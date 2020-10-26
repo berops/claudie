@@ -32,8 +32,8 @@ message Cluster {
 }
 
 message Node {
-    public_ip Ip = 1;
-    private_ip Ip = 2;
+    Ip public_ip = 1;
+    Ip private_ip = 2;
 }
 
 message Ip {
