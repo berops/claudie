@@ -1,4 +1,4 @@
-package vpn_builder;
+package wireguardian;
 
 service NetworkBuilder {
 
