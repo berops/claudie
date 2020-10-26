@@ -1,0 +1,8 @@
+---
+- hosts: all
+  remote_user: root
+  gather_facts: yes
+  become: yes
+
+  roles:
+    - role: "./wireguard"
