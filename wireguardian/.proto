@@ -1,0 +1,44 @@
+package wireguardian;
+
+service NetworkBuilder {
+
+    rpc buildVPN (Network) returns (Status);
+    
+    rpc destroyVPN (Network) returns (Status);
+
+}
+
+service NodeHandler {
+
+    rpc addNode (Network, Node) returns (Status);
+    
+    rpc removeNode (Network, Node) returns (Status);
+}
+
+message Status {
+    bool success = 1;
+}
+
+message Network {
+    reserved 1;
+    cluster Cluster = 2;
+}
+
+message Cluster {
+    reserved 1;
+    repeated Node control_plane = 2;
+    repeated Node compute_plane = 3;
+    string kubernetes_version = 4;
+}
+
+message Node {
+    Ip public_ip = 1;
+    Ip private_ip = 2;
+}
+
+message Ip {
+    oneof ip_address {
+        fixed32 v4 = 1;
+        bytes v6 = 2;
+    }
+}
