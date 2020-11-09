@@ -142,16 +142,16 @@ func (x *Node) GetPrivateIp() string {
 	return ""
 }
 
-type Response struct {
+type Status struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Response string `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	Success bool `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
 }
 
-func (x *Response) Reset() {
-	*x = Response{}
+func (x *Status) Reset() {
+	*x = Status{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_wireguardianpb_wireguardian_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -159,13 +159,13 @@ func (x *Response) Reset() {
 	}
 }
 
-func (x *Response) String() string {
+func (x *Status) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Response) ProtoMessage() {}
+func (*Status) ProtoMessage() {}
 
-func (x *Response) ProtoReflect() protoreflect.Message {
+func (x *Status) ProtoReflect() protoreflect.Message {
 	mi := &file_wireguardianpb_wireguardian_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -177,16 +177,16 @@ func (x *Response) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Response.ProtoReflect.Descriptor instead.
-func (*Response) Descriptor() ([]byte, []int) {
+// Deprecated: Use Status.ProtoReflect.Descriptor instead.
+func (*Status) Descriptor() ([]byte, []int) {
 	return file_wireguardianpb_wireguardian_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *Response) GetResponse() string {
+func (x *Status) GetSuccess() bool {
 	if x != nil {
-		return x.Response
+		return x.Success
 	}
-	return ""
+	return false
 }
 
 var File_wireguardianpb_wireguardian_proto protoreflect.FileDescriptor
@@ -210,17 +210,16 @@ var file_wireguardianpb_wireguardian_proto_rawDesc = []byte{
 	0x5f, 0x69, 0x70, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x70, 0x75, 0x62, 0x6c, 0x69,
 	0x63, 0x49, 0x70, 0x12, 0x1d, 0x0a, 0x0a, 0x70, 0x72, 0x69, 0x76, 0x61, 0x74, 0x65, 0x5f, 0x69,
 	0x70, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x70, 0x72, 0x69, 0x76, 0x61, 0x74, 0x65,
-	0x49, 0x70, 0x22, 0x26, 0x0a, 0x08, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1a,
-	0x0a, 0x08, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x08, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x32, 0x4c, 0x0a, 0x0f, 0x42, 0x75,
-	0x69, 0x6c, 0x64, 0x56, 0x50, 0x4e, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x39, 0x0a,
-	0x08, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x56, 0x50, 0x4e, 0x12, 0x15, 0x2e, 0x77, 0x69, 0x72, 0x65,
-	0x67, 0x75, 0x61, 0x72, 0x64, 0x69, 0x61, 0x6e, 0x2e, 0x43, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72,
-	0x1a, 0x16, 0x2e, 0x77, 0x69, 0x72, 0x65, 0x67, 0x75, 0x61, 0x72, 0x64, 0x69, 0x61, 0x6e, 0x2e,
-	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x42, 0x1f, 0x5a, 0x1d, 0x77, 0x69, 0x72, 0x65,
-	0x67, 0x75, 0x61, 0x72, 0x64, 0x69, 0x61, 0x6e, 0x70, 0x62, 0x3b, 0x77, 0x69, 0x72, 0x65, 0x67,
-	0x75, 0x61, 0x72, 0x64, 0x69, 0x61, 0x6e, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x33,
+	0x49, 0x70, 0x22, 0x22, 0x0a, 0x06, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x18, 0x0a, 0x07,
+	0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x73,
+	0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x32, 0x4a, 0x0a, 0x0f, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x56,
+	0x50, 0x4e, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x37, 0x0a, 0x08, 0x42, 0x75, 0x69,
+	0x6c, 0x64, 0x56, 0x50, 0x4e, 0x12, 0x15, 0x2e, 0x77, 0x69, 0x72, 0x65, 0x67, 0x75, 0x61, 0x72,
+	0x64, 0x69, 0x61, 0x6e, 0x2e, 0x43, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x1a, 0x14, 0x2e, 0x77,
+	0x69, 0x72, 0x65, 0x67, 0x75, 0x61, 0x72, 0x64, 0x69, 0x61, 0x6e, 0x2e, 0x53, 0x74, 0x61, 0x74,
+	0x75, 0x73, 0x42, 0x1f, 0x5a, 0x1d, 0x77, 0x69, 0x72, 0x65, 0x67, 0x75, 0x61, 0x72, 0x64, 0x69,
+	0x61, 0x6e, 0x70, 0x62, 0x3b, 0x77, 0x69, 0x72, 0x65, 0x67, 0x75, 0x61, 0x72, 0x64, 0x69, 0x61,
+	0x6e, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -237,15 +236,15 @@ func file_wireguardianpb_wireguardian_proto_rawDescGZIP() []byte {
 
 var file_wireguardianpb_wireguardian_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_wireguardianpb_wireguardian_proto_goTypes = []interface{}{
-	(*Cluster)(nil),  // 0: wireguardian.Cluster
-	(*Node)(nil),     // 1: wireguardian.Node
-	(*Response)(nil), // 2: wireguardian.Response
+	(*Cluster)(nil), // 0: wireguardian.Cluster
+	(*Node)(nil),    // 1: wireguardian.Node
+	(*Status)(nil),  // 2: wireguardian.Status
 }
 var file_wireguardianpb_wireguardian_proto_depIdxs = []int32{
 	1, // 0: wireguardian.Cluster.control_plane:type_name -> wireguardian.Node
 	1, // 1: wireguardian.Cluster.compute_plane:type_name -> wireguardian.Node
 	0, // 2: wireguardian.BuildVPNService.BuildVPN:input_type -> wireguardian.Cluster
-	2, // 3: wireguardian.BuildVPNService.BuildVPN:output_type -> wireguardian.Response
+	2, // 3: wireguardian.BuildVPNService.BuildVPN:output_type -> wireguardian.Status
 	3, // [3:4] is the sub-list for method output_type
 	2, // [2:3] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
@@ -284,7 +283,7 @@ func file_wireguardianpb_wireguardian_proto_init() {
 			}
 		}
 		file_wireguardianpb_wireguardian_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Response); i {
+			switch v := v.(*Status); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -328,7 +327,7 @@ const _ = grpc.SupportPackageIsVersion6
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type BuildVPNServiceClient interface {
-	BuildVPN(ctx context.Context, in *Cluster, opts ...grpc.CallOption) (*Response, error)
+	BuildVPN(ctx context.Context, in *Cluster, opts ...grpc.CallOption) (*Status, error)
 }
 
 type buildVPNServiceClient struct {
@@ -339,8 +338,8 @@ func NewBuildVPNServiceClient(cc grpc.ClientConnInterface) BuildVPNServiceClient
 	return &buildVPNServiceClient{cc}
 }
 
-func (c *buildVPNServiceClient) BuildVPN(ctx context.Context, in *Cluster, opts ...grpc.CallOption) (*Response, error) {
-	out := new(Response)
+func (c *buildVPNServiceClient) BuildVPN(ctx context.Context, in *Cluster, opts ...grpc.CallOption) (*Status, error) {
+	out := new(Status)
 	err := c.cc.Invoke(ctx, "/wireguardian.BuildVPNService/BuildVPN", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -350,14 +349,14 @@ func (c *buildVPNServiceClient) BuildVPN(ctx context.Context, in *Cluster, opts 
 
 // BuildVPNServiceServer is the server API for BuildVPNService service.
 type BuildVPNServiceServer interface {
-	BuildVPN(context.Context, *Cluster) (*Response, error)
+	BuildVPN(context.Context, *Cluster) (*Status, error)
 }
 
 // UnimplementedBuildVPNServiceServer can be embedded to have forward compatible implementations.
 type UnimplementedBuildVPNServiceServer struct {
 }
 
-func (*UnimplementedBuildVPNServiceServer) BuildVPN(context.Context, *Cluster) (*Response, error) {
+func (*UnimplementedBuildVPNServiceServer) BuildVPN(context.Context, *Cluster) (*Status, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BuildVPN not implemented")
 }
 

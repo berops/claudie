@@ -26,21 +26,21 @@ func buildVPN(c wireguardianpb.BuildVPNServiceClient) {
 	req := &wireguardianpb.Cluster{
 		ControlPlane: []*wireguardianpb.Node{
 			{
-				PublicIp:  "159.69.9.154",
+				PublicIp:  "168.119.170.52",
 				PrivateIp: "192.168.2.1",
 			},
 			{
-				PublicIp:  "168.119.119.101",
+				PublicIp:  "168.119.173.167",
 				PrivateIp: "192.168.2.2",
 			},
 		},
 		ComputePlane: []*wireguardianpb.Node{
 			{
-				PublicIp:  "159.69.29.78",
+				PublicIp:  "168.119.169.217",
 				PrivateIp: "192.168.2.3",
 			},
 			{
-				PublicIp:  "168.119.115.229",
+				PublicIp:  "168.119.173.20",
 				PrivateIp: "192.168.2.4",
 			},
 		},
@@ -51,5 +51,5 @@ func buildVPN(c wireguardianpb.BuildVPNServiceClient) {
 	if err != nil {
 		log.Fatalln("error while calling BuildVPN RPC", err)
 	}
-	log.Println("Response from BuildVPN", res.GetResponse())
+	log.Println("BuildVPN success stauts:", res.GetSuccess())
 }

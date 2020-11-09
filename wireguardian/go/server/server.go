@@ -3,16 +3,17 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+	"net"
+
 	"github.com/Berops/wireguardian/inventory"
 	"github.com/Berops/wireguardian/wireguardianpb"
 	"google.golang.org/grpc"
-	"log"
-	"net"
 )
 
 type server struct{}
 
-func (*server) BuildVPN(_ context.Context, req *wireguardianpb.Cluster) (*wireguardianpb.Response, error) {
+func (*server) BuildVPN(_ context.Context, req *wireguardianpb.Cluster) (*wireguardianpb.Status, error) {
 	fmt.Println("BuildVPN function was invoked with", req)
 	var nodes []*wireguardianpb.Node //creates empty slice of nodes
 	nodes = append(nodes, req.GetControlPlane()...)
@@ -20,12 +21,9 @@ func (*server) BuildVPN(_ context.Context, req *wireguardianpb.Cluster) (*wiregu
 	inventory.Generate(nodes)
 	err := runAnsible()
 	if err != nil {
-		log.Fatalln("Error from Ansible:", err)
+		return &wireguardianpb.Status{Success: false}, nil
 	}
-	res := &wireguardianpb.Response{
-		Response: "Success",
-	}
-	return res, nil //TODO: res - send response to client
+	return &wireguardianpb.Status{Success: true}, nil
 }
 
 func main() {

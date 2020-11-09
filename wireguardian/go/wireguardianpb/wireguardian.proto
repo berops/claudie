@@ -15,8 +15,6 @@ message Node {
   string private_ip = 2;
 }
 
-message Response {
-  string response = 1;
-}
+message Status { bool success = 1; }
 
-service BuildVPNService { rpc BuildVPN(Cluster) returns(Response); }
+service BuildVPNService { rpc BuildVPN(Cluster) returns(Status); }
