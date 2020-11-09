@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package wireguardian;
+
+option go_package = "wireguardianpb;wireguardianpb";
+
+message Cluster {
+  repeated Node control_plane = 2;
+  repeated Node compute_plane = 3;
+  string kubernetes_version = 4;
+}
+
+message Node {
+  string public_ip = 1;
+  string private_ip = 2;
+}
+
+message Response {
+  string response = 1;
+}
+
+service BuildVPNService { rpc BuildVPN(Cluster) returns(Response); }

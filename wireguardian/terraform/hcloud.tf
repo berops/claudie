@@ -8,7 +8,7 @@ resource "hcloud_ssh_key" "kubeone" {
 }
 
 resource "hcloud_server" "control_plane" {
-  count       = 10
+  count       = 4
   name        = "${var.cluster_name}-node-${count.index + 1}"
   server_type = var.control_plane_type
   image       = var.image
