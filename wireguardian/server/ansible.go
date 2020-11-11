@@ -5,7 +5,7 @@ import (
 	"os/exec"
 )
 
-const playbookPath = "../ansible/playbook.yml"
+const playbookPath = "./ansible/playbook.yml"
 const inventoryPath = "inventory/inventory.ini"
 const privateKeyPath = "/Users/samuelstolicny/.ssh/samuelstolicny_ssh_key"
 
