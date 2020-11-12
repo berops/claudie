@@ -4,10 +4,22 @@ package wireguardianpb;
 
 option go_package = "wireguardianpb;wireguardianpb";
 
+message Project {
+  string id = 1;
+  string name = 2;
+  Cluster cluster = 3;
+}
+
 message Cluster {
+  Network network = 1;
   repeated Node control_plane = 2;
   repeated Node compute_plane = 3;
   string kubernetes_version = 4;
+}
+
+message Network {
+  string network_ip = 1;
+  string network_mask = 2;
 }
 
 message Node {
@@ -15,6 +27,10 @@ message Node {
   string private_ip = 2;
 }
 
-message Status { bool success = 1; }
+message Status {
+  bool success = 1;
+}
 
-service BuildVPNService { rpc BuildVPN(Cluster) returns(Status); }
+service BuildVPNService {
+  rpc BuildVPN(Project) returns(Status);
+}
