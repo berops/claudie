@@ -18,8 +18,8 @@ message Cluster {
 }
 
 message Network {
-  string network_ip = 1;
-  string network_mask = 2;
+  string ip = 1;
+  string mask = 2;
 }
 
 message Node {

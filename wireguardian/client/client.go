@@ -18,38 +18,48 @@ func main() {
 
 	c := wireguardianpb.NewBuildVPNServiceClient(cc)
 
-	buildVPN(c)
-}
-
-func buildVPN(c wireguardianpb.BuildVPNServiceClient) {
-	fmt.Println("Starting to do a Unary RPC")
-	req := &wireguardianpb.Cluster{
-		ControlPlane: []*wireguardianpb.Node{
-			{
-				PublicIp:  "168.119.170.52",
-				PrivateIp: "192.168.2.1",
+	project := &wireguardianpb.Project{
+		Id:   "12345",
+		Name: "Test Project",
+		Cluster: &wireguardianpb.Cluster{
+			Network: &wireguardianpb.Network{
+				Ip:   "192.168.2.0",
+				Mask: "24",
 			},
-			{
-				PublicIp:  "168.119.173.167",
-				PrivateIp: "192.168.2.2",
+			ControlPlane: []*wireguardianpb.Node{
+				{
+					PublicIp:  "168.119.170.52",
+					PrivateIp: "192.168.2.1",
+				},
+				{
+					PublicIp:  "168.119.173.167",
+					PrivateIp: "192.168.2.2",
+				},
 			},
+			ComputePlane: []*wireguardianpb.Node{
+				{
+					PublicIp:  "168.119.169.217",
+					PrivateIp: "192.168.2.3",
+				},
+				{
+					PublicIp:  "168.119.173.20",
+					PrivateIp: "192.168.2.4",
+				},
+			},
+			KubernetesVersion: "v1.19.0",
 		},
-		ComputePlane: []*wireguardianpb.Node{
-			{
-				PublicIp:  "168.119.169.217",
-				PrivateIp: "192.168.2.3",
-			},
-			{
-				PublicIp:  "168.119.173.20",
-				PrivateIp: "192.168.2.4",
-			},
-		},
-		KubernetesVersion: "v1.19.0",
 	}
 
-	res, err := c.BuildVPN(context.Background(), req)
+	buildVPN(c, project)
+}
+
+func buildVPN(c wireguardianpb.BuildVPNServiceClient, project *wireguardianpb.Project) {
+	fmt.Println("Starting to do a Unary RPC")
+	req := project
+
+	res, err := c.BuildVPN(context.Background(), req) //sending request to the server and receiving response
 	if err != nil {
 		log.Fatalln("error while calling BuildVPN RPC", err)
 	}
-	log.Println("BuildVPN success stauts:", res.GetSuccess())
+	log.Println("BuildVPN success status:", res.GetSuccess())
 }

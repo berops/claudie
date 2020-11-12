@@ -13,11 +13,12 @@ import (
 
 type server struct{}
 
-func (*server) BuildVPN(_ context.Context, req *wireguardianpb.Cluster) (*wireguardianpb.Status, error) {
+func (*server) BuildVPN(_ context.Context, req *wireguardianpb.Project) (*wireguardianpb.Status, error) {
 	fmt.Println("BuildVPN function was invoked with", req)
 	var nodes []*wireguardianpb.Node //creates empty slice of nodes
-	nodes = append(nodes, req.GetControlPlane()...)
-	nodes = append(nodes, req.GetComputePlane()...)
+	//nodes = append(nodes, req.GetControlPlane()...)
+	nodes = append(nodes, req.GetCluster().GetControlPlane()...)
+	nodes = append(nodes, req.GetCluster().GetComputePlane()...)
 	inventory.Generate(nodes)
 	err := runAnsible()
 	if err != nil {
