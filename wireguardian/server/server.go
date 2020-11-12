@@ -6,8 +6,8 @@ import (
 	"log"
 	"net"
 
-	"github.com/Berops/wireguardian/inventory"
-	"github.com/Berops/wireguardian/wireguardianpb"
+	"github.com/Berops/platform/wireguardian/inventory"
+	"github.com/Berops/platform/wireguardian/wireguardianpb"
 	"google.golang.org/grpc"
 )
 

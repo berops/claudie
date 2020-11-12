@@ -6,7 +6,7 @@ import (
 	"os"
 	"text/template"
 
-	"github.com/Berops/wireguardian/wireguardianpb"
+	"github.com/Berops/platform/wireguardian/wireguardianpb"
 )
 
 // Generate generates a new Ansible inventory file

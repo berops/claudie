@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Berops/wireguardian/wireguardianpb"
+	"github.com/Berops/platform/wireguardian/wireguardianpb"
 	"google.golang.org/grpc"
 )
 
