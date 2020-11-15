@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package platform;
+
+import "platform.proto";
+
+option go_package = "proto/pb";
+
+service BuildInfrastructureService {
+  rpc BuildInfrastructure(Project) returns(Project);
+}

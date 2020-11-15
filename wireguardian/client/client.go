@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/Berops/platform/proto/pb"
 	"log"
 
-	"github.com/Berops/platform/wireguardian/wireguardianpb"
 	"google.golang.org/grpc"
 )
 
@@ -16,17 +16,17 @@ func main() {
 	}
 	defer cc.Close() //close the connection after response is received
 
-	c := wireguardianpb.NewBuildVPNServiceClient(cc)
+	c := pb.NewBuildVPNServiceClient(cc)
 
-	project := &wireguardianpb.Project{
+	project := &pb.Project{
 		Id:   "12345",
 		Name: "Test Project",
-		Cluster: &wireguardianpb.Cluster{
-			Network: &wireguardianpb.Network{
+		Cluster: &pb.Cluster{
+			Network: &pb.Network{
 				Ip:   "192.168.2.0",
 				Mask: "24",
 			},
-			ControlPlane: []*wireguardianpb.Node{
+			ControlPlane: []*pb.Node{
 				{
 					PublicIp:  "168.119.170.52",
 					PrivateIp: "192.168.2.1",
@@ -36,7 +36,7 @@ func main() {
 					PrivateIp: "192.168.2.2",
 				},
 			},
-			ComputePlane: []*wireguardianpb.Node{
+			ComputePlane: []*pb.Node{
 				{
 					PublicIp:  "168.119.169.217",
 					PrivateIp: "192.168.2.3",
@@ -53,7 +53,7 @@ func main() {
 	buildVPN(c, project)
 }
 
-func buildVPN(c wireguardianpb.BuildVPNServiceClient, project *wireguardianpb.Project) {
+func buildVPN(c pb.BuildVPNServiceClient, project *pb.Project) {
 	fmt.Println("Starting to do a Unary RPC")
 	req := project
 

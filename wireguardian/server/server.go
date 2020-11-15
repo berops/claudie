@@ -6,25 +6,25 @@ import (
 	"log"
 	"net"
 
+	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/wireguardian/inventory"
-	"github.com/Berops/platform/wireguardian/wireguardianpb"
 	"google.golang.org/grpc"
 )
 
 type server struct{}
 
-func (*server) BuildVPN(_ context.Context, req *wireguardianpb.Project) (*wireguardianpb.Status, error) {
+func (*server) BuildVPN(_ context.Context, req *pb.Project) (*pb.Status, error) {
 	fmt.Println("BuildVPN function was invoked with", req)
-	var nodes []*wireguardianpb.Node //creates empty slice of nodes
+	var nodes []*pb.Node //creates empty slice of nodes
 	//nodes = append(nodes, req.GetControlPlane()...)
 	nodes = append(nodes, req.GetCluster().GetControlPlane()...)
 	nodes = append(nodes, req.GetCluster().GetComputePlane()...)
 	inventory.Generate(nodes)
 	err := runAnsible()
 	if err != nil {
-		return &wireguardianpb.Status{Success: false}, nil
+		return &pb.Status{Success: false}, nil
 	}
-	return &wireguardianpb.Status{Success: true}, nil
+	return &pb.Status{Success: true}, nil
 }
 
 func main() {
@@ -37,7 +37,7 @@ func main() {
 
 	// creating a new server
 	s := grpc.NewServer()
-	wireguardianpb.RegisterBuildVPNServiceServer(s, &server{})
+	pb.RegisterBuildVPNServiceServer(s, &server{})
 
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve: %v", err)

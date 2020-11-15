@@ -6,11 +6,11 @@ import (
 	"os"
 	"text/template"
 
-	"github.com/Berops/platform/wireguardian/wireguardianpb"
+	"github.com/Berops/platform/proto/pb"
 )
 
 // Generate generates a new Ansible inventory file
-func Generate(nodes []*wireguardianpb.Node) {
+func Generate(nodes []*pb.Node) {
 	fmt.Println(nodes)
 
 	tpl, err := template.ParseFiles("./inventory/inventory.goini")

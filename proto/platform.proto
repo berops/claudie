@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package terraformerpb;
+package platform;
 
-option go_package = "terraformerpb;terraformerpb";
+option go_package = "proto/pb";
 
 message Project {
   string id = 1;
@@ -25,8 +25,4 @@ message Network {
 message Node {
   string public_ip = 1;
   string private_ip = 2;
-}
-
-service BuildInfrastructureService {
-  rpc BuildInfrastructure(Project) returns(Project);
 }
