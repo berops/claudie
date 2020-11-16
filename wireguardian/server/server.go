@@ -15,11 +15,8 @@ type server struct{}
 
 func (*server) BuildVPN(_ context.Context, req *pb.Project) (*pb.Status, error) {
 	fmt.Println("BuildVPN function was invoked with", req)
-	var nodes []*pb.Node //creates empty slice of nodes
-	//nodes = append(nodes, req.GetControlPlane()...)
-	nodes = append(nodes, req.GetCluster().GetControlPlane()...)
-	nodes = append(nodes, req.GetCluster().GetComputePlane()...)
-	inventory.Generate(nodes)
+
+	inventory.Generate(req.GetCluster().GetNodes())
 	err := runAnsible()
 	if err != nil {
 		return &pb.Status{Success: false}, nil

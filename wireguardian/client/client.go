@@ -27,24 +27,26 @@ func main() {
 				Ip:   "192.168.2.0",
 				Mask: "24",
 			},
-			ControlPlane: []*pb.Node{
+			Nodes: []*pb.Node{
 				{
 					PublicIp:  "168.119.170.52",
 					PrivateIp: "192.168.2.1",
+					Control:   true,
 				},
 				{
 					PublicIp:  "168.119.173.167",
 					PrivateIp: "192.168.2.2",
+					Control:   true,
 				},
-			},
-			ComputePlane: []*pb.Node{
 				{
 					PublicIp:  "168.119.169.217",
 					PrivateIp: "192.168.2.3",
+					Control:   false,
 				},
 				{
 					PublicIp:  "168.119.173.20",
 					PrivateIp: "192.168.2.4",
+					Control:   false,
 				},
 			},
 			KubernetesVersion: "v1.19.0",

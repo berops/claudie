@@ -12,8 +12,7 @@ message Project {
 
 message Cluster {
   Network network = 1;
-  repeated Node control_plane = 2;
-  repeated Node compute_plane = 3;
+  repeated Node nodes = 2;
   string kubernetes_version = 4;
 }
 
@@ -25,6 +24,8 @@ message Network {
 message Node {
   string public_ip = 1;
   string private_ip = 2;
+  string provider = 3;
+  bool control = 4;
 }
 
 message Metadata { string name = 1; }
