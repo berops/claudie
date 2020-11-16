@@ -5,14 +5,14 @@ package platform;
 option go_package = "proto/pb";
 
 message Project {
-  string id = 1;
-  Metadata metadata = 2;
-  Cluster cluster = 3;
+  Metadata metadata = 1;
+  Cluster cluster = 2;
 }
 
 message Cluster {
-  Network network = 1;
-  repeated Node nodes = 2;
+  Metadata metadata = 1;
+  Network network = 2;
+  repeated Node nodes = 3;
   string kubernetes_version = 4;
 }
 
@@ -25,7 +25,10 @@ message Node {
   string public_ip = 1;
   string private_ip = 2;
   string provider = 3;
-  bool control = 4;
+  bool isControlPlane = 4;
 }
 
-message Metadata { string name = 1; }
+message Metadata {
+  string name = 1;
+  string id = 2;
+}

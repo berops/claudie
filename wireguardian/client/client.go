@@ -20,8 +20,10 @@ func main() {
 	c := pb.NewBuildVPNServiceClient(cc)
 
 	project := &pb.Project{
-		Id:       "12345",
-		Metadata: &pb.Metadata{Name: "Test"},
+		Metadata: &pb.Metadata{
+			Name: "Test",
+			Id:   "12345",
+		},
 		Cluster: &pb.Cluster{
 			Network: &pb.Network{
 				Ip:   "192.168.2.0",
@@ -29,24 +31,24 @@ func main() {
 			},
 			Nodes: []*pb.Node{
 				{
-					PublicIp:  "168.119.170.52",
-					PrivateIp: "192.168.2.1",
-					Control:   true,
+					PublicIp:       "168.119.170.52",
+					PrivateIp:      "192.168.2.1",
+					IsControlPlane: true,
 				},
 				{
-					PublicIp:  "168.119.173.167",
-					PrivateIp: "192.168.2.2",
-					Control:   true,
+					PublicIp:       "168.119.173.167",
+					PrivateIp:      "192.168.2.2",
+					IsControlPlane: true,
 				},
 				{
-					PublicIp:  "168.119.169.217",
-					PrivateIp: "192.168.2.3",
-					Control:   false,
+					PublicIp:       "168.119.169.217",
+					PrivateIp:      "192.168.2.3",
+					IsControlPlane: false,
 				},
 				{
-					PublicIp:  "168.119.173.20",
-					PrivateIp: "192.168.2.4",
-					Control:   false,
+					PublicIp:       "168.119.173.20",
+					PrivateIp:      "192.168.2.4",
+					IsControlPlane: false,
 				},
 			},
 			KubernetesVersion: "v1.19.0",
