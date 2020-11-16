@@ -6,7 +6,7 @@ option go_package = "proto/pb";
 
 message Project {
   string id = 1;
-  string name = 2;
+  Metadata metadata = 2;
   Cluster cluster = 3;
 }
 
@@ -26,3 +26,5 @@ message Node {
   string public_ip = 1;
   string private_ip = 2;
 }
+
+message Metadata { string name = 1; }

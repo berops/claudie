@@ -3,8 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/Berops/platform/proto/pb"
 	"log"
+
+	"github.com/Berops/platform/proto/pb"
 
 	"google.golang.org/grpc"
 )
@@ -19,8 +20,8 @@ func main() {
 	c := pb.NewBuildVPNServiceClient(cc)
 
 	project := &pb.Project{
-		Id:   "12345",
-		Name: "Test Project",
+		Id:       "12345",
+		Metadata: &pb.Metadata{Name: "Test"},
 		Cluster: &pb.Cluster{
 			Network: &pb.Network{
 				Ip:   "192.168.2.0",
