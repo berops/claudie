@@ -4,13 +4,13 @@ provider "hcloud" {
 
 resource "hcloud_ssh_key" "platform" {
   name       = "test_key"
-  public_key = "I am public key. I am an extrovert personality."
+  public_key = "{{ .PublicKey }}"
 }
 
 resource "hcloud_server" "control_plane" {
-  count       = 2
+  count       = {{ .ControlPlane }}
   name        = "test-node-${count.index + 1}"
-  server_type = "cpx11"
+  server_type = "{{ .ControlPlaneType }}"
   image       = "ubuntu-20.04"
 
   ssh_keys = [
@@ -19,9 +19,9 @@ resource "hcloud_server" "control_plane" {
 }
 
 resource "hcloud_server" "compute_plane" {
-  count       = 2
+  count       = {{ .ComputePlane }}
   name        = "test-node-${count.index + 1}"
-  server_type = "cpx11"
+  server_type = "{{ .ControlPlaneType }}"
   image       = "ubuntu-20.04"
 
   ssh_keys = [

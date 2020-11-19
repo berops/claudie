@@ -7,6 +7,8 @@ option go_package = "proto/pb";
 message Project {
   Metadata metadata = 1;
   Cluster cluster = 2;
+  string public_key = 3;
+  string private_key = 4;
 }
 
 message Cluster {
@@ -26,6 +28,8 @@ message Node {
   string private_ip = 2;
   string provider = 3;
   bool isControlPlane = 4;
+  string server_type = 5;
+  string image = 6;
 }
 
 message Metadata {
