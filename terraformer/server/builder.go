@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"text/template"
 
 	"github.com/Berops/platform/proto/pb"
@@ -53,6 +55,9 @@ func countNodes(cluster *pb.Cluster) {
 }
 
 func createTemplateFile(templatePath string, outputPath string, p provider) {
+	if _, err := os.Stat("terraform"); os.IsNotExist(err) {
+		os.Mkdir("terraform", os.ModePerm)
+	}
 	tpl, err := template.ParseFiles(templatePath)
 	if err != nil {
 		log.Fatalln("Failed to load template file", err)
@@ -67,6 +72,45 @@ func createTemplateFile(templatePath string, outputPath string, p provider) {
 	}
 }
 
+func callTerraform() {
+	fmt.Println("Calling Terraform")
+	cmd := exec.Command("terraform", "init", "terraform")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	cmd = exec.Command("terraform", "apply", "--auto-approve", "-state=terraform/terraform.tfstate", "terraform")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func readTerraformOutput(project *pb.Project) {
+	f, err := os.Open("./terraform/output")
+	if err != nil {
+		log.Fatalln("Error while opening output file:", err)
+	}
+
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	for i := 0; scanner.Scan(); i++ {
+		fmt.Println(scanner.Text())
+		project.Cluster.Nodes[i].PublicIp = scanner.Text()
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatalln("Error while reading the output file", err)
+	}
+
+}
+
 // generateTemplates is generating terraform files for different providers
 func generateTemplates(project *pb.Project) error {
 	fmt.Println("Generating provider templates")
@@ -79,6 +123,8 @@ func generateTemplates(project *pb.Project) error {
 	// HETZNER
 	if providers[hetzner].using {
 		createTemplateFile(templatePath, outputPath, providers[hetzner])
+		callTerraform()
+		readTerraformOutput(project)
 	}
 
 	return nil

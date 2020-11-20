@@ -24,8 +24,8 @@ func main() {
 			Name: "Test",
 			Id:   "12345",
 		},
-		PrivateKey: "I am private key. I am an introver personality.",
-		PublicKey:  "I am public key. I am an extrovert personality.",
+		PrivateKey: "/Users/samuelstolicny/go/src/github.com/Berops/platform/terraformer/keys/keykey",
+		PublicKey:  "/Users/samuelstolicny/go/src/github.com/Berops/platform/terraformer/keys/keykey.pub",
 		Cluster: &pb.Cluster{
 			Network: &pb.Network{
 				Ip:   "192.168.2.0",
@@ -33,28 +33,24 @@ func main() {
 			},
 			Nodes: []*pb.Node{
 				{
-					PublicIp:       "168.119.170.52",
 					PrivateIp:      "192.168.2.1",
 					Provider:       "hetzner",
 					IsControlPlane: true,
 					ServerType:     "cpx11",
 				},
 				{
-					PublicIp:       "168.119.173.167",
 					PrivateIp:      "192.168.2.2",
 					Provider:       "hetzner",
 					IsControlPlane: true,
 					ServerType:     "cpx11",
 				},
 				{
-					PublicIp:       "168.119.169.217",
 					PrivateIp:      "192.168.2.3",
 					Provider:       "hetzner",
 					IsControlPlane: false,
 					ServerType:     "cpx11",
 				},
 				{
-					PublicIp:       "168.119.173.20",
 					PrivateIp:      "192.168.2.4",
 					Provider:       "hetzner",
 					IsControlPlane: false,
