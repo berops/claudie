@@ -1,3 +1,11 @@
+terraform {
+  backend "gcs" {
+    bucket      = "develop_test_bucket"
+    prefix      = "/customer/{{ .ProjectName }}"
+    credentials = "./keys/platform-296509-d6ddeb344e91.json"
+  }
+}
+
 provider "hcloud" {
   token = "xIAfsb7M5K6etYAfXYcg5iYyrFGNlCxcICo060HVEygjoF0usFpv5P9X7pk85Xe1" 
 }

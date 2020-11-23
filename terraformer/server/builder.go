@@ -19,12 +19,17 @@ type provider struct {
 	using                              bool
 	ControlPlane, ComputePlane         int
 	ControlPlaneType, ComputePlaneType string
+	ProjectName                        string
+}
+
+type bucket struct {
+	ProjectName string
 }
 
 var providers [2]provider
 
 func initializeProviders(project *pb.Project) {
-	providers[hetzner] = provider{name: "hetzner", using: false, PublicKey: project.GetPublicKey(), PrivateKey: project.GetPrivateKey()}
+	providers[hetzner] = provider{name: "hetzner", using: false, PublicKey: project.GetPublicKey(), PrivateKey: project.GetPrivateKey(), ProjectName: "testProjectName"}
 	providers[gcp] = provider{name: "gcp", using: false, PublicKey: project.GetPublicKey(), PrivateKey: project.GetPrivateKey()}
 }
 
@@ -54,27 +59,28 @@ func countNodes(cluster *pb.Cluster) {
 	}
 }
 
-func createTemplateFile(templatePath string, outputPath string, p provider) {
-	if _, err := os.Stat("terraform"); os.IsNotExist(err) {
-		os.Mkdir("terraform", os.ModePerm)
+func createTerraformConfig(templatePath string, outputPath string, s interface{}, fileName string) {
+	if _, err := os.Stat(fileName); os.IsNotExist(err) {
+		os.Mkdir(fileName, os.ModePerm)
 	}
 	tpl, err := template.ParseFiles(templatePath)
 	if err != nil {
-		log.Fatalln("Failed to load template file", err)
+		log.Fatalln("Failed to load the template file", err)
 	}
 	f, err := os.Create(outputPath)
 	if err != nil {
-		log.Fatalln("Failed to create a terraform file", err)
+		log.Fatalln("Failed to create the", fileName, "file", err)
 	}
-	err = tpl.Execute(f, p)
+	err = tpl.Execute(f, s)
 	if err != nil {
-		log.Fatalln("Failed to execute template file", err)
+		log.Fatalln("Failed to execute the template file", err)
 	}
 }
 
-func callTerraform() {
+// callTerraform function calls terraform and executes a .tf file
+func callTerraform(fileName string) {
 	fmt.Println("Calling Terraform")
-	cmd := exec.Command("terraform", "init", "terraform")
+	cmd := exec.Command("terraform", "init", fileName)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
@@ -82,7 +88,7 @@ func callTerraform() {
 		log.Fatal(err)
 	}
 
-	cmd = exec.Command("terraform", "apply", "--auto-approve", "-state=terraform/terraform.tfstate", "terraform")
+	cmd = exec.Command("terraform", "apply", "--auto-approve", fileName)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
@@ -114,16 +120,19 @@ func readTerraformOutput(project *pb.Project) {
 // generateTemplates is generating terraform files for different providers
 func generateTemplates(project *pb.Project) error {
 	fmt.Println("Generating provider templates")
+
 	initializeProviders(project)
 	countNodes(project.GetCluster())
 
-	templatePath := "./templates/hetzner.gotf"
-	outputPath := "./terraform/hetzner.tf"
-
 	// HETZNER
 	if providers[hetzner].using {
-		createTemplateFile(templatePath, outputPath, providers[hetzner])
-		callTerraform()
+		createTerraformConfig(
+			"./templates/hetzner.tpl",
+			"./terraform/hetzner.tf",
+			providers[hetzner],
+			"terraform",
+		) // creating terraform file for a provider
+		callTerraform("terraform")
 		readTerraformOutput(project)
 	}
 

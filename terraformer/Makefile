@@ -10,4 +10,4 @@ client:
 	go run ./client
 
 destroy:
-	terraform destroy --auto-approve -state=terraform/terraform.tfstate terraform 
+	terraform destroy --auto-approve terraform && rm -r terraform && rm -r .terraform
