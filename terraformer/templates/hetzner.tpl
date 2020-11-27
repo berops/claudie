@@ -29,7 +29,7 @@ resource "hcloud_server" "compute_plane" {
   ]
 }
 
-resource "local_file" "output" { 
+resource "local_file" "output_hetzner" { 
     content = templatefile("templates/output.tpl",
         {
             control_public_ip = hcloud_server.control_plane.*.ipv4_address,

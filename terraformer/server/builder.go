@@ -47,6 +47,7 @@ func callTerraform(fileName string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Fprintln(cmd.Stdout)
 }
 
 func readTerraformOutput(project *pb.Project) {
@@ -58,9 +59,15 @@ func readTerraformOutput(project *pb.Project) {
 	defer f.Close()
 
 	scanner := bufio.NewScanner(f)
+	//TEMPORARY SOLUTION
 	for i := 0; scanner.Scan(); i++ {
 		fmt.Println(scanner.Text())
-		project.Cluster.Nodes[i].PublicIp = scanner.Text()
+		for j := i; j < len(project.Cluster.Nodes); j++ {
+			if project.Cluster.Nodes[j].PublicIp == "" {
+				project.Cluster.Nodes[j].PublicIp = scanner.Text()
+				break
+			}
+		}
 	}
 
 	if err := scanner.Err(); err != nil {

@@ -23,26 +23,26 @@ func main() {
 	providers["hetzner"] = &pb.Provider{
 		Name: "hetzner",
 		ControlNodeSpecs: &pb.ControlNodeSpecs{
-			Count:      2,
+			Count:      1,
 			ServerType: "cpx11",
 			Image:      "ubuntu-20.04",
 		},
 		ComputeNodeSpecs: &pb.ComputeNodeSpecs{
-			Count:      2,
+			Count:      1,
 			ServerType: "cpx11",
 			Image:      "ubuntu-20.04",
 		},
-		IsInUse: false,
+		IsInUse: true,
 	}
 	providers["gcp"] = &pb.Provider{
 		Name: "gcp",
 		ControlNodeSpecs: &pb.ControlNodeSpecs{
-			Count:      2,
+			Count:      1,
 			ServerType: "f1-micro",
 			Image:      "ubuntu-os-cloud/ubuntu-2004-lts",
 		},
 		ComputeNodeSpecs: &pb.ComputeNodeSpecs{
-			Count:      2,
+			Count:      1,
 			ServerType: "f1-micro",
 			Image:      "ubuntu-os-cloud/ubuntu-2004-lts",
 		},
@@ -92,4 +92,8 @@ func buildInfrastructure(c pb.BuildInfrastructureServiceClient, project *pb.Proj
 		log.Fatalln("error while calling BuildVPN RPC", err)
 	}
 	log.Println("Infrastructure was successfully built", res)
+
+	for _, ip := range res.GetCluster().GetNodes() {
+		fmt.Println(ip)
+	}
 }

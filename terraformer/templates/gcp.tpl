@@ -47,7 +47,7 @@ resource "google_compute_instance" "compute_plane" {
   }
 }
 
-resource "local_file" "output" {
+resource "local_file" "output_gcp" {
     content = templatefile("templates/output.tpl",
         {
             control_public_ip = "${google_compute_instance.control_plane[*].network_interface.0.access_config.0.nat_ip}",
