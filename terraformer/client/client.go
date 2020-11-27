@@ -18,13 +18,42 @@ func main() {
 	defer cc.Close() //close the connection after response is received
 
 	c := pb.NewBuildInfrastructureServiceClient(cc)
+
+	providers := make(map[string]*pb.Provider)
+	providers["hetzner"] = &pb.Provider{
+		Name: "hetzner",
+		ControlNodeSpecs: &pb.ControlNodeSpecs{
+			Count:      2,
+			ServerType: "cpx11",
+			Image:      "ubuntu-20.04",
+		},
+		ComputeNodeSpecs: &pb.ComputeNodeSpecs{
+			Count:      2,
+			ServerType: "cpx11",
+			Image:      "ubuntu-20.04",
+		},
+		IsInUse: false,
+	}
+	providers["gcp"] = &pb.Provider{
+		Name: "gcp",
+		ControlNodeSpecs: &pb.ControlNodeSpecs{
+			Count:      2,
+			ServerType: "f1-micro",
+			Image:      "ubuntu-os-cloud/ubuntu-2004-lts",
+		},
+		ComputeNodeSpecs: &pb.ComputeNodeSpecs{
+			Count:      2,
+			ServerType: "f1-micro",
+			Image:      "ubuntu-os-cloud/ubuntu-2004-lts",
+		},
+		IsInUse: true,
+	}
+
 	project := &pb.Project{
 		Metadata: &pb.Metadata{
 			Name: "ProjectX",
 			Id:   "12345",
 		},
-		PrivateKey: "/Users/samuelstolicny/go/src/github.com/Berops/platform/terraformer/keys/keykey",
-		PublicKey:  "/Users/samuelstolicny/go/src/github.com/Berops/platform/terraformer/keys/keykey.pub",
 		Cluster: &pb.Cluster{
 			Network: &pb.Network{
 				Ip:   "192.168.2.0",
@@ -32,31 +61,22 @@ func main() {
 			},
 			Nodes: []*pb.Node{
 				{
-					PrivateIp:      "192.168.2.1",
-					Provider:       "hetzner",
-					IsControlPlane: true,
-					ServerType:     "cpx11", //"f1-micro" for gcp, "cpx11" for hetzner
+					PrivateIp: "192.168.2.1",
 				},
 				{
-					PrivateIp:      "192.168.2.2",
-					Provider:       "hetzner",
-					IsControlPlane: true,
-					ServerType:     "cpx11",
+					PrivateIp: "192.168.2.2",
 				},
 				{
-					PrivateIp:      "192.168.2.3",
-					Provider:       "hetzner",
-					IsControlPlane: false,
-					ServerType:     "cpx11",
+					PrivateIp: "192.168.2.3",
 				},
 				{
-					PrivateIp:      "192.168.2.4",
-					Provider:       "hetzner",
-					IsControlPlane: false,
-					ServerType:     "cpx11",
+					PrivateIp: "192.168.2.4",
 				},
 			},
 			KubernetesVersion: "v1.19.0",
+			Providers:         providers,
+			PrivateKey:        "/Users/samuelstolicny/go/src/github.com/Berops/platform/terraformer/keys/keykey",
+			PublicKey:         "/Users/samuelstolicny/go/src/github.com/Berops/platform/terraformer/keys/keykey.pub",
 		},
 	}
 

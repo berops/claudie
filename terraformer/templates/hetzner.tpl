@@ -4,14 +4,14 @@ provider "hcloud" {
 
 resource "hcloud_ssh_key" "platform" {
   name       = "test_key"
-  public_key = file("{{ .PublicKey }}")
+  public_key = file("{{ .Cluster.PublicKey }}")
 }
 
 resource "hcloud_server" "control_plane" {
-  count       = {{ .ControlPlane }}
-  name        = "test-terraformer-control-${count.index + 1}"
-  server_type = "{{ .ControlPlaneType }}"
-  image       = "ubuntu-20.04"
+  count       = {{ .Cluster.Providers.hetzner.ControlNodeSpecs.Count }}
+  name        = "{{ .Metadata.Id }}-test-terraformer-control-${count.index + 1}"
+  server_type = "{{ .Cluster.Providers.hetzner.ControlNodeSpecs.ServerType }}"
+  image       = "{{ .Cluster.Providers.hetzner.ControlNodeSpecs.Image }}"
 
   ssh_keys = [
     hcloud_ssh_key.platform.id,
@@ -19,10 +19,10 @@ resource "hcloud_server" "control_plane" {
 }
 
 resource "hcloud_server" "compute_plane" {
-  count       = {{ .ComputePlane }}
-  name        = "test-terraformer-compute-${count.index + 1}"
-  server_type = "{{ .ComputePlaneType }}"
-  image       = "ubuntu-20.04"
+  count       = {{ .Cluster.Providers.hetzner.ComputeNodeSpecs.Count }}
+  name        = "{{ .Metadata.Id }}-test-terraformer-compute-${count.index + 1}"
+  server_type = "{{ .Cluster.Providers.hetzner.ComputeNodeSpecs.ServerType }}"
+  image       = "{{ .Cluster.Providers.hetzner.ComputeNodeSpecs.Image }}"
 
   ssh_keys = [
     hcloud_ssh_key.platform.id,

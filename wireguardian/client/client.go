@@ -31,24 +31,20 @@ func main() {
 			},
 			Nodes: []*pb.Node{
 				{
-					PublicIp:       "168.119.170.52",
-					PrivateIp:      "192.168.2.1",
-					IsControlPlane: true,
+					PublicIp:  "168.119.170.52",
+					PrivateIp: "192.168.2.1",
 				},
 				{
-					PublicIp:       "168.119.173.167",
-					PrivateIp:      "192.168.2.2",
-					IsControlPlane: true,
+					PublicIp:  "168.119.173.167",
+					PrivateIp: "192.168.2.2",
 				},
 				{
-					PublicIp:       "168.119.169.217",
-					PrivateIp:      "192.168.2.3",
-					IsControlPlane: false,
+					PublicIp:  "168.119.169.217",
+					PrivateIp: "192.168.2.3",
 				},
 				{
-					PublicIp:       "168.119.173.20",
-					PrivateIp:      "192.168.2.4",
-					IsControlPlane: false,
+					PublicIp:  "168.119.173.20",
+					PrivateIp: "192.168.2.4",
 				},
 			},
 			KubernetesVersion: "v1.19.0",

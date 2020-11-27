@@ -11,50 +11,6 @@ import (
 	"github.com/Berops/platform/proto/pb"
 )
 
-const hetzner = 0
-const gcp = 1
-
-type provider struct {
-	name, PublicKey, PrivateKey        string
-	using                              bool
-	ControlPlane, ComputePlane         int
-	ControlPlaneType, ComputePlaneType string
-	ProjectName                        string
-}
-
-var providers [2]provider
-
-func initializeProviders(project *pb.Project) {
-	providers[hetzner] = provider{name: "hetzner", using: false, PublicKey: project.GetPublicKey(), PrivateKey: project.GetPrivateKey(), ProjectName: project.GetMetadata().GetName()}
-	providers[gcp] = provider{name: "gcp", using: false, PublicKey: project.GetPublicKey(), PrivateKey: project.GetPrivateKey(), ProjectName: project.GetMetadata().GetName()}
-}
-
-// countNodes is checking how many nodes are for each provider inside cluster and updating []providers
-func countNodes(cluster *pb.Cluster) {
-	for _, node := range cluster.GetNodes() {
-		switch node.GetProvider() {
-		case "hetzner":
-			providers[hetzner].using = true
-			if node.GetIsControlPlane() {
-				providers[hetzner].ControlPlane++
-				providers[hetzner].ControlPlaneType = node.GetServerType()
-			} else {
-				providers[hetzner].ComputePlane++
-				providers[hetzner].ComputePlaneType = node.GetServerType()
-			}
-		case "gcp":
-			providers[gcp].using = true
-			if node.GetIsControlPlane() {
-				providers[gcp].ControlPlane++
-				providers[gcp].ControlPlaneType = node.GetServerType()
-			} else {
-				providers[gcp].ComputePlane++
-				providers[gcp].ComputePlaneType = node.GetServerType()
-			}
-		}
-	}
-}
-
 func createTerraformConfig(templatePath string, outputPath string, d interface{}, dirName string) {
 	if _, err := os.Stat(dirName); os.IsNotExist(err) {
 		os.Mkdir(dirName, os.ModePerm)
@@ -117,20 +73,16 @@ func readTerraformOutput(project *pb.Project) {
 func generateTemplates(project *pb.Project) error {
 	fmt.Println("Generating templates")
 
-	initializeProviders(project)
-	countNodes(project.GetCluster())
-
 	createTerraformConfig("./templates/backend.tpl", "./terraform/backend.tf", project, "terraform")
 	// HETZNER
-	if providers[hetzner].using {
-		createTerraformConfig("./templates/hetzner.tpl", "./terraform/hetzner.tf", providers[hetzner], "terraform") // creating terraform file for a provider
+	if project.Cluster.Providers["hetzner"].IsInUse {
+		createTerraformConfig("./templates/hetzner.tpl", "./terraform/hetzner.tf", project, "terraform") // creating terraform file for a provider
 		callTerraform("terraform")
 		readTerraformOutput(project)
 	}
-
 	// GCP
-	if providers[gcp].using {
-		createTerraformConfig("./templates/gcp.tpl", "./terraform/gcp.tf", providers[gcp], "terraform") // creating terraform file for a provider
+	if project.Cluster.Providers["gcp"].IsInUse {
+		createTerraformConfig("./templates/gcp.tpl", "./terraform/gcp.tf", project, "terraform") // creating terraform file for a provider
 		callTerraform("terraform")
 		readTerraformOutput(project)
 	}
