@@ -22,15 +22,11 @@ type provider struct {
 	ProjectName                        string
 }
 
-type bucket struct {
-	ProjectName string
-}
-
 var providers [2]provider
 
 func initializeProviders(project *pb.Project) {
-	providers[hetzner] = provider{name: "hetzner", using: false, PublicKey: project.GetPublicKey(), PrivateKey: project.GetPrivateKey(), ProjectName: "testProjectName"}
-	providers[gcp] = provider{name: "gcp", using: false, PublicKey: project.GetPublicKey(), PrivateKey: project.GetPrivateKey()}
+	providers[hetzner] = provider{name: "hetzner", using: false, PublicKey: project.GetPublicKey(), PrivateKey: project.GetPrivateKey(), ProjectName: project.GetMetadata().GetName()}
+	providers[gcp] = provider{name: "gcp", using: false, PublicKey: project.GetPublicKey(), PrivateKey: project.GetPrivateKey(), ProjectName: project.GetMetadata().GetName()}
 }
 
 // countNodes is checking how many nodes are for each provider inside cluster and updating []providers
@@ -59,9 +55,9 @@ func countNodes(cluster *pb.Cluster) {
 	}
 }
 
-func createTerraformConfig(templatePath string, outputPath string, s interface{}, fileName string) {
-	if _, err := os.Stat(fileName); os.IsNotExist(err) {
-		os.Mkdir(fileName, os.ModePerm)
+func createTerraformConfig(templatePath string, outputPath string, d interface{}, dirName string) {
+	if _, err := os.Stat(dirName); os.IsNotExist(err) {
+		os.Mkdir(dirName, os.ModePerm)
 	}
 	tpl, err := template.ParseFiles(templatePath)
 	if err != nil {
@@ -69,9 +65,9 @@ func createTerraformConfig(templatePath string, outputPath string, s interface{}
 	}
 	f, err := os.Create(outputPath)
 	if err != nil {
-		log.Fatalln("Failed to create the", fileName, "file", err)
+		log.Fatalln("Failed to create the", dirName, "file", err)
 	}
-	err = tpl.Execute(f, s)
+	err = tpl.Execute(f, d)
 	if err != nil {
 		log.Fatalln("Failed to execute the template file", err)
 	}
@@ -117,21 +113,24 @@ func readTerraformOutput(project *pb.Project) {
 
 }
 
-// generateTemplates is generating terraform files for different providers
+// generateTemplates is generating terraform files for different providers and calling terraform
 func generateTemplates(project *pb.Project) error {
-	fmt.Println("Generating provider templates")
+	fmt.Println("Generating templates")
 
 	initializeProviders(project)
 	countNodes(project.GetCluster())
 
+	createTerraformConfig("./templates/backend.tpl", "./terraform/backend.tf", project, "terraform")
 	// HETZNER
 	if providers[hetzner].using {
-		createTerraformConfig(
-			"./templates/hetzner.tpl",
-			"./terraform/hetzner.tf",
-			providers[hetzner],
-			"terraform",
-		) // creating terraform file for a provider
+		createTerraformConfig("./templates/hetzner.tpl", "./terraform/hetzner.tf", providers[hetzner], "terraform") // creating terraform file for a provider
+		callTerraform("terraform")
+		readTerraformOutput(project)
+	}
+
+	// GCP
+	if providers[gcp].using {
+		createTerraformConfig("./templates/gcp.tpl", "./terraform/gcp.tf", providers[gcp], "terraform") // creating terraform file for a provider
 		callTerraform("terraform")
 		readTerraformOutput(project)
 	}

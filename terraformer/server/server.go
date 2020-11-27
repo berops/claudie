@@ -20,7 +20,7 @@ func (*server) BuildInfrastructure(_ context.Context, req *pb.Project) (*pb.Proj
 		log.Fatalln("Template generator failed:", err)
 	}
 
-	//log.Println("Infrastructure was successfully generated")
+	log.Println("Infrastructure was successfully generated")
 	return req, nil
 }
 

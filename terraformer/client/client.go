@@ -18,10 +18,9 @@ func main() {
 	defer cc.Close() //close the connection after response is received
 
 	c := pb.NewBuildInfrastructureServiceClient(cc)
-
 	project := &pb.Project{
 		Metadata: &pb.Metadata{
-			Name: "Test",
+			Name: "ProjectX",
 			Id:   "12345",
 		},
 		PrivateKey: "/Users/samuelstolicny/go/src/github.com/Berops/platform/terraformer/keys/keykey",
@@ -36,7 +35,7 @@ func main() {
 					PrivateIp:      "192.168.2.1",
 					Provider:       "hetzner",
 					IsControlPlane: true,
-					ServerType:     "cpx11",
+					ServerType:     "cpx11", //"f1-micro" for gcp, "cpx11" for hetzner
 				},
 				{
 					PrivateIp:      "192.168.2.2",
