@@ -25,7 +25,7 @@ func generateKubeConfiguration(templatePath string, outputPath string, d interfa
 
 func runKubeOne() {
 	fmt.Println("Running KubeOne")
-	cmd := exec.Command("kubeone", "apply", "kubeone.yaml")
+	cmd := exec.Command("kubeone", "install", "kubeone.yaml")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
@@ -34,4 +34,3 @@ func runKubeOne() {
 	}
 	//fmt.Fprintln(cmd.Stdout)
 }
-
