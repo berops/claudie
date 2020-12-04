@@ -31,22 +31,19 @@ func main() {
 			},
 			Nodes: []*pb.Node{
 				{
-					PublicIp:  "168.119.170.52",
+					PublicIp:  "95.216.220.4",
 					PrivateIp: "192.168.2.1",
 				},
 				{
-					PublicIp:  "168.119.173.167",
+					PublicIp:  "95.217.19.245",
 					PrivateIp: "192.168.2.2",
 				},
 				{
-					PublicIp:  "168.119.169.217",
+					PublicIp:  "95.216.216.101",
 					PrivateIp: "192.168.2.3",
 				},
-				{
-					PublicIp:  "168.119.173.20",
-					PrivateIp: "192.168.2.4",
-				},
 			},
+			PrivateKey:        "../keys/keykey",
 			KubernetesVersion: "v1.19.0",
 		},
 	}

@@ -6,4 +6,6 @@ import "platform.proto";
 
 option go_package = "proto/pb";
 
-service CreateClusterService { rpc CreateCluster(Project) returns(Project); }
+service CreateClusterService {
+  rpc CreateCluster(Project) returns(Project);
+}

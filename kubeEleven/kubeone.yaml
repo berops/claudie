@@ -1,0 +1,34 @@
+apiVersion: kubeone.io/v1beta1
+kind: KubeOneCluster
+name: demo-cluster
+
+versions:
+  kubernetes: '1.19.0'
+
+clusterNetwork:
+  cni:
+    external: {}
+
+cloudProvider:
+  none: {}
+  external: false
+
+apiEndpoint:
+  host: '95.216.220.4'
+  port: 6443
+
+controlPlane:
+  hosts:
+
+  - publicAddress: '95.216.220.4'
+    privateAddress: '192.168.2.1'
+    sshPrivateKeyFile: '/Users/samuelstolicny/go/src/github.com/Berops/platform/keys/keykey'
+  - publicAddress: '95.217.19.245'
+    privateAddress: '192.168.2.2'
+    sshPrivateKeyFile: '/Users/samuelstolicny/go/src/github.com/Berops/platform/keys/keykey'
+  - publicAddress: '95.216.216.101'
+    privateAddress: '192.168.2.3'
+    sshPrivateKeyFile: '/Users/samuelstolicny/go/src/github.com/Berops/platform/keys/keykey'
+
+machineController:
+  deploy: false

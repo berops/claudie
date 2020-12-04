@@ -17,7 +17,7 @@ func (*server) BuildVPN(_ context.Context, req *pb.Project) (*pb.Status, error) 
 	fmt.Println("BuildVPN function was invoked with", req)
 
 	inventory.Generate(req.GetCluster().GetNodes())
-	err := runAnsible()
+	err := runAnsible(req)
 	if err != nil {
 		return &pb.Status{Success: false}, nil
 	}

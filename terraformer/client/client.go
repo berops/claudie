@@ -28,7 +28,7 @@ func main() {
 			Image:      "ubuntu-20.04",
 		},
 		ComputeNodeSpecs: &pb.ComputeNodeSpecs{
-			Count:      1,
+			Count:      2,
 			ServerType: "cpx11",
 			Image:      "ubuntu-20.04",
 		},
@@ -37,16 +37,16 @@ func main() {
 	providers["gcp"] = &pb.Provider{
 		Name: "gcp",
 		ControlNodeSpecs: &pb.ControlNodeSpecs{
-			Count:      1,
+			Count:      0,
 			ServerType: "f1-micro",
 			Image:      "ubuntu-os-cloud/ubuntu-2004-lts",
 		},
 		ComputeNodeSpecs: &pb.ComputeNodeSpecs{
-			Count:      1,
+			Count:      0,
 			ServerType: "f1-micro",
 			Image:      "ubuntu-os-cloud/ubuntu-2004-lts",
 		},
-		IsInUse: true,
+		IsInUse: false,
 	}
 
 	project := &pb.Project{
@@ -69,14 +69,11 @@ func main() {
 				{
 					PrivateIp: "192.168.2.3",
 				},
-				{
-					PrivateIp: "192.168.2.4",
-				},
 			},
 			KubernetesVersion: "v1.19.0",
 			Providers:         providers,
-			PrivateKey:        "/Users/samuelstolicny/go/src/github.com/Berops/platform/terraformer/keys/keykey",
-			PublicKey:         "/Users/samuelstolicny/go/src/github.com/Berops/platform/terraformer/keys/keykey.pub",
+			PrivateKey:        "/Users/samuelstolicny/go/src/github.com/Berops/platform/keys/keykey",
+			PublicKey:         "/Users/samuelstolicny/go/src/github.com/Berops/platform/keys/keykey.pub",
 		},
 	}
 

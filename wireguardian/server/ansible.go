@@ -3,14 +3,15 @@ package main
 import (
 	"os"
 	"os/exec"
+
+	"github.com/Berops/platform/proto/pb"
 )
 
 const playbookPath = "./ansible/playbook.yml"
 const inventoryPath = "inventory/inventory.ini"
 const privateKeyPath = "/Users/samuelstolicny/.ssh/samuelstolicny_ssh_key"
 
-func runAnsible() error {
-	//ansible-playbook -i inventory.ini playbook.yml -f 20 --private-key ~/.ssh/samuelstolicny_ssh_key
+func runAnsible(p *pb.Project) error {
 	cmd := exec.Command(
 		"ansible-playbook",
 		playbookPath,
@@ -19,7 +20,7 @@ func runAnsible() error {
 		"-f",
 		"20",
 		"--private-key",
-		privateKeyPath,
+		p.GetCluster().GetPrivateKey(),
 	)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
