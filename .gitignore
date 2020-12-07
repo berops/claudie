@@ -2,3 +2,4 @@
 *.ini
 .terraform
 terraform
+kubeone

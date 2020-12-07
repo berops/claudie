@@ -9,6 +9,9 @@ import (
 )
 
 func generateKubeConfiguration(templatePath string, outputPath string, d interface{}) {
+	if _, err := os.Stat("kubeone"); os.IsNotExist(err) { //this creates a new file if it doesn't exist
+		os.Mkdir("kubeone", os.ModePerm)
+	}
 	tpl, err := template.ParseFiles(templatePath)
 	if err != nil {
 		log.Fatalln("Failed to load the template file", err)
@@ -26,6 +29,7 @@ func generateKubeConfiguration(templatePath string, outputPath string, d interfa
 func runKubeOne() {
 	fmt.Println("Running KubeOne")
 	cmd := exec.Command("kubeone", "install", "kubeone.yaml")
+	cmd.Dir = "kubeone" //golang will execute comand from this directory
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()

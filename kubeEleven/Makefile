@@ -1,4 +1,4 @@
-.PHONY: server client
+.PHONY: server client delete
 
 server:
 	go run ./server
@@ -6,4 +6,5 @@ server:
 client:
 	go run ./client
 
-delete: rm -r demo-cluster.tar.gz && rm -r kubeone.yaml
+delete: 
+	rm -r kubeone
