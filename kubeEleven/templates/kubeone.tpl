@@ -13,6 +13,12 @@ cloudProvider:
   none: {}
   external: false
 
+addons:
+  enable: true
+  # In case when the relative path is provided, the path is relative
+  # to the KubeOne configuration file.
+  path: "../addons"
+
 apiEndpoint:
 {{- $node := index .Cluster.Nodes 0 }}
   host: '{{ $node.PublicIp }}'
