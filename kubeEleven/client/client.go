@@ -60,15 +60,15 @@ func main() {
 			},
 			Nodes: []*pb.Node{
 				{
-					PublicIp:  "135.181.82.18",
+					PublicIp:  "135.181.37.13",
 					PrivateIp: "192.168.2.1",
 				},
 				{
-					PublicIp:  "135.181.100.212",
+					PublicIp:  "135.181.40.234",
 					PrivateIp: "192.168.2.2",
 				},
 				{
-					PublicIp:  "135.181.36.139",
+					PublicIp:  "135.181.40.118",
 					PrivateIp: "192.168.2.3",
 				},
 			},

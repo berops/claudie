@@ -6,4 +6,6 @@ import "platform.proto";
 
 option go_package = "proto/pb";
 
+message Status { bool success = 1; }
+
 service BuildVPNService { rpc BuildVPN(Project) returns(Status); }

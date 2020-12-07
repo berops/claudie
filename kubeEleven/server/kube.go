@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -37,4 +38,12 @@ func runKubeOne() {
 		log.Fatal(err)
 	}
 	//fmt.Fprintln(cmd.Stdout)
+}
+
+func getKubeconfig() []byte {
+	kubeconfig, err := ioutil.ReadFile("./kubeone/cluster-kubeconfig")
+	if err != nil {
+		log.Fatalln("Error while reading a kubeconfig file", err)
+	}
+	return kubeconfig
 }

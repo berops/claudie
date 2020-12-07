@@ -17,6 +17,7 @@ message Cluster {
   map<string, Provider> providers = 5;
   string public_key = 6;
   string private_key = 7;
+  bytes kubeconfig = 8;
 }
 
 message Provider {
@@ -52,5 +53,3 @@ message Metadata {
   string name = 1;
   string id = 2;
 }
-
-message Status { bool success = 1; }
