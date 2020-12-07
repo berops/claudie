@@ -52,3 +52,5 @@ message Metadata {
   string name = 1;
   string id = 2;
 }
+
+message Status { bool success = 1; }

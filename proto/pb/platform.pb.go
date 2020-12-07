@@ -532,6 +532,53 @@ func (x *Metadata) GetId() string {
 	return ""
 }
 
+type Status struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Success bool `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+}
+
+func (x *Status) Reset() {
+	*x = Status{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_platform_proto_msgTypes[8]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Status) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Status) ProtoMessage() {}
+
+func (x *Status) ProtoReflect() protoreflect.Message {
+	mi := &file_platform_proto_msgTypes[8]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Status.ProtoReflect.Descriptor instead.
+func (*Status) Descriptor() ([]byte, []int) {
+	return file_platform_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *Status) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
 var File_platform_proto protoreflect.FileDescriptor
 
 var file_platform_proto_rawDesc = []byte{
@@ -603,8 +650,10 @@ var file_platform_proto_rawDesc = []byte{
 	0x49, 0x70, 0x22, 0x2e, 0x0a, 0x08, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x12, 0x12,
 	0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61,
 	0x6d, 0x65, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02,
-	0x69, 0x64, 0x42, 0x0a, 0x5a, 0x08, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x70, 0x62, 0x62, 0x06,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x69, 0x64, 0x22, 0x22, 0x0a, 0x06, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x18, 0x0a, 0x07,
+	0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x73,
+	0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x42, 0x0a, 0x5a, 0x08, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f,
+	0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -619,7 +668,7 @@ func file_platform_proto_rawDescGZIP() []byte {
 	return file_platform_proto_rawDescData
 }
 
-var file_platform_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_platform_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_platform_proto_goTypes = []interface{}{
 	(*Project)(nil),          // 0: platform.Project
 	(*Cluster)(nil),          // 1: platform.Cluster
@@ -629,7 +678,8 @@ var file_platform_proto_goTypes = []interface{}{
 	(*Network)(nil),          // 5: platform.Network
 	(*Node)(nil),             // 6: platform.Node
 	(*Metadata)(nil),         // 7: platform.Metadata
-	nil,                      // 8: platform.Cluster.ProvidersEntry
+	(*Status)(nil),           // 8: platform.Status
+	nil,                      // 9: platform.Cluster.ProvidersEntry
 }
 var file_platform_proto_depIdxs = []int32{
 	7, // 0: platform.Project.metadata:type_name -> platform.Metadata
@@ -637,7 +687,7 @@ var file_platform_proto_depIdxs = []int32{
 	7, // 2: platform.Cluster.metadata:type_name -> platform.Metadata
 	5, // 3: platform.Cluster.network:type_name -> platform.Network
 	6, // 4: platform.Cluster.nodes:type_name -> platform.Node
-	8, // 5: platform.Cluster.providers:type_name -> platform.Cluster.ProvidersEntry
+	9, // 5: platform.Cluster.providers:type_name -> platform.Cluster.ProvidersEntry
 	3, // 6: platform.Provider.controlNodeSpecs:type_name -> platform.ControlNodeSpecs
 	4, // 7: platform.Provider.computeNodeSpecs:type_name -> platform.ComputeNodeSpecs
 	2, // 8: platform.Cluster.ProvidersEntry.value:type_name -> platform.Provider
@@ -750,6 +800,18 @@ func file_platform_proto_init() {
 				return nil
 			}
 		}
+		file_platform_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Status); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -757,7 +819,7 @@ func file_platform_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_platform_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -12,11 +12,11 @@ import (
 
 type server struct{}
 
-func (*server) CreateCluster(_ context.Context, req *pb.Project) (*pb.Project, error) {
+func (*server) CreateCluster(_ context.Context, req *pb.Project) (*pb.Status, error) {
 	fmt.Println("CreateCluster function was invoked with", req)
 	generateKubeConfiguration("./templates/kubeone.tpl", "./kubeone/kubeone.yaml", req)
 	runKubeOne()
-	return req, nil
+	return &pb.Status{Success: true}, nil
 }
 
 func main() {
