@@ -19,8 +19,8 @@ func main() {
 
 	c := pb.NewBuildInfrastructureServiceClient(cc)
 
-	providers := make(map[string]*pb.Provider)
-	providers["hetzner"] = &pb.Provider{
+	providers := make(map[string]*pb.Provider) //create a new map of providers
+	providers["hetzner"] = &pb.Provider{       //add new provider to the map
 		Name: "hetzner",
 		ControlNodeSpecs: &pb.ControlNodeSpecs{
 			Count:      1,
@@ -49,7 +49,7 @@ func main() {
 		IsInUse: false,
 	}
 
-	project := &pb.Project{
+	project := &pb.Project{ //create a new project
 		Metadata: &pb.Metadata{
 			Name: "ProjectX",
 			Id:   "12345",

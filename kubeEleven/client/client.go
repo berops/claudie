@@ -60,7 +60,7 @@ func main() {
 			},
 			Nodes: []*pb.Node{
 				{
-					PublicIp:  "135.181.37.13",
+					PublicIp:  "135.181.100.212",
 					PrivateIp: "192.168.2.1",
 				},
 				{
@@ -68,7 +68,7 @@ func main() {
 					PrivateIp: "192.168.2.2",
 				},
 				{
-					PublicIp:  "135.181.40.118",
+					PublicIp:  "135.181.37.13",
 					PrivateIp: "192.168.2.3",
 				},
 			},
@@ -76,6 +76,8 @@ func main() {
 			Providers:         providers,
 			PrivateKey:        "/Users/samuelstolicny/go/src/github.com/Berops/platform/keys/keykey",
 			PublicKey:         "/Users/samuelstolicny/go/src/github.com/Berops/platform/keys/keykey.pub",
+			ControlCount:      1,
+			WorkerCount:       1,
 		},
 	}
 

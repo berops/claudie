@@ -33,5 +33,20 @@ controlPlane:
     sshPrivateKeyFile: '{{ $privateKey }}'
 {{- end}}
 
+staticWorkers:
+  hosts:
+{{ $privateKey := .Cluster.PrivateKey }}  
+{{- range .Cluster.Nodes}}
+  - publicAddress: '{{ .PublicIp }}'
+    privateAddress: '{{ .PrivateIp }}'
+    sshPrivateKeyFile: '{{ $privateKey }}'
+{{- end}}
+
+# staticWorkers:
+#   hosts: 
+#   - publicAddress: '135.181.37.13'
+#     privateAddress: '192.168.2.3'
+#     sshPrivateKeyFile: '/Users/samuelstolicny/.ssh/samuelstolicny_ssh_key'
+
 machineController:
   deploy: false

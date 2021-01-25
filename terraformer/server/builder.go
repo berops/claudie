@@ -11,6 +11,7 @@ import (
 	"github.com/Berops/platform/proto/pb"
 )
 
+// createTerraformConfig generates terraform config file
 func createTerraformConfig(templatePath string, outputPath string, d interface{}, dirName string) {
 	if _, err := os.Stat(dirName); os.IsNotExist(err) {
 		os.Mkdir(dirName, os.ModePerm)
@@ -59,7 +60,7 @@ func readTerraformOutput(project *pb.Project) {
 	defer f.Close()
 
 	scanner := bufio.NewScanner(f)
-	//TEMPORARY SOLUTION
+	//TEMPORARY SOLUTION reading terraform output file and filling cluster with ip addresses
 	for i := 0; scanner.Scan(); i++ {
 		fmt.Println(scanner.Text())
 		for j := i; j < len(project.Cluster.Nodes); j++ {
@@ -76,8 +77,8 @@ func readTerraformOutput(project *pb.Project) {
 
 }
 
-// generateTemplates is generating terraform files for different providers and calling terraform
-func generateTemplates(project *pb.Project) error {
+// buildTerraform is generating terraform files for different providers and calling terraform
+func buildTerraform(project *pb.Project) error {
 	fmt.Println("Generating templates")
 
 	createTerraformConfig("./templates/backend.tpl", "./terraform/backend.tf", project, "terraform")

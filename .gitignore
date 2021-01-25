@@ -1,5 +1,5 @@
 .idea/
 *.ini
-.terraform
+.terraform*
 terraform
 kubeone
