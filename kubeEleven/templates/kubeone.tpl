@@ -26,27 +26,25 @@ apiEndpoint:
 
 controlPlane:
   hosts:
-{{ $privateKey := .Cluster.PrivateKey }}  
+{{- $privateKey := .Cluster.PrivateKey }}  
 {{- range .Cluster.Nodes}}
+{{- if eq .IsWorker false}}
   - publicAddress: '{{ .PublicIp }}'
     privateAddress: '{{ .PrivateIp }}'
     sshPrivateKeyFile: '{{ $privateKey }}'
+{{- end}}
 {{- end}}
 
 staticWorkers:
   hosts:
-{{ $privateKey := .Cluster.PrivateKey }}  
+{{- $privateKey := .Cluster.PrivateKey }}  
 {{- range .Cluster.Nodes}}
+{{- if eq .IsWorker true}}
   - publicAddress: '{{ .PublicIp }}'
     privateAddress: '{{ .PrivateIp }}'
     sshPrivateKeyFile: '{{ $privateKey }}'
 {{- end}}
-
-# staticWorkers:
-#   hosts: 
-#   - publicAddress: '135.181.37.13'
-#     privateAddress: '192.168.2.3'
-#     sshPrivateKeyFile: '/Users/samuelstolicny/.ssh/samuelstolicny_ssh_key'
+{{- end}}
 
 machineController:
   deploy: false
