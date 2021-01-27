@@ -18,8 +18,6 @@ message Cluster {
   string public_key = 6;
   string private_key = 7;
   bytes kubeconfig = 8;
-  int32 controlCount = 9;
-  int32 workerCount = 10;
 }
 
 message Provider {
