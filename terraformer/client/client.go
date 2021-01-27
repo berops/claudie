@@ -37,16 +37,16 @@ func main() {
 	providers["gcp"] = &pb.Provider{
 		Name: "gcp",
 		ControlNodeSpecs: &pb.ControlNodeSpecs{
-			Count:      0,
-			ServerType: "f1-micro",
+			Count:      1,
+			ServerType: "e2-small",
 			Image:      "ubuntu-os-cloud/ubuntu-2004-lts",
 		},
 		ComputeNodeSpecs: &pb.ComputeNodeSpecs{
-			Count:      0,
+			Count:      2,
 			ServerType: "f1-micro",
 			Image:      "ubuntu-os-cloud/ubuntu-2004-lts",
 		},
-		IsInUse: false,
+		IsInUse: true,
 	}
 
 	project := &pb.Project{ //create a new project
@@ -69,11 +69,20 @@ func main() {
 				{
 					PrivateIp: "192.168.2.3",
 				},
+				{
+					PrivateIp: "192.168.2.4",
+				},
+				{
+					PrivateIp: "192.168.2.5",
+				},
+				{
+					PrivateIp: "192.168.2.6",
+				},
 			},
 			KubernetesVersion: "v1.19.0",
 			Providers:         providers,
-			PrivateKey:        "/Users/samuelstolicny/go/src/github.com/Berops/platform/keys/keykey",
-			PublicKey:         "/Users/samuelstolicny/go/src/github.com/Berops/platform/keys/keykey.pub",
+			PrivateKey:        "../keys/testkey",
+			PublicKey:         "../keys/testkey.pub",
 		},
 	}
 

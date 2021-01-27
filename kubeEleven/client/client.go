@@ -36,16 +36,16 @@ func main() {
 	providers["gcp"] = &pb.Provider{
 		Name: "gcp",
 		ControlNodeSpecs: &pb.ControlNodeSpecs{
-			Count:      0,
+			Count:      1,
 			ServerType: "f1-micro",
 			Image:      "ubuntu-os-cloud/ubuntu-2004-lts",
 		},
 		ComputeNodeSpecs: &pb.ComputeNodeSpecs{
-			Count:      0,
+			Count:      2,
 			ServerType: "f1-micro",
 			Image:      "ubuntu-os-cloud/ubuntu-2004-lts",
 		},
-		IsInUse: false,
+		IsInUse: true,
 	}
 
 	project := &pb.Project{
@@ -60,27 +60,40 @@ func main() {
 			},
 			Nodes: []*pb.Node{
 				{
-					PublicIp:  "95.216.160.148",
+					PublicIp:  "95.216.162.187",
 					PrivateIp: "192.168.2.1",
 					IsWorker:  false,
 				},
 				{
-					PublicIp:  "95.216.162.94",
+					PublicIp:  "95.216.160.148",
 					PrivateIp: "192.168.2.2",
 					IsWorker:  true,
 				},
 				{
-					PublicIp:  "95.216.162.187",
+					PublicIp:  "95.216.161.182",
 					PrivateIp: "192.168.2.3",
+					IsWorker:  true,
+				},
+				{
+					PublicIp:  "34.76.125.174",
+					PrivateIp: "192.168.2.4",
+					IsWorker:  false,
+				},
+				{
+					PublicIp:  "35.195.47.33",
+					PrivateIp: "192.168.2.5",
+					IsWorker:  true,
+				},
+				{
+					PublicIp:  "34.77.235.6",
+					PrivateIp: "192.168.2.6",
 					IsWorker:  true,
 				},
 			},
 			KubernetesVersion: "1.19.0",
 			Providers:         providers,
-			PrivateKey:        "/Users/samuelstolicny/go/src/github.com/Berops/platform/keys/keykey",
-			PublicKey:         "/Users/samuelstolicny/go/src/github.com/Berops/platform/keys/keykey.pub",
-			ControlCount:      1,
-			WorkerCount:       1,
+			PrivateKey:        "../../keys/testkey",
+			PublicKey:         "../../keys/testkey.pub",
 		},
 	}
 
