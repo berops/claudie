@@ -12,8 +12,8 @@ import (
 
 type server struct{}
 
-func (*server) CreateCluster(_ context.Context, req *pb.Project) (*pb.Project, error) {
-	fmt.Println("CreateCluster function was invoked with", req)
+func (*server) BuildCluster(_ context.Context, req *pb.Project) (*pb.Project, error) {
+	fmt.Println("BuildCluster function was invoked with", req)
 	generateKubeConfiguration("./templates/kubeone.tpl", "./kubeone/kubeone.yaml", req)
 	runKubeOne()
 	req.Cluster.Kubeconfig = getKubeconfig()
@@ -30,7 +30,7 @@ func main() {
 	}
 
 	s := grpc.NewServer()
-	pb.RegisterCreateClusterServiceServer(s, &server{})
+	pb.RegisterBuildClusterServiceServer(s, &server{})
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve: %v", err)
 	}

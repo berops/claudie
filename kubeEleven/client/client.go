@@ -16,7 +16,7 @@ func main() {
 	}
 	defer cc.Close() //close the connection after response is received
 
-	c := pb.NewCreateClusterServiceClient(cc)
+	c := pb.NewBuildClusterServiceClient(cc)
 
 	providers := make(map[string]*pb.Provider)
 	providers["hetzner"] = &pb.Provider{
@@ -100,11 +100,11 @@ func main() {
 	createCluster(c, project)
 }
 
-func createCluster(c pb.CreateClusterServiceClient, project *pb.Project) {
+func createCluster(c pb.BuildClusterServiceClient, project *pb.Project) {
 	fmt.Println("Sending project to KubeEleven...")
 	req := project
 
-	res, err := c.CreateCluster(context.Background(), req)
+	res, err := c.BuildCluster(context.Background(), req)
 	if err != nil {
 		log.Fatalln("Error received from KubeEleven:", err)
 	}
