@@ -29,7 +29,7 @@ func generateKubeConfiguration(templatePath string, outputPath string, d interfa
 
 func runKubeOne() {
 	fmt.Println("Running KubeOne")
-	cmd := exec.Command("kubeone", "install", "kubeone.yaml")
+	cmd := exec.Command("kubeone", "apply", "-m", "kubeone.yaml", "-y")
 	cmd.Dir = "kubeone" //golang will execute comand from this directory
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

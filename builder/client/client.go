@@ -17,7 +17,7 @@ func main() {
 	}
 	defer cc.Close() //close the connection after response is received
 
-	c := pb.NewBuildInfrastructureServiceClient(cc)
+	c := pb.NewBuildServiceClient(cc)
 
 	providers := make(map[string]*pb.Provider) //create a new map of providers
 	providers["hetzner"] = &pb.Provider{       //add new provider to the map
@@ -77,20 +77,17 @@ func main() {
 		},
 	}
 
-	buildInfrastructure(c, project)
+	build(c, project)
 }
 
-func buildInfrastructure(c pb.BuildInfrastructureServiceClient, project *pb.Project) {
+func build(c pb.BuildServiceClient, project *pb.Project) {
 	fmt.Println("Starting to do a Unary RPC")
 	req := project
 
-	res, err := c.BuildInfrastructure(context.Background(), req) //sending request to the server and receiving response
+	res, err := c.Build(context.Background(), req)
 	if err != nil {
-		log.Fatalln("error while calling BuildVPN RPC", err)
+		log.Fatalln("error while sending message to Builder", err)
 	}
-	log.Println("Infrastructure was successfully built", res)
-
-	for _, ip := range res.GetCluster().GetNodes() {
-		fmt.Println(ip)
-	}
+	log.Println("Received message from Builder:", res)
 }
+
