@@ -24,7 +24,7 @@ func (*server) BuildCluster(_ context.Context, req *pb.Project) (*pb.Project, er
 func main() {
 	fmt.Println("KubeEleven server is running")
 
-	lis, err := net.Listen("tcp", "localhost:50051")
+	lis, err := net.Listen("tcp", "localhost:50054")
 	if err != nil {
 		log.Fatalln("Failed to listen on", err)
 	}
