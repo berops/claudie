@@ -8,7 +8,7 @@ import (
 
 	"github.com/Berops/platform/ports"
 	"github.com/Berops/platform/proto/pb"
-	"github.com/Berops/platform/wireguardian/inventory"
+	"github.com/Berops/platform/services/wireguardian/inventory"
 	"google.golang.org/grpc"
 )
 

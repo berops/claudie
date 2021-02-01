@@ -72,8 +72,8 @@ func main() {
 			},
 			KubernetesVersion: "v1.19.0",
 			Providers:         providers,
-			PrivateKey:        "../keys/testkey",
-			PublicKey:         "../keys/testkey.pub",
+			PrivateKey:        "../../keys/testkey",
+			PublicKey:         "../../keys/testkey.pub",
 		},
 	}
 
@@ -90,4 +90,3 @@ func build(c pb.BuildServiceClient, project *pb.Project) {
 	}
 	log.Println("Received message from Builder:", res)
 }
-
