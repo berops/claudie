@@ -3,19 +3,26 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/Berops/platform/proto/pb"
 	"google.golang.org/grpc"
 	"log"
 	"net"
-	"github.com/Berops/platform/proto/pb"
 )
 
-type server struct {}
+type server struct{}
 
 func (*server) Build(_ context.Context, req *pb.Project) (*pb.Project, error) {
+	//Terraformer
+	project := messageTerraformer(req) //sending request(project) to Terraformer
+	//Wireguardian
+	_, err := messageWireguardian(project) //sending request(project) to Wireguardian
+	if err != nil {
+		log.Fatalln("Building Wireguard VPN was unsuccessful")
+	}
+	log.Println("OK")
+	//KubeEleven
 
-	messageTerraformer(req)
-	fmt.Println("success")
-	return req, nil
+	return project, nil //return response(project) to the client(Reconcilliator)
 }
 
 func main() {
