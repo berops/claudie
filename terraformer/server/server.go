@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 
+	"github.com/Berops/platform/ports"
 	"github.com/Berops/platform/proto/pb"
 	"google.golang.org/grpc"
 )
@@ -27,7 +28,7 @@ func (*server) BuildInfrastructure(_ context.Context, req *pb.Project) (*pb.Proj
 func main() {
 	fmt.Println("Terraformer server is running")
 
-	lis, err := net.Listen("tcp", "localhost:50052")
+	lis, err := net.Listen("tcp", ports.TerraformerPort)
 	if err != nil {
 		log.Fatalln("Failed to listen on", err)
 	}

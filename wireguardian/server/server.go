@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 
+	"github.com/Berops/platform/ports"
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/wireguardian/inventory"
 	"google.golang.org/grpc"
@@ -27,7 +28,7 @@ func (*server) BuildVPN(_ context.Context, req *pb.Project) (*pb.Status, error) 
 func main() {
 	fmt.Println("wireguardian_api server is running")
 
-	lis, err := net.Listen("tcp", "localhost:50053")
+	lis, err := net.Listen("tcp", ports.WireguardianPort)
 	if err != nil {
 		log.Fatalln("Failed to listen on", err)
 	}

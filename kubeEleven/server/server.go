@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 
+	"github.com/Berops/platform/ports"
 	"github.com/Berops/platform/proto/pb"
 	"google.golang.org/grpc"
 )
@@ -24,7 +25,7 @@ func (*server) BuildCluster(_ context.Context, req *pb.Project) (*pb.Project, er
 func main() {
 	fmt.Println("KubeEleven server is running")
 
-	lis, err := net.Listen("tcp", "localhost:50054")
+	lis, err := net.Listen("tcp", ports.KubeElevenPort)
 	if err != nil {
 		log.Fatalln("Failed to listen on", err)
 	}

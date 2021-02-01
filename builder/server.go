@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/Berops/platform/proto/pb"
-	"google.golang.org/grpc"
 	"log"
 	"net"
+
+	"github.com/Berops/platform/ports"
+	"github.com/Berops/platform/proto/pb"
+	"google.golang.org/grpc"
 )
 
 type server struct{}
@@ -28,7 +30,7 @@ func (*server) Build(_ context.Context, req *pb.Project) (*pb.Project, error) {
 func main() {
 	fmt.Println("Builder server is running")
 
-	lis, err := net.Listen("tcp", "localhost:50051")
+	lis, err := net.Listen("tcp", ports.BuilderPort)
 	if err != nil {
 		log.Fatalln("Failed to listen on", err)
 	}
