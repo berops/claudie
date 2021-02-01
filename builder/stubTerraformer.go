@@ -9,7 +9,8 @@ import (
 	"google.golang.org/grpc"
 )
 
-func messageTerraformer(project *pb.Project) {
+// messageTerraformer will create connection with terraformer
+func messageTerraformer(project *pb.Project) *pb.Project {
 	cc, err := grpc.Dial("localhost:50052", grpc.WithInsecure()) //connects to a grpc server
 	if err != nil {
 		log.Fatalf("could not connect to server: %v", err)
@@ -18,11 +19,12 @@ func messageTerraformer(project *pb.Project) {
 
 	c := pb.NewBuildInfrastructureServiceClient(cc)
 
-	buildInfrastructure(c, project)
+	return buildInfrastructure(c, project)
 }
 
-func buildInfrastructure(c pb.BuildInfrastructureServiceClient, project *pb.Project) {
-	fmt.Println("Starting to do a Unary RPC")
+// buildInfrastructure will send a request(Project message) to the Terraformer module and return the response to builder server
+func buildInfrastructure(c pb.BuildInfrastructureServiceClient, project *pb.Project) *pb.Project {
+	fmt.Println("Sending a project message to terraformer.")
 	req := project
 
 	res, err := c.BuildInfrastructure(context.Background(), req) //sending request to the server and receiving response
@@ -34,4 +36,5 @@ func buildInfrastructure(c pb.BuildInfrastructureServiceClient, project *pb.Proj
 	for _, ip := range res.GetCluster().GetNodes() {
 		fmt.Println(ip)
 	}
+	return res
 }
