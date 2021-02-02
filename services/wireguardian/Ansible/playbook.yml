@@ -1,8 +1,16 @@
 ---
 - hosts: all
   remote_user: root
-  gather_facts: yes
+  gather_facts: no
   become: yes
+
+  pre_tasks:
+  - name: Wait 300 seconds for target connection to become reachable/usable
+    wait_for_connection:
+      timeout: 300
+
+  - name: Gathering facts
+    setup:
 
   roles:
     - role: "./wireguard"
