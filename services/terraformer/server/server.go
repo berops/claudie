@@ -26,7 +26,7 @@ func (*server) BuildInfrastructure(_ context.Context, req *pb.Project) (*pb.Proj
 }
 
 func main() {
-	fmt.Println("Terraformer server is running")
+	fmt.Println("Terraformer server is listening on", ports.TerraformerPort)
 
 	lis, err := net.Listen("tcp", ports.TerraformerPort)
 	if err != nil {

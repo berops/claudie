@@ -23,7 +23,7 @@ func (*server) BuildCluster(_ context.Context, req *pb.Project) (*pb.Project, er
 }
 
 func main() {
-	fmt.Println("KubeEleven server is running")
+	fmt.Println("KubeEleven server is listening on", ports.KubeElevenPort)
 
 	lis, err := net.Listen("tcp", ports.KubeElevenPort)
 	if err != nil {

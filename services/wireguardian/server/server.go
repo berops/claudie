@@ -26,7 +26,7 @@ func (*server) BuildVPN(_ context.Context, req *pb.Project) (*pb.Status, error) 
 }
 
 func main() {
-	fmt.Println("wireguardian_api server is running")
+	fmt.Println("Wireguardian server is listening on", ports.WireguardianPort)
 
 	lis, err := net.Listen("tcp", ports.WireguardianPort)
 	if err != nil {

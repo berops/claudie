@@ -15,20 +15,28 @@ type server struct{}
 
 func (*server) Build(_ context.Context, req *pb.Project) (*pb.Project, error) {
 	//Terraformer
-	project := messageTerraformer(req) //sending request(project) to Terraformer
-	//Wireguardian
-	_, err := messageWireguardian(project) //sending request(project) to Wireguardian
+	project, err := messageTerraformer(req) //sending request(project) to Terraformer
 	if err != nil {
-		log.Fatalln("Building Wireguard VPN was unsuccessful")
+		log.Fatalln("Error while Building Infrastructure")
 	}
-	log.Println("OK")
+	//time.Sleep(10 * time.Second) //sleep because newly created servers are not ready yet
+	//Wireguardian
+	_, err = messageWireguardian(project) //sending request(project) to Wireguardian
+	if err != nil {
+		log.Fatalln("Error while creating Wireguard VPN")
+	}
 	//KubeEleven
+	project, err = messageKubeEleven(project) //sending request(project) to KubeEleven
+	if err != nil {
+		log.Fatalln("Error while creating cluster with KubeOne")
+	}
+	fmt.Println(project)
 
 	return project, nil //return response(project) to the client(Reconcilliator)
 }
 
 func main() {
-	fmt.Println("Builder server is running")
+	fmt.Println("Builder server is running on ", ports.BuilderPort)
 
 	lis, err := net.Listen("tcp", ports.BuilderPort)
 	if err != nil {

@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/Berops/platform/ports"
 	"github.com/Berops/platform/proto/pb"
 	"google.golang.org/grpc"
 )
 
 // messageTerraformer will create connection with terraformer
-func messageTerraformer(project *pb.Project) *pb.Project {
-	cc, err := grpc.Dial("localhost:50052", grpc.WithInsecure()) //connects to a grpc server
+func messageTerraformer(project *pb.Project) (*pb.Project, error) {
+	cc, err := grpc.Dial(ports.TerraformerPort, grpc.WithInsecure()) //connects to a grpc server
 	if err != nil {
 		log.Fatalf("could not connect to server: %v", err)
 	}
@@ -23,7 +24,7 @@ func messageTerraformer(project *pb.Project) *pb.Project {
 }
 
 // buildInfrastructure will send a request(Project message) to the Terraformer module and return the response to builder server
-func buildInfrastructure(c pb.BuildInfrastructureServiceClient, project *pb.Project) *pb.Project {
+func buildInfrastructure(c pb.BuildInfrastructureServiceClient, project *pb.Project) (*pb.Project, error) {
 	fmt.Println("Sending a project message to terraformer.")
 	req := project
 
@@ -36,5 +37,5 @@ func buildInfrastructure(c pb.BuildInfrastructureServiceClient, project *pb.Proj
 	for _, ip := range res.GetCluster().GetNodes() {
 		fmt.Println(ip)
 	}
-	return res
+	return res, nil
 }
