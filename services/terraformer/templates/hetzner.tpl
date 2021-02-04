@@ -39,10 +39,10 @@ resource "hcloud_server" "compute_plane" {
 }
 
 resource "local_file" "output_hetzner" { 
-    content = templatefile("templates/output.tpl",
+    content = templatefile("templates/output_hetzner.tpl",
         {
-            control_public_ip = hcloud_server.control_plane.*.ipv4_address,
-            compute_public_ip = hcloud_server.compute_plane.*.ipv4_address,
+            control = hcloud_server.control_plane.*
+            compute = hcloud_server.compute_plane.*
         }
     )
     filename = "terraform/output"

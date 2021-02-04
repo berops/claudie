@@ -49,10 +49,10 @@ resource "google_compute_instance" "compute_plane" {
 }
 
 resource "local_file" "output_gcp" {
-    content = templatefile("templates/output.tpl",
+    content = templatefile("templates/output_gcp.tpl",
         {
-            control_public_ip = "${google_compute_instance.control_plane[*].network_interface.0.access_config.0.nat_ip}",
-            compute_public_ip = "${google_compute_instance.compute_plane[*].network_interface.0.access_config.0.nat_ip}",
+            control = "${google_compute_instance.control_plane[*]}"
+            compute = "${google_compute_instance.compute_plane[*]}"
         }
     )
     filename = "terraform/output"

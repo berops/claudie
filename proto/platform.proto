@@ -48,6 +48,7 @@ message Node {
   string public_ip = 1;
   string private_ip = 2;
   bool isWorker = 3;
+  string name = 4;
 }
 
 message Metadata {

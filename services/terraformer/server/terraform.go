@@ -66,6 +66,9 @@ func readTerraformOutput(project *pb.Project) {
 		for j := i; j < len(project.Cluster.Nodes); j++ {
 			if project.Cluster.Nodes[j].PublicIp == "" {
 				project.Cluster.Nodes[j].PublicIp = scanner.Text()
+				scanner.Scan()
+				fmt.Println(scanner.Text())
+				project.Cluster.Nodes[j].Name = scanner.Text()
 				break
 			}
 		}
@@ -75,6 +78,7 @@ func readTerraformOutput(project *pb.Project) {
 		log.Fatalln("Error while reading the output file", err)
 	}
 
+	fmt.Println(project)
 }
 
 // buildTerraform is generating terraform files for different providers and calling terraform
