@@ -5,6 +5,7 @@ import (
 
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/serializer"
+	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/require"
 )
 
@@ -77,4 +78,10 @@ func TestFileSerializer(t *testing.T) {
 
 	err = serializer.WriteProtobufToJSONFile(project, jsonFile)
 	require.NoError(t, err)
+
+	readProject := &pb.Project{}
+	err = serializer.ReadProtobufFromBinaryFile(readProject, binaryFile)
+	require.NoError(t, err)
+
+	require.True(t, proto.Equal(project, readProject))
 }

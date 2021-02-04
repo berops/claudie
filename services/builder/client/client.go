@@ -7,6 +7,7 @@ import (
 
 	"github.com/Berops/platform/ports"
 	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/platform/serializer"
 
 	"google.golang.org/grpc"
 )
@@ -20,62 +21,15 @@ func main() {
 
 	c := pb.NewBuildServiceClient(cc)
 
-	providers := make(map[string]*pb.Provider) //create a new map of providers
-	providers["hetzner"] = &pb.Provider{       //add new provider to the map
-		Name: "hetzner",
-		ControlNodeSpecs: &pb.ControlNodeSpecs{
-			Count:      1,
-			ServerType: "cpx11",
-			Image:      "ubuntu-20.04",
-		},
-		ComputeNodeSpecs: &pb.ComputeNodeSpecs{
-			Count:      2,
-			ServerType: "cpx11",
-			Image:      "ubuntu-20.04",
-		},
-		IsInUse: true,
-	}
-	providers["gcp"] = &pb.Provider{
-		Name: "gcp",
-		ControlNodeSpecs: &pb.ControlNodeSpecs{
-			Count:      0,
-			ServerType: "e2-small",
-			Image:      "ubuntu-os-cloud/ubuntu-2004-lts",
-		},
-		ComputeNodeSpecs: &pb.ComputeNodeSpecs{
-			Count:      0,
-			ServerType: "f1-micro",
-			Image:      "ubuntu-os-cloud/ubuntu-2004-lts",
-		},
-		IsInUse: false,
-	}
+	project := &pb.Project{}
+	// err = serializer.ReadProtobufFromBinaryFile(project, "../../tmp/project.bin") //reads project from binary file and converts it into protobuf
+	// if err != nil {
+	// 	log.Fatalln("Failed to read project binary file:", err)
+	// }
 
-	project := &pb.Project{ //create a new project
-		Metadata: &pb.Metadata{
-			Name: "ProjectX",
-			Id:   "12345",
-		},
-		Cluster: &pb.Cluster{
-			Network: &pb.Network{
-				Ip:   "192.168.2.0",
-				Mask: "24",
-			},
-			Nodes: []*pb.Node{
-				{
-					PrivateIp: "192.168.2.1",
-				},
-				{
-					PrivateIp: "192.168.2.2",
-				},
-				{
-					PrivateIp: "192.168.2.3",
-				},
-			},
-			KubernetesVersion: "v1.19.0",
-			Providers:         providers,
-			PrivateKey:        "/Users/samuelstolicny/go/src/github.com/Berops/platform/keys/testkey",
-			PublicKey:         "/Users/samuelstolicny/go/src/github.com/Berops/platform/keys/testkey.pub",
-		},
+	err = serializer.ReadProtobufFromJSONFile(project, "../../tmp/project.json") //reads project from binary file and converts it into protobuf
+	if err != nil {
+		log.Fatalln("Failed to read project json file:", err)
 	}
 
 	build(c, project)

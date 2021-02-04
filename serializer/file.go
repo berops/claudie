@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	"github.com/Berops/platform/proto/pb"
 	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 // WriteProtobufToBinaryFile writes protocol buffer message to binary file
@@ -47,6 +49,21 @@ func WriteProtobufToJSONFile(message proto.Message, filename string) error {
 	err = ioutil.WriteFile(filename, []byte(data), 0644)
 	if err != nil {
 		return fmt.Errorf("cannot write JSON data to file: %w", err)
+	}
+
+	return nil
+}
+
+// ReadProtobufFromJSONFile reads protocol buffer message from json file
+func ReadProtobufFromJSONFile(project *pb.Project, filename string) error {
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return fmt.Errorf("cannot read json data from file: %w", err)
+	}
+
+	err = protojson.Unmarshal(data, project)
+	if err != nil {
+		return fmt.Errorf("cannot unmarshal json to protobuf message: %w", err)
 	}
 
 	return nil
