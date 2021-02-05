@@ -13,21 +13,15 @@ import (
 
 type server struct{}
 
-func (*server) BuildCluster(_ context.Context, req *pb.Project) (*pb.Project, error) {
-	fmt.Println("BuildCluster function was invoked with", req)
+func (*server) BuildCluster(_ context.Context, project *pb.Project) (*pb.Project, error) {
+	fmt.Println("BuildCluster function was invoked with", project)
 
-	// Check if kubeconfig exists
-	if req.GetCluster().GetKubeconfig() != nil { // Kubeconfig exists
-		fmt.Println("Cluster already has a kubeconfig file")
-		removeNode(req)
-	} else { // Kubeconfig doesnt exists
-		generateKubeConfiguration("./templates/kubeone.tpl", "./kubeone/kubeone.yaml", req)
-		runKubeOne()
-		req.Cluster.Kubeconfig = getKubeconfig()
-	}
+	generateKubeConfiguration("./templates/kubeone.tpl", "./kubeone/kubeone.yaml", project)
+	runKubeOne()
+	project.Cluster.Kubeconfig = getKubeconfig()
 
 	//fmt.Println("Kubeconfig:", string(req.GetCluster().GetKubeconfig()))
-	return req, nil
+	return project, nil
 }
 
 func main() {

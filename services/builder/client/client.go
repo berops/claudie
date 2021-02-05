@@ -27,7 +27,7 @@ func main() {
 	// 	log.Fatalln("Failed to read project binary file:", err)
 	// }
 
-	err = serializer.ReadProtobufFromJSONFile(project, "../../tmp/project.json") //reads project from binary file and converts it into protobuf
+	err = serializer.ReadProtobufFromJSONFile(project, "../../tmp/project.json") //reads project from json file and converts it into protobuf
 	if err != nil {
 		log.Fatalln("Failed to read project json file:", err)
 	}
