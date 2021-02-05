@@ -6,6 +6,6 @@ import "platform.proto";
 
 option go_package = "proto/pb";
 
-service BuildInfrastructureService {
-  rpc BuildInfrastructure(Project) returns(Project);
+service TerraformerService {
+  rpc BuildInfrastructure(Project) returns (Project);
 }

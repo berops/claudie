@@ -18,13 +18,13 @@ func messageTerraformer(project *pb.Project) (*pb.Project, error) {
 	}
 	defer cc.Close() //close the connection after response is received
 
-	c := pb.NewBuildInfrastructureServiceClient(cc)
+	c := pb.NewTerraformerServiceClient(cc)
 
 	return buildInfrastructure(c, project)
 }
 
 // buildInfrastructure will send a request(Project message) to the Terraformer module and return the response to builder server
-func buildInfrastructure(c pb.BuildInfrastructureServiceClient, project *pb.Project) (*pb.Project, error) {
+func buildInfrastructure(c pb.TerraformerServiceClient, project *pb.Project) (*pb.Project, error) {
 	fmt.Println("Sending a project message to terraformer.")
 	req := project
 

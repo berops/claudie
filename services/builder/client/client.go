@@ -19,7 +19,7 @@ func main() {
 	}
 	defer cc.Close() //close the connection after response is received
 
-	c := pb.NewBuildServiceClient(cc)
+	c := pb.NewBuilderServiceClient(cc)
 
 	project := &pb.Project{}
 	// err = serializer.ReadProtobufFromBinaryFile(project, "../../tmp/project.bin") //reads project from binary file and converts it into protobuf
@@ -35,7 +35,7 @@ func main() {
 	build(c, project)
 }
 
-func build(c pb.BuildServiceClient, project *pb.Project) {
+func build(c pb.BuilderServiceClient, project *pb.Project) {
 	fmt.Println("Starting to do a Unary RPC")
 	req := project
 

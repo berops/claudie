@@ -79,12 +79,12 @@ var file_wireguardian_proto_rawDesc = []byte{
 	0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x22,
 	0x0a, 0x06, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x18, 0x0a, 0x07, 0x73, 0x75, 0x63, 0x63,
 	0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65,
-	0x73, 0x73, 0x32, 0x42, 0x0a, 0x0f, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x56, 0x50, 0x4e, 0x53, 0x65,
-	0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x2f, 0x0a, 0x08, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x56, 0x50,
-	0x4e, 0x12, 0x11, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x50, 0x72, 0x6f,
-	0x6a, 0x65, 0x63, 0x74, 0x1a, 0x10, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e,
-	0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x42, 0x0a, 0x5a, 0x08, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f,
-	0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x73, 0x73, 0x32, 0x46, 0x0a, 0x13, 0x57, 0x69, 0x72, 0x65, 0x67, 0x75, 0x61, 0x72, 0x64, 0x69,
+	0x61, 0x6e, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x2f, 0x0a, 0x08, 0x42, 0x75, 0x69,
+	0x6c, 0x64, 0x56, 0x50, 0x4e, 0x12, 0x11, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d,
+	0x2e, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x1a, 0x10, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66,
+	0x6f, 0x72, 0x6d, 0x2e, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x42, 0x0a, 0x5a, 0x08, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x2f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -105,8 +105,8 @@ var file_wireguardian_proto_goTypes = []interface{}{
 	(*Project)(nil), // 1: platform.Project
 }
 var file_wireguardian_proto_depIdxs = []int32{
-	1, // 0: platform.BuildVPNService.BuildVPN:input_type -> platform.Project
-	0, // 1: platform.BuildVPNService.BuildVPN:output_type -> platform.Status
+	1, // 0: platform.WireguardianService.BuildVPN:input_type -> platform.Project
+	0, // 1: platform.WireguardianService.BuildVPN:output_type -> platform.Status
 	1, // [1:2] is the sub-list for method output_type
 	0, // [0:1] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
@@ -162,72 +162,72 @@ var _ grpc.ClientConnInterface
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion6
 
-// BuildVPNServiceClient is the client API for BuildVPNService service.
+// WireguardianServiceClient is the client API for WireguardianService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
-type BuildVPNServiceClient interface {
+type WireguardianServiceClient interface {
 	BuildVPN(ctx context.Context, in *Project, opts ...grpc.CallOption) (*Status, error)
 }
 
-type buildVPNServiceClient struct {
+type wireguardianServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewBuildVPNServiceClient(cc grpc.ClientConnInterface) BuildVPNServiceClient {
-	return &buildVPNServiceClient{cc}
+func NewWireguardianServiceClient(cc grpc.ClientConnInterface) WireguardianServiceClient {
+	return &wireguardianServiceClient{cc}
 }
 
-func (c *buildVPNServiceClient) BuildVPN(ctx context.Context, in *Project, opts ...grpc.CallOption) (*Status, error) {
+func (c *wireguardianServiceClient) BuildVPN(ctx context.Context, in *Project, opts ...grpc.CallOption) (*Status, error) {
 	out := new(Status)
-	err := c.cc.Invoke(ctx, "/platform.BuildVPNService/BuildVPN", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/platform.WireguardianService/BuildVPN", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// BuildVPNServiceServer is the server API for BuildVPNService service.
-type BuildVPNServiceServer interface {
+// WireguardianServiceServer is the server API for WireguardianService service.
+type WireguardianServiceServer interface {
 	BuildVPN(context.Context, *Project) (*Status, error)
 }
 
-// UnimplementedBuildVPNServiceServer can be embedded to have forward compatible implementations.
-type UnimplementedBuildVPNServiceServer struct {
+// UnimplementedWireguardianServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedWireguardianServiceServer struct {
 }
 
-func (*UnimplementedBuildVPNServiceServer) BuildVPN(context.Context, *Project) (*Status, error) {
+func (*UnimplementedWireguardianServiceServer) BuildVPN(context.Context, *Project) (*Status, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BuildVPN not implemented")
 }
 
-func RegisterBuildVPNServiceServer(s *grpc.Server, srv BuildVPNServiceServer) {
-	s.RegisterService(&_BuildVPNService_serviceDesc, srv)
+func RegisterWireguardianServiceServer(s *grpc.Server, srv WireguardianServiceServer) {
+	s.RegisterService(&_WireguardianService_serviceDesc, srv)
 }
 
-func _BuildVPNService_BuildVPN_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _WireguardianService_BuildVPN_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Project)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(BuildVPNServiceServer).BuildVPN(ctx, in)
+		return srv.(WireguardianServiceServer).BuildVPN(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/platform.BuildVPNService/BuildVPN",
+		FullMethod: "/platform.WireguardianService/BuildVPN",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BuildVPNServiceServer).BuildVPN(ctx, req.(*Project))
+		return srv.(WireguardianServiceServer).BuildVPN(ctx, req.(*Project))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-var _BuildVPNService_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "platform.BuildVPNService",
-	HandlerType: (*BuildVPNServiceServer)(nil),
+var _WireguardianService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "platform.WireguardianService",
+	HandlerType: (*WireguardianServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "BuildVPN",
-			Handler:    _BuildVPNService_BuildVPN_Handler,
+			Handler:    _WireguardianService_BuildVPN_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

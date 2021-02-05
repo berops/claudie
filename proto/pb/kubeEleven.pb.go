@@ -28,21 +28,21 @@ var File_kubeEleven_proto protoreflect.FileDescriptor
 var file_kubeEleven_proto_rawDesc = []byte{
 	0x0a, 0x10, 0x6b, 0x75, 0x62, 0x65, 0x45, 0x6c, 0x65, 0x76, 0x65, 0x6e, 0x2e, 0x70, 0x72, 0x6f,
 	0x74, 0x6f, 0x12, 0x08, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x1a, 0x0e, 0x70, 0x6c,
-	0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x32, 0x4b, 0x0a, 0x13,
-	0x42, 0x75, 0x69, 0x6c, 0x64, 0x43, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x53, 0x65, 0x72, 0x76,
-	0x69, 0x63, 0x65, 0x12, 0x34, 0x0a, 0x0c, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x43, 0x6c, 0x75, 0x73,
-	0x74, 0x65, 0x72, 0x12, 0x11, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x50,
-	0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x1a, 0x11, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72,
-	0x6d, 0x2e, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x42, 0x0a, 0x5a, 0x08, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x2f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x32, 0x49, 0x0a, 0x11,
+	0x4b, 0x75, 0x62, 0x65, 0x45, 0x6c, 0x65, 0x76, 0x65, 0x6e, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63,
+	0x65, 0x12, 0x34, 0x0a, 0x0c, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x43, 0x6c, 0x75, 0x73, 0x74, 0x65,
+	0x72, 0x12, 0x11, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x50, 0x72, 0x6f,
+	0x6a, 0x65, 0x63, 0x74, 0x1a, 0x11, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e,
+	0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x42, 0x0a, 0x5a, 0x08, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x2f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var file_kubeEleven_proto_goTypes = []interface{}{
 	(*Project)(nil), // 0: platform.Project
 }
 var file_kubeEleven_proto_depIdxs = []int32{
-	0, // 0: platform.BuildClusterService.BuildCluster:input_type -> platform.Project
-	0, // 1: platform.BuildClusterService.BuildCluster:output_type -> platform.Project
+	0, // 0: platform.KubeElevenService.BuildCluster:input_type -> platform.Project
+	0, // 1: platform.KubeElevenService.BuildCluster:output_type -> platform.Project
 	1, // [1:2] is the sub-list for method output_type
 	0, // [0:1] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
@@ -83,72 +83,72 @@ var _ grpc.ClientConnInterface
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion6
 
-// BuildClusterServiceClient is the client API for BuildClusterService service.
+// KubeElevenServiceClient is the client API for KubeElevenService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
-type BuildClusterServiceClient interface {
+type KubeElevenServiceClient interface {
 	BuildCluster(ctx context.Context, in *Project, opts ...grpc.CallOption) (*Project, error)
 }
 
-type buildClusterServiceClient struct {
+type kubeElevenServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewBuildClusterServiceClient(cc grpc.ClientConnInterface) BuildClusterServiceClient {
-	return &buildClusterServiceClient{cc}
+func NewKubeElevenServiceClient(cc grpc.ClientConnInterface) KubeElevenServiceClient {
+	return &kubeElevenServiceClient{cc}
 }
 
-func (c *buildClusterServiceClient) BuildCluster(ctx context.Context, in *Project, opts ...grpc.CallOption) (*Project, error) {
+func (c *kubeElevenServiceClient) BuildCluster(ctx context.Context, in *Project, opts ...grpc.CallOption) (*Project, error) {
 	out := new(Project)
-	err := c.cc.Invoke(ctx, "/platform.BuildClusterService/BuildCluster", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/platform.KubeElevenService/BuildCluster", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// BuildClusterServiceServer is the server API for BuildClusterService service.
-type BuildClusterServiceServer interface {
+// KubeElevenServiceServer is the server API for KubeElevenService service.
+type KubeElevenServiceServer interface {
 	BuildCluster(context.Context, *Project) (*Project, error)
 }
 
-// UnimplementedBuildClusterServiceServer can be embedded to have forward compatible implementations.
-type UnimplementedBuildClusterServiceServer struct {
+// UnimplementedKubeElevenServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedKubeElevenServiceServer struct {
 }
 
-func (*UnimplementedBuildClusterServiceServer) BuildCluster(context.Context, *Project) (*Project, error) {
+func (*UnimplementedKubeElevenServiceServer) BuildCluster(context.Context, *Project) (*Project, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BuildCluster not implemented")
 }
 
-func RegisterBuildClusterServiceServer(s *grpc.Server, srv BuildClusterServiceServer) {
-	s.RegisterService(&_BuildClusterService_serviceDesc, srv)
+func RegisterKubeElevenServiceServer(s *grpc.Server, srv KubeElevenServiceServer) {
+	s.RegisterService(&_KubeElevenService_serviceDesc, srv)
 }
 
-func _BuildClusterService_BuildCluster_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _KubeElevenService_BuildCluster_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Project)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(BuildClusterServiceServer).BuildCluster(ctx, in)
+		return srv.(KubeElevenServiceServer).BuildCluster(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/platform.BuildClusterService/BuildCluster",
+		FullMethod: "/platform.KubeElevenService/BuildCluster",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BuildClusterServiceServer).BuildCluster(ctx, req.(*Project))
+		return srv.(KubeElevenServiceServer).BuildCluster(ctx, req.(*Project))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-var _BuildClusterService_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "platform.BuildClusterService",
-	HandlerType: (*BuildClusterServiceServer)(nil),
+var _KubeElevenService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "platform.KubeElevenService",
+	HandlerType: (*KubeElevenServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "BuildCluster",
-			Handler:    _BuildClusterService_BuildCluster_Handler,
+			Handler:    _KubeElevenService_BuildCluster_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

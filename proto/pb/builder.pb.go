@@ -28,20 +28,20 @@ var File_builder_proto protoreflect.FileDescriptor
 var file_builder_proto_rawDesc = []byte{
 	0x0a, 0x0d, 0x62, 0x75, 0x69, 0x6c, 0x64, 0x65, 0x72, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12,
 	0x08, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x1a, 0x0e, 0x70, 0x6c, 0x61, 0x74, 0x66,
-	0x6f, 0x72, 0x6d, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x32, 0x3d, 0x0a, 0x0c, 0x42, 0x75, 0x69,
-	0x6c, 0x64, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x2d, 0x0a, 0x05, 0x42, 0x75, 0x69,
-	0x6c, 0x64, 0x12, 0x11, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x50, 0x72,
-	0x6f, 0x6a, 0x65, 0x63, 0x74, 0x1a, 0x11, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d,
-	0x2e, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x42, 0x0a, 0x5a, 0x08, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x2f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x6f, 0x72, 0x6d, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x32, 0x3f, 0x0a, 0x0e, 0x42, 0x75, 0x69,
+	0x6c, 0x64, 0x65, 0x72, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x2d, 0x0a, 0x05, 0x42,
+	0x75, 0x69, 0x6c, 0x64, 0x12, 0x11, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e,
+	0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x1a, 0x11, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f,
+	0x72, 0x6d, 0x2e, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x42, 0x0a, 0x5a, 0x08, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x2f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var file_builder_proto_goTypes = []interface{}{
 	(*Project)(nil), // 0: platform.Project
 }
 var file_builder_proto_depIdxs = []int32{
-	0, // 0: platform.BuildService.Build:input_type -> platform.Project
-	0, // 1: platform.BuildService.Build:output_type -> platform.Project
+	0, // 0: platform.BuilderService.Build:input_type -> platform.Project
+	0, // 1: platform.BuilderService.Build:output_type -> platform.Project
 	1, // [1:2] is the sub-list for method output_type
 	0, // [0:1] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
@@ -82,72 +82,72 @@ var _ grpc.ClientConnInterface
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion6
 
-// BuildServiceClient is the client API for BuildService service.
+// BuilderServiceClient is the client API for BuilderService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
-type BuildServiceClient interface {
+type BuilderServiceClient interface {
 	Build(ctx context.Context, in *Project, opts ...grpc.CallOption) (*Project, error)
 }
 
-type buildServiceClient struct {
+type builderServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewBuildServiceClient(cc grpc.ClientConnInterface) BuildServiceClient {
-	return &buildServiceClient{cc}
+func NewBuilderServiceClient(cc grpc.ClientConnInterface) BuilderServiceClient {
+	return &builderServiceClient{cc}
 }
 
-func (c *buildServiceClient) Build(ctx context.Context, in *Project, opts ...grpc.CallOption) (*Project, error) {
+func (c *builderServiceClient) Build(ctx context.Context, in *Project, opts ...grpc.CallOption) (*Project, error) {
 	out := new(Project)
-	err := c.cc.Invoke(ctx, "/platform.BuildService/Build", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/platform.BuilderService/Build", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// BuildServiceServer is the server API for BuildService service.
-type BuildServiceServer interface {
+// BuilderServiceServer is the server API for BuilderService service.
+type BuilderServiceServer interface {
 	Build(context.Context, *Project) (*Project, error)
 }
 
-// UnimplementedBuildServiceServer can be embedded to have forward compatible implementations.
-type UnimplementedBuildServiceServer struct {
+// UnimplementedBuilderServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedBuilderServiceServer struct {
 }
 
-func (*UnimplementedBuildServiceServer) Build(context.Context, *Project) (*Project, error) {
+func (*UnimplementedBuilderServiceServer) Build(context.Context, *Project) (*Project, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Build not implemented")
 }
 
-func RegisterBuildServiceServer(s *grpc.Server, srv BuildServiceServer) {
-	s.RegisterService(&_BuildService_serviceDesc, srv)
+func RegisterBuilderServiceServer(s *grpc.Server, srv BuilderServiceServer) {
+	s.RegisterService(&_BuilderService_serviceDesc, srv)
 }
 
-func _BuildService_Build_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _BuilderService_Build_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Project)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(BuildServiceServer).Build(ctx, in)
+		return srv.(BuilderServiceServer).Build(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/platform.BuildService/Build",
+		FullMethod: "/platform.BuilderService/Build",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BuildServiceServer).Build(ctx, req.(*Project))
+		return srv.(BuilderServiceServer).Build(ctx, req.(*Project))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-var _BuildService_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "platform.BuildService",
-	HandlerType: (*BuildServiceServer)(nil),
+var _BuilderService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "platform.BuilderService",
+	HandlerType: (*BuilderServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "Build",
-			Handler:    _BuildService_Build_Handler,
+			Handler:    _BuilderService_Build_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

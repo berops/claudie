@@ -6,4 +6,4 @@ import "platform.proto";
 
 option go_package = "proto/pb";
 
-service BuildService { rpc Build(Project) returns(Project); }
+service BuilderService { rpc Build(Project) returns (Project); }

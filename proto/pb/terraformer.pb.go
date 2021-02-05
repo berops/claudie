@@ -28,22 +28,22 @@ var File_terraformer_proto protoreflect.FileDescriptor
 var file_terraformer_proto_rawDesc = []byte{
 	0x0a, 0x11, 0x74, 0x65, 0x72, 0x72, 0x61, 0x66, 0x6f, 0x72, 0x6d, 0x65, 0x72, 0x2e, 0x70, 0x72,
 	0x6f, 0x74, 0x6f, 0x12, 0x08, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x1a, 0x0e, 0x70,
-	0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x32, 0x59, 0x0a,
-	0x1a, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x49, 0x6e, 0x66, 0x72, 0x61, 0x73, 0x74, 0x72, 0x75, 0x63,
-	0x74, 0x75, 0x72, 0x65, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x3b, 0x0a, 0x13, 0x42,
-	0x75, 0x69, 0x6c, 0x64, 0x49, 0x6e, 0x66, 0x72, 0x61, 0x73, 0x74, 0x72, 0x75, 0x63, 0x74, 0x75,
-	0x72, 0x65, 0x12, 0x11, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x50, 0x72,
-	0x6f, 0x6a, 0x65, 0x63, 0x74, 0x1a, 0x11, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d,
-	0x2e, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x42, 0x0a, 0x5a, 0x08, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x2f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x32, 0x51, 0x0a,
+	0x12, 0x54, 0x65, 0x72, 0x72, 0x61, 0x66, 0x6f, 0x72, 0x6d, 0x65, 0x72, 0x53, 0x65, 0x72, 0x76,
+	0x69, 0x63, 0x65, 0x12, 0x3b, 0x0a, 0x13, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x49, 0x6e, 0x66, 0x72,
+	0x61, 0x73, 0x74, 0x72, 0x75, 0x63, 0x74, 0x75, 0x72, 0x65, 0x12, 0x11, 0x2e, 0x70, 0x6c, 0x61,
+	0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x1a, 0x11, 0x2e,
+	0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74,
+	0x42, 0x0a, 0x5a, 0x08, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x33,
 }
 
 var file_terraformer_proto_goTypes = []interface{}{
 	(*Project)(nil), // 0: platform.Project
 }
 var file_terraformer_proto_depIdxs = []int32{
-	0, // 0: platform.BuildInfrastructureService.BuildInfrastructure:input_type -> platform.Project
-	0, // 1: platform.BuildInfrastructureService.BuildInfrastructure:output_type -> platform.Project
+	0, // 0: platform.TerraformerService.BuildInfrastructure:input_type -> platform.Project
+	0, // 1: platform.TerraformerService.BuildInfrastructure:output_type -> platform.Project
 	1, // [1:2] is the sub-list for method output_type
 	0, // [0:1] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
@@ -84,72 +84,72 @@ var _ grpc.ClientConnInterface
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion6
 
-// BuildInfrastructureServiceClient is the client API for BuildInfrastructureService service.
+// TerraformerServiceClient is the client API for TerraformerService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
-type BuildInfrastructureServiceClient interface {
+type TerraformerServiceClient interface {
 	BuildInfrastructure(ctx context.Context, in *Project, opts ...grpc.CallOption) (*Project, error)
 }
 
-type buildInfrastructureServiceClient struct {
+type terraformerServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewBuildInfrastructureServiceClient(cc grpc.ClientConnInterface) BuildInfrastructureServiceClient {
-	return &buildInfrastructureServiceClient{cc}
+func NewTerraformerServiceClient(cc grpc.ClientConnInterface) TerraformerServiceClient {
+	return &terraformerServiceClient{cc}
 }
 
-func (c *buildInfrastructureServiceClient) BuildInfrastructure(ctx context.Context, in *Project, opts ...grpc.CallOption) (*Project, error) {
+func (c *terraformerServiceClient) BuildInfrastructure(ctx context.Context, in *Project, opts ...grpc.CallOption) (*Project, error) {
 	out := new(Project)
-	err := c.cc.Invoke(ctx, "/platform.BuildInfrastructureService/BuildInfrastructure", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/platform.TerraformerService/BuildInfrastructure", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// BuildInfrastructureServiceServer is the server API for BuildInfrastructureService service.
-type BuildInfrastructureServiceServer interface {
+// TerraformerServiceServer is the server API for TerraformerService service.
+type TerraformerServiceServer interface {
 	BuildInfrastructure(context.Context, *Project) (*Project, error)
 }
 
-// UnimplementedBuildInfrastructureServiceServer can be embedded to have forward compatible implementations.
-type UnimplementedBuildInfrastructureServiceServer struct {
+// UnimplementedTerraformerServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedTerraformerServiceServer struct {
 }
 
-func (*UnimplementedBuildInfrastructureServiceServer) BuildInfrastructure(context.Context, *Project) (*Project, error) {
+func (*UnimplementedTerraformerServiceServer) BuildInfrastructure(context.Context, *Project) (*Project, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BuildInfrastructure not implemented")
 }
 
-func RegisterBuildInfrastructureServiceServer(s *grpc.Server, srv BuildInfrastructureServiceServer) {
-	s.RegisterService(&_BuildInfrastructureService_serviceDesc, srv)
+func RegisterTerraformerServiceServer(s *grpc.Server, srv TerraformerServiceServer) {
+	s.RegisterService(&_TerraformerService_serviceDesc, srv)
 }
 
-func _BuildInfrastructureService_BuildInfrastructure_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TerraformerService_BuildInfrastructure_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Project)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(BuildInfrastructureServiceServer).BuildInfrastructure(ctx, in)
+		return srv.(TerraformerServiceServer).BuildInfrastructure(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/platform.BuildInfrastructureService/BuildInfrastructure",
+		FullMethod: "/platform.TerraformerService/BuildInfrastructure",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BuildInfrastructureServiceServer).BuildInfrastructure(ctx, req.(*Project))
+		return srv.(TerraformerServiceServer).BuildInfrastructure(ctx, req.(*Project))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-var _BuildInfrastructureService_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "platform.BuildInfrastructureService",
-	HandlerType: (*BuildInfrastructureServiceServer)(nil),
+var _TerraformerService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "platform.TerraformerService",
+	HandlerType: (*TerraformerServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "BuildInfrastructure",
-			Handler:    _BuildInfrastructureService_BuildInfrastructure_Handler,
+			Handler:    _TerraformerService_BuildInfrastructure_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

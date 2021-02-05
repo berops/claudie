@@ -18,12 +18,12 @@ func messageWireguardian(project *pb.Project) (*pb.Status, error) {
 	}
 	defer cc.Close() //close the connection after response is received
 
-	c := pb.NewBuildVPNServiceClient(cc)
+	c := pb.NewWireguardianServiceClient(cc)
 
 	return buildVPN(c, project) //returns success status to Builder module
 }
 
-func buildVPN(c pb.BuildVPNServiceClient, project *pb.Project) (*pb.Status, error) {
+func buildVPN(c pb.WireguardianServiceClient, project *pb.Project) (*pb.Status, error) {
 	fmt.Println("Sending a project message to Wireguardian")
 	req := project
 

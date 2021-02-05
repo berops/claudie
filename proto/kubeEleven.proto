@@ -6,4 +6,4 @@ import "platform.proto";
 
 option go_package = "proto/pb";
 
-service BuildClusterService { rpc BuildCluster(Project) returns(Project); }
+service KubeElevenService { rpc BuildCluster(Project) returns (Project); }

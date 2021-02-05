@@ -34,7 +34,7 @@ func main() {
 	}
 
 	s := grpc.NewServer()
-	pb.RegisterBuildInfrastructureServiceServer(s, &server{})
+	pb.RegisterTerraformerServiceServer(s, &server{})
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve: %v", err)
 	}
