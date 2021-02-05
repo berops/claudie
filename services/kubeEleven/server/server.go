@@ -15,10 +15,18 @@ type server struct{}
 
 func (*server) BuildCluster(_ context.Context, req *pb.Project) (*pb.Project, error) {
 	fmt.Println("BuildCluster function was invoked with", req)
-	generateKubeConfiguration("./templates/kubeone.tpl", "./kubeone/kubeone.yaml", req)
-	runKubeOne()
-	req.Cluster.Kubeconfig = getKubeconfig()
-	fmt.Println("Kubeconfig:", string(req.GetCluster().GetKubeconfig()))
+
+	// Check if kubeconfig exists
+	if req.GetCluster().GetKubeconfig() != nil { // Kubeconfig exists
+		fmt.Println("Cluster already has a kubeconfig file")
+		removeNode(req)
+	} else { // Kubeconfig doesnt exists
+		generateKubeConfiguration("./templates/kubeone.tpl", "./kubeone/kubeone.yaml", req)
+		runKubeOne()
+		req.Cluster.Kubeconfig = getKubeconfig()
+	}
+
+	//fmt.Println("Kubeconfig:", string(req.GetCluster().GetKubeconfig()))
 	return req, nil
 }
 
@@ -31,7 +39,7 @@ func main() {
 	}
 
 	s := grpc.NewServer()
-	pb.RegisterBuildClusterServiceServer(s, &server{})
+	pb.RegisterKubeElevenServiceServer(s, &server{})
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve: %v", err)
 	}

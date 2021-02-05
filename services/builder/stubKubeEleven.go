@@ -17,12 +17,12 @@ func messageKubeEleven(project *pb.Project) (*pb.Project, error) {
 	}
 	defer cc.Close() //close the connection after response is received
 
-	c := pb.NewBuildClusterServiceClient(cc)
+	c := pb.NewKubeElevenServiceClient(cc)
 
 	return createCluster(c, project)
 }
 
-func createCluster(c pb.BuildClusterServiceClient, project *pb.Project) (*pb.Project, error) {
+func createCluster(c pb.KubeElevenServiceClient, project *pb.Project) (*pb.Project, error) {
 	fmt.Println("Sending project message to KubeEleven")
 	req := project
 
@@ -30,6 +30,6 @@ func createCluster(c pb.BuildClusterServiceClient, project *pb.Project) (*pb.Pro
 	if err != nil {
 		log.Fatalln("Error received from KubeEleven:", err)
 	}
-	log.Println("Cluster was created", res)
+	//log.Println("Cluster was created", res)
 	return res, nil
 }
