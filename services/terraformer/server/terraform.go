@@ -63,15 +63,10 @@ func readTerraformOutput(project *pb.Project) {
 	//TEMPORARY SOLUTION reading terraform output file and filling cluster with ip addresses
 	for i := 0; scanner.Scan(); i++ {
 		fmt.Println(scanner.Text())
-		for j := i; j < len(project.Cluster.Nodes); j++ {
-			if project.Cluster.Nodes[j].PublicIp == "" {
-				project.Cluster.Nodes[j].PublicIp = scanner.Text()
-				scanner.Scan()
-				fmt.Println(scanner.Text())
-				project.Cluster.Nodes[j].Name = scanner.Text()
-				break
-			}
-		}
+		project.Cluster.Nodes[i].PublicIp = scanner.Text()
+		scanner.Scan()
+		fmt.Println(scanner.Text())
+		project.Cluster.Nodes[i].Name = scanner.Text()
 	}
 
 	if err := scanner.Err(); err != nil {
