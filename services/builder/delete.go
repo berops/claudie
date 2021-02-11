@@ -53,7 +53,7 @@ func deleteNodes(project *pb.Project) error {
 		}
 	}
 
-	return nil
+	return err
 }
 
 // difference returns slice of strings which are in the first slice but not in the second slice

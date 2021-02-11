@@ -51,8 +51,8 @@ resource "google_compute_instance" "compute_plane" {
 resource "local_file" "output_gcp" {
     content = templatefile("templates/output_gcp.tpl",
         {
-            control = "${google_compute_instance.control_plane[*]}"
-            compute = "${google_compute_instance.compute_plane[*]}"
+            control = google_compute_instance.control_plane[*]
+            compute = google_compute_instance.compute_plane[*]
         }
     )
     filename = "terraform/output"
