@@ -6,7 +6,7 @@ resource "google_compute_instance" "control_plane" {
   count        = {{ .Cluster.Providers.gcp.ControlNodeSpecs.Count }}
   project      = "platform-296509"
   zone         = "europe-west1-c"
-  name         = "test-terraformer-control-{{ .Metadata.Id }}-${count.index + 1}"
+  name         = "gcp-control-{{ .Metadata.Id }}-${count.index + 1}"
   machine_type = "{{ .Cluster.Providers.gcp.ControlNodeSpecs.ServerType }}"
   allow_stopping_for_update = true
   boot_disk {
@@ -29,7 +29,7 @@ resource "google_compute_instance" "compute_plane" {
   count        = {{ .Cluster.Providers.gcp.ComputeNodeSpecs.Count }}
   project      = "platform-296509"
   zone         = "europe-west1-c"
-  name         = "test-terraformer-compute-{{ .Metadata.Id }}-${count.index + 1}"
+  name         = "gcp-compute-{{ .Metadata.Id }}-${count.index + 1}"
   machine_type = "{{ .Cluster.Providers.gcp.ComputeNodeSpecs.ServerType }}"
   allow_stopping_for_update = true
   boot_disk {

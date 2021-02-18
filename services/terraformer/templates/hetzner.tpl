@@ -18,7 +18,7 @@ resource "hcloud_ssh_key" "platform" {
 
 resource "hcloud_server" "control_plane" {
   count       = {{ .Cluster.Providers.hetzner.ControlNodeSpecs.Count }}
-  name        = "{{ .Metadata.Id }}-test-terraformer-control-${count.index + 1}"
+  name        = "{{ .Metadata.Id }}-hetzner-control-${count.index + 1}"
   server_type = "{{ .Cluster.Providers.hetzner.ControlNodeSpecs.ServerType }}"
   image       = "{{ .Cluster.Providers.hetzner.ControlNodeSpecs.Image }}"
 
@@ -29,7 +29,7 @@ resource "hcloud_server" "control_plane" {
 
 resource "hcloud_server" "compute_plane" {
   count       = {{ .Cluster.Providers.hetzner.ComputeNodeSpecs.Count }}
-  name        = "{{ .Metadata.Id }}-test-terraformer-compute-${count.index + 1}"
+  name        = "{{ .Metadata.Id }}-hetzner-compute-${count.index + 1}"
   server_type = "{{ .Cluster.Providers.hetzner.ComputeNodeSpecs.ServerType }}"
   image       = "{{ .Cluster.Providers.hetzner.ComputeNodeSpecs.Image }}"
 
