@@ -24,20 +24,11 @@ func (*server) Build(_ context.Context, req *pb.Project) (*pb.Project, error) {
 			log.Fatalln("Error while deleting nodes from cluster", err)
 		}
 	}
-	//Terraformer
-	project, err := messageTerraformer(req) //sending request(project) to Terraformer
+
+	//Call TWK modules
+	project, err := flow(req)
 	if err != nil {
-		log.Fatalln("Error while Building Infrastructure", err)
-	}
-	//Wireguardian
-	_, err = messageWireguardian(project) //sending request(project) to Wireguardian
-	if err != nil {
-		log.Fatalln("Error while creating Wireguard VPN", err)
-	}
-	//KubeEleven
-	project, err = messageKubeEleven(project) //sending request(project) to KubeEleven
-	if err != nil {
-		log.Fatalln("Error while creating the cluster with KubeOne", err)
+		log.Fatalln("Error in flow: ", err)
 	}
 
 	// Saving file TEMPORARY
@@ -68,4 +59,25 @@ func main() {
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve: %v", err)
 	}
+}
+
+// flow permorms the sequence of gRPC calls to Terraformer, Wireguardian, KubeEleven modules (TWK)
+func flow(project *pb.Project) (*pb.Project, error) {
+	//Terraformer
+	project, err := messageTerraformer(project) //sending project message to Terraformer
+	if err != nil {
+		log.Fatalln("Error while Building Infrastructure", err)
+	}
+	//Wireguardian
+	_, err = messageWireguardian(project) //sending project message to Wireguardian
+	if err != nil {
+		log.Fatalln("Error while creating Wireguard VPN", err)
+	}
+	//KubeEleven
+	project, err = messageKubeEleven(project) //sending project message to KubeEleven
+	if err != nil {
+		log.Fatalln("Error while creating the cluster with KubeOne", err)
+	}
+
+	return project, nil
 }
