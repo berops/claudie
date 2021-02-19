@@ -33,12 +33,12 @@ func TestFileSerializer(t *testing.T) {
 	providers["gcp"] = &pb.Provider{
 		Name: "gcp",
 		ControlNodeSpecs: &pb.ControlNodeSpecs{
-			Count:      0,
+			Count:      1,
 			ServerType: "e2-small",
 			Image:      "ubuntu-os-cloud/ubuntu-2004-lts",
 		},
 		ComputeNodeSpecs: &pb.ComputeNodeSpecs{
-			Count:      0,
+			Count:      2,
 			ServerType: "f1-micro",
 			Image:      "ubuntu-os-cloud/ubuntu-2004-lts",
 		},
@@ -58,18 +58,21 @@ func TestFileSerializer(t *testing.T) {
 			Nodes: []*pb.Node{
 				{
 					PrivateIp: "192.168.2.1",
+					IsWorker:  false,
 				},
 				{
 					PrivateIp: "192.168.2.2",
+					IsWorker:  true,
 				},
 				{
 					PrivateIp: "192.168.2.3",
+					IsWorker:  true,
 				},
 			},
 			KubernetesVersion: "v1.19.0",
 			Providers:         providers,
-			PrivateKey:        "/Users/samuelstolicny/go/src/github.com/Berops/platform/keys/testkey",
-			PublicKey:         "/Users/samuelstolicny/go/src/github.com/Berops/platform/keys/testkey.pub",
+			PrivateKey:        "/Users/samuelstolicny/Github/Berops/platform/keys/testkey",
+			PublicKey:         "/Users/samuelstolicny/Github/Berops/platform/keys/testkey.pub",
 		},
 	}
 
