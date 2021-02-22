@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"os/signal"
 
 	"github.com/Berops/platform/ports"
 	"github.com/Berops/platform/proto/pb"
@@ -46,21 +48,6 @@ func (*server) Build(_ context.Context, req *pb.Project) (*pb.Project, error) {
 	return project, nil //return response(project) to the client(Reconcilliator)
 }
 
-func main() {
-	fmt.Println("Builder server is running on ", ports.BuilderPort)
-
-	lis, err := net.Listen("tcp", ports.BuilderPort)
-	if err != nil {
-		log.Fatalln("Failed to listen on", err)
-	}
-
-	s := grpc.NewServer()
-	pb.RegisterBuilderServiceServer(s, &server{})
-	if err := s.Serve(lis); err != nil {
-		log.Fatalf("Failed to serve: %v", err)
-	}
-}
-
 // flow permorms the sequence of gRPC calls to Terraformer, Wireguardian, KubeEleven modules (TWK)
 func flow(project *pb.Project) (*pb.Project, error) {
 	//Terraformer
@@ -80,4 +67,37 @@ func flow(project *pb.Project) (*pb.Project, error) {
 	}
 
 	return project, nil
+}
+
+func main() {
+	// If we crath the go gode, we get the file name and line number
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	lis, err := net.Listen("tcp", ports.BuilderPort)
+	if err != nil {
+		log.Fatalln("Failed to listen on", err)
+	}
+	fmt.Println("Builder service is running on ", ports.BuilderPort)
+
+	s := grpc.NewServer()
+	pb.RegisterBuilderServiceServer(s, &server{})
+
+	go func() {
+		fmt.Println("Starting Server...")
+		if err := s.Serve(lis); err != nil {
+			log.Fatalf("Failed to serve: %v", err)
+		}
+	}()
+
+	// Wait for Control C to exit
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, os.Interrupt)
+
+	// Block until a signal is received
+	<-ch
+	fmt.Println("Stopping the server")
+	s.Stop()
+	fmt.Println("Closing the listener")
+	lis.Close()
+	fmt.Println("End of Program")
 }
