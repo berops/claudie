@@ -29,7 +29,8 @@ func main() {
 
 	fmt.Println("Saving confing")
 	config := &pb.Config{
-		Name:    "test_created",
+		Id:      "6046125fe007b36dcb77b147",
+		Name:    "test_created_edited",
 		Content: string(content),
 	}
 	res, err := c.SaveConfig(context.Background(), &pb.SaveConfigRequest{Config: config})

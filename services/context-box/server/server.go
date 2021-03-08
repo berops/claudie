@@ -41,8 +41,14 @@ func (*server) SaveConfig(ctx context.Context, req *pb.SaveConfigRequest) (*pb.S
 	log.Println("Save config request")
 	config := req.GetConfig()
 
+	//Parse data and map it to configItem struct
+	data := &configItem{}
+	data.Name = config.GetName()
+	data.Content = config.GetContent()
+
 	//Check if ID exists
 	if config.GetId() != "" {
+		//Get id from config
 		oid, err := primitive.ObjectIDFromHex(config.GetId())
 		if err != nil {
 			return nil, status.Errorf(
@@ -50,11 +56,7 @@ func (*server) SaveConfig(ctx context.Context, req *pb.SaveConfigRequest) (*pb.S
 				fmt.Sprintf("Cannot parse ID"),
 			)
 		}
-		data := &configItem{}
 		filter := bson.M{"_id": oid}
-
-		data.Name = config.GetName()
-		data.Content = config.GetContent()
 
 		_, err = collection.ReplaceOne(context.Background(), filter, data)
 		if err != nil {
@@ -66,13 +68,6 @@ func (*server) SaveConfig(ctx context.Context, req *pb.SaveConfigRequest) (*pb.S
 
 		return &pb.SaveConfigResponse{Config: dataToConfigPb(data)}, nil
 	}
-
-	//Parse data and map it to configItem struct
-	data := configItem{
-		Name:    config.GetName(),
-		Content: config.GetContent(),
-	}
-
 	//Add data to the collection
 	res, err := collection.InsertOne(context.Background(), data)
 	if err != nil {
@@ -90,15 +85,9 @@ func (*server) SaveConfig(ctx context.Context, req *pb.SaveConfigRequest) (*pb.S
 			fmt.Sprintf("Cannot convert to OID"),
 		)
 	}
-
+	data.ID = oid
 	//Return config with ID
-	return &pb.SaveConfigResponse{
-		Config: &pb.Config{
-			Id:      oid.Hex(),
-			Name:    config.GetName(),
-			Content: config.GetContent(),
-		},
-	}, nil
+	return &pb.SaveConfigResponse{Config: dataToConfigPb(data)}, nil
 }
 
 func main() {
