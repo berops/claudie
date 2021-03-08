@@ -9,4 +9,6 @@ const (
 	KubeElevenPort string = "localhost:50054"
 	//BuilderPort is a listening port for Builder module
 	BuilderPort string = "localhost:50051"
+	//ContextBoxPort is a listening port for ContextBox module
+	ContextBoxPort string = "localhost:50055"
 )

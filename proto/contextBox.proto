@@ -1,0 +1,18 @@
+syntax = "proto3";
+package platform;
+option go_package = "proto/pb";
+
+message Config {
+  string id = 1;
+  string name = 2;
+  string content = 3;
+}
+
+message SaveConfigRequest { Config config = 1; }
+
+message saveConfigResponse { Config config = 1; }
+
+service ContextBoxService {
+  rpc SaveConfig(SaveConfigRequest) returns (saveConfigResponse);
+  // rpc GetConfig(google.protobuf.Empty) returns (Config);
+}
