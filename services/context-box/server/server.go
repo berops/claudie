@@ -90,12 +90,68 @@ func (*server) SaveConfig(ctx context.Context, req *pb.SaveConfigRequest) (*pb.S
 	return &pb.SaveConfigResponse{Config: dataToConfigPb(data)}, nil
 }
 
+func (*server) GetConfig(ctx context.Context, req *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
+	log.Println("GetConfig request")
+	var res []*pb.Config
+
+	cur, err := collection.Find(context.Background(), primitive.D{{}})
+	if err != nil {
+		return nil, status.Errorf(
+			codes.Internal,
+			fmt.Sprintf("Unknown internal error: %v\n", err),
+		)
+	}
+	defer cur.Close(context.Background())
+	for cur.Next(context.Background()) { //Iterate through cur and extract all data
+		data := &configItem{}   //initialize empty struct
+		err := cur.Decode(data) //Decode data from cursor to data
+		if err != nil {         //check error
+			return nil, status.Errorf(
+				codes.Internal,
+				fmt.Sprintf("Error while decoding data from MongoDB: %v\n", err),
+			)
+		}
+		res = append(res, dataToConfigPb(data)) //append decoded data (config) to res (response) slice
+	}
+
+	return &pb.GetConfigResponse{Config: res}, nil
+}
+
+func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*pb.DeleteConfigResponse, error) {
+	log.Println("DeleteConfig request")
+
+	oid, err := primitive.ObjectIDFromHex(req.GetId()) //convert id to mongo type id (oid)
+	if err != nil {
+		return nil, status.Errorf(
+			codes.InvalidArgument,
+			fmt.Sprintf("Cannot parse ID"),
+		)
+	}
+	filter := bson.M{"_id": oid} //create filter for searching in the database
+	res, err := collection.DeleteOne(context.Background(), filter)
+	if err != nil {
+		return nil, status.Errorf(
+			codes.Internal,
+			fmt.Sprintf("Cannot delete config in MongoDB: %v", err),
+		)
+	}
+
+	if res.DeletedCount == 0 {
+		return nil, status.Errorf(
+			codes.NotFound,
+			fmt.Sprintf("Cannot find blog with specified ID: %v", err),
+		)
+	}
+
+	return &pb.DeleteConfigResponse{Id: req.GetId()}, nil
+}
+
 func main() {
-	// If we crath the go gode, we get the file name and line number
+	// If code crash, we get the file name and line number
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	// Connect to MongoDB
-	client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://localhost:27017")) //client represents conection object do db
+	client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://localhost:27017")) //client represents connection object do db
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -134,7 +190,7 @@ func main() {
 	s.Stop()
 	fmt.Println("Closing the listener")
 	lis.Close()
-	fmt.Println("Closing MongDB Connection")
+	fmt.Println("Closing MongoDB Connection")
 	client.Disconnect(context.TODO())
 	fmt.Println("End of Program")
 }
