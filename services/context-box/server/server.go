@@ -10,6 +10,7 @@ import (
 
 	"github.com/Berops/platform/ports"
 	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/platform/serializer"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -24,16 +25,18 @@ var collection *mongo.Collection
 type server struct{}
 
 type configItem struct {
-	ID      primitive.ObjectID `bson:"_id,omitempty"`
-	Name    string             `bson:"name"`
-	Content string             `bson:"content"`
+	ID           primitive.ObjectID `bson:"_id,omitempty"`
+	Name         string             `bson:"name"`
+	Manifest     string             `bson:"manifest"`
+	DesiredState []byte             `bson:"desiredState"`
+	CurrentState []byte             `bson:"currentState"`
 }
 
 func dataToConfigPb(data *configItem) *pb.Config {
 	return &pb.Config{
-		Id:      data.ID.Hex(),
-		Name:    data.Name,
-		Content: data.Content,
+		Id:       data.ID.Hex(),
+		Name:     data.Name,
+		Manifest: data.Manifest,
 	}
 }
 
@@ -41,10 +44,22 @@ func (*server) SaveConfig(ctx context.Context, req *pb.SaveConfigRequest) (*pb.S
 	log.Println("Save config request")
 	config := req.GetConfig()
 
+	//Convert desiredState and currentState to byte[] because we want to save it to the database
+	desiredStateByte, errDS := serializer.ProtoToByte(config.DesiredState)
+	if errDS != nil {
+		log.Fatalln("Error while converting from protobuf to byte", errDS)
+	}
+	currentStateByte, errCS := serializer.ProtoToByte(config.CurrentState)
+	if errCS != nil {
+		log.Fatalln("Error while converting from protobuf to byte", errCS)
+	}
+
 	//Parse data and map it to configItem struct
 	data := &configItem{}
 	data.Name = config.GetName()
-	data.Content = config.GetContent()
+	data.Manifest = config.GetManifest()
+	data.DesiredState = desiredStateByte
+	data.CurrentState = currentStateByte
 
 	//Check if ID exists
 	if config.GetId() != "" {
@@ -66,9 +81,10 @@ func (*server) SaveConfig(ctx context.Context, req *pb.SaveConfigRequest) (*pb.S
 			)
 		}
 
-		return &pb.SaveConfigResponse{Config: dataToConfigPb(data)}, nil
+		return &pb.SaveConfigResponse{Config: config}, nil
 	}
-	//Add data to the collection
+
+	//Add data to the collection if OID doesn't exist
 	res, err := collection.InsertOne(context.Background(), data)
 	if err != nil {
 		// Return error in protobuf
@@ -86,8 +102,9 @@ func (*server) SaveConfig(ctx context.Context, req *pb.SaveConfigRequest) (*pb.S
 		)
 	}
 	data.ID = oid
-	//Return config with ID
-	return &pb.SaveConfigResponse{Config: dataToConfigPb(data)}, nil
+	config.Id = oid.Hex()
+	//Return config with new ID
+	return &pb.SaveConfigResponse{Config: config}, nil
 }
 
 func (*server) GetConfig(ctx context.Context, req *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {

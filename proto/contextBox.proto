@@ -1,11 +1,14 @@
 syntax = "proto3";
 package platform;
 option go_package = "proto/pb";
+import "platform.proto";
 
 message Config {
   string id = 1;
   string name = 2;
-  string content = 3;
+  string manifest = 3;
+  Project desiredState = 4;
+  Project currentState = 5;
 }
 // Save
 message SaveConfigRequest { Config config = 1; }

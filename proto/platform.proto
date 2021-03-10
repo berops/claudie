@@ -5,53 +5,29 @@ package platform;
 option go_package = "proto/pb";
 
 message Project {
-  Metadata metadata = 1;
-  Cluster cluster = 2;
+  string name = 1;
+  map<string, string> credetials = 2;
+  repeated Cluster clusters = 3;
 }
 
 message Cluster {
-  Metadata metadata = 1;
-  Network network = 2;
-  repeated Node nodes = 3;
-  string kubernetes_version = 4;
-  map<string, Provider> providers = 5;
-  string public_key = 6;
-  string private_key = 7;
-  bytes kubeconfig = 8;
-}
-
-message Provider {
   string name = 1;
-  ControlNodeSpecs controlNodeSpecs = 2;
-  ComputeNodeSpecs computeNodeSpecs = 3;
-  bool isInUse = 4;
+  string kubernetes = 2;
+  string network = 3;
+  repeated NodePool nodePools = 4;
+  string kubeconfig = 5;
 }
 
-message ControlNodeSpecs {
-  int32 count = 1;
-  string server_type = 2;
-  string image = 3;
-}
-
-message ComputeNodeSpecs {
-  int32 count = 1;
-  string server_type = 2;
-  string image = 3;
-}
-
-message Network {
-  string ip = 1;
-  string mask = 2;
+message NodePool {
+  string name = 1;
+  string region = 2;
+  map<string, Node> nodes = 3;
 }
 
 message Node {
-  string public_ip = 1;
-  string private_ip = 2;
-  bool isWorker = 3;
-  string name = 4;
-}
-
-message Metadata {
-  string name = 1;
-  string id = 2;
+  uint32 count = 1;
+  string serverType = 2;
+  string image = 3;
+  uint32 diskSize = 4;
+  string zone = 5;
 }

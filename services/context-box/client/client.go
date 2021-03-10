@@ -21,23 +21,24 @@ func main() {
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
 
-	// Save config
-	//saveConfig(c)
+	saveConfig(c)
 	//getConfig(c)
-	deleteConfig(c)
+	//deleteConfig(c)
 }
 
 func saveConfig(c pb.ContextBoxServiceClient) {
-	content, errR := ioutil.ReadFile("/Users/samuelstolicny/Github/Berops/platform/services/context-box/client/config.yaml")
+	manifest, errR := ioutil.ReadFile("/Users/samuelstolicny/Github/Berops/platform/services/context-box/client/manifest.yaml")
 	if errR != nil {
 		log.Fatalln(errR)
 	}
 
 	fmt.Println("Saving config")
 	config := &pb.Config{
-		Id:      "6046125fe007b36dcb77b147",
-		Name:    "test_created_edited",
-		Content: string(content),
+		//Id:       "6046125fe007b36dcb77b147",
+		Name:         "test",
+		Manifest:     string(manifest),
+		DesiredState: &pb.Project{Name: "test"},
+		CurrentState: &pb.Project{Name: "test"},
 	}
 	res, err := c.SaveConfig(context.Background(), &pb.SaveConfigRequest{Config: config})
 	if err != nil {
