@@ -10,7 +10,6 @@ import (
 
 	"github.com/Berops/platform/ports"
 	"github.com/Berops/platform/proto/pb"
-	"github.com/Berops/platform/serializer"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -18,6 +17,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 )
 
 var collection *mongo.Collection
@@ -33,10 +33,23 @@ type configItem struct {
 }
 
 func dataToConfigPb(data *configItem) *pb.Config {
+	var desiredState *pb.Project = new(pb.Project)
+	err := proto.Unmarshal(data.DesiredState, desiredState)
+	if err != nil {
+		log.Fatalln("Error while Unmarshal desiredState", err)
+	}
+	var currentState *pb.Project = new(pb.Project)
+	err = proto.Unmarshal(data.CurrentState, currentState)
+	if err != nil {
+		log.Fatalln("Error while Unmarshal currentState", err)
+	}
+
 	return &pb.Config{
-		Id:       data.ID.Hex(),
-		Name:     data.Name,
-		Manifest: data.Manifest,
+		Id:           data.ID.Hex(),
+		Name:         data.Name,
+		Manifest:     data.Manifest,
+		DesiredState: desiredState,
+		CurrentState: currentState,
 	}
 }
 
@@ -45,11 +58,11 @@ func (*server) SaveConfig(ctx context.Context, req *pb.SaveConfigRequest) (*pb.S
 	config := req.GetConfig()
 
 	//Convert desiredState and currentState to byte[] because we want to save it to the database
-	desiredStateByte, errDS := serializer.ProtoToByte(config.DesiredState)
+	desiredStateByte, errDS := proto.Marshal(config.DesiredState)
 	if errDS != nil {
 		log.Fatalln("Error while converting from protobuf to byte", errDS)
 	}
-	currentStateByte, errCS := serializer.ProtoToByte(config.CurrentState)
+	currentStateByte, errCS := proto.Marshal(config.CurrentState)
 	if errCS != nil {
 		log.Fatalln("Error while converting from protobuf to byte", errCS)
 	}
@@ -109,9 +122,9 @@ func (*server) SaveConfig(ctx context.Context, req *pb.SaveConfigRequest) (*pb.S
 
 func (*server) GetConfig(ctx context.Context, req *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
 	log.Println("GetConfig request")
-	var res []*pb.Config
+	var res []*pb.Config //slice of configs
 
-	cur, err := collection.Find(context.Background(), primitive.D{{}})
+	cur, err := collection.Find(context.Background(), primitive.D{{}}) //primitive.D{{}} finds all records in the collection
 	if err != nil {
 		return nil, status.Errorf(
 			codes.Internal,
@@ -119,6 +132,7 @@ func (*server) GetConfig(ctx context.Context, req *pb.GetConfigRequest) (*pb.Get
 		)
 	}
 	defer cur.Close(context.Background())
+
 	for cur.Next(context.Background()) { //Iterate through cur and extract all data
 		data := &configItem{}   //initialize empty struct
 		err := cur.Decode(data) //Decode data from cursor to data
@@ -144,8 +158,8 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 			fmt.Sprintf("Cannot parse ID"),
 		)
 	}
-	filter := bson.M{"_id": oid} //create filter for searching in the database
-	res, err := collection.DeleteOne(context.Background(), filter)
+	filter := bson.M{"_id": oid}                                   //create filter for searching in the database
+	res, err := collection.DeleteOne(context.Background(), filter) //delete object from the database
 	if err != nil {
 		return nil, status.Errorf(
 			codes.Internal,
@@ -153,10 +167,10 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 		)
 	}
 
-	if res.DeletedCount == 0 {
+	if res.DeletedCount == 0 { //check if the object was really deleted
 		return nil, status.Errorf(
 			codes.NotFound,
-			fmt.Sprintf("Cannot find blog with specified ID: %v", err),
+			fmt.Sprintf("Cannot find blog with the specified ID: %v", err),
 		)
 	}
 

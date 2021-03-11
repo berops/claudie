@@ -24,11 +24,6 @@ func WriteProtobufToBinaryFile(message proto.Message, filename string) error {
 	return nil
 }
 
-// ProtoToByte converts a protobuf message to []byte
-func ProtoToByte(message proto.Message) ([]byte, error) {
-	return proto.Marshal(message)
-}
-
 // ReadProtobufFromBinaryFile reads protocol buffer message from binary file
 func ReadProtobufFromBinaryFile(message proto.Message, filename string) error {
 	data, err := ioutil.ReadFile(filename)

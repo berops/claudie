@@ -21,7 +21,7 @@ func main() {
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
 
-	saveConfig(c)
+	//saveConfig(c)
 	//getConfig(c)
 	//deleteConfig(c)
 }
@@ -34,11 +34,11 @@ func saveConfig(c pb.ContextBoxServiceClient) {
 
 	fmt.Println("Saving config")
 	config := &pb.Config{
-		//Id:       "6046125fe007b36dcb77b147",
-		Name:         "test",
-		Manifest:     string(manifest),
-		DesiredState: &pb.Project{Name: "test"},
-		CurrentState: &pb.Project{Name: "test"},
+		//Id:       "6049d7afc57394c1278f10a4",
+		Name:     "test_without_states",
+		Manifest: string(manifest),
+		// DesiredState: &pb.Project{Name: "test"},
+		// CurrentState: &pb.Project{Name: "test"},
 	}
 	res, err := c.SaveConfig(context.Background(), &pb.SaveConfigRequest{Config: config})
 	if err != nil {
@@ -55,12 +55,12 @@ func getConfig(c pb.ContextBoxServiceClient) {
 	// Print config names and IDs
 	fmt.Printf("ID                       Name\n")
 	for _, c := range res.GetConfig() {
-		fmt.Println(c.GetId(), c.GetName())
+		fmt.Println(c.GetId(), c.GetName(), c.GetDesiredState(), c.CurrentState)
 	}
 }
 
 func deleteConfig(c pb.ContextBoxServiceClient) {
-	res, err := c.DeleteConfig(context.Background(), &pb.DeleteConfigRequest{Id: "6046125fe007b36dcb77b147"})
+	res, err := c.DeleteConfig(context.Background(), &pb.DeleteConfigRequest{Id: "6049d7afc57394c1278f10a4"})
 	if err != nil {
 		log.Fatalf("Error happened while deleting: %v\n", err)
 	}

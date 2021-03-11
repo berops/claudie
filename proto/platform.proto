@@ -6,7 +6,7 @@ option go_package = "proto/pb";
 
 message Project {
   string name = 1;
-  map<string, string> credetials = 2;
+  map<string, string> credentials = 2;
   repeated Cluster clusters = 3;
 }
 
