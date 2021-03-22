@@ -15,7 +15,7 @@ message SaveConfigRequest { Config config = 1; }
 message SaveConfigResponse { Config config = 1; }
 // Get
 message GetConfigRequest {}
-message GetConfigResponse { repeated Config config = 1; }
+message GetConfigResponse { repeated Config configs = 1; }
 // Delete
 message DeleteConfigRequest { string id = 1; }
 message DeleteConfigResponse { string id = 1; }

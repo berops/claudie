@@ -21,13 +21,15 @@ message Cluster {
 message NodePool {
   string name = 1;
   string region = 2;
-  map<string, Node> nodes = 3;
+  Node master = 3;
+  Node worker = 4;
 }
 
 message Node {
   uint32 count = 1;
-  string serverType = 2;
-  string image = 3;
-  uint32 diskSize = 4;
-  string zone = 5;
+  string shape = 2;
+  string serverType = 3;
+  string image = 4;
+  uint32 diskSize = 5;
+  string zone = 6;
 }

@@ -26,7 +26,7 @@ func TestGetConfig(t *testing.T) {
 	res, err := cbox.GetConfig(c)
 	require.NoError(t, err)
 	t.Logf("ID                       Name\n")
-	for _, c := range res.GetConfig() {
+	for _, c := range res.GetConfigs() {
 		t.Log(c.GetId(), c.GetName(), c.GetDesiredState(), c.CurrentState)
 	}
 }
@@ -48,10 +48,10 @@ func TestSaveConfig(t *testing.T) {
 	}
 	config := &pb.Config{
 		//Id:       "6049f860a0cf8c4d391e6f58",
-		Name:     "test_while_testing",
-		Manifest: string(manifest),
-		// DesiredState: &pb.Project{Name: "test"},
-		// CurrentState: &pb.Project{Name: "test"},
+		Name:         "test_while_testing",
+		Manifest:     string(manifest),
+		DesiredState: &pb.Project{Name: "This is desiredState name"},
+		CurrentState: &pb.Project{Name: "This is currentState name"},
 	}
 
 	err = cbox.SaveConfig(c, config)

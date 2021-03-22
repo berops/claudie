@@ -1,9 +1,7 @@
 name: # project name
 publicCloudCredentials: # optional credentials for each supported public cloud that can be used to create nodes
-  gcp: 
-    credentials: "../secrets/admin-project-283514-3729b1f097f2.json"
-  hetzner:
-    token: xadwxadwxadwxadwxadw
+  gcp: "../secrets/admin-project-283514-3729b1f097f2.json"
+  hetzner: xadwxadwxadwxadwxadw
   # and other similar clouds
 
 # out of scope of MVP; an array of already existing machines (e.g. on-premises) that can be used for the clusters

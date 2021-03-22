@@ -8,34 +8,6 @@ import (
 	"github.com/Berops/platform/proto/pb"
 )
 
-// func main() {
-// 	cc, err := grpc.Dial(ports.ContextBoxPort, grpc.WithInsecure())
-// 	if err != nil {
-// 		log.Fatalf("could not connect to server: %v", err)
-// 	}
-// 	defer cc.Close()
-
-// 	// Creating the client
-// 	c := pb.NewContextBoxServiceClient(cc)
-
-// 	//Only for testing
-// 	manifest, errR := ioutil.ReadFile("/Users/samuelstolicny/Github/Berops/platform/services/context-box/client/manifest.yaml")
-// 	if errR != nil {
-// 		log.Fatalln(errR)
-// 	}
-// 	config := &pb.Config{
-// 		//Id:       "6049d7afc57394c1278f10a4",
-// 		Name:     "test_without_states",
-// 		Manifest: string(manifest),
-// 		DesiredState: &pb.Project{Name: "test"},
-// 		CurrentState: &pb.Project{Name: "test"},
-// 	}
-
-// 	SaveConfig(c, config)
-// 	//GetConfig(c)
-// 	//DeleteConfig(c)
-// }
-
 // SaveConfig calls Content-box gRPC server and saves configuration to the mongoDB database
 // A new config file with Id will be created if ID is empty
 func SaveConfig(c pb.ContextBoxServiceClient, config *pb.Config) error {

@@ -145,7 +145,7 @@ func (*server) GetConfig(ctx context.Context, req *pb.GetConfigRequest) (*pb.Get
 		res = append(res, dataToConfigPb(data)) //append decoded data (config) to res (response) slice
 	}
 
-	return &pb.GetConfigResponse{Config: res}, nil
+	return &pb.GetConfigResponse{Configs: res}, nil
 }
 
 func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*pb.DeleteConfigResponse, error) {
