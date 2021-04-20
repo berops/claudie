@@ -42,7 +42,7 @@ func TestSaveConfig(t *testing.T) {
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
 
-	manifest, errR := ioutil.ReadFile("/Users/samuelstolicny/Github/Berops/platform/services/context-box/client/manifest.yaml")
+	manifest, errR := ioutil.ReadFile("manifest.yaml")
 	if errR != nil {
 		log.Fatalln(errR)
 	}
