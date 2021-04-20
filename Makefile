@@ -1,4 +1,4 @@
-.PHONY: gen contentbox
+.PHONY: gen contentbox scheduler
 
 #Generate all .proto files
 gen:
@@ -6,3 +6,6 @@ gen:
 
 contentbox:
 	go run services/context-box/server/server.go
+
+scheduler:
+	go run services/scheduler/scheduler.go
