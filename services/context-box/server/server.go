@@ -57,7 +57,7 @@ func (*server) SaveConfig(ctx context.Context, req *pb.SaveConfigRequest) (*pb.S
 	log.Println("Save config request")
 	config := req.GetConfig()
 
-	//Convert desiredState and currentState to byte[] because we want to save it to the database
+	//Convert desiredState and currentState to byte[] because we want to save them to the database
 	desiredStateByte, errDS := proto.Marshal(config.DesiredState)
 	if errDS != nil {
 		log.Fatalln("Error while converting from protobuf to byte", errDS)
