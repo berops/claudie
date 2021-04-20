@@ -1,7 +1,7 @@
-name: # project name
+name: TestProjectName
 publicCloudCredentials: # optional credentials for each supported public cloud that can be used to create nodes
-  gcp: "../secrets/admin-project-283514-3729b1f097f2.json"
-  hetzner: xadwxadwxadwxadwxadw
+  gcp: ../secrets/admin-project-283514-3729b1f097f2.json
+  hetzner: TestHetznerPassword
   # and other similar clouds
 
 # out of scope of MVP; an array of already existing machines (e.g. on-premises) that can be used for the clusters
@@ -15,22 +15,22 @@ publicCloudCredentials: # optional credentials for each supported public cloud t
 
 # clusters represents an array of clusterSpecs - high level descriptions of what the desired clusters should be like
 clusters: 
-  - name: dev
+  - name: TestClusterName
     kubernetes: v1.19.0
     network: 192.168.2.0/24
     
     nodePools:       
     - name: gcp
       region: europe-west1
-      Master:
-      - count: 1
+      master:
+        count: 1
         # shape: small
         server_type: e2-small
         image: ubuntu-os-cloud/ubuntu-2004-lts
         disk_size: 50
         zone: europe-west1-c
-      Worker:
-      - count: 2
+      worker:
+        count: 2
         # shape: tiny
         server_type: f1-micro
         image: ubuntu-os-cloud/ubuntu-2004-lts
@@ -38,16 +38,16 @@ clusters:
         zone: europe-west1-c
     
     - name: hetzner
-      Master:
-      - count: 1
+      master:
+        count: 1
         # shape: small
         server_type: cpx11
         image: ubuntu-20.04
         disk_size: 50
         location: nbg1
         datacenter: nbg1-dc3
-      Worker:
-      - count: 2
+      worker:
+        count: 2
         # shape: small
         server_type: cpx11
         image: ubuntu-20.04
