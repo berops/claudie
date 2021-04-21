@@ -32,4 +32,6 @@ message Node {
   string image = 4;
   uint32 diskSize = 5;
   string zone = 6;
+  string location = 7;
+  string datacenter = 8;
 }
