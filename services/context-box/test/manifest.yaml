@@ -22,14 +22,14 @@ clusters:
     nodePools:       
     - name: gcp
       region: europe-west1
-      Master:
+      master:
         count: 1
         # shape: small
         server_type: e2-small
         image: ubuntu-os-cloud/ubuntu-2004-lts
         disk_size: 50
         zone: europe-west1-c
-      Worker:
+      worker:
         count: 2
         # shape: tiny
         server_type: f1-micro
