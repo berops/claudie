@@ -42,7 +42,7 @@ func TestSaveConfig(t *testing.T) {
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
 
-	manifest, errR := ioutil.ReadFile("manifest.yaml")
+	manifest, errR := ioutil.ReadFile("manifest.yaml") //this is manifest from this test file
 	if errR != nil {
 		log.Fatalln(errR)
 	}
