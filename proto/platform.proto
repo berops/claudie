@@ -27,7 +27,6 @@ message NodePool {
 
 message Node {
   uint32 count = 1;
-  string shape = 2;
   string serverType = 3;
   string image = 4;
   uint32 diskSize = 5;
