@@ -18,7 +18,10 @@ func TestGetConfig(t *testing.T) {
 	if err != nil {
 		log.Fatalf("could not connect to server: %v", err)
 	}
-	defer cc.Close()
+	defer func() {
+		err := cc.Close()
+		require.NoError(t, err)
+	}()
 
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
@@ -37,7 +40,10 @@ func TestSaveConfig(t *testing.T) {
 	if err != nil {
 		log.Fatalf("could not connect to server: %v", err)
 	}
-	defer cc.Close()
+	defer func() {
+		err := cc.Close()
+		require.NoError(t, err)
+	}()
 
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
@@ -46,15 +52,17 @@ func TestSaveConfig(t *testing.T) {
 	if errR != nil {
 		log.Fatalln(errR)
 	}
-	config := &pb.Config{
-		//Id:       "6049f860a0cf8c4d391e6f58",
-		Name:         "test_while_testing",
-		Manifest:     string(manifest),
-		DesiredState: &pb.Project{Name: "This is desiredState name"},
-		CurrentState: &pb.Project{Name: "This is currentState name"},
-	}
 
-	err = cbox.SaveConfig(c, config)
+	err = cbox.SaveConfig(c, &pb.SaveConfigRequest{
+		Config: &pb.Config{
+			Id:           "6087d18da56a5b590dd7f289",
+			Name:         "timestamp test",
+			Manifest:     string(manifest),
+			DesiredState: &pb.Project{Name: "This is desiredState name"},
+			CurrentState: &pb.Project{Name: "This is currentState name"},
+		},
+		IsFromScheduler: false,
+	})
 	require.NoError(t, err)
 }
 
@@ -64,7 +72,10 @@ func TestDeleteConfig(t *testing.T) {
 	if err != nil {
 		log.Fatalf("could not connect to server: %v", err)
 	}
-	defer cc.Close()
+	defer func() {
+		err := cc.Close()
+		require.NoError(t, err)
+	}()
 
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
