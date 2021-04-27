@@ -1,4 +1,4 @@
-package test
+package main
 
 import (
 	"io/ioutil"
@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-func TestGetConfig(t *testing.T) {
+func TestServer_GetAllConfigs(t *testing.T) {
 	//Create connection to Context-box
 	cc, err := grpc.Dial(ports.ContextBoxPort, grpc.WithInsecure())
 	if err != nil {
@@ -26,15 +26,14 @@ func TestGetConfig(t *testing.T) {
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
 
-	res, err := cbox.GetConfig(c)
+	res, err := cbox.GetAllConfigs(c)
 	require.NoError(t, err)
-	t.Logf("ID                       Name\n")
 	for _, c := range res.GetConfigs() {
 		t.Log(c.GetId(), c.GetName(), c.GetDesiredState(), c.CurrentState)
 	}
 }
 
-func TestSaveConfig(t *testing.T) {
+func TestServer_SaveConfig(t *testing.T) {
 	//Create connection to Context-box
 	cc, err := grpc.Dial(ports.ContextBoxPort, grpc.WithInsecure())
 	if err != nil {
@@ -66,7 +65,7 @@ func TestSaveConfig(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestDeleteConfig(t *testing.T) {
+func TestServer_DeleteConfig(t *testing.T) {
 	//Create connection to Context-box
 	cc, err := grpc.Dial(ports.ContextBoxPort, grpc.WithInsecure())
 	if err != nil {
