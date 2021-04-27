@@ -140,14 +140,14 @@ func main() {
 
 	//Infinite FOR cycle gets all configs from the context box every defined number of seconds
 	for { // TODO: Maybe goroutines here?
-		res, err := cbox.GetConfig(c) //Get all configs from the database. It is a grpc call to the context-box
+		res, err := cbox.GetAllConfigs(c) //Get all configs from the database. It is a grpc call to the context-box
 		if err != nil {
 			log.Fatalln("Error while getting config from the Scheduler", err)
 		}
 		for _, config := range res.GetConfigs() {
 			config = createDesiredState(config)
 			//fmt.Println(config.GetDesiredState())
-			err := cbox.SaveConfig(c, config)
+			err := cbox.SaveConfig(c, &pb.SaveConfigRequest{Config: config})
 			if err != nil {
 				log.Fatalln("Error while saving config", err)
 			}

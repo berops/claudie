@@ -1,12 +1,14 @@
 package main
 
 import (
+	"container/list"
 	"context"
 	"fmt"
 	"log"
 	"net"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/Berops/platform/ports"
 	"github.com/Berops/platform/proto/pb"
@@ -22,14 +24,18 @@ import (
 
 var collection *mongo.Collection
 
+var queue *list.List
+
 type server struct{}
 
 type configItem struct {
-	ID           primitive.ObjectID `bson:"_id,omitempty"`
-	Name         string             `bson:"name"`
-	Manifest     string             `bson:"manifest"`
-	DesiredState []byte             `bson:"desiredState"`
-	CurrentState []byte             `bson:"currentState"`
+	ID             primitive.ObjectID `bson:"_id,omitempty"`
+	Name           string             `bson:"name"`
+	Manifest       string             `bson:"manifest"`
+	ManifestTS     time.Time          `bson:"manifestTS"`
+	DesiredState   []byte             `bson:"desiredState"`
+	DesiredStateTS time.Time          `bson:"desiredStateTS"`
+	CurrentState   []byte             `bson:"currentState"`
 }
 
 func dataToConfigPb(data *configItem) *pb.Config {
@@ -74,6 +80,12 @@ func (*server) SaveConfig(ctx context.Context, req *pb.SaveConfigRequest) (*pb.S
 	data.DesiredState = desiredStateByte
 	data.CurrentState = currentStateByte
 
+	if !req.GetIsFromScheduler() {
+		data.ManifestTS = time.Now().Local()
+	} else {
+		data.DesiredStateTS = time.Now().Local()
+	}
+
 	//Check if ID exists
 	if config.GetId() != "" {
 		//Get id from config
@@ -81,7 +93,7 @@ func (*server) SaveConfig(ctx context.Context, req *pb.SaveConfigRequest) (*pb.S
 		if err != nil {
 			return nil, status.Errorf(
 				codes.InvalidArgument,
-				fmt.Sprintf("Cannot parse ID"),
+				fmt.Sprintln("Cannot parse ID"),
 			)
 		}
 		filter := bson.M{"_id": oid}
@@ -111,7 +123,7 @@ func (*server) SaveConfig(ctx context.Context, req *pb.SaveConfigRequest) (*pb.S
 	if !ok {
 		return nil, status.Errorf(
 			codes.Internal,
-			fmt.Sprintf("Cannot convert to OID"),
+			fmt.Sprintln("Cannot convert to OID"),
 		)
 	}
 	data.ID = oid
@@ -120,8 +132,8 @@ func (*server) SaveConfig(ctx context.Context, req *pb.SaveConfigRequest) (*pb.S
 	return &pb.SaveConfigResponse{Config: config}, nil
 }
 
-func (*server) GetConfig(ctx context.Context, req *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
-	log.Println("GetConfig request")
+func (*server) GetAllConfigs(ctx context.Context, req *pb.GetAllConfigsRequest) (*pb.GetAllConfigsResponse, error) {
+	log.Println("GetAllConfigs request")
 	var res []*pb.Config //slice of configs
 
 	cur, err := collection.Find(context.Background(), primitive.D{{}}) //primitive.D{{}} finds all records in the collection
@@ -145,7 +157,7 @@ func (*server) GetConfig(ctx context.Context, req *pb.GetConfigRequest) (*pb.Get
 		res = append(res, dataToConfigPb(data)) //append decoded data (config) to res (response) slice
 	}
 
-	return &pb.GetConfigResponse{Configs: res}, nil
+	return &pb.GetAllConfigsResponse{Configs: res}, nil
 }
 
 func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*pb.DeleteConfigResponse, error) {
@@ -155,7 +167,7 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 	if err != nil {
 		return nil, status.Errorf(
 			codes.InvalidArgument,
-			fmt.Sprintf("Cannot parse ID"),
+			fmt.Sprintln("Cannot parse ID"),
 		)
 	}
 	filter := bson.M{"_id": oid}                                   //create filter for searching in the database
@@ -177,6 +189,12 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 	return &pb.DeleteConfigResponse{Id: req.GetId()}, nil
 }
 
+func serverCheck() {
+	//TODO: Get all configs
+
+	//TODO: Check if any has older DesiredStateTS than ManifestTS and add it to the queue
+}
+
 func main() {
 	// If code crash, we get the file name and line number
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -192,6 +210,7 @@ func main() {
 	}
 	log.Println("Connected to MongoDB")
 	collection = client.Database("platform").Collection("config")
+	defer client.Disconnect(context.TODO()) //closing MongoDB connection
 
 	// Start ContextBox Service
 	lis, err := net.Listen("tcp", ports.ContextBoxPort)
@@ -208,12 +227,13 @@ func main() {
 		if err := s.Serve(lis); err != nil {
 			log.Fatalf("Failed to serve: %v", err)
 		}
-		fmt.Println("Server started")
 	}()
 
 	// Wait for Control C to exit
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, os.Interrupt)
+
+	//TODO: Call serverCheck in infinite for loop and goroutines
 
 	// Block until a signal is received
 	<-ch
@@ -221,7 +241,5 @@ func main() {
 	s.Stop()
 	fmt.Println("Closing the listener")
 	lis.Close()
-	fmt.Println("Closing MongoDB Connection")
-	client.Disconnect(context.TODO())
 	fmt.Println("End of Program")
 }

@@ -10,10 +10,10 @@ import (
 
 // SaveConfig calls Content-box gRPC server and saves configuration to the mongoDB database
 // A new config file with Id will be created if ID is empty
-func SaveConfig(c pb.ContextBoxServiceClient, config *pb.Config) error {
+func SaveConfig(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest) error {
 	fmt.Println("Saving config")
 
-	res, err := c.SaveConfig(context.Background(), &pb.SaveConfigRequest{Config: config})
+	res, err := c.SaveConfig(context.Background(), req)
 	if err != nil {
 		log.Fatalf("Unexpected error: %v", err)
 	}
@@ -21,9 +21,9 @@ func SaveConfig(c pb.ContextBoxServiceClient, config *pb.Config) error {
 	return nil
 }
 
-// GetConfig calls Content-box gRPC server and returns all configs from the mongoDB database
-func GetConfig(c pb.ContextBoxServiceClient) (*pb.GetConfigResponse, error) {
-	res, err := c.GetConfig(context.Background(), &pb.GetConfigRequest{})
+// GetAllConfigs calls Content-box gRPC server and returns all configs from the mongoDB database
+func GetAllConfigs(c pb.ContextBoxServiceClient) (*pb.GetAllConfigsResponse, error) {
+	res, err := c.GetAllConfigs(context.Background(), &pb.GetAllConfigsRequest{})
 	if err != nil {
 		log.Fatalf("Unexpected error: %v", err)
 	}

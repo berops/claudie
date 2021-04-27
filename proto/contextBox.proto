@@ -2,6 +2,7 @@ syntax = "proto3";
 package platform;
 option go_package = "proto/pb";
 import "platform.proto";
+import "google/protobuf/timestamp.proto";
 
 message Config {
   string id = 1;
@@ -9,19 +10,24 @@ message Config {
   string manifest = 3;
   Project desiredState = 4;
   Project currentState = 5;
+  google.protobuf.Timestamp manifestTS = 6;
+  google.protobuf.Timestamp desiredStateTS = 7;
 }
 // Save
-message SaveConfigRequest { Config config = 1; }
+message SaveConfigRequest {
+  Config config = 1;
+  bool IsFromScheduler = 2;
+}
 message SaveConfigResponse { Config config = 1; }
 // Get
-message GetConfigRequest {}
-message GetConfigResponse { repeated Config configs = 1; }
+message GetAllConfigsRequest {}
+message GetAllConfigsResponse { repeated Config configs = 1; }
 // Delete
 message DeleteConfigRequest { string id = 1; }
 message DeleteConfigResponse { string id = 1; }
 
 service ContextBoxService {
   rpc SaveConfig(SaveConfigRequest) returns (SaveConfigResponse);
-  rpc GetConfig(GetConfigRequest) returns (GetConfigResponse);
+  rpc GetAllConfigs(GetAllConfigsRequest) returns (GetAllConfigsResponse);
   rpc DeleteConfig(DeleteConfigRequest) returns (DeleteConfigResponse);
 }
