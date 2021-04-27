@@ -1,4 +1,4 @@
-package main
+package cbox
 
 import (
 	"io/ioutil"
@@ -7,12 +7,11 @@ import (
 
 	"github.com/Berops/platform/ports"
 	"github.com/Berops/platform/proto/pb"
-	cbox "github.com/Berops/platform/services/context-box/client"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 )
 
-func TestServer_GetAllConfigs(t *testing.T) {
+func TestGetAllConfigs(t *testing.T) {
 	//Create connection to Context-box
 	cc, err := grpc.Dial(ports.ContextBoxPort, grpc.WithInsecure())
 	if err != nil {
@@ -26,14 +25,14 @@ func TestServer_GetAllConfigs(t *testing.T) {
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
 
-	res, err := cbox.GetAllConfigs(c)
+	res, err := GetAllConfigs(c)
 	require.NoError(t, err)
 	for _, c := range res.GetConfigs() {
 		t.Log(c.GetId(), c.GetName(), c.GetDesiredState(), c.CurrentState)
 	}
 }
 
-func TestServer_SaveConfig(t *testing.T) {
+func TestSaveConfig(t *testing.T) {
 	//Create connection to Context-box
 	cc, err := grpc.Dial(ports.ContextBoxPort, grpc.WithInsecure())
 	if err != nil {
@@ -52,7 +51,7 @@ func TestServer_SaveConfig(t *testing.T) {
 		log.Fatalln(errR)
 	}
 
-	err = cbox.SaveConfig(c, &pb.SaveConfigRequest{
+	err = SaveConfig(c, &pb.SaveConfigRequest{
 		Config: &pb.Config{
 			Id:           "6087d18da56a5b590dd7f289",
 			Name:         "timestamp test",
@@ -65,7 +64,7 @@ func TestServer_SaveConfig(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestServer_DeleteConfig(t *testing.T) {
+func TestDeleteConfig(t *testing.T) {
 	//Create connection to Context-box
 	cc, err := grpc.Dial(ports.ContextBoxPort, grpc.WithInsecure())
 	if err != nil {
@@ -79,6 +78,6 @@ func TestServer_DeleteConfig(t *testing.T) {
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
 
-	err = cbox.DeleteConfig(c, "6049f856a0cf8c4d391e6f57")
+	err = DeleteConfig(c, "6049f856a0cf8c4d391e6f57")
 	require.NoError(t, err)
 }
