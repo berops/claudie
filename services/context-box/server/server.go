@@ -134,29 +134,10 @@ func (*server) SaveConfig(ctx context.Context, req *pb.SaveConfigRequest) (*pb.S
 
 func (*server) GetAllConfigs(ctx context.Context, req *pb.GetAllConfigsRequest) (*pb.GetAllConfigsResponse, error) {
 	log.Println("GetAllConfigs request")
-	var res []*pb.Config //slice of configs
-
-	cur, err := collection.Find(context.Background(), primitive.D{{}}) //primitive.D{{}} finds all records in the collection
+	res, err := getAllConfigs()
 	if err != nil {
-		return nil, status.Errorf(
-			codes.Internal,
-			fmt.Sprintf("Unknown internal error: %v\n", err),
-		)
+		return nil, err
 	}
-	defer cur.Close(context.Background())
-
-	for cur.Next(context.Background()) { //Iterate through cur and extract all data
-		data := &configItem{}   //initialize empty struct
-		err := cur.Decode(data) //Decode data from cursor to data
-		if err != nil {         //check error
-			return nil, status.Errorf(
-				codes.Internal,
-				fmt.Sprintf("Error while decoding data from MongoDB: %v\n", err),
-			)
-		}
-		res = append(res, dataToConfigPb(data)) //append decoded data (config) to res (response) slice
-	}
-
 	return &pb.GetAllConfigsResponse{Configs: res}, nil
 }
 
@@ -189,9 +170,34 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 	return &pb.DeleteConfigResponse{Id: req.GetId()}, nil
 }
 
-func serverCheck() {
+func getAllConfigs() ([]*pb.Config, error) {
 	//TODO: Get all configs
+	var res []*pb.Config //slice of configs
 
+	cur, err := collection.Find(context.Background(), primitive.D{{}}) //primitive.D{{}} finds all records in the collection
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		err := cur.Close(context.Background())
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}()
+
+	for cur.Next(context.Background()) { //Iterate through cur and extract all data
+		data := &configItem{}   //initialize empty struct
+		err := cur.Decode(data) //Decode data from cursor to data
+		if err != nil {         //check error
+			return nil, err
+		}
+		res = append(res, dataToConfigPb(data)) //append decoded data (config) to res (response) slice
+	}
+
+	return res, nil
+}
+
+func ConfigCheck() {
 	//TODO: Check if any has older DesiredStateTS than ManifestTS and add it to the queue
 }
 
