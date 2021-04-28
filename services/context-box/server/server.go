@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/Berops/platform/ports"
 	"github.com/Berops/platform/proto/pb"
@@ -254,14 +255,15 @@ func main() {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, os.Interrupt)
 
-	//TODO: Call configCheck in infinite for loop and goroutines
-	for i := 0; i < 10; i++ {
-		queue, err = configCheck(queue)
-		if err != nil {
-			log.Fatalln("Error while configCheck", err)
+	go func() {
+		for {
+			queue, err = configCheck(queue)
+			if err != nil {
+				log.Fatalln("Error while configCheck", err)
+			}
+			time.Sleep(5 * time.Second)
 		}
-		fmt.Println(queue)
-	}
+	}()
 
 	// Block until a signal is received
 	<-ch
