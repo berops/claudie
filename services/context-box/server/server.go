@@ -1,7 +1,6 @@
 package main
 
 import (
-	"container/list"
 	"context"
 	"fmt"
 	"log"
@@ -23,8 +22,6 @@ import (
 )
 
 var collection *mongo.Collection
-
-var queue *list.List
 
 type server struct{}
 
@@ -81,9 +78,9 @@ func (*server) SaveConfig(ctx context.Context, req *pb.SaveConfigRequest) (*pb.S
 	data.CurrentState = currentStateByte
 
 	if !req.GetIsFromScheduler() {
-		data.ManifestTS = time.Now().Local()
+		data.ManifestTS = time.Now()
 	} else {
-		data.DesiredStateTS = time.Now().Local()
+		data.DesiredStateTS = time.Now()
 	}
 
 	//Check if ID exists
@@ -134,10 +131,16 @@ func (*server) SaveConfig(ctx context.Context, req *pb.SaveConfigRequest) (*pb.S
 
 func (*server) GetAllConfigs(ctx context.Context, req *pb.GetAllConfigsRequest) (*pb.GetAllConfigsResponse, error) {
 	log.Println("GetAllConfigs request")
-	res, err := getAllConfigs()
+	var res []*pb.Config //slice of configs
+
+	configs, err := getAllConfigs() //get all configs from database
 	if err != nil {
 		return nil, err
 	}
+	for _, config := range configs {
+		res = append(res, dataToConfigPb(config)) //add them into protobuf in the right format
+	}
+
 	return &pb.GetAllConfigsResponse{Configs: res}, nil
 }
 
@@ -170,10 +173,8 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 	return &pb.DeleteConfigResponse{Id: req.GetId()}, nil
 }
 
-func getAllConfigs() ([]*pb.Config, error) {
-	//TODO: Get all configs
-	var res []*pb.Config //slice of configs
-
+func getAllConfigs() ([]*configItem, error) {
+	var configs []*configItem
 	cur, err := collection.Find(context.Background(), primitive.D{{}}) //primitive.D{{}} finds all records in the collection
 	if err != nil {
 		return nil, err
@@ -184,24 +185,44 @@ func getAllConfigs() ([]*pb.Config, error) {
 			log.Fatalln(err)
 		}
 	}()
-
 	for cur.Next(context.Background()) { //Iterate through cur and extract all data
 		data := &configItem{}   //initialize empty struct
 		err := cur.Decode(data) //Decode data from cursor to data
 		if err != nil {         //check error
 			return nil, err
 		}
-		res = append(res, dataToConfigPb(data)) //append decoded data (config) to res (response) slice
+		configs = append(configs, data) //append decoded data (config) to res (response) slice
 	}
 
-	return res, nil
+	return configs, nil
 }
 
-func ConfigCheck() {
+func configCheck(queue []*configItem) error {
 	//TODO: Check if any has older DesiredStateTS than ManifestTS and add it to the queue
+	configs, err := getAllConfigs()
+	if err != nil {
+		return err
+	}
+
+	// Check all configs for smaller DesiredStateTS than ManifestTS and add these configs to the queue if they are not there already
+	for _, config := range configs {
+		if config.ManifestTS.After(config.DesiredStateTS) {
+			for _, item := range queue {
+				if config == item {
+					break
+				}
+				queue = append(queue, config)
+			}
+		}
+	}
+	fmt.Println(queue)
+
+	return nil
 }
 
 func main() {
+	var queue []*configItem
+
 	// If code crash, we get the file name and line number
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
@@ -239,7 +260,9 @@ func main() {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, os.Interrupt)
 
-	//TODO: Call serverCheck in infinite for loop and goroutines
+	//TODO: Call configCheck in infinite for loop and goroutines
+	fmt.Println(time.Time{})
+	configCheck(queue)
 
 	// Block until a signal is received
 	<-ch
