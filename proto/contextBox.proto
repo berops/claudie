@@ -2,7 +2,6 @@ syntax = "proto3";
 package platform;
 option go_package = "proto/pb";
 import "platform.proto";
-import "google/protobuf/timestamp.proto";
 
 message Config {
   string id = 1;
@@ -10,14 +9,10 @@ message Config {
   string manifest = 3;
   Project desiredState = 4;
   Project currentState = 5;
-  google.protobuf.Timestamp manifestTS = 6;
-  google.protobuf.Timestamp desiredStateTS = 7;
+  bool isNewManifest = 6;
 }
 // Save
-message SaveConfigRequest {
-  Config config = 1;
-  bool IsFromScheduler = 2;
-}
+message SaveConfigRequest { Config config = 1; }
 message SaveConfigResponse { Config config = 1; }
 // Get
 message GetAllConfigsRequest {}

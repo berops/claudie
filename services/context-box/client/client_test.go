@@ -53,13 +53,12 @@ func TestSaveConfig(t *testing.T) {
 
 	err = SaveConfig(c, &pb.SaveConfigRequest{
 		Config: &pb.Config{
-			Id:           "6087d18da56a5b590dd7f289",
-			Name:         "timestamp test",
-			Manifest:     string(manifest),
-			DesiredState: &pb.Project{Name: "This is desiredState name"},
-			CurrentState: &pb.Project{Name: "This is currentState name"},
+			Name:          "randomNameTrue",
+			Manifest:      string(manifest),
+			DesiredState:  &pb.Project{Name: "This is desiredState name"},
+			CurrentState:  &pb.Project{Name: "This is currentState name"},
+			IsNewManifest: true,
 		},
-		IsFromScheduler: false,
 	})
 	require.NoError(t, err)
 }

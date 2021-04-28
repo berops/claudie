@@ -7,7 +7,6 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"time"
 
 	"github.com/Berops/platform/ports"
 	"github.com/Berops/platform/proto/pb"
@@ -26,13 +25,12 @@ var collection *mongo.Collection
 type server struct{}
 
 type configItem struct {
-	ID             primitive.ObjectID `bson:"_id,omitempty"`
-	Name           string             `bson:"name"`
-	Manifest       string             `bson:"manifest"`
-	ManifestTS     time.Time          `bson:"manifestTS"`
-	DesiredState   []byte             `bson:"desiredState"`
-	DesiredStateTS time.Time          `bson:"desiredStateTS"`
-	CurrentState   []byte             `bson:"currentState"`
+	ID            primitive.ObjectID `bson:"_id,omitempty"`
+	Name          string             `bson:"name"`
+	Manifest      string             `bson:"manifest"`
+	DesiredState  []byte             `bson:"desiredState"`
+	CurrentState  []byte             `bson:"currentState"`
+	IsNewManifest bool               `bson:"isNewManifest"`
 }
 
 func dataToConfigPb(data *configItem) *pb.Config {
@@ -76,12 +74,7 @@ func (*server) SaveConfig(ctx context.Context, req *pb.SaveConfigRequest) (*pb.S
 	data.Manifest = config.GetManifest()
 	data.DesiredState = desiredStateByte
 	data.CurrentState = currentStateByte
-
-	if !req.GetIsFromScheduler() {
-		data.ManifestTS = time.Now()
-	} else {
-		data.DesiredStateTS = time.Now()
-	}
+	data.IsNewManifest = config.GetIsNewManifest()
 
 	//Check if ID exists
 	if config.GetId() != "" {
@@ -197,27 +190,28 @@ func getAllConfigs() ([]*configItem, error) {
 	return configs, nil
 }
 
-func configCheck(queue []*configItem) error {
-	//TODO: Check if any has older DesiredStateTS than ManifestTS and add it to the queue
+func configCheck(queue []*configItem) ([]*configItem, error) {
 	configs, err := getAllConfigs()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// Check all configs for smaller DesiredStateTS than ManifestTS and add these configs to the queue if they are not there already
+	// Check all configs for true bool in IsNewManifest add these configs to the queue if they are not there already
 	for _, config := range configs {
-		if config.ManifestTS.After(config.DesiredStateTS) {
+		if config.IsNewManifest { //If IsNewManifest is true, check if it is already in the queue
+			unique := true
 			for _, item := range queue {
-				if config == item {
+				if config.ID == item.ID {
+					unique = false
 					break
 				}
+			}
+			if unique {
 				queue = append(queue, config)
 			}
 		}
 	}
-	fmt.Println(queue)
-
-	return nil
+	return queue, nil
 }
 
 func main() {
@@ -261,8 +255,13 @@ func main() {
 	signal.Notify(ch, os.Interrupt)
 
 	//TODO: Call configCheck in infinite for loop and goroutines
-	fmt.Println(time.Time{})
-	configCheck(queue)
+	for i := 0; i < 10; i++ {
+		queue, err = configCheck(queue)
+		if err != nil {
+			log.Fatalln("Error while configCheck", err)
+		}
+		fmt.Println(queue)
+	}
 
 	// Block until a signal is received
 	<-ch
