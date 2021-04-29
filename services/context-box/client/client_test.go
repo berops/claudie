@@ -11,6 +11,25 @@ import (
 	"google.golang.org/grpc"
 )
 
+func TestGetConfig(t *testing.T) {
+	//Create connection to Context-box
+	cc, err := grpc.Dial(ports.ContextBoxPort, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("could not connect to server: %v", err)
+	}
+	defer func() {
+		err := cc.Close()
+		require.NoError(t, err)
+	}()
+
+	// Creating the client
+	c := pb.NewContextBoxServiceClient(cc)
+
+	res, err := GetConfig(c)
+	require.NoError(t, err)
+	t.Log("Config name", res.GetConfig().GetName())
+}
+
 func TestGetAllConfigs(t *testing.T) {
 	//Create connection to Context-box
 	cc, err := grpc.Dial(ports.ContextBoxPort, grpc.WithInsecure())

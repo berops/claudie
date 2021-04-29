@@ -207,6 +207,91 @@ func (x *SaveConfigResponse) GetConfig() *Config {
 }
 
 // Get
+type GetConfigRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *GetConfigRequest) Reset() {
+	*x = GetConfigRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_contextBox_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GetConfigRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetConfigRequest) ProtoMessage() {}
+
+func (x *GetConfigRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_contextBox_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetConfigRequest.ProtoReflect.Descriptor instead.
+func (*GetConfigRequest) Descriptor() ([]byte, []int) {
+	return file_contextBox_proto_rawDescGZIP(), []int{3}
+}
+
+type GetConfigResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Config *Config `protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
+}
+
+func (x *GetConfigResponse) Reset() {
+	*x = GetConfigResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_contextBox_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GetConfigResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetConfigResponse) ProtoMessage() {}
+
+func (x *GetConfigResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_contextBox_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetConfigResponse.ProtoReflect.Descriptor instead.
+func (*GetConfigResponse) Descriptor() ([]byte, []int) {
+	return file_contextBox_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *GetConfigResponse) GetConfig() *Config {
+	if x != nil {
+		return x.Config
+	}
+	return nil
+}
+
 type GetAllConfigsRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -216,7 +301,7 @@ type GetAllConfigsRequest struct {
 func (x *GetAllConfigsRequest) Reset() {
 	*x = GetAllConfigsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_contextBox_proto_msgTypes[3]
+		mi := &file_contextBox_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -229,7 +314,7 @@ func (x *GetAllConfigsRequest) String() string {
 func (*GetAllConfigsRequest) ProtoMessage() {}
 
 func (x *GetAllConfigsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_contextBox_proto_msgTypes[3]
+	mi := &file_contextBox_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -242,7 +327,7 @@ func (x *GetAllConfigsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAllConfigsRequest.ProtoReflect.Descriptor instead.
 func (*GetAllConfigsRequest) Descriptor() ([]byte, []int) {
-	return file_contextBox_proto_rawDescGZIP(), []int{3}
+	return file_contextBox_proto_rawDescGZIP(), []int{5}
 }
 
 type GetAllConfigsResponse struct {
@@ -256,7 +341,7 @@ type GetAllConfigsResponse struct {
 func (x *GetAllConfigsResponse) Reset() {
 	*x = GetAllConfigsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_contextBox_proto_msgTypes[4]
+		mi := &file_contextBox_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -269,7 +354,7 @@ func (x *GetAllConfigsResponse) String() string {
 func (*GetAllConfigsResponse) ProtoMessage() {}
 
 func (x *GetAllConfigsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_contextBox_proto_msgTypes[4]
+	mi := &file_contextBox_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -282,7 +367,7 @@ func (x *GetAllConfigsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAllConfigsResponse.ProtoReflect.Descriptor instead.
 func (*GetAllConfigsResponse) Descriptor() ([]byte, []int) {
-	return file_contextBox_proto_rawDescGZIP(), []int{4}
+	return file_contextBox_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *GetAllConfigsResponse) GetConfigs() []*Config {
@@ -304,7 +389,7 @@ type DeleteConfigRequest struct {
 func (x *DeleteConfigRequest) Reset() {
 	*x = DeleteConfigRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_contextBox_proto_msgTypes[5]
+		mi := &file_contextBox_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -317,7 +402,7 @@ func (x *DeleteConfigRequest) String() string {
 func (*DeleteConfigRequest) ProtoMessage() {}
 
 func (x *DeleteConfigRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_contextBox_proto_msgTypes[5]
+	mi := &file_contextBox_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -330,7 +415,7 @@ func (x *DeleteConfigRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteConfigRequest.ProtoReflect.Descriptor instead.
 func (*DeleteConfigRequest) Descriptor() ([]byte, []int) {
-	return file_contextBox_proto_rawDescGZIP(), []int{5}
+	return file_contextBox_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *DeleteConfigRequest) GetId() string {
@@ -351,7 +436,7 @@ type DeleteConfigResponse struct {
 func (x *DeleteConfigResponse) Reset() {
 	*x = DeleteConfigResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_contextBox_proto_msgTypes[6]
+		mi := &file_contextBox_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -364,7 +449,7 @@ func (x *DeleteConfigResponse) String() string {
 func (*DeleteConfigResponse) ProtoMessage() {}
 
 func (x *DeleteConfigResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_contextBox_proto_msgTypes[6]
+	mi := &file_contextBox_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -377,7 +462,7 @@ func (x *DeleteConfigResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteConfigResponse.ProtoReflect.Descriptor instead.
 func (*DeleteConfigResponse) Descriptor() ([]byte, []int) {
-	return file_contextBox_proto_rawDescGZIP(), []int{6}
+	return file_contextBox_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *DeleteConfigResponse) GetId() string {
@@ -414,35 +499,45 @@ var file_contextBox_proto_rawDesc = []byte{
 	0x76, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
 	0x12, 0x28, 0x0a, 0x06, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
 	0x32, 0x10, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x43, 0x6f, 0x6e, 0x66,
-	0x69, 0x67, 0x52, 0x06, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x22, 0x16, 0x0a, 0x14, 0x47, 0x65,
-	0x74, 0x41, 0x6c, 0x6c, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65,
-	0x73, 0x74, 0x22, 0x43, 0x0a, 0x15, 0x47, 0x65, 0x74, 0x41, 0x6c, 0x6c, 0x43, 0x6f, 0x6e, 0x66,
-	0x69, 0x67, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x2a, 0x0a, 0x07, 0x63,
-	0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x10, 0x2e, 0x70,
-	0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x07,
-	0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x22, 0x25, 0x0a, 0x13, 0x44, 0x65, 0x6c, 0x65, 0x74,
-	0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x0e,
-	0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x22, 0x26,
-	0x0a, 0x14, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65,
-	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01,
-	0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x32, 0xfd, 0x01, 0x0a, 0x11, 0x43, 0x6f, 0x6e, 0x74, 0x65,
-	0x78, 0x74, 0x42, 0x6f, 0x78, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x47, 0x0a, 0x0a,
-	0x53, 0x61, 0x76, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x1b, 0x2e, 0x70, 0x6c, 0x61,
+	0x69, 0x67, 0x52, 0x06, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x22, 0x12, 0x0a, 0x10, 0x47, 0x65,
+	0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x3d,
+	0x0a, 0x11, 0x47, 0x65, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x12, 0x28, 0x0a, 0x06, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x10, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x43,
+	0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x06, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x22, 0x16, 0x0a,
+	0x14, 0x47, 0x65, 0x74, 0x41, 0x6c, 0x6c, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x43, 0x0a, 0x15, 0x47, 0x65, 0x74, 0x41, 0x6c, 0x6c, 0x43,
+	0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x2a,
+	0x0a, 0x07, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32,
+	0x10, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x43, 0x6f, 0x6e, 0x66, 0x69,
+	0x67, 0x52, 0x07, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x22, 0x25, 0x0a, 0x13, 0x44, 0x65,
+	0x6c, 0x65, 0x74, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69,
+	0x64, 0x22, 0x26, 0x0a, 0x14, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69,
+	0x67, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x32, 0xc3, 0x02, 0x0a, 0x11, 0x43, 0x6f,
+	0x6e, 0x74, 0x65, 0x78, 0x74, 0x42, 0x6f, 0x78, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12,
+	0x47, 0x0a, 0x0a, 0x53, 0x61, 0x76, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x1b, 0x2e,
+	0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x53, 0x61, 0x76, 0x65, 0x43, 0x6f, 0x6e,
+	0x66, 0x69, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1c, 0x2e, 0x70, 0x6c, 0x61,
 	0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x53, 0x61, 0x76, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1c, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f,
-	0x72, 0x6d, 0x2e, 0x53, 0x61, 0x76, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x50, 0x0a, 0x0d, 0x47, 0x65, 0x74, 0x41, 0x6c, 0x6c, 0x43,
-	0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x12, 0x1e, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72,
-	0x6d, 0x2e, 0x47, 0x65, 0x74, 0x41, 0x6c, 0x6c, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1f, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72,
-	0x6d, 0x2e, 0x47, 0x65, 0x74, 0x41, 0x6c, 0x6c, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x52,
-	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x4d, 0x0a, 0x0c, 0x44, 0x65, 0x6c, 0x65, 0x74,
-	0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x1d, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f,
-	0x72, 0x6d, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1e, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72,
-	0x6d, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65,
-	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x42, 0x0a, 0x5a, 0x08, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f,
-	0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x44, 0x0a, 0x09, 0x47, 0x65, 0x74, 0x43,
+	0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x1a, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d,
+	0x2e, 0x47, 0x65, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x1a, 0x1b, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x47, 0x65, 0x74,
+	0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x50,
+	0x0a, 0x0d, 0x47, 0x65, 0x74, 0x41, 0x6c, 0x6c, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x12,
+	0x1e, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x47, 0x65, 0x74, 0x41, 0x6c,
+	0x6c, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
+	0x1f, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x47, 0x65, 0x74, 0x41, 0x6c,
+	0x6c, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x12, 0x4d, 0x0a, 0x0c, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67,
+	0x12, 0x1d, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x44, 0x65, 0x6c, 0x65,
+	0x74, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
+	0x1e, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74,
+	0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x42,
+	0x0a, 0x5a, 0x08, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x33,
 }
 
 var (
@@ -457,34 +552,39 @@ func file_contextBox_proto_rawDescGZIP() []byte {
 	return file_contextBox_proto_rawDescData
 }
 
-var file_contextBox_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_contextBox_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_contextBox_proto_goTypes = []interface{}{
 	(*Config)(nil),                // 0: platform.Config
 	(*SaveConfigRequest)(nil),     // 1: platform.SaveConfigRequest
 	(*SaveConfigResponse)(nil),    // 2: platform.SaveConfigResponse
-	(*GetAllConfigsRequest)(nil),  // 3: platform.GetAllConfigsRequest
-	(*GetAllConfigsResponse)(nil), // 4: platform.GetAllConfigsResponse
-	(*DeleteConfigRequest)(nil),   // 5: platform.DeleteConfigRequest
-	(*DeleteConfigResponse)(nil),  // 6: platform.DeleteConfigResponse
-	(*Project)(nil),               // 7: platform.Project
+	(*GetConfigRequest)(nil),      // 3: platform.GetConfigRequest
+	(*GetConfigResponse)(nil),     // 4: platform.GetConfigResponse
+	(*GetAllConfigsRequest)(nil),  // 5: platform.GetAllConfigsRequest
+	(*GetAllConfigsResponse)(nil), // 6: platform.GetAllConfigsResponse
+	(*DeleteConfigRequest)(nil),   // 7: platform.DeleteConfigRequest
+	(*DeleteConfigResponse)(nil),  // 8: platform.DeleteConfigResponse
+	(*Project)(nil),               // 9: platform.Project
 }
 var file_contextBox_proto_depIdxs = []int32{
-	7, // 0: platform.Config.desiredState:type_name -> platform.Project
-	7, // 1: platform.Config.currentState:type_name -> platform.Project
-	0, // 2: platform.SaveConfigRequest.config:type_name -> platform.Config
-	0, // 3: platform.SaveConfigResponse.config:type_name -> platform.Config
-	0, // 4: platform.GetAllConfigsResponse.configs:type_name -> platform.Config
-	1, // 5: platform.ContextBoxService.SaveConfig:input_type -> platform.SaveConfigRequest
-	3, // 6: platform.ContextBoxService.GetAllConfigs:input_type -> platform.GetAllConfigsRequest
-	5, // 7: platform.ContextBoxService.DeleteConfig:input_type -> platform.DeleteConfigRequest
-	2, // 8: platform.ContextBoxService.SaveConfig:output_type -> platform.SaveConfigResponse
-	4, // 9: platform.ContextBoxService.GetAllConfigs:output_type -> platform.GetAllConfigsResponse
-	6, // 10: platform.ContextBoxService.DeleteConfig:output_type -> platform.DeleteConfigResponse
-	8, // [8:11] is the sub-list for method output_type
-	5, // [5:8] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	9,  // 0: platform.Config.desiredState:type_name -> platform.Project
+	9,  // 1: platform.Config.currentState:type_name -> platform.Project
+	0,  // 2: platform.SaveConfigRequest.config:type_name -> platform.Config
+	0,  // 3: platform.SaveConfigResponse.config:type_name -> platform.Config
+	0,  // 4: platform.GetConfigResponse.config:type_name -> platform.Config
+	0,  // 5: platform.GetAllConfigsResponse.configs:type_name -> platform.Config
+	1,  // 6: platform.ContextBoxService.SaveConfig:input_type -> platform.SaveConfigRequest
+	3,  // 7: platform.ContextBoxService.GetConfig:input_type -> platform.GetConfigRequest
+	5,  // 8: platform.ContextBoxService.GetAllConfigs:input_type -> platform.GetAllConfigsRequest
+	7,  // 9: platform.ContextBoxService.DeleteConfig:input_type -> platform.DeleteConfigRequest
+	2,  // 10: platform.ContextBoxService.SaveConfig:output_type -> platform.SaveConfigResponse
+	4,  // 11: platform.ContextBoxService.GetConfig:output_type -> platform.GetConfigResponse
+	6,  // 12: platform.ContextBoxService.GetAllConfigs:output_type -> platform.GetAllConfigsResponse
+	8,  // 13: platform.ContextBoxService.DeleteConfig:output_type -> platform.DeleteConfigResponse
+	10, // [10:14] is the sub-list for method output_type
+	6,  // [6:10] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_contextBox_proto_init() }
@@ -531,7 +631,7 @@ func file_contextBox_proto_init() {
 			}
 		}
 		file_contextBox_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetAllConfigsRequest); i {
+			switch v := v.(*GetConfigRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -543,7 +643,7 @@ func file_contextBox_proto_init() {
 			}
 		}
 		file_contextBox_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetAllConfigsResponse); i {
+			switch v := v.(*GetConfigResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -555,7 +655,7 @@ func file_contextBox_proto_init() {
 			}
 		}
 		file_contextBox_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DeleteConfigRequest); i {
+			switch v := v.(*GetAllConfigsRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -567,6 +667,30 @@ func file_contextBox_proto_init() {
 			}
 		}
 		file_contextBox_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GetAllConfigsResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_contextBox_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DeleteConfigRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_contextBox_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*DeleteConfigResponse); i {
 			case 0:
 				return &v.state
@@ -585,7 +709,7 @@ func file_contextBox_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_contextBox_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
@@ -612,6 +736,7 @@ const _ = grpc.SupportPackageIsVersion6
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type ContextBoxServiceClient interface {
 	SaveConfig(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error)
+	GetConfig(ctx context.Context, in *GetConfigRequest, opts ...grpc.CallOption) (*GetConfigResponse, error)
 	GetAllConfigs(ctx context.Context, in *GetAllConfigsRequest, opts ...grpc.CallOption) (*GetAllConfigsResponse, error)
 	DeleteConfig(ctx context.Context, in *DeleteConfigRequest, opts ...grpc.CallOption) (*DeleteConfigResponse, error)
 }
@@ -627,6 +752,15 @@ func NewContextBoxServiceClient(cc grpc.ClientConnInterface) ContextBoxServiceCl
 func (c *contextBoxServiceClient) SaveConfig(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error) {
 	out := new(SaveConfigResponse)
 	err := c.cc.Invoke(ctx, "/platform.ContextBoxService/SaveConfig", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *contextBoxServiceClient) GetConfig(ctx context.Context, in *GetConfigRequest, opts ...grpc.CallOption) (*GetConfigResponse, error) {
+	out := new(GetConfigResponse)
+	err := c.cc.Invoke(ctx, "/platform.ContextBoxService/GetConfig", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -654,6 +788,7 @@ func (c *contextBoxServiceClient) DeleteConfig(ctx context.Context, in *DeleteCo
 // ContextBoxServiceServer is the server API for ContextBoxService service.
 type ContextBoxServiceServer interface {
 	SaveConfig(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error)
+	GetConfig(context.Context, *GetConfigRequest) (*GetConfigResponse, error)
 	GetAllConfigs(context.Context, *GetAllConfigsRequest) (*GetAllConfigsResponse, error)
 	DeleteConfig(context.Context, *DeleteConfigRequest) (*DeleteConfigResponse, error)
 }
@@ -664,6 +799,9 @@ type UnimplementedContextBoxServiceServer struct {
 
 func (*UnimplementedContextBoxServiceServer) SaveConfig(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SaveConfig not implemented")
+}
+func (*UnimplementedContextBoxServiceServer) GetConfig(context.Context, *GetConfigRequest) (*GetConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetConfig not implemented")
 }
 func (*UnimplementedContextBoxServiceServer) GetAllConfigs(context.Context, *GetAllConfigsRequest) (*GetAllConfigsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAllConfigs not implemented")
@@ -690,6 +828,24 @@ func _ContextBoxService_SaveConfig_Handler(srv interface{}, ctx context.Context,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ContextBoxServiceServer).SaveConfig(ctx, req.(*SaveConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ContextBoxService_GetConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ContextBoxServiceServer).GetConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/platform.ContextBoxService/GetConfig",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ContextBoxServiceServer).GetConfig(ctx, req.(*GetConfigRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -737,6 +893,10 @@ var _ContextBoxService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SaveConfig",
 			Handler:    _ContextBoxService_SaveConfig_Handler,
+		},
+		{
+			MethodName: "GetConfig",
+			Handler:    _ContextBoxService_GetConfig_Handler,
 		},
 		{
 			MethodName: "GetAllConfigs",

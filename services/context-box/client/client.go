@@ -21,6 +21,14 @@ func SaveConfig(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest) error {
 	return nil
 }
 
+func GetConfig(c pb.ContextBoxServiceClient) (*pb.GetConfigResponse, error) {
+	res, err := c.GetConfig(context.Background(), &pb.GetConfigRequest{})
+	if err != nil {
+		log.Fatalf("Unexpected error: %v", err)
+	}
+	return res, nil
+}
+
 // GetAllConfigs calls Content-box gRPC server and returns all configs from the mongoDB database
 func GetAllConfigs(c pb.ContextBoxServiceClient) (*pb.GetAllConfigsResponse, error) {
 	res, err := c.GetAllConfigs(context.Background(), &pb.GetAllConfigsRequest{})

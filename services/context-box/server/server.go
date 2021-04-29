@@ -23,6 +23,8 @@ import (
 
 var collection *mongo.Collection
 
+var queue []*configItem
+
 type server struct{}
 
 type configItem struct {
@@ -123,6 +125,13 @@ func (*server) SaveConfig(ctx context.Context, req *pb.SaveConfigRequest) (*pb.S
 	return &pb.SaveConfigResponse{Config: config}, nil
 }
 
+func (*server) GetConfig(ctx context.Context, req *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
+	log.Println("GetConfig request")
+	var config *configItem
+	config, queue = queue[0], queue[1:]
+	return &pb.GetConfigResponse{Config: dataToConfigPb(config)}, nil
+}
+
 func (*server) GetAllConfigs(ctx context.Context, req *pb.GetAllConfigsRequest) (*pb.GetAllConfigsResponse, error) {
 	log.Println("GetAllConfigs request")
 	var res []*pb.Config //slice of configs
@@ -216,7 +225,6 @@ func configCheck(queue []*configItem) ([]*configItem, error) {
 }
 
 func main() {
-	var queue []*configItem
 
 	// If code crash, we get the file name and line number
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -261,7 +269,8 @@ func main() {
 			if err != nil {
 				log.Fatalln("Error while configCheck", err)
 			}
-			time.Sleep(5 * time.Second)
+			log.Println(queue)
+			time.Sleep(10 * time.Second)
 		}
 	}()
 
