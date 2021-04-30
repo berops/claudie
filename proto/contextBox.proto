@@ -26,7 +26,8 @@ message DeleteConfigRequest { string id = 1; }
 message DeleteConfigResponse { string id = 1; }
 
 service ContextBoxService {
-  rpc SaveConfig(SaveConfigRequest) returns (SaveConfigResponse);
+  rpc SaveConfigFrontEnd(SaveConfigRequest) returns (SaveConfigResponse);
+  rpc SaveConfigScheduler(SaveConfigRequest) returns (SaveConfigResponse);
   rpc GetConfig(GetConfigRequest) returns (GetConfigResponse);
   rpc GetAllConfigs(GetAllConfigsRequest) returns (GetAllConfigsResponse);
   rpc DeleteConfig(DeleteConfigRequest) returns (DeleteConfigResponse);

@@ -51,7 +51,7 @@ func TestGetAllConfigs(t *testing.T) {
 	}
 }
 
-func TestSaveConfig(t *testing.T) {
+func TestSaveConfigFrontEnd(t *testing.T) {
 	//Create connection to Context-box
 	cc, err := grpc.Dial(ports.ContextBoxPort, grpc.WithInsecure())
 	if err != nil {
@@ -70,13 +70,43 @@ func TestSaveConfig(t *testing.T) {
 		log.Fatalln(errR)
 	}
 
-	err = SaveConfig(c, &pb.SaveConfigRequest{
+	err = SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
 		Config: &pb.Config{
-			Name:          "randomNameTrue",
-			Manifest:      string(manifest),
-			DesiredState:  &pb.Project{Name: "This is desiredState name"},
-			CurrentState:  &pb.Project{Name: "This is currentState name"},
-			IsNewManifest: true,
+			Name:         "NewTest",
+			Manifest:     string(manifest),
+			DesiredState: &pb.Project{Name: "This is desiredState name"},
+			CurrentState: &pb.Project{Name: "This is currentState name"},
+		},
+	})
+	require.NoError(t, err)
+}
+
+func TestSaveConfigScheduler(t *testing.T) {
+	//Create connection to Context-box
+	cc, err := grpc.Dial(ports.ContextBoxPort, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("could not connect to server: %v", err)
+	}
+	defer func() {
+		err := cc.Close()
+		require.NoError(t, err)
+	}()
+
+	// Creating the client
+	c := pb.NewContextBoxServiceClient(cc)
+
+	manifest, errR := ioutil.ReadFile("manifest.yaml") //this is manifest from this test file
+	if errR != nil {
+		log.Fatalln(errR)
+	}
+
+	err = SaveConfigScheduler(c, &pb.SaveConfigRequest{
+		Config: &pb.Config{
+			Id:           "608bebc826897cc8fed730d8",
+			Name:         "TestSaveConfigScheduler",
+			Manifest:     string(manifest),
+			DesiredState: &pb.Project{Name: "This is desiredState name"},
+			CurrentState: &pb.Project{Name: "This is currentState name"},
 		},
 	})
 	require.NoError(t, err)

@@ -8,12 +8,24 @@ import (
 	"github.com/Berops/platform/proto/pb"
 )
 
-// SaveConfig calls Content-box gRPC server and saves configuration to the mongoDB database
+// SaveConfigFrontEnd calls Content-box gRPC server and saves configuration to the mongoDB database
 // A new config file with Id will be created if ID is empty
-func SaveConfig(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest) error {
+func SaveConfigFrontEnd(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest) error {
 	fmt.Println("Saving config")
 
-	res, err := c.SaveConfig(context.Background(), req)
+	res, err := c.SaveConfigFrontEnd(context.Background(), req)
+	if err != nil {
+		log.Fatalf("Unexpected error: %v", err)
+	}
+	fmt.Println("Config", res.GetConfig().GetName(), "has been saved")
+	return nil
+}
+
+//SaveConfigScheduler saves config from Scheduler
+func SaveConfigScheduler(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest) error {
+	fmt.Println("Saving config")
+
+	res, err := c.SaveConfigScheduler(context.Background(), req)
 	if err != nil {
 		log.Fatalf("Unexpected error: %v", err)
 	}

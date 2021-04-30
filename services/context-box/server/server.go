@@ -4,12 +4,6 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
-	"log"
-	"net"
-	"os"
-	"os/signal"
-	"time"
-
 	"github.com/Berops/platform/ports"
 	"github.com/Berops/platform/proto/pb"
 	"go.mongodb.org/mongo-driver/bson"
@@ -20,6 +14,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+	"log"
+	"net"
+	"os"
+	"os/signal"
 )
 
 var collection *mongo.Collection
@@ -28,6 +26,7 @@ var queue []*configItem
 
 type server struct{}
 
+//TODO: Change byte to project structure
 type configItem struct {
 	ID           primitive.ObjectID `bson:"_id,omitempty"`
 	Name         string             `bson:"name"`
@@ -61,10 +60,7 @@ func dataToConfigPb(data *configItem) *pb.Config {
 	}
 }
 
-func (*server) SaveConfig(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
-	log.Println("Save config request")
-	config := req.GetConfig()
-
+func saveToDB(config *pb.Config) (*pb.Config, error) {
 	//Convert desiredState and currentState to byte[] because we want to save them to the database
 	desiredStateByte, errDS := proto.Marshal(config.DesiredState)
 	if errDS != nil {
@@ -82,8 +78,9 @@ func (*server) SaveConfig(ctx context.Context, req *pb.SaveConfigRequest) (*pb.S
 	data.DesiredState = desiredStateByte
 	data.CurrentState = currentStateByte
 
-	msChecksum := md5.Sum([]byte(config.GetManifest()))
-	data.MsChecksum = msChecksum[:] //Creating a slice using an array you can just make a simple slice expression
+	msChecksum := md5.Sum([]byte(config.GetManifest())) //Calculate md5 hash for a manifest file
+	data.MsChecksum = msChecksum[:]                     //Creating a slice using an array you can just make a simple slice expression
+	data.DsChecksum = data.MsChecksum
 
 	//Check if ID exists
 	if config.GetId() != "" {
@@ -105,7 +102,7 @@ func (*server) SaveConfig(ctx context.Context, req *pb.SaveConfigRequest) (*pb.S
 			)
 		}
 
-		return &pb.SaveConfigResponse{Config: config}, nil
+		return &pb.Config{}, nil
 	}
 
 	//Add data to the collection if OID doesn't exist
@@ -128,9 +125,60 @@ func (*server) SaveConfig(ctx context.Context, req *pb.SaveConfigRequest) (*pb.S
 	data.ID = oid
 	config.Id = oid.Hex()
 	//Return config with new ID
+	return config, nil
+}
+
+func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
+	log.Println("SaveConfigScheduler request")
+	config := req.GetConfig()
+
+	//Get config from the DB
+	var data configItem
+	oid, err := primitive.ObjectIDFromHex(config.GetId()) //convert id to mongo type id (oid)
+	if err != nil {
+		return nil, status.Errorf(
+			codes.InvalidArgument,
+			fmt.Sprintln("Cannot parse ID"),
+		)
+	}
+	filter := bson.M{"_id": oid}
+	if err := collection.FindOne(context.Background(), filter).Decode(&data); err != nil {
+		log.Fatalln(err)
+	}
+
+	if string(config.MsChecksum) != string(data.MsChecksum) {
+		log.Println("Manifest checksums mismatch. Desired State will be not saved.")
+		return &pb.SaveConfigResponse{Config: config}, nil
+	}
+
+	config, err1 := saveToDB(config)
+	if err1 != nil {
+		return nil, status.Errorf(
+			codes.Internal,
+			fmt.Sprintf("Internal error: %v", err1),
+		)
+	}
+
 	return &pb.SaveConfigResponse{Config: config}, nil
 }
 
+func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
+	log.Println("SaveConfigFrontEnd request")
+	config := req.GetConfig()
+	msChecksum := md5.Sum([]byte(config.GetManifest())) //Calculate md5 hash for a manifest file
+	config.MsChecksum = msChecksum[:]                   //Creating a slice using an array you can just make a simple slice expression
+
+	config, err := saveToDB(config)
+	if err != nil {
+		return nil, status.Errorf(
+			codes.Internal,
+			fmt.Sprintf("Internal error: %v", err),
+		)
+	}
+	return &pb.SaveConfigResponse{Config: config}, nil
+}
+
+// GetConfig is a gRPC service: function returns one config from the queue
 func (*server) GetConfig(ctx context.Context, req *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
 	log.Println("GetConfig request")
 	var config *configItem
@@ -138,11 +186,12 @@ func (*server) GetConfig(ctx context.Context, req *pb.GetConfigRequest) (*pb.Get
 	return &pb.GetConfigResponse{Config: dataToConfigPb(config)}, nil
 }
 
+// GetAllConfigs is a gRPC service: function returns all configs from the DB
 func (*server) GetAllConfigs(ctx context.Context, req *pb.GetAllConfigsRequest) (*pb.GetAllConfigsResponse, error) {
 	log.Println("GetAllConfigs request")
 	var res []*pb.Config //slice of configs
 
-	configs, err := getAllConfigs() //get all configs from database
+	configs, err := getAllFromDB() //get all configs from database
 	if err != nil {
 		return nil, err
 	}
@@ -153,6 +202,7 @@ func (*server) GetAllConfigs(ctx context.Context, req *pb.GetAllConfigsRequest) 
 	return &pb.GetAllConfigsResponse{Configs: res}, nil
 }
 
+// DeleteConfig is a gRPC service: function deletes one specified config from the DB and returns it's ID
 func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*pb.DeleteConfigResponse, error) {
 	log.Println("DeleteConfig request")
 
@@ -182,7 +232,8 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 	return &pb.DeleteConfigResponse{Id: req.GetId()}, nil
 }
 
-func getAllConfigs() ([]*configItem, error) {
+//getAllFromDB gets all configs from the database and returns slice of *configItem
+func getAllFromDB() ([]*configItem, error) {
 	var configs []*configItem
 	cur, err := collection.Find(context.Background(), primitive.D{{}}) //primitive.D{{}} finds all records in the collection
 	if err != nil {
@@ -206,27 +257,27 @@ func getAllConfigs() ([]*configItem, error) {
 	return configs, nil
 }
 
+//TODO: Finish this function
 func configCheck(queue []*configItem) ([]*configItem, error) {
-	configs, err := getAllConfigs()
+	configs, err := getAllFromDB()
 	if err != nil {
 		return nil, err
 	}
 
 	// Check all configs for true bool in IsNewManifest add these configs to the queue if they are not there already
 	for _, config := range configs {
-		if config.IsNewManifest { //If IsNewManifest is true, check if it is already in the queue
-			unique := true
-			for _, item := range queue {
-				if config.ID == item.ID {
-					unique = false
-					break
-				}
-			}
-			if unique {
-				queue = append(queue, config)
+		unique := true
+		for _, item := range queue {
+			if config.ID == item.ID {
+				unique = false
+				break
 			}
 		}
+		if unique {
+			queue = append(queue, config)
+		}
 	}
+
 	return queue, nil
 }
 
@@ -269,7 +320,7 @@ func main() {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, os.Interrupt)
 
-	go func() {
+	/*	go func() {
 		for {
 			queue, err = configCheck(queue)
 			if err != nil {
@@ -278,7 +329,7 @@ func main() {
 			log.Println(queue)
 			time.Sleep(10 * time.Second)
 		}
-	}()
+	}()*/
 
 	// Block until a signal is received
 	<-ch
