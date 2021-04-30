@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/md5"
 	"fmt"
 	"log"
 	"net"
@@ -28,12 +29,13 @@ var queue []*configItem
 type server struct{}
 
 type configItem struct {
-	ID            primitive.ObjectID `bson:"_id,omitempty"`
-	Name          string             `bson:"name"`
-	Manifest      string             `bson:"manifest"`
-	DesiredState  []byte             `bson:"desiredState"`
-	CurrentState  []byte             `bson:"currentState"`
-	IsNewManifest bool               `bson:"isNewManifest"`
+	ID           primitive.ObjectID `bson:"_id,omitempty"`
+	Name         string             `bson:"name"`
+	Manifest     string             `bson:"manifest"`
+	DesiredState []byte             `bson:"desiredState"`
+	CurrentState []byte             `bson:"currentState"`
+	MsChecksum   []byte             `bson:"msChecksum"`
+	DsChecksum   []byte             `bson:"dsChecksum"`
 }
 
 func dataToConfigPb(data *configItem) *pb.Config {
@@ -54,6 +56,8 @@ func dataToConfigPb(data *configItem) *pb.Config {
 		Manifest:     data.Manifest,
 		DesiredState: desiredState,
 		CurrentState: currentState,
+		MsChecksum:   data.MsChecksum,
+		DsChecksum:   data.DsChecksum,
 	}
 }
 
@@ -77,7 +81,9 @@ func (*server) SaveConfig(ctx context.Context, req *pb.SaveConfigRequest) (*pb.S
 	data.Manifest = config.GetManifest()
 	data.DesiredState = desiredStateByte
 	data.CurrentState = currentStateByte
-	data.IsNewManifest = config.GetIsNewManifest()
+
+	msChecksum := md5.Sum([]byte(config.GetManifest()))
+	data.MsChecksum = msChecksum[:] //Creating a slice using an array you can just make a simple slice expression
 
 	//Check if ID exists
 	if config.GetId() != "" {

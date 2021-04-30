@@ -9,7 +9,8 @@ message Config {
   string manifest = 3;
   Project desiredState = 4;
   Project currentState = 5;
-  bool isNewManifest = 6;
+  bytes msChecksum = 6;
+  bytes dsChecksum = 7;
 }
 // Save
 message SaveConfigRequest { Config config = 1; }
