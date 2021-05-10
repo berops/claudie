@@ -33,6 +33,7 @@ func SaveConfigScheduler(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest
 	return nil
 }
 
+//GetConfig gets config from queue in which are available configs for Scheduler
 func GetConfig(c pb.ContextBoxServiceClient) (*pb.GetConfigResponse, error) {
 	res, err := c.GetConfig(context.Background(), &pb.GetConfigRequest{})
 	if err != nil {
