@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
+	"os/signal"
 	"time"
 
 	"github.com/Berops/platform/ports"
@@ -124,6 +126,9 @@ func createDesiredState(config *pb.Config) *pb.Config {
 			},
 			Clusters: clusters,
 		},
+		CurrentState: config.GetCurrentState(),
+		MsChecksum:   config.GetMsChecksum(),
+		DsChecksum:   config.GetDsChecksum(),
 	}
 }
 
@@ -138,20 +143,29 @@ func main() {
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
 
-	//Infinite FOR cycle gets all configs from the context box every defined number of seconds
-	for { // TODO: Maybe goroutines here?
-		res, err := cbox.GetAllConfigs(c) //Get all configs from the database. It is a grpc call to the context-box
-		if err != nil {
-			log.Fatalln("Error while getting config from the Scheduler", err)
-		}
-		for _, config := range res.GetConfigs() {
-			config = createDesiredState(config)
-			//fmt.Println(config.GetDesiredState())
-			err := cbox.SaveConfig(c, &pb.SaveConfigRequest{Config: config})
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, os.Interrupt)
+
+	go func() {
+		//Infinite FOR loop gets config from the context box queue
+		for {
+			res, err := cbox.GetConfig(c)
 			if err != nil {
-				log.Fatalln("Error while saving config", err)
+				log.Fatalln("Error while getting config from the Scheduler", err)
 			}
+			if res.GetConfig() != nil {
+				config := res.GetConfig()
+				config = createDesiredState(config)
+				fmt.Println(config.GetDesiredState())
+				err = cbox.SaveConfigScheduler(c, &pb.SaveConfigRequest{Config: config})
+				if err != nil {
+					log.Fatalln("Error while saving the config", err)
+				}
+			}
+			time.Sleep(10 * time.Second)
 		}
-		time.Sleep(5 * time.Second)
-	}
+	}()
+	<-ch
+	fmt.Println("Stopping Scheduler")
+
 }

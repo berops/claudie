@@ -4,6 +4,12 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
+	"log"
+	"net"
+	"os"
+	"os/signal"
+	"time"
+
 	"github.com/Berops/platform/ports"
 	"github.com/Berops/platform/proto/pb"
 	"go.mongodb.org/mongo-driver/bson"
@@ -14,10 +20,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
-	"log"
-	"net"
-	"os"
-	"os/signal"
 )
 
 var collection *mongo.Collection
@@ -77,10 +79,8 @@ func saveToDB(config *pb.Config) (*pb.Config, error) {
 	data.Manifest = config.GetManifest()
 	data.DesiredState = desiredStateByte
 	data.CurrentState = currentStateByte
-
-	msChecksum := md5.Sum([]byte(config.GetManifest())) //Calculate md5 hash for a manifest file
-	data.MsChecksum = msChecksum[:]                     //Creating a slice using an array you can just make a simple slice expression
-	data.DsChecksum = data.MsChecksum
+	data.MsChecksum = config.GetMsChecksum()
+	data.DsChecksum = config.GetDsChecksum()
 
 	//Check if ID exists
 	if config.GetId() != "" {
@@ -132,7 +132,7 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 	log.Println("SaveConfigScheduler request")
 	config := req.GetConfig()
 
-	//Get config from the DB
+	// Get config from the DB
 	var data configItem
 	oid, err := primitive.ObjectIDFromHex(config.GetId()) //convert id to mongo type id (oid)
 	if err != nil {
@@ -146,10 +146,15 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 		log.Fatalln(err)
 	}
 
+	// Compare manifest checksums
+	fmt.Println("Config checksum:", config.MsChecksum)
+	fmt.Println("Data checksum:", data.MsChecksum)
 	if string(config.MsChecksum) != string(data.MsChecksum) {
 		log.Println("Manifest checksums mismatch. Desired State will be not saved.")
 		return &pb.SaveConfigResponse{Config: config}, nil
 	}
+
+	config.DsChecksum = config.MsChecksum
 
 	config, err1 := saveToDB(config)
 	if err1 != nil {
@@ -181,9 +186,12 @@ func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest
 // GetConfig is a gRPC service: function returns one config from the queue
 func (*server) GetConfig(ctx context.Context, req *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
 	log.Println("GetConfig request")
-	var config *configItem
-	config, queue = queue[0], queue[1:]
-	return &pb.GetConfigResponse{Config: dataToConfigPb(config)}, nil
+	if len(queue) > 0 {
+		var config *configItem
+		config, queue = queue[0], queue[1:]
+		return &pb.GetConfigResponse{Config: dataToConfigPb(config)}, nil
+	}
+	return &pb.GetConfigResponse{}, nil
 }
 
 // GetAllConfigs is a gRPC service: function returns all configs from the DB
@@ -257,24 +265,24 @@ func getAllFromDB() ([]*configItem, error) {
 	return configs, nil
 }
 
-//TODO: Finish this function
 func configCheck(queue []*configItem) ([]*configItem, error) {
 	configs, err := getAllFromDB()
 	if err != nil {
 		return nil, err
 	}
 
-	// Check all configs for true bool in IsNewManifest add these configs to the queue if they are not there already
 	for _, config := range configs {
 		unique := true
-		for _, item := range queue {
-			if config.ID == item.ID {
-				unique = false
-				break
+		if string(config.DsChecksum) != string(config.MsChecksum) {
+			for _, item := range queue {
+				if config.ID == item.ID {
+					unique = false
+					break
+				}
 			}
-		}
-		if unique {
-			queue = append(queue, config)
+			if unique {
+				queue = append(queue, config)
+			}
 		}
 	}
 
@@ -320,16 +328,16 @@ func main() {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, os.Interrupt)
 
-	/*	go func() {
+	go func() {
 		for {
 			queue, err = configCheck(queue)
 			if err != nil {
 				log.Fatalln("Error while configCheck", err)
 			}
-			log.Println(queue)
+			log.Println("Queue content:", queue)
 			time.Sleep(10 * time.Second)
 		}
-	}()*/
+	}()
 
 	// Block until a signal is received
 	<-ch
