@@ -129,11 +129,12 @@ func createDesiredState(config *pb.Config) *pb.Config {
 		CurrentState: config.GetCurrentState(),
 		MsChecksum:   config.GetMsChecksum(),
 		DsChecksum:   config.GetDsChecksum(),
+		CsChecksum:   config.GetCsChecksum(),
 	}
 }
 
 func main() {
-	//Create connection to Context-box
+	// Create connection to Context-box
 	cc, err := grpc.Dial(ports.ContextBoxPort, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("could not connect to server: %v", err)
@@ -147,7 +148,7 @@ func main() {
 	signal.Notify(ch, os.Interrupt)
 
 	go func() {
-		//Infinite FOR loop gets config from the context box queue
+		// Infinite FOR loop gets config from the context box queue
 		for {
 			res, err := cbox.GetConfig(c)
 			if err != nil {

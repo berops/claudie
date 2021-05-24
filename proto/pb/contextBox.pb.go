@@ -36,6 +36,7 @@ type Config struct {
 	CurrentState *Project `protobuf:"bytes,5,opt,name=currentState,proto3" json:"currentState,omitempty"`
 	MsChecksum   []byte   `protobuf:"bytes,6,opt,name=msChecksum,proto3" json:"msChecksum,omitempty"`
 	DsChecksum   []byte   `protobuf:"bytes,7,opt,name=dsChecksum,proto3" json:"dsChecksum,omitempty"`
+	CsChecksum   []byte   `protobuf:"bytes,8,opt,name=csChecksum,proto3" json:"csChecksum,omitempty"`
 }
 
 func (x *Config) Reset() {
@@ -115,6 +116,13 @@ func (x *Config) GetMsChecksum() []byte {
 func (x *Config) GetDsChecksum() []byte {
 	if x != nil {
 		return x.DsChecksum
+	}
+	return nil
+}
+
+func (x *Config) GetCsChecksum() []byte {
+	if x != nil {
+		return x.CsChecksum
 	}
 	return nil
 }
@@ -485,7 +493,7 @@ var File_contextBox_proto protoreflect.FileDescriptor
 var file_contextBox_proto_rawDesc = []byte{
 	0x0a, 0x10, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x42, 0x6f, 0x78, 0x2e, 0x70, 0x72, 0x6f,
 	0x74, 0x6f, 0x12, 0x08, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x1a, 0x0e, 0x70, 0x6c,
-	0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xf6, 0x01, 0x0a,
+	0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x96, 0x02, 0x0a,
 	0x06, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20,
 	0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18,
 	0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x1a, 0x0a, 0x08, 0x6d,
@@ -501,6 +509,8 @@ var file_contextBox_proto_rawDesc = []byte{
 	0x73, 0x75, 0x6d, 0x18, 0x06, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x0a, 0x6d, 0x73, 0x43, 0x68, 0x65,
 	0x63, 0x6b, 0x73, 0x75, 0x6d, 0x12, 0x1e, 0x0a, 0x0a, 0x64, 0x73, 0x43, 0x68, 0x65, 0x63, 0x6b,
 	0x73, 0x75, 0x6d, 0x18, 0x07, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x0a, 0x64, 0x73, 0x43, 0x68, 0x65,
+	0x63, 0x6b, 0x73, 0x75, 0x6d, 0x12, 0x1e, 0x0a, 0x0a, 0x63, 0x73, 0x43, 0x68, 0x65, 0x63, 0x6b,
+	0x73, 0x75, 0x6d, 0x18, 0x08, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x0a, 0x63, 0x73, 0x43, 0x68, 0x65,
 	0x63, 0x6b, 0x73, 0x75, 0x6d, 0x22, 0x3d, 0x0a, 0x11, 0x53, 0x61, 0x76, 0x65, 0x43, 0x6f, 0x6e,
 	0x66, 0x69, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x28, 0x0a, 0x06, 0x63, 0x6f,
 	0x6e, 0x66, 0x69, 0x67, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x10, 0x2e, 0x70, 0x6c, 0x61,
@@ -525,7 +535,7 @@ var file_contextBox_proto_rawDesc = []byte{
 	0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x22, 0x26, 0x0a, 0x14, 0x44,
 	0x65, 0x6c, 0x65, 0x74, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65, 0x73, 0x70, 0x6f,
 	0x6e, 0x73, 0x65, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x02, 0x69, 0x64, 0x32, 0x9d, 0x03, 0x0a, 0x11, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x42,
+	0x02, 0x69, 0x64, 0x32, 0xed, 0x03, 0x0a, 0x11, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x42,
 	0x6f, 0x78, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x4f, 0x0a, 0x12, 0x53, 0x61, 0x76,
 	0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x46, 0x72, 0x6f, 0x6e, 0x74, 0x45, 0x6e, 0x64, 0x12,
 	0x1b, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x53, 0x61, 0x76, 0x65, 0x43,
@@ -533,6 +543,11 @@ var file_contextBox_proto_rawDesc = []byte{
 	0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x53, 0x61, 0x76, 0x65, 0x43, 0x6f, 0x6e, 0x66,
 	0x69, 0x67, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x50, 0x0a, 0x13, 0x53, 0x61,
 	0x76, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x53, 0x63, 0x68, 0x65, 0x64, 0x75, 0x6c, 0x65,
+	0x72, 0x12, 0x1b, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x53, 0x61, 0x76,
+	0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1c,
+	0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x53, 0x61, 0x76, 0x65, 0x43, 0x6f,
+	0x6e, 0x66, 0x69, 0x67, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x4e, 0x0a, 0x11,
+	0x53, 0x61, 0x76, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x65,
 	0x72, 0x12, 0x1b, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x53, 0x61, 0x76,
 	0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1c,
 	0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x53, 0x61, 0x76, 0x65, 0x43, 0x6f,
@@ -589,16 +604,18 @@ var file_contextBox_proto_depIdxs = []int32{
 	0,  // 5: platform.GetAllConfigsResponse.configs:type_name -> platform.Config
 	1,  // 6: platform.ContextBoxService.SaveConfigFrontEnd:input_type -> platform.SaveConfigRequest
 	1,  // 7: platform.ContextBoxService.SaveConfigScheduler:input_type -> platform.SaveConfigRequest
-	3,  // 8: platform.ContextBoxService.GetConfig:input_type -> platform.GetConfigRequest
-	5,  // 9: platform.ContextBoxService.GetAllConfigs:input_type -> platform.GetAllConfigsRequest
-	7,  // 10: platform.ContextBoxService.DeleteConfig:input_type -> platform.DeleteConfigRequest
-	2,  // 11: platform.ContextBoxService.SaveConfigFrontEnd:output_type -> platform.SaveConfigResponse
-	2,  // 12: platform.ContextBoxService.SaveConfigScheduler:output_type -> platform.SaveConfigResponse
-	4,  // 13: platform.ContextBoxService.GetConfig:output_type -> platform.GetConfigResponse
-	6,  // 14: platform.ContextBoxService.GetAllConfigs:output_type -> platform.GetAllConfigsResponse
-	8,  // 15: platform.ContextBoxService.DeleteConfig:output_type -> platform.DeleteConfigResponse
-	11, // [11:16] is the sub-list for method output_type
-	6,  // [6:11] is the sub-list for method input_type
+	1,  // 8: platform.ContextBoxService.SaveConfigBuilder:input_type -> platform.SaveConfigRequest
+	3,  // 9: platform.ContextBoxService.GetConfig:input_type -> platform.GetConfigRequest
+	5,  // 10: platform.ContextBoxService.GetAllConfigs:input_type -> platform.GetAllConfigsRequest
+	7,  // 11: platform.ContextBoxService.DeleteConfig:input_type -> platform.DeleteConfigRequest
+	2,  // 12: platform.ContextBoxService.SaveConfigFrontEnd:output_type -> platform.SaveConfigResponse
+	2,  // 13: platform.ContextBoxService.SaveConfigScheduler:output_type -> platform.SaveConfigResponse
+	2,  // 14: platform.ContextBoxService.SaveConfigBuilder:output_type -> platform.SaveConfigResponse
+	4,  // 15: platform.ContextBoxService.GetConfig:output_type -> platform.GetConfigResponse
+	6,  // 16: platform.ContextBoxService.GetAllConfigs:output_type -> platform.GetAllConfigsResponse
+	8,  // 17: platform.ContextBoxService.DeleteConfig:output_type -> platform.DeleteConfigResponse
+	12, // [12:18] is the sub-list for method output_type
+	6,  // [6:12] is the sub-list for method input_type
 	6,  // [6:6] is the sub-list for extension type_name
 	6,  // [6:6] is the sub-list for extension extendee
 	0,  // [0:6] is the sub-list for field type_name
@@ -752,10 +769,14 @@ const _ = grpc.SupportPackageIsVersion6
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type ContextBoxServiceClient interface {
+	// Save
 	SaveConfigFrontEnd(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error)
 	SaveConfigScheduler(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error)
+	SaveConfigBuilder(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error)
+	// Get
 	GetConfig(ctx context.Context, in *GetConfigRequest, opts ...grpc.CallOption) (*GetConfigResponse, error)
 	GetAllConfigs(ctx context.Context, in *GetAllConfigsRequest, opts ...grpc.CallOption) (*GetAllConfigsResponse, error)
+	// Delete
 	DeleteConfig(ctx context.Context, in *DeleteConfigRequest, opts ...grpc.CallOption) (*DeleteConfigResponse, error)
 }
 
@@ -779,6 +800,15 @@ func (c *contextBoxServiceClient) SaveConfigFrontEnd(ctx context.Context, in *Sa
 func (c *contextBoxServiceClient) SaveConfigScheduler(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error) {
 	out := new(SaveConfigResponse)
 	err := c.cc.Invoke(ctx, "/platform.ContextBoxService/SaveConfigScheduler", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *contextBoxServiceClient) SaveConfigBuilder(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error) {
+	out := new(SaveConfigResponse)
+	err := c.cc.Invoke(ctx, "/platform.ContextBoxService/SaveConfigBuilder", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -814,10 +844,14 @@ func (c *contextBoxServiceClient) DeleteConfig(ctx context.Context, in *DeleteCo
 
 // ContextBoxServiceServer is the server API for ContextBoxService service.
 type ContextBoxServiceServer interface {
+	// Save
 	SaveConfigFrontEnd(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error)
 	SaveConfigScheduler(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error)
+	SaveConfigBuilder(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error)
+	// Get
 	GetConfig(context.Context, *GetConfigRequest) (*GetConfigResponse, error)
 	GetAllConfigs(context.Context, *GetAllConfigsRequest) (*GetAllConfigsResponse, error)
+	// Delete
 	DeleteConfig(context.Context, *DeleteConfigRequest) (*DeleteConfigResponse, error)
 }
 
@@ -830,6 +864,9 @@ func (*UnimplementedContextBoxServiceServer) SaveConfigFrontEnd(context.Context,
 }
 func (*UnimplementedContextBoxServiceServer) SaveConfigScheduler(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SaveConfigScheduler not implemented")
+}
+func (*UnimplementedContextBoxServiceServer) SaveConfigBuilder(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SaveConfigBuilder not implemented")
 }
 func (*UnimplementedContextBoxServiceServer) GetConfig(context.Context, *GetConfigRequest) (*GetConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetConfig not implemented")
@@ -877,6 +914,24 @@ func _ContextBoxService_SaveConfigScheduler_Handler(srv interface{}, ctx context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ContextBoxServiceServer).SaveConfigScheduler(ctx, req.(*SaveConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ContextBoxService_SaveConfigBuilder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SaveConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ContextBoxServiceServer).SaveConfigBuilder(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/platform.ContextBoxService/SaveConfigBuilder",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ContextBoxServiceServer).SaveConfigBuilder(ctx, req.(*SaveConfigRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -946,6 +1001,10 @@ var _ContextBoxService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SaveConfigScheduler",
 			Handler:    _ContextBoxService_SaveConfigScheduler_Handler,
+		},
+		{
+			MethodName: "SaveConfigBuilder",
+			Handler:    _ContextBoxService_SaveConfigBuilder_Handler,
 		},
 		{
 			MethodName: "GetConfig",
