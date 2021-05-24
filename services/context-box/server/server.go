@@ -37,6 +37,7 @@ type configItem struct {
 	CurrentState []byte             `bson:"currentState"`
 	MsChecksum   []byte             `bson:"msChecksum"`
 	DsChecksum   []byte             `bson:"dsChecksum"`
+	CsChecksum   []byte             `bson:"cdChecksum"`
 }
 
 func dataToConfigPb(data *configItem) *pb.Config {
@@ -128,22 +129,28 @@ func saveToDB(config *pb.Config) (*pb.Config, error) {
 	return config, nil
 }
 
+func getFromDB(id string) (configItem, error) {
+	var data configItem
+	oid, err := primitive.ObjectIDFromHex(id) //convert id to mongo type id (oid)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	filter := bson.M{"_id": oid}
+	if err := collection.FindOne(context.Background(), filter).Decode(&data); err != nil {
+		log.Fatalln("Error while finding ID in the DB", err)
+	}
+	return data, nil
+}
+
 func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
 	log.Println("SaveConfigScheduler request")
 	config := req.GetConfig()
 
-	// Get config from the DB
-	var data configItem
-	oid, err := primitive.ObjectIDFromHex(config.GetId()) //convert id to mongo type id (oid)
+	// Get config with the same ID from the DB
+	data, err := getFromDB(config.GetId())
 	if err != nil {
-		return nil, status.Errorf(
-			codes.InvalidArgument,
-			fmt.Sprintln("Cannot parse ID"),
-		)
-	}
-	filter := bson.M{"_id": oid}
-	if err := collection.FindOne(context.Background(), filter).Decode(&data); err != nil {
-		log.Fatalln(err)
+		return nil, err
 	}
 
 	// Compare manifest checksums
@@ -154,8 +161,8 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 		return &pb.SaveConfigResponse{Config: config}, nil
 	}
 
+	// Save new config to the DB
 	config.DsChecksum = config.MsChecksum
-
 	config, err1 := saveToDB(config)
 	if err1 != nil {
 		return nil, status.Errorf(
@@ -181,6 +188,13 @@ func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest
 		)
 	}
 	return &pb.SaveConfigResponse{Config: config}, nil
+}
+
+func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
+	log.Println("SaveConfigBuilder request")
+	//config := req.GetConfig()
+
+	return nil, nil
 }
 
 // GetConfig is a gRPC service: function returns one config from the queue
