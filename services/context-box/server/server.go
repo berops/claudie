@@ -143,6 +143,14 @@ func getFromDB(id string) (configItem, error) {
 	return data, nil
 }
 
+func compareChecksums(ch1, ch2 string) bool {
+	if ch1 != ch2 {
+		log.Println("Manifest checksums mismatch. Nothing will be not saved.")
+		return false
+	}
+	return true
+}
+
 func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
 	log.Println("SaveConfigScheduler request")
 	config := req.GetConfig()
@@ -152,13 +160,8 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 	if err != nil {
 		return nil, err
 	}
-
-	// Compare manifest checksums
-	fmt.Println("Config checksum:", config.MsChecksum)
-	fmt.Println("Data checksum:", data.MsChecksum)
-	if string(config.MsChecksum) != string(data.MsChecksum) {
-		log.Println("Manifest checksums mismatch. Desired State will be not saved.")
-		return &pb.SaveConfigResponse{Config: config}, nil
+	if compareChecksums(string(config.MsChecksum), string(data.MsChecksum)) {
+		return nil, nil
 	}
 
 	// Save new config to the DB
@@ -192,9 +195,28 @@ func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest
 
 func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
 	log.Println("SaveConfigBuilder request")
-	//config := req.GetConfig()
+	config := req.GetConfig()
 
-	return nil, nil
+	// Get config with the same ID from the DB
+	data, err := getFromDB(config.GetId())
+	if err != nil {
+		return nil, err
+	}
+	if compareChecksums(string(config.MsChecksum), string(data.MsChecksum)) {
+		return nil, nil
+	}
+
+	// Save new config to the DB
+	config.CsChecksum = config.DsChecksum
+	config, err1 := saveToDB(config)
+	if err1 != nil {
+		return nil, status.Errorf(
+			codes.Internal,
+			fmt.Sprintf("Internal error: %v", err1),
+		)
+	}
+
+	return &pb.SaveConfigResponse{Config: config}, nil
 }
 
 // GetConfig is a gRPC service: function returns one config from the queue
