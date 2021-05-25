@@ -3,65 +3,71 @@ package main
 import (
 	"fmt"
 	"log"
-	"net"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/Berops/platform/ports"
 	"github.com/Berops/platform/proto/pb"
+	cbox "github.com/Berops/platform/services/context-box/client"
 	"google.golang.org/grpc"
 )
 
 // flow permorms the sequence of gRPC calls to Terraformer, Wireguardian, KubeEleven modules (TWK)
-func flow(project *pb.Project) (*pb.Project, error) {
-	//Terraformer
-	project, err := messageTerraformer(project) //sending project message to Terraformer
-	if err != nil {
-		log.Fatalln("Error while Building Infrastructure", err)
-	}
-	//Wireguardian
-	_, err = messageWireguardian(project) //sending project message to Wireguardian
-	if err != nil {
-		log.Fatalln("Error while creating Wireguard VPN", err)
-	}
-	//KubeEleven
-	project, err = messageKubeEleven(project) //sending project message to KubeEleven
-	if err != nil {
-		log.Fatalln("Error while creating the cluster with KubeOne", err)
-	}
+// func flow(project *pb.Project) (*pb.Project, error) {
+// 	//Terraformer
+// 	project, err := messageTerraformer(project) //sending project message to Terraformer
+// 	if err != nil {
+// 		log.Fatalln("Error while Building Infrastructure", err)
+// 	}
+// 	//Wireguardian
+// 	_, err = messageWireguardian(project) //sending project message to Wireguardian
+// 	if err != nil {
+// 		log.Fatalln("Error while creating Wireguard VPN", err)
+// 	}
+// 	//KubeEleven
+// 	project, err = messageKubeEleven(project) //sending project message to KubeEleven
+// 	if err != nil {
+// 		log.Fatalln("Error while creating the cluster with KubeOne", err)
+// 	}
 
-	return project, nil
-}
+// 	return project, nil
+// }
 
 func main() {
-	// If we crath the go gode, we get the file name and line number
+	// If go code crash, we will get the file name and line number
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	lis, err := net.Listen("tcp", ports.BuilderPort)
+	// Create connection to Context-box
+	cc, err := grpc.Dial(ports.ContextBoxPort, grpc.WithInsecure())
 	if err != nil {
-		log.Fatalln("Failed to listen on", err)
+		log.Fatalf("could not connect to Content-box server: %v", err)
 	}
-	fmt.Println("Builder service is running on ", ports.BuilderPort)
+	defer cc.Close()
 
-	s := grpc.NewServer()
-	pb.RegisterBuilderServiceServer(s, &server{})
-
+	// Creating the client
+	c := pb.NewContextBoxServiceClient(cc)
 	go func() {
-		fmt.Println("Starting Server...")
-		if err := s.Serve(lis); err != nil {
-			log.Fatalf("Failed to serve: %v", err)
+		for {
+			res, err := cbox.GetConfigBuilder(c)
+			if err != nil {
+				log.Fatalln("Error while getting config from the Builder", err)
+			}
+			if res.GetConfig() != nil {
+				config := res.GetConfig()
+				log.Println(config.GetName())
+				err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
+				if err != nil {
+					log.Fatalln("Error while saving the config", err)
+				}
+			}
+			time.Sleep(5 * time.Second)
 		}
 	}()
 
-	// Wait for Control C to exit
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, os.Interrupt)
 
-	// Block until a signal is received
 	<-ch
-	fmt.Println("Stopping the server")
-	s.Stop()
-	fmt.Println("Closing the listener")
-	lis.Close()
-	fmt.Println("End of Program")
+	fmt.Println("Stopping Builder")
 }
