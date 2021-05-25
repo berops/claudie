@@ -153,6 +153,73 @@ func compareChecksums(ch1 string, ch2 string) bool {
 	return true
 }
 
+func configCheck() error {
+	configs, err := getAllFromDB()
+	if err != nil {
+		return err
+	}
+
+	for _, config := range configs {
+		uniqueS := true
+		uniqueB := true
+		// Checking for Scheduler
+		fmt.Println("DsChecksum", config.DsChecksum)
+		fmt.Println("MsChecksum", config.MsChecksum)
+		fmt.Println("CsChecksum", config.CsChecksum)
+		fmt.Println("")
+		if string(config.DsChecksum) != string(config.MsChecksum) {
+			for _, item := range queueScheduler {
+				if config.ID == item.ID {
+					uniqueS = false
+					break
+				}
+			}
+			if uniqueS {
+				queueScheduler = append(queueScheduler, config)
+			}
+		}
+		// Checking for Builder
+		if string(config.DsChecksum) != string(config.CsChecksum) {
+			for _, item := range queueBuilder {
+				if config.ID == item.ID {
+					uniqueB = false
+					break
+				}
+			}
+			if uniqueB {
+				queueBuilder = append(queueBuilder, config)
+			}
+		}
+	}
+
+	return nil
+}
+
+//getAllFromDB gets all configs from the database and returns slice of *configItem
+func getAllFromDB() ([]*configItem, error) {
+	var configs []*configItem
+	cur, err := collection.Find(context.Background(), primitive.D{{}}) //primitive.D{{}} finds all records in the collection
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		err := cur.Close(context.Background())
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}()
+	for cur.Next(context.Background()) { //Iterate through cur and extract all data
+		data := &configItem{}   //initialize empty struct
+		err := cur.Decode(data) //Decode data from cursor to data
+		if err != nil {         //check error
+			return nil, err
+		}
+		configs = append(configs, data) //append decoded data (config) to res (response) slice
+	}
+
+	return configs, nil
+}
+
 func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
 	log.Println("SaveConfigScheduler request")
 	config := req.GetConfig()
@@ -289,73 +356,6 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 	}
 
 	return &pb.DeleteConfigResponse{Id: req.GetId()}, nil
-}
-
-//getAllFromDB gets all configs from the database and returns slice of *configItem
-func getAllFromDB() ([]*configItem, error) {
-	var configs []*configItem
-	cur, err := collection.Find(context.Background(), primitive.D{{}}) //primitive.D{{}} finds all records in the collection
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		err := cur.Close(context.Background())
-		if err != nil {
-			log.Fatalln(err)
-		}
-	}()
-	for cur.Next(context.Background()) { //Iterate through cur and extract all data
-		data := &configItem{}   //initialize empty struct
-		err := cur.Decode(data) //Decode data from cursor to data
-		if err != nil {         //check error
-			return nil, err
-		}
-		configs = append(configs, data) //append decoded data (config) to res (response) slice
-	}
-
-	return configs, nil
-}
-
-func configCheck() error {
-	configs, err := getAllFromDB()
-	if err != nil {
-		return err
-	}
-
-	for _, config := range configs {
-		uniqueS := true
-		uniqueB := true
-		// Checking for Scheduler
-		fmt.Println("DsChecksum", config.DsChecksum)
-		fmt.Println("MsChecksum", config.MsChecksum)
-		fmt.Println("CsChecksum", config.CsChecksum)
-		fmt.Println("")
-		if string(config.DsChecksum) != string(config.MsChecksum) {
-			for _, item := range queueScheduler {
-				if config.ID == item.ID {
-					uniqueS = false
-					break
-				}
-			}
-			if uniqueS {
-				queueScheduler = append(queueScheduler, config)
-			}
-		}
-		// Checking for Builder
-		if string(config.DsChecksum) != string(config.CsChecksum) {
-			for _, item := range queueBuilder {
-				if config.ID == item.ID {
-					uniqueB = false
-					break
-				}
-			}
-			if uniqueB {
-				queueBuilder = append(queueBuilder, config)
-			}
-		}
-	}
-
-	return nil
 }
 
 func main() {
