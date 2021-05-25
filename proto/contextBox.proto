@@ -32,7 +32,8 @@ service ContextBoxService {
   rpc SaveConfigScheduler(SaveConfigRequest) returns (SaveConfigResponse);
   rpc SaveConfigBuilder(SaveConfigRequest) returns (SaveConfigResponse);
   // Get
-  rpc GetConfig(GetConfigRequest) returns (GetConfigResponse);
+  rpc GetConfigScheduler(GetConfigRequest) returns (GetConfigResponse);
+  rpc GetConfigBuilder(GetConfigRequest) returns (GetConfigResponse);
   rpc GetAllConfigs(GetAllConfigsRequest) returns (GetAllConfigsResponse);
   // Delete
   rpc DeleteConfig(DeleteConfigRequest) returns (DeleteConfigResponse);

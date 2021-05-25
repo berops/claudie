@@ -150,7 +150,7 @@ func main() {
 	go func() {
 		// Infinite FOR loop gets config from the context box queue
 		for {
-			res, err := cbox.GetConfig(c)
+			res, err := cbox.GetConfigScheduler(c)
 			if err != nil {
 				log.Fatalln("Error while getting config from the Scheduler", err)
 			}

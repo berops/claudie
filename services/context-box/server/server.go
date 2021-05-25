@@ -24,7 +24,8 @@ import (
 
 var collection *mongo.Collection
 
-var queue []*configItem
+var queueScheduler []*configItem
+var queueBuilder []*configItem
 
 type server struct{}
 
@@ -82,6 +83,7 @@ func saveToDB(config *pb.Config) (*pb.Config, error) {
 	data.CurrentState = currentStateByte
 	data.MsChecksum = config.GetMsChecksum()
 	data.DsChecksum = config.GetDsChecksum()
+	data.CsChecksum = config.GetCsChecksum()
 
 	//Check if ID exists
 	if config.GetId() != "" {
@@ -143,7 +145,7 @@ func getFromDB(id string) (configItem, error) {
 	return data, nil
 }
 
-func compareChecksums(ch1, ch2 string) bool {
+func compareChecksums(ch1 string, ch2 string) bool {
 	if ch1 != ch2 {
 		log.Println("Manifest checksums mismatch. Nothing will be not saved.")
 		return false
@@ -160,7 +162,7 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 	if err != nil {
 		return nil, err
 	}
-	if compareChecksums(string(config.MsChecksum), string(data.MsChecksum)) {
+	if !compareChecksums(string(config.MsChecksum), string(data.MsChecksum)) {
 		return nil, nil
 	}
 
@@ -182,6 +184,8 @@ func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest
 	config := req.GetConfig()
 	msChecksum := md5.Sum([]byte(config.GetManifest())) //Calculate md5 hash for a manifest file
 	config.MsChecksum = msChecksum[:]                   //Creating a slice using an array you can just make a simple slice expression
+	config.DsChecksum = []byte("e")
+	config.CsChecksum = []byte("e")
 
 	config, err := saveToDB(config)
 	if err != nil {
@@ -219,12 +223,23 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 	return &pb.SaveConfigResponse{Config: config}, nil
 }
 
-// GetConfig is a gRPC service: function returns one config from the queue
-func (*server) GetConfig(ctx context.Context, req *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
+// GetConfigScheduler is a gRPC service: function returns one config from the queueScheduler
+func (*server) GetConfigScheduler(ctx context.Context, req *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
 	log.Println("GetConfig request")
-	if len(queue) > 0 {
+	if len(queueScheduler) > 0 {
 		var config *configItem
-		config, queue = queue[0], queue[1:]
+		config, queueScheduler = queueScheduler[0], queueScheduler[1:] // This is like push from a queue
+		return &pb.GetConfigResponse{Config: dataToConfigPb(config)}, nil
+	}
+	return &pb.GetConfigResponse{}, nil
+}
+
+// GetConfigBuilder is a gRPC service: function returns one config from the queueScheduler
+func (*server) GetConfigBuilder(ctx context.Context, req *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
+	log.Println("GetConfig request")
+	if len(queueBuilder) > 0 {
+		var config *configItem
+		config, queueBuilder = queueBuilder[0], queueBuilder[1:] // This is like push from a queue
 		return &pb.GetConfigResponse{Config: dataToConfigPb(config)}, nil
 	}
 	return &pb.GetConfigResponse{}, nil
@@ -301,28 +316,46 @@ func getAllFromDB() ([]*configItem, error) {
 	return configs, nil
 }
 
-func configCheck(queue []*configItem) ([]*configItem, error) {
+func configCheck() error {
 	configs, err := getAllFromDB()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	for _, config := range configs {
-		unique := true
+		uniqueS := true
+		uniqueB := true
+		// Checking for Scheduler
+		fmt.Println("DsChecksum", config.DsChecksum)
+		fmt.Println("MsChecksum", config.MsChecksum)
+		fmt.Println("CsChecksum", config.CsChecksum)
+		fmt.Println("")
 		if string(config.DsChecksum) != string(config.MsChecksum) {
-			for _, item := range queue {
+			for _, item := range queueScheduler {
 				if config.ID == item.ID {
-					unique = false
+					uniqueS = false
 					break
 				}
 			}
-			if unique {
-				queue = append(queue, config)
+			if uniqueS {
+				queueScheduler = append(queueScheduler, config)
+			}
+		}
+		// Checking for Builder
+		if string(config.DsChecksum) != string(config.CsChecksum) {
+			for _, item := range queueBuilder {
+				if config.ID == item.ID {
+					uniqueB = false
+					break
+				}
+			}
+			if uniqueB {
+				queueBuilder = append(queueBuilder, config)
 			}
 		}
 	}
 
-	return queue, nil
+	return nil
 }
 
 func main() {
@@ -366,11 +399,12 @@ func main() {
 
 	go func() {
 		for {
-			queue, err = configCheck(queue)
+			err = configCheck()
 			if err != nil {
 				log.Fatalln("Error while configCheck", err)
 			}
-			log.Println("Queue content:", queue)
+			log.Println("QueueScheduler content:", queueScheduler)
+			log.Println("QueueBuilder content:", queueBuilder)
 			time.Sleep(10 * time.Second)
 		}
 	}()

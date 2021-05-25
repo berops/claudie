@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-func TestGetConfig(t *testing.T) {
+func TestGetConfigScheduler(t *testing.T) {
 	//Create connection to Context-box
 	cc, err := grpc.Dial(ports.ContextBoxPort, grpc.WithInsecure())
 	if err != nil {
@@ -25,7 +25,26 @@ func TestGetConfig(t *testing.T) {
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
 
-	res, err := GetConfig(c)
+	res, err := GetConfigScheduler(c)
+	require.NoError(t, err)
+	t.Log("Config name", res.GetConfig().GetName())
+}
+
+func TestGetConfigBuilder(t *testing.T) {
+	//Create connection to Context-box
+	cc, err := grpc.Dial(ports.ContextBoxPort, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("could not connect to server: %v", err)
+	}
+	defer func() {
+		err := cc.Close()
+		require.NoError(t, err)
+	}()
+
+	// Creating the client
+	c := pb.NewContextBoxServiceClient(cc)
+
+	res, err := GetConfigBuilder(c)
 	require.NoError(t, err)
 	t.Log("Config name", res.GetConfig().GetName())
 }
@@ -72,7 +91,7 @@ func TestSaveConfigFrontEnd(t *testing.T) {
 
 	err = SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
 		Config: &pb.Config{
-			Name:         "NewTest",
+			Name:         "NewTest3",
 			Manifest:     string(manifest),
 			DesiredState: &pb.Project{Name: "This is desiredState name"},
 			CurrentState: &pb.Project{Name: "This is currentState name"},

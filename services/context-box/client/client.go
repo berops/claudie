@@ -33,9 +33,18 @@ func SaveConfigScheduler(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest
 	return nil
 }
 
-//GetConfig gets config from queue in which are available configs for Scheduler
-func GetConfig(c pb.ContextBoxServiceClient) (*pb.GetConfigResponse, error) {
-	res, err := c.GetConfig(context.Background(), &pb.GetConfigRequest{})
+//GetConfigScheduler gets config from queueScheduler in which are available configs for Scheduler
+func GetConfigScheduler(c pb.ContextBoxServiceClient) (*pb.GetConfigResponse, error) {
+	res, err := c.GetConfigScheduler(context.Background(), &pb.GetConfigRequest{})
+	if err != nil {
+		log.Fatalf("Unexpected error: %v", err)
+	}
+	return res, nil
+}
+
+//GetConfigBuilder gets config from queueBuilder in which are available configs for Builder
+func GetConfigBuilder(c pb.ContextBoxServiceClient) (*pb.GetConfigResponse, error) {
+	res, err := c.GetConfigBuilder(context.Background(), &pb.GetConfigRequest{})
 	if err != nil {
 		log.Fatalf("Unexpected error: %v", err)
 	}
