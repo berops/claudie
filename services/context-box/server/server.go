@@ -163,9 +163,6 @@ func configCheck() error {
 		uniqueS := true
 		uniqueB := true
 		// Checking for Scheduler
-		fmt.Println("DsChecksum", config.DsChecksum)
-		fmt.Println("MsChecksum", config.MsChecksum)
-		fmt.Println("CsChecksum", config.CsChecksum)
 		fmt.Println("")
 		if string(config.DsChecksum) != string(config.MsChecksum) {
 			for _, item := range queueScheduler {
@@ -251,8 +248,6 @@ func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest
 	config := req.GetConfig()
 	msChecksum := md5.Sum([]byte(config.GetManifest())) //Calculate md5 hash for a manifest file
 	config.MsChecksum = msChecksum[:]                   //Creating a slice using an array you can just make a simple slice expression
-	config.DsChecksum = []byte("e")
-	config.CsChecksum = []byte("e")
 
 	config, err := saveToDB(config)
 	if err != nil {
@@ -273,7 +268,7 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 	if err != nil {
 		return nil, err
 	}
-	if compareChecksums(string(config.MsChecksum), string(data.MsChecksum)) {
+	if !compareChecksums(string(config.MsChecksum), string(data.MsChecksum)) {
 		return nil, nil
 	}
 
@@ -292,7 +287,7 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 
 // GetConfigScheduler is a gRPC service: function returns one config from the queueScheduler
 func (*server) GetConfigScheduler(ctx context.Context, req *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
-	log.Println("GetConfig request")
+	log.Println("GetConfigScheduler request")
 	if len(queueScheduler) > 0 {
 		var config *configItem
 		config, queueScheduler = queueScheduler[0], queueScheduler[1:] // This is like push from a queue
@@ -303,7 +298,7 @@ func (*server) GetConfigScheduler(ctx context.Context, req *pb.GetConfigRequest)
 
 // GetConfigBuilder is a gRPC service: function returns one config from the queueScheduler
 func (*server) GetConfigBuilder(ctx context.Context, req *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
-	log.Println("GetConfig request")
+	log.Println("GetConfigBuilder request")
 	if len(queueBuilder) > 0 {
 		var config *configItem
 		config, queueBuilder = queueBuilder[0], queueBuilder[1:] // This is like push from a queue
