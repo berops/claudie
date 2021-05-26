@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package platform;
 
-import "platform.proto";
+import "config.proto";
 
 option go_package = "proto/pb";
 

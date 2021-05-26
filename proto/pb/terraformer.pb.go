@@ -14,6 +14,7 @@ import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -23,32 +24,154 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type BuildInfrastructureRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Config *Config `protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
+}
+
+func (x *BuildInfrastructureRequest) Reset() {
+	*x = BuildInfrastructureRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_terraformer_proto_msgTypes[0]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *BuildInfrastructureRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BuildInfrastructureRequest) ProtoMessage() {}
+
+func (x *BuildInfrastructureRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_terraformer_proto_msgTypes[0]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BuildInfrastructureRequest.ProtoReflect.Descriptor instead.
+func (*BuildInfrastructureRequest) Descriptor() ([]byte, []int) {
+	return file_terraformer_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *BuildInfrastructureRequest) GetConfig() *Config {
+	if x != nil {
+		return x.Config
+	}
+	return nil
+}
+
+type BuildInfrastructureResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Config *Config `protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
+}
+
+func (x *BuildInfrastructureResponse) Reset() {
+	*x = BuildInfrastructureResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_terraformer_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *BuildInfrastructureResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BuildInfrastructureResponse) ProtoMessage() {}
+
+func (x *BuildInfrastructureResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_terraformer_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BuildInfrastructureResponse.ProtoReflect.Descriptor instead.
+func (*BuildInfrastructureResponse) Descriptor() ([]byte, []int) {
+	return file_terraformer_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *BuildInfrastructureResponse) GetConfig() *Config {
+	if x != nil {
+		return x.Config
+	}
+	return nil
+}
+
 var File_terraformer_proto protoreflect.FileDescriptor
 
 var file_terraformer_proto_rawDesc = []byte{
 	0x0a, 0x11, 0x74, 0x65, 0x72, 0x72, 0x61, 0x66, 0x6f, 0x72, 0x6d, 0x65, 0x72, 0x2e, 0x70, 0x72,
-	0x6f, 0x74, 0x6f, 0x12, 0x08, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x1a, 0x0e, 0x70,
-	0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x32, 0x51, 0x0a,
-	0x12, 0x54, 0x65, 0x72, 0x72, 0x61, 0x66, 0x6f, 0x72, 0x6d, 0x65, 0x72, 0x53, 0x65, 0x72, 0x76,
-	0x69, 0x63, 0x65, 0x12, 0x3b, 0x0a, 0x13, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x49, 0x6e, 0x66, 0x72,
-	0x61, 0x73, 0x74, 0x72, 0x75, 0x63, 0x74, 0x75, 0x72, 0x65, 0x12, 0x11, 0x2e, 0x70, 0x6c, 0x61,
-	0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x1a, 0x11, 0x2e,
-	0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74,
-	0x42, 0x0a, 0x5a, 0x08, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72,
-	0x6f, 0x74, 0x6f, 0x33,
+	0x6f, 0x74, 0x6f, 0x12, 0x08, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x1a, 0x0c, 0x63,
+	0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x46, 0x0a, 0x1a, 0x42,
+	0x75, 0x69, 0x6c, 0x64, 0x49, 0x6e, 0x66, 0x72, 0x61, 0x73, 0x74, 0x72, 0x75, 0x63, 0x74, 0x75,
+	0x72, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x28, 0x0a, 0x06, 0x63, 0x6f, 0x6e,
+	0x66, 0x69, 0x67, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x10, 0x2e, 0x70, 0x6c, 0x61, 0x74,
+	0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x06, 0x63, 0x6f, 0x6e,
+	0x66, 0x69, 0x67, 0x22, 0x47, 0x0a, 0x1b, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x49, 0x6e, 0x66, 0x72,
+	0x61, 0x73, 0x74, 0x72, 0x75, 0x63, 0x74, 0x75, 0x72, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x12, 0x28, 0x0a, 0x06, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x10, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x43, 0x6f,
+	0x6e, 0x66, 0x69, 0x67, 0x52, 0x06, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x32, 0x78, 0x0a, 0x12,
+	0x54, 0x65, 0x72, 0x72, 0x61, 0x66, 0x6f, 0x72, 0x6d, 0x65, 0x72, 0x53, 0x65, 0x72, 0x76, 0x69,
+	0x63, 0x65, 0x12, 0x62, 0x0a, 0x13, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x49, 0x6e, 0x66, 0x72, 0x61,
+	0x73, 0x74, 0x72, 0x75, 0x63, 0x74, 0x75, 0x72, 0x65, 0x12, 0x24, 0x2e, 0x70, 0x6c, 0x61, 0x74,
+	0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x49, 0x6e, 0x66, 0x72, 0x61, 0x73,
+	0x74, 0x72, 0x75, 0x63, 0x74, 0x75, 0x72, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
+	0x25, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x42, 0x75, 0x69, 0x6c, 0x64,
+	0x49, 0x6e, 0x66, 0x72, 0x61, 0x73, 0x74, 0x72, 0x75, 0x63, 0x74, 0x75, 0x72, 0x65, 0x52, 0x65,
+	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x42, 0x0a, 0x5a, 0x08, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f,
+	0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
+var (
+	file_terraformer_proto_rawDescOnce sync.Once
+	file_terraformer_proto_rawDescData = file_terraformer_proto_rawDesc
+)
+
+func file_terraformer_proto_rawDescGZIP() []byte {
+	file_terraformer_proto_rawDescOnce.Do(func() {
+		file_terraformer_proto_rawDescData = protoimpl.X.CompressGZIP(file_terraformer_proto_rawDescData)
+	})
+	return file_terraformer_proto_rawDescData
+}
+
+var file_terraformer_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_terraformer_proto_goTypes = []interface{}{
-	(*Project)(nil), // 0: platform.Project
+	(*BuildInfrastructureRequest)(nil),  // 0: platform.BuildInfrastructureRequest
+	(*BuildInfrastructureResponse)(nil), // 1: platform.BuildInfrastructureResponse
+	(*Config)(nil),                      // 2: platform.Config
 }
 var file_terraformer_proto_depIdxs = []int32{
-	0, // 0: platform.TerraformerService.BuildInfrastructure:input_type -> platform.Project
-	0, // 1: platform.TerraformerService.BuildInfrastructure:output_type -> platform.Project
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	2, // 0: platform.BuildInfrastructureRequest.config:type_name -> platform.Config
+	2, // 1: platform.BuildInfrastructureResponse.config:type_name -> platform.Config
+	0, // 2: platform.TerraformerService.BuildInfrastructure:input_type -> platform.BuildInfrastructureRequest
+	1, // 3: platform.TerraformerService.BuildInfrastructure:output_type -> platform.BuildInfrastructureResponse
+	3, // [3:4] is the sub-list for method output_type
+	2, // [2:3] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_terraformer_proto_init() }
@@ -56,19 +179,46 @@ func file_terraformer_proto_init() {
 	if File_terraformer_proto != nil {
 		return
 	}
-	file_platform_proto_init()
+	file_config_proto_init()
+	if !protoimpl.UnsafeEnabled {
+		file_terraformer_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*BuildInfrastructureRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_terraformer_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*BuildInfrastructureResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_terraformer_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   0,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_terraformer_proto_goTypes,
 		DependencyIndexes: file_terraformer_proto_depIdxs,
+		MessageInfos:      file_terraformer_proto_msgTypes,
 	}.Build()
 	File_terraformer_proto = out.File
 	file_terraformer_proto_rawDesc = nil
@@ -88,7 +238,7 @@ const _ = grpc.SupportPackageIsVersion6
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type TerraformerServiceClient interface {
-	BuildInfrastructure(ctx context.Context, in *Project, opts ...grpc.CallOption) (*Project, error)
+	BuildInfrastructure(ctx context.Context, in *BuildInfrastructureRequest, opts ...grpc.CallOption) (*BuildInfrastructureResponse, error)
 }
 
 type terraformerServiceClient struct {
@@ -99,8 +249,8 @@ func NewTerraformerServiceClient(cc grpc.ClientConnInterface) TerraformerService
 	return &terraformerServiceClient{cc}
 }
 
-func (c *terraformerServiceClient) BuildInfrastructure(ctx context.Context, in *Project, opts ...grpc.CallOption) (*Project, error) {
-	out := new(Project)
+func (c *terraformerServiceClient) BuildInfrastructure(ctx context.Context, in *BuildInfrastructureRequest, opts ...grpc.CallOption) (*BuildInfrastructureResponse, error) {
+	out := new(BuildInfrastructureResponse)
 	err := c.cc.Invoke(ctx, "/platform.TerraformerService/BuildInfrastructure", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -110,14 +260,14 @@ func (c *terraformerServiceClient) BuildInfrastructure(ctx context.Context, in *
 
 // TerraformerServiceServer is the server API for TerraformerService service.
 type TerraformerServiceServer interface {
-	BuildInfrastructure(context.Context, *Project) (*Project, error)
+	BuildInfrastructure(context.Context, *BuildInfrastructureRequest) (*BuildInfrastructureResponse, error)
 }
 
 // UnimplementedTerraformerServiceServer can be embedded to have forward compatible implementations.
 type UnimplementedTerraformerServiceServer struct {
 }
 
-func (*UnimplementedTerraformerServiceServer) BuildInfrastructure(context.Context, *Project) (*Project, error) {
+func (*UnimplementedTerraformerServiceServer) BuildInfrastructure(context.Context, *BuildInfrastructureRequest) (*BuildInfrastructureResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BuildInfrastructure not implemented")
 }
 
@@ -126,7 +276,7 @@ func RegisterTerraformerServiceServer(s *grpc.Server, srv TerraformerServiceServ
 }
 
 func _TerraformerService_BuildInfrastructure_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Project)
+	in := new(BuildInfrastructureRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -138,7 +288,7 @@ func _TerraformerService_BuildInfrastructure_Handler(srv interface{}, ctx contex
 		FullMethod: "/platform.TerraformerService/BuildInfrastructure",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TerraformerServiceServer).BuildInfrastructure(ctx, req.(*Project))
+		return srv.(TerraformerServiceServer).BuildInfrastructure(ctx, req.(*BuildInfrastructureRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
