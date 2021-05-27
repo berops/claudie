@@ -1,4 +1,4 @@
-.PHONY: gen contentbox scheduler builder
+.PHONY: gen contentbox scheduler builder terraformer
 
 #Generate all .proto files
 gen:
@@ -12,3 +12,6 @@ scheduler:
 
 builder:
 	go run services/builder/builder.go
+
+terraformer:
+	go run services/terraformer/server/server.go
