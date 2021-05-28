@@ -5,3 +5,4 @@ terraform
 kubeone
 playground
 .vscode
+*.tf
