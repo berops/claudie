@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package platform;
+
+option go_package = "proto/pb";
+
+message Project {
+  string name = 1;
+  map<string, string> credentials = 2;
+  repeated Cluster clusters = 3;
+}
+
+message Cluster {
+  string name = 1;
+  string kubernetes = 2;
+  string network = 3;
+  repeated NodePool nodePools = 4;
+  string kubeconfig = 5;
+}
+
+message NodePool {
+  string name = 1;
+  string region = 2;
+  Node master = 3;
+  Node worker = 4;
+}
+
+message Node {
+  uint32 count = 1;
+  string serverType = 3;
+  string image = 4;
+  uint32 diskSize = 5;
+  string zone = 6;
+  string location = 7;
+  string datacenter = 8;
+}

@@ -1,0 +1,59 @@
+---
+- name: Create wireguard config dir
+  file:
+    path: "/etc/wireguard"
+    state: directory
+  register: wg_conf_dir
+
+- name: Generate wireguard keypair
+  shell: umask 077 && wg genkey | tee {{wg_conf_dir.path}}/privatekey | wg pubkey > {{wg_conf_dir.path}}/publickey
+
+- name: Save privatekey
+  shell: cat {{ wg_conf_dir.path }}/privatekey
+  register: privatekey
+
+- name: Save publickey
+  shell: cat {{ wg_conf_dir.path }}/publickey
+  register: publickey
+
+- name: Check if wireguard interface exists
+  shell: ip a
+  register: ipa_contents
+
+- name: Create wireguard interface
+  shell: ip link add dev wg0 type wireguard
+  when: ipa_contents.stdout.find('wg0') == -1
+
+- name: Check if wireguard interface has IP address
+  shell: ip a
+  register: ipa_contents
+
+- name: Configure an IP address for an interface
+  shell: "ip address add dev wg0 {{private_ip}}/24"
+  when: "ipa_contents.stdout.find( private_ip ) == -1"
+
+- name: Template wireguard config file to a node
+  template:
+    src: ../templates/wg.conf.j2
+    dest: "{{ wg_conf_dir.path }}/wg.conf"
+
+- name: Apply wireguard configuration file
+  shell: wg syncconf {{ wg_interface_name }} {{ wg_conf_dir.path }}/wg.conf
+  
+- name: Delete privatekey
+  file:
+    path: "{{ wg_conf_dir.path }}/privatekey"
+    state: absent
+
+- name: Delete publickey
+  file:
+    path: "{{ wg_conf_dir.path }}/publickey"
+    state: absent
+
+- name: Delete wireguard config file
+  file:
+    path: "{{ wg_conf_dir.path }}/wg.conf"
+    state: absent
+
+- name: Enable wireguard interface
+  shell: ip link set up dev wg0

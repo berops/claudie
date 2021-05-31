@@ -1,0 +1,7 @@
+.idea/
+*.ini
+.terraform*
+terraform
+kubeone
+playground
+.vscode
