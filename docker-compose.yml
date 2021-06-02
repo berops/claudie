@@ -1,3 +1,17 @@
+# Enviroment variables, must reffer to service names and their ports
+#
+# List of default can be found in .env file, in order to override them, use flag --env-file
+# with your own .env file
+#
+# List of supported env vars:
+#     Hostnames:              Ports:  
+#     DATABASE_HOSTNAME       DATABASE_PORT
+#     CONTEXT_BOX_HOSTNAME    CONTEXT_BOX_PORT
+#     TERRAFORMER_HOSTNAME    TERRAFORMER_PORT
+#     WIREGUARDIAN_HOSTNAME   WIREGUARDIAN_PORT
+#     KUBE_ELEVEN_HOSTNAME    KUBE_ELEVEN_PORT
+#     BUILDER_HOSTNAME        BUILDER_PORT
+
 version: '3'
 services:
   context-box:
@@ -5,13 +19,18 @@ services:
       context: ./
       dockerfile: ./services/context-box/Dockerfile
     ports:
-    - "50055:50055" #port of the Context-box
-    environment:    #set enviroment variables for each service
-    - DATABASE=mongodb
-    - CONTEXT_BOX=context-box
+      - "${CONTEXT_BOX_PORT}:${CONTEXT_BOX_PORT}" #port of the Context-box
+    env_file: 
+      - .env
   mongodb:
     image: mongo
     volumes: 
-    - ./mongodb:/data/db
+      - ./mongodb:/data/db
     ports:
-    - "27017:27017" #port of database
+      - "${DATABASE_PORT}:${DATABASE_PORT}" #port of database
+  scheduler:
+    build: 
+      context: ./
+      dockerfile: ./services/scheduler/Dockerfile
+    env_file: 
+      - .env
