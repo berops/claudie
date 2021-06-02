@@ -7,43 +7,40 @@ terraform {
   }
 }
 
-provider "hcloud" {
-  token = "xIAfsb7M5K6etYAfXYcg5iYyrFGNlCxcICo060HVEygjoF0usFpv5P9X7pk85Xe1" 
-}
+{{- $index := .Index }}
 
-resource "hcloud_ssh_key" "platform" {
-  name       = "test_key"
-  public_key = file("{{ .Cluster.PublicKey }}")
+provider "hcloud" {
+  token = "{{ (index .Cluster.NodePools $index).Provider.Credentials }}" 
 }
 
 resource "hcloud_server" "control_plane" {
-  count       = {{ .Cluster.Providers.hetzner.ControlNodeSpecs.Count }}
-  name        = "{{ .Metadata.Id }}-hetzner-control-${count.index + 1}"
-  server_type = "{{ .Cluster.Providers.hetzner.ControlNodeSpecs.ServerType }}"
-  image       = "{{ .Cluster.Providers.hetzner.ControlNodeSpecs.Image }}"
+  count       = "{{ (index .Cluster.NodePools $index).Master.Count }}"
+  name        = "{{ .Cluster.Name }}-hetzner-control-${count.index + 1}"
+  server_type = "{{ (index .Cluster.NodePools $index).Master.ServerType }}"
+  image       = "{{ (index .Cluster.NodePools $index).Master.Image }}"
 
   ssh_keys = [
-    hcloud_ssh_key.platform.id,
+    3626771,
   ]
 }
 
 resource "hcloud_server" "compute_plane" {
-  count       = {{ .Cluster.Providers.hetzner.ComputeNodeSpecs.Count }}
-  name        = "{{ .Metadata.Id }}-hetzner-compute-${count.index + 1}"
-  server_type = "{{ .Cluster.Providers.hetzner.ComputeNodeSpecs.ServerType }}"
-  image       = "{{ .Cluster.Providers.hetzner.ComputeNodeSpecs.Image }}"
+  count       = "{{ (index .Cluster.NodePools $index).Worker.Count }}"
+  name        = "{{ .Cluster.Name}}-hetzner-compute-${count.index + 1}"
+  server_type = "{{ (index .Cluster.NodePools $index).Worker.ServerType }}"
+  image       = "{{ (index .Cluster.NodePools $index).Worker.Image }}"
 
   ssh_keys = [
-    hcloud_ssh_key.platform.id,
+    3626771,
   ]
 }
 
 resource "local_file" "output_hetzner" { 
-    content = templatefile("templates/output_hetzner.tpl",
+    content = templatefile("../../templates/output_hetzner.tpl",
         {
             control = hcloud_server.control_plane.*
             compute = hcloud_server.compute_plane.*
         }
     )
-    filename = "terraform/output"
+    filename = "output"
 }
