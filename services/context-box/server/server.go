@@ -295,7 +295,7 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	// Connect to MongoDB
-	client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://localhost:27017")) //client represents connection object do db
+	client, err := mongo.NewClient(options.Client().ApplyURI(ports.DatabasePort)) //client represents connection object do db
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -304,6 +304,7 @@ func main() {
 		log.Fatal(err)
 	}
 	log.Println("Connected to MongoDB")
+	fmt.Println("MongoDB connected via", ports.DatabasePort)
 	collection = client.Database("platform").Collection("config")
 	defer client.Disconnect(context.TODO()) //closing MongoDB connection
 
