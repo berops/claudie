@@ -2,7 +2,7 @@ package ports
 
 import "os"
 
-//URLs and ports on what services are listening
+//URLs and ports, on what services are listening
 
 var (
 	//TerraformerPort is a listening port for Terraformer module
@@ -15,6 +15,6 @@ var (
 	BuilderPort string = os.Getenv("BUILDER") + ":50051"
 	//ContextBoxPort is a listening port for ContextBox module
 	ContextBoxPort string = os.Getenv("CONTEXT_BOX") + ":50055"
-	//DatabasePort is a port on which database is listening
+	//DatabasePort is a listening port for Database
 	DatabasePort string = "mongodb://" + os.Getenv("DATABASE") + ":27017"
 )

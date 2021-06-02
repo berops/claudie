@@ -1,9 +1,9 @@
 FROM golang:alpine AS build
 
-#unset the GOPATH
+#Unset the GOPATH
 ENV GOPATH=
 
-#First, copy go.mod and go.sum to prevent uneccesary dowload of modules
+#First, copy go.mod and go.sum to prevent uneccesary download of modules
 COPY go.mod .
 COPY go.sum .
 
@@ -13,11 +13,11 @@ RUN go mod download
 #Copy all files apart from the ones in .dockerignore
 COPY . .
 
-#change the directory
+#Change the directory
 WORKDIR ./services/context-box/server
 
-#compile the golang code
+#Compile the golang code
 RUN go build
 
-#run server
+#Run server
 CMD ["./server"]

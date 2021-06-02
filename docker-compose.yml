@@ -8,10 +8,10 @@ services:
     - "50055:50055" #port of the Context-box
     environment:    #set enviroment variables for each service
     - DATABASE=mongodb
-    - CONTEXT_BOX=localhost
+    - CONTEXT_BOX=context-box
   mongodb:
     image: mongo
     volumes: 
     - ./mongodb:/data/db
     ports:
-    - "27017:27017"
+    - "27017:27017" #port of database
