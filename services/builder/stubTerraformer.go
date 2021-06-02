@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Berops/platform/ports"
 	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/platform/urls"
 	"google.golang.org/grpc"
 )
 
 // messageTerraformer will create connection with terraformer
 func messageTerraformer(project *pb.Project) (*pb.Project, error) {
-	cc, err := grpc.Dial(ports.TerraformerPort, grpc.WithInsecure()) //connects to a grpc server
+	cc, err := grpc.Dial(urls.TerraformerURL, grpc.WithInsecure()) //connects to a grpc server
 	if err != nil {
 		log.Fatalf("could not connect to server: %v", err)
 	}

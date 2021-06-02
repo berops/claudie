@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Berops/platform/ports"
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/serializer"
+	"github.com/Berops/platform/urls"
 
 	"google.golang.org/grpc"
 )
 
 func main() {
-	cc, err := grpc.Dial(ports.BuilderPort, grpc.WithInsecure()) //connects to a grpc server
+	cc, err := grpc.Dial(urls.BuilderURL, grpc.WithInsecure()) //connects to a grpc server
 	if err != nil {
 		log.Fatalf("could not connect to server: %v", err)
 	}

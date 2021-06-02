@@ -8,9 +8,9 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/Berops/platform/ports"
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/serializer"
+	"github.com/Berops/platform/urls"
 	"google.golang.org/grpc"
 )
 
@@ -73,11 +73,11 @@ func main() {
 	// If we crath the go gode, we get the file name and line number
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	lis, err := net.Listen("tcp", ports.BuilderPort)
+	lis, err := net.Listen("tcp", urls.BuilderURL)
 	if err != nil {
 		log.Fatalln("Failed to listen on", err)
 	}
-	fmt.Println("Builder service is running on ", ports.BuilderPort)
+	fmt.Println("Builder service is running on ", urls.BuilderURL)
 
 	s := grpc.NewServer()
 	pb.RegisterBuilderServiceServer(s, &server{})

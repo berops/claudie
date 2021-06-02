@@ -10,6 +10,5 @@ services/terraformer
 services/wireguardian
 services/builder
 services/kubeEleven
-services/scheduler
-services/context-box/client
+services/context-box
 mongodb
