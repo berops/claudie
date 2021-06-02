@@ -1,7 +1,7 @@
 name: TestProjectName
 publicCloudCredentials: # optional credentials for each supported public cloud that can be used to create nodes
   gcp: ../secrets/admin-project-283514-3729b1f097f2.json
-  hetzner: TestHetznerPassword
+  hetzner: xIAfsb7M5K6etYAfXYcg5iYyrFGNlCxcICo060HVEygjoF0usFpv5P9X7pk85Xe1
   # and other similar clouds
 
 # out of scope of MVP; an array of already existing machines (e.g. on-premises) that can be used for the clusters

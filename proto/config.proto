@@ -15,16 +15,17 @@ message Config {
 
 message Project {
   string name = 1;
-  map<string, string> credentials = 2;
-  repeated Cluster clusters = 3;
+  repeated Cluster clusters = 2;
 }
 
 message Cluster {
   string name = 1;
   string kubernetes = 2;
   string network = 3;
-  repeated NodePool nodePools = 4;
-  string kubeconfig = 5;
+  string kubeconfig = 4;
+  string public_key = 5;
+  string private_key = 6;
+  repeated NodePool nodePools = 9;
 }
 
 message NodePool {
@@ -32,6 +33,7 @@ message NodePool {
   string region = 2;
   Node master = 3;
   Node worker = 4;
+  Provider provider = 5;
 }
 
 message Node {
@@ -42,4 +44,11 @@ message Node {
   string zone = 6;
   string location = 7;
   string datacenter = 8;
+  string public_ip = 9;
+  string private_ip = 10;
+}
+
+message Provider {
+  string name = 1;
+  string credentials = 2;
 }

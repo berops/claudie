@@ -3,7 +3,7 @@ module github.com/Berops/platform
 go 1.16
 
 require (
-	github.com/golang/protobuf v1.5.2
+	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/stretchr/testify v1.7.0
 	go.mongodb.org/mongo-driver v1.5.2
 	google.golang.org/grpc v1.38.0
