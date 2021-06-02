@@ -16,8 +16,14 @@ COPY . .
 #Change the directory
 WORKDIR ./services/context-box/server
 
-#Compile the golang code
-RUN go build
+#Compile the golang code to /out, CGO_ENABLE=0 removes cross compile dependencies
+RUN CGO_ENABLED=0 go build -o /out
+
+#Use empty base image
+FROM scratch
+
+#Copy the binaries to empty base image
+COPY --from=build /out /out
 
 #Run server
-CMD ["./server"]
+ENTRYPOINT [ "/out" ]
