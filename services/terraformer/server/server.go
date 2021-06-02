@@ -18,7 +18,7 @@ type server struct{}
 func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastructureRequest) (*pb.BuildInfrastructureResponse, error) {
 	fmt.Println("BuildInfrastructure function was invoked with", req)
 	config := req.GetConfig()
-	err := buildTerraform(config.GetDesiredState())
+	err := buildInfrastructure(config.GetDesiredState())
 	if err != nil {
 		log.Fatalln("Template generator failed:", err)
 	}
