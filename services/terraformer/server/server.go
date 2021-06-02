@@ -15,20 +15,20 @@ import (
 
 type server struct{}
 
-func (*server) BuildInfrastructure(_ context.Context, req *pb.Project) (*pb.Project, error) {
+func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastructureRequest) (*pb.BuildInfrastructureResponse, error) {
 	fmt.Println("BuildInfrastructure function was invoked with", req)
-
-	err := buildTerraform(req)
+	config := req.GetConfig()
+	err := buildTerraform(config.GetDesiredState())
 	if err != nil {
 		log.Fatalln("Template generator failed:", err)
 	}
 
 	log.Println("Infrastructure was successfully generated")
-	return req, nil
+	return &pb.BuildInfrastructureResponse{Config: config}, nil
 }
 
 func main() {
-	// If we crath the go gode, we get the file name and line number
+	// If code crash, we get the file name and line number
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	lis, err := net.Listen("tcp", ports.TerraformerPort)

@@ -11,8 +11,71 @@ import (
 	"github.com/Berops/platform/proto/pb"
 )
 
-// createTerraformConfig generates terraform config file
-func createTerraformConfig(templatePath string, outputPath string, d interface{}, dirName string) {
+const outputPath string = "services/terraformer/server/terraform"
+const templatePath string = "services/terraformer/templates"
+
+type Backend struct {
+	ProjectName string
+	ClusterName string
+}
+
+type Data struct {
+	Index   int
+	Cluster *pb.Cluster
+}
+
+// buildTerraform is generating terraform files for different providers and calling terraform
+func buildTerraform(project *pb.Project) error {
+	fmt.Println("Generating templates")
+	//var nodes []string
+	var backendData Backend
+	backendData.ProjectName = project.GetName()
+
+	for _, cluster := range project.Clusters {
+
+		log.Println("Cluster name:", cluster.GetName())
+		backendData.ClusterName = cluster.GetName()
+		// Creating backend.tf file
+		templateGen(templatePath+"/backend.tpl", outputPath+"/backend.tf", backendData, outputPath)
+
+		for i, nodePool := range cluster.NodePools {
+
+			// HETZNER node pool
+			if nodePool.Provider.Name == "hetzner" { // it will return true if hetzner key exists in the credentials map
+				log.Println("Cluster provider: ", nodePool.Provider.Name)
+				// creating terraform file for a provider
+				templateGen(templatePath+"/hetzner.tpl", outputPath+"/hetzner.tf",
+					&Data{
+						Index:   i,
+						Cluster: cluster,
+					}, templatePath)
+				//nodes = readTerraformOutput(nodes)
+			}
+
+			// GCP node pool
+			if nodePool.Provider.Name == "gcp" { // it will return true if gcp key exists in the credentials map
+				log.Println("Cluster provider: ", nodePool.Provider.Name)
+				// creating terraform file for a provider
+				templateGen(templatePath+"/gcp.tpl", outputPath+"/gcp.tf",
+					&Data{
+						Index:   i,
+						Cluster: cluster,
+					}, templatePath)
+				//nodes = readTerraformOutput(nodes)
+			}
+
+		}
+		callTerraform(outputPath)
+	}
+
+	//fmt.Println("NODEEEEEEEEEEES:", nodes)
+	//fillNodes(nodes, project)
+
+	return nil
+}
+
+// templateGen generates terraform config file from a template .tpl
+func templateGen(templatePath string, outputPath string, d interface{}, dirName string) {
 	if _, err := os.Stat(dirName); os.IsNotExist(err) {
 		os.Mkdir(dirName, os.ModePerm)
 	}
@@ -33,7 +96,10 @@ func createTerraformConfig(templatePath string, outputPath string, d interface{}
 // callTerraform function calls terraform and executes a .tf file
 func callTerraform(fileName string) {
 	fmt.Println("Calling Terraform")
-	cmd := exec.Command("terraform", "init", fileName)
+
+	// terraform init
+	cmd := exec.Command("terraform", "init")
+	cmd.Dir = fileName
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
@@ -41,7 +107,9 @@ func callTerraform(fileName string) {
 		log.Fatal(err)
 	}
 
-	cmd = exec.Command("terraform", "apply", "--auto-approve", fileName)
+	// terraform apply --auto-approve
+	cmd = exec.Command("terraform", "apply", "--auto-approve")
+	cmd.Dir = fileName
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
@@ -76,38 +144,14 @@ func readTerraformOutput(nodes []string) []string {
 	return nodes
 }
 
-func fillNodes(nodes []string, project *pb.Project) {
-	j := 0
-	for i := 0; i < len(nodes); i++ {
-		project.Cluster.Nodes[j].PublicIp = nodes[i]
-		fmt.Println(project.Cluster.Nodes[j].PublicIp)
-		i++
-		project.Cluster.Nodes[j].Name = nodes[i]
-		fmt.Println(project.Cluster.Nodes[j].Name)
-		j++
-	}
-}
-
-// buildTerraform is generating terraform files for different providers and calling terraform
-func buildTerraform(project *pb.Project) error {
-	fmt.Println("Generating templates")
-	var nodes []string
-
-	createTerraformConfig("./templates/backend.tpl", "./terraform/backend.tf", project, "terraform")
-	// HETZNER
-	if project.Cluster.Providers["hetzner"].IsInUse {
-		createTerraformConfig("./templates/hetzner.tpl", "./terraform/hetzner.tf", project, "terraform") // creating terraform file for a provider
-		callTerraform("terraform")
-		nodes = readTerraformOutput(nodes)
-	}
-	// GCP
-	if project.Cluster.Providers["gcp"].IsInUse {
-		createTerraformConfig("./templates/gcp.tpl", "./terraform/gcp.tf", project, "terraform") // creating terraform file for a provider
-		callTerraform("terraform")
-		nodes = readTerraformOutput(nodes)
-	}
-	fmt.Println("NODEEEEEEEEEEES:", nodes)
-	fillNodes(nodes, project)
-
-	return nil
-}
+// func fillNodes(nodes []string, project *pb.Project) {
+// 	j := 0
+// 	for i := 0; i < len(nodes); i++ {
+// 		project.Cluster.Nodes[j].PublicIp = nodes[i]
+// 		fmt.Println(project.Cluster.Nodes[j].PublicIp)
+// 		i++
+// 		project.Cluster.Nodes[j].Name = nodes[i]
+// 		fmt.Println(project.Cluster.Nodes[j].Name)
+// 		j++
+// 	}
+// }
