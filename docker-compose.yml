@@ -1,7 +1,7 @@
 # Enviroment variables, must reffer to service names and their ports
 #
-# List of default can be found in .env file, in order to override them, use flag --env-file
-# with your own .env file
+# List of the default values can be found in .env file, in order to override them,
+# use flag --env-file with your own .env file
 #
 # List of supported env vars:
 #     Hostnames:              Ports:  
