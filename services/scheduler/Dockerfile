@@ -25,5 +25,5 @@ FROM scratch
 #Copy the binaries to empty base image
 COPY --from=build /out /out
 
-#Run server
+#Run scheduler
 ENTRYPOINT [ "/out" ]
