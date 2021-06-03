@@ -22,8 +22,13 @@ jobs:
       # Build the docker images via docker-compose.yml
       - name: Build the docker-compose stack
         run: docker-compose up -d
-      - name: Delay      # Adding a small delay
+      # Adding a small delay
+      - name: Delay      
         run: sleep 5     # 5 seconds
+      #Check if containers are running
       - name: Check the running containers
         run: docker ps -a
+      #Stop the containers
+      - name: Stop the running containers
+        run: docker-compose down
         
