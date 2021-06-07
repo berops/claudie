@@ -18,11 +18,11 @@ type server struct{}
 func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastructureRequest) (*pb.BuildInfrastructureResponse, error) {
 	fmt.Println("BuildInfrastructure function was invoked with", req)
 	config := req.GetConfig()
-	err := buildInfrastructure(config.GetDesiredState())
+	currentState, err := buildInfrastructure(config.GetDesiredState())
 	if err != nil {
 		log.Fatalln("Template generator failed:", err)
 	}
-
+	config.CurrentState, config.DesiredState = currentState, currentState // Update currentState and desiredState
 	log.Println("Infrastructure was successfully generated")
 	return &pb.BuildInfrastructureResponse{Config: config}, nil
 }
