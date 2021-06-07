@@ -6,29 +6,28 @@ on:
     branches: [ master, feature/GithubActions ] 
   pull_request:
     branches: [ master ]
-
+env:
+    DATABASE_HOSTNAME: mongodb://mongodb
+    CONTEXT_BOX_HOSTNAME: context-box
+    TERRAFORMER_HOSTNAME: terraformer
+    WIREGUARDIAN_HOSTNAME: wireguardian
+    KUBE_ELEVEN_HOSTNAME: kube_eleven
+    BUILDER_HOSTNAME: builder
+    
+    DATABASE_PORT: 27017
+    CONTEXT_BOX_PORT: 50055
+    TERRAFORMER_PORT: 50052
+    WIREGUARDIAN_PORT: 50053
+    KUBE_ELEVEN_PORT: 50054
+    BUILDER_PORT: 50051
   # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
+workflow_dispatch:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   build:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
-    env:
-      DATABASE_HOSTNAME: mongodb://mongodb
-      CONTEXT_BOX_HOSTNAME: context-box
-      TERRAFORMER_HOSTNAME: terraformer
-      WIREGUARDIAN_HOSTNAME: wireguardian
-      KUBE_ELEVEN_HOSTNAME: kube_eleven
-      BUILDER_HOSTNAME: builder
-      
-      DATABASE_PORT: 27017
-      CONTEXT_BOX_PORT: 50055
-      TERRAFORMER_PORT: 50052
-      WIREGUARDIAN_PORT: 50053
-      KUBE_ELEVEN_PORT: 50054
-      BUILDER_PORT: 50051
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
@@ -49,9 +48,9 @@ jobs:
 
       # Run the docker images
       - name: Run MongoDB
-        run: docker run --rm -it -v mongodb:/data/db --name mongodb -d -p ${{DATABASE_PORT}}:${{DATABASE_PORT}} mongo
+        run: docker run --rm -it -v mongodb:/data/db --name mongodb -d -p ${env.DATABASE_PORT}:${env.DATABASE_PORT} mongo
       - name: Run Context-box
-        run: docker run --rm --env-file .env -d context-box -p ${{CONTEXT-BOX_PORT}}:${{CONTEXT-BOX_PORT}}
+        run: docker run --rm --env-file .env -d context-box -p ${env.CONTEXT-BOX_PORT}:${env.CONTEXT-BOX_PORT}
       - name: Run Scheduler
         run: docker run --rm --env-file .env -d scheduler
   #    - name: Run KubeEleven
