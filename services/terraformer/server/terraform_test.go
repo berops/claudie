@@ -126,11 +126,18 @@ var desiredState *pb.Project = &pb.Project{
 }
 
 func TestBuildInfrastructure(t *testing.T) {
-	err := buildInfrastructure(desiredState)
-	require.NoError(t, err)
+	err, currentState := buildInfrastructure(desiredState)
+	t.Log(currentState)
+	require.NoError(t, currentState, err)
 }
 
 func TestDestroyInfrastructure(t *testing.T) {
 	err := destroyInfrastructure(desiredState)
+	require.NoError(t, err)
+}
+
+func TestOutputTerraform(t *testing.T) {
+	out, err := outputTerraform(outputPath, "gcp")
+	t.Log(out)
 	require.NoError(t, err)
 }
