@@ -26,6 +26,7 @@ message Cluster {
   string public_key = 5;
   string private_key = 6;
   repeated NodePool nodePools = 9;
+  map<string, Ip> ips = 10;
 }
 
 message NodePool {
@@ -44,11 +45,16 @@ message Node {
   string zone = 6;
   string location = 7;
   string datacenter = 8;
-  string public_ip = 9;
-  string private_ip = 10;
+  repeated string public_ip = 9;
+  repeated string private_ip = 10;
 }
 
 message Provider {
   string name = 1;
   string credentials = 2;
+}
+
+message Ip {
+  string public = 1;
+  string private = 2;
 }
