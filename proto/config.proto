@@ -45,8 +45,6 @@ message Node {
   string zone = 6;
   string location = 7;
   string datacenter = 8;
-  repeated string public_ip = 9;
-  repeated string private_ip = 10;
 }
 
 message Provider {
