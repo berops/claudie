@@ -35,12 +35,15 @@ resource "hcloud_server" "compute_plane" {
   ]
 }
 
-resource "local_file" "output_hetzner" { 
-    content = templatefile("../../templates/output_hetzner.tpl",
-        {
-            control = hcloud_server.control_plane.*
-            compute = hcloud_server.compute_plane.*
-        }
-    )
-    filename = "output"
+output "hetzner" {
+  value = {
+    control = {
+      for node in hcloud_server.control_plane:
+      node.name => node.ipv4_address
+    }
+    compute = {
+      for node in hcloud_server.compute_plane:
+      node.name => node.ipv4_address
+    }
+  }
 }

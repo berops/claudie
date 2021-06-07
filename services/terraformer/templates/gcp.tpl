@@ -50,12 +50,15 @@ resource "google_compute_instance" "compute_plane" {
   metadata_startup_script = "echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart"
 }
 
-resource "local_file" "output_gcp" {
-    content = templatefile("../../templates/output_gcp.tpl",
-        {
-            control = google_compute_instance.control_plane[*]
-            compute = google_compute_instance.compute_plane[*]
-        }
-    )
-    filename = "output"
+output "gcp" {
+  value = {
+    control = {
+      for node in google_compute_instance.control_plane:
+      node.name => node.network_interface.0.access_config.0.nat_ip
+    }
+    compute = {
+      for node in google_compute_instance.compute_plane:
+      node.name => node.network_interface.0.access_config.0.nat_ip
+    }
+  }
 }
