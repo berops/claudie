@@ -45,7 +45,7 @@ jobs:
       - name: Run MongoDB
         run: docker run --rm -it -v mongodb:/data/db --name mongodb -d -p $DATABASE_PORT:$DATABASE_PORT mongo
       - name: Run Context-box
-        run: docker run --rm --env-file .env --name context-box -d -p $CONTEXT-BOX_PORT:$CONTEXT-BOX_PORT context-box
+        run: docker run --rm --env-file .env --name context-box -d -p $CONTEXT_BOX_PORT:$CONTEXT_BOX_PORT context-box
       - name: Run Scheduler
         run: docker run --rm --env-file .env --name scheduler -d scheduler
 #     - name: Run KubeEleven
@@ -56,15 +56,15 @@ jobs:
 #      run: docker run --rm --env-file .env wireguardian -p ${{WIREGUARDIAN_PORT}}:${{WIREGUARDIAN_PORT}}
 #     - name: Terraformer
 #      run: docker run --rm --env-file .env terraformer -p ${{TERRAFORMER_PORT}}:${{TERRAFORMER_PORT}}
-
       - name: Small delay
         run: sleep 5
+      # Check if containers are running
+      - name: Check the running containers
+        run: docker ps -a
       # Show logs from containers
       - name: Show logs from context-box
         run: docker logs context-box
       - name: Show logs from scheduler
         run: docker logs scheduler
-      # Check if containers are running
-      - name: Check the running containers
-        run: docker ps -a
+ 
         
