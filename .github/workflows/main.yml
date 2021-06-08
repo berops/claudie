@@ -29,23 +29,23 @@ jobs:
 
       # Build the docker images
       - name: Build the docker image for Context-box
-        run: docker build --tag context-box -f ./services/context-box/Dockerfile
+        run: docker build --tag context-box -f ./services/context-box/Dockerfile .
       - name: Build the docker image for Scheduler
-        run: docker build --tag scheduler -f ./services/scheduler/Dockerfile
+        run: docker build --tag scheduler -f ./services/scheduler/Dockerfile .
 #     - name: Build the docker image for KubeEleven
-#       run: docker build --tag kube_eleven -f ./services/kubeEleven/Dockerfile
+#       run: docker build --tag kube_eleven -f ./services/kubeEleven/Dockerfile .
 #     - name: Build the docker image for Builder
 #       run: docker build --tag builder -f ./services/builder/Dockerfile
 #     - name: Build the docker image for Wireguardian
-#       run: docker build --tag wireguardian -f ./services/wireguardian/Dockerfile
+#       run: docker build --tag wireguardian -f ./services/wireguardian/Dockerfile .
 #     - name: Build the docker image for Terraformer
-#       run: docker build --tag terraformer -f ./services/terraformer/Dockerfile
+#       run: docker build --tag terraformer -f ./services/terraformer/Dockerfile .
 
       # Run the docker images
       - name: Run MongoDB
-        run: docker run --rm -it -v mongodb:/data/db --name mongodb -d -p ${env.DATABASE_PORT}:${env.DATABASE_PORT} mongo
+        run: docker run --rm -it -v mongodb:/data/db --name mongodb -d -p ${{env.DATABASE_PORT}}:${{env.DATABASE_PORT}} mongo
       - name: Run Context-box
-        run: docker run --rm --env-file .env -d context-box -p ${env.CONTEXT-BOX_PORT}:${env.CONTEXT-BOX_PORT}
+        run: docker run --rm --env-file .env -d context-box -p ${{env.CONTEXT-BOX_PORT}}:${{env.CONTEXT-BOX_PORT}}
       - name: Run Scheduler
         run: docker run --rm --env-file .env -d scheduler
 #     - name: Run KubeEleven
