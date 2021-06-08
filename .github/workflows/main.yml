@@ -26,7 +26,9 @@ jobs:
           while read line; do
             echo "$line" >> $GITHUB_ENV
           done < ${{ env.ENV_FILE }}
-
+      # Create network for docker containers, so they can connect via names
+      - name: Create network for Docker containers
+        run: docker network create --driver bridge platform-net
       # Build the docker images
       - name: Build the docker image for Context-box
         run: docker build --tag context-box -f ./services/context-box/Dockerfile .
@@ -43,11 +45,11 @@ jobs:
 
       # Run the docker images
       - name: Run MongoDB
-        run: docker run --rm -it -v mongodb:/data/db --name mongodb -d -p $DATABASE_PORT:$DATABASE_PORT mongo
+        run: docker run --rm -it -v mongodb:/data/db --name mongodb -d -p $DATABASE_PORT:$DATABASE_PORT --network platform-net mongo
       - name: Run Context-box
-        run: docker run --env-file .env --name context-box -d -p $CONTEXT_BOX_PORT:$CONTEXT_BOX_PORT context-box
+        run: docker run --env-file .env --name context-box -d -p $CONTEXT_BOX_PORT:$CONTEXT_BOX_PORT --network platform-net context-box
       - name: Run Scheduler
-        run: docker run --env-file .env --name scheduler -d scheduler
+        run: docker run --env-file .env --name scheduler -d --network platform-net scheduler
 #     - name: Run KubeEleven
 #      run: docker run --rm --env-file .env kube_eleven -p ${{KUBE_ELEVEN_PORT}}:${{KUBE_ELEVEN_PORT}}
 #     - name: Run Builder
