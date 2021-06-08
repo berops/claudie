@@ -16,6 +16,15 @@ jobs:
       ENV_FILE: .env
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+      # Login to GCP
+      - name: Login
+        uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_email: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+          service_account_key: ${{ secrets.GCP_DOCKER_REGISTRY_KEY }}
+      - name: Configure Docker
+        run: gcloud auth configure-docker --quiet
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
       # Import .env file - read it through bash script
@@ -78,14 +87,7 @@ jobs:
 #     - name: Show logs from Terraformer
 #       run: docker logs terraformer
       # Push images to GCR
-      - name: Login
-        uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-          service_account_email: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
-          service_account_key: ${{ secrets.GCP_DOCKER_REGISTRY_KEY }}
-      - name: Configure Docker
-        run: gcloud auth configure-docker --quiet
+     
       - name: Push Context-box image
         run: docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/context-box:$GITHUB_RUN_NUMBER 
       - name: Push Scheduler image
