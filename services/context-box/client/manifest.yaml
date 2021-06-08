@@ -1,8 +1,4 @@
 name: TestProjectName
-publicCloudCredentials: # optional credentials for each supported public cloud that can be used to create nodes
-  gcp: ../secrets/admin-project-283514-3729b1f097f2.json
-  hetzner: xIAfsb7M5K6etYAfXYcg5iYyrFGNlCxcICo060HVEygjoF0usFpv5P9X7pk85Xe1
-  # and other similar clouds
 
 # out of scope of MVP; an array of already existing machines (e.g. on-premises) that can be used for the clusters
 # machinePool: 
@@ -15,12 +11,14 @@ publicCloudCredentials: # optional credentials for each supported public cloud t
 
 # clusters represents an array of clusterSpecs - high level descriptions of what the desired clusters should be like
 clusters: 
-  - name: TestClusterName
+  - name: TestClusterName1
     kubernetes: v1.19.0
     network: 192.168.2.0/24
-    
     nodePools:       
     - name: gcp
+      provider:
+        name: gcp
+        credentials: ../secrets/admin-project-283514-3729b1f097f2.json
       region: europe-west1
       master:
         count: 1
@@ -38,6 +36,9 @@ clusters:
         zone: europe-west1-c
     
     - name: hetzner
+      provider:
+        name: hetzner
+        credentials: xIAfsb7M5K6etYAfXYcg5iYyrFGNlCxcICo060HVEygjoF0usFpv5P9X7pk85Xe1
       master:
         count: 1
         # shape: small
@@ -55,6 +56,50 @@ clusters:
         location: nbg1
         datacenter: nbg1-dc3
 
+  - name: TestClusterName2
+    kubernetes: v1.19.0
+    network: 192.168.2.0/24
+    nodePools:
+      - name: gcp
+        provider:
+          name: gcp
+          credentials: ../secrets/admin-project-283514-3729b1f097f2.json
+        region: europe-west1
+        master:
+          count: 1
+          # shape: small
+          server_type: e2-small
+          image: ubuntu-os-cloud/ubuntu-2004-lts
+          disk_size: 50
+          zone: europe-west1-c
+        worker:
+          count: 2
+          # shape: tiny
+          server_type: f1-micro
+          image: ubuntu-os-cloud/ubuntu-2004-lts
+          disk_size: 50
+          zone: europe-west1-c
+
+      - name: hetzner
+        provider:
+          name: hetzner
+          credentials: xIAfsb7M5K6etYAfXYcg5iYyrFGNlCxcICo060HVEygjoF0usFpv5P9X7pk85Xe1
+        master:
+          count: 1
+          # shape: small
+          server_type: cpx11
+          image: ubuntu-20.04
+          disk_size: 50
+          location: nbg1
+          datacenter: nbg1-dc3
+        worker:
+          count: 2
+          # shape: small
+          server_type: cpx11
+          image: ubuntu-20.04
+          disk_size: 50
+          location: nbg1
+          datacenter: nbg1-dc3
     # out of MVP
     # - machinePoolIPs: 
     #   - 1.1.1.1
