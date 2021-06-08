@@ -1,4 +1,4 @@
-name: CI pipeline for creating the docker images via docker-compose
+name: CI pipeline for creating the docker images
 # Controls when the action will run. 
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
@@ -18,7 +18,7 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
-      # Import .env file
+      # Import .env file - read it through bash script
       - name: Import environment variables from a file
         id: import-env
         shell: bash
@@ -31,42 +31,63 @@ jobs:
         run: docker network create --driver bridge platform-net
       # Build the docker images
       - name: Build the docker image for Context-box
-        run: docker build --tag context-box -f ./services/context-box/Dockerfile .
+        run: docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/context-box:$GITHUB_RUN_NUMBER -f ./services/context-box/Dockerfile .
       - name: Build the docker image for Scheduler
-        run: docker build --tag scheduler -f ./services/scheduler/Dockerfile .
+        run: docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/scheduler:$GITHUB_RUN_NUMBER -f ./services/scheduler/Dockerfile .
 #     - name: Build the docker image for KubeEleven
-#       run: docker build --tag kube_eleven -f ./services/kubeEleven/Dockerfile .
+#       run: docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/kube_eleven:$GITHUB_RUN_NUMBER -f ./services/kubeEleven/Dockerfile .
 #     - name: Build the docker image for Builder
-#       run: docker build --tag builder -f ./services/builder/Dockerfile
+#       run: docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/builder:$GITHUB_RUN_NUMBER -f ./services/builder/Dockerfile .
 #     - name: Build the docker image for Wireguardian
-#       run: docker build --tag wireguardian -f ./services/wireguardian/Dockerfile .
+#       run: docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/wireguardian:$GITHUB_RUN_NUMBER -f ./services/wireguardian/Dockerfile .
 #     - name: Build the docker image for Terraformer
-#       run: docker build --tag terraformer -f ./services/terraformer/Dockerfile .
+#       run: docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/terraformer:$GITHUB_RUN_NUMBER -f ./services/terraformer/Dockerfile .
 
       # Run the docker images
       - name: Run MongoDB
         run: docker run --rm -it -v mongodb:/data/db --name mongodb -d -p $DATABASE_PORT:$DATABASE_PORT --network platform-net mongo
       - name: Run Context-box
-        run: docker run --env-file .env --name context-box -d -p $CONTEXT_BOX_PORT:$CONTEXT_BOX_PORT --network platform-net context-box
+        run: docker run --env-file .env --name context-box -d -p $CONTEXT_BOX_PORT:$CONTEXT_BOX_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/context-box:$GITHUB_RUN_NUMBER
       - name: Run Scheduler
-        run: docker run --env-file .env --name scheduler -d --network platform-net scheduler
+        run: docker run --env-file .env --name scheduler -d --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/scheduler:$GITHUB_RUN_NUMBER 
 #     - name: Run KubeEleven
-#      run: docker run --rm --env-file .env kube_eleven -p ${{KUBE_ELEVEN_PORT}}:${{KUBE_ELEVEN_PORT}}
+#      run: docker run --env-file .env --name kube_eleven -d -p $KUBE_ELEVEN_PORT:$KUBE_ELEVEN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/kube_eleven:$GITHUB_RUN_NUMBER
 #     - name: Run Builder
-#      run: docker run --rm --env-file .env builder -p ${{BUILDER_PORT}}:${{BUILDER_PORT}}
+#      run: docker run --env-file .env --name builder -d -p $BUILDER_PORT:$BUILDER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/builder:$GITHUB_RUN_NUMBER
 #     - name: Run Wireguardian
-#      run: docker run --rm --env-file .env wireguardian -p ${{WIREGUARDIAN_PORT}}:${{WIREGUARDIAN_PORT}}
+#      run: docker run --env-file .env --name wireguardian -d -p $WIREGUARDIAN_PORT:$WIREGUARDIAN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/wireguardian:$GITHUB_RUN_NUMBER
 #     - name: Terraformer
-#      run: docker run --rm --env-file .env terraformer -p ${{TERRAFORMER_PORT}}:${{TERRAFORMER_PORT}}
+#      run: docker run --env-file .env --name terraformer -d -p $TERRAFORMER_PORT:$TERRAFORMER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/terraformer:$GITHUB_RUN_NUMBER
+      # Add 10s delay so services can connect and start working as intended
       - name: Small delay
-        run: sleep 5
-      # Check if containers are running
-      - name: Check the running containers
+        run: sleep 10
+      # Check the containers and their status
+      - name: Check the containers
         run: docker ps -a
       # Show logs from containers
       - name: Show logs from context-box
         run: docker logs context-box
       - name: Show logs from scheduler
         run: docker logs scheduler
- 
-        
+#     - name: Show logs from KubeEleven
+#       run: docker logs kube_eleven
+#     - name: Show logs from Builder
+#       run: docker logs builder
+#     - name: Show logs from Wireguardian
+#       run: docker logs wireguardian
+#     - name: Show logs from Terraformer
+#       run: docker logs terraformer
+      # Push images to GCR
+#      - name: Login
+#        uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+#        with:
+#          project_id: ${{ secrets.GCP_PROJECT_ID }}
+#          service_account_email: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+#          service_account_key: ${{ secrets.GCP_DOCKER_REGISTRY_KEY }}
+#      - name: Configure Docker
+#        run: gcloud auth configure-docker --quiet
+#      - name: Push Context-box image
+#        run: docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/context-box:$GITHUB_RUN_NUMBER 
+#      - name: Push Scheduler image
+#        run: docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/scheduler:$GITHUB_RUN_NUMBER 
+
