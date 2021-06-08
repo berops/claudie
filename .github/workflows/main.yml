@@ -45,9 +45,9 @@ jobs:
       - name: Run MongoDB
         run: docker run --rm -it -v mongodb:/data/db --name mongodb -d -p $DATABASE_PORT:$DATABASE_PORT mongo
       - name: Run Context-box
-        run: docker run --rm --env-file .env -d context-box -p $CONTEXT-BOX_PORT:$CONTEXT-BOX_PORT
+        run: docker run --rm --env-file .env --name context-box -d -p $CONTEXT-BOX_PORT:$CONTEXT-BOX_PORT context-box
       - name: Run Scheduler
-        run: docker run --rm --env-file .env -d scheduler
+        run: docker run --rm --env-file .env --name scheduler -d scheduler
 #     - name: Run KubeEleven
 #      run: docker run --rm --env-file .env kube_eleven -p ${{KUBE_ELEVEN_PORT}}:${{KUBE_ELEVEN_PORT}}
 #     - name: Run Builder
