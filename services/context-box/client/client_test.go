@@ -84,7 +84,7 @@ func TestSaveConfigFrontEnd(t *testing.T) {
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
 
-	manifest, errR := ioutil.ReadFile("manifest.yaml") //this is manifest from this test file
+	manifest, errR := ioutil.ReadFile("/Users/samuelstolicny/Github/Berops/platform/services/context-box/client/manifest.yaml") //this is manifest from this test file
 	if errR != nil {
 		log.Fatalln(errR)
 	}
@@ -114,14 +114,14 @@ func TestSaveConfigScheduler(t *testing.T) {
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
 
-	manifest, errR := ioutil.ReadFile("manifest.yaml") //this is manifest from this test file
+	manifest, errR := ioutil.ReadFile("/Users/samuelstolicny/Github/Berops/platform/services/context-box/client/manifest.yaml") //this is manifest from this test file
 	if errR != nil {
 		log.Fatalln(errR)
 	}
 
 	err = SaveConfigScheduler(c, &pb.SaveConfigRequest{
 		Config: &pb.Config{
-			Id:           "608bebc826897cc8fed730d8",
+			Id:           "60bf64e9489c76f2e72a768f",
 			Name:         "TestSaveConfigScheduler",
 			Manifest:     string(manifest),
 			DesiredState: &pb.Project{Name: "This is desiredState name"},
