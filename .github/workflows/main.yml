@@ -87,9 +87,15 @@ jobs:
 #     - name: Show logs from Terraformer
 #       run: docker logs terraformer
       # Push images to GCR
-     
       - name: Push Context-box image
         run: docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/context-box:$GITHUB_RUN_NUMBER 
       - name: Push Scheduler image
         run: docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/scheduler:$GITHUB_RUN_NUMBER 
-
+#     - name: Push KubeEleven image
+#       run: docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/kube_eleven:$GITHUB_RUN_NUMBER 
+#     - name: Push Builder image
+#       run: docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/builder:$GITHUB_RUN_NUMBER 
+#     - name: Push Wireguardian image
+#       run: docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/wireguardian:$GITHUB_RUN_NUMBER 
+#     - name: Push Terraformer image
+#       run: docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/terraformer:$GITHUB_RUN_NUMBER 
