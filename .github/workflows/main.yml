@@ -6,24 +6,7 @@ on:
     branches: [ master, feature/GithubActions ] 
   pull_request:
     branches: [ master ]
-env:
-    DATABASE_HOSTNAME: mongodb://mongodb
-    CONTEXT_BOX_HOSTNAME: context-box
-    TERRAFORMER_HOSTNAME: terraformer
-    WIREGUARDIAN_HOSTNAME: wireguardian
-    KUBE_ELEVEN_HOSTNAME: kube_eleven
-    BUILDER_HOSTNAME: builder
-    
-    DATABASE_PORT: 27017
-    CONTEXT_BOX_PORT: 50055
-    TERRAFORMER_PORT: 50052
-    WIREGUARDIAN_PORT: 50053
-    KUBE_ELEVEN_PORT: 50054
-    BUILDER_PORT: 50051
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+ 
 jobs:
   build:
     # The type of runner that the job will run on
@@ -32,19 +15,30 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
+      # Import .env file
+      - name: Import environment variables from a file
+        id: import-env
+        shell: bash
+        run: |
+          while read line; do
+            echo "$line" >> $GITHUB_ENV
+          done < ${{ env.ENV_FILE }}
+        # Ptah to env file
+        env:
+          ENV_FILE=.env
       # Build the docker images
       - name: Build the docker image for Context-box
         run: docker build --tag context-box -f ./services/context-box/Dockerfile
       - name: Build the docker image for Scheduler
         run: docker build --tag scheduler -f ./services/scheduler/Dockerfile
-  #    - name: Build the docker image for KubeEleven
-  #      run: docker build --tag kube_eleven -f ./services/kubeEleven/Dockerfile
-  #    - name: Build the docker image for Builder
-  #      run: docker build --tag builder -f ./services/builder/Dockerfile
-  #    - name: Build the docker image for Wireguardian
-  #      run: docker build --tag wireguardian -f ./services/wireguardian/Dockerfile
-  #    - name: Build the docker image for Terraformer
-  #      run: docker build --tag terraformer -f ./services/terraformer/Dockerfile
+#     - name: Build the docker image for KubeEleven
+#       run: docker build --tag kube_eleven -f ./services/kubeEleven/Dockerfile
+#     - name: Build the docker image for Builder
+#       run: docker build --tag builder -f ./services/builder/Dockerfile
+#     - name: Build the docker image for Wireguardian
+#       run: docker build --tag wireguardian -f ./services/wireguardian/Dockerfile
+#     - name: Build the docker image for Terraformer
+#       run: docker build --tag terraformer -f ./services/terraformer/Dockerfile
 
       # Run the docker images
       - name: Run MongoDB
@@ -53,27 +47,16 @@ jobs:
         run: docker run --rm --env-file .env -d context-box -p ${env.CONTEXT-BOX_PORT}:${env.CONTEXT-BOX_PORT}
       - name: Run Scheduler
         run: docker run --rm --env-file .env -d scheduler
-  #    - name: Run KubeEleven
-  #     run: docker run --rm --env-file .env kube_eleven -p ${{KUBE_ELEVEN_PORT}}:${{KUBE_ELEVEN_PORT}}
-  #    - name: Run Builder
-  #     run: docker run --rm --env-file .env builder -p ${{BUILDER_PORT}}:${{BUILDER_PORT}}
-  #    - name: Run Wireguardian
-  #     run: docker run --rm --env-file .env wireguardian -p ${{WIREGUARDIAN_PORT}}:${{WIREGUARDIAN_PORT}}
-  #    - name: Terraformer
-  #     run: docker run --rm --env-file .env terraformer -p ${{TERRAFORMER_PORT}}:${{TERRAFORMER_PORT}}
-      
-
+#     - name: Run KubeEleven
+#      run: docker run --rm --env-file .env kube_eleven -p ${{KUBE_ELEVEN_PORT}}:${{KUBE_ELEVEN_PORT}}
+#     - name: Run Builder
+#      run: docker run --rm --env-file .env builder -p ${{BUILDER_PORT}}:${{BUILDER_PORT}}
+#     - name: Run Wireguardian
+#      run: docker run --rm --env-file .env wireguardian -p ${{WIREGUARDIAN_PORT}}:${{WIREGUARDIAN_PORT}}
+#     - name: Terraformer
+#      run: docker run --rm --env-file .env terraformer -p ${{TERRAFORMER_PORT}}:${{TERRAFORMER_PORT}}
 
       # Check if containers are running
       - name: Check the running containers
         run: docker ps -a
-
-      # Push images to GCR
-  #    - name: Push Docker images 
-  #      uses: whoan/docker-build-with-cache-action@v5
-  #      with:
-  #        username: _json_key
-  #        password: "${{ secrets.GCLOUD_JSON_KEY }}"
-  #        registry: eu.gcr.io/platform-infrastructure-316112/platform
-  #        compose_file: docker-compose.yml
         
