@@ -1,6 +1,10 @@
 package main
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -18,14 +22,8 @@ import (
 ////////////////////YAML STRUCT//////////////////////////////////////////////////
 
 type Manifest struct {
-	Name                   string                 `yaml:"name"`
-	PublicCloudCredentials PublicCloudCredentials `yaml:"publicCloudCredentials"`
-	Clusters               []Cluster              `yaml:"clusters"`
-}
-
-type PublicCloudCredentials struct {
-	Gcp     string `yaml:"gcp"`
-	Hetzner string `yaml:"hetzner"`
+	Name     string    `yaml:"name"`
+	Clusters []Cluster `yaml:"clusters"`
 }
 
 type Cluster struct {
@@ -33,13 +31,16 @@ type Cluster struct {
 	Kubernetes string     `yaml:"kubernetes"`
 	Network    string     `yaml:"network"`
 	NodePools  []NodePool `yaml:"nodePools"`
+	PrivateKey string
+	PublicKey  string
 }
 
 type NodePool struct {
-	Name   string `yaml:"name"`
-	Region string `yaml:"region"`
-	Master Master `yaml:"master"`
-	Worker Worker `yaml:"worker"`
+	Name     string   `yaml:"name"`
+	Region   string   `yaml:"region"`
+	Master   Master   `yaml:"master"`
+	Worker   Worker   `yaml:"worker"`
+	Provider Provider `yaml:"provider"`
 }
 
 type Master struct {
@@ -62,7 +63,41 @@ type Worker struct {
 	Datacenter string `yaml:"datacenter"`
 }
 
+type Provider struct {
+	Name        string `yaml:"name"`
+	Credentials string `yaml:"credentials"`
+}
+
 ////////////////////////////////////////////////////////////////////////////////
+
+func generateRSAKeyPair() (string, string) {
+	bitSize := 2048
+	// Generate RSA key.
+	key, err := rsa.GenerateKey(rand.Reader, bitSize)
+	if err != nil {
+		panic(err)
+	}
+
+	// Extract public component.
+	pub := key.Public()
+
+	// Encode private key to PKCS#1 ASN.1 PEM.
+	keyPEM := pem.EncodeToMemory(
+		&pem.Block{
+			Type:  "RSA PRIVATE KEY",
+			Bytes: x509.MarshalPKCS1PrivateKey(key),
+		},
+	)
+
+	// Encode public key to PKCS#1 ASN.1 PEM.
+	pubPEM := pem.EncodeToMemory(
+		&pem.Block{
+			Type:  "RSA PUBLIC KEY",
+			Bytes: x509.MarshalPKCS1PublicKey(pub.(*rsa.PublicKey)),
+		},
+	)
+	return string(keyPEM), string(pubPEM)
+}
 
 func createDesiredState(config *pb.Config) *pb.Config {
 	//Create yaml manifest
@@ -87,9 +122,9 @@ func createDesiredState(config *pb.Config) *pb.Config {
 		log.Fatalln("error while removing maninfest.yaml file", err)
 	}
 
-	clusters := []*pb.Cluster{}
-	for _, cluster := range desiredState.Clusters {
-		nodePools := []*pb.NodePool{}
+	var clusters []*pb.Cluster
+	for i, cluster := range desiredState.Clusters {
+		var nodePools []*pb.NodePool
 		for _, nodePool := range cluster.NodePools {
 			nodePools = append(nodePools, &pb.NodePool{
 				Name:   nodePool.Name,
@@ -103,13 +138,41 @@ func createDesiredState(config *pb.Config) *pb.Config {
 					Location:   nodePool.Master.Location,
 					Datacenter: nodePool.Master.Datacenter,
 				},
+				Worker: &pb.Node{
+					Count:      uint32(nodePool.Worker.Count),
+					ServerType: nodePool.Worker.ServerType,
+					Image:      nodePool.Worker.Image,
+					DiskSize:   nodePool.Worker.DiskSize,
+					Zone:       nodePool.Worker.Zone,
+					Location:   nodePool.Worker.Location,
+					Datacenter: nodePool.Worker.Datacenter,
+				},
+				Provider: &pb.Provider{
+					Name:        nodePool.Provider.Name,
+					Credentials: nodePool.Provider.Credentials,
+				},
 			})
+		}
+
+		// Check if a cluster has already a RSA key pair, if no generate one
+		if len(config.GetCurrentState().Clusters) > i {
+			if config.GetCurrentState().Clusters[i] == nil {
+				privateKey, publicKey := generateRSAKeyPair()
+				cluster.PrivateKey = privateKey
+				cluster.PublicKey = publicKey
+			}
+		} else {
+			privateKey, publicKey := generateRSAKeyPair()
+			cluster.PrivateKey = privateKey
+			cluster.PublicKey = publicKey
 		}
 
 		clusters = append(clusters, &pb.Cluster{
 			Name:       cluster.Name,
 			Kubernetes: cluster.Kubernetes,
 			Network:    cluster.Network,
+			PrivateKey: cluster.PrivateKey,
+			PublicKey:  cluster.PublicKey,
 			NodePools:  nodePools,
 		})
 	}
@@ -119,11 +182,7 @@ func createDesiredState(config *pb.Config) *pb.Config {
 		Name:     config.GetName(),
 		Manifest: config.GetManifest(),
 		DesiredState: &pb.Project{
-			Name: desiredState.Name,
-			Credentials: map[string]string{
-				"gcp":     desiredState.PublicCloudCredentials.Gcp,
-				"hetzner": desiredState.PublicCloudCredentials.Hetzner,
-			},
+			Name:     desiredState.Name,
 			Clusters: clusters,
 		},
 		CurrentState: config.GetCurrentState(),
@@ -168,5 +227,4 @@ func main() {
 	}()
 	<-ch
 	fmt.Println("Stopping Scheduler")
-
 }
