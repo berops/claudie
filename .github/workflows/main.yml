@@ -14,6 +14,8 @@ jobs:
       # Path to env file
     env:
       ENV_FILE: .env
+      ARRAY: ${{ steps.id.outputs.array }}
+
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Login to GCP
@@ -35,23 +37,42 @@ jobs:
           while read line; do
             echo "$line" >> $GITHUB_ENV
           done < ${{ env.ENV_FILE }}
+      # Create an array with modules that changed by a recent commit
+      - name: Check the files for a change
+        id: array
+        run: |
+          arr=()
+          for i in "$(git diff --name-only)"
+          do
+            if [[ $i == *"context-box"* ]]; then
+              arr+=("context-box")
+            fi
+            if [[ $i == *"scheduler"* ]]; then
+              arr+=("scheduler")
+            fi
+            if [[ $i == *"terraformer"* ]]; then
+              arr+=("terraformer")
+            fi
+            if [[ $i == *"builder"* ]]; then
+              arr+=("builder")
+            fi
+            if [[ $i == *"wireguardian"* ]]; then
+              arr+=("wireguardian")
+            fi
+            if [[ $i == *"kubeEleven"* ]]; then
+              arr+=("kubeEleven")
+            fi
+          done
+          echo ::set-output name=arr::${arr[@]}
       # Create network for docker containers, so they can connect via names
       - name: Create network for Docker containers
         run: docker network create --driver bridge platform-net
-      # Build the docker images
-      - name: Build the docker image for Context-box
-        run: docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/context-box:$GITHUB_RUN_NUMBER -f ./services/context-box/Dockerfile .
-      - name: Build the docker image for Scheduler
-        run: docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/scheduler:$GITHUB_RUN_NUMBER -f ./services/scheduler/Dockerfile .
-#     - name: Build the docker image for KubeEleven
-#       run: docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/kube_eleven:$GITHUB_RUN_NUMBER -f ./services/kubeEleven/Dockerfile .
-#     - name: Build the docker image for Builder
-#       run: docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/builder:$GITHUB_RUN_NUMBER -f ./services/builder/Dockerfile .
-#     - name: Build the docker image for Wireguardian
-#       run: docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/wireguardian:$GITHUB_RUN_NUMBER -f ./services/wireguardian/Dockerfile .
-#     - name: Build the docker image for Terraformer
-#       run: docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/terraformer:$GITHUB_RUN_NUMBER -f ./services/terraformer/Dockerfile .
-
+      - name: Build new images
+        run: |
+          for path in "${env.ARRAY}"
+          do
+          docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_RUN_NUMBER -f ./services/$path/Dockerfile .
+          done
       # Run the docker images
       - name: Run MongoDB
         run: docker run --rm -it -v mongodb:/data/db --name mongodb -d -p $DATABASE_PORT:$DATABASE_PORT --network platform-net mongo
@@ -86,16 +107,10 @@ jobs:
 #       run: docker logs wireguardian
 #     - name: Show logs from Terraformer
 #       run: docker logs terraformer
-      # Push images to GCR
-      - name: Push Context-box image
-        run: docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/context-box:$GITHUB_RUN_NUMBER 
-      - name: Push Scheduler image
-        run: docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/scheduler:$GITHUB_RUN_NUMBER 
-#     - name: Push KubeEleven image
-#       run: docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/kube_eleven:$GITHUB_RUN_NUMBER 
-#     - name: Push Builder image
-#       run: docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/builder:$GITHUB_RUN_NUMBER 
-#     - name: Push Wireguardian image
-#       run: docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/wireguardian:$GITHUB_RUN_NUMBER 
-#     - name: Push Terraformer image
-#       run: docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/terraformer:$GITHUB_RUN_NUMBER 
+      # Push images to GCR - TESTING
+#      - name: Push new images 
+#        run: |
+#          for path in "${env.ARRAY}"
+#          do
+#          docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_RUN_NUMBER
+#          done
