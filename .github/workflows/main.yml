@@ -14,7 +14,6 @@ jobs:
       # Path to env file
     env:
       ENV_FILE: .env
-      ARRAY: ${{ steps.id.outputs.array }}
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -63,13 +62,13 @@ jobs:
               arr+=("kubeEleven")
             fi
           done
-          echo ::set-output name=arr::${arr[@]}
+          echo '::set-output name=ARRAY::${arr[@]}'
       # Create network for docker containers, so they can connect via names
       - name: Create network for Docker containers
         run: docker network create --driver bridge platform-net
       - name: Build new images
         run: |
-          for path in "${env.ARRAY}"
+          for path in "${ ${{ steps.array.outputs.ARRAY }} }"
           do
           docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_RUN_NUMBER -f ./services/$path/Dockerfile .
           done
@@ -110,7 +109,7 @@ jobs:
       # Push images to GCR - TESTING
 #      - name: Push new images 
 #        run: |
-#          for path in "${env.ARRAY}"
+#          for path in "${ ${{ steps.array.outputs.ARRAY }} }"
 #          do
 #          docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_RUN_NUMBER
 #          done
