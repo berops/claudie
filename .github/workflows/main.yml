@@ -77,8 +77,8 @@ jobs:
         run: docker run --rm -it -v mongodb:/data/db --name mongodb -d -p $DATABASE_PORT:$DATABASE_PORT --network platform-net mongo
       - name: Run Context-box
         run: docker run --env-file .env --name context-box -d -p $CONTEXT_BOX_PORT:$CONTEXT_BOX_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/context-box:$GITHUB_RUN_NUMBER
-      - name: Run Scheduler
-        run: docker run --env-file .env --name scheduler -d --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/scheduler:$GITHUB_RUN_NUMBER 
+#     - name: Run Scheduler
+#       run: docker run --env-file .env --name scheduler -d --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/scheduler:$GITHUB_RUN_NUMBER 
 #     - name: Run KubeEleven
 #      run: docker run --env-file .env --name kube_eleven -d -p $KUBE_ELEVEN_PORT:$KUBE_ELEVEN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/kube_eleven:$GITHUB_RUN_NUMBER
 #     - name: Run Builder
@@ -96,8 +96,8 @@ jobs:
       # Show logs from containers
       - name: Show logs from Context-box
         run: docker logs context-box
-      - name: Show logs from Scheduler
-        run: docker logs scheduler
+#     - name: Show logs from Scheduler
+#       run: docker logs scheduler
 #     - name: Show logs from KubeEleven
 #       run: docker logs kube_eleven
 #     - name: Show logs from Builder
