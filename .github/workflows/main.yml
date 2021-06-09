@@ -43,7 +43,7 @@ jobs:
         id: array
         run: |
           arr=()
-          git fetch origin main
+          git fetch origin master
           git diff  --name-only origin/master..HEAD
           for i in "$(git diff  --name-only origin/master..HEAD)"
           do
