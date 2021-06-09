@@ -43,7 +43,7 @@ jobs:
         id: array
         run: |
           arr=()
-          git diff  --name-only origin/master
+          git diff  --name-only master
           for i in "$(git diff  --name-only master)"
           do
             if [[ $i == *"context-box"* ]]; then
