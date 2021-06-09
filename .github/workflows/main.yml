@@ -28,6 +28,8 @@ jobs:
 #        run: gcloud auth configure-docker --quiet
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
       # Import .env file - read it through bash script
       - name: Import environment variables from a file
         id: import-env
@@ -41,7 +43,8 @@ jobs:
         id: array
         run: |
           arr=()
-          for i in "$(git diff --name-only)"
+          echo git diff  --name-only HEAD^..HEAD
+          for i in "$(git diff  --name-only HEAD^..HEAD)"
           do
             if [[ $i == *"context-box"* ]]; then
               arr+=("context-box")
@@ -68,6 +71,7 @@ jobs:
         run: docker network create --driver bridge platform-net
       - name: Build new images
         run: |
+          echo "${{ steps.array.outputs.ARRAY }}"
           for path in "${{ steps.array.outputs.ARRAY }}"
           do
           docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_RUN_NUMBER -f ./services/$path/Dockerfile .
