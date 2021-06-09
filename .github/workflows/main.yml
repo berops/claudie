@@ -18,14 +18,14 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Login to GCP
-      - name: Login to GCP
-        uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-          service_account_email: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
-          service_account_key: ${{ secrets.GCP_DOCKER_REGISTRY_KEY }}
-      - name: Configure Docker
-        run: gcloud auth configure-docker --quiet
+#      - name: Login to GCP
+#        uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+#        with:
+#          project_id: ${{ secrets.GCP_PROJECT_ID }}
+#          service_account_email: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+#          service_account_key: ${{ secrets.GCP_DOCKER_REGISTRY_KEY }}
+#      - name: Configure Docker
+#        run: gcloud auth configure-docker --quiet
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
       # Import .env file - read it through bash script
@@ -68,7 +68,7 @@ jobs:
         run: docker network create --driver bridge platform-net
       - name: Build new images
         run: |
-          for path in "${ ${{ steps.array.outputs.ARRAY }} }"
+          for path in "${{ steps.array.outputs.ARRAY }}"
           do
           docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_RUN_NUMBER -f ./services/$path/Dockerfile .
           done
@@ -109,7 +109,7 @@ jobs:
       # Push images to GCR - TESTING
 #      - name: Push new images 
 #        run: |
-#          for path in "${ ${{ steps.array.outputs.ARRAY }} }"
+#          for path in "${{ steps.array.outputs.ARRAY }}"
 #          do
 #          docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_RUN_NUMBER
 #          done
