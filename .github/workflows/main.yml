@@ -17,7 +17,7 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Login to GCP
-      - name: Login
+      - name: Login to GCP
         uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
@@ -68,15 +68,15 @@ jobs:
 #     - name: Terraformer
 #      run: docker run --env-file .env --name terraformer -d -p $TERRAFORMER_PORT:$TERRAFORMER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/terraformer:$GITHUB_RUN_NUMBER
       # Add 10s delay so services can connect and start working as intended
-      - name: Small delay
+      - name: Add a small delay to give services time to initialize
         run: sleep 10
       # Check the containers and their status
       - name: Check the containers
         run: docker ps -a
       # Show logs from containers
-      - name: Show logs from context-box
+      - name: Show logs from Context-box
         run: docker logs context-box
-      - name: Show logs from scheduler
+      - name: Show logs from Scheduler
         run: docker logs scheduler
 #     - name: Show logs from KubeEleven
 #       run: docker logs kube_eleven
