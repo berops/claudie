@@ -49,23 +49,30 @@ jobs:
           do
             if [[ $i == *"context-box"* ]]; then
               arr+=("context-box")
+              echo "Adding context-box"
             fi
             if [[ $i == *"scheduler"* ]]; then
               arr+=("scheduler")
+              echo "Adding scheduler"
             fi
             if [[ $i == *"terraformer"* ]]; then
               arr+=("terraformer")
+              echo "Adding terraformer"
             fi
             if [[ $i == *"builder"* ]]; then
               arr+=("builder")
+              echo "Adding builder"
             fi
             if [[ $i == *"wireguardian"* ]]; then
               arr+=("wireguardian")
+              echo "Adding wireguardian"
             fi
             if [[ $i == *"kubeEleven"* ]]; then
               arr+=("kubeEleven")
+              echo "Adding kubeEleven"
             fi
           done
+          echo "${arr[@]}"
           echo '::set-output name=ARRAY::${arr[@]}'
       # Create network for docker containers, so they can connect via names
       - name: Create network for Docker containers
