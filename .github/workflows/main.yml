@@ -77,12 +77,16 @@ jobs:
       # Build the new images 
       - name: Build new images
         run: |
-          echo "${{ steps.array.outputs.ARRAY }}"
-          for path in "${{ steps.array.outputs.ARRAY }}"
-          do
-          docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_RUN_NUMBER -f ./services/$path/Dockerfile .
-          done
-
+          if test -z "${{ steps.array.outputs.ARRAY }}" 
+          then
+            echo "${{ steps.array.outputs.ARRAY }}"
+            for path in "${{ steps.array.outputs.ARRAY }}"
+            do
+            docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_RUN_NUMBER -f ./services/$path/Dockerfile .
+            done
+          else
+            echo "No changes were detected, nothing to build"
+          fi
       # Create network for docker containers, so they can connect to each other
       - name: Create network for Docker containers
         run: docker network create --driver bridge platform-net
@@ -111,7 +115,12 @@ jobs:
       # Push images to GCR 
       - name: Push new images 
         run: |
-          for path in "${{ steps.array.outputs.ARRAY }}"
-          do
-          docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_RUN_NUMBER
-          done
+          if test -z "${{ steps.array.outputs.ARRAY }}" 
+          then
+            for path in "${{ steps.array.outputs.ARRAY }}"
+            do
+            docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_RUN_NUMBER
+            done
+          else
+            echo "No images were build, nothing to push"
+          fi
