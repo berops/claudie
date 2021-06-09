@@ -73,10 +73,8 @@ jobs:
             fi
           done
           echo "${arr[@]}"
-          echo '::set-output name=ARRAY::${arr[@]}'
-      # Create network for docker containers, so they can connect via names
-      - name: Create network for Docker containers
-        run: docker network create --driver bridge platform-net
+          echo ::set-output name=ARRAY::"${arr[@]}"
+      # Build the new images 
       - name: Build new images
         run: |
           echo "${{ steps.array.outputs.ARRAY }}"
@@ -84,6 +82,11 @@ jobs:
           do
           docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_RUN_NUMBER -f ./services/$path/Dockerfile .
           done
+
+      # Create network for docker containers, so they can connect via names
+      - name: Create network for Docker containers
+        run: docker network create --driver bridge platform-net
+
       # Run the docker images
       - name: Run MongoDB
         run: docker run --rm -it -v mongodb:/data/db --name mongodb -d -p $DATABASE_PORT:$DATABASE_PORT --network platform-net mongo
