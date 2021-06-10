@@ -78,11 +78,12 @@ jobs:
       # Build the new images that were changed by a recent commit - tag image latest as well for testing
       - name: Build new images
         run: |
-          if [ -z "${{ steps.array.outputs.ARRAY }}" ] 
+          arr=({{ steps.array.outputs.ARRAY }})
+          if [ ${#arr[@]} -eq 0 ] 
           then
             echo "No changes were detected, nothing to build"            
           else
-            for path in "${{ steps.array.outputs.ARRAY }}"
+            for path in "${arr[@]}"
             do
             docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA -f ./services/$path/Dockerfile .
             #docker tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:latest
@@ -116,7 +117,8 @@ jobs:
       # Push images to GCR - latest tag is overwritten
 #      - name: Push new images 
 #        run: |
-#          if [ -z "${{ steps.array.outputs.ARRAY }}" ]
+#          arr=({{ steps.array.outputs.ARRAY }})
+#          if [ ${#arr[@]} -eq 0 ] 
 #          then
 #            echo "No images were build, nothing to push"
 #          else
