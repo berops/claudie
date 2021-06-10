@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"regexp"
 	"time"
 
 	"github.com/Berops/platform/ports"
@@ -96,7 +97,12 @@ func generateRSAKeyPair() (string, string) {
 			Bytes: x509.MarshalPKCS1PublicKey(pub.(*rsa.PublicKey)),
 		},
 	)
-	return string(keyPEM), string(pubPEM)
+
+	// Remove all new line characters from a key
+	re := regexp.MustCompile(`\r?\n`)
+	keyPEMString := re.ReplaceAllString(string(keyPEM), "")
+	pubPEMString := re.ReplaceAllString(string(pubPEM), "")
+	return keyPEMString, pubPEMString
 }
 
 func createDesiredState(config *pb.Config) *pb.Config {
