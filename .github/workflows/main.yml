@@ -77,6 +77,8 @@ jobs:
           echo ::set-output name=ARRAY::"${arr[@]}"
       # Build the new images that were changed by a recent commit - tag image latest as well for testing
       - name: Build new images
+        env:
+          TAG: ${{GITHUB_SHA}}
         run: |
           arr=({{ steps.array.outputs.ARRAY }})
           if [ ${#arr[@]} -eq 0 ] 
@@ -85,8 +87,9 @@ jobs:
           else
             for path in "${arr[@]}"
             do
-            docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA -f ./services/$path/Dockerfile .
-            #docker tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:latest
+            echo "$path"
+            docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$TAG -f ./services/$path/Dockerfile .
+            #docker tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$TAG eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:latest
             done
           fi
       # Create network for docker containers, so they can connect to each other
