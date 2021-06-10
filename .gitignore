@@ -1,7 +1,8 @@
 .idea/
 *.ini
 .terraform*
-terraform
+services/terraformer/server/terraform
 kubeone
 playground
 .vscode
+mongodb
