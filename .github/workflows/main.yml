@@ -78,7 +78,7 @@ jobs:
       # Build the new images that were changed by a recent commit - tag image latest as well for testing
       - name: Build new images
         env:
-          TAG: ${{GITHUB_SHA}}
+          TAG: ${{ github.sha }}
         run: |
           arr=({{ steps.array.outputs.ARRAY }})
           if [ ${#arr[@]} -eq 0 ] 
