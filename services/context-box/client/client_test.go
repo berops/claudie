@@ -5,15 +5,15 @@ import (
 	"log"
 	"testing"
 
-	"github.com/Berops/platform/ports"
 	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/platform/urls"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 )
 
 func TestGetConfigScheduler(t *testing.T) {
 	//Create connection to Context-box
-	cc, err := grpc.Dial(ports.ContextBoxPort, grpc.WithInsecure())
+	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("could not connect to server: %v", err)
 	}
@@ -51,7 +51,7 @@ func TestGetConfigBuilder(t *testing.T) {
 
 func TestGetAllConfigs(t *testing.T) {
 	//Create connection to Context-box
-	cc, err := grpc.Dial(ports.ContextBoxPort, grpc.WithInsecure())
+	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("could not connect to server: %v", err)
 	}
@@ -72,7 +72,7 @@ func TestGetAllConfigs(t *testing.T) {
 
 func TestSaveConfigFrontEnd(t *testing.T) {
 	//Create connection to Context-box
-	cc, err := grpc.Dial(ports.ContextBoxPort, grpc.WithInsecure())
+	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("could not connect to server: %v", err)
 	}
@@ -102,7 +102,7 @@ func TestSaveConfigFrontEnd(t *testing.T) {
 
 func TestSaveConfigScheduler(t *testing.T) {
 	//Create connection to Context-box
-	cc, err := grpc.Dial(ports.ContextBoxPort, grpc.WithInsecure())
+	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("could not connect to server: %v", err)
 	}
@@ -133,7 +133,7 @@ func TestSaveConfigScheduler(t *testing.T) {
 
 func TestDeleteConfig(t *testing.T) {
 	//Create connection to Context-box
-	cc, err := grpc.Dial(ports.ContextBoxPort, grpc.WithInsecure())
+	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("could not connect to server: %v", err)
 	}

@@ -8,8 +8,8 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/Berops/platform/ports"
 	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/platform/urls"
 	"google.golang.org/grpc"
 )
 
@@ -42,11 +42,11 @@ func main() {
 	// If code crash, we get the file name and line number
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	lis, err := net.Listen("tcp", ports.TerraformerPort)
+	lis, err := net.Listen("tcp", urls.TerraformerURL)
 	if err != nil {
 		log.Fatalln("Failed to listen on", err)
 	}
-	fmt.Println("Terraformer service is listening on", ports.TerraformerPort)
+	fmt.Println("Terraformer service is listening on", urls.TerraformerURL)
 
 	s := grpc.NewServer()
 	pb.RegisterTerraformerServiceServer(s, &server{})

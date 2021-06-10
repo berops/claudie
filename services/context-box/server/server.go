@@ -4,15 +4,16 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
-	terraformer "github.com/Berops/platform/services/terraformer/client"
 	"log"
 	"net"
 	"os"
 	"os/signal"
 	"time"
 
-	"github.com/Berops/platform/ports"
+	terraformer "github.com/Berops/platform/services/terraformer/client"
+
 	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/platform/urls"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -387,7 +388,7 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	// Connect to MongoDB
-	client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://localhost:27017")) //client represents connection object do db
+	client, err := mongo.NewClient(options.Client().ApplyURI(urls.DatabaseURL)) //client represents connection object do db
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -395,15 +396,17 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Println("Connected to MongoDB")
+	fmt.Println("MongoDB connected via", urls.DatabaseURL)
 	collection = client.Database("platform").Collection("config")
 	defer client.Disconnect(context.TODO()) //closing MongoDB connection
 
 	// Start ContextBox Service
-	lis, err := net.Listen("tcp", ports.ContextBoxPort)
+	lis, err := net.Listen("tcp", urls.ContextBoxURL)
 	if err != nil {
 		log.Fatalln("Failed to listen on", err)
 	}
-	fmt.Println("ContextBox service is listening on", ports.ContextBoxPort)
+	fmt.Println("ContextBox service is listening on", urls.ContextBoxURL)
 
 	s := grpc.NewServer()
 	pb.RegisterContextBoxServiceServer(s, &server{})

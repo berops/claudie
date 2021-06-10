@@ -1,0 +1,15 @@
+*.md
+.gitignore
+Makefile
+LICENSE
+*.yaml
+.git
+tmp
+serializer
+services/terraformer
+services/wireguardian
+services/builder
+services/kubeEleven
+services/scheduler
+services/context-box/client
+mongodb
