@@ -91,7 +91,7 @@ func TestSaveConfigFrontEnd(t *testing.T) {
 
 	err = SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
 		Config: &pb.Config{
-			Name:         "NewTest3",
+			Name:         "NewTest",
 			Manifest:     string(manifest),
 			DesiredState: &pb.Project{Name: "This is desiredState name"},
 			CurrentState: &pb.Project{Name: "This is currentState name"},
@@ -145,6 +145,6 @@ func TestDeleteConfig(t *testing.T) {
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
 
-	err = DeleteConfig(c, "6049f856a0cf8c4d391e6f57")
+	err = DeleteConfig(c, "60c1d5a94b5eff444d453b48")
 	require.NoError(t, err)
 }

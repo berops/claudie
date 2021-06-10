@@ -6,7 +6,10 @@ option go_package = "proto/pb";
 message BuildInfrastructureRequest { Config config = 1; }
 message BuildInfrastructureResponse { Config config = 1; }
 
+message DestroyInfrastructureRequest { Config config = 1; }
+message DestroyInfrastructureResponse { Config config = 1; }
+
 service TerraformerService {
-  rpc BuildInfrastructure(BuildInfrastructureRequest)
-      returns (BuildInfrastructureResponse);
+  rpc BuildInfrastructure(BuildInfrastructureRequest) returns (BuildInfrastructureResponse);
+  rpc DestroyInfrastructure(DestroyInfrastructureRequest) returns (DestroyInfrastructureResponse);
 }

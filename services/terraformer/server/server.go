@@ -16,7 +16,7 @@ import (
 type server struct{}
 
 func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastructureRequest) (*pb.BuildInfrastructureResponse, error) {
-	fmt.Println("BuildInfrastructure function was invoked with", req)
+	fmt.Println("BuildInfrastructure function was invoked with config", req.GetConfig().GetName())
 	config := req.GetConfig()
 	currentState, err := buildInfrastructure(config.GetDesiredState())
 	if err != nil {
@@ -25,6 +25,17 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 	config.CurrentState, config.DesiredState = currentState, currentState // Update currentState and desiredState
 	log.Println("Infrastructure was successfully generated")
 	return &pb.BuildInfrastructureResponse{Config: config}, nil
+}
+
+func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrastructureRequest) (*pb.DestroyInfrastructureResponse, error) {
+	fmt.Println("DestroyInfrastructure function was invoked with config:", req.GetConfig().GetName())
+	config := req.GetConfig()
+	err := destroyInfrastructure(config.GetCurrentState())
+	if err != nil {
+		log.Fatalln("Error while destroying the infrastructure", err)
+	}
+	res := &pb.DestroyInfrastructureResponse{Config: config}
+	return res, nil
 }
 
 func main() {
