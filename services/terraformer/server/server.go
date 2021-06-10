@@ -41,7 +41,6 @@ func main() {
 	pb.RegisterTerraformerServiceServer(s, &server{})
 
 	go func() {
-		fmt.Println("Starting Server...")
 		if err := s.Serve(lis); err != nil {
 			log.Fatalf("Failed to serve: %v", err)
 		}
