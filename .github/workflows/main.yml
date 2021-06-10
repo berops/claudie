@@ -37,7 +37,7 @@ jobs:
         shell: bash
         run: |
           while read line; do
-            echo "$line" >> $GITHUB_RUN_NUMBERENV
+            echo "$line" >> $GITHUB_ENV
           done < ${{ env.ENV_FILE }}
       # Create an array with modules that were changed by a recent commit via bash script
       - name: Check the files for a change
