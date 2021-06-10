@@ -4,8 +4,8 @@ import (
 	"log"
 	"testing"
 
-	"github.com/Berops/platform/ports"
 	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/platform/urls"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 )
@@ -130,7 +130,7 @@ var desiredState *pb.Project = &pb.Project{
 
 func TestBuildInfrastructure(t *testing.T) {
 	//Create connection to Terraformer
-	cc, err := grpc.Dial(ports.TerraformerPort, grpc.WithInsecure())
+	cc, err := grpc.Dial(urls.TerraformerURL, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("could not connect to server: %v", err)
 	}

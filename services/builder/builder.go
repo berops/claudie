@@ -2,21 +2,22 @@ package main
 
 import (
 	"fmt"
-	cbox "github.com/Berops/platform/services/context-box/client"
-	terraformer "github.com/Berops/platform/services/terraformer/client"
 	"log"
 	"os"
 	"os/signal"
 	"time"
 
-	"github.com/Berops/platform/ports"
+	cbox "github.com/Berops/platform/services/context-box/client"
+	terraformer "github.com/Berops/platform/services/terraformer/client"
+	"github.com/Berops/platform/urls"
+
 	"github.com/Berops/platform/proto/pb"
 	"google.golang.org/grpc"
 )
 
 func callTerraformer(config *pb.Config) *pb.Config {
 	// Create connection to Terraformer
-	cc, err := grpc.Dial(ports.TerraformerPort, grpc.WithInsecure())
+	cc, err := grpc.Dial(urls.TerraformerURL, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("could not connect to server: %v", err)
 	}
@@ -38,7 +39,7 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	// Create connection to Context-box
-	cc, err := grpc.Dial(ports.ContextBoxPort, grpc.WithInsecure())
+	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("could not connect to Content-box server: %v", err)
 	}
