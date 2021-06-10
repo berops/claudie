@@ -130,7 +130,7 @@ var desiredState *pb.Project = &pb.Project{
 
 func TestBuildInfrastructure(t *testing.T) {
 	//Create connection to Terraformer
-	cc, err := grpc.Dial(urls.TerraformerURL, grpc.WithInsecure())
+	cc, err := grpc.Dial(urls.ExportURL("terraformer"), grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("could not connect to server: %v", err)
 	}

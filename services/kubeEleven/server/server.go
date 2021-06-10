@@ -30,11 +30,11 @@ func main() {
 	// If we crath the go gode, we get the file name and line number
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	lis, err := net.Listen("tcp", urls.KubeElevenURL)
+	lis, err := net.Listen("tcp", urls.ExportURL("kubeEleven")URL)
 	if err != nil {
 		log.Fatalln("Failed to listen on", err)
 	}
-	fmt.Println("KubeEleven service is listening on", urls.KubeElevenURL)
+	fmt.Println("KubeEleven service is listening on", urls.ExportURL("kubeEleven")URL)
 
 	s := grpc.NewServer()
 	pb.RegisterKubeElevenServiceServer(s, &server{})

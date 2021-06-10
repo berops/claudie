@@ -17,7 +17,7 @@ import (
 
 func callTerraformer(config *pb.Config) *pb.Config {
 	// Create connection to Terraformer
-	cc, err := grpc.Dial(urls.TerraformerURL, grpc.WithInsecure())
+	cc, err := grpc.Dial(urls.ExportURL("terraformer"), grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("could not connect to server: %v", err)
 	}
@@ -39,7 +39,7 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	// Create connection to Context-box
-	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
+	cc, err := grpc.Dial(urls.ExportURL("contextBox"), grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("could not connect to Content-box server: %v", err)
 	}

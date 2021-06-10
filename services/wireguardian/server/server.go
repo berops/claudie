@@ -31,11 +31,11 @@ func main() {
 	// If we crath the go gode, we get the file name and line number
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	lis, err := net.Listen("tcp", urls.WireguardianURL)
+	lis, err := net.Listen("tcp", urls.ExportURL("wireguardian"))
 	if err != nil {
 		log.Fatalln("Failed to listen on", err)
 	}
-	fmt.Println("Wireguardian service is listening on", urls.WireguardianURL)
+	fmt.Println("Wireguardian service is listening on", urls.ExportURL("wireguardian")URL)
 
 	// creating a new server
 	s := grpc.NewServer()

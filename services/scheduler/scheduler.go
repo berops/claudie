@@ -200,10 +200,11 @@ func createDesiredState(config *pb.Config) *pb.Config {
 
 func main() {
 	//Create connection to Context-box
-	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
+	cc, err := grpc.Dial(urls.ExportURL("contextBox"), grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("could not connect to server: %v", err)
 	}
+
 	defer cc.Close()
 
 	// Creating the client
