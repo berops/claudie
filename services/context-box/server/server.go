@@ -26,6 +26,7 @@ var collection *mongo.Collection
 
 var queueScheduler []*configItem
 var queueBuilder []*configItem
+var tmpBuidler map[string]*configItem = make(map[string]*configItem)
 
 type server struct{}
 
@@ -38,7 +39,7 @@ type configItem struct {
 	CurrentState []byte             `bson:"currentState"`
 	MsChecksum   []byte             `bson:"msChecksum"`
 	DsChecksum   []byte             `bson:"dsChecksum"`
-	CsChecksum   []byte             `bson:"cdChecksum"`
+	CsChecksum   []byte             `bson:"csChecksum"`
 }
 
 func dataToConfigPb(data *configItem) *pb.Config {
@@ -176,7 +177,8 @@ func configCheck() error {
 			}
 		}
 		// Checking for Builder
-		if string(config.DsChecksum) != string(config.CsChecksum) {
+		_, ok := tmpBuidler[config.Name]
+		if (string(config.DsChecksum) != string(config.CsChecksum)) && !(ok) {
 			for _, item := range queueBuilder {
 				if config.ID == item.ID {
 					uniqueB = false
@@ -281,7 +283,7 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 			fmt.Sprintf("Internal error: %v", err1),
 		)
 	}
-
+	delete(tmpBuidler, config.Name)
 	return &pb.SaveConfigResponse{Config: config}, nil
 }
 
@@ -302,6 +304,7 @@ func (*server) GetConfigBuilder(ctx context.Context, req *pb.GetConfigRequest) (
 	if len(queueBuilder) > 0 {
 		var config *configItem
 		config, queueBuilder = queueBuilder[0], queueBuilder[1:] // This is like push from a queue
+		tmpBuidler[config.Name] = config
 		return &pb.GetConfigResponse{Config: dataToConfigPb(config)}, nil
 	}
 	return &pb.GetConfigResponse{}, nil
@@ -367,7 +370,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("Connected to MongoDB")
 	collection = client.Database("platform").Collection("config")
 	defer client.Disconnect(context.TODO()) //closing MongoDB connection
 
@@ -382,7 +384,6 @@ func main() {
 	pb.RegisterContextBoxServiceServer(s, &server{})
 
 	go func() {
-		fmt.Println("Starting Server...")
 		if err := s.Serve(lis); err != nil {
 			log.Fatalf("Failed to serve: %v", err)
 		}
