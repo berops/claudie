@@ -32,7 +32,7 @@ func TestGetConfigScheduler(t *testing.T) {
 
 func TestGetConfigBuilder(t *testing.T) {
 	//Create connection to Context-box
-	cc, err := grpc.Dial(ports.ContextBoxPort, grpc.WithInsecure())
+	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("could not connect to server: %v", err)
 	}

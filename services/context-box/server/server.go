@@ -367,7 +367,7 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 // destroyConfigTerraformer calls terraformer's DestroyInfrastructure function
 func destroyConfigTerraformer(config *pb.Config) *pb.Config {
 	// Create connection to Terraformer
-	cc, err := grpc.Dial(ports.TerraformerPort, grpc.WithInsecure())
+	cc, err := grpc.Dial(urls.TerraformerURL, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("could not connect to server: %v", err)
 	}
