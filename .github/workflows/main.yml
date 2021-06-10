@@ -27,7 +27,7 @@ jobs:
       # Configure docker for use on the GCP
       - name: Configure Docker
         run: gcloud auth configure-docker --quiet
-      # Checks-out repository under $GITHUB_RUN_NUMBERWORKSPACE, so your job can access it
+      # Checks-out repository under $GITHUB_SHAWORKSPACE, so your job can access it
       - uses: actions/checkout@v2
         with:
           fetch-depth: 2
@@ -78,7 +78,7 @@ jobs:
       # Build the new images that were changed by a recent commit - tag image latest as well for testing
       - name: Build new images
         run: |
-          arr=({{ steps.array.outputs.ARRAY }})
+          arr=(${{ steps.array.outputs.ARRAY }})
           if [ ${#arr[@]} -eq 0 ] 
           then
             echo "No changes were detected, nothing to build"            
@@ -86,8 +86,8 @@ jobs:
             for path in "${arr[@]}"
             do
             echo "$path"
-            docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_RUN_NUMBER -f ./services/$path/Dockerfile .
-            #docker tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_RUN_NUMBER eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:latest
+            docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA -f ./services/$path/Dockerfile .
+            #docker tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:latest
             done
           fi
       # Create network for docker containers, so they can connect to each other
@@ -118,14 +118,14 @@ jobs:
       # Push images to GCR - latest tag is overwritten
 #      - name: Push new images 
 #        run: |
-#          arr=({{ steps.array.outputs.ARRAY }})
+#          arr=(${{ steps.array.outputs.ARRAY }})
 #          if [ ${#arr[@]} -eq 0 ] 
 #          then
 #            echo "No images were build, nothing to push"
 #          else
 #            for path in "${{ steps.array.outputs.ARRAY }}"
 #            do
-#            docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_RUN_NUMBER
+#            docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA
 #            docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:latest
 #            done
 #          fi
