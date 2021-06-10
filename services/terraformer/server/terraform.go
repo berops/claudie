@@ -51,10 +51,16 @@ func buildInfrastructure(desiredState *pb.Project) (*pb.Project, error) {
 			fillNodes(m, readOutput(output))
 		}
 		cluster.Ips = m
+		// Clean after Terraform. Remove tmp terraform dir.
+		err := os.RemoveAll("services/terraformer/server/terraform")
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 	for _, m := range desiredState.Clusters {
 		log.Println(m.Ips)
 	}
+
 	return desiredState, nil
 }
 
@@ -73,6 +79,10 @@ func destroyInfrastructure(project *pb.Project) error {
 		// Call terraform
 		initTerraform(outputPath)
 		destroyTerraform(outputPath)
+		err := os.RemoveAll("services/terraformer/server/terraform")
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 	return nil
 }
