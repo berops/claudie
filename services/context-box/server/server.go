@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
+	terraformer "github.com/Berops/platform/services/terraformer/client"
 	"log"
 	"net"
 	"os"
@@ -330,6 +331,12 @@ func (*server) GetAllConfigs(ctx context.Context, req *pb.GetAllConfigsRequest) 
 func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*pb.DeleteConfigResponse, error) {
 	log.Println("DeleteConfig request")
 
+	config, err := getFromDB(req.Id)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	destroyConfigTerraformer(dataToConfigPb(&config)) //destroy infrastructure with terraformer
+
 	oid, err := primitive.ObjectIDFromHex(req.GetId()) //convert id to mongo type id (oid)
 	if err != nil {
 		return nil, status.Errorf(
@@ -354,6 +361,24 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 	}
 
 	return &pb.DeleteConfigResponse{Id: req.GetId()}, nil
+}
+
+// destroyConfigTerraformer calls terraformer's DestroyInfrastructure function
+func destroyConfigTerraformer(config *pb.Config) *pb.Config {
+	// Create connection to Terraformer
+	cc, err := grpc.Dial(ports.TerraformerPort, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("could not connect to server: %v", err)
+	}
+	defer cc.Close()
+	// Creating the client
+	c := pb.NewTerraformerServiceClient(cc)
+	res, err := terraformer.DestroyInfrastructure(c, &pb.DestroyInfrastructureRequest{Config: config})
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	return res.GetConfig()
 }
 
 func main() {
