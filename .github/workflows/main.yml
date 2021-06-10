@@ -123,7 +123,7 @@ jobs:
           then
             echo "No images were build, nothing to push"
           else
-            for path in "${{ steps.array.outputs.ARRAY }}"
+            for path in "${arr[@]}"
             do
             docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA
             docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:latest
