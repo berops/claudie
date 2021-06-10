@@ -1,4 +1,4 @@
-name: CI pipeline for creating the docker images
+name: CI pipeline for creating and pushing the docker images
 # Controls when the action will run. 
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
@@ -17,7 +17,7 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Login to GCP
+      # Login to GCP with repository secrets 
       - name: Login to GCP
         uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
         with:
@@ -27,7 +27,7 @@ jobs:
       # Configure docker for use on the GCP
       - name: Configure Docker
         run: gcloud auth configure-docker --quiet
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      # Checks-out repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
         with:
           fetch-depth: 2
@@ -39,12 +39,13 @@ jobs:
           while read line; do
             echo "$line" >> $GITHUB_ENV
           done < ${{ env.ENV_FILE }}
-      # Create an array with modules that were changed by a recent commit
+      # Create an array with modules that were changed by a recent commit via bash script
       - name: Check the files for a change
         id: array
         run: |
           arr=()
           git fetch origin master
+          echo "Changed files:"
           git diff  --name-only origin/master..HEAD
           for i in "$(git diff  --name-only origin/master..HEAD)"
           do
@@ -74,45 +75,45 @@ jobs:
             fi
           done
           echo ::set-output name=ARRAY::"${arr[@]}"
-      # Build the new images 
+      # Build the new images that were changed by a recent commit - tag image latest as well for testing
       - name: Build new images
         run: |
           if [ -z "${{ steps.array.outputs.ARRAY }}" ] 
           then
             echo "No changes were detected, nothing to build"            
           else
-            echo "${{ steps.array.outputs.ARRAY }}"
             for path in "${{ steps.array.outputs.ARRAY }}"
             do
-            docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_RUN_NUMBER -f ./services/$path/Dockerfile .
+            docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA -f ./services/$path/Dockerfile .
+            docker tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:latest
             done
           fi
       # Create network for docker containers, so they can connect to each other
       - name: Create network for Docker containers
         run: docker network create --driver bridge platform-net
 
-      # Run the docker images
+      # Run the docker images - using latest for testing
       - name: Run MongoDB
         run: docker run --rm -it -v mongodb:/data/db --name mongodb -d -p $DATABASE_PORT:$DATABASE_PORT --network platform-net mongo
       - name: Run Context-box
-        run: docker run --env-file .env --name context-box -d -p $CONTEXT_BOX_PORT:$CONTEXT_BOX_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/context-box:$GITHUB_RUN_NUMBER
+        run: docker run --env-file .env --name context-box -d -p $CONTEXT_BOX_PORT:$CONTEXT_BOX_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/context-box:latest
       - name: Run Scheduler
-        run: docker run --env-file .env --name scheduler -d --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/scheduler:$GITHUB_RUN_NUMBER 
+        run: docker run --env-file .env --name scheduler -d --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/scheduler:latest
 #     - name: Run KubeEleven
-#      run: docker run --env-file .env --name kube_eleven -d -p $KUBE_ELEVEN_PORT:$KUBE_ELEVEN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/kube_eleven:$GITHUB_RUN_NUMBER
+#      run: docker run --env-file .env --name kube_eleven -d -p $KUBE_ELEVEN_PORT:$KUBE_ELEVEN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/kube_eleven:latest
 #     - name: Run Builder
-#      run: docker run --env-file .env --name builder -d -p $BUILDER_PORT:$BUILDER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/builder:$GITHUB_RUN_NUMBER
+#      run: docker run --env-file .env --name builder -d -p $BUILDER_PORT:$BUILDER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/builder:latest
 #     - name: Run Wireguardian
-#      run: docker run --env-file .env --name wireguardian -d -p $WIREGUARDIAN_PORT:$WIREGUARDIAN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/wireguardian:$GITHUB_RUN_NUMBER
+#      run: docker run --env-file .env --name wireguardian -d -p $WIREGUARDIAN_PORT:$WIREGUARDIAN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/wireguardian:latest
 #     - name: Terraformer
-#      run: docker run --env-file .env --name terraformer -d -p $TERRAFORMER_PORT:$TERRAFORMER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/terraformer:$GITHUB_RUN_NUMBER
+#      run: docker run --env-file .env --name terraformer -d -p $TERRAFORMER_PORT:$TERRAFORMER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/terraformer:latest
       # Add 10s delay so services can connect and start working as intended
       - name: Add a small delay to give services time to initialize
         run: sleep 10
       # Check the containers and their status
       - name: Check the containers
         run: docker ps -a
-      # Push images to GCR 
+      # Push images to GCR - latest tag is overwritten
       - name: Push new images 
         run: |
           if [ -z "${{ steps.array.outputs.ARRAY }}" ]
@@ -121,6 +122,7 @@ jobs:
           else
             for path in "${{ steps.array.outputs.ARRAY }}"
             do
-            docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_RUN_NUMBER
+            docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA
+            docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:latest
             done
           fi
