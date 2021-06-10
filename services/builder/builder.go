@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	cbox "github.com/Berops/platform/services/context-box/client"
+	terraformer "github.com/Berops/platform/services/terraformer/client"
 	"log"
 	"os"
 	"os/signal"
@@ -9,30 +11,27 @@ import (
 
 	"github.com/Berops/platform/ports"
 	"github.com/Berops/platform/proto/pb"
-	cbox "github.com/Berops/platform/services/context-box/client"
 	"google.golang.org/grpc"
 )
 
-// flow permorms the sequence of gRPC calls to Terraformer, Wireguardian, KubeEleven modules (TWK)
-// func flow(project *pb.Project) (*pb.Project, error) {
-// 	//Terraformer
-// 	project, err := messageTerraformer(project) //sending project message to Terraformer
-// 	if err != nil {
-// 		log.Fatalln("Error while Building Infrastructure", err)
-// 	}
-// 	//Wireguardian
-// 	_, err = messageWireguardian(project) //sending project message to Wireguardian
-// 	if err != nil {
-// 		log.Fatalln("Error while creating Wireguard VPN", err)
-// 	}
-// 	//KubeEleven
-// 	project, err = messageKubeEleven(project) //sending project message to KubeEleven
-// 	if err != nil {
-// 		log.Fatalln("Error while creating the cluster with KubeOne", err)
-// 	}
+func callTerraformer(config *pb.Config) *pb.Config {
+	// Create connection to Terraformer
+	cc, err := grpc.Dial(ports.TerraformerPort, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("could not connect to server: %v", err)
+	}
+	defer cc.Close()
 
-// 	return project, nil
-// }
+	// Creating the client
+	c := pb.NewTerraformerServiceClient(cc)
+
+	res, err := terraformer.BuildInfrastructure(c, &pb.BuildInfrastructureRequest{Config: config})
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	return res.GetConfig()
+}
 
 func main() {
 	// If go code crash, we will get the file name and line number
@@ -49,13 +48,17 @@ func main() {
 	c := pb.NewContextBoxServiceClient(cc)
 	go func() {
 		for {
-			res, err := cbox.GetConfigBuilder(c)
+			res, err := cbox.GetConfigBuilder(c) // Get a new config
 			if err != nil {
 				log.Fatalln("Error while getting config from the Builder", err)
 			}
 			if res.GetConfig() != nil {
 				config := res.GetConfig()
-				log.Println(config.GetName())
+				log.Println("I got config: ", config.GetName())
+				// TODO: Call Terrraform
+				config = callTerraformer(config)
+				// TODO: Call Wireguardian
+				// TODO: Call KubeEleven
 				err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 				if err != nil {
 					log.Fatalln("Error while saving the config", err)
