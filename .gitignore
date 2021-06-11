@@ -6,3 +6,4 @@ kubeone
 playground
 .vscode
 mongodb
+*.tfstate*
