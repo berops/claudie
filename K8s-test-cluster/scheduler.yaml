@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment 
+metadata:
+  name: platform-deployment-scheduler
+  labels:
+    app: scheduler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scheduler
+  template:
+    metadata:
+      labels:
+        app: scheduler
+    spec:
+      containers:
+      - name: scheduler
+        image: eu.gcr.io/platform-infrastructure-316112/platform/scheduler:latest 
+        env:
+        - name: CONTEXT_BOX_PORT
+          value: "50055"
+        - name: CONTEXT_BOX_HOSTNAME
+          value: "context-box"
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: platform-service-scheduler
+spec:
+  selector:
+    app: scheduler
+  ports:
+  - protocol: TCP
+    port: 50056
+    targetPort: 50056
+  type: NodePort
