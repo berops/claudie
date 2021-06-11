@@ -19,46 +19,23 @@ var (
 	DatabaseURL string = os.Getenv("DATABASE_HOSTNAME") + ":" + os.Getenv("DATABASE_PORT")
 )
 
-func ExportURL(url string) string {
-	switch url {
-	case "builder":
-		if BuilderURL == ":" {
-			return "localhost:50051"
-		} else {
-			return BuilderURL
-		}
-	case "terraformer":
-		if TerraformerURL == ":" {
-			return "localhost:50052"
-		} else {
-			return TerraformerURL
-		}
-	case "wireguardian":
-		if WireguardianURL == ":" {
-			return "localhost:50053"
-		} else {
-			return WireguardianURL
-		}
-	case "kubeEleven":
-		if KubeElevenURL == ":" {
-			return "localhost:50054"
-		} else {
-			return KubeElevenURL
-		}
-
-	case "contextBox":
-		if ContextBoxURL == ":" {
-			return "localhost:50055"
-		} else {
-			return ContextBoxURL
-		}
-	case "database":
-		if DatabaseURL == ":" {
-			return "mongodb://localhost:27017"
-		} else {
-			return DatabaseURL
-		}
-	default:
-		return url
+func init() {
+	if BuilderURL == ":" {
+		BuilderURL = "localhost:50051"
+	}
+	if TerraformerURL == ":" {
+		TerraformerURL = "localhost:50052"
+	}
+	if WireguardianURL == ":" {
+		WireguardianURL = "localhost:50053"
+	}
+	if KubeElevenURL == ":" {
+		KubeElevenURL = "localhost:50054"
+	}
+	if ContextBoxURL == ":" {
+		ContextBoxURL = "localhost:50055"
+	}
+	if DatabaseURL == ":" {
+		DatabaseURL = "mongodb://localhost:27017"
 	}
 }

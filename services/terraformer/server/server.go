@@ -42,11 +42,11 @@ func main() {
 	// If code crash, we get the file name and line number
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	lis, err := net.Listen("tcp", urls.ExportURL("terraformer"))
+	lis, err := net.Listen("tcp", urls.TerraformerURL)
 	if err != nil {
 		log.Fatalln("Failed to listen on", err)
 	}
-	fmt.Println("Terraformer service is listening on:", urls.ExportURL("terraformer"))
+	fmt.Println("Terraformer service is listening on:", urls.TerraformerURL)
 
 	s := grpc.NewServer()
 	pb.RegisterTerraformerServiceServer(s, &server{})
