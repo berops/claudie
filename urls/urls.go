@@ -18,3 +18,24 @@ var (
 	//DatabaseURL is a listening URL for Database
 	DatabaseURL string = os.Getenv("DATABASE_HOSTNAME") + ":" + os.Getenv("DATABASE_PORT")
 )
+
+func init() {
+	if BuilderURL == ":" {
+		BuilderURL = "localhost:50051"
+	}
+	if TerraformerURL == ":" {
+		TerraformerURL = "localhost:50052"
+	}
+	if WireguardianURL == ":" {
+		WireguardianURL = "localhost:50053"
+	}
+	if KubeElevenURL == ":" {
+		KubeElevenURL = "localhost:50054"
+	}
+	if ContextBoxURL == ":" {
+		ContextBoxURL = "localhost:50055"
+	}
+	if DatabaseURL == ":" {
+		DatabaseURL = "mongodb://localhost:27017"
+	}
+}
