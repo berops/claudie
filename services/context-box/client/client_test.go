@@ -145,6 +145,6 @@ func TestDeleteConfig(t *testing.T) {
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
 
-	err = DeleteConfig(c, "60c1d5a94b5eff444d453b48")
+	err = DeleteConfig(c, "60c31adfd278aff9eff87eef")
 	require.NoError(t, err)
 }

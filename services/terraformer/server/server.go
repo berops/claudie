@@ -46,7 +46,7 @@ func main() {
 	if err != nil {
 		log.Fatalln("Failed to listen on", err)
 	}
-	fmt.Println("Terraformer service is listening on", urls.TerraformerURL)
+	fmt.Println("Terraformer service is listening on:", urls.TerraformerURL)
 
 	s := grpc.NewServer()
 	pb.RegisterTerraformerServiceServer(s, &server{})

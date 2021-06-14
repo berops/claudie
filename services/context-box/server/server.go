@@ -406,7 +406,7 @@ func main() {
 	if err != nil {
 		log.Fatalln("Failed to listen on", err)
 	}
-	fmt.Println("ContextBox service is listening on", urls.ContextBoxURL)
+	fmt.Println("ContextBox service is listening on:", urls.ContextBoxURL)
 
 	s := grpc.NewServer()
 	pb.RegisterContextBoxServiceServer(s, &server{})

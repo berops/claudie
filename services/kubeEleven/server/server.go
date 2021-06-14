@@ -9,7 +9,6 @@ import (
 	"os/signal"
 
 	"github.com/Berops/platform/proto/pb"
-	"github.com/Berops/platform/urls"
 	"google.golang.org/grpc"
 )
 
@@ -30,11 +29,11 @@ func main() {
 	// If we crath the go gode, we get the file name and line number
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	lis, err := net.Listen("tcp", urls.KubeElevenURL)
+	lis, err := net.Listen("tcp", KubeElevenURLURL)
 	if err != nil {
 		log.Fatalln("Failed to listen on", err)
 	}
-	fmt.Println("KubeEleven service is listening on", urls.KubeElevenURL)
+	fmt.Println("KubeEleven service is listening on", KubeElevenURLURL)
 
 	s := grpc.NewServer()
 	pb.RegisterKubeElevenServiceServer(s, &server{})

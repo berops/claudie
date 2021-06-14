@@ -10,7 +10,6 @@ import (
 
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/services/wireguardian/inventory"
-	"github.com/Berops/platform/urls"
 	"google.golang.org/grpc"
 )
 
@@ -31,11 +30,11 @@ func main() {
 	// If we crath the go gode, we get the file name and line number
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	lis, err := net.Listen("tcp", urls.WireguardianURL)
+	lis, err := net.Listen("tcp", WireguardianURL)
 	if err != nil {
 		log.Fatalln("Failed to listen on", err)
 	}
-	fmt.Println("Wireguardian service is listening on", urls.WireguardianURL)
+	fmt.Println("Wireguardian service is listening on", WireguardianURLURL)
 
 	// creating a new server
 	s := grpc.NewServer()

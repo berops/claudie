@@ -204,6 +204,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("could not connect to server: %v", err)
 	}
+
 	defer cc.Close()
 
 	// Creating the client
