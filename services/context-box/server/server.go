@@ -401,12 +401,18 @@ func main() {
 	collection = client.Database("platform").Collection("config")
 	defer client.Disconnect(context.TODO()) //closing MongoDB connection
 
+	// Set the context-box port
+	contextboxPort := os.Getenv("CONTEXT_BOX_PORT")
+	if contextboxPort == "" {
+		contextboxPort = "50055" // Default value
+	}
+
 	// Start ContextBox Service
-	lis, err := net.Listen("tcp", urls.ContextBoxURL)
+	lis, err := net.Listen("tcp", "0.0.0.0"+contextboxPort)
 	if err != nil {
 		log.Fatalln("Failed to listen on", err)
 	}
-	fmt.Println("ContextBox service is listening on:", urls.ContextBoxURL)
+	fmt.Println("ContextBox service is listening on:", "0.0.0.0"+contextboxPort)
 
 	s := grpc.NewServer()
 	pb.RegisterContextBoxServiceServer(s, &server{})
