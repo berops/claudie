@@ -408,11 +408,11 @@ func main() {
 	}
 
 	// Start ContextBox Service
-	lis, err := net.Listen("tcp", "0.0.0.0"+contextboxPort)
+	lis, err := net.Listen("tcp", "0.0.0.0:"+contextboxPort)
 	if err != nil {
 		log.Fatalln("Failed to listen on", err)
 	}
-	fmt.Println("ContextBox service is listening on:", "0.0.0.0"+contextboxPort)
+	fmt.Println("ContextBox service is listening on:", "0.0.0.0:"+contextboxPort)
 
 	s := grpc.NewServer()
 	pb.RegisterContextBoxServiceServer(s, &server{})
