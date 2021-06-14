@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: context-box
-        image: eu.gcr.io/platform-infrastructure-316112/platform/context-box:test-tag
+        image: eu.gcr.io/platform-infrastructure-316112/platform/context-box:latest
         env:
         - name: DATABASE_PORT
           valueFrom:
