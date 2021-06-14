@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment 
 metadata:
-  name: platform-deployment-context-box
+  name: context-box
   labels:
     app: context-box
 spec:
@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: context-box
-        image: eu.gcr.io/platform-infrastructure-316112/platform/context-box:latest 
+        image: eu.gcr.io/platform-infrastructure-316112/platform/context-box:test-tag 
         env:
         - name: DATABASE_PORT
           value: "27017"
@@ -25,14 +25,14 @@ spec:
         - name: CONTEXT_BOX_PORT
           value: "50055"
         - name: CONTEXT_BOX_HOSTNAME
-          value: "localhost"
+          value: "0.0.0.0"
         ports:
         - containerPort: 50055
 ---
 kind: Service
 apiVersion: v1
 metadata:
-  name: platform-service-context-box
+  name: context-box
 spec:
   selector:
     app: context-box
@@ -40,4 +40,3 @@ spec:
   - protocol: TCP
     port: 50055
     targetPort: 50055
-  type: NodePort

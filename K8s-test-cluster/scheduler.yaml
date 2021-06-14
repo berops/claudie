@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment 
 metadata:
-  name: platform-deployment-scheduler
+  name: scheduler
   labels:
     app: scheduler
 spec:
@@ -22,16 +22,4 @@ spec:
           value: "50055"
         - name: CONTEXT_BOX_HOSTNAME
           value: "context-box"
----
-kind: Service
-apiVersion: v1
-metadata:
-  name: platform-service-scheduler
-spec:
-  selector:
-    app: scheduler
-  ports:
-  - protocol: TCP
-    port: 50056
-    targetPort: 50056
-  type: NodePort
+# No Service needed
