@@ -117,9 +117,11 @@ jobs:
         run: docker run --env-file .env --name terraformer -d -p $TERRAFORMER_PORT:$TERRAFORMER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/terraformer:latest
       # Add 10s delay so services can connect and start working as intended
       - name: Add a small delay to give services time to initialize
-        run: sleep 10
+        if: ${{ always() }}  # Wait for the running containers to configure themselves - some may fail, therefore always()
+        run: sleep 5
       # Check the containers and their status
       - name: Check the containers
+        if: ${{ always() }}  # Check the running containers even if some fail
         run: docker ps -a
       # Push images to GCR - latest tag is overwritten
       - name: Push new images 
