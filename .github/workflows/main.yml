@@ -3,7 +3,7 @@ name: CI pipeline for creating and pushing the docker images
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ master ] 
+    branches: [ master, feature/GithubActions ] 
   pull_request:
     branches: [ master ]
 
@@ -102,13 +102,13 @@ jobs:
       - name: Run Scheduler
         run: docker run --env-file .env --name scheduler -d --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/scheduler:latest
 #     - name: Run KubeEleven
-#      run: docker run --env-file .env --name kube_eleven -d -p $KUBE_ELEVEN_PORT:$KUBE_ELEVEN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/kube_eleven:latest
-#     - name: Run Builder
-#      run: docker run --env-file .env --name builder -d -p $BUILDER_PORT:$BUILDER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/builder:latest
+#       run: docker run --env-file .env --name kube_eleven -d -p $KUBE_ELEVEN_PORT:$KUBE_ELEVEN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/kube_eleven:latest
+      - name: Run Builder
+        run: docker run --env-file .env --name builder -d -p $BUILDER_PORT:$BUILDER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/builder:latest
 #     - name: Run Wireguardian
-#      run: docker run --env-file .env --name wireguardian -d -p $WIREGUARDIAN_PORT:$WIREGUARDIAN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/wireguardian:latest
-#     - name: Terraformer
-#      run: docker run --env-file .env --name terraformer -d -p $TERRAFORMER_PORT:$TERRAFORMER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/terraformer:latest
+#       run: docker run --env-file .env --name wireguardian -d -p $WIREGUARDIAN_PORT:$WIREGUARDIAN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/wireguardian:latest
+      - name: Terraformer
+        run: docker run --env-file .env --name terraformer -d -p $TERRAFORMER_PORT:$TERRAFORMER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/terraformer:latest
       # Add 10s delay so services can connect and start working as intended
       - name: Add a small delay to give services time to initialize
         run: sleep 10
