@@ -58,24 +58,3 @@ spec:
             configMapKeyRef:
               name: urls
               key: KUBE_ELEVEN_HOSTNAME
-        - name: BUILDER_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: urls
-              key: BUILDER_PORT
-        - name: BUILDER_HOSTNAME
-          value: "0.0.0.0"      # Override env var from .env file - need to talk to Samo about changes in a code
-        ports:
-          - containerPort: 50051
----
-kind: Service
-apiVersion: v1
-metadata:
-  name: builder
-spec:
-  selector:
-    app: builder
-  ports:
-  - protocol: TCP
-    port: 50051
-    targetPort: 50051
