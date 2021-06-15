@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-func TestGetConfig(t *testing.T) {
+func TestGetConfigScheduler(t *testing.T) {
 	//Create connection to Context-box
 	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
 	if err != nil {
@@ -25,7 +25,26 @@ func TestGetConfig(t *testing.T) {
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
 
-	res, err := GetConfig(c)
+	res, err := GetConfigScheduler(c)
+	require.NoError(t, err)
+	t.Log("Config name", res.GetConfig().GetName())
+}
+
+func TestGetConfigBuilder(t *testing.T) {
+	//Create connection to Context-box
+	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("could not connect to server: %v", err)
+	}
+	defer func() {
+		err := cc.Close()
+		require.NoError(t, err)
+	}()
+
+	// Creating the client
+	c := pb.NewContextBoxServiceClient(cc)
+
+	res, err := GetConfigBuilder(c)
 	require.NoError(t, err)
 	t.Log("Config name", res.GetConfig().GetName())
 }
@@ -65,7 +84,7 @@ func TestSaveConfigFrontEnd(t *testing.T) {
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
 
-	manifest, errR := ioutil.ReadFile("manifest.yaml") //this is manifest from this test file
+	manifest, errR := ioutil.ReadFile("/Users/samuelstolicny/Github/Berops/platform/services/context-box/client/manifest.yaml") //this is manifest from this test file
 	if errR != nil {
 		log.Fatalln(errR)
 	}
@@ -95,14 +114,14 @@ func TestSaveConfigScheduler(t *testing.T) {
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
 
-	manifest, errR := ioutil.ReadFile("manifest.yaml") //this is manifest from this test file
+	manifest, errR := ioutil.ReadFile("/Users/samuelstolicny/Github/Berops/platform/services/context-box/client/manifest.yaml") //this is manifest from this test file
 	if errR != nil {
 		log.Fatalln(errR)
 	}
 
 	err = SaveConfigScheduler(c, &pb.SaveConfigRequest{
 		Config: &pb.Config{
-			Id:           "608bebc826897cc8fed730d8",
+			Id:           "60bf64e9489c76f2e72a768f",
 			Name:         "TestSaveConfigScheduler",
 			Manifest:     string(manifest),
 			DesiredState: &pb.Project{Name: "This is desiredState name"},
@@ -126,6 +145,6 @@ func TestDeleteConfig(t *testing.T) {
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
 
-	err = DeleteConfig(c, "6049f856a0cf8c4d391e6f57")
+	err = DeleteConfig(c, "60c31adfd278aff9eff87eef")
 	require.NoError(t, err)
 }
