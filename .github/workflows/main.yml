@@ -3,7 +3,7 @@ name: CI pipeline for creating and pushing the docker images
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ master, feature/GithubActions ] 
+    branches: [ master, feature/GithubActions ] # the feature branch is included for testing
   pull_request:
     branches: [ master ]
 
