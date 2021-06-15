@@ -15,33 +15,43 @@ import (
 
 type server struct{}
 
-func (*server) BuildInfrastructure(_ context.Context, req *pb.Project) (*pb.Project, error) {
-	fmt.Println("BuildInfrastructure function was invoked with", req)
-
-	err := buildTerraform(req)
+func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastructureRequest) (*pb.BuildInfrastructureResponse, error) {
+	fmt.Println("BuildInfrastructure function was invoked with config", req.GetConfig().GetName())
+	config := req.GetConfig()
+	currentState, err := buildInfrastructure(config.GetDesiredState())
 	if err != nil {
 		log.Fatalln("Template generator failed:", err)
 	}
-
+	config.CurrentState, config.DesiredState = currentState, currentState // Update currentState and desiredState
 	log.Println("Infrastructure was successfully generated")
-	return req, nil
+	return &pb.BuildInfrastructureResponse{Config: config}, nil
+}
+
+func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrastructureRequest) (*pb.DestroyInfrastructureResponse, error) {
+	fmt.Println("DestroyInfrastructure function was invoked with config:", req.GetConfig().GetName())
+	config := req.GetConfig()
+	err := destroyInfrastructure(config.GetCurrentState())
+	if err != nil {
+		log.Fatalln("Error while destroying the infrastructure", err)
+	}
+	res := &pb.DestroyInfrastructureResponse{Config: config}
+	return res, nil
 }
 
 func main() {
-	// If we crath the go gode, we get the file name and line number
+	// If code crash, we get the file name and line number
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	lis, err := net.Listen("tcp", urls.TerraformerURL)
 	if err != nil {
 		log.Fatalln("Failed to listen on", err)
 	}
-	fmt.Println("Terraformer service is listening on", urls.TerraformerURL)
+	fmt.Println("Terraformer service is listening on:", urls.TerraformerURL)
 
 	s := grpc.NewServer()
 	pb.RegisterTerraformerServiceServer(s, &server{})
 
 	go func() {
-		fmt.Println("Starting Server...")
 		if err := s.Serve(lis); err != nil {
 			log.Fatalf("Failed to serve: %v", err)
 		}
