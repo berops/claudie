@@ -42,7 +42,7 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	// Set the context-box port
-	terraformerPort := os.Getenv("CONTEXT_BOX_PORT")
+	terraformerPort := os.Getenv("TERRAFORMER_PORT")
 	if terraformerPort == "" {
 		terraformerPort = "50052" // Default value
 	}
