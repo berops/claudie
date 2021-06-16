@@ -76,20 +76,20 @@ jobs:
           done
           echo ::set-output name=ARRAY::"${arr[@]}"
       # Build the new images that were changed by a recent commit - tag image latest as well for testing
-      - name: Build new images
-        run: |
-          arr=(${{ steps.array.outputs.ARRAY }})
-          if [ ${#arr[@]} -eq 0 ] 
-          then
-            echo "No changes were detected, nothing to build"            
-          else
-            for path in "${arr[@]}"
-            do
-            echo "$path"
-            docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA -f ./services/$path/Dockerfile .
-            docker tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:latest
-            done
-          fi
+#      - name: Build new images
+#        run: |
+#          arr=(${{ steps.array.outputs.ARRAY }})
+#          if [ ${#arr[@]} -eq 0 ] 
+#          then
+#            echo "No changes were detected, nothing to build"            
+#          else
+#            for path in "${arr[@]}"
+#            do
+#            echo "$path"
+#            docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA -f ./services/$path/Dockerfile .
+#            docker tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:latest
+#            done
+#          fi
       # Create network for docker containers, so they can connect to each other
       - name: Create network for Docker containers
         if: ${{ always() }}  #run the containers - some modules are still unable to compile (KubeEleven, Wireguardian)
@@ -123,19 +123,19 @@ jobs:
         if: ${{ always() }}  # Check the running containers even if some fail
         run: docker ps -a
       # Push images to GCR - latest tag is overwritten
-      - name: Push new images 
-        run: |
-          arr=(${{ steps.array.outputs.ARRAY }})
-          if [ ${#arr[@]} -eq 0 ] 
-          then
-            echo "No images were build, nothing to push"
-          else
-            for path in "${arr[@]}"
-            do
-            docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA
-            docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:latest
-            done
-          fi
+#      - name: Push new images 
+#        run: |
+#          arr=(${{ steps.array.outputs.ARRAY }})
+#          if [ ${#arr[@]} -eq 0 ] 
+#          then
+#            echo "No images were build, nothing to push"
+#          else
+#            for path in "${arr[@]}"
+#            do
+#            docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA
+#            docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:latest
+#            done
+#          fi
       - name: Clear up the containers
         run: docker kill $(docker ps -q)  # Kill all containers, flag --rm will remove them automatically
   # Deploy manifests to GKE cluster
@@ -149,7 +149,7 @@ jobs:
         with:
           ref: "feature/K8sTestCluster"
       # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@main
+      - uses: google-github-actions/setup-gcloud@master
         with:
           service_account_key: ${{ secrets.GKE_SERVICE_ACC_KEY }}
           project_id: ${{ secrets.GCP_PROJECT_ID }}
