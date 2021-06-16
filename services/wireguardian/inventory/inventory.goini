@@ -1,4 +1,0 @@
-[nodes]
-{{- range $index, $node := .}}
-node_{{$index}} ansible_host={{$node.PublicIp}} private_ip={{$node.PrivateIp}}
-{{- end}}
