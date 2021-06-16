@@ -136,8 +136,8 @@ jobs:
             docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:latest
             done
           fi
-        - name: Clear up the containers
-          run: docker kill $(docker ps -q)  # Kill all containers, flag --rm will remove them automatically
+      - name: Clear up the containers
+        run: docker kill $(docker ps -q)  # Kill all containers, flag --rm will remove them automatically
   # Deploy manifests to GKE cluster
   deploy:
     needs: build  # Wait until job build is finished
