@@ -1,0 +1,40 @@
+name: "Turn off the K8s dev cluster"
+on:
+  schedule:
+  - cron: "0 20 * * 4"    # minute (0-59) | hour(0-23) | day of the month(1-31) | month(1-12) | day of the week(0-6)
+                          # Run every friday at 20:00 -> "0 20 * * 4"
+jobs:
+  turn-off:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the repository
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: "feature/K8sTestCluster" # Checkout to feature branch until PR
+      # Setup gcloud CLI
+      - uses: google-github-actions/setup-gcloud@master
+        with:
+          service_account_key: ${{ secrets.GKE_SERVICE_ACC_KEY }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+      # Get the GKE credentials so we can deploy to the cluster
+      - uses: google-github-actions/get-gke-credentials@v0.2.1
+        with:
+          cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
+          location: ${{ secrets.GKE_ZONE }}
+          credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
+      # Turn off the services    
+      - name: Turn off the Scheduler
+      - run: kubectl apply -f
+      - name: Turn off the Builder
+      - run: kubectl apply -f
+      - name: Turn off the Terraformer
+      - run: kubectl apply -f
+      - name: Turn off the Contex-box
+      - run: kubectl apply -f
+      - name: Turn off the Database
+      - run: kubectl apply -f
+#     - name: Turn off the KubeEleven
+#     - run: kubectl apply -f
+#     - name: Turn off the Wireguardian
+#     - run: kubectl apply -f
