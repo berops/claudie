@@ -1,4 +1,4 @@
-.PHONY: gen contentbox scheduler builder terraformer
+.PHONY: gen contentbox scheduler builder terraformer wireguardian
 
 #Generate all .proto files
 gen:
@@ -15,3 +15,6 @@ builder:
 
 terraformer:
 	go run services/terraformer/server/server.go services/terraformer/server/terraform.go
+
+wireguardian:
+	go run services/wireguardian/server/server.go
