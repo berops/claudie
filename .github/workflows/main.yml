@@ -3,7 +3,7 @@ name: CI pipeline for creating and pushing the docker images
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ master ] #, feature/GithubActions ] # the feature branch is included for the testing
+    branches: [ master , feature/GithubActions ] # the feature branch is included for the testing
   pull_request:
     branches: [ master ]
 
@@ -146,6 +146,8 @@ jobs:
       # Checkout the repository
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          ref: "feature/K8sTestCluster"
       # Setup gcloud CLI
       - uses: google-github-actions/setup-gcloud@main
         with:
