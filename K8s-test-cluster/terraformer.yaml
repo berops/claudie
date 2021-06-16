@@ -23,8 +23,7 @@ spec:
             configMapKeyRef:
               name: urls
               key: TERRAFORMER_PORT
-        - name: TERRAFORMER_HOSTNAME
-          value: "0.0.0.0"    # Override env var from .env file - need to talk to Samo about changes in a code
+         # No hostname needed
         ports:
         - containerPort: 50052
 ---
