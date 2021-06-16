@@ -3,7 +3,7 @@ name: CI pipeline for creating and pushing the docker images
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ master, feature/GithubActions ] # the feature branch is included for testing
+    branches: [ master ] #, feature/GithubActions ] # the feature branch is included for the testing
   pull_request:
     branches: [ master ]
 
@@ -51,27 +51,27 @@ jobs:
           do
             if [[ $i == *"context-box"* ]]; then
               arr+=("context-box")
-              echo "Adding context-box"
+              echo "Detected change in context-box"
             fi
             if [[ $i == *"scheduler"* ]]; then
               arr+=("scheduler")
-              echo "Adding scheduler"
+              echo "Detected change in scheduler"
             fi
             if [[ $i == *"terraformer"* ]]; then
               arr+=("terraformer")
-              echo "Adding terraformer"
+              echo "Detected change in terraformer"
             fi
             if [[ $i == *"builder"* ]]; then
               arr+=("builder")
-              echo "Adding builder"
+              echo "Detected change in builder"
             fi
             if [[ $i == *"wireguardian"* ]]; then
               arr+=("wireguardian")
-              echo "Adding wireguardian"
+              echo "Detected change in wireguardian"
             fi
             if [[ $i == *"kubeEleven"* ]]; then
               arr+=("kubeEleven")
-              echo "Adding kubeEleven"
+              echo "Detected change in kubeEleven"
             fi
           done
           echo ::set-output name=ARRAY::"${arr[@]}"
@@ -94,27 +94,26 @@ jobs:
       - name: Create network for Docker containers
         if: ${{ always() }}  #run the containers - some modules are still unable to compile (KubeEleven, Wireguardian)
         run: docker network create --driver bridge platform-net
-
       # Run the docker images - using latest for testing
       - name: Run MongoDB
         if: ${{ always() }}  #run the containers - some modules are still unable to compile (KubeEleven, Wireguardian)
         run: docker run --rm -it -v mongodb:/data/db --name mongodb -d -p $DATABASE_PORT:$DATABASE_PORT --network platform-net mongo
       - name: Run Context-box
         if: ${{ always() }}  #run the containers - some modules are still unable to compile (KubeEleven, Wireguardian)
-        run: docker run --env-file .env --name context-box -d -p $CONTEXT_BOX_PORT:$CONTEXT_BOX_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/context-box:latest
+        run: docker run --rm --env-file .env --name context-box -d -p $CONTEXT_BOX_PORT:$CONTEXT_BOX_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/context-box:latest
       - name: Run Scheduler
         if: ${{ always() }}  #run the containers - some modules are still unable to compile (KubeEleven, Wireguardian)
-        run: docker run --env-file .env --name scheduler -d --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/scheduler:latest
+        run: docker run --rm --env-file .env --name scheduler -d --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/scheduler:latest
 #     - name: Run KubeEleven
-#       run: docker run --env-file .env --name kube_eleven -d -p $KUBE_ELEVEN_PORT:$KUBE_ELEVEN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/kube_eleven:latest
+#       run: docker run --rm --env-file .env --name kube_eleven -d -p $KUBE_ELEVEN_PORT:$KUBE_ELEVEN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/kube_eleven:latest
       - name: Run Builder
         if: ${{ always() }}  #run the containers - some modules are still unable to compile (KubeEleven, Wireguardian)
-        run: docker run --env-file .env --name builder -d -p $BUILDER_PORT:$BUILDER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/builder:latest
+        run: docker run --rm --env-file .env --name builder -d -p $BUILDER_PORT:$BUILDER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/builder:latest
 #     - name: Run Wireguardian
-#       run: docker run --env-file .env --name wireguardian -d -p $WIREGUARDIAN_PORT:$WIREGUARDIAN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/wireguardian:latest
-      - name: Terraformer
+#       run: docker run --rm --env-file .env --name wireguardian -d -p $WIREGUARDIAN_PORT:$WIREGUARDIAN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/wireguardian:latest
+      - name: Run Terraformer
         if: ${{ always() }}  #run the containers - some modules are still unable to compile (KubeEleven, Wireguardian)
-        run: docker run --env-file .env --name terraformer -d -p $TERRAFORMER_PORT:$TERRAFORMER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/terraformer:latest
+        run: docker run --rm --env-file .env --name terraformer -d -p $TERRAFORMER_PORT:$TERRAFORMER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/terraformer:latest
       # Add 10s delay so services can connect and start working as intended
       - name: Add a small delay to give services time to initialize
         if: ${{ always() }}  # Wait for the running containers to configure themselves - some may fail, therefore always()
@@ -125,7 +124,6 @@ jobs:
         run: docker ps -a
       # Push images to GCR - latest tag is overwritten
       - name: Push new images 
-        if: ${{ always() }}  # Push the containers if any were build (if not, the tag does not exists)
         run: |
           arr=(${{ steps.array.outputs.ARRAY }})
           if [ ${#arr[@]} -eq 0 ] 
@@ -138,3 +136,42 @@ jobs:
             docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:latest
             done
           fi
+        - name: Clear up the containers
+          run: docker kill $(docker ps -q)  # Kill all containers, flag --rm will remove them automatically
+  # Deploy manifests to GKE cluster
+  deploy:
+    needs: build  # Wait until job build is finished
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the repository
+      - name: Checkout
+        uses: actions/checkout@v2
+      # Setup gcloud CLI
+      - uses: google-github-actions/setup-gcloud@main
+        with:
+          service_account_key: ${{ secrets.GKE_SERVICE_ACC_KEY }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+      # Get the GKE credentials so we can deploy to the cluster
+      - uses: google-github-actions/get-gke-credentials@v0.2.1
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER_NAME }}
+          location: ${{ env.GKE_ZONE }}
+          credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
+      # Create a ConfigMap from .env file
+      - name: Set up ConfigMap
+        run: kubectl create configmap urls --from-env-file=.env
+      # Deploy services
+      - name: Deploy Database
+        run: kubectl apply -f ./K8s-test-cluster/mongodb.yaml
+      - name: Deploy Context-box
+        run: kubectl apply -f ./K8s-test-cluster/contextbox.yaml
+      - name: Deploy Scheduler
+        run: kubectl apply -f ./K8s-test-cluster/scheduler.yaml
+      - name: Deploy Builder
+        run: kubectl apply -f ./K8s-test-cluster/builder.yaml
+      - name: Deploy Terraformer
+        run: kubectl apply -f ./K8s-test-cluster/terraformer.yaml
+#     - name: Deploy KubeEleven
+#       run: kubectl apply -f ./K8s-test-cluster/kubeEleven.yaml
+#     - name: Deploy Wireguardian
+#       run: kubectl apply -f ./K8s-test-cluster/wireguardian.yaml
