@@ -25,16 +25,16 @@ jobs:
           credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
       # Turn off the services    
       - name: Turn off the Scheduler
-      - run: kubectl apply -f ./K8s-test-cluster/turnOffManifests/schedulerOff.yaml
+        run: kubectl apply -f ./K8s-test-cluster/turnOffManifests/schedulerOff.yaml
       - name: Turn off the Builder
-      - run: kubectl apply -f ./K8s-test-cluster/turnOffManifests/builderOff.yaml
+        run: kubectl apply -f ./K8s-test-cluster/turnOffManifests/builderOff.yaml
       - name: Turn off the Terraformer
-      - run: kubectl apply -f ./K8s-test-cluster/turnOffManifests/terraformerOff.yaml
+        run: kubectl apply -f ./K8s-test-cluster/turnOffManifests/terraformerOff.yaml
       - name: Turn off the Contex-box
-      - run: kubectl apply -f ./K8s-test-cluster/turnOffManifests/context-boxOff.yaml
+        run: kubectl apply -f ./K8s-test-cluster/turnOffManifests/context-boxOff.yaml
       - name: Turn off the Database
-      - run: kubectl apply -f ./K8s-test-cluster/turnOffManifests/mongodbOff.yaml
+        run: kubectl apply -f ./K8s-test-cluster/turnOffManifests/mongodbOff.yaml
 #     - name: Turn off the KubeEleven
-#     - run: kubectl apply -f ./K8s-test-cluster/turnOffManifests/kubeElevenOff.yaml
+#       run: kubectl apply -f ./K8s-test-cluster/turnOffManifests/kubeElevenOff.yaml
 #     - name: Turn off the Wireguardian
-#     - run: kubectl apply -f ./K8s-test-cluster/turnOffManifests/wireguardianOff.yaml
+#       run: kubectl apply -f ./K8s-test-cluster/turnOffManifests/wireguardianOff.yaml
