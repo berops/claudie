@@ -49,27 +49,27 @@ jobs:
           git diff  --name-only origin/master..HEAD
           for i in "$(git diff  --name-only origin/master..HEAD)"
           do
-            if [[ $i == *"context-box"* ]]; then
+            if [[ $i == *"services/context-box"* ]]; then
               arr+=("context-box")
               echo "Detected change in context-box"
             fi
-            if [[ $i == *"scheduler"* ]]; then
+            if [[ $i == *"services/scheduler"* ]]; then
               arr+=("scheduler")
               echo "Detected change in scheduler"
             fi
-            if [[ $i == *"terraformer"* ]]; then
+            if [[ $i == *"services/terraformer"* ]]; then
               arr+=("terraformer")
               echo "Detected change in terraformer"
             fi
-            if [[ $i == *"builder"* ]]; then
+            if [[ $i == *"services/builder"* ]]; then
               arr+=("builder")
               echo "Detected change in builder"
             fi
-            if [[ $i == *"wireguardian"* ]]; then
+            if [[ $i == *"services/wireguardian"* ]]; then
               arr+=("wireguardian")
               echo "Detected change in wireguardian"
             fi
-            if [[ $i == *"kubeEleven"* ]]; then
+            if [[ $i == *"services/kubeEleven"* ]]; then
               arr+=("kubeEleven")
               echo "Detected change in kubeEleven"
             fi
