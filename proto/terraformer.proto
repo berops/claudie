@@ -1,11 +1,15 @@
 syntax = "proto3";
-
 package platform;
-
-import "platform.proto";
-
+import "config.proto";
 option go_package = "proto/pb";
 
+message BuildInfrastructureRequest { Config config = 1; }
+message BuildInfrastructureResponse { Config config = 1; }
+
+message DestroyInfrastructureRequest { Config config = 1; }
+message DestroyInfrastructureResponse { Config config = 1; }
+
 service TerraformerService {
-  rpc BuildInfrastructure(Project) returns (Project);
+  rpc BuildInfrastructure(BuildInfrastructureRequest) returns (BuildInfrastructureResponse);
+  rpc DestroyInfrastructure(DestroyInfrastructureRequest) returns (DestroyInfrastructureResponse);
 }

@@ -92,31 +92,40 @@ jobs:
           fi
       # Create network for docker containers, so they can connect to each other
       - name: Create network for Docker containers
+        if: ${{ always() }}  #run the containers - some modules are still unable to compile (KubeEleven, Wireguardian)
         run: docker network create --driver bridge platform-net
 
       # Run the docker images - using latest for testing
       - name: Run MongoDB
+        if: ${{ always() }}  #run the containers - some modules are still unable to compile (KubeEleven, Wireguardian)
         run: docker run --rm -it -v mongodb:/data/db --name mongodb -d -p $DATABASE_PORT:$DATABASE_PORT --network platform-net mongo
       - name: Run Context-box
+        if: ${{ always() }}  #run the containers - some modules are still unable to compile (KubeEleven, Wireguardian)
         run: docker run --env-file .env --name context-box -d -p $CONTEXT_BOX_PORT:$CONTEXT_BOX_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/context-box:latest
       - name: Run Scheduler
+        if: ${{ always() }}  #run the containers - some modules are still unable to compile (KubeEleven, Wireguardian)
         run: docker run --env-file .env --name scheduler -d --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/scheduler:latest
 #     - name: Run KubeEleven
-#      run: docker run --env-file .env --name kube_eleven -d -p $KUBE_ELEVEN_PORT:$KUBE_ELEVEN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/kube_eleven:latest
-#     - name: Run Builder
-#      run: docker run --env-file .env --name builder -d -p $BUILDER_PORT:$BUILDER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/builder:latest
+#       run: docker run --env-file .env --name kube_eleven -d -p $KUBE_ELEVEN_PORT:$KUBE_ELEVEN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/kube_eleven:latest
+      - name: Run Builder
+        if: ${{ always() }}  #run the containers - some modules are still unable to compile (KubeEleven, Wireguardian)
+        run: docker run --env-file .env --name builder -d -p $BUILDER_PORT:$BUILDER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/builder:latest
 #     - name: Run Wireguardian
-#      run: docker run --env-file .env --name wireguardian -d -p $WIREGUARDIAN_PORT:$WIREGUARDIAN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/wireguardian:latest
-#     - name: Terraformer
-#      run: docker run --env-file .env --name terraformer -d -p $TERRAFORMER_PORT:$TERRAFORMER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/terraformer:latest
+#       run: docker run --env-file .env --name wireguardian -d -p $WIREGUARDIAN_PORT:$WIREGUARDIAN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/wireguardian:latest
+      - name: Terraformer
+        if: ${{ always() }}  #run the containers - some modules are still unable to compile (KubeEleven, Wireguardian)
+        run: docker run --env-file .env --name terraformer -d -p $TERRAFORMER_PORT:$TERRAFORMER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/terraformer:latest
       # Add 10s delay so services can connect and start working as intended
       - name: Add a small delay to give services time to initialize
-        run: sleep 10
+        if: ${{ always() }}  # Wait for the running containers to configure themselves - some may fail, therefore always()
+        run: sleep 5
       # Check the containers and their status
       - name: Check the containers
+        if: ${{ always() }}  # Check the running containers even if some fail
         run: docker ps -a
       # Push images to GCR - latest tag is overwritten
       - name: Push new images 
+        if: ${{ always() }}  # Push the containers if any were build (if not, the tag does not exists)
         run: |
           arr=(${{ steps.array.outputs.ARRAY }})
           if [ ${#arr[@]} -eq 0 ] 

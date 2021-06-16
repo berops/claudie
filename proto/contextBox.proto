@@ -1,17 +1,8 @@
 syntax = "proto3";
 package platform;
 option go_package = "proto/pb";
-import "platform.proto";
+import "config.proto";
 
-message Config {
-  string id = 1;
-  string name = 2;
-  string manifest = 3;
-  Project desiredState = 4;
-  Project currentState = 5;
-  bytes msChecksum = 6;
-  bytes dsChecksum = 7;
-}
 // Save
 message SaveConfigRequest { Config config = 1; }
 message SaveConfigResponse { Config config = 1; }
@@ -26,9 +17,14 @@ message DeleteConfigRequest { string id = 1; }
 message DeleteConfigResponse { string id = 1; }
 
 service ContextBoxService {
+  // Save
   rpc SaveConfigFrontEnd(SaveConfigRequest) returns (SaveConfigResponse);
   rpc SaveConfigScheduler(SaveConfigRequest) returns (SaveConfigResponse);
-  rpc GetConfig(GetConfigRequest) returns (GetConfigResponse);
+  rpc SaveConfigBuilder(SaveConfigRequest) returns (SaveConfigResponse);
+  // Get
+  rpc GetConfigScheduler(GetConfigRequest) returns (GetConfigResponse);
+  rpc GetConfigBuilder(GetConfigRequest) returns (GetConfigResponse);
   rpc GetAllConfigs(GetAllConfigsRequest) returns (GetAllConfigsResponse);
+  // Delete
   rpc DeleteConfig(DeleteConfigRequest) returns (DeleteConfigResponse);
 }
