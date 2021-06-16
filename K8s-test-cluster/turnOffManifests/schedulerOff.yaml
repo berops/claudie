@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment 
+metadata:
+  name: scheduler
+  labels:
+    app: scheduler
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: scheduler
+  template:
+    metadata:
+      labels:
+        app: scheduler
+    spec:
+      containers:
+      - name: scheduler
+        image: eu.gcr.io/platform-infrastructure-316112/platform/scheduler:latest 
+# No Service needed

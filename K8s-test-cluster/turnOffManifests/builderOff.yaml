@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment 
+metadata:
+  name: builder
+  labels:
+    app: builder
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: builder
+  template:
+    metadata:
+      labels:
+        app: builder
+    spec:
+      containers:
+      - name: builder
+        image: eu.gcr.io/platform-infrastructure-316112/platform/builder:latest 
+# No Service needed
