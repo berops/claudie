@@ -160,8 +160,8 @@ jobs:
           location: ${{ secrets.GKE_ZONE }}
           credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
       # Create a ConfigMap from .env file
-      - name: Set up ConfigMap
-        run: kubectl create configmap urls --from-env-file=.env
+     # - name: Set up ConfigMap
+     #   run: kubectl create configmap urls --from-env-file=.env
       # Deploy services
       - name: Deploy Database
         run: kubectl apply -f ./K8s-test-cluster/mongodb.yaml
