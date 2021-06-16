@@ -9,7 +9,6 @@ import (
 	"os/signal"
 
 	"github.com/Berops/platform/proto/pb"
-	"github.com/Berops/platform/urls"
 	"google.golang.org/grpc"
 )
 
@@ -42,11 +41,18 @@ func main() {
 	// If code crash, we get the file name and line number
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	lis, err := net.Listen("tcp", urls.TerraformerURL)
+	// Set the context-box port
+	terraformerPort := os.Getenv("CONTEXT_BOX_PORT")
+	if terraformerPort == "" {
+		terraformerPort = "50052" // Default value
+	}
+
+	// Start Terraformer Service
+	lis, err := net.Listen("tcp", "0.0.0.0:"+terraformerPort)
 	if err != nil {
 		log.Fatalln("Failed to listen on", err)
 	}
-	fmt.Println("Terraformer service is listening on:", urls.TerraformerURL)
+	fmt.Println("Terrafomer service is listening on:", "0.0.0.0:"+terraformerPort)
 
 	s := grpc.NewServer()
 	pb.RegisterTerraformerServiceServer(s, &server{})
