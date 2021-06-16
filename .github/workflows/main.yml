@@ -166,7 +166,7 @@ jobs:
       - name: Deploy Database
         run: kubectl apply -f ./K8s-test-cluster/mongodb.yaml
       - name: Deploy Context-box
-        run: kubectl apply -f ./K8s-test-cluster/contextbox.yaml
+        run: kubectl apply -f ./K8s-test-cluster/context-box.yaml
       - name: Deploy Scheduler
         run: kubectl apply -f ./K8s-test-cluster/scheduler.yaml
       - name: Deploy Builder
