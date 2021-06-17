@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: mongodb
-        image: mongo
+        image: mongo:bionic
         ports:
         - containerPort: 27017  
 ---
