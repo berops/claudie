@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment 
+metadata:
+  name: builder
+  labels:
+    app: builder
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: builder
+  template:
+    metadata:
+      labels:
+        app: builder
+    spec:
+      containers:
+      - name: builder
+        image: eu.gcr.io/platform-infrastructure-316112/platform/builder:latest 
+        env:
+        - name: CONTEXT_BOX_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: urls
+              key: CONTEXT_BOX_PORT
+        - name: CONTEXT_BOX_HOSTNAME
+          valueFrom:
+            configMapKeyRef:
+              name: urls
+              key: CONTEXT_BOX_HOSTNAME
+        - name: TERRAFORMER_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: urls
+              key: TERRAFORMER_PORT
+        - name: TERRAFORMER_HOSTNAME
+          valueFrom:
+            configMapKeyRef:
+              name: urls
+              key: TERRAFORMER_HOSTNAME
+        - name: WIREGUARDIAN_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: urls
+              key: WIREGUARDIAN_PORT
+        - name: WIREGUARDIAN_HOSTNAME
+          valueFrom:
+            configMapKeyRef:
+              name: urls
+              key: WIREGUARDIAN_HOSTNAME
+        - name: KUBE_ELEVEN_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: urls
+              key: KUBE_ELEVEN_PORT
+        - name: KUBE_ELEVEN_HOSTNAME
+          valueFrom:
+            configMapKeyRef:
+              name: urls
+              key: KUBE_ELEVEN_HOSTNAME
