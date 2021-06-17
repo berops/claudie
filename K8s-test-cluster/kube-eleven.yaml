@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment 
 metadata:
-  name: kubeEleven
+  name: kube-eleven
   labels:
-    app: kubeEleven
+    app: kube-eleven
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: kubeEleven
+      app: kube-eleven
   template:
     metadata:
       labels:
-        app: kubeEleven
+        app: kube-eleven
     spec:
       containers:
-      - name: kubeEleven
-        image: eu.gcr.io/platform-infrastructure-316112/platform/kubeEleven:latest 
+      - name: kube-eleven
+        image: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven:latest 
         env:
         - name: KUBE_ELEVEN_PORT
           valueFrom:
@@ -30,10 +30,10 @@ spec:
 kind: Service
 apiVersion: v1
 metadata:
-  name: kubeEleven
+  name: kube-eleven
 spec:
   selector:
-    app: kubeEleven
+    app: kube-eleven
   ports:
   - protocol: TCP
     port: 50054
