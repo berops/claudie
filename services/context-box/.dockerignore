@@ -9,7 +9,7 @@ serializer
 services/terraformer
 services/wireguardian
 services/builder
-services/kubeEleven
+services/kube-eleven
 services/scheduler
 services/context-box/client
 mongodb

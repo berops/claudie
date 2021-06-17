@@ -35,7 +35,7 @@ jobs:
         run: kubectl scale --replicas=0 -f ./K8s-test-cluster/context-box.yaml
       - name: Turn off the Database
         run: kubectl scale --replicas=0 -f ./K8s-test-cluster/mongodb.yaml
-#     - name: Turn off the KubeEleven
-#       run: kubectl scale --replicas=0 -f ./K8s-test-cluster/kubeEleven.yaml
+#     - name: Turn off the Kube-eleven
+#       run: kubectl scale --replicas=0 -f ./K8s-test-cluster/kube-eleven.yaml
 #     - name: Turn off the Wireguardian
 #       run: kubectl scale --replicas=0 -f ./K8s-test-cluster/wireguardian.yaml

@@ -69,9 +69,9 @@ jobs:
             #  arr+=("wireguardian")
             #  echo "Detected change in wireguardian"
             #fi
-            #if [[ $i == *"services/kubeEleven"* ]]; then
-            #  arr+=("kubeEleven")
-            #  echo "Detected change in kubeEleven"
+            #if [[ $i == *"services/kube-eleven"* ]]; then
+            #  arr+=("kube-eleven")
+            #  echo "Detected change in kube-eleven"
             #fi
           done
           echo ::set-output name=ARRAY::"${arr[@]}"
@@ -104,8 +104,8 @@ jobs:
       - name: Run Scheduler
         if: ${{ always() }}  
         run: docker run --rm --env-file .env --name scheduler -d --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/scheduler:latest
-#     - name: Run KubeEleven
-#       run: docker run --rm --env-file .env --name kubeEleven -d -p $KUBE_ELEVEN_PORT:$KUBE_ELEVEN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/kubeEleven:latest
+#     - name: Run Kube-eleven
+#       run: docker run --rm --env-file .env --name kube-eleven -d -p $KUBE_ELEVEN_PORT:$KUBE_ELEVEN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/kube-eleven:latest
       - name: Run Builder
         if: ${{ always() }}  
         run: docker run --rm --env-file .env --name builder -d -p $BUILDER_PORT:$BUILDER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/builder:latest
@@ -171,7 +171,7 @@ jobs:
         run: kubectl apply -f ./K8s-test-cluster/builder.yaml
       - name: Deploy Terraformer
         run: kubectl apply -f ./K8s-test-cluster/terraformer.yaml
-#     - name: Deploy KubeEleven
-#       run: kubectl apply -f ./K8s-test-cluster/kubeEleven.yaml
+#     - name: Deploy Kube-eleven
+#       run: kubectl apply -f ./K8s-test-cluster/kube-eleven.yaml
 #     - name: Deploy Wireguardian
 #       run: kubectl apply -f ./K8s-test-cluster/wireguardian.yaml
