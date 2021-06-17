@@ -9,6 +9,6 @@ serializer
 services/terraformer
 services/wireguardian
 services/builder
-services/kubeEleven
+services/kube-eleven
 services/context-box
 mongodb

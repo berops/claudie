@@ -14,7 +14,7 @@ RUN go mod download
 COPY . .
 
 #Change the directory
-WORKDIR ./services/kubeEleven/server
+WORKDIR ./services/kube-eleven/server
 
 #Compile the golang code to /out, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build -o /out

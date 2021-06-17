@@ -8,7 +8,7 @@ tmp
 serializer
 services/terraformer/Makefile
 services/wireguardian
-services/kubeEleven
+services/kube-eleven
 services/scheduler
 services/context-box
 services/builder
