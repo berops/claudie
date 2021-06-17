@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment 
+metadata:
+  name: wireguardian
+  labels:
+    app: wireguardian
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wireguardian
+  template:
+    metadata:
+      labels:
+        app: wireguardian
+    spec:
+      containers:
+      - name: wireguardian
+        image: eu.gcr.io/platform-infrastructure-316112/platform/wireguardian:latest 
+        env:
+        - name: WIREGUARDIAN_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: urls
+              key: WIREGUARDIAN_PORT
+         # No hostname needed
+        ports:
+        - containerPort: 50053
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: wireguardian
+spec:
+  selector:
+    app: wireguardian
+  ports:
+  - protocol: TCP
+    port: 50053
+    targetPort: 50053

@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment 
+metadata:
+  name: context-box
+  labels:
+    app: context-box
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: context-box
+  template:
+    metadata:
+      labels:
+        app: context-box
+    spec:
+      containers:
+      - name: context-box
+        image: eu.gcr.io/platform-infrastructure-316112/platform/context-box:latest
+        env:
+        - name: DATABASE_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: urls
+              key: DATABASE_PORT
+        - name: DATABASE_HOSTNAME
+          valueFrom:
+            configMapKeyRef:
+              name: urls
+              key: DATABASE_HOSTNAME
+        - name: CONTEXT_BOX_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: urls
+              key: CONTEXT_BOX_PORT
+         # No hostname needed
+        ports:
+        - containerPort: 50055
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: context-box
+spec:
+  selector:
+    app: context-box
+  ports:
+  - protocol: TCP
+    port: 50055
+    targetPort: 50055
