@@ -2,7 +2,7 @@ name: "Turn off the K8s dev cluster"
 on:
   workflow_dispatch:
   schedule:
-  - cron: "0 18 * * 5"    # minute (0-59) | hour(0-23) | day of the month(1-31) | month(1-12) | day of the week(1-7)
+  - cron: "0 8 * * 4"    # minute (0-59) | hour(0-23) | day of the month(1-31) | month(1-12) | day of the week(1-7)
                           # Uses UTC timezone - Run every friday at 20:00 CET -> "0 18 * * 5"
 jobs:
   turn-off:
@@ -26,16 +26,16 @@ jobs:
           credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
       # Turn off the services    
       - name: Turn off the Scheduler
-        run: kubectl apply -f ./K8s-test-cluster/turnOffManifests/schedulerOff.yaml
+        run: kubectl scale --replicas=0 -f ./K8s-test-cluster/scheduler.yaml
       - name: Turn off the Builder
-        run: kubectl apply -f ./K8s-test-cluster/turnOffManifests/builderOff.yaml
+        run: kubectl scale --replicas=0 -f ./K8s-test-cluster/builder.yaml
       - name: Turn off the Terraformer
-        run: kubectl apply -f ./K8s-test-cluster/turnOffManifests/terraformerOff.yaml
+        run: kubectl scale --replicas=0 -f ./K8s-test-cluster/terraformer.yaml
       - name: Turn off the Contex-box
-        run: kubectl apply -f ./K8s-test-cluster/turnOffManifests/context-boxOff.yaml
+        run: kubectl scale --replicas=0 -f ./K8s-test-cluster/context-box.yaml
       - name: Turn off the Database
-        run: kubectl apply -f ./K8s-test-cluster/turnOffManifests/mongodbOff.yaml
+        run: kubectl scale --replicas=0 -f ./K8s-test-cluster/mongodb.yaml
 #     - name: Turn off the KubeEleven
-#       run: kubectl apply -f ./K8s-test-cluster/turnOffManifests/kubeElevenOff.yaml
+#       run: kubectl scale --replicas=0 -f ./K8s-test-cluster/kubeEleven.yaml
 #     - name: Turn off the Wireguardian
-#       run: kubectl apply -f ./K8s-test-cluster/turnOffManifests/wireguardianOff.yaml
+#       run: kubectl scale --replicas=0 -f ./K8s-test-cluster/wireguardian.yaml
