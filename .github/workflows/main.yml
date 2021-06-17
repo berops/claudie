@@ -146,8 +146,6 @@ jobs:
       # Checkout the repository
       - name: Checkout
         uses: actions/checkout@v2
-        with:
-          ref: "feature/K8sTestCluster" # Checkout to feature branch until PR
       # Setup gcloud CLI
       - uses: google-github-actions/setup-gcloud@master
         with:
