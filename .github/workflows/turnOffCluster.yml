@@ -27,22 +27,22 @@ jobs:
       # Turn off the services    
       - name: Turn off the Scheduler
         if: ${{ always() }}   
-        run: kubectl scale --replicas=0 -f ./K8s-test-cluster/scheduler.yaml
+        run: kubectl scale --replicas=0 deployments/scheduler
       - name: Turn off the Builder
         if: ${{ always() }}   
-        run: kubectl scale --replicas=0 -f ./K8s-test-cluster/builder.yaml
+        run: kubectl scale --replicas=0 deployments/builder
       - name: Turn off the Terraformer
         if: ${{ always() }}   
-        run: kubectl scale --replicas=0 -f ./K8s-test-cluster/terraformer.yaml
+        run: kubectl scale --replicas=0 deployments/terraformer
       - name: Turn off the Contex-box
         if: ${{ always() }}   
-        run: kubectl scale --replicas=0 -f ./K8s-test-cluster/context-box.yaml
+        run: kubectl scale --replicas=0 deployments/context-box
       - name: Turn off the Database
         if: ${{ always() }}   
-        run: kubectl scale --replicas=0 -f ./K8s-test-cluster/mongodb.yaml
+        run: kubectl scale --replicas=0 deployments/mongodb
 #     - name: Turn off the Kube-eleven
 #       if: ${{ always() }}       
-#       run: kubectl scale --replicas=0 -f ./K8s-test-cluster/kube-eleven.yaml
+#       run: kubectl scale --replicas=0 -deployments/kube-eleven
 #     - name: Turn off the Wireguardian
 #       if: ${{ always() }}   
-#       run: kubectl scale --replicas=0 -f ./K8s-test-cluster/wireguardian.yaml
+#       run: kubectl scale --replicas=0 deployments/wireguardian
