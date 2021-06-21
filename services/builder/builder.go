@@ -9,6 +9,7 @@ import (
 
 	cbox "github.com/Berops/platform/services/context-box/client"
 	terraformer "github.com/Berops/platform/services/terraformer/client"
+	wireguardian "github.com/Berops/platform/services/wireguardian/client"
 	"github.com/Berops/platform/urls"
 
 	"github.com/Berops/platform/proto/pb"
@@ -19,18 +20,31 @@ func callTerraformer(config *pb.Config) *pb.Config {
 	// Create connection to Terraformer
 	cc, err := grpc.Dial(urls.TerraformerURL, grpc.WithInsecure())
 	if err != nil {
-		log.Fatalf("could not connect to server: %v", err)
+		log.Fatalf("could not connect to Terraformer: %v", err)
 	}
 	defer cc.Close()
-
 	// Creating the client
 	c := pb.NewTerraformerServiceClient(cc)
-
 	res, err := terraformer.BuildInfrastructure(c, &pb.BuildInfrastructureRequest{Config: config})
 	if err != nil {
 		log.Fatalln(err)
 	}
 
+	return res.GetConfig()
+}
+
+func callWireguardian(config *pb.Config) *pb.Config {
+	cc, err := grpc.Dial(urls.WireguardianURL, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("could not connect to Wireguardian: %v", err)
+	}
+	defer cc.Close()
+	// Creating the client
+	c := pb.NewWireguardianServiceClient(cc)
+	res, err := wireguardian.BuildVPN(c, &pb.BuildVPNRequest{Config: config})
+	if err != nil {
+		log.Fatalln(err)
+	}
 	return res.GetConfig()
 }
 
@@ -41,7 +55,7 @@ func main() {
 	// Create connection to Context-box
 	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
 	if err != nil {
-		log.Fatalf("could not connect to Content-box server: %v", err)
+		log.Fatalf("could not connect to Content-box: %v", err)
 	}
 	defer cc.Close()
 
@@ -56,9 +70,8 @@ func main() {
 			if res.GetConfig() != nil {
 				config := res.GetConfig()
 				log.Println("I got config: ", config.GetName())
-				// TODO: Call Terrraform
 				config = callTerraformer(config)
-				// TODO: Call Wireguardian
+				config = callWireguardian(config)
 				// TODO: Call KubeEleven
 				err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 				if err != nil {
