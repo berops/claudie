@@ -73,7 +73,8 @@ func main() {
 				config = callTerraformer(config)
 				config = callWireguardian(config)
 				// TODO: Call KubeEleven
-				err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
+				config.CurrentState = config.DesiredState // Update currentState
+				err = cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 				if err != nil {
 					log.Fatalln("Error while saving the config", err)
 				}
