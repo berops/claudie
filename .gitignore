@@ -7,3 +7,4 @@ playground
 .vscode
 mongodb
 *.tfstate*
+*.pem
