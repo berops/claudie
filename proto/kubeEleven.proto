@@ -6,4 +6,9 @@ import "config.proto";
 
 option go_package = "proto/pb";
 
-service KubeElevenService { rpc BuildCluster(Project) returns (Project); }
+message BuildClusterRequest { Config config = 1; }
+message BuildClusterResponse { Config config = 1; }
+
+service KubeElevenService {
+  rpc BuildCluster(BuildClusterRequest) returns (BuildClusterResponse);
+}
