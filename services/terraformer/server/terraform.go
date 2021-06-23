@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -25,12 +26,20 @@ type Data struct {
 	Cluster *pb.Cluster
 }
 
+func createKeyFile(key string, keyType string) {
+	err := ioutil.WriteFile(outputPath+keyType, []byte(key), 0600)
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+
 // buildInfrastructure is generating terraform files for different providers and calling terraform
-func buildInfrastructure(desiredState *pb.Project) (*pb.Project, error) {
+func buildInfrastructure(desiredState *pb.Project) error {
 	fmt.Println("Generating templates")
 	var backendData Backend
 	backendData.ProjectName = desiredState.GetName()
 	for _, cluster := range desiredState.Clusters {
+
 		providers := getProviders(cluster)
 		log.Println("Cluster name:", cluster.GetName())
 		backendData.ClusterName = cluster.GetName()
@@ -38,6 +47,9 @@ func buildInfrastructure(desiredState *pb.Project) (*pb.Project, error) {
 		templateGen(templatePath+"/backend.tpl", outputPath+"/backend.tf", backendData, outputPath)
 		// Creating .tf files for providers from templates
 		buildNodePools(cluster)
+		// Create publicKey file for a cluster
+		createKeyFile(cluster.GetPublicKey(), "/public.pem")
+		createKeyFile(cluster.GetPublicKey(), "/private.pem")
 		// Call terraform init and apply
 		initTerraform(outputPath)
 		applyTerraform(outputPath)
@@ -61,7 +73,7 @@ func buildInfrastructure(desiredState *pb.Project) (*pb.Project, error) {
 		log.Println(m.Ips)
 	}
 
-	return desiredState, nil
+	return nil
 }
 
 // destroyInfrastructure executes terraform destroy --auto-approve. It destroys whole infrastructure in a project.
@@ -76,6 +88,8 @@ func destroyInfrastructure(project *pb.Project) error {
 		templateGen(templatePath+"/backend.tpl", outputPath+"/backend.tf", backendData, outputPath)
 		// Creating .tf files for providers
 		buildNodePools(cluster)
+		// Create publicKey file for a cluster
+		createKeyFile(cluster.GetPublicKey(), "/public.pem")
 		// Call terraform
 		initTerraform(outputPath)
 		destroyTerraform(outputPath)

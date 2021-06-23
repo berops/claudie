@@ -13,6 +13,12 @@ provider "hcloud" {
   token = "{{ (index .Cluster.NodePools $index).Provider.Credentials }}" 
 }
 
+resource "hcloud_ssh_key" "platform" {
+  name       = "key-{{ .Cluster.Name }}"
+  public_key = file("./public.pem")
+}
+
+
 resource "hcloud_server" "control_plane" {
   count       = "{{ (index .Cluster.NodePools $index).Master.Count }}"
   name        = "{{ .Cluster.Name }}-hetzner-control-${count.index + 1}"
@@ -20,7 +26,7 @@ resource "hcloud_server" "control_plane" {
   image       = "{{ (index .Cluster.NodePools $index).Master.Image }}"
 
   ssh_keys = [
-    3626771,
+    hcloud_ssh_key.platform.id,
   ]
 }
 
@@ -31,7 +37,7 @@ resource "hcloud_server" "compute_plane" {
   image       = "{{ (index .Cluster.NodePools $index).Worker.Image }}"
 
   ssh_keys = [
-    3626771,
+    hcloud_ssh_key.platform.id,
   ]
 }
 

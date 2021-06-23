@@ -24,16 +24,16 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type Status struct {
+type BuildVPNRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Success bool `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Config *Config `protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
 }
 
-func (x *Status) Reset() {
-	*x = Status{}
+func (x *BuildVPNRequest) Reset() {
+	*x = BuildVPNRequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_wireguardian_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -41,13 +41,13 @@ func (x *Status) Reset() {
 	}
 }
 
-func (x *Status) String() string {
+func (x *BuildVPNRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Status) ProtoMessage() {}
+func (*BuildVPNRequest) ProtoMessage() {}
 
-func (x *Status) ProtoReflect() protoreflect.Message {
+func (x *BuildVPNRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_wireguardian_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -59,16 +59,63 @@ func (x *Status) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Status.ProtoReflect.Descriptor instead.
-func (*Status) Descriptor() ([]byte, []int) {
+// Deprecated: Use BuildVPNRequest.ProtoReflect.Descriptor instead.
+func (*BuildVPNRequest) Descriptor() ([]byte, []int) {
 	return file_wireguardian_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Status) GetSuccess() bool {
+func (x *BuildVPNRequest) GetConfig() *Config {
 	if x != nil {
-		return x.Success
+		return x.Config
 	}
-	return false
+	return nil
+}
+
+type BuildVPNResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Config *Config `protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
+}
+
+func (x *BuildVPNResponse) Reset() {
+	*x = BuildVPNResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_wireguardian_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *BuildVPNResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BuildVPNResponse) ProtoMessage() {}
+
+func (x *BuildVPNResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_wireguardian_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BuildVPNResponse.ProtoReflect.Descriptor instead.
+func (*BuildVPNResponse) Descriptor() ([]byte, []int) {
+	return file_wireguardian_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *BuildVPNResponse) GetConfig() *Config {
+	if x != nil {
+		return x.Config
+	}
+	return nil
 }
 
 var File_wireguardian_proto protoreflect.FileDescriptor
@@ -76,15 +123,22 @@ var File_wireguardian_proto protoreflect.FileDescriptor
 var file_wireguardian_proto_rawDesc = []byte{
 	0x0a, 0x12, 0x77, 0x69, 0x72, 0x65, 0x67, 0x75, 0x61, 0x72, 0x64, 0x69, 0x61, 0x6e, 0x2e, 0x70,
 	0x72, 0x6f, 0x74, 0x6f, 0x12, 0x08, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x1a, 0x0c,
-	0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x22, 0x0a, 0x06,
-	0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x18, 0x0a, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73,
-	0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73,
-	0x32, 0x46, 0x0a, 0x13, 0x57, 0x69, 0x72, 0x65, 0x67, 0x75, 0x61, 0x72, 0x64, 0x69, 0x61, 0x6e,
-	0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x2f, 0x0a, 0x08, 0x42, 0x75, 0x69, 0x6c, 0x64,
-	0x56, 0x50, 0x4e, 0x12, 0x11, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x50,
-	0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x1a, 0x10, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72,
-	0x6d, 0x2e, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x42, 0x0a, 0x5a, 0x08, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x2f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x3b, 0x0a, 0x0f,
+	0x42, 0x75, 0x69, 0x6c, 0x64, 0x56, 0x50, 0x4e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12,
+	0x28, 0x0a, 0x06, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32,
+	0x10, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x43, 0x6f, 0x6e, 0x66, 0x69,
+	0x67, 0x52, 0x06, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x22, 0x3c, 0x0a, 0x10, 0x42, 0x75, 0x69,
+	0x6c, 0x64, 0x56, 0x50, 0x4e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x28, 0x0a,
+	0x06, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x10, 0x2e,
+	0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52,
+	0x06, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x32, 0x58, 0x0a, 0x13, 0x57, 0x69, 0x72, 0x65, 0x67,
+	0x75, 0x61, 0x72, 0x64, 0x69, 0x61, 0x6e, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x41,
+	0x0a, 0x08, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x56, 0x50, 0x4e, 0x12, 0x19, 0x2e, 0x70, 0x6c, 0x61,
+	0x74, 0x66, 0x6f, 0x72, 0x6d, 0x2e, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x56, 0x50, 0x4e, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1a, 0x2e, 0x70, 0x6c, 0x61, 0x74, 0x66, 0x6f, 0x72, 0x6d,
+	0x2e, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x56, 0x50, 0x4e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x42, 0x0a, 0x5a, 0x08, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x70, 0x62, 0x62, 0x06, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -99,19 +153,22 @@ func file_wireguardian_proto_rawDescGZIP() []byte {
 	return file_wireguardian_proto_rawDescData
 }
 
-var file_wireguardian_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_wireguardian_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_wireguardian_proto_goTypes = []interface{}{
-	(*Status)(nil),  // 0: platform.Status
-	(*Project)(nil), // 1: platform.Project
+	(*BuildVPNRequest)(nil),  // 0: platform.BuildVPNRequest
+	(*BuildVPNResponse)(nil), // 1: platform.BuildVPNResponse
+	(*Config)(nil),           // 2: platform.Config
 }
 var file_wireguardian_proto_depIdxs = []int32{
-	1, // 0: platform.WireguardianService.BuildVPN:input_type -> platform.Project
-	0, // 1: platform.WireguardianService.BuildVPN:output_type -> platform.Status
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	2, // 0: platform.BuildVPNRequest.config:type_name -> platform.Config
+	2, // 1: platform.BuildVPNResponse.config:type_name -> platform.Config
+	0, // 2: platform.WireguardianService.BuildVPN:input_type -> platform.BuildVPNRequest
+	1, // 3: platform.WireguardianService.BuildVPN:output_type -> platform.BuildVPNResponse
+	3, // [3:4] is the sub-list for method output_type
+	2, // [2:3] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_wireguardian_proto_init() }
@@ -122,7 +179,19 @@ func file_wireguardian_proto_init() {
 	file_config_proto_init()
 	if !protoimpl.UnsafeEnabled {
 		file_wireguardian_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Status); i {
+			switch v := v.(*BuildVPNRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_wireguardian_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*BuildVPNResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -140,7 +209,7 @@ func file_wireguardian_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_wireguardian_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   1,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
@@ -166,7 +235,7 @@ const _ = grpc.SupportPackageIsVersion6
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type WireguardianServiceClient interface {
-	BuildVPN(ctx context.Context, in *Project, opts ...grpc.CallOption) (*Status, error)
+	BuildVPN(ctx context.Context, in *BuildVPNRequest, opts ...grpc.CallOption) (*BuildVPNResponse, error)
 }
 
 type wireguardianServiceClient struct {
@@ -177,8 +246,8 @@ func NewWireguardianServiceClient(cc grpc.ClientConnInterface) WireguardianServi
 	return &wireguardianServiceClient{cc}
 }
 
-func (c *wireguardianServiceClient) BuildVPN(ctx context.Context, in *Project, opts ...grpc.CallOption) (*Status, error) {
-	out := new(Status)
+func (c *wireguardianServiceClient) BuildVPN(ctx context.Context, in *BuildVPNRequest, opts ...grpc.CallOption) (*BuildVPNResponse, error) {
+	out := new(BuildVPNResponse)
 	err := c.cc.Invoke(ctx, "/platform.WireguardianService/BuildVPN", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -188,14 +257,14 @@ func (c *wireguardianServiceClient) BuildVPN(ctx context.Context, in *Project, o
 
 // WireguardianServiceServer is the server API for WireguardianService service.
 type WireguardianServiceServer interface {
-	BuildVPN(context.Context, *Project) (*Status, error)
+	BuildVPN(context.Context, *BuildVPNRequest) (*BuildVPNResponse, error)
 }
 
 // UnimplementedWireguardianServiceServer can be embedded to have forward compatible implementations.
 type UnimplementedWireguardianServiceServer struct {
 }
 
-func (*UnimplementedWireguardianServiceServer) BuildVPN(context.Context, *Project) (*Status, error) {
+func (*UnimplementedWireguardianServiceServer) BuildVPN(context.Context, *BuildVPNRequest) (*BuildVPNResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BuildVPN not implemented")
 }
 
@@ -204,7 +273,7 @@ func RegisterWireguardianServiceServer(s *grpc.Server, srv WireguardianServiceSe
 }
 
 func _WireguardianService_BuildVPN_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Project)
+	in := new(BuildVPNRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -216,7 +285,7 @@ func _WireguardianService_BuildVPN_Handler(srv interface{}, ctx context.Context,
 		FullMethod: "/platform.WireguardianService/BuildVPN",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WireguardianServiceServer).BuildVPN(ctx, req.(*Project))
+		return srv.(WireguardianServiceServer).BuildVPN(ctx, req.(*BuildVPNRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

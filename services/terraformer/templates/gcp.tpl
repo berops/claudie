@@ -22,7 +22,7 @@ resource "google_compute_instance" "control_plane" {
     access_config {}
   }
   metadata = {
-    ssh-keys = "root:{{.Cluster.PublicKey }}"
+    ssh-keys = "root:${file("./public.pem")}"
   }
   metadata_startup_script = "echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart"
 }
@@ -45,9 +45,7 @@ resource "google_compute_instance" "compute_plane" {
     access_config {}
   }
   metadata = {
-    ssh-keys = <<EOT
-                root:{{ .Cluster.PublicKey }}
-                EOT
+    ssh-keys = "root:${file("./public.pem")}"
   }
   metadata_startup_script = "echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart"
 }

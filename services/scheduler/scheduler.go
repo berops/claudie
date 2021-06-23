@@ -10,12 +10,13 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"regexp"
+	"strings"
 	"time"
 
 	"github.com/Berops/platform/proto/pb"
 	cbox "github.com/Berops/platform/services/context-box/client"
 	"github.com/Berops/platform/urls"
+	"golang.org/x/crypto/ssh"
 	"google.golang.org/grpc"
 	"gopkg.in/yaml.v3"
 )
@@ -71,38 +72,30 @@ type Provider struct {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func generateRSAKeyPair() (string, string) {
-	bitSize := 2048
-	// Generate RSA key.
-	key, err := rsa.GenerateKey(rand.Reader, bitSize)
+func MakeSSHKeyPair() (string, string) {
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2042)
 	if err != nil {
-		panic(err)
+		return "", ""
 	}
 
-	// Extract public component.
-	pub := key.Public()
+	// generate and write private key as PEM
+	var privKeyBuf strings.Builder
 
-	// Encode private key to PKCS#1 ASN.1 PEM.
-	keyPEM := pem.EncodeToMemory(
-		&pem.Block{
-			Type:  "RSA PRIVATE KEY",
-			Bytes: x509.MarshalPKCS1PrivateKey(key),
-		},
-	)
+	privateKeyPEM := &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)}
+	if err := pem.Encode(&privKeyBuf, privateKeyPEM); err != nil {
+		return "", ""
+	}
 
-	// Encode public key to PKCS#1 ASN.1 PEM.
-	pubPEM := pem.EncodeToMemory(
-		&pem.Block{
-			Type:  "RSA PUBLIC KEY",
-			Bytes: x509.MarshalPKCS1PublicKey(pub.(*rsa.PublicKey)),
-		},
-	)
+	// generate and write public key
+	pub, err := ssh.NewPublicKey(&privateKey.PublicKey)
+	if err != nil {
+		return "", ""
+	}
 
-	// Remove all new line characters from a key
-	re := regexp.MustCompile(`\r?\n`)
-	keyPEMString := re.ReplaceAllString(string(keyPEM), "")
-	pubPEMString := re.ReplaceAllString(string(pubPEM), "")
-	return keyPEMString, pubPEMString
+	var pubKeyBuf strings.Builder
+	pubKeyBuf.Write(ssh.MarshalAuthorizedKey(pub))
+
+	return privKeyBuf.String(), pubKeyBuf.String()
 }
 
 func createDesiredState(config *pb.Config) *pb.Config {
@@ -163,12 +156,12 @@ func createDesiredState(config *pb.Config) *pb.Config {
 		// Check if a cluster has already a RSA key pair, if no generate one
 		if len(config.GetCurrentState().Clusters) > i {
 			if config.GetCurrentState().Clusters[i] == nil {
-				privateKey, publicKey := generateRSAKeyPair()
+				privateKey, publicKey := MakeSSHKeyPair()
 				cluster.PrivateKey = privateKey
 				cluster.PublicKey = publicKey
 			}
 		} else {
-			privateKey, publicKey := generateRSAKeyPair()
+			privateKey, publicKey := MakeSSHKeyPair()
 			cluster.PrivateKey = privateKey
 			cluster.PublicKey = publicKey
 		}
