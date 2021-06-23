@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	kubeEleven "github.com/Berops/platform/services/kube-eleven/client"
 	"log"
 	"os"
 	"os/signal"
@@ -48,6 +49,21 @@ func callWireguardian(config *pb.Config) *pb.Config {
 	return res.GetConfig()
 }
 
+func callKubeEleven(config *pb.Config) *pb.Config {
+	cc, err := grpc.Dial(urls.KubeElevenURL, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("could not connect to KubeEleven: %v", err)
+	}
+	defer cc.Close()
+	// Creating the client
+	c := pb.NewKubeElevenServiceClient(cc)
+	res, err := kubeEleven.BuildCluster(c, &pb.BuildClusterRequest{Config: config})
+	if err != nil {
+		log.Fatalln(err)
+	}
+	return res.GetConfig()
+}
+
 func main() {
 	// If go code crash, we will get the file name and line number
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -72,7 +88,7 @@ func main() {
 				log.Println("I got config: ", config.GetName())
 				config = callTerraformer(config)
 				config = callWireguardian(config)
-				// TODO: Call KubeEleven
+				config = callKubeEleven(config)
 				config.CurrentState = config.DesiredState // Update currentState
 				err = cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 				if err != nil {
