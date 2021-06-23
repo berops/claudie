@@ -2,7 +2,7 @@ name: "Turn off the K8s dev cluster"
 on:
   workflow_dispatch:
   schedule:               # Set for Thursday for testing
-  - cron: "0 18 * * 4"    # minute (0-59) | hour(0-23) | day of the month(1-31) | month(1-12) | day of the week(1-7)
+  - cron: "0 18 * * 5"    # minute (0-59) | hour(0-23) | day of the month(1-31) | month(1-12) | day of the week(1-7)
                           # Uses UTC timezone - Run every friday at 20:00 CET -> "0 18 * * 5"
 jobs:
   turn-off:
@@ -26,16 +26,23 @@ jobs:
           credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
       # Turn off the services    
       - name: Turn off the Scheduler
-        run: kubectl scale --replicas=0 -f ./K8s-test-cluster/scheduler.yaml
+        if: ${{ always() }}   
+        run: kubectl scale --replicas=0 deployments/scheduler
       - name: Turn off the Builder
-        run: kubectl scale --replicas=0 -f ./K8s-test-cluster/builder.yaml
+        if: ${{ always() }}   
+        run: kubectl scale --replicas=0 deployments/builder
       - name: Turn off the Terraformer
-        run: kubectl scale --replicas=0 -f ./K8s-test-cluster/terraformer.yaml
+        if: ${{ always() }}   
+        run: kubectl scale --replicas=0 deployments/terraformer
       - name: Turn off the Contex-box
-        run: kubectl scale --replicas=0 -f ./K8s-test-cluster/context-box.yaml
+        if: ${{ always() }}   
+        run: kubectl scale --replicas=0 deployments/context-box
       - name: Turn off the Database
-        run: kubectl scale --replicas=0 -f ./K8s-test-cluster/mongodb.yaml
+        if: ${{ always() }}   
+        run: kubectl scale --replicas=0 deployments/mongodb
 #     - name: Turn off the Kube-eleven
-#       run: kubectl scale --replicas=0 -f ./K8s-test-cluster/kube-eleven.yaml
+#       if: ${{ always() }}       
+#       run: kubectl scale --replicas=0 deployments/kube-eleven
 #     - name: Turn off the Wireguardian
-#       run: kubectl scale --replicas=0 -f ./K8s-test-cluster/wireguardian.yaml
+#       if: ${{ always() }}   
+#       run: kubectl scale --replicas=0 deployments/wireguardian

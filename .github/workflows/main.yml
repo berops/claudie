@@ -65,14 +65,14 @@ jobs:
               arr+=("builder")
               echo "Detected change in builder"
             fi
-            if [[ $i == *"services/wireguardian"* ]]; then
-              arr+=("wireguardian")
-              echo "Detected change in wireguardian"
-            fi
-            if [[ $i == *"services/kube-eleven"* ]]; then
-              arr+=("kube-eleven")
-              echo "Detected change in kube-eleven"
-            fi
+            #if [[ $i == *"services/wireguardian"* ]]; then
+            #  arr+=("wireguardian")
+            #  echo "Detected change in wireguardian"
+            #fi
+            #if [[ $i == *"services/kube-eleven"* ]]; then
+            #  arr+=("kube-eleven")
+            #  echo "Detected change in kube-eleven"
+            #fi
           done
           echo ::set-output name=ARRAY::"${arr[@]}"
       # Build the new images that were changed by a recent commit - tag image latest as well for testing
