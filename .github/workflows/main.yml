@@ -65,10 +65,10 @@ jobs:
               arr+=("builder")
               echo "Detected change in builder"
             fi
-            #if [[ $i == *"services/wireguardian"* ]]; then
-            #  arr+=("wireguardian")
-            #  echo "Detected change in wireguardian"
-            #fi
+            if [[ $i == *"services/wireguardian"* ]]; then
+              arr+=("wireguardian")
+              echo "Detected change in wireguardian"
+            fi
             #if [[ $i == *"services/kube-eleven"* ]]; then
             #  arr+=("kube-eleven")
             #  echo "Detected change in kube-eleven"
@@ -109,8 +109,8 @@ jobs:
       - name: Run Builder
         if: ${{ always() }}  
         run: docker run --rm --env-file .env --name builder -d -p $BUILDER_PORT:$BUILDER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/builder:latest
-#     - name: Run Wireguardian
-#       run: docker run --rm --env-file .env --name wireguardian -d -p $WIREGUARDIAN_PORT:$WIREGUARDIAN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/wireguardian:latest
+      - name: Run Wireguardian
+        run: docker run --rm --env-file .env --name wireguardian -d -p $WIREGUARDIAN_PORT:$WIREGUARDIAN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/wireguardian:latest
       - name: Run Terraformer
         if: ${{ always() }}  
         run: docker run --rm --env-file .env --name terraformer -d -p $TERRAFORMER_PORT:$TERRAFORMER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/terraformer:latest
