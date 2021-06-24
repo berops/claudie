@@ -43,6 +43,6 @@ jobs:
 #     - name: Turn off the Kube-eleven
 #       if: ${{ always() }}       
 #       run: kubectl scale --replicas=0 deployments/kube-eleven
-#     - name: Turn off the Wireguardian
-#       if: ${{ always() }}   
-#       run: kubectl scale --replicas=0 deployments/wireguardian
+      - name: Turn off the Wireguardian
+        if: ${{ always() }}   
+        run: kubectl scale --replicas=0 deployments/wireguardian
