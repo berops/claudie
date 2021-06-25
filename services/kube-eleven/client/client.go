@@ -11,5 +11,6 @@ func BuildCluster(c pb.KubeElevenServiceClient, req *pb.BuildClusterRequest) (*p
 	if err != nil {
 		log.Fatalln(err)
 	}
+	log.Println("Clusters were successfully built")
 	return res, nil
 }
