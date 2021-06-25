@@ -8,3 +8,6 @@ playground
 mongodb
 *.tfstate*
 *.pem
+kubeone.yaml
+cluster.tar.gz
+cluster-kubeconfig
