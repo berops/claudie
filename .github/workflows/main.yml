@@ -3,7 +3,7 @@ name: CI/CD pipeline for platform
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ master , feature/CI-Refactoring] # Testing branch 
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 
