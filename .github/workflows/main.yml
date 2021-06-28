@@ -97,6 +97,7 @@ jobs:
       - name: Create network for Docker containers
         if: ${{ steps.array.outputs.ARRAY != '' }}
         run: docker network create --driver bridge platform-net
+        
       # Run the docker images - using latest for testing
       - name: Run MongoDB
         if: ${{ steps.array.outputs.ARRAY != '' }} 
@@ -119,7 +120,8 @@ jobs:
       - name: Run Terraformer
         if: ${{ steps.array.outputs.ARRAY != '' }}  
         run: docker run --rm --env-file .env --name terraformer -d -p $TERRAFORMER_PORT:$TERRAFORMER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/terraformer:latest
-      # Add 10s delay so services can connect and start working as intended
+      
+      # Add 5s delay so services can connect and start working as intended
       - name: Add a small delay to give services time to initialize
         if: ${{ steps.array.outputs.ARRAY != '' }} 
         run: sleep 5
@@ -127,6 +129,7 @@ jobs:
       - name: Check the containers
         if: ${{ steps.array.outputs.ARRAY != '' }}  # Check the running containers even if some fail
         run: docker ps -a
+
       # Push images to GCR - latest tag is overwritten
       - name: Push new images
         if: ${{ steps.array.outputs.ARRAY != '' }}
@@ -143,7 +146,9 @@ jobs:
             done
           fi
       - name: Clear up the containers
+        if: ${{ steps.array.outputs.ARRAY != '' }}
         run: docker kill $(docker ps -q)  # Kill all containers, flag --rm will remove them automatically
+
   # Deploy manifests to GKE cluster
   deploy:
     needs: build  # Wait until job build is finished
