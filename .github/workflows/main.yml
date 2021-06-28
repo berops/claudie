@@ -148,12 +148,13 @@ jobs:
       - name: Clear up the containers
         if: ${{ steps.array.outputs.ARRAY != '' }}
         run: docker kill $(docker ps -q)  # Kill all containers, flag --rm will remove them automatically
-
+    outputs:
+       ARRAY: ${{ needs.build.steps.array.outputs.ARRAY }}
   # Deploy manifests to GKE cluster
   deploy:
     needs: build  # Wait until job build is finished
     runs-on: ubuntu-latest
-    if: ${{ needs.build.steps.array.outputs.ARRAY != '' }}
+    if: ${{ needs.build.outputs.ARRAY != '' }}
     steps:
       # Checkout the repository
       - name: Checkout
