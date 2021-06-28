@@ -57,7 +57,8 @@ jobs:
             #fi
           done
           echo ::set-output name=ARRAY::"${arr[@]}"
-          echo "ENV_ARRAY=("${arr[@]}")" >> $GITHUB_ENV
+        outputs:
+          ARRAY: ${{ steps.array.outputs.ARRAY != '' }}
 
       # Import .env file - read it through bash script
       - name: Import environment variables from a file
@@ -148,8 +149,8 @@ jobs:
   # Deploy manifests to GKE cluster
   deploy:
     needs: build  # Wait until job build is finished
-    if: env.ENV_ARRAY != ''
     runs-on: ubuntu-latest
+    if: ${{ needs.build.outputs.ARRAY != '' }}
     steps:
       # Checkout the repository
       - name: Checkout
