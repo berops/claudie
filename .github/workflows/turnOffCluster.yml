@@ -2,8 +2,8 @@ name: "Turn off the K8s dev cluster"
 on:
   workflow_dispatch:
   schedule:               # Set for Thursday for testing
-  - cron: "0 18 * * 5"    # minute (0-59) | hour(0-23) | day of the month(1-31) | month(1-12) | day of the week(1-7)
-                          # Uses UTC timezone - Run every friday at 20:00 CET -> "0 18 * * 5"
+  - cron: "0 18 * * *"    # minute (0-59) | hour(0-23) | day of the month(1-31) | month(1-12) | day of the week(1-7)
+                          # Uses UTC timezone - Run every day at 20:00 CET -> "0 18 * * *"
 jobs:
   turn-off:
     runs-on: ubuntu-latest
