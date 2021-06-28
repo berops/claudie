@@ -149,7 +149,7 @@ jobs:
         if: ${{ steps.array.outputs.ARRAY != '' }}
         run: docker kill $(docker ps -q)  # Kill all containers, flag --rm will remove them automatically
     outputs:
-       ARRAY: ${{ needs.build.steps.array.outputs.ARRAY }}
+       ARRAY: ${{ steps.array.outputs.ARRAY }}
   # Deploy manifests to GKE cluster
   deploy:
     needs: build  # Wait until job build is finished
