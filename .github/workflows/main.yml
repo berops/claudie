@@ -58,7 +58,7 @@ jobs:
           done
           echo ::set-output name=ARRAY::"${arr[@]}"
         outputs:
-          ARRAY: ${{ steps.array.outputs.ARRAY != '' }}
+          ARRAY: ${{ steps.array.outputs.ARRAY }}
 
       # Import .env file - read it through bash script
       - name: Import environment variables from a file
