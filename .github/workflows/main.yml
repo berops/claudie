@@ -148,7 +148,7 @@ jobs:
   # Deploy manifests to GKE cluster
   deploy:
     needs: build  # Wait until job build is finished
-    if: ${{ $ENV_ARRAY != ''}}
+    if: ${{ env.ENV_ARRAY != ''}}
     runs-on: ubuntu-latest
     steps:
       # Checkout the repository
