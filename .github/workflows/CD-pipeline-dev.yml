@@ -2,7 +2,8 @@ name: CD pipeline for platform - dev
 # Controls when the action will run. 
 on:
   # Run after CI
-  workflows: [ "CI pipeline for platform" ]
+  workflow_run:
+    workflows: [ "CI pipeline for platform" ]
     types: [ completed ]
   # Manual trigger    
   workflow_dispatch:
