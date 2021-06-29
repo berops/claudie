@@ -4,7 +4,7 @@ on:
   # Run after CI
   workflow_run:
     workflows: [ "CI pipeline for platform" ]
-    branches: [ main ]
+    branches: [ main, feature/CI-CD-Refactoring  ]
     types: 
       - completed
   # Manual trigger    
