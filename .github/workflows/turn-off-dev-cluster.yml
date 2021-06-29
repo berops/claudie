@@ -25,24 +25,6 @@ jobs:
           location: ${{ secrets.GKE_ZONE }}
           credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
       # Turn off the services    
-      - name: Turn off the Scheduler
-        if: ${{ always() }}   
-        run: kubectl scale --replicas=0 deployments/scheduler
-      - name: Turn off the Builder
-        if: ${{ always() }}   
-        run: kubectl scale --replicas=0 deployments/builder
-      - name: Turn off the Terraformer
-        if: ${{ always() }}   
-        run: kubectl scale --replicas=0 deployments/terraformer
-      - name: Turn off the Contex-box
-        if: ${{ always() }}   
-        run: kubectl scale --replicas=0 deployments/context-box
-      - name: Turn off the Database
-        if: ${{ always() }}   
-        run: kubectl scale --replicas=0 deployments/mongodb
-#     - name: Turn off the Kube-eleven
-#       if: ${{ always() }}       
-#       run: kubectl scale --replicas=0 deployments/kube-eleven
-      - name: Turn off the Wireguardian
-        if: ${{ always() }}   
-        run: kubectl scale --replicas=0 deployments/wireguardian
+      - name: Turn off the GKE cluster
+        run: gcloud dataproc clusters stop k8s-test-cluster --region=europe-west3
+       
