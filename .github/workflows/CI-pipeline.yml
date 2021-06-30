@@ -62,9 +62,11 @@ jobs:
       - name: Import environment variables from a file
         if: ${{ steps.array.outputs.ARRAY != '' }}
         run: |
+          cd K8s-dev-cluster
           while read line; do
             echo "$line" >> $GITHUB_ENV
           done < ${{ env.ENV_FILE }}
+          cd ..
         # Login to GCP with repository secrets 
       - name: Login to GCP
         if: ${{ steps.array.outputs.ARRAY != '' }}
