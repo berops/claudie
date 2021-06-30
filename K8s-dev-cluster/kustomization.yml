@@ -1,0 +1,20 @@
+resources:
+- mongodb.yaml
+- context-box.yaml
+- terraformer.yaml
+- wireguardian.yaml
+- scheduler.yaml
+- builder.yaml
+#- kube-eleven.yaml
+configMapGenerator:
+- envs:
+  - .env
+  name: urls
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+images:
+- name: context-box
+  newTag: 9d92950411ab33252d64f18bdf3c12939cf891ec
+- name: context-box:latest
+  newName: context-box
+  newTag: e919ee7baf1f097e5d2d6978f05e12f57d742b74

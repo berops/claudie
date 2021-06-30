@@ -3,7 +3,7 @@ name: CD pipeline for platform - dev
 on:
   # Run after CI
   workflow_run:
-    workflows: [ "CI pipeline for platform" ]
+    workflows: [ "CI/CD pipeline for platform" ] # for testing
     types: [ completed ]
   # Manual trigger    
   workflow_dispatch:
@@ -27,24 +27,14 @@ jobs:
           cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
           location: ${{ secrets.GKE_ZONE }}
           credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
-      # Start the GKE cluster    
-      - name: Start the GKE cluster
-        run: gcloud dataproc clusters start k8s-test-cluster --region=europe-west3
-      # Create a ConfigMap from .env file
-      - name: Set up ConfigMap
-        run: kubectl create configmap urls --from-env-file=.env -o yaml --dry-run | kubectl replace -f - 
-      # Deploy services
-      - name: Deploy Database
-        run: kubectl apply -f ./K8s-test-cluster/mongodb.yaml
-      - name: Deploy Context-box
-        run: kubectl apply -f ./K8s-test-cluster/context-box.yaml
-      - name: Deploy Scheduler
-        run: kubectl apply -f ./K8s-test-cluster/scheduler.yaml
-      - name: Deploy Builder
-        run: kubectl apply -f ./K8s-test-cluster/builder.yaml
-      - name: Deploy Terraformer
-        run: kubectl apply -f ./K8s-test-cluster/terraformer.yaml
-#     - name: Deploy Kube-eleven
-#       run: kubectl apply -f ./K8s-test-cluster/kube-eleven.yaml
-      - name: Deploy Wireguardian
-        run: kubectl apply -f ./K8s-test-cluster/wireguardian.yaml
+    
+      - name: Change the service images to most recent ones
+        run: |
+          kustomize edit set image context-box:$GITHUB_SHA
+          kustomize edit set image scheduler:$GITHUB_SHA
+          kustomize edit set image builder:$GITHUB_SHA
+          kustomize edit set image terraformer:$GITHUB_SHA
+          kustomize edit set image wireguardian:$GITHUB_SHA
+          kustomize edit set image kube-eleven:$GITHUB_SHA
+      - name: Deploy to the dev cluster via kustomize
+        run: kustomize build . | kubectl apply -f -
