@@ -17,7 +17,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
        # Retrieve saved tag 
-      - name: Get an image tag
+      - name: Check if CD should deploy
         id: get_persistent_value
         uses: aaimio/get-persistent-value@v1
         with:
