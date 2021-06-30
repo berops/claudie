@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
       # Path to env file
     env:
-      ENV_FILE: ../.env
+      ENV_FILE: .env
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
