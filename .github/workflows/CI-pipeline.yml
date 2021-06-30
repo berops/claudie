@@ -3,7 +3,7 @@ name: CI pipeline for platform
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ master ,feature/CI-CD-Refactoring ]
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 
@@ -148,5 +148,3 @@ jobs:
       - name: Clear up the containers
         if: ${{ steps.array.outputs.ARRAY != '' }}
         run: docker kill $(docker ps -q)  # Kill all containers, flag --rm will remove them automatically
-    outputs:
-       ARRAY: ${{ steps.array.outputs.ARRAY }}
