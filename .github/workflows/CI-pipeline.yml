@@ -105,22 +105,22 @@ jobs:
         run: docker run --rm -it -v mongodb:/data/db --name mongodb -d -p $DATABASE_PORT:$DATABASE_PORT --network platform-net mongo
       - name: Run Context-box
         if: ${{ steps.array.outputs.ARRAY != '' }}  
-        run: docker run --rm --env-file .env --name context-box -d -p $CONTEXT_BOX_PORT:$CONTEXT_BOX_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/context-box:latest
+        run: docker run --rm --env-file ./K8s-dev-cluster/.env --name context-box -d -p $CONTEXT_BOX_PORT:$CONTEXT_BOX_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/context-box:latest
       - name: Run Scheduler
         if: ${{ steps.array.outputs.ARRAY != '' }}  
-        run: docker run --rm --env-file .env --name scheduler -d --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/scheduler:latest
+        run: docker run --rm --env-file ./K8s-dev-cluster/.env --name scheduler -d --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/scheduler:latest
 #     - name: Run Kube-eleven
 #       if: ${{ steps.array.outputs.ARRAY != '' }}
-#       run: docker run --rm --env-file .env --name kube-eleven -d -p $KUBE_ELEVEN_PORT:$KUBE_ELEVEN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/kube-eleven:latest
+#       run: docker run --rm --env-file ./K8s-dev-cluster/.env --name kube-eleven -d -p $KUBE_ELEVEN_PORT:$KUBE_ELEVEN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/kube-eleven:latest
       - name: Run Builder
         if: ${{ steps.array.outputs.ARRAY != '' }}  
-        run: docker run --rm --env-file .env --name builder -d -p $BUILDER_PORT:$BUILDER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/builder:latest
+        run: docker run --rm --env-file ./K8s-dev-cluster/.env --name builder -d -p $BUILDER_PORT:$BUILDER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/builder:latest
       - name: Run Wireguardian
         if: ${{ steps.array.outputs.ARRAY != '' }}
-        run: docker run --rm --env-file .env --name wireguardian -d -p $WIREGUARDIAN_PORT:$WIREGUARDIAN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/wireguardian:latest
+        run: docker run --rm --env-file ./K8s-dev-cluster/.env --name wireguardian -d -p $WIREGUARDIAN_PORT:$WIREGUARDIAN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/wireguardian:latest
       - name: Run Terraformer
         if: ${{ steps.array.outputs.ARRAY != '' }}  
-        run: docker run --rm --env-file .env --name terraformer -d -p $TERRAFORMER_PORT:$TERRAFORMER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/terraformer:latest
+        run: docker run --rm --env-file ./K8s-dev-cluster/.env --name terraformer -d -p $TERRAFORMER_PORT:$TERRAFORMER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/terraformer:latest
       
       # Add 5s delay so services can connect and start working as intended
       - name: Add a small delay to give services time to initialize
