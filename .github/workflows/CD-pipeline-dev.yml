@@ -3,7 +3,7 @@ name: CD pipeline for platform - dev
 on:
   # Run after CI
   workflow_run:
-    workflows: [ "CI/CD pipeline for platform" ] # for testing
+    workflows: [ "CI pipeline for platform" ] # for testing
     types: [ completed ]
   # Manual trigger    
   workflow_dispatch:
