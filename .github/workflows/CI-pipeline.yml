@@ -149,10 +149,11 @@ jobs:
         if: ${{ steps.array.outputs.ARRAY != '' }}
         run: docker kill $(docker ps -q)  # Kill all containers, flag --rm will remove them automatically
       # This will save a value that is used as a tag for new images
-      - name: Save a status for the CD pipeline
+      - name: Save an image tag for the CD pipeline
+        if: ${{ steps.array.outputs.ARRAY != '' }}
         id: set_persistent_value
         uses: aaimio/set-persistent-value@v1
         with:
-          key: SHOULD_RUN
-          value:  ${{ steps.array.outputs.ARRAY != '' }}
+          key: TAG
+          value: $GITHUB_SHA
           access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN }}

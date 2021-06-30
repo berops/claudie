@@ -17,37 +17,33 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
        # Retrieve saved tag 
-      - name: Check if CD should deploy
+      - name: Get the newest tag
         id: get_persistent_value
         uses: aaimio/get-persistent-value@v1
         with:
-          key: SHOULD_RUN
+          key: TAG
           access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN }}
 
       # Setup gcloud CLI
       - uses: google-github-actions/setup-gcloud@master
-        if: ${{ steps.get_persistent_value.outputs.value }}
         with:
           service_account_key: ${{ secrets.GKE_SERVICE_ACC_KEY }}
           project_id: ${{ secrets.GCP_PROJECT_ID }}
       # Get the GKE credentials so we can deploy to the cluster
       - uses: google-github-actions/get-gke-credentials@v0.2.1
-        if: ${{ steps.get_persistent_value.outputs.value }}
         with:
           cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
           location: ${{ secrets.GKE_ZONE }}
           credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
     
       - name: Change the service images to most recent ones
-        if: ${{ steps.get_persistent_value.outputs.value }}
         run: |
           cd K8s-dev-cluster   # Go to directory with kustomization.yaml
-          kustomize edit set image context-box:$GITHUB_SHA
-          kustomize edit set image scheduler:$GITHUB_SHA
-          kustomize edit set image builder:$GITHUB_SHA
-          kustomize edit set image terraformer:$GITHUB_SHA
-          kustomize edit set image wireguardian:$GITHUB_SHA
-          kustomize edit set image kube-eleven:$GITHUB_SHA
+          kustomize edit set image context-box:${{ steps.get_persistent_value.outputs.value }}
+          kustomize edit set image scheduler:${{ steps.get_persistent_value.outputs.value }}
+          kustomize edit set image builder:${{ steps.get_persistent_value.outputs.value }}
+          kustomize edit set image terraformer:${{ steps.get_persistent_value.outputs.value }}
+          kustomize edit set image wireguardian:${{ steps.get_persistent_value.outputs.value }}
+          kustomize edit set image kube-eleven:${{ steps.get_persistent_value.outputs.value }}
       - name: Deploy to the dev cluster via kustomize
-        if: ${{ steps.get_persistent_value.outputs.value }}
         run: kustomize build | kubectl apply -f -
