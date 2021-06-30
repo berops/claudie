@@ -1,0 +1,40 @@
+name: CD pipeline for platform - dev
+# Controls when the action will run. 
+on:
+  # Run after CI
+  workflow_run:
+    workflows: [ "CI pipeline for platform" ] # for testing
+    types: [ completed ]
+  # Manual trigger    
+  workflow_dispatch:
+
+jobs:
+# Deploy manifests to GKE cluster
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the repository
+      - name: Checkout
+        uses: actions/checkout@v2
+      # Setup gcloud CLI
+      - uses: google-github-actions/setup-gcloud@master
+        with:
+          service_account_key: ${{ secrets.GKE_SERVICE_ACC_KEY }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+      # Get the GKE credentials so we can deploy to the cluster
+      - uses: google-github-actions/get-gke-credentials@v0.2.1
+        with:
+          cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
+          location: ${{ secrets.GKE_ZONE }}
+          credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
+    
+      - name: Change the service images to most recent ones
+        run: |
+          kustomize edit set image context-box:$GITHUB_SHA
+          kustomize edit set image scheduler:$GITHUB_SHA
+          kustomize edit set image builder:$GITHUB_SHA
+          kustomize edit set image terraformer:$GITHUB_SHA
+          kustomize edit set image wireguardian:$GITHUB_SHA
+          kustomize edit set image kube-eleven:$GITHUB_SHA
+      - name: Deploy to the dev cluster via kustomize
+        run: kustomize build . | kubectl apply -f -

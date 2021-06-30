@@ -1,0 +1,150 @@
+name: CI pipeline for platform
+# Controls when the action will run. 
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+      # Path to env file
+    env:
+      ENV_FILE: .env
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out repository under $GITHUB_SHAWORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+      # Create an array with modules that were changed by a recent commit via bash script
+      - name: Check the files for a change
+        id: array
+        run: |
+          arr=()
+          git fetch origin master
+          echo "Changed files:"
+          git diff  --name-only origin/master..HEAD
+          for i in "$(git diff  --name-only origin/master..HEAD)"
+          do
+            if [[ $i == *"services/context-box"* ]]; then
+              arr+=("context-box")
+              echo "Detected change in context-box"
+            fi
+            if [[ $i == *"services/scheduler"* ]]; then
+              arr+=("scheduler")
+              echo "Detected change in scheduler"
+            fi
+            if [[ $i == *"services/terraformer"* ]]; then
+              arr+=("terraformer")
+              echo "Detected change in terraformer"
+            fi
+            if [[ $i == *"services/builder"* ]]; then
+              arr+=("builder")
+              echo "Detected change in builder"
+            fi
+            if [[ $i == *"services/wireguardian"* ]]; then
+              arr+=("wireguardian")
+              echo "Detected change in wireguardian"
+            fi
+            #if [[ $i == *"services/kube-eleven"* ]]; then
+            #  arr+=("kube-eleven")
+            #  echo "Detected change in kube-eleven"
+            #fi
+          done
+          echo ::set-output name=ARRAY::"${arr[@]}"
+
+      # Import .env file - read it through bash script
+      - name: Import environment variables from a file
+        if: ${{ steps.array.outputs.ARRAY != '' }}
+        run: |
+          cd K8s-dev-cluster
+          while read line; do
+            echo "$line" >> $GITHUB_ENV
+          done < ${{ env.ENV_FILE }}
+          cd ..
+        # Login to GCP with repository secrets 
+      - name: Login to GCP
+        if: ${{ steps.array.outputs.ARRAY != '' }}
+        uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_email: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+          service_account_key: ${{ secrets.GCP_DOCKER_REGISTRY_KEY }}
+      # Configure docker for use on the GCP
+      - name: Configure Docker
+        if: ${{ steps.array.outputs.ARRAY != '' }}
+        run: gcloud auth configure-docker --quiet
+      # Build the new images that were changed by a recent commit - tag image latest as well for testing
+      - name: Build new images
+        if: ${{ steps.array.outputs.ARRAY != '' }}
+        run: |
+          arr=(${{ steps.array.outputs.ARRAY }})
+          if [ ${#arr[@]} -eq 0 ] 
+          then
+            echo "No changes were detected, nothing to build"            
+          else
+            for path in "${arr[@]}"
+            do
+            echo "-----Building $path-----"
+            docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA -f ./services/$path/Dockerfile .
+            done
+          fi
+      # Create network for docker containers, so they can connect to each other
+      - name: Create network for Docker containers
+        if: ${{ steps.array.outputs.ARRAY != '' }}
+        run: docker network create --driver bridge platform-net
+        
+      # Run the docker images - using latest for testing
+      - name: Run MongoDB
+        if: ${{ steps.array.outputs.ARRAY != '' }} 
+        run: docker run --rm -it -v mongodb:/data/db --name mongodb -d -p $DATABASE_PORT:$DATABASE_PORT --network platform-net mongo
+      - name: Run Context-box
+        if: ${{ steps.array.outputs.ARRAY != '' }}  
+        run: docker run --rm --env-file ./K8s-dev-cluster/.env --name context-box -d -p $CONTEXT_BOX_PORT:$CONTEXT_BOX_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/context-box:latest
+      - name: Run Scheduler
+        if: ${{ steps.array.outputs.ARRAY != '' }}  
+        run: docker run --rm --env-file ./K8s-dev-cluster/.env --name scheduler -d --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/scheduler:latest
+#     - name: Run Kube-eleven
+#       if: ${{ steps.array.outputs.ARRAY != '' }}
+#       run: docker run --rm --env-file ./K8s-dev-cluster/.env --name kube-eleven -d -p $KUBE_ELEVEN_PORT:$KUBE_ELEVEN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/kube-eleven:latest
+      - name: Run Builder
+        if: ${{ steps.array.outputs.ARRAY != '' }}  
+        run: docker run --rm --env-file ./K8s-dev-cluster/.env --name builder -d -p $BUILDER_PORT:$BUILDER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/builder:latest
+      - name: Run Wireguardian
+        if: ${{ steps.array.outputs.ARRAY != '' }}
+        run: docker run --rm --env-file ./K8s-dev-cluster/.env --name wireguardian -d -p $WIREGUARDIAN_PORT:$WIREGUARDIAN_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/wireguardian:latest
+      - name: Run Terraformer
+        if: ${{ steps.array.outputs.ARRAY != '' }}  
+        run: docker run --rm --env-file ./K8s-dev-cluster/.env --name terraformer -d -p $TERRAFORMER_PORT:$TERRAFORMER_PORT --network platform-net eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/terraformer:latest
+      
+      # Add 5s delay so services can connect and start working as intended
+      - name: Add a small delay to give services time to initialize
+        if: ${{ steps.array.outputs.ARRAY != '' }} 
+        run: sleep 5
+      # Check the containers and their status
+      - name: Check the containers
+        if: ${{ steps.array.outputs.ARRAY != '' }}  # Check the running containers even if some fail
+        run: docker ps -a
+
+      # Push images to GCR - latest tag is overwritten
+      - name: Push new images
+        if: ${{ steps.array.outputs.ARRAY != '' }}
+        run: |
+          arr=(${{ steps.array.outputs.ARRAY }})
+          if [ ${#arr[@]} -eq 0 ] 
+          then
+            echo "No images were build, nothing to push"
+          else
+            for path in "${arr[@]}"
+            do
+            docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA
+            done
+          fi
+      - name: Clear up the containers
+        if: ${{ steps.array.outputs.ARRAY != '' }}
+        run: docker kill $(docker ps -q)  # Kill all containers, flag --rm will remove them automatically
