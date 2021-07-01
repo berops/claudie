@@ -159,7 +159,7 @@ jobs:
     strategy:
       matrix:
         # Specify what services need updated tag
-        updated-services: ${{ needs.build.outputs.ARRAY }}
+        updated-services: [ ${{ needs.build.outputs.ARRAY }} ]
     steps:
       - name: Save an image tag for the CD pipeline - ${{ matrix.updated-services }}
         if: ${{ steps.array.outputs.ARRAY != '' }}
@@ -177,7 +177,7 @@ jobs:
     strategy:
       matrix:
         # Specify what services need updated tag
-        updated-services: ${{ needs.build.outputs.ARRAY }}
+        updated-services: [ ${{ needs.build.outputs.ARRAY }} ]
     steps:
       - name: Get tags
         run: |
