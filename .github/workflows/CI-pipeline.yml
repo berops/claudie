@@ -158,7 +158,7 @@ jobs:
     if: ${{ needs.build.outputs.ARRAY != '' }}
     steps:
       - name: Save an image tag for the CD pipeline 
-        if: ${{ steps.array.outputs.ARRAY != '' }}
+        if: ${{ needs.build.outputs.ARRAY != '' }}
         run: |
           arr=(${{ needs.build.outputs.ARRAY }})
 
