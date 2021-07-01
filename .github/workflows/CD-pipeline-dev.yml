@@ -16,6 +16,14 @@ jobs:
       # Checkout the repository
       - name: Checkout
         uses: actions/checkout@v2
+       # Retrieve saved tag 
+      - name: Get the newest tag
+        id: get_persistent_value
+        uses: aaimio/get-persistent-value@v1
+        with:
+          key: TAG
+          access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN }}
+
       # Setup gcloud CLI
       - uses: google-github-actions/setup-gcloud@master
         with:
@@ -30,11 +38,12 @@ jobs:
     
       - name: Change the service images to most recent ones
         run: |
-          kustomize edit set image context-box:$GITHUB_SHA
-          kustomize edit set image scheduler:$GITHUB_SHA
-          kustomize edit set image builder:$GITHUB_SHA
-          kustomize edit set image terraformer:$GITHUB_SHA
-          kustomize edit set image wireguardian:$GITHUB_SHA
-          kustomize edit set image kube-eleven:$GITHUB_SHA
+          cd K8s-dev-cluster   # Go to directory with kustomization.yaml
+          kustomize edit set image context-box:${{ steps.get_persistent_value.outputs.value }}
+          kustomize edit set image scheduler:${{ steps.get_persistent_value.outputs.value }}
+          kustomize edit set image builder:${{ steps.get_persistent_value.outputs.value }}
+          kustomize edit set image terraformer:${{ steps.get_persistent_value.outputs.value }}
+          kustomize edit set image wireguardian:${{ steps.get_persistent_value.outputs.value }}
+          kustomize edit set image kube-eleven:${{ steps.get_persistent_value.outputs.value }}
       - name: Deploy to the dev cluster via kustomize
-        run: kustomize build . | kubectl apply -f -
+        run: kustomize build | kubectl apply -f -
