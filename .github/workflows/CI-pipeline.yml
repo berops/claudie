@@ -156,28 +156,20 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: ${{ needs.build.outputs.ARRAY != '' }}
-    strategy:
-      matrix:
-        # Specify what services need updated tag
-        updated-services: [ ${{ needs.build.outputs.ARRAY }} ]
     steps:
       - name: Save an image tag for the CD pipeline - ${{ matrix.updated-services }}
         if: ${{ steps.array.outputs.ARRAY != '' }}
-        id: set_persistent_value
-        uses: aaimio/set-persistent-value@v1
-        with:
-          key: ${{ matrix.updated-services }}
-          value: $GITHUB_SHA
-          access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN }}
+        run: |
+          arr=(${{ needs.build.outputs.ARRAY }})
+
+          for SERVICE in "${arr[@]}"
+          do
+          curl -X POST -H 'x-api-key: ${{  secrets.SHOULD_CD_RUN_TOKEN }}' -H 'content-type: application/json' -d '{ "$SERVISE": $GITHUB_SHA }' 'https://persistent.aaim.io/api/values/set?key=$SERVICE&output=plain'
+          done
 
   test-exported:
     runs-on: ubuntu-latest
-    needs: [ build, export-tag ] 
-    if: ${{ needs.build.outputs.ARRAY != '' }}
-    strategy:
-      matrix:
-        # Specify what services need updated tag
-        updated-services: [ ${{ needs.build.outputs.ARRAY }} ]
+    needs: [ build, export-tag ]   
     steps:
       - name: Get tags
         run: |
@@ -185,6 +177,6 @@ jobs:
 
           for SERVICE in "${arr[@]}"
           do
-          TAG= $(curl -X GET -H 'x-api-key: ${{ secrets.SHOULD_CD_RUN_TOKEN  }}' -H 'x-github-repo: <Berops/platform>' 'https://persistent.aaim.io/api/values/get?key=$SERVICE&output=plain')
+          TAG= $(curl -X GET -H 'x-api-key: ${{ secrets.SHOULD_CD_RUN_TOKEN  }}' -H 'https://persistent.aaim.io/api/values/get?key=$SERVICE&output=plain')
           echo $TAG
           done
