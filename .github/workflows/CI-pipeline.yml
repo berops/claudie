@@ -164,7 +164,7 @@ jobs:
 
           for SERVICE in "${arr[@]}"
           do
-          curl -X POST -H 'x-api-key: ${{  secrets.SHOULD_CD_RUN_TOKEN }}' -H 'content-type: application/json' -d '{ "$SERVISE": $GITHUB_SHA }' 'https://persistent.aaim.io/api/values/set?key=$SERVICE&output=plain'
+          curl -X POST -H 'x-api-key: ${{  secrets.SHOULD_CD_RUN_TOKEN }}' -H 'content-type: application/json' -d '{ "$SERVICE": $GITHUB_SHA }' 'https://persistent.aaim.io/api/values/set?key=$SERVICE&output=plain'
           done
 
   test-exported:
