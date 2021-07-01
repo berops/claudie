@@ -65,7 +65,7 @@ jobs:
           finalJSON=${json::-2}
           finalJSON+="}"
           echo ::set-output name=ARRAY::"${arr[@]}"
-          echo ::set-output name=JSON::"$finalJSON"
+          echo ::set-output name=JSON::$finalJSON
       # Import .env file - read it through bash script
       - name: Import environment variables from a file
         if: ${{ steps.array.outputs.ARRAY != '' }}
