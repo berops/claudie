@@ -180,7 +180,7 @@ jobs:
         updated-services: ${{ needs.build.outputs.ARRAY }}
     steps:
       - name: Get tags
-         run: |
+        run: |
           arr=(${{ needs.build.outputs.ARRAY }})
 
           for SERVICE in "${arr[@]}"
