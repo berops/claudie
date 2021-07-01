@@ -12,6 +12,8 @@ jobs:
 # Deploy manifests to GKE cluster
   deploy:
     runs-on: ubuntu-latest
+    env:
+      ARRAY: context-box, scheduler, builder, terraformer, wireguardian #, kube-eleven)
     steps:
       # Checkout the repository
       - name: Checkout
@@ -40,13 +42,14 @@ jobs:
         # Set the working directory
         working-directory: ./K8s-dev-cluster
         run: |
-          kustomize edit set image context-box:${{ steps.get_persistent_value.outputs.value }}
-          kustomize edit set image scheduler:${{ steps.get_persistent_value.outputs.value }}
-          kustomize edit set image builder:${{ steps.get_persistent_value.outputs.value }}
-          kustomize edit set image terraformer:${{ steps.get_persistent_value.outputs.value }}
-          kustomize edit set image wireguardian:${{ steps.get_persistent_value.outputs.value }}
-          kustomize edit set image kube-eleven:${{ steps.get_persistent_value.outputs.value }}
+          arr=(${{ env.ARRAY }})
 
+          for SERVICE in "${arr[@]}"
+          do
+          TAG= $(curl -X GET -H 'x-api-key: ${{ secrets.SHOULD_CD_RUN_TOKEN  }}' -H 'x-github-repo: <Berops/platform>' 'https://persistent.aaim.io/api/values/get?key=$SERVICE&output=plain')
+          kustomize edit set image $SERVICE:$TAG
+          done
+          
           cat kustomization.yaml
       - name: Deploy to the dev cluster via kustomize
         # Set the working directory
