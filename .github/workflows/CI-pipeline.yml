@@ -157,7 +157,7 @@ jobs:
     needs: build
     if: ${{ needs.build.outputs.ARRAY != '' }}
     steps:
-      - name: Save an image tag for the CD pipeline - ${{ matrix.updated-services }}
+      - name: Save an image tag for the CD pipeline 
         if: ${{ steps.array.outputs.ARRAY != '' }}
         run: |
           arr=(${{ needs.build.outputs.ARRAY }})
@@ -177,6 +177,6 @@ jobs:
 
           for SERVICE in "${arr[@]}"
           do
-          TAG= $(curl -X GET -H 'x-api-key: ${{ secrets.SHOULD_CD_RUN_TOKEN  }}' -H 'https://persistent.aaim.io/api/values/get?key=$SERVICE&output=plain')
+          TAG= $(curl -X GET -H 'x-api-key: ${{ secrets.SHOULD_CD_RUN_TOKEN  }}' 'https://persistent.aaim.io/api/values/get?key=$SERVICE&output=plain')
           echo $TAG
           done
