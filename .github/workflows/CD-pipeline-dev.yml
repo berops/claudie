@@ -37,13 +37,18 @@ jobs:
           credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
     
       - name: Change the service images to most recent ones
+        # Set the working directory
+        working-directory: ./K8s-dev-cluster
         run: |
-          cd K8s-dev-cluster   # Go to directory with kustomization.yaml
           kustomize edit set image context-box:${{ steps.get_persistent_value.outputs.value }}
           kustomize edit set image scheduler:${{ steps.get_persistent_value.outputs.value }}
           kustomize edit set image builder:${{ steps.get_persistent_value.outputs.value }}
           kustomize edit set image terraformer:${{ steps.get_persistent_value.outputs.value }}
           kustomize edit set image wireguardian:${{ steps.get_persistent_value.outputs.value }}
           kustomize edit set image kube-eleven:${{ steps.get_persistent_value.outputs.value }}
+
+          cat kustomization.yaml
       - name: Deploy to the dev cluster via kustomize
+        # Set the working directory
+        working-directory: ./K8s-dev-cluster
         run: kustomize build | kubectl apply -f -
