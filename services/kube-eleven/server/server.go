@@ -21,17 +21,24 @@ const outputPath = "services/kube-eleven/server/"
 
 type data struct {
 	ApiEndpoint string
-	Cluster     *pb.Cluster
+	Kubernetes  string
+	Nodes       []*pb.Ip
 }
 
-// formatTemplateData finds the first control plane node and sets it as a apiEndpoint for a cluster
+// formatTemplateData formats data for kubeone template input
 func (d *data) formatTemplateData(cluster *pb.Cluster) {
 	for _, ip := range cluster.Ips {
 		if ip.GetIsControl() {
-			d.ApiEndpoint = ip.GetPublic()
+			d.Nodes = append(d.Nodes, ip)
 		}
 	}
-	d.Cluster = cluster
+	for _, ip := range cluster.Ips {
+		if !ip.GetIsControl() {
+			d.Nodes = append(d.Nodes, ip)
+		}
+	}
+	d.Kubernetes = cluster.GetKubernetes()
+	d.ApiEndpoint = d.Nodes[0].GetPrivate()
 }
 
 func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb.BuildClusterResponse, error) {
@@ -45,6 +52,7 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 		genKubeOneConfig(outputPath+"kubeone.tpl", outputPath+"kubeone.yaml", d)
 		runKubeOne()
 		cluster.Kubeconfig = saveKubeconfig()
+		deleteTmpFiles()
 	}
 
 	//fmt.Println("Kubeconfig:", string(req.GetCluster().GetKubeconfig()))
@@ -95,6 +103,25 @@ func saveKubeconfig() string {
 		log.Fatalln("Error while reading a kubeconfig file", err)
 	}
 	return string(kubeconfig)
+}
+
+func deleteTmpFiles() {
+	err := os.Remove(outputPath + "cluster.tar.gz")
+	if err != nil {
+		log.Fatalln("Error while deleting cluster.tar.gz file", err)
+	}
+	err = os.Remove(outputPath + "cluster-kubeconfig")
+	if err != nil {
+		log.Fatalln("Error while deleting cluster-kubeconfig file", err)
+	}
+	err = os.Remove(outputPath + "kubeone.yaml")
+	if err != nil {
+		log.Fatalln("Error while deleting kubeone.yaml file", err)
+	}
+	err = os.Remove(outputPath + "private.pem")
+	if err != nil {
+		log.Fatalln("Error while deleting private.pem file", err)
+	}
 }
 
 func main() {
