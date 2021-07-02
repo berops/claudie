@@ -3,7 +3,7 @@ kind: KubeOneCluster
 name: cluster
 
 versions:
-  kubernetes: '{{ .Cluster.Kubernetes }}'
+  kubernetes: '{{ .Kubernetes }}'
 
 clusterNetwork:
   cni:
@@ -26,20 +26,20 @@ apiEndpoint:
 controlPlane:
   hosts:
 {{- $privateKey := "./private.pem" }}
-{{- range $Name, $Value := .Cluster.Ips }}
-{{- if eq $Value.IsControl true}}
-  - publicAddress: '{{ $Value.Public }}'
-    privateAddress: '{{ $Value.Private }}'
+{{- range $value := .Nodes }}
+{{- if eq $value.IsControl true}}
+  - publicAddress: '{{ $value.Public }}'
+    privateAddress: '{{ $value.Private }}'
     sshPrivateKeyFile: '{{ $privateKey }}'
 {{- end}}
 {{- end}}
 
 staticWorkers:
   hosts:
-{{- range $Name, $Value := .Cluster.Ips }}
-{{- if eq $Value.IsControl false}}
-  - publicAddress: '{{ $Value.Public }}'
-    privateAddress: '{{ $Value.Private }}'
+{{- range $value := .Nodes }}
+{{- if eq $value.IsControl false}}
+  - publicAddress: '{{ $value.Public }}'
+    privateAddress: '{{ $value.Private }}'
     sshPrivateKeyFile: '{{ $privateKey }}'
 {{- end}}
 {{- end}}
