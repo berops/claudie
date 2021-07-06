@@ -64,7 +64,7 @@ jobs:
           cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
           location: ${{ secrets.GKE_ZONE }}
           credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
-    
+      # Set the new image tags
       - name: Change the service images to most recent ones
         # Set the working directory
         working-directory: ./K8s-dev-cluster
@@ -77,6 +77,7 @@ jobs:
           done
           
           cat kustomization.yaml
+      # Deploy to a dev cluster
       - name: Deploy to the dev cluster via kustomize
         # Set the working directory
         working-directory: ./K8s-dev-cluster
