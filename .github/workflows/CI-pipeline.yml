@@ -3,7 +3,7 @@ name: CI pipeline for platform
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ master, feature/Support-for-multiple-tags ]
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 
@@ -159,7 +159,7 @@ jobs:
       - name: Save an image tags for the CD pipeline
         run: |
           echo "Exporting values: ${{ needs.build.outputs.ARRAY }} "
-          
+
       - uses: aaimio/set-persistent-value@v1
         with:
           key: context-box
