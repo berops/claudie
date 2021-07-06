@@ -201,6 +201,7 @@ jobs:
     needs: [ build, export-tags ]   
     steps:
       - name: Get tag
+        run: echo "Retrieving a tag"
       - uses: aaimio/get-persistent-value@v1
         id: get_persistent_value-context-box
         with:
