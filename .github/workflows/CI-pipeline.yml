@@ -56,16 +56,7 @@ jobs:
             #  echo "Detected change in kube-eleven"
             #fi
           done
-          # Form JSON object
-          json="{"
-          for path in "${arr[@]}"
-            do
-            json+="$path : $GITHUB_SHA, "
-            done
-          finalJSON=${json::-2}
-          finalJSON+="}"
           echo ::set-output name=ARRAY::"${arr[@]}"
-          echo ::set-output name=JSON::$finalJSON
       # Import .env file - read it through bash script
       - name: Import environment variables from a file
         if: ${{ steps.array.outputs.ARRAY != '' }}
@@ -160,35 +151,60 @@ jobs:
     outputs:
       JSON: ${{ steps.array.outputs.JSON }}
   
-  export-tag:
+  export-tags:
     runs-on: ubuntu-latest
     needs: build
     if: ${{ needs.build.outputs.JSON != '' }}
-    strategy:
-      matrix:
-        # Specify what services need updated tag
-        updated-services: ${{fromJson(needs.needs.build.outputs.JSON)}}
     steps:
-      - name: Save an image tag for the CD pipeline - ${{ matrix.updated-services }}
-        if: ${{ steps.array.outputs.JSON != '' }}
-        id: set_persistent_value
-        uses: aaimio/set-persistent-value@v1
+      - name: Save an image tags for the CD pipeline
+
+      - uses: aaimio/set-persistent-value@v1
         with:
-          key: ${{ matrix.updated-services }}
+          key: context-box
           value: $GITHUB_SHA
           access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN }}
-
-  test-exported:
-    runs-on: ubuntu-latest
-    needs: [ build, export-tag ]   
-    strategy:
-      matrix:
-        # Specify what services need updated tag
-        updated-services: ${{fromJson(needs.needs.build.outputs.JSON)}}
-    steps:
-      - name: Get tag - ${{ matrix.updated-services }}
-        id: get_persistent_value
-        uses: aaimio/get-persistent-value@v1
+        if: ${{ contains(needs.build.outputs.JSON, context-box) }}
+      - uses: aaimio/set-persistent-value@v1
         with:
-          key: ${{ matrix.updated-services }}
+          key: scheduler
+          value: $GITHUB_SHA
+          access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN }}
+        if: ${{ contains(needs.build.outputs.JSON, scheduler) }}
+      - uses: aaimio/set-persistent-value@v1
+        with:
+          key: builder
+          value: $GITHUB_SHA
+          access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN }}
+        if: ${{ contains(needs.build.outputs.JSON, builder) }}
+      - uses: aaimio/set-persistent-value@v1
+        with:
+          key: kube-eleven
+          value: $GITHUB_SHA
+          access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN }}
+        if: ${{ contains(needs.build.outputs.JSON, kube-eleven) }}
+      - uses: aaimio/set-persistent-value@v1
+        with:
+          key: wireguardian
+          value: $GITHUB_SHA
+          access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN }}
+        if: ${{ contains(needs.build.outputs.JSON, wireguardian) }}
+      - uses: aaimio/set-persistent-value@v1
+        with:
+          key: terraformer
+          value: $GITHUB_SHA
+          access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN }}
+        if: ${{ contains(needs.build.outputs.JSON, terraformer) }}
+
+  test-exported-tags:
+    runs-on: ubuntu-latest
+    needs: [ build, export-tags ]   
+    steps:
+      - name: Get tag
+      - uses: aaimio/get-persistent-value@v1
+        id: get_persistent_value-context-box
+        with:
+          key: context-box
           access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN  }}
+      - name: Print
+        run: |
+          echo ${{ steps.get_persistent_value.outputs.value }}
