@@ -209,4 +209,4 @@ jobs:
           access_token: ${{ secrets.PERSISTENT_STORAGE_KEY  }}
       - name: Print
         run: |
-          echo ${{ steps.get_persistent_value.outputs.value }}
+          echo ${{ steps.get_persistent_value-context-box.outputs.value }}

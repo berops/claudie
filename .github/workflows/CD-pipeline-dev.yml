@@ -19,12 +19,39 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
        # Retrieve saved tag 
-      - name: Get the newest tag
-        id: get_persistent_value
-        uses: aaimio/get-persistent-value@v1
+      - name: Get the newest tags
+        run: echo "Retrieving saved tags"
+
+      - uses: aaimio/get-persistent-value@v1
+        id: get_persistent_value-context-box
         with:
-          key: TAG
+          key: context-box
           access_token: ${{ secrets.PERSISTENT_STORAGE_KEY }}
+      - uses: aaimio/get-persistent-value@v1
+        id: get_persistent_value-scheduler
+        with:
+          key: scheduler
+          access_token: ${{ secrets.PERSISTENT_STORAGE_KEY }}
+      - uses: aaimio/get-persistent-value@v1
+        id: get_persistent_value-builder
+        with:
+          key: builder
+          access_token: ${{ secrets.PERSISTENT_STORAGE_KEY }}
+      - uses: aaimio/get-persistent-value@v1
+        id: get_persistent_value-terraformer
+        with:
+          key: terraformer
+          access_token: ${{ secrets.PERSISTENT_STORAGE_KEY }}
+      - uses: aaimio/get-persistent-value@v1
+        id: get_persistent_value-wireguardian
+        with:
+          key: wireguardian
+          access_token: ${{ secrets.PERSISTENT_STORAGE_KEY }}
+#      - uses: aaimio/get-persistent-value@v1
+#        id: get_persistent_value-kube-eleven
+#        with:
+#          key: kube-eleven
+#          access_token: ${{ secrets.PERSISTENT_STORAGE_KEY }}
 
       # Setup gcloud CLI
       - uses: google-github-actions/setup-gcloud@master
@@ -46,8 +73,7 @@ jobs:
 
           for SERVICE in "${arr[@]}"
           do
-          TAG= $(curl -X GET -H 'x-api-key: ${{ secrets.PERSISTENT_STORAGE_KEY  }}' -H 'x-github-repo: <Berops/platform>' 'https://persistent.aaim.io/api/values/get?key=$SERVICE&output=plain')
-          kustomize edit set image $SERVICE:$TAG
+          kustomize edit set image $SERVICE:${{ steps.get_persistent_value-$SERVICE.outputs.value }}
           done
           
           cat kustomization.yaml
