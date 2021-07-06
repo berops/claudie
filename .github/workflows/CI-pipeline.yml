@@ -159,6 +159,7 @@ jobs:
       - name: Save an image tags for the CD pipeline
         run: |
           echo "Exporting values: ${{ needs.build.outputs.ARRAY }} "
+          
       - uses: aaimio/set-persistent-value@v1
         with:
           key: context-box
