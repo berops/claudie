@@ -195,19 +195,3 @@ jobs:
           value: $GITHUB_SHA
           access_token: ${{ secrets.PERSISTENT_STORAGE_KEY }}
         if: ${{ contains(needs.build.outputs.ARRAY, 'terraformer') }}
-        
-  test-exported-tags:
-    runs-on: ubuntu-latest
-    needs: [ build, export-tags ]   
-    steps:
-      - name: Get tag
-        run: echo "Retrieving a tag"
-      - uses: aaimio/get-persistent-value@v1
-        id: get_persistent_value-context-box
-        with:
-          key: context-box
-          access_token: ${{ secrets.PERSISTENT_STORAGE_KEY  }}
-      - name: Print
-        run: |
-          SERVISE=context-box
-          echo ${{ steps.get_persistent_value-$SERVISE.outputs.value }}

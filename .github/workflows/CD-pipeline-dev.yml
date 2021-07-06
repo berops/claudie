@@ -12,8 +12,6 @@ jobs:
 # Deploy manifests to GKE cluster
   deploy:
     runs-on: ubuntu-latest
-    env:
-      ARRAY: context-box, scheduler, builder, terraformer, wireguardian #, kube-eleven)
     steps:
       # Checkout the repository
       - name: Checkout
@@ -69,12 +67,12 @@ jobs:
         # Set the working directory
         working-directory: ./K8s-dev-cluster
         run: |
-          arr=(${{ env.ARRAY }})
-
-          for SERVICE in "${arr[@]}"
-          do
-          kustomize edit set image $SERVICE:${{ steps.get_persistent_value-$SERVICE.outputs.value }}
-          done
+          kustomize edit set image context-box:${{ steps.get_persistent_value-context-box.outputs.value }}
+          kustomize edit set image scheduler:${{ steps.get_persistent_value-scheduler.outputs.value }}
+          kustomize edit set image terraformer:${{ steps.get_persistent_value-terraformer.outputs.value }}
+          kustomize edit set image builder:${{ steps.get_persistent_value-builder.outputs.value }}
+          kustomize edit set image wireguardian:${{ steps.get_persistent_value-wireguardian.outputs.value }}         
+          kustomize edit set image kube-eleven:${{ steps.get_persistent_value-kube-eleven.outputs.value }}          
           
           cat kustomization.yaml
       # Deploy to a dev cluster
