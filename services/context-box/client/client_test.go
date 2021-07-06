@@ -132,19 +132,16 @@ func TestSaveConfigScheduler(t *testing.T) {
 }
 
 func TestDeleteConfig(t *testing.T) {
-	//Create connection to Context-box
-	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
+	c := ClientConnection()
+	err := DeleteConfig(c, "60e40e3ab65e073bab1674ce")
+	require.NoError(t, err)
+}
+
+func TestPrintConfig(t *testing.T) {
+	c := ClientConnection()
+	_, err := PrintConfig(c, "60e40e3ab65e073bab1674ce")
 	if err != nil {
-		log.Fatalf("could not connect to server: %v", err)
+		log.Fatalln("Config not found:", err)
 	}
-	defer func() {
-		err := cc.Close()
-		require.NoError(t, err)
-	}()
-
-	// Creating the client
-	c := pb.NewContextBoxServiceClient(cc)
-
-	err = DeleteConfig(c, "60c31adfd278aff9eff87eef")
 	require.NoError(t, err)
 }

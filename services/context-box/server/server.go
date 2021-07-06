@@ -222,7 +222,7 @@ func getAllFromDB() ([]*configItem, error) {
 }
 
 func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
-	log.Println("SaveConfigScheduler request")
+	log.Println("CLIENT REQUEST: SaveConfigScheduler")
 	config := req.GetConfig()
 
 	// Get config with the same ID from the DB
@@ -248,7 +248,7 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 }
 
 func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
-	log.Println("SaveConfigFrontEnd request")
+	log.Println("CLIENT REQUEST: SaveConfigFrontEnd")
 	config := req.GetConfig()
 	msChecksum := md5.Sum([]byte(config.GetManifest())) //Calculate md5 hash for a manifest file
 	config.MsChecksum = msChecksum[:]                   //Creating a slice using an array you can just make a simple slice expression
@@ -264,7 +264,7 @@ func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest
 }
 
 func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
-	log.Println("SaveConfigBuilder request")
+	log.Println("CLIENT REQUEST: SaveConfigBuilder")
 	config := req.GetConfig()
 
 	// Get config with the same ID from the DB
@@ -289,9 +289,19 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 	return &pb.SaveConfigResponse{Config: config}, nil
 }
 
+// PrintConfig is a gRPC service: function returns one config from the DB
+func (*server) PrintConfig(ctx context.Context, req *pb.PrintConfigRequest) (*pb.PrintConfigResponse, error) {
+	log.Println("CLIENT REQUEST: PrintConfig")
+	d, err := getFromDB(req.Id)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.PrintConfigResponse{Config: dataToConfigPb(&d)}, nil
+}
+
 // GetConfigScheduler is a gRPC service: function returns one config from the queueScheduler
 func (*server) GetConfigScheduler(ctx context.Context, req *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
-	log.Println("GetConfigScheduler request")
+	log.Println("CLIENT REQUEST: GetConfigScheduler")
 	if len(queueScheduler) > 0 {
 		var config *configItem
 		config, queueScheduler = queueScheduler[0], queueScheduler[1:] // This is like push from a queue
@@ -302,7 +312,7 @@ func (*server) GetConfigScheduler(ctx context.Context, req *pb.GetConfigRequest)
 
 // GetConfigBuilder is a gRPC service: function returns one config from the queueScheduler
 func (*server) GetConfigBuilder(ctx context.Context, req *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
-	log.Println("GetConfigBuilder request")
+	log.Println("CLIENT REQUEST: GetConfigBuilder")
 	if len(queueBuilder) > 0 {
 		var config *configItem
 		config, queueBuilder = queueBuilder[0], queueBuilder[1:] // This is like push from a queue
@@ -314,7 +324,7 @@ func (*server) GetConfigBuilder(ctx context.Context, req *pb.GetConfigRequest) (
 
 // GetAllConfigs is a gRPC service: function returns all configs from the DB
 func (*server) GetAllConfigs(ctx context.Context, req *pb.GetAllConfigsRequest) (*pb.GetAllConfigsResponse, error) {
-	log.Println("GetAllConfigs request")
+	log.Println("CLIENT REQUEST: GetAllConfigs")
 	var res []*pb.Config //slice of configs
 
 	configs, err := getAllFromDB() //get all configs from database
@@ -330,7 +340,7 @@ func (*server) GetAllConfigs(ctx context.Context, req *pb.GetAllConfigsRequest) 
 
 // DeleteConfig is a gRPC service: function deletes one specified config from the DB and returns it's ID
 func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*pb.DeleteConfigResponse, error) {
-	log.Println("DeleteConfig request")
+	log.Println("CLIENT REQUEST: DeleteConfig")
 
 	config, err := getFromDB(req.Id)
 	if err != nil {
