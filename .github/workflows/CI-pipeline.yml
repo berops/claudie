@@ -149,52 +149,52 @@ jobs:
         run: docker kill $(docker ps -q)  # Kill all containers, flag --rm will remove them automatically
       # This will save a value that is used as a tag for new images
     outputs:
-      JSON: ${{ steps.array.outputs.JSON }}
+      ARRAY: ${{ steps.array.outputs.ARRAY }}
   
   export-tags:
     runs-on: ubuntu-latest
     needs: build
-    if: ${{ needs.build.outputs.JSON != '' }}
+    if: ${{ needs.build.outputs.ARRAY != '' }}
     steps:
       - name: Save an image tags for the CD pipeline
         run: |
-          echo "Exporting values: ${{ needs.build.outputs.JSON }} "
+          echo "Exporting values: ${{ needs.build.outputs.ARRAY }} "
       - uses: aaimio/set-persistent-value@v1
         with:
           key: context-box
           value: $GITHUB_SHA
           access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN }}
-        if: ${{ contains(needs.build.outputs.JSON, 'context-box') }}
+        if: ${{ contains(needs.build.outputs.ARRAY, 'context-box') }}
       - uses: aaimio/set-persistent-value@v1
         with:
           key: scheduler
           value: $GITHUB_SHA
           access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN }}
-        if: ${{ contains(needs.build.outputs.JSON, 'scheduler') }}
+        if: ${{ contains(needs.build.outputs.ARRAY, 'scheduler') }}
       - uses: aaimio/set-persistent-value@v1
         with:
           key: builder
           value: $GITHUB_SHA
           access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN }}
-        if: ${{ contains(needs.build.outputs.JSON, 'builder') }}
+        if: ${{ contains(needs.build.outputs.ARRAY, 'builder') }}
       - uses: aaimio/set-persistent-value@v1
         with:
           key: kube-eleven
           value: $GITHUB_SHA
           access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN }}
-        if: ${{ contains(needs.build.outputs.JSON, 'kube-eleven') }}
+        if: ${{ contains(needs.build.outputs.ARRAY, 'kube-eleven') }}
       - uses: aaimio/set-persistent-value@v1
         with:
           key: wireguardian
           value: $GITHUB_SHA
           access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN }}
-        if: ${{ contains(needs.build.outputs.JSON, 'wireguardian') }}
+        if: ${{ contains(needs.build.outputs.ARRAY, 'wireguardian') }}
       - uses: aaimio/set-persistent-value@v1
         with:
           key: terraformer
           value: $GITHUB_SHA
           access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN }}
-        if: ${{ contains(needs.build.outputs.JSON, 'terraformer') }}
+        if: ${{ contains(needs.build.outputs.ARRAY, 'terraformer') }}
 
   test-exported-tags:
     runs-on: ubuntu-latest
