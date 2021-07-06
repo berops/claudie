@@ -164,37 +164,37 @@ jobs:
           key: context-box
           value: $GITHUB_SHA
           access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN }}
-        if: ${{ contains(needs.build.outputs.JSON, context-box) }}
+        if: ${{ contains(needs.build.outputs.JSON, "context-box") }}
       - uses: aaimio/set-persistent-value@v1
         with:
           key: scheduler
           value: $GITHUB_SHA
           access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN }}
-        if: ${{ contains(needs.build.outputs.JSON, scheduler) }}
+        if: ${{ contains(needs.build.outputs.JSON, "scheduler") }}
       - uses: aaimio/set-persistent-value@v1
         with:
           key: builder
           value: $GITHUB_SHA
           access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN }}
-        if: ${{ contains(needs.build.outputs.JSON, builder) }}
+        if: ${{ contains(needs.build.outputs.JSON, "builder") }}
       - uses: aaimio/set-persistent-value@v1
         with:
           key: kube-eleven
           value: $GITHUB_SHA
           access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN }}
-        if: ${{ contains(needs.build.outputs.JSON, kube-eleven) }}
+        if: ${{ contains(needs.build.outputs.JSON, "kube-eleven") }}
       - uses: aaimio/set-persistent-value@v1
         with:
           key: wireguardian
           value: $GITHUB_SHA
           access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN }}
-        if: ${{ contains(needs.build.outputs.JSON, wireguardian) }}
+        if: ${{ contains(needs.build.outputs.JSON, "wireguardian") }}
       - uses: aaimio/set-persistent-value@v1
         with:
           key: terraformer
           value: $GITHUB_SHA
           access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN }}
-        if: ${{ contains(needs.build.outputs.JSON, terraformer) }}
+        if: ${{ contains(needs.build.outputs.JSON, "terraformer") }}
 
   test-exported-tags:
     runs-on: ubuntu-latest
