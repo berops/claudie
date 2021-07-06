@@ -163,37 +163,37 @@ jobs:
         with:
           key: context-box
           value: $GITHUB_SHA
-          access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN }}
+          access_token: ${{ secrets.PERSISTENT_STORAGE_KEY }}
         if: ${{ contains(needs.build.outputs.ARRAY, 'context-box') }}
       - uses: aaimio/set-persistent-value@v1
         with:
           key: scheduler
           value: $GITHUB_SHA
-          access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN }}
+          access_token: ${{ secrets.PERSISTENT_STORAGE_KEY }}
         if: ${{ contains(needs.build.outputs.ARRAY, 'scheduler') }}
       - uses: aaimio/set-persistent-value@v1
         with:
           key: builder
           value: $GITHUB_SHA
-          access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN }}
+          access_token: ${{ secrets.PERSISTENT_STORAGE_KEY }}
         if: ${{ contains(needs.build.outputs.ARRAY, 'builder') }}
       - uses: aaimio/set-persistent-value@v1
         with:
           key: kube-eleven
           value: $GITHUB_SHA
-          access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN }}
+          access_token: ${{ secrets.PERSISTENT_STORAGE_KEY }}
         if: ${{ contains(needs.build.outputs.ARRAY, 'kube-eleven') }}
       - uses: aaimio/set-persistent-value@v1
         with:
           key: wireguardian
           value: $GITHUB_SHA
-          access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN }}
+          access_token: ${{ secrets.PERSISTENT_STORAGE_KEY }}
         if: ${{ contains(needs.build.outputs.ARRAY, 'wireguardian') }}
       - uses: aaimio/set-persistent-value@v1
         with:
           key: terraformer
           value: $GITHUB_SHA
-          access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN }}
+          access_token: ${{ secrets.PERSISTENT_STORAGE_KEY }}
         if: ${{ contains(needs.build.outputs.ARRAY, 'terraformer') }}
 
   test-exported-tags:
@@ -206,7 +206,7 @@ jobs:
         id: get_persistent_value-context-box
         with:
           key: context-box
-          access_token: ${{ secrets.SHOULD_CD_RUN_TOKEN  }}
+          access_token: ${{ secrets.PERSISTENT_STORAGE_KEY  }}
       - name: Print
         run: |
           echo ${{ steps.get_persistent_value.outputs.value }}
