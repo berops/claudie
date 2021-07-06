@@ -26,5 +26,5 @@ FROM scratch
 COPY --from=build /out /out
 
 #Run scheduler
-ENTRYPOINT [ "/out" ] 
+ENTRYPOINT [ "/out" ]
   
