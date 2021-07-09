@@ -78,7 +78,7 @@ func saveToDB(config *pb.Config) (*pb.Config, error) {
 		log.Fatalln("Error while converting from protobuf to byte", errCS)
 	}
 
-	//Parse data and map it to configItem struct
+	//Parse data and map it to the configItem struct
 	data := &configItem{}
 	data.Name = config.GetName()
 	data.Manifest = config.GetManifest()
@@ -89,8 +89,9 @@ func saveToDB(config *pb.Config) (*pb.Config, error) {
 	data.CsChecksum = config.GetCsChecksum()
 
 	//Check if ID exists
+	//If config has already some ID:
 	if config.GetId() != "" {
-		//Get id from config
+		//Get id from config as oid
 		oid, err := primitive.ObjectIDFromHex(config.GetId())
 		if err != nil {
 			return nil, status.Errorf(
@@ -107,30 +108,28 @@ func saveToDB(config *pb.Config) (*pb.Config, error) {
 				fmt.Sprintf("Cannot update config with specified ID: %v", err),
 			)
 		}
+	} else {
+		//Add data to the collection if OID doesn't exist
+		res, err := collection.InsertOne(context.Background(), data)
+		if err != nil {
+			// Return error in protobuf
+			return nil, status.Errorf(
+				codes.Internal,
+				fmt.Sprintf("Internal error: %v", err),
+			)
+		}
 
-		return &pb.Config{}, nil
+		oid, ok := res.InsertedID.(primitive.ObjectID)
+		if !ok {
+			return nil, status.Errorf(
+				codes.Internal,
+				fmt.Sprintln("Cannot convert to OID"),
+			)
+		}
+		data.ID = oid
+		config.Id = oid.Hex()
+		//Return config with new ID
 	}
-
-	//Add data to the collection if OID doesn't exist
-	res, err := collection.InsertOne(context.Background(), data)
-	if err != nil {
-		// Return error in protobuf
-		return nil, status.Errorf(
-			codes.Internal,
-			fmt.Sprintf("Internal error: %v", err),
-		)
-	}
-
-	oid, ok := res.InsertedID.(primitive.ObjectID)
-	if !ok {
-		return nil, status.Errorf(
-			codes.Internal,
-			fmt.Sprintln("Cannot convert to OID"),
-		)
-	}
-	data.ID = oid
-	config.Id = oid.Hex()
-	//Return config with new ID
 	return config, nil
 }
 
@@ -249,18 +248,28 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 
 func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
 	log.Println("CLIENT REQUEST: SaveConfigFrontEnd")
-	config := req.GetConfig()
-	msChecksum := md5.Sum([]byte(config.GetManifest())) //Calculate md5 hash for a manifest file
-	config.MsChecksum = msChecksum[:]                   //Creating a slice using an array you can just make a simple slice expression
+	newConfig := req.GetConfig()
+	msChecksum := md5.Sum([]byte(newConfig.GetManifest())) //Calculate md5 hash for a manifest file
+	newConfig.MsChecksum = msChecksum[:]                   //Creating a slice using an array you can just make a simple slice expression
 
-	config, err := saveToDB(config)
+	if newConfig.GetId() != "" {
+		//Check if there is already ID in the DB
+		oldConfig, err := getFromDB(newConfig.GetId())
+		if err != nil {
+			log.Fatalln("Error while getting old newConfig from the DB", err)
+		}
+		oldConfigPb := dataToConfigPb(&oldConfig)
+		newConfig.CurrentState = oldConfigPb.CurrentState
+	}
+
+	newConfig, err := saveToDB(newConfig)
 	if err != nil {
 		return nil, status.Errorf(
 			codes.Internal,
 			fmt.Sprintf("Internal error: %v", err),
 		)
 	}
-	return &pb.SaveConfigResponse{Config: config}, nil
+	return &pb.SaveConfigResponse{Config: newConfig}, nil
 }
 
 func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
