@@ -102,8 +102,6 @@ func diff(config *pb.Config) *pb.Config {
 					tmpNodePool.Master.Count = tableCurrent[key].masterCount
 					deleting = true
 				}
-				fmt.Println("Master count tmp:", tmpNodePool.Master.Count)
-				fmt.Println("Master count config:", nodePool.Master.Count)
 				if nodePool.Worker.Count > tableCurrent[key].workerCount {
 					tmpNodePool.Worker.Count = nodePool.Worker.Count
 					adding = true
@@ -111,8 +109,6 @@ func diff(config *pb.Config) *pb.Config {
 					tmpNodePool.Worker.Count = tableCurrent[key].workerCount
 					deleting = true
 				}
-				fmt.Println("Worker count tmp:", tmpNodePool.Worker.Count)
-				fmt.Println("Worker count config:", nodePool.Worker.Count)
 				delete(tableCurrent, key)
 			}
 		}
@@ -130,9 +126,6 @@ func diff(config *pb.Config) *pb.Config {
 		}
 	}
 
-	fmt.Println(tmpConfig.DesiredState, config.DesiredState)
-	log.Println("Adding:", adding)
-	log.Println("Deleting:", deleting)
 	if adding && deleting {
 		return tmpConfig
 	} else {
@@ -170,9 +163,9 @@ func getClusterByName(clusterName string, clusters []*pb.Cluster) *pb.Cluster {
 
 // flow will initiate kubernetes cluster creation cycle
 func flow(config *pb.Config) *pb.Config {
-	/*config = callTerraformer(config)
+	config = callTerraformer(config)
 	config = callWireguardian(config)
-	config = callKubeEleven(config)*/
+	config = callKubeEleven(config)
 	return config
 }
 
