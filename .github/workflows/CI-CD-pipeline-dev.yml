@@ -128,7 +128,8 @@ jobs:
         run: |
           kubectl create namespace $GITHUB_SHA
           kustomize edit set namespace $GITHUB_SHA
-
+          
+          cat kustomization.yaml
 
       - name: Deploy to new namespace
         working-directory: ./K8s-dev-cluster
