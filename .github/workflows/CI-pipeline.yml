@@ -1,0 +1,182 @@
+name: CI pipeline for platform
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [ master, feature/new-workflow-for-CI-CD ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  ENV_FILE: .env
+  SERVICES: context-box scheduler builder kube-eleven terraformer wireguardian
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      # Create an array with modules that were changed by a recent commit via bash script
+      - name: Check the files for a change
+        id: array
+        run: |
+          arr=()
+          SERVICES=( ${{ env.SERVICES }} )
+          git fetch origin master
+          echo "Changed files:"
+          git diff  --name-only origin/master..HEAD
+          for i in "$(git diff  --name-only origin/master..HEAD)"
+          do
+            for SERVICE in in "${SERVICES[@]}"; do
+              if [[ $i == *"services/$SERVICE"* ]]; then
+              arr+=($SERVICE)
+              echo "Detected change in $SERVICE"
+            fi
+            done
+          done
+          echo ::set-output name=ARRAY_OF_CHANGES::"${arr[@]}"
+
+        # Login to GCP with repository secrets 
+      - name: Login to GCP
+        if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
+        uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_email: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+          service_account_key: ${{ secrets.GCP_DOCKER_REGISTRY_KEY }}
+
+      # Configure docker for use on the GCP
+      - name: Configure Docker
+        if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
+        run: gcloud auth configure-docker --quiet
+
+      # Build the new images that were changed by a recent commit - tag image latest as well for testing
+      - name: Build new images
+        if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
+        run: |
+          arr=(${{ steps.array.outputs.ARRAY_OF_CHANGES }})
+          if [ ${#arr[@]} -eq 0 ] 
+          then
+            echo "No changes were detected, nothing to build"            
+          else
+            for path in "${arr[@]}"
+            do
+            echo "-----Building $path-----"
+            docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA -f ./services/$path/Dockerfile .
+            done
+          fi
+     
+      # Push images to GCR - latest tag is overwritten
+      - name: Push new images
+        if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
+        run: |
+          arr=(${{ steps.array.outputs.ARRAY_OF_CHANGES }})
+          if [ ${#arr[@]} -eq 0 ] 
+          then
+            echo "No images were build, nothing to push"
+          else
+            for path in "${arr[@]}"
+            do
+            docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA
+            done
+          fi
+    outputs:
+      ARRAY_OF_CHANGES: ${{ steps.array.outputs.ARRAY_OF_CHANGES }}
+#--------------------------------------------------------------------------------------------------
+  edit-kustomization:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Edit kustomization.yaml
+        working-directory: ./K8s-dev-cluster
+        run: |
+          NEW_SERVICES=( ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES }} )
+          for SERVICE in "${NEW_SERVICES[@]}"
+          do
+            echo "Setting a new tag for a $SETVICE"
+            kustomize edit set image eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$SERVICE:$GITHUB_SHA
+          done
+
+      - name: Commit new kustomization.yaml to feature branch
+        working-directory: ./K8s-dev-cluster
+        run: |
+          git config --global user.name 'CI/CD pipeline'
+          git config --global user.email 'CI/CD-pipeline@users.noreply.github.com'
+          git add kustomization.yaml
+          git commit -am "Auto commit - add new kustomization.yaml"
+          git push
+#--------------------------------------------------------------------------------------------------
+  deploy-and-monitor:
+    runs-on: ubuntu-latest
+    needs: [ build-and-push, edit-kustomization ]
+    if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Configure kubectl
+        uses: google-github-actions/get-gke-credentials@v0.2.1
+        with:
+          cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
+          location: ${{ secrets.GKE_ZONE }}
+          credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
+
+      - name: Create seperate namespace
+        working-directory: ./K8s-dev-cluster
+        run: kubectl create namespace $GITHUB_SHA
+
+      - name: Deploy to new namespace
+        working-directory: ./K8s-dev-cluster
+        run: kustomize build | kubectl apply -f - --namespace=$GITHUB_SHA
+
+      - name: Monitor status of the new namespace
+        run: |
+          sleep 30
+          STATUSES=( $(kubectl get pods -o jsonpath='{.items[*].status.phase}') )
+          for STATUS in "${STATUSES[@]}"
+          do
+            if[ "$STATUS" != "Running" ]
+            then
+              echo "Some image is not running... See debug message bellow"
+              kubectl get pods --namespace=$GITHUB_SHA
+              kubectl delete namespace $GITHUB_SHA
+              exit 1
+            fi
+          done
+          echo "Everything is up and running"
+          kubectl delete namespace $GITHUB_SHA
+
+#-------------------------------------------------------------------------------------------------
+
+# GCR does not have any means to manage number of images stored apart from third party scripts/tools.
+# Feature request: https://googlecloudplatform.uservoice.com/forums/596032-container-registry/suggestions/34718119-limit-the-number-of-images-that-are-retained
+  
+#  clean-up-gcr:
+#    runs-on: ubuntu-latest
+#    needs: deploy-and-monitor
+#    steps:
+#      - name: Set up the gcloud
+#        uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+#        with:
+#          project_id: ${{ secrets.GCP_PROJECT_ID }}
+#          service_account_email: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+#          service_account_key: ${{ secrets.GCP_DOCKER_REGISTRY_KEY }}
+#        
+#      - name: Clean up GCR
+#        run: |
+#          SERVICES=( ${{ env.SERVICES }} )
+#          NUMBER_OF_STORED=10
+#          for SERVICE in "${SERVICES[@]}"; do          
+#              echo "------ Checking $SERVICE ------"
+#              TEMP=($(gcloud container images list-tags eu .gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$SERVICE --sort-by=TIMESTAMP --format="get(tags)"))
+#              if [ ${#TEMP[@]} -ge $NUMBER_OF_STORED ]  # If 10 or more images found, delete them
+#              then
+#                  STOP="$(( ${#TEMP[@]} - $NUMBER_OF_STORED - 1))"  
+#                  echo "------ Deleting $(($STOP+1)) images from $SERVICE ------"
+#                  for i in $(seq 0 $STOP); do
+#                      gcloud container images delete -q --force-delete-tags eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$SERVICE:${TEMP[$i]}
+#                  done
+#              fi
+#          done
