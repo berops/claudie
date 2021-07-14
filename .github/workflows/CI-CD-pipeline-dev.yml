@@ -2,7 +2,7 @@ name: CI/CD pipeline for platform
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ master ]
+    branches: [ master, feature/new-workflow-for-CI-CD ]
   pull_request:
     branches: [ master ]
 
