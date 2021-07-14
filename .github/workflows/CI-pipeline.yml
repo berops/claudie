@@ -137,7 +137,7 @@ jobs:
           STATUSES=( $(kubectl get pods -o jsonpath='{.items[*].status.phase}') )
           for STATUS in "${STATUSES[@]}"
           do
-            if[ "$STATUS" != "Running" ]
+            if [ "$STATUS" != "Running" ]
             then
               echo "Some image is not running... See debug message bellow"
               kubectl get pods --namespace=$GITHUB_SHA
