@@ -6,9 +6,9 @@ on:
   pull_request:
     branches: [ master ]
 
-  env:
-    ENV_FILE: .env
-    SERVICES: context-box scheduler builder kube-eleven terraformer wireguardian
+env:
+  ENV_FILE: .env
+  SERVICES: context-box scheduler builder kube-eleven terraformer wireguardian
 
 jobs:
   build-and-push:
