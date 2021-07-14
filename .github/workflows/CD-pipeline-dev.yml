@@ -15,7 +15,7 @@ jobs:
     # Run only if CI was successful
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
       - name: Deploy to the dev cluster default namespace via kustomize
         working-directory: ./K8s-dev-cluster
