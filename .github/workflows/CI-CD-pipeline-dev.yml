@@ -92,8 +92,10 @@ jobs:
         working-directory: ./K8s-dev-cluster
         run: |
           NEW_SERVICES=( ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES }} )
+          ls
           for SERVICE in "${NEW_SERVICES[@]}"
           do
+            echo "Setting a new tag for a $SETVICE"
             kustomize edit set image $SERVICE:$GITHUB_SHA
           done
 
