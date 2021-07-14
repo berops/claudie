@@ -108,7 +108,8 @@ jobs:
 #--------------------------------------------------------------------------------------------------
   deploy-and-monitor:
     runs-on: ubuntu-latest
-    needs: edit-kustomization
+    needs: [ build-and-push, edit-kustomization ]
+    if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES }}
     steps:
       - name: Configure kubectl
         uses: google-github-actions/get-gke-credentials@v0.2.1
@@ -125,6 +126,7 @@ jobs:
 
 
       - name: Deploy to new namespace
+        working-directory: ./K8s-dev-cluster
         run: kustomize build | kubectl apply -f -
 
       - name: Monitor status of the new namespace
