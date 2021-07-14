@@ -27,3 +27,4 @@ COPY --from=build /out /out
 
 #Run server
 ENTRYPOINT [ "/out" ]
+ 
