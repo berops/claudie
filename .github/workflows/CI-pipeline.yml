@@ -133,7 +133,6 @@ jobs:
 
       - name: Monitor status of the new namespace
         run: |
-          sleep 30
           STATUSES=( $(kubectl get pods -o jsonpath='{.items[*].status.phase}') )
           for STATUS in "${STATUSES[@]}"
           do
