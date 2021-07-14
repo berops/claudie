@@ -16,10 +16,10 @@ images:
 - name: builder
   newTag: 63bd053fbb5600fdaca0b0d33edfb238b534af2e
 - name: context-box
-  newTag: 69d962c05bb41f9b6e0532dd1b6abdb324f976b3
+  newTag: ee63decb742b2b3f2376a3de8aa75e748901fdaa
 - name: scheduler
-  newTag: 69d962c05bb41f9b6e0532dd1b6abdb324f976b3
+  newTag: ee63decb742b2b3f2376a3de8aa75e748901fdaa
 - name: terraformer
-  newTag: 69d962c05bb41f9b6e0532dd1b6abdb324f976b3
+  newTag: ee63decb742b2b3f2376a3de8aa75e748901fdaa
 - name: wireguardian
-  newTag: 69d962c05bb41f9b6e0532dd1b6abdb324f976b3
+  newTag: ee63decb742b2b3f2376a3de8aa75e748901fdaa
