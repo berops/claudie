@@ -125,19 +125,15 @@ jobs:
 
       - name: Create seperate namespace
         working-directory: ./K8s-dev-cluster
-        run: |
-          kubectl create namespace $GITHUB_SHA
-          kustomize edit set namespace $GITHUB_SHA
-
-          cat kustomization.yaml
+        run: kubectl create namespace $GITHUB_SHA
 
       - name: Deploy to new namespace
         working-directory: ./K8s-dev-cluster
-        run: kustomize build | kubectl apply -f -
+        run: kustomize build | kubectl apply -f - --namespace=$GITHUB_SHA
 
       - name: Monitor status of the new namespace
         run: |
-          sleep 10
+          sleep 20
           kubectl get pods --namespace=$GITHUB_SHA
 
 #-------------------------------------------------------------------------------------------------
