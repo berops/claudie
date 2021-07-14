@@ -10,3 +10,16 @@ configMapGenerator:
 - envs:
   - .env
   name: urls
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+images:
+- name: builder
+  newTag: 63bd053fbb5600fdaca0b0d33edfb238b534af2e
+- name: context-box
+  newTag: 63bd053fbb5600fdaca0b0d33edfb238b534af2e
+- name: scheduler
+  newTag: 63bd053fbb5600fdaca0b0d33edfb238b534af2e
+- name: terraformer
+  newTag: 63bd053fbb5600fdaca0b0d33edfb238b534af2e
+- name: wireguardian
+  newTag: 63bd053fbb5600fdaca0b0d33edfb238b534af2e
