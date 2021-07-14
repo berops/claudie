@@ -137,7 +137,7 @@ jobs:
       - name: Monitor status of the new namespace
         run: |
           sleep 10
-          kubectl get pods
+          kubectl get pods --namespace=$GITHUB_SHA
 
 #-------------------------------------------------------------------------------------------------
 

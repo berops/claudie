@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: scheduler
-        image: eu.gcr.io/platform-infrastructure-316112/platform/scheduler:latest 
+        image: eu.gcr.io/platform-infrastructure-316112/platform/scheduler
         env:
         - name: CONTEXT_BOX_PORT
           valueFrom:
