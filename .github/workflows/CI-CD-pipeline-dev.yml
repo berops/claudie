@@ -88,11 +88,12 @@ jobs:
     needs: build-and-push
     if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' }}
     steps:
+      - uses: actions/checkout@v2
+
       - name: Edit kustomization.yaml
         working-directory: ./K8s-dev-cluster
         run: |
           NEW_SERVICES=( ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES }} )
-          ls
           for SERVICE in "${NEW_SERVICES[@]}"
           do
             echo "Setting a new tag for a $SETVICE"
@@ -113,6 +114,8 @@ jobs:
     needs: [ build-and-push, edit-kustomization ]
     if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES }}
     steps:
+      - uses: actions/checkout@v2
+
       - name: Configure kubectl
         uses: google-github-actions/get-gke-credentials@v0.2.1
         with:
