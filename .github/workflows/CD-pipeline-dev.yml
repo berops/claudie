@@ -1,0 +1,22 @@
+name: CD pipeline for platform - dev
+# Controls when the action will run. 
+on:
+  # Run after CI
+  workflow_run:
+    workflows: [ "CI pipeline for platform" ] # for testing
+    types: [ completed ]
+  # Manual trigger    
+  workflow_dispatch:
+
+jobs:
+# Deploy manifests to GKE clusters default namespace
+  deploy:
+    runs-on: ubuntu-latest
+    # Run only if CI was successful
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+        uses: actions/checkout@v2
+
+      - name: Deploy to the dev cluster default namespace via kustomize
+        working-directory: ./K8s-dev-cluster
+        run: kustomize build | kubectl apply -f -
