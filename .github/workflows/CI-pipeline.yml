@@ -107,11 +107,12 @@ jobs:
       - name: Commit new kustomization.yaml to feature branch
         working-directory: ./K8s-dev-cluster
         run: |
+          BRANCH_NAME=$(echo ${$GITHUB_REF#refs/heads/})
           git config --global user.name 'CI/CD pipeline'
           git config --global user.email 'CI/CD-pipeline@users.noreply.github.com'
           git add kustomization.yaml
-          git commit -am "Auto commit - add new kustomization.yaml"
-          git push
+          git commit -m "Auto commit - add new kustomization.yaml"
+          git push origin HEAD:$BRANCH_NAME
 #--------------------------------------------------------------------------------------------------
   deploy-and-monitor:
     runs-on: ubuntu-latest
