@@ -2,7 +2,7 @@ name: CI pipeline for platform
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ master, feature/new-workflow-for-CI-CD ]
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 
@@ -142,36 +142,3 @@ jobs:
 
           kubectl get pods --namespace=$GITHUB_SHA
           kubectl delete namespace $GITHUB_SHA
-
-#-------------------------------------------------------------------------------------------------
-
-# GCR does not have any means to manage number of images stored apart from third party scripts/tools.
-# Feature request: https://googlecloudplatform.uservoice.com/forums/596032-container-registry/suggestions/34718119-limit-the-number-of-images-that-are-retained
-  
-#  clean-up-gcr:
-#    runs-on: ubuntu-latest
-#    needs: deploy-and-monitor
-#    steps:
-#      - name: Set up the gcloud
-#        uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
-#        with:
-#          project_id: ${{ secrets.GCP_PROJECT_ID }}
-#          service_account_email: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
-#          service_account_key: ${{ secrets.GCP_DOCKER_REGISTRY_KEY }}
-#        
-#      - name: Clean up GCR
-#        run: |
-#          SERVICES=( ${{ env.SERVICES }} )
-#          NUMBER_OF_STORED=10
-#          for SERVICE in "${SERVICES[@]}"; do          
-#              echo "------ Checking $SERVICE ------"
-#              TEMP=($(gcloud container images list-tags eu .gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$SERVICE --sort-by=TIMESTAMP --format="get(tags)"))
-#              if [ ${#TEMP[@]} -ge $NUMBER_OF_STORED ]  # If 10 or more images found, delete them
-#              then
-#                  STOP="$(( ${#TEMP[@]} - $NUMBER_OF_STORED - 1))"  
-#                  echo "------ Deleting $(($STOP+1)) images from $SERVICE ------"
-#                  for i in $(seq 0 $STOP); do
-#                      gcloud container images delete -q --force-delete-tags eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$SERVICE:${TEMP[$i]}
-#                  done
-#              fi
-#          done
