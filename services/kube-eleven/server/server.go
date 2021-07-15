@@ -3,44 +3,147 @@ package main
 import (
 	"context"
 	"fmt"
+	"html/template"
+	"io/ioutil"
 	"log"
 	"net"
 	"os"
+	"os/exec"
 	"os/signal"
 
 	"github.com/Berops/platform/proto/pb"
-	"github.com/Berops/platform/urls"
 	"google.golang.org/grpc"
 )
 
 type server struct{}
 
-func (*server) BuildCluster(_ context.Context, project *pb.Project) (*pb.Project, error) {
-	fmt.Println("BuildCluster function was invoked with", project)
+const outputPath = "services/kube-eleven/server/"
 
-	generateKubeConfiguration("./templates/kubeone.tpl", "./kubeone/kubeone.yaml", project)
-	runKubeOne()
-	project.Cluster.Kubeconfig = getKubeconfig()
+type data struct {
+	ApiEndpoint string
+	Kubernetes  string
+	Nodes       []*pb.Ip
+}
+
+// formatTemplateData formats data for kubeone template input
+func (d *data) formatTemplateData(cluster *pb.Cluster) {
+	for _, ip := range cluster.Ips {
+		if ip.GetIsControl() {
+			d.Nodes = append(d.Nodes, ip)
+		}
+	}
+	for _, ip := range cluster.Ips {
+		if !ip.GetIsControl() {
+			d.Nodes = append(d.Nodes, ip)
+		}
+	}
+	d.Kubernetes = cluster.GetKubernetes()
+	d.ApiEndpoint = d.Nodes[0].GetPrivate()
+}
+
+func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb.BuildClusterResponse, error) {
+	config := req.Config
+	log.Println("I have received a BuildCluster request with config name:", config.GetName())
+
+	for _, cluster := range config.GetDesiredState().GetClusters() {
+		var d data
+		d.formatTemplateData(cluster)
+		createKeyFile(cluster.GetPrivateKey(), "private.pem")
+		genKubeOneConfig(outputPath+"kubeone.tpl", outputPath+"kubeone.yaml", d)
+		runKubeOne()
+		cluster.Kubeconfig = saveKubeconfig()
+		deleteTmpFiles()
+	}
 
 	//fmt.Println("Kubeconfig:", string(req.GetCluster().GetKubeconfig()))
-	return project, nil
+	return &pb.BuildClusterResponse{Config: config}, nil
+}
+
+func createKeyFile(key string, keyName string) {
+	err := ioutil.WriteFile(outputPath+keyName, []byte(key), 0600)
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func genKubeOneConfig(templatePath string, outputPath string, d interface{}) {
+	if _, err := os.Stat("kubeone"); os.IsNotExist(err) { //this creates a new file if it doesn't exist
+		os.Mkdir("kubeone", os.ModePerm)
+	}
+	tpl, err := template.ParseFiles(templatePath)
+	if err != nil {
+		log.Fatalln("Failed to load the template file", err)
+	}
+	f, err := os.Create(outputPath)
+	if err != nil {
+		log.Fatalln("Failed to create the manifest file", err)
+	}
+	err = tpl.Execute(f, d)
+	if err != nil {
+		log.Fatalln("Failed to execute the template file", err)
+	}
+}
+
+func runKubeOne() {
+	fmt.Println("Running KubeOne")
+	cmd := exec.Command("kubeone", "apply", "-m", "kubeone.yaml", "-y")
+	cmd.Dir = outputPath //golang will execute command from this directory
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+// saveKubeconfig reads kubeconfig from a file and returns it
+func saveKubeconfig() string {
+	kubeconfig, err := ioutil.ReadFile(outputPath + "cluster-kubeconfig")
+	if err != nil {
+		log.Fatalln("Error while reading a kubeconfig file", err)
+	}
+	return string(kubeconfig)
+}
+
+func deleteTmpFiles() {
+	err := os.Remove(outputPath + "cluster.tar.gz")
+	if err != nil {
+		log.Fatalln("Error while deleting cluster.tar.gz file", err)
+	}
+	err = os.Remove(outputPath + "cluster-kubeconfig")
+	if err != nil {
+		log.Fatalln("Error while deleting cluster-kubeconfig file", err)
+	}
+	err = os.Remove(outputPath + "kubeone.yaml")
+	if err != nil {
+		log.Fatalln("Error while deleting kubeone.yaml file", err)
+	}
+	err = os.Remove(outputPath + "private.pem")
+	if err != nil {
+		log.Fatalln("Error while deleting private.pem file", err)
+	}
 }
 
 func main() {
-	// If we crath the go gode, we get the file name and line number
+	// If we crash the go code, we get the file name and line number
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	lis, err := net.Listen("tcp", urls.KubeElevenURL)
+	// Set KubeEleven port
+	kubeElevenPort := os.Getenv("KUBE_ELEVEN_PORT")
+	if kubeElevenPort == "" {
+		kubeElevenPort = "50054" // Default value
+	}
+
+	lis, err := net.Listen("tcp", "0.0.0.0:"+kubeElevenPort)
 	if err != nil {
 		log.Fatalln("Failed to listen on", err)
 	}
-	fmt.Println("KubeEleven service is listening on", urls.KubeElevenURL)
+	fmt.Println("KubeEleven service is listening on", "0.0.0.0:"+kubeElevenPort)
 
 	s := grpc.NewServer()
 	pb.RegisterKubeElevenServiceServer(s, &server{})
 
 	go func() {
-		fmt.Println("Starting Server...")
 		if err := s.Serve(lis); err != nil {
 			log.Fatalf("Failed to serve: %v", err)
 		}

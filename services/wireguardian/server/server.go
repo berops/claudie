@@ -18,6 +18,8 @@ import (
 
 type server struct{}
 
+const outputPath string = "services/wireguardian/server/Ansible/"
+
 func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVPNResponse, error) {
 	fmt.Println("BuildVPN function was invoked with", req.Config.Name)
 	config := req.GetConfig()
@@ -26,6 +28,7 @@ func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVP
 		genPrivAdd(cluster.GetIps(), cluster.GetNetwork())
 		genInv(cluster.GetIps())
 		runAnsible(cluster)
+		deleteTmpFiles()
 	}
 
 	return &pb.BuildVPNResponse{Config: config}, nil
@@ -53,7 +56,7 @@ func genInv(addresses map[string]*pb.Ip) {
 		log.Fatalln("Failed to load template file", err)
 	}
 
-	f, err := os.Create("services/wireguardian/server/Ansible/inventory.ini")
+	f, err := os.Create(outputPath + "inventory.ini")
 	if err != nil {
 		log.Fatalln("Failed to create a inventory file", err)
 	}
@@ -68,7 +71,7 @@ func runAnsible(cluster *pb.Cluster) {
 	createKeyFile(cluster.GetPrivateKey())
 	os.Setenv("ANSIBLE_HOST_KEY_CHECKING", "False")
 	cmd := exec.Command("ansible-playbook", "playbook.yml", "-i", "inventory.ini", "-f", "20", "--private-key", "private.pem")
-	cmd.Dir = "services/wireguardian/server/Ansible/"
+	cmd.Dir = outputPath
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
@@ -77,9 +80,22 @@ func runAnsible(cluster *pb.Cluster) {
 }
 
 func createKeyFile(key string) {
-	err := ioutil.WriteFile("services/wireguardian/server/Ansible/private.pem", []byte(key), 0600)
+	err := ioutil.WriteFile(outputPath+"private.pem", []byte(key), 0600)
 	if err != nil {
 		log.Fatalln(err)
+	}
+}
+
+func deleteTmpFiles() {
+	// Delete a private key
+	err := os.Remove(outputPath + "private.pem")
+	if err != nil {
+		log.Fatalln("Error while deleting private.pem file", err)
+	}
+	// Delete an inventory file
+	err = os.Remove(outputPath + "inventory.ini")
+	if err != nil {
+		log.Fatalln("Error while deleting inventory.ini file", err)
 	}
 }
 

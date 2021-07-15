@@ -28,7 +28,7 @@ clusters:
         disk_size: 50
         zone: europe-west1-c
       worker:
-        count: 2
+        count: 1
         # shape: tiny
         server_type: f1-micro
         image: ubuntu-os-cloud/ubuntu-2004-lts
@@ -48,7 +48,7 @@ clusters:
         location: nbg1
         datacenter: nbg1-dc3
       worker:
-        count: 2
+        count: 1
         # shape: small
         server_type: cpx11
         image: ubuntu-20.04
@@ -73,7 +73,7 @@ clusters:
           disk_size: 50
           zone: europe-west1-c
         worker:
-          count: 2
+          count: 1
           # shape: tiny
           server_type: f1-micro
           image: ubuntu-os-cloud/ubuntu-2004-lts
@@ -93,7 +93,7 @@ clusters:
           location: nbg1
           datacenter: nbg1-dc3
         worker:
-          count: 2
+          count: 1
           # shape: small
           server_type: cpx11
           image: ubuntu-20.04

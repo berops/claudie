@@ -1,4 +1,4 @@
-.PHONY: gen contentbox scheduler builder terraformer wireguardian
+.PHONY: gen contentbox scheduler builder terraformer wireguardian kubeEleven
 
 #Generate all .proto files
 gen:
@@ -18,3 +18,6 @@ terraformer:
 
 wireguardian:
 	go run services/wireguardian/server/server.go
+
+kubeEleven:
+	go run services/kube-eleven/server/server.go

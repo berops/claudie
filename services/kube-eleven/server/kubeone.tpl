@@ -3,7 +3,7 @@ kind: KubeOneCluster
 name: cluster
 
 versions:
-  kubernetes: '{{ .Cluster.KubernetesVersion }}'
+  kubernetes: '{{ .Kubernetes }}'
 
 clusterNetwork:
   cni:
@@ -17,31 +17,29 @@ addons:
   enable: true
   # In case when the relative path is provided, the path is relative
   # to the KubeOne configuration file.
-  path: "../addons"
+  path: "addons"
 
 apiEndpoint:
-{{- $node := index .Cluster.Nodes 0 }}
-  host: '{{ $node.PublicIp }}'
+  host: '{{ .ApiEndpoint }}'
   port: 6443
 
 controlPlane:
   hosts:
-{{- $privateKey := .Cluster.PrivateKey }}  
-{{- range .Cluster.Nodes}}
-{{- if eq .IsWorker false}}
-  - publicAddress: '{{ .PublicIp }}'
-    privateAddress: '{{ .PrivateIp }}'
+{{- $privateKey := "./private.pem" }}
+{{- range $value := .Nodes }}
+{{- if eq $value.IsControl true}}
+  - publicAddress: '{{ $value.Public }}'
+    privateAddress: '{{ $value.Private }}'
     sshPrivateKeyFile: '{{ $privateKey }}'
 {{- end}}
 {{- end}}
 
 staticWorkers:
   hosts:
-{{- $privateKey := .Cluster.PrivateKey }}  
-{{- range .Cluster.Nodes}}
-{{- if eq .IsWorker true}}
-  - publicAddress: '{{ .PublicIp }}'
-    privateAddress: '{{ .PrivateIp }}'
+{{- range $value := .Nodes }}
+{{- if eq $value.IsControl false}}
+  - publicAddress: '{{ $value.Public }}'
+    privateAddress: '{{ $value.Private }}'
     sshPrivateKeyFile: '{{ $privateKey }}'
 {{- end}}
 {{- end}}

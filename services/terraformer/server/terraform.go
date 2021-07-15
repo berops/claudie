@@ -218,7 +218,10 @@ func readOutput(data string) map[string]map[string]string {
 func fillNodes(m map[string]*pb.Ip, terraformOutput map[string]map[string]string) {
 	for key, element := range terraformOutput["control"] {
 		log.Println("Key:", key, "=>", "Element:", element)
-		m[key] = &pb.Ip{Public: element}
+		m[key] = &pb.Ip{
+			Public:    element,
+			IsControl: true,
+		}
 	}
 	for key, element := range terraformOutput["compute"] {
 		log.Println("Key:", key, "=>", "Element:", element)

@@ -1,12 +1,47 @@
 provider "google" {
   region = "europe-west1"
+  project = "platform-296509"
 }
 
 {{- $index := .Index }}
 
+resource "google_compute_network" "network" {
+  name                    = "{{ .Cluster.Name }}-network"
+  auto_create_subnetworks = false
+}
+
+resource "google_compute_subnetwork" "subnet" {
+  name          = "{{ .Cluster.Name }}-subnet"
+  network       = google_compute_network.network.self_link
+  region        = "europe-west1"
+  ip_cidr_range = "10.0.0.0/8"
+}
+
+resource "google_compute_firewall" "firewall" {
+  name    = "{{ .Cluster.Name }}-firewall"
+  network = google_compute_network.network.self_link
+
+  allow {
+    protocol = "UDP"
+    ports    = ["51820"]
+  }
+
+  allow {
+      protocol = "TCP"
+      ports    = ["22","6443","2379-2380","10250-10252","30000-32767"]
+    }
+
+  allow {
+      protocol = "icmp"
+   }
+
+  source_ranges = [
+      "0.0.0.0/0",
+   ]
+}
+
 resource "google_compute_instance" "control_plane" {
   count        = {{ (index .Cluster.NodePools $index).Master.Count }}
-  project      = "platform-296509"
   zone         = "europe-west1-c"
   name         = "{{ .Cluster.Name }}-gcp-control-${count.index + 1}"
   machine_type = "{{ (index .Cluster.NodePools $index).Master.ServerType }}"
@@ -18,7 +53,7 @@ resource "google_compute_instance" "control_plane" {
     }
   }
   network_interface {
-    network = "default"
+    subnetwork = google_compute_subnetwork.subnet.self_link
     access_config {}
   }
   metadata = {
@@ -29,7 +64,6 @@ resource "google_compute_instance" "control_plane" {
 
 resource "google_compute_instance" "compute_plane" {
   count        = {{ (index .Cluster.NodePools $index).Worker.Count }}
-  project      = "platform-296509"
   zone         = "europe-west1-c"
   name         = "{{ .Cluster.Name }}-gcp-compute-${count.index + 1}"
   machine_type = "{{ (index .Cluster.NodePools $index).Worker.ServerType }}"
@@ -41,7 +75,7 @@ resource "google_compute_instance" "compute_plane" {
     }
   }
   network_interface {
-    network = "default"
+    subnetwork = google_compute_subnetwork.subnet.self_link
     access_config {}
   }
   metadata = {
