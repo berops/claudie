@@ -125,7 +125,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 2
-      - run: git checkout HEAD^
+      - run: git checkout ${{ github.head_ref }}
 
       - name: Configure kubectl
         uses: google-github-actions/get-gke-credentials@v0.2.1
