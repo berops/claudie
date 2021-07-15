@@ -89,6 +89,8 @@ jobs:
     if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' }}
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
 
       # Set the new image tags in kustomization.yaml
       - name: Edit kustomization.yaml
