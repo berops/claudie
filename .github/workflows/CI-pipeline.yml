@@ -133,18 +133,13 @@ jobs:
 
       - name: Monitor status of the new namespace
         run: |
-          STATUSES=( $(kubectl get pods -o jsonpath='{.items[*].status.phase}') )
-          for STATUS in "${STATUSES[@]}"
-          do
-            if [ "$STATUS" != "Running" ]
-            then
-              echo "Some image is not running... See debug message bellow"
-              kubectl get pods --namespace=$GITHUB_SHA
-              kubectl delete namespace $GITHUB_SHA
-              exit 1
-            fi
-          done
-          echo "Everything is up and running"
+          kubectl wait deployment -l app=database --for=condition=available --timeout=60s
+          kubectl wait deployment -l app=context-box --for=condition=available --timeout=60s
+          kubectl wait deployment -l app=scheduler --for=condition=available --timeout=60s
+          kubectl wait deployment -l app=builder --for=condition=available --timeout=60s
+          kubectl wait deployment -l app=wireguardian --for=condition=available --timeout=60s
+          kubectl wait deployment -l app=terraformer --for=condition=available --timeout=60s
+          # kubectl wait deployment -l app=kube-eleven --for=condition=available --timeout=60s
           kubectl get pods --namespace=$GITHUB_SHA
           kubectl delete namespace $GITHUB_SHA
 
