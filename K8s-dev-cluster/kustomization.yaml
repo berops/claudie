@@ -13,8 +13,6 @@ configMapGenerator:
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
-- name: builder
-  newTag: 63bd053fbb5600fdaca0b0d33edfb238b534af2e
 - name: eu.gcr.io/platform-infrastructure-316112/platform/builder
   newTag: cd6ac43597022b191cdade43d49ec03209aaa320
 - name: eu.gcr.io/platform-infrastructure-316112/platform/context-box
