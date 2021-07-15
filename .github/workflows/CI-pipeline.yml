@@ -143,6 +143,8 @@ jobs:
           kustomize edit set namespace $GITHUB_SHA
           kustomize build | kubectl apply -f - 
 
+          cat kustomization.yaml
+
       # Check if everything is ready and running
       - name: Monitor status of the new namespace
         run: |
