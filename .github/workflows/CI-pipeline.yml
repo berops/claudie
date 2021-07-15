@@ -124,7 +124,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 2
+      - run: git checkout HEAD^
 
       - name: Configure kubectl
         uses: google-github-actions/get-gke-credentials@v0.2.1
