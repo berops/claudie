@@ -15,7 +15,7 @@ kind: Kustomization
 images:
 - name: builder
   newTag: 63bd053fbb5600fdaca0b0d33edfb238b534af2e
-- name: context-box
+- name: eu.gcr.io/platform-infrastructure-316112/platform/context-box
   newTag: ee63decb742b2b3f2376a3de8aa75e748901fdaa
 - name: eu.gcr.io/platform-infrastructure-316112/platform/builder
   newTag: cd6ac43597022b191cdade43d49ec03209aaa320
@@ -27,9 +27,9 @@ images:
   newTag: cd6ac43597022b191cdade43d49ec03209aaa320
 - name: eu.gcr.io/platform-infrastructure-316112/platform/wireguardian
   newTag: cd6ac43597022b191cdade43d49ec03209aaa320
-- name: scheduler
+- name: eu.gcr.io/platform-infrastructure-316112/platform/scheduler
   newTag: ee63decb742b2b3f2376a3de8aa75e748901fdaa
-- name: terraformer
+- name: eu.gcr.io/platform-infrastructure-316112/platform/terraformer
   newTag: ee63decb742b2b3f2376a3de8aa75e748901fdaa
-- name: wireguardian
+- name: eu.gcr.io/platform-infrastructure-316112/platform/wireguardian
   newTag: ee63decb742b2b3f2376a3de8aa75e748901fdaa
