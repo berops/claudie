@@ -90,6 +90,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      # Set the new image tags in kustomization.yaml
       - name: Edit kustomization.yaml
         working-directory: ./K8s-dev-cluster
         run: |
@@ -102,6 +103,7 @@ jobs:
 
           cat kustomization.yaml
 
+      # Auto commit the changes
       - name: Commit new kustomization.yaml to feature branch
         working-directory: ./K8s-dev-cluster
         run: |
@@ -125,14 +127,17 @@ jobs:
           location: ${{ secrets.GKE_ZONE }}
           credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
 
+      # Create a seperate temporary namespace
       - name: Create seperate namespace
         working-directory: ./K8s-dev-cluster
         run: kubectl create namespace $GITHUB_SHA
 
+      # Deploy services to new namespace
       - name: Deploy to new namespace
         working-directory: ./K8s-dev-cluster
         run: kustomize build | kubectl apply -f - --namespace=$GITHUB_SHA
 
+      # Check if everything is ready and running
       - name: Monitor status of the new namespace
         run: |
           for SERVICE in ${{ env.SERVICES }}
