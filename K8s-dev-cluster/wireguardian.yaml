@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: wireguardian
-        image: eu.gcr.io/platform-infrastructure-316112/platform/wireguardian:latest 
+        image: eu.gcr.io/platform-infrastructure-316112/platform/wireguardian
         env:
         - name: WIREGUARDIAN_PORT
           valueFrom:

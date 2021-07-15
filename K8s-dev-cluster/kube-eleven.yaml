@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: kube-eleven
-        image: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven:latest 
+        image: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven
         env:
         - name: KUBE_ELEVEN_PORT
           valueFrom:

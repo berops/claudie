@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: builder
-        image: eu.gcr.io/platform-infrastructure-316112/platform/builder:latest 
+        image: eu.gcr.io/platform-infrastructure-316112/platform/builder
         env:
         - name: CONTEXT_BOX_PORT
           valueFrom:
