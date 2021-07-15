@@ -20,7 +20,7 @@ images:
 - name: eu.gcr.io/platform-infrastructure-316112/platform/builder
   newTag: cd6ac43597022b191cdade43d49ec03209aaa320
 - name: eu.gcr.io/platform-infrastructure-316112/platform/context-box
-  newTag: test
+  newTag: 1fd82d3df0dc24c57cc7948730937ee3ea62d0fa
 - name: eu.gcr.io/platform-infrastructure-316112/platform/scheduler
   newTag: cd6ac43597022b191cdade43d49ec03209aaa320
 - name: eu.gcr.io/platform-infrastructure-316112/platform/terraformer
