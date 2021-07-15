@@ -116,6 +116,15 @@ jobs:
           git add kustomization.yaml
           git commit -m "Auto commit - add new kustomization.yaml"
           git push 
+
+      - name: Get SHA of auto-commit
+        id: sha
+        run: |
+          sha_new=$(git rev-parse HEAD)
+          echo $sha_new
+          echo "::set-output name=SHA::$sha_new"
+    outputs:
+      SHA: ${{ steps.sha.outputs.SHA }}
 #--------------------------------------------------------------------------------------------------
   deploy-and-monitor:
     runs-on: ubuntu-latest
@@ -124,8 +133,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          fetch-depth: 2
-      - run: git checkout ${{ github.head_ref }}
+          ref: ${{ needs.edit-kustomization.outputs.SHA }}
+          fetch-depth: 0
 
       - name: Configure kubectl
         uses: google-github-actions/get-gke-credentials@v0.2.1
