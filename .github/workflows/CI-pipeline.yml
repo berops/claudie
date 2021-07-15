@@ -90,7 +90,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          fetch-depth: 2
+          ref: ${{ github.head_ref }}
 
       # Set the new image tags in kustomization.yaml
       - name: Edit kustomization.yaml
@@ -112,9 +112,9 @@ jobs:
           BRANCH_NAME=${{ github.head_ref }}
           git config --global user.name 'CI/CD pipeline'
           git config --global user.email 'CI/CD-pipeline@users.noreply.github.com'
-          git checkout $BRANCH_NAME
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
           git add kustomization.yaml
-          git commit -m "Auto commit - add new kustomization.yaml"
+          git commit -m "Auto commit - add new `kustomization.yaml`"
           git push 
 #--------------------------------------------------------------------------------------------------
   deploy-and-monitor:
