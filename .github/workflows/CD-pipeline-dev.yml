@@ -1,9 +1,8 @@
 name: CD pipeline for platform - dev
-# Controls when the action will run. 
 on:
   # Run after CI
   workflow_run:
-    workflows: [ "CI pipeline for platform" ] # for testing
+    workflows: [ "CI pipeline for platform" ] 
     types: [ completed ]
   # Manual trigger    
   workflow_dispatch:
@@ -17,6 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      # Deploy to the default namespace for further testing
       - name: Deploy to the dev cluster default namespace via kustomize
         working-directory: ./K8s-dev-cluster
         run: kustomize build | kubectl apply -f -
