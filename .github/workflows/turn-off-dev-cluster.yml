@@ -25,22 +25,22 @@ jobs:
       # Turn off the services    
       - name: Turn off the Scheduler
         if: ${{ always() }}   
-        run: kubectl scale --replicas=0 deployments/scheduler
+        run: kubectl scale --replicas=0 deployments/scheduler --namespace=master
       - name: Turn off the Builder
         if: ${{ always() }}   
-        run: kubectl scale --replicas=0 deployments/builder
+        run: kubectl scale --replicas=0 deployments/builder --namespace=master
       - name: Turn off the Terraformer
         if: ${{ always() }}   
-        run: kubectl scale --replicas=0 deployments/terraformer
+        run: kubectl scale --replicas=0 deployments/terraformer --namespace=master
       - name: Turn off the Contex-box
         if: ${{ always() }}   
-        run: kubectl scale --replicas=0 deployments/context-box
+        run: kubectl scale --replicas=0 deployments/context-box --namespace=master
       - name: Turn off the Database
         if: ${{ always() }}   
-        run: kubectl scale --replicas=0 deployments/mongodb
+        run: kubectl scale --replicas=0 deployments/mongodb --namespace=master
       - name: Turn off the Kube-eleven
         if: ${{ always() }}       
-        run: kubectl scale --replicas=0 deployments/kube-eleven
+        run: kubectl scale --replicas=0 deployments/kube-eleven --namespace=master
       - name: Turn off the Wireguardian
         if: ${{ always() }}   
-        run: kubectl scale --replicas=0 deployments/wireguardian
+        run: kubectl scale --replicas=0 deployments/wireguardian --namespace=master

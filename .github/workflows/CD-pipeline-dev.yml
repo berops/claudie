@@ -19,4 +19,6 @@ jobs:
       # Deploy to the default namespace for further testing
       - name: Deploy to the dev cluster default namespace via kustomize
         working-directory: ./K8s-dev-cluster
-        run: kustomize build | kubectl apply -f -
+        run: |
+          kubectl create namespace master --dry-run=client -o yaml | kubectl apply -f -
+          kustomize build | kubectl apply -f -
