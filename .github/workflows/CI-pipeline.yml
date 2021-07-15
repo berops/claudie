@@ -137,7 +137,7 @@ jobs:
         run: |
           for SERVICE in ${{ env.SERVICES }}
           do 
-          kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=60s --namespace=$GITHUB_SHA
+          kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=120s --namespace=$GITHUB_SHA
           done
 
           kubectl get pods --namespace=$GITHUB_SHA
