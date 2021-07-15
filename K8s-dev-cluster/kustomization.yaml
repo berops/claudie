@@ -1,3 +1,4 @@
+namespace: master
 resources:
 - mongodb.yaml
 - context-box.yaml
@@ -5,7 +6,7 @@ resources:
 - wireguardian.yaml
 - scheduler.yaml
 - builder.yaml
-#- kube-eleven.yaml
+- kube-eleven.yaml
 configMapGenerator:
 - envs:
   - .env
