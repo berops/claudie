@@ -114,7 +114,7 @@ jobs:
           git config --global user.email 'CI/CD-pipeline@users.noreply.github.com'
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
           git add kustomization.yaml
-          git commit -m "Auto commit - add new `kustomization.yaml`"
+          git commit -m "Auto commit - add new kustomization.yaml"
           git push 
 #--------------------------------------------------------------------------------------------------
   deploy-and-monitor:
