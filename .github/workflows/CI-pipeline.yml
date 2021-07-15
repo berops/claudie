@@ -123,6 +123,8 @@ jobs:
     if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES }}
     steps:
       - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Configure kubectl
         uses: google-github-actions/get-gke-credentials@v0.2.1
