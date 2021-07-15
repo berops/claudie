@@ -96,8 +96,8 @@ jobs:
           NEW_SERVICES=( ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES }} )
           for SERVICE in "${NEW_SERVICES[@]}"
           do
-            echo "Setting a new tag for a $SETVICE"
-            kustomize edit set image eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$SERVICE:test
+            echo "Setting a new tag for a $SERVICE"
+            kustomize edit set image eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$SERVICE:$GITHUB_SHA
           done
 
       - name: Commit new kustomization.yaml to feature branch
@@ -133,13 +133,11 @@ jobs:
 
       - name: Monitor status of the new namespace
         run: |
-          kubectl wait deployment -l app=database --for=condition=available --timeout=60s
-          kubectl wait deployment -l app=context-box --for=condition=available --timeout=60s
-          kubectl wait deployment -l app=scheduler --for=condition=available --timeout=60s
-          kubectl wait deployment -l app=builder --for=condition=available --timeout=60s
-          kubectl wait deployment -l app=wireguardian --for=condition=available --timeout=60s
-          kubectl wait deployment -l app=terraformer --for=condition=available --timeout=60s
-          # kubectl wait deployment -l app=kube-eleven --for=condition=available --timeout=60s
+          for SERVICE in ${{ env.SERVICES }}
+          do 
+          kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=60s --namespace=$GITHUB_SHA
+          done
+
           kubectl get pods --namespace=$GITHUB_SHA
           kubectl delete namespace $GITHUB_SHA
 
