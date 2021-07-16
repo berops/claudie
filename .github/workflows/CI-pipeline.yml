@@ -146,13 +146,13 @@ jobs:
       # Create a seperate temporary namespace
       - name: Create seperate namespace
         working-directory: ./K8s-dev-cluster
-        run: kubectl create namespace $GITHUB_SHA
+        run: kubectl create namespace claudie-$GITHUB_SHA
 
       # Deploy services to new namespace
       - name: Deploy to new namespace
         working-directory: ./K8s-dev-cluster
         run: |
-          kustomize edit set namespace $GITHUB_SHA
+          kustomize edit set namespace claudie-$GITHUB_SHA
           kustomize build | kubectl apply -f - 
 
           cat kustomization.yaml
@@ -162,8 +162,8 @@ jobs:
         run: |
           for SERVICE in ${{ env.SERVICES }}
           do 
-          kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=120s --namespace=$GITHUB_SHA
+          kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=120s --namespace=claudie-$GITHUB_SHA
           done
 
-          kubectl get pods --namespace=$GITHUB_SHA
-          kubectl delete namespace $GITHUB_SHA
+          kubectl get pods --namespace=claudie-$GITHUB_SHA
+          kubectl delete namespace claudie-$GITHUB_SHA

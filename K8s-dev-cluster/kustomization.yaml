@@ -1,4 +1,4 @@
-namespace: master
+namespace: claudie
 resources:
 - mongodb.yaml
 - context-box.yaml
