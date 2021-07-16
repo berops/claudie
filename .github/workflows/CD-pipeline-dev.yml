@@ -16,7 +16,15 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Configure kubectl
+        uses: google-github-actions/get-gke-credentials@v0.2.1
+        with:
+          cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
+          location: ${{ secrets.GKE_ZONE }}
+          credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
+
       # Deploy to the default namespace for further testing
       - name: Deploy to the dev cluster default namespace via kustomize
         working-directory: ./K8s-dev-cluster
-        run: kustomize build | kubectl apply -f -
+        run: |
+          kustomize build | kubectl apply -f -

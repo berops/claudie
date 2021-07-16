@@ -8,7 +8,7 @@ on:
 
 env:
   ENV_FILE: .env
-  SERVICES: context-box scheduler builder terraformer wireguardian #kube-eleven
+  SERVICES: context-box scheduler builder terraformer wireguardian kube-eleven
 
 jobs:
   build-and-push:
@@ -116,6 +116,15 @@ jobs:
           git add kustomization.yaml
           git commit -m "Auto commit - add new kustomization.yaml"
           git push 
+
+      - name: Get SHA of auto-commit
+        id: sha
+        run: |
+          sha_new=$(git rev-parse HEAD)
+          echo $sha_new
+          echo "::set-output name=SHA::$sha_new"
+    outputs:
+      SHA: ${{ steps.sha.outputs.SHA }}
 #--------------------------------------------------------------------------------------------------
   deploy-and-monitor:
     runs-on: ubuntu-latest
@@ -123,6 +132,9 @@ jobs:
     if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES }}
     steps:
       - uses: actions/checkout@v2
+        with:
+          ref: ${{ needs.edit-kustomization.outputs.SHA }}
+          fetch-depth: 0
 
       - name: Configure kubectl
         uses: google-github-actions/get-gke-credentials@v0.2.1
@@ -134,20 +146,24 @@ jobs:
       # Create a seperate temporary namespace
       - name: Create seperate namespace
         working-directory: ./K8s-dev-cluster
-        run: kubectl create namespace $GITHUB_SHA
+        run: kubectl create namespace claudie-$GITHUB_SHA
 
       # Deploy services to new namespace
       - name: Deploy to new namespace
         working-directory: ./K8s-dev-cluster
-        run: kustomize build | kubectl apply -f - --namespace=$GITHUB_SHA
+        run: |
+          kustomize edit set namespace claudie-$GITHUB_SHA
+          kustomize build | kubectl apply -f - 
+
+          cat kustomization.yaml
 
       # Check if everything is ready and running
       - name: Monitor status of the new namespace
         run: |
           for SERVICE in ${{ env.SERVICES }}
           do 
-          kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=120s --namespace=$GITHUB_SHA
+          kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=120s --namespace=claudie-$GITHUB_SHA
           done
 
-          kubectl get pods --namespace=$GITHUB_SHA
-          kubectl delete namespace $GITHUB_SHA
+          kubectl get pods --namespace=claudie-$GITHUB_SHA
+          kubectl delete namespace claudie-$GITHUB_SHA

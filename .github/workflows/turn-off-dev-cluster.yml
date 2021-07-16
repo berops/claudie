@@ -1,7 +1,7 @@
 name: "Turn off the K8s dev cluster"
 on:
   workflow_dispatch:
-  schedule:               # Set for Thursday for testing
+  schedule:
   - cron: "0 18 * * *"    # minute (0-59) | hour(0-23) | day of the month(1-31) | month(1-12) | day of the week(1-7)
                           # Uses UTC timezone - Run every day at 20:00 CET -> "0 18 * * *"
 jobs:
@@ -25,22 +25,22 @@ jobs:
       # Turn off the services    
       - name: Turn off the Scheduler
         if: ${{ always() }}   
-        run: kubectl scale --replicas=0 deployments/scheduler
+        run: kubectl scale --replicas=0 deployments/scheduler --namespace=claudie
       - name: Turn off the Builder
         if: ${{ always() }}   
-        run: kubectl scale --replicas=0 deployments/builder
+        run: kubectl scale --replicas=0 deployments/builder --namespace=claudie
       - name: Turn off the Terraformer
         if: ${{ always() }}   
-        run: kubectl scale --replicas=0 deployments/terraformer
+        run: kubectl scale --replicas=0 deployments/terraformer --namespace=claudie
       - name: Turn off the Contex-box
         if: ${{ always() }}   
-        run: kubectl scale --replicas=0 deployments/context-box
+        run: kubectl scale --replicas=0 deployments/context-box --namespace=claudie
       - name: Turn off the Database
         if: ${{ always() }}   
-        run: kubectl scale --replicas=0 deployments/mongodb
-#     - name: Turn off the Kube-eleven
-#       if: ${{ always() }}       
-#       run: kubectl scale --replicas=0 deployments/kube-eleven
+        run: kubectl scale --replicas=0 deployments/mongodb --namespace=claudie
+      - name: Turn off the Kube-eleven
+        if: ${{ always() }}       
+        run: kubectl scale --replicas=0 deployments/kube-eleven --namespace=claudie
       - name: Turn off the Wireguardian
         if: ${{ always() }}   
-        run: kubectl scale --replicas=0 deployments/wireguardian
+        run: kubectl scale --replicas=0 deployments/wireguardian --namespace=claudie
