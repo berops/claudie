@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
-	kubeEleven "github.com/Berops/platform/services/kube-eleven/client"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"time"
+
+	kubeEleven "github.com/Berops/platform/services/kube-eleven/client"
 
 	cbox "github.com/Berops/platform/services/context-box/client"
 	terraformer "github.com/Berops/platform/services/terraformer/client"
@@ -74,6 +76,7 @@ func main() {
 		log.Fatalf("could not connect to Content-box: %v", err)
 	}
 	defer cc.Close()
+	startProbes()
 
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
@@ -104,4 +107,33 @@ func main() {
 
 	<-ch
 	fmt.Println("Stopping Builder")
+}
+
+func startProbes() {
+	//health := healthcheck.NewHandler()
+
+	//health.AddLivenessCheck("report-liveliness", reportTrue())
+
+	// listen to /live and /ready
+	//go http.ListenAndServe("0.0.0.0:8086", health)
+	http.HandleFunc("/live", live)
+	http.HandleFunc("/ready", ready)
+
+	go http.ListenAndServe("0.0.0.0:8086", nil)
+}
+
+func live(w http.ResponseWriter, req *http.Request) {
+	fmt.Fprintf(w, "200 OK \n")
+}
+
+func ready(w http.ResponseWriter, req *http.Request) {
+	// timeout := time.Second
+	// conn, err := net.DialTimeout("tcp", net.JoinHostPort("127.0.0.1", "50051"), timeout)
+	// if err != nil {
+	// 	fmt.Println("Connecting error:", err)
+	// }
+	// if conn != nil {
+	// 	defer conn.Close()
+	// 	fmt.Println("Opened", net.JoinHostPort("127.0.0.1", "50051"))
+	// }
 }

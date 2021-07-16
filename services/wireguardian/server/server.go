@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -114,6 +115,8 @@ func main() {
 		log.Fatalln("Failed to listen on", err)
 	}
 	fmt.Println("Wireguardian service is listening on", "0.0.0.0:"+wireguardianPort)
+	//
+	startProbes()
 
 	// creating a new server
 	s := grpc.NewServer()
@@ -136,4 +139,25 @@ func main() {
 	fmt.Println("Closing the listener")
 	lis.Close()
 	fmt.Println("End of Program")
+}
+
+func startProbes() {
+	//health := healthcheck.NewHandler()
+
+	//health.AddLivenessCheck("report-liveliness", reportTrue())
+
+	// listen to /live and /ready
+	//go http.ListenAndServe("0.0.0.0:8086", health)
+	http.HandleFunc("/live", live)
+	http.HandleFunc("/ready", ready)
+
+	go http.ListenAndServe("0.0.0.0:8086", nil)
+}
+
+func live(w http.ResponseWriter, req *http.Request) {
+	fmt.Fprintf(w, "200 OK \n")
+}
+
+func ready(w http.ResponseWriter, req *http.Request) {
+
 }
