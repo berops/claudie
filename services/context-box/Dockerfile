@@ -19,6 +19,8 @@ WORKDIR ./services/context-box/server
 #Compile the golang code to /out, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build -o /out
 
+RUN apk update && apk add ca-certificates && update-ca-certificates
+
 #Install grpc health probes
 RUN wget -q /bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.4.4/grpc_health_probe-linux-amd64 && \
     chmod +x /bin/grpc_health_probe
