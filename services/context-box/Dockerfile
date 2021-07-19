@@ -21,15 +21,15 @@ RUN CGO_ENABLED=0 go build -o /out
 
 #Install grpc health probes
 RUN GRPC_HEALTH_PROBE_VERSION=v0.3.1 && \
-    curl -fSL https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 -o grpc_health_probe \
-    && chmod +x grpc_health_probe
+    wget -q /bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 && \
+    chmod +x /bin/grpc_health_probe
 
 #Use empty base image
 FROM scratch
 
 #Copy the binaries to empty base image
 COPY --from=build /out /out
-COPY --from=build /grpc_health_probe /bin/grpc_health_probe
+COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
 
 #Run server
 ENTRYPOINT [ "/out" ]
