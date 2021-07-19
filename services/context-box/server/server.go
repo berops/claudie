@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
+	"github.com/Berops/platform/services/context-box/healthcheck"
 	terraformer "github.com/Berops/platform/services/terraformer/client"
 
 	"github.com/Berops/platform/proto/pb"
@@ -21,6 +21,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
@@ -408,8 +409,6 @@ func main() {
 		contextboxPort = "50055" // Default value
 	}
 
-	startProbes()
-
 	// Start ContextBox Service
 	lis, err := net.Listen("tcp", "0.0.0.0:"+contextboxPort)
 	if err != nil {
@@ -419,6 +418,10 @@ func main() {
 
 	s := grpc.NewServer()
 	pb.RegisterContextBoxServiceServer(s, &server{})
+
+	// Add health service to gRPC
+	healthService := healthcheck.NewHealthChecker()
+	grpc_health_v1.RegisterHealthServer(s, healthService)
 
 	go func() {
 		if err := s.Serve(lis); err != nil {
@@ -449,41 +452,4 @@ func main() {
 	fmt.Println("Closing the listener")
 	lis.Close()
 	fmt.Println("End of Program")
-}
-
-func startProbes() {
-	// listen to /live and /ready
-	http.HandleFunc("/live", live)
-	http.HandleFunc("/ready", ready)
-
-	go http.ListenAndServe("0.0.0.0:8080", nil)
-}
-
-func live(w http.ResponseWriter, req *http.Request) {
-	fmt.Println("Liviness probe check: OK")
-	w.WriteHeader(200)
-	w.Write([]byte("ok"))
-}
-
-func ready(w http.ResponseWriter, req *http.Request) {
-	timeout := 5 * time.Second
-	contextboxPort := os.Getenv("CONTEXT_BOX_PORT")
-
-	if contextboxPort == "" {
-		contextboxPort = "50055" // Default value
-	}
-
-	conn, err := net.DialTimeout("tcp", net.JoinHostPort("127.0.0.1", contextboxPort), timeout)
-	if err != nil {
-		fmt.Println("Readiness probe check: ERROR")
-		fmt.Println(err)
-		w.WriteHeader(500)
-		w.Write([]byte(err.Error()))
-	}
-	if conn != nil {
-		defer conn.Close()
-		fmt.Println("Readiness probe check: OK")
-		w.WriteHeader(200)
-		w.Write([]byte("ok"))
-	}
 }
