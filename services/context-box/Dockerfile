@@ -21,6 +21,8 @@ RUN CGO_ENABLED=0 go build -o /out
 
 RUN apk update && apk add ca-certificates wget && update-ca-certificates
 
+RUN apk update && apk add wget
+
 #Install grpc health probes
 RUN wget /bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.4.4/grpc_health_probe-linux-amd64
 RUN chmod +x /bin/grpc_health_probe
