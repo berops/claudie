@@ -29,7 +29,7 @@ FROM scratch
 
 #Copy the binaries to empty base image
 COPY --from=build /out /out
-COPY --from=builder /grpc_health_probe /bin/grpc_health_probe
+COPY --from=build /grpc_health_probe /bin/grpc_health_probe
 
 #Run server
 ENTRYPOINT [ "/out" ]
