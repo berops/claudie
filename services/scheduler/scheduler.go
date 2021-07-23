@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
 	cbox "github.com/Berops/platform/services/context-box/client"
 	"github.com/Berops/platform/urls"
@@ -99,6 +100,10 @@ func MakeSSHKeyPair() (string, string) {
 }
 
 func createDesiredState(config *pb.Config) *pb.Config {
+	if config == nil {
+		fmt.Println("Got nil, expected Config... \n Returning nil")
+		return nil
+	}
 	//Create yaml manifest
 	d := []byte(config.GetManifest())
 	err := ioutil.WriteFile("manifest.yaml", d, 0644)
@@ -205,6 +210,10 @@ func main() {
 
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, os.Interrupt)
+
+	// Initilize health probes
+	healthChecker := healthcheck.NewClientHealthChecker("50056")
+	healthChecker.StartProbes(createDesiredState)
 
 	go func() {
 		// Infinite FOR loop gets config from the context box queue

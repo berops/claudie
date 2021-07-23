@@ -28,4 +28,13 @@ spec:
             configMapKeyRef:
               name: urls
               key: CONTEXT_BOX_HOSTNAME
-# No Service needed
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 50056
+          initialDelaySeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /live
+            port: 50056
+          initialDelaySeconds: 10
