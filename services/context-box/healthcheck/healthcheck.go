@@ -46,7 +46,7 @@ func (s *HealthChecker) Check(ctx context.Context, req *grpc_health_v1.HealthChe
 
 	// Return answer NOT_SERVING -> app is live but not ready
 	return &grpc_health_v1.HealthCheckResponse{
-		Status: grpc_health_v1.HealthCheckResponse_SERVING,
+		Status: grpc_health_v1.HealthCheckResponse_NOT_SERVING,
 	}, nil
 }
 
