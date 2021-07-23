@@ -33,7 +33,7 @@ func (s *HealthChecker) Check(ctx context.Context, req *grpc_health_v1.HealthChe
 		fmt.Println("Readiness probe check: ERROR")
 		fmt.Println(err)
 		return &grpc_health_v1.HealthCheckResponse{
-			Status: grpc_health_v1.HealthCheckResponse_NOT_SERVING,
+			Status: grpc_health_v1.HealthCheckResponse_SERVING,
 		}, nil
 	}
 	if conn != nil {
@@ -46,7 +46,7 @@ func (s *HealthChecker) Check(ctx context.Context, req *grpc_health_v1.HealthChe
 
 	// Return answer NOT_SERVING -> app is live but not ready
 	return &grpc_health_v1.HealthCheckResponse{
-		Status: grpc_health_v1.HealthCheckResponse_NOT_SERVING,
+		Status: grpc_health_v1.HealthCheckResponse_SERVING,
 	}, nil
 }
 
