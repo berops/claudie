@@ -26,6 +26,14 @@ spec:
          # No hostname needed
         ports:
         - containerPort: 50052
+        readinessProbe:
+          exec:
+            command: ["bin/grpc_health_probe", "-addr=:50052"]
+          initialDelaySeconds: 5
+        livenessProbe:
+          exec:
+            command: ["bin/grpc_health_probe", "-addr=:50052"]
+          initialDelaySeconds: 10
 ---
 kind: Service
 apiVersion: v1
