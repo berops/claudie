@@ -10,9 +10,9 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/Berops/platform/services/context-box/healthcheck"
 	terraformer "github.com/Berops/platform/services/terraformer/client"
 
+	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/urls"
 	"go.mongodb.org/mongo-driver/bson"
@@ -420,7 +420,7 @@ func main() {
 	pb.RegisterContextBoxServiceServer(s, &server{})
 
 	// Add health service to gRPC
-	healthService := healthcheck.NewHealthChecker()
+	healthService := healthcheck.NewServerHealthChecker("50055", "CONTEXT_BOX_PORT")
 	grpc_health_v1.RegisterHealthServer(s, healthService)
 
 	go func() {
