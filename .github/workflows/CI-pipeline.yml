@@ -15,6 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
 
       # Create an array with modules that were changed by a recent commit via bash script
       - name: Check the files for a change
@@ -24,7 +26,7 @@ jobs:
           SERVICES=( ${{ env.SERVICES }} )
           git fetch origin master
           echo "Changed files:"
-          git diff  --name-only origin/master..HEAD
+          git diff  --name-only HEAD^..HEAD
           for i in "$(git diff  --name-only origin/master..HEAD)"
           do
             for SERVICE in in "${SERVICES[@]}"; do
@@ -39,7 +41,7 @@ jobs:
         # Login to GCP with repository secrets 
       - name: Login to GCP
         if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
-        uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+        uses: google-github-actions/setup-gcloud@master
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
           service_account_email: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
