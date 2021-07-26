@@ -26,7 +26,7 @@ jobs:
           SERVICES=( ${{ env.SERVICES }} )
           git fetch origin master
           echo "Changed files:"
-          git diff  --name-only HEAD^..HEAD
+          git diff  --name-only origin/master..HEAD
           for i in "$(git diff  --name-only origin/master..HEAD)"
           do
             for SERVICE in in "${SERVICES[@]}"; do

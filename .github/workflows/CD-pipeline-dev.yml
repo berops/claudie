@@ -15,6 +15,9 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion != 'failure' }}
     steps:
       - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
+
 
       - name: Configure kubectl
         uses: google-github-actions/get-gke-credentials@v0.2.1
