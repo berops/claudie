@@ -43,11 +43,11 @@ func (s *ClientHealthChecker) ready(w http.ResponseWriter, req *http.Request) {
 	fmt.Println("Serving the Check request for readiness check")
 	result := s.checkFunc()
 	if result != nil {
-		fmt.Println("Readiness probe check: OK")
-		fmt.Fprintf(w, "200 OK \n")
+		fmt.Println(result)
+		fmt.Println("Readiness probe check: ERROR")
+		fmt.Fprintf(w, "300 NOT READY \n")
 		return
 	}
-	fmt.Println(result)
-	fmt.Println("Readiness probe check: ERROR")
-	fmt.Fprintf(w, "300 NOT READY \n")
+	fmt.Println("Readiness probe check: OK")
+	fmt.Fprintf(w, "200 OK \n")
 }
