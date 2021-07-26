@@ -196,7 +196,7 @@ func createDesiredState(config *pb.Config) *pb.Config {
 	}
 }
 
-// healthCheck function is function used for querring readiness/liviness of the pod running this microservice
+// healthCheck function is function used for querring readiness of the pod running this microservice
 func healthCheck() error {
 	res := createDesiredState(nil)
 	if res != nil {

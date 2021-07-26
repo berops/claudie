@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/Berops/platform/healthcheck"
 	kubeEleven "github.com/Berops/platform/services/kube-eleven/client"
 
 	cbox "github.com/Berops/platform/services/context-box/client"
@@ -65,6 +66,25 @@ func callKubeEleven(config *pb.Config) *pb.Config {
 	return res.GetConfig()
 }
 
+// healthCheck function is function used for querring readiness of the pod running this microservice
+func healthCheck() error {
+	//Check if Builder can connect to Terraformer/Wireguardian/Kube-eleven
+	//Connection to these services are crucial for Builder, without them, the builder is NOT Ready
+	_, err := grpc.Dial(urls.KubeElevenURL, grpc.WithInsecure())
+	if err != nil {
+		return fmt.Errorf("could not connect to Kube-eleven: %v", err)
+	}
+	_, err = grpc.Dial(urls.TerraformerURL, grpc.WithInsecure())
+	if err != nil {
+		return fmt.Errorf("could not connect to Terraformer: %v", err)
+	}
+	_, err = grpc.Dial(urls.WireguardianURL, grpc.WithInsecure())
+	if err != nil {
+		return fmt.Errorf("could not connect to Wireguardian: %v", err)
+	}
+	return nil
+}
+
 func main() {
 	// If go code crash, we will get the file name and line number
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -77,6 +97,11 @@ func main() {
 	defer cc.Close()
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
+
+	// Initilize health probes
+	healthChecker := healthcheck.NewClientHealthChecker("50051", healthCheck)
+	healthChecker.StartProbes()
+
 	go func() {
 		for {
 			res, err := cbox.GetConfigBuilder(c) // Get a new config
