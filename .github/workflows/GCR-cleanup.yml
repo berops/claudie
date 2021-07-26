@@ -1,0 +1,42 @@
+name: "Turn off the K8s dev cluster"
+on:
+  workflow_dispatch:
+  schedule:
+  - cron: "0 18 * * *"    # minute (0-59) | hour(0-23) | day of the month(1-31) | month(1-12) | day of the week(1-7)
+                          # Uses UTC timezone - Run every day at 20:00 CET -> "0 18 * * *"
+
+env:
+  SERVICES: context-box scheduler builder terraformer wireguardian kube-eleven
+
+jobs:
+  turn-off:
+    runs-on: ubuntu-latest
+    steps:
+      # Setup gcloud CLI
+      - uses: google-github-actions/setup-gcloud@master
+        with:
+          service_account_key: ${{ secrets.GKE_SERVICE_ACC_KEY }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+      - name: Clean up the GCR
+        run: |
+          SERVICES=( env.SERVICES )
+          NUMBER_OF_RETAINED=10
+          
+          # Loop through the services
+          for SERVICE in "${SERVICES[@]}"; do
+          
+              echo "------ Checking $SERVICE ------"
+              TEMP=($(gcloud container images list-tags eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$SERVICE --sort-by=TIMESTAMP --format="get(tags)"))
+          
+              # Check for the length of the array
+              if [ ${#TEMP[@]} -ge $((NUMBER_OF_RETAINED+1)) ]  
+              then
+                  # Set the stop index
+                  STOP="$(( ${#TEMP[@]} - $((NUMBER_OF_RETAINED+1))))"
+                  echo "------ Deleting $(($STOP+1)) images from $SERVICE ------"
+                  # Delete the old ones
+                  for i in $(seq 0 $STOP); do
+                      gcloud container images delete -q --force-delete-tags eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$SERVICE:${TEMP[$i]}
+                  done
+              fi
+          done
