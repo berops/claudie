@@ -34,7 +34,7 @@ func (s *ClientHealthChecker) StartProbes() {
 func live(w http.ResponseWriter, req *http.Request) {
 	fmt.Println("Serving the Check request for liviness check")
 	fmt.Println("Liviness probe check: OK")
-	w.WriteHeader(200)
+	w.WriteHeader(500)
 	w.Write([]byte("ok"))
 }
 
