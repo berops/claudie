@@ -196,6 +196,15 @@ func createDesiredState(config *pb.Config) *pb.Config {
 	}
 }
 
+// healthCheck function is function used for querring readiness/liviness of the pod running this microservice
+func healthCheck() error {
+	res := createDesiredState(nil)
+	if res != nil {
+		return fmt.Errorf("health check function got unexpected result")
+	}
+	return nil
+}
+
 func main() {
 	//Create connection to Context-box
 	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
@@ -212,8 +221,8 @@ func main() {
 	signal.Notify(ch, os.Interrupt)
 
 	// Initilize health probes
-	healthChecker := healthcheck.NewClientHealthChecker("50056")
-	healthChecker.StartProbes(createDesiredState)
+	healthChecker := healthcheck.NewClientHealthChecker("50056", healthCheck)
+	healthChecker.StartProbes()
 
 	go func() {
 		// Infinite FOR loop gets config from the context box queue
