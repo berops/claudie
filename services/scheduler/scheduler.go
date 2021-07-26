@@ -101,7 +101,7 @@ func MakeSSHKeyPair() (string, string) {
 
 func createDesiredState(config *pb.Config) *pb.Config {
 	if config == nil {
-		fmt.Println("Got nil, expected Config... \n Returning nil")
+		fmt.Println("Got nil, expected Config... \nReturning nil")
 		return nil
 	}
 	//Create yaml manifest
