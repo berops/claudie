@@ -1,4 +1,4 @@
-name: "Turn off the K8s dev cluster"
+name: "Clean up GCR"
 on:
   workflow_dispatch:
   schedule:
