@@ -59,6 +59,6 @@ func (s *ServerHealthChecker) Check(ctx context.Context, req *grpc_health_v1.Hea
 
 func (s *ServerHealthChecker) Watch(req *grpc_health_v1.HealthCheckRequest, server grpc_health_v1.Health_WatchServer) error {
 	// Unimplemented
-	// The method only returns error/nil - can not reflect ready and liviness separately
+	// The method only returns error/nil - can not reflect ready and liviness respectively
 	return status.Error(codes.Unimplemented, "unimplemented")
 }

@@ -34,7 +34,8 @@ func (s *ClientHealthChecker) StartProbes() {
 func live(w http.ResponseWriter, req *http.Request) {
 	fmt.Println("Serving the Check request for liviness check")
 	fmt.Println("Liviness probe check: OK")
-	fmt.Fprintf(w, "200 OK \n")
+	w.WriteHeader(200)
+	w.Write([]byte("ok"))
 }
 
 // ready function is testing readiness state of the microservice
@@ -45,9 +46,11 @@ func (s *ClientHealthChecker) ready(w http.ResponseWriter, req *http.Request) {
 	if result != nil {
 		fmt.Println(result)
 		fmt.Println("Readiness probe check: ERROR")
-		fmt.Fprintf(w, "300 NOT READY \n")
+		w.WriteHeader(500)
+		w.Write([]byte("not ready"))
 		return
 	}
 	fmt.Println("Readiness probe check: OK")
-	fmt.Fprintf(w, "200 OK \n")
+	w.WriteHeader(200)
+	w.Write([]byte("ok"))
 }
