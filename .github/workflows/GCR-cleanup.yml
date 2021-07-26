@@ -26,7 +26,7 @@ jobs:
           for SERVICE in "${SERVICES[@]}"; do
           
               echo "------ Checking $SERVICE ------"
-              TEMP=($(gcloud container images list-tags eu.gcr.io/platform-infrastructure-316112/platform/$SERVICE --sort-by=TIMESTAMP --format="get(tags)"))
+              TEMP=($(gcloud container images list-tags eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$SERVICE --sort-by=TIMESTAMP --format="get(tags)"))
           
               # Check for the length of the array
               if [ ${#TEMP[@]} -ge $((NUMBER_OF_RETAINED+1)) ]  
@@ -36,7 +36,7 @@ jobs:
                   echo "------ Deleting $(($STOP+1)) images from $SERVICE ------"
                   # Delete the old ones
                   for i in $(seq 0 $STOP); do
-                      gcloud container images delete -q --force-delete-tags eu.gcr.io/platform-infrastructure-316112/platform/$SERVICE:${TEMP[$i]}
+                      gcloud container images delete -q --force-delete-tags eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$SERVICE:${TEMP[$i]}
                   done
               fi
           done
