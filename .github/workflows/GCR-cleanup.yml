@@ -19,7 +19,7 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
       - name: Clean up the GCR
         run: |
-          SERVICES=( env.SERVICES )
+          SERVICES=( ${{ env.SERVICES }})
           NUMBER_OF_RETAINED=10
           
           # Loop through the services
