@@ -19,24 +19,24 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
       - name: Clean up the GCR
         run: |
-        SERVICES=( env.SERVICES )
-        NUMBER_OF_RETAINED=10
-        
-        # Loop through the services
-        for SERVICE in "${SERVICES[@]}"; do
-        
-            echo "------ Checking $SERVICE ------"
-            TEMP=($(gcloud container images list-tags eu.gcr.io/platform-infrastructure-316112/platform/$SERVICE --sort-by=TIMESTAMP --format="get(tags)"))
-        
-            # Check for the length of the array
-            if [ ${#TEMP[@]} -ge $((NUMBER_OF_RETAINED+1)) ]  
-            then
-                # Set the stop index
-                STOP="$(( ${#TEMP[@]} - $((NUMBER_OF_RETAINED+1))))"
-                echo "------ Deleting $(($STOP+1)) images from $SERVICE ------"
-                # Delete the old ones
-                for i in $(seq 0 $STOP); do
-                    gcloud container images delete -q --force-delete-tags eu.gcr.io/platform-infrastructure-316112/platform/$SERVICE:${TEMP[$i]}
-                done
-            fi
-        done
+          SERVICES=( env.SERVICES )
+          NUMBER_OF_RETAINED=10
+          
+          # Loop through the services
+          for SERVICE in "${SERVICES[@]}"; do
+          
+              echo "------ Checking $SERVICE ------"
+              TEMP=($(gcloud container images list-tags eu.gcr.io/platform-infrastructure-316112/platform/$SERVICE --sort-by=TIMESTAMP --format="get(tags)"))
+          
+              # Check for the length of the array
+              if [ ${#TEMP[@]} -ge $((NUMBER_OF_RETAINED+1)) ]  
+              then
+                  # Set the stop index
+                  STOP="$(( ${#TEMP[@]} - $((NUMBER_OF_RETAINED+1))))"
+                  echo "------ Deleting $(($STOP+1)) images from $SERVICE ------"
+                  # Delete the old ones
+                  for i in $(seq 0 $STOP); do
+                      gcloud container images delete -q --force-delete-tags eu.gcr.io/platform-infrastructure-316112/platform/$SERVICE:${TEMP[$i]}
+                  done
+              fi
+          done
