@@ -5,27 +5,28 @@ import (
 	"net/http"
 )
 
+// Function to check the readiness
 type checkFunction func() error
-type ClientHealthChecker struct{}
 
-var portForProbes string
-var checkFunc checkFunction
+type ClientHealthChecker struct {
+	portForProbes string
+	checkFunc     checkFunction
+}
 
-// Will initilize new healthchecks
+// NewClientHealthChecker fucntion will return new struct with
 func NewClientHealthChecker(port string, f checkFunction) *ClientHealthChecker {
-	portForProbes = port
-	checkFunc = f
-	return &ClientHealthChecker{}
+	return &ClientHealthChecker{
+		portForProbes: port,
+		checkFunc:     f,
+	}
 }
 
 // StartProbes will initilize http endpoints for liviness (/live) and readiness (/ready) checks
 func (s *ClientHealthChecker) StartProbes() {
 	http.HandleFunc("/live", live)
-	http.HandleFunc("/ready", ready)
+	http.HandleFunc("/ready", s.ready)
 	// Port close to other services
-	fmt.Println("0.0.0.0:" + portForProbes)
-	go http.ListenAndServe("0.0.0.0:"+portForProbes, nil)
-	//fmt.Println(id)
+	go http.ListenAndServe("0.0.0.0:"+s.portForProbes, nil)
 }
 
 // live function is testing liviness state of the microservice
@@ -35,9 +36,9 @@ func live(w http.ResponseWriter, req *http.Request) {
 }
 
 // ready function is testing readiness state of the microservice
-// uses checkFunction provided in NewClientHealthChecker -> if no error thrown, microservice is ready
-func ready(w http.ResponseWriter, req *http.Request) {
-	result := checkFunc()
+// uses checkFunction provided in ClientHealthChecker -> if no error thrown, microservice is ready
+func (s *ClientHealthChecker) ready(w http.ResponseWriter, req *http.Request) {
+	result := s.checkFunc()
 	if result != nil {
 		fmt.Fprintf(w, "200 OK \n")
 		return
