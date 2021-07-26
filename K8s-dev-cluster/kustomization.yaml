@@ -15,14 +15,14 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
 - name: eu.gcr.io/platform-infrastructure-316112/platform/builder
-  newTag: ce9b92b0e0014def85444f31ec35b5d71bd6a2e0
+  newTag: 6fa19ee7b85f1c12e3cb0dd1fddb23bec80cfb79
 - name: eu.gcr.io/platform-infrastructure-316112/platform/context-box
-  newTag: ce9b92b0e0014def85444f31ec35b5d71bd6a2e0
+  newTag: 6fa19ee7b85f1c12e3cb0dd1fddb23bec80cfb79
 - name: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven
-  newTag: ce9b92b0e0014def85444f31ec35b5d71bd6a2e0
+  newTag: 6fa19ee7b85f1c12e3cb0dd1fddb23bec80cfb79
 - name: eu.gcr.io/platform-infrastructure-316112/platform/scheduler
-  newTag: ce9b92b0e0014def85444f31ec35b5d71bd6a2e0
+  newTag: 6fa19ee7b85f1c12e3cb0dd1fddb23bec80cfb79
 - name: eu.gcr.io/platform-infrastructure-316112/platform/terraformer
-  newTag: ce9b92b0e0014def85444f31ec35b5d71bd6a2e0
+  newTag: 6fa19ee7b85f1c12e3cb0dd1fddb23bec80cfb79
 - name: eu.gcr.io/platform-infrastructure-316112/platform/wireguardian
-  newTag: ce9b92b0e0014def85444f31ec35b5d71bd6a2e0
+  newTag: 6fa19ee7b85f1c12e3cb0dd1fddb23bec80cfb79
