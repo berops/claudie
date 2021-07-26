@@ -15,8 +15,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        with:
-          fetch-depth: 2
 
       # Create an array with modules that were changed by a recent commit via bash script
       - name: Check the files for a change
