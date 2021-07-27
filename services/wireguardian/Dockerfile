@@ -24,12 +24,20 @@ RUN GRPC_HEALTH_PROBE_VERSION=v0.4.4 && \
     wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 && \
     chmod +x /bin/grpc_health_probe
 
+#Change workdir to modified health probe directory
+WORKDIR ./../../../grpc-health-probe-Liveness
+
+#Compile modified health probe
+RUN CGO_ENABLED=0 go build -o /bin/grpc_health_probe-Liveness
+RUN chmod +x /bin/grpc_health_probe-Liveness
+
 #Use empty base image
 FROM scratch
 
 #Copy the binaries to empty base image
 COPY --from=build /out /out
 COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
+COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Liveness
 
 #Run server
 ENTRYPOINT [ "/out" ]
