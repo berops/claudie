@@ -196,6 +196,7 @@ func createDesiredState(config *pb.Config) *pb.Config {
 	}
 }
 
+// processConfig is function used to carry out task specific to Scheduler concurrently
 func processConfig(config *pb.Config, c pb.ContextBoxServiceClient) {
 	config = createDesiredState(config)
 	fmt.Println(config.GetDesiredState())

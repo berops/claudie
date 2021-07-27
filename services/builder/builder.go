@@ -66,6 +66,7 @@ func callKubeEleven(config *pb.Config) *pb.Config {
 	return res.GetConfig()
 }
 
+// processConfig is function used to carry out task specific to Builder concurrently
 func processConfig(config *pb.Config, c pb.ContextBoxServiceClient) {
 	log.Println("I got config: ", config.GetName())
 	config = callTerraformer(config)
