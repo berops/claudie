@@ -58,3 +58,13 @@ spec:
             configMapKeyRef:
               name: urls
               key: KUBE_ELEVEN_HOSTNAME
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 50051
+          initialDelaySeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /live
+            port: 50051
+          initialDelaySeconds: 10

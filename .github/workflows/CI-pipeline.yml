@@ -39,7 +39,7 @@ jobs:
         # Login to GCP with repository secrets 
       - name: Login to GCP
         if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
-        uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+        uses: google-github-actions/setup-gcloud@master
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
           service_account_email: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}

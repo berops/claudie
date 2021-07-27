@@ -11,9 +11,11 @@ import (
 	"os/signal"
 	"text/template"
 
+	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
 type server struct{}
@@ -118,6 +120,10 @@ func main() {
 	// creating a new server
 	s := grpc.NewServer()
 	pb.RegisterWireguardianServiceServer(s, &server{})
+
+	// Add health service to gRPC
+	healthService := healthcheck.NewServerHealthChecker("50053", "WIREGUARDIAN_PORT")
+	grpc_health_v1.RegisterHealthServer(s, healthService)
 
 	go func() {
 		if err := s.Serve(lis); err != nil {
