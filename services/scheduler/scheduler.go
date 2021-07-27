@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
 	cbox "github.com/Berops/platform/services/context-box/client"
 	"github.com/Berops/platform/urls"
@@ -99,6 +100,10 @@ func MakeSSHKeyPair() (string, string) {
 }
 
 func createDesiredState(config *pb.Config) *pb.Config {
+	if config == nil {
+		fmt.Println("Got nil, expected Config... \nReturning nil")
+		return nil
+	}
 	//Create yaml manifest
 	d := []byte(config.GetManifest())
 	err := ioutil.WriteFile("manifest.yaml", d, 0644)
@@ -191,6 +196,15 @@ func createDesiredState(config *pb.Config) *pb.Config {
 	}
 }
 
+// healthCheck function is function used for querring readiness of the pod running this microservice
+func healthCheck() error {
+	res := createDesiredState(nil)
+	if res != nil {
+		return fmt.Errorf("health check function got unexpected result")
+	}
+	return nil
+}
+
 func main() {
 	//Create connection to Context-box
 	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
@@ -205,6 +219,10 @@ func main() {
 
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, os.Interrupt)
+
+	// Initilize health probes
+	healthChecker := healthcheck.NewClientHealthChecker("50056", healthCheck)
+	healthChecker.StartProbes()
 
 	go func() {
 		// Infinite FOR loop gets config from the context box queue

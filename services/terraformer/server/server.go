@@ -8,8 +8,10 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
 type server struct{}
@@ -55,6 +57,10 @@ func main() {
 
 	s := grpc.NewServer()
 	pb.RegisterTerraformerServiceServer(s, &server{})
+
+	// Add health service to gRPC
+	healthService := healthcheck.NewServerHealthChecker("50052", "TERRAFORMER_PORT")
+	grpc_health_v1.RegisterHealthServer(s, healthService)
 
 	go func() {
 		if err := s.Serve(lis); err != nil {

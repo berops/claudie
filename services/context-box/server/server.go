@@ -12,6 +12,7 @@ import (
 
 	terraformer "github.com/Berops/platform/services/terraformer/client"
 
+	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/urls"
 	"go.mongodb.org/mongo-driver/bson"
@@ -20,6 +21,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
@@ -416,6 +418,10 @@ func main() {
 
 	s := grpc.NewServer()
 	pb.RegisterContextBoxServiceServer(s, &server{})
+
+	// Add health service to gRPC
+	healthService := healthcheck.NewServerHealthChecker("50055", "CONTEXT_BOX_PORT")
+	grpc_health_v1.RegisterHealthServer(s, healthService)
 
 	go func() {
 		if err := s.Serve(lis); err != nil {
