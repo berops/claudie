@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	kubeEleven "github.com/Berops/platform/services/kube-eleven/client"
 	"log"
 	"os"
 	"os/signal"
 	"time"
+
+	kubeEleven "github.com/Berops/platform/services/kube-eleven/client"
 
 	cbox "github.com/Berops/platform/services/context-box/client"
 	terraformer "github.com/Berops/platform/services/terraformer/client"
@@ -64,6 +65,19 @@ func callKubeEleven(config *pb.Config) *pb.Config {
 	return res.GetConfig()
 }
 
+func processConfig(config *pb.Config, c pb.ContextBoxServiceClient) {
+	log.Println("I got config: ", config.GetName())
+	config = callTerraformer(config)
+	config = callWireguardian(config)
+	config = callKubeEleven(config)
+	config.CurrentState = config.DesiredState // Update currentState
+
+	err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
+	if err != nil {
+		log.Fatalln("Error while saving the config", err)
+	}
+}
+
 func main() {
 	// If go code crash, we will get the file name and line number
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -85,15 +99,7 @@ func main() {
 			}
 			if res.GetConfig() != nil {
 				config := res.GetConfig()
-				log.Println("I got config: ", config.GetName())
-				config = callTerraformer(config)
-				config = callWireguardian(config)
-				config = callKubeEleven(config)
-				config.CurrentState = config.DesiredState // Update currentState
-				err = cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
-				if err != nil {
-					log.Fatalln("Error while saving the config", err)
-				}
+				go processConfig(config, c)
 			}
 			time.Sleep(5 * time.Second)
 		}
