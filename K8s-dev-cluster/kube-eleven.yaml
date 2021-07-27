@@ -28,11 +28,11 @@ spec:
         - containerPort: 50054
         readinessProbe:
           exec:
-            command: ["bin/grpc_health_probe", "-addr=:50054"]
+            command: ["/bin/grpc_health_probe", "-addr=:50054"]
           initialDelaySeconds: 5
         livenessProbe:
           exec:
-            command: ["bin/grpc_health_probe", "-addr=:50054"]
+            command: ["/bin/grpc_health_probe", "-addr=:50054"]
           initialDelaySeconds: 10
 ---
 kind: Service

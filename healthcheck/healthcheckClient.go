@@ -13,7 +13,7 @@ type ClientHealthChecker struct {
 	checkFunc     checkFunction
 }
 
-// NewClientHealthChecker fucntion will return new struct with
+// NewClientHealthChecker fucntion will return new struct with specified port and checkFunction
 func NewClientHealthChecker(port string, f checkFunction) *ClientHealthChecker {
 	return &ClientHealthChecker{
 		portForProbes: port,
