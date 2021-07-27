@@ -121,8 +121,8 @@ func main() {
 			if err != nil {
 				log.Fatalln("Error while getting config from the Builder", err)
 			}
-			if res.GetConfig() != nil {
-				config := res.GetConfig()
+			config := res.GetConfig()
+			if config != nil {
 				go processConfig(config, c)
 			}
 			time.Sleep(5 * time.Second)
