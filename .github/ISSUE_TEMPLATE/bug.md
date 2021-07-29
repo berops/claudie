@@ -20,13 +20,6 @@ Example: steps to reproduce the behavior:
 4. See error...
 -->
 
-### Environment:
-<!--
-Example:
-- OS: 
-- GO: 1.16
--->
-
 ### Anything else to note:
 <!--
 Similiar bugs found online? Links? Possible solution?
