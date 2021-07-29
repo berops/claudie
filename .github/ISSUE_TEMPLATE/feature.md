@@ -17,9 +17,9 @@ Note: Please search to see if an issue already exists for the bug you encountere
 <!-- A concise description of what you expected to happen. -->
 
 ### Exit criteria:
--[] Task...
+- [ ] Task...
 <!--
 Example:
--[] Implement the feature
--[] Add feature to the platform
+- [ ] Implement the feature
+- [ ] Add feature to the platform
 -->
