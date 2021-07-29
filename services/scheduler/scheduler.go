@@ -122,7 +122,7 @@ func createDesiredState(config *pb.Config) *pb.Config {
 	}
 
 	var clusters []*pb.Cluster
-	for i, cluster := range desiredState.Clusters {
+	for _, cluster := range desiredState.Clusters {
 		var nodePools []*pb.NodePool
 		for _, nodePool := range cluster.NodePools {
 			nodePools = append(nodePools, &pb.NodePool{
@@ -153,19 +153,6 @@ func createDesiredState(config *pb.Config) *pb.Config {
 			})
 		}
 
-		// Check if a cluster has already a RSA key pair, if no generate one
-		if len(config.GetCurrentState().Clusters) > i {
-			if config.GetCurrentState().Clusters[i] == nil {
-				privateKey, publicKey := MakeSSHKeyPair()
-				cluster.PrivateKey = privateKey
-				cluster.PublicKey = publicKey
-			}
-		} else {
-			privateKey, publicKey := MakeSSHKeyPair()
-			cluster.PrivateKey = privateKey
-			cluster.PublicKey = publicKey
-		}
-
 		clusters = append(clusters, &pb.Cluster{
 			Name:       cluster.Name,
 			Kubernetes: cluster.Kubernetes,
@@ -176,7 +163,7 @@ func createDesiredState(config *pb.Config) *pb.Config {
 		})
 	}
 
-	return &pb.Config{
+	res := &pb.Config{
 		Id:       config.GetId(),
 		Name:     config.GetName(),
 		Manifest: config.GetManifest(),
@@ -189,6 +176,19 @@ func createDesiredState(config *pb.Config) *pb.Config {
 		DsChecksum:   config.GetDsChecksum(),
 		CsChecksum:   config.GetCsChecksum(),
 	}
+
+	for i, cluster := range res.CurrentState.Clusters {
+		if cluster.PublicKey == "" {
+			privateKey, publicKey := MakeSSHKeyPair()
+			res.DesiredState.Clusters[i].PrivateKey = privateKey
+			res.DesiredState.Clusters[i].PublicKey = publicKey
+		} else {
+			res.DesiredState.Clusters[i].PrivateKey = config.CurrentState.Clusters[i].PrivateKey
+			res.DesiredState.Clusters[i].PublicKey = config.CurrentState.Clusters[i].PublicKey
+		}
+	}
+
+	return res
 }
 
 func main() {
