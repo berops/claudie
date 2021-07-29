@@ -191,14 +191,14 @@ func main() {
 			if res.GetConfig() != nil {
 				var tmpConfig *pb.Config
 				config := res.GetConfig()
-				log.Println("I got config: ", config.GetName())
+				log.Println("I got config: ", config.GetCurrentState())
 				if len(config.CurrentState.GetClusters()) > 0 {
 					tmpConfig = diff(config)
 				}
 				if tmpConfig != nil {
 					flow(tmpConfig)
 				}
-				flow(config)
+				config = flow(config)
 				log.Println("SAVING DESIRED STATE AS CURRENT STATE")
 				config.CurrentState = config.DesiredState // Update currentState
 				err = cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
