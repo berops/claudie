@@ -116,15 +116,43 @@ func main() {
 	healthChecker := healthcheck.NewClientHealthChecker("50051", healthCheck)
 	healthChecker.StartProbes()
 
+	// Create limit on max goroutines
+	maxGoroutines := 10
+	// Dummy channel
+	concurrentGoroutines := make(chan struct{}, maxGoroutines)
+	// Fill up the dummy channel so N goroutines can start immediately
+	for i := 0; i < maxGoroutines; i++ {
+		concurrentGoroutines <- struct{}{}
+	}
+	// Channel to determine when goroutine is done
+	done := make(chan bool)
+
+	go func() {
+		for {
+			// if we receive bool from done channel, we add empty struct to say, that new goroutine can start
+			<-done
+			concurrentGoroutines <- struct{}{}
+			fmt.Println("Send to channel concurrentGoroutines")
+		}
+	}()
+
 	go func() {
 		for {
 			res, err := cbox.GetConfigBuilder(c) // Get a new config
 			if err != nil {
 				log.Fatalln("Error while getting config from the Builder", err)
 			}
+			// if we recieve something from the channel, we are ready to start a goroutine
+
 			config := res.GetConfig()
 			if config != nil {
-				go processConfig(config, c)
+				<-concurrentGoroutines
+				fmt.Println("Recieved signal to start")
+				go func() {
+					processConfig(config, c)
+					done <- true
+					fmt.Println("Done", config.GetName())
+				}()
 			}
 			time.Sleep(5 * time.Second)
 		}
