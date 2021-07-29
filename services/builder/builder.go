@@ -118,34 +118,34 @@ func main() {
 
 	// Create limit on max goroutines
 	maxGoroutines := 10
-	// Dummy channel
-	concurrentGoroutines := make(chan struct{}, maxGoroutines)
+	concurrentGoroutines := make(chan struct{}, maxGoroutines) // Dummy channel to act like a semaphore
+	done := make(chan bool)                                    // Channel to determine when goroutine is done
+
 	// Fill up the dummy channel so N goroutines can start immediately
 	for i := 0; i < maxGoroutines; i++ {
 		concurrentGoroutines <- struct{}{}
 	}
-	// Channel to determine when goroutine is done
-	done := make(chan bool)
 
+	// Monitor done channel
+	// if we receive a bool, we add empty struct to signal, that new goroutine can start
 	go func() {
 		for {
-			// if we receive bool from done channel, we add empty struct to say, that new goroutine can start
-			<-done
-			concurrentGoroutines <- struct{}{}
-			fmt.Println("Send to channel concurrentGoroutines")
+			<-done                             // block function until done has recieved bool
+			concurrentGoroutines <- struct{}{} // signal that new goroutine can start
 		}
 	}()
 
+	// Main loop for getting and processing configs
 	go func() {
 		for {
 			res, err := cbox.GetConfigBuilder(c) // Get a new config
 			if err != nil {
 				log.Fatalln("Error while getting config from the Builder", err)
 			}
-			// if we recieve something from the channel, we are ready to start a goroutine
 
 			config := res.GetConfig()
 			if config != nil {
+				// if we recieve a message from the channel, the goroutine can start, block otherwise
 				<-concurrentGoroutines
 				fmt.Println("Recieved signal to start")
 				go func() {
