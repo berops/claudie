@@ -1,6 +1,6 @@
 ---
 name: Feature
-about: Add a feature for grooming
+about: Create a feature request
 title: 'Feature: <title>'
 assignees: ''
 ---
