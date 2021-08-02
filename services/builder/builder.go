@@ -66,6 +66,20 @@ func callKubeEleven(config *pb.Config) *pb.Config {
 	return res.GetConfig()
 }
 
+// processConfig is function used to carry out task specific to Builder concurrently
+func processConfig(config *pb.Config, c pb.ContextBoxServiceClient) {
+	log.Println("I got config: ", config.GetName())
+	config = callTerraformer(config)
+	config = callWireguardian(config)
+	config = callKubeEleven(config)
+	config.CurrentState = config.DesiredState // Update currentState
+
+	err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
+	if err != nil {
+		log.Fatalln("Error while saving the config", err)
+	}
+}
+
 // healthCheck function is function used for querring readiness of the pod running this microservice
 func healthCheck() error {
 	//Check if Builder can connect to Terraformer/Wireguardian/Kube-eleven
@@ -102,23 +116,17 @@ func main() {
 	healthChecker := healthcheck.NewClientHealthChecker("50051", healthCheck)
 	healthChecker.StartProbes()
 
+	// Main loop for getting and processing configs
 	go func() {
 		for {
 			res, err := cbox.GetConfigBuilder(c) // Get a new config
 			if err != nil {
 				log.Fatalln("Error while getting config from the Builder", err)
 			}
-			if res.GetConfig() != nil {
-				config := res.GetConfig()
-				log.Println("I got config: ", config.GetName())
-				config = callTerraformer(config)
-				config = callWireguardian(config)
-				config = callKubeEleven(config)
-				config.CurrentState = config.DesiredState // Update currentState
-				err = cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
-				if err != nil {
-					log.Fatalln("Error while saving the config", err)
-				}
+
+			config := res.GetConfig()
+			if config != nil {
+				go processConfig(config, c)
 			}
 			time.Sleep(5 * time.Second)
 		}

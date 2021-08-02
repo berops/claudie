@@ -63,6 +63,7 @@ func main() {
 	grpc_health_v1.RegisterHealthServer(s, healthService)
 
 	go func() {
+		// s.Serve() will create a service goroutine for each connection
 		if err := s.Serve(lis); err != nil {
 			log.Fatalf("Failed to serve: %v", err)
 		}

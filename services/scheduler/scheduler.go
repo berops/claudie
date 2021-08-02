@@ -196,6 +196,16 @@ func createDesiredState(config *pb.Config) *pb.Config {
 	}
 }
 
+// processConfig is function used to carry out task specific to Scheduler concurrently
+func processConfig(config *pb.Config, c pb.ContextBoxServiceClient) {
+	config = createDesiredState(config)
+	fmt.Println(config.GetDesiredState())
+	err := cbox.SaveConfigScheduler(c, &pb.SaveConfigRequest{Config: config})
+	if err != nil {
+		log.Fatalln("Error while saving the config", err)
+	}
+}
+
 // healthCheck function is function used for querring readiness of the pod running this microservice
 func healthCheck() error {
 	res := createDesiredState(nil)
@@ -231,14 +241,9 @@ func main() {
 			if err != nil {
 				log.Fatalln("Error while getting config from the Scheduler", err)
 			}
-			if res.GetConfig() != nil {
-				config := res.GetConfig()
-				config = createDesiredState(config)
-				fmt.Println(config.GetDesiredState())
-				err = cbox.SaveConfigScheduler(c, &pb.SaveConfigRequest{Config: config})
-				if err != nil {
-					log.Fatalln("Error while saving the config", err)
-				}
+			config := res.GetConfig()
+			if config != nil {
+				go processConfig(config, c)
 			}
 			time.Sleep(10 * time.Second)
 		}
