@@ -11,6 +11,8 @@ message Config {
   bytes msChecksum = 6;
   bytes dsChecksum = 7;
   bytes csChecksum = 8;
+  int32 builderTTL = 9;
+  int32 schedulerTTL = 10; 
 }
 
 message Project {
