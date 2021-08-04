@@ -85,13 +85,13 @@ func dataToConfigPb(data *configItem) (*pb.Config, error) {
 	var desiredState *pb.Project = new(pb.Project)
 	err := proto.Unmarshal(data.DesiredState, desiredState)
 	if err != nil {
-		return nil, fmt.Errorf("error while Unmarshal desiredState", err)
+		return nil, fmt.Errorf("error while Unmarshal desiredState: %v", err)
 	}
 
 	var currentState *pb.Project = new(pb.Project)
 	err = proto.Unmarshal(data.CurrentState, currentState)
 	if err != nil {
-		return nil, fmt.Errorf("error while Unmarshal currentState", err)
+		return nil, fmt.Errorf("error while Unmarshal currentState: %v", err)
 	}
 
 	return &pb.Config{
@@ -111,12 +111,12 @@ func saveToDB(config *pb.Config) (*pb.Config, error) {
 	//Convert desiredState and currentState to byte[] because we want to save them to the database
 	desiredStateByte, errDS := proto.Marshal(config.DesiredState)
 	if errDS != nil {
-		return nil, fmt.Errorf("error while converting from protobuf to byte", errDS)
+		return nil, fmt.Errorf("error while converting from protobuf to byte: %v", errDS)
 	}
 
 	currentStateByte, errCS := proto.Marshal(config.CurrentState)
 	if errCS != nil {
-		return nil, fmt.Errorf("error while converting from protobuf to byte", errCS)
+		return nil, fmt.Errorf("error while converting from protobuf to byte: %v", errCS)
 	}
 
 	//Parse data and map it to configItem struct
@@ -186,7 +186,7 @@ func getFromDB(id string) (configItem, error) {
 
 	filter := bson.M{"_id": oid}
 	if err := collection.FindOne(context.Background(), filter).Decode(&data); err != nil {
-		return data, fmt.Errorf("error while finding ID in the DB", err)
+		return data, fmt.Errorf("error while finding ID in the DB: %v", err)
 	}
 	return data, nil
 }
