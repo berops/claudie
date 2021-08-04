@@ -521,11 +521,6 @@ func main() {
 	healthService := healthcheck.NewServerHealthChecker("50055", "CONTEXT_BOX_PORT")
 	grpc_health_v1.RegisterHealthServer(s, healthService)
 
-	defer func() {
-		s.Stop()
-		lis.Close()
-	}()
-
 	g, ctx := errgroup.WithContext(context.Background())
 	w := worker.NewWorker(10*time.Second, ctx, configChecker, worker.ErrorLogger)
 
@@ -533,8 +528,11 @@ func main() {
 		g.Go(func() error {
 			ch := make(chan os.Signal, 1)
 			signal.Notify(ch, os.Interrupt)
-			defer signal.Stop(ch)
 			<-ch
+
+			signal.Stop(ch)
+			s.GracefulStop()
+
 			return errors.New("interrupt signal")
 		})
 	}
