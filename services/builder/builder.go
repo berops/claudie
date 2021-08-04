@@ -1,14 +1,17 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/Berops/platform/healthcheck"
 	kubeEleven "github.com/Berops/platform/services/kube-eleven/client"
+	"golang.org/x/sync/errgroup"
 
 	cbox "github.com/Berops/platform/services/context-box/client"
 	terraformer "github.com/Berops/platform/services/terraformer/client"
@@ -134,26 +137,37 @@ func main() {
 	healthChecker.StartProbes()
 
 	// Main loop for getting and processing configs
-	go func() {
-		for {
-			res, err := cbox.GetConfigBuilder(c) // Get a new config
-			if err != nil {
-				log.Println("Error while getting config from the Builder", err)
-				continue
+
+	ctx, cancel := context.WithCancel(context.Background())
+	g, ctx := errgroup.WithContext(ctx)
+	{
+		g.Go(func() error {
+			ch := make(chan os.Signal, 1)
+			signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
+			defer signal.Stop(ch)
+			<-ch
+			cancel()
+			return nil
+		})
+	}
+	{
+		g.Go(func() error {
+			for {
+				res, err := cbox.GetConfigBuilder(c) // Get a new config
+				if err != nil {
+					log.Println("Error while getting config from the Builder", err)
+					continue
+				}
+
+				config := res.GetConfig()
+				if config != nil {
+					go processConfig(config, c)
+				}
+
+				time.Sleep(5 * time.Second)
 			}
+		})
+	}
 
-			config := res.GetConfig()
-			if config != nil {
-				go processConfig(config, c)
-			}
-
-			time.Sleep(5 * time.Second)
-		}
-	}()
-
-	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, os.Interrupt)
-
-	<-ch
 	log.Println("Stopping Builder")
 }
