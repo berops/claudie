@@ -199,7 +199,7 @@ func configCheck() error {
 	if err != nil {
 		return err
 	}
-
+	// loop through config
 	for _, config := range configs {
 		// check if item is already in some queue
 		if queueBuilder.contains(config) || queueScheduler.contains(config) {
@@ -210,11 +210,11 @@ func configCheck() error {
 		// check for Scheduler
 		if config.SchedulerTTL <= 0 {
 			config.SchedulerTTL = defaultSchedulerTTL
+			saveToDB(dataToConfigPb(config))
 			if string(config.DsChecksum) != string(config.MsChecksum) {
 				queueScheduler.configs = append(queueScheduler.configs, config)
+				continue
 			}
-			saveToDB(dataToConfigPb(config))
-			continue
 		} else {
 			config.SchedulerTTL = config.SchedulerTTL - 1
 		}
@@ -222,18 +222,17 @@ func configCheck() error {
 		// check for Builder
 		if config.BuilderTTL <= 0 {
 			config.BuilderTTL = defaultBuilderTTL
+			saveToDB(dataToConfigPb(config))
 			if string(config.DsChecksum) != string(config.CsChecksum) {
 				queueBuilder.configs = append(queueBuilder.configs, config)
+				continue
 			}
-			saveToDB(dataToConfigPb(config))
-			continue
 		} else {
 			config.BuilderTTL = config.BuilderTTL - 1
 		}
 		// save data if both TTL were substracted
 		saveToDB(dataToConfigPb(config))
 	}
-
 	return nil
 }
 
