@@ -172,5 +172,5 @@ func main() {
 		})
 	}
 
-	log.Println("Stopping Builder")
+	log.Println("Stopping Builder: ", g.Wait())
 }

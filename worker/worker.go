@@ -32,6 +32,7 @@ func (w *Worker) Run() {
 			}
 		case <-w.ctx.Done():
 			w.tick.Stop()
+			return
 		}
 	}
 }
