@@ -34,12 +34,12 @@ func createKeyFile(key string, keyType string) {
 }
 
 // buildInfrastructure is generating terraform files for different providers and calling terraform
-func buildInfrastructure(desiredState *pb.Project) error {
+func buildInfrastructure(config *pb.Config) error {
+	desiredState := config.DesiredState
 	fmt.Println("Generating templates")
 	var backendData Backend
 	backendData.ProjectName = desiredState.GetName()
 	for _, cluster := range desiredState.Clusters {
-
 		providers := getProviders(cluster)
 		log.Println("Cluster name:", cluster.GetName())
 		backendData.ClusterName = cluster.GetName()
@@ -53,8 +53,16 @@ func buildInfrastructure(desiredState *pb.Project) error {
 		// Call terraform init and apply
 		initTerraform(outputPath)
 		applyTerraform(outputPath)
+
 		// Fill public ip addresses
-		m := make(map[string]*pb.Ip)
+		var m map[string]*pb.Ip
+		tmpCluster := getClusterByName(cluster.Name, config.CurrentState.Clusters)
+
+		if tmpCluster == nil {
+			m = make(map[string]*pb.Ip)
+		} else {
+			m = tmpCluster.Ips
+		}
 		for _, provider := range providers {
 			output, err := outputTerraform(outputPath, provider)
 			if err != nil {
@@ -71,6 +79,23 @@ func buildInfrastructure(desiredState *pb.Project) error {
 	}
 	for _, m := range desiredState.Clusters {
 		log.Println(m.Ips)
+	}
+
+	return nil
+}
+
+func getClusterByName(name string, clusters []*pb.Cluster) *pb.Cluster {
+	if name == "" {
+		return nil
+	}
+	if len(clusters) == 0 {
+		return nil
+	}
+
+	for _, cluster := range clusters {
+		if cluster.Name == name {
+			return cluster
+		}
 	}
 
 	return nil
@@ -217,15 +242,30 @@ func readOutput(data string) map[string]map[string]string {
 // fillNodes gets ip addresses from a terraform output
 func fillNodes(m map[string]*pb.Ip, terraformOutput map[string]map[string]string) {
 	for key, element := range terraformOutput["control"] {
-		log.Println("Key:", key, "=>", "Element:", element)
+		_, ok := m[key]
+		var private = ""
+		// If node exist, assign previous private IP
+		if ok {
+			private = m[key].Private
+		}
 		m[key] = &pb.Ip{
 			Public:    element,
-			IsControl: true,
+			Private:   private,
+			IsControl: 1,
 		}
 	}
 	for key, element := range terraformOutput["compute"] {
-		log.Println("Key:", key, "=>", "Element:", element)
-		m[key] = &pb.Ip{Public: element}
+		_, ok := m[key]
+		var private = ""
+		// If node exist, assign previous private IP
+		if ok {
+			private = m[key].Private
+		}
+		m[key] = &pb.Ip{
+			Public:    element,
+			Private:   private,
+			IsControl: 0,
+		}
 	}
 }
 

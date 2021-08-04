@@ -9,6 +9,8 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"strconv"
+	"strings"
 	"text/template"
 
 	"github.com/Berops/platform/proto/pb"
@@ -37,6 +39,15 @@ func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVP
 // genPrivAdd will generate private ip addresses from network parameter
 func genPrivAdd(addresses map[string]*pb.Ip, network string) {
 	_, ipNet, err := net.ParseCIDR(network)
+	var addressesToAssign []*pb.Ip
+
+	// initilize slice of possible last octet
+	lastOctets := make([]byte, 255)
+	var i byte
+	for i = 0; i < 255; i++ {
+		lastOctets[i] = i + 1
+	}
+
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -44,9 +55,32 @@ func genPrivAdd(addresses map[string]*pb.Ip, network string) {
 	ip = ip.To4()
 
 	for _, address := range addresses {
-		ip[3]++ // check for rollover
-		address.Private = ip.String()
+		// If address already assigned, skip
+		if address.Private != "" {
+			lastOctet := strings.Split(address.Private, ".")[3]
+			lastOctetInt, _ := strconv.Atoi(lastOctet)
+			lastOctets = remove(lastOctets, byte(lastOctetInt))
+			continue
+		}
+		addressesToAssign = append(addressesToAssign, address)
 	}
+
+	var temp int = 0
+	for _, address := range addressesToAssign {
+		ip[3] = lastOctets[temp]
+		address.Private = ip.String()
+		temp++
+	}
+}
+
+func remove(slice []byte, value byte) []byte {
+	var pos int
+	for pos = 0; pos < len(slice); pos++ {
+		if slice[pos] == value {
+			break
+		}
+	}
+	return append(slice[:pos], slice[pos+1:]...)
 }
 
 // genInv will generate ansible inventory file slice of clusters input
