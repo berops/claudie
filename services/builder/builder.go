@@ -2,15 +2,16 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/Berops/platform/healthcheck"
 	kubeEleven "github.com/Berops/platform/services/kube-eleven/client"
+	"github.com/Berops/platform/worker"
 	"golang.org/x/sync/errgroup"
 
 	cbox "github.com/Berops/platform/services/context-box/client"
@@ -100,6 +101,22 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient) (err error) 
 	return nil
 }
 
+func configProcessor(c pb.ContextBoxServiceClient) func() error {
+	return func() error {
+		res, err := cbox.GetConfigBuilder(c) // Get a new config
+		if err != nil {
+			return fmt.Errorf("Error while getting config from the Builder: %v", err)
+		}
+
+		config := res.GetConfig()
+		if config != nil {
+			go processConfig(config, c)
+		}
+
+		return nil
+	}
+}
+
 // healthCheck function is function used for querring readiness of the pod running this microservice
 func healthCheck() error {
 	//Check if Builder can connect to Terraformer/Wireguardian/Kube-eleven
@@ -136,36 +153,22 @@ func main() {
 	healthChecker := healthcheck.NewClientHealthChecker("50051", healthCheck)
 	healthChecker.StartProbes()
 
-	// Main loop for getting and processing configs
+	g, ctx := errgroup.WithContext(context.Background())
+	w := worker.NewWorker(5*time.Second, ctx, configProcessor(c), worker.ErrorLogger)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	g, ctx := errgroup.WithContext(ctx)
 	{
 		g.Go(func() error {
 			ch := make(chan os.Signal, 1)
-			signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
+			signal.Notify(ch, os.Interrupt)
 			defer signal.Stop(ch)
 			<-ch
-			cancel()
-			return nil
+			return errors.New("interrupt signal")
 		})
 	}
 	{
 		g.Go(func() error {
-			for {
-				res, err := cbox.GetConfigBuilder(c) // Get a new config
-				if err != nil {
-					log.Println("Error while getting config from the Builder", err)
-					continue
-				}
-
-				config := res.GetConfig()
-				if config != nil {
-					go processConfig(config, c)
-				}
-
-				time.Sleep(5 * time.Second)
-			}
+			w.Run()
+			return nil
 		})
 	}
 
