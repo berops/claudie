@@ -105,7 +105,7 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 	return func() error {
 		res, err := cbox.GetConfigBuilder(c) // Get a new config
 		if err != nil {
-			return fmt.Errorf("Error while getting config from the Builder: %v", err)
+			return fmt.Errorf("error while getting config from the Builder: %v", err)
 		}
 
 		config := res.GetConfig()
