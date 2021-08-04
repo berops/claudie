@@ -51,9 +51,14 @@ message Provider {
   string name = 1;
   string credentials = 2;
 }
-
+/*
+ * isControl flag
+ * 0 - Only worker node
+ * 1 - Only master node
+ * 2 - ApiEndpoint master node (must be singleton)
+ */
 message Ip {
   string public = 1;
   string private = 2;
-  bool isControl = 3;
+  uint32 isControl = 3;
 }
