@@ -193,6 +193,8 @@ func createDesiredState(config *pb.Config) *pb.Config {
 		MsChecksum:   config.GetMsChecksum(),
 		DsChecksum:   config.GetDsChecksum(),
 		CsChecksum:   config.GetCsChecksum(),
+		BuilderTTL:   config.GetBuilderTTL(),
+		SchedulerTTL: config.GetSchedulerTTL(),
 	}
 }
 
