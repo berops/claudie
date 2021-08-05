@@ -2,6 +2,7 @@ package terraformer
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/Berops/platform/proto/pb"
@@ -10,8 +11,9 @@ import (
 func BuildInfrastructure(c pb.TerraformerServiceClient, req *pb.BuildInfrastructureRequest) (*pb.BuildInfrastructureResponse, error) {
 	res, err := c.BuildInfrastructure(context.Background(), req) //sending request to the server and receiving response
 	if err != nil {
-		log.Fatalln("error while calling BuildInfrastructure on Terraformer", err)
+		return nil, fmt.Errorf("error while calling BuildInfrastructure on Terraformer: %v", err)
 	}
+
 	log.Println("Infrastructure was successfully built")
 	return res, nil
 }
@@ -19,8 +21,9 @@ func BuildInfrastructure(c pb.TerraformerServiceClient, req *pb.BuildInfrastruct
 func DestroyInfrastructure(c pb.TerraformerServiceClient, req *pb.DestroyInfrastructureRequest) (*pb.DestroyInfrastructureResponse, error) {
 	res, err := c.DestroyInfrastructure(context.Background(), req)
 	if err != nil {
-		log.Fatalln(err)
+		return nil, fmt.Errorf("error while calling DestroyInfrastructure on Terraformer: %v", err)
 	}
-	log.Println("Infrastructure was successfully built destroyed")
+
+	log.Println("Infrastructure was successfully destroyed")
 	return res, nil
 }

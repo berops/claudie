@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -17,7 +19,9 @@ import (
 	"github.com/Berops/platform/proto/pb"
 	cbox "github.com/Berops/platform/services/context-box/client"
 	"github.com/Berops/platform/urls"
+	"github.com/Berops/platform/worker"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"gopkg.in/yaml.v3"
 )
@@ -99,31 +103,31 @@ func MakeSSHKeyPair() (string, string) {
 	return privKeyBuf.String(), pubKeyBuf.String()
 }
 
-func createDesiredState(config *pb.Config) *pb.Config {
+func createDesiredState(config *pb.Config) (*pb.Config, error) {
 	if config == nil {
-		fmt.Println("Got nil, expected Config... \nReturning nil")
-		return nil
+		log.Println("Got nil, expected Config... \nReturning nil")
+		return nil, nil
 	}
 	//Create yaml manifest
 	d := []byte(config.GetManifest())
 	err := ioutil.WriteFile("manifest.yaml", d, 0644)
 	if err != nil {
-		log.Fatalln("Error while creating manifest.yaml file", err)
+		return nil, fmt.Errorf("error while creating manifest.yaml file: %v", err)
 	}
 	//Parse yaml to protobuf and create desiredState
 	var desiredState Manifest
 	yamlFile, err := ioutil.ReadFile("manifest.yaml")
 	if err != nil {
-		log.Fatalln("error while reading maninfest.yaml file", err)
+		return nil, fmt.Errorf("error while reading maninfest.yaml file: %v", err)
 	}
 	err = yaml.Unmarshal(yamlFile, &desiredState)
 	if err != nil {
-		log.Fatalln("error while unmarshalling yaml file", err)
+		return nil, fmt.Errorf("error while unmarshalling yaml file: %v", err)
 	}
 	//Remove yaml manifest after loading
 	err = os.Remove("manifest.yaml")
 	if err != nil {
-		log.Fatalln("error while removing maninfest.yaml file", err)
+		return nil, fmt.Errorf("error while removing maninfest.yaml file: %v", err)
 	}
 
 	var clusters []*pb.Cluster
@@ -200,26 +204,48 @@ KeyChecking:
 		clusterDesired.PublicKey = publicKey
 	}
 
-	return res
+	return res, nil
 }
 
 // processConfig is function used to carry out task specific to Scheduler concurrently
-func processConfig(config *pb.Config, c pb.ContextBoxServiceClient) {
-	config = createDesiredState(config)
-	fmt.Println(config.GetDesiredState())
-	err := cbox.SaveConfigScheduler(c, &pb.SaveConfigRequest{Config: config})
+func processConfig(config *pb.Config, c pb.ContextBoxServiceClient) (err error) {
+	config, err = createDesiredState(config)
 	if err != nil {
-		log.Fatalln("Error while saving the config", err)
+		return
 	}
+
+	log.Println(config.GetDesiredState())
+	err = cbox.SaveConfigScheduler(c, &pb.SaveConfigRequest{Config: config})
+	if err != nil {
+		return fmt.Errorf("error while saving the config: %v", err)
+	}
+
+	return nil
 }
 
 // healthCheck function is function used for querring readiness of the pod running this microservice
 func healthCheck() error {
-	res := createDesiredState(nil)
-	if res != nil {
+	res, err := createDesiredState(nil)
+	if res != nil || err != nil {
 		return fmt.Errorf("health check function got unexpected result")
 	}
 	return nil
+}
+
+func configProcessor(c pb.ContextBoxServiceClient) func() error {
+	return func() error {
+		res, err := cbox.GetConfigScheduler(c)
+		if err != nil {
+			return fmt.Errorf("error while getting config from the Scheduler: %v", err)
+		}
+
+		config := res.GetConfig()
+		if config != nil {
+			go processConfig(config, c)
+		}
+
+		return nil
+	}
 }
 
 func main() {
@@ -234,27 +260,28 @@ func main() {
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
 
-	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, os.Interrupt)
-
 	// Initilize health probes
 	healthChecker := healthcheck.NewClientHealthChecker("50056", healthCheck)
 	healthChecker.StartProbes()
 
-	go func() {
-		// Infinite FOR loop gets config from the context box queue
-		for {
-			res, err := cbox.GetConfigScheduler(c)
-			if err != nil {
-				log.Fatalln("Error while getting config from the Scheduler", err)
-			}
-			config := res.GetConfig()
-			if config != nil {
-				go processConfig(config, c)
-			}
-			time.Sleep(10 * time.Second)
-		}
-	}()
-	<-ch
-	fmt.Println("Stopping Scheduler")
+	g, ctx := errgroup.WithContext(context.Background())
+	w := worker.NewWorker(10*time.Second, ctx, configProcessor(c), worker.ErrorLogger)
+
+	{
+		g.Go(func() error {
+			ch := make(chan os.Signal, 1)
+			signal.Notify(ch, os.Interrupt)
+			defer signal.Stop(ch)
+			<-ch
+			return errors.New("interrupt signal")
+		})
+	}
+	{
+		g.Go(func() error {
+			w.Run()
+			return nil
+		})
+	}
+
+	log.Println("Stopping Scheduler: ", g.Wait())
 }

@@ -26,11 +26,8 @@ type Data struct {
 	Cluster *pb.Cluster
 }
 
-func createKeyFile(key string, keyType string) {
-	err := ioutil.WriteFile(outputPath+keyType, []byte(key), 0600)
-	if err != nil {
-		log.Fatalln(err)
-	}
+func createKeyFile(key string, keyType string) error {
+	return ioutil.WriteFile(outputPath+keyType, []byte(key), 0600)
 }
 
 // buildInfrastructure is generating terraform files for different providers and calling terraform
@@ -44,15 +41,29 @@ func buildInfrastructure(config *pb.Config) error {
 		log.Println("Cluster name:", cluster.GetName())
 		backendData.ClusterName = cluster.GetName()
 		// Creating backend.tf file from the template
-		templateGen(templatePath+"/backend.tpl", outputPath+"/backend.tf", backendData, outputPath)
+		if err := templateGen(templatePath+"/backend.tpl", outputPath+"/backend.tf", backendData, outputPath); err != nil {
+			return err
+		}
 		// Creating .tf files for providers from templates
-		buildNodePools(cluster)
+		if err := buildNodePools(cluster); err != nil {
+			return err
+		}
 		// Create publicKey file for a cluster
-		createKeyFile(cluster.GetPublicKey(), "/public.pem")
-		createKeyFile(cluster.GetPublicKey(), "/private.pem")
+		if err := createKeyFile(cluster.GetPublicKey(), "/public.pem"); err != nil {
+			return err
+		}
+
+		if err := createKeyFile(cluster.GetPublicKey(), "/private.pem"); err != nil {
+			return err
+		}
 		// Call terraform init and apply
-		initTerraform(outputPath)
-		applyTerraform(outputPath)
+		if err := initTerraform(outputPath); err != nil {
+			return err
+		}
+
+		if err := applyTerraform(outputPath); err != nil {
+			return err
+		}
 
 		// Fill public ip addresses
 		var m map[string]*pb.Ip
@@ -66,17 +77,24 @@ func buildInfrastructure(config *pb.Config) error {
 		for _, provider := range providers {
 			output, err := outputTerraform(outputPath, provider)
 			if err != nil {
-				log.Fatalln(err)
+				return err
 			}
-			fillNodes(m, readOutput(output))
+
+			out, err := readOutput(output)
+			if err != nil {
+				return err
+			}
+
+			fillNodes(m, out)
 		}
 		cluster.Ips = m
 		// Clean after Terraform. Remove tmp terraform dir.
 		err := os.RemoveAll("services/terraformer/server/terraform")
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
+
 	for _, m := range desiredState.Clusters {
 		log.Println(m.Ips)
 	}
@@ -110,35 +128,50 @@ func destroyInfrastructure(project *pb.Project) error {
 		log.Println("Cluster name:", cluster.GetName())
 		backendData.ClusterName = cluster.GetName()
 		// Creating backend.tf file
-		templateGen(templatePath+"/backend.tpl", outputPath+"/backend.tf", backendData, outputPath)
+		if err := templateGen(templatePath+"/backend.tpl",
+			outputPath+"/backend.tf",
+			backendData, outputPath); err != nil {
+			return err
+		}
 		// Creating .tf files for providers
-		buildNodePools(cluster)
+		if err := buildNodePools(cluster); err != nil {
+			return err
+		}
 		// Create publicKey file for a cluster
-		createKeyFile(cluster.GetPublicKey(), "/public.pem")
+		if err := createKeyFile(cluster.GetPublicKey(), "/public.pem"); err != nil {
+			return err
+		}
 		// Call terraform
-		initTerraform(outputPath)
-		destroyTerraform(outputPath)
-		err := os.RemoveAll("services/terraformer/server/terraform")
-		if err != nil {
-			log.Fatal(err)
+		if err := initTerraform(outputPath); err != nil {
+			return err
+		}
+
+		if err := destroyTerraform(outputPath); err != nil {
+			return err
+		}
+
+		if err := os.RemoveAll("services/terraformer/server/terraform"); err != nil {
+			return err
 		}
 	}
+
 	return nil
 }
 
 // buildNodePools creates .tf files from providers contained in a cluster
-func buildNodePools(cluster *pb.Cluster) {
+func buildNodePools(cluster *pb.Cluster) error {
 	for i, nodePool := range cluster.NodePools {
-
 		// HETZNER node pool
 		if nodePool.Provider.Name == "hetzner" { // it will return true if hetzner key exists in the credentials map
 			log.Println("Cluster provider: ", nodePool.Provider.Name)
 			// creating terraform file for a provider
-			templateGen(templatePath+"/hetzner.tpl", outputPath+"/hetzner.tf",
+			if err := templateGen(templatePath+"/hetzner.tpl", outputPath+"/hetzner.tf",
 				&Data{
 					Index:   i,
 					Cluster: cluster,
-				}, templatePath)
+				}, templatePath); err != nil {
+				return err
+			}
 			//nodes = readTerraformOutput(nodes)
 		}
 
@@ -146,72 +179,68 @@ func buildNodePools(cluster *pb.Cluster) {
 		if nodePool.Provider.Name == "gcp" { // it will return true if gcp key exists in the credentials map
 			log.Println("Cluster provider: ", nodePool.Provider.Name)
 			// creating terraform file for a provider
-			templateGen(templatePath+"/gcp.tpl", outputPath+"/gcp.tf",
+			if err := templateGen(templatePath+"/gcp.tpl", outputPath+"/gcp.tf",
 				&Data{
 					Index:   i,
 					Cluster: cluster,
-				}, templatePath)
+				}, templatePath); err != nil {
+				return err
+			}
 			//nodes = readTerraformOutput(nodes)
 		}
 	}
+
+	return nil
 }
 
 // templateGen generates terraform config file from a template .tpl
-func templateGen(templatePath string, outputPath string, d interface{}, dirName string) {
+func templateGen(templatePath string, outputPath string, d interface{}, dirName string) error {
 	if _, err := os.Stat(dirName); os.IsNotExist(err) {
-		os.Mkdir(dirName, os.ModePerm)
+		if err := os.Mkdir(dirName, os.ModePerm); err != nil {
+			return fmt.Errorf("failed to create dir: %v", err)
+		}
 	}
+
 	tpl, err := template.ParseFiles(templatePath)
 	if err != nil {
-		log.Fatalln("Failed to load the template file", err)
+		return fmt.Errorf("failed to load the template file: %v", err)
 	}
+
 	f, err := os.Create(outputPath)
 	if err != nil {
-		log.Fatalln("Failed to create the", dirName, "file", err)
+		return fmt.Errorf("failed to create the %s file: %v", dirName, err)
 	}
-	err = tpl.Execute(f, d)
-	if err != nil {
-		log.Fatalln("Failed to execute the template file", err)
+
+	if err := tpl.Execute(f, d); err != nil {
+		return fmt.Errorf("failed to execute the template file: %v", err)
 	}
+
+	return nil
 }
 
 // initTerraform executes terraform init in a given path
-func initTerraform(fileName string) {
+func initTerraform(fileName string) error {
 	// terraform init
-	cmd := exec.Command("terraform", "init")
-	cmd.Dir = fileName
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		log.Fatal(err)
-	}
+	return executeTerraform(exec.Command("terraform", "init"), fileName)
 }
 
 // applyTerraform executes terraform terraform apply on a .tf files in a given path
-func applyTerraform(fileName string) {
+func applyTerraform(fileName string) error {
 	// terraform apply --auto-approve
-	cmd := exec.Command("terraform", "apply", "--auto-approve")
-	cmd.Dir = fileName
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		log.Fatal(err)
-	}
+	return executeTerraform(exec.Command("terraform", "apply", "--auto-approve"), fileName)
 }
 
 // destroyTerraform executes terraform destroy in a given path
-func destroyTerraform(fileName string) {
+func destroyTerraform(fileName string) error {
 	// terraform destroy
-	cmd := exec.Command("terraform", "destroy", "--auto-approve")
+	return executeTerraform(exec.Command("terraform", "destroy", "--auto-approve"), fileName)
+}
+
+func executeTerraform(cmd *exec.Cmd, fileName string) error {
 	cmd.Dir = fileName
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		log.Fatal(err)
-	}
+	return cmd.Run()
 }
 
 // outputTerraform returns terraform output for a given provider and path in a json format
@@ -223,20 +252,17 @@ func outputTerraform(fileName string, provider string) (string, error) {
 	cmd.Stderr = &errb
 	err := cmd.Run()
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 	return outb.String(), nil
 }
 
 // readOutput reads json output format from terraform and unmarshal it into map[string]map[string]string readable by GO
-func readOutput(data string) map[string]map[string]string {
+func readOutput(data string) (map[string]map[string]string, error) {
 	var result map[string]map[string]string
 	// Unmarshal or Decode the JSON to the interface.
 	err := json.Unmarshal([]byte(data), &result)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	return result
+	return result, err
 }
 
 // fillNodes gets ip addresses from a terraform output

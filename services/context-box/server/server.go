@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/md5"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -11,6 +12,8 @@ import (
 	"time"
 
 	terraformer "github.com/Berops/platform/services/terraformer/client"
+	"github.com/Berops/platform/worker"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
@@ -78,16 +81,17 @@ func (q *queue) push() (item *configItem, newQueue queue) {
 	}
 }
 
-func dataToConfigPb(data *configItem) *pb.Config {
+func dataToConfigPb(data *configItem) (*pb.Config, error) {
 	var desiredState *pb.Project = new(pb.Project)
 	err := proto.Unmarshal(data.DesiredState, desiredState)
 	if err != nil {
-		log.Fatalln("Error while Unmarshal desiredState", err)
+		return nil, fmt.Errorf("error while Unmarshal desiredState: %v", err)
 	}
+
 	var currentState *pb.Project = new(pb.Project)
 	err = proto.Unmarshal(data.CurrentState, currentState)
 	if err != nil {
-		log.Fatalln("Error while Unmarshal currentState", err)
+		return nil, fmt.Errorf("error while Unmarshal currentState: %v", err)
 	}
 
 	return &pb.Config{
@@ -100,18 +104,19 @@ func dataToConfigPb(data *configItem) *pb.Config {
 		DsChecksum:   data.DsChecksum,
 		BuilderTTL:   int32(data.BuilderTTL),
 		SchedulerTTL: int32(data.SchedulerTTL),
-	}
+	}, nil
 }
 
 func saveToDB(config *pb.Config) (*pb.Config, error) {
 	//Convert desiredState and currentState to byte[] because we want to save them to the database
 	desiredStateByte, errDS := proto.Marshal(config.DesiredState)
 	if errDS != nil {
-		log.Fatalln("Error while converting from protobuf to byte", errDS)
+		return nil, fmt.Errorf("error while converting from protobuf to byte: %v", errDS)
 	}
+
 	currentStateByte, errCS := proto.Marshal(config.CurrentState)
 	if errCS != nil {
-		log.Fatalln("Error while converting from protobuf to byte", errCS)
+		return nil, fmt.Errorf("error while converting from protobuf to byte: %v", errCS)
 	}
 
 	//Parse data and map it to the configItem struct
@@ -175,12 +180,12 @@ func getFromDB(id string) (configItem, error) {
 	var data configItem
 	oid, err := primitive.ObjectIDFromHex(id) //convert id to mongo type id (oid)
 	if err != nil {
-		log.Fatalln(err)
+		return data, err
 	}
 
 	filter := bson.M{"_id": oid}
 	if err := collection.FindOne(context.Background(), filter).Decode(&data); err != nil {
-		log.Fatalln("Error while finding ID in the DB", err)
+		return data, fmt.Errorf("error while finding ID in the DB: %v", err)
 	}
 	return data, nil
 }
@@ -209,7 +214,16 @@ func configCheck() error {
 		// check for Scheduler
 		if config.SchedulerTTL <= 0 {
 			config.SchedulerTTL = defaultSchedulerTTL
-			saveToDB(dataToConfigPb(config))
+
+			c, err := dataToConfigPb(config)
+			if err != nil {
+				return err
+			}
+
+			if _, err := saveToDB(c); err != nil {
+				return err
+			}
+
 			if string(config.DsChecksum) != string(config.MsChecksum) {
 				queueScheduler.configs = append(queueScheduler.configs, config)
 				continue
@@ -221,7 +235,16 @@ func configCheck() error {
 		// check for Builder
 		if config.BuilderTTL <= 0 {
 			config.BuilderTTL = defaultBuilderTTL
-			saveToDB(dataToConfigPb(config))
+
+			c, err := dataToConfigPb(config)
+			if err != nil {
+				return err
+			}
+
+			if _, err := saveToDB(c); err != nil {
+				return err
+			}
+
 			if string(config.DsChecksum) != string(config.CsChecksum) {
 				queueBuilder.configs = append(queueBuilder.configs, config)
 				continue
@@ -230,7 +253,14 @@ func configCheck() error {
 			config.BuilderTTL = config.BuilderTTL - 1
 		}
 		// save data if both TTL were substracted
-		saveToDB(dataToConfigPb(config))
+		c, err := dataToConfigPb(config)
+		if err != nil {
+			return err
+		}
+
+		if _, err := saveToDB(c); err != nil {
+			return nil
+		}
 	}
 	return nil
 }
@@ -298,7 +328,10 @@ func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest
 		if err != nil {
 			log.Fatalln("Error while getting old newConfig from the DB", err)
 		}
-		oldConfigPb := dataToConfigPb(&oldConfig)
+		oldConfigPb, err := dataToConfigPb(&oldConfig)
+		if err != nil {
+			log.Fatalln("Error while converting data to pb", err)
+		}
 		newConfig.CurrentState = oldConfigPb.CurrentState
 	}
 
@@ -344,7 +377,11 @@ func (*server) PrintConfig(ctx context.Context, req *pb.PrintConfigRequest) (*pb
 	if err != nil {
 		return nil, err
 	}
-	return &pb.PrintConfigResponse{Config: dataToConfigPb(&d)}, nil
+	config, err := dataToConfigPb(&d)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.PrintConfigResponse{Config: config}, nil
 }
 
 // GetConfigScheduler is a gRPC service: function returns one config from the queueScheduler
@@ -353,7 +390,12 @@ func (*server) GetConfigScheduler(ctx context.Context, req *pb.GetConfigRequest)
 	if len(queueScheduler.configs) > 0 {
 		var config *configItem
 		config, queueScheduler = queueScheduler.push()
-		return &pb.GetConfigResponse{Config: dataToConfigPb(config)}, nil
+		c, err := dataToConfigPb(config)
+		if err != nil {
+			return nil, err
+		}
+
+		return &pb.GetConfigResponse{Config: c}, nil
 	}
 	return &pb.GetConfigResponse{}, nil
 }
@@ -364,7 +406,12 @@ func (*server) GetConfigBuilder(ctx context.Context, req *pb.GetConfigRequest) (
 	if len(queueBuilder.configs) > 0 {
 		var config *configItem
 		config, queueBuilder = queueBuilder.push()
-		return &pb.GetConfigResponse{Config: dataToConfigPb(config)}, nil
+		c, err := dataToConfigPb(config)
+		if err != nil {
+			return nil, err
+		}
+
+		return &pb.GetConfigResponse{Config: c}, nil
 	}
 	return &pb.GetConfigResponse{}, nil
 }
@@ -379,7 +426,12 @@ func (*server) GetAllConfigs(ctx context.Context, req *pb.GetAllConfigsRequest) 
 		return nil, err
 	}
 	for _, config := range configs {
-		res = append(res, dataToConfigPb(config)) //add them into protobuf in the right format
+		c, err := dataToConfigPb(config)
+		if err != nil {
+			return nil, err
+		}
+
+		res = append(res, c) //add them into protobuf in the right format
 	}
 
 	return &pb.GetAllConfigsResponse{Configs: res}, nil
@@ -391,9 +443,15 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 
 	config, err := getFromDB(req.Id)
 	if err != nil {
-		log.Fatalln(err)
+		return nil, err
 	}
-	destroyConfigTerraformer(dataToConfigPb(&config)) //destroy infrastructure with terraformer
+
+	c, err := dataToConfigPb(&config)
+	if err != nil {
+		return nil, err
+	}
+
+	destroyConfigTerraformer(c) //destroy infrastructure with terraformer
 
 	oid, err := primitive.ObjectIDFromHex(req.GetId()) //convert id to mongo type id (oid)
 	if err != nil {
@@ -422,21 +480,32 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 }
 
 // destroyConfigTerraformer calls terraformer's DestroyInfrastructure function
-func destroyConfigTerraformer(config *pb.Config) *pb.Config {
+func destroyConfigTerraformer(config *pb.Config) (*pb.Config, error) {
 	// Create connection to Terraformer
 	cc, err := grpc.Dial(urls.TerraformerURL, grpc.WithInsecure())
 	if err != nil {
-		log.Fatalf("could not connect to server: %v", err)
+		return nil, fmt.Errorf("could not connect to server: %v", err)
 	}
 	defer cc.Close()
 	// Creating the client
 	c := pb.NewTerraformerServiceClient(cc)
 	res, err := terraformer.DestroyInfrastructure(c, &pb.DestroyInfrastructureRequest{Config: config})
 	if err != nil {
-		log.Fatalln(err)
+		return nil, err
 	}
 
-	return res.GetConfig()
+	return res.GetConfig(), nil
+}
+
+func configChecker() error {
+	if err := configCheck(); err != nil {
+		return fmt.Errorf("error while configCheck: %v", err)
+	}
+
+	log.Println("QueueScheduler content:", queueScheduler)
+	log.Println("QueueBuilder content:", queueBuilder)
+
+	return nil
 }
 
 func main() {
@@ -478,34 +547,36 @@ func main() {
 	healthService := healthcheck.NewServerHealthChecker("50055", "CONTEXT_BOX_PORT")
 	grpc_health_v1.RegisterHealthServer(s, healthService)
 
-	go func() {
-		// s.Serve() will create a service goroutine for each connection
-		if err := s.Serve(lis); err != nil {
-			log.Fatalf("Failed to serve: %v", err)
-		}
-	}()
+	g, ctx := errgroup.WithContext(context.Background())
+	w := worker.NewWorker(10*time.Second, ctx, configChecker, worker.ErrorLogger)
 
-	// Wait for Control C to exit
-	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, os.Interrupt)
+	{
+		g.Go(func() error {
+			ch := make(chan os.Signal, 1)
+			signal.Notify(ch, os.Interrupt)
+			<-ch
 
-	go func() {
-		for {
-			err = configCheck()
-			if err != nil {
-				log.Fatalln("Error while configCheck", err)
+			signal.Stop(ch)
+			s.GracefulStop()
+
+			return errors.New("interrupt signal")
+		})
+	}
+	{
+		g.Go(func() error {
+			// s.Serve() will create a service goroutine for each connection
+			if err := s.Serve(lis); err != nil {
+				return fmt.Errorf("failed to serve: %v", err)
 			}
-			log.Println("QueueScheduler content:", queueScheduler)
-			log.Println("QueueBuilder content:", queueBuilder)
-			time.Sleep(10 * time.Second)
-		}
-	}()
+			return nil
+		})
+	}
+	{
+		g.Go(func() error {
+			w.Run()
+			return nil
+		})
+	}
 
-	// Block until a signal is received
-	<-ch
-	fmt.Println("Stopping the server")
-	s.Stop()
-	fmt.Println("Closing the listener")
-	lis.Close()
-	fmt.Println("End of Program")
+	log.Println("Stopping Context-Box: ", g.Wait())
 }
