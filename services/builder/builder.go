@@ -214,9 +214,9 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 				tmpConfig = diff(config)
 			}
 			if tmpConfig != nil {
-				processConfig(tmpConfig, c, false)
+				processConfig(tmpConfig, c, true)
 			}
-			go processConfig(config, c, true)
+			go processConfig(config, c, false)
 		}
 
 		return nil
