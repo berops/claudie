@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
@@ -21,7 +23,7 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 	config := req.GetConfig()
 	err := buildInfrastructure(config.GetDesiredState())
 	if err != nil {
-		log.Fatalln("Template generator failed:", err)
+		return nil, fmt.Errorf("template generator failed: %v", err)
 	}
 	log.Println("Infrastructure was successfully generated")
 	return &pb.BuildInfrastructureResponse{Config: config}, nil
@@ -32,10 +34,10 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 	config := req.GetConfig()
 	err := destroyInfrastructure(config.GetCurrentState())
 	if err != nil {
-		log.Fatalln("Error while destroying the infrastructure", err)
+		return nil, fmt.Errorf("error while destroying the infrastructure: %v", err)
 	}
-	res := &pb.DestroyInfrastructureResponse{Config: config}
-	return res, nil
+
+	return &pb.DestroyInfrastructureResponse{Config: config}, nil
 }
 
 func main() {
@@ -62,23 +64,30 @@ func main() {
 	healthService := healthcheck.NewServerHealthChecker("50052", "TERRAFORMER_PORT")
 	grpc_health_v1.RegisterHealthServer(s, healthService)
 
-	go func() {
-		// s.Serve() will create a service goroutine for each connection
-		if err := s.Serve(lis); err != nil {
-			log.Fatalf("Failed to serve: %v", err)
-		}
-	}()
+	g, _ := errgroup.WithContext(context.Background())
 
-	// Wait for Control C to exit
-	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, os.Interrupt)
+	{
+		g.Go(func() error {
+			ch := make(chan os.Signal, 1)
+			signal.Notify(ch, os.Interrupt)
+			defer signal.Stop(ch)
+			<-ch
 
-	// Block until a signal is received
-	<-ch
-	fmt.Println("Stopping the server")
-	s.Stop()
-	fmt.Println("Closing the listener")
-	lis.Close()
-	fmt.Println("End of Program")
+			signal.Stop(ch)
+			s.GracefulStop()
 
+			return errors.New("interrupt signal")
+		})
+	}
+	{
+		g.Go(func() error {
+			// s.Serve() will create a service goroutine for each connection
+			if err := s.Serve(lis); err != nil {
+				return fmt.Errorf("failed to serve: %v", err)
+			}
+			return nil
+		})
+	}
+
+	log.Println("Stopping Terraformer: ", g.Wait())
 }

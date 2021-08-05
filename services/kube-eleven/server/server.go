@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"html/template"
 	"io/ioutil"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
@@ -50,80 +52,97 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 	for _, cluster := range config.GetDesiredState().GetClusters() {
 		var d data
 		d.formatTemplateData(cluster)
-		createKeyFile(cluster.GetPrivateKey(), "private.pem")
-		genKubeOneConfig(outputPath+"kubeone.tpl", outputPath+"kubeone.yaml", d)
-		runKubeOne()
-		cluster.Kubeconfig = saveKubeconfig()
-		deleteTmpFiles()
+		if err := createKeyFile(cluster.GetPrivateKey(), "private.pem"); err != nil {
+			return nil, err
+		}
+
+		if err := genKubeOneConfig(outputPath+"kubeone.tpl", outputPath+"kubeone.yaml", d); err != nil {
+			return nil, err
+		}
+
+		if err := runKubeOne(); err != nil {
+			return nil, err
+		}
+
+		kc, err := saveKubeconfig()
+		if err != nil {
+			return nil, err
+		}
+		cluster.Kubeconfig = kc
+
+		if err := deleteTmpFiles(); err != nil {
+			return nil, err
+		}
 	}
 
 	//fmt.Println("Kubeconfig:", string(req.GetCluster().GetKubeconfig()))
 	return &pb.BuildClusterResponse{Config: config}, nil
 }
 
-func createKeyFile(key string, keyName string) {
-	err := ioutil.WriteFile(outputPath+keyName, []byte(key), 0600)
-	if err != nil {
-		log.Fatalln(err)
-	}
+func createKeyFile(key string, keyName string) error {
+	return ioutil.WriteFile(outputPath+keyName, []byte(key), 0600)
 }
 
-func genKubeOneConfig(templatePath string, outputPath string, d interface{}) {
+func genKubeOneConfig(templatePath string, outputPath string, d interface{}) error {
 	if _, err := os.Stat("kubeone"); os.IsNotExist(err) { //this creates a new file if it doesn't exist
-		os.Mkdir("kubeone", os.ModePerm)
+		if err := os.Mkdir("kubeone", os.ModePerm); err != nil {
+			return err
+		}
 	}
+
 	tpl, err := template.ParseFiles(templatePath)
 	if err != nil {
-		log.Fatalln("Failed to load the template file", err)
+		return fmt.Errorf("failed to load the template file: %v", err)
 	}
+
 	f, err := os.Create(outputPath)
 	if err != nil {
-		log.Fatalln("Failed to create the manifest file", err)
+		return fmt.Errorf("failed to create the manifest file: %v", err)
 	}
-	err = tpl.Execute(f, d)
-	if err != nil {
-		log.Fatalln("Failed to execute the template file", err)
+
+	if err := tpl.Execute(f, d); err != nil {
+		return fmt.Errorf("failed to execute the template file: %v", err)
 	}
+
+	return nil
 }
 
-func runKubeOne() {
+func runKubeOne() error {
 	fmt.Println("Running KubeOne")
 	cmd := exec.Command("kubeone", "apply", "-m", "kubeone.yaml", "-y")
 	cmd.Dir = outputPath //golang will execute command from this directory
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		log.Fatal(err)
-	}
+	return cmd.Run()
 }
 
 // saveKubeconfig reads kubeconfig from a file and returns it
-func saveKubeconfig() string {
+func saveKubeconfig() (string, error) {
 	kubeconfig, err := ioutil.ReadFile(outputPath + "cluster-kubeconfig")
 	if err != nil {
-		log.Fatalln("Error while reading a kubeconfig file", err)
+		return "", fmt.Errorf("error while reading a kubeconfig file: %v", err)
 	}
-	return string(kubeconfig)
+	return string(kubeconfig), nil
 }
 
-func deleteTmpFiles() {
-	err := os.Remove(outputPath + "cluster.tar.gz")
-	if err != nil {
-		log.Fatalln("Error while deleting cluster.tar.gz file", err)
+func deleteTmpFiles() error {
+	if err := os.Remove(outputPath + "cluster.tar.gz"); err != nil {
+		return fmt.Errorf("error while deleting cluster.tar.gz file: %v", err)
 	}
-	err = os.Remove(outputPath + "cluster-kubeconfig")
-	if err != nil {
-		log.Fatalln("Error while deleting cluster-kubeconfig file", err)
+
+	if err := os.Remove(outputPath + "cluster-kubeconfig"); err != nil {
+		return fmt.Errorf("error while deleting cluster-kubeconfig file: %v", err)
 	}
-	err = os.Remove(outputPath + "kubeone.yaml")
-	if err != nil {
-		log.Fatalln("Error while deleting kubeone.yaml file", err)
+
+	if err := os.Remove(outputPath + "kubeone.yaml"); err != nil {
+		return fmt.Errorf("error while deleting kubeone.yaml file: %v", err)
 	}
-	err = os.Remove(outputPath + "private.pem")
-	if err != nil {
-		log.Fatalln("Error while deleting private.pem file", err)
+
+	if err := os.Remove(outputPath + "private.pem"); err != nil {
+		return fmt.Errorf("error while deleting private.pem file: %v", err)
 	}
+
+	return nil
 }
 
 func main() {
@@ -149,22 +168,29 @@ func main() {
 	healthService := healthcheck.NewServerHealthChecker("50054", "KUBE_ELEVEN_PORT")
 	grpc_health_v1.RegisterHealthServer(s, healthService)
 
-	go func() {
-		// s.Serve() will create a service goroutine for each connection
-		if err := s.Serve(lis); err != nil {
-			log.Fatalf("Failed to serve: %v", err)
-		}
-	}()
+	g, _ := errgroup.WithContext(context.Background())
 
-	// Wait for Control C to exit
-	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, os.Interrupt)
+	{
+		g.Go(func() error {
+			ch := make(chan os.Signal, 1)
+			signal.Notify(ch, os.Interrupt)
+			<-ch
 
-	// Block until a signal is received
-	<-ch
-	fmt.Println("Stopping the server")
-	s.Stop()
-	fmt.Println("Closing the listener")
-	lis.Close()
-	fmt.Println("End of Program")
+			signal.Stop(ch)
+			s.GracefulStop()
+
+			return errors.New("interrupt signal")
+		})
+	}
+	{
+		g.Go(func() error {
+			// s.Serve() will create a service goroutine for each connection
+			if err := s.Serve(lis); err != nil {
+				return fmt.Errorf("failed to serve: %v", err)
+			}
+			return nil
+		})
+	}
+
+	log.Println("Stopping Kube-Eleven: ", g.Wait())
 }

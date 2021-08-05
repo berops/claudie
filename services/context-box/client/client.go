@@ -3,7 +3,6 @@ package cbox
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/Berops/platform/proto/pb"
 )
@@ -15,8 +14,9 @@ func SaveConfigFrontEnd(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest)
 
 	res, err := c.SaveConfigFrontEnd(context.Background(), req)
 	if err != nil {
-		log.Fatalf("Unexpected error: %v", err)
+		return fmt.Errorf("unexpected error: %v", err)
 	}
+
 	fmt.Println("Config", res.GetConfig().GetName(), "has been saved")
 	return nil
 }
@@ -27,8 +27,9 @@ func SaveConfigScheduler(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest
 
 	res, err := c.SaveConfigScheduler(context.Background(), req)
 	if err != nil {
-		log.Fatalf("Unexpected error: %v", err)
+		return fmt.Errorf("unexpected error: %v", err)
 	}
+
 	fmt.Println("Config", res.GetConfig().GetName(), "has been saved")
 	return nil
 }
@@ -39,8 +40,9 @@ func SaveConfigBuilder(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest) 
 
 	res, err := c.SaveConfigBuilder(context.Background(), req)
 	if err != nil {
-		log.Fatalf("Unexpected error: %v", err)
+		return fmt.Errorf("unexpected error: %v", err)
 	}
+
 	fmt.Println("Config", res.GetConfig().GetName(), "has been saved")
 	return nil
 }
@@ -49,8 +51,9 @@ func SaveConfigBuilder(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest) 
 func GetConfigScheduler(c pb.ContextBoxServiceClient) (*pb.GetConfigResponse, error) {
 	res, err := c.GetConfigScheduler(context.Background(), &pb.GetConfigRequest{})
 	if err != nil {
-		log.Fatalf("Unexpected error: %v", err)
+		return nil, fmt.Errorf("unexpected error: %v", err)
 	}
+
 	return res, nil
 }
 
@@ -58,8 +61,9 @@ func GetConfigScheduler(c pb.ContextBoxServiceClient) (*pb.GetConfigResponse, er
 func GetConfigBuilder(c pb.ContextBoxServiceClient) (*pb.GetConfigResponse, error) {
 	res, err := c.GetConfigBuilder(context.Background(), &pb.GetConfigRequest{})
 	if err != nil {
-		log.Fatalf("Unexpected error: %v", err)
+		return nil, fmt.Errorf("unexpected error: %v", err)
 	}
+
 	return res, nil
 }
 
@@ -67,8 +71,9 @@ func GetConfigBuilder(c pb.ContextBoxServiceClient) (*pb.GetConfigResponse, erro
 func GetAllConfigs(c pb.ContextBoxServiceClient) (*pb.GetAllConfigsResponse, error) {
 	res, err := c.GetAllConfigs(context.Background(), &pb.GetAllConfigsRequest{})
 	if err != nil {
-		log.Fatalf("Unexpected error: %v", err)
+		return nil, fmt.Errorf("unexpected error: %v", err)
 	}
+
 	return res, nil
 }
 
@@ -76,8 +81,9 @@ func GetAllConfigs(c pb.ContextBoxServiceClient) (*pb.GetAllConfigsResponse, err
 func DeleteConfig(c pb.ContextBoxServiceClient, id string) error {
 	res, err := c.DeleteConfig(context.Background(), &pb.DeleteConfigRequest{Id: id})
 	if err != nil {
-		log.Fatalf("Error happened while deleting: %v\n", err)
+		return fmt.Errorf("error happened while deleting: %v", err)
 	}
+
 	fmt.Println("Config was deleted", res)
 	return nil
 }

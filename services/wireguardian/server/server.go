@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
+	"golang.org/x/sync/errgroup"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health/grpc_health_v1"
@@ -27,20 +29,31 @@ func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVP
 	config := req.GetConfig()
 
 	for _, cluster := range config.GetDesiredState().GetClusters() {
-		genPrivAdd(cluster.GetIps(), cluster.GetNetwork())
-		genInv(cluster.GetIps())
-		runAnsible(cluster)
-		deleteTmpFiles()
+		if err := genPrivAdd(cluster.GetIps(), cluster.GetNetwork()); err != nil {
+			return nil, err
+		}
+
+		if err := genInv(cluster.GetIps()); err != nil {
+			return nil, err
+		}
+
+		if err := runAnsible(cluster); err != nil {
+			return nil, err
+		}
+
+		if err := deleteTmpFiles(); err != nil {
+			return nil, err
+		}
 	}
 
 	return &pb.BuildVPNResponse{Config: config}, nil
 }
 
 // genPrivAdd will generate private ip addresses from network parameter
-func genPrivAdd(addresses map[string]*pb.Ip, network string) {
+func genPrivAdd(addresses map[string]*pb.Ip, network string) error {
 	_, ipNet, err := net.ParseCIDR(network)
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 	ip := ipNet.IP
 	ip = ip.To4()
@@ -49,56 +62,60 @@ func genPrivAdd(addresses map[string]*pb.Ip, network string) {
 		ip[3]++ // check for rollover
 		address.Private = ip.String()
 	}
+
+	return nil
 }
 
 // genInv will generate ansible inventory file slice of clusters input
-func genInv(addresses map[string]*pb.Ip) {
+func genInv(addresses map[string]*pb.Ip) error {
 	tpl, err := template.ParseFiles("services/wireguardian/server/inventory.goini")
 	if err != nil {
-		log.Fatalln("Failed to load template file", err)
+		return fmt.Errorf("failed to load template file: %v", err)
 	}
 
 	f, err := os.Create(outputPath + "inventory.ini")
 	if err != nil {
-		log.Fatalln("Failed to create a inventory file", err)
+		return fmt.Errorf("failed to create a inventory file: %v", err)
 	}
 
-	err = tpl.Execute(f, addresses)
-	if err != nil {
-		log.Fatalln("Failed to execute template file", err)
+	if err := tpl.Execute(f, addresses); err != nil {
+		return fmt.Errorf("failed to execute template file: %v", err)
 	}
+
+	return nil
 }
 
-func runAnsible(cluster *pb.Cluster) {
-	createKeyFile(cluster.GetPrivateKey())
-	os.Setenv("ANSIBLE_HOST_KEY_CHECKING", "False")
+func runAnsible(cluster *pb.Cluster) error {
+	if err := createKeyFile(cluster.GetPrivateKey()); err != nil {
+		return err
+	}
+
+	if err := os.Setenv("ANSIBLE_HOST_KEY_CHECKING", "False"); err != nil {
+		return err
+	}
+
 	cmd := exec.Command("ansible-playbook", "playbook.yml", "-i", "inventory.ini", "-f", "20", "--private-key", "private.pem")
 	cmd.Dir = outputPath
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		log.Fatalln("Error while executing Ansible", err)
-	}
+	return cmd.Run()
 }
 
-func createKeyFile(key string) {
-	err := ioutil.WriteFile(outputPath+"private.pem", []byte(key), 0600)
-	if err != nil {
-		log.Fatalln(err)
-	}
+func createKeyFile(key string) error {
+	return ioutil.WriteFile(outputPath+"private.pem", []byte(key), 0600)
 }
 
-func deleteTmpFiles() {
+func deleteTmpFiles() error {
 	// Delete a private key
-	err := os.Remove(outputPath + "private.pem")
-	if err != nil {
-		log.Fatalln("Error while deleting private.pem file", err)
+	if err := os.Remove(outputPath + "private.pem"); err != nil {
+		return fmt.Errorf("error while deleting private.pem file: %v", err)
 	}
 	// Delete an inventory file
-	err = os.Remove(outputPath + "inventory.ini")
-	if err != nil {
-		log.Fatalln("Error while deleting inventory.ini file", err)
+	if err := os.Remove(outputPath + "inventory.ini"); err != nil {
+		return fmt.Errorf("error while deleting inventory.ini file: %v", err)
 	}
+
+	return nil
 }
 
 func main() {
@@ -125,22 +142,30 @@ func main() {
 	healthService := healthcheck.NewServerHealthChecker("50053", "WIREGUARDIAN_PORT")
 	grpc_health_v1.RegisterHealthServer(s, healthService)
 
-	go func() {
-		// s.Serve() will create a service goroutine for each connection
-		if err := s.Serve(lis); err != nil {
-			log.Fatalf("Failed to serve: %v", err)
-		}
-	}()
+	g, _ := errgroup.WithContext(context.Background())
 
-	// Wait for Control C to exit
-	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, os.Interrupt)
+	{
+		g.Go(func() error {
+			ch := make(chan os.Signal, 1)
+			signal.Notify(ch, os.Interrupt)
+			defer signal.Stop(ch)
+			<-ch
 
-	// Block until a signal is received
-	<-ch
-	fmt.Println("Stopping the server")
-	s.Stop()
-	fmt.Println("Closing the listener")
-	lis.Close()
-	fmt.Println("End of Program")
+			signal.Stop(ch)
+			s.GracefulStop()
+
+			return errors.New("interrupt signal")
+		})
+	}
+	{
+		g.Go(func() error {
+			// s.Serve() will create a service goroutine for each connection
+			if err := s.Serve(lis); err != nil {
+				return fmt.Errorf("failed to serve: %v", err)
+			}
+			return nil
+		})
+	}
+
+	log.Println("Stopping Wireguardian: ", g.Wait())
 }
