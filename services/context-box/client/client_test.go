@@ -58,10 +58,8 @@ func TestSaveConfigFrontEnd(t *testing.T) {
 
 	err := SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
 		Config: &pb.Config{
-			Name:         "NewTestConfig name",
-			Manifest:     string(manifest),
-			DesiredState: &pb.Project{Name: "This is desiredState name"},
-			CurrentState: &pb.Project{Name: "This is currentState name"},
+			Name:     "NewTestConfig name",
+			Manifest: string(manifest),
 		},
 	})
 	require.NoError(t, err)
@@ -95,7 +93,7 @@ func TestDeleteConfig(t *testing.T) {
 
 func TestPrintConfig(t *testing.T) {
 	c := ClientConnection()
-	_, err := PrintConfig(c, "60e40e3ab65e073bab1674ce")
+	_, err := PrintConfig(c, "610ba67645a86f7c1470a9ce")
 	if err != nil {
 		log.Fatalln("Config not found:", err)
 	}
