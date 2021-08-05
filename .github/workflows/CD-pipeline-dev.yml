@@ -1,0 +1,33 @@
+name: CD pipeline for platform - dev
+on:
+  # Run after CI
+  workflow_run:
+    workflows: [ "CI pipeline for platform" ] 
+    types: [ completed ]
+  # Manual trigger    
+  workflow_dispatch:
+
+jobs:
+# Deploy manifests to GKE clusters default namespace
+  deploy:
+    runs-on: ubuntu-latest
+    # Run only if CI was successful
+    if: ${{ github.event.workflow_run.conclusion != 'failure' }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
+
+
+      - name: Configure kubectl
+        uses: google-github-actions/get-gke-credentials@v0.2.1
+        with:
+          cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
+          location: ${{ secrets.GKE_ZONE }}
+          credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
+
+      # Deploy to the default namespace for further testing
+      - name: Deploy to the dev cluster default namespace via kustomize
+        working-directory: ./K8s-dev-cluster
+        run: |
+          kustomize build | kubectl apply -f -

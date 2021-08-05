@@ -5,7 +5,7 @@ metadata:
   labels:
     app: builder
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: builder
@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: builder
-        image: eu.gcr.io/platform-infrastructure-316112/platform/builder:latest 
+        image: eu.gcr.io/platform-infrastructure-316112/platform/builder
         env:
         - name: CONTEXT_BOX_PORT
           valueFrom:
@@ -58,3 +58,13 @@ spec:
             configMapKeyRef:
               name: urls
               key: KUBE_ELEVEN_HOSTNAME
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 50051
+          initialDelaySeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /live
+            port: 50051
+          initialDelaySeconds: 10

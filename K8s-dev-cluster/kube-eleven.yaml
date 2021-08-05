@@ -5,7 +5,7 @@ metadata:
   labels:
     app: kube-eleven
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: kube-eleven
@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: kube-eleven
-        image: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven:latest 
+        image: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven
         env:
         - name: KUBE_ELEVEN_PORT
           valueFrom:
@@ -26,6 +26,14 @@ spec:
         # No hostname needed
         ports:
         - containerPort: 50054
+        readinessProbe:
+          exec:
+            command: ["/bin/grpc_health_probe", "-addr=:50054"]
+          initialDelaySeconds: 5
+        livenessProbe:
+          exec:
+            command: ["/bin/grpc_health_probe-Liveness", "-addr=:50054"]
+          initialDelaySeconds: 10
 ---
 kind: Service
 apiVersion: v1

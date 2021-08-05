@@ -12,6 +12,7 @@ import (
 
 	terraformer "github.com/Berops/platform/services/terraformer/client"
 
+	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/urls"
 	"go.mongodb.org/mongo-driver/bson"
@@ -20,17 +21,27 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
 
-var collection *mongo.Collection
-
-var queueScheduler []*configItem
-var queueBuilder []*configItem
-var tmpBuidler map[string]*configItem = make(map[string]*configItem)
-
 type server struct{}
+
+type queue struct {
+	configs []*configItem
+}
+
+const (
+	defaultBuilderTTL   = 360
+	defaultSchedulerTTL = 5
+)
+
+var (
+	collection     *mongo.Collection
+	queueScheduler queue
+	queueBuilder   queue
+)
 
 //TODO: Change byte to project structure
 type configItem struct {
@@ -42,6 +53,29 @@ type configItem struct {
 	MsChecksum   []byte             `bson:"msChecksum"`
 	DsChecksum   []byte             `bson:"dsChecksum"`
 	CsChecksum   []byte             `bson:"csChecksum"`
+	BuilderTTL   int                `bson:"BuilderTTL"`
+	SchedulerTTL int                `bson:"SchedulerTTL"`
+}
+
+func (q *queue) contains(item *configItem) bool {
+	if len(q.configs) == 0 {
+		return false
+	}
+	for _, config := range q.configs {
+		if config.Name == item.Name {
+			return true
+		}
+	}
+	return false
+}
+
+func (q *queue) push() (item *configItem, newQueue queue) {
+	if len(q.configs) == 0 {
+		return nil, *q
+	}
+	return q.configs[0], queue{
+		configs: q.configs[1:],
+	}
 }
 
 func dataToConfigPb(data *configItem) *pb.Config {
@@ -64,6 +98,8 @@ func dataToConfigPb(data *configItem) *pb.Config {
 		CurrentState: currentState,
 		MsChecksum:   data.MsChecksum,
 		DsChecksum:   data.DsChecksum,
+		BuilderTTL:   int32(data.BuilderTTL),
+		SchedulerTTL: int32(data.SchedulerTTL),
 	}
 }
 
@@ -87,6 +123,8 @@ func saveToDB(config *pb.Config) (*pb.Config, error) {
 	data.MsChecksum = config.GetMsChecksum()
 	data.DsChecksum = config.GetDsChecksum()
 	data.CsChecksum = config.GetCsChecksum()
+	data.BuilderTTL = int(config.GetBuilderTTL())
+	data.SchedulerTTL = int(config.GetSchedulerTTL())
 
 	//Check if ID exists
 	//If config has already some ID:
@@ -149,7 +187,7 @@ func getFromDB(id string) (configItem, error) {
 
 func compareChecksums(ch1 string, ch2 string) bool {
 	if ch1 != ch2 {
-		log.Println("Manifest checksums mismatch. Nothing will be not saved.")
+		log.Println("Manifest checksums mismatch. Nothing will be saved.")
 		return false
 	}
 	return true
@@ -160,38 +198,40 @@ func configCheck() error {
 	if err != nil {
 		return err
 	}
-
+	// loop through config
 	for _, config := range configs {
-		uniqueS := true
-		uniqueB := true
-		// Checking for Scheduler
-		fmt.Println("")
-		if string(config.DsChecksum) != string(config.MsChecksum) {
-			for _, item := range queueScheduler {
-				if config.ID == item.ID {
-					uniqueS = false
-					break
-				}
-			}
-			if uniqueS {
-				queueScheduler = append(queueScheduler, config)
-			}
+		// check if item is already in some queue
+		if queueBuilder.contains(config) || queueScheduler.contains(config) {
+			// some queue already has this particular config
+			continue
 		}
-		// Checking for Builder
-		_, ok := tmpBuidler[config.Name]
-		if (string(config.DsChecksum) != string(config.CsChecksum)) && !(ok) {
-			for _, item := range queueBuilder {
-				if config.ID == item.ID {
-					uniqueB = false
-					break
-				}
-			}
-			if uniqueB {
-				queueBuilder = append(queueBuilder, config)
-			}
-		}
-	}
 
+		// check for Scheduler
+		if config.SchedulerTTL <= 0 {
+			config.SchedulerTTL = defaultSchedulerTTL
+			saveToDB(dataToConfigPb(config))
+			if string(config.DsChecksum) != string(config.MsChecksum) {
+				queueScheduler.configs = append(queueScheduler.configs, config)
+				continue
+			}
+		} else {
+			config.SchedulerTTL = config.SchedulerTTL - 1
+		}
+
+		// check for Builder
+		if config.BuilderTTL <= 0 {
+			config.BuilderTTL = defaultBuilderTTL
+			saveToDB(dataToConfigPb(config))
+			if string(config.DsChecksum) != string(config.CsChecksum) {
+				queueBuilder.configs = append(queueBuilder.configs, config)
+				continue
+			}
+		} else {
+			config.BuilderTTL = config.BuilderTTL - 1
+		}
+		// save data if both TTL were substracted
+		saveToDB(dataToConfigPb(config))
+	}
 	return nil
 }
 
@@ -294,7 +334,6 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 			fmt.Sprintf("Internal error: %v", err1),
 		)
 	}
-	delete(tmpBuidler, config.Name)
 	return &pb.SaveConfigResponse{Config: config}, nil
 }
 
@@ -310,10 +349,10 @@ func (*server) PrintConfig(ctx context.Context, req *pb.PrintConfigRequest) (*pb
 
 // GetConfigScheduler is a gRPC service: function returns one config from the queueScheduler
 func (*server) GetConfigScheduler(ctx context.Context, req *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
-	log.Println("CLIENT REQUEST: GetConfigScheduler")
-	if len(queueScheduler) > 0 {
+	log.Println("GetConfigScheduler request")
+	if len(queueScheduler.configs) > 0 {
 		var config *configItem
-		config, queueScheduler = queueScheduler[0], queueScheduler[1:] // This is like push from a queue
+		config, queueScheduler = queueScheduler.push()
 		return &pb.GetConfigResponse{Config: dataToConfigPb(config)}, nil
 	}
 	return &pb.GetConfigResponse{}, nil
@@ -321,11 +360,10 @@ func (*server) GetConfigScheduler(ctx context.Context, req *pb.GetConfigRequest)
 
 // GetConfigBuilder is a gRPC service: function returns one config from the queueScheduler
 func (*server) GetConfigBuilder(ctx context.Context, req *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
-	log.Println("CLIENT REQUEST: GetConfigBuilder")
-	if len(queueBuilder) > 0 {
+	log.Println("GetConfigBuilder request")
+	if len(queueBuilder.configs) > 0 {
 		var config *configItem
-		config, queueBuilder = queueBuilder[0], queueBuilder[1:] // This is like push from a queue
-		tmpBuidler[config.Name] = config
+		config, queueBuilder = queueBuilder.push()
 		return &pb.GetConfigResponse{Config: dataToConfigPb(config)}, nil
 	}
 	return &pb.GetConfigResponse{}, nil
@@ -436,7 +474,12 @@ func main() {
 	s := grpc.NewServer()
 	pb.RegisterContextBoxServiceServer(s, &server{})
 
+	// Add health service to gRPC
+	healthService := healthcheck.NewServerHealthChecker("50055", "CONTEXT_BOX_PORT")
+	grpc_health_v1.RegisterHealthServer(s, healthService)
+
 	go func() {
+		// s.Serve() will create a service goroutine for each connection
 		if err := s.Serve(lis); err != nil {
 			log.Fatalf("Failed to serve: %v", err)
 		}

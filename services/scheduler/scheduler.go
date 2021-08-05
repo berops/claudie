@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
 	cbox "github.com/Berops/platform/services/context-box/client"
 	"github.com/Berops/platform/urls"
@@ -99,6 +100,10 @@ func MakeSSHKeyPair() (string, string) {
 }
 
 func createDesiredState(config *pb.Config) *pb.Config {
+	if config == nil {
+		fmt.Println("Got nil, expected Config... \nReturning nil")
+		return nil
+	}
 	//Create yaml manifest
 	d := []byte(config.GetManifest())
 	err := ioutil.WriteFile("manifest.yaml", d, 0644)
@@ -175,8 +180,9 @@ func createDesiredState(config *pb.Config) *pb.Config {
 		MsChecksum:   config.GetMsChecksum(),
 		DsChecksum:   config.GetDsChecksum(),
 		CsChecksum:   config.GetCsChecksum(),
+		BuilderTTL:   config.GetBuilderTTL(),
+		SchedulerTTL: config.GetSchedulerTTL(),
 	}
-
 	// Check if all clusters in a currentState have generated a SSH key pair. If not, generate a new pair for a cluster in desiredState.
 KeyChecking:
 	for _, clusterDesired := range res.DesiredState.Clusters {
@@ -197,6 +203,25 @@ KeyChecking:
 	return res
 }
 
+// processConfig is function used to carry out task specific to Scheduler concurrently
+func processConfig(config *pb.Config, c pb.ContextBoxServiceClient) {
+	config = createDesiredState(config)
+	fmt.Println(config.GetDesiredState())
+	err := cbox.SaveConfigScheduler(c, &pb.SaveConfigRequest{Config: config})
+	if err != nil {
+		log.Fatalln("Error while saving the config", err)
+	}
+}
+
+// healthCheck function is function used for querring readiness of the pod running this microservice
+func healthCheck() error {
+	res := createDesiredState(nil)
+	if res != nil {
+		return fmt.Errorf("health check function got unexpected result")
+	}
+	return nil
+}
+
 func main() {
 	//Create connection to Context-box
 	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
@@ -212,6 +237,10 @@ func main() {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, os.Interrupt)
 
+	// Initilize health probes
+	healthChecker := healthcheck.NewClientHealthChecker("50056", healthCheck)
+	healthChecker.StartProbes()
+
 	go func() {
 		// Infinite FOR loop gets config from the context box queue
 		for {
@@ -219,14 +248,9 @@ func main() {
 			if err != nil {
 				log.Fatalln("Error while getting config from the Scheduler", err)
 			}
-			if res.GetConfig() != nil {
-				config := res.GetConfig()
-				config = createDesiredState(config)
-				fmt.Println(config.GetDesiredState())
-				err = cbox.SaveConfigScheduler(c, &pb.SaveConfigRequest{Config: config})
-				if err != nil {
-					log.Fatalln("Error while saving the config", err)
-				}
+			config := res.GetConfig()
+			if config != nil {
+				go processConfig(config, c)
 			}
 			time.Sleep(10 * time.Second)
 		}

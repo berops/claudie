@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: context-box
-        image: eu.gcr.io/platform-infrastructure-316112/platform/context-box:latest
+        image: eu.gcr.io/platform-infrastructure-316112/platform/context-box
         env:
         - name: DATABASE_PORT
           valueFrom:
@@ -36,6 +36,14 @@ spec:
          # No hostname needed
         ports:
         - containerPort: 50055
+        readinessProbe:
+          exec:
+            command: ["/bin/grpc_health_probe", "-addr=:50055"]
+          initialDelaySeconds: 5
+        livenessProbe:
+          exec:
+            command: ["/bin/grpc_health_probe-Liveness", "-addr=:50055"]
+          initialDelaySeconds: 10
 ---
 kind: Service
 apiVersion: v1

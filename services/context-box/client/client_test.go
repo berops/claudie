@@ -51,7 +51,7 @@ func TestGetAllConfigs(t *testing.T) {
 func TestSaveConfigFrontEnd(t *testing.T) {
 	c := ClientConnection()
 
-	manifest, errR := ioutil.ReadFile("/Users/samuelstolicny/Github/Berops/platform/services/context-box/client/manifest.yaml") //this is manifest from this test file
+	manifest, errR := ioutil.ReadFile("./manifest.yaml") //this is manifest from this test file
 	if errR != nil {
 		log.Fatalln(errR)
 	}
@@ -70,7 +70,7 @@ func TestSaveConfigFrontEnd(t *testing.T) {
 func TestSaveConfigScheduler(t *testing.T) {
 	c := ClientConnection()
 
-	manifest, errR := ioutil.ReadFile("/Users/samuelstolicny/Github/Berops/platform/services/context-box/client/manifest.yaml") //this is manifest from this test file
+	manifest, errR := ioutil.ReadFile("./manifest.yaml") //this is manifest from this test file
 	if errR != nil {
 		log.Fatalln(errR)
 	}

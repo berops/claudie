@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/Berops/platform/proto/pb"
-	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
+
+	"github.com/Berops/platform/proto/pb"
+	"github.com/stretchr/testify/require"
 )
 
 var cluster = &pb.Cluster{

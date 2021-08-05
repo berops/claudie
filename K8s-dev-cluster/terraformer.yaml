@@ -5,7 +5,7 @@ metadata:
   labels:
     app: terraformer
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: terraformer
@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: terraformer
-        image: eu.gcr.io/platform-infrastructure-316112/platform/terraformer:latest 
+        image: eu.gcr.io/platform-infrastructure-316112/platform/terraformer
         env:
         - name: TERRAFORMER_PORT
           valueFrom:
@@ -26,6 +26,14 @@ spec:
          # No hostname needed
         ports:
         - containerPort: 50052
+        readinessProbe:
+          exec:
+            command: ["/bin/grpc_health_probe", "-addr=:50052"]
+          initialDelaySeconds: 5
+        livenessProbe:
+          exec:
+            command: ["/bin/grpc_health_probe-Liveness", "-addr=:50052"]
+          initialDelaySeconds: 10
 ---
 kind: Service
 apiVersion: v1

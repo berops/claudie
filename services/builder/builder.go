@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/Berops/platform/healthcheck"
 	kubeEleven "github.com/Berops/platform/services/kube-eleven/client"
 
 	cbox "github.com/Berops/platform/services/context-box/client"
@@ -161,12 +162,38 @@ func getClusterByName(clusterName string, clusters []*pb.Cluster) *pb.Cluster {
 	return nil
 }
 
-// flow will initiate kubernetes cluster creation cycle
-func flow(config *pb.Config) *pb.Config {
+// processConfig is function used to carry out task specific to Builder concurrently
+func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, tmp bool) {
+	log.Println("I got config: ", config.GetName())
 	config = callTerraformer(config)
 	config = callWireguardian(config)
 	config = callKubeEleven(config)
-	return config
+	if !tmp {
+		config.CurrentState = config.DesiredState // Update currentState
+		err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
+		if err != nil {
+			log.Fatalln("Error while saving the config", err)
+		}
+	}
+}
+
+// healthCheck function is function used for querring readiness of the pod running this microservice
+func healthCheck() error {
+	//Check if Builder can connect to Terraformer/Wireguardian/Kube-eleven
+	//Connection to these services are crucial for Builder, without them, the builder is NOT Ready
+	_, err := grpc.Dial(urls.KubeElevenURL, grpc.WithInsecure())
+	if err != nil {
+		return fmt.Errorf("could not connect to Kube-eleven: %v", err)
+	}
+	_, err = grpc.Dial(urls.TerraformerURL, grpc.WithInsecure())
+	if err != nil {
+		return fmt.Errorf("could not connect to Terraformer: %v", err)
+	}
+	_, err = grpc.Dial(urls.WireguardianURL, grpc.WithInsecure())
+	if err != nil {
+		return fmt.Errorf("could not connect to Wireguardian: %v", err)
+	}
+	return nil
 }
 
 func main() {
@@ -179,9 +206,14 @@ func main() {
 		log.Fatalf("could not connect to Content-box: %v", err)
 	}
 	defer cc.Close()
-
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
+
+	// Initilize health probes
+	healthChecker := healthcheck.NewClientHealthChecker("50051", healthCheck)
+	healthChecker.StartProbes()
+
+	// Main loop for getting and processing configs
 	go func() {
 		for {
 			res, err := cbox.GetConfigBuilder(c) // Get a new config
@@ -196,17 +228,11 @@ func main() {
 					tmpConfig = diff(config)
 				}
 				if tmpConfig != nil {
-					flow(tmpConfig)
+					processConfig(tmpConfig, c, false)
 				}
-				config = flow(config)
-				log.Println("SAVING DESIRED STATE AS CURRENT STATE")
-				config.CurrentState = config.DesiredState // Update currentState
-				err = cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
-				if err != nil {
-					log.Fatalln("Error while saving the config", err)
-				}
+				go processConfig(config, c, true)
+				time.Sleep(5 * time.Second)
 			}
-			time.Sleep(5 * time.Second)
 		}
 	}()
 

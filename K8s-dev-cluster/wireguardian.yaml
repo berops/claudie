@@ -5,7 +5,7 @@ metadata:
   labels:
     app: wireguardian
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: wireguardian
@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: wireguardian
-        image: eu.gcr.io/platform-infrastructure-316112/platform/wireguardian:latest 
+        image: eu.gcr.io/platform-infrastructure-316112/platform/wireguardian
         env:
         - name: WIREGUARDIAN_PORT
           valueFrom:
@@ -26,6 +26,14 @@ spec:
          # No hostname needed
         ports:
         - containerPort: 50053
+        readinessProbe:
+          exec:
+            command: ["/bin/grpc_health_probe", "-addr=:50053"]
+          initialDelaySeconds: 5
+        livenessProbe:
+          exec:
+            command: ["/bin/grpc_health_probe-Liveness", "-addr=:50053"]
+          initialDelaySeconds: 10
 ---
 kind: Service
 apiVersion: v1

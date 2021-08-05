@@ -5,7 +5,7 @@ metadata:
   labels:
     app: scheduler
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: scheduler
@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: scheduler
-        image: eu.gcr.io/platform-infrastructure-316112/platform/scheduler:latest 
+        image: eu.gcr.io/platform-infrastructure-316112/platform/scheduler
         env:
         - name: CONTEXT_BOX_PORT
           valueFrom:
@@ -28,4 +28,13 @@ spec:
             configMapKeyRef:
               name: urls
               key: CONTEXT_BOX_HOSTNAME
-# No Service needed
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 50056
+          initialDelaySeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /live
+            port: 50056
+          initialDelaySeconds: 10

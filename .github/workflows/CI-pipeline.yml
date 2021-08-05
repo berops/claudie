@@ -1,0 +1,169 @@
+name: CI pipeline for platform
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  ENV_FILE: .env
+  SERVICES: context-box scheduler builder terraformer wireguardian kube-eleven
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      # Create an array with modules that were changed by a recent commit via bash script
+      - name: Check the files for a change
+        id: array
+        run: |
+          arr=()
+          SERVICES=( ${{ env.SERVICES }} )
+          git fetch origin master
+          echo "Changed files:"
+          git diff  --name-only origin/master..HEAD
+          for i in "$(git diff  --name-only origin/master..HEAD)"
+          do
+            for SERVICE in in "${SERVICES[@]}"; do
+              if [[ $i == *"services/$SERVICE"* ]]; then
+              arr+=($SERVICE)
+              echo "Detected change in $SERVICE"
+            fi
+            done
+          done
+          echo ::set-output name=ARRAY_OF_CHANGES::"${arr[@]}"
+
+        # Login to GCP with repository secrets 
+      - name: Login to GCP
+        if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
+        uses: google-github-actions/setup-gcloud@master
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_email: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+          service_account_key: ${{ secrets.GCP_DOCKER_REGISTRY_KEY }}
+
+      # Configure docker for use on the GCP
+      - name: Configure Docker
+        if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
+        run: gcloud auth configure-docker --quiet
+
+      # Build the new images that were changed by a recent commit - tag image latest as well for testing
+      - name: Build new images
+        if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
+        run: |
+          arr=(${{ steps.array.outputs.ARRAY_OF_CHANGES }})
+          if [ ${#arr[@]} -eq 0 ] 
+          then
+            echo "No changes were detected, nothing to build"            
+          else
+            for path in "${arr[@]}"
+            do
+            echo "-----Building $path-----"
+            docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA -f ./services/$path/Dockerfile .
+            done
+          fi
+     
+      # Push images to GCR - latest tag is overwritten
+      - name: Push new images
+        if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
+        run: |
+          arr=(${{ steps.array.outputs.ARRAY_OF_CHANGES }})
+          if [ ${#arr[@]} -eq 0 ] 
+          then
+            echo "No images were build, nothing to push"
+          else
+            for path in "${arr[@]}"
+            do
+            docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA
+            done
+          fi
+    outputs:
+      ARRAY_OF_CHANGES: ${{ steps.array.outputs.ARRAY_OF_CHANGES }}
+#--------------------------------------------------------------------------------------------------
+  edit-kustomization:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
+
+      # Set the new image tags in kustomization.yaml
+      - name: Edit kustomization.yaml
+        working-directory: ./K8s-dev-cluster
+        run: |
+          NEW_SERVICES=( ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES }} )
+          for SERVICE in "${NEW_SERVICES[@]}"
+          do
+            echo "Setting a new tag for a $SERVICE"
+            kustomize edit set image eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$SERVICE:$GITHUB_SHA
+          done
+
+          cat kustomization.yaml
+
+      # Auto commit the changes
+      - name: Commit new kustomization.yaml to feature branch
+        working-directory: ./K8s-dev-cluster
+        run: |
+          BRANCH_NAME=${{ github.head_ref }}
+          git config --global user.name 'CI/CD pipeline'
+          git config --global user.email 'CI/CD-pipeline@users.noreply.github.com'
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git add kustomization.yaml
+          git commit -m "Auto commit - add new kustomization.yaml"
+          git push 
+
+      - name: Get SHA of auto-commit
+        id: sha
+        run: |
+          sha_new=$(git rev-parse HEAD)
+          echo $sha_new
+          echo "::set-output name=SHA::$sha_new"
+    outputs:
+      SHA: ${{ steps.sha.outputs.SHA }}
+#--------------------------------------------------------------------------------------------------
+  deploy-and-monitor:
+    runs-on: ubuntu-latest
+    needs: [ build-and-push, edit-kustomization ]
+    if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ needs.edit-kustomization.outputs.SHA }}
+          fetch-depth: 0
+
+      - name: Configure kubectl
+        uses: google-github-actions/get-gke-credentials@v0.2.1
+        with:
+          cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
+          location: ${{ secrets.GKE_ZONE }}
+          credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
+
+      # Create a seperate temporary namespace
+      - name: Create seperate namespace
+        working-directory: ./K8s-dev-cluster
+        run: kubectl create namespace claudie-$GITHUB_SHA
+
+      # Deploy services to new namespace
+      - name: Deploy to new namespace
+        working-directory: ./K8s-dev-cluster
+        run: |
+          kustomize edit set namespace claudie-$GITHUB_SHA
+          kustomize build | kubectl apply -f - 
+
+          cat kustomization.yaml
+
+      # Check if everything is ready and running
+      - name: Monitor status of the new namespace
+        run: |
+          for SERVICE in ${{ env.SERVICES }}
+          do 
+          kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=120s --namespace=claudie-$GITHUB_SHA
+          done
+
+          kubectl get pods --namespace=claudie-$GITHUB_SHA
+          kubectl delete namespace claudie-$GITHUB_SHA
