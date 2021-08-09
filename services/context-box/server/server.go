@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"sync"
 	"time"
 
 	terraformer "github.com/Berops/platform/services/terraformer/client"
@@ -44,6 +45,7 @@ var (
 	collection     *mongo.Collection
 	queueScheduler queue
 	queueBuilder   queue
+	mutexDBsave    sync.Mutex
 )
 
 //TODO: Change byte to project structure
@@ -102,6 +104,7 @@ func dataToConfigPb(data *configItem) (*pb.Config, error) {
 		CurrentState: currentState,
 		MsChecksum:   data.MsChecksum,
 		DsChecksum:   data.DsChecksum,
+		CsChecksum:   data.CsChecksum,
 		BuilderTTL:   int32(data.BuilderTTL),
 		SchedulerTTL: int32(data.SchedulerTTL),
 	}, nil
@@ -199,12 +202,14 @@ func compareChecksums(ch1 string, ch2 string) bool {
 }
 
 func configCheck() error {
+	mutexDBsave.Lock()
 	configs, err := getAllFromDB()
 	if err != nil {
 		return err
 	}
 	// loop through config
 	for _, config := range configs {
+		log.Println("CSCHECKSUM:", config.CsChecksum)
 		// check if item is already in some queue
 		if queueBuilder.contains(config) || queueScheduler.contains(config) {
 			// some queue already has this particular config
@@ -212,46 +217,46 @@ func configCheck() error {
 		}
 
 		// check for Scheduler
-		if config.SchedulerTTL <= 0 {
-			config.SchedulerTTL = defaultSchedulerTTL
+		if string(config.DsChecksum) != string(config.MsChecksum) {
+			if config.SchedulerTTL <= 0 {
+				config.SchedulerTTL = defaultSchedulerTTL
 
-			c, err := dataToConfigPb(config)
-			if err != nil {
-				return err
-			}
+				c, err := dataToConfigPb(config)
+				if err != nil {
+					return err
+				}
 
-			if _, err := saveToDB(c); err != nil {
-				return err
-			}
-
-			if string(config.DsChecksum) != string(config.MsChecksum) {
+				if _, err := saveToDB(c); err != nil {
+					return err
+				}
 				queueScheduler.configs = append(queueScheduler.configs, config)
 				continue
+			} else {
+				config.SchedulerTTL = config.SchedulerTTL - 1
 			}
-		} else {
-			config.SchedulerTTL = config.SchedulerTTL - 1
 		}
 
 		// check for Builder
-		if config.BuilderTTL <= 0 {
-			config.BuilderTTL = defaultBuilderTTL
+		if string(config.DsChecksum) != string(config.CsChecksum) {
+			if config.BuilderTTL <= 0 {
+				config.BuilderTTL = defaultBuilderTTL
 
-			c, err := dataToConfigPb(config)
-			if err != nil {
-				return err
-			}
+				c, err := dataToConfigPb(config)
+				if err != nil {
+					return err
+				}
 
-			if _, err := saveToDB(c); err != nil {
-				return err
-			}
-
-			if string(config.DsChecksum) != string(config.CsChecksum) {
+				if _, err := saveToDB(c); err != nil {
+					return err
+				}
 				queueBuilder.configs = append(queueBuilder.configs, config)
 				continue
+
+			} else {
+				config.BuilderTTL = config.BuilderTTL - 1
 			}
-		} else {
-			config.BuilderTTL = config.BuilderTTL - 1
 		}
+
 		// save data if both TTL were substracted
 		c, err := dataToConfigPb(config)
 		if err != nil {
@@ -262,6 +267,7 @@ func configCheck() error {
 			return nil
 		}
 	}
+	mutexDBsave.Unlock()
 	return nil
 }
 
@@ -305,7 +311,10 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 
 	// Save new config to the DB
 	config.DsChecksum = config.MsChecksum
+	config.SchedulerTTL = defaultSchedulerTTL
+	mutexDBsave.Lock()
 	config, err1 := saveToDB(config)
+	mutexDBsave.Unlock()
 	if err1 != nil {
 		return nil, status.Errorf(
 			codes.Internal,
@@ -360,7 +369,10 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 
 	// Save new config to the DB
 	config.CsChecksum = config.DsChecksum
+	config.BuilderTTL = defaultBuilderTTL
+	mutexDBsave.Lock()
 	config, err1 := saveToDB(config)
+	mutexDBsave.Unlock()
 	if err1 != nil {
 		return nil, status.Errorf(
 			codes.Internal,
