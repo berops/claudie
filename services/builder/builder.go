@@ -25,6 +25,11 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+type nodesToDelete struct {
+	masterCount uint32
+	workerCount uint32
+}
+
 type countsToDelete struct {
 	nodes map[string]*nodesToDelete //[provider]nodes
 }
