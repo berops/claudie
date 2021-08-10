@@ -63,4 +63,5 @@ message Ip {
   string public = 1;
   string private = 2;
   uint32 isControl = 3;
+  string provider = 4;
 }

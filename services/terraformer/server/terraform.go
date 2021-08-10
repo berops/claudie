@@ -85,7 +85,7 @@ func buildInfrastructure(config *pb.Config) error {
 				return err
 			}
 
-			fillNodes(m, out)
+			fillNodes(m, out, provider)
 		}
 		cluster.Ips = m
 		// Clean after Terraform. Remove tmp terraform dir.
@@ -224,7 +224,7 @@ func initTerraform(fileName string) error {
 	return executeTerraform(exec.Command("terraform", "init"), fileName)
 }
 
-// applyTerraform executes terraform terraform apply on a .tf files in a given path
+// applyTerraform executes terraform apply on a .tf files in a given path
 func applyTerraform(fileName string) error {
 	// terraform apply --auto-approve
 	return executeTerraform(exec.Command("terraform", "apply", "--auto-approve"), fileName)
@@ -266,7 +266,7 @@ func readOutput(data string) (map[string]map[string]string, error) {
 }
 
 // fillNodes gets ip addresses from a terraform output
-func fillNodes(m map[string]*pb.Ip, terraformOutput map[string]map[string]string) {
+func fillNodes(m map[string]*pb.Ip, terraformOutput map[string]map[string]string, provider string) {
 	for key, element := range terraformOutput["control"] {
 		_, ok := m[key]
 		var private = ""
@@ -278,6 +278,7 @@ func fillNodes(m map[string]*pb.Ip, terraformOutput map[string]map[string]string
 			Public:    element,
 			Private:   private,
 			IsControl: 1,
+			Provider:  provider,
 		}
 	}
 	for key, element := range terraformOutput["compute"] {
@@ -291,6 +292,7 @@ func fillNodes(m map[string]*pb.Ip, terraformOutput map[string]map[string]string
 			Public:    element,
 			Private:   private,
 			IsControl: 0,
+			Provider:  provider,
 		}
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"os/signal"
 	"time"
 
@@ -23,6 +24,10 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 )
+
+type countsToDelete struct {
+	nodes map[string]*nodesToDelete //[provider]nodes
+}
 
 func callTerraformer(config *pb.Config) (*pb.Config, error) {
 	// Create connection to Terraformer
@@ -73,7 +78,7 @@ func callKubeEleven(config *pb.Config) (*pb.Config, error) {
 	return res.GetConfig(), nil
 }
 
-func diff(config *pb.Config) *pb.Config {
+func diff(config *pb.Config) (*pb.Config, bool, map[string]*countsToDelete) {
 	adding, deleting := false, false
 	tmpConfig := proto.Clone(config).(*pb.Config)
 
@@ -87,6 +92,8 @@ func diff(config *pb.Config) *pb.Config {
 		nodePoolName string
 	}
 
+	var delCounts = make(map[string]*countsToDelete)
+
 	var tableCurrent = make(map[tableKey]nodeCount)
 	for _, cluster := range tmpConfig.GetCurrentState().GetClusters() {
 		for _, nodePool := range cluster.GetNodePools() {
@@ -96,8 +103,9 @@ func diff(config *pb.Config) *pb.Config {
 	}
 
 	for _, cluster := range tmpConfig.GetDesiredState().GetClusters() {
+		tmp := make(map[string]*nodesToDelete)
 		for _, nodePool := range cluster.GetNodePools() {
-
+			var nodesProvider nodesToDelete
 			key := tableKey{nodePoolName: nodePool.Name, clusterName: cluster.Name}
 
 			if _, ok := tableCurrent[key]; ok {
@@ -106,6 +114,7 @@ func diff(config *pb.Config) *pb.Config {
 					tmpNodePool.Master.Count = nodePool.Master.Count
 					adding = true
 				} else if nodePool.Master.Count < tableCurrent[key].masterCount {
+					nodesProvider.masterCount = tableCurrent[key].masterCount - nodePool.Master.Count
 					tmpNodePool.Master.Count = tableCurrent[key].masterCount
 					deleting = true
 				}
@@ -113,11 +122,16 @@ func diff(config *pb.Config) *pb.Config {
 					tmpNodePool.Worker.Count = nodePool.Worker.Count
 					adding = true
 				} else if nodePool.Worker.Count < tableCurrent[key].workerCount {
+					nodesProvider.workerCount = tableCurrent[key].workerCount - nodePool.Worker.Count
 					tmpNodePool.Worker.Count = tableCurrent[key].workerCount
 					deleting = true
 				}
+				tmp[nodePool.Provider.Name] = &nodesProvider
 				delete(tableCurrent, key)
 			}
+		}
+		delCounts[cluster.Name] = &countsToDelete{
+			nodes: tmp,
 		}
 	}
 
@@ -134,9 +148,11 @@ func diff(config *pb.Config) *pb.Config {
 	}
 
 	if adding && deleting {
-		return tmpConfig
+		return tmpConfig, deleting, delCounts
+	} else if deleting {
+		return nil, deleting, delCounts
 	} else {
-		return nil
+		return nil, deleting, nil
 	}
 }
 
@@ -208,13 +224,20 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 		config := res.GetConfig()
 		if config != nil {
 			var tmpConfig *pb.Config
+			var deleting bool
+			var toDelete = make(map[string]*countsToDelete)
 			config := res.GetConfig()
-			log.Println("I got config: ", config.GetCurrentState())
 			if len(config.CurrentState.GetClusters()) > 0 {
-				tmpConfig = diff(config)
+				tmpConfig, deleting, toDelete = diff(config)
 			}
 			if tmpConfig != nil {
 				processConfig(tmpConfig, c, true)
+			}
+			if deleting {
+				err := deleteNodes(config, toDelete)
+				if err != nil {
+					return err
+				}
 			}
 			go processConfig(config, c, false)
 		}
@@ -238,6 +261,64 @@ func healthCheck() error {
 	_, err = grpc.Dial(urls.WireguardianURL, grpc.WithInsecure())
 	if err != nil {
 		return fmt.Errorf("could not connect to Wireguardian: %v", err)
+	}
+	return nil
+}
+
+func deleteNodes(config *pb.Config, toDelete map[string]*countsToDelete) error {
+
+	for i, cluster := range config.CurrentState.Clusters {
+		var nodesToDelete []string
+		del := toDelete[cluster.Name]
+		for nodeName, ip := range cluster.Ips {
+			val, ok := del.nodes[ip.Provider]
+			if ok {
+				if val.masterCount > 0 && ip.IsControl > 0 {
+					val.masterCount--
+					nodesToDelete = append(nodesToDelete, nodeName)
+					continue
+				}
+				if val.workerCount > 0 && ip.IsControl == 0 {
+					val.workerCount--
+					nodesToDelete = append(nodesToDelete, nodeName)
+					continue
+				}
+			}
+		}
+		err := deleteNodesByName(cluster, nodesToDelete)
+		if err != nil {
+			return err
+		}
+		// Delete nodes from a current state Ips map
+		for _, nodeName := range nodesToDelete {
+			delete(config.CurrentState.Clusters[i].Ips, nodeName)
+		}
+	}
+	return nil
+}
+
+// deleteNodesByName checks if there is any difference in nodes between a desired state cluster and a running cluster
+func deleteNodesByName(cluster *pb.Cluster, nodesToDelete []string) error {
+	//kubectl drain <node-name> --ignore-daemonsets --delete-local-data ,all diffNodes
+	for _, node := range nodesToDelete {
+		log.Println("kubectl drain " + node + " --ignore-daemonsets --delete-local-data")
+		cmd := "kubectl drain " + node + " --ignore-daemonsets --delete-local-data --kubeconfig <(echo '" + cluster.GetKubeconfig() + "')"
+		_, err := exec.Command("bash", "-c", cmd).CombinedOutput()
+		if err != nil {
+			log.Println("Error while draining node "+node+":", err)
+			return err
+		}
+	}
+
+	//kubectl delete node <node-name>
+	for _, node := range nodesToDelete {
+		log.Println("kubectl delete node " + node)
+		cmd := "kubectl delete node " + node + " --kubeconfig <(echo '" + cluster.GetKubeconfig() + "')"
+		_, err := exec.Command("bash", "-c", cmd).CombinedOutput()
+		if err != nil {
+			log.Println("Error while deleting node "+node+":", err)
+			return err
+		}
 	}
 	return nil
 }
