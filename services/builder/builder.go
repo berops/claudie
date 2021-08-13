@@ -231,19 +231,22 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 			var tmpConfig *pb.Config
 			var deleting bool
 			var toDelete = make(map[string]*countsToDelete)
-			config := res.GetConfig()
 			if len(config.CurrentState.GetClusters()) > 0 {
 				tmpConfig, deleting, toDelete = diff(config)
 			}
 			if tmpConfig != nil {
+				log.Println("Processing a tmpConfig...")
 				processConfig(tmpConfig, c, true)
 			}
 			if deleting {
-				err := deleteNodes(config, toDelete)
+				log.Println("Deleting nodes...")
+				config, err = deleteNodes(config, toDelete)
 				if err != nil {
 					return err
 				}
 			}
+
+			log.Println("Processing a config...")
 			go processConfig(config, c, false)
 		}
 
@@ -270,9 +273,8 @@ func healthCheck() error {
 	return nil
 }
 
-func deleteNodes(config *pb.Config, toDelete map[string]*countsToDelete) error {
-
-	for i, cluster := range config.CurrentState.Clusters {
+func deleteNodes(config *pb.Config, toDelete map[string]*countsToDelete) (*pb.Config, error) {
+	for _, cluster := range config.CurrentState.Clusters {
 		var nodesToDelete []string
 		del := toDelete[cluster.Name]
 		for nodeName, ip := range cluster.Ips {
@@ -292,14 +294,14 @@ func deleteNodes(config *pb.Config, toDelete map[string]*countsToDelete) error {
 		}
 		err := deleteNodesByName(cluster, nodesToDelete)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		// Delete nodes from a current state Ips map
 		for _, nodeName := range nodesToDelete {
-			delete(config.CurrentState.Clusters[i].Ips, nodeName)
+			delete(cluster.GetIps(), nodeName)
 		}
 	}
-	return nil
+	return config, nil
 }
 
 // deleteNodesByName checks if there is any difference in nodes between a desired state cluster and a running cluster

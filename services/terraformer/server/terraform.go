@@ -84,8 +84,7 @@ func buildInfrastructure(config *pb.Config) error {
 			if err != nil {
 				return err
 			}
-
-			fillNodes(m, out, provider)
+			m = fillNodes(m, out, provider)
 		}
 		cluster.Ips = m
 		// Clean after Terraform. Remove tmp terraform dir.
@@ -266,35 +265,47 @@ func readOutput(data string) (map[string]map[string]string, error) {
 }
 
 // fillNodes gets ip addresses from a terraform output
-func fillNodes(m map[string]*pb.Ip, terraformOutput map[string]map[string]string, provider string) {
-	for key, element := range terraformOutput["control"] {
-		_, ok := m[key]
+func fillNodes(mOld map[string]*pb.Ip, terraformOutput map[string]map[string]string, provider string) map[string]*pb.Ip {
+	mNew := make(map[string]*pb.Ip)
+	for key, ip := range terraformOutput["control"] {
+
 		var private = ""
 		// If node exist, assign previous private IP
-		if ok {
-			private = m[key].Private
+		existingKey, _ := containPublicIP(mOld, ip)
+		if existingKey != "" {
+			private = mOld[existingKey].Private
 		}
-		m[key] = &pb.Ip{
-			Public:    element,
+		mNew[key] = &pb.Ip{
+			Public:    ip,
 			Private:   private,
 			IsControl: 1,
 			Provider:  provider,
 		}
 	}
-	for key, element := range terraformOutput["compute"] {
-		_, ok := m[key]
+	for key, ip := range terraformOutput["compute"] {
 		var private = ""
 		// If node exist, assign previous private IP
-		if ok {
-			private = m[key].Private
+		existingKey, _ := containPublicIP(mOld, ip)
+		if existingKey != "" {
+			private = mOld[existingKey].Private
 		}
-		m[key] = &pb.Ip{
-			Public:    element,
+		mNew[key] = &pb.Ip{
+			Public:    ip,
 			Private:   private,
 			IsControl: 0,
 			Provider:  provider,
 		}
 	}
+	return mNew
+}
+
+func containPublicIP(m map[string]*pb.Ip, ip string) (string, error) {
+	for key, ips := range m {
+		if ips.Public == ip {
+			return key, nil
+		}
+	}
+	return "", fmt.Errorf("ip does not exist")
 }
 
 // getProviders returns names of all providers used in a cluster
