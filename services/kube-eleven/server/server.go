@@ -50,7 +50,7 @@ func (d *data) formatTemplateData(cluster *pb.Cluster) {
 	}
 	d.Nodes = append(controlNodes, workerNodes...)
 	d.Kubernetes = cluster.GetKubernetes()
-	d.ApiEndpoint = d.Nodes[0].GetPublic()
+	d.ApiEndpoint = d.Nodes[0].GetPublic() //TODO: for production change to private
 }
 
 func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb.BuildClusterResponse, error) {

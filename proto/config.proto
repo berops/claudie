@@ -64,4 +64,5 @@ message Ip {
   string private = 2;
   uint32 isControl = 3;
   string provider = 4;
+  string nodepoolName = 5;
 }

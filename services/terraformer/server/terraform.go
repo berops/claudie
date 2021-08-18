@@ -37,7 +37,6 @@ func buildInfrastructure(config *pb.Config) error {
 	var backendData Backend
 	backendData.ProjectName = desiredState.GetName()
 	for _, cluster := range desiredState.Clusters {
-		providers := getProviders(cluster)
 		log.Println("Cluster name:", cluster.GetName())
 		backendData.ClusterName = cluster.GetName()
 		// Creating backend.tf file from the template
@@ -74,8 +73,8 @@ func buildInfrastructure(config *pb.Config) error {
 		} else {
 			m = tmpCluster.Ips
 		}
-		for _, provider := range providers {
-			output, err := outputTerraform(outputPath, provider)
+		for _, nodepool := range cluster.NodePools {
+			output, err := outputTerraform(outputPath, nodepool.Provider.Name)
 			if err != nil {
 				return err
 			}
@@ -84,7 +83,7 @@ func buildInfrastructure(config *pb.Config) error {
 			if err != nil {
 				return err
 			}
-			m = fillNodes(m, out, provider)
+			m = fillNodes(m, out, nodepool)
 		}
 		cluster.Ips = m
 		// Clean after Terraform. Remove tmp terraform dir.
@@ -265,7 +264,7 @@ func readOutput(data string) (map[string]map[string]string, error) {
 }
 
 // fillNodes gets ip addresses from a terraform output
-func fillNodes(mOld map[string]*pb.Ip, terraformOutput map[string]map[string]string, provider string) map[string]*pb.Ip {
+func fillNodes(mOld map[string]*pb.Ip, terraformOutput map[string]map[string]string, nodepool *pb.NodePool) map[string]*pb.Ip {
 	mNew := make(map[string]*pb.Ip)
 	for key, ip := range terraformOutput["control"] {
 
@@ -276,10 +275,11 @@ func fillNodes(mOld map[string]*pb.Ip, terraformOutput map[string]map[string]str
 			private = mOld[existingKey].Private
 		}
 		mNew[key] = &pb.Ip{
-			Public:    ip,
-			Private:   private,
-			IsControl: 1,
-			Provider:  provider,
+			Public:       ip,
+			Private:      private,
+			IsControl:    1,
+			Provider:     nodepool.Provider.Name,
+			NodepoolName: nodepool.Name,
 		}
 	}
 	for key, ip := range terraformOutput["compute"] {
@@ -290,10 +290,11 @@ func fillNodes(mOld map[string]*pb.Ip, terraformOutput map[string]map[string]str
 			private = mOld[existingKey].Private
 		}
 		mNew[key] = &pb.Ip{
-			Public:    ip,
-			Private:   private,
-			IsControl: 0,
-			Provider:  provider,
+			Public:       ip,
+			Private:      private,
+			IsControl:    0,
+			Provider:     nodepool.Provider.Name,
+			NodepoolName: nodepool.Name,
 		}
 	}
 	return mNew

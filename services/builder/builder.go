@@ -298,6 +298,18 @@ func deleteNodes(config *pb.Config, toDelete map[string]*countsToDelete) (*pb.Co
 		}
 		// Delete nodes from a current state Ips map
 		for _, nodeName := range nodesToDelete {
+			for key, val := range cluster.GetIps() {
+				if key == nodeName {
+					nodepool := getNodePoolByName(val.NodepoolName, cluster.NodePools)
+					if val.IsControl > 1 {
+						// decrement master count
+						nodepool.Master.Count = nodepool.GetMaster().GetCount() - 1
+					} else {
+						// decrement worker count
+						nodepool.Worker.Count = nodepool.GetWorker().GetCount() - 1
+					}
+				}
+			}
 			delete(cluster.GetIps(), nodeName)
 		}
 	}
