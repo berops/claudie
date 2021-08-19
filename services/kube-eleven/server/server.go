@@ -33,7 +33,7 @@ type data struct {
 func (d *data) formatTemplateData(cluster *pb.Cluster) {
 	var controlNodes []*pb.Ip
 	var workerNodes []*pb.Ip
-	var hasApiEndpoint bool
+	hasApiEndpoint := false
 
 	for _, ip := range cluster.Ips {
 		if ip.GetIsControl() == 1 {
@@ -50,7 +50,7 @@ func (d *data) formatTemplateData(cluster *pb.Cluster) {
 	}
 	d.Nodes = append(controlNodes, workerNodes...)
 	d.Kubernetes = cluster.GetKubernetes()
-	d.ApiEndpoint = d.Nodes[0].GetPublic() //TODO: for production change to private
+	d.ApiEndpoint = d.Nodes[0].GetPrivate()
 }
 
 func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb.BuildClusterResponse, error) {

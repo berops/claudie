@@ -269,15 +269,17 @@ func fillNodes(mOld map[string]*pb.Ip, terraformOutput map[string]map[string]str
 	for key, ip := range terraformOutput["control"] {
 
 		var private = ""
+		var control uint32 = 1
 		// If node exist, assign previous private IP
-		existingKey, _ := containPublicIP(mOld, ip)
-		if existingKey != "" {
-			private = mOld[existingKey].Private
+		existingIp, _ := existsInCluster(mOld, ip)
+		if existingIp != nil {
+			private = existingIp.Private
+			control = existingIp.IsControl
 		}
 		mNew[key] = &pb.Ip{
 			Public:       ip,
 			Private:      private,
-			IsControl:    1,
+			IsControl:    control,
 			Provider:     nodepool.Provider.Name,
 			NodepoolName: nodepool.Name,
 		}
@@ -285,9 +287,9 @@ func fillNodes(mOld map[string]*pb.Ip, terraformOutput map[string]map[string]str
 	for key, ip := range terraformOutput["compute"] {
 		var private = ""
 		// If node exist, assign previous private IP
-		existingKey, _ := containPublicIP(mOld, ip)
-		if existingKey != "" {
-			private = mOld[existingKey].Private
+		existingIp, _ := existsInCluster(mOld, ip)
+		if existingIp != nil {
+			private = existingIp.Private
 		}
 		mNew[key] = &pb.Ip{
 			Public:       ip,
@@ -300,13 +302,13 @@ func fillNodes(mOld map[string]*pb.Ip, terraformOutput map[string]map[string]str
 	return mNew
 }
 
-func containPublicIP(m map[string]*pb.Ip, ip string) (string, error) {
-	for key, ips := range m {
+func existsInCluster(m map[string]*pb.Ip, ip string) (*pb.Ip, error) {
+	for _, ips := range m {
 		if ips.Public == ip {
-			return key, nil
+			return ips, nil
 		}
 	}
-	return "", fmt.Errorf("ip does not exist")
+	return nil, fmt.Errorf("ip does not exist")
 }
 
 // getProviders returns names of all providers used in a cluster
