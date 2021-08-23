@@ -82,7 +82,7 @@ func applyTestSet(pathToSet string, c pb.ContextBoxServiceClient) error {
 			log.Fatalln(errR)
 		}
 
-		id, err := cbox.SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
+		id, err = cbox.SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
 			Config: &pb.Config{
 				Name:     file.Name(),
 				Id:       id,
