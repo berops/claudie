@@ -320,8 +320,8 @@ func deleteNodes(config *pb.Config, toDelete map[string]*countsToDelete) (*pb.Co
 func deleteNodesByName(cluster *pb.Cluster, nodesToDelete []string) error {
 	//kubectl drain <node-name> --ignore-daemonsets --delete-local-data ,all diffNodes
 	for _, node := range nodesToDelete {
-		log.Println("kubectl drain " + node + " --ignore-daemonsets --delete-emptydir-data")
-		cmd := "kubectl drain " + node + " --ignore-daemonsets --delete-emptydir-data --kubeconfig <(echo '" + cluster.GetKubeconfig() + "')"
+		log.Println("kubectl drain " + node + " --ignore-daemonsets --delete-local-data")
+		cmd := "kubectl drain " + node + " --ignore-daemonsets --delete-local-data --kubeconfig <(echo '" + cluster.GetKubeconfig() + "')"
 		res, err := exec.Command("bash", "-c", cmd).CombinedOutput()
 		if err != nil {
 			log.Println("Error while draining node "+node+":", err)
