@@ -82,9 +82,9 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 		}
 		cluster.Kubeconfig = kc
 
-		/*if err := deleteTmpFiles(); err != nil {
+		if err := deleteTmpFiles(); err != nil {
 			return nil, err
-		}*/
+		}
 	}
 
 	return &pb.BuildClusterResponse{Config: config}, nil
@@ -95,12 +95,6 @@ func createKeyFile(key string, keyName string) error {
 }
 
 func genKubeOneConfig(templatePath string, outputPath string, d interface{}) error {
-	if _, err := os.Stat("kubeone"); os.IsNotExist(err) { //this creates a new file if it doesn't exist
-		if err := os.Mkdir("kubeone", os.ModePerm); err != nil {
-			return err
-		}
-	}
-
 	tpl, err := template.ParseFiles(templatePath)
 	if err != nil {
 		return fmt.Errorf("failed to load the template file: %v", err)
@@ -120,7 +114,7 @@ func genKubeOneConfig(templatePath string, outputPath string, d interface{}) err
 
 func runKubeOne() error {
 	fmt.Println("Running KubeOne")
-	cmd := exec.Command("kubeone", "apply", "-m", "kubeone.yaml", "-y")
+	cmd := exec.Command("kubeone", "apply", "-m", "kubeone.yaml", "-y", "--verbose")
 	cmd.Dir = outputPath //golang will execute command from this directory
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
