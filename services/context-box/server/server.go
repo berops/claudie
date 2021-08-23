@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"sync"
 	"time"
 
 	terraformer "github.com/Berops/platform/services/terraformer/client"
@@ -44,6 +45,7 @@ var (
 	collection     *mongo.Collection
 	queueScheduler queue
 	queueBuilder   queue
+	mutexDBsave    sync.Mutex
 )
 
 //TODO: Change byte to project structure
@@ -102,6 +104,7 @@ func dataToConfigPb(data *configItem) (*pb.Config, error) {
 		CurrentState: currentState,
 		MsChecksum:   data.MsChecksum,
 		DsChecksum:   data.DsChecksum,
+		CsChecksum:   data.CsChecksum,
 		BuilderTTL:   int32(data.BuilderTTL),
 		SchedulerTTL: int32(data.SchedulerTTL),
 	}, nil
@@ -119,7 +122,7 @@ func saveToDB(config *pb.Config) (*pb.Config, error) {
 		return nil, fmt.Errorf("error while converting from protobuf to byte: %v", errCS)
 	}
 
-	//Parse data and map it to configItem struct
+	//Parse data and map it to the configItem struct
 	data := &configItem{}
 	data.Name = config.GetName()
 	data.Manifest = config.GetManifest()
@@ -132,8 +135,9 @@ func saveToDB(config *pb.Config) (*pb.Config, error) {
 	data.SchedulerTTL = int(config.GetSchedulerTTL())
 
 	//Check if ID exists
+	//If config has already some ID:
 	if config.GetId() != "" {
-		//Get id from config
+		//Get id from config as oid
 		oid, err := primitive.ObjectIDFromHex(config.GetId())
 		if err != nil {
 			return nil, status.Errorf(
@@ -150,30 +154,28 @@ func saveToDB(config *pb.Config) (*pb.Config, error) {
 				fmt.Sprintf("Cannot update config with specified ID: %v", err),
 			)
 		}
+	} else {
+		//Add data to the collection if OID doesn't exist
+		res, err := collection.InsertOne(context.Background(), data)
+		if err != nil {
+			// Return error in protobuf
+			return nil, status.Errorf(
+				codes.Internal,
+				fmt.Sprintf("Internal error: %v", err),
+			)
+		}
 
-		return &pb.Config{}, nil
+		oid, ok := res.InsertedID.(primitive.ObjectID)
+		if !ok {
+			return nil, status.Errorf(
+				codes.Internal,
+				fmt.Sprintln("Cannot convert to OID"),
+			)
+		}
+		data.ID = oid
+		config.Id = oid.Hex()
+		//Return config with new ID
 	}
-
-	//Add data to the collection if OID doesn't exist
-	res, err := collection.InsertOne(context.Background(), data)
-	if err != nil {
-		// Return error in protobuf
-		return nil, status.Errorf(
-			codes.Internal,
-			fmt.Sprintf("Internal error: %v", err),
-		)
-	}
-
-	oid, ok := res.InsertedID.(primitive.ObjectID)
-	if !ok {
-		return nil, status.Errorf(
-			codes.Internal,
-			fmt.Sprintln("Cannot convert to OID"),
-		)
-	}
-	data.ID = oid
-	config.Id = oid.Hex()
-	//Return config with new ID
 	return config, nil
 }
 
@@ -200,12 +202,14 @@ func compareChecksums(ch1 string, ch2 string) bool {
 }
 
 func configCheck() error {
+	mutexDBsave.Lock()
 	configs, err := getAllFromDB()
 	if err != nil {
 		return err
 	}
 	// loop through config
 	for _, config := range configs {
+		log.Println("CSCHECKSUM:", config.CsChecksum)
 		// check if item is already in some queue
 		if queueBuilder.contains(config) || queueScheduler.contains(config) {
 			// some queue already has this particular config
@@ -213,46 +217,46 @@ func configCheck() error {
 		}
 
 		// check for Scheduler
-		if config.SchedulerTTL <= 0 {
-			config.SchedulerTTL = defaultSchedulerTTL
+		if string(config.DsChecksum) != string(config.MsChecksum) {
+			if config.SchedulerTTL <= 0 {
+				config.SchedulerTTL = defaultSchedulerTTL
 
-			c, err := dataToConfigPb(config)
-			if err != nil {
-				return err
-			}
+				c, err := dataToConfigPb(config)
+				if err != nil {
+					return err
+				}
 
-			if _, err := saveToDB(c); err != nil {
-				return err
-			}
-
-			if string(config.DsChecksum) != string(config.MsChecksum) {
+				if _, err := saveToDB(c); err != nil {
+					return err
+				}
 				queueScheduler.configs = append(queueScheduler.configs, config)
 				continue
+			} else {
+				config.SchedulerTTL = config.SchedulerTTL - 1
 			}
-		} else {
-			config.SchedulerTTL = config.SchedulerTTL - 1
 		}
 
 		// check for Builder
-		if config.BuilderTTL <= 0 {
-			config.BuilderTTL = defaultBuilderTTL
+		if string(config.DsChecksum) != string(config.CsChecksum) {
+			if config.BuilderTTL <= 0 {
+				config.BuilderTTL = defaultBuilderTTL
 
-			c, err := dataToConfigPb(config)
-			if err != nil {
-				return err
-			}
+				c, err := dataToConfigPb(config)
+				if err != nil {
+					return err
+				}
 
-			if _, err := saveToDB(c); err != nil {
-				return err
-			}
-
-			if string(config.DsChecksum) != string(config.CsChecksum) {
+				if _, err := saveToDB(c); err != nil {
+					return err
+				}
 				queueBuilder.configs = append(queueBuilder.configs, config)
 				continue
+
+			} else {
+				config.BuilderTTL = config.BuilderTTL - 1
 			}
-		} else {
-			config.BuilderTTL = config.BuilderTTL - 1
 		}
+
 		// save data if both TTL were substracted
 		c, err := dataToConfigPb(config)
 		if err != nil {
@@ -263,6 +267,7 @@ func configCheck() error {
 			return nil
 		}
 	}
+	mutexDBsave.Unlock()
 	return nil
 }
 
@@ -292,7 +297,7 @@ func getAllFromDB() ([]*configItem, error) {
 }
 
 func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
-	log.Println("SaveConfigScheduler request")
+	log.Println("CLIENT REQUEST: SaveConfigScheduler")
 	config := req.GetConfig()
 
 	// Get config with the same ID from the DB
@@ -306,7 +311,10 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 
 	// Save new config to the DB
 	config.DsChecksum = config.MsChecksum
+	config.SchedulerTTL = defaultSchedulerTTL
+	mutexDBsave.Lock()
 	config, err1 := saveToDB(config)
+	mutexDBsave.Unlock()
 	if err1 != nil {
 		return nil, status.Errorf(
 			codes.Internal,
@@ -318,23 +326,36 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 }
 
 func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
-	log.Println("SaveConfigFrontEnd request")
-	config := req.GetConfig()
-	msChecksum := md5.Sum([]byte(config.GetManifest())) //Calculate md5 hash for a manifest file
-	config.MsChecksum = msChecksum[:]                   //Creating a slice using an array you can just make a simple slice expression
+	log.Println("CLIENT REQUEST: SaveConfigFrontEnd")
+	newConfig := req.GetConfig()
+	msChecksum := md5.Sum([]byte(newConfig.GetManifest())) //Calculate md5 hash for a manifest file
+	newConfig.MsChecksum = msChecksum[:]                   //Creating a slice using an array you can just make a simple slice expression
 
-	config, err := saveToDB(config)
+	if newConfig.GetId() != "" {
+		//Check if there is already ID in the DB
+		oldConfig, err := getFromDB(newConfig.GetId())
+		if err != nil {
+			log.Fatalln("Error while getting old newConfig from the DB", err)
+		}
+		oldConfigPb, err := dataToConfigPb(&oldConfig)
+		if err != nil {
+			log.Fatalln("Error while converting data to pb", err)
+		}
+		newConfig.CurrentState = oldConfigPb.CurrentState
+	}
+
+	newConfig, err := saveToDB(newConfig)
 	if err != nil {
 		return nil, status.Errorf(
 			codes.Internal,
 			fmt.Sprintf("Internal error: %v", err),
 		)
 	}
-	return &pb.SaveConfigResponse{Config: config}, nil
+	return &pb.SaveConfigResponse{Config: newConfig}, nil
 }
 
 func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
-	log.Println("SaveConfigBuilder request")
+	log.Println("CLIENT REQUEST: SaveConfigBuilder")
 	config := req.GetConfig()
 
 	// Get config with the same ID from the DB
@@ -348,7 +369,10 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 
 	// Save new config to the DB
 	config.CsChecksum = config.DsChecksum
+	config.BuilderTTL = defaultBuilderTTL
+	mutexDBsave.Lock()
 	config, err1 := saveToDB(config)
+	mutexDBsave.Unlock()
 	if err1 != nil {
 		return nil, status.Errorf(
 			codes.Internal,
@@ -356,6 +380,20 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 		)
 	}
 	return &pb.SaveConfigResponse{Config: config}, nil
+}
+
+// PrintConfig is a gRPC service: function returns one config from the DB
+func (*server) PrintConfig(ctx context.Context, req *pb.PrintConfigRequest) (*pb.PrintConfigResponse, error) {
+	log.Println("CLIENT REQUEST: PrintConfig")
+	d, err := getFromDB(req.Id)
+	if err != nil {
+		return nil, err
+	}
+	config, err := dataToConfigPb(&d)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.PrintConfigResponse{Config: config}, nil
 }
 
 // GetConfigScheduler is a gRPC service: function returns one config from the queueScheduler
@@ -392,7 +430,7 @@ func (*server) GetConfigBuilder(ctx context.Context, req *pb.GetConfigRequest) (
 
 // GetAllConfigs is a gRPC service: function returns all configs from the DB
 func (*server) GetAllConfigs(ctx context.Context, req *pb.GetAllConfigsRequest) (*pb.GetAllConfigsResponse, error) {
-	log.Println("GetAllConfigs request")
+	log.Println("CLIENT REQUEST: GetAllConfigs")
 	var res []*pb.Config //slice of configs
 
 	configs, err := getAllFromDB() //get all configs from database
@@ -411,34 +449,9 @@ func (*server) GetAllConfigs(ctx context.Context, req *pb.GetAllConfigsRequest) 
 	return &pb.GetAllConfigsResponse{Configs: res}, nil
 }
 
-// GetConfigByID is a gRPC service: function returns config with a specified ID from DB
-func (*server) GetConfigByID(ctx context.Context, req *pb.GetConfigByIDRequest) (*pb.GetConfigByIDResponse, error) {
-	log.Println("GetConfigByID request")
-	var res *pb.Config
-
-	configs, err := getAllFromDB() //get all configs from database
-	if err != nil {
-		return nil, err
-	}
-	for _, config := range configs {
-		c, err := dataToConfigPb(config)
-		if err != nil {
-			return nil, err
-		}
-		if c.Id == req.Id {
-			res = c
-			break
-		}
-	}
-
-	return &pb.GetConfigByIDResponse{Config: res}, nil
-}
-
-
-
 // DeleteConfig is a gRPC service: function deletes one specified config from the DB and returns it's ID
 func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*pb.DeleteConfigResponse, error) {
-	log.Println("DeleteConfig request")
+	log.Println("CLIENT REQUEST: DeleteConfig")
 
 	config, err := getFromDB(req.Id)
 	if err != nil {

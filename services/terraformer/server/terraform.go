@@ -31,12 +31,12 @@ func createKeyFile(key string, keyType string) error {
 }
 
 // buildInfrastructure is generating terraform files for different providers and calling terraform
-func buildInfrastructure(desiredState *pb.Project) error {
+func buildInfrastructure(config *pb.Config) error {
+	desiredState := config.DesiredState
 	fmt.Println("Generating templates")
 	var backendData Backend
 	backendData.ProjectName = desiredState.GetName()
 	for _, cluster := range desiredState.Clusters {
-		providers := getProviders(cluster)
 		log.Println("Cluster name:", cluster.GetName())
 		backendData.ClusterName = cluster.GetName()
 		// Creating backend.tf file from the template
@@ -65,9 +65,16 @@ func buildInfrastructure(desiredState *pb.Project) error {
 		}
 
 		// Fill public ip addresses
-		m := make(map[string]*pb.Ip)
-		for _, provider := range providers {
-			output, err := outputTerraform(outputPath, provider)
+		var m map[string]*pb.Ip
+		tmpCluster := getClusterByName(cluster.Name, config.CurrentState.Clusters)
+
+		if tmpCluster == nil {
+			m = make(map[string]*pb.Ip)
+		} else {
+			m = tmpCluster.Ips
+		}
+		for _, nodepool := range cluster.NodePools {
+			output, err := outputTerraform(outputPath, nodepool.Provider.Name)
 			if err != nil {
 				return err
 			}
@@ -76,8 +83,7 @@ func buildInfrastructure(desiredState *pb.Project) error {
 			if err != nil {
 				return err
 			}
-
-			fillNodes(m, out)
+			m = fillNodes(m, out, nodepool)
 		}
 		cluster.Ips = m
 		// Clean after Terraform. Remove tmp terraform dir.
@@ -89,6 +95,23 @@ func buildInfrastructure(desiredState *pb.Project) error {
 
 	for _, m := range desiredState.Clusters {
 		log.Println(m.Ips)
+	}
+
+	return nil
+}
+
+func getClusterByName(name string, clusters []*pb.Cluster) *pb.Cluster {
+	if name == "" {
+		return nil
+	}
+	if len(clusters) == 0 {
+		return nil
+	}
+
+	for _, cluster := range clusters {
+		if cluster.Name == name {
+			return cluster
+		}
 	}
 
 	return nil
@@ -199,7 +222,7 @@ func initTerraform(fileName string) error {
 	return executeTerraform(exec.Command("terraform", "init"), fileName)
 }
 
-// applyTerraform executes terraform terraform apply on a .tf files in a given path
+// applyTerraform executes terraform apply on a .tf files in a given path
 func applyTerraform(fileName string) error {
 	// terraform apply --auto-approve
 	return executeTerraform(exec.Command("terraform", "apply", "--auto-approve"), fileName)
@@ -241,18 +264,51 @@ func readOutput(data string) (map[string]map[string]string, error) {
 }
 
 // fillNodes gets ip addresses from a terraform output
-func fillNodes(m map[string]*pb.Ip, terraformOutput map[string]map[string]string) {
-	for key, element := range terraformOutput["control"] {
-		log.Println("Key:", key, "=>", "Element:", element)
-		m[key] = &pb.Ip{
-			Public:    element,
-			IsControl: true,
+func fillNodes(mOld map[string]*pb.Ip, terraformOutput map[string]map[string]string, nodepool *pb.NodePool) map[string]*pb.Ip {
+	mNew := make(map[string]*pb.Ip)
+	for key, ip := range terraformOutput["control"] {
+
+		var private = ""
+		var control uint32 = 1
+		// If node exist, assign previous private IP
+		existingIp, _ := existsInCluster(mOld, ip)
+		if existingIp != nil {
+			private = existingIp.Private
+			control = existingIp.IsControl
+		}
+		mNew[key] = &pb.Ip{
+			Public:       ip,
+			Private:      private,
+			IsControl:    control,
+			Provider:     nodepool.Provider.Name,
+			NodepoolName: nodepool.Name,
 		}
 	}
-	for key, element := range terraformOutput["compute"] {
-		log.Println("Key:", key, "=>", "Element:", element)
-		m[key] = &pb.Ip{Public: element}
+	for key, ip := range terraformOutput["compute"] {
+		var private = ""
+		// If node exist, assign previous private IP
+		existingIp, _ := existsInCluster(mOld, ip)
+		if existingIp != nil {
+			private = existingIp.Private
+		}
+		mNew[key] = &pb.Ip{
+			Public:       ip,
+			Private:      private,
+			IsControl:    0,
+			Provider:     nodepool.Provider.Name,
+			NodepoolName: nodepool.Name,
+		}
 	}
+	return mNew
+}
+
+func existsInCluster(m map[string]*pb.Ip, ip string) (*pb.Ip, error) {
+	for _, ips := range m {
+		if ips.Public == ip {
+			return ips, nil
+		}
+	}
+	return nil, fmt.Errorf("ip does not exist")
 }
 
 // getProviders returns names of all providers used in a cluster

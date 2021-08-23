@@ -31,18 +31,30 @@ type data struct {
 
 // formatTemplateData formats data for kubeone template input
 func (d *data) formatTemplateData(cluster *pb.Cluster) {
+	var controlNodes []*pb.Ip
+	var workerNodes []*pb.Ip
+	hasApiEndpoint := false
+
 	for _, ip := range cluster.Ips {
-		if ip.GetIsControl() {
-			d.Nodes = append(d.Nodes, ip)
+		if ip.GetIsControl() == 1 {
+			controlNodes = append(controlNodes, ip)
+		} else if ip.GetIsControl() == 2 {
+			hasApiEndpoint = true
+			d.Nodes = append(d.Nodes, ip) //the Api endpoint must be first in slice
+		} else {
+			workerNodes = append(workerNodes, ip)
 		}
 	}
-	for _, ip := range cluster.Ips {
-		if !ip.GetIsControl() {
-			d.Nodes = append(d.Nodes, ip)
-		}
+	if !hasApiEndpoint {
+		controlNodes[0].IsControl = 2
 	}
+	// if there is something in d.Nodes, it would be rewritten in line 55, therefore this condition
+	if len(d.Nodes) > 0 {
+		controlNodes = append(d.Nodes, controlNodes...)
+	}
+	d.Nodes = append(controlNodes, workerNodes...)
 	d.Kubernetes = cluster.GetKubernetes()
-	d.ApiEndpoint = d.Nodes[0].GetPrivate()
+	d.ApiEndpoint = d.Nodes[0].GetPublic()
 }
 
 func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb.BuildClusterResponse, error) {
@@ -70,12 +82,11 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 		}
 		cluster.Kubeconfig = kc
 
-		if err := deleteTmpFiles(); err != nil {
+		/*if err := deleteTmpFiles(); err != nil {
 			return nil, err
-		}
+		}*/
 	}
 
-	//fmt.Println("Kubeconfig:", string(req.GetCluster().GetKubeconfig()))
 	return &pb.BuildClusterResponse{Config: config}, nil
 }
 

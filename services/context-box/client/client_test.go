@@ -23,18 +23,7 @@ func ClientConnection() pb.ContextBoxServiceClient {
 }
 
 func TestGetConfigScheduler(t *testing.T) {
-	//Create connection to Context-box
-	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("could not connect to server: %v", err)
-	}
-	defer func() {
-		err := cc.Close()
-		require.NoError(t, err)
-	}()
-
-	// Creating the client
-	c := pb.NewContextBoxServiceClient(cc)
+	c := ClientConnection()
 
 	res, err := GetConfigScheduler(c)
 	require.NoError(t, err)
@@ -42,18 +31,7 @@ func TestGetConfigScheduler(t *testing.T) {
 }
 
 func TestGetConfigBuilder(t *testing.T) {
-	//Create connection to Context-box
-	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("could not connect to server: %v", err)
-	}
-	defer func() {
-		err := cc.Close()
-		require.NoError(t, err)
-	}()
-
-	// Creating the client
-	c := pb.NewContextBoxServiceClient(cc)
+	c := ClientConnection()
 
 	res, err := GetConfigBuilder(c)
 	require.NoError(t, err)
@@ -61,18 +39,7 @@ func TestGetConfigBuilder(t *testing.T) {
 }
 
 func TestGetAllConfigs(t *testing.T) {
-	//Create connection to Context-box
-	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("could not connect to server: %v", err)
-	}
-	defer func() {
-		err := cc.Close()
-		require.NoError(t, err)
-	}()
-
-	// Creating the client
-	c := pb.NewContextBoxServiceClient(cc)
+	c := ClientConnection()
 
 	res, err := GetAllConfigs(c)
 	require.NoError(t, err)
@@ -82,28 +49,16 @@ func TestGetAllConfigs(t *testing.T) {
 }
 
 func TestSaveConfigFrontEnd(t *testing.T) {
-	//Create connection to Context-box
-	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("could not connect to server: %v", err)
-	}
-	defer func() {
-		err := cc.Close()
-		require.NoError(t, err)
-	}()
-
-	// Creating the client
-	c := pb.NewContextBoxServiceClient(cc)
+	c := ClientConnection()
 
 	manifest, errR := ioutil.ReadFile("./manifest.yaml") //this is manifest from this test file
 	if errR != nil {
 		log.Fatalln(errR)
 	}
 
-	_, err = SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
+	_, err := SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
 		Config: &pb.Config{
 			Name:     "NewTestConfig name",
-			Id:       "611f7abcc5b81dd7af082a95",
 			Manifest: string(manifest),
 		},
 	})
@@ -111,25 +66,14 @@ func TestSaveConfigFrontEnd(t *testing.T) {
 }
 
 func TestSaveConfigScheduler(t *testing.T) {
-	//Create connection to Context-box
-	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("could not connect to server: %v", err)
-	}
-	defer func() {
-		err := cc.Close()
-		require.NoError(t, err)
-	}()
-
-	// Creating the client
-	c := pb.NewContextBoxServiceClient(cc)
+	c := ClientConnection()
 
 	manifest, errR := ioutil.ReadFile("./manifest.yaml") //this is manifest from this test file
 	if errR != nil {
 		log.Fatalln(errR)
 	}
 
-	err = SaveConfigScheduler(c, &pb.SaveConfigRequest{
+	err := SaveConfigScheduler(c, &pb.SaveConfigRequest{
 		Config: &pb.Config{
 			Id:           "60bf64e9489c76f2e72a768f",
 			Name:         "TestSaveConfigScheduler",
@@ -143,15 +87,15 @@ func TestSaveConfigScheduler(t *testing.T) {
 
 func TestDeleteConfig(t *testing.T) {
 	c := ClientConnection()
-	err := DeleteConfig(c, "611f7abcc5b81dd7af082a95")
+	err := DeleteConfig(c, "60e40e3ab65e073bab1674ce")
 	require.NoError(t, err)
 }
 
-/*func TestPrintConfig(t *testing.T) {
+func TestPrintConfig(t *testing.T) {
 	c := ClientConnection()
-	_, err := PrintConfig(c, "611d02e9a49024ce81823aed")
+	_, err := PrintConfig(c, "610ba67645a86f7c1470a9ce")
 	if err != nil {
-		log.Fatalf("could not connect to server: %v", err)
+		log.Fatalln("Config not found:", err)
 	}
+	require.NoError(t, err)
 }
-*/

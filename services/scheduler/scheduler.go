@@ -131,7 +131,7 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 	}
 
 	var clusters []*pb.Cluster
-	for i, cluster := range desiredState.Clusters {
+	for _, cluster := range desiredState.Clusters {
 		var nodePools []*pb.NodePool
 		for _, nodePool := range cluster.NodePools {
 			nodePools = append(nodePools, &pb.NodePool{
@@ -162,19 +162,6 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 			})
 		}
 
-		// Check if a cluster has already a RSA key pair, if no generate one
-		if len(config.GetCurrentState().Clusters) > i {
-			if config.GetCurrentState().Clusters[i] == nil {
-				privateKey, publicKey := MakeSSHKeyPair()
-				cluster.PrivateKey = privateKey
-				cluster.PublicKey = publicKey
-			}
-		} else {
-			privateKey, publicKey := MakeSSHKeyPair()
-			cluster.PrivateKey = privateKey
-			cluster.PublicKey = publicKey
-		}
-
 		clusters = append(clusters, &pb.Cluster{
 			Name:       cluster.Name,
 			Kubernetes: cluster.Kubernetes,
@@ -185,7 +172,7 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 		})
 	}
 
-	return &pb.Config{
+	res := &pb.Config{
 		Id:       config.GetId(),
 		Name:     config.GetName(),
 		Manifest: config.GetManifest(),
@@ -199,7 +186,25 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 		CsChecksum:   config.GetCsChecksum(),
 		BuilderTTL:   config.GetBuilderTTL(),
 		SchedulerTTL: config.GetSchedulerTTL(),
-	}, nil
+	}
+	// Check if all clusters in a currentState have generated a SSH key pair. If not, generate a new pair for a cluster in desiredState.
+KeyChecking:
+	for _, clusterDesired := range res.DesiredState.Clusters {
+		for _, clusterCurrent := range res.CurrentState.Clusters {
+			if clusterDesired.Name == clusterCurrent.Name {
+				if clusterCurrent.PublicKey != "" {
+					clusterDesired.PublicKey = clusterCurrent.PublicKey
+					clusterDesired.PrivateKey = clusterCurrent.PrivateKey
+					continue KeyChecking
+				}
+			}
+		}
+		privateKey, publicKey := MakeSSHKeyPair()
+		clusterDesired.PrivateKey = privateKey
+		clusterDesired.PublicKey = publicKey
+	}
+
+	return res, nil
 }
 
 // processConfig is function used to carry out task specific to Scheduler concurrently

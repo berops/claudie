@@ -126,7 +126,7 @@ var desiredState *pb.Project = &pb.Project{
 }
 
 func TestBuildInfrastructure(t *testing.T) {
-	err := buildInfrastructure(desiredState)
+	err := buildInfrastructure(&pb.Config{DesiredState: desiredState})
 	require.NoError(t, err)
 }
 

@@ -3,16 +3,18 @@ package testing_framework
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/Berops/platform/proto/pb"
 	cbox "github.com/Berops/platform/services/context-box/client"
 	"github.com/Berops/platform/urls"
 	"google.golang.org/grpc"
-	"time"
 
-	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"log"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 const (
