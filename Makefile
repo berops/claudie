@@ -21,3 +21,6 @@ wireguardian:
 
 kubeEleven:
 	go run services/kube-eleven/server/server.go
+
+test:
+	go test ./testing-framework/...

@@ -91,10 +91,9 @@ func TestSaveConfigFrontEnd(t *testing.T) {
 
 	err = SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
 		Config: &pb.Config{
-			Name:         "NewTest",
-			Manifest:     string(manifest),
-			DesiredState: &pb.Project{Name: "This is desiredState name"},
-			CurrentState: &pb.Project{Name: "This is currentState name"},
+			Name:     "NewTestConfig name",
+			Id:       "611f7abcc5b81dd7af082a95",
+			Manifest: string(manifest),
 		},
 	})
 	require.NoError(t, err)
@@ -132,8 +131,14 @@ func TestSaveConfigScheduler(t *testing.T) {
 }
 
 func TestDeleteConfig(t *testing.T) {
-	//Create connection to Context-box
-	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
+	c := ClientConnection()
+	err := DeleteConfig(c, "611f7abcc5b81dd7af082a95")
+	require.NoError(t, err)
+}
+
+func TestPrintConfig(t *testing.T) {
+	c := ClientConnection()
+	_, err := PrintConfig(c, "611d02e9a49024ce81823aed")
 	if err != nil {
 		log.Fatalf("could not connect to server: %v", err)
 	}
