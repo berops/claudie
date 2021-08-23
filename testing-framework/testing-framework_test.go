@@ -18,7 +18,8 @@ import (
 )
 
 const (
-	testDir = "tests"
+	testDir    = "tests"
+	maxTimeout = 60
 )
 
 func ClientConnection() pb.ContextBoxServiceClient {
@@ -35,6 +36,7 @@ func ClientConnection() pb.ContextBoxServiceClient {
 //TestPlatform will start all the test cases specified in tests directory
 func TestPlatform(t *testing.T) {
 	var err error
+	c := ClientConnection()
 	log.Println("----Starting the tests----")
 
 	//loop through the directory and list files inside
@@ -54,17 +56,18 @@ func TestPlatform(t *testing.T) {
 
 	//apply test sets sequentially - while framework is still in dev
 	for _, path := range pathsToSets {
-		err = applyTestSet(path)
+		err = applyTestSet(path, c)
 		if err != nil {
 			log.Println("Error while processing", path, ":", err)
 			break
 		}
 	}
+
 	require.NoError(t, err)
 }
-func applyTestSet(pathToSet string) error {
-	c := ClientConnection()
-	var done chan struct{}
+func applyTestSet(pathToSet string, c pb.ContextBoxServiceClient) error {
+	done := make(chan struct{})
+	var id string
 
 	log.Println("Working on the test set:", pathToSet)
 
@@ -73,15 +76,15 @@ func applyTestSet(pathToSet string) error {
 		log.Println("Error while trying to read test configs:", err)
 	}
 
-	for _, path := range files {
-		manifest, errR := ioutil.ReadFile(pathToSet + "/" + path.Name())
+	for _, file := range files {
+		manifest, errR := ioutil.ReadFile(pathToSet + "/" + file.Name())
 		if errR != nil {
 			log.Fatalln(errR)
 		}
 
 		id, err := cbox.SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
 			Config: &pb.Config{
-				Name:     path.Name(),
+				Name:     file.Name(),
 				Manifest: string(manifest),
 			},
 		})
@@ -94,6 +97,11 @@ func applyTestSet(pathToSet string) error {
 
 		<-done //wait until test config has been processed
 	}
+	if err != nil {
+		return err
+	}
+	// delete the nodes
+	_, err = c.DeleteConfig(context.Background(), &pb.DeleteConfigRequest{Id: id})
 
 	if err != nil {
 		return err
@@ -102,19 +110,27 @@ func applyTestSet(pathToSet string) error {
 }
 
 func configChecker(done chan struct{}, c pb.ContextBoxServiceClient, configId string) {
+	var timeout byte
 	for {
 		// if CSchecksum == DSchecksum, the config has been processed
-		ctx := context.Background()
-		config, err := c.GetConfigByID(ctx, &pb.GetConfigByIDRequest{Id: configId})
+		config, err := c.GetConfigById(context.Background(), &pb.GetConfigByIdRequest{
+			Id: configId,
+		})
 		if err != nil {
-			log.Println("Got error while waiting for config to finish:", err)
+			log.Fatal("Got error while waiting for config to finish:", err)
 		}
+		log.Println(config.Config.DsChecksum, config.Config.CsChecksum)
 		if config != nil {
+
 			if equals(config.Config.DsChecksum, config.Config.CsChecksum) {
 				break
 			}
 		}
+		if timeout == maxTimeout {
+			log.Fatal("Test took too long... Aborting")
+		}
 		time.Sleep(30 * time.Second)
+		timeout++
 	}
 	done <- struct{}{} //send signal that config has been processed, unblock the applyTestSet
 }

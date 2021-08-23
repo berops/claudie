@@ -382,9 +382,9 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 	return &pb.SaveConfigResponse{Config: config}, nil
 }
 
-// PrintConfig is a gRPC service: function returns one config from the DB
-func (*server) PrintConfig(ctx context.Context, req *pb.PrintConfigRequest) (*pb.PrintConfigResponse, error) {
-	log.Println("CLIENT REQUEST: PrintConfig")
+// GetConfigById is a gRPC service: function returns one config from the DB
+func (*server) GetConfigById(ctx context.Context, req *pb.GetConfigByIdRequest) (*pb.GetConfigByIdResponse, error) {
+	log.Println("CLIENT REQUEST: GetConfigById")
 	d, err := getFromDB(req.Id)
 	if err != nil {
 		return nil, err
@@ -393,7 +393,7 @@ func (*server) PrintConfig(ctx context.Context, req *pb.PrintConfigRequest) (*pb
 	if err != nil {
 		return nil, err
 	}
-	return &pb.PrintConfigResponse{Config: config}, nil
+	return &pb.GetConfigByIdResponse{Config: config}, nil
 }
 
 // GetConfigScheduler is a gRPC service: function returns one config from the queueScheduler

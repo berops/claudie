@@ -91,8 +91,8 @@ func DeleteConfig(c pb.ContextBoxServiceClient, id string) error {
 }
 
 // PrintConfig prints a desired config with a current state
-func PrintConfig(c pb.ContextBoxServiceClient, id string) (*pb.PrintConfigResponse, error) {
-	res, err := c.PrintConfig(context.Background(), &pb.PrintConfigRequest{Id: id})
+func PrintConfig(c pb.ContextBoxServiceClient, id string) (*pb.GetConfigByIdResponse, error) {
+	res, err := c.GetConfigById(context.Background(), &pb.GetConfigByIdRequest{Id: id})
 	if err != nil {
 		log.Fatalf("Unexpected error: %v", err)
 	}
