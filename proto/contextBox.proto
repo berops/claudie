@@ -4,17 +4,21 @@ option go_package = "proto/pb";
 import "config.proto";
 
 // Save
-message SaveConfigRequest { Config config = 1; }
-message SaveConfigResponse { Config config = 1; }
+message SaveConfigRequest {Config config = 1;}
+message SaveConfigResponse {Config config = 1;}
 // Get
 message GetConfigRequest {}
-message GetConfigResponse { Config config = 1; }
+message GetConfigResponse {Config config = 1;}
 
 message GetAllConfigsRequest {}
-message GetAllConfigsResponse { repeated Config configs = 1; }
+message GetAllConfigsResponse {repeated Config configs = 1;}
+
+message GetConfigByIDRequest {string id = 1;}
+message GetConfigByIDResponse {Config config = 1;}
+
 // Delete
-message DeleteConfigRequest { string id = 1; }
-message DeleteConfigResponse { string id = 1; }
+message DeleteConfigRequest {string id = 1;}
+message DeleteConfigResponse {string id = 1;}
 
 service ContextBoxService {
   // Save
@@ -25,6 +29,7 @@ service ContextBoxService {
   rpc GetConfigScheduler(GetConfigRequest) returns (GetConfigResponse);
   rpc GetConfigBuilder(GetConfigRequest) returns (GetConfigResponse);
   rpc GetAllConfigs(GetAllConfigsRequest) returns (GetAllConfigsResponse);
+  rpc GetConfigByID(GetConfigByIDRequest) returns (GetConfigByIDResponse);
   // Delete
   rpc DeleteConfig(DeleteConfigRequest) returns (DeleteConfigResponse);
 }

@@ -11,6 +11,17 @@ import (
 	"google.golang.org/grpc"
 )
 
+func ClientConnection() pb.ContextBoxServiceClient {
+	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("could not connect to server: %v", err)
+	}
+
+	// Creating the client
+	c := pb.NewContextBoxServiceClient(cc)
+	return c
+}
+
 func TestGetConfigScheduler(t *testing.T) {
 	//Create connection to Context-box
 	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
@@ -89,7 +100,7 @@ func TestSaveConfigFrontEnd(t *testing.T) {
 		log.Fatalln(errR)
 	}
 
-	err = SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
+	_, err = SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
 		Config: &pb.Config{
 			Name:     "NewTestConfig name",
 			Id:       "611f7abcc5b81dd7af082a95",
@@ -136,20 +147,11 @@ func TestDeleteConfig(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestPrintConfig(t *testing.T) {
+/*func TestPrintConfig(t *testing.T) {
 	c := ClientConnection()
 	_, err := PrintConfig(c, "611d02e9a49024ce81823aed")
 	if err != nil {
 		log.Fatalf("could not connect to server: %v", err)
 	}
-	defer func() {
-		err := cc.Close()
-		require.NoError(t, err)
-	}()
-
-	// Creating the client
-	c := pb.NewContextBoxServiceClient(cc)
-
-	err = DeleteConfig(c, "60c31adfd278aff9eff87eef")
-	require.NoError(t, err)
 }
+*/

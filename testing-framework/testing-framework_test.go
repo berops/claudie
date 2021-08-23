@@ -1,17 +1,15 @@
 package testing_framework
 
 import (
+	"context"
 	"fmt"
 	"github.com/Berops/platform/proto/pb"
 	cbox "github.com/Berops/platform/services/context-box/client"
 	"github.com/Berops/platform/urls"
 	"google.golang.org/grpc"
+	"time"
 
-	//"github.com/Berops/platform/proto/pb"
-	//cbox "github.com/Berops/platform/services/context-box/client"
-	//"github.com/Berops/platform/urls"
 	"github.com/stretchr/testify/require"
-	//"google.golang.org/grpc"
 	"io/ioutil"
 	"log"
 	"testing"
@@ -32,8 +30,7 @@ func ClientConnection() pb.ContextBoxServiceClient {
 	return c
 }
 
-//TestPlatform will start all the test cases specified in platform/tests/
-// should be run from root directory of this project like `go test testing-framework/testing-framework_test.go -run TestPlatform`
+//TestPlatform will start all the test cases specified in tests directory
 func TestPlatform(t *testing.T) {
 	var err error
 	log.Println("----Starting the tests----")
@@ -54,13 +51,13 @@ func TestPlatform(t *testing.T) {
 	}
 
 	//apply test sets sequentially - while framework is still in dev
-	/*for _, path := range pathsToSets {
+	for _, path := range pathsToSets {
 		err = applyTestSet(path)
 		if err != nil {
 			log.Println("Error while processing", path, ":", err)
 			break
 		}
-	}*/
+	}
 	require.NoError(t, err)
 }
 func applyTestSet(pathToSet string) error {
@@ -69,7 +66,7 @@ func applyTestSet(pathToSet string) error {
 
 	log.Println("Working on the test set:", pathToSet)
 
-	files, err := ioutil.ReadDir(testDir)
+	files, err := ioutil.ReadDir(pathToSet)
 	if err != nil {
 		log.Println("Error while trying to read test configs:", err)
 	}
@@ -80,14 +77,18 @@ func applyTestSet(pathToSet string) error {
 			log.Fatalln(errR)
 		}
 
-		err = cbox.SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
+		id, err := cbox.SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
 			Config: &pb.Config{
 				Name:     path.Name(),
 				Manifest: string(manifest),
 			},
 		})
 
-		//go configChecker(done,c , )
+		if err != nil {
+			log.Println("Error while saving a config")
+			return err
+		}
+		go configChecker(done, c, id)
 
 		<-done //wait until test config has been processed
 	}
@@ -101,8 +102,29 @@ func applyTestSet(pathToSet string) error {
 func configChecker(done chan struct{}, c pb.ContextBoxServiceClient, configId string) {
 	for {
 		// if CSchecksum == DSchecksum, the config has been processed
-
-		break
+		ctx := context.Background()
+		config, err := c.GetConfigByID(ctx, &pb.GetConfigByIDRequest{Id: configId})
+		if err != nil {
+			log.Println("Got error while waiting for config to finish:", err)
+		}
+		if config != nil {
+			if equals(config.Config.DsChecksum, config.Config.CsChecksum) {
+				break
+			}
+		}
+		time.Sleep(30 * time.Second)
 	}
-	done<-struct{}{}	//send signal that config has been processed, unblock the applyTestSet
+	done <- struct{}{} //send signal that config has been processed, unblock the applyTestSet
+}
+
+func equals(checksum []byte, checksum2 []byte) bool {
+	if checksum == nil || checksum2 == nil {
+		return false
+	}
+	for i := 0; i < len(checksum); i++ {
+		if checksum[i] != checksum2[i] {
+			return false
+		}
+	}
+	return true
 }

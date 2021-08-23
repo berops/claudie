@@ -411,6 +411,31 @@ func (*server) GetAllConfigs(ctx context.Context, req *pb.GetAllConfigsRequest) 
 	return &pb.GetAllConfigsResponse{Configs: res}, nil
 }
 
+// GetConfigByID is a gRPC service: function returns config with a specified ID from DB
+func (*server) GetConfigByID(ctx context.Context, req *pb.GetConfigByIDRequest) (*pb.GetConfigByIDResponse, error) {
+	log.Println("GetConfigByID request")
+	var res *pb.Config
+
+	configs, err := getAllFromDB() //get all configs from database
+	if err != nil {
+		return nil, err
+	}
+	for _, config := range configs {
+		c, err := dataToConfigPb(config)
+		if err != nil {
+			return nil, err
+		}
+		if c.Id == req.Id {
+			res = c
+			break
+		}
+	}
+
+	return &pb.GetConfigByIDResponse{Config: res}, nil
+}
+
+
+
 // DeleteConfig is a gRPC service: function deletes one specified config from the DB and returns it's ID
 func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*pb.DeleteConfigResponse, error) {
 	log.Println("DeleteConfig request")
