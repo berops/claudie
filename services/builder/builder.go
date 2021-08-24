@@ -280,7 +280,7 @@ func deleteNodes(config *pb.Config, toDelete map[string]*countsToDelete) (*pb.Co
 		for nodeName, ip := range cluster.Ips {
 			val, ok := del.nodes[ip.Provider]
 			if ok {
-				if val.masterCount > 0 && ip.IsControl > 0 {
+				if val.masterCount > 0 && ip.IsControl == 1 {
 					val.masterCount--
 					nodesToDelete = append(nodesToDelete, nodeName)
 					continue
