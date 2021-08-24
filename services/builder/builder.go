@@ -236,7 +236,10 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 			}
 			if tmpConfig != nil {
 				log.Println("Processing a tmpConfig...")
-				processConfig(tmpConfig, c, true)
+				err := processConfig(tmpConfig, c, true)
+				if err != nil {
+					return err
+				}
 			}
 			if deleting {
 				log.Println("Deleting nodes...")
@@ -247,9 +250,13 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 			}
 
 			log.Println("Processing a config...")
-			go processConfig(config, c, false)
+			go func() {
+				err := processConfig(config, c, false)
+				if err != nil {
+					log.Println("Got an error while processing a config:", err)
+				}
+			}()
 		}
-
 		return nil
 	}
 }
