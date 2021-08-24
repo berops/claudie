@@ -31,13 +31,13 @@ WORKDIR ./../../../grpc-health-probe-Liveness
 RUN CGO_ENABLED=0 go build -o /bin/grpc_health_probe-Liveness
 RUN chmod +x /bin/grpc_health_probe-Liveness
 
-#Use empty base image
-FROM scratch
-
-#Copy the binaries to empty base image
-COPY --from=build /out /out
-COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
-COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Liveness
+# Install kubeone
+WORKDIR ./../
+RUN wget https://github.com/kubermatic/kubeone/releases/download/v1.2.3/kubeone_1.2.3_linux_amd64.zip
+RUN unzip kubeone_1.2.3_linux_amd64.zip -d kubeone_1.2.3_linux_amd64
+RUN mv kubeone_1.2.3_linux_amd64/kubeone /usr/local/bin
 
 #Run server
 ENTRYPOINT [ "/out" ]
+
+#NOTE: We cannot use scratch image for our dockerfile since we are using shell commands to execute commands inside the code
