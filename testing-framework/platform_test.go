@@ -19,7 +19,7 @@ import (
 
 const (
 	testDir    = "tests"
-	maxTimeout = 60
+	maxTimeout = 60	//checking each 30s, so max allowed time for operation to finish is maxTimeout * 30 [seconds]
 )
 
 func ClientConnection() pb.ContextBoxServiceClient {
@@ -94,7 +94,7 @@ func applyTestSet(pathToSet string, c pb.ContextBoxServiceClient) error {
 			log.Println("Error while saving a config")
 			return err
 		}
-		go configChecker(done, c, id)
+		go configChecker(done, c, id, file.Name())
 
 		<-done //wait until test config has been processed
 	}
@@ -102,6 +102,7 @@ func applyTestSet(pathToSet string, c pb.ContextBoxServiceClient) error {
 		return err
 	}
 	// delete the nodes
+	log.Println("Deleting the clusters from test set:", pathToSet)
 	_, err = c.DeleteConfig(context.Background(), &pb.DeleteConfigRequest{Id: id})
 
 	if err != nil {
@@ -110,8 +111,8 @@ func applyTestSet(pathToSet string, c pb.ContextBoxServiceClient) error {
 	return nil
 }
 
-func configChecker(done chan struct{}, c pb.ContextBoxServiceClient, configId string) {
-	var timeout byte
+func configChecker(done chan struct{}, c pb.ContextBoxServiceClient, configId string, configName string) {
+	var timeout int
 	for {
 		// if CSchecksum == DSchecksum, the config has been processed
 		config, err := c.GetConfigById(context.Background(), &pb.GetConfigByIdRequest{
@@ -120,9 +121,7 @@ func configChecker(done chan struct{}, c pb.ContextBoxServiceClient, configId st
 		if err != nil {
 			log.Fatal("Got error while waiting for config to finish:", err)
 		}
-		log.Println(config.Config.DsChecksum, config.Config.CsChecksum)
 		if config != nil {
-
 			if equals(config.Config.DsChecksum, config.Config.CsChecksum) {
 				break
 			}
@@ -132,6 +131,7 @@ func configChecker(done chan struct{}, c pb.ContextBoxServiceClient, configId st
 		}
 		time.Sleep(30 * time.Second)
 		timeout++
+		log.Printf("Waiting for %s to finish... [ %ds elapsed ]", configName, timeout*30)
 	}
 	done <- struct{}{} //send signal that config has been processed, unblock the applyTestSet
 }
