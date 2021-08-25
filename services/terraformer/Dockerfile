@@ -31,14 +31,13 @@ WORKDIR ./../../../grpc-health-probe-Liveness
 RUN CGO_ENABLED=0 go build -o /bin/grpc_health_probe-Liveness
 RUN chmod +x /bin/grpc_health_probe-Liveness
 
-#Use empty base image
-FROM scratch
-
-#Copy the binaries to empty base image
-COPY --from=build /out /out
-COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
-COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Liveness
+#Install terraform
+WORKDIR ./../
+RUN wget https://releases.hashicorp.com/terraform/1.0.0/terraform_1.0.0_linux_amd64.zip
+RUN unzip terraform_1.0.0_linux_amd64.zip -d /usr/local/bin
 
 #Run server
 ENTRYPOINT [ "/out" ]
+
+#NOTE: We cannot use scratch image for our dockerfile since we are using shell commands to execute commands inside the code
  

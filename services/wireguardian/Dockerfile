@@ -31,14 +31,11 @@ WORKDIR ./../../../grpc-health-probe-Liveness
 RUN CGO_ENABLED=0 go build -o /bin/grpc_health_probe-Liveness
 RUN chmod +x /bin/grpc_health_probe-Liveness
 
-#Use empty base image
-FROM scratch
-
-#Copy the binaries to empty base image
-COPY --from=build /out /out
-COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
-COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Liveness
+#Install the Ansible
+RUN apk add ansible
 
 #Run server
 ENTRYPOINT [ "/out" ]
+
+#NOTE: We cannot use scratch image for our dockerfile since we are using shell commands to execute commands inside the code
  
