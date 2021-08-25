@@ -18,4 +18,3 @@ WORKDIR ./services/testing-framework
 
 #Run server
 ENTRYPOINT [ "go", "test", "-v", "./..." ]
- 

@@ -19,9 +19,10 @@ import (
 
 const (
 	testDir    = "tests"
-	maxTimeout = 60	//checking each 30s, so max allowed time for operation to finish is maxTimeout * 30 [seconds]
+	maxTimeout = 60 //checking each 30s, so max allowed time for operation to finish is maxTimeout * 30 [seconds]
 )
 
+//ClientConnection will return new client connection to Context-box
 func ClientConnection() pb.ContextBoxServiceClient {
 	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
 	if err != nil {
@@ -65,6 +66,8 @@ func TestPlatform(t *testing.T) {
 
 	require.NoError(t, err)
 }
+
+//applyTestSet function will apply test set sequantially to a platform
 func applyTestSet(pathToSet string, c pb.ContextBoxServiceClient) error {
 	done := make(chan struct{})
 	var id string
@@ -111,6 +114,7 @@ func applyTestSet(pathToSet string, c pb.ContextBoxServiceClient) error {
 	return nil
 }
 
+//configChecker function will check if the config has been applied every 30s
 func configChecker(done chan struct{}, c pb.ContextBoxServiceClient, configId string, configName string) {
 	var timeout int
 	for {
@@ -136,6 +140,7 @@ func configChecker(done chan struct{}, c pb.ContextBoxServiceClient, configId st
 	done <- struct{}{} //send signal that config has been processed, unblock the applyTestSet
 }
 
+//equals function will check if two checksums are equal
 func equals(checksum []byte, checksum2 []byte) bool {
 	if checksum == nil || checksum2 == nil {
 		return false
