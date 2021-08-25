@@ -1,0 +1,10 @@
+*.md
+.gitignore
+Makefile
+LICENSE
+*.yaml
+.git
+tmp
+serializer
+services
+mongodb
