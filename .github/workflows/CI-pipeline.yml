@@ -154,6 +154,7 @@ jobs:
         run: |
           arr=( env.SERVICES )
           unset arr[-1]
+          echo "${arr[@]}"
           for SERVICE in "${arr[@]}"
           do 
           kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=120s --namespace=claudie-$GITHUB_SHA
