@@ -160,5 +160,5 @@ jobs:
           done
       - name: Start the E2E tests
         run: |
-          apt-get install -y gettext-base
+          sudo apt-get install -y gettext-base
           envsubst < ./K8s-dev-cluster/testing-framework.yaml | kubectl apply -n claudie-$GITHUB_SHA -f -
