@@ -15,14 +15,16 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
 - name: eu.gcr.io/platform-infrastructure-316112/platform/builder
-  newTag: 84c19ec414b05d4fc72c88a370365e56c941d2d8
+  newTag: 6c4fe569bc6016c7b9955969ed127793e85e9cb2
 - name: eu.gcr.io/platform-infrastructure-316112/platform/context-box
-  newTag: 84c19ec414b05d4fc72c88a370365e56c941d2d8
+  newTag: 6c4fe569bc6016c7b9955969ed127793e85e9cb2
 - name: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven
-  newTag: 84c19ec414b05d4fc72c88a370365e56c941d2d8
+  newTag: 6c4fe569bc6016c7b9955969ed127793e85e9cb2
 - name: eu.gcr.io/platform-infrastructure-316112/platform/scheduler
-  newTag: 84c19ec414b05d4fc72c88a370365e56c941d2d8
+  newTag: 6c4fe569bc6016c7b9955969ed127793e85e9cb2
 - name: eu.gcr.io/platform-infrastructure-316112/platform/terraformer
-  newTag: 84c19ec414b05d4fc72c88a370365e56c941d2d8
+  newTag: 6c4fe569bc6016c7b9955969ed127793e85e9cb2
+- name: eu.gcr.io/platform-infrastructure-316112/platform/testing-framework
+  newTag: 6c4fe569bc6016c7b9955969ed127793e85e9cb2
 - name: eu.gcr.io/platform-infrastructure-316112/platform/wireguardian
-  newTag: 84c19ec414b05d4fc72c88a370365e56c941d2d8
+  newTag: 6c4fe569bc6016c7b9955969ed127793e85e9cb2
