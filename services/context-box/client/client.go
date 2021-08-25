@@ -119,8 +119,8 @@ func PrintConfig(c pb.ContextBoxServiceClient, id string) (*pb.PrintConfigRespon
 		}
 		fmt.Println("----------------------------------------")
 		fmt.Println("Cluster Nodes:")
-		for name, ip := range cluster.GetIps() {
-			fmt.Println("Name:", name, "IP:", ip)
+		for _, nodeInfo := range cluster.GetNodeInfos() {
+			fmt.Println("Name:", nodeInfo.NodeName, "Public:", nodeInfo.GetPublic(), "Private", nodeInfo.GetPrivate(), "isControl:", nodeInfo.GetIsControl())
 		}
 	}
 	//fmt.Println(res.GetConfig().GetCurrentState().GetClusters())

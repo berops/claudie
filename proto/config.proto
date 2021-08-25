@@ -28,7 +28,7 @@ message Cluster {
   string public_key = 5;
   string private_key = 6;
   repeated NodePool nodePools = 9;
-  map<string, Ip> ips = 10;
+  repeated NodeInfo nodeInfos = 10;
 }
 
 message NodePool {
@@ -59,10 +59,11 @@ message Provider {
  * 1 - Only master node
  * 2 - ApiEndpoint master node (must be singleton)
  */
-message Ip {
-  string public = 1;
-  string private = 2;
-  uint32 isControl = 3;
-  string provider = 4;
-  string nodepoolName = 5;
+message NodeInfo {
+  string nodeName = 1;
+  string public = 2;
+  string private = 3;
+  uint32 isControl = 4;
+  string provider = 5;
+  string nodepoolName = 6;
 }
