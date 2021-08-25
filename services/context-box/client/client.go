@@ -106,6 +106,8 @@ func PrintConfig(c pb.ContextBoxServiceClient, id string) (*pb.GetConfigByIdResp
 		fmt.Println("Name:", cluster.GetName())
 		fmt.Println("Kubernetes version:", cluster.GetKubernetes())
 		fmt.Println("Network CIDR:", cluster.GetNetwork())
+		fmt.Println("Kubeconfig:")
+		fmt.Println(cluster.GetKubeconfig())
 		fmt.Println("Node Pools:")
 		for i2, nodePool := range cluster.GetNodePools() {
 			fmt.Println("----------------------------------------")
