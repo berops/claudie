@@ -266,8 +266,8 @@ func readOutput(data string) (map[string]map[string]string, error) {
 // fillNodes gets ip addresses from a terraform output
 func fillNodes(mOld map[string]*pb.Ip, terraformOutput map[string]map[string]string, nodepool *pb.NodePool) map[string]*pb.Ip {
 	mNew := make(map[string]*pb.Ip)
-	for key, ip := range terraformOutput["control"] {
 
+	for key, ip := range terraformOutput["control"] {
 		var private = ""
 		var control uint32 = 1
 		// If node exist, assign previous private IP
