@@ -152,7 +152,9 @@ jobs:
       # Check if everything is ready and running
       - name: Monitor status of the new namespace
         run: |
-          for SERVICE in ${{ env.SERVICES }}
+          arr=( env.SERVICES )
+          unset arr[-1]
+          for SERVICE in "${arr[@]}"
           do 
           kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=120s --namespace=claudie-$GITHUB_SHA
           done
