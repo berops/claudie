@@ -14,18 +14,8 @@ RUN go mod download
 COPY . .
 
 #Change the directory
-WORKDIR ./testing-framework
-
-#Compile the golang code to /out, CGO_ENABLE=0 removes cross compile dependencies
-RUN CGO_ENABLED=0 go build -o /out
-
-#Use empty base image
-FROM scratch
-
-#Copy the binaries to empty base image
-COPY --from=build /out /out
-COPY --from=build /testing-framework/tests /out
+WORKDIR ./services/testing-framework
 
 #Run server
-ENTRYPOINT [ "/out" ]
+ENTRYPOINT [ "go", "test", "-v", "./..." ]
  
