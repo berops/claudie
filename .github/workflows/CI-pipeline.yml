@@ -8,7 +8,7 @@ on:
 
 env:
   ENV_FILE: .env
-  SERVICES: context-box scheduler builder terraformer wireguardian kube-eleven
+  SERVICES: context-box scheduler builder terraformer wireguardian kube-eleven testing-framework
 
 jobs:
   build-and-push:
@@ -55,31 +55,23 @@ jobs:
         if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
         run: |
           arr=(${{ steps.array.outputs.ARRAY_OF_CHANGES }})
-          if [ ${#arr[@]} -eq 0 ] 
-          then
-            echo "No changes were detected, nothing to build"            
-          else
-            for path in "${arr[@]}"
-            do
+          for path in "${arr[@]}"
+          do
             echo "-----Building $path-----"
             docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA -f ./services/$path/Dockerfile .
-            done
-          fi
-     
+          done
+            
       # Push images to GCR - latest tag is overwritten
       - name: Push new images
         if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
         run: |
           arr=(${{ steps.array.outputs.ARRAY_OF_CHANGES }})
-          if [ ${#arr[@]} -eq 0 ] 
-          then
-            echo "No images were build, nothing to push"
-          else
-            for path in "${arr[@]}"
-            do
+         
+          for path in "${arr[@]}"
+          do
             docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA
-            done
-          fi
+          done
+         
     outputs:
       ARRAY_OF_CHANGES: ${{ steps.array.outputs.ARRAY_OF_CHANGES }}
 #--------------------------------------------------------------------------------------------------
@@ -164,6 +156,7 @@ jobs:
           do 
           kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=120s --namespace=claudie-$GITHUB_SHA
           done
-
-          kubectl get pods --namespace=claudie-$GITHUB_SHA
-          kubectl delete namespace claudie-$GITHUB_SHA
+      - name: Start the E2E tests
+        run: |
+          apt-get install -y gettext-base
+          envsubst < ./K8s-dev-cluster/testing-framework.yaml | kubectl apply -f -

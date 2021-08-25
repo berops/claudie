@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment 
+metadata:
+  name: testing-framework
+  labels:
+    app: testing-framework
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: testing-framework
+  template:
+    metadata:
+      labels:
+        app: testing-framework
+    spec:
+      containers:
+      - name: testing-framework
+        image: eu.gcr.io/platform-infrastructure-316112/platform/testing-framework:$GITHUB_SHA
+        env:
+        - name: CONTEXT_BOX_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: urls
+              key: CONTEXT_BOX_PORT
+        - name: CONTEXT_BOX_HOSTNAME
+          valueFrom:
+            configMapKeyRef:
+              name: urls
+              key: CONTEXT_BOX_HOSTNAME
