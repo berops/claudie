@@ -64,14 +64,12 @@ func buildInfrastructure(config *pb.Config) error {
 			return err
 		}
 
-		// Fill public ip addresses
-		var m map[string]*pb.Ip
+		// Fill public ip addresseNodeInfos
 		tmpCluster := getClusterByName(cluster.Name, config.CurrentState.Clusters)
+		var m []*pb.NodeInfo
 
-		if tmpCluster == nil {
-			m = make(map[string]*pb.Ip)
-		} else {
-			m = tmpCluster.Ips
+		if tmpCluster != nil {
+			m = tmpCluster.NodeInfos
 		}
 		for _, nodepool := range cluster.NodePools {
 			output, err := outputTerraform(outputPath, nodepool.Provider.Name)
@@ -85,7 +83,7 @@ func buildInfrastructure(config *pb.Config) error {
 			}
 			m = fillNodes(m, out, nodepool)
 		}
-		cluster.Ips = m
+		cluster.NodeInfos = m
 		// Clean after Terraform. Remove tmp terraform dir.
 		err := os.RemoveAll("services/terraformer/server/terraform")
 		if err != nil {
@@ -94,7 +92,7 @@ func buildInfrastructure(config *pb.Config) error {
 	}
 
 	for _, m := range desiredState.Clusters {
-		log.Println(m.Ips)
+		log.Println(m.NodeInfos)
 	}
 
 	return nil
@@ -264,8 +262,8 @@ func readOutput(data string) (map[string]map[string]string, error) {
 }
 
 // fillNodes gets ip addresses from a terraform output
-func fillNodes(mOld map[string]*pb.Ip, terraformOutput map[string]map[string]string, nodepool *pb.NodePool) map[string]*pb.Ip {
-	mNew := make(map[string]*pb.Ip)
+func fillNodes(mOld []*pb.NodeInfo, terraformOutput map[string]map[string]string, nodepool *pb.NodePool) []*pb.NodeInfo {
+	var mNew []*pb.NodeInfo
 	for key, ip := range terraformOutput["control"] {
 
 		var private = ""
@@ -276,13 +274,14 @@ func fillNodes(mOld map[string]*pb.Ip, terraformOutput map[string]map[string]str
 			private = existingIp.Private
 			control = existingIp.IsControl
 		}
-		mNew[key] = &pb.Ip{
+		mNew = append(mNew, &pb.NodeInfo{
+			NodeName:     key,
 			Public:       ip,
 			Private:      private,
 			IsControl:    control,
 			Provider:     nodepool.Provider.Name,
 			NodepoolName: nodepool.Name,
-		}
+		})
 	}
 	for key, ip := range terraformOutput["compute"] {
 		var private = ""
@@ -291,31 +290,23 @@ func fillNodes(mOld map[string]*pb.Ip, terraformOutput map[string]map[string]str
 		if existingIp != nil {
 			private = existingIp.Private
 		}
-		mNew[key] = &pb.Ip{
+		mNew = append(mNew, &pb.NodeInfo{
+			NodeName:     key,
 			Public:       ip,
 			Private:      private,
 			IsControl:    0,
 			Provider:     nodepool.Provider.Name,
 			NodepoolName: nodepool.Name,
-		}
+		})
 	}
 	return mNew
 }
 
-func existsInCluster(m map[string]*pb.Ip, ip string) (*pb.Ip, error) {
+func existsInCluster(m []*pb.NodeInfo, ip string) (*pb.NodeInfo, error) {
 	for _, ips := range m {
 		if ips.Public == ip {
 			return ips, nil
 		}
 	}
 	return nil, fmt.Errorf("ip does not exist")
-}
-
-// getProviders returns names of all providers used in a cluster
-func getProviders(cluster *pb.Cluster) []string {
-	var providers []string
-	for _, nodePool := range cluster.NodePools {
-		providers = append(providers, nodePool.Provider.Name)
-	}
-	return providers
 }
