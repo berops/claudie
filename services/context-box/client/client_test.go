@@ -58,7 +58,8 @@ func TestSaveConfigFrontEnd(t *testing.T) {
 
 	err := SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
 		Config: &pb.Config{
-			Name:     "NewTestConfig name",
+			Id:       "6126737f4f9bcdabaa336da4",
+			Name:     "TestDeleteConfig Samo",
 			Manifest: string(manifest),
 		},
 	})
@@ -75,11 +76,8 @@ func TestSaveConfigScheduler(t *testing.T) {
 
 	err := SaveConfigScheduler(c, &pb.SaveConfigRequest{
 		Config: &pb.Config{
-			Id:           "60bf64e9489c76f2e72a768f",
-			Name:         "TestSaveConfigScheduler",
-			Manifest:     string(manifest),
-			DesiredState: &pb.Project{Name: "This is desiredState name"},
-			CurrentState: &pb.Project{Name: "This is currentState name"},
+			Name:     "TestDeleteNodeSamo",
+			Manifest: string(manifest),
 		},
 	})
 	require.NoError(t, err)
@@ -87,13 +85,13 @@ func TestSaveConfigScheduler(t *testing.T) {
 
 func TestDeleteConfig(t *testing.T) {
 	c := ClientConnection()
-	err := DeleteConfig(c, "60e40e3ab65e073bab1674ce")
+	err := DeleteConfig(c, "6126737f4f9bcdabaa336da4")
 	require.NoError(t, err)
 }
 
 func TestPrintConfig(t *testing.T) {
 	c := ClientConnection()
-	_, err := PrintConfig(c, "610ba67645a86f7c1470a9ce")
+	_, err := PrintConfig(c, "6126737f4f9bcdabaa336da4")
 	if err != nil {
 		log.Fatalln("Config not found:", err)
 	}

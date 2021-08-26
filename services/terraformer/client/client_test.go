@@ -155,7 +155,7 @@ func TestBuildInfrastructure(t *testing.T) {
 	// Print just public ip addresses
 	for _, cluster := range res.GetConfig().GetCurrentState().GetClusters() {
 		t.Log(cluster.GetName())
-		for k, ip := range cluster.GetIps() {
+		for k, ip := range cluster.GetNodeInfos() {
 			t.Log(k, ip.GetPublic())
 		}
 	}

@@ -89,12 +89,11 @@ func buildInfrastructure(config *pb.Config) error {
 		if err != nil {
 			return err
 		}
-	}
 
-	for _, m := range desiredState.Clusters {
-		log.Println(m.NodeInfos)
+		for _, m := range desiredState.Clusters {
+			log.Println(m.NodeInfos)
+		}
 	}
-
 	return nil
 }
 
@@ -265,7 +264,6 @@ func readOutput(data string) (map[string]map[string]string, error) {
 func fillNodes(mOld []*pb.NodeInfo, terraformOutput map[string]map[string]string, nodepool *pb.NodePool) []*pb.NodeInfo {
 	var mNew []*pb.NodeInfo
 	for key, ip := range terraformOutput["control"] {
-
 		var private = ""
 		var control uint32 = 1
 		// If node exist, assign previous private IP
