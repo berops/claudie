@@ -1,4 +1,4 @@
 [nodes]
-{{- range $key, $address := .}}
-{{$key}} ansible_host={{$address.Public}} private_ip={{$address.Private}}
+{{- range $val := .}}
+{{$val.NodeName}} ansible_host={{$val.Public}} private_ip={{$val.Private}}
 {{- end}}

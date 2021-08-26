@@ -31,11 +31,11 @@ func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVP
 	config := req.GetConfig()
 
 	for _, cluster := range config.GetDesiredState().GetClusters() {
-		if err := genPrivAdd(cluster.GetIps(), cluster.GetNetwork()); err != nil {
+		if err := genPrivAdd(cluster.GetNodeInfos(), cluster.GetNetwork()); err != nil {
 			return nil, err
 		}
 
-		if err := genInv(cluster.GetIps()); err != nil {
+		if err := genInv(cluster.GetNodeInfos()); err != nil {
 			return nil, err
 		}
 
@@ -52,9 +52,9 @@ func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVP
 }
 
 // genPrivAdd will generate private ip addresses from network parameter
-func genPrivAdd(addresses map[string]*pb.Ip, network string) error {
+func genPrivAdd(addresses []*pb.NodeInfo, network string) error {
 	_, ipNet, err := net.ParseCIDR(network)
-	var addressesToAssign []*pb.Ip
+	var addressesToAssign []*pb.NodeInfo
 
 	// initilize slice of possible last octet
 	lastOctets := make([]byte, 255)
@@ -100,7 +100,7 @@ func remove(slice []byte, value byte) []byte {
 }
 
 // genInv will generate ansible inventory file slice of clusters input
-func genInv(addresses map[string]*pb.Ip) error {
+func genInv(addresses []*pb.NodeInfo) error {
 	tpl, err := template.ParseFiles("services/wireguardian/server/inventory.goini")
 	if err != nil {
 		return fmt.Errorf("failed to load template file: %v", err)

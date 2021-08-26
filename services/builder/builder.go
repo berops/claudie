@@ -284,17 +284,17 @@ func deleteNodes(config *pb.Config, toDelete map[string]*countsToDelete) (*pb.Co
 	for _, cluster := range config.CurrentState.Clusters {
 		var nodesToDelete []string
 		del := toDelete[cluster.Name]
-		for nodeName, ip := range cluster.Ips {
-			val, ok := del.nodes[ip.Provider]
+		for i := len(cluster.NodeInfos) - 1; i >= 0; i-- {
+			val, ok := del.nodes[cluster.NodeInfos[i].Provider]
 			if ok {
-				if val.masterCount > 0 && ip.IsControl == 1 {
+				if val.masterCount > 0 && cluster.NodeInfos[i].IsControl > 0 {
 					val.masterCount--
-					nodesToDelete = append(nodesToDelete, nodeName)
+					nodesToDelete = append(nodesToDelete, cluster.NodeInfos[i].GetNodeName())
 					continue
 				}
-				if val.workerCount > 0 && ip.IsControl == 0 {
+				if val.workerCount > 0 && cluster.NodeInfos[i].IsControl == 0 {
 					val.workerCount--
-					nodesToDelete = append(nodesToDelete, nodeName)
+					nodesToDelete = append(nodesToDelete, cluster.NodeInfos[i].NodeName)
 					continue
 				}
 			}
@@ -305,8 +305,8 @@ func deleteNodes(config *pb.Config, toDelete map[string]*countsToDelete) (*pb.Co
 		}
 		// Delete nodes from a current state Ips map
 		for _, nodeName := range nodesToDelete {
-			for key, val := range cluster.GetIps() {
-				if key == nodeName {
+			for _, val := range cluster.NodeInfos {
+				if val.GetNodeName() == nodeName {
 					nodepool := getNodePoolByName(val.NodepoolName, cluster.NodePools)
 					if val.IsControl > 1 {
 						// decrement master count
@@ -317,10 +317,20 @@ func deleteNodes(config *pb.Config, toDelete map[string]*countsToDelete) (*pb.Co
 					}
 				}
 			}
-			delete(cluster.GetIps(), nodeName)
+			cluster.NodeInfos = remove(cluster.NodeInfos, nodeName)
 		}
 	}
 	return config, nil
+}
+
+func remove(slice []*pb.NodeInfo, value string) []*pb.NodeInfo {
+	var pos int
+	for pos = 0; pos < len(slice); pos++ {
+		if slice[pos].GetNodeName() == value {
+			break
+		}
+	}
+	return append(slice[:pos], slice[pos+1:]...)
 }
 
 // deleteNodesByName checks if there is any difference in nodes between a desired state cluster and a running cluster

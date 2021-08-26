@@ -26,23 +26,23 @@ const outputPath = "services/kube-eleven/server/"
 type data struct {
 	ApiEndpoint string
 	Kubernetes  string
-	Nodes       []*pb.Ip
+	Nodes       []*pb.NodeInfo
 }
 
 // formatTemplateData formats data for kubeone template input
 func (d *data) formatTemplateData(cluster *pb.Cluster) {
-	var controlNodes []*pb.Ip
-	var workerNodes []*pb.Ip
+	var controlNodes []*pb.NodeInfo
+	var workerNodes []*pb.NodeInfo
 	hasApiEndpoint := false
 
-	for _, ip := range cluster.Ips {
-		if ip.GetIsControl() == 1 {
-			controlNodes = append(controlNodes, ip)
-		} else if ip.GetIsControl() == 2 {
+	for _, nodeInfo := range cluster.GetNodeInfos() {
+		if nodeInfo.GetIsControl() == 1 {
+			controlNodes = append(controlNodes, nodeInfo)
+		} else if nodeInfo.GetIsControl() == 2 {
 			hasApiEndpoint = true
-			d.Nodes = append(d.Nodes, ip) //the Api endpoint must be first in slice
+			d.Nodes = append(d.Nodes, nodeInfo) //the Api endpoint must be first in slice
 		} else {
-			workerNodes = append(workerNodes, ip)
+			workerNodes = append(workerNodes, nodeInfo)
 		}
 	}
 	if !hasApiEndpoint {
