@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/Berops/platform/proto/pb"
@@ -125,6 +126,8 @@ var desiredState *pb.Project = &pb.Project{
 	},
 }
 
+var jsonData = "{\"compute\":{\"test-cluster-compute1\":\"0.0.0.65\",\n\"test-cluster-compute2\":\"0.0.0.512\"},\n\"control\":{\"test-cluster-control1\":\"0.0.0.72\",\n\"test-cluster-control2\":\"0.0.0.65\"}}"
+
 func TestBuildInfrastructure(t *testing.T) {
 	err := buildInfrastructure(&pb.Config{DesiredState: desiredState})
 	require.NoError(t, err)
@@ -138,5 +141,26 @@ func TestDestroyInfrastructure(t *testing.T) {
 func TestOutputTerraform(t *testing.T) {
 	out, err := outputTerraform(outputPath, "gcp")
 	t.Log(out)
+	require.NoError(t, err)
+}
+
+func TestReadOutput(t *testing.T) {
+	out, err := readOutput(jsonData)
+
+	if err == nil {
+		t.Log(out.Control)
+		t.Log("=====================")
+		t.Log(out.Compute)
+	}
+	require.NoError(t, err)
+}
+
+func TestFillNodes(t *testing.T) {
+	out, err := readOutput(jsonData)
+	if err == nil {
+		var m []*pb.NodeInfo
+		m = fillNodes(m, &out, desiredState.Clusters[0].NodePools[0])
+		fmt.Println(m)
+	}
 	require.NoError(t, err)
 }

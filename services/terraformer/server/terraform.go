@@ -26,6 +26,11 @@ type Data struct {
 	Cluster *pb.Cluster
 }
 
+type jsonOut struct {
+	Compute map[string]string `json:"compute"`
+	Control map[string]string `json:"control"`
+}
+
 func createKeyFile(key string, keyType string) error {
 	return ioutil.WriteFile(outputPath+keyType, []byte(key), 0600)
 }
@@ -81,7 +86,7 @@ func buildInfrastructure(config *pb.Config) error {
 			if err != nil {
 				return err
 			}
-			m = fillNodes(m, out, nodepool)
+			m = fillNodes(m, &out, nodepool)
 		}
 		cluster.NodeInfos = m
 		// Clean after Terraform. Remove tmp terraform dir.
@@ -253,17 +258,18 @@ func outputTerraform(fileName string, provider string) (string, error) {
 }
 
 // readOutput reads json output format from terraform and unmarshal it into map[string]map[string]string readable by GO
-func readOutput(data string) (map[string]map[string]string, error) {
-	var result map[string]map[string]string
+func readOutput(data string) (jsonOut, error) {
+	var result jsonOut
 	// Unmarshal or Decode the JSON to the interface.
 	err := json.Unmarshal([]byte(data), &result)
 	return result, err
 }
 
 // fillNodes gets ip addresses from a terraform output
-func fillNodes(mOld []*pb.NodeInfo, terraformOutput map[string]map[string]string, nodepool *pb.NodePool) []*pb.NodeInfo {
+
+func fillNodes(mOld []*pb.NodeInfo, terraformOutput *jsonOut, nodepool *pb.NodePool) []*pb.NodeInfo {
 	var mNew []*pb.NodeInfo
-	for key, ip := range terraformOutput["control"] {
+	for name, ip := range terraformOutput.Control {
 		var private = ""
 		var control uint32 = 1
 		// If node exist, assign previous private IP
@@ -273,7 +279,7 @@ func fillNodes(mOld []*pb.NodeInfo, terraformOutput map[string]map[string]string
 			control = existingIp.IsControl
 		}
 		mNew = append(mNew, &pb.NodeInfo{
-			NodeName:     key,
+			NodeName:     name,
 			Public:       ip,
 			Private:      private,
 			IsControl:    control,
@@ -281,7 +287,7 @@ func fillNodes(mOld []*pb.NodeInfo, terraformOutput map[string]map[string]string
 			NodepoolName: nodepool.Name,
 		})
 	}
-	for key, ip := range terraformOutput["compute"] {
+	for name, ip := range terraformOutput.Compute {
 		var private = ""
 		// If node exist, assign previous private IP
 		existingIp, _ := existsInCluster(mOld, ip)
@@ -289,7 +295,7 @@ func fillNodes(mOld []*pb.NodeInfo, terraformOutput map[string]map[string]string
 			private = existingIp.Private
 		}
 		mNew = append(mNew, &pb.NodeInfo{
-			NodeName:     key,
+			NodeName:     name,
 			Public:       ip,
 			Private:      private,
 			IsControl:    0,
