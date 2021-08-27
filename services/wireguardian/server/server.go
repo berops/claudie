@@ -86,6 +86,11 @@ func genPrivAdd(addresses []*pb.NodeInfo, network string) error {
 		address.Private = ip.String()
 		temp++
 	}
+	// debug message
+	for _, address := range addresses {
+		fmt.Println(address)
+	}
+
 	return nil
 }
 
