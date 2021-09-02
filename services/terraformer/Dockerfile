@@ -1,4 +1,4 @@
-FROM golang:1.16AS build
+FROM golang:1.16 AS build
 
 #Unset the GOPATH
 ENV GOPATH=

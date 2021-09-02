@@ -10,9 +10,6 @@ COPY go.sum .
 #Check if any modules need downloading
 RUN go mod download
 
-#install dependecies for tests
-RUN apk add build-base
-
 #Copy all files apart from the ones in .dockerignore
 COPY . .
 
