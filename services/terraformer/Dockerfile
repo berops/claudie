@@ -33,7 +33,7 @@ RUN chmod +x /bin/grpc_health_probe-Liveness
 
 #Install terraform
 WORKDIR /go
-RUN apt install unzip
+RUN apt install -y unzip
 RUN wget https://releases.hashicorp.com/terraform/1.0.0/terraform_1.0.0_linux_amd64.zip
 RUN unzip terraform_1.0.0_linux_amd64.zip -d /usr/local/bin
 

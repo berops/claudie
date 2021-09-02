@@ -33,7 +33,7 @@ RUN chmod +x /bin/grpc_health_probe-Liveness
 
 # Install kubeone
 WORKDIR /go
-RUN apt install unzip
+RUN apt install -y unzip
 RUN wget https://github.com/kubermatic/kubeone/releases/download/v1.2.3/kubeone_1.2.3_linux_amd64.zip
 RUN unzip kubeone_1.2.3_linux_amd64.zip -d kubeone_1.2.3_linux_amd64
 RUN mv kubeone_1.2.3_linux_amd64/kubeone /usr/local/bin
