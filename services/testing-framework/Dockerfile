@@ -1,4 +1,4 @@
-FROM golang:1.16-alpine AS build
+FROM golang:1.16 AS build
 
 #Unset the GOPATH
 ENV GOPATH=
@@ -14,7 +14,7 @@ RUN go mod download
 COPY . .
 
 #Change the directory
-WORKDIR ./services/testing-framework
+WORKDIR /go/services/testing-framework
 
 #Run server
 ENTRYPOINT [ "go", "test", "-v", "./..." ]

@@ -14,7 +14,7 @@ RUN go mod download
 COPY . .
 
 #Change the directory
-WORKDIR ./services/terraformer/server
+WORKDIR /go/services/terraformer/server
 
 #Compile the golang code to /out, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build
@@ -25,20 +25,20 @@ RUN GRPC_HEALTH_PROBE_VERSION=v0.4.4 && \
     chmod +x /bin/grpc_health_probe
 
 #Change workdir to modified health probe directory
-WORKDIR ./../../../grpc-health-probe-Liveness
+WORKDIR /go/grpc-health-probe-Liveness
 
 #Compile modified health probe
 RUN CGO_ENABLED=0 go build -o /bin/grpc_health_probe-Liveness
 RUN chmod +x /bin/grpc_health_probe-Liveness
 
 #Install terraform
-WORKDIR ./../
+WORKDIR /go
 RUN wget https://releases.hashicorp.com/terraform/1.0.0/terraform_1.0.0_linux_amd64.zip
 RUN unzip terraform_1.0.0_linux_amd64.zip -d /usr/local/bin
 
 #Run server
-WORKDIR ./services/terraformer/server
-ENTRYPOINT [ "server" ]
+WORKDIR /go/services/terraformer/server
+ENTRYPOINT [ "./server" ]
 
 #NOTE: We cannot use scratch image for our dockerfile since we are using shell commands to execute commands inside the code
  

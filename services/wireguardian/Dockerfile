@@ -14,7 +14,7 @@ RUN go mod download
 COPY . .
 
 #Change the directory
-WORKDIR ./services/wireguardian/server
+WORKDIR /go/services/wireguardian/server
 
 #Compile the golang code to /out, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build
@@ -25,7 +25,7 @@ RUN GRPC_HEALTH_PROBE_VERSION=v0.4.4 && \
     chmod +x /bin/grpc_health_probe
 
 #Change workdir to modified health probe directory
-WORKDIR ./../../../grpc-health-probe-Liveness
+WORKDIR /go/grpc-health-probe-Liveness
 
 #Compile modified health probe
 RUN CGO_ENABLED=0 go build -o /bin/grpc_health_probe-Liveness
@@ -44,9 +44,9 @@ RUN apt-get update && \
   pip3 install ansible
 
 
-WORKDIR ./../services/wireguardian/server
+WORKDIR /go/services/wireguardian/server
 #Run server
-ENTRYPOINT [ "server" ]
+ENTRYPOINT [ "./server" ]
 
 #NOTE: We cannot use scratch image for our dockerfile since we are using shell commands to execute commands inside the code
  

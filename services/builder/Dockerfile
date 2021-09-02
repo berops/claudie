@@ -14,10 +14,10 @@ RUN go mod download
 COPY . .
 
 #Change the directory
-WORKDIR ./services/builder
+WORKDIR /go/services/builder
 
 #Compile the golang code to /out, CGO_ENABLE=0 removes cross compile dependencies
-RUN CGO_ENABLED=0 go build -o /out
+RUN CGO_ENABLED=0 go build
 
 #Install kubectl
 RUN wget https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
@@ -26,6 +26,6 @@ RUN mv ./kubectl /usr/local/bin/kubectl
 RUN kubectl version --client
 
 #Run server
-ENTRYPOINT [ "/out" ]
+ENTRYPOINT [ "./builder" ]
 
 #Note: When deleting nodes, builder is using kubectl drain/delete from shell
