@@ -16,5 +16,7 @@ COPY . .
 #Change the directory
 WORKDIR /go/services/testing-framework
 
+RUN apt update
+RUN apt install -y build-essential
 #Run server
 ENTRYPOINT [ "go", "test", "-v", "./..." ]
