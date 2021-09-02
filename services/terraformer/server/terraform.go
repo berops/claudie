@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"sort"
 	"text/template"
 
 	"github.com/Berops/platform/proto/pb"
@@ -96,7 +97,9 @@ func buildInfrastructure(config *pb.Config) error {
 		}
 
 		for _, m := range desiredState.Clusters {
-			log.Println(m.NodeInfos)
+			for _, nodeInfo := range m.NodeInfos {
+				fmt.Println(nodeInfo)
+			}
 		}
 	}
 	return nil
@@ -269,34 +272,50 @@ func readOutput(data string) (jsonOut, error) {
 
 func fillNodes(mOld []*pb.NodeInfo, terraformOutput *jsonOut, nodepool *pb.NodePool) []*pb.NodeInfo {
 	var mNew []*pb.NodeInfo
-	for name, ip := range terraformOutput.Control {
+	// Create empty slices for node names
+	var keysControl []string
+	var keysCompute []string
+	// Fill slices from terraformOutput maps with names of nodes to ensure an order
+	for name, _ := range terraformOutput.Control {
+		keysControl = append(keysControl, name)
+	}
+	sort.Strings(keysControl)
+	for name, _ := range terraformOutput.Compute {
+		keysCompute = append(keysCompute, name)
+	}
+	sort.Strings(keysCompute)
+	//TODO: delete this test print
+	log.Println(keysControl)
+	log.Println(keysCompute)
+
+	for _, name := range keysControl {
 		var private = ""
 		var control uint32 = 1
 		// If node exist, assign previous private IP
-		existingIp, _ := existsInCluster(mOld, ip)
+		existingIp, _ := existsInCluster(mOld, terraformOutput.Control[name])
 		if existingIp != nil {
 			private = existingIp.Private
 			control = existingIp.IsControl
 		}
 		mNew = append(mNew, &pb.NodeInfo{
 			NodeName:     name,
-			Public:       ip,
+			Public:       terraformOutput.Control[name],
 			Private:      private,
 			IsControl:    control,
 			Provider:     nodepool.Provider.Name,
 			NodepoolName: nodepool.Name,
 		})
 	}
-	for name, ip := range terraformOutput.Compute {
+	for _, name := range keysCompute {
 		var private = ""
 		// If node exist, assign previous private IP
-		existingIp, _ := existsInCluster(mOld, ip)
+		existingIp, _ := existsInCluster(mOld, terraformOutput.Compute[name])
 		if existingIp != nil {
 			private = existingIp.Private
 		}
 		mNew = append(mNew, &pb.NodeInfo{
 			NodeName:     name,
-			Public:       ip,
+			Public:       terraformOutput.Compute[name],
 			Private:      private,
 			IsControl:    0,
 			Provider:     nodepool.Provider.Name,
