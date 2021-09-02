@@ -163,6 +163,3 @@ jobs:
         run: |
           sudo apt-get install -y gettext-base
           envsubst < ./K8s-dev-cluster/testing-framework.yaml | kubectl apply -n claudie-$GITHUB_SHA -f -
-      - name: Show kubeconfig for debugging
-        if: ${{ always() }}
-        run: kubectl config view
