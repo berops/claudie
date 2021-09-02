@@ -152,7 +152,7 @@ jobs:
       # Check if everything is ready and running
       - name: Monitor status of the new namespace
         run: |
-          arr=( env.SERVICES )
+          arr=( ${{ env.SERVICES }} )
           unset arr[-1]
           echo "${arr[@]}"
           for SERVICE in "${arr[@]}"
@@ -163,3 +163,5 @@ jobs:
         run: |
           sudo apt-get install -y gettext-base
           envsubst < ./K8s-dev-cluster/testing-framework.yaml | kubectl apply -n claudie-$GITHUB_SHA -f -
+      - name: Show kubeconfig for debugging
+        run: kubectl config view
