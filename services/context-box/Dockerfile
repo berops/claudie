@@ -1,4 +1,4 @@
-FROM golang:alpine AS build
+FROM golang:1.16 AS build
 
 #Unset the GOPATH
 ENV GOPATH=
@@ -17,7 +17,7 @@ COPY . .
 WORKDIR ./services/context-box/server
 
 #Compile the golang code to /out, CGO_ENABLE=0 removes cross compile dependencies
-RUN CGO_ENABLED=0 go build -o /out
+RUN CGO_ENABLED=0 go build
 
 RUN apk update && apk add ca-certificates wget && update-ca-certificates
 
@@ -39,7 +39,7 @@ RUN chmod +x /bin/grpc_health_probe-Liveness
 FROM scratch
 
 #Copy the binaries to empty base image
-COPY --from=build /out /out
+COPY --from=build  /home//services/context-box/server /out
 COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
 COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Liveness
 

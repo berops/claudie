@@ -1,4 +1,4 @@
-FROM golang:alpine AS build
+FROM golang:1.16AS build
 
 #Unset the GOPATH
 ENV GOPATH=
@@ -17,7 +17,7 @@ COPY . .
 WORKDIR ./services/terraformer/server
 
 #Compile the golang code to /out, CGO_ENABLE=0 removes cross compile dependencies
-RUN CGO_ENABLED=0 go build -o /out
+RUN CGO_ENABLED=0 go build
 
 #Install grpc health probe
 RUN GRPC_HEALTH_PROBE_VERSION=v0.4.4 && \
@@ -37,7 +37,8 @@ RUN wget https://releases.hashicorp.com/terraform/1.0.0/terraform_1.0.0_linux_am
 RUN unzip terraform_1.0.0_linux_amd64.zip -d /usr/local/bin
 
 #Run server
-ENTRYPOINT [ "/out" ]
+WORKDIR ./services/terraformer/server
+ENTRYPOINT [ "server" ]
 
 #NOTE: We cannot use scratch image for our dockerfile since we are using shell commands to execute commands inside the code
  

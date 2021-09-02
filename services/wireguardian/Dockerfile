@@ -1,4 +1,4 @@
-FROM golang:alpine AS build
+FROM golang:1.16 AS build
 
 #Unset the GOPATH
 ENV GOPATH=
@@ -17,7 +17,7 @@ COPY . .
 WORKDIR ./services/wireguardian/server
 
 #Compile the golang code to /out, CGO_ENABLE=0 removes cross compile dependencies
-RUN CGO_ENABLED=0 go build -o /out
+RUN CGO_ENABLED=0 go build
 
 #Install grpc health probe
 RUN GRPC_HEALTH_PROBE_VERSION=v0.4.4 && \
@@ -34,8 +34,10 @@ RUN chmod +x /bin/grpc_health_probe-Liveness
 #Install the Ansible
 RUN apk add ansible
 
+
+WORKDIR ./../services/wireguardian/server
 #Run server
-ENTRYPOINT [ "/out" ]
+ENTRYPOINT [ "server" ]
 
 #NOTE: We cannot use scratch image for our dockerfile since we are using shell commands to execute commands inside the code
  
