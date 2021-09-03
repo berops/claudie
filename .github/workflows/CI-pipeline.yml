@@ -135,6 +135,13 @@ jobs:
           location: ${{ secrets.GKE_ZONE }}
           credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
 
+      - name: Login to GCP
+        uses: google-github-actions/setup-gcloud@master
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_email: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+          service_account_key: ${{ secrets.GCP_DOCKER_REGISTRY_KEY }}
+
       # Create a seperate temporary namespace
       - name: Create seperate namespace
         working-directory: ./K8s-dev-cluster
@@ -159,7 +166,15 @@ jobs:
           do 
           kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=120s --namespace=claudie-$GITHUB_SHA
           done
+
       - name: Start the E2E tests
         run: |
-          sudo apt-get install -y gettext-base
-          envsubst < ./K8s-dev-cluster/testing-framework.yaml | kubectl apply -n claudie-$GITHUB_SHA -f -
+          TEMP=($(gcloud container images list-tags eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$SERVICE --sort-by=TIMESTAMP --format="get(tags)"))
+          NEWEST_TAG=${TEMP[-1]}
+          kustomize edit add resource testing-framework.yaml
+          kustomize edit set image eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/testing-framework:NEWEST_TAG
+          kustomize build . | kubectl apply -f -
+
+      - name: Monitor E2E test
+        run: |
+          kubectl wait --for=condition=complete --timeout=900s job/testing-framework -n claudie-$GITHUB_SHA

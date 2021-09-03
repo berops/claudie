@@ -1,24 +1,22 @@
-apiVersion: apps/v1
-kind: Deployment 
+apiVersion: batch/v1
+kind: Job
 metadata:
   name: testing-framework
-  labels:
-    app: testing-framework
 spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: testing-framework
   template:
-    metadata:
-      labels:
-        app: testing-framework
     spec:
       containers:
-      - name: testing-framework
-        image: eu.gcr.io/platform-infrastructure-316112/platform/testing-framework:1f9a6f90800b24d84dd23ed98eeb4ccac69c5b7c
-        env:
-        - name: CONTEXT_BOX_PORT
-          value: "50055"
-        - name: CONTEXT_BOX_HOSTNAME
-          value: "context-box"
+        - name: testing-framework
+          image: eu.gcr.io/platform-infrastructure-316112/platform/testing-framework
+          env:
+            - name: CONTEXT_BOX_PORT
+                valueFrom:
+                  configMapKeyRef:
+                    name: urls
+                    key: CONTEXT_BOX_PORT
+            - name: CONTEXT_BOX_HOSTNAME
+                valueFrom:
+                  configMapKeyRef:
+                    name: urls
+                    key: CONTEXT_BOX_HOSTNAME
+      restartPolicy: Never

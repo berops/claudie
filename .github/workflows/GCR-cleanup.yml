@@ -6,7 +6,7 @@ on:
                           # Uses UTC timezone - Run every day at 20:00 CET -> "0 18 * * *"
 
 env:
-  SERVICES: context-box scheduler builder terraformer wireguardian kube-eleven
+  SERVICES: context-box scheduler builder terraformer wireguardian kube-eleven testing-framework
 
 jobs:
   turn-off:
