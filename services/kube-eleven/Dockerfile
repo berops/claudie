@@ -39,8 +39,8 @@ RUN wget https://github.com/kubermatic/kubeone/releases/download/v1.2.3/kubeone_
 RUN unzip kubeone_1.2.3_linux_amd64.zip -d kubeone_1.2.3_linux_amd64
 RUN mv kubeone_1.2.3_linux_amd64/kubeone /usr/local/bin
 
-WORKDIR /go/services/kube-eleven/server
 #Run server
-ENTRYPOINT [ "./server" ]
+WORKDIR /go
+ENTRYPOINT [ "./services/kube-eleven/server/server" ]
 
 #NOTE: We cannot use scratch image for our dockerfile since we are using shell commands to execute commands inside the code

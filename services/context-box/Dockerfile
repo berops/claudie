@@ -39,6 +39,6 @@ COPY --from=build  /go/services/context-box /bin/services/context-box
 COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
 COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Liveness
 
-WORKDIR /bin/services/context-box/server
+WORKDIR /bin
 #Run server
-ENTRYPOINT [ "./server" ]
+ENTRYPOINT [ "./services/context-box/server/server" ]

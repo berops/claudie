@@ -26,6 +26,7 @@ RUN mv ./kubectl /usr/local/bin/kubectl
 RUN kubectl version --client
 
 #Run server
-ENTRYPOINT [ "./builder" ]
+WORKDIR /go
+ENTRYPOINT [ "./services/builder/builder" ]
 
 #Note: When deleting nodes, builder is using kubectl drain/delete from shell

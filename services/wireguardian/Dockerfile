@@ -44,9 +44,9 @@ RUN apt-get update && \
   pip3 install ansible
 
 
-WORKDIR /go/services/wireguardian/server
 #Run server
-ENTRYPOINT [ "./server" ]
+WORKDIR /go
+ENTRYPOINT [ "./services/wireguardian/server/server" ]
 
 #NOTE: We cannot use scratch image for our dockerfile since we are using shell commands to execute commands inside the code
  

@@ -39,8 +39,8 @@ RUN wget https://releases.hashicorp.com/terraform/1.0.0/terraform_1.0.0_linux_am
 RUN unzip terraform_1.0.0_linux_amd64.zip -d /usr/local/bin
 
 #Run server
-WORKDIR /go/services/terraformer/server
-ENTRYPOINT [ "./server" ]
+WORKDIR /go
+ENTRYPOINT [ "./services/terraformer/server/server" ]
 
 #NOTE: We cannot use scratch image for our dockerfile since we are using shell commands to execute commands inside the code
  
