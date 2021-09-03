@@ -24,4 +24,4 @@ kubeEleven:
 
 # -timeout 0 will disable default timeout
 test:
-	go test ./testing-framework/... -timeout 0
+	go test ./services/testing-framework/... -timeout 0
