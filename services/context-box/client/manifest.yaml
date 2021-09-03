@@ -1,15 +1,5 @@
 name: TestProjectNameNumberTwo
 
-# out of scope of MVP; an array of already existing machines (e.g. on-premises) that can be used for the clusters
-# machinePool: 
-# - publicIP: 1.1.1.1
-#   privateSshKey: fsadfdsxfD4
-# - publicIP: 1.1.1.2
-#   privateSshKey: fsadfdsxfD4
-# - publicIP: 1.1.1.3
-#   privateSshKey: fsadfdsxfD4
-
-# clusters represents an array of clusterSpecs - high level descriptions of what the desired clusters should be like
 clusters: 
   - name: test-cluster-name1
     kubernetes: v1.19.0
@@ -22,14 +12,12 @@ clusters:
       region: europe-west1
       master:
         count: 1
-        # shape: small
         server_type: e2-small
         image: ubuntu-os-cloud/ubuntu-2004-lts
         disk_size: 50
         zone: europe-west1-c
       worker:
         count: 1
-        # shape: tiny
         server_type: f1-micro
         image: ubuntu-os-cloud/ubuntu-2004-lts
         disk_size: 50
@@ -41,7 +29,6 @@ clusters:
         credentials: xIAfsb7M5K6etYAfXYcg5iYyrFGNlCxcICo060HVEygjoF0usFpv5P9X7pk85Xe1
       master:
         count: 1
-        # shape: small
         server_type: cpx11
         image: ubuntu-20.04
         disk_size: 50
@@ -49,7 +36,6 @@ clusters:
         datacenter: nbg1-dc3
       worker:
         count: 1
-        # shape: small
         server_type: cpx11
         image: ubuntu-20.04
         disk_size: 50
@@ -67,14 +53,12 @@ clusters:
         region: europe-west1
         master:
           count: 1
-          # shape: small
           server_type: e2-small
           image: ubuntu-os-cloud/ubuntu-2004-lts
           disk_size: 50
           zone: europe-west1-c
         worker:
           count: 1
-          # shape: tiny
           server_type: f1-micro
           image: ubuntu-os-cloud/ubuntu-2004-lts
           disk_size: 50
@@ -86,7 +70,6 @@ clusters:
           credentials: xIAfsb7M5K6etYAfXYcg5iYyrFGNlCxcICo060HVEygjoF0usFpv5P9X7pk85Xe1
         master:
           count: 1
-          # shape: small
           server_type: cpx11
           image: ubuntu-20.04
           disk_size: 50
@@ -94,23 +77,8 @@ clusters:
           datacenter: nbg1-dc3
         worker:
           count: 1
-          # shape: small
           server_type: cpx11
           image: ubuntu-20.04
           disk_size: 50
           location: nbg1
           datacenter: nbg1-dc3
-    # out of MVP
-    # - machinePoolIPs: 
-    #   - 1.1.1.1
-    #   - 1.1.1.2
-    #   - 1.1.1.3
-
-# NOTES:
-# Please consider this as a very barebones, incomplete design, that can however be extended arbitrarily. The API version lifecycle can work similarly to how K8s manifests work.
-# The input config will to undergo a lot of validation - e.g. are credentials correct? are the provided machinePool IPs reachable, and do the ssh keys work?
-# Security must be extremely tight - the config contains extremely sensitive data
-# Can we support "machinePool" with private IPs somehow? Not all on-premise machines are going to have public IPs
-# Open question - if e.g. an on-premise node or a cloud provider doesn't respond, how far should we go to try to satisfy the requested architecture of the cluster?
-# There are tons of things that will need to be discussed/planned - e.g. availability domains, and similar stuff.
-# TODO: load balancers

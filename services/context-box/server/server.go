@@ -48,7 +48,6 @@ var (
 	mutexDBsave    sync.Mutex
 )
 
-//TODO: Change byte to project structure
 type configItem struct {
 	ID           primitive.ObjectID `bson:"_id,omitempty"`
 	Name         string             `bson:"name"`
@@ -209,7 +208,6 @@ func configCheck() error {
 	}
 	// loop through config
 	for _, config := range configs {
-		log.Println("CSCHECKSUM:", config.CsChecksum)
 		// check if item is already in some queue
 		if queueBuilder.contains(config) || queueScheduler.contains(config) {
 			// some queue already has this particular config
