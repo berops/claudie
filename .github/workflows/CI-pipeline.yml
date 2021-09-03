@@ -172,8 +172,9 @@ jobs:
         run: |        
           TEMP=($(gcloud container images list-tags eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/testing-framework --sort-by=TIMESTAMP --format="get(tags)"))
           NEWEST_TAG=${TEMP[-1]}
+          kustomize edit set namespace  claudie-ea67bfdb35f21442a547f13b285e870e624d9733
           kustomize edit add resource testing-framework.yaml
-          kustomize edit set image eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/testing-framework:NEWEST_TAG
+          kustomize edit set image eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/testing-framework:$NEWEST_TAG
           kustomize build . | kubectl apply -f -
 
       - name: Monitor E2E test
