@@ -1,4 +1,4 @@
-FROM golang:alpine AS build
+FROM golang:1.16 AS build
 
 #Unset the GOPATH
 ENV GOPATH=
@@ -14,10 +14,10 @@ RUN go mod download
 COPY . .
 
 #Change the directory
-WORKDIR ./services/kube-eleven/server
+WORKDIR /go/services/kube-eleven/server
 
 #Compile the golang code to /out, CGO_ENABLE=0 removes cross compile dependencies
-RUN CGO_ENABLED=0 go build -o /out
+RUN CGO_ENABLED=0 go build
 
 #Install grpc health probe
 RUN GRPC_HEALTH_PROBE_VERSION=v0.4.4 && \
@@ -25,19 +25,22 @@ RUN GRPC_HEALTH_PROBE_VERSION=v0.4.4 && \
     chmod +x /bin/grpc_health_probe
 
 #Change workdir to modified health probe directory
-WORKDIR ./../../../grpc-health-probe-Liveness
+WORKDIR /go/grpc-health-probe-Liveness
 
 #Compile modified health probe
 RUN CGO_ENABLED=0 go build -o /bin/grpc_health_probe-Liveness
 RUN chmod +x /bin/grpc_health_probe-Liveness
 
-#Use empty base image
-FROM scratch
-
-#Copy the binaries to empty base image
-COPY --from=build /out /out
-COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
-COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Liveness
+# Install kubeone
+WORKDIR /go
+RUN apt update
+RUN apt install -y unzip
+RUN wget https://github.com/kubermatic/kubeone/releases/download/v1.2.3/kubeone_1.2.3_linux_amd64.zip
+RUN unzip kubeone_1.2.3_linux_amd64.zip -d kubeone_1.2.3_linux_amd64
+RUN mv kubeone_1.2.3_linux_amd64/kubeone /usr/local/bin
 
 #Run server
-ENTRYPOINT [ "/out" ]
+WORKDIR /go
+ENTRYPOINT [ "./services/kube-eleven/server/server" ]
+
+#NOTE: We cannot use scratch image for our dockerfile since we are using shell commands to execute commands inside the code

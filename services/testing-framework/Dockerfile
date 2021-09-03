@@ -14,17 +14,9 @@ RUN go mod download
 COPY . .
 
 #Change the directory
-WORKDIR /go/services/scheduler
+WORKDIR /go/services/testing-framework
 
-#Compile the golang code to /out, CGO_ENABLE=0 removes cross compile dependencies
-RUN CGO_ENABLED=0 go build -o /out
-
-#Use empty base image
-FROM scratch
-
-#Copy the binaries to empty base image
-COPY --from=build /out /out
-
-#Run scheduler
-ENTRYPOINT [ "/out" ]
-  
+RUN apt update
+RUN apt install -y build-essential
+#Run server
+ENTRYPOINT [ "go", "test", "-v", "./..." ]

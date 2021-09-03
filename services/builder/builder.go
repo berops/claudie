@@ -257,12 +257,11 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 				}
 			}()
 		}
-
 		return nil
 	}
 }
 
-// healthCheck function is function used for querring readiness of the pod running this microservice
+// healthCheck function is function used for querying readiness of the pod running this microservice
 func healthCheck() error {
 	//Check if Builder can connect to Terraformer/Wireguardian/Kube-eleven
 	//Connection to these services are crucial for Builder, without them, the builder is NOT Ready

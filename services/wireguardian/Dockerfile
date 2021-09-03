@@ -1,4 +1,4 @@
-FROM golang:alpine AS build
+FROM golang:1.16 AS build
 
 #Unset the GOPATH
 ENV GOPATH=
@@ -14,10 +14,10 @@ RUN go mod download
 COPY . .
 
 #Change the directory
-WORKDIR ./services/wireguardian/server
+WORKDIR /go/services/wireguardian/server
 
 #Compile the golang code to /out, CGO_ENABLE=0 removes cross compile dependencies
-RUN CGO_ENABLED=0 go build -o /out
+RUN CGO_ENABLED=0 go build
 
 #Install grpc health probe
 RUN GRPC_HEALTH_PROBE_VERSION=v0.4.4 && \
@@ -25,20 +25,28 @@ RUN GRPC_HEALTH_PROBE_VERSION=v0.4.4 && \
     chmod +x /bin/grpc_health_probe
 
 #Change workdir to modified health probe directory
-WORKDIR ./../../../grpc-health-probe-Liveness
+WORKDIR /go/grpc-health-probe-Liveness
 
 #Compile modified health probe
 RUN CGO_ENABLED=0 go build -o /bin/grpc_health_probe-Liveness
 RUN chmod +x /bin/grpc_health_probe-Liveness
 
-#Use empty base image
-FROM scratch
+#Install the Ansible
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && \
+  apt-get install -y gcc python-dev libkrb5-dev && \
+  apt-get install python3-pip -y && \
+  pip3 install --upgrade pip && \
+  pip3 install --upgrade virtualenv && \
+  pip3 install pywinrm[kerberos] && \
+  apt install krb5-user -y && \ 
+  pip3 install pywinrm && \
+  pip3 install ansible
 
-#Copy the binaries to empty base image
-COPY --from=build /out /out
-COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
-COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Liveness
 
 #Run server
-ENTRYPOINT [ "/out" ]
+WORKDIR /go
+ENTRYPOINT [ "./services/wireguardian/server/server" ]
+
+#NOTE: We cannot use scratch image for our dockerfile since we are using shell commands to execute commands inside the code
  

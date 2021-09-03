@@ -67,7 +67,7 @@ func TestSaveConfigFrontEnd(t *testing.T) {
 		log.Fatalln(errR)
 	}
 
-	err := SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
+	_, err := SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
 		Config: &pb.Config{
 			Name:     "TestDeleteConfig Samo",
 			Manifest: string(manifest),

@@ -1,4 +1,4 @@
-FROM golang:alpine AS build
+FROM golang:1.16 AS build
 
 #Unset the GOPATH
 ENV GOPATH=
@@ -14,14 +14,10 @@ RUN go mod download
 COPY . .
 
 #Change the directory
-WORKDIR ./services/context-box/server
+WORKDIR /go/services/context-box/server
 
 #Compile the golang code to /out, CGO_ENABLE=0 removes cross compile dependencies
-RUN CGO_ENABLED=0 go build -o /out
-
-RUN apk update && apk add ca-certificates wget && update-ca-certificates
-
-RUN apk update && apk add wget
+RUN CGO_ENABLED=0 go build
 
 #Install grpc health probe
 RUN GRPC_HEALTH_PROBE_VERSION=v0.4.4 && \
@@ -29,7 +25,7 @@ RUN GRPC_HEALTH_PROBE_VERSION=v0.4.4 && \
     chmod +x /bin/grpc_health_probe
 
 #Change workdir to modified health probe directory
-WORKDIR ./../../../grpc-health-probe-Liveness
+WORKDIR /go/grpc-health-probe-Liveness
 
 #Compile modified health probe
 RUN CGO_ENABLED=0 go build -o /bin/grpc_health_probe-Liveness
@@ -39,10 +35,10 @@ RUN chmod +x /bin/grpc_health_probe-Liveness
 FROM scratch
 
 #Copy the binaries to empty base image
-COPY --from=build /out /out
+COPY --from=build  /go/services/context-box /bin/services/context-box
 COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
 COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Liveness
 
-
+WORKDIR /bin
 #Run server
-ENTRYPOINT [ "/out" ]
+ENTRYPOINT [ "./services/context-box/server/server" ]

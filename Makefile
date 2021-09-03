@@ -21,3 +21,7 @@ wireguardian:
 
 kubeEleven:
 	go run services/kube-eleven/server/server.go
+
+# -timeout 0 will disable default timeout
+test:
+	go test ./services/testing-framework/... -timeout 0

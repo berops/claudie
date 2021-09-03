@@ -9,17 +9,17 @@ message SaveConfigResponse { Config config = 1; }
 
 // Get
 message GetConfigRequest {}
-message GetConfigResponse { Config config = 1; }
+message GetConfigResponse {Config config = 1;}
 
 message GetAllConfigsRequest {}
-message GetAllConfigsResponse { repeated Config configs = 1; }
+message GetAllConfigsResponse {repeated Config configs = 1;}
 
-message PrintConfigRequest { string id = 1; }
-message PrintConfigResponse { Config config = 1; }
+message GetConfigByIdRequest {string id = 1;}
+message GetConfigByIdResponse {Config config = 1;}
 
 // Delete
-message DeleteConfigRequest { string id = 1; }
-message DeleteConfigResponse { string id = 1; }
+message DeleteConfigRequest {string id = 1;}
+message DeleteConfigResponse {string id = 1;}
 
 service ContextBoxService {
   // Save
@@ -27,7 +27,7 @@ service ContextBoxService {
   rpc SaveConfigScheduler(SaveConfigRequest) returns (SaveConfigResponse);
   rpc SaveConfigBuilder(SaveConfigRequest) returns (SaveConfigResponse);
   // Get
-  rpc PrintConfig(PrintConfigRequest) returns (PrintConfigResponse);
+  rpc GetConfigById(GetConfigByIdRequest) returns (GetConfigByIdResponse);
   rpc GetConfigScheduler(GetConfigRequest) returns (GetConfigResponse);
   rpc GetConfigBuilder(GetConfigRequest) returns (GetConfigResponse);
   rpc GetAllConfigs(GetAllConfigsRequest) returns (GetAllConfigsResponse);
