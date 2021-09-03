@@ -167,6 +167,8 @@ jobs:
           kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=120s --namespace=claudie-$GITHUB_SHA
           done
 
+          kubectl get pods --namespace=claudie-$GITHUB_SHA
+
       - name: Start the E2E tests
         working-directory: ./K8s-dev-cluster
         run: |        
@@ -180,3 +182,7 @@ jobs:
       - name: Monitor E2E test
         run: |
           kubectl wait --for=condition=complete --timeout=900s job/testing-framework -n claudie-$GITHUB_SHA
+     
+      - name: Delete temporary namespace
+        run: |
+          kubectl delete namespace claudie-$GITHUB_SHA 
