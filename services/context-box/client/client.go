@@ -11,7 +11,7 @@ import (
 // SaveConfigFrontEnd calls Content-box gRPC server and saves configuration to the mongoDB database
 // A new config file with Id will be created if ID is empty
 // returns id of the saved config and error
-func SaveConfigFrontEnd(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest) (string, error ) {
+func SaveConfigFrontEnd(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest) (string, error) {
 	fmt.Println("Saving config")
 
 	res, err := c.SaveConfigFrontEnd(context.Background(), req)

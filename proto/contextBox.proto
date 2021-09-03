@@ -4,8 +4,9 @@ option go_package = "proto/pb";
 import "config.proto";
 
 // Save
-message SaveConfigRequest {Config config = 1;}
-message SaveConfigResponse {Config config = 1;}
+message SaveConfigRequest { Config config = 1; }
+message SaveConfigResponse { Config config = 1; }
+
 // Get
 message GetConfigRequest {}
 message GetConfigResponse {Config config = 1;}
