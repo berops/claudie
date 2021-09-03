@@ -168,7 +168,8 @@ jobs:
 #          done
 #
       - name: Start the E2E tests
-        run: |
+        working-directory: ./K8s-dev-cluster
+        run: |        
           TEMP=($(gcloud container images list-tags eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/testing-framework --sort-by=TIMESTAMP --format="get(tags)"))
           NEWEST_TAG=${TEMP[-1]}
           kustomize edit add resource testing-framework.yaml
