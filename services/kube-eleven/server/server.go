@@ -64,10 +64,15 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 	for _, cluster := range config.GetDesiredState().GetClusters() {
 		var d data
 		d.formatTemplateData(cluster)
+		// Create a private key file
 		if err := createKeyFile(cluster.GetPrivateKey(), "private.pem"); err != nil {
 			return nil, err
 		}
-
+		// Create a cluster-kubeconfig file
+		if err := ioutil.WriteFile(outputPath+"cluster-kubeconfig", []byte(cluster.GetKubeconfig()), 0600); err != nil {
+			return nil, err
+		}
+		// Generate a kubeOne yaml manifest from a golang template
 		if err := genKubeOneConfig(outputPath+"kubeone.tpl", outputPath+"kubeone.yaml", d); err != nil {
 			return nil, err
 		}
