@@ -11,59 +11,49 @@ import (
 	"google.golang.org/grpc"
 )
 
-func TestGetConfigScheduler(t *testing.T) {
-	//Create connection to Context-box
+func ClientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
 	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("could not connect to server: %v", err)
 	}
-	defer func() {
-		err := cc.Close()
-		require.NoError(t, err)
-	}()
 
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
+	return c, cc
+}
+
+func TestGetConfigScheduler(t *testing.T) {
+	c, cc := ClientConnection()
 
 	res, err := GetConfigScheduler(c)
+	err = cc.Close()
+	if err != nil {
+		log.Fatalln("Error while closing the client connection:", err)
+	}
 	require.NoError(t, err)
 	t.Log("Config name", res.GetConfig().GetName())
 }
 
 func TestGetConfigBuilder(t *testing.T) {
-	//Create connection to Context-box
-	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("could not connect to server: %v", err)
-	}
-	defer func() {
-		err := cc.Close()
-		require.NoError(t, err)
-	}()
-
-	// Creating the client
-	c := pb.NewContextBoxServiceClient(cc)
+	c, cc := ClientConnection()
 
 	res, err := GetConfigBuilder(c)
+	err = cc.Close()
+	if err != nil {
+		log.Fatalln("Error while closing the client connection:", err)
+	}
 	require.NoError(t, err)
 	t.Log("Config name", res.GetConfig().GetName())
 }
 
 func TestGetAllConfigs(t *testing.T) {
-	//Create connection to Context-box
-	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("could not connect to server: %v", err)
-	}
-	defer func() {
-		err := cc.Close()
-		require.NoError(t, err)
-	}()
-
-	// Creating the client
-	c := pb.NewContextBoxServiceClient(cc)
+	c, cc := ClientConnection()
 
 	res, err := GetAllConfigs(c)
+	err = cc.Close()
+	if err != nil {
+		log.Fatalln("Error while closing the client connection:", err)
+	}
 	require.NoError(t, err)
 	for _, c := range res.GetConfigs() {
 		t.Log(c.GetId(), c.GetName(), c.GetDesiredState(), c.CurrentState)
@@ -71,80 +61,66 @@ func TestGetAllConfigs(t *testing.T) {
 }
 
 func TestSaveConfigFrontEnd(t *testing.T) {
-	//Create connection to Context-box
-	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("could not connect to server: %v", err)
-	}
-	defer func() {
-		err := cc.Close()
-		require.NoError(t, err)
-	}()
-
-	// Creating the client
-	c := pb.NewContextBoxServiceClient(cc)
-
+	c, cc := ClientConnection()
 	manifest, errR := ioutil.ReadFile("./manifest.yaml") //this is manifest from this test file
 	if errR != nil {
 		log.Fatalln(errR)
 	}
 
-	err = SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
+	err := SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
 		Config: &pb.Config{
-			Name:         "NewTest",
-			Manifest:     string(manifest),
-			DesiredState: &pb.Project{Name: "This is desiredState name"},
-			CurrentState: &pb.Project{Name: "This is currentState name"},
+			Name:     "TestDeleteConfig Samo",
+			Manifest: string(manifest),
 		},
 	})
+	err = cc.Close()
+	if err != nil {
+		log.Fatalln("Error while closing the client connection:", err)
+	}
 	require.NoError(t, err)
 }
 
 func TestSaveConfigScheduler(t *testing.T) {
-	//Create connection to Context-box
-	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("could not connect to server: %v", err)
-	}
-	defer func() {
-		err := cc.Close()
-		require.NoError(t, err)
-	}()
-
-	// Creating the client
-	c := pb.NewContextBoxServiceClient(cc)
+	c, cc := ClientConnection()
 
 	manifest, errR := ioutil.ReadFile("./manifest.yaml") //this is manifest from this test file
 	if errR != nil {
 		log.Fatalln(errR)
 	}
 
-	err = SaveConfigScheduler(c, &pb.SaveConfigRequest{
+	err := SaveConfigScheduler(c, &pb.SaveConfigRequest{
 		Config: &pb.Config{
-			Id:           "60bf64e9489c76f2e72a768f",
-			Name:         "TestSaveConfigScheduler",
-			Manifest:     string(manifest),
-			DesiredState: &pb.Project{Name: "This is desiredState name"},
-			CurrentState: &pb.Project{Name: "This is currentState name"},
+			Name:     "TestDeleteNodeSamo",
+			Manifest: string(manifest),
 		},
 	})
+	err = cc.Close()
+	if err != nil {
+		log.Fatalln("Error while closing the client connection:", err)
+	}
 	require.NoError(t, err)
+
 }
 
 func TestDeleteConfig(t *testing.T) {
-	//Create connection to Context-box
-	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
+	c, cc := ClientConnection()
+	err := DeleteConfig(c, "6126737f4f9bcdabaa336da4")
+	err = cc.Close()
 	if err != nil {
-		log.Fatalf("could not connect to server: %v", err)
+		log.Fatalln("Error while closing the client connection:", err)
 	}
-	defer func() {
-		err := cc.Close()
-		require.NoError(t, err)
-	}()
+	require.NoError(t, err)
+}
 
-	// Creating the client
-	c := pb.NewContextBoxServiceClient(cc)
-
-	err = DeleteConfig(c, "60c31adfd278aff9eff87eef")
+func TestPrintConfig(t *testing.T) {
+	c, cc := ClientConnection()
+	_, err := PrintConfig(c, "6126737f4f9bcdabaa336da4")
+	if err != nil {
+		log.Fatalln("Config not found:", err)
+	}
+	err = cc.Close()
+	if err != nil {
+		log.Fatalln("Error while closing the client connection:", err)
+	}
 	require.NoError(t, err)
 }

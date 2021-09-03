@@ -10,6 +10,8 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"strconv"
+	"strings"
 	"text/template"
 
 	"github.com/Berops/platform/healthcheck"
@@ -29,11 +31,11 @@ func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVP
 	config := req.GetConfig()
 
 	for _, cluster := range config.GetDesiredState().GetClusters() {
-		if err := genPrivAdd(cluster.GetIps(), cluster.GetNetwork()); err != nil {
+		if err := genPrivAdd(cluster.GetNodeInfos(), cluster.GetNetwork()); err != nil {
 			return nil, err
 		}
 
-		if err := genInv(cluster.GetIps()); err != nil {
+		if err := genInv(cluster.GetNodeInfos()); err != nil {
 			return nil, err
 		}
 
@@ -50,8 +52,17 @@ func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVP
 }
 
 // genPrivAdd will generate private ip addresses from network parameter
-func genPrivAdd(addresses map[string]*pb.Ip, network string) error {
+func genPrivAdd(addresses []*pb.NodeInfo, network string) error {
 	_, ipNet, err := net.ParseCIDR(network)
+	var addressesToAssign []*pb.NodeInfo
+
+	// initilize slice of possible last octet
+	lastOctets := make([]byte, 255)
+	var i byte
+	for i = 0; i < 255; i++ {
+		lastOctets[i] = i + 1
+	}
+
 	if err != nil {
 		return err
 	}
@@ -59,15 +70,42 @@ func genPrivAdd(addresses map[string]*pb.Ip, network string) error {
 	ip = ip.To4()
 
 	for _, address := range addresses {
-		ip[3]++ // check for rollover
+		// If address already assigned, skip
+		if address.Private != "" {
+			lastOctet := strings.Split(address.Private, ".")[3]
+			lastOctetInt, _ := strconv.Atoi(lastOctet)
+			lastOctets = remove(lastOctets, byte(lastOctetInt))
+			continue
+		}
+		addressesToAssign = append(addressesToAssign, address)
+	}
+
+	var temp int = 0
+	for _, address := range addressesToAssign {
+		ip[3] = lastOctets[temp]
 		address.Private = ip.String()
+		temp++
+	}
+	// debug message
+	for _, address := range addresses {
+		fmt.Println(address)
 	}
 
 	return nil
 }
 
+func remove(slice []byte, value byte) []byte {
+	var pos int
+	for pos = 0; pos < len(slice); pos++ {
+		if slice[pos] == value {
+			break
+		}
+	}
+	return append(slice[:pos], slice[pos+1:]...)
+}
+
 // genInv will generate ansible inventory file slice of clusters input
-func genInv(addresses map[string]*pb.Ip) error {
+func genInv(addresses []*pb.NodeInfo) error {
 	tpl, err := template.ParseFiles("services/wireguardian/server/inventory.goini")
 	if err != nil {
 		return fmt.Errorf("failed to load template file: %v", err)

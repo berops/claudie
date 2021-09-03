@@ -12,7 +12,7 @@ message Config {
   bytes dsChecksum = 7;
   bytes csChecksum = 8;
   int32 builderTTL = 9;
-  int32 schedulerTTL = 10; 
+  int32 schedulerTTL = 10;
 }
 
 message Project {
@@ -28,7 +28,7 @@ message Cluster {
   string public_key = 5;
   string private_key = 6;
   repeated NodePool nodePools = 9;
-  map<string, Ip> ips = 10;
+  repeated NodeInfo nodeInfos = 10;
 }
 
 message NodePool {
@@ -53,9 +53,17 @@ message Provider {
   string name = 1;
   string credentials = 2;
 }
-
-message Ip {
-  string public = 1;
-  string private = 2;
-  bool isControl = 3;
+/*
+ * isControl flag
+ * 0 - Only worker node
+ * 1 - Only master node
+ * 2 - ApiEndpoint master node (must be singleton)
+ */
+message NodeInfo {
+  string nodeName = 1;
+  string public = 2;
+  string private = 3;
+  uint32 isControl = 4;
+  string provider = 5;
+  string nodepoolName = 6;
 }

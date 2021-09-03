@@ -3,6 +3,7 @@ package cbox
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/Berops/platform/proto/pb"
 )
@@ -86,4 +87,42 @@ func DeleteConfig(c pb.ContextBoxServiceClient, id string) error {
 
 	fmt.Println("Config was deleted", res)
 	return nil
+}
+
+// PrintConfig prints a desired config with a current state
+func PrintConfig(c pb.ContextBoxServiceClient, id string) (*pb.PrintConfigResponse, error) {
+	res, err := c.PrintConfig(context.Background(), &pb.PrintConfigRequest{Id: id})
+	if err != nil {
+		log.Fatalf("Unexpected error: %v", err)
+	}
+	fmt.Println("Config name:", res.GetConfig().GetName())
+	fmt.Println("Config ID:", res.GetConfig().GetId())
+	fmt.Println("Project name:", res.GetConfig().GetCurrentState().GetName())
+	fmt.Println("Project clusters: ")
+	for i, cluster := range res.GetConfig().GetCurrentState().GetClusters() {
+		fmt.Println("========================================")
+		fmt.Println("Cluster number:", i)
+		fmt.Println("Name:", cluster.GetName())
+		fmt.Println("Kubernetes version:", cluster.GetKubernetes())
+		fmt.Println("Network CIDR:", cluster.GetNetwork())
+		fmt.Println("Kubeconfig:")
+		fmt.Println(cluster.GetKubeconfig())
+		fmt.Println("Node Pools:")
+		for i2, nodePool := range cluster.GetNodePools() {
+			fmt.Println("----------------------------------------")
+			fmt.Println("NodePool number:", i2)
+			fmt.Println("Name:", nodePool.GetName())
+			fmt.Println("Region", nodePool.GetRegion())
+			fmt.Println("Master node specs:", nodePool.GetMaster())
+			fmt.Println("Worker node specs:", nodePool.GetWorker())
+			fmt.Println("Provider specs:", nodePool.GetProvider())
+		}
+		fmt.Println("----------------------------------------")
+		fmt.Println("Cluster Nodes:")
+		for _, nodeInfo := range cluster.GetNodeInfos() {
+			fmt.Println("Name:", nodeInfo.NodeName, "Public:", nodeInfo.GetPublic(), "Private", nodeInfo.GetPrivate(), "isControl:", nodeInfo.GetIsControl())
+		}
+	}
+	//fmt.Println(res.GetConfig().GetCurrentState().GetClusters())
+	return res, nil
 }

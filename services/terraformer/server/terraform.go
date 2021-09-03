@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"sort"
 	"text/template"
 
 	"github.com/Berops/platform/proto/pb"
@@ -26,17 +27,22 @@ type Data struct {
 	Cluster *pb.Cluster
 }
 
+type jsonOut struct {
+	Compute map[string]string `json:"compute"`
+	Control map[string]string `json:"control"`
+}
+
 func createKeyFile(key string, keyType string) error {
 	return ioutil.WriteFile(outputPath+keyType, []byte(key), 0600)
 }
 
 // buildInfrastructure is generating terraform files for different providers and calling terraform
-func buildInfrastructure(desiredState *pb.Project) error {
+func buildInfrastructure(config *pb.Config) error {
+	desiredState := config.DesiredState
 	fmt.Println("Generating templates")
 	var backendData Backend
 	backendData.ProjectName = desiredState.GetName()
 	for _, cluster := range desiredState.Clusters {
-		providers := getProviders(cluster)
 		log.Println("Cluster name:", cluster.GetName())
 		backendData.ClusterName = cluster.GetName()
 		// Creating backend.tf file from the template
@@ -64,10 +70,15 @@ func buildInfrastructure(desiredState *pb.Project) error {
 			return err
 		}
 
-		// Fill public ip addresses
-		m := make(map[string]*pb.Ip)
-		for _, provider := range providers {
-			output, err := outputTerraform(outputPath, provider)
+		// Fill public ip addresseNodeInfos
+		tmpCluster := getClusterByName(cluster.Name, config.CurrentState.Clusters)
+		var m []*pb.NodeInfo
+
+		if tmpCluster != nil {
+			m = tmpCluster.NodeInfos
+		}
+		for _, nodepool := range cluster.NodePools {
+			output, err := outputTerraform(outputPath, nodepool.Provider.Name)
 			if err != nil {
 				return err
 			}
@@ -76,19 +87,36 @@ func buildInfrastructure(desiredState *pb.Project) error {
 			if err != nil {
 				return err
 			}
-
-			fillNodes(m, out)
+			m = fillNodes(m, &out, nodepool)
 		}
-		cluster.Ips = m
+		cluster.NodeInfos = m
 		// Clean after Terraform. Remove tmp terraform dir.
 		err := os.RemoveAll("services/terraformer/server/terraform")
 		if err != nil {
 			return err
 		}
+
+		for _, m := range desiredState.Clusters {
+			for _, nodeInfo := range m.NodeInfos {
+				fmt.Println(nodeInfo)
+			}
+		}
+	}
+	return nil
+}
+
+func getClusterByName(name string, clusters []*pb.Cluster) *pb.Cluster {
+	if name == "" {
+		return nil
+	}
+	if len(clusters) == 0 {
+		return nil
 	}
 
-	for _, m := range desiredState.Clusters {
-		log.Println(m.Ips)
+	for _, cluster := range clusters {
+		if cluster.Name == name {
+			return cluster
+		}
 	}
 
 	return nil
@@ -199,7 +227,7 @@ func initTerraform(fileName string) error {
 	return executeTerraform(exec.Command("terraform", "init"), fileName)
 }
 
-// applyTerraform executes terraform terraform apply on a .tf files in a given path
+// applyTerraform executes terraform apply on a .tf files in a given path
 func applyTerraform(fileName string) error {
 	// terraform apply --auto-approve
 	return executeTerraform(exec.Command("terraform", "apply", "--auto-approve"), fileName)
@@ -233,33 +261,72 @@ func outputTerraform(fileName string, provider string) (string, error) {
 }
 
 // readOutput reads json output format from terraform and unmarshal it into map[string]map[string]string readable by GO
-func readOutput(data string) (map[string]map[string]string, error) {
-	var result map[string]map[string]string
+func readOutput(data string) (jsonOut, error) {
+	var result jsonOut
 	// Unmarshal or Decode the JSON to the interface.
 	err := json.Unmarshal([]byte(data), &result)
 	return result, err
 }
 
 // fillNodes gets ip addresses from a terraform output
-func fillNodes(m map[string]*pb.Ip, terraformOutput map[string]map[string]string) {
-	for key, element := range terraformOutput["control"] {
-		log.Println("Key:", key, "=>", "Element:", element)
-		m[key] = &pb.Ip{
-			Public:    element,
-			IsControl: true,
+
+func fillNodes(mOld []*pb.NodeInfo, terraformOutput *jsonOut, nodepool *pb.NodePool) []*pb.NodeInfo {
+	var mNew []*pb.NodeInfo
+	// Create empty slices for node names
+	var keysControl []string
+	var keysCompute []string
+	// Fill slices from terraformOutput maps with names of nodes to ensure an order
+	for name, _ := range terraformOutput.Control {
+		keysControl = append(keysControl, name)
+	}
+	sort.Strings(keysControl)
+	for name, _ := range terraformOutput.Compute {
+		keysCompute = append(keysCompute, name)
+	}
+	sort.Strings(keysCompute)
+
+	for _, name := range keysControl {
+		var private = ""
+		var control uint32 = 1
+		// If node exist, assign previous private IP
+		existingIp, _ := existsInCluster(mOld, terraformOutput.Control[name])
+		if existingIp != nil {
+			private = existingIp.Private
+			control = existingIp.IsControl
 		}
+		mNew = append(mNew, &pb.NodeInfo{
+			NodeName:     name,
+			Public:       terraformOutput.Control[name],
+			Private:      private,
+			IsControl:    control,
+			Provider:     nodepool.Provider.Name,
+			NodepoolName: nodepool.Name,
+		})
 	}
-	for key, element := range terraformOutput["compute"] {
-		log.Println("Key:", key, "=>", "Element:", element)
-		m[key] = &pb.Ip{Public: element}
+	for _, name := range keysCompute {
+		var private = ""
+		// If node exist, assign previous private IP
+		existingIp, _ := existsInCluster(mOld, terraformOutput.Compute[name])
+		if existingIp != nil {
+			private = existingIp.Private
+		}
+		mNew = append(mNew, &pb.NodeInfo{
+			NodeName:     name,
+			Public:       terraformOutput.Compute[name],
+			Private:      private,
+			IsControl:    0,
+			Provider:     nodepool.Provider.Name,
+			NodepoolName: nodepool.Name,
+		})
 	}
+	return mNew
 }
 
-// getProviders returns names of all providers used in a cluster
-func getProviders(cluster *pb.Cluster) []string {
-	var providers []string
-	for _, nodePool := range cluster.NodePools {
-		providers = append(providers, nodePool.Provider.Name)
+func existsInCluster(m []*pb.NodeInfo, ip string) (*pb.NodeInfo, error) {
+	for _, ips := range m {
+		if ips.Public == ip {
+			return ips, nil
+		}
 	}
-	return providers
+	return nil, fmt.Errorf("ip does not exist")
 }

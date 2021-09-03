@@ -26,23 +26,35 @@ const outputPath = "services/kube-eleven/server/"
 type data struct {
 	ApiEndpoint string
 	Kubernetes  string
-	Nodes       []*pb.Ip
+	Nodes       []*pb.NodeInfo
 }
 
 // formatTemplateData formats data for kubeone template input
 func (d *data) formatTemplateData(cluster *pb.Cluster) {
-	for _, ip := range cluster.Ips {
-		if ip.GetIsControl() {
-			d.Nodes = append(d.Nodes, ip)
+	var controlNodes []*pb.NodeInfo
+	var workerNodes []*pb.NodeInfo
+	hasApiEndpoint := false
+
+	for _, nodeInfo := range cluster.GetNodeInfos() {
+		if nodeInfo.GetIsControl() == 1 {
+			controlNodes = append(controlNodes, nodeInfo)
+		} else if nodeInfo.GetIsControl() == 2 {
+			hasApiEndpoint = true
+			d.Nodes = append(d.Nodes, nodeInfo) //the Api endpoint must be first in slice
+		} else {
+			workerNodes = append(workerNodes, nodeInfo)
 		}
 	}
-	for _, ip := range cluster.Ips {
-		if !ip.GetIsControl() {
-			d.Nodes = append(d.Nodes, ip)
-		}
+	if !hasApiEndpoint {
+		controlNodes[0].IsControl = 2
 	}
+	// if there is something in d.Nodes, it would be rewritten in line 55, therefore this condition
+	if len(d.Nodes) > 0 {
+		controlNodes = append(d.Nodes, controlNodes...)
+	}
+	d.Nodes = append(controlNodes, workerNodes...)
 	d.Kubernetes = cluster.GetKubernetes()
-	d.ApiEndpoint = d.Nodes[0].GetPrivate()
+	d.ApiEndpoint = d.Nodes[0].GetPublic()
 }
 
 func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb.BuildClusterResponse, error) {
@@ -52,10 +64,15 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 	for _, cluster := range config.GetDesiredState().GetClusters() {
 		var d data
 		d.formatTemplateData(cluster)
+		// Create a private key file
 		if err := createKeyFile(cluster.GetPrivateKey(), "private.pem"); err != nil {
 			return nil, err
 		}
-
+		// Create a cluster-kubeconfig file
+		if err := ioutil.WriteFile(outputPath+"cluster-kubeconfig", []byte(cluster.GetKubeconfig()), 0600); err != nil {
+			return nil, err
+		}
+		// Generate a kubeOne yaml manifest from a golang template
 		if err := genKubeOneConfig(outputPath+"kubeone.tpl", outputPath+"kubeone.yaml", d); err != nil {
 			return nil, err
 		}
@@ -75,7 +92,6 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 		}
 	}
 
-	//fmt.Println("Kubeconfig:", string(req.GetCluster().GetKubeconfig()))
 	return &pb.BuildClusterResponse{Config: config}, nil
 }
 
@@ -84,12 +100,6 @@ func createKeyFile(key string, keyName string) error {
 }
 
 func genKubeOneConfig(templatePath string, outputPath string, d interface{}) error {
-	if _, err := os.Stat("kubeone"); os.IsNotExist(err) { //this creates a new file if it doesn't exist
-		if err := os.Mkdir("kubeone", os.ModePerm); err != nil {
-			return err
-		}
-	}
-
 	tpl, err := template.ParseFiles(templatePath)
 	if err != nil {
 		return fmt.Errorf("failed to load the template file: %v", err)
