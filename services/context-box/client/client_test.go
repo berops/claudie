@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-func ClientConnection() pb.ContextBoxServiceClient {
+func ClientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
 	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("could not connect to server: %v", err)
@@ -19,29 +19,32 @@ func ClientConnection() pb.ContextBoxServiceClient {
 
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
-	return c
+	return c, cc
 }
 
 func TestGetConfigScheduler(t *testing.T) {
-	c := ClientConnection()
+	c, cc := ClientConnection()
 
 	res, err := GetConfigScheduler(c)
+	cc.Close()
 	require.NoError(t, err)
 	t.Log("Config name", res.GetConfig().GetName())
 }
 
 func TestGetConfigBuilder(t *testing.T) {
-	c := ClientConnection()
+	c, cc := ClientConnection()
 
 	res, err := GetConfigBuilder(c)
+	cc.Close()
 	require.NoError(t, err)
 	t.Log("Config name", res.GetConfig().GetName())
 }
 
 func TestGetAllConfigs(t *testing.T) {
-	c := ClientConnection()
+	c, cc := ClientConnection()
 
 	res, err := GetAllConfigs(c)
+	cc.Close()
 	require.NoError(t, err)
 	for _, c := range res.GetConfigs() {
 		t.Log(c.GetId(), c.GetName(), c.GetDesiredState(), c.CurrentState)
@@ -49,8 +52,7 @@ func TestGetAllConfigs(t *testing.T) {
 }
 
 func TestSaveConfigFrontEnd(t *testing.T) {
-	c := ClientConnection()
-
+	c, cc := ClientConnection()
 	manifest, errR := ioutil.ReadFile("./manifest.yaml") //this is manifest from this test file
 	if errR != nil {
 		log.Fatalln(errR)
@@ -58,16 +60,16 @@ func TestSaveConfigFrontEnd(t *testing.T) {
 
 	err := SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
 		Config: &pb.Config{
-			Id:       "6126737f4f9bcdabaa336da4",
 			Name:     "TestDeleteConfig Samo",
 			Manifest: string(manifest),
 		},
 	})
+	cc.Close()
 	require.NoError(t, err)
 }
 
 func TestSaveConfigScheduler(t *testing.T) {
-	c := ClientConnection()
+	c, cc := ClientConnection()
 
 	manifest, errR := ioutil.ReadFile("./manifest.yaml") //this is manifest from this test file
 	if errR != nil {
@@ -80,20 +82,24 @@ func TestSaveConfigScheduler(t *testing.T) {
 			Manifest: string(manifest),
 		},
 	})
+	cc.Close()
 	require.NoError(t, err)
+
 }
 
 func TestDeleteConfig(t *testing.T) {
-	c := ClientConnection()
+	c, cc := ClientConnection()
 	err := DeleteConfig(c, "6126737f4f9bcdabaa336da4")
+	cc.Close()
 	require.NoError(t, err)
 }
 
 func TestPrintConfig(t *testing.T) {
-	c := ClientConnection()
+	c, cc := ClientConnection()
 	_, err := PrintConfig(c, "6126737f4f9bcdabaa336da4")
 	if err != nil {
 		log.Fatalln("Config not found:", err)
 	}
+	cc.Close()
 	require.NoError(t, err)
 }
