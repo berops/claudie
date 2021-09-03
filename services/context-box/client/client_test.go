@@ -26,7 +26,10 @@ func TestGetConfigScheduler(t *testing.T) {
 	c, cc := ClientConnection()
 
 	res, err := GetConfigScheduler(c)
-	cc.Close()
+	err = cc.Close()
+	if err != nil {
+		log.Fatalln("Error while closing the client connection:", err)
+	}
 	require.NoError(t, err)
 	t.Log("Config name", res.GetConfig().GetName())
 }
@@ -35,7 +38,10 @@ func TestGetConfigBuilder(t *testing.T) {
 	c, cc := ClientConnection()
 
 	res, err := GetConfigBuilder(c)
-	cc.Close()
+	err = cc.Close()
+	if err != nil {
+		log.Fatalln("Error while closing the client connection:", err)
+	}
 	require.NoError(t, err)
 	t.Log("Config name", res.GetConfig().GetName())
 }
@@ -44,7 +50,10 @@ func TestGetAllConfigs(t *testing.T) {
 	c, cc := ClientConnection()
 
 	res, err := GetAllConfigs(c)
-	cc.Close()
+	err = cc.Close()
+	if err != nil {
+		log.Fatalln("Error while closing the client connection:", err)
+	}
 	require.NoError(t, err)
 	for _, c := range res.GetConfigs() {
 		t.Log(c.GetId(), c.GetName(), c.GetDesiredState(), c.CurrentState)
@@ -64,7 +73,10 @@ func TestSaveConfigFrontEnd(t *testing.T) {
 			Manifest: string(manifest),
 		},
 	})
-	cc.Close()
+	err = cc.Close()
+	if err != nil {
+		log.Fatalln("Error while closing the client connection:", err)
+	}
 	require.NoError(t, err)
 }
 
@@ -82,7 +94,10 @@ func TestSaveConfigScheduler(t *testing.T) {
 			Manifest: string(manifest),
 		},
 	})
-	cc.Close()
+	err = cc.Close()
+	if err != nil {
+		log.Fatalln("Error while closing the client connection:", err)
+	}
 	require.NoError(t, err)
 
 }
@@ -90,7 +105,10 @@ func TestSaveConfigScheduler(t *testing.T) {
 func TestDeleteConfig(t *testing.T) {
 	c, cc := ClientConnection()
 	err := DeleteConfig(c, "6126737f4f9bcdabaa336da4")
-	cc.Close()
+	err = cc.Close()
+	if err != nil {
+		log.Fatalln("Error while closing the client connection:", err)
+	}
 	require.NoError(t, err)
 }
 
@@ -100,6 +118,9 @@ func TestPrintConfig(t *testing.T) {
 	if err != nil {
 		log.Fatalln("Config not found:", err)
 	}
-	cc.Close()
+	err = cc.Close()
+	if err != nil {
+		log.Fatalln("Error while closing the client connection:", err)
+	}
 	require.NoError(t, err)
 }
