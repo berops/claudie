@@ -463,7 +463,10 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 		return nil, err
 	}
 
-	destroyConfigTerraformer(c) //destroy infrastructure with terraformer
+	_, err = destroyConfigTerraformer(c)
+	if err != nil {
+		return nil, err
+	} //destroy infrastructure with terraformer
 
 	oid, err := primitive.ObjectIDFromHex(req.GetId()) //convert id to mongo type id (oid)
 	if err != nil {
