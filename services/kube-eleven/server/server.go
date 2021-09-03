@@ -119,7 +119,7 @@ func genKubeOneConfig(templatePath string, outputPath string, d interface{}) err
 
 func runKubeOne() error {
 	fmt.Println("Running KubeOne")
-	cmd := exec.Command("kubeone", "apply", "-m", "kubeone.yaml", "-y", "--verbose")
+	cmd := exec.Command("kubeone", "apply", "-m", "kubeone.yaml", "-y")
 	cmd.Dir = outputPath //golang will execute command from this directory
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

@@ -284,9 +284,6 @@ func fillNodes(mOld []*pb.NodeInfo, terraformOutput *jsonOut, nodepool *pb.NodeP
 		keysCompute = append(keysCompute, name)
 	}
 	sort.Strings(keysCompute)
-	//TODO: delete this test print
-	log.Println(keysControl)
-	log.Println(keysCompute)
 
 	for _, name := range keysControl {
 		var private = ""
