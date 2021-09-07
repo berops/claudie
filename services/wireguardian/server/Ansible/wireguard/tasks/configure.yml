@@ -35,25 +35,15 @@
 - name: Template wireguard config file to a node
   template:
     src: ../templates/wg.conf.j2
-    dest: "{{ wg_conf_dir.path }}/wg.conf"
+    dest: "{{ wg_conf_dir.path }}/wg0.conf"
 
-- name: Apply wireguard configuration file
-  shell: wg syncconf {{ wg_interface_name }} {{ wg_conf_dir.path }}/wg.conf
-  
-- name: Delete privatekey
-  file:
-    path: "{{ wg_conf_dir.path }}/privatekey"
-    state: absent
-
-- name: Delete publickey
-  file:
-    path: "{{ wg_conf_dir.path }}/publickey"
-    state: absent
-
-- name: Delete wireguard config file
-  file:
-    path: "{{ wg_conf_dir.path }}/wg.conf"
-    state: absent
+- name: Sync configuration file
+  shell: wg syncconf {{ wg_interface_name }} <(wg-quick strip {{ wg_interface_name }})
+  args:
+    executable: /bin/bash
 
 - name: Enable wireguard interface
   shell: ip link set up dev wg0
+
+- name: Enable WireGuard to start automatically at system boot, also enable the systemd service
+  shell: systemctl enable wg-quick@wg0
