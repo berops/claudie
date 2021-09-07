@@ -9,8 +9,5 @@
     wait_for_connection:
       timeout: 300
 
-  - name: Gathering facts
-    setup:
-
   roles:
     - role: "./wireguard"
