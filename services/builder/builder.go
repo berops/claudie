@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"strings"
 	"time"
 
 	"github.com/Berops/platform/healthcheck"
@@ -283,6 +284,7 @@ func healthCheck() error {
 func deleteNodes(config *pb.Config, toDelete map[string]*countsToDelete) (*pb.Config, error) {
 	for _, cluster := range config.CurrentState.Clusters {
 		var nodesToDelete []string
+		var etcdToDelete []string
 		del := toDelete[cluster.Name]
 		for i := len(cluster.NodeInfos) - 1; i >= 0; i-- {
 			val, ok := del.nodes[cluster.NodeInfos[i].Provider]
@@ -290,6 +292,7 @@ func deleteNodes(config *pb.Config, toDelete map[string]*countsToDelete) (*pb.Co
 				if val.masterCount > 0 && cluster.NodeInfos[i].IsControl > 0 {
 					val.masterCount--
 					nodesToDelete = append(nodesToDelete, cluster.NodeInfos[i].GetNodeName())
+					etcdToDelete = append(etcdToDelete, cluster.NodeInfos[i].GetNodeName())
 					continue
 				}
 				if val.workerCount > 0 && cluster.NodeInfos[i].IsControl == 0 {
@@ -299,10 +302,20 @@ func deleteNodes(config *pb.Config, toDelete map[string]*countsToDelete) (*pb.Co
 				}
 			}
 		}
+
+		// Delete nodes from an etcd
+		if len(etcdToDelete) > 0 {
+			err := deleteEtcd(cluster, etcdToDelete)
+			if err != nil {
+				return nil, err
+			}
+		}
+		// Delete nodes from a cluster
 		err := deleteNodesByName(cluster, nodesToDelete)
 		if err != nil {
 			return nil, err
 		}
+
 		// Delete nodes from a current state Ips map
 		for _, nodeName := range nodesToDelete {
 			for _, val := range cluster.NodeInfos {
@@ -358,6 +371,58 @@ func deleteNodesByName(cluster *pb.Cluster, nodesToDelete []string) error {
 		}
 	}
 	return nil
+}
+
+func deleteEtcd(cluster *pb.Cluster, etcdToDelete []string) error {
+	mainMaster := cluster.GetNodeInfos()[0]
+
+	// Execute into the working etcd container and setup client TLS authentication in order to be able to communicate
+	// with etcd and get output of all etcd members
+	prepCmd := "kubectl --kubeconfig <(echo '" + cluster.GetKubeconfig() + "') -n kube-system exec -i etcd-" +
+		mainMaster.GetNodeName() + " -- /bin/sh -c "
+	exportCmd := "export ETCDCTL_API=3 && " +
+		"export ETCDCTL_CACERT=/etc/kubernetes/pki/etcd/ca.crt && " +
+		"export ETCDCTL_CERT=/etc/kubernetes/pki/etcd/healthcheck-client.crt && " +
+		"export ETCDCTL_KEY=/etc/kubernetes/pki/etcd/healthcheck-client.key"
+	cmd := prepCmd + "\"" + exportCmd + " && etcdctl member list" + "\""
+	output, err := exec.Command("bash", "-c", cmd).CombinedOutput()
+	if err != nil {
+		log.Println("Error while executing commands in a working etcd container", err)
+		return err
+	}
+	// Convert output into []string, each line of output is a separate string
+	etcdStrings := strings.Fields(string(output))
+	// Example etcdNodesOutput:
+	// 3ea84f69be8336f3, started, test2-cluster-name1-hetzner-control-2, https://192.168.2.2:2380, https://192.168.2.2:2379, false
+	// 56c921bc723229ec, started, test2-cluster-name1-hetzner-control-1, https://192.168.2.1:2380, https://192.168.2.1:2379, false
+	// Trim "," from every string
+	var etcdStringsTrimmed []string
+	for _, s := range etcdStrings {
+		s = TrimSuffix(s, ",")
+		etcdStringsTrimmed = append(etcdStringsTrimmed, s)
+	}
+	// Remove etcd members that are in etcdToDelete, you need to know an etcd node hash to be able to remove a member
+	for _, nodeName := range etcdToDelete {
+		for i, s := range etcdStringsTrimmed {
+			if nodeName == s {
+				cmd = prepCmd + "\"" + exportCmd + " && etcdctl member remove " + etcdStringsTrimmed[i-2] + "\""
+				_, err := exec.Command("bash", "-c", cmd).CombinedOutput()
+				if err != nil {
+					log.Println("Error while etcdctl member remove:", err)
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func TrimSuffix(s, suffix string) string {
+	if strings.HasSuffix(s, suffix) {
+		s = s[:len(s)-len(suffix)]
+	}
+	return s
 }
 
 func main() {
