@@ -12,6 +12,7 @@ import (
 	"text/template"
 
 	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/platform/utils"
 )
 
 const outputPath string = "services/terraformer/server/terraform"
@@ -71,7 +72,7 @@ func buildInfrastructure(config *pb.Config) error {
 		}
 
 		// Fill public ip addresseNodeInfos
-		tmpCluster := getClusterByName(cluster.Name, config.CurrentState.Clusters)
+		tmpCluster := utils.GetClusterByName(cluster.Name, config.CurrentState.Clusters)
 		var m []*pb.NodeInfo
 
 		if tmpCluster != nil {
@@ -102,23 +103,6 @@ func buildInfrastructure(config *pb.Config) error {
 			}
 		}
 	}
-	return nil
-}
-
-func getClusterByName(name string, clusters []*pb.Cluster) *pb.Cluster {
-	if name == "" {
-		return nil
-	}
-	if len(clusters) == 0 {
-		return nil
-	}
-
-	for _, cluster := range clusters {
-		if cluster.Name == name {
-			return cluster
-		}
-	}
-
 	return nil
 }
 
