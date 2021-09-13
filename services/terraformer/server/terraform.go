@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -33,10 +32,6 @@ type jsonOut struct {
 	Control map[string]string `json:"control"`
 }
 
-func createKeyFile(key string, keyType string) error {
-	return ioutil.WriteFile(outputPath+keyType, []byte(key), 0600)
-}
-
 // buildInfrastructure is generating terraform files for different providers and calling terraform
 func buildInfrastructure(config *pb.Config) error {
 	desiredState := config.DesiredState
@@ -55,11 +50,11 @@ func buildInfrastructure(config *pb.Config) error {
 			return err
 		}
 		// Create publicKey file for a cluster
-		if err := createKeyFile(cluster.GetPublicKey(), "/public.pem"); err != nil {
+		if err := utils.CreateKeyFile(cluster.GetPublicKey(), outputPath, "/public.pem"); err != nil {
 			return err
 		}
 
-		if err := createKeyFile(cluster.GetPublicKey(), "/private.pem"); err != nil {
+		if err := utils.CreateKeyFile(cluster.GetPublicKey(), outputPath, "/private.pem"); err != nil {
 			return err
 		}
 		// Call terraform init and apply
@@ -125,7 +120,7 @@ func destroyInfrastructure(project *pb.Project) error {
 			return err
 		}
 		// Create publicKey file for a cluster
-		if err := createKeyFile(cluster.GetPublicKey(), "/public.pem"); err != nil {
+		if err := utils.CreateKeyFile(cluster.GetPublicKey(), outputPath, "/public.pem"); err != nil {
 			return err
 		}
 		// Call terraform

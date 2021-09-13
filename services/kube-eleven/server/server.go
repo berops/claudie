@@ -14,6 +14,7 @@ import (
 
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/platform/utils"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health/grpc_health_v1"
@@ -65,7 +66,7 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 		var d data
 		d.formatTemplateData(cluster)
 		// Create a private key file
-		if err := createKeyFile(cluster.GetPrivateKey(), "private.pem"); err != nil {
+		if err := utils.CreateKeyFile(cluster.GetPrivateKey(), outputPath, "private.pem"); err != nil {
 			return nil, err
 		}
 		// Create a cluster-kubeconfig file
@@ -93,10 +94,6 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 	}
 
 	return &pb.BuildClusterResponse{Config: config}, nil
-}
-
-func createKeyFile(key string, keyName string) error {
-	return ioutil.WriteFile(outputPath+keyName, []byte(key), 0600)
 }
 
 func genKubeOneConfig(templatePath string, outputPath string, d interface{}) error {

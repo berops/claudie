@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/platform/utils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -53,7 +54,7 @@ func Test_genKubeOneConfig(t *testing.T) {
 }
 
 func Test_createKeyFile(t *testing.T) {
-	createKeyFile(cluster.GetPrivateKey(), "private.pem")
+	utils.CreateKeyFile(cluster.GetPrivateKey(), outputPath, "private.pem")
 	if _, err := os.Stat("services/kube-eleven/server/private.pem"); os.IsNotExist(err) {
 		// path/to/whatever does not exist
 		t.Error("private.pem file doesn't exist")
