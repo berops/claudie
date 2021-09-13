@@ -13,6 +13,7 @@ import (
 
 	"github.com/Berops/platform/healthcheck"
 	kubeEleven "github.com/Berops/platform/services/kube-eleven/client"
+	"github.com/Berops/platform/utils"
 	"github.com/Berops/platform/worker"
 	"golang.org/x/sync/errgroup"
 
@@ -115,7 +116,7 @@ func diff(config *pb.Config) (*pb.Config, bool, map[string]*countsToDelete) {
 			key := tableKey{nodePoolName: nodePool.Name, clusterName: cluster.Name}
 
 			if _, ok := tableCurrent[key]; ok {
-				tmpNodePool := getNodePoolByName(nodePool.Name, getClusterByName(cluster.Name, tmpConfig.GetDesiredState().GetClusters()).GetNodePools())
+				tmpNodePool := getNodePoolByName(nodePool.Name, utils.GetClusterByName(cluster.Name, tmpConfig.GetDesiredState().GetClusters()).GetNodePools())
 				if nodePool.Master.Count > tableCurrent[key].masterCount {
 					tmpNodePool.Master.Count = nodePool.Master.Count
 					adding = true
@@ -143,9 +144,9 @@ func diff(config *pb.Config) (*pb.Config, bool, map[string]*countsToDelete) {
 
 	if len(tableCurrent) > 0 {
 		for key := range tableCurrent {
-			cluster := getClusterByName(key.clusterName, tmpConfig.DesiredState.Clusters)
+			cluster := utils.GetClusterByName(key.clusterName, tmpConfig.DesiredState.Clusters)
 			if cluster != nil {
-				currentCluster := getClusterByName(key.clusterName, tmpConfig.CurrentState.Clusters)
+				currentCluster := utils.GetClusterByName(key.clusterName, tmpConfig.CurrentState.Clusters)
 				log.Println(currentCluster)
 				cluster.NodePools = append(cluster.NodePools, getNodePoolByName(key.nodePoolName, currentCluster.GetNodePools()))
 				deleting = true
@@ -171,20 +172,6 @@ func getNodePoolByName(nodePoolName string, nodePools []*pb.NodePool) *pb.NodePo
 	for i := 0; i < len(nodePools); i++ {
 		if nodePools[i].Name == nodePoolName {
 			return nodePools[i]
-		}
-	}
-	return nil
-}
-
-// getClusterByName will return Cluster that will have same name as specified in parameters
-// If no name is found, return nil
-func getClusterByName(clusterName string, clusters []*pb.Cluster) *pb.Cluster {
-	if clusterName == "" {
-		return nil
-	}
-	for i := 0; i < len(clusters); i++ {
-		if clusters[i].Name == clusterName {
-			return clusters[i]
 		}
 	}
 	return nil

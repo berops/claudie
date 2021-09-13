@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -16,6 +15,7 @@ import (
 
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/platform/utils"
 	"golang.org/x/sync/errgroup"
 
 	"google.golang.org/grpc"
@@ -43,7 +43,7 @@ func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVP
 			return nil, err
 		}
 
-		if err := deleteTmpFiles(); err != nil {
+		if err := utils.DeleteTmpFiles(outputPath, []string{"private.pem", "inventory.ini"}); err != nil {
 			return nil, err
 		}
 	}
@@ -124,7 +124,7 @@ func genInv(addresses []*pb.NodeInfo) error {
 }
 
 func runAnsible(cluster *pb.Cluster) error {
-	if err := createKeyFile(cluster.GetPrivateKey()); err != nil {
+	if err := utils.CreateKeyFile(cluster.GetPrivateKey(), outputPath, "private.pem"); err != nil {
 		return err
 	}
 
@@ -137,23 +137,6 @@ func runAnsible(cluster *pb.Cluster) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
-}
-
-func createKeyFile(key string) error {
-	return ioutil.WriteFile(outputPath+"private.pem", []byte(key), 0600)
-}
-
-func deleteTmpFiles() error {
-	// Delete a private key
-	if err := os.Remove(outputPath + "private.pem"); err != nil {
-		return fmt.Errorf("error while deleting private.pem file: %v", err)
-	}
-	// Delete an inventory file
-	if err := os.Remove(outputPath + "inventory.ini"); err != nil {
-		return fmt.Errorf("error while deleting inventory.ini file: %v", err)
-	}
-
-	return nil
 }
 
 func main() {

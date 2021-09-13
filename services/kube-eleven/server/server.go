@@ -14,6 +14,7 @@ import (
 
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/platform/utils"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health/grpc_health_v1"
@@ -65,7 +66,7 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 		var d data
 		d.formatTemplateData(cluster)
 		// Create a private key file
-		if err := createKeyFile(cluster.GetPrivateKey(), "private.pem"); err != nil {
+		if err := utils.CreateKeyFile(cluster.GetPrivateKey(), outputPath, "private.pem"); err != nil {
 			return nil, err
 		}
 		// Create a cluster-kubeconfig file
@@ -87,16 +88,18 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 		}
 		cluster.Kubeconfig = kc
 
-		if err := deleteTmpFiles(); err != nil {
+		tmpFiles := []string{
+			"cluster.tar.gz",
+			"cluster-kubeconfig",
+			"kubeone.yaml",
+			"private.pem",
+		}
+		if err := utils.DeleteTmpFiles(outputPath, tmpFiles); err != nil {
 			return nil, err
 		}
 	}
 
 	return &pb.BuildClusterResponse{Config: config}, nil
-}
-
-func createKeyFile(key string, keyName string) error {
-	return ioutil.WriteFile(outputPath+keyName, []byte(key), 0600)
 }
 
 func genKubeOneConfig(templatePath string, outputPath string, d interface{}) error {
@@ -133,26 +136,6 @@ func saveKubeconfig() (string, error) {
 		return "", fmt.Errorf("error while reading a kubeconfig file: %v", err)
 	}
 	return string(kubeconfig), nil
-}
-
-func deleteTmpFiles() error {
-	if err := os.Remove(outputPath + "cluster.tar.gz"); err != nil {
-		return fmt.Errorf("error while deleting cluster.tar.gz file: %v", err)
-	}
-
-	if err := os.Remove(outputPath + "cluster-kubeconfig"); err != nil {
-		return fmt.Errorf("error while deleting cluster-kubeconfig file: %v", err)
-	}
-
-	if err := os.Remove(outputPath + "kubeone.yaml"); err != nil {
-		return fmt.Errorf("error while deleting kubeone.yaml file: %v", err)
-	}
-
-	if err := os.Remove(outputPath + "private.pem"); err != nil {
-		return fmt.Errorf("error while deleting private.pem file: %v", err)
-	}
-
-	return nil
 }
 
 func main() {

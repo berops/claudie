@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -12,6 +11,7 @@ import (
 	"text/template"
 
 	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/platform/utils"
 )
 
 const outputPath string = "services/terraformer/server/terraform"
@@ -32,10 +32,6 @@ type jsonOut struct {
 	Control map[string]string `json:"control"`
 }
 
-func createKeyFile(key string, keyType string) error {
-	return ioutil.WriteFile(outputPath+keyType, []byte(key), 0600)
-}
-
 // buildInfrastructure is generating terraform files for different providers and calling terraform
 func buildInfrastructure(config *pb.Config) error {
 	desiredState := config.DesiredState
@@ -54,11 +50,11 @@ func buildInfrastructure(config *pb.Config) error {
 			return err
 		}
 		// Create publicKey file for a cluster
-		if err := createKeyFile(cluster.GetPublicKey(), "/public.pem"); err != nil {
+		if err := utils.CreateKeyFile(cluster.GetPublicKey(), outputPath, "/public.pem"); err != nil {
 			return err
 		}
 
-		if err := createKeyFile(cluster.GetPublicKey(), "/private.pem"); err != nil {
+		if err := utils.CreateKeyFile(cluster.GetPublicKey(), outputPath, "/private.pem"); err != nil {
 			return err
 		}
 		// Call terraform init and apply
@@ -71,7 +67,7 @@ func buildInfrastructure(config *pb.Config) error {
 		}
 
 		// Fill public ip addresseNodeInfos
-		tmpCluster := getClusterByName(cluster.Name, config.CurrentState.Clusters)
+		tmpCluster := utils.GetClusterByName(cluster.Name, config.CurrentState.Clusters)
 		var m []*pb.NodeInfo
 
 		if tmpCluster != nil {
@@ -105,23 +101,6 @@ func buildInfrastructure(config *pb.Config) error {
 	return nil
 }
 
-func getClusterByName(name string, clusters []*pb.Cluster) *pb.Cluster {
-	if name == "" {
-		return nil
-	}
-	if len(clusters) == 0 {
-		return nil
-	}
-
-	for _, cluster := range clusters {
-		if cluster.Name == name {
-			return cluster
-		}
-	}
-
-	return nil
-}
-
 // destroyInfrastructure executes terraform destroy --auto-approve. It destroys whole infrastructure in a project.
 func destroyInfrastructure(project *pb.Project) error {
 	fmt.Println("Generating templates")
@@ -141,7 +120,7 @@ func destroyInfrastructure(project *pb.Project) error {
 			return err
 		}
 		// Create publicKey file for a cluster
-		if err := createKeyFile(cluster.GetPublicKey(), "/public.pem"); err != nil {
+		if err := utils.CreateKeyFile(cluster.GetPublicKey(), outputPath, "/public.pem"); err != nil {
 			return err
 		}
 		// Call terraform
