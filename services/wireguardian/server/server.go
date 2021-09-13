@@ -43,7 +43,7 @@ func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVP
 			return nil, err
 		}
 
-		if err := deleteTmpFiles(); err != nil {
+		if err := utils.DeleteTmpFiles(outputPath, []string{"private.pem", "inventory.ini"}); err != nil {
 			return nil, err
 		}
 	}
@@ -137,19 +137,6 @@ func runAnsible(cluster *pb.Cluster) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
-}
-
-func deleteTmpFiles() error {
-	// Delete a private key
-	if err := os.Remove(outputPath + "private.pem"); err != nil {
-		return fmt.Errorf("error while deleting private.pem file: %v", err)
-	}
-	// Delete an inventory file
-	if err := os.Remove(outputPath + "inventory.ini"); err != nil {
-		return fmt.Errorf("error while deleting inventory.ini file: %v", err)
-	}
-
-	return nil
 }
 
 func main() {

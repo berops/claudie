@@ -88,7 +88,13 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 		}
 		cluster.Kubeconfig = kc
 
-		if err := deleteTmpFiles(); err != nil {
+		tmpFiles := []string{
+			"cluster.tar.gz",
+			"cluster-kubeconfig",
+			"kubeone.yaml",
+			"private.pem",
+		}
+		if err := utils.DeleteTmpFiles(outputPath, tmpFiles); err != nil {
 			return nil, err
 		}
 	}
@@ -130,26 +136,6 @@ func saveKubeconfig() (string, error) {
 		return "", fmt.Errorf("error while reading a kubeconfig file: %v", err)
 	}
 	return string(kubeconfig), nil
-}
-
-func deleteTmpFiles() error {
-	if err := os.Remove(outputPath + "cluster.tar.gz"); err != nil {
-		return fmt.Errorf("error while deleting cluster.tar.gz file: %v", err)
-	}
-
-	if err := os.Remove(outputPath + "cluster-kubeconfig"); err != nil {
-		return fmt.Errorf("error while deleting cluster-kubeconfig file: %v", err)
-	}
-
-	if err := os.Remove(outputPath + "kubeone.yaml"); err != nil {
-		return fmt.Errorf("error while deleting kubeone.yaml file: %v", err)
-	}
-
-	if err := os.Remove(outputPath + "private.pem"); err != nil {
-		return fmt.Errorf("error while deleting private.pem file: %v", err)
-	}
-
-	return nil
 }
 
 func main() {

@@ -1,8 +1,8 @@
-package utils
+package utils // import "github.com/Berops/platform/utils"
 
 import "github.com/Berops/platform/proto/pb"
 
-// getClusterByName will return Cluster that will have same name as specified in parameters
+// GetClusterByName will return Cluster that will have same name as specified in parameters
 // If no name is found, return nil
 func GetClusterByName(clusterName string, clusters []*pb.Cluster) *pb.Cluster {
 	if clusterName == "" {
