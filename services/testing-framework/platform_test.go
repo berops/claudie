@@ -101,16 +101,13 @@ func applyTestSet(pathToSet string, c pb.ContextBoxServiceClient) error {
 
 		<-done //wait until test config has been processed
 	}
-	if err != nil {
-		return err
-	}
 	// delete the nodes
 	log.Println("Deleting the clusters from test set:", pathToSet)
-	_, err = c.DeleteConfig(context.Background(), &pb.DeleteConfigRequest{Id: id})
-
+	err = cbox.DeleteConfig(c, id)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
