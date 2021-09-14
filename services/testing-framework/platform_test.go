@@ -19,7 +19,7 @@ import (
 
 const (
 	testDir    = "tests"
-	maxTimeout = 60 //checking each 30s, so max allowed time for operation to finish is maxTimeout * 30 [seconds]
+	maxTimeout = 120 //checking each 30s, so max allowed time for operation to finish is maxTimeout * 30 [seconds]
 )
 
 //ClientConnection will return new client connection to Context-box
