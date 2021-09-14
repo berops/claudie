@@ -19,4 +19,4 @@ WORKDIR /go/services/testing-framework
 RUN apt update
 RUN apt install -y build-essential
 #Run server
-ENTRYPOINT [ "go", "test", "-timeout 3600s","-v", "./..." ]
+ENTRYPOINT [ "go", "test", "-v", "./...", "-timeout 3600s" ]
