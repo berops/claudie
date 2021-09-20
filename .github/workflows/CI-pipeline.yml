@@ -164,7 +164,7 @@ jobs:
           echo "${arr[@]}"
           for SERVICE in "${arr[@]}"
           do 
-          kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=120s --namespace=claudie-$GITHUB_SHA
+          kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=900s --namespace=claudie-$GITHUB_SHA
           done
 
           kubectl get pods --namespace=claudie-$GITHUB_SHA
