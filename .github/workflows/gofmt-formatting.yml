@@ -1,0 +1,20 @@
+name: 'Apply gofmt formatting'
+on:
+  # Manual trigger
+  workflow_dispatch:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  apply-gofmt:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the repository
+      - name: Checkout
+        uses: actions/checkout@v2
+      # Run gofmt formatting tool
+      - name: Run gofmt
+        uses: borkaz/gofmt-github-action@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
