@@ -496,9 +496,8 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 // destroyConfigTerraformer calls terraformer's DestroyInfrastructure function
 func destroyConfigTerraformer(config *pb.Config) (*pb.Config, error) {
 	// Trim "tcp://" substring from urls.TerraformerURL
-	log.Println("Before trim: ", urls.TerraformerURL)
 	trimmedTerraformerURL := strings.ReplaceAll(urls.TerraformerURL, ":tcp://", "")
-	log.Println("After trim: ", trimmedTerraformerURL)
+	log.Println("Dial Terraformer: ", trimmedTerraformerURL)
 	// Create connection to Terraformer
 	cc, err := grpc.Dial(trimmedTerraformerURL, grpc.WithInsecure())
 	if err != nil {

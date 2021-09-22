@@ -250,6 +250,7 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 
 func main() {
 	//Create connection to Context-box
+	log.Println("Dial Context-box: ", urls.ContextBoxURL)
 	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("could not connect to server: %v", err)
