@@ -17,6 +17,13 @@ spec:
       containers:
       - name: terraformer
         image: eu.gcr.io/platform-infrastructure-316112/platform/terraformer
+        resources:
+          requests:
+            cpu: 70m
+            memory: 250Mi
+          limits:
+            cpu: 400m
+            memory: 500Mi
         env:
         - name: TERRAFORMER_PORT
           valueFrom:

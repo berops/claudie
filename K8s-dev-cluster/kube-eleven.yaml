@@ -17,6 +17,13 @@ spec:
       containers:
       - name: kube-eleven
         image: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven
+        resources:
+          requests:
+            cpu: 70m
+            memory: 250Mi
+          limits:
+            cpu: 400m
+            memory: 500Mi
         env:
         - name: KUBE_ELEVEN_PORT
           valueFrom:

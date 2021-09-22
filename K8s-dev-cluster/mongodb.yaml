@@ -17,6 +17,13 @@ spec:
       containers:
       - name: mongodb
         image: mongo:bionic
+        resources:
+          requests:
+            cpu: 70m
+            memory: 250Mi
+          limits:
+            cpu: 400m
+            memory: 500Mi
         ports:
         - containerPort: 27017  
 ---
