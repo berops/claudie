@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"time"
 
@@ -494,8 +495,11 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 
 // destroyConfigTerraformer calls terraformer's DestroyInfrastructure function
 func destroyConfigTerraformer(config *pb.Config) (*pb.Config, error) {
+	// Trim "tcp://" substring from urls.TerraformerURL
+	trimmedTerraformerURL := strings.ReplaceAll(urls.TerraformerURL, ":tcp://", "")
+	log.Println("Dial Terraformer: ", trimmedTerraformerURL)
 	// Create connection to Terraformer
-	cc, err := grpc.Dial(urls.TerraformerURL, grpc.WithInsecure())
+	cc, err := grpc.Dial(trimmedTerraformerURL, grpc.WithInsecure())
 	if err != nil {
 		return nil, fmt.Errorf("could not connect to server: %v", err)
 	}

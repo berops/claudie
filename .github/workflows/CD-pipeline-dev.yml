@@ -26,7 +26,7 @@ jobs:
           location: ${{ secrets.GKE_ZONE }}
           credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
 
-      # Deploy to the default namespace for further testing
+      # Deploy to the claudie namespace for further testing
       - name: Deploy to the dev cluster default namespace via kustomize
         working-directory: ./K8s-dev-cluster
         run: |

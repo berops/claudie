@@ -19,7 +19,7 @@ import (
 
 const (
 	testDir    = "tests"
-	maxTimeout = 60 //checking each 30s, so max allowed time for operation to finish is maxTimeout * 30 [seconds]
+	maxTimeout = 120 //checking each 30s, so max allowed time for operation to finish is maxTimeout * 30 [seconds]
 )
 
 //ClientConnection will return new client connection to Context-box
@@ -101,16 +101,13 @@ func applyTestSet(pathToSet string, c pb.ContextBoxServiceClient) error {
 
 		<-done //wait until test config has been processed
 	}
-	if err != nil {
-		return err
-	}
 	// delete the nodes
 	log.Println("Deleting the clusters from test set:", pathToSet)
-	_, err = c.DeleteConfig(context.Background(), &pb.DeleteConfigRequest{Id: id})
-
+	err = cbox.DeleteConfig(c, id)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 

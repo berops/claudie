@@ -17,6 +17,13 @@ spec:
       containers:
       - name: wireguardian
         image: eu.gcr.io/platform-infrastructure-316112/platform/wireguardian
+        resources:
+          requests:
+            cpu: 70m
+            memory: 250Mi
+          limits:
+            cpu: 400m
+            memory: 500Mi
         env:
         - name: WIREGUARDIAN_PORT
           valueFrom:
