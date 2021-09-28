@@ -1,0 +1,102 @@
+version: "3.9"
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    env_file: K8s-dev-cluster/.env
+    ports:
+      - "27017:27017"
+    volumes:
+      - ~/mongo/data:/data/db
+  
+  
+  builder: 
+    build:
+      context: .
+      dockerfile: "./services/builder/Dockerfile"
+    container_name: builder
+    depends_on: 
+      - context-box
+    env_file: K8s-dev-cluster/.env
+    ports:
+      - "50051:50051"
+    deploy: 
+      restart_policy:
+        condition: on-failure
+  
+  
+  terraformer: 
+    build:
+      context: .
+      dockerfile: ./services/terraformer/Dockerfile
+    container_name: terraformer
+    depends_on: 
+      - builder
+    env_file: K8s-dev-cluster/.env
+    ports:
+      - "50052:50052"
+    volumes: 
+      - ~/.config/gcloud:/root/.config/gcloud
+    deploy: 
+      restart_policy:
+        condition: on-failure
+  
+  
+  wireguardian: 
+    build:
+      context: .
+      dockerfile: ./services/wireguardian/Dockerfile
+    container_name: wireguardian
+    depends_on: 
+      - builder
+    env_file: K8s-dev-cluster/.env
+    ports:
+      - "50053:50053"
+    deploy: 
+      restart_policy:
+        condition: on-failure
+  
+  
+  kube-eleven: 
+    build:
+      context: .
+      dockerfile: ./services/kube-eleven/Dockerfile
+    container_name: kube-eleven
+    depends_on: 
+      - builder
+    env_file: K8s-dev-cluster/.env
+    ports:
+      - "50054:50054"
+    deploy: 
+      restart_policy:
+        condition: on-failure
+  
+  
+  context-box: 
+    build:
+      context: .
+      dockerfile: ./services/context-box/Dockerfile
+    container_name: context-box
+    depends_on: 
+      - mongodb
+    env_file: K8s-dev-cluster/.env
+    ports:
+      - "50055:50055"
+    deploy: 
+      restart_policy:
+        condition: on-failure
+  
+  
+  scheduler: 
+    build:
+      context: .
+      dockerfile: ./services/scheduler/Dockerfile
+    container_name: scheduler
+    depends_on: 
+      - context-box
+    env_file: K8s-dev-cluster/.env
+    ports:
+      - "50056:50056"
+    deploy: 
+      restart_policy:
+        condition: on-failure
