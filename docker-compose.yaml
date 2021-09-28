@@ -35,8 +35,6 @@ services:
     env_file: K8s-dev-cluster/.env
     ports:
       - "50052:50052"
-    volumes: 
-      - ~/.config/gcloud:/root/.config/gcloud
     deploy: 
       restart_policy:
         condition: on-failure
