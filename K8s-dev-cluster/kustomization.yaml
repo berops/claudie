@@ -17,7 +17,7 @@ images:
 - name: eu.gcr.io/platform-infrastructure-316112/platform/builder
   newTag: 5c8c991be28be619297b9f235b8a4fa637b7b557
 - name: eu.gcr.io/platform-infrastructure-316112/platform/context-box
-  newTag: 5423773658aab46e0b6254f5e90b87697cb7c01e
+  newTag: 65a32f018aac3edb01182fe090bedcc4cafdc07c
 - name: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven
   newTag: 5c8c991be28be619297b9f235b8a4fa637b7b557
 - name: eu.gcr.io/platform-infrastructure-316112/platform/scheduler
@@ -25,6 +25,6 @@ images:
 - name: eu.gcr.io/platform-infrastructure-316112/platform/terraformer
   newTag: 5c8c991be28be619297b9f235b8a4fa637b7b557
 - name: eu.gcr.io/platform-infrastructure-316112/platform/testing-framework
-  newTag: 5423773658aab46e0b6254f5e90b87697cb7c01e
+  newTag: 65a32f018aac3edb01182fe090bedcc4cafdc07c
 - name: eu.gcr.io/platform-infrastructure-316112/platform/wireguardian
   newTag: 5c8c991be28be619297b9f235b8a4fa637b7b557
