@@ -57,7 +57,7 @@ message Provider {
  * isControl flag
  * 0 - Only worker node
  * 1 - Only master node
- * 2 - ApiEndpoint master node (must be singleton)
+ * 2 - APIEndpoint master node (must be singleton)
  */
 message NodeInfo {
   string nodeName = 1;

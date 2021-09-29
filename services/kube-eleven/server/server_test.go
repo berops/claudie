@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/Berops/platform/proto/pb"
@@ -46,22 +47,34 @@ var cluster = &pb.Cluster{
 func Test_genKubeOneConfig(t *testing.T) {
 	var d data
 	d.formatTemplateData(cluster)
-	genKubeOneConfig("services/kube-eleven/server/kubeone.tpl", "services/kube-eleven/server/kubeone.yaml", d)
-	if _, err := os.Stat("services/kube-eleven/server/kubeone.yaml"); os.IsNotExist(err) {
+	serverDir := "services/kube-eleven/server"
+	genFilePath := func(fileName string) string { return filepath.Join(serverDir, fileName) }
+	if err := genKubeOneConfig(genFilePath("kubeone.tpl"), genFilePath("kubeone.yaml"), d); err != nil {
+		t.Error(err)
+	}
+	fileName := genFilePath("kubeone.yaml")
+	if _, err := os.Stat(fileName); os.IsNotExist(err) {
 		// path/to/whatever does not exist
-		t.Error("kubeone.yaml file doesn't exist")
+		t.Errorf("%s file doesn't exist", fileName)
 	}
 }
 
 func Test_createKeyFile(t *testing.T) {
-	utils.CreateKeyFile(cluster.GetPrivateKey(), outputPath, "private.pem")
-	if _, err := os.Stat("services/kube-eleven/server/private.pem"); os.IsNotExist(err) {
+	privateKeyFile := "private.pem"
+	keyErr := utils.CreateKeyFile(cluster.GetPrivateKey(), outputPath, privateKeyFile)
+	if keyErr != nil {
+		t.Error("Error writing out .pem file doesn't exist")
+	}
+
+	if _, err := os.Stat(filepath.Join("services/kube-eleven/server", privateKeyFile)); os.IsNotExist(err) {
 		// path/to/whatever does not exist
-		t.Error("private.pem file doesn't exist")
+		t.Errorf("%s file doesn't exist", privateKeyFile)
 	}
 }
 
 func Test_runKubeOne(t *testing.T) {
-	runKubeOne()
+	if err := runKubeOne(); err != nil {
+		t.Fatal(err)
+	}
 	require.NoError(t, nil)
 }

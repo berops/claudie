@@ -1,4 +1,4 @@
-package testing_framework
+package testingframework
 
 import (
 	"context"
@@ -112,12 +112,12 @@ func applyTestSet(pathToSet string, c pb.ContextBoxServiceClient) error {
 }
 
 //configChecker function will check if the config has been applied every 30s
-func configChecker(done chan struct{}, c pb.ContextBoxServiceClient, configId string, configName string) {
+func configChecker(done chan struct{}, c pb.ContextBoxServiceClient, configID string, configName string) {
 	var timeout int
 	for {
 		// if CSchecksum == DSchecksum, the config has been processed
 		config, err := c.GetConfigById(context.Background(), &pb.GetConfigByIdRequest{
-			Id: configId,
+			Id: configID,
 		})
 		if err != nil {
 			log.Fatal("Got error while waiting for config to finish:", err)

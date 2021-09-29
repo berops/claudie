@@ -42,7 +42,7 @@ func callTerraformer(config *pb.Config) (*pb.Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not connect to Terraformer: %v", err)
 	}
-	defer cc.Close()
+	defer func() { utils.CloseClientConnection(cc) }()
 	// Creating the client
 	c := pb.NewTerraformerServiceClient(cc)
 	res, err := terraformer.BuildInfrastructure(c, &pb.BuildInfrastructureRequest{Config: config})
@@ -58,7 +58,7 @@ func callWireguardian(config *pb.Config) (*pb.Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not connect to Wireguardian: %v", err)
 	}
-	defer cc.Close()
+	defer func() { utils.CloseClientConnection(cc) }()
 	// Creating the client
 	c := pb.NewWireguardianServiceClient(cc)
 	res, err := wireguardian.BuildVPN(c, &pb.BuildVPNRequest{Config: config})
@@ -74,7 +74,7 @@ func callKubeEleven(config *pb.Config) (*pb.Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not connect to KubeEleven: %v", err)
 	}
-	defer cc.Close()
+	defer func() { utils.CloseClientConnection(cc) }()
 	// Creating the client
 	c := pb.NewKubeElevenServiceClient(cc)
 	res, err := kubeEleven.BuildCluster(c, &pb.BuildClusterRequest{Config: config})
@@ -385,7 +385,7 @@ func deleteEtcd(cluster *pb.Cluster, etcdToDelete []string) error {
 	// Trim "," from every string
 	var etcdStringsTrimmed []string
 	for _, s := range etcdStrings {
-		s = TrimSuffix(s, ",")
+		s = strings.TrimSuffix(s, ",")
 		etcdStringsTrimmed = append(etcdStringsTrimmed, s)
 	}
 	// Remove etcd members that are in etcdToDelete, you need to know an etcd node hash to be able to remove a member
@@ -405,13 +405,6 @@ func deleteEtcd(cluster *pb.Cluster, etcdToDelete []string) error {
 	return nil
 }
 
-func TrimSuffix(s, suffix string) string {
-	if strings.HasSuffix(s, suffix) {
-		s = s[:len(s)-len(suffix)]
-	}
-	return s
-}
-
 func main() {
 	// If go code crash, we will get the file name and line number
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -421,7 +414,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("could not connect to Content-box: %v", err)
 	}
-	defer cc.Close()
+	defer func() { utils.CloseClientConnection(cc) }()
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
 
@@ -430,7 +423,7 @@ func main() {
 	healthChecker.StartProbes()
 
 	g, ctx := errgroup.WithContext(context.Background())
-	w := worker.NewWorker(5*time.Second, ctx, configProcessor(c), worker.ErrorLogger)
+	w := worker.NewWorker(ctx, 5*time.Second, configProcessor(c), worker.ErrorLogger)
 
 	{
 		g.Go(func() error {

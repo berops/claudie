@@ -7,6 +7,7 @@ import (
 	"github.com/Berops/platform/proto/pb"
 )
 
+// BuildCluster uses KubeEleven service client to deploy our cluster
 func BuildCluster(c pb.KubeElevenServiceClient, req *pb.BuildClusterRequest) (*pb.BuildClusterResponse, error) {
 	res, err := c.BuildCluster(context.Background(), req)
 	if err != nil {

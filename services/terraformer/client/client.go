@@ -8,6 +8,7 @@ import (
 	"github.com/Berops/platform/proto/pb"
 )
 
+// BuildInfrastructure uses TerraformServiceClient to build/deploy the infrastructure
 func BuildInfrastructure(c pb.TerraformerServiceClient, req *pb.BuildInfrastructureRequest) (*pb.BuildInfrastructureResponse, error) {
 	res, err := c.BuildInfrastructure(context.Background(), req) //sending request to the server and receiving response
 	if err != nil {
@@ -18,6 +19,7 @@ func BuildInfrastructure(c pb.TerraformerServiceClient, req *pb.BuildInfrastruct
 	return res, nil
 }
 
+// DestroyInfrastructure uses TerraformServiceClient to destroy infrastructure
 func DestroyInfrastructure(c pb.TerraformerServiceClient, req *pb.DestroyInfrastructureRequest) (*pb.DestroyInfrastructureResponse, error) {
 	res, err := c.DestroyInfrastructure(context.Background(), req)
 	if err != nil {

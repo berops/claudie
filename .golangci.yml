@@ -14,6 +14,16 @@ linters:
     - govet
     - staticcheck
 
+linters-settings:
+
+  revive:
+    # see https://github.com/mgechev/revive#available-rules for details.
+    ignore-generated-header: true
+    severity: warning
+    rules:
+      - name: var-naming
+        arguments: [["ID"], ["VM"]]
+
 issues:
   exclude-use-default: false
   max-issues-per-linter: 0

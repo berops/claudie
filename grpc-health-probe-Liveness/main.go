@@ -27,6 +27,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/Berops/platform/utils"
 	"github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig"
 	"github.com/spiffe/go-spiffe/v2/workloadapi"
 	"google.golang.org/grpc"
@@ -231,7 +232,8 @@ func main() {
 		}
 		opts = append(opts, grpc.WithTransportCredentials(creds))
 	} else if flSPIFFE {
-		spiffeCtx, _ := context.WithTimeout(ctx, flRPCTimeout)
+		spiffeCtx, cancel := context.WithTimeout(ctx, flRPCTimeout)
+		defer cancel()
 		source, err := workloadapi.NewX509Source(spiffeCtx)
 		if err != nil {
 			log.Printf("failed to initialize tls credentials with spiffe. error=%v", err)
@@ -252,10 +254,7 @@ func main() {
 	}
 
 	if flGZIP {
-		opts = append(opts,
-			grpc.WithCompressor(grpc.NewGZIPCompressor()),
-			grpc.WithDecompressor(grpc.NewGZIPDecompressor()),
-		)
+		opts = append(opts, grpc.WithDefaultCallOptions(grpc.UseCompressor("gzip")))
 	}
 
 	if flVerbose {
@@ -275,15 +274,15 @@ func main() {
 		return
 	}
 	connDuration := time.Since(connStart)
-	defer conn.Close()
+	defer func() { utils.CloseClientConnection(conn) }()
 	if flVerbose {
 		log.Printf("connection established (took %v)", connDuration)
 	}
 
 	rpcStart := time.Now()
-	rpcCtx, rpcCancel := context.WithTimeout(ctx, flRPCTimeout)
+	_, rpcCancel := context.WithTimeout(ctx, flRPCTimeout)
 	defer rpcCancel()
-	rpcCtx = metadata.NewOutgoingContext(ctx, flRPCHeaders.MD)
+	rpcCtx := metadata.NewOutgoingContext(ctx, flRPCHeaders.MD)
 	resp, err := healthpb.NewHealthClient(conn).Check(rpcCtx,
 		&healthpb.HealthCheckRequest{
 			Service: flService})
