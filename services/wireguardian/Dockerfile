@@ -21,8 +21,8 @@ RUN CGO_ENABLED=0 go build
 
 #Install grpc health probe
 RUN GRPC_HEALTH_PROBE_VERSION=v0.4.4 && \
-    wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 && \
-    chmod +x /bin/grpc_health_probe
+  wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 && \
+  chmod +x /bin/grpc_health_probe
 
 #Change workdir to modified health probe directory
 WORKDIR /go/grpc-health-probe-Liveness
@@ -31,8 +31,11 @@ WORKDIR /go/grpc-health-probe-Liveness
 RUN CGO_ENABLED=0 go build -o /bin/grpc_health_probe-Liveness
 RUN chmod +x /bin/grpc_health_probe-Liveness
 
+FROM debian:bullseye-slim
+
 #Install the Ansible
 ENV DEBIAN_FRONTEND=noninteractive
+
 RUN apt-get update && \
   apt-get install -y gcc python-dev libkrb5-dev && \
   apt-get install python3-pip -y && \
@@ -43,10 +46,12 @@ RUN apt-get update && \
   pip3 install pywinrm && \
   pip3 install ansible
 
+#Copy the binaries to empty base image
+COPY --from=build /go/services/wireguardian /bin/services/wireguardian
+COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
+COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Liveness
 
 #Run server
-WORKDIR /go
+WORKDIR /bin
 ENTRYPOINT [ "./services/wireguardian/server/server" ]
-
 #NOTE: We cannot use scratch image for our dockerfile since we are using shell commands to execute commands inside the code
- 
