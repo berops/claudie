@@ -33,14 +33,21 @@ RUN chmod +x /bin/grpc_health_probe-Liveness
 
 # Install kubeone
 WORKDIR /go
-RUN apt update
-RUN apt install -y unzip
+
+FROM alpine
+
+RUN apk add --update  unzip
 RUN wget https://github.com/kubermatic/kubeone/releases/download/v1.2.3/kubeone_1.2.3_linux_amd64.zip
 RUN unzip kubeone_1.2.3_linux_amd64.zip -d kubeone_1.2.3_linux_amd64
 RUN mv kubeone_1.2.3_linux_amd64/kubeone /usr/local/bin
 
+COPY --from=build /go/services/kube-eleven /bin/services/kube-eleven
+COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
+COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Liveness
+
+
 #Run server
-WORKDIR /go
+WORKDIR /bin
 ENTRYPOINT [ "./services/kube-eleven/server/server" ]
 
 #NOTE: We cannot use scratch image for our dockerfile since we are using shell commands to execute commands inside the code
