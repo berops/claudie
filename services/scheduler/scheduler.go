@@ -117,13 +117,13 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 		log.Println("Got nil, expected Config... \nReturning nil")
 		return nil, nil
 	}
-	//Create yaml manifest
+	// Create yaml manifest
 	d := []byte(config.GetManifest())
 	err := ioutil.WriteFile("manifest.yaml", d, 0644)
 	if err != nil {
 		return nil, fmt.Errorf("error while creating manifest.yaml file: %v", err)
 	}
-	//Parse yaml to protobuf and create desiredState
+	// Parse yaml to protobuf and create desiredState
 	var desiredState Manifest
 	yamlFile, err := ioutil.ReadFile("manifest.yaml")
 	if err != nil {
@@ -133,7 +133,7 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error while unmarshalling yaml file: %v", err)
 	}
-	//Remove yaml manifest after loading
+	// Remove yaml manifest after loading
 	err = os.Remove("manifest.yaml")
 	if err != nil {
 		return nil, fmt.Errorf("error while removing maninfest.yaml file: %v", err)
@@ -262,7 +262,7 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 }
 
 func main() {
-	//Create connection to Context-box
+	// Create connection to Context-box
 	log.Println("Dial Context-box: ", urls.ContextBoxURL)
 	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
 	if err != nil {

@@ -112,7 +112,7 @@ func dataToConfigPb(data *configItem) (*pb.Config, error) {
 }
 
 func saveToDB(config *pb.Config) (*pb.Config, error) {
-	//Convert desiredState and currentState to byte[] because we want to save them to the database
+	// Convert desiredState and currentState to byte[] because we want to save them to the database
 	desiredStateByte, errDS := proto.Marshal(config.DesiredState)
 	if errDS != nil {
 		return nil, fmt.Errorf("error while converting from protobuf to byte: %v", errDS)
@@ -123,7 +123,7 @@ func saveToDB(config *pb.Config) (*pb.Config, error) {
 		return nil, fmt.Errorf("error while converting from protobuf to byte: %v", errCS)
 	}
 
-	//Parse data and map it to the configItem struct
+	// Parse data and map it to the configItem struct
 	data := &configItem{}
 	data.Name = config.GetName()
 	data.Manifest = config.GetManifest()

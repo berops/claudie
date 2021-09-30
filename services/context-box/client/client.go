@@ -23,7 +23,7 @@ func SaveConfigFrontEnd(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest)
 	return res.Config.Id, nil
 }
 
-//SaveConfigScheduler saves config from Scheduler
+// SaveConfigScheduler saves config from Scheduler
 func SaveConfigScheduler(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest) error {
 	fmt.Println("Saving config")
 
@@ -36,7 +36,7 @@ func SaveConfigScheduler(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest
 	return nil
 }
 
-//SaveConfigBuilder saves config from Scheduler
+// SaveConfigBuilder saves config from Scheduler
 func SaveConfigBuilder(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest) error {
 	fmt.Println("Saving config")
 
@@ -49,7 +49,7 @@ func SaveConfigBuilder(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest) 
 	return nil
 }
 
-//GetConfigScheduler gets config from queueScheduler in which are available configs for Scheduler
+// GetConfigScheduler gets config from queueScheduler in which are available configs for Scheduler
 func GetConfigScheduler(c pb.ContextBoxServiceClient) (*pb.GetConfigResponse, error) {
 	res, err := c.GetConfigScheduler(context.Background(), &pb.GetConfigRequest{})
 	if err != nil {
@@ -59,7 +59,7 @@ func GetConfigScheduler(c pb.ContextBoxServiceClient) (*pb.GetConfigResponse, er
 	return res, nil
 }
 
-//GetConfigBuilder gets config from queueBuilder in which are available configs for Builder
+// GetConfigBuilder gets config from queueBuilder in which are available configs for Builder
 func GetConfigBuilder(c pb.ContextBoxServiceClient) (*pb.GetConfigResponse, error) {
 	res, err := c.GetConfigBuilder(context.Background(), &pb.GetConfigRequest{})
 	if err != nil {

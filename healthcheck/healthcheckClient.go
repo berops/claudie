@@ -8,13 +8,13 @@ import (
 // Function to check the readiness
 type checkFunction func() error
 
-// ClientHealthChecker contains the port and the check function callback
+// ClientHealthChecker contains the port and check function callback
 type ClientHealthChecker struct {
 	portForProbes string
 	checkFunc     checkFunction
 }
 
-// NewClientHealthChecker function will return new struct with specified port and checkFunction
+// NewClientHealthChecker function will return new ClientHealthChecker struct with specified port and checkFunction
 func NewClientHealthChecker(port string, f checkFunction) *ClientHealthChecker {
 	return &ClientHealthChecker{
 		portForProbes: port,

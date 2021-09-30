@@ -67,6 +67,7 @@ func (s *ServerHealthChecker) Check(ctx context.Context, req *grpc_health_v1.Hea
 }
 
 // Watch is a method function on ServerHealthChecker struct
+// Method is currently unimplemented - throws grpc status error
 func (s *ServerHealthChecker) Watch(req *grpc_health_v1.HealthCheckRequest, server grpc_health_v1.Health_WatchServer) error {
 	// Unimplemented
 	// The method only returns error/nil - can not reflect ready and liviness respectively
