@@ -1,6 +1,6 @@
 name: TestSetOne-1
 clusters: 
-  - name: test-cluster-name1
+  - name: testset-cluster-name1
     kubernetes: v1.19.0
     network: 192.168.2.0/24
     nodePools:

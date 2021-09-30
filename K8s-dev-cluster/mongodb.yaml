@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: mongodb
-        image: mongo:bionic
+        image: mongo:5
         resources:
           requests:
             cpu: 70m
