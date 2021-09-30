@@ -354,6 +354,7 @@ func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest
 	return &pb.SaveConfigResponse{Config: newConfig}, nil
 }
 
+// SaveConfigBuilder is a gRPC service: the function saves config to the DB after receiving it from Builder
 func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
 	log.Println("CLIENT REQUEST: SaveConfigBuilder")
 	config := req.GetConfig()
