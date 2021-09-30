@@ -43,7 +43,6 @@ func (s *ServerHealthChecker) Check(ctx context.Context, req *grpc_health_v1.Hea
 	}
 	if conn != nil {
 		defer conn.Close()
-		fmt.Println("gRPC server status: SERVING")
 		return &grpc_health_v1.HealthCheckResponse{
 			Status: grpc_health_v1.HealthCheckResponse_SERVING,
 		}, nil
@@ -57,7 +56,7 @@ func (s *ServerHealthChecker) Check(ctx context.Context, req *grpc_health_v1.Hea
 }
 
 func (s *ServerHealthChecker) Watch(req *grpc_health_v1.HealthCheckRequest, server grpc_health_v1.Health_WatchServer) error {
-	// Unimplemented
+	// Not implemented
 	// The method only returns error/nil - can not reflect ready and liviness respectively
 	return status.Error(codes.Unimplemented, "unimplemented")
 }
