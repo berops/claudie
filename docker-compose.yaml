@@ -5,7 +5,7 @@ services:
     container_name: mongodb
     env_file: K8s-dev-cluster/.env
     ports:
-      - "27017:27017"
+      - ${DATABASE_PORT}:${DATABASE_PORT}
     volumes:
       - ~/mongo/data:/data/db
   
@@ -19,7 +19,7 @@ services:
       - context-box
     env_file: K8s-dev-cluster/.env
     ports:
-      - "50051:50051"
+      - ${BUILDER_PORT}:${BUILDER_PORT}
     deploy: 
       restart_policy:
         condition: on-failure
@@ -34,7 +34,7 @@ services:
       - builder
     env_file: K8s-dev-cluster/.env
     ports:
-      - "50052:50052"
+      - ${TERRAFORMER_PORT}:${TERRAFORMER_PORT}
     deploy: 
       restart_policy:
         condition: on-failure
@@ -49,7 +49,7 @@ services:
       - builder
     env_file: K8s-dev-cluster/.env
     ports:
-      - "50053:50053"
+      - ${WIREGUARDIAN_PORT}:${WIREGUARDIAN_PORT}
     deploy: 
       restart_policy:
         condition: on-failure
@@ -64,7 +64,7 @@ services:
       - builder
     env_file: K8s-dev-cluster/.env
     ports:
-      - "50054:50054"
+      - ${KUBE_ELEVEN_PORT}:${KUBE_ELEVEN_PORT}
     deploy: 
       restart_policy:
         condition: on-failure
@@ -79,7 +79,7 @@ services:
       - mongodb
     env_file: K8s-dev-cluster/.env
     ports:
-      - "50055:50055"
+      - ${CONTEXT_BOX_PORT}:${CONTEXT_BOX_PORT}
     deploy: 
       restart_policy:
         condition: on-failure
@@ -94,7 +94,7 @@ services:
       - context-box
     env_file: K8s-dev-cluster/.env
     ports:
-      - "50056:50056"
+      - ${SCHEDULER_PORT}:${SCHEDULER_PORT}
     deploy: 
       restart_policy:
         condition: on-failure
