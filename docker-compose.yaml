@@ -1,0 +1,100 @@
+version: "3.9"
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    env_file: K8s-dev-cluster/.env
+    ports:
+      - ${DATABASE_PORT}:${DATABASE_PORT}
+    volumes:
+      - ~/mongo/data:/data/db
+  
+  
+  builder: 
+    build:
+      context: .
+      dockerfile: "./services/builder/Dockerfile"
+    container_name: builder
+    depends_on: 
+      - context-box
+    env_file: K8s-dev-cluster/.env
+    ports:
+      - ${BUILDER_PORT}:${BUILDER_PORT}
+    deploy: 
+      restart_policy:
+        condition: on-failure
+  
+  
+  terraformer: 
+    build:
+      context: .
+      dockerfile: ./services/terraformer/Dockerfile
+    container_name: terraformer
+    depends_on: 
+      - builder
+    env_file: K8s-dev-cluster/.env
+    ports:
+      - ${TERRAFORMER_PORT}:${TERRAFORMER_PORT}
+    deploy: 
+      restart_policy:
+        condition: on-failure
+  
+  
+  wireguardian: 
+    build:
+      context: .
+      dockerfile: ./services/wireguardian/Dockerfile
+    container_name: wireguardian
+    depends_on: 
+      - builder
+    env_file: K8s-dev-cluster/.env
+    ports:
+      - ${WIREGUARDIAN_PORT}:${WIREGUARDIAN_PORT}
+    deploy: 
+      restart_policy:
+        condition: on-failure
+  
+  
+  kube-eleven: 
+    build:
+      context: .
+      dockerfile: ./services/kube-eleven/Dockerfile
+    container_name: kube-eleven
+    depends_on: 
+      - builder
+    env_file: K8s-dev-cluster/.env
+    ports:
+      - ${KUBE_ELEVEN_PORT}:${KUBE_ELEVEN_PORT}
+    deploy: 
+      restart_policy:
+        condition: on-failure
+  
+  
+  context-box: 
+    build:
+      context: .
+      dockerfile: ./services/context-box/Dockerfile
+    container_name: context-box
+    depends_on: 
+      - mongodb
+    env_file: K8s-dev-cluster/.env
+    ports:
+      - ${CONTEXT_BOX_PORT}:${CONTEXT_BOX_PORT}
+    deploy: 
+      restart_policy:
+        condition: on-failure
+  
+  
+  scheduler: 
+    build:
+      context: .
+      dockerfile: ./services/scheduler/Dockerfile
+    container_name: scheduler
+    depends_on: 
+      - context-box
+    env_file: K8s-dev-cluster/.env
+    ports:
+      - ${SCHEDULER_PORT}:${SCHEDULER_PORT}
+    deploy: 
+      restart_policy:
+        condition: on-failure
