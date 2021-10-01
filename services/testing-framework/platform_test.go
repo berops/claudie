@@ -1,4 +1,4 @@
-package testing_framework
+package testingframework
 
 import (
 	"context"
@@ -22,7 +22,7 @@ const (
 	maxTimeout = 120 //checking each 30s, so max allowed time for operation to finish is maxTimeout * 30 [seconds]
 )
 
-//ClientConnection will return new client connection to Context-box
+// ClientConnection will return new client connection to Context-box
 func ClientConnection() pb.ContextBoxServiceClient {
 	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
 	if err != nil {
@@ -34,7 +34,7 @@ func ClientConnection() pb.ContextBoxServiceClient {
 	return c
 }
 
-//TestPlatform will start all the test cases specified in tests directory
+// TestPlatform will start all the test cases specified in tests directory
 func TestPlatform(t *testing.T) {
 	var err error
 	c := ClientConnection()
@@ -67,7 +67,7 @@ func TestPlatform(t *testing.T) {
 	require.NoError(t, err)
 }
 
-//applyTestSet function will apply test set sequantially to a platform
+// applyTestSet function will apply test set sequantially to a platform
 func applyTestSet(pathToSet string, c pb.ContextBoxServiceClient) error {
 	done := make(chan struct{})
 	var id string
@@ -111,13 +111,13 @@ func applyTestSet(pathToSet string, c pb.ContextBoxServiceClient) error {
 	return nil
 }
 
-//configChecker function will check if the config has been applied every 30s
-func configChecker(done chan struct{}, c pb.ContextBoxServiceClient, configId string, configName string) {
+// configChecker function will check if the config has been applied every 30s
+func configChecker(done chan struct{}, c pb.ContextBoxServiceClient, configID string, configName string) {
 	var timeout int
 	for {
 		// if CSchecksum == DSchecksum, the config has been processed
 		config, err := c.GetConfigById(context.Background(), &pb.GetConfigByIdRequest{
-			Id: configId,
+			Id: configID,
 		})
 		if err != nil {
 			log.Fatal("Got error while waiting for config to finish:", err)
@@ -137,7 +137,7 @@ func configChecker(done chan struct{}, c pb.ContextBoxServiceClient, configId st
 	done <- struct{}{} //send signal that config has been processed, unblock the applyTestSet
 }
 
-//equals function will check if two checksums are equal
+// equals function will check if two checksums are equal
 func equals(checksum []byte, checksum2 []byte) bool {
 	if checksum == nil || checksum2 == nil {
 		return false

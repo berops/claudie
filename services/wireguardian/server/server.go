@@ -80,7 +80,7 @@ func genPrivAdd(addresses []*pb.NodeInfo, network string) error {
 		addressesToAssign = append(addressesToAssign, address)
 	}
 
-	var temp int = 0
+	var temp int
 	for _, address := range addressesToAssign {
 		ip[3] = lastOctets[temp]
 		address.Private = ip.String()

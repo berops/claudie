@@ -22,44 +22,46 @@ func ClientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
 	return c, cc
 }
 
-func TestGetConfigScheduler(t *testing.T) {
-	c, cc := ClientConnection()
-
-	res, err := GetConfigScheduler(c)
-	err = cc.Close()
+func closeConn(t *testing.T, connection *grpc.ClientConn) {
+	err := connection.Close()
 	if err != nil {
 		log.Fatalln("Error while closing the client connection:", err)
 	}
 	require.NoError(t, err)
+}
+
+func TestGetConfigScheduler(t *testing.T) {
+	c, cc := ClientConnection()
+
+	res, _ := GetConfigScheduler(c)
+	closeConn(t, cc)
 	t.Log("Config name", res.GetConfig().GetName())
 }
 
 func TestGetConfigBuilder(t *testing.T) {
 	c, cc := ClientConnection()
 
-	res, err := GetConfigBuilder(c)
-	err = cc.Close()
-	if err != nil {
-		log.Fatalln("Error while closing the client connection:", err)
-	}
-	require.NoError(t, err)
+	res, _ := GetConfigBuilder(c)
+	closeConn(t, cc)
 	t.Log("Config name", res.GetConfig().GetName())
 }
 
 func TestGetAllConfigs(t *testing.T) {
 	c, cc := ClientConnection()
 
-	res, err := GetAllConfigs(c)
-	err = cc.Close()
-	if err != nil {
-		log.Fatalln("Error while closing the client connection:", err)
-	}
-	require.NoError(t, err)
+	res, _ := GetAllConfigs(c)
+	closeConn(t, cc)
 	for _, c := range res.GetConfigs() {
 		t.Log(c.GetId(), c.GetName(), c.GetDesiredState(), c.CurrentState)
 	}
 }
 
+func makePbConfig(msg string, manifest []byte) *pb.Config {
+	return &pb.Config{
+		Name:     msg,
+		Manifest: string(manifest),
+	}
+}
 func TestSaveConfigFrontEnd(t *testing.T) {
 	c, cc := ClientConnection()
 	manifest, errR := ioutil.ReadFile("./manifest.yaml") //this is manifest from this test file
@@ -67,17 +69,13 @@ func TestSaveConfigFrontEnd(t *testing.T) {
 		log.Fatalln(errR)
 	}
 
-	_, err := SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
-		Config: &pb.Config{
-			Name:     "TestDeleteConfig Samo",
-			Manifest: string(manifest),
-		},
+	_, cfgErr := SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
+		Config: makePbConfig("TestDeleteConfig Samo", manifest),
 	})
-	err = cc.Close()
-	if err != nil {
-		log.Fatalln("Error while closing the client connection:", err)
+	if cfgErr != nil {
+		log.Fatalln("Error saving FrontEnd configuration to DB connection:", cfgErr)
 	}
-	require.NoError(t, err)
+	closeConn(t, cc)
 }
 
 func TestSaveConfigScheduler(t *testing.T) {
@@ -88,28 +86,23 @@ func TestSaveConfigScheduler(t *testing.T) {
 		log.Fatalln(errR)
 	}
 
-	err := SaveConfigScheduler(c, &pb.SaveConfigRequest{
-		Config: &pb.Config{
-			Name:     "TestDeleteNodeSamo",
-			Manifest: string(manifest),
-		},
+	cfgErr := SaveConfigScheduler(c, &pb.SaveConfigRequest{
+		Config: makePbConfig("TestDeleteNodeSamo", manifest),
 	})
-	err = cc.Close()
-	if err != nil {
-		log.Fatalln("Error while closing the client connection:", err)
+	if cfgErr != nil {
+		log.Fatalln("Error saving Scheduler configuration to DB connection:", cfgErr)
 	}
-	require.NoError(t, err)
-
+	closeConn(t, cc)
 }
 
 func TestDeleteConfig(t *testing.T) {
 	c, cc := ClientConnection()
-	err := DeleteConfig(c, "6126737f4f9bcdabaa336da4")
-	err = cc.Close()
-	if err != nil {
-		log.Fatalln("Error while closing the client connection:", err)
+	configID := "6126737f4f9bcdabaa336da4"
+	delErr := DeleteConfig(c, configID)
+	if delErr != nil {
+		log.Fatalf("Error deleting config %s %s\n", configID, delErr)
 	}
-	require.NoError(t, err)
+	closeConn(t, cc)
 }
 
 func TestPrintConfig(t *testing.T) {
@@ -118,9 +111,5 @@ func TestPrintConfig(t *testing.T) {
 	if err != nil {
 		log.Fatalln("Config not found:", err)
 	}
-	err = cc.Close()
-	if err != nil {
-		log.Fatalln("Error while closing the client connection:", err)
-	}
-	require.NoError(t, err)
+	closeConn(t, cc)
 }
