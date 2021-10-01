@@ -19,6 +19,7 @@ import (
 	"github.com/Berops/platform/proto/pb"
 	cbox "github.com/Berops/platform/services/context-box/client"
 	"github.com/Berops/platform/urls"
+	"github.com/Berops/platform/utils"
 	"github.com/Berops/platform/worker"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/sync/errgroup"
@@ -28,11 +29,13 @@ import (
 
 ////////////////////YAML STRUCT//////////////////////////////////////////////////
 
+// Manifest struct holding info on clusters
 type Manifest struct {
 	Name     string    `yaml:"name"`
 	Clusters []Cluster `yaml:"clusters"`
 }
 
+// Cluster struct holds cluster related info
 type Cluster struct {
 	Name       string     `yaml:"name"`
 	Kubernetes string     `yaml:"kubernetes"`
@@ -42,6 +45,7 @@ type Cluster struct {
 	PublicKey  string
 }
 
+// NodePool struct contains data on master and worker nodes
 type NodePool struct {
 	Name     string   `yaml:"name"`
 	Region   string   `yaml:"region"`
@@ -50,6 +54,7 @@ type NodePool struct {
 	Provider Provider `yaml:"provider"`
 }
 
+// Master struct contains master/leader node data
 type Master struct {
 	Count      int32  `yaml:"count"`
 	ServerType string `yaml:"server_type"`
@@ -60,6 +65,7 @@ type Master struct {
 	Datacenter string `yaml:"datacenter"`
 }
 
+// Worker struct aggregates info about worker node
 type Worker struct {
 	Count      int32  `yaml:"count"`
 	ServerType string `yaml:"server_type"`
@@ -70,6 +76,7 @@ type Worker struct {
 	Datacenter string `yaml:"datacenter"`
 }
 
+// Provider struct holding credentials info
 type Provider struct {
 	Name        string `yaml:"name"`
 	Credentials string `yaml:"credentials"`
@@ -77,6 +84,8 @@ type Provider struct {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+// MakeSSHKeyPair function generates SSH privateKey,publicKey pair
+// returns (strPrivateKey, strPublicKey)
 func MakeSSHKeyPair() (string, string) {
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2042)
 	if err != nil {
@@ -108,13 +117,13 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 		log.Println("Got nil, expected Config... \nReturning nil")
 		return nil, nil
 	}
-	//Create yaml manifest
+	// Create yaml manifest
 	d := []byte(config.GetManifest())
 	err := ioutil.WriteFile("manifest.yaml", d, 0644)
 	if err != nil {
 		return nil, fmt.Errorf("error while creating manifest.yaml file: %v", err)
 	}
-	//Parse yaml to protobuf and create desiredState
+	// Parse yaml to protobuf and create desiredState
 	var desiredState Manifest
 	yamlFile, err := ioutil.ReadFile("manifest.yaml")
 	if err != nil {
@@ -124,7 +133,7 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error while unmarshalling yaml file: %v", err)
 	}
-	//Remove yaml manifest after loading
+	// Remove yaml manifest after loading
 	err = os.Remove("manifest.yaml")
 	if err != nil {
 		return nil, fmt.Errorf("error while removing maninfest.yaml file: %v", err)
@@ -241,7 +250,11 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 
 		config := res.GetConfig()
 		if config != nil {
-			go processConfig(config, c)
+			go func() {
+				if err := processConfig(config, c); err != nil {
+					log.Printf("scheduler:processConfig failed: %s\n", err)
+				}
+			}()
 		}
 
 		return nil
@@ -249,14 +262,14 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 }
 
 func main() {
-	//Create connection to Context-box
+	// Create connection to Context-box
 	log.Println("Dial Context-box: ", urls.ContextBoxURL)
 	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("could not connect to server: %v", err)
 	}
 
-	defer cc.Close()
+	defer func() { utils.CloseClientConnection(cc) }()
 
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
@@ -266,7 +279,7 @@ func main() {
 	healthChecker.StartProbes()
 
 	g, ctx := errgroup.WithContext(context.Background())
-	w := worker.NewWorker(10*time.Second, ctx, configProcessor(c), worker.ErrorLogger)
+	w := worker.NewWorker(ctx, 10*time.Second, configProcessor(c), worker.ErrorLogger)
 
 	{
 		g.Go(func() error {

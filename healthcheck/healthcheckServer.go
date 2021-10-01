@@ -3,6 +3,7 @@ package healthcheck
 import (
 	"context"
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"time"
@@ -12,16 +13,21 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// ServerHealthChecker struct
 type ServerHealthChecker struct{}
 
 var defaultServicePort, envKey string
 
-func NewServerHealthChecker(port, key string) *ServerHealthChecker {
+// NewServerHealthChecker function generates a ServerHealthChecker struct
+// Input args: (port string, key string)
+// Return value: ServerHealthChecker
+func NewServerHealthChecker(port string, key string) *ServerHealthChecker {
 	defaultServicePort = port
 	envKey = key
 	return &ServerHealthChecker{}
 }
 
+// Check is a method function on ServerHealthChecker struct
 func (s *ServerHealthChecker) Check(ctx context.Context, req *grpc_health_v1.HealthCheckRequest) (*grpc_health_v1.HealthCheckResponse, error) {
 
 	// Check if app is ready -> if true, return SERVING
@@ -42,7 +48,11 @@ func (s *ServerHealthChecker) Check(ctx context.Context, req *grpc_health_v1.Hea
 		}, nil
 	}
 	if conn != nil {
-		defer conn.Close()
+		defer func() {
+			if err := conn.Close(); err != nil {
+				log.Printf("error closing connection: %s", err.Error())
+			}
+		}()
 		return &grpc_health_v1.HealthCheckResponse{
 			Status: grpc_health_v1.HealthCheckResponse_SERVING,
 		}, nil
@@ -55,6 +65,8 @@ func (s *ServerHealthChecker) Check(ctx context.Context, req *grpc_health_v1.Hea
 	}, nil
 }
 
+// Watch is a method function on ServerHealthChecker struct
+// Method is currently not implemented - throws grpc status error
 func (s *ServerHealthChecker) Watch(req *grpc_health_v1.HealthCheckRequest, server grpc_health_v1.Health_WatchServer) error {
 	// Not implemented
 	// The method only returns error/nil - can not reflect ready and liviness respectively

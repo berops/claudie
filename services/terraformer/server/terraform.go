@@ -17,11 +17,13 @@ import (
 const outputPath string = "services/terraformer/server/terraform"
 const templatePath string = "services/terraformer/templates"
 
+// Backend struct
 type Backend struct {
 	ProjectName string
 	ClusterName string
 }
 
+// Data struct
 type Data struct {
 	Index   int
 	Cluster *pb.Cluster
@@ -255,11 +257,11 @@ func fillNodes(mOld []*pb.NodeInfo, terraformOutput *jsonOut, nodepool *pb.NodeP
 	var keysControl []string
 	var keysCompute []string
 	// Fill slices from terraformOutput maps with names of nodes to ensure an order
-	for name, _ := range terraformOutput.Control {
+	for name := range terraformOutput.Control {
 		keysControl = append(keysControl, name)
 	}
 	sort.Strings(keysControl)
-	for name, _ := range terraformOutput.Compute {
+	for name := range terraformOutput.Compute {
 		keysCompute = append(keysCompute, name)
 	}
 	sort.Strings(keysCompute)
@@ -268,10 +270,10 @@ func fillNodes(mOld []*pb.NodeInfo, terraformOutput *jsonOut, nodepool *pb.NodeP
 		var private = ""
 		var control uint32 = 1
 		// If node exist, assign previous private IP
-		existingIp, _ := existsInCluster(mOld, terraformOutput.Control[name])
-		if existingIp != nil {
-			private = existingIp.Private
-			control = existingIp.IsControl
+		existingIP, _ := existsInCluster(mOld, terraformOutput.Control[name])
+		if existingIP != nil {
+			private = existingIP.Private
+			control = existingIP.IsControl
 		}
 		mNew = append(mNew, &pb.NodeInfo{
 			NodeName:     name,
@@ -285,9 +287,9 @@ func fillNodes(mOld []*pb.NodeInfo, terraformOutput *jsonOut, nodepool *pb.NodeP
 	for _, name := range keysCompute {
 		var private = ""
 		// If node exist, assign previous private IP
-		existingIp, _ := existsInCluster(mOld, terraformOutput.Compute[name])
-		if existingIp != nil {
-			private = existingIp.Private
+		existingIP, _ := existsInCluster(mOld, terraformOutput.Compute[name])
+		if existingIP != nil {
+			private = existingIP.Private
 		}
 		mNew = append(mNew, &pb.NodeInfo{
 			NodeName:     name,

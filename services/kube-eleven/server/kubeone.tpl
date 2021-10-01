@@ -20,7 +20,7 @@ addons:
   path: "addons"
 
 apiEndpoint:
-  host: '{{ .ApiEndpoint }}'
+  host: '{{ .APIEndpoint }}'
   port: 6443
 
 controlPlane:

@@ -25,7 +25,7 @@ type server struct{}
 const outputPath = "services/kube-eleven/server/"
 
 type data struct {
-	ApiEndpoint string
+	APIEndpoint string
 	Kubernetes  string
 	Nodes       []*pb.NodeInfo
 }
@@ -34,19 +34,19 @@ type data struct {
 func (d *data) formatTemplateData(cluster *pb.Cluster) {
 	var controlNodes []*pb.NodeInfo
 	var workerNodes []*pb.NodeInfo
-	hasApiEndpoint := false
+	hasAPIEndpoint := false
 
 	for _, nodeInfo := range cluster.GetNodeInfos() {
 		if nodeInfo.GetIsControl() == 1 {
 			controlNodes = append(controlNodes, nodeInfo)
 		} else if nodeInfo.GetIsControl() == 2 {
-			hasApiEndpoint = true
+			hasAPIEndpoint = true
 			d.Nodes = append(d.Nodes, nodeInfo) //the Api endpoint must be first in slice
 		} else {
 			workerNodes = append(workerNodes, nodeInfo)
 		}
 	}
-	if !hasApiEndpoint {
+	if !hasAPIEndpoint {
 		controlNodes[0].IsControl = 2
 	}
 	// if there is something in d.Nodes, it would be rewritten in line 55, therefore this condition
@@ -55,7 +55,7 @@ func (d *data) formatTemplateData(cluster *pb.Cluster) {
 	}
 	d.Nodes = append(controlNodes, workerNodes...)
 	d.Kubernetes = cluster.GetKubernetes()
-	d.ApiEndpoint = d.Nodes[0].GetPublic()
+	d.APIEndpoint = d.Nodes[0].GetPublic()
 }
 
 func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb.BuildClusterResponse, error) {

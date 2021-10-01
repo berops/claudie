@@ -7,6 +7,7 @@ import (
 	"github.com/Berops/platform/proto/pb"
 )
 
+// BuildVPN simply calls WireGuardian service client to build a VPN
 func BuildVPN(c pb.WireguardianServiceClient, req *pb.BuildVPNRequest) (*pb.BuildVPNResponse, error) {
 	res, err := c.BuildVPN(context.Background(), req)
 	if err != nil {

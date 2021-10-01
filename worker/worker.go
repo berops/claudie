@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// Worker struct
 type Worker struct {
 	tick         *time.Ticker
 	fn           func() error
@@ -12,7 +13,8 @@ type Worker struct {
 	ctx          context.Context
 }
 
-func NewWorker(d time.Duration, ctx context.Context, fn func() error, eh func(err error)) *Worker {
+// NewWorker creates a new Worker structure
+func NewWorker(ctx context.Context, d time.Duration, fn func() error, eh func(err error)) *Worker {
 	return &Worker{
 		ctx:          ctx,
 		fn:           fn,
@@ -21,6 +23,7 @@ func NewWorker(d time.Duration, ctx context.Context, fn func() error, eh func(er
 	}
 }
 
+// Run starts the handling loop
 func (w *Worker) Run() {
 	for {
 		select {

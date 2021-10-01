@@ -14,6 +14,7 @@ import (
 	"time"
 
 	terraformer "github.com/Berops/platform/services/terraformer/client"
+	"github.com/Berops/platform/utils"
 	"github.com/Berops/platform/worker"
 	"golang.org/x/sync/errgroup"
 
@@ -111,7 +112,7 @@ func dataToConfigPb(data *configItem) (*pb.Config, error) {
 }
 
 func saveToDB(config *pb.Config) (*pb.Config, error) {
-	//Convert desiredState and currentState to byte[] because we want to save them to the database
+	// Convert desiredState and currentState to byte[] because we want to save them to the database
 	desiredStateByte, errDS := proto.Marshal(config.DesiredState)
 	if errDS != nil {
 		return nil, fmt.Errorf("error while converting from protobuf to byte: %v", errDS)
@@ -122,7 +123,7 @@ func saveToDB(config *pb.Config) (*pb.Config, error) {
 		return nil, fmt.Errorf("error while converting from protobuf to byte: %v", errCS)
 	}
 
-	//Parse data and map it to the configItem struct
+	// Parse data and map it to the configItem struct
 	data := &configItem{}
 	data.Name = config.GetName()
 	data.Manifest = config.GetManifest()
@@ -504,7 +505,7 @@ func destroyConfigTerraformer(config *pb.Config) (*pb.Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not connect to server: %v", err)
 	}
-	defer cc.Close()
+	defer func() { utils.CloseClientConnection(cc) }()
 	// Creating the client
 	c := pb.NewTerraformerServiceClient(cc)
 	res, err := terraformer.DestroyInfrastructure(c, &pb.DestroyInfrastructureRequest{Config: config})
@@ -543,8 +544,12 @@ func main() {
 	log.Println("Connected to MongoDB")
 	fmt.Println("MongoDB connected via", urls.DatabaseURL)
 	collection = client.Database("platform").Collection("config")
-	defer client.Disconnect(context.TODO()) //closing MongoDB connection
-
+	defer func() {
+		// closing MongoDB connection
+		if err := client.Disconnect(context.TODO()); err != nil {
+			log.Fatalln("Error closing MongoDB connection: ", err)
+		}
+	}()
 	// Set the context-box port
 	contextboxPort := os.Getenv("CONTEXT_BOX_PORT")
 	if contextboxPort == "" {
@@ -566,7 +571,7 @@ func main() {
 	grpc_health_v1.RegisterHealthServer(s, healthService)
 
 	g, ctx := errgroup.WithContext(context.Background())
-	w := worker.NewWorker(10*time.Second, ctx, configChecker, worker.ErrorLogger)
+	w := worker.NewWorker(ctx, 10*time.Second, configChecker, worker.ErrorLogger)
 
 	{
 		g.Go(func() error {
