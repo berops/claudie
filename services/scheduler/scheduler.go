@@ -29,13 +29,13 @@ import (
 
 ////////////////////YAML STRUCT//////////////////////////////////////////////////
 
-// Manifest struct
+// Manifest struct holding info on clusters
 type Manifest struct {
 	Name     string    `yaml:"name"`
 	Clusters []Cluster `yaml:"clusters"`
 }
 
-// Cluster struct
+// Cluster struct holds cluster related info
 type Cluster struct {
 	Name       string     `yaml:"name"`
 	Kubernetes string     `yaml:"kubernetes"`
@@ -45,7 +45,7 @@ type Cluster struct {
 	PublicKey  string
 }
 
-// NodePool struct
+// NodePool struct contains data on master and worker nodes
 type NodePool struct {
 	Name     string   `yaml:"name"`
 	Region   string   `yaml:"region"`
@@ -54,7 +54,7 @@ type NodePool struct {
 	Provider Provider `yaml:"provider"`
 }
 
-// Master struct
+// Master struct contains master/leader node data
 type Master struct {
 	Count      int32  `yaml:"count"`
 	ServerType string `yaml:"server_type"`
@@ -65,7 +65,7 @@ type Master struct {
 	Datacenter string `yaml:"datacenter"`
 }
 
-// Worker struct
+// Worker struct aggregates info about worker node
 type Worker struct {
 	Count      int32  `yaml:"count"`
 	ServerType string `yaml:"server_type"`
@@ -76,7 +76,7 @@ type Worker struct {
 	Datacenter string `yaml:"datacenter"`
 }
 
-// Provider struct
+// Provider struct holding credentials info
 type Provider struct {
 	Name        string `yaml:"name"`
 	Credentials string `yaml:"credentials"`
