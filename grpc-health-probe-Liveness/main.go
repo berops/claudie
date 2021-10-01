@@ -27,7 +27,6 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/Berops/platform/utils"
 	"github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig"
 	"github.com/spiffe/go-spiffe/v2/workloadapi"
 	"google.golang.org/grpc"
@@ -274,7 +273,11 @@ func main() {
 		return
 	}
 	connDuration := time.Since(connStart)
-	defer func() { utils.CloseClientConnection(conn) }()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Fatalln("Error while closing the client connection:", err)
+		}
+	}()
 	if flVerbose {
 		log.Printf("connection established (took %v)", connDuration)
 	}

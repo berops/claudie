@@ -10,19 +10,12 @@ COPY go.sum .
 #Check if any modules need downloading
 RUN go mod download
 
-#Copy all files apart from the ones in .dockerignore
-COPY . .
-
-#Change the directory
-WORKDIR /go/services/wireguardian/server
-
-#Compile the golang code to /out, CGO_ENABLE=0 removes cross compile dependencies
-RUN CGO_ENABLED=0 go build
-
 #Install grpc health probe
 RUN GRPC_HEALTH_PROBE_VERSION=v0.4.4 && \
-    wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 && \
-    chmod +x /bin/grpc_health_probe
+  wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 && \
+  chmod +x /bin/grpc_health_probe
+COPY ./grpc-health-probe-Liveness ./grpc-health-probe-Liveness
+
 
 #Change workdir to modified health probe directory
 WORKDIR /go/grpc-health-probe-Liveness
@@ -31,22 +24,33 @@ WORKDIR /go/grpc-health-probe-Liveness
 RUN CGO_ENABLED=0 go build -o /bin/grpc_health_probe-Liveness
 RUN chmod +x /bin/grpc_health_probe-Liveness
 
+#Copy all files apart from the ones in .dockerignore
+WORKDIR /go
+COPY . .
+
+#Change the directory
+WORKDIR /go/services/wireguardian/server
+
+#Compile the golang code to /out, CGO_ENABLE=0 removes cross compile dependencies
+RUN CGO_ENABLED=0 go build
+
+FROM python:3-slim
+
 #Install the Ansible
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && \
-  apt-get install -y gcc python-dev libkrb5-dev && \
-  apt-get install python3-pip -y && \
-  pip3 install --upgrade pip && \
-  pip3 install --upgrade virtualenv && \
-  pip3 install pywinrm[kerberos] && \
-  apt install krb5-user -y && \ 
-  pip3 install pywinrm && \
-  pip3 install ansible
 
+RUN apt-get update && \
+  apt-get install -y  \
+  libkrb5-dev \
+  krb5-user -y &&\ 
+  python -m pip install --user ansible
+
+#Copy the binaries to empty base image
+COPY --from=build /go/services/wireguardian /bin/services/wireguardian
+COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
+COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Liveness
 
 #Run server
-WORKDIR /go
+WORKDIR /bin
 ENTRYPOINT [ "./services/wireguardian/server/server" ]
-
 #NOTE: We cannot use scratch image for our dockerfile since we are using shell commands to execute commands inside the code
- 
