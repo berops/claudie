@@ -85,7 +85,8 @@ func buildInfrastructure(config *pb.Config) error {
 			if err != nil {
 				return err
 			}
-			m = fillNodes(m, &out, nodepool)
+			res := fillNodes(m, &out, nodepool)
+			m = append(m, res...)
 		}
 		cluster.NodeInfos = m
 		// Clean after Terraform. Remove tmp terraform dir.
