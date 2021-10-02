@@ -8,6 +8,8 @@ services:
       - ${DATABASE_PORT}:${DATABASE_PORT}
     volumes:
       - ~/mongo/data:/data/db
+    logging:
+      driver: none
   
   
   builder: 
