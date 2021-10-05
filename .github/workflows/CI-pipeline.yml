@@ -58,7 +58,8 @@ jobs:
           for path in "${arr[@]}"
           do
             echo "-----Building $path-----"
-            docker build --tag eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA -f ./services/$path/Dockerfile .
+            IMGTAG="eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA"
+            DOCKER_BUILDKIT=1 docker build --tag $IMGTAG -f ./services/$path/Dockerfile .
           done
             
       # Push images to GCR - latest tag is overwritten

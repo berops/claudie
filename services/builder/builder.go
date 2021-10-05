@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -17,12 +16,12 @@ import (
 	"github.com/Berops/platform/worker"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/Berops/platform/proto/pb"
 	cbox "github.com/Berops/platform/services/context-box/client"
 	terraformer "github.com/Berops/platform/services/terraformer/client"
 	wireguardian "github.com/Berops/platform/services/wireguardian/client"
 	"github.com/Berops/platform/urls"
-
-	"github.com/Berops/platform/proto/pb"
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 )
@@ -147,7 +146,7 @@ func diff(config *pb.Config) (*pb.Config, bool, map[string]*countsToDelete) {
 			cluster := utils.GetClusterByName(key.clusterName, tmpConfig.DesiredState.Clusters)
 			if cluster != nil {
 				currentCluster := utils.GetClusterByName(key.clusterName, tmpConfig.CurrentState.Clusters)
-				log.Println(currentCluster)
+				log.Info().Interface("currentCluster", currentCluster)
 				cluster.NodePools = append(cluster.NodePools, getNodePoolByName(key.nodePoolName, currentCluster.GetNodePools()))
 				deleting = true
 			}
@@ -179,8 +178,7 @@ func getNodePoolByName(nodePoolName string, nodePools []*pb.NodePool) *pb.NodePo
 
 // processConfig is function used to carry out task specific to Builder concurrently
 func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, tmp bool) (err error) {
-	log.Println("I got config: ", config.GetName())
-
+	log.Info().Msgf("processConfig received config: %s", config.GetName())
 	config, err = callTerraformer(config)
 	if err != nil {
 		return
@@ -223,25 +221,25 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 				tmpConfig, deleting, toDelete = diff(config)
 			}
 			if tmpConfig != nil {
-				log.Println("Processing a tmpConfig...")
+				log.Info().Msg("Processing a tmpConfig...")
 				err := processConfig(tmpConfig, c, true)
 				if err != nil {
 					return err
 				}
 			}
 			if deleting {
-				log.Println("Deleting nodes...")
+				log.Info().Msg("Deleting nodes...")
 				config, err = deleteNodes(config, toDelete)
 				if err != nil {
 					return err
 				}
 			}
 
-			log.Println("Processing a config...")
+			log.Info().Msgf("Processing config %s", config.Name)
 			go func() {
 				err := processConfig(config, c, false)
 				if err != nil {
-					log.Println(err)
+					log.Error().Err(err)
 				}
 			}()
 		}
@@ -337,23 +335,23 @@ func remove(slice []*pb.NodeInfo, value string) []*pb.NodeInfo {
 func deleteNodesByName(cluster *pb.Cluster, nodesToDelete []string) error {
 	//kubectl drain <node-name> --ignore-daemonsets --delete-local-data ,all diffNodes
 	for _, node := range nodesToDelete {
-		log.Println("kubectl drain " + node + " --ignore-daemonsets --delete-local-data")
-		cmd := "kubectl drain " + node + " --ignore-daemonsets --delete-local-data --kubeconfig <(echo '" + cluster.GetKubeconfig() + "')"
+		log.Info().Msgf("kubectl drain %s --ignore-daemonsets --delete-local-data", node)
+		cmd := fmt.Sprintf("kubectl drain %s --ignore-daemonsets --delete-local-data --kubeconfig <(echo '%s')", node, cluster.GetKubeconfig())
 		res, err := exec.Command("bash", "-c", cmd).CombinedOutput()
 		if err != nil {
-			log.Println("Error while draining node "+node+":", err)
-			log.Println(res)
+			log.Error().Msgf("Error while draining node %s : %v", node, err)
+			log.Error().Bytes("result", res)
 			return err
 		}
 	}
 
 	//kubectl delete node <node-name>
 	for _, node := range nodesToDelete {
-		log.Println("kubectl delete node " + node)
-		cmd := "kubectl delete node " + node + " --kubeconfig <(echo '" + cluster.GetKubeconfig() + "')"
+		log.Info().Msgf("kubectl delete node %s" + node)
+		cmd := fmt.Sprintf("kubectl delete node %s --kubeconfig <(echo '%s')", node, cluster.GetKubeconfig())
 		_, err := exec.Command("bash", "-c", cmd).CombinedOutput()
 		if err != nil {
-			log.Println("Error while deleting node "+node+":", err)
+			log.Error().Msgf("Error while deleting node %s : %v", node, err)
 			return err
 		}
 	}
@@ -365,16 +363,17 @@ func deleteEtcd(cluster *pb.Cluster, etcdToDelete []string) error {
 
 	// Execute into the working etcd container and setup client TLS authentication in order to be able to communicate
 	// with etcd and get output of all etcd members
-	prepCmd := "kubectl --kubeconfig <(echo '" + cluster.GetKubeconfig() + "') -n kube-system exec -i etcd-" +
-		mainMaster.GetNodeName() + " -- /bin/sh -c "
+	prepCmd := fmt.Sprintf("kubectl --kubeconfig <(echo '%s') -n kube-system exec -i etcd-%s -- /bin/sh -c ",
+		cluster.GetKubeconfig(), mainMaster.GetNodeName())
 	exportCmd := "export ETCDCTL_API=3 && " +
 		"export ETCDCTL_CACERT=/etc/kubernetes/pki/etcd/ca.crt && " +
 		"export ETCDCTL_CERT=/etc/kubernetes/pki/etcd/healthcheck-client.crt && " +
 		"export ETCDCTL_KEY=/etc/kubernetes/pki/etcd/healthcheck-client.key"
-	cmd := prepCmd + "\"" + exportCmd + " && etcdctl member list" + "\""
+	cmd := fmt.Sprintf("%s \" %s && etcdctl member list \"", prepCmd, exportCmd)
 	output, err := exec.Command("bash", "-c", cmd).CombinedOutput()
 	if err != nil {
-		log.Println("Error while executing commands in a working etcd container", err)
+		log.Error().Msgf("Error while executing command %s in a working etcd container: %v", cmd, err)
+		log.Error().Msgf("prepCmd was %s", prepCmd)
 		return err
 	}
 	// Convert output into []string, each line of output is a separate string
@@ -392,10 +391,11 @@ func deleteEtcd(cluster *pb.Cluster, etcdToDelete []string) error {
 	for _, nodeName := range etcdToDelete {
 		for i, s := range etcdStringsTrimmed {
 			if nodeName == s {
-				cmd = prepCmd + "\"" + exportCmd + " && etcdctl member remove " + etcdStringsTrimmed[i-2] + "\""
+				cmd = fmt.Sprintf("%s \" %s && etcdctl member remove %s \"", prepCmd, exportCmd, etcdStringsTrimmed[i-2])
 				_, err := exec.Command("bash", "-c", cmd).CombinedOutput()
 				if err != nil {
-					log.Println("Error while etcdctl member remove:", err)
+					log.Error().Msgf("Error while etcdctl member remove: %v", err)
+					log.Error().Msgf("prepCmd was %s", prepCmd)
 					return err
 				}
 			}
@@ -406,13 +406,13 @@ func deleteEtcd(cluster *pb.Cluster, etcdToDelete []string) error {
 }
 
 func main() {
-	// If go code crash, we will get the file name and line number
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	// intialize logging framework
+	utils.InitLog("builder")
 
 	// Create connection to Context-box
 	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
 	if err != nil {
-		log.Fatalf("could not connect to Content-box: %v", err)
+		log.Fatal().Msgf("Could not connect to Content-box: %v", err)
 	}
 	defer func() { utils.CloseClientConnection(cc) }()
 	// Creating the client
@@ -441,5 +441,5 @@ func main() {
 		})
 	}
 
-	log.Println("Stopping Builder: ", g.Wait())
+	log.Info().Msgf("Stopping Builder: %v", g.Wait())
 }

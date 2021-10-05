@@ -5,13 +5,14 @@ import (
 	"crypto/md5"
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"os/signal"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	terraformer "github.com/Berops/platform/services/terraformer/client"
 	"github.com/Berops/platform/utils"
@@ -196,7 +197,7 @@ func getFromDB(id string) (configItem, error) {
 
 func compareChecksums(ch1 string, ch2 string) bool {
 	if ch1 != ch2 {
-		log.Println("Manifest checksums mismatch. Nothing will be saved.")
+		log.Info().Msg("Manifest checksums mismatch. Nothing will be saved.")
 		return false
 	}
 	return true
@@ -281,7 +282,7 @@ func getAllFromDB() ([]*configItem, error) {
 	defer func() {
 		err := cur.Close(context.Background())
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatal().Msgf("Failed to close MongoDB cursor: %v", err)
 		}
 	}()
 	for cur.Next(context.Background()) { //Iterate through cur and extract all data
@@ -297,7 +298,7 @@ func getAllFromDB() ([]*configItem, error) {
 }
 
 func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
-	log.Println("CLIENT REQUEST: SaveConfigScheduler")
+	log.Info().Msg("CLIENT REQUEST: SaveConfigScheduler")
 	config := req.GetConfig()
 
 	// Get config with the same ID from the DB
@@ -326,7 +327,7 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 }
 
 func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
-	log.Println("CLIENT REQUEST: SaveConfigFrontEnd")
+	log.Info().Msg("CLIENT REQUEST: SaveConfigFrontEnd")
 	newConfig := req.GetConfig()
 	msChecksum := md5.Sum([]byte(newConfig.GetManifest())) //Calculate md5 hash for a manifest file
 	newConfig.MsChecksum = msChecksum[:]                   //Creating a slice using an array you can just make a simple slice expression
@@ -335,11 +336,11 @@ func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest
 		//Check if there is already ID in the DB
 		oldConfig, err := getFromDB(newConfig.GetId())
 		if err != nil {
-			log.Fatalln("Error while getting old newConfig from the DB", err)
+			log.Fatal().Msgf("Error while getting old newConfig from the DB %v", err)
 		}
 		oldConfigPb, err := dataToConfigPb(&oldConfig)
 		if err != nil {
-			log.Fatalln("Error while converting data to pb", err)
+			log.Fatal().Msgf("Error while converting data to pb %v", err)
 		}
 		newConfig.CurrentState = oldConfigPb.CurrentState
 	}
@@ -356,7 +357,7 @@ func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest
 
 // SaveConfigBuilder is a gRPC service: the function saves config to the DB after receiving it from Builder
 func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
-	log.Println("CLIENT REQUEST: SaveConfigBuilder")
+	log.Info().Msg("CLIENT REQUEST: SaveConfigBuilder")
 	config := req.GetConfig()
 
 	// Get config with the same ID from the DB
@@ -385,7 +386,7 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 
 // GetConfigById is a gRPC service: function returns one config from the DB
 func (*server) GetConfigById(ctx context.Context, req *pb.GetConfigByIdRequest) (*pb.GetConfigByIdResponse, error) {
-	log.Println("CLIENT REQUEST: GetConfigById")
+	log.Info().Msg("CLIENT REQUEST: GetConfigById")
 	d, err := getFromDB(req.Id)
 	if err != nil {
 		return nil, err
@@ -399,7 +400,7 @@ func (*server) GetConfigById(ctx context.Context, req *pb.GetConfigByIdRequest) 
 
 // GetConfigScheduler is a gRPC service: function returns one config from the queueScheduler
 func (*server) GetConfigScheduler(ctx context.Context, req *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
-	log.Println("GetConfigScheduler request")
+	log.Info().Msg("GetConfigScheduler request")
 	if len(queueScheduler.configs) > 0 {
 		var config *configItem
 		config, queueScheduler = queueScheduler.push()
@@ -415,7 +416,7 @@ func (*server) GetConfigScheduler(ctx context.Context, req *pb.GetConfigRequest)
 
 // GetConfigBuilder is a gRPC service: function returns one config from the queueScheduler
 func (*server) GetConfigBuilder(ctx context.Context, req *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
-	log.Println("GetConfigBuilder request")
+	log.Info().Msg("GetConfigBuilder request")
 	if len(queueBuilder.configs) > 0 {
 		var config *configItem
 		config, queueBuilder = queueBuilder.push()
@@ -431,7 +432,7 @@ func (*server) GetConfigBuilder(ctx context.Context, req *pb.GetConfigRequest) (
 
 // GetAllConfigs is a gRPC service: function returns all configs from the DB
 func (*server) GetAllConfigs(ctx context.Context, req *pb.GetAllConfigsRequest) (*pb.GetAllConfigsResponse, error) {
-	log.Println("CLIENT REQUEST: GetAllConfigs")
+	log.Info().Msg("CLIENT REQUEST: GetAllConfigs")
 	var res []*pb.Config //slice of configs
 
 	configs, err := getAllFromDB() //get all configs from database
@@ -452,7 +453,7 @@ func (*server) GetAllConfigs(ctx context.Context, req *pb.GetAllConfigsRequest) 
 
 // DeleteConfig is a gRPC service: function deletes one specified config from the DB and returns it's ID
 func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*pb.DeleteConfigResponse, error) {
-	log.Println("CLIENT REQUEST: DeleteConfig")
+	log.Info().Msg("CLIENT REQUEST: DeleteConfig")
 
 	config, err := getFromDB(req.Id)
 	if err != nil {
@@ -499,7 +500,7 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 func destroyConfigTerraformer(config *pb.Config) (*pb.Config, error) {
 	// Trim "tcp://" substring from urls.TerraformerURL
 	trimmedTerraformerURL := strings.ReplaceAll(urls.TerraformerURL, ":tcp://", "")
-	log.Println("Dial Terraformer: ", trimmedTerraformerURL)
+	log.Info().Msgf("Dial Terraformer: %s", trimmedTerraformerURL)
 	// Create connection to Terraformer
 	cc, err := grpc.Dial(trimmedTerraformerURL, grpc.WithInsecure())
 	if err != nil {
@@ -521,33 +522,31 @@ func configChecker() error {
 		return fmt.Errorf("error while configCheck: %v", err)
 	}
 
-	log.Println("QueueScheduler content:", queueScheduler)
-	log.Println("QueueBuilder content:", queueBuilder)
+	log.Info().Msgf("QueueScheduler content: %v", queueScheduler)
+	log.Info().Msgf("QueueBuilder content: %v", queueBuilder)
 
 	return nil
 }
 
 func main() {
-
-	// If code crash, we get the file name and line number
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	// intialize logging framework
+	utils.InitLog("context-box")
 
 	// Connect to MongoDB
 	client, err := mongo.NewClient(options.Client().ApplyURI(urls.DatabaseURL)) //client represents connection object do db
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err)
 	}
 	err = client.Connect(context.TODO())
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err)
 	}
-	log.Println("Connected to MongoDB")
-	fmt.Println("MongoDB connected via", urls.DatabaseURL)
+	log.Info().Msgf("Connected to MongoDB at %s", urls.DatabaseURL)
 	collection = client.Database("platform").Collection("config")
 	defer func() {
 		// closing MongoDB connection
 		if err := client.Disconnect(context.TODO()); err != nil {
-			log.Fatalln("Error closing MongoDB connection: ", err)
+			log.Fatal().Msgf("Error closing MongoDB connection: %v", err)
 		}
 	}()
 	// Set the context-box port
@@ -557,11 +556,12 @@ func main() {
 	}
 
 	// Start ContextBox Service
-	lis, err := net.Listen("tcp", "0.0.0.0:"+contextboxPort)
+	contextBoxAddr := "0.0.0.0:" + contextboxPort
+	lis, err := net.Listen("tcp", contextBoxAddr)
 	if err != nil {
-		log.Fatalln("Failed to listen on", err)
+		log.Fatal().Msgf("Failed to listen on contextbox addr %s : %v", contextBoxAddr, err)
 	}
-	fmt.Println("ContextBox service is listening on:", "0.0.0.0:"+contextboxPort)
+	log.Info().Msgf("ContextBox service is listening on: %s", contextBoxAddr)
 
 	s := grpc.NewServer()
 	pb.RegisterContextBoxServiceServer(s, &server{})
@@ -601,5 +601,5 @@ func main() {
 		})
 	}
 
-	log.Println("Stopping Context-Box: ", g.Wait())
+	log.Info().Msgf("Stopping Context-Box: %v", g.Wait())
 }

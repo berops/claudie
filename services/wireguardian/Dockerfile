@@ -42,8 +42,9 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
   apt-get install -y  \
   libkrb5-dev \
-  krb5-user -y &&\ 
-  python -m pip install --user ansible
+  krb5-user \
+  openssh-client &&\
+  python -m pip install ansible
 
 #Copy the binaries to empty base image
 COPY --from=build /go/services/wireguardian /bin/services/wireguardian

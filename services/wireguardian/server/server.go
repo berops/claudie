@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -12,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
@@ -27,7 +28,7 @@ type server struct{}
 const outputPath string = "services/wireguardian/server/Ansible/"
 
 func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVPNResponse, error) {
-	fmt.Println("BuildVPN function was invoked with", req.Config.Name)
+	log.Info().Msgf("BuildVPN function was invoked with %s", req.Config.Name)
 	config := req.GetConfig()
 
 	for _, cluster := range config.GetDesiredState().GetClusters() {
@@ -140,8 +141,8 @@ func runAnsible(cluster *pb.Cluster) error {
 }
 
 func main() {
-	// If we crath the go gode, we get the file name and line number
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	// intialize logging framework
+	utils.InitLog("wireguardian")
 
 	// Set Wireguardian port
 	wireguardianPort := os.Getenv("WIREGUARDIAN_PORT")
@@ -149,11 +150,12 @@ func main() {
 		wireguardianPort = "50053" // Default value
 	}
 
-	lis, err := net.Listen("tcp", "0.0.0.0:"+wireguardianPort)
+	serviceAddr := "0.0.0.0:" + wireguardianPort
+	lis, err := net.Listen("tcp", serviceAddr)
 	if err != nil {
-		log.Fatalln("Failed to listen on", err)
+		log.Fatal().Msgf("Failed to listen on %s : %v", serviceAddr, err)
 	}
-	fmt.Println("Wireguardian service is listening on", "0.0.0.0:"+wireguardianPort)
+	log.Info().Msgf("Wireguardian service is listening on %s", serviceAddr)
 
 	// creating a new server
 	s := grpc.NewServer()
@@ -188,5 +190,5 @@ func main() {
 		})
 	}
 
-	log.Println("Stopping Wireguardian: ", g.Wait())
+	log.Info().Msgf("Stopping Wireguardian: %v", g.Wait())
 }

@@ -2,8 +2,9 @@ package cbox
 
 import (
 	"io/ioutil"
-	"log"
 	"testing"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/urls"
@@ -14,7 +15,7 @@ import (
 func ClientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
 	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
 	if err != nil {
-		log.Fatalf("could not connect to server: %v", err)
+		log.Fatal().Msgf("Could not connect to server: %v", err)
 	}
 
 	// Creating the client
@@ -25,7 +26,7 @@ func ClientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
 func closeConn(t *testing.T, connection *grpc.ClientConn) {
 	err := connection.Close()
 	if err != nil {
-		log.Fatalln("Error while closing the client connection:", err)
+		log.Fatal().Msgf("Error while closing the client connection:", err)
 	}
 	require.NoError(t, err)
 }
@@ -64,33 +65,36 @@ func makePbConfig(msg string, manifest []byte) *pb.Config {
 }
 func TestSaveConfigFrontEnd(t *testing.T) {
 	c, cc := ClientConnection()
-	manifest, errR := ioutil.ReadFile("./manifest.yaml") //this is manifest from this test file
+	manifestFile := "./manifest.yaml" // this is manifest from this test file
+
+	manifest, errR := ioutil.ReadFile(manifestFile)
 	if errR != nil {
-		log.Fatalln(errR)
+		log.Fatal().Msgf("Error reading file %s. %v", manifestFile, errR)
 	}
 
 	_, cfgErr := SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
 		Config: makePbConfig("TestDeleteConfig Samo", manifest),
 	})
 	if cfgErr != nil {
-		log.Fatalln("Error saving FrontEnd configuration to DB connection:", cfgErr)
+		log.Fatal().Msgf("Error saving FrontEnd configuration to DB connection: %v", cfgErr)
 	}
 	closeConn(t, cc)
 }
 
 func TestSaveConfigScheduler(t *testing.T) {
 	c, cc := ClientConnection()
+	manifestFile := "./manifest.yaml" // this is manifest from this test file
 
-	manifest, errR := ioutil.ReadFile("./manifest.yaml") //this is manifest from this test file
+	manifest, errR := ioutil.ReadFile(manifestFile)
 	if errR != nil {
-		log.Fatalln(errR)
+		log.Fatal().Msgf("Error reading file %s. %v", manifestFile, errR)
 	}
 
 	cfgErr := SaveConfigScheduler(c, &pb.SaveConfigRequest{
 		Config: makePbConfig("TestDeleteNodeSamo", manifest),
 	})
 	if cfgErr != nil {
-		log.Fatalln("Error saving Scheduler configuration to DB connection:", cfgErr)
+		log.Fatal().Msgf("Error saving Scheduler configuration to DB connection: %v", cfgErr)
 	}
 	closeConn(t, cc)
 }
@@ -100,7 +104,7 @@ func TestDeleteConfig(t *testing.T) {
 	configID := "6126737f4f9bcdabaa336da4"
 	delErr := DeleteConfig(c, configID)
 	if delErr != nil {
-		log.Fatalf("Error deleting config %s %s\n", configID, delErr)
+		log.Fatal().Msgf("Error deleting config %s %v", configID, delErr)
 	}
 	closeConn(t, cc)
 }
@@ -109,7 +113,7 @@ func TestPrintConfig(t *testing.T) {
 	c, cc := ClientConnection()
 	_, err := PrintConfig(c, "6126737f4f9bcdabaa336da4")
 	if err != nil {
-		log.Fatalln("Config not found:", err)
+		log.Fatal().Msgf("Config not found: %v", err)
 	}
 	closeConn(t, cc)
 }

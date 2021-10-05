@@ -2,17 +2,18 @@ package testingframework
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/Berops/platform/proto/pb"
 	cbox "github.com/Berops/platform/services/context-box/client"
 	"github.com/Berops/platform/urls"
+	"github.com/Berops/platform/utils"
 	"google.golang.org/grpc"
 
 	"io/ioutil"
-	"log"
 	"testing"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/stretchr/testify/require"
 )
@@ -22,11 +23,16 @@ const (
 	maxTimeout = 120 //checking each 30s, so max allowed time for operation to finish is maxTimeout * 30 [seconds]
 )
 
+func init() {
+	// intialize logging framework
+	utils.InitLog("testingframework")
+}
+
 // ClientConnection will return new client connection to Context-box
 func ClientConnection() pb.ContextBoxServiceClient {
 	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
 	if err != nil {
-		log.Fatalf("could not connect to server: %v", err)
+		log.Fatal().Msgf("could not connect to server: %v", err)
 	}
 
 	// Creating the client
@@ -38,12 +44,12 @@ func ClientConnection() pb.ContextBoxServiceClient {
 func TestPlatform(t *testing.T) {
 	var err error
 	c := ClientConnection()
-	log.Println("----Starting the tests----")
+	log.Info().Msg("----Starting the tests----")
 
 	//loop through the directory and list files inside
 	files, err := ioutil.ReadDir(testDir)
 	if err != nil {
-		log.Println("Error while trying to read test sets:", err)
+		log.Fatal().Msgf("Error while trying to read test sets: %v", err)
 	}
 
 	//save all the test set paths
@@ -51,7 +57,7 @@ func TestPlatform(t *testing.T) {
 	for _, f := range files {
 		if f.IsDir() {
 			pathsToSets = append(pathsToSets, testDir+"/"+f.Name())
-			fmt.Println("Found test set:", f.Name())
+			log.Info().Msgf("Found test set: %s", f.Name())
 		}
 	}
 
@@ -59,7 +65,7 @@ func TestPlatform(t *testing.T) {
 	for _, path := range pathsToSets {
 		err = applyTestSet(path, c)
 		if err != nil {
-			log.Println("Error while processing", path, ":", err)
+			log.Fatal().Msgf("Error while processing %s : %v", path, err)
 			break
 		}
 	}
@@ -72,17 +78,17 @@ func applyTestSet(pathToSet string, c pb.ContextBoxServiceClient) error {
 	done := make(chan struct{})
 	var id string
 
-	log.Println("Working on the test set:", pathToSet)
+	log.Info().Msgf("Working on the test set: %s", pathToSet)
 
 	files, err := ioutil.ReadDir(pathToSet)
 	if err != nil {
-		log.Println("Error while trying to read test configs:", err)
+		log.Fatal().Msgf("Error while trying to read test configs: %v", err)
 	}
 
 	for _, file := range files {
 		manifest, errR := ioutil.ReadFile(pathToSet + "/" + file.Name())
 		if errR != nil {
-			log.Fatalln(errR)
+			log.Fatal().Err(errR)
 		}
 
 		id, err = cbox.SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
@@ -94,7 +100,7 @@ func applyTestSet(pathToSet string, c pb.ContextBoxServiceClient) error {
 		})
 
 		if err != nil {
-			log.Println("Error while saving a config")
+			log.Fatal().Msgf("Error while saving a config: %v", err)
 			return err
 		}
 		go configChecker(done, c, id, file.Name())
@@ -102,7 +108,7 @@ func applyTestSet(pathToSet string, c pb.ContextBoxServiceClient) error {
 		<-done //wait until test config has been processed
 	}
 	// delete the nodes
-	log.Println("Deleting the clusters from test set:", pathToSet)
+	log.Info().Msgf("Deleting the clusters from test set: %s", pathToSet)
 	err = cbox.DeleteConfig(c, id)
 	if err != nil {
 		return err
@@ -120,7 +126,7 @@ func configChecker(done chan struct{}, c pb.ContextBoxServiceClient, configID st
 			Id: configID,
 		})
 		if err != nil {
-			log.Fatal("Got error while waiting for config to finish:", err)
+			log.Fatal().Msgf("Got error while waiting for config to finish: %v", err)
 		}
 		if config != nil {
 			if equals(config.Config.DsChecksum, config.Config.CsChecksum) {
@@ -128,11 +134,11 @@ func configChecker(done chan struct{}, c pb.ContextBoxServiceClient, configID st
 			}
 		}
 		if timeout == maxTimeout {
-			log.Fatal("Test took too long... Aborting")
+			log.Fatal().Msgf("Test took too long... Aborting on timeout %d", maxTimeout)
 		}
 		time.Sleep(30 * time.Second)
 		timeout++
-		log.Printf("Waiting for %s to finish... [ %ds elapsed ]", configName, timeout*30)
+		log.Info().Msgf("Waiting for %s to finish... [ %ds elapsed ]", configName, timeout*30)
 	}
 	done <- struct{}{} //send signal that config has been processed, unblock the applyTestSet
 }

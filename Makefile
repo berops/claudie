@@ -1,4 +1,4 @@
-.PHONY: gen contentbox scheduler builder terraformer wireguardian kubeEleven
+.PHONY: gen contentbox scheduler builder terraformer wireguardian kubeEleven docker
 
 #Generate all .proto files
 gen:
@@ -21,6 +21,9 @@ wireguardian:
 
 kubeEleven:
 	go run services/kube-eleven/server/server.go
+
+docker:
+	DOCKER_BUILDKIT=1 docker-compose --env-file ./K8s-dev-cluster/.env up -d
 
 # -timeout 0 will disable default timeout
 test:
