@@ -56,7 +56,7 @@ func main() {
 	trfAddr := "0.0.0.0:" + terraformerPort
 	lis, err := net.Listen("tcp", trfAddr)
 	if err != nil {
-		log.Fatal().Msgf("Failed to listen on %s", err)
+		log.Fatal().Msgf("Failed to listen on %v", err)
 	}
 	log.Info().Msgf("Terraformer service is listening on: %s", trfAddr)
 

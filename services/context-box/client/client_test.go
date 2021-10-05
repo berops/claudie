@@ -26,7 +26,7 @@ func ClientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
 func closeConn(t *testing.T, connection *grpc.ClientConn) {
 	err := connection.Close()
 	if err != nil {
-		log.Fatal().Msgf("Error while closing the client connection:", err)
+		log.Fatal().Msgf("Error while closing the client connection: %v", err)
 	}
 	require.NoError(t, err)
 }
@@ -87,7 +87,7 @@ func TestSaveConfigScheduler(t *testing.T) {
 
 	manifest, errR := ioutil.ReadFile(manifestFile)
 	if errR != nil {
-		log.Fatal().Msgf("Error reading file %s. %v", manifestFile, errR)
+		log.Fatal().Msgf("Error reading file %s : %v", manifestFile, errR)
 	}
 
 	cfgErr := SaveConfigScheduler(c, &pb.SaveConfigRequest{
