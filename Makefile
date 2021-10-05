@@ -22,14 +22,14 @@ wireguardian:
 kubeEleven:
 	go run services/kube-eleven/server/server.go
 
-docker:
-	DOCKER_BUILDKIT=1 docker-compose --env-file ./K8s-dev-cluster/.env up -d
-
 # -timeout 0 will disable default timeout
 test:
 	go test -v ./services/testing-framework/... -timeout 0
 
 # Run all services in docker containers via docker-compose on a local machine
+docker:
+	DOCKER_BUILDKIT=1 docker-compose --env-file ./K8s-dev-cluster/.env up -d
+
 dockerUp:
 	docker-compose --env-file ./K8s-dev-cluster/.env up
 
