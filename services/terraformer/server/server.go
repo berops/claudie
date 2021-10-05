@@ -4,13 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"os/signal"
 
+	"github.com/rs/zerolog/log"
+
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/platform/utils"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health/grpc_health_v1"
@@ -19,13 +21,13 @@ import (
 type server struct{}
 
 func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastructureRequest) (*pb.BuildInfrastructureResponse, error) {
-	fmt.Println("BuildInfrastructure function was invoked with config", req.GetConfig().GetName())
+	log.Info().Msgf("BuildInfrastructure function was invoked with config %s", req.GetConfig().GetName())
 	config := req.GetConfig()
 	err := buildInfrastructure(config)
 	if err != nil {
 		return nil, fmt.Errorf("template generator failed: %v", err)
 	}
-	log.Println("Infrastructure was successfully generated")
+	log.Info().Msg("Infrastructure was successfully generated")
 	return &pb.BuildInfrastructureResponse{Config: config}, nil
 }
 
@@ -41,8 +43,8 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 }
 
 func main() {
-	// If code crash, we get the file name and line number
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	// intialize logging framework
+	utils.InitLog("terraformer")
 
 	// Set the context-box port
 	terraformerPort := os.Getenv("TERRAFORMER_PORT")
@@ -51,11 +53,12 @@ func main() {
 	}
 
 	// Start Terraformer Service
-	lis, err := net.Listen("tcp", "0.0.0.0:"+terraformerPort)
+	trfAddr := "0.0.0.0:" + terraformerPort
+	lis, err := net.Listen("tcp", trfAddr)
 	if err != nil {
-		log.Fatalln("Failed to listen on", err)
+		log.Fatal().Msgf("Failed to listen on %v", err)
 	}
-	fmt.Println("Terrafomer service is listening on:", "0.0.0.0:"+terraformerPort)
+	log.Info().Msgf("Terraformer service is listening on: %s", trfAddr)
 
 	s := grpc.NewServer()
 	pb.RegisterTerraformerServiceServer(s, &server{})
@@ -89,5 +92,5 @@ func main() {
 		})
 	}
 
-	log.Println("Stopping Terraformer: ", g.Wait())
+	log.Info().Msgf("Stopping Terraformer: %v", g.Wait())
 }

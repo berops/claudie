@@ -3,10 +3,17 @@ package terraformer
 import (
 	"context"
 	"fmt"
-	"log"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/platform/utils"
 )
+
+func init() {
+	// intialize logging framework
+	utils.InitLog("terraformer")
+}
 
 // BuildInfrastructure uses TerraformServiceClient to build/deploy the infrastructure
 func BuildInfrastructure(c pb.TerraformerServiceClient, req *pb.BuildInfrastructureRequest) (*pb.BuildInfrastructureResponse, error) {
@@ -15,7 +22,7 @@ func BuildInfrastructure(c pb.TerraformerServiceClient, req *pb.BuildInfrastruct
 		return nil, fmt.Errorf("error while calling BuildInfrastructure on Terraformer: %v", err)
 	}
 
-	log.Println("Infrastructure was successfully built")
+	log.Info().Msg("Infrastructure was successfully built")
 	return res, nil
 }
 
@@ -26,6 +33,6 @@ func DestroyInfrastructure(c pb.TerraformerServiceClient, req *pb.DestroyInfrast
 		return nil, fmt.Errorf("error while calling DestroyInfrastructure on Terraformer: %v", err)
 	}
 
-	log.Println("Infrastructure was successfully destroyed")
+	log.Info().Msg("Infrastructure was successfully destroyed")
 	return res, nil
 }

@@ -1,8 +1,9 @@
 package terraformer
 
 import (
-	"log"
 	"testing"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/urls"
@@ -132,7 +133,7 @@ func TestBuildInfrastructure(t *testing.T) {
 	// Create connection to Terraformer
 	cc, err := grpc.Dial(urls.TerraformerURL, grpc.WithInsecure())
 	if err != nil {
-		log.Fatalf("could not connect to server: %v", err)
+		log.Fatal().Msgf("could not connect to server: %v", err)
 	}
 	defer func() {
 		err := cc.Close()

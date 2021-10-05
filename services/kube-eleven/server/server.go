@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
-	"log"
 	"net"
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
@@ -60,7 +62,7 @@ func (d *data) formatTemplateData(cluster *pb.Cluster) {
 
 func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb.BuildClusterResponse, error) {
 	config := req.Config
-	log.Println("I have received a BuildCluster request with config name:", config.GetName())
+	log.Info().Msgf("I have received a BuildCluster request with config name: %s", config.GetName())
 
 	for _, cluster := range config.GetDesiredState().GetClusters() {
 		var d data
@@ -70,11 +72,14 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 			return nil, err
 		}
 		// Create a cluster-kubeconfig file
-		if err := ioutil.WriteFile(outputPath+"cluster-kubeconfig", []byte(cluster.GetKubeconfig()), 0600); err != nil {
+		kubeconfigFile := filepath.Join(outputPath, "cluster-kubeconfig")
+		if err := ioutil.WriteFile(kubeconfigFile, []byte(cluster.GetKubeconfig()), 0600); err != nil {
 			return nil, err
 		}
 		// Generate a kubeOne yaml manifest from a golang template
-		if err := genKubeOneConfig(outputPath+"kubeone.tpl", outputPath+"kubeone.yaml", d); err != nil {
+		templateFile := filepath.Join(outputPath, "kubeone.tpl")
+		outputFile := filepath.Join(outputPath, "kubeone.yaml")
+		if err := genKubeOneConfig(templateFile, outputFile, d); err != nil {
 			return nil, err
 		}
 
@@ -121,7 +126,7 @@ func genKubeOneConfig(templatePath string, outputPath string, d interface{}) err
 }
 
 func runKubeOne() error {
-	fmt.Println("Running KubeOne")
+	log.Info().Msg("Running KubeOne")
 	cmd := exec.Command("kubeone", "apply", "-m", "kubeone.yaml", "-y")
 	cmd.Dir = outputPath //golang will execute command from this directory
 	cmd.Stdout = os.Stdout
@@ -131,28 +136,29 @@ func runKubeOne() error {
 
 // saveKubeconfig reads kubeconfig from a file and returns it
 func saveKubeconfig() (string, error) {
-	kubeconfig, err := ioutil.ReadFile(outputPath + "cluster-kubeconfig")
+	kubeconfigFile := filepath.Join(outputPath, "cluster-kubeconfig")
+	kubeconfig, err := ioutil.ReadFile(kubeconfigFile)
 	if err != nil {
-		return "", fmt.Errorf("error while reading a kubeconfig file: %v", err)
+		return "", fmt.Errorf("error while reading kubeconfig file: %s : %v", kubeconfigFile, err)
 	}
 	return string(kubeconfig), nil
 }
 
 func main() {
-	// If we crash the go code, we get the file name and line number
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	// intialize logging framework
+	utils.InitLog("kubeEleven")
 
 	// Set KubeEleven port
 	kubeElevenPort := os.Getenv("KUBE_ELEVEN_PORT")
 	if kubeElevenPort == "" {
 		kubeElevenPort = "50054" // Default value
 	}
-
-	lis, err := net.Listen("tcp", "0.0.0.0:"+kubeElevenPort)
+	kubeElevenAddr := "0.0.0.0:" + kubeElevenPort
+	lis, err := net.Listen("tcp", kubeElevenAddr)
 	if err != nil {
-		log.Fatalln("Failed to listen on", err)
+		log.Fatal().Msgf("Failed to listen on %s : %v", kubeElevenAddr, err)
 	}
-	fmt.Println("KubeEleven service is listening on", "0.0.0.0:"+kubeElevenPort)
+	log.Info().Msgf("KubeEleven service is listening on %s", kubeElevenAddr)
 
 	s := grpc.NewServer()
 	pb.RegisterKubeElevenServiceServer(s, &server{})
@@ -185,5 +191,5 @@ func main() {
 		})
 	}
 
-	log.Println("Stopping Kube-Eleven: ", g.Wait())
+	log.Info().Msgf("Stopping Kube-Eleven: %s", g.Wait())
 }

@@ -1,4 +1,4 @@
-package utils // import "github.com/Berops/platform/utils"
+package utils
 
 import (
 	"fmt"
