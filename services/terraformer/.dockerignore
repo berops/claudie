@@ -12,4 +12,5 @@ services/kube-eleven
 services/scheduler
 services/context-box
 services/builder
+services/terraformer/server/terraform
 mongodb
