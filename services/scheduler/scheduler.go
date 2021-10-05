@@ -9,11 +9,12 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/signal"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
@@ -114,7 +115,7 @@ func MakeSSHKeyPair() (string, string) {
 
 func createDesiredState(config *pb.Config) (*pb.Config, error) {
 	if config == nil {
-		log.Println("Got nil, expected Config... \nReturning nil")
+		log.Info().Msg("createDesiredState got nil Config... \nReturning nil")
 		return nil, nil
 	}
 	// Create yaml manifest
@@ -223,7 +224,7 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient) (err error) 
 		return
 	}
 
-	log.Println(config.GetDesiredState())
+	log.Info().Interface("project", config.GetDesiredState())
 	err = cbox.SaveConfigScheduler(c, &pb.SaveConfigRequest{Config: config})
 	if err != nil {
 		return fmt.Errorf("error while saving the config: %v", err)
@@ -262,11 +263,14 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 }
 
 func main() {
+	// intialize logging framework
+	utils.InitLog("scheduler")
+
 	// Create connection to Context-box
-	log.Println("Dial Context-box: ", urls.ContextBoxURL)
+	log.Info().Msgf("Dial Context-box: %s", urls.ContextBoxURL)
 	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
 	if err != nil {
-		log.Fatalf("could not connect to server: %v", err)
+		log.Fatal().Msgf("Could not connect to server: %v", err)
 	}
 
 	defer func() { utils.CloseClientConnection(cc) }()
@@ -297,5 +301,5 @@ func main() {
 		})
 	}
 
-	log.Println("Stopping Scheduler: ", g.Wait())
+	log.Info().Msgf("Stopping Scheduler: %v", g.Wait())
 }

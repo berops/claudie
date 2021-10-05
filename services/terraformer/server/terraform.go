@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sort"
 	"text/template"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/utils"
@@ -37,14 +39,18 @@ type jsonOut struct {
 // buildInfrastructure is generating terraform files for different providers and calling terraform
 func buildInfrastructure(config *pb.Config) error {
 	desiredState := config.DesiredState
-	fmt.Println("Generating templates")
+	log.Info().Msg("Generating templates for infrastructure build")
 	var backendData Backend
 	backendData.ProjectName = desiredState.GetName()
 	for _, cluster := range desiredState.Clusters {
-		log.Println("Cluster name:", cluster.GetName())
+		log.Info().Msgf("Cluster name: %s", cluster.GetName())
 		backendData.ClusterName = cluster.GetName()
 		// Creating backend.tf file from the template
-		if err := templateGen(templatePath+"/backend.tpl", outputPath+"/backend.tf", backendData, outputPath); err != nil {
+		templateFile := filepath.Join(templatePath, "backend.tpl")
+		trfFile := filepath.Join(outputPath, "backend.tf")
+		if err := templateGen(templateFile, trfFile, backendData, outputPath); err != nil {
+			log.Error().Msgf("Error generating terraform config file %s from template %s: %v",
+				trfFile, templateFile, err)
 			return err
 		}
 		// Creating .tf files for providers from templates
@@ -52,19 +58,23 @@ func buildInfrastructure(config *pb.Config) error {
 			return err
 		}
 		// Create publicKey file for a cluster
-		if err := utils.CreateKeyFile(cluster.GetPublicKey(), outputPath, "/public.pem"); err != nil {
+		if err := utils.CreateKeyFile(cluster.GetPublicKey(), outputPath, "public.pem"); err != nil {
 			return err
 		}
 
-		if err := utils.CreateKeyFile(cluster.GetPublicKey(), outputPath, "/private.pem"); err != nil {
+		if err := utils.CreateKeyFile(cluster.GetPublicKey(), outputPath, "private.pem"); err != nil {
 			return err
 		}
 		// Call terraform init and apply
+		log.Info().Msgf("Running terraform init in %s", outputPath)
 		if err := initTerraform(outputPath); err != nil {
+			log.Error().Msgf("Error running terraform init in %s: %v", outputPath, err)
 			return err
 		}
 
+		log.Info().Msgf("Running terraform apply in %s", outputPath)
 		if err := applyTerraform(outputPath); err != nil {
+			log.Error().Msgf("Error running terraform apply in %s: %v", outputPath, err)
 			return err
 		}
 
@@ -89,7 +99,7 @@ func buildInfrastructure(config *pb.Config) error {
 		}
 		cluster.NodeInfos = m
 		// Clean after Terraform. Remove tmp terraform dir.
-		err := os.RemoveAll("services/terraformer/server/terraform")
+		err := os.RemoveAll(outputPath)
 		if err != nil {
 			return err
 		}
@@ -105,36 +115,42 @@ func buildInfrastructure(config *pb.Config) error {
 
 // destroyInfrastructure executes terraform destroy --auto-approve. It destroys whole infrastructure in a project.
 func destroyInfrastructure(project *pb.Project) error {
-	fmt.Println("Generating templates")
+	log.Info().Msg("Generating templates for infrastructure destroy")
 	var backendData Backend
 	backendData.ProjectName = project.GetName()
 	for _, cluster := range project.Clusters {
-		log.Println("Cluster name:", cluster.GetName())
+		log.Info().Msgf("Cluster name: %s", cluster.GetName())
 		backendData.ClusterName = cluster.GetName()
 		// Creating backend.tf file
-		if err := templateGen(templatePath+"/backend.tpl",
-			outputPath+"/backend.tf",
-			backendData, outputPath); err != nil {
+		templateFile := filepath.Join(templatePath, "backend.tpl")
+		trfFile := filepath.Join(outputPath, "backend.tf")
+		if err := templateGen(templateFile, trfFile, backendData, outputPath); err != nil {
+			log.Error().Msgf("Error generating terraform config file %s from template %s: %v",
+				trfFile, templateFile, err)
 			return err
 		}
 		// Creating .tf files for providers
 		if err := buildNodePools(cluster); err != nil {
+			log.Error().Msgf("Error building NodePools for cluster %s : %v", cluster.GetName(), err)
 			return err
 		}
 		// Create publicKey file for a cluster
-		if err := utils.CreateKeyFile(cluster.GetPublicKey(), outputPath, "/public.pem"); err != nil {
+		if err := utils.CreateKeyFile(cluster.GetPublicKey(), outputPath, "public.pem"); err != nil {
+			log.Error().Msgf("Error in CreateKeyFile: %v", err)
 			return err
 		}
 		// Call terraform
 		if err := initTerraform(outputPath); err != nil {
+			log.Error().Msgf("Error in initTerraform: %v", err)
 			return err
 		}
 
 		if err := destroyTerraform(outputPath); err != nil {
+			log.Error().Msgf("Error in destroyTerraform: %v", err)
 			return err
 		}
 
-		if err := os.RemoveAll("services/terraformer/server/terraform"); err != nil {
+		if err := os.RemoveAll(outputPath); err != nil {
 			return err
 		}
 	}
@@ -145,32 +161,28 @@ func destroyInfrastructure(project *pb.Project) error {
 // buildNodePools creates .tf files from providers contained in a cluster
 func buildNodePools(cluster *pb.Cluster) error {
 	for i, nodePool := range cluster.NodePools {
-		// HETZNER node pool
-		if nodePool.Provider.Name == "hetzner" { // it will return true if hetzner key exists in the credentials map
-			log.Println("Cluster provider: ", nodePool.Provider.Name)
+		providerName := nodePool.Provider.Name
+		switch providerName {
+		case "hetzner", "gcp":
+			log.Info().Msgf("Cluster provider: %s", providerName)
 			// creating terraform file for a provider
-			if err := templateGen(templatePath+"/hetzner.tpl", outputPath+"/hetzner.tf",
-				&Data{
-					Index:   i,
-					Cluster: cluster,
-				}, templatePath); err != nil {
-				return err
+			tplFileName := fmt.Sprintf("%s.tpl", providerName)
+			terraFormFileName := fmt.Sprintf("%s.tf", providerName)
+			tplFile := filepath.Join(templatePath, tplFileName)
+			trfFile := filepath.Join(outputPath, terraFormFileName)
+			genRes := templateGen(
+				tplFile,
+				trfFile,
+				&Data{Index: i, Cluster: cluster},
+				templatePath)
+			if genRes != nil {
+				log.Error().Msgf("Error generating terraform config file %s from template %s: %v",
+					trfFile, tplFile, genRes)
+				return genRes
 			}
 			//nodes = readTerraformOutput(nodes)
-		}
-
-		// GCP node pool
-		if nodePool.Provider.Name == "gcp" { // it will return true if gcp key exists in the credentials map
-			log.Println("Cluster provider: ", nodePool.Provider.Name)
-			// creating terraform file for a provider
-			if err := templateGen(templatePath+"/gcp.tpl", outputPath+"/gcp.tf",
-				&Data{
-					Index:   i,
-					Cluster: cluster,
-				}, templatePath); err != nil {
-				return err
-			}
-			//nodes = readTerraformOutput(nodes)
+		default:
+			log.Error().Str("provider", providerName).Msgf("Received unsupported provider %s", providerName)
 		}
 	}
 
@@ -203,25 +215,25 @@ func templateGen(templatePath string, outputPath string, d interface{}, dirName 
 }
 
 // initTerraform executes terraform init in a given path
-func initTerraform(fileName string) error {
+func initTerraform(directoryName string) error {
 	// terraform init
-	return executeTerraform(exec.Command("terraform", "init"), fileName)
+	return executeTerraform(exec.Command("terraform", "init"), directoryName)
 }
 
 // applyTerraform executes terraform apply on a .tf files in a given path
-func applyTerraform(fileName string) error {
+func applyTerraform(directoryName string) error {
 	// terraform apply --auto-approve
-	return executeTerraform(exec.Command("terraform", "apply", "--auto-approve"), fileName)
+	return executeTerraform(exec.Command("terraform", "apply", "--auto-approve"), directoryName)
 }
 
 // destroyTerraform executes terraform destroy in a given path
-func destroyTerraform(fileName string) error {
+func destroyTerraform(directoryName string) error {
 	// terraform destroy
-	return executeTerraform(exec.Command("terraform", "destroy", "--auto-approve"), fileName)
+	return executeTerraform(exec.Command("terraform", "destroy", "--auto-approve"), directoryName)
 }
 
-func executeTerraform(cmd *exec.Cmd, fileName string) error {
-	cmd.Dir = fileName
+func executeTerraform(cmd *exec.Cmd, workingDir string) error {
+	cmd.Dir = workingDir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()

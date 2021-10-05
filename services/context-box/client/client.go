@@ -3,57 +3,64 @@ package cbox
 import (
 	"context"
 	"fmt"
-	"log"
+
+	"github.com/rs/zerolog/log"
+	"google.golang.org/grpc"
 
 	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/platform/utils"
 )
+
+func init() {
+	// intialize logging framework
+	utils.InitLog("context-box")
+}
 
 // SaveConfigFrontEnd calls Content-box gRPC server and saves configuration to the mongoDB database
 // A new config file with Id will be created if ID is empty
 // returns id of the saved config and error
 func SaveConfigFrontEnd(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest) (string, error) {
-	fmt.Println("Saving config")
-
-	res, err := c.SaveConfigFrontEnd(context.Background(), req)
+	res, err := saveConfig("frontend", c, req, c.SaveConfigFrontEnd)
 	if err != nil {
-		return "", fmt.Errorf("unexpected error: %v", err)
+		return "", err
+	} else {
+		return res.Config.Id, nil
 	}
-
-	fmt.Println("Config", res.GetConfig().GetName(), "has been saved")
-	return res.Config.Id, nil
 }
 
 // SaveConfigScheduler saves config from Scheduler
 func SaveConfigScheduler(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest) error {
-	fmt.Println("Saving config")
-
-	res, err := c.SaveConfigScheduler(context.Background(), req)
-	if err != nil {
-		return fmt.Errorf("unexpected error: %v", err)
-	}
-
-	fmt.Println("Config", res.GetConfig().GetName(), "has been saved")
-	return nil
+	_, err := saveConfig("builder", c, req, c.SaveConfigScheduler)
+	return err
 }
 
 // SaveConfigBuilder saves config from Scheduler
 func SaveConfigBuilder(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest) error {
-	fmt.Println("Saving config")
+	_, err := saveConfig("builder", c, req, c.SaveConfigBuilder)
+	return err
+}
 
-	res, err := c.SaveConfigBuilder(context.Background(), req)
+func saveConfig(
+	service string,
+	c pb.ContextBoxServiceClient,
+	req *pb.SaveConfigRequest,
+	saveFn func(context.Context, *pb.SaveConfigRequest, ...grpc.CallOption) (*pb.SaveConfigResponse, error)) (*pb.SaveConfigResponse, error) {
+	log.Info().Msgf("Saving %s config", service)
+
+	res, err := saveFn(context.Background(), req)
 	if err != nil {
-		return fmt.Errorf("unexpected error: %v", err)
+		return nil, fmt.Errorf("Failed to save %s config: %v", service, err)
 	}
 
-	fmt.Println("Config", res.GetConfig().GetName(), "has been saved")
-	return nil
+	log.Info().Msgf("Config %s has been saved", res.GetConfig().GetName())
+	return res, nil
 }
 
 // GetConfigScheduler gets config from queueScheduler in which are available configs for Scheduler
 func GetConfigScheduler(c pb.ContextBoxServiceClient) (*pb.GetConfigResponse, error) {
 	res, err := c.GetConfigScheduler(context.Background(), &pb.GetConfigRequest{})
 	if err != nil {
-		return nil, fmt.Errorf("unexpected error: %v", err)
+		return nil, fmt.Errorf("Error getting scheduler config: %v", err)
 	}
 
 	return res, nil
@@ -63,7 +70,7 @@ func GetConfigScheduler(c pb.ContextBoxServiceClient) (*pb.GetConfigResponse, er
 func GetConfigBuilder(c pb.ContextBoxServiceClient) (*pb.GetConfigResponse, error) {
 	res, err := c.GetConfigBuilder(context.Background(), &pb.GetConfigRequest{})
 	if err != nil {
-		return nil, fmt.Errorf("unexpected error: %v", err)
+		return nil, fmt.Errorf("Error getting builder config: %v", err)
 	}
 
 	return res, nil
@@ -73,7 +80,7 @@ func GetConfigBuilder(c pb.ContextBoxServiceClient) (*pb.GetConfigResponse, erro
 func GetAllConfigs(c pb.ContextBoxServiceClient) (*pb.GetAllConfigsResponse, error) {
 	res, err := c.GetAllConfigs(context.Background(), &pb.GetAllConfigsRequest{})
 	if err != nil {
-		return nil, fmt.Errorf("unexpected error: %v", err)
+		return nil, fmt.Errorf("Unexpected error: %v", err)
 	}
 
 	return res, nil
@@ -83,10 +90,10 @@ func GetAllConfigs(c pb.ContextBoxServiceClient) (*pb.GetAllConfigsResponse, err
 func DeleteConfig(c pb.ContextBoxServiceClient, id string) error {
 	res, err := c.DeleteConfig(context.Background(), &pb.DeleteConfigRequest{Id: id})
 	if err != nil {
-		return fmt.Errorf("error happened while deleting: %v", err)
+		return fmt.Errorf("Error deleting: %v", err)
 	}
 
-	fmt.Println("Config was deleted", res)
+	log.Info().Msgf("Config was deleted %v", res)
 	return nil
 }
 
@@ -94,7 +101,7 @@ func DeleteConfig(c pb.ContextBoxServiceClient, id string) error {
 func PrintConfig(c pb.ContextBoxServiceClient, id string) (*pb.GetConfigByIdResponse, error) {
 	res, err := c.GetConfigById(context.Background(), &pb.GetConfigByIdRequest{Id: id})
 	if err != nil {
-		log.Fatalf("Unexpected error: %v", err)
+		log.Fatal().Msgf("Failed to get config ID %s : %v", id, err)
 	}
 	fmt.Println("Config name:", res.GetConfig().GetName())
 	fmt.Println("Config ID:", res.GetConfig().GetId())
