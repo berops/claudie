@@ -56,10 +56,11 @@ func TestGetAllConfigs(t *testing.T) {
 	}
 }
 
-func makePbConfig(msg string, manifest []byte) *pb.Config {
+func makePbConfig(msg string, manifest []byte, id string) *pb.Config {
 	return &pb.Config{
 		Name:     msg,
 		Manifest: string(manifest),
+		Id:       id,
 	}
 }
 func TestSaveConfigFrontEnd(t *testing.T) {
@@ -70,7 +71,7 @@ func TestSaveConfigFrontEnd(t *testing.T) {
 	}
 
 	_, cfgErr := SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
-		Config: makePbConfig("TestDeleteConfig Samo", manifest),
+		Config: makePbConfig("TestConfig24", manifest, ""),
 	})
 	if cfgErr != nil {
 		log.Fatalln("Error saving FrontEnd configuration to DB connection:", cfgErr)
@@ -87,7 +88,7 @@ func TestSaveConfigScheduler(t *testing.T) {
 	}
 
 	cfgErr := SaveConfigScheduler(c, &pb.SaveConfigRequest{
-		Config: makePbConfig("TestDeleteNodeSamo", manifest),
+		Config: makePbConfig("TestDeleteNodeSamo", manifest, ""),
 	})
 	if cfgErr != nil {
 		log.Fatalln("Error saving Scheduler configuration to DB connection:", cfgErr)
