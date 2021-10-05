@@ -1,4 +1,4 @@
-.PHONY: gen contentbox scheduler builder terraformer wireguardian kubeEleven test dockerUp dockerDown dockerBuild docker
+.PHONY: gen contentbox scheduler builder terraformer wireguardian kubeEleven test dockerUp dockerDown dockerBuild
 
 #Generate all .proto files
 gen:
@@ -27,9 +27,6 @@ test:
 	go test -v ./services/testing-framework/... -timeout 0
 
 # Run all services in docker containers via docker-compose on a local machine
-docker:
-	DOCKER_BUILDKIT=1 docker-compose --env-file ./K8s-dev-cluster/.env up -d
-
 dockerUp:
 	docker-compose --env-file ./K8s-dev-cluster/.env up
 
