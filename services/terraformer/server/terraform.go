@@ -205,6 +205,8 @@ func templateGen(templatePath string, outputPath string, d interface{}, dirName 
 
 // initTerraform executes terraform init in a given path
 func initTerraform(fileName string) error {
+	// Apply GCP credentials as an env variable
+	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "../../../../keys/platform-296509-d6ddeb344e91.json")
 	// terraform init
 	return executeTerraform(exec.Command("terraform", "init"), fileName)
 }
