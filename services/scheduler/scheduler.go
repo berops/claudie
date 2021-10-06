@@ -291,7 +291,7 @@ func main() {
 			signal.Notify(ch, os.Interrupt)
 			defer signal.Stop(ch)
 			<-ch
-			return errors.New("interrupt signal")
+			return errors.New("Interrupt signal")
 		})
 	}
 	{
