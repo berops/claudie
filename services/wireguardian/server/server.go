@@ -177,7 +177,7 @@ func main() {
 			signal.Stop(ch)
 			s.GracefulStop()
 
-			return errors.New("interrupt signal")
+			return errors.New("Interrupt signal")
 		})
 	}
 	{
