@@ -39,12 +39,12 @@ FROM python:3-slim
 #Install the Ansible
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && \
-  apt-get install -y  \
+RUN apt update && \
+  apt install -y  \
   libkrb5-dev \
   krb5-user \
-  openssh-client &&\
-  python -m pip install ansible
+  openssh-client \
+  ansible
 
 #Copy the binaries to empty base image
 COPY --from=build /go/services/wireguardian /bin/services/wireguardian
