@@ -16,15 +16,16 @@ COPY . .
 #Change the directory
 WORKDIR /go/services/scheduler
 
-#Compile the golang code to /out, CGO_ENABLE=0 removes cross compile dependencies
-RUN CGO_ENABLED=0 go build -o /out
+#Compile the golang code, CGO_ENABLE=0 removes cross compile dependencies
+RUN CGO_ENABLED=0 go build
 
 #Use empty base image
 FROM scratch
 
 #Copy the binaries to empty base image
-COPY --from=build /out /out
+COPY --from=build /go/services/scheduler /bin/services/scheduler
 
+WORKDIR /bin
 #Run scheduler
-ENTRYPOINT [ "/out" ]
+ENTRYPOINT [ "./services/scheduler/scheduler" ]
   

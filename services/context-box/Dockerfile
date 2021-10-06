@@ -31,7 +31,7 @@ COPY . .
 #Change the directory
 WORKDIR /go/services/context-box/server
 
-#Compile the golang code to /out, CGO_ENABLE=0 removes cross compile dependencies
+#Compile the golang code, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build
 
 #Use empty base image
