@@ -22,7 +22,7 @@ images:
 - name: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven
   newTag: f3097a31d38872164d7a93beb2ac323ecc7f06f6
 - name: eu.gcr.io/platform-infrastructure-316112/platform/scheduler
-  newTag: e4fe52a6f0f5cb1412eef615898c3d4304a5bf86
+  newTag: 19cd454c66ad9a9737d4dffeecab3ea847e8cfb9
 - name: eu.gcr.io/platform-infrastructure-316112/platform/terraformer
   newTag: 765996ccc3641713e252fd4f3e1a56c931745469
 - name: eu.gcr.io/platform-infrastructure-316112/platform/testing-framework
