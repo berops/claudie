@@ -44,7 +44,6 @@ func writeMsg(w http.ResponseWriter, msg string) {
 // live function is testing liviness state of the microservice
 // always return 200 -> if microservice is able to respond, it is live
 func live(w http.ResponseWriter, req *http.Request) {
-	fmt.Println("Liviness probe check: OK")
 	w.WriteHeader(200)
 	writeMsg(w, "ok")
 }
@@ -60,7 +59,6 @@ func (s *ClientHealthChecker) ready(w http.ResponseWriter, req *http.Request) {
 		writeMsg(w, "not ready")
 		return
 	}
-	fmt.Println("Readiness probe check: OK")
 	w.WriteHeader(200)
 	writeMsg(w, "ok")
 }

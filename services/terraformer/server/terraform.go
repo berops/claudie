@@ -78,9 +78,10 @@ func buildInfrastructure(config *pb.Config) error {
 			return err
 		}
 
-		// Fill public ip addresseNodeInfos
+		// Fill public ip addresses to NodeInfos
 		tmpCluster := utils.GetClusterByName(cluster.Name, config.CurrentState.Clusters)
 		var m []*pb.NodeInfo
+		var newM []*pb.NodeInfo
 
 		if tmpCluster != nil {
 			m = tmpCluster.NodeInfos
@@ -95,9 +96,10 @@ func buildInfrastructure(config *pb.Config) error {
 			if err != nil {
 				return err
 			}
-			m = fillNodes(m, &out, nodepool)
+			res := fillNodes(m, &out, nodepool)
+			newM = append(newM, res...)
 		}
-		cluster.NodeInfos = m
+		cluster.NodeInfos = newM
 		// Clean after Terraform. Remove tmp terraform dir.
 		err := os.RemoveAll(outputPath)
 		if err != nil {
@@ -216,6 +218,11 @@ func templateGen(templatePath string, outputPath string, d interface{}, dirName 
 
 // initTerraform executes terraform init in a given path
 func initTerraform(directoryName string) error {
+	// Apply GCP credentials as an env variable
+	err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "../../../../keys/platform-296509-d6ddeb344e91.json")
+	if err != nil {
+		return fmt.Errorf("failed to set the google credentials env variable: %v", err)
+	}
 	// terraform init
 	return executeTerraform(exec.Command("terraform", "init"), directoryName)
 }
