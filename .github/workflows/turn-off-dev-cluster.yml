@@ -17,12 +17,12 @@ jobs:
           service_account_key: ${{ secrets.GKE_SERVICE_ACC_KEY }}
           project_id: ${{ secrets.GCP_PROJECT_ID }}
       # Get the GKE credentials so we can deploy to the cluster
-      - uses: google-github-actions/get-gke-credentials@v0.2.1
+      - uses: google-github-actions/get-gke-credentials@v0.3.0
         with:
           cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
           location: ${{ secrets.GKE_ZONE }}
           credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
-      # Turn off the services    
+      # Turn off the services
       - name: Turn off the Scheduler
         if: ${{ always() }}   
         run: kubectl scale --replicas=0 deployments/scheduler --namespace=claudie
