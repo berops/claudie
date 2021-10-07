@@ -81,6 +81,7 @@ func buildInfrastructure(config *pb.Config) error {
 		// Fill public ip addresses to NodeInfos
 		tmpCluster := utils.GetClusterByName(cluster.Name, config.CurrentState.Clusters)
 		var m []*pb.NodeInfo
+		var newM []*pb.NodeInfo
 
 		if tmpCluster != nil {
 			m = tmpCluster.NodeInfos
@@ -96,9 +97,9 @@ func buildInfrastructure(config *pb.Config) error {
 				return err
 			}
 			res := fillNodes(m, &out, nodepool)
-			m = append(m, res...)
+			newM = append(newM, res...)
 		}
-		cluster.NodeInfos = m
+		cluster.NodeInfos = newM
 		// Clean after Terraform. Remove tmp terraform dir.
 		err := os.RemoveAll(outputPath)
 		if err != nil {
