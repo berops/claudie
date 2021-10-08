@@ -17,6 +17,7 @@ spec:
       containers:
       - name: builder
         image: eu.gcr.io/platform-infrastructure-316112/platform/builder
+        imagePullPolicy: Always
         resources:
           requests:
             cpu: 70m

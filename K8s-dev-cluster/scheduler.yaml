@@ -17,6 +17,7 @@ spec:
       containers:
       - name: scheduler
         image: eu.gcr.io/platform-infrastructure-316112/platform/scheduler
+        imagePullPolicy: Always
         resources:
           requests:
             cpu: 70m
