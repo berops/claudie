@@ -124,8 +124,13 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: merge with master
-        run: git merge master
+      - name: Merge development -> staging
+        uses: devmasx/merge-branch@v1.4.0
+        with:
+          type: now
+          from_branch: master
+          target_branch: ${{ github.head_ref }}
+          github_token: ${{ github.token }}
 #--------------------------------------------------------------------------------------------------
   deploy-and-monitor:
     runs-on: ubuntu-latest
