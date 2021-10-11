@@ -5,10 +5,6 @@ on:
   # Triggers the workflow on push or pull request events but only for the master branch
   pull_request:
     branches: [ master ]
-  # Trigger after merge to master
-  push:
-    branches:
-      - master
 
 env:
   ENV_FILE: .env
@@ -197,7 +193,7 @@ jobs:
 
       - name: Monitor E2E test
         run: |
-          kubectl wait --for=condition=complete --timeout=2500s job/testing-framework -n claudie-$GITHUB_SHA
+          kubectl wait --for=condition=complete --timeout=3600s job/testing-framework -n claudie-$GITHUB_SHA
      
       - name: Delete temporary namespace
         run: |
