@@ -5,7 +5,7 @@ metadata:
   labels:
     app: kube-eleven
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: kube-eleven
