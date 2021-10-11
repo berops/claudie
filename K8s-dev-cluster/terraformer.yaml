@@ -17,7 +17,6 @@ spec:
       containers:
       - name: terraformer
         image: eu.gcr.io/platform-infrastructure-316112/platform/terraformer
-        imagePullPolicy: Always
         resources:
           requests:
             cpu: 70m

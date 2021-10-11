@@ -5,10 +5,6 @@ on:
   # Triggers the workflow on push or pull request events but only for the master branch
   pull_request:
     branches: [ master ]
-  # Trigger after merge to master
-  push:
-    branches:
-      - master
 
 env:
   ENV_FILE: .env
@@ -123,17 +119,6 @@ jobs:
     outputs:
       SHA: ${{ steps.sha.outputs.SHA }}
 #--------------------------------------------------------------------------------------------------
-  merge-branch:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: everlytic/branch-merge@1.1.2
-        with:
-          github_token: ${{ github.token }}
-          source_ref: ${{ github.ref }}
-          target_branch: 'master'
-          commit_message_template: '[Automated] Merged {source_ref} into target {target_branch}'
-#--------------------------------------------------------------------------------------------------
   deploy-and-monitor:
     runs-on: ubuntu-latest
     needs: [ build-and-push, edit-kustomization ]
@@ -197,7 +182,7 @@ jobs:
 
       - name: Monitor E2E test
         run: |
-          kubectl wait --for=condition=complete --timeout=2500s job/testing-framework -n claudie-$GITHUB_SHA
+          kubectl wait --for=condition=complete --timeout=3600s job/testing-framework -n claudie-$GITHUB_SHA
      
       - name: Delete temporary namespace
         run: |

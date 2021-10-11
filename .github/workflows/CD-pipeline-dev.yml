@@ -1,9 +1,9 @@
 name: CD pipeline for platform - dev
 on:
-  # Trigger after merge to master
-  push:
-    branches:
-      - master
+  # Run after CI
+  workflow_run:
+    workflows: [ "CI pipeline for platform" ] 
+    types: [ completed ]
   # Manual trigger    
   workflow_dispatch:
 
