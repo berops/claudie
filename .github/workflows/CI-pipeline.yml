@@ -131,7 +131,7 @@ jobs:
         with:
           github_token: ${{ github.token }}
           source_ref: master
-          target_branch: '${{ github.ref }}'
+          target_branch: ${{ github.ref }}
           commit_message_template: '[Automated] Merged {source_ref} into target {target_branch}'
 #--------------------------------------------------------------------------------------------------
   deploy-and-monitor:
