@@ -28,7 +28,6 @@ jobs:
           for i in "$(git diff  --name-only origin/master..HEAD)"
           do
             for SERVICE in in "${SERVICES[@]}"; do
-              #if [[ $i == *"services/$SERVICE"* ]]; then
               arr+=($SERVICE)
               echo "Detected change in $SERVICE"
             fi
