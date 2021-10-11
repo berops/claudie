@@ -124,8 +124,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Merge development -> staging
-        uses: devmasx/merge-branch@v1.4.0
+      - name: Merge with master branch
+        uses: devmasx/merge-branch@1.4.0
         with:
           type: now
           from_branch: master
