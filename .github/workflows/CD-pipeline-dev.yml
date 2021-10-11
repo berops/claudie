@@ -1,6 +1,6 @@
 name: CD pipeline for platform - dev
 on:
-  # Run after merge to master
+  # Trigger after merge to master
   push:
     branches:
       - master
