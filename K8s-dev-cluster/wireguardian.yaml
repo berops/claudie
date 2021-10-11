@@ -17,6 +17,7 @@ spec:
       containers:
       - name: wireguardian
         image: eu.gcr.io/platform-infrastructure-316112/platform/wireguardian
+        imagePullPolicy: Always
         resources:
           requests:
             cpu: 70m
