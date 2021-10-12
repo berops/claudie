@@ -5,18 +5,29 @@ on:
   # Triggers the workflow on push or pull request events but only for the master branch
   pull_request:
     branches: [ master ]
-  # Run after merge to master
-  push:
-    branches:
-      - master
 
 env:
   ENV_FILE: .env
   SERVICES: context-box scheduler builder terraformer wireguardian kube-eleven testing-framework
 
 jobs:
+#--------------------------------------------------------------------------------------------------
+  merge-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Merge with master branch
+        uses: devmasx/merge-branch@1.4.0
+        with:
+          type: now
+          from_branch: master
+          target_branch: ${{ github.head_ref }}
+          github_token: ${{ github.token }}
+#--------------------------------------------------------------------------------------------------
   build-and-push:
     runs-on: ubuntu-latest
+    needs: merge-branch
     steps:
       - uses: actions/checkout@v2
 
@@ -82,7 +93,7 @@ jobs:
 #--------------------------------------------------------------------------------------------------
   edit-kustomization:
     runs-on: ubuntu-latest
-    needs: build-and-push
+    needs: [build-and-push, merge-branch]
     if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' }}
     steps:
       - uses: actions/checkout@v2
@@ -122,19 +133,6 @@ jobs:
           echo "::set-output name=SHA::$sha_new"
     outputs:
       SHA: ${{ steps.sha.outputs.SHA }}
-#--------------------------------------------------------------------------------------------------
-  merge-branch:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Merge with master branch
-        uses: devmasx/merge-branch@1.4.0
-        with:
-          type: now
-          from_branch: master
-          target_branch: ${{ github.head_ref }}
-          github_token: ${{ github.token }}
 #--------------------------------------------------------------------------------------------------
   deploy-and-monitor:
     runs-on: ubuntu-latest
