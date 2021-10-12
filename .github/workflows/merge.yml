@@ -1,0 +1,22 @@
+name: merge github action
+on:
+  # Manual trigger
+  workflow_dispatch:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  merge-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Merge with master branch
+        if: ${{ github.head_ref }} != master
+        uses: devmasx/merge-branch@1.4.0
+        with:
+          type: now
+          from_branch: master
+          target_branch: ${{ github.head_ref }}
+          github_token: ${{ github.token }}
