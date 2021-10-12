@@ -12,8 +12,6 @@ import (
 	"os/signal"
 	"path/filepath"
 
-	"github.com/rs/zerolog/log"
-
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/utils"
@@ -21,6 +19,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
+
+var log = utils.InitLog("kubeEleven", "GOLANG_LOG")
 
 type server struct{}
 
@@ -145,9 +145,6 @@ func saveKubeconfig() (string, error) {
 }
 
 func main() {
-	// intialize logging framework
-	utils.InitLog("kubeEleven")
-
 	// Set KubeEleven port
 	kubeElevenPort := os.Getenv("KUBE_ELEVEN_PORT")
 	if kubeElevenPort == "" {

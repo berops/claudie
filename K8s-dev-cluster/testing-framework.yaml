@@ -19,4 +19,9 @@ spec:
                 configMapKeyRef:
                   name: urls
                   key: CONTEXT_BOX_HOSTNAME
+            - name: GOLANG_LOG
+              valueFrom:
+                configMapKeyRef:
+                  name: urls
+                  key: GOLANG_LOG
       restartPolicy: Never

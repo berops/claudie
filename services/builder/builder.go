@@ -21,10 +21,11 @@ import (
 	terraformer "github.com/Berops/platform/services/terraformer/client"
 	wireguardian "github.com/Berops/platform/services/wireguardian/client"
 	"github.com/Berops/platform/urls"
-	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 )
+
+var log = utils.InitLog("builder", "GOLANG_LOG")
 
 type nodesToDelete struct {
 	masterCount uint32
@@ -406,9 +407,6 @@ func deleteEtcd(cluster *pb.Cluster, etcdToDelete []string) error {
 }
 
 func main() {
-	// intialize logging framework
-	utils.InitLog("builder")
-
 	// Create connection to Context-box
 	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
 	if err != nil {

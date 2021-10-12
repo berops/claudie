@@ -42,6 +42,11 @@ spec:
               name: urls
               key: CONTEXT_BOX_PORT
          # No hostname needed
+        - name: GOLANG_LOG
+          valueFrom:
+            configMapKeyRef:
+              name: urls
+              key: GOLANG_LOG
         ports:
         - containerPort: 50055
         readinessProbe:

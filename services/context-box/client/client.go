@@ -4,17 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/utils"
 )
 
-func init() {
-	// intialize logging framework
-	utils.InitLog("context-box")
-}
+var log = utils.InitLog("context-box", "GOLANG_LOG")
 
 // SaveConfigFrontEnd calls Content-box gRPC server and saves configuration to the mongoDB database
 // A new config file with Id will be created if ID is empty

@@ -4,8 +4,6 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/rs/zerolog/log"
-
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/urls"
 	"github.com/stretchr/testify/require"

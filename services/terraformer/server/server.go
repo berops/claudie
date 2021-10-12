@@ -8,8 +8,6 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/rs/zerolog/log"
-
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/utils"
@@ -17,6 +15,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
+
+var log = utils.InitLog("terraformer", "GOLANG_LOG")
 
 type server struct{}
 
@@ -43,9 +43,6 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 }
 
 func main() {
-	// intialize logging framework
-	utils.InitLog("terraformer")
-
 	// Set the context-box port
 	terraformerPort := os.Getenv("TERRAFORMER_PORT")
 	if terraformerPort == "" {

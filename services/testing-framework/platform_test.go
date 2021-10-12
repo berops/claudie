@@ -13,8 +13,6 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/rs/zerolog/log"
-
 	"github.com/stretchr/testify/require"
 )
 
@@ -23,10 +21,7 @@ const (
 	maxTimeout = 120 //checking each 30s, so max allowed time for operation to finish is maxTimeout * 30 [seconds]
 )
 
-func init() {
-	// intialize logging framework
-	utils.InitLog("testingframework")
-}
+var log = utils.InitLog("terraformer", "GOLANG_LOG")
 
 // ClientConnection will return new client connection to Context-box
 func ClientConnection() pb.ContextBoxServiceClient {

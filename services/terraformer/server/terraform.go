@@ -10,8 +10,6 @@ import (
 	"sort"
 	"text/template"
 
-	"github.com/rs/zerolog/log"
-
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/utils"
 )

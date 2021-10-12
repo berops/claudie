@@ -12,8 +12,6 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/rs/zerolog/log"
-
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/utils"
@@ -22,6 +20,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
+
+var log = utils.InitLog("wireguardian", "GOLANG_LOG")
 
 type server struct{}
 
@@ -141,9 +141,6 @@ func runAnsible(cluster *pb.Cluster) error {
 }
 
 func main() {
-	// intialize logging framework
-	utils.InitLog("wireguardian")
-
 	// Set Wireguardian port
 	wireguardianPort := os.Getenv("WIREGUARDIAN_PORT")
 	if wireguardianPort == "" {

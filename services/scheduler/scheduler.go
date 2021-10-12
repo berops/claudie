@@ -14,8 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rs/zerolog/log"
-
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
 	cbox "github.com/Berops/platform/services/context-box/client"
@@ -27,6 +25,8 @@ import (
 	"google.golang.org/grpc"
 	"gopkg.in/yaml.v3"
 )
+
+var log = utils.InitLog("scheduler", "GOLANG_LOG")
 
 ////////////////////YAML STRUCT//////////////////////////////////////////////////
 
@@ -263,9 +263,6 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 }
 
 func main() {
-	// intialize logging framework
-	utils.InitLog("scheduler")
-
 	// Create connection to Context-box
 	log.Info().Msgf("Dial Context-box: %s", urls.ContextBoxURL)
 	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())

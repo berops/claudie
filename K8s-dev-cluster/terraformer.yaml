@@ -32,6 +32,11 @@ spec:
               name: urls
               key: TERRAFORMER_PORT
          # No hostname needed
+        - name: GOLANG_LOG
+          valueFrom:
+            configMapKeyRef:
+              name: urls
+              key: GOLANG_LOG
         ports:
         - containerPort: 50052
         readinessProbe:
