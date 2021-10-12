@@ -5,6 +5,10 @@ on:
   # Triggers the workflow on push or pull request events but only for the master branch
   pull_request:
     branches: [ master ]
+  # Run after merge to master
+  push:
+    branches:
+      - master
 
 env:
   ENV_FILE: .env
@@ -118,6 +122,19 @@ jobs:
           echo "::set-output name=SHA::$sha_new"
     outputs:
       SHA: ${{ steps.sha.outputs.SHA }}
+#--------------------------------------------------------------------------------------------------
+  merge-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Merge with master branch
+        uses: devmasx/merge-branch@1.4.0
+        with:
+          type: now
+          from_branch: master
+          target_branch: ${{ github.head_ref }}
+          github_token: ${{ github.token }}
 #--------------------------------------------------------------------------------------------------
   deploy-and-monitor:
     runs-on: ubuntu-latest
