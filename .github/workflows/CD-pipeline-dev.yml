@@ -7,6 +7,10 @@ on:
   # Manual trigger    
   workflow_dispatch:
 
+env:
+  ENV_FILE: .env
+  SERVICES: context-box scheduler builder terraformer wireguardian kube-eleven testing-framework
+
 jobs:
   deploy-and-monitor:
     runs-on: ubuntu-latest
