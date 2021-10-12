@@ -16,6 +16,7 @@ spec:
     spec:
       containers:
       - name: builder
+        imagePullPolicy: Always
         image: eu.gcr.io/platform-infrastructure-316112/platform/builder
         resources:
           requests:
