@@ -74,7 +74,7 @@ func TestSaveConfigFrontEnd(t *testing.T) {
 	}
 
 	_, cfgErr := SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
-		Config: makePbConfig("TestConfig24", manifest, ""),
+		Config: makePbConfig("Sample config name", manifest, ""),
 	})
 	if cfgErr != nil {
 		log.Fatal().Msgf("Error saving FrontEnd configuration to DB connection: %v", cfgErr)
@@ -102,7 +102,7 @@ func TestSaveConfigScheduler(t *testing.T) {
 
 func TestDeleteConfig(t *testing.T) {
 	c, cc := ClientConnection()
-	configID := "6126737f4f9bcdabaa336da4"
+	configID := "61670534f7a29e5c0a7d7c26" // Put desired config ID here
 	delErr := DeleteConfig(c, configID)
 	if delErr != nil {
 		log.Fatal().Msgf("Error deleting config %s %v", configID, delErr)
@@ -112,7 +112,7 @@ func TestDeleteConfig(t *testing.T) {
 
 func TestPrintConfig(t *testing.T) {
 	c, cc := ClientConnection()
-	_, err := PrintConfig(c, "6126737f4f9bcdabaa336da4")
+	_, err := PrintConfig(c, "61670534f7a29e5c0a7d7c26") // Put desired config ID here
 	if err != nil {
 		log.Fatal().Msgf("Config not found: %v", err)
 	}
