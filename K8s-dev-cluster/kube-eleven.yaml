@@ -31,6 +31,11 @@ spec:
               name: urls
               key: KUBE_ELEVEN_PORT
         # No hostname needed
+        - name: GOLANG_LOG
+          valueFrom:
+            configMapKeyRef:
+              name: urls
+              key: GOLANG_LOG
         ports:
         - containerPort: 50054
         readinessProbe:

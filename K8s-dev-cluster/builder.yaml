@@ -66,6 +66,11 @@ spec:
             configMapKeyRef:
               name: urls
               key: KUBE_ELEVEN_HOSTNAME
+        - name: GOLANG_LOG
+          valueFrom:
+            configMapKeyRef:
+              name: urls
+              key: GOLANG_LOG
         readinessProbe:
           httpGet:
             path: /ready

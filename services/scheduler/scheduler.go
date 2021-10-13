@@ -14,14 +14,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rs/zerolog/log"
-
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
 	cbox "github.com/Berops/platform/services/context-box/client"
 	"github.com/Berops/platform/urls"
 	"github.com/Berops/platform/utils"
 	"github.com/Berops/platform/worker"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -263,8 +262,8 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 }
 
 func main() {
-	// intialize logging framework
-	utils.InitLog("scheduler")
+	// initialize logger
+	utils.InitLog("scheduler", "GOLANG_LOG")
 
 	// Create connection to Context-box
 	log.Info().Msgf("Dial Context-box: %s", urls.ContextBoxURL)

@@ -12,11 +12,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/rs/zerolog/log"
-
 	terraformer "github.com/Berops/platform/services/terraformer/client"
 	"github.com/Berops/platform/utils"
 	"github.com/Berops/platform/worker"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/Berops/platform/healthcheck"
@@ -529,8 +528,8 @@ func configChecker() error {
 }
 
 func main() {
-	// intialize logging framework
-	utils.InitLog("context-box")
+	// initialize logger
+	utils.InitLog("context-box", "GOLANG_LOG")
 
 	// Connect to MongoDB
 	client, err := mongo.NewClient(options.Client().ApplyURI(urls.DatabaseURL)) //client represents connection object do db
