@@ -4,16 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rs/zerolog/log"
-
 	"github.com/Berops/platform/proto/pb"
-	"github.com/Berops/platform/utils"
+	"github.com/rs/zerolog/log"
 )
-
-func init() {
-	// intialize logging framework
-	utils.InitLog("terraformer")
-}
 
 // BuildInfrastructure uses TerraformServiceClient to build/deploy the infrastructure
 func BuildInfrastructure(c pb.TerraformerServiceClient, req *pb.BuildInfrastructureRequest) (*pb.BuildInfrastructureResponse, error) {

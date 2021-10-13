@@ -3,10 +3,9 @@ package terraformer
 import (
 	"testing"
 
-	"github.com/rs/zerolog/log"
-
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/urls"
+	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 )

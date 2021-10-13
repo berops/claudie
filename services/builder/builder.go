@@ -14,6 +14,7 @@ import (
 	kubeEleven "github.com/Berops/platform/services/kube-eleven/client"
 	"github.com/Berops/platform/utils"
 	"github.com/Berops/platform/worker"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/Berops/platform/proto/pb"
@@ -21,7 +22,6 @@ import (
 	terraformer "github.com/Berops/platform/services/terraformer/client"
 	wireguardian "github.com/Berops/platform/services/wireguardian/client"
 	"github.com/Berops/platform/urls"
-	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 )
@@ -406,8 +406,8 @@ func deleteEtcd(cluster *pb.Cluster, etcdToDelete []string) error {
 }
 
 func main() {
-	// intialize logging framework
-	utils.InitLog("builder")
+	// initialize logger
+	utils.InitLog("builder", "GOLANG_LOG")
 
 	// Create connection to Context-box
 	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())

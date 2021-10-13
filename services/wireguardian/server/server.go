@@ -12,11 +12,10 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/rs/zerolog/log"
-
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/utils"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 
 	"google.golang.org/grpc"
@@ -141,8 +140,8 @@ func runAnsible(cluster *pb.Cluster) error {
 }
 
 func main() {
-	// intialize logging framework
-	utils.InitLog("wireguardian")
+	// initialize logger
+	utils.InitLog("wireguardian", "GOLANG_LOG")
 
 	// Set Wireguardian port
 	wireguardianPort := os.Getenv("WIREGUARDIAN_PORT")
