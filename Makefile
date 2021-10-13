@@ -34,4 +34,4 @@ dockerDown:
 	docker-compose --env-file ./K8s-dev-cluster/.env down
 
 dockerBuild:
-	docker-compose --env-file ./K8s-dev-cluster/.env build --parallel
+	docker-compose --env-file ./K8s-dev-cluster/.env build
