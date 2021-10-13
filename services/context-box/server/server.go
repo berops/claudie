@@ -15,6 +15,7 @@ import (
 	terraformer "github.com/Berops/platform/services/terraformer/client"
 	"github.com/Berops/platform/utils"
 	"github.com/Berops/platform/worker"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/Berops/platform/healthcheck"
@@ -30,8 +31,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
-
-var log = utils.InitLog("context-box", "GOLANG_LOG")
 
 type server struct{}
 
@@ -529,6 +528,9 @@ func configChecker() error {
 }
 
 func main() {
+	// initialize logger
+	utils.InitLog("context-box", "GOLANG_LOG")
+
 	// Connect to MongoDB
 	client, err := mongo.NewClient(options.Client().ApplyURI(urls.DatabaseURL)) //client represents connection object do db
 	if err != nil {

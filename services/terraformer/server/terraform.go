@@ -12,6 +12,7 @@ import (
 
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/utils"
+	"github.com/rs/zerolog/log"
 )
 
 const outputPath string = "services/terraformer/server/terraform"

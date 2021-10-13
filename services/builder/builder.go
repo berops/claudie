@@ -14,6 +14,7 @@ import (
 	kubeEleven "github.com/Berops/platform/services/kube-eleven/client"
 	"github.com/Berops/platform/utils"
 	"github.com/Berops/platform/worker"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/Berops/platform/proto/pb"
@@ -24,8 +25,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 )
-
-var log = utils.InitLog("builder", "GOLANG_LOG")
 
 type nodesToDelete struct {
 	masterCount uint32
@@ -407,6 +406,9 @@ func deleteEtcd(cluster *pb.Cluster, etcdToDelete []string) error {
 }
 
 func main() {
+	// initialize logger
+	utils.InitLog("builder", "GOLANG_LOG")
+
 	// Create connection to Context-box
 	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
 	if err != nil {

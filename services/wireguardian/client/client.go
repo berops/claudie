@@ -4,10 +4,8 @@ import (
 	"context"
 
 	"github.com/Berops/platform/proto/pb"
-	"github.com/Berops/platform/utils"
+	"github.com/rs/zerolog/log"
 )
-
-var log = utils.InitLog("wireguardian", "GOLANG_LOG")
 
 // BuildVPN simply calls WireGuardian service client to build a VPN
 func BuildVPN(c pb.WireguardianServiceClient, req *pb.BuildVPNRequest) (*pb.BuildVPNResponse, error) {

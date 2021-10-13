@@ -7,7 +7,7 @@ import (
 	"github.com/Berops/platform/proto/pb"
 	cbox "github.com/Berops/platform/services/context-box/client"
 	"github.com/Berops/platform/urls"
-	"github.com/Berops/platform/utils"
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 
 	"io/ioutil"
@@ -20,8 +20,6 @@ const (
 	testDir    = "tests"
 	maxTimeout = 120 //checking each 30s, so max allowed time for operation to finish is maxTimeout * 30 [seconds]
 )
-
-var log = utils.InitLog("terraformer", "GOLANG_LOG")
 
 // ClientConnection will return new client connection to Context-box
 func ClientConnection() pb.ContextBoxServiceClient {

@@ -5,10 +5,8 @@ import (
 	"fmt"
 
 	"github.com/Berops/platform/proto/pb"
-	"github.com/Berops/platform/utils"
+	"github.com/rs/zerolog/log"
 )
-
-var log = utils.InitLog("terraformer", "GOLANG_LOG")
 
 // BuildInfrastructure uses TerraformServiceClient to build/deploy the infrastructure
 func BuildInfrastructure(c pb.TerraformerServiceClient, req *pb.BuildInfrastructureRequest) (*pb.BuildInfrastructureResponse, error) {
