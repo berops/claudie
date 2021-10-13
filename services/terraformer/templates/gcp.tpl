@@ -29,8 +29,8 @@ resource "google_compute_firewall" "firewall" {
 
   allow {
       protocol = "TCP"
-      ports    = ["22","6443","2379-2380","10250-10252","30000-32767"]
-    }
+      ports    = ["22", "6443"]
+  }
 
   allow {
       protocol = "icmp"

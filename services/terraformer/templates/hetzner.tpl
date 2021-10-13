@@ -2,8 +2,50 @@ terraform {
   required_providers {
     hcloud = {
       source = "hetznercloud/hcloud"
-      version = "1.23.0"
+      version = "1.31.1"
     }
+  }
+}
+
+resource "hcloud_firewall" "defaultfirewall" {
+  name = "default-firewall"
+  rule {
+    direction = "in"
+    protocol  = "icmp"
+    source_ips = [
+      "0.0.0.0/0",
+      "::/0"
+    ]
+  }
+
+  rule {
+    direction = "in"
+    protocol  = "tcp"
+    port      = "22"
+    source_ips = [
+      "0.0.0.0/0",
+      "::/0"
+    ]
+  }
+
+  rule {
+    direction = "in"
+    protocol  = "tcp"
+    port      = "6443"
+    source_ips = [
+      "0.0.0.0/0",
+      "::/0"
+    ]
+  }
+
+  rule {
+    direction = "in"
+    protocol  = "udp"
+    port      = "51820"
+    source_ips = [
+      "0.0.0.0/0",
+      "::/0"
+    ]
   }
 }
 
@@ -24,6 +66,7 @@ resource "hcloud_server" "control_plane" {
   name        = "{{ .Cluster.Name }}-hetzner-control-${count.index + 1}"
   server_type = "{{ (index .Cluster.NodePools $index).Master.ServerType }}"
   image       = "{{ (index .Cluster.NodePools $index).Master.Image }}"
+  firewall_ids = [hcloud_firewall.defaultfirewall.id]
 
   ssh_keys = [
     hcloud_ssh_key.platform.id,
@@ -35,6 +78,7 @@ resource "hcloud_server" "compute_plane" {
   name        = "{{ .Cluster.Name}}-hetzner-compute-${count.index + 1}"
   server_type = "{{ (index .Cluster.NodePools $index).Worker.ServerType }}"
   image       = "{{ (index .Cluster.NodePools $index).Worker.Image }}"
+  firewall_ids = [hcloud_firewall.defaultfirewall.id]
 
   ssh_keys = [
     hcloud_ssh_key.platform.id,
