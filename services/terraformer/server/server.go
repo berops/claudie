@@ -46,13 +46,10 @@ func main() {
 	utils.InitLog("terraformer", "GOLANG_LOG")
 
 	// Set the context-box port
-	terraformerPort := os.Getenv("TERRAFORMER_PORT")
-	if terraformerPort == "" {
-		terraformerPort = "50052" // Default value
-	}
+	terraformerPort := utils.GetenvOr("TERRAFORMER_PORT", "50052")
 
 	// Start Terraformer Service
-	trfAddr := "0.0.0.0:" + terraformerPort
+	trfAddr := net.JoinHostPort("0.0.0.0", terraformerPort)
 	lis, err := net.Listen("tcp", trfAddr)
 	if err != nil {
 		log.Fatal().Msgf("Failed to listen on %v", err)
@@ -68,28 +65,24 @@ func main() {
 
 	g, _ := errgroup.WithContext(context.Background())
 
-	{
-		g.Go(func() error {
-			ch := make(chan os.Signal, 1)
-			signal.Notify(ch, os.Interrupt)
-			defer signal.Stop(ch)
-			<-ch
+	g.Go(func() error {
+		ch := make(chan os.Signal, 1)
+		signal.Notify(ch, os.Interrupt)
+		defer signal.Stop(ch)
+		<-ch
 
-			signal.Stop(ch)
-			s.GracefulStop()
+		signal.Stop(ch)
+		s.GracefulStop()
 
-			return errors.New("interrupt signal")
-		})
-	}
-	{
-		g.Go(func() error {
-			// s.Serve() will create a service goroutine for each connection
-			if err := s.Serve(lis); err != nil {
-				return fmt.Errorf("failed to serve: %v", err)
-			}
-			return nil
-		})
-	}
+		return errors.New("interrupt signal")
+	})
+	g.Go(func() error {
+		// s.Serve() will create a service goroutine for each connection
+		if err := s.Serve(lis); err != nil {
+			return fmt.Errorf("failed to serve: %v", err)
+		}
+		return nil
+	})
 
 	log.Info().Msgf("Stopping Terraformer: %v", g.Wait())
 }

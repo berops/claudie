@@ -549,13 +549,10 @@ func main() {
 		}
 	}()
 	// Set the context-box port
-	contextboxPort := os.Getenv("CONTEXT_BOX_PORT")
-	if contextboxPort == "" {
-		contextboxPort = "50055" // Default value
-	}
+	contextboxPort := utils.GetenvOr("CONTEXT_BOX_PORT", "50055")
 
 	// Start ContextBox Service
-	contextBoxAddr := "0.0.0.0:" + contextboxPort
+	contextBoxAddr := net.JoinHostPort("0.0.0.0", contextboxPort)
 	lis, err := net.Listen("tcp", contextBoxAddr)
 	if err != nil {
 		log.Fatal().Msgf("Failed to listen on contextbox addr %s : %v", contextBoxAddr, err)
@@ -572,33 +569,27 @@ func main() {
 	g, ctx := errgroup.WithContext(context.Background())
 	w := worker.NewWorker(ctx, 10*time.Second, configChecker, worker.ErrorLogger)
 
-	{
-		g.Go(func() error {
-			ch := make(chan os.Signal, 1)
-			signal.Notify(ch, os.Interrupt)
-			<-ch
+	g.Go(func() error {
+		ch := make(chan os.Signal, 1)
+		signal.Notify(ch, os.Interrupt)
+		<-ch
 
-			signal.Stop(ch)
-			s.GracefulStop()
+		signal.Stop(ch)
+		s.GracefulStop()
 
-			return errors.New("interrupt signal")
-		})
-	}
-	{
-		g.Go(func() error {
-			// s.Serve() will create a service goroutine for each connection
-			if err := s.Serve(lis); err != nil {
-				return fmt.Errorf("failed to serve: %v", err)
-			}
-			return nil
-		})
-	}
-	{
-		g.Go(func() error {
-			w.Run()
-			return nil
-		})
-	}
+		return errors.New("interrupt signal")
+	})
+	g.Go(func() error {
+		// s.Serve() will create a service goroutine for each connection
+		if err := s.Serve(lis); err != nil {
+			return fmt.Errorf("failed to serve: %v", err)
+		}
+		return nil
+	})
+	g.Go(func() error {
+		w.Run()
+		return nil
+	})
 
 	log.Info().Msgf("Stopping Context-Box: %v", g.Wait())
 }

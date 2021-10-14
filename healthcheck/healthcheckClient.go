@@ -2,6 +2,7 @@ package healthcheck
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 )
 
@@ -28,7 +29,7 @@ func (s *ClientHealthChecker) StartProbes() {
 	http.HandleFunc("/ready", s.ready)
 	// Port close to other services
 	go func() {
-		serverErr := http.ListenAndServe("0.0.0.0:"+s.portForProbes, nil)
+		serverErr := http.ListenAndServe(net.JoinHostPort("0.0.0.0", s.portForProbes), nil)
 		if serverErr != nil {
 			fmt.Println(serverErr)
 		}

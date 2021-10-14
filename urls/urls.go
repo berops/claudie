@@ -1,36 +1,19 @@
 package urls
 
-import "os"
-
-//Hostnames and ports on what services are listening
-
-var (
-	//TerraformerURL is a listening URL for Terraformer module
-	TerraformerURL = os.Getenv("TERRAFORMER_HOSTNAME") + ":" + os.Getenv("TERRAFORMER_PORT")
-	//WireguardianURL is a listening URL for Wireguardian module
-	WireguardianURL = os.Getenv("WIREGUARDIAN_HOSTNAME") + ":" + os.Getenv("WIREGUARDIAN_PORT")
-	//KubeElevenURL is a listening URL for KubeEleven module
-	KubeElevenURL = os.Getenv("KUBE_ELEVEN_HOSTNAME") + ":" + os.Getenv("KUBE_ELEVEN_PORT")
-	//ContextBoxURL is a listening URL for ContextBox module
-	ContextBoxURL = os.Getenv("CONTEXT_BOX_HOSTNAME") + ":" + os.Getenv("CONTEXT_BOX_PORT")
-	//DatabaseURL is a listening URL for Database
-	DatabaseURL = os.Getenv("DATABASE_HOSTNAME") + ":" + os.Getenv("DATABASE_PORT")
+import (
+	"github.com/Berops/platform/utils"
 )
 
-func init() {
-	if TerraformerURL == ":" {
-		TerraformerURL = "localhost:50052"
-	}
-	if WireguardianURL == ":" {
-		WireguardianURL = "localhost:50053"
-	}
-	if KubeElevenURL == ":" {
-		KubeElevenURL = "localhost:50054"
-	}
-	if ContextBoxURL == ":" {
-		ContextBoxURL = "localhost:50055"
-	}
-	if DatabaseURL == ":" {
-		DatabaseURL = "mongodb://localhost:27017"
-	}
-}
+// Hostnames and ports on which services are listening
+var (
+	//TerraformerURL is a listening URL for Terraformer module
+	TerraformerURL = utils.GetenvOr("TERRAFORMER_HOSTNAME", "localhost") + ":" + utils.GetenvOr("TERRAFORMER_PORT", "50052")
+	//WireguardianURL is a listening URL for Wireguardian module
+	WireguardianURL = utils.GetenvOr("WIREGUARDIAN_HOSTNAME", "localhost") + ":" + utils.GetenvOr("WIREGUARDIAN_PORT", "50053")
+	//KubeElevenURL is a listening URL for KubeEleven module
+	KubeElevenURL = utils.GetenvOr("KUBE_ELEVEN_HOSTNAME", "localhost") + ":" + utils.GetenvOr("KUBE_ELEVEN_PORT", "50054")
+	//ContextBoxURL is a listening URL for ContextBox module
+	ContextBoxURL = utils.GetenvOr("CONTEXT_BOX_HOSTNAME", "localhost") + ":" + utils.GetenvOr("CONTEXT_BOX_PORT", "50055")
+	//DatabaseURL is a listening URL for Database
+	DatabaseURL = utils.GetenvOr("DATABASE_HOSTNAME", "mongodb://localhost") + ":" + utils.GetenvOr("DATABASE_PORT", "27017")
+)

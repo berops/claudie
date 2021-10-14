@@ -148,11 +148,8 @@ func main() {
 	utils.InitLog("kube-eleven", "GOLANG_LOG")
 
 	// Set KubeEleven port
-	kubeElevenPort := os.Getenv("KUBE_ELEVEN_PORT")
-	if kubeElevenPort == "" {
-		kubeElevenPort = "50054" // Default value
-	}
-	kubeElevenAddr := "0.0.0.0:" + kubeElevenPort
+	kubeElevenPort := utils.GetenvOr("KUBE_ELEVEN_PORT", "50054")
+	kubeElevenAddr := net.JoinHostPort("0.0.0.0", kubeElevenPort)
 	lis, err := net.Listen("tcp", kubeElevenAddr)
 	if err != nil {
 		log.Fatal().Msgf("Failed to listen on %s : %v", kubeElevenAddr, err)
@@ -168,27 +165,23 @@ func main() {
 
 	g, _ := errgroup.WithContext(context.Background())
 
-	{
-		g.Go(func() error {
-			ch := make(chan os.Signal, 1)
-			signal.Notify(ch, os.Interrupt)
-			<-ch
+	g.Go(func() error {
+		ch := make(chan os.Signal, 1)
+		signal.Notify(ch, os.Interrupt)
+		<-ch
 
-			signal.Stop(ch)
-			s.GracefulStop()
+		signal.Stop(ch)
+		s.GracefulStop()
 
-			return errors.New("interrupt signal")
-		})
-	}
-	{
-		g.Go(func() error {
-			// s.Serve() will create a service goroutine for each connection
-			if err := s.Serve(lis); err != nil {
-				return fmt.Errorf("failed to serve: %v", err)
-			}
-			return nil
-		})
-	}
+		return errors.New("interrupt signal")
+	})
+	g.Go(func() error {
+		// s.Serve() will create a service goroutine for each connection
+		if err := s.Serve(lis); err != nil {
+			return fmt.Errorf("failed to serve: %v", err)
+		}
+		return nil
+	})
 
 	log.Info().Msgf("Stopping Kube-Eleven: %s", g.Wait())
 }
