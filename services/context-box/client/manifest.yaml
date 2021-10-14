@@ -1,4 +1,4 @@
-name: TestProjectNameNumberTwo
+name: SampleConfigName
 
 clusters: 
   - name: test-cluster-name1
