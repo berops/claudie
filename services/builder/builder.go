@@ -26,6 +26,8 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+const defaultBuilderPort = 50051
+
 type nodesToDelete struct {
 	masterCount uint32
 	workerCount uint32
@@ -35,11 +37,20 @@ type countsToDelete struct {
 	nodes map[string]*nodesToDelete //[provider]nodes
 }
 
+func grpcDialWithInsecure(serviceName string, serviceURL string) (*grpc.ClientConn, error) {
+	cc, err := grpc.Dial(serviceURL, grpc.WithInsecure())
+	if err != nil {
+		return nil, fmt.Errorf("Could not connect to %s: %v", serviceName, err)
+	} else {
+		return cc, err
+	}
+}
+
 func callTerraformer(config *pb.Config) (*pb.Config, error) {
 	// Create connection to Terraformer
-	cc, err := grpc.Dial(urls.TerraformerURL, grpc.WithInsecure())
+	cc, err := grpcDialWithInsecure("terraformer", urls.TerraformerURL)
 	if err != nil {
-		return nil, fmt.Errorf("could not connect to Terraformer: %v", err)
+		return nil, err
 	}
 	defer func() { utils.CloseClientConnection(cc) }()
 	// Creating the client
@@ -53,9 +64,9 @@ func callTerraformer(config *pb.Config) (*pb.Config, error) {
 }
 
 func callWireguardian(config *pb.Config) (*pb.Config, error) {
-	cc, err := grpc.Dial(urls.WireguardianURL, grpc.WithInsecure())
+	cc, err := grpcDialWithInsecure("wireguardian", urls.WireguardianURL)
 	if err != nil {
-		return nil, fmt.Errorf("could not connect to Wireguardian: %v", err)
+		return nil, err
 	}
 	defer func() { utils.CloseClientConnection(cc) }()
 	// Creating the client
@@ -69,9 +80,9 @@ func callWireguardian(config *pb.Config) (*pb.Config, error) {
 }
 
 func callKubeEleven(config *pb.Config) (*pb.Config, error) {
-	cc, err := grpc.Dial(urls.KubeElevenURL, grpc.WithInsecure())
+	cc, err := grpcDialWithInsecure("kubeEleven", urls.KubeElevenURL)
 	if err != nil {
-		return nil, fmt.Errorf("could not connect to KubeEleven: %v", err)
+		return nil, err
 	}
 	defer func() { utils.CloseClientConnection(cc) }()
 	// Creating the client
@@ -251,17 +262,14 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 func healthCheck() error {
 	//Check if Builder can connect to Terraformer/Wireguardian/Kube-eleven
 	//Connection to these services are crucial for Builder, without them, the builder is NOT Ready
-	_, err := grpc.Dial(urls.KubeElevenURL, grpc.WithInsecure())
-	if err != nil {
-		return fmt.Errorf("could not connect to Kube-eleven: %v", err)
+	if _, err := grpcDialWithInsecure("kubeEleven", urls.KubeElevenURL); err != nil {
+		return err
 	}
-	_, err = grpc.Dial(urls.TerraformerURL, grpc.WithInsecure())
-	if err != nil {
-		return fmt.Errorf("could not connect to Terraformer: %v", err)
+	if _, err := grpcDialWithInsecure("terraformer", urls.TerraformerURL); err != nil {
+		return err
 	}
-	_, err = grpc.Dial(urls.WireguardianURL, grpc.WithInsecure())
-	if err != nil {
-		return fmt.Errorf("could not connect to Wireguardian: %v", err)
+	if _, err := grpcDialWithInsecure("wireguardian", urls.WireguardianURL); err != nil {
+		return err
 	}
 	return nil
 }
@@ -322,13 +330,12 @@ func deleteNodes(config *pb.Config, toDelete map[string]*countsToDelete) (*pb.Co
 }
 
 func remove(slice []*pb.NodeInfo, value string) []*pb.NodeInfo {
-	var pos int
-	for pos = 0; pos < len(slice); pos++ {
-		if slice[pos].GetNodeName() == value {
-			break
+	for idx, v := range slice {
+		if v.GetNodeName() == value {
+			return append(slice[:idx], slice[idx+1:]...)
 		}
 	}
-	return append(slice[:pos], slice[pos+1:]...)
+	return slice
 }
 
 // deleteNodesByName checks if there is any difference in nodes between a desired state cluster and a running cluster
@@ -410,7 +417,7 @@ func main() {
 	utils.InitLog("builder", "GOLANG_LOG")
 
 	// Create connection to Context-box
-	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
+	cc, err := grpcDialWithInsecure("context-box", urls.ContextBoxURL)
 	if err != nil {
 		log.Fatal().Msgf("Could not connect to Content-box: %v", err)
 	}
@@ -419,27 +426,24 @@ func main() {
 	c := pb.NewContextBoxServiceClient(cc)
 
 	// Initilize health probes
-	healthChecker := healthcheck.NewClientHealthChecker("50051", healthCheck)
+	healthChecker := healthcheck.NewClientHealthChecker(fmt.Sprint(defaultBuilderPort), healthCheck)
 	healthChecker.StartProbes()
 
 	g, ctx := errgroup.WithContext(context.Background())
 	w := worker.NewWorker(ctx, 5*time.Second, configProcessor(c), worker.ErrorLogger)
 
-	{
-		g.Go(func() error {
-			ch := make(chan os.Signal, 1)
-			signal.Notify(ch, os.Interrupt)
-			defer signal.Stop(ch)
-			<-ch
-			return errors.New("interrupt signal")
-		})
-	}
-	{
-		g.Go(func() error {
-			w.Run()
-			return nil
-		})
-	}
+	g.Go(func() error {
+		ch := make(chan os.Signal, 1)
+		signal.Notify(ch, os.Interrupt)
+		defer signal.Stop(ch)
+		<-ch
+		return errors.New("interrupt signal")
+	})
+
+	g.Go(func() error {
+		w.Run()
+		return nil
+	})
 
 	log.Info().Msgf("Stopping Builder: %v", g.Wait())
 }

@@ -27,6 +27,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const defaultSchedulerPort = 50056
+
 ////////////////////YAML STRUCT//////////////////////////////////////////////////
 
 // Manifest struct holding info on clusters
@@ -278,27 +280,24 @@ func main() {
 	c := pb.NewContextBoxServiceClient(cc)
 
 	// Initilize health probes
-	healthChecker := healthcheck.NewClientHealthChecker("50056", healthCheck)
+	healthChecker := healthcheck.NewClientHealthChecker(fmt.Sprint(defaultSchedulerPort), healthCheck)
 	healthChecker.StartProbes()
 
 	g, ctx := errgroup.WithContext(context.Background())
 	w := worker.NewWorker(ctx, 10*time.Second, configProcessor(c), worker.ErrorLogger)
 
-	{
-		g.Go(func() error {
-			ch := make(chan os.Signal, 1)
-			signal.Notify(ch, os.Interrupt)
-			defer signal.Stop(ch)
-			<-ch
-			return errors.New("interrupt signal")
-		})
-	}
-	{
-		g.Go(func() error {
-			w.Run()
-			return nil
-		})
-	}
+	g.Go(func() error {
+		ch := make(chan os.Signal, 1)
+		signal.Notify(ch, os.Interrupt)
+		defer signal.Stop(ch)
+		<-ch
+		return errors.New("interrupt signal")
+	})
+
+	g.Go(func() error {
+		w.Run()
+		return nil
+	})
 
 	log.Info().Msgf("Stopping Scheduler: %v", g.Wait())
 }

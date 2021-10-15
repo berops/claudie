@@ -23,7 +23,10 @@ import (
 
 type server struct{}
 
-const outputPath = "services/kube-eleven/server/"
+const (
+	outputPath            = "services/kube-eleven/server/"
+	defaultKubeElevenPort = 50054
+)
 
 type data struct {
 	APIEndpoint string
@@ -148,7 +151,7 @@ func main() {
 	utils.InitLog("kube-eleven", "GOLANG_LOG")
 
 	// Set KubeEleven port
-	kubeElevenPort := utils.GetenvOr("KUBE_ELEVEN_PORT", "50054")
+	kubeElevenPort := utils.GetenvOr("KUBE_ELEVEN_PORT", fmt.Sprint(defaultKubeElevenPort))
 	kubeElevenAddr := net.JoinHostPort("0.0.0.0", kubeElevenPort)
 	lis, err := net.Listen("tcp", kubeElevenAddr)
 	if err != nil {
@@ -160,7 +163,7 @@ func main() {
 	pb.RegisterKubeElevenServiceServer(s, &server{})
 
 	// Add health service to gRPC
-	healthService := healthcheck.NewServerHealthChecker("50054", "KUBE_ELEVEN_PORT")
+	healthService := healthcheck.NewServerHealthChecker(kubeElevenPort, "KUBE_ELEVEN_PORT")
 	grpc_health_v1.RegisterHealthServer(s, healthService)
 
 	g, _ := errgroup.WithContext(context.Background())
@@ -175,6 +178,7 @@ func main() {
 
 		return errors.New("interrupt signal")
 	})
+
 	g.Go(func() error {
 		// s.Serve() will create a service goroutine for each connection
 		if err := s.Serve(lis); err != nil {

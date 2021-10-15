@@ -26,10 +26,11 @@ import (
 type server struct{}
 
 const (
-	outputPath        = "services/wireguardian/server/Ansible"
-	inventoryFile     = "inventory.ini"
-	playbookFile      = "playbook.yml"
-	sslPrivateKeyFile = "private.pem"
+	outputPath              = "services/wireguardian/server/Ansible"
+	inventoryFile           = "inventory.ini"
+	playbookFile            = "playbook.yml"
+	sslPrivateKeyFile       = "private.pem"
+	defaultWireguardianPort = 50053
 )
 
 func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVPNResponse, error) {
@@ -150,7 +151,7 @@ func main() {
 	utils.InitLog("wireguardian", "GOLANG_LOG")
 
 	// Set Wireguardian port
-	wireguardianPort := utils.GetenvOr("WIREGUARDIAN_PORT", "50053")
+	wireguardianPort := utils.GetenvOr("WIREGUARDIAN_PORT", fmt.Sprint(defaultWireguardianPort))
 
 	serviceAddr := net.JoinHostPort("0.0.0.0", wireguardianPort)
 	lis, err := net.Listen("tcp", serviceAddr)
@@ -164,7 +165,7 @@ func main() {
 	pb.RegisterWireguardianServiceServer(s, &server{})
 
 	// Add health service to gRPC
-	healthService := healthcheck.NewServerHealthChecker("50053", "WIREGUARDIAN_PORT")
+	healthService := healthcheck.NewServerHealthChecker(wireguardianPort, "WIREGUARDIAN_PORT")
 	grpc_health_v1.RegisterHealthServer(s, healthService)
 
 	g, _ := errgroup.WithContext(context.Background())
@@ -180,6 +181,7 @@ func main() {
 
 		return errors.New("Interrupt signal")
 	})
+
 	g.Go(func() error {
 		// s.Serve() will create a service goroutine for each connection
 		if err := s.Serve(lis); err != nil {

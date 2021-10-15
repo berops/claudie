@@ -39,8 +39,9 @@ type queue struct {
 }
 
 const (
-	defaultBuilderTTL   = 360
-	defaultSchedulerTTL = 5
+	defaultContextBoxPort = 50055
+	defaultBuilderTTL     = 360
+	defaultSchedulerTTL   = 5
 )
 
 var (
@@ -549,7 +550,7 @@ func main() {
 		}
 	}()
 	// Set the context-box port
-	contextboxPort := utils.GetenvOr("CONTEXT_BOX_PORT", "50055")
+	contextboxPort := utils.GetenvOr("CONTEXT_BOX_PORT", fmt.Sprint(defaultContextBoxPort))
 
 	// Start ContextBox Service
 	contextBoxAddr := net.JoinHostPort("0.0.0.0", contextboxPort)
@@ -563,7 +564,7 @@ func main() {
 	pb.RegisterContextBoxServiceServer(s, &server{})
 
 	// Add health service to gRPC
-	healthService := healthcheck.NewServerHealthChecker("50055", "CONTEXT_BOX_PORT")
+	healthService := healthcheck.NewServerHealthChecker(contextboxPort, "CONTEXT_BOX_PORT")
 	grpc_health_v1.RegisterHealthServer(s, healthService)
 
 	g, ctx := errgroup.WithContext(context.Background())
@@ -579,6 +580,7 @@ func main() {
 
 		return errors.New("interrupt signal")
 	})
+
 	g.Go(func() error {
 		// s.Serve() will create a service goroutine for each connection
 		if err := s.Serve(lis); err != nil {
@@ -586,6 +588,7 @@ func main() {
 		}
 		return nil
 	})
+
 	g.Go(func() error {
 		w.Run()
 		return nil
