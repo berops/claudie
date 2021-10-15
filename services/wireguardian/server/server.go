@@ -179,13 +179,13 @@ func main() {
 		signal.Stop(ch)
 		s.GracefulStop()
 
-		return errors.New("Interrupt signal")
+		return errors.New("Wireguardian Interrupt signal")
 	})
 
 	g.Go(func() error {
 		// s.Serve() will create a service goroutine for each connection
 		if err := s.Serve(lis); err != nil {
-			return fmt.Errorf("failed to serve: %v", err)
+			return fmt.Errorf("Wireguardian failed to serve: %v", err)
 		}
 		return nil
 	})

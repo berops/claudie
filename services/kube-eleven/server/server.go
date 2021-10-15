@@ -176,16 +176,16 @@ func main() {
 		signal.Stop(ch)
 		s.GracefulStop()
 
-		return errors.New("interrupt signal")
+		return errors.New("KubeEleven interrupt signal")
 	})
 
 	g.Go(func() error {
 		// s.Serve() will create a service goroutine for each connection
 		if err := s.Serve(lis); err != nil {
-			return fmt.Errorf("failed to serve: %v", err)
+			return fmt.Errorf("KubeEleven failed to serve: %v", err)
 		}
 		return nil
 	})
 
-	log.Info().Msgf("Stopping Kube-Eleven: %s", g.Wait())
+	log.Info().Msgf("Stopping KubeEleven: %s", g.Wait())
 }

@@ -1,8 +1,8 @@
 package worker
 
-import "log"
+import "github.com/rs/zerolog/log"
 
 // ErrorLogger function defines a callback for handling errors
 func ErrorLogger(err error) {
-	log.Println(err)
+	log.Error().Err(err)
 }

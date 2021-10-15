@@ -268,7 +268,6 @@ func readOutput(data string) (jsonOut, error) {
 }
 
 // fillNodes gets ip addresses from a terraform output
-
 func fillNodes(mOld []*pb.NodeInfo, terraformOutput *jsonOut, nodepool *pb.NodePool) []*pb.NodeInfo {
 	var mNew []*pb.NodeInfo
 	// Create empty slices for node names
@@ -327,5 +326,5 @@ func existsInCluster(m []*pb.NodeInfo, ip string) (*pb.NodeInfo, error) {
 			return ips, nil
 		}
 	}
-	return nil, fmt.Errorf("ip does not exist")
+	return nil, fmt.Errorf("Ip address %v does not exist", ip)
 }

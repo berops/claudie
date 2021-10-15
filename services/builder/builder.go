@@ -21,8 +21,6 @@ import (
 	cbox "github.com/Berops/platform/services/context-box/client"
 	terraformer "github.com/Berops/platform/services/terraformer/client"
 	wireguardian "github.com/Berops/platform/services/wireguardian/client"
-	"github.com/Berops/platform/urls"
-	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -34,21 +32,12 @@ type nodesToDelete struct {
 }
 
 type countsToDelete struct {
-	nodes map[string]*nodesToDelete //[provider]nodes
-}
-
-func grpcDialWithInsecure(serviceName string, serviceURL string) (*grpc.ClientConn, error) {
-	cc, err := grpc.Dial(serviceURL, grpc.WithInsecure())
-	if err != nil {
-		return nil, fmt.Errorf("Could not connect to %s: %v", serviceName, err)
-	} else {
-		return cc, err
-	}
+	nodes map[string]*nodesToDelete // [provider]nodes
 }
 
 func callTerraformer(config *pb.Config) (*pb.Config, error) {
 	// Create connection to Terraformer
-	cc, err := grpcDialWithInsecure("terraformer", urls.TerraformerURL)
+	cc, err := utils.GrpcDialWithInsecure("terraformer", utils.TerraformerURL)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +53,7 @@ func callTerraformer(config *pb.Config) (*pb.Config, error) {
 }
 
 func callWireguardian(config *pb.Config) (*pb.Config, error) {
-	cc, err := grpcDialWithInsecure("wireguardian", urls.WireguardianURL)
+	cc, err := utils.GrpcDialWithInsecure("wireguardian", utils.WireguardianURL)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +69,7 @@ func callWireguardian(config *pb.Config) (*pb.Config, error) {
 }
 
 func callKubeEleven(config *pb.Config) (*pb.Config, error) {
-	cc, err := grpcDialWithInsecure("kubeEleven", urls.KubeElevenURL)
+	cc, err := utils.GrpcDialWithInsecure("kubeEleven", utils.KubeElevenURL)
 	if err != nil {
 		return nil, err
 	}
@@ -118,15 +107,15 @@ func diff(config *pb.Config) (*pb.Config, bool, map[string]*countsToDelete) {
 			tableCurrent[tmp] = nodeCount{nodePool.Master.Count, nodePool.Worker.Count}
 		}
 	}
-
-	for _, cluster := range tmpConfig.GetDesiredState().GetClusters() {
+	tmpConfigClusters := tmpConfig.GetDesiredState().GetClusters()
+	for _, cluster := range tmpConfigClusters {
 		tmp := make(map[string]*nodesToDelete)
 		for _, nodePool := range cluster.GetNodePools() {
 			var nodesProvider nodesToDelete
 			key := tableKey{nodePoolName: nodePool.Name, clusterName: cluster.Name}
 
 			if _, ok := tableCurrent[key]; ok {
-				tmpNodePool := getNodePoolByName(nodePool.Name, utils.GetClusterByName(cluster.Name, tmpConfig.GetDesiredState().GetClusters()).GetNodePools())
+				tmpNodePool := getNodePoolByName(nodePool.Name, utils.GetClusterByName(cluster.Name, tmpConfigClusters).GetNodePools())
 				if nodePool.Master.Count > tableCurrent[key].masterCount {
 					tmpNodePool.Master.Count = nodePool.Master.Count
 					adding = true
@@ -164,11 +153,12 @@ func diff(config *pb.Config) (*pb.Config, bool, map[string]*countsToDelete) {
 		}
 	}
 
-	if adding && deleting {
+	switch {
+	case adding && deleting:
 		return tmpConfig, deleting, delCounts
-	} else if deleting {
+	case deleting:
 		return nil, deleting, delCounts
-	} else {
+	default:
 		return nil, deleting, nil
 	}
 }
@@ -179,9 +169,9 @@ func getNodePoolByName(nodePoolName string, nodePools []*pb.NodePool) *pb.NodePo
 	if nodePoolName == "" {
 		return nil
 	}
-	for i := 0; i < len(nodePools); i++ {
-		if nodePools[i].Name == nodePoolName {
-			return nodePools[i]
+	for _, np := range nodePools {
+		if np.Name == nodePoolName {
+			return np
 		}
 	}
 	return nil
@@ -262,13 +252,13 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 func healthCheck() error {
 	//Check if Builder can connect to Terraformer/Wireguardian/Kube-eleven
 	//Connection to these services are crucial for Builder, without them, the builder is NOT Ready
-	if _, err := grpcDialWithInsecure("kubeEleven", urls.KubeElevenURL); err != nil {
+	if _, err := utils.GrpcDialWithInsecure("kubeEleven", utils.KubeElevenURL); err != nil {
 		return err
 	}
-	if _, err := grpcDialWithInsecure("terraformer", urls.TerraformerURL); err != nil {
+	if _, err := utils.GrpcDialWithInsecure("terraformer", utils.TerraformerURL); err != nil {
 		return err
 	}
-	if _, err := grpcDialWithInsecure("wireguardian", urls.WireguardianURL); err != nil {
+	if _, err := utils.GrpcDialWithInsecure("wireguardian", utils.WireguardianURL); err != nil {
 		return err
 	}
 	return nil
@@ -417,7 +407,7 @@ func main() {
 	utils.InitLog("builder", "GOLANG_LOG")
 
 	// Create connection to Context-box
-	cc, err := grpcDialWithInsecure("context-box", urls.ContextBoxURL)
+	cc, err := utils.GrpcDialWithInsecure("context-box", utils.ContextBoxURL)
 	if err != nil {
 		log.Fatal().Msgf("Could not connect to Content-box: %v", err)
 	}
@@ -437,7 +427,7 @@ func main() {
 		signal.Notify(ch, os.Interrupt)
 		defer signal.Stop(ch)
 		<-ch
-		return errors.New("interrupt signal")
+		return errors.New("Builder interrupt signal")
 	})
 
 	g.Go(func() error {

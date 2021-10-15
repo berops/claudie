@@ -17,13 +17,11 @@ import (
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
 	cbox "github.com/Berops/platform/services/context-box/client"
-	"github.com/Berops/platform/urls"
 	"github.com/Berops/platform/utils"
 	"github.com/Berops/platform/worker"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc"
 	"gopkg.in/yaml.v3"
 )
 
@@ -247,7 +245,7 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 	return func() error {
 		res, err := cbox.GetConfigScheduler(c)
 		if err != nil {
-			return fmt.Errorf("error while getting config from the Scheduler: %v", err)
+			return fmt.Errorf("error while getting Scheduler config: %v", err)
 		}
 
 		config := res.GetConfig()
@@ -268,10 +266,10 @@ func main() {
 	utils.InitLog("scheduler", "GOLANG_LOG")
 
 	// Create connection to Context-box
-	log.Info().Msgf("Dial Context-box: %s", urls.ContextBoxURL)
-	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
+	log.Info().Msgf("Dial Context-box: %s", utils.ContextBoxURL)
+	cc, err := utils.GrpcDialWithInsecure("context-box", utils.ContextBoxURL)
 	if err != nil {
-		log.Fatal().Msgf("Could not connect to server: %v", err)
+		log.Fatal().Err(err)
 	}
 
 	defer func() { utils.CloseClientConnection(cc) }()
@@ -291,7 +289,7 @@ func main() {
 		signal.Notify(ch, os.Interrupt)
 		defer signal.Stop(ch)
 		<-ch
-		return errors.New("interrupt signal")
+		return errors.New("Scheduler interrupt signal")
 	})
 
 	g.Go(func() error {

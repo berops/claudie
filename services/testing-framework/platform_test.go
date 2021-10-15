@@ -8,9 +8,8 @@ import (
 
 	"github.com/Berops/platform/proto/pb"
 	cbox "github.com/Berops/platform/services/context-box/client"
-	"github.com/Berops/platform/urls"
+	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
-	"google.golang.org/grpc"
 
 	"io/ioutil"
 	"testing"
@@ -25,9 +24,9 @@ const (
 
 // ClientConnection will return new client connection to Context-box
 func ClientConnection() pb.ContextBoxServiceClient {
-	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
+	cc, err := utils.GrpcDialWithInsecure("context-box", utils.ContextBoxURL)
 	if err != nil {
-		log.Fatal().Msgf("could not connect to server: %v", err)
+		log.Fatal().Err(err)
 	}
 
 	// Creating the client
@@ -52,8 +51,8 @@ func TestPlatform(t *testing.T) {
 	for _, f := range files {
 		if f.IsDir() {
 			log.Info().Msgf("Found test set: %s", f.Name())
-			setFile := filepath.Join(testDir, f.Name())
-			pathsToSets = append(pathsToSets, setFile)
+			setTestDir := filepath.Join(testDir, f.Name())
+			pathsToSets = append(pathsToSets, setTestDir)
 		}
 	}
 
@@ -141,7 +140,7 @@ func configChecker(done chan struct{}, c pb.ContextBoxServiceClient, configID st
 		counter++
 		log.Info().Msgf("Waiting for %s to finish... [ %ds elapsed ]", configName, elapsedSec)
 	}
-	//send signal that config has been processed, unblock the applyTestSet
+	// send signal that config has been processed, unblock the applyTestSet
 	done <- struct{}{}
 }
 

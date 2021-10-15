@@ -20,7 +20,6 @@ import (
 
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
-	"github.com/Berops/platform/urls"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -85,6 +84,7 @@ func (q *queue) push() (item *configItem, newQueue queue) {
 	}
 }
 
+// convert configItem struct to pb.Config
 func dataToConfigPb(data *configItem) (*pb.Config, error) {
 	var desiredState *pb.Project = new(pb.Project)
 	err := proto.Unmarshal(data.DesiredState, desiredState)
@@ -499,12 +499,12 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 // destroyConfigTerraformer calls terraformer's DestroyInfrastructure function
 func destroyConfigTerraformer(config *pb.Config) (*pb.Config, error) {
 	// Trim "tcp://" substring from urls.TerraformerURL
-	trimmedTerraformerURL := strings.ReplaceAll(urls.TerraformerURL, ":tcp://", "")
+	trimmedTerraformerURL := strings.ReplaceAll(utils.TerraformerURL, ":tcp://", "")
 	log.Info().Msgf("Dial Terraformer: %s", trimmedTerraformerURL)
 	// Create connection to Terraformer
-	cc, err := grpc.Dial(trimmedTerraformerURL, grpc.WithInsecure())
+	cc, err := utils.GrpcDialWithInsecure("terraformer", trimmedTerraformerURL)
 	if err != nil {
-		return nil, fmt.Errorf("could not connect to server: %v", err)
+		return nil, err
 	}
 	defer func() { utils.CloseClientConnection(cc) }()
 	// Creating the client
@@ -533,7 +533,7 @@ func main() {
 	utils.InitLog("context-box", "GOLANG_LOG")
 
 	// Connect to MongoDB
-	client, err := mongo.NewClient(options.Client().ApplyURI(urls.DatabaseURL)) //client represents connection object do db
+	client, err := mongo.NewClient(options.Client().ApplyURI(utils.DatabaseURL)) //client represents connection object do db
 	if err != nil {
 		log.Fatal().Err(err)
 	}
@@ -541,7 +541,7 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err)
 	}
-	log.Info().Msgf("Connected to MongoDB at %s", urls.DatabaseURL)
+	log.Info().Msgf("Connected to MongoDB at %s", utils.DatabaseURL)
 	collection = client.Database("platform").Collection("config")
 	defer func() {
 		// closing MongoDB connection
@@ -578,13 +578,13 @@ func main() {
 		signal.Stop(ch)
 		s.GracefulStop()
 
-		return errors.New("interrupt signal")
+		return errors.New("ContextBox interrupt signal")
 	})
 
 	g.Go(func() error {
 		// s.Serve() will create a service goroutine for each connection
 		if err := s.Serve(lis); err != nil {
-			return fmt.Errorf("failed to serve: %v", err)
+			return fmt.Errorf("ContextBox failed to serve: %v", err)
 		}
 		return nil
 	})
