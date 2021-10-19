@@ -39,22 +39,25 @@ func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVP
 
 	for _, cluster := range config.GetDesiredState().GetClusters() {
 		if err := genPrivAdd(cluster.GetNodeInfos(), cluster.GetNetwork()); err != nil {
-			return nil, err
+			config = utils.SetConfigErrorMessage(config, err)
+			return &pb.BuildVPNResponse{Config: config}, err
 		}
 
 		if err := genInv(cluster.GetNodeInfos()); err != nil {
-			return nil, err
+			config = utils.SetConfigErrorMessage(config, err)
+			return &pb.BuildVPNResponse{Config: config}, err
 		}
 
 		if err := runAnsible(cluster); err != nil {
-			return nil, err
+			config = utils.SetConfigErrorMessage(config, err)
+			return &pb.BuildVPNResponse{Config: config}, err
 		}
 
 		if err := utils.DeleteTmpFiles(outputPath, []string{sslPrivateKeyFile, inventoryFile}); err != nil {
-			return nil, err
+			config = utils.SetConfigErrorMessage(config, err)
+			return &pb.BuildVPNResponse{Config: config}, err
 		}
 	}
-
 	return &pb.BuildVPNResponse{Config: config}, nil
 }
 

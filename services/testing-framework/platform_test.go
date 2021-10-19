@@ -3,6 +3,7 @@ package testingframework
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"path/filepath"
 	"time"
 
@@ -70,7 +71,7 @@ func TestPlatform(t *testing.T) {
 
 // applyTestSet function will apply test set sequantially to a platform
 func applyTestSet(pathToSet string, c pb.ContextBoxServiceClient) error {
-	done := make(chan struct{})
+	done := make(chan string)
 	var id string
 
 	log.Info().Msgf("Working on the test set: %s", pathToSet)
@@ -101,7 +102,10 @@ func applyTestSet(pathToSet string, c pb.ContextBoxServiceClient) error {
 		}
 		go configChecker(done, c, id, file.Name())
 		// wait until test config has been processed
-		<-done
+		if res := <-done; res != "ok" {
+			log.Error().Msg(res)
+			return fmt.Errorf(res)
+		}
 	}
 	// delete the nodes
 	log.Info().Msgf("Deleting the clusters from test set: %s", pathToSet)
@@ -114,7 +118,7 @@ func applyTestSet(pathToSet string, c pb.ContextBoxServiceClient) error {
 }
 
 // configChecker function will check if the config has been applied every 30s
-func configChecker(done chan struct{}, c pb.ContextBoxServiceClient, configID string, configName string) {
+func configChecker(done chan string, c pb.ContextBoxServiceClient, configID string, configName string) {
 	var counter int
 	sleepSec := 30
 	for {
@@ -124,24 +128,36 @@ func configChecker(done chan struct{}, c pb.ContextBoxServiceClient, configID st
 			Id: configID,
 		})
 		if err != nil {
-			log.Fatal().Msgf("Got error while waiting for config to finish: %v", err)
+			emsg := fmt.Sprintf("Got error while waiting for config to finish: %v", err)
+			log.Fatal().Msg(emsg)
+			done <- emsg
 		}
 		if config != nil {
-			cs := config.Config.CsChecksum
-			ds := config.Config.DsChecksum
+			cfg := config.Config
+			if cfg.Status != nil {
+				emsg := cfg.Status.ErrorMessage
+				log.Error().Msg(emsg)
+				done <- emsg
+				return
+			}
+			cs := cfg.CsChecksum
+			ds := cfg.DsChecksum
 			if checksumsEqual(cs, ds) {
 				break
 			}
 		}
 		if elapsedSec == maxTimeout {
-			log.Fatal().Msgf("Test took too long... Aborting on timeout %d seconds", maxTimeout)
+			emsg := fmt.Sprintf("Test took too long... Aborting on timeout %d seconds", maxTimeout)
+			log.Fatal().Msg(emsg)
+			done <- emsg
+			return
 		}
 		time.Sleep(time.Duration(sleepSec) * time.Second)
 		counter++
 		log.Info().Msgf("Waiting for %s to finish... [ %ds elapsed ]", configName, elapsedSec)
 	}
 	// send signal that config has been processed, unblock the applyTestSet
-	done <- struct{}{}
+	done <- "ok"
 }
 
 // checksumsEq will check if two checksums are equal

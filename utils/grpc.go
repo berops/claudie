@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/Berops/platform/proto/pb"
 	"google.golang.org/grpc"
 )
 
@@ -21,4 +22,13 @@ func GrpcDialWithInsecure(serviceName string, serviceURL string) (*grpc.ClientCo
 	} else {
 		return cc, err
 	}
+}
+
+func SetConfigErrorMessage(config *pb.Config, err error) *pb.Config {
+	if config.Status == nil {
+		config.Status = new(pb.Config_Status)
+	}
+	config.Status.IsFail = true
+	config.Status.ErrorMessage = err.Error()
+	return config
 }

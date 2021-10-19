@@ -13,6 +13,11 @@ message Config {
   bytes csChecksum = 8;
   int32 builderTTL = 9;
   int32 schedulerTTL = 10;
+  message Status {
+    bool isFail = 1;
+    string errorMessage = 2;
+  }
+  Status status = 11;
 }
 
 message Project {

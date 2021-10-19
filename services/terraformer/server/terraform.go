@@ -15,8 +15,10 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const outputPath string = "services/terraformer/server/terraform"
-const templatePath string = "services/terraformer/templates"
+const (
+	outputPath   string = "services/terraformer/server/terraform"
+	templatePath string = "services/terraformer/templates"
+)
 
 // Backend struct
 type Backend struct {

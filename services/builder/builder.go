@@ -46,7 +46,7 @@ func callTerraformer(config *pb.Config) (*pb.Config, error) {
 	c := pb.NewTerraformerServiceClient(cc)
 	res, err := terraformer.BuildInfrastructure(c, &pb.BuildInfrastructureRequest{Config: config})
 	if err != nil {
-		return nil, err
+		return res.GetConfig(), err
 	}
 
 	return res.GetConfig(), nil
@@ -62,7 +62,7 @@ func callWireguardian(config *pb.Config) (*pb.Config, error) {
 	c := pb.NewWireguardianServiceClient(cc)
 	res, err := wireguardian.BuildVPN(c, &pb.BuildVPNRequest{Config: config})
 	if err != nil {
-		return nil, err
+		return res.GetConfig(), err
 	}
 
 	return res.GetConfig(), nil
@@ -78,7 +78,7 @@ func callKubeEleven(config *pb.Config) (*pb.Config, error) {
 	c := pb.NewKubeElevenServiceClient(cc)
 	res, err := kubeEleven.BuildCluster(c, &pb.BuildClusterRequest{Config: config})
 	if err != nil {
-		return nil, err
+		return res.GetConfig(), err
 	}
 
 	return res.GetConfig(), nil
@@ -182,17 +182,29 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, tmp bool) (e
 	log.Info().Msgf("processConfig received config: %s", config.GetName())
 	config, err = callTerraformer(config)
 	if err != nil {
-		return
+		config.CurrentState = config.DesiredState // Update currentState
+		err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
+		if err != nil {
+			return fmt.Errorf("error while saving the config: %v", err)
+		}
 	}
 
 	config, err = callWireguardian(config)
 	if err != nil {
-		return
+		config.CurrentState = config.DesiredState // Update currentState
+		err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
+		if err != nil {
+			return fmt.Errorf("error while saving the config: %v", err)
+		}
 	}
 
 	config, err = callKubeEleven(config)
 	if err != nil {
-		return
+		config.CurrentState = config.DesiredState // Update currentState
+		err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
+		if err != nil {
+			return fmt.Errorf("error while saving the config: %v", err)
+		}
 	}
 
 	if !tmp {
