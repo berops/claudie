@@ -12,7 +12,7 @@ import (
 func BuildInfrastructure(c pb.TerraformerServiceClient, req *pb.BuildInfrastructureRequest) (*pb.BuildInfrastructureResponse, error) {
 	res, err := c.BuildInfrastructure(context.Background(), req) //sending request to the server and receiving response
 	if err != nil {
-		return res, fmt.Errorf("error while calling BuildInfrastructure on Terraformer: %v", err)
+		return nil, fmt.Errorf("error while calling BuildInfrastructure on Terraformer: %v", err)
 	}
 
 	log.Info().Msg("Infrastructure was successfully built")

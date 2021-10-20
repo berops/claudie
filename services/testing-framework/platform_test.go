@@ -130,11 +130,10 @@ func configChecker(done chan string, c pb.ContextBoxServiceClient, configID stri
 		if err != nil {
 			emsg := fmt.Sprintf("Got error while waiting for config to finish: %v", err)
 			log.Fatal().Msg(emsg)
-			done <- emsg
 		}
 		if config != nil {
 			cfg := config.Config
-			if cfg.Status != nil {
+			if cfg.Status != nil && cfg.Status.IsFail {
 				emsg := cfg.Status.ErrorMessage
 				log.Error().Msg(emsg)
 				done <- emsg
@@ -162,7 +161,7 @@ func configChecker(done chan string, c pb.ContextBoxServiceClient, configID stri
 
 // checksumsEq will check if two checksums are equal
 func checksumsEqual(checksum1 []byte, checksum2 []byte) bool {
-	if len(checksum1) > 0 && len(checksum2) > 0 && bytes.Compare(checksum1, checksum2) == 0 {
+	if len(checksum1) > 0 && len(checksum2) > 0 && bytes.Equal(checksum1, checksum2) {
 		return true
 	} else {
 		return false

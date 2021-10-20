@@ -46,7 +46,7 @@ func callTerraformer(config *pb.Config) (*pb.Config, error) {
 	c := pb.NewTerraformerServiceClient(cc)
 	res, err := terraformer.BuildInfrastructure(c, &pb.BuildInfrastructureRequest{Config: config})
 	if err != nil {
-		return res.GetConfig(), err
+		return config, err
 	}
 
 	return res.GetConfig(), nil
@@ -181,8 +181,10 @@ func getNodePoolByName(nodePoolName string, nodePools []*pb.NodePool) *pb.NodePo
 func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, tmp bool) (err error) {
 	log.Info().Msgf("processConfig received config: %s", config.GetName())
 	config, err = callTerraformer(config)
-	if err != nil {
+	if err != nil && config != nil {
 		config.CurrentState = config.DesiredState // Update currentState
+		// save error to config status
+		config = utils.SetConfigErrorMessage(config, err)
 		err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 		if err != nil {
 			return fmt.Errorf("error while saving the config: %v", err)
@@ -190,8 +192,10 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, tmp bool) (e
 	}
 
 	config, err = callWireguardian(config)
-	if err != nil {
+	if err != nil && config != nil {
 		config.CurrentState = config.DesiredState // Update currentState
+		// save error to config status
+		config = utils.SetConfigErrorMessage(config, err)
 		err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 		if err != nil {
 			return fmt.Errorf("error while saving the config: %v", err)
@@ -199,15 +203,17 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, tmp bool) (e
 	}
 
 	config, err = callKubeEleven(config)
-	if err != nil {
+	if err != nil && config != nil {
 		config.CurrentState = config.DesiredState // Update currentState
+		// save error to config status
+		config = utils.SetConfigErrorMessage(config, err)
 		err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 		if err != nil {
 			return fmt.Errorf("error while saving the config: %v", err)
 		}
 	}
 
-	if !tmp {
+	if !tmp && config != nil {
 		config.CurrentState = config.DesiredState // Update currentState
 		err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 		if err != nil {
