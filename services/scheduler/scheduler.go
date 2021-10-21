@@ -17,6 +17,7 @@ import (
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
 	cbox "github.com/Berops/platform/services/context-box/client"
+	"github.com/Berops/platform/urls"
 	"github.com/Berops/platform/utils"
 	"github.com/Berops/platform/worker"
 	"github.com/rs/zerolog/log"
@@ -266,8 +267,8 @@ func main() {
 	utils.InitLog("scheduler", "GOLANG_LOG")
 
 	// Create connection to Context-box
-	log.Info().Msgf("Dial Context-box: %s", utils.ContextBoxURL)
-	cc, err := utils.GrpcDialWithInsecure("context-box", utils.ContextBoxURL)
+	log.Info().Msgf("Dial Context-box: %s", urls.ContextBoxURL)
+	cc, err := utils.GrpcDialWithInsecure("context-box", urls.ContextBoxURL)
 	if err != nil {
 		log.Fatal().Err(err)
 	}

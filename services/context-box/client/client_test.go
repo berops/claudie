@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/platform/urls"
 	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/require"
@@ -12,7 +13,7 @@ import (
 )
 
 func ClientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
-	cc, err := utils.GrpcDialWithInsecure("context-box", utils.ContextBoxURL)
+	cc, err := utils.GrpcDialWithInsecure("context-box", urls.ContextBoxURL)
 	if err != nil {
 		log.Fatal().Err(err)
 	}

@@ -12,6 +12,7 @@ import (
 
 	"github.com/Berops/platform/healthcheck"
 	kubeEleven "github.com/Berops/platform/services/kube-eleven/client"
+	"github.com/Berops/platform/urls"
 	"github.com/Berops/platform/utils"
 	"github.com/Berops/platform/worker"
 	"github.com/rs/zerolog/log"
@@ -37,7 +38,7 @@ type countsToDelete struct {
 
 func callTerraformer(config *pb.Config) (*pb.Config, error) {
 	// Create connection to Terraformer
-	cc, err := utils.GrpcDialWithInsecure("terraformer", utils.TerraformerURL)
+	cc, err := utils.GrpcDialWithInsecure("terraformer", urls.TerraformerURL)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +54,7 @@ func callTerraformer(config *pb.Config) (*pb.Config, error) {
 }
 
 func callWireguardian(config *pb.Config) (*pb.Config, error) {
-	cc, err := utils.GrpcDialWithInsecure("wireguardian", utils.WireguardianURL)
+	cc, err := utils.GrpcDialWithInsecure("wireguardian", urls.WireguardianURL)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +70,7 @@ func callWireguardian(config *pb.Config) (*pb.Config, error) {
 }
 
 func callKubeEleven(config *pb.Config) (*pb.Config, error) {
-	cc, err := utils.GrpcDialWithInsecure("kubeEleven", utils.KubeElevenURL)
+	cc, err := utils.GrpcDialWithInsecure("kubeEleven", urls.KubeElevenURL)
 	if err != nil {
 		return nil, err
 	}
@@ -270,13 +271,13 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 func healthCheck() error {
 	//Check if Builder can connect to Terraformer/Wireguardian/Kube-eleven
 	//Connection to these services are crucial for Builder, without them, the builder is NOT Ready
-	if _, err := utils.GrpcDialWithInsecure("kubeEleven", utils.KubeElevenURL); err != nil {
+	if _, err := utils.GrpcDialWithInsecure("kubeEleven", urls.KubeElevenURL); err != nil {
 		return err
 	}
-	if _, err := utils.GrpcDialWithInsecure("terraformer", utils.TerraformerURL); err != nil {
+	if _, err := utils.GrpcDialWithInsecure("terraformer", urls.TerraformerURL); err != nil {
 		return err
 	}
-	if _, err := utils.GrpcDialWithInsecure("wireguardian", utils.WireguardianURL); err != nil {
+	if _, err := utils.GrpcDialWithInsecure("wireguardian", urls.WireguardianURL); err != nil {
 		return err
 	}
 	return nil
@@ -425,7 +426,7 @@ func main() {
 	utils.InitLog("builder", "GOLANG_LOG")
 
 	// Create connection to Context-box
-	cc, err := utils.GrpcDialWithInsecure("context-box", utils.ContextBoxURL)
+	cc, err := utils.GrpcDialWithInsecure("context-box", urls.ContextBoxURL)
 	if err != nil {
 		log.Fatal().Msgf("Could not connect to Content-box: %v", err)
 	}

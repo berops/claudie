@@ -9,6 +9,7 @@ import (
 
 	"github.com/Berops/platform/proto/pb"
 	cbox "github.com/Berops/platform/services/context-box/client"
+	"github.com/Berops/platform/urls"
 	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
 
@@ -25,7 +26,7 @@ const (
 
 // ClientConnection will return new client connection to Context-box
 func ClientConnection() pb.ContextBoxServiceClient {
-	cc, err := utils.GrpcDialWithInsecure("context-box", utils.ContextBoxURL)
+	cc, err := utils.GrpcDialWithInsecure("context-box", urls.ContextBoxURL)
 	if err != nil {
 		log.Fatal().Err(err)
 	}

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/platform/urls"
 	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/require"
@@ -129,7 +130,7 @@ var desiredState *pb.Project = &pb.Project{
 
 func TestBuildInfrastructure(t *testing.T) {
 	// Create connection to Terraformer
-	cc, err := utils.GrpcDialWithInsecure("terraformer", utils.TerraformerURL)
+	cc, err := utils.GrpcDialWithInsecure("terraformer", urls.TerraformerURL)
 	if err != nil {
 		log.Fatal().Err(err)
 	}

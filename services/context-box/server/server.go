@@ -13,6 +13,7 @@ import (
 	"time"
 
 	terraformer "github.com/Berops/platform/services/terraformer/client"
+	"github.com/Berops/platform/urls"
 	"github.com/Berops/platform/utils"
 	"github.com/Berops/platform/worker"
 	"github.com/rs/zerolog/log"
@@ -509,7 +510,7 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 // destroyConfigTerraformer calls terraformer's DestroyInfrastructure function
 func destroyConfigTerraformer(config *pb.Config) (*pb.Config, error) {
 	// Trim "tcp://" substring from urls.TerraformerURL
-	trimmedTerraformerURL := strings.ReplaceAll(utils.TerraformerURL, ":tcp://", "")
+	trimmedTerraformerURL := strings.ReplaceAll(urls.TerraformerURL, ":tcp://", "")
 	log.Info().Msgf("Dial Terraformer: %s", trimmedTerraformerURL)
 	// Create connection to Terraformer
 	cc, err := utils.GrpcDialWithInsecure("terraformer", trimmedTerraformerURL)
@@ -543,7 +544,7 @@ func main() {
 	utils.InitLog("context-box", "GOLANG_LOG")
 
 	// Connect to MongoDB
-	client, err := mongo.NewClient(options.Client().ApplyURI(utils.DatabaseURL)) //client represents connection object do db
+	client, err := mongo.NewClient(options.Client().ApplyURI(urls.DatabaseURL)) //client represents connection object do db
 	if err != nil {
 		log.Fatal().Err(err)
 	}
@@ -551,7 +552,7 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err)
 	}
-	log.Info().Msgf("Connected to MongoDB at %s", utils.DatabaseURL)
+	log.Info().Msgf("Connected to MongoDB at %s", urls.DatabaseURL)
 	collection = client.Database("platform").Collection("config")
 	defer func() {
 		// closing MongoDB connection

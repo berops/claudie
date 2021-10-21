@@ -16,9 +16,10 @@ func CreateKeyFile(key string, outputPath string, keyName string) error {
 // GetenvOr returns the value of the env variable argument if it exists.
 // Otherwise it returns the provided default value.
 func GetenvOr(envKey string, defaultVal string) string {
-	v := os.Getenv(envKey)
-	if v == "" {
-		v = defaultVal
+	v, present := os.LookupEnv(envKey)
+	if present {
+		return v
+	} else {
+		return defaultVal
 	}
-	return v
 }
