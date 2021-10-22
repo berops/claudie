@@ -8,12 +8,9 @@ message Config {
   string manifest = 3;
   Project desiredState = 4;
   Project currentState = 5;
-  bytes msChecksum = 6;
-  bytes dsChecksum = 7;
-  bytes csChecksum = 8;
-  int32 builderTTL = 9;
-  int32 schedulerTTL = 10;
-  string errorMessage = 11;
+  int32 builderTTL = 6;
+  int32 schedulerTTL = 7;
+  string errorMessage = 8;
 }
 
 message Project {

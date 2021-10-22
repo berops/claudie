@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/md5"
 	"errors"
 	"fmt"
 	"net"
@@ -57,7 +56,6 @@ type configItem struct {
 	Manifest     string             `bson:"manifest"`
 	DesiredState []byte             `bson:"desiredState"`
 	CurrentState []byte             `bson:"currentState"`
-	MsChecksum   []byte             `bson:"msChecksum"`
 	DsChecksum   []byte             `bson:"dsChecksum"`
 	CsChecksum   []byte             `bson:"csChecksum"`
 	BuilderTTL   int                `bson:"BuilderTTL"`
@@ -106,7 +104,6 @@ func dataToConfigPb(data *configItem) (*pb.Config, error) {
 		Manifest:     data.Manifest,
 		DesiredState: desiredState,
 		CurrentState: currentState,
-		MsChecksum:   data.MsChecksum,
 		DsChecksum:   data.DsChecksum,
 		CsChecksum:   data.CsChecksum,
 		BuilderTTL:   int32(data.BuilderTTL),
@@ -133,7 +130,6 @@ func saveToDB(config *pb.Config) (*pb.Config, error) {
 	data.Manifest = config.GetManifest()
 	data.DesiredState = desiredStateByte
 	data.CurrentState = currentStateByte
-	data.MsChecksum = config.GetMsChecksum()
 	data.DsChecksum = config.GetDsChecksum()
 	data.CsChecksum = config.GetCsChecksum()
 	data.BuilderTTL = int(config.GetBuilderTTL())
@@ -222,7 +218,8 @@ func configCheck() error {
 		}
 
 		// check for Scheduler
-		if string(config.DsChecksum) != string(config.MsChecksum) {
+		configMsChecksum := utils.CalcChecksum(config.Manifest)
+		if string(config.DsChecksum) != string(configMsChecksum) {
 			if config.SchedulerTTL <= 0 {
 				config.SchedulerTTL = defaultSchedulerTTL
 
@@ -310,12 +307,14 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 	if err != nil {
 		return nil, err
 	}
-	if !compareChecksums(string(config.MsChecksum), string(data.MsChecksum)) {
+	configMsChecksum := utils.CalcChecksum(config.GetManifest())
+	dataMsChecksum := utils.CalcChecksum(data.Manifest)
+	if !compareChecksums(string(configMsChecksum), string(dataMsChecksum)) {
 		return nil, nil
 	}
 
 	// Save new config to the DB
-	config.DsChecksum = config.MsChecksum
+	config.DsChecksum = configMsChecksum
 	config.SchedulerTTL = defaultSchedulerTTL
 	mutexDBsave.Lock()
 	config, err1 := saveToDB(config)
@@ -333,8 +332,6 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
 	log.Info().Msg("CLIENT REQUEST: SaveConfigFrontEnd")
 	newConfig := req.GetConfig()
-	msChecksum := md5.Sum([]byte(newConfig.GetManifest())) //Calculate md5 hash for a manifest file
-	newConfig.MsChecksum = msChecksum[:]                   //Creating a slice using an array you can just make a simple slice expression
 
 	if newConfig.GetId() != "" {
 		//Check if there is already ID in the DB
@@ -369,7 +366,9 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 	if err != nil {
 		return nil, err
 	}
-	if !compareChecksums(string(config.MsChecksum), string(data.MsChecksum)) {
+	configMsChecksum := utils.CalcChecksum(config.GetManifest())
+	dataMsChecksum := utils.CalcChecksum(data.Manifest)
+	if !compareChecksums(string(configMsChecksum), string(dataMsChecksum)) {
 		return nil, nil
 	}
 

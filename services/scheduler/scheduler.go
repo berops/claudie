@@ -191,7 +191,6 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 			Clusters: clusters,
 		},
 		CurrentState: config.GetCurrentState(),
-		MsChecksum:   config.GetMsChecksum(),
 		DsChecksum:   config.GetDsChecksum(),
 		CsChecksum:   config.GetCsChecksum(),
 		BuilderTTL:   config.GetBuilderTTL(),

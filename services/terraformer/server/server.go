@@ -22,8 +22,9 @@ const defaultTerraformerPort = 50052
 type server struct{}
 
 func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastructureRequest) (*pb.BuildInfrastructureResponse, error) {
-	log.Info().Msgf("BuildInfrastructure function was invoked with config %s", req.GetConfig().GetName())
 	config := req.GetConfig()
+	log.Info().Msgf("BuildInfrastructure function was invoked with config %s", config.GetName())
+
 	err := buildInfrastructure(config)
 	if err != nil {
 		config.ErrorMessage = err.Error()
@@ -35,7 +36,6 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 }
 
 func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrastructureRequest) (*pb.DestroyInfrastructureResponse, error) {
-	fmt.Println("DestroyInfrastructure function was invoked with config:", req.GetConfig().GetName())
 	config := req.GetConfig()
 	err := destroyInfrastructure(config)
 	if err != nil {

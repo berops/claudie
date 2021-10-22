@@ -34,7 +34,6 @@ const (
 )
 
 func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVPNResponse, error) {
-	log.Info().Msgf("BuildVPN function was invoked with %s", req.Config.Name)
 	config := req.GetConfig()
 	var errGroup errgroup.Group
 
