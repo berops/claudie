@@ -1,7 +1,6 @@
 package testingframework
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"path/filepath"
@@ -140,9 +139,10 @@ func configChecker(done chan string, c pb.ContextBoxServiceClient, configID stri
 				done <- emsg
 				return
 			}
-			cs := cfg.CsChecksum
-			ds := cfg.DsChecksum
-			if checksumsEqual(cs, ds) {
+			currentState := cfg.CurrentState.String()
+			desiredState := cfg.DesiredState.String()
+			// if currentState == desiredState, the config has been processed
+			if len(currentState) > 0 && currentState == desiredState {
 				break
 			}
 		}
@@ -158,13 +158,4 @@ func configChecker(done chan string, c pb.ContextBoxServiceClient, configID stri
 	}
 	// send signal that config has been processed, unblock the applyTestSet
 	done <- "ok"
-}
-
-// checksumsEq will check if two checksums are equal
-func checksumsEqual(checksum1 []byte, checksum2 []byte) bool {
-	if len(checksum1) > 0 && len(checksum2) > 0 && bytes.Equal(checksum1, checksum2) {
-		return true
-	} else {
-		return false
-	}
 }

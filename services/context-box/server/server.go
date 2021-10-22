@@ -56,8 +56,6 @@ type configItem struct {
 	Manifest     string             `bson:"manifest"`
 	DesiredState []byte             `bson:"desiredState"`
 	CurrentState []byte             `bson:"currentState"`
-	DsChecksum   []byte             `bson:"dsChecksum"`
-	CsChecksum   []byte             `bson:"csChecksum"`
 	BuilderTTL   int                `bson:"BuilderTTL"`
 	SchedulerTTL int                `bson:"SchedulerTTL"`
 	ErrorMessage string             `bson:"errorMessage"`
@@ -104,8 +102,6 @@ func dataToConfigPb(data *configItem) (*pb.Config, error) {
 		Manifest:     data.Manifest,
 		DesiredState: desiredState,
 		CurrentState: currentState,
-		DsChecksum:   data.DsChecksum,
-		CsChecksum:   data.CsChecksum,
 		BuilderTTL:   int32(data.BuilderTTL),
 		SchedulerTTL: int32(data.SchedulerTTL),
 		ErrorMessage: data.ErrorMessage,
@@ -130,8 +126,6 @@ func saveToDB(config *pb.Config) (*pb.Config, error) {
 	data.Manifest = config.GetManifest()
 	data.DesiredState = desiredStateByte
 	data.CurrentState = currentStateByte
-	data.DsChecksum = config.GetDsChecksum()
-	data.CsChecksum = config.GetCsChecksum()
 	data.BuilderTTL = int(config.GetBuilderTTL())
 	data.SchedulerTTL = int(config.GetSchedulerTTL())
 	data.ErrorMessage = config.ErrorMessage
@@ -218,8 +212,10 @@ func configCheck() error {
 		}
 
 		// check for Scheduler
+		configCsChecksum := utils.CalcChecksum(string(config.CurrentState))
+		configDsChecksum := utils.CalcChecksum(string(config.DesiredState))
 		configMsChecksum := utils.CalcChecksum(config.Manifest)
-		if string(config.DsChecksum) != string(configMsChecksum) {
+		if string(configDsChecksum) != string(configMsChecksum) {
 			if config.SchedulerTTL <= 0 {
 				config.SchedulerTTL = defaultSchedulerTTL
 
@@ -239,7 +235,7 @@ func configCheck() error {
 		}
 
 		// check for Builder
-		if string(config.DsChecksum) != string(config.CsChecksum) {
+		if string(configDsChecksum) != string(configCsChecksum) {
 			if config.BuilderTTL <= 0 {
 				config.BuilderTTL = defaultBuilderTTL
 
@@ -314,7 +310,6 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 	}
 
 	// Save new config to the DB
-	config.DsChecksum = configMsChecksum
 	config.SchedulerTTL = defaultSchedulerTTL
 	mutexDBsave.Lock()
 	config, err1 := saveToDB(config)
@@ -373,7 +368,6 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 	}
 
 	// Save new config to the DB
-	config.CsChecksum = config.DsChecksum
 	config.BuilderTTL = defaultBuilderTTL
 	mutexDBsave.Lock()
 	config, err1 := saveToDB(config)
