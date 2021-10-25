@@ -15,8 +15,10 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const outputPath string = "services/terraformer/server/terraform"
-const templatePath string = "services/terraformer/templates"
+const (
+	outputPath   string = "services/terraformer/server/terraform"
+	templatePath string = "services/terraformer/templates"
+)
 
 // Backend struct
 type Backend struct {
@@ -268,7 +270,6 @@ func readOutput(data string) (jsonOut, error) {
 }
 
 // fillNodes gets ip addresses from a terraform output
-
 func fillNodes(mOld []*pb.NodeInfo, terraformOutput *jsonOut, nodepool *pb.NodePool) []*pb.NodeInfo {
 	var mNew []*pb.NodeInfo
 	// Create empty slices for node names
@@ -327,5 +328,5 @@ func existsInCluster(m []*pb.NodeInfo, ip string) (*pb.NodeInfo, error) {
 			return ips, nil
 		}
 	}
-	return nil, fmt.Errorf("ip does not exist")
+	return nil, fmt.Errorf("Ip address %v does not exist", ip)
 }

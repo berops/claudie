@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"text/template"
@@ -24,7 +25,13 @@ import (
 
 type server struct{}
 
-const outputPath string = "services/wireguardian/server/Ansible/"
+const (
+	outputPath              = "services/wireguardian/server/Ansible"
+	inventoryFile           = "inventory.ini"
+	playbookFile            = "playbook.yml"
+	sslPrivateKeyFile       = "private.pem"
+	defaultWireguardianPort = 50053
+)
 
 func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVPNResponse, error) {
 	log.Info().Msgf("BuildVPN function was invoked with %s", req.Config.Name)
@@ -32,22 +39,26 @@ func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVP
 
 	for _, cluster := range config.GetDesiredState().GetClusters() {
 		if err := genPrivAdd(cluster.GetNodeInfos(), cluster.GetNetwork()); err != nil {
-			return nil, err
+			config.ErrorMessage = err.Error()
+			return &pb.BuildVPNResponse{Config: config}, err
 		}
 
 		if err := genInv(cluster.GetNodeInfos()); err != nil {
-			return nil, err
+			config.ErrorMessage = err.Error()
+			return &pb.BuildVPNResponse{Config: config}, err
 		}
 
 		if err := runAnsible(cluster); err != nil {
-			return nil, err
+			config.ErrorMessage = err.Error()
+			return &pb.BuildVPNResponse{Config: config}, err
 		}
 
-		if err := utils.DeleteTmpFiles(outputPath, []string{"private.pem", "inventory.ini"}); err != nil {
-			return nil, err
+		if err := utils.DeleteTmpFiles(outputPath, []string{sslPrivateKeyFile, inventoryFile}); err != nil {
+			config.ErrorMessage = err.Error()
+			return &pb.BuildVPNResponse{Config: config}, err
 		}
 	}
-
+	config.ErrorMessage = ""
 	return &pb.BuildVPNResponse{Config: config}, nil
 }
 
@@ -111,7 +122,7 @@ func genInv(addresses []*pb.NodeInfo) error {
 		return fmt.Errorf("failed to load template file: %v", err)
 	}
 
-	f, err := os.Create(outputPath + "inventory.ini")
+	f, err := os.Create(filepath.Join(outputPath, inventoryFile))
 	if err != nil {
 		return fmt.Errorf("failed to create a inventory file: %v", err)
 	}
@@ -124,7 +135,7 @@ func genInv(addresses []*pb.NodeInfo) error {
 }
 
 func runAnsible(cluster *pb.Cluster) error {
-	if err := utils.CreateKeyFile(cluster.GetPrivateKey(), outputPath, "private.pem"); err != nil {
+	if err := utils.CreateKeyFile(cluster.GetPrivateKey(), outputPath, sslPrivateKeyFile); err != nil {
 		return err
 	}
 
@@ -132,7 +143,7 @@ func runAnsible(cluster *pb.Cluster) error {
 		return err
 	}
 
-	cmd := exec.Command("ansible-playbook", "playbook.yml", "-i", "inventory.ini", "-f", "20", "--private-key", "private.pem")
+	cmd := exec.Command("ansible-playbook", playbookFile, "-i", inventoryFile, "-f", "20", "--private-key", sslPrivateKeyFile)
 	cmd.Dir = outputPath
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -144,12 +155,9 @@ func main() {
 	utils.InitLog("wireguardian", "GOLANG_LOG")
 
 	// Set Wireguardian port
-	wireguardianPort := os.Getenv("WIREGUARDIAN_PORT")
-	if wireguardianPort == "" {
-		wireguardianPort = "50053" // Default value
-	}
+	wireguardianPort := utils.GetenvOr("WIREGUARDIAN_PORT", fmt.Sprint(defaultWireguardianPort))
 
-	serviceAddr := "0.0.0.0:" + wireguardianPort
+	serviceAddr := net.JoinHostPort("0.0.0.0", wireguardianPort)
 	lis, err := net.Listen("tcp", serviceAddr)
 	if err != nil {
 		log.Fatal().Msgf("Failed to listen on %s : %v", serviceAddr, err)
@@ -161,33 +169,30 @@ func main() {
 	pb.RegisterWireguardianServiceServer(s, &server{})
 
 	// Add health service to gRPC
-	healthService := healthcheck.NewServerHealthChecker("50053", "WIREGUARDIAN_PORT")
+	healthService := healthcheck.NewServerHealthChecker(wireguardianPort, "WIREGUARDIAN_PORT")
 	grpc_health_v1.RegisterHealthServer(s, healthService)
 
 	g, _ := errgroup.WithContext(context.Background())
 
-	{
-		g.Go(func() error {
-			ch := make(chan os.Signal, 1)
-			signal.Notify(ch, os.Interrupt)
-			defer signal.Stop(ch)
-			<-ch
+	g.Go(func() error {
+		ch := make(chan os.Signal, 1)
+		signal.Notify(ch, os.Interrupt)
+		defer signal.Stop(ch)
+		<-ch
 
-			signal.Stop(ch)
-			s.GracefulStop()
+		signal.Stop(ch)
+		s.GracefulStop()
 
-			return errors.New("Interrupt signal")
-		})
-	}
-	{
-		g.Go(func() error {
-			// s.Serve() will create a service goroutine for each connection
-			if err := s.Serve(lis); err != nil {
-				return fmt.Errorf("failed to serve: %v", err)
-			}
-			return nil
-		})
-	}
+		return errors.New("Wireguardian Interrupt signal")
+	})
+
+	g.Go(func() error {
+		// s.Serve() will create a service goroutine for each connection
+		if err := s.Serve(lis); err != nil {
+			return fmt.Errorf("Wireguardian failed to serve: %v", err)
+		}
+		return nil
+	})
 
 	log.Info().Msgf("Stopping Wireguardian: %v", g.Wait())
 }

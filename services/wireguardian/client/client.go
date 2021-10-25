@@ -12,7 +12,7 @@ func BuildVPN(c pb.WireguardianServiceClient, req *pb.BuildVPNRequest) (*pb.Buil
 	res, err := c.BuildVPN(context.Background(), req)
 	if err != nil {
 		log.Fatal().Msg("Failed to build VPN")
-		return nil, err
+		return res, err
 	}
 
 	log.Info().Msg("VPN was successfully built")

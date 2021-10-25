@@ -23,9 +23,10 @@ import (
 	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc"
 	"gopkg.in/yaml.v3"
 )
+
+const defaultSchedulerPort = 50056
 
 ////////////////////YAML STRUCT//////////////////////////////////////////////////
 
@@ -245,7 +246,7 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 	return func() error {
 		res, err := cbox.GetConfigScheduler(c)
 		if err != nil {
-			return fmt.Errorf("error while getting config from the Scheduler: %v", err)
+			return fmt.Errorf("error while getting Scheduler config: %v", err)
 		}
 
 		config := res.GetConfig()
@@ -267,9 +268,9 @@ func main() {
 
 	// Create connection to Context-box
 	log.Info().Msgf("Dial Context-box: %s", urls.ContextBoxURL)
-	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
+	cc, err := utils.GrpcDialWithInsecure("context-box", urls.ContextBoxURL)
 	if err != nil {
-		log.Fatal().Msgf("Could not connect to server: %v", err)
+		log.Fatal().Err(err)
 	}
 
 	defer func() { utils.CloseClientConnection(cc) }()
@@ -278,27 +279,24 @@ func main() {
 	c := pb.NewContextBoxServiceClient(cc)
 
 	// Initilize health probes
-	healthChecker := healthcheck.NewClientHealthChecker("50056", healthCheck)
+	healthChecker := healthcheck.NewClientHealthChecker(fmt.Sprint(defaultSchedulerPort), healthCheck)
 	healthChecker.StartProbes()
 
 	g, ctx := errgroup.WithContext(context.Background())
 	w := worker.NewWorker(ctx, 10*time.Second, configProcessor(c), worker.ErrorLogger)
 
-	{
-		g.Go(func() error {
-			ch := make(chan os.Signal, 1)
-			signal.Notify(ch, os.Interrupt)
-			defer signal.Stop(ch)
-			<-ch
-			return errors.New("interrupt signal")
-		})
-	}
-	{
-		g.Go(func() error {
-			w.Run()
-			return nil
-		})
-	}
+	g.Go(func() error {
+		ch := make(chan os.Signal, 1)
+		signal.Notify(ch, os.Interrupt)
+		defer signal.Stop(ch)
+		<-ch
+		return errors.New("Scheduler interrupt signal")
+	})
+
+	g.Go(func() error {
+		w.Run()
+		return nil
+	})
 
 	log.Info().Msgf("Stopping Scheduler: %v", g.Wait())
 }

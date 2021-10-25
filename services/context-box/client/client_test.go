@@ -6,15 +6,16 @@ import (
 
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/urls"
+	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 )
 
 func ClientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
-	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
+	cc, err := utils.GrpcDialWithInsecure("context-box", urls.ContextBoxURL)
 	if err != nil {
-		log.Fatal().Msgf("Could not connect to server: %v", err)
+		log.Fatal().Err(err)
 	}
 
 	// Creating the client

@@ -23,7 +23,7 @@ func BuildInfrastructure(c pb.TerraformerServiceClient, req *pb.BuildInfrastruct
 func DestroyInfrastructure(c pb.TerraformerServiceClient, req *pb.DestroyInfrastructureRequest) (*pb.DestroyInfrastructureResponse, error) {
 	res, err := c.DestroyInfrastructure(context.Background(), req)
 	if err != nil {
-		return nil, fmt.Errorf("error while calling DestroyInfrastructure on Terraformer: %v", err)
+		return res, fmt.Errorf("error while calling DestroyInfrastructure on Terraformer: %v", err)
 	}
 
 	log.Info().Msg("Infrastructure was successfully destroyed")

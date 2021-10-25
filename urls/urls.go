@@ -2,8 +2,7 @@ package urls
 
 import "os"
 
-//Hostnames and ports on what services are listening
-
+// Hostnames and ports on what services are listening
 var (
 	//TerraformerURL is a listening URL for Terraformer module
 	TerraformerURL = os.Getenv("TERRAFORMER_HOSTNAME") + ":" + os.Getenv("TERRAFORMER_PORT")

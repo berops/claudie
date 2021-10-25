@@ -23,7 +23,10 @@ import (
 
 type server struct{}
 
-const outputPath = "services/kube-eleven/server/"
+const (
+	outputPath            = "services/kube-eleven/server/"
+	defaultKubeElevenPort = 50054
+)
 
 type data struct {
 	APIEndpoint string
@@ -68,27 +71,32 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 		d.formatTemplateData(cluster)
 		// Create a private key file
 		if err := utils.CreateKeyFile(cluster.GetPrivateKey(), outputPath, "private.pem"); err != nil {
-			return nil, err
+			config.ErrorMessage = err.Error()
+			return &pb.BuildClusterResponse{Config: config}, err
 		}
 		// Create a cluster-kubeconfig file
 		kubeconfigFile := filepath.Join(outputPath, "cluster-kubeconfig")
 		if err := ioutil.WriteFile(kubeconfigFile, []byte(cluster.GetKubeconfig()), 0600); err != nil {
-			return nil, err
+			config.ErrorMessage = err.Error()
+			return &pb.BuildClusterResponse{Config: config}, err
 		}
 		// Generate a kubeOne yaml manifest from a golang template
 		templateFile := filepath.Join(outputPath, "kubeone.tpl")
 		outputFile := filepath.Join(outputPath, "kubeone.yaml")
 		if err := genKubeOneConfig(templateFile, outputFile, d); err != nil {
-			return nil, err
+			config.ErrorMessage = err.Error()
+			return &pb.BuildClusterResponse{Config: config}, err
 		}
 
 		if err := runKubeOne(); err != nil {
-			return nil, err
+			config.ErrorMessage = err.Error()
+			return &pb.BuildClusterResponse{Config: config}, err
 		}
 
 		kc, err := saveKubeconfig()
 		if err != nil {
-			return nil, err
+			config.ErrorMessage = err.Error()
+			return &pb.BuildClusterResponse{Config: config}, err
 		}
 		cluster.Kubeconfig = kc
 
@@ -99,10 +107,11 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 			"private.pem",
 		}
 		if err := utils.DeleteTmpFiles(outputPath, tmpFiles); err != nil {
-			return nil, err
+			config.ErrorMessage = err.Error()
+			return &pb.BuildClusterResponse{Config: config}, err
 		}
 	}
-
+	config.ErrorMessage = ""
 	return &pb.BuildClusterResponse{Config: config}, nil
 }
 
@@ -148,11 +157,8 @@ func main() {
 	utils.InitLog("kube-eleven", "GOLANG_LOG")
 
 	// Set KubeEleven port
-	kubeElevenPort := os.Getenv("KUBE_ELEVEN_PORT")
-	if kubeElevenPort == "" {
-		kubeElevenPort = "50054" // Default value
-	}
-	kubeElevenAddr := "0.0.0.0:" + kubeElevenPort
+	kubeElevenPort := utils.GetenvOr("KUBE_ELEVEN_PORT", fmt.Sprint(defaultKubeElevenPort))
+	kubeElevenAddr := net.JoinHostPort("0.0.0.0", kubeElevenPort)
 	lis, err := net.Listen("tcp", kubeElevenAddr)
 	if err != nil {
 		log.Fatal().Msgf("Failed to listen on %s : %v", kubeElevenAddr, err)
@@ -163,32 +169,29 @@ func main() {
 	pb.RegisterKubeElevenServiceServer(s, &server{})
 
 	// Add health service to gRPC
-	healthService := healthcheck.NewServerHealthChecker("50054", "KUBE_ELEVEN_PORT")
+	healthService := healthcheck.NewServerHealthChecker(kubeElevenPort, "KUBE_ELEVEN_PORT")
 	grpc_health_v1.RegisterHealthServer(s, healthService)
 
 	g, _ := errgroup.WithContext(context.Background())
 
-	{
-		g.Go(func() error {
-			ch := make(chan os.Signal, 1)
-			signal.Notify(ch, os.Interrupt)
-			<-ch
+	g.Go(func() error {
+		ch := make(chan os.Signal, 1)
+		signal.Notify(ch, os.Interrupt)
+		<-ch
 
-			signal.Stop(ch)
-			s.GracefulStop()
+		signal.Stop(ch)
+		s.GracefulStop()
 
-			return errors.New("interrupt signal")
-		})
-	}
-	{
-		g.Go(func() error {
-			// s.Serve() will create a service goroutine for each connection
-			if err := s.Serve(lis); err != nil {
-				return fmt.Errorf("failed to serve: %v", err)
-			}
-			return nil
-		})
-	}
+		return errors.New("KubeEleven interrupt signal")
+	})
 
-	log.Info().Msgf("Stopping Kube-Eleven: %s", g.Wait())
+	g.Go(func() error {
+		// s.Serve() will create a service goroutine for each connection
+		if err := s.Serve(lis); err != nil {
+			return fmt.Errorf("KubeEleven failed to serve: %v", err)
+		}
+		return nil
+	})
+
+	log.Info().Msgf("Stopping KubeEleven: %s", g.Wait())
 }

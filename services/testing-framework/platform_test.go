@@ -1,14 +1,17 @@
 package testingframework
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/Berops/platform/proto/pb"
 	cbox "github.com/Berops/platform/services/context-box/client"
 	"github.com/Berops/platform/urls"
+	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
-	"google.golang.org/grpc"
 
 	"io/ioutil"
 	"testing"
@@ -18,14 +21,14 @@ import (
 
 const (
 	testDir    = "tests"
-	maxTimeout = 120 //checking each 30s, so max allowed time for operation to finish is maxTimeout * 30 [seconds]
+	maxTimeout = 3600 // max allowed time for operation to finish in [seconds]
 )
 
 // ClientConnection will return new client connection to Context-box
 func ClientConnection() pb.ContextBoxServiceClient {
-	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
+	cc, err := utils.GrpcDialWithInsecure("context-box", urls.ContextBoxURL)
 	if err != nil {
-		log.Fatal().Msgf("could not connect to server: %v", err)
+		log.Fatal().Err(err)
 	}
 
 	// Creating the client
@@ -39,22 +42,23 @@ func TestPlatform(t *testing.T) {
 	c := ClientConnection()
 	log.Info().Msg("----Starting the tests----")
 
-	//loop through the directory and list files inside
+	// loop through the directory and list files inside
 	files, err := ioutil.ReadDir(testDir)
 	if err != nil {
 		log.Fatal().Msgf("Error while trying to read test sets: %v", err)
 	}
 
-	//save all the test set paths
+	// save all the test set paths
 	var pathsToSets []string
 	for _, f := range files {
 		if f.IsDir() {
-			pathsToSets = append(pathsToSets, testDir+"/"+f.Name())
 			log.Info().Msgf("Found test set: %s", f.Name())
+			setTestDir := filepath.Join(testDir, f.Name())
+			pathsToSets = append(pathsToSets, setTestDir)
 		}
 	}
 
-	//apply test sets sequentially - while framework is still in dev
+	// apply test sets sequentially - while framework is still in dev
 	for _, path := range pathsToSets {
 		err = applyTestSet(path, c)
 		if err != nil {
@@ -68,7 +72,7 @@ func TestPlatform(t *testing.T) {
 
 // applyTestSet function will apply test set sequantially to a platform
 func applyTestSet(pathToSet string, c pb.ContextBoxServiceClient) error {
-	done := make(chan struct{})
+	done := make(chan string)
 	var id string
 
 	log.Info().Msgf("Working on the test set: %s", pathToSet)
@@ -79,7 +83,8 @@ func applyTestSet(pathToSet string, c pb.ContextBoxServiceClient) error {
 	}
 
 	for _, file := range files {
-		manifest, errR := ioutil.ReadFile(pathToSet + "/" + file.Name())
+		setFile := filepath.Join(pathToSet, file.Name())
+		manifest, errR := ioutil.ReadFile(setFile)
 		if errR != nil {
 			log.Fatal().Err(errR)
 		}
@@ -97,8 +102,11 @@ func applyTestSet(pathToSet string, c pb.ContextBoxServiceClient) error {
 			return err
 		}
 		go configChecker(done, c, id, file.Name())
-
-		<-done //wait until test config has been processed
+		// wait until test config has been processed
+		if res := <-done; res != "ok" {
+			log.Error().Msg(res)
+			return fmt.Errorf(res)
+		}
 	}
 	// delete the nodes
 	log.Info().Msgf("Deleting the clusters from test set: %s", pathToSet)
@@ -111,40 +119,52 @@ func applyTestSet(pathToSet string, c pb.ContextBoxServiceClient) error {
 }
 
 // configChecker function will check if the config has been applied every 30s
-func configChecker(done chan struct{}, c pb.ContextBoxServiceClient, configID string, configName string) {
-	var timeout int
+func configChecker(done chan string, c pb.ContextBoxServiceClient, configID string, configName string) {
+	var counter int
+	sleepSec := 30
 	for {
+		elapsedSec := counter * sleepSec
 		// if CSchecksum == DSchecksum, the config has been processed
 		config, err := c.GetConfigById(context.Background(), &pb.GetConfigByIdRequest{
 			Id: configID,
 		})
 		if err != nil {
-			log.Fatal().Msgf("Got error while waiting for config to finish: %v", err)
+			emsg := fmt.Sprintf("Got error while waiting for config to finish: %v", err)
+			log.Fatal().Msg(emsg)
 		}
 		if config != nil {
-			if equals(config.Config.DsChecksum, config.Config.CsChecksum) {
+			cfg := config.Config
+			if len(cfg.ErrorMessage) > 0 {
+				emsg := cfg.ErrorMessage
+				log.Error().Msg(emsg)
+				done <- emsg
+				return
+			}
+			cs := cfg.CsChecksum
+			ds := cfg.DsChecksum
+			if checksumsEqual(cs, ds) {
 				break
 			}
 		}
-		if timeout == maxTimeout {
-			log.Fatal().Msgf("Test took too long... Aborting on timeout %d", maxTimeout)
+		if elapsedSec == maxTimeout {
+			emsg := fmt.Sprintf("Test took too long... Aborting on timeout %d seconds", maxTimeout)
+			log.Fatal().Msg(emsg)
+			done <- emsg
+			return
 		}
-		time.Sleep(30 * time.Second)
-		timeout++
-		log.Info().Msgf("Waiting for %s to finish... [ %ds elapsed ]", configName, timeout*30)
+		time.Sleep(time.Duration(sleepSec) * time.Second)
+		counter++
+		log.Info().Msgf("Waiting for %s to finish... [ %ds elapsed ]", configName, elapsedSec)
 	}
-	done <- struct{}{} //send signal that config has been processed, unblock the applyTestSet
+	// send signal that config has been processed, unblock the applyTestSet
+	done <- "ok"
 }
 
-// equals function will check if two checksums are equal
-func equals(checksum []byte, checksum2 []byte) bool {
-	if checksum == nil || checksum2 == nil {
+// checksumsEq will check if two checksums are equal
+func checksumsEqual(checksum1 []byte, checksum2 []byte) bool {
+	if len(checksum1) > 0 && len(checksum2) > 0 && bytes.Equal(checksum1, checksum2) {
+		return true
+	} else {
 		return false
 	}
-	for i := 0; i < len(checksum); i++ {
-		if checksum[i] != checksum2[i] {
-			return false
-		}
-	}
-	return true
 }

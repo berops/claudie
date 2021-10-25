@@ -13,6 +13,7 @@ import (
 	"time"
 
 	terraformer "github.com/Berops/platform/services/terraformer/client"
+	"github.com/Berops/platform/urls"
 	"github.com/Berops/platform/utils"
 	"github.com/Berops/platform/worker"
 	"github.com/rs/zerolog/log"
@@ -20,7 +21,6 @@ import (
 
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
-	"github.com/Berops/platform/urls"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -39,8 +39,9 @@ type queue struct {
 }
 
 const (
-	defaultBuilderTTL   = 360
-	defaultSchedulerTTL = 5
+	defaultContextBoxPort = 50055
+	defaultBuilderTTL     = 360
+	defaultSchedulerTTL   = 5
 )
 
 var (
@@ -61,6 +62,7 @@ type configItem struct {
 	CsChecksum   []byte             `bson:"csChecksum"`
 	BuilderTTL   int                `bson:"BuilderTTL"`
 	SchedulerTTL int                `bson:"SchedulerTTL"`
+	ErrorMessage string             `bson:"errorMessage"`
 }
 
 func (q *queue) contains(item *configItem) bool {
@@ -84,6 +86,7 @@ func (q *queue) push() (item *configItem, newQueue queue) {
 	}
 }
 
+// convert configItem struct to pb.Config
 func dataToConfigPb(data *configItem) (*pb.Config, error) {
 	var desiredState *pb.Project = new(pb.Project)
 	err := proto.Unmarshal(data.DesiredState, desiredState)
@@ -108,6 +111,7 @@ func dataToConfigPb(data *configItem) (*pb.Config, error) {
 		CsChecksum:   data.CsChecksum,
 		BuilderTTL:   int32(data.BuilderTTL),
 		SchedulerTTL: int32(data.SchedulerTTL),
+		ErrorMessage: data.ErrorMessage,
 	}, nil
 }
 
@@ -134,6 +138,7 @@ func saveToDB(config *pb.Config) (*pb.Config, error) {
 	data.CsChecksum = config.GetCsChecksum()
 	data.BuilderTTL = int(config.GetBuilderTTL())
 	data.SchedulerTTL = int(config.GetSchedulerTTL())
+	data.ErrorMessage = config.ErrorMessage
 
 	//Check if ID exists
 	//If config has already some ID:
@@ -501,9 +506,9 @@ func destroyConfigTerraformer(config *pb.Config) (*pb.Config, error) {
 	trimmedTerraformerURL := strings.ReplaceAll(urls.TerraformerURL, ":tcp://", "")
 	log.Info().Msgf("Dial Terraformer: %s", trimmedTerraformerURL)
 	// Create connection to Terraformer
-	cc, err := grpc.Dial(trimmedTerraformerURL, grpc.WithInsecure())
+	cc, err := utils.GrpcDialWithInsecure("terraformer", trimmedTerraformerURL)
 	if err != nil {
-		return nil, fmt.Errorf("could not connect to server: %v", err)
+		return nil, err
 	}
 	defer func() { utils.CloseClientConnection(cc) }()
 	// Creating the client
@@ -549,13 +554,10 @@ func main() {
 		}
 	}()
 	// Set the context-box port
-	contextboxPort := os.Getenv("CONTEXT_BOX_PORT")
-	if contextboxPort == "" {
-		contextboxPort = "50055" // Default value
-	}
+	contextboxPort := utils.GetenvOr("CONTEXT_BOX_PORT", fmt.Sprint(defaultContextBoxPort))
 
 	// Start ContextBox Service
-	contextBoxAddr := "0.0.0.0:" + contextboxPort
+	contextBoxAddr := net.JoinHostPort("0.0.0.0", contextboxPort)
 	lis, err := net.Listen("tcp", contextBoxAddr)
 	if err != nil {
 		log.Fatal().Msgf("Failed to listen on contextbox addr %s : %v", contextBoxAddr, err)
@@ -566,39 +568,35 @@ func main() {
 	pb.RegisterContextBoxServiceServer(s, &server{})
 
 	// Add health service to gRPC
-	healthService := healthcheck.NewServerHealthChecker("50055", "CONTEXT_BOX_PORT")
+	healthService := healthcheck.NewServerHealthChecker(contextboxPort, "CONTEXT_BOX_PORT")
 	grpc_health_v1.RegisterHealthServer(s, healthService)
 
 	g, ctx := errgroup.WithContext(context.Background())
 	w := worker.NewWorker(ctx, 10*time.Second, configChecker, worker.ErrorLogger)
 
-	{
-		g.Go(func() error {
-			ch := make(chan os.Signal, 1)
-			signal.Notify(ch, os.Interrupt)
-			<-ch
+	g.Go(func() error {
+		ch := make(chan os.Signal, 1)
+		signal.Notify(ch, os.Interrupt)
+		<-ch
 
-			signal.Stop(ch)
-			s.GracefulStop()
+		signal.Stop(ch)
+		s.GracefulStop()
 
-			return errors.New("interrupt signal")
-		})
-	}
-	{
-		g.Go(func() error {
-			// s.Serve() will create a service goroutine for each connection
-			if err := s.Serve(lis); err != nil {
-				return fmt.Errorf("failed to serve: %v", err)
-			}
-			return nil
-		})
-	}
-	{
-		g.Go(func() error {
-			w.Run()
-			return nil
-		})
-	}
+		return errors.New("ContextBox interrupt signal")
+	})
+
+	g.Go(func() error {
+		// s.Serve() will create a service goroutine for each connection
+		if err := s.Serve(lis); err != nil {
+			return fmt.Errorf("ContextBox failed to serve: %v", err)
+		}
+		return nil
+	})
+
+	g.Go(func() error {
+		w.Run()
+		return nil
+	})
 
 	log.Info().Msgf("Stopping Context-Box: %v", g.Wait())
 }

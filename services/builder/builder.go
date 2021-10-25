@@ -12,6 +12,7 @@ import (
 
 	"github.com/Berops/platform/healthcheck"
 	kubeEleven "github.com/Berops/platform/services/kube-eleven/client"
+	"github.com/Berops/platform/urls"
 	"github.com/Berops/platform/utils"
 	"github.com/Berops/platform/worker"
 	"github.com/rs/zerolog/log"
@@ -21,10 +22,10 @@ import (
 	cbox "github.com/Berops/platform/services/context-box/client"
 	terraformer "github.com/Berops/platform/services/terraformer/client"
 	wireguardian "github.com/Berops/platform/services/wireguardian/client"
-	"github.com/Berops/platform/urls"
-	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 )
+
+const defaultBuilderPort = 50051
 
 type nodesToDelete struct {
 	masterCount uint32
@@ -32,53 +33,53 @@ type nodesToDelete struct {
 }
 
 type countsToDelete struct {
-	nodes map[string]*nodesToDelete //[provider]nodes
+	nodes map[string]*nodesToDelete // [provider]nodes
 }
 
 func callTerraformer(config *pb.Config) (*pb.Config, error) {
 	// Create connection to Terraformer
-	cc, err := grpc.Dial(urls.TerraformerURL, grpc.WithInsecure())
+	cc, err := utils.GrpcDialWithInsecure("terraformer", urls.TerraformerURL)
 	if err != nil {
-		return nil, fmt.Errorf("could not connect to Terraformer: %v", err)
+		return nil, err
 	}
 	defer func() { utils.CloseClientConnection(cc) }()
 	// Creating the client
 	c := pb.NewTerraformerServiceClient(cc)
 	res, err := terraformer.BuildInfrastructure(c, &pb.BuildInfrastructureRequest{Config: config})
 	if err != nil {
-		return nil, err
+		return config, err
 	}
 
 	return res.GetConfig(), nil
 }
 
 func callWireguardian(config *pb.Config) (*pb.Config, error) {
-	cc, err := grpc.Dial(urls.WireguardianURL, grpc.WithInsecure())
+	cc, err := utils.GrpcDialWithInsecure("wireguardian", urls.WireguardianURL)
 	if err != nil {
-		return nil, fmt.Errorf("could not connect to Wireguardian: %v", err)
+		return nil, err
 	}
 	defer func() { utils.CloseClientConnection(cc) }()
 	// Creating the client
 	c := pb.NewWireguardianServiceClient(cc)
 	res, err := wireguardian.BuildVPN(c, &pb.BuildVPNRequest{Config: config})
 	if err != nil {
-		return nil, err
+		return res.GetConfig(), err
 	}
 
 	return res.GetConfig(), nil
 }
 
 func callKubeEleven(config *pb.Config) (*pb.Config, error) {
-	cc, err := grpc.Dial(urls.KubeElevenURL, grpc.WithInsecure())
+	cc, err := utils.GrpcDialWithInsecure("kubeEleven", urls.KubeElevenURL)
 	if err != nil {
-		return nil, fmt.Errorf("could not connect to KubeEleven: %v", err)
+		return nil, err
 	}
 	defer func() { utils.CloseClientConnection(cc) }()
 	// Creating the client
 	c := pb.NewKubeElevenServiceClient(cc)
 	res, err := kubeEleven.BuildCluster(c, &pb.BuildClusterRequest{Config: config})
 	if err != nil {
-		return nil, err
+		return res.GetConfig(), err
 	}
 
 	return res.GetConfig(), nil
@@ -107,15 +108,15 @@ func diff(config *pb.Config) (*pb.Config, bool, map[string]*countsToDelete) {
 			tableCurrent[tmp] = nodeCount{nodePool.Master.Count, nodePool.Worker.Count}
 		}
 	}
-
-	for _, cluster := range tmpConfig.GetDesiredState().GetClusters() {
+	tmpConfigClusters := tmpConfig.GetDesiredState().GetClusters()
+	for _, cluster := range tmpConfigClusters {
 		tmp := make(map[string]*nodesToDelete)
 		for _, nodePool := range cluster.GetNodePools() {
 			var nodesProvider nodesToDelete
 			key := tableKey{nodePoolName: nodePool.Name, clusterName: cluster.Name}
 
 			if _, ok := tableCurrent[key]; ok {
-				tmpNodePool := getNodePoolByName(nodePool.Name, utils.GetClusterByName(cluster.Name, tmpConfig.GetDesiredState().GetClusters()).GetNodePools())
+				tmpNodePool := getNodePoolByName(nodePool.Name, utils.GetClusterByName(cluster.Name, tmpConfigClusters).GetNodePools())
 				if nodePool.Master.Count > tableCurrent[key].masterCount {
 					tmpNodePool.Master.Count = nodePool.Master.Count
 					adding = true
@@ -153,11 +154,12 @@ func diff(config *pb.Config) (*pb.Config, bool, map[string]*countsToDelete) {
 		}
 	}
 
-	if adding && deleting {
+	switch {
+	case adding && deleting:
 		return tmpConfig, deleting, delCounts
-	} else if deleting {
+	case deleting:
 		return nil, deleting, delCounts
-	} else {
+	default:
 		return nil, deleting, nil
 	}
 }
@@ -168,9 +170,9 @@ func getNodePoolByName(nodePoolName string, nodePools []*pb.NodePool) *pb.NodePo
 	if nodePoolName == "" {
 		return nil
 	}
-	for i := 0; i < len(nodePools); i++ {
-		if nodePools[i].Name == nodePoolName {
-			return nodePools[i]
+	for _, np := range nodePools {
+		if np.Name == nodePoolName {
+			return np
 		}
 	}
 	return nil
@@ -180,21 +182,39 @@ func getNodePoolByName(nodePoolName string, nodePools []*pb.NodePool) *pb.NodePo
 func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, tmp bool) (err error) {
 	log.Info().Msgf("processConfig received config: %s", config.GetName())
 	config, err = callTerraformer(config)
-	if err != nil {
-		return
+	if err != nil && config != nil {
+		config.CurrentState = config.DesiredState // Update currentState
+		// save error message to config
+		config.ErrorMessage = err.Error()
+		err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
+		if err != nil {
+			return fmt.Errorf("error while saving the config: %v", err)
+		}
 	}
 
 	config, err = callWireguardian(config)
-	if err != nil {
-		return
+	if err != nil && config != nil {
+		config.CurrentState = config.DesiredState // Update currentState
+		// save error message to config
+		config.ErrorMessage = err.Error()
+		err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
+		if err != nil {
+			return fmt.Errorf("error while saving the config: %v", err)
+		}
 	}
 
 	config, err = callKubeEleven(config)
-	if err != nil {
-		return
+	if err != nil && config != nil {
+		config.CurrentState = config.DesiredState // Update currentState
+		// save error message to config
+		config.ErrorMessage = err.Error()
+		err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
+		if err != nil {
+			return fmt.Errorf("error while saving the config: %v", err)
+		}
 	}
 
-	if !tmp {
+	if !tmp && config != nil {
 		config.CurrentState = config.DesiredState // Update currentState
 		err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 		if err != nil {
@@ -251,17 +271,14 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 func healthCheck() error {
 	//Check if Builder can connect to Terraformer/Wireguardian/Kube-eleven
 	//Connection to these services are crucial for Builder, without them, the builder is NOT Ready
-	_, err := grpc.Dial(urls.KubeElevenURL, grpc.WithInsecure())
-	if err != nil {
-		return fmt.Errorf("could not connect to Kube-eleven: %v", err)
+	if _, err := utils.GrpcDialWithInsecure("kubeEleven", urls.KubeElevenURL); err != nil {
+		return err
 	}
-	_, err = grpc.Dial(urls.TerraformerURL, grpc.WithInsecure())
-	if err != nil {
-		return fmt.Errorf("could not connect to Terraformer: %v", err)
+	if _, err := utils.GrpcDialWithInsecure("terraformer", urls.TerraformerURL); err != nil {
+		return err
 	}
-	_, err = grpc.Dial(urls.WireguardianURL, grpc.WithInsecure())
-	if err != nil {
-		return fmt.Errorf("could not connect to Wireguardian: %v", err)
+	if _, err := utils.GrpcDialWithInsecure("wireguardian", urls.WireguardianURL); err != nil {
+		return err
 	}
 	return nil
 }
@@ -322,13 +339,12 @@ func deleteNodes(config *pb.Config, toDelete map[string]*countsToDelete) (*pb.Co
 }
 
 func remove(slice []*pb.NodeInfo, value string) []*pb.NodeInfo {
-	var pos int
-	for pos = 0; pos < len(slice); pos++ {
-		if slice[pos].GetNodeName() == value {
-			break
+	for idx, v := range slice {
+		if v.GetNodeName() == value {
+			return append(slice[:idx], slice[idx+1:]...)
 		}
 	}
-	return append(slice[:pos], slice[pos+1:]...)
+	return slice
 }
 
 // deleteNodesByName checks if there is any difference in nodes between a desired state cluster and a running cluster
@@ -410,7 +426,7 @@ func main() {
 	utils.InitLog("builder", "GOLANG_LOG")
 
 	// Create connection to Context-box
-	cc, err := grpc.Dial(urls.ContextBoxURL, grpc.WithInsecure())
+	cc, err := utils.GrpcDialWithInsecure("context-box", urls.ContextBoxURL)
 	if err != nil {
 		log.Fatal().Msgf("Could not connect to Content-box: %v", err)
 	}
@@ -419,27 +435,24 @@ func main() {
 	c := pb.NewContextBoxServiceClient(cc)
 
 	// Initilize health probes
-	healthChecker := healthcheck.NewClientHealthChecker("50051", healthCheck)
+	healthChecker := healthcheck.NewClientHealthChecker(fmt.Sprint(defaultBuilderPort), healthCheck)
 	healthChecker.StartProbes()
 
 	g, ctx := errgroup.WithContext(context.Background())
 	w := worker.NewWorker(ctx, 5*time.Second, configProcessor(c), worker.ErrorLogger)
 
-	{
-		g.Go(func() error {
-			ch := make(chan os.Signal, 1)
-			signal.Notify(ch, os.Interrupt)
-			defer signal.Stop(ch)
-			<-ch
-			return errors.New("interrupt signal")
-		})
-	}
-	{
-		g.Go(func() error {
-			w.Run()
-			return nil
-		})
-	}
+	g.Go(func() error {
+		ch := make(chan os.Signal, 1)
+		signal.Notify(ch, os.Interrupt)
+		defer signal.Stop(ch)
+		<-ch
+		return errors.New("Builder interrupt signal")
+	})
+
+	g.Go(func() error {
+		w.Run()
+		return nil
+	})
 
 	log.Info().Msgf("Stopping Builder: %v", g.Wait())
 }
