@@ -44,7 +44,7 @@ RUN apt update && \
   libkrb5-dev \
   krb5-user \
   openssh-client \
-  ansible
+  ansible=2.10.7+merged+base+2.10.8+dfsg-1
 
 #Copy the binaries to empty base image
 COPY --from=build /go/services/wireguardian /bin/services/wireguardian
