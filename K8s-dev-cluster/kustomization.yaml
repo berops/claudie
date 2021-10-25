@@ -27,4 +27,4 @@ images:
 - name: eu.gcr.io/platform-infrastructure-316112/platform/testing-framework
   newTag: 3a27b2c7b3375017e7beb9d5378f6624e4bac469
 - name: eu.gcr.io/platform-infrastructure-316112/platform/wireguardian
-  newTag: 3a27b2c7b3375017e7beb9d5378f6624e4bac469
+  newTag: f56eac83f6282294be14f3a38fe5846600fcb630
