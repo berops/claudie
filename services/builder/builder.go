@@ -184,8 +184,8 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, tmp bool) (e
 	config, err = callTerraformer(config)
 	if err != nil && config != nil {
 		config.CurrentState = config.DesiredState // Update currentState
-		// save error to config status
-		config = utils.SetConfigErrorMessage(config, err)
+		// save error message to config
+		config.ErrorMessage = err.Error()
 		err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 		if err != nil {
 			return fmt.Errorf("error while saving the config: %v", err)
@@ -195,8 +195,8 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, tmp bool) (e
 	config, err = callWireguardian(config)
 	if err != nil && config != nil {
 		config.CurrentState = config.DesiredState // Update currentState
-		// save error to config status
-		config = utils.SetConfigErrorMessage(config, err)
+		// save error message to config
+		config.ErrorMessage = err.Error()
 		err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 		if err != nil {
 			return fmt.Errorf("error while saving the config: %v", err)
@@ -206,8 +206,8 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, tmp bool) (e
 	config, err = callKubeEleven(config)
 	if err != nil && config != nil {
 		config.CurrentState = config.DesiredState // Update currentState
-		// save error to config status
-		config = utils.SetConfigErrorMessage(config, err)
+		// save error message to config
+		config.ErrorMessage = err.Error()
 		err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 		if err != nil {
 			return fmt.Errorf("error while saving the config: %v", err)

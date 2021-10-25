@@ -134,8 +134,8 @@ func configChecker(done chan string, c pb.ContextBoxServiceClient, configID stri
 		}
 		if config != nil {
 			cfg := config.Config
-			if cfg.Status != nil && cfg.Status.IsFail {
-				emsg := cfg.Status.ErrorMessage
+			if len(cfg.ErrorMessage) > 0 {
+				emsg := cfg.ErrorMessage
 				log.Error().Msg(emsg)
 				done <- emsg
 				return

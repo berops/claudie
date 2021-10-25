@@ -26,10 +26,11 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 	config := req.GetConfig()
 	err := buildInfrastructure(config)
 	if err != nil {
-		config = utils.SetConfigErrorMessage(config, err)
+		config.ErrorMessage = err.Error()
 		return &pb.BuildInfrastructureResponse{Config: config}, fmt.Errorf("template generator failed: %v", err)
 	}
 	log.Info().Msg("Infrastructure was successfully generated")
+	config.ErrorMessage = ""
 	return &pb.BuildInfrastructureResponse{Config: config}, nil
 }
 
@@ -38,10 +39,10 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 	config := req.GetConfig()
 	err := destroyInfrastructure(config.GetCurrentState())
 	if err != nil {
-		config = utils.SetConfigErrorMessage(config, err)
+		config.ErrorMessage = err.Error()
 		return &pb.DestroyInfrastructureResponse{Config: config}, fmt.Errorf("error while destroying the infrastructure: %v", err)
 	}
-
+	config.ErrorMessage = ""
 	return &pb.DestroyInfrastructureResponse{Config: config}, nil
 }
 

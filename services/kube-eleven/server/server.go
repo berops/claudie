@@ -71,31 +71,31 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 		d.formatTemplateData(cluster)
 		// Create a private key file
 		if err := utils.CreateKeyFile(cluster.GetPrivateKey(), outputPath, "private.pem"); err != nil {
-			config = utils.SetConfigErrorMessage(config, err)
+			config.ErrorMessage = err.Error()
 			return &pb.BuildClusterResponse{Config: config}, err
 		}
 		// Create a cluster-kubeconfig file
 		kubeconfigFile := filepath.Join(outputPath, "cluster-kubeconfig")
 		if err := ioutil.WriteFile(kubeconfigFile, []byte(cluster.GetKubeconfig()), 0600); err != nil {
-			config = utils.SetConfigErrorMessage(config, err)
+			config.ErrorMessage = err.Error()
 			return &pb.BuildClusterResponse{Config: config}, err
 		}
 		// Generate a kubeOne yaml manifest from a golang template
 		templateFile := filepath.Join(outputPath, "kubeone.tpl")
 		outputFile := filepath.Join(outputPath, "kubeone.yaml")
 		if err := genKubeOneConfig(templateFile, outputFile, d); err != nil {
-			config = utils.SetConfigErrorMessage(config, err)
+			config.ErrorMessage = err.Error()
 			return &pb.BuildClusterResponse{Config: config}, err
 		}
 
 		if err := runKubeOne(); err != nil {
-			config = utils.SetConfigErrorMessage(config, err)
+			config.ErrorMessage = err.Error()
 			return &pb.BuildClusterResponse{Config: config}, err
 		}
 
 		kc, err := saveKubeconfig()
 		if err != nil {
-			config = utils.SetConfigErrorMessage(config, err)
+			config.ErrorMessage = err.Error()
 			return &pb.BuildClusterResponse{Config: config}, err
 		}
 		cluster.Kubeconfig = kc
@@ -107,11 +107,11 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 			"private.pem",
 		}
 		if err := utils.DeleteTmpFiles(outputPath, tmpFiles); err != nil {
-			config = utils.SetConfigErrorMessage(config, err)
+			config.ErrorMessage = err.Error()
 			return &pb.BuildClusterResponse{Config: config}, err
 		}
 	}
-
+	config.ErrorMessage = ""
 	return &pb.BuildClusterResponse{Config: config}, nil
 }
 

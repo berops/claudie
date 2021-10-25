@@ -62,7 +62,6 @@ type configItem struct {
 	CsChecksum   []byte             `bson:"csChecksum"`
 	BuilderTTL   int                `bson:"BuilderTTL"`
 	SchedulerTTL int                `bson:"SchedulerTTL"`
-	IsFail       bool               `bson:"isFail"`
 	ErrorMessage string             `bson:"errorMessage"`
 }
 
@@ -112,7 +111,7 @@ func dataToConfigPb(data *configItem) (*pb.Config, error) {
 		CsChecksum:   data.CsChecksum,
 		BuilderTTL:   int32(data.BuilderTTL),
 		SchedulerTTL: int32(data.SchedulerTTL),
-		Status:       &pb.Config_Status{IsFail: data.IsFail, ErrorMessage: data.ErrorMessage},
+		ErrorMessage: data.ErrorMessage,
 	}, nil
 }
 
@@ -139,13 +138,7 @@ func saveToDB(config *pb.Config) (*pb.Config, error) {
 	data.CsChecksum = config.GetCsChecksum()
 	data.BuilderTTL = int(config.GetBuilderTTL())
 	data.SchedulerTTL = int(config.GetSchedulerTTL())
-	if config.Status != nil {
-		data.IsFail = config.Status.IsFail
-		data.ErrorMessage = config.Status.ErrorMessage
-	} else {
-		data.IsFail = false
-		data.ErrorMessage = ""
-	}
+	data.ErrorMessage = config.ErrorMessage
 
 	//Check if ID exists
 	//If config has already some ID:
