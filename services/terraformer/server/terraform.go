@@ -328,5 +328,5 @@ func existsInCluster(m []*pb.NodeInfo, ip string) (*pb.NodeInfo, error) {
 			return ips, nil
 		}
 	}
-	return nil, fmt.Errorf("Ip address %v does not exist", ip)
+	return nil, fmt.Errorf("ip address %v does not exist", ip)
 }

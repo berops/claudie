@@ -79,13 +79,13 @@ func main() {
 		signal.Stop(ch)
 		s.GracefulStop()
 
-		return errors.New("Terraformer interrupt signal")
+		return errors.New("terraformer interrupt signal")
 	})
 
 	g.Go(func() error {
 		// s.Serve() will create a service goroutine for each connection
 		if err := s.Serve(lis); err != nil {
-			return fmt.Errorf("Terraformer failed to serve: %v", err)
+			return fmt.Errorf("terraformer failed to serve: %v", err)
 		}
 		return nil
 	})
