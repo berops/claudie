@@ -8,11 +8,13 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"sync"
 	"text/template"
 
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -37,132 +39,179 @@ type jsonOut struct {
 	Control map[string]string `json:"control"`
 }
 
-// buildInfrastructure is generating terraform files for different providers and calling terraform
-func buildInfrastructure(config *pb.Config) error {
-	desiredState := config.DesiredState
-	log.Info().Msg("Generating templates for infrastructure build")
-	var backendData Backend
-	backendData.ProjectName = desiredState.GetName()
-	for _, cluster := range desiredState.Clusters {
-		log.Info().Msgf("Cluster name: %s", cluster.GetName())
-		backendData.ClusterName = cluster.GetName()
-		// Creating backend.tf file from the template
-		templateFile := filepath.Join(templatePath, "backend.tpl")
-		trfFile := filepath.Join(outputPath, "backend.tf")
-		if err := templateGen(templateFile, trfFile, backendData, outputPath); err != nil {
-			log.Error().Msgf("Error generating terraform config file %s from template %s: %v",
-				trfFile, templateFile, err)
-			return err
-		}
-		// Creating .tf files for providers from templates
-		if err := buildNodePools(cluster); err != nil {
-			return err
-		}
-		// Create publicKey file for a cluster
-		if err := utils.CreateKeyFile(cluster.GetPublicKey(), outputPath, "public.pem"); err != nil {
-			return err
-		}
+func buildInfrastructureAsync(cluster *pb.Cluster, backendData Backend) error {
+	// Prepare backend data for golang templates
+	backendData.ClusterName = cluster.GetName()
+	log.Info().Msgf("Cluster name: %s", cluster.GetName())
 
-		if err := utils.CreateKeyFile(cluster.GetPublicKey(), outputPath, "private.pem"); err != nil {
-			return err
-		}
-		// Call terraform init and apply
-		log.Info().Msgf("Running terraform init in %s", outputPath)
-		if err := initTerraform(outputPath); err != nil {
-			log.Error().Msgf("Error running terraform init in %s: %v", outputPath, err)
-			return err
-		}
+	templateFilePath := filepath.Join(templatePath, "backend.tpl")
+	tfFilePath := filepath.Join(outputPath, cluster.GetName(), "backend.tf")
+	outputPathCluster := filepath.Join(outputPath, cluster.GetName())
 
-		log.Info().Msgf("Running terraform apply in %s", outputPath)
-		if err := applyTerraform(outputPath); err != nil {
-			log.Error().Msgf("Error running terraform apply in %s: %v", outputPath, err)
-			return err
-		}
+	// Creating backend.tf file from the template backend.tpl
+	if err := templateGen(templateFilePath, tfFilePath, backendData, outputPathCluster); err != nil {
+		log.Error().Msgf("Error generating terraform config file %s from template %s: %v",
+			tfFilePath, templateFilePath, err)
+		return err
+	}
 
-		// Fill public ip addresses to NodeInfos
-		tmpCluster := utils.GetClusterByName(cluster.Name, config.CurrentState.Clusters)
-		var m []*pb.NodeInfo
-		var newM []*pb.NodeInfo
+	// Creating .tf files for providers from templates
+	if err := buildNodePools(cluster, outputPathCluster); err != nil {
+		return err
+	}
 
-		if tmpCluster != nil {
-			m = tmpCluster.NodeInfos
-		}
-		for _, nodepool := range cluster.NodePools {
-			output, err := outputTerraform(outputPath, nodepool.Provider.Name)
-			if err != nil {
-				return err
-			}
+	// Create publicKey and privateKey file for a cluster
+	terraformOutputPath := filepath.Join(outputPath, cluster.GetName())
+	if err := utils.CreateKeyFile(cluster.GetPublicKey(), terraformOutputPath, "public.pem"); err != nil {
+		return err
+	}
+	if err := utils.CreateKeyFile(cluster.GetPublicKey(), terraformOutputPath, "private.pem"); err != nil {
+		return err
+	}
 
-			out, err := readOutput(output)
-			if err != nil {
-				return err
-			}
-			res := fillNodes(m, &out, nodepool)
-			newM = append(newM, res...)
-		}
-		cluster.NodeInfos = newM
-		// Clean after Terraform. Remove tmp terraform dir.
-		err := os.RemoveAll(outputPath)
+	// Call terraform init and apply
+	log.Info().Msgf("Running terraform init in %s", terraformOutputPath)
+	if err := initTerraform(terraformOutputPath); err != nil {
+		log.Error().Msgf("Error running terraform init in %s: %v", terraformOutputPath, err)
+		return err
+	}
+	log.Info().Msgf("Running terraform apply in %s", terraformOutputPath)
+	if err := applyTerraform(terraformOutputPath); err != nil {
+		log.Error().Msgf("Error running terraform apply in %s: %v", terraformOutputPath, err)
+		return err
+	}
+
+	// Fill public ip addresses to NodeInfos
+	var m []*pb.NodeInfo
+	var newM []*pb.NodeInfo
+
+	if cluster != nil {
+		m = cluster.NodeInfos
+	}
+	for _, nodepool := range cluster.NodePools {
+		output, err := outputTerraform(terraformOutputPath, nodepool.Provider.Name)
 		if err != nil {
 			return err
 		}
 
-		for _, m := range desiredState.Clusters {
-			for _, nodeInfo := range m.NodeInfos {
-				fmt.Println(nodeInfo)
-			}
+		out, err := readOutput(output)
+		if err != nil {
+			return err
 		}
+
+		res := fillNodes(m, &out, nodepool)
+		newM = append(newM, res...)
+	}
+	cluster.NodeInfos = newM
+	// Clean after Terraform. Remove tmp terraform dir.
+	err := os.RemoveAll(terraformOutputPath)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// buildInfrastructure is generating terraform files for different providers and calling terraform
+func buildInfrastructure(config *pb.Config) error {
+	fmt.Println("Generating templates")
+	var backendData Backend
+	backendData.ProjectName = config.GetDesiredState().GetName()
+	var errGroup errgroup.Group
+
+	for _, cluster := range config.GetDesiredState().GetClusters() {
+		func(cluster *pb.Cluster, backendData Backend) {
+			errGroup.Go(func() error {
+				err := buildInfrastructureAsync(cluster, backendData)
+				if err != nil {
+					log.Error().Msgf("error encountered in Terraformer - buildInfrastructure: %v", err)
+					return err
+				}
+				return nil
+			})
+		}(cluster, backendData)
+	}
+	err := errGroup.Wait()
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
-// destroyInfrastructure executes terraform destroy --auto-approve. It destroys whole infrastructure in a project.
-func destroyInfrastructure(project *pb.Project) error {
+// destroyInfrastructureAsync executes terraform destroy --auto-approve. It destroys whole infrastructure in a project.
+func destroyInfrastructureAsync(cluster *pb.Cluster, backendData Backend, wg *sync.WaitGroup) error {
 	log.Info().Msg("Generating templates for infrastructure destroy")
-	var backendData Backend
-	backendData.ProjectName = project.GetName()
-	for _, cluster := range project.Clusters {
-		log.Info().Msgf("Cluster name: %s", cluster.GetName())
-		backendData.ClusterName = cluster.GetName()
-		// Creating backend.tf file
-		templateFile := filepath.Join(templatePath, "backend.tpl")
-		trfFile := filepath.Join(outputPath, "backend.tf")
-		if err := templateGen(templateFile, trfFile, backendData, outputPath); err != nil {
-			log.Error().Msgf("Error generating terraform config file %s from template %s: %v",
-				trfFile, templateFile, err)
-			return err
-		}
-		// Creating .tf files for providers
-		if err := buildNodePools(cluster); err != nil {
-			log.Error().Msgf("Error building NodePools for cluster %s : %v", cluster.GetName(), err)
-			return err
-		}
-		// Create publicKey file for a cluster
-		if err := utils.CreateKeyFile(cluster.GetPublicKey(), outputPath, "public.pem"); err != nil {
-			log.Error().Msgf("Error in CreateKeyFile: %v", err)
-			return err
-		}
-		// Call terraform
-		if err := initTerraform(outputPath); err != nil {
-			log.Error().Msgf("Error in initTerraform: %v", err)
-			return err
-		}
+	defer wg.Done()
+	backendData.ClusterName = cluster.GetName()
 
-		if err := destroyTerraform(outputPath); err != nil {
-			log.Error().Msgf("Error in destroyTerraform: %v", err)
-			return err
-		}
+	log.Info().Msgf("Cluster name: %s", cluster.GetName())
 
-		if err := os.RemoveAll(outputPath); err != nil {
-			return err
-		}
+	// Creating backend.tf file
+	templateFilePath := filepath.Join(templatePath, "backend.tpl")
+	tfFilePath := filepath.Join(outputPath, cluster.GetName(), "backend.tf")
+	outputPathCluster := filepath.Join(outputPath, cluster.GetName())
+
+	// Creating backend.tf file from the template backend.tpl
+	if err := templateGen(templateFilePath, tfFilePath, backendData, outputPathCluster); err != nil {
+		log.Error().Msgf("Error generating terraform config file %s from template %s: %v",
+			tfFilePath, templateFilePath, err)
+		return err
 	}
 
+	// Creating .tf files for providers from templates
+	if err := buildNodePools(cluster, outputPathCluster); err != nil {
+		return err
+	}
+
+	// Create publicKey and privateKey file for a cluster
+	terraformOutputPath := filepath.Join(outputPath, cluster.GetName())
+	if err := utils.CreateKeyFile(cluster.GetPublicKey(), terraformOutputPath, "public.pem"); err != nil {
+		return err
+	}
+	if err := utils.CreateKeyFile(cluster.GetPublicKey(), terraformOutputPath, "private.pem"); err != nil {
+		return err
+	}
+
+	// Call terraform init and apply
+	log.Info().Msgf("Running terraform init in %s", terraformOutputPath)
+	if err := initTerraform(terraformOutputPath); err != nil {
+		log.Error().Msgf("Error running terraform init in %s: %v", terraformOutputPath, err)
+		return err
+	}
+
+	if err := destroyTerraform(terraformOutputPath); err != nil {
+		log.Error().Msgf("Error in destroyTerraform: %v", err)
+		return err
+	}
+	// Clean after Terraform. Remove tmp terraform dir.
+	if err := os.RemoveAll(terraformOutputPath); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func destroyInfrastructure(config *pb.Config) error {
+	fmt.Println("Generating templates")
+	var backendData Backend
+	backendData.ProjectName = config.GetDesiredState().GetName()
+	var wg sync.WaitGroup
+	for _, cluster := range config.GetDesiredState().GetClusters() {
+		wg.Add(1)
+		go func(cluster *pb.Cluster) error {
+			err := destroyInfrastructureAsync(cluster, backendData, &wg)
+			if err != nil {
+				return fmt.Errorf("error encountered in Terraformer - destroyInfrastructure: %v", err)
+			}
+			return nil
+		}(cluster)
+	}
+	wg.Wait()
 	return nil
 }
 
 // buildNodePools creates .tf files from providers contained in a cluster
-func buildNodePools(cluster *pb.Cluster) error {
+func buildNodePools(cluster *pb.Cluster, outputPathCluster string) error {
 	for i, nodePool := range cluster.NodePools {
 		providerName := nodePool.Provider.Name
 		switch providerName {
@@ -172,7 +221,7 @@ func buildNodePools(cluster *pb.Cluster) error {
 			tplFileName := fmt.Sprintf("%s.tpl", providerName)
 			terraFormFileName := fmt.Sprintf("%s.tf", providerName)
 			tplFile := filepath.Join(templatePath, tplFileName)
-			trfFile := filepath.Join(outputPath, terraFormFileName)
+			trfFile := filepath.Join(outputPathCluster, terraFormFileName)
 			genRes := templateGen(
 				tplFile,
 				trfFile,
@@ -195,7 +244,7 @@ func buildNodePools(cluster *pb.Cluster) error {
 // templateGen generates terraform config file from a template .tpl
 func templateGen(templatePath string, outputPath string, d interface{}, dirName string) error {
 	if _, err := os.Stat(dirName); os.IsNotExist(err) {
-		if err := os.Mkdir(dirName, os.ModePerm); err != nil {
+		if err := os.MkdirAll(dirName, os.ModePerm); err != nil {
 			return fmt.Errorf("failed to create dir: %v", err)
 		}
 	}
@@ -220,7 +269,7 @@ func templateGen(templatePath string, outputPath string, d interface{}, dirName 
 // initTerraform executes terraform init in a given path
 func initTerraform(directoryName string) error {
 	// Apply GCP credentials as an env variable
-	err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "../../../../keys/platform-296509-d6ddeb344e91.json")
+	err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "../../../../../keys/platform-296509-d6ddeb344e91.json")
 	if err != nil {
 		return fmt.Errorf("failed to set the google credentials env variable: %v", err)
 	}

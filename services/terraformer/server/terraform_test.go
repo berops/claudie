@@ -195,11 +195,6 @@ func TestBuildInfrastructure(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestDestroyInfrastructure(t *testing.T) {
-	err := destroyInfrastructure(testState)
-	require.NoError(t, err)
-}
-
 func TestOutputTerraform(t *testing.T) {
 	out, err := outputTerraform(outputPath, "gcp")
 	t.Log(out)

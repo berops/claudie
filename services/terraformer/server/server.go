@@ -37,7 +37,7 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrastructureRequest) (*pb.DestroyInfrastructureResponse, error) {
 	fmt.Println("DestroyInfrastructure function was invoked with config:", req.GetConfig().GetName())
 	config := req.GetConfig()
-	err := destroyInfrastructure(config.GetCurrentState())
+	err := destroyInfrastructure(config)
 	if err != nil {
 		config.ErrorMessage = err.Error()
 		return &pb.DestroyInfrastructureResponse{Config: config}, fmt.Errorf("error while destroying the infrastructure: %v", err)
