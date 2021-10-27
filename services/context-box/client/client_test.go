@@ -102,7 +102,7 @@ func TestSaveConfigScheduler(t *testing.T) {
 
 func TestDeleteConfig(t *testing.T) {
 	c, cc := ClientConnection()
-	configID := "61670534f7a29e5c0a7d7c26" // Put desired config ID here
+	configID := "6179101c00343357d3a52960" // Put desired config ID here
 	delErr := DeleteConfig(c, configID)
 	if delErr != nil {
 		log.Fatal().Msgf("Error deleting config %s %v", configID, delErr)
@@ -110,11 +110,13 @@ func TestDeleteConfig(t *testing.T) {
 	closeConn(t, cc)
 }
 
+// To get an output of the test, run this from the test's directory: go test -timeout 30s -run ^TestPrintConfig$ github.com/Berops/platform/services/context-box/client -v
 func TestPrintConfig(t *testing.T) {
 	c, cc := ClientConnection()
-	_, err := PrintConfig(c, "61670534f7a29e5c0a7d7c26") // Put desired config ID here
+	out, err := PrintConfig(c, "6179101c00343357d3a52960") // Put desired config ID here
 	if err != nil {
 		log.Fatal().Msgf("Config not found: %v", err)
 	}
+	t.Log(out)
 	closeConn(t, cc)
 }
