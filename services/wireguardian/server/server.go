@@ -74,9 +74,10 @@ func buildVPNAsync(cluster *pb.Cluster) error {
 		return err
 	}
 
-	if err := utils.DeleteTmpFiles(invOutputPath, []string{sslPrivateKeyFile, inventoryFile}); err != nil {
+	if err := os.RemoveAll(invOutputPath); err != nil {
 		return err
 	}
+
 	return nil
 }
 

@@ -103,11 +103,6 @@ func buildInfrastructureAsync(cluster *pb.Cluster, backendData Backend) error {
 		newM = append(newM, res...)
 	}
 	cluster.NodeInfos = newM
-	// Clean after Terraform. Remove tmp terraform dir.
-	err := os.RemoveAll(terraformOutputPath)
-	if err != nil {
-		return err
-	}
 
 	return nil
 }
@@ -135,6 +130,12 @@ func buildInfrastructure(config *pb.Config) error {
 	if err != nil {
 		return err
 	}
+
+	// Clean after terraform
+	if err := os.RemoveAll(outputPath); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -183,10 +184,6 @@ func destroyInfrastructureAsync(cluster *pb.Cluster, backendData Backend, wg *sy
 		log.Error().Msgf("Error in destroyTerraform: %v", err)
 		return err
 	}
-	// Clean after Terraform. Remove tmp terraform dir.
-	if err := os.RemoveAll(terraformOutputPath); err != nil {
-		return err
-	}
 
 	return nil
 }
@@ -207,6 +204,11 @@ func destroyInfrastructure(config *pb.Config) error {
 		}(cluster)
 	}
 	wg.Wait()
+
+	if err := os.RemoveAll(outputPath); err != nil {
+		return err
+	}
+
 	return nil
 }
 
