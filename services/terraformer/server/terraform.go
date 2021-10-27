@@ -120,6 +120,7 @@ func buildInfrastructure(config *pb.Config) error {
 				err := buildInfrastructureAsync(cluster, backendData)
 				if err != nil {
 					log.Error().Msgf("error encountered in Terraformer - buildInfrastructure: %v", err)
+					config.ErrorMessage = err.Error()
 					return err
 				}
 				return nil
@@ -128,6 +129,7 @@ func buildInfrastructure(config *pb.Config) error {
 	}
 	err := errGroup.Wait()
 	if err != nil {
+		config.ErrorMessage = err.Error()
 		return err
 	}
 

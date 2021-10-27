@@ -45,6 +45,7 @@ func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVP
 				err := buildVPNAsync(cluster)
 				if err != nil {
 					log.Error().Msgf("error encountered in Wireguardian - BuildVPN: %v", err)
+					config.ErrorMessage = err.Error()
 					return err
 				}
 				return nil
@@ -54,6 +55,7 @@ func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVP
 
 	err := errGroup.Wait()
 	if err != nil {
+		config.ErrorMessage = err.Error()
 		return &pb.BuildVPNResponse{Config: config}, err
 	}
 	config.ErrorMessage = ""
