@@ -24,7 +24,7 @@ kubeEleven:
 
 # -timeout 0 will disable default timeout
 test:
-	go test -v ./services/testing-framework/... -timeout 0
+	go test -v ./services/testing-framework/... -timeout 0 -count=1
 
 # Run all services in docker containers via docker-compose on a local machine
 dockerUp:
