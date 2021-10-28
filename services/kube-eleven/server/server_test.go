@@ -7,7 +7,6 @@ import (
 
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/utils"
-	"github.com/stretchr/testify/require"
 )
 
 var cluster = &pb.Cluster{
@@ -70,11 +69,4 @@ func Test_createKeyFile(t *testing.T) {
 		// path/to/whatever does not exist
 		t.Errorf("%s file doesn't exist", privateKeyFile)
 	}
-}
-
-func Test_runKubeOne(t *testing.T) {
-	if err := runKubeOne(); err != nil {
-		t.Fatal(err)
-	}
-	require.NoError(t, nil)
 }
