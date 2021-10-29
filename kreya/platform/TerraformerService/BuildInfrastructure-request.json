@@ -1,0 +1,343 @@
+{
+  "config": {
+    "id": "fooBar",
+    "name": "fooBar",
+    "manifest": "fooBar",
+    "desiredState": {
+      "name": "fooBar",
+      "clusters": [
+        {
+          "name": "fooBar",
+          "kubernetes": "fooBar",
+          "network": "fooBar",
+          "kubeconfig": "fooBar",
+          "publicKey": "fooBar",
+          "privateKey": "fooBar",
+          "nodePools": [
+            {
+              "name": "fooBar",
+              "region": "fooBar",
+              "master": {
+                "count": 123,
+                "serverType": "fooBar",
+                "image": "fooBar",
+                "diskSize": 123,
+                "zone": "fooBar",
+                "location": "fooBar",
+                "datacenter": "fooBar"
+              },
+              "worker": {
+                "count": 123,
+                "serverType": "fooBar",
+                "image": "fooBar",
+                "diskSize": 123,
+                "zone": "fooBar",
+                "location": "fooBar",
+                "datacenter": "fooBar"
+              },
+              "provider": {
+                "name": "fooBar",
+                "credentials": "fooBar"
+              }
+            },
+            {
+              "name": "fooBar",
+              "region": "fooBar",
+              "master": {
+                "count": 123,
+                "serverType": "fooBar",
+                "image": "fooBar",
+                "diskSize": 123,
+                "zone": "fooBar",
+                "location": "fooBar",
+                "datacenter": "fooBar"
+              },
+              "worker": {
+                "count": 123,
+                "serverType": "fooBar",
+                "image": "fooBar",
+                "diskSize": 123,
+                "zone": "fooBar",
+                "location": "fooBar",
+                "datacenter": "fooBar"
+              },
+              "provider": {
+                "name": "fooBar",
+                "credentials": "fooBar"
+              }
+            }
+          ],
+          "nodeInfos": [
+            {
+              "nodeName": "fooBar",
+              "public": "fooBar",
+              "private": "fooBar",
+              "isControl": 123,
+              "provider": "fooBar",
+              "nodepoolName": "fooBar"
+            },
+            {
+              "nodeName": "fooBar",
+              "public": "fooBar",
+              "private": "fooBar",
+              "isControl": 123,
+              "provider": "fooBar",
+              "nodepoolName": "fooBar"
+            }
+          ]
+        },
+        {
+          "name": "fooBar",
+          "kubernetes": "fooBar",
+          "network": "fooBar",
+          "kubeconfig": "fooBar",
+          "publicKey": "fooBar",
+          "privateKey": "fooBar",
+          "nodePools": [
+            {
+              "name": "fooBar",
+              "region": "fooBar",
+              "master": {
+                "count": 123,
+                "serverType": "fooBar",
+                "image": "fooBar",
+                "diskSize": 123,
+                "zone": "fooBar",
+                "location": "fooBar",
+                "datacenter": "fooBar"
+              },
+              "worker": {
+                "count": 123,
+                "serverType": "fooBar",
+                "image": "fooBar",
+                "diskSize": 123,
+                "zone": "fooBar",
+                "location": "fooBar",
+                "datacenter": "fooBar"
+              },
+              "provider": {
+                "name": "fooBar",
+                "credentials": "fooBar"
+              }
+            },
+            {
+              "name": "fooBar",
+              "region": "fooBar",
+              "master": {
+                "count": 123,
+                "serverType": "fooBar",
+                "image": "fooBar",
+                "diskSize": 123,
+                "zone": "fooBar",
+                "location": "fooBar",
+                "datacenter": "fooBar"
+              },
+              "worker": {
+                "count": 123,
+                "serverType": "fooBar",
+                "image": "fooBar",
+                "diskSize": 123,
+                "zone": "fooBar",
+                "location": "fooBar",
+                "datacenter": "fooBar"
+              },
+              "provider": {
+                "name": "fooBar",
+                "credentials": "fooBar"
+              }
+            }
+          ],
+          "nodeInfos": [
+            {
+              "nodeName": "fooBar",
+              "public": "fooBar",
+              "private": "fooBar",
+              "isControl": 123,
+              "provider": "fooBar",
+              "nodepoolName": "fooBar"
+            },
+            {
+              "nodeName": "fooBar",
+              "public": "fooBar",
+              "private": "fooBar",
+              "isControl": 123,
+              "provider": "fooBar",
+              "nodepoolName": "fooBar"
+            }
+          ]
+        }
+      ]
+    },
+    "currentState": {
+      "name": "fooBar",
+      "clusters": [
+        {
+          "name": "fooBar",
+          "kubernetes": "fooBar",
+          "network": "fooBar",
+          "kubeconfig": "fooBar",
+          "publicKey": "fooBar",
+          "privateKey": "fooBar",
+          "nodePools": [
+            {
+              "name": "fooBar",
+              "region": "fooBar",
+              "master": {
+                "count": 123,
+                "serverType": "fooBar",
+                "image": "fooBar",
+                "diskSize": 123,
+                "zone": "fooBar",
+                "location": "fooBar",
+                "datacenter": "fooBar"
+              },
+              "worker": {
+                "count": 123,
+                "serverType": "fooBar",
+                "image": "fooBar",
+                "diskSize": 123,
+                "zone": "fooBar",
+                "location": "fooBar",
+                "datacenter": "fooBar"
+              },
+              "provider": {
+                "name": "fooBar",
+                "credentials": "fooBar"
+              }
+            },
+            {
+              "name": "fooBar",
+              "region": "fooBar",
+              "master": {
+                "count": 123,
+                "serverType": "fooBar",
+                "image": "fooBar",
+                "diskSize": 123,
+                "zone": "fooBar",
+                "location": "fooBar",
+                "datacenter": "fooBar"
+              },
+              "worker": {
+                "count": 123,
+                "serverType": "fooBar",
+                "image": "fooBar",
+                "diskSize": 123,
+                "zone": "fooBar",
+                "location": "fooBar",
+                "datacenter": "fooBar"
+              },
+              "provider": {
+                "name": "fooBar",
+                "credentials": "fooBar"
+              }
+            }
+          ],
+          "nodeInfos": [
+            {
+              "nodeName": "fooBar",
+              "public": "fooBar",
+              "private": "fooBar",
+              "isControl": 123,
+              "provider": "fooBar",
+              "nodepoolName": "fooBar"
+            },
+            {
+              "nodeName": "fooBar",
+              "public": "fooBar",
+              "private": "fooBar",
+              "isControl": 123,
+              "provider": "fooBar",
+              "nodepoolName": "fooBar"
+            }
+          ]
+        },
+        {
+          "name": "fooBar",
+          "kubernetes": "fooBar",
+          "network": "fooBar",
+          "kubeconfig": "fooBar",
+          "publicKey": "fooBar",
+          "privateKey": "fooBar",
+          "nodePools": [
+            {
+              "name": "fooBar",
+              "region": "fooBar",
+              "master": {
+                "count": 123,
+                "serverType": "fooBar",
+                "image": "fooBar",
+                "diskSize": 123,
+                "zone": "fooBar",
+                "location": "fooBar",
+                "datacenter": "fooBar"
+              },
+              "worker": {
+                "count": 123,
+                "serverType": "fooBar",
+                "image": "fooBar",
+                "diskSize": 123,
+                "zone": "fooBar",
+                "location": "fooBar",
+                "datacenter": "fooBar"
+              },
+              "provider": {
+                "name": "fooBar",
+                "credentials": "fooBar"
+              }
+            },
+            {
+              "name": "fooBar",
+              "region": "fooBar",
+              "master": {
+                "count": 123,
+                "serverType": "fooBar",
+                "image": "fooBar",
+                "diskSize": 123,
+                "zone": "fooBar",
+                "location": "fooBar",
+                "datacenter": "fooBar"
+              },
+              "worker": {
+                "count": 123,
+                "serverType": "fooBar",
+                "image": "fooBar",
+                "diskSize": 123,
+                "zone": "fooBar",
+                "location": "fooBar",
+                "datacenter": "fooBar"
+              },
+              "provider": {
+                "name": "fooBar",
+                "credentials": "fooBar"
+              }
+            }
+          ],
+          "nodeInfos": [
+            {
+              "nodeName": "fooBar",
+              "public": "fooBar",
+              "private": "fooBar",
+              "isControl": 123,
+              "provider": "fooBar",
+              "nodepoolName": "fooBar"
+            },
+            {
+              "nodeName": "fooBar",
+              "public": "fooBar",
+              "private": "fooBar",
+              "isControl": 123,
+              "provider": "fooBar",
+              "nodepoolName": "fooBar"
+            }
+          ]
+        }
+      ]
+    },
+    "msChecksum": "Zm9vQmFy",
+    "dsChecksum": "Zm9vQmFy",
+    "csChecksum": "Zm9vQmFy",
+    "builderTTL": 123,
+    "schedulerTTL": 123,
+    "errorMessage": "fooBar"
+  }
+}

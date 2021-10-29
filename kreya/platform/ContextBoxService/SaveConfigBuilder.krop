@@ -1,0 +1,12 @@
+{
+  "details": {
+    "methodFqn": "platform.ContextBoxService.SaveConfigBuilder"
+  },
+  "requests": [
+    {
+      "location": "SaveConfigBuilder-request.json"
+    }
+  ],
+  "operationType": "unary",
+  "invokerName": "grpc"
+}

@@ -1,0 +1,12 @@
+{
+  "details": {
+    "methodFqn": "platform.TerraformerService.DestroyInfrastructure"
+  },
+  "requests": [
+    {
+      "location": "DestroyInfrastructure-request.json"
+    }
+  ],
+  "operationType": "unary",
+  "invokerName": "grpc"
+}

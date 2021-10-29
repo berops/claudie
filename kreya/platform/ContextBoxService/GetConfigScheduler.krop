@@ -1,0 +1,12 @@
+{
+  "details": {
+    "methodFqn": "platform.ContextBoxService.GetConfigScheduler"
+  },
+  "requests": [
+    {
+      "location": "GetConfigScheduler-request.json"
+    }
+  ],
+  "operationType": "unary",
+  "invokerName": "grpc"
+}

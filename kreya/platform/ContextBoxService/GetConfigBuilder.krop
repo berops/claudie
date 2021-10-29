@@ -1,0 +1,12 @@
+{
+  "details": {
+    "methodFqn": "platform.ContextBoxService.GetConfigBuilder"
+  },
+  "requests": [
+    {
+      "location": "GetConfigBuilder-request.json"
+    }
+  ],
+  "operationType": "unary",
+  "invokerName": "grpc"
+}

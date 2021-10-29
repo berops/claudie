@@ -1,0 +1,12 @@
+{
+  "details": {
+    "methodFqn": "platform.KubeElevenService.BuildCluster"
+  },
+  "requests": [
+    {
+      "location": "BuildCluster-request.json"
+    }
+  ],
+  "operationType": "unary",
+  "invokerName": "grpc"
+}

@@ -1,0 +1,12 @@
+{
+  "details": {
+    "methodFqn": "platform.ContextBoxService.SaveConfigFrontEnd"
+  },
+  "requests": [
+    {
+      "location": "SaveConfigFrontEnd-request.json"
+    }
+  ],
+  "operationType": "unary",
+  "invokerName": "grpc"
+}

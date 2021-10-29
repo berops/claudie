@@ -1,0 +1,12 @@
+{
+  "details": {
+    "methodFqn": "platform.ContextBoxService.DeleteConfig"
+  },
+  "requests": [
+    {
+      "location": "DeleteConfig-request.json"
+    }
+  ],
+  "operationType": "unary",
+  "invokerName": "grpc"
+}

@@ -1,0 +1,12 @@
+{
+  "details": {
+    "methodFqn": "platform.ContextBoxService.SaveConfigScheduler"
+  },
+  "requests": [
+    {
+      "location": "SaveConfigScheduler-request.json"
+    }
+  ],
+  "operationType": "unary",
+  "invokerName": "grpc"
+}

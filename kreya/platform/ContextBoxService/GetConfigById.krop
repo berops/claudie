@@ -1,0 +1,12 @@
+{
+  "details": {
+    "methodFqn": "platform.ContextBoxService.GetConfigById"
+  },
+  "requests": [
+    {
+      "location": "GetConfigById-request.json"
+    }
+  ],
+  "operationType": "unary",
+  "invokerName": "grpc"
+}

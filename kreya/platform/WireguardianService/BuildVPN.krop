@@ -1,0 +1,12 @@
+{
+  "details": {
+    "methodFqn": "platform.WireguardianService.BuildVPN"
+  },
+  "requests": [
+    {
+      "location": "BuildVPN-request.json"
+    }
+  ],
+  "operationType": "unary",
+  "invokerName": "grpc"
+}
