@@ -36,30 +36,51 @@ const (
 func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVPNResponse, error) {
 	log.Info().Msgf("BuildVPN function was invoked with %s", req.Config.Name)
 	config := req.GetConfig()
+	var errGroup errgroup.Group
 
 	for _, cluster := range config.GetDesiredState().GetClusters() {
-		if err := genPrivAdd(cluster.GetNodeInfos(), cluster.GetNetwork()); err != nil {
-			config.ErrorMessage = err.Error()
-			return &pb.BuildVPNResponse{Config: config}, err
-		}
+		// to pass the parameter in loop, we need to create a dummy fuction
+		func(cluster *pb.Cluster) {
+			errGroup.Go(func() error {
+				err := buildVPNAsync(cluster)
+				if err != nil {
+					log.Error().Msgf("error encountered in Wireguardian - BuildVPN: %v", err)
+					config.ErrorMessage = err.Error()
+					return err
+				}
+				return nil
+			})
+		}(cluster)
+	}
 
-		if err := genInv(cluster.GetNodeInfos()); err != nil {
-			config.ErrorMessage = err.Error()
-			return &pb.BuildVPNResponse{Config: config}, err
-		}
-
-		if err := runAnsible(cluster); err != nil {
-			config.ErrorMessage = err.Error()
-			return &pb.BuildVPNResponse{Config: config}, err
-		}
-
-		if err := utils.DeleteTmpFiles(outputPath, []string{sslPrivateKeyFile, inventoryFile}); err != nil {
-			config.ErrorMessage = err.Error()
-			return &pb.BuildVPNResponse{Config: config}, err
-		}
+	err := errGroup.Wait()
+	if err != nil {
+		config.ErrorMessage = err.Error()
+		return &pb.BuildVPNResponse{Config: config}, err
 	}
 	config.ErrorMessage = ""
 	return &pb.BuildVPNResponse{Config: config}, nil
+}
+
+func buildVPNAsync(cluster *pb.Cluster) error {
+	if err := genPrivAdd(cluster.GetNodeInfos(), cluster.GetNetwork()); err != nil {
+		return err
+	}
+
+	invOutputPath := filepath.Join(outputPath, cluster.GetName())
+	if err := genInv(cluster.GetNodeInfos(), invOutputPath); err != nil {
+		return err
+	}
+
+	if err := runAnsible(cluster, invOutputPath); err != nil {
+		return err
+	}
+
+	if err := os.RemoveAll(invOutputPath); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // genPrivAdd will generate private ip addresses from network parameter
@@ -116,13 +137,20 @@ func remove(slice []byte, value byte) []byte {
 }
 
 // genInv will generate ansible inventory file slice of clusters input
-func genInv(addresses []*pb.NodeInfo) error {
+func genInv(addresses []*pb.NodeInfo, path string) error {
 	tpl, err := template.ParseFiles("services/wireguardian/server/inventory.goini")
 	if err != nil {
 		return fmt.Errorf("failed to load template file: %v", err)
 	}
 
-	f, err := os.Create(filepath.Join(outputPath, inventoryFile))
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		err = os.MkdirAll(path, os.ModePerm)
+		if err != nil {
+			return fmt.Errorf("failed to create a directory: %v", err)
+		}
+	}
+
+	f, err := os.Create(filepath.Join(path, inventoryFile))
 	if err != nil {
 		return fmt.Errorf("failed to create a inventory file: %v", err)
 	}
@@ -134,8 +162,8 @@ func genInv(addresses []*pb.NodeInfo) error {
 	return nil
 }
 
-func runAnsible(cluster *pb.Cluster) error {
-	if err := utils.CreateKeyFile(cluster.GetPrivateKey(), outputPath, sslPrivateKeyFile); err != nil {
+func runAnsible(cluster *pb.Cluster, invOutputPath string) error {
+	if err := utils.CreateKeyFile(cluster.GetPrivateKey(), invOutputPath, sslPrivateKeyFile); err != nil {
 		return err
 	}
 
@@ -143,7 +171,7 @@ func runAnsible(cluster *pb.Cluster) error {
 		return err
 	}
 
-	cmd := exec.Command("ansible-playbook", playbookFile, "-i", inventoryFile, "-f", "20", "--private-key", sslPrivateKeyFile)
+	cmd := exec.Command("ansible-playbook", playbookFile, "-i", cluster.Name+"/"+inventoryFile, "-f", "20", "--private-key", cluster.Name+"/"+sslPrivateKeyFile)
 	cmd.Dir = outputPath
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -183,13 +211,13 @@ func main() {
 		signal.Stop(ch)
 		s.GracefulStop()
 
-		return errors.New("Wireguardian Interrupt signal")
+		return errors.New("wireguardian Interrupt signal")
 	})
 
 	g.Go(func() error {
 		// s.Serve() will create a service goroutine for each connection
 		if err := s.Serve(lis); err != nil {
-			return fmt.Errorf("Wireguardian failed to serve: %v", err)
+			return fmt.Errorf("wireguardian failed to serve: %v", err)
 		}
 		return nil
 	})

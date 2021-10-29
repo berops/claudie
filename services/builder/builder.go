@@ -186,10 +186,11 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, tmp bool) (e
 		config.CurrentState = config.DesiredState // Update currentState
 		// save error message to config
 		config.ErrorMessage = err.Error()
-		err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
-		if err != nil {
+		errSave := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
+		if errSave != nil {
 			return fmt.Errorf("error while saving the config: %v", err)
 		}
+		return fmt.Errorf("error in Terraformer: %v", err)
 	}
 
 	config, err = callWireguardian(config)
@@ -197,10 +198,11 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, tmp bool) (e
 		config.CurrentState = config.DesiredState // Update currentState
 		// save error message to config
 		config.ErrorMessage = err.Error()
-		err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
-		if err != nil {
+		errSave := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
+		if errSave != nil {
 			return fmt.Errorf("error while saving the config: %v", err)
 		}
+		return fmt.Errorf("error in Wireguardian: %v", err)
 	}
 
 	config, err = callKubeEleven(config)
@@ -208,16 +210,17 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, tmp bool) (e
 		config.CurrentState = config.DesiredState // Update currentState
 		// save error message to config
 		config.ErrorMessage = err.Error()
-		err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
-		if err != nil {
+		errSave := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
+		if errSave != nil {
 			return fmt.Errorf("error while saving the config: %v", err)
 		}
+		return fmt.Errorf("error in KubeEleven: %v", err)
 	}
 
 	if !tmp && config != nil {
 		config.CurrentState = config.DesiredState // Update currentState
-		err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
-		if err != nil {
+		errSave := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
+		if errSave != nil {
 			return fmt.Errorf("error while saving the config: %v", err)
 		}
 	}
@@ -446,7 +449,7 @@ func main() {
 		signal.Notify(ch, os.Interrupt)
 		defer signal.Stop(ch)
 		<-ch
-		return errors.New("Builder interrupt signal")
+		return errors.New("builder interrupt signal")
 	})
 
 	g.Go(func() error {

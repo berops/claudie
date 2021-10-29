@@ -24,8 +24,8 @@ import (
 type server struct{}
 
 const (
-	outputPath            = "services/kube-eleven/server/"
-	defaultKubeElevenPort = 50054
+	outputPath            = "services/kube-eleven/server/" // path to the output directory
+	defaultKubeElevenPort = 50054                          // default port for kube-eleven
 )
 
 type data struct {
@@ -40,6 +40,7 @@ func (d *data) formatTemplateData(cluster *pb.Cluster) {
 	var workerNodes []*pb.NodeInfo
 	hasAPIEndpoint := false
 
+	// Get the API endpoint. If it is not set, use the first control node
 	for _, nodeInfo := range cluster.GetNodeInfos() {
 		if nodeInfo.GetIsControl() == 1 {
 			controlNodes = append(controlNodes, nodeInfo)
@@ -62,89 +63,126 @@ func (d *data) formatTemplateData(cluster *pb.Cluster) {
 	d.APIEndpoint = d.Nodes[0].GetPublic()
 }
 
+// BuildCluster builds all cluster defined in the desired state
 func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb.BuildClusterResponse, error) {
 	config := req.Config
 	log.Info().Msgf("I have received a BuildCluster request with config name: %s", config.GetName())
 
+	var errGroup errgroup.Group
+
+	// Build all clusters
 	for _, cluster := range config.GetDesiredState().GetClusters() {
-		var d data
-		d.formatTemplateData(cluster)
-		// Create a private key file
-		if err := utils.CreateKeyFile(cluster.GetPrivateKey(), outputPath, "private.pem"); err != nil {
-			config.ErrorMessage = err.Error()
-			return &pb.BuildClusterResponse{Config: config}, err
-		}
-		// Create a cluster-kubeconfig file
-		kubeconfigFile := filepath.Join(outputPath, "cluster-kubeconfig")
-		if err := ioutil.WriteFile(kubeconfigFile, []byte(cluster.GetKubeconfig()), 0600); err != nil {
-			config.ErrorMessage = err.Error()
-			return &pb.BuildClusterResponse{Config: config}, err
-		}
-		// Generate a kubeOne yaml manifest from a golang template
-		templateFile := filepath.Join(outputPath, "kubeone.tpl")
-		outputFile := filepath.Join(outputPath, "kubeone.yaml")
-		if err := genKubeOneConfig(templateFile, outputFile, d); err != nil {
-			config.ErrorMessage = err.Error()
-			return &pb.BuildClusterResponse{Config: config}, err
-		}
-
-		if err := runKubeOne(); err != nil {
-			config.ErrorMessage = err.Error()
-			return &pb.BuildClusterResponse{Config: config}, err
-		}
-
-		kc, err := saveKubeconfig()
-		if err != nil {
-			config.ErrorMessage = err.Error()
-			return &pb.BuildClusterResponse{Config: config}, err
-		}
-		cluster.Kubeconfig = kc
-
-		tmpFiles := []string{
-			"cluster.tar.gz",
-			"cluster-kubeconfig",
-			"kubeone.yaml",
-			"private.pem",
-		}
-		if err := utils.DeleteTmpFiles(outputPath, tmpFiles); err != nil {
-			config.ErrorMessage = err.Error()
-			return &pb.BuildClusterResponse{Config: config}, err
-		}
+		func(cluster *pb.Cluster) {
+			errGroup.Go(func() error {
+				err := buildClusterAsync(cluster)
+				if err != nil {
+					log.Error().Msgf("error encountered in KubeEleven - BuildCluster: %v", err)
+					config.ErrorMessage = err.Error()
+					return err
+				}
+				return nil
+			})
+		}(cluster)
 	}
+	err := errGroup.Wait()
+	if err != nil {
+		return &pb.BuildClusterResponse{Config: config}, err
+	}
+
 	config.ErrorMessage = ""
 	return &pb.BuildClusterResponse{Config: config}, nil
 }
 
-func genKubeOneConfig(templatePath string, outputPath string, d interface{}) error {
-	tpl, err := template.ParseFiles(templatePath)
+// buildClusterAsync builds a kubeone cluster
+// It is executed in a goroutine
+func buildClusterAsync(cluster *pb.Cluster) error {
+	var d data
+	d.formatTemplateData(cluster)
+
+	// Create a directory for the cluster
+	clusterOutputPath := filepath.Join(outputPath, cluster.GetName())
+
+	// Create a directory for the cluster
+	if _, err := os.Stat(clusterOutputPath); os.IsNotExist(err) {
+		if err := os.MkdirAll(clusterOutputPath, os.ModePerm); err != nil {
+			return fmt.Errorf("failed to create dir: %v", err)
+		}
+	}
+
+	// Create a private key file
+	if err := utils.CreateKeyFile(cluster.GetPrivateKey(), clusterOutputPath, "private.pem"); err != nil {
+		return err
+	}
+
+	// Create a cluster-kubeconfig file
+	kubeconfigFilePath := filepath.Join(clusterOutputPath, "cluster-kubeconfig")
+	if err := ioutil.WriteFile(kubeconfigFilePath, []byte(cluster.GetKubeconfig()), 0600); err != nil {
+		return err
+	}
+
+	// Generate a kubeOne yaml manifest from a golang template
+	templateFilePath := filepath.Join(outputPath, "kubeone.tpl")
+	manifestFilePath := filepath.Join(clusterOutputPath, "kubeone.yaml")
+	if err := genKubeOneConfig(templateFilePath, manifestFilePath, d); err != nil {
+		return err
+	}
+
+	// Run kubeone
+	if err := runKubeOne(clusterOutputPath); err != nil {
+		return err
+	}
+
+	// Save generated kubeconfig file to cluster config
+	kc, err := saveKubeconfig(clusterOutputPath)
+	if err != nil {
+		return err
+	}
+	cluster.Kubeconfig = kc
+
+	// Clean up
+	if err := os.RemoveAll(clusterOutputPath); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// genKubeOneConfig generates a kubeone yaml manifest from a golang template
+func genKubeOneConfig(templateFilePath string, manifestFilePath string, d interface{}) error {
+	// Read the template file
+	tpl, err := template.ParseFiles(templateFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to load the template file: %v", err)
 	}
 
-	f, err := os.Create(outputPath)
+	// Create a file for the manifest
+	f, err := os.Create(manifestFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to create the manifest file: %v", err)
 	}
 
+	// Execute the template and write to the manifest file
 	if err := tpl.Execute(f, d); err != nil {
+		// Error is probably because the template is not valid
 		return fmt.Errorf("failed to execute the template file: %v", err)
 	}
 
 	return nil
 }
 
-func runKubeOne() error {
+// runKubeOne runs kubeone with the generated manifest
+func runKubeOne(path string) error {
 	log.Info().Msg("Running KubeOne")
 	cmd := exec.Command("kubeone", "apply", "-m", "kubeone.yaml", "-y")
-	cmd.Dir = outputPath //golang will execute command from this directory
+	cmd.Dir = path //golang will execute command from this directory
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
 
 // saveKubeconfig reads kubeconfig from a file and returns it
-func saveKubeconfig() (string, error) {
-	kubeconfigFile := filepath.Join(outputPath, "cluster-kubeconfig")
+func saveKubeconfig(path string) (string, error) {
+	kubeconfigFile := filepath.Join(path, "cluster-kubeconfig")
 	kubeconfig, err := ioutil.ReadFile(kubeconfigFile)
 	if err != nil {
 		return "", fmt.Errorf("error while reading kubeconfig file: %s : %v", kubeconfigFile, err)

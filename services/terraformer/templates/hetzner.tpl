@@ -8,7 +8,7 @@ terraform {
 }
 
 resource "hcloud_firewall" "defaultfirewall" {
-  name = "default-firewall"
+  name = "{{ .Cluster.Name }}-firewall"
   rule {
     direction = "in"
     protocol  = "icmp"

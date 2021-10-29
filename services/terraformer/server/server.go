@@ -37,7 +37,7 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrastructureRequest) (*pb.DestroyInfrastructureResponse, error) {
 	fmt.Println("DestroyInfrastructure function was invoked with config:", req.GetConfig().GetName())
 	config := req.GetConfig()
-	err := destroyInfrastructure(config.GetCurrentState())
+	err := destroyInfrastructure(config)
 	if err != nil {
 		config.ErrorMessage = err.Error()
 		return &pb.DestroyInfrastructureResponse{Config: config}, fmt.Errorf("error while destroying the infrastructure: %v", err)
@@ -79,13 +79,13 @@ func main() {
 		signal.Stop(ch)
 		s.GracefulStop()
 
-		return errors.New("Terraformer interrupt signal")
+		return errors.New("terraformer interrupt signal")
 	})
 
 	g.Go(func() error {
 		// s.Serve() will create a service goroutine for each connection
 		if err := s.Serve(lis); err != nil {
-			return fmt.Errorf("Terraformer failed to serve: %v", err)
+			return fmt.Errorf("terraformer failed to serve: %v", err)
 		}
 		return nil
 	})
