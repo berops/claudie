@@ -1,6 +1,6 @@
-name: TestSetOne-1-concurrency
+name: TestSetOne-1
 clusters:
-  - name: testset-cluster-name1-concurrency
+  - name: testset-cluster-name1
     kubernetes: v1.19.0
     network: 192.168.2.0/24
     nodePools:
@@ -23,7 +23,7 @@ clusters:
         location: nbg1
         datacenter: nbg1-dc3
 
-  - name: testset-cluster-name2-concurrency
+  - name: testset-cluster-name2
     kubernetes: v1.19.0
     network: 192.168.2.0/24
     nodePools:
