@@ -2,6 +2,7 @@ package wireguardian
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Berops/platform/proto/pb"
 	"github.com/rs/zerolog/log"
@@ -11,8 +12,7 @@ import (
 func BuildVPN(c pb.WireguardianServiceClient, req *pb.BuildVPNRequest) (*pb.BuildVPNResponse, error) {
 	res, err := c.BuildVPN(context.Background(), req)
 	if err != nil {
-		log.Fatal().Msg("Failed to build VPN")
-		return res, err
+		return res, fmt.Errorf("error while calling BuildVPN on Wireguardian: %v", err)
 	}
 
 	log.Info().Msg("VPN was successfully built")
