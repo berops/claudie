@@ -1,5 +1,6 @@
 {
   "details": {
+    "endpoint": "http://localhost:50055",
     "methodFqn": "platform.ContextBoxService.GetAllConfigs"
   },
   "requests": [

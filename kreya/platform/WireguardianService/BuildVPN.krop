@@ -1,5 +1,6 @@
 {
   "details": {
+    "endpoint": "http://localhost:50053",
     "methodFqn": "platform.WireguardianService.BuildVPN"
   },
   "requests": [
