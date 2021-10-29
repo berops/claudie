@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
-	"sync"
 	"text/template"
 
 	"github.com/Berops/platform/proto/pb"
@@ -142,9 +141,8 @@ func buildInfrastructure(config *pb.Config) error {
 }
 
 // destroyInfrastructureAsync executes terraform destroy --auto-approve. It destroys whole infrastructure in a project.
-func destroyInfrastructureAsync(cluster *pb.Cluster, backendData Backend, wg *sync.WaitGroup) error {
+func destroyInfrastructureAsync(cluster *pb.Cluster, backendData Backend) error {
 	log.Info().Msg("Generating templates for infrastructure destroy")
-	defer wg.Done()
 	backendData.ClusterName = cluster.GetName()
 
 	log.Info().Msgf("Cluster name: %s", cluster.GetName())
@@ -194,18 +192,26 @@ func destroyInfrastructure(config *pb.Config) error {
 	fmt.Println("Generating templates")
 	var backendData Backend
 	backendData.ProjectName = config.GetDesiredState().GetName()
-	var wg sync.WaitGroup
+	var errGroup errgroup.Group
+
 	for _, cluster := range config.GetDesiredState().GetClusters() {
-		wg.Add(1)
-		go func(cluster *pb.Cluster) error {
-			err := destroyInfrastructureAsync(cluster, backendData, &wg)
-			if err != nil {
-				return fmt.Errorf("error encountered in Terraformer - destroyInfrastructure: %v", err)
-			}
-			return nil
-		}(cluster)
+		func(cluster *pb.Cluster, backendData Backend) {
+			errGroup.Go(func() error {
+				err := destroyInfrastructureAsync(cluster, backendData)
+				if err != nil {
+					log.Error().Msgf("error encountered in Terraformer - destroyInfrastructure: %v", err)
+					config.ErrorMessage = err.Error()
+					return err
+				}
+				return nil
+			})
+		}(cluster, backendData)
 	}
-	wg.Wait()
+	err := errGroup.Wait()
+	if err != nil {
+		config.ErrorMessage = err.Error()
+		return err
+	}
 
 	if err := os.RemoveAll(outputPath); err != nil {
 		return err
