@@ -36,21 +36,24 @@ type countsToDelete struct {
 	nodes map[string]*nodesToDelete // [provider]nodes
 }
 
-func callTerraformer(config *pb.Config) (*pb.Config, error) {
+func callTerraformer(currentState *pb.Project, desiredState *pb.Project) (*pb.Project, *pb.Project, error) {
 	// Create connection to Terraformer
 	cc, err := utils.GrpcDialWithInsecure("terraformer", urls.TerraformerURL)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer func() { utils.CloseClientConnection(cc) }()
 	// Creating the client
 	c := pb.NewTerraformerServiceClient(cc)
-	res, err := terraformer.BuildInfrastructure(c, &pb.BuildInfrastructureRequest{Config: config})
+	res, err := terraformer.BuildInfrastructure(c, &pb.BuildInfrastructureRequest{
+		CurrentState: currentState,
+		DesiredState: desiredState,
+	})
 	if err != nil {
-		return config, err
+		return currentState, desiredState, err
 	}
 
-	return res.GetConfig(), nil
+	return res.GetCurrentState(), res.GetDesiredState(), nil
 }
 
 func callWireguardian(config *pb.Config) (*pb.Config, error) {
@@ -181,7 +184,7 @@ func getNodePoolByName(nodePoolName string, nodePools []*pb.NodePool) *pb.NodePo
 // processConfig is function used to carry out task specific to Builder concurrently
 func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, tmp bool) (err error) {
 	log.Info().Msgf("processConfig received config: %s", config.GetName())
-	config, err = callTerraformer(config)
+	currentState, desiredState, err := callTerraformer(config.GetCurrentState(), config.GetDesiredState())
 	if err != nil && config != nil {
 		config.CurrentState = config.DesiredState // Update currentState
 		// save error message to config
@@ -192,6 +195,8 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, tmp bool) (e
 		}
 		return fmt.Errorf("error in Terraformer: %v", err)
 	}
+	config.CurrentState = currentState
+	config.DesiredState = desiredState
 
 	config, err = callWireguardian(config)
 	if err != nil && config != nil {

@@ -22,17 +22,23 @@ const defaultTerraformerPort = 50052
 type server struct{}
 
 func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastructureRequest) (*pb.BuildInfrastructureResponse, error) {
-	config := req.GetConfig()
-	log.Info().Msgf("BuildInfrastructure function was invoked with config %s", config.GetName())
+	currentState := req.GetCurrentState()
+	desiredState := req.GetDesiredState()
 
-	err := buildInfrastructure(config)
+	err := buildInfrastructure(currentState, desiredState)
 	if err != nil {
-		config.ErrorMessage = err.Error()
-		return &pb.BuildInfrastructureResponse{Config: config}, fmt.Errorf("template generator failed: %v", err)
+		return &pb.BuildInfrastructureResponse{
+				CurrentState: currentState,
+				DesiredState: desiredState,
+				ErrorMessage: err.Error()},
+			fmt.Errorf("template generator failed: %v", err)
 	}
 	log.Info().Msg("Infrastructure was successfully generated")
-	config.ErrorMessage = ""
-	return &pb.BuildInfrastructureResponse{Config: config}, nil
+	return &pb.BuildInfrastructureResponse{
+		CurrentState: currentState,
+		DesiredState: desiredState,
+		ErrorMessage: "",
+	}, nil
 }
 
 func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrastructureRequest) (*pb.DestroyInfrastructureResponse, error) {

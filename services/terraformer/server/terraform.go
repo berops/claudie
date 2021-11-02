@@ -102,19 +102,18 @@ func buildInfrastructureAsync(cluster *pb.Cluster, backendData Backend) error {
 }
 
 // buildInfrastructure is generating terraform files for different providers and calling terraform
-func buildInfrastructure(config *pb.Config) error {
+func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) error {
 	fmt.Println("Generating templates")
 	var backendData Backend
-	backendData.ProjectName = config.GetDesiredState().GetName()
+	backendData.ProjectName = desiredState.GetName()
 	var errGroup errgroup.Group
 
-	for _, cluster := range config.GetDesiredState().GetClusters() {
+	for _, cluster := range desiredState.GetClusters() {
 		func(cluster *pb.Cluster, backendData Backend) {
 			errGroup.Go(func() error {
 				err := buildInfrastructureAsync(cluster, backendData)
 				if err != nil {
 					log.Error().Msgf("error encountered in Terraformer - buildInfrastructure: %v", err)
-					config.ErrorMessage = err.Error()
 					return err
 				}
 				return nil
@@ -123,7 +122,6 @@ func buildInfrastructure(config *pb.Config) error {
 	}
 	err := errGroup.Wait()
 	if err != nil {
-		config.ErrorMessage = err.Error()
 		return err
 	}
 
