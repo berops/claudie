@@ -115,29 +115,29 @@ func MakeSSHKeyPair() (string, string) {
 
 func createDesiredState(config *pb.Config) (*pb.Config, error) {
 	if config == nil {
-		log.Info().Msg("createDesiredState got nil Config... \nReturning nil")
-		return nil, nil
+		return nil, fmt.Errorf("createDesiredState got nil Config")
 	}
 	// Create yaml manifest
+	manifestFileName := "manifest.yaml"
 	d := []byte(config.GetManifest())
-	err := ioutil.WriteFile("manifest.yaml", d, 0644)
+	err := ioutil.WriteFile(manifestFileName, d, 0644)
 	if err != nil {
-		return nil, fmt.Errorf("error while creating manifest.yaml file: %v", err)
+		return nil, fmt.Errorf("error while creating %s file: %v", manifestFileName, err)
 	}
 	// Parse yaml to protobuf and create desiredState
 	var desiredState Manifest
-	yamlFile, err := ioutil.ReadFile("manifest.yaml")
+	yamlFile, err := ioutil.ReadFile(manifestFileName)
 	if err != nil {
-		return nil, fmt.Errorf("error while reading maninfest.yaml file: %v", err)
+		return nil, fmt.Errorf("error while reading %s file: %v", manifestFileName, err)
 	}
 	err = yaml.Unmarshal(yamlFile, &desiredState)
 	if err != nil {
 		return nil, fmt.Errorf("error while unmarshalling yaml file: %v", err)
 	}
 	// Remove yaml manifest after loading
-	err = os.Remove("manifest.yaml")
+	err = os.Remove(manifestFileName)
 	if err != nil {
-		return nil, fmt.Errorf("error while removing maninfest.yaml file: %v", err)
+		return nil, fmt.Errorf("error while removing %s file: %v", manifestFileName, err)
 	}
 
 	var clusters []*pb.Cluster
@@ -230,10 +230,10 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient) (err error) 
 	return nil
 }
 
-// healthCheck function is function used for querring readiness of the pod running this microservice
+// healthCheck function is used for querring readiness of the pod running this microservice
 func healthCheck() error {
 	res, err := createDesiredState(nil)
-	if res != nil || err != nil {
+	if res != nil || err == nil {
 		return fmt.Errorf("health check function got unexpected result")
 	}
 	return nil
