@@ -56,7 +56,7 @@ func callTerraformer(currentState *pb.Project, desiredState *pb.Project) (*pb.Pr
 	return res.GetCurrentState(), res.GetDesiredState(), nil
 }
 
-func callWireguardian(config *pb.Config) (*pb.Config, error) {
+func callWireguardian(desiredState *pb.Project) (*pb.Project, error) {
 	cc, err := utils.GrpcDialWithInsecure("wireguardian", urls.WireguardianURL)
 	if err != nil {
 		return nil, err
@@ -64,12 +64,12 @@ func callWireguardian(config *pb.Config) (*pb.Config, error) {
 	defer func() { utils.CloseClientConnection(cc) }()
 	// Creating the client
 	c := pb.NewWireguardianServiceClient(cc)
-	res, err := wireguardian.BuildVPN(c, &pb.BuildVPNRequest{Config: config})
+	res, err := wireguardian.BuildVPN(c, &pb.BuildVPNRequest{DesiredState: desiredState})
 	if err != nil {
-		return res.GetConfig(), err
+		return res.GetDesiredState(), err
 	}
 
-	return res.GetConfig(), nil
+	return res.GetDesiredState(), nil
 }
 
 func callKubeEleven(config *pb.Config) (*pb.Config, error) {
@@ -198,7 +198,7 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, tmp bool) (e
 	config.CurrentState = currentState
 	config.DesiredState = desiredState
 
-	config, err = callWireguardian(config)
+	desiredState, err = callWireguardian(config.GetDesiredState())
 	if err != nil && config != nil {
 		config.CurrentState = config.DesiredState // Update currentState
 		// save error message to config
@@ -209,6 +209,7 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, tmp bool) (e
 		}
 		return fmt.Errorf("error in Wireguardian: %v", err)
 	}
+	config.DesiredState = desiredState
 
 	config, err = callKubeEleven(config)
 	if err != nil && config != nil {
