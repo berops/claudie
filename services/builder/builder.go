@@ -72,7 +72,7 @@ func callWireguardian(desiredState *pb.Project) (*pb.Project, error) {
 	return res.GetDesiredState(), nil
 }
 
-func callKubeEleven(config *pb.Config) (*pb.Config, error) {
+func callKubeEleven(desiredState *pb.Project) (*pb.Project, error) {
 	cc, err := utils.GrpcDialWithInsecure("kubeEleven", urls.KubeElevenURL)
 	if err != nil {
 		return nil, err
@@ -80,12 +80,12 @@ func callKubeEleven(config *pb.Config) (*pb.Config, error) {
 	defer func() { utils.CloseClientConnection(cc) }()
 	// Creating the client
 	c := pb.NewKubeElevenServiceClient(cc)
-	res, err := kubeEleven.BuildCluster(c, &pb.BuildClusterRequest{Config: config})
+	res, err := kubeEleven.BuildCluster(c, &pb.BuildClusterRequest{DesiredState: desiredState})
 	if err != nil {
-		return res.GetConfig(), err
+		return res.GetDesiredState(), err
 	}
 
-	return res.GetConfig(), nil
+	return res.GetDesiredState(), nil
 }
 
 func diff(config *pb.Config) (*pb.Config, bool, map[string]*countsToDelete) {
@@ -211,8 +211,8 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, tmp bool) (e
 	}
 	config.DesiredState = desiredState
 
-	config, err = callKubeEleven(config)
-	if err != nil && config != nil {
+	desiredState, err = callKubeEleven(config.GetDesiredState())
+	if err != nil {
 		config.CurrentState = config.DesiredState // Update currentState
 		// save error message to config
 		config.ErrorMessage = err.Error()
@@ -222,8 +222,9 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, tmp bool) (e
 		}
 		return fmt.Errorf("error in KubeEleven: %v", err)
 	}
+	config.DesiredState = desiredState
 
-	if !tmp && config != nil {
+	if !tmp {
 		config.CurrentState = config.DesiredState // Update currentState
 		errSave := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 		if errSave != nil {
