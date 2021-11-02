@@ -185,7 +185,7 @@ func getNodePoolByName(nodePoolName string, nodePools []*pb.NodePool) *pb.NodePo
 func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, tmp bool) (err error) {
 	log.Info().Msgf("processConfig received config: %s", config.GetName())
 	currentState, desiredState, err := callTerraformer(config.GetCurrentState(), config.GetDesiredState())
-	if err != nil && config != nil {
+	if err != nil {
 		config.CurrentState = config.DesiredState // Update currentState
 		// save error message to config
 		config.ErrorMessage = err.Error()
@@ -199,7 +199,7 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, tmp bool) (e
 	config.DesiredState = desiredState
 
 	desiredState, err = callWireguardian(config.GetDesiredState())
-	if err != nil && config != nil {
+	if err != nil {
 		config.CurrentState = config.DesiredState // Update currentState
 		// save error message to config
 		config.ErrorMessage = err.Error()
