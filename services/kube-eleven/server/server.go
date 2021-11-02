@@ -133,7 +133,7 @@ func buildClusterAsync(cluster *pb.Cluster) error {
 	}
 
 	// Save generated kubeconfig file to cluster config
-	kc, err := saveKubeconfig(clusterOutputPath)
+	kc, err := readKubeconfig(kubeconfigFilePath)
 	if err != nil {
 		return err
 	}
@@ -172,20 +172,19 @@ func genKubeOneConfig(templateFilePath string, manifestFilePath string, d interf
 
 // runKubeOne runs kubeone with the generated manifest
 func runKubeOne(path string) error {
-	log.Info().Msg("Running KubeOne")
+	log.Info().Msgf("Running KubeOne in %s dir", path)
 	cmd := exec.Command("kubeone", "apply", "-m", "kubeone.yaml", "-y")
-	cmd.Dir = path //golang will execute command from this directory
+	cmd.Dir = path // golang will execute command from this directory
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
 
-// saveKubeconfig reads kubeconfig from a file and returns it
-func saveKubeconfig(path string) (string, error) {
-	kubeconfigFile := filepath.Join(path, "cluster-kubeconfig")
+// readKubeconfig reads kubeconfig from a file and returns it
+func readKubeconfig(kubeconfigFile string) (string, error) {
 	kubeconfig, err := ioutil.ReadFile(kubeconfigFile)
 	if err != nil {
-		return "", fmt.Errorf("error while reading kubeconfig file: %s : %v", kubeconfigFile, err)
+		return "", fmt.Errorf("error while reading kubeconfig file %s : %v", kubeconfigFile, err)
 	}
 	return string(kubeconfig), nil
 }
