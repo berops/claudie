@@ -82,11 +82,6 @@ func buildInfrastructureAsync(cluster *pb.Cluster, backendData Backend) error {
 
 	// Fill public ip addresses to NodeInfos
 	var m []*pb.NodeInfo
-	var newM []*pb.NodeInfo
-
-	if cluster != nil {
-		m = cluster.NodeInfos
-	}
 	for _, nodepool := range cluster.NodePools {
 		output, err := outputTerraform(terraformOutputPath, nodepool.Provider.Name)
 		if err != nil {
@@ -98,10 +93,10 @@ func buildInfrastructureAsync(cluster *pb.Cluster, backendData Backend) error {
 			return err
 		}
 
-		res := fillNodes(m, &out, nodepool)
-		newM = append(newM, res...)
+		res := fillNodes(cluster.NodeInfos, &out, nodepool)
+		m = append(m, res...)
 	}
-	cluster.NodeInfos = newM
+	cluster.NodeInfos = m
 
 	return nil
 }
