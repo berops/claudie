@@ -65,19 +65,18 @@ func (d *data) formatTemplateData(cluster *pb.Cluster) {
 
 // BuildCluster builds all cluster defined in the desired state
 func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb.BuildClusterResponse, error) {
-	config := req.Config
-	log.Info().Msgf("I have received a BuildCluster request with config name: %s", config.GetName())
+	desiredState := req.GetDesiredState()
+	log.Info().Msgf("I have received a BuildCluster request with Project name: %s", desiredState.GetName())
 
 	var errGroup errgroup.Group
 
 	// Build all clusters
-	for _, cluster := range config.GetDesiredState().GetClusters() {
+	for _, cluster := range desiredState.GetClusters() {
 		func(cluster *pb.Cluster) {
 			errGroup.Go(func() error {
 				err := buildClusterAsync(cluster)
 				if err != nil {
 					log.Error().Msgf("error encountered in KubeEleven - BuildCluster: %v", err)
-					config.ErrorMessage = err.Error()
 					return err
 				}
 				return nil
@@ -86,11 +85,9 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 	}
 	err := errGroup.Wait()
 	if err != nil {
-		return &pb.BuildClusterResponse{Config: config}, err
+		return &pb.BuildClusterResponse{DesiredState: desiredState, ErrorMessage: err.Error()}, err
 	}
-
-	config.ErrorMessage = ""
-	return &pb.BuildClusterResponse{Config: config}, nil
+	return &pb.BuildClusterResponse{DesiredState: desiredState, ErrorMessage: ""}, nil
 }
 
 // buildClusterAsync builds a kubeone cluster
