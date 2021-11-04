@@ -23,6 +23,10 @@ import (
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
+type server struct {
+	pb.UnimplementedWireguardianServiceServer
+}
+
 const (
 	outputPath              = "services/wireguardian/server/Ansible"
 	inventoryTemplate       = "services/wireguardian/server/inventory.goini"
@@ -31,8 +35,6 @@ const (
 	sslPrivateKeyFile       = "private.pem"
 	defaultWireguardianPort = 50053
 )
-
-type server struct{}
 
 func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVPNResponse, error) {
 	desiredState := req.GetDesiredState()

@@ -32,7 +32,9 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type server struct{}
+type server struct {
+	pb.UnimplementedContextBoxServiceServer
+}
 
 type queue struct {
 	configs []*configItem

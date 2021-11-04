@@ -28,6 +28,7 @@ message Cluster {
   string kubeconfig = 4;
   string public_key = 5;
   string private_key = 6;
+  string hash = 7;
   repeated NodePool nodePools = 9;
   repeated NodeInfo nodeInfos = 10;
 }
