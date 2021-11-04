@@ -23,15 +23,16 @@ import (
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
-type server struct{}
-
 const (
 	outputPath              = "services/wireguardian/server/Ansible"
+	inventoryTemplate       = "services/wireguardian/server/inventory.goini"
 	inventoryFile           = "inventory.ini"
 	playbookFile            = "playbook.yml"
 	sslPrivateKeyFile       = "private.pem"
 	defaultWireguardianPort = 50053
 )
+
+type server struct{}
 
 func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVPNResponse, error) {
 	desiredState := req.GetDesiredState()
@@ -133,7 +134,7 @@ func remove(slice []byte, value byte) []byte {
 
 // genInv will generate ansible inventory file slice of clusters input
 func genInv(addresses []*pb.NodeInfo, path string) error {
-	tpl, err := template.ParseFiles("services/wireguardian/server/inventory.goini")
+	tpl, err := template.ParseFiles(inventoryTemplate)
 	if err != nil {
 		return fmt.Errorf("failed to load template file: %v", err)
 	}
