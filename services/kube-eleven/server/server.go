@@ -21,7 +21,9 @@ import (
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
-type server struct{}
+type server struct {
+	pb.UnimplementedKubeElevenServiceServer
+}
 
 const (
 	outputPath            = "services/kube-eleven/server/" // path to the output directory
