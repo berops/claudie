@@ -8,7 +8,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"strings"
@@ -117,27 +116,12 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 	if config == nil {
 		return nil, fmt.Errorf("createDesiredState got nil Config")
 	}
-	// Create yaml manifest
-	manifestFileName := "manifest.yaml"
 	d := []byte(config.GetManifest())
-	err := ioutil.WriteFile(manifestFileName, d, 0644)
-	if err != nil {
-		return nil, fmt.Errorf("error while creating %s file: %v", manifestFileName, err)
-	}
 	// Parse yaml to protobuf and create desiredState
 	var desiredState Manifest
-	yamlFile, err := ioutil.ReadFile(manifestFileName)
+	err := yaml.Unmarshal(d, &desiredState)
 	if err != nil {
-		return nil, fmt.Errorf("error while reading %s file: %v", manifestFileName, err)
-	}
-	err = yaml.Unmarshal(yamlFile, &desiredState)
-	if err != nil {
-		return nil, fmt.Errorf("error while unmarshalling yaml file: %v", err)
-	}
-	// Remove yaml manifest after loading
-	err = os.Remove(manifestFileName)
-	if err != nil {
-		return nil, fmt.Errorf("error while removing %s file: %v", manifestFileName, err)
+		return nil, fmt.Errorf("error while unmarshalling yaml manifest: %v", err)
 	}
 
 	var clusters []*pb.Cluster
