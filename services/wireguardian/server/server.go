@@ -23,7 +23,9 @@ import (
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
-type server struct{}
+type server struct {
+	pb.UnimplementedWireguardianServiceServer
+}
 
 const (
 	outputPath              = "services/wireguardian/server/Ansible"

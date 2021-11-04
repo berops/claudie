@@ -2,7 +2,7 @@
 
 #Generate all .proto files
 gen:
-	protoc --proto_path=proto proto/*.proto --go_out=plugins=grpc:.
+	protoc  --go-grpc_out=. --go_out=. proto/*.proto
 
 contextbox:
 	go run services/context-box/server/server.go
