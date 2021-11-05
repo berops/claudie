@@ -19,7 +19,9 @@ import (
 
 const defaultTerraformerPort = 50052
 
-type server struct{}
+type server struct {
+	pb.UnimplementedTerraformerServiceServer
+}
 
 func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastructureRequest) (*pb.BuildInfrastructureResponse, error) {
 	currentState := req.GetCurrentState()
