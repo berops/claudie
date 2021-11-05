@@ -19,7 +19,9 @@ import (
 
 const defaultTerraformerPort = 50052
 
-type server struct{}
+type server struct {
+	pb.UnimplementedTerraformerServiceServer
+}
 
 func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastructureRequest) (*pb.BuildInfrastructureResponse, error) {
 	log.Info().Msgf("BuildInfrastructure function was invoked with config %s", req.GetConfig().GetName())
@@ -31,6 +33,9 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 	}
 	log.Info().Msg("Infrastructure was successfully generated")
 	config.ErrorMessage = ""
+	for _, cluster := range config.DesiredState.Clusters {
+		fmt.Printf("jaskeerat cluster: %v\n", cluster)
+	}
 	return &pb.BuildInfrastructureResponse{Config: config}, nil
 }
 

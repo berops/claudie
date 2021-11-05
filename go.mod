@@ -3,6 +3,9 @@ module github.com/Berops/platform
 go 1.16
 
 require (
+	github.com/hashicorp/errwrap v1.1.0 // indirect
+	github.com/hashicorp/go-multierror v1.1.1 // indirect
+	github.com/posener/complete/v2 v2.0.1-alpha.13 // indirect
 	github.com/rs/zerolog v1.25.0
 	github.com/spiffe/go-spiffe/v2 v2.0.0-beta.7
 	github.com/stretchr/testify v1.7.0
