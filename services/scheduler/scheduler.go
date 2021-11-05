@@ -199,23 +199,6 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 		BuilderTTL:   config.GetBuilderTTL(),
 		SchedulerTTL: config.GetSchedulerTTL(),
 	}
-	// Check if all clusters in a currentState have generated a SSH key pair. If not, generate a new pair for a cluster in desiredState.
-
-	// KeyChecking:
-	// 	for _, clusterDesired := range res.DesiredState.Clusters {
-	// 		for _, clusterCurrent := range res.CurrentState.Clusters {
-	// 			if clusterDesired.Name == clusterCurrent.Name {
-	// 				if clusterCurrent.PublicKey != "" {
-	// 					clusterDesired.PublicKey = clusterCurrent.PublicKey
-	// 					clusterDesired.PrivateKey = clusterCurrent.PrivateKey
-	// 					continue KeyChecking
-	// 				}
-	// 			}
-	// 		}
-	// 		privateKey, publicKey := MakeSSHKeyPair()
-	// 		clusterDesired.PrivateKey = privateKey
-	// 		clusterDesired.PublicKey = publicKey
-	// 	}
 
 	for _, clusterDesired := range res.DesiredState.Clusters {
 		for _, clusterCurrent := range res.CurrentState.Clusters {
