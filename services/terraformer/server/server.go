@@ -33,9 +33,6 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 	}
 	log.Info().Msg("Infrastructure was successfully generated")
 	config.ErrorMessage = ""
-	for _, cluster := range config.DesiredState.Clusters {
-		fmt.Printf("jaskeerat cluster: %v\n", cluster)
-	}
 	return &pb.BuildInfrastructureResponse{Config: config}, nil
 }
 
