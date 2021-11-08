@@ -56,7 +56,7 @@ provider "hcloud" {
 }
 
 resource "hcloud_ssh_key" "platform" {
-  name       = "key-{{ .Cluster.Name }}"
+  name       = "key-{{ .Cluster.Name }}-{{.Cluster.Hash}}"
   public_key = file("./public.pem")
 }
 

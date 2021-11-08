@@ -12,14 +12,14 @@ resource "google_compute_network" "network" {
 }
 
 resource "google_compute_subnetwork" "subnet" {
-  name          = "{{ .Cluster.Name }}-subnet"
+  name          = "{{ .Cluster.Name }}-{{.Cluster.Hash}}-subnet"
   network       = google_compute_network.network.self_link
   region        = "europe-west1"
   ip_cidr_range = "10.0.0.0/8"
 }
 
 resource "google_compute_firewall" "firewall" {
-  name    = "{{ .Cluster.Name }}-firewall"
+  name    = "{{ .Cluster.Name }}-{{.Cluster.Hash}}-firewall"
   network = google_compute_network.network.self_link
 
   allow {
@@ -44,7 +44,7 @@ resource "google_compute_firewall" "firewall" {
 resource "google_compute_instance" "control_plane" {
   count        = {{ (index .Cluster.NodePools $index).Master.Count }}
   zone         = "europe-west1-c"
-  name         = "{{ .Cluster.Name }}-gcp-control-${count.index + 1}"
+  name         = "{{ .Cluster.Name }}-{{.Cluster.Hash}}-gcp-control-${count.index + 1}"
   machine_type = "{{ (index .Cluster.NodePools $index).Master.ServerType }}"
   allow_stopping_for_update = true
   boot_disk {
@@ -66,7 +66,7 @@ resource "google_compute_instance" "control_plane" {
 resource "google_compute_instance" "compute_plane" {
   count        = {{ (index .Cluster.NodePools $index).Worker.Count }}
   zone         = "europe-west1-c"
-  name         = "{{ .Cluster.Name }}-gcp-compute-${count.index + 1}"
+  name         = "{{ .Cluster.Name }}-{{.Cluster.Hash}}-gcp-compute-${count.index + 1}"
   machine_type = "{{ (index .Cluster.NodePools $index).Worker.ServerType }}"
   allow_stopping_for_update = true
   boot_disk {
