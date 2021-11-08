@@ -142,18 +142,14 @@ func TestBuildInfrastructure(t *testing.T) {
 	c := pb.NewTerraformerServiceClient(cc)
 
 	res, err := BuildInfrastructure(c, &pb.BuildInfrastructureRequest{
-		Config: &pb.Config{
-			Id:           "12345",
-			Name:         "Test config for Terraformer",
-			Manifest:     "ManifestStringExample",
-			DesiredState: desiredState,
-		},
+		CurrentState: nil,
+		DesiredState: desiredState,
 	})
 	require.NoError(t, err)
 	t.Log("Terraformer response: ", res)
 
 	// Print just public ip addresses
-	for _, cluster := range res.GetConfig().GetCurrentState().GetClusters() {
+	for _, cluster := range res.GetCurrentState().GetClusters() {
 		t.Log(cluster.GetName())
 		for k, ip := range cluster.GetNodeInfos() {
 			t.Log(k, ip.GetPublic())

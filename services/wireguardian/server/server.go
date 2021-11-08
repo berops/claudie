@@ -23,29 +23,28 @@ import (
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
-type server struct{}
-
 const (
 	outputPath              = "services/wireguardian/server/Ansible"
+	inventoryTemplate       = "services/wireguardian/server/inventory.goini"
 	inventoryFile           = "inventory.ini"
 	playbookFile            = "playbook.yml"
 	sslPrivateKeyFile       = "private.pem"
 	defaultWireguardianPort = 50053
 )
 
+type server struct{}
+
 func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVPNResponse, error) {
-	log.Info().Msgf("BuildVPN function was invoked with %s", req.Config.Name)
-	config := req.GetConfig()
+	desiredState := req.GetDesiredState()
 	var errGroup errgroup.Group
 
-	for _, cluster := range config.GetDesiredState().GetClusters() {
+	for _, cluster := range desiredState.GetClusters() {
 		// to pass the parameter in loop, we need to create a dummy fuction
 		func(cluster *pb.Cluster) {
 			errGroup.Go(func() error {
 				err := buildVPNAsync(cluster)
 				if err != nil {
 					log.Error().Msgf("error encountered in Wireguardian - BuildVPN: %v", err)
-					config.ErrorMessage = err.Error()
 					return err
 				}
 				return nil
@@ -55,11 +54,9 @@ func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVP
 
 	err := errGroup.Wait()
 	if err != nil {
-		config.ErrorMessage = err.Error()
-		return &pb.BuildVPNResponse{Config: config}, err
+		return &pb.BuildVPNResponse{DesiredState: desiredState}, err
 	}
-	config.ErrorMessage = ""
-	return &pb.BuildVPNResponse{Config: config}, nil
+	return &pb.BuildVPNResponse{DesiredState: desiredState}, nil
 }
 
 func buildVPNAsync(cluster *pb.Cluster) error {
@@ -127,18 +124,17 @@ func genPrivAdd(addresses []*pb.NodeInfo, network string) error {
 }
 
 func remove(slice []byte, value byte) []byte {
-	var pos int
-	for pos = 0; pos < len(slice); pos++ {
-		if slice[pos] == value {
-			break
+	for idx, v := range slice {
+		if v == value {
+			return append(slice[:idx], slice[idx+1:]...)
 		}
 	}
-	return append(slice[:pos], slice[pos+1:]...)
+	return slice
 }
 
 // genInv will generate ansible inventory file slice of clusters input
 func genInv(addresses []*pb.NodeInfo, path string) error {
-	tpl, err := template.ParseFiles("services/wireguardian/server/inventory.goini")
+	tpl, err := template.ParseFiles(inventoryTemplate)
 	if err != nil {
 		return fmt.Errorf("failed to load template file: %v", err)
 	}

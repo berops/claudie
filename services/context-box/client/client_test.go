@@ -12,6 +12,8 @@ import (
 	"google.golang.org/grpc"
 )
 
+const configIDDefault = "6179101c00343357d3a52960"
+
 func ClientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
 	cc, err := utils.GrpcDialWithInsecure("context-box", urls.ContextBoxURL)
 	if err != nil {
@@ -102,7 +104,7 @@ func TestSaveConfigScheduler(t *testing.T) {
 
 func TestDeleteConfig(t *testing.T) {
 	c, cc := ClientConnection()
-	configID := "6179101c00343357d3a52960" // Put desired config ID here
+	configID := configIDDefault // Put desired config ID here
 	delErr := DeleteConfig(c, configID)
 	if delErr != nil {
 		log.Fatal().Msgf("Error deleting config %s %v", configID, delErr)
@@ -113,7 +115,7 @@ func TestDeleteConfig(t *testing.T) {
 // To get an output of the test, run this from the test's directory: go test -timeout 30s -run ^TestPrintConfig$ github.com/Berops/platform/services/context-box/client -v
 func TestPrintConfig(t *testing.T) {
 	c, cc := ClientConnection()
-	out, err := PrintConfig(c, "6179101c00343357d3a52960") // Put desired config ID here
+	out, err := PrintConfig(c, configIDDefault) // Put desired config ID here
 	if err != nil {
 		log.Fatal().Msgf("Config not found: %v", err)
 	}

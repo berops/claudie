@@ -82,11 +82,6 @@ func buildInfrastructureAsync(cluster *pb.Cluster, backendData Backend) error {
 
 	// Fill public ip addresses to NodeInfos
 	var m []*pb.NodeInfo
-	var newM []*pb.NodeInfo
-
-	if cluster != nil {
-		m = cluster.NodeInfos
-	}
 	for _, nodepool := range cluster.NodePools {
 		output, err := outputTerraform(terraformOutputPath, nodepool.Provider.Name)
 		if err != nil {
@@ -98,28 +93,27 @@ func buildInfrastructureAsync(cluster *pb.Cluster, backendData Backend) error {
 			return err
 		}
 
-		res := fillNodes(m, &out, nodepool)
-		newM = append(newM, res...)
+		res := fillNodes(cluster.NodeInfos, &out, nodepool)
+		m = append(m, res...)
 	}
-	cluster.NodeInfos = newM
+	cluster.NodeInfos = m
 
 	return nil
 }
 
 // buildInfrastructure is generating terraform files for different providers and calling terraform
-func buildInfrastructure(config *pb.Config) error {
+func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) error {
 	fmt.Println("Generating templates")
 	var backendData Backend
-	backendData.ProjectName = config.GetDesiredState().GetName()
+	backendData.ProjectName = desiredState.GetName()
 	var errGroup errgroup.Group
 
-	for _, cluster := range config.GetDesiredState().GetClusters() {
+	for _, cluster := range desiredState.GetClusters() {
 		func(cluster *pb.Cluster, backendData Backend) {
 			errGroup.Go(func() error {
 				err := buildInfrastructureAsync(cluster, backendData)
 				if err != nil {
 					log.Error().Msgf("error encountered in Terraformer - buildInfrastructure: %v", err)
-					config.ErrorMessage = err.Error()
 					return err
 				}
 				return nil
@@ -128,7 +122,6 @@ func buildInfrastructure(config *pb.Config) error {
 	}
 	err := errGroup.Wait()
 	if err != nil {
-		config.ErrorMessage = err.Error()
 		return err
 	}
 
@@ -224,27 +217,21 @@ func destroyInfrastructure(config *pb.Config) error {
 func buildNodePools(cluster *pb.Cluster, outputPathCluster string) error {
 	for i, nodePool := range cluster.NodePools {
 		providerName := nodePool.Provider.Name
-		switch providerName {
-		case "hetzner", "gcp":
-			log.Info().Msgf("Cluster provider: %s", providerName)
-			// creating terraform file for a provider
-			tplFileName := fmt.Sprintf("%s.tpl", providerName)
-			terraFormFileName := fmt.Sprintf("%s.tf", providerName)
-			tplFile := filepath.Join(templatePath, tplFileName)
-			trfFile := filepath.Join(outputPathCluster, terraFormFileName)
-			genRes := templateGen(
-				tplFile,
-				trfFile,
-				&Data{Index: i, Cluster: cluster},
-				templatePath)
-			if genRes != nil {
-				log.Error().Msgf("Error generating terraform config file %s from template %s: %v",
-					trfFile, tplFile, genRes)
-				return genRes
-			}
-			//nodes = readTerraformOutput(nodes)
-		default:
-			log.Error().Str("provider", providerName).Msgf("Received unsupported provider %s", providerName)
+		log.Info().Msgf("Cluster provider: %s", providerName)
+		// creating terraform file for a provider
+		tplFileName := fmt.Sprintf("%s.tpl", providerName)
+		terraFormFileName := fmt.Sprintf("%s.tf", providerName)
+		tplFile := filepath.Join(templatePath, tplFileName)
+		trfFile := filepath.Join(outputPathCluster, terraFormFileName)
+		genRes := templateGen(
+			tplFile,
+			trfFile,
+			&Data{Index: i, Cluster: cluster},
+			templatePath)
+		if genRes != nil {
+			log.Error().Msgf("Error generating terraform config file %s from template %s: %v",
+				trfFile, tplFile, genRes)
+			return genRes
 		}
 	}
 
@@ -307,9 +294,9 @@ func executeTerraform(cmd *exec.Cmd, workingDir string) error {
 }
 
 // outputTerraform returns terraform output for a given provider and path in a json format
-func outputTerraform(fileName string, provider string) (string, error) {
+func outputTerraform(dirName string, provider string) (string, error) {
 	cmd := exec.Command("terraform", "output", "-json", provider)
-	cmd.Dir = fileName
+	cmd.Dir = dirName
 	var outb, errb bytes.Buffer
 	cmd.Stdout = &outb
 	cmd.Stderr = &errb
@@ -328,21 +315,22 @@ func readOutput(data string) (jsonOut, error) {
 	return result, err
 }
 
+// getKeysFromMap returns an array of all keys in a map
+func getkeysFromMap(data map[string]string) []string {
+	var keys []string
+	for key := range data {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
 // fillNodes gets ip addresses from a terraform output
 func fillNodes(mOld []*pb.NodeInfo, terraformOutput *jsonOut, nodepool *pb.NodePool) []*pb.NodeInfo {
 	var mNew []*pb.NodeInfo
-	// Create empty slices for node names
-	var keysControl []string
-	var keysCompute []string
 	// Fill slices from terraformOutput maps with names of nodes to ensure an order
-	for name := range terraformOutput.Control {
-		keysControl = append(keysControl, name)
-	}
-	sort.Strings(keysControl)
-	for name := range terraformOutput.Compute {
-		keysCompute = append(keysCompute, name)
-	}
-	sort.Strings(keysCompute)
+	keysControl := getkeysFromMap(terraformOutput.Control)
+	keysCompute := getkeysFromMap(terraformOutput.Compute)
 
 	for _, name := range keysControl {
 		var private = ""

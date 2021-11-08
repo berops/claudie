@@ -140,8 +140,8 @@ func saveToDB(config *pb.Config) (*pb.Config, error) {
 	data.SchedulerTTL = int(config.GetSchedulerTTL())
 	data.ErrorMessage = config.ErrorMessage
 
-	//Check if ID exists
-	//If config has already some ID:
+	// Check if ID exists
+	// If config has already some ID:
 	if config.GetId() != "" {
 		//Get id from config as oid
 		oid, err := primitive.ObjectIDFromHex(config.GetId())
@@ -161,7 +161,7 @@ func saveToDB(config *pb.Config) (*pb.Config, error) {
 			)
 		}
 	} else {
-		//Add data to the collection if OID doesn't exist
+		// Add data to the collection if OID doesn't exist
 		res, err := collection.InsertOne(context.Background(), data)
 		if err != nil {
 			// Return error in protobuf
@@ -180,7 +180,7 @@ func saveToDB(config *pb.Config) (*pb.Config, error) {
 		}
 		data.ID = oid
 		config.Id = oid.Hex()
-		//Return config with new ID
+		// Return config with new ID
 	}
 	return config, nil
 }
@@ -330,12 +330,17 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 	return &pb.SaveConfigResponse{Config: config}, nil
 }
 
+// calcChecksum calculates the md5 hash of the input string arg
+func calcChecksum(data string) []byte {
+	res := md5.Sum([]byte(data))
+	// Creating a slice using an array you can just make a simple slice expression
+	return res[:]
+}
+
 func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
 	log.Info().Msg("CLIENT REQUEST: SaveConfigFrontEnd")
 	newConfig := req.GetConfig()
-	msChecksum := md5.Sum([]byte(newConfig.GetManifest())) //Calculate md5 hash for a manifest file
-	newConfig.MsChecksum = msChecksum[:]                   //Creating a slice using an array you can just make a simple slice expression
-
+	newConfig.MsChecksum = calcChecksum(newConfig.GetManifest())
 	if newConfig.GetId() != "" {
 		//Check if there is already ID in the DB
 		oldConfig, err := getFromDB(newConfig.GetId())

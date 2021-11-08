@@ -3,8 +3,16 @@ package platform;
 import "config.proto";
 option go_package = "proto/pb";
 
-message BuildInfrastructureRequest { Config config = 1; }
-message BuildInfrastructureResponse { Config config = 1; }
+message BuildInfrastructureRequest {
+  Project currentState = 1;
+  Project desiredState = 2;
+}
+
+message BuildInfrastructureResponse {
+  Project currentState = 1;
+  Project desiredState = 2;
+  string errorMessage = 3;
+}
 
 message DestroyInfrastructureRequest { Config config = 1; }
 message DestroyInfrastructureResponse { Config config = 1; }

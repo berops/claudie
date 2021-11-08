@@ -6,8 +6,11 @@ import "config.proto";
 
 option go_package = "proto/pb";
 
-message BuildVPNRequest { Config config = 1; }
-message BuildVPNResponse { Config config = 1; }
+message BuildVPNRequest { Project desiredState = 1; }
+message BuildVPNResponse {
+  Project desiredState = 1;
+  string errorMessage = 2;
+}
 
 service WireguardianService {
   rpc BuildVPN(BuildVPNRequest) returns (BuildVPNResponse);
