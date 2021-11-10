@@ -75,28 +75,3 @@ jobs:
       - name: Delete temporary namespace
         run: |
           kubectl delete namespace claudie-$GITHUB_SHA 
-#--------------------------------------------------------------------------------------------------
-# Deploy manifests to GKE clusters default namespace
-  deploy:
-    runs-on: ubuntu-latest
-    needs: [ deploy-and-monitor ]
-    # Run only if CI was successful
-    if: ${{ github.event.workflow_run.conclusion != 'failure' }}
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          ref: ${{ github.head_ref }}
-
-
-      - name: Configure kubectl
-        uses: google-github-actions/get-gke-credentials@v0.3.0
-        with:
-          cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
-          location: ${{ secrets.GKE_ZONE }}
-          credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
-
-      # Deploy to the claudie namespace for further testing
-      - name: Deploy to the dev cluster default namespace via kustomize
-        working-directory: ./K8s-dev-cluster
-        run: |
-          kustomize build | kubectl apply -f -
