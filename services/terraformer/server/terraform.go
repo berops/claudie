@@ -40,7 +40,7 @@ type jsonOut struct {
 
 func buildInfrastructureAsync(cluster *pb.Cluster, backendData Backend) error {
 	// Prepare backend data for golang templates
-	backendData.ClusterName = cluster.GetName()
+	backendData.ClusterName = cluster.GetName() + cluster.GetHash()
 	log.Info().Msgf("Cluster name: %s", cluster.GetName())
 
 	templateFilePath := filepath.Join(templatePath, "backend.tpl")
@@ -136,7 +136,7 @@ func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) err
 // destroyInfrastructureAsync executes terraform destroy --auto-approve. It destroys whole infrastructure in a project.
 func destroyInfrastructureAsync(cluster *pb.Cluster, backendData Backend) error {
 	log.Info().Msg("Generating templates for infrastructure destroy")
-	backendData.ClusterName = cluster.GetName()
+	backendData.ClusterName = cluster.GetName() + cluster.GetHash()
 
 	log.Info().Msgf("Cluster name: %s", cluster.GetName())
 

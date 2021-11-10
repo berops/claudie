@@ -8,7 +8,7 @@ terraform {
 }
 
 resource "hcloud_firewall" "defaultfirewall" {
-  name = "{{ .Cluster.Name }}-firewall"
+  name = "{{ .Cluster.Name }}-{{.Cluster.Hash}}-firewall"
   rule {
     direction = "in"
     protocol  = "icmp"
@@ -56,14 +56,14 @@ provider "hcloud" {
 }
 
 resource "hcloud_ssh_key" "platform" {
-  name       = "key-{{ .Cluster.Name }}"
+  name       = "key-{{ .Cluster.Name }}-{{.Cluster.Hash}}"
   public_key = file("./public.pem")
 }
 
 
 resource "hcloud_server" "control_plane" {
   count       = "{{ (index .Cluster.NodePools $index).Master.Count }}"
-  name        = "{{ .Cluster.Name }}-hetzner-control-${count.index + 1}"
+  name        = "{{ .Cluster.Name }}-{{.Cluster.Hash}}-hetzner-control-${count.index + 1}"
   server_type = "{{ (index .Cluster.NodePools $index).Master.ServerType }}"
   image       = "{{ (index .Cluster.NodePools $index).Master.Image }}"
   firewall_ids = [hcloud_firewall.defaultfirewall.id]
@@ -75,7 +75,7 @@ resource "hcloud_server" "control_plane" {
 
 resource "hcloud_server" "compute_plane" {
   count       = "{{ (index .Cluster.NodePools $index).Worker.Count }}"
-  name        = "{{ .Cluster.Name}}-hetzner-compute-${count.index + 1}"
+  name        = "{{ .Cluster.Name}}-{{.Cluster.Hash}}-hetzner-compute-${count.index + 1}"
   server_type = "{{ (index .Cluster.NodePools $index).Worker.ServerType }}"
   image       = "{{ (index .Cluster.NodePools $index).Worker.Image }}"
   firewall_ids = [hcloud_firewall.defaultfirewall.id]

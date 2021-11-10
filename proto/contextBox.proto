@@ -1,7 +1,7 @@
 syntax = "proto3";
 package platform;
 option go_package = "proto/pb";
-import "config.proto";
+import "proto/config.proto";
 
 // Save
 message SaveConfigRequest { Config config = 1; }
