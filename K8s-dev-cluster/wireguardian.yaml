@@ -20,11 +20,11 @@ spec:
         image: eu.gcr.io/platform-infrastructure-316112/platform/wireguardian
         resources:
           requests:
-            cpu: 70m
-            memory: 250Mi
+            cpu: 5m
+            memory: 50Mi
           limits:
-            cpu: 400m
-            memory: 500Mi
+            cpu: 25m
+            memory: 100Mi
         env:
         - name: WIREGUARDIAN_PORT
           valueFrom:

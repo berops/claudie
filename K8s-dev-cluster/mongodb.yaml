@@ -19,11 +19,11 @@ spec:
         image: mongo:5
         resources:
           requests:
-            cpu: 70m
-            memory: 250Mi
+            cpu: 10m
+            memory: 70Mi
           limits:
-            cpu: 400m
-            memory: 500Mi
+            cpu: 35m
+            memory: 150Mi
         ports:
         - containerPort: 27017  
 ---
