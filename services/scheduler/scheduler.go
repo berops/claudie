@@ -29,58 +29,84 @@ const defaultSchedulerPort = 50056
 
 ////////////////////YAML STRUCT//////////////////////////////////////////////////
 
-// Manifest struct holding info on clusters
 type Manifest struct {
-	Name     string    `yaml:"name"`
-	Clusters []Cluster `yaml:"clusters"`
+	Name         string       `yaml:"name"`
+	Providers    []Provider   `yaml:"providers"`
+	NodePools    []NodePool   `yaml:"nodePools"`
+	LoadBalancer LoadBalancer `yaml:"loadBalancer"`
+	Kubernetes   Kubernetes   `yaml:"kubernetes"`
 }
 
-// Cluster struct holds cluster related info
-type Cluster struct {
-	Name       string     `yaml:"name"`
-	Kubernetes string     `yaml:"kubernetes"`
-	Network    string     `yaml:"network"`
-	NodePools  []NodePool `yaml:"nodePools"`
-	PrivateKey string
-	PublicKey  string
-	Hash       string
-}
-
-// NodePool struct contains data on master and worker nodes
-type NodePool struct {
-	Name     string   `yaml:"name"`
-	Region   string   `yaml:"region"`
-	Master   Master   `yaml:"master"`
-	Worker   Worker   `yaml:"worker"`
-	Provider Provider `yaml:"provider"`
-}
-
-// Master struct contains master/leader node data
-type Master struct {
-	Count      int32  `yaml:"count"`
-	ServerType string `yaml:"server_type"`
-	Image      string `yaml:"image"`
-	DiskSize   uint32 `yaml:"disk_size"`
-	Zone       string `yaml:"zone"`
-	Location   string `yaml:"location"`
-	Datacenter string `yaml:"datacenter"`
-}
-
-// Worker struct aggregates info about worker node
-type Worker struct {
-	Count      int32  `yaml:"count"`
-	ServerType string `yaml:"server_type"`
-	Image      string `yaml:"image"`
-	DiskSize   uint32 `yaml:"disk_size"`
-	Zone       string `yaml:"zone"`
-	Location   string `yaml:"location"`
-	Datacenter string `yaml:"datacenter"`
-}
-
-// Provider struct holding credentials info
 type Provider struct {
 	Name        string `yaml:"name"`
 	Credentials string `yaml:"credentials"`
+}
+
+type NodePool struct {
+	Dynamic []DynamicNode `yaml:"dynamic"`
+	Static  []StaticNode  `yaml:"static"`
+}
+
+type LoadBalancer struct {
+	Roles    []Role                `yaml:"roles"`
+	Clusters []LoadBalancerCluster `yaml:"clusters"`
+}
+
+type Kubernetes struct {
+	Clusters []Cluster `yaml:"clusters"`
+}
+
+type DynamicNode struct {
+	Name       string `yaml:"name"`
+	Provider   string `yaml:"provider"`
+	Count      int64  `yaml:"count"`
+	ServerType string `yaml:"server_type"`
+	Image      string `yaml:"image"`
+	DiskSize   int64  `yaml:"disk_size"`
+}
+
+type StaticNode struct {
+	Name  string `yaml:"name"`
+	Nodes []Node `yaml:"nodes"`
+}
+
+type Node struct {
+	PublicIP      string `yaml:"publicIP"`
+	PrivateSSHKey string `yaml:"privateSshKey"`
+}
+
+type Cluster struct {
+	Name    string `yaml:"name"`
+	Version string `yaml:"version"`
+	Network string `yaml:"network"`
+	Pools   []Pool `yaml:"pools"`
+}
+
+type Pool struct {
+	Control []string `yaml:"control"`
+	Compute []string `yaml:"compute"`
+}
+
+type Role struct {
+	Name string `yaml:"name"`
+}
+
+type LoadBalancerCluster struct {
+	Name   string   `yaml:"name"`
+	Role   string   `yaml:"role"`
+	DNS    []DNS    `yaml:"dns"`
+	Target Target   `yaml:"target"`
+	Pools  []string `yaml:"pools"`
+}
+
+type DNS struct {
+	Hostname string   `yaml:"hostname"`
+	Provider []string `yaml:"provider"`
+}
+
+type Target struct {
+	Name string `yaml:"name"`
+	Type string `yaml:"type"`
 }
 
 ////////////////////////////////////////////////////////////////////////////////
