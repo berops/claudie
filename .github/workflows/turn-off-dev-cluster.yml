@@ -6,6 +6,7 @@ on:
                           # Uses UTC timezone - Run every day at 20:00 CET -> "0 18 * * *"
 jobs:
   turn-off:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
       # Checkout the repository
