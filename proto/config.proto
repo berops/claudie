@@ -18,80 +18,48 @@ message Config {
 
 message Project {
   string name = 1;
-  repeated Provider providers = 2;
-  repeated NodePool nodePools = 3;
-  LoadBalancer loadBalancer = 4;
-  Kubernetes kubernetes = 5;
-}
-
-message Provider {
-  string name = 1;
-  string crendtials = 2;
-}
-
-message NodePool {
-  repeated DynamicNode dynamic = 1;
-  repeated StaticNode static = 2;
-}
-
-message LoadBalancer {
-  repeated Role roles = 1;
-  repeated LoadBalancerCluster clusters = 2;
-}
-
-message Kubernetes {
-  repeated Cluster cluster = 1;
-}
-
-message DynamicNode {
-  string name = 1;
-  string provider = 2;
-  int64 count = 3;
-  string serverType = 4;
-  string imaeg = 5;
-  int64 diskSize = 6;
-}
-
-message StaticNode {
-  string name = 1;
-  repeated Node nodes = 2;
-}
-
-message Node {
-  string publicIP = 1;
-  string privateSSHKey = 2;  
+  repeated Cluster clusters = 2;
 }
 
 message Cluster {
   string name = 1;
-  string version = 2;
+  string kubernetes = 2;
   string network = 3;
-  repeated Pool pools = 4;
+  string kubeconfig = 4;
+  string public_key = 5;
+  string private_key = 6;
+  string hash = 7;
+  repeated NodePool nodePools = 9;
 }
 
-message Pool {
-  repeated string control = 1;
-  repeated string compute = 2;
-}
-
-message Role {
+message NodePool {
   string name = 1;
+  string region = 2;
+  string serverType = 3;
+  string image = 4;
+  uint32 diskSize = 5;
+  string zone = 6;
+  string location = 7;
+  string datacenter = 8;
+  repeated Node nodes = 9;
+  Provider provider = 10;
 }
 
-message LoadBalancerCluster {
+/*
+ * isControl flag
+ * 0 - Only worker node
+ * 1 - Only master node
+ * 2 - APIEndpoint master node (must be singleton)
+ */
+
+message Node {
+  string name = 9;
+  string private = 10;
+  string public = 11;
+  uint32 isControl = 12;
+}
+
+message Provider {
   string name = 1;
-  string role = 2;
-  repeated DNS dns = 3;
-  Target target = 4;
-  repeated string pools = 5;
-}
-
-message DNS {
-  string hostname = 1;
-  repeated string provider = 2;
-}
-
-message Target {
-  string name = 1;
-  string type = 2;
+  string credentials = 2;
 }
