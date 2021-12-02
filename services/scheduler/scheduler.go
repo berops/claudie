@@ -32,14 +32,14 @@ const defaultSchedulerPort = 50056
 type Manifest struct {
 	Name         string       `yaml:"name"`
 	Providers    []Provider   `yaml:"providers"`
-	NodePools    []NodePool   `yaml:"nodePools"`
+	NodePools    NodePool     `yaml:"nodePools"`
 	LoadBalancer LoadBalancer `yaml:"loadBalancer"`
 	Kubernetes   Kubernetes   `yaml:"kubernetes"`
 }
 
 type Provider struct {
-	Name        string `yaml:"name"`
-	Credentials string `yaml:"credentials"`
+	Name        string            `yaml:"name"`
+	Credentials map[string]string `yaml:"credentials"`
 }
 
 type NodePool struct {
@@ -57,12 +57,14 @@ type Kubernetes struct {
 }
 
 type DynamicNode struct {
-	Name       string `yaml:"name"`
-	Provider   string `yaml:"provider"`
-	Count      int64  `yaml:"count"`
-	ServerType string `yaml:"server_type"`
-	Image      string `yaml:"image"`
-	DiskSize   int64  `yaml:"disk_size"`
+	Name       string                       `yaml:"name"`
+	Provider   map[string]map[string]string `yaml:"provider"`
+	Count      int64                        `yaml:"count"`
+	ServerType string                       `yaml:"server_type"`
+	Image      string                       `yaml:"image"`
+	DiskSize   int64                        `yaml:"disk_size"`
+	Location   string                       `yaml:"location"`
+	Datacenter string                       `yaml:"datacenter"`
 }
 
 type StaticNode struct {
@@ -79,7 +81,7 @@ type Cluster struct {
 	Name    string `yaml:"name"`
 	Version string `yaml:"version"`
 	Network string `yaml:"network"`
-	Pools   []Pool `yaml:"pools"`
+	Pools   Pool   `yaml:"pools"`
 }
 
 type Pool struct {
@@ -89,12 +91,19 @@ type Pool struct {
 
 type Role struct {
 	Name string `yaml:"name"`
+	Conf Conf   `yaml:"conf"`
+}
+
+type Conf struct {
+	Protocol   string `yaml:"protocol"`
+	Port       uint32 `yaml:"port"`
+	TargetPort uint32 `yaml:"targetPort"`
 }
 
 type LoadBalancerCluster struct {
 	Name   string   `yaml:"name"`
 	Role   string   `yaml:"role"`
-	DNS    []DNS    `yaml:"dns"`
+	DNS    DNS      `yaml:"dns"`
 	Target Target   `yaml:"target"`
 	Pools  []string `yaml:"pools"`
 }
@@ -110,6 +119,14 @@ type Target struct {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+type isControlFlag uint32
+
+const (
+	Compute     isControlFlag = 0
+	Control     isControlFlag = 1
+	APIEndpoint isControlFlag = 2
+)
 
 // MakeSSHKeyPair function generates SSH privateKey,publicKey pair
 // returns (strPrivateKey, strPublicKey)
@@ -152,46 +169,94 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 	}
 
 	var clusters []*pb.Cluster
-	for _, cluster := range desiredState.Clusters {
-		var nodePools []*pb.NodePool
-		for _, nodePool := range cluster.NodePools {
-			nodePools = append(nodePools, &pb.NodePool{
-				Name:   nodePool.Name,
-				Region: nodePool.Region,
-				Master: &pb.Node{
-					Count:      uint32(nodePool.Master.Count),
-					ServerType: nodePool.Master.ServerType,
-					Image:      nodePool.Master.Image,
-					DiskSize:   nodePool.Master.DiskSize,
-					Zone:       nodePool.Master.Zone,
-					Location:   nodePool.Master.Location,
-					Datacenter: nodePool.Master.Datacenter,
-				},
-				Worker: &pb.Node{
-					Count:      uint32(nodePool.Worker.Count),
-					ServerType: nodePool.Worker.ServerType,
-					Image:      nodePool.Worker.Image,
-					DiskSize:   nodePool.Worker.DiskSize,
-					Zone:       nodePool.Worker.Zone,
-					Location:   nodePool.Worker.Location,
-					Datacenter: nodePool.Worker.Datacenter,
-				},
-				Provider: &pb.Provider{
-					Name:        nodePool.Provider.Name,
-					Credentials: nodePool.Provider.Credentials,
-				},
-			})
+	for _, cluster := range desiredState.Kubernetes.Clusters {
+
+		newCluster := &pb.Cluster{
+			Name:       cluster.Name,
+			Kubernetes: cluster.Version,
+			Network:    cluster.Network,
+			Hash:       utils.CreateHash(7),
+			// public_key
+			// private_key
 		}
 
-		clusters = append(clusters, &pb.Cluster{
-			Name:       cluster.Name,
-			Kubernetes: cluster.Kubernetes,
-			Network:    cluster.Network,
-			PrivateKey: cluster.PrivateKey,
-			PublicKey:  cluster.PublicKey,
-			NodePools:  nodePools,
-			// Hash:       utils.CreateHash(7),
-		})
+		var ComputeNodePools, ControlNodePools []*pb.NodePool
+
+		// Check if the nodepool is part of the cluster
+
+		// Control nodePool
+		for index, nodePool := range cluster.Pools.Control {
+			if isFound, position := searchNodePool(nodePool, desiredState.NodePools.Dynamic); isFound {
+
+				var Nodes []*pb.Node
+				var isControlFlagValue isControlFlag
+				// check if it's the first nodepool of type control
+				if index == 0 {
+					isControlFlagValue = APIEndpoint
+				} else {
+					isControlFlagValue = Control
+				}
+
+				for i := 0; i < int(desiredState.NodePools.Dynamic[position].Count); i++ {
+					Nodes = append(Nodes, &pb.Node{
+						Name:      "hard-Coded", // TODO change this value
+						IsControl: uint32(isControlFlagValue),
+					})
+				}
+
+				provider, region, zone := getProviderRegionAndZone(desiredState.NodePools.Dynamic[position].Provider)
+				ControlNodePools = append(ControlNodePools, &pb.NodePool{
+					Name:       desiredState.NodePools.Dynamic[position].Name,
+					Region:     region,
+					Zone:       zone,
+					ServerType: desiredState.NodePools.Dynamic[position].ServerType,
+					Image:      desiredState.NodePools.Dynamic[position].Image,
+					DiskSize:   uint32(desiredState.NodePools.Dynamic[position].DiskSize),
+					Location:   desiredState.NodePools.Dynamic[position].Location,
+					Datacenter: desiredState.NodePools.Dynamic[position].Datacenter,
+					Nodes:      Nodes,
+					Provider: &pb.Provider{
+						Name:        desiredState.Providers[searchProvider(provider, desiredState.Providers)].Name,
+						Credentials: desiredState.Providers[searchProvider(provider, desiredState.Providers)].Credentials["value"], // TODO change hard-coded value
+					},
+				})
+			}
+		}
+
+		// compute nodepools
+		for _, nodePool := range cluster.Pools.Compute {
+			if isFound, position := searchNodePool(nodePool, desiredState.NodePools.Dynamic); isFound {
+
+				var Nodes []*pb.Node
+				var isControlFlagValue isControlFlag = Compute
+
+				for i := 0; i < int(desiredState.NodePools.Dynamic[position].Count); i++ {
+					Nodes = append(Nodes, &pb.Node{
+						Name:      "hard-Coded", // TODO change this value
+						IsControl: uint32(isControlFlagValue),
+					})
+				}
+
+				provider, region, zone := getProviderRegionAndZone(desiredState.NodePools.Dynamic[position].Provider)
+				ComputeNodePools = append(ComputeNodePools, &pb.NodePool{
+					Name:       desiredState.NodePools.Dynamic[position].Name,
+					Region:     region,
+					Zone:       zone,
+					ServerType: desiredState.NodePools.Dynamic[position].ServerType,
+					Image:      desiredState.NodePools.Dynamic[position].Image,
+					DiskSize:   uint32(desiredState.NodePools.Dynamic[position].DiskSize),
+					Location:   desiredState.NodePools.Dynamic[position].Location,
+					Datacenter: desiredState.NodePools.Dynamic[position].Datacenter,
+					Nodes:      Nodes,
+					Provider: &pb.Provider{
+						Name:        desiredState.Providers[searchProvider(provider, desiredState.Providers)].Name,
+						Credentials: desiredState.Providers[searchProvider(provider, desiredState.Providers)].Credentials["value"], // TODO change hard-coded value
+					},
+				})
+			}
+		}
+
+		newCluster.NodePools = append(ControlNodePools, ComputeNodePools...)
 	}
 
 	res := &pb.Config{
@@ -278,6 +343,33 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 
 		return nil
 	}
+}
+
+func getProviderRegionAndZone(providerMap map[string]map[string]string) (string, string, string) {
+
+	var provider string
+	for provider = range providerMap {
+	}
+	return provider, providerMap[provider]["region"], providerMap[provider]["zone"]
+}
+
+// search of the nodePool in the nodePools []DynamicNode
+func searchNodePool(nodePoolName string, nodePools []DynamicNode) (bool, int) {
+	for index, nodePool := range nodePools {
+		if nodePool.Name == nodePoolName {
+			return true, index
+		}
+	}
+	return false, -1
+}
+
+func searchProvider(providerName string, providers []Provider) int {
+	for index, provider := range providers {
+		if provider.Name == providerName {
+			return index
+		}
+	}
+	return -1
 }
 
 func main() {
