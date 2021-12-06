@@ -2,11 +2,9 @@ name: SampleConfigName
 
 providers:
 - name: gcp
-  credentials: 
-    file: ../secrets/admin-project-283514-3729b1f097f2.json
+  credentials: ../secrets/admin-project-283514-3729b1f097f2.json
 - name: hetzner
-  credentials:
-    value: xIAfsb7M5K6etYAfXYcg5iYyrFGNlCxcICo060HVEygjoF0usFpv5P9X7pk85Xe1
+  credentials: xIAfsb7M5K6etYAfXYcg5iYyrFGNlCxcICo060HVEygjoF0usFpv5P9X7pk85Xe1
 
 nodePools:
   dynamic: 

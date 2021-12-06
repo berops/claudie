@@ -38,13 +38,13 @@ type Manifest struct {
 }
 
 type Provider struct {
-	Name        string            `yaml:"name"`
-	Credentials map[string]string `yaml:"credentials"`
+	Name        string `yaml:"name"`
+	Credentials string `yaml:"credentials"`
 }
 
 type NodePool struct {
-	Dynamic []DynamicNode `yaml:"dynamic"`
-	Static  []StaticNode  `yaml:"static"`
+	Dynamic []DynamicNodePool `yaml:"dynamic"`
+	Static  []StaticNodePool  `yaml:"static"`
 }
 
 type LoadBalancer struct {
@@ -56,18 +56,16 @@ type Kubernetes struct {
 	Clusters []Cluster `yaml:"clusters"`
 }
 
-type DynamicNode struct {
+type DynamicNodePool struct {
 	Name       string                       `yaml:"name"`
 	Provider   map[string]map[string]string `yaml:"provider"`
 	Count      int64                        `yaml:"count"`
 	ServerType string                       `yaml:"server_type"`
 	Image      string                       `yaml:"image"`
-	DiskSize   int64                        `yaml:"disk_size"`
-	Location   string                       `yaml:"location"`
 	Datacenter string                       `yaml:"datacenter"`
 }
 
-type StaticNode struct {
+type StaticNodePool struct {
 	Name  string `yaml:"name"`
 	Nodes []Node `yaml:"nodes"`
 }
@@ -199,7 +197,6 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 
 				for i := 0; i < int(desiredState.NodePools.Dynamic[position].Count); i++ {
 					Nodes = append(Nodes, &pb.Node{
-						Name:      "hard-Coded", // TODO change this value
 						IsControl: uint32(isControlFlagValue),
 					})
 				}
@@ -211,13 +208,11 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 					Zone:       zone,
 					ServerType: desiredState.NodePools.Dynamic[position].ServerType,
 					Image:      desiredState.NodePools.Dynamic[position].Image,
-					DiskSize:   uint32(desiredState.NodePools.Dynamic[position].DiskSize),
-					Location:   desiredState.NodePools.Dynamic[position].Location,
 					Datacenter: desiredState.NodePools.Dynamic[position].Datacenter,
 					Nodes:      Nodes,
 					Provider: &pb.Provider{
 						Name:        desiredState.Providers[searchProvider(provider, desiredState.Providers)].Name,
-						Credentials: desiredState.Providers[searchProvider(provider, desiredState.Providers)].Credentials["value"], // TODO change hard-coded value
+						Credentials: desiredState.Providers[searchProvider(provider, desiredState.Providers)].Credentials,
 					},
 				})
 			}
@@ -232,7 +227,6 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 
 				for i := 0; i < int(desiredState.NodePools.Dynamic[position].Count); i++ {
 					Nodes = append(Nodes, &pb.Node{
-						Name:      "hard-Coded", // TODO change this value
 						IsControl: uint32(isControlFlagValue),
 					})
 				}
@@ -244,13 +238,11 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 					Zone:       zone,
 					ServerType: desiredState.NodePools.Dynamic[position].ServerType,
 					Image:      desiredState.NodePools.Dynamic[position].Image,
-					DiskSize:   uint32(desiredState.NodePools.Dynamic[position].DiskSize),
-					Location:   desiredState.NodePools.Dynamic[position].Location,
 					Datacenter: desiredState.NodePools.Dynamic[position].Datacenter,
 					Nodes:      Nodes,
 					Provider: &pb.Provider{
 						Name:        desiredState.Providers[searchProvider(provider, desiredState.Providers)].Name,
-						Credentials: desiredState.Providers[searchProvider(provider, desiredState.Providers)].Credentials["value"], // TODO change hard-coded value
+						Credentials: desiredState.Providers[searchProvider(provider, desiredState.Providers)].Credentials,
 					},
 				})
 			}
@@ -354,7 +346,7 @@ func getProviderRegionAndZone(providerMap map[string]map[string]string) (string,
 }
 
 // search of the nodePool in the nodePools []DynamicNode
-func searchNodePool(nodePoolName string, nodePools []DynamicNode) (bool, int) {
+func searchNodePool(nodePoolName string, nodePools []DynamicNodePool) (bool, int) {
 	for index, nodePool := range nodePools {
 		if nodePool.Name == nodePoolName {
 			return true, index
