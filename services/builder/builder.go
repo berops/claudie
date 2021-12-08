@@ -27,13 +27,12 @@ import (
 
 const defaultBuilderPort = 50051
 
-type nodesToDelete struct {
-	masterCount uint32
-	workerCount uint32
+type countsToDelete struct {
+	Count uint32
 }
 
-type countsToDelete struct {
-	nodes map[string]*nodesToDelete // [provider]nodes
+type nodesToDelete struct {
+	nodes map[string]*countsToDelete // [provider]nodes
 }
 
 func callTerraformer(currentState *pb.Project, desiredState *pb.Project) (*pb.Project, *pb.Project, error) {
@@ -88,13 +87,12 @@ func callKubeEleven(desiredState *pb.Project) (*pb.Project, error) {
 	return res.GetDesiredState(), nil
 }
 
-func diff(config *pb.Config) (*pb.Config, bool, map[string]*countsToDelete) {
+func diff(config *pb.Config) (*pb.Config, bool, map[string]*nodesToDelete) {
 	adding, deleting := false, false
 	tmpConfig := proto.Clone(config).(*pb.Config)
 
 	type nodeCount struct {
-		masterCount uint32
-		workerCount uint32
+		Count uint32
 	}
 
 	type tableKey struct {
@@ -102,45 +100,47 @@ func diff(config *pb.Config) (*pb.Config, bool, map[string]*countsToDelete) {
 		nodePoolName string
 	}
 
-	var delCounts = make(map[string]*countsToDelete)
+	var delCounts = make(map[string]*nodesToDelete)
 
 	var tableCurrent = make(map[tableKey]nodeCount)
 	for _, cluster := range tmpConfig.GetCurrentState().GetClusters() {
 		for _, nodePool := range cluster.GetNodePools() {
 			tmp := tableKey{nodePoolName: nodePool.Name, clusterName: cluster.Name}
-			tableCurrent[tmp] = nodeCount{nodePool.Master.Count, nodePool.Worker.Count}
+			tableCurrent[tmp] = nodeCount{Count: nodePool.Count} // Since a nodepool as only one type of nodes, we'll need only one type of count
 		}
 	}
 	tmpConfigClusters := tmpConfig.GetDesiredState().GetClusters()
 	for _, cluster := range tmpConfigClusters {
-		tmp := make(map[string]*nodesToDelete)
+		tmp := make(map[string]*countsToDelete)
 		for _, nodePool := range cluster.GetNodePools() {
-			var nodesProvider nodesToDelete
+			var nodesProvider countsToDelete
 			key := tableKey{nodePoolName: nodePool.Name, clusterName: cluster.Name}
 
 			if _, ok := tableCurrent[key]; ok {
 				tmpNodePool := getNodePoolByName(nodePool.Name, utils.GetClusterByName(cluster.Name, tmpConfigClusters).GetNodePools())
-				if nodePool.Master.Count > tableCurrent[key].masterCount {
-					tmpNodePool.Master.Count = nodePool.Master.Count
+				if nodePool.Count > tableCurrent[key].Count {
+					tmpNodePool.Count = nodePool.Count
 					adding = true
-				} else if nodePool.Master.Count < tableCurrent[key].masterCount {
-					nodesProvider.masterCount = tableCurrent[key].masterCount - nodePool.Master.Count
-					tmpNodePool.Master.Count = tableCurrent[key].masterCount
+				} else if nodePool.Count < tableCurrent[key].Count {
+					nodesProvider.Count = tableCurrent[key].Count - nodePool.Count
+					tmpNodePool.Count = tableCurrent[key].Count
 					deleting = true
 				}
-				if nodePool.Worker.Count > tableCurrent[key].workerCount {
-					tmpNodePool.Worker.Count = nodePool.Worker.Count
-					adding = true
-				} else if nodePool.Worker.Count < tableCurrent[key].workerCount {
-					nodesProvider.workerCount = tableCurrent[key].workerCount - nodePool.Worker.Count
-					tmpNodePool.Worker.Count = tableCurrent[key].workerCount
-					deleting = true
-				}
+
+				// if nodePool.Worker.Count > tableCurrent[key].workerCount {
+				// 	tmpNodePool.Worker.Count = nodePool.Worker.Count
+				// 	adding = true
+				// } else if nodePool.Worker.Count < tableCurrent[key].workerCount {
+				// 	nodesProvider.workerCount = tableCurrent[key].workerCount - nodePool.Worker.Count
+				// 	tmpNodePool.Worker.Count = tableCurrent[key].workerCount
+				// 	deleting = true
+				// }
+
 				tmp[nodePool.Provider.Name] = &nodesProvider
 				delete(tableCurrent, key)
 			}
 		}
-		delCounts[cluster.Name] = &countsToDelete{
+		delCounts[cluster.Name] = &nodesToDelete{
 			nodes: tmp,
 		}
 	}
@@ -246,7 +246,7 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 		if config != nil {
 			var tmpConfig *pb.Config
 			var deleting bool
-			var toDelete = make(map[string]*countsToDelete)
+			var toDelete = make(map[string]*nodesToDelete)
 			if len(config.CurrentState.GetClusters()) > 0 {
 				tmpConfig, deleting, toDelete = diff(config)
 			}
@@ -293,24 +293,21 @@ func healthCheck() error {
 	return nil
 }
 
-func deleteNodes(config *pb.Config, toDelete map[string]*countsToDelete) (*pb.Config, error) {
+func deleteNodes(config *pb.Config, toDelete map[string]*nodesToDelete) (*pb.Config, error) {
 	for _, cluster := range config.CurrentState.Clusters {
 		var nodesToDelete []string
 		var etcdToDelete []string
 		del := toDelete[cluster.Name]
-		for i := len(cluster.NodeInfos) - 1; i >= 0; i-- {
-			val, ok := del.nodes[cluster.NodeInfos[i].Provider]
-			if ok {
-				if val.masterCount > 0 && cluster.NodeInfos[i].IsControl > 0 {
-					val.masterCount--
-					nodesToDelete = append(nodesToDelete, cluster.NodeInfos[i].GetNodeName())
-					etcdToDelete = append(etcdToDelete, cluster.NodeInfos[i].GetNodeName())
-					continue
-				}
-				if val.workerCount > 0 && cluster.NodeInfos[i].IsControl == 0 {
-					val.workerCount--
-					nodesToDelete = append(nodesToDelete, cluster.NodeInfos[i].NodeName)
-					continue
+		for _, nodepool := range cluster.NodePools {
+			for _, node := range nodepool.Nodes {
+				val, ok := del.nodes[nodepool.Provider.Name]
+				if ok {
+					if val.Count > 0 && node.IsControl > 0 {
+						val.Count--
+						nodesToDelete = append(nodesToDelete, node.GetName())
+						etcdToDelete = append(etcdToDelete, node.GetName())
+						continue
+					}
 				}
 			}
 		}
@@ -330,31 +327,17 @@ func deleteNodes(config *pb.Config, toDelete map[string]*countsToDelete) (*pb.Co
 
 		// Delete nodes from a current state Ips map
 		for _, nodeName := range nodesToDelete {
-			for _, val := range cluster.NodeInfos {
-				if val.GetNodeName() == nodeName {
-					nodepool := getNodePoolByName(val.NodepoolName, cluster.NodePools)
-					if val.IsControl > 1 {
-						// decrement master count
-						nodepool.Master.Count = nodepool.GetMaster().GetCount() - 1
-					} else {
-						// decrement worker count
-						nodepool.Worker.Count = nodepool.GetWorker().GetCount() - 1
+			for _, nodepool := range cluster.NodePools {
+				for idx, node := range nodepool.Nodes {
+					if node.GetName() == nodeName {
+						nodepool.Count = nodepool.Count - 1
+						nodepool.Nodes = append(nodepool.Nodes[:idx], nodepool.Nodes[idx+1:]...)
 					}
 				}
 			}
-			cluster.NodeInfos = remove(cluster.NodeInfos, nodeName)
 		}
 	}
 	return config, nil
-}
-
-func remove(slice []*pb.NodeInfo, value string) []*pb.NodeInfo {
-	for idx, v := range slice {
-		if v.GetNodeName() == value {
-			return append(slice[:idx], slice[idx+1:]...)
-		}
-	}
-	return slice
 }
 
 // deleteNodesByName checks if there is any difference in nodes between a desired state cluster and a running cluster
@@ -385,12 +368,12 @@ func deleteNodesByName(cluster *pb.Cluster, nodesToDelete []string) error {
 }
 
 func deleteEtcd(cluster *pb.Cluster, etcdToDelete []string) error {
-	mainMaster := cluster.GetNodeInfos()[0]
+	mainMasterPool := cluster.GetNodePools()[0]
 
 	// Execute into the working etcd container and setup client TLS authentication in order to be able to communicate
 	// with etcd and get output of all etcd members
 	prepCmd := fmt.Sprintf("kubectl --kubeconfig <(echo '%s') -n kube-system exec -i etcd-%s -- /bin/sh -c ",
-		cluster.GetKubeconfig(), mainMaster.GetNodeName())
+		cluster.GetKubeconfig(), mainMasterPool.Nodes[0])
 	exportCmd := "export ETCDCTL_API=3 && " +
 		"export ETCDCTL_CACERT=/etc/kubernetes/pki/etcd/ca.crt && " +
 		"export ETCDCTL_CERT=/etc/kubernetes/pki/etcd/healthcheck-client.crt && " +

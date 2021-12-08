@@ -39,10 +39,9 @@ message NodePool {
   string image = 4;
   uint32 diskSize = 5;
   string zone = 6;
-  string location = 7;
-  string datacenter = 8;
-  repeated Node nodes = 9;
-  Provider provider = 10;
+  uint32 count = 9;
+  repeated Node nodes = 10;
+  Provider provider = 11 ;
 }
 
 /*

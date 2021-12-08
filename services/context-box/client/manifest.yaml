@@ -29,8 +29,8 @@ nodePools:
   - name: hetzner-k8s-compute-large-1
     provider:
       hetzner:
-        location: nbg1
-        datacenter: nbg1-dc3
+        region: nbg1
+        zone: nbg1-dc3
     count: 1
     server_type: cpx11
     image: ubuntu-20.04
@@ -47,8 +47,8 @@ nodePools:
   - name: hetzner-lb-small-1
     provider:
       hetzner:
-        location: nbg1
-        datacenter: nbg1-dc3
+        region: nbg1
+        zone: nbg1-dc3
     count: 1
     server_type: cpx11
     image: ubuntu-20.04

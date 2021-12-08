@@ -208,8 +208,8 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 					Zone:       zone,
 					ServerType: desiredState.NodePools.Dynamic[position].ServerType,
 					Image:      desiredState.NodePools.Dynamic[position].Image,
-					Datacenter: desiredState.NodePools.Dynamic[position].Datacenter,
 					Nodes:      Nodes,
+					Count:      uint32(desiredState.NodePools.Dynamic[position].Count),
 					Provider: &pb.Provider{
 						Name:        desiredState.Providers[searchProvider(provider, desiredState.Providers)].Name,
 						Credentials: desiredState.Providers[searchProvider(provider, desiredState.Providers)].Credentials,
@@ -238,7 +238,6 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 					Zone:       zone,
 					ServerType: desiredState.NodePools.Dynamic[position].ServerType,
 					Image:      desiredState.NodePools.Dynamic[position].Image,
-					Datacenter: desiredState.NodePools.Dynamic[position].Datacenter,
 					Nodes:      Nodes,
 					Provider: &pb.Provider{
 						Name:        desiredState.Providers[searchProvider(provider, desiredState.Providers)].Name,
