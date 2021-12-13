@@ -248,6 +248,7 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 		}
 
 		newCluster.NodePools = append(ControlNodePools, ComputeNodePools...)
+		clusters = append(clusters, newCluster)
 	}
 
 	res := &pb.Config{

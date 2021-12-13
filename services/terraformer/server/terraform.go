@@ -81,7 +81,6 @@ func buildInfrastructureAsync(cluster *pb.Cluster, backendData Backend) error {
 	}
 
 	// Fill public ip addresses to NodeInfos
-	var m []*pb.NodeInfo
 	for _, nodepool := range cluster.NodePools {
 		output, err := outputTerraform(terraformOutputPath, nodepool.Provider.Name)
 		if err != nil {
@@ -92,11 +91,9 @@ func buildInfrastructureAsync(cluster *pb.Cluster, backendData Backend) error {
 		if err != nil {
 			return err
 		}
-
-		res := fillNodes(cluster.NodeInfos, &out, nodepool)
-		m = append(m, res...)
+		fmt.Printf("%v", out)
+		// fillNodes(cluster.NodeInfos, &out, nodepool)
 	}
-	cluster.NodeInfos = m
 
 	return nil
 }
@@ -326,54 +323,36 @@ func getkeysFromMap(data map[string]string) []string {
 }
 
 // fillNodes gets ip addresses from a terraform output
-func fillNodes(mOld []*pb.NodeInfo, terraformOutput *jsonOut, nodepool *pb.NodePool) []*pb.NodeInfo {
-	var mNew []*pb.NodeInfo
-	// Fill slices from terraformOutput maps with names of nodes to ensure an order
-	keysControl := getkeysFromMap(terraformOutput.Control)
-	keysCompute := getkeysFromMap(terraformOutput.Compute)
+// func fillNodes(terraformOutput *jsonOut, nodepool *pb.NodePool) {
+// 	var mNew []*pb.Node
+// 	// Fill slices from terraformOutput maps with names of nodes to ensure an order
+// 	keysControl := getkeysFromMap(terraformOutput.Control)
+// 	keysCompute := getkeysFromMap(terraformOutput.Compute)
 
-	for _, name := range keysControl {
-		var private = ""
-		var control uint32 = 1
-		// If node exist, assign previous private IP
-		existingIP, _ := existsInCluster(mOld, terraformOutput.Control[name])
-		if existingIP != nil {
-			private = existingIP.Private
-			control = existingIP.IsControl
-		}
-		mNew = append(mNew, &pb.NodeInfo{
-			NodeName:     name,
-			Public:       terraformOutput.Control[name],
-			Private:      private,
-			IsControl:    control,
-			Provider:     nodepool.Provider.Name,
-			NodepoolName: nodepool.Name,
-		})
-	}
-	for _, name := range keysCompute {
-		var private = ""
-		// If node exist, assign previous private IP
-		existingIP, _ := existsInCluster(mOld, terraformOutput.Compute[name])
-		if existingIP != nil {
-			private = existingIP.Private
-		}
-		mNew = append(mNew, &pb.NodeInfo{
-			NodeName:     name,
-			Public:       terraformOutput.Compute[name],
-			Private:      private,
-			IsControl:    0,
-			Provider:     nodepool.Provider.Name,
-			NodepoolName: nodepool.Name,
-		})
-	}
-	return mNew
-}
+// 	for _, name := range keysControl {
+// 		var private = ""
+// 		var control uint32 = 1
+// 		// If node exist, assign previous private IP
+// 		indexOfExistingIP, _ := existsInCluster(nodepool.Nodes, terraformOutput.Control[name])
+// 		if indexOfExistingIP >= 0 {
+// 			private = nodepool.Nodes[indexOfExistingIP].Private
+// 			control = nodepool.Nodes[indexOfExistingIP].IsControl
+// 		}
+// 		mNew = append(mNew, &pb.Node{
+// 			Name:      name,
+// 			Public:    terraformOutput.Control[name],
+// 			Private:   private,
+// 			IsControl: control,
+// 		})
+// 	}
+// 	return mNew
+// }
 
-func existsInCluster(m []*pb.NodeInfo, ip string) (*pb.NodeInfo, error) {
-	for _, ips := range m {
-		if ips.Public == ip {
-			return ips, nil
+func existsInCluster(nodes []*pb.Node, ip string) (int, error) {
+	for index, node := range nodes {
+		if node.Public == ip {
+			return index, nil
 		}
 	}
-	return nil, fmt.Errorf("ip address %v does not exist", ip)
+	return -1, fmt.Errorf("ip address %v does not exist", ip)
 }
