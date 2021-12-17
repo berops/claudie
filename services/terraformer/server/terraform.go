@@ -29,8 +29,8 @@ type Backend struct {
 
 // Data struct
 type Data struct {
-	Index   int
-	Cluster *pb.Cluster
+	NodePools []*pb.NodePool
+	Cluster   *pb.Cluster
 }
 
 type jsonOut struct {
@@ -212,10 +212,9 @@ func destroyInfrastructure(config *pb.Config) error {
 
 // buildNodePools creates .tf files from providers contained in a cluster
 func buildNodePools(cluster *pb.Cluster, outputPathCluster string) error {
-	for i, nodePool := range cluster.NodePools {
-		providerName := nodePool.Provider.Name
+	sortedNodePools := sortNodePools(cluster)
+	for providerName, nodePool := range sortedNodePools {
 		log.Info().Msgf("Cluster provider: %s", providerName)
-		// creating terraform file for a provider
 		tplFileName := fmt.Sprintf("%s.tpl", providerName)
 		terraFormFileName := fmt.Sprintf("%s.tf", providerName)
 		tplFile := filepath.Join(templatePath, tplFileName)
@@ -223,7 +222,7 @@ func buildNodePools(cluster *pb.Cluster, outputPathCluster string) error {
 		genRes := templateGen(
 			tplFile,
 			trfFile,
-			&Data{Index: i, Cluster: cluster},
+			&Data{NodePools: nodePool, Cluster: cluster},
 			templatePath)
 		if genRes != nil {
 			log.Error().Msgf("Error generating terraform config file %s from template %s: %v",
@@ -231,7 +230,6 @@ func buildNodePools(cluster *pb.Cluster, outputPathCluster string) error {
 			return genRes
 		}
 	}
-
 	return nil
 }
 
@@ -355,4 +353,12 @@ func existsInCluster(nodes []*pb.Node, ip string) (int, error) {
 		}
 	}
 	return -1, fmt.Errorf("ip address %v does not exist", ip)
+}
+
+func sortNodePools(cluster *pb.Cluster) map[string][]*pb.NodePool {
+	sortedNodePools := map[string][]*pb.NodePool{}
+	for _, nodepool := range cluster.NodePools {
+		sortedNodePools[nodepool.Provider.Name] = append(sortedNodePools[nodepool.Provider.Name], nodepool)
+	}
+	return sortedNodePools
 }
