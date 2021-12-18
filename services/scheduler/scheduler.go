@@ -63,6 +63,7 @@ type DynamicNodePool struct {
 	ServerType string                       `yaml:"server_type"`
 	Image      string                       `yaml:"image"`
 	Datacenter string                       `yaml:"datacenter"`
+	DiskSize   int64                        `yaml:"disk_size"`
 }
 
 type StaticNodePool struct {
@@ -208,8 +209,9 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 					Zone:       zone,
 					ServerType: desiredState.NodePools.Dynamic[position].ServerType,
 					Image:      desiredState.NodePools.Dynamic[position].Image,
-					Nodes:      Nodes,
+					DiskSize:   uint32(desiredState.NodePools.Dynamic[position].DiskSize),
 					Count:      uint32(desiredState.NodePools.Dynamic[position].Count),
+					Nodes:      Nodes,
 					Provider: &pb.Provider{
 						Name:        desiredState.Providers[searchProvider(provider, desiredState.Providers)].Name,
 						Credentials: desiredState.Providers[searchProvider(provider, desiredState.Providers)].Credentials,
@@ -238,6 +240,8 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 					Zone:       zone,
 					ServerType: desiredState.NodePools.Dynamic[position].ServerType,
 					Image:      desiredState.NodePools.Dynamic[position].Image,
+					DiskSize:   uint32(desiredState.NodePools.Dynamic[position].DiskSize),
+					Count:      uint32(desiredState.NodePools.Dynamic[position].Count),
 					Nodes:      Nodes,
 					Provider: &pb.Provider{
 						Name:        desiredState.Providers[searchProvider(provider, desiredState.Providers)].Name,
