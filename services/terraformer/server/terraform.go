@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
 	"text/template"
 
 	"github.com/Berops/platform/proto/pb"
@@ -34,8 +33,7 @@ type Data struct {
 }
 
 type jsonOut struct {
-	Compute map[string]string `json:"compute"`
-	Control map[string]string `json:"control"`
+	IPs map[string]interface{} `json:"-"`
 }
 
 func buildInfrastructureAsync(cluster *pb.Cluster, backendData Backend) error {
@@ -82,7 +80,7 @@ func buildInfrastructureAsync(cluster *pb.Cluster, backendData Backend) error {
 
 	// Fill public ip addresses to NodeInfos
 	for _, nodepool := range cluster.NodePools {
-		output, err := outputTerraform(terraformOutputPath, nodepool.Provider.Name)
+		output, err := outputTerraform(terraformOutputPath, nodepool)
 		if err != nil {
 			return err
 		}
@@ -92,7 +90,7 @@ func buildInfrastructureAsync(cluster *pb.Cluster, backendData Backend) error {
 			return err
 		}
 		fmt.Printf("%v", out)
-		// fillNodes(cluster.NodeInfos, &out, nodepool)
+		fillNodes(&out, nodepool)
 	}
 
 	return nil
@@ -289,8 +287,8 @@ func executeTerraform(cmd *exec.Cmd, workingDir string) error {
 }
 
 // outputTerraform returns terraform output for a given provider and path in a json format
-func outputTerraform(dirName string, provider string) (string, error) {
-	cmd := exec.Command("terraform", "output", "-json", provider)
+func outputTerraform(dirName string, nodepool *pb.NodePool) (string, error) {
+	cmd := exec.Command("terraform", "output", "-json", nodepool.Name)
 	cmd.Dir = dirName
 	var outb, errb bytes.Buffer
 	cmd.Stdout = &outb
@@ -306,53 +304,20 @@ func outputTerraform(dirName string, provider string) (string, error) {
 func readOutput(data string) (jsonOut, error) {
 	var result jsonOut
 	// Unmarshal or Decode the JSON to the interface.
-	err := json.Unmarshal([]byte(data), &result)
+	err := json.Unmarshal([]byte(data), &result.IPs)
 	return result, err
 }
 
-// getKeysFromMap returns an array of all keys in a map
-func getkeysFromMap(data map[string]string) []string {
-	var keys []string
-	for key := range data {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	return keys
-}
-
 // fillNodes gets ip addresses from a terraform output
-// func fillNodes(terraformOutput *jsonOut, nodepool *pb.NodePool) {
-// 	var mNew []*pb.Node
-// 	// Fill slices from terraformOutput maps with names of nodes to ensure an order
-// 	keysControl := getkeysFromMap(terraformOutput.Control)
-// 	keysCompute := getkeysFromMap(terraformOutput.Compute)
+func fillNodes(terraformOutput *jsonOut, nodepool *pb.NodePool) {
+	// Fill slices from terraformOutput maps with names of nodes to ensure an order
 
-// 	for _, name := range keysControl {
-// 		var private = ""
-// 		var control uint32 = 1
-// 		// If node exist, assign previous private IP
-// 		indexOfExistingIP, _ := existsInCluster(nodepool.Nodes, terraformOutput.Control[name])
-// 		if indexOfExistingIP >= 0 {
-// 			private = nodepool.Nodes[indexOfExistingIP].Private
-// 			control = nodepool.Nodes[indexOfExistingIP].IsControl
-// 		}
-// 		mNew = append(mNew, &pb.Node{
-// 			Name:      name,
-// 			Public:    terraformOutput.Control[name],
-// 			Private:   private,
-// 			IsControl: control,
-// 		})
-// 	}
-// 	return mNew
-// }
-
-func existsInCluster(nodes []*pb.Node, ip string) (int, error) {
-	for index, node := range nodes {
-		if node.Public == ip {
-			return index, nil
-		}
+	var index int = 0
+	for nodeName, ip := range terraformOutput.IPs {
+		nodepool.Nodes[index].Name = nodeName
+		nodepool.Nodes[index].Public = fmt.Sprint(ip)
+		index++
 	}
-	return -1, fmt.Errorf("ip address %v does not exist", ip)
 }
 
 func sortNodePools(cluster *pb.Cluster) map[string][]*pb.NodePool {
