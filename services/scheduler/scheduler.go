@@ -188,15 +188,15 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 			if isFound, position := searchNodePool(nodePool, desiredState.NodePools.Dynamic); isFound {
 
 				var Nodes []*pb.Node
-				var isControlFlagValue isControlFlag
-				// check if it's the first nodepool of type control
-				if index == 0 {
-					isControlFlagValue = APIEndpoint
-				} else {
-					isControlFlagValue = Control
-				}
 
 				for i := 0; i < int(desiredState.NodePools.Dynamic[position].Count); i++ {
+					var isControlFlagValue isControlFlag
+					// check if it's the first nodepool of type control
+					if index == 0 && i == 0 {
+						isControlFlagValue = APIEndpoint
+					} else {
+						isControlFlagValue = Control
+					}
 					Nodes = append(Nodes, &pb.Node{
 						IsControl: uint32(isControlFlagValue),
 					})
