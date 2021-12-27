@@ -171,12 +171,10 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 	for _, cluster := range desiredState.Kubernetes.Clusters {
 
 		newCluster := &pb.Cluster{
-			Name:       cluster.Name,
+			Name:       strings.ToLower(cluster.Name),
 			Kubernetes: cluster.Version,
 			Network:    cluster.Network,
 			Hash:       utils.CreateHash(7),
-			// public_key
-			// private_key
 		}
 
 		var ComputeNodePools, ControlNodePools []*pb.NodePool
