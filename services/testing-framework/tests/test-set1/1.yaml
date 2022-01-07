@@ -1,47 +1,45 @@
 name: TestSetOne-1
-clusters:
-  - name: testset-cluster-name1
-    kubernetes: v1.19.0
-    network: 192.168.2.0/24
-    nodePools:
-    - name: hetzner
-      provider:
-        name: hetzner
-        credentials: xIAfsb7M5K6etYAfXYcg5iYyrFGNlCxcICo060HVEygjoF0usFpv5P9X7pk85Xe1
-      master:
-        count: 2
-        server_type: cpx11
-        image: ubuntu-20.04
-        disk_size: 50
-        location: nbg1
-        datacenter: nbg1-dc3
-      worker:
-        count: 2
-        server_type: cpx11
-        image: ubuntu-20.04
-        disk_size: 50
-        location: nbg1
-        datacenter: nbg1-dc3
 
-  - name: testset-cluster-name2
-    kubernetes: v1.19.0
-    network: 192.168.2.0/24
-    nodePools:
-    - name: hetzner
-      provider:
-        name: hetzner
-        credentials: xIAfsb7M5K6etYAfXYcg5iYyrFGNlCxcICo060HVEygjoF0usFpv5P9X7pk85Xe1
-      master:
-        count: 2
-        server_type: cpx11
-        image: ubuntu-20.04
-        disk_size: 50
-        location: nbg1
-        datacenter: nbg1-dc3
-      worker:
-        count: 2
-        server_type: cpx11
-        image: ubuntu-20.04
-        disk_size: 50
-        location: nbg1
-        datacenter: nbg1-dc3
+providers:
+- name: hetzner
+  credentials: xIAfsb7M5K6etYAfXYcg5iYyrFGNlCxcICo060HVEygjoF0usFpv5P9X7pk85Xe1
+
+nodePools:
+  dynamic:
+  - name: hetzner-control
+    provider:
+      hetzner:
+        region: nbg1
+        zone: nbg1-dc3
+    count: 2
+    server_type: cpx11
+    image: ubuntu-20.04
+    disk_size: 50
+  - name: hetzner-compute
+    provider:
+      hetzner:
+        region: nbg1
+        zone: nbg1-dc3
+    count: 2
+    server_type: cpx11
+    image: ubuntu-20.04
+    disk_size: 50
+
+kubernetes:
+  clusters:
+    - name: testset-cluster-name1
+      version: v1.19.0
+      network: 192.168.2.0/24
+      pools:
+        control:
+        - hetzner-control
+        compute:
+        - hetzner-compute
+    - name: testset-cluster-name2
+      version: v1.19.0
+      network: 192.168.2.0/24
+      pools:
+        control:
+        - hetzner-control
+        compute:
+        - hetzner-compute
