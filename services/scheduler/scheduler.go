@@ -182,23 +182,8 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 		// Check if the nodepool is part of the cluster
 
 		// Control nodePool
-		for index, nodePool := range cluster.Pools.Control {
+		for _, nodePool := range cluster.Pools.Control {
 			if isFound, position := searchNodePool(nodePool, desiredState.NodePools.Dynamic); isFound {
-
-				var Nodes []*pb.Node
-
-				for i := 0; i < int(desiredState.NodePools.Dynamic[position].Count); i++ {
-					var isControlFlagValue isControlFlag
-					// check if it's the first nodepool of type control
-					if index == 0 && i == 0 {
-						isControlFlagValue = APIEndpoint
-					} else {
-						isControlFlagValue = Control
-					}
-					Nodes = append(Nodes, &pb.Node{
-						IsControl: uint32(isControlFlagValue),
-					})
-				}
 
 				provider, region, zone := getProviderRegionAndZone(desiredState.NodePools.Dynamic[position].Provider)
 				ControlNodePools = append(ControlNodePools, &pb.NodePool{
@@ -209,11 +194,11 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 					Image:      desiredState.NodePools.Dynamic[position].Image,
 					DiskSize:   uint32(desiredState.NodePools.Dynamic[position].DiskSize),
 					Count:      uint32(desiredState.NodePools.Dynamic[position].Count),
-					Nodes:      Nodes,
 					Provider: &pb.Provider{
 						Name:        desiredState.Providers[searchProvider(provider, desiredState.Providers)].Name,
 						Credentials: desiredState.Providers[searchProvider(provider, desiredState.Providers)].Credentials,
 					},
+					IsControl: true,
 				})
 			}
 		}
@@ -221,15 +206,6 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 		// compute nodepools
 		for _, nodePool := range cluster.Pools.Compute {
 			if isFound, position := searchNodePool(nodePool, desiredState.NodePools.Dynamic); isFound {
-
-				var Nodes []*pb.Node
-				var isControlFlagValue isControlFlag = Compute
-
-				for i := 0; i < int(desiredState.NodePools.Dynamic[position].Count); i++ {
-					Nodes = append(Nodes, &pb.Node{
-						IsControl: uint32(isControlFlagValue),
-					})
-				}
 
 				provider, region, zone := getProviderRegionAndZone(desiredState.NodePools.Dynamic[position].Provider)
 				ComputeNodePools = append(ComputeNodePools, &pb.NodePool{
@@ -240,11 +216,11 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 					Image:      desiredState.NodePools.Dynamic[position].Image,
 					DiskSize:   uint32(desiredState.NodePools.Dynamic[position].DiskSize),
 					Count:      uint32(desiredState.NodePools.Dynamic[position].Count),
-					Nodes:      Nodes,
 					Provider: &pb.Provider{
 						Name:        desiredState.Providers[searchProvider(provider, desiredState.Providers)].Name,
 						Credentials: desiredState.Providers[searchProvider(provider, desiredState.Providers)].Credentials,
 					},
+					IsControl: false,
 				})
 			}
 		}

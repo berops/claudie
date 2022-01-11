@@ -42,6 +42,7 @@ message NodePool {
   uint32 count = 9;
   repeated Node nodes = 10;
   Provider provider = 11 ;
+  bool isControl = 12;
 }
 
 /*
