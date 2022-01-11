@@ -35,11 +35,11 @@ kubernetes:
         - hetzner-control
         compute:
         - hetzner-compute
-    - name: testset-cluster-name2
-      version: v1.19.0
-      network: 192.168.2.0/24
-      pools:
-        control:
-        - hetzner-control
-        compute:
-        - hetzner-compute
+    # - name: testset-cluster-name2
+    #   version: v1.19.0
+    #   network: 192.168.2.0/24
+    #   pools:
+    #     control:
+    #     - hetzner-control
+    #     compute:
+    #     - hetzner-compute
