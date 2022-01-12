@@ -127,16 +127,7 @@ func diff(config *pb.Config) (*pb.Config, bool, map[string]*nodesToDelete) {
 					deleting = true
 				}
 
-				// if nodePool.Worker.Count > tableCurrent[key].workerCount {
-				// 	tmpNodePool.Worker.Count = nodePool.Worker.Count
-				// 	adding = true
-				// } else if nodePool.Worker.Count < tableCurrent[key].workerCount {
-				// 	nodesProvider.workerCount = tableCurrent[key].workerCount - nodePool.Worker.Count
-				// 	tmpNodePool.Worker.Count = tableCurrent[key].workerCount
-				// 	deleting = true
-				// }
-
-				tmp[nodePool.Provider.Name] = &nodesProvider
+				tmp[nodePool.Name] = &nodesProvider
 				delete(tableCurrent, key)
 			}
 		}
@@ -299,15 +290,21 @@ func deleteNodes(config *pb.Config, toDelete map[string]*nodesToDelete) (*pb.Con
 		var etcdToDelete []string
 		del := toDelete[cluster.Name]
 		for _, nodepool := range cluster.NodePools {
-			for _, node := range nodepool.Nodes {
-				val, ok := del.nodes[nodepool.Provider.Name]
-				if ok {
-					if val.Count > 0 && node.IsControl > 0 {
+			for i := len(nodepool.Nodes) - 1; i >= 0; i-- {
+				val, ok := del.nodes[nodepool.Name]
+				if val.Count > 0 && ok {
+					if nodepool.Nodes[i].IsControl > 0 {
 						val.Count--
-						nodesToDelete = append(nodesToDelete, node.GetName())
-						etcdToDelete = append(etcdToDelete, node.GetName())
+						nodesToDelete = append(nodesToDelete, nodepool.Nodes[i].GetName())
+						etcdToDelete = append(etcdToDelete, nodepool.Nodes[i].GetName())
 						continue
 					}
+					if nodepool.Nodes[i].IsControl == 0 {
+						val.Count--
+						nodesToDelete = append(nodesToDelete, nodepool.Nodes[i].GetName())
+						continue
+					}
+
 				}
 			}
 		}
@@ -368,12 +365,25 @@ func deleteNodesByName(cluster *pb.Cluster, nodesToDelete []string) error {
 }
 
 func deleteEtcd(cluster *pb.Cluster, etcdToDelete []string) error {
-	mainMasterPool := cluster.GetNodePools()[0]
+	var mainMasterNode *pb.Node
+	for _, nodepool := range cluster.GetNodePools() {
+		for _, node := range nodepool.Nodes {
+			if node.IsControl == 2 {
+				mainMasterNode = node
+				break
+			}
+		}
+	}
+
+	if mainMasterNode == nil {
+		log.Error().Msg("APIEndpoint node not found")
+		return fmt.Errorf("failed to find any node with IsControl value as 2")
+	}
 
 	// Execute into the working etcd container and setup client TLS authentication in order to be able to communicate
 	// with etcd and get output of all etcd members
 	prepCmd := fmt.Sprintf("kubectl --kubeconfig <(echo '%s') -n kube-system exec -i etcd-%s -- /bin/sh -c ",
-		cluster.GetKubeconfig(), mainMasterPool.Nodes[0])
+		cluster.GetKubeconfig(), mainMasterNode.Name)
 	exportCmd := "export ETCDCTL_API=3 && " +
 		"export ETCDCTL_CACERT=/etc/kubernetes/pki/etcd/ca.crt && " +
 		"export ETCDCTL_CERT=/etc/kubernetes/pki/etcd/healthcheck-client.crt && " +
