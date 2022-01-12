@@ -120,7 +120,7 @@ func applyTestSet(pathToSet string, c pb.ContextBoxServiceClient) error {
 
 // configChecker function will check if the config has been applied every 30s
 func configChecker(done chan string, c pb.ContextBoxServiceClient, configID string, configName string) {
-	var counter int
+	counter := 1
 	sleepSec := 30
 	for {
 		elapsedSec := counter * sleepSec
