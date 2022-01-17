@@ -119,14 +119,6 @@ type Target struct {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-type isControlFlag uint32
-
-const (
-	Compute     isControlFlag = 0
-	Control     isControlFlag = 1
-	APIEndpoint isControlFlag = 2
-)
-
 // MakeSSHKeyPair function generates SSH privateKey,publicKey pair
 // returns (strPrivateKey, strPublicKey)
 func MakeSSHKeyPair() (string, string) {
