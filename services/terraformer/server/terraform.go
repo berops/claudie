@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"text/template"
 
 	"github.com/Berops/platform/proto/pb"
@@ -323,12 +324,24 @@ func readOutput(data string) (jsonOut, error) {
 	return result, err
 }
 
+// getKeysFromMap returns an array of all keys in a map
+func getkeysFromMap(data map[string]interface{}) []string {
+	var keys []string
+	for key := range data {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
 // fillNodes gets ip addresses from a terraform output
 func fillNodes(terraformOutput *jsonOut, newNodePool *pb.NodePool, oldNodes []*pb.Node) {
 	// Fill slices from terraformOutput maps with names of nodes to ensure an order
 	var tempNodes []*pb.Node
-	var index uint32 = 0
-	for nodeName, ip := range terraformOutput.IPs {
+
+	// get sorted list of keys
+	sortedNodeNames := getkeysFromMap(terraformOutput.IPs)
+	for _, nodeName := range sortedNodeNames {
 		var private = ""
 		var control uint32
 
@@ -340,7 +353,7 @@ func fillNodes(terraformOutput *jsonOut, newNodePool *pb.NodePool, oldNodes []*p
 
 		if len(oldNodes) > 0 {
 			for _, node := range oldNodes {
-				if fmt.Sprint(ip) == node.Public {
+				if fmt.Sprint(terraformOutput.IPs[nodeName]) == node.Public {
 					private = node.Private
 					control = node.IsControl
 					break
@@ -349,11 +362,10 @@ func fillNodes(terraformOutput *jsonOut, newNodePool *pb.NodePool, oldNodes []*p
 		}
 		tempNodes = append(tempNodes, &pb.Node{
 			Name:      nodeName,
-			Public:    fmt.Sprint(ip),
+			Public:    fmt.Sprint(terraformOutput.IPs[nodeName]),
 			Private:   private,
 			IsControl: control,
 		})
-		index++
 	}
 	newNodePool.Nodes = tempNodes
 }
