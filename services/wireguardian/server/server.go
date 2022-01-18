@@ -66,7 +66,7 @@ func buildVPNAsync(cluster *pb.Cluster) error {
 		return err
 	}
 
-	invOutputPath := filepath.Join(outputPath, cluster.GetName())
+	invOutputPath := filepath.Join(outputPath, cluster.GetName()+"-"+cluster.GetHash())
 	if err := genInv(cluster.GetNodeInfos(), invOutputPath); err != nil {
 		return err
 	}
@@ -169,7 +169,7 @@ func runAnsible(cluster *pb.Cluster, invOutputPath string) error {
 		return err
 	}
 
-	cmd := exec.Command("ansible-playbook", playbookFile, "-i", cluster.Name+"/"+inventoryFile, "-f", "20", "--private-key", cluster.Name+"/"+sslPrivateKeyFile)
+	cmd := exec.Command("ansible-playbook", playbookFile, "-i", cluster.Name+"-"+cluster.Hash+"/"+inventoryFile, "-f", "20", "--private-key", cluster.Name+"-"+cluster.Hash+"/"+sslPrivateKeyFile)
 	cmd.Dir = outputPath
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

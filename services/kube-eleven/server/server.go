@@ -99,7 +99,7 @@ func buildClusterAsync(cluster *pb.Cluster) error {
 	d.formatTemplateData(cluster)
 
 	// Create a directory for the cluster
-	clusterOutputPath := filepath.Join(outputPath, cluster.GetName())
+	clusterOutputPath := filepath.Join(outputPath, cluster.GetName()+"-"+cluster.GetHash())
 
 	// Create a directory for the cluster
 	if _, err := os.Stat(clusterOutputPath); os.IsNotExist(err) {
@@ -172,7 +172,7 @@ func genKubeOneConfig(templateFilePath string, manifestFilePath string, d interf
 // runKubeOne runs kubeone with the generated manifest
 func runKubeOne(path string) error {
 	log.Info().Msgf("Running KubeOne in %s dir", path)
-	cmd := exec.Command("kubeone", "apply", "-m", "kubeone.yaml", "-y")
+	cmd := exec.Command("kubeone", "apply", "-m", "kubeone.yaml", "-y", "-v")
 	cmd.Dir = path // golang will execute command from this directory
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

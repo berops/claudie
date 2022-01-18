@@ -40,12 +40,12 @@ type jsonOut struct {
 
 func buildInfrastructureAsync(cluster *pb.Cluster, backendData Backend) error {
 	// Prepare backend data for golang templates
-	backendData.ClusterName = cluster.GetName() + cluster.GetHash()
-	log.Info().Msgf("Cluster name: %s", cluster.GetName())
+	backendData.ClusterName = cluster.GetName() + "-" + cluster.GetHash()
+	log.Info().Msgf("Cluster name: %s", backendData.ClusterName)
 
 	templateFilePath := filepath.Join(templatePath, "backend.tpl")
-	tfFilePath := filepath.Join(outputPath, cluster.GetName(), "backend.tf")
-	outputPathCluster := filepath.Join(outputPath, cluster.GetName())
+	tfFilePath := filepath.Join(outputPath, backendData.ClusterName, "backend.tf")
+	outputPathCluster := filepath.Join(outputPath, backendData.ClusterName)
 
 	// Creating backend.tf file from the template backend.tpl
 	if err := templateGen(templateFilePath, tfFilePath, backendData, outputPathCluster); err != nil {
@@ -60,11 +60,11 @@ func buildInfrastructureAsync(cluster *pb.Cluster, backendData Backend) error {
 	}
 
 	// Create publicKey and privateKey file for a cluster
-	terraformOutputPath := filepath.Join(outputPath, cluster.GetName())
+	terraformOutputPath := filepath.Join(outputPath, backendData.ClusterName)
 	if err := utils.CreateKeyFile(cluster.GetPublicKey(), terraformOutputPath, "public.pem"); err != nil {
 		return err
 	}
-	if err := utils.CreateKeyFile(cluster.GetPublicKey(), terraformOutputPath, "private.pem"); err != nil {
+	if err := utils.CreateKeyFile(cluster.GetPrivateKey(), terraformOutputPath, "private.pem"); err != nil {
 		return err
 	}
 
@@ -136,14 +136,14 @@ func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) err
 // destroyInfrastructureAsync executes terraform destroy --auto-approve. It destroys whole infrastructure in a project.
 func destroyInfrastructureAsync(cluster *pb.Cluster, backendData Backend) error {
 	log.Info().Msg("Generating templates for infrastructure destroy")
-	backendData.ClusterName = cluster.GetName() + cluster.GetHash()
+	backendData.ClusterName = cluster.GetName() + "-" + cluster.GetHash()
 
-	log.Info().Msgf("Cluster name: %s", cluster.GetName())
+	log.Info().Msgf("Cluster name: %s", backendData.ClusterName)
 
 	// Creating backend.tf file
 	templateFilePath := filepath.Join(templatePath, "backend.tpl")
-	tfFilePath := filepath.Join(outputPath, cluster.GetName(), "backend.tf")
-	outputPathCluster := filepath.Join(outputPath, cluster.GetName())
+	tfFilePath := filepath.Join(outputPath, backendData.ClusterName, "backend.tf")
+	outputPathCluster := filepath.Join(outputPath, backendData.ClusterName)
 
 	// Creating backend.tf file from the template backend.tpl
 	if err := templateGen(templateFilePath, tfFilePath, backendData, outputPathCluster); err != nil {
@@ -158,7 +158,7 @@ func destroyInfrastructureAsync(cluster *pb.Cluster, backendData Backend) error 
 	}
 
 	// Create publicKey and privateKey file for a cluster
-	terraformOutputPath := filepath.Join(outputPath, cluster.GetName())
+	terraformOutputPath := filepath.Join(outputPath, backendData.ClusterName)
 	if err := utils.CreateKeyFile(cluster.GetPublicKey(), terraformOutputPath, "public.pem"); err != nil {
 		return err
 	}

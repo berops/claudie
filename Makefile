@@ -1,4 +1,4 @@
-.PHONY: gen contentbox scheduler builder terraformer wireguardian kubeEleven test dockerUp dockerDown dockerBuild
+.PHONY: gen contextbox scheduler builder terraformer wireguardian kubeEleven test dockerUp dockerDown dockerBuild
 
 #Generate all .proto files
 gen:
