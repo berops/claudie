@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -18,6 +19,12 @@ func TestCreateKeyFiles(t *testing.T) {
 	err := utils.CreateKeyFile(private, "", "private.pem")
 	err1 := utils.CreateKeyFile(public, "", "public.pem")
 	require.NoError(t, err, err1)
+}
+
+func TestCreateHash(t *testing.T) {
+	hashLength := 0
+	hash := utils.CreateHash(hashLength)
+	fmt.Printf("Hash is %s\n", hash)
 }
 
 func makeSSHKeyPair() (string, string) {

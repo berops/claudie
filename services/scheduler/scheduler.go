@@ -26,6 +26,7 @@ import (
 )
 
 const defaultSchedulerPort = 50056
+const hashLength = 3
 
 ////////////////////YAML STRUCT//////////////////////////////////////////////////
 
@@ -164,7 +165,7 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 			PrivateKey: cluster.PrivateKey,
 			PublicKey:  cluster.PublicKey,
 			NodePools:  nodePools,
-			// Hash:       utils.CreateHash(7),
+			Hash:       "",
 		})
 	}
 
@@ -186,6 +187,7 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 
 	for _, clusterDesired := range res.DesiredState.Clusters {
 		for _, clusterCurrent := range res.CurrentState.Clusters {
+			// found current cluster with matching name
 			if clusterDesired.Name == clusterCurrent.Name {
 				if clusterCurrent.PublicKey != "" {
 					clusterDesired.PublicKey = clusterCurrent.PublicKey
@@ -196,13 +198,14 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 				}
 			}
 		}
+		// no current cluster found with matching name, create keys/hash
 		if clusterDesired.PublicKey == "" {
 			privateKey, publicKey := MakeSSHKeyPair()
 			clusterDesired.PrivateKey = privateKey
 			clusterDesired.PublicKey = publicKey
 		}
 		if clusterDesired.Hash == "" {
-			clusterDesired.Hash = utils.CreateHash(7)
+			clusterDesired.Hash = utils.CreateHash(hashLength)
 		}
 	}
 
@@ -211,9 +214,15 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 
 // processConfig is function used to carry out task specific to Scheduler concurrently
 func processConfig(config *pb.Config, c pb.ContextBoxServiceClient) (err error) {
+	log.Printf("Processing new config")
 	config, err = createDesiredState(config)
 	if err != nil {
 		return
+	}
+	log.Printf("Created desired state")
+	err = utils.CheckLengthOfFutureDomain(config, hashLength)
+	if err != nil {
+		return fmt.Errorf("error while checking the length of future domain: %v", err)
 	}
 
 	log.Info().Interface("project", config.GetDesiredState())
@@ -282,7 +291,7 @@ func main() {
 		signal.Notify(ch, os.Interrupt)
 		defer signal.Stop(ch)
 		<-ch
-		return errors.New("Scheduler interrupt signal")
+		return errors.New("scheduler interrupt signal")
 	})
 
 	g.Go(func() error {
