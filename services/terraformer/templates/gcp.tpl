@@ -44,7 +44,7 @@ resource "google_compute_firewall" "firewall" {
 resource "google_compute_instance" "control_plane" {
   count        = {{ (index .Cluster.NodePools $index).Master.Count }}
   zone         = "europe-west1-c"
-  name         = "{{ .Cluster.Name }}-{{.Cluster.Hash}}-gcp-control-${count.index + 1}"
+  name         = "{{ .Cluster.Name }}-{{.Cluster.Hash}}-gcp-cont-${count.index + 1}"
   machine_type = "{{ (index .Cluster.NodePools $index).Master.ServerType }}"
   allow_stopping_for_update = true
   boot_disk {
@@ -66,7 +66,7 @@ resource "google_compute_instance" "control_plane" {
 resource "google_compute_instance" "compute_plane" {
   count        = {{ (index .Cluster.NodePools $index).Worker.Count }}
   zone         = "europe-west1-c"
-  name         = "{{ .Cluster.Name }}-{{.Cluster.Hash}}-gcp-compute-${count.index + 1}"
+  name         = "{{ .Cluster.Name }}-{{.Cluster.Hash}}-gcp-comp-${count.index + 1}"
   machine_type = "{{ (index .Cluster.NodePools $index).Worker.ServerType }}"
   allow_stopping_for_update = true
   boot_disk {
