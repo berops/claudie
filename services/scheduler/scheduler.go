@@ -26,7 +26,6 @@ import (
 )
 
 const defaultSchedulerPort = 50056
-const hashLength = 3
 
 ////////////////////YAML STRUCT//////////////////////////////////////////////////
 
@@ -205,7 +204,7 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 			clusterDesired.PublicKey = publicKey
 		}
 		if clusterDesired.Hash == "" {
-			clusterDesired.Hash = utils.CreateHash(hashLength)
+			clusterDesired.Hash = utils.CreateHash(utils.HashLength)
 		}
 	}
 
@@ -218,11 +217,6 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient) (err error) 
 	config, err = createDesiredState(config)
 	if err != nil {
 		return fmt.Errorf("error while creating a desired state: %v", err)
-	}
-	log.Printf("Created desired state")
-	err = utils.CheckLengthOfFutureDomain(config, hashLength)
-	if err != nil {
-		return fmt.Errorf("error while checking the length of future domain: %v", err)
 	}
 
 	log.Info().Interface("project", config.GetDesiredState())

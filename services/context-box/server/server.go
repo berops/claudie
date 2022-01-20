@@ -306,7 +306,10 @@ func getAllFromDB() ([]*configItem, error) {
 func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
 	log.Info().Msg("CLIENT REQUEST: SaveConfigScheduler")
 	config := req.GetConfig()
-
+	err := utils.CheckLengthOfFutureDomain(config)
+	if err != nil {
+		return nil, fmt.Errorf("error while checking the length of future domain: %v", err)
+	}
 	// Get config with the same ID from the DB
 	data, err := getFromDB(config.GetId())
 	if err != nil {
