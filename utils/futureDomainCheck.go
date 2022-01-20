@@ -6,8 +6,8 @@ import (
 	"github.com/Berops/platform/proto/pb"
 )
 
-const gcpNodeNameLength = 8
-const hetznerNodeNameLength = 12
+const gcpNodeNameLength = 8      // gcp-cont / gcp-comp
+const hetznerNodeNameLength = 12 // hetzner-cont / hetzner-comp
 
 func CheckLengthOfFutureDomain(config *pb.Config, hashLength int) error {
 	// NOTE: after that we have .c.<gcpProject-id>.internal, and we cannot see what gcpProjectLength will be used in future
@@ -30,8 +30,8 @@ func CheckLengthOfFutureDomain(config *pb.Config, hashLength int) error {
 			} else if nodepool.Provider.Name == "hetzner" {
 				nodeNameLength += hetznerNodeNameLength + nodeIndexLength
 			}
-			if maxLenght < currentLenght+len(cluster.GetName())+nodeNameLength {
-				return fmt.Errorf("cluster name %s or nodepool name %s is too long, consider shortening it", cluster.GetName(), nodepool.GetName())
+			if maxLenght <= currentLenght+nodeNameLength {
+				return fmt.Errorf("cluster name %s or nodepool name %s is too long, consider shortening it to be bellow %d [total: %d, hash: %d, nodeName: %d]", cluster.GetName(), nodepool.GetName(), maxLenght, currentLenght+nodeNameLength, hashLength, nodeNameLength)
 			}
 		}
 	}
