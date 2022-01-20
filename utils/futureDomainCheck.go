@@ -9,14 +9,14 @@ import (
 const gcpNodeNameLength = 8      // gcp-cont / gcp-comp
 const hetznerNodeNameLength = 12 // hetzner-cont / hetzner-comp
 
-func CheckLengthOfFutureDomain(config *pb.Config, hashLength int) error {
+func CheckLengthOfFutureDomain(config *pb.Config) error {
 	// NOTE: after that we have .c.<gcpProject-id>.internal, and we cannot see what gcpProjectLength will be used in future
 	maxLenght := 37    // total length of domain = clusterName + hash + nodeName + indexLength + separators
 	currentLenght := 1 // "-" separator between clusterName and hash
 	desiredState := config.DesiredState
 
 	for _, cluster := range desiredState.GetClusters() {
-		currentLenght += len(cluster.Name) + hashLength
+		currentLenght += len(cluster.Name) + HashLength
 		for _, nodepool := range cluster.GetNodePools() {
 			nodeNameLength := 1  // "-" separator between hash and nodeName
 			nodeIndexLength := 1 // "-" separator between nodeName and index
@@ -31,7 +31,7 @@ func CheckLengthOfFutureDomain(config *pb.Config, hashLength int) error {
 				nodeNameLength += hetznerNodeNameLength + nodeIndexLength
 			}
 			if maxLenght <= currentLenght+nodeNameLength {
-				return fmt.Errorf("cluster name %s or nodepool name %s is too long, consider shortening it to be bellow %d [total: %d, hash: %d, nodeName: %d]", cluster.GetName(), nodepool.GetName(), maxLenght, currentLenght+nodeNameLength, hashLength, nodeNameLength)
+				return fmt.Errorf("cluster name %s or nodepool name %s is too long, consider shortening it to be bellow %d [total: %d, hash: %d, nodeName: %d]", cluster.GetName(), nodepool.GetName(), maxLenght, currentLenght+nodeNameLength, HashLength, nodeNameLength)
 			}
 		}
 	}
