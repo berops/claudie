@@ -217,7 +217,7 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient) (err error) 
 	log.Printf("Processing new config")
 	config, err = createDesiredState(config)
 	if err != nil {
-		return
+		return fmt.Errorf("error while creating a desired state: %v", err)
 	}
 	log.Printf("Created desired state")
 	err = utils.CheckLengthOfFutureDomain(config, hashLength)
@@ -253,8 +253,10 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 		config := res.GetConfig()
 		if config != nil {
 			go func() {
-				if err := processConfig(config, c); err != nil {
-					log.Printf("scheduler:processConfig failed: %s\n", err)
+				log.Info().Msgf("Processing %s ", config.Name)
+				err := processConfig(config, c)
+				if err != nil {
+					log.Info().Msgf("scheduler:processConfig failed: %s", err)
 				}
 			}()
 		}
