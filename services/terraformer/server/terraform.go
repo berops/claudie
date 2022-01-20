@@ -126,7 +126,7 @@ func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) err
 	}
 
 	// Clean after terraform
-	if err := os.RemoveAll(outputPath); err != nil {
+	if err := os.RemoveAll(outputPath + "/" + backendData.ClusterName); err != nil {
 		return err
 	}
 
@@ -206,7 +206,7 @@ func destroyInfrastructure(config *pb.Config) error {
 		return err
 	}
 
-	if err := os.RemoveAll(outputPath); err != nil {
+	if err := os.RemoveAll(outputPath + "/" + backendData.ClusterName); err != nil {
 		return err
 	}
 
