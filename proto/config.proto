@@ -30,42 +30,36 @@ message Cluster {
   string private_key = 6;
   string hash = 7;
   repeated NodePool nodePools = 9;
-  repeated NodeInfo nodeInfos = 10;
 }
 
 message NodePool {
   string name = 1;
   string region = 2;
-  Node master = 3;
-  Node worker = 4;
-  Provider provider = 5;
-}
-
-message Node {
-  uint32 count = 1;
   string serverType = 3;
   string image = 4;
   uint32 diskSize = 5;
   string zone = 6;
-  string location = 7;
-  string datacenter = 8;
+  uint32 count = 9;
+  repeated Node nodes = 10;
+  Provider provider = 11 ;
+  bool isControl = 12;
 }
 
-message Provider {
-  string name = 1;
-  string credentials = 2;
-}
 /*
  * isControl flag
  * 0 - Only worker node
  * 1 - Only master node
  * 2 - APIEndpoint master node (must be singleton)
  */
-message NodeInfo {
-  string nodeName = 1;
-  string public = 2;
-  string private = 3;
-  uint32 isControl = 4;
-  string provider = 5;
-  string nodepoolName = 6;
+
+message Node {
+  string name = 9;
+  string private = 10;
+  string public = 11;
+  uint32 isControl = 12;
+}
+
+message Provider {
+  string name = 1;
+  string credentials = 2;
 }

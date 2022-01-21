@@ -4,7 +4,7 @@ provider "google" {
   project = "platform-296509"
 }
 
-{{- $index := .Index }}
+{{- $cluster := .Cluster}}
 
 resource "google_compute_network" "network" {
   name                    = "{{ .Cluster.Name }}-network"
@@ -41,16 +41,17 @@ resource "google_compute_firewall" "firewall" {
    ]
 }
 
-resource "google_compute_instance" "control_plane" {
-  count        = {{ (index .Cluster.NodePools $index).Master.Count }}
+{{range $nodepool := .NodePools}}
+resource "google_compute_instance" "{{$nodepool.Name}}" {
+  count        = {{$nodepool.Count}}
   zone         = "europe-west1-c"
-  name         = "{{ .Cluster.Name }}-{{.Cluster.Hash}}-gcp-control-${count.index + 1}"
-  machine_type = "{{ (index .Cluster.NodePools $index).Master.ServerType }}"
+  name         = "{{$cluster.Name}}-{{$cluster.Hash}}-{{$nodepool.Name}}-gcp-${count.index + 1}"
+  machine_type = "{{$nodepool.ServerType}}"
   allow_stopping_for_update = true
   boot_disk {
     initialize_params {
       size = 10
-      image = "{{ (index .Cluster.NodePools $index).Master.Image }}"
+      image = "{{$nodepool.Image}}"
     }
   }
   network_interface {
@@ -63,37 +64,12 @@ resource "google_compute_instance" "control_plane" {
   metadata_startup_script = "echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart"
 }
 
-resource "google_compute_instance" "compute_plane" {
-  count        = {{ (index .Cluster.NodePools $index).Worker.Count }}
-  zone         = "europe-west1-c"
-  name         = "{{ .Cluster.Name }}-{{.Cluster.Hash}}-gcp-compute-${count.index + 1}"
-  machine_type = "{{ (index .Cluster.NodePools $index).Worker.ServerType }}"
-  allow_stopping_for_update = true
-  boot_disk {
-    initialize_params {
-      size = 10
-      image = "{{ (index .Cluster.NodePools $index).Worker.Image }}"
-    }
-  }
-  network_interface {
-    subnetwork = google_compute_subnetwork.subnet.self_link
-    access_config {}
-  }
-  metadata = {
-    ssh-keys = "root:${file("./public.pem")}"
-  }
-  metadata_startup_script = "echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart"
-}
-
-output "gcp" {
+output "{{$nodepool.Name}}" {
   value = {
-    control = {
-      for node in google_compute_instance.control_plane:
-      node.name => node.network_interface.0.access_config.0.nat_ip
-    }
-    compute = {
-      for node in google_compute_instance.compute_plane:
-      node.name => node.network_interface.0.access_config.0.nat_ip
-    }
+    for node in google_compute_instance.{{$nodepool.Name}}:
+    node.name => node.network_interface.0.access_config.0.nat_ip
   }
 }
+{{end}}
+
+

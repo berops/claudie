@@ -62,12 +62,12 @@ func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVP
 }
 
 func buildVPNAsync(cluster *pb.Cluster) error {
-	if err := genPrivAdd(cluster.GetNodeInfos(), cluster.GetNetwork()); err != nil {
+	if err := genPrivAdd(cluster.GetNodePools(), cluster.GetNetwork()); err != nil {
 		return err
 	}
 
 	invOutputPath := filepath.Join(outputPath, cluster.GetName())
-	if err := genInv(cluster.GetNodeInfos(), invOutputPath); err != nil {
+	if err := genInv(cluster.GetNodePools(), invOutputPath); err != nil {
 		return err
 	}
 
@@ -83,9 +83,9 @@ func buildVPNAsync(cluster *pb.Cluster) error {
 }
 
 // genPrivAdd will generate private ip addresses from network parameter
-func genPrivAdd(addresses []*pb.NodeInfo, network string) error {
+func genPrivAdd(nodepools []*pb.NodePool, network string) error {
 	_, ipNet, err := net.ParseCIDR(network)
-	var addressesToAssign []*pb.NodeInfo
+	var addressesToAssign []*pb.Node
 
 	// initilize slice of possible last octet
 	lastOctets := make([]byte, 255)
@@ -99,16 +99,17 @@ func genPrivAdd(addresses []*pb.NodeInfo, network string) error {
 	}
 	ip := ipNet.IP
 	ip = ip.To4()
-
-	for _, address := range addresses {
-		// If address already assigned, skip
-		if address.Private != "" {
-			lastOctet := strings.Split(address.Private, ".")[3]
-			lastOctetInt, _ := strconv.Atoi(lastOctet)
-			lastOctets = remove(lastOctets, byte(lastOctetInt))
-			continue
+	for _, nodepool := range nodepools {
+		for _, node := range nodepool.Nodes {
+			// If address already assigned, skip
+			if node.Private != "" {
+				lastOctet := strings.Split(node.Private, ".")[3]
+				lastOctetInt, _ := strconv.Atoi(lastOctet)
+				lastOctets = remove(lastOctets, byte(lastOctetInt))
+				continue
+			}
+			addressesToAssign = append(addressesToAssign, node)
 		}
-		addressesToAssign = append(addressesToAssign, address)
 	}
 
 	var temp int
@@ -118,8 +119,8 @@ func genPrivAdd(addresses []*pb.NodeInfo, network string) error {
 		temp++
 	}
 	// debug message
-	for _, address := range addresses {
-		fmt.Println(address)
+	for _, nodepool := range nodepools {
+		fmt.Println(nodepool)
 	}
 
 	return nil
@@ -135,7 +136,7 @@ func remove(slice []byte, value byte) []byte {
 }
 
 // genInv will generate ansible inventory file slice of clusters input
-func genInv(addresses []*pb.NodeInfo, path string) error {
+func genInv(nodepools []*pb.NodePool, path string) error {
 	tpl, err := template.ParseFiles(inventoryTemplate)
 	if err != nil {
 		return fmt.Errorf("failed to load template file: %v", err)
@@ -153,7 +154,7 @@ func genInv(addresses []*pb.NodeInfo, path string) error {
 		return fmt.Errorf("failed to create a inventory file: %v", err)
 	}
 
-	if err := tpl.Execute(f, addresses); err != nil {
+	if err := tpl.Execute(f, nodepools); err != nil {
 		return fmt.Errorf("failed to execute template file: %v", err)
 	}
 

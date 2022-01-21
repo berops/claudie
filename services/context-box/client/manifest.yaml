@@ -1,84 +1,107 @@
 name: SampleConfigName
 
-clusters: 
-  - name: test-cluster-name1
-    kubernetes: v1.19.0
-    network: 192.168.2.0/24
-    nodePools:       
-    - name: gcp
-      provider:
-        name: gcp
-        credentials: ../secrets/admin-project-283514-3729b1f097f2.json
-      region: europe-west1
-      master:
-        count: 1
-        server_type: e2-small
-        image: ubuntu-os-cloud/ubuntu-2004-lts
-        disk_size: 50
-        zone: europe-west1-c
-      worker:
-        count: 1
-        server_type: f1-micro
-        image: ubuntu-os-cloud/ubuntu-2004-lts
-        disk_size: 50
-        zone: europe-west1-c
-    
-    - name: hetzner
-      provider:
-        name: hetzner
-        credentials: xIAfsb7M5K6etYAfXYcg5iYyrFGNlCxcICo060HVEygjoF0usFpv5P9X7pk85Xe1
-      master:
-        count: 1
-        server_type: cpx11
-        image: ubuntu-20.04
-        disk_size: 50
-        location: nbg1
-        datacenter: nbg1-dc3
-      worker:
-        count: 1
-        server_type: cpx11
-        image: ubuntu-20.04
-        disk_size: 50
-        location: nbg1
-        datacenter: nbg1-dc3
+providers:
+- name: gcp
+  credentials: ../secrets/admin-project-283514-3729b1f097f2.json
+- name: hetzner
+  credentials: xIAfsb7M5K6etYAfXYcg5iYyrFGNlCxcICo060HVEygjoF0usFpv5P9X7pk85Xe1
 
-  - name: test-cluster-name2
-    kubernetes: v1.19.0
-    network: 192.168.2.0/24
-    nodePools:
-      - name: gcp
-        provider:
-          name: gcp
-          credentials: ../secrets/admin-project-283514-3729b1f097f2.json
+nodePools:
+  dynamic: 
+  - name: gcp-k8s-control-small-1
+    provider: 
+      gcp:
         region: europe-west1
-        master:
-          count: 1
-          server_type: e2-small
-          image: ubuntu-os-cloud/ubuntu-2004-lts
-          disk_size: 50
-          zone: europe-west1-c
-        worker:
-          count: 1
-          server_type: f1-micro
-          image: ubuntu-os-cloud/ubuntu-2004-lts
-          disk_size: 50
-          zone: europe-west1-c
+        zone: europe-west1-c
+    count: 1
+    server_type: e2-small
+    image: ubuntu-20.04
+    disk_size: 50    
+  - name: gcp-k8s-compute-target-1
+    provider: 
+      gcp:
+        region: europe-west1
+        zone: europe-west1-c
+    count: 1
+    server_type: e2-small
+    image: ubuntu-20.04
+    disk_size: 50
+  - name: hetzner-k8s-compute-large-1
+    provider:
+      hetzner:
+        region: nbg1
+        zone: nbg1-dc3
+    count: 1
+    server_type: cpx11
+    image: ubuntu-20.04
+    disk_size: 50
+  - name: gcp-lb-small-1
+    provider:
+      gcp:
+        region: europe-west1
+        zone: europe-west1-c
+    count: 1
+    server_type: e2-small
+    image: ubuntu-20.04
+    disk_size: 50
+  - name: hetzner-lb-small-1
+    provider:
+      hetzner:
+        region: nbg1
+        zone: nbg1-dc3
+    count: 1
+    server_type: cpx11
+    image: ubuntu-20.04
+    disk_size: 50
+  static: 
+  - name: dc-alpha-k8s-control-medium-1
+    nodes:
+    - publicIP: 1.1.1.1
+      privateSshKey: foo
+    - publicIP: 1.1.1.2
+      privateSshKey: bar
+  - name: dc-beta-lb-small-1
+    nodes:
+    - publicIP: 1.1.1.3
+      privateSshKey: lorem
+    - publicIP: 1.1.1.4
+      privateSshKey: ipsum
 
-      - name: hetzner
-        provider:
-          name: hetzner
-          credentials: xIAfsb7M5K6etYAfXYcg5iYyrFGNlCxcICo060HVEygjoF0usFpv5P9X7pk85Xe1
-        master:
-          count: 1
-          server_type: cpx11
-          image: ubuntu-20.04
-          disk_size: 50
-          location: nbg1
-          datacenter: nbg1-dc3
-        worker:
-          count: 1
-          server_type: cpx11
-          image: ubuntu-20.04
-          disk_size: 50
-          location: nbg1
-          datacenter: nbg1-dc3
+kubernetes:
+  clusters:
+  - name:  Project-X
+    version: v1.19.0
+    network: 192.168.2.0/24
+    pools:
+     control:
+     - gcp-k8s-control-small-1
+     compute:
+     - gcp-k8s-compute-target-1
+     - hetzner-k8s-compute-large-1
+
+loadBalancer:
+  roles:
+  - name: apiserver-lb
+    conf: 
+      protocol: tcp
+      port: 6443
+      targetPort: 6443
+  - name: ingress
+    conf:
+      protocol: tcp
+      port: 443
+      targetPort: 30443
+  clusters:
+  - name: development-project-X-apiserver-lb
+    role: apiserver-lb
+    dns:
+      hostname: www.dev-apiserver.mycompany.io
+      providers: 
+      - gcp
+      - hetzner
+    target:
+      name: development-project-X
+      type: k8s-control-plane
+    pools:
+    - gcp-lb-small-1
+    - hetzner-lb-small-1
