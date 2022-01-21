@@ -63,9 +63,6 @@ func buildInfrastructureAsync(desiredStateCluster *pb.Cluster, currentStateClust
 	if err := utils.CreateKeyFile(desiredStateCluster.GetPublicKey(), terraformOutputPath, "public.pem"); err != nil {
 		return err
 	}
-	if err := utils.CreateKeyFile(desiredStateCluster.GetPublicKey(), terraformOutputPath, "private.pem"); err != nil {
-		return err
-	}
 
 	// Call terraform init and apply
 	log.Info().Msgf("Running terraform init in %s", terraformOutputPath)
