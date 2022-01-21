@@ -171,51 +171,10 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 
 		var ComputeNodePools, ControlNodePools []*pb.NodePool
 
-		// Check if the nodepool is part of the cluster
-
 		// Control nodePool
-		for _, nodePool := range cluster.Pools.Control {
-			if isFound, position := searchNodePool(nodePool, desiredState.NodePools.Dynamic); isFound {
-
-				provider, region, zone := getProviderRegionAndZone(desiredState.NodePools.Dynamic[position].Provider)
-				ControlNodePools = append(ControlNodePools, &pb.NodePool{
-					Name:       desiredState.NodePools.Dynamic[position].Name,
-					Region:     region,
-					Zone:       zone,
-					ServerType: desiredState.NodePools.Dynamic[position].ServerType,
-					Image:      desiredState.NodePools.Dynamic[position].Image,
-					DiskSize:   uint32(desiredState.NodePools.Dynamic[position].DiskSize),
-					Count:      uint32(desiredState.NodePools.Dynamic[position].Count),
-					Provider: &pb.Provider{
-						Name:        desiredState.Providers[searchProvider(provider, desiredState.Providers)].Name,
-						Credentials: desiredState.Providers[searchProvider(provider, desiredState.Providers)].Credentials,
-					},
-					IsControl: true,
-				})
-			}
-		}
-
+		ControlNodePools = createNodepools(cluster.Pools.Control, desiredState, true)
 		// compute nodepools
-		for _, nodePool := range cluster.Pools.Compute {
-			if isFound, position := searchNodePool(nodePool, desiredState.NodePools.Dynamic); isFound {
-
-				provider, region, zone := getProviderRegionAndZone(desiredState.NodePools.Dynamic[position].Provider)
-				ComputeNodePools = append(ComputeNodePools, &pb.NodePool{
-					Name:       desiredState.NodePools.Dynamic[position].Name,
-					Region:     region,
-					Zone:       zone,
-					ServerType: desiredState.NodePools.Dynamic[position].ServerType,
-					Image:      desiredState.NodePools.Dynamic[position].Image,
-					DiskSize:   uint32(desiredState.NodePools.Dynamic[position].DiskSize),
-					Count:      uint32(desiredState.NodePools.Dynamic[position].Count),
-					Provider: &pb.Provider{
-						Name:        desiredState.Providers[searchProvider(provider, desiredState.Providers)].Name,
-						Credentials: desiredState.Providers[searchProvider(provider, desiredState.Providers)].Credentials,
-					},
-					IsControl: false,
-				})
-			}
-		}
+		ComputeNodePools = createNodepools(cluster.Pools.Compute, desiredState, false)
 
 		newCluster.NodePools = append(ControlNodePools, ComputeNodePools...)
 		clusters = append(clusters, newCluster)
@@ -260,6 +219,33 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 	}
 
 	return res, nil
+}
+
+// populate nodepools for a cluster
+func createNodepools(pools []string, desiredState Manifest, isControl bool) []*pb.NodePool {
+	var nodePools []*pb.NodePool
+	for _, nodePool := range pools {
+		// Check if the nodepool is part of the cluster
+		if isFound, position := searchNodePool(nodePool, desiredState.NodePools.Dynamic); isFound {
+
+			provider, region, zone := getProviderRegionAndZone(desiredState.NodePools.Dynamic[position].Provider)
+			nodePools = append(nodePools, &pb.NodePool{
+				Name:       desiredState.NodePools.Dynamic[position].Name,
+				Region:     region,
+				Zone:       zone,
+				ServerType: desiredState.NodePools.Dynamic[position].ServerType,
+				Image:      desiredState.NodePools.Dynamic[position].Image,
+				DiskSize:   uint32(desiredState.NodePools.Dynamic[position].DiskSize),
+				Count:      uint32(desiredState.NodePools.Dynamic[position].Count),
+				Provider: &pb.Provider{
+					Name:        desiredState.Providers[searchProvider(provider, desiredState.Providers)].Name,
+					Credentials: desiredState.Providers[searchProvider(provider, desiredState.Providers)].Credentials,
+				},
+				IsControl: isControl,
+			})
+		}
+	}
+	return nodePools
 }
 
 // processConfig is function used to carry out task specific to Scheduler concurrently
