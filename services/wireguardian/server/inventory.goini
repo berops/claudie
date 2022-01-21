@@ -1,4 +1,6 @@
 [nodes]
-{{- range $val := .}}
-{{$val.NodeName}} ansible_host={{$val.Public}} private_ip={{$val.Private}}
+{{- range $nodepool := .}}
+{{- range $node :=  $nodepool.Nodes }}
+{{$node.Name}} ansible_host={{$node.Public}} private_ip={{$node.Private}}
+{{- end}}
 {{- end}}

@@ -29,58 +29,92 @@ const defaultSchedulerPort = 50056
 
 ////////////////////YAML STRUCT//////////////////////////////////////////////////
 
-// Manifest struct holding info on clusters
 type Manifest struct {
-	Name     string    `yaml:"name"`
-	Clusters []Cluster `yaml:"clusters"`
+	Name         string       `yaml:"name"`
+	Providers    []Provider   `yaml:"providers"`
+	NodePools    NodePool     `yaml:"nodePools"`
+	LoadBalancer LoadBalancer `yaml:"loadBalancer"`
+	Kubernetes   Kubernetes   `yaml:"kubernetes"`
 }
 
-// Cluster struct holds cluster related info
-type Cluster struct {
-	Name       string     `yaml:"name"`
-	Kubernetes string     `yaml:"kubernetes"`
-	Network    string     `yaml:"network"`
-	NodePools  []NodePool `yaml:"nodePools"`
-	PrivateKey string
-	PublicKey  string
-	Hash       string
-}
-
-// NodePool struct contains data on master and worker nodes
-type NodePool struct {
-	Name     string   `yaml:"name"`
-	Region   string   `yaml:"region"`
-	Master   Master   `yaml:"master"`
-	Worker   Worker   `yaml:"worker"`
-	Provider Provider `yaml:"provider"`
-}
-
-// Master struct contains master/leader node data
-type Master struct {
-	Count      int32  `yaml:"count"`
-	ServerType string `yaml:"server_type"`
-	Image      string `yaml:"image"`
-	DiskSize   uint32 `yaml:"disk_size"`
-	Zone       string `yaml:"zone"`
-	Location   string `yaml:"location"`
-	Datacenter string `yaml:"datacenter"`
-}
-
-// Worker struct aggregates info about worker node
-type Worker struct {
-	Count      int32  `yaml:"count"`
-	ServerType string `yaml:"server_type"`
-	Image      string `yaml:"image"`
-	DiskSize   uint32 `yaml:"disk_size"`
-	Zone       string `yaml:"zone"`
-	Location   string `yaml:"location"`
-	Datacenter string `yaml:"datacenter"`
-}
-
-// Provider struct holding credentials info
 type Provider struct {
 	Name        string `yaml:"name"`
 	Credentials string `yaml:"credentials"`
+}
+
+type NodePool struct {
+	Dynamic []DynamicNodePool `yaml:"dynamic"`
+	Static  []StaticNodePool  `yaml:"static"`
+}
+
+type LoadBalancer struct {
+	Roles    []Role                `yaml:"roles"`
+	Clusters []LoadBalancerCluster `yaml:"clusters"`
+}
+
+type Kubernetes struct {
+	Clusters []Cluster `yaml:"clusters"`
+}
+
+type DynamicNodePool struct {
+	Name       string                       `yaml:"name"`
+	Provider   map[string]map[string]string `yaml:"provider"`
+	Count      int64                        `yaml:"count"`
+	ServerType string                       `yaml:"server_type"`
+	Image      string                       `yaml:"image"`
+	Datacenter string                       `yaml:"datacenter"`
+	DiskSize   int64                        `yaml:"disk_size"`
+}
+
+type StaticNodePool struct {
+	Name  string `yaml:"name"`
+	Nodes []Node `yaml:"nodes"`
+}
+
+type Node struct {
+	PublicIP      string `yaml:"publicIP"`
+	PrivateSSHKey string `yaml:"privateSshKey"`
+}
+
+type Cluster struct {
+	Name    string `yaml:"name"`
+	Version string `yaml:"version"`
+	Network string `yaml:"network"`
+	Pools   Pool   `yaml:"pools"`
+}
+
+type Pool struct {
+	Control []string `yaml:"control"`
+	Compute []string `yaml:"compute"`
+}
+
+type Role struct {
+	Name string `yaml:"name"`
+	Conf Conf   `yaml:"conf"`
+}
+
+type Conf struct {
+	Protocol   string `yaml:"protocol"`
+	Port       uint32 `yaml:"port"`
+	TargetPort uint32 `yaml:"targetPort"`
+}
+
+type LoadBalancerCluster struct {
+	Name   string   `yaml:"name"`
+	Role   string   `yaml:"role"`
+	DNS    DNS      `yaml:"dns"`
+	Target Target   `yaml:"target"`
+	Pools  []string `yaml:"pools"`
+}
+
+type DNS struct {
+	Hostname string   `yaml:"hostname"`
+	Provider []string `yaml:"provider"`
+}
+
+type Target struct {
+	Name string `yaml:"name"`
+	Type string `yaml:"type"`
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -126,46 +160,24 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 	}
 
 	var clusters []*pb.Cluster
-	for _, cluster := range desiredState.Clusters {
-		var nodePools []*pb.NodePool
-		for _, nodePool := range cluster.NodePools {
-			nodePools = append(nodePools, &pb.NodePool{
-				Name:   nodePool.Name,
-				Region: nodePool.Region,
-				Master: &pb.Node{
-					Count:      uint32(nodePool.Master.Count),
-					ServerType: nodePool.Master.ServerType,
-					Image:      nodePool.Master.Image,
-					DiskSize:   nodePool.Master.DiskSize,
-					Zone:       nodePool.Master.Zone,
-					Location:   nodePool.Master.Location,
-					Datacenter: nodePool.Master.Datacenter,
-				},
-				Worker: &pb.Node{
-					Count:      uint32(nodePool.Worker.Count),
-					ServerType: nodePool.Worker.ServerType,
-					Image:      nodePool.Worker.Image,
-					DiskSize:   nodePool.Worker.DiskSize,
-					Zone:       nodePool.Worker.Zone,
-					Location:   nodePool.Worker.Location,
-					Datacenter: nodePool.Worker.Datacenter,
-				},
-				Provider: &pb.Provider{
-					Name:        nodePool.Provider.Name,
-					Credentials: nodePool.Provider.Credentials,
-				},
-			})
+	for _, cluster := range desiredState.Kubernetes.Clusters {
+
+		newCluster := &pb.Cluster{
+			Name:       strings.ToLower(cluster.Name),
+			Kubernetes: cluster.Version,
+			Network:    cluster.Network,
+			Hash:       utils.CreateHash(7),
 		}
 
-		clusters = append(clusters, &pb.Cluster{
-			Name:       cluster.Name,
-			Kubernetes: cluster.Kubernetes,
-			Network:    cluster.Network,
-			PrivateKey: cluster.PrivateKey,
-			PublicKey:  cluster.PublicKey,
-			NodePools:  nodePools,
-			Hash:       "",
-		})
+		var ComputeNodePools, ControlNodePools []*pb.NodePool
+
+		// Control nodePool
+		ControlNodePools = createNodepools(cluster.Pools.Control, desiredState, true)
+		// compute nodepools
+		ComputeNodePools = createNodepools(cluster.Pools.Compute, desiredState, false)
+
+		newCluster.NodePools = append(ControlNodePools, ComputeNodePools...)
+		clusters = append(clusters, newCluster)
 	}
 
 	res := &pb.Config{
@@ -209,6 +221,33 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 	}
 
 	return res, nil
+}
+
+// populate nodepools for a cluster
+func createNodepools(pools []string, desiredState Manifest, isControl bool) []*pb.NodePool {
+	var nodePools []*pb.NodePool
+	for _, nodePool := range pools {
+		// Check if the nodepool is part of the cluster
+		if isFound, position := searchNodePool(nodePool, desiredState.NodePools.Dynamic); isFound {
+
+			provider, region, zone := getProviderRegionAndZone(desiredState.NodePools.Dynamic[position].Provider)
+			nodePools = append(nodePools, &pb.NodePool{
+				Name:       desiredState.NodePools.Dynamic[position].Name,
+				Region:     region,
+				Zone:       zone,
+				ServerType: desiredState.NodePools.Dynamic[position].ServerType,
+				Image:      desiredState.NodePools.Dynamic[position].Image,
+				DiskSize:   uint32(desiredState.NodePools.Dynamic[position].DiskSize),
+				Count:      uint32(desiredState.NodePools.Dynamic[position].Count),
+				Provider: &pb.Provider{
+					Name:        desiredState.Providers[searchProvider(provider, desiredState.Providers)].Name,
+					Credentials: desiredState.Providers[searchProvider(provider, desiredState.Providers)].Credentials,
+				},
+				IsControl: isControl,
+			})
+		}
+	}
+	return nodePools
 }
 
 // processConfig is function used to carry out task specific to Scheduler concurrently
@@ -257,6 +296,33 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 
 		return nil
 	}
+}
+
+func getProviderRegionAndZone(providerMap map[string]map[string]string) (string, string, string) {
+
+	var provider string
+	for provider = range providerMap {
+	}
+	return provider, providerMap[provider]["region"], providerMap[provider]["zone"]
+}
+
+// search of the nodePool in the nodePools []DynamicNode
+func searchNodePool(nodePoolName string, nodePools []DynamicNodePool) (bool, int) {
+	for index, nodePool := range nodePools {
+		if nodePool.Name == nodePoolName {
+			return true, index
+		}
+	}
+	return false, -1
+}
+
+func searchProvider(providerName string, providers []Provider) int {
+	for index, provider := range providers {
+		if provider.Name == providerName {
+			return index
+		}
+	}
+	return -1
 }
 
 func main() {

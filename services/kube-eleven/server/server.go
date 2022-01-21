@@ -33,24 +33,26 @@ const (
 type data struct {
 	APIEndpoint string
 	Kubernetes  string
-	Nodes       []*pb.NodeInfo
+	Nodes       []*pb.Node
 }
 
 // formatTemplateData formats data for kubeone template input
 func (d *data) formatTemplateData(cluster *pb.Cluster) {
-	var controlNodes []*pb.NodeInfo
-	var workerNodes []*pb.NodeInfo
+	var controlNodes []*pb.Node
+	var workerNodes []*pb.Node
 	hasAPIEndpoint := false
 
 	// Get the API endpoint. If it is not set, use the first control node
-	for _, nodeInfo := range cluster.GetNodeInfos() {
-		if nodeInfo.GetIsControl() == 1 {
-			controlNodes = append(controlNodes, nodeInfo)
-		} else if nodeInfo.GetIsControl() == 2 {
-			hasAPIEndpoint = true
-			d.Nodes = append(d.Nodes, nodeInfo) //the Api endpoint must be first in slice
-		} else {
-			workerNodes = append(workerNodes, nodeInfo)
+	for _, Nodepool := range cluster.GetNodePools() {
+		for _, Node := range Nodepool.Nodes {
+			if Node.GetIsControl() == 1 {
+				controlNodes = append(controlNodes, Node)
+			} else if Node.GetIsControl() == 2 {
+				hasAPIEndpoint = true
+				d.Nodes = append(d.Nodes, Node) //the Api endpoint must be first in slice
+			} else {
+				workerNodes = append(workerNodes, Node)
+			}
 		}
 	}
 	if !hasAPIEndpoint {
@@ -172,7 +174,7 @@ func genKubeOneConfig(templateFilePath string, manifestFilePath string, d interf
 // runKubeOne runs kubeone with the generated manifest
 func runKubeOne(path string) error {
 	log.Info().Msgf("Running KubeOne in %s dir", path)
-	cmd := exec.Command("kubeone", "apply", "-m", "kubeone.yaml", "-y")
+	cmd := exec.Command("kubeone", "apply", "-m", "kubeone.yaml", "-y", "-v")
 	cmd.Dir = path // golang will execute command from this directory
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

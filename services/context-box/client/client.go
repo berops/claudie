@@ -115,14 +115,14 @@ func PrintConfig(c pb.ContextBoxServiceClient, id string) (*pb.GetConfigByIdResp
 			fmt.Println("NodePool number:", i2)
 			fmt.Println("Name:", nodePool.GetName())
 			fmt.Println("Region", nodePool.GetRegion())
-			fmt.Println("Master node specs:", nodePool.GetMaster())
-			fmt.Println("Worker node specs:", nodePool.GetWorker())
 			fmt.Println("Provider specs:", nodePool.GetProvider())
 		}
 		fmt.Println("----------------------------------------")
 		fmt.Println("Cluster Nodes:")
-		for _, nodeInfo := range cluster.GetNodeInfos() {
-			fmt.Println("Name:", nodeInfo.NodeName, "Public:", nodeInfo.GetPublic(), "Private", nodeInfo.GetPrivate(), "isControl:", nodeInfo.GetIsControl())
+		for _, nodePools := range cluster.GetNodePools() {
+			for _, node := range nodePools.GetNodes() {
+				fmt.Println("Name:", node.Name, "Public:", node.GetPublic(), "Private", node.GetPrivate(), "isControl:", node.GetIsControl())
+			}
 		}
 	}
 	//fmt.Println(res.GetConfig().GetCurrentState().GetClusters())
