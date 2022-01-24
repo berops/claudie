@@ -59,7 +59,7 @@ func buildInfrastructureAsync(desiredStateCluster *pb.Cluster, currentStateClust
 	}
 
 	// Create publicKey and privateKey file for a cluster
-	terraformOutputPath := filepath.Join(outputPath, desiredStateCluster.GetName())
+	terraformOutputPath := filepath.Join(outputPath, backendData.ClusterName)
 	if err := utils.CreateKeyFile(desiredStateCluster.GetPublicKey(), terraformOutputPath, "public.pem"); err != nil {
 		return err
 	}
