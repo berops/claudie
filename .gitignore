@@ -11,4 +11,3 @@ mongodb
 kubeone.yaml
 cluster.tar.gz
 cluster-kubeconfig
-services/testing-framework/tests/test-set2
