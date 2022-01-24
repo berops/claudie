@@ -7,7 +7,7 @@ import (
 )
 
 func CheckLengthOfFutureDomain(config *pb.Config) error {
-	// NOTE: after that we have .c.<gcpProject-id>.internal, and we cannot see what gcpProjectLength will be used in future
+	// NOTE: In domain, we have .c.<gcpProject-id>.internal, and we cannot see what gcpProjectNameLength will be in future
 	maxLenght := 37    // total length of domain = clusterName + hash + nodeName + indexLength + separators
 	currentLenght := 1 // "-" separator between clusterName and hash
 	desiredState := config.DesiredState
