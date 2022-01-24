@@ -45,7 +45,7 @@ resource "google_compute_firewall" "firewall" {
 resource "google_compute_instance" "{{$nodepool.Name}}" {
   count        = {{$nodepool.Count}}
   zone         = "europe-west1-c"
-  name         = "{{$cluster.Name}}-{{$cluster.Hash}}-{{$nodepool.Name}}-gcp-${count.index + 1}"
+  name         = "{{$cluster.Name}}-{{$cluster.Hash}}-{{$nodepool.Name}}-${count.index + 1}"
   machine_type = "{{$nodepool.ServerType}}"
   allow_stopping_for_update = true
   boot_disk {
