@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   mongodb:
-    image: mongo:latest
+    image: mongo:5
     container_name: mongodb
     env_file: K8s-dev-cluster/.env
     ports:

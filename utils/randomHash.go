@@ -6,6 +6,7 @@ import (
 )
 
 const charset = "abcdefghijklmnopqrstuvwxyz" + "0123456789"
+const HashLength = 7
 
 var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 

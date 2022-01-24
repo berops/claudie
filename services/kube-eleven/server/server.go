@@ -101,7 +101,7 @@ func buildClusterAsync(cluster *pb.Cluster) error {
 	d.formatTemplateData(cluster)
 
 	// Create a directory for the cluster
-	clusterOutputPath := filepath.Join(outputPath, cluster.GetName())
+	clusterOutputPath := filepath.Join(outputPath, cluster.GetName()+"-"+cluster.GetHash())
 
 	// Create a directory for the cluster
 	if _, err := os.Stat(clusterOutputPath); os.IsNotExist(err) {

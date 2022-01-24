@@ -198,6 +198,7 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 
 	for _, clusterDesired := range res.DesiredState.Clusters {
 		for _, clusterCurrent := range res.CurrentState.Clusters {
+			// found current cluster with matching name
 			if clusterDesired.Name == clusterCurrent.Name {
 				if clusterCurrent.PublicKey != "" {
 					clusterDesired.PublicKey = clusterCurrent.PublicKey
@@ -208,13 +209,14 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 				}
 			}
 		}
+		// no current cluster found with matching name, create keys/hash
 		if clusterDesired.PublicKey == "" {
 			privateKey, publicKey := MakeSSHKeyPair()
 			clusterDesired.PrivateKey = privateKey
 			clusterDesired.PublicKey = publicKey
 		}
 		if clusterDesired.Hash == "" {
-			clusterDesired.Hash = utils.CreateHash(7)
+			clusterDesired.Hash = utils.CreateHash(utils.HashLength)
 		}
 	}
 
@@ -250,9 +252,10 @@ func createNodepools(pools []string, desiredState Manifest, isControl bool) []*p
 
 // processConfig is function used to carry out task specific to Scheduler concurrently
 func processConfig(config *pb.Config, c pb.ContextBoxServiceClient) (err error) {
+	log.Printf("Processing new config")
 	config, err = createDesiredState(config)
 	if err != nil {
-		return
+		return fmt.Errorf("error while creating a desired state: %v", err)
 	}
 
 	log.Info().Interface("project", config.GetDesiredState())
@@ -283,8 +286,10 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 		config := res.GetConfig()
 		if config != nil {
 			go func() {
-				if err := processConfig(config, c); err != nil {
-					log.Printf("scheduler:processConfig failed: %s\n", err)
+				log.Info().Msgf("Processing %s ", config.Name)
+				err := processConfig(config, c)
+				if err != nil {
+					log.Info().Msgf("scheduler:processConfig failed: %s", err)
 				}
 			}()
 		}
@@ -348,7 +353,7 @@ func main() {
 		signal.Notify(ch, os.Interrupt)
 		defer signal.Stop(ch)
 		<-ch
-		return errors.New("Scheduler interrupt signal")
+		return errors.New("scheduler interrupt signal")
 	})
 
 	g.Go(func() error {

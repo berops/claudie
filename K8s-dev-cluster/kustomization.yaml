@@ -17,14 +17,14 @@ images:
 - name: eu.gcr.io/platform-infrastructure-316112/platform/builder
   newTag: e75e219d9bc4c6ac79bb2c2b2dbaabf537169721
 - name: eu.gcr.io/platform-infrastructure-316112/platform/context-box
-  newTag: e75e219d9bc4c6ac79bb2c2b2dbaabf537169721
+  newTag: c818762c8e10284f35cbfb1639d38c084a34ee72
 - name: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven
-  newTag: e75e219d9bc4c6ac79bb2c2b2dbaabf537169721
+  newTag: c818762c8e10284f35cbfb1639d38c084a34ee72
 - name: eu.gcr.io/platform-infrastructure-316112/platform/scheduler
-  newTag: e75e219d9bc4c6ac79bb2c2b2dbaabf537169721
+  newTag: c818762c8e10284f35cbfb1639d38c084a34ee72
 - name: eu.gcr.io/platform-infrastructure-316112/platform/terraformer
-  newTag: e75e219d9bc4c6ac79bb2c2b2dbaabf537169721
+  newTag: c818762c8e10284f35cbfb1639d38c084a34ee72
 - name: eu.gcr.io/platform-infrastructure-316112/platform/testing-framework
-  newTag: e75e219d9bc4c6ac79bb2c2b2dbaabf537169721
+  newTag: c818762c8e10284f35cbfb1639d38c084a34ee72
 - name: eu.gcr.io/platform-infrastructure-316112/platform/wireguardian
-  newTag: e75e219d9bc4c6ac79bb2c2b2dbaabf537169721
+  newTag: c818762c8e10284f35cbfb1639d38c084a34ee72
