@@ -1,8 +1,8 @@
-namespace: claudie
+namespace: test
 resources:
 - mongodb.yaml
 - context-box.yaml
-- terraformer.yaml
+#- terraformer.yaml # testing
 - wireguardian.yaml
 - scheduler.yaml
 - builder.yaml
