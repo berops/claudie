@@ -1,8 +1,8 @@
 namespace: test
+#- terraformer.yaml # testing
 resources:
 - mongodb.yaml
 - context-box.yaml
-#- terraformer.yaml # testing
 - wireguardian.yaml
 - scheduler.yaml
 - builder.yaml
@@ -25,6 +25,6 @@ images:
 - name: eu.gcr.io/platform-infrastructure-316112/platform/terraformer
   newTag: c818762c8e10284f35cbfb1639d38c084a34ee72
 - name: eu.gcr.io/platform-infrastructure-316112/platform/testing-framework
-  newTag: c818762c8e10284f35cbfb1639d38c084a34ee72
+  newTag: cc30f7a4f6d8a634142cec29d990f947760a3034
 - name: eu.gcr.io/platform-infrastructure-316112/platform/wireguardian
   newTag: c818762c8e10284f35cbfb1639d38c084a34ee72
