@@ -14,20 +14,20 @@ env:
 
 jobs:
 #--------------------------------------------------------------------------------------------------
-  merge-branch:
-    if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Merge with master branch
-        uses: devmasx/merge-branch@1.4.0
-        with:
-          type: now
-          from_branch: master
-          target_branch: ${{ github.head_ref }}
-          github_token: ${{ github.token }}
-#--------------------------------------------------------------------------------------------------
+#  merge-branch:
+#    if: github.event.pull_request.draft == false
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v2
+#
+#      - name: Merge with master branch
+#        uses: devmasx/merge-branch@1.4.0
+#        with:
+#          type: now
+#          from_branch: master
+#          target_branch: ${{ github.head_ref }}
+#          github_token: ${{ github.token }}
+##--------------------------------------------------------------------------------------------------
   build-and-push:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
