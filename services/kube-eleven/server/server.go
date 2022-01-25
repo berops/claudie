@@ -106,18 +106,21 @@ func buildClusterAsync(cluster *pb.Cluster) error {
 	// Create a directory for the cluster
 	if _, err := os.Stat(clusterOutputPath); os.IsNotExist(err) {
 		if err := os.MkdirAll(clusterOutputPath, os.ModePerm); err != nil {
+			log.Info().Msgf("error while creating dir %s: %v", clusterOutputPath, err)
 			return fmt.Errorf("failed to create dir: %v", err)
 		}
 	}
 
 	// Create a private key file
 	if err := utils.CreateKeyFile(cluster.GetPrivateKey(), clusterOutputPath, "private.pem"); err != nil {
+		log.Info().Msgf("error while key file: %v", err)
 		return err
 	}
 
 	// Create a cluster-kubeconfig file
 	kubeconfigFilePath := filepath.Join(clusterOutputPath, "cluster-kubeconfig")
 	if err := ioutil.WriteFile(kubeconfigFilePath, []byte(cluster.GetKubeconfig()), 0600); err != nil {
+		log.Info().Msgf("error while writing cluster-kubeconfig in %s: %v", clusterOutputPath, err)
 		return err
 	}
 
@@ -125,23 +128,27 @@ func buildClusterAsync(cluster *pb.Cluster) error {
 	templateFilePath := filepath.Join(outputPath, "kubeone.tpl")
 	manifestFilePath := filepath.Join(clusterOutputPath, "kubeone.yaml")
 	if err := genKubeOneConfig(templateFilePath, manifestFilePath, d); err != nil {
+		log.Info().Msgf("error while generating kubeone.yaml in %s: %v", clusterOutputPath, err)
 		return err
 	}
 
 	// Run kubeone
 	if err := runKubeOne(clusterOutputPath); err != nil {
+		log.Info().Msgf("error while running kubeone in %s: %v", clusterOutputPath, err)
 		return err
 	}
 
 	// Save generated kubeconfig file to cluster config
 	kc, err := readKubeconfig(kubeconfigFilePath)
 	if err != nil {
+		log.Info().Msgf("error while reading cluster-config in %s: %v", clusterOutputPath, err)
 		return err
 	}
 	cluster.Kubeconfig = kc
 
 	// Clean up
 	if err := os.RemoveAll(clusterOutputPath); err != nil {
+		log.Info().Msgf("error while removing files from %s: %v", clusterOutputPath, err)
 		return err
 	}
 
