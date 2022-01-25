@@ -295,7 +295,6 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 				return nil
 			}()
 		}
-
 		return nil
 	}
 }

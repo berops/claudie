@@ -172,54 +172,58 @@ func getNodePoolByName(nodePoolName string, nodePools []*pb.NodePool) *pb.NodePo
 	return nil
 }
 
+// function saveErrorMessage saves error message to config
+func saveErrorMessage(config *pb.Config, c pb.ContextBoxServiceClient, err error) error {
+	config.CurrentState = config.DesiredState // Update currentState
+	config.ErrorMessage = err.Error()
+	errSave := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
+	if errSave != nil {
+		return fmt.Errorf("error while saving the config: %v", err)
+	}
+	return nil
+}
+
 // processConfig is function used to carry out task specific to Builder concurrently
-func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, tmp bool) (err error) {
+func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig bool) (err error) {
 	log.Info().Msgf("processConfig received config: %s", config.GetName())
+	// call Terraformer to build infra
 	currentState, desiredState, err := callTerraformer(config.GetCurrentState(), config.GetDesiredState())
 	if err != nil {
-		config.CurrentState = config.DesiredState // Update currentState
-		// save error message to config
-		config.ErrorMessage = err.Error()
-		errSave := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
-		if errSave != nil {
-			return fmt.Errorf("error while saving the config: %v", err)
+		err1 := saveErrorMessage(config, c, err)
+		if err1 != nil {
+			return fmt.Errorf("error in Terraformer: %v; unable to save error message config: %v", err, err1)
 		}
 		return fmt.Errorf("error in Terraformer: %v", err)
 	}
 	config.CurrentState = currentState
 	config.DesiredState = desiredState
-
+	// call Wireguardian to build VPN
 	desiredState, err = callWireguardian(config.GetDesiredState())
 	if err != nil {
-		config.CurrentState = config.DesiredState // Update currentState
-		// save error message to config
-		config.ErrorMessage = err.Error()
-		errSave := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
-		if errSave != nil {
-			return fmt.Errorf("error while saving the config: %v", err)
+		err1 := saveErrorMessage(config, c, err)
+		if err1 != nil {
+			return fmt.Errorf("error in Wireguardian: %v; unable to save error message config: %v", err, err1)
 		}
 		return fmt.Errorf("error in Wireguardian: %v", err)
 	}
 	config.DesiredState = desiredState
-
+	// call Kube-eleven to create K8s clusters
 	desiredState, err = callKubeEleven(config.GetDesiredState())
 	if err != nil {
-		config.CurrentState = config.DesiredState // Update currentState
-		// save error message to config
-		config.ErrorMessage = err.Error()
-		errSave := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
-		if errSave != nil {
-			return fmt.Errorf("error while saving the config: %v", err)
+		err1 := saveErrorMessage(config, c, err)
+		if err1 != nil {
+			return fmt.Errorf("error in KubeEleven: %v; unable to save error message config: %v", err, err1)
 		}
 		return fmt.Errorf("error in KubeEleven: %v", err)
 	}
 	config.DesiredState = desiredState
 
-	if !tmp {
+	if !isTmpConfig {
+		log.Info().Msgf("Saving the temporary config")
 		config.CurrentState = config.DesiredState // Update currentState
-		errSave := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
-		if errSave != nil {
-			return fmt.Errorf("error while saving the config: %v", err)
+		err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
+		if err != nil {
+			return fmt.Errorf("error while saving the tmpConfig: %v", err)
 		}
 	}
 
