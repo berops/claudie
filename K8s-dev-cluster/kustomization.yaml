@@ -1,8 +1,8 @@
 namespace: test
-#- terraformer.yaml # testing
 resources:
 - mongodb.yaml
 - context-box.yaml
+- terraformer.yaml
 - wireguardian.yaml
 - scheduler.yaml
 - builder.yaml
