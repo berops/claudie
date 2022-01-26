@@ -25,6 +25,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/health/grpc_health_v1"
@@ -225,7 +226,8 @@ func configCheck() error {
 
 		// check for Scheduler
 		if string(config.DsChecksum) != string(config.MsChecksum) {
-			if config.SchedulerTTL <= 0 {
+			// if scheduler ttl is 0 or smaller AND config has no errorMessage, add to scheduler Q
+			if config.SchedulerTTL <= 0 && len(config.ErrorMessage) == 0 {
 				config.SchedulerTTL = defaultSchedulerTTL
 
 				c, err := dataToConfigPb(config)
@@ -245,7 +247,8 @@ func configCheck() error {
 
 		// check for Builder
 		if string(config.DsChecksum) != string(config.CsChecksum) {
-			if config.BuilderTTL <= 0 {
+			// if builder ttl is 0 or smaller AND config has no errorMessage, add to builder Q
+			if config.BuilderTTL <= 0 && len(config.ErrorMessage) == 0 {
 				config.BuilderTTL = defaultBuilderTTL
 
 				c, err := dataToConfigPb(config)
@@ -316,7 +319,7 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 		return nil, err
 	}
 	if !compareChecksums(string(config.MsChecksum), string(data.MsChecksum)) {
-		return nil, nil
+		return nil, fmt.Errorf("MsChecksum are not equal")
 	}
 
 	// Save new config to the DB
@@ -380,7 +383,7 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 		return nil, err
 	}
 	if !compareChecksums(string(config.MsChecksum), string(data.MsChecksum)) {
-		return nil, nil
+		return nil, fmt.Errorf("MsChecksums are not equal")
 	}
 
 	// Save new config to the DB
@@ -546,23 +549,31 @@ func main() {
 	// initialize logger
 	utils.InitLog("context-box", "GOLANG_LOG")
 
-	// Connect to MongoDB
-	client, err := mongo.NewClient(options.Client().ApplyURI(urls.DatabaseURL)) //client represents connection object do db
+	ctx, cancel := context.WithTimeout(context.Background(),
+		5*time.Second)
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(urls.DatabaseURL))
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Error().Msgf("Unable to connect to MongoDB at %s", urls.DatabaseURL)
+		cancel()
+		panic(err)
 	}
-	err = client.Connect(context.TODO())
-	if err != nil {
-		log.Fatal().Err(err)
-	}
-	log.Info().Msgf("Connected to MongoDB at %s", urls.DatabaseURL)
-	collection = client.Database("platform").Collection("config")
+	// closing MongoDB connection
 	defer func() {
-		// closing MongoDB connection
-		if err := client.Disconnect(context.TODO()); err != nil {
+		if err = client.Disconnect(ctx); err != nil {
 			log.Fatal().Msgf("Error closing MongoDB connection: %v", err)
+			cancel()
+			panic(err)
 		}
 	}()
+	// Ping the primary
+	if err := client.Ping(ctx, readpref.Primary()); err != nil {
+		log.Fatal().Msgf("Unable to ping database: %v", err)
+		cancel()
+		panic(err)
+	}
+
+	log.Info().Msgf("Connected to MongoDB at %s", urls.DatabaseURL)
+	collection = client.Database("platform").Collection("config")
 	// Set the context-box port
 	contextboxPort := utils.GetenvOr("CONTEXT_BOX_PORT", fmt.Sprint(defaultContextBoxPort))
 
