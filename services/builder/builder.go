@@ -49,7 +49,7 @@ func callTerraformer(currentState *pb.Project, desiredState *pb.Project) (*pb.Pr
 		DesiredState: desiredState,
 	})
 	if err != nil {
-		return currentState, desiredState, err
+		return nil, nil, err
 	}
 
 	return res.GetCurrentState(), res.GetDesiredState(), nil
@@ -65,7 +65,7 @@ func callWireguardian(desiredState *pb.Project) (*pb.Project, error) {
 	c := pb.NewWireguardianServiceClient(cc)
 	res, err := wireguardian.BuildVPN(c, &pb.BuildVPNRequest{DesiredState: desiredState})
 	if err != nil {
-		return res.GetDesiredState(), err
+		return nil, err
 	}
 
 	return res.GetDesiredState(), nil
@@ -81,7 +81,7 @@ func callKubeEleven(desiredState *pb.Project) (*pb.Project, error) {
 	c := pb.NewKubeElevenServiceClient(cc)
 	res, err := kubeEleven.BuildCluster(c, &pb.BuildClusterRequest{DesiredState: desiredState})
 	if err != nil {
-		return res.GetDesiredState(), err
+		return nil, err
 	}
 
 	return res.GetDesiredState(), nil
@@ -117,7 +117,7 @@ func diff(config *pb.Config) (*pb.Config, bool, map[string]*nodesToDelete) {
 			key := tableKey{nodePoolName: nodePool.Name, clusterName: cluster.Name}
 
 			if _, ok := tableCurrent[key]; ok {
-				tmpNodePool := getNodePoolByName(nodePool.Name, utils.GetClusterByName(cluster.Name, tmpConfigClusters).GetNodePools())
+				tmpNodePool := utils.GetNodePoolByName(nodePool.Name, utils.GetClusterByName(cluster.Name, tmpConfigClusters).GetNodePools())
 				if nodePool.Count > tableCurrent[key].Count {
 					tmpNodePool.Count = nodePool.Count
 					adding = true
@@ -142,7 +142,7 @@ func diff(config *pb.Config) (*pb.Config, bool, map[string]*nodesToDelete) {
 			if cluster != nil {
 				currentCluster := utils.GetClusterByName(key.clusterName, tmpConfig.CurrentState.Clusters)
 				log.Info().Interface("currentCluster", currentCluster)
-				cluster.NodePools = append(cluster.NodePools, getNodePoolByName(key.nodePoolName, currentCluster.GetNodePools()))
+				cluster.NodePools = append(cluster.NodePools, utils.GetNodePoolByName(key.nodePoolName, currentCluster.GetNodePools()))
 				deleting = true
 			}
 		}
@@ -158,23 +158,9 @@ func diff(config *pb.Config) (*pb.Config, bool, map[string]*nodesToDelete) {
 	}
 }
 
-// getNodePoolByName will return first Nodepool that will have same name as specified in parameters
-// If no name is found, return nil
-func getNodePoolByName(nodePoolName string, nodePools []*pb.NodePool) *pb.NodePool {
-	if nodePoolName == "" {
-		return nil
-	}
-	for _, np := range nodePools {
-		if np.Name == nodePoolName {
-			return np
-		}
-	}
-	return nil
-}
-
 // function saveErrorMessage saves error message to config
 func saveErrorMessage(config *pb.Config, c pb.ContextBoxServiceClient, err error) error {
-	config.CurrentState = config.DesiredState // Update currentState
+	config.CurrentState = config.DesiredState // Update currentState, so we can use it for deletion later
 	config.ErrorMessage = err.Error()
 	errSave := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 	if errSave != nil {
@@ -219,11 +205,11 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig 
 	config.DesiredState = desiredState
 
 	if !isTmpConfig {
-		log.Info().Msgf("Saving the temporary config")
+		log.Info().Msgf("Saving the config %s", config.GetName())
 		config.CurrentState = config.DesiredState // Update currentState
 		err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 		if err != nil {
-			return fmt.Errorf("error while saving the tmpConfig: %v", err)
+			return fmt.Errorf("error while saving the config %s: %v", config.GetName(), err)
 		}
 	}
 
