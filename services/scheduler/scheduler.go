@@ -166,7 +166,7 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 			Name:       strings.ToLower(cluster.Name),
 			Kubernetes: cluster.Version,
 			Network:    cluster.Network,
-			Hash:       utils.CreateHash(7),
+			Hash:       utils.CreateHash(utils.HashLength),
 		}
 
 		var ComputeNodePools, ControlNodePools []*pb.NodePool
