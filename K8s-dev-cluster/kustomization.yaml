@@ -1,4 +1,4 @@
-namespace: test
+namespace: claudie
 resources:
 - mongodb.yaml
 - context-box.yaml
