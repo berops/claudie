@@ -138,7 +138,12 @@ func buildClusterAsync(cluster *pb.Cluster) error {
 	if err != nil {
 		return err
 	}
-	cluster.Kubeconfig = kc
+	//check if kubeconfig is not empty
+	if len(kc) > 0 {
+		cluster.Kubeconfig = kc
+	} else {
+		fmt.Println("Empty kubeconfig ya muppet")
+	}
 
 	// Clean up
 	if err := os.RemoveAll(clusterOutputPath); err != nil {
