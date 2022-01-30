@@ -253,6 +253,7 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 				if err != nil {
 					return err
 				}
+				config.CurrentState = tmpConfig.DesiredState
 			}
 			if deleting {
 				log.Info().Msg("Deleting nodes...")
