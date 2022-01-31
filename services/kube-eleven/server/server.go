@@ -141,8 +141,6 @@ func buildClusterAsync(cluster *pb.Cluster) error {
 	//check if kubeconfig is not empty
 	if len(kc) > 0 {
 		cluster.Kubeconfig = kc
-	} else {
-		fmt.Println("Empty kubeconfig ya muppet")
 	}
 
 	// Clean up
@@ -179,7 +177,7 @@ func genKubeOneConfig(templateFilePath string, manifestFilePath string, d interf
 // runKubeOne runs kubeone with the generated manifest
 func runKubeOne(path string) error {
 	log.Info().Msgf("Running KubeOne in %s dir", path)
-	cmd := exec.Command("kubeone", "apply", "-m", "kubeone.yaml", "-y", "-v")
+	cmd := exec.Command("kubeone", "apply", "-m", "kubeone.yaml", "-y")
 	cmd.Dir = path // golang will execute command from this directory
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

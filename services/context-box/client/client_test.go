@@ -104,7 +104,7 @@ func TestSaveConfigScheduler(t *testing.T) {
 
 func TestDeleteConfig(t *testing.T) {
 	c, cc := ClientConnection()
-	configID := "61f2c5c64a40199392f84a92" //configIDDefault // Put desired config ID here
+	configID := configIDDefault // Put desired config ID here
 	delErr := DeleteConfig(c, configID)
 	if delErr != nil {
 		log.Fatal().Msgf("Error deleting config %s %v", configID, delErr)
