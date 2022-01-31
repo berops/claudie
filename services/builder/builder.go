@@ -304,13 +304,13 @@ func deleteNodes(config *pb.Config, toDelete map[string]*nodesToDelete) (*pb.Con
 						val.Count--
 						nodesToDelete = append(nodesToDelete, nodepool.Nodes[i].GetName())
 						etcdToDelete = append(etcdToDelete, nodepool.Nodes[i].GetName())
-						fmt.Printf("Choosing Master node %s, with public IP %s, private IP %s for deletion\n", nodepool.Nodes[i].GetName(), nodepool.Nodes[i].GetPublic(), nodepool.Nodes[i].GetPrivate())
+						log.Info().Msgf("Choosing Master node %s, with public IP %s, private IP %s for deletion\n", nodepool.Nodes[i].GetName(), nodepool.Nodes[i].GetPublic(), nodepool.Nodes[i].GetPrivate())
 						continue
 					}
 					if nodepool.Nodes[i].IsControl == 0 {
 						val.Count--
 						nodesToDelete = append(nodesToDelete, nodepool.Nodes[i].GetName())
-						fmt.Printf("Choosing Worker node %s, with public IP %s, private IP %s for deletion\n", nodepool.Nodes[i].GetName(), nodepool.Nodes[i].GetPublic(), nodepool.Nodes[i].GetPrivate())
+						log.Info().Msgf("Choosing Worker node %s, with public IP %s, private IP %s for deletion\n", nodepool.Nodes[i].GetName(), nodepool.Nodes[i].GetPublic(), nodepool.Nodes[i].GetPrivate())
 						continue
 					}
 				}

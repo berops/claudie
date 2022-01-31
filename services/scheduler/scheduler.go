@@ -212,7 +212,6 @@ clusterDesired:
 					clusterDesired.Kubeconfig = clusterCurrent.Kubeconfig
 				}
 			}
-			fmt.Printf("Desired state for cluster %s, has a kube-config %s\n", clusterDesired.Name, clusterDesired.Kubeconfig)
 			//skip the checks bellow
 			continue clusterDesired
 		}
@@ -225,8 +224,6 @@ clusterDesired:
 		if clusterDesired.Hash == "" {
 			clusterDesired.Hash = utils.CreateHash(utils.HashLength)
 		}
-		fmt.Printf("No current state for cluster %s\n", clusterDesired.Name)
-		fmt.Printf("Desired state for cluster %s, has a kube-config %s\n", clusterDesired.Name, clusterDesired.Kubeconfig)
 	}
 
 	return res, nil
