@@ -196,6 +196,7 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 		SchedulerTTL: config.GetSchedulerTTL(),
 	}
 
+clusterDesired:
 	for _, clusterDesired := range res.DesiredState.Clusters {
 		for _, clusterCurrent := range res.CurrentState.Clusters {
 			// found current cluster with matching name
@@ -207,7 +208,12 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 				if clusterCurrent.Hash != "" {
 					clusterDesired.Hash = clusterCurrent.Hash
 				}
+				if clusterCurrent.Kubeconfig != "" {
+					clusterDesired.Kubeconfig = clusterCurrent.Kubeconfig
+				}
 			}
+			//skip the checks bellow
+			continue clusterDesired
 		}
 		// no current cluster found with matching name, create keys/hash
 		if clusterDesired.PublicKey == "" {
