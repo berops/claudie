@@ -13,7 +13,7 @@ services:
   
   
   builder: 
-    image: eu.gcr.io/platform-infrastructure-316112/platform/builder:docker-compose
+    image: eu.gcr.io/platform-infrastructure-316112/platform/builder
     build:
       context: .
       dockerfile: "./services/builder/Dockerfile"
@@ -29,7 +29,7 @@ services:
   
   
   terraformer: 
-    image: eu.gcr.io/platform-infrastructure-316112/platform/terraformer:docker-compose
+    image: eu.gcr.io/platform-infrastructure-316112/platform/terraformer
     build:
       context: .
       dockerfile: ./services/terraformer/Dockerfile
@@ -45,7 +45,7 @@ services:
   
   
   wireguardian: 
-    image: eu.gcr.io/platform-infrastructure-316112/platform/wireguardian:docker-compose
+    image: eu.gcr.io/platform-infrastructure-316112/platform/wireguardian
     build:
       context: .
       dockerfile: ./services/wireguardian/Dockerfile
@@ -61,7 +61,7 @@ services:
   
   
   kube-eleven: 
-    image: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven:docker-compose
+    image: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven
     build:
       context: .
       dockerfile: ./services/kube-eleven/Dockerfile
@@ -77,7 +77,7 @@ services:
   
   
   context-box: 
-    image: eu.gcr.io/platform-infrastructure-316112/platform/context-box:docker-compose
+    image: eu.gcr.io/platform-infrastructure-316112/platform/context-box
     build:
       context: .
       dockerfile: ./services/context-box/Dockerfile
@@ -93,7 +93,7 @@ services:
   
   
   scheduler: 
-    image: eu.gcr.io/platform-infrastructure-316112/platform/scheduler:docker-compose
+    image: eu.gcr.io/platform-infrastructure-316112/platform/scheduler
     build:
       context: .
       dockerfile: ./services/scheduler/Dockerfile
