@@ -35,6 +35,11 @@ type nodesToDelete struct {
 	nodes map[string]*countsToDelete // [provider]nodes
 }
 
+type etcdNodeInfo struct {
+	nodeName string
+	nodeHash string
+}
+
 func callTerraformer(currentState *pb.Project, desiredState *pb.Project) (*pb.Project, *pb.Project, error) {
 	// Create connection to Terraformer
 	cc, err := utils.GrpcDialWithInsecure("terraformer", urls.TerraformerURL)
@@ -171,7 +176,7 @@ func saveErrorMessage(config *pb.Config, c pb.ContextBoxServiceClient, err error
 
 // processConfig is function used to carry out task specific to Builder concurrently
 func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig bool) (err error) {
-	log.Info().Msgf("processConfig received config: %s", config.GetName())
+	log.Info().Msgf("processConfig received config: %s, is tmpConfig: %t", config.GetName(), isTmpConfig)
 	// call Terraformer to build infra
 	currentState, desiredState, err := callTerraformer(config.GetCurrentState(), config.GetDesiredState())
 	if err != nil {
@@ -237,6 +242,7 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 				if err != nil {
 					return err
 				}
+				config.CurrentState = tmpConfig.DesiredState
 			}
 			if deleting {
 				log.Info().Msg("Deleting nodes...")
@@ -287,14 +293,15 @@ func deleteNodes(config *pb.Config, toDelete map[string]*nodesToDelete) (*pb.Con
 						val.Count--
 						nodesToDelete = append(nodesToDelete, nodepool.Nodes[i].GetName())
 						etcdToDelete = append(etcdToDelete, nodepool.Nodes[i].GetName())
+						log.Info().Msgf("Choosing Master node %s, with public IP %s, private IP %s for deletion\n", nodepool.Nodes[i].GetName(), nodepool.Nodes[i].GetPublic(), nodepool.Nodes[i].GetPrivate())
 						continue
 					}
 					if nodepool.Nodes[i].IsControl == 0 {
 						val.Count--
 						nodesToDelete = append(nodesToDelete, nodepool.Nodes[i].GetName())
+						log.Info().Msgf("Choosing Worker node %s, with public IP %s, private IP %s for deletion\n", nodepool.Nodes[i].GetName(), nodepool.Nodes[i].GetPublic(), nodepool.Nodes[i].GetPrivate())
 						continue
 					}
-
 				}
 			}
 		}
@@ -374,10 +381,12 @@ func deleteEtcd(cluster *pb.Cluster, etcdToDelete []string) error {
 	// with etcd and get output of all etcd members
 	prepCmd := fmt.Sprintf("kubectl --kubeconfig <(echo '%s') -n kube-system exec -i etcd-%s -- /bin/sh -c ",
 		cluster.GetKubeconfig(), mainMasterNode.Name)
+
 	exportCmd := "export ETCDCTL_API=3 && " +
 		"export ETCDCTL_CACERT=/etc/kubernetes/pki/etcd/ca.crt && " +
 		"export ETCDCTL_CERT=/etc/kubernetes/pki/etcd/healthcheck-client.crt && " +
 		"export ETCDCTL_KEY=/etc/kubernetes/pki/etcd/healthcheck-client.key"
+
 	cmd := fmt.Sprintf("%s \" %s && etcdctl member list \"", prepCmd, exportCmd)
 	output, err := exec.Command("bash", "-c", cmd).CombinedOutput()
 	if err != nil {
@@ -386,21 +395,29 @@ func deleteEtcd(cluster *pb.Cluster, etcdToDelete []string) error {
 		return err
 	}
 	// Convert output into []string, each line of output is a separate string
-	etcdStrings := strings.Fields(string(output))
+	etcdStrings := strings.Split(string(output), "\n")
+	//delete last entry - empty \n
+	if len(etcdStrings) > 0 {
+		etcdStrings = etcdStrings[:len(etcdStrings)-1]
+	}
 	// Example etcdNodesOutput:
 	// 3ea84f69be8336f3, started, test2-cluster-name1-hetzner-control-2, https://192.168.2.2:2380, https://192.168.2.2:2379, false
 	// 56c921bc723229ec, started, test2-cluster-name1-hetzner-control-1, https://192.168.2.1:2380, https://192.168.2.1:2379, false
-	// Trim "," from every string
-	var etcdStringsTrimmed []string
-	for _, s := range etcdStrings {
-		s = strings.TrimSuffix(s, ",")
-		etcdStringsTrimmed = append(etcdStringsTrimmed, s)
+	var etcdNodeInfos []etcdNodeInfo
+
+	for _, etcdString := range etcdStrings {
+		etcdStringTokenized := strings.Split(etcdString, ", ")
+		if len(etcdStringTokenized) > 0 {
+			temp := etcdNodeInfo{etcdStringTokenized[2] /*name*/, etcdStringTokenized[0] /*hash*/}
+			etcdNodeInfos = append(etcdNodeInfos, temp)
+		}
 	}
 	// Remove etcd members that are in etcdToDelete, you need to know an etcd node hash to be able to remove a member
 	for _, nodeName := range etcdToDelete {
-		for i, s := range etcdStringsTrimmed {
-			if nodeName == s {
-				cmd = fmt.Sprintf("%s \" %s && etcdctl member remove %s \"", prepCmd, exportCmd, etcdStringsTrimmed[i-2])
+		for _, etcdNode := range etcdNodeInfos {
+			if nodeName == etcdNode.nodeName {
+				log.Info().Msgf("Removing node %s, with hash %s \n", etcdNode.nodeName, etcdNode.nodeHash)
+				cmd = fmt.Sprintf("%s \" %s && etcdctl member remove %s \"", prepCmd, exportCmd, etcdNode.nodeHash)
 				_, err := exec.Command("bash", "-c", cmd).CombinedOutput()
 				if err != nil {
 					log.Error().Msgf("Error while etcdctl member remove: %v", err)

@@ -20,7 +20,7 @@ nodePools:
       hetzner:
         region: nbg1
         zone: nbg1-dc3
-    count: 2
+    count: 4
     server_type: cpx11
     image: ubuntu-20.04
     disk_size: 50

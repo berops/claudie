@@ -2,8 +2,8 @@ FROM golang:1.16 AS build
 
 # download and unzip kube-one binary
 RUN apt-get update && apt-get install unzip
-RUN wget https://github.com/kubermatic/kubeone/releases/download/v1.2.3/kubeone_1.2.3_linux_amd64.zip
-RUN unzip kubeone_1.2.3_linux_amd64.zip -d kubeone_1.2.3_linux_amd64
+RUN wget https://github.com/kubermatic/kubeone/releases/download/v1.3.3/kubeone_1.3.3_linux_amd64.zip
+RUN unzip kubeone_1.3.3_linux_amd64.zip -d kubeone_1.3.3_linux_amd64
 #Unset the GOPATH
 ENV GOPATH=
 
@@ -40,7 +40,7 @@ RUN CGO_ENABLED=0 go build
 
 FROM alpine
 
-COPY --from=build /go/kubeone_1.2.3_linux_amd64/kubeone /usr/local/bin
+COPY --from=build /go/kubeone_1.3.3_linux_amd64/kubeone /usr/local/bin
 COPY --from=build /go/services/kube-eleven /bin/services/kube-eleven
 COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
 COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Liveness
