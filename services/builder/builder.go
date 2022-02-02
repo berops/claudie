@@ -349,7 +349,7 @@ func deleteNodes(config *pb.Config, toDelete map[string]*nodesToDelete) (*pb.Con
 func deleteNodesByName(cluster *pb.Cluster, nodesToDelete []string) error {
 
 	// get node name
-	nodesQueryCmd := fmt.Sprintf("kubectl --kubeconfig <(echo \"%s\") get nodes -A --no-headers -o custom-columns=\":metadata.name\" ", cluster.GetKubeconfig())
+	nodesQueryCmd := fmt.Sprintf("kubectl --kubeconfig <(echo \"%s\") get nodes -n kube-system --no-headers -o custom-columns=\":metadata.name\" ", cluster.GetKubeconfig())
 	output, err := exec.Command("bash", "-c", nodesQueryCmd).CombinedOutput()
 	if err != nil {
 		log.Error().Msgf("Failed to get list of nodes ")
@@ -415,7 +415,7 @@ func deleteEtcd(cluster *pb.Cluster, etcdToDelete []string) error {
 	}
 
 	// get etcd pods name
-	podsQueryCmd := fmt.Sprintf("kubectl --kubeconfig <(echo \"%s\") get pods -A --no-headers -o custom-columns=\":metadata.name\" | grep etcd-%s", cluster.GetKubeconfig(), mainMasterNode.Name)
+	podsQueryCmd := fmt.Sprintf("kubectl --kubeconfig <(echo \"%s\") get pods -n kube-system --no-headers -o custom-columns=\":metadata.name\" | grep etcd-%s", cluster.GetKubeconfig(), mainMasterNode.Name)
 	output, err := exec.Command("bash", "-c", podsQueryCmd).CombinedOutput()
 	if err != nil {
 		log.Error().Msgf("Failed to get list of pods with name: etcd-%s", mainMasterNode.Name)
