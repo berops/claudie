@@ -15,7 +15,7 @@ nodePools:
         zone: europe-west1-c
     count: 1
     server_type: e2-small
-    image: ubuntu-20.04
+    image: ubuntu-os-cloud/ubuntu-2004-lts
     disk_size: 50    
   - name: gcp-k8s-compute-target-1
     provider: 
@@ -24,7 +24,7 @@ nodePools:
         zone: europe-west1-c
     count: 1
     server_type: e2-small
-    image: ubuntu-20.04
+    image: ubuntu-os-cloud/ubuntu-2004-lts
     disk_size: 50
   - name: hetzner-k8s-compute-large-1
     provider:

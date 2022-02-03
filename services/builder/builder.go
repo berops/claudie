@@ -347,26 +347,52 @@ func deleteNodes(config *pb.Config, toDelete map[string]*nodesToDelete) (*pb.Con
 
 // deleteNodesByName checks if there is any difference in nodes between a desired state cluster and a running cluster
 func deleteNodesByName(cluster *pb.Cluster, nodesToDelete []string) error {
+
+	// get node name
+	nodesQueryCmd := fmt.Sprintf("kubectl --kubeconfig <(echo \"%s\") get nodes -n kube-system --no-headers -o custom-columns=\":metadata.name\" ", cluster.GetKubeconfig())
+	output, err := exec.Command("bash", "-c", nodesQueryCmd).CombinedOutput()
+	if err != nil {
+		log.Error().Msgf("Failed to get list of nodes ")
+		return err
+	}
+
+	// parse list of pods returned
+	nodeNames := strings.Split(string(output), "\n")
+
 	//kubectl drain <node-name> --ignore-daemonsets --delete-local-data ,all diffNodes
-	for _, node := range nodesToDelete {
-		log.Info().Msgf("kubectl drain %s --ignore-daemonsets --delete-local-data", node)
-		cmd := fmt.Sprintf("kubectl drain %s --ignore-daemonsets --delete-local-data --kubeconfig <(echo '%s')", node, cluster.GetKubeconfig())
-		res, err := exec.Command("bash", "-c", cmd).CombinedOutput()
-		if err != nil {
-			log.Error().Msgf("Error while draining node %s : %v", node, err)
-			log.Error().Bytes("result", res)
-			return err
+	for _, nodeNameSubString := range nodesToDelete {
+		nodeName, found := searchNodeNames(nodeNames, nodeNameSubString)
+		if found {
+			log.Info().Msgf("kubectl drain %s --ignore-daemonsets --delete-local-data", nodeName)
+			cmd := fmt.Sprintf("kubectl drain %s --ignore-daemonsets --delete-local-data --kubeconfig <(echo '%s')", nodeName, cluster.GetKubeconfig())
+			res, err := exec.Command("bash", "-c", cmd).CombinedOutput()
+			if err != nil {
+				log.Error().Msgf("Error while draining node %s : %v", nodeName, err)
+				log.Error().Bytes("result", res)
+				return err
+			}
+		} else {
+			log.Error().Msgf("Node name that contains \"%s\" no found ", nodeNameSubString)
+			return fmt.Errorf("no node with name %s found ", nodeNameSubString)
 		}
+
 	}
 
 	//kubectl delete node <node-name>
-	for _, node := range nodesToDelete {
-		log.Info().Msgf("kubectl delete node %s" + node)
-		cmd := fmt.Sprintf("kubectl delete node %s --kubeconfig <(echo '%s')", node, cluster.GetKubeconfig())
-		_, err := exec.Command("bash", "-c", cmd).CombinedOutput()
-		if err != nil {
-			log.Error().Msgf("Error while deleting node %s : %v", node, err)
-			return err
+	for _, nodeNameSubString := range nodesToDelete {
+		nodeName, found := searchNodeNames(nodeNames, nodeNameSubString)
+
+		if found {
+			log.Info().Msgf("kubectl delete node %s" + nodeName)
+			cmd := fmt.Sprintf("kubectl delete node %s --kubeconfig <(echo '%s')", nodeName, cluster.GetKubeconfig())
+			_, err := exec.Command("bash", "-c", cmd).CombinedOutput()
+			if err != nil {
+				log.Error().Msgf("Error while deleting node %s : %v", nodeName, err)
+				return err
+			}
+		} else {
+			log.Error().Msgf("Node name that contains \"%s\" no found ", nodeNameSubString)
+			return fmt.Errorf("no node with name %s found ", nodeNameSubString)
 		}
 	}
 	return nil
@@ -388,10 +414,21 @@ func deleteEtcd(cluster *pb.Cluster, etcdToDelete []string) error {
 		return fmt.Errorf("failed to find any node with IsControl value as 2")
 	}
 
+	// get etcd pods name
+	podsQueryCmd := fmt.Sprintf("kubectl --kubeconfig <(echo \"%s\") get pods -n kube-system --no-headers -o custom-columns=\":metadata.name\" | grep etcd-%s", cluster.GetKubeconfig(), mainMasterNode.Name)
+	output, err := exec.Command("bash", "-c", podsQueryCmd).CombinedOutput()
+	if err != nil {
+		log.Error().Msgf("Failed to get list of pods with name: etcd-%s", mainMasterNode.Name)
+		return err
+	}
+
+	// parse list of pods returned
+	podNames := strings.Split(string(output), "\n")
+
 	// Execute into the working etcd container and setup client TLS authentication in order to be able to communicate
 	// with etcd and get output of all etcd members
-	prepCmd := fmt.Sprintf("kubectl --kubeconfig <(echo '%s') -n kube-system exec -i etcd-%s -- /bin/sh -c ",
-		cluster.GetKubeconfig(), mainMasterNode.Name)
+	prepCmd := fmt.Sprintf("kubectl --kubeconfig <(echo '%s') -n kube-system exec -i %s -- /bin/sh -c ",
+		cluster.GetKubeconfig(), podNames[0])
 
 	exportCmd := "export ETCDCTL_API=3 && " +
 		"export ETCDCTL_CACERT=/etc/kubernetes/pki/etcd/ca.crt && " +
@@ -399,7 +436,7 @@ func deleteEtcd(cluster *pb.Cluster, etcdToDelete []string) error {
 		"export ETCDCTL_KEY=/etc/kubernetes/pki/etcd/healthcheck-client.key"
 
 	cmd := fmt.Sprintf("%s \" %s && etcdctl member list \"", prepCmd, exportCmd)
-	output, err := exec.Command("bash", "-c", cmd).CombinedOutput()
+	output, err = exec.Command("bash", "-c", cmd).CombinedOutput()
 	if err != nil {
 		log.Error().Msgf("Error while executing command %s in a working etcd container: %v", cmd, err)
 		log.Error().Msgf("prepCmd was %s", prepCmd)
@@ -440,6 +477,16 @@ func deleteEtcd(cluster *pb.Cluster, etcdToDelete []string) error {
 	}
 
 	return nil
+}
+
+func searchNodeNames(nodeNames []string, nodeNameSubString string) (string, bool) {
+	// find full nodeName for list of nodes using partial nodename
+	for _, nodeName := range nodeNames {
+		if strings.Contains(nodeName, nodeNameSubString) {
+			return nodeName, true
+		}
+	}
+	return "", false
 }
 
 func main() {
