@@ -33,8 +33,8 @@ type Manifest struct {
 	Name         string       `yaml:"name"`
 	Providers    []Provider   `yaml:"providers"`
 	NodePools    NodePool     `yaml:"nodePools"`
-	LoadBalancer LoadBalancer `yaml:"loadBalancer"`
 	Kubernetes   Kubernetes   `yaml:"kubernetes"`
+	LoadBalancer LoadBalancer `yaml:"loadBalancer"`
 }
 
 type Provider struct {
@@ -62,7 +62,6 @@ type DynamicNodePool struct {
 	Count      int64                        `yaml:"count"`
 	ServerType string                       `yaml:"server_type"`
 	Image      string                       `yaml:"image"`
-	Datacenter string                       `yaml:"datacenter"`
 	DiskSize   int64                        `yaml:"disk_size"`
 }
 
@@ -109,7 +108,7 @@ type LoadBalancerCluster struct {
 
 type DNS struct {
 	Hostname string   `yaml:"hostname"`
-	Provider []string `yaml:"provider"`
+	Provider []string `yaml:"providers"`
 }
 
 type Target struct {
@@ -180,13 +179,52 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 		clusters = append(clusters, newCluster)
 	}
 
+	var roles []*pb.Role
+	for _, role := range desiredState.LoadBalancer.Roles {
+		newRole := &pb.Role{
+			Name: role.Name,
+			Conf: &pb.Conf{
+				Protocol:   role.Conf.Protocol,
+				Port:       int32(role.Conf.Port),
+				TargetPort: int32(role.Conf.TargetPort),
+			},
+		}
+		roles = append(roles, newRole)
+	}
+
+	var lbClusters []*pb.LoadBalancerCluster
+	for _, lbCluster := range desiredState.LoadBalancer.Clusters {
+
+		newLbCluster := &pb.LoadBalancerCluster{
+			Name: lbCluster.Name,
+			Role: lbCluster.Role,
+			Dns: &pb.DNS{
+				Hostname:  lbCluster.DNS.Hostname,
+				Providers: lbCluster.DNS.Provider,
+			},
+			Target: &pb.Target{
+				Name: lbCluster.Target.Name,
+				Type: lbCluster.Target.Type,
+			},
+		}
+
+		newLbCluster.NodePools = createNodepools(lbCluster.Pools, desiredState, false)
+		lbClusters = append(lbClusters, newLbCluster)
+	}
+
+	loadBalancer := &pb.LoadBalancer{
+		Roles:      roles,
+		LbClusters: lbClusters,
+	}
+
 	res := &pb.Config{
 		Id:       config.GetId(),
 		Name:     config.GetName(),
 		Manifest: config.GetManifest(),
 		DesiredState: &pb.Project{
-			Name:     desiredState.Name,
-			Clusters: clusters,
+			Name:         desiredState.Name,
+			Clusters:     clusters,
+			Loadbalancer: loadBalancer,
 		},
 		CurrentState: config.GetCurrentState(),
 		MsChecksum:   config.GetMsChecksum(),
@@ -211,9 +249,9 @@ clusterDesired:
 				if clusterCurrent.Kubeconfig != "" {
 					clusterDesired.Kubeconfig = clusterCurrent.Kubeconfig
 				}
+				//skip the checks bellow
+				continue clusterDesired
 			}
-			//skip the checks bellow
-			continue clusterDesired
 		}
 		// no current cluster found with matching name, create keys/hash
 		if clusterDesired.PublicKey == "" {
@@ -263,6 +301,7 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient) (err error) 
 	if err != nil {
 		return fmt.Errorf("error while creating a desired state: %v", err)
 	}
+	fmt.Println(config)
 
 	log.Info().Interface("project", config.GetDesiredState())
 	err = cbox.SaveConfigScheduler(c, &pb.SaveConfigRequest{Config: config})
