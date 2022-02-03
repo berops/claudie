@@ -7,7 +7,7 @@ provider "google" {
 {{- $cluster := .Cluster}}
 
 resource "google_compute_network" "network" {
-  name                    = "{{ .Cluster.Name }}-network"
+  name                    = "{{ .Cluster.Name }}-{{.Cluster.Hash}}-network"
   auto_create_subnetworks = false
 }
 

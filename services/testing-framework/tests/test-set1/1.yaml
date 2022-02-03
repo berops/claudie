@@ -63,11 +63,29 @@ nodePools:
     server_type: cpx11
     image: ubuntu-20.04
     disk_size: 50
+  - name: gcp-control
+    provider: 
+      gcp:
+        region: europe-west1
+        zone: europe-west1-c
+    count: 2
+    server_type: e2-small
+    image: ubuntu-os-cloud/ubuntu-2004-lts
+    disk_size: 50
+  - name: gcp-compute
+    provider: 
+      gcp:
+        region: europe-west1
+        zone: europe-west1-c
+    count: 2
+    server_type: e2-small
+    image: ubuntu-os-cloud/ubuntu-2004-lts
+    disk_size: 50
 
 
 kubernetes:
   clusters:
-    - name: testset-cluster-name1
+    - name: cluster-1
       version: v1.19.0
       network: 192.168.2.0/24
       pools:
