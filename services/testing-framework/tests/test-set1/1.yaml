@@ -3,6 +3,8 @@ name: TestSetOne-1
 providers:
 - name: hetzner
   credentials: xIAfsb7M5K6etYAfXYcg5iYyrFGNlCxcICo060HVEygjoF0usFpv5P9X7pk85Xe1
+- name: gcp
+  credentials: ./need/to/save/credentials/here/key.json
 
 nodePools:
   dynamic:
@@ -24,7 +26,7 @@ nodePools:
     server_type: e2-small
     image: ubuntu-os-cloud/ubuntu-2004-lts
     disk_size: 50
-    - name: hetzner-control
+  - name: hetzner-control
     provider:
       hetzner:
         region: nbg1
