@@ -19,6 +19,7 @@ message Config {
 message Project {
   string name = 1;
   repeated Cluster clusters = 2;
+  LoadBalancer loadbalancer = 3;
 }
 
 message Cluster {
@@ -30,6 +31,40 @@ message Cluster {
   string private_key = 6;
   string hash = 7;
   repeated NodePool nodePools = 9;
+}
+
+message LoadBalancer {
+  repeated Role roles = 1;
+  repeated LoadBalancerCluster lbClusters = 2;
+}
+
+message Role {
+  string name = 1;
+  Conf conf = 2;
+}
+
+message Conf {
+  string protocol = 1;
+  int32 port = 2;
+  int32 targetPort = 3;
+}
+
+message LoadBalancerCluster {
+  string name = 1;
+  string role = 2;
+  DNS dns = 3;
+  Target target = 4;
+  repeated NodePool nodePools = 5;
+}
+
+message Target {
+  string name = 1;  //kubernetes cluster name
+  string type = 2;  
+}
+
+message DNS {
+  string hostname = 1;
+  repeated string providers = 2;
 }
 
 message NodePool {
