@@ -213,8 +213,8 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 	}
 
 	loadBalancer := &pb.LoadBalancer{
-		Roles:      roles,
-		LbClusters: lbClusters,
+		Roles:                roles,
+		LoadBalancerClusters: lbClusters,
 	}
 
 	res := &pb.Config{
@@ -261,6 +261,33 @@ clusterDesired:
 		}
 		if clusterDesired.Hash == "" {
 			clusterDesired.Hash = utils.CreateHash(utils.HashLength)
+		}
+	}
+
+clusterLbDesired:
+	for _, clusterLbDesired := range res.DesiredState.GetLoadbalancer().LoadBalancerClusters {
+		for _, clusterLbCurrent := range res.CurrentState.GetLoadbalancer().LoadBalancerClusters {
+			// found current cluster with matching name
+			if clusterLbDesired.Name == clusterLbCurrent.Name {
+				if clusterLbCurrent.PublicKey != "" {
+					clusterLbDesired.PublicKey = clusterLbCurrent.PublicKey
+					clusterLbDesired.PrivateKey = clusterLbCurrent.PrivateKey
+				}
+				if clusterLbDesired.Hash != "" {
+					clusterLbDesired.Hash = clusterLbCurrent.Hash
+				}
+				//skip the checks bellow
+				continue clusterLbDesired
+			}
+		}
+		// no current cluster found with matching name, create keys/hash
+		if clusterLbDesired.PublicKey == "" {
+			privateKey, publicKey := MakeSSHKeyPair()
+			clusterLbDesired.PrivateKey = privateKey
+			clusterLbDesired.PublicKey = publicKey
+		}
+		if clusterLbDesired.Hash == "" {
+			clusterLbDesired.Hash = utils.CreateHash(utils.HashLength)
 		}
 	}
 

@@ -35,7 +35,7 @@ message Cluster {
 
 message LoadBalancer {
   repeated Role roles = 1;
-  repeated LoadBalancerCluster lbClusters = 2;
+  repeated LoadBalancerCluster loadBalancerClusters = 2;
 }
 
 message Role {
@@ -55,6 +55,9 @@ message LoadBalancerCluster {
   DNS dns = 3;
   Target target = 4;
   repeated NodePool nodePools = 5;
+  string public_key = 6;
+  string private_key = 7;
+  string hash = 8;
 }
 
 message Target {
