@@ -42,7 +42,7 @@ func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVP
 
 	for _, cluster := range desiredState.GetClusters() {
 		// to pass the parameter in loop, we need to create a dummy fuction
-		func(cluster *pb.Cluster) {
+		func(cluster *pb.K8Scluster) {
 			errGroup.Go(func() error {
 				err := buildVPNAsync(cluster)
 				if err != nil {
@@ -61,13 +61,13 @@ func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVP
 	return &pb.BuildVPNResponse{DesiredState: desiredState}, nil
 }
 
-func buildVPNAsync(cluster *pb.Cluster) error {
-	if err := genPrivAdd(cluster.GetNodePools(), cluster.GetNetwork()); err != nil {
+func buildVPNAsync(cluster *pb.K8Scluster) error {
+	if err := genPrivAdd(cluster.ClusterInfo.GetNodePools(), cluster.GetNetwork()); err != nil {
 		return err
 	}
 
-	invOutputPath := filepath.Join(outputPath, cluster.GetName()+"-"+cluster.GetHash())
-	if err := genInv(cluster.GetNodePools(), invOutputPath); err != nil {
+	invOutputPath := filepath.Join(outputPath, cluster.ClusterInfo.GetName()+"-"+cluster.ClusterInfo.GetHash())
+	if err := genInv(cluster.ClusterInfo.GetNodePools(), invOutputPath); err != nil {
 		return err
 	}
 
@@ -161,8 +161,8 @@ func genInv(nodepools []*pb.NodePool, path string) error {
 	return nil
 }
 
-func runAnsible(cluster *pb.Cluster, invOutputPath string) error {
-	if err := utils.CreateKeyFile(cluster.GetPrivateKey(), invOutputPath, sslPrivateKeyFile); err != nil {
+func runAnsible(cluster *pb.K8Scluster, invOutputPath string) error {
+	if err := utils.CreateKeyFile(cluster.ClusterInfo.GetPrivateKey(), invOutputPath, sslPrivateKeyFile); err != nil {
 		return err
 	}
 
@@ -170,7 +170,7 @@ func runAnsible(cluster *pb.Cluster, invOutputPath string) error {
 		return err
 	}
 
-	cmd := exec.Command("ansible-playbook", playbookFile, "-i", cluster.Name+"-"+cluster.Hash+"/"+inventoryFile, "-f", "20", "--private-key", cluster.Name+"-"+cluster.Hash+"/"+sslPrivateKeyFile)
+	cmd := exec.Command("ansible-playbook", playbookFile, "-i", cluster.ClusterInfo.Name+"-"+cluster.ClusterInfo.Hash+"/"+inventoryFile, "-f", "20", "--private-key", cluster.ClusterInfo.Name+"-"+cluster.ClusterInfo.Hash+"/"+sslPrivateKeyFile)
 	cmd.Dir = outputPath
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

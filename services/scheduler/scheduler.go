@@ -34,7 +34,7 @@ type Manifest struct {
 	Providers    []Provider   `yaml:"providers"`
 	NodePools    NodePool     `yaml:"nodePools"`
 	Kubernetes   Kubernetes   `yaml:"kubernetes"`
-	LoadBalancer LoadBalancer `yaml:"loadBalancer"`
+	LoadBalancer LoadBalancer `yaml:"loadBalancers"`
 }
 
 type Provider struct {
@@ -88,8 +88,11 @@ type Pool struct {
 }
 
 type Role struct {
-	Name string `yaml:"name"`
-	Conf Conf   `yaml:"conf"`
+	Name       string `yaml:"name"`
+	Protocol   string `yaml:"protocol"`
+	Port       string `yaml:"port"`
+	TargetPort string `yaml:"target_port"`
+	Target     string `yaml:"target"`
 }
 
 type Conf struct {
@@ -99,21 +102,16 @@ type Conf struct {
 }
 
 type LoadBalancerCluster struct {
-	Name   string   `yaml:"name"`
-	Role   string   `yaml:"role"`
-	DNS    DNS      `yaml:"dns"`
-	Target Target   `yaml:"target"`
-	Pools  []string `yaml:"pools"`
+	Name        string   `yaml:"name"`
+	Role        []string `yaml:"role"`
+	DNS         DNS      `yaml:"dns"`
+	TargetedK8s []string `yaml:"targeted-k8s"`
+	Pools       []string `yaml:"pools"`
 }
 
 type DNS struct {
 	Hostname string   `yaml:"hostname"`
 	Provider []string `yaml:"providers"`
-}
-
-type Target struct {
-	Name string `yaml:"name"`
-	Type string `yaml:"type"`
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -158,14 +156,16 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 		return nil, fmt.Errorf("error while unmarshalling yaml manifest: %v", err)
 	}
 
-	var clusters []*pb.Cluster
+	var clusters []*pb.K8Scluster
 	for _, cluster := range desiredState.Kubernetes.Clusters {
 
-		newCluster := &pb.Cluster{
-			Name:       strings.ToLower(cluster.Name),
+		newCluster := &pb.K8Scluster{
+			ClusterInfo: &pb.ClusterInfo{
+				Name: strings.ToLower(cluster.Name),
+				Hash: utils.CreateHash(utils.HashLength),
+			},
 			Kubernetes: cluster.Version,
 			Network:    cluster.Network,
-			Hash:       utils.CreateHash(7),
 		}
 
 		var ComputeNodePools, ControlNodePools []*pb.NodePool
@@ -175,56 +175,57 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 		// compute nodepools
 		ComputeNodePools = createNodepools(cluster.Pools.Compute, desiredState, false)
 
-		newCluster.NodePools = append(ControlNodePools, ComputeNodePools...)
+		newCluster.ClusterInfo.NodePools = append(ControlNodePools, ComputeNodePools...)
 		clusters = append(clusters, newCluster)
 	}
+	/*
+		var roles []*pb.Role
 
-	var roles []*pb.Role
-	for _, role := range desiredState.LoadBalancer.Roles {
-		newRole := &pb.Role{
-			Name: role.Name,
-			Conf: &pb.Conf{
-				Protocol:   role.Conf.Protocol,
-				Port:       int32(role.Conf.Port),
-				TargetPort: int32(role.Conf.TargetPort),
-			},
-		}
-		roles = append(roles, newRole)
-	}
+					for _, role := range desiredState.LoadBalancer.Roles {
+						newRole := &pb.Role{
+							Name: role.Name,
+							Conf: &pb.Conf{
+								Protocol:   role.Conf.Protocol,
+								Port:       int32(role.Conf.Port),
+								TargetPort: int32(role.Conf.TargetPort),
+							},
+						}
+						roles = append(roles, newRole)
+					}
 
-	var lbClusters []*pb.LoadBalancerCluster
-	for _, lbCluster := range desiredState.LoadBalancer.Clusters {
+				var lbClusters []*pb.LoadBalancerCluster
+				for _, lbCluster := range desiredState.LoadBalancer.Clusters {
 
-		newLbCluster := &pb.LoadBalancerCluster{
-			Name: lbCluster.Name,
-			Role: lbCluster.Role,
-			Dns: &pb.DNS{
-				Hostname:  lbCluster.DNS.Hostname,
-				Providers: lbCluster.DNS.Provider,
-			},
-			Target: &pb.Target{
-				Name: lbCluster.Target.Name,
-				Type: lbCluster.Target.Type,
-			},
-		}
+					newLbCluster := &pb.LoadBalancerCluster{
+						Name: lbCluster.Name,
+						Role: lbCluster.Role,
+						Dns: &pb.DNS{
+							Hostname:  lbCluster.DNS.Hostname,
+							Providers: lbCluster.DNS.Provider,
+						},
+						Target: &pb.Target{
+							Name: lbCluster.Target.Name,
+							Type: lbCluster.Target.Type,
+						},
+					}
 
-		newLbCluster.NodePools = createNodepools(lbCluster.Pools, desiredState, false)
-		lbClusters = append(lbClusters, newLbCluster)
-	}
+					newLbCluster.ClusterInfo.NodePools = createNodepools(lbCluster.Pools, desiredState, false)
+					lbClusters = append(lbClusters, newLbCluster)
+				}
 
-	loadBalancer := &pb.LoadBalancer{
-		Roles:                roles,
-		LoadBalancerClusters: lbClusters,
-	}
+			loadBalancer := &pb.LoadBalancer{
+				Roles:                roles,
+				LoadBalancerClusters: lbClusters,
+			}*/
 
 	res := &pb.Config{
 		Id:       config.GetId(),
 		Name:     config.GetName(),
 		Manifest: config.GetManifest(),
 		DesiredState: &pb.Project{
-			Name:         desiredState.Name,
-			Clusters:     clusters,
-			Loadbalancer: loadBalancer,
+			Name:     desiredState.Name,
+			Clusters: clusters,
+			//Loadbalancer: loadBalancer,
 		},
 		CurrentState: config.GetCurrentState(),
 		MsChecksum:   config.GetMsChecksum(),
@@ -238,13 +239,13 @@ clusterDesired:
 	for _, clusterDesired := range res.DesiredState.Clusters {
 		for _, clusterCurrent := range res.CurrentState.Clusters {
 			// found current cluster with matching name
-			if clusterDesired.Name == clusterCurrent.Name {
-				if clusterCurrent.PublicKey != "" {
-					clusterDesired.PublicKey = clusterCurrent.PublicKey
-					clusterDesired.PrivateKey = clusterCurrent.PrivateKey
+			if clusterDesired.ClusterInfo.Name == clusterCurrent.ClusterInfo.Name {
+				if clusterCurrent.ClusterInfo.PublicKey != "" {
+					clusterDesired.ClusterInfo.PublicKey = clusterCurrent.ClusterInfo.PublicKey
+					clusterDesired.ClusterInfo.PrivateKey = clusterCurrent.ClusterInfo.PrivateKey
 				}
-				if clusterCurrent.Hash != "" {
-					clusterDesired.Hash = clusterCurrent.Hash
+				if clusterCurrent.ClusterInfo.Hash != "" {
+					clusterDesired.ClusterInfo.Hash = clusterCurrent.ClusterInfo.Hash
 				}
 				if clusterCurrent.Kubeconfig != "" {
 					clusterDesired.Kubeconfig = clusterCurrent.Kubeconfig
@@ -254,42 +255,42 @@ clusterDesired:
 			}
 		}
 		// no current cluster found with matching name, create keys/hash
-		if clusterDesired.PublicKey == "" {
+		if clusterDesired.ClusterInfo.PublicKey == "" {
 			privateKey, publicKey := MakeSSHKeyPair()
-			clusterDesired.PrivateKey = privateKey
-			clusterDesired.PublicKey = publicKey
+			clusterDesired.ClusterInfo.PrivateKey = privateKey
+			clusterDesired.ClusterInfo.PublicKey = publicKey
 		}
-		if clusterDesired.Hash == "" {
-			clusterDesired.Hash = utils.CreateHash(utils.HashLength)
+		if clusterDesired.ClusterInfo.Hash == "" {
+			clusterDesired.ClusterInfo.Hash = utils.CreateHash(utils.HashLength)
 		}
 	}
-
-clusterLbDesired:
-	for _, clusterLbDesired := range res.DesiredState.GetLoadbalancer().LoadBalancerClusters {
-		for _, clusterLbCurrent := range res.CurrentState.GetLoadbalancer().LoadBalancerClusters {
-			// found current cluster with matching name
-			if clusterLbDesired.Name == clusterLbCurrent.Name {
-				if clusterLbCurrent.PublicKey != "" {
-					clusterLbDesired.PublicKey = clusterLbCurrent.PublicKey
-					clusterLbDesired.PrivateKey = clusterLbCurrent.PrivateKey
-				}
-				if clusterLbDesired.Hash != "" {
-					clusterLbDesired.Hash = clusterLbCurrent.Hash
-				}
-				//skip the checks bellow
-				continue clusterLbDesired
-			}
-		}
-		// no current cluster found with matching name, create keys/hash
-		if clusterLbDesired.PublicKey == "" {
-			privateKey, publicKey := MakeSSHKeyPair()
-			clusterLbDesired.PrivateKey = privateKey
-			clusterLbDesired.PublicKey = publicKey
-		}
-		if clusterLbDesired.Hash == "" {
-			clusterLbDesired.Hash = utils.CreateHash(utils.HashLength)
-		}
-	}
+	/*
+	   clusterLbDesired:
+	   	for _, clusterLbDesired := range res.DesiredState.GetLoadbalancer().LoadBalancerClusters {
+	   		for _, clusterLbCurrent := range res.CurrentState.GetLoadbalancer().LoadBalancerClusters {
+	   			// found current cluster with matching name
+	   			if clusterLbDesired.Name == clusterLbCurrent.Name {
+	   				if clusterLbCurrent.PublicKey != "" {
+	   					clusterLbDesired.PublicKey = clusterLbCurrent.PublicKey
+	   					clusterLbDesired.PrivateKey = clusterLbCurrent.PrivateKey
+	   				}
+	   				if clusterLbDesired.Hash != "" {
+	   					clusterLbDesired.Hash = clusterLbCurrent.Hash
+	   				}
+	   				//skip the checks bellow
+	   				continue clusterLbDesired
+	   			}
+	   		}
+	   		// no current cluster found with matching name, create keys/hash
+	   		if clusterLbDesired.PublicKey == "" {
+	   			privateKey, publicKey := MakeSSHKeyPair()
+	   			clusterLbDesired.PrivateKey = privateKey
+	   			clusterLbDesired.PublicKey = publicKey
+	   		}
+	   		if clusterLbDesired.Hash == "" {
+	   			clusterLbDesired.Hash = utils.CreateHash(utils.HashLength)
+	   		}
+	   	}*/
 
 	return res, nil
 }
