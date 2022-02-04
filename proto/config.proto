@@ -19,7 +19,7 @@ message Config {
 message Project {
   string name = 1;
   repeated K8scluster clusters = 2;
-  repeated LoadBalancerCluster loadBalancerClusters = 3;
+  repeated LBcluster loadBalancerClusters = 3;
 }
 
 message K8scluster {
@@ -29,11 +29,11 @@ message K8scluster {
   string kubernetes = 4;
 }
 
-message LoadBalancerCluster {
+message LBcluster {
   ClusterInfo clusterInfo = 1;
   repeated Role roles = 2;
   DNS dns = 3;
-  repeated string k8sTargets = 4;
+  repeated string targetedK8s = 4;
 }
 
 message ClusterInfo {

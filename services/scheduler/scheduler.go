@@ -90,8 +90,8 @@ type Pool struct {
 type Role struct {
 	Name       string `yaml:"name"`
 	Protocol   string `yaml:"protocol"`
-	Port       string `yaml:"port"`
-	TargetPort string `yaml:"target_port"`
+	Port       int32  `yaml:"port"`
+	TargetPort int32  `yaml:"target_port"`
 	Target     string `yaml:"target"`
 }
 
@@ -178,54 +178,46 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 		newCluster.ClusterInfo.NodePools = append(ControlNodePools, ComputeNodePools...)
 		clusters = append(clusters, newCluster)
 	}
-	/*
-		var roles []*pb.Role
+	var roles []*pb.Role
 
-					for _, role := range desiredState.LoadBalancer.Roles {
-						newRole := &pb.Role{
-							Name: role.Name,
-							Conf: &pb.Conf{
-								Protocol:   role.Conf.Protocol,
-								Port:       int32(role.Conf.Port),
-								TargetPort: int32(role.Conf.TargetPort),
-							},
-						}
-						roles = append(roles, newRole)
-					}
+	for _, role := range desiredState.LoadBalancer.Roles {
+		newRole := &pb.Role{
+			Name:       role.Name,
+			Protocol:   role.Protocol,
+			Port:       int32(role.Port),
+			TargetPort: int32(role.TargetPort),
+		}
+		roles = append(roles, newRole)
+	}
 
-				var lbClusters []*pb.LoadBalancerCluster
-				for _, lbCluster := range desiredState.LoadBalancer.Clusters {
+	var lbClusters []*pb.LBcluster
+	for _, lbCluster := range desiredState.LoadBalancer.Clusters {
 
-					newLbCluster := &pb.LoadBalancerCluster{
-						Name: lbCluster.Name,
-						Role: lbCluster.Role,
-						Dns: &pb.DNS{
-							Hostname:  lbCluster.DNS.Hostname,
-							Providers: lbCluster.DNS.Provider,
-						},
-						Target: &pb.Target{
-							Name: lbCluster.Target.Name,
-							Type: lbCluster.Target.Type,
-						},
-					}
+		newLbCluster := &pb.LBcluster{
+			ClusterInfo: &pb.ClusterInfo{
+				Name: lbCluster.Name,
+				Hash: utils.CreateHash(utils.HashLength),
+			},
+			Roles: roles,
+			Dns: &pb.DNS{
+				Hostname:  lbCluster.DNS.Hostname,
+				Providers: lbCluster.DNS.Provider,
+			},
+			TargetedK8S: lbCluster.TargetedK8s,
+		}
 
-					newLbCluster.ClusterInfo.NodePools = createNodepools(lbCluster.Pools, desiredState, false)
-					lbClusters = append(lbClusters, newLbCluster)
-				}
-
-			loadBalancer := &pb.LoadBalancer{
-				Roles:                roles,
-				LoadBalancerClusters: lbClusters,
-			}*/
+		newLbCluster.ClusterInfo.NodePools = createNodepools(lbCluster.Pools, desiredState, false)
+		lbClusters = append(lbClusters, newLbCluster)
+	}
 
 	res := &pb.Config{
 		Id:       config.GetId(),
 		Name:     config.GetName(),
 		Manifest: config.GetManifest(),
 		DesiredState: &pb.Project{
-			Name:     desiredState.Name,
-			Clusters: clusters,
-			//Loadbalancer: loadBalancer,
+			Name:                 desiredState.Name,
+			Clusters:             clusters,
+			LoadBalancerClusters: lbClusters,
 		},
 		CurrentState: config.GetCurrentState(),
 		MsChecksum:   config.GetMsChecksum(),
