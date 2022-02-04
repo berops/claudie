@@ -7,11 +7,12 @@ terraform {
   }
 }
 
-{{- $cluster := .Cluster}}
+{{- $clusterName := .ClusterName}}
+{{- $clusterHash := .ClusterHash}}
 {{$index :=  0}}
 
 resource "hcloud_firewall" "defaultfirewall" {
-  name = "{{ $cluster.Name }}-{{$cluster.Hash}}-firewall"
+  name = "{{ $clusterName }}-{{ $clusterHash }}-firewall"
   rule {
     direction = "in"
     protocol  = "icmp"
@@ -58,7 +59,7 @@ provider "hcloud" {
 }
 
 resource "hcloud_ssh_key" "platform" {
-  name       = "key-{{ $cluster.Name }}-{{$cluster.Hash}}"
+  name       = "key-{{ $clusterName }}-{{ $clusterHash }}"
   public_key = file("./public.pem")
 }
 
@@ -67,7 +68,7 @@ resource "hcloud_ssh_key" "platform" {
 
 resource "hcloud_server" "{{$nodepool.Name}}" {
   count       = "{{ $nodepool.Count }}"
-  name        = "{{ $cluster.Name }}-{{$cluster.Hash}}-{{$nodepool.Name}}-${count.index +1}"
+  name        = "{{ $clusterName }}-{{ $clusterHash }}-{{$nodepool.Name}}-${count.index +1}"
   server_type = "{{ $nodepool.ServerType }}"
   image       = "{{ $nodepool.Image }}"
   firewall_ids = [hcloud_firewall.defaultfirewall.id]

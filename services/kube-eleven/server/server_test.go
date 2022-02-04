@@ -58,7 +58,7 @@ var cluster = &pb.K8Scluster{
 func Test_genKubeOneConfig(t *testing.T) {
 	var d data
 	d.formatTemplateData(cluster)
-	serverDir := "services/kube-eleven/server"
+	serverDir := ""
 	genFilePath := func(fileName string) string { return filepath.Join(serverDir, fileName) }
 	if err := genKubeOneConfig(genFilePath("kubeone.tpl"), genFilePath("kubeone.yaml"), d); err != nil {
 		t.Error(err)
