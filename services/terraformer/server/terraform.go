@@ -37,31 +37,8 @@ type jsonOut struct {
 	IPs map[string]interface{} `json:"-"`
 }
 
-func initTerraformProcedure(clusterInfo *pb.ClusterInfo, outputPathCluster, tplFile, tfFile string) error {
-	// Creating .tf files for providers from templates
-	if err := buildNodePools(clusterInfo, outputPathCluster, tplFile, tfFile); err != nil {
-		return err
-	}
-
-	// Create publicKey and privateKey file for a cluster
-	if err := utils.CreateKeyFile(clusterInfo.PublicKey, outputPathCluster, "public.pem"); err != nil {
-		return err
-	}
-
-	// Call terraform init
-	log.Info().Msgf("Running terraform init in %s", outputPathCluster)
-	if err := initTerraform(outputPathCluster); err != nil {
-		log.Error().Msgf("Error running terraform init in %s: %v", outputPathCluster, err)
-		return err
-	}
-	return nil
-}
-
-func buildK8sClustersAsynch(desiredStateCluster *pb.K8Scluster, currentStateCluster *pb.K8Scluster, backendData Backend) error {
-	// Prepare backend data for golang templates
-	backendData.ClusterName = desiredStateCluster.ClusterInfo.GetName() + "-" + desiredStateCluster.ClusterInfo.GetHash()
-	log.Info().Msgf("Cluster name: %s", backendData.ClusterName)
-
+func initInfra(clusterInfo *pb.ClusterInfo, backendData Backend, tplFile, tfFile string) (string, error) {
+	// Creating backend.tf file
 	templateFilePath := filepath.Join(templatePath, "backend.tpl")
 	tfFilePath := filepath.Join(outputPath, backendData.ClusterName, "backend.tf")
 	outputPathCluster := filepath.Join(outputPath, backendData.ClusterName)
@@ -70,16 +47,30 @@ func buildK8sClustersAsynch(desiredStateCluster *pb.K8Scluster, currentStateClus
 	if err := templateGen(templateFilePath, tfFilePath, backendData, outputPathCluster); err != nil {
 		log.Error().Msgf("Error generating terraform config file %s from template %s: %v",
 			tfFilePath, templateFilePath, err)
-		return err
+		return "", err
 	}
 
-	// Create all files necessary and do terraform init
-	if err := initTerraformProcedure(desiredStateCluster.ClusterInfo, outputPathCluster, ".tpl", ".tf"); err != nil {
-		log.Error().Msgf("Error in terraform init procedure for %s: %v",
-			backendData.ClusterName, err)
-		return err
+	// Creating .tf files for providers from templates
+	if err := buildNodePools(clusterInfo, outputPathCluster, tplFile, tfFile); err != nil {
+		return "", err
 	}
 
+	// Create publicKey and privateKey file for a cluster
+	if err := utils.CreateKeyFile(clusterInfo.PublicKey, outputPathCluster, "public.pem"); err != nil {
+		return "", err
+	}
+
+	// Call terraform init
+	log.Info().Msgf("Running terraform init in %s", outputPathCluster)
+	if err := initTerraform(outputPathCluster); err != nil {
+		log.Error().Msgf("Error running terraform init in %s: %v", outputPathCluster, err)
+		return "", err
+	}
+	return outputPathCluster, nil
+}
+
+func createInfra(clusterInfoDesired, clusterInfoCurrent *pb.ClusterInfo, outputPathCluster string) error {
+	// terraform apply
 	log.Info().Msgf("Running terraform apply in %s", outputPathCluster)
 	if err := applyTerraform(outputPathCluster); err != nil {
 		log.Error().Msgf("Error running terraform apply in %s: %v", outputPathCluster, err)
@@ -88,14 +79,14 @@ func buildK8sClustersAsynch(desiredStateCluster *pb.K8Scluster, currentStateClus
 
 	// group all the nodes together to make searching with respect to IP easy
 	var oldNodes []*pb.Node
-	if currentStateCluster != nil {
-		for _, oldNodepool := range currentStateCluster.ClusterInfo.NodePools {
+	if clusterInfoCurrent != nil {
+		for _, oldNodepool := range clusterInfoCurrent.NodePools {
 			oldNodes = append(oldNodes, oldNodepool.Nodes...)
 		}
 	}
 
 	// Fill public ip addresses to NodeInfos
-	for _, nodepool := range desiredStateCluster.ClusterInfo.NodePools {
+	for _, nodepool := range clusterInfoDesired.NodePools {
 		output, err := outputTerraform(outputPathCluster, nodepool)
 		if err != nil {
 			return err
@@ -108,22 +99,54 @@ func buildK8sClustersAsynch(desiredStateCluster *pb.K8Scluster, currentStateClus
 		fmt.Printf("%v", out)
 		fillNodes(&out, nodepool, oldNodes)
 	}
+	return nil
+}
+
+func buildK8sClustersAsynch(desiredStateCluster *pb.K8Scluster, currentStateCluster *pb.K8Scluster, backendData Backend) error {
+	// Prepare backend data for golang templates
+	backendData.ClusterName = desiredStateCluster.ClusterInfo.GetName() + "-" + desiredStateCluster.ClusterInfo.GetHash()
+	log.Info().Msgf("Cluster name: %s", backendData.ClusterName)
+
+	// Create all files necessary and do terraform init
+	outputPathCluster, err := initInfra(desiredStateCluster.ClusterInfo, backendData, ".tpl", ".tf")
+	if err != nil {
+		log.Error().Msgf("Error in terraform init procedure for %s: %v",
+			backendData.ClusterName, err)
+		return err
+	}
+	var currentClusterInfo *pb.ClusterInfo
+	if currentStateCluster != nil {
+		currentClusterInfo = currentStateCluster.ClusterInfo
+	}
+
+	if err := createInfra(desiredStateCluster.ClusterInfo, currentClusterInfo, outputPathCluster); err != nil {
+		log.Error().Msgf("Error in terraform apply procedure for Loadbalancer cluster %s: %v",
+			desiredStateCluster.ClusterInfo.Name, err)
+		return err
+	}
 
 	return nil
 }
 
-func buildLBClustersAsynch(desiredLbCluster *pb.LBcluster, currentLbCluster *pb.LBcluster) error {
-	outputPathCluster := outputPath + "/" + desiredLbCluster.ClusterInfo.Name + "-" + desiredLbCluster.ClusterInfo.Hash
+func buildLBClustersAsynch(desiredLbCluster *pb.LBcluster, currentLbCluster *pb.LBcluster, backendData Backend) error {
+	backendData.ClusterName = desiredLbCluster.ClusterInfo.GetName() + "-" + desiredLbCluster.ClusterInfo.GetHash()
 	// Create .tf files
-	if err := initTerraformProcedure(currentLbCluster.ClusterInfo, outputPathCluster, "-lb.tpl", "-lb.tf"); err != nil {
+	outputPathCluster, err := initInfra(desiredLbCluster.ClusterInfo, backendData, "-lb.tpl", "-lb.tf")
+	if err != nil {
 		log.Error().Msgf("Error in terraform init procedure for Loadbalancer cluster %s: %v",
 			desiredLbCluster.ClusterInfo.Name, err)
 		return err
 	}
-	// tf apply
-
-	// fill nodes to join the vpn
-
+	var currentClusterInfo *pb.ClusterInfo
+	//check if any current cluster exists
+	if currentLbCluster != nil {
+		currentClusterInfo = currentLbCluster.ClusterInfo
+	}
+	if err := createInfra(desiredLbCluster.ClusterInfo, currentClusterInfo, outputPathCluster); err != nil {
+		log.Error().Msgf("Error in terraform apply procedure for Loadbalancer cluster %s: %v",
+			desiredLbCluster.ClusterInfo.Name, err)
+		return err
+	}
 	return nil
 }
 
@@ -154,25 +177,25 @@ func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) err
 		}(desiredStateCluster, oldCluster, backendData)
 	}
 
-	// for _, desiredLbCluster := range desiredState.GetLoadBalancerClusters() {
-	// 	var oldCluster *pb.LBcluster
-	// 	for _, currentLbCluster := range currentState.GetLoadBalancerClusters() {
-	// 		if currentLbCluster.ClusterInfo.Name == desiredLbCluster.ClusterInfo.Name {
-	// 			oldCluster = currentLbCluster
-	// 			break
-	// 		}
-	// 	}
-	// 	func(desiredLbCluster *pb.LBcluster, currentLbCluster *pb.LBcluster) {
-	// 		errGroup.Go(func() error {
-	// 			err := buildLBClustersAsynch(desiredLbCluster, currentLbCluster)
-	// 			if err != nil {
-	// 				log.Error().Msgf("error encountered in Terraformer - buildInfrastructure: %v", err)
-	// 				return err
-	// 			}
-	// 			return nil
-	// 		})
-	// 	}(desiredLbCluster, oldCluster)
-	// }
+	for _, desiredLbCluster := range desiredState.GetLoadBalancerClusters() {
+		var oldCluster *pb.LBcluster
+		for _, currentLbCluster := range currentState.GetLoadBalancerClusters() {
+			if currentLbCluster.ClusterInfo.Name == desiredLbCluster.ClusterInfo.Name {
+				oldCluster = currentLbCluster
+				break
+			}
+		}
+		func(desiredLbCluster *pb.LBcluster, currentLbCluster *pb.LBcluster, backendData Backend) {
+			errGroup.Go(func() error {
+				err := buildLBClustersAsynch(desiredLbCluster, currentLbCluster, backendData)
+				if err != nil {
+					log.Error().Msgf("error encountered in Terraformer - buildInfrastructure: %v", err)
+					return err
+				}
+				return nil
+			})
+		}(desiredLbCluster, oldCluster, backendData)
+	}
 	err := errGroup.Wait()
 	if err != nil {
 		return err
@@ -187,26 +210,15 @@ func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) err
 }
 
 // destroyInfrastructureAsync executes terraform destroy --auto-approve. It destroys whole infrastructure in a project.
-func destroyInfrastructureAsync(cluster *pb.K8Scluster, backendData Backend) error {
+func destroyInfrastructureAsync(clusterInfo *pb.ClusterInfo, backendData Backend, tfFile, tplFile string) error {
 	log.Info().Msg("Generating templates for infrastructure destroy")
-	backendData.ClusterName = cluster.ClusterInfo.GetName() + "-" + cluster.ClusterInfo.GetHash()
+	backendData.ClusterName = clusterInfo.GetName() + "-" + clusterInfo.GetHash()
 
 	log.Info().Msgf("Cluster name: %s", backendData.ClusterName)
 
-	// Creating backend.tf file
-	templateFilePath := filepath.Join(templatePath, "backend.tpl")
-	tfFilePath := filepath.Join(outputPath, backendData.ClusterName, "backend.tf")
-	outputPathCluster := filepath.Join(outputPath, backendData.ClusterName)
-
-	// Creating backend.tf file from the template backend.tpl
-	if err := templateGen(templateFilePath, tfFilePath, backendData, outputPathCluster); err != nil {
-		log.Error().Msgf("Error generating terraform config file %s from template %s: %v",
-			tfFilePath, templateFilePath, err)
-		return err
-	}
-
 	// Create all files necessary and do terraform init
-	if err := initTerraformProcedure(cluster.ClusterInfo, outputPathCluster, ".tpl", ".tf"); err != nil {
+	outputPathCluster, err := initInfra(clusterInfo, backendData, tplFile, tfFile)
+	if err != nil {
 		log.Error().Msgf("Error in terraform init procedure for %s: %v",
 			backendData.ClusterName, err)
 		return err
@@ -227,10 +239,11 @@ func destroyInfrastructure(config *pb.Config) error {
 	backendData.ProjectName = config.GetDesiredState().GetName()
 	var errGroup errgroup.Group
 
+	// Destroy K8s clusters
 	for _, cluster := range config.GetDesiredState().GetClusters() {
-		func(cluster *pb.K8Scluster, backendData Backend) {
+		func(clusterInfo *pb.ClusterInfo, backendData Backend) {
 			errGroup.Go(func() error {
-				err := destroyInfrastructureAsync(cluster, backendData)
+				err := destroyInfrastructureAsync(clusterInfo, backendData, ".tf", ".tpl")
 				if err != nil {
 					log.Error().Msgf("error encountered in Terraformer - destroyInfrastructure: %v", err)
 					config.ErrorMessage = err.Error()
@@ -238,7 +251,21 @@ func destroyInfrastructure(config *pb.Config) error {
 				}
 				return nil
 			})
-		}(cluster, backendData)
+		}(cluster.ClusterInfo, backendData)
+	}
+	// Destroy LB clusters
+	for _, cluster := range config.GetDesiredState().GetLoadBalancerClusters() {
+		func(clusterInfo *pb.ClusterInfo, backendData Backend) {
+			errGroup.Go(func() error {
+				err := destroyInfrastructureAsync(clusterInfo, backendData, "-lb.tf", "-lb.tpl")
+				if err != nil {
+					log.Error().Msgf("error encountered in Terraformer - destroyInfrastructure: %v", err)
+					config.ErrorMessage = err.Error()
+					return err
+				}
+				return nil
+			})
+		}(cluster.ClusterInfo, backendData)
 	}
 	err := errGroup.Wait()
 	if err != nil {
@@ -266,7 +293,7 @@ func buildNodePools(clusterInfo *pb.ClusterInfo, outputPathCluster string, tplFi
 			tplFile,
 			trfFile,
 			&Data{NodePools: nodePool, ClusterName: clusterInfo.Name, ClusterHash: clusterInfo.Hash},
-			templatePath)
+			outputPathCluster)
 		if err != nil {
 			log.Error().Msgf("Error generating terraform config file %s from template %s: %v",
 				trfFile, tplFile, err)
@@ -288,7 +315,7 @@ func templateGen(templatePath string, outputPath string, d interface{}, dirName 
 	if err != nil {
 		return fmt.Errorf("failed to load the template file: %v", err)
 	}
-
+	fmt.Printf("Creating %s \n", outputPath)
 	f, err := os.Create(outputPath)
 	if err != nil {
 		return fmt.Errorf("failed to create the %s file: %v", dirName, err)
