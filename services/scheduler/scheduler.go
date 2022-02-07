@@ -252,37 +252,31 @@ clusterDesired:
 			clusterDesired.ClusterInfo.PrivateKey = privateKey
 			clusterDesired.ClusterInfo.PublicKey = publicKey
 		}
-		if clusterDesired.ClusterInfo.Hash == "" {
-			clusterDesired.ClusterInfo.Hash = utils.CreateHash(utils.HashLength)
+	}
+
+clusterLbDesired:
+	for _, clusterLbDesired := range res.DesiredState.LoadBalancerClusters {
+		for _, clusterLbCurrent := range res.CurrentState.LoadBalancerClusters {
+			// found current cluster with matching name
+			if clusterLbDesired.ClusterInfo.Name == clusterLbCurrent.ClusterInfo.Name {
+				if clusterLbCurrent.ClusterInfo.PublicKey != "" {
+					clusterLbDesired.ClusterInfo.PublicKey = clusterLbCurrent.ClusterInfo.PublicKey
+					clusterLbDesired.ClusterInfo.PrivateKey = clusterLbCurrent.ClusterInfo.PrivateKey
+				}
+				if clusterLbDesired.ClusterInfo.Hash != "" {
+					clusterLbDesired.ClusterInfo.Hash = clusterLbCurrent.ClusterInfo.Hash
+				}
+				//skip the checks bellow
+				continue clusterLbDesired
+			}
+		}
+		// no current cluster found with matching name, create keys/hash
+		if clusterLbDesired.ClusterInfo.PublicKey == "" {
+			privateKey, publicKey := MakeSSHKeyPair()
+			clusterLbDesired.ClusterInfo.PrivateKey = privateKey
+			clusterLbDesired.ClusterInfo.PublicKey = publicKey
 		}
 	}
-	/*
-	   clusterLbDesired:
-	   	for _, clusterLbDesired := range res.DesiredState.GetLoadbalancer().LoadBalancerClusters {
-	   		for _, clusterLbCurrent := range res.CurrentState.GetLoadbalancer().LoadBalancerClusters {
-	   			// found current cluster with matching name
-	   			if clusterLbDesired.Name == clusterLbCurrent.Name {
-	   				if clusterLbCurrent.PublicKey != "" {
-	   					clusterLbDesired.PublicKey = clusterLbCurrent.PublicKey
-	   					clusterLbDesired.PrivateKey = clusterLbCurrent.PrivateKey
-	   				}
-	   				if clusterLbDesired.Hash != "" {
-	   					clusterLbDesired.Hash = clusterLbCurrent.Hash
-	   				}
-	   				//skip the checks bellow
-	   				continue clusterLbDesired
-	   			}
-	   		}
-	   		// no current cluster found with matching name, create keys/hash
-	   		if clusterLbDesired.PublicKey == "" {
-	   			privateKey, publicKey := MakeSSHKeyPair()
-	   			clusterLbDesired.PrivateKey = privateKey
-	   			clusterLbDesired.PublicKey = publicKey
-	   		}
-	   		if clusterLbDesired.Hash == "" {
-	   			clusterLbDesired.Hash = utils.CreateHash(utils.HashLength)
-	   		}
-	   	}*/
 
 	return res, nil
 }
