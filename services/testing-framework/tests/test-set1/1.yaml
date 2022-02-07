@@ -63,24 +63,6 @@ nodePools:
     server_type: cpx11
     image: ubuntu-20.04
     disk_size: 50
-  - name: gcp-control
-    provider: 
-      gcp:
-        region: europe-west1
-        zone: europe-west1-c
-    count: 2
-    server_type: e2-small
-    image: ubuntu-os-cloud/ubuntu-2004-lts
-    disk_size: 50
-  - name: gcp-compute
-    provider: 
-      gcp:
-        region: europe-west1
-        zone: europe-west1-c
-    count: 2
-    server_type: e2-small
-    image: ubuntu-os-cloud/ubuntu-2004-lts
-    disk_size: 50
 
 
 kubernetes:
@@ -94,24 +76,26 @@ kubernetes:
         compute:
         - hetzner-compute
 
-loadBalancer:
+loadBalancers:
   roles:
   - name: apiserver-lb
-    conf: 
-      protocol: tcp
-      port: 6443
-      targetPort: 6443
-  clusters:
-  - name: cluster1-apiserver-lb
-    role: apiserver-lb
+    protocol: tcp
+    port: 6443
+    target_port: 6443
+    target: k8s-control-plane
+
+  clusters:    
+  - name: cluster-1-apiserver-lb
+    roles:
+    - apiserver-lb
     dns:
-      hostname: www.dev-apiserver.claudie.io
+      hostname: www.dev-apiserver.mycompany.io
       providers: 
       - gcp
       - hetzner
-    target:
-      name: development-project-X
-      type: k8s-control-plane
-    pools:
-    - gcp-lb
+    targeted-k8s: 
+    - cluster-1
+    pools:  
+    #- gcp-lb
     - hetzner-lb
+    
