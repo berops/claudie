@@ -27,13 +27,21 @@ type server struct {
 	pb.UnimplementedWireguardianServiceServer
 }
 
+type dataForTemplate struct {
+	Nodepools                []*pb.NodePool
+	LBNodepools              []*pb.NodePool
+	SshClusterPrivateKeyFile string
+	SshLBPrivateKeyFile      string
+}
+
 const (
-	outputPath              = "services/wireguardian/server/Ansible"
-	inventoryTemplate       = "services/wireguardian/server/inventory.goini"
-	inventoryFile           = "inventory.ini"
-	playbookFile            = "playbook.yml"
-	sslPrivateKeyFile       = "private.pem"
-	defaultWireguardianPort = 50053
+	outputPath               = "services/wireguardian/server/Ansible"
+	inventoryTemplate        = "services/wireguardian/server/inventory.goini"
+	inventoryFile            = "inventory.ini"
+	playbookFile             = "playbook.yml"
+	sshClusterPrivateKeyFile = "cluster.pem"
+	sshLBPrivateKeyFile      = "lb.pem"
+	defaultWireguardianPort  = 50053
 )
 
 func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVPNResponse, error) {
@@ -41,10 +49,10 @@ func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVP
 	var errGroup errgroup.Group
 
 	for _, cluster := range desiredState.GetClusters() {
-		// to pass the parameter in loop, we need to create a dummy fuction
+		// to pass the parameter in loop, we need to create a dummy function
 		func(cluster *pb.K8Scluster) {
 			errGroup.Go(func() error {
-				err := buildVPNAsync(cluster)
+				err := buildVPNAsync(cluster, desiredState.LoadBalancerClusters)
 				if err != nil {
 					log.Error().Msgf("error encountered in Wireguardian - BuildVPN: %v", err)
 					return err
@@ -61,17 +69,20 @@ func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVP
 	return &pb.BuildVPNResponse{DesiredState: desiredState}, nil
 }
 
-func buildVPNAsync(cluster *pb.K8Scluster) error {
-	if err := genPrivAdd(cluster.ClusterInfo.GetNodePools(), cluster.GetNetwork()); err != nil {
+func buildVPNAsync(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster) error {
+
+	lbCluster := findLBCluster(cluster.ClusterInfo.Name, lbClusters)
+
+	if err := genPrivAdd(append(cluster.ClusterInfo.NodePools, lbCluster.ClusterInfo.NodePools...), cluster.GetNetwork()); err != nil {
 		return err
 	}
 
 	invOutputPath := filepath.Join(outputPath, cluster.ClusterInfo.GetName()+"-"+cluster.ClusterInfo.GetHash())
-	if err := genInv(cluster.ClusterInfo.GetNodePools(), invOutputPath); err != nil {
+	if err := genInv(cluster, lbCluster, invOutputPath); err != nil {
 		return err
 	}
 
-	if err := runAnsible(cluster, invOutputPath); err != nil {
+	if err := runAnsible(cluster, lbCluster, invOutputPath); err != nil {
 		return err
 	}
 
@@ -87,7 +98,7 @@ func genPrivAdd(nodepools []*pb.NodePool, network string) error {
 	_, ipNet, err := net.ParseCIDR(network)
 	var addressesToAssign []*pb.Node
 
-	// initilize slice of possible last octet
+	// initialize slice of possible last octet
 	lastOctets := make([]byte, 255)
 	var i byte
 	for i = 0; i < 255; i++ {
@@ -136,7 +147,7 @@ func remove(slice []byte, value byte) []byte {
 }
 
 // genInv will generate ansible inventory file slice of clusters input
-func genInv(nodepools []*pb.NodePool, path string) error {
+func genInv(cluster *pb.K8Scluster, lbCluster *pb.LBcluster, path string) error {
 	tpl, err := template.ParseFiles(inventoryTemplate)
 	if err != nil {
 		return fmt.Errorf("failed to load template file: %v", err)
@@ -154,27 +165,53 @@ func genInv(nodepools []*pb.NodePool, path string) error {
 		return fmt.Errorf("failed to create a inventory file: %v", err)
 	}
 
-	if err := tpl.Execute(f, nodepools); err != nil {
+	data := &dataForTemplate{
+		Nodepools:                cluster.ClusterInfo.NodePools,
+		LBNodepools:              lbCluster.ClusterInfo.NodePools,
+		SshClusterPrivateKeyFile: cluster.ClusterInfo.Name + "-" + cluster.ClusterInfo.Hash + "/" + sshClusterPrivateKeyFile,
+		SshLBPrivateKeyFile:      cluster.ClusterInfo.Name + "-" + cluster.ClusterInfo.Hash + "/" + sshLBPrivateKeyFile,
+	}
+
+	if err := tpl.Execute(f, data); err != nil {
 		return fmt.Errorf("failed to execute template file: %v", err)
 	}
 
 	return nil
 }
 
-func runAnsible(cluster *pb.K8Scluster, invOutputPath string) error {
-	if err := utils.CreateKeyFile(cluster.ClusterInfo.GetPrivateKey(), invOutputPath, sslPrivateKeyFile); err != nil {
+func runAnsible(cluster *pb.K8Scluster, lbCluster *pb.LBcluster, invOutputPath string) error {
+	if err := utils.CreateKeyFile(cluster.ClusterInfo.GetPrivateKey(), invOutputPath, sshClusterPrivateKeyFile); err != nil {
 		return err
+	}
+
+	if lbCluster != nil {
+		if err := utils.CreateKeyFile(lbCluster.ClusterInfo.GetPrivateKey(), invOutputPath, sshLBPrivateKeyFile); err != nil {
+			return err
+		}
 	}
 
 	if err := os.Setenv("ANSIBLE_HOST_KEY_CHECKING", "False"); err != nil {
 		return err
 	}
 
-	cmd := exec.Command("ansible-playbook", playbookFile, "-i", cluster.ClusterInfo.Name+"-"+cluster.ClusterInfo.Hash+"/"+inventoryFile, "-f", "20", "--private-key", cluster.ClusterInfo.Name+"-"+cluster.ClusterInfo.Hash+"/"+sslPrivateKeyFile)
+	inventoryFilePath := cluster.ClusterInfo.Name + "-" + cluster.ClusterInfo.Hash + "/" + inventoryFile
+
+	cmd := exec.Command("ansible-playbook", playbookFile, "-i", inventoryFilePath, "-f", "20")
 	cmd.Dir = outputPath
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
+}
+
+func findLBCluster(ClusterName string, lbClusters []*pb.LBcluster) *pb.LBcluster {
+	for _, lbCluster := range lbClusters {
+		for _, targetClusterName := range lbCluster.TargetedK8S {
+			if targetClusterName == ClusterName {
+				return lbCluster
+			}
+		}
+	}
+	return nil
 }
 
 func main() {
