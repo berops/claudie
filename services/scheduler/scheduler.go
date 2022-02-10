@@ -105,7 +105,7 @@ type LoadBalancerCluster struct {
 	Name        string   `yaml:"name"`
 	Role        []string `yaml:"role"`
 	DNS         DNS      `yaml:"dns"`
-	TargetedK8s []string `yaml:"targeted-k8s"`
+	TargetedK8s string   `yaml:"targeted-k8s"`
 	Pools       []string `yaml:"pools"`
 }
 
