@@ -1,0 +1,14 @@
+{{- range $role := .Roles }}
+upstream {{ $role.Role.Name }}{
+    {{- range $node := $role.Nodes}}
+    server {{$node.Private}}:{{$role.Role.TargetPort}};
+    {{- end}}
+}
+
+server  {
+    listen {{ $role.Role.Port }};
+    location / {
+        proxy_pass http://{{ $role.Role.Name}};
+    }
+}
+{{- end }}

@@ -11,3 +11,4 @@ mongodb
 kubeone.yaml
 cluster.tar.gz
 cluster-kubeconfig
+*.conf

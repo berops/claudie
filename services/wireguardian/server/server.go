@@ -27,17 +27,28 @@ type server struct {
 	pb.UnimplementedWireguardianServiceServer
 }
 
-type dataForTemplate struct {
+type dataForIniTemplate struct {
 	Nodepools                []*pb.NodePool
 	LBNodepools              []*pb.NodePool
 	SshClusterPrivateKeyFile string
 	SshLBPrivateKeyFile      string
 }
 
+type dataForConfTemplate struct {
+	Roles []lbRolesWithNodes
+}
+
+type lbRolesWithNodes struct {
+	pb.Role
+	Nodes []*pb.Node
+}
+
 const (
 	outputPath               = "services/wireguardian/server/Ansible"
 	inventoryTemplate        = "services/wireguardian/server/inventory.goini"
+	nginxCongTemplate        = "services/wireguardian/server/conf.gotpl"
 	inventoryFile            = "inventory.ini"
+	nginxConfFileExt         = ".conf"
 	playbookFile             = "playbook.yml"
 	sshClusterPrivateKeyFile = "cluster.pem"
 	sshLBPrivateKeyFile      = "lb.pem"
@@ -77,16 +88,16 @@ func buildVPNAsync(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster) error {
 		return err
 	}
 
-	invOutputPath := filepath.Join(outputPath, cluster.ClusterInfo.GetName()+"-"+cluster.ClusterInfo.GetHash())
-	if err := genInv(cluster, lbCluster, invOutputPath); err != nil {
+	outputPath := filepath.Join(outputPath, cluster.ClusterInfo.GetName()+"-"+cluster.ClusterInfo.GetHash())
+	if err := genTpl(cluster, lbCluster, outputPath); err != nil {
 		return err
 	}
 
-	if err := runAnsible(cluster, lbCluster, invOutputPath); err != nil {
+	if err := runAnsible(cluster, lbCluster, outputPath); err != nil {
 		return err
 	}
 
-	if err := os.RemoveAll(invOutputPath); err != nil {
+	if err := os.RemoveAll(outputPath); err != nil {
 		return err
 	}
 
@@ -146,37 +157,67 @@ func remove(slice []byte, value byte) []byte {
 	return slice
 }
 
-// genInv will generate ansible inventory file slice of clusters input
-func genInv(cluster *pb.K8Scluster, lbCluster *pb.LBcluster, path string) error {
-	tpl, err := template.ParseFiles(inventoryTemplate)
-	if err != nil {
-		return fmt.Errorf("failed to load template file: %v", err)
-	}
+// genTpl will generate ansible inventory file slice of clusters input
+func genTpl(cluster *pb.K8Scluster, lbCluster *pb.LBcluster, outputPath string) error {
 
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		err = os.MkdirAll(path, os.ModePerm)
-		if err != nil {
-			return fmt.Errorf("failed to create a directory: %v", err)
-		}
-	}
-
-	f, err := os.Create(filepath.Join(path, inventoryFile))
-	if err != nil {
-		return fmt.Errorf("failed to create a inventory file: %v", err)
-	}
-
-	data := &dataForTemplate{
+	// inventory file
+	iniData := &dataForIniTemplate{
 		Nodepools:                cluster.ClusterInfo.NodePools,
 		LBNodepools:              lbCluster.ClusterInfo.NodePools,
 		SshClusterPrivateKeyFile: cluster.ClusterInfo.Name + "-" + cluster.ClusterInfo.Hash + "/" + sshClusterPrivateKeyFile,
 		SshLBPrivateKeyFile:      cluster.ClusterInfo.Name + "-" + cluster.ClusterInfo.Hash + "/" + sshLBPrivateKeyFile,
 	}
+	err := tplExecution(iniData, inventoryTemplate, outputPath, inventoryFile)
+	if err != nil {
+		return err
+	}
+
+	// nginx conf file
+	controlNodes, computeNodes := nodeSegregation(cluster)
+	confData := &dataForConfTemplate{}
+	for _, role := range lbCluster.Roles {
+		tmpRole := lbRolesWithNodes{Role: *role}
+
+		if role.Target == pb.Target_k8sAllNodes {
+			tmpRole.Nodes = append(controlNodes, computeNodes...)
+		} else if role.Target == pb.Target_k8sControlPlane {
+			tmpRole.Nodes = controlNodes
+		} else if role.Target == pb.Target_k8sComputePlane {
+			tmpRole.Nodes = computeNodes
+		}
+		confData.Roles = append(confData.Roles, tmpRole)
+	}
+	err = tplExecution(confData, nginxCongTemplate, outputPath, lbCluster.ClusterInfo.Name+nginxConfFileExt)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func tplExecution(data interface{}, templateFilePath string, outputPath string, filename string) error {
+	tpl, err := template.ParseFiles(templateFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to load template file:%s, err:%v", templateFilePath, err)
+	}
+
+	if _, err := os.Stat(outputPath); os.IsNotExist(err) {
+		err = os.MkdirAll(outputPath, os.ModePerm)
+		if err != nil {
+			return fmt.Errorf("failed to create the directory:%s, err:%v", outputPath, err)
+		}
+	}
+
+	f, err := os.Create(filepath.Join(outputPath, filename))
+	if err != nil {
+		return fmt.Errorf("failed to create the file:%s, err:%v", filename, err)
+	}
 
 	if err := tpl.Execute(f, data); err != nil {
-		return fmt.Errorf("failed to execute template file: %v", err)
+		return fmt.Errorf("failed to execute template file:%s, err:%v", filename, err)
 	}
 
 	return nil
+
 }
 
 func runAnsible(cluster *pb.K8Scluster, lbCluster *pb.LBcluster, invOutputPath string) error {
@@ -203,17 +244,29 @@ func runAnsible(cluster *pb.K8Scluster, lbCluster *pb.LBcluster, invOutputPath s
 	return cmd.Run()
 }
 
+// find the all the load balancer cluster for a K8s cluster
+// TODO: return slice in stead of an object of pb.LBcluster
 func findLBCluster(ClusterName string, lbClusters []*pb.LBcluster) *pb.LBcluster {
 	for _, lbCluster := range lbClusters {
-		for _, targetClusterName := range lbCluster.TargetedK8S {
-			if targetClusterName == ClusterName {
-				return lbCluster
-			}
+		if lbCluster.TargetedK8S == ClusterName {
+			return lbCluster
 		}
 	}
 	return nil
 }
 
+func nodeSegregation(cluster *pb.K8Scluster) (controlNodes, ComputeNodes []*pb.Node) {
+	for _, nodepools := range cluster.ClusterInfo.NodePools {
+		for _, node := range nodepools.Nodes {
+			if node.NodeType == pb.NodeType_apiEndpoint || node.NodeType == pb.NodeType_master {
+				controlNodes = append(controlNodes, node)
+			} else {
+				ComputeNodes = append(ComputeNodes, node)
+			}
+		}
+	}
+	return
+}
 func main() {
 	// initialize logger
 	utils.InitLog("wireguardian", "GOLANG_LOG")
