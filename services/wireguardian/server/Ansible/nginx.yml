@@ -1,12 +1,17 @@
 ---
-- gather_facts: no
+- hosts: all
+  gather_facts: no
   become: yes
+  remote_user: root
   tasks:
     - name: ensure nginx is at the latest version
-      apt: name=nginx state=latest update_cache=yes
+      apt:
+        name: nginx
+        state: latest
+        update_cache: yes
     - name: copy config files
       copy:
-        src: {{ conf_path }}
+        src: ./cluster-1-164yzu9/cluster.conf
         dest: /etc/nginx/sites-available/static_site.cfg
     - name: create symlink
       file:
