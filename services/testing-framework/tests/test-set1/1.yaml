@@ -93,8 +93,7 @@ loadBalancers:
       providers: 
       - gcp
       - hetzner
-    targeted-k8s: 
-    - cluster-1
+    targeted-k8s: cluster-1
     pools:  
     #- gcp-lb
     - hetzner-lb

@@ -39,7 +39,7 @@ type dataForConfTemplate struct {
 }
 
 type lbRolesWithNodes struct {
-	pb.Role
+	*pb.Role
 	Nodes []*pb.Node
 }
 
@@ -50,6 +50,7 @@ const (
 	inventoryFile            = "inventory.ini"
 	nginxConfFileExt         = ".conf"
 	playbookFile             = "playbook.yml"
+	nginxPlaybook            = "nginx.yml"
 	sshClusterPrivateKeyFile = "cluster.pem"
 	sshLBPrivateKeyFile      = "lb.pem"
 	defaultWireguardianPort  = 50053
@@ -176,7 +177,7 @@ func genTpl(cluster *pb.K8Scluster, lbCluster *pb.LBcluster, outputPath string) 
 	controlNodes, computeNodes := nodeSegregation(cluster)
 	confData := &dataForConfTemplate{}
 	for _, role := range lbCluster.Roles {
-		tmpRole := lbRolesWithNodes{Role: *role}
+		tmpRole := lbRolesWithNodes{Role: role}
 
 		if role.Target == pb.Target_k8sAllNodes {
 			tmpRole.Nodes = append(controlNodes, computeNodes...)
@@ -236,12 +237,27 @@ func runAnsible(cluster *pb.K8Scluster, lbCluster *pb.LBcluster, invOutputPath s
 	}
 
 	inventoryFilePath := cluster.ClusterInfo.Name + "-" + cluster.ClusterInfo.Hash + "/" + inventoryFile
+	configFilePath := cluster.ClusterInfo.Name + "-" + cluster.ClusterInfo.Hash + "/" + lbCluster.ClusterInfo.Name + nginxConfFileExt
 
 	cmd := exec.Command("ansible-playbook", playbookFile, "-i", inventoryFilePath, "-f", "20")
 	cmd.Dir = outputPath
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	err := cmd.Run()
+	if err != nil {
+		return err
+	}
+
+	// run nginx playbook
+	cmd = exec.Command("ansible-playbook", nginxPlaybook, "i", inventoryFilePath, "-f", "20", "-l", "lbnodes", "--extra-vars", "conf_path=", configFilePath)
+	cmd.Dir = outputPath
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // find the all the load balancer cluster for a K8s cluster

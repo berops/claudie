@@ -1,0 +1,21 @@
+---
+- gather_facts: no
+  become: yes
+  tasks:
+    - name: ensure nginx is at the latest version
+      apt: name=nginx state=latest update_cache=yes
+    - name: copy config files
+      copy:
+        src: {{ conf_path }}
+        dest: /etc/nginx/sites-available/static_site.cfg
+    - name: create symlink
+      file:
+        src: /etc/nginx/sites-available/static_site.cfg
+        dest: /etc/nginx/sites-enabled/default
+        state: link
+      become: yes
+    - name: restart nginx
+      service: 
+        name: nginx
+        state: restarted
+      become: yes
