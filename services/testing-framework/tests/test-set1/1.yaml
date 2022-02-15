@@ -3,6 +3,8 @@ name: TestSetOne-1
 providers:
 - name: hetzner
   credentials: xIAfsb7M5K6etYAfXYcg5iYyrFGNlCxcICo060HVEygjoF0usFpv5P9X7pk85Xe1
+- name: gcp
+  credentials: ../secrets/admin-project-283514-3729b1f097f2.json
 
 nodePools:
   dynamic:
@@ -24,10 +26,28 @@ nodePools:
     server_type: cpx11
     image: ubuntu-20.04
     disk_size: 50
+  - name: gcp-control
+    provider: 
+      gcp:
+        region: europe-west1
+        zone: europe-west1-c
+    count: 2
+    server_type: e2-small
+    image: ubuntu-os-cloud/ubuntu-2004-lts
+    disk_size: 50
+  - name: gcp-compute
+    provider: 
+      gcp:
+        region: europe-west1
+        zone: europe-west1-c
+    count: 2
+    server_type: e2-small
+    image: ubuntu-os-cloud/ubuntu-2004-lts
+    disk_size: 50
 
 kubernetes:
   clusters:
-    - name: testset-cluster-name1
+    - name: cluster-1
       version: v1.19.0
       network: 192.168.2.0/24
       pools:
@@ -35,11 +55,11 @@ kubernetes:
         - hetzner-control
         compute:
         - hetzner-compute
-    # - name: testset-cluster-name2
-    #   version: v1.19.0
-    #   network: 192.168.2.0/24
-    #   pools:
-    #     control:
-    #     - hetzner-control
-    #     compute:
-    #     - hetzner-compute
+    - name: cluster-2
+      version: v1.19.0
+      network: 192.168.2.0/24
+      pools:
+        control:
+        - gcp-control
+        compute:
+        - gcp-compute

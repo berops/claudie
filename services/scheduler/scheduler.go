@@ -211,9 +211,10 @@ clusterDesired:
 				if clusterCurrent.Kubeconfig != "" {
 					clusterDesired.Kubeconfig = clusterCurrent.Kubeconfig
 				}
+				//skip the checks bellow
+				continue clusterDesired
 			}
-			//skip the checks bellow
-			continue clusterDesired
+
 		}
 		// no current cluster found with matching name, create keys/hash
 		if clusterDesired.PublicKey == "" {
@@ -236,7 +237,12 @@ func createNodepools(pools []string, desiredState Manifest, isControl bool) []*p
 		// Check if the nodepool is part of the cluster
 		if isFound, position := searchNodePool(nodePool, desiredState.NodePools.Dynamic); isFound {
 
-			provider, region, zone := getProviderRegionAndZone(desiredState.NodePools.Dynamic[position].Provider)
+			providerName, region, zone := getProviderRegionAndZone(desiredState.NodePools.Dynamic[position].Provider)
+			providerIndex := searchProvider(providerName, desiredState.Providers)
+			if providerIndex < 0 {
+				log.Error().Msg("Provider not defined")
+				continue
+			}
 			nodePools = append(nodePools, &pb.NodePool{
 				Name:       desiredState.NodePools.Dynamic[position].Name,
 				Region:     region,
@@ -246,8 +252,8 @@ func createNodepools(pools []string, desiredState Manifest, isControl bool) []*p
 				DiskSize:   uint32(desiredState.NodePools.Dynamic[position].DiskSize),
 				Count:      uint32(desiredState.NodePools.Dynamic[position].Count),
 				Provider: &pb.Provider{
-					Name:        desiredState.Providers[searchProvider(provider, desiredState.Providers)].Name,
-					Credentials: desiredState.Providers[searchProvider(provider, desiredState.Providers)].Credentials,
+					Name:        desiredState.Providers[providerIndex].Name,
+					Credentials: desiredState.Providers[providerIndex].Credentials,
 				},
 				IsControl: isControl,
 			})
