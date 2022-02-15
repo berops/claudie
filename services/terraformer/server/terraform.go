@@ -55,12 +55,14 @@ func buildInfrastructureAsync(desiredStateCluster *pb.Cluster, currentStateClust
 
 	// Creating .tf files for providers from templates
 	if err := buildNodePools(desiredStateCluster, outputPathCluster); err != nil {
+		log.Error().Msgf("Error building building .tf files: %v", err)
 		return err
 	}
 
 	// Create publicKey and privateKey file for a cluster
 	terraformOutputPath := filepath.Join(outputPath, backendData.ClusterName)
 	if err := utils.CreateKeyFile(desiredStateCluster.GetPublicKey(), terraformOutputPath, "public.pem"); err != nil {
+		log.Error().Msgf("Error creating key file: %v", err)
 		return err
 	}
 
@@ -88,11 +90,13 @@ func buildInfrastructureAsync(desiredStateCluster *pb.Cluster, currentStateClust
 	for _, nodepool := range desiredStateCluster.NodePools {
 		output, err := outputTerraform(terraformOutputPath, nodepool)
 		if err != nil {
+			log.Error().Msgf("Error while getting output from terraform: %v", err)
 			return err
 		}
 
 		out, err := readOutput(output)
 		if err != nil {
+			log.Error().Msgf("Error while reading the terraform output: %v", err)
 			return err
 		}
 		fmt.Printf("%v", out)
@@ -130,12 +134,12 @@ func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) err
 	}
 	err := errGroup.Wait()
 	if err != nil {
-		return err
+		return fmt.Errorf("error while building infrastructure: %v", err)
 	}
 
 	// Clean after terraform
 	if err := os.RemoveAll(outputPath + "/" + backendData.ClusterName); err != nil {
-		return err
+		return fmt.Errorf("error while deleting files: %v", err)
 	}
 
 	return nil
@@ -162,15 +166,14 @@ func destroyInfrastructureAsync(cluster *pb.Cluster, backendData Backend) error 
 
 	// Creating .tf files for providers from templates
 	if err := buildNodePools(cluster, outputPathCluster); err != nil {
+		log.Info().Msgf("error while building .tf files %s", err)
 		return err
 	}
 
 	// Create publicKey and privateKey file for a cluster
 	terraformOutputPath := filepath.Join(outputPath, backendData.ClusterName)
 	if err := utils.CreateKeyFile(cluster.GetPublicKey(), terraformOutputPath, "public.pem"); err != nil {
-		return err
-	}
-	if err := utils.CreateKeyFile(cluster.GetPublicKey(), terraformOutputPath, "private.pem"); err != nil {
+		log.Info().Msgf("error while creating key: %v", err)
 		return err
 	}
 
@@ -230,15 +233,15 @@ func buildNodePools(cluster *pb.Cluster, outputPathCluster string) error {
 		terraFormFileName := fmt.Sprintf("%s.tf", providerName)
 		tplFile := filepath.Join(templatePath, tplFileName)
 		trfFile := filepath.Join(outputPathCluster, terraFormFileName)
-		genRes := templateGen(
+		err := templateGen(
 			tplFile,
 			trfFile,
 			&Data{NodePools: nodePool, Cluster: cluster},
 			templatePath)
-		if genRes != nil {
+		if err != nil {
 			log.Error().Msgf("Error generating terraform config file %s from template %s: %v",
-				trfFile, tplFile, genRes)
-			return genRes
+				trfFile, tplFile, err)
+			return err
 		}
 	}
 	return nil

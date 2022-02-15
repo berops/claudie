@@ -166,7 +166,7 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 			Name:       strings.ToLower(cluster.Name),
 			Kubernetes: cluster.Version,
 			Network:    cluster.Network,
-			Hash:       utils.CreateHash(7),
+			Hash:       utils.CreateHash(utils.HashLength),
 		}
 
 		var ComputeNodePools, ControlNodePools []*pb.NodePool
@@ -297,15 +297,16 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 
 		config := res.GetConfig()
 		if config != nil {
-			go func() {
+			go func() error {
 				log.Info().Msgf("Processing %s ", config.Name)
 				err := processConfig(config, c)
 				if err != nil {
 					log.Info().Msgf("scheduler:processConfig failed: %s", err)
+					return err
 				}
+				return nil
 			}()
 		}
-
 		return nil
 	}
 }

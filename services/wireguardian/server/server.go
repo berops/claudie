@@ -63,20 +63,23 @@ func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVP
 
 func buildVPNAsync(cluster *pb.Cluster) error {
 	if err := genPrivAdd(cluster.GetNodePools(), cluster.GetNetwork()); err != nil {
+		log.Error().Msgf("error while generating private addresses: %v", err)
 		return err
 	}
 
 	invOutputPath := filepath.Join(outputPath, cluster.GetName()+"-"+cluster.GetHash())
 	if err := genInv(cluster.GetNodePools(), invOutputPath); err != nil {
+		log.Error().Msgf("error while genereting inventory file: %v", err)
 		return err
 	}
 
 	if err := runAnsible(cluster, invOutputPath); err != nil {
+		log.Error().Msgf("error while running Ansible: %v", err)
 		return err
 	}
 
 	if err := os.RemoveAll(invOutputPath); err != nil {
-		return err
+		return fmt.Errorf("failed to remove ansible files for cluster: %v", err)
 	}
 
 	return nil
@@ -85,6 +88,9 @@ func buildVPNAsync(cluster *pb.Cluster) error {
 // genPrivAdd will generate private ip addresses from network parameter
 func genPrivAdd(nodepools []*pb.NodePool, network string) error {
 	_, ipNet, err := net.ParseCIDR(network)
+	if err != nil {
+		return fmt.Errorf("failed to parse CIDR: %v", err)
+	}
 	var addressesToAssign []*pb.Node
 
 	// initilize slice of possible last octet
@@ -94,9 +100,6 @@ func genPrivAdd(nodepools []*pb.NodePool, network string) error {
 		lastOctets[i] = i + 1
 	}
 
-	if err != nil {
-		return err
-	}
 	ip := ipNet.IP
 	ip = ip.To4()
 	for _, nodepool := range nodepools {
@@ -163,11 +166,11 @@ func genInv(nodepools []*pb.NodePool, path string) error {
 
 func runAnsible(cluster *pb.Cluster, invOutputPath string) error {
 	if err := utils.CreateKeyFile(cluster.GetPrivateKey(), invOutputPath, sslPrivateKeyFile); err != nil {
-		return err
+		return fmt.Errorf("failed to create key file: %v", err)
 	}
 
 	if err := os.Setenv("ANSIBLE_HOST_KEY_CHECKING", "False"); err != nil {
-		return err
+		return fmt.Errorf("failed to set ANSIBLE_HOST_KEY_CHECKING env var: %v", err)
 	}
 
 	cmd := exec.Command("ansible-playbook", playbookFile, "-i", cluster.Name+"-"+cluster.Hash+"/"+inventoryFile, "-f", "20", "--private-key", cluster.Name+"-"+cluster.Hash+"/"+sslPrivateKeyFile)
