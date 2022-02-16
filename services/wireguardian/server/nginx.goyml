@@ -11,7 +11,7 @@
         update_cache: yes
     - name: copy config files
       copy:
-        src: ./cluster-1-164yzu9/cluster.conf
+        src: {{ .ConfPath }}
         dest: /etc/nginx/sites-available/static_site.cfg
     - name: create symlink
       file:
