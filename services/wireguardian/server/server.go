@@ -28,14 +28,19 @@ type server struct {
 }
 
 type dataForIniTemplate struct {
-	Nodepools                []*pb.NodePool
-	LBNodepools              []*pb.NodePool
-	SshClusterPrivateKeyFile string
-	SshLBPrivateKeyFile      string
+	Nodepools         []*pb.NodePool
+	LBClusters        []*pb.LBcluster
+	DirName           string
+	ClusterSSHKeyName string
+	PrivateFileExt    string
 }
 
 type dataForConfTemplate struct {
 	Roles []lbRolesWithNodes
+}
+
+type dataForNginxPlaybookTemplate struct {
+	ConfPath string
 }
 
 type lbRolesWithNodes struct {
@@ -47,12 +52,13 @@ const (
 	outputPath               = "services/wireguardian/server/Ansible"
 	inventoryTemplate        = "services/wireguardian/server/inventory.goini"
 	nginxCongTemplate        = "services/wireguardian/server/conf.gotpl"
+	nginxPlaybookTemplate    = "services/wireguardian/server/nginx.goyml"
 	inventoryFile            = "inventory.ini"
 	nginxConfFileExt         = ".conf"
+	nginxPlaybookExt         = ".yml"
+	privateFileExt           = ".pem"
 	playbookFile             = "playbook.yml"
-	nginxPlaybook            = "nginx.yml"
 	sshClusterPrivateKeyFile = "cluster.pem"
-	sshLBPrivateKeyFile      = "lb.pem"
 	defaultWireguardianPort  = 50053
 )
 
@@ -83,18 +89,18 @@ func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVP
 
 func buildVPNAsync(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster) error {
 
-	lbCluster := findLBCluster(cluster.ClusterInfo.Name, lbClusters)
+	matchingLBClusters := findLBCluster(cluster.ClusterInfo.Name, lbClusters)
 
-	if err := genPrivAdd(append(cluster.ClusterInfo.NodePools, lbCluster.ClusterInfo.NodePools...), cluster.GetNetwork()); err != nil {
+	if err := genPrivAdd(groupNodepool(cluster, matchingLBClusters), cluster.GetNetwork()); err != nil {
 		return err
 	}
 
 	outputPath := filepath.Join(outputPath, cluster.ClusterInfo.GetName()+"-"+cluster.ClusterInfo.GetHash())
-	if err := genTpl(cluster, lbCluster, outputPath); err != nil {
+	if err := genTpl(cluster, matchingLBClusters, outputPath); err != nil {
 		return err
 	}
 
-	if err := runAnsible(cluster, lbCluster, outputPath); err != nil {
+	if err := runAnsible(cluster, matchingLBClusters, outputPath); err != nil {
 		return err
 	}
 
@@ -159,38 +165,42 @@ func remove(slice []byte, value byte) []byte {
 }
 
 // genTpl will generate ansible inventory file slice of clusters input
-func genTpl(cluster *pb.K8Scluster, lbCluster *pb.LBcluster, outputPath string) error {
+func genTpl(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster, outputPath string) error {
 
 	// inventory file
 	iniData := &dataForIniTemplate{
-		Nodepools:                cluster.ClusterInfo.NodePools,
-		LBNodepools:              lbCluster.ClusterInfo.NodePools,
-		SshClusterPrivateKeyFile: cluster.ClusterInfo.Name + "-" + cluster.ClusterInfo.Hash + "/" + sshClusterPrivateKeyFile,
-		SshLBPrivateKeyFile:      cluster.ClusterInfo.Name + "-" + cluster.ClusterInfo.Hash + "/" + sshLBPrivateKeyFile,
+		Nodepools:         cluster.ClusterInfo.NodePools,
+		LBClusters:        lbClusters,
+		DirName:           cluster.ClusterInfo.Name + "-" + cluster.ClusterInfo.Hash,
+		ClusterSSHKeyName: sshClusterPrivateKeyFile,
+		PrivateFileExt:    privateFileExt,
 	}
 	err := tplExecution(iniData, inventoryTemplate, outputPath, inventoryFile)
 	if err != nil {
 		return err
 	}
 
-	// nginx conf file
+	// nginx conf files
 	controlNodes, computeNodes := nodeSegregation(cluster)
-	confData := &dataForConfTemplate{}
-	for _, role := range lbCluster.Roles {
-		tmpRole := lbRolesWithNodes{Role: role}
+	for _, lbCluster := range lbClusters {
 
-		if role.Target == pb.Target_k8sAllNodes {
-			tmpRole.Nodes = append(controlNodes, computeNodes...)
-		} else if role.Target == pb.Target_k8sControlPlane {
-			tmpRole.Nodes = controlNodes
-		} else if role.Target == pb.Target_k8sComputePlane {
-			tmpRole.Nodes = computeNodes
+		confData := &dataForConfTemplate{}
+		for _, role := range lbCluster.Roles {
+			tmpRole := lbRolesWithNodes{Role: role}
+
+			if role.Target == pb.Target_k8sAllNodes {
+				tmpRole.Nodes = append(controlNodes, computeNodes...)
+			} else if role.Target == pb.Target_k8sControlPlane {
+				tmpRole.Nodes = controlNodes
+			} else if role.Target == pb.Target_k8sComputePlane {
+				tmpRole.Nodes = computeNodes
+			}
+			confData.Roles = append(confData.Roles, tmpRole)
 		}
-		confData.Roles = append(confData.Roles, tmpRole)
-	}
-	err = tplExecution(confData, nginxCongTemplate, outputPath, lbCluster.ClusterInfo.Name+nginxConfFileExt)
-	if err != nil {
-		return err
+		err = tplExecution(confData, nginxCongTemplate, outputPath, lbCluster.ClusterInfo.Name+nginxConfFileExt)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -221,13 +231,13 @@ func tplExecution(data interface{}, templateFilePath string, outputPath string, 
 
 }
 
-func runAnsible(cluster *pb.K8Scluster, lbCluster *pb.LBcluster, invOutputPath string) error {
-	if err := utils.CreateKeyFile(cluster.ClusterInfo.GetPrivateKey(), invOutputPath, sshClusterPrivateKeyFile); err != nil {
+func runAnsible(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster, clusterOutputPath string) error {
+	if err := utils.CreateKeyFile(cluster.ClusterInfo.GetPrivateKey(), clusterOutputPath, sshClusterPrivateKeyFile); err != nil {
 		return err
 	}
 
-	if lbCluster != nil {
-		if err := utils.CreateKeyFile(lbCluster.ClusterInfo.GetPrivateKey(), invOutputPath, sshLBPrivateKeyFile); err != nil {
+	for _, lbCluster := range lbClusters {
+		if err := utils.CreateKeyFile(lbCluster.ClusterInfo.GetPrivateKey(), clusterOutputPath, lbCluster.ClusterInfo.Name+privateFileExt); err != nil {
 			return err
 		}
 	}
@@ -237,7 +247,6 @@ func runAnsible(cluster *pb.K8Scluster, lbCluster *pb.LBcluster, invOutputPath s
 	}
 
 	inventoryFilePath := cluster.ClusterInfo.Name + "-" + cluster.ClusterInfo.Hash + "/" + inventoryFile
-	configFilePath := cluster.ClusterInfo.Name + "-" + cluster.ClusterInfo.Hash + "/" + lbCluster.ClusterInfo.Name + nginxConfFileExt
 
 	cmd := exec.Command("ansible-playbook", playbookFile, "-i", inventoryFilePath, "-f", "20")
 	cmd.Dir = outputPath
@@ -248,27 +257,38 @@ func runAnsible(cluster *pb.K8Scluster, lbCluster *pb.LBcluster, invOutputPath s
 		return err
 	}
 
-	// run nginx playbook
-	cmd = exec.Command("ansible-playbook", nginxPlaybook, "i", inventoryFilePath, "-f", "20", "-l", "lbnodes", "--extra-vars", "conf_path=", configFilePath)
-	cmd.Dir = outputPath
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
-	if err != nil {
-		return err
+	// generate and run nginx playbook
+
+	for _, lbCluster := range lbClusters {
+
+		d := dataForNginxPlaybookTemplate{ConfPath: "./" + lbCluster.ClusterInfo.Name + nginxConfFileExt}
+		err := tplExecution(d, nginxPlaybookTemplate, clusterOutputPath, lbCluster.ClusterInfo.Name+nginxPlaybookExt)
+		if err != nil {
+			return err
+		}
+
+		nginxPlaybookPath := cluster.ClusterInfo.Name + "-" + cluster.ClusterInfo.Hash + "/" + lbCluster.ClusterInfo.Name + nginxPlaybookExt
+		cmd := exec.Command("ansible-playbook", nginxPlaybookPath, "-i", inventoryFilePath, "-f", "20", "-l", lbCluster.ClusterInfo.Name)
+		cmd.Dir = outputPath
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		err = cmd.Run()
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 // find the all the load balancer cluster for a K8s cluster
-// TODO: return slice in stead of an object of pb.LBcluster
-func findLBCluster(ClusterName string, lbClusters []*pb.LBcluster) *pb.LBcluster {
+func findLBCluster(ClusterName string, lbClusters []*pb.LBcluster) []*pb.LBcluster {
+	var matchingLBClusters []*pb.LBcluster
 	for _, lbCluster := range lbClusters {
 		if lbCluster.TargetedK8S == ClusterName {
-			return lbCluster
+			matchingLBClusters = append(matchingLBClusters, lbCluster)
 		}
 	}
-	return nil
+	return matchingLBClusters
 }
 
 func nodeSegregation(cluster *pb.K8Scluster) (controlNodes, ComputeNodes []*pb.Node) {
@@ -282,6 +302,15 @@ func nodeSegregation(cluster *pb.K8Scluster) (controlNodes, ComputeNodes []*pb.N
 		}
 	}
 	return
+}
+
+func groupNodepool(k8sCluster *pb.K8Scluster, lbClusters []*pb.LBcluster) []*pb.NodePool {
+	var nodepools []*pb.NodePool
+	nodepools = append(nodepools, k8sCluster.ClusterInfo.NodePools...)
+	for _, lb := range lbClusters {
+		nodepools = append(nodepools, lb.ClusterInfo.NodePools...)
+	}
+	return nodepools
 }
 func main() {
 	// initialize logger
