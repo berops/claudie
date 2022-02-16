@@ -103,7 +103,7 @@ type Conf struct {
 
 type LoadBalancerCluster struct {
 	Name        string   `yaml:"name"`
-	Role        []string `yaml:"role"`
+	Roles       []string `yaml:"roles"`
 	DNS         DNS      `yaml:"dns"`
 	TargetedK8s string   `yaml:"targeted-k8s"`
 	Pools       []string `yaml:"pools"`
@@ -178,17 +178,6 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 		newCluster.ClusterInfo.NodePools = append(ControlNodePools, ComputeNodePools...)
 		clusters = append(clusters, newCluster)
 	}
-	var roles []*pb.Role
-
-	for _, role := range desiredState.LoadBalancer.Roles {
-		newRole := &pb.Role{
-			Name:       role.Name,
-			Protocol:   role.Protocol,
-			Port:       int32(role.Port),
-			TargetPort: int32(role.TargetPort),
-		}
-		roles = append(roles, newRole)
-	}
 
 	var lbClusters []*pb.LBcluster
 	for _, lbCluster := range desiredState.LoadBalancer.Clusters {
@@ -198,7 +187,7 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 				Name: lbCluster.Name,
 				Hash: utils.CreateHash(utils.HashLength),
 			},
-			Roles: roles,
+			Roles: getMatchingRoles(desiredState.LoadBalancer.Roles, lbCluster.Roles),
 			Dns: &pb.DNS{
 				Hostname:  lbCluster.DNS.Hostname,
 				Providers: lbCluster.DNS.Provider,
@@ -389,6 +378,35 @@ func searchProvider(providerName string, providers []Provider) int {
 	return -1
 }
 
+func getMatchingRoles(roles []Role, roleNames []string) []*pb.Role {
+	var matchingRoles []*pb.Role
+
+	for _, roleName := range roleNames {
+		for _, role := range roles {
+			if role.Name == roleName {
+
+				var target pb.Target
+				if role.Target == "k8sAllNodes" {
+					target = pb.Target_k8sAllNodes
+				} else if role.Target == "k8sControlPlane" {
+					target = pb.Target_k8sControlPlane
+				} else if role.Target == "k8sComputePlane" {
+					target = pb.Target_k8sComputePlane
+				}
+
+				newRole := &pb.Role{
+					Name:       role.Name,
+					Protocol:   role.Protocol,
+					Port:       int32(role.Port),
+					TargetPort: int32(role.TargetPort),
+					Target:     target,
+				}
+				matchingRoles = append(matchingRoles, newRole)
+			}
+		}
+	}
+	return matchingRoles
+}
 func main() {
 	// initialize logger
 	utils.InitLog("scheduler", "GOLANG_LOG")

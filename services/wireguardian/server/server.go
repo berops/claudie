@@ -58,7 +58,7 @@ const (
 	nginxPlaybookExt         = ".yml"
 	privateFileExt           = ".pem"
 	playbookFile             = "playbook.yml"
-	sshClusterPrivateKeyFile = "cluster.pem"
+	sshClusterPrivateKeyFile = "cluster"
 	defaultWireguardianPort  = 50053
 )
 
@@ -232,7 +232,7 @@ func tplExecution(data interface{}, templateFilePath string, outputPath string, 
 }
 
 func runAnsible(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster, clusterOutputPath string) error {
-	if err := utils.CreateKeyFile(cluster.ClusterInfo.GetPrivateKey(), clusterOutputPath, sshClusterPrivateKeyFile); err != nil {
+	if err := utils.CreateKeyFile(cluster.ClusterInfo.GetPrivateKey(), clusterOutputPath, sshClusterPrivateKeyFile+privateFileExt); err != nil {
 		return err
 	}
 
@@ -248,14 +248,14 @@ func runAnsible(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster, clusterOutpu
 
 	inventoryFilePath := cluster.ClusterInfo.Name + "-" + cluster.ClusterInfo.Hash + "/" + inventoryFile
 
-	cmd := exec.Command("ansible-playbook", playbookFile, "-i", inventoryFilePath, "-f", "20")
-	cmd.Dir = outputPath
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		return err
-	}
+	// cmd := exec.Command("ansible-playbook", playbookFile, "-i", inventoryFilePath, "-f", "20")
+	// cmd.Dir = outputPath
+	// cmd.Stdout = os.Stdout
+	// cmd.Stderr = os.Stderr
+	// err := cmd.Run()
+	// if err != nil {
+	// 	return err
+	// }
 
 	// generate and run nginx playbook
 
