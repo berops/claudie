@@ -248,14 +248,14 @@ func runAnsible(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster, clusterOutpu
 
 	inventoryFilePath := cluster.ClusterInfo.Name + "-" + cluster.ClusterInfo.Hash + "/" + inventoryFile
 
-	// cmd := exec.Command("ansible-playbook", playbookFile, "-i", inventoryFilePath, "-f", "20")
-	// cmd.Dir = outputPath
-	// cmd.Stdout = os.Stdout
-	// cmd.Stderr = os.Stderr
-	// err := cmd.Run()
-	// if err != nil {
-	// 	return err
-	// }
+	cmd := exec.Command("ansible-playbook", playbookFile, "-i", inventoryFilePath, "-f", "20", "-l", "nodes")
+	cmd.Dir = outputPath
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		return err
+	}
 
 	// generate and run nginx playbook
 
