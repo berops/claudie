@@ -434,7 +434,7 @@ func getClusterInfoPairs(a, b interface{}) []ClusterPair {
 			}
 		}
 	default:
-		fmt.Println("\nType not found")
+		log.Info().Msgf("Type not found in getClusterInfoPairs(): %t", a)
 	}
 	return clusterPairs
 }
