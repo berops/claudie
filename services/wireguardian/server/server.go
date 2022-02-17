@@ -92,20 +92,23 @@ func buildVPNAsync(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster) error {
 	matchingLBClusters := findLBCluster(cluster.ClusterInfo.Name, lbClusters)
 
 	if err := genPrivAdd(groupNodepool(cluster, matchingLBClusters), cluster.GetNetwork()); err != nil {
+		log.Error().Msgf("error while generating private addresses: %v", err)
 		return err
 	}
 
 	outputPath := filepath.Join(outputPath, cluster.ClusterInfo.GetName()+"-"+cluster.ClusterInfo.GetHash())
 	if err := genTpl(cluster, matchingLBClusters, outputPath); err != nil {
+		log.Error().Msgf("error while genereting inventory file: %v", err)
 		return err
 	}
 
 	if err := runAnsible(cluster, matchingLBClusters, outputPath); err != nil {
+		log.Error().Msgf("error while running Ansible: %v", err)
 		return err
 	}
 
 	if err := os.RemoveAll(outputPath); err != nil {
-		return err
+		return fmt.Errorf("failed to remove ansible files for cluster: %v", err)
 	}
 
 	return nil
@@ -114,6 +117,9 @@ func buildVPNAsync(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster) error {
 // genPrivAdd will generate private ip addresses from network parameter
 func genPrivAdd(nodepools []*pb.NodePool, network string) error {
 	_, ipNet, err := net.ParseCIDR(network)
+	if err != nil {
+		return fmt.Errorf("failed to parse CIDR: %v", err)
+	}
 	var addressesToAssign []*pb.Node
 
 	// initialize slice of possible last octet
@@ -123,9 +129,6 @@ func genPrivAdd(nodepools []*pb.NodePool, network string) error {
 		lastOctets[i] = i + 1
 	}
 
-	if err != nil {
-		return err
-	}
 	ip := ipNet.IP
 	ip = ip.To4()
 	for _, nodepool := range nodepools {
@@ -233,9 +236,9 @@ func tplExecution(data interface{}, templateFilePath string, outputPath string, 
 
 func runAnsible(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster, clusterOutputPath string) error {
 	if err := utils.CreateKeyFile(cluster.ClusterInfo.GetPrivateKey(), clusterOutputPath, sshClusterPrivateKeyFile+privateFileExt); err != nil {
-		return err
-	}
+		return fmt.Errorf("failed to create key file: %v", err)
 
+	}
 	for _, lbCluster := range lbClusters {
 		if err := utils.CreateKeyFile(lbCluster.ClusterInfo.GetPrivateKey(), clusterOutputPath, lbCluster.ClusterInfo.Name+privateFileExt); err != nil {
 			return err
@@ -243,7 +246,7 @@ func runAnsible(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster, clusterOutpu
 	}
 
 	if err := os.Setenv("ANSIBLE_HOST_KEY_CHECKING", "False"); err != nil {
-		return err
+		return fmt.Errorf("failed to set ANSIBLE_HOST_KEY_CHECKING env var: %v", err)
 	}
 
 	inventoryFilePath := cluster.ClusterInfo.Name + "-" + cluster.ClusterInfo.Hash + "/" + inventoryFile

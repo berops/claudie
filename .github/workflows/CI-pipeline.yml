@@ -200,7 +200,12 @@ jobs:
       - name: Monitor E2E test
         run: |
           kubectl wait --for=condition=complete --timeout=3600s job/testing-framework -n claudie-$GITHUB_SHA
-     
+      
+      - name: Dump logs from testing framework
+        if:  ${{ always() }}  
+        run: |
+          gcloud logging read "resource.labels.container_name = "testing-framework" AND severity >= ERROR AND  resource.labels.namespace_name = "claudie-$GITHUB_SHA""
+      
       - name: Delete temporary namespace
         run: |
           kubectl delete namespace claudie-$GITHUB_SHA 

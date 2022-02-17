@@ -129,8 +129,7 @@ func configChecker(done chan string, c pb.ContextBoxServiceClient, configID stri
 			Id: configID,
 		})
 		if err != nil {
-			emsg := fmt.Sprintf("Got error while waiting for config to finish: %v", err)
-			log.Fatal().Msg(emsg)
+			log.Fatal().Msg(fmt.Sprintf("Got error while waiting for config to finish: %v", err))
 		}
 		if config != nil {
 			cfg := config.Config

@@ -338,15 +338,16 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 
 		config := res.GetConfig()
 		if config != nil {
-			go func() {
+			go func() error {
 				log.Info().Msgf("Processing %s ", config.Name)
 				err := processConfig(config, c)
 				if err != nil {
 					log.Info().Msgf("scheduler:processConfig failed: %s", err)
+					return err
 				}
+				return nil
 			}()
 		}
-
 		return nil
 	}
 }
