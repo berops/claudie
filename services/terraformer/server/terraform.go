@@ -144,12 +144,10 @@ func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) err
 	// create pairs of cluster infos
 	clusterPairs := getClusterInfoPairs(desiredState.GetClusters(), currentState.GetClusters())
 	clusterPairs = append(clusterPairs, getClusterInfoPairs(desiredState.GetLoadBalancerClusters(), currentState.GetLoadBalancerClusters())...)
-	fmt.Println(len(clusterPairs))
 	for _, pair := range clusterPairs {
-		fmt.Println(pair)
 		func(desiredInfo *pb.ClusterInfo, currentInfo *pb.ClusterInfo, backendData Backend) {
+			tfFile, tplFile := getFileSuffix(pair.isK8s)
 			errGroup.Go(func() error {
-				tfFile, tplFile := getFileSuffix(pair.isK8s)
 				err := buildClustersAsynch(desiredInfo, currentInfo, backendData, tfFile, tplFile)
 				if err != nil {
 					log.Error().Msgf("error encountered in Terraformer - buildInfrastructure: %v", err)
@@ -206,8 +204,8 @@ func destroyInfrastructure(config *pb.Config) error {
 	clusterPairs = append(clusterPairs, getClusterInfoPairs(config.DesiredState.GetLoadBalancerClusters(), nil)...)
 	for _, pair := range clusterPairs {
 		func(desiredInfo *pb.ClusterInfo, backendData Backend) {
+			tfFile, tplFile := getFileSuffix(pair.isK8s)
 			errGroup.Go(func() error {
-				tfFile, tplFile := getFileSuffix(pair.isK8s)
 				err := destroyInfrastructureAsync(desiredInfo, backendData, tfFile, tplFile)
 				if err != nil {
 					log.Error().Msgf("error encountered in Terraformer - destroyInfrastructure: %v", err)
@@ -394,7 +392,7 @@ func getClusterInfoPairs(a, b interface{}) []ClusterPair {
 			for _, desired := range desiredK8s {
 				clusterPairs = append(clusterPairs, ClusterPair{desired.ClusterInfo, nil, true})
 			}
-			break
+			return clusterPairs
 		}
 		currentK8s := b.([]*pb.K8Scluster)
 		for _, desired := range desiredK8s {
@@ -417,7 +415,7 @@ func getClusterInfoPairs(a, b interface{}) []ClusterPair {
 			for _, desired := range desiredLB {
 				clusterPairs = append(clusterPairs, ClusterPair{desired.ClusterInfo, nil, false})
 			}
-			break
+			return clusterPairs
 		}
 		currentLB := b.([]*pb.LBcluster)
 		for _, desired := range desiredLB {
