@@ -241,7 +241,7 @@ func runAnsible(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster, clusterOutpu
 	}
 	for _, lbCluster := range lbClusters {
 		if err := utils.CreateKeyFile(lbCluster.ClusterInfo.GetPrivateKey(), clusterOutputPath, lbCluster.ClusterInfo.Name+privateFileExt); err != nil {
-			return err
+			return fmt.Errorf("failed to create key file for LB cluster %s : %v", lbCluster.ClusterInfo.Name, err)
 		}
 	}
 
