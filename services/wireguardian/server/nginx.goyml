@@ -12,12 +12,12 @@
     - name: copy config files
       copy:
         src: {{ .ConfPath }}
-        dest: /etc/nginx/sites-available/static_site.cfg
-    - name: create symlink
-      file:
-        src: /etc/nginx/sites-available/static_site.cfg
-        dest: /etc/nginx/sites-enabled/default
-        state: link
+        dest: /etc/nginx/passthrough.conf
+    - name: include passthrough conf in nginx.conf
+      lineinfile:
+        path: /etc/nginx/nginx.conf
+        line: 'include /etc/nginx/passthrough.conf;'
+        insertafter: EOF
       become: yes
     - name: restart nginx
       service: 
