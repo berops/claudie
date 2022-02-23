@@ -31,7 +31,7 @@ nodePools:
       hetzner:
         region: nbg1
         zone: nbg1-dc3
-    count: 1
+    count: 3
     server_type: cpx11
     image: ubuntu-20.04
     disk_size: 50
@@ -40,7 +40,7 @@ nodePools:
       hetzner:
         region: nbg1
         zone: nbg1-dc3
-    count: 1
+    count: 3
     server_type: cpx11
     image: ubuntu-20.04
     disk_size: 50
@@ -82,19 +82,21 @@ loadBalancers:
     protocol: tcp
     port: 6443
     target_port: 6443
-    target: k8s-control-plane
-
+    target: k8sControlPlane
+  - name: ingress-lb
+    protocol: tcp
+    port: 30080
+    target_port: 30080
+    target: k8sAllNodes
   clusters:    
   - name: cluster-1-apiserver-lb
     roles:
     - apiserver-lb
     dns:
-      hostname: www.dev-apiserver.mycompany.io
+      hostname: project-1.company.io
       providers: 
       - gcp
-      - hetzner
     targeted-k8s: cluster-1
     pools:  
     #- gcp-lb
     - hetzner-lb
-    
