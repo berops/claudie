@@ -13,17 +13,17 @@ provider "google" {
     project = "platform-infrastructure-316112"
 }
 
-resource "google_dns_managed_zone" "{{ .LBName}}" {
-  name        = "{{.ClusterName}}-{{.ClusterHash}}-{{ .LBName }}"
-  dns_name    = "{{ .Hostname}}"
+resource "google_dns_managed_zone" "lb-zone" {
+  name        = "{{ .ClusterName }}-{{ .ClusterHash }}"
+  dns_name    = "{{ .Hostname }}"
   visibility = "public"
 }
-
-{{- $lbName := .LBName}}
+{{- $clusterName := .ClusterName }}
 {{- range $nodepool := .NodePools}}
-resource "google_dns_record_set" "{{$nodepool.Name}}-{{$lbName}}" {
 
-  name = "{{ .SubDomain }}.${data.google_dns_managed_zone.lb-zone.dns_name}"
+resource "google_dns_record_set" "{{$nodepool.Name}}-{{$clusterName}}" {
+
+  name = "{{ .ClusterName }}-{{ .ClusterHash }}.${data.google_dns_managed_zone.lb-zone.dns_name}"
   type = "A"
   ttl  = 300
 

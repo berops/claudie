@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strings"
 	"text/template"
 
 	"github.com/Berops/platform/proto/pb"
@@ -21,10 +22,17 @@ const (
 	templatePath string = "services/terraformer/templates"
 )
 
+// flag to distinguish between different types of cluster
+const (
+	K8S = 0
+	LB  = 1
+)
+
 // Backend struct
 type Backend struct {
 	ProjectName string
 	ClusterName string
+	Hostname    string
 }
 
 // Data struct
@@ -33,18 +41,28 @@ type Data struct {
 	ClusterName string
 	ClusterHash string
 }
+type DataDns struct {
+	ClusterName string
+	ClusterHash string
+	Hostname    string
+	NodePools   []*pb.NodePool
+}
 type jsonOut struct {
 	IPs map[string]interface{} `json:"-"`
+}
+
+type FilePair struct {
+	outputFile   string
+	templateFile string
 }
 
 type ClusterPair struct {
 	desiredInfo *pb.ClusterInfo
 	currentInfo *pb.ClusterInfo
-	isK8s       bool
+	clusterType int
 }
 
-func initInfra(clusterInfo *pb.ClusterInfo, backendData Backend, tplFile, tfFile string) (string, error) {
-	// Creating backend.tf file
+func initInfra(clusterInfo *pb.ClusterInfo, backendData Backend, clusterType int) (string, error) {
 	templateFilePath := filepath.Join(templatePath, "backend.tpl")
 	tfFilePath := filepath.Join(outputPath, backendData.ClusterName, "backend.tf")
 	outputPathCluster := filepath.Join(outputPath, backendData.ClusterName)
@@ -57,14 +75,38 @@ func initInfra(clusterInfo *pb.ClusterInfo, backendData Backend, tplFile, tfFile
 	}
 
 	// Creating .tf files for providers from templates
-	if err := buildNodePools(clusterInfo, outputPathCluster, tplFile, tfFile); err != nil {
+	if err := buildNodePools(clusterInfo, outputPathCluster, clusterType); err != nil {
 		log.Error().Msgf("Error building building .tf files: %v", err)
 		return "", err
 	}
 
+	// Create dns.tf files if we are dealing with loadbalancer cluster
+	if clusterType == LB {
+		fmt.Printf("Creating DNS records\n")
+		var copied string
+		for _, nodepool := range clusterInfo.NodePools {
+			if strings.Contains(nodepool.Provider.Name, copied) {
+				tpl := filepath.Join(templatePath, fmt.Sprintf("%s-dns.tpl", nodepool.Provider.Name))
+				tf := filepath.Join(outputPath, backendData.ClusterName, fmt.Sprintf("%s-dns.tf", nodepool.Provider.Name))
+				err := templateGen(tpl, tf, DataDns{
+					ClusterName: clusterInfo.Name,
+					ClusterHash: clusterInfo.Hash,
+					Hostname:    backendData.Hostname,
+					NodePools:   clusterInfo.NodePools,
+				}, outputPathCluster)
+				if err != nil {
+					log.Error().Msgf("Error generating terraform config file %s from template %s: %v",
+						tf, tpl, err)
+					return "", err
+				}
+				//save the copied provider
+				copied = copied + nodepool.Provider.Name
+			}
+		}
+	}
+
 	// Create publicKey and privateKey file for a cluster
-	terraformOutputPath := filepath.Join(outputPath, backendData.ClusterName)
-	if err := utils.CreateKeyFile(clusterInfo.GetPublicKey(), terraformOutputPath, "public.pem"); err != nil {
+	if err := utils.CreateKeyFile(clusterInfo.GetPublicKey(), outputPathCluster, "public.pem"); err != nil {
 		log.Error().Msgf("Error creating key file: %v", err)
 		return "", err
 	}
@@ -113,25 +155,27 @@ func createInfra(clusterInfoDesired, clusterInfoCurrent *pb.ClusterInfo, outputP
 	return nil
 }
 
-func buildClustersAsynch(desiredClusterInfo *pb.ClusterInfo, currentClusterInfo *pb.ClusterInfo, backendData Backend, tfFile, tplFile string) error {
+func buildClustersAsynch(desiredClusterInfo *pb.ClusterInfo, currentClusterInfo *pb.ClusterInfo, backendData Backend, clusterType int) error {
 	// Prepare backend data for golang templates
 	backendData.ClusterName = desiredClusterInfo.GetName() + "-" + desiredClusterInfo.GetHash()
 	log.Info().Msgf("Cluster name: %s", backendData.ClusterName)
 
 	// Create all files necessary and do terraform init
-	outputPathCluster, err := initInfra(desiredClusterInfo, backendData, tplFile, tfFile)
+	/*outputPathCluster*/
+	_, err := initInfra(desiredClusterInfo, backendData, clusterType)
 	if err != nil {
 		log.Error().Msgf("Error in terraform init procedure for %s: %v",
 			backendData.ClusterName, err)
 		return err
 	}
-	// create infra via terraform plan and apply
-	if err := createInfra(desiredClusterInfo, currentClusterInfo, outputPathCluster); err != nil {
-		log.Error().Msgf("Error in terraform apply procedure for Loadbalancer cluster %s: %v",
-			desiredClusterInfo.Name, err)
-		return err
-	}
-
+	/*
+		// create infra via terraform plan and apply
+		if err := createInfra(desiredClusterInfo, currentClusterInfo, outputPathCluster); err != nil {
+			log.Error().Msgf("Error in terraform apply procedure for Loadbalancer cluster %s: %v",
+				desiredClusterInfo.Name, err)
+			return err
+		}
+	*/
 	return nil
 }
 
@@ -145,10 +189,13 @@ func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) err
 	clusterPairs := getClusterInfoPairs(desiredState.GetClusters(), currentState.GetClusters())
 	clusterPairs = append(clusterPairs, getClusterInfoPairs(desiredState.GetLoadBalancerClusters(), currentState.GetLoadBalancerClusters())...)
 	for _, pair := range clusterPairs {
+		clusterType := pair.clusterType
 		func(desiredInfo *pb.ClusterInfo, currentInfo *pb.ClusterInfo, backendData Backend) {
-			tfFile, tplFile := getFileSuffix(pair.isK8s)
+			if clusterType == LB {
+				backendData.Hostname = getHostName(desiredState.GetLoadBalancerClusters(), pair.desiredInfo.Name)
+			}
 			errGroup.Go(func() error {
-				err := buildClustersAsynch(desiredInfo, currentInfo, backendData, tfFile, tplFile)
+				err := buildClustersAsynch(desiredInfo, currentInfo, backendData, clusterType)
 				if err != nil {
 					log.Error().Msgf("error encountered in Terraformer - buildInfrastructure: %v", err)
 					return err
@@ -161,7 +208,6 @@ func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) err
 	if err != nil {
 		return fmt.Errorf("error while building infrastructure: %v", err)
 	}
-
 	// Clean after terraform
 	if err := os.RemoveAll(outputPath + "/" + backendData.ClusterName); err != nil {
 		return fmt.Errorf("error while deleting files: %v", err)
@@ -170,15 +216,25 @@ func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) err
 	return nil
 }
 
+func getHostName(lBcluster []*pb.LBcluster, lbName string) string {
+	hostname := ""
+	for _, cluster := range lBcluster {
+		if cluster.ClusterInfo.Name == lbName {
+			hostname = cluster.Dns.GetHostname()
+		}
+	}
+	return hostname
+}
+
 // destroyInfrastructureAsync executes terraform destroy --auto-approve. It destroys whole infrastructure in a project.
-func destroyInfrastructureAsync(clusterInfo *pb.ClusterInfo, backendData Backend, tfFile, tplFile string) error {
+func destroyInfrastructureAsync(clusterInfo *pb.ClusterInfo, backendData Backend, clusterType int) error {
 	log.Info().Msg("Generating templates for infrastructure destroy")
 	backendData.ClusterName = clusterInfo.GetName() + "-" + clusterInfo.GetHash()
 
 	log.Info().Msgf("Cluster name: %s", backendData.ClusterName)
 
 	// Create all files necessary and do terraform init
-	outputPathCluster, err := initInfra(clusterInfo, backendData, tplFile, tfFile)
+	outputPathCluster, err := initInfra(clusterInfo, backendData, clusterType)
 	if err != nil {
 		log.Error().Msgf("Error in terraform init procedure for %s: %v",
 			backendData.ClusterName, err)
@@ -203,10 +259,10 @@ func destroyInfrastructure(config *pb.Config) error {
 	clusterPairs := getClusterInfoPairs(config.DesiredState.GetClusters(), nil)
 	clusterPairs = append(clusterPairs, getClusterInfoPairs(config.DesiredState.GetLoadBalancerClusters(), nil)...)
 	for _, pair := range clusterPairs {
+		clusterType := pair.clusterType
 		func(desiredInfo *pb.ClusterInfo, backendData Backend) {
-			tfFile, tplFile := getFileSuffix(pair.isK8s)
 			errGroup.Go(func() error {
-				err := destroyInfrastructureAsync(desiredInfo, backendData, tfFile, tplFile)
+				err := destroyInfrastructureAsync(desiredInfo, backendData, clusterType)
 				if err != nil {
 					log.Error().Msgf("error encountered in Terraformer - destroyInfrastructure: %v", err)
 					return err
@@ -229,22 +285,25 @@ func destroyInfrastructure(config *pb.Config) error {
 }
 
 // buildNodePools creates .tf files from providers contained in a cluster
-func buildNodePools(clusterInfo *pb.ClusterInfo, outputPathCluster string, tplFile, tfFile string) error {
+func buildNodePools(clusterInfo *pb.ClusterInfo, outputPathCluster string, clusterType int) error {
 	sortedNodePools := sortNodePools(clusterInfo)
 	for providerName, nodePool := range sortedNodePools {
 		log.Info().Msgf("Cluster provider: %s", providerName)
-		tplFileName := fmt.Sprintf("%s%s", providerName, tplFile)
-		terraformFileName := fmt.Sprintf("%s%s", providerName, tfFile)
-		tplFile := filepath.Join(templatePath, tplFileName)
-		trfFile := filepath.Join(outputPathCluster, terraformFileName)
-		err := templateGen(
+		files, err := getFilePair(clusterType)
+		if err != nil {
+			log.Error().Msgf("Error getting the template files: %v", err)
+			return err
+		}
+		tplFile := filepath.Join(templatePath, fmt.Sprintf("%s%s", providerName, files.templateFile))
+		tfFile := filepath.Join(outputPathCluster, fmt.Sprintf("%s%s", providerName, files.outputFile))
+		err = templateGen(
 			tplFile,
-			trfFile,
+			tfFile,
 			&Data{NodePools: nodePool, ClusterName: clusterInfo.Name, ClusterHash: clusterInfo.Hash},
 			outputPathCluster)
 		if err != nil {
 			log.Error().Msgf("Error generating terraform config file %s from template %s: %v",
-				trfFile, tplFile, err)
+				tfFile, tplFile, err)
 			return err
 		}
 	}
@@ -252,7 +311,7 @@ func buildNodePools(clusterInfo *pb.ClusterInfo, outputPathCluster string, tplFi
 }
 
 // templateGen generates terraform config file from a template .tpl
-func templateGen(templatePath string, outputPath string, d interface{}, dirName string) error {
+func templateGen(templatePath string, tfFilePath string, d interface{}, dirName string) error {
 	if _, err := os.Stat(dirName); os.IsNotExist(err) {
 		if err := os.MkdirAll(dirName, os.ModePerm); err != nil {
 			return fmt.Errorf("failed to create dir: %v", err)
@@ -263,8 +322,8 @@ func templateGen(templatePath string, outputPath string, d interface{}, dirName 
 	if err != nil {
 		return fmt.Errorf("failed to load the template file: %v", err)
 	}
-	fmt.Printf("Creating %s \n", outputPath)
-	f, err := os.Create(outputPath)
+	fmt.Printf("Creating %s \n", tfFilePath)
+	f, err := os.Create(tfFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to create the %s file: %v", dirName, err)
 	}
@@ -390,7 +449,7 @@ func getClusterInfoPairs(a, b interface{}) []ClusterPair {
 		if b == nil {
 			// no current state
 			for _, desired := range desiredK8s {
-				clusterPairs = append(clusterPairs, ClusterPair{desired.ClusterInfo, nil, true})
+				clusterPairs = append(clusterPairs, ClusterPair{desired.ClusterInfo, nil, K8S})
 			}
 			return clusterPairs
 		}
@@ -399,13 +458,13 @@ func getClusterInfoPairs(a, b interface{}) []ClusterPair {
 			added := len(clusterPairs)
 			for _, current := range currentK8s {
 				if current.ClusterInfo.Name == desired.ClusterInfo.Name {
-					clusterPairs = append(clusterPairs, ClusterPair{desired.ClusterInfo, current.ClusterInfo, true})
+					clusterPairs = append(clusterPairs, ClusterPair{desired.ClusterInfo, current.ClusterInfo, K8S})
 					break
 				}
 			}
 			//not found in current
 			if added == len(clusterPairs) {
-				clusterPairs = append(clusterPairs, ClusterPair{desired.ClusterInfo, nil, true})
+				clusterPairs = append(clusterPairs, ClusterPair{desired.ClusterInfo, nil, K8S})
 			}
 		}
 	case []*pb.LBcluster:
@@ -413,7 +472,7 @@ func getClusterInfoPairs(a, b interface{}) []ClusterPair {
 		if b == nil {
 			// no current state
 			for _, desired := range desiredLB {
-				clusterPairs = append(clusterPairs, ClusterPair{desired.ClusterInfo, nil, false})
+				clusterPairs = append(clusterPairs, ClusterPair{desired.ClusterInfo, nil, LB})
 			}
 			return clusterPairs
 		}
@@ -422,13 +481,13 @@ func getClusterInfoPairs(a, b interface{}) []ClusterPair {
 			added := len(clusterPairs)
 			for _, current := range currentLB {
 				if current.ClusterInfo.Name == desired.ClusterInfo.Name {
-					clusterPairs = append(clusterPairs, ClusterPair{desired.ClusterInfo, current.ClusterInfo, false})
+					clusterPairs = append(clusterPairs, ClusterPair{desired.ClusterInfo, current.ClusterInfo, LB})
 					break
 				}
 			}
 			//not found in current
 			if added == len(clusterPairs) {
-				clusterPairs = append(clusterPairs, ClusterPair{desired.ClusterInfo, nil, false})
+				clusterPairs = append(clusterPairs, ClusterPair{desired.ClusterInfo, nil, LB})
 			}
 		}
 	default:
@@ -437,10 +496,13 @@ func getClusterInfoPairs(a, b interface{}) []ClusterPair {
 	return clusterPairs
 }
 
-func getFileSuffix(isK8s bool) (string, string) {
-	if isK8s {
-		return ".tf", ".tpl"
-	} else {
-		return "-lb.tf", "-lb.tpl"
+func getFilePair(clusterType int) (FilePair, error) {
+	switch clusterType {
+	case K8S:
+		return FilePair{".tf", ".tpl"}, nil
+	case LB:
+		return FilePair{"-lb.tf", "-lb.tpl"}, nil
+	default:
+		return FilePair{}, fmt.Errorf("no such type of cluster")
 	}
 }

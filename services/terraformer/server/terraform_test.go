@@ -160,6 +160,20 @@ var desiredState *pb.Project = &pb.Project{
 							Name:        "gcp",
 							Credentials: "/Users/samuelstolicny/Github/Berops/platform/keys/platform-296509-d6ddeb344e91.json",
 						},
+						Nodes: []*pb.Node{
+							{
+								Name:     "testName1",
+								Private:  "1.1.1.1",
+								Public:   "34.0.9.1",
+								NodeType: pb.NodeType_worker,
+							},
+							{
+								Name:     "testName2",
+								Private:  "1.1.1.1",
+								Public:   "34.0.9.2",
+								NodeType: pb.NodeType_worker,
+							},
+						},
 					},
 				},
 			},
@@ -258,11 +272,11 @@ func TestFillNodes(t *testing.T) {
 }
 
 func TestBuildLBNodepools(t *testing.T) {
-	err := buildNodePools(desiredState.LoadBalancerClusters[0].GetClusterInfo(), "terraform", "-lb.tpl", "-lb.tf")
+	err := buildNodePools(desiredState.LoadBalancerClusters[0].GetClusterInfo(), "terraform", LB)
 	require.NoError(t, err)
 }
 
 func TestBuildNodepools(t *testing.T) {
-	err := buildNodePools(desiredState.Clusters[0].ClusterInfo, "terraform", ".tpl", ".tf")
+	err := buildNodePools(desiredState.Clusters[0].ClusterInfo, "terraform", K8S)
 	require.NoError(t, err)
 }
