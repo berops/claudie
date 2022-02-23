@@ -18,12 +18,14 @@ resource "google_dns_managed_zone" "lb-zone" {
   dns_name    = "{{ .Hostname }}"
   visibility = "public"
 }
+
 {{- $clusterName := .ClusterName }}
+{{- $clusterHash := .ClusterHash }}
 {{- range $nodepool := .NodePools}}
 
 resource "google_dns_record_set" "{{$nodepool.Name}}-{{$clusterName}}" {
 
-  name = "{{ .ClusterName }}-{{ .ClusterHash }}.${data.google_dns_managed_zone.lb-zone.dns_name}"
+  name = "{{ $clusterName }}-{{ $clusterHash }}.${data.google_dns_managed_zone.lb-zone.dns_name}"
   type = "A"
   ttl  = 300
 
