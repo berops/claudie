@@ -82,16 +82,16 @@ func initInfra(clusterInfo *pb.ClusterInfo, backendData Backend, clusterType int
 
 	// Create dns.tf files if we are dealing with loadbalancer cluster
 	if clusterType == LB {
-		fmt.Printf("Creating DNS records\n")
 		var copied string
 		for _, nodepool := range clusterInfo.NodePools {
 			if strings.Contains(nodepool.Provider.Name, copied) {
+				hostname := validateHostname(backendData.Hostname)
 				tpl := filepath.Join(templatePath, fmt.Sprintf("%s-dns.tpl", nodepool.Provider.Name))
 				tf := filepath.Join(outputPath, backendData.ClusterName, fmt.Sprintf("%s-dns.tf", nodepool.Provider.Name))
 				err := templateGen(tpl, tf, DataDns{
 					ClusterName: clusterInfo.Name,
 					ClusterHash: clusterInfo.Hash,
-					Hostname:    backendData.Hostname,
+					Hostname:    hostname,
 					NodePools:   clusterInfo.NodePools,
 				}, outputPathCluster)
 				if err != nil {
@@ -118,6 +118,15 @@ func initInfra(clusterInfo *pb.ClusterInfo, backendData Backend, clusterType int
 		return "", err
 	}
 	return outputPathCluster, nil
+}
+
+// function will check if the hostname ends with ".", and will concatenate it if not
+func validateHostname(s string) string {
+	hostname := s
+	if hostname[len(hostname)-1] != '.' {
+		hostname += "."
+	}
+	return hostname
 }
 
 func createInfra(clusterInfoDesired, clusterInfoCurrent *pb.ClusterInfo, outputPathCluster string) error {
@@ -149,7 +158,6 @@ func createInfra(clusterInfoDesired, clusterInfoCurrent *pb.ClusterInfo, outputP
 			log.Error().Msgf("Error while reading the terraform output: %v", err)
 			return err
 		}
-		fmt.Printf("%v", out)
 		fillNodes(&out, nodepool, oldNodes)
 	}
 	return nil
@@ -161,27 +169,25 @@ func buildClustersAsynch(desiredClusterInfo *pb.ClusterInfo, currentClusterInfo 
 	log.Info().Msgf("Cluster name: %s", backendData.ClusterName)
 
 	// Create all files necessary and do terraform init
-	/*outputPathCluster*/
-	_, err := initInfra(desiredClusterInfo, backendData, clusterType)
+	outputPathCluster, err := initInfra(desiredClusterInfo, backendData, clusterType)
 	if err != nil {
 		log.Error().Msgf("Error in terraform init procedure for %s: %v",
 			backendData.ClusterName, err)
 		return err
 	}
-	/*
-		// create infra via terraform plan and apply
-		if err := createInfra(desiredClusterInfo, currentClusterInfo, outputPathCluster); err != nil {
-			log.Error().Msgf("Error in terraform apply procedure for Loadbalancer cluster %s: %v",
-				desiredClusterInfo.Name, err)
-			return err
-		}
-	*/
+
+	// create infra via terraform plan and apply
+	if err := createInfra(desiredClusterInfo, currentClusterInfo, outputPathCluster); err != nil {
+		log.Error().Msgf("Error in terraform apply procedure for Loadbalancer cluster %s: %v",
+			desiredClusterInfo.Name, err)
+		return err
+	}
+
 	return nil
 }
 
 // buildInfrastructure is generating terraform files for different providers and calling terraform
 func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) error {
-	fmt.Println("Generating templates")
 	var backendData Backend
 	backendData.ProjectName = desiredState.GetName()
 	var errGroup errgroup.Group
@@ -251,7 +257,6 @@ func destroyInfrastructureAsync(clusterInfo *pb.ClusterInfo, backendData Backend
 }
 
 func destroyInfrastructure(config *pb.Config) error {
-	fmt.Println("Generating templates")
 	var backendData Backend
 	backendData.ProjectName = config.GetDesiredState().GetName()
 	var errGroup errgroup.Group
@@ -322,7 +327,7 @@ func templateGen(templatePath string, tfFilePath string, d interface{}, dirName 
 	if err != nil {
 		return fmt.Errorf("failed to load the template file: %v", err)
 	}
-	fmt.Printf("Creating %s \n", tfFilePath)
+	log.Info().Msgf("Creating %s \n", tfFilePath)
 	f, err := os.Create(tfFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to create the %s file: %v", dirName, err)

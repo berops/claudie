@@ -280,3 +280,10 @@ func TestBuildNodepools(t *testing.T) {
 	err := buildNodePools(desiredState.Clusters[0].ClusterInfo, "terraform", K8S)
 	require.NoError(t, err)
 }
+
+func TestValidateHostname(t *testing.T) {
+	hostname1 := validateHostname("domain.com")  //add '.'
+	hostname2 := validateHostname("domain.com.") //no change
+	//domain needs to end with '.', thus the hostname1 and hostname2 should be equal
+	require.Equal(t, hostname1, hostname2)
+}
