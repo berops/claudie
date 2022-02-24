@@ -4,23 +4,20 @@ provider "google" {
     project = "platform-infrastructure-316112"
 }
 
-resource "google_dns_managed_zone" "lb-zone" {
-  name        = "{{ .ClusterName }}-{{ .ClusterHash }}"
-  dns_name    = "{{ .Hostname }}"
-  visibility = "public"
+data "google_dns_managed_zone" "lb-zone" {
+  name = "lb-zone"
 }
-
 {{- $clusterName := .ClusterName }}
 {{- $clusterHash := .ClusterHash }}
 {{- range $nodepool := .NodePools}}
 
 resource "google_dns_record_set" "{{$nodepool.Name}}-{{$clusterName}}" {
 
-  name = "{{ $clusterName }}-{{ $clusterHash }}.${google_dns_managed_zone.lb-zone.dns_name}"
+  name = "{{ $clusterName }}-{{ $clusterHash }}.${data.google_dns_managed_zone.lb-zone.dns_name}"
   type = "A"
   ttl  = 300
 
-  managed_zone = google_dns_managed_zone.lb-zone.name
+  managed_zone = data.google_dns_managed_zone.lb-zone.name
 
   rrdatas = [
       for node in google_compute_instance.{{$nodepool.Name}} : node.network_interface.0.access_config.0.nat_ip
