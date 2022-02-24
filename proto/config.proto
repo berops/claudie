@@ -34,6 +34,8 @@ message LBcluster {
   repeated Role roles = 2;
   DNS dns = 3;
   string targetedK8s = 4;
+  
+
 }
 
 message ClusterInfo {
@@ -50,6 +52,12 @@ message Role {
   int32 port = 3;
   int32 targetPort = 4;  
   Target target = 5;  
+  RoleType roleType = 6;
+}
+
+enum RoleType {
+  ApiServer = 0;
+  Ingress = 1;
 }
 
 enum Target {

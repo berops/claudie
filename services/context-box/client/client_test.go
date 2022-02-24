@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-const configIDDefault = "6179101c00343357d3a52960"
+const configIDDefault = "6216777d6256d8476aaf6b63"
 
 func ClientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
 	cc, err := utils.GrpcDialWithInsecure("context-box", urls.ContextBoxURL)
@@ -68,7 +68,7 @@ func makePbConfig(msg string, manifest []byte, id string) *pb.Config {
 }
 func TestSaveConfigFrontEnd(t *testing.T) {
 	c, cc := ClientConnection()
-	manifestFile := "./manifest.yaml" // this is manifest from this test file
+	manifestFile := "../../testing-framework/tests/test-set1/1.yaml" // this is manifest from this test file
 
 	manifest, errR := ioutil.ReadFile(manifestFile)
 	if errR != nil {

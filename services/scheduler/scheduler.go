@@ -25,7 +25,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const defaultSchedulerPort = 50056
+const (
+	defaultSchedulerPort = 50056
+	apiserverPort        = 6443
+)
 
 ////////////////////YAML STRUCT//////////////////////////////////////////////////
 
@@ -387,6 +390,8 @@ func getMatchingRoles(roles []Role, roleNames []string) []*pb.Role {
 			if role.Name == roleName {
 
 				var target pb.Target
+				var roleType pb.RoleType
+
 				if role.Target == "k8sAllNodes" {
 					target = pb.Target_k8sAllNodes
 				} else if role.Target == "k8sControlPlane" {
@@ -395,12 +400,19 @@ func getMatchingRoles(roles []Role, roleNames []string) []*pb.Role {
 					target = pb.Target_k8sComputePlane
 				}
 
+				if role.TargetPort == apiserverPort && target == pb.Target_k8sControlPlane {
+					roleType = pb.RoleType_ApiServer
+				} else {
+					roleType = pb.RoleType_Ingress
+				}
+
 				newRole := &pb.Role{
 					Name:       role.Name,
 					Protocol:   role.Protocol,
 					Port:       int32(role.Port),
 					TargetPort: int32(role.TargetPort),
 					Target:     target,
+					RoleType:   roleType,
 				}
 				matchingRoles = append(matchingRoles, newRole)
 			}
