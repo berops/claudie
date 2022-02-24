@@ -122,6 +122,7 @@ func initInfra(clusterInfo *pb.ClusterInfo, backendData Backend, clusterType int
 
 // function will check if the hostname ends with ".", and will concatenate it if not
 func validateHostname(s string) string {
+	fmt.Println(s)
 	hostname := s
 	if hostname[len(hostname)-1] != '.' {
 		hostname += "."
@@ -266,6 +267,9 @@ func destroyInfrastructure(config *pb.Config) error {
 	for _, pair := range clusterPairs {
 		clusterType := pair.clusterType
 		func(desiredInfo *pb.ClusterInfo, backendData Backend) {
+			if clusterType == LB {
+				backendData.Hostname = getHostName(config.DesiredState.LoadBalancerClusters, pair.desiredInfo.Name)
+			}
 			errGroup.Go(func() error {
 				err := destroyInfrastructureAsync(desiredInfo, backendData, clusterType)
 				if err != nil {
