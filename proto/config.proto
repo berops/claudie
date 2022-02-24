@@ -34,8 +34,6 @@ message LBcluster {
   repeated Role roles = 2;
   DNS dns = 3;
   string targetedK8s = 4;
-  
-
 }
 
 message ClusterInfo {
