@@ -37,12 +37,23 @@ type data struct {
 }
 
 // formatTemplateData formats data for kubeone template input
-func (d *data) formatTemplateData(cluster *pb.K8Scluster) {
+func (d *data) formatTemplateData(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster) {
 	var controlNodes []*pb.Node
 	var workerNodes []*pb.Node
 	hasAPIEndpoint := false
 
 	// Get the API endpoint. If it is not set, use the first control node
+	for _, lbCluster := range lbClusters {
+		if lbCluster.TargetedK8S == cluster.ClusterInfo.Name {
+			//check if the lb is api-lb
+			for _, role := range lbCluster.Roles {
+				if role.RoleType == pb.RoleType_ApiServer {
+					hasAPIEndpoint = true
+					d.APIEndpoint = lbCluster.ClusterInfo.Name + "-" + lbCluster.ClusterInfo.Hash + "-" + lbCluster.Dns.Hostname
+				}
+			}
+		}
+	}
 	for _, Nodepool := range cluster.ClusterInfo.GetNodePools() {
 		for _, Node := range Nodepool.Nodes {
 			if Node.GetNodeType() == pb.NodeType_master {
@@ -64,7 +75,9 @@ func (d *data) formatTemplateData(cluster *pb.K8Scluster) {
 	}
 	d.Nodes = append(controlNodes, workerNodes...)
 	d.Kubernetes = cluster.GetKubernetes()
-	d.APIEndpoint = d.Nodes[0].GetPublic()
+	if d.APIEndpoint == "" {
+		d.APIEndpoint = d.Nodes[0].GetPublic()
+	}
 }
 
 // BuildCluster builds all cluster defined in the desired state
@@ -78,7 +91,7 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 	for _, cluster := range desiredState.GetClusters() {
 		func(cluster *pb.K8Scluster) {
 			errGroup.Go(func() error {
-				err := buildClusterAsync(cluster)
+				err := buildClusterAsync(cluster, desiredState.LoadBalancerClusters)
 				if err != nil {
 					log.Error().Msgf("error encountered in KubeEleven - BuildCluster: %v", err)
 					return err
@@ -96,9 +109,9 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 
 // buildClusterAsync builds a kubeone cluster
 // It is executed in a goroutine
-func buildClusterAsync(cluster *pb.K8Scluster) error {
+func buildClusterAsync(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster) error {
 	var d data
-	d.formatTemplateData(cluster)
+	d.formatTemplateData(cluster, lbClusters)
 
 	// Create a directory for the cluster
 	clusterOutputPath := filepath.Join(outputPath, cluster.ClusterInfo.GetName()+"-"+cluster.ClusterInfo.GetHash())
