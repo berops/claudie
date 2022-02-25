@@ -29,13 +29,13 @@ spec:
         - name: TERRAFORMER_PORT
           valueFrom:
             configMapKeyRef:
-              name: urls
+              name: env
               key: TERRAFORMER_PORT
          # No hostname needed
         - name: GOLANG_LOG
           valueFrom:
             configMapKeyRef:
-              name: urls
+              name: env
               key: GOLANG_LOG
         ports:
         - containerPort: 50052

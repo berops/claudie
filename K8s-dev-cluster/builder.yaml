@@ -29,47 +29,47 @@ spec:
         - name: CONTEXT_BOX_PORT
           valueFrom:
             configMapKeyRef:
-              name: urls
+              name: env
               key: CONTEXT_BOX_PORT
         - name: CONTEXT_BOX_HOSTNAME
           valueFrom:
             configMapKeyRef:
-              name: urls
+              name: env
               key: CONTEXT_BOX_HOSTNAME
         - name: TERRAFORMER_PORT
           valueFrom:
             configMapKeyRef:
-              name: urls
+              name: env
               key: TERRAFORMER_PORT
         - name: TERRAFORMER_HOSTNAME
           valueFrom:
             configMapKeyRef:
-              name: urls
+              name: env
               key: TERRAFORMER_HOSTNAME
         - name: WIREGUARDIAN_PORT
           valueFrom:
             configMapKeyRef:
-              name: urls
+              name: env
               key: WIREGUARDIAN_PORT
         - name: WIREGUARDIAN_HOSTNAME
           valueFrom:
             configMapKeyRef:
-              name: urls
+              name: env
               key: WIREGUARDIAN_HOSTNAME
         - name: KUBE_ELEVEN_PORT
           valueFrom:
             configMapKeyRef:
-              name: urls
+              name: env
               key: KUBE_ELEVEN_PORT
         - name: KUBE_ELEVEN_HOSTNAME
           valueFrom:
             configMapKeyRef:
-              name: urls
+              name: env
               key: KUBE_ELEVEN_HOSTNAME
         - name: GOLANG_LOG
           valueFrom:
             configMapKeyRef:
-              name: urls
+              name: env
               key: GOLANG_LOG
         readinessProbe:
           httpGet:
