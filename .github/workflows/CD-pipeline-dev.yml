@@ -18,19 +18,20 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Configure kubectl
-        uses: google-github-actions/get-gke-credentials@v0.3.0
-        with:
-          cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
-          location: ${{ secrets.GKE_ZONE }}
-          credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
-
       - name: Login to GCP
         uses: google-github-actions/setup-gcloud@master
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
           service_account_email: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
           service_account_key: ${{ secrets.GCP_DOCKER_REGISTRY_KEY }}
+
+      - name: Configure kubectl
+        uses: google-github-actions/get-gke-credentials@v0.3.0
+        with:
+          cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
+          location: ${{ secrets.GKE_ZONE }}
+          credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
+          use_auth_provider: true
 
       # Create a seperate temporary namespace
       - name: Create seperate namespace
