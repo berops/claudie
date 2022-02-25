@@ -152,6 +152,8 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
           service_account_email: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
           service_account_key: ${{ secrets.GCP_DOCKER_REGISTRY_KEY }}
+          export_default_credentials: true
+          cleanup_credentials: true
 
       - name: Configure kubectl
         uses: google-github-actions/get-gke-credentials@v0.3.0
