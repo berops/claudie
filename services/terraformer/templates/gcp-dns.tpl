@@ -9,6 +9,7 @@ data "google_dns_managed_zone" "zone" {
 }
 
 {{- $clusterName := .ClusterName }}
+{{- $clusterHash := .ClusterHash }}
 {{- $hostnameHash := .HostnameHash }}
 {{- range $nodepool := .NodePools}}
 

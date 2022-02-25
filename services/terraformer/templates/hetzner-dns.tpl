@@ -9,6 +9,7 @@ data "google_dns_managed_zone" "zone" {
 }
 
 {{- $clusterName := .ClusterName }}
+{{- $clusterHash := .ClusterHash }}
 {{- $hostnameHash := .HostnameHash }}
 {{- range $nodepool := .NodePools}}
 
@@ -27,6 +28,6 @@ resource "google_dns_record_set" "{{$nodepool.Name}}-{{$clusterName}}" {
 }
 
 output "{{$clusterName}}-{{$clusterHash}}" {
-  value = { APIEndpoint = google_dns_record_set.{{$nodepool.Name}}-{{$clusterName}}.name }
+  value = { {{$clusterName}}-{{$clusterHash}} = google_dns_record_set.{{$nodepool.Name}}-{{$clusterName}}.name }
 }
 {{- end}}

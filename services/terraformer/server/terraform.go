@@ -45,6 +45,7 @@ type Data struct {
 }
 type DataDNS struct {
 	ClusterName  string
+	ClusterHash  string
 	HostnameHash string
 	Zone         string
 	NodePools    []*pb.NodePool
@@ -54,7 +55,7 @@ type jsonOut struct {
 }
 
 type DomainJson struct {
-	Domain string `json:"APIEndpoint"`
+	Domain map[string]string `json:"-"`
 }
 
 type FilePair struct {
@@ -96,6 +97,7 @@ func initInfra(clusterInfo *pb.ClusterInfo, backendData Backend, clusterType int
 				tf := filepath.Join(outputPath, backendData.ClusterName, fmt.Sprintf("%s-dns.tf", nodepool.Provider.Name))
 				err := templateGen(tpl, tf, DataDNS{
 					ClusterName:  clusterInfo.Name,
+					ClusterHash:  clusterInfo.Hash,
 					HostnameHash: hostname,
 					Zone:         backendData.Zone,
 					NodePools:    clusterInfo.NodePools,
@@ -222,7 +224,8 @@ func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) err
 	for _, lbCluster := range desiredState.LoadBalancerClusters {
 		outPath := filepath.Join(outputPath, lbCluster.ClusterInfo.Name+"-"+lbCluster.ClusterInfo.Hash)
 		//use any nodepool, every single node has same domain
-		output, err := outputTerraform(outPath, fmt.Sprintf("%s-%s", lbCluster.ClusterInfo.NodePools[0].Name, lbCluster.ClusterInfo.Name))
+		fullClusterName := fmt.Sprintf("%s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash)
+		output, err := outputTerraform(outPath, fullClusterName)
 		if err != nil {
 			log.Error().Msgf("Error while getting output from terraform: %v", err)
 			return err
@@ -232,7 +235,7 @@ func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) err
 			log.Error().Msgf("Error while reading the terraform output: %v", err)
 			return err
 		}
-		domain := validateDomain(out.Domain)
+		domain := validateDomain(out.Domain[fullClusterName])
 		lbCluster.Dns.Hostname = domain
 		log.Info().Msgf("Set the domain for %s to %s", lbCluster.ClusterInfo.Name, domain)
 	}
@@ -431,7 +434,7 @@ func readIPs(data string) (jsonOut, error) {
 func readDomain(data string) (DomainJson, error) {
 	var result DomainJson
 	// Unmarshal or Decode the JSON to the interface.
-	err := json.Unmarshal([]byte(data), &result)
+	err := json.Unmarshal([]byte(data), &result.Domain)
 	return result, err
 }
 
