@@ -28,7 +28,10 @@ import (
 const (
 	defaultSchedulerPort = 50056
 	apiserverPort        = 6443
+	gcpProvider          = "gcp"
 )
+
+var claudieProvider = &pb.Provider{Name: "claudie", Credentials: "./key/here"}
 
 ////////////////////YAML STRUCT//////////////////////////////////////////////////
 
@@ -107,14 +110,13 @@ type Conf struct {
 type LoadBalancerCluster struct {
 	Name        string   `yaml:"name"`
 	Roles       []string `yaml:"roles"`
-	DNS         DNS      `yaml:"dns"`
+	DNS         DNS      `yaml:"dns,omitempty"`
 	TargetedK8s string   `yaml:"targeted-k8s"`
 	Pools       []string `yaml:"pools"`
 }
 
 type DNS struct {
-	Hostname string   `yaml:"hostname"`
-	Provider []string `yaml:"providers"`
+	Zone string `yaml:"zone,omitempty"`
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -190,11 +192,8 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 				Name: lbCluster.Name,
 				Hash: utils.CreateHash(utils.HashLength),
 			},
-			Roles: getMatchingRoles(desiredState.LoadBalancer.Roles, lbCluster.Roles),
-			Dns: &pb.DNS{
-				Hostname:  lbCluster.DNS.Hostname,
-				Providers: lbCluster.DNS.Provider,
-			},
+			Roles:       getMatchingRoles(desiredState.LoadBalancer.Roles, lbCluster.Roles),
+			Dns:         getDNS(lbCluster.DNS, desiredState.Providers),
 			TargetedK8S: lbCluster.TargetedK8s,
 		}
 
@@ -420,6 +419,21 @@ func getMatchingRoles(roles []Role, roleNames []string) []*pb.Role {
 	}
 	return matchingRoles
 }
+
+func getDNS(lbDNS DNS, provider []Provider) *pb.DNS {
+	if lbDNS.Zone == "" {
+		return &pb.DNS{Zone: "lb-zone", Provider: claudieProvider} // default zone is used
+	} else {
+		providerIndex := searchProvider(gcpProvider, provider)
+		return &pb.DNS{Zone: lbDNS.Zone,
+			Provider: &pb.Provider{
+				Name:        provider[providerIndex].Name,
+				Credentials: provider[providerIndex].Credentials,
+			},
+		}
+	}
+}
+
 func main() {
 	// initialize logger
 	utils.InitLog("scheduler", "GOLANG_LOG")

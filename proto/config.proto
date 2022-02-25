@@ -65,8 +65,9 @@ enum Target {
 }
 
 message DNS {
-  string hostname = 1;
-  repeated string providers = 2;
+  string zone = 1;
+  string hostname = 2;
+  Provider provider = 3;
 }
 
 message NodePool {

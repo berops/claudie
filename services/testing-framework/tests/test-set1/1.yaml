@@ -93,10 +93,13 @@ loadBalancers:
     roles:
     - apiserver-lb
     dns:
-      hostname: project-1.company.io
-      providers: 
-      - gcp
+      zone: lb-zone
     targeted-k8s: cluster-1
     pools:  
-    #- gcp-lb
+    - hetzner-lb
+  - name: cluster-1-ingress-lb
+    roles:
+    - apiserver-lb
+    targeted-k8s: cluster-1
+    pools:  
     - hetzner-lb
