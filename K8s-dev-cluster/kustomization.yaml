@@ -10,7 +10,7 @@ resources:
 configMapGenerator:
 - envs:
   - .env
-  name: urls
+  name: env
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:

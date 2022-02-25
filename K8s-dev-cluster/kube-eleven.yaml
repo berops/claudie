@@ -28,13 +28,13 @@ spec:
         - name: KUBE_ELEVEN_PORT
           valueFrom:
             configMapKeyRef:
-              name: urls
+              name: env
               key: KUBE_ELEVEN_PORT
         # No hostname needed
         - name: GOLANG_LOG
           valueFrom:
             configMapKeyRef:
-              name: urls
+              name: env
               key: GOLANG_LOG
         ports:
         - containerPort: 50054
