@@ -49,7 +49,7 @@ func (d *data) formatTemplateData(cluster *pb.K8Scluster, lbClusters []*pb.LBclu
 			for _, role := range lbCluster.Roles {
 				if role.RoleType == pb.RoleType_ApiServer {
 					hasAPIEndpoint = true
-					d.APIEndpoint = lbCluster.ClusterInfo.Name + "-" + lbCluster.ClusterInfo.Hash + "." + lbCluster.Dns.Hostname
+					d.APIEndpoint = lbCluster.Dns.Hostname
 				}
 			}
 		}

@@ -249,13 +249,13 @@ func TestBuildInfrastructure(t *testing.T) {
 }
 
 func TestOutputTerraform(t *testing.T) {
-	out, err := outputTerraform(outputPath, testState.Clusters[0].ClusterInfo.NodePools[0])
+	out, err := outputTerraform(outputPath, testState.Clusters[0].ClusterInfo.NodePools[0].Name)
 	t.Log(out)
 	require.NoError(t, err)
 }
 
 func TestReadOutput(t *testing.T) {
-	out, err := readOutput(jsonData)
+	out, err := readIPs(jsonData)
 
 	if err == nil {
 		t.Log(out.IPs)
@@ -264,7 +264,7 @@ func TestReadOutput(t *testing.T) {
 }
 
 func TestFillNodes(t *testing.T) {
-	out, err := readOutput(jsonData)
+	out, err := readIPs(jsonData)
 	if err == nil {
 		var m = &pb.NodePool{}
 		fillNodes(&out, m, desiredState.Clusters[0].ClusterInfo.NodePools[0].Nodes)
@@ -281,11 +281,4 @@ func TestBuildLBNodepools(t *testing.T) {
 func TestBuildNodepools(t *testing.T) {
 	err := buildNodePools(desiredState.Clusters[0].ClusterInfo, "terraform", K8S)
 	require.NoError(t, err)
-}
-
-func TestValidateHostname(t *testing.T) {
-	hostname1 := validateHostname("domain.com")  //add '.'
-	hostname2 := validateHostname("domain.com.") //no change
-	//domain needs to end with '.', thus the hostname1 and hostname2 should be equal
-	require.Equal(t, hostname1, hostname2)
 }

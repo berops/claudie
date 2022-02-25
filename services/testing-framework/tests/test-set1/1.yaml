@@ -40,7 +40,7 @@ nodePools:
       hetzner:
         region: nbg1
         zone: nbg1-dc3
-    count: 3
+    count: 2
     server_type: cpx11
     image: ubuntu-20.04
     disk_size: 50
@@ -99,7 +99,7 @@ loadBalancers:
     - hetzner-lb
   - name: cluster-1-ingress-lb
     roles:
-    - apiserver-lb
+    - ingress-lb
     targeted-k8s: cluster-1
     pools:  
     - hetzner-lb

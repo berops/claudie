@@ -20,6 +20,7 @@ import (
 const (
 	outputPath   string = "services/terraformer/server/terraform"
 	templatePath string = "services/terraformer/templates"
+	hostnameHash int    = 15
 )
 
 // flag to distinguish between different types of cluster
@@ -33,6 +34,7 @@ type Backend struct {
 	ProjectName string
 	ClusterName string
 	Hostname    string
+	Zone        string
 }
 
 // Data struct
@@ -41,14 +43,18 @@ type Data struct {
 	ClusterName string
 	ClusterHash string
 }
-type DataDns struct {
-	ClusterName string
-	ClusterHash string
-	Hostname    string
-	NodePools   []*pb.NodePool
+type DataDNS struct {
+	ClusterName  string
+	HostnameHash string
+	Zone         string
+	NodePools    []*pb.NodePool
 }
 type jsonOut struct {
 	IPs map[string]interface{} `json:"-"`
+}
+
+type DomainJson struct {
+	Domain string `json:"APIEndpoint"`
 }
 
 type FilePair struct {
@@ -85,14 +91,14 @@ func initInfra(clusterInfo *pb.ClusterInfo, backendData Backend, clusterType int
 		var copied string
 		for _, nodepool := range clusterInfo.NodePools {
 			if strings.Contains(nodepool.Provider.Name, copied) {
-				hostname := validateHostname(backendData.Hostname)
+				hostname := createHostnameHash()
 				tpl := filepath.Join(templatePath, fmt.Sprintf("%s-dns.tpl", nodepool.Provider.Name))
 				tf := filepath.Join(outputPath, backendData.ClusterName, fmt.Sprintf("%s-dns.tf", nodepool.Provider.Name))
-				err := templateGen(tpl, tf, DataDns{
-					ClusterName: clusterInfo.Name,
-					ClusterHash: clusterInfo.Hash,
-					Hostname:    hostname,
-					NodePools:   clusterInfo.NodePools,
+				err := templateGen(tpl, tf, DataDNS{
+					ClusterName:  clusterInfo.Name,
+					HostnameHash: hostname,
+					Zone:         backendData.Zone,
+					NodePools:    clusterInfo.NodePools,
 				}, outputPathCluster)
 				if err != nil {
 					log.Error().Msgf("Error generating terraform config file %s from template %s: %v",
@@ -121,12 +127,8 @@ func initInfra(clusterInfo *pb.ClusterInfo, backendData Backend, clusterType int
 }
 
 // function will check if the hostname ends with ".", and will concatenate it if not
-func validateHostname(s string) string {
-	fmt.Println(s)
-	hostname := s
-	if hostname[len(hostname)-1] != '.' {
-		hostname += "."
-	}
+func createHostnameHash() string {
+	hostname := utils.CreateHash(hostnameHash)
 	return hostname
 }
 
@@ -148,19 +150,20 @@ func createInfra(clusterInfoDesired, clusterInfoCurrent *pb.ClusterInfo, outputP
 
 	// Fill public ip addresses to NodeInfos
 	for _, nodepool := range clusterInfoDesired.NodePools {
-		output, err := outputTerraform(outputPathCluster, nodepool)
+		output, err := outputTerraform(outputPathCluster, nodepool.Name)
 		if err != nil {
 			log.Error().Msgf("Error while getting output from terraform: %v", err)
 			return err
 		}
 
-		out, err := readOutput(output)
+		out, err := readIPs(output)
 		if err != nil {
 			log.Error().Msgf("Error while reading the terraform output: %v", err)
 			return err
 		}
 		fillNodes(&out, nodepool, oldNodes)
 	}
+
 	return nil
 }
 
@@ -199,7 +202,7 @@ func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) err
 		clusterType := pair.clusterType
 		func(desiredInfo *pb.ClusterInfo, currentInfo *pb.ClusterInfo, backendData Backend) {
 			if clusterType == LB {
-				backendData.Hostname = getHostName(desiredState.GetLoadBalancerClusters(), pair.desiredInfo.Name)
+				backendData.Hostname, backendData.Zone = getDnsData(desiredState.GetLoadBalancerClusters(), pair.desiredInfo.Name)
 			}
 			errGroup.Go(func() error {
 				err := buildClustersAsynch(desiredInfo, currentInfo, backendData, clusterType)
@@ -215,6 +218,24 @@ func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) err
 	if err != nil {
 		return fmt.Errorf("error while building infrastructure: %v", err)
 	}
+	// save the hostname to DNS
+	for _, lbCluster := range desiredState.LoadBalancerClusters {
+		outPath := filepath.Join(outputPath, lbCluster.ClusterInfo.Name+"-"+lbCluster.ClusterInfo.Hash)
+		//use any nodepool, every single node has same domain
+		output, err := outputTerraform(outPath, fmt.Sprintf("%s-%s", lbCluster.ClusterInfo.NodePools[0].Name, lbCluster.ClusterInfo.Name))
+		if err != nil {
+			log.Error().Msgf("Error while getting output from terraform: %v", err)
+			return err
+		}
+		out, err := readDomain(output)
+		if err != nil {
+			log.Error().Msgf("Error while reading the terraform output: %v", err)
+			return err
+		}
+		domain := validateDomain(out.Domain)
+		lbCluster.Dns.Hostname = domain
+		log.Info().Msgf("Set the domain for %s to %s", lbCluster.ClusterInfo.Name, domain)
+	}
 	// Clean after terraform
 	if err := os.RemoveAll(outputPath + "/" + backendData.ClusterName); err != nil {
 		return fmt.Errorf("error while deleting files: %v", err)
@@ -223,14 +244,24 @@ func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) err
 	return nil
 }
 
-func getHostName(lBcluster []*pb.LBcluster, lbName string) string {
+func validateDomain(s string) string {
+	if s[len(s)-1] == '.' {
+		return s[:len(s)-1]
+	}
+	return s
+}
+
+// function returns pair of strings, first the hash hostname, second the zone
+func getDnsData(lBcluster []*pb.LBcluster, lbName string) (string, string) {
 	hostname := ""
+	zone := ""
 	for _, cluster := range lBcluster {
 		if cluster.ClusterInfo.Name == lbName {
 			hostname = cluster.Dns.GetHostname()
+			zone = cluster.Dns.Zone
 		}
 	}
-	return hostname
+	return hostname, zone
 }
 
 // destroyInfrastructureAsync executes terraform destroy --auto-approve. It destroys whole infrastructure in a project.
@@ -268,7 +299,7 @@ func destroyInfrastructure(config *pb.Config) error {
 		clusterType := pair.clusterType
 		func(desiredInfo *pb.ClusterInfo, backendData Backend) {
 			if clusterType == LB {
-				backendData.Hostname = getHostName(config.DesiredState.LoadBalancerClusters, pair.desiredInfo.Name)
+				backendData.Hostname, backendData.Zone = getDnsData(config.DesiredState.LoadBalancerClusters, pair.desiredInfo.Name)
 			}
 			errGroup.Go(func() error {
 				err := destroyInfrastructureAsync(desiredInfo, backendData, clusterType)
@@ -375,8 +406,8 @@ func executeTerraform(cmd *exec.Cmd, workingDir string) error {
 }
 
 // outputTerraform returns terraform output for a given provider and path in a json format
-func outputTerraform(dirName string, nodepool *pb.NodePool) (string, error) {
-	cmd := exec.Command("terraform", "output", "-json", nodepool.Name)
+func outputTerraform(dirName string, name string) (string, error) {
+	cmd := exec.Command("terraform", "output", "-json", name)
 	cmd.Dir = dirName
 	var outb, errb bytes.Buffer
 	cmd.Stdout = &outb
@@ -388,11 +419,19 @@ func outputTerraform(dirName string, nodepool *pb.NodePool) (string, error) {
 	return outb.String(), nil
 }
 
-// readOutput reads json output format from terraform and unmarshal it into map[string]map[string]string readable by GO
-func readOutput(data string) (jsonOut, error) {
+// readIPs reads json output format from terraform and unmarshal it into map[string]map[string]string readable by GO
+func readIPs(data string) (jsonOut, error) {
 	var result jsonOut
 	// Unmarshal or Decode the JSON to the interface.
 	err := json.Unmarshal([]byte(data), &result.IPs)
+	return result, err
+}
+
+// readIPs reads json output format from terraform and unmarshal it into map[string]map[string]string readable by GO
+func readDomain(data string) (DomainJson, error) {
+	var result DomainJson
+	// Unmarshal or Decode the JSON to the interface.
+	err := json.Unmarshal([]byte(data), &result)
 	return result, err
 }
 
