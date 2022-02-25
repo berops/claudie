@@ -4,8 +4,8 @@ provider "google" {
     project = "platform-infrastructure-316112"
 }
 
-data "google_dns_managed_zone" "lb-zone" {
-  name = "lb-zone"
+data "google_dns_managed_zone" "zone" {
+  name = "{{.Zone}}"
 }
 
 {{- $clusterName := .ClusterName }}
@@ -15,14 +15,18 @@ data "google_dns_managed_zone" "lb-zone" {
 
 resource "google_dns_record_set" "{{$nodepool.Name}}-{{$clusterName}}" {
 
-  name = "{{ $clusterName }}-{{ $clusterHash }}.${data.google_dns_managed_zone.lb-zone.dns_name}"
+  name = "{{ $clusterName }}-{{ $clusterHash }}.${data.google_dns_managed_zone.zone.dns_name}"
   type = "A"
   ttl  = 300
 
-  managed_zone = data.google_dns_managed_zone.lb-zone.name
+  managed_zone = data.google_dns_managed_zone.zone.name
 
   rrdatas = [
         for node in hcloud_server.{{$nodepool.Name}} :node.ipv4_address
     ]
+}
+
+output "{{$nodepool.Name}}-{{$clusterName}}" {
+  value = { APIEndpoint =>google_dns_record_set.{{$nodepool.Name}}-{{$clusterName}}.name }
 }
 {{- end}}
