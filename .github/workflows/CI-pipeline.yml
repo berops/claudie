@@ -202,7 +202,7 @@ jobs:
 
       - name: Monitor E2E test
         run: |
-          kubectl wait --for=condition=complete --timeout=3600s job/testing-framework -n claudie-$GITHUB_SHA
+          kubectl wait --for=condition=complete --timeout=10800s job/testing-framework -n claudie-$GITHUB_SHA
       
       - name: Dump logs from testing framework
         if:  ${{ always() }}  
