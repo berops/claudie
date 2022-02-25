@@ -186,9 +186,11 @@ var desiredState *pb.Project = &pb.Project{
 				},
 			},
 			Dns: &pb.DNS{
+				Zone:     "lb-zone",
 				Hostname: "www.test.io",
-				Providers: []string{
-					"gcp",
+				Provider: &pb.Provider{
+					Name:        "gcp",
+					Credentials: "keyfile.json",
 				},
 			},
 		},
