@@ -18,9 +18,9 @@ import (
 )
 
 const (
-	outputPath   string = "services/terraformer/server/terraform"
-	templatePath string = "services/terraformer/templates"
-	hostnameHash int    = 15
+	outputPath      string = "services/terraformer/server/terraform"
+	templatePath    string = "services/terraformer/templates"
+	hostnameHashLen int    = 15
 )
 
 // flag to distinguish between different types of cluster
@@ -33,8 +33,7 @@ const (
 type Backend struct {
 	ProjectName string
 	ClusterName string
-	Hostname    string
-	Zone        string
+	DnsData     DNSData
 }
 
 // Data struct
@@ -43,12 +42,14 @@ type Data struct {
 	ClusterName string
 	ClusterHash string
 }
-type DataDNS struct {
+type DNSData struct {
 	ClusterName  string
 	ClusterHash  string
 	HostnameHash string
-	Zone         string
+	DnsZone      string
 	NodePools    []*pb.NodePool
+	Project      string
+	Provider     *pb.Provider
 }
 type jsonOut struct {
 	IPs map[string]interface{} `json:"-"`
@@ -92,16 +93,9 @@ func initInfra(clusterInfo *pb.ClusterInfo, backendData Backend, clusterType int
 		var copied string
 		for _, nodepool := range clusterInfo.NodePools {
 			if strings.Contains(nodepool.Provider.Name, copied) {
-				hostname := createHostnameHash()
 				tpl := filepath.Join(templatePath, fmt.Sprintf("%s-dns.tpl", nodepool.Provider.Name))
 				tf := filepath.Join(outputPath, backendData.ClusterName, fmt.Sprintf("%s-dns.tf", nodepool.Provider.Name))
-				err := templateGen(tpl, tf, DataDNS{
-					ClusterName:  clusterInfo.Name,
-					ClusterHash:  clusterInfo.Hash,
-					HostnameHash: hostname,
-					Zone:         backendData.Zone,
-					NodePools:    clusterInfo.NodePools,
-				}, outputPathCluster)
+				err := templateGen(tpl, tf, backendData.DnsData, outputPathCluster)
 				if err != nil {
 					log.Error().Msgf("Error generating terraform config file %s from template %s: %v",
 						tf, tpl, err)
@@ -130,7 +124,7 @@ func initInfra(clusterInfo *pb.ClusterInfo, backendData Backend, clusterType int
 
 // function will check if the hostname ends with ".", and will concatenate it if not
 func createHostnameHash() string {
-	hostname := utils.CreateHash(hostnameHash)
+	hostname := utils.CreateHash(hostnameHashLen)
 	return hostname
 }
 
@@ -204,7 +198,7 @@ func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) err
 		clusterType := pair.clusterType
 		func(desiredInfo *pb.ClusterInfo, currentInfo *pb.ClusterInfo, backendData Backend) {
 			if clusterType == LB {
-				backendData.Hostname, backendData.Zone = getDnsData(desiredState.GetLoadBalancerClusters(), pair.desiredInfo.Name)
+				backendData.getDnsData(desiredState.GetLoadBalancerClusters(), pair.desiredInfo.Name)
 			}
 			errGroup.Go(func() error {
 				err := buildClustersAsynch(desiredInfo, currentInfo, backendData, clusterType)
@@ -255,16 +249,21 @@ func validateDomain(s string) string {
 }
 
 // function returns pair of strings, first the hash hostname, second the zone
-func getDnsData(lBcluster []*pb.LBcluster, lbName string) (string, string) {
-	hostname := ""
-	zone := ""
-	for _, cluster := range lBcluster {
+func (backend *Backend) getDnsData(lbCluster []*pb.LBcluster, lbName string) {
+	for _, cluster := range lbCluster {
 		if cluster.ClusterInfo.Name == lbName {
-			hostname = cluster.Dns.GetHostname()
-			zone = cluster.Dns.Zone
+			backend.DnsData = DNSData{
+				HostnameHash: createHostnameHash(),
+				DnsZone:      cluster.Dns.DnsZone,
+				ClusterName:  cluster.ClusterInfo.Name,
+				ClusterHash:  cluster.ClusterInfo.Hash,
+				NodePools:    cluster.ClusterInfo.NodePools,
+				Project:      cluster.Dns.Project,
+				Provider:     cluster.Dns.Provider,
+			}
+			return
 		}
 	}
-	return hostname, zone
 }
 
 // destroyInfrastructureAsync executes terraform destroy --auto-approve. It destroys whole infrastructure in a project.
@@ -302,7 +301,7 @@ func destroyInfrastructure(config *pb.Config) error {
 		clusterType := pair.clusterType
 		func(desiredInfo *pb.ClusterInfo, backendData Backend) {
 			if clusterType == LB {
-				backendData.Hostname, backendData.Zone = getDnsData(config.DesiredState.LoadBalancerClusters, pair.desiredInfo.Name)
+				backendData.getDnsData(config.DesiredState.LoadBalancerClusters, pair.desiredInfo.Name)
 			}
 			errGroup.Go(func() error {
 				err := destroyInfrastructureAsync(desiredInfo, backendData, clusterType)

@@ -186,7 +186,7 @@ var desiredState *pb.Project = &pb.Project{
 				},
 			},
 			Dns: &pb.DNS{
-				Zone:     "lb-zone",
+				DnsZone:  "lb-zone",
 				Hostname: "www.test.io",
 				Provider: &pb.Provider{
 					Name:        "gcp",
