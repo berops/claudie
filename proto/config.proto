@@ -65,9 +65,10 @@ enum Target {
 }
 
 message DNS {
-  string zone = 1;
+  string dnsZone = 1;
   string hostname = 2;
   Provider provider = 3;
+  string project = 4;
 }
 
 message NodePool {
