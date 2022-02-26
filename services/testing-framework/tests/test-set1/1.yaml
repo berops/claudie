@@ -93,7 +93,8 @@ loadBalancers:
     roles:
     - apiserver-lb
     dns:
-      zone: lb-zone
+      dns_zone : lb-zone-2
+      project: platform-296509
     targeted-k8s: cluster-1
     pools:  
     - hetzner-lb
