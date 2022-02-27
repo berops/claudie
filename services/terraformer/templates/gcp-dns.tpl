@@ -1,11 +1,10 @@
 provider "google" {
-    credentials = "${file("../../../../../keys/platform-infrastructure-316112-bd7953f712df.json")}"
-    region = "europe-west1"
-    project = "platform-infrastructure-316112"
+    credentials = "${file("{{.Provider.Credentials}}")}"
+    project = "{{.Project}}"
 }
 
 data "google_dns_managed_zone" "zone" {
-  name = "{{.Zone}}"
+  name = "{{.DNSZone}}"
 }
 
 {{- $clusterName := .ClusterName }}

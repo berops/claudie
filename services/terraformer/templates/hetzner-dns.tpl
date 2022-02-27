@@ -4,14 +4,13 @@ provider "google" {
 }
 
 data "google_dns_managed_zone" "zone" {
-  name = "{{.DnsZone}}"
+  name = "{{.DNSZone}}"
 }
 
 {{- $clusterName := .ClusterName }}
 {{- $clusterHash := .ClusterHash }}
 {{- $hostnameHash := .HostnameHash }}
 {{- range $nodepool := .NodePools}}
-
 
 resource "google_dns_record_set" "{{$nodepool.Name}}-{{$clusterName}}" {
 
