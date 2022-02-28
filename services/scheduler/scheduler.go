@@ -119,8 +119,9 @@ type LoadBalancerCluster struct {
 }
 
 type DNS struct {
-	DNSZone string `yaml:"dns_zone,omitempty"`
-	Project string `yaml:"project,omitempty"`
+	DNSZone  string `yaml:"dns_zone,omitempty"`
+	Project  string `yaml:"project,omitempty"`
+	Hostname string `yaml:"hostname,omitempty"`
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -435,7 +436,8 @@ func getDNS(lbDNS DNS, provider []Provider) *pb.DNS {
 				Name:        provider[providerIndex].Name,
 				Credentials: provider[providerIndex].Credentials,
 			},
-			Project: lbDNS.Project,
+			Project:  lbDNS.Project,
+			Hostname: lbDNS.Hostname,
 		}
 	}
 }
