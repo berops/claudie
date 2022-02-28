@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
-	"strings"
 	"text/template"
 
 	"github.com/Berops/platform/proto/pb"
@@ -90,20 +89,18 @@ func initInfra(clusterInfo *pb.ClusterInfo, backendData Backend, clusterType int
 
 	// Create dns.tf files if we are dealing with loadbalancer cluster
 	if clusterType == LB {
-		var copied string
-		for _, nodepool := range clusterInfo.NodePools {
-			if strings.Contains(nodepool.Provider.Name, copied) {
-				tpl := filepath.Join(templatePath, fmt.Sprintf("%s-dns.tpl", nodepool.Provider.Name))
-				tf := filepath.Join(outputPath, backendData.ClusterName, fmt.Sprintf("%s-dns.tf", nodepool.Provider.Name))
-				err := templateGen(tpl, tf, backendData.DNSData, outputPathCluster)
-				if err != nil {
-					log.Error().Msgf("Error generating terraform config file %s from template %s: %v",
-						tf, tpl, err)
-					return "", err
-				}
-				//save the copied provider
-				copied = copied + nodepool.Provider.Name
+		sortedNodePools := sortNodePools(clusterInfo)
+		for provider, nodepool := range sortedNodePools {
+			tpl := filepath.Join(templatePath, fmt.Sprintf("%s-dns.tpl", provider))
+			tf := filepath.Join(outputPath, backendData.ClusterName, fmt.Sprintf("%s-dns.tf", provider))
+			backendData.DNSData.NodePools = nodepool
+			err := templateGen(tpl, tf, backendData.DNSData, outputPathCluster)
+			if err != nil {
+				log.Error().Msgf("Error generating terraform config file %s from template %s: %v",
+					tf, tpl, err)
+				return "", err
 			}
+
 		}
 	}
 
@@ -216,22 +213,24 @@ func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) err
 	}
 	// save the hostname to DNS
 	for _, lbCluster := range desiredState.LoadBalancerClusters {
-		outPath := filepath.Join(outputPath, lbCluster.ClusterInfo.Name+"-"+lbCluster.ClusterInfo.Hash)
-		//use any nodepool, every single node has same domain
-		fullClusterName := fmt.Sprintf("%s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash)
-		output, err := outputTerraform(outPath, fullClusterName)
-		if err != nil {
-			log.Error().Msgf("Error while getting output from terraform: %v", err)
-			return err
+		for _, nodepool := range lbCluster.ClusterInfo.NodePools {
+			outPath := filepath.Join(outputPath, lbCluster.ClusterInfo.Name+"-"+lbCluster.ClusterInfo.Hash)
+			//use any nodepool, every single node has same domain
+			outputID := fmt.Sprintf("%s-%s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash, nodepool.Name)
+			output, err := outputTerraform(outPath, outputID)
+			if err != nil {
+				log.Error().Msgf("Error while getting output from terraform: %v", err)
+				return err
+			}
+			out, err := readDomain(output)
+			if err != nil {
+				log.Error().Msgf("Error while reading the terraform output: %v", err)
+				return err
+			}
+			domain := validateDomain(out.Domain[outputID])
+			lbCluster.Dns.Hostname = domain
+			log.Info().Msgf("Set the domain for %s to %s", lbCluster.ClusterInfo.Name, domain)
 		}
-		out, err := readDomain(output)
-		if err != nil {
-			log.Error().Msgf("Error while reading the terraform output: %v", err)
-			return err
-		}
-		domain := validateDomain(out.Domain[fullClusterName])
-		lbCluster.Dns.Hostname = domain
-		log.Info().Msgf("Set the domain for %s to %s", lbCluster.ClusterInfo.Name, domain)
 	}
 	// Clean after terraform
 	if err := os.RemoveAll(outputPath + "/" + backendData.ClusterName); err != nil {
@@ -257,7 +256,6 @@ func (backend *Backend) getDNSData(lbCluster []*pb.LBcluster, lbName string) {
 				DNSZone:      cluster.Dns.DnsZone,
 				ClusterName:  cluster.ClusterInfo.Name,
 				ClusterHash:  cluster.ClusterInfo.Hash,
-				NodePools:    cluster.ClusterInfo.NodePools,
 				Project:      cluster.Dns.Project,
 				Provider:     cluster.Dns.Provider,
 			}

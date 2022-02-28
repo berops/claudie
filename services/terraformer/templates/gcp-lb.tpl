@@ -22,7 +22,7 @@ resource "google_compute_instance" "{{$nodepool.Name}}" {
     }
   }
   network_interface {
-    subnetwork = google_compute_subnetwork.subnet.self_link
+    network = "default"
     access_config {}
   }
   metadata = {

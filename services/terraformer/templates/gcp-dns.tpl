@@ -1,11 +1,11 @@
 provider "google" {
     credentials = "${file("{{.Provider.Credentials}}")}"
     project = "{{.Project}}"
-    alias = "dns"
+    alias = "dns-gcp"
 }
 
 data "google_dns_managed_zone" "gcp-zone" {
-  provider = google.dns
+  provider = google.dns-gcp
   name = "{{.DNSZone}}"
 }
 
@@ -15,7 +15,7 @@ data "google_dns_managed_zone" "gcp-zone" {
 {{- range $nodepool := .NodePools}}
 
 resource "google_dns_record_set" "{{$nodepool.Name}}-{{$clusterName}}" {
-  provider = google.dns
+  provider = google.dns-gcp
 
   name = "{{ $hostnameHash }}.${data.google_dns_managed_zone.gcp-zone.dns_name}"
   type = "A"
@@ -28,7 +28,7 @@ resource "google_dns_record_set" "{{$nodepool.Name}}-{{$clusterName}}" {
     ]
 }
 
-output "{{$clusterName}}-{{$clusterHash}}" {
-  value = { {{$clusterName}}-{{$clusterHash}} = google_dns_record_set.{{$nodepool.Name}}-{{$clusterName}}.name }
+output "{{$clusterName}}-{{$clusterHash}}-{{$nodepool.Name}}" {
+  value = { "{{$clusterName}}-{{$clusterHash}}-{{$nodepool.Name}}" = google_dns_record_set.{{$nodepool.Name}}-{{$clusterName}}.name }
 }
 {{- end}}
