@@ -12,6 +12,7 @@ import (
 	"github.com/Berops/platform/urls"
 	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
+	"golang.org/x/sync/errgroup"
 
 	"io/ioutil"
 	"testing"
@@ -21,7 +22,7 @@ import (
 
 const (
 	testDir    = "tests"
-	maxTimeout = 3600 // max allowed time for operation to finish in [seconds]
+	maxTimeout = 3600 // max allowed time for one manifest to finish in [seconds]
 )
 
 // ClientConnection will return new client connection to Context-box
@@ -38,7 +39,7 @@ func ClientConnection() pb.ContextBoxServiceClient {
 
 // TestPlatform will start all the test cases specified in tests directory
 func TestPlatform(t *testing.T) {
-	var err error
+	var errGroup errgroup.Group
 	c := ClientConnection()
 	log.Info().Msg("----Starting the tests----")
 
@@ -58,15 +59,19 @@ func TestPlatform(t *testing.T) {
 		}
 	}
 
-	// apply test sets sequentially - while framework is still in dev
+	// apply test sets concurrently
 	for _, path := range pathsToSets {
-		err = applyTestSet(path, c)
-		if err != nil {
-			log.Fatal().Msgf("Error while processing %s : %v", path, err)
-			break
-		}
+		func(path string) {
+			errGroup.Go(func() error {
+				err := applyTestSet(path, c)
+				if err != nil {
+					return fmt.Errorf("Error while processing %s : %v", path, err)
+				}
+				return nil
+			})
+		}(path)
 	}
-
+	err = errGroup.Wait()
 	require.NoError(t, err)
 }
 
@@ -101,7 +106,7 @@ func applyTestSet(pathToSet string, c pb.ContextBoxServiceClient) error {
 			log.Fatal().Msgf("Error while saving a config: %v", err)
 			return err
 		}
-		go configChecker(done, c, id, file.Name())
+		go configChecker(done, c, id, file.Name(), pathToSet)
 		// wait until test config has been processed
 		if res := <-done; res != "ok" {
 			log.Error().Msg(res)
@@ -119,7 +124,7 @@ func applyTestSet(pathToSet string, c pb.ContextBoxServiceClient) error {
 }
 
 // configChecker function will check if the config has been applied every 30s
-func configChecker(done chan string, c pb.ContextBoxServiceClient, configID string, configName string) {
+func configChecker(done chan string, c pb.ContextBoxServiceClient, configID, configName, testSetName string) {
 	counter := 1
 	sleepSec := 30
 	for {
@@ -153,7 +158,7 @@ func configChecker(done chan string, c pb.ContextBoxServiceClient, configID stri
 		}
 		time.Sleep(time.Duration(sleepSec) * time.Second)
 		counter++
-		log.Info().Msgf("Waiting for %s to finish... [ %ds elapsed ]", configName, elapsedSec)
+		log.Info().Msgf("Waiting for %s to from %s finish... [ %ds elapsed ]", configName, testSetName, elapsedSec)
 	}
 	// send signal that config has been processed, unblock the applyTestSet
 	done <- "ok"
