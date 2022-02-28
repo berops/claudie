@@ -121,7 +121,7 @@ func initInfra(clusterInfo *pb.ClusterInfo, backendData Backend, clusterType int
 
 // function will check if the hostname ends with ".", and will concatenate it if not
 func getHostname(DNS *pb.DNS) string {
-	if DNS.Hostname == "" {
+	if DNS.Hostname != "" {
 		return DNS.Hostname
 	}
 	hostname := utils.CreateHash(hostnameHashLen)
