@@ -297,15 +297,18 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 
 		config := res.GetConfig()
 		if config != nil {
-			go func() error {
+			go func(config *pb.Config) {
 				log.Info().Msgf("Processing %s ", config.Name)
 				err := processConfig(config, c)
 				if err != nil {
 					log.Info().Msgf("scheduler:processConfig failed: %s", err)
-					return err
+					//save error message to config
+					errSave := saveErrorMessage(config, c, err)
+					if errSave != nil {
+						log.Error().Msgf("scheduler:failed to save error to the config: %s : processConfig failed: %s", errSave, err)
+					}
 				}
-				return nil
-			}()
+			}(config)
 		}
 		return nil
 	}
@@ -336,6 +339,17 @@ func searchProvider(providerName string, providers []Provider) int {
 		}
 	}
 	return -1
+}
+
+// function saveErrorMessage saves error message to config
+func saveErrorMessage(config *pb.Config, c pb.ContextBoxServiceClient, err error) error {
+	config.CurrentState = config.DesiredState // Update currentState, so we can use it for deletion later
+	config.ErrorMessage = err.Error()
+	errSave := cbox.SaveConfigScheduler(c, &pb.SaveConfigRequest{Config: config})
+	if errSave != nil {
+		return fmt.Errorf("error while saving the config: %v", err)
+	}
+	return nil
 }
 
 func main() {
