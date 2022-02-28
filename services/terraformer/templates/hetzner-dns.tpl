@@ -4,7 +4,7 @@ provider "google" {
     alias = "dns"
 }
 
-data "google_dns_managed_zone" "zone" {
+data "google_dns_managed_zone" "hetzner-zone" {
   name = "{{.DNSZone}}"
 }
 
@@ -15,11 +15,11 @@ data "google_dns_managed_zone" "zone" {
 
 resource "google_dns_record_set" "{{$nodepool.Name}}-{{$clusterName}}" {
   provider = google.dns
-  name = "{{ $hostnameHash }}.${data.google_dns_managed_zone.zone.dns_name}"
+  name = "{{ $hostnameHash }}.${data.google_dns_managed_zone.hetzner-zone.dns_name}"
   type = "A"
   ttl  = 300
 
-  managed_zone = data.google_dns_managed_zone.zone.name
+  managed_zone = data.google_dns_managed_zone.hetzner-zone.name
 
   rrdatas = [
         for node in hcloud_server.{{$nodepool.Name}} :node.ipv4_address
