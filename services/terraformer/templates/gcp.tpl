@@ -2,17 +2,20 @@ provider "google" {
   credentials = "${file("../../../../../keys/platform-296509-d6ddeb344e91.json")}"
   region = "europe-west1"
   project = "platform-296509"
+  alias  = "k8s-nodepool"
 }
 
 {{- $clusterName := .ClusterName}}
 {{- $clusterHash := .ClusterHash}}
 
 resource "google_compute_network" "network" {
+  provider     = google.k8s-nodepool
   name                    = "{{ $clusterName }}-{{ $clusterHash }}-network"
   auto_create_subnetworks = false
 }
 
 resource "google_compute_subnetwork" "subnet" {
+  provider     = google.k8s-nodepool
   name          = "{{ $clusterName }}-{{ $clusterHash }}-subnet"
   network       = google_compute_network.network.self_link
   region        = "europe-west1"
@@ -20,6 +23,7 @@ resource "google_compute_subnetwork" "subnet" {
 }
 
 resource "google_compute_firewall" "firewall" {
+  provider     = google.k8s-nodepool
   name    = "{{ $clusterName }}-{{ $clusterHash }}-firewall"
   network = google_compute_network.network.self_link
 
@@ -44,6 +48,7 @@ resource "google_compute_firewall" "firewall" {
 
 {{ range $nodepool := .NodePools }}
 resource "google_compute_instance" "{{ $nodepool.Name }}" {
+  provider     = google.k8s-nodepool
   count        = {{ $nodepool.Count }}
   zone         = "europe-west1-c"
   name         = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}"

@@ -1,0 +1,94 @@
+name: TestSetOne-1
+
+providers:
+- name: hetzner
+  credentials: xIAfsb7M5K6etYAfXYcg5iYyrFGNlCxcICo060HVEygjoF0usFpv5P9X7pk85Xe1
+- name: gcp
+  credentials: /Users/jaskeeratrandhawa/Projects/berops/platform/keys/platform-296509-cd97c3e55223.json
+
+nodePools:
+  dynamic:
+  - name: hetzner-control
+    provider:
+      hetzner:
+        region: nbg1
+        zone: nbg1-dc3
+    count: 3
+    server_type: cpx11
+    image: ubuntu-20.04
+    disk_size: 50
+  - name: hetzner-compute
+    provider:
+      hetzner:
+        region: nbg1
+        zone: nbg1-dc3
+    count: 2
+    server_type: cpx11
+    image: ubuntu-20.04
+    disk_size: 50
+  #-----------LB nodepools----------
+  - name: gcp-lb
+    provider: 
+      gcp:
+        region: europe-west1
+        zone: europe-west1-c
+    count: 2
+    server_type: e2-small
+    image: ubuntu-os-cloud/ubuntu-2004-lts
+    disk_size: 50 
+  - name: hetzner-lb
+    provider:
+      hetzner:
+        region: nbg1
+        zone: nbg1-dc3
+    count: 2
+    server_type: cpx11
+    image: ubuntu-20.04
+    disk_size: 50
+
+
+kubernetes:
+  clusters:
+    - name: cluster-1
+      version: v1.19.0
+      network: 192.168.2.0/24
+      pools:
+        control:
+        - hetzner-control
+        compute:
+        - hetzner-compute
+    - name: cluster-2
+      version: v1.19.0
+      network: 192.168.2.0/24
+      pools:
+        control:
+        - hetzner-control
+        compute:
+        - hetzner-compute
+
+loadBalancers:
+  roles:
+  - name: apiserver-lb
+    protocol: tcp
+    port: 6443
+    target_port: 6443
+    target: k8sControlPlane
+  clusters:    
+  - name: cluster-1-apiserver-lb
+    roles:
+    - apiserver-lb
+    dns:                          # user managed dns
+      dns_zone : lb-zone-2
+      project: platform-296509
+    targeted-k8s: cluster-1
+    pools:  
+    - gcp-lb
+    - hetzner-lb
+  - name: cluster-2-apiserver-lb
+    roles:
+    - apiserver-lb
+    #                               berops manged dns
+    targeted-k8s: cluster-2
+    pools:  
+    - gcp-lb
+    - hetzner-lb

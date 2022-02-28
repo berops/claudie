@@ -1,11 +1,11 @@
 provider "google" {
-    credentials = "${file("../../../../../keys/platform-infrastructure-316112-bd7953f712df.json")}"
-    region = "europe-west1"
-    project = "platform-infrastructure-316112"
+    credentials = "${file("{{.Provider.Credentials}}")}"
+    project = "{{.Project}}"
+    alias = "dns"
 }
 
 data "google_dns_managed_zone" "zone" {
-  name = "{{.Zone}}"
+  name = "{{.DNSZone}}"
 }
 
 {{- $clusterName := .ClusterName }}
@@ -13,9 +13,8 @@ data "google_dns_managed_zone" "zone" {
 {{- $hostnameHash := .HostnameHash }}
 {{- range $nodepool := .NodePools}}
 
-
 resource "google_dns_record_set" "{{$nodepool.Name}}-{{$clusterName}}" {
-
+  provider = google.dns
   name = "{{ $hostnameHash }}.${data.google_dns_managed_zone.zone.dns_name}"
   type = "A"
   ttl  = 300

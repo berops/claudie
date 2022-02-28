@@ -31,7 +31,16 @@ const (
 	gcpProvider          = "gcp"
 )
 
-var claudieProvider = &pb.Provider{Name: "claudie", Credentials: "./key/here"}
+var claudieProvider = &pb.Provider{
+	Name:        "claudie",
+	Credentials: "../../../../../keys/platform-infrastructure-316112-bd7953f712df.json",
+}
+
+var DefaultDNS = &pb.DNS{
+	DnsZone:  "lb-zone",
+	Project:  "platform-infrastructure-316112",
+	Provider: claudieProvider,
+}
 
 ////////////////////YAML STRUCT//////////////////////////////////////////////////
 
@@ -101,12 +110,6 @@ type Role struct {
 	Target     string `yaml:"target"`
 }
 
-type Conf struct {
-	Protocol   string `yaml:"protocol"`
-	Port       uint32 `yaml:"port"`
-	TargetPort uint32 `yaml:"targetPort"`
-}
-
 type LoadBalancerCluster struct {
 	Name        string   `yaml:"name"`
 	Roles       []string `yaml:"roles"`
@@ -116,7 +119,8 @@ type LoadBalancerCluster struct {
 }
 
 type DNS struct {
-	Zone string `yaml:"zone,omitempty"`
+	DNSZone string `yaml:"dns_zone,omitempty"`
+	Project string `yaml:"project,omitempty"`
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -421,15 +425,17 @@ func getMatchingRoles(roles []Role, roleNames []string) []*pb.Role {
 }
 
 func getDNS(lbDNS DNS, provider []Provider) *pb.DNS {
-	if lbDNS.Zone == "" {
-		return &pb.DNS{Zone: "lb-zone", Provider: claudieProvider} // default zone is used
+	if lbDNS.DNSZone == "" {
+		return DefaultDNS // default zone is used
 	} else {
 		providerIndex := searchProvider(gcpProvider, provider)
-		return &pb.DNS{Zone: lbDNS.Zone,
+		return &pb.DNS{
+			DnsZone: lbDNS.DNSZone,
 			Provider: &pb.Provider{
 				Name:        provider[providerIndex].Name,
 				Credentials: provider[providerIndex].Credentials,
 			},
+			Project: lbDNS.Project,
 		}
 	}
 }
