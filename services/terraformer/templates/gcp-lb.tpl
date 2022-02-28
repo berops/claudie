@@ -2,12 +2,14 @@ provider "google" {
   credentials = "${file("../../../../../keys/platform-296509-d6ddeb344e91.json")}"
   region = "europe-west1"
   project = "platform-296509"
+  alias  = "lb-nodepool"
 }
 {{- $clusterName := .ClusterName}}
 {{- $clusterHash := .ClusterHash}}
 
 {{range $nodepool := .NodePools}}
 resource "google_compute_instance" "{{$nodepool.Name}}" {
+  provider     = google.lb-nodepool
   count        = {{$nodepool.Count}}
   zone         = "europe-west1-c"
   name         = "{{ $clusterName }}-{{ $clusterHash }}-{{$nodepool.Name}}-${count.index + 1}"

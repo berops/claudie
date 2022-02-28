@@ -13,9 +13,11 @@ terraform {
 
 provider "hcloud" {
   token = "{{ (index .NodePools $index).Provider.Credentials }}" 
+  alias = "lb-nodepool"
 }
 
 resource "hcloud_ssh_key" "platform" {
+  provider     = hcloud.lb-nodepool
   name       = "key-{{ $clusterName }}-{{ $clusterHash }}"
   public_key = file("./public.pem")
 }
@@ -24,6 +26,7 @@ resource "hcloud_ssh_key" "platform" {
 {{range $nodepool := .NodePools}}
 
 resource "hcloud_server" "{{$nodepool.Name}}" {
+  provider     = hcloud.lb-nodepool
   count       = "{{ $nodepool.Count }}"
   name        = "{{ $clusterName }}-{{ $clusterHash }}-{{$nodepool.Name}}-${count.index +1}"
   server_type = "{{ $nodepool.ServerType }}"
