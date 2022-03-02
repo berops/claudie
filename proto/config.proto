@@ -101,3 +101,8 @@ message Provider {
   string name = 1;
   string credentials = 2;
 }
+
+enum ClusterType {
+  K8s = 0;
+  LB = 1;
+}

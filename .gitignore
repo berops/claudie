@@ -1,7 +1,7 @@
 .idea/
 *.ini
 .terraform*
-services/terraformer/server/terraform
+services/terraformer/server/clusters
 kubeone
 playground
 .vscode

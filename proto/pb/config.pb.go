@@ -164,6 +164,52 @@ func (NodeType) EnumDescriptor() ([]byte, []int) {
 	return file_proto_config_proto_rawDescGZIP(), []int{2}
 }
 
+type ClusterType int32
+
+const (
+	ClusterType_K8s ClusterType = 0
+	ClusterType_LB  ClusterType = 1
+)
+
+// Enum value maps for ClusterType.
+var (
+	ClusterType_name = map[int32]string{
+		0: "K8s",
+		1: "LB",
+	}
+	ClusterType_value = map[string]int32{
+		"K8s": 0,
+		"LB":  1,
+	}
+)
+
+func (x ClusterType) Enum() *ClusterType {
+	p := new(ClusterType)
+	*p = x
+	return p
+}
+
+func (x ClusterType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ClusterType) Descriptor() protoreflect.EnumDescriptor {
+	return file_proto_config_proto_enumTypes[3].Descriptor()
+}
+
+func (ClusterType) Type() protoreflect.EnumType {
+	return &file_proto_config_proto_enumTypes[3]
+}
+
+func (x ClusterType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ClusterType.Descriptor instead.
+func (ClusterType) EnumDescriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{3}
+}
+
 type Config struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1110,6 +1156,8 @@ var file_proto_config_proto_rawDesc = []byte{
 	0x6f, 0x64, 0x65, 0x54, 0x79, 0x70, 0x65, 0x12, 0x0a, 0x0a, 0x06, 0x77, 0x6f, 0x72, 0x6b, 0x65,
 	0x72, 0x10, 0x00, 0x12, 0x0a, 0x0a, 0x06, 0x6d, 0x61, 0x73, 0x74, 0x65, 0x72, 0x10, 0x01, 0x12,
 	0x0f, 0x0a, 0x0b, 0x61, 0x70, 0x69, 0x45, 0x6e, 0x64, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x10, 0x02,
+	0x2a, 0x1e, 0x0a, 0x0b, 0x43, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x54, 0x79, 0x70, 0x65, 0x12,
+	0x07, 0x0a, 0x03, 0x4b, 0x38, 0x73, 0x10, 0x00, 0x12, 0x06, 0x0a, 0x02, 0x4c, 0x42, 0x10, 0x01,
 	0x42, 0x0a, 0x5a, 0x08, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72,
 	0x6f, 0x74, 0x6f, 0x33,
 }
@@ -1126,38 +1174,39 @@ func file_proto_config_proto_rawDescGZIP() []byte {
 	return file_proto_config_proto_rawDescData
 }
 
-var file_proto_config_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_proto_config_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
 var file_proto_config_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_proto_config_proto_goTypes = []interface{}{
 	(RoleType)(0),       // 0: platform.RoleType
 	(Target)(0),         // 1: platform.Target
 	(NodeType)(0),       // 2: platform.NodeType
-	(*Config)(nil),      // 3: platform.Config
-	(*Project)(nil),     // 4: platform.Project
-	(*K8Scluster)(nil),  // 5: platform.K8scluster
-	(*LBcluster)(nil),   // 6: platform.LBcluster
-	(*ClusterInfo)(nil), // 7: platform.ClusterInfo
-	(*Role)(nil),        // 8: platform.Role
-	(*DNS)(nil),         // 9: platform.DNS
-	(*NodePool)(nil),    // 10: platform.NodePool
-	(*Node)(nil),        // 11: platform.Node
-	(*Provider)(nil),    // 12: platform.Provider
+	(ClusterType)(0),    // 3: platform.ClusterType
+	(*Config)(nil),      // 4: platform.Config
+	(*Project)(nil),     // 5: platform.Project
+	(*K8Scluster)(nil),  // 6: platform.K8scluster
+	(*LBcluster)(nil),   // 7: platform.LBcluster
+	(*ClusterInfo)(nil), // 8: platform.ClusterInfo
+	(*Role)(nil),        // 9: platform.Role
+	(*DNS)(nil),         // 10: platform.DNS
+	(*NodePool)(nil),    // 11: platform.NodePool
+	(*Node)(nil),        // 12: platform.Node
+	(*Provider)(nil),    // 13: platform.Provider
 }
 var file_proto_config_proto_depIdxs = []int32{
-	4,  // 0: platform.Config.desiredState:type_name -> platform.Project
-	4,  // 1: platform.Config.currentState:type_name -> platform.Project
-	5,  // 2: platform.Project.clusters:type_name -> platform.K8scluster
-	6,  // 3: platform.Project.loadBalancerClusters:type_name -> platform.LBcluster
-	7,  // 4: platform.K8scluster.clusterInfo:type_name -> platform.ClusterInfo
-	7,  // 5: platform.LBcluster.clusterInfo:type_name -> platform.ClusterInfo
-	8,  // 6: platform.LBcluster.roles:type_name -> platform.Role
-	9,  // 7: platform.LBcluster.dns:type_name -> platform.DNS
-	10, // 8: platform.ClusterInfo.nodePools:type_name -> platform.NodePool
+	5,  // 0: platform.Config.desiredState:type_name -> platform.Project
+	5,  // 1: platform.Config.currentState:type_name -> platform.Project
+	6,  // 2: platform.Project.clusters:type_name -> platform.K8scluster
+	7,  // 3: platform.Project.loadBalancerClusters:type_name -> platform.LBcluster
+	8,  // 4: platform.K8scluster.clusterInfo:type_name -> platform.ClusterInfo
+	8,  // 5: platform.LBcluster.clusterInfo:type_name -> platform.ClusterInfo
+	9,  // 6: platform.LBcluster.roles:type_name -> platform.Role
+	10, // 7: platform.LBcluster.dns:type_name -> platform.DNS
+	11, // 8: platform.ClusterInfo.nodePools:type_name -> platform.NodePool
 	1,  // 9: platform.Role.target:type_name -> platform.Target
 	0,  // 10: platform.Role.roleType:type_name -> platform.RoleType
-	12, // 11: platform.DNS.provider:type_name -> platform.Provider
-	11, // 12: platform.NodePool.nodes:type_name -> platform.Node
-	12, // 13: platform.NodePool.provider:type_name -> platform.Provider
+	13, // 11: platform.DNS.provider:type_name -> platform.Provider
+	12, // 12: platform.NodePool.nodes:type_name -> platform.Node
+	13, // 13: platform.NodePool.provider:type_name -> platform.Provider
 	2,  // 14: platform.Node.nodeType:type_name -> platform.NodeType
 	15, // [15:15] is the sub-list for method output_type
 	15, // [15:15] is the sub-list for method input_type
@@ -1298,7 +1347,7 @@ func file_proto_config_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_proto_config_proto_rawDesc,
-			NumEnums:      3,
+			NumEnums:      4,
 			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,
