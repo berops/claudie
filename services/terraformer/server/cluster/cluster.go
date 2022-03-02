@@ -36,13 +36,13 @@ type outputNodepools struct {
 }
 
 const (
-	output = "services/terraformer/server/clusters"
+	Output = "services/terraformer/server/clusters"
 )
 
 // tplFile - template file for creation of nodepools
 func (c Cluster) CreateNodepools() error {
 	clusterID := fmt.Sprintf(c.DesiredInfo.Name, "-", c.DesiredInfo.Hash)
-	clusterDir := filepath.Join(output, clusterID)
+	clusterDir := filepath.Join(Output, clusterID)
 	terraform := terraform.Terraform{Directory: clusterDir}
 	err := c.generateFiles(clusterID, clusterDir)
 	if err != nil {
@@ -86,12 +86,12 @@ func (c Cluster) CreateNodepools() error {
 }
 
 // tplFile - template file for creation of nodepools
-func (c Cluster) DestroyNodepools(tplFile string) error {
+func (c Cluster) DestroyNodepools() error {
 	clusterID := fmt.Sprintf(c.DesiredInfo.Name, "-", c.DesiredInfo.Hash)
-	clusterDir := filepath.Join(output, clusterID)
+	clusterDir := filepath.Join(Output, clusterID)
 	terraform := terraform.Terraform{Directory: clusterDir}
 	//generate template files
-	err := c.generateFiles(clusterID, clusterDir, tplFile)
+	err := c.generateFiles(clusterID, clusterDir)
 	if err != nil {
 		// description of an error in c.generateFiles()
 		return err
@@ -109,25 +109,31 @@ func (c Cluster) DestroyNodepools(tplFile string) error {
 }
 
 func (c Cluster) generateFiles(clusterID, clusterDir string) error {
-	// generate .tf files from templates
+	// generate backend
 	backend := BackendData{
 		ProjectName: c.ProjectName,
 		ClusterName: clusterID,
-	}
-	nodepools := NodepoolsData{
-		NodePools:   c.DesiredInfo.NodePools,
-		ClusterName: c.DesiredInfo.Name,
-		ClusterHash: c.DesiredInfo.Hash,
 	}
 	templates := templates.Templates{Directory: clusterDir}
 	err := templates.Generate("backend.tpl", "backend.tf", backend)
 	if err != nil {
 		return fmt.Errorf("error while generating backend.tf for %s : %v", clusterID, err)
 	}
-	tplFile := getTplFile(c.ClusterType)
-	err = templates.Generate(tplFile, fmt.Sprintf("%s.tf", clusterID), nodepools)
-	if err != nil {
-		return fmt.Errorf("error while generating .tf files for %s : %v", clusterID, err)
+	// generate .tf files for nodepools
+	tplType := getTplFile(c.ClusterType)
+	//sort nodepools by a provider
+	sortedNodePools := sortNodePools(c.DesiredInfo)
+
+	for provider, nodepools := range sortedNodePools {
+		nodepoolData := NodepoolsData{
+			NodePools:   nodepools,
+			ClusterName: c.DesiredInfo.Name,
+			ClusterHash: c.DesiredInfo.Hash,
+		}
+		err := templates.Generate(fmt.Sprintf("%s%s", provider, tplType), fmt.Sprintf("%s-%s.tf", clusterID, provider), nodepoolData)
+		if err != nil {
+			return fmt.Errorf("error while generating .tf files for %s : %v", clusterID, err)
+		}
 	}
 	return nil
 }
@@ -135,7 +141,6 @@ func (c Cluster) generateFiles(clusterID, clusterDir string) error {
 func fillNodes(terraformOutput *outputNodepools, newNodePool *pb.NodePool, oldNodes []*pb.Node) {
 	// Fill slices from terraformOutput maps with names of nodes to ensure an order
 	var tempNodes []*pb.Node
-
 	// get sorted list of keys
 	sortedNodeNames := getkeysFromMap(terraformOutput.IPs)
 	for _, nodeName := range sortedNodeNames {
@@ -186,5 +191,19 @@ func readIPs(data string) (outputNodepools, error) {
 }
 
 func getTplFile(clusterType pb.ClusterType) string {
+	switch clusterType {
+	case pb.ClusterType_K8s:
+		return ".tpl"
+	case pb.ClusterType_LB:
+		return "-lb.tpl"
+	}
+	return ""
+}
 
+func sortNodePools(clusterInfo *pb.ClusterInfo) map[string][]*pb.NodePool {
+	sortedNodePools := map[string][]*pb.NodePool{}
+	for _, nodepool := range clusterInfo.GetNodePools() {
+		sortedNodePools[nodepool.Provider.Name] = append(sortedNodePools[nodepool.Provider.Name], nodepool)
+	}
+	return sortedNodePools
 }
