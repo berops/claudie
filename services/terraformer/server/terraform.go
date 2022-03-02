@@ -52,7 +52,9 @@ type DNSData struct {
 type jsonOut struct {
 	IPs map[string]interface{} `json:"-"`
 }
-
+type DomainJSON struct {
+	Domain map[string]string `json:"-"`
+}
 type FilePair struct {
 	outputFile   string
 	templateFile string
@@ -182,11 +184,11 @@ func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) err
 	}
 	// create DNS records
 	for _, lbCluster := range desiredState.LoadBalancerClusters {
+		outputPath := filepath.Join(outputPath, fmt.Sprintf("%s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash))
 		for _, nodepool := range lbCluster.ClusterInfo.NodePools {
 			hostnameHash := utils.CreateHash(hostnameHashLen)
 			nodeIPs := getNodeIPs(nodepool)
 			dnsData := getDNSData(lbCluster, hostnameHash, nodeIPs)
-			outputPath := filepath.Join(outputPath, fmt.Sprintf("%s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash))
 			tplFile := filepath.Join(templatePath, "dns.tpl")
 			tfFile := filepath.Join(outputPath, "dns.tf")
 			err := templateGen(tplFile, tfFile, dnsData, outputPath)
@@ -202,6 +204,22 @@ func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) err
 				return err
 			}
 		}
+		// save full hostname to LB
+		//use any nodepool, every node has same domain
+		outputID := fmt.Sprintf("%s-%s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash, lbCluster.ClusterInfo.NodePools[0].Name)
+		output, err := outputTerraform(outputPath, outputID)
+		if err != nil {
+			log.Error().Msgf("Error while getting output from terraform: %v", err)
+			return err
+		}
+		out, err := readDomain(output)
+		if err != nil {
+			log.Error().Msgf("Error while reading the terraform output: %v", err)
+			return err
+		}
+		domain := validateDomain(out.Domain[outputID])
+		lbCluster.Dns.Hostname = domain
+		log.Info().Msgf("Set the domain for %s to %s", lbCluster.ClusterInfo.Name, domain)
 	}
 	// Clean after terraform
 	if err := os.RemoveAll(outputPath + "/" + backendData.ClusterName); err != nil {
@@ -511,4 +529,18 @@ func getFilePair(clusterType int) (FilePair, error) {
 	default:
 		return FilePair{}, fmt.Errorf("no such type of cluster")
 	}
+}
+
+func validateDomain(s string) string {
+	if s[len(s)-1] == '.' {
+		return s[:len(s)-1]
+	}
+	return s
+}
+
+func readDomain(data string) (DomainJSON, error) {
+	var result DomainJSON
+	// Unmarshal or Decode the JSON to the interface.
+	err := json.Unmarshal([]byte(data), &result.Domain)
+	return result, err
 }
