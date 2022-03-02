@@ -185,7 +185,6 @@ func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) err
 	// create DNS records
 	for _, lbCluster := range desiredState.LoadBalancerClusters {
 		outputPath := filepath.Join(outputPath, fmt.Sprintf("%s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash))
-
 		hostnameHash := utils.CreateHash(hostnameHashLen)
 		nodeIPs := getNodeIPs(lbCluster.ClusterInfo.NodePools)
 		dnsData := getDNSData(lbCluster, hostnameHash, nodeIPs)
@@ -206,8 +205,9 @@ func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) err
 
 		// save full hostname to LB
 		//use any nodepool, every node has same domain
+		clusterID := fmt.Sprintf("%s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash)
 		outputID := fmt.Sprintf("%s-%s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash, "endpoint")
-		output, err := outputTerraform(outputPath, outputID)
+		output, err := outputTerraform(outputPath, clusterID)
 		if err != nil {
 			log.Error().Msgf("Error while getting output from terraform: %v", err)
 			return err
