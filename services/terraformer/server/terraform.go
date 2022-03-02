@@ -185,28 +185,28 @@ func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) err
 	// create DNS records
 	for _, lbCluster := range desiredState.LoadBalancerClusters {
 		outputPath := filepath.Join(outputPath, fmt.Sprintf("%s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash))
-		for _, nodepool := range lbCluster.ClusterInfo.NodePools {
-			hostnameHash := utils.CreateHash(hostnameHashLen)
-			nodeIPs := getNodeIPs(nodepool)
-			dnsData := getDNSData(lbCluster, hostnameHash, nodeIPs)
-			tplFile := filepath.Join(templatePath, "dns.tpl")
-			tfFile := filepath.Join(outputPath, "dns.tf")
-			err := templateGen(tplFile, tfFile, dnsData, outputPath)
-			if err != nil {
-				return err
-			}
-			err = initTerraform(outputPath)
-			if err != nil {
-				return err
-			}
-			err = applyTerraform(outputPath)
-			if err != nil {
-				return err
-			}
+
+		hostnameHash := utils.CreateHash(hostnameHashLen)
+		nodeIPs := getNodeIPs(lbCluster.ClusterInfo.NodePools)
+		dnsData := getDNSData(lbCluster, hostnameHash, nodeIPs)
+		tplFile := filepath.Join(templatePath, "dns.tpl")
+		tfFile := filepath.Join(outputPath, "dns.tf")
+		err := templateGen(tplFile, tfFile, dnsData, outputPath)
+		if err != nil {
+			return err
 		}
+		err = initTerraform(outputPath)
+		if err != nil {
+			return err
+		}
+		err = applyTerraform(outputPath)
+		if err != nil {
+			return err
+		}
+
 		// save full hostname to LB
 		//use any nodepool, every node has same domain
-		outputID := fmt.Sprintf("%s-%s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash, lbCluster.ClusterInfo.NodePools[0].Name)
+		outputID := fmt.Sprintf("%s-%s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash, "endpoint")
 		output, err := outputTerraform(outputPath, outputID)
 		if err != nil {
 			log.Error().Msgf("Error while getting output from terraform: %v", err)
@@ -229,10 +229,12 @@ func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) err
 	return nil
 }
 
-func getNodeIPs(nodepool *pb.NodePool) []string {
+func getNodeIPs(nodepools []*pb.NodePool) []string {
 	var ips []string
-	for _, node := range nodepool.Nodes {
-		ips = append(ips, node.Public)
+	for _, nodepool := range nodepools {
+		for _, node := range nodepool.Nodes {
+			ips = append(ips, node.Public)
+		}
 	}
 	return ips
 }
