@@ -25,6 +25,11 @@ type server struct {
 	pb.UnimplementedTerraformerServiceServer
 }
 
+type Cluster interface {
+	Build() error
+	Destroy() error
+}
+
 func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastructureRequest) (*pb.BuildInfrastructureResponse, error) {
 	currentState := req.GetCurrentState()
 	desiredState := req.GetDesiredState()

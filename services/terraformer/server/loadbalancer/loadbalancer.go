@@ -1,35 +1,16 @@
 package loadbalancer
 
 import (
-	"encoding/json"
 	"fmt"
-	"path/filepath"
 
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/services/terraformer/server/clusterBuilder"
-	"github.com/Berops/platform/services/terraformer/server/templates"
-	"github.com/Berops/platform/services/terraformer/server/terraform"
-	"github.com/Berops/platform/utils"
-	"github.com/rs/zerolog/log"
 )
 
 const (
 	hostnameHashLength int = 15
 )
 
-type DNSData struct {
-	ClusterName  string
-	ClusterHash  string
-	HostnameHash string
-	DNSZone      string
-	NodeIPs      []string
-	Project      string
-	Provider     *pb.Provider
-}
-
-type outputDomain struct {
-	Domain map[string]string `json:"-"`
-}
 type LBcluster struct {
 	DesiredLB   *pb.LBcluster
 	CurrentLB   *pb.LBcluster
@@ -47,11 +28,25 @@ func (l LBcluster) Build() error {
 		CurrentInfo: currentInfo,
 		ProjectName: l.ProjectName,
 		ClusterType: pb.ClusterType_LB}
+
 	err := cl.CreateNodepools()
 	if err != nil {
-		return fmt.Errorf("error while creating the K8s cluster %s : %v", l.DesiredLB.ClusterInfo.Name, err)
+		return fmt.Errorf("error while creating the LB cluster %s : %v", l.DesiredLB.ClusterInfo.Name, err)
 	}
-	l.createDNS()
+	nodeIPs := getNodeIPs(l.DesiredLB.ClusterInfo.NodePools)
+	dns := DNS{
+		ClusterName: l.DesiredLB.ClusterInfo.Name,
+		ClusterHash: l.DesiredLB.ClusterInfo.Hash,
+		DNSZone:     l.DesiredLB.Dns.DnsZone,
+		NodeIPs:     nodeIPs,
+		Project:     l.DesiredLB.Dns.Project,
+		Provider:    l.DesiredLB.Dns.Provider,
+	}
+	hostname, err := dns.CreateDNSrecords()
+	if err != nil {
+		return fmt.Errorf("error while creating the DNS for %s : %v", l.DesiredLB.ClusterInfo.Name, err)
+	}
+	l.DesiredLB.Dns.Hostname = hostname
 	return nil
 }
 
@@ -61,69 +56,25 @@ func (l LBcluster) Destroy() error {
 		CurrentInfo: l.CurrentLB.ClusterInfo,
 		ProjectName: l.ProjectName,
 		ClusterType: pb.ClusterType_LB}
+	nodeIPs := getNodeIPs(l.CurrentLB.ClusterInfo.NodePools)
+	dns := DNS{
+		ClusterName: l.CurrentLB.ClusterInfo.Name,
+		ClusterHash: l.CurrentLB.ClusterInfo.Hash,
+		DNSZone:     l.CurrentLB.Dns.DnsZone,
+		NodeIPs:     nodeIPs,
+		Project:     l.CurrentLB.Dns.Project,
+		Provider:    l.CurrentLB.Dns.Provider,
+	}
+
 	err := cluster.DestroyNodepools()
 	if err != nil {
-		return fmt.Errorf("error while destroying the K8s cluster %s : %v", l.DesiredLB.ClusterInfo.Name, err)
+		return fmt.Errorf("error while destroying the K8s cluster %s : %v", l.CurrentLB.ClusterInfo.Name, err)
+	}
+	err = dns.DestroyDNSrecords()
+	if err != nil {
+		return fmt.Errorf("error while destroying the DNS records %s : %v", l.CurrentLB.ClusterInfo.Name, err)
 	}
 	return nil
-}
-
-func (l LBcluster) GetName() string {
-	return l.CurrentLB.ClusterInfo.Name
-}
-
-func (l LBcluster) createDNS() error {
-	clusterID := fmt.Sprintf("%s-%s", l.DesiredLB.ClusterInfo.Name, l.DesiredLB.ClusterInfo.Hash)
-	clusterDir := filepath.Join(clusterBuilder.Output, clusterID)
-	terraform := terraform.Terraform{Directory: clusterDir}
-	templates := templates.Templates{Directory: clusterDir}
-
-	hostnameHash := utils.CreateHash(hostnameHashLength)
-	nodeIPs := getNodeIPs(l.DesiredLB.ClusterInfo.NodePools)
-	dnsData := getDNSData(l.DesiredLB, hostnameHash, nodeIPs)
-	err := templates.Generate("dns.tpl", "dns.tf", dnsData)
-	if err != nil {
-		return err
-	}
-	err = terraform.TerraformInit()
-	if err != nil {
-		return err
-	}
-	err = terraform.TerraformApply()
-	if err != nil {
-		return err
-	}
-
-	// save full hostname to LBcluster.DNS.Hostname
-	outputID := fmt.Sprintf("%s-%s-%s", l.DesiredLB.ClusterInfo.Name, l.DesiredLB.ClusterInfo.Hash, "endpoint")
-	output, err := terraform.TerraformOutput(outputID)
-	if err != nil {
-		log.Error().Msgf("Error while getting output from terraform: %v", err)
-		return err
-	}
-	out, err := readDomain(output)
-	if err != nil {
-		log.Error().Msgf("Error while reading the terraform output: %v", err)
-		return err
-	}
-	domain := validateDomain(out.Domain[outputID])
-	l.DesiredLB.Dns.Hostname = domain
-	log.Info().Msgf("Set the domain for %s to %s", l.DesiredLB.ClusterInfo.Name, domain)
-	return nil
-}
-
-// function returns pair of strings, first the hash hostname, second the zone
-func getDNSData(lbCluster *pb.LBcluster, hostname string, nodeIPs []string) DNSData {
-	DNSData := DNSData{
-		DNSZone:      lbCluster.Dns.DnsZone,
-		HostnameHash: hostname,
-		ClusterName:  lbCluster.ClusterInfo.Name,
-		ClusterHash:  lbCluster.ClusterInfo.Hash,
-		NodeIPs:      nodeIPs,
-		Project:      lbCluster.Dns.Project,
-		Provider:     lbCluster.Dns.Provider,
-	}
-	return DNSData
 }
 
 func getNodeIPs(nodepools []*pb.NodePool) []string {
@@ -134,18 +85,4 @@ func getNodeIPs(nodepools []*pb.NodePool) []string {
 		}
 	}
 	return ips
-}
-
-func validateDomain(s string) string {
-	if s[len(s)-1] == '.' {
-		return s[:len(s)-1]
-	}
-	return s
-}
-
-func readDomain(data string) (outputDomain, error) {
-	var result outputDomain
-	// Unmarshal or Decode the JSON to the interface.
-	err := json.Unmarshal([]byte(data), &result.Domain)
-	return result, err
 }

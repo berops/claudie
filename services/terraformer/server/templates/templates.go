@@ -21,7 +21,7 @@ type Templates struct {
 
 func (t Templates) Generate(tplFile, outputFile string, d interface{}) error {
 	generatedFile := filepath.Join(t.Directory, outputFile)
-	// make sure the t.Directory exists, if not, create dir
+	// make sure the t.Directory exists, if not, create it
 	if _, err := os.Stat(t.Directory); os.IsNotExist(err) {
 		if err := os.MkdirAll(t.Directory, os.ModePerm); err != nil {
 			return fmt.Errorf("failed to create dir: %v", err)

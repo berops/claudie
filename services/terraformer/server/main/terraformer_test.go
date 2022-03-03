@@ -197,8 +197,6 @@ var desiredState *pb.Project = &pb.Project{
 	},
 }
 
-var jsonData = "{\"compute\":{\"test-cluster-compute1\":\"0.0.0.65\",\n\"test-cluster-compute2\":\"0.0.0.512\"},\n\"control\":{\"test-cluster-control1\":\"0.0.0.72\",\n\"test-cluster-control2\":\"0.0.0.65\"}}"
-
 var testState *pb.Project = &pb.Project{
 	Name: "TestProjectName",
 	Clusters: []*pb.K8Scluster{

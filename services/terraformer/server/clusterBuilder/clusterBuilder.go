@@ -3,12 +3,14 @@ package clusterBuilder
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"sort"
 
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/services/terraformer/server/templates"
 	"github.com/Berops/platform/services/terraformer/server/terraform"
+	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
 )
 
@@ -41,14 +43,16 @@ const (
 
 // tplFile - template file for creation of nodepools
 func (c ClusterBuilder) CreateNodepools() error {
-	clusterID := fmt.Sprintf(c.DesiredInfo.Name, "-", c.DesiredInfo.Hash)
+	clusterID := fmt.Sprintf("%s-%s", c.DesiredInfo.Name, c.DesiredInfo.Hash)
 	clusterDir := filepath.Join(Output, clusterID)
+	fmt.Println(clusterDir)
 	terraform := terraform.Terraform{Directory: clusterDir}
 	err := c.generateFiles(clusterID, clusterDir)
 	if err != nil {
 		// description of an error in c.generateFiles()
 		return err
 	}
+
 	// create nodepool with terraform
 	err = terraform.TerraformInit()
 	if err != nil {
@@ -59,13 +63,8 @@ func (c ClusterBuilder) CreateNodepools() error {
 		return fmt.Errorf("error while running terraform apply in %s : %v", clusterID, err)
 	}
 
-	// group all the nodes together to make searching with respect to IP easy
-	var oldNodes []*pb.Node
-	if c.CurrentInfo != nil {
-		for _, oldNodepool := range c.CurrentInfo.NodePools {
-			oldNodes = append(oldNodes, oldNodepool.Nodes...)
-		}
-	}
+	// get slice of old nodes
+	oldNodes := c.getNodes()
 
 	// fill new nodes with output
 	for _, nodepool := range c.DesiredInfo.NodePools {
@@ -82,12 +81,17 @@ func (c ClusterBuilder) CreateNodepools() error {
 		fillNodes(&out, nodepool, oldNodes)
 	}
 
+	// Clean after terraform
+	if err := os.RemoveAll(clusterDir); err != nil {
+		return fmt.Errorf("error while deleting files: %v", err)
+	}
+
 	return nil
 }
 
 // tplFile - template file for creation of nodepools
 func (c ClusterBuilder) DestroyNodepools() error {
-	clusterID := fmt.Sprintf(c.CurrentInfo.Name, "-", c.CurrentInfo.Hash)
+	clusterID := fmt.Sprintf("%s-%s", c.CurrentInfo.Name, c.CurrentInfo.Hash)
 	clusterDir := filepath.Join(Output, clusterID)
 	terraform := terraform.Terraform{Directory: clusterDir}
 	//generate template files
@@ -105,6 +109,10 @@ func (c ClusterBuilder) DestroyNodepools() error {
 	if err != nil {
 		return fmt.Errorf("error while running terraform apply in %s : %v", clusterID, err)
 	}
+	// Clean after terraform
+	if err := os.RemoveAll(clusterDir); err != nil {
+		return fmt.Errorf("error while deleting files: %v", err)
+	}
 	return nil
 }
 
@@ -119,23 +127,47 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	if err != nil {
 		return fmt.Errorf("error while generating backend.tf for %s : %v", clusterID, err)
 	}
+
 	// generate .tf files for nodepools
+	var clusterInfo *pb.ClusterInfo
+	if c.DesiredInfo != nil {
+		clusterInfo = c.DesiredInfo
+	} else if c.CurrentInfo != nil {
+		clusterInfo = c.CurrentInfo
+	}
+
 	tplType := getTplFile(c.ClusterType)
 	//sort nodepools by a provider
-	sortedNodePools := sortNodePools(c.DesiredInfo)
-
+	sortedNodePools := sortNodePools(clusterInfo)
 	for provider, nodepools := range sortedNodePools {
 		nodepoolData := NodepoolsData{
 			NodePools:   nodepools,
-			ClusterName: c.DesiredInfo.Name,
-			ClusterHash: c.DesiredInfo.Hash,
+			ClusterName: clusterInfo.Name,
+			ClusterHash: clusterInfo.Hash,
 		}
 		err := templates.Generate(fmt.Sprintf("%s%s", provider, tplType), fmt.Sprintf("%s-%s.tf", clusterID, provider), nodepoolData)
 		if err != nil {
-			return fmt.Errorf("error while generating .tf files for %s : %v", clusterID, err)
+			return fmt.Errorf("error while generating .tf files : %v", err)
+		}
+		// Create publicKey file for a cluster
+		if err := utils.CreateKeyFile(clusterInfo.PublicKey, clusterDir, "public.pem"); err != nil {
+			log.Error().Msgf("Error creating key file: %v", err)
+			return err
 		}
 	}
+
 	return nil
+}
+
+func (c ClusterBuilder) getNodes() []*pb.Node {
+	// group all the nodes together to make searching with respect to IP easy
+	var oldNodes []*pb.Node
+	if c.CurrentInfo != nil {
+		for _, oldNodepool := range c.CurrentInfo.NodePools {
+			oldNodes = append(oldNodes, oldNodepool.Nodes...)
+		}
+	}
+	return oldNodes
 }
 
 func fillNodes(terraformOutput *outputNodepools, newNodePool *pb.NodePool, oldNodes []*pb.Node) {
