@@ -10,6 +10,8 @@ import (
 
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/platform/services/terraformer/server/kubernetes"
+	"github.com/Berops/platform/services/terraformer/server/loadbalancer"
 	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
@@ -26,8 +28,45 @@ type server struct {
 func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastructureRequest) (*pb.BuildInfrastructureResponse, error) {
 	currentState := req.GetCurrentState()
 	desiredState := req.GetDesiredState()
-
-	err := buildInfrastructure(currentState, desiredState)
+	projectName := desiredState.Name
+	var errGroup errgroup.Group
+	var clusters []Cluster
+	// Get kubernetes clusters
+	for _, desiredK8s := range desiredState.Clusters {
+		var existingCluster *pb.K8Scluster
+		for _, currentK8s := range currentState.Clusters {
+			if desiredK8s.ClusterInfo.Name == currentK8s.ClusterInfo.Name {
+				existingCluster = currentK8s
+				break
+			}
+		}
+		clusters = append(clusters, kubernetes.K8Scluster{DesiredK8s: desiredK8s, CurrentK8s: existingCluster, ProjectName: projectName})
+	}
+	// Get LB clusters
+	for _, desiredLB := range desiredState.LoadBalancerClusters {
+		var existingCluster *pb.LBcluster
+		for _, currentLB := range currentState.LoadBalancerClusters {
+			if desiredLB.ClusterInfo.Name == currentLB.ClusterInfo.Name {
+				existingCluster = currentLB
+				break
+			}
+		}
+		clusters = append(clusters, loadbalancer.LBcluster{DesiredLB: desiredLB, CurrentLB: existingCluster, ProjectName: projectName})
+	}
+	// Build clusters concurrently
+	for _, cluster := range clusters {
+		func(c Cluster) {
+			errGroup.Go(func() error {
+				err := c.Build()
+				if err != nil {
+					log.Error().Msgf("error encountered in Terraformer - DestroyInfrastructure: %v", err)
+					return err
+				}
+				return nil
+			})
+		}(cluster)
+	}
+	err := errGroup.Wait()
 	if err != nil {
 		return &pb.BuildInfrastructureResponse{
 				CurrentState: currentState,
@@ -46,7 +85,31 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrastructureRequest) (*pb.DestroyInfrastructureResponse, error) {
 	fmt.Println("DestroyInfrastructure function was invoked with config:", req.GetConfig().GetName())
 	config := req.GetConfig()
-	err := destroyInfrastructure(config)
+	projectName := config.CurrentState.Name
+	var errGroup errgroup.Group
+	var clusters []Cluster
+	// Get kubernetes clusters
+	for _, k8s := range config.CurrentState.Clusters {
+		clusters = append(clusters, kubernetes.K8Scluster{CurrentK8s: k8s, ProjectName: projectName})
+	}
+	// Get LB clusters
+	for _, lb := range config.CurrentState.LoadBalancerClusters {
+		clusters = append(clusters, loadbalancer.LBcluster{CurrentLB: lb, ProjectName: projectName})
+	}
+	// Destroy clusters concurrently
+	for _, cluster := range clusters {
+		func(c Cluster) {
+			errGroup.Go(func() error {
+				err := c.Destroy()
+				if err != nil {
+					log.Error().Msgf("error encountered in Terraformer - DestroyInfrastructure: %v", err)
+					return err
+				}
+				return nil
+			})
+		}(cluster)
+	}
+	err := errGroup.Wait()
 	if err != nil {
 		config.ErrorMessage = err.Error()
 		return &pb.DestroyInfrastructureResponse{Config: config}, fmt.Errorf("error while destroying the infrastructure: %v", err)

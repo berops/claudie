@@ -1,10 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/platform/services/terraformer/server/clusterBuilder"
 	"github.com/stretchr/testify/require"
 )
 
@@ -244,41 +244,13 @@ var testState *pb.Project = &pb.Project{
 }
 
 func TestBuildInfrastructure(t *testing.T) {
-	err := buildInfrastructure(testState, testState)
-	require.NoError(t, err)
-}
-
-func TestOutputTerraform(t *testing.T) {
-	out, err := outputTerraform(outputPath, testState.Clusters[0].ClusterInfo.NodePools[0].Name)
-	t.Log(out)
-	require.NoError(t, err)
-}
-
-func TestReadOutput(t *testing.T) {
-	out, err := readIPs(jsonData)
-
-	if err == nil {
-		t.Log(out.IPs)
-	}
-	require.NoError(t, err)
-}
-
-func TestFillNodes(t *testing.T) {
-	out, err := readIPs(jsonData)
-	if err == nil {
-		var m = &pb.NodePool{}
-		fillNodes(&out, m, desiredState.Clusters[0].ClusterInfo.NodePools[0].Nodes)
-		fmt.Println(m)
-	}
+	clusterBuilder := clusterBuilder.ClusterBuilder{DesiredInfo: testState.Clusters[0].ClusterInfo, CurrentInfo: nil, ProjectName: "GO TEST", ClusterType: pb.ClusterType_K8s}
+	err := clusterBuilder.CreateNodepools()
 	require.NoError(t, err)
 }
 
 func TestBuildLBNodepools(t *testing.T) {
-	err := buildNodePools(desiredState.LoadBalancerClusters[0].GetClusterInfo(), "terraform", LB)
-	require.NoError(t, err)
-}
-
-func TestBuildNodepools(t *testing.T) {
-	err := buildNodePools(desiredState.Clusters[0].ClusterInfo, "terraform", K8S)
+	clusterBuilder := clusterBuilder.ClusterBuilder{DesiredInfo: desiredState.LoadBalancerClusters[0].ClusterInfo, CurrentInfo: nil, ProjectName: "GO TEST", ClusterType: pb.ClusterType_LB}
+	err := clusterBuilder.CreateNodepools()
 	require.NoError(t, err)
 }

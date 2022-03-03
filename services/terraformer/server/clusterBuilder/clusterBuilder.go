@@ -1,4 +1,4 @@
-package cluster
+package clusterBuilder
 
 import (
 	"encoding/json"
@@ -13,7 +13,7 @@ import (
 )
 
 // desiredInfo - clusterInfo of desired state, currentInfo - clusterInfo of current state
-type Cluster struct {
+type ClusterBuilder struct {
 	DesiredInfo *pb.ClusterInfo
 	CurrentInfo *pb.ClusterInfo
 	ProjectName string
@@ -40,7 +40,7 @@ const (
 )
 
 // tplFile - template file for creation of nodepools
-func (c Cluster) CreateNodepools() error {
+func (c ClusterBuilder) CreateNodepools() error {
 	clusterID := fmt.Sprintf(c.DesiredInfo.Name, "-", c.DesiredInfo.Hash)
 	clusterDir := filepath.Join(Output, clusterID)
 	terraform := terraform.Terraform{Directory: clusterDir}
@@ -86,8 +86,8 @@ func (c Cluster) CreateNodepools() error {
 }
 
 // tplFile - template file for creation of nodepools
-func (c Cluster) DestroyNodepools() error {
-	clusterID := fmt.Sprintf(c.DesiredInfo.Name, "-", c.DesiredInfo.Hash)
+func (c ClusterBuilder) DestroyNodepools() error {
+	clusterID := fmt.Sprintf(c.CurrentInfo.Name, "-", c.CurrentInfo.Hash)
 	clusterDir := filepath.Join(Output, clusterID)
 	terraform := terraform.Terraform{Directory: clusterDir}
 	//generate template files
@@ -108,7 +108,7 @@ func (c Cluster) DestroyNodepools() error {
 	return nil
 }
 
-func (c Cluster) generateFiles(clusterID, clusterDir string) error {
+func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	// generate backend
 	backend := BackendData{
 		ProjectName: c.ProjectName,
