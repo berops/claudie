@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strings"
 	"text/template"
 
 	"github.com/Berops/platform/proto/pb"
@@ -160,8 +161,9 @@ func buildClustersAsynch(desiredClusterInfo *pb.ClusterInfo, currentClusterInfo 
 // buildInfrastructure is generating terraform files for different providers and calling terraform
 func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) error {
 	var backendData Backend
-	backendData.ProjectName = desiredState.GetName()
 	var errGroup errgroup.Group
+	var dirsToDelete []string
+	backendData.ProjectName = desiredState.GetName()
 	// create pairs of cluster infos
 	clusterPairs := getClusterInfoPairs(desiredState.GetClusters(), currentState.GetClusters())
 	clusterPairs = append(clusterPairs, getClusterInfoPairs(desiredState.GetLoadBalancerClusters(), currentState.GetLoadBalancerClusters())...)
@@ -177,6 +179,7 @@ func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) err
 				return nil
 			})
 		}(pair.desiredInfo, pair.currentInfo, backendData)
+		dirsToDelete = append(dirsToDelete, fmt.Sprintf("%s-%s", pair.desiredInfo.Name, pair.desiredInfo.Hash))
 	}
 	err := errGroup.Wait()
 	if err != nil {
@@ -184,14 +187,24 @@ func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) err
 	}
 	// create DNS records
 	for _, lbCluster := range desiredState.LoadBalancerClusters {
-		outputPath := filepath.Join(outputPath, fmt.Sprintf("%s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash))
-		hostnameHash := utils.CreateHash(hostnameHashLen)
+		outputPath := filepath.Join(outputPath, fmt.Sprintf("%s-%s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash, "dns"))
+		hostnameHash := getHostname(lbCluster.Dns)
 		nodeIPs := getNodeIPs(lbCluster.ClusterInfo.NodePools)
 		dnsData := getDNSData(lbCluster, hostnameHash, nodeIPs)
 		tplFile := filepath.Join(templatePath, "dns.tpl")
 		tfFile := filepath.Join(outputPath, "dns.tf")
 		err := templateGen(tplFile, tfFile, dnsData, outputPath)
 		if err != nil {
+			return err
+		}
+
+		templateFilePath := filepath.Join(templatePath, "backend.tpl")
+		tfFilePath := filepath.Join(outputPath, "backend.tf")
+
+		// Creating backend.tf file from the template backend.tpl
+		if err := templateGen(templateFilePath, tfFilePath, Backend{ProjectName: desiredState.Name, ClusterName: lbCluster.ClusterInfo.Name + "-" + lbCluster.ClusterInfo.Hash + "-" + "dns"}, outputPath); err != nil {
+			log.Error().Msgf("Error generating terraform config file %s from template %s: %v",
+				tfFilePath, templateFilePath, err)
 			return err
 		}
 		err = initTerraform(outputPath)
@@ -220,11 +233,11 @@ func buildInfrastructure(currentState *pb.Project, desiredState *pb.Project) err
 		domain := validateDomain(out.Domain[outputID])
 		lbCluster.Dns.Hostname = domain
 		log.Info().Msgf("Set the domain for %s to %s", lbCluster.ClusterInfo.Name, domain)
+		dirsToDelete = append(dirsToDelete, fmt.Sprintf("%s-%s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash, "dns"))
 	}
+
 	// Clean after terraform
-	if err := os.RemoveAll(outputPath + "/" + backendData.ClusterName); err != nil {
-		return fmt.Errorf("error while deleting files: %v", err)
-	}
+	deleteDir(outputPath, dirsToDelete)
 
 	return nil
 }
@@ -253,6 +266,25 @@ func getDNSData(lbCluster *pb.LBcluster, hostname string, nodeIPs []string) DNSD
 	return DNSData
 }
 
+// return hostname
+func getHostname(dns *pb.DNS) string {
+	if dns.Hostname == "" {
+		return utils.CreateHash(hostnameHashLen)
+	} else {
+		hostname := strings.Split(dns.Hostname, ".")[0]
+		return hostname
+	}
+}
+
+// delete directories under terraform/
+func deleteDir(outputPath string, dirsToDelete []string) {
+	for _, dir := range dirsToDelete {
+		if err := os.RemoveAll(outputPath + "/" + dir); err != nil {
+			log.Info().Msgf("failed to delete directory %s", outputPath+"/"+dir)
+		}
+	}
+}
+
 // destroyInfrastructureAsync executes terraform destroy --auto-approve. It destroys whole infrastructure in a project.
 func destroyInfrastructureAsync(clusterInfo *pb.ClusterInfo, backendData Backend, clusterType int) error {
 	log.Info().Msg("Generating templates for infrastructure destroy")
@@ -279,11 +311,12 @@ func destroyInfrastructureAsync(clusterInfo *pb.ClusterInfo, backendData Backend
 
 func destroyInfrastructure(config *pb.Config) error {
 	var backendData Backend
-	backendData.ProjectName = config.GetDesiredState().GetName()
 	var errGroup errgroup.Group
+	var dirsToDelete []string
+	backendData.ProjectName = config.GetDesiredState().GetName()
 	for _, lbCluster := range config.DesiredState.LoadBalancerClusters {
-		outputPath := filepath.Join(outputPath, fmt.Sprintf("%s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash))
-		hostnameHash := utils.CreateHash(hostnameHashLen)
+		outputPath := filepath.Join(outputPath, fmt.Sprintf("%s-%s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash, "dns"))
+		hostnameHash := getHostname(lbCluster.Dns)
 		nodeIPs := getNodeIPs(lbCluster.ClusterInfo.NodePools)
 		dnsData := getDNSData(lbCluster, hostnameHash, nodeIPs)
 		tplFile := filepath.Join(templatePath, "dns.tpl")
@@ -292,6 +325,20 @@ func destroyInfrastructure(config *pb.Config) error {
 		if err != nil {
 			return err
 		}
+
+		templateFilePath := filepath.Join(templatePath, "backend.tpl")
+		tfFilePath := filepath.Join(outputPath, "backend.tf")
+
+		// Creating backend.tf file from the template backend.tpl
+		if err := templateGen(templateFilePath, tfFilePath, Backend{ProjectName: config.CurrentState.Name, ClusterName: lbCluster.ClusterInfo.Name + "-" + lbCluster.ClusterInfo.Hash + "-" + "dns"}, outputPath); err != nil {
+			log.Error().Msgf("Error generating terraform config file %s from template %s: %v",
+				tfFilePath, templateFilePath, err)
+			return err
+		}
+
+		initTerraform(outputPath)
+		destroyTerraform(outputPath)
+		dirsToDelete = append(dirsToDelete, fmt.Sprintf("%s-%s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash, "dns"))
 	}
 	// create pairs of cluster infos
 	clusterPairs := getClusterInfoPairs(config.DesiredState.GetClusters(), nil)
@@ -305,9 +352,14 @@ func destroyInfrastructure(config *pb.Config) error {
 					log.Error().Msgf("error encountered in Terraformer - destroyInfrastructure: %v", err)
 					return err
 				}
+				if err := os.RemoveAll(outputPath + "/" + desiredInfo.Name); err != nil {
+					return err
+				}
 				return nil
 			})
 		}(pair.desiredInfo, backendData)
+
+		dirsToDelete = append(dirsToDelete, fmt.Sprintf("%s-%s", pair.desiredInfo.Name, pair.desiredInfo.Hash))
 	}
 	err := errGroup.Wait()
 	if err != nil {
@@ -315,10 +367,7 @@ func destroyInfrastructure(config *pb.Config) error {
 		return err
 	}
 
-	if err := os.RemoveAll(outputPath + "/" + backendData.ClusterName); err != nil {
-		return err
-	}
-
+	deleteDir(outputPath, dirsToDelete)
 	return nil
 }
 
