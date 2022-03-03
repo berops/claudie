@@ -12,3 +12,4 @@ kubeone.yaml
 cluster.tar.gz
 cluster-kubeconfig
 *.conf
+__debug_bin

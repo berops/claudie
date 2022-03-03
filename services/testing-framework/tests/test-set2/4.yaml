@@ -4,7 +4,7 @@ providers:
 - name: hetzner
   credentials: xIAfsb7M5K6etYAfXYcg5iYyrFGNlCxcICo060HVEygjoF0usFpv5P9X7pk85Xe1
 - name: gcp
-  credentials: /Users/jaskeeratrandhawa/Projects/berops/platform/keys/platform-296509-cd97c3e55223.json
+  credentials: ../../../../../keys/platform-296509-d6ddeb344e91.json
 
 nodePools:
   dynamic:

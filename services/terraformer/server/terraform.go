@@ -281,6 +281,18 @@ func destroyInfrastructure(config *pb.Config) error {
 	var backendData Backend
 	backendData.ProjectName = config.GetDesiredState().GetName()
 	var errGroup errgroup.Group
+	for _, lbCluster := range config.DesiredState.LoadBalancerClusters {
+		outputPath := filepath.Join(outputPath, fmt.Sprintf("%s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash))
+		hostnameHash := utils.CreateHash(hostnameHashLen)
+		nodeIPs := getNodeIPs(lbCluster.ClusterInfo.NodePools)
+		dnsData := getDNSData(lbCluster, hostnameHash, nodeIPs)
+		tplFile := filepath.Join(templatePath, "dns.tpl")
+		tfFile := filepath.Join(outputPath, "dns.tf")
+		err := templateGen(tplFile, tfFile, dnsData, outputPath)
+		if err != nil {
+			return err
+		}
+	}
 	// create pairs of cluster infos
 	clusterPairs := getClusterInfoPairs(config.DesiredState.GetClusters(), nil)
 	clusterPairs = append(clusterPairs, getClusterInfoPairs(config.DesiredState.GetLoadBalancerClusters(), nil)...)

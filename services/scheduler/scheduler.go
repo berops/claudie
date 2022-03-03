@@ -32,7 +32,7 @@ const (
 )
 
 var claudieProvider = &pb.Provider{
-	Name:        "claudie",
+	Name:        "gcp",
 	Credentials: "../../../../../keys/platform-infrastructure-316112-bd7953f712df.json",
 }
 

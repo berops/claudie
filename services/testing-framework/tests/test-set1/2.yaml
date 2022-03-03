@@ -13,7 +13,7 @@ nodePools:
       hetzner:
         region: nbg1
         zone: nbg1-dc3
-    count: 2
+    count: 3
     server_type: cpx11
     image: ubuntu-20.04
     disk_size: 50
@@ -22,7 +22,7 @@ nodePools:
       hetzner:
         region: nbg1
         zone: nbg1-dc3
-    count: 2
+    count: 3
     server_type: cpx11
     image: ubuntu-20.04
     disk_size: 50
@@ -31,7 +31,7 @@ nodePools:
       gcp:
         region: europe-west1
         zone: europe-west1-c
-    count: 2
+    count: 3
     server_type: e2-small
     image: ubuntu-os-cloud/ubuntu-2004-lts
     disk_size: 50
@@ -40,7 +40,7 @@ nodePools:
       gcp:
         region: europe-west1
         zone: europe-west1-c
-    count: 2
+    count: 3
     server_type: e2-small
     image: ubuntu-os-cloud/ubuntu-2004-lts
     disk_size: 50
