@@ -69,6 +69,7 @@ message DNS {
   string hostname = 2;
   Provider provider = 3;
   string project = 4;
+  string endpoint = 5;
 }
 
 message NodePool {
