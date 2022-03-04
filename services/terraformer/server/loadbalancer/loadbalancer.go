@@ -41,12 +41,13 @@ func (l LBcluster) Build() error {
 		NodeIPs:     nodeIPs,
 		Project:     l.DesiredLB.Dns.Project,
 		Provider:    l.DesiredLB.Dns.Provider,
+		Hostname:    l.DesiredLB.Dns.Hostname,
 	}
-	hostname, err := dns.CreateDNSrecords()
+	endpoint, err := dns.CreateDNSrecords()
 	if err != nil {
 		return fmt.Errorf("error while creating the DNS for %s : %v", l.DesiredLB.ClusterInfo.Name, err)
 	}
-	l.DesiredLB.Dns.Hostname = hostname
+	l.DesiredLB.Dns.Endpoint = endpoint
 	return nil
 }
 
@@ -64,6 +65,7 @@ func (l LBcluster) Destroy() error {
 		NodeIPs:     nodeIPs,
 		Project:     l.CurrentLB.Dns.Project,
 		Provider:    l.CurrentLB.Dns.Provider,
+		Hostname:    l.DesiredLB.Dns.Hostname,
 	}
 
 	err := cluster.DestroyNodepools()

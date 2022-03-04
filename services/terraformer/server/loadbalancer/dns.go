@@ -10,7 +10,6 @@ import (
 	"github.com/Berops/platform/services/terraformer/server/clusterBuilder"
 	"github.com/Berops/platform/services/terraformer/server/templates"
 	"github.com/Berops/platform/services/terraformer/server/terraform"
-	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
 )
 
@@ -22,6 +21,7 @@ type DNS struct {
 	Project     string
 	Provider    *pb.Provider
 	ProjectName string
+	Hostname    string
 }
 
 type DNSData struct {
@@ -129,7 +129,7 @@ func (d DNS) generateFiles(dnsID, dnsDir string) error {
 func (d DNS) getDNSData() DNSData {
 	DNSData := DNSData{
 		DNSZone:      d.DNSZone,
-		HostnameHash: utils.CreateHash(hostnameHashLength),
+		HostnameHash: d.Hostname,
 		ClusterName:  d.ClusterName,
 		ClusterHash:  d.ClusterHash,
 		NodeIPs:      d.NodeIPs,
