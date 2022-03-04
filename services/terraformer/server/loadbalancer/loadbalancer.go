@@ -65,7 +65,7 @@ func (l LBcluster) Destroy() error {
 		NodeIPs:     nodeIPs,
 		Project:     l.CurrentLB.Dns.Project,
 		Provider:    l.CurrentLB.Dns.Provider,
-		Hostname:    l.DesiredLB.Dns.Hostname,
+		Hostname:    l.CurrentLB.Dns.Hostname,
 	}
 
 	err := cluster.DestroyNodepools()
