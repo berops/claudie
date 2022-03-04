@@ -15,9 +15,11 @@ type LBcluster struct {
 
 func (l LBcluster) Build() error {
 	var currentInfo *pb.ClusterInfo
+	var currentProvider *pb.Provider
 	// check if current cluster was defined, to avoid access of unrefferenced memory
 	if l.CurrentLB != nil {
 		currentInfo = l.CurrentLB.ClusterInfo
+		currentProvider = l.CurrentLB.Dns.Provider
 	}
 	cl := clusterBuilder.ClusterBuilder{
 		DesiredInfo: l.DesiredLB.ClusterInfo,
@@ -31,14 +33,15 @@ func (l LBcluster) Build() error {
 	}
 	nodeIPs := getNodeIPs(l.DesiredLB.ClusterInfo.NodePools)
 	dns := DNS{
-		ClusterName: l.DesiredLB.ClusterInfo.Name,
-		ClusterHash: l.DesiredLB.ClusterInfo.Hash,
-		DNSZone:     l.DesiredLB.Dns.DnsZone,
-		NodeIPs:     nodeIPs,
-		Project:     l.DesiredLB.Dns.Project,
-		Provider:    l.DesiredLB.Dns.Provider,
-		Hostname:    l.DesiredLB.Dns.Hostname,
-		ProjectName: l.ProjectName,
+		ClusterName:     l.DesiredLB.ClusterInfo.Name,
+		ClusterHash:     l.DesiredLB.ClusterInfo.Hash,
+		DNSZone:         l.DesiredLB.Dns.DnsZone,
+		NodeIPs:         nodeIPs,
+		Project:         l.DesiredLB.Dns.Project,
+		CurrentProvider: currentProvider,
+		DesiredProvider: l.DesiredLB.Dns.Provider,
+		Hostname:        l.DesiredLB.Dns.Hostname,
+		ProjectName:     l.ProjectName,
 	}
 	endpoint, err := dns.CreateDNSrecords()
 	if err != nil {
@@ -56,14 +59,14 @@ func (l LBcluster) Destroy() error {
 		ClusterType: pb.ClusterType_LB}
 	nodeIPs := getNodeIPs(l.CurrentLB.ClusterInfo.NodePools)
 	dns := DNS{
-		ClusterName: l.CurrentLB.ClusterInfo.Name,
-		ClusterHash: l.CurrentLB.ClusterInfo.Hash,
-		DNSZone:     l.CurrentLB.Dns.DnsZone,
-		NodeIPs:     nodeIPs,
-		Project:     l.CurrentLB.Dns.Project,
-		Provider:    l.CurrentLB.Dns.Provider,
-		Hostname:    l.CurrentLB.Dns.Hostname,
-		ProjectName: l.ProjectName,
+		ClusterName:     l.CurrentLB.ClusterInfo.Name,
+		ClusterHash:     l.CurrentLB.ClusterInfo.Hash,
+		DNSZone:         l.CurrentLB.Dns.DnsZone,
+		NodeIPs:         nodeIPs,
+		Project:         l.CurrentLB.Dns.Project,
+		CurrentProvider: l.CurrentLB.Dns.Provider,
+		Hostname:        l.CurrentLB.Dns.Hostname,
+		ProjectName:     l.ProjectName,
 	}
 
 	err := cluster.DestroyNodepools()
