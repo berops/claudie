@@ -7,10 +7,6 @@ import (
 	"github.com/Berops/platform/services/terraformer/server/clusterBuilder"
 )
 
-const (
-	hostnameHashLength int = 15
-)
-
 type LBcluster struct {
 	DesiredLB   *pb.LBcluster
 	CurrentLB   *pb.LBcluster

@@ -8,6 +8,7 @@ import (
 	"sort"
 
 	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/platform/services/terraformer/server/backend"
 	"github.com/Berops/platform/services/terraformer/server/templates"
 	"github.com/Berops/platform/services/terraformer/server/terraform"
 	"github.com/Berops/platform/utils"
@@ -26,11 +27,6 @@ type NodepoolsData struct {
 	NodePools   []*pb.NodePool
 	ClusterName string
 	ClusterHash string
-}
-
-type BackendData struct {
-	ProjectName string
-	ClusterName string
 }
 
 type outputNodepools struct {
@@ -118,18 +114,14 @@ func (c ClusterBuilder) DestroyNodepools() error {
 
 func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	// generate backend
-	backend := BackendData{
-		ProjectName: c.ProjectName,
-		ClusterName: clusterID,
-	}
-	templates := templates.Templates{Directory: clusterDir}
-	err := templates.Generate("backend.tpl", "backend.tf", backend)
+	backend := backend.Backend{ProjectName: c.ProjectName, ClusterName: clusterID, Directory: clusterDir}
+	err := backend.CreateFiles()
 	if err != nil {
-		return fmt.Errorf("error while generating backend.tf for %s : %v", clusterID, err)
+		return err
 	}
-
 	// generate .tf files for nodepools
 	var clusterInfo *pb.ClusterInfo
+	templates := templates.Templates{Directory: clusterDir}
 	if c.DesiredInfo != nil {
 		clusterInfo = c.DesiredInfo
 	} else if c.CurrentInfo != nil {
