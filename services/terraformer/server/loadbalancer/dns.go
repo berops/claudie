@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/platform/services/terraformer/server/backend"
 	"github.com/Berops/platform/services/terraformer/server/clusterBuilder"
 	"github.com/Berops/platform/services/terraformer/server/templates"
 	"github.com/Berops/platform/services/terraformer/server/terraform"
@@ -32,11 +33,6 @@ type DNSData struct {
 	NodeIPs      []string
 	Project      string
 	Provider     *pb.Provider
-}
-
-type BackendData struct {
-	ProjectName string
-	ClusterName string
 }
 
 type outputDomain struct {
@@ -110,14 +106,10 @@ func (d DNS) DestroyDNSrecords() error {
 
 func (d DNS) generateFiles(dnsID, dnsDir string) error {
 	// generate backend
-	backend := BackendData{
-		ProjectName: d.ProjectName,
-		ClusterName: dnsID,
-	}
-	backendTemplate := templates.Templates{Directory: dnsDir}
-	err := backendTemplate.Generate("backend.tpl", "backend.tf", backend)
+	backend := backend.Backend{ProjectName: d.ProjectName, ClusterName: dnsID, Directory: dnsDir}
+	err := backend.CreateFiles()
 	if err != nil {
-		return fmt.Errorf("error while generating backend.tf for %s: %v", dnsID, err)
+		return err
 	}
 
 	DNSTemplates := templates.Templates{Directory: dnsDir}
