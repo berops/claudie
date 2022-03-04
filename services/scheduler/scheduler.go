@@ -28,6 +28,7 @@ import (
 const (
 	defaultSchedulerPort = 50056
 	apiserverPort        = 6443
+	hostnameHashLen      = 17
 	gcpProvider          = "gcp"
 )
 
@@ -40,6 +41,7 @@ var DefaultDNS = &pb.DNS{
 	DnsZone:  "lb-zone",
 	Project:  "platform-infrastructure-316112",
 	Provider: claudieProvider,
+	Hostname: utils.CreateHash(hostnameHashLen),
 }
 
 ////////////////////YAML STRUCT//////////////////////////////////////////////////
@@ -433,6 +435,10 @@ func getDNS(lbDNS DNS, provider []Provider) *pb.DNS {
 		return DefaultDNS // default zone is used
 	} else {
 		providerIndex := searchProvider(gcpProvider, provider)
+
+		if lbDNS.Hostname == "" {
+			lbDNS.Hostname = utils.CreateHash(hostnameHashLen)
+		}
 		return &pb.DNS{
 			DnsZone: lbDNS.DNSZone,
 			Provider: &pb.Provider{
