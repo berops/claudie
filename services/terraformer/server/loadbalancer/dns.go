@@ -21,6 +21,7 @@ type DNS struct {
 	NodeIPs     []string
 	Project     string
 	Provider    *pb.Provider
+	ProjectName string
 }
 
 type DNSData struct {
@@ -33,6 +34,11 @@ type DNSData struct {
 	Provider     *pb.Provider
 }
 
+type BackendData struct {
+	ProjectName string
+	ClusterName string
+}
+
 type outputDomain struct {
 	Domain map[string]string `json:"-"`
 }
@@ -42,7 +48,7 @@ func (d DNS) CreateDNSrecords() (string, error) {
 	dnsID := fmt.Sprintf("%s-dns", clusterID)
 	dnsDir := filepath.Join(clusterBuilder.Output, dnsID)
 	// create files
-	err := d.generateFiles(dnsDir)
+	err := d.generateFiles(dnsID, dnsDir)
 	if err != nil {
 		return "", fmt.Errorf("error while creating dns records for %s : %v", dnsID, err)
 	}
@@ -80,7 +86,7 @@ func (d DNS) DestroyDNSrecords() error {
 	dnsID := fmt.Sprintf("%s-%s-dns", d.ClusterName, d.ClusterHash)
 	dnsDir := filepath.Join(clusterBuilder.Output, dnsID)
 	// create files
-	err := d.generateFiles(dnsDir)
+	err := d.generateFiles(dnsID, dnsDir)
 	if err != nil {
 		return fmt.Errorf("error while creating dns records for %s : %v", dnsID, err)
 	}
@@ -102,10 +108,21 @@ func (d DNS) DestroyDNSrecords() error {
 	return nil
 }
 
-func (d DNS) generateFiles(dnsDir string) error {
-	templates := templates.Templates{Directory: dnsDir}
+func (d DNS) generateFiles(dnsID, dnsDir string) error {
+	// generate backend
+	backend := BackendData{
+		ProjectName: d.ProjectName,
+		ClusterName: dnsID,
+	}
+	backendTemplate := templates.Templates{Directory: dnsDir}
+	err := backendTemplate.Generate("backend.tpl", "backend.tf", backend)
+	if err != nil {
+		return fmt.Errorf("error while generating backend.tf for %s: %v", dnsID, err)
+	}
+
+	DNSTemplates := templates.Templates{Directory: dnsDir}
 	dnsData := d.getDNSData()
-	return templates.Generate("dns.tpl", "dns.tf", dnsData)
+	return DNSTemplates.Generate("dns.tpl", "dns.tf", dnsData)
 }
 
 // function returns pair of strings, first the hash hostname, second the zone
