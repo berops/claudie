@@ -15,15 +15,13 @@ import (
 )
 
 type DNS struct {
-	ClusterName     string
-	ClusterHash     string
-	DNSZone         string
-	NodeIPs         []string
-	Project         string
-	CurrentProvider *pb.Provider
-	DesiredProvider *pb.Provider
-	ProjectName     string
-	Hostname        string
+	ClusterName    string
+	ClusterHash    string
+	DesiredNodeIPs []string
+	CurrentNodeIPs []string
+	CurrentDNS     *pb.DNS
+	DesiredDNS     *pb.DNS
+	ProjectName    string
 }
 
 type DNSData struct {
@@ -51,10 +49,11 @@ func (d DNS) CreateDNSrecords() (string, error) {
 		return "", fmt.Errorf("error while checking the DNS provider credentials: %v", err)
 	}
 	if changedDNS {
+		log.Info().Msgf("Destroying old DNS records")
 		//destroy old DNS records
-		err := d.generateFiles(dnsID, dnsDir, d.CurrentProvider)
+		err := d.generateFiles(dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs)
 		if err != nil {
-			return "", fmt.Errorf("error while creating dns records for %s : %v", dnsID, err)
+			return "", fmt.Errorf("error while creating dns .tf files for %s : %v", dnsID, err)
 		}
 		// destroy old dns records with terraform
 		err = terraform.TerraformInit()
@@ -67,9 +66,9 @@ func (d DNS) CreateDNSrecords() (string, error) {
 		}
 	}
 	// create files
-	err = d.generateFiles(dnsID, dnsDir, d.DesiredProvider)
+	err = d.generateFiles(dnsID, dnsDir, d.DesiredDNS, d.DesiredNodeIPs)
 	if err != nil {
-		return "", fmt.Errorf("error while creating dns records for %s : %v", dnsID, err)
+		return "", fmt.Errorf("error while creating dns .tf files for %s : %v", dnsID, err)
 	}
 	// create dns records with terraform
 	err = terraform.TerraformInit()
@@ -104,7 +103,7 @@ func (d DNS) DestroyDNSrecords() error {
 	dnsID := fmt.Sprintf("%s-%s-dns", d.ClusterName, d.ClusterHash)
 	dnsDir := filepath.Join(clusterBuilder.Output, dnsID)
 	// create files
-	err := d.generateFiles(dnsID, dnsDir, d.CurrentProvider)
+	err := d.generateFiles(dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs)
 	if err != nil {
 		return fmt.Errorf("error while creating dns records for %s : %v", dnsID, err)
 	}
@@ -126,7 +125,7 @@ func (d DNS) DestroyDNSrecords() error {
 	return nil
 }
 
-func (d DNS) generateFiles(dnsID, dnsDir string, provider *pb.Provider) error {
+func (d DNS) generateFiles(dnsID, dnsDir string, dns *pb.DNS, nodeIPs []string) error {
 	// generate backend
 	backend := backend.Backend{ProjectName: d.ProjectName, ClusterName: dnsID, Directory: dnsDir}
 	err := backend.CreateFiles()
@@ -135,18 +134,18 @@ func (d DNS) generateFiles(dnsID, dnsDir string, provider *pb.Provider) error {
 	}
 
 	DNSTemplates := templates.Templates{Directory: dnsDir}
-	dnsData := d.getDNSData(provider)
+	dnsData := d.getDNSData(dns, nodeIPs)
 	return DNSTemplates.Generate("dns.tpl", "dns.tf", dnsData)
 }
 
 func (d DNS) checkDNSProvider() (bool, error) {
 	// DNS not yet created
-	if d.CurrentProvider == nil {
+	if d.CurrentDNS == nil {
 		return false, nil
 	}
 	// DNS provider are same
-	if d.CurrentProvider.Name == d.DesiredProvider.Name {
-		if d.CurrentProvider.Credentials == d.DesiredProvider.Credentials {
+	if d.CurrentDNS.Provider.Name == d.DesiredDNS.Provider.Name {
+		if d.CurrentDNS.Provider.Credentials == d.DesiredDNS.Provider.Credentials {
 			return false, nil
 		}
 	}
@@ -154,15 +153,15 @@ func (d DNS) checkDNSProvider() (bool, error) {
 }
 
 // function returns pair of strings, first the hash hostname, second the zone
-func (d DNS) getDNSData(provider *pb.Provider) DNSData {
+func (d DNS) getDNSData(dns *pb.DNS, nodeIPs []string) DNSData {
 	DNSData := DNSData{
-		DNSZone:      d.DNSZone,
-		HostnameHash: d.Hostname,
+		DNSZone:      dns.DnsZone,
+		HostnameHash: dns.Hostname,
 		ClusterName:  d.ClusterName,
 		ClusterHash:  d.ClusterHash,
-		NodeIPs:      d.NodeIPs,
-		Project:      d.Project,
-		Provider:     provider,
+		NodeIPs:      nodeIPs,
+		Project:      dns.Project,
+		Provider:     dns.Provider,
 	}
 	return DNSData
 }
