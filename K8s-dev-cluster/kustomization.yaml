@@ -7,10 +7,19 @@ resources:
 - scheduler.yaml
 - builder.yaml
 - kube-eleven.yaml
+- frontend.yaml
 configMapGenerator:
 - envs:
   - .env
   name: env
+secretGenerator:
+- files:
+  - input-manifest.yaml
+  name: input-manifest
+  options:
+    disableNameSuffixHash: true
+    labels:
+      claudie.io/input-manifest: ""
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:

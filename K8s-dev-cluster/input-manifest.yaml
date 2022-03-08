@@ -1,0 +1,65 @@
+name: ExampleProject # It would be nice if this example input manifest was a comprehensive representation of features & syntax
+
+providers:
+- name: hetzner
+  credentials: some_creds # fix me please
+- name: gcp
+  credentials: some_creds # fix me please
+
+nodePools:
+  dynamic:
+  - name: hetzner-control
+    provider:
+      hetzner:
+        region: nbg1
+        zone: nbg1-dc3
+    count: 2
+    server_type: cpx11
+    image: ubuntu-20.04
+    disk_size: 50
+  - name: hetzner-compute
+    provider:
+      hetzner:
+        region: nbg1
+        zone: nbg1-dc3
+    count: 2
+    server_type: cpx11
+    image: ubuntu-20.04
+    disk_size: 50
+  - name: gcp-control
+    provider: 
+      gcp:
+        region: europe-west1
+        zone: europe-west1-c
+    count: 2
+    server_type: e2-small
+    image: ubuntu-os-cloud/ubuntu-2004-lts
+    disk_size: 50
+  - name: gcp-compute
+    provider: 
+      gcp:
+        region: europe-west1
+        zone: europe-west1-c
+    count: 2
+    server_type: e2-small
+    image: ubuntu-os-cloud/ubuntu-2004-lts
+    disk_size: 50
+
+kubernetes:
+  clusters:
+    - name: cluster-1
+      version: v1.19.0
+      network: 192.168.2.0/24
+      pools:
+        control:
+        - hetzner-control
+        compute:
+        - hetzner-compute
+    - name: cluster-2
+      version: v1.19.0
+      network: 192.168.2.0/24
+      pools:
+        control:
+        - gcp-control
+        compute:
+        - gcp-compute
