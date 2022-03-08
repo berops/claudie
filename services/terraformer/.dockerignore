@@ -4,6 +4,7 @@ Makefile
 LICENSE
 *.yaml
 .git
+github
 tmp
 serializer
 services/terraformer/Makefile
@@ -12,5 +13,6 @@ services/kube-eleven
 services/scheduler
 services/context-box
 services/builder
-services/terraformer/server/terraform
+services/terraformer/server/clusters
+services/testing-framework
 mongodb
