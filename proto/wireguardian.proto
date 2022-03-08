@@ -7,12 +7,15 @@ import "proto/config.proto";
 
 option go_package = "proto/pb";
 
-message BuildVPNRequest { Project desiredState = 1; }
-message BuildVPNResponse {
+message RunAnsibleRequest { 
+  Project desiredState = 1;
+  Project currentState = 2; 
+}
+message RunAnsibleResponse {
   Project desiredState = 1;
   string errorMessage = 2;
 }
 
 service WireguardianService {
-  rpc BuildVPN(BuildVPNRequest) returns (BuildVPNResponse);
+  rpc RunAnsible(RunAnsibleRequest) returns (RunAnsibleResponse);
 }
