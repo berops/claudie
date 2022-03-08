@@ -8,9 +8,9 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// BuildVPN simply calls WireGuardian service client to build a VPN
-func BuildVPN(c pb.WireguardianServiceClient, req *pb.BuildVPNRequest) (*pb.BuildVPNResponse, error) {
-	res, err := c.BuildVPN(context.Background(), req)
+// RunAnsible executes all tasks run in ansible (wireguard, LB configs, ...)
+func RunAnsible(c pb.WireguardianServiceClient, req *pb.RunAnsibleRequest) (*pb.RunAnsibleResponse, error) {
+	res, err := c.RunAnsible(context.Background(), req)
 	if err != nil {
 		return res, fmt.Errorf("error while calling BuildVPN on Wireguardian: %v", err)
 	}

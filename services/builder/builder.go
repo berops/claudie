@@ -60,7 +60,7 @@ func callTerraformer(currentState *pb.Project, desiredState *pb.Project) (*pb.Pr
 	return res.GetCurrentState(), res.GetDesiredState(), nil
 }
 
-func callWireguardian(desiredState *pb.Project) (*pb.Project, error) {
+func callWireguardian(desiredState, currenState *pb.Project) (*pb.Project, error) {
 	cc, err := utils.GrpcDialWithInsecure("wireguardian", urls.WireguardianURL)
 	if err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ func callWireguardian(desiredState *pb.Project) (*pb.Project, error) {
 	defer func() { utils.CloseClientConnection(cc) }()
 	// Creating the client
 	c := pb.NewWireguardianServiceClient(cc)
-	res, err := wireguardian.BuildVPN(c, &pb.BuildVPNRequest{DesiredState: desiredState})
+	res, err := wireguardian.RunAnsible(c, &pb.RunAnsibleRequest{DesiredState: desiredState, CurrentState: currenState})
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +189,7 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig 
 	config.CurrentState = currentState
 	config.DesiredState = desiredState
 	// call Wireguardian to build VPN
-	desiredState, err = callWireguardian(config.GetDesiredState())
+	desiredState, err = callWireguardian(config.GetDesiredState(), config.GetCurrentState())
 	if err != nil {
 		err1 := saveErrorMessage(config, c, err)
 		if err1 != nil {

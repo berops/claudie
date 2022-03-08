@@ -62,10 +62,11 @@ const (
 	defaultWireguardianPort  = 50053
 )
 
-func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVPNResponse, error) {
+func (*server) RunAnsible(_ context.Context, req *pb.RunAnsibleRequest) (*pb.RunAnsibleResponse, error) {
 	desiredState := req.GetDesiredState()
+	currentState := req.GetCurrentState()
 	var errGroup errgroup.Group
-
+	// Create VPN and set up LB
 	for _, cluster := range desiredState.GetClusters() {
 		// to pass the parameter in loop, we need to create a dummy function
 		func(cluster *pb.K8Scluster) {
@@ -79,12 +80,37 @@ func (*server) BuildVPN(_ context.Context, req *pb.BuildVPNRequest) (*pb.BuildVP
 			})
 		}(cluster)
 	}
+	// Reset the API endpoint on cluster nodes if needed
+	for _, desiredLB := range desiredState.LoadBalancerClusters {
+		var oldLB *pb.LBcluster
+		for _, currentLB := range currentState.LoadBalancerClusters {
+			if desiredLB.ClusterInfo.Name == currentLB.ClusterInfo.Name {
+				oldLB = currentLB
+				break
+			}
+		}
+
+		if !utils.ChangedDNSProvider(oldLB.GetDns(), desiredLB.Dns) {
+			// the DNS provider has not changed
+			break
+		}
+		func() {
+			errGroup.Go(func() error {
+
+				// if err != nil {
+				// 	log.Error().Msgf("error encountered in Wireguardian : %v" /*insert func name in err*/, err)
+				// 	return err
+				// }
+				return nil
+			})
+		}()
+	}
 
 	err := errGroup.Wait()
 	if err != nil {
-		return &pb.BuildVPNResponse{DesiredState: desiredState}, err
+		return &pb.RunAnsibleResponse{DesiredState: desiredState}, err
 	}
-	return &pb.BuildVPNResponse{DesiredState: desiredState}, nil
+	return &pb.RunAnsibleResponse{DesiredState: desiredState}, nil
 }
 
 func buildVPNAsync(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster) error {
