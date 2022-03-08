@@ -81,31 +81,32 @@ func (*server) RunAnsible(_ context.Context, req *pb.RunAnsibleRequest) (*pb.Run
 		}(cluster)
 	}
 	// Reset the API endpoint on cluster nodes if needed
-	for _, desiredLB := range desiredState.LoadBalancerClusters {
-		var oldLB *pb.LBcluster
-		for _, currentLB := range currentState.LoadBalancerClusters {
-			if desiredLB.ClusterInfo.Name == currentLB.ClusterInfo.Name {
-				oldLB = currentLB
+	if currentState != nil {
+		for _, desiredLB := range desiredState.LoadBalancerClusters {
+			var oldLB *pb.LBcluster
+			for _, currentLB := range currentState.LoadBalancerClusters {
+				if desiredLB.ClusterInfo.Name == currentLB.ClusterInfo.Name {
+					oldLB = currentLB
+					break
+				}
+			}
+
+			if !utils.ChangedDNSProvider(oldLB.GetDns(), desiredLB.Dns) {
+				// the DNS provider has not changed
 				break
 			}
-		}
+			func() {
+				errGroup.Go(func() error {
 
-		if !utils.ChangedDNSProvider(oldLB.GetDns(), desiredLB.Dns) {
-			// the DNS provider has not changed
-			break
+					// if err != nil {
+					// 	log.Error().Msgf("error encountered in Wireguardian : %v" /*insert func name in err*/, err)
+					// 	return err
+					// }
+					return nil
+				})
+			}()
 		}
-		func() {
-			errGroup.Go(func() error {
-
-				// if err != nil {
-				// 	log.Error().Msgf("error encountered in Wireguardian : %v" /*insert func name in err*/, err)
-				// 	return err
-				// }
-				return nil
-			})
-		}()
 	}
-
 	err := errGroup.Wait()
 	if err != nil {
 		return &pb.RunAnsibleResponse{DesiredState: desiredState}, err
