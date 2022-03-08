@@ -12,4 +12,6 @@ services/kube-eleven
 services/scheduler
 services/context-box
 services/builder/Makefile
+services/testing-framework
+.github
 mongodb

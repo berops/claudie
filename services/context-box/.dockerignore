@@ -13,3 +13,5 @@ services/kube-eleven
 services/scheduler
 services/context-box/client
 mongodb
+services/testing-framework
+.github

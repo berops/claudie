@@ -9,10 +9,29 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/utils"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/ssh"
 )
+
+var provider1 = &pb.Provider{
+	Name:        "gcp",
+	Credentials: "keys/platform-296509-d6ddeb344e91.json",
+}
+
+var provider2 = &pb.Provider{
+	Name:        "gcp",
+	Credentials: "keys/platform-infrastructure-316112-bd7953f712df.json",
+}
+
+var dns1 = &pb.DNS{
+	Provider: provider1,
+}
+
+var dns2 = &pb.DNS{
+	Provider: provider2,
+}
 
 func TestCreateKeyFiles(t *testing.T) {
 	private, public := makeSSHKeyPair()
@@ -51,4 +70,11 @@ func makeSSHKeyPair() (string, string) {
 	pubKeyBuf.Write(ssh.MarshalAuthorizedKey(pub))
 
 	return privKeyBuf.String(), pubKeyBuf.String()
+}
+
+func TestCheckDNSProvider(t *testing.T) {
+	b1 := utils.ChangedDNSProvider(dns1, dns2)
+	b2 := utils.ChangedDNSProvider(dns1, dns1)
+	require.Equal(t, true, b1)
+	require.Equal(t, false, b2)
 }

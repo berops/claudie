@@ -11,6 +11,7 @@ import (
 	"github.com/Berops/platform/services/terraformer/server/clusterBuilder"
 	"github.com/Berops/platform/services/terraformer/server/templates"
 	"github.com/Berops/platform/services/terraformer/server/terraform"
+	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
 )
 
@@ -44,11 +45,7 @@ func (d DNS) CreateDNSrecords() (string, error) {
 	dnsDir := filepath.Join(clusterBuilder.Output, dnsID)
 	terraform := terraform.Terraform{Directory: dnsDir}
 	//check if DNS provider is unchanged
-	changedDNS, err := d.checkDNSProvider()
-	if err != nil {
-		return "", fmt.Errorf("error while checking the DNS provider credentials: %v", err)
-	}
-	if changedDNS {
+	if utils.ChangedDNSProvider(d.CurrentDNS, d.DesiredDNS) {
 		log.Info().Msgf("Destroying old DNS records")
 		//destroy old DNS records
 		err := d.generateFiles(dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs)
@@ -66,7 +63,7 @@ func (d DNS) CreateDNSrecords() (string, error) {
 		}
 	}
 	// create files
-	err = d.generateFiles(dnsID, dnsDir, d.DesiredDNS, d.DesiredNodeIPs)
+	err := d.generateFiles(dnsID, dnsDir, d.DesiredDNS, d.DesiredNodeIPs)
 	if err != nil {
 		return "", fmt.Errorf("error while creating dns .tf files for %s : %v", dnsID, err)
 	}
@@ -136,20 +133,6 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *pb.DNS, nodeIPs []string) 
 	DNSTemplates := templates.Templates{Directory: dnsDir}
 	dnsData := d.getDNSData(dns, nodeIPs)
 	return DNSTemplates.Generate("dns.tpl", "dns.tf", dnsData)
-}
-
-func (d DNS) checkDNSProvider() (bool, error) {
-	// DNS not yet created
-	if d.CurrentDNS == nil {
-		return false, nil
-	}
-	// DNS provider are same
-	if d.CurrentDNS.Provider.Name == d.DesiredDNS.Provider.Name {
-		if d.CurrentDNS.Provider.Credentials == d.DesiredDNS.Provider.Credentials {
-			return false, nil
-		}
-	}
-	return true, nil
 }
 
 // function returns pair of strings, first the hash hostname, second the zone
