@@ -43,6 +43,11 @@ type dataForNginxPlaybookTemplate struct {
 	ConfPath string
 }
 
+type dataForApiEndpointTemplate struct {
+	OldEndpoint string
+	NewEndpoint string
+}
+
 type lbRolesWithNodes struct {
 	*pb.Role
 	Nodes []*pb.Node
@@ -53,9 +58,10 @@ const (
 	inventoryTemplate        = "services/wireguardian/server/inventory.goini"
 	nginxCongTemplate        = "services/wireguardian/server/conf.gotpl"
 	nginxPlaybookTemplate    = "services/wireguardian/server/nginx.goyml"
+	apiEndpointTemplate      = "services/wireguardian/server/apiserverchange.goyml"
 	inventoryFile            = "inventory.ini"
 	nginxConfFileExt         = ".conf"
-	nginxPlaybookExt         = ".yml"
+	playbookExt              = ".yml"
 	privateFileExt           = ".pem"
 	playbookFile             = "playbook.yml"
 	sshClusterPrivateKeyFile = "cluster"
@@ -71,7 +77,7 @@ func (*server) RunAnsible(_ context.Context, req *pb.RunAnsibleRequest) (*pb.Run
 		// to pass the parameter in loop, we need to create a dummy function
 		func(cluster *pb.K8Scluster) {
 			errGroup.Go(func() error {
-				err := buildVPNAsync(cluster, desiredState.LoadBalancerClusters)
+				err := buildVPNAsync(cluster, desiredState.LoadBalancerClusters, currentState, desiredState)
 				if err != nil {
 					log.Error().Msgf("error encountered in Wireguardian - BuildVPN: %v", err)
 					return err
@@ -80,33 +86,6 @@ func (*server) RunAnsible(_ context.Context, req *pb.RunAnsibleRequest) (*pb.Run
 			})
 		}(cluster)
 	}
-	// Reset the API endpoint on cluster nodes if needed
-	if currentState != nil {
-		for _, desiredLB := range desiredState.LoadBalancerClusters {
-			var oldLB *pb.LBcluster
-			for _, currentLB := range currentState.LoadBalancerClusters {
-				if desiredLB.ClusterInfo.Name == currentLB.ClusterInfo.Name {
-					oldLB = currentLB
-					break
-				}
-			}
-
-			if !utils.ChangedDNSProvider(oldLB.GetDns(), desiredLB.Dns) {
-				// the DNS provider has not changed
-				break
-			}
-			func() {
-				errGroup.Go(func() error {
-
-					// if err != nil {
-					// 	log.Error().Msgf("error encountered in Wireguardian : %v" /*insert func name in err*/, err)
-					// 	return err
-					// }
-					return nil
-				})
-			}()
-		}
-	}
 	err := errGroup.Wait()
 	if err != nil {
 		return &pb.RunAnsibleResponse{DesiredState: desiredState}, err
@@ -114,10 +93,10 @@ func (*server) RunAnsible(_ context.Context, req *pb.RunAnsibleRequest) (*pb.Run
 	return &pb.RunAnsibleResponse{DesiredState: desiredState}, nil
 }
 
-func buildVPNAsync(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster) error {
+func buildVPNAsync(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster, currentState, desiredState *pb.Project) error {
 
 	matchingLBClusters := findLBCluster(cluster.ClusterInfo.Name, lbClusters)
-
+	changedEndpoints := getEndpointChanges(currentState, desiredState, matchingLBClusters)
 	if err := genPrivAdd(groupNodepool(cluster, matchingLBClusters), cluster.GetNetwork()); err != nil {
 		log.Error().Msgf("error while generating private addresses: %v", err)
 		return err
@@ -129,7 +108,7 @@ func buildVPNAsync(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster) error {
 		return err
 	}
 
-	if err := runAnsible(cluster, matchingLBClusters, outputPath); err != nil {
+	if err := runAnsible(cluster, matchingLBClusters, changedEndpoints, outputPath); err != nil {
 		log.Error().Msgf("error while running Ansible: %v", err)
 		return err
 	}
@@ -210,7 +189,7 @@ func genTpl(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster, outputPath strin
 		return err
 	}
 
-	// nginx conf files
+	// nginx conf files nad
 	controlNodes, computeNodes := nodeSegregation(cluster)
 	for _, lbCluster := range lbClusters {
 
@@ -261,7 +240,7 @@ func tplExecution(data interface{}, templateFilePath string, outputPath string, 
 
 }
 
-func runAnsible(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster, clusterOutputPath string) error {
+func runAnsible(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster, changedEndpoint map[string]dataForApiEndpointTemplate, clusterOutputPath string) error {
 	if err := utils.CreateKeyFile(cluster.ClusterInfo.GetPrivateKey(), clusterOutputPath, sshClusterPrivateKeyFile+privateFileExt); err != nil {
 		return fmt.Errorf("failed to create key file: %v", err)
 
@@ -291,13 +270,14 @@ func runAnsible(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster, clusterOutpu
 
 	for _, lbCluster := range lbClusters {
 
+		// generate nginx playbook and run
 		d := dataForNginxPlaybookTemplate{ConfPath: "./" + lbCluster.ClusterInfo.Name + nginxConfFileExt}
-		err := tplExecution(d, nginxPlaybookTemplate, clusterOutputPath, lbCluster.ClusterInfo.Name+nginxPlaybookExt)
+		err := tplExecution(d, nginxPlaybookTemplate, clusterOutputPath, lbCluster.ClusterInfo.Name+playbookExt)
 		if err != nil {
 			return err
 		}
 
-		nginxPlaybookPath := cluster.ClusterInfo.Name + "-" + cluster.ClusterInfo.Hash + "/" + lbCluster.ClusterInfo.Name + nginxPlaybookExt
+		nginxPlaybookPath := cluster.ClusterInfo.Name + "-" + cluster.ClusterInfo.Hash + "/" + lbCluster.ClusterInfo.Name + playbookExt
 		cmd := exec.Command("ansible-playbook", nginxPlaybookPath, "-i", inventoryFilePath, "-f", "20", "-l", lbCluster.ClusterInfo.Name)
 		cmd.Dir = outputPath
 		cmd.Stdout = os.Stdout
@@ -305,6 +285,25 @@ func runAnsible(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster, clusterOutpu
 		err = cmd.Run()
 		if err != nil {
 			return err
+		}
+
+		// check if apiendpoint is changed
+		if d, ok := changedEndpoint[lbCluster.ClusterInfo.Name]; ok {
+			// generate api endpoint change playbook
+			err := tplExecution(d, apiEndpointTemplate, clusterOutputPath, lbCluster.ClusterInfo.Name+"apiendpoint"+playbookExt)
+			if err != nil {
+				return err
+			}
+
+			apiEndpointPlaybookPath := cluster.ClusterInfo.Name + "-" + cluster.ClusterInfo.Hash + "/" + lbCluster.ClusterInfo.Name + "apiendpoint" + playbookExt
+			cmd := exec.Command("ansible-playbook", apiEndpointPlaybookPath, "-i", inventoryFilePath, "-f", "20")
+			cmd.Dir = outputPath
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			err = cmd.Run()
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -319,6 +318,24 @@ func findLBCluster(ClusterName string, lbClusters []*pb.LBcluster) []*pb.LBclust
 		}
 	}
 	return matchingLBClusters
+}
+
+func getEndpointChanges(currentState, desiredState *pb.Project, lbClusters []*pb.LBcluster) map[string]dataForApiEndpointTemplate {
+	changedEndpointClusters := make(map[string]dataForApiEndpointTemplate)
+	for _, lbCluster := range lbClusters {
+		for _, currentLbCluster := range currentState.LoadBalancerClusters {
+			if currentLbCluster.ClusterInfo.Name == lbCluster.ClusterInfo.Name {
+				for _, desiredLbCluster := range desiredState.LoadBalancerClusters {
+					if desiredLbCluster.ClusterInfo.Name == lbCluster.ClusterInfo.Name {
+						if utils.ChangedAPIEndpoint(currentLbCluster.Dns, desiredLbCluster.Dns) {
+							changedEndpointClusters[lbCluster.ClusterInfo.Name] = dataForApiEndpointTemplate{OldEndpoint: currentLbCluster.Dns.Endpoint, NewEndpoint: desiredLbCluster.Dns.Endpoint}
+						}
+					}
+				}
+			}
+		}
+	}
+	return changedEndpointClusters
 }
 
 func nodeSegregation(cluster *pb.K8Scluster) (controlNodes, ComputeNodes []*pb.Node) {

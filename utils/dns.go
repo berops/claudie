@@ -15,3 +15,13 @@ func ChangedDNSProvider(currentDNS, desiredDNS *pb.DNS) bool {
 	}
 	return true
 }
+
+func ChangedAPIEndpoint(currentDNS, desiredDNS *pb.DNS) bool {
+	if currentDNS == nil {
+		return false
+	}
+	if currentDNS.Endpoint == desiredDNS.Endpoint {
+		return false
+	}
+	return true
+}
