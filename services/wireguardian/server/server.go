@@ -43,7 +43,7 @@ type dataForNginxPlaybookTemplate struct {
 	ConfPath string
 }
 
-type dataForApiEndpointTemplate struct {
+type dataForAPIEndpointTemplate struct {
 	OldEndpoint string
 	NewEndpoint string
 }
@@ -240,7 +240,7 @@ func tplExecution(data interface{}, templateFilePath string, outputPath string, 
 
 }
 
-func runAnsible(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster, changedEndpoint map[string]dataForApiEndpointTemplate, clusterOutputPath string) error {
+func runAnsible(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster, changedEndpoint map[string]dataForAPIEndpointTemplate, clusterOutputPath string) error {
 	if err := utils.CreateKeyFile(cluster.ClusterInfo.GetPrivateKey(), clusterOutputPath, sshClusterPrivateKeyFile+privateFileExt); err != nil {
 		return fmt.Errorf("failed to create key file: %v", err)
 
@@ -315,15 +315,15 @@ func findLBCluster(ClusterName string, lbClusters []*pb.LBcluster) []*pb.LBclust
 	return matchingLBClusters
 }
 
-func getEndpointChanges(currentState, desiredState *pb.Project, lbClusters []*pb.LBcluster) map[string]dataForApiEndpointTemplate {
-	changedEndpointClusters := make(map[string]dataForApiEndpointTemplate)
+func getEndpointChanges(currentState, desiredState *pb.Project, lbClusters []*pb.LBcluster) map[string]dataForAPIEndpointTemplate {
+	changedEndpointClusters := make(map[string]dataForAPIEndpointTemplate)
 	for _, lbCluster := range lbClusters {
 		for _, currentLbCluster := range currentState.LoadBalancerClusters {
 			if currentLbCluster.ClusterInfo.Name == lbCluster.ClusterInfo.Name {
 				for _, desiredLbCluster := range desiredState.LoadBalancerClusters {
 					if desiredLbCluster.ClusterInfo.Name == lbCluster.ClusterInfo.Name {
 						if utils.ChangedAPIEndpoint(currentLbCluster.Dns, desiredLbCluster.Dns) {
-							changedEndpointClusters[lbCluster.ClusterInfo.Name] = dataForApiEndpointTemplate{OldEndpoint: currentLbCluster.Dns.Endpoint, NewEndpoint: desiredLbCluster.Dns.Endpoint}
+							changedEndpointClusters[lbCluster.ClusterInfo.Name] = dataForAPIEndpointTemplate{OldEndpoint: currentLbCluster.Dns.Endpoint, NewEndpoint: desiredLbCluster.Dns.Endpoint}
 						}
 					}
 				}
