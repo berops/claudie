@@ -58,7 +58,7 @@ const (
 	inventoryTemplate        = "services/wireguardian/server/inventory.goini"
 	nginxCongTemplate        = "services/wireguardian/server/conf.gotpl"
 	nginxPlaybookTemplate    = "services/wireguardian/server/nginx.goyml"
-	apiEndpointTemplate      = "services/wireguardian/server/apiserverchange.goyml"
+	apiEndpointPlaybookPath  = "apiEndpointChange.yml"
 	inventoryFile            = "inventory.ini"
 	nginxConfFileExt         = ".conf"
 	playbookExt              = ".yml"
@@ -289,14 +289,9 @@ func runAnsible(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster, changedEndpo
 
 		// check if apiendpoint is changed
 		if d, ok := changedEndpoint[lbCluster.ClusterInfo.Name]; ok {
-			// generate api endpoint change playbook
-			err := tplExecution(d, apiEndpointTemplate, clusterOutputPath, lbCluster.ClusterInfo.Name+"apiendpoint"+playbookExt)
-			if err != nil {
-				return err
-			}
+			// run apiEndpoint playbook
 
-			apiEndpointPlaybookPath := cluster.ClusterInfo.Name + "-" + cluster.ClusterInfo.Hash + "/" + lbCluster.ClusterInfo.Name + "apiendpoint" + playbookExt
-			cmd := exec.Command("ansible-playbook", apiEndpointPlaybookPath, "-i", inventoryFilePath, "-f", "20")
+			cmd := exec.Command("ansible-playbook", apiEndpointPlaybookPath, "-i", inventoryFilePath, "-f", "20", "--extra-vars", "NewEndpoint="+d.NewEndpoint+" OldEndpoint="+d.OldEndpoint)
 			cmd.Dir = outputPath
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr

@@ -24,8 +24,8 @@
     - name: replace endpoint 
       replace:
         path: "{{file.files[0].path}}"
-        regexp: '{{ .OldEndpoint}}'
-        replace: '{{ .NewEndpoint}}'
+        regexp: '{{ OldEndpoint}}'
+        replace: '{{ NewEndpoint}}'
     - name: generate new certs
       shell: "kubeadm init phase certs apiserver --config {{file.files[0].path}}"
     - name: generate kubeconfig 
@@ -49,8 +49,8 @@
     - name: replace endpoint 
       replace:
         path: "/etc/kubernetes/kubelet.conf"
-        regexp: '{{ .OldEndpoint}}'
-        replace: '{{ .NewEndpoint}}'
+        regexp: '{{ OldEndpoint}}'
+        replace: '{{ NewEndpoint}}'
     - name: restart kubelet
       service:
         name: kubelet
