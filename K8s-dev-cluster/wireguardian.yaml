@@ -24,7 +24,7 @@ spec:
             memory: 200Mi
           limits:
             cpu: 100m
-            memory: 400Mi
+            memory: 800Mi
         env:
         - name: WIREGUARDIAN_PORT
           valueFrom:

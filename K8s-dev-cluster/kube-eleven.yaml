@@ -23,7 +23,7 @@ spec:
             memory: 100Mi
           limits:
             cpu: 100m
-            memory: 400Mi
+            memory: 800Mi
         env:
         - name: KUBE_ELEVEN_PORT
           valueFrom:
