@@ -42,7 +42,10 @@ jobs:
           sudo make install
           cd ..
           rm -rf git-crypt
-          git-crypt unlock ${{ secrets.GIT_CRYPT_KEY }}
+          echo "${{ secrets.GIT_CRYPT_KEY }}" | base64  -d > ./git-crypt-key
+          echo "Unlocking"
+          git-crypt unlock git-crypt-key
+          rm git-crypt-key
 
       # Create an array with modules that were changed by a recent commit via bash script
       - name: Check the files for a change
