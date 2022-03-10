@@ -130,6 +130,12 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *pb.DNS, nodeIPs []string) 
 		return err
 	}
 
+	// save provider cred file
+	if err = utils.CreateKeyFile(dns.Provider.Credentials, dnsDir, dns.Provider.Name); err != nil {
+		log.Error().Msgf("Error creating provider credential key file: %v", err)
+		return err
+	}
+
 	DNSTemplates := templates.Templates{Directory: dnsDir}
 	dnsData := d.getDNSData(dns, nodeIPs)
 	return DNSTemplates.Generate("dns.tpl", "dns.tf", dnsData)

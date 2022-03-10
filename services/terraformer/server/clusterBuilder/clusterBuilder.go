@@ -131,13 +131,13 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	tplType := getTplFile(c.ClusterType)
 	//sort nodepools by a provider
 	sortedNodePools := sortNodePools(clusterInfo)
-	for provider, nodepools := range sortedNodePools {
+	for providerName, nodepools := range sortedNodePools {
 		nodepoolData := NodepoolsData{
 			NodePools:   nodepools,
 			ClusterName: clusterInfo.Name,
 			ClusterHash: clusterInfo.Hash,
 		}
-		err := templates.Generate(fmt.Sprintf("%s%s", provider, tplType), fmt.Sprintf("%s-%s.tf", clusterID, provider), nodepoolData)
+		err := templates.Generate(fmt.Sprintf("%s%s", providerName, tplType), fmt.Sprintf("%s-%s.tf", clusterID, providerName), nodepoolData)
 		if err != nil {
 			return fmt.Errorf("error while generating .tf files : %v", err)
 		}
@@ -146,6 +146,12 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 			log.Error().Msgf("Error creating key file: %v", err)
 			return err
 		}
+		// save keys
+		if err = utils.CreateKeyFile(nodepools[0].Provider.Credentials, clusterDir, providerName); err != nil {
+			log.Error().Msgf("Error creating provider credential key file: %v", err)
+			return err
+		}
+
 	}
 
 	return nil

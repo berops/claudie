@@ -1,11 +1,13 @@
+{{- $clusterName := .ClusterName}}
+{{- $clusterHash := .ClusterHash}}
+{{$index :=  0}}
+
 provider "google" {
-  credentials = "${file("../../../../../keys/platform-296509-d6ddeb344e91.json")}"
+  credentials = "${file("{{(index .NodePools $index).Provider.Name}}")}"
   region = "europe-west1"
   project = "platform-296509"
   alias  = "lb-nodepool"
 }
-{{- $clusterName := .ClusterName}}
-{{- $clusterHash := .ClusterHash}}
 
 resource "google_compute_network" "network" {
   provider     = google.lb-nodepool

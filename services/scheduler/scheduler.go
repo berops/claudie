@@ -55,8 +55,8 @@ type Manifest struct {
 }
 
 type Provider struct {
-	Name        string `yaml:"name"`
-	Credentials string `yaml:"credentials"`
+	Name        string      `yaml:"name"`
+	Credentials interface{} `yaml:"credentials"`
 }
 
 type NodePool struct {
@@ -302,7 +302,7 @@ func createNodepools(pools []string, desiredState Manifest, isControl bool) []*p
 				Count:      uint32(desiredState.NodePools.Dynamic[position].Count),
 				Provider: &pb.Provider{
 					Name:        desiredState.Providers[providerIndex].Name,
-					Credentials: desiredState.Providers[providerIndex].Credentials,
+					Credentials: fmt.Sprint(desiredState.Providers[providerIndex].Credentials),
 				},
 				IsControl: isControl,
 			})
@@ -443,7 +443,7 @@ func getDNS(lbDNS DNS, provider []Provider) *pb.DNS {
 			DnsZone: lbDNS.DNSZone,
 			Provider: &pb.Provider{
 				Name:        provider[providerIndex].Name,
-				Credentials: provider[providerIndex].Credentials,
+				Credentials: fmt.Sprint(provider[providerIndex].Credentials),
 			},
 			Project:  lbDNS.Project,
 			Hostname: lbDNS.Hostname,

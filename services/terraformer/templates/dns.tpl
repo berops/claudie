@@ -1,5 +1,5 @@
 provider "google" {
-    credentials = "${file("{{.Provider.Credentials}}")}"
+    credentials = "${file("{{.Provider.Name}}")}"
     project = "{{.Project}}"
     alias = "dns-gcp"
 }

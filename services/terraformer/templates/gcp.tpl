@@ -1,21 +1,22 @@
+{{- $clusterName := .ClusterName}}
+{{- $clusterHash := .ClusterHash}}
+{{$index :=  0}}
+
 provider "google" {
-  credentials = "${file("../../../../../keys/platform-296509-d6ddeb344e91.json")}"
+  credentials = "${file("{{(index .NodePools $index).Provider.Name}}")}"
   region = "europe-west1"
   project = "platform-296509"
   alias  = "k8s-nodepool"
 }
 
-{{- $clusterName := .ClusterName}}
-{{- $clusterHash := .ClusterHash}}
-
 resource "google_compute_network" "network" {
-  provider     = google.k8s-nodepool
+  provider                = google.k8s-nodepool
   name                    = "{{ $clusterName }}-{{ $clusterHash }}-network"
   auto_create_subnetworks = false
 }
 
 resource "google_compute_subnetwork" "subnet" {
-  provider     = google.k8s-nodepool
+  provider      = google.k8s-nodepool
   name          = "{{ $clusterName }}-{{ $clusterHash }}-subnet"
   network       = google_compute_network.network.self_link
   region        = "europe-west1"
