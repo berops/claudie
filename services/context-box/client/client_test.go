@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-const configIDDefault = "6216777d6256d8476aaf6b63"
+const configIDDefault = "6228ab28e655d4721eae5727"
 
 func ClientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
 	cc, err := utils.GrpcDialWithInsecure("context-box", urls.ContextBoxURL)
@@ -104,7 +104,7 @@ func TestSaveConfigScheduler(t *testing.T) {
 
 func TestDeleteConfig(t *testing.T) {
 	c, cc := ClientConnection()
-	configID := "6220d347bb6df023459ab467" //configIDDefault // Put desired config ID here
+	configID := "622c71975c34eca07b320c71" //configIDDefault // Put desired config ID here
 	delErr := DeleteConfig(c, configID)
 	if delErr != nil {
 		log.Fatal().Msgf("Error deleting config %s %v", configID, delErr)
