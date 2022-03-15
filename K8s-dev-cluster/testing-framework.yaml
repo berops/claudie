@@ -3,7 +3,7 @@ kind: Job
 metadata:
   name: testing-framework
 spec:
-  backoffLimit: 1
+  backoffLimit: 0
   template:
     spec:
       containers:
@@ -25,4 +25,4 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: GOLANG_LOG
-      restartPolicy: OnFailure
+      restartPolicy: Never
