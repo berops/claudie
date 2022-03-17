@@ -34,7 +34,7 @@ WORKDIR /go/services/wireguardian/server
 #Compile the golang code, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build
 
-FROM python:3-slim
+FROM python:3.9-slim
 
 #Install the Ansible
 ENV DEBIAN_FRONTEND=noninteractive
@@ -44,7 +44,7 @@ RUN apt update && \
   libkrb5-dev \
   krb5-user \
   openssh-client \
-  ansible=2.10.7+merged+base+2.10.8+dfsg-1
+  ansible
 
 #Copy the binaries to empty base image
 COPY --from=build /go/services/wireguardian /bin/services/wireguardian
