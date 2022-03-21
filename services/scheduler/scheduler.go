@@ -41,7 +41,6 @@ var DefaultDNS = &pb.DNS{
 	DnsZone:  "lb-zone",
 	Project:  "platform-infrastructure-316112",
 	Provider: claudieProvider,
-	Hostname: utils.CreateHash(hostnameHashLen),
 }
 
 ////////////////////YAML STRUCT//////////////////////////////////////////////////
@@ -264,7 +263,12 @@ clusterLbDesired:
 				if clusterLbDesired.ClusterInfo.Hash != "" {
 					clusterLbDesired.ClusterInfo.Hash = clusterLbCurrent.ClusterInfo.Hash
 				}
-				//skip the checks bellow
+				// copy hostname from current state if not specified in manifest
+				if clusterLbDesired.Dns.Hostname == "" {
+					clusterLbDesired.Dns.Hostname = clusterLbCurrent.Dns.Hostname
+				}
+
+				//skip the checks
 				continue clusterLbDesired
 			}
 		}
@@ -273,6 +277,11 @@ clusterLbDesired:
 			privateKey, publicKey := MakeSSHKeyPair()
 			clusterLbDesired.ClusterInfo.PrivateKey = privateKey
 			clusterLbDesired.ClusterInfo.PublicKey = publicKey
+		}
+
+		// create hostname if its not set and not present in current state
+		if clusterLbDesired.Dns.Hostname == "" {
+			clusterLbDesired.Dns.Hostname = utils.CreateHash(hostnameHashLen)
 		}
 	}
 
@@ -435,10 +444,6 @@ func getDNS(lbDNS DNS, provider []Provider) *pb.DNS {
 		return DefaultDNS // default zone is used
 	} else {
 		providerIndex := searchProvider(gcpProvider, provider)
-
-		if lbDNS.Hostname == "" {
-			lbDNS.Hostname = utils.CreateHash(hostnameHashLen)
-		}
 		return &pb.DNS{
 			DnsZone: lbDNS.DNSZone,
 			Provider: &pb.Provider{
