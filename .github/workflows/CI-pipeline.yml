@@ -14,7 +14,7 @@ jobs:
 #--------------------------------------------------------------------------------------------------
   merge-branch:
     if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
 
@@ -28,7 +28,7 @@ jobs:
 #--------------------------------------------------------------------------------------------------
   build-and-push:
     if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: merge-branch
     steps:
       - uses: actions/checkout@v2
@@ -94,7 +94,7 @@ jobs:
       ARRAY_OF_CHANGES: ${{ steps.array.outputs.ARRAY_OF_CHANGES }}
 #--------------------------------------------------------------------------------------------------
   edit-kustomization:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [build-and-push, merge-branch]
     if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
     steps:
@@ -137,7 +137,7 @@ jobs:
       SHA: ${{ steps.sha.outputs.SHA }}
 #--------------------------------------------------------------------------------------------------
   deploy-and-monitor:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [ build-and-push, edit-kustomization ]
     if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES && github.event.pull_request.draft == false }}
     steps:
