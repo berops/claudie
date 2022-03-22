@@ -14,7 +14,7 @@ jobs:
     runs-on: self-hosted
     steps:
       # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@master
+      - uses: google-github-actions/setup-gcloud@v0.6.0
         with:
           service_account_key: ${{ secrets.GKE_SERVICE_ACC_KEY }}
           project_id: ${{ secrets.GCP_PROJECT_ID }}

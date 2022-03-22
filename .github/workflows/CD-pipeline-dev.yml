@@ -18,15 +18,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Install gcloud CLI
-        run: |
-          curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-377.0.0-linux-x86_64.tar.gz
-          tar -xf google-cloud-sdk-377.0.0-linux-x86_64.tar.gz
-          ./google-cloud-sdk/install.sh --path-update true --quiet
-          ./google-cloud-sdk/bin/gcloud init
-
       - name: Login to GCP
-        uses: google-github-actions/setup-gcloud@master
+        uses: google-github-actions/setup-gcloud@v0.6.0
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
           service_account_email: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
