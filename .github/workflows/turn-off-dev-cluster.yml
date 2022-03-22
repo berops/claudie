@@ -12,6 +12,10 @@ jobs:
       # Checkout the repository
       - name: Checkout
         uses: actions/checkout@v2
+      - name: install kubectl
+        uses: azure/setup-kubectl@v2.0
+        with:
+          version: latest
       # Setup gcloud CLI
       - uses: google-github-actions/setup-gcloud@v0.6.0
         with:
