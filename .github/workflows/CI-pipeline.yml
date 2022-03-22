@@ -102,6 +102,11 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
+      - name: install kustomize
+        uses: imranismail/setup-kustomize@v1.6.1
+        with:
+          version: 3.6.1
+
       # Set the new image tags in kustomization.yaml
       - name: Edit kustomization.yaml
         working-directory: ./K8s-dev-cluster
@@ -150,6 +155,11 @@ jobs:
         uses: azure/setup-kubectl@v2.0
         with:
           version: latest
+
+      - name: install kustomize
+        uses: imranismail/setup-kustomize@v1.6.1
+        with:
+          version: 3.6.1
 
       - name: Login to GCP
         uses: google-github-actions/setup-gcloud@v0.6.0

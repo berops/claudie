@@ -23,6 +23,11 @@ jobs:
         with:
           version: latest
 
+      - name: install kustomize
+        uses: imranismail/setup-kustomize@v1.6.1
+        with:
+          version: 3.6.1
+
       - name: Login to GCP
         uses: google-github-actions/setup-gcloud@v0.6.0
         with:
