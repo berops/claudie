@@ -1,4 +1,4 @@
-FROM golang:1.16 AS build
+FROM golang:1.16.15 AS build
 
 # download and unzip kube-one binary
 RUN apt-get update && apt-get install unzip
