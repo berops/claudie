@@ -14,12 +14,22 @@ env:
 jobs:
   deploy-and-monitor:
     if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
 
+      - name: install kubectl
+        uses: azure/setup-kubectl@v2.0
+        with:
+          version: latest
+
+      - name: install kustomize
+        uses: imranismail/setup-kustomize@v1.6.1
+        with:
+          version: 3.6.1
+
       - name: Login to GCP
-        uses: google-github-actions/setup-gcloud@master
+        uses: google-github-actions/setup-gcloud@v0.6.0
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
           service_account_email: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
