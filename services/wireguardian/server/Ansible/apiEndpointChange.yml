@@ -4,7 +4,7 @@
   become: true
   remote_user: root
   tasks:
-    - name: remove old apiserver.crt, apiserver.key and /etc/kubernetes/*.conf
+    - name: remove old apiserver.crt, apiserver.key
       file:
         path: "{{ item }}"
         state: absent
@@ -27,7 +27,7 @@
     - name: generate new certs
       shell: "kubeadm init phase certs apiserver --config {{file.files[0].path}}"
     
-    - name: remove old apiserver.crt, apiserver.key and /etc/kubernetes/*.conf
+    - name: remove old /etc/kubernetes/*.conf
       file:
         path: "{{ item }}"
         state: absent
@@ -43,13 +43,15 @@
     - name: upload config map
       shell: "kubeadm init phase upload-config all --config {{file.files[0].path}}"
     - name: restart docker and kubelet
-      service:
-        name: "{{item}}"
+      ansible.builtin.service: 
+        name: "{{ item }}"
         state: restarted
-      become: true
       loop:
-        - kubelet
-        - docker
+      - "kubelet"
+      - "docker"
+    - name: Wait 60s to ensure the services are up and running
+      pause:
+        seconds: 60
 
 - hosts: compute
   gather_facts: true
@@ -62,7 +64,9 @@
         regexp: '{{ OldEndpoint}}'
         replace: '{{ NewEndpoint}}'
     - name: restart kubelet
-      service:
+      ansible.builtin.service: 
         name: kubelet
         state: restarted
-      become: true
+    - name: Wait 60s to ensure the services are up and running
+      pause:
+        seconds: 60
