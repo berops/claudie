@@ -16,6 +16,7 @@ spec:
     spec:
       containers:
       - name: kube-eleven
+        imagePullPolicy: Always
         image: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven
         resources:
           requests:
