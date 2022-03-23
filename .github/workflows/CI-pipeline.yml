@@ -14,7 +14,7 @@ jobs:
 #--------------------------------------------------------------------------------------------------
   merge-branch:
     if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
 
@@ -28,7 +28,7 @@ jobs:
 #--------------------------------------------------------------------------------------------------
   build-and-push:
     if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: merge-branch
     steps:
       - uses: actions/checkout@v2
@@ -108,13 +108,18 @@ jobs:
       ARRAY_OF_CHANGES: ${{ steps.array.outputs.ARRAY_OF_CHANGES }}
 #--------------------------------------------------------------------------------------------------
   edit-kustomization:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [build-and-push, merge-branch]
     if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
     steps:
       - uses: actions/checkout@v2
         with:
           ref: ${{ github.head_ref }}
+
+      - name: install kustomize
+        uses: imranismail/setup-kustomize@v1.6.1
+        with:
+          version: 3.6.1
 
       # Set the new image tags in kustomization.yaml
       - name: Edit kustomization.yaml
@@ -151,7 +156,7 @@ jobs:
       SHA: ${{ steps.sha.outputs.SHA }}
 #--------------------------------------------------------------------------------------------------
   deploy-and-monitor:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [ build-and-push, edit-kustomization ]
     if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES && github.event.pull_request.draft == false }}
     steps:
@@ -159,6 +164,16 @@ jobs:
         with:
           ref: ${{ needs.edit-kustomization.outputs.SHA }}
           fetch-depth: 0
+
+      - name: install kubectl
+        uses: azure/setup-kubectl@v2.0
+        with:
+          version: latest
+
+      - name: install kustomize
+        uses: imranismail/setup-kustomize@v1.6.1
+        with:
+          version: 3.6.1
 
       - name: Login to GCP
         uses: google-github-actions/setup-gcloud@v0.6.0
