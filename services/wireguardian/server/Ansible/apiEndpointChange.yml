@@ -46,12 +46,13 @@
       ansible.builtin.service: 
         name: "{{ item }}"
         state: restarted
+      register: serviceDetails
+      until: serviceDetails.status.ActiveState == "active"
+      retries: 10
+      delay: 20
       loop:
       - "kubelet"
       - "docker"
-    - name: Wait 60s to ensure the services are up and running
-      pause:
-        seconds: 60
 
 - hosts: compute
   gather_facts: true
@@ -67,6 +68,7 @@
       ansible.builtin.service: 
         name: kubelet
         state: restarted
-    - name: Wait 60s to ensure the services are up and running
-      pause:
-        seconds: 60
+      register: serviceDetails
+      until: serviceDetails.status.ActiveState == "active"
+      retries: 10
+      delay: 20
