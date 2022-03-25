@@ -37,3 +37,12 @@ func GetNodePoolByName(nodePoolName string, nodePools []*pb.NodePool) *pb.NodePo
 	}
 	return nil
 }
+
+// groups nodepool by provider name into the map[Provider Name][]*pb.Nodepool
+func GroupNodepoolsByProvider(clusterInfo *pb.ClusterInfo) map[string][]*pb.NodePool {
+	sortedNodePools := map[string][]*pb.NodePool{}
+	for _, nodepool := range clusterInfo.GetNodePools() {
+		sortedNodePools[nodepool.Provider.Name] = append(sortedNodePools[nodepool.Provider.Name], nodepool)
+	}
+	return sortedNodePools
+}

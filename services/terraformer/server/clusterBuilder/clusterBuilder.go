@@ -130,7 +130,7 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 
 	tplType := getTplFile(c.ClusterType)
 	//sort nodepools by a provider
-	sortedNodePools := sortNodePools(clusterInfo)
+	sortedNodePools := utils.GroupNodepoolsByProvider(clusterInfo)
 	for providerName, nodepools := range sortedNodePools {
 		nodepoolData := NodepoolsData{
 			NodePools:   nodepools,
@@ -228,12 +228,4 @@ func getTplFile(clusterType pb.ClusterType) string {
 		return "-lb.tpl"
 	}
 	return ""
-}
-
-func sortNodePools(clusterInfo *pb.ClusterInfo) map[string][]*pb.NodePool {
-	sortedNodePools := map[string][]*pb.NodePool{}
-	for _, nodepool := range clusterInfo.GetNodePools() {
-		sortedNodePools[nodepool.Provider.Name] = append(sortedNodePools[nodepool.Provider.Name], nodepool)
-	}
-	return sortedNodePools
 }
