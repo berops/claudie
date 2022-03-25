@@ -20,11 +20,11 @@ spec:
         image: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven
         resources:
           requests:
-            cpu: 1000m
-            memory: 1000Mi
+            cpu: 300m
+            memory: 500Mi
           limits:
-            cpu: 1000m
-            memory: 1000Mi
+            cpu: 400m
+            memory: 600Mi
         env:
         - name: KUBE_ELEVEN_PORT
           valueFrom:
