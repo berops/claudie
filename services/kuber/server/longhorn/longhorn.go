@@ -1,3 +1,4 @@
+// Package longhorn provides functions needed to set up the longhorn on k8s cluster
 package longhorn
 
 import (
@@ -8,6 +9,7 @@ import (
 	"github.com/Berops/platform/utils"
 )
 
+// Cluster - k8s clusther where longhorn will be set up
 type Longhorn struct {
 	Cluster *pb.K8Scluster
 }
@@ -28,6 +30,7 @@ const (
 	storageManifestTpl = "storage-class.goyaml"
 )
 
+// SetUp function will set up the longhorn on the k8s cluster saved in l.Longhorn
 func (l Longhorn) SetUp() error {
 	kubectl := kubectl.Kubectl{Kubeconfig: l.Cluster.Kubeconfig}
 	clusterID := fmt.Sprintf("%s-%s", l.Cluster.ClusterInfo.Name, l.Cluster.ClusterInfo.Hash)
@@ -38,8 +41,7 @@ func (l Longhorn) SetUp() error {
 		return fmt.Errorf("error while applying longhorn.yaml : %v", err)
 	}
 
-	// apply cluster-machine.yaml based on zones
-	sortedNodePools := utils.GroupNodepoolsByProvider(l.Cluster.ClusterInfo)
+	//load the templates
 	template := utils.Templates{Directory: clusterID}
 	templateLoader := utils.TemplateLoader{Directory: utils.KuberTemplates}
 	nodeTpl, err := templateLoader.LoadTemplate(nodeManifestTpl)
@@ -50,6 +52,9 @@ func (l Longhorn) SetUp() error {
 	if err != nil {
 		return err
 	}
+
+	// apply cluster-machine.yaml based on zones
+	sortedNodePools := utils.GroupNodepoolsByProvider(l.Cluster.ClusterInfo)
 	for provider, nodepools := range sortedNodePools {
 		zoneName := fmt.Sprintf("%s-zone", provider)
 		storageClassName := fmt.Sprintf("longhorn-%s", zoneName)
