@@ -1,31 +1,25 @@
-{{- $clusterName := .ClusterName}}
-{{- $clusterHash := .ClusterHash}}
-{{$index :=  0}}
-
 provider "google" {
-  credentials = "${file("{{(index .NodePools $index).Provider.Name}}")}"
+  credentials = "${file("../../../../../keys/platform-296509-d6ddeb344e91.json")}"
   region = "europe-west1"
   project = "platform-296509"
-  alias  = "k8s-nodepool"
 }
 
+{{- $cluster := .Cluster}}
+
 resource "google_compute_network" "network" {
-  provider                = google.k8s-nodepool
-  name                    = "{{ $clusterName }}-{{ $clusterHash }}-network"
+  name                    = "{{ .Cluster.Name }}-{{.Cluster.Hash}}-network"
   auto_create_subnetworks = false
 }
 
 resource "google_compute_subnetwork" "subnet" {
-  provider      = google.k8s-nodepool
-  name          = "{{ $clusterName }}-{{ $clusterHash }}-subnet"
+  name          = "{{ .Cluster.Name }}-{{.Cluster.Hash}}-subnet"
   network       = google_compute_network.network.self_link
   region        = "europe-west1"
   ip_cidr_range = "10.0.0.0/8"
 }
 
 resource "google_compute_firewall" "firewall" {
-  provider     = google.k8s-nodepool
-  name    = "{{ $clusterName }}-{{ $clusterHash }}-firewall"
+  name    = "{{ .Cluster.Name }}-{{.Cluster.Hash}}-firewall"
   network = google_compute_network.network.self_link
 
   allow {
@@ -47,18 +41,17 @@ resource "google_compute_firewall" "firewall" {
    ]
 }
 
-{{ range $nodepool := .NodePools }}
-resource "google_compute_instance" "{{ $nodepool.Name }}" {
-  provider     = google.k8s-nodepool
-  count        = {{ $nodepool.Count }}
+{{range $nodepool := .NodePools}}
+resource "google_compute_instance" "{{$nodepool.Name}}" {
+  count        = {{$nodepool.Count}}
   zone         = "europe-west1-c"
-  name         = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}"
-  machine_type = "{{ $nodepool.ServerType }}"
+  name         = "{{$cluster.Name}}-{{$cluster.Hash}}-{{$nodepool.Name}}-${count.index + 1}"
+  machine_type = "{{$nodepool.ServerType}}"
   allow_stopping_for_update = true
   boot_disk {
     initialize_params {
       size = 10
-      image = "{{ $nodepool.Image }}"
+      image = "{{$nodepool.Image}}"
     }
   }
   network_interface {
@@ -71,9 +64,9 @@ resource "google_compute_instance" "{{ $nodepool.Name }}" {
   metadata_startup_script = "echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart"
 }
 
-output "{{ $nodepool.Name }}" {
+output "{{$nodepool.Name}}" {
   value = {
-    for node in google_compute_instance.{{ $nodepool.Name }}:
+    for node in google_compute_instance.{{$nodepool.Name}}:
     node.name => node.network_interface.0.access_config.0.nat_ip
   }
 }

@@ -1,2 +1,0 @@
-keys/** filter=git-crypt diff=git-crypt
-services/testing-framework/tests/** filter=git-crypt diff=git-crypt

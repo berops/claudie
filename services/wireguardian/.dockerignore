@@ -13,5 +13,3 @@ services/scheduler
 services/context-box
 services/builder
 mongodb
-services/testing-framework
-.github

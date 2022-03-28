@@ -18,7 +18,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type WireguardianServiceClient interface {
-	RunAnsible(ctx context.Context, in *RunAnsibleRequest, opts ...grpc.CallOption) (*RunAnsibleResponse, error)
+	BuildVPN(ctx context.Context, in *BuildVPNRequest, opts ...grpc.CallOption) (*BuildVPNResponse, error)
 }
 
 type wireguardianServiceClient struct {
@@ -29,9 +29,9 @@ func NewWireguardianServiceClient(cc grpc.ClientConnInterface) WireguardianServi
 	return &wireguardianServiceClient{cc}
 }
 
-func (c *wireguardianServiceClient) RunAnsible(ctx context.Context, in *RunAnsibleRequest, opts ...grpc.CallOption) (*RunAnsibleResponse, error) {
-	out := new(RunAnsibleResponse)
-	err := c.cc.Invoke(ctx, "/platform.WireguardianService/RunAnsible", in, out, opts...)
+func (c *wireguardianServiceClient) BuildVPN(ctx context.Context, in *BuildVPNRequest, opts ...grpc.CallOption) (*BuildVPNResponse, error) {
+	out := new(BuildVPNResponse)
+	err := c.cc.Invoke(ctx, "/platform.WireguardianService/BuildVPN", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (c *wireguardianServiceClient) RunAnsible(ctx context.Context, in *RunAnsib
 // All implementations must embed UnimplementedWireguardianServiceServer
 // for forward compatibility
 type WireguardianServiceServer interface {
-	RunAnsible(context.Context, *RunAnsibleRequest) (*RunAnsibleResponse, error)
+	BuildVPN(context.Context, *BuildVPNRequest) (*BuildVPNResponse, error)
 	mustEmbedUnimplementedWireguardianServiceServer()
 }
 
@@ -50,8 +50,8 @@ type WireguardianServiceServer interface {
 type UnimplementedWireguardianServiceServer struct {
 }
 
-func (UnimplementedWireguardianServiceServer) RunAnsible(context.Context, *RunAnsibleRequest) (*RunAnsibleResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RunAnsible not implemented")
+func (UnimplementedWireguardianServiceServer) BuildVPN(context.Context, *BuildVPNRequest) (*BuildVPNResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BuildVPN not implemented")
 }
 func (UnimplementedWireguardianServiceServer) mustEmbedUnimplementedWireguardianServiceServer() {}
 
@@ -66,20 +66,20 @@ func RegisterWireguardianServiceServer(s grpc.ServiceRegistrar, srv Wireguardian
 	s.RegisterService(&WireguardianService_ServiceDesc, srv)
 }
 
-func _WireguardianService_RunAnsible_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RunAnsibleRequest)
+func _WireguardianService_BuildVPN_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BuildVPNRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(WireguardianServiceServer).RunAnsible(ctx, in)
+		return srv.(WireguardianServiceServer).BuildVPN(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/platform.WireguardianService/RunAnsible",
+		FullMethod: "/platform.WireguardianService/BuildVPN",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WireguardianServiceServer).RunAnsible(ctx, req.(*RunAnsibleRequest))
+		return srv.(WireguardianServiceServer).BuildVPN(ctx, req.(*BuildVPNRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -92,8 +92,8 @@ var WireguardianService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*WireguardianServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "RunAnsible",
-			Handler:    _WireguardianService_RunAnsible_Handler,
+			MethodName: "BuildVPN",
+			Handler:    _WireguardianService_BuildVPN_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

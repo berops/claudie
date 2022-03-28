@@ -7,18 +7,11 @@ terraform {
   }
 }
 
-{{- $clusterName := .ClusterName}}
-{{- $clusterHash := .ClusterHash}}
+{{- $cluster := .Cluster}}
 {{$index :=  0}}
 
-provider "hcloud" {
-  token = "{{ (index .NodePools $index).Provider.Credentials }}" 
-  alias = "k8s-nodepool"
-}
-
 resource "hcloud_firewall" "defaultfirewall" {
-  provider     = hcloud.k8s-nodepool
-  name = "{{ $clusterName }}-{{ $clusterHash }}-firewall"
+  name = "{{ $cluster.Name }}-{{$cluster.Hash}}-firewall"
   rule {
     direction = "in"
     protocol  = "icmp"
@@ -59,9 +52,13 @@ resource "hcloud_firewall" "defaultfirewall" {
   }
 }
 
+
+provider "hcloud" {
+  token = "{{ (index .NodePools $index).Provider.Credentials }}" 
+}
+
 resource "hcloud_ssh_key" "platform" {
-  provider     = hcloud.k8s-nodepool
-  name       = "key-{{ $clusterName }}-{{ $clusterHash }}"
+  name       = "key-{{ $cluster.Name }}-{{$cluster.Hash}}"
   public_key = file("./public.pem")
 }
 
@@ -69,9 +66,8 @@ resource "hcloud_ssh_key" "platform" {
 {{range $nodepool := .NodePools}}
 
 resource "hcloud_server" "{{$nodepool.Name}}" {
-  provider     = hcloud.k8s-nodepool
   count       = "{{ $nodepool.Count }}"
-  name        = "{{ $clusterName }}-{{ $clusterHash }}-{{$nodepool.Name}}-${count.index +1}"
+  name        = "{{ $cluster.Name }}-{{$cluster.Hash}}-{{$nodepool.Name}}-${count.index +1}"
   server_type = "{{ $nodepool.ServerType }}"
   image       = "{{ $nodepool.Image }}"
   firewall_ids = [hcloud_firewall.defaultfirewall.id]

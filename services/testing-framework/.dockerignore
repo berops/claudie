@@ -6,12 +6,5 @@ LICENSE
 .git
 tmp
 serializer
-services/context-box
-services/scheduler
-services/builder
-services/terraformer
-services/wireguardian
-services/kube-eleven
-utils
-.github
+services
 mongodb

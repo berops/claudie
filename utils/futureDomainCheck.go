@@ -13,14 +13,14 @@ func CheckLengthOfFutureDomain(config *pb.Config) error {
 	desiredState := config.DesiredState
 
 	for _, cluster := range desiredState.GetClusters() {
-		currentLenght += len(cluster.ClusterInfo.Name) + HashLength
-		for _, nodepool := range cluster.ClusterInfo.GetNodePools() {
+		currentLenght += len(cluster.Name) + HashLength
+		for _, nodepool := range cluster.GetNodePools() {
 			nodeNameLength := 1  // "-" separator between hash and nodeName
 			nodeIndexLength := 1 // "-" separator between nodeName and index
 			nodeIndexLength += len(fmt.Sprint(nodepool.Count))
 			nodeNameLength += nodeIndexLength
 			if maxLenght <= currentLenght+nodeNameLength {
-				return fmt.Errorf("cluster name %s or nodepool name %s is too long, consider shortening it to be bellow %d [total: %d, hash: %d, nodeName: %d]", cluster.ClusterInfo.GetName(), nodepool.GetName(), maxLenght, currentLenght+nodeNameLength, HashLength, nodeNameLength)
+				return fmt.Errorf("cluster name %s or nodepool name %s is too long, consider shortening it to be bellow %d [total: %d, hash: %d, nodeName: %d]", cluster.GetName(), nodepool.GetName(), maxLenght, currentLenght+nodeNameLength, HashLength, nodeNameLength)
 			}
 		}
 	}

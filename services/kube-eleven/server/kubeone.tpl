@@ -27,7 +27,7 @@ controlPlane:
   hosts:
 {{- $privateKey := "./private.pem" }}
 {{- range $value := .Nodes }}
-{{- if ge $value.NodeType 1}}
+{{- if ge $value.IsControl 1}}
   - publicAddress: '{{ $value.Public }}'
     privateAddress: '{{ $value.Private }}'
     sshPrivateKeyFile: '{{ $privateKey }}'
@@ -37,7 +37,7 @@ controlPlane:
 staticWorkers:
   hosts:
 {{- range $value := .Nodes }}
-{{- if eq $value.NodeType 0}}
+{{- if eq $value.IsControl 0}}
   - publicAddress: '{{ $value.Public }}'
     privateAddress: '{{ $value.Private }}'
     sshPrivateKeyFile: '{{ $privateKey }}'

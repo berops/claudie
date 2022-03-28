@@ -1,7 +1,7 @@
 .idea/
 *.ini
 .terraform*
-services/terraformer/server/clusters
+services/terraformer/server/terraform
 kubeone
 playground
 .vscode
@@ -11,5 +11,3 @@ mongodb
 kubeone.yaml
 cluster.tar.gz
 cluster-kubeconfig
-*.conf
-__debug_bin

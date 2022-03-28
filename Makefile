@@ -14,7 +14,7 @@ builder:
 	go run services/builder/builder.go
 
 terraformer:
-	go run services/terraformer/server/server.go 
+	go run services/terraformer/server/server.go services/terraformer/server/terraform.go
 
 wireguardian:
 	go run services/wireguardian/server/server.go

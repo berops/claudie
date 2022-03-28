@@ -6,7 +6,7 @@ import (
 
 // GetClusterByName will return Cluster that will have same name as specified in parameters
 // If no name is found, return nil
-func GetClusterByName(clusterName string, clusters []*pb.K8Scluster) *pb.K8Scluster {
+func GetClusterByName(clusterName string, clusters []*pb.Cluster) *pb.Cluster {
 	if clusterName == "" {
 		return nil
 	}
@@ -16,7 +16,7 @@ func GetClusterByName(clusterName string, clusters []*pb.K8Scluster) *pb.K8Sclus
 	}
 
 	for _, cluster := range clusters {
-		if cluster.ClusterInfo.Name == clusterName {
+		if cluster.Name == clusterName {
 			return cluster
 		}
 	}

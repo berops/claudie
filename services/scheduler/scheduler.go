@@ -25,23 +25,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const (
-	defaultSchedulerPort = 50056
-	apiserverPort        = 6443
-	hostnameHashLen      = 17
-	gcpProvider          = "gcp"
-)
-
-var claudieProvider = &pb.Provider{
-	Name:        "gcp",
-	Credentials: "../../../../../keys/platform-infrastructure-316112-bd7953f712df.json",
-}
-
-var DefaultDNS = &pb.DNS{
-	DnsZone:  "lb-zone",
-	Project:  "platform-infrastructure-316112",
-	Provider: claudieProvider,
-}
+const defaultSchedulerPort = 50056
 
 ////////////////////YAML STRUCT//////////////////////////////////////////////////
 
@@ -49,13 +33,13 @@ type Manifest struct {
 	Name         string       `yaml:"name"`
 	Providers    []Provider   `yaml:"providers"`
 	NodePools    NodePool     `yaml:"nodePools"`
+	LoadBalancer LoadBalancer `yaml:"loadBalancer"`
 	Kubernetes   Kubernetes   `yaml:"kubernetes"`
-	LoadBalancer LoadBalancer `yaml:"loadBalancers"`
 }
 
 type Provider struct {
-	Name        string      `yaml:"name"`
-	Credentials interface{} `yaml:"credentials"`
+	Name        string `yaml:"name"`
+	Credentials string `yaml:"credentials"`
 }
 
 type NodePool struct {
@@ -78,6 +62,7 @@ type DynamicNodePool struct {
 	Count      int64                        `yaml:"count"`
 	ServerType string                       `yaml:"server_type"`
 	Image      string                       `yaml:"image"`
+	Datacenter string                       `yaml:"datacenter"`
 	DiskSize   int64                        `yaml:"disk_size"`
 }
 
@@ -104,25 +89,32 @@ type Pool struct {
 }
 
 type Role struct {
-	Name       string `yaml:"name"`
+	Name string `yaml:"name"`
+	Conf Conf   `yaml:"conf"`
+}
+
+type Conf struct {
 	Protocol   string `yaml:"protocol"`
-	Port       int32  `yaml:"port"`
-	TargetPort int32  `yaml:"target_port"`
-	Target     string `yaml:"target"`
+	Port       uint32 `yaml:"port"`
+	TargetPort uint32 `yaml:"targetPort"`
 }
 
 type LoadBalancerCluster struct {
-	Name        string   `yaml:"name"`
-	Roles       []string `yaml:"roles"`
-	DNS         DNS      `yaml:"dns,omitempty"`
-	TargetedK8s string   `yaml:"targeted-k8s"`
-	Pools       []string `yaml:"pools"`
+	Name   string   `yaml:"name"`
+	Role   string   `yaml:"role"`
+	DNS    DNS      `yaml:"dns"`
+	Target Target   `yaml:"target"`
+	Pools  []string `yaml:"pools"`
 }
 
 type DNS struct {
-	DNSZone  string `yaml:"dns_zone,omitempty"`
-	Project  string `yaml:"project,omitempty"`
-	Hostname string `yaml:"hostname,omitempty"`
+	Hostname string   `yaml:"hostname"`
+	Provider []string `yaml:"provider"`
+}
+
+type Target struct {
+	Name string `yaml:"name"`
+	Type string `yaml:"type"`
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -167,16 +159,14 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 		return nil, fmt.Errorf("error while unmarshalling yaml manifest: %v", err)
 	}
 
-	var clusters []*pb.K8Scluster
+	var clusters []*pb.Cluster
 	for _, cluster := range desiredState.Kubernetes.Clusters {
 
-		newCluster := &pb.K8Scluster{
-			ClusterInfo: &pb.ClusterInfo{
-				Name: strings.ToLower(cluster.Name),
-				Hash: utils.CreateHash(utils.HashLength),
-			},
+		newCluster := &pb.Cluster{
+			Name:       strings.ToLower(cluster.Name),
 			Kubernetes: cluster.Version,
 			Network:    cluster.Network,
+			Hash:       utils.CreateHash(utils.HashLength),
 		}
 
 		var ComputeNodePools, ControlNodePools []*pb.NodePool
@@ -186,25 +176,8 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 		// compute nodepools
 		ComputeNodePools = createNodepools(cluster.Pools.Compute, desiredState, false)
 
-		newCluster.ClusterInfo.NodePools = append(ControlNodePools, ComputeNodePools...)
+		newCluster.NodePools = append(ControlNodePools, ComputeNodePools...)
 		clusters = append(clusters, newCluster)
-	}
-
-	var lbClusters []*pb.LBcluster
-	for _, lbCluster := range desiredState.LoadBalancer.Clusters {
-
-		newLbCluster := &pb.LBcluster{
-			ClusterInfo: &pb.ClusterInfo{
-				Name: lbCluster.Name,
-				Hash: utils.CreateHash(utils.HashLength),
-			},
-			Roles:       getMatchingRoles(desiredState.LoadBalancer.Roles, lbCluster.Roles),
-			Dns:         getDNS(lbCluster.DNS, desiredState.Providers),
-			TargetedK8S: lbCluster.TargetedK8s,
-		}
-
-		newLbCluster.ClusterInfo.NodePools = createNodepools(lbCluster.Pools, desiredState, false)
-		lbClusters = append(lbClusters, newLbCluster)
 	}
 
 	res := &pb.Config{
@@ -212,9 +185,8 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 		Name:     config.GetName(),
 		Manifest: config.GetManifest(),
 		DesiredState: &pb.Project{
-			Name:                 desiredState.Name,
-			Clusters:             clusters,
-			LoadBalancerClusters: lbClusters,
+			Name:     desiredState.Name,
+			Clusters: clusters,
 		},
 		CurrentState: config.GetCurrentState(),
 		MsChecksum:   config.GetMsChecksum(),
@@ -228,13 +200,13 @@ clusterDesired:
 	for _, clusterDesired := range res.DesiredState.Clusters {
 		for _, clusterCurrent := range res.CurrentState.Clusters {
 			// found current cluster with matching name
-			if clusterDesired.ClusterInfo.Name == clusterCurrent.ClusterInfo.Name {
-				if clusterCurrent.ClusterInfo.PublicKey != "" {
-					clusterDesired.ClusterInfo.PublicKey = clusterCurrent.ClusterInfo.PublicKey
-					clusterDesired.ClusterInfo.PrivateKey = clusterCurrent.ClusterInfo.PrivateKey
+			if clusterDesired.Name == clusterCurrent.Name {
+				if clusterCurrent.PublicKey != "" {
+					clusterDesired.PublicKey = clusterCurrent.PublicKey
+					clusterDesired.PrivateKey = clusterCurrent.PrivateKey
 				}
-				if clusterCurrent.ClusterInfo.Hash != "" {
-					clusterDesired.ClusterInfo.Hash = clusterCurrent.ClusterInfo.Hash
+				if clusterCurrent.Hash != "" {
+					clusterDesired.Hash = clusterCurrent.Hash
 				}
 				if clusterCurrent.Kubeconfig != "" {
 					clusterDesired.Kubeconfig = clusterCurrent.Kubeconfig
@@ -242,46 +214,16 @@ clusterDesired:
 				//skip the checks bellow
 				continue clusterDesired
 			}
+
 		}
 		// no current cluster found with matching name, create keys/hash
-		if clusterDesired.ClusterInfo.PublicKey == "" {
+		if clusterDesired.PublicKey == "" {
 			privateKey, publicKey := MakeSSHKeyPair()
-			clusterDesired.ClusterInfo.PrivateKey = privateKey
-			clusterDesired.ClusterInfo.PublicKey = publicKey
+			clusterDesired.PrivateKey = privateKey
+			clusterDesired.PublicKey = publicKey
 		}
-	}
-
-clusterLbDesired:
-	for _, clusterLbDesired := range res.DesiredState.LoadBalancerClusters {
-		for _, clusterLbCurrent := range res.CurrentState.LoadBalancerClusters {
-			// found current cluster with matching name
-			if clusterLbDesired.ClusterInfo.Name == clusterLbCurrent.ClusterInfo.Name {
-				if clusterLbCurrent.ClusterInfo.PublicKey != "" {
-					clusterLbDesired.ClusterInfo.PublicKey = clusterLbCurrent.ClusterInfo.PublicKey
-					clusterLbDesired.ClusterInfo.PrivateKey = clusterLbCurrent.ClusterInfo.PrivateKey
-				}
-				if clusterLbDesired.ClusterInfo.Hash != "" {
-					clusterLbDesired.ClusterInfo.Hash = clusterLbCurrent.ClusterInfo.Hash
-				}
-				// copy hostname from current state if not specified in manifest
-				if clusterLbDesired.Dns.Hostname == "" {
-					clusterLbDesired.Dns.Hostname = clusterLbCurrent.Dns.Hostname
-				}
-
-				//skip the checks
-				continue clusterLbDesired
-			}
-		}
-		// no current cluster found with matching name, create keys/hash
-		if clusterLbDesired.ClusterInfo.PublicKey == "" {
-			privateKey, publicKey := MakeSSHKeyPair()
-			clusterLbDesired.ClusterInfo.PrivateKey = privateKey
-			clusterLbDesired.ClusterInfo.PublicKey = publicKey
-		}
-
-		// create hostname if its not set and not present in current state
-		if clusterLbDesired.Dns.Hostname == "" {
-			clusterLbDesired.Dns.Hostname = utils.CreateHash(hostnameHashLen)
+		if clusterDesired.Hash == "" {
+			clusterDesired.Hash = utils.CreateHash(utils.HashLength)
 		}
 	}
 
@@ -311,7 +253,7 @@ func createNodepools(pools []string, desiredState Manifest, isControl bool) []*p
 				Count:      uint32(desiredState.NodePools.Dynamic[position].Count),
 				Provider: &pb.Provider{
 					Name:        desiredState.Providers[providerIndex].Name,
-					Credentials: fmt.Sprint(desiredState.Providers[providerIndex].Credentials),
+					Credentials: desiredState.Providers[providerIndex].Credentials,
 				},
 				IsControl: isControl,
 			})
@@ -327,7 +269,6 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient) (err error) 
 	if err != nil {
 		return fmt.Errorf("error while creating a desired state: %v", err)
 	}
-	fmt.Println(config)
 
 	log.Info().Interface("project", config.GetDesiredState())
 	err = cbox.SaveConfigScheduler(c, &pb.SaveConfigRequest{Config: config})
@@ -400,62 +341,6 @@ func searchProvider(providerName string, providers []Provider) int {
 	return -1
 }
 
-func getMatchingRoles(roles []Role, roleNames []string) []*pb.Role {
-	var matchingRoles []*pb.Role
-
-	for _, roleName := range roleNames {
-		for _, role := range roles {
-			if role.Name == roleName {
-
-				var target pb.Target
-				var roleType pb.RoleType
-
-				if role.Target == "k8sAllNodes" {
-					target = pb.Target_k8sAllNodes
-				} else if role.Target == "k8sControlPlane" {
-					target = pb.Target_k8sControlPlane
-				} else if role.Target == "k8sComputePlane" {
-					target = pb.Target_k8sComputePlane
-				}
-
-				if role.TargetPort == apiserverPort && target == pb.Target_k8sControlPlane {
-					roleType = pb.RoleType_ApiServer
-				} else {
-					roleType = pb.RoleType_Ingress
-				}
-
-				newRole := &pb.Role{
-					Name:       role.Name,
-					Protocol:   role.Protocol,
-					Port:       int32(role.Port),
-					TargetPort: int32(role.TargetPort),
-					Target:     target,
-					RoleType:   roleType,
-				}
-				matchingRoles = append(matchingRoles, newRole)
-			}
-		}
-	}
-	return matchingRoles
-}
-
-func getDNS(lbDNS DNS, provider []Provider) *pb.DNS {
-	if lbDNS.DNSZone == "" {
-		return DefaultDNS // default zone is used
-	} else {
-		providerIndex := searchProvider(gcpProvider, provider)
-		return &pb.DNS{
-			DnsZone: lbDNS.DNSZone,
-			Provider: &pb.Provider{
-				Name:        provider[providerIndex].Name,
-				Credentials: fmt.Sprint(provider[providerIndex].Credentials),
-			},
-			Project:  lbDNS.Project,
-			Hostname: lbDNS.Hostname,
-		}
-	}
-}
-
 // function saveErrorMessage saves error message to config
 func saveErrorMessage(config *pb.Config, c pb.ContextBoxServiceClient, err error) error {
 	config.CurrentState = config.DesiredState // Update currentState, so we can use it for deletion later
@@ -483,7 +368,7 @@ func main() {
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
 
-	// Initialize health probes
+	// Initilize health probes
 	healthChecker := healthcheck.NewClientHealthChecker(fmt.Sprint(defaultSchedulerPort), healthCheck)
 	healthChecker.StartProbes()
 

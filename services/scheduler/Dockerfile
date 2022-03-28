@@ -1,4 +1,4 @@
-FROM golang:1.16.15 AS build
+FROM golang:1.16 AS build
 
 #Unset the GOPATH
 ENV GOPATH=
@@ -28,3 +28,4 @@ COPY --from=build /go/services/scheduler /bin/services/scheduler
 WORKDIR /bin
 #Run scheduler
 ENTRYPOINT [ "./services/scheduler/scheduler" ]
+  

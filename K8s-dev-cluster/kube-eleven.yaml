@@ -16,15 +16,14 @@ spec:
     spec:
       containers:
       - name: kube-eleven
-        imagePullPolicy: Always
         image: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven
         resources:
           requests:
-            cpu: 300m
-            memory: 500Mi
+            cpu: 20m
+            memory: 100Mi
           limits:
-            cpu: 400m
-            memory: 600Mi
+            cpu: 100m
+            memory: 400Mi
         env:
         - name: KUBE_ELEVEN_PORT
           valueFrom:

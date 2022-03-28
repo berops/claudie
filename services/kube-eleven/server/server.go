@@ -37,28 +37,17 @@ type data struct {
 }
 
 // formatTemplateData formats data for kubeone template input
-func (d *data) formatTemplateData(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster) {
+func (d *data) formatTemplateData(cluster *pb.Cluster) {
 	var controlNodes []*pb.Node
 	var workerNodes []*pb.Node
 	hasAPIEndpoint := false
 
 	// Get the API endpoint. If it is not set, use the first control node
-	for _, lbCluster := range lbClusters {
-		if lbCluster.TargetedK8S == cluster.ClusterInfo.Name {
-			//check if the lb is api-lb
-			for _, role := range lbCluster.Roles {
-				if role.RoleType == pb.RoleType_ApiServer {
-					hasAPIEndpoint = true
-					d.APIEndpoint = lbCluster.Dns.Endpoint
-				}
-			}
-		}
-	}
-	for _, Nodepool := range cluster.ClusterInfo.GetNodePools() {
+	for _, Nodepool := range cluster.GetNodePools() {
 		for _, Node := range Nodepool.Nodes {
-			if Node.GetNodeType() == pb.NodeType_master {
+			if Node.GetIsControl() == 1 {
 				controlNodes = append(controlNodes, Node)
-			} else if Node.GetNodeType() == pb.NodeType_apiEndpoint {
+			} else if Node.GetIsControl() == 2 {
 				hasAPIEndpoint = true
 				d.Nodes = append(d.Nodes, Node) //the Api endpoint must be first in slice
 			} else {
@@ -67,7 +56,7 @@ func (d *data) formatTemplateData(cluster *pb.K8Scluster, lbClusters []*pb.LBclu
 		}
 	}
 	if !hasAPIEndpoint {
-		controlNodes[0].NodeType = pb.NodeType_apiEndpoint
+		controlNodes[0].IsControl = 2
 	}
 	// if there is something in d.Nodes, it would be rewritten in line 55, therefore this condition
 	if len(d.Nodes) > 0 {
@@ -75,9 +64,7 @@ func (d *data) formatTemplateData(cluster *pb.K8Scluster, lbClusters []*pb.LBclu
 	}
 	d.Nodes = append(controlNodes, workerNodes...)
 	d.Kubernetes = cluster.GetKubernetes()
-	if d.APIEndpoint == "" {
-		d.APIEndpoint = d.Nodes[0].GetPublic()
-	}
+	d.APIEndpoint = d.Nodes[0].GetPublic()
 }
 
 // BuildCluster builds all cluster defined in the desired state
@@ -89,9 +76,9 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 
 	// Build all clusters
 	for _, cluster := range desiredState.GetClusters() {
-		func(cluster *pb.K8Scluster) {
+		func(cluster *pb.Cluster) {
 			errGroup.Go(func() error {
-				err := buildClusterAsync(cluster, desiredState.LoadBalancerClusters)
+				err := buildClusterAsync(cluster)
 				if err != nil {
 					log.Error().Msgf("error encountered in KubeEleven - BuildCluster: %v", err)
 					return err
@@ -109,12 +96,12 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 
 // buildClusterAsync builds a kubeone cluster
 // It is executed in a goroutine
-func buildClusterAsync(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster) error {
+func buildClusterAsync(cluster *pb.Cluster) error {
 	var d data
-	d.formatTemplateData(cluster, lbClusters)
+	d.formatTemplateData(cluster)
 
 	// Create a directory for the cluster
-	clusterOutputPath := filepath.Join(outputPath, cluster.ClusterInfo.GetName()+"-"+cluster.ClusterInfo.GetHash())
+	clusterOutputPath := filepath.Join(outputPath, cluster.GetName()+"-"+cluster.GetHash())
 
 	// Create a directory for the cluster
 	if _, err := os.Stat(clusterOutputPath); os.IsNotExist(err) {
@@ -125,7 +112,7 @@ func buildClusterAsync(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster) error
 	}
 
 	// Create a private key file
-	if err := utils.CreateKeyFile(cluster.ClusterInfo.GetPrivateKey(), clusterOutputPath, "private.pem"); err != nil {
+	if err := utils.CreateKeyFile(cluster.GetPrivateKey(), clusterOutputPath, "private.pem"); err != nil {
 		log.Info().Msgf("error while key file: %v", err)
 		return err
 	}

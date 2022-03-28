@@ -60,7 +60,7 @@ func callTerraformer(currentState *pb.Project, desiredState *pb.Project) (*pb.Pr
 	return res.GetCurrentState(), res.GetDesiredState(), nil
 }
 
-func callWireguardian(desiredState, currenState *pb.Project) (*pb.Project, error) {
+func callWireguardian(desiredState *pb.Project) (*pb.Project, error) {
 	cc, err := utils.GrpcDialWithInsecure("wireguardian", urls.WireguardianURL)
 	if err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ func callWireguardian(desiredState, currenState *pb.Project) (*pb.Project, error
 	defer func() { utils.CloseClientConnection(cc) }()
 	// Creating the client
 	c := pb.NewWireguardianServiceClient(cc)
-	res, err := wireguardian.RunAnsible(c, &pb.RunAnsibleRequest{DesiredState: desiredState, CurrentState: currenState})
+	res, err := wireguardian.BuildVPN(c, &pb.BuildVPNRequest{DesiredState: desiredState})
 	if err != nil {
 		return nil, err
 	}
@@ -109,20 +109,20 @@ func diff(config *pb.Config) (*pb.Config, bool, map[string]*nodesToDelete) {
 
 	var tableCurrent = make(map[tableKey]nodeCount)
 	for _, cluster := range tmpConfig.GetCurrentState().GetClusters() {
-		for _, nodePool := range cluster.ClusterInfo.GetNodePools() {
-			tmp := tableKey{nodePoolName: nodePool.Name, clusterName: cluster.ClusterInfo.Name}
+		for _, nodePool := range cluster.GetNodePools() {
+			tmp := tableKey{nodePoolName: nodePool.Name, clusterName: cluster.Name}
 			tableCurrent[tmp] = nodeCount{Count: nodePool.Count} // Since a nodepool as only one type of nodes, we'll need only one type of count
 		}
 	}
 	tmpConfigClusters := tmpConfig.GetDesiredState().GetClusters()
 	for _, cluster := range tmpConfigClusters {
 		tmp := make(map[string]*countsToDelete)
-		for _, nodePool := range cluster.ClusterInfo.GetNodePools() {
+		for _, nodePool := range cluster.GetNodePools() {
 			var nodesProvider countsToDelete
-			key := tableKey{nodePoolName: nodePool.Name, clusterName: cluster.ClusterInfo.Name}
+			key := tableKey{nodePoolName: nodePool.Name, clusterName: cluster.Name}
 
 			if _, ok := tableCurrent[key]; ok {
-				tmpNodePool := utils.GetNodePoolByName(nodePool.Name, utils.GetClusterByName(cluster.ClusterInfo.Name, tmpConfigClusters).ClusterInfo.GetNodePools())
+				tmpNodePool := utils.GetNodePoolByName(nodePool.Name, utils.GetClusterByName(cluster.Name, tmpConfigClusters).GetNodePools())
 				if nodePool.Count > tableCurrent[key].Count {
 					tmpNodePool.Count = nodePool.Count
 					adding = true
@@ -136,7 +136,7 @@ func diff(config *pb.Config) (*pb.Config, bool, map[string]*nodesToDelete) {
 				delete(tableCurrent, key)
 			}
 		}
-		delCounts[cluster.ClusterInfo.Name] = &nodesToDelete{
+		delCounts[cluster.Name] = &nodesToDelete{
 			nodes: tmp,
 		}
 	}
@@ -147,7 +147,7 @@ func diff(config *pb.Config) (*pb.Config, bool, map[string]*nodesToDelete) {
 			if cluster != nil {
 				currentCluster := utils.GetClusterByName(key.clusterName, tmpConfig.CurrentState.Clusters)
 				log.Info().Interface("currentCluster", currentCluster)
-				cluster.ClusterInfo.NodePools = append(cluster.ClusterInfo.NodePools, utils.GetNodePoolByName(key.nodePoolName, currentCluster.ClusterInfo.GetNodePools()))
+				cluster.NodePools = append(cluster.NodePools, utils.GetNodePoolByName(key.nodePoolName, currentCluster.GetNodePools()))
 				deleting = true
 			}
 		}
@@ -189,7 +189,7 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig 
 	config.CurrentState = currentState
 	config.DesiredState = desiredState
 	// call Wireguardian to build VPN
-	desiredState, err = callWireguardian(config.GetDesiredState(), config.GetCurrentState())
+	desiredState, err = callWireguardian(config.GetDesiredState())
 	if err != nil {
 		err1 := saveErrorMessage(config, c, err)
 		if err1 != nil {
@@ -284,19 +284,19 @@ func deleteNodes(config *pb.Config, toDelete map[string]*nodesToDelete) (*pb.Con
 	for _, cluster := range config.CurrentState.Clusters {
 		var nodesToDelete []string
 		var etcdToDelete []string
-		del := toDelete[cluster.ClusterInfo.Name]
-		for _, nodepool := range cluster.ClusterInfo.NodePools {
+		del := toDelete[cluster.Name]
+		for _, nodepool := range cluster.NodePools {
 			for i := len(nodepool.Nodes) - 1; i >= 0; i-- {
 				val, ok := del.nodes[nodepool.Name]
 				if val.Count > 0 && ok {
-					if nodepool.Nodes[i].NodeType > pb.NodeType_worker {
+					if nodepool.Nodes[i].IsControl > 0 {
 						val.Count--
 						nodesToDelete = append(nodesToDelete, nodepool.Nodes[i].GetName())
 						etcdToDelete = append(etcdToDelete, nodepool.Nodes[i].GetName())
 						log.Info().Msgf("Choosing Master node %s, with public IP %s, private IP %s for deletion\n", nodepool.Nodes[i].GetName(), nodepool.Nodes[i].GetPublic(), nodepool.Nodes[i].GetPrivate())
 						continue
 					}
-					if nodepool.Nodes[i].NodeType == pb.NodeType_worker {
+					if nodepool.Nodes[i].IsControl == 0 {
 						val.Count--
 						nodesToDelete = append(nodesToDelete, nodepool.Nodes[i].GetName())
 						log.Info().Msgf("Choosing Worker node %s, with public IP %s, private IP %s for deletion\n", nodepool.Nodes[i].GetName(), nodepool.Nodes[i].GetPublic(), nodepool.Nodes[i].GetPrivate())
@@ -321,7 +321,7 @@ func deleteNodes(config *pb.Config, toDelete map[string]*nodesToDelete) (*pb.Con
 
 		// Delete nodes from a current state Ips map
 		for _, nodeName := range nodesToDelete {
-			for _, nodepool := range cluster.ClusterInfo.NodePools {
+			for _, nodepool := range cluster.NodePools {
 				for idx, node := range nodepool.Nodes {
 					if node.GetName() == nodeName {
 						nodepool.Count = nodepool.Count - 1
@@ -335,7 +335,7 @@ func deleteNodes(config *pb.Config, toDelete map[string]*nodesToDelete) (*pb.Con
 }
 
 // deleteNodesByName checks if there is any difference in nodes between a desired state cluster and a running cluster
-func deleteNodesByName(cluster *pb.K8Scluster, nodesToDelete []string) error {
+func deleteNodesByName(cluster *pb.Cluster, nodesToDelete []string) error {
 
 	// get node name
 	nodesQueryCmd := fmt.Sprintf("kubectl --kubeconfig <(echo \"%s\") get nodes -n kube-system --no-headers -o custom-columns=\":metadata.name\" ", cluster.GetKubeconfig())
@@ -387,11 +387,11 @@ func deleteNodesByName(cluster *pb.K8Scluster, nodesToDelete []string) error {
 	return nil
 }
 
-func deleteEtcd(cluster *pb.K8Scluster, etcdToDelete []string) error {
+func deleteEtcd(cluster *pb.Cluster, etcdToDelete []string) error {
 	var mainMasterNode *pb.Node
-	for _, nodepool := range cluster.ClusterInfo.GetNodePools() {
+	for _, nodepool := range cluster.GetNodePools() {
 		for _, node := range nodepool.Nodes {
-			if node.NodeType == pb.NodeType_apiEndpoint {
+			if node.IsControl == 2 {
 				mainMasterNode = node
 				break
 			}
