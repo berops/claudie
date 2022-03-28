@@ -33,7 +33,7 @@ func (l Longhorn) SetUp() error {
 	clusterID := fmt.Sprintf("%s-%s", l.Cluster.ClusterInfo.Name, l.Cluster.ClusterInfo.Hash)
 
 	// apply longhorn.yaml
-	err := kubectl.KubectlApply(longhornYaml)
+	err := kubectl.KubectlApply(longhornYaml, "")
 	if err != nil {
 		return fmt.Errorf("error while applying longhorn.yaml : %v", err)
 	}
@@ -64,7 +64,7 @@ func (l Longhorn) SetUp() error {
 					return fmt.Errorf("error while generating %s manifest : %v", manifest, err)
 				}
 				// apply manifest
-				err = kubectl.KubectlApply(manifest)
+				err = kubectl.KubectlApply(manifest, "")
 				if err != nil {
 					return fmt.Errorf("error while applying %s manifest : %v", manifest, err)
 				}
@@ -78,7 +78,7 @@ func (l Longhorn) SetUp() error {
 			return fmt.Errorf("error while generating %s manifest : %v", manifest, err)
 		}
 		// apply manifest
-		err = kubectl.KubectlApply(manifest)
+		err = kubectl.KubectlApply(manifest, "")
 		if err != nil {
 			return fmt.Errorf("error while applying %s manifest : %v", manifest, err)
 		}
