@@ -20,11 +20,11 @@ spec:
         image: eu.gcr.io/platform-infrastructure-316112/platform/terraformer
         resources:
           requests:
-            cpu: 20m
-            memory: 200Mi
+            cpu: 300m
+            memory: 700Mi
           limits:
-            cpu: 100m
-            memory: 400Mi
+            cpu: 400m
+            memory: 800Mi
         env:
         - name: TERRAFORMER_PORT
           valueFrom:

@@ -1,6 +1,40 @@
-[nodes]
-{{- range $nodepool := .}}
+{{- $dirName := .DirName}}
+{{- $clusterSSHKeyName := .ClusterSSHKeyName}}
+{{- $privateFileExt := .PrivateFileExt}}
+
+[control]
+{{- range $nodepool := .Nodepools }}
+{{- if $nodepool.IsControl }}       
 {{- range $node :=  $nodepool.Nodes }}
-{{$node.Name}} ansible_host={{$node.Public}} private_ip={{$node.Private}}
-{{- end}}
-{{- end}}
+{{ $node.Name }} ansible_host={{ $node.Public }} private_ip={{ $node.Private }} ansible_ssh_private_key_file=./{{ $dirName }}/{{ $clusterSSHKeyName }}{{ $privateFileExt }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+[compute]
+{{- range $nodepool := .Nodepools }}
+{{- if not $nodepool.IsControl }}       
+{{- range $node :=  $nodepool.Nodes }}
+{{ $node.Name }} ansible_host={{ $node.Public }} private_ip={{ $node.Private }} ansible_ssh_private_key_file=./{{ $dirName }}/{{ $clusterSSHKeyName }}{{ $privateFileExt }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- range $lbCluster := .LBClusters }}
+[{{ $lbCluster.ClusterInfo.Name }}]
+{{- range $lbNodepool := $lbCluster.ClusterInfo.NodePools }}
+{{- range $lbNode :=  $lbNodepool.Nodes }}
+{{ $lbNode.Name }} ansible_host={{ $lbNode.Public }} private_ip={{ $lbNode.Private }} ansible_ssh_private_key_file=./{{ $dirName }}/{{ $lbCluster.ClusterInfo.Name }}{{ $privateFileExt }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+[k8s:children]
+control
+compute
+
+[nodes:children]
+k8s
+{{- range $lbCluster := .LBClusters }}
+{{ $lbCluster.ClusterInfo.Name }}
+{{- end }}

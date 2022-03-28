@@ -1,0 +1,26 @@
+---
+- hosts: all
+  gather_facts: no
+  become: yes
+  remote_user: root
+  tasks:
+    - name: ensure nginx is at the latest version
+      apt:
+        name: nginx
+        state: latest
+        update_cache: yes
+    - name: copy config files
+      copy:
+        src: {{ .ConfPath }}
+        dest: /etc/nginx/passthrough.conf
+    - name: include passthrough conf in nginx.conf
+      lineinfile:
+        path: /etc/nginx/nginx.conf
+        line: 'include /etc/nginx/passthrough.conf;'
+        insertafter: EOF
+      become: yes
+    - name: restart nginx
+      service: 
+        name: nginx
+        state: restarted
+      become: yes

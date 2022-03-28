@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-const configIDDefault = "6179101c00343357d3a52960"
+const configIDDefault = "6228ab28e655d4721eae5727"
 
 func ClientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
 	cc, err := utils.GrpcDialWithInsecure("context-box", urls.ContextBoxURL)
@@ -68,7 +68,7 @@ func makePbConfig(msg string, manifest []byte, id string) *pb.Config {
 }
 func TestSaveConfigFrontEnd(t *testing.T) {
 	c, cc := ClientConnection()
-	manifestFile := "./manifest.yaml" // this is manifest from this test file
+	manifestFile := "../../testing-framework/tests/test-set1/1.yaml" // this is manifest from this test file
 
 	manifest, errR := ioutil.ReadFile(manifestFile)
 	if errR != nil {
@@ -104,7 +104,7 @@ func TestSaveConfigScheduler(t *testing.T) {
 
 func TestDeleteConfig(t *testing.T) {
 	c, cc := ClientConnection()
-	configID := configIDDefault // Put desired config ID here
+	configID := "622c71975c34eca07b320c71" //configIDDefault // Put desired config ID here
 	delErr := DeleteConfig(c, configID)
 	if delErr != nil {
 		log.Fatal().Msgf("Error deleting config %s %v", configID, delErr)

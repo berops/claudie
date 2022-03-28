@@ -1,4 +1,4 @@
-FROM golang:1.16 AS build
+FROM golang:1.16.15 AS build
 
 #Unset the GOPATH
 ENV GOPATH=
@@ -34,7 +34,7 @@ WORKDIR /go/services/wireguardian/server
 #Compile the golang code, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build
 
-FROM python:3-slim
+FROM python:3.9-slim
 
 #Install the Ansible
 ENV DEBIAN_FRONTEND=noninteractive

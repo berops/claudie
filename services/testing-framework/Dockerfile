@@ -1,4 +1,4 @@
-FROM golang:1.16 AS build
+FROM golang:1.16.15 AS build
 
 #Unset the GOPATH
 ENV GOPATH=
@@ -19,4 +19,4 @@ WORKDIR /go/services/testing-framework
 RUN apt update
 RUN apt install -y build-essential
 #Run server
-ENTRYPOINT [ "go", "test", "-timeout=7200s", "-v", "./..." ]
+ENTRYPOINT [ "go", "test", "-timeout=10800s", "-v", "./..." ]

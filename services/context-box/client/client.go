@@ -104,13 +104,13 @@ func PrintConfig(c pb.ContextBoxServiceClient, id string) (*pb.GetConfigByIdResp
 	for i, cluster := range res.GetConfig().GetCurrentState().GetClusters() {
 		fmt.Println("========================================")
 		fmt.Println("Cluster number:", i)
-		fmt.Println("Name:", cluster.GetName())
+		fmt.Println("Name:", cluster.ClusterInfo.GetName())
 		fmt.Println("Kubernetes version:", cluster.GetKubernetes())
 		fmt.Println("Network CIDR:", cluster.GetNetwork())
 		fmt.Println("Kubeconfig:")
 		fmt.Println(cluster.GetKubeconfig())
 		fmt.Println("Node Pools:")
-		for i2, nodePool := range cluster.GetNodePools() {
+		for i2, nodePool := range cluster.ClusterInfo.GetNodePools() {
 			fmt.Println("----------------------------------------")
 			fmt.Println("NodePool number:", i2)
 			fmt.Println("Name:", nodePool.GetName())
@@ -119,9 +119,9 @@ func PrintConfig(c pb.ContextBoxServiceClient, id string) (*pb.GetConfigByIdResp
 		}
 		fmt.Println("----------------------------------------")
 		fmt.Println("Cluster Nodes:")
-		for _, nodePools := range cluster.GetNodePools() {
+		for _, nodePools := range cluster.ClusterInfo.GetNodePools() {
 			for _, node := range nodePools.GetNodes() {
-				fmt.Println("Name:", node.Name, "Public:", node.GetPublic(), "Private", node.GetPrivate(), "isControl:", node.GetIsControl())
+				fmt.Println("Name:", node.Name, "Public:", node.GetPublic(), "Private", node.GetPrivate(), "NodeType:", node.GetNodeType().Descriptor())
 			}
 		}
 	}

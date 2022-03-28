@@ -18,18 +18,58 @@ message Config {
 
 message Project {
   string name = 1;
-  repeated Cluster clusters = 2;
+  repeated K8scluster clusters = 2;
+  repeated LBcluster loadBalancerClusters = 3;
 }
 
-message Cluster {
+message K8scluster {
+  ClusterInfo clusterInfo = 1;
+  string network = 2;
+  string kubeconfig = 3;
+  string kubernetes = 4;
+}
+
+message LBcluster {
+  ClusterInfo clusterInfo = 1;
+  repeated Role roles = 2;
+  DNS dns = 3;
+  string targetedK8s = 4;
+}
+
+message ClusterInfo {
   string name = 1;
-  string kubernetes = 2;
-  string network = 3;
-  string kubeconfig = 4;
-  string public_key = 5;
-  string private_key = 6;
-  string hash = 7;
-  repeated NodePool nodePools = 9;
+  string hash = 2;
+  string public_key = 3;
+  string private_key = 4;
+  repeated NodePool nodePools = 5;
+}
+
+message Role {
+  string name = 1;
+  string protocol = 2;
+  int32 port = 3;
+  int32 targetPort = 4;  
+  Target target = 5;  
+  RoleType roleType = 6;
+}
+
+enum RoleType {
+  ApiServer = 0;
+  Ingress = 1;
+}
+
+enum Target {
+  k8sAllNodes = 0;
+  k8sControlPlane = 1;
+  k8sComputePlane = 2;
+}
+
+message DNS {
+  string dnsZone = 1;
+  string hostname = 2;
+  Provider provider = 3;
+  string project = 4;
+  string endpoint = 5;
 }
 
 message NodePool {
@@ -45,21 +85,25 @@ message NodePool {
   bool isControl = 12;
 }
 
-/*
- * isControl flag
- * 0 - Only worker node
- * 1 - Only master node
- * 2 - APIEndpoint master node (must be singleton)
- */
+enum NodeType {
+  worker = 0;
+  master = 1;
+  apiEndpoint = 2;
+}
 
 message Node {
-  string name = 9;
-  string private = 10;
-  string public = 11;
-  uint32 isControl = 12;
+  string name = 1;
+  string private = 2;
+  string public = 3;
+  NodeType nodeType = 4;
 }
 
 message Provider {
   string name = 1;
   string credentials = 2;
+}
+
+enum ClusterType {
+  K8s = 0;
+  LB = 1;
 }

@@ -12,3 +12,5 @@ services/builder
 services/kube-eleven
 services/context-box
 mongodb
+services/testing-framework
+.github
