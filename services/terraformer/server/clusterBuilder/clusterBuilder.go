@@ -9,7 +9,6 @@ import (
 
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/services/terraformer/server/backend"
-	"github.com/Berops/platform/services/terraformer/server/templates"
 	"github.com/Berops/platform/services/terraformer/server/terraform"
 	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
@@ -34,7 +33,8 @@ type outputNodepools struct {
 }
 
 const (
-	Output = "services/terraformer/server/clusters"
+	Output            = "services/terraformer/server/clusters"
+	TemplateDirectory = "services/terraformer/templates"
 )
 
 // tplFile - template file for creation of nodepools
@@ -121,7 +121,9 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	}
 	// generate .tf files for nodepools
 	var clusterInfo *pb.ClusterInfo
-	templates := templates.Templates{Directory: clusterDir}
+	template := utils.Templates{Directory: clusterDir}
+	templateLoader := utils.TemplateLoader{Directory: utils.TerraformerTemplates}
+
 	if c.DesiredInfo != nil {
 		clusterInfo = c.DesiredInfo
 	} else if c.CurrentInfo != nil {
@@ -137,7 +139,11 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 			ClusterName: clusterInfo.Name,
 			ClusterHash: clusterInfo.Hash,
 		}
-		err := templates.Generate(fmt.Sprintf("%s%s", providerName, tplType), fmt.Sprintf("%s-%s.tf", clusterID, providerName), nodepoolData)
+		tpl, err := templateLoader.LoadTemplate(fmt.Sprintf("%s%s", providerName, tplType))
+		if err != nil {
+			return fmt.Errorf("error while parsing template file backend.tpl: %v", err)
+		}
+		err = template.Generate(tpl, fmt.Sprintf("%s-%s.tf", clusterID, providerName), nodepoolData)
 		if err != nil {
 			return fmt.Errorf("error while generating .tf files : %v", err)
 		}
