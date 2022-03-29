@@ -2,6 +2,7 @@
 *.ini
 .terraform*
 services/terraformer/server/clusters
+services/kuber/server/clusters
 kubeone
 playground
 .vscode
