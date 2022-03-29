@@ -8,6 +8,7 @@ spec:
     spec:
       containers:
         - name: testing-framework
+          imagePullPolicy: Always
           image: eu.gcr.io/platform-infrastructure-316112/platform/testing-framework
           env:
             - name: CONTEXT_BOX_PORT
