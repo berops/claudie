@@ -42,7 +42,7 @@
    
     - name: upload config map
       shell: "kubeadm init phase upload-config all --config {{file.files[0].path}}"
-    - name: restart docker and kubelet
+    - name: restart containerd and kubelet
       ansible.builtin.service: 
         name: "{{ item }}"
         state: restarted
@@ -52,7 +52,7 @@
       delay: 20
       loop:
       - "kubelet"
-      - "docker"
+      - "containerd"
 
 - hosts: compute
   gather_facts: true
