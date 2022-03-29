@@ -12,7 +12,7 @@ import (
 
 const (
 	templatePath          = "templates"
-	baseDirectory         = ".."
+	baseDirectory         = "." //NOTE: left it here since it might be changed later
 	TerraformerTemplates  = "services/terraformer/templates"
 	WireguardianTemplates = "services/wireguardian/server"
 	KuberTemplates        = "services/kuber/templates"

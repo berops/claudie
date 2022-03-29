@@ -3,6 +3,8 @@ package longhorn
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/services/kuber/server/kubectl"
@@ -25,15 +27,17 @@ type zoneData struct {
 }
 
 const (
-	longhornYaml       = "../manifests/longhorn.yaml"
+	longhornYaml       = "services/kuber/server/manifests/longhorn.yaml"
+	outputDir          = "services/kuber/server/clusters"
 	nodeManifestTpl    = "cluster-machine.goyaml"
 	storageManifestTpl = "storage-class.goyaml"
 )
 
 // SetUp function will set up the longhorn on the k8s cluster saved in l.Longhorn
 func (l Longhorn) SetUp() error {
-	kubectl := kubectl.Kubectl{Kubeconfig: l.Cluster.Kubeconfig}
 	clusterID := fmt.Sprintf("%s-%s", l.Cluster.ClusterInfo.Name, l.Cluster.ClusterInfo.Hash)
+	clusterDir := filepath.Join(outputDir, clusterID)
+	kubectl := kubectl.Kubectl{Kubeconfig: l.Cluster.GetKubeconfig()}
 
 	// apply longhorn.yaml
 	err := kubectl.KubectlApply(longhornYaml, "")
@@ -42,12 +46,8 @@ func (l Longhorn) SetUp() error {
 	}
 
 	//load the templates
-	template := utils.Templates{Directory: clusterID}
+	template := utils.Templates{Directory: clusterDir}
 	templateLoader := utils.TemplateLoader{Directory: utils.KuberTemplates}
-	nodeTpl, err := templateLoader.LoadTemplate(nodeManifestTpl)
-	if err != nil {
-		return err
-	}
 	storageTpl, err := templateLoader.LoadTemplate(storageManifestTpl)
 	if err != nil {
 		return err
@@ -61,17 +61,11 @@ func (l Longhorn) SetUp() error {
 		for _, nodepool := range nodepools {
 			//tag nodes from nodepool based on the future zone
 			for _, node := range nodepool.Nodes {
-				//generate manifest
-				nodeData := nodeData{NodeName: node.Name, ZoneName: zoneName}
-				manifest := fmt.Sprintf("%s.yaml", node.Name)
-				err := template.Generate(nodeTpl, manifest, nodeData)
+				// add tag to the node via kubectl annotate
+				annotation := fmt.Sprintf("node.longhorn.io/default-node-tags='[\"%s\"]'", zoneName)
+				err = kubectl.KubectlAnnotate("node", node.Name, annotation)
 				if err != nil {
-					return fmt.Errorf("error while generating %s manifest : %v", manifest, err)
-				}
-				// apply manifest
-				err = kubectl.KubectlApply(manifest, "")
-				if err != nil {
-					return fmt.Errorf("error while applying %s manifest : %v", manifest, err)
+					return fmt.Errorf("error while tagging the node %s via kubectl annotate : %v", node.Name, err)
 				}
 			}
 		}
@@ -82,11 +76,20 @@ func (l Longhorn) SetUp() error {
 		if err != nil {
 			return fmt.Errorf("error while generating %s manifest : %v", manifest, err)
 		}
+		//update the kubectl working directory
+		kubectl.Directory = clusterDir
 		// apply manifest
 		err = kubectl.KubectlApply(manifest, "")
 		if err != nil {
 			return fmt.Errorf("error while applying %s manifest : %v", manifest, err)
 		}
+	}
+	fmt.Println("---------------")
+	fmt.Println(kubectl.Kubeconfig)
+	fmt.Println("---------------")
+	// Clean up
+	if err := os.RemoveAll(clusterDir); err != nil {
+		return fmt.Errorf("error while deleting files: %v", err)
 	}
 	return nil
 }
