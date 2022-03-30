@@ -3,7 +3,6 @@ package kubectl
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 )
 
@@ -98,8 +97,6 @@ func (k Kubectl) KubectlAnnotate(resource, resourceName, annotation string) erro
 func (k Kubectl) run(command string) error {
 	cmd := exec.Command("bash", "-c", command)
 	cmd.Dir = k.Directory
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
 
@@ -107,7 +104,5 @@ func (k Kubectl) run(command string) error {
 func (k Kubectl) runWithOutput(command string) ([]byte, error) {
 	cmd := exec.Command("bash", "-c", command)
 	cmd.Dir = k.Directory
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
 	return cmd.CombinedOutput()
 }
