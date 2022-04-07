@@ -251,4 +251,4 @@ jobs:
 
       - name: Delete temporary namespace
         run: |
-          kubectl delete namespace claudie-$GITHUB_RUN_NUMBER
+          kubectl delete namespace claudie-${{ steps.sha_short.outputs.sha_short }}-$GITHUB_RUN_NUMBER
