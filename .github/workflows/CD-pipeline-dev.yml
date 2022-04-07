@@ -28,6 +28,7 @@ jobs:
         with:
           version: 3.6.1
 
+      # Set output to use short sha of the merge commit HEAD
       - name: Set short sha output
         id: sha_short
         run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"

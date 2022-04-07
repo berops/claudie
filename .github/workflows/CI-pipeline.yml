@@ -113,6 +113,7 @@ jobs:
     needs: [build-and-push, merge-branch]
     if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
     steps:
+      # Set output to use short sha of the merge commit HEAD
       - name: Set short sha output
         id: sha_short
         run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
@@ -170,6 +171,7 @@ jobs:
           ref: ${{ needs.edit-kustomization.outputs.SHA }}
           fetch-depth: 0
 
+      # Set output to use short sha of the merge commit HEAD
       - name: Set short sha output
         id: sha_short
         run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
