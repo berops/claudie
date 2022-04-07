@@ -4,14 +4,14 @@ on:
   workflow_dispatch:
   # Triggers the workflow on push or pull request events but only for the master branch
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 env:
   ENV_FILE: .env
   SERVICES: context-box scheduler builder terraformer wireguardian kube-eleven testing-framework
 
 jobs:
-#--------------------------------------------------------------------------------------------------
+  #--------------------------------------------------------------------------------------------------
   merge-branch:
     if: github.event.pull_request.draft == false
     runs-on: self-hosted
@@ -25,7 +25,7 @@ jobs:
           from_branch: master
           target_branch: ${{ github.head_ref }}
           github_token: ${{ github.token }}
-#--------------------------------------------------------------------------------------------------
+  #--------------------------------------------------------------------------------------------------
   build-and-push:
     if: github.event.pull_request.draft == false
     runs-on: self-hosted
@@ -63,7 +63,7 @@ jobs:
           done
           echo ::set-output name=ARRAY_OF_CHANGES::"${arr[@]}"
 
-        # Login to GCP with repository secrets 
+        # Login to GCP with repository secrets
       - name: Login to GCP
         if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
         uses: google-github-actions/setup-gcloud@v0.6.0
@@ -88,21 +88,21 @@ jobs:
             IMGTAG="eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA"
             DOCKER_BUILDKIT=1 docker build --tag $IMGTAG -f ./services/$path/Dockerfile .
           done
-            
+
       # Push images to GCR - latest tag is overwritten
       - name: Push new images
         if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
         run: |
           arr=(${{ steps.array.outputs.ARRAY_OF_CHANGES }})
-         
+
           for path in "${arr[@]}"
           do
             docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA
           done
-         
+
     outputs:
       ARRAY_OF_CHANGES: ${{ steps.array.outputs.ARRAY_OF_CHANGES }}
-#--------------------------------------------------------------------------------------------------
+  #--------------------------------------------------------------------------------------------------
   edit-kustomization:
     runs-on: self-hosted
     needs: [build-and-push, merge-branch]
@@ -140,7 +140,7 @@ jobs:
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
           git add kustomization.yaml
           git commit -m "Auto commit - add new kustomization.yaml"
-          git push 
+          git push
 
       - name: Get SHA of auto-commit
         id: sha
@@ -150,10 +150,10 @@ jobs:
           echo "::set-output name=SHA::$sha_new"
     outputs:
       SHA: ${{ steps.sha.outputs.SHA }}
-#--------------------------------------------------------------------------------------------------
+  #--------------------------------------------------------------------------------------------------
   deploy-and-monitor:
     runs-on: self-hosted
-    needs: [ build-and-push, edit-kustomization ]
+    needs: [build-and-push, edit-kustomization]
     if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES && github.event.pull_request.draft == false }}
     steps:
       - uses: actions/checkout@v2
@@ -191,13 +191,13 @@ jobs:
       # Create a seperate temporary namespace
       - name: Create seperate namespace
         working-directory: ./K8s-dev-cluster
-        run: kubectl create namespace claudie-$GITHUB_SHA
+        run: kubectl create namespace claudie-$GITHUB_RUN_NUMBER
 
       # Deploy services to new namespace
       - name: Deploy to new namespace
         working-directory: ./K8s-dev-cluster
         run: |
-          kustomize edit set namespace claudie-$GITHUB_SHA
+          kustomize edit set namespace claudie-$GITHUB_RUN_NUMBER
           kustomize build | kubectl apply -f - 
 
           cat kustomization.yaml
@@ -210,30 +210,30 @@ jobs:
           echo "${arr[@]}"
           for SERVICE in "${arr[@]}"
           do 
-          kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=900s --namespace=claudie-$GITHUB_SHA
+          kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=900s --namespace=claudie-$GITHUB_RUN_NUMBER
           done
 
-          kubectl get pods --namespace=claudie-$GITHUB_SHA
+          kubectl get pods --namespace=claudie-$GITHUB_RUN_NUMBER
 
       - name: Start the E2E tests
         working-directory: ./K8s-dev-cluster
-        run: |        
+        run: |
           TEMP=($(gcloud container images list-tags eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/testing-framework --sort-by=TIMESTAMP --format="get(tags)"))
           NEWEST_TAG=${TEMP[-1]}
-          kustomize edit set namespace claudie-$GITHUB_SHA
+          kustomize edit set namespace claudie-$GITHUB_RUN_NUMBER
           kustomize edit add resource testing-framework.yaml
           kustomize edit set image eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/testing-framework:$NEWEST_TAG
           kustomize build . | kubectl apply -f -
 
       - name: Monitor E2E test
         run: |
-          kubectl wait --for=condition=complete --timeout=10800s job/testing-framework -n claudie-$GITHUB_SHA
-      
+          kubectl wait --for=condition=complete --timeout=10800s job/testing-framework -n claudie-$GITHUB_RUN_NUMBER
+
       - name: Dump logs from testing framework
-        if:  ${{ always() }}  
+        if: ${{ always() }}
         run: |
-          gcloud logging read "resource.labels.container_name = "testing-framework" AND severity >= ERROR AND  resource.labels.namespace_name = "claudie-$GITHUB_SHA""
-      
+          gcloud logging read "resource.labels.container_name = "testing-framework" AND severity >= ERROR AND  resource.labels.namespace_name = "claudie-$GITHUB_RUN_NUMBERA""
+
       - name: Delete temporary namespace
         run: |
-          kubectl delete namespace claudie-$GITHUB_SHA 
+          kubectl delete namespace claudie-$GITHUB_RUN_NUMBER
