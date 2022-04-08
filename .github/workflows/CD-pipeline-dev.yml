@@ -56,13 +56,13 @@ jobs:
       # Create a seperate temporary namespace
       - name: Create seperate namespace
         working-directory: ./K8s-dev-cluster
-        run: kubectl create namespace claudie-${{ steps.sha_short.outputs.sha_short }}-{{ $GITHUB_RUN_NUMBER" }}
+        run: kubectl create namespace claudie-${{ steps.sha_short.outputs.sha_short }}-${{ $GITHUB_RUN_NUMBER" }}
 
       # Deploy services to new namespace
       - name: Deploy to new namespace
         working-directory: ./K8s-dev-cluster
         run: |
-          kustomize edit set namespace claudie-${{ steps.sha_short.outputs.sha_short }}-{{ $GITHUB_RUN_NUMBER" }}
+          kustomize edit set namespace claudie-${{ steps.sha_short.outputs.sha_short }}-${{ $GITHUB_RUN_NUMBER" }}
           kustomize build | kubectl apply -f - 
 
           cat kustomization.yaml
@@ -75,24 +75,24 @@ jobs:
           echo "${arr[@]}"
           for SERVICE in "${arr[@]}"
           do 
-          kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=900s --namespace=claudie-${{ steps.sha_short.outputs.sha_short }}-{{ $GITHUB_RUN_NUMBER" }}
+          kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=900s --namespace=claudie-${{ steps.sha_short.outputs.sha_short }}-${{ $GITHUB_RUN_NUMBER" }}
           done
 
-          kubectl get pods --namespace=claudie-${{ steps.sha_short.outputs.sha_short }}-{{ $GITHUB_RUN_NUMBER" }}
+          kubectl get pods --namespace=claudie-${{ steps.sha_short.outputs.sha_short }}-${{ $GITHUB_RUN_NUMBER" }}}
 
       - name: Start the E2E tests
         working-directory: ./K8s-dev-cluster
         run: |
           TEMP=($(gcloud container images list-tags eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/testing-framework --sort-by=TIMESTAMP --format="get(tags)"))
           NEWEST_TAG=${TEMP[-1]}
-          kustomize edit set namespace claudie-${{ steps.sha_short.outputs.sha_short }}-$GITHUB_RUN_NUMBER
+          kustomize edit set namespace claudie-${{ steps.sha_short.outputs.sha_short }}-${{ $GITHUB_RUN_NUMBER" }}R
           kustomize edit add resource testing-framework.yaml
           kustomize edit set image eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/testing-framework:$NEWEST_TAG
           kustomize build . | kubectl apply -f -
 
       - name: Monitor E2E test
         run: |
-          kubectl wait --for=condition=complete --timeout=10800s job/testing-framework -n claudie-${{ steps.sha_short.outputs.sha_short }}-$GITHUB_RUN_NUMBER
+          kubectl wait --for=condition=complete --timeout=10800s job/testing-framework -n claudie-${{ steps.sha_short.outputs.sha_short }}-${{ $GITHUB_RUN_NUMBER" }}
 
       - name: Dump logs from testing framework
         if: ${{ always() }}
