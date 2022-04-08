@@ -14,3 +14,7 @@ services/builder
 mongodb
 services/testing-framework
 .github
+.golangci.yml
+.gitattributes
+keys
+K8s-dev-cluster
