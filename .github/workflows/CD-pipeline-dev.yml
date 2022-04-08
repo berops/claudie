@@ -62,7 +62,7 @@ jobs:
       - name: Deploy to new namespace
         working-directory: ./K8s-dev-cluster
         run: |
-          kustomize edit set namespace claudie-${{ steps.sha_short.outputs.sha_short }}-${GITHUB_RUN_NUMBER}}
+          kustomize edit set namespace claudie-${{ steps.sha_short.outputs.sha_short }}-${GITHUB_RUN_NUMBER}
           kustomize build | kubectl apply -f - 
 
           cat kustomization.yaml
