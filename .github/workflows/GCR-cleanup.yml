@@ -2,11 +2,12 @@ name: "Clean up the GCR"
 on:
   workflow_dispatch:
   schedule:
-  - cron: "0 18 * * *"    # minute (0-59) | hour(0-23) | day of the month(1-31) | month(1-12) | day of the week(1-7)
-                          # Uses UTC timezone - Run every day at 20:00 CET -> "0 18 * * *"
+    - cron:
+        "0 18 * * *" # minute (0-59) | hour(0-23) | day of the month(1-31) | month(1-12) | day of the week(1-7)
+        # Uses UTC timezone - Run every day at 20:00 CET -> "0 18 * * *"
 
 env:
-  SERVICES: context-box scheduler builder terraformer wireguardian kube-eleven testing-framework
+  SERVICES: context-box scheduler builder terraformer wireguardian kube-eleven testing-framework kuber
 
 jobs:
   turn-off:
@@ -22,13 +23,13 @@ jobs:
         run: |
           SERVICES=(${{ env.SERVICES }})
           NUMBER_OF_RETAINED=10
-          
+
           # Loop through the services
           for SERVICE in "${SERVICES[@]}"; do
-          
+
               echo "------ Checking $SERVICE ------"
               TEMP=($(gcloud container images list-tags eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$SERVICE --sort-by=TIMESTAMP --format="get(tags)"))
-          
+
               # Check for the length of the array
               if [ ${#TEMP[@]} -ge $((NUMBER_OF_RETAINED+1)) ]  
               then
