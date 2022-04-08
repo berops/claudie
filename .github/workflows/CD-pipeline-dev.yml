@@ -33,6 +33,9 @@ jobs:
         id: sha_short
         run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
 
+      - name: Check outputs
+        run: echo ${{ steps.vars.outputs.sha_short }}
+
       - name: Login to GCP
         uses: google-github-actions/setup-gcloud@v0.6.0
         with:

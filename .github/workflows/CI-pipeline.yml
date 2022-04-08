@@ -38,6 +38,9 @@ jobs:
         id: sha_short
         run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
 
+      - name: Check outputs
+        run: echo ${{ steps.sha_short.outputs.sha_short }}
+
       # Install the git-crypt and unlock the files
       - name: git-crypt unlock
         run: |
