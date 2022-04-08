@@ -34,7 +34,7 @@ jobs:
         run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
 
       - name: Check outputs
-        run: echo ${{ steps.vars.outputs.sha_short }}
+        run: echo ${{ steps.sha_short.outputs.sha_short }}
 
       - name: Login to GCP
         uses: google-github-actions/setup-gcloud@v0.6.0
@@ -56,13 +56,13 @@ jobs:
       # Create a seperate temporary namespace
       - name: Create seperate namespace
         working-directory: ./K8s-dev-cluster
-        run: kubectl create namespace claudie-${{ steps.sha_short.outputs.sha_short }}-$GITHUB_RUN_NUMBER
+        run: kubectl create namespace claudie-${{ steps.sha_short.outputs.sha_short }}-{{ $GITHUB_RUN_NUMBER" }}
 
       # Deploy services to new namespace
       - name: Deploy to new namespace
         working-directory: ./K8s-dev-cluster
         run: |
-          kustomize edit set namespace claudie-${{ steps.sha_short.outputs.sha_short }}-$GITHUB_RUN_NUMBER
+          kustomize edit set namespace claudie-${{ steps.sha_short.outputs.sha_short }}-{{ $GITHUB_RUN_NUMBER" }}
           kustomize build | kubectl apply -f - 
 
           cat kustomization.yaml
@@ -75,10 +75,10 @@ jobs:
           echo "${arr[@]}"
           for SERVICE in "${arr[@]}"
           do 
-          kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=900s --namespace=claudie-${{ steps.sha_short.outputs.sha_short }}-$GITHUB_RUN_NUMBER
+          kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=900s --namespace=claudie-${{ steps.sha_short.outputs.sha_short }}-{{ $GITHUB_RUN_NUMBER" }}
           done
 
-          kubectl get pods --namespace=claudie-${{ steps.sha_short.outputs.sha_short }}-$GITHUB_RUN_NUMBER
+          kubectl get pods --namespace=claudie-${{ steps.sha_short.outputs.sha_short }}-{{ $GITHUB_RUN_NUMBER" }}
 
       - name: Start the E2E tests
         working-directory: ./K8s-dev-cluster
