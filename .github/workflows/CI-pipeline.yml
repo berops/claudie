@@ -161,8 +161,10 @@ jobs:
           sha_new=$(git rev-parse HEAD)
           echo $sha_new
           echo "::set-output name=SHA::$sha_new"
+
     outputs:
       SHA: ${{ steps.sha.outputs.SHA }}
+      SHORT_SHA_RUN_ID: ${{ steps.sha_short.outputs.sha_short }}-${GITHUB_RUN_NUMBER}
   #--------------------------------------------------------------------------------------------------
   deploy-and-monitor:
     runs-on: self-hosted
