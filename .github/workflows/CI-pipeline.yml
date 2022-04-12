@@ -93,7 +93,7 @@ jobs:
           for path in "${arr[@]}"
           do
             echo "-----Building $path-----"
-            IMGTAG="eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:${{ steps.sha_short.outputs.sha_short }}-${GITHUB_RUN_NUMBER}
+            IMGTAG="eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:${{ steps.sha_short.outputs.sha_short }}-${GITHUB_RUN_NUMBER}"
             DOCKER_BUILDKIT=1 docker build --tag $IMGTAG -f ./services/$path/Dockerfile .
           done
 
