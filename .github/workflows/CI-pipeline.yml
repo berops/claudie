@@ -116,14 +116,14 @@ jobs:
     needs: [build-and-push, merge-branch]
     if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
     steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
+
       # Set output to use short sha of the merge commit HEAD
       - name: Set short sha output
         id: sha_short
         run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-
-      - uses: actions/checkout@v2
-        with:
-          ref: ${{ github.head_ref }}
 
       - name: install kustomize
         uses: imranismail/setup-kustomize@v1.6.1
