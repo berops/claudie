@@ -34,6 +34,6 @@ images:
 - name: eu.gcr.io/platform-infrastructure-316112/platform/terraformer
   newTag: 3c60d0a26c013e2575b122364300a774883400b3
 - name: eu.gcr.io/platform-infrastructure-316112/platform/testing-framework
-  newTag: 49b40c4-450
+  newTag: 446864c-451
 - name: eu.gcr.io/platform-infrastructure-316112/platform/wireguardian
-  newTag: 49b40c4-450
+  newTag: 446864c-451
