@@ -553,15 +553,13 @@ func connectToMongoDb(ctx context.Context) (*mongo.Client, error) {
 // MongoDB connection should wait for the database to init. This function will retry the connection until it succeeds.
 func retryMongoDbConnection(attempts int, sleep time.Duration, ctx context.Context) (*mongo.Client, error) {
 	for i := 0; i < attempts; i++ {
-		if i > 0 {
-			log.Info().Msgf("Retrying after error.")
-			time.Sleep(sleep)
-			sleep *= 2
-		}
 		client, err := connectToMongoDb(ctx)
 		if err == nil {
 			return client, err
 		}
+		log.Info().Msgf("Retrying after error.")
+		time.Sleep(sleep)
+		sleep *= 2
 	}
 	return nil, fmt.Errorf("Mongodb connection failed after %d attempts", attempts)
 }
