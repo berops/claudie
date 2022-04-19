@@ -552,9 +552,8 @@ func retryMongoDbConnection(attempts int, sleep time.Duration, ctx context.Conte
 		if err == nil {
 			return client, err
 		}
-		log.Info().Msgf("Retrying after error.")
-		time.Sleep(sleep)
-		sleep *= 2
+		log.Info().Msgf("Retrying after connection error.")
+		time.Sleep(1)
 	}
 	return nil, fmt.Errorf("Mongodb connection failed after %d attempts", attempts)
 }
@@ -565,7 +564,7 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(),
 		5*time.Second)
-	client, err := retryMongoDbConnection(120, 1, ctx)
+	client, err := retryMongoDbConnection(60, 1, ctx)
 	if err != nil {
 		log.Error().Msgf("Unable to connect to MongoDB at %s", urls.DatabaseURL)
 		cancel()
