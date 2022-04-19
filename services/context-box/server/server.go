@@ -545,13 +545,34 @@ func configChecker() error {
 	return nil
 }
 
+func connectToMongoDb(ctx context.Context) (*mongo.Client, error) {
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(urls.DatabaseURL))
+	return client, err
+}
+
+// MongoDB connection should wait for the database to init. This function will retry the connection until it succeeds.
+func retryMongoDbConnection(attempts int, sleep time.Duration, ctx context.Context) (*mongo.Client, error) {
+	for i := 0; i < attempts; i++ {
+		if i > 0 {
+			log.Info().Msgf("Retrying after error.")
+			time.Sleep(sleep)
+			sleep *= 2
+		}
+		client, err := connectToMongoDb(ctx)
+		if err == nil {
+			return client, err
+		}
+	}
+	return nil, fmt.Errorf("Mongodb connection failed after %d attempts", attempts)
+}
+
 func main() {
 	// initialize logger
 	utils.InitLog("context-box", "GOLANG_LOG")
 
 	ctx, cancel := context.WithTimeout(context.Background(),
 		5*time.Second)
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(urls.DatabaseURL))
+	client, err := retryMongoDbConnection(120, 1, ctx)
 	if err != nil {
 		log.Error().Msgf("Unable to connect to MongoDB at %s", urls.DatabaseURL)
 		cancel()
