@@ -552,10 +552,10 @@ func retryMongoDbConnection(attempts int, sleep time.Duration, ctx context.Conte
 		if err == nil {
 			return client, err
 		}
-		log.Info().Msgf("Retrying after connection error.")
+		log.Info().Msgf("Retrying after error: %v", err)
 		time.Sleep(1)
 	}
-	return nil, fmt.Errorf("Mongodb connection failed after %d attempts", attempts)
+	return nil, fmt.Errorf("Mongodb connection failed after %v attempts due to connection timeout.", attempts)
 }
 
 func main() {
