@@ -176,6 +176,11 @@ jobs:
           ref: ${{ needs.edit-kustomization.outputs.SHA }}
           fetch-depth: 0
 
+      # Set output to use short sha of the merge commit HEAD
+      - name: Set short sha output
+        id: sha_short
+        run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+
       - name: install kubectl
         uses: azure/setup-kubectl@v2.0
         with:
