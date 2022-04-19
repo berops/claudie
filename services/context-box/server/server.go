@@ -545,15 +545,10 @@ func configChecker() error {
 	return nil
 }
 
-func connectToMongoDb(ctx context.Context) (*mongo.Client, error) {
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(urls.DatabaseURL))
-	return client, err
-}
-
 // MongoDB connection should wait for the database to init. This function will retry the connection until it succeeds.
 func retryMongoDbConnection(attempts int, sleep time.Duration, ctx context.Context) (*mongo.Client, error) {
 	for i := 0; i < attempts; i++ {
-		client, err := connectToMongoDb(ctx)
+		client, err := mongo.Connect(ctx, options.Client().ApplyURI(urls.DatabaseURL))
 		if err == nil {
 			return client, err
 		}
