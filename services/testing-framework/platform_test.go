@@ -14,12 +14,9 @@ import (
 	"github.com/Berops/platform/urls"
 	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
-	"golang.org/x/sync/errgroup"
 
 	"io/ioutil"
 	"testing"
-
-	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -44,7 +41,6 @@ func ClientConnection() pb.ContextBoxServiceClient {
 
 // TestPlatform will start all the test cases specified in tests directory
 func TestPlatform(t *testing.T) {
-	var errGroup errgroup.Group
 	c := ClientConnection()
 	log.Info().Msg("----Starting the tests----")
 
@@ -64,20 +60,13 @@ func TestPlatform(t *testing.T) {
 		}
 	}
 
-	// apply test sets concurrently
 	for _, path := range pathsToSets {
-		func(path string) {
-			errGroup.Go(func() error {
-				err := applyTestSet(path, c)
-				if err != nil {
-					return fmt.Errorf("Error while processing %s : %v", path, err)
-				}
-				return nil
-			})
-		}(path)
+		err := applyTestSet(path, c)
+		if err != nil {
+			t.Logf("Error while processing %s : %v", path, err)
+			t.Fail()
+		}
 	}
-	err = errGroup.Wait()
-	require.NoError(t, err)
 }
 
 // applyTestSet function will apply test set sequantially to a platform

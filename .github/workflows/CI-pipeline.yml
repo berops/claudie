@@ -33,6 +33,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Set short sha output
+        run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
+
       # Install the git-crypt and unlock the files
       - name: git-crypt unlock
         run: |
@@ -85,7 +88,7 @@ jobs:
           for path in "${arr[@]}"
           do
             echo "-----Building $path-----"
-            IMGTAG="eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA"
+            IMGTAG="eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}"
             DOCKER_BUILDKIT=1 docker build --tag $IMGTAG -f ./services/$path/Dockerfile .
           done
 
@@ -97,7 +100,7 @@ jobs:
 
           for path in "${arr[@]}"
           do
-            docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:$GITHUB_SHA
+            docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
           done
 
     outputs:
@@ -112,6 +115,9 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
+      - name: Set short sha output
+        run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
+
       - name: install kustomize
         uses: imranismail/setup-kustomize@v1.6.1
         with:
@@ -125,7 +131,7 @@ jobs:
           for SERVICE in "${NEW_SERVICES[@]}"
           do
             echo "Setting a new tag for a $SERVICE"
-            kustomize edit set image eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$SERVICE:$GITHUB_SHA
+            kustomize edit set image eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$SERVICE:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
           done
 
           cat kustomization.yaml
@@ -148,6 +154,7 @@ jobs:
           sha_new=$(git rev-parse HEAD)
           echo $sha_new
           echo "::set-output name=SHA::$sha_new"
+
     outputs:
       SHA: ${{ steps.sha.outputs.SHA }}
   #--------------------------------------------------------------------------------------------------
@@ -160,6 +167,9 @@ jobs:
         with:
           ref: ${{ needs.edit-kustomization.outputs.SHA }}
           fetch-depth: 0
+
+      - name: Set short sha output
+        run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
 
       - name: install kubectl
         uses: azure/setup-kubectl@v2.0
@@ -191,13 +201,13 @@ jobs:
       # Create a seperate temporary namespace
       - name: Create seperate namespace
         working-directory: ./K8s-dev-cluster
-        run: kubectl create namespace claudie-$GITHUB_SHA
+        run: kubectl create namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
 
       # Deploy services to new namespace
       - name: Deploy to new namespace
         working-directory: ./K8s-dev-cluster
         run: |
-          kustomize edit set namespace claudie-$GITHUB_SHA
+          kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
           kustomize build | kubectl apply -f - 
 
           cat kustomization.yaml
@@ -210,30 +220,30 @@ jobs:
           echo "${arr[@]}"
           for SERVICE in "${arr[@]}"
           do 
-          kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=900s --namespace=claudie-$GITHUB_SHA
+          kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=900s --namespace=claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
           done
 
-          kubectl get pods --namespace=claudie-$GITHUB_SHA
+          kubectl get pods --namespace=claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
 
       - name: Start the E2E tests
         working-directory: ./K8s-dev-cluster
         run: |
           TEMP=($(gcloud container images list-tags eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/testing-framework --sort-by=TIMESTAMP --format="get(tags)"))
           NEWEST_TAG=${TEMP[-1]}
-          kustomize edit set namespace claudie-$GITHUB_SHA
+          kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
           kustomize edit add resource testing-framework.yaml
           kustomize edit set image eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/testing-framework:$NEWEST_TAG
           kustomize build . | kubectl apply -f -
 
       - name: Monitor E2E test
         run: |
-          kubectl wait --for=condition=complete --timeout=10800s job/testing-framework -n claudie-$GITHUB_SHA
+          kubectl wait --for=condition=complete --timeout=10800s job/testing-framework -n claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
 
       - name: Dump logs from testing framework
         if: ${{ always() }}
         run: |
-          gcloud logging read "resource.labels.container_name = "testing-framework" AND severity >= ERROR AND  resource.labels.namespace_name = "claudie-$GITHUB_SHA""
+          gcloud logging read "resource.labels.container_name = "testing-framework" AND severity >= ERROR AND  resource.labels.namespace_name = "claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}""
 
       - name: Delete temporary namespace
         run: |
-          kubectl delete namespace claudie-$GITHUB_SHA
+          kubectl delete namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
