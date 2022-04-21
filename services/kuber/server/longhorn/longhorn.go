@@ -26,7 +26,6 @@ type zoneData struct {
 const (
 	longhornYaml       = "services/kuber/server/manifests/longhorn.yaml"
 	outputDir          = "services/kuber/server/clusters"
-	nodeManifestTpl    = "cluster-machine.goyaml"
 	storageManifestTpl = "storage-class.goyaml"
 )
 
