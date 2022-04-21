@@ -89,7 +89,7 @@ jobs:
           do
             echo "-----Building $path-----"
             IMGTAG="eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}"
-            DOCKER_BUILDKIT=1 docker build --tag $IMGTAG -f ./services/$path/Dockerfile .
+            DOCKER_BUILDKIT=1 docker build --no-cache --tag $IMGTAG -f ./services/$path/Dockerfile . 
           done
 
       # Push images to GCR - latest tag is overwritten
