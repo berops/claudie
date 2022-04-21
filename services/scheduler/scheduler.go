@@ -329,7 +329,7 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient) (err error) 
 	}
 	fmt.Println(config)
 
-	log.Info().Interface("project", config.GetDesiredState())
+	//log.Info().Interface("project", config.GetDesiredState())
 	err = cbox.SaveConfigScheduler(c, &pb.SaveConfigRequest{Config: config})
 	if err != nil {
 		return fmt.Errorf("error while saving the config: %v", err)

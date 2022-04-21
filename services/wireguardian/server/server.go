@@ -158,9 +158,9 @@ func genPrivAdd(nodepools []*pb.NodePool, network string) error {
 		temp++
 	}
 	// debug message
-	for _, nodepool := range nodepools {
-		fmt.Println(nodepool)
-	}
+	// for _, nodepool := range nodepools {
+	// 	fmt.Println(nodepool)
+	// }
 
 	return nil
 }

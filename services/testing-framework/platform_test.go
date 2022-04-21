@@ -152,7 +152,7 @@ func configChecker(done chan string, c pb.ContextBoxServiceClient, configID, con
 						done <- emsg
 					}
 					// check if all pods from longhorn-system are ready
-					err = checkLonghornPods(cluster.Kubeconfig)
+					err = checkLonghornPods(cluster.Kubeconfig, cluster.ClusterInfo.Name)
 					if err != nil {
 						emsg := fmt.Sprintf("error while checking if all pods from longhorn-system are ready : %v", err)
 						log.Fatal().Msg(emsg)
@@ -203,7 +203,7 @@ func checkLonghornNodes(cluster *pb.K8Scluster) error {
 		cmd := exec.Command("/bin/bash", "-c", command)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-			emsg := fmt.Sprintf("error while getting the nodes.longhorn.io count %v", err)
+			emsg := fmt.Sprintf("error while getting the nodes.longhorn.io count in cluster %s : %v", cluster.ClusterInfo.Name, err)
 			return fmt.Errorf(emsg)
 		}
 		//trim the whitespaces
@@ -217,16 +217,16 @@ func checkLonghornNodes(cluster *pb.K8Scluster) error {
 			break
 		}
 		time.Sleep(time.Duration(sleepSecPods) * time.Second)
-		log.Info().Msgf("Waiting for nodes.longhorn.io to be initialized... [ %ds elapsed ]", readyCheck)
+		log.Info().Msgf("Waiting for nodes.longhorn.io to be initialized in cluster %s... [ %ds elapsed ]", cluster.ClusterInfo.Name, readyCheck)
 	}
 	if !allNodesFound {
-		return fmt.Errorf(fmt.Sprintf("the count of schedulable nodes (%d) is not equal to nodes.longhorn.io (%s)", workerCount, count))
+		return fmt.Errorf(fmt.Sprintf("the count of schedulable nodes (%d) is not equal to nodes.longhorn.io (%s) in cluster %s", workerCount, count, cluster.ClusterInfo.Name))
 	}
 	return nil
 }
 
 // checkLonghornPods will check if the pods in longhorn-system namespace are in ready state
-func checkLonghornPods(config string) error {
+func checkLonghornPods(config, clusterName string) error {
 	command := fmt.Sprintf("kubectl get pods -n longhorn-system -o json --kubeconfig <(echo '%s') | jq -r '.items[] | .status.containerStatuses[].ready'", config)
 	readyCheck := 0
 	allPodsReady := false
@@ -235,7 +235,7 @@ func checkLonghornPods(config string) error {
 		cmd := exec.Command("/bin/bash", "-c", command)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-			return fmt.Errorf(fmt.Sprintf("error while getting the status of the pods in longhorn-system %v", err))
+			return fmt.Errorf(fmt.Sprintf("error while getting the status of the pods in longhorn-system in cluster %s : %v", clusterName, err))
 		}
 		// if some are not ready, wait sleepSecPods seconds
 		if strings.Contains(string(out), "false") {
@@ -245,10 +245,10 @@ func checkLonghornPods(config string) error {
 			break
 		}
 		time.Sleep(time.Duration(sleepSecPods) * time.Second)
-		log.Info().Msgf("Waiting for pods from longhorn-system namespace to be in ready state... [ %ds elapsed ]", readyCheck)
+		log.Info().Msgf("Waiting for pods from longhorn-system namespace in cluster %s to be in ready state... [ %ds elapsed ]", clusterName, readyCheck)
 	}
 	if !allPodsReady {
-		return fmt.Errorf("pods in longhorn-system took too long to initialize")
+		return fmt.Errorf("pods in longhorn-system took too long to initialize in cluster %s", clusterName)
 	}
 	return nil
 }
