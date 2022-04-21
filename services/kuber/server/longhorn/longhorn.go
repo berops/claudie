@@ -35,7 +35,7 @@ func (l Longhorn) SetUp() error {
 	clusterID := fmt.Sprintf("%s-%s", l.Cluster.ClusterInfo.Name, l.Cluster.ClusterInfo.Hash)
 	clusterDir := filepath.Join(outputDir, clusterID)
 	kubectl := kubectl.Kubectl{Kubeconfig: l.Cluster.GetKubeconfig()}
-	fmt.Printf("-------%s--------\n %s \n ---------------\n", l.Cluster.ClusterInfo.Name, kubectl.Kubeconfig)
+	//fmt.Printf("-------%s--------\n %s \n ---------------\n", l.Cluster.ClusterInfo.Name, kubectl.Kubeconfig) //NOTE:debug print
 	// apply longhorn.yaml
 	err := kubectl.KubectlApply(longhornYaml, "")
 	if err != nil {
@@ -88,6 +88,7 @@ func (l Longhorn) SetUp() error {
 			return fmt.Errorf("error while applying %s manifest : %v", manifest, err)
 		}
 	}
+	log.Info().Msgf("Longhorn successfully set-up on the %s", clusterID)
 
 	// Clean up
 	if err := os.RemoveAll(clusterDir); err != nil {
@@ -109,6 +110,9 @@ func getRealNodeNames(nodeInfo []byte) []string {
 	return nodeNames
 }
 
+// findName will return a real node name based on the user defined one
+// this is needed in case of GCP, where nodes have some info appended to their which cannot be read from terraform output
+// example: gcp-control-1 -> gcp-control-1.c.project.id
 func findName(realNames []string, name string) string {
 	for _, n := range realNames {
 		if strings.Contains(n, name) {
