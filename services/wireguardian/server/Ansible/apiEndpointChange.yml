@@ -4,6 +4,13 @@
   become: true
   remote_user: root
   tasks:
+    - name: stop kubelet
+      service:
+        name: "{{ item }}"
+        state: stopped
+      loop:
+      - "kubelet"
+    
     - name: remove old apiserver.crt, apiserver.key
       file:
         path: "{{ item }}"
@@ -39,10 +46,22 @@
     
     - name: generate kubeconfig 
       shell: "kubeadm init phase kubeconfig all --config {{file.files[0].path}}"
-   
+    
+    - name: restart kubelet
+      ansible.builtin.service: 
+        name: "{{ item }}"
+        state: restarted
+      register: serviceDetails
+      until: serviceDetails.status.ActiveState == "active"
+      retries: 5
+      delay: 20
+      loop:
+      - "kubelet"
+    
     - name: upload config map
       shell: "kubeadm init phase upload-config all --config {{file.files[0].path}}"
-    - name: restart docker and kubelet
+    
+    - name: restart containerd and kubelet
       ansible.builtin.service: 
         name: "{{ item }}"
         state: restarted
@@ -52,18 +71,24 @@
       delay: 20
       loop:
       - "kubelet"
-      - "docker"
+      - "containerd"
 
 - hosts: compute
   gather_facts: true
   become: true
   remote_user: root
   tasks:
+    - name: stop kubelet
+      ansible.builtin.service: 
+        name: kubelet
+        state: stopped
+    
     - name: replace endpoint 
       replace:
         path: "/etc/kubernetes/kubelet.conf"
         regexp: '{{ OldEndpoint}}'
         replace: '{{ NewEndpoint}}'
+    
     - name: restart kubelet
       ansible.builtin.service: 
         name: kubelet
