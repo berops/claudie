@@ -41,6 +41,7 @@ func ClientConnection() pb.ContextBoxServiceClient {
 
 // TestPlatform will start all the test cases specified in tests directory
 func TestPlatform(t *testing.T) {
+	utils.InitLog("testing-framework", "GOLANG_LOG")
 	c := ClientConnection()
 	log.Info().Msg("----Starting the tests----")
 

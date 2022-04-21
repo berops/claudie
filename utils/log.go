@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"sync"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -13,28 +12,23 @@ import (
 const defaultLogLevel = zerolog.InfoLevel
 
 var (
-	initLogLock sync.Mutex
-	isLogInit   = false
-	logger      zerolog.Logger
+	isLogInit = false
+	logger    zerolog.Logger
 )
-
-func initLog() {
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-}
 
 // Initialize the logging framework.
 // Inputs are the golang module name used as a logging prefix
 // and the env variable with the logging level
 func InitLog(moduleName string, logEnvVar string) {
-	initLogLock.Lock()
-	defer initLogLock.Unlock()
 	if !isLogInit {
-		initLog()
+		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 		// set log level from env variable
 		logLevel, err := getLogLevelFromEnv(logEnvVar)
 		baseLogger := zerolog.New(os.Stderr)
 		// create sub logger
-		logger = baseLogger.With().Str("module", moduleName).Caller().Logger().Level(logLevel)
+		logger = baseLogger.With().Str("module", moduleName).Caller().Logger()        // add module name to log
+		logger = logger.Level(logLevel).Output(zerolog.ConsoleWriter{Out: os.Stderr}) //prettify the output
+		logger = logger.With().Timestamp().Logger()                                   //add time stamp
 		if err != nil {
 			logger.Err(err)
 		} else {
