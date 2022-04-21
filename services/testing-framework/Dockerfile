@@ -23,7 +23,7 @@ WORKDIR /go/services/testing-framework
 RUN apt update
 RUN apt install -y build-essential
 RUN chmod +x /usr/local/bin/kubectl
-RUN apt-get update && apt-get install jq
+RUN apt-get update && apt-get install -y jq 
 
 #Run server
 ENTRYPOINT [ "go", "test", "-timeout=10800s", "-v", "./..." ]
