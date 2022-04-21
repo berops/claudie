@@ -2,6 +2,7 @@ FROM golang:1.16.15 AS build
 
 #Install kubectl
 RUN wget https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
+RUN mv kubectl /usr/local/bin/
 
 #Unset the GOPATH
 ENV GOPATH=
