@@ -549,10 +549,13 @@ func configChecker() error {
 
 // MongoDB connection should wait for the database to init. This function will retry the connection until it succeeds.
 func retryMongoDbConnection(attempts int, ctx context.Context) (*mongo.Client, error) {
-	for i := 0; i < attempts; i++ {
-		// establish DB connection
-		client, err := mongo.Connect(ctx, options.Client().ApplyURI(urls.DatabaseURL))
-		if err == nil {
+	// establish DB connection
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(urls.DatabaseURL))
+	if err != nil {
+		log.Warn().Msgf("Failed to establish connection with the DB: %v", urls.DatabaseURL)
+		return client, err
+	} else {
+		for i := 0; i < attempts; i++ {
 			// Ping the primary
 			ctxWithTimeout, cancel := context.WithTimeout(context.Background(), defaultPingTimeout)
 			if err := client.Ping(ctxWithTimeout, readpref.Primary()); err == nil {
@@ -562,12 +565,10 @@ func retryMongoDbConnection(attempts int, ctx context.Context) (*mongo.Client, e
 				log.Warn().Msgf("Unable to ping database: %v", err)
 				cancel()
 			}
-		} else {
-			log.Warn().Msgf("Failed to establish connection with the DB: %v", urls.DatabaseURL)
+			log.Info().Msg("Trying to ping the DB again")
 		}
-		log.Info().Msg("Retrying... ")
+		return nil, fmt.Errorf("Mongodb connection failed after %v attempts due to connection timeout.", attempts)
 	}
-	return nil, fmt.Errorf("Mongodb connection failed after %v attempts due to connection timeout.", attempts)
 }
 
 func main() {
