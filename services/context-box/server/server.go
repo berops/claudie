@@ -45,6 +45,8 @@ const (
 	defaultContextBoxPort = 50055
 	defaultBuilderTTL     = 360
 	defaultSchedulerTTL   = 5
+	defaultAttempts       = 10
+	defaultPingTimeout    = 6 * time.Second
 )
 
 var (
@@ -545,13 +547,36 @@ func configChecker() error {
 	return nil
 }
 
+// MongoDB connection should wait for the database to init. This function will retry the connection until it succeeds.
+func retryMongoDbConnection(attempts int, ctx context.Context) (*mongo.Client, error) {
+	// establish DB connection
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(urls.DatabaseURL))
+	if err != nil {
+		log.Warn().Msgf("Failed to establish connection with the DB: %v", urls.DatabaseURL)
+		return client, err
+	} else {
+		for i := 0; i < attempts; i++ {
+			// Ping the primary
+			ctxWithTimeout, cancel := context.WithTimeout(context.Background(), defaultPingTimeout)
+			if err := client.Ping(ctxWithTimeout, readpref.Primary()); err == nil {
+				cancel()
+				return client, nil
+			} else {
+				log.Warn().Msgf("Unable to ping database: %v", err)
+				cancel()
+			}
+			log.Info().Msg("Trying to ping the DB again")
+		}
+		return nil, fmt.Errorf("Mongodb connection failed after %v attempts due to connection timeout.", attempts)
+	}
+}
+
 func main() {
 	// initialize logger
 	utils.InitLog("context-box", "GOLANG_LOG")
 
-	ctx, cancel := context.WithTimeout(context.Background(),
-		5*time.Second)
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(urls.DatabaseURL))
+	ctx, cancel := context.WithCancel(context.Background())
+	client, err := retryMongoDbConnection(defaultAttempts, ctx)
 	if err != nil {
 		log.Error().Msgf("Unable to connect to MongoDB at %s", urls.DatabaseURL)
 		cancel()
@@ -565,12 +590,6 @@ func main() {
 			panic(err)
 		}
 	}()
-	// Ping the primary
-	if err := client.Ping(ctx, readpref.Primary()); err != nil {
-		log.Fatal().Msgf("Unable to ping database: %v", err)
-		cancel()
-		panic(err)
-	}
 
 	log.Info().Msgf("Connected to MongoDB at %s", urls.DatabaseURL)
 	collection = client.Database("platform").Collection("config")
