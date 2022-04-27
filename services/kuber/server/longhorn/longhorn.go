@@ -61,14 +61,16 @@ func (l Longhorn) SetUp() error {
 		zoneName := fmt.Sprintf("%s-zone", provider)
 		storageClassName := fmt.Sprintf("longhorn-%s", zoneName)
 		for _, nodepool := range nodepools {
-			// tag nodes from nodepool based on the future zone
-			for _, node := range nodepool.Nodes {
-				// add tag to the node via kubectl annotate, use --overwrite to avoid getting error of already tagged node
-				annotation := fmt.Sprintf("node.longhorn.io/default-node-tags='[\"%s\"]' --overwrite", zoneName)
-				realNodeName := findName(realNodeNames, node.Name)
-				err := kubectl.KubectlAnnotate("node", realNodeName, annotation)
-				if err != nil {
-					return fmt.Errorf("error while tagging the node %s via kubectl annotate : %v", realNodeName, err)
+			// tag worker nodes from nodepool based on the future zone
+			if !nodepool.IsControl {
+				for _, node := range nodepool.Nodes {
+					// add tag to the node via kubectl annotate, use --overwrite to avoid getting error of already tagged node
+					annotation := fmt.Sprintf("node.longhorn.io/default-node-tags='[\"%s\"]' --overwrite", zoneName)
+					realNodeName := findName(realNodeNames, node.Name)
+					err := kubectl.KubectlAnnotate("node", realNodeName, annotation)
+					if err != nil {
+						return fmt.Errorf("error while tagging the node %s via kubectl annotate : %v", realNodeName, err)
+					}
 				}
 			}
 		}
