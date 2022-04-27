@@ -954,16 +954,15 @@ data:
     volumeBindingMode: Immediate
     parameters:
       fsType: "ext4"
-      numberOfReplicas: "2"
+      numberOfReplicas: "3"
       staleReplicaTimeout: "2880"
       fromBackup: ""
-      fsType: "ext4"
     #  backingImage: "bi-test"
     #  backingImageDataSourceType: "download"
     #  backingImageDataSourceParameters: '{"url": "https://backing-image-example.s3-region.amazonaws.com/test-backing-image"}'
     #  backingImageChecksum: "SHA512 checksum of the backing image"
     #  diskSelector: "ssd,fast"
-    #  nodeSelector: "zone1"
+    #  nodeSelector: "storage,fast"
     #  recurringJobSelector: '[{"name":"snap-group", "isGroup":true},
     #                          {"name":"backup", "isGroup":false}]'
 ---
@@ -985,7 +984,7 @@ spec:
     spec:
       containers:
       - name: longhorn-manager
-        image: longhornio/longhorn-manager:v1.2.2
+        image: longhornio/longhorn-manager:v1.2.4
         imagePullPolicy: IfNotPresent
         securityContext:
           privileged: true
@@ -994,15 +993,15 @@ spec:
         - -d
         - daemon
         - --engine-image
-        - longhornio/longhorn-engine:v1.2.2
+        - longhornio/longhorn-engine:v1.2.4
         - --instance-manager-image
-        - longhornio/longhorn-instance-manager:v1_20210731
+        - longhornio/longhorn-instance-manager:v1_20220303
         - --share-manager-image
-        - longhornio/longhorn-share-manager:v1_20210914
+        - longhornio/longhorn-share-manager:v1_20211020
         - --backing-image-manager-image
         - longhornio/backing-image-manager:v2_20210820
         - --manager-image
-        - longhornio/longhorn-manager:v1.2.2
+        - longhornio/longhorn-manager:v1.2.4
         - --service-account
         - longhorn-service-account
         ports:
@@ -1083,6 +1082,28 @@ spec:
     port: 9500
     targetPort: manager
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: longhorn-engine-manager
+  namespace: longhorn-system
+spec:
+  clusterIP: None
+  selector:
+    longhorn.io/component: instance-manager
+    longhorn.io/instance-manager-type: engine
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: longhorn-replica-manager
+  namespace: longhorn-system
+spec:
+  clusterIP: None
+  selector:
+    longhorn.io/component: instance-manager
+    longhorn.io/instance-manager-type: replica
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -1102,16 +1123,28 @@ spec:
     spec:
       containers:
       - name: longhorn-ui
-        image: longhornio/longhorn-ui:v1.2.2
+        image: longhornio/longhorn-ui:v1.2.4
         imagePullPolicy: IfNotPresent
-        securityContext:
-          runAsUser: 0
+        volumeMounts:
+        - name : nginx-cache
+          mountPath: /var/cache/nginx/
+        - name : nginx-config
+          mountPath: /var/config/nginx/
+        - name: var-run
+          mountPath: /var/run/
         ports:
         - containerPort: 8000
           name: http
         env:
           - name: LONGHORN_MANAGER_IP
             value: "http://longhorn-backend:9500"
+      volumes:
+      - emptyDir: {}
+        name: nginx-cache
+      - emptyDir: {}
+        name: nginx-config
+      - emptyDir: {}
+        name: var-run
 #      imagePullSecrets:
 #        - name: ""
 #      priorityClassName:
@@ -1132,15 +1165,14 @@ metadata:
   name: longhorn-frontend
   namespace: longhorn-system
 spec:
-# change back to ClusterIP after POC is finished
-  type: NodePort
+  type: ClusterIP
   selector:
     app: longhorn-ui
   ports:
   - name: http
     port: 80
     targetPort: http
-    nodePort: 32323
+    nodePort: null
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -1159,18 +1191,18 @@ spec:
     spec:
       initContainers:
         - name: wait-longhorn-manager
-          image: longhornio/longhorn-manager:v1.2.2
+          image: longhornio/longhorn-manager:v1.2.4
           command: ['sh', '-c', 'while [ $(curl -m 1 -s -o /dev/null -w "%{http_code}" http://longhorn-backend:9500/v1) != "200" ]; do echo waiting; sleep 2; done']
       containers:
         - name: longhorn-driver-deployer
-          image: longhornio/longhorn-manager:v1.2.2
+          image: longhornio/longhorn-manager:v1.2.4
           imagePullPolicy: IfNotPresent
           command:
           - longhorn-manager
           - -d
           - deploy-driver
           - --manager-image
-          - longhornio/longhorn-manager:v1.2.2
+          - longhornio/longhorn-manager:v1.2.4
           - --manager-url
           - http://longhorn-backend:9500/v1
           env:
