@@ -1,0 +1,44 @@
+apiVersion: v1
+items:
+- allowVolumeExpansion: true
+  apiVersion: storage.k8s.io/v1
+  kind: StorageClass
+  metadata:
+    annotations:
+      longhorn.io/last-applied-configmap: |
+        kind: StorageClass
+        apiVersion: storage.k8s.io/v1
+        metadata:
+          name: {{ .StorageClassName }}
+        provisioner: driver.longhorn.io
+        allowVolumeExpansion: true
+        reclaimPolicy: Delete
+        volumeBindingMode: Immediate
+        parameters:
+          fsType: "ext4"
+          numberOfReplicas: "2"
+          staleReplicaTimeout: "2880"
+          fromBackup: ""
+          fsType: "ext4"
+        #  backingImage: "bi-test"
+        #  backingImageDataSourceType: "download"
+        #  backingImageDataSourceParameters: '{"url": "https://backing-image-example.s3-region.amazonaws.com/test-backing-image"}'
+        #  backingImageChecksum: "SHA512 checksum of the backing image"
+        #  diskSelector: "ssd,fast"
+          nodeSelector: {{ .ZoneName }}
+        #  recurringJobSelector: '[{"name":"snap-group", "isGroup":true},
+        #                          {"name":"backup", "isGroup":false}]'
+    name: {{ .StorageClassName }}
+  parameters:
+    fromBackup: ""
+    nodeSelector: {{ .ZoneName }}
+    fsType: ext4
+    numberOfReplicas: "2"
+    staleReplicaTimeout: "2880"
+  provisioner: driver.longhorn.io
+  reclaimPolicy: Delete
+  volumeBindingMode: Immediate
+kind: List
+metadata:
+  resourceVersion: ""
+  selfLink: ""

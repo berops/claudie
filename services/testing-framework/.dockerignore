@@ -15,3 +15,7 @@ services/kube-eleven
 utils
 .github
 mongodb
+.golangci.yml
+.gitattributes
+keys
+K8s-dev-cluster

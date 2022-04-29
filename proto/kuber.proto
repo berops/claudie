@@ -1,0 +1,16 @@
+syntax = "proto3";
+package platform;
+option go_package = "proto/pb";
+import "proto/config.proto";
+
+message SetUpStorageRequest { 
+  Project desiredState = 1;
+}
+message SetUpStorageResponse {
+  Project desiredState = 1;
+  string errorMessage = 2;
+}
+
+service KuberService {
+  rpc SetUpStorage(SetUpStorageRequest) returns (SetUpStorageResponse); 
+}

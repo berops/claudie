@@ -19,7 +19,9 @@ import (
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
-const defaultTerraformerPort = 50052
+const (
+	defaultTerraformerPort = 50052
+)
 
 type server struct {
 	pb.UnimplementedTerraformerServiceServer

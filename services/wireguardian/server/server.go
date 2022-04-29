@@ -58,7 +58,8 @@ const (
 	inventoryTemplate        = "services/wireguardian/server/inventory.goini"
 	nginxCongTemplate        = "services/wireguardian/server/conf.gotpl"
 	nginxPlaybookTemplate    = "services/wireguardian/server/nginx.goyml"
-	apiEndpointPlaybookPath  = "apiEndpointChange.yml"
+	apiEndpointPlaybookFile  = "apiEndpointChange.yml"
+	longhornPlaybookFile     = "longhorn.yml"
 	inventoryFile            = "inventory.ini"
 	nginxConfFileExt         = ".conf"
 	playbookExt              = ".yml"
@@ -157,9 +158,9 @@ func genPrivAdd(nodepools []*pb.NodePool, network string) error {
 		temp++
 	}
 	// debug message
-	for _, nodepool := range nodepools {
-		fmt.Println(nodepool)
-	}
+	// for _, nodepool := range nodepools {
+	// 	fmt.Println(nodepool)
+	// }
 
 	return nil
 }
@@ -266,8 +267,17 @@ func runAnsible(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster, changedEndpo
 		return err
 	}
 
-	// generate and run nginx playbook
+	//install longhorn dependencies
+	cmd = exec.Command("ansible-playbook", longhornPlaybookFile, "-i", inventoryFilePath, "-f", "20")
+	cmd.Dir = outputPath
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err != nil {
+		return err
+	}
 
+	// generate and run nginx playbook
 	for _, lbCluster := range lbClusters {
 
 		// generate nginx playbook and run
@@ -290,8 +300,7 @@ func runAnsible(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster, changedEndpo
 		// check if apiendpoint is changed
 		if d, ok := changedEndpoint[lbCluster.ClusterInfo.Name]; ok {
 			// run apiEndpoint playbook
-
-			cmd := exec.Command("ansible-playbook", apiEndpointPlaybookPath, "-i", inventoryFilePath, "-f", "20", "--extra-vars", "NewEndpoint="+d.NewEndpoint+" OldEndpoint="+d.OldEndpoint)
+			cmd := exec.Command("ansible-playbook", apiEndpointPlaybookFile, "-i", inventoryFilePath, "-f", "20", "--extra-vars", "NewEndpoint="+d.NewEndpoint+" OldEndpoint="+d.OldEndpoint)
 			cmd.Dir = outputPath
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
@@ -301,6 +310,7 @@ func runAnsible(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster, changedEndpo
 			}
 		}
 	}
+
 	return nil
 }
 

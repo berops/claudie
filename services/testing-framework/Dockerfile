@@ -1,5 +1,9 @@
 FROM golang:1.16.15 AS build
 
+#Install kubectl
+RUN wget https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
+RUN mv kubectl /usr/local/bin/
+
 #Unset the GOPATH
 ENV GOPATH=
 
@@ -18,5 +22,8 @@ WORKDIR /go/services/testing-framework
 
 RUN apt update
 RUN apt install -y build-essential
+RUN chmod +x /usr/local/bin/kubectl
+RUN apt-get update && apt-get install -y jq 
+
 #Run server
 ENTRYPOINT [ "go", "test", "-timeout=10800s", "-v", "./..." ]

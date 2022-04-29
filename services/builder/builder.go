@@ -12,6 +12,7 @@ import (
 
 	"github.com/Berops/platform/healthcheck"
 	kubeEleven "github.com/Berops/platform/services/kube-eleven/client"
+	kuber "github.com/Berops/platform/services/kuber/client"
 	"github.com/Berops/platform/urls"
 	"github.com/Berops/platform/utils"
 	"github.com/Berops/platform/worker"
@@ -89,6 +90,21 @@ func callKubeEleven(desiredState *pb.Project) (*pb.Project, error) {
 		return nil, err
 	}
 
+	return res.GetDesiredState(), nil
+}
+
+func callKuber(desiredState *pb.Project) (*pb.Project, error) {
+	cc, err := utils.GrpcDialWithInsecure("kuber", urls.KuberURL)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { utils.CloseClientConnection(cc) }()
+	// Creating the client
+	c := pb.NewKuberServiceClient(cc)
+	res, err := kuber.SetUpStorage(c, &pb.SetUpStorageRequest{DesiredState: desiredState})
+	if err != nil {
+		return nil, err
+	}
 	return res.GetDesiredState(), nil
 }
 
@@ -206,6 +222,17 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig 
 			return fmt.Errorf("error in KubeEleven: %v; unable to save error message config: %v", err, err1)
 		}
 		return fmt.Errorf("error in KubeEleven: %v", err)
+	}
+	config.DesiredState = desiredState
+
+	// call Kuber to set up longhorn
+	desiredState, err = callKuber(config.GetDesiredState())
+	if err != nil {
+		err1 := saveErrorMessage(config, c, err)
+		if err1 != nil {
+			return fmt.Errorf("error in Kuber: %v; unable to save error message config: %v", err, err1)
+		}
+		return fmt.Errorf("error in Kuber: %v", err)
 	}
 	config.DesiredState = desiredState
 
@@ -491,7 +518,7 @@ func main() {
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
 
-	// Initilize health probes
+	// Initialize health probes
 	healthChecker := healthcheck.NewClientHealthChecker(fmt.Sprint(defaultBuilderPort), healthCheck)
 	healthChecker.StartProbes()
 

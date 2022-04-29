@@ -66,6 +66,16 @@ spec:
             configMapKeyRef:
               name: env
               key: KUBE_ELEVEN_HOSTNAME
+        - name: KUBER_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: env
+              key: KUBER_PORT
+        - name: KUBER_HOSTNAME
+          valueFrom:
+            configMapKeyRef:
+              name: env
+              key: KUBER_HOSTNAME
         - name: GOLANG_LOG
           valueFrom:
             configMapKeyRef:

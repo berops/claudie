@@ -8,7 +8,7 @@ on:
 
 env:
   ENV_FILE: .env
-  SERVICES: context-box scheduler builder terraformer wireguardian kube-eleven testing-framework
+  SERVICES: context-box scheduler builder terraformer wireguardian kube-eleven kuber testing-framework
 
 jobs:
   #--------------------------------------------------------------------------------------------------
@@ -89,7 +89,7 @@ jobs:
           do
             echo "-----Building $path-----"
             IMGTAG="eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}"
-            DOCKER_BUILDKIT=1 docker build --tag $IMGTAG -f ./services/$path/Dockerfile .
+            DOCKER_BUILDKIT=1 docker build --tag $IMGTAG -f ./services/$path/Dockerfile . 
           done
 
       # Push images to GCR - latest tag is overwritten

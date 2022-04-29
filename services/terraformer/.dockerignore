@@ -16,3 +16,7 @@ services/builder
 services/terraformer/server/clusters
 services/testing-framework
 mongodb
+.golangci.yml
+.gitattributes
+keys
+K8s-dev-cluster

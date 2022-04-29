@@ -14,6 +14,8 @@ var (
 	ContextBoxURL = os.Getenv("CONTEXT_BOX_HOSTNAME") + ":" + os.Getenv("CONTEXT_BOX_PORT")
 	//DatabaseURL is a listening URL for Database
 	DatabaseURL = os.Getenv("DATABASE_HOSTNAME") + ":" + os.Getenv("DATABASE_PORT")
+	//KuberURL is a listening URL for Kuber module
+	KuberURL = os.Getenv("KUBER_HOSTNAME") + ":" + os.Getenv("KUBER_PORT")
 )
 
 func init() {
@@ -31,5 +33,8 @@ func init() {
 	}
 	if DatabaseURL == ":" {
 		DatabaseURL = "mongodb://localhost:27017"
+	}
+	if KuberURL == ":" {
+		KuberURL = "localhost:50057"
 	}
 }

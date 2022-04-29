@@ -9,7 +9,6 @@ import (
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/services/terraformer/server/backend"
 	"github.com/Berops/platform/services/terraformer/server/clusterBuilder"
-	"github.com/Berops/platform/services/terraformer/server/templates"
 	"github.com/Berops/platform/services/terraformer/server/terraform"
 	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
@@ -136,9 +135,14 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *pb.DNS, nodeIPs []string) 
 		return err
 	}
 
-	DNSTemplates := templates.Templates{Directory: dnsDir}
+	DNSTemplates := utils.Templates{Directory: dnsDir}
+	templateLoader := utils.TemplateLoader{Directory: utils.TerraformerTemplates}
+	tpl, err := templateLoader.LoadTemplate("dns.tpl")
+	if err != nil {
+		return fmt.Errorf("error while parsing template file backend.tpl: %v", err)
+	}
 	dnsData := d.getDNSData(dns, nodeIPs)
-	return DNSTemplates.Generate("dns.tpl", "dns.tf", dnsData)
+	return DNSTemplates.Generate(tpl, "dns.tf", dnsData)
 }
 
 // function returns pair of strings, first the hash hostname, second the zone

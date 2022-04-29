@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kuber
+  labels:
+    app: kuber
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kuber
+  template:
+    metadata:
+      labels:
+        app: kuber
+    spec:
+      containers:
+        - name: kuber
+          imagePullPolicy: Always
+          image: eu.gcr.io/platform-infrastructure-316112/platform/kuber
+          resources:
+            requests:
+              cpu: 10m
+              memory: 200Mi
+            limits:
+              cpu: 50m
+              memory: 500Mi
+          env:
+            - name: KUBER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: KUBER_PORT
+            # No hostname needed
+            - name: GOLANG_LOG
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: GOLANG_LOG
+          ports:
+            - containerPort: 50054
+          readinessProbe:
+            exec:
+              command: ["/bin/grpc_health_probe", "-addr=:50057"]
+            initialDelaySeconds: 5
+          livenessProbe:
+            exec:
+              command: ["/bin/grpc_health_probe-Liveness", "-addr=:50057"]
+            initialDelaySeconds: 10
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: kuber
+spec:
+  selector:
+    app: kuber
+  ports:
+    - protocol: TCP
+      port: 50057
+      targetPort: 50057
