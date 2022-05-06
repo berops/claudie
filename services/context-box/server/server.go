@@ -190,9 +190,19 @@ func saveToDB(config *pb.Config) (*pb.Config, error) {
 	return config, nil
 }
 
-func getFromDB(id string) (configItem, error) {
+func getFromDB(name string) (configItem, error) {
+	var data configItem //convert id to mongo type id (oid)
+
+	filter := bson.M{"name": name}
+	if err := collection.FindOne(context.Background(), filter).Decode(&data); err != nil {
+		return data, fmt.Errorf("error while finding name in the DB: %v", err)
+	}
+	return data, nil
+}
+
+func getByIDFromDB(id string) (configItem, error) {
 	var data configItem
-	oid, err := primitive.ObjectIDFromHex(id) //convert id to mongo type id (oid)
+	oid, err := primitive.ObjectIDFromHex(id) // convert id to mongo id type (oid)
 	if err != nil {
 		return data, err
 	}
@@ -316,7 +326,7 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 		return nil, fmt.Errorf("error while checking the length of future domain: %v", err)
 	}
 	// Get config with the same ID from the DB
-	data, err := getFromDB(config.GetId())
+	data, err := getFromDB(config.GetName())
 	if err != nil {
 		return nil, err
 	}
@@ -351,12 +361,18 @@ func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest
 	log.Info().Msg("CLIENT REQUEST: SaveConfigFrontEnd")
 	newConfig := req.GetConfig()
 	newConfig.MsChecksum = calcChecksum(newConfig.GetManifest())
-	if newConfig.GetId() != "" {
-		//Check if there is already ID in the DB
-		oldConfig, err := getFromDB(newConfig.GetId())
+
+	oldConfig, err := getFromDB(newConfig.GetName())
+	if err != nil {
+		log.Info().Msgf("No existing doc with name: %v", newConfig.Name)
+		newConfig, err = saveToDB(newConfig)
 		if err != nil {
-			log.Fatal().Msgf("Error while getting old newConfig from the DB %v", err)
+			return nil, status.Errorf(
+				codes.Internal,
+				fmt.Sprintf("Internal error: %v", err),
+			)
 		}
+	} else {
 		oldConfigPb, err := dataToConfigPb(&oldConfig)
 		if err != nil {
 			log.Fatal().Msgf("Error while converting data to pb %v", err)
@@ -364,13 +380,6 @@ func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest
 		newConfig.CurrentState = oldConfigPb.CurrentState
 	}
 
-	newConfig, err := saveToDB(newConfig)
-	if err != nil {
-		return nil, status.Errorf(
-			codes.Internal,
-			fmt.Sprintf("Internal error: %v", err),
-		)
-	}
 	return &pb.SaveConfigResponse{Config: newConfig}, nil
 }
 
@@ -380,7 +389,7 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 	config := req.GetConfig()
 
 	// Get config with the same ID from the DB
-	data, err := getFromDB(config.GetId())
+	data, err := getFromDB(config.GetName())
 	if err != nil {
 		return nil, err
 	}
@@ -406,7 +415,7 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 // GetConfigById is a gRPC service: function returns one config from the DB
 func (*server) GetConfigById(ctx context.Context, req *pb.GetConfigByIdRequest) (*pb.GetConfigByIdResponse, error) {
 	log.Info().Msg("CLIENT REQUEST: GetConfigById")
-	d, err := getFromDB(req.Id)
+	d, err := getByIDFromDB(req.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -474,7 +483,7 @@ func (*server) GetAllConfigs(ctx context.Context, req *pb.GetAllConfigsRequest) 
 func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*pb.DeleteConfigResponse, error) {
 	log.Info().Msg("CLIENT REQUEST: DeleteConfig")
 
-	config, err := getFromDB(req.Id)
+	config, err := getByIDFromDB(req.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -592,7 +601,19 @@ func main() {
 	}()
 
 	log.Info().Msgf("Connected to MongoDB at %s", urls.DatabaseURL)
+
+	// create collection
 	collection = client.Database("platform").Collection("config")
+
+	// create index
+	_, err = collection.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys:    bson.D{{Key: "name", Value: 1}},
+		Options: options.Index().SetUnique(true),
+	})
+	if err != nil {
+		log.Fatal().Msgf("Failed to create index, err: %v", err)
+		panic(err)
+	}
 	// Set the context-box port
 	contextboxPort := utils.GetenvOr("CONTEXT_BOX_PORT", fmt.Sprint(defaultContextBoxPort))
 
