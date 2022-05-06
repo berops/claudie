@@ -25,6 +25,9 @@ kubeEleven:
 kuber:
 	go run services/kuber/server/server.go
 
+frontend:
+	go run services/frontend/server.go
+
 # -timeout 0 will disable default timeout
 test:
 	go test -v ./services/testing-framework/... -timeout 0 -count=1
