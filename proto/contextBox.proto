@@ -17,6 +17,9 @@ message GetAllConfigsResponse {repeated Config configs = 1;}
 message GetConfigByIdRequest {string id = 1;}
 message GetConfigByIdResponse {Config config = 1;}
 
+message GetConfigByNameRequest {string name = 1;}
+message GetConfigByNameResponse {Config config = 1;}
+
 // Delete
 message DeleteConfigRequest {string id = 1;}
 message DeleteConfigResponse {string id = 1;}
@@ -28,6 +31,7 @@ service ContextBoxService {
   rpc SaveConfigBuilder(SaveConfigRequest) returns (SaveConfigResponse);
   // Get
   rpc GetConfigById(GetConfigByIdRequest) returns (GetConfigByIdResponse);
+  rpc GetConfigByName(GetConfigByNameRequest) returns (GetConfigByNameResponse);
   rpc GetConfigScheduler(GetConfigRequest) returns (GetConfigResponse);
   rpc GetConfigBuilder(GetConfigRequest) returns (GetConfigResponse);
   rpc GetAllConfigs(GetAllConfigsRequest) returns (GetAllConfigsResponse);
