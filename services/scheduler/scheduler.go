@@ -16,6 +16,7 @@ import (
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
 	cbox "github.com/Berops/platform/services/context-box/client"
+	"github.com/Berops/platform/services/scheduler/manifest"
 	"github.com/Berops/platform/urls"
 	"github.com/Berops/platform/utils"
 	"github.com/Berops/platform/worker"
@@ -42,90 +43,6 @@ var DefaultDNS = &pb.DNS{
 	Project:  "platform-infrastructure-316112",
 	Provider: claudieProvider,
 }
-
-////////////////////YAML STRUCT//////////////////////////////////////////////////
-
-type Manifest struct {
-	Name         string       `yaml:"name"`
-	Providers    []Provider   `yaml:"providers"`
-	NodePools    NodePool     `yaml:"nodePools"`
-	Kubernetes   Kubernetes   `yaml:"kubernetes"`
-	LoadBalancer LoadBalancer `yaml:"loadBalancers"`
-}
-
-type Provider struct {
-	Name        string      `yaml:"name"`
-	Credentials interface{} `yaml:"credentials"`
-}
-
-type NodePool struct {
-	Dynamic []DynamicNodePool `yaml:"dynamic"`
-	Static  []StaticNodePool  `yaml:"static"`
-}
-
-type LoadBalancer struct {
-	Roles    []Role                `yaml:"roles"`
-	Clusters []LoadBalancerCluster `yaml:"clusters"`
-}
-
-type Kubernetes struct {
-	Clusters []Cluster `yaml:"clusters"`
-}
-
-type DynamicNodePool struct {
-	Name       string                       `yaml:"name"`
-	Provider   map[string]map[string]string `yaml:"provider"`
-	Count      int64                        `yaml:"count"`
-	ServerType string                       `yaml:"server_type"`
-	Image      string                       `yaml:"image"`
-	DiskSize   int64                        `yaml:"disk_size"`
-}
-
-type StaticNodePool struct {
-	Name  string `yaml:"name"`
-	Nodes []Node `yaml:"nodes"`
-}
-
-type Node struct {
-	PublicIP      string `yaml:"publicIP"`
-	PrivateSSHKey string `yaml:"privateSshKey"`
-}
-
-type Cluster struct {
-	Name    string `yaml:"name"`
-	Version string `yaml:"version"`
-	Network string `yaml:"network"`
-	Pools   Pool   `yaml:"pools"`
-}
-
-type Pool struct {
-	Control []string `yaml:"control"`
-	Compute []string `yaml:"compute"`
-}
-
-type Role struct {
-	Name       string `yaml:"name"`
-	Protocol   string `yaml:"protocol"`
-	Port       int32  `yaml:"port"`
-	TargetPort int32  `yaml:"target_port"`
-	Target     string `yaml:"target"`
-}
-
-type LoadBalancerCluster struct {
-	Name        string   `yaml:"name"`
-	Roles       []string `yaml:"roles"`
-	DNS         DNS      `yaml:"dns,omitempty"`
-	TargetedK8s string   `yaml:"targeted-k8s"`
-	Pools       []string `yaml:"pools"`
-}
-
-type DNS struct {
-	DNSZone  string `yaml:"dns_zone,omitempty"`
-	Project  string `yaml:"project,omitempty"`
-	Hostname string `yaml:"hostname,omitempty"`
-}
-
-////////////////////////////////////////////////////////////////////////////////
 
 // MakeSSHKeyPair function generates SSH privateKey,publicKey pair
 // returns (strPrivateKey, strPublicKey)
@@ -161,7 +78,7 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 	}
 	d := []byte(config.GetManifest())
 	// Parse yaml to protobuf and create desiredState
-	var desiredState Manifest
+	var desiredState manifest.Manifest
 	err := yaml.Unmarshal(d, &desiredState)
 	if err != nil {
 		return nil, fmt.Errorf("error while unmarshalling yaml manifest: %v", err)
@@ -289,7 +206,7 @@ clusterLbDesired:
 }
 
 // populate nodepools for a cluster
-func createNodepools(pools []string, desiredState Manifest, isControl bool) []*pb.NodePool {
+func createNodepools(pools []string, desiredState manifest.Manifest, isControl bool) []*pb.NodePool {
 	var nodePools []*pb.NodePool
 	for _, nodePool := range pools {
 		// Check if the nodepool is part of the cluster
@@ -380,7 +297,7 @@ func getProviderRegionAndZone(providerMap map[string]map[string]string) (string,
 }
 
 // search of the nodePool in the nodePools []DynamicNode
-func searchNodePool(nodePoolName string, nodePools []DynamicNodePool) (bool, int) {
+func searchNodePool(nodePoolName string, nodePools []manifest.DynamicNodePool) (bool, int) {
 	for index, nodePool := range nodePools {
 		if nodePool.Name == nodePoolName {
 			return true, index
@@ -389,7 +306,7 @@ func searchNodePool(nodePoolName string, nodePools []DynamicNodePool) (bool, int
 	return false, -1
 }
 
-func searchProvider(providerName string, providers []Provider) int {
+func searchProvider(providerName string, providers []manifest.Provider) int {
 	for index, provider := range providers {
 		if provider.Name == providerName {
 			return index
@@ -398,7 +315,7 @@ func searchProvider(providerName string, providers []Provider) int {
 	return -1
 }
 
-func getMatchingRoles(roles []Role, roleNames []string) []*pb.Role {
+func getMatchingRoles(roles []manifest.Role, roleNames []string) []*pb.Role {
 	var matchingRoles []*pb.Role
 
 	for _, roleName := range roleNames {
@@ -437,7 +354,7 @@ func getMatchingRoles(roles []Role, roleNames []string) []*pb.Role {
 	return matchingRoles
 }
 
-func getDNS(lbDNS DNS, provider []Provider) *pb.DNS {
+func getDNS(lbDNS manifest.DNS, provider []manifest.Provider) *pb.DNS {
 	if lbDNS.DNSZone == "" {
 		return DefaultDNS // default zone is used
 	} else {
