@@ -1,13 +1,20 @@
 package main
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"io/ioutil"
+	"os"
+	"os/signal"
 	"path/filepath"
 	"time"
 
 	"github.com/rs/zerolog/log"
+	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v3"
 
+	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
 	cbox "github.com/Berops/platform/services/context-box/client"
 	"github.com/Berops/platform/services/scheduler/manifest"
@@ -16,8 +23,9 @@ import (
 )
 
 const (
-	manifestDir   = "/input-manifests"
-	sleepDuration = 60 * 15 // 15 minutes
+	defaultFrontendPort = 50058
+	manifestDir         = "/input-manifests"
+	sleepDuration       = 60 * 15 // 15 minutes
 )
 
 func ClientConnection() pb.ContextBoxServiceClient {
@@ -32,11 +40,16 @@ func ClientConnection() pb.ContextBoxServiceClient {
 	return c
 }
 
-func saveFiles(c pb.ContextBoxServiceClient) {
+func SaveFiles(c pb.ContextBoxServiceClient) error {
+	if c == nil {
+		return fmt.Errorf("nil client received")
+	}
+
 	// loop through the directory and list files inside
 	files, err := ioutil.ReadDir(manifestDir)
 	if err != nil {
 		log.Fatal().Msgf("Error while trying to read test sets: %v", err)
+		return err
 	}
 
 	log.Info().Msgf("Found %d files in %v", len(files), manifestDir)
@@ -48,11 +61,13 @@ func saveFiles(c pb.ContextBoxServiceClient) {
 		strManifest, err := ioutil.ReadFile(filePath)
 		if err != nil {
 			log.Fatal().Err(err)
+			return err
 		}
 		// syntax check can be done here
 		err = yaml.Unmarshal([]byte(strManifest), &manifest)
 		if err != nil {
 			log.Fatal().Err(err)
+			return err
 		}
 
 		_, err = cbox.SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
@@ -63,9 +78,19 @@ func saveFiles(c pb.ContextBoxServiceClient) {
 		})
 		if err != nil {
 			log.Fatal().Msgf("Error while saving the config: %v err: %v", file.Name(), err)
+			return err
 		}
 	}
 	log.Info().Msg("Saved all files")
+	return nil
+}
+
+func healthCheck() error {
+	err := SaveFiles(nil)
+	if err == nil {
+		return fmt.Errorf("health check function got unexpected result")
+	}
+	return nil
 }
 
 func main() {
@@ -73,9 +98,22 @@ func main() {
 
 	client := ClientConnection()
 
+	// Initialize health probes
+	healthChecker := healthcheck.NewClientHealthChecker(fmt.Sprint(defaultFrontendPort), healthCheck)
+	healthChecker.StartProbes()
+
+	g, _ := errgroup.WithContext(context.Background())
+
+	g.Go(func() error {
+		ch := make(chan os.Signal, 1)
+		signal.Notify(ch, os.Interrupt)
+		defer signal.Stop(ch)
+		<-ch
+		return errors.New("scheduler interrupt signal")
+	})
 	for {
 		// list and upload manifest
-		saveFiles(client)
+		SaveFiles(client)
 		time.Sleep(time.Duration(sleepDuration * time.Second))
 	}
 
