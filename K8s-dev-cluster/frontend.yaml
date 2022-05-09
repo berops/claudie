@@ -51,7 +51,7 @@ spec:
           httpGet:
             path: /live
             port: 50058
-         initialDelaySeconds: 10
+          initialDelaySeconds: 10
         volumeMounts:
         - name: input-manifests
           mountPath: /input-manifests/

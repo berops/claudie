@@ -113,7 +113,10 @@ func main() {
 	})
 	for {
 		// list and upload manifest
-		SaveFiles(client)
+		err := SaveFiles(client)
+		if err != nil {
+			panic(err)
+		}
 		time.Sleep(time.Duration(sleepDuration * time.Second))
 	}
 
