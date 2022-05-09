@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	manifestDir   = "/input-manifest"
+	manifestDir   = "/input-manifests"
 	sleepDuration = 60 * 15 // 15 minutes
 )
 
