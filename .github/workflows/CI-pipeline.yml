@@ -8,7 +8,7 @@ on:
 
 env:
   ENV_FILE: .env
-  SERVICES: context-box scheduler builder terraformer wireguardian kube-eleven kuber testing-framework
+  SERVICES: context-box scheduler builder terraformer wireguardian kube-eleven kuber testing-framework frontend
 
 jobs:
   #--------------------------------------------------------------------------------------------------
