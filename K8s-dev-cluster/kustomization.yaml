@@ -40,3 +40,5 @@ images:
   newTag: 37fe7fe-478
 - name: eu.gcr.io/platform-infrastructure-316112/platform/wireguardian
   newTag: 37fe7fe-478
+- name: eu.gcr.io/platform-infrastructure-316112/platform/frontend
+  newTag: 37fe7fe-478
