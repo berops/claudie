@@ -365,19 +365,22 @@ func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest
 	oldConfig, err := getFromDB(newConfig.GetName())
 	if err != nil {
 		log.Info().Msgf("No existing doc with name: %v", newConfig.Name)
-		newConfig, err = saveToDB(newConfig)
-		if err != nil {
-			return nil, status.Errorf(
-				codes.Internal,
-				fmt.Sprintf("Internal error: %v", err),
-			)
-		}
 	} else {
+		// copy current state from saved config to new config
 		oldConfigPb, err := dataToConfigPb(&oldConfig)
 		if err != nil {
 			log.Fatal().Msgf("Error while converting data to pb %v", err)
 		}
 		newConfig.CurrentState = oldConfigPb.CurrentState
+	}
+
+	// save config to DB
+	newConfig, err = saveToDB(newConfig)
+	if err != nil {
+		return nil, status.Errorf(
+			codes.Internal,
+			fmt.Sprintf("Internal error: %v", err),
+		)
 	}
 
 	return &pb.SaveConfigResponse{Config: newConfig}, nil
