@@ -44,4 +44,4 @@ COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Livenes
 
 WORKDIR /bin
 #Run server
-ENTRYPOINT [ "./services/frontend/server" ]
+ENTRYPOINT [ "./services/frontend/frontend" ]
