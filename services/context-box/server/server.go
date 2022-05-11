@@ -372,6 +372,7 @@ func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest
 			log.Fatal().Msgf("Error while converting data to pb %v", err)
 		}
 		newConfig.CurrentState = oldConfigPb.CurrentState
+		newConfig.Id = oldConfigPb.Id
 	}
 
 	// save config to DB
