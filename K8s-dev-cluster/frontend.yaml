@@ -42,6 +42,8 @@ spec:
             configMapKeyRef:
               name: env
               key: GOLANG_LOG
+        - name: MANIFEST_DIR
+          value: /input-manifests
         readinessProbe:
           httpGet:
             path: /ready

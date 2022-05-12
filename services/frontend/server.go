@@ -24,8 +24,11 @@ import (
 
 const (
 	defaultFrontendPort = 50058
-	manifestDir         = "/input-manifests"
 	sleepDuration       = 60 * 15 // 15 minutes
+)
+
+var (
+	manifestDir = os.Getenv("MANIFEST_DIR")
 )
 
 func ClientConnection() pb.ContextBoxServiceClient {
@@ -52,6 +55,13 @@ func SaveFiles(c pb.ContextBoxServiceClient) error {
 		return err
 	}
 
+	// get all saved configs
+	configsToDelete, err := cbox.GetAllConfigs(c)
+	if err != nil {
+		log.Fatal().Msgf("Failed to get all configs from the database")
+		return err
+	}
+
 	log.Info().Msgf("Found %d files in %v", len(files), manifestDir)
 
 	for _, file := range files {
@@ -66,10 +76,15 @@ func SaveFiles(c pb.ContextBoxServiceClient) error {
 		// syntax check can be done here
 		err = yaml.Unmarshal([]byte(strManifest), &manifest)
 		if err != nil {
-			log.Fatal().Err(err)
+			log.Fatal().Msgf("Failed to parse manifest file, Err:%v", err)
 			return err
 		}
 
+		// remove this config from configsToDelete
+		configsToDelete.Configs, err = removeConfig(configsToDelete.Configs, manifest.Name)
+		if err != nil {
+			log.Info().Msgf("No config saved in the database")
+		}
 		_, err = cbox.SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
 			Config: &pb.Config{
 				Name:     manifest.Name,
@@ -81,8 +96,29 @@ func SaveFiles(c pb.ContextBoxServiceClient) error {
 			return err
 		}
 	}
+
+	for _, config := range configsToDelete.Configs {
+		if err := cbox.DeleteConfig(c, config.Id); err != nil {
+			log.Error().Msgf("Failed to the delete %v with id %v", config.Name, config.Id)
+		}
+	}
 	log.Info().Msg("Saved all files")
 	return nil
+}
+
+func removeConfig(configs []*pb.Config, configName string) ([]*pb.Config, error) {
+	if len(configs) <= 0 {
+		return configs, fmt.Errorf("no Config present")
+	}
+	var index = 0
+	for _, config := range configs {
+		if config.Name == configName {
+			break
+		}
+		index++
+	}
+	configs[index] = configs[len(configs)-1]
+	return configs[:len(configs)-1], nil
 }
 
 func healthCheck() error {
