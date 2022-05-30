@@ -24,7 +24,7 @@ import (
 
 const (
 	defaultFrontendPort = 50058
-	sleepDuration       = 60 * 15 // 15 minutes
+	sleepDuration       = 60 * 5 // 5 minutes
 )
 
 var (
