@@ -237,6 +237,7 @@ func configCheck() error {
 		}
 
 		// check for Scheduler
+
 		if string(config.DsChecksum) != string(config.MsChecksum) {
 			// if scheduler ttl is 0 or smaller AND config has no errorMessage, add to scheduler Q
 			if config.SchedulerTTL <= 0 && len(config.ErrorMessage) == 0 {
@@ -279,7 +280,7 @@ func configCheck() error {
 			}
 		}
 
-		// save data if both TTL were substracted
+		// save data if both TTL were subtracted
 		c, err := dataToConfigPb(config)
 		if err != nil {
 			return err
@@ -359,24 +360,29 @@ func calcChecksum(data string) []byte {
 
 func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
 	log.Info().Msg("CLIENT REQUEST: SaveConfigFrontEnd")
-	newConfig := req.GetConfig()
-	newConfig.MsChecksum = calcChecksum(newConfig.GetManifest())
+	newConfigPb := req.GetConfig()
+	newConfigPb.MsChecksum = calcChecksum(newConfigPb.GetManifest())
 
-	oldConfig, err := getFromDB(newConfig.GetName())
+	oldConfig, err := getFromDB(newConfigPb.GetName())
 	if err != nil {
-		log.Info().Msgf("No existing doc with name: %v", newConfig.Name)
+		log.Info().Msgf("No existing doc with name: %v", newConfigPb.Name)
 	} else {
 		// copy current state from saved config to new config
 		oldConfigPb, err := dataToConfigPb(&oldConfig)
 		if err != nil {
 			log.Fatal().Msgf("Error while converting data to pb %v", err)
 		}
-		newConfig.CurrentState = oldConfigPb.CurrentState
-		newConfig.Id = oldConfigPb.Id
+		if string(oldConfigPb.MsChecksum) != string(newConfigPb.MsChecksum) {
+			oldConfigPb.MsChecksum = newConfigPb.MsChecksum
+			oldConfigPb.Manifest = newConfigPb.Manifest
+			oldConfigPb.SchedulerTTL = 0
+			oldConfigPb.BuilderTTL = 0
+		}
+		newConfigPb = oldConfigPb
 	}
 
 	// save config to DB
-	newConfig, err = saveToDB(newConfig)
+	newConfigPb, err = saveToDB(newConfigPb)
 	if err != nil {
 		return nil, status.Errorf(
 			codes.Internal,
@@ -384,7 +390,7 @@ func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest
 		)
 	}
 
-	return &pb.SaveConfigResponse{Config: newConfig}, nil
+	return &pb.SaveConfigResponse{Config: newConfigPb}, nil
 }
 
 // SaveConfigBuilder is a gRPC service: the function saves config to the DB after receiving it from Builder
