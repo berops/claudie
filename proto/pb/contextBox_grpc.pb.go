@@ -23,7 +23,7 @@ type ContextBoxServiceClient interface {
 	SaveConfigScheduler(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error)
 	SaveConfigBuilder(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error)
 	// Get
-	GetConfigById(ctx context.Context, in *GetConfigByIdRequest, opts ...grpc.CallOption) (*GetConfigByIdResponse, error)
+	GetConfigFromDB(ctx context.Context, in *GetConfigFromDBRequest, opts ...grpc.CallOption) (*GetConfigFromDBResponse, error)
 	GetConfigByName(ctx context.Context, in *GetConfigByNameRequest, opts ...grpc.CallOption) (*GetConfigByNameResponse, error)
 	GetConfigScheduler(ctx context.Context, in *GetConfigRequest, opts ...grpc.CallOption) (*GetConfigResponse, error)
 	GetConfigBuilder(ctx context.Context, in *GetConfigRequest, opts ...grpc.CallOption) (*GetConfigResponse, error)
@@ -67,9 +67,9 @@ func (c *contextBoxServiceClient) SaveConfigBuilder(ctx context.Context, in *Sav
 	return out, nil
 }
 
-func (c *contextBoxServiceClient) GetConfigById(ctx context.Context, in *GetConfigByIdRequest, opts ...grpc.CallOption) (*GetConfigByIdResponse, error) {
-	out := new(GetConfigByIdResponse)
-	err := c.cc.Invoke(ctx, "/platform.ContextBoxService/GetConfigById", in, out, opts...)
+func (c *contextBoxServiceClient) GetConfigFromDB(ctx context.Context, in *GetConfigFromDBRequest, opts ...grpc.CallOption) (*GetConfigFromDBResponse, error) {
+	out := new(GetConfigFromDBResponse)
+	err := c.cc.Invoke(ctx, "/platform.ContextBoxService/GetConfigFromDB", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +130,7 @@ type ContextBoxServiceServer interface {
 	SaveConfigScheduler(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error)
 	SaveConfigBuilder(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error)
 	// Get
-	GetConfigById(context.Context, *GetConfigByIdRequest) (*GetConfigByIdResponse, error)
+	GetConfigFromDB(context.Context, *GetConfigFromDBRequest) (*GetConfigFromDBResponse, error)
 	GetConfigByName(context.Context, *GetConfigByNameRequest) (*GetConfigByNameResponse, error)
 	GetConfigScheduler(context.Context, *GetConfigRequest) (*GetConfigResponse, error)
 	GetConfigBuilder(context.Context, *GetConfigRequest) (*GetConfigResponse, error)
@@ -153,8 +153,8 @@ func (UnimplementedContextBoxServiceServer) SaveConfigScheduler(context.Context,
 func (UnimplementedContextBoxServiceServer) SaveConfigBuilder(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SaveConfigBuilder not implemented")
 }
-func (UnimplementedContextBoxServiceServer) GetConfigById(context.Context, *GetConfigByIdRequest) (*GetConfigByIdResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetConfigById not implemented")
+func (UnimplementedContextBoxServiceServer) GetConfigFromDB(context.Context, *GetConfigFromDBRequest) (*GetConfigFromDBResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetConfigFromDB not implemented")
 }
 func (UnimplementedContextBoxServiceServer) GetConfigByName(context.Context, *GetConfigByNameRequest) (*GetConfigByNameResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetConfigByName not implemented")
@@ -238,20 +238,20 @@ func _ContextBoxService_SaveConfigBuilder_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ContextBoxService_GetConfigById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetConfigByIdRequest)
+func _ContextBoxService_GetConfigFromDB_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetConfigFromDBRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ContextBoxServiceServer).GetConfigById(ctx, in)
+		return srv.(ContextBoxServiceServer).GetConfigFromDB(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/platform.ContextBoxService/GetConfigById",
+		FullMethod: "/platform.ContextBoxService/GetConfigFromDB",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ContextBoxServiceServer).GetConfigById(ctx, req.(*GetConfigByIdRequest))
+		return srv.(ContextBoxServiceServer).GetConfigFromDB(ctx, req.(*GetConfigFromDBRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -366,8 +366,8 @@ var ContextBoxService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ContextBoxService_SaveConfigBuilder_Handler,
 		},
 		{
-			MethodName: "GetConfigById",
-			Handler:    _ContextBoxService_GetConfigById_Handler,
+			MethodName: "GetConfigFromDB",
+			Handler:    _ContextBoxService_GetConfigFromDB_Handler,
 		},
 		{
 			MethodName: "GetConfigByName",
