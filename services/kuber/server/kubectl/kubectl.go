@@ -113,6 +113,6 @@ func (k Kubectl) getKubeconfig() string {
 	if k.Kubeconfig == "" {
 		return ""
 	} else {
-		return k.getKubeconfig()
+		return fmt.Sprintf("--kubeconfig <(echo '%s')", k.Kubeconfig)
 	}
 }
