@@ -4,9 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"os/exec"
+	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/Berops/platform/proto/pb"
@@ -15,20 +14,60 @@ import (
 	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
 
+	"io/fs"
 	"io/ioutil"
 	"testing"
 )
 
+type idInfo struct {
+	id     string
+	idType pb.IdType
+}
+
 const (
-	testDir          = "tests"
-	maxTimeout       = 3600 // max allowed time for one manifest to finish in [seconds]
-	maxLonghornCheck = 240  // max allowed time for pods of longhorn-system to be ready [seconds]
-	sleepSec         = 30   // seconds for one cycle of config check
-	sleepSecPods     = 10   // seconds for one cycle of longhorn checks (the node and pod checks)
+	testDir = "tests"
+
+	maxTimeout     = 3600   // max allowed time for one manifest to finish in [seconds]
+	sleepSec       = 30     // seconds for one cycle of config check
+	maxTimeoutSave = 60 * 6 // max allowed time for config to be found in the database
 )
 
-// ClientConnection will return new client connection to Context-box
-func ClientConnection() pb.ContextBoxServiceClient {
+// TestPlatform will start all the test cases specified in tests directory
+func TestPlatform(t *testing.T) {
+	utils.InitLog("testing-framework", "GOLANG_LOG")
+	c := clientConnection()
+	log.Info().Msg("----Starting the tests----")
+
+	// loop through the directory and list files inside
+	files, err := ioutil.ReadDir(testDir)
+	if err != nil {
+		log.Fatal().Msgf("Error while trying to read test sets: %v", err)
+	}
+
+	// save all the test set paths
+	var setNames []string
+	for _, f := range files {
+		if f.IsDir() {
+			log.Info().Msgf("Found test set: %s", f.Name())
+			setNames = append(setNames, f.Name())
+		}
+	}
+
+	// retrieve namespace from ENV
+	namespace := os.Getenv("NAMESPACE")
+
+	// apply the test sets
+	for _, path := range setNames {
+		err := applyTestSet(path, namespace, c)
+		if err != nil {
+			t.Logf("Error while processing %s : %v", path, err)
+			t.Fail()
+		}
+	}
+}
+
+// clientConnection will return new client connection to Context-box
+func clientConnection() pb.ContextBoxServiceClient {
 	cc, err := utils.GrpcDialWithInsecure("context-box", urls.ContextBoxURL)
 	if err != nil {
 		log.Fatal().Err(err)
@@ -39,79 +78,65 @@ func ClientConnection() pb.ContextBoxServiceClient {
 	return c
 }
 
-// TestPlatform will start all the test cases specified in tests directory
-func TestPlatform(t *testing.T) {
-	utils.InitLog("testing-framework", "GOLANG_LOG")
-	c := ClientConnection()
-	log.Info().Msg("----Starting the tests----")
-
-	// loop through the directory and list files inside
-	files, err := ioutil.ReadDir(testDir)
-	if err != nil {
-		log.Fatal().Msgf("Error while trying to read test sets: %v", err)
-	}
-
-	// save all the test set paths
-	var pathsToSets []string
-	for _, f := range files {
-		if f.IsDir() {
-			log.Info().Msgf("Found test set: %s", f.Name())
-			setTestDir := filepath.Join(testDir, f.Name())
-			pathsToSets = append(pathsToSets, setTestDir)
-		}
-	}
-
-	for _, path := range pathsToSets {
-		err := applyTestSet(path, c)
-		if err != nil {
-			t.Logf("Error while processing %s : %v", path, err)
-			t.Fail()
-		}
-	}
-}
-
-// applyTestSet function will apply test set sequantially to a platform
-func applyTestSet(pathToSet string, c pb.ContextBoxServiceClient) error {
+// applyTestSet function will apply test set sequentially to a platform
+func applyTestSet(setName, namespace string, c pb.ContextBoxServiceClient) error {
 	done := make(chan string)
-	var id string
+	idInfo := idInfo{id: "", idType: -1}
 
-	log.Info().Msgf("Working on the test set: %s", pathToSet)
+	pathToTestSet := filepath.Join(testDir, setName)
+	log.Info().Msgf("Working on the test set: %s", pathToTestSet)
 
-	files, err := ioutil.ReadDir(pathToSet)
+	manifestFiles, err := ioutil.ReadDir(pathToTestSet)
 	if err != nil {
-		log.Fatal().Msgf("Error while trying to read test configs: %v", err)
+		log.Fatal().Msgf("Error while trying to read test manifests: %v", err)
 	}
 
-	for _, file := range files {
-		setFile := filepath.Join(pathToSet, file.Name())
-		manifest, errR := ioutil.ReadFile(setFile)
-		if errR != nil {
-			log.Fatal().Err(errR)
-		}
-
-		id, err = cbox.SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
-			Config: &pb.Config{
-				Name:     file.Name(),
-				Id:       id,
-				Manifest: string(manifest),
-			},
-		})
-
+	for _, manifest := range manifestFiles {
+		// create a path and read the file
+		manifestPath := filepath.Join(pathToTestSet, manifest.Name())
+		yamlFile, err := ioutil.ReadFile(manifestPath)
 		if err != nil {
-			log.Fatal().Msgf("Error while saving a config: %v", err)
+			log.Error().Msgf("Error while reading the manifest %s : %v", manifestPath, err)
 			return err
 		}
-		go configChecker(done, c, id, file.Name(), pathToSet)
+
+		if namespace != "" {
+			idInfo, err = clusterTesting(yamlFile, setName, pathToTestSet, manifestPath, namespace, c)
+			if err != nil {
+				log.Error().Msgf("Error while applying manifest %s : %v", manifest.Name(), err)
+				return err
+			}
+		} else {
+			idInfo, err = localTesting(manifest, yamlFile, idInfo.id, c)
+			if err != nil {
+				log.Error().Msgf("Error while applying manifest %s : %v", manifest.Name(), err)
+				return err
+			}
+		}
+
+		go configChecker(done, c, pathToTestSet, manifest.Name(), idInfo)
 		// wait until test config has been processed
 		if res := <-done; res != "ok" {
 			log.Error().Msg(res)
 			return fmt.Errorf(res)
 		}
 	}
+
 	// clean up
-	log.Info().Msgf("Deleting the clusters from test set: %s", pathToSet)
-	err = cbox.DeleteConfig(c, id)
+	log.Info().Msgf("Deleting the clusters from test set: %s", pathToTestSet)
+
+	//delete secret from cluster
+	if namespace != "" {
+		err = deleteSecret(setName, namespace)
+		if err != nil {
+			log.Error().Msgf("Error while deleting the secret from %s : %v", pathToTestSet, err)
+			return err
+		}
+	}
+	// delete config from database
+	err = cbox.DeleteConfig(c, idInfo.id)
 	if err != nil {
+		log.Error().Msgf("Error while deleting the clusters from test set %s : %v", pathToTestSet, err)
 		return err
 	}
 
@@ -119,50 +144,37 @@ func applyTestSet(pathToSet string, c pb.ContextBoxServiceClient) error {
 }
 
 // configChecker function will check if the config has been applied every 30s
-func configChecker(done chan string, c pb.ContextBoxServiceClient, configID, configName, testSetName string) {
+func configChecker(done chan string, c pb.ContextBoxServiceClient, testSetName, manifestName string, idInfo idInfo) {
 	counter := 1
 	for {
 		elapsedSec := counter * sleepSec
-		// if CSchecksum == DSchecksum, the config has been processed
-		config, err := c.GetConfigById(context.Background(), &pb.GetConfigByIdRequest{
-			Id: configID,
+		config, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{
+			Id:   idInfo.id,
+			Type: idInfo.idType,
 		})
 		if err != nil {
 			log.Fatal().Msg(fmt.Sprintf("Got error while waiting for config to finish: %v", err))
 		}
 		if config != nil {
-			cfg := config.Config
-			if len(cfg.ErrorMessage) > 0 {
-				emsg := cfg.ErrorMessage
+			if len(config.Config.ErrorMessage) > 0 {
+				emsg := config.Config.ErrorMessage
 				log.Error().Msg(emsg)
 				done <- emsg
 				return
 			}
-			cs := cfg.CsChecksum
-			ds := cfg.DsChecksum
-			if checksumsEqual(cs, ds) {
-				//start longhorn testing
-				clusters := cfg.CurrentState.Clusters
-				for _, cluster := range clusters {
-					// check number of nodes in nodes.longhorn.io
-					err := checkLonghornNodes(cluster)
-					if err != nil {
-						emsg := fmt.Sprintf("error while checking the nodes.longhorn.io : %v", err)
-						log.Fatal().Msg(emsg)
-						done <- emsg
-					}
-					// check if all pods from longhorn-system are ready
-					err = checkLonghornPods(cluster.Kubeconfig, cluster.ClusterInfo.Name)
-					if err != nil {
-						emsg := fmt.Sprintf("error while checking if all pods from longhorn-system are ready : %v", err)
-						log.Fatal().Msg(emsg)
-						done <- emsg
-					}
-				}
+
+			// if checksums are equal, the config has been processed by claudie
+			if checksumsEqual(config.Config.MsChecksum, config.Config.CsChecksum) && checksumsEqual(config.Config.CsChecksum, config.Config.DsChecksum) {
+				log.Info().Msgf("Manifest %s from %s is done...", manifestName, testSetName)
+				//err := testLonghornDeployment(config, done)
+				//if err != nil {
+				//	log.Fatal().Msg(err.Error())
+				//	done <- err.Error()
+				//}
 				break
 			}
 		}
-		if elapsedSec == maxTimeout {
+		if elapsedSec >= maxTimeout {
 			emsg := fmt.Sprintf("Test took too long... Aborting on timeout %d seconds", maxTimeout)
 			log.Fatal().Msg(emsg)
 			done <- emsg
@@ -170,7 +182,7 @@ func configChecker(done chan string, c pb.ContextBoxServiceClient, configID, con
 		}
 		time.Sleep(time.Duration(sleepSec) * time.Second)
 		counter++
-		log.Info().Msgf("Waiting for %s to from %s finish... [ %ds elapsed ]", configName, testSetName, elapsedSec)
+		log.Info().Msgf("Waiting for %s to from %s finish... [ %ds elapsed ]", manifestName, testSetName, elapsedSec)
 	}
 	// send signal that config has been processed, unblock the applyTestSet
 	done <- "ok"
@@ -185,70 +197,76 @@ func checksumsEqual(checksum1 []byte, checksum2 []byte) bool {
 	}
 }
 
-// checkLonghornNodes will check if the count of nodes.longhorn.io is same as number of schedulable nodes
-func checkLonghornNodes(cluster *pb.K8Scluster) error {
-	command := fmt.Sprintf("kubectl get nodes.longhorn.io -A -o json --kubeconfig <(echo '%s') | jq -r '.items | length '", cluster.Kubeconfig)
-	allNodesFound := false
-	readyCheck := 0
-	workerCount := 0
-	count := "" //in order to save last value for error message, the var is defined here
-	//count the worker nodes
-	for _, nodepool := range cluster.ClusterInfo.NodePools {
-		if !nodepool.IsControl {
-			workerCount += int(nodepool.Count)
-		}
+// clusterTesting will perform actions needed for testing framework to function in k8s cluster deployment
+// this option is only used when NAMESPACE env var has been found
+// this option is testing the whole claudie
+func clusterTesting(yamlFile []byte, setName, pathToTestSet, manifestPath, namespace string, c pb.ContextBoxServiceClient) (idInfo, error) {
+	// get the id from manifest file
+	id, err := getManifestId(yamlFile)
+	idType := pb.IdType_NAME
+	if err != nil {
+		log.Error().Msgf("Error while getting an id for %s : %v", manifestPath, err)
+		return idInfo{}, err
 	}
-	// give them time of maxLonghornCheck seconds to be scheduled
-	for readyCheck < maxLonghornCheck {
-		cmd := exec.Command("/bin/bash", "-c", command)
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			emsg := fmt.Sprintf("error while getting the nodes.longhorn.io count in cluster %s : %v", cluster.ClusterInfo.Name, err)
-			return fmt.Errorf(emsg)
-		}
-		//trim the whitespaces
-		count = strings.Trim(string(out), "\t\n ")
-		// the number of worker nodes should be equal to number of scheduled nodes in longhorn
-		// NOTE: by default, master nodes will not be used to schedule pods, however, if this changes the condition will be broken
-		if count != fmt.Sprint(workerCount) {
-			readyCheck += sleepSecPods
-		} else {
-			allNodesFound = true
-			break
-		}
-		time.Sleep(time.Duration(sleepSecPods) * time.Second)
-		log.Info().Msgf("Waiting for nodes.longhorn.io to be initialized in cluster %s... [ %ds elapsed ]", cluster.ClusterInfo.Name, readyCheck)
+
+	// create/edit a secret which holds current manifest
+	err = manageSecret(setName, pathToTestSet, manifestPath, namespace)
+	if err != nil {
+		log.Error().Msgf("Error while creating/editing a secret : %v", err)
+		return idInfo{}, err
 	}
-	if !allNodesFound {
-		return fmt.Errorf(fmt.Sprintf("the count of schedulable nodes (%d) is not equal to nodes.longhorn.io (%s) in cluster %s", workerCount, count, cluster.ClusterInfo.Name))
+	err = checkIfManifestSaved(id, idType, c)
+	if err != nil {
+		return idInfo{}, err
 	}
-	return nil
+	return idInfo{id: id, idType: idType}, nil
 }
 
-// checkLonghornPods will check if the pods in longhorn-system namespace are in ready state
-func checkLonghornPods(config, clusterName string) error {
-	command := fmt.Sprintf("kubectl get pods -n longhorn-system -o json --kubeconfig <(echo '%s') | jq -r '.items[] | .status.containerStatuses[].ready'", config)
-	readyCheck := 0
-	allPodsReady := false
-	// give them time of maxLonghornCheck seconds to be scheduled
-	for readyCheck < maxLonghornCheck {
-		cmd := exec.Command("/bin/bash", "-c", command)
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			return fmt.Errorf(fmt.Sprintf("error while getting the status of the pods in longhorn-system in cluster %s : %v", clusterName, err))
-		}
-		// if some are not ready, wait sleepSecPods seconds
-		if strings.Contains(string(out), "false") {
-			readyCheck += sleepSecPods
-		} else {
-			allPodsReady = true
-			break
-		}
-		time.Sleep(time.Duration(sleepSecPods) * time.Second)
-		log.Info().Msgf("Waiting for pods from longhorn-system namespace in cluster %s to be in ready state... [ %ds elapsed ]", clusterName, readyCheck)
+// localTesting will perform actions needed for testing framework to function in local deployment
+// this option is only used when NAMESPACE env var has NOT been found
+// this option is NOT testing the whole claudie (the frontend is omitted from workflow)
+func localTesting(manifest fs.FileInfo, yamlFile []byte, id string, c pb.ContextBoxServiceClient) (idInfo, error) {
+	// testing locally - NOT TESTING THE FRONTEND!
+	id, err := cbox.SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
+		Config: &pb.Config{
+			Name:     manifest.Name(),
+			Id:       id,
+			Manifest: string(yamlFile),
+		},
+	})
+	if err != nil {
+		return idInfo{}, err
 	}
-	if !allPodsReady {
-		return fmt.Errorf("pods in longhorn-system took too long to initialize in cluster %s", clusterName)
+	return idInfo{id: id, idType: pb.IdType_HASH}, nil
+}
+
+// checkIfManifestSaved function will wait until the manifest has been picked up from the secret by the frontend component and
+// that it has been saved in database; throws error after set amount of time
+func checkIfManifestSaved(configID string, idType pb.IdType, c pb.ContextBoxServiceClient) error {
+	counter := 1
+	// wait for the secret to be saved in the database and check if the secret has been updated with the new manifest
+	for {
+		time.Sleep(20 * time.Second)
+		elapsedSec := counter * 20
+		log.Info().Msgf("Waiting for secret to be picked up by the frontend... [ %ds elapsed...]", elapsedSec)
+		counter++
+		config, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{
+			Id:   configID,
+			Type: idType,
+		})
+		if err == nil {
+			// if manifest checksum != desired state checksum -> the manifest has been updated
+			if !checksumsEqual(config.Config.MsChecksum, config.Config.CsChecksum) || !checksumsEqual(config.Config.CsChecksum, config.Config.DsChecksum) {
+				log.Info().Msgf("Manifest has been saved...")
+				break
+			} else {
+				if elapsedSec > maxTimeoutSave {
+					return fmt.Errorf("The secret has not been picked up by the frontend in time, aborting...")
+				}
+			}
+		} else if elapsedSec > maxTimeoutSave {
+			return fmt.Errorf("The secret has not been picked up by the frontend in time, aborting...")
+		}
 	}
 	return nil
 }
