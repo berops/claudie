@@ -190,7 +190,7 @@ func saveToDB(config *pb.Config) (*pb.Config, error) {
 	return config, nil
 }
 
-func getFromDB(name string) (configItem, error) {
+func getByNameFromDB(name string) (configItem, error) {
 	var data configItem //convert id to mongo type id (oid)
 
 	filter := bson.M{"name": name}
@@ -327,7 +327,7 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 		return nil, fmt.Errorf("error while checking the length of future domain: %v", err)
 	}
 	// Get config with the same ID from the DB
-	data, err := getFromDB(config.GetName())
+	data, err := getByNameFromDB(config.GetName())
 	if err != nil {
 		return nil, err
 	}
@@ -363,7 +363,7 @@ func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest
 	newConfigPb := req.GetConfig()
 	newConfigPb.MsChecksum = calcChecksum(newConfigPb.GetManifest())
 
-	oldConfig, err := getFromDB(newConfigPb.GetName())
+	oldConfig, err := getByNameFromDB(newConfigPb.GetName())
 	if err != nil {
 		log.Info().Msgf("No existing doc with name: %v", newConfigPb.Name)
 	} else {
@@ -399,7 +399,7 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 	config := req.GetConfig()
 
 	// Get config with the same ID from the DB
-	data, err := getFromDB(config.GetName())
+	data, err := getByNameFromDB(config.GetName())
 	if err != nil {
 		return nil, err
 	}
@@ -423,17 +423,27 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 }
 
 // GetConfigById is a gRPC service: function returns one config from the DB
-func (*server) GetConfigById(ctx context.Context, req *pb.GetConfigByIdRequest) (*pb.GetConfigByIdResponse, error) {
-	log.Info().Msg("CLIENT REQUEST: GetConfigById")
-	d, err := getByIDFromDB(req.Id)
-	if err != nil {
-		return nil, err
+func (*server) GetConfigFromDB(ctx context.Context, req *pb.GetConfigFromDBRequest) (*pb.GetConfigFromDBResponse, error) {
+	log.Info().Msg("CLIENT REQUEST: GetConfigFromDB")
+	var d configItem
+	var err error
+	if req.Type == pb.IdType_HASH {
+		d, err = getByIDFromDB(req.Id)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		d, err = getByNameFromDB(req.Id)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	config, err := dataToConfigPb(&d)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.GetConfigByIdResponse{Config: config}, nil
+	return &pb.GetConfigFromDBResponse{Config: config}, nil
 }
 
 // GetConfigScheduler is a gRPC service: function returns one config from the queueScheduler
@@ -493,9 +503,18 @@ func (*server) GetAllConfigs(ctx context.Context, req *pb.GetAllConfigsRequest) 
 func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*pb.DeleteConfigResponse, error) {
 	log.Info().Msg("CLIENT REQUEST: DeleteConfig")
 
-	config, err := getByIDFromDB(req.Id)
-	if err != nil {
-		return nil, err
+	var config configItem
+	var err error
+	if req.Type == pb.IdType_HASH {
+		config, err = getByIDFromDB(req.Id)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		config, err = getByNameFromDB(req.Id)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	c, err := dataToConfigPb(&config)
@@ -508,14 +527,13 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 		return nil, err
 	} //destroy infrastructure with terraformer
 
-	oid, err := primitive.ObjectIDFromHex(req.GetId()) //convert id to mongo type id (oid)
-	if err != nil {
-		return nil, status.Errorf(
-			codes.InvalidArgument,
-			fmt.Sprintln("Cannot parse ID"),
-		)
+	var filter primitive.M
+	if req.Type == pb.IdType_HASH {
+		filter = bson.M{"_id": req.Id} //create filter for searching in the database
+	} else {
+		filter = bson.M{"name": req.Id} //create filter for searching in the database
 	}
-	filter := bson.M{"_id": oid}                                   //create filter for searching in the database
+
 	res, err := collection.DeleteOne(context.Background(), filter) //delete object from the database
 	if err != nil {
 		return nil, status.Errorf(
@@ -523,7 +541,6 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 			fmt.Sprintf("Cannot delete config in MongoDB: %v", err),
 		)
 	}
-
 	if res.DeletedCount == 0 { //check if the object was really deleted
 		return nil, status.Errorf(
 			codes.NotFound,

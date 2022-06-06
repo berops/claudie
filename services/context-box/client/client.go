@@ -92,8 +92,8 @@ func DeleteConfig(c pb.ContextBoxServiceClient, id string) error {
 }
 
 // PrintConfig prints a desired config with a current state
-func PrintConfig(c pb.ContextBoxServiceClient, id string) (*pb.GetConfigByIdResponse, error) {
-	res, err := c.GetConfigById(context.Background(), &pb.GetConfigByIdRequest{Id: id})
+func PrintConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType) (*pb.GetConfigFromDBResponse, error) {
+	res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: id, Type: idType})
 	if err != nil {
 		log.Fatal().Msgf("Failed to get config ID %s : %v", id, err)
 	}
