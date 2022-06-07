@@ -114,16 +114,16 @@ services:
     deploy:
       restart_policy:
         condition: on-failure
-    frontend: 
-      platform: linux/amd64
-      image: eu.gcr.io/platform-infrastructure-316112/platform/frontend
-      build:
-        context: .
-        dockerfile: ./services/frontend/Dockerfile
-      container_name: frontend
-      depends_on: 
-        - context-box
-      env_file: K8s-dev-cluster/.env
-      deploy:
-        restart_policy: 
-          condition: on-failure
+  frontend:
+    platform: linux/amd64
+    image: eu.gcr.io/platform-infrastructure-316112/platform/frontend
+    build:
+      context: .
+      dockerfile: ./services/frontend/Dockerfile
+    container_name: frontend
+    depends_on:
+      - context-box
+    env_file: K8s-dev-cluster/.env
+    deploy:
+      restart_policy:
+        condition: on-failure
