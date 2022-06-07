@@ -81,8 +81,8 @@ func GetAllConfigs(c pb.ContextBoxServiceClient) (*pb.GetAllConfigsResponse, err
 }
 
 // DeleteConfig deletes object from the mongoDB database with a specified Id
-func DeleteConfig(c pb.ContextBoxServiceClient, id string) error {
-	res, err := c.DeleteConfig(context.Background(), &pb.DeleteConfigRequest{Id: id})
+func DeleteConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType) error {
+	res, err := c.DeleteConfig(context.Background(), &pb.DeleteConfigRequest{Id: id, Type: idType})
 	if err != nil {
 		return fmt.Errorf("Error deleting: %v", err)
 	}
