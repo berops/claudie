@@ -15,8 +15,8 @@ const (
 	sleepSecPods     = 10  // seconds for one cycle of longhorn checks (the node and pod checks)
 )
 
-type KubectlJson struct {
-	ApiVersion string                   `json:"apiVersion"`
+type KubectlJSON struct {
+	APIVersion string                   `json:"apiVersion"`
 	Items      []map[string]interface{} `json:"items"`
 	Kind       string                   `json:"kind"`
 	Metadata   map[string]interface{}   `json:"metadata"`
@@ -117,13 +117,13 @@ func testLonghornDeployment(config *pb.GetConfigFromDBResponse, done chan string
 // returns true if every pod is ready, false otherwise
 func parseNodesOutput(out []byte, nodesExpected int) (bool, int, error) {
 	// parse output
-	var parsedJson KubectlJson
-	err := json.Unmarshal(out, &parsedJson)
+	var parsedJSON KubectlJSON
+	err := json.Unmarshal(out, &parsedJSON)
 	if err != nil {
 		return false, -1, fmt.Errorf("error while unmarshalling output data : %v", err)
 	}
 	// get number of nodes currently
-	nodes := len(parsedJson.Items)
+	nodes := len(parsedJSON.Items)
 
 	if nodes == nodesExpected {
 		return true, nodes, nil
@@ -136,13 +136,13 @@ func parseNodesOutput(out []byte, nodesExpected int) (bool, int, error) {
 // returns true if every pod is ready, false otherwise
 func parsePodsOutput(out []byte) (bool, error) {
 	// parse output
-	var parsedJson KubectlJson
-	err := json.Unmarshal(out, &parsedJson)
+	var parsedJSON KubectlJSON
+	err := json.Unmarshal(out, &parsedJSON)
 	if err != nil {
 		return false, fmt.Errorf("error while unmarshalling output data : %v", err)
 	}
 	// iterate over all returned items
-	for _, item := range parsedJson.Items {
+	for _, item := range parsedJSON.Items {
 		// get status field
 		status := item["status"].(map[string]interface{})
 		// get container statuses
