@@ -14,7 +14,7 @@ import (
 )
 
 type Secret struct {
-	ApiVersion string   `yaml:"apiVersion"`
+	APIVersion string   `yaml:"apiVersion"`
 	Kind       string   `yaml:"kind"`
 	Metadata   Metadata `yaml:"metadata"`
 	SecretType string   `yaml:"type"`
@@ -35,12 +35,11 @@ type Label struct {
 }
 
 var (
-	secret = Secret{ApiVersion: "v1", Kind: "Secret", Metadata: Metadata{Labels: Label{}}, SecretType: "Opaque", Data: Data{}}
+	secret = Secret{APIVersion: "v1", Kind: "Secret", Metadata: Metadata{Labels: Label{}}, SecretType: "Opaque", Data: Data{}}
 )
 
 const (
-	secretLabel = "claudie.io/input-manifest"
-	secretFile  = "secret.yaml"
+	secretFile = "secret.yaml"
 )
 
 // createSecret function will create a secret.yaml file in test set directory, with a specified manifest in data encoded as base64 string
@@ -108,6 +107,7 @@ func manageSecret(setName, testSetPath, manifestPath, namespace string) error {
 	if err != nil {
 		return err
 	}
+	var secretPath string
 	// check if secret present
 	command := fmt.Sprintf("%s %s -n %s", "kubectl get secret", setName, namespace)
 	cmd := exec.Command("/bin/bash", "-c", command)
@@ -118,22 +118,18 @@ func manageSecret(setName, testSetPath, manifestPath, namespace string) error {
 		if err != nil {
 			return err
 		}
-		secretPath := filepath.Join(testSetPath, secretFile)
-		err = applySecret(secretPath, namespace)
-		if err != nil {
-			return err
-		}
+		secretPath = filepath.Join(testSetPath, secretFile)
 	} else {
 		pathToSecret := filepath.Join(testSetPath, secretFile)
 		err := editSecret(manifest, pathToSecret)
 		if err != nil {
 			return err
 		}
-		secretPath := filepath.Join(testSetPath, secretFile)
-		err = applySecret(secretPath, namespace)
-		if err != nil {
-			return err
-		}
+		secretPath = filepath.Join(testSetPath, secretFile)
+	}
+	err = applySecret(secretPath, namespace)
+	if err != nil {
+		return err
 	}
 	return nil
 }

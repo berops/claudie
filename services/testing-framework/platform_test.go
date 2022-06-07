@@ -132,12 +132,13 @@ func applyTestSet(setName, namespace string, c pb.ContextBoxServiceClient) error
 			log.Error().Msgf("Error while deleting the secret from %s : %v", pathToTestSet, err)
 			return err
 		}
-	}
-	// delete config from database
-	err = cbox.DeleteConfig(c, idInfo.id)
-	if err != nil {
-		log.Error().Msgf("Error while deleting the clusters from test set %s : %v", pathToTestSet, err)
-		return err
+	} else {
+		// delete config from database
+		err = cbox.DeleteConfig(c, idInfo.id, pb.IdType_HASH)
+		if err != nil {
+			log.Error().Msgf("Error while deleting the clusters from test set %s : %v", pathToTestSet, err)
+			return err
+		}
 	}
 
 	return nil
@@ -165,12 +166,13 @@ func configChecker(done chan string, c pb.ContextBoxServiceClient, testSetName, 
 
 			// if checksums are equal, the config has been processed by claudie
 			if checksumsEqual(config.Config.MsChecksum, config.Config.CsChecksum) && checksumsEqual(config.Config.CsChecksum, config.Config.DsChecksum) {
+				// test longhorn deployment
+				err := testLonghornDeployment(config, done)
+				if err != nil {
+					log.Fatal().Msg(err.Error())
+					done <- err.Error()
+				}
 				log.Info().Msgf("Manifest %s from %s is done...", manifestName, testSetName)
-				//err := testLonghornDeployment(config, done)
-				//if err != nil {
-				//	log.Fatal().Msg(err.Error())
-				//	done <- err.Error()
-				//}
 				break
 			}
 		}
