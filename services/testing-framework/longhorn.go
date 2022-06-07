@@ -22,6 +22,26 @@ type KubectlJSON struct {
 	Metadata   map[string]interface{}   `json:"metadata"`
 }
 
+// testLonghornDeployment function will perform actions needed to confirm that longhorn has been successfully deployed in the cluster
+func testLonghornDeployment(config *pb.GetConfigFromDBResponse) error {
+	//start longhorn testing
+	clusters := config.Config.CurrentState.Clusters
+	for _, cluster := range clusters {
+		// check number of nodes in nodes.longhorn.io
+		err := checkLonghornNodes(cluster)
+		if err != nil {
+			return fmt.Errorf("error while checking the nodes.longhorn.io : %v", err)
+
+		}
+		// check if all pods from longhorn-system are ready
+		err = checkLonghornPods(cluster.Kubeconfig, cluster.ClusterInfo.Name)
+		if err != nil {
+			return fmt.Errorf("error while checking if all pods from longhorn-system are ready : %v", err)
+		}
+	}
+	return nil
+}
+
 // checkLonghornNodes will check if the count of nodes.longhorn.io is same as number of schedulable nodes
 func checkLonghornNodes(cluster *pb.K8Scluster) error {
 	command := fmt.Sprintf("kubectl get nodes.longhorn.io -A -o json --kubeconfig <(echo '%s')", cluster.Kubeconfig)
@@ -89,26 +109,6 @@ func checkLonghornPods(config, clusterName string) error {
 	}
 	if !allPodsReady {
 		return fmt.Errorf("pods in longhorn-system took too long to initialize in cluster %s", clusterName)
-	}
-	return nil
-}
-
-// testLonghornDeployment function will perform actions needed to confirm that longhorn has been successfully deployed in the cluster
-func testLonghornDeployment(config *pb.GetConfigFromDBResponse, done chan string) error {
-	//start longhorn testing
-	clusters := config.Config.CurrentState.Clusters
-	for _, cluster := range clusters {
-		// check number of nodes in nodes.longhorn.io
-		err := checkLonghornNodes(cluster)
-		if err != nil {
-			return fmt.Errorf("error while checking the nodes.longhorn.io : %v", err)
-
-		}
-		// check if all pods from longhorn-system are ready
-		err = checkLonghornPods(cluster.Kubeconfig, cluster.ClusterInfo.Name)
-		if err != nil {
-			return fmt.Errorf("error while checking if all pods from longhorn-system are ready : %v", err)
-		}
 	}
 	return nil
 }

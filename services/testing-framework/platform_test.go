@@ -167,7 +167,7 @@ func configChecker(done chan string, c pb.ContextBoxServiceClient, testSetName, 
 			// if checksums are equal, the config has been processed by claudie
 			if checksumsEqual(config.Config.MsChecksum, config.Config.CsChecksum) && checksumsEqual(config.Config.CsChecksum, config.Config.DsChecksum) {
 				// test longhorn deployment
-				err := testLonghornDeployment(config, done)
+				err := testLonghornDeployment(config)
 				if err != nil {
 					log.Fatal().Msg(err.Error())
 					done <- err.Error()
