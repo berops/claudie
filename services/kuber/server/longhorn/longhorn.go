@@ -13,7 +13,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// Cluster - k8s clusther where longhorn will be set up
+// Cluster - k8s cluster where longhorn will be set up
 type Longhorn struct {
 	Cluster *pb.K8Scluster
 }

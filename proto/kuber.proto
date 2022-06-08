@@ -11,6 +11,15 @@ message SetUpStorageResponse {
   string errorMessage = 2;
 }
 
+message StoreKubeconfigRequest {
+  K8scluster cluster = 1;
+}
+
+message StoreKubeconfigResponse {
+  string errorMessage = 1;
+}
+
 service KuberService {
   rpc SetUpStorage(SetUpStorageRequest) returns (SetUpStorageResponse); 
+  rpc StoreKubeconfig(StoreKubeconfigRequest) returns (StoreKubeconfigResponse);
 }

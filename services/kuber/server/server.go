@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"net"
@@ -11,6 +12,7 @@ import (
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/services/kuber/server/longhorn"
+	"github.com/Berops/platform/services/kuber/server/secret"
 	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
@@ -45,6 +47,30 @@ func (s *server) SetUpStorage(ctx context.Context, req *pb.SetUpStorageRequest) 
 		return &pb.SetUpStorageResponse{DesiredState: desiredState, ErrorMessage: fmt.Sprintf("Error encountered in SetUpStorage: %v", err)}, err
 	}
 	return &pb.SetUpStorageResponse{DesiredState: desiredState, ErrorMessage: ""}, nil
+}
+
+func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigRequest) (*pb.StoreKubeconfigResponse, error) {
+	cluster := req.GetCluster()
+	var errGroup errgroup.Group
+	func(c *pb.K8Scluster) {
+		errGroup.Go(func() error {
+			sec := secret.New()
+			// save kubeconfig as base64 encoded string
+			sec.YamlManifest.Data.SecretData = base64.StdEncoding.EncodeToString([]byte(c.GetKubeconfig()))
+			// create or update existing secret
+			err := sec.Create()
+			if err != nil {
+				log.Error().Msgf("Error while creating the kubeconfig secret for %s", c.ClusterInfo.Name)
+				return fmt.Errorf("error while creating kubeconfig secret")
+			}
+			return nil
+		})
+	}(cluster)
+	err := errGroup.Wait()
+	if err != nil {
+		return &pb.StoreKubeconfigResponse{ErrorMessage: err.Error()}, err
+	}
+	return &pb.StoreKubeconfigResponse{ErrorMessage: ""}, nil
 }
 
 func main() {

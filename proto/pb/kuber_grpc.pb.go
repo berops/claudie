@@ -19,6 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type KuberServiceClient interface {
 	SetUpStorage(ctx context.Context, in *SetUpStorageRequest, opts ...grpc.CallOption) (*SetUpStorageResponse, error)
+	StoreKubeconfig(ctx context.Context, in *StoreKubeconfigRequest, opts ...grpc.CallOption) (*StoreKubeconfigResponse, error)
 }
 
 type kuberServiceClient struct {
@@ -38,11 +39,21 @@ func (c *kuberServiceClient) SetUpStorage(ctx context.Context, in *SetUpStorageR
 	return out, nil
 }
 
+func (c *kuberServiceClient) StoreKubeconfig(ctx context.Context, in *StoreKubeconfigRequest, opts ...grpc.CallOption) (*StoreKubeconfigResponse, error) {
+	out := new(StoreKubeconfigResponse)
+	err := c.cc.Invoke(ctx, "/platform.KuberService/StoreKubeconfig", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // KuberServiceServer is the server API for KuberService service.
 // All implementations must embed UnimplementedKuberServiceServer
 // for forward compatibility
 type KuberServiceServer interface {
 	SetUpStorage(context.Context, *SetUpStorageRequest) (*SetUpStorageResponse, error)
+	StoreKubeconfig(context.Context, *StoreKubeconfigRequest) (*StoreKubeconfigResponse, error)
 	mustEmbedUnimplementedKuberServiceServer()
 }
 
@@ -52,6 +63,9 @@ type UnimplementedKuberServiceServer struct {
 
 func (UnimplementedKuberServiceServer) SetUpStorage(context.Context, *SetUpStorageRequest) (*SetUpStorageResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetUpStorage not implemented")
+}
+func (UnimplementedKuberServiceServer) StoreKubeconfig(context.Context, *StoreKubeconfigRequest) (*StoreKubeconfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StoreKubeconfig not implemented")
 }
 func (UnimplementedKuberServiceServer) mustEmbedUnimplementedKuberServiceServer() {}
 
@@ -84,6 +98,24 @@ func _KuberService_SetUpStorage_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _KuberService_StoreKubeconfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StoreKubeconfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KuberServiceServer).StoreKubeconfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/platform.KuberService/StoreKubeconfig",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KuberServiceServer).StoreKubeconfig(ctx, req.(*StoreKubeconfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // KuberService_ServiceDesc is the grpc.ServiceDesc for KuberService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -94,6 +126,10 @@ var KuberService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetUpStorage",
 			Handler:    _KuberService_SetUpStorage_Handler,
+		},
+		{
+			MethodName: "StoreKubeconfig",
+			Handler:    _KuberService_StoreKubeconfig_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

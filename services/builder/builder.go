@@ -93,7 +93,7 @@ func callKubeEleven(desiredState *pb.Project) (*pb.Project, error) {
 	return res.GetDesiredState(), nil
 }
 
-func callKuber(desiredState *pb.Project) (*pb.Project, error) {
+func callKuber(desiredState *pb.Project, currentState *pb.Project) (*pb.Project, error) {
 	cc, err := utils.GrpcDialWithInsecure("kuber", urls.KuberURL)
 	if err != nil {
 		return nil, err
@@ -101,11 +101,17 @@ func callKuber(desiredState *pb.Project) (*pb.Project, error) {
 	defer func() { utils.CloseClientConnection(cc) }()
 	// Creating the client
 	c := pb.NewKuberServiceClient(cc)
-	res, err := kuber.SetUpStorage(c, &pb.SetUpStorageRequest{DesiredState: desiredState})
+	res_storage, err := kuber.SetUpStorage(c, &pb.SetUpStorageRequest{DesiredState: desiredState})
 	if err != nil {
 		return nil, err
 	}
-	return res.GetDesiredState(), nil
+	for _, cluster := range currentState.Clusters {
+		_, err := kuber.StoreKubeconfig(c, &pb.StoreKubeconfigRequest{Cluster: cluster})
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res_storage.GetDesiredState(), nil
 }
 
 func diff(config *pb.Config) (*pb.Config, bool, map[string]*nodesToDelete) {
@@ -226,7 +232,7 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig 
 	config.DesiredState = desiredState
 
 	// call Kuber to set up longhorn
-	desiredState, err = callKuber(config.GetDesiredState())
+	desiredState, err = callKuber(config.GetDesiredState(), config.GetCurrentState())
 	if err != nil {
 		err1 := saveErrorMessage(config, c, err)
 		if err1 != nil {
