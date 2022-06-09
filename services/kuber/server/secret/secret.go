@@ -16,16 +16,16 @@ type Secret struct {
 }
 
 type SecretYaml struct {
-	ApiVersion string
-	Kind       string
-	Metadata   Metadata
-	SecretType string `yaml:"type"`
-	Data       Data
+	APIVersion string   `yaml:"apiVersion"`
+	Kind       string   `yaml:"kind"`
+	Metadata   Metadata `yaml:"metadata"`
+	SecretType string   `yaml:"type"`
+	Data       Data     `yaml:"data"`
 }
 
 type Metadata struct {
-	Name   string
-	Labels []interface{}
+	Name   string        `yaml:"name"`
+	Labels []interface{} `yaml:"labels"`
 }
 
 type Data struct {
@@ -44,7 +44,7 @@ const (
 func New() Secret {
 	return Secret{
 		YamlManifest: SecretYaml{
-			ApiVersion: "v1",
+			APIVersion: "v1",
 			Kind:       "Secret",
 			Metadata:   Metadata{},
 			SecretType: "Opaque",
