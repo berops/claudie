@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -53,7 +54,7 @@ func TestPlatform(t *testing.T) {
 	}
 
 	// retrieve namespace from ENV
-	namespace := "miro" //os.Getenv("NAMESPACE")
+	namespace := os.Getenv("NAMESPACE")
 
 	// apply the test sets
 	for _, path := range setNames {
