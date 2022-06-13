@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 type KuberServiceClient interface {
 	SetUpStorage(ctx context.Context, in *SetUpStorageRequest, opts ...grpc.CallOption) (*SetUpStorageResponse, error)
 	StoreKubeconfig(ctx context.Context, in *StoreKubeconfigRequest, opts ...grpc.CallOption) (*StoreKubeconfigResponse, error)
+	DeleteKubeconfig(ctx context.Context, in *DeleteKubeconfigRequest, opts ...grpc.CallOption) (*DeleteKubeconfigResponse, error)
 }
 
 type kuberServiceClient struct {
@@ -48,12 +49,22 @@ func (c *kuberServiceClient) StoreKubeconfig(ctx context.Context, in *StoreKubec
 	return out, nil
 }
 
+func (c *kuberServiceClient) DeleteKubeconfig(ctx context.Context, in *DeleteKubeconfigRequest, opts ...grpc.CallOption) (*DeleteKubeconfigResponse, error) {
+	out := new(DeleteKubeconfigResponse)
+	err := c.cc.Invoke(ctx, "/platform.KuberService/DeleteKubeconfig", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // KuberServiceServer is the server API for KuberService service.
 // All implementations must embed UnimplementedKuberServiceServer
 // for forward compatibility
 type KuberServiceServer interface {
 	SetUpStorage(context.Context, *SetUpStorageRequest) (*SetUpStorageResponse, error)
 	StoreKubeconfig(context.Context, *StoreKubeconfigRequest) (*StoreKubeconfigResponse, error)
+	DeleteKubeconfig(context.Context, *DeleteKubeconfigRequest) (*DeleteKubeconfigResponse, error)
 	mustEmbedUnimplementedKuberServiceServer()
 }
 
@@ -66,6 +77,9 @@ func (UnimplementedKuberServiceServer) SetUpStorage(context.Context, *SetUpStora
 }
 func (UnimplementedKuberServiceServer) StoreKubeconfig(context.Context, *StoreKubeconfigRequest) (*StoreKubeconfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StoreKubeconfig not implemented")
+}
+func (UnimplementedKuberServiceServer) DeleteKubeconfig(context.Context, *DeleteKubeconfigRequest) (*DeleteKubeconfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteKubeconfig not implemented")
 }
 func (UnimplementedKuberServiceServer) mustEmbedUnimplementedKuberServiceServer() {}
 
@@ -116,6 +130,24 @@ func _KuberService_StoreKubeconfig_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _KuberService_DeleteKubeconfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteKubeconfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KuberServiceServer).DeleteKubeconfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/platform.KuberService/DeleteKubeconfig",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KuberServiceServer).DeleteKubeconfig(ctx, req.(*DeleteKubeconfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // KuberService_ServiceDesc is the grpc.ServiceDesc for KuberService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -130,6 +162,10 @@ var KuberService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "StoreKubeconfig",
 			Handler:    _KuberService_StoreKubeconfig_Handler,
+		},
+		{
+			MethodName: "DeleteKubeconfig",
+			Handler:    _KuberService_DeleteKubeconfig_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

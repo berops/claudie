@@ -25,3 +25,12 @@ func StoreKubeconfig(c pb.KuberServiceClient, req *pb.StoreKubeconfigRequest) (*
 	log.Info().Msg("Saved Kubeconfig Secret successfully")
 	return res, nil
 }
+
+func DeleteKubeconfig(c pb.KuberServiceClient, req *pb.DeleteKubeconfigRequest) (*pb.DeleteKubeconfigResponse, error) {
+	res, err := c.DeleteKubeconfig(context.Background(), req)
+	if err != nil {
+		return nil, fmt.Errorf("Error while calling DeleteKubeconfig on kuber: %v", err)
+	}
+	log.Info().Msgf("Deleted kubeconfig secret successfully")
+	return res, nil
+}

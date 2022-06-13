@@ -12,6 +12,7 @@ import (
 
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/platform/services/kuber/server/kubectl"
 	"github.com/Berops/platform/services/kuber/server/longhorn"
 	"github.com/Berops/platform/services/kuber/server/secret"
 	"github.com/Berops/platform/utils"
@@ -84,7 +85,7 @@ func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigReq
 				log.Error().Msgf("Error while creating the kubeconfig secret for %s", c.ClusterInfo.Name)
 				return fmt.Errorf("error while creating kubeconfig secret")
 			}
-			log.Info().Msgf("Secret with kubeconfig for cluster %s has been created", c.ClusterInfo.Name)
+			log.Info().Msgf("Secret with kubeconfig for cluster %s has been created in namespace %v", c.ClusterInfo.Name, namespace)
 			return nil
 		})
 	}(cluster)
@@ -93,6 +94,35 @@ func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigReq
 		return &pb.StoreKubeconfigResponse{ErrorMessage: err.Error()}, err
 	}
 	return &pb.StoreKubeconfigResponse{ErrorMessage: ""}, nil
+}
+
+func (s *server) DeleteKubeconfig(ctx context.Context, req *pb.DeleteKubeconfigRequest) (*pb.DeleteKubeconfigResponse, error) {
+	cluster := req.Cluster
+	var errGroup errgroup.Group
+	func(c *pb.K8Scluster) {
+		errGroup.Go(func() error {
+			secretName := fmt.Sprintf("%s-%s-kubeconfig", c.ClusterInfo.Name, c.ClusterInfo.Hash)
+			namespace := os.Getenv("NAMESPACE")
+			if namespace == "" {
+				namespace = "claudie" // default ns
+			}
+			kc := kubectl.Kubectl{}
+
+			// delete kubeconfig secret
+			err := kc.KubectlDeleteResource("secret", secretName, namespace)
+			if err != nil {
+				log.Error().Msgf("Failed to delete kubeconfig secret")
+				return err
+			}
+			log.Info().Msgf("Deleted kubeconfig secret: cluster: %s Namespace: %s", secretName, namespace)
+			return nil
+		})
+	}(cluster)
+	err := errGroup.Wait()
+	if err != nil {
+		return &pb.DeleteKubeconfigResponse{ErrorMessage: err.Error()}, err
+	}
+	return &pb.DeleteKubeconfigResponse{ErrorMessage: ""}, nil
 }
 
 func main() {
