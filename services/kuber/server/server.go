@@ -76,7 +76,7 @@ func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigReq
 			sec.YamlManifest.Metadata.Name = fmt.Sprintf("%s-kubeconfig", clusterID)
 			namespace := os.Getenv("NAMESPACE")
 			if namespace == "" {
-				namespace = "miro" // default ns
+				namespace = "claudie" // default ns
 			}
 			// apply secret
 			err := sec.Apply(namespace, "")
