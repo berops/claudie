@@ -101,7 +101,7 @@ func callKuber(desiredState *pb.Project) (*pb.Project, error) {
 	defer func() { utils.CloseClientConnection(cc) }()
 	// Creating the client
 	c := pb.NewKuberServiceClient(cc)
-	res_storage, err := kuber.SetUpStorage(c, &pb.SetUpStorageRequest{DesiredState: desiredState})
+	resStorage, err := kuber.SetUpStorage(c, &pb.SetUpStorageRequest{DesiredState: desiredState})
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +111,7 @@ func callKuber(desiredState *pb.Project) (*pb.Project, error) {
 			return nil, err
 		}
 	}
-	return res_storage.GetDesiredState(), nil
+	return resStorage.GetDesiredState(), nil
 }
 
 func diff(config *pb.Config) (*pb.Config, bool, map[string]*nodesToDelete) {
