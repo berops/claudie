@@ -31,7 +31,6 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: KUBER_PORT
-            # No hostname needed
             - name: GOLANG_LOG
               valueFrom:
                 configMapKeyRef:
@@ -75,7 +74,7 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: testing-framework
+  name: kuber
 rules:
   - apiGroups: [""]
     resources: ["secrets"]

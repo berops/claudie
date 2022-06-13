@@ -4,7 +4,6 @@ package longhorn
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/Berops/platform/proto/pb"
@@ -14,8 +13,10 @@ import (
 )
 
 // Cluster - k8s cluster where longhorn will be set up
+// Directory - directory where to create storage class manidests
 type Longhorn struct {
-	Cluster *pb.K8Scluster
+	Cluster   *pb.K8Scluster
+	Directory string
 }
 
 type zoneData struct {
@@ -25,14 +26,11 @@ type zoneData struct {
 
 const (
 	longhornYaml       = "services/kuber/server/manifests/longhorn.yaml"
-	outputDir          = "services/kuber/server/clusters"
 	storageManifestTpl = "storage-class.goyaml"
 )
 
 // SetUp function will set up the longhorn on the k8s cluster saved in l.Longhorn
 func (l Longhorn) SetUp() error {
-	clusterID := fmt.Sprintf("%s-%s", l.Cluster.ClusterInfo.Name, l.Cluster.ClusterInfo.Hash)
-	clusterDir := filepath.Join(outputDir, clusterID)
 	kubectl := kubectl.Kubectl{Kubeconfig: l.Cluster.GetKubeconfig()}
 	//fmt.Printf("-------%s--------\n %s \n ---------------\n", l.Cluster.ClusterInfo.Name, kubectl.Kubeconfig) //NOTE:debug print
 	// apply longhorn.yaml
@@ -42,7 +40,7 @@ func (l Longhorn) SetUp() error {
 	}
 
 	//load the templates
-	template := utils.Templates{Directory: clusterDir}
+	template := utils.Templates{Directory: l.Directory}
 	templateLoader := utils.TemplateLoader{Directory: utils.KuberTemplates}
 	storageTpl, err := templateLoader.LoadTemplate(storageManifestTpl)
 	if err != nil {
@@ -84,17 +82,17 @@ func (l Longhorn) SetUp() error {
 			return fmt.Errorf("error while generating %s manifest : %v", manifest, err)
 		}
 		//update the kubectl working directory
-		kubectl.Directory = clusterDir
+		kubectl.Directory = l.Directory
 		// apply manifest
 		err = kubectl.KubectlApply(manifest, "")
 		if err != nil {
 			return fmt.Errorf("error while applying %s manifest : %v", manifest, err)
 		}
 	}
-	log.Info().Msgf("Longhorn successfully set-up on the %s", clusterID)
+	log.Info().Msgf("Longhorn successfully set-up on the %s", l.Directory)
 
 	// Clean up
-	if err := os.RemoveAll(clusterDir); err != nil {
+	if err := os.RemoveAll(l.Directory); err != nil {
 		return fmt.Errorf("error while deleting files: %v", err)
 	}
 	return nil

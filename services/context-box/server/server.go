@@ -505,7 +505,7 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 
 	var config configItem
 	var err error
-	if req.Type == pb.IdType_HASH {
+	if req.Type == pb.IdType_HASH { //create filter for searching in the database
 		config, err = getByIDFromDB(req.Id)
 		if err != nil {
 			return nil, err
@@ -529,7 +529,11 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 
 	var filter primitive.M
 	if req.Type == pb.IdType_HASH {
-		filter = bson.M{"_id": req.Id} //create filter for searching in the database
+		oid, err := primitive.ObjectIDFromHex(req.GetId())
+		if err != nil {
+			return nil, fmt.Errorf("error while converting id %s to mongo primitive : %v", req.Id, err)
+		}
+		filter = bson.M{"_id": oid} //create filter for searching in the database
 	} else {
 		filter = bson.M{"name": req.Id} //create filter for searching in the database
 	}

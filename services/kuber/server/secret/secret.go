@@ -3,15 +3,18 @@ package secret
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
-	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/services/kuber/server/kubectl"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 )
 
+// struct Secret holds information necessary to create a secret
+// Directory - directory where secret will be created
+// YamlManifest - secret specification
 type Secret struct {
-	Cluster      *pb.ClusterInfo
+	Directory    string
 	YamlManifest SecretYaml
 }
 
@@ -24,23 +27,20 @@ type SecretYaml struct {
 }
 
 type Metadata struct {
-	Name   string        `yaml:"name"`
-	Labels []interface{} `yaml:"labels"`
+	Name   string      `yaml:"name"`
+	Labels interface{} `yaml:"labels"`
 }
 
 type Data struct {
 	SecretData string
 }
 
-type Label struct {
-	Label string `yaml:"claudie.io/input-manifest"`
-}
-
 const (
-	secretYamlDir  string      = "services/kuber/server/secret/manifest"
 	filePermission os.FileMode = 0644
+	filename                   = "secret.yaml"
 )
 
+// returns new Secret object with default values
 func New() Secret {
 	return Secret{
 		YamlManifest: SecretYaml{
@@ -53,42 +53,41 @@ func New() Secret {
 	}
 }
 
-func (s *Secret) Create() error {
-	kubectl := kubectl.Kubectl{Kubeconfig: ""} // setting empty string for kubeconfig will create secret on same cluster where claudie is running
-	namespace := os.Getenv("NAMESPACE")
+// Creates a secret manifests and applies it in the cluster (specified by given kubeconfig) in the specified namespace
+// if the kubeconfig is left empty, it uses default kubeconfig
+func (s *Secret) Apply(namespace, kubeconfig string) error {
+	// setting empty string for kubeconfig will create secret on same cluster where claudie is running
+	kubectl := kubectl.Kubectl{Kubeconfig: kubeconfig}
+	path := filepath.Join(s.Directory, filename)
 
-	path, err := s.SaveSecretManifest()
+	err := s.saveSecretManifest(path)
 	if err != nil {
-		return err
+		return fmt.Errorf("error while saving secret.yaml for %s : %v", s.YamlManifest.Metadata.Name, err)
 	}
 	err = kubectl.KubectlApply(path, namespace)
 	if err != nil {
-		return err
+		return fmt.Errorf("error while applying secret.yaml for %s : %v", s.YamlManifest.Metadata.Name, err)
 	}
 
 	// cleanup
 	if err = os.Remove(path); err != nil {
-		return fmt.Errorf("Error while delete the manifest file")
+		return fmt.Errorf("error while delete the secret.yaml for %s : %v", s.YamlManifest.Metadata.Name, err)
 	}
 	return nil
 }
 
-func (s *Secret) SaveSecretManifest() (string, error) {
-	secretYaml, err := yaml.Marshal(s.YamlManifest)
+//saves secret into the file system
+func (s *Secret) saveSecretManifest(path string) error {
+	secretYaml, err := yaml.Marshal(&s.YamlManifest)
 	if err != nil {
 		log.Err(err).Msg("Failed to marshal secret manifest yaml")
-		return "", err
+		return err
 	}
-	// default file name
-	var filename = "secret.yaml"
-	if s.Cluster != nil {
-		filename = fmt.Sprintf("%s-%s", s.Cluster.Name, s.Cluster.Hash)
-	}
-	path := fmt.Sprintf("%s/%s", secretYamlDir, filename)
+
 	err = os.WriteFile(path, secretYaml, filePermission)
 	if err != nil {
 		log.Error().Msgf("Error while saving secret manifest file")
-		return "", err
+		return err
 	}
-	return path, nil
+	return nil
 }

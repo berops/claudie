@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -54,7 +53,7 @@ func TestPlatform(t *testing.T) {
 	}
 
 	// retrieve namespace from ENV
-	namespace := os.Getenv("NAMESPACE")
+	namespace := "miro" //os.Getenv("NAMESPACE")
 
 	// apply the test sets
 	for _, path := range setNames {
@@ -211,8 +210,12 @@ func clusterTesting(yamlFile []byte, setName, pathToTestSet, manifestPath, names
 		return idInfo{}, err
 	}
 
-	// create/edit a secret which holds current manifest
-	err = manageSecret(setName, pathToTestSet, manifestPath, namespace)
+	// create and apply a secret which holds current manifest
+	yamlFile, err = ioutil.ReadFile(manifestPath)
+	if err != nil {
+		return idInfo{}, err
+	}
+	err = manageSecret(yamlFile, pathToTestSet, setName, namespace)
 	if err != nil {
 		log.Error().Msgf("Error while creating/editing a secret : %v", err)
 		return idInfo{}, err

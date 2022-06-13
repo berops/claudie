@@ -93,7 +93,7 @@ func callKubeEleven(desiredState *pb.Project) (*pb.Project, error) {
 	return res.GetDesiredState(), nil
 }
 
-func callKuber(desiredState *pb.Project, currentState *pb.Project) (*pb.Project, error) {
+func callKuber(desiredState *pb.Project) (*pb.Project, error) {
 	cc, err := utils.GrpcDialWithInsecure("kuber", urls.KuberURL)
 	if err != nil {
 		return nil, err
@@ -105,7 +105,7 @@ func callKuber(desiredState *pb.Project, currentState *pb.Project) (*pb.Project,
 	if err != nil {
 		return nil, err
 	}
-	for _, cluster := range currentState.Clusters {
+	for _, cluster := range desiredState.Clusters {
 		_, err := kuber.StoreKubeconfig(c, &pb.StoreKubeconfigRequest{Cluster: cluster})
 		if err != nil {
 			return nil, err
@@ -232,7 +232,7 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig 
 	config.DesiredState = desiredState
 
 	// call Kuber to set up longhorn
-	desiredState, err = callKuber(config.GetDesiredState(), config.GetCurrentState())
+	desiredState, err = callKuber(config.GetDesiredState())
 	if err != nil {
 		err1 := saveErrorMessage(config, c, err)
 		if err1 != nil {

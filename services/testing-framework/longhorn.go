@@ -3,10 +3,10 @@ package testingframework
 import (
 	"encoding/json"
 	"fmt"
-	"os/exec"
 	"time"
 
 	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/platform/services/kuber/server/kubectl"
 	"github.com/rs/zerolog/log"
 )
 
@@ -15,7 +15,7 @@ const (
 	sleepSecPods     = 10  // seconds for one cycle of longhorn checks (the node and pod checks)
 )
 
-type KubectlJSON struct {
+type KubectlOutputJSON struct {
 	APIVersion string                   `json:"apiVersion"`
 	Items      []map[string]interface{} `json:"items"`
 	Kind       string                   `json:"kind"`
@@ -28,13 +28,15 @@ func testLonghornDeployment(config *pb.GetConfigFromDBResponse) error {
 	clusters := config.Config.CurrentState.Clusters
 	for _, cluster := range clusters {
 		// check number of nodes in nodes.longhorn.io
-		err := checkLonghornNodes(cluster)
+
+		kubectl := kubectl.Kubectl{Kubeconfig: cluster.Kubeconfig}
+		err := checkLonghornNodes(cluster, kubectl)
 		if err != nil {
 			return fmt.Errorf("error while checking the nodes.longhorn.io : %v", err)
 
 		}
 		// check if all pods from longhorn-system are ready
-		err = checkLonghornPods(cluster.Kubeconfig, cluster.ClusterInfo.Name)
+		err = checkLonghornPods(cluster.Kubeconfig, cluster.ClusterInfo.Name, kubectl)
 		if err != nil {
 			return fmt.Errorf("error while checking if all pods from longhorn-system are ready : %v", err)
 		}
@@ -43,8 +45,7 @@ func testLonghornDeployment(config *pb.GetConfigFromDBResponse) error {
 }
 
 // checkLonghornNodes will check if the count of nodes.longhorn.io is same as number of schedulable nodes
-func checkLonghornNodes(cluster *pb.K8Scluster) error {
-	command := fmt.Sprintf("kubectl get nodes.longhorn.io -A -o json --kubeconfig <(echo '%s')", cluster.Kubeconfig)
+func checkLonghornNodes(cluster *pb.K8Scluster, kubectl kubectl.Kubectl) error {
 	allNodesFound := false
 	readyCheck := 0
 	workerCount := 0
@@ -57,8 +58,7 @@ func checkLonghornNodes(cluster *pb.K8Scluster) error {
 	}
 	// give them time of maxLonghornCheck seconds to be scheduled
 	for readyCheck < maxLonghornCheck {
-		cmd := exec.Command("/bin/bash", "-c", command)
-		out, err := cmd.CombinedOutput()
+		out, err := kubectl.KubectlGet("nodes.longhorn.io -A -o json", "")
 		if err != nil {
 			return fmt.Errorf(fmt.Sprintf("error while getting the nodes.longhorn.io in cluster %s : %v", cluster.ClusterInfo.Name, err))
 		}
@@ -82,14 +82,12 @@ func checkLonghornNodes(cluster *pb.K8Scluster) error {
 }
 
 // checkLonghornPods will check if the pods in longhorn-system namespace are in ready state
-func checkLonghornPods(config, clusterName string) error {
-	command := fmt.Sprintf("kubectl get pods -n longhorn-system -o json --kubeconfig <(echo '%s')", config)
+func checkLonghornPods(config, clusterName string, kubectl kubectl.Kubectl) error {
 	readyCheck := 0
 	allPodsReady := false
 	// give them time of maxLonghornCheck seconds to be scheduled
 	for readyCheck < maxLonghornCheck {
-		cmd := exec.Command("/bin/bash", "-c", command)
-		out, err := cmd.CombinedOutput()
+		out, err := kubectl.KubectlGet("pods -o json", "longhorn-system")
 		if err != nil {
 			return fmt.Errorf("error while getting the status of the pods in longhorn-system in cluster %s : %v", clusterName, err)
 		}
@@ -117,7 +115,7 @@ func checkLonghornPods(config, clusterName string) error {
 // returns true if every pod is ready, false otherwise
 func parseNodesOutput(out []byte, nodesExpected int) (bool, int, error) {
 	// parse output
-	var parsedJSON KubectlJSON
+	var parsedJSON KubectlOutputJSON
 	err := json.Unmarshal(out, &parsedJSON)
 	if err != nil {
 		return false, -1, fmt.Errorf("error while unmarshalling output data : %v", err)
@@ -136,7 +134,7 @@ func parseNodesOutput(out []byte, nodesExpected int) (bool, int, error) {
 // returns true if every pod is ready, false otherwise
 func parsePodsOutput(out []byte) (bool, error) {
 	// parse output
-	var parsedJSON KubectlJSON
+	var parsedJSON KubectlOutputJSON
 	err := json.Unmarshal(out, &parsedJSON)
 	if err != nil {
 		return false, fmt.Errorf("error while unmarshalling output data : %v", err)

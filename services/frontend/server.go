@@ -99,7 +99,7 @@ func SaveFiles(c pb.ContextBoxServiceClient) error {
 
 	for _, config := range configsToDelete.Configs {
 		if err := cbox.DeleteConfig(c, config.Id, pb.IdType_HASH); err != nil {
-			log.Error().Msgf("Failed to the delete %v with id %v", config.Name, config.Id)
+			log.Error().Msgf("Failed to the delete %s with id %s : %v", config.Name, config.Id, err)
 		}
 	}
 	log.Info().Msg("Saved all files")
@@ -111,14 +111,14 @@ func removeConfig(configs []*pb.Config, configName string) ([]*pb.Config, error)
 		return configs, fmt.Errorf("no Config present")
 	}
 	var index = 0
-	for _, config := range configs {
+	for i, config := range configs {
 		if config.Name == configName {
+			index = i
 			break
 		}
-		index++
 	}
-	configs[index] = configs[len(configs)-1]
-	return configs[:len(configs)-1], nil
+	configs = append(configs[0:index], configs[index+1:]...)
+	return configs, nil
 }
 
 func healthCheck() error {
