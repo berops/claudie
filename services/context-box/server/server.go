@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	kuber "github.com/Berops/platform/services/kuber/client"
 	terraformer "github.com/Berops/platform/services/terraformer/client"
 	"github.com/Berops/platform/urls"
 	"github.com/Berops/platform/utils"
@@ -527,6 +528,11 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 		return nil, err
 	} //destroy infrastructure with terraformer
 
+	err = deleteKubeconfig(c)
+	if err != nil {
+		return nil, err
+	} // delete kubeconfig secret
+
 	var filter primitive.M
 	if req.Type == pb.IdType_HASH {
 		oid, err := primitive.ObjectIDFromHex(req.GetId())
@@ -574,6 +580,27 @@ func destroyConfigTerraformer(config *pb.Config) (*pb.Config, error) {
 	}
 
 	return res.GetConfig(), nil
+}
+
+// gRPC call to delete
+func deleteKubeconfig(config *pb.Config) error {
+	trimmedKuberURL := strings.ReplaceAll(urls.KuberURL, ":tcp://", "")
+	log.Info().Msgf("Dial Terraformer: %s", trimmedKuberURL)
+	// Create connection to Terraformer
+	cc, err := utils.GrpcDialWithInsecure("kuber", trimmedKuberURL)
+	if err != nil {
+		return err
+	}
+	defer func() { utils.CloseClientConnection(cc) }()
+
+	c := pb.NewKuberServiceClient(cc)
+	for _, cluster := range config.CurrentState.Clusters {
+		_, err := kuber.DeleteKubeconfig(c, &pb.DeleteKubeconfigRequest{Cluster: cluster})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func configChecker() error {
