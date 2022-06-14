@@ -102,11 +102,11 @@ func (k Kubectl) KubectlAnnotate(resource, resourceName, annotation string) erro
 
 // run will run the command in a bash shell like "bash -c command"
 func (k Kubectl) run(command string) error {
-	cmd := exec.Command("bash", "-c", command)
-	cmd.Dir = k.Directory
 	try := 0
 	var err error
 	for i := 0; i < maxNumOfTries; i++ {
+		cmd := exec.Command("bash", "-c", command)
+		cmd.Dir = k.Directory
 		err = cmd.Run()
 		if err == nil {
 			break
@@ -119,12 +119,12 @@ func (k Kubectl) run(command string) error {
 
 // runWithOutput will run the command in a bash shell like "bash -c command" and return the output
 func (k Kubectl) runWithOutput(command string) ([]byte, error) {
-	cmd := exec.Command("bash", "-c", command)
-	cmd.Dir = k.Directory
 	var result []byte
 	var err error
 	try := 0
 	for i := 0; i < maxNumOfTries; i++ {
+		cmd := exec.Command("bash", "-c", command)
+		cmd.Dir = k.Directory
 		result, err = cmd.CombinedOutput()
 		if err == nil {
 			break
