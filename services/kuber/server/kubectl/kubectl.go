@@ -4,6 +4,8 @@ package kubectl
 import (
 	"fmt"
 	"os/exec"
+
+	"github.com/rs/zerolog/log"
 )
 
 // Kubeconfig - the kubeconfig of the cluster as a string
@@ -12,6 +14,10 @@ type Kubectl struct {
 	Kubeconfig string
 	Directory  string
 }
+
+const (
+	maxNumOfTries = 5
+)
 
 // KubectlApply runs kubectl apply in k.Directory directory, with specified manifest and specified namespace
 // if namespace is empty string, the kubectl apply will not use -n flag
@@ -98,14 +104,35 @@ func (k Kubectl) KubectlAnnotate(resource, resourceName, annotation string) erro
 func (k Kubectl) run(command string) error {
 	cmd := exec.Command("bash", "-c", command)
 	cmd.Dir = k.Directory
-	return cmd.Run()
+	try := 0
+	var err error
+	for i := 0; i < maxNumOfTries; i++ {
+		err = cmd.Run()
+		if err == nil {
+			break
+		}
+		try++
+		log.Warn().Msgf("Error encounter while executing kubectl : %v (retrying (%d/%d))", err, try, maxNumOfTries)
+	}
+	return err
 }
 
 // runWithOutput will run the command in a bash shell like "bash -c command" and return the output
 func (k Kubectl) runWithOutput(command string) ([]byte, error) {
 	cmd := exec.Command("bash", "-c", command)
 	cmd.Dir = k.Directory
-	return cmd.CombinedOutput()
+	var result []byte
+	var err error
+	try := 0
+	for i := 0; i < maxNumOfTries; i++ {
+		result, err = cmd.CombinedOutput()
+		if err == nil {
+			break
+		}
+		try++
+		log.Warn().Msgf("Error encounter while executing kubectl : %v (retrying (%d/%d))", err, try, maxNumOfTries)
+	}
+	return result, err
 }
 
 // getKubeconfig function returns either the "--kubeconfig <(echo ...)" if kubeconfig is specified, or empty string of none is given
