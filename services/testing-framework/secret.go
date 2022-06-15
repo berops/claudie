@@ -37,9 +37,9 @@ func manageSecret(manifest []byte, pathToTestSet, secretName, namespace string) 
 	return nil
 }
 
-// getManifestId will read the name of the manifest from the file and return it,
+// getManifestName will read the name of the manifest from the file and return it,
 // so it can be used as an id to retrieve it from database in configChecker()
-func getManifestId(yamlFile []byte) (string, error) {
+func getManifestName(yamlFile []byte) (string, error) {
 	var manifest manifest.Manifest
 	err := yaml.Unmarshal(yamlFile, &manifest)
 	if err != nil {

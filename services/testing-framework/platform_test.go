@@ -99,15 +99,22 @@ func applyTestSet(setName, namespace string, c pb.ContextBoxServiceClient) error
 			log.Error().Msgf("Error while reading the manifest %s : %v", manifestPath, err)
 			return err
 		}
+		manifestName, err := getManifestName(yamlFile)
+		if err != nil {
+			log.Error().Msgf("Error while getting the manifest name from %s : %v", manifestPath, err)
+			return err
+		}
 
 		if namespace != "" {
-			idInfo, err = clusterTesting(yamlFile, setName, pathToTestSet, manifestPath, namespace, c)
+			err = clusterTesting(yamlFile, setName, pathToTestSet, manifestName, namespace, c)
+			idInfo.idType = pb.IdType_NAME
 			if err != nil {
 				log.Error().Msgf("Error while applying manifest %s : %v", manifest.Name(), err)
 				return err
 			}
 		} else {
-			idInfo, err = localTesting(manifest, yamlFile, idInfo.id, c)
+			idInfo.id, err = localTesting(manifest, yamlFile, manifestName, c)
+			idInfo.idType = pb.IdType_HASH
 			if err != nil {
 				log.Error().Msgf("Error while applying manifest %s : %v", manifest.Name(), err)
 				return err
@@ -202,48 +209,45 @@ func checksumsEqual(checksum1 []byte, checksum2 []byte) bool {
 // clusterTesting will perform actions needed for testing framework to function in k8s cluster deployment
 // this option is only used when NAMESPACE env var has been found
 // this option is testing the whole claudie
-func clusterTesting(yamlFile []byte, setName, pathToTestSet, manifestPath, namespace string, c pb.ContextBoxServiceClient) (idInfo, error) {
+func clusterTesting(yamlFile []byte, setName, pathToTestSet, namespace, manifestName string, c pb.ContextBoxServiceClient) error {
 	// get the id from manifest file
-	id, err := getManifestId(yamlFile)
+	id, err := getManifestName(yamlFile)
 	idType := pb.IdType_NAME
 	if err != nil {
-		log.Error().Msgf("Error while getting an id for %s : %v", manifestPath, err)
-		return idInfo{}, err
+		log.Error().Msgf("Error while getting an id for %s : %v", manifestName, err)
+		return err
 	}
 
-	// create and apply a secret which holds current manifest
-	yamlFile, err = ioutil.ReadFile(manifestPath)
 	if err != nil {
-		return idInfo{}, err
+		return err
 	}
 	err = manageSecret(yamlFile, pathToTestSet, setName, namespace)
 	if err != nil {
 		log.Error().Msgf("Error while creating/editing a secret : %v", err)
-		return idInfo{}, err
+		return err
 	}
 	err = checkIfManifestSaved(id, idType, c)
 	if err != nil {
-		return idInfo{}, err
+		return err
 	}
-	return idInfo{id: id, idType: idType}, nil
+	return nil
 }
 
 // localTesting will perform actions needed for testing framework to function in local deployment
 // this option is only used when NAMESPACE env var has NOT been found
 // this option is NOT testing the whole claudie (the frontend is omitted from workflow)
-func localTesting(manifest fs.FileInfo, yamlFile []byte, id string, c pb.ContextBoxServiceClient) (idInfo, error) {
+func localTesting(manifest fs.FileInfo, yamlFile []byte, manifestName string, c pb.ContextBoxServiceClient) (string, error) {
 	// testing locally - NOT TESTING THE FRONTEND!
 	id, err := cbox.SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
 		Config: &pb.Config{
-			Name:     manifest.Name(),
-			Id:       id,
+			Name:     manifestName,
 			Manifest: string(yamlFile),
 		},
 	})
 	if err != nil {
-		return idInfo{}, err
+		return "", err
 	}
-	return idInfo{id: id, idType: pb.IdType_HASH}, nil
+	return id, nil
 }
 
 // checkIfManifestSaved function will wait until the manifest has been picked up from the secret by the frontend component and
