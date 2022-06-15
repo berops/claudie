@@ -150,6 +150,7 @@ func buildClusterAsync(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster) error
 		log.Info().Msgf("error while running kubeone in %s: %v", clusterOutputPath, err)
 		return err
 	}
+	log.Info().Msgf("KubeOne has finished building the cluster %s", cluster.ClusterInfo.Name)
 
 	// Save generated kubeconfig file to cluster config
 	kc, err := readKubeconfig(kubeconfigFilePath)
@@ -161,13 +162,14 @@ func buildClusterAsync(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster) error
 	if len(kc) > 0 {
 		cluster.Kubeconfig = kc
 	}
+	log.Info().Msgf("Kubeconfig has been saved for the cluster %s", cluster.ClusterInfo.Name)
 
 	// Clean up
 	if err := os.RemoveAll(clusterOutputPath); err != nil {
 		log.Info().Msgf("error while removing files from %s: %v", clusterOutputPath, err)
 		return err
 	}
-
+	log.Info().Msgf("Kube-eleven has finished setting up the cluster %s", cluster.ClusterInfo.Name)
 	return nil
 }
 
