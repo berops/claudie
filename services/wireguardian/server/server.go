@@ -258,7 +258,7 @@ func runAnsible(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster, changedEndpo
 
 	inventoryFilePath := cluster.ClusterInfo.Name + "-" + cluster.ClusterInfo.Hash + "/" + inventoryFile
 
-	cmd := exec.Command("ansible-playbook", playbookFile, "-i", inventoryFilePath, "-f", "20", "-l", "nodes")
+	cmd := exec.Command("ansible-playbook", playbookFile, "-i", inventoryFilePath, "-f", "30", "-l", "nodes")
 	cmd.Dir = outputPath
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -268,7 +268,7 @@ func runAnsible(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster, changedEndpo
 	}
 
 	//install longhorn dependencies
-	cmd = exec.Command("ansible-playbook", longhornPlaybookFile, "-i", inventoryFilePath, "-f", "20")
+	cmd = exec.Command("ansible-playbook", longhornPlaybookFile, "-i", inventoryFilePath, "-f", "30")
 	cmd.Dir = outputPath
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -288,7 +288,7 @@ func runAnsible(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster, changedEndpo
 		}
 
 		nginxPlaybookPath := cluster.ClusterInfo.Name + "-" + cluster.ClusterInfo.Hash + "/" + lbCluster.ClusterInfo.Name + playbookExt
-		cmd := exec.Command("ansible-playbook", nginxPlaybookPath, "-i", inventoryFilePath, "-f", "20", "-l", lbCluster.ClusterInfo.Name)
+		cmd := exec.Command("ansible-playbook", nginxPlaybookPath, "-i", inventoryFilePath, "-f", "30", "-l", lbCluster.ClusterInfo.Name)
 		cmd.Dir = outputPath
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
@@ -300,7 +300,7 @@ func runAnsible(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster, changedEndpo
 		// check if apiendpoint is changed
 		if d, ok := changedEndpoint[lbCluster.ClusterInfo.Name]; ok {
 			// run apiEndpoint playbook
-			cmd := exec.Command("ansible-playbook", apiEndpointPlaybookFile, "-i", inventoryFilePath, "-f", "20", "--extra-vars", "NewEndpoint="+d.NewEndpoint+" OldEndpoint="+d.OldEndpoint)
+			cmd := exec.Command("ansible-playbook", apiEndpointPlaybookFile, "-i", inventoryFilePath, "-f", "30", "--extra-vars", "NewEndpoint="+d.NewEndpoint+" OldEndpoint="+d.OldEndpoint)
 			cmd.Dir = outputPath
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
