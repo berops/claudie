@@ -101,14 +101,19 @@ func PrintConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType) (*pb
 	fmt.Println("Config ID:", res.GetConfig().GetId())
 	fmt.Println("Project name:", res.GetConfig().GetCurrentState().GetName())
 	fmt.Println("Project clusters: ")
-	for i, cluster := range res.GetConfig().GetCurrentState().GetClusters() {
+	for i, cluster := range res.GetConfig().GetDesiredState().GetClusters() {
 		fmt.Println("========================================")
 		fmt.Println("Cluster number:", i)
 		fmt.Println("Name:", cluster.ClusterInfo.GetName())
+		fmt.Println("Hash:", cluster.ClusterInfo.GetHash())
 		fmt.Println("Kubernetes version:", cluster.GetKubernetes())
 		fmt.Println("Network CIDR:", cluster.GetNetwork())
 		fmt.Println("Kubeconfig:")
 		fmt.Println(cluster.GetKubeconfig())
+		fmt.Println("Public key:")
+		fmt.Println(cluster.ClusterInfo.PublicKey)
+		fmt.Println("Private key:")
+		fmt.Println(cluster.ClusterInfo.PrivateKey)
 		fmt.Println("Node Pools:")
 		for i2, nodePool := range cluster.ClusterInfo.GetNodePools() {
 			fmt.Println("----------------------------------------")
