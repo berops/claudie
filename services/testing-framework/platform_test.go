@@ -106,7 +106,8 @@ func applyTestSet(setName, namespace string, c pb.ContextBoxServiceClient) error
 		}
 
 		if namespace != "" {
-			err = clusterTesting(yamlFile, setName, pathToTestSet, manifestName, namespace, c)
+			err = clusterTesting(yamlFile, setName, pathToTestSet, namespace, manifestName, c)
+			idInfo.id = manifestName
 			idInfo.idType = pb.IdType_NAME
 			if err != nil {
 				log.Error().Msgf("Error while applying manifest %s : %v", manifest.Name(), err)
