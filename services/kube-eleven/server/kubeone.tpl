@@ -32,6 +32,9 @@ controlPlane:
     privateAddress: '{{ $value.Private }}'
     sshUsername: root
     sshPrivateKeyFile: '{{ $privateKey }}'
+    taints:
+    - key: "node-role.kubernetes.io/master"
+      effect: "NoSchedule"
 {{- end}}
 {{- end}}
 
