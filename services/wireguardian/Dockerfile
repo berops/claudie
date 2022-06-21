@@ -36,15 +36,14 @@ RUN CGO_ENABLED=0 go build
 
 FROM python:3.9-slim
 
-#Install the Ansible
-ENV DEBIAN_FRONTEND=noninteractive
+RUN pip install ansible==5.9.0
+RUN pip install ansible-core==2.12.7
 
 RUN apt update && \
   apt install -y  \
   libkrb5-dev \
   krb5-user \
-  openssh-client \
-  ansible=2.10.7+merged+base+2.10.8+dfsg-1
+  openssh-client 
 
 #Copy the binaries to empty base image
 COPY --from=build /go/services/wireguardian /bin/services/wireguardian
