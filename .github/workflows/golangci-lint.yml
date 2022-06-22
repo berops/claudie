@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
   # Triggers the workflow on push or pull request events but only for the master branch
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 jobs:
   golangci:
@@ -16,7 +16,18 @@ jobs:
       - name: Install golang
         uses: actions/setup-go@v2
         with:
-          go-version: '1.16.1'
+          go-version: "1.16.1"
+
+        # Install the git-crypt and unlock the files
+      - name: git-crypt unlock
+        run: |
+          sudo apt update
+          sudo apt install git-crypt
+          echo "${{ secrets.GIT_CRYPT_KEY }}" | base64  -d > ./git-crypt-key
+          echo "Unlocking"
+          git-crypt unlock git-crypt-key
+          rm git-crypt-key
+
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v2
         with:
