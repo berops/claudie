@@ -248,6 +248,11 @@ jobs:
         run: |
           gcloud logging read "resource.labels.container_name = "testing-framework" AND severity >= ERROR AND  resource.labels.namespace_name = "claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}""
 
+      - name: Wait until frontend will clean up the infra from tests
+        run: |
+          # wait max 5min until the frontend will pick up the change + 5min until everything is destroyed
+          sleep 10m
+
       - name: Delete temporary namespace
         run: |
           kubectl delete namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
