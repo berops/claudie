@@ -318,13 +318,16 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 func healthCheck() error {
 	//Check if Builder can connect to Terraformer/Wireguardian/Kube-eleven
 	//Connection to these services are crucial for Builder, without them, the builder is NOT Ready
-	if _, err := utils.GrpcDialWithInsecure("kubeEleven", urls.KubeElevenURL); err != nil {
+	if cc, err := utils.GrpcDialWithInsecure("kubeEleven", urls.KubeElevenURL); err != nil {
+		cc.Close()
 		return err
 	}
-	if _, err := utils.GrpcDialWithInsecure("terraformer", urls.TerraformerURL); err != nil {
+	if cc, err := utils.GrpcDialWithInsecure("terraformer", urls.TerraformerURL); err != nil {
+		cc.Close()
 		return err
 	}
-	if _, err := utils.GrpcDialWithInsecure("wireguardian", urls.WireguardianURL); err != nil {
+	if cc, err := utils.GrpcDialWithInsecure("wireguardian", urls.WireguardianURL); err != nil {
+		cc.Close()
 		return err
 	}
 	return nil
