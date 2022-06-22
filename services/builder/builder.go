@@ -318,17 +318,33 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 func healthCheck() error {
 	//Check if Builder can connect to Terraformer/Wireguardian/Kube-eleven
 	//Connection to these services are crucial for Builder, without them, the builder is NOT Ready
-	if cc, err := utils.GrpcDialWithInsecure("kubeEleven", urls.KubeElevenURL); err != nil {
-		cc.Close()
-		return err
-	}
 	if cc, err := utils.GrpcDialWithInsecure("terraformer", urls.TerraformerURL); err != nil {
-		cc.Close()
 		return err
+	} else {
+		if err := cc.Close(); err != nil {
+			log.Error().Msgf("Error closing the connection in health check function : %v", err)
+		}
 	}
 	if cc, err := utils.GrpcDialWithInsecure("wireguardian", urls.WireguardianURL); err != nil {
-		cc.Close()
 		return err
+	} else {
+		if err := cc.Close(); err != nil {
+			log.Error().Msgf("Error closing the connection in health check function : %v", err)
+		}
+	}
+	if cc, err := utils.GrpcDialWithInsecure("kubeEleven", urls.KubeElevenURL); err != nil {
+		return err
+	} else {
+		if err := cc.Close(); err != nil {
+			log.Error().Msgf("Error closing the connection in health check function : %v", err)
+		}
+	}
+	if cc, err := utils.GrpcDialWithInsecure("kuber", urls.KuberURL); err != nil {
+		return err
+	} else {
+		if err := cc.Close(); err != nil {
+			log.Error().Msgf("Error closing the connection in health check function : %v", err)
+		}
 	}
 	return nil
 }
