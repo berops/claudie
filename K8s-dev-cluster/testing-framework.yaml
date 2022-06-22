@@ -28,9 +28,8 @@ spec:
                   key: GOLANG_LOG
             - name: NAMESPACE
               valueFrom:
-                configMapKeyRef:
-                  name: env
-                  key: NAMESPACE
+                fieldRef:
+                  fieldPath: metadata.namespace
       restartPolicy: Never
       serviceAccountName: testing-framework
 ---

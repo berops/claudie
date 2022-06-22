@@ -198,11 +198,6 @@ jobs:
           credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
           use_auth_provider: true
 
-      # Create a seperate temporary namespace
-      - name: Create seperate namespace
-        working-directory: ./K8s-dev-cluster
-        run: kubectl create namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
-
       # Add the environment variable to .env, so testing framework knows which namespace it is deployed in
       # This is needed in case of multiple testing-frameworks deployed at the same time
       # The changes are not to be committed, since the namespace is appended to the file every time CI/CD runs
