@@ -2,15 +2,19 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"net"
 	"os"
 	"os/signal"
+	"path/filepath"
 
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/platform/services/kuber/server/kubectl"
 	"github.com/Berops/platform/services/kuber/server/longhorn"
+	"github.com/Berops/platform/services/kuber/server/secret"
 	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
@@ -18,7 +22,10 @@ import (
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
-const defaultKuberPort = 50057
+const (
+	defaultKuberPort = 50057
+	outputDir        = "services/kuber/server/clusters"
+)
 
 type server struct {
 	pb.UnimplementedKuberServiceServer
@@ -30,7 +37,9 @@ func (s *server) SetUpStorage(ctx context.Context, req *pb.SetUpStorageRequest) 
 	for _, cluster := range desiredState.GetClusters() {
 		func(c *pb.K8Scluster) {
 			errGroup.Go(func() error {
-				longhorn := longhorn.Longhorn{Cluster: c}
+				clusterID := fmt.Sprintf("%s-%s", c.ClusterInfo.Name, c.ClusterInfo.Hash)
+				clusterDir := filepath.Join(outputDir, clusterID)
+				longhorn := longhorn.Longhorn{Cluster: c, Directory: clusterDir}
 				err := longhorn.SetUp()
 				if err != nil {
 					log.Error().Msgf("Error while setting up the longhorn for %s : %v", c.ClusterInfo.Name, err)
@@ -45,6 +54,75 @@ func (s *server) SetUpStorage(ctx context.Context, req *pb.SetUpStorageRequest) 
 		return &pb.SetUpStorageResponse{DesiredState: desiredState, ErrorMessage: fmt.Sprintf("Error encountered in SetUpStorage: %v", err)}, err
 	}
 	return &pb.SetUpStorageResponse{DesiredState: desiredState, ErrorMessage: ""}, nil
+}
+
+func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigRequest) (*pb.StoreKubeconfigResponse, error) {
+	cluster := req.GetCluster()
+	var errGroup errgroup.Group
+	func(c *pb.K8Scluster) {
+		errGroup.Go(func() error {
+			clusterID := fmt.Sprintf("%s-%s", c.ClusterInfo.Name, c.ClusterInfo.Hash)
+			clusterDir := filepath.Join(outputDir, clusterID)
+
+			if _, err := os.Stat(clusterDir); os.IsNotExist(err) {
+				if err := os.Mkdir(clusterDir, os.ModePerm); err != nil {
+					log.Error().Msgf("Could not create a directory for %s", c.ClusterInfo.Name)
+					return err
+				}
+			}
+			sec := secret.New()
+			sec.Directory = clusterDir
+			// save kubeconfig as base64 encoded string
+			sec.YamlManifest.Data.SecretData = base64.StdEncoding.EncodeToString([]byte(c.GetKubeconfig()))
+			sec.YamlManifest.Metadata.Name = fmt.Sprintf("%s-kubeconfig", clusterID)
+			namespace := os.Getenv("NAMESPACE")
+			if namespace == "" {
+				namespace = "claudie" // default ns
+			}
+			// apply secret
+			err := sec.Apply(namespace, "")
+			if err != nil {
+				log.Error().Msgf("Error while creating the kubeconfig secret for %s", c.ClusterInfo.Name)
+				return fmt.Errorf("error while creating kubeconfig secret")
+			}
+			log.Info().Msgf("Secret with kubeconfig for cluster %s has been created in namespace %v", c.ClusterInfo.Name, namespace)
+			return nil
+		})
+	}(cluster)
+	err := errGroup.Wait()
+	if err != nil {
+		return &pb.StoreKubeconfigResponse{ErrorMessage: err.Error()}, err
+	}
+	return &pb.StoreKubeconfigResponse{ErrorMessage: ""}, nil
+}
+
+func (s *server) DeleteKubeconfig(ctx context.Context, req *pb.DeleteKubeconfigRequest) (*pb.DeleteKubeconfigResponse, error) {
+	cluster := req.Cluster
+	var errGroup errgroup.Group
+	func(c *pb.K8Scluster) {
+		errGroup.Go(func() error {
+			secretName := fmt.Sprintf("%s-%s-kubeconfig", c.ClusterInfo.Name, c.ClusterInfo.Hash)
+			namespace := os.Getenv("NAMESPACE")
+			if namespace == "" {
+				namespace = "claudie" // default ns
+			}
+			kc := kubectl.Kubectl{}
+
+			// delete kubeconfig secret
+			err := kc.KubectlDeleteResource("secret", secretName, namespace)
+			if err != nil {
+				log.Error().Msgf("Failed to delete kubeconfig secret")
+				return err
+			}
+			log.Info().Msgf("Deleted kubeconfig secret: cluster: %s Namespace: %s", secretName, namespace)
+			return nil
+		})
+	}(cluster)
+	err := errGroup.Wait()
+	if err != nil {
+		return &pb.DeleteKubeconfigResponse{ErrorMessage: err.Error()}, err
+	}
+	return &pb.DeleteKubeconfigResponse{ErrorMessage: ""}, nil
 }
 
 func main() {

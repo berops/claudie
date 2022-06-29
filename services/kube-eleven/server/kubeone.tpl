@@ -1,4 +1,4 @@
-apiVersion: kubeone.io/v1beta1
+apiVersion: kubeone.k8c.io/v1beta2
 kind: KubeOneCluster
 name: cluster
 
@@ -30,7 +30,11 @@ controlPlane:
 {{- if ge $value.NodeType 1}}
   - publicAddress: '{{ $value.Public }}'
     privateAddress: '{{ $value.Private }}'
+    sshUsername: root
     sshPrivateKeyFile: '{{ $privateKey }}'
+    taints:
+    - key: "node-role.kubernetes.io/master"
+      effect: "NoSchedule"
 {{- end}}
 {{- end}}
 
@@ -40,6 +44,7 @@ staticWorkers:
 {{- if eq $value.NodeType 0}}
   - publicAddress: '{{ $value.Public }}'
     privateAddress: '{{ $value.Private }}'
+    sshUsername: root
     sshPrivateKeyFile: '{{ $privateKey }}'
 {{- end}}
 {{- end}}

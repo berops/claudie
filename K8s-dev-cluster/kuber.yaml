@@ -31,12 +31,15 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: KUBER_PORT
-            # No hostname needed
             - name: GOLANG_LOG
               valueFrom:
                 configMapKeyRef:
                   name: env
                   key: GOLANG_LOG
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
           ports:
             - containerPort: 50054
           readinessProbe:
@@ -47,6 +50,7 @@ spec:
             exec:
               command: ["/bin/grpc_health_probe-Liveness", "-addr=:50057"]
             initialDelaySeconds: 10
+      serviceAccountName: kuber
 ---
 kind: Service
 apiVersion: v1
@@ -59,3 +63,30 @@ spec:
     - protocol: TCP
       port: 50057
       targetPort: 50057
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kuber
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kuber
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["create", "patch", "update", "get", "list", "delete"]
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kuber
+roleRef:
+  kind: Role
+  name: kuber
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - kind: ServiceAccount
+    name: kuber

@@ -47,9 +47,13 @@ func callTerraformer(currentState *pb.Project, desiredState *pb.Project) (*pb.Pr
 	if err != nil {
 		return nil, nil, err
 	}
-	defer func() { utils.CloseClientConnection(cc) }()
+	defer func() {
+		utils.CloseClientConnection(cc)
+		log.Info().Msgf("Closing the connection for terraformer")
+	}()
 	// Creating the client
 	c := pb.NewTerraformerServiceClient(cc)
+	log.Info().Msgf("Calling BuildInfrastructure on terraformer")
 	res, err := terraformer.BuildInfrastructure(c, &pb.BuildInfrastructureRequest{
 		CurrentState: currentState,
 		DesiredState: desiredState,
@@ -66,9 +70,13 @@ func callWireguardian(desiredState, currenState *pb.Project) (*pb.Project, error
 	if err != nil {
 		return nil, err
 	}
-	defer func() { utils.CloseClientConnection(cc) }()
+	defer func() {
+		utils.CloseClientConnection(cc)
+		log.Info().Msgf("Closing the connection for wireguardian")
+	}()
 	// Creating the client
 	c := pb.NewWireguardianServiceClient(cc)
+	log.Info().Msgf("Calling RunAnsible on wireguardian")
 	res, err := wireguardian.RunAnsible(c, &pb.RunAnsibleRequest{DesiredState: desiredState, CurrentState: currenState})
 	if err != nil {
 		return nil, err
@@ -82,9 +90,13 @@ func callKubeEleven(desiredState *pb.Project) (*pb.Project, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func() { utils.CloseClientConnection(cc) }()
+	defer func() {
+		utils.CloseClientConnection(cc)
+		log.Info().Msgf("Closing the connection for kube-eleven")
+	}()
 	// Creating the client
 	c := pb.NewKubeElevenServiceClient(cc)
+	log.Info().Msgf("Calling BuildCluster on kube-eleven")
 	res, err := kubeEleven.BuildCluster(c, &pb.BuildClusterRequest{DesiredState: desiredState})
 	if err != nil {
 		return nil, err
@@ -98,14 +110,25 @@ func callKuber(desiredState *pb.Project) (*pb.Project, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func() { utils.CloseClientConnection(cc) }()
+	defer func() {
+		utils.CloseClientConnection(cc)
+		log.Info().Msgf("Closing the connection for kuber")
+	}()
 	// Creating the client
 	c := pb.NewKuberServiceClient(cc)
-	res, err := kuber.SetUpStorage(c, &pb.SetUpStorageRequest{DesiredState: desiredState})
+	log.Info().Msgf("Calling SetUpStorage on kuber")
+	resStorage, err := kuber.SetUpStorage(c, &pb.SetUpStorageRequest{DesiredState: desiredState})
 	if err != nil {
 		return nil, err
 	}
-	return res.GetDesiredState(), nil
+	for _, cluster := range desiredState.Clusters {
+		log.Info().Msgf("Calling StoreKubeconfig on kuber")
+		_, err := kuber.StoreKubeconfig(c, &pb.StoreKubeconfigRequest{Cluster: cluster})
+		if err != nil {
+			return nil, err
+		}
+	}
+	return resStorage.GetDesiredState(), nil
 }
 
 func diff(config *pb.Config) (*pb.Config, bool, map[string]*nodesToDelete) {
@@ -295,14 +318,33 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 func healthCheck() error {
 	//Check if Builder can connect to Terraformer/Wireguardian/Kube-eleven
 	//Connection to these services are crucial for Builder, without them, the builder is NOT Ready
-	if _, err := utils.GrpcDialWithInsecure("kubeEleven", urls.KubeElevenURL); err != nil {
+	if cc, err := utils.GrpcDialWithInsecure("terraformer", urls.TerraformerURL); err != nil {
 		return err
+	} else {
+		if err := cc.Close(); err != nil {
+			log.Error().Msgf("Error closing the connection in health check function : %v", err)
+		}
 	}
-	if _, err := utils.GrpcDialWithInsecure("terraformer", urls.TerraformerURL); err != nil {
+	if cc, err := utils.GrpcDialWithInsecure("wireguardian", urls.WireguardianURL); err != nil {
 		return err
+	} else {
+		if err := cc.Close(); err != nil {
+			log.Error().Msgf("Error closing the connection in health check function : %v", err)
+		}
 	}
-	if _, err := utils.GrpcDialWithInsecure("wireguardian", urls.WireguardianURL); err != nil {
+	if cc, err := utils.GrpcDialWithInsecure("kubeEleven", urls.KubeElevenURL); err != nil {
 		return err
+	} else {
+		if err := cc.Close(); err != nil {
+			log.Error().Msgf("Error closing the connection in health check function : %v", err)
+		}
+	}
+	if cc, err := utils.GrpcDialWithInsecure("kuber", urls.KuberURL); err != nil {
+		return err
+	} else {
+		if err := cc.Close(); err != nil {
+			log.Error().Msgf("Error closing the connection in health check function : %v", err)
+		}
 	}
 	return nil
 }
@@ -511,6 +553,7 @@ func main() {
 
 	// Create connection to Context-box
 	cc, err := utils.GrpcDialWithInsecure("context-box", urls.ContextBoxURL)
+	log.Info().Msgf("Dial Context-box: %s", urls.ContextBoxURL)
 	if err != nil {
 		log.Fatal().Msgf("Could not connect to Content-box: %v", err)
 	}

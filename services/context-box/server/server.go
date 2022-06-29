@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	kuber "github.com/Berops/platform/services/kuber/client"
 	terraformer "github.com/Berops/platform/services/terraformer/client"
 	"github.com/Berops/platform/urls"
 	"github.com/Berops/platform/utils"
@@ -190,9 +191,19 @@ func saveToDB(config *pb.Config) (*pb.Config, error) {
 	return config, nil
 }
 
-func getFromDB(id string) (configItem, error) {
+func getByNameFromDB(name string) (configItem, error) {
+	var data configItem //convert id to mongo type id (oid)
+
+	filter := bson.M{"name": name}
+	if err := collection.FindOne(context.Background(), filter).Decode(&data); err != nil {
+		return data, fmt.Errorf("error while finding name in the DB: %v", err)
+	}
+	return data, nil
+}
+
+func getByIDFromDB(id string) (configItem, error) {
 	var data configItem
-	oid, err := primitive.ObjectIDFromHex(id) //convert id to mongo type id (oid)
+	oid, err := primitive.ObjectIDFromHex(id) // convert id to mongo id type (oid)
 	if err != nil {
 		return data, err
 	}
@@ -227,6 +238,7 @@ func configCheck() error {
 		}
 
 		// check for Scheduler
+
 		if string(config.DsChecksum) != string(config.MsChecksum) {
 			// if scheduler ttl is 0 or smaller AND config has no errorMessage, add to scheduler Q
 			if config.SchedulerTTL <= 0 && len(config.ErrorMessage) == 0 {
@@ -269,7 +281,7 @@ func configCheck() error {
 			}
 		}
 
-		// save data if both TTL were substracted
+		// save data if both TTL were subtracted
 		c, err := dataToConfigPb(config)
 		if err != nil {
 			return err
@@ -316,7 +328,7 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 		return nil, fmt.Errorf("error while checking the length of future domain: %v", err)
 	}
 	// Get config with the same ID from the DB
-	data, err := getFromDB(config.GetId())
+	data, err := getByNameFromDB(config.GetName())
 	if err != nil {
 		return nil, err
 	}
@@ -349,29 +361,37 @@ func calcChecksum(data string) []byte {
 
 func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
 	log.Info().Msg("CLIENT REQUEST: SaveConfigFrontEnd")
-	newConfig := req.GetConfig()
-	newConfig.MsChecksum = calcChecksum(newConfig.GetManifest())
-	if newConfig.GetId() != "" {
-		//Check if there is already ID in the DB
-		oldConfig, err := getFromDB(newConfig.GetId())
-		if err != nil {
-			log.Fatal().Msgf("Error while getting old newConfig from the DB %v", err)
-		}
+	newConfigPb := req.GetConfig()
+	newConfigPb.MsChecksum = calcChecksum(newConfigPb.GetManifest())
+
+	oldConfig, err := getByNameFromDB(newConfigPb.GetName())
+	if err != nil {
+		log.Info().Msgf("No existing doc with name: %v", newConfigPb.Name)
+	} else {
+		// copy current state from saved config to new config
 		oldConfigPb, err := dataToConfigPb(&oldConfig)
 		if err != nil {
 			log.Fatal().Msgf("Error while converting data to pb %v", err)
 		}
-		newConfig.CurrentState = oldConfigPb.CurrentState
+		if string(oldConfigPb.MsChecksum) != string(newConfigPb.MsChecksum) {
+			oldConfigPb.MsChecksum = newConfigPb.MsChecksum
+			oldConfigPb.Manifest = newConfigPb.Manifest
+			oldConfigPb.SchedulerTTL = 0
+			oldConfigPb.BuilderTTL = 0
+		}
+		newConfigPb = oldConfigPb
 	}
 
-	newConfig, err := saveToDB(newConfig)
+	// save config to DB
+	newConfigPb, err = saveToDB(newConfigPb)
 	if err != nil {
 		return nil, status.Errorf(
 			codes.Internal,
 			fmt.Sprintf("Internal error: %v", err),
 		)
 	}
-	return &pb.SaveConfigResponse{Config: newConfig}, nil
+
+	return &pb.SaveConfigResponse{Config: newConfigPb}, nil
 }
 
 // SaveConfigBuilder is a gRPC service: the function saves config to the DB after receiving it from Builder
@@ -380,7 +400,7 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 	config := req.GetConfig()
 
 	// Get config with the same ID from the DB
-	data, err := getFromDB(config.GetId())
+	data, err := getByNameFromDB(config.GetName())
 	if err != nil {
 		return nil, err
 	}
@@ -404,17 +424,27 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 }
 
 // GetConfigById is a gRPC service: function returns one config from the DB
-func (*server) GetConfigById(ctx context.Context, req *pb.GetConfigByIdRequest) (*pb.GetConfigByIdResponse, error) {
-	log.Info().Msg("CLIENT REQUEST: GetConfigById")
-	d, err := getFromDB(req.Id)
-	if err != nil {
-		return nil, err
+func (*server) GetConfigFromDB(ctx context.Context, req *pb.GetConfigFromDBRequest) (*pb.GetConfigFromDBResponse, error) {
+	log.Info().Msg("CLIENT REQUEST: GetConfigFromDB")
+	var d configItem
+	var err error
+	if req.Type == pb.IdType_HASH {
+		d, err = getByIDFromDB(req.Id)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		d, err = getByNameFromDB(req.Id)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	config, err := dataToConfigPb(&d)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.GetConfigByIdResponse{Config: config}, nil
+	return &pb.GetConfigFromDBResponse{Config: config}, nil
 }
 
 // GetConfigScheduler is a gRPC service: function returns one config from the queueScheduler
@@ -474,9 +504,18 @@ func (*server) GetAllConfigs(ctx context.Context, req *pb.GetAllConfigsRequest) 
 func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*pb.DeleteConfigResponse, error) {
 	log.Info().Msg("CLIENT REQUEST: DeleteConfig")
 
-	config, err := getFromDB(req.Id)
-	if err != nil {
-		return nil, err
+	var config configItem
+	var err error
+	if req.Type == pb.IdType_HASH { //create filter for searching in the database
+		config, err = getByIDFromDB(req.Id)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		config, err = getByNameFromDB(req.Id)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	c, err := dataToConfigPb(&config)
@@ -489,14 +528,22 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 		return nil, err
 	} //destroy infrastructure with terraformer
 
-	oid, err := primitive.ObjectIDFromHex(req.GetId()) //convert id to mongo type id (oid)
+	err = deleteKubeconfig(c)
 	if err != nil {
-		return nil, status.Errorf(
-			codes.InvalidArgument,
-			fmt.Sprintln("Cannot parse ID"),
-		)
+		return nil, err
+	} // delete kubeconfig secret
+
+	var filter primitive.M
+	if req.Type == pb.IdType_HASH {
+		oid, err := primitive.ObjectIDFromHex(req.GetId())
+		if err != nil {
+			return nil, fmt.Errorf("error while converting id %s to mongo primitive : %v", req.Id, err)
+		}
+		filter = bson.M{"_id": oid} //create filter for searching in the database
+	} else {
+		filter = bson.M{"name": req.Id} //create filter for searching in the database
 	}
-	filter := bson.M{"_id": oid}                                   //create filter for searching in the database
+
 	res, err := collection.DeleteOne(context.Background(), filter) //delete object from the database
 	if err != nil {
 		return nil, status.Errorf(
@@ -504,7 +551,6 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 			fmt.Sprintf("Cannot delete config in MongoDB: %v", err),
 		)
 	}
-
 	if res.DeletedCount == 0 { //check if the object was really deleted
 		return nil, status.Errorf(
 			codes.NotFound,
@@ -534,6 +580,27 @@ func destroyConfigTerraformer(config *pb.Config) (*pb.Config, error) {
 	}
 
 	return res.GetConfig(), nil
+}
+
+// gRPC call to delete
+func deleteKubeconfig(config *pb.Config) error {
+	trimmedKuberURL := strings.ReplaceAll(urls.KuberURL, ":tcp://", "")
+	log.Info().Msgf("Dial Terraformer: %s", trimmedKuberURL)
+	// Create connection to Terraformer
+	cc, err := utils.GrpcDialWithInsecure("kuber", trimmedKuberURL)
+	if err != nil {
+		return err
+	}
+	defer func() { utils.CloseClientConnection(cc) }()
+
+	c := pb.NewKuberServiceClient(cc)
+	for _, cluster := range config.CurrentState.Clusters {
+		_, err := kuber.DeleteKubeconfig(c, &pb.DeleteKubeconfigRequest{Cluster: cluster})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func configChecker() error {
@@ -592,7 +659,19 @@ func main() {
 	}()
 
 	log.Info().Msgf("Connected to MongoDB at %s", urls.DatabaseURL)
+
+	// create collection
 	collection = client.Database("platform").Collection("config")
+
+	// create index
+	_, err = collection.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys:    bson.D{{Key: "name", Value: 1}},
+		Options: options.Index().SetUnique(true),
+	})
+	if err != nil {
+		log.Fatal().Msgf("Failed to create index, err: %v", err)
+		panic(err)
+	}
 	// Set the context-box port
 	contextboxPort := utils.GetenvOr("CONTEXT_BOX_PORT", fmt.Sprint(defaultContextBoxPort))
 

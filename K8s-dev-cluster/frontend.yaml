@@ -18,7 +18,7 @@ spec:
       containers:
       - name: frontend
         imagePullPolicy: Always
-        image: nginx # change me please ! After that, uncomment the probes too.
+        image: eu.gcr.io/platform-infrastructure-316112/platform/frontend
         resources:
           requests:
             cpu: 10m
@@ -42,16 +42,18 @@ spec:
             configMapKeyRef:
               name: env
               key: GOLANG_LOG
-#        readinessProbe:
-#          httpGet:
-#            path: /ready
-#            port: 50051
-#          initialDelaySeconds: 5
-#        livenessProbe:
-#          httpGet:
-#            path: /live
-#            port: 50051
-#          initialDelaySeconds: 10
+        - name: MANIFEST_DIR
+          value: /input-manifests
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 50058
+          initialDelaySeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /live
+            port: 50058
+          initialDelaySeconds: 10
         volumeMounts:
         - name: input-manifests
           mountPath: /input-manifests/

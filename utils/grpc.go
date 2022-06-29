@@ -19,6 +19,6 @@ func GrpcDialWithInsecure(serviceName string, serviceURL string) (*grpc.ClientCo
 	if err != nil {
 		return nil, fmt.Errorf("Could not connect to %s: %v", serviceName, err)
 	} else {
-		return cc, err
+		return cc, nil
 	}
 }

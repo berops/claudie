@@ -81,8 +81,8 @@ func GetAllConfigs(c pb.ContextBoxServiceClient) (*pb.GetAllConfigsResponse, err
 }
 
 // DeleteConfig deletes object from the mongoDB database with a specified Id
-func DeleteConfig(c pb.ContextBoxServiceClient, id string) error {
-	res, err := c.DeleteConfig(context.Background(), &pb.DeleteConfigRequest{Id: id})
+func DeleteConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType) error {
+	res, err := c.DeleteConfig(context.Background(), &pb.DeleteConfigRequest{Id: id, Type: idType})
 	if err != nil {
 		return fmt.Errorf("Error deleting: %v", err)
 	}
@@ -92,8 +92,8 @@ func DeleteConfig(c pb.ContextBoxServiceClient, id string) error {
 }
 
 // PrintConfig prints a desired config with a current state
-func PrintConfig(c pb.ContextBoxServiceClient, id string) (*pb.GetConfigByIdResponse, error) {
-	res, err := c.GetConfigById(context.Background(), &pb.GetConfigByIdRequest{Id: id})
+func PrintConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType) (*pb.GetConfigFromDBResponse, error) {
+	res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: id, Type: idType})
 	if err != nil {
 		log.Fatal().Msgf("Failed to get config ID %s : %v", id, err)
 	}
@@ -101,14 +101,19 @@ func PrintConfig(c pb.ContextBoxServiceClient, id string) (*pb.GetConfigByIdResp
 	fmt.Println("Config ID:", res.GetConfig().GetId())
 	fmt.Println("Project name:", res.GetConfig().GetCurrentState().GetName())
 	fmt.Println("Project clusters: ")
-	for i, cluster := range res.GetConfig().GetCurrentState().GetClusters() {
+	for i, cluster := range res.GetConfig().GetDesiredState().GetClusters() {
 		fmt.Println("========================================")
 		fmt.Println("Cluster number:", i)
 		fmt.Println("Name:", cluster.ClusterInfo.GetName())
+		fmt.Println("Hash:", cluster.ClusterInfo.GetHash())
 		fmt.Println("Kubernetes version:", cluster.GetKubernetes())
 		fmt.Println("Network CIDR:", cluster.GetNetwork())
 		fmt.Println("Kubeconfig:")
 		fmt.Println(cluster.GetKubeconfig())
+		fmt.Println("Public key:")
+		fmt.Println(cluster.ClusterInfo.PublicKey)
+		fmt.Println("Private key:")
+		fmt.Println(cluster.ClusterInfo.PrivateKey)
 		fmt.Println("Node Pools:")
 		for i2, nodePool := range cluster.ClusterInfo.GetNodePools() {
 			fmt.Println("----------------------------------------")
