@@ -28,6 +28,7 @@ type server struct {
 const (
 	outputPath            = "services/kube-eleven/server/" // path to the output directory
 	defaultKubeElevenPort = 50054                          // default port for kube-eleven
+	maxNumOfRetries       = 5
 )
 
 type data struct {
@@ -199,11 +200,21 @@ func genKubeOneConfig(templateFilePath string, manifestFilePath string, d interf
 // runKubeOne runs kubeone with the generated manifest
 func runKubeOne(path string) error {
 	log.Info().Msgf("Running KubeOne in %s dir", path)
-	cmd := exec.Command("kubeone", "apply", "-m", "kubeone.yaml", "-y")
+	command := "kubeone apply -m kubeone.yaml -y"
+	cmd := exec.Command("bash", "-c", command)
 	cmd.Dir = path // golang will execute command from this directory
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	err := cmd.Run()
+	if err != nil {
+		log.Warn().Msgf("Error encountered while executing %s : %v", command, err)
+		retryCmd := utils.Cmd{Command: command, Dir: path}
+		err := retryCmd.RetryCommand(maxNumOfRetries)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // readKubeconfig reads kubeconfig from a file and returns it

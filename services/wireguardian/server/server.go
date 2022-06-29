@@ -67,6 +67,8 @@ const (
 	playbookFile             = "playbook.yml"
 	sshClusterPrivateKeyFile = "cluster"
 	defaultWireguardianPort  = 50053
+	maxAnsibleRetries        = 3
+	defaultAnsibleForks      = 30
 )
 
 func (*server) RunAnsible(_ context.Context, req *pb.RunAnsibleRequest) (*pb.RunAnsibleResponse, error) {
@@ -257,22 +259,13 @@ func runAnsible(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster, changedEndpo
 	}
 
 	inventoryFilePath := cluster.ClusterInfo.Name + "-" + cluster.ClusterInfo.Hash + "/" + inventoryFile
-
-	cmd := exec.Command("ansible-playbook", playbookFile, "-i", inventoryFilePath, "-f", "30", "-l", "nodes")
-	cmd.Dir = outputPath
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
+	// install wireguard
+	err := executeAnsible(playbookFile, inventoryFilePath, "", cluster.ClusterInfo.Name+"-"+cluster.ClusterInfo.Hash)
 	if err != nil {
 		return err
 	}
-
-	//install longhorn dependencies
-	cmd = exec.Command("ansible-playbook", longhornPlaybookFile, "-i", inventoryFilePath, "-f", "30")
-	cmd.Dir = outputPath
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
+	// install longhorn dependencies
+	err = executeAnsible(longhornPlaybookFile, inventoryFilePath, "", cluster.ClusterInfo.Name+"-"+cluster.ClusterInfo.Hash)
 	if err != nil {
 		return err
 	}
@@ -288,23 +281,14 @@ func runAnsible(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster, changedEndpo
 		}
 
 		nginxPlaybookPath := cluster.ClusterInfo.Name + "-" + cluster.ClusterInfo.Hash + "/" + lbCluster.ClusterInfo.Name + playbookExt
-		cmd := exec.Command("ansible-playbook", nginxPlaybookPath, "-i", inventoryFilePath, "-f", "30", "-l", lbCluster.ClusterInfo.Name)
-		cmd.Dir = outputPath
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		err = cmd.Run()
+		err = executeAnsible(nginxPlaybookPath, inventoryFilePath, "-l"+lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Name+"-"+lbCluster.ClusterInfo.Hash)
 		if err != nil {
 			return err
 		}
 
 		// check if apiendpoint is changed
 		if d, ok := changedEndpoint[lbCluster.ClusterInfo.Name]; ok {
-			// run apiEndpoint playbook
-			cmd := exec.Command("ansible-playbook", apiEndpointPlaybookFile, "-i", inventoryFilePath, "-f", "30", "--extra-vars", "NewEndpoint="+d.NewEndpoint+" OldEndpoint="+d.OldEndpoint)
-			cmd.Dir = outputPath
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-			err = cmd.Run()
+			err := executeAnsible(apiEndpointPlaybookFile, inventoryFilePath, "--extra-vars \"NewEndpoint="+d.NewEndpoint+" OldEndpoint="+d.OldEndpoint+"\"", lbCluster.ClusterInfo.Name+"-"+lbCluster.ClusterInfo.Hash)
 			if err != nil {
 				return err
 			}
@@ -364,6 +348,28 @@ func groupNodepool(k8sCluster *pb.K8Scluster, lbClusters []*pb.LBcluster) []*pb.
 	}
 	return nodepools
 }
+
+// executes ansible-playbook with the default forks of 30
+// any additional flags like -l <name>, or --extra-vars <vars> include in flags parameter
+// if command unsuccessful, the function will retry it until successful or maxAnsibleRetries reached
+func executeAnsible(playbookPath, inventoryPath, flags, clusterID string) error {
+	command := fmt.Sprintf("ansible-playbook %s -i %s -f %d %s", playbookPath, inventoryPath, defaultAnsibleForks, flags)
+	cmd := exec.Command("bash", "-c", command)
+	cmd.Dir = outputPath
+	cmd.Stdout = utils.GetStdOut(clusterID)
+	cmd.Stderr = utils.GetStdErr(clusterID)
+	err := cmd.Run()
+	if err != nil {
+		log.Warn().Msgf("Error encountered while executing %s : %v", command, err)
+		retryCmd := utils.Cmd{Command: command, Dir: outputPath, Stdout: cmd.Stdout, Stderr: cmd.Stderr}
+		err := retryCmd.RetryCommand(maxAnsibleRetries)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func main() {
 	// initialize logger
 	utils.InitLog("wireguardian", "GOLANG_LOG")

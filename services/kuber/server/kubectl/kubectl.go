@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/rs/zerolog/log"
+	"github.com/Berops/platform/utils"
 )
 
 // Kubeconfig - the kubeconfig of the cluster as a string
@@ -16,7 +16,7 @@ type Kubectl struct {
 }
 
 const (
-	maxNumOfTries = 5
+	maxKubectlRetries = 5
 )
 
 // KubectlApply runs kubectl apply in k.Directory directory, with specified manifest and specified namespace
@@ -102,37 +102,34 @@ func (k Kubectl) KubectlAnnotate(resource, resourceName, annotation string) erro
 
 // run will run the command in a bash shell like "bash -c command"
 func (k Kubectl) run(command string) error {
-	try := 0
-	var err error
-	for i := 0; i < maxNumOfTries; i++ {
-		cmd := exec.Command("bash", "-c", command)
-		cmd.Dir = k.Directory
-		err = cmd.Run()
-		if err == nil {
-			break
+	cmd := exec.Command("bash", "-c", command)
+	cmd.Dir = k.Directory
+	err := cmd.Run()
+	if err != nil {
+		retryCmd := utils.Cmd{Command: command, Dir: k.Directory}
+		err = retryCmd.RetryCommand(maxKubectlRetries)
+		if err != nil {
+			return err
 		}
-		try++
-		log.Warn().Msgf("Error encounter while executing kubectl : %v (retrying (%d/%d))", err, try, maxNumOfTries)
 	}
-	return err
+	return nil
 }
 
 // runWithOutput will run the command in a bash shell like "bash -c command" and return the output
 func (k Kubectl) runWithOutput(command string) ([]byte, error) {
 	var result []byte
 	var err error
-	try := 0
-	for i := 0; i < maxNumOfTries; i++ {
-		cmd := exec.Command("bash", "-c", command)
-		cmd.Dir = k.Directory
-		result, err = cmd.CombinedOutput()
-		if err == nil {
-			break
+	cmd := exec.Command("bash", "-c", command)
+	cmd.Dir = k.Directory
+	result, err = cmd.CombinedOutput()
+	if err != nil {
+		cmd := utils.Cmd{Command: command, Dir: k.Directory}
+		result, err = cmd.RetryCommandWithOutput(maxKubectlRetries)
+		if err != nil {
+			return nil, err
 		}
-		try++
-		log.Warn().Msgf("Error encounter while executing kubectl : %v (retrying (%d/%d))", err, try, maxNumOfTries)
 	}
-	return result, err
+	return result, nil
 }
 
 // getKubeconfig function returns either the "--kubeconfig <(echo ...)" if kubeconfig is specified, or empty string of none is given

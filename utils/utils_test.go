@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"os/exec"
 	"strings"
 	"testing"
 
@@ -77,4 +78,26 @@ func TestCheckDNSProvider(t *testing.T) {
 	b2 := utils.ChangedDNSProvider(dns1, dns1)
 	require.Equal(t, true, b1)
 	require.Equal(t, false, b2)
+}
+
+func TestWrapperOut(t *testing.T) {
+	command := "ls -la"
+	cmd := exec.Command("bash", "-c", command)
+	cmd.Stdout = utils.GetStdOut("this is no error")
+	cmd.Stderr = utils.GetStdErr("this is error")
+	out, err := cmd.CombinedOutput()
+	fmt.Println(out)
+	require.NoError(t, err)
+	cmd1 := exec.Command("bash", "-c", "dummy")
+	cmd1.Stdout = utils.GetStdOut("this is no error")
+	cmd1.Stderr = utils.GetStdErr("this is error")
+	err = cmd1.Run()
+	require.Error(t, err)
+}
+
+func TestCmd(t *testing.T) {
+	command := "ls -la"
+	cmd := utils.Cmd{Command: command, Stdout: utils.GetStdOut("this is no error"), Stderr: utils.GetStdErr("this is error")}
+	err := cmd.RetryCommand(10)
+	require.NoError(t, err)
 }
