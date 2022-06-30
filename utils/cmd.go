@@ -151,9 +151,9 @@ func (w *Wrapper) printWithPrefix(str string) {
 	}
 	if w.useColours {
 		if w.logType == STDOUT {
-			str = colorOkay + w.prefix + colorReset + " " + str
+			str = colorOkay + w.prefix + "\t" + colorReset + " " + str
 		} else {
-			str = colorFail + w.prefix + colorReset + " " + str
+			str = colorFail + w.prefix + "\t" + colorReset + " " + str
 		}
 	} else {
 		str = w.prefix + str
