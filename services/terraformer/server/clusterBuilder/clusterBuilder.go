@@ -42,7 +42,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 	clusterID := fmt.Sprintf("%s-%s", c.DesiredInfo.Name, c.DesiredInfo.Hash)
 	clusterDir := filepath.Join(Output, clusterID)
 	fmt.Println(clusterDir)
-	terraform := terraform.Terraform{Directory: clusterDir}
+	terraform := terraform.Terraform{Directory: clusterDir, StdOut: utils.GetStdOut(clusterID), StdErr: utils.GetStdErr(clusterID)}
 	err := c.generateFiles(clusterID, clusterDir)
 	if err != nil {
 		// description of an error in c.generateFiles()
@@ -89,7 +89,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 func (c ClusterBuilder) DestroyNodepools() error {
 	clusterID := fmt.Sprintf("%s-%s", c.CurrentInfo.Name, c.CurrentInfo.Hash)
 	clusterDir := filepath.Join(Output, clusterID)
-	terraform := terraform.Terraform{Directory: clusterDir}
+	terraform := terraform.Terraform{Directory: clusterDir, StdOut: utils.GetStdOut(clusterID), StdErr: utils.GetStdErr(clusterID)}
 	//generate template files
 	err := c.generateFiles(clusterID, clusterDir)
 	if err != nil {

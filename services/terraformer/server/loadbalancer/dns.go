@@ -42,7 +42,7 @@ func (d DNS) CreateDNSrecords() (string, error) {
 	clusterID := fmt.Sprintf("%s-%s", d.ClusterName, d.ClusterHash)
 	dnsID := fmt.Sprintf("%s-dns", clusterID)
 	dnsDir := filepath.Join(clusterBuilder.Output, dnsID)
-	terraform := terraform.Terraform{Directory: dnsDir}
+	terraform := terraform.Terraform{Directory: dnsDir, StdOut: utils.GetStdOut(dnsID), StdErr: utils.GetStdErr(dnsID)}
 	//check if DNS provider is unchanged
 	if utils.ChangedDNSProvider(d.CurrentDNS, d.DesiredDNS) {
 		log.Info().Msgf("Destroying old DNS records")
@@ -104,7 +104,7 @@ func (d DNS) DestroyDNSrecords() error {
 		return fmt.Errorf("error while creating dns records for %s : %v", dnsID, err)
 	}
 	// create dns records with terraform
-	terraform := terraform.Terraform{Directory: dnsDir}
+	terraform := terraform.Terraform{Directory: dnsDir, StdOut: utils.GetStdOut(dnsID), StdErr: utils.GetStdErr(dnsID)}
 	err = terraform.TerraformInit()
 	if err != nil {
 		return err
