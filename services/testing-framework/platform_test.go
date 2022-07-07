@@ -12,6 +12,7 @@ import (
 	cbox "github.com/Berops/platform/services/context-box/client"
 	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
+	"google.golang.org/grpc"
 
 	"io/fs"
 	"io/ioutil"
@@ -34,7 +35,8 @@ const (
 // TestPlatform will start all the test cases specified in tests directory
 func TestPlatform(t *testing.T) {
 	utils.InitLog("testing-framework")
-	c := clientConnection()
+	c, cc := clientConnection()
+	defer cc.Close()
 	log.Info().Msg("----Starting the tests----")
 
 	// loop through the directory and list files inside
@@ -66,7 +68,7 @@ func TestPlatform(t *testing.T) {
 }
 
 // clientConnection will return new client connection to Context-box
-func clientConnection() pb.ContextBoxServiceClient {
+func clientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
 	cc, err := utils.GrpcDialWithInsecure("context-box", envs.ContextBoxURL)
 	if err != nil {
 		log.Fatal().Err(err)
@@ -74,7 +76,7 @@ func clientConnection() pb.ContextBoxServiceClient {
 
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
-	return c
+	return c, cc
 }
 
 // applyTestSet function will apply test set sequentially to a platform
