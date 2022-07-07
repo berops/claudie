@@ -156,7 +156,7 @@ func (w *Wrapper) printWithPrefix(str string) {
 			str = colorFail + w.prefix + "\t" + colorReset + " " + str
 		}
 	} else {
-		str = w.prefix + str
+		str = w.prefix + "\t" + str
 	}
 	w.logger.Print(str)
 }

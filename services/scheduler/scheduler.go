@@ -33,23 +33,29 @@ const (
 	gcpProvider          = "gcp"
 )
 
-var claudieProvider = &pb.Provider{
-	Name:        "gcp",
-	Credentials: "../../../../../keys/platform-infrastructure-316112-bd7953f712df.json",
-}
+var (
+	claudieProvider = &pb.Provider{
+		Name:        "gcp",
+		Credentials: "../../../../../keys/platform-infrastructure-316112-bd7953f712df.json",
+	}
+	DefaultDNS = &pb.DNS{
+		DnsZone:  "lb-zone",
+		Project:  "platform-infrastructure-316112",
+		Provider: claudieProvider,
+	}
+)
 
-var DefaultDNS = &pb.DNS{
-	DnsZone:  "lb-zone",
-	Project:  "platform-infrastructure-316112",
-	Provider: claudieProvider,
+type keyPair struct {
+	public  string
+	private string
 }
 
 // MakeSSHKeyPair function generates SSH privateKey,publicKey pair
 // returns (strPrivateKey, strPublicKey)
-func MakeSSHKeyPair() (string, string) {
+func MakeSSHKeyPair() (keyPair, error) {
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2042)
 	if err != nil {
-		return "", ""
+		return keyPair{}, err
 	}
 
 	// generate and write private key as PEM
@@ -57,19 +63,19 @@ func MakeSSHKeyPair() (string, string) {
 
 	privateKeyPEM := &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)}
 	if err := pem.Encode(&privKeyBuf, privateKeyPEM); err != nil {
-		return "", ""
+		return keyPair{}, err
 	}
 
 	// generate and write public key
 	pub, err := ssh.NewPublicKey(&privateKey.PublicKey)
 	if err != nil {
-		return "", ""
+		return keyPair{}, err
 	}
 
 	var pubKeyBuf strings.Builder
 	pubKeyBuf.Write(ssh.MarshalAuthorizedKey(pub))
 
-	return privKeyBuf.String(), pubKeyBuf.String()
+	return keyPair{public: pubKeyBuf.String(), private: privKeyBuf.String()}, nil
 }
 
 func createDesiredState(config *pb.Config) (*pb.Config, error) {
@@ -146,10 +152,7 @@ clusterDesired:
 		for _, clusterCurrent := range res.CurrentState.Clusters {
 			// found current cluster with matching name
 			if clusterDesired.ClusterInfo.Name == clusterCurrent.ClusterInfo.Name {
-				if clusterCurrent.ClusterInfo.PublicKey != "" {
-					clusterDesired.ClusterInfo.PublicKey = clusterCurrent.ClusterInfo.PublicKey
-					clusterDesired.ClusterInfo.PrivateKey = clusterCurrent.ClusterInfo.PrivateKey
-				}
+				fillExistingKeys(clusterDesired.ClusterInfo, clusterCurrent.ClusterInfo)
 				if clusterCurrent.ClusterInfo.Hash != "" {
 					clusterDesired.ClusterInfo.Hash = clusterCurrent.ClusterInfo.Hash
 				}
@@ -162,9 +165,10 @@ clusterDesired:
 		}
 		// no current cluster found with matching name, create keys/hash
 		if clusterDesired.ClusterInfo.PublicKey == "" {
-			privateKey, publicKey := MakeSSHKeyPair()
-			clusterDesired.ClusterInfo.PrivateKey = privateKey
-			clusterDesired.ClusterInfo.PublicKey = publicKey
+			err := createKeys(clusterDesired.ClusterInfo)
+			if err != nil {
+				log.Error().Msgf("Error encountered while creating desired state for %s : %v", clusterDesired.ClusterInfo.Name, err)
+			}
 		}
 	}
 
@@ -173,10 +177,7 @@ clusterLbDesired:
 		for _, clusterLbCurrent := range res.CurrentState.LoadBalancerClusters {
 			// found current cluster with matching name
 			if clusterLbDesired.ClusterInfo.Name == clusterLbCurrent.ClusterInfo.Name {
-				if clusterLbCurrent.ClusterInfo.PublicKey != "" {
-					clusterLbDesired.ClusterInfo.PublicKey = clusterLbCurrent.ClusterInfo.PublicKey
-					clusterLbDesired.ClusterInfo.PrivateKey = clusterLbCurrent.ClusterInfo.PrivateKey
-				}
+				fillExistingKeys(clusterLbDesired.ClusterInfo, clusterLbCurrent.ClusterInfo)
 				if clusterLbDesired.ClusterInfo.Hash != "" {
 					clusterLbDesired.ClusterInfo.Hash = clusterLbCurrent.ClusterInfo.Hash
 				}
@@ -191,11 +192,11 @@ clusterLbDesired:
 		}
 		// no current cluster found with matching name, create keys/hash
 		if clusterLbDesired.ClusterInfo.PublicKey == "" {
-			privateKey, publicKey := MakeSSHKeyPair()
-			clusterLbDesired.ClusterInfo.PrivateKey = privateKey
-			clusterLbDesired.ClusterInfo.PublicKey = publicKey
+			err := createKeys(clusterLbDesired.ClusterInfo)
+			if err != nil {
+				log.Error().Msgf("Error encountered while creating desired state for %s : %v", clusterLbDesired.ClusterInfo.Name, err)
+			}
 		}
-
 		// create hostname if its not set and not present in current state
 		if clusterLbDesired.Dns.Hostname == "" {
 			clusterLbDesired.Dns.Hostname = utils.CreateHash(hostnameHashLen)
@@ -203,6 +204,29 @@ clusterLbDesired:
 	}
 
 	return res, nil
+}
+
+// function fillExistingKey will copy the keys from currentState to desired state
+func fillExistingKeys(desiredInfo, currentInfo *pb.ClusterInfo) {
+	if currentInfo.PublicKey != "" {
+		desiredInfo.PublicKey = currentInfo.PublicKey
+		desiredInfo.PrivateKey = currentInfo.PrivateKey
+	}
+}
+
+// function createKeys will create a RSA keypair and save it into the desired state
+// return error if key creation fails
+func createKeys(desiredInfo *pb.ClusterInfo) error {
+	// no current cluster found with matching name, create keys/hash
+	if desiredInfo.PublicKey == "" {
+		keys, err := MakeSSHKeyPair()
+		if err != nil {
+			return fmt.Errorf("error while filling up the keys for %s : %v", desiredInfo.Name, err)
+		}
+		desiredInfo.PrivateKey = keys.private
+		desiredInfo.PublicKey = keys.public
+	}
+	return nil
 }
 
 // populate nodepools for a cluster
