@@ -37,7 +37,7 @@ spec:
             configMapKeyRef:
               name: env
               key: GOLANG_LOG
-        - name: MINIO_URL
+        - name: MINIO_HOSTNAME
           valueFrom:
             configMapKeyRef:
               name: env
