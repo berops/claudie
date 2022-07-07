@@ -1,4 +1,4 @@
-.PHONY: gen contextbox scheduler builder terraformer wireguardian kubeEleven test dockerUp dockerDown dockerBuild databse minio
+.PHONY: gen contextbox scheduler builder terraformer wireguardian kubeEleven test dockerUp dockerDown dockerBuild database minio
 
 #Generate all .proto files
 gen:
@@ -48,7 +48,7 @@ dockerDown:
 	docker-compose --env-file ./K8s-dev-cluster/.env down
 
 dockerBuild:
-	docker-compose --env-file ./K8s-dev-cluster/.env build 
+	docker-compose --env-file ./K8s-dev-cluster/.env build --parallel
 
 dockerPush:
 	docker push eu.gcr.io/platform-infrastructure-316112/platform/context-box:minio
