@@ -49,13 +49,3 @@ dockerDown:
 
 dockerBuild:
 	docker-compose --env-file ./K8s-dev-cluster/.env build --parallel
-
-dockerPush:
-	docker push eu.gcr.io/platform-infrastructure-316112/platform/context-box:minio
-	docker push eu.gcr.io/platform-infrastructure-316112/platform/scheduler:minio
-	docker push eu.gcr.io/platform-infrastructure-316112/platform/builder:minio
-	docker push eu.gcr.io/platform-infrastructure-316112/platform/terraformer:minio
-	docker push eu.gcr.io/platform-infrastructure-316112/platform/wireguardian:minio
-	docker push eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven:minio
-	docker push eu.gcr.io/platform-infrastructure-316112/platform/kuber:minio
-	docker push eu.gcr.io/platform-infrastructure-316112/platform/frontend:minio
