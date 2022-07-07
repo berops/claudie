@@ -47,6 +47,9 @@ spec:
             configMapKeyRef:
               name: env
               key: MINIO_PORT
+        envFrom:
+            - secretRef:
+                name: minio-secret
         ports:
         - containerPort: 50052
         readinessProbe:

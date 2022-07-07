@@ -25,11 +25,9 @@ spec:
             - "/bin/sh"
             - "-ce"
             - "/usr/bin/docker-entrypoint.sh minio server /data --address :9000 --console-address :9001"
-          # env:
-          #   - name: MINIO_ROOT_USER
-          #     value: "minio-uname"
-          #   - name: MINIO_ROOT_PASSWORD
-          #     value: "minio-passw"
+          envFrom:
+            - secretRef:
+                name: minio-secret
           ports:
             - name: https
               containerPort: 9000
