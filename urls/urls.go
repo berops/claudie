@@ -16,6 +16,8 @@ var (
 	DatabaseURL = os.Getenv("DATABASE_HOSTNAME") + ":" + os.Getenv("DATABASE_PORT")
 	//KuberURL is a listening URL for Kuber module
 	KuberURL = os.Getenv("KUBER_HOSTNAME") + ":" + os.Getenv("KUBER_PORT")
+	//MinioURL is a listening URL for Minio deployment
+	MinioURL = os.Getenv("MINIO_HOSTNAME") + ":" + os.Getenv("MINIO_PORT")
 )
 
 func init() {
@@ -36,5 +38,8 @@ func init() {
 	}
 	if KuberURL == ":" {
 		KuberURL = "localhost:50057"
+	}
+	if MinioURL == ":" {
+		MinioURL = "http://localhost:9000"
 	}
 }

@@ -1,0 +1,7 @@
+kind: Kustomization
+metadata:
+  name: minio
+resources:
+  - deployment.yaml
+  - cm.yaml
+  - job.yaml
