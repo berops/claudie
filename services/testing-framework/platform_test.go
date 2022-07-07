@@ -36,7 +36,12 @@ const (
 func TestPlatform(t *testing.T) {
 	utils.InitLog("testing-framework")
 	c, cc := clientConnection()
-	defer cc.Close()
+	defer func() {
+		err := cc.Close()
+		if err != nil {
+			log.Error().Msgf("error while closing client connection : %v", err)
+		}
+	}()
 	log.Info().Msg("----Starting the tests----")
 
 	// loop through the directory and list files inside
