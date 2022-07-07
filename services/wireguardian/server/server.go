@@ -372,7 +372,7 @@ func executeAnsible(playbookPath, inventoryPath, flags, clusterID string) error 
 
 func main() {
 	// initialize logger
-	utils.InitLog("wireguardian", "GOLANG_LOG")
+	utils.InitLog("wireguardian")
 
 	// Set Wireguardian port
 	wireguardianPort := utils.GetenvOr("WIREGUARDIAN_PORT", fmt.Sprint(defaultWireguardianPort))

@@ -14,11 +14,11 @@ import (
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v3"
 
+	"github.com/Berops/platform/envs"
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
 	cbox "github.com/Berops/platform/services/context-box/client"
 	"github.com/Berops/platform/services/scheduler/manifest"
-	"github.com/Berops/platform/urls"
 	"github.com/Berops/platform/utils"
 )
 
@@ -32,7 +32,7 @@ var (
 )
 
 func ClientConnection() pb.ContextBoxServiceClient {
-	cc, err := utils.GrpcDialWithInsecure("context-box", urls.ContextBoxURL)
+	cc, err := utils.GrpcDialWithInsecure("context-box", envs.ContextBoxURL)
 	if err != nil {
 		log.Fatal().Err(err)
 	}
@@ -130,7 +130,7 @@ func healthCheck() error {
 }
 
 func main() {
-	utils.InitLog("frontend", "GOLANG_LOG")
+	utils.InitLog("frontend")
 
 	client := ClientConnection()
 

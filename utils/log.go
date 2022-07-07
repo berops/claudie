@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Berops/platform/envs"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -19,11 +20,11 @@ var (
 // Initialize the logging framework.
 // Inputs are the golang module name used as a logging prefix
 // and the env variable with the logging level
-func InitLog(moduleName string, logEnvVar string) {
+func InitLog(moduleName string) {
 	if !isLogInit {
 		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 		// set log level from env variable
-		logLevel, err := getLogLevelFromEnv(logEnvVar)
+		logLevel, err := getLogLevelFromEnv()
 		baseLogger := zerolog.New(os.Stderr)
 		// create sub logger
 		logger = baseLogger.With().Str("module", moduleName).Caller().Logger()        // add module name to log
@@ -32,28 +33,23 @@ func InitLog(moduleName string, logEnvVar string) {
 		if err != nil {
 			logger.Err(err)
 		} else {
-			logger.Info().Msgf("Using %s log level %v", logEnvVar, logLevel)
+			logger.Info().Msgf("Using %s log level %v", logLevel, logLevel)
 		}
 		isLogInit = true
 	}
 	log.Logger = logger
 }
 
-func getLogLevelFromEnv(envVarName string) (zerolog.Level, error) {
-	logLevelStr, ok := os.LookupEnv(envVarName)
+func getLogLevelFromEnv() (zerolog.Level, error) {
+	logLevelStr := envs.LogLevel
 	var logLevel zerolog.Level
 	var e error = nil
-	if !ok {
-		e = fmt.Errorf("%s env variable not set. Using default log level %v", envVarName, defaultLogLevel)
+	level, err := convertLogLevelStr(logLevelStr)
+	if err != nil {
+		e = fmt.Errorf("unsupported %s value %s. Assuming log level %v", logLevelStr, logLevelStr, defaultLogLevel)
 		logLevel = defaultLogLevel
 	} else {
-		level, err := convertLogLevelStr(logLevelStr)
-		if err != nil {
-			e = fmt.Errorf("Unsupported %s value %s. Assuming log level %v", envVarName, logLevelStr, defaultLogLevel)
-			logLevel = defaultLogLevel
-		} else {
-			logLevel = level
-		}
+		logLevel = level
 	}
 	return logLevel, e
 }
@@ -71,7 +67,7 @@ func convertLogLevelStr(logLevelStr string) (zerolog.Level, error) {
 	}
 	res, ok := levels[strings.ToLower(logLevelStr)]
 	if !ok {
-		return defaultLogLevel, fmt.Errorf("Unsupported log level %s", logLevelStr)
+		return defaultLogLevel, fmt.Errorf("unsupported log level %s", logLevelStr)
 	} else {
 		return res, nil
 	}

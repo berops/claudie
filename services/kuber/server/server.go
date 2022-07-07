@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"path/filepath"
 
+	"github.com/Berops/platform/envs"
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/services/kuber/server/kubectl"
@@ -75,9 +76,12 @@ func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigReq
 			// save kubeconfig as base64 encoded string
 			sec.YamlManifest.Data.SecretData = base64.StdEncoding.EncodeToString([]byte(c.GetKubeconfig()))
 			sec.YamlManifest.Metadata.Name = fmt.Sprintf("%s-kubeconfig", clusterID)
-			namespace := os.Getenv("NAMESPACE")
+			namespace := envs.Namespace
 			if namespace == "" {
-				namespace = "claudie" // default ns
+				// the claudie is in local deployment - print kubeconfig
+				log.Info().Msgf("The kubeconfig for %s:", clusterID)
+				fmt.Println(c.Kubeconfig)
+				return nil
 			}
 			// apply secret
 			err := sec.Apply(namespace, "")
@@ -102,9 +106,10 @@ func (s *server) DeleteKubeconfig(ctx context.Context, req *pb.DeleteKubeconfigR
 	func(c *pb.K8Scluster) {
 		errGroup.Go(func() error {
 			secretName := fmt.Sprintf("%s-%s-kubeconfig", c.ClusterInfo.Name, c.ClusterInfo.Hash)
-			namespace := os.Getenv("NAMESPACE")
+			namespace := envs.Namespace
 			if namespace == "" {
-				namespace = "claudie" // default ns
+				// the claudie is in local deployment - no action needed
+				return nil
 			}
 			kc := kubectl.Kubectl{}
 
@@ -127,7 +132,7 @@ func (s *server) DeleteKubeconfig(ctx context.Context, req *pb.DeleteKubeconfigR
 
 func main() {
 	// initialize logger
-	utils.InitLog("kuber", "GOLANG_LOG")
+	utils.InitLog("kuber")
 
 	// Set the kuber port
 	kuberPort := utils.GetenvOr("KUBER_PORT", fmt.Sprint(defaultKuberPort))

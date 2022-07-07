@@ -4,13 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/Berops/platform/envs"
 	"github.com/Berops/platform/proto/pb"
 	cbox "github.com/Berops/platform/services/context-box/client"
-	"github.com/Berops/platform/urls"
 	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
 
@@ -34,7 +33,7 @@ const (
 
 // TestPlatform will start all the test cases specified in tests directory
 func TestPlatform(t *testing.T) {
-	utils.InitLog("testing-framework", "GOLANG_LOG")
+	utils.InitLog("testing-framework")
 	c := clientConnection()
 	log.Info().Msg("----Starting the tests----")
 
@@ -54,7 +53,7 @@ func TestPlatform(t *testing.T) {
 	}
 
 	// retrieve namespace from ENV
-	namespace := os.Getenv("NAMESPACE")
+	namespace := envs.Namespace
 
 	// apply the test sets
 	for _, path := range setNames {
@@ -68,7 +67,7 @@ func TestPlatform(t *testing.T) {
 
 // clientConnection will return new client connection to Context-box
 func clientConnection() pb.ContextBoxServiceClient {
-	cc, err := utils.GrpcDialWithInsecure("context-box", urls.ContextBoxURL)
+	cc, err := utils.GrpcDialWithInsecure("context-box", envs.ContextBoxURL)
 	if err != nil {
 		log.Fatal().Err(err)
 	}

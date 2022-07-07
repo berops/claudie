@@ -13,11 +13,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Berops/platform/envs"
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
 	cbox "github.com/Berops/platform/services/context-box/client"
 	"github.com/Berops/platform/services/scheduler/manifest"
-	"github.com/Berops/platform/urls"
 	"github.com/Berops/platform/utils"
 	"github.com/Berops/platform/worker"
 	"github.com/rs/zerolog/log"
@@ -408,11 +408,11 @@ func saveErrorMessage(config *pb.Config, c pb.ContextBoxServiceClient, err error
 
 func main() {
 	// initialize logger
-	utils.InitLog("scheduler", "GOLANG_LOG")
+	utils.InitLog("scheduler")
 
 	// Create connection to Context-box
-	log.Info().Msgf("Dial Context-box: %s", urls.ContextBoxURL)
-	cc, err := utils.GrpcDialWithInsecure("context-box", urls.ContextBoxURL)
+	log.Info().Msgf("Dial Context-box: %s", envs.ContextBoxURL)
+	cc, err := utils.GrpcDialWithInsecure("context-box", envs.ContextBoxURL)
 	if err != nil {
 		log.Fatal().Err(err)
 	}
