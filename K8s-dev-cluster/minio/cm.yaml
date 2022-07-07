@@ -15,7 +15,7 @@ data:
       SCHEME=$1
       ATTEMPTS=0 ; LIMIT=29 ; # Allow 30 attempts
       set -e ; # fail if we can't read the keys.
-      ACCESS="minioadmin" ; SECRET="minioadmin" ; #NOTE: MIGHT NEED TO CHANGE LATER - Miro
+      ACCESS=$MINIO_ROOT_USER ; SECRET=$MINIO_ROOT_PASSWORD ; #NOTE: MIGHT NEED TO CHANGE LATER - Miro
       set +e ; # The connections to minio are allowed to fail.
       echo "Connecting to MinIO server: $SCHEME://$MINIO_ENDPOINT:$MINIO_PORT" ;
       MC_COMMAND="${MC} alias set myminio $SCHEME://$MINIO_ENDPOINT:$MINIO_PORT $ACCESS $SECRET" ;

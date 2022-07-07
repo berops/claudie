@@ -26,6 +26,9 @@ spec:
               value: minio
             - name: MINIO_PORT
               value: "9000"
+          envFrom:
+            - secretRef:
+                name: minio-secret
           volumeMounts:
             - name: minio-configuration
               mountPath: /config
