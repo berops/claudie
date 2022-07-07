@@ -1,4 +1,4 @@
-.PHONY: gen contextbox scheduler builder terraformer wireguardian kubeEleven test dockerUp dockerDown dockerBuild
+.PHONY: gen contextbox scheduler builder terraformer wireguardian kubeEleven test dockerUp dockerDown dockerBuild databse minio
 
 #Generate all .proto files
 gen:
@@ -28,6 +28,14 @@ kuber:
 frontend:
 	go run services/frontend/server.go
 
+database:
+	docker run --rm -p 27017:27017 -v ~/mongo/data:/data/db mongo:5
+
+minio:
+# mkdir will simulate the automatic bucket creation 
+	mkdir -p ~/minio/data/claudie-tf-state-files
+	docker run --rm -p 9000:9000 -p 9001:9001 --name minio -v ~/minio/data:/data quay.io/minio/minio server /data --console-address ":9001"
+
 # -timeout 0 will disable default timeout
 test:
 	go test -v ./services/testing-framework/... -timeout 0 -count=1
@@ -40,4 +48,14 @@ dockerDown:
 	docker-compose --env-file ./K8s-dev-cluster/.env down
 
 dockerBuild:
-	docker-compose --env-file ./K8s-dev-cluster/.env build --parallel
+	docker-compose --env-file ./K8s-dev-cluster/.env build 
+
+dockerPush:
+	docker push eu.gcr.io/platform-infrastructure-316112/platform/context-box:minio
+	docker push eu.gcr.io/platform-infrastructure-316112/platform/scheduler:minio
+	docker push eu.gcr.io/platform-infrastructure-316112/platform/builder:minio
+	docker push eu.gcr.io/platform-infrastructure-316112/platform/terraformer:minio
+	docker push eu.gcr.io/platform-infrastructure-316112/platform/wireguardian:minio
+	docker push eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven:minio
+	docker push eu.gcr.io/platform-infrastructure-316112/platform/kuber:minio
+	docker push eu.gcr.io/platform-infrastructure-316112/platform/frontend:minio
