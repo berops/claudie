@@ -26,9 +26,16 @@ spec:
               value: minio
             - name: MINIO_PORT
               value: "9000"
-          envFrom:
-            - secretRef:
-                name: minio-secret
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secret
+                  key: MINIO_ROOT_USER
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secret
+                  key: MINIO_ROOT_PASSWORD
           volumeMounts:
             - name: minio-configuration
               mountPath: /config
