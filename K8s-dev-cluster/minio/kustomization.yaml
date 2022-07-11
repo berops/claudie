@@ -5,9 +5,7 @@ resources:
   - deployment.yaml
   - cm.yaml
   - job.yaml
-# NOTE: for dev purposes, the network policy is disabled, since the CI/CD always deploy claudie to dynamically created namespace
-# For production, network policy MUST be added
-#  - network-policy.yaml
+  - network-policy.yaml
 secretGenerator:
 - name: minio-secret
   files:
