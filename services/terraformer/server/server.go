@@ -8,19 +8,26 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/Berops/platform/envs"
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/services/terraformer/server/kubernetes"
 	"github.com/Berops/platform/services/terraformer/server/loadbalancer"
 	"github.com/Berops/platform/utils"
+	"github.com/minio/minio-go"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
 const (
 	defaultTerraformerPort = 50052
+)
+
+var (
+	minioEndpoint  = envs.MinioURL
+	minioAccessKey = envs.MinioAccessKey
+	minioSecretKey = envs.MinioSecretKey
 )
 
 type server struct {
@@ -125,6 +132,20 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 	return &pb.DestroyInfrastructureResponse{Config: config}, nil
 }
 
+// healthCheck function is a readiness function defined by terraformer
+// it check whether bucket exists. If true, returns nil, error otherwise
+func healthCheck() error {
+	mc, err := minio.New(minioEndpoint, minioAccessKey, minioSecretKey, false)
+	if err != nil {
+		return err
+	}
+	exists, err := mc.BucketExists("claudie-tf-state-files")
+	if !exists || err != nil {
+		return fmt.Errorf("error: bucket exists %t || err: %v", exists, err)
+	}
+	return nil
+}
+
 func main() {
 	// initialize logger
 	utils.InitLog("terraformer")
@@ -144,8 +165,9 @@ func main() {
 	pb.RegisterTerraformerServiceServer(s, &server{})
 
 	// Add health service to gRPC
-	healthService := healthcheck.NewServerHealthChecker(terraformerPort, "TERRAFORMER_PORT")
-	grpc_health_v1.RegisterHealthServer(s, healthService)
+	// Here we use "client" health checker, since we are defining our own readiness function
+	healthService := healthcheck.NewClientHealthChecker(terraformerPort, healthCheck)
+	healthService.StartProbes()
 
 	g, _ := errgroup.WithContext(context.Background())
 
