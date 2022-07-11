@@ -21,8 +21,7 @@ type ServerHealthChecker struct {
 var defaultServicePort, envKey string
 
 // NewServerHealthChecker function generates a ServerHealthChecker struct
-// Input args: (port string, key string)
-// Return value: ServerHealthChecker
+// You can specify a custom readiness function in checkFunc parameter
 func NewServerHealthChecker(port string, key string, checkFunc checkFunction) *ServerHealthChecker {
 	defaultServicePort = port
 	envKey = key
@@ -45,6 +44,7 @@ func (s *ServerHealthChecker) Check(ctx context.Context, req *grpc_health_v1.Hea
 	if err != nil {
 		fmt.Println("gRPC server status: NOT_SERVING")
 		fmt.Println(err)
+		// no connection created -> not ready
 		return &grpc_health_v1.HealthCheckResponse{
 			Status: grpc_health_v1.HealthCheckResponse_NOT_SERVING,
 		}, nil
@@ -55,17 +55,21 @@ func (s *ServerHealthChecker) Check(ctx context.Context, req *grpc_health_v1.Hea
 				log.Printf("error closing connection: %s", err.Error())
 			}
 		}()
+		// execute custom readiness function if provided
 		if s.checkFunc != nil {
 			err := s.checkFunc()
 			if err != nil {
+				// error -> not ready
 				return &grpc_health_v1.HealthCheckResponse{
 					Status: grpc_health_v1.HealthCheckResponse_NOT_SERVING,
 				}, nil
 			}
+			// no error -> ready
 			return &grpc_health_v1.HealthCheckResponse{
 				Status: grpc_health_v1.HealthCheckResponse_SERVING,
 			}, nil
 		}
+		// if custom readiness function not provided, consider server ready
 		return &grpc_health_v1.HealthCheckResponse{
 			Status: grpc_health_v1.HealthCheckResponse_SERVING,
 		}, nil

@@ -27,7 +27,7 @@ const (
 )
 
 var (
-	minioEndpoint  = strings.TrimPrefix(envs.MinioURL, "http://") //minio go client does not support http/https prefix in handle creation
+	minioEndpoint  = strings.TrimPrefix(envs.MinioURL, "http://") //minio go client does not support http/https prefix when creating handle
 	minioAccessKey = envs.MinioAccessKey
 	minioSecretKey = envs.MinioSecretKey
 )
@@ -135,7 +135,7 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 }
 
 // healthCheck function is a readiness function defined by terraformer
-// it check whether bucket exists. If true, returns nil, error otherwise
+// it checks whether bucket exists. If true, returns nil, error otherwise
 func healthCheck() error {
 	//check if URL has http://
 	if strings.Contains(minioEndpoint, "http://") {
@@ -171,7 +171,7 @@ func main() {
 	pb.RegisterTerraformerServiceServer(s, &server{})
 
 	// Add health service to gRPC
-	// Here we use "client" health checker, since we are defining our own readiness function
+	// Here we pass our custom readiness probe
 	healthService := healthcheck.NewServerHealthChecker(terraformerPort, "TERRAFORMER_PORT", healthCheck)
 	grpc_health_v1.RegisterHealthServer(s, healthService)
 
