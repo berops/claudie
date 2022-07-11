@@ -14,17 +14,19 @@ import (
 )
 
 // ServerHealthChecker struct
-type ServerHealthChecker struct{}
+type ServerHealthChecker struct {
+	checkFunc checkFunction
+}
 
 var defaultServicePort, envKey string
 
 // NewServerHealthChecker function generates a ServerHealthChecker struct
 // Input args: (port string, key string)
 // Return value: ServerHealthChecker
-func NewServerHealthChecker(port string, key string) *ServerHealthChecker {
+func NewServerHealthChecker(port string, key string, checkFunc checkFunction) *ServerHealthChecker {
 	defaultServicePort = port
 	envKey = key
-	return &ServerHealthChecker{}
+	return &ServerHealthChecker{checkFunc: checkFunc}
 }
 
 // Check is a method function on ServerHealthChecker struct
@@ -53,6 +55,17 @@ func (s *ServerHealthChecker) Check(ctx context.Context, req *grpc_health_v1.Hea
 				log.Printf("error closing connection: %s", err.Error())
 			}
 		}()
+		if s.checkFunc != nil {
+			err := s.checkFunc()
+			if err != nil {
+				return &grpc_health_v1.HealthCheckResponse{
+					Status: grpc_health_v1.HealthCheckResponse_NOT_SERVING,
+				}, nil
+			}
+			return &grpc_health_v1.HealthCheckResponse{
+				Status: grpc_health_v1.HealthCheckResponse_SERVING,
+			}, nil
+		}
 		return &grpc_health_v1.HealthCheckResponse{
 			Status: grpc_health_v1.HealthCheckResponse_SERVING,
 		}, nil

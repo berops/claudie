@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 
 	"github.com/Berops/platform/envs"
 	"github.com/Berops/platform/healthcheck"
@@ -18,6 +19,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
 const (
@@ -25,7 +27,7 @@ const (
 )
 
 var (
-	minioEndpoint  = envs.MinioURL
+	minioEndpoint  = strings.TrimPrefix(envs.MinioURL, "http://") //minio go client does not support http/https prefix in handle creation
 	minioAccessKey = envs.MinioAccessKey
 	minioSecretKey = envs.MinioSecretKey
 )
@@ -135,6 +137,10 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 // healthCheck function is a readiness function defined by terraformer
 // it check whether bucket exists. If true, returns nil, error otherwise
 func healthCheck() error {
+	//check if URL has http://
+	if strings.Contains(minioEndpoint, "http://") {
+		minioEndpoint = strings.TrimPrefix(minioEndpoint, "http://")
+	}
 	mc, err := minio.New(minioEndpoint, minioAccessKey, minioSecretKey, false)
 	if err != nil {
 		return err
@@ -166,8 +172,8 @@ func main() {
 
 	// Add health service to gRPC
 	// Here we use "client" health checker, since we are defining our own readiness function
-	healthService := healthcheck.NewClientHealthChecker(terraformerPort, healthCheck)
-	healthService.StartProbes()
+	healthService := healthcheck.NewServerHealthChecker(terraformerPort, "TERRAFORMER_PORT", healthCheck)
+	grpc_health_v1.RegisterHealthServer(s, healthService)
 
 	g, _ := errgroup.WithContext(context.Background())
 

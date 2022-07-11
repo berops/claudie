@@ -687,7 +687,7 @@ func main() {
 	pb.RegisterContextBoxServiceServer(s, &server{})
 
 	// Add health service to gRPC
-	healthService := healthcheck.NewServerHealthChecker(contextboxPort, "CONTEXT_BOX_PORT")
+	healthService := healthcheck.NewServerHealthChecker(contextboxPort, "CONTEXT_BOX_PORT", nil)
 	grpc_health_v1.RegisterHealthServer(s, healthService)
 
 	g, ctx := errgroup.WithContext(context.Background())
