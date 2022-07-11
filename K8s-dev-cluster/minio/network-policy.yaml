@@ -2,12 +2,11 @@ kind: NetworkPolicy
 apiVersion: networking.k8s.io/v1
 metadata:
   name: minio-only-allow-this-namespace
+  namespace: claudie
 spec:
   podSelector:
     matchLabels:
       app: minio
   ingress:
   - from:
-    - namespaceSelector:
-        matchLabels:
-          kubernetes.io/metadata.name: claudie
+    - podSelector: {}
