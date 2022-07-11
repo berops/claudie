@@ -1,7 +1,17 @@
 terraform {
-  backend "gcs" {
-    bucket      = "develop_test_bucket"
-    prefix      = "/customer/{{ .ProjectName }}/{{ .ClusterName }}"
-    credentials = "../../../../../keys/platform-296509-d6ddeb344e91.json"
+  backend "s3" {
+    bucket      = "claudie-tf-state-files"
+    key      = "{{ .ProjectName }}/{{ .ClusterName }}"
+
+    endpoint = "{{.MinioURL}}"
+    region = "main"
+    
+    access_key="{{.AccessKey}}"
+    secret_key="{{.SecretKey}}"
+
+    skip_credentials_validation = true
+    skip_metadata_api_check = true
+    skip_region_validation = true
+    force_path_style = true
   }
 }

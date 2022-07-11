@@ -1,0 +1,13 @@
+kind: Kustomization
+metadata:
+  name: minio
+resources:
+  - deployment.yaml
+  - cm.yaml
+  - job.yaml
+  - network-policy.yaml
+secretGenerator:
+- name: minio-secret
+  files:
+  - MINIO_ROOT_USER=secrets/access-key
+  - MINIO_ROOT_PASSWORD=secrets/secret-key

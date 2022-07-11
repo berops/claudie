@@ -12,9 +12,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Berops/platform/envs"
 	kuber "github.com/Berops/platform/services/kuber/client"
 	terraformer "github.com/Berops/platform/services/terraformer/client"
-	"github.com/Berops/platform/urls"
 	"github.com/Berops/platform/utils"
 	"github.com/Berops/platform/worker"
 	"github.com/rs/zerolog/log"
@@ -563,8 +563,8 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 
 // destroyConfigTerraformer calls terraformer's DestroyInfrastructure function
 func destroyConfigTerraformer(config *pb.Config) (*pb.Config, error) {
-	// Trim "tcp://" substring from urls.TerraformerURL
-	trimmedTerraformerURL := strings.ReplaceAll(urls.TerraformerURL, ":tcp://", "")
+	// Trim "tcp://" substring from envs.TerraformerURL
+	trimmedTerraformerURL := strings.ReplaceAll(envs.TerraformerURL, ":tcp://", "")
 	log.Info().Msgf("Dial Terraformer: %s", trimmedTerraformerURL)
 	// Create connection to Terraformer
 	cc, err := utils.GrpcDialWithInsecure("terraformer", trimmedTerraformerURL)
@@ -584,7 +584,7 @@ func destroyConfigTerraformer(config *pb.Config) (*pb.Config, error) {
 
 // gRPC call to delete
 func deleteKubeconfig(config *pb.Config) error {
-	trimmedKuberURL := strings.ReplaceAll(urls.KuberURL, ":tcp://", "")
+	trimmedKuberURL := strings.ReplaceAll(envs.KuberURL, ":tcp://", "")
 	log.Info().Msgf("Dial Terraformer: %s", trimmedKuberURL)
 	// Create connection to Terraformer
 	cc, err := utils.GrpcDialWithInsecure("kuber", trimmedKuberURL)
@@ -617,9 +617,9 @@ func configChecker() error {
 // MongoDB connection should wait for the database to init. This function will retry the connection until it succeeds.
 func retryMongoDbConnection(attempts int, ctx context.Context) (*mongo.Client, error) {
 	// establish DB connection
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(urls.DatabaseURL))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(envs.DatabaseURL))
 	if err != nil {
-		log.Warn().Msgf("Failed to establish connection with the DB: %v", urls.DatabaseURL)
+		log.Warn().Msgf("Failed to establish connection with the DB: %v", envs.DatabaseURL)
 		return client, err
 	} else {
 		for i := 0; i < attempts; i++ {
@@ -640,12 +640,12 @@ func retryMongoDbConnection(attempts int, ctx context.Context) (*mongo.Client, e
 
 func main() {
 	// initialize logger
-	utils.InitLog("context-box", "GOLANG_LOG")
+	utils.InitLog("context-box")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	client, err := retryMongoDbConnection(defaultAttempts, ctx)
 	if err != nil {
-		log.Error().Msgf("Unable to connect to MongoDB at %s", urls.DatabaseURL)
+		log.Error().Msgf("Unable to connect to MongoDB at %s", envs.DatabaseURL)
 		cancel()
 		panic(err)
 	}
@@ -658,7 +658,7 @@ func main() {
 		}
 	}()
 
-	log.Info().Msgf("Connected to MongoDB at %s", urls.DatabaseURL)
+	log.Info().Msgf("Connected to MongoDB at %s", envs.DatabaseURL)
 
 	// create collection
 	collection = client.Database("platform").Collection("config")

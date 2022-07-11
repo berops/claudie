@@ -228,7 +228,7 @@ func readKubeconfig(kubeconfigFile string) (string, error) {
 
 func main() {
 	// initialize logger
-	utils.InitLog("kube-eleven", "GOLANG_LOG")
+	utils.InitLog("kube-eleven")
 
 	// Set KubeEleven port
 	kubeElevenPort := utils.GetenvOr("KUBE_ELEVEN_PORT", fmt.Sprint(defaultKubeElevenPort))

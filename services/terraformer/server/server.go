@@ -127,7 +127,7 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 
 func main() {
 	// initialize logger
-	utils.InitLog("terraformer", "GOLANG_LOG")
+	utils.InitLog("terraformer")
 
 	// Set the context-box port
 	terraformerPort := utils.GetenvOr("TERRAFORMER_PORT", fmt.Sprint(defaultTerraformerPort))

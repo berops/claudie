@@ -18,6 +18,16 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      # Install the git-crypt and unlock the files
+      - name: git-crypt unlock
+        run: |
+          sudo apt update
+          sudo apt install git-crypt
+          echo "${{ secrets.GIT_CRYPT_KEY }}" | base64  -d > ./git-crypt-key
+          echo "Unlocking"
+          git-crypt unlock git-crypt-key
+          rm git-crypt-key
+
       - name: Set short sha output
         run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
 
@@ -74,6 +84,10 @@ jobs:
           done
 
           kubectl get pods --namespace=claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+
+      - name: Wait until the S3 bucket has been set up on Minio
+        run: |
+          kubectl wait --for=condition=complete --timeout=200s job/make-bucket-job -n claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
 
       - name: Start the E2E tests
         working-directory: ./K8s-dev-cluster

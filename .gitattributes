@@ -4,3 +4,4 @@ services/context-box/client/manifest.yaml filter=git-crypt diff=git-crypt
 services/terraformer/client/client_test.go filter=git-crypt diff=git-crypt
 services/terraformer/server/terraformer_test.go filter=git-crypt diff=git-crypt
 services/terraformer/server/clusterBuilder/clusterBuilder_test.go filter=git-crypt diff=git-crypt
+K8s-dev-cluster/minio/secrets/** filter=git-crypt diff=git-crypt

@@ -1,6 +1,8 @@
-package urls
+package envs
 
-import "os"
+import (
+	"os"
+)
 
 // Hostnames and ports on what services are listening
 var (
@@ -16,8 +18,20 @@ var (
 	DatabaseURL = os.Getenv("DATABASE_HOSTNAME") + ":" + os.Getenv("DATABASE_PORT")
 	//KuberURL is a listening URL for Kuber module
 	KuberURL = os.Getenv("KUBER_HOSTNAME") + ":" + os.Getenv("KUBER_PORT")
+	//MinioURL is a listening URL for Minio deployment
+	MinioURL = os.Getenv("MINIO_HOSTNAME") + ":" + os.Getenv("MINIO_PORT")
+	//MinioAccessKey for backend
+	MinioAccessKey = os.Getenv("MINIO_ROOT_USER")
+	//MinioSecretKey for backend
+	MinioSecretKey = os.Getenv("MINIO_ROOT_PASSWORD")
+	//Namespace of current deployment
+	//NOTE: namespace should be left empty if env var not been set
+	Namespace = os.Getenv("NAMESPACE")
+	//Golang log level
+	LogLevel = os.Getenv("GOLANG_LOG")
 )
 
+// func init is used as setter for default values in case the env var has not been set
 func init() {
 	if TerraformerURL == ":" {
 		TerraformerURL = "localhost:50052"
@@ -36,5 +50,17 @@ func init() {
 	}
 	if KuberURL == ":" {
 		KuberURL = "localhost:50057"
+	}
+	if MinioURL == ":" {
+		MinioURL = "http://localhost:9000"
+	}
+	if MinioAccessKey == "" {
+		MinioAccessKey = "minioadmin"
+	}
+	if MinioSecretKey == "" {
+		MinioSecretKey = "minioadmin"
+	}
+	if LogLevel == "" {
+		LogLevel = "info"
 	}
 }

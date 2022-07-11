@@ -37,6 +37,26 @@ spec:
             configMapKeyRef:
               name: env
               key: GOLANG_LOG
+        - name: MINIO_HOSTNAME
+          valueFrom:
+            configMapKeyRef:
+              name: env
+              key: MINIO_HOSTNAME
+        - name: MINIO_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: env
+              key: MINIO_PORT
+        - name: MINIO_ROOT_USER
+          valueFrom:
+            secretKeyRef:
+              name: minio-secret
+              key: MINIO_ROOT_USER
+        - name: MINIO_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: minio-secret
+              key: MINIO_ROOT_PASSWORD
         ports:
         - containerPort: 50052
         readinessProbe:

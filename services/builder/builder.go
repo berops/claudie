@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Berops/platform/envs"
 	"github.com/Berops/platform/healthcheck"
 	kubeEleven "github.com/Berops/platform/services/kube-eleven/client"
 	kuber "github.com/Berops/platform/services/kuber/client"
-	"github.com/Berops/platform/urls"
 	"github.com/Berops/platform/utils"
 	"github.com/Berops/platform/worker"
 	"github.com/rs/zerolog/log"
@@ -43,7 +43,7 @@ type etcdNodeInfo struct {
 
 func callTerraformer(currentState *pb.Project, desiredState *pb.Project) (*pb.Project, *pb.Project, error) {
 	// Create connection to Terraformer
-	cc, err := utils.GrpcDialWithInsecure("terraformer", urls.TerraformerURL)
+	cc, err := utils.GrpcDialWithInsecure("terraformer", envs.TerraformerURL)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -66,7 +66,7 @@ func callTerraformer(currentState *pb.Project, desiredState *pb.Project) (*pb.Pr
 }
 
 func callWireguardian(desiredState, currenState *pb.Project) (*pb.Project, error) {
-	cc, err := utils.GrpcDialWithInsecure("wireguardian", urls.WireguardianURL)
+	cc, err := utils.GrpcDialWithInsecure("wireguardian", envs.WireguardianURL)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func callWireguardian(desiredState, currenState *pb.Project) (*pb.Project, error
 }
 
 func callKubeEleven(desiredState *pb.Project) (*pb.Project, error) {
-	cc, err := utils.GrpcDialWithInsecure("kubeEleven", urls.KubeElevenURL)
+	cc, err := utils.GrpcDialWithInsecure("kubeEleven", envs.KubeElevenURL)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +106,7 @@ func callKubeEleven(desiredState *pb.Project) (*pb.Project, error) {
 }
 
 func callKuber(desiredState *pb.Project) (*pb.Project, error) {
-	cc, err := utils.GrpcDialWithInsecure("kuber", urls.KuberURL)
+	cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL)
 	if err != nil {
 		return nil, err
 	}
@@ -318,28 +318,28 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 func healthCheck() error {
 	//Check if Builder can connect to Terraformer/Wireguardian/Kube-eleven
 	//Connection to these services are crucial for Builder, without them, the builder is NOT Ready
-	if cc, err := utils.GrpcDialWithInsecure("terraformer", urls.TerraformerURL); err != nil {
+	if cc, err := utils.GrpcDialWithInsecure("terraformer", envs.TerraformerURL); err != nil {
 		return err
 	} else {
 		if err := cc.Close(); err != nil {
 			log.Error().Msgf("Error closing the connection in health check function : %v", err)
 		}
 	}
-	if cc, err := utils.GrpcDialWithInsecure("wireguardian", urls.WireguardianURL); err != nil {
+	if cc, err := utils.GrpcDialWithInsecure("wireguardian", envs.WireguardianURL); err != nil {
 		return err
 	} else {
 		if err := cc.Close(); err != nil {
 			log.Error().Msgf("Error closing the connection in health check function : %v", err)
 		}
 	}
-	if cc, err := utils.GrpcDialWithInsecure("kubeEleven", urls.KubeElevenURL); err != nil {
+	if cc, err := utils.GrpcDialWithInsecure("kubeEleven", envs.KubeElevenURL); err != nil {
 		return err
 	} else {
 		if err := cc.Close(); err != nil {
 			log.Error().Msgf("Error closing the connection in health check function : %v", err)
 		}
 	}
-	if cc, err := utils.GrpcDialWithInsecure("kuber", urls.KuberURL); err != nil {
+	if cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL); err != nil {
 		return err
 	} else {
 		if err := cc.Close(); err != nil {
@@ -549,11 +549,11 @@ func searchNodeNames(nodeNames []string, nodeNameSubString string) (string, bool
 
 func main() {
 	// initialize logger
-	utils.InitLog("builder", "GOLANG_LOG")
+	utils.InitLog("builder")
 
 	// Create connection to Context-box
-	cc, err := utils.GrpcDialWithInsecure("context-box", urls.ContextBoxURL)
-	log.Info().Msgf("Dial Context-box: %s", urls.ContextBoxURL)
+	cc, err := utils.GrpcDialWithInsecure("context-box", envs.ContextBoxURL)
+	log.Info().Msgf("Dial Context-box: %s", envs.ContextBoxURL)
 	if err != nil {
 		log.Fatal().Msgf("Could not connect to Content-box: %v", err)
 	}
