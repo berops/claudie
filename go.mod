@@ -5,10 +5,13 @@ go 1.16
 require (
 	cloud.google.com/go/storage v1.23.0 // indirect
 	github.com/aws/aws-sdk-go v1.34.28 // indirect
+	github.com/go-ini/ini v1.66.6 // indirect
 	github.com/gobuffalo/genny v0.1.1 // indirect
 	github.com/gobuffalo/gogen v0.1.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/karrick/godirwalk v1.10.3 // indirect
+	github.com/minio/minio-go v6.0.14+incompatible
+	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/pelletier/go-toml v1.7.0 // indirect
 	github.com/rs/zerolog v1.25.0
 	github.com/sirupsen/logrus v1.4.2 // indirect

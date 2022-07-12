@@ -243,7 +243,7 @@ func main() {
 	pb.RegisterKubeElevenServiceServer(s, &server{})
 
 	// Add health service to gRPC
-	healthService := healthcheck.NewServerHealthChecker(kubeElevenPort, "KUBE_ELEVEN_PORT")
+	healthService := healthcheck.NewServerHealthChecker(kubeElevenPort, "KUBE_ELEVEN_PORT", nil)
 	grpc_health_v1.RegisterHealthServer(s, healthService)
 
 	g, _ := errgroup.WithContext(context.Background())
