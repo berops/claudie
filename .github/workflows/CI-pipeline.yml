@@ -235,10 +235,6 @@ jobs:
 
           kubectl get pods --namespace=claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
 
-      - name: Wait until the S3 bucket has been set up on Minio
-        run: |
-          kubectl wait --for=condition=complete --timeout=200s job/make-bucket-job -n claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
-
       - name: Start the E2E tests
         working-directory: ./K8s-dev-cluster
         run: |
