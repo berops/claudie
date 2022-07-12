@@ -137,10 +137,6 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 // healthCheck function is a readiness function defined by terraformer
 // it checks whether bucket exists. If true, returns nil, error otherwise
 func healthCheck() error {
-	//check if URL has http://
-	if strings.Contains(minioEndpoint, "http://") {
-		minioEndpoint = strings.TrimPrefix(minioEndpoint, "http://")
-	}
 	mc, err := minio.New(minioEndpoint, minioAccessKey, minioSecretKey, false)
 	if err != nil {
 		return err
