@@ -2,7 +2,7 @@ terraform {
   required_providers {
     hcloud = {
       source = "hetznercloud/hcloud"
-      version = "1.31.1"
+      version = "1.34.3"
     }
   }
 }
@@ -69,12 +69,13 @@ resource "hcloud_ssh_key" "platform" {
 {{range $nodepool := .NodePools}}
 
 resource "hcloud_server" "{{$nodepool.Name}}" {
-  provider     = hcloud.k8s-nodepool
-  count       = "{{ $nodepool.Count }}"
-  name        = "{{ $clusterName }}-{{ $clusterHash }}-{{$nodepool.Name}}-${count.index +1}"
-  server_type = "{{ $nodepool.ServerType }}"
-  image       = "{{ $nodepool.Image }}"
-  firewall_ids = [hcloud_firewall.defaultfirewall.id]
+  provider      = hcloud.k8s-nodepool
+  count         = "{{ $nodepool.Count }}"
+  name          = "{{ $clusterName }}-{{ $clusterHash }}-{{$nodepool.Name}}-${count.index +1}"
+  server_type   = "{{ $nodepool.ServerType }}"
+  image         = "{{ $nodepool.Image }}"
+  firewall_ids  = [hcloud_firewall.defaultfirewall.id]
+  datacenter    = "{{ $nodepool.Zone}}"
 
   ssh_keys = [
     hcloud_ssh_key.platform.id,
