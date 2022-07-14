@@ -253,7 +253,7 @@ func createNodepools(pools []string, desiredState manifest.Manifest, isControl b
 				Provider: &pb.Provider{
 					Name:        desiredState.Providers[providerIndex].Name,
 					Credentials: fmt.Sprint(desiredState.Providers[providerIndex].Credentials),
-					Project:     desiredState.Providers[providerIndex].GCP_Project,
+					Project:     desiredState.Providers[providerIndex].GCPProject,
 				},
 				IsControl: isControl,
 			})
