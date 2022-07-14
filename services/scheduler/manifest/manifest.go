@@ -13,6 +13,7 @@ type Manifest struct {
 type Provider struct {
 	Name        string      `yaml:"name"`
 	Credentials interface{} `yaml:"credentials"`
+	GCPProject  string      `yaml:"gcp_project,omitempty"`
 }
 
 type NodePool struct {
