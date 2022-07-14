@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/md5"
 	"errors"
 	"fmt"
 	"net"
@@ -13,6 +12,8 @@ import (
 	"time"
 
 	"github.com/Berops/platform/envs"
+	"github.com/Berops/platform/services/context-box/server/checksum"
+	claudieDB "github.com/Berops/platform/services/context-box/server/claudieDB"
 	kuber "github.com/Berops/platform/services/kuber/client"
 	terraformer "github.com/Berops/platform/services/terraformer/client"
 	"github.com/Berops/platform/utils"
@@ -22,16 +23,11 @@ import (
 
 	"github.com/Berops/platform/healthcheck"
 	"github.com/Berops/platform/proto/pb"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/proto"
 )
 
 type server struct {
@@ -40,6 +36,16 @@ type server struct {
 
 type queue struct {
 	configs []*configItem
+}
+
+type ClaudieDB interface {
+	Connect() error
+	Disconnect() error
+	Init() error
+	GetConfig(id string, idType pb.IdType) (*pb.Config, error)
+	DeleteConfig(id string, idType pb.IdType) error
+	GetAllConfigs() ([]*pb.Config, error)
+	SaveConfig(config *pb.Config) error
 }
 
 const (
@@ -51,7 +57,7 @@ const (
 )
 
 var (
-	collection     *mongo.Collection
+	database       ClaudieDB
 	queueScheduler queue
 	queueBuilder   queue
 	mutexDBsave    sync.Mutex
@@ -90,137 +96,6 @@ func (q *queue) push() (item *configItem, newQueue queue) {
 	return q.configs[0], queue{
 		configs: q.configs[1:],
 	}
-}
-
-// convert configItem struct to pb.Config
-func dataToConfigPb(data *configItem) (*pb.Config, error) {
-	var desiredState *pb.Project = new(pb.Project)
-	err := proto.Unmarshal(data.DesiredState, desiredState)
-	if err != nil {
-		return nil, fmt.Errorf("error while Unmarshal desiredState: %v", err)
-	}
-
-	var currentState *pb.Project = new(pb.Project)
-	err = proto.Unmarshal(data.CurrentState, currentState)
-	if err != nil {
-		return nil, fmt.Errorf("error while Unmarshal currentState: %v", err)
-	}
-
-	return &pb.Config{
-		Id:           data.ID.Hex(),
-		Name:         data.Name,
-		Manifest:     data.Manifest,
-		DesiredState: desiredState,
-		CurrentState: currentState,
-		MsChecksum:   data.MsChecksum,
-		DsChecksum:   data.DsChecksum,
-		CsChecksum:   data.CsChecksum,
-		BuilderTTL:   int32(data.BuilderTTL),
-		SchedulerTTL: int32(data.SchedulerTTL),
-		ErrorMessage: data.ErrorMessage,
-	}, nil
-}
-
-func saveToDB(config *pb.Config) (*pb.Config, error) {
-	// Convert desiredState and currentState to byte[] because we want to save them to the database
-	desiredStateByte, errDS := proto.Marshal(config.DesiredState)
-	if errDS != nil {
-		return nil, fmt.Errorf("error while converting from protobuf to byte: %v", errDS)
-	}
-
-	currentStateByte, errCS := proto.Marshal(config.CurrentState)
-	if errCS != nil {
-		return nil, fmt.Errorf("error while converting from protobuf to byte: %v", errCS)
-	}
-
-	// Parse data and map it to the configItem struct
-	data := &configItem{}
-	data.Name = config.GetName()
-	data.Manifest = config.GetManifest()
-	data.DesiredState = desiredStateByte
-	data.CurrentState = currentStateByte
-	data.MsChecksum = config.GetMsChecksum()
-	data.DsChecksum = config.GetDsChecksum()
-	data.CsChecksum = config.GetCsChecksum()
-	data.BuilderTTL = int(config.GetBuilderTTL())
-	data.SchedulerTTL = int(config.GetSchedulerTTL())
-	data.ErrorMessage = config.ErrorMessage
-
-	// Check if ID exists
-	// If config has already some ID:
-	if config.GetId() != "" {
-		//Get id from config as oid
-		oid, err := primitive.ObjectIDFromHex(config.GetId())
-		if err != nil {
-			return nil, status.Errorf(
-				codes.InvalidArgument,
-				fmt.Sprintln("Cannot parse ID"),
-			)
-		}
-		filter := bson.M{"_id": oid}
-
-		_, err = collection.ReplaceOne(context.Background(), filter, data)
-		if err != nil {
-			return nil, status.Errorf(
-				codes.NotFound,
-				fmt.Sprintf("Cannot update config with specified ID: %v", err),
-			)
-		}
-	} else {
-		// Add data to the collection if OID doesn't exist
-		res, err := collection.InsertOne(context.Background(), data)
-		if err != nil {
-			// Return error in protobuf
-			return nil, status.Errorf(
-				codes.Internal,
-				fmt.Sprintf("Internal error: %v", err),
-			)
-		}
-
-		oid, ok := res.InsertedID.(primitive.ObjectID)
-		if !ok {
-			return nil, status.Errorf(
-				codes.Internal,
-				fmt.Sprintln("Cannot convert to OID"),
-			)
-		}
-		data.ID = oid
-		config.Id = oid.Hex()
-		// Return config with new ID
-	}
-	return config, nil
-}
-
-func getByNameFromDB(name string) (configItem, error) {
-	var data configItem //convert id to mongo type id (oid)
-
-	filter := bson.M{"name": name}
-	if err := collection.FindOne(context.Background(), filter).Decode(&data); err != nil {
-		return data, fmt.Errorf("error while finding name in the DB: %v", err)
-	}
-	return data, nil
-}
-
-func getByIDFromDB(id string) (configItem, error) {
-	var data configItem
-	oid, err := primitive.ObjectIDFromHex(id) // convert id to mongo id type (oid)
-	if err != nil {
-		return data, err
-	}
-
-	filter := bson.M{"_id": oid}
-	if err := collection.FindOne(context.Background(), filter).Decode(&data); err != nil {
-		return data, fmt.Errorf("error while finding ID in the DB: %v", err)
-	}
-	return data, nil
-}
-
-func compareChecksums(ch1 string, ch2 string) bool {
-	if ch1 != ch2 {
-		log.Info().Msg("Manifest checksums mismatch. Nothing will be saved.")
-		return false
-	}
-	return true
 }
 
 func configCheck() error {
@@ -295,31 +170,6 @@ func configCheck() error {
 	return nil
 }
 
-//getAllFromDB gets all configs from the database and returns slice of *configItem
-func getAllFromDB() ([]*configItem, error) {
-	var configs []*configItem
-	cur, err := collection.Find(context.Background(), primitive.D{{}}) //primitive.D{{}} finds all records in the collection
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		err := cur.Close(context.Background())
-		if err != nil {
-			log.Fatal().Msgf("Failed to close MongoDB cursor: %v", err)
-		}
-	}()
-	for cur.Next(context.Background()) { //Iterate through cur and extract all data
-		data := &configItem{}   //initialize empty struct
-		err := cur.Decode(data) //Decode data from cursor to data
-		if err != nil {         //check error
-			return nil, err
-		}
-		configs = append(configs, data) //append decoded data (config) to res (response) slice
-	}
-
-	return configs, nil
-}
-
 func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
 	log.Info().Msg("CLIENT REQUEST: SaveConfigScheduler")
 	config := req.GetConfig()
@@ -328,11 +178,11 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 		return nil, fmt.Errorf("error while checking the length of future domain: %v", err)
 	}
 	// Get config with the same ID from the DB
-	data, err := getByNameFromDB(config.GetName())
+	data, err := database.GetConfig(config.GetName(), pb.IdType_NAME)
 	if err != nil {
 		return nil, err
 	}
-	if !compareChecksums(string(config.MsChecksum), string(data.MsChecksum)) {
+	if !checksum.CompareChecksums(config.MsChecksum, data.MsChecksum) {
 		return nil, fmt.Errorf("MsChecksum are not equal")
 	}
 
@@ -340,50 +190,8 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 	config.DsChecksum = config.MsChecksum
 	config.SchedulerTTL = defaultSchedulerTTL
 	mutexDBsave.Lock()
-	config, err1 := saveToDB(config)
+	err = database.SaveConfig(config)
 	mutexDBsave.Unlock()
-	if err1 != nil {
-		return nil, status.Errorf(
-			codes.Internal,
-			fmt.Sprintf("Internal error: %v", err1),
-		)
-	}
-
-	return &pb.SaveConfigResponse{Config: config}, nil
-}
-
-// calcChecksum calculates the md5 hash of the input string arg
-func calcChecksum(data string) []byte {
-	res := md5.Sum([]byte(data))
-	// Creating a slice using an array you can just make a simple slice expression
-	return res[:]
-}
-
-func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
-	log.Info().Msg("CLIENT REQUEST: SaveConfigFrontEnd")
-	newConfigPb := req.GetConfig()
-	newConfigPb.MsChecksum = calcChecksum(newConfigPb.GetManifest())
-
-	oldConfig, err := getByNameFromDB(newConfigPb.GetName())
-	if err != nil {
-		log.Info().Msgf("No existing doc with name: %v", newConfigPb.Name)
-	} else {
-		// copy current state from saved config to new config
-		oldConfigPb, err := dataToConfigPb(&oldConfig)
-		if err != nil {
-			log.Fatal().Msgf("Error while converting data to pb %v", err)
-		}
-		if string(oldConfigPb.MsChecksum) != string(newConfigPb.MsChecksum) {
-			oldConfigPb.MsChecksum = newConfigPb.MsChecksum
-			oldConfigPb.Manifest = newConfigPb.Manifest
-			oldConfigPb.SchedulerTTL = 0
-			oldConfigPb.BuilderTTL = 0
-		}
-		newConfigPb = oldConfigPb
-	}
-
-	// save config to DB
-	newConfigPb, err = saveToDB(newConfigPb)
 	if err != nil {
 		return nil, status.Errorf(
 			codes.Internal,
@@ -391,7 +199,43 @@ func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest
 		)
 	}
 
-	return &pb.SaveConfigResponse{Config: newConfigPb}, nil
+	return &pb.SaveConfigResponse{Config: config}, nil
+}
+
+func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
+	log.Info().Msg("CLIENT REQUEST: SaveConfigFrontEnd")
+	newConfig := req.GetConfig()
+	newConfig.MsChecksum = checksum.CalculateChecksum(newConfig.Manifest)
+
+	oldConfig, err := database.GetConfig(newConfig.GetName(), pb.IdType_NAME)
+	if err != nil {
+		log.Info().Msgf("No existing doc with name: %v", newConfig.Name)
+	} else {
+		// copy current state from saved config to new config
+		if err != nil {
+			log.Fatal().Msgf("Error while converting data to pb %v", err)
+		}
+		if string(oldConfig.MsChecksum) != string(newConfig.MsChecksum) {
+			oldConfig.MsChecksum = newConfig.MsChecksum
+			oldConfig.Manifest = newConfig.Manifest
+			oldConfig.SchedulerTTL = 0
+			oldConfig.BuilderTTL = 0
+		}
+		newConfig = oldConfig
+	}
+
+	// save config to DB
+	mutexDBsave.Lock()
+	err = database.SaveConfig(newConfig)
+	mutexDBsave.Unlock()
+	if err != nil {
+		return nil, status.Errorf(
+			codes.Internal,
+			fmt.Sprintf("Internal error: %v", err),
+		)
+	}
+
+	return &pb.SaveConfigResponse{Config: newConfig}, nil
 }
 
 // SaveConfigBuilder is a gRPC service: the function saves config to the DB after receiving it from Builder
@@ -400,24 +244,24 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 	config := req.GetConfig()
 
 	// Get config with the same ID from the DB
-	data, err := getByNameFromDB(config.GetName())
+	databaseConfig, err := database.GetConfig(config.GetName(), pb.IdType_NAME)
 	if err != nil {
 		return nil, err
 	}
-	if !compareChecksums(string(config.MsChecksum), string(data.MsChecksum)) {
-		return nil, fmt.Errorf("MsChecksums are not equal")
+	if !checksum.CompareChecksums(config.MsChecksum, databaseConfig.MsChecksum) {
+		return nil, fmt.Errorf("msChecksums are not equal")
 	}
 
 	// Save new config to the DB
 	config.CsChecksum = config.DsChecksum
 	config.BuilderTTL = defaultBuilderTTL
 	mutexDBsave.Lock()
-	config, err1 := saveToDB(config)
+	err = database.SaveConfig(config)
 	mutexDBsave.Unlock()
-	if err1 != nil {
+	if err != nil {
 		return nil, status.Errorf(
 			codes.Internal,
-			fmt.Sprintf("Internal error: %v", err1),
+			fmt.Sprintf("Internal error: %v", err),
 		)
 	}
 	return &pb.SaveConfigResponse{Config: config}, nil
@@ -426,22 +270,9 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 // GetConfigById is a gRPC service: function returns one config from the DB
 func (*server) GetConfigFromDB(ctx context.Context, req *pb.GetConfigFromDBRequest) (*pb.GetConfigFromDBResponse, error) {
 	log.Info().Msg("CLIENT REQUEST: GetConfigFromDB")
-	var d configItem
-	var err error
-	if req.Type == pb.IdType_HASH {
-		d, err = getByIDFromDB(req.Id)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		d, err = getByNameFromDB(req.Id)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	config, err := dataToConfigPb(&d)
+	config, err := database.GetConfig(req.Id, req.Type)
 	if err != nil {
+		log.Error().Msgf("Error while getting a config from database : %v", err)
 		return nil, err
 	}
 	return &pb.GetConfigFromDBResponse{Config: config}, nil
@@ -482,82 +313,36 @@ func (*server) GetConfigBuilder(ctx context.Context, req *pb.GetConfigRequest) (
 // GetAllConfigs is a gRPC service: function returns all configs from the DB
 func (*server) GetAllConfigs(ctx context.Context, req *pb.GetAllConfigsRequest) (*pb.GetAllConfigsResponse, error) {
 	log.Info().Msg("CLIENT REQUEST: GetAllConfigs")
-	var res []*pb.Config //slice of configs
-
-	configs, err := getAllFromDB() //get all configs from database
+	configs, err := database.GetAllConfigs()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting all configs : %v", err)
 	}
-	for _, config := range configs {
-		c, err := dataToConfigPb(config)
-		if err != nil {
-			return nil, err
-		}
-
-		res = append(res, c) //add them into protobuf in the right format
-	}
-
-	return &pb.GetAllConfigsResponse{Configs: res}, nil
+	return &pb.GetAllConfigsResponse{Configs: configs}, nil
 }
 
 // DeleteConfig is a gRPC service: function deletes one specified config from the DB and returns it's ID
 func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*pb.DeleteConfigResponse, error) {
 	log.Info().Msg("CLIENT REQUEST: DeleteConfig")
-
-	var config configItem
-	var err error
-	if req.Type == pb.IdType_HASH { //create filter for searching in the database
-		config, err = getByIDFromDB(req.Id)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		config, err = getByNameFromDB(req.Id)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	c, err := dataToConfigPb(&config)
+	// find a config from database
+	config, err := database.GetConfig(req.Id, req.Type)
 	if err != nil {
 		return nil, err
 	}
-
-	_, err = destroyConfigTerraformer(c)
+	//destroy infrastructure with terraformer
+	_, err = destroyConfigTerraformer(config)
 	if err != nil {
 		return nil, err
-	} //destroy infrastructure with terraformer
-
-	err = deleteKubeconfig(c)
+	}
+	// delete kubeconfig secret
+	err = deleteKubeconfig(config)
 	if err != nil {
 		return nil, err
-	} // delete kubeconfig secret
-
-	var filter primitive.M
-	if req.Type == pb.IdType_HASH {
-		oid, err := primitive.ObjectIDFromHex(req.GetId())
-		if err != nil {
-			return nil, fmt.Errorf("error while converting id %s to mongo primitive : %v", req.Id, err)
-		}
-		filter = bson.M{"_id": oid} //create filter for searching in the database
-	} else {
-		filter = bson.M{"name": req.Id} //create filter for searching in the database
 	}
-
-	res, err := collection.DeleteOne(context.Background(), filter) //delete object from the database
+	//delete config from db
+	err = database.DeleteConfig(req.Id, req.Type)
 	if err != nil {
-		return nil, status.Errorf(
-			codes.Internal,
-			fmt.Sprintf("Cannot delete config in MongoDB: %v", err),
-		)
+		return nil, err
 	}
-	if res.DeletedCount == 0 { //check if the object was really deleted
-		return nil, status.Errorf(
-			codes.NotFound,
-			fmt.Sprintf("Cannot find blog with the specified ID: %v", err),
-		)
-	}
-
 	return &pb.DeleteConfigResponse{Id: req.GetId()}, nil
 }
 
@@ -607,75 +392,39 @@ func configChecker() error {
 	if err := configCheck(); err != nil {
 		return fmt.Errorf("error while configCheck: %v", err)
 	}
-
 	log.Info().Msgf("QueueScheduler content: %v", queueScheduler)
 	log.Info().Msgf("QueueBuilder content: %v", queueBuilder)
-
 	return nil
 }
 
-// MongoDB connection should wait for the database to init. This function will retry the connection until it succeeds.
-func retryMongoDbConnection(attempts int, ctx context.Context) (*mongo.Client, error) {
-	// establish DB connection
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(envs.DatabaseURL))
+func initDatabase() (ClaudieDB, error) {
+	claudieDatabase := &claudieDB.ClaudieMongo{Url: envs.DatabaseURL}
+	err := claudieDatabase.Connect()
 	if err != nil {
-		log.Warn().Msgf("Failed to establish connection with the DB: %v", envs.DatabaseURL)
-		return client, err
-	} else {
-		for i := 0; i < attempts; i++ {
-			// Ping the primary
-			ctxWithTimeout, cancel := context.WithTimeout(context.Background(), defaultPingTimeout)
-			if err := client.Ping(ctxWithTimeout, readpref.Primary()); err == nil {
-				cancel()
-				return client, nil
-			} else {
-				log.Warn().Msgf("Unable to ping database: %v", err)
-				cancel()
-			}
-			log.Info().Msg("Trying to ping the DB again")
-		}
-		return nil, fmt.Errorf("Mongodb connection failed after %v attempts due to connection timeout.", attempts)
+		log.Error().Msgf("Unable to connect to database at %s : %v", envs.DatabaseURL, err)
+		return nil, err
 	}
+	log.Info().Msgf("Connected to database at %s", envs.DatabaseURL)
+	err = claudieDatabase.Init()
+	if err != nil {
+		log.Error().Msgf("Unable to initialise to database at %s : %v", envs.DatabaseURL, err)
+		return nil, err
+	}
+	return claudieDatabase, nil
 }
 
 func main() {
-	// initialize logger
+	// initialize logger & db
 	utils.InitLog("context-box")
-
-	ctx, cancel := context.WithCancel(context.Background())
-	client, err := retryMongoDbConnection(defaultAttempts, ctx)
+	var err error
+	database, err = initDatabase()
 	if err != nil {
-		log.Error().Msgf("Unable to connect to MongoDB at %s", envs.DatabaseURL)
-		cancel()
-		panic(err)
+		log.Fatal().Msgf("Failed to connect to the database, aborting... : %v", err)
 	}
-	// closing MongoDB connection
-	defer func() {
-		if err = client.Disconnect(ctx); err != nil {
-			log.Fatal().Msgf("Error closing MongoDB connection: %v", err)
-			cancel()
-			panic(err)
-		}
-	}()
-
-	log.Info().Msgf("Connected to MongoDB at %s", envs.DatabaseURL)
-
-	// create collection
-	collection = client.Database("platform").Collection("config")
-
-	// create index
-	_, err = collection.Indexes().CreateOne(ctx, mongo.IndexModel{
-		Keys:    bson.D{{Key: "name", Value: 1}},
-		Options: options.Index().SetUnique(true),
-	})
-	if err != nil {
-		log.Fatal().Msgf("Failed to create index, err: %v", err)
-		panic(err)
-	}
-	// Set the context-box port
-	contextboxPort := utils.GetenvOr("CONTEXT_BOX_PORT", fmt.Sprint(defaultContextBoxPort))
+	defer database.Disconnect()
 
 	// Start ContextBox Service
+	contextboxPort := utils.GetenvOr("CONTEXT_BOX_PORT", fmt.Sprint(defaultContextBoxPort))
 	contextBoxAddr := net.JoinHostPort("0.0.0.0", contextboxPort)
 	lis, err := net.Listen("tcp", contextBoxAddr)
 	if err != nil {
@@ -683,6 +432,7 @@ func main() {
 	}
 	log.Info().Msgf("ContextBox service is listening on: %s", contextBoxAddr)
 
+	// start the gRPC server
 	s := grpc.NewServer()
 	pb.RegisterContextBoxServiceServer(s, &server{})
 
@@ -693,17 +443,16 @@ func main() {
 	g, ctx := errgroup.WithContext(context.Background())
 	w := worker.NewWorker(ctx, 10*time.Second, configChecker, worker.ErrorLogger)
 
+	// listen for system interrupts to gracefully shut down
 	g.Go(func() error {
 		ch := make(chan os.Signal, 1)
 		signal.Notify(ch, os.Interrupt)
 		<-ch
-
 		signal.Stop(ch)
 		s.GracefulStop()
-
 		return errors.New("ContextBox interrupt signal")
 	})
-
+	// server goroutine
 	g.Go(func() error {
 		// s.Serve() will create a service goroutine for each connection
 		if err := s.Serve(lis); err != nil {
@@ -711,11 +460,10 @@ func main() {
 		}
 		return nil
 	})
-
+	//config checker go routine
 	g.Go(func() error {
 		w.Run()
 		return nil
 	})
-
 	log.Info().Msgf("Stopping Context-Box: %v", g.Wait())
 }
