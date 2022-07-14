@@ -53,7 +53,6 @@ resource "google_compute_instance" "{{ $nodepool.Name }}" {
   count        = {{ $nodepool.Count }}
   zone         = "{{$nodepool.Zone}}"
   name         = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}"
-  hostname     = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}.claudie.io"
   machine_type = "{{ $nodepool.ServerType }}"
   allow_stopping_for_update = true
   boot_disk {
