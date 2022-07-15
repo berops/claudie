@@ -4,22 +4,22 @@
 
 provider "google" {
   credentials = "${file("{{(index .NodePools $index).Provider.Name}}")}"
-  region = "europe-west1"
-  project = "platform-296509"
-  alias  = "lb-nodepool"
+  region  = "{{(index .NodePools 0).Region}}"
+  project = "{{(index .NodePools 0).Provider.Project}}"
+  alias   = "lb-nodepool"
 }
 
 resource "google_compute_network" "network" {
-  provider     = google.lb-nodepool
+  provider                = google.lb-nodepool
   name                    = "{{ $clusterName }}-{{ $clusterHash }}-network"
   auto_create_subnetworks = false
 }
 
 resource "google_compute_subnetwork" "subnet" {
-  provider     = google.lb-nodepool
+  provider      = google.lb-nodepool
   name          = "{{ $clusterName }}-{{ $clusterHash }}-subnet"
   network       = google_compute_network.network.self_link
-  region        = "europe-west1"
+  region        = "{{(index .NodePools 0).Region}}"
   ip_cidr_range = "10.0.0.0/8"
 }
 
@@ -46,7 +46,7 @@ resource "google_compute_firewall" "firewall" {
 resource "google_compute_instance" "{{$nodepool.Name}}" {
   provider     = google.lb-nodepool
   count        = {{$nodepool.Count}}
-  zone         = "europe-west1-c"
+  zone         = "{{$nodepool.Zone}}"
   name         = "{{ $clusterName }}-{{ $clusterHash }}-{{$nodepool.Name}}-${count.index + 1}"
   machine_type = "{{$nodepool.ServerType}}"
   allow_stopping_for_update = true

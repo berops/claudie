@@ -14,8 +14,15 @@ spec:
       labels:
         app: database
     spec:
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: mongo-pvc
       containers:
       - name: mongodb
+        volumeMounts:
+            - name: data
+              mountPath: /data/db
         image: mongo:5
         resources:
           requests:
@@ -38,3 +45,14 @@ spec:
   - protocol: TCP
     port: 27017
     targetPort: 27017
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-pvc
+spec:
+  resources:
+    requests:
+      storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
