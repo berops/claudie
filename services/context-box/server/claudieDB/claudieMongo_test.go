@@ -198,3 +198,24 @@ func TestSaveConfig(t *testing.T) {
 	err = cm.DeleteConfig(conf.Name, pb.IdType_NAME)
 	require.NoError(t, err)
 }
+
+func TestUpdateTTL(t *testing.T) {
+	cm := ClaudieMongo{Url: envs.DatabaseURL}
+	err := cm.Connect()
+	require.NoError(t, err)
+	err = cm.Init()
+	require.NoError(t, err)
+	defer cm.Disconnect()
+	conf := &pb.Config{DesiredState: desiredState, Name: "test-pb-config", BuilderTTL: 1000, SchedulerTTL: 1000}
+	cm.SaveConfig(conf)
+	err = cm.UpdateBuilderTTL(conf.Name, 500)
+	require.NoError(t, err)
+	err = cm.UpdateSchedulerTTL(conf.Name, 200)
+	require.NoError(t, err)
+	conf, err = cm.GetConfig(conf.Name, pb.IdType_NAME)
+	require.NoError(t, err)
+	require.EqualValues(t, 500, conf.BuilderTTL)
+	require.EqualValues(t, 200, conf.SchedulerTTL)
+	err = cm.DeleteConfig(conf.Name, pb.IdType_NAME)
+	require.NoError(t, err)
+}

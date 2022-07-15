@@ -32,9 +32,10 @@ const (
 )
 
 var (
-	database ClaudieDB
+	database ClaudieDB //database handle
 )
 
+// SaveConfigScheduler is a gRPC service: the function saves config to the DB after receiving it from Scheduler
 func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
 	log.Info().Msg("CLIENT REQUEST: SaveConfigScheduler")
 	config := req.GetConfig()
@@ -65,11 +66,13 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 	return &pb.SaveConfigResponse{Config: config}, nil
 }
 
+// SaveConfigFrontEnd is a gRPC service: the function saves config to the DB after receiving it from Frontend
 func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
 	log.Info().Msg("CLIENT REQUEST: SaveConfigFrontEnd")
 	newConfig := req.GetConfig()
 	newConfig.MsChecksum = checksum.CalculateChecksum(newConfig.Manifest)
 
+	//check if any data already present for the newConfig
 	oldConfig, err := database.GetConfig(newConfig.GetName(), pb.IdType_NAME)
 	if err != nil {
 		log.Info().Msgf("No existing doc with name: %v", newConfig.Name)
@@ -126,7 +129,7 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 	return &pb.SaveConfigResponse{Config: config}, nil
 }
 
-// GetConfigById is a gRPC service: function returns one config from the DB
+// GetConfigById is a gRPC service: function returns one config from the DB based on the requested index/name
 func (*server) GetConfigFromDB(ctx context.Context, req *pb.GetConfigFromDBRequest) (*pb.GetConfigFromDBResponse, error) {
 	log.Info().Msg("CLIENT REQUEST: GetConfigFromDB")
 	config, err := database.GetConfig(req.Id, req.Type)
@@ -137,7 +140,7 @@ func (*server) GetConfigFromDB(ctx context.Context, req *pb.GetConfigFromDBReque
 	return &pb.GetConfigFromDBResponse{Config: config}, nil
 }
 
-// GetConfigScheduler is a gRPC service: function returns one config from the queueScheduler
+// GetConfigScheduler is a gRPC service: function returns oldest config from the queueScheduler
 func (*server) GetConfigScheduler(ctx context.Context, req *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
 	log.Info().Msg("GetConfigScheduler request")
 	configInfo := queueScheduler.Dequeue()
@@ -151,7 +154,7 @@ func (*server) GetConfigScheduler(ctx context.Context, req *pb.GetConfigRequest)
 	return nil, fmt.Errorf("empty Scheduler queue")
 }
 
-// GetConfigBuilder is a gRPC service: function returns one config from the queueScheduler
+// GetConfigBuilder is a gRPC service: function returns oldest config from the queueBuilder
 func (*server) GetConfigBuilder(ctx context.Context, req *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
 	log.Info().Msg("GetConfigBuilder request")
 	configInfo := queueBuilder.Dequeue()
@@ -184,7 +187,7 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 		return nil, err
 	}
 	//destroy infrastructure with terraformer
-	_, err = destroyConfigTerraformer(config)
+	err = destroyConfigTerraformer(config)
 	if err != nil {
 		return nil, err
 	}

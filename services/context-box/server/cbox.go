@@ -14,6 +14,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// ClaudieDB interface describes functionality that cbox needs in order to function properly
+// By using an interface, we abstract the underlying DB plus, it can be changed by simply providing different interface implementation
 type ClaudieDB interface {
 	Connect() error
 	Disconnect() error
@@ -26,6 +28,9 @@ type ClaudieDB interface {
 	UpdateBuilderTTL(name string, newTTL int32) error
 }
 
+// ConfigInfo struct describes data which cbox needs to hold in order to function properly
+// it is used in configChecker, to decide which configs should be enqueued and which not
+// it must implement ConfigItem interface in order to be used with queue package
 type ConfigInfo struct {
 	Name         string
 	MsChecksum   []byte
@@ -46,10 +51,12 @@ var (
 	queueBuilder   queue.Queue
 )
 
+// GetName is function required by queue package to evaluate equivalence
 func (ci *ConfigInfo) GetName() string {
 	return ci.Name
 }
 
+//getConfigInfos returns a slice of ConfigInfos based on the configs currently in database
 func getConfigInfos() ([]*ConfigInfo, error) {
 	configs, err := database.GetAllConfigs()
 	if err != nil {
@@ -64,12 +71,13 @@ func getConfigInfos() ([]*ConfigInfo, error) {
 	return result, nil
 }
 
+// configCheck function checks all configs, decides if they should be enqueued and updates their TTLs
 func configCheck() error {
 	configs, err := getConfigInfos()
 	if err != nil {
 		return err
 	}
-	// loop through config
+	// loop through configInfos from db
 	for _, config := range configs {
 		// check if item is already in some queue
 		if queueBuilder.Contains(config) || queueScheduler.Contains(config) {
@@ -118,27 +126,26 @@ func configCheck() error {
 }
 
 // destroyConfigTerraformer calls terraformer's DestroyInfrastructure function
-func destroyConfigTerraformer(config *pb.Config) (*pb.Config, error) {
+func destroyConfigTerraformer(config *pb.Config) error {
 	// Trim "tcp://" substring from envs.TerraformerURL
 	trimmedTerraformerURL := strings.ReplaceAll(envs.TerraformerURL, ":tcp://", "")
 	log.Info().Msgf("Dial Terraformer: %s", trimmedTerraformerURL)
 	// Create connection to Terraformer
 	cc, err := utils.GrpcDialWithInsecure("terraformer", trimmedTerraformerURL)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer func() { utils.CloseClientConnection(cc) }()
 	// Creating the client
 	c := pb.NewTerraformerServiceClient(cc)
-	res, err := terraformer.DestroyInfrastructure(c, &pb.DestroyInfrastructureRequest{Config: config})
+	_, err = terraformer.DestroyInfrastructure(c, &pb.DestroyInfrastructureRequest{Config: config})
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	return res.GetConfig(), nil
+	return nil
 }
 
-// gRPC call to delete
+// deleteKubeconfig calls kuber's DeleteKubeconfig function
 func deleteKubeconfig(config *pb.Config) error {
 	trimmedKuberURL := strings.ReplaceAll(envs.KuberURL, ":tcp://", "")
 	log.Info().Msgf("Dial Terraformer: %s", trimmedKuberURL)
@@ -159,6 +166,7 @@ func deleteKubeconfig(config *pb.Config) error {
 	return nil
 }
 
+// configChecker is a driver for configCheck function
 func configChecker() error {
 	if err := configCheck(); err != nil {
 		return fmt.Errorf("error while configCheck: %v", err)
@@ -168,6 +176,7 @@ func configChecker() error {
 	return nil
 }
 
+// initDatabase will establish connection to the DB and initialise it to our needs, i.e. creates collections, etc..
 func initDatabase() (ClaudieDB, error) {
 	claudieDatabase := &claudieDB.ClaudieMongo{Url: envs.DatabaseURL}
 	err := claudieDatabase.Connect()
