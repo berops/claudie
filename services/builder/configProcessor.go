@@ -89,15 +89,15 @@ func diff(config *pb.Config) (*pb.Config, bool, map[string]*nodesToDelete) {
 			nodepoolMap[tmp] = nodeCount{Count: nodePool.Count} // Since a nodepool as only one type of nodes, we'll need only one type of count
 		}
 	}
-	tmpConfigClusters := tmpConfig.GetDesiredState().GetClusters()
-	for _, cluster := range tmpConfigClusters {
+
+	for _, cluster := range tmpConfig.GetDesiredState().GetClusters() {
 		tmp := make(map[string]*countsToDelete)
 		for _, nodePool := range cluster.ClusterInfo.GetNodePools() {
 			var nodesProvider countsToDelete
 			key := nodepoolKey{nodePoolName: nodePool.Name, clusterName: cluster.ClusterInfo.Name}
 
 			if _, ok := nodepoolMap[key]; ok {
-				tmpNodePool := utils.GetNodePoolByName(nodePool.Name, utils.GetClusterByName(cluster.ClusterInfo.Name, tmpConfigClusters).ClusterInfo.GetNodePools())
+				tmpNodePool := utils.GetNodePoolByName(nodePool.Name, utils.GetClusterByName(cluster.ClusterInfo.Name, tmpConfig.GetDesiredState().GetClusters()).ClusterInfo.GetNodePools())
 				if nodePool.Count > nodepoolMap[key].Count {
 					tmpNodePool.Count = nodePool.Count
 					adding = true
