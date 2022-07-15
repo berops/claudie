@@ -101,6 +101,7 @@ message Node {
 message Provider {
   string name = 1;
   string credentials = 2;
+  string project = 3;
 }
 
 enum ClusterType {

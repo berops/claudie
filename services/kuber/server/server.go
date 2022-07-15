@@ -149,7 +149,7 @@ func main() {
 	pb.RegisterKuberServiceServer(s, &server{})
 
 	// Add health service to gRPC
-	healthService := healthcheck.NewServerHealthChecker(kuberPort, "KUBER_PORT")
+	healthService := healthcheck.NewServerHealthChecker(kuberPort, "KUBER_PORT", nil)
 	grpc_health_v1.RegisterHealthServer(s, healthService)
 
 	g, _ := errgroup.WithContext(context.Background())
