@@ -203,7 +203,7 @@ func deleteEtcd(cluster *pb.K8Scluster, etcdToDelete []string) error {
 }
 
 func searchNodeNames(nodeNames []string, nodeNameSubString string) (string, bool) {
-	// find full nodeName for list of nodes using partial nodename
+	// Get full node name using substring of node name
 	for _, nodeName := range nodeNames {
 		if strings.Contains(nodeName, nodeNameSubString) {
 			return nodeName, true

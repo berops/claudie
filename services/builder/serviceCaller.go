@@ -72,6 +72,7 @@ func buildConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig bo
 	return nil
 }
 
+// pass config to terraformer for building the infra
 func callTerraformer(currentState *pb.Project, desiredState *pb.Project) (*pb.Project, *pb.Project, error) {
 	// Create connection to Terraformer
 	cc, err := utils.GrpcDialWithInsecure("terraformer", envs.TerraformerURL)
@@ -96,7 +97,8 @@ func callTerraformer(currentState *pb.Project, desiredState *pb.Project) (*pb.Pr
 	return res.GetCurrentState(), res.GetDesiredState(), nil
 }
 
-func callWireguardian(desiredState, currenState *pb.Project) (*pb.Project, error) {
+// pass config to wireguardian for building VPN
+func callWireguardian(desiredState, currentState *pb.Project) (*pb.Project, error) {
 	cc, err := utils.GrpcDialWithInsecure("wireguardian", envs.WireguardianURL)
 	if err != nil {
 		return nil, err
@@ -108,7 +110,7 @@ func callWireguardian(desiredState, currenState *pb.Project) (*pb.Project, error
 	// Creating the client
 	c := pb.NewWireguardianServiceClient(cc)
 	log.Info().Msgf("Calling RunAnsible on wireguardian")
-	res, err := wireguardian.RunAnsible(c, &pb.RunAnsibleRequest{DesiredState: desiredState, CurrentState: currenState})
+	res, err := wireguardian.RunAnsible(c, &pb.RunAnsibleRequest{DesiredState: desiredState, CurrentState: currentState})
 	if err != nil {
 		return nil, err
 	}
@@ -116,6 +118,7 @@ func callWireguardian(desiredState, currenState *pb.Project) (*pb.Project, error
 	return res.GetDesiredState(), nil
 }
 
+// pass config to kubeEleven to bootstrap k8s cluster
 func callKubeEleven(desiredState *pb.Project) (*pb.Project, error) {
 	cc, err := utils.GrpcDialWithInsecure("kubeEleven", envs.KubeElevenURL)
 	if err != nil {
@@ -136,6 +139,7 @@ func callKubeEleven(desiredState *pb.Project) (*pb.Project, error) {
 	return res.GetDesiredState(), nil
 }
 
+// pass config to Kuber to carry out kubectl tasks
 func callKuber(desiredState *pb.Project) (*pb.Project, error) {
 	cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL)
 	if err != nil {

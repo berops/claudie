@@ -18,6 +18,11 @@ type nodesToDelete struct {
 	nodes map[string]*countsToDelete // [provider]nodes
 }
 
+// configProcessor takes in cbox client to receive the configs.
+// It then calculated the changes that needs to be done in order
+// to see if nodes needs to be deleted or added or both. It also
+// create a tempConfig to divide the addition and deletion of nodes
+// into two steps and call respective functions.
 func configProcessor(c pb.ContextBoxServiceClient) func() error {
 	return func() error {
 		res, err := cbox.GetConfigBuilder(c) // Get a new config
@@ -61,6 +66,7 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 	}
 }
 
+// diff takes config to calculate which nodes needs to be deleted and added.
 func diff(config *pb.Config) (*pb.Config, bool, map[string]*nodesToDelete) {
 	adding, deleting := false, false
 	tmpConfig := proto.Clone(config).(*pb.Config)
@@ -69,18 +75,18 @@ func diff(config *pb.Config) (*pb.Config, bool, map[string]*nodesToDelete) {
 		Count uint32
 	}
 
-	type tableKey struct {
+	type nodepoolKey struct {
 		clusterName  string
 		nodePoolName string
 	}
 
 	var delCounts = make(map[string]*nodesToDelete)
 
-	var tableCurrent = make(map[tableKey]nodeCount)
+	var nodepoolMap = make(map[nodepoolKey]nodeCount)
 	for _, cluster := range tmpConfig.GetCurrentState().GetClusters() {
 		for _, nodePool := range cluster.ClusterInfo.GetNodePools() {
-			tmp := tableKey{nodePoolName: nodePool.Name, clusterName: cluster.ClusterInfo.Name}
-			tableCurrent[tmp] = nodeCount{Count: nodePool.Count} // Since a nodepool as only one type of nodes, we'll need only one type of count
+			tmp := nodepoolKey{nodePoolName: nodePool.Name, clusterName: cluster.ClusterInfo.Name}
+			nodepoolMap[tmp] = nodeCount{Count: nodePool.Count} // Since a nodepool as only one type of nodes, we'll need only one type of count
 		}
 	}
 	tmpConfigClusters := tmpConfig.GetDesiredState().GetClusters()
@@ -88,21 +94,21 @@ func diff(config *pb.Config) (*pb.Config, bool, map[string]*nodesToDelete) {
 		tmp := make(map[string]*countsToDelete)
 		for _, nodePool := range cluster.ClusterInfo.GetNodePools() {
 			var nodesProvider countsToDelete
-			key := tableKey{nodePoolName: nodePool.Name, clusterName: cluster.ClusterInfo.Name}
+			key := nodepoolKey{nodePoolName: nodePool.Name, clusterName: cluster.ClusterInfo.Name}
 
-			if _, ok := tableCurrent[key]; ok {
+			if _, ok := nodepoolMap[key]; ok {
 				tmpNodePool := utils.GetNodePoolByName(nodePool.Name, utils.GetClusterByName(cluster.ClusterInfo.Name, tmpConfigClusters).ClusterInfo.GetNodePools())
-				if nodePool.Count > tableCurrent[key].Count {
+				if nodePool.Count > nodepoolMap[key].Count {
 					tmpNodePool.Count = nodePool.Count
 					adding = true
-				} else if nodePool.Count < tableCurrent[key].Count {
-					nodesProvider.Count = tableCurrent[key].Count - nodePool.Count
-					tmpNodePool.Count = tableCurrent[key].Count
+				} else if nodePool.Count < nodepoolMap[key].Count {
+					nodesProvider.Count = nodepoolMap[key].Count - nodePool.Count
+					tmpNodePool.Count = nodepoolMap[key].Count
 					deleting = true
 				}
 
 				tmp[nodePool.Name] = &nodesProvider
-				delete(tableCurrent, key)
+				delete(nodepoolMap, key)
 			}
 		}
 		delCounts[cluster.ClusterInfo.Name] = &nodesToDelete{
@@ -110,8 +116,8 @@ func diff(config *pb.Config) (*pb.Config, bool, map[string]*nodesToDelete) {
 		}
 	}
 
-	if len(tableCurrent) > 0 {
-		for key := range tableCurrent {
+	if len(nodepoolMap) > 0 {
+		for key := range nodepoolMap {
 			cluster := utils.GetClusterByName(key.clusterName, tmpConfig.DesiredState.Clusters)
 			if cluster != nil {
 				currentCluster := utils.GetClusterByName(key.clusterName, tmpConfig.CurrentState.Clusters)
