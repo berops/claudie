@@ -230,6 +230,37 @@ func (c *ClaudieMongo) getByIDFromDB(id string) (configItem, error) {
 	return data, nil
 }
 
+func (c *ClaudieMongo) UpdateSchedulerTTL(name string, newTTL int32) error {
+	err := c.updateDocument(bson.M{"name": name}, bson.M{"$set": bson.M{"SchedulerTTL": newTTL}})
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			log.Warn().Msgf("Document %s failed to update Scheduler TTL", name)
+		}
+		return err
+	}
+	return nil
+}
+func (c *ClaudieMongo) UpdateBuilderTTL(name string, newTTL int32) error {
+	err := c.updateDocument(bson.M{"name": name}, bson.M{"$set": bson.M{"BuilderTTL": newTTL}})
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			log.Warn().Msgf("Document %s failed to update Scheduler TTL", name)
+		}
+		return err
+	}
+	return nil
+}
+
+func (c *ClaudieMongo) updateDocument(filter, operation primitive.M) error {
+	res := c.collection.FindOneAndUpdate(context.Background(), filter, operation)
+	var r configItem
+	err := res.Decode(&r)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // convert configItem struct to *pb.Config
 // returns *pb.Config if successful, error otherwise
 func dataToConfigPb(data *configItem) (*pb.Config, error) {
