@@ -22,11 +22,12 @@ const (
 	defaultSchedulerPort = 50056
 )
 
-// processConfig is function used to carry out task specific to Scheduler
-func processConfig(config *pb.Config, c pb.ContextBoxServiceClient) (err error) {
+//processConfig is function used to carry out task specific to Scheduler
+//returns error if not successful, nil otherwise
+func processConfig(config *pb.Config, c pb.ContextBoxServiceClient) error {
 	log.Printf("Processing new config")
 	//create desired state
-	config, err = createDesiredState(config)
+	config, err := createDesiredState(config)
 	if err != nil {
 		return fmt.Errorf("error while creating a desired state: %v", err)
 	}
@@ -40,7 +41,8 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient) (err error) 
 	return nil
 }
 
-// configProcessor is worker function which invokes the processConfig() function
+//configProcessor is worker function which invokes the processConfig() function
+//returns func()error which will carry out the processConfig() execution
 func configProcessor(c pb.ContextBoxServiceClient) func() error {
 	return func() error {
 		//pull an item from a queue in cbox
@@ -69,7 +71,8 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 	}
 }
 
-// saveErrorMessage saves error message to config
+//saveErrorMessage saves error message to config
+//returns error if not successful, nil otherwise
 func saveErrorMessage(config *pb.Config, c pb.ContextBoxServiceClient, err error) error {
 	config.CurrentState = config.DesiredState // Update currentState, so we can use it for deletion later
 	config.ErrorMessage = err.Error()
@@ -80,7 +83,7 @@ func saveErrorMessage(config *pb.Config, c pb.ContextBoxServiceClient, err error
 	return nil
 }
 
-// healthCheck function is used for querying readiness of the pod running this microservice
+//healthCheck function is used for querying readiness of the pod running this microservice
 func healthCheck() error {
 	res, err := createDesiredState(nil)
 	if res != nil || err == nil {
