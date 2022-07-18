@@ -8,6 +8,12 @@ import (
 	"github.com/Berops/platform/utils"
 )
 
+const (
+	hostnameHashLength = 17
+	apiserverPort      = 6443
+	gcpProvider        = "gcp"
+)
+
 var (
 	// claudie provider for berops customers
 	claudieProvider = &pb.Provider{

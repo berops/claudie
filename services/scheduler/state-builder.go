@@ -14,12 +14,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const (
-	hostnameHashLength = 17
-	apiserverPort      = 6443
-	gcpProvider        = "gcp"
-)
-
 //keyPair is a struct containing private and public keys as a string
 type keyPair struct {
 	public  string
