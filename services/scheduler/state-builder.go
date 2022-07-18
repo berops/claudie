@@ -75,12 +75,12 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 func readManifest(config *pb.Config) (*manifest.Manifest, error) {
 	d := []byte(config.GetManifest())
 	// Parse yaml to protobuf and create desiredState
-	var desiredState *manifest.Manifest
-	err := yaml.Unmarshal(d, desiredState)
+	var desiredState manifest.Manifest
+	err := yaml.Unmarshal(d, &desiredState)
 	if err != nil {
 		return nil, fmt.Errorf("error while unmarshalling yaml manifest: %v", err)
 	}
-	return desiredState, nil
+	return &desiredState, nil
 }
 
 //updateClusterInfo updates the desired state based on the current state
