@@ -40,7 +40,7 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient) (err error) 
 	return nil
 }
 
-// worker function which invokes the processConfig() function
+// configProcessor is worker function which invokes the processConfig() function
 func configProcessor(c pb.ContextBoxServiceClient) func() error {
 	return func() error {
 		//pull an item from a queue in cbox
@@ -67,6 +67,17 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 		}
 		return nil
 	}
+}
+
+// saveErrorMessage saves error message to config
+func saveErrorMessage(config *pb.Config, c pb.ContextBoxServiceClient, err error) error {
+	config.CurrentState = config.DesiredState // Update currentState, so we can use it for deletion later
+	config.ErrorMessage = err.Error()
+	errSave := cbox.SaveConfigScheduler(c, &pb.SaveConfigRequest{Config: config})
+	if errSave != nil {
+		return fmt.Errorf("error while saving the config: %v", err)
+	}
+	return nil
 }
 
 // healthCheck function is used for querying readiness of the pod running this microservice
