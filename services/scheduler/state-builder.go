@@ -18,10 +18,6 @@ const (
 	hostnameHashLength = 17
 	apiserverPort      = 6443
 	gcpProvider        = "gcp"
-
-	ALL_NODES     = "k8sAllNodes"
-	CONTROL_PLANE = "k8sControlPlane"
-	COMPUTE_PLANE = "k8sComputePlane"
 )
 
 //keyPair is a struct containing private and public keys as a string
