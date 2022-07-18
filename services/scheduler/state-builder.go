@@ -61,7 +61,10 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 	}
 
 	//update info from current state into the desired state
-	updateK8sClusters(newConfig)
+	err = updateK8sClusters(newConfig)
+	if err != nil {
+		return nil, fmt.Errorf("error while updating Kubernetes clusters for config %s : %v", config.Name, err)
+	}
 	err = updateLBClusters(newConfig)
 	if err != nil {
 		return nil, fmt.Errorf("error while updating Loadbalancer clusters for config %s : %v", config.Name, err)

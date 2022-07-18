@@ -58,7 +58,7 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 				log.Info().Msgf("Processing %s ", config.Name)
 				err := processConfig(config, c)
 				if err != nil {
-					log.Info().Msgf("processConfig() failed: %s", err)
+					log.Error().Msgf("processConfig() failed: %s", err)
 					//save error message to config
 					errSave := saveErrorMessage(config, c, err)
 					if errSave != nil {
