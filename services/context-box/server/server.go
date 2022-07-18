@@ -212,7 +212,12 @@ func main() {
 	if err != nil {
 		log.Fatal().Msgf("Failed to connect to the database, aborting... : %v", err)
 	}
-	defer database.Disconnect()
+	defer func() {
+		err := database.Disconnect()
+		if err != nil {
+			log.Fatal().Msgf("Error while closing the connection to the database : %v", err)
+		}
+	}()
 
 	// Start ContextBox Service
 	contextboxPort := utils.GetenvOr("CONTEXT_BOX_PORT", fmt.Sprint(defaultContextBoxPort))

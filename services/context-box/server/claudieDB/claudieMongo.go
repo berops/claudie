@@ -22,7 +22,7 @@ var (
 )
 
 type ClaudieMongo struct {
-	Url        string
+	URL        string
 	client     *mongo.Client
 	collection *mongo.Collection
 }
@@ -45,9 +45,9 @@ type configItem struct {
 //if successful, returns mongo client, error otherwise
 func (c *ClaudieMongo) Connect() error {
 	// establish DB connection, this does not do any deployment checks/IO on the DB
-	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(c.Url))
+	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(c.URL))
 	if err != nil {
-		log.Error().Msgf("Failed to create a client at %s : %v", c.Url, err)
+		log.Error().Msgf("Failed to create a client at %s : %v", c.URL, err)
 		return err
 	} else {
 		//if client creation successful, ping the DB to verify the connection

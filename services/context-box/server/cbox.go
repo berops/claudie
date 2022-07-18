@@ -178,7 +178,7 @@ func configChecker() error {
 
 // initDatabase will establish connection to the DB and initialise it to our needs, i.e. creates collections, etc..
 func initDatabase() (ClaudieDB, error) {
-	claudieDatabase := &claudieDB.ClaudieMongo{Url: envs.DatabaseURL}
+	claudieDatabase := &claudieDB.ClaudieMongo{URL: envs.DatabaseURL}
 	err := claudieDatabase.Connect()
 	if err != nil {
 		log.Error().Msgf("Unable to connect to database at %s : %v", envs.DatabaseURL, err)

@@ -2,6 +2,7 @@ package claudieDB
 
 import (
 	"fmt"
+	"log"
 	"testing"
 
 	"github.com/Berops/platform/envs"
@@ -185,14 +186,20 @@ var (
 )
 
 func TestSaveConfig(t *testing.T) {
-	cm := ClaudieMongo{Url: envs.DatabaseURL}
+	cm := ClaudieMongo{URL: envs.DatabaseURL}
 	err := cm.Connect()
 	require.NoError(t, err)
 	err = cm.Init()
 	require.NoError(t, err)
-	defer cm.Disconnect()
+	defer func() {
+		err := cm.Disconnect()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 	conf := &pb.Config{DesiredState: desiredState, Name: "test-pb-config"}
-	cm.SaveConfig(conf)
+	err = cm.SaveConfig(conf)
+	require.NoError(t, err)
 	fmt.Println("Config id: " + conf.Id)
 	require.NotEmpty(t, conf.Id)
 	err = cm.DeleteConfig(conf.Name, pb.IdType_NAME)
@@ -200,14 +207,20 @@ func TestSaveConfig(t *testing.T) {
 }
 
 func TestUpdateTTL(t *testing.T) {
-	cm := ClaudieMongo{Url: envs.DatabaseURL}
+	cm := ClaudieMongo{URL: envs.DatabaseURL}
 	err := cm.Connect()
 	require.NoError(t, err)
 	err = cm.Init()
 	require.NoError(t, err)
-	defer cm.Disconnect()
+	defer func() {
+		err := cm.Disconnect()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 	conf := &pb.Config{DesiredState: desiredState, Name: "test-pb-config", BuilderTTL: 1000, SchedulerTTL: 1000}
-	cm.SaveConfig(conf)
+	err = cm.SaveConfig(conf)
+	require.NoError(t, err)
 	err = cm.UpdateBuilderTTL(conf.Name, 500)
 	require.NoError(t, err)
 	err = cm.UpdateSchedulerTTL(conf.Name, 200)
