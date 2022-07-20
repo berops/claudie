@@ -17,6 +17,8 @@ jobs:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
 
       - name: Merge with master branch
         uses: devmasx/merge-branch@1.4.0
@@ -32,6 +34,8 @@ jobs:
     needs: merge-branch
     steps:
       - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
 
       - name: Set short sha output
         run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
@@ -148,15 +152,6 @@ jobs:
           git commit -m "Auto commit - add new kustomization.yaml"
           git push
 
-      - name: Get SHA of auto-commit
-        id: sha
-        run: |
-          sha_new=$(git rev-parse HEAD)
-          echo $sha_new
-          echo "::set-output name=SHA::$sha_new"
-
-    outputs:
-      SHA: ${{ steps.sha.outputs.SHA }}
   #--------------------------------------------------------------------------------------------------
   deploy-and-monitor:
     runs-on: self-hosted
@@ -165,8 +160,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          ref: ${{ needs.edit-kustomization.outputs.SHA }}
-          fetch-depth: 0
+          ref: ${{ github.head_ref }}
     
        # Install the git-crypt and unlock the files
       - name: git-crypt unlock
