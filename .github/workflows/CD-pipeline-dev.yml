@@ -17,6 +17,8 @@ jobs:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
 
       # Install the git-crypt and unlock the files
       - name: git-crypt unlock
