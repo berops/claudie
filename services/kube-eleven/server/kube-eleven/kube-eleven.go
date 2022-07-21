@@ -106,7 +106,7 @@ func (k *KubeEleven) generateFiles() error {
 func (k *KubeEleven) generateTemplateData() templateData {
 	var d templateData
 	// Get the API endpoint. If it is not set, use the first control node
-	d.APIEndpoint = k.findApiEndpoint()
+	d.APIEndpoint = k.findAPIEndpoint()
 	//Prepare the nodes for template
 	d.Nodes = k.getClusterNodes()
 
@@ -119,9 +119,9 @@ func (k *KubeEleven) generateTemplateData() templateData {
 	return d
 }
 
-//findApiEndpoint will loop through the slice of LBs and return endpoint, if any loadbalancer is used as API loadbalancer
+//findAPIEndpoint will loop through the slice of LBs and return endpoint, if any loadbalancer is used as API loadbalancer
 //returns API endpoint if LB fulfils prerequisites, empty string otherwise
-func (k *KubeEleven) findApiEndpoint() string {
+func (k *KubeEleven) findAPIEndpoint() string {
 	for _, lbCluster := range k.LBClusters {
 		//check if lb is used for this k8s
 		if lbCluster.TargetedK8S == k.K8sCluster.ClusterInfo.Name {
