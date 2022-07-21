@@ -37,7 +37,7 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 		func(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster) {
 			errGroup.Go(func() error {
 				ke := kubeEleven.KubeEleven{K8sCluster: cluster, LBClusters: lbClusters}
-				err := ke.Apply()
+				err := ke.BuildCluster()
 				if err != nil {
 					log.Error().Msgf("error encountered in KubeEleven - BuildCluster: %v", err)
 					return err
