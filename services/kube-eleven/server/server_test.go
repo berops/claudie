@@ -55,29 +55,14 @@ var cluster = &pb.K8Scluster{
 	Network:    "192.168.2.0/24",
 }
 
-func Test_genKubeOneConfig(t *testing.T) {
-	var d data
-	d.formatTemplateData(cluster, nil)
-	serverDir := ""
-	genFilePath := func(fileName string) string { return filepath.Join(serverDir, fileName) }
-	if err := genKubeOneConfig(genFilePath("kubeone.tpl"), genFilePath("kubeone.yaml"), d); err != nil {
-		t.Error(err)
-	}
-	fileName := genFilePath("kubeone.yaml")
-	if _, err := os.Stat(fileName); os.IsNotExist(err) {
-		// path/to/whatever does not exist
-		t.Errorf("%s file doesn't exist", fileName)
-	}
-}
-
 func Test_createKeyFile(t *testing.T) {
 	privateKeyFile := "private.pem"
-	keyErr := utils.CreateKeyFile(cluster.ClusterInfo.GetPrivateKey(), outputPath, privateKeyFile)
+	keyErr := utils.CreateKeyFile(cluster.ClusterInfo.GetPrivateKey(), ".", privateKeyFile)
 	if keyErr != nil {
 		t.Error("Error writing out .pem file doesn't exist")
 	}
 
-	if _, err := os.Stat(filepath.Join("services/kube-eleven/server", privateKeyFile)); os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(".", privateKeyFile)); os.IsNotExist(err) {
 		// path/to/whatever does not exist
 		t.Errorf("%s file doesn't exist", privateKeyFile)
 	}
