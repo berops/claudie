@@ -2,7 +2,7 @@
 Config is a datastructure which holds all of the data for a Claudie microservices. It is saved in the database and is passed from service to service.
 
 ## Config
-Config holds data for a single manifest. Config is datastructure which is saved into the database 
+Config holds data for a single manifest
 
   | Name | Type | Description |
   |------|------|-------------|
