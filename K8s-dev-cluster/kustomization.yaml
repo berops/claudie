@@ -22,11 +22,11 @@ images:
 - name: eu.gcr.io/platform-infrastructure-316112/platform/builder
   newTag: 43aebf4-531
 - name: eu.gcr.io/platform-infrastructure-316112/platform/context-box
-  newTag: 586717f-544
+  newTag: 6dd2a0c-554
 - name: eu.gcr.io/platform-infrastructure-316112/platform/frontend
   newTag: 43aebf4-531
 - name: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven
-  newTag: 61b89cb-537
+  newTag: c671566-549
 - name: eu.gcr.io/platform-infrastructure-316112/platform/kuber
   newTag: 4e10389-534
 - name: eu.gcr.io/platform-infrastructure-316112/platform/scheduler
