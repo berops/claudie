@@ -41,7 +41,7 @@ LBcluster represents single loadbalancer cluster specified in manifest
   | Name | Type | Description |
   |------|------|-------------|
   | ClusterInfo | [ClusterInfo](#clusterinfo) | General info about the cluster |
-  | Roles | []Role(#role) | Loadbalancer role |
+  | Roles | [][Role](#role) | Loadbalancer role |
   | DNS | [Dns](#dns) | DNS information |
   | TargetedK8s | string | Kubernetes cluster name of cluster this loadbalancer is assigned to |
 
