@@ -15,6 +15,7 @@ const (
 	TerraformerTemplates  = "services/terraformer/templates"
 	WireguardianTemplates = "services/wireguardian/server"
 	KuberTemplates        = "services/kuber/templates"
+	KubeElevenTemplates   = "services/kube-eleven/server/templates"
 )
 
 // directory - output directory
