@@ -54,3 +54,15 @@ func (q *Queue) Contains(element ConfigInfo) bool {
 	}
 	return false
 }
+
+//GetContent returns names of the items in the queue
+//returns slice of names of the elements in the queue
+func (q *Queue) GetContent() []string {
+	var content []string
+	q.lock.Lock()
+	for _, ci := range q.queue {
+		content = append(content, ci.GetName())
+	}
+	q.lock.Unlock()
+	return content
+}

@@ -171,8 +171,8 @@ func configChecker() error {
 	if err := configCheck(); err != nil {
 		return fmt.Errorf("error while configCheck: %v", err)
 	}
-	log.Info().Msgf("QueueScheduler content: %v", queueScheduler)
-	log.Info().Msgf("QueueBuilder content: %v", queueBuilder)
+	log.Info().Msgf("QueueScheduler content: %v", queueScheduler.GetContent())
+	log.Info().Msgf("QueueBuilder content: %v", queueBuilder.GetContent())
 	return nil
 }
 
