@@ -32,7 +32,7 @@ images:
 - name: eu.gcr.io/platform-infrastructure-316112/platform/scheduler
   newTag: c0b11e5-546
 - name: eu.gcr.io/platform-infrastructure-316112/platform/terraformer
-  newTag: 61b89cb-537
+  newTag: cd34fbb-564
 - name: eu.gcr.io/platform-infrastructure-316112/platform/testing-framework
   newTag: 61b89cb-537
 - name: eu.gcr.io/platform-infrastructure-316112/platform/wireguardian
