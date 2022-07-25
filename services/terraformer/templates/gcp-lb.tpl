@@ -30,7 +30,12 @@ resource "google_compute_firewall" "firewall" {
 
   allow {
       protocol = "TCP"
-      ports    = ["1-65535"]
+      ports    = ["6443","22"]
+  }
+
+  allow {
+    protocol = "UDP"
+    ports    = ["51820"]
   }
 
   allow {
