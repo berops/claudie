@@ -34,6 +34,24 @@ nodePools:
       server_type: cpx11
       image: ubuntu-20.04
       disk_size: 50
+    - name: control-gcp
+      provider:
+        gcp:
+          region: europe-west1
+          zone: europe-west1-c
+      count: 3
+      server_type: e2-medium
+      image: ubuntu-os-cloud/ubuntu-2004-focal-v20220610
+      disk_size: 50
+    - name: compute-gcp
+      provider:
+        gcp:
+          region: europe-west1
+          zone: europe-west1-c
+      count: 2
+      server_type: e2-small
+      image: ubuntu-os-cloud/ubuntu-2004-focal-v20220610
+      disk_size: 50
       # loadbalancer nodes
     - name: loadbalancer-1
       provider:
@@ -77,8 +95,10 @@ kubernetes:
       pools:
         control:
           - control-hetzner
+          - control-gcp
         compute:
           - compute-hetzner
+          - compute-gcp
 
 # loadbalancers field defines loadbalncers used for the k8s clusters
 loadBalancers:

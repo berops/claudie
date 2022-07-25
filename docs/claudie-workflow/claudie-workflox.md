@@ -73,7 +73,9 @@ Context box is "control unit" for the Claudie. It holds pending configs, which n
 
 
 ## Scheduler
-Scheduler creates desired state of the infra based on the manifest state. 
+Scheduler creates desired state of the infra based on the manifest taken from the config received from Context-box.
+
+Scheduler also monitors health of the current infra and manages any operations based on it, e.g. replacement of broken node, etc. *[work in progress]*
 
 ### API
 ```
