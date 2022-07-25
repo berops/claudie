@@ -1,4 +1,4 @@
-# Claudie Loadbalancer solution
+# Claudie Loadbalancer proposal
 
 ## Example diagram
 
