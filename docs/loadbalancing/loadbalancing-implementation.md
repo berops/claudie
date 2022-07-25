@@ -50,3 +50,26 @@ The Claudie creates and manages DNS for the loadbalancer. If user adds loadbalan
 ### Nodepools
 
 Loadbalancers are build from user defined nodepools in `pools` field, similar to how kubernetes clusters are defined. These nodepools allows user to change/scale the loadbalancers according to their needs without any fuss. See nodepool definition for more information.
+
+# Example of loadbalancer definition
+
+```yaml
+loadBalancers:
+  roles:
+    - name: apiserver-lb
+      protocol: tcp
+      port: 6443
+      target_port: 6443
+      target: k8sControlPlane
+  clusters:
+    - name: lb-1
+      roles:
+        - apiserver-lb
+      targeted-k8s: production-cluster # k8s cluster name
+      pools:
+        - nodepool-1
+      dns:
+      dns_zone: dns-zone
+      project: gcp-project-id
+      hostname: production  # www.production.<dns-zone>
+```
