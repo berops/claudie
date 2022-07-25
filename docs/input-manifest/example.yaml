@@ -6,7 +6,7 @@ providers:
   - name: hetzner
     credentials: abcdefgh123456
   - name: gcp
-    credentials: "{type: service-account, project_id: ....}"
+    credentials: '{"type": service-account, "project_id": ....}'
     gcp_project: project-id
 
 # nodepools field is used for defining the nodepool spec
