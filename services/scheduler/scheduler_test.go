@@ -5,7 +5,7 @@ import (
 )
 
 func TestMakeSSHKeyPair(t *testing.T) {
-	priv, pub := MakeSSHKeyPair()
+	priv, pub := makeSSHKeyPair()
 	t.Log(priv)
 	t.Log(pub)
 }
