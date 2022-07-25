@@ -45,7 +45,9 @@ The Claudie creates and manages DNS for the loadbalancer. If user adds loadbalan
   - Claudie currently supports only GCP cloud DNS 
 - `hostname`
   - hostname for the DNS records
-  - if left empty, random hash will be generated 
+  - if left empty, random hash will be generated
+
+Only for the Berops customers, if the DNS field will be left undefined, the loadbalancer will use Berops managed cloud DNS
 
 ### Nodepools
 
