@@ -1,5 +1,9 @@
 # Claudie Loadbalancer solution
 
+## Example diagram
+
+![Loadbalancing diagram](LB-diagram.jpg)
+
 ## Requirements
 
 - 1 or more virtual machines (LB machines), either on-premises, or via 1 on more cloud providers.
