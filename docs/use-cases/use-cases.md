@@ -1,7 +1,7 @@
 
 # Use-cases and customers
 
-## We foresee the following use-cases of the Claudie platform
+We foresee the following use-cases of the Claudie platform
 
 ## 1. Cloud-bursting
 
