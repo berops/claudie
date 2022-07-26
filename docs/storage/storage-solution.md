@@ -4,7 +4,7 @@
 
 Claudie created cluster comes with the longhorn deployment preinstalled and ready to be used. By default, only **worker** nodes are used to store data.
 
-Longhorn installed in the cluster is set up in a way, it provides one default `StorageClass` called `longhorn`, which if used, will create a volume on random node in a cluster. 
+Longhorn installed in the cluster is set up in a way, it provides one default `StorageClass` called `longhorn`, which if used, will create a volume which is replicated across random nodes in a cluster. 
 
 Other than default storage class, Claudie creates custom storage classes, which force persistent volumes to be created on a specific nodes based on the provider they have. In other words, you can use a specific provider to provision nodes for your storage needs, while using other provider for computing tasks.
 
