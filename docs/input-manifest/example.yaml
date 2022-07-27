@@ -124,6 +124,7 @@ loadBalancers:
       dns:
         dns_zone: dns-zone
         project: project-id
+        #hostname: #left empty means the Claudie will create random hash as a hostname
       # name of targeted k8s cluster
       targeted-k8s: dev-cluster
       # nodepools for loadbalancer
