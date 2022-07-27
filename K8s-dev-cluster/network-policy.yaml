@@ -1,11 +1,10 @@
 kind: NetworkPolicy
 apiVersion: networking.k8s.io/v1
 metadata:
-  name: minio-only-allow-this-namespace
+  name: deny-from-other-namespaces
 spec:
   podSelector:
     matchLabels:
-      app: minio
   ingress:
   - from:
     - podSelector: {}
