@@ -46,11 +46,11 @@ Collection of static and dynamic nodepool specification. These are "blueprints" 
 
 - `dynamic` [Dynamic](#dynamic)
 
-  Collection of dynamically created nodepools of not yet existing machines, used for Kubernetes or loadbalancer clusters.
+  List of dynamically created nodepools of not yet existing machines, used for Kubernetes or loadbalancer clusters.
 
 - `static` [WORK IN PROGRESS]
 
-  Collection of statically created nodepools of already existing machines, not created by of Claudie, used for Kubernetes or loadbalancer clusters. Typically, these would be on-premises machines.
+  List of statically created nodepools of already existing machines, not created by of Claudie, used for Kubernetes or loadbalancer clusters. Typically, these would be on-premises machines.
 
 
 ## Dynamic
