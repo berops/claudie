@@ -22,7 +22,7 @@ const defaultBuilderPort = 50051
 
 // healthCheck function is function used for querying readiness of the pod running this microservice
 func healthCheck() error {
-	//Check if Builder can connect to Terraformer/Wireguardian/Kube-eleven
+	//Check if Builder can connect to Terraformer/Wireguardian/Kube-eleven/Kuber
 	//Connection to these services are crucial for Builder, without them, the builder is NOT Ready
 	if cc, err := utils.GrpcDialWithInsecure("terraformer", envs.TerraformerURL); err != nil {
 		return err
@@ -75,7 +75,7 @@ func main() {
 
 	g, ctx := errgroup.WithContext(context.Background())
 	w := worker.NewWorker(ctx, 5*time.Second, configProcessor(c), worker.ErrorLogger)
-
+	// interrupt catching goroutine
 	g.Go(func() error {
 		ch := make(chan os.Signal, 1)
 		signal.Notify(ch, os.Interrupt)
@@ -83,11 +83,10 @@ func main() {
 		<-ch
 		return errors.New("builder interrupt signal")
 	})
-
+	//builder goroutine
 	g.Go(func() error {
 		w.Run()
 		return nil
 	})
-
 	log.Info().Msgf("Stopping Builder: %v", g.Wait())
 }
