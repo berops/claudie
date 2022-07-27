@@ -26,19 +26,19 @@ Manifest is a definition of the user's infrastructure. It contains cloud provide
 
 ## Provider [NEEDS REWORK]
 
-Provider is a collection of data for a cloud provider like Hetzner of GCP.
+Collection of data defining a used cloud provider, like Hetzner or GCP.
 
 - `name`
 
-  Name of the provider. This name will be used to reference it further in the input manifest.
+  Name of the provider. Used as a reference further in the input manifest.
 
 - `credentials`
 
-  Credentials for the provider. Can be API token, or a service account key.
+  Credentials for the provider. Either an API token (Hetzner), or a service account key (GCP).
 
 - `gcp_project`
 
-  GCP specific field. Value is a project id for that particular credentials.
+  GCP project id of an already existing GCP project. Only valid for GCP.
 
 ## Nodepools
 
