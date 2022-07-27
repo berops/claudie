@@ -31,6 +31,7 @@ func (q *Queue) Enqueue(element ConfigInfo) {
 //returns nil if queue empty
 func (q *Queue) Dequeue() ConfigInfo {
 	q.lock.Lock()
+	defer q.lock.Unlock()
 	if len(q.queue) == 0 {
 		return nil
 	}
@@ -38,7 +39,6 @@ func (q *Queue) Dequeue() ConfigInfo {
 	element := q.queue[0]
 	//remove the element
 	q.queue = q.queue[1:]
-	q.lock.Unlock()
 	return element
 }
 
