@@ -8,7 +8,7 @@ contextbox:
 	go run ./services/context-box/server
 
 scheduler:
-	go run services/scheduler/scheduler.go
+	go run ./services/scheduler
 
 builder:
 	go run services/builder/builder.go
