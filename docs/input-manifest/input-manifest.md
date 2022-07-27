@@ -44,7 +44,7 @@ GCP specific field. Value is a project id for that particular credentials.
 
 Nodepools is a collection of static and dynamic nodepool specification. These are a "blueprints" for the nodepools, which will be created once referenced in the `kubernetes` or `loadBalancer` clusters. This allows you to define a single nodepool but use it in multiple clusters.
 
-- `dynamic` [[]Dynamic](#dynamic)
+- `dynamic` [Dynamic](#dynamic)
 
 Dynamic is a collection of dynamically created nodepool used for kubernetes or loadbalancer clusters.
 
@@ -86,7 +86,7 @@ Size of the disk on the nodes in the nodepool.
 
 Kubernetes field is used to define a kubernetes clusters. 
 
-- `clusters` [[]Cluster-k8s](#cluster-k8s)
+- `clusters` [Cluster-k8s](#cluster-k8s)
 
 Clusters is a list of kubernetes cluster Claudie will create.
 
@@ -114,11 +114,11 @@ The list of nodepool names this cluster will use. Remember, that nodepools defin
 
 Loadbalancer field defines loadbalancer nodes and loadbalancer clusters.
 
-- `roles` [[]Role](#role)
+- `roles` [Role](#role)
   
 Roles is a list of roles loadbalancers use to forward the traffic. Single role can be used in multiple loadbalancer clusters.
 
-- `clusters` [[]Cluster-lb](#cluster-lb)
+- `clusters` [Cluster-lb](#cluster-lb)
 
 Clusters is a list of loadbalancer clusters used in the kubernetes cluster defined under [clusters](#cluster-k8s)
 
