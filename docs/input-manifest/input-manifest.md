@@ -22,7 +22,7 @@ Manifest is a definition of the user's infrastructure. It contains cloud provide
 
 - `loadBalancers` [Loadbalancer](#loadbalancer)
 
-  List of loadbalancer clusters the Kubernetes clusters defined in `kubernetes` may use.
+  List of loadbalancer clusters the Kubernetes clusters may use.
 
 ## Provider [NEEDS REWORK]
 
