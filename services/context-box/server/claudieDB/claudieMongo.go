@@ -247,7 +247,7 @@ func (c *ClaudieMongo) getByNameFromDB(name string) (configItem, error) {
 	var data configItem
 	filter := bson.M{"name": name}
 	if err := c.collection.FindOne(context.Background(), filter).Decode(&data); err != nil {
-		return data, fmt.Errorf("error while finding name in the DB: %v", err)
+		return data, fmt.Errorf("error while finding name %s in the DB: %v", name, err)
 	}
 	return data, nil
 }

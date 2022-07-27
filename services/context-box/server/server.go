@@ -77,10 +77,6 @@ func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest
 	if err != nil {
 		log.Info().Msgf("No existing doc with name: %v", newConfig.Name)
 	} else {
-		// copy current state from saved config to new config
-		if err != nil {
-			log.Fatal().Msgf("Error while converting data to pb %v", err)
-		}
 		if string(oldConfig.MsChecksum) != string(newConfig.MsChecksum) {
 			oldConfig.MsChecksum = newConfig.MsChecksum
 			oldConfig.Manifest = newConfig.Manifest
@@ -93,10 +89,7 @@ func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest
 	// save config to DB
 	err = database.SaveConfig(newConfig)
 	if err != nil {
-		return nil, status.Errorf(
-			codes.Internal,
-			fmt.Sprintf("Internal error: %v", err),
-		)
+		return nil, fmt.Errorf("error while saving config %s in db : %v", newConfig.Name, err)
 	}
 
 	return &pb.SaveConfigResponse{Config: newConfig}, nil
