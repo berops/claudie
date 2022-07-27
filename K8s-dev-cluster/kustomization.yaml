@@ -22,7 +22,7 @@ images:
 - name: eu.gcr.io/platform-infrastructure-316112/platform/builder
   newTag: 43aebf4-531
 - name: eu.gcr.io/platform-infrastructure-316112/platform/context-box
-  newTag: ed24056-577
+  newTag: b4c553c-578
 - name: eu.gcr.io/platform-infrastructure-316112/platform/frontend
   newTag: 43aebf4-531
 - name: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven
