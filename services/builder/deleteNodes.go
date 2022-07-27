@@ -14,6 +14,14 @@ type etcdNodeInfo struct {
 	nodeHash string
 }
 
+var (
+	exportCmd = `export ETCDCTL_API=3 && 
+		export ETCDCTL_CACERT=/etc/kubernetes/pki/etcd/ca.crt && 
+		export ETCDCTL_CERT=/etc/kubernetes/pki/etcd/healthcheck-client.crt && 
+		export ETCDCTL_KEY=/etc/kubernetes/pki/etcd/healthcheck-client.key`
+	getEtcdPodsCmd = "get pods -n kube-system --no-headers -o custom-columns=\":metadata.name\" | grep etcd"
+)
+
 func deleteNodes(config *pb.Config, toDelete map[string]*nodesToDelete) (*pb.Config, error) {
 	for _, cluster := range config.CurrentState.Clusters {
 		var nodesToDelete []string
@@ -122,44 +130,26 @@ func deleteNodesByName(cluster *pb.K8Scluster, nodesToDelete []string) error {
 }
 
 func deleteEtcd(cluster *pb.K8Scluster, etcdToDelete []string) error {
-	var mainMasterNode *pb.Node
-	for _, nodepool := range cluster.ClusterInfo.GetNodePools() {
-		for _, node := range nodepool.Nodes {
-			if node.NodeType == pb.NodeType_apiEndpoint {
-				mainMasterNode = node
-				break
-			}
-		}
-	}
-
+	mainMasterNode := getMainMaster(cluster)
 	if mainMasterNode == nil {
 		log.Error().Msg("APIEndpoint node not found")
 		return fmt.Errorf("failed to find any node with IsControl value as 2")
 	}
-
-	// get etcd pods name
-	podsQueryCmd := fmt.Sprintf("kubectl --kubeconfig <(echo \"%s\") get pods -n kube-system --no-headers -o custom-columns=\":metadata.name\" | grep etcd-%s", cluster.GetKubeconfig(), mainMasterNode.Name)
-	output, err := exec.Command("bash", "-c", podsQueryCmd).CombinedOutput()
+	etcdPods, err := getEtcdPods(mainMasterNode, cluster)
 	if err != nil {
-		log.Error().Msgf("Failed to get list of pods with name: etcd-%s", mainMasterNode.Name)
-		return err
+		log.Error().Msgf("Cannot find etcd pods in cluster : %v", err)
+		return fmt.Errorf("cannot find etcd pods in cluster : %v", err)
 	}
-
 	// parse list of pods returned
-	podNames := strings.Split(string(output), "\n")
+	podNames := strings.Split(etcdPods, "\n")
 
 	// Execute into the working etcd container and setup client TLS authentication in order to be able to communicate
 	// with etcd and get output of all etcd members
 	prepCmd := fmt.Sprintf("kubectl --kubeconfig <(echo '%s') -n kube-system exec -i %s -- /bin/sh -c ",
 		cluster.GetKubeconfig(), podNames[0])
 
-	exportCmd := "export ETCDCTL_API=3 && " +
-		"export ETCDCTL_CACERT=/etc/kubernetes/pki/etcd/ca.crt && " +
-		"export ETCDCTL_CERT=/etc/kubernetes/pki/etcd/healthcheck-client.crt && " +
-		"export ETCDCTL_KEY=/etc/kubernetes/pki/etcd/healthcheck-client.key"
-
 	cmd := fmt.Sprintf("%s \" %s && etcdctl member list \"", prepCmd, exportCmd)
-	output, err = exec.Command("bash", "-c", cmd).CombinedOutput()
+	output, err := exec.Command("bash", "-c", cmd).CombinedOutput()
 	if err != nil {
 		log.Error().Msgf("Error while executing command %s in a working etcd container: %v", cmd, err)
 		log.Error().Msgf("prepCmd was %s", prepCmd)
@@ -210,4 +200,30 @@ func searchNodeNames(nodeNames []string, nodeNameSubString string) (string, bool
 		}
 	}
 	return "", false
+}
+
+// func getDeleteEtcdCommand() string {
+
+// }
+
+func getEtcdPods(master *pb.Node, cluster *pb.K8Scluster) (string, error) {
+	// get etcd pods name
+	podsQueryCmd := fmt.Sprintf("kubectl --kubeconfig <(echo \"%s\") %s-%s", cluster.GetKubeconfig(), getEtcdPodsCmd, master.Name)
+	output, err := exec.Command("bash", "-c", podsQueryCmd).CombinedOutput()
+	if err != nil {
+		log.Error().Msgf("Failed to get list of pods with name: etcd-%s", master.Name)
+		return "", err
+	}
+	return string(output), nil
+}
+
+func getMainMaster(cluster *pb.K8Scluster) *pb.Node {
+	for _, nodepool := range cluster.ClusterInfo.GetNodePools() {
+		for _, node := range nodepool.Nodes {
+			if node.NodeType == pb.NodeType_apiEndpoint {
+				return node
+			}
+		}
+	}
+	return nil
 }
