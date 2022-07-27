@@ -8,7 +8,7 @@ Manifest is a definition of a clients infrastructure. It contains cloud provider
 
 Name of the manifest. If you plan to use multiple manifests for your infra, it is up to you to assure uniqueness of the name.
 
-- `providers` [[]Provider](#providers)
+- `providers` [Provider](#providers)
 
 List of provider used for the infrastructure. Includes DNS provider, Nodepool provider, etc.
 
