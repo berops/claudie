@@ -18,6 +18,15 @@ type nodesToDelete struct {
 	nodes map[string]*countsToDelete // [provider]nodes
 }
 
+type nodeCount struct {
+	Count uint32
+}
+
+type nodepoolKey struct {
+	clusterName  string
+	nodePoolName string
+}
+
 // configProcessor takes in cbox client to receive the configs.
 // It then calculated the changes that needs to be done in order
 // to see if nodes needs to be deleted or added or both. It also
@@ -70,15 +79,6 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 func diff(config *pb.Config) (*pb.Config, bool, map[string]*nodesToDelete) {
 	adding, deleting := false, false
 	tmpConfig := proto.Clone(config).(*pb.Config)
-
-	type nodeCount struct {
-		Count uint32
-	}
-
-	type nodepoolKey struct {
-		clusterName  string
-		nodePoolName string
-	}
 
 	var delCounts = make(map[string]*nodesToDelete)
 
