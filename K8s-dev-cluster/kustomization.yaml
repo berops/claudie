@@ -10,6 +10,7 @@ resources:
 - frontend.yaml
 - kuber.yaml
 - minio
+- network-policy.yaml
 # NOTE: when running the testing framework manually in the cluster, you need to specify the namespace in .env file
 # Example: NAMESPACE=foo
 configMapGenerator:
