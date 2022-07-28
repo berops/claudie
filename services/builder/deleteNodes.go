@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
 )
 
@@ -78,52 +79,28 @@ func deleteNodes(config *pb.Config, toDelete map[string]*nodesToDelete) (*pb.Con
 
 // deleteNodesByName checks if there is any difference in nodes between a desired state cluster and a running cluster
 func deleteNodesByName(cluster *pb.K8Scluster, nodesToDelete []string) error {
-
-	// get node name
-	nodesQueryCmd := fmt.Sprintf("kubectl --kubeconfig <(echo \"%s\") get nodes -n kube-system --no-headers -o custom-columns=\":metadata.name\" ", cluster.GetKubeconfig())
-	output, err := exec.Command("bash", "-c", nodesQueryCmd).CombinedOutput()
+	// get real node names
+	realNodeNames, err := kcGetNodeNames(cluster.Kubeconfig)
 	if err != nil {
-		log.Error().Msgf("Failed to get list of nodes ")
-		return err
+		return fmt.Errorf("error while getting nodes from cluster %s : %v", cluster.ClusterInfo.Name, err)
 	}
-
 	// parse list of pods returned
-	nodeNames := strings.Split(string(output), "\n")
-
-	//kubectl drain <node-name> --ignore-daemonsets --delete-local-data ,all diffNodes
-	for _, nodeNameSubString := range nodesToDelete {
-		nodeName, found := searchNodeNames(nodeNames, nodeNameSubString)
-		if found {
-			log.Info().Msgf("kubectl drain %s --ignore-daemonsets --delete-local-data", nodeName)
-			cmd := fmt.Sprintf("kubectl drain %s --ignore-daemonsets --delete-local-data --kubeconfig <(echo '%s')", nodeName, cluster.GetKubeconfig())
-			res, err := exec.Command("bash", "-c", cmd).CombinedOutput()
+	for _, nodeName := range nodesToDelete {
+		realNodeName := utils.FindName(realNodeNames, nodeName)
+		if realNodeName != "" {
+			//kubectl drain <node-name> --ignore-daemonsets --delete-local-data ,all diffNodes
+			err := kcDrainNode(realNodeName, cluster.Kubeconfig)
 			if err != nil {
-				log.Error().Msgf("Error while draining node %s : %v", nodeName, err)
-				log.Error().Bytes("result", res)
-				return err
+				return fmt.Errorf("error while deleting node %s : %v", nodeName, err)
+			}
+			//kubectl delete node <node-name>
+			err = kcDeleteNode(realNodeName, cluster.Kubeconfig)
+			if err != nil {
+				return fmt.Errorf("error while deleting node %s : %v", nodeName, err)
 			}
 		} else {
-			log.Error().Msgf("Node name that contains \"%s\" no found ", nodeNameSubString)
-			return fmt.Errorf("no node with name %s found ", nodeNameSubString)
-		}
-
-	}
-
-	//kubectl delete node <node-name>
-	for _, nodeNameSubString := range nodesToDelete {
-		nodeName, found := searchNodeNames(nodeNames, nodeNameSubString)
-
-		if found {
-			log.Info().Msgf("kubectl delete node %s" + nodeName)
-			cmd := fmt.Sprintf("kubectl delete node %s --kubeconfig <(echo '%s')", nodeName, cluster.GetKubeconfig())
-			_, err := exec.Command("bash", "-c", cmd).CombinedOutput()
-			if err != nil {
-				log.Error().Msgf("Error while deleting node %s : %v", nodeName, err)
-				return err
-			}
-		} else {
-			log.Error().Msgf("Node name that contains \"%s\" no found ", nodeNameSubString)
-			return fmt.Errorf("no node with name %s found ", nodeNameSubString)
+			log.Error().Msgf("Node name that contains \"%s\" no found ", nodeName)
+			return fmt.Errorf("no node with name %s found ", nodeName)
 		}
 	}
 	return nil
@@ -166,16 +143,6 @@ func deleteFromEtcd(cluster *pb.K8Scluster, mastersToDelete []string) error {
 		}
 	}
 	return nil
-}
-
-func searchNodeNames(nodeNames []string, nodeNameSubString string) (string, bool) {
-	// Get full node name using substring of node name
-	for _, nodeName := range nodeNames {
-		if strings.Contains(nodeName, nodeNameSubString) {
-			return nodeName, true
-		}
-	}
-	return "", false
 }
 
 func getEtcdPods(master *pb.Node, cluster *pb.K8Scluster) ([]string, error) {
@@ -232,4 +199,36 @@ func getMainMaster(cluster *pb.K8Scluster) *pb.Node {
 		}
 	}
 	return nil
+}
+
+func kcDrainNode(nodeName, kubeconfig string) error {
+	log.Info().Msgf("kubectl drain %s --ignore-daemonsets --delete-local-data", nodeName)
+	cmd := fmt.Sprintf("kubectl drain %s --ignore-daemonsets --delete-local-data --kubeconfig <(echo '%s')", nodeName, kubeconfig)
+	err := exec.Command("bash", "-c", cmd).Run()
+	if err != nil {
+		log.Error().Msgf("Error while draining node %s : %v", nodeName, err)
+		return err
+	}
+	return nil
+}
+
+func kcDeleteNode(nodeName, kubeconfig string) error {
+	log.Info().Msgf("kubectl delete node %s" + nodeName)
+	cmd := fmt.Sprintf("kubectl delete node %s --kubeconfig <(echo '%s')", nodeName, kubeconfig)
+	err := exec.Command("bash", "-c", cmd).Run()
+	if err != nil {
+		log.Error().Msgf("Error while deleting node %s : %v", nodeName, err)
+		return err
+	}
+	return nil
+}
+
+func kcGetNodeNames(kubeconfig string) ([]string, error) {
+	nodesQueryCmd := fmt.Sprintf("kubectl --kubeconfig <(echo \"%s\") get nodes -n kube-system --no-headers -o custom-columns=\":metadata.name\" ", kubeconfig)
+	output, err := exec.Command("bash", "-c", nodesQueryCmd).CombinedOutput()
+	if err != nil {
+		log.Error().Msgf("Failed to get list of nodes ")
+		return nil, err
+	}
+	return strings.Split(string(output), "\n"), nil
 }
