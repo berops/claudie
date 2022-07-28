@@ -10,12 +10,8 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type countsToDelete struct {
-	Count uint32
-}
-
 type nodesToDelete struct {
-	nodes map[string]*countsToDelete // [provider]nodes
+	nodes map[string]*nodeCount // [nodepoolName]count which needs to be deleted
 }
 
 type nodeCount struct {
@@ -91,9 +87,9 @@ func diff(config *pb.Config) (*pb.Config, bool, map[string]*nodesToDelete) {
 	}
 
 	for _, cluster := range tmpConfig.GetDesiredState().GetClusters() {
-		tmp := make(map[string]*countsToDelete)
+		tmp := make(map[string]*nodeCount)
 		for _, nodePool := range cluster.ClusterInfo.GetNodePools() {
-			var nodesProvider countsToDelete
+			var nodesProvider nodeCount
 			key := nodepoolKey{nodePoolName: nodePool.Name, clusterName: cluster.ClusterInfo.Name}
 
 			if _, ok := nodepoolMap[key]; ok {
