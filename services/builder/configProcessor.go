@@ -10,17 +10,12 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type nodesToDelete struct {
-	nodes map[string]*nodeCount // [nodepoolName]count which needs to be deleted
+type nodepoolsCounts struct {
+	nodepools map[string]*nodeCount // [nodepoolName]count which needs to be deleted
 }
 
 type nodeCount struct {
 	Count uint32
-}
-
-type nodepoolKey struct {
-	clusterName  string
-	nodePoolName string
 }
 
 // configProcessor takes in cbox client to receive the configs.
@@ -43,7 +38,7 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 			//tmpConfig is used in operation where config is adding && deleting the nodes
 			//first, tmpConfig is applied which only adds nodes and only then the real config is applied, which will delete nodes
 			var tmpConfig *pb.Config
-			var toDelete map[string]*nodesToDelete
+			var toDelete map[string]*nodepoolsCounts
 			//if any current state already exist, find difference
 			if len(config.CurrentState.GetClusters()) > 0 {
 				tmpConfig, toDelete = stateDifference(config)
@@ -77,28 +72,35 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 }
 
 // stateDifference takes config to calculates difference between desired and current state to determine how many nodes  needs to be deleted and added.
-func stateDifference(config *pb.Config) (*pb.Config, map[string]*nodesToDelete) {
+func stateDifference(config *pb.Config) (*pb.Config, map[string]*nodepoolsCounts) {
 	adding, deleting := false, false
 	tmpConfig := proto.Clone(config).(*pb.Config)
-	currentNodepoolMap := getNodepoolMap(tmpConfig.CurrentState.Clusters)
-	var delCounts = make(map[string]*nodesToDelete)
+	currentNodepoolMap := getNodepoolMap(tmpConfig.CurrentState.Clusters) //[clusterName][nodepoolName]Count
+	var delCounts = make(map[string]*nodepoolsCounts)
 	//iterate over clusters and find difference in nodepools
 	for _, desiredClusterTmp := range tmpConfig.GetDesiredState().GetClusters() {
 		delCounts[desiredClusterTmp.ClusterInfo.Name], adding, deleting = findNodepoolDifference(currentNodepoolMap, desiredClusterTmp)
 	}
 
 	//if any key left, it means that nodepool is defined in current state but not in the desired, i.e. whole nodepool should be deleted
-	for key := range currentNodepoolMap {
-		//find cluster in desired state
-		desiredClusterTmp := utils.GetClusterByName(key.clusterName, tmpConfig.DesiredState.Clusters)
-		if desiredClusterTmp != nil {
-			//find cluster in current state
-			currentCluster := utils.GetClusterByName(key.clusterName, tmpConfig.CurrentState.Clusters)
-			if currentCluster != nil {
-				//append nodepool to desired state, since tmpConfig only adds nodes
-				desiredClusterTmp.ClusterInfo.NodePools = append(desiredClusterTmp.ClusterInfo.NodePools, utils.GetNodePoolByName(key.nodePoolName, currentCluster.ClusterInfo.GetNodePools()))
-				//true since we will delete whole nodepool
-				deleting = true
+	if len(currentNodepoolMap) > 0 {
+		log.Info().Msgf("Detected deletion of a nodepools")
+		deleting = true
+		for clusterName, nodepoolsCount := range currentNodepoolMap {
+			//merge maps together so delCounts holds all delete counts
+			mergeDeleteCounts(delCounts[clusterName].nodepools, nodepoolsCount.nodepools)
+			//since tmpConfig first adds nodes, the deleted nodes needs to be added into tmp Desired state
+			desiredClusterTmp := utils.GetClusterByName(clusterName, tmpConfig.DesiredState.Clusters)
+			if desiredClusterTmp != nil {
+				//find cluster in current state
+				currentCluster := utils.GetClusterByName(clusterName, tmpConfig.CurrentState.Clusters)
+				if currentCluster != nil {
+					//append nodepool to desired state, since tmpConfig only adds nodes
+					for nodepoolName := range nodepoolsCount.nodepools {
+						log.Info().Msgf("Nodepool %s from cluster %s will be deleted", nodepoolName, clusterName)
+						desiredClusterTmp.ClusterInfo.NodePools = append(desiredClusterTmp.ClusterInfo.NodePools, utils.GetNodePoolByName(nodepoolName, currentCluster.ClusterInfo.GetNodePools()))
+					}
+				}
 			}
 		}
 	}
@@ -113,43 +115,53 @@ func stateDifference(config *pb.Config) (*pb.Config, map[string]*nodesToDelete) 
 	}
 }
 
-func getNodepoolMap(clusters []*pb.K8Scluster) map[nodepoolKey]nodeCount {
-	nodepoolMap := make(map[nodepoolKey]nodeCount)
+func getNodepoolMap(clusters []*pb.K8Scluster) map[string]*nodepoolsCounts {
+	nodepoolMap := make(map[string]*nodepoolsCounts)
 	for _, cluster := range clusters {
+		npCount := &nodepoolsCounts{nodepools: make(map[string]*nodeCount)}
 		for _, nodePool := range cluster.ClusterInfo.GetNodePools() {
-			tmp := nodepoolKey{nodePoolName: nodePool.Name, clusterName: cluster.ClusterInfo.Name}
-			nodepoolMap[tmp] = nodeCount{Count: nodePool.Count} // Since a nodepool as only one type of nodes, we'll need only one type of count
+			npCount.nodepools[nodePool.Name] = &nodeCount{Count: nodePool.Count}
 		}
+		nodepoolMap[cluster.ClusterInfo.Name] = npCount
 	}
 	return nodepoolMap
 }
 
-func findNodepoolDifference(currentNodepoolMap map[nodepoolKey]nodeCount, desiredClusterTmp *pb.K8Scluster) (result *nodesToDelete, adding bool, deleting bool) {
-	nodepoolCounts := make(map[string]*nodeCount)
-	//prepare the key
-	nodepoolKey := nodepoolKey{clusterName: desiredClusterTmp.ClusterInfo.Name}
-	//iterate over nodepools in cluster
+func findNodepoolDifference(currentNodepoolMap map[string]*nodepoolsCounts, desiredClusterTmp *pb.K8Scluster) (result *nodepoolsCounts, adding bool, deleting bool) {
+	nodepoolCountToDelete := make(map[string]*nodeCount)
+	//iterate over nodepools in desired cluster
 	for _, nodePoolDesired := range desiredClusterTmp.ClusterInfo.GetNodePools() {
-		var countToDelete nodeCount
-		nodepoolKey.nodePoolName = nodePoolDesired.Name
-		//if nodepool found in current nodepoolMap, check difference
-		if nodePoolCurrent, ok := currentNodepoolMap[nodepoolKey]; ok {
-			if nodePoolDesired.Count > nodePoolCurrent.Count {
-				//if desired cluster has more nodes than in current nodepool
-				adding = true
-			} else if nodePoolDesired.Count < nodePoolCurrent.Count {
-				//if desired cluster has less nodes than in current nodepool
-				countToDelete.Count = nodePoolCurrent.Count - nodePoolDesired.Count
-				//since we are working with tmp config, we do not delete nodes in this step, thus save the current node count
-				nodePoolDesired.Count = nodePoolCurrent.Count
-				deleting = true
+		//iterate over nodepools in current cluster
+		nodepoolsCurrent := currentNodepoolMap[desiredClusterTmp.ClusterInfo.Name]
+		for nodepoolCurrentName, nodePoolCurrentCount := range nodepoolsCurrent.nodepools {
+			//if desired state contains nodepool from current, check counts
+			if nodePoolDesired.Name == nodepoolCurrentName {
+				var countToDelete nodeCount
+				if nodePoolDesired.Count > nodePoolCurrentCount.Count { //if desired cluster has more nodes than in current nodepool
+					adding = true
+				} else if nodePoolDesired.Count < nodePoolCurrentCount.Count { //if desired cluster has less nodes than in current nodepool
+					countToDelete.Count = nodePoolCurrentCount.Count - nodePoolDesired.Count
+					//since we are working with tmp config, we do not delete nodes in this step, thus save the current node count
+					nodePoolDesired.Count = nodePoolCurrentCount.Count
+					deleting = true
+				}
+				nodepoolCountToDelete[nodePoolDesired.Name] = &countToDelete
+				//delete nodepool from nodepool map, so we can keep track of which nodepools were deleted
+				delete(nodepoolsCurrent.nodepools, nodePoolDesired.Name)
+				//if cluster has no nodepools, delete the reference to cluster
+				if len(nodepoolsCurrent.nodepools) == 0 {
+					delete(currentNodepoolMap, desiredClusterTmp.ClusterInfo.Name)
+				}
 			}
-			//save nodepool and the count of nodes which will be deleted
-			nodepoolCounts[nodePoolDesired.Name] = &countToDelete
-			//delete nodepool from current nodepoolMap
-			delete(currentNodepoolMap, nodepoolKey)
 		}
 	}
-	result = &nodesToDelete{nodes: nodepoolCounts}
+	result = &nodepoolsCounts{nodepools: nodepoolCountToDelete}
 	return result, adding, deleting
+}
+
+func mergeDeleteCounts(dst, src map[string]*nodeCount) map[string]*nodeCount {
+	for k, v := range src {
+		dst[k] = v
+	}
+	return dst
 }

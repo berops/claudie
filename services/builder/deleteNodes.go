@@ -26,7 +26,7 @@ var (
 //deleteNodes function finds particular nodes for deletion and deletes them from the etcd and k8s clusters
 //function also changes config.Current state after the nodes are deleted
 //return config with new current state and nil if successful, nil and error  otherwise
-func deleteNodes(config *pb.Config, toDelete map[string]*nodesToDelete) (*pb.Config, error) {
+func deleteNodes(config *pb.Config, toDelete map[string]*nodepoolsCounts) (*pb.Config, error) {
 	for _, cluster := range config.CurrentState.Clusters {
 		//get nodes to delete for this cluster
 		clusterNodesToDelete := toDelete[cluster.ClusterInfo.Name]
@@ -120,7 +120,7 @@ func deleteFromEtcd(cluster *pb.K8Scluster, mastersToDelete []string) error {
 	for _, nodeName := range mastersToDelete {
 		for _, etcdPodInfo := range etcdPodInfos {
 			if nodeName == etcdPodInfo.nodeName {
-				log.Info().Msgf("Removing node %s, with etcd member hash %s \n", etcdPodInfo.nodeName, etcdPodInfo.memberHash)
+				log.Info().Msgf("Removing node %s, with etcd member hash %s ", etcdPodInfo.nodeName, etcdPodInfo.memberHash)
 				cmd := fmt.Sprintf("%s \" %s && etcdctl member remove %s \"", kcExecEtcdCmd, exportEtcdEnvsCmd, etcdPodInfo.memberHash)
 				err := exec.Command("bash", "-c", cmd).Run()
 				if err != nil {
@@ -240,18 +240,16 @@ func kcGetNodeNames(kubeconfig string) ([]string, error) {
 
 //getNodesToDelete chooses a particular nodes which will be deleted based on the clusterNodesToDelete values
 //return slice of nodes and etcd members to delete
-func getNodesToDelete(clusterNodesToDelete *nodesToDelete, nodepools []*pb.NodePool) (nodesToDelete []string, etcdToDelete []string) {
+func getNodesToDelete(clusterNodesToDelete *nodepoolsCounts, nodepools []*pb.NodePool) (nodesToDelete []string, etcdToDelete []string) {
 	for _, nodepool := range nodepools {
 		for i := len(nodepool.Nodes) - 1; i >= 0; i-- {
 			// get count from nodepool
-			count, ok := clusterNodesToDelete.nodes[nodepool.Name]
-			// if nodepool found in clusterNodesToDelete
-			if ok {
+			if count, ok := clusterNodesToDelete.nodepools[nodepool.Name]; ok {
 				// count to delete is non zero -> pick a node to delete
 				if count.Count > 0 {
 					count.Count--
 					nodesToDelete = append(nodesToDelete, nodepool.Nodes[i].GetName())
-					log.Info().Msgf("Choosing node %s, with public IP %s, private IP %s for deletion\n", nodepool.Nodes[i].GetName(), nodepool.Nodes[i].GetPublic(), nodepool.Nodes[i].GetPrivate())
+					log.Info().Msgf("Choosing node %s, with public IP %s, private IP %s for deletion", nodepool.Nodes[i].GetName(), nodepool.Nodes[i].GetPublic(), nodepool.Nodes[i].GetPrivate())
 					//if nodepool is control, append it to etcdToDelete
 					if nodepool.Nodes[i].NodeType > pb.NodeType_worker {
 						etcdToDelete = append(etcdToDelete, nodepool.Nodes[i].GetName())
