@@ -34,91 +34,70 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 		if err != nil {
 			return fmt.Errorf("error while getting config from the Builder: %v", err)
 		}
-
 		config := res.GetConfig()
-		if config != nil {
+		if config == nil {
+			return nil
+		}
+		//process config in goroutine to allow single Builder to work concurrently on multiple configs
+		go func(config *pb.Config) {
+			//tmpConfig is used in operation where config is adding && deleting the nodes
+			//first, tmpConfig is applied which only adds nodes and only then the real config is applied, which will delete nodes
 			var tmpConfig *pb.Config
-			var deleting bool
-			var toDelete = make(map[string]*nodesToDelete)
+			var toDelete map[string]*nodesToDelete
+			//if any current state already exist, find difference
 			if len(config.CurrentState.GetClusters()) > 0 {
-				tmpConfig, deleting, toDelete = diff(config)
+				tmpConfig, toDelete = stateDifference(config)
 			}
+			//if tmpConfig is not nil, first apply it
 			if tmpConfig != nil {
 				log.Info().Msg("Processing a tmpConfig...")
 				err := buildConfig(tmpConfig, c, true)
 				if err != nil {
-					return err
+					log.Error().Err(err)
 				}
 				config.CurrentState = tmpConfig.DesiredState
 			}
-			if deleting {
+			if toDelete != nil {
 				log.Info().Msg("Deleting nodes...")
 				config, err = deleteNodes(config, toDelete)
 				if err != nil {
-					return err
+					log.Error().Err(err)
 				}
 			}
 
 			log.Info().Msgf("Processing config %s", config.Name)
-			go func() {
-				err := buildConfig(config, c, false)
-				if err != nil {
-					log.Error().Err(err)
-				}
-			}()
-		}
+
+			err = buildConfig(config, c, false)
+			if err != nil {
+				log.Error().Err(err)
+			}
+		}(config)
 		return nil
 	}
 }
 
-// diff takes config to calculate which nodes needs to be deleted and added.
-func diff(config *pb.Config) (*pb.Config, bool, map[string]*nodesToDelete) {
+// stateDifference takes config to calculates difference between desired and current state to determine how many nodes  needs to be deleted and added.
+func stateDifference(config *pb.Config) (*pb.Config, map[string]*nodesToDelete) {
 	adding, deleting := false, false
 	tmpConfig := proto.Clone(config).(*pb.Config)
-
+	currentNodepoolMap := getNodepoolMap(tmpConfig.CurrentState.Clusters)
 	var delCounts = make(map[string]*nodesToDelete)
-
-	var nodepoolMap = make(map[nodepoolKey]nodeCount)
-	for _, cluster := range tmpConfig.GetCurrentState().GetClusters() {
-		for _, nodePool := range cluster.ClusterInfo.GetNodePools() {
-			tmp := nodepoolKey{nodePoolName: nodePool.Name, clusterName: cluster.ClusterInfo.Name}
-			nodepoolMap[tmp] = nodeCount{Count: nodePool.Count} // Since a nodepool as only one type of nodes, we'll need only one type of count
-		}
+	//iterate over clusters and find difference in nodepools
+	for _, desiredClusterTmp := range tmpConfig.GetDesiredState().GetClusters() {
+		delCounts[desiredClusterTmp.ClusterInfo.Name], adding, deleting = findNodepoolDifference(currentNodepoolMap, desiredClusterTmp)
 	}
 
-	for _, cluster := range tmpConfig.GetDesiredState().GetClusters() {
-		tmp := make(map[string]*nodeCount)
-		for _, nodePool := range cluster.ClusterInfo.GetNodePools() {
-			var nodesProvider nodeCount
-			key := nodepoolKey{nodePoolName: nodePool.Name, clusterName: cluster.ClusterInfo.Name}
-
-			if _, ok := nodepoolMap[key]; ok {
-				tmpNodePool := utils.GetNodePoolByName(nodePool.Name, utils.GetClusterByName(cluster.ClusterInfo.Name, tmpConfig.GetDesiredState().GetClusters()).ClusterInfo.GetNodePools())
-				if nodePool.Count > nodepoolMap[key].Count {
-					tmpNodePool.Count = nodePool.Count
-					adding = true
-				} else if nodePool.Count < nodepoolMap[key].Count {
-					nodesProvider.Count = nodepoolMap[key].Count - nodePool.Count
-					tmpNodePool.Count = nodepoolMap[key].Count
-					deleting = true
-				}
-
-				tmp[nodePool.Name] = &nodesProvider
-				delete(nodepoolMap, key)
-			}
-		}
-		delCounts[cluster.ClusterInfo.Name] = &nodesToDelete{
-			nodes: tmp,
-		}
-	}
-
-	if len(nodepoolMap) > 0 {
-		for key := range nodepoolMap {
-			cluster := utils.GetClusterByName(key.clusterName, tmpConfig.DesiredState.Clusters)
-			if cluster != nil {
-				currentCluster := utils.GetClusterByName(key.clusterName, tmpConfig.CurrentState.Clusters)
-				log.Info().Interface("currentCluster", currentCluster)
-				cluster.ClusterInfo.NodePools = append(cluster.ClusterInfo.NodePools, utils.GetNodePoolByName(key.nodePoolName, currentCluster.ClusterInfo.GetNodePools()))
+	//if any key left, it means that nodepool is defined in current state but not in the desired, i.e. whole nodepool should be deleted
+	for key := range currentNodepoolMap {
+		//find cluster in desired state
+		desiredClusterTmp := utils.GetClusterByName(key.clusterName, tmpConfig.DesiredState.Clusters)
+		if desiredClusterTmp != nil {
+			//find cluster in current state
+			currentCluster := utils.GetClusterByName(key.clusterName, tmpConfig.CurrentState.Clusters)
+			if currentCluster != nil {
+				//append nodepool to desired state, since tmpConfig only adds nodes
+				desiredClusterTmp.ClusterInfo.NodePools = append(desiredClusterTmp.ClusterInfo.NodePools, utils.GetNodePoolByName(key.nodePoolName, currentCluster.ClusterInfo.GetNodePools()))
+				//true since we will delete whole nodepool
 				deleting = true
 			}
 		}
@@ -126,10 +105,51 @@ func diff(config *pb.Config) (*pb.Config, bool, map[string]*nodesToDelete) {
 
 	switch {
 	case adding && deleting:
-		return tmpConfig, deleting, delCounts
+		return tmpConfig, delCounts
 	case deleting:
-		return nil, deleting, delCounts
+		return nil, delCounts
 	default:
-		return nil, deleting, nil
+		return nil, nil
 	}
+}
+
+func getNodepoolMap(clusters []*pb.K8Scluster) map[nodepoolKey]nodeCount {
+	nodepoolMap := make(map[nodepoolKey]nodeCount)
+	for _, cluster := range clusters {
+		for _, nodePool := range cluster.ClusterInfo.GetNodePools() {
+			tmp := nodepoolKey{nodePoolName: nodePool.Name, clusterName: cluster.ClusterInfo.Name}
+			nodepoolMap[tmp] = nodeCount{Count: nodePool.Count} // Since a nodepool as only one type of nodes, we'll need only one type of count
+		}
+	}
+	return nodepoolMap
+}
+
+func findNodepoolDifference(currentNodepoolMap map[nodepoolKey]nodeCount, desiredClusterTmp *pb.K8Scluster) (result *nodesToDelete, adding bool, deleting bool) {
+	nodepoolCounts := make(map[string]*nodeCount)
+	//prepare the key
+	nodepoolKey := nodepoolKey{clusterName: desiredClusterTmp.ClusterInfo.Name}
+	//iterate over nodepools in cluster
+	for _, nodePoolDesired := range desiredClusterTmp.ClusterInfo.GetNodePools() {
+		var countToDelete nodeCount
+		nodepoolKey.nodePoolName = nodePoolDesired.Name
+		//if nodepool found in current nodepoolMap, check difference
+		if nodePoolCurrent, ok := currentNodepoolMap[nodepoolKey]; ok {
+			if nodePoolDesired.Count > nodePoolCurrent.Count {
+				//if desired cluster has more nodes than in current nodepool
+				adding = true
+			} else if nodePoolDesired.Count < nodePoolCurrent.Count {
+				//if desired cluster has less nodes than in current nodepool
+				countToDelete.Count = nodePoolCurrent.Count - nodePoolDesired.Count
+				//since we are working with tmp config, we do not delete nodes in this step, thus save the current node count
+				nodePoolDesired.Count = nodePoolCurrent.Count
+				deleting = true
+			}
+			//save nodepool and the count of nodes which will be deleted
+			nodepoolCounts[nodePoolDesired.Name] = &countToDelete
+			//delete nodepool from current nodepoolMap
+			delete(currentNodepoolMap, nodepoolKey)
+		}
+	}
+	result = &nodesToDelete{nodes: nodepoolCounts}
+	return result, adding, deleting
 }
