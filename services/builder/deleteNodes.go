@@ -216,7 +216,7 @@ func kcDrainNode(nodeName, kubeconfig string) error {
 //kcDeleteNode executes kubectl delete node for a specified node
 //return nil if successful, error otherwise
 func kcDeleteNode(nodeName, kubeconfig string) error {
-	log.Info().Msgf("kubectl delete node %s" + nodeName)
+	log.Info().Msgf("kubectl delete node %s", nodeName)
 	cmd := fmt.Sprintf("kubectl delete node %s --kubeconfig <(echo '%s')", nodeName, kubeconfig)
 	err := exec.Command("bash", "-c", cmd).Run()
 	if err != nil {
@@ -245,15 +245,20 @@ func getNodesToDelete(clusterNodesToDelete *nodesToDelete, nodepools []*pb.NodeP
 		for i := len(nodepool.Nodes) - 1; i >= 0; i-- {
 			// get count from nodepool
 			count, ok := clusterNodesToDelete.nodes[nodepool.Name]
-			// if nodepool found in clusterNodesToDelete && count to delete is non zero -> pick a node to delete
-			if count.Count > 0 && ok {
-				count.Count--
-				nodesToDelete = append(nodesToDelete, nodepool.Nodes[i].GetName())
-				log.Info().Msgf("Choosing node %s, with public IP %s, private IP %s for deletion\n", nodepool.Nodes[i].GetName(), nodepool.Nodes[i].GetPublic(), nodepool.Nodes[i].GetPrivate())
-				//if nodepool is control, append it to etcdToDelete
-				if nodepool.Nodes[i].NodeType > pb.NodeType_worker {
-					etcdToDelete = append(etcdToDelete, nodepool.Nodes[i].GetName())
+			// if nodepool found in clusterNodesToDelete
+			if ok {
+				// count to delete is non zero -> pick a node to delete
+				if count.Count > 0 {
+					count.Count--
+					nodesToDelete = append(nodesToDelete, nodepool.Nodes[i].GetName())
+					log.Info().Msgf("Choosing node %s, with public IP %s, private IP %s for deletion\n", nodepool.Nodes[i].GetName(), nodepool.Nodes[i].GetPublic(), nodepool.Nodes[i].GetPrivate())
+					//if nodepool is control, append it to etcdToDelete
+					if nodepool.Nodes[i].NodeType > pb.NodeType_worker {
+						etcdToDelete = append(etcdToDelete, nodepool.Nodes[i].GetName())
+					}
 				}
+			} else {
+				log.Warn().Msgf("Trying to delete nodes from %s, but the count of nodes was not defined", nodepool.Name)
 			}
 		}
 	}

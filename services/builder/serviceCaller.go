@@ -172,7 +172,7 @@ func saveErrorMessage(config *pb.Config, c pb.ContextBoxServiceClient, err error
 	config.ErrorMessage = err.Error()
 	errSave := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 	if errSave != nil {
-		return fmt.Errorf("error while saving the config: %v", err)
+		return fmt.Errorf("error while saving the config in Builder: %v", err)
 	}
 	return nil
 }
