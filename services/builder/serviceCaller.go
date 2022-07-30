@@ -14,7 +14,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// buildConfig is function used to carry out task specific to Builder concurrently
+// buildConfig is function used to build infra based on the desired state concurrently
 func buildConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig bool) (err error) {
 	log.Info().Msgf("processConfig received config: %s, is tmpConfig: %t", config.GetName(), isTmpConfig)
 	// call Terraformer to build infra
@@ -72,7 +72,7 @@ func buildConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig bo
 	return nil
 }
 
-// pass config to terraformer for building the infra
+//callTerraformer passes config to terraformer for building the infra
 func callTerraformer(currentState *pb.Project, desiredState *pb.Project) (*pb.Project, *pb.Project, error) {
 	// Create connection to Terraformer
 	cc, err := utils.GrpcDialWithInsecure("terraformer", envs.TerraformerURL)
@@ -97,7 +97,7 @@ func callTerraformer(currentState *pb.Project, desiredState *pb.Project) (*pb.Pr
 	return res.GetCurrentState(), res.GetDesiredState(), nil
 }
 
-// pass config to wireguardian for building VPN
+//callWireguardian passes config to wireguardian to set up VPN
 func callWireguardian(desiredState, currentState *pb.Project) (*pb.Project, error) {
 	cc, err := utils.GrpcDialWithInsecure("wireguardian", envs.WireguardianURL)
 	if err != nil {
@@ -118,7 +118,7 @@ func callWireguardian(desiredState, currentState *pb.Project) (*pb.Project, erro
 	return res.GetDesiredState(), nil
 }
 
-// pass config to kubeEleven to bootstrap k8s cluster
+// callKubeEleven passes config to kubeEleven to bootstrap k8s cluster
 func callKubeEleven(desiredState *pb.Project) (*pb.Project, error) {
 	cc, err := utils.GrpcDialWithInsecure("kubeEleven", envs.KubeElevenURL)
 	if err != nil {
@@ -139,7 +139,7 @@ func callKubeEleven(desiredState *pb.Project) (*pb.Project, error) {
 	return res.GetDesiredState(), nil
 }
 
-// pass config to Kuber to carry out kubectl tasks
+//callKuber passes config to Kuber to apply any additional resources via kubectl
 func callKuber(desiredState *pb.Project) (*pb.Project, error) {
 	cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL)
 	if err != nil {
@@ -166,7 +166,7 @@ func callKuber(desiredState *pb.Project) (*pb.Project, error) {
 	return resStorage.GetDesiredState(), nil
 }
 
-// function saveErrorMessage saves error message to config
+// saveErrorMessage saves error message to config
 func saveErrorMessage(config *pb.Config, c pb.ContextBoxServiceClient, err error) error {
 	config.CurrentState = config.DesiredState // Update currentState, so we can use it for deletion later
 	config.ErrorMessage = err.Error()

@@ -1,5 +1,23 @@
 package main
 
+/*
+How operations with the nodes work:
+
+We can have three cases of a operation within the input manifest
+
+- just addition of a nodes
+  - the config is processed right away
+
+- just deletion of a nodes
+  - firstly, the nodes are deleted from the cluster (via kubectl)
+  - secondly, the config is  processed which will delete the nodes from infra
+
+- addition AND deletion of the nodes
+  - firstly the tmpConfig is applied, which will only add nodes into the cluster
+  - secondly, the nodes are deleted from the cluster (via kubectl)
+  - lastly, the config is processed, which will delete the nodes from infra
+*/
+
 import (
 	"fmt"
 
@@ -18,11 +36,7 @@ type nodeCount struct {
 	Count uint32
 }
 
-// configProcessor takes in cbox client to receive the configs.
-// It then calculated the changes that needs to be done in order
-// to see if nodes needs to be deleted or added or both. It also
-// create a tempConfig to divide the addition and deletion of nodes
-// into two steps and call respective functions.
+// configProcessor will process the config in a concurrent manner
 func configProcessor(c pb.ContextBoxServiceClient) func() error {
 	return func() error {
 		res, err := cbox.GetConfigBuilder(c) // Get a new config
@@ -115,6 +129,7 @@ func stateDifference(config *pb.Config) (*pb.Config, map[string]*nodepoolsCounts
 	}
 }
 
+//getNodepoolMap returns a map in a form of map[ClusterName]nodecount{map[NodepoolName]count}
 func getNodepoolMap(clusters []*pb.K8Scluster) map[string]*nodepoolsCounts {
 	nodepoolMap := make(map[string]*nodepoolsCounts)
 	for _, cluster := range clusters {
@@ -127,6 +142,9 @@ func getNodepoolMap(clusters []*pb.K8Scluster) map[string]*nodepoolsCounts {
 	return nodepoolMap
 }
 
+//findNodepoolDifference will find any difference in nodepool between desired state and current
+//this function should be used only with tmpConfig, since it will augment the desired state in a way, that will not delete the nodes
+//returns count of nodes to delete in form of map[NodepoolName]counts,and booleans about deletion and addition of any nodes
 func findNodepoolDifference(currentNodepoolMap map[string]*nodepoolsCounts, desiredClusterTmp *pb.K8Scluster) (result *nodepoolsCounts, adding bool, deleting bool) {
 	nodepoolCountToDelete := make(map[string]*nodeCount)
 	//iterate over nodepools in desired cluster
@@ -159,6 +177,8 @@ func findNodepoolDifference(currentNodepoolMap map[string]*nodepoolsCounts, desi
 	return result, adding, deleting
 }
 
+//mergeDeleteCounts function will merge two maps which hold info about deletion of the nodes into one
+//return map of the nodes for deletion in for of map[ClusterName]nodecount{map[NodepoolName]count}
 func mergeDeleteCounts(dst, src map[string]*nodeCount) map[string]*nodeCount {
 	for k, v := range src {
 		dst[k] = v
