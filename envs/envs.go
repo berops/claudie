@@ -15,11 +15,11 @@ var (
 	//ContextBoxURL is a listening URL for ContextBox module
 	ContextBoxURL = os.Getenv("CONTEXT_BOX_HOSTNAME") + ":" + os.Getenv("CONTEXT_BOX_PORT")
 	//DatabaseURL is a listening URL for Database
-	DatabaseURL = os.Getenv("DATABASE_HOSTNAME") + ":" + os.Getenv("DATABASE_PORT")
+	DatabaseURL = "mongodb://" + os.Getenv("DATABASE_USERNAME") + ":" + os.Getenv("DATABASE_PASSWORD") + "@" + os.Getenv("DATABASE_HOSTNAME") + ":" + os.Getenv("DATABASE_PORT")
 	//KuberURL is a listening URL for Kuber module
 	KuberURL = os.Getenv("KUBER_HOSTNAME") + ":" + os.Getenv("KUBER_PORT")
 	//MinioURL is a listening URL for Minio deployment
-	MinioURL = os.Getenv("MINIO_HOSTNAME") + ":" + os.Getenv("MINIO_PORT")
+	MinioURL = "http://" + os.Getenv("MINIO_HOSTNAME") + ":" + os.Getenv("MINIO_PORT")
 	//MinioAccessKey for backend
 	MinioAccessKey = os.Getenv("MINIO_ROOT_USER")
 	//MinioSecretKey for backend
