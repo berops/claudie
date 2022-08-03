@@ -22,6 +22,49 @@ resource "hcloud_ssh_key" "platform" {
   public_key = file("./public.pem")
 }
 
+resource "hcloud_firewall" "firewall" {
+  provider     = hcloud.lb-nodepool
+  name = "{{ $clusterName }}-{{ $clusterHash }}-firewall"
+  rule {
+    direction = "in"
+    protocol  = "icmp"
+    source_ips = [
+      "0.0.0.0/0",
+      "::/0"
+    ]
+  }
+
+  rule {
+    direction = "in"
+    protocol  = "tcp"
+    port      = "22"
+    source_ips = [
+      "0.0.0.0/0",
+      "::/0"
+    ]
+  }
+
+  rule {
+    direction = "in"
+    protocol  = "tcp"
+    port      = "6443"
+    source_ips = [
+      "0.0.0.0/0",
+      "::/0"
+    ]
+  }
+
+  rule {
+    direction = "in"
+    protocol  = "udp"
+    port      = "51820"
+    source_ips = [
+      "0.0.0.0/0",
+      "::/0"
+    ]
+  }
+}
+
 
 {{range $nodepool := .NodePools}}
 

@@ -1,0 +1,144 @@
+name: ExampleManifest
+
+# providers field is used for defining the providers
+# Currently, claudie supports hetzner and gcp only
+providers:
+  - name: hetzner
+    credentials: abcdefgh123456
+  - name: gcp
+    credentials: '{"type": service-account, "project_id": ....}'
+    gcp_project: project-id
+
+# nodepools field is used for defining the nodepool spec
+# you can think of them as a blueprints, not actual nodepools that will be created
+nodePools:
+  # dynamic nodepools are created by claudie 
+  dynamic:
+      # control nodes
+    - name: control-hetzner # name of the nodepool
+      provider:             # provider spec
+        hetzner:            # use provider name define in providers section
+          region: nbg1
+          zone: nbg1-dc3
+      count: 3              # number of nodes in node pool
+      server_type: cpx11
+      image: ubuntu-20.04   # OS image
+      disk_size: 50         # size of the disk
+      # compute nodes
+    - name: compute-hetzner
+      provider:
+        hetzner:
+          region: nbg1
+          zone: nbg1-dc3
+      count: 2
+      server_type: cpx11
+      image: ubuntu-20.04
+      disk_size: 50
+    - name: control-gcp
+      provider:
+        gcp:
+          region: europe-west1
+          zone: europe-west1-c
+      count: 3
+      server_type: e2-medium
+      image: ubuntu-os-cloud/ubuntu-2004-focal-v20220610
+      disk_size: 50
+    - name: compute-gcp
+      provider:
+        gcp:
+          region: europe-west1
+          zone: europe-west1-c
+      count: 2
+      server_type: e2-small
+      image: ubuntu-os-cloud/ubuntu-2004-focal-v20220610
+      disk_size: 50
+      # loadbalancer nodes
+    - name: loadbalancer-1
+      provider:
+        gcp:
+          region: europe-west1
+          zone: europe-west1-c
+      count: 2
+      server_type: e2-small
+      image: ubuntu-os-cloud/ubuntu-2004-focal-v20220610
+      disk_size: 50
+    - name: loadbalancer-2
+      provider:
+        hetzner:
+          region: nbg1
+          zone: nbg1-dc3
+      count: 2
+      server_type: cpx11
+      image: ubuntu-20.04
+      disk_size: 50
+
+# kubernetes field is used to define the k8s clusters
+# here we define two clusters, dev and prod
+kubernetes:
+  clusters:
+    # dev cluster
+    - name: dev-cluster
+      version: v1.21.0        # kubernetes version must be supported by kubeone
+      network: 192.168.2.0/24 # private network range
+      # pools define what type of machines cluster will use
+      # only pools metioned here will get created 
+      pools:
+        control:
+          - control-hetzner
+        compute:
+          - compute-hetzner
+    # prod cluster      
+    - name: prod-cluster
+      version: v1.21.0
+      network: 192.168.2.0/24
+      # we can reuse same nodepool spec and claudie will create new nodes
+      pools:
+        control:
+          - control-hetzner
+          - control-gcp
+        compute:
+          - compute-hetzner
+          - compute-gcp
+
+# loadbalancers field defines loadbalncers used for the k8s clusters
+loadBalancers:
+  # roles define loadbalancer roles 
+  roles:
+    # here, we define api server loadbalancer, but you can also define ingress loadbalancer
+    - name: apiserver
+      protocol: tcp
+      # incoming port
+      port: 6443
+      # forwarded port
+      target_port: 6443
+      # tageted nodes
+      # can be k8sControlPlane, k8sComputePlane or k8sAllNodes
+      target: k8sControlPlane
+  # Here we define actual loadbalancer clusters
+  clusters:
+    # api server lb for dev cluster
+    - name: apiserver-lb-dev
+      roles:
+        - apiserver
+      # dns spec where claudie will create DNS records for LB
+      dns:
+        dns_zone: dns-zone
+        project: project-id
+        #hostname: #left empty means the Claudie will create random hash as a hostname
+      # name of targeted k8s cluster
+      targeted-k8s: dev-cluster
+      # nodepools for loadbalancer
+      pools:
+        - loadbalancer-1
+    - name: apiserver-lb-prod
+      roles:
+        - apiserver
+      dns:
+        dns_zone: dns-zone
+        project: project-id
+        # this hostname will be used for DNS records
+        # keep in mind that DNS zone will be included
+        hostname: my.fancy.url
+      targeted-k8s: prod-cluster
+      pools:
+        - loadbalancer-2

@@ -1,4 +1,4 @@
-package kubeEleven
+package kubeElevenClient
 
 import (
 	"context"

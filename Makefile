@@ -5,10 +5,10 @@ gen:
 	protoc  --go-grpc_out=. --go_out=. proto/*.proto
 
 contextbox:
-	go run services/context-box/server/server.go
+	go run ./services/context-box/server
 
 scheduler:
-	go run services/scheduler/scheduler.go
+	go run ./services/scheduler
 
 builder:
 	go run ./services/builder
