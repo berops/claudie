@@ -1,7 +1,10 @@
 package utils
 
 import (
+	"strings"
+
 	"github.com/Berops/platform/proto/pb"
+	"github.com/rs/zerolog/log"
 )
 
 // GetClusterByName will return Cluster that will have same name as specified in parameters
@@ -45,4 +48,17 @@ func GroupNodepoolsByProvider(clusterInfo *pb.ClusterInfo) map[string][]*pb.Node
 		sortedNodePools[nodepool.Provider.Name] = append(sortedNodePools[nodepool.Provider.Name], nodepool)
 	}
 	return sortedNodePools
+}
+
+// findName will return a real node name based on the user defined one
+// this is needed in case of e.g. GCP, where nodes have some info appended to their which cannot be read from terraform output
+// example: gcp-control-1 -> gcp-control-1.c.project.id
+func FindName(realNames []string, name string) string {
+	for _, n := range realNames {
+		if strings.Contains(n, name) {
+			return n
+		}
+	}
+	log.Error().Msgf("Error: no real name found for %s", name)
+	return ""
 }

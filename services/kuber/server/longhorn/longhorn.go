@@ -66,7 +66,7 @@ func (l Longhorn) SetUp() error {
 				for _, node := range nodepool.Nodes {
 					// add tag to the node via kubectl annotate, use --overwrite to avoid getting error of already tagged node
 					annotation := fmt.Sprintf("node.longhorn.io/default-node-tags='[\"%s\"]' --overwrite", zoneName)
-					realNodeName := findName(realNodeNames, node.Name)
+					realNodeName := utils.FindName(realNodeNames, node.Name)
 					err := kubectl.KubectlAnnotate("node", realNodeName, annotation)
 					if err != nil {
 						return fmt.Errorf("error while tagging the node %s via kubectl annotate : %v", realNodeName, err)
@@ -109,17 +109,4 @@ func getRealNodeNames(nodeInfo []byte) []string {
 		nodeNames = append(nodeNames, fields[0])
 	}
 	return nodeNames
-}
-
-// findName will return a real node name based on the user defined one
-// this is needed in case of GCP, where nodes have some info appended to their which cannot be read from terraform output
-// example: gcp-control-1 -> gcp-control-1.c.project.id
-func findName(realNames []string, name string) string {
-	for _, n := range realNames {
-		if strings.Contains(n, name) {
-			return n
-		}
-	}
-	log.Error().Msgf("Error: no real name found for %s", name)
-	return ""
 }
