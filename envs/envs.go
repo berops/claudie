@@ -45,13 +45,13 @@ func init() {
 	if ContextBoxURL == ":" {
 		ContextBoxURL = "localhost:50055"
 	}
-	if DatabaseURL == ":" {
+	if DatabaseURL == "mongodb://:@:" {
 		DatabaseURL = "mongodb://localhost:27017"
 	}
 	if KuberURL == ":" {
 		KuberURL = "localhost:50057"
 	}
-	if MinioURL == ":" {
+	if MinioURL == "http://:" {
 		MinioURL = "http://localhost:9000"
 	}
 	if MinioAccessKey == "" {
