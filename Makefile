@@ -11,7 +11,7 @@ scheduler:
 	go run ./services/scheduler
 
 builder:
-	go run services/builder/builder.go
+	go run ./services/builder
 
 terraformer:
 	go run services/terraformer/server/server.go 
