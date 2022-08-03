@@ -3,11 +3,11 @@ package manifest
 ////////////////////YAML STRUCT//////////////////////////////////////////////////
 
 type Manifest struct {
-	Name         string       `yaml:"name"`
-	Providers    []Provider   `yaml:"providers"`
-	NodePools    NodePool     `yaml:"nodePools"`
-	Kubernetes   Kubernetes   `yaml:"kubernetes"`
-	LoadBalancer LoadBalancer `yaml:"loadBalancers"`
+	Name         string              `yaml:"name"`
+	Providers    map[string]Provider `yaml:"providers"`
+	NodePools    NodePool            `yaml:"nodePools"`
+	Kubernetes   Kubernetes          `yaml:"kubernetes"`
+	LoadBalancer LoadBalancer        `yaml:"loadBalancers"`
 }
 
 type Provider struct {
@@ -31,12 +31,18 @@ type Kubernetes struct {
 }
 
 type DynamicNodePool struct {
-	Name       string                       `yaml:"name"`
-	Provider   map[string]map[string]string `yaml:"provider"`
-	Count      int64                        `yaml:"count"`
-	ServerType string                       `yaml:"server_type"`
-	Image      string                       `yaml:"image"`
-	DiskSize   int64                        `yaml:"disk_size"`
+	Name         string       `yaml:"name"`
+	ProviderSpec ProviderSpec `yaml:"providerSpec"`
+	Count        int64        `yaml:"count"`
+	ServerType   string       `yaml:"server_type"`
+	Image        string       `yaml:"image"`
+	DiskSize     int64        `yaml:"disk_size"`
+}
+
+type ProviderSpec struct {
+	Name   string `yaml:"name"`
+	Region string `yaml:"region"`
+	Zone   string `yaml:"zone"`
 }
 
 type StaticNodePool struct {
