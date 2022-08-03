@@ -30,7 +30,18 @@ spec:
             memory: 100Mi
           limits:
             cpu: 35m
-            memory: 200Mi
+            memory: 200M
+        env:
+          - name: MONGO_INITDB_ROOT_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: mongo-secret
+                key: MONGO_INITDB_ROOT_USERNAME
+          - name: MONGO_INITDB_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mongo-secret
+                key: MONGO_INITDB_ROOT_PASSWORD
         ports:
         - containerPort: 27017  
 ---
