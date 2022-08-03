@@ -44,7 +44,7 @@ func (l Longhorn) SetUp() error {
 	if err != nil {
 		return fmt.Errorf("error while getting existing storage classes for %s : %v", l.Cluster.ClusterInfo.Name, err)
 	}
-	//save "created" sc so we can find a difference and remove the old ones
+	//save applied sc so we can find a difference with existing ones and remove the redundant ones
 	var appliedSC []string
 
 	//load the templates
