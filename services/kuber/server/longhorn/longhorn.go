@@ -28,6 +28,8 @@ type zoneData struct {
 const (
 	longhornYaml       = "services/kuber/server/manifests/longhorn.yaml"
 	storageManifestTpl = "storage-class.goyaml"
+	defaultSC          = "longhorn"
+	claudieLabel       = "claudie.io/storage-class"
 )
 
 // SetUp function will set up the longhorn on the k8s cluster saved in l.Longhorn
@@ -128,9 +130,13 @@ func (l *Longhorn) getStorageClasses(kc kubectl.Kubectl) (result []string, err e
 		Metadata   map[string]interface{}   `json:"metadata"`
 	}
 	//get existing storage classes
-	out, err := kc.KubectlGet("sc", "")
+	out, err := kc.KubectlGet("sc -o json", "")
 	if err != nil {
 		return nil, err
+	}
+	//no storage class defined yet
+	if strings.Contains(string(out), "No resources found") {
+		return result, nil
 	}
 	//parse output
 	var parsedJson KubectlOutputJSON
@@ -142,7 +148,13 @@ func (l *Longhorn) getStorageClasses(kc kubectl.Kubectl) (result []string, err e
 	for _, sc := range parsedJson.Items {
 		metadata := sc["metadata"].(map[string]interface{})
 		name := metadata["name"].(string)
-		result = append(result, name)
+		//check if storage class has a claudie label
+		if labels, ok := metadata["labels"]; ok {
+			labelsMap := labels.(map[string]interface{})
+			if _, ok := labelsMap[claudieLabel]; ok {
+				result = append(result, name)
+			}
+		}
 	}
 	return result, nil
 }
@@ -150,6 +162,10 @@ func (l *Longhorn) getStorageClasses(kc kubectl.Kubectl) (result []string, err e
 //deleteOldStorageClasses deletes storage classes, which does not have a worker nodes behind it
 func (l *Longhorn) deleteOldStorageClasses(existing, applied []string, kc kubectl.Kubectl) error {
 	for _, ex := range existing {
+		if ex == defaultSC {
+			//ignore the default sc
+			continue
+		}
 		found := false
 		for _, app := range applied {
 			if ex == app {
@@ -157,7 +173,8 @@ func (l *Longhorn) deleteOldStorageClasses(existing, applied []string, kc kubect
 				break
 			}
 		}
-		if found {
+		//if not found in applied, delete the sc
+		if !found {
 			err := kc.KubectlDeleteResource("sc", ex, "")
 			log.Info().Msgf("Deleting storage class %s", ex)
 			if err != nil {
