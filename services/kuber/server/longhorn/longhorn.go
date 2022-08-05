@@ -139,13 +139,13 @@ func (l *Longhorn) getStorageClasses(kc kubectl.Kubectl) (result []string, err e
 		return result, nil
 	}
 	//parse output
-	var parsedJson KubectlOutputJSON
-	err = json.Unmarshal(out, &parsedJson)
+	var parsedJSON KubectlOutputJSON
+	err = json.Unmarshal(out, &parsedJSON)
 	if err != nil {
 		return nil, err
 	}
 	//return name of the storage classes
-	for _, sc := range parsedJson.Items {
+	for _, sc := range parsedJSON.Items {
 		metadata := sc["metadata"].(map[string]interface{})
 		name := metadata["name"].(string)
 		//check if storage class has a claudie label
