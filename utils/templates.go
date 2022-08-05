@@ -11,11 +11,11 @@ import (
 )
 
 const (
-	baseDirectory         = "." //NOTE: left it here since it might be changed later
-	TerraformerTemplates  = "services/terraformer/templates"
-	WireguardianTemplates = "services/wireguardian/server"
-	KuberTemplates        = "services/kuber/templates"
-	KubeElevenTemplates   = "services/kube-eleven/server/templates"
+	baseDirectory        = "." //NOTE: left it here since it might be changed later
+	TerraformerTemplates = "services/terraformer/templates"
+	AnsiblerTemplates    = "services/ansibler/server/templates"
+	KuberTemplates       = "services/kuber/templates"
+	KubeElevenTemplates  = "services/kube-eleven/server/templates"
 )
 
 // directory - output directory
@@ -24,7 +24,7 @@ type Templates struct {
 	Directory string
 }
 
-// directory - output directory
+// directory - template directory
 // MUST be relative to base directory, i.e. services/terraformer/etc
 type TemplateLoader struct {
 	Directory string
