@@ -4,8 +4,6 @@ items:
   apiVersion: storage.k8s.io/v1
   kind: StorageClass
   metadata:
-    label:
-      
     annotations:
       longhorn.io/last-applied-configmap: |
         kind: StorageClass
