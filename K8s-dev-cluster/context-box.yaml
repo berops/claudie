@@ -36,6 +36,16 @@ spec:
             configMapKeyRef:
               name: env
               key: DATABASE_HOSTNAME
+        - name: DATABASE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: MONGO_INITDB_ROOT_USERNAME
+        - name: DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: MONGO_INITDB_ROOT_PASSWORD
         - name: CONTEXT_BOX_PORT
           valueFrom:
             configMapKeyRef:
