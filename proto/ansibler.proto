@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package platform;
+
+import "proto/config.proto";
+
+
+option go_package = "proto/pb";
+
+message InstallRequest { 
+  Project desiredState = 1;
+  Project currentState = 2; 
+}
+message InstallResponse {
+  Project desiredState = 1;
+}
+
+message SetUpLBRequest { 
+  Project desiredState = 1;
+  Project currentState = 2; 
+}
+message SetUpLBResponse {
+  Project desiredState = 1;
+}
+
+service AnsiblerService {
+  rpc InstallNodeRequirements(InstallRequest) returns (InstallResponse);
+  rpc InstallVPN(InstallRequest) returns (InstallResponse);
+  rpc SetUpLoadbalancers(SetUpLBRequest) returns (SetUpLBResponse);
+}
