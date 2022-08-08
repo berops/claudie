@@ -10,7 +10,7 @@ Manifest is a definition of the user's infrastructure. It contains cloud provide
 
 - `providers` [Provider](#providers)
 
-  List of Cloud providers used for the infrastructure. Includes DNS provider, Nodepool provider, etc.
+  Map of Cloud providers used for the infrastructure. The cloud provider name is the key of the map with list [Provider specs](#provider-spec). Includes DNS provider, Nodepool provider, etc.
 
 - `nodepools` [Nodepools](#nodepools)
 
@@ -24,13 +24,13 @@ Manifest is a definition of the user's infrastructure. It contains cloud provide
 
   List of loadbalancer clusters the Kubernetes clusters may use.
 
-## Provider [NEEDS REWORK]
+## Provider Spec 
 
 Collection of data defining a used cloud provider, like Hetzner or GCP.
 
 - `name`
 
-  Name of the provider. Used as a reference further in the input manifest.
+  Name of the provider spec. Used as a reference further in the input manifest.
 
 - `credentials`
 
@@ -61,9 +61,9 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
   Name of the nodepool. Each nodepool will have a random hash appended to the name, so the whole name will be of format `<name>-<hash>`.
 
-- `provider`
+- `provideSpec`
 
-  Provider of the nodepool [NEEDS REWORK]
+  Provider Spec of the nodepool.
 
 - `count`
 
@@ -189,9 +189,9 @@ Collection of data Claudie uses to create a DNS record for the loadbalancer.
 
   DNS zone inside of which the records will be created. For now, only a GCP DNS zone is accepted, thus making definition of the GCP provider necessary.
 
-- `project`
+- `provider`
 
-  [NEEDS REWORK]  
+  Provider spec to be used for DNS.
 
 - `hostname`
   
