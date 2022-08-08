@@ -9,6 +9,7 @@ import (
 
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/services/terraformer/server/backend"
+	"github.com/Berops/platform/services/terraformer/server/provider"
 	"github.com/Berops/platform/services/terraformer/server/terraform"
 	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
@@ -119,6 +120,14 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	if err != nil {
 		return err
 	}
+
+	// generate Providers terraform configuration
+
+	providers := provider.Provider{ProjectName: c.ProjectName, ClusterName: clusterID, Directory: clusterDir}
+	err = providers.CreateProvider()
+	if err != nil {
+		return err
+	}
 	// generate .tf files for nodepools
 	var clusterInfo *pb.ClusterInfo
 	template := utils.Templates{Directory: clusterDir}
@@ -132,28 +141,34 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 
 	tplType := getTplFile(c.ClusterType)
 	//sort nodepools by a provider
-	sortedNodePools := utils.GroupNodepoolsByProvider(clusterInfo)
-	for providerName, nodepools := range sortedNodePools {
+	sortedNodePools := utils.GroupNodepoolsByProviderSpecName(clusterInfo)
+	for providerSpecName, nodepools := range sortedNodePools {
 		nodepoolData := NodepoolsData{
 			NodePools:   nodepools,
 			ClusterName: clusterInfo.Name,
 			ClusterHash: clusterInfo.Hash,
 		}
-		tpl, err := templateLoader.LoadTemplate(fmt.Sprintf("%s%s", providerName, tplType))
+
+		// Load TF files of the specific cloud provider
+		tpl, err := templateLoader.LoadTemplate(fmt.Sprintf("%s%s", nodepools[0].Provider.CloudProviderName, tplType))
 		if err != nil {
 			return fmt.Errorf("error while parsing template file backend.tpl: %v", err)
 		}
-		err = template.Generate(tpl, fmt.Sprintf("%s-%s.tf", clusterID, providerName), nodepoolData)
+
+		// Parse the templates and create Tf files
+		err = template.Generate(tpl, fmt.Sprintf("%s-%s.tf", clusterID, providerSpecName), nodepoolData)
 		if err != nil {
 			return fmt.Errorf("error while generating .tf files : %v", err)
 		}
+
 		// Create publicKey file for a cluster
 		if err := utils.CreateKeyFile(clusterInfo.PublicKey, clusterDir, "public.pem"); err != nil {
 			log.Error().Msgf("Error creating key file: %v", err)
 			return err
 		}
+
 		// save keys
-		if err = utils.CreateKeyFile(nodepools[0].Provider.Credentials, clusterDir, providerName); err != nil {
+		if err = utils.CreateKeyFile(nodepools[0].Provider.Credentials, clusterDir, providerSpecName); err != nil {
 			log.Error().Msgf("Error creating provider credential key file: %v", err)
 			return err
 		}

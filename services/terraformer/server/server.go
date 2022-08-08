@@ -75,7 +75,7 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 			errGroup.Go(func() error {
 				err := c.Build()
 				if err != nil {
-					log.Error().Msgf("error encountered in Terraformer - DestroyInfrastructure: %v", err)
+					log.Error().Msgf("error encountered in Terraformer - BuildInfrastructure: %v", err)
 					return err
 				}
 				return nil
