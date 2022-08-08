@@ -29,7 +29,7 @@ images:
 - name: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven
   newTag: c671566-549
 - name: eu.gcr.io/platform-infrastructure-316112/platform/kuber
-  newTag: b3b6484-585
+  newTag: c804dcd-591
 - name: eu.gcr.io/platform-infrastructure-316112/platform/scheduler
   newTag: c0b11e5-546
 - name: eu.gcr.io/platform-infrastructure-316112/platform/terraformer
