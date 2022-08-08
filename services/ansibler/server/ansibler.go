@@ -1,14 +1,18 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/utils"
 )
 
 const (
-	baseDirectory      = "services/ansibler/server"
-	inventoryFile      = "inventory.ini"
-	nodesInventoryFile = "all-node-inventory.goini"
+	baseDirectory         = "services/ansibler/server"
+	inventoryFile         = "inventory.ini"
+	nodesInventoryFileTpl = "all-node-inventory.goini"
+	outputDirectory       = "clusters"
+	privateKeyExt         = "pem"
 )
 
 type NodepoolInfo struct {
@@ -30,12 +34,12 @@ func generateInventoryFile(inventoryTemplate, directory string, data interface{}
 	templateLoader := utils.TemplateLoader{Directory: utils.AnsiblerTemplates}
 	tpl, err := templateLoader.LoadTemplate(inventoryTemplate)
 	if err != nil {
-		return err
+		return fmt.Errorf("error while loading template %s : %v", inventoryTemplate, err)
 	}
 	template := utils.Templates{Directory: directory}
 	err = template.Generate(tpl, inventoryFile, data)
 	if err != nil {
-		return err
+		return fmt.Errorf("error while generating from template %s : %v", inventoryTemplate, err)
 	}
 	return nil
 }

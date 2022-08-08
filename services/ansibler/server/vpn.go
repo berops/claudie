@@ -48,13 +48,13 @@ func installWireguardVPN(vpnNodepools map[string]*VPNInfo) error {
 					}
 				}
 				//generate inventory
-				err = generateInventoryFile(nodesInventoryFile, directory, AllNodesInventoryData{NodepoolInfos: vpnInfo.NodepoolInfo})
+				err = generateInventoryFile(nodesInventoryFileTpl, directory, AllNodesInventoryData{NodepoolInfos: vpnInfo.NodepoolInfo})
 				if err != nil {
 					return err
 				}
 				//start ansible playbook
 				ansible := ansible.Ansible{Playbook: wireguardPlaybook, Inventory: inventoryFile, Directory: directory}
-				err = ansible.RunAnsiblePlaybook(directory)
+				err = ansible.RunAnsiblePlaybook(fmt.Sprintf("VPN - %s", directory))
 				if err != nil {
 					return err
 				}

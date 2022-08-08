@@ -10,9 +10,7 @@ import (
 )
 
 const (
-	longhornReq     = "../../ansible-playbooks/longhorn-req.yml"
-	outputDirectory = "clusters"
-	privateKeyExt   = "pem"
+	longhornReq = "../../ansible-playbooks/longhorn-req.yml"
 )
 
 func installLonghornRequirements(k8sNodepools []*NodepoolInfo) error {
@@ -31,15 +29,15 @@ func installLonghornRequirements(k8sNodepools []*NodepoolInfo) error {
 		}
 	}
 	//generate inventory file
-	err := generateInventoryFile(nodesInventoryFile, directory, AllNodesInventoryData{NodepoolInfos: k8sNodepools})
+	err := generateInventoryFile(nodesInventoryFileTpl, directory, AllNodesInventoryData{NodepoolInfos: k8sNodepools})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to generate inventory file for all nodes : %v", err)
 	}
 	//run playbook
 	ansible := ansible.Ansible{Playbook: longhornReq, Inventory: inventoryFile, Directory: directory}
-	err = ansible.RunAnsiblePlaybook(fmt.Sprintf("ALL NODES - %s", directory))
+	err = ansible.RunAnsiblePlaybook(fmt.Sprintf("ALL - %s", directory))
 	if err != nil {
-		return err
+		return fmt.Errorf("error while running ansible to install Longhorn requirements : %v", err)
 	}
 	//Clean up
 	if err := os.RemoveAll(directory); err != nil {
