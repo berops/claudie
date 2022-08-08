@@ -74,7 +74,7 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 }
 
 //readManifest will read manifest from config and return it in manifest.Manifest struct
-//returns *manifest.Manifest if sucessful, error otherwise
+//returns *manifest.Manifest if successful, error otherwise
 func readManifest(config *pb.Config) (*manifest.Manifest, error) {
 	d := []byte(config.GetManifest())
 	// Parse yaml to protobuf and create desiredState
@@ -97,74 +97,7 @@ func updateClusterInfo(desired, current *pb.ClusterInfo) {
 	desired.PrivateKey = current.PrivateKey
 }
 
-// createNodepools will create a pb.Nodepool structs based on the manifest specification
-// returns error if nodepool/provider not defined, nil otherwise
-func createNodepools(pools []string, desiredState *manifest.Manifest, isControl bool) ([]*pb.NodePool, error) {
-	var nodePools []*pb.NodePool
-	for _, nodePoolName := range pools {
-		// Check if the nodepool is part of the cluster
-		nodePool := findNodePool(nodePoolName, desiredState.NodePools.Dynamic)
-		if nodePool != nil {
-			providerName, region, zone := getProviderRegionAndZone(nodePool.Provider)
-			provider := findProvider(providerName, desiredState.Providers)
-			if provider == nil {
-				return nil, fmt.Errorf("provider %s not defined", providerName)
-			}
-			nodePools = append(nodePools, &pb.NodePool{
-				Name:       nodePool.Name,
-				Region:     region,
-				Zone:       zone,
-				ServerType: nodePool.ServerType,
-				Image:      nodePool.Image,
-				DiskSize:   uint32(nodePool.DiskSize),
-				Count:      uint32(nodePool.Count),
-				Provider: &pb.Provider{
-					Name:        provider.Name,
-					Credentials: fmt.Sprint(provider.Credentials),
-					Project:     provider.GCPProject,
-				},
-				IsControl: isControl,
-			})
-		} else {
-			return nil, fmt.Errorf("nodepool %s not defined", nodePoolName)
-		}
-	}
-	return nodePools, nil
-}
-
-//getProviderRegionAndZone will return a provider name, region and zone based on the value read from manifest
-func getProviderRegionAndZone(providerMap map[string]map[string]string) (string, string, string) {
-	var providerName string
-	//since we cannot retrieve a key from a map without a loop in go and we know first map will have just one key,
-	//we can find provider name by calling range on the first map
-	for providerName = range providerMap {
-	}
-	return providerName, providerMap[providerName]["region"], providerMap[providerName]["zone"]
-}
-
-//findNodePool will search for the nodepool in manifest.DynamicNodePool based on the nodepool name
-//returns *manifest.DynamicNodePool if found, nil otherwise
-func findNodePool(nodePoolName string, nodePools []manifest.DynamicNodePool) *manifest.DynamicNodePool {
-	for _, nodePool := range nodePools {
-		if nodePool.Name == nodePoolName {
-			return &nodePool
-		}
-	}
-	return nil
-}
-
-//findProvider will search for the provider in manifest.Provider based on the provider name
-//returns *manifest.Provider if found, nil otherwise
-func findProvider(providerName string, providers []manifest.Provider) *manifest.Provider {
-	for _, provider := range providers {
-		if provider.Name == providerName {
-			return &provider
-		}
-	}
-	return nil
-}
-
-//createKeys will create a RSA keypair and save it into the clusterInfo provided
+//createKeys will create a RSA key-pair and save it into the clusterInfo provided
 //return error if key creation fails
 func createKeys(desiredInfo *pb.ClusterInfo) error {
 	// no current cluster found with matching name, create keys/hash
