@@ -18,7 +18,7 @@ type Provider struct {
 type GCP struct {
 	Name        string `yaml:"name"`
 	Credentials string `yaml:"credentials"`
-	GCP_Project string `yaml:"gcp_project"`
+	GCPProject  string `yaml:"gcp_project"`
 }
 
 type Hetzner struct {

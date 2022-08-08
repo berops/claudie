@@ -14,7 +14,7 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
 			return &pb.Provider{
 				SpecName:          gcpConf.Name,
 				Credentials:       gcpConf.Credentials,
-				GcpProject:        gcpConf.GCP_Project,
+				GcpProject:        gcpConf.GCPProject,
 				CloudProviderName: "gcp",
 			}, nil
 		}
