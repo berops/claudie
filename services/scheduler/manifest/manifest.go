@@ -3,17 +3,27 @@ package manifest
 ////////////////////YAML STRUCT//////////////////////////////////////////////////
 
 type Manifest struct {
-	Name         string              `yaml:"name"`
-	Providers    map[string]Provider `yaml:"providers"`
-	NodePools    NodePool            `yaml:"nodePools"`
-	Kubernetes   Kubernetes          `yaml:"kubernetes"`
-	LoadBalancer LoadBalancer        `yaml:"loadBalancers"`
+	Name         string       `yaml:"name"`
+	Providers    Provider     `yaml:"providers"`
+	NodePools    NodePool     `yaml:"nodePools"`
+	Kubernetes   Kubernetes   `yaml:"kubernetes"`
+	LoadBalancer LoadBalancer `yaml:"loadBalancers"`
 }
 
 type Provider struct {
-	Name        string      `yaml:"name"`
-	Credentials interface{} `yaml:"credentials"`
-	GCPProject  string      `yaml:"gcp_project,omitempty"`
+	GCP     []GCP     `yaml:"gcp"`
+	Hetzner []Hetzner `yaml:"hetzner"`
+}
+
+type GCP struct {
+	Name        string `yaml:"name"`
+	Credentials string `yaml:"credentials"`
+	GCP_Project string `yaml:"gcp_project"`
+}
+
+type Hetzner struct {
+	Name        string `yaml:"name"`
+	Credentials string `yaml:"credentials"`
 }
 
 type NodePool struct {
@@ -85,7 +95,7 @@ type LoadBalancerCluster struct {
 
 type DNS struct {
 	DNSZone  string `yaml:"dns_zone,omitempty"`
-	Project  string `yaml:"project,omitempty"`
+	Provider string `yaml:"provider,omitempty"`
 	Hostname string `yaml:"hostname,omitempty"`
 }
 
