@@ -3,10 +3,10 @@
 {{$index :=  0}}
 
 provider "google" {
-  credentials = "${file("{{(index .NodePools $index).Provider.Name}}")}"
-  region  = "{{(index .NodePools 0).Region}}"
-  project = "{{(index .NodePools 0).Provider.Project}}"
-  alias   = "lb-nodepool"
+  credentials = "${file("{{(index .NodePools $index).Provider.SpecName}}")}"
+  region      = "{{(index .NodePools 0).Region}}"
+  project     = "{{(index .NodePools 0).Provider.GcpProject}}"
+  alias       = "lb-nodepool"
 }
 
 resource "google_compute_network" "network" {
