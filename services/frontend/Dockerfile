@@ -35,7 +35,7 @@ WORKDIR /go/services/frontend
 RUN CGO_ENABLED=0 go build
 
 #Use empty base image
-FROM scratch
+FROM alpine
 
 #Copy the binaries to empty base image
 COPY --from=build  /go/services/frontend /bin/services/frontend
@@ -43,5 +43,8 @@ COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
 COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Liveness
 
 WORKDIR /bin
+
+RUN apk add bash
+
 #Run server
 ENTRYPOINT [ "./services/frontend/frontend" ]
