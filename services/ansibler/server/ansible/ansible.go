@@ -47,6 +47,7 @@ func (a *Ansible) RunAnsiblePlaybook(prefix string) error {
 	return nil
 }
 
+//setEnv function will set environment variable to the environment before executing ansible
 func setEnv() error {
 	if err := os.Setenv("ANSIBLE_HOST_KEY_CHECKING", "False"); err != nil {
 		return fmt.Errorf("failed to set ANSIBLE_HOST_KEY_CHECKING env var: %v", err)

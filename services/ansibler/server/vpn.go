@@ -19,10 +19,12 @@ const (
 )
 
 type VPNInfo struct {
-	Network      string
-	NodepoolInfo []*NodepoolInfo
+	Network      string          //network range
+	NodepoolInfo []*NodepoolInfo //nodepools which will be inside the VPN
 }
 
+//installWireguardVPN takes a map of [k8sClusterName]*VPNInfo and sets up the wireguard vpn
+//return error if not successful, nil otherwise
 func installWireguardVPN(vpnNodepools map[string]*VPNInfo) error {
 	var errGroup errgroup.Group
 	for k8sClusterName, vpnInfo := range vpnNodepools {
@@ -71,7 +73,8 @@ func installWireguardVPN(vpnNodepools map[string]*VPNInfo) error {
 	return nil
 }
 
-// setPrivateAddresses will generate private ip addresses from network parameter
+// setPrivateAddresses will assign private ip addresses from network range
+//it will ignore the addresses which were previously assigned to an existing nodes
 func setPrivateAddresses(nodepools []*pb.NodePool, network string) error {
 	_, ipNet, err := net.ParseCIDR(network)
 	if err != nil {
@@ -110,6 +113,8 @@ func setPrivateAddresses(nodepools []*pb.NodePool, network string) error {
 	return nil
 }
 
+//remove removes a value from the given slice
+//if value not found in slice, returns original slice
 func remove(slice []byte, value byte) []byte {
 	for idx, v := range slice {
 		if v == value {
@@ -119,6 +124,7 @@ func remove(slice []byte, value byte) []byte {
 	return slice
 }
 
+//groupNodepool takes a nodepools from slice of Nodepool infos and return slice of all pb.Nodepools
 func groupNodepool(nodepoolInfo []*NodepoolInfo) []*pb.NodePool {
 	var nodepools []*pb.NodePool
 	for _, np := range nodepoolInfo {

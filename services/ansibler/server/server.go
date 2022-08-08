@@ -25,6 +25,7 @@ type server struct {
 	pb.UnimplementedAnsiblerServiceServer
 }
 
+//InstallNodeRequirements installs any requirements there are on all of the nodes
 func (*server) InstallNodeRequirements(_ context.Context, req *pb.InstallRequest) (*pb.InstallResponse, error) {
 	var k8sNodepools []*NodepoolInfo
 	//add k8s nodes to k8sNodepools
@@ -40,6 +41,7 @@ func (*server) InstallNodeRequirements(_ context.Context, req *pb.InstallRequest
 	return &pb.InstallResponse{DesiredState: req.DesiredState}, nil
 }
 
+//InstallVPN installs VPN between nodes in the k8s cluster and lb clusters
 func (*server) InstallVPN(_ context.Context, req *pb.InstallRequest) (*pb.InstallResponse, error) {
 	vpnNodepools := make(map[string]*VPNInfo) //[k8sClusterName][]nodepoolInfos
 	//add k8s nodepools to vpn nodepools
@@ -63,6 +65,7 @@ func (*server) InstallVPN(_ context.Context, req *pb.InstallRequest) (*pb.Instal
 	return &pb.InstallResponse{DesiredState: req.DesiredState}, nil
 }
 
+//SetUpLoadbalancers sets up the loadbalancers, DNS and verifies their configuration
 func (*server) SetUpLoadbalancers(_ context.Context, req *pb.SetUpLBRequest) (*pb.SetUpLBResponse, error) {
 	lbInfos := make(map[string]*LBInfo)             //[k8sClusterName]lbInfo
 	k8sNodepools := make(map[string][]*pb.NodePool) //[k8sClusterName][]nodepools
