@@ -17,7 +17,7 @@ spec:
       containers:
       - name: wireguardian
         imagePullPolicy: Always
-        image: eu.gcr.io/platform-infrastructure-316112/platform/wireguardian
+        image: eu.gcr.io/platform-infrastructure-316112/platform/ansibler
         resources:
           requests:
             cpu: 200m
