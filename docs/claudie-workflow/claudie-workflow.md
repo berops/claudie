@@ -8,7 +8,7 @@
 - [Scheduler](https://github.com/Berops/platform/tree/master/services/scheduler)
 - [Builder](https://github.com/Berops/platform/tree/master/services/builder)
 - [Terraformer](https://github.com/Berops/platform/tree/master/services/terraformer)
-- [Wireguardian](https://github.com/Berops/platform/tree/master/services/wireguardian)
+- [Ansibler](https://github.com/Berops/platform/tree/master/services/ansibler)
 - [Kube-eleven](https://github.com/Berops/platform/tree/master/services/kube-eleven)
 - [Kuber](https://github.com/Berops/platform/tree/master/services/kuber)
 - [Frontend](https://github.com/Berops/platform/tree/master/services/frontend)
@@ -89,7 +89,7 @@ This service is gRPC client, thus it does not provide any API
 
 
 ## Builder
-Builder aligns the current state of the infrastructure with the desired state. It calls methods on `terraformer`, `wireguardian`, `kube-eleven` and `kuber` in order to manage the infrastructure. Builder also takes care of deleting nodes from kubernetes cluster by finding difference between `desiredState` and `currentState`.
+Builder aligns the current state of the infrastructure with the desired state. It calls methods on `terraformer`, `ansibler`, `kube-eleven` and `kuber` in order to manage the infrastructure. Builder also takes care of deleting nodes from kubernetes cluster by finding difference between `desiredState` and `currentState`.
 
 ### API
 ```
@@ -98,7 +98,7 @@ This service is gRPC client, thus it does not provide any API
 
 ### Flow
 - Periodically pulls `config` from Context-Box's `builderQueue`
-- Calls Terraformer, Wireguardian, Kube-eleven and Kuber
+- Calls Terraformer, Ansibler, Kube-eleven and Kuber
 - Creates `currentState`
 - Sends updated config with `currentState` to Context-box
 
@@ -120,8 +120,8 @@ Terraformer creates or destroys infra specified in the desired state via terrafo
 - Updates `currentState` in a `config`
 - On infra deletion, destroys the infra based on the current state
 
-## Wireguardian
-Wireguardian uses Ansible to set up:
+## Ansibler
+Ansibler uses Ansible to set up:
   - Wireguard VPN between the nodes
   - nginx loadbalancer
   - installs dependencies for nodes in kubernetes cluster
@@ -129,15 +129,25 @@ Wireguardian uses Ansible to set up:
 ### API
 
 ```go
-  // Runs ansible playbooks on the nodes specified in the desiredState
-  rpc RunAnsible(RunAnsibleRequest) returns (RunAnsibleResponse);
+  //InstallNodeRequirements installs any requirements there are on all of the nodes
+  rpc InstallNodeRequirements(InstallRequest) returns (InstallResponse);
+  //InstallVPN installs VPN between nodes in the k8s cluster and lb clusters
+  rpc InstallVPN(InstallRequest) returns (InstallResponse);
+  //SetUpLoadbalancers sets up the loadbalancers, DNS and verifies their configuration
+  rpc SetUpLoadbalancers(SetUpLBRequest) returns (SetUpLBResponse);
 ```
 
 ### Flow
-- Receives `config` from Builder
-- Generates Ansible inventory file with newly assigned private ip adresses for nodes in `desiredState` 
-- Uses Ansible to create Wireguard full mesh VPN from inventory file
-- Updates `currentState` in a `config`
+- Receives `config` from Builder for `InstallVPN()`
+  - Sets up the ansible inventory, and installs the Wireguard full mesh VPN via playbook
+  - Updates `currentState` in a `config`
+- Receives `config` from Builder for `InstallNodeRequirements()`
+  - Sets up the ansible inventory, and install any requirements nodes in the infra might need
+  - Updates `currentState` in a `config`
+- Receives `config` from Builder for `SetUpLoadbalancers()`
+  - Sets up the ansible inventory, and installs nginx loadbalancers
+  - Creates and verifies the DNS configuration for the loadbalancers
+
 
 ## Kube-eleven
 Kube-eleven uses kubeOne to set up kubernetes clusters. If the cluster was build, it assures the cluster is healthy and running as it should.
