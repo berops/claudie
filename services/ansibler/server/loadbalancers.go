@@ -21,9 +21,11 @@ clusters/
 └── k8s-cluster-1/
 	├── lb-cluster-1/
 	│	├── private.pem
+	│	├── lb.conf
 	│	└── nginx.yml
 	├── lb-cluster-2/
 	│	├── private.pem
+	│	├── lb.conf
 	│	└── nginx.yml
 	├── k8s.pem
 	└── inventory.ini
