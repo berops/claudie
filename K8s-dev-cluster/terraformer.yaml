@@ -23,7 +23,7 @@ spec:
             cpu: 200m
             memory: 500Mi
           limits:
-            cpu: 300m
+            cpu: 400m
             memory: 800Mi
         env:
         - name: TERRAFORMER_PORT
