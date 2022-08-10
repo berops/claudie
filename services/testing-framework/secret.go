@@ -3,16 +3,26 @@ package testingframework
 import (
 	"encoding/base64"
 	"fmt"
+	"path/filepath"
 
 	"github.com/Berops/platform/services/kuber/server/kubectl"
-	"github.com/Berops/platform/services/kuber/server/secret"
 	"github.com/Berops/platform/services/scheduler/manifest"
+	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v2"
 )
 
-type Label struct {
-	Label string `yaml:"claudie.io/input-manifest"`
+const (
+	baseDirectory = "services/testing-framework"
+	secretTpl     = "secret.goyaml"
+	secretFile    = "secret.yaml"
+)
+
+type SecretData struct {
+	SecretName string
+	Namespace  string
+	FieldName  string
+	Manifest   string
 }
 
 // deleteSecret will delete a secret in the cluster in the specified namespace
@@ -23,18 +33,25 @@ func deleteSecret(setName, namespace string) error {
 
 // manageSecret function will create a secret.yaml file in test set directory, with a specified manifest in data encoded as base64 string
 func manageSecret(manifest []byte, pathToTestSet, secretName, namespace string) error {
-	s := secret.New()
-	s.Directory = pathToTestSet
-	s.YamlManifest.Data.SecretData = base64.StdEncoding.EncodeToString(manifest)
-	s.YamlManifest.Metadata.Name = secretName
-	s.YamlManifest.Metadata.Labels = Label{Label: secretName}
-	// apply secret
-	err := s.Apply(namespace, "")
+	dir := filepath.Join(baseDirectory, pathToTestSet)
+	templateLoader := utils.TemplateLoader{Directory: utils.TestingTemplates}
+	template := utils.Templates{Directory: dir}
+	tpl, err := templateLoader.LoadTemplate(secretTpl)
 	if err != nil {
-		log.Error().Msgf("Error while creating secret.yaml for %s : %v", secretName, err)
 		return err
 	}
-	return nil
+	d := &SecretData{
+		SecretName: secretName,
+		Namespace:  namespace,
+		FieldName:  secretName,
+		Manifest:   base64.StdEncoding.EncodeToString(manifest),
+	}
+	err = template.Generate(tpl, secretFile, d)
+	if err != nil {
+		return err
+	}
+	kc := kubectl.Kubectl{Directory: dir}
+	return kc.KubectlApply(secretFile, "")
 }
 
 // getManifestName will read the name of the manifest from the file and return it,
