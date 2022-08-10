@@ -20,10 +20,10 @@ spec:
         image: eu.gcr.io/platform-infrastructure-316112/platform/scheduler
         resources:
           requests:
-            cpu: 5m
+            cpu: 30m
             memory: 50Mi
           limits:
-            cpu: 25m
+            cpu: 80m
             memory: 100Mi
         env:
         - name: CONTEXT_BOX_PORT
