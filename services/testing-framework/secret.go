@@ -3,7 +3,6 @@ package testingframework
 import (
 	"encoding/base64"
 	"fmt"
-	"path/filepath"
 
 	"github.com/Berops/platform/services/kuber/server/kubectl"
 	"github.com/Berops/platform/services/scheduler/manifest"
@@ -13,9 +12,8 @@ import (
 )
 
 const (
-	baseDirectory = "services/testing-framework"
-	secretTpl     = "secret.goyaml"
-	secretFile    = "secret.yaml"
+	secretTpl  = "secret.goyaml"
+	secretFile = "secret.yaml"
 )
 
 type SecretData struct {
@@ -33,9 +31,8 @@ func deleteSecret(setName, namespace string) error {
 
 // manageSecret function will create a secret.yaml file in test set directory, with a specified manifest in data encoded as base64 string
 func manageSecret(manifest []byte, pathToTestSet, secretName, namespace string) error {
-	dir := filepath.Join(baseDirectory, pathToTestSet)
 	templateLoader := utils.TemplateLoader{Directory: utils.TestingTemplates}
-	template := utils.Templates{Directory: dir}
+	template := utils.Templates{Directory: pathToTestSet}
 	tpl, err := templateLoader.LoadTemplate(secretTpl)
 	if err != nil {
 		return err
@@ -50,7 +47,7 @@ func manageSecret(manifest []byte, pathToTestSet, secretName, namespace string) 
 	if err != nil {
 		return err
 	}
-	kc := kubectl.Kubectl{Directory: dir}
+	kc := kubectl.Kubectl{Directory: pathToTestSet}
 	return kc.KubectlApply(secretFile, "")
 }
 
