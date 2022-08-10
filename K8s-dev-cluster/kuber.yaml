@@ -20,10 +20,10 @@ spec:
           image: eu.gcr.io/platform-infrastructure-316112/platform/kuber
           resources:
             requests:
-              cpu: 10m
+              cpu: 50m
               memory: 100Mi
             limits:
-              cpu: 50m
+              cpu: 100m
               memory: 200Mi
           env:
             - name: KUBER_PORT
