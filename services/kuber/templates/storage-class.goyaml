@@ -28,6 +28,8 @@ items:
           nodeSelector: {{ .ZoneName }}
         #  recurringJobSelector: '[{"name":"snap-group", "isGroup":true},
         #                          {"name":"backup", "isGroup":false}]'
+    labels:
+      claudie.io/storage-class: {{ .StorageClassName }}
     name: {{ .StorageClassName }}
   parameters:
     fromBackup: ""
