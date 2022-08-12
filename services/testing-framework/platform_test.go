@@ -12,6 +12,7 @@ import (
 	cbox "github.com/Berops/platform/services/context-box/client"
 	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 
 	"io/fs"
@@ -63,12 +64,23 @@ func TestPlatform(t *testing.T) {
 	namespace := envs.Namespace
 
 	// apply the test sets
+	var errGroup errgroup.Group
 	for _, path := range setNames {
-		err := applyTestSet(path, namespace, c)
-		if err != nil {
-			t.Logf("Error while processing %s : %v", path, err)
-			t.Fail()
-		}
+		func(path, namespace string, c pb.ContextBoxServiceClient) {
+			errGroup.Go(func() error {
+				err := applyTestSet(path, namespace, c)
+				if err != nil {
+					log.Error().Msgf("Error in %s : %v", path, err)
+					return fmt.Errorf("error in %s : %v", path, err)
+				}
+				return nil
+			})
+		}(path, namespace, c)
+	}
+	err = errGroup.Wait()
+	if err != nil {
+		t.Error(err)
+		t.Fail()
 	}
 }
 
