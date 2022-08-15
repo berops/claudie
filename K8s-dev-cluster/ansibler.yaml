@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ansibler
+  labels:
+    app: ansibler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ansibler
+  template:
+    metadata:
+      labels:
+        app: ansibler
+    spec:
+      containers:
+        - name: ansibler
+          imagePullPolicy: Always
+          image: eu.gcr.io/platform-infrastructure-316112/platform/ansibler
+          resources:
+            requests:
+              cpu: 300m
+              memory: 500Mi
+            limits:
+              cpu: 500m
+              memory: 700Mi
+          env:
+            - name: ANSIBLER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: ANSIBLER_PORT
+              # No hostname needed
+            - name: GOLANG_LOG
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: GOLANG_LOG
+          ports:
+            - containerPort: 50053
+          readinessProbe:
+            exec:
+              command: ["/bin/grpc_health_probe", "-addr=:50053"]
+            initialDelaySeconds: 5
+          livenessProbe:
+            exec:
+              command: ["/bin/grpc_health_probe-Liveness", "-addr=:50053"]
+            initialDelaySeconds: 10
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: ansibler
+spec:
+  selector:
+    app: ansibler
+  ports:
+    - protocol: TCP
+      port: 50053
+      targetPort: 50053

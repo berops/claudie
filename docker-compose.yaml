@@ -51,7 +51,7 @@ services:
       - builder
     env_file: K8s-dev-cluster/.env
     ports:
-      - ${WIREGUARDIAN_PORT}:${WIREGUARDIAN_PORT}
+      - ${ANSIBLER_PORT}:${ANSIBLER_PORT}
     deploy:
       restart_policy:
         condition: on-failure

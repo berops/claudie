@@ -5,11 +5,11 @@ import (
 
 	"github.com/Berops/platform/envs"
 	"github.com/Berops/platform/proto/pb"
+	ansibler "github.com/Berops/platform/services/ansibler/client"
 	cbox "github.com/Berops/platform/services/context-box/client"
 	kubeEleven "github.com/Berops/platform/services/kube-eleven/client"
 	kuber "github.com/Berops/platform/services/kuber/client"
 	terraformer "github.com/Berops/platform/services/terraformer/client"
-	wireguardian "github.com/Berops/platform/services/wireguardian/client"
 	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
 )
@@ -29,7 +29,7 @@ func buildConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig bo
 	config.CurrentState = currentState
 	config.DesiredState = desiredState
 	// call Wireguardian to build VPN
-	desiredState, err = callWireguardian(config.GetDesiredState(), config.GetCurrentState())
+	desiredState, err = callAnsibler(config.GetDesiredState(), config.GetCurrentState())
 	if err != nil {
 		err1 := saveErrorMessage(config, c, err)
 		if err1 != nil {
@@ -97,25 +97,34 @@ func callTerraformer(currentState *pb.Project, desiredState *pb.Project) (*pb.Pr
 	return res.GetCurrentState(), res.GetDesiredState(), nil
 }
 
-//callWireguardian passes config to wireguardian to set up VPN
-func callWireguardian(desiredState, currentState *pb.Project) (*pb.Project, error) {
-	cc, err := utils.GrpcDialWithInsecure("wireguardian", envs.WireguardianURL)
+//callAnsibler passes config to wireguardian to set up VPN
+func callAnsibler(desiredState, currentState *pb.Project) (*pb.Project, error) {
+	cc, err := utils.GrpcDialWithInsecure("ansibler", envs.WireguardianURL)
 	if err != nil {
 		return nil, err
 	}
 	defer func() {
 		utils.CloseClientConnection(cc)
-		log.Info().Msgf("Closing the connection for wireguardian")
+		log.Info().Msgf("Closing the connection for ansibler")
 	}()
 	// Creating the client
-	c := pb.NewWireguardianServiceClient(cc)
-	log.Info().Msgf("Calling RunAnsible on wireguardian")
-	res, err := wireguardian.RunAnsible(c, &pb.RunAnsibleRequest{DesiredState: desiredState, CurrentState: currentState})
+	c := pb.NewAnsiblerServiceClient(cc)
+	log.Info().Msgf("Calling InstallVPN on ansibler")
+	installRes, err := ansibler.InstallVPN(c, &pb.InstallRequest{DesiredState: desiredState})
 	if err != nil {
 		return nil, err
 	}
-
-	return res.GetDesiredState(), nil
+	log.Info().Msgf("Calling InstallNodeRequirements on ansibler")
+	installRes, err = ansibler.InstallNodeRequirements(c, &pb.InstallRequest{DesiredState: installRes.DesiredState})
+	if err != nil {
+		return nil, err
+	}
+	log.Info().Msgf("Calling SetUpLoadbalancers on ansibler")
+	setUpRes, err := ansibler.SetUpLoadbalancers(c, &pb.SetUpLBRequest{DesiredState: installRes.DesiredState, CurrentState: currentState})
+	if err != nil {
+		return nil, err
+	}
+	return setUpRes.GetDesiredState(), nil
 }
 
 // callKubeEleven passes config to kubeEleven to bootstrap k8s cluster
