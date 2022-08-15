@@ -29,7 +29,7 @@ WORKDIR /go
 COPY . .
 
 #Change the directory
-WORKDIR /go/services/wireguardian/server
+WORKDIR /go/services/ansibler/server
 
 #Compile the golang code, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build
@@ -46,11 +46,11 @@ RUN apt update && \
   openssh-client 
 
 #Copy the binaries to empty base image
-COPY --from=build /go/services/wireguardian /bin/services/wireguardian
+COPY --from=build /go/services/ansibler /bin/services/ansibler
 COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
 COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Liveness
 
 #Run server
 WORKDIR /bin
-ENTRYPOINT [ "./services/wireguardian/server/server" ]
+ENTRYPOINT [ "./services/ansibler/server/server" ]
 #NOTE: We cannot use scratch image for our dockerfile since we are using shell commands to execute commands inside the code
