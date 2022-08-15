@@ -16,7 +16,7 @@ const (
 	AnsiblerTemplates    = "services/ansibler/server/templates"
 	KuberTemplates       = "services/kuber/templates"
 	KubeElevenTemplates  = "services/kube-eleven/server/templates"
-	TestingTemplates      = "templates" //due to how tests are run, the path to templates is absolute to testing-framework directory
+	TestingTemplates     = "templates" //due to how tests are run, the path to templates is absolute to testing-framework directory
 )
 
 // directory - output directory
