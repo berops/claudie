@@ -20,8 +20,10 @@ configMapGenerator:
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
+- name: eu.gcr.io/platform-infrastructure-316112/platform/ansibler
+  newTag: 777939a-612
 - name: eu.gcr.io/platform-infrastructure-316112/platform/builder
-  newTag: b3b6484-585
+  newTag: 777939a-612
 - name: eu.gcr.io/platform-infrastructure-316112/platform/context-box
   newTag: b3b6484-585
 - name: eu.gcr.io/platform-infrastructure-316112/platform/frontend
