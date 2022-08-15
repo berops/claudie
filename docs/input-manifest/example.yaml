@@ -127,7 +127,7 @@ loadBalancers:
       # dns spec where claudie will create DNS records for LB
       dns:
         dns_zone: dns-zone
-        project: project-id
+        provider: gcp-1
         #hostname: #left empty means the Claudie will create random hash as a hostname
       # name of targeted k8s cluster
       targeted-k8s: dev-cluster
@@ -139,7 +139,7 @@ loadBalancers:
         - apiserver
       dns:
         dns_zone: dns-zone
-        project: project-id
+        provider: gcp-1
         # this hostname will be used for DNS records
         # keep in mind that DNS zone will be included
         hostname: my.fancy.url

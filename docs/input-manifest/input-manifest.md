@@ -8,15 +8,9 @@ Manifest is a definition of the user's infrastructure. It contains cloud provide
 
   Name of the manifest. Must be unique across all manifests of the Claudie instance.
 
-- `providers` [Provider](#providers)
+- `providers` [Providers](#providers)
 
-  Map of Cloud providers used for the infrastructure. The cloud provider name is the key of the map with list [Provider specs](#provider-spec). Includes DNS provider, Nodepool provider, etc.
-
-  We currently support the following the Cloud Providers:
-  * [Google Cloud Platform](https://cloud.google.com/)
-  * [Hetzner Cloud](https://www.hetzner.com/cloud)
-  
-  Support for more cloud providers is planned and will be rolled out in future.
+  Defines all your cloud provider configuration that will be used while infrastructure provisioning.
 
 - `nodepools` [Nodepools](#nodepools)
 
@@ -30,21 +24,32 @@ Manifest is a definition of the user's infrastructure. It contains cloud provide
 
   List of loadbalancer clusters the Kubernetes clusters may use.
 
+## Providers 
+
+Contains configurations for different supported cloud providers. Atleast one provider needs to be defined out of the following supported providers 
+
+- `gcp`
+  List of [provider spec](#provider-spec) for [Google cloud](https://cloud.google.com/) configuration. This field is optional.
+
+- `hetzner`
+  List of [provider spec](#provider-spec) for [Hetzner cloud](https://www.hetzner.com/cloud) configuration. This field is optional.
+
+Support for more cloud provider is planned and will be rolled out in future. 
+
 ## Provider Spec 
 
-Collection of data defining a used cloud provider, like Hetzner or GCP.
+Collection of data defining cloud provider configuration. 
 
 - `name`
 
-  Name of the provider spec. Used as a reference further in the input manifest.
-
+  Name of the provider spec. Used as a reference further in the input manifest. Should be unique for each provider spec across all the cloud providers.
 - `credentials`
 
-  Credentials for the provider. Either an API token (Hetzner), or a service account key (GCP).
+  Credentials for the provider. Either an API token (Hetzner), or a stringified JSON service account key (GCP).
 
 - `gcp_project`
 
-  GCP project id of an already existing GCP project. Only valid for GCP.
+  GCP project id of an already existing GCP project. Only valid for GCP [Provider](#providers).
 
 ## Nodepools
 
@@ -69,7 +74,7 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
 - `provideSpec`
 
-  Provider Spec of the nodepool.
+  Name of the [provider spec](#provider-spec) to be used while creating the nodepool.  
 
 - `count`
 
@@ -197,8 +202,8 @@ Collection of data Claudie uses to create a DNS record for the loadbalancer.
 
 - `provider`
 
-  Provider spec to be used for DNS.
+  Name of [provider spec](provider-spec) to be used for creating an A record entry in defined dns zone.
 
 - `hostname`
   
-  Custom hostname for your record. If left empty, the hostname will be a random hash.
+  Custom hostname for your A record. If left empty, the hostname will be a random hash.
