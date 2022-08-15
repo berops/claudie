@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: Deployment 
+kind: Deployment
 metadata:
   name: builder
   labels:
@@ -15,79 +15,79 @@ spec:
         app: builder
     spec:
       containers:
-      - name: builder
-        imagePullPolicy: Always
-        image: eu.gcr.io/platform-infrastructure-316112/platform/builder
-        resources:
-          requests:
-            cpu: 10m
-            memory: 200Mi
-          limits:
-            cpu: 50m
-            memory: 400Mi
-        env:
-        - name: CONTEXT_BOX_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: env
-              key: CONTEXT_BOX_PORT
-        - name: CONTEXT_BOX_HOSTNAME
-          valueFrom:
-            configMapKeyRef:
-              name: env
-              key: CONTEXT_BOX_HOSTNAME
-        - name: TERRAFORMER_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: env
-              key: TERRAFORMER_PORT
-        - name: TERRAFORMER_HOSTNAME
-          valueFrom:
-            configMapKeyRef:
-              name: env
-              key: TERRAFORMER_HOSTNAME
-        - name: WIREGUARDIAN_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: env
-              key: WIREGUARDIAN_PORT
-        - name: WIREGUARDIAN_HOSTNAME
-          valueFrom:
-            configMapKeyRef:
-              name: env
-              key: WIREGUARDIAN_HOSTNAME
-        - name: KUBE_ELEVEN_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: env
-              key: KUBE_ELEVEN_PORT
-        - name: KUBE_ELEVEN_HOSTNAME
-          valueFrom:
-            configMapKeyRef:
-              name: env
-              key: KUBE_ELEVEN_HOSTNAME
-        - name: KUBER_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: env
-              key: KUBER_PORT
-        - name: KUBER_HOSTNAME
-          valueFrom:
-            configMapKeyRef:
-              name: env
-              key: KUBER_HOSTNAME
-        - name: GOLANG_LOG
-          valueFrom:
-            configMapKeyRef:
-              name: env
-              key: GOLANG_LOG
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: 50051
-          initialDelaySeconds: 5
-        livenessProbe:
-          httpGet:
-            path: /live
-            port: 50051
-          initialDelaySeconds: 10
+        - name: builder
+          imagePullPolicy: Always
+          image: eu.gcr.io/platform-infrastructure-316112/platform/builder
+          resources:
+            requests:
+              cpu: 10m
+              memory: 200Mi
+            limits:
+              cpu: 50m
+              memory: 400Mi
+          env:
+            - name: CONTEXT_BOX_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: CONTEXT_BOX_PORT
+            - name: CONTEXT_BOX_HOSTNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: CONTEXT_BOX_HOSTNAME
+            - name: TERRAFORMER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: TERRAFORMER_PORT
+            - name: TERRAFORMER_HOSTNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: TERRAFORMER_HOSTNAME
+            - name: ANSIBLER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: ANSIBLER_PORT
+            - name: ANSIBLER_HOSTNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: ANSIBLER_HOSTNAME
+            - name: KUBE_ELEVEN_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: KUBE_ELEVEN_PORT
+            - name: KUBE_ELEVEN_HOSTNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: KUBE_ELEVEN_HOSTNAME
+            - name: KUBER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: KUBER_PORT
+            - name: KUBER_HOSTNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: KUBER_HOSTNAME
+            - name: GOLANG_LOG
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: GOLANG_LOG
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 50051
+            initialDelaySeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: 50051
+            initialDelaySeconds: 10

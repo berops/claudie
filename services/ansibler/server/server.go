@@ -112,10 +112,10 @@ func (*server) SetUpLoadbalancers(_ context.Context, req *pb.SetUpLBRequest) (*p
 
 func main() {
 	// initialize logger
-	utils.InitLog("wireguardian")
-	// Set Wireguardian port
-	wireguardianPort := utils.GetenvOr("WIREGUARDIAN_PORT", fmt.Sprint(defaultWireguardianPort))
-	serviceAddr := net.JoinHostPort("0.0.0.0", wireguardianPort)
+	utils.InitLog("ansibler")
+	// Set Ansibler port
+	ansiblerPort := utils.GetenvOr("ANSIBLER_PORT", fmt.Sprint(defaultWireguardianPort))
+	serviceAddr := net.JoinHostPort("0.0.0.0", ansiblerPort)
 	lis, err := net.Listen("tcp", serviceAddr)
 	if err != nil {
 		log.Fatal().Msgf("Failed to listen on %s : %v", serviceAddr, err)
@@ -125,7 +125,7 @@ func main() {
 	s := grpc.NewServer()
 	pb.RegisterAnsiblerServiceServer(s, &server{})
 	// Add health service to gRPC
-	healthService := healthcheck.NewServerHealthChecker(wireguardianPort, "WIREGUARDIAN_PORT", nil)
+	healthService := healthcheck.NewServerHealthChecker(ansiblerPort, "ANSIBLER_PORT", nil)
 	grpc_health_v1.RegisterHealthServer(s, healthService)
 	g, _ := errgroup.WithContext(context.Background())
 
