@@ -74,6 +74,7 @@ resource "hcloud_server" "{{$nodepool.Name}}" {
   name         = "{{ $clusterName }}-{{ $clusterHash }}-{{$nodepool.Name}}-${count.index +1}"
   server_type  = "{{ $nodepool.ServerType }}"
   image        = "{{ $nodepool.Image }}"
+  firewall_ids = [hcloud_firewall.firewall.id]
   datacenter   = "{{ $nodepool.Zone}}"
   ssh_keys = [
     hcloud_ssh_key.platform.id,

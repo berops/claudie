@@ -105,8 +105,8 @@ jobs:
 
       - name: Wait until frontend will clean up the infra from tests
         run: |
-          # wait max 5min until the frontend will pick up the change + 5min until everything is destroyed
-          sleep 10m
+          # wait max 5min until the frontend will pick up the change + 10min until everything is destroyed
+          sleep 15m
 
       - name: Delete temporary namespace
         run: |

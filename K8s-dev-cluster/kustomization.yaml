@@ -29,12 +29,12 @@ images:
 - name: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven
   newTag: c671566-549
 - name: eu.gcr.io/platform-infrastructure-316112/platform/kuber
-  newTag: b3b6484-585
+  newTag: c804dcd-591
 - name: eu.gcr.io/platform-infrastructure-316112/platform/scheduler
   newTag: c0b11e5-546
 - name: eu.gcr.io/platform-infrastructure-316112/platform/terraformer
-  newTag: 2e7c133-582
+  newTag: 4065566-606
 - name: eu.gcr.io/platform-infrastructure-316112/platform/testing-framework
-  newTag: 3a1243b-589
+  newTag: 85c8b6a-605
 - name: eu.gcr.io/platform-infrastructure-316112/platform/wireguardian
   newTag: 4e10389-534
