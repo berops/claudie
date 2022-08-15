@@ -9,7 +9,7 @@ var (
 	//TerraformerURL is a listening URL for Terraformer module
 	TerraformerURL = os.Getenv("TERRAFORMER_HOSTNAME") + ":" + os.Getenv("TERRAFORMER_PORT")
 	//WireguardianURL is a listening URL for Wireguardian module
-	WireguardianURL = os.Getenv("WIREGUARDIAN_HOSTNAME") + ":" + os.Getenv("WIREGUARDIAN_PORT")
+	WireguardianURL = os.Getenv("ANSIBLER_HOSTNAME") + ":" + os.Getenv("ANSIBLER_PORT")
 	//KubeElevenURL is a listening URL for KubeEleven module
 	KubeElevenURL = os.Getenv("KUBE_ELEVEN_HOSTNAME") + ":" + os.Getenv("KUBE_ELEVEN_PORT")
 	//ContextBoxURL is a listening URL for ContextBox module

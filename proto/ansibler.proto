@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package platform;
+
+import "proto/config.proto";
+
+
+option go_package = "proto/pb";
+
+message InstallRequest { 
+  Project desiredState = 1;
+  Project currentState = 2; 
+}
+message InstallResponse {
+  Project desiredState = 1;
+}
+
+message SetUpLBRequest { 
+  Project desiredState = 1;
+  Project currentState = 2; 
+}
+message SetUpLBResponse {
+  Project desiredState = 1;
+}
+
+service AnsiblerService {
+  //InstallNodeRequirements installs any requirments there are on all of the nodes
+  rpc InstallNodeRequirements(InstallRequest) returns (InstallResponse);
+  //InstallVPN installs VPN between nodes in the k8s cluster and lb clusters
+  rpc InstallVPN(InstallRequest) returns (InstallResponse);
+  //SetUpLoadbalancers sets up the loadbalancers, DNS and verifies their configuration
+  rpc SetUpLoadbalancers(SetUpLBRequest) returns (SetUpLBResponse);
+}

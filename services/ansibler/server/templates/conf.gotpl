@@ -1,7 +1,7 @@
 stream{
 {{- range $role := .Roles }}
 upstream {{ $role.Role.Name }}{
-    {{- range $node := $role.Nodes}}
+    {{- range $node := $role.TargetNodes}}
     server {{$node.Private}}:{{$role.Role.TargetPort}} max_fails=3 fail_timeout=10s;
     {{- end}}
 }

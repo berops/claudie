@@ -2,7 +2,7 @@ namespace: claudie
 resources:
 - context-box.yaml
 - terraformer.yaml
-- wireguardian.yaml
+- ansibler.yaml
 - scheduler.yaml
 - builder.yaml
 - kube-eleven.yaml
@@ -11,8 +11,6 @@ resources:
 - minio
 - mongo
 - network-policy.yaml
-# NOTE: when running the testing framework manually in the cluster, you need to specify the namespace in .env file
-# Example: NAMESPACE=foo
 configMapGenerator:
 - envs:
   - .env
@@ -20,8 +18,10 @@ configMapGenerator:
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
+- name: eu.gcr.io/platform-infrastructure-316112/platform/ansibler
+  newTag: 7502763-616
 - name: eu.gcr.io/platform-infrastructure-316112/platform/builder
-  newTag: b3b6484-585
+  newTag: 7502763-616
 - name: eu.gcr.io/platform-infrastructure-316112/platform/context-box
   newTag: ae24b5a-617
 - name: eu.gcr.io/platform-infrastructure-316112/platform/frontend
@@ -35,6 +35,4 @@ images:
 - name: eu.gcr.io/platform-infrastructure-316112/platform/terraformer
   newTag: ae24b5a-617
 - name: eu.gcr.io/platform-infrastructure-316112/platform/testing-framework
-  newTag: ae24b5a-617
-- name: eu.gcr.io/platform-infrastructure-316112/platform/wireguardian
-  newTag: 4e10389-534
+  newTag: 85c8b6a-605

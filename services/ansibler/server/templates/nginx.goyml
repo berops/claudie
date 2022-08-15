@@ -1,5 +1,5 @@
 ---
-- hosts: all
+- hosts: {{ .Loadbalancer }}
   gather_facts: no
   become: yes
   remote_user: root
@@ -11,16 +11,16 @@
         update_cache: yes
     - name: copy config files
       copy:
-        src: {{ .ConfPath }}
+        src: lb.conf
         dest: /etc/nginx/passthrough.conf
     - name: include passthrough conf in nginx.conf
       lineinfile:
         path: /etc/nginx/nginx.conf
-        line: 'include /etc/nginx/passthrough.conf;'
+        line: "include /etc/nginx/passthrough.conf;"
         insertafter: EOF
       become: yes
     - name: restart nginx
-      service: 
+      service:
         name: nginx
         state: restarted
       become: yes

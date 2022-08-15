@@ -16,8 +16,8 @@ builder:
 terraformer:
 	go run services/terraformer/server/server.go 
 
-wireguardian:
-	go run services/wireguardian/server/server.go
+ansibler:
+	go run ./services/ansibler/server
 
 kubeEleven:
 	go run services/kube-eleven/server/server.go

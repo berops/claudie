@@ -1,0 +1,28 @@
+#K8s
+[control]
+{{- range $nodepool := .K8sNodepools }}
+    {{- if $nodepool.IsControl }}       
+        {{- range $node :=  $nodepool.Nodes }}
+{{ $node.Name }} ansible_host={{ $node.Public }} private_ip={{ $node.Private }} ansible_ssh_private_key_file=k8s.pem
+        {{- end }}
+    {{- end }}
+{{- end }}
+
+[compute]
+{{- range $nodepool := .K8sNodepools }}
+    {{- if not $nodepool.IsControl }}       
+        {{- range $node :=  $nodepool.Nodes }}
+{{ $node.Name }} ansible_host={{ $node.Public }} private_ip={{ $node.Private }} ansible_ssh_private_key_file=k8s.pem
+        {{- end }}
+    {{- end }}
+{{- end }}
+
+#Loadbalancers
+{{- range $lbCluster := .LBClusters }}
+[{{ $lbCluster.ClusterInfo.Name }}]
+    {{- range $lbNodepool := $lbCluster.ClusterInfo.NodePools }}
+        {{- range $lbNode :=  $lbNodepool.Nodes }}
+{{ $lbNode.Name }} ansible_host={{ $lbNode.Public }} private_ip={{ $lbNode.Private }} ansible_ssh_private_key_file=./{{ $lbCluster.ClusterInfo.Name }}/key.pem
+        {{- end }}
+    {{- end }}
+{{- end }}
