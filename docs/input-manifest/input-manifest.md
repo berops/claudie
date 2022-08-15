@@ -12,6 +12,12 @@ Manifest is a definition of the user's infrastructure. It contains cloud provide
 
   Map of Cloud providers used for the infrastructure. The cloud provider name is the key of the map with list [Provider specs](#provider-spec). Includes DNS provider, Nodepool provider, etc.
 
+  We currently support the following the Cloud Providers:
+  * [Google Cloud Platform](https://cloud.google.com/)
+  * [Hetzner Cloud](https://www.hetzner.com/cloud)
+  
+  Support for more cloud providers is planned and will be rolled out in future.
+
 - `nodepools` [Nodepools](#nodepools)
 
   Describes nodepools used for either kubernetes clusters or loadbalancer cluster defined in this manifest.
