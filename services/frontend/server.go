@@ -95,6 +95,7 @@ func SaveFiles(c pb.ContextBoxServiceClient) error {
 			log.Fatal().Msgf("Error while saving the config: %v err: %v", file.Name(), err)
 			return err
 		}
+		log.Info().Msgf("File %s has been saved to the database", filePath)
 	}
 
 	for _, config := range configsToDelete.Configs {
