@@ -41,12 +41,12 @@ services:
       restart_policy:
         condition: on-failure
 
-  wireguardian:
-    image: eu.gcr.io/platform-infrastructure-316112/platform/wireguardian
+  ansibler:
+    image: eu.gcr.io/platform-infrastructure-316112/platform/ansibler
     build:
       context: .
-      dockerfile: ./services/wireguardian/Dockerfile
-    container_name: wireguardian
+      dockerfile: ./services/ansibler/Dockerfile
+    container_name: ansibler
     depends_on:
       - builder
     env_file: K8s-dev-cluster/.env

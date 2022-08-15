@@ -7,7 +7,6 @@ LICENSE
 tmp
 serializer
 services/terraformer
-services/wireguardian/Makefile
 services/kube-eleven
 services/scheduler
 services/context-box
