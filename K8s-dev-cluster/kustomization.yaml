@@ -1,42 +1,38 @@
 namespace: claudie
 resources:
-- context-box.yaml
-- terraformer.yaml
-- wireguardian.yaml
-- scheduler.yaml
-- builder.yaml
-- kube-eleven.yaml
-- frontend.yaml
-- kuber.yaml
-- minio
-- mongo
-- network-policy.yaml
-# NOTE: when running the testing framework manually in the cluster, you need to specify the namespace in .env file
-# Example: NAMESPACE=foo
+  - context-box.yaml
+  - terraformer.yaml
+  - ansibler.yaml
+  - scheduler.yaml
+  - builder.yaml
+  - kube-eleven.yaml
+  - frontend.yaml
+  - kuber.yaml
+  - minio
+  - mongo
+  - network-policy.yaml
 configMapGenerator:
-- envs:
-  - .env
-  name: env
+  - envs:
+      - .env
+    name: env
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
-- name: eu.gcr.io/platform-infrastructure-316112/platform/ansibler
-  newTag: 777939a-612
-- name: eu.gcr.io/platform-infrastructure-316112/platform/builder
-  newTag: 777939a-612
-- name: eu.gcr.io/platform-infrastructure-316112/platform/context-box
-  newTag: b3b6484-585
-- name: eu.gcr.io/platform-infrastructure-316112/platform/frontend
-  newTag: 43aebf4-531
-- name: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven
-  newTag: c671566-549
-- name: eu.gcr.io/platform-infrastructure-316112/platform/kuber
-  newTag: c804dcd-591
-- name: eu.gcr.io/platform-infrastructure-316112/platform/scheduler
-  newTag: c0b11e5-546
-- name: eu.gcr.io/platform-infrastructure-316112/platform/terraformer
-  newTag: 4065566-606
-- name: eu.gcr.io/platform-infrastructure-316112/platform/testing-framework
-  newTag: 85c8b6a-605
-- name: eu.gcr.io/platform-infrastructure-316112/platform/wireguardian
-  newTag: 4e10389-534
+  - name: eu.gcr.io/platform-infrastructure-316112/platform/ansibler
+    newTag: 777939a-612
+  - name: eu.gcr.io/platform-infrastructure-316112/platform/builder
+    newTag: 777939a-612
+  - name: eu.gcr.io/platform-infrastructure-316112/platform/context-box
+    newTag: b3b6484-585
+  - name: eu.gcr.io/platform-infrastructure-316112/platform/frontend
+    newTag: 43aebf4-531
+  - name: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven
+    newTag: c671566-549
+  - name: eu.gcr.io/platform-infrastructure-316112/platform/kuber
+    newTag: c804dcd-591
+  - name: eu.gcr.io/platform-infrastructure-316112/platform/scheduler
+    newTag: c0b11e5-546
+  - name: eu.gcr.io/platform-infrastructure-316112/platform/terraformer
+    newTag: 4065566-606
+  - name: eu.gcr.io/platform-infrastructure-316112/platform/testing-framework
+    newTag: 85c8b6a-605
