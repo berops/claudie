@@ -19,7 +19,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
 - name: eu.gcr.io/platform-infrastructure-316112/platform/ansibler
-  newTag: 1eb467e-620
+  newTag: d4e5194-629
 - name: eu.gcr.io/platform-infrastructure-316112/platform/builder
   newTag: 7502763-616
 - name: eu.gcr.io/platform-infrastructure-316112/platform/context-box
