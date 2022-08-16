@@ -20,11 +20,11 @@ The layout of the files/directories for a single k8s cluster loadbalancers is:
 clusters/
 └── k8s-cluster-1/
 	├── lb-cluster-1/
-	│	├── private.pem
+	│	├── key.pem
 	│	├── lb.conf
 	│	└── nginx.yml
 	├── lb-cluster-2/
-	│	├── private.pem
+	│	├── key.pem
 	│	├── lb.conf
 	│	└── nginx.yml
 	├── k8s.pem
@@ -145,7 +145,7 @@ func setUpNginx(lb *pb.LBcluster, targetedNodepool []*pb.NodePool, directory str
 			return fmt.Errorf("failed to create directory %s : %v", directory, err)
 		}
 	}
-	if err := utils.CreateKeyFile(lb.ClusterInfo.PrivateKey, directory, fmt.Sprintf("%s.%s", lb.ClusterInfo.Name, privateKeyExt)); err != nil {
+	if err := utils.CreateKeyFile(lb.ClusterInfo.PrivateKey, directory, fmt.Sprintf("key.%s", privateKeyExt)); err != nil {
 		return fmt.Errorf("failed to create key file for %s : %v", lb.ClusterInfo.Name, err)
 	}
 	//prepare data for .conf
