@@ -179,7 +179,7 @@ func setUpNginx(lb *pb.LBcluster, targetedNodepool []*pb.NodePool, directory str
 		return fmt.Errorf("error while generating %s for %s : %v", nginxPlaybook, lb.ClusterInfo.Name, err)
 	}
 	//run the playbook
-	ansible := ansible.Ansible{Playbook: nginxPlaybook, Inventory: "../" + inventoryFile, Directory: directory}
+	ansible := ansible.Ansible{Playbook: nginxPlaybook, Inventory: filepath.Join("..", inventoryFile), Directory: directory}
 	err = ansible.RunAnsiblePlaybook(lb.ClusterInfo.Name)
 	if err != nil {
 		return fmt.Errorf("error while running ansible for %s : %v", lb.ClusterInfo.Name, err)
