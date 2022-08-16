@@ -9,6 +9,7 @@ on:
 env:
   ENV_FILE: .env
   SERVICES: context-box scheduler builder terraformer ansibler kube-eleven kuber frontend testing-framework
+  TEST_FILES: test-set1/1.yaml test-set1/2.yaml test-set1/3.yaml test-set1/4.yaml test-set2/1.yaml test-set2/2.yaml test-set2/3.yaml test-set2/4.yaml
 
 jobs:
   #--------------------------------------------------------------------------------------------------
@@ -32,17 +33,6 @@ jobs:
     if: github.event.pull_request.draft == false
     runs-on: self-hosted
     needs: merge-branch
-    strategy:
-      matrix:
-        test-set-files:
-          - services/testing-framework/tests/test-set1/1.yaml
-          - services/testing-framework/tests/test-set1/2.yaml
-          - services/testing-framework/tests/test-set1/3.yaml
-          - services/testing-framework/tests/test-set1/4.yaml
-          - services/testing-framework/tests/test-set2/1.yaml
-          - services/testing-framework/tests/test-set2/2.yaml
-          - services/testing-framework/tests/test-set2/3.yaml
-          - services/testing-framework/tests/test-set2/4.yaml
     steps:
       - uses: actions/checkout@v2
         with:
@@ -97,16 +87,16 @@ jobs:
 
       - name: Insert cloud credentials for Hetzner to test set if needed
         if: ${{ contains(steps.array.outputs.ARRAY_OF_CHANGES, 'testing-framework') }}
-        uses: mikefarah/yq@v4.27.2
-        with:
-          cmd: yq e '.providers.[0].credentials = "secrets.HETZNER_CREDENTIALS"' "${{ matrix.test-set-files }}" -i
+        working-directory: services/testing-framework/tests
+        run: |
+          go install github.com/mikefarah/yq/v4@master
 
-      - name: Insert cloud credentials for GCP to test set if needed
-        if: ${{ contains(steps.array.outputs.ARRAY_OF_CHANGES, 'testing-framework') }}
-        uses: mikefarah/yq@v4.27.2
-        with:
-          cmd: yq e '.providers.[1].credentials = "${{ secrets.GCP_CREDENTIALS }}"' "${{ matrix.test-set-files }}" -i
-
+          files=( ${{ env.TEST_FILES }} )
+          for file in "${files[@]}" 
+          do
+            yq e '.providers.[0].credentials = "${{ secrets.HETZNER_CREDENTIALS}}"' $file -i
+            yq e '.providers.[1].credentials = "${{ secrets.GCP_CREDENTIALS }}"' $file -i
+          done
       # Build the new images that were changed by a recent commit - tag image latest as well for testing
       - name: Build new images
         if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
