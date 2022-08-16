@@ -32,6 +32,17 @@ jobs:
     if: github.event.pull_request.draft == false
     runs-on: self-hosted
     needs: merge-branch
+    strategy:
+      matrix:
+        test-set-files:
+          - services/testing-framework/tests/test-set1/1.yaml
+          - services/testing-framework/tests/test-set1/2.yaml
+          - services/testing-framework/tests/test-set1/3.yaml
+          - services/testing-framework/tests/test-set1/4.yaml
+          - services/testing-framework/tests/test-set2/1.yaml
+          - services/testing-framework/tests/test-set2/2.yaml
+          - services/testing-framework/tests/test-set2/3.yaml
+          - services/testing-framework/tests/test-set2/4.yaml
     steps:
       - uses: actions/checkout@v2
         with:
@@ -83,6 +94,18 @@ jobs:
       - name: Configure Docker
         if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
         run: gcloud auth configure-docker --quiet
+
+      - name: Insert cloud credentials for Hetzner to test set if needed
+        if: ${{ contains(steps.array.outputs.ARRAY_OF_CHANGES, 'testing-framework') }}
+        uses: mikefarah/yq@v4.27.2
+        with:
+          cmd: yq e '.providers.[0].credentials = "secrets.HETZNER_CREDENTIALS"' "${{ matrix.test-set-files }}" -i
+
+      - name: Insert cloud credentials for GCP to test set if needed
+        if: ${{ contains(steps.array.outputs.ARRAY_OF_CHANGES, 'testing-framework') }}
+        uses: mikefarah/yq@v4.27.2
+        with:
+          cmd: yq e '.providers.[1].credentials = "${{ secrets.GCP_CREDENTIALS }}"' "${{ matrix.test-set-files }}" -i
 
       # Build the new images that were changed by a recent commit - tag image latest as well for testing
       - name: Build new images
@@ -161,8 +184,8 @@ jobs:
       - uses: actions/checkout@v2
         with:
           ref: ${{ github.head_ref }}
-    
-       # Install the git-crypt and unlock the files
+
+          # Install the git-crypt and unlock the files
       - name: git-crypt unlock
         run: |
           sudo apt update
