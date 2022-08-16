@@ -71,7 +71,7 @@ func setUpLoadbalancers(lbInfos map[string]*LBInfo) error {
 	for k8sClusterName, lbInfo := range lbInfos {
 		func(lbInfo *LBInfo, k8sClusterName string) {
 			//set up all lbs for the k8s cluster, since single k8s can have multiple LBs
-			k8sDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-lbs", k8sClusterName))
+			k8sDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", k8sClusterName, utils.CreateHash(4)))
 			//generate inventory for all LBs with k8s nodes
 			err := generateK8sBaseFiles(k8sDirectory, lbInfo)
 			if err != nil {
@@ -83,7 +83,8 @@ func setUpLoadbalancers(lbInfos map[string]*LBInfo) error {
 				var errGroupLB errgroup.Group
 				//iterate over all LBs for a single k8s cluster
 				for _, lb := range lbInfo.LbClusters {
-					directory := filepath.Join(k8sDirectory, lb.LbCluster.ClusterInfo.Name)
+					directory := filepath.Join(k8sDirectory, fmt.Sprintf("%s-%s", lb.LbCluster.ClusterInfo.Name, lb.LbCluster.ClusterInfo.Hash))
+					log.Info().Msgf("Setting up the LB %s", directory)
 					func(directory, k8sDirectory string, lb *LBData) {
 						//set up the individual LB
 						errGroupLB.Go(func() error {
@@ -180,7 +181,7 @@ func setUpNginx(lb *pb.LBcluster, targetedNodepool []*pb.NodePool, directory str
 	}
 	//run the playbook
 	ansible := ansible.Ansible{Playbook: nginxPlaybook, Inventory: filepath.Join("..", inventoryFile), Directory: directory}
-	err = ansible.RunAnsiblePlaybook(lb.ClusterInfo.Name)
+	err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s", lb.ClusterInfo.Name))
 	if err != nil {
 		return fmt.Errorf("error while running ansible for %s : %v", lb.ClusterInfo.Name, err)
 	}
