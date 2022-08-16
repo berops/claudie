@@ -9,7 +9,8 @@ on:
 env:
   ENV_FILE: .env
   SERVICES: context-box scheduler builder terraformer ansibler kube-eleven kuber frontend testing-framework
-  TEST_FILES: test-set1/1.yaml test-set1/2.yaml test-set1/3.yaml test-set1/4.yaml test-set2/1.yaml test-set2/2.yaml test-set2/3.yaml test-set2/4.yaml
+  TEST_SET1: test-set1/1.yaml test-set1/2.yaml test-set1/3.yaml test-set1/4.yaml 
+  TEST_SET2: test-set2/1.yaml test-set2/2.yaml test-set2/3.yaml test-set2/4.yaml
 
 jobs:
   #--------------------------------------------------------------------------------------------------
@@ -84,7 +85,8 @@ jobs:
       - name: Configure Docker
         if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
         run: gcloud auth configure-docker --quiet
-
+      
+      # Insert cloud credentials to test set if needed at CI runtime
       - name: Insert cloud credentials to test set if needed
         if: ${{ contains(steps.array.outputs.ARRAY_OF_CHANGES, 'testing-framework') }}
         working-directory: services/testing-framework/tests
@@ -92,12 +94,23 @@ jobs:
           wget https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
           tar xz && mv yq_linux_amd64 yq
 
-          files=( ${{ env.TEST_FILES }} )
+          files=( ${{ env.TEST_SET1 }} )
           for file in "${files[@]}" 
           do
             ./yq e '.providers.[0].credentials = "${{ secrets.HETZNER_CREDENTIALS}}"' $file -i
             ./yq e '.providers.[1].credentials = ${{ secrets.GCP_CREDENTIALS }}' $file -i
           done
+          
+          files=( ${{ env.TEST_SET2 }} )
+          for file in "${files[@]}" 
+          do
+            ./yq e '.providers.[0].credentials = "${{ secrets.HETZNER_CREDENTIALS}}"' $file -i
+            ./yq e '.providers.[1].credentials = ${{ secrets.GCP_CREDENTIALS }}' $file -i
+          done
+          #Clean up
+          rm -f yq 
+          rm -f yq.1 
+          rm -f install-man-page.sh 
       # Build the new images that were changed by a recent commit - tag image latest as well for testing
       - name: Build new images
         if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
@@ -166,104 +179,104 @@ jobs:
           git commit -m "Auto commit - add new kustomization.yaml"
           git push
 
-  # #--------------------------------------------------------------------------------------------------
-  # deploy-and-monitor:
-  #   runs-on: self-hosted
-  #   needs: [build-and-push, edit-kustomization]
-  #   if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES && github.event.pull_request.draft == false }}
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #       with:
-  #         ref: ${{ github.head_ref }}
+  #--------------------------------------------------------------------------------------------------
+  deploy-and-monitor:
+    runs-on: self-hosted
+    needs: [build-and-push, edit-kustomization]
+    if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES && github.event.pull_request.draft == false }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
 
-  #         # Install the git-crypt and unlock the files
-  #     - name: git-crypt unlock
-  #       run: |
-  #         sudo apt update
-  #         sudo apt install git-crypt
-  #         echo "${{ secrets.GIT_CRYPT_KEY }}" | base64  -d > ./git-crypt-key
-  #         echo "Unlocking"
-  #         git-crypt unlock git-crypt-key
-  #         rm git-crypt-key
+          # Install the git-crypt and unlock the files
+      - name: git-crypt unlock
+        run: |
+          sudo apt update
+          sudo apt install git-crypt
+          echo "${{ secrets.GIT_CRYPT_KEY }}" | base64  -d > ./git-crypt-key
+          echo "Unlocking"
+          git-crypt unlock git-crypt-key
+          rm git-crypt-key
 
-  #     - name: Set short sha output
-  #       run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
+      - name: Set short sha output
+        run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
 
-  #     - name: install kubectl
-  #       uses: azure/setup-kubectl@v2.0
-  #       with:
-  #         version: latest
+      - name: install kubectl
+        uses: azure/setup-kubectl@v2.0
+        with:
+          version: latest
 
-  #     - name: install kustomize
-  #       uses: imranismail/setup-kustomize@v1.6.1
-  #       with:
-  #         version: 3.6.1
+      - name: install kustomize
+        uses: imranismail/setup-kustomize@v1.6.1
+        with:
+          version: 3.6.1
 
-  #     - name: Login to GCP
-  #       uses: google-github-actions/setup-gcloud@v0.6.0
-  #       with:
-  #         project_id: ${{ secrets.GCP_PROJECT_ID }}
-  #         service_account_email: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
-  #         service_account_key: ${{ secrets.GCP_DOCKER_REGISTRY_KEY }}
-  #         export_default_credentials: true
-  #         cleanup_credentials: true
+      - name: Login to GCP
+        uses: google-github-actions/setup-gcloud@v0.6.0
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_email: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+          service_account_key: ${{ secrets.GCP_DOCKER_REGISTRY_KEY }}
+          export_default_credentials: true
+          cleanup_credentials: true
 
-  #     - name: Configure kubectl
-  #       uses: google-github-actions/get-gke-credentials@v0.3.0
-  #       with:
-  #         cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
-  #         location: ${{ secrets.GKE_ZONE }}
-  #         credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
-  #         use_auth_provider: true
+      - name: Configure kubectl
+        uses: google-github-actions/get-gke-credentials@v0.3.0
+        with:
+          cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
+          location: ${{ secrets.GKE_ZONE }}
+          credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
+          use_auth_provider: true
 
-  #     # Create a seperate temporary namespace
-  #     - name: Create seperate namespace
-  #       working-directory: ./K8s-dev-cluster
-  #       run: kubectl create namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+      # Create a seperate temporary namespace
+      - name: Create seperate namespace
+        working-directory: ./K8s-dev-cluster
+        run: kubectl create namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
 
-  #     # Deploy services to new namespace
-  #     - name: Deploy to new namespace
-  #       working-directory: ./K8s-dev-cluster
-  #       run: |
-  #         kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
-  #         kustomize build | kubectl apply -f -
+      # Deploy services to new namespace
+      - name: Deploy to new namespace
+        working-directory: ./K8s-dev-cluster
+        run: |
+          kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+          kustomize build | kubectl apply -f -
 
-  #         cat kustomization.yaml
+          cat kustomization.yaml
 
-  #     # Check if everything is ready and running
-  #     - name: Monitor status of the new namespace
-  #       run: |
-  #         arr=( ${{ env.SERVICES }} )
-  #         unset arr[-1]
-  #         echo "${arr[@]}"
-  #         for SERVICE in "${arr[@]}"
-  #         do
-  #         kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=900s --namespace=claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
-  #         done
+      # Check if everything is ready and running
+      - name: Monitor status of the new namespace
+        run: |
+          arr=( ${{ env.SERVICES }} )
+          unset arr[-1]
+          echo "${arr[@]}"
+          for SERVICE in "${arr[@]}"
+          do
+          kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=900s --namespace=claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+          done
 
-  #         kubectl get pods --namespace=claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+          kubectl get pods --namespace=claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
 
-  #     - name: Start the E2E tests
-  #       working-directory: ./K8s-dev-cluster
-  #       run: |
-  #         kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
-  #         kustomize edit add resource testing-framework.yaml
-  #         kustomize build . | kubectl apply -f -
+      - name: Start the E2E tests
+        working-directory: ./K8s-dev-cluster
+        run: |
+          kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+          kustomize edit add resource testing-framework.yaml
+          kustomize build . | kubectl apply -f -
 
-  #     - name: Monitor E2E test
-  #       run: |
-  #         kubectl wait --for=condition=complete --timeout=10800s job/testing-framework -n claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+      - name: Monitor E2E test
+        run: |
+          kubectl wait --for=condition=complete --timeout=10800s job/testing-framework -n claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
 
-  #     - name: Dump logs from testing framework
-  #       if: ${{ always() }}
-  #       run: |
-  #         gcloud logging read "resource.labels.container_name = "testing-framework" AND severity >= ERROR AND  resource.labels.namespace_name = "claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}""
+      - name: Dump logs from testing framework
+        if: ${{ always() }}
+        run: |
+          gcloud logging read "resource.labels.container_name = "testing-framework" AND severity >= ERROR AND  resource.labels.namespace_name = "claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}""
 
-  #     - name: Wait until frontend will clean up the infra from tests
-  #       run: |
-  #         # wait max 5min until the frontend will pick up the change + 10min until everything is destroyed
-  #         sleep 15m
+      - name: Wait until frontend will clean up the infra from tests
+        run: |
+          # wait max 5min until the frontend will pick up the change + 10min until everything is destroyed
+          sleep 15m
 
-  #     - name: Delete temporary namespace
-  #       run: |
-  #         kubectl delete namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+      - name: Delete temporary namespace
+        run: |
+          kubectl delete namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
