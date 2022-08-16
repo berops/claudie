@@ -90,13 +90,13 @@ jobs:
         working-directory: services/testing-framework/tests
         run: |
           wget https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
-          tar xz && mv yq_linux_amd64 /usr/bin/yq
+          tar xz && mv yq_linux_amd64 yq
 
           files=( ${{ env.TEST_FILES }} )
           for file in "${files[@]}" 
           do
-            yq e '.providers.[0].credentials = "${{ secrets.HETZNER_CREDENTIALS}}"' $file -i
-            yq e '.providers.[1].credentials = "${{ secrets.GCP_CREDENTIALS }}"' $file -i
+            ./yq e '.providers.[0].credentials = "${{ secrets.HETZNER_CREDENTIALS}}"' $file -i
+            ./yq e '.providers.[1].credentials = "${{ secrets.GCP_CREDENTIALS }}"' $file -i
           done
       # Build the new images that were changed by a recent commit - tag image latest as well for testing
       - name: Build new images
