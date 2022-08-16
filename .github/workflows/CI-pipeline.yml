@@ -89,7 +89,8 @@ jobs:
         if: ${{ contains(steps.array.outputs.ARRAY_OF_CHANGES, 'testing-framework') }}
         working-directory: services/testing-framework/tests
         run: |
-          go install github.com/mikefarah/yq/v4@master
+          wget https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
+          tar xz && mv yq_linux_amd64 /usr/bin/yq
 
           files=( ${{ env.TEST_FILES }} )
           for file in "${files[@]}" 
