@@ -121,13 +121,6 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 		return err
 	}
 
-	// generate Providers terraform configuration
-
-	providers := provider.Provider{ProjectName: c.ProjectName, ClusterName: clusterID, Directory: clusterDir}
-	err = providers.CreateProvider()
-	if err != nil {
-		return err
-	}
 	// generate .tf files for nodepools
 	var clusterInfo *pb.ClusterInfo
 	template := utils.Templates{Directory: clusterDir}
@@ -137,6 +130,13 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 		clusterInfo = c.DesiredInfo
 	} else if c.CurrentInfo != nil {
 		clusterInfo = c.CurrentInfo
+	}
+
+	// generate Providers terraform configuration
+	providers := provider.Provider{ProjectName: c.ProjectName, ClusterName: clusterID, Directory: clusterDir}
+	err = providers.CreateProvider(clusterInfo)
+	if err != nil {
+		return err
 	}
 
 	tplType := getTplFile(c.ClusterType)
