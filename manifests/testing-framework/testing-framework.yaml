@@ -30,6 +30,13 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+          volumeMounts:
+            - name: test-sets
+              mountPath: "/go/services/testing-framework/test-sets"
+      volumes:
+        - name: test-sets
+          secret:
+            secretName: test-sets
       restartPolicy: Never
       serviceAccountName: testing-framework
 ---
