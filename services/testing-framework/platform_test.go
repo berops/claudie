@@ -110,6 +110,10 @@ func applyTestSet(setName, namespace string, c pb.ContextBoxServiceClient) error
 	}
 
 	for _, manifest := range manifestFiles {
+		if manifest.IsDir() { // https://github.com/Berops/platform/pull/243#issuecomment-1218237412
+			continue
+		}
+
 		// create a path and read the file
 		manifestPath := filepath.Join(pathToTestSet, manifest.Name())
 		yamlFile, err := ioutil.ReadFile(manifestPath)
