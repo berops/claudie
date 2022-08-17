@@ -1,6 +1,6 @@
 package main
 
-import ( // fake change to trigger CI
+import (
 	"fmt"
 
 	"github.com/Berops/platform/proto/pb"
