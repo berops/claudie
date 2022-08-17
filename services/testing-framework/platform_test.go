@@ -26,7 +26,7 @@ type idInfo struct {
 }
 
 const (
-	testDir = "tests"
+	testDir = "test-sets"
 
 	maxTimeout     = 3600   // max allowed time for one manifest to finish in [seconds]
 	sleepSec       = 30     // seconds for one cycle of config check
