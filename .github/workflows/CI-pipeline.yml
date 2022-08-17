@@ -9,8 +9,7 @@ on:
 env:
   ENV_FILE: .env
   SERVICES: context-box scheduler builder terraformer ansibler kube-eleven kuber frontend testing-framework
-  TEST_SET1: test-set1/1.yaml test-set1/2.yaml test-set1/3.yaml test-set1/4.yaml 
-  TEST_SET2: test-set2/1.yaml test-set2/2.yaml test-set2/3.yaml test-set2/4.yaml
+  TEST_SETS: test-set1 test-set2
 
 jobs:
   #--------------------------------------------------------------------------------------------------
@@ -94,18 +93,14 @@ jobs:
           wget https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
           tar xz && mv yq_linux_amd64 yq
 
-          files=( ${{ env.TEST_SET1 }} )
-          for file in "${files[@]}" 
+          DIR=( ${{ env.TEST_SETS }} )
+          for directory in "${DIR[@]}"
           do
+            for file in $directory/*
+            do
             ./yq e '.providers.[0].credentials = "${{ secrets.HETZNER_CREDENTIALS}}"' $file -i
             ./yq e '.providers.[1].credentials = ${{ secrets.GCP_CREDENTIALS }}' $file -i
-          done
-          
-          files=( ${{ env.TEST_SET2 }} )
-          for file in "${files[@]}" 
-          do
-            ./yq e '.providers.[0].credentials = "${{ secrets.HETZNER_CREDENTIALS}}"' $file -i
-            ./yq e '.providers.[1].credentials = ${{ secrets.GCP_CREDENTIALS }}' $file -i
+            done
           done
           #Clean up
           rm -f yq 
