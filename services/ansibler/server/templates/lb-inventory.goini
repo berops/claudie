@@ -22,7 +22,7 @@
 [{{ $lbCluster.ClusterInfo.Name }}]
     {{- range $lbNodepool := $lbCluster.ClusterInfo.NodePools }}
         {{- range $lbNode :=  $lbNodepool.Nodes }}
-{{ $lbNode.Name }} ansible_host={{ $lbNode.Public }} private_ip={{ $lbNode.Private }} ansible_ssh_private_key_file=./{{ $lbCluster.ClusterInfo.Name }}/key.pem
+{{ $lbNode.Name }} ansible_host={{ $lbNode.Public }} private_ip={{ $lbNode.Private }} ansible_ssh_private_key_file=./{{ $lbCluster.ClusterInfo.Name }}-{{ $lbCluster.ClusterInfo.Hash }}/key.pem
         {{- end }}
     {{- end }}
 {{- end }}
