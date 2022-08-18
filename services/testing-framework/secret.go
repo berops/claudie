@@ -43,12 +43,12 @@ func manageSecret(manifest []byte, pathToTestSet, secretName, namespace string) 
 		FieldName:  secretName,
 		Manifest:   base64.StdEncoding.EncodeToString(manifest),
 	}
-	err = template.Generate(tpl, secretFile, d)
+	secret, err := template.GenerateToString(tpl, d)
 	if err != nil {
 		return err
 	}
-	kc := kubectl.Kubectl{Directory: pathToTestSet}
-	return kc.KubectlApply(secretFile, "")
+	kc := kubectl.Kubectl{}
+	return kc.KubectlApplyString(secret, namespace)
 }
 
 // getManifestName will read the name of the manifest from the file and return it,
