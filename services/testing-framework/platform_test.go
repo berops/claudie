@@ -110,7 +110,7 @@ func applyTestSet(setName, namespace string, c pb.ContextBoxServiceClient) error
 	}
 
 	for _, manifest := range manifestFiles {
-		if manifest.IsDir() { // https://github.com/Berops/platform/pull/243#issuecomment-1218237412
+		if manifest.IsDir() || manifest.Name()[0:1] == "." { // https://github.com/Berops/platform/pull/243#issuecomment-1218237412
 			continue
 		}
 
