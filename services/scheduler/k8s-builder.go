@@ -25,11 +25,11 @@ func createK8sCluster(manifestState *manifest.Manifest) ([]*pb.K8Scluster, error
 			Network:    cluster.Network,
 		}
 		// createNodepools
-		controlNodePools, err := createNodepools(cluster.Pools.Control, manifestState, true)
+		controlNodePools, err := manifestState.CreateNodepools(cluster.Pools.Control, true)
 		if err != nil {
 			return nil, fmt.Errorf("error while creating control nodepool for %s : %v", cluster.Name, err)
 		}
-		computeNodePools, err := createNodepools(cluster.Pools.Compute, manifestState, false)
+		computeNodePools, err := manifestState.CreateNodepools(cluster.Pools.Compute, false)
 		if err != nil {
 			return nil, fmt.Errorf("error while creating compute nodepool for %s : %v", cluster.Name, err)
 		}

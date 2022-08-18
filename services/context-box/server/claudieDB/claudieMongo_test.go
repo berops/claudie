@@ -27,7 +27,8 @@ var (
 							Zone:       "example zone",
 							Count:      1,
 							Provider: &pb.Provider{
-								Name: "hetzner",
+								SpecName:          "hetzner-1",
+								CloudProviderName: "hetzner",
 							},
 						},
 						{
@@ -39,7 +40,8 @@ var (
 							Zone:       "example zone",
 							Count:      2,
 							Provider: &pb.Provider{
-								Name: "hetzner",
+								SpecName:          "hetzner-1",
+								CloudProviderName: "hetzner",
 							},
 						},
 						{
@@ -51,7 +53,8 @@ var (
 							Zone:       "example zone",
 							Count:      1,
 							Provider: &pb.Provider{
-								Name: "gcp",
+								SpecName:          "gcp-1",
+								CloudProviderName: "gcp",
 							},
 						},
 						{
@@ -63,7 +66,8 @@ var (
 							Zone:       "example zone",
 							Count:      2,
 							Provider: &pb.Provider{
-								Name: "gcp",
+								SpecName:          "gcp-1",
+								CloudProviderName: "gcp",
 							},
 						},
 					},
@@ -85,7 +89,8 @@ var (
 							Zone:       "example zone",
 							Count:      1,
 							Provider: &pb.Provider{
-								Name: "hetzner",
+								SpecName:          "hetzner-1",
+								CloudProviderName: "hetzner",
 							},
 						},
 						{
@@ -97,7 +102,8 @@ var (
 							Zone:       "example zone",
 							Count:      2,
 							Provider: &pb.Provider{
-								Name: "hetzner",
+								SpecName:          "hetzner-1",
+								CloudProviderName: "hetzner",
 							},
 						},
 						{
@@ -109,7 +115,8 @@ var (
 							Zone:       "example zone",
 							Count:      1,
 							Provider: &pb.Provider{
-								Name: "gcp",
+								SpecName:          "gcp-1",
+								CloudProviderName: "gcp",
 							},
 						},
 						{
@@ -121,7 +128,8 @@ var (
 							Zone:       "example zone",
 							Count:      2,
 							Provider: &pb.Provider{
-								Name: "gcp",
+								SpecName:          "gcp-1",
+								CloudProviderName: "gcp",
 							},
 						},
 					},
@@ -146,7 +154,8 @@ var (
 							Zone:       "example zone",
 							Count:      2,
 							Provider: &pb.Provider{
-								Name: "gcp",
+								SpecName:          "gcp-1",
+								CloudProviderName: "gcp",
 							},
 							Nodes: []*pb.Node{
 								{
@@ -177,7 +186,8 @@ var (
 					DnsZone:  "lb-zone",
 					Hostname: "www.test.io",
 					Provider: &pb.Provider{
-						Name: "gcp",
+						SpecName:          "gcp-1",
+						CloudProviderName: "gcp",
 					},
 				},
 			},
