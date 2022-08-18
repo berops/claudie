@@ -12,8 +12,7 @@ import (
 )
 
 const (
-	secretTpl  = "secret.goyaml"
-	secretFile = "secret.yaml"
+	secretTpl = "secret.goyaml"
 )
 
 type SecretData struct {
