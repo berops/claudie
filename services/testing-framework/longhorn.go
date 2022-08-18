@@ -141,13 +141,31 @@ func parsePodsOutput(out []byte) (bool, error) {
 	}
 	// iterate over all returned items
 	for _, item := range parsedJSON.Items {
+		if item == nil {
+			return false, nil
+		}
 		// get status field
-		status := item["status"].(map[string]interface{})
+		statusField := item["status"]
+		if statusField == nil {
+			return false, nil
+		}
+		status := statusField.(map[string]interface{})
 		// get container statuses
-		containerStatuses := status["containerStatuses"].([]interface{})
+		containerStatusesField := status["containerStatuses"]
+		if containerStatusesField == nil {
+			return false, nil
+		}
+		containerStatuses := containerStatusesField.([]interface{})
 		// check all container statuses if they are ready
 		for _, conStat := range containerStatuses {
-			ready := conStat.(map[string]interface{})["ready"].(bool)
+			if conStat == nil {
+				return false, nil
+			}
+			readyField := conStat.(map[string]interface{})
+			if readyField == nil {
+				return false, nil
+			}
+			ready := readyField["ready"].(bool)
 			// if not ready, return false
 			if !ready {
 				log.Info().Msgf("Container %s is not ready yet...", conStat.(map[string]interface{})["name"].(string))
