@@ -23,16 +23,16 @@ images:
 - name: eu.gcr.io/platform-infrastructure-316112/platform/builder
   newTag: 7502763-616
 - name: eu.gcr.io/platform-infrastructure-316112/platform/context-box
-  newTag: eb498db-619
+  newTag: 0a7238c-644
 - name: eu.gcr.io/platform-infrastructure-316112/platform/frontend
-  newTag: eb498db-619
+  newTag: 0a7238c-644
 - name: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven
   newTag: c671566-549
 - name: eu.gcr.io/platform-infrastructure-316112/platform/kuber
   newTag: c804dcd-591
 - name: eu.gcr.io/platform-infrastructure-316112/platform/scheduler
-  newTag: eb498db-619
+  newTag: 0a7238c-644
 - name: eu.gcr.io/platform-infrastructure-316112/platform/terraformer
-  newTag: eb498db-619
+  newTag: 0a7238c-644
 - name: eu.gcr.io/platform-infrastructure-316112/platform/testing-framework
-  newTag: 6fb467b-630
+  newTag: 0a7238c-644
