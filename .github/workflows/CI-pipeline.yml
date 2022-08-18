@@ -98,8 +98,8 @@ jobs:
           do
             for file in $directory/*
             do
-            ./yq e '.providers.[0].credentials = "${{ secrets.HETZNER_CREDENTIALS}}"' $file -i
-            ./yq e '.providers.[1].credentials = ${{ secrets.GCP_CREDENTIALS }}' $file -i
+            ./yq e '.providers.hetzner.[0].credentials = "${{ secrets.HETZNER_CREDENTIALS}}"' $file -i
+            ./yq e '.providers.gcp.[1].credentials = ${{ secrets.GCP_CREDENTIALS }}' $file -i
             done
           done
           #Clean up
