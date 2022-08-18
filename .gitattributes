@@ -1,5 +1,6 @@
 keys/** filter=git-crypt diff=git-crypt
 services/context-box/client/manifest.yaml filter=git-crypt diff=git-crypt
+services/testing-framework/tests/** filter=git-crypt diff=git-crypt
 services/terraformer/client/client_test.go filter=git-crypt diff=git-crypt
 services/terraformer/server/terraformer_test.go filter=git-crypt diff=git-crypt
 services/terraformer/server/clusterBuilder/clusterBuilder_test.go filter=git-crypt diff=git-crypt
