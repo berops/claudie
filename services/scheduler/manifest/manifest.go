@@ -4,16 +4,26 @@ package manifest
 
 type Manifest struct {
 	Name         string       `yaml:"name"`
-	Providers    []Provider   `yaml:"providers"`
+	Providers    Provider     `yaml:"providers"`
 	NodePools    NodePool     `yaml:"nodePools"`
 	Kubernetes   Kubernetes   `yaml:"kubernetes"`
 	LoadBalancer LoadBalancer `yaml:"loadBalancers"`
 }
 
 type Provider struct {
-	Name        string      `yaml:"name"`
-	Credentials interface{} `yaml:"credentials"`
-	GCPProject  string      `yaml:"gcp_project,omitempty"`
+	GCP     []GCP     `yaml:"gcp"`
+	Hetzner []Hetzner `yaml:"hetzner"`
+}
+
+type GCP struct {
+	Name        string `yaml:"name"`
+	Credentials string `yaml:"credentials"`
+	GCPProject  string `yaml:"gcp_project"`
+}
+
+type Hetzner struct {
+	Name        string `yaml:"name"`
+	Credentials string `yaml:"credentials"`
 }
 
 type NodePool struct {
@@ -31,12 +41,18 @@ type Kubernetes struct {
 }
 
 type DynamicNodePool struct {
-	Name       string                       `yaml:"name"`
-	Provider   map[string]map[string]string `yaml:"provider"`
-	Count      int64                        `yaml:"count"`
-	ServerType string                       `yaml:"server_type"`
-	Image      string                       `yaml:"image"`
-	DiskSize   int64                        `yaml:"disk_size"`
+	Name         string       `yaml:"name"`
+	ProviderSpec ProviderSpec `yaml:"providerSpec"`
+	Count        int64        `yaml:"count"`
+	ServerType   string       `yaml:"server_type"`
+	Image        string       `yaml:"image"`
+	DiskSize     int64        `yaml:"disk_size"`
+}
+
+type ProviderSpec struct {
+	Name   string `yaml:"name"`
+	Region string `yaml:"region"`
+	Zone   string `yaml:"zone"`
 }
 
 type StaticNodePool struct {
@@ -79,7 +95,7 @@ type LoadBalancerCluster struct {
 
 type DNS struct {
 	DNSZone  string `yaml:"dns_zone,omitempty"`
-	Project  string `yaml:"project,omitempty"`
+	Provider string `yaml:"provider,omitempty"`
 	Hostname string `yaml:"hostname,omitempty"`
 }
 
