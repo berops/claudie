@@ -32,6 +32,18 @@ func (k *Kubectl) KubectlApply(manifest, namespace string) error {
 	return k.run(command)
 }
 
+// KubectlApplyString runs kubectl apply in k.Directory directory, with specified string data and specified namespace
+// if namespace is empty string, the kubectl apply will not use -n flag
+// example: echo 'Kind: Pod ...' | kubectl apply -f - -> k.KubectlApply("Kind: Pod ...", "")
+func (k *Kubectl) KubectlApplyString(str, namespace string) error {
+	kubeconfig := k.getKubeconfig()
+	if namespace != "" {
+		namespace = fmt.Sprintf("-n %s", namespace)
+	}
+	command := fmt.Sprintf("echo '%s' | kubectl apply -f - %s %s", str, kubeconfig, namespace)
+	return k.run(command)
+}
+
 // KubectlDeleteManifest runs kubectl delete in k.Directory, with specified manifest and specified namespace
 // if namespace is empty string, the kubectl apply will not use -n flag
 // example: kubectl delete -f test.yaml -> k.KubectlDelete("test.yaml", "")

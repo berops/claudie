@@ -28,7 +28,7 @@ type VPNInfo struct {
 func installWireguardVPN(vpnNodepools map[string]*VPNInfo) error {
 	var errGroup errgroup.Group
 	for k8sClusterName, vpnInfo := range vpnNodepools {
-		directory := filepath.Join(baseDirectory, outputDirectory, k8sClusterName)
+		directory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", k8sClusterName, utils.CreateHash(4)))
 		func(vpnInfo *VPNInfo) {
 			//concurrent vpn creation on cluster level
 			errGroup.Go(func() error {

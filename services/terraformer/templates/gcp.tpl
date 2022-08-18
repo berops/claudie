@@ -3,9 +3,9 @@
 {{$index :=  0}}
 
 provider "google" {
-  credentials = "${file("{{(index .NodePools $index).Provider.Name}}")}"
+  credentials = "${file("{{(index .NodePools $index).Provider.SpecName}}")}"
   region      = "{{(index .NodePools 0).Region}}"
-  project     = "{{(index .NodePools 0).Provider.Project}}"
+  project     = "{{(index .NodePools 0).Provider.GcpProject}}"
   alias       = "k8s-nodepool"
 }
 

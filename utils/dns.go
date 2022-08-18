@@ -8,7 +8,7 @@ func ChangedDNSProvider(currentDNS, desiredDNS *pb.DNS) bool {
 		return false
 	}
 	// DNS provider are same
-	if currentDNS.Provider.Name == desiredDNS.Provider.Name {
+	if currentDNS.Provider.SpecName == desiredDNS.Provider.SpecName {
 		if currentDNS.Provider.Credentials == desiredDNS.Provider.Credentials {
 			return false
 		}

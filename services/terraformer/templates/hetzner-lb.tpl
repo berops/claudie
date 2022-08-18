@@ -1,12 +1,3 @@
-terraform {
-  required_providers {
-    hcloud = {
-      source = "hetznercloud/hcloud"
-      version = "1.34.3"
-    }
-  }
-}
-
 {{- $clusterName := .ClusterName}}
 {{- $clusterHash := .ClusterHash}}
 {{$index :=  0}}

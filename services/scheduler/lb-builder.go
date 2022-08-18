@@ -11,19 +11,19 @@ import (
 const (
 	hostnameHashLength = 17
 	apiserverPort      = 6443
-	gcpProvider        = "gcp"
 )
 
 var (
 	// claudie provider for berops customers
 	claudieProvider = &pb.Provider{
-		Name:        "gcp",
-		Credentials: "../../../../../keys/platform-infrastructure-316112-bd7953f712df.json",
+		SpecName:          "default-gcp",
+		CloudProviderName: "gcp",
+		Credentials:       "../../../../../keys/platform-infrastructure-316112-bd7953f712df.json",
+		GcpProject:        "platform-infrastructure-316112",
 	}
 	// default DNS for berops customers
 	DefaultDNS = &pb.DNS{
 		DnsZone:  "lb-zone",
-		Project:  "platform-infrastructure-316112",
 		Provider: claudieProvider,
 	}
 )
@@ -33,7 +33,7 @@ var (
 func createLBCluster(manifestState *manifest.Manifest) ([]*pb.LBcluster, error) {
 	var lbClusters []*pb.LBcluster
 	for _, lbCluster := range manifestState.LoadBalancer.Clusters {
-		dns, err := getDNS(lbCluster.DNS, manifestState.Providers)
+		dns, err := getDNS(lbCluster.DNS, manifestState)
 		if err != nil {
 			return nil, fmt.Errorf("error while processing %s : %v", lbCluster.Name, err)
 		}
@@ -50,7 +50,7 @@ func createLBCluster(manifestState *manifest.Manifest) ([]*pb.LBcluster, error) 
 			Dns:         dns,
 			TargetedK8S: lbCluster.TargetedK8s,
 		}
-		nodes, err := createNodepools(lbCluster.Pools, manifestState, false)
+		nodes, err := manifestState.CreateNodepools(lbCluster.Pools, false)
 		if err != nil {
 			return nil, fmt.Errorf("error while creating nodepools for %s : %v", lbCluster.Name, err)
 		}
@@ -94,21 +94,17 @@ clusterLbDesired:
 
 //getDNS reads manifest state and returns *pb.DNS based on it
 //return *pb.DNS if successful, error if provider has not been found
-func getDNS(lbDNS manifest.DNS, providers []manifest.Provider) (*pb.DNS, error) {
+func getDNS(lbDNS manifest.DNS, manifestState *manifest.Manifest) (*pb.DNS, error) {
 	if lbDNS.DNSZone == "" {
 		return DefaultDNS, nil // default zone is used
 	} else {
-		provider := findProvider(gcpProvider, providers)
-		if provider == nil {
-			return nil, fmt.Errorf("provider %s was not found", gcpProvider)
+		provider, err := manifestState.GetProvider(lbDNS.Provider)
+		if err != nil {
+			return nil, fmt.Errorf("Provider %s was not found", lbDNS.Provider)
 		}
 		return &pb.DNS{
-			DnsZone: lbDNS.DNSZone,
-			Provider: &pb.Provider{
-				Name:        provider.Name,
-				Credentials: fmt.Sprint(provider.Credentials),
-			},
-			Project:  lbDNS.Project,
+			DnsZone:  lbDNS.DNSZone,
+			Provider: provider,
 			Hostname: lbDNS.Hostname,
 		}, nil
 	}

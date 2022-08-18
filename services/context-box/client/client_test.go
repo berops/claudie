@@ -68,7 +68,7 @@ func makePbConfig(msg string, manifest []byte, id string) *pb.Config {
 }
 func TestSaveConfigFrontEnd(t *testing.T) {
 	c, cc := ClientConnection()
-	manifestFile := "../../../../poc/manifests/client-2/1.yaml" // this is manifest from this test file
+	manifestFile := "./manifest.yaml" // this is manifest from this test file
 
 	manifest, errR := ioutil.ReadFile(manifestFile)
 	if errR != nil {
@@ -104,7 +104,7 @@ func TestSaveConfigScheduler(t *testing.T) {
 
 func TestDeleteConfig(t *testing.T) {
 	c, cc := ClientConnection()
-	configID := "62e3b025f1cc5318a1632234" //configIDDefault // Put desired config ID here
+	configID := "62fcd110fb0a5215e2233da3" //configIDDefault // Put desired config ID here
 	delErr := DeleteConfig(c, configID, pb.IdType_HASH)
 	if delErr != nil {
 		log.Fatal().Msgf("Error deleting config %s %v", configID, delErr)
