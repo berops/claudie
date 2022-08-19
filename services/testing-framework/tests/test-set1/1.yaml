@@ -1,0 +1,68 @@
+name: TestSet-1
+
+providers:
+  hetzner:
+    - name: hetzner-1
+      credentials: replaceme-token
+  gcp:
+    - name: gcp-1
+      credentials: replaceme-key
+      gcp_project: replaceme-project
+
+nodePools:
+  dynamic:
+    - name: hetzner-control
+      providerSpec:
+        name: hetzner-1
+        region: nbg1
+        zone: nbg1-dc3
+      count: 2
+      server_type: cpx11
+      image: ubuntu-20.04
+      disk_size: 50
+    - name: hetzner-compute
+      providerSpec:
+        name: hetzner-1
+        region: nbg1
+        zone: nbg1-dc3
+      count: 2
+      server_type: cpx11
+      image: ubuntu-20.04
+      disk_size: 50
+    - name: gcp-control
+      providerSpec:
+        name: gcp-1
+        region: europe-west1
+        zone: europe-west1-c
+      count: 2
+      server_type: e2-medium
+      image: ubuntu-os-cloud/ubuntu-2004-focal-v20220610
+      disk_size: 50
+    - name: gcp-compute
+      providerSpec:
+        name: gcp-1
+        region: europe-west1
+        zone: europe-west1-c
+      count: 2
+      server_type: e2-small
+      image: ubuntu-os-cloud/ubuntu-2004-focal-v20220610
+      disk_size: 50
+
+kubernetes:
+  clusters:
+    - name: ts1-c-1
+      version: v1.21.0
+      network: 192.168.2.0/24
+      pools:
+        control:
+          - hetzner-control
+        compute:
+          - hetzner-compute
+    - name: ts1-c-2
+      version: v1.21.0
+      network: 192.168.2.0/24
+      pools:
+        control:
+          - gcp-control
+        compute:
+          - gcp-compute
