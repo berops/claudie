@@ -13,21 +13,6 @@ const (
 	apiserverPort      = 6443
 )
 
-var (
-	// claudie provider for berops customers
-	claudieProvider = &pb.Provider{
-		SpecName:          "default-gcp",
-		CloudProviderName: "gcp",
-		Credentials:       "../../../../../keys/platform-infrastructure-316112-bd7953f712df.json",
-		GcpProject:        "platform-infrastructure-316112",
-	}
-	// default DNS for berops customers
-	DefaultDNS = &pb.DNS{
-		DnsZone:  "lb-zone",
-		Provider: claudieProvider,
-	}
-)
-
 //createLBCluster reads manifest state and create loadbalancer clusters based on it
 //returns slice of *pb.LBcluster if successful, nil otherwise
 func createLBCluster(manifestState *manifest.Manifest) ([]*pb.LBcluster, error) {
@@ -96,7 +81,7 @@ clusterLbDesired:
 //return *pb.DNS if successful, error if provider has not been found
 func getDNS(lbDNS manifest.DNS, manifestState *manifest.Manifest) (*pb.DNS, error) {
 	if lbDNS.DNSZone == "" {
-		return DefaultDNS, nil // default zone is used
+		return nil, fmt.Errorf("DNS zone not provided")
 	} else {
 		provider, err := manifestState.GetProvider(lbDNS.Provider)
 		if err != nil {
