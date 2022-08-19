@@ -16,8 +16,6 @@ Loadbalancer is assigned to the kubernetes cluster with a field `targeted-k8s`. 
 
 The Claudie creates and manages DNS for the loadbalancer. If user adds loadbalancer into their infrastructure via Claudie, it will create a DNS A record with the public IP of the loadbalancer machines behind it. When the loadbalancer configuration changes in any way e.g. adds/removes a node, changes hostname, changes target; the DNS record is reconfigured seamlessly by Claudie. This lifts the burden of the DNS management from the user. 
 
-Only for the Berops customers, if the DNS field will be left undefined, the loadbalancer will use Berops managed cloud DNS
-
 ### Nodepools
 
 Loadbalancers are build from user defined nodepools in `pools` field, similar to how kubernetes clusters are defined. These nodepools allows user to change/scale the loadbalancers according to their needs without any fuss. See nodepool definition for more information.
