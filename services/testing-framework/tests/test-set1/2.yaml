@@ -32,8 +32,8 @@ nodePools:
     - name: gcp-control
       providerSpec:
         name: gcp-1
-        region: europe-west1
-        zone: europe-west1-c
+        region: europe-west2
+        zone: europe-west2-c
       count: 3
       server_type: e2-medium
       image: ubuntu-os-cloud/ubuntu-2004-focal-v20220610
@@ -41,8 +41,8 @@ nodePools:
     - name: gcp-compute
       providerSpec:
         name: gcp-1
-        region: europe-west1
-        zone: europe-west1-c
+        region: europe-west2
+        zone: europe-west2-c
       count: 3
       server_type: e2-small
       image: ubuntu-os-cloud/ubuntu-2004-focal-v20220610
