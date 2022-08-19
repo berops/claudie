@@ -8,8 +8,8 @@ import (
 var (
 	//TerraformerURL is a listening URL for Terraformer module
 	TerraformerURL = os.Getenv("TERRAFORMER_HOSTNAME") + ":" + os.Getenv("TERRAFORMER_PORT")
-	//WireguardianURL is a listening URL for Wireguardian module
-	WireguardianURL = os.Getenv("ANSIBLER_HOSTNAME") + ":" + os.Getenv("ANSIBLER_PORT")
+	//AnsiblerURL is a listening URL for Ansibler module
+	AnsiblerURL = os.Getenv("ANSIBLER_HOSTNAME") + ":" + os.Getenv("ANSIBLER_PORT")
 	//KubeElevenURL is a listening URL for KubeEleven module
 	KubeElevenURL = os.Getenv("KUBE_ELEVEN_HOSTNAME") + ":" + os.Getenv("KUBE_ELEVEN_PORT")
 	//ContextBoxURL is a listening URL for ContextBox module
@@ -36,8 +36,8 @@ func init() {
 	if TerraformerURL == ":" {
 		TerraformerURL = "localhost:50052"
 	}
-	if WireguardianURL == ":" {
-		WireguardianURL = "localhost:50053"
+	if AnsiblerURL == ":" {
+		AnsiblerURL = "localhost:50053"
 	}
 	if KubeElevenURL == ":" {
 		KubeElevenURL = "localhost:50054"

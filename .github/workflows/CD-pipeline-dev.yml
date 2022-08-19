@@ -62,12 +62,12 @@ jobs:
 
       # Create a seperate temporary namespace
       - name: Create seperate namespace
-        working-directory: ./K8s-dev-cluster
+        working-directory: ./manifests/claudie
         run: kubectl create namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
 
       # Deploy services to new namespace
       - name: Deploy to new namespace
-        working-directory: ./K8s-dev-cluster
+        working-directory: ./manifests/claudie
         run: |
           kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
           kustomize build | kubectl apply -f - 
@@ -87,11 +87,34 @@ jobs:
 
           kubectl get pods --namespace=claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
 
+        # Insert cloud credentials to test set if needed at CI runtime
+      - name: Insert cloud credentials to test set
+        working-directory: ./manifests/testing-framework/test-sets
+        run: |
+          wget https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
+          tar xz && mv yq_linux_amd64 yq
+
+          DIR=( ${{ env.TEST_SETS }} )
+          for directory in "${DIR[@]}"
+          do
+            for file in $directory/*
+            do
+            #replace hetzner cred
+            ./yq e '.providers.hetzner.[0].credentials = "${{ secrets.HETZNER_CREDENTIALS}}"' $file -i
+            #replace gcp cred & project
+            ./yq e '.providers.gcp.[0].credentials = ${{ secrets.GCP_CREDENTIALS }}' $file -i
+            ./yq e '.providers.gcp.[0].gcp_project = "${{ secrets.GCP_DEV_PROJECT_ID }}"' $file -i
+            done
+          done
+          #Clean up
+          rm -f yq 
+          rm -f yq.1 
+          rm -f install-man-page.sh 
+
       - name: Start the E2E tests
-        working-directory: ./K8s-dev-cluster
+        working-directory: ./manifests
         run: |
           kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
-          kustomize edit add resource testing-framework.yaml
           kustomize build . | kubectl apply -f -
 
       - name: Monitor E2E test

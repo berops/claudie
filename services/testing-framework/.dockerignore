@@ -10,7 +10,7 @@ services/context-box
 services/scheduler
 services/builder
 services/terraformer
-services/wireguardian
+services/ansibler
 services/kube-eleven
 utils
 .github
