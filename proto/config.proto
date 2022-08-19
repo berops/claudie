@@ -68,7 +68,6 @@ message DNS {
   string dnsZone = 1;
   string hostname = 2;
   Provider provider = 3;
-  string project = 4;
   string endpoint = 5;
 }
 
@@ -99,9 +98,10 @@ message Node {
 }
 
 message Provider {
-  string name = 1;
+  string specName = 1;
   string credentials = 2;
-  string project = 3;
+  string gcp_project = 3;
+  string cloudProviderName = 4; 
 }
 
 enum ClusterType {

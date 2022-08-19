@@ -30,7 +30,6 @@ type DNSData struct {
 	HostnameHash string
 	DNSZone      string
 	NodeIPs      []string
-	Project      string
 	Provider     *pb.Provider
 }
 
@@ -130,7 +129,7 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *pb.DNS, nodeIPs []string) 
 	}
 
 	// save provider cred file
-	if err = utils.CreateKeyFile(dns.Provider.Credentials, dnsDir, dns.Provider.Name); err != nil {
+	if err = utils.CreateKeyFile(dns.Provider.Credentials, dnsDir, dns.Provider.SpecName); err != nil {
 		log.Error().Msgf("Error creating provider credential key file: %v", err)
 		return err
 	}
@@ -153,7 +152,6 @@ func (d DNS) getDNSData(dns *pb.DNS, nodeIPs []string) DNSData {
 		ClusterName:  d.ClusterName,
 		ClusterHash:  d.ClusterHash,
 		NodeIPs:      nodeIPs,
-		Project:      dns.Project,
 		Provider:     dns.Provider,
 	}
 	return DNSData

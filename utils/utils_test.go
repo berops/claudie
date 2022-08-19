@@ -17,12 +17,12 @@ import (
 )
 
 var provider1 = &pb.Provider{
-	Name:        "gcp",
+	SpecName:    "gcp",
 	Credentials: "keys/platform-296509-d6ddeb344e91.json",
 }
 
 var provider2 = &pb.Provider{
-	Name:        "gcp",
+	SpecName:    "gcp",
 	Credentials: "keys/platform-infrastructure-316112-bd7953f712df.json",
 }
 

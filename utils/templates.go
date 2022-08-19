@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -52,6 +53,17 @@ func (t Templates) Generate(tpl *template.Template, outputFile string, d interfa
 		return fmt.Errorf("failed to execute the template file: %v", err)
 	}
 	return nil
+}
+
+// creates a  file from template and returns it as a string variable
+//returns error if not successful, generated template as a string and nil otherwise
+func (t Templates) GenerateToString(tpl *template.Template, d interface{}) (string, error) {
+	var buff bytes.Buffer
+	err := tpl.Execute(&buff, d)
+	if err != nil {
+		return "", err
+	}
+	return buff.String(), nil
 }
 
 //loads the template from directory specified in TemplateLoader

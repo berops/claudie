@@ -3,11 +3,14 @@ name: ExampleManifest
 # providers field is used for defining the providers
 # Currently, claudie supports hetzner and gcp only
 providers:
-  - name: hetzner
-    credentials: abcdefgh123456
-  - name: gcp
-    credentials: '{"type": service-account, "project_id": ....}'
-    gcp_project: project-id
+  hetzner:
+    - name: hetzner-1
+      credentials: abcdefgh123456
+  gcp:
+    - name: gcp-1
+      credentials: '{"type": service-account, "project_id": ....}'
+      gcp_project: project-id
+
 
 # nodepools field is used for defining the nodepool spec
 # you can think of them as a blueprints, not actual nodepools that will be created
@@ -16,38 +19,38 @@ nodePools:
   dynamic:
       # control nodes
     - name: control-hetzner # name of the nodepool
-      provider:             # provider spec
-        hetzner:            # use provider name define in providers section
-          region: nbg1
-          zone: nbg1-dc3
+      providerSpec:
+        name: hetzner-1
+        region: hel1
+        zone: hel1-dc2
       count: 3              # number of nodes in node pool
       server_type: cpx11
       image: ubuntu-20.04   # OS image
       disk_size: 50         # size of the disk
       # compute nodes
     - name: compute-hetzner
-      provider:
-        hetzner:
-          region: nbg1
-          zone: nbg1-dc3
+      providerSpec:
+        name: hetzner-1
+        region: hel1
+        zone: hel1-dc2
       count: 2
       server_type: cpx11
       image: ubuntu-20.04
       disk_size: 50
     - name: control-gcp
-      provider:
-        gcp:
-          region: europe-west1
-          zone: europe-west1-c
+      providerSpec:
+        name: gcp-1
+        region: europe-west1
+        zone: europe-west1-c
       count: 3
       server_type: e2-medium
       image: ubuntu-os-cloud/ubuntu-2004-focal-v20220610
       disk_size: 50
     - name: compute-gcp
-      provider:
-        gcp:
-          region: europe-west1
-          zone: europe-west1-c
+      providerSpec:
+        name: gcp-1
+        region: europe-west1
+        zone: europe-west1-c
       count: 2
       server_type: e2-small
       image: ubuntu-os-cloud/ubuntu-2004-focal-v20220610
@@ -55,18 +58,19 @@ nodePools:
       # loadbalancer nodes
     - name: loadbalancer-1
       provider:
-        gcp:
-          region: europe-west1
-          zone: europe-west1-c
+      providerSpec:
+        name: gcp-1
+        region: europe-west1
+        zone: europe-west1-c
       count: 2
       server_type: e2-small
       image: ubuntu-os-cloud/ubuntu-2004-focal-v20220610
       disk_size: 50
     - name: loadbalancer-2
-      provider:
-        hetzner:
-          region: nbg1
-          zone: nbg1-dc3
+      providerSpec:
+        name: hetzner-1
+        region: hel1
+        zone: hel1-dc2
       count: 2
       server_type: cpx11
       image: ubuntu-20.04
@@ -123,7 +127,7 @@ loadBalancers:
       # dns spec where claudie will create DNS records for LB
       dns:
         dns_zone: dns-zone
-        project: project-id
+        provider: gcp-1
         #hostname: #left empty means the Claudie will create random hash as a hostname
       # name of targeted k8s cluster
       targeted-k8s: dev-cluster
@@ -135,7 +139,7 @@ loadBalancers:
         - apiserver
       dns:
         dns_zone: dns-zone
-        project: project-id
+        provider: gcp-1
         # this hostname will be used for DNS records
         # keep in mind that DNS zone will be included
         hostname: my.fancy.url
