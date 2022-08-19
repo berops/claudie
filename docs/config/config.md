@@ -76,7 +76,6 @@ DNS holds general information about the DNS records
   | DnsZone | string | DNS zone for the DNS records |
   | Hostname | string | User specified hostname |
   | Provider | [Provider](#provider) | Provider for the DNS records |
-  | Project | string | Project id for the DNS |
   | Endpoint | string | The whole hostname of the DNS record |
 
 ## NodePool
@@ -110,9 +109,10 @@ Provider represent a single provider from manifest
 
   | Name | Type | Description |
   |------|------|-------------|
-  | Name | string | Provider name |
+  | SpecName | string | Provider name |
   | Credentials | string | Credentials of the provider |
-  | Project | string | Provider project |
+  | GcpProject | string | GCP project (only required when using GCP as DNS provider) |
+  | CloudProviderName | string | Cloud provider name. e.g. `gcp` and `hetzner`
 
 ## NodeType
 NodeType specifies type of the node

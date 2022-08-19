@@ -20,11 +20,11 @@ The layout of the files/directories for a single k8s cluster loadbalancers is:
 clusters/
 └── k8s-cluster-1/
 	├── lb-cluster-1/
-	│	├── private.pem
+	│	├── key.pem
 	│	├── lb.conf
 	│	└── nginx.yml
 	├── lb-cluster-2/
-	│	├── private.pem
+	│	├── key.pem
 	│	├── lb.conf
 	│	└── nginx.yml
 	├── k8s.pem
@@ -71,7 +71,7 @@ func setUpLoadbalancers(lbInfos map[string]*LBInfo) error {
 	for k8sClusterName, lbInfo := range lbInfos {
 		func(lbInfo *LBInfo, k8sClusterName string) {
 			//set up all lbs for the k8s cluster, since single k8s can have multiple LBs
-			k8sDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-lbs", k8sClusterName))
+			k8sDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", k8sClusterName, utils.CreateHash(4)))
 			//generate inventory for all LBs with k8s nodes
 			err := generateK8sBaseFiles(k8sDirectory, lbInfo)
 			if err != nil {
@@ -83,7 +83,8 @@ func setUpLoadbalancers(lbInfos map[string]*LBInfo) error {
 				var errGroupLB errgroup.Group
 				//iterate over all LBs for a single k8s cluster
 				for _, lb := range lbInfo.LbClusters {
-					directory := filepath.Join(k8sDirectory, lb.LbCluster.ClusterInfo.Name)
+					directory := filepath.Join(k8sDirectory, fmt.Sprintf("%s-%s", lb.LbCluster.ClusterInfo.Name, lb.LbCluster.ClusterInfo.Hash))
+					log.Info().Msgf("Setting up the LB %s", directory)
 					func(directory, k8sDirectory string, lb *LBData) {
 						//set up the individual LB
 						errGroupLB.Go(func() error {
@@ -145,7 +146,7 @@ func setUpNginx(lb *pb.LBcluster, targetedNodepool []*pb.NodePool, directory str
 			return fmt.Errorf("failed to create directory %s : %v", directory, err)
 		}
 	}
-	if err := utils.CreateKeyFile(lb.ClusterInfo.PrivateKey, directory, fmt.Sprintf("%s.%s", lb.ClusterInfo.Name, privateKeyExt)); err != nil {
+	if err := utils.CreateKeyFile(lb.ClusterInfo.PrivateKey, directory, fmt.Sprintf("key.%s", privateKeyExt)); err != nil {
 		return fmt.Errorf("failed to create key file for %s : %v", lb.ClusterInfo.Name, err)
 	}
 	//prepare data for .conf
@@ -179,8 +180,8 @@ func setUpNginx(lb *pb.LBcluster, targetedNodepool []*pb.NodePool, directory str
 		return fmt.Errorf("error while generating %s for %s : %v", nginxPlaybook, lb.ClusterInfo.Name, err)
 	}
 	//run the playbook
-	ansible := ansible.Ansible{Playbook: nginxPlaybook, Inventory: "../" + inventoryFile, Directory: directory}
-	err = ansible.RunAnsiblePlaybook(lb.ClusterInfo.Name)
+	ansible := ansible.Ansible{Playbook: nginxPlaybook, Inventory: filepath.Join("..", inventoryFile), Directory: directory}
+	err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s", lb.ClusterInfo.Name))
 	if err != nil {
 		return fmt.Errorf("error while running ansible for %s : %v", lb.ClusterInfo.Name, err)
 	}
