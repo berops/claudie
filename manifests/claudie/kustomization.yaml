@@ -34,3 +34,5 @@ images:
   newTag: 0a7238c-644
 - name: eu.gcr.io/platform-infrastructure-316112/platform/terraformer
   newTag: 0a7238c-644
+- name: eu.gcr.io/platform-infrastructure-316112/platform/testing-framework
+  newTag: e6be2d8-656
