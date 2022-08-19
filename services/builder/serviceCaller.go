@@ -28,14 +28,14 @@ func buildConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig bo
 	}
 	config.CurrentState = currentState
 	config.DesiredState = desiredState
-	// call Wireguardian to build VPN
+	// call Ansibler to build VPN
 	desiredState, err = callAnsibler(config.GetDesiredState(), config.GetCurrentState())
 	if err != nil {
 		err1 := saveErrorMessage(config, c, err)
 		if err1 != nil {
-			return fmt.Errorf("error in Wireguardian: %v; unable to save error message config: %v", err, err1)
+			return fmt.Errorf("error in Ansibler: %v; unable to save error message config: %v", err, err1)
 		}
-		return fmt.Errorf("error in Wireguardian: %v", err)
+		return fmt.Errorf("error in Ansibler: %v", err)
 	}
 	config.DesiredState = desiredState
 	// call Kube-eleven to create K8s clusters
@@ -97,9 +97,9 @@ func callTerraformer(currentState *pb.Project, desiredState *pb.Project) (*pb.Pr
 	return res.GetCurrentState(), res.GetDesiredState(), nil
 }
 
-//callAnsibler passes config to wireguardian to set up VPN
+//callAnsibler passes config to ansibler to set up VPN
 func callAnsibler(desiredState, currentState *pb.Project) (*pb.Project, error) {
-	cc, err := utils.GrpcDialWithInsecure("ansibler", envs.WireguardianURL)
+	cc, err := utils.GrpcDialWithInsecure("ansibler", envs.AnsiblerURL)
 	if err != nil {
 		return nil, err
 	}

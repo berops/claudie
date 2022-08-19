@@ -1,4 +1,4 @@
-package wireguardian
+package ansibler
 
 import (
 	"context"
