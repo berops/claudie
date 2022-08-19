@@ -28,28 +28,44 @@ Manifest is a definition of the user's infrastructure. It contains cloud provide
 
 Contains configurations for different supported cloud providers. Atleast one provider needs to be defined out of the following supported providers 
 
-- `gcp`
-  List of [provider spec](#provider-spec) for [Google cloud](https://cloud.google.com/) configuration. This field is optional.
+- `gcp` [GCP](#gcp)
+  
+  List of GCP configurations for [Google cloud](https://cloud.google.com/). This field is optional.
 
-- `hetzner`
-  List of [provider spec](#provider-spec) for [Hetzner cloud](https://www.hetzner.com/cloud) configuration. This field is optional.
+- `hetzner` [Hetzner](#hetzner)
+  
+  List of Hetzner configuration for [Hetzner cloud](https://www.hetzner.com/cloud) . This field is optional.
 
 Support for more cloud provider is planned and will be rolled out in future. 
 
-## Provider Spec 
+## GCP
 
-Collection of data defining cloud provider configuration. 
+Collection of data defining GCP cloud provider configuration. 
+
+- `name`
+
+  Name of the provider. Used as a reference further in the input manifest. Should be unique for each provider spec across all the cloud providers.
+
+- `credentials`
+
+  Credentials for the provider. Stringified JSON service account key.
+
+- `gcp_project`
+
+  GCP project id of an already existing GCP project.
+
+## Hetzner
+
+Collection of data defining Hetzner cloud provider configuration. 
 
 - `name`
 
   Name of the provider spec. Used as a reference further in the input manifest. Should be unique for each provider spec across all the cloud providers.
+
 - `credentials`
 
-  Credentials for the provider. Either an API token (Hetzner), or a stringified JSON service account key (GCP).
+  Credentials for the provider (API token).
 
-- `gcp_project`
-
-  GCP project id of an already existing GCP project. Only valid for GCP [Provider](#providers).
 
 ## Nodepools
 
@@ -72,9 +88,9 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
   Name of the nodepool. Each nodepool will have a random hash appended to the name, so the whole name will be of format `<name>-<hash>`.
 
-- `provideSpec`
+- `provideSpec` [Provider spec](#provider-spec)
 
-  Name of the [provider spec](#provider-spec) to be used while creating the nodepool.  
+  Collection of provider data to be used while creating the nodepool.  
 
 - `count`
 
@@ -92,7 +108,21 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
   Size of the disk on the nodes in the nodepool.
 
+## Provider Spec
 
+Provider spec is further specification build on top of the data from either [GCP](#gcp) or [Hetzner](#hetzner)
+
+- `name`
+
+  Name of the provider specified in either [GCP](#gcp) or [Hetzner](#hetzner)
+
+- `region`
+
+  Region of the nodepool. [NOTE: only used in GCP nodepools]
+
+- `zone`
+
+  Zone of the nodepool. Zone can be either GCP zone or Hetzner datacenter.
 ## Kubernetes
 
 Defines Kubernetes clusters.
@@ -202,7 +232,7 @@ Collection of data Claudie uses to create a DNS record for the loadbalancer.
 
 - `provider`
 
-  Name of [provider spec](provider-spec) to be used for creating an A record entry in defined dns zone.
+  Name of [provider](#providers) to be used for creating an A record entry in defined dns zone.
 
 - `hostname`
   
