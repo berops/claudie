@@ -94,8 +94,8 @@ type LoadBalancerCluster struct {
 }
 
 type DNS struct {
-	DNSZone  string `yaml:"dns_zone,omitempty"`
-	Provider string `yaml:"provider,omitempty"`
+	DNSZone  string `yaml:"dns_zone"`
+	Provider string `yaml:"provider"`
 	Hostname string `yaml:"hostname,omitempty"`
 }
 
