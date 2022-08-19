@@ -127,29 +127,47 @@ jobs:
         with:
           version: 3.6.1
 
-      # Set the new image tags in kustomization.yaml
-      - name: Edit kustomization.yaml
-        working-directory: ./K8s-dev-cluster
+      # Set the new claudie image tags in kustomization.yaml
+      - name: Edit claudie kustomization.yaml
+        working-directory: ./manifests/claudie
         run: |
           NEW_SERVICES=( ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES }} )
           for SERVICE in "${NEW_SERVICES[@]}"
           do
             echo "Setting a new tag for a $SERVICE"
-            kustomize edit set image eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$SERVICE:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+            if [ "$SERVICE" != "testing-framework" ]; then
+              kustomize edit set image eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$SERVICE:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+            fi
+          done
+
+          cat kustomization.yaml
+
+      # Set the new testing-framework image tags in kustomization.yaml
+      - name: Edit testing-framework kustomization.yaml
+        working-directory: ./manifests/testing-framework
+        run: |
+          NEW_SERVICES=( ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES }} )
+          for SERVICE in "${NEW_SERVICES[@]}"
+          do
+            echo "Setting a new tag for a $SERVICE"
+            if [ "$SERVICE" == "testing-framework" ]; then
+              kustomize edit set image eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$SERVICE:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+            fi
           done
 
           cat kustomization.yaml
 
       # Auto commit the changes
       - name: Commit new kustomization.yaml to feature branch
-        working-directory: ./K8s-dev-cluster
+        working-directory: ./manifests
         run: |
           BRANCH_NAME=${{ github.head_ref }}
           git config --global user.name 'CI/CD pipeline'
           git config --global user.email 'CI/CD-pipeline@users.noreply.github.com'
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          git add kustomization.yaml
-          git commit -m "Auto commit - add new kustomization.yaml"
+          git add claudie/kustomization.yaml
+          git add testing-framework/kustomization.yaml
+          git commit -m "Auto commit - update kustomization.yaml"
           git push
 
   #--------------------------------------------------------------------------------------------------
@@ -204,12 +222,12 @@ jobs:
 
       # Create a seperate temporary namespace
       - name: Create seperate namespace
-        working-directory: ./K8s-dev-cluster
+        working-directory: ./manifests/claudie
         run: kubectl create namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
 
       # Deploy services to new namespace
       - name: Deploy to new namespace
-        working-directory: ./K8s-dev-cluster
+        working-directory: ./manifests/claudie
         run: |
           kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
           kustomize build | kubectl apply -f - 
@@ -230,10 +248,9 @@ jobs:
           kubectl get pods --namespace=claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
 
       - name: Start the E2E tests
-        working-directory: ./K8s-dev-cluster
+        working-directory: ./manifests
         run: |
           kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
-          kustomize edit add resource testing-framework.yaml
           kustomize build . | kubectl apply -f -
 
       - name: Monitor E2E test
