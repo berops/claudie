@@ -31,6 +31,6 @@ images:
 - name: eu.gcr.io/platform-infrastructure-316112/platform/kuber
   newTag: 376e0c8-651
 - name: eu.gcr.io/platform-infrastructure-316112/platform/scheduler
-  newTag: ffcb58b-665
+  newTag: 6edf7c9-667
 - name: eu.gcr.io/platform-infrastructure-316112/platform/terraformer
   newTag: 0a7238c-644
