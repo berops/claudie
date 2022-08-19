@@ -119,7 +119,6 @@ func printConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType) (*pb
 }
 
 func saveConfig(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest, saveFun saveFunction) (*pb.SaveConfigResponse, error) {
-	log.Info().Msgf("Saving config via %v", saveFun)
 	res, err := saveFun(context.Background(), req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to save config via %s : %v", runtime.FuncForPC(reflect.ValueOf(saveFun).Pointer()).Name() /*prints name of the function*/, err)

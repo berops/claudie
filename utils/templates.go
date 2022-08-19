@@ -44,7 +44,7 @@ func (t Templates) Generate(tpl *template.Template, outputFile string, d interfa
 			return fmt.Errorf("failed to create dir: %v", err)
 		}
 	}
-	log.Info().Msgf("Creating %s \n", generatedFile)
+	log.Info().Msgf("Creating %s", generatedFile)
 	f, err := os.Create(generatedFile)
 	if err != nil {
 		return fmt.Errorf("failed to create the %s file: %v", t.Directory, err)

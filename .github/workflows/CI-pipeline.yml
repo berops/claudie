@@ -9,6 +9,7 @@ on:
 env:
   ENV_FILE: .env
   SERVICES: context-box scheduler builder terraformer ansibler kube-eleven kuber frontend testing-framework
+  TEST_SETS: test-set1 test-set2
 
 jobs:
   #--------------------------------------------------------------------------------------------------
@@ -83,7 +84,6 @@ jobs:
       - name: Configure Docker
         if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
         run: gcloud auth configure-docker --quiet
-
       # Build the new images that were changed by a recent commit - tag image latest as well for testing
       - name: Build new images
         if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
@@ -179,8 +179,8 @@ jobs:
       - uses: actions/checkout@v2
         with:
           ref: ${{ github.head_ref }}
-    
-       # Install the git-crypt and unlock the files
+
+          # Install the git-crypt and unlock the files
       - name: git-crypt unlock
         run: |
           sudo apt update
@@ -230,7 +230,7 @@ jobs:
         working-directory: ./manifests/claudie
         run: |
           kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
-          kustomize build | kubectl apply -f - 
+          kustomize build | kubectl apply -f -
 
           cat kustomization.yaml
 
@@ -241,11 +241,35 @@ jobs:
           unset arr[-1]
           echo "${arr[@]}"
           for SERVICE in "${arr[@]}"
-          do 
+          do
           kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=900s --namespace=claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
           done
 
           kubectl get pods --namespace=claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+
+      # Insert cloud credentials to test set if needed at CI runtime
+      - name: Insert cloud credentials to test set
+        working-directory: ./manifests/testing-framework/test-sets
+        run: |
+          wget https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
+          tar xz && mv yq_linux_amd64 yq
+
+          DIR=( ${{ env.TEST_SETS }} )
+          for directory in "${DIR[@]}"
+          do
+            for file in $directory/*
+            do
+            #replace hetzner cred
+            ./yq e '.providers.hetzner.[0].credentials = "${{ secrets.HETZNER_CREDENTIALS}}"' $file -i
+            #replace gcp cred & project
+            ./yq e '.providers.gcp.[0].credentials = ${{ secrets.GCP_CREDENTIALS }}' $file -i
+            ./yq e '.providers.gcp.[0].gcp_project = "${{ secrets.GCP_DEV_PROJECT_ID }}"' $file -i
+            done
+          done
+          #Clean up
+          rm -f yq 
+          rm -f yq.1 
+          rm -f install-man-page.sh 
 
       - name: Start the E2E tests
         working-directory: ./manifests
