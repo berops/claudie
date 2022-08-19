@@ -22,7 +22,7 @@ const defaultBuilderPort = 50051
 
 // healthCheck function is function used for querying readiness of the pod running this microservice
 func healthCheck() error {
-	//Check if Builder can connect to Terraformer/Wireguardian/Kube-eleven/Kuber
+	//Check if Builder can connect to Terraformer/Ansibler/Kube-eleven/Kuber
 	//Connection to these services are crucial for Builder, without them, the builder is NOT Ready
 	if cc, err := utils.GrpcDialWithInsecure("terraformer", envs.TerraformerURL); err != nil {
 		return err
@@ -31,7 +31,7 @@ func healthCheck() error {
 			log.Error().Msgf("Error closing the connection in health check function : %v", err)
 		}
 	}
-	if cc, err := utils.GrpcDialWithInsecure("wireguardian", envs.WireguardianURL); err != nil {
+	if cc, err := utils.GrpcDialWithInsecure("ansibler", envs.AnsiblerURL); err != nil {
 		return err
 	} else {
 		if err := cc.Close(); err != nil {

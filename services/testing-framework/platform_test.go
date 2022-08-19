@@ -26,7 +26,7 @@ type idInfo struct {
 }
 
 const (
-	testDir = "tests"
+	testDir = "test-sets"
 
 	maxTimeout     = 3600   // max allowed time for one manifest to finish in [seconds]
 	sleepSec       = 30     // seconds for one cycle of config check
@@ -110,6 +110,10 @@ func applyTestSet(setName, namespace string, c pb.ContextBoxServiceClient) error
 	}
 
 	for _, manifest := range manifestFiles {
+		if manifest.IsDir() || manifest.Name()[0:1] == "." { // https://github.com/Berops/platform/pull/243#issuecomment-1218237412
+			continue
+		}
+
 		// create a path and read the file
 		manifestPath := filepath.Join(pathToTestSet, manifest.Name())
 		yamlFile, err := ioutil.ReadFile(manifestPath)

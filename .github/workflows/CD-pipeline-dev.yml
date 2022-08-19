@@ -62,12 +62,12 @@ jobs:
 
       # Create a seperate temporary namespace
       - name: Create seperate namespace
-        working-directory: ./K8s-dev-cluster
+        working-directory: ./manifests/claudie
         run: kubectl create namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
 
       # Deploy services to new namespace
       - name: Deploy to new namespace
-        working-directory: ./K8s-dev-cluster
+        working-directory: ./manifests/claudie
         run: |
           kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
           kustomize build | kubectl apply -f - 
@@ -88,10 +88,9 @@ jobs:
           kubectl get pods --namespace=claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
 
       - name: Start the E2E tests
-        working-directory: ./K8s-dev-cluster
+        working-directory: ./manifests
         run: |
           kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
-          kustomize edit add resource testing-framework.yaml
           kustomize build . | kubectl apply -f -
 
       - name: Monitor E2E test

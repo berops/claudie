@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	defaultWireguardianPort = 50053
+	defaultAnsiblerPort = 50053
 )
 
 type server struct {
@@ -114,7 +114,7 @@ func main() {
 	// initialize logger
 	utils.InitLog("ansibler")
 	// Set Ansibler port
-	ansiblerPort := utils.GetenvOr("ANSIBLER_PORT", fmt.Sprint(defaultWireguardianPort))
+	ansiblerPort := utils.GetenvOr("ANSIBLER_PORT", fmt.Sprint(defaultAnsiblerPort))
 	serviceAddr := net.JoinHostPort("0.0.0.0", ansiblerPort)
 	lis, err := net.Listen("tcp", serviceAddr)
 	if err != nil {
