@@ -101,8 +101,8 @@ jobs:
             #replace hetzner cred
             ./yq e '.providers.hetzner.[0].credentials = "${{ secrets.HETZNER_CREDENTIALS}}"' $file -i
             #replace gcp cred & project
-            ./yq e '.providers.gcp.[1].credentials = ${{ secrets.GCP_CREDENTIALS }}' $file -i
-            ./yq e '.providers.gcp.[1].gcp_project = "${{ secrets.GCP_DEV_PROJECT_ID }}"' $file -i
+            ./yq e '.providers.gcp.[0].credentials = ${{ secrets.GCP_CREDENTIALS }}' $file -i
+            ./yq e '.providers.gcp.[0].gcp_project = "${{ secrets.GCP_DEV_PROJECT_ID }}"' $file -i
             done
           done
           #Clean up
