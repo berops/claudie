@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Berops/platform/pkg/kubectl"
+	"github.com/Berops/platform/internal/kubectl"
 	"github.com/stretchr/testify/require"
 )
 

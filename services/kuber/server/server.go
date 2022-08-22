@@ -12,8 +12,8 @@ import (
 
 	"github.com/Berops/platform/internal/envs"
 	"github.com/Berops/platform/internal/healthcheck"
+	"github.com/Berops/platform/internal/kubectl"
 	"github.com/Berops/platform/internal/utils"
-	"github.com/Berops/platform/pkg/kubectl"
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/services/kuber/server/longhorn"
 	"github.com/Berops/platform/services/kuber/server/secret"

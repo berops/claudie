@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Berops/platform/pkg/manifest"
+	"github.com/Berops/platform/internal/manifest"
 	"github.com/Berops/platform/proto/pb"
 	"golang.org/x/crypto/ssh"
 	"gopkg.in/yaml.v3"

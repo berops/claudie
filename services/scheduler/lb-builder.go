@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
+	"github.com/Berops/platform/internal/manifest"
 	"github.com/Berops/platform/internal/utils"
-	"github.com/Berops/platform/pkg/manifest"
 	"github.com/Berops/platform/proto/pb"
 )
 
