@@ -17,4 +17,4 @@ services/testing-framework
 .golangci.yml
 .gitattributes
 keys
-K8s-dev-cluster
+manifests
