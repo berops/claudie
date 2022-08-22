@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/Berops/platform/internal/utils"
+	"github.com/Berops/platform/pkg/manifest"
 	"github.com/Berops/platform/proto/pb"
-	"github.com/Berops/platform/services/scheduler/manifest"
 )
 
 const (

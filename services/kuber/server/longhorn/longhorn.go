@@ -9,8 +9,8 @@ import (
 
 	"github.com/Berops/platform/internal/templateUtils"
 	"github.com/Berops/platform/internal/utils"
+	"github.com/Berops/platform/pkg/kubectl"
 	"github.com/Berops/platform/proto/pb"
-	"github.com/Berops/platform/services/kuber/server/kubectl"
 	"github.com/rs/zerolog/log"
 )
 

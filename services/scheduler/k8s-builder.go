@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/Berops/platform/internal/utils"
+	"github.com/Berops/platform/pkg/manifest"
 	"github.com/Berops/platform/proto/pb"
-	"github.com/Berops/platform/services/scheduler/manifest"
 )
 
 //createK8sCluster reads manifest state and create kubernetes clusters based on it

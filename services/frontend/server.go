@@ -17,9 +17,9 @@ import (
 	"github.com/Berops/platform/internal/envs"
 	"github.com/Berops/platform/internal/healthcheck"
 	"github.com/Berops/platform/internal/utils"
+	"github.com/Berops/platform/pkg/manifest"
 	"github.com/Berops/platform/proto/pb"
 	cbox "github.com/Berops/platform/services/context-box/client"
-	"github.com/Berops/platform/services/scheduler/manifest"
 )
 
 const (

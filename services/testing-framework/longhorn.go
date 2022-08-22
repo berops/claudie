@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Berops/platform/pkg/kubectl"
 	"github.com/Berops/platform/proto/pb"
-	"github.com/Berops/platform/services/kuber/server/kubectl"
 	"github.com/rs/zerolog/log"
 )
 
