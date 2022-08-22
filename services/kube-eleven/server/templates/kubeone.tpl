@@ -17,7 +17,7 @@ addons:
   enable: true
   # In case when the relative path is provided, the path is relative
   # to the KubeOne configuration file.
-  path: "../../addons"
+  path: "../addons"
 
 apiEndpoint:
   host: '{{ .APIEndpoint }}'
