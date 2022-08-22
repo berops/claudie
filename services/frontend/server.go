@@ -14,12 +14,12 @@ import (
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v3"
 
-	"github.com/Berops/platform/envs"
-	"github.com/Berops/platform/healthcheck"
+	"github.com/Berops/platform/internal/envs"
+	"github.com/Berops/platform/internal/healthcheck"
+	"github.com/Berops/platform/internal/utils"
 	"github.com/Berops/platform/proto/pb"
 	cbox "github.com/Berops/platform/services/context-box/client"
 	"github.com/Berops/platform/services/scheduler/manifest"
-	"github.com/Berops/platform/utils"
 )
 
 const (

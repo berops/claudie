@@ -6,11 +6,14 @@ import (
 	"os"
 	"path/filepath"
 
+	comm "github.com/Berops/platform/internal/command"
+
+	"github.com/Berops/platform/internal/templateUtils"
+	"github.com/Berops/platform/internal/utils"
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/services/terraformer/server/backend"
 	"github.com/Berops/platform/services/terraformer/server/clusterBuilder"
 	"github.com/Berops/platform/services/terraformer/server/terraform"
-	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
 )
 
@@ -41,7 +44,7 @@ func (d DNS) CreateDNSrecords() (string, error) {
 	clusterID := fmt.Sprintf("%s-%s", d.ClusterName, d.ClusterHash)
 	dnsID := fmt.Sprintf("%s-dns", clusterID)
 	dnsDir := filepath.Join(clusterBuilder.Output, dnsID)
-	terraform := terraform.Terraform{Directory: dnsDir, StdOut: utils.GetStdOut(dnsID), StdErr: utils.GetStdErr(dnsID)}
+	terraform := terraform.Terraform{Directory: dnsDir, StdOut: comm.GetStdOut(dnsID), StdErr: comm.GetStdErr(dnsID)}
 	//check if DNS provider is unchanged
 	if utils.ChangedDNSProvider(d.CurrentDNS, d.DesiredDNS) {
 		log.Info().Msgf("Destroying old DNS records")
@@ -103,7 +106,7 @@ func (d DNS) DestroyDNSrecords() error {
 		return fmt.Errorf("error while creating dns records for %s : %v", dnsID, err)
 	}
 	// create dns records with terraform
-	terraform := terraform.Terraform{Directory: dnsDir, StdOut: utils.GetStdOut(dnsID), StdErr: utils.GetStdErr(dnsID)}
+	terraform := terraform.Terraform{Directory: dnsDir, StdOut: comm.GetStdOut(dnsID), StdErr: comm.GetStdErr(dnsID)}
 	err = terraform.TerraformInit()
 	if err != nil {
 		return err
@@ -134,8 +137,8 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *pb.DNS, nodeIPs []string) 
 		return err
 	}
 
-	DNSTemplates := utils.Templates{Directory: dnsDir}
-	templateLoader := utils.TemplateLoader{Directory: utils.TerraformerTemplates}
+	DNSTemplates := templateUtils.Templates{Directory: dnsDir}
+	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.TerraformerTemplates}
 	tpl, err := templateLoader.LoadTemplate("dns.tpl")
 	if err != nil {
 		return fmt.Errorf("error while parsing template file backend.tpl: %v", err)

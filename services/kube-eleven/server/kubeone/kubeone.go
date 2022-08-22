@@ -4,8 +4,9 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
+
+	comm "github.com/Berops/platform/internal/command"
 )
 
 const (
@@ -29,7 +30,7 @@ func (k *Kubeone) Apply() error {
 	err := cmd.Run()
 	if err != nil {
 		log.Warn().Msgf("Error encountered while executing %s : %v", command, err)
-		retryCmd := utils.Cmd{Command: command, Dir: k.Directory}
+		retryCmd := comm.Cmd{Command: command, Dir: k.Directory}
 		err := retryCmd.RetryCommand(maxNumOfRetries)
 		if err != nil {
 			return err

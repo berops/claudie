@@ -7,9 +7,10 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Berops/platform/internal/templateUtils"
+	"github.com/Berops/platform/internal/utils"
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/services/kuber/server/kubectl"
-	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
 )
 
@@ -50,8 +51,8 @@ func (l Longhorn) SetUp() error {
 	var appliedSC []string
 
 	//load the templates
-	template := utils.Templates{Directory: l.Directory}
-	templateLoader := utils.TemplateLoader{Directory: utils.KuberTemplates}
+	template := templateUtils.Templates{Directory: l.Directory}
+	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.KuberTemplates}
 	storageTpl, err := templateLoader.LoadTemplate(storageManifestTpl)
 	if err != nil {
 		return err

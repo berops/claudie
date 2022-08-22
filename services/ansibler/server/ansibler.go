@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
+	"github.com/Berops/platform/internal/templateUtils"
 	"github.com/Berops/platform/proto/pb"
-	"github.com/Berops/platform/utils"
 )
 
 const (
@@ -31,12 +31,12 @@ type LbInventoryData struct {
 }
 
 func generateInventoryFile(inventoryTemplate, directory string, data interface{}) error {
-	templateLoader := utils.TemplateLoader{Directory: utils.AnsiblerTemplates}
+	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.AnsiblerTemplates}
 	tpl, err := templateLoader.LoadTemplate(inventoryTemplate)
 	if err != nil {
 		return fmt.Errorf("error while loading template %s : %v", inventoryTemplate, err)
 	}
-	template := utils.Templates{Directory: directory}
+	template := templateUtils.Templates{Directory: directory}
 	err = template.Generate(tpl, inventoryFile, data)
 	if err != nil {
 		return fmt.Errorf("error while generating from template %s : %v", inventoryTemplate, err)

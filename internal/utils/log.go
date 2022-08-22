@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Berops/platform/envs"
+	"github.com/Berops/platform/internal/envs"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )

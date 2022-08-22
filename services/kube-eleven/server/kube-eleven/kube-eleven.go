@@ -6,9 +6,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/Berops/platform/internal/templateUtils"
+	"github.com/Berops/platform/internal/utils"
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/services/kube-eleven/server/kubeone"
-	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
 )
 
@@ -75,8 +76,8 @@ func (k *KubeEleven) BuildCluster() error {
 //generateFiles will generate files needed for kubeone execution like kubeone.yaml, key.pem, etc..
 //returns nil if successful, error otherwise
 func (k *KubeEleven) generateFiles() error {
-	template := utils.Templates{Directory: k.directory}
-	templateLoader := utils.TemplateLoader{Directory: utils.KubeElevenTemplates}
+	template := templateUtils.Templates{Directory: k.directory}
+	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.KubeElevenTemplates}
 	//load template file
 	tpl, err := templateLoader.LoadTemplate(kubeoneTemplate)
 	if err != nil {

@@ -8,10 +8,10 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/Berops/platform/healthcheck"
+	"github.com/Berops/platform/internal/healthcheck"
+	"github.com/Berops/platform/internal/utils"
 	"github.com/Berops/platform/proto/pb"
 	kubeEleven "github.com/Berops/platform/services/kube-eleven/server/kube-eleven"
-	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"

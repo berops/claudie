@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/Berops/platform/internal/utils"
 	"github.com/Berops/platform/proto/pb"
-	"github.com/Berops/platform/utils"
 )
 
 var cluster = &pb.K8Scluster{

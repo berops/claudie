@@ -8,12 +8,12 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/Berops/platform/envs"
-	"github.com/Berops/platform/healthcheck"
+	"github.com/Berops/platform/internal/envs"
+	"github.com/Berops/platform/internal/healthcheck"
+	"github.com/Berops/platform/internal/utils"
+	"github.com/Berops/platform/internal/worker"
 	"github.com/Berops/platform/proto/pb"
 	cbox "github.com/Berops/platform/services/context-box/client"
-	"github.com/Berops/platform/utils"
-	"github.com/Berops/platform/worker"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 )
