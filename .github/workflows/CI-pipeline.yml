@@ -41,16 +41,6 @@ jobs:
       - name: Set short sha output
         run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
 
-      # Install the git-crypt and unlock the files
-      - name: git-crypt unlock
-        run: |
-          sudo apt update
-          sudo apt install git-crypt
-          echo "${{ secrets.GIT_CRYPT_KEY }}" | base64  -d > ./git-crypt-key
-          echo "Unlocking"
-          git-crypt unlock git-crypt-key
-          rm git-crypt-key
-
       # Create an array with modules that were changed by a recent commit via bash script
       - name: Check the files for a change
         id: array
