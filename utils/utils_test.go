@@ -18,12 +18,12 @@ import (
 
 var provider1 = &pb.Provider{
 	SpecName:    "gcp",
-	Credentials: "keys/platform-296509-d6ddeb344e91.json",
+	Credentials: "key1.json",
 }
 
 var provider2 = &pb.Provider{
 	SpecName:    "gcp",
-	Credentials: "keys/platform-infrastructure-316112-bd7953f712df.json",
+	Credentials: "key1.json",
 }
 
 var dns1 = &pb.DNS{
