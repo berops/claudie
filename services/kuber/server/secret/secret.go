@@ -70,7 +70,7 @@ func (s *Secret) Apply(namespace, kubeconfig string) error {
 	}
 
 	// cleanup
-	if err = os.Remove(path); err != nil {
+	if err = os.RemoveAll(s.Directory); err != nil {
 		return fmt.Errorf("error while delete the secret.yaml for %s : %v", s.YamlManifest.Metadata.Name, err)
 	}
 	return nil
