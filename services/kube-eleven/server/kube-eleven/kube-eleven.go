@@ -19,6 +19,7 @@ const (
 	keyFile         = "private.pem"
 	kubeconfigFile  = "cluster-kubeconfig"
 	baseDirectory   = "services/kube-eleven/server"
+	outputDirectory = "clusters"
 )
 
 //KubeEleven struct
@@ -41,7 +42,7 @@ type templateData struct {
 //Apply will create all necessary files and apply kubeone, which will set up the cluster completely
 //return nil if successful, error otherwise
 func (k *KubeEleven) BuildCluster() error {
-	k.directory = filepath.Join(baseDirectory, fmt.Sprintf("%s-%s", k.K8sCluster.ClusterInfo.Name, k.K8sCluster.ClusterInfo.Hash))
+	k.directory = filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", k.K8sCluster.ClusterInfo.Name, k.K8sCluster.ClusterInfo.Hash))
 	//generate files needed for kubeone
 	err := k.generateFiles()
 	if err != nil {
