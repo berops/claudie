@@ -42,10 +42,10 @@ test:
 
 # Run all services in docker containers via docker-compose on a local machine
 dockerUp:
-	docker-compose --env-file ./K8s-dev-cluster/.env up
+	docker-compose --env-file ./manifests/claudie/.env up
 
 dockerDown:
-	docker-compose --env-file ./K8s-dev-cluster/.env down
+	docker-compose --env-file ./manifests/claudie/.env down
 
 dockerBuild:
-	docker-compose --env-file ./K8s-dev-cluster/.env build --parallel
+	docker-compose --env-file ./manifests/claudie/.env build 

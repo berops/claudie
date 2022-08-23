@@ -3,8 +3,8 @@ package backend
 import (
 	"fmt"
 
-	"github.com/Berops/platform/envs"
-	"github.com/Berops/platform/utils"
+	"github.com/Berops/platform/internal/envs"
+	"github.com/Berops/platform/internal/templateUtils"
 )
 
 var (
@@ -29,8 +29,8 @@ type templateData struct {
 
 // function CreateFiles will create a backend.tf file from template
 func (b Backend) CreateFiles() error {
-	template := utils.Templates{Directory: b.Directory}
-	templateLoader := utils.TemplateLoader{Directory: utils.TerraformerTemplates}
+	template := templateUtils.Templates{Directory: b.Directory}
+	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.TerraformerTemplates}
 	tpl, err := templateLoader.LoadTemplate("backend.tpl")
 	if err != nil {
 		return fmt.Errorf("error while parsing template file backend.tpl: %v", err)

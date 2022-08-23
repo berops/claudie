@@ -3,14 +3,14 @@ package main
 import (
 	"fmt"
 
-	"github.com/Berops/platform/envs"
+	"github.com/Berops/platform/internal/envs"
+	"github.com/Berops/platform/internal/utils"
 	"github.com/Berops/platform/proto/pb"
 	ansibler "github.com/Berops/platform/services/ansibler/client"
 	cbox "github.com/Berops/platform/services/context-box/client"
 	kubeEleven "github.com/Berops/platform/services/kube-eleven/client"
 	kuber "github.com/Berops/platform/services/kuber/client"
 	terraformer "github.com/Berops/platform/services/terraformer/client"
-	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
 )
 

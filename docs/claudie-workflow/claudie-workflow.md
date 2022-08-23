@@ -14,8 +14,8 @@
 - [Frontend](https://github.com/Berops/platform/tree/master/services/frontend)
 
 ### Data stores
-- [MongoDB](https://github.com/Berops/platform/blob/master/K8s-dev-cluster/mongodb.yaml)
-- [Minio](https://github.com/Berops/platform/tree/master/K8s-dev-cluster/minio)
+- [MongoDB](https://github.com/Berops/platform/blob/master/manifests/claudie/mongodb.yaml)
+- [Minio](https://github.com/Berops/platform/tree/master/manifests/claudie/minio)
 
 ### Tools used
 - [Terraform](https://github.com/hashicorp/terraform)

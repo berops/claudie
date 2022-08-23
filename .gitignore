@@ -1,8 +1,7 @@
 .idea/
 *.ini
 .terraform*
-services/terraformer/server/clusters
-services/kuber/server/clusters
+clusters
 playground
 .vscode
 mongodb

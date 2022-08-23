@@ -4,9 +4,9 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/Berops/platform/services/kuber/server/kubectl"
-	"github.com/Berops/platform/services/scheduler/manifest"
-	"github.com/Berops/platform/utils"
+	"github.com/Berops/platform/internal/kubectl"
+	"github.com/Berops/platform/internal/manifest"
+	"github.com/Berops/platform/internal/templateUtils"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v2"
 )
@@ -30,8 +30,8 @@ func deleteSecret(setName, namespace string) error {
 
 // manageSecret function will create a secret.yaml file in test set directory, with a specified manifest in data encoded as base64 string
 func manageSecret(manifest []byte, pathToTestSet, secretName, namespace string) error {
-	templateLoader := utils.TemplateLoader{Directory: utils.TestingTemplates}
-	template := utils.Templates{Directory: pathToTestSet}
+	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.TestingTemplates}
+	template := templateUtils.Templates{Directory: pathToTestSet}
 	tpl, err := templateLoader.LoadTemplate(secretTpl)
 	if err != nil {
 		return err

@@ -5,9 +5,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/Berops/platform/internal/templateUtils"
+	"github.com/Berops/platform/internal/utils"
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/services/ansibler/server/ansible"
-	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 )
@@ -150,8 +151,8 @@ func setUpNginx(lb *pb.LBcluster, targetedNodepool []*pb.NodePool, directory str
 		return fmt.Errorf("failed to create key file for %s : %v", lb.ClusterInfo.Name, err)
 	}
 	//prepare data for .conf
-	templateLoader := utils.TemplateLoader{Directory: utils.AnsiblerTemplates}
-	template := utils.Templates{Directory: directory}
+	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.AnsiblerTemplates}
+	template := templateUtils.Templates{Directory: directory}
 	tpl, err := templateLoader.LoadTemplate(confFile)
 	if err != nil {
 		return fmt.Errorf("error while loading %s template for %v", confFile, err)

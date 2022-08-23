@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Berops/platform/services/kuber/server/kubectl"
+	"github.com/Berops/platform/internal/kubectl"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 )
@@ -70,7 +70,7 @@ func (s *Secret) Apply(namespace, kubeconfig string) error {
 	}
 
 	// cleanup
-	if err = os.Remove(path); err != nil {
+	if err = os.RemoveAll(s.Directory); err != nil {
 		return fmt.Errorf("error while delete the secret.yaml for %s : %v", s.YamlManifest.Metadata.Name, err)
 	}
 	return nil

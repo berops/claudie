@@ -3,7 +3,7 @@ services:
   mongodb:
     image: mongo:5
     container_name: mongodb
-    env_file: K8s-dev-cluster/.env
+    env_file: manifests/claudie/.env
     ports:
       - ${DATABASE_PORT}:${DATABASE_PORT}
     volumes:
@@ -19,7 +19,7 @@ services:
     container_name: builder
     depends_on:
       - context-box
-    env_file: K8s-dev-cluster/.env
+    env_file: manifests/claudie/.env
     ports:
       - ${BUILDER_PORT}:${BUILDER_PORT}
     deploy:
@@ -34,7 +34,7 @@ services:
     container_name: terraformer
     depends_on:
       - builder
-    env_file: K8s-dev-cluster/.env
+    env_file: manifests/claudie/.env
     ports:
       - ${TERRAFORMER_PORT}:${TERRAFORMER_PORT}
     deploy:
@@ -49,7 +49,7 @@ services:
     container_name: ansibler
     depends_on:
       - builder
-    env_file: K8s-dev-cluster/.env
+    env_file: manifests/claudie/.env
     ports:
       - ${ANSIBLER_PORT}:${ANSIBLER_PORT}
     deploy:
@@ -64,7 +64,7 @@ services:
     container_name: kube-eleven
     depends_on:
       - builder
-    env_file: K8s-dev-cluster/.env
+    env_file: manifests/claudie/.env
     ports:
       - ${KUBE_ELEVEN_PORT}:${KUBE_ELEVEN_PORT}
     deploy:
@@ -79,7 +79,7 @@ services:
     container_name: context-box
     depends_on:
       - mongodb
-    env_file: K8s-dev-cluster/.env
+    env_file: manifests/claudie/.env
     ports:
       - ${CONTEXT_BOX_PORT}:${CONTEXT_BOX_PORT}
     deploy:
@@ -94,7 +94,7 @@ services:
     container_name: scheduler
     depends_on:
       - context-box
-    env_file: K8s-dev-cluster/.env
+    env_file: manifests/claudie/.env
     ports:
       - ${SCHEDULER_PORT}:${SCHEDULER_PORT}
     deploy:
@@ -108,7 +108,7 @@ services:
     container_name: kuber
     depends_on:
       - builder
-    env_file: K8s-dev-cluster/.env
+    env_file: manifests/claudie/.env
     ports:
       - ${KUBER_PORT}:${KUBER_PORT}
     deploy:
@@ -123,7 +123,7 @@ services:
     container_name: frontend
     depends_on:
       - context-box
-    env_file: K8s-dev-cluster/.env
+    env_file: manifests/claudie/.env
     deploy:
       restart_policy:
         condition: on-failure
