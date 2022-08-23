@@ -63,6 +63,7 @@ func SaveFiles(c pb.ContextBoxServiceClient) error {
 	}
 
 	log.Info().Msgf("Found %d files in %v", len(files), manifestDir)
+	log.Info().Msgf("Found %d files in database", len(configsToDelete.Configs))
 
 	for _, file := range files {
 		// read file
