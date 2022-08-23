@@ -3,9 +3,9 @@ package terraformer
 import (
 	"testing"
 
-	"github.com/Berops/platform/envs"
+	"github.com/Berops/platform/internal/envs"
+	"github.com/Berops/platform/internal/utils"
 	"github.com/Berops/platform/proto/pb"
-	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/require"
 )

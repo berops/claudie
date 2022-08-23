@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Berops/platform/envs"
+	"github.com/Berops/platform/internal/envs"
+	"github.com/Berops/platform/internal/utils"
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/services/context-box/server/claudieDB"
 	"github.com/Berops/platform/services/context-box/server/queue"
 	kuber "github.com/Berops/platform/services/kuber/client"
 	terraformer "github.com/Berops/platform/services/terraformer/client"
-	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
 )
 

@@ -7,11 +7,13 @@ import (
 	"path/filepath"
 	"sort"
 
+	comm "github.com/Berops/platform/internal/command"
+	"github.com/Berops/platform/internal/templateUtils"
+	"github.com/Berops/platform/internal/utils"
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/services/terraformer/server/backend"
 	"github.com/Berops/platform/services/terraformer/server/provider"
 	"github.com/Berops/platform/services/terraformer/server/terraform"
-	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
 )
 
@@ -43,7 +45,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 	clusterID := fmt.Sprintf("%s-%s", c.DesiredInfo.Name, c.DesiredInfo.Hash)
 	clusterDir := filepath.Join(Output, clusterID)
 	fmt.Println(clusterDir)
-	terraform := terraform.Terraform{Directory: clusterDir, StdOut: utils.GetStdOut(clusterID), StdErr: utils.GetStdErr(clusterID)}
+	terraform := terraform.Terraform{Directory: clusterDir, StdOut: comm.GetStdOut(clusterID), StdErr: comm.GetStdErr(clusterID)}
 	err := c.generateFiles(clusterID, clusterDir)
 	if err != nil {
 		// description of an error in c.generateFiles()
@@ -90,7 +92,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 func (c ClusterBuilder) DestroyNodepools() error {
 	clusterID := fmt.Sprintf("%s-%s", c.CurrentInfo.Name, c.CurrentInfo.Hash)
 	clusterDir := filepath.Join(Output, clusterID)
-	terraform := terraform.Terraform{Directory: clusterDir, StdOut: utils.GetStdOut(clusterID), StdErr: utils.GetStdErr(clusterID)}
+	terraform := terraform.Terraform{Directory: clusterDir, StdOut: comm.GetStdOut(clusterID), StdErr: comm.GetStdErr(clusterID)}
 	//generate template files
 	err := c.generateFiles(clusterID, clusterDir)
 	if err != nil {
@@ -123,8 +125,8 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 
 	// generate .tf files for nodepools
 	var clusterInfo *pb.ClusterInfo
-	template := utils.Templates{Directory: clusterDir}
-	templateLoader := utils.TemplateLoader{Directory: utils.TerraformerTemplates}
+	template := templateUtils.Templates{Directory: clusterDir}
+	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.TerraformerTemplates}
 
 	if c.DesiredInfo != nil {
 		clusterInfo = c.DesiredInfo

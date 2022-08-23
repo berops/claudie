@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/Berops/platform/utils"
+	comm "github.com/Berops/platform/internal/command"
 )
 
 // Kubeconfig - the kubeconfig of the cluster as a string
@@ -118,7 +118,7 @@ func (k Kubectl) run(command string) error {
 	cmd.Dir = k.Directory
 	err := cmd.Run()
 	if err != nil {
-		retryCmd := utils.Cmd{Command: command, Dir: k.Directory}
+		retryCmd := comm.Cmd{Command: command, Dir: k.Directory}
 		err = retryCmd.RetryCommand(maxKubectlRetries)
 		if err != nil {
 			return err
@@ -135,7 +135,7 @@ func (k Kubectl) runWithOutput(command string) ([]byte, error) {
 	cmd.Dir = k.Directory
 	result, err = cmd.CombinedOutput()
 	if err != nil {
-		cmd := utils.Cmd{Command: command, Dir: k.Directory}
+		cmd := comm.Cmd{Command: command, Dir: k.Directory}
 		result, err = cmd.RetryCommandWithOutput(maxKubectlRetries)
 		if err != nil {
 			return nil, err

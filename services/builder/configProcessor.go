@@ -21,9 +21,9 @@ We can have three cases of a operation within the input manifest
 import (
 	"fmt"
 
+	"github.com/Berops/platform/internal/utils"
 	"github.com/Berops/platform/proto/pb"
 	cbox "github.com/Berops/platform/services/context-box/client"
-	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/protobuf/proto"
 )

@@ -3,8 +3,8 @@ package provider
 import (
 	"fmt"
 
+	"github.com/Berops/platform/internal/templateUtils"
 	"github.com/Berops/platform/proto/pb"
-	"github.com/Berops/platform/utils"
 )
 
 // Provider package struct
@@ -21,8 +21,8 @@ type templateData struct {
 }
 
 func (p Provider) CreateProvider(clusterInfo *pb.ClusterInfo) error {
-	template := utils.Templates{Directory: p.Directory}
-	templateLoader := utils.TemplateLoader{Directory: utils.TerraformerTemplates}
+	template := templateUtils.Templates{Directory: p.Directory}
+	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.TerraformerTemplates}
 	data := getProvidersUsed(clusterInfo)
 	tpl, err := templateLoader.LoadTemplate("providers.tpl")
 	if err != nil {

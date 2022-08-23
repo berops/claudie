@@ -5,8 +5,8 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/Berops/platform/internal/utils"
 	"github.com/Berops/platform/proto/pb"
-	"github.com/Berops/platform/utils"
 	"github.com/rs/zerolog/log"
 )
 

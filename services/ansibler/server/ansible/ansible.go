@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/Berops/platform/utils"
+	comm "github.com/Berops/platform/internal/command"
 	"github.com/rs/zerolog/log"
 )
 
@@ -33,12 +33,12 @@ func (a *Ansible) RunAnsiblePlaybook(prefix string) error {
 	command := fmt.Sprintf("ansible-playbook %s -i %s -f %d %s", a.Playbook, a.Inventory, defaultAnsibleForks, a.Flags)
 	cmd := exec.Command("bash", "-c", command)
 	cmd.Dir = a.Directory
-	cmd.Stdout = utils.GetStdOut(prefix)
-	cmd.Stderr = utils.GetStdErr(prefix)
+	cmd.Stdout = comm.GetStdOut(prefix)
+	cmd.Stderr = comm.GetStdErr(prefix)
 	err = cmd.Run()
 	if err != nil {
 		log.Warn().Msgf("Error encountered while executing %s from %s : %v", command, a.Directory, err)
-		retryCmd := utils.Cmd{Command: command, Dir: a.Directory, Stdout: cmd.Stdout, Stderr: cmd.Stderr}
+		retryCmd := comm.Cmd{Command: command, Dir: a.Directory, Stdout: cmd.Stdout, Stderr: cmd.Stderr}
 		err := retryCmd.RetryCommand(maxAnsibleRetries)
 		if err != nil {
 			return err
