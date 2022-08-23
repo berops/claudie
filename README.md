@@ -20,7 +20,7 @@ TODO
 ### DNS management
 TODO
 
-# To get started using the Claudie
+# Get started using the Claudie
 
 <!-- Words about possible deployments of claudie (local, in k8s cluster) -->
 Claudie can be deployed
