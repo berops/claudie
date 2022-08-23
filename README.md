@@ -22,7 +22,7 @@ TODO
 
 # Get started using the Claudie
 
-Claudie was designed to be run in any standard kubernetes cluster. Therefore, the easiest way to get started with a claudie is to deploy it to some already built cluster. The deployments are accessible in [manifests](https://github.com/Berops/platform/tree/master/manifests/claudie). To deploy it simply create a namespace by running
+Claudie was designed to be run in any standard kubernetes cluster. Therefore, the easiest way to get started with a claudie is to deploy it to some already built cluster. The deployments are accessible in [manifests](https://github.com/Berops/platform/tree/master/manifests/claudie) directory. To deploy it simply create a namespace by running
 
 ```
 kubectl create namespace claudie
@@ -51,7 +51,7 @@ kubectl label secret input-manifest claudie.io/input-manifest=my-fancy-manifest
 This will be then picked up by the Claudie and will be automatically applied.
 To see in full details how you manage the Claudie, please refer to [CRUD](./docs/crud/crud.md) document.
 
-# Getting involved
+# Get involved
 
 <!-- Contributor guidelines -->
 Everyone is more than welcome to open an issue, a PR or to start a discussion. For more information about contributing please read the [contribution guidelines](./docs/contributing/contributing.md).
