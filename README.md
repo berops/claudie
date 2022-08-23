@@ -1,5 +1,9 @@
 # Claudie
 
+![Build](https://github.com/berops/platform/actions/workflows/CD-pipeline-dev.yml/badge.svg)
+![license](https://img.shields.io/github/license/berops/platform)
+![Go Version](https://img.shields.io/github/go-mod/go-version/berops/platform)
+
 <!-- Basic info what claudie is -->
 Claudie is a simple solution for managing your multi-cloud kubernetes clusters. From node creation, cluster creation to loadbalancing and DNS set up it makes the kubernetes management a piece of cake.
 
@@ -14,8 +18,10 @@ To scale-up or scale-down, simply change a few lines in the input manifest and C
 
 ### Simple multi-cloud set up
 Claudie is built with multi-cloud infrastructure in mind. Simply provide credentials to your cloud projects and watch how the infra is being build in front of you.
-### Loadbalancing
-TODO
+### Loadbalancing 
+In order to create highly available kubernetes cluster, Claudie creates a Loadbalancer cluster for kubeAPI-server . The loadbalancing cluster can also be multi-zone or multi-cloud to ensure no downtime due to LB node failure. 
+
+Claudie also takes care of creating the DNS record for the loadbalancer cluster using a pre-configured google cloud platform dns zone. 
 
 ### DNS management
 TODO
