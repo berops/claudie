@@ -35,21 +35,9 @@ kustomize build | kubectl apply -f -
 
 To input the manifest into the claudie, you need to create a secret, which holds the input manifest defined by you.
 
-Example:
+Example of the input manifest can be found [here](https://github.com/Berops/platform/blob/master/docs/input-manifest/example.yaml) 
 
-If you define an input manifest called `claudie-manifest.yaml` (see the example [here](https://github.com/Berops/platform/blob/master/docs/input-manifest/example.yaml)) you apply it by 
-
-1. Creating the secret by running
-```
-kubectl create secret generic input-manifest --from-file=input-manifest.yaml -n claudie
-```
-
-2. Labeling the secret with label `claudie.io/input-manifest` by running
-```
-kubectl label secret input-manifest claudie.io/input-manifest=my-fancy-manifest
-```
-This will be then picked up by the Claudie and will be automatically applied.
-To see in full details how you manage the Claudie, please refer to [CRUD](./docs/crud/crud.md) document.
+To see in full details how you apply the input manifest into the Claudie, please refer to [CRUD](./docs/crud/crud.md) document.
 
 # Get involved
 
