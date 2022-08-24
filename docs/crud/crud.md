@@ -26,7 +26,7 @@ bectl label secret input-manifest claudie.io/input-manifest=my-fancy-manifest
 ```
 # Read
 
-The user and the Claudie, both share the single "source of truth" for the input manifests the kubernetes secrets. Created in the Claudie namespace, they are accessible by both user and the Claudie. This forces users to have input manifests in IaC manner, and it can be easily configured for GitOps synchronization, i.e. via FluxCD.
+The user and the Claudie, both share the single "source of truth" for the input manifests, the kubernetes secrets. Created in the Claudie namespace, they are accessible by both user and the Claudie. This forces users to have input manifests in IaC manner, and it can be easily configured for GitOps synchronization, i.e. via FluxCD.
 
 # Update
 
