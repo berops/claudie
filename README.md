@@ -11,17 +11,18 @@ Claudie is a simple solution for managing your multi-cloud kubernetes clusters. 
 <!-- Why is Claudie coolest thing ever -->
 ### Claudie management via IaC 
 
-Declaratively define your infrastructure with a simple, easy to understand YAML [manifest](./docs/input-manifest/example.yaml).
+Declaratively define your infrastructure with a simple, easy to understand YAML [manifest](./docs/input-manifest/input-manifest.md).
 
 ### Fast scale-up/scale-down of your infrastructure
-To scale-up or scale-down, simply change a few lines in the input manifest and Claudie will take care of the rest.
+To scale-up or scale-down, simply change a few lines in the input manifest and Claudie will take care of the rest in the matter of minutes.
 
 ### Simple multi-cloud set up
 Claudie is built with multi-cloud infrastructure in mind. Simply provide credentials to your cloud projects and watch how the infra is being build in front of you.
 ### Loadbalancing 
-In order to create highly available kubernetes cluster, Claudie creates a Loadbalancer cluster for kubeAPI-server . The loadbalancing cluster can also be multi-zone or multi-cloud to ensure no downtime due to LB node failure. 
+In order to create highly available kubernetes cluster, Claudie by default creates a Loadbalancers for kubeAPI server. The loadbalancing cluster can also be multi-zone or multi-cloud to ensure no downtime due to LB node failure. On top of that, users can define their own Loadbalancers with the custom rules for their applications running inside the cluster.
 
-Claudie also takes care of creating the DNS record for the loadbalancer cluster using a pre-configured google cloud platform dns zone. 
+
+For all of your Loadbalancers Claudie also manages customizable DNS records, on pre-configured GCP DNS zone, so you do not need to worry about any of that.
 
 
 # Get started using the Claudie
