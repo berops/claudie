@@ -11,7 +11,7 @@ Platform for managing multi-cloud Kubernetes clusters.
 <!-- Why is Claudie coolest thing ever -->
 ### Management via IaC 
 
-Declaratively define your infrastructure with a simple, easy to understand YAML [manifest](./docs/input-manifest/input-manifest.md).
+Declaratively define your infrastructure with a simple, easy to understand YAML [syntax](./docs/input-manifest/input-manifest.md).
 See example [manifest](./docs/input-manifest/example.yaml).
 
 ### Fast scale-up/scale-down of your infrastructure
