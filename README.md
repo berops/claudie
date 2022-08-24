@@ -9,9 +9,10 @@ Platform for managing multi-cloud Kubernetes clusters.
 
 # Features
 <!-- Why is Claudie coolest thing ever -->
-### Claudie management via IaC 
+### Management via IaC 
 
 Declaratively define your infrastructure with a simple, easy to understand YAML [manifest](./docs/input-manifest/input-manifest.md).
+See example [manifest](./docs/input-manifest/example.yaml).
 
 ### Fast scale-up/scale-down of your infrastructure
 To scale-up or scale-down, simply change a few lines in the input manifest and Claudie will take care of the rest in the matter of minutes.
