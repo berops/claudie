@@ -8,6 +8,10 @@ Platform for managing multi-cloud Kubernetes clusters.
 
 # Features
 
+### Manage multi-cloud Kubernetes clusters
+
+Create fully-featured Kubernetes clusters composed of multiple different public Cloud providers in an easy and secure manner.
+
 ### Management via IaC 
 
 Declaratively define your infrastructure with a simple, easy to understand YAML [syntax](./docs/input-manifest/input-manifest.md).
