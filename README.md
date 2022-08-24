@@ -24,7 +24,7 @@ To scale-up or scale-down, simply change a few lines in the input manifest and C
 
 ### Loadbalancing 
 
-In order to create highly available kubernetes cluster, Claudie by default creates a Loadbalancers for kubeAPI server. The loadbalancing cluster can also be multi-zone or multi-cloud to ensure no downtime due to LB node failure. On top of that, users can define their own Loadbalancers with the custom rules for their applications running inside the cluster.
+In order to create highly available Kubernetes cluster, Claudie by default creates a Loadbalancers for kubeAPI server. The loadbalancing cluster can also be multi-zone or multi-cloud to ensure no downtime due to LB node failure. On top of that, users can define their own Loadbalancers with the custom rules for their applications running inside the cluster.
 
 
 For all of your Loadbalancers Claudie also manages customizable DNS records, on pre-configured GCP DNS zone, so you do not need to worry about any of that.
@@ -32,7 +32,7 @@ For all of your Loadbalancers Claudie also manages customizable DNS records, on 
 
 # Get started using the Claudie
 
-Claudie was designed to be run in any standard kubernetes cluster. Therefore, the easiest way to get started with a claudie is to deploy it to some already built cluster. The deployments are accessible in [manifests](https://github.com/Berops/platform/tree/master/manifests/claudie) directory. To deploy it simply create a namespace by running
+Claudie was designed to be run in any standard Kubernetes cluster. Therefore, the easiest way to get started with a claudie is to deploy it to some already built cluster. The deployments are accessible in [manifests](https://github.com/Berops/platform/tree/master/manifests/claudie) directory. To deploy it simply create a namespace by running
 
 ```
 kubectl create namespace claudie
