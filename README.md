@@ -1,7 +1,7 @@
 # Claudie
 
 ![Build](https://github.com/berops/platform/actions/workflows/CD-pipeline-dev.yml/badge.svg)
-![license](https://img.shields.io/github/license/berops/platform)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 ![Go Version](https://img.shields.io/github/go-mod/go-version/berops/platform)
 
 <!-- Basic info what claudie is -->
