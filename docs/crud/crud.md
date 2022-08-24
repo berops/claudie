@@ -8,7 +8,7 @@ The Claudie has a component called Frontend, which functions like an entrypoint 
 In order to create (apply) new input manifest, user needs to create a new secret in the namespace, where claudie is deployed. This secret needs needs to have
 - label `claudie.io/input-manifest`
 - unique field name
-  - If two secrets share the same data field name, the manifest saved by the k8s-sidecar will be **overwritten**, which may lead to deletion of the infrastructure.
+  - **IMPORTANT**: If two secrets share the same data field name, the manifest saved by the k8s-sidecar will be overwritten, which may lead to deletion of the infrastructure.
 
 ### Example:
 
