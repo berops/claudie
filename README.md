@@ -24,7 +24,7 @@ To scale-up or scale-down, simply change a few lines in the input manifest and C
 
 ### Loadbalancing 
 
-Claudie has its own managed loadbalancing solution, which you can use for the Kubernetes API server. See [LB docs](https://github.com/Berops/platform/tree/master/docs/loadbalancing).
+Claudie has its own managed loadbalancing solution, which you can use for Ingresses, for the Kubernetes API server, or generally anything. See [LB docs](https://github.com/Berops/platform/tree/master/docs/loadbalancing).
 
 ### Persistent storage volumes 
 
