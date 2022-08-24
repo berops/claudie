@@ -40,9 +40,9 @@ kustomize build | kubectl apply -f -
 
 Lastly, provide your own manifest via a Kubernetes Secret.
 
-Example of the input manifest can be found [here](https://github.com/Berops/platform/blob/master/docs/input-manifest/example.yaml) 
+Example of the input manifest can be found [here](https://github.com/Berops/platform/blob/master/docs/input-manifest/example.yaml).
 
-To see in detail how you apply the manifest into Claudie, please refer to [CRUD](./docs/crud/crud.md) document.
+To see in detail how you apply the manifest into Claudie, please refer to the [CRUD](./docs/crud/crud.md) document.
 
 # Get involved
 
