@@ -2,7 +2,7 @@
 
 ## Loadbalancer
 
-For creating a highly available kubernetes cluster, Loadbalancers for kubeAPI-server is created by Claudie are using Nginx to loadbalance the traffic into the cluster nodes. 
+For creating a highly available kubernetes cluster, Loadbalancers for kubeAPI server is created by Claudie are using Nginx to loadbalance the traffic into the cluster nodes. Claudie also supports definition of a custom Loadbalancer, for the applications running inside the cluster.
 
 ### Role 
 
