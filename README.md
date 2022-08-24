@@ -28,6 +28,7 @@ Claudie has its own managed loadbalancing solution, which you can use for the Ku
 
 ### Persistent storage volumes 
 
+Claudie comes with a pre-configured storage solution, with ready-to-use Storage Classes. See [Storage docs](https://github.com/Berops/platform/tree/master/docs/storage).
 
 # Get started using the Claudie
 
