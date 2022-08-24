@@ -51,11 +51,6 @@ jobs:
           credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
           use_auth_provider: true
 
-      # Create a seperate temporary namespace
-      - name: Create seperate namespace
-        working-directory: ./manifests/claudie
-        run: kubectl create namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
-
       # Deploy services to new namespace
       - name: Deploy to new namespace
         working-directory: ./manifests/claudie
