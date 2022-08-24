@@ -4,11 +4,10 @@
 ![license](https://img.shields.io/github/license/berops/platform)
 ![Go Version](https://img.shields.io/github/go-mod/go-version/berops/platform)
 
-<!-- Basic info what claudie is -->
 Platform for managing multi-cloud Kubernetes clusters.
 
 # Features
-<!-- Why is Claudie coolest thing ever -->
+
 ### Management via IaC 
 
 Declaratively define your infrastructure with a simple, easy to understand YAML [syntax](./docs/input-manifest/input-manifest.md).
