@@ -23,8 +23,6 @@ In order to create highly available kubernetes cluster, Claudie creates a Loadba
 
 Claudie also takes care of creating the DNS record for the loadbalancer cluster using a pre-configured google cloud platform dns zone. 
 
-### DNS management
-TODO
 
 # Get started using the Claudie
 
