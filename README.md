@@ -5,7 +5,7 @@
 ![Go Version](https://img.shields.io/github/go-mod/go-version/berops/platform)
 
 <!-- Basic info what claudie is -->
-Claudie is a simple solution for managing your multi-cloud kubernetes clusters. From node creation, cluster creation to loadbalancing and DNS set up it makes the kubernetes management a piece of cake.
+Platform for managing multi-cloud Kubernetes clusters.
 
 # Features
 <!-- Why is Claudie coolest thing ever -->
