@@ -51,13 +51,6 @@ Everyone is more than welcome to open an issue, a PR or to start a discussion.
 
 For more information about contributing please read the [contribution guidelines](./docs/contributing/contributing.md).
 
-# Bug reports
-When you encounter a bug, please create a new [issue](https://github.com/Berops/platform/issues/new/choose) and use bug template. Before you submit, please check
-
-- If the issue you want to open is not a duplicate
-- You submitted any errors and concise way to reproduce the issue
-- The input manifest you used (be careful not to include your cloud credentials) 
-
 # Roadmap
 <!-- Add a roadmap for claudie so users know which features are being worked on and which will in future -->
 To see the vision behind the Claudie, please refer to the [roadmap](./docs/roadmap/roadmap.md) document.
