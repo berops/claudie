@@ -24,10 +24,9 @@ To scale-up or scale-down, simply change a few lines in the input manifest and C
 
 ### Loadbalancing 
 
-In order to create highly available Kubernetes cluster, Claudie by default creates a Loadbalancers for kubeAPI server. The loadbalancing cluster can also be multi-zone or multi-cloud to ensure no downtime due to LB node failure. On top of that, users can define their own Loadbalancers with the custom rules for their applications running inside the cluster.
+Claudie has its own managed loadbalancing solution, which you can use for the Kubernetes API server. See [LB docs](https://github.com/Berops/platform/tree/master/docs/loadbalancing).
 
-
-For all of your Loadbalancers Claudie also manages customizable DNS records, on pre-configured GCP DNS zone, so you do not need to worry about any of that.
+### Persistent storage volumes 
 
 
 # Get started using the Claudie
