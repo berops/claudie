@@ -47,7 +47,9 @@ To see in detail how you apply the manifest into Claudie, please refer to the [C
 # Get involved
 
 <!-- Contributor guidelines -->
-Everyone is more than welcome to open an issue, a PR or to start a discussion. For more information about contributing please read the [contribution guidelines](./docs/contributing/contributing.md).
+Everyone is more than welcome to open an issue, a PR or to start a discussion. 
+
+For more information about contributing please read the [contribution guidelines](./docs/contributing/contributing.md).
 
 # Bug reports
 When you encounter a bug, please create a new [issue](https://github.com/Berops/platform/issues/new/choose) and use bug template. Before you submit, please check
