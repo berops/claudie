@@ -11,6 +11,7 @@ Platform for managing multi-cloud Kubernetes clusters.
 ### Manage multi-cloud Kubernetes clusters
 
 Create fully-featured Kubernetes clusters composed of multiple different public Cloud providers in an easy and secure manner.
+Simply insert credentials to your cloud projects, define your cluster, and watch how the infra spawns right in front of you.
 
 ### Management via IaC 
 
@@ -20,10 +21,6 @@ See example [manifest](./docs/input-manifest/example.yaml).
 ### Fast scale-up/scale-down of your infrastructure
 
 To scale-up or scale-down, simply change a few lines in the input manifest and Claudie will take care of the rest in the matter of minutes.
-
-### Simple multi-cloud set up
-
-Claudie is built with multi-cloud infrastructure in mind. Simply provide credentials to your cloud projects and watch how the infra is being build in front of you.
 
 ### Loadbalancing 
 
