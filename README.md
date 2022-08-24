@@ -32,18 +32,13 @@ Claudie comes with a pre-configured storage solution, with ready-to-use Storage 
 
 # Get started using the Claudie
 
-Claudie was designed to be run in any standard Kubernetes cluster. Therefore, the easiest way to get started with a claudie is to deploy it to some already built cluster. The deployments are accessible in [manifests](https://github.com/Berops/platform/tree/master/manifests/claudie) directory. To deploy it simply create a namespace by running
-
-```
-kubectl create namespace claudie
-```
-and then deploy Claudie by running
+Deploy Claudie Kubernetes [manifests](https://github.com/Berops/platform/tree/master/manifests/claudie) into a Kubernetes cluster.
 
 ```
 kustomize build | kubectl apply -f -
 ```
 
-To input the manifest into the claudie, you need to create a secret, which holds the input manifest defined by you.
+Lastly, provide your own manifest via a Kubernetes Secret.
 
 Example of the input manifest can be found [here](https://github.com/Berops/platform/blob/master/docs/input-manifest/example.yaml) 
 
