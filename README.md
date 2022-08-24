@@ -42,7 +42,7 @@ Lastly, provide your own manifest via a Kubernetes Secret.
 
 Example of the input manifest can be found [here](https://github.com/Berops/platform/blob/master/docs/input-manifest/example.yaml) 
 
-To see in full details how you apply the input manifest into the Claudie, please refer to [CRUD](./docs/crud/crud.md) document.
+To see in detail how you apply the manifest into Claudie, please refer to [CRUD](./docs/crud/crud.md) document.
 
 # Get involved
 
