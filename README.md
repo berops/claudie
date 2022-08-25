@@ -4,57 +4,52 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 ![Go Version](https://img.shields.io/github/go-mod/go-version/berops/platform)
 
-<!-- Basic info what claudie is -->
-Claudie is a simple solution for managing your multi-cloud kubernetes clusters. From node creation, cluster creation to loadbalancing and DNS set up it makes the kubernetes management a piece of cake.
+Platform for managing multi-cloud Kubernetes clusters.
 
 # Features
-<!-- Why is Claudie coolest thing ever -->
-### Claudie management via IaC 
 
-Declaratively define your infrastructure with a simple, easy to understand YAML [manifest](./docs/input-manifest/input-manifest.md).
+### Manage multi-cloud Kubernetes clusters
+
+Create fully-featured Kubernetes clusters composed of multiple different public Cloud providers in an easy and secure manner.
+Simply insert credentials to your cloud projects, define your cluster, and watch how the infra spawns right in front of you.
+
+### Management via IaC 
+
+Declaratively define your infrastructure with a simple, easy to understand YAML [syntax](./docs/input-manifest/input-manifest.md).
+See example [manifest](./docs/input-manifest/example.yaml).
 
 ### Fast scale-up/scale-down of your infrastructure
+
 To scale-up or scale-down, simply change a few lines in the input manifest and Claudie will take care of the rest in the matter of minutes.
 
-### Simple multi-cloud set up
-Claudie is built with multi-cloud infrastructure in mind. Simply provide credentials to your cloud projects and watch how the infra is being build in front of you.
 ### Loadbalancing 
-In order to create highly available kubernetes cluster, Claudie by default creates a Loadbalancers for kubeAPI server. The loadbalancing cluster can also be multi-zone or multi-cloud to ensure no downtime due to LB node failure. On top of that, users can define their own Loadbalancers with the custom rules for their applications running inside the cluster.
 
+Claudie has its own managed loadbalancing solution, which you can use for Ingresses, for the Kubernetes API server, or generally anything. See [LB docs](https://github.com/Berops/platform/tree/master/docs/loadbalancing).
 
-For all of your Loadbalancers Claudie also manages customizable DNS records, on pre-configured GCP DNS zone, so you do not need to worry about any of that.
+### Persistent storage volumes 
 
+Claudie comes with a pre-configured storage solution, with ready-to-use Storage Classes. See [Storage docs](https://github.com/Berops/platform/tree/master/docs/storage).
 
 # Get started using the Claudie
 
-Claudie was designed to be run in any standard kubernetes cluster. Therefore, the easiest way to get started with a claudie is to deploy it to some already built cluster. The deployments are accessible in [manifests](https://github.com/Berops/platform/tree/master/manifests/claudie) directory. To deploy it simply create a namespace by running
-
-```
-kubectl create namespace claudie
-```
-and then deploy Claudie by running
+Deploy Claudie Kubernetes [manifests](https://github.com/Berops/platform/tree/master/manifests/claudie) into a Kubernetes cluster.
 
 ```
 kustomize build | kubectl apply -f -
 ```
 
-To input the manifest into the claudie, you need to create a secret, which holds the input manifest defined by you.
+Lastly, provide your own manifest via a Kubernetes Secret.
 
-Example of the input manifest can be found [here](https://github.com/Berops/platform/blob/master/docs/input-manifest/example.yaml) 
+Example of the input manifest can be found [here](https://github.com/Berops/platform/blob/master/docs/input-manifest/example.yaml).
 
-To see in full details how you apply the input manifest into the Claudie, please refer to [CRUD](./docs/crud/crud.md) document.
+To see in detail how you apply the manifest into Claudie, please refer to the [CRUD](./docs/crud/crud.md) document.
 
 # Get involved
 
 <!-- Contributor guidelines -->
-Everyone is more than welcome to open an issue, a PR or to start a discussion. For more information about contributing please read the [contribution guidelines](./docs/contributing/contributing.md).
+Everyone is more than welcome to open an issue, a PR or to start a discussion. 
 
-# Bug reports
-When you encounter a bug, please create a new [issue](https://github.com/Berops/platform/issues/new/choose) and use bug template. Before you submit, please check
-
-- If the issue you want to open is not a duplicate
-- You submitted any errors and concise way to reproduce the issue
-- The input manifest you used (be careful not to include your cloud credentials) 
+For more information about contributing please read the [contribution guidelines](./docs/contributing/contributing.md).
 
 # Roadmap
 <!-- Add a roadmap for claudie so users know which features are being worked on and which will in future -->
