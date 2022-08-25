@@ -2,7 +2,6 @@
 
 ![Build](https://github.com/berops/platform/actions/workflows/CD-pipeline-dev.yml/badge.svg)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-![Go Version](https://img.shields.io/github/go-mod/go-version/berops/platform)
 
 Platform for managing multi-cloud Kubernetes clusters.
 
@@ -55,6 +54,3 @@ For more information about contributing please read the [contribution guidelines
 <!-- Add a roadmap for claudie so users know which features are being worked on and which will in future -->
 To see the vision behind the Claudie, please refer to the [roadmap](./docs/roadmap/roadmap.md) document.
 
-# License
-
-Licensed under the [Apache License, Version 2.0](LICENSE)
