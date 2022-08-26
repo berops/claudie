@@ -5,28 +5,29 @@ name: ExampleManifest
 providers:
   hetzner:
     - name: hetzner-1
-      credentials: abcdefgh123456
+      #examaple token
+      credentials: kslISA878a6etYAfXYcg5iYyrFGNlCxcICo060HVEygjFs21nske76ksjKko21lp 
   gcp:
     - name: gcp-1
-      credentials: '{"type": service-account, "project_id": ....}'
+      # example credentials
+      credentials: '{"type": "service_account","project_id": "project-claudie","private_key_id": "bskdlo875s9087394763eb84e407903lskdimp439","private_key": "-----BEGIN PRIVATE KEY-----\nSKLOosKJUSDANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhki\n-----END PRIVATE KEY-----\n","client_email": "claudie@project-claudie-123456.iam.gserviceaccount.com","client_id": "109876543211234567890","auth_uri": "https://accounts.google.com/o/oauth2/auth","token_uri": "https://oauth2.googleapis.com/token","auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs","client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/claudie%40claudie-project-123456.iam.gserviceaccount.com"}'
       gcp_project: project-id
-
 
 # nodepools field is used for defining the nodepool spec
 # you can think of them as a blueprints, not actual nodepools that will be created
 nodePools:
-  # dynamic nodepools are created by claudie 
+  # dynamic nodepools are created by claudie
   dynamic:
-      # control nodes
+    # control nodes
     - name: control-hetzner # name of the nodepool
       providerSpec:
         name: hetzner-1
         region: hel1
         zone: hel1-dc2
-      count: 3              # number of nodes in node pool
+      count: 3 # number of nodes in node pool
       server_type: cpx11
-      image: ubuntu-20.04   # OS image
-      disk_size: 50         # size of the disk
+      image: ubuntu-20.04 # OS image
+      disk_size: 50 # size of the disk
       # compute nodes
     - name: compute-hetzner
       providerSpec:
@@ -82,16 +83,16 @@ kubernetes:
   clusters:
     # dev cluster
     - name: dev-cluster
-      version: v1.21.0        # kubernetes version must be supported by kubeone
+      version: v1.21.0 # kubernetes version must be supported by kubeone
       network: 192.168.2.0/24 # private network range
       # pools define what type of machines cluster will use
-      # only pools metioned here will get created 
+      # only pools metioned here will get created
       pools:
         control:
           - control-hetzner
         compute:
           - compute-hetzner
-    # prod cluster      
+    # prod cluster
     - name: prod-cluster
       version: v1.21.0
       network: 192.168.2.0/24
@@ -106,7 +107,7 @@ kubernetes:
 
 # loadbalancers field defines loadbalncers used for the k8s clusters
 loadBalancers:
-  # roles define loadbalancer roles 
+  # roles define loadbalancer roles
   roles:
     # here, we define api server loadbalancer, but you can also define ingress loadbalancer
     - name: apiserver
