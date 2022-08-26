@@ -14,7 +14,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// ClaudieDB interface describes functionality that cbox needs in order to function properly
+// ClaudieDB interface describes functionality that cbox needs in order to function properly, for real
 // By using an interface, we abstract the underlying DB plus, it can be changed by simply providing different interface implementation
 type ClaudieDB interface {
 	Connect() error
