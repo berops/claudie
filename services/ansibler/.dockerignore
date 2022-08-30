@@ -15,7 +15,6 @@ services/kuber
 .github
 .golangci.yml
 .gitattributes
-keys
 manifests
 docs
 docker-compose.yml
