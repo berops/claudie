@@ -1,7 +1,7 @@
 FROM golang:1.16.15 AS build
 
 #Install kubectl
-RUN wget https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
+RUN wget -q https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
 RUN mv kubectl /usr/local/bin/
 
 #Unset the GOPATH
@@ -19,11 +19,17 @@ COPY . .
 
 #Change the directory
 WORKDIR /go/services/testing-framework
+RUN CGO_ENABLED=0 go test -c -run TestPlatform
 
-RUN apt update
-RUN apt install -y build-essential
-RUN chmod +x /usr/local/bin/kubectl
-RUN apt-get update && apt-get install -y jq 
+FROM alpine
+
+COPY --from=build /usr/local/bin/kubectl /usr/local/bin/kubectl
+COPY --from=build /go/services/testing-framework/testing-framework.test /bin/services/testing-framework/testing-framework.test
+COPY --from=build /go/services/testing-framework/test-sets /bin/services/testing-framework/test-sets
+
+RUN chmod +x /usr/local/bin/kubectl && \
+    apk add bash
 
 #Run server
-ENTRYPOINT [ "go", "test", "-timeout=10800s", "-v", "./..." ]
+WORKDIR /bin/services/testing-framework
+ENTRYPOINT [ "./testing-framework.test", "-test.run", "TestPlatform", "-test.timeout=10800s", "-test.v", "./..." ]
