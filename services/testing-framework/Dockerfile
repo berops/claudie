@@ -24,13 +24,12 @@ RUN CGO_ENABLED=0 go test -c -run TestPlatform
 FROM alpine
 
 COPY --from=build /usr/local/bin/kubectl /usr/local/bin/kubectl
-COPY --from=build /go/services/testing-framework/testing-framework.test /bin/services/testing-framework/testing-framework.test
-COPY --from=build /go/services/testing-framework/test-sets /bin/services/testing-framework/test-sets
-COPY --from=build /go/services/testing-framework/templates /bin/services/testing-framework/templates
+COPY --from=build /go/services/testing-framework/testing-framework.test /go/services/testing-framework/testing-framework.test
+COPY --from=build /go/services/testing-framework/templates /go/services/testing-framework/templates
 
 RUN chmod +x /usr/local/bin/kubectl && \
     apk add -q bash
 
 #Run server
-WORKDIR /bin/services/testing-framework
+WORKDIR /go/services/testing-framework
 ENTRYPOINT [ "./testing-framework.test", "-test.run", "TestPlatform", "-test.timeout=10800s", "-test.v", "./..." ]
