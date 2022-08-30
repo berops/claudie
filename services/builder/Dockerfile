@@ -25,7 +25,7 @@ FROM alpine
 
 #Copy the binaries to empty base image
 COPY --from=build /go/kubectl /usr/local/bin/kubectl
-COPY --from=build /go/services/builder /bin/services/builder
+COPY --from=build /go/services/builder/builder /bin/services/builder/builder
 RUN chmod +x /usr/local/bin/kubectl && \
     apk add bash
 
