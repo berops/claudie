@@ -17,7 +17,7 @@ jobs:
       # Setup gcloud CLI
       - uses: google-github-actions/setup-gcloud@v0.6.0
         with:
-          service_account_key: ${{ secrets.GKE_SERVICE_ACC_KEY }}
+          service_account_key: ${{ secrets.GCP_DOCKER_REGISTRY_KEY }}
           project_id: ${{ secrets.GCP_PROJECT_ID }}
       - name: Clean up the GCR
         run: |
