@@ -41,11 +41,12 @@ RUN CGO_ENABLED=0 go build
 FROM alpine
 
 RUN apk update
-RUN apk upgrade
 RUN apk add bash
 
 COPY --from=build /go/kubeone_1.4.3_linux_amd64/kubeone /usr/local/bin
-COPY --from=build /go/services/kube-eleven /bin/services/kube-eleven
+COPY --from=build /go/services/kube-eleven/server/server /bin/services/kube-eleven/server/server
+COPY --from=build /go/services/kube-eleven/server/addons /bin/services/kube-eleven/server/addons
+COPY --from=build /go/services/kube-eleven/server/templates /bin/services/kube-eleven/server/templates
 COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
 COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Liveness
 
