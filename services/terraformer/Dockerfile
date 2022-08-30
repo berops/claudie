@@ -44,7 +44,8 @@ FROM alpine
 #Copy the binaries to empty base image
 COPY --from=build /go/terraform_1.0.0_linux_amd64/terraform /usr/local/bin
 
-COPY --from=build /go/services/terraformer /bin/services/terraformer
+COPY --from=build /go/services/terraformer/server/server /bin/services/terraformer/server/server
+COPY --from=build /go/services/terraformer/templates /bin/services/terraformer/templates
 COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
 COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Liveness
 
