@@ -27,7 +27,7 @@ FROM alpine
 COPY --from=build /go/kubectl /usr/local/bin/kubectl
 COPY --from=build /go/services/builder/builder /bin/services/builder/builder
 RUN chmod +x /usr/local/bin/kubectl && \
-    apk add bash
+    apk add -q bash
 
 #Run server
 WORKDIR /bin

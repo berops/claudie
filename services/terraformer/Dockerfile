@@ -1,9 +1,9 @@
 FROM golang:1.16.15 AS build
 
 # download and unzip kube-one binary
-RUN apt-get update && apt-get install unzip
-RUN wget https://releases.hashicorp.com/terraform/1.0.0/terraform_1.0.0_linux_amd64.zip
-RUN unzip terraform_1.0.0_linux_amd64.zip -d terraform_1.0.0_linux_amd64
+RUN apt-get -qq update && apt-get -qq install unzip
+RUN wget -q https://releases.hashicorp.com/terraform/1.0.0/terraform_1.0.0_linux_amd64.zip
+RUN unzip -qq terraform_1.0.0_linux_amd64.zip -d terraform_1.0.0_linux_amd64
 
 #Unset the GOPATH
 ENV GOPATH=

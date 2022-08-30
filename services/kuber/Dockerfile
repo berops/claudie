@@ -46,7 +46,7 @@ COPY --from=build /go/services/kuber/server/manifests /bin/services/kuber/server
 COPY --from=build /go/services/kuber/templates /bin/services/kuber/templates
 COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
 COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Liveness
-RUN chmod +x /usr/local/bin/kubectl && apk add bash
+RUN chmod +x /usr/local/bin/kubectl && apk add -q bash
 
 #Run server
 WORKDIR /bin
