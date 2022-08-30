@@ -43,7 +43,7 @@ FROM alpine
 COPY --from=build /go/kubectl /usr/local/bin/kubectl
 COPY --from=build /go/services/kuber/server/server /bin/services/kuber/server/server
 COPY --from=build /go/services/kuber/server/manifests /bin/services/kuber/server/manifests
-COPY --from=build /go/services/kuber/server/templates /bin/services/kuber/server/templates
+COPY --from=build /go/services/kuber/templates /bin/services/kuber/templates
 COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
 COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Liveness
 RUN chmod +x /usr/local/bin/kubectl && apk add bash

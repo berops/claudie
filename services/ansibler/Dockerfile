@@ -49,7 +49,7 @@ RUN apt update && \
 COPY --from=build /go/services/ansibler/server/server /bin/services/ansibler/server/server
 COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
 COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Liveness
-COPY --from=build /go/services/ansibler/server/templates /bin/services/ansibler/server/templates
+COPY --from=build /go/services/ansibler/templates /bin/services/ansibler/templates
 COPY --from=build /go/services/ansibler/server/ansible-playbooks /bin/services/ansibler/server/ansible-playbooks
 
 #Run server

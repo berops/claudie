@@ -14,9 +14,9 @@ import (
 const (
 	baseDirectory        = "." //NOTE: left it here since it might be changed later
 	TerraformerTemplates = "services/terraformer/templates"
-	AnsiblerTemplates    = "services/ansibler/server/templates"
-	KuberTemplates       = "services/kuber/server/templates"
-	KubeElevenTemplates  = "services/kube-eleven/server/templates"
+	AnsiblerTemplates    = "services/ansibler/templates"
+	KuberTemplates       = "services/kuber/templates"
+	KubeElevenTemplates  = "services/kube-eleven/templates"
 	TestingTemplates     = "templates" //due to how tests are run, the path to templates is absolute to testing-framework directory
 )
 
