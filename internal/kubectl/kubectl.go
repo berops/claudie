@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	comm "github.com/Berops/platform/internal/command"
+	comm "github.com/Berops/claudie/internal/command"
 )
 
 // Kubeconfig - the kubeconfig of the cluster as a string

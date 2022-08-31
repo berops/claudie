@@ -3,8 +3,8 @@ package provider
 import (
 	"fmt"
 
-	"github.com/Berops/platform/internal/templateUtils"
-	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/claudie/internal/templateUtils"
+	"github.com/Berops/claudie/proto/pb"
 )
 
 // Provider package struct

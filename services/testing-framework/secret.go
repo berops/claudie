@@ -4,9 +4,9 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/Berops/platform/internal/kubectl"
-	"github.com/Berops/platform/internal/manifest"
-	"github.com/Berops/platform/internal/templateUtils"
+	"github.com/Berops/claudie/internal/kubectl"
+	"github.com/Berops/claudie/internal/manifest"
+	"github.com/Berops/claudie/internal/templateUtils"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v2"
 )

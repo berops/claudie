@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Berops/platform/internal/utils"
-	"github.com/Berops/platform/proto/pb"
-	"github.com/Berops/platform/services/ansibler/server/ansible"
+	"github.com/Berops/claudie/internal/utils"
+	"github.com/Berops/claudie/proto/pb"
+	"github.com/Berops/claudie/services/ansibler/server/ansible"
 	"golang.org/x/sync/errgroup"
 )
 

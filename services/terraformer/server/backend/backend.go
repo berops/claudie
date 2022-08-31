@@ -3,8 +3,8 @@ package backend
 import (
 	"fmt"
 
-	"github.com/Berops/platform/internal/envs"
-	"github.com/Berops/platform/internal/templateUtils"
+	"github.com/Berops/claudie/internal/envs"
+	"github.com/Berops/claudie/internal/templateUtils"
 )
 
 var (
