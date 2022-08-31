@@ -100,9 +100,11 @@ func saveFiles(c pb.ContextBoxServiceClient) func() error {
 			}
 
 			for _, config := range configsToDelete.Configs {
-				if err := cbox.DeleteConfig(c, config.Id, pb.IdType_HASH); err != nil {
-					log.Error().Msgf("Failed to the delete %s with id %s : %v", config.Name, config.Id, err)
-				}
+				go func(config *pb.Config) {
+					if err := cbox.DeleteConfig(c, config.Id, pb.IdType_HASH); err != nil {
+						log.Error().Msgf("Failed to the delete %s with id %s : %v", config.Name, config.Id, err)
+					}
+				}(config)
 			}
 			log.Info().Msg("Saved all files")
 		}()
