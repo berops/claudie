@@ -17,7 +17,7 @@ spec:
       containers:
         - name: builder
           imagePullPolicy: Always
-          image: eu.gcr.io/platform-infrastructure-316112/platform/builder
+          image: eu.gcr.io/platform-infrastructure-316112/claudie/builder
           resources:
             requests:
               cpu: 10m

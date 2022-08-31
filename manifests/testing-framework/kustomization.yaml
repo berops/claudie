@@ -17,5 +17,5 @@ secretGenerator:
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
-- name: eu.gcr.io/platform-infrastructure-316112/platform/testing-framework
+- name: eu.gcr.io/platform-infrastructure-316112/claudie/testing-framework
   newTag: fa82676-692

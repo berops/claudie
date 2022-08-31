@@ -12,7 +12,7 @@ services:
       driver: none
 
   builder:
-    image: eu.gcr.io/platform-infrastructure-316112/platform/builder
+    image: eu.gcr.io/platform-infrastructure-316112/claudie/builder
     build:
       context: .
       dockerfile: "./services/builder/Dockerfile"
@@ -27,7 +27,7 @@ services:
         condition: on-failure
 
   terraformer:
-    image: eu.gcr.io/platform-infrastructure-316112/platform/terraformer
+    image: eu.gcr.io/platform-infrastructure-316112/claudie/terraformer
     build:
       context: .
       dockerfile: ./services/terraformer/Dockerfile
@@ -42,7 +42,7 @@ services:
         condition: on-failure
 
   ansibler:
-    image: eu.gcr.io/platform-infrastructure-316112/platform/ansibler
+    image: eu.gcr.io/platform-infrastructure-316112/claudie/ansibler
     build:
       context: .
       dockerfile: ./services/ansibler/Dockerfile
@@ -57,7 +57,7 @@ services:
         condition: on-failure
 
   kube-eleven:
-    image: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven
+    image: eu.gcr.io/platform-infrastructure-316112/claudie/kube-eleven
     build:
       context: .
       dockerfile: ./services/kube-eleven/Dockerfile
@@ -72,7 +72,7 @@ services:
         condition: on-failure
 
   context-box:
-    image: eu.gcr.io/platform-infrastructure-316112/platform/context-box
+    image: eu.gcr.io/platform-infrastructure-316112/claudie/context-box
     build:
       context: .
       dockerfile: ./services/context-box/Dockerfile
@@ -87,7 +87,7 @@ services:
         condition: on-failure
 
   scheduler:
-    image: eu.gcr.io/platform-infrastructure-316112/platform/scheduler
+    image: eu.gcr.io/platform-infrastructure-316112/claudie/scheduler
     build:
       context: .
       dockerfile: ./services/scheduler/Dockerfile
@@ -101,7 +101,7 @@ services:
       restart_policy:
         condition: on-failure
   kuber:
-    image: eu.gcr.io/platform-infrastructure-316112/platform/kuber
+    image: eu.gcr.io/platform-infrastructure-316112/claudie/kuber
     build:
       context: .
       dockerfile: ./services/kuber/Dockerfile
@@ -116,7 +116,7 @@ services:
         condition: on-failure
   frontend:
     platform: linux/amd64
-    image: eu.gcr.io/platform-infrastructure-316112/platform/frontend
+    image: eu.gcr.io/platform-infrastructure-316112/claudie/frontend
     build:
       context: .
       dockerfile: ./services/frontend/Dockerfile

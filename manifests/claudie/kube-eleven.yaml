@@ -17,7 +17,7 @@ spec:
       containers:
       - name: kube-eleven
         imagePullPolicy: Always
-        image: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven
+        image: eu.gcr.io/platform-infrastructure-316112/claudie/kube-eleven
         resources:
           requests:
             cpu: 300m

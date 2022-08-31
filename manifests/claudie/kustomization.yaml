@@ -19,19 +19,19 @@ configMapGenerator:
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
-- name: eu.gcr.io/platform-infrastructure-316112/platform/ansibler
+- name: eu.gcr.io/platform-infrastructure-316112/claudie/ansibler
   newTag: fa82676-692
-- name: eu.gcr.io/platform-infrastructure-316112/platform/builder
+- name: eu.gcr.io/platform-infrastructure-316112/claudie/builder
   newTag: fa82676-692
-- name: eu.gcr.io/platform-infrastructure-316112/platform/context-box
+- name: eu.gcr.io/platform-infrastructure-316112/claudie/context-box
   newTag: fa82676-692
-- name: eu.gcr.io/platform-infrastructure-316112/platform/frontend
+- name: eu.gcr.io/platform-infrastructure-316112/claudie/frontend
   newTag: fa82676-692
-- name: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven
+- name: eu.gcr.io/platform-infrastructure-316112/claudie/kube-eleven
   newTag: fa82676-692
-- name: eu.gcr.io/platform-infrastructure-316112/platform/kuber
+- name: eu.gcr.io/platform-infrastructure-316112/claudie/kuber
   newTag: fa82676-692
-- name: eu.gcr.io/platform-infrastructure-316112/platform/scheduler
+- name: eu.gcr.io/platform-infrastructure-316112/claudie/scheduler
   newTag: fa82676-692
-- name: eu.gcr.io/platform-infrastructure-316112/platform/terraformer
+- name: eu.gcr.io/platform-infrastructure-316112/claudie/terraformer
   newTag: fa82676-692
