@@ -14,7 +14,7 @@
 - [Frontend](https://github.com/Berops/claudie/tree/master/services/frontend)
 
 ### Data stores
-- [MongoDB](https://github.com/Berops/claudie/blob/master/manifests/claudie/mongodb.yaml)
+- [MongoDB](https://github.com/Berops/claudie/blob/master/manifests/claudie/mongo)
 - [Minio](https://github.com/Berops/claudie/tree/master/manifests/claudie/minio)
 
 ### Tools used
