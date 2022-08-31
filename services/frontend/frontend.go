@@ -138,7 +138,7 @@ func healthCheck() error {
 func main() {
 	utils.InitLog("frontend")
 	cc := ClientConnection()
-	defer cc.Close()
+	defer func() { utils.CloseClientConnection(cc) }()
 	// Creating the client
 	c := pb.NewContextBoxServiceClient(cc)
 	// Initialize health probes
