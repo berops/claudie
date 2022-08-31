@@ -40,7 +40,7 @@ func NewAnsiblerServiceClient(cc grpc.ClientConnInterface) AnsiblerServiceClient
 
 func (c *ansiblerServiceClient) InstallNodeRequirements(ctx context.Context, in *InstallRequest, opts ...grpc.CallOption) (*InstallResponse, error) {
 	out := new(InstallResponse)
-	err := c.cc.Invoke(ctx, "/platform.AnsiblerService/InstallNodeRequirements", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/claudie.AnsiblerService/InstallNodeRequirements", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (c *ansiblerServiceClient) InstallNodeRequirements(ctx context.Context, in 
 
 func (c *ansiblerServiceClient) InstallVPN(ctx context.Context, in *InstallRequest, opts ...grpc.CallOption) (*InstallResponse, error) {
 	out := new(InstallResponse)
-	err := c.cc.Invoke(ctx, "/platform.AnsiblerService/InstallVPN", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/claudie.AnsiblerService/InstallVPN", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func (c *ansiblerServiceClient) InstallVPN(ctx context.Context, in *InstallReque
 
 func (c *ansiblerServiceClient) SetUpLoadbalancers(ctx context.Context, in *SetUpLBRequest, opts ...grpc.CallOption) (*SetUpLBResponse, error) {
 	out := new(SetUpLBResponse)
-	err := c.cc.Invoke(ctx, "/platform.AnsiblerService/SetUpLoadbalancers", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/claudie.AnsiblerService/SetUpLoadbalancers", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,7 @@ func _AnsiblerService_InstallNodeRequirements_Handler(srv interface{}, ctx conte
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/platform.AnsiblerService/InstallNodeRequirements",
+		FullMethod: "/claudie.AnsiblerService/InstallNodeRequirements",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AnsiblerServiceServer).InstallNodeRequirements(ctx, req.(*InstallRequest))
@@ -132,7 +132,7 @@ func _AnsiblerService_InstallVPN_Handler(srv interface{}, ctx context.Context, d
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/platform.AnsiblerService/InstallVPN",
+		FullMethod: "/claudie.AnsiblerService/InstallVPN",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AnsiblerServiceServer).InstallVPN(ctx, req.(*InstallRequest))
@@ -150,7 +150,7 @@ func _AnsiblerService_SetUpLoadbalancers_Handler(srv interface{}, ctx context.Co
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/platform.AnsiblerService/SetUpLoadbalancers",
+		FullMethod: "/claudie.AnsiblerService/SetUpLoadbalancers",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AnsiblerServiceServer).SetUpLoadbalancers(ctx, req.(*SetUpLBRequest))
@@ -162,7 +162,7 @@ func _AnsiblerService_SetUpLoadbalancers_Handler(srv interface{}, ctx context.Co
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var AnsiblerService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "platform.AnsiblerService",
+	ServiceName: "claudie.AnsiblerService",
 	HandlerType: (*AnsiblerServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

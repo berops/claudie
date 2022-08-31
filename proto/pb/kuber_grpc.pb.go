@@ -37,7 +37,7 @@ func NewKuberServiceClient(cc grpc.ClientConnInterface) KuberServiceClient {
 
 func (c *kuberServiceClient) SetUpStorage(ctx context.Context, in *SetUpStorageRequest, opts ...grpc.CallOption) (*SetUpStorageResponse, error) {
 	out := new(SetUpStorageResponse)
-	err := c.cc.Invoke(ctx, "/platform.KuberService/SetUpStorage", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/claudie.KuberService/SetUpStorage", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (c *kuberServiceClient) SetUpStorage(ctx context.Context, in *SetUpStorageR
 
 func (c *kuberServiceClient) StoreKubeconfig(ctx context.Context, in *StoreKubeconfigRequest, opts ...grpc.CallOption) (*StoreKubeconfigResponse, error) {
 	out := new(StoreKubeconfigResponse)
-	err := c.cc.Invoke(ctx, "/platform.KuberService/StoreKubeconfig", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/claudie.KuberService/StoreKubeconfig", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func (c *kuberServiceClient) StoreKubeconfig(ctx context.Context, in *StoreKubec
 
 func (c *kuberServiceClient) DeleteKubeconfig(ctx context.Context, in *DeleteKubeconfigRequest, opts ...grpc.CallOption) (*DeleteKubeconfigResponse, error) {
 	out := new(DeleteKubeconfigResponse)
-	err := c.cc.Invoke(ctx, "/platform.KuberService/DeleteKubeconfig", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/claudie.KuberService/DeleteKubeconfig", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func _KuberService_SetUpStorage_Handler(srv interface{}, ctx context.Context, de
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/platform.KuberService/SetUpStorage",
+		FullMethod: "/claudie.KuberService/SetUpStorage",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(KuberServiceServer).SetUpStorage(ctx, req.(*SetUpStorageRequest))
@@ -126,7 +126,7 @@ func _KuberService_StoreKubeconfig_Handler(srv interface{}, ctx context.Context,
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/platform.KuberService/StoreKubeconfig",
+		FullMethod: "/claudie.KuberService/StoreKubeconfig",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(KuberServiceServer).StoreKubeconfig(ctx, req.(*StoreKubeconfigRequest))
@@ -144,7 +144,7 @@ func _KuberService_DeleteKubeconfig_Handler(srv interface{}, ctx context.Context
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/platform.KuberService/DeleteKubeconfig",
+		FullMethod: "/claudie.KuberService/DeleteKubeconfig",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(KuberServiceServer).DeleteKubeconfig(ctx, req.(*DeleteKubeconfigRequest))
@@ -156,7 +156,7 @@ func _KuberService_DeleteKubeconfig_Handler(srv interface{}, ctx context.Context
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var KuberService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "platform.KuberService",
+	ServiceName: "claudie.KuberService",
 	HandlerType: (*KuberServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
