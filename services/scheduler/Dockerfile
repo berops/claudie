@@ -23,7 +23,7 @@ RUN CGO_ENABLED=0 go build
 FROM scratch
 
 #Copy the binaries to empty base image
-COPY --from=build /go/services/scheduler /bin/services/scheduler
+COPY --from=build /go/services/scheduler/scheduler /bin/services/scheduler/scheduler
 
 WORKDIR /bin
 #Run scheduler

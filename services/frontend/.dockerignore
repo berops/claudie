@@ -8,9 +8,9 @@ services/terraformer
 services/kube-eleven
 services/scheduler
 services/context-box
-services/ansibler
+services/builder
 services/testing-framework
-services/frontend
+services/ansibler
 services/kuber
 .github
 .golangci.yml
