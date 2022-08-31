@@ -38,7 +38,7 @@ RUN CGO_ENABLED=0 go build
 FROM scratch
 
 #Copy the binaries to empty base image
-COPY --from=build  /go/services/frontend /bin/services/frontend
+COPY --from=build  /go/services/frontend/frontend /bin/services/frontend/frontend
 COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
 COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Liveness
 

@@ -1,7 +1,7 @@
 FROM golang:1.16.15 AS build
 
 #Install kubectl
-RUN wget https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
+RUN wget -q https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
 
 #Unset the GOPATH
 ENV GOPATH=
@@ -41,10 +41,12 @@ FROM alpine
 
 #Copy the binaries to empty base image
 COPY --from=build /go/kubectl /usr/local/bin/kubectl
-COPY --from=build /go/services/kuber /bin/services/kuber
+COPY --from=build /go/services/kuber/server/server /bin/services/kuber/server/server
+COPY --from=build /go/services/kuber/server/manifests /bin/services/kuber/server/manifests
+COPY --from=build /go/services/kuber/templates /bin/services/kuber/templates
 COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
 COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Liveness
-RUN chmod +x /usr/local/bin/kubectl && apk add bash
+RUN chmod +x /usr/local/bin/kubectl && apk add -q bash
 
 #Run server
 WORKDIR /bin

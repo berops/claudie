@@ -1,9 +1,9 @@
 FROM golang:1.16.15 AS build
 
 # download and unzip kube-one binary
-RUN apt-get update && apt-get install unzip
-RUN wget https://releases.hashicorp.com/terraform/1.0.0/terraform_1.0.0_linux_amd64.zip
-RUN unzip terraform_1.0.0_linux_amd64.zip -d terraform_1.0.0_linux_amd64
+RUN apt-get -qq update && apt-get -qq install unzip
+RUN wget -q https://releases.hashicorp.com/terraform/1.0.0/terraform_1.0.0_linux_amd64.zip
+RUN unzip -qq terraform_1.0.0_linux_amd64.zip -d terraform_1.0.0_linux_amd64
 
 #Unset the GOPATH
 ENV GOPATH=
@@ -44,7 +44,8 @@ FROM alpine
 #Copy the binaries to empty base image
 COPY --from=build /go/terraform_1.0.0_linux_amd64/terraform /usr/local/bin
 
-COPY --from=build /go/services/terraformer /bin/services/terraformer
+COPY --from=build /go/services/terraformer/server/server /bin/services/terraformer/server/server
+COPY --from=build /go/services/terraformer/templates /bin/services/terraformer/templates
 COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
 COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Liveness
 

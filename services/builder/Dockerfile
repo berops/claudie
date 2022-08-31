@@ -1,7 +1,7 @@
 FROM golang:1.16.15 AS build
 
 #Install kubectl
-RUN wget https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
+RUN wget -q https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
 #Unset the GOPATH
 ENV GOPATH=
 
@@ -25,9 +25,9 @@ FROM alpine
 
 #Copy the binaries to empty base image
 COPY --from=build /go/kubectl /usr/local/bin/kubectl
-COPY --from=build /go/services/builder /bin/services/builder
+COPY --from=build /go/services/builder/builder /bin/services/builder/builder
 RUN chmod +x /usr/local/bin/kubectl && \
-    apk add bash
+    apk add -q bash
 
 #Run server
 WORKDIR /bin
