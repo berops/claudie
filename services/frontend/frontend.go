@@ -153,7 +153,7 @@ func main() {
 		signal.Notify(ch, os.Interrupt)
 		defer signal.Stop(ch)
 		<-ch
-		return errors.New("builder interrupt signal")
+		return errors.New("frontend interrupt signal")
 	})
 	g.Go(func() error {
 		w.Run()
