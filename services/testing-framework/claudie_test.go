@@ -96,7 +96,7 @@ func clientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
 	return c, cc
 }
 
-// applyTestSet function will apply test set sequentially to a platform
+// applyTestSet function will apply test set sequentially to Claudie
 func applyTestSet(setName, namespace string, c pb.ContextBoxServiceClient) error {
 	done := make(chan string)
 	idInfo := idInfo{id: "", idType: -1}

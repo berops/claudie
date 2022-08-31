@@ -1,4 +1,4 @@
-name: CD pipeline for platform - dev
+name: CD pipeline for Claudie - dev
 on:
   # Run after merge to master
   push:

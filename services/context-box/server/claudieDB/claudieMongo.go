@@ -75,7 +75,7 @@ func (c *ClaudieMongo) Disconnect() error {
 //Init will initialise database and collections
 // returns error if initialisation failed, nil otherwise
 func (c *ClaudieMongo) Init() error {
-	c.collection = c.client.Database("platform").Collection("config")
+	c.collection = c.client.Database("claudie").Collection("config")
 	// create index
 	indexName, err := c.collection.Indexes().CreateOne(context.Background(), mongo.IndexModel{
 		Keys:    bson.D{{Key: "name", Value: 1}},
