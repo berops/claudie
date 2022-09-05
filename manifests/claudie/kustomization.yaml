@@ -20,18 +20,18 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
 - name: eu.gcr.io/platform-infrastructure-316112/platform/ansibler
-  newTag: fa82676-692
+  newTag: c742ded-706
 - name: eu.gcr.io/platform-infrastructure-316112/platform/builder
-  newTag: fa82676-692
+  newTag: c742ded-706
 - name: eu.gcr.io/platform-infrastructure-316112/platform/context-box
-  newTag: fa82676-692
+  newTag: c742ded-706
 - name: eu.gcr.io/platform-infrastructure-316112/platform/frontend
-  newTag: 9b4c739-704
+  newTag: c742ded-706
 - name: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven
-  newTag: fa82676-692
+  newTag: c742ded-706
 - name: eu.gcr.io/platform-infrastructure-316112/platform/kuber
-  newTag: fa82676-692
+  newTag: c742ded-706
 - name: eu.gcr.io/platform-infrastructure-316112/platform/scheduler
-  newTag: fa82676-692
+  newTag: c742ded-706
 - name: eu.gcr.io/platform-infrastructure-316112/platform/terraformer
-  newTag: fa82676-692
+  newTag: c742ded-706
