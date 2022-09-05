@@ -3,6 +3,7 @@ module github.com/Berops/platform
 go 1.18
 
 require (
+	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/minio/minio-go/v7 v7.0.0
 	github.com/rs/zerolog v1.28.0
 	github.com/spiffe/go-spiffe/v2 v2.1.1
