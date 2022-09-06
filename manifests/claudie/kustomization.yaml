@@ -26,7 +26,7 @@ images:
 - name: eu.gcr.io/platform-infrastructure-316112/platform/context-box
   newTag: fa82676-692
 - name: eu.gcr.io/platform-infrastructure-316112/platform/frontend
-  newTag: 9b4c739-704
+  newTag: 0ddca68-707
 - name: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven
   newTag: fa82676-692
 - name: eu.gcr.io/platform-infrastructure-316112/platform/kuber
