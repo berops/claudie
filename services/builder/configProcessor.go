@@ -93,7 +93,14 @@ func stateDifference(config *pb.Config) (*pb.Config, map[string]*nodepoolsCounts
 	var delCounts = make(map[string]*nodepoolsCounts)                     //[clusterName]nodepoolCount
 	//iterate over clusters and find difference in nodepools
 	for _, desiredClusterTmp := range tmpConfig.GetDesiredState().GetClusters() {
-		delCounts[desiredClusterTmp.ClusterInfo.Name], adding, deleting = findNodepoolDifference(currentNodepoolMap, desiredClusterTmp)
+		npCounts, add, del := findNodepoolDifference(currentNodepoolMap, desiredClusterTmp)
+		delCounts[desiredClusterTmp.ClusterInfo.Name] = npCounts
+		if add {
+			adding = true
+		}
+		if del {
+			deleting = true
+		}
 	}
 
 	//if any key left, it means that nodepool is defined in current state but not in the desired, i.e. whole nodepool should be deleted
