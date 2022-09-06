@@ -1,4 +1,4 @@
-//Package kubectl provides function for using the kubectl commands
+// Package kubectl provides function for using the kubectl commands
 package kubectl
 
 import (
@@ -6,6 +6,7 @@ import (
 	"os/exec"
 
 	comm "github.com/Berops/platform/internal/command"
+	"github.com/Berops/platform/proto/pb"
 )
 
 // Kubeconfig - the kubeconfig of the cluster as a string
@@ -17,6 +18,11 @@ type Kubectl struct {
 
 const (
 	maxKubectlRetries = 5
+	getEtcdPodsCmd    = "get pods -n kube-system --no-headers -o custom-columns=\":metadata.name\" | grep etcd"
+	exportEtcdEnvsCmd = `export ETCDCTL_API=3 && 
+		export ETCDCTL_CACERT=/etc/kubernetes/pki/etcd/ca.crt && 
+		export ETCDCTL_CERT=/etc/kubernetes/pki/etcd/healthcheck-client.crt && 
+		export ETCDCTL_KEY=/etc/kubernetes/pki/etcd/healthcheck-client.key`
 )
 
 // KubectlApply runs kubectl apply in k.Directory directory, with specified manifest and specified namespace
@@ -106,10 +112,38 @@ func (k *Kubectl) KubectlGet(resource, namespace string) ([]byte, error) {
 
 // KubectlAnnotate runs kubectl annotate in k.Directory, with the specified annotation on a specified resource and resource name
 // example: kubectl annotate node node-1 node.longhorn.io/default-node-tags='["zone2"]' -> k.KubectlAnnotate("node","node-1","node.longhorn.io/default-node-tags='["zone2"]")
-func (k Kubectl) KubectlAnnotate(resource, resourceName, annotation string) error {
+func (k *Kubectl) KubectlAnnotate(resource, resourceName, annotation string) error {
 	kubeconfig := k.getKubeconfig()
 	command := fmt.Sprintf("kubectl annotate %s %s %s %s", resource, resourceName, annotation, kubeconfig)
 	return k.run(command)
+}
+
+// KubectlGetNodeNames will find a node names for a particular cluster
+// return slice of node names and nil if successful, nil and error otherwise
+func (k *Kubectl) KubectlGetNodeNames() ([]byte, error) {
+	kubeconfig := k.getKubeconfig()
+
+	nodesQueryCmd := fmt.Sprintf("kubectl --kubeconfig <(echo \"%s\") get nodes -n kube-system --no-headers -o custom-columns=\":metadata.name\" ", kubeconfig)
+	return k.runWithOutput(nodesQueryCmd)
+}
+
+// getEtcdPods finds all etcd pods in cluster
+// returns slice of pod names and nil if successful, nil and error otherwise
+func (k *Kubectl) KubectlGetEtcdPods(master *pb.Node) ([]byte, error) {
+	kubeconfig := k.getKubeconfig()
+
+	// get etcd pods name
+	podsQueryCmd := fmt.Sprintf("kubectl --kubeconfig <(echo \"%s\") %s-%s", kubeconfig, getEtcdPodsCmd, master.Name)
+	return k.runWithOutput(podsQueryCmd)
+}
+
+func (k *Kubectl) KubectlExecEtcd(etcdPod, etcdctlCmd string) ([]byte, error) {
+	kubeconfig := k.getKubeconfig()
+
+	kcExecEtcdCmd := fmt.Sprintf("kubectl --kubeconfig <(echo '%s') -n kube-system exec -i %s -- /bin/sh -c \" %s && %s \"",
+		kubeconfig, etcdPod, exportEtcdEnvsCmd, etcdctlCmd)
+	return k.runWithOutput(kcExecEtcdCmd)
+
 }
 
 // run will run the command in a bash shell like "bash -c command"
