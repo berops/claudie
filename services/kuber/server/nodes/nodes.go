@@ -56,6 +56,8 @@ func (d *Deleter) DeleteNodes() (*pb.K8Scluster, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error while deleting nodes from worker nodes for %s : %v", d.cluster.ClusterInfo.Name, err)
 	}
+	//update the current cluster
+	d.updateClusterData()
 	return d.cluster, nil
 }
 
@@ -79,7 +81,7 @@ func deleteNodesByName(kc kubectl.Kubectl, nodesToDelete, realNodeNames []string
 				return fmt.Errorf("error while deleting node %s : %v", nodeName, err)
 			}
 		} else {
-			log.Error().Msgf("Node name that contains \"%s\" no found ", nodeName)
+			log.Error().Msgf("Node name that contains %s not found ", nodeName)
 			return fmt.Errorf("no node with name %s found ", nodeName)
 		}
 	}
@@ -173,4 +175,18 @@ func getEtcdPodInfo(etcdMembersString []string) []etcdPodInfo {
 		}
 	}
 	return etcdPodInfos
+}
+
+//updateClusterData will remove deleted nodes from nodepools
+func (d *Deleter) updateClusterData() {
+	for _, name := range append(d.masterNodes, d.workerNodes...) {
+		for _, nodepool := range d.cluster.ClusterInfo.NodePools {
+			for i, node := range nodepool.Nodes {
+				if node.Name == name {
+					nodepool.Count--
+					nodepool.Nodes = append(nodepool.Nodes[:i], nodepool.Nodes[i+1:]...)
+				}
+			}
+		}
+	}
 }
