@@ -60,11 +60,11 @@ func (l Longhorn) SetUp() error {
 
 	sortedNodePools := utils.GroupNodepoolsByProvider(l.Cluster.ClusterInfo)
 	// get real nodes names in a case when provider appends some string to the set name
-	realNodesInfo, err := kubectl.KubectlGet("nodes", "")
+	realNodesInfo, err := kubectl.KubectlGetNodeNames()
 	if err != nil {
 		return err
 	}
-	realNodeNames := getRealNodeNames(realNodesInfo)
+	realNodeNames := strings.Split(string(realNodesInfo), "\n")
 	// tag nodes based on the zones
 	for provider, nodepools := range sortedNodePools {
 		zoneName := fmt.Sprintf("%s-zone", provider)
@@ -184,19 +184,4 @@ func (l *Longhorn) deleteOldStorageClasses(existing, applied []string, kc kubect
 		}
 	}
 	return nil
-}
-
-//getRealNodeNames will find a real node names, since some providers appends additional data after user defined name
-//returns slice of a real node names
-func getRealNodeNames(nodeInfo []byte) []string {
-	// get slice of lines from output
-	nodeInfoStrings := strings.Split(string(nodeInfo), "\n")
-	// trim the column description and whitespace at the end
-	nodeInfoStrings = nodeInfoStrings[1 : len(nodeInfoStrings)-1]
-	var nodeNames []string
-	for _, line := range nodeInfoStrings {
-		fields := strings.Fields(line)
-		nodeNames = append(nodeNames, fields[0])
-	}
-	return nodeNames
 }
