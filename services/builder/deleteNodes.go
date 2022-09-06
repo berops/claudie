@@ -5,11 +5,6 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type etcdPodInfo struct {
-	nodeName   string
-	memberHash string
-}
-
 //deleteNodes function finds particular nodes for deletion and deletes them from the etcd and k8s clusters by calling Kuber
 //function also changes config.Current state after the nodes are deleted, so current state reflects the real cluster state
 //return config with new current state and nil if successful, nil and error  otherwise
