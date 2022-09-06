@@ -52,7 +52,7 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 			//tmpConfig is used in operation where config is adding && deleting the nodes
 			//first, tmpConfig is applied which only adds nodes and only then the real config is applied, which will delete nodes
 			var tmpConfig *pb.Config
-			var toDelete map[string]*nodepoolsCounts
+			var toDelete map[string]*nodepoolsCounts //[clusterName]nodepoolsCount
 			//if any current state already exist, find difference
 			if len(config.CurrentState.GetClusters()) > 0 {
 				tmpConfig, toDelete = stateDifference(config)
@@ -90,7 +90,7 @@ func stateDifference(config *pb.Config) (*pb.Config, map[string]*nodepoolsCounts
 	adding, deleting := false, false
 	tmpConfig := proto.Clone(config).(*pb.Config)
 	currentNodepoolMap := getNodepoolMap(tmpConfig.CurrentState.Clusters) //[clusterName][nodepoolName]Count
-	var delCounts = make(map[string]*nodepoolsCounts)
+	var delCounts = make(map[string]*nodepoolsCounts)                     //[clusterName]nodepoolCount
 	//iterate over clusters and find difference in nodepools
 	for _, desiredClusterTmp := range tmpConfig.GetDesiredState().GetClusters() {
 		delCounts[desiredClusterTmp.ClusterInfo.Name], adding, deleting = findNodepoolDifference(currentNodepoolMap, desiredClusterTmp)
