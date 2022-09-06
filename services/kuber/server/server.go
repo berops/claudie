@@ -16,6 +16,7 @@ import (
 	"github.com/Berops/platform/internal/utils"
 	"github.com/Berops/platform/proto/pb"
 	"github.com/Berops/platform/services/kuber/server/longhorn"
+	"github.com/Berops/platform/services/kuber/server/nodes"
 	"github.com/Berops/platform/services/kuber/server/secret"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
@@ -128,6 +129,33 @@ func (s *server) DeleteKubeconfig(ctx context.Context, req *pb.DeleteKubeconfigR
 		return &pb.DeleteKubeconfigResponse{ErrorMessage: err.Error()}, err
 	}
 	return &pb.DeleteKubeconfigResponse{ErrorMessage: ""}, nil
+}
+
+func (s *server) DeleteNodes(ctx context.Context, req *pb.DeleteNodesRequest) (*pb.DeleteNodesResponse, error) {
+	cluster := req.Cluster
+	nodesToDelete := req.NodesToDelete
+	etcdToDelete := req.EtcdToDelete
+	var errGroup errgroup.Group
+	func(c *pb.K8Scluster, nodesToDelete, etcdToDelete []string) {
+		errGroup.Go(func() error {
+			if len(etcdToDelete) > 0 {
+				err := nodes.DeleteFromEtcd(cluster, etcdToDelete)
+				if err != nil {
+					return err
+				}
+			}
+			err := nodes.DeleteNodesByName(cluster, nodesToDelete)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+	}(cluster, nodesToDelete, etcdToDelete)
+	err := errGroup.Wait()
+	if err != nil {
+		return &pb.DeleteNodesResponse{ErrorMessage: err.Error()}, err
+	}
+	return &pb.DeleteNodesResponse{ErrorMessage: ""}, nil
 }
 
 func main() {
