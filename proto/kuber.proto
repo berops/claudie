@@ -29,12 +29,13 @@ message DeleteKubeconfigResponse {
 
 message DeleteNodesRequest {
   K8scluster cluster = 1;
-  repeated string nodesToDelete = 2;
-  repeated string etcdToDelete = 3;
+  repeated string workerNodes = 2;
+  repeated string masterNodes = 3;
 }
 
 message DeleteNodesResponse {
-  string errorMessage = 1;
+  K8scluster cluster = 1;
+  string errorMessage = 2;
 }
 
 service KuberService {
