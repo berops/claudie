@@ -132,26 +132,8 @@ func (s *server) DeleteKubeconfig(ctx context.Context, req *pb.DeleteKubeconfigR
 }
 
 func (s *server) DeleteNodes(ctx context.Context, req *pb.DeleteNodesRequest) (*pb.DeleteNodesResponse, error) {
-	cluster := req.Cluster
-	nodesToDelete := req.NodesToDelete
-	etcdToDelete := req.EtcdToDelete
-	var errGroup errgroup.Group
-	func(c *pb.K8Scluster, nodesToDelete, etcdToDelete []string) {
-		errGroup.Go(func() error {
-			if len(etcdToDelete) > 0 {
-				err := nodes.DeleteFromEtcd(cluster, etcdToDelete)
-				if err != nil {
-					return err
-				}
-			}
-			err := nodes.DeleteNodesByName(cluster, nodesToDelete)
-			if err != nil {
-				return err
-			}
-			return nil
-		})
-	}(cluster, nodesToDelete, etcdToDelete)
-	err := errGroup.Wait()
+	deleter := nodes.New(req.MasterNodes, req.WorkerNodes, req.Cluster)
+	err := deleter.DeleteNodes()
 	if err != nil {
 		return &pb.DeleteNodesResponse{ErrorMessage: err.Error()}, err
 	}
