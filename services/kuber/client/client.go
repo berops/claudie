@@ -40,6 +40,6 @@ func DeleteNodes(c pb.KuberServiceClient, req *pb.DeleteNodesRequest) (*pb.Delet
 	if err != nil {
 		return nil, fmt.Errorf("error while calling DeleteNodes on kuber: %v", err)
 	}
-	log.Info().Msgf("Delete nodes successfully")
+	log.Info().Msgf("Nodes were deleted successfully")
 	return res, nil
 }

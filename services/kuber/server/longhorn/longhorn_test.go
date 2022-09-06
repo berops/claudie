@@ -1,7 +1,6 @@
 package longhorn
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/Berops/platform/internal/kubectl"
@@ -13,5 +12,5 @@ func TestGetNodeNames(t *testing.T) {
 	k := kubectl.Kubectl{Kubeconfig: ""}
 	out, err := k.KubectlGetNodeNames()
 	require.NoError(t, err)
-	fmt.Println(string(out))
+	t.Log(string(out))
 }

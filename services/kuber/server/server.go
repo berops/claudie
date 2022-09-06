@@ -132,12 +132,14 @@ func (s *server) DeleteKubeconfig(ctx context.Context, req *pb.DeleteKubeconfigR
 }
 
 func (s *server) DeleteNodes(ctx context.Context, req *pb.DeleteNodesRequest) (*pb.DeleteNodesResponse, error) {
+	log.Info().Msgf("Deleting nodes for cluster %s", req.Cluster.ClusterInfo.Name)
 	deleter := nodes.New(req.MasterNodes, req.WorkerNodes, req.Cluster)
-	err := deleter.DeleteNodes()
+	cluster, err := deleter.DeleteNodes()
 	if err != nil {
+		log.Error().Msgf("Error while deleting nodes for %s : %v", req.Cluster.ClusterInfo.Name, err)
 		return &pb.DeleteNodesResponse{ErrorMessage: err.Error()}, err
 	}
-	return &pb.DeleteNodesResponse{ErrorMessage: ""}, nil
+	return &pb.DeleteNodesResponse{ErrorMessage: "", Cluster: cluster}, nil
 }
 
 func main() {
