@@ -124,7 +124,7 @@ func (d *Deleter) deleteFromEtcd(kc kubectl.Kubectl) error {
 	for _, nodeName := range d.masterNodes {
 		for _, etcdPodInfo := range etcdPodInfos {
 			if nodeName == etcdPodInfo.nodeName {
-				log.Info().Msgf("Removing node %s, with etcd member hash %s ", etcdPodInfo.nodeName, etcdPodInfo.memberHash)
+				log.Info().Msgf("Deleting node %s, with etcd member hash %s ", etcdPodInfo.nodeName, etcdPodInfo.memberHash)
 				etcdctlCmd := fmt.Sprintf("etcdctl member remove %s", etcdPodInfo.memberHash)
 				_, err := kc.KubectlExecEtcd(firstEtcdPod, etcdctlCmd)
 				if err != nil {
