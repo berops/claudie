@@ -31,16 +31,14 @@ var (
 	manifestDir = os.Getenv("MANIFEST_DIR")
 )
 
-func ClientConnection() pb.ContextBoxServiceClient {
-	cc, err := utils.GrpcDialWithInsecure("context-box", envs.ContextBoxURL)
+func ClientConnection(ctx context.Context) (pb.ContextBoxServiceClient, error) {
+	cc, err := utils.GrpcDialWithInsecureAndBackoff(ctx, "context-box", envs.ContextBoxURL)
 	if err != nil {
-		log.Fatal().Err(err)
+		return nil, err
 	}
 	log.Info().Msg("Connected to cbox")
 
-	// Creating the client
-	c := pb.NewContextBoxServiceClient(cc)
-	return c
+	return pb.NewContextBoxServiceClient(cc), nil
 }
 
 func SaveFiles(c pb.ContextBoxServiceClient) error {
@@ -75,7 +73,7 @@ func SaveFiles(c pb.ContextBoxServiceClient) error {
 			return err
 		}
 		// syntax check can be done here
-		err = yaml.Unmarshal([]byte(strManifest), &manifest)
+		err = yaml.Unmarshal(strManifest, &manifest)
 		if err != nil {
 			log.Fatal().Msgf("Failed to parse manifest file, Err:%v", err)
 			return err
@@ -134,11 +132,19 @@ func healthCheck() error {
 func main() {
 	utils.InitLog("frontend")
 
-	client := ClientConnection()
-
 	// Initialize health probes
 	healthChecker := healthcheck.NewClientHealthChecker(fmt.Sprint(defaultFrontendPort), healthCheck)
 	healthChecker.StartProbes()
+
+	// set reconnect timeout to 5 mins.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*60*time.Second)
+
+	client, err := ClientConnection(ctx)
+	if err != nil {
+		log.Fatal().Msg(err.Error())
+	}
+
+	cancel()
 
 	g, _ := errgroup.WithContext(context.Background())
 
@@ -155,7 +161,6 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		time.Sleep(time.Duration(sleepDuration * time.Second))
+		time.Sleep(sleepDuration * time.Second)
 	}
-
 }
