@@ -15,35 +15,61 @@ type etcdPodInfo struct {
 	memberHash string
 }
 
+type Deleter struct {
+	masterNodes []string
+	workerNodes []string
+	cluster     *pb.K8Scluster
+}
+
+func New(masterNodes, workerNodes []string, cluster *pb.K8Scluster) *Deleter {
+	return &Deleter{masterNodes: masterNodes, workerNodes: workerNodes, cluster: cluster}
+}
+
 // deleteNodesByName checks if there is any difference in nodes between a desired state cluster and a running cluster
 // return nil if successful, error otherwise
-func DeleteNodesByName(cluster *pb.K8Scluster, nodesToDelete []string) error {
-	kubectl := kubectl.Kubectl{Kubeconfig: cluster.Kubeconfig}
-
+func (d *Deleter) DeleteNodes() error {
+	kubectl := kubectl.Kubectl{Kubeconfig: d.cluster.Kubeconfig}
 	// get real node names
 	realNodeNamesBytes, err := kubectl.KubectlGetNodeNames()
 	realNodeNames := strings.Split(string(realNodeNamesBytes), "\n")
 	if err != nil {
-		return fmt.Errorf("error while getting nodes from cluster %s : %v", cluster.ClusterInfo.Name, err)
+		return fmt.Errorf("error while getting nodes from cluster %s : %v", d.cluster.ClusterInfo.Name, err)
+	}
+	//delete master nodes + etcd
+	err = d.deleteFromEtcd(kubectl)
+	if err != nil {
+		return err
+	}
+	err = deleteNodesByName(kubectl, d.masterNodes, realNodeNames)
+	if err != nil {
+		return err
+	}
+	//delete worker nodes + nodes.longhorn.io
+	err = d.deleteFromLonghorn(kubectl)
+	if err != nil {
+		return err
 	}
 	// parse list of pods returned
+	err = deleteNodesByName(kubectl, d.workerNodes, realNodeNames)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func deleteNodesByName(kc kubectl.Kubectl, nodesToDelete, realNodeNames []string) error {
 	for _, nodeName := range nodesToDelete {
 		realNodeName := utils.FindName(realNodeNames, nodeName)
 		if realNodeName != "" {
-			//kubectl drain <node-name> --ignore-daemonsets --delete-local-data ,all diffNodes
-			err := kubectl.KubectlDrain(realNodeName)
+			//kubectl drain <node-name> --ignore-daemonsets --delete-emptydir-data ,all diffNodes
+			err := kc.KubectlDrain(realNodeName)
 			if err != nil {
 				return fmt.Errorf("error while draining node %s : %v", nodeName, err)
 			}
 			//kubectl delete node <node-name>
-			err = kubectl.KubectlDeleteResource("nodes", "", realNodeName)
+			err = kc.KubectlDeleteResource("nodes", "", realNodeName)
 			if err != nil {
 				return fmt.Errorf("error while deleting node %s : %v", nodeName, err)
-			}
-
-			err = kubectl.KubectlDeleteResource("nodes.longhorn.io", "longhorn-system", realNodeName)
-			if err != nil {
-				return fmt.Errorf("error while deleting node from longhorn %s : %v", nodeName, err)
 			}
 		} else {
 			log.Error().Msgf("Node name that contains \"%s\" no found ", nodeName)
@@ -55,27 +81,26 @@ func DeleteNodesByName(cluster *pb.K8Scluster, nodesToDelete []string) error {
 
 // deleteFromEtcd function deletes members of the etcd cluster. This needs to be done in order to prevent any data corruption in etcd
 // return nil if successful, error otherwise
-func DeleteFromEtcd(cluster *pb.K8Scluster, mastersToDelete []string) error {
-	kubectl := kubectl.Kubectl{Kubeconfig: cluster.Kubeconfig}
-	mainMasterNode := getMainMaster(cluster)
+func (d *Deleter) deleteFromEtcd(kc kubectl.Kubectl) error {
+	mainMasterNode := getMainMaster(d.cluster)
 	if mainMasterNode == nil {
 		log.Error().Msg("APIEndpoint node not found")
-		return fmt.Errorf("failed to find any node with IsControl value as 2 in cluster %s", cluster.ClusterInfo.Name)
+		return fmt.Errorf("failed to find any node with IsControl value as 2 in cluster %s", d.cluster.ClusterInfo.Name)
 	}
 	//get etcd pods
-	etcdPodsBytes, err := kubectl.KubectlGetEtcdPods(mainMasterNode)
+	etcdPodsBytes, err := kc.KubectlGetEtcdPods(mainMasterNode)
 	etcdPods := strings.Split(string(etcdPodsBytes), "\n")
 	if err != nil {
-		log.Error().Msgf("Cannot find etcd pods in cluster %s : %v", cluster.ClusterInfo.Name, err)
-		return fmt.Errorf("cannot find etcd pods in cluster %s  : %v", cluster.ClusterInfo.Name, err)
+		log.Error().Msgf("Cannot find etcd pods in cluster %s : %v", d.cluster.ClusterInfo.Name, err)
+		return fmt.Errorf("cannot find etcd pods in cluster %s  : %v", d.cluster.ClusterInfo.Name, err)
 	}
 
 	//get etcd members
 	firstEtcdPod := etcdPods[0]
-	etcdMembersBytes, err := kubectl.KubectlExecEtcd(firstEtcdPod, "etcdctl member list")
+	etcdMembersBytes, err := kc.KubectlExecEtcd(firstEtcdPod, "etcdctl member list")
 	if err != nil {
-		log.Error().Msgf("Cannot find etcd members in cluster %s : %v", cluster.ClusterInfo.Name, err)
-		return fmt.Errorf("cannot find etcd members in cluster %s : %v", cluster.ClusterInfo.Name, err)
+		log.Error().Msgf("Cannot find etcd members in cluster %s : %v", d.cluster.ClusterInfo.Name, err)
+		return fmt.Errorf("cannot find etcd members in cluster %s : %v", d.cluster.ClusterInfo.Name, err)
 	}
 	// Convert output into []string, each line of output is a separate string
 	etcdMembersStrings := strings.Split(string(etcdMembersBytes), "\n")
@@ -87,17 +112,27 @@ func DeleteFromEtcd(cluster *pb.K8Scluster, mastersToDelete []string) error {
 	//get pod info, like name of a node where pod is deployed and etcd member hash
 	etcdPodInfos := getEtcdPodInfo(etcdMembersStrings)
 	// Remove etcd members that are in mastersToDelete, you need to know an etcd node hash to be able to remove a member
-	for _, nodeName := range mastersToDelete {
+	for _, nodeName := range d.masterNodes {
 		for _, etcdPodInfo := range etcdPodInfos {
 			if nodeName == etcdPodInfo.nodeName {
 				log.Info().Msgf("Removing node %s, with etcd member hash %s ", etcdPodInfo.nodeName, etcdPodInfo.memberHash)
 				etcdctlCmd := fmt.Sprintf("etcdctl member remove %s", etcdPodInfo.memberHash)
-				_, err := kubectl.KubectlExecEtcd(firstEtcdPod, etcdctlCmd)
+				_, err := kc.KubectlExecEtcd(firstEtcdPod, etcdctlCmd)
 				if err != nil {
 					log.Error().Msgf("Error while etcdctl member remove: %v", err)
 					return err
 				}
 			}
+		}
+	}
+	return nil
+}
+
+func (d *Deleter) deleteFromLonghorn(kc kubectl.Kubectl) error {
+	for _, nodeName := range d.workerNodes {
+		err := kc.KubectlDeleteResource("nodes.longhorn.io", nodeName, "longhorn-system")
+		if err != nil {
+			return err
 		}
 	}
 	return nil
