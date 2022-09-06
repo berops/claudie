@@ -14,7 +14,7 @@ func deleteNodes(config *pb.Config, toDelete map[string]*nodepoolsCounts) (*pb.C
 	for _, cluster := range config.CurrentState.Clusters {
 		//get nodes to delete for this cluster
 		clusterNodesToDelete, ok := toDelete[cluster.ClusterInfo.Name]
-		if ok && clusterNodesToDelete == nil {
+		if ok && clusterNodesToDelete != nil {
 			func(clusterNodes *nodepoolsCounts, cluster *pb.K8Scluster) {
 				//call DeleteNodes on kuber for this cluster
 				errGroup.Go(func() error {
@@ -60,8 +60,9 @@ func separateNodepools(clusterNodes *nodepoolsCounts, clusterInfo *pb.ClusterInf
 }
 
 //getNodeNames returns slice of length count with names of the nodes from specified nodepool
+//nodes chosen are from the last element in Nodes slice, up to the first one
 func getNodeNames(nodepool *pb.NodePool, count int) (names []string) {
-	for i := 0; i < count; i++ {
+	for i := len(nodepool.Nodes) - 1; i >= len(nodepool.Nodes)-count; i-- {
 		names = append(names, nodepool.Nodes[i].Name)
 	}
 	return names
