@@ -81,7 +81,9 @@ func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigReq
 			if namespace == "" {
 				// the claudie is in local deployment - print kubeconfig
 				log.Info().Msgf("The kubeconfig for %s:", clusterID)
+				//print and clean-up
 				fmt.Println(c.Kubeconfig)
+				os.RemoveAll(sec.Directory)
 				return nil
 			}
 			// apply secret
