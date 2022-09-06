@@ -132,6 +132,10 @@ func healthCheck() error {
 func main() {
 	utils.InitLog("frontend")
 
+	// Initialize health probes
+	healthChecker := healthcheck.NewClientHealthChecker(fmt.Sprint(defaultFrontendPort), healthCheck)
+	healthChecker.StartProbes()
+
 	// set reconnect timeout to 5 mins.
 	ctx, cancel := context.WithTimeout(context.Background(), 5*60*time.Second)
 
@@ -141,10 +145,6 @@ func main() {
 	}
 
 	cancel()
-
-	// Initialize health probes
-	healthChecker := healthcheck.NewClientHealthChecker(fmt.Sprint(defaultFrontendPort), healthCheck)
-	healthChecker.StartProbes()
 
 	g, _ := errgroup.WithContext(context.Background())
 
