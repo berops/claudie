@@ -6,7 +6,6 @@ import (
 	"os/exec"
 
 	comm "github.com/Berops/platform/internal/command"
-	"github.com/Berops/platform/proto/pb"
 )
 
 // Kubeconfig - the kubeconfig of the cluster as a string
@@ -122,22 +121,22 @@ func (k *Kubectl) KubectlAnnotate(resource, resourceName, annotation string) err
 // return slice of node names and nil if successful, nil and error otherwise
 func (k *Kubectl) KubectlGetNodeNames() ([]byte, error) {
 	kubeconfig := k.getKubeconfig()
-	nodesQueryCmd := fmt.Sprintf("kubectl --kubeconfig <(echo \"%s\") get nodes -n kube-system --no-headers -o custom-columns=\":metadata.name\" ", kubeconfig)
+	nodesQueryCmd := fmt.Sprintf("kubectl get nodes -n kube-system --no-headers -o custom-columns=\":metadata.name\" %s", kubeconfig)
 	return k.runWithOutput(nodesQueryCmd)
 }
 
 // getEtcdPods finds all etcd pods in cluster
 // returns slice of pod names and nil if successful, nil and error otherwise
-func (k *Kubectl) KubectlGetEtcdPods(master *pb.Node) ([]byte, error) {
+func (k *Kubectl) KubectlGetEtcdPods(masterNodeName string) ([]byte, error) {
 	kubeconfig := k.getKubeconfig()
 	// get etcd pods name
-	podsQueryCmd := fmt.Sprintf("kubectl --kubeconfig <(echo \"%s\") %s-%s", kubeconfig, getEtcdPodsCmd, master.Name)
+	podsQueryCmd := fmt.Sprintf("kubectl %s %s-%s", kubeconfig, getEtcdPodsCmd, masterNodeName)
 	return k.runWithOutput(podsQueryCmd)
 }
 
 func (k *Kubectl) KubectlExecEtcd(etcdPod, etcdctlCmd string) ([]byte, error) {
 	kubeconfig := k.getKubeconfig()
-	kcExecEtcdCmd := fmt.Sprintf("kubectl --kubeconfig <(echo '%s') -n kube-system exec -i %s -- /bin/sh -c \" %s && %s \"",
+	kcExecEtcdCmd := fmt.Sprintf("kubectl %s -n kube-system exec -i %s -- /bin/sh -c \" %s && %s \"",
 		kubeconfig, etcdPod, exportEtcdEnvsCmd, etcdctlCmd)
 	return k.runWithOutput(kcExecEtcdCmd)
 
