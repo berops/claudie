@@ -76,11 +76,11 @@ func (k *Kubectl) KubectlDeleteResource(resource, resourceName, namespace string
 	return k.run(command)
 }
 
-// KubectlDrain runs kubectl drain in k.Directory, on a specified node with flags --ignore-daemonsets --delete-local-data
+// KubectlDrain runs kubectl drain in k.Directory, on a specified node with flags --ignore-daemonsets --delete-emptydir-data
 // example: kubectl drain node1 -> k.KubectlDrain("node1")
 func (k *Kubectl) KubectlDrain(nodeName string) error {
 	kubeconfig := k.getKubeconfig()
-	command := fmt.Sprintf("kubectl drain %s --ignore-daemonsets --delete-local-data %s", nodeName, kubeconfig)
+	command := fmt.Sprintf("kubectl drain %s --ignore-daemonsets --delete-emptydir-data %s", nodeName, kubeconfig)
 	return k.run(command)
 }
 
@@ -122,7 +122,6 @@ func (k *Kubectl) KubectlAnnotate(resource, resourceName, annotation string) err
 // return slice of node names and nil if successful, nil and error otherwise
 func (k *Kubectl) KubectlGetNodeNames() ([]byte, error) {
 	kubeconfig := k.getKubeconfig()
-
 	nodesQueryCmd := fmt.Sprintf("kubectl --kubeconfig <(echo \"%s\") get nodes -n kube-system --no-headers -o custom-columns=\":metadata.name\" ", kubeconfig)
 	return k.runWithOutput(nodesQueryCmd)
 }
@@ -131,7 +130,6 @@ func (k *Kubectl) KubectlGetNodeNames() ([]byte, error) {
 // returns slice of pod names and nil if successful, nil and error otherwise
 func (k *Kubectl) KubectlGetEtcdPods(master *pb.Node) ([]byte, error) {
 	kubeconfig := k.getKubeconfig()
-
 	// get etcd pods name
 	podsQueryCmd := fmt.Sprintf("kubectl --kubeconfig <(echo \"%s\") %s-%s", kubeconfig, getEtcdPodsCmd, master.Name)
 	return k.runWithOutput(podsQueryCmd)
@@ -139,7 +137,6 @@ func (k *Kubectl) KubectlGetEtcdPods(master *pb.Node) ([]byte, error) {
 
 func (k *Kubectl) KubectlExecEtcd(etcdPod, etcdctlCmd string) ([]byte, error) {
 	kubeconfig := k.getKubeconfig()
-
 	kcExecEtcdCmd := fmt.Sprintf("kubectl --kubeconfig <(echo '%s') -n kube-system exec -i %s -- /bin/sh -c \" %s && %s \"",
 		kubeconfig, etcdPod, exportEtcdEnvsCmd, etcdctlCmd)
 	return k.runWithOutput(kcExecEtcdCmd)
