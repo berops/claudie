@@ -15,7 +15,8 @@ import (
 	"github.com/Berops/claudie/proto/pb"
 	"github.com/Berops/claudie/services/terraformer/server/kubernetes"
 	"github.com/Berops/claudie/services/terraformer/server/loadbalancer"
-	"github.com/minio/minio-go"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -137,11 +138,15 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 // healthCheck function is a readiness function defined by terraformer
 // it checks whether bucket exists. If true, returns nil, error otherwise
 func healthCheck() error {
-	mc, err := minio.New(minioEndpoint, minioAccessKey, minioSecretKey, false)
+	mc, err := minio.New(minioEndpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(minioAccessKey, minioSecretKey, ""),
+		Secure: false,
+	})
 	if err != nil {
 		return err
 	}
-	exists, err := mc.BucketExists("claudie-tf-state-files")
+
+	exists, err := mc.BucketExists(context.Background(), "claudie-tf-state-files")
 	if !exists || err != nil {
 		return fmt.Errorf("error: bucket exists %t || err: %v", exists, err)
 	}

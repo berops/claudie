@@ -1,4 +1,4 @@
-FROM golang:1.16.15 AS build
+FROM golang:1.18 AS build
 
 #Install kubectl
 RUN wget -q https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
