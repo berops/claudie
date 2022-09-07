@@ -117,6 +117,14 @@ func (k *Kubectl) KubectlAnnotate(resource, resourceName, annotation string) err
 	return k.run(command)
 }
 
+// KubectlLabel runs kubectl label in k.Directory, with the specified label on a specified resource and resource name
+// example: kubectl label node node-1 label=value -> k.KubectlLabel("node","node-1","label=value")
+func (k *Kubectl) KubectlLabel(resource, resourceName, label string) error {
+	kubeconfig := k.getKubeconfig()
+	command := fmt.Sprintf("kubectl label %s %s %s %s", resource, resourceName, label, kubeconfig)
+	return k.run(command)
+}
+
 // KubectlGetNodeNames will find a node names for a particular cluster
 // return slice of node names and nil if successful, nil and error otherwise
 func (k *Kubectl) KubectlGetNodeNames() ([]byte, error) {
