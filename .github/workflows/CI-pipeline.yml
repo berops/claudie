@@ -42,7 +42,6 @@ jobs:
         run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
 
       # Create an array with modules that were changed by a recent commit via bash script
-      # the 3 after the break in the second beak statement helps to exit the all the loops 
       - name: Check the files for a change
         id: array
         run: |
@@ -53,18 +52,18 @@ jobs:
           git diff  --name-only origin/master..HEAD
           for i in "$(git diff  --name-only origin/master..HEAD)"
           do
-            for SERVICE in in "${SERVICES[@]}"; do
-              if [[ $i == *"services/$SERVICE"* ]]; then
-              arr+=($SERVICE)
-              echo "Detected change in $SERVICE"
-              fi
-
-              if [[ $i == *"internal/"*]] || [[$i == *"proto/"*]]; then
-              arr=(${SERVICE[@]})
+            if [[ $i == *"internal/"* ]] || [[ $i == *"proto/"* ]]; then
+              arr=(${SERVICES[@]})
               echo "All services needs to be built"
-              break 3;
-              fi
-            done
+              break ;
+            else
+              for SERVICE in "${SERVICES[@]}"; do
+                if [[ $i == *"services/$SERVICE"* ]]; then
+                arr+=($SERVICE)
+                echo "Detected change in $SERVICE"
+                fi
+              done
+            fi
           done
           echo ::set-output name=ARRAY_OF_CHANGES::"${arr[@]}"
 
