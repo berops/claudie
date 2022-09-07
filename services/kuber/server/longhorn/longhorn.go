@@ -31,6 +31,7 @@ const (
 	storageManifestTpl = "storage-class.goyaml"
 	defaultSC          = "longhorn"
 	claudieLabel       = "claudie.io/storage-class"
+	claudieWorkerLabel = "claudie.io/worker-node=true"
 )
 
 // SetUp function will set up the longhorn on the k8s cluster saved in l.Longhorn
@@ -83,7 +84,11 @@ func (l Longhorn) SetUp() error {
 					realNodeName := utils.FindName(realNodeNames, node.Name)
 					err := kubectl.KubectlAnnotate("node", realNodeName, annotation)
 					if err != nil {
-						return fmt.Errorf("error while tagging the node %s via kubectl annotate : %v", realNodeName, err)
+						return fmt.Errorf("error while annotating the node %s via kubectl annotate : %v", realNodeName, err)
+					}
+					err = kubectl.KubectlLabel("node", realNodeName, claudieWorkerLabel)
+					if err != nil {
+						return fmt.Errorf("error while labeling the node %s via kubectl label : %v", realNodeName, err)
 					}
 				}
 			}
