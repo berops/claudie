@@ -159,7 +159,6 @@ func findNodepoolDifference(currentNodepoolMap map[string]*nodepoolsCounts, desi
 		//iterate over nodepools in current cluster
 		if nodepoolsCurrent, ok := currentNodepoolMap[desiredClusterTmp.ClusterInfo.Name]; ok {
 			for nodepoolCurrentName, nodePoolCurrentCount := range nodepoolsCurrent.nodepools {
-				log.Warn().Msgf("%v", nodepoolsCurrent.nodepools)
 				//if desired state contains nodepool from current, check counts
 				if nodePoolDesired.Name == nodepoolCurrentName {
 					var countToDelete nodeCount
@@ -179,7 +178,6 @@ func findNodepoolDifference(currentNodepoolMap map[string]*nodepoolsCounts, desi
 						delete(currentNodepoolMap, desiredClusterTmp.ClusterInfo.Name)
 					}
 				}
-				log.Warn().Msgf("%v", nodepoolsCurrent.nodepools)
 			}
 		} else {
 			//adding a new nodepool, since not found in current state
