@@ -93,48 +93,50 @@ func deleteNodesByName(kc kubectl.Kubectl, nodesToDelete, realNodeNames []string
 func (d *Deleter) deleteFromEtcd(kc kubectl.Kubectl) error {
 	mainMasterNode := getMainMaster(d.cluster)
 	if mainMasterNode == nil {
-		log.Error().Msg("APIEndpoint node not found")
 		return fmt.Errorf("failed to find any API endpoint node in cluster %s", d.cluster.ClusterInfo.Name)
 	}
 	//get etcd pods
-	etcdPodsBytes, err := kc.KubectlGetEtcdPods(mainMasterNode.Name)
-	etcdPods := strings.Split(string(etcdPodsBytes), "\n")
+	etcdPods, err := getEtcdPodNames(kc, mainMasterNode.Name)
 	if err != nil {
 		log.Error().Msgf("Cannot find etcd pods in cluster %s : %v", d.cluster.ClusterInfo.Name, err)
 		return fmt.Errorf("cannot find etcd pods in cluster %s  : %v", d.cluster.ClusterInfo.Name, err)
 	}
-
-	//get etcd members
-	firstEtcdPod := etcdPods[0]
-	etcdMembersBytes, err := kc.KubectlExecEtcd(firstEtcdPod, "etcdctl member list")
+	etcdMembers, err := getEtcdMembers(kc, etcdPods[0])
 	if err != nil {
 		log.Error().Msgf("Cannot find etcd members in cluster %s : %v", d.cluster.ClusterInfo.Name, err)
 		return fmt.Errorf("cannot find etcd members in cluster %s : %v", d.cluster.ClusterInfo.Name, err)
 	}
-	// Convert output into []string, each line of output is a separate string
-	etcdMembersStrings := strings.Split(string(etcdMembersBytes), "\n")
-	//delete last entry - empty \n
-	if len(etcdMembersStrings) > 0 {
-		etcdMembersStrings = etcdMembersStrings[:len(etcdMembersStrings)-1]
-	}
-
 	//get pod info, like name of a node where pod is deployed and etcd member hash
-	etcdPodInfos := getEtcdPodInfo(etcdMembersStrings)
+	etcdPodInfos := getEtcdPodInfo(etcdMembers)
 	// Remove etcd members that are in mastersToDelete, you need to know an etcd node hash to be able to remove a member
 	for _, nodeName := range d.masterNodes {
 		for _, etcdPodInfo := range etcdPodInfos {
 			if nodeName == etcdPodInfo.nodeName {
-				log.Info().Msgf("Deleting node %s, with etcd member hash %s ", etcdPodInfo.nodeName, etcdPodInfo.memberHash)
+				log.Info().Msgf("Deleting etcd member %s, with hash %s ", etcdPodInfo.nodeName, etcdPodInfo.memberHash)
 				etcdctlCmd := fmt.Sprintf("etcdctl member remove %s", etcdPodInfo.memberHash)
-				_, err := kc.KubectlExecEtcd(firstEtcdPod, etcdctlCmd)
+				_, err := kc.KubectlExecEtcd(etcdPods[0], etcdctlCmd)
 				if err != nil {
 					log.Error().Msgf("Error while etcdctl member remove: %v", err)
-					return err
+					return fmt.Errorf("error while executing \"etcdctl member remove\" on node %s, cluster %s: %v", etcdPodInfo.nodeName, d.cluster.ClusterInfo.Name, err)
 				}
 			}
 		}
 	}
 	return nil
+}
+
+//updateClusterData will remove deleted nodes from nodepools
+func (d *Deleter) updateClusterData() {
+	for _, name := range append(d.masterNodes, d.workerNodes...) {
+		for _, nodepool := range d.cluster.ClusterInfo.NodePools {
+			for i, node := range nodepool.Nodes {
+				if node.Name == name {
+					nodepool.Count--
+					nodepool.Nodes = append(nodepool.Nodes[:i], nodepool.Nodes[i+1:]...)
+				}
+			}
+		}
+	}
 }
 
 //deleteFromLonghorn will delete node from nodes.longhorn.io
@@ -160,7 +162,39 @@ func getMainMaster(cluster *pb.K8Scluster) *pb.Node {
 			}
 		}
 	}
+	log.Error().Msg("APIEndpoint node not found")
 	return nil
+}
+
+//getEtcdPodNames returns slice of strings containing all etcd pod names
+func getEtcdPodNames(kc kubectl.Kubectl, masterNodeName string) ([]string, error) {
+	etcdPodsBytes, err := kc.KubectlGetEtcdPods(masterNodeName)
+	if err != nil {
+		return nil, fmt.Errorf("cannot find etcd pods in cluster with master node %s  : %v", masterNodeName, err)
+	}
+	return strings.Split(string(etcdPodsBytes), "\n"), nil
+}
+
+//getEtcdMembers will return slice of strings, each element containing etcd member info from "etcdctl member list"
+//
+// Example output:
+// [
+// "3ea84f69be8336f3, started, test2-cluster-name1-hetzner-control-2, https://192.168.2.2:2380, https://192.168.2.2:2379, false",
+// "56c921bc723229ec, started, test2-cluster-name1-hetzner-control-1, https://192.168.2.1:2380, https://192.168.2.1:2379, false"
+// ]
+func getEtcdMembers(kc kubectl.Kubectl, etcdPod string) ([]string, error) {
+	//get etcd members
+	etcdMembersBytes, err := kc.KubectlExecEtcd(etcdPod, "etcdctl member list")
+	if err != nil {
+		return nil, fmt.Errorf("cannot find etcd members in cluster with etcd pod %s : %v", etcdPod, err)
+	}
+	// Convert output into []string, each line of output is a separate string
+	etcdMembersStrings := strings.Split(string(etcdMembersBytes), "\n")
+	//delete last entry - empty \n
+	if len(etcdMembersStrings) > 0 {
+		etcdMembersStrings = etcdMembersStrings[:len(etcdMembersStrings)-1]
+	}
+	return etcdMembersStrings, nil
 }
 
 //getEtcdPodInfo tokenizes an etcdMemberInfo and data containing node name and etcd member hash for all etcd members
@@ -175,18 +209,4 @@ func getEtcdPodInfo(etcdMembersString []string) []etcdPodInfo {
 		}
 	}
 	return etcdPodInfos
-}
-
-//updateClusterData will remove deleted nodes from nodepools
-func (d *Deleter) updateClusterData() {
-	for _, name := range append(d.masterNodes, d.workerNodes...) {
-		for _, nodepool := range d.cluster.ClusterInfo.NodePools {
-			for i, node := range nodepool.Nodes {
-				if node.Name == name {
-					nodepool.Count--
-					nodepool.Nodes = append(nodepool.Nodes[:i], nodepool.Nodes[i+1:]...)
-				}
-			}
-		}
-	}
 }
