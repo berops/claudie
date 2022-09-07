@@ -22,7 +22,7 @@ images:
 - name: eu.gcr.io/platform-infrastructure-316112/platform/ansibler
   newTag: dbbe976-709
 - name: eu.gcr.io/platform-infrastructure-316112/platform/builder
-  newTag: dbbe976-709
+  newTag: 42a3932-711
 - name: eu.gcr.io/platform-infrastructure-316112/platform/context-box
   newTag: dbbe976-709
 - name: eu.gcr.io/platform-infrastructure-316112/platform/frontend
@@ -30,7 +30,7 @@ images:
 - name: eu.gcr.io/platform-infrastructure-316112/platform/kube-eleven
   newTag: dbbe976-709
 - name: eu.gcr.io/platform-infrastructure-316112/platform/kuber
-  newTag: dbbe976-709
+  newTag: 42a3932-711
 - name: eu.gcr.io/platform-infrastructure-316112/platform/scheduler
   newTag: dbbe976-709
 - name: eu.gcr.io/platform-infrastructure-316112/platform/terraformer
