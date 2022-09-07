@@ -8,7 +8,7 @@ import (
 	"github.com/Berops/platform/internal/manifest"
 	"github.com/Berops/platform/internal/templateUtils"
 	"github.com/rs/zerolog/log"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 const (
