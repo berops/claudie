@@ -83,7 +83,10 @@ func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigReq
 				log.Info().Msgf("The kubeconfig for %s:", clusterID)
 				//print and clean-up
 				fmt.Println(c.Kubeconfig)
-				os.RemoveAll(sec.Directory)
+				err := os.RemoveAll(sec.Directory)
+				if err != nil {
+					return fmt.Errorf("error while cleaning up the temporary directory %s : %v", sec.Directory, err)
+				}
 				return nil
 			}
 			// apply secret
