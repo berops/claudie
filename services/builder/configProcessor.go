@@ -157,27 +157,33 @@ func findNodepoolDifference(currentNodepoolMap map[string]*nodepoolsCounts, desi
 	//iterate over nodepools in desired cluster
 	for _, nodePoolDesired := range desiredClusterTmp.ClusterInfo.GetNodePools() {
 		//iterate over nodepools in current cluster
-		nodepoolsCurrent := currentNodepoolMap[desiredClusterTmp.ClusterInfo.Name]
-		for nodepoolCurrentName, nodePoolCurrentCount := range nodepoolsCurrent.nodepools {
-			//if desired state contains nodepool from current, check counts
-			if nodePoolDesired.Name == nodepoolCurrentName {
-				var countToDelete nodeCount
-				if nodePoolDesired.Count > nodePoolCurrentCount.Count { //if desired cluster has more nodes than in current nodepool
-					adding = true
-				} else if nodePoolDesired.Count < nodePoolCurrentCount.Count { //if desired cluster has less nodes than in current nodepool
-					countToDelete.Count = nodePoolCurrentCount.Count - nodePoolDesired.Count
-					//since we are working with tmp config, we do not delete nodes in this step, thus save the current node count
-					nodePoolDesired.Count = nodePoolCurrentCount.Count
-					deleting = true
+		if nodepoolsCurrent, ok := currentNodepoolMap[desiredClusterTmp.ClusterInfo.Name]; ok {
+			for nodepoolCurrentName, nodePoolCurrentCount := range nodepoolsCurrent.nodepools {
+				log.Warn().Msgf("%v", nodepoolsCurrent.nodepools)
+				//if desired state contains nodepool from current, check counts
+				if nodePoolDesired.Name == nodepoolCurrentName {
+					var countToDelete nodeCount
+					if nodePoolDesired.Count > nodePoolCurrentCount.Count { //if desired cluster has more nodes than in current nodepool
+						adding = true
+					} else if nodePoolDesired.Count < nodePoolCurrentCount.Count { //if desired cluster has less nodes than in current nodepool
+						countToDelete.Count = nodePoolCurrentCount.Count - nodePoolDesired.Count
+						//since we are working with tmp config, we do not delete nodes in this step, thus save the current node count
+						nodePoolDesired.Count = nodePoolCurrentCount.Count
+						deleting = true
+					}
+					nodepoolCountToDelete[nodePoolDesired.Name] = &countToDelete
+					//delete nodepool from nodepool map, so we can keep track of which nodepools were deleted
+					delete(nodepoolsCurrent.nodepools, nodePoolDesired.Name)
+					//if cluster has no nodepools, delete the reference to cluster
+					if len(nodepoolsCurrent.nodepools) == 0 {
+						delete(currentNodepoolMap, desiredClusterTmp.ClusterInfo.Name)
+					}
 				}
-				nodepoolCountToDelete[nodePoolDesired.Name] = &countToDelete
-				//delete nodepool from nodepool map, so we can keep track of which nodepools were deleted
-				delete(nodepoolsCurrent.nodepools, nodePoolDesired.Name)
-				//if cluster has no nodepools, delete the reference to cluster
-				if len(nodepoolsCurrent.nodepools) == 0 {
-					delete(currentNodepoolMap, desiredClusterTmp.ClusterInfo.Name)
-				}
+				log.Warn().Msgf("%v", nodepoolsCurrent.nodepools)
 			}
+		} else {
+			//adding a new nodepool, since not found in current state
+			adding = true
 		}
 	}
 	result = &nodepoolsCounts{nodepools: nodepoolCountToDelete}
