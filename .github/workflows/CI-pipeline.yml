@@ -136,7 +136,7 @@ jobs:
           do
             echo "Setting a new tag for a $SERVICE"
             if [ "$SERVICE" != "testing-framework" ]; then
-              kustomize edit set image eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$SERVICE:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+              kustomize edit set image ${secrets.DOCKERHUB_USERNAME}/$SERVICE:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
             fi
           done
 
@@ -151,7 +151,7 @@ jobs:
           do
             echo "Setting a new tag for a $SERVICE"
             if [ "$SERVICE" == "testing-framework" ]; then
-              kustomize edit set image eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$SERVICE:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+              kustomize edit set image ${secrets.DOCKERHUB_USERNAME}/$SERVICE:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
             fi
           done
 
