@@ -42,6 +42,7 @@ jobs:
         run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
 
       # Create an array with modules that were changed by a recent commit via bash script
+      # the 3 after the break in the second beak statement helps to exit the all the loops 
       - name: Check the files for a change
         id: array
         run: |
@@ -56,7 +57,13 @@ jobs:
               if [[ $i == *"services/$SERVICE"* ]]; then
               arr+=($SERVICE)
               echo "Detected change in $SERVICE"
-            fi
+              fi
+
+              if [[ $i == *"internal/"*]] || [[$i == *"proto/"*]]; then
+              arr=(${SERVICE[@]})
+              echo "All services needs to be built"
+              break 3;
+              fi
             done
           done
           echo ::set-output name=ARRAY_OF_CHANGES::"${arr[@]}"
@@ -70,10 +77,14 @@ jobs:
           service_account_email: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
           service_account_key: ${{ secrets.GCP_DOCKER_REGISTRY_KEY }}
 
-      # Configure docker for use on the GCP
-      - name: Configure Docker
+      # Login to Docker Hub
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
         if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
-        run: gcloud auth configure-docker --quiet
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN}}
+
       # Build the new images that were changed by a recent commit - tag image latest as well for testing
       - name: Build new images
         if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
@@ -82,11 +93,11 @@ jobs:
           for path in "${arr[@]}"
           do
             echo "-----Building $path-----"
-            IMGTAG="eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}"
+            IMGTAG="${{secrets.DOCKERHUB_USERNAME}}/$path:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}"
             DOCKER_BUILDKIT=1 docker build --tag $IMGTAG -f ./services/$path/Dockerfile . 
           done
 
-      # Push images to GCR - latest tag is overwritten
+      # Push images to DockerHub - latest tag is overwritten
       - name: Push new images
         if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
         run: |
@@ -94,7 +105,7 @@ jobs:
 
           for path in "${arr[@]}"
           do
-            docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/platform/$path:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+            docker push ${{secrets.DOCKERHUB_USERNAME}}/$path:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
           done
 
     outputs:
