@@ -17,7 +17,7 @@ spec:
       containers:
       - name: context-box
         imagePullPolicy: Always
-        image: eu.gcr.io/platform-infrastructure-316112/platform/context-box
+        image: claudieio/context-box
         resources:
           requests:
             cpu: 5m
