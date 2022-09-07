@@ -15,6 +15,11 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+const (
+	databaseName   = "claudie"
+	collectionName = "input-manifests"
+)
+
 var (
 	maxConnectionRetries = 10
 	defaultPingTimeout   = 5 * time.Second
@@ -75,7 +80,7 @@ func (c *ClaudieMongo) Disconnect() error {
 //Init will initialise database and collections
 // returns error if initialisation failed, nil otherwise
 func (c *ClaudieMongo) Init() error {
-	c.collection = c.client.Database("claudie").Collection("config")
+	c.collection = c.client.Database(databaseName).Collection(collectionName)
 	// create index
 	indexName, err := c.collection.Indexes().CreateOne(context.Background(), mongo.IndexModel{
 		Keys:    bson.D{{Key: "name", Value: 1}},
