@@ -12,7 +12,7 @@ services:
       driver: none
 
   builder:
-    image:claudieio/builder
+    image: claudieio/builder
     build:
       context: .
       dockerfile: "./services/builder/Dockerfile"
@@ -27,7 +27,7 @@ services:
         condition: on-failure
 
   terraformer:
-    image:claudieio/terraformer
+    image: claudieio/terraformer
     build:
       context: .
       dockerfile: ./services/terraformer/Dockerfile
@@ -42,7 +42,7 @@ services:
         condition: on-failure
 
   ansibler:
-    image:claudieio/ansibler
+    image: claudieio/ansibler
     build:
       context: .
       dockerfile: ./services/ansibler/Dockerfile
@@ -57,7 +57,7 @@ services:
         condition: on-failure
 
   kube-eleven:
-    image:claudieio/kube-eleven
+    image: claudieio/kube-eleven
     build:
       context: .
       dockerfile: ./services/kube-eleven/Dockerfile
@@ -72,7 +72,7 @@ services:
         condition: on-failure
 
   context-box:
-    image:claudieio/context-box
+    image: claudieio/context-box
     build:
       context: .
       dockerfile: ./services/context-box/Dockerfile
@@ -87,7 +87,7 @@ services:
         condition: on-failure
 
   scheduler:
-    image:claudieio/scheduler
+    image: claudieio/scheduler
     build:
       context: .
       dockerfile: ./services/scheduler/Dockerfile
@@ -101,7 +101,7 @@ services:
       restart_policy:
         condition: on-failure
   kuber:
-    image:claudieio/kuber
+    image: claudieio/kuber
     build:
       context: .
       dockerfile: ./services/kuber/Dockerfile
@@ -116,7 +116,7 @@ services:
         condition: on-failure
   frontend:
     platform: linux/amd64
-    image:claudieio/frontend
+    image: claudieio/frontend
     build:
       context: .
       dockerfile: ./services/frontend/Dockerfile
