@@ -119,8 +119,11 @@ func (k *Kubectl) KubectlAnnotate(resource, resourceName, annotation string) err
 
 // KubectlLabel runs kubectl label in k.Directory, with the specified label on a specified resource and resource name
 // example: kubectl label node node-1 label=value -> k.KubectlLabel("node","node-1","label=value")
-func (k *Kubectl) KubectlLabel(resource, resourceName, label string) error {
+func (k *Kubectl) KubectlLabel(resource, resourceName, label string, overwrite bool) error {
 	kubeconfig := k.getKubeconfig()
+	if overwrite {
+		kubeconfig = fmt.Sprintf("--overwrite %s", kubeconfig)
+	}
 	command := fmt.Sprintf("kubectl label %s %s %s %s", resource, resourceName, label, kubeconfig)
 	return k.run(command)
 }

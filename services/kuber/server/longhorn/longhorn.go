@@ -86,7 +86,7 @@ func (l Longhorn) SetUp() error {
 					if err != nil {
 						return fmt.Errorf("error while annotating the node %s via kubectl annotate : %v", realNodeName, err)
 					}
-					err = kubectl.KubectlLabel("node", realNodeName, claudieWorkerLabel)
+					err = kubectl.KubectlLabel("node", realNodeName, claudieWorkerLabel, true)
 					if err != nil {
 						return fmt.Errorf("error while labeling the node %s via kubectl label : %v", realNodeName, err)
 					}
