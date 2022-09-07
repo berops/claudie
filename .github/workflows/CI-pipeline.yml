@@ -52,12 +52,18 @@ jobs:
           git diff  --name-only origin/master..HEAD
           for i in "$(git diff  --name-only origin/master..HEAD)"
           do
-            for SERVICE in in "${SERVICES[@]}"; do
-              if [[ $i == *"services/$SERVICE"* ]]; then
-              arr+=($SERVICE)
-              echo "Detected change in $SERVICE"
+            if [[ $i == *"internal/"* ]] || [[ $i == *"proto/"* ]]; then
+              arr=(${SERVICES[@]})
+              echo "All services needs to be built"
+              break ;
+            else
+              for SERVICE in "${SERVICES[@]}"; do
+                if [[ $i == *"services/$SERVICE"* ]]; then
+                arr+=($SERVICE)
+                echo "Detected change in $SERVICE"
+                fi
+              done
             fi
-            done
           done
           echo ::set-output name=ARRAY_OF_CHANGES::"${arr[@]}"
 
@@ -70,10 +76,14 @@ jobs:
           service_account_email: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
           service_account_key: ${{ secrets.GCP_DOCKER_REGISTRY_KEY }}
 
-      # Configure docker for use on the GCP
-      - name: Configure Docker
+      # Login to Docker Hub
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
         if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
-        run: gcloud auth configure-docker --quiet
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN}}
+
       # Build the new images that were changed by a recent commit - tag image latest as well for testing
       - name: Build new images
         if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
@@ -82,11 +92,11 @@ jobs:
           for path in "${arr[@]}"
           do
             echo "-----Building $path-----"
-            IMGTAG="eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/claudie/$path:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}"
+            IMGTAG="${{secrets.DOCKERHUB_USERNAME}}/$path:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}"
             DOCKER_BUILDKIT=1 docker build --tag $IMGTAG -f ./services/$path/Dockerfile . 
           done
 
-      # Push images to GCR - latest tag is overwritten
+      # Push images to DockerHub - latest tag is overwritten
       - name: Push new images
         if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
         run: |
@@ -94,7 +104,7 @@ jobs:
 
           for path in "${arr[@]}"
           do
-            docker push eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/claudie/$path:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+            docker push ${{secrets.DOCKERHUB_USERNAME}}/$path:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
           done
 
     outputs:
@@ -126,7 +136,7 @@ jobs:
           do
             echo "Setting a new tag for a $SERVICE"
             if [ "$SERVICE" != "testing-framework" ]; then
-              kustomize edit set image eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/claudie/$SERVICE:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+              kustomize edit set image ${{ secrets.DOCKERHUB_USERNAME }}/$SERVICE:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
             fi
           done
 
@@ -141,7 +151,7 @@ jobs:
           do
             echo "Setting a new tag for a $SERVICE"
             if [ "$SERVICE" == "testing-framework" ]; then
-              kustomize edit set image eu.gcr.io/${{ secrets.GCP_PROJECT_ID }}/claudie/$SERVICE:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+              kustomize edit set image ${{ secrets.DOCKERHUB_USERNAME }}/$SERVICE:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
             fi
           done
 
@@ -251,7 +261,7 @@ jobs:
           #Clean up
           rm -f yq 
           rm -f yq.1 
-          rm -f install-man-page.sh 
+          rm -f install-man-page.sh
 
       - name: Start the E2E tests
         working-directory: ./manifests

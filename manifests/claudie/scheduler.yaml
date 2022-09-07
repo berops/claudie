@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: Deployment 
+kind: Deployment
 metadata:
   name: scheduler
   labels:
@@ -15,39 +15,39 @@ spec:
         app: scheduler
     spec:
       containers:
-      - name: scheduler
-        imagePullPolicy: Always
-        image: eu.gcr.io/platform-infrastructure-316112/claudie/scheduler
-        resources:
-          requests:
-            cpu: 30m
-            memory: 50Mi
-          limits:
-            cpu: 80m
-            memory: 100Mi
-        env:
-        - name: CONTEXT_BOX_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: env
-              key: CONTEXT_BOX_PORT
-        - name: CONTEXT_BOX_HOSTNAME
-          valueFrom:
-            configMapKeyRef:
-              name: env
-              key: CONTEXT_BOX_HOSTNAME
-        - name: GOLANG_LOG
-          valueFrom:
-            configMapKeyRef:
-              name: env
-              key: GOLANG_LOG
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: 50056
-          initialDelaySeconds: 5
-        livenessProbe:
-          httpGet:
-            path: /live
-            port: 50056
-          initialDelaySeconds: 10
+        - name: scheduler
+          imagePullPolicy: Always
+          image: claudieio/scheduler
+          resources:
+            requests:
+              cpu: 30m
+              memory: 50Mi
+            limits:
+              cpu: 80m
+              memory: 100Mi
+          env:
+            - name: CONTEXT_BOX_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: CONTEXT_BOX_PORT
+            - name: CONTEXT_BOX_HOSTNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: CONTEXT_BOX_HOSTNAME
+            - name: GOLANG_LOG
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: GOLANG_LOG
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 50056
+            initialDelaySeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: 50056
+            initialDelaySeconds: 10

@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: Deployment 
+kind: Deployment
 metadata:
   name: kube-eleven
   labels:
@@ -15,38 +15,38 @@ spec:
         app: kube-eleven
     spec:
       containers:
-      - name: kube-eleven
-        imagePullPolicy: Always
-        image: eu.gcr.io/platform-infrastructure-316112/claudie/kube-eleven
-        resources:
-          requests:
-            cpu: 300m
-            memory: 500Mi
-          limits:
-            cpu: 500m
-            memory: 600Mi
-        env:
-        - name: KUBE_ELEVEN_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: env
-              key: KUBE_ELEVEN_PORT
-        # No hostname needed
-        - name: GOLANG_LOG
-          valueFrom:
-            configMapKeyRef:
-              name: env
-              key: GOLANG_LOG
-        ports:
-        - containerPort: 50054
-        readinessProbe:
-          exec:
-            command: ["/bin/grpc_health_probe", "-addr=:50054"]
-          initialDelaySeconds: 5
-        livenessProbe:
-          exec:
-            command: ["/bin/grpc_health_probe-Liveness", "-addr=:50054"]
-          initialDelaySeconds: 10
+        - name: kube-eleven
+          imagePullPolicy: Always
+          image: claudieio/kube-eleven
+          resources:
+            requests:
+              cpu: 300m
+              memory: 500Mi
+            limits:
+              cpu: 500m
+              memory: 600Mi
+          env:
+            - name: KUBE_ELEVEN_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: KUBE_ELEVEN_PORT
+            # No hostname needed
+            - name: GOLANG_LOG
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: GOLANG_LOG
+          ports:
+            - containerPort: 50054
+          readinessProbe:
+            exec:
+              command: ["/bin/grpc_health_probe", "-addr=:50054"]
+            initialDelaySeconds: 5
+          livenessProbe:
+            exec:
+              command: ["/bin/grpc_health_probe-Liveness", "-addr=:50054"]
+            initialDelaySeconds: 10
 ---
 kind: Service
 apiVersion: v1
@@ -56,6 +56,6 @@ spec:
   selector:
     app: kube-eleven
   ports:
-  - protocol: TCP
-    port: 50054
-    targetPort: 50054
+    - protocol: TCP
+      port: 50054
+      targetPort: 50054

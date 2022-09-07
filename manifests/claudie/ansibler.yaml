@@ -17,7 +17,7 @@ spec:
       containers:
         - name: ansibler
           imagePullPolicy: Always
-          image: eu.gcr.io/platform-infrastructure-316112/claudie/ansibler
+          image: claudieio/ansibler
           resources:
             requests:
               cpu: 300m

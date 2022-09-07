@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: Deployment 
+kind: Deployment
 metadata:
   name: frontend
   labels:
@@ -16,79 +16,79 @@ spec:
     spec:
       serviceAccountName: k8s-sidecar
       containers:
-      - name: frontend
-        imagePullPolicy: Always
-        image: eu.gcr.io/platform-infrastructure-316112/claudie/frontend
-        resources:
-          requests:
-            cpu: 10m
-            memory: 200Mi
-          limits:
-            cpu: 50m
-            memory: 400Mi
-        env:
-        - name: CONTEXT_BOX_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: env
-              key: CONTEXT_BOX_PORT
-        - name: CONTEXT_BOX_HOSTNAME
-          valueFrom:
-            configMapKeyRef:
-              name: env
-              key: CONTEXT_BOX_HOSTNAME
-        - name: GOLANG_LOG
-          valueFrom:
-            configMapKeyRef:
-              name: env
-              key: GOLANG_LOG
-        - name: MANIFEST_DIR
-          value: /input-manifests
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: 50058
-          initialDelaySeconds: 5
-        livenessProbe:
-          httpGet:
-            path: /live
-            port: 50058
-          initialDelaySeconds: 10
-        volumeMounts:
-        - name: input-manifests
-          mountPath: /input-manifests/
-      - name: k8s-sidecar
-        imagePullPolicy: Always
-        image: quay.io/kiwigrid/k8s-sidecar:1.15.7
-        resources:
-          requests:
-            cpu: 50m
-            memory: 75Mi
-          limits:
-            cpu: 100m
-            memory: 150Mi
-        env:
-        - name: LABEL
-          value: "claudie.io/input-manifest"
-        - name: FOLDER
-          value: /input-manifests/
-        - name: RESOURCE
-          value: secret
-        volumeMounts:
-        - name: input-manifests
-          mountPath: /input-manifests/
+        - name: frontend
+          imagePullPolicy: Always
+          image: claudieio/frontend
+          resources:
+            requests:
+              cpu: 10m
+              memory: 200Mi
+            limits:
+              cpu: 50m
+              memory: 400Mi
+          env:
+            - name: CONTEXT_BOX_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: CONTEXT_BOX_PORT
+            - name: CONTEXT_BOX_HOSTNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: CONTEXT_BOX_HOSTNAME
+            - name: GOLANG_LOG
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: GOLANG_LOG
+            - name: MANIFEST_DIR
+              value: /input-manifests
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 50058
+            initialDelaySeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: 50058
+            initialDelaySeconds: 10
+          volumeMounts:
+            - name: input-manifests
+              mountPath: /input-manifests/
+        - name: k8s-sidecar
+          imagePullPolicy: Always
+          image: quay.io/kiwigrid/k8s-sidecar:1.15.7
+          resources:
+            requests:
+              cpu: 50m
+              memory: 75Mi
+            limits:
+              cpu: 100m
+              memory: 150Mi
+          env:
+            - name: LABEL
+              value: "claudie.io/input-manifest"
+            - name: FOLDER
+              value: /input-manifests/
+            - name: RESOURCE
+              value: secret
+          volumeMounts:
+            - name: input-manifests
+              mountPath: /input-manifests/
       volumes:
-      - name: input-manifests
-        emptyDir: {}
+        - name: input-manifests
+          emptyDir: {}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: k8s-sidecar
 rules:
-- apiGroups: [""]
-  resources: ["configmaps", "secrets"]
-  verbs: ["get", "watch", "list"]
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets"]
+    verbs: ["get", "watch", "list"]
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -104,5 +104,5 @@ roleRef:
   name: k8s-sidecar
   apiGroup: rbac.authorization.k8s.io
 subjects:
-- kind: ServiceAccount
-  name: k8s-sidecar
+  - kind: ServiceAccount
+    name: k8s-sidecar

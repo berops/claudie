@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: Deployment 
+kind: Deployment
 metadata:
   name: context-box
   labels:
@@ -15,58 +15,58 @@ spec:
         app: context-box
     spec:
       containers:
-      - name: context-box
-        imagePullPolicy: Always
-        image: eu.gcr.io/platform-infrastructure-316112/claudie/context-box
-        resources:
-          requests:
-            cpu: 5m
-            memory: 50Mi
-          limits:
-            cpu: 25m
-            memory: 100Mi
-        env:
-        - name: DATABASE_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: env
-              key: DATABASE_PORT
-        - name: DATABASE_HOSTNAME
-          valueFrom:
-            configMapKeyRef:
-              name: env
-              key: DATABASE_HOSTNAME
-        - name: DATABASE_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: mongo-secret
-              key: MONGO_INITDB_ROOT_USERNAME
-        - name: DATABASE_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: mongo-secret
-              key: MONGO_INITDB_ROOT_PASSWORD
-        - name: CONTEXT_BOX_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: env
-              key: CONTEXT_BOX_PORT
-         # No hostname needed
-        - name: GOLANG_LOG
-          valueFrom:
-            configMapKeyRef:
-              name: env
-              key: GOLANG_LOG
-        ports:
-        - containerPort: 50055
-        readinessProbe:
-          exec:
-            command: ["/bin/grpc_health_probe", "-addr=:50055"]
-          initialDelaySeconds: 5
-        livenessProbe:
-          exec:
-            command: ["/bin/grpc_health_probe-Liveness", "-addr=:50055"]
-          initialDelaySeconds: 10
+        - name: context-box
+          imagePullPolicy: Always
+          image: claudieio/context-box
+          resources:
+            requests:
+              cpu: 5m
+              memory: 50Mi
+            limits:
+              cpu: 25m
+              memory: 100Mi
+          env:
+            - name: DATABASE_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: DATABASE_PORT
+            - name: DATABASE_HOSTNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: DATABASE_HOSTNAME
+            - name: DATABASE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-secret
+                  key: MONGO_INITDB_ROOT_USERNAME
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-secret
+                  key: MONGO_INITDB_ROOT_PASSWORD
+            - name: CONTEXT_BOX_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: CONTEXT_BOX_PORT
+              # No hostname needed
+            - name: GOLANG_LOG
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: GOLANG_LOG
+          ports:
+            - containerPort: 50055
+          readinessProbe:
+            exec:
+              command: ["/bin/grpc_health_probe", "-addr=:50055"]
+            initialDelaySeconds: 5
+          livenessProbe:
+            exec:
+              command: ["/bin/grpc_health_probe-Liveness", "-addr=:50055"]
+            initialDelaySeconds: 10
 ---
 kind: Service
 apiVersion: v1
@@ -76,6 +76,6 @@ spec:
   selector:
     app: context-box
   ports:
-  - protocol: TCP
-    port: 50055
-    targetPort: 50055
+    - protocol: TCP
+      port: 50055
+      targetPort: 50055
