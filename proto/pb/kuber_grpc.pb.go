@@ -65,7 +65,7 @@ func (c *kuberServiceClient) DeleteKubeconfig(ctx context.Context, in *DeleteKub
 
 func (c *kuberServiceClient) DeleteNodes(ctx context.Context, in *DeleteNodesRequest, opts ...grpc.CallOption) (*DeleteNodesResponse, error) {
 	out := new(DeleteNodesResponse)
-	err := c.cc.Invoke(ctx, "/platform.KuberService/DeleteNodes", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/claudie.KuberService/DeleteNodes", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +176,7 @@ func _KuberService_DeleteNodes_Handler(srv interface{}, ctx context.Context, dec
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/platform.KuberService/DeleteNodes",
+		FullMethod: "/claudie.KuberService/DeleteNodes",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(KuberServiceServer).DeleteNodes(ctx, req.(*DeleteNodesRequest))
