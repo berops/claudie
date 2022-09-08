@@ -17,7 +17,7 @@ spec:
       containers:
         - name: kuber
           imagePullPolicy: Always
-          image: eu.gcr.io/platform-infrastructure-316112/platform/kuber
+          image: claudieio/kuber
           resources:
             requests:
               cpu: 150m

@@ -18,7 +18,7 @@ spec:
       containers:
       - name: frontend
         imagePullPolicy: Always
-        image: eu.gcr.io/platform-infrastructure-316112/platform/frontend
+        image: claudieio/frontend
         resources:
           requests:
             cpu: 10m
