@@ -7,10 +7,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Berops/platform/internal/kubectl"
-	"github.com/Berops/platform/internal/templateUtils"
-	"github.com/Berops/platform/internal/utils"
-	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/claudie/internal/kubectl"
+	"github.com/Berops/claudie/internal/templateUtils"
+	"github.com/Berops/claudie/internal/utils"
+	"github.com/Berops/claudie/proto/pb"
 	"github.com/rs/zerolog/log"
 )
 

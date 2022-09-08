@@ -1,6 +1,6 @@
 # Claudie
 
-![Build](https://github.com/berops/platform/actions/workflows/CD-pipeline-dev.yml/badge.svg)
+![Build](https://github.com/Berops/claudie/actions/workflows/CD-pipeline-dev.yml/badge.svg)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 Platform for managing multi-cloud Kubernetes clusters.
@@ -23,15 +23,15 @@ To scale-up or scale-down, simply change a few lines in the input manifest and C
 
 ### Loadbalancing 
 
-Claudie has its own managed loadbalancing solution, which you can use for Ingresses, for the Kubernetes API server, or generally anything. See [LB docs](https://github.com/Berops/platform/tree/master/docs/loadbalancing).
+Claudie has its own managed loadbalancing solution, which you can use for Ingresses, for the Kubernetes API server, or generally anything. See [LB docs](https://github.com/Berops/claudie/tree/master/docs/loadbalancing).
 
 ### Persistent storage volumes 
 
-Claudie comes with a pre-configured storage solution, with ready-to-use Storage Classes. See [Storage docs](https://github.com/Berops/platform/tree/master/docs/storage).
+Claudie comes with a pre-configured storage solution, with ready-to-use Storage Classes. See [Storage docs](https://github.com/Berops/claudie/tree/master/docs/storage).
 
 # Get started using the Claudie
 
-Deploy Claudie Kubernetes [manifests](https://github.com/Berops/platform/tree/master/manifests/claudie) into a Kubernetes cluster.
+Deploy Claudie Kubernetes [manifests](https://github.com/Berops/claudie/tree/master/manifests/claudie) into a Kubernetes cluster.
 
 ```
 kustomize build | kubectl apply -f -
@@ -39,7 +39,7 @@ kustomize build | kubectl apply -f -
 
 Lastly, provide your own manifest via a Kubernetes Secret.
 
-Example of the input manifest can be found [here](https://github.com/Berops/platform/blob/master/docs/input-manifest/example.yaml).
+Example of the input manifest can be found [here](https://github.com/Berops/claudie/blob/master/docs/input-manifest/example.yaml).
 
 To see in detail how you apply the manifest into Claudie, please refer to the [CRUD](./docs/crud/crud.md) document.
 

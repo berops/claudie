@@ -3,8 +3,8 @@ package main
 import (
 	"testing"
 
-	"github.com/Berops/platform/proto/pb"
-	"github.com/Berops/platform/services/terraformer/server/clusterBuilder"
+	"github.com/Berops/claudie/proto/pb"
+	"github.com/Berops/claudie/services/terraformer/server/clusterBuilder"
 	"github.com/stretchr/testify/require"
 )
 

@@ -530,19 +530,19 @@ var file_proto_kuber_proto_goTypes = []interface{}{
 	(*K8Scluster)(nil),               // 9: platform.K8scluster
 }
 var file_proto_kuber_proto_depIdxs = []int32{
-	8,  // 0: platform.SetUpStorageRequest.desiredState:type_name -> platform.Project
-	8,  // 1: platform.SetUpStorageResponse.desiredState:type_name -> platform.Project
-	9,  // 2: platform.StoreKubeconfigRequest.cluster:type_name -> platform.K8scluster
-	9,  // 3: platform.DeleteKubeconfigRequest.cluster:type_name -> platform.K8scluster
+	8,  // 0: claudie.SetUpStorageRequest.desiredState:type_name -> claudie.Project
+	8,  // 1: claudie.SetUpStorageResponse.desiredState:type_name -> claudie.Project
+	9,  // 2: claudie.StoreKubeconfigRequest.cluster:type_name -> claudie.K8scluster
+	9,  // 3: claudie.DeleteKubeconfigRequest.cluster:type_name -> claudie.K8scluster
 	9,  // 4: platform.DeleteNodesRequest.cluster:type_name -> platform.K8scluster
 	9,  // 5: platform.DeleteNodesResponse.cluster:type_name -> platform.K8scluster
-	0,  // 6: platform.KuberService.SetUpStorage:input_type -> platform.SetUpStorageRequest
-	2,  // 7: platform.KuberService.StoreKubeconfig:input_type -> platform.StoreKubeconfigRequest
-	4,  // 8: platform.KuberService.DeleteKubeconfig:input_type -> platform.DeleteKubeconfigRequest
+	0,  // 6: claudie.KuberService.SetUpStorage:input_type -> claudie.SetUpStorageRequest
+	2,  // 7: claudie.KuberService.StoreKubeconfig:input_type -> claudie.StoreKubeconfigRequest
+	4,  // 8: claudie.KuberService.DeleteKubeconfig:input_type -> claudie.DeleteKubeconfigRequest
 	6,  // 9: platform.KuberService.DeleteNodes:input_type -> platform.DeleteNodesRequest
-	1,  // 10: platform.KuberService.SetUpStorage:output_type -> platform.SetUpStorageResponse
-	3,  // 11: platform.KuberService.StoreKubeconfig:output_type -> platform.StoreKubeconfigResponse
-	5,  // 12: platform.KuberService.DeleteKubeconfig:output_type -> platform.DeleteKubeconfigResponse
+	1,  // 10: claudie.KuberService.SetUpStorage:output_type -> claudie.SetUpStorageResponse
+	3,  // 11: claudie.KuberService.StoreKubeconfig:output_type -> claudie.StoreKubeconfigResponse
+	5,  // 12: claudie.KuberService.DeleteKubeconfig:output_type -> claudie.DeleteKubeconfigResponse
 	7,  // 13: platform.KuberService.DeleteNodes:output_type -> platform.DeleteNodesResponse
 	10, // [10:14] is the sub-list for method output_type
 	6,  // [6:10] is the sub-list for method input_type

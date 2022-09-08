@@ -21,5 +21,5 @@ Note: Please search to see if an issue already exists for the feature you reques
 <!--
 Example:
 - [ ] Implement the feature
-- [ ] Add feature to the platform
+- [ ] Add feature to the Claudie
 -->

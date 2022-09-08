@@ -1,4 +1,4 @@
-name: CI pipeline for platform
+name: CI pipeline for Claudie
 on:
   # Manual trigger
   workflow_dispatch:
@@ -261,7 +261,7 @@ jobs:
           #Clean up
           rm -f yq 
           rm -f yq.1 
-          rm -f install-man-page.sh 
+          rm -f install-man-page.sh
 
       - name: Start the E2E tests
         working-directory: ./manifests

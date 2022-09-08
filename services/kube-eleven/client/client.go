@@ -3,7 +3,7 @@ package kubeElevenClient
 import (
 	"context"
 
-	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/claudie/proto/pb"
 	"github.com/rs/zerolog/log"
 )
 

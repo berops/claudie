@@ -7,7 +7,7 @@ provider "hcloud" {
   alias = "lb-nodepool"
 }
 
-resource "hcloud_ssh_key" "platform" {
+resource "hcloud_ssh_key" "claudie" {
   provider     = hcloud.lb-nodepool
   name       = "key-{{ $clusterName }}-{{ $clusterHash }}"
   public_key = file("./public.pem")
@@ -68,7 +68,7 @@ resource "hcloud_server" "{{$nodepool.Name}}" {
   firewall_ids = [hcloud_firewall.firewall.id]
   datacenter   = "{{ $nodepool.Zone}}"
   ssh_keys = [
-    hcloud_ssh_key.platform.id,
+    hcloud_ssh_key.claudie.id,
   ]
 }
 

@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/Berops/platform/internal/manifest"
-	"github.com/Berops/platform/internal/utils"
-	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/claudie/internal/manifest"
+	"github.com/Berops/claudie/internal/utils"
+	"github.com/Berops/claudie/proto/pb"
 )
 
 const (

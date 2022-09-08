@@ -1,4 +1,4 @@
-module github.com/Berops/platform
+module github.com/Berops/claudie
 
 go 1.18
 

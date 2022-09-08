@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: Deployment 
+kind: Deployment
 metadata:
   name: terraformer
   labels:
@@ -15,58 +15,58 @@ spec:
         app: terraformer
     spec:
       containers:
-      - name: terraformer
-        imagePullPolicy: Always
-        image: claudieio/terraformer
-        resources:
-          requests:
-            cpu: 200m
-            memory: 500Mi
-          limits:
-            cpu: 400m
-            memory: 800Mi
-        env:
-        - name: TERRAFORMER_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: env
-              key: TERRAFORMER_PORT
-         # No hostname needed
-        - name: GOLANG_LOG
-          valueFrom:
-            configMapKeyRef:
-              name: env
-              key: GOLANG_LOG
-        - name: MINIO_HOSTNAME
-          valueFrom:
-            configMapKeyRef:
-              name: env
-              key: MINIO_HOSTNAME
-        - name: MINIO_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: env
-              key: MINIO_PORT
-        - name: MINIO_ROOT_USER
-          valueFrom:
-            secretKeyRef:
-              name: minio-secret
-              key: MINIO_ROOT_USER
-        - name: MINIO_ROOT_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: minio-secret
-              key: MINIO_ROOT_PASSWORD
-        ports:
-        - containerPort: 50052
-        readinessProbe:
-          exec:
-            command: ["/bin/grpc_health_probe", "-addr=:50052"]
-          initialDelaySeconds: 5
-        livenessProbe:
-          exec:
-            command: ["/bin/grpc_health_probe-Liveness", "-addr=:50052"]
-          initialDelaySeconds: 10
+        - name: terraformer
+          imagePullPolicy: Always
+          image: claudieio/terraformer
+          resources:
+            requests:
+              cpu: 200m
+              memory: 500Mi
+            limits:
+              cpu: 400m
+              memory: 800Mi
+          env:
+            - name: TERRAFORMER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: TERRAFORMER_PORT
+              # No hostname needed
+            - name: GOLANG_LOG
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: GOLANG_LOG
+            - name: MINIO_HOSTNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: MINIO_HOSTNAME
+            - name: MINIO_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: MINIO_PORT
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secret
+                  key: MINIO_ROOT_USER
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secret
+                  key: MINIO_ROOT_PASSWORD
+          ports:
+            - containerPort: 50052
+          readinessProbe:
+            exec:
+              command: ["/bin/grpc_health_probe", "-addr=:50052"]
+            initialDelaySeconds: 5
+          livenessProbe:
+            exec:
+              command: ["/bin/grpc_health_probe-Liveness", "-addr=:50052"]
+            initialDelaySeconds: 10
 ---
 kind: Service
 apiVersion: v1
@@ -76,6 +76,6 @@ spec:
   selector:
     app: terraformer
   ports:
-  - protocol: TCP
-    port: 50052
-    targetPort: 50052
+    - protocol: TCP
+      port: 50052
+      targetPort: 50052

@@ -1,6 +1,6 @@
 package utils
 
-import "github.com/Berops/platform/proto/pb"
+import "github.com/Berops/claudie/proto/pb"
 
 func ChangedDNSProvider(currentDNS, desiredDNS *pb.DNS) bool {
 	// DNS not yet created

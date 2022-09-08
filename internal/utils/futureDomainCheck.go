@@ -3,7 +3,7 @@ package utils
 import (
 	"fmt"
 
-	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/claudie/proto/pb"
 )
 
 func CheckLengthOfFutureDomain(config *pb.Config) error {

@@ -1,7 +1,7 @@
 # Contributing
 
 ### Bug reports
-When you encounter a bug, please create a new [issue](https://github.com/Berops/platform/issues/new/choose) and use bug template. Before you submit, please check
+When you encounter a bug, please create a new [issue](https://github.com/Berops/claudie/issues/new/choose) and use bug template. Before you submit, please check
 
 - If the issue you want to open is not a duplicate
 - You submitted any errors and concise way to reproduce the issue
