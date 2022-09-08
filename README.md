@@ -2,7 +2,6 @@
 
 ![Build](https://github.com/Berops/claudie/actions/workflows/CD-pipeline-dev.yml/badge.svg)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Slack](https://img.shields.io/badge/Slack-Claudie-yellow.svg?logo=slack)](https://claudie-workspace.slack.com/)
 
 Platform for managing multi-cloud Kubernetes clusters.
 
@@ -50,6 +49,8 @@ To see in detail how you apply the manifest into Claudie, please refer to the [C
 Everyone is more than welcome to open an issue, a PR or to start a discussion. 
 
 For more information about contributing please read the [contribution guidelines](./docs/contributing/contributing.md).
+
+If you want to have a chat with us, feel free to join our [slack workspace](https://claudie-workspace.slack.com).
 
 # Roadmap
 <!-- Add a roadmap for claudie so users know which features are being worked on and which will in future -->
