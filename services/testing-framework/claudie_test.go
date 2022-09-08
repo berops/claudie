@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/Berops/platform/internal/envs"
-	"github.com/Berops/platform/internal/utils"
-	"github.com/Berops/platform/proto/pb"
-	cbox "github.com/Berops/platform/services/context-box/client"
+	"github.com/Berops/claudie/internal/envs"
+	"github.com/Berops/claudie/internal/utils"
+	"github.com/Berops/claudie/proto/pb"
+	cbox "github.com/Berops/claudie/services/context-box/client"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -33,8 +33,8 @@ const (
 	maxTimeoutSave = 60 * 12 // max allowed time for config to be found in the database
 )
 
-// TestPlatform will start all the test cases specified in tests directory
-func TestPlatform(t *testing.T) {
+// TestClaudie will start all the test cases specified in tests directory
+func TestClaudie(t *testing.T) {
 	utils.InitLog("testing-framework")
 	c, cc := clientConnection()
 	defer func() {
@@ -96,7 +96,7 @@ func clientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
 	return c, cc
 }
 
-// applyTestSet function will apply test set sequentially to a platform
+// applyTestSet function will apply test set sequentially to Claudie
 func applyTestSet(setName, namespace string, c pb.ContextBoxServiceClient) error {
 	done := make(chan string)
 	idInfo := idInfo{id: "", idType: -1}
@@ -110,7 +110,7 @@ func applyTestSet(setName, namespace string, c pb.ContextBoxServiceClient) error
 	}
 
 	for _, manifest := range manifestFiles {
-		if manifest.IsDir() || manifest.Name()[0:1] == "." { // https://github.com/Berops/platform/pull/243#issuecomment-1218237412
+		if manifest.IsDir() || manifest.Name()[0:1] == "." { // https://github.com/Berops/claudie/pull/243#issuecomment-1218237412
 			continue
 		}
 

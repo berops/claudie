@@ -37,7 +37,7 @@ func NewTerraformerServiceClient(cc grpc.ClientConnInterface) TerraformerService
 
 func (c *terraformerServiceClient) BuildInfrastructure(ctx context.Context, in *BuildInfrastructureRequest, opts ...grpc.CallOption) (*BuildInfrastructureResponse, error) {
 	out := new(BuildInfrastructureResponse)
-	err := c.cc.Invoke(ctx, "/platform.TerraformerService/BuildInfrastructure", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/claudie.TerraformerService/BuildInfrastructure", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (c *terraformerServiceClient) BuildInfrastructure(ctx context.Context, in *
 
 func (c *terraformerServiceClient) DestroyInfrastructure(ctx context.Context, in *DestroyInfrastructureRequest, opts ...grpc.CallOption) (*DestroyInfrastructureResponse, error) {
 	out := new(DestroyInfrastructureResponse)
-	err := c.cc.Invoke(ctx, "/platform.TerraformerService/DestroyInfrastructure", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/claudie.TerraformerService/DestroyInfrastructure", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func _TerraformerService_BuildInfrastructure_Handler(srv interface{}, ctx contex
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/platform.TerraformerService/BuildInfrastructure",
+		FullMethod: "/claudie.TerraformerService/BuildInfrastructure",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(TerraformerServiceServer).BuildInfrastructure(ctx, req.(*BuildInfrastructureRequest))
@@ -113,7 +113,7 @@ func _TerraformerService_DestroyInfrastructure_Handler(srv interface{}, ctx cont
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/platform.TerraformerService/DestroyInfrastructure",
+		FullMethod: "/claudie.TerraformerService/DestroyInfrastructure",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(TerraformerServiceServer).DestroyInfrastructure(ctx, req.(*DestroyInfrastructureRequest))
@@ -125,7 +125,7 @@ func _TerraformerService_DestroyInfrastructure_Handler(srv interface{}, ctx cont
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var TerraformerService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "platform.TerraformerService",
+	ServiceName: "claudie.TerraformerService",
 	HandlerType: (*TerraformerServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

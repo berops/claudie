@@ -47,7 +47,7 @@ func NewContextBoxServiceClient(cc grpc.ClientConnInterface) ContextBoxServiceCl
 
 func (c *contextBoxServiceClient) SaveConfigFrontEnd(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error) {
 	out := new(SaveConfigResponse)
-	err := c.cc.Invoke(ctx, "/platform.ContextBoxService/SaveConfigFrontEnd", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/claudie.ContextBoxService/SaveConfigFrontEnd", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (c *contextBoxServiceClient) SaveConfigFrontEnd(ctx context.Context, in *Sa
 
 func (c *contextBoxServiceClient) SaveConfigScheduler(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error) {
 	out := new(SaveConfigResponse)
-	err := c.cc.Invoke(ctx, "/platform.ContextBoxService/SaveConfigScheduler", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/claudie.ContextBoxService/SaveConfigScheduler", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (c *contextBoxServiceClient) SaveConfigScheduler(ctx context.Context, in *S
 
 func (c *contextBoxServiceClient) SaveConfigBuilder(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error) {
 	out := new(SaveConfigResponse)
-	err := c.cc.Invoke(ctx, "/platform.ContextBoxService/SaveConfigBuilder", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/claudie.ContextBoxService/SaveConfigBuilder", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func (c *contextBoxServiceClient) SaveConfigBuilder(ctx context.Context, in *Sav
 
 func (c *contextBoxServiceClient) GetConfigFromDB(ctx context.Context, in *GetConfigFromDBRequest, opts ...grpc.CallOption) (*GetConfigFromDBResponse, error) {
 	out := new(GetConfigFromDBResponse)
-	err := c.cc.Invoke(ctx, "/platform.ContextBoxService/GetConfigFromDB", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/claudie.ContextBoxService/GetConfigFromDB", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func (c *contextBoxServiceClient) GetConfigFromDB(ctx context.Context, in *GetCo
 
 func (c *contextBoxServiceClient) GetConfigByName(ctx context.Context, in *GetConfigByNameRequest, opts ...grpc.CallOption) (*GetConfigByNameResponse, error) {
 	out := new(GetConfigByNameResponse)
-	err := c.cc.Invoke(ctx, "/platform.ContextBoxService/GetConfigByName", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/claudie.ContextBoxService/GetConfigByName", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func (c *contextBoxServiceClient) GetConfigByName(ctx context.Context, in *GetCo
 
 func (c *contextBoxServiceClient) GetConfigScheduler(ctx context.Context, in *GetConfigRequest, opts ...grpc.CallOption) (*GetConfigResponse, error) {
 	out := new(GetConfigResponse)
-	err := c.cc.Invoke(ctx, "/platform.ContextBoxService/GetConfigScheduler", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/claudie.ContextBoxService/GetConfigScheduler", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +101,7 @@ func (c *contextBoxServiceClient) GetConfigScheduler(ctx context.Context, in *Ge
 
 func (c *contextBoxServiceClient) GetConfigBuilder(ctx context.Context, in *GetConfigRequest, opts ...grpc.CallOption) (*GetConfigResponse, error) {
 	out := new(GetConfigResponse)
-	err := c.cc.Invoke(ctx, "/platform.ContextBoxService/GetConfigBuilder", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/claudie.ContextBoxService/GetConfigBuilder", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func (c *contextBoxServiceClient) GetConfigBuilder(ctx context.Context, in *GetC
 
 func (c *contextBoxServiceClient) GetAllConfigs(ctx context.Context, in *GetAllConfigsRequest, opts ...grpc.CallOption) (*GetAllConfigsResponse, error) {
 	out := new(GetAllConfigsResponse)
-	err := c.cc.Invoke(ctx, "/platform.ContextBoxService/GetAllConfigs", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/claudie.ContextBoxService/GetAllConfigs", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +119,7 @@ func (c *contextBoxServiceClient) GetAllConfigs(ctx context.Context, in *GetAllC
 
 func (c *contextBoxServiceClient) DeleteConfig(ctx context.Context, in *DeleteConfigRequest, opts ...grpc.CallOption) (*DeleteConfigResponse, error) {
 	out := new(DeleteConfigResponse)
-	err := c.cc.Invoke(ctx, "/platform.ContextBoxService/DeleteConfig", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/claudie.ContextBoxService/DeleteConfig", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +199,7 @@ func _ContextBoxService_SaveConfigFrontEnd_Handler(srv interface{}, ctx context.
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/platform.ContextBoxService/SaveConfigFrontEnd",
+		FullMethod: "/claudie.ContextBoxService/SaveConfigFrontEnd",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ContextBoxServiceServer).SaveConfigFrontEnd(ctx, req.(*SaveConfigRequest))
@@ -217,7 +217,7 @@ func _ContextBoxService_SaveConfigScheduler_Handler(srv interface{}, ctx context
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/platform.ContextBoxService/SaveConfigScheduler",
+		FullMethod: "/claudie.ContextBoxService/SaveConfigScheduler",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ContextBoxServiceServer).SaveConfigScheduler(ctx, req.(*SaveConfigRequest))
@@ -235,7 +235,7 @@ func _ContextBoxService_SaveConfigBuilder_Handler(srv interface{}, ctx context.C
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/platform.ContextBoxService/SaveConfigBuilder",
+		FullMethod: "/claudie.ContextBoxService/SaveConfigBuilder",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ContextBoxServiceServer).SaveConfigBuilder(ctx, req.(*SaveConfigRequest))
@@ -253,7 +253,7 @@ func _ContextBoxService_GetConfigFromDB_Handler(srv interface{}, ctx context.Con
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/platform.ContextBoxService/GetConfigFromDB",
+		FullMethod: "/claudie.ContextBoxService/GetConfigFromDB",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ContextBoxServiceServer).GetConfigFromDB(ctx, req.(*GetConfigFromDBRequest))
@@ -271,7 +271,7 @@ func _ContextBoxService_GetConfigByName_Handler(srv interface{}, ctx context.Con
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/platform.ContextBoxService/GetConfigByName",
+		FullMethod: "/claudie.ContextBoxService/GetConfigByName",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ContextBoxServiceServer).GetConfigByName(ctx, req.(*GetConfigByNameRequest))
@@ -289,7 +289,7 @@ func _ContextBoxService_GetConfigScheduler_Handler(srv interface{}, ctx context.
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/platform.ContextBoxService/GetConfigScheduler",
+		FullMethod: "/claudie.ContextBoxService/GetConfigScheduler",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ContextBoxServiceServer).GetConfigScheduler(ctx, req.(*GetConfigRequest))
@@ -307,7 +307,7 @@ func _ContextBoxService_GetConfigBuilder_Handler(srv interface{}, ctx context.Co
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/platform.ContextBoxService/GetConfigBuilder",
+		FullMethod: "/claudie.ContextBoxService/GetConfigBuilder",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ContextBoxServiceServer).GetConfigBuilder(ctx, req.(*GetConfigRequest))
@@ -325,7 +325,7 @@ func _ContextBoxService_GetAllConfigs_Handler(srv interface{}, ctx context.Conte
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/platform.ContextBoxService/GetAllConfigs",
+		FullMethod: "/claudie.ContextBoxService/GetAllConfigs",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ContextBoxServiceServer).GetAllConfigs(ctx, req.(*GetAllConfigsRequest))
@@ -343,7 +343,7 @@ func _ContextBoxService_DeleteConfig_Handler(srv interface{}, ctx context.Contex
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/platform.ContextBoxService/DeleteConfig",
+		FullMethod: "/claudie.ContextBoxService/DeleteConfig",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ContextBoxServiceServer).DeleteConfig(ctx, req.(*DeleteConfigRequest))
@@ -355,7 +355,7 @@ func _ContextBoxService_DeleteConfig_Handler(srv interface{}, ctx context.Contex
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var ContextBoxService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "platform.ContextBoxService",
+	ServiceName: "claudie.ContextBoxService",
 	HandlerType: (*ContextBoxServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

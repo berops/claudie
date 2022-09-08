@@ -50,7 +50,7 @@ resource "hcloud_firewall" "defaultfirewall" {
   }
 }
 
-resource "hcloud_ssh_key" "platform" {
+resource "hcloud_ssh_key" "claudie" {
   provider     = hcloud.k8s-nodepool
   name       = "key-{{ $clusterName }}-{{ $clusterHash }}"
   public_key = file("./public.pem")
@@ -69,7 +69,7 @@ resource "hcloud_server" "{{$nodepool.Name}}" {
   datacenter    = "{{ $nodepool.Zone}}"
 
   ssh_keys = [
-    hcloud_ssh_key.platform.id,
+    hcloud_ssh_key.claudie.id,
   ]
 }
 

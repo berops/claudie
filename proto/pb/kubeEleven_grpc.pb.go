@@ -36,7 +36,7 @@ func NewKubeElevenServiceClient(cc grpc.ClientConnInterface) KubeElevenServiceCl
 
 func (c *kubeElevenServiceClient) BuildCluster(ctx context.Context, in *BuildClusterRequest, opts ...grpc.CallOption) (*BuildClusterResponse, error) {
 	out := new(BuildClusterResponse)
-	err := c.cc.Invoke(ctx, "/platform.KubeElevenService/BuildCluster", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/claudie.KubeElevenService/BuildCluster", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func _KubeElevenService_BuildCluster_Handler(srv interface{}, ctx context.Contex
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/platform.KubeElevenService/BuildCluster",
+		FullMethod: "/claudie.KubeElevenService/BuildCluster",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(KubeElevenServiceServer).BuildCluster(ctx, req.(*BuildClusterRequest))
@@ -93,7 +93,7 @@ func _KubeElevenService_BuildCluster_Handler(srv interface{}, ctx context.Contex
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var KubeElevenService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "platform.KubeElevenService",
+	ServiceName: "claudie.KubeElevenService",
 	HandlerType: (*KubeElevenServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

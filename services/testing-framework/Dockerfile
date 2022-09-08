@@ -19,7 +19,7 @@ COPY . .
 
 #Change the directory
 WORKDIR /go/services/testing-framework
-RUN CGO_ENABLED=0 go test -c -run TestPlatform
+RUN CGO_ENABLED=0 go test -c -run TestClaudie
 
 FROM alpine
 
@@ -32,4 +32,4 @@ RUN chmod +x /usr/local/bin/kubectl && \
 
 #Run server
 WORKDIR /go/services/testing-framework
-ENTRYPOINT [ "./testing-framework.test", "-test.run", "TestPlatform", "-test.timeout=10800s", "-test.v", "./..." ]
+ENTRYPOINT [ "./testing-framework.test", "-test.run", "TestClaudie", "-test.timeout=10800s", "-test.v", "./..." ]

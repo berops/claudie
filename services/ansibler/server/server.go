@@ -8,9 +8,9 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/Berops/platform/internal/healthcheck"
-	"github.com/Berops/platform/internal/utils"
-	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/claudie/internal/healthcheck"
+	"github.com/Berops/claudie/internal/utils"
+	"github.com/Berops/claudie/proto/pb"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"

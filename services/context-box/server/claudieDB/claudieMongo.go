@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/claudie/proto/pb"
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -13,6 +13,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"google.golang.org/protobuf/proto"
+)
+
+const (
+	databaseName   = "claudie"
+	collectionName = "input-manifests"
 )
 
 var (
@@ -75,7 +80,7 @@ func (c *ClaudieMongo) Disconnect() error {
 //Init will initialise database and collections
 // returns error if initialisation failed, nil otherwise
 func (c *ClaudieMongo) Init() error {
-	c.collection = c.client.Database("platform").Collection("config")
+	c.collection = c.client.Database(databaseName).Collection(collectionName)
 	// create index
 	indexName, err := c.collection.Indexes().CreateOne(context.Background(), mongo.IndexModel{
 		Keys:    bson.D{{Key: "name", Value: 1}},

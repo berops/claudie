@@ -1,5 +1,5 @@
 syntax = "proto3";
-package platform;
+package claudie;
 import "proto/config.proto";
 
 option go_package = "proto/pb";

@@ -6,14 +6,14 @@ import (
 	"os"
 	"path/filepath"
 
-	comm "github.com/Berops/platform/internal/command"
+	comm "github.com/Berops/claudie/internal/command"
 
-	"github.com/Berops/platform/internal/templateUtils"
-	"github.com/Berops/platform/internal/utils"
-	"github.com/Berops/platform/proto/pb"
-	"github.com/Berops/platform/services/terraformer/server/backend"
-	"github.com/Berops/platform/services/terraformer/server/clusterBuilder"
-	"github.com/Berops/platform/services/terraformer/server/terraform"
+	"github.com/Berops/claudie/internal/templateUtils"
+	"github.com/Berops/claudie/internal/utils"
+	"github.com/Berops/claudie/proto/pb"
+	"github.com/Berops/claudie/services/terraformer/server/backend"
+	"github.com/Berops/claudie/services/terraformer/server/clusterBuilder"
+	"github.com/Berops/claudie/services/terraformer/server/terraform"
 	"github.com/rs/zerolog/log"
 )
 
