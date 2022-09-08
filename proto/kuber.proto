@@ -28,8 +28,20 @@ message DeleteKubeconfigResponse {
   string errorMessage = 1;
 }
 
+message DeleteNodesRequest {
+  K8scluster cluster = 1;
+  repeated string workerNodes = 2;
+  repeated string masterNodes = 3;
+}
+
+message DeleteNodesResponse {
+  K8scluster cluster = 1;
+  string errorMessage = 2;
+}
+
 service KuberService {
   rpc SetUpStorage(SetUpStorageRequest) returns (SetUpStorageResponse); 
   rpc StoreKubeconfig(StoreKubeconfigRequest) returns (StoreKubeconfigResponse);
   rpc DeleteKubeconfig(DeleteKubeconfigRequest) returns (DeleteKubeconfigResponse);
+  rpc DeleteNodes(DeleteNodesRequest) returns (DeleteNodesResponse);
 }

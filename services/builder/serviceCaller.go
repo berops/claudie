@@ -175,6 +175,26 @@ func callKuber(desiredState *pb.Project) (*pb.Project, error) {
 	return resStorage.GetDesiredState(), nil
 }
 
+//callDeleteNodes calls Kuber.DeleteNodes which will safely delete nodes from cluster
+func callDeleteNodes(master, worker []string, cluster *pb.K8Scluster) (*pb.K8Scluster, error) {
+	cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		utils.CloseClientConnection(cc)
+		log.Info().Msgf("Closing the connection for kuber")
+	}()
+	// Creating the client
+	c := pb.NewKuberServiceClient(cc)
+	log.Info().Msgf("Calling DeleteNodes on kuber")
+	resDelete, err := kuber.DeleteNodes(c, &pb.DeleteNodesRequest{MasterNodes: master, WorkerNodes: worker, Cluster: cluster})
+	if err != nil {
+		return nil, err
+	}
+	return resDelete.Cluster, nil
+}
+
 // saveErrorMessage saves error message to config
 func saveErrorMessage(config *pb.Config, c pb.ContextBoxServiceClient, err error) error {
 	config.CurrentState = config.DesiredState // Update currentState, so we can use it for deletion later

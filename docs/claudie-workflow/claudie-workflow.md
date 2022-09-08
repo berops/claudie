@@ -175,6 +175,8 @@ Kuber manipulates the cluster resources using `kubectl`.
   rpc StoreKubeconfig(StoreKubeconfigRequest) returns (StoreKubeconfigResponse);
   //DeleteKubeconfig will remove a secret that holds kubeconfig of Claudie created cluster
   rpc DeleteKubeconfig(DeleteKubeconfigRequest) returns (DeleteKubeconfigResponse);
+  //DeleteNodes will delete specified nodes from a specified k8s cluster
+  rpc DeleteNodes(DeleteNodesRequest) returns (DeleteNodesResponse);
 ```
 
 ### Flow

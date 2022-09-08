@@ -16,6 +16,7 @@ import (
 	"github.com/Berops/claudie/internal/utils"
 	"github.com/Berops/claudie/proto/pb"
 	"github.com/Berops/claudie/services/kuber/server/longhorn"
+	"github.com/Berops/claudie/services/kuber/server/nodes"
 	"github.com/Berops/claudie/services/kuber/server/secret"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
@@ -80,7 +81,12 @@ func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigReq
 			if namespace == "" {
 				// the claudie is in local deployment - print kubeconfig
 				log.Info().Msgf("The kubeconfig for %s:", clusterID)
+				//print and clean-up
 				fmt.Println(c.Kubeconfig)
+				err := os.RemoveAll(sec.Directory)
+				if err != nil {
+					return fmt.Errorf("error while cleaning up the temporary directory %s : %v", sec.Directory, err)
+				}
 				return nil
 			}
 			// apply secret
@@ -128,6 +134,16 @@ func (s *server) DeleteKubeconfig(ctx context.Context, req *pb.DeleteKubeconfigR
 		return &pb.DeleteKubeconfigResponse{ErrorMessage: err.Error()}, err
 	}
 	return &pb.DeleteKubeconfigResponse{ErrorMessage: ""}, nil
+}
+
+func (s *server) DeleteNodes(ctx context.Context, req *pb.DeleteNodesRequest) (*pb.DeleteNodesResponse, error) {
+	deleter := nodes.New(req.MasterNodes, req.WorkerNodes, req.Cluster)
+	cluster, err := deleter.DeleteNodes()
+	if err != nil {
+		log.Error().Msgf("Error while deleting nodes for %s : %v", req.Cluster.ClusterInfo.Name, err)
+		return &pb.DeleteNodesResponse{ErrorMessage: err.Error()}, err
+	}
+	return &pb.DeleteNodesResponse{ErrorMessage: "", Cluster: cluster}, nil
 }
 
 func main() {
