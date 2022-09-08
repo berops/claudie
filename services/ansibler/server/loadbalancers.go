@@ -5,10 +5,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Berops/platform/internal/templateUtils"
-	"github.com/Berops/platform/internal/utils"
-	"github.com/Berops/platform/proto/pb"
-	"github.com/Berops/platform/services/ansibler/server/ansible"
+	"github.com/Berops/claudie/internal/templateUtils"
+	"github.com/Berops/claudie/internal/utils"
+	"github.com/Berops/claudie/proto/pb"
+	"github.com/Berops/claudie/services/ansibler/server/ansible"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 )

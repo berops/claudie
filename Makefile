@@ -49,3 +49,6 @@ dockerDown:
 
 dockerBuild:
 	docker-compose --env-file ./manifests/claudie/.env build 
+
+lint:
+	golangci-lint run

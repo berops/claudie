@@ -7,10 +7,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Berops/platform/internal/kubectl"
-	"github.com/Berops/platform/internal/templateUtils"
-	"github.com/Berops/platform/internal/utils"
-	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/claudie/internal/kubectl"
+	"github.com/Berops/claudie/internal/templateUtils"
+	"github.com/Berops/claudie/internal/utils"
+	"github.com/Berops/claudie/proto/pb"
 	"github.com/rs/zerolog/log"
 )
 
@@ -31,6 +31,7 @@ const (
 	storageManifestTpl = "storage-class.goyaml"
 	defaultSC          = "longhorn"
 	claudieLabel       = "claudie.io/storage-class"
+	claudieWorkerLabel = "claudie.io/worker-node=true"
 )
 
 // SetUp function will set up the longhorn on the k8s cluster saved in l.Longhorn
@@ -60,11 +61,11 @@ func (l Longhorn) SetUp() error {
 
 	sortedNodePools := utils.GroupNodepoolsByProvider(l.Cluster.ClusterInfo)
 	// get real nodes names in a case when provider appends some string to the set name
-	realNodesInfo, err := kubectl.KubectlGet("nodes", "")
+	realNodesInfo, err := kubectl.KubectlGetNodeNames()
 	if err != nil {
 		return err
 	}
-	realNodeNames := getRealNodeNames(realNodesInfo)
+	realNodeNames := strings.Split(string(realNodesInfo), "\n")
 	// tag nodes based on the zones
 	for provider, nodepools := range sortedNodePools {
 		zoneName := fmt.Sprintf("%s-zone", provider)
@@ -83,7 +84,11 @@ func (l Longhorn) SetUp() error {
 					realNodeName := utils.FindName(realNodeNames, node.Name)
 					err := kubectl.KubectlAnnotate("node", realNodeName, annotation)
 					if err != nil {
-						return fmt.Errorf("error while tagging the node %s via kubectl annotate : %v", realNodeName, err)
+						return fmt.Errorf("error while annotating the node %s via kubectl annotate : %v", realNodeName, err)
+					}
+					err = kubectl.KubectlLabel("node", realNodeName, claudieWorkerLabel, true)
+					if err != nil {
+						return fmt.Errorf("error while labeling the node %s via kubectl label : %v", realNodeName, err)
 					}
 				}
 			}
@@ -184,19 +189,4 @@ func (l *Longhorn) deleteOldStorageClasses(existing, applied []string, kc kubect
 		}
 	}
 	return nil
-}
-
-//getRealNodeNames will find a real node names, since some providers appends additional data after user defined name
-//returns slice of a real node names
-func getRealNodeNames(nodeInfo []byte) []string {
-	// get slice of lines from output
-	nodeInfoStrings := strings.Split(string(nodeInfo), "\n")
-	// trim the column description and whitespace at the end
-	nodeInfoStrings = nodeInfoStrings[1 : len(nodeInfoStrings)-1]
-	var nodeNames []string
-	for _, line := range nodeInfoStrings {
-		fields := strings.Fields(line)
-		nodeNames = append(nodeNames, fields[0])
-	}
-	return nodeNames
 }

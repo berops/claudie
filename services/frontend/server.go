@@ -15,7 +15,7 @@ import (
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/claudie/proto/pb"
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"

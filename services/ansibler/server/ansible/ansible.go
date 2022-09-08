@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/exec"
 
-	comm "github.com/Berops/platform/internal/command"
+	comm "github.com/Berops/claudie/internal/command"
 	"github.com/rs/zerolog/log"
 )
 

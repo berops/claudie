@@ -1,7 +1,5 @@
 FROM golang:1.18 AS build
 
-#Install kubectl
-RUN wget -q https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
 #Unset the GOPATH
 ENV GOPATH=
 
@@ -21,16 +19,11 @@ WORKDIR /go/services/builder
 #Compile the golang code, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build
 
-FROM alpine
+FROM scratch
 
 #Copy the binaries to empty base image
-COPY --from=build /go/kubectl /usr/local/bin/kubectl
 COPY --from=build /go/services/builder/builder /bin/services/builder/builder
-RUN chmod +x /usr/local/bin/kubectl && \
-    apk add -q bash
 
 #Run server
 WORKDIR /bin
 ENTRYPOINT [ "./services/builder/builder" ]
-
-#Note: When deleting nodes, builder is using kubectl drain/delete from shell

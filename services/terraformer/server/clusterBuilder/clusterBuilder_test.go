@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Berops/platform/proto/pb"
+	"github.com/Berops/claudie/proto/pb"
 	"github.com/stretchr/testify/require"
 )
 

@@ -6,10 +6,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Berops/platform/internal/templateUtils"
-	"github.com/Berops/platform/internal/utils"
-	"github.com/Berops/platform/proto/pb"
-	"github.com/Berops/platform/services/kube-eleven/server/kubeone"
+	"github.com/Berops/claudie/internal/templateUtils"
+	"github.com/Berops/claudie/internal/utils"
+	"github.com/Berops/claudie/proto/pb"
+	"github.com/Berops/claudie/services/kube-eleven/server/kubeone"
 	"github.com/rs/zerolog/log"
 )
 

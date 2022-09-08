@@ -6,9 +6,9 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/Berops/platform/internal/envs"
-	"github.com/Berops/platform/internal/healthcheck"
-	"github.com/Berops/platform/internal/utils"
+	"github.com/Berops/claudie/internal/envs"
+	"github.com/Berops/claudie/internal/healthcheck"
+	"github.com/Berops/claudie/internal/utils"
 	"github.com/rs/zerolog/log"
 
 	"golang.org/x/sync/errgroup"

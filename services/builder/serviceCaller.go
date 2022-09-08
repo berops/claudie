@@ -3,14 +3,14 @@ package main
 import (
 	"fmt"
 
-	"github.com/Berops/platform/internal/envs"
-	"github.com/Berops/platform/internal/utils"
-	"github.com/Berops/platform/proto/pb"
-	ansibler "github.com/Berops/platform/services/ansibler/client"
-	cbox "github.com/Berops/platform/services/context-box/client"
-	kubeEleven "github.com/Berops/platform/services/kube-eleven/client"
-	kuber "github.com/Berops/platform/services/kuber/client"
-	terraformer "github.com/Berops/platform/services/terraformer/client"
+	"github.com/Berops/claudie/internal/envs"
+	"github.com/Berops/claudie/internal/utils"
+	"github.com/Berops/claudie/proto/pb"
+	ansibler "github.com/Berops/claudie/services/ansibler/client"
+	cbox "github.com/Berops/claudie/services/context-box/client"
+	kubeEleven "github.com/Berops/claudie/services/kube-eleven/client"
+	kuber "github.com/Berops/claudie/services/kuber/client"
+	terraformer "github.com/Berops/claudie/services/terraformer/client"
 	"github.com/rs/zerolog/log"
 )
 
@@ -173,6 +173,26 @@ func callKuber(desiredState *pb.Project) (*pb.Project, error) {
 		}
 	}
 	return resStorage.GetDesiredState(), nil
+}
+
+//callDeleteNodes calls Kuber.DeleteNodes which will safely delete nodes from cluster
+func callDeleteNodes(master, worker []string, cluster *pb.K8Scluster) (*pb.K8Scluster, error) {
+	cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		utils.CloseClientConnection(cc)
+		log.Info().Msgf("Closing the connection for kuber")
+	}()
+	// Creating the client
+	c := pb.NewKuberServiceClient(cc)
+	log.Info().Msgf("Calling DeleteNodes on kuber")
+	resDelete, err := kuber.DeleteNodes(c, &pb.DeleteNodesRequest{MasterNodes: master, WorkerNodes: worker, Cluster: cluster})
+	if err != nil {
+		return nil, err
+	}
+	return resDelete.Cluster, nil
 }
 
 // saveErrorMessage saves error message to config
