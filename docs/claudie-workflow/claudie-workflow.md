@@ -185,8 +185,9 @@ Kuber manipulates the cluster resources using `kubectl`.
 - On infra deletion, deletes the secret which holds kubeconfig of deleted cluster
 
 ## Frontend
-Frontend is a layer between user and the Claudie. It periodically check if any new manifests has been saved, and if yes, it pushes them to the database.
-The new manifests are added as a secret into the kubernetes cluster where, `k8s-sidecar` will save them into the Frontends file system.
+Frontend is a layer between user and the Claudie. 
+The new manifests are added as a secret into the kubernetes cluster where, `k8s-sidecar` will save them into the Frontends file system
+and notify the frontend service via HTTP request that new manifests are available.
 
 ### API
 ```
@@ -196,5 +197,6 @@ This service is gRPC client, thus it does not provide any API
 ### Flow
 - User applies new secret holding a manifest
 - `k8s-sidecar` will detect it and save it to the Frontend's file system
+- `k8s-sidecar` notifies frontend via HTTP request that changes have been made
 - Frontend detects new manifest and saves it to the database
 - On deletion of user created secret, Frontend initiates deletion process of the manifest

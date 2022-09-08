@@ -74,6 +74,11 @@ spec:
           value: /input-manifests/
         - name: RESOURCE
           value: secret
+          # notify frontend service on changes in the dir.
+        - name: REQ_URL
+          value: "http://localhost:50059/reload"
+        - name: REQ_METHOD
+          value: "GET"
         volumeMounts:
         - name: input-manifests
           mountPath: /input-manifests/
