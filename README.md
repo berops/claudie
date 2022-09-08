@@ -2,6 +2,7 @@
 
 ![Build](https://github.com/Berops/claudie/actions/workflows/CD-pipeline-dev.yml/badge.svg)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Slack](https://img.shields.io/badge/Slack-Claudie-yellow.svg?logo=slack)](https://claudie-workspace.slack.com/)
 
 Platform for managing multi-cloud Kubernetes clusters.
 
