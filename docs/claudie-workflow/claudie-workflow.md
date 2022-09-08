@@ -1,7 +1,7 @@
 # Claudie
 ### Single platform for multiple clouds
 
-![claudie schema](platform-diagram.jpg)
+![claudie schema](claudie-diagram.jpg)
 
 ### Microservices
 - [Context-box](https://github.com/Berops/claudie/tree/master/services/context-box)
