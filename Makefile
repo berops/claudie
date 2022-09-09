@@ -26,7 +26,7 @@ kuber:
 	go run services/kuber/server/server.go
 
 frontend:
-	go run services/frontend/frontend.go
+	go run ./services/frontend
 
 database:
 	docker run --rm -p 27017:27017 -v ~/mongo/data:/data/db mongo:5
