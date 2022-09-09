@@ -35,7 +35,9 @@ WORKDIR /go/services/ansibler/server
 RUN CGO_ENABLED=0 go build
 
 #Use alpine based ansible image
-FROM cytopia/ansible:2.11
+FROM alpine:3.16
+
+RUN apk add ansible=5.8.0-r0
 
 #Copy the binaries to empty base image
 COPY --from=build /go/services/ansibler/server/server /bin/services/ansibler/server/server
