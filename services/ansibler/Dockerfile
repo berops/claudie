@@ -37,7 +37,21 @@ RUN CGO_ENABLED=0 go build
 #Use alpine based ansible image
 FROM alpine:3.16
 
-RUN apk add ansible=5.8.0-r0
+#Install dependecies for ansible
+RUN apk add libbz2 expat libffi gdbm \
+  xz-libs libgcc libstdc++ mpdecimal \
+  ncurses-terminfo-base ncurses-libs \
+  readline sqlite-libs python3 py3-markupsafe \
+  py3-jinja2 py3-parsing py3-six py3-packaging \
+  yaml py3-yaml py3-cparser py3-cffi py3-idna \
+  py3-cryptography py3-asn1 py3-bcrypt py3-pynacl \
+  py3-paramiko py3-resolvelib openssh-client \
+  krb5 krb5-dev py3-pip
+
+# Install ansible
+RUN pip install ansible==5.9.0
+RUN pip install ansible-core==2.12.7
+
 
 #Copy the binaries to empty base image
 COPY --from=build /go/services/ansibler/server/server /bin/services/ansibler/server/server
