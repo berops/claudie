@@ -35,22 +35,16 @@ WORKDIR /go/services/ansibler/server
 RUN CGO_ENABLED=0 go build
 
 #Use alpine based ansible image
-FROM alpine:3.16
+FROM python:3.9-slim
 
-#Install dependecies for ansible
-RUN apk add libbz2 expat libffi gdbm \
-  xz-libs libgcc libstdc++ mpdecimal \
-  ncurses-terminfo-base ncurses-libs \
-  readline sqlite-libs python3 py3-markupsafe \
-  py3-jinja2 py3-parsing py3-six py3-packaging \
-  yaml py3-yaml py3-cparser py3-cffi py3-idna \
-  py3-cryptography py3-asn1 py3-bcrypt py3-pynacl \
-  py3-paramiko py3-resolvelib openssh-client \
-  krb5 krb5-dev py3-pip
-
-# Install ansible
 RUN pip install ansible==5.9.0
 RUN pip install ansible-core==2.12.7
+
+RUN apt update && \
+  apt install -y  \
+  libkrb5-dev \
+  krb5-user \
+  openssh-client
 
 
 #Copy the binaries to empty base image
@@ -59,8 +53,6 @@ COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
 COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Liveness
 COPY --from=build /go/services/ansibler/templates /bin/services/ansibler/templates
 COPY --from=build /go/services/ansibler/server/ansible-playbooks /bin/services/ansibler/server/ansible-playbooks
-
-RUN apk update && apk add -q bash
 
 #Run server
 WORKDIR /bin
