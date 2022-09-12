@@ -34,4 +34,4 @@ images:
 - name: claudieio/scheduler
   newTag: 3f77d61-728
 - name: claudieio/terraformer
-  newTag: 3f77d61-728
+  newTag: f16b77a-734
