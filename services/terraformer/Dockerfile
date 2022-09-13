@@ -2,8 +2,9 @@ FROM golang:1.18 AS build
 
 # download and unzip kube-one binary
 RUN apt-get -qq update && apt-get -qq install unzip
-RUN wget -q https://releases.hashicorp.com/terraform/1.0.0/terraform_1.0.0_linux_amd64.zip
-RUN unzip -qq terraform_1.0.0_linux_amd64.zip -d terraform_1.0.0_linux_amd64
+RUN VERSION=1.2.8 && \
+    wget -q https://releases.hashicorp.com/terraform/${VERSION}/terraform_${VERSION}_linux_amd64.zip && \
+    unzip -qq terraform_${VERSION}_linux_amd64.zip -d terraform
 
 #Unset the GOPATH
 ENV GOPATH=
@@ -42,7 +43,7 @@ RUN CGO_ENABLED=0 go build
 FROM alpine
 
 #Copy the binaries to empty base image
-COPY --from=build /go/terraform_1.0.0_linux_amd64/terraform /usr/local/bin
+COPY --from=build /go/terraform/terraform /usr/local/bin
 
 COPY --from=build /go/services/terraformer/server/server /bin/services/terraformer/server/server
 COPY --from=build /go/services/terraformer/templates /bin/services/terraformer/templates
