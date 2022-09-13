@@ -35,17 +35,7 @@ WORKDIR /go/services/ansibler/server
 RUN CGO_ENABLED=0 go build
 
 #Use alpine based ansible image
-FROM python:3.9-slim
-
-RUN pip install ansible==5.9.0
-RUN pip install ansible-core==2.12.7
-
-RUN apt update && \
-  apt install -y  \
-  libkrb5-dev \
-  krb5-user \
-  openssh-client
-
+FROM cytopia/ansible:2.11
 
 #Copy the binaries to empty base image
 COPY --from=build /go/services/ansibler/server/server /bin/services/ansibler/server/server
@@ -53,6 +43,7 @@ COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
 COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Liveness
 COPY --from=build /go/services/ansibler/templates /bin/services/ansibler/templates
 COPY --from=build /go/services/ansibler/server/ansible-playbooks /bin/services/ansibler/server/ansible-playbooks
+RUN apk update && apk add -q bash
 
 #Run server
 WORKDIR /bin
