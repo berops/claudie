@@ -52,5 +52,8 @@ func setEnv() error {
 	if err := os.Setenv("ANSIBLE_HOST_KEY_CHECKING", "False"); err != nil {
 		return fmt.Errorf("failed to set ANSIBLE_HOST_KEY_CHECKING env var: %v", err)
 	}
+	if err := os.Setenv("ANSIBLE_PARAMIKO_RECORD_HOST_KEYS", "False"); err != nil {
+		return fmt.Errorf("failed to set ANSIBLE_PARAMIKO_RECORD_HOST_KEYS env var: %v", err)
+	}
 	return nil
 }
