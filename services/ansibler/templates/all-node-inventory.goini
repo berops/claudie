@@ -2,7 +2,7 @@
 {{- range $nodepoolInfo := .NodepoolInfos }}
     {{- range $nodepool := $nodepoolInfo.Nodepools }}
         {{- range $node :=  $nodepool.Nodes }}
-{{ $node.Name }} ansible_host={{ $node.Public }} private_ip={{ $node.Private }} ansible_ssh_private_key_file={{ $nodepoolInfo.ID }}.pem
+{{ $node.Name }} ansible_host={{ $node.Public }} private_ip={{ $node.Private }} ansible_ssh_private_key_file={{ $nodepoolInfo.ID }}.pem ansible_python_interpreter=auto_silent
         {{- end }}
     {{- end }}
 {{- end }}

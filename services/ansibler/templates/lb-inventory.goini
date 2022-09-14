@@ -3,7 +3,7 @@
 {{- range $nodepool := .K8sNodepools }}
     {{- if $nodepool.IsControl }}       
         {{- range $node :=  $nodepool.Nodes }}
-{{ $node.Name }} ansible_host={{ $node.Public }} private_ip={{ $node.Private }} ansible_ssh_private_key_file=k8s.pem
+{{ $node.Name }} ansible_host={{ $node.Public }} private_ip={{ $node.Private }} ansible_ssh_private_key_file=k8s.pem ansible_python_interpreter=auto_silent
         {{- end }}
     {{- end }}
 {{- end }}
@@ -12,7 +12,7 @@
 {{- range $nodepool := .K8sNodepools }}
     {{- if not $nodepool.IsControl }}       
         {{- range $node :=  $nodepool.Nodes }}
-{{ $node.Name }} ansible_host={{ $node.Public }} private_ip={{ $node.Private }} ansible_ssh_private_key_file=k8s.pem
+{{ $node.Name }} ansible_host={{ $node.Public }} private_ip={{ $node.Private }} ansible_ssh_private_key_file=k8s.pem ansible_python_interpreter=auto_silent
         {{- end }}
     {{- end }}
 {{- end }}
@@ -23,7 +23,7 @@
     {{- range $lbNodepool := $lbCluster.ClusterInfo.NodePools }}
         {{- range $lbNode :=  $lbNodepool.Nodes }}
 {{/*key.pem is taken from a directory where ansible-playbook is called, thus it does not need to specify path relative to inventory.ini*/}}
-{{ $lbNode.Name }} ansible_host={{ $lbNode.Public }} private_ip={{ $lbNode.Private }} ansible_ssh_private_key_file=key.pem
+{{ $lbNode.Name }} ansible_host={{ $lbNode.Public }} private_ip={{ $lbNode.Private }} ansible_ssh_private_key_file=key.pem ansible_python_interpreter=auto_silent
         {{- end }}
     {{- end }}
 {{- end }}
