@@ -62,7 +62,7 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 				log.Info().Msg("Processing a tmpConfig...")
 				err := buildConfig(tmpConfig, c, true)
 				if err != nil {
-					log.Error().Err(err)
+					log.Error().Err(err).Send()
 				}
 				config.CurrentState = tmpConfig.DesiredState
 			}
@@ -70,7 +70,7 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 				log.Info().Msg("Deleting nodes...")
 				config, err = deleteNodes(config, toDelete)
 				if err != nil {
-					log.Error().Err(err)
+					log.Error().Err(err).Send()
 				}
 			}
 
@@ -78,7 +78,7 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 
 			err = buildConfig(config, c, false)
 			if err != nil {
-				log.Error().Err(err)
+				log.Error().Err(err).Send()
 			}
 		}(config)
 		return nil
