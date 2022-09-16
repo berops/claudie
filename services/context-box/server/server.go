@@ -43,23 +43,23 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 	if err != nil {
 		return nil, fmt.Errorf("error while checking the length of future domain: %v", err)
 	}
-	// Get config with the same ID from the DB
-	data, err := database.GetConfig(config.GetName(), pb.IdType_NAME)
-	if err != nil {
-		return nil, err
-	}
-	if !checksum.CompareChecksums(config.MsChecksum, data.MsChecksum) {
-		return nil, fmt.Errorf("MsChecksum are not equal")
-	}
 
 	// Save new config to the DB
 	config.DsChecksum = config.MsChecksum
-	config.SchedulerTTL = defaultSchedulerTTL
-	err = database.SaveConfig(config)
+	config.SchedulerTTL = 0
+	err = database.UpdateDs(config)
 	if err != nil {
 		return nil, status.Errorf(
 			codes.Internal,
-			fmt.Sprintf("Internal error: %v", err),
+			fmt.Sprintf("Error while updating dsChecksum and : %v", err),
+		)
+	}
+
+	err = database.UpdateSchedulerTTL(config.Name, config.SchedulerTTL)
+	if err != nil {
+		return nil, status.Errorf(
+			codes.Internal,
+			fmt.Sprintf("Error while update schedulerTTL: %v", err),
 		)
 	}
 
@@ -105,18 +105,31 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 	if err != nil {
 		return nil, err
 	}
-	if !checksum.CompareChecksums(config.MsChecksum, databaseConfig.MsChecksum) {
-		return nil, fmt.Errorf("msChecksums are not equal")
+	// check if the DsChecksum from DB and config object are nil.
+	// If they are nill , we want to delete the document from the DB
+	if config.DsChecksum == nil && databaseConfig.DsChecksum == nil {
+		err = database.DeleteConfig(config.Id, pb.IdType_HASH)
+		if err != nil {
+			return nil, err
+		}
+		return &pb.SaveConfigResponse{Config: config}, nil
 	}
-
 	// Save new config to the DB
 	config.CsChecksum = config.DsChecksum
-	config.BuilderTTL = defaultBuilderTTL
-	err = database.SaveConfig(config)
+	config.BuilderTTL = 0
+	err = database.UpdateCs(config)
 	if err != nil {
 		return nil, status.Errorf(
 			codes.Internal,
-			fmt.Sprintf("Internal error: %v", err),
+			fmt.Sprintf("Error while updating current state: %v", err),
+		)
+	}
+
+	err = database.UpdateBuilderTTL(config.Name, config.BuilderTTL)
+	if err != nil {
+		return nil, status.Errorf(
+			codes.Internal,
+			fmt.Sprintf("Error while update builderTTL: %v", err),
 		)
 	}
 	return &pb.SaveConfigResponse{Config: config}, nil
@@ -174,26 +187,11 @@ func (*server) GetAllConfigs(ctx context.Context, req *pb.GetAllConfigsRequest) 
 // DeleteConfig is a gRPC service: function deletes one specified config from the DB and returns it's ID
 func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*pb.DeleteConfigResponse, error) {
 	log.Info().Msg("CLIENT REQUEST: DeleteConfig")
-	// find a config from database
-	config, err := database.GetConfig(req.Id, req.Type)
+	err := database.UpdateMsToNull(req.Id)
 	if err != nil {
 		return nil, err
 	}
-	//destroy infrastructure with terraformer
-	err = destroyConfigTerraformer(config)
-	if err != nil {
-		return nil, err
-	}
-	// delete kubeconfig secret
-	err = deleteKubeconfig(config)
-	if err != nil {
-		return nil, err
-	}
-	//delete config from db
-	err = database.DeleteConfig(req.Id, req.Type)
-	if err != nil {
-		return nil, err
-	}
+
 	return &pb.DeleteConfigResponse{Id: req.GetId()}, nil
 }
 
@@ -231,7 +229,6 @@ func main() {
 
 	g, ctx := errgroup.WithContext(context.Background())
 	w := worker.NewWorker(ctx, 10*time.Second, configChecker, worker.ErrorLogger)
-
 	// listen for system interrupts to gracefully shut down
 	g.Go(func() error {
 		ch := make(chan os.Signal, 1)
