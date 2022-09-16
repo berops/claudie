@@ -49,36 +49,44 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 		}
 		//process config in goroutine to allow single Builder to work concurrently on multiple configs
 		go func(config *pb.Config) {
-			//tmpConfig is used in operation where config is adding && deleting the nodes
-			//first, tmpConfig is applied which only adds nodes and only then the real config is applied, which will delete nodes
-			var tmpConfig *pb.Config
-			var toDelete map[string]*nodepoolsCounts //[clusterName]nodepoolsCount
-			//if any current state already exist, find difference
-			if len(config.CurrentState.GetClusters()) > 0 {
-				tmpConfig, toDelete = stateDifference(config)
-			}
-			//if tmpConfig is not nil, first apply it
-			if tmpConfig != nil {
-				log.Info().Msg("Processing a tmpConfig...")
-				err := buildConfig(tmpConfig, c, true)
+			// check if Desired state is null and if so we want to delete the existing cluster
+			if config.DsChecksum == nil && config.CsChecksum != nil {
+				err := destroyConfig(config, c)
 				if err != nil {
 					log.Error().Err(err)
 				}
-				config.CurrentState = tmpConfig.DesiredState
-			}
-			if toDelete != nil {
-				log.Info().Msg("Deleting nodes...")
-				config, err = deleteNodes(config, toDelete)
+			} else {
+				//tmpConfig is used in operation where config is adding && deleting the nodes
+				//first, tmpConfig is applied which only adds nodes and only then the real config is applied, which will delete nodes
+				var tmpConfig *pb.Config
+				var toDelete map[string]*nodepoolsCounts //[clusterName]nodepoolsCount
+				//if any current state already exist, find difference
+				if len(config.CurrentState.GetClusters()) > 0 {
+					tmpConfig, toDelete = stateDifference(config)
+				}
+				//if tmpConfig is not nil, first apply it
+				if tmpConfig != nil {
+					log.Info().Msg("Processing a tmpConfig...")
+					err := buildConfig(tmpConfig, c, true)
+					if err != nil {
+						log.Error().Err(err)
+					}
+					config.CurrentState = tmpConfig.DesiredState
+				}
+				if toDelete != nil {
+					log.Info().Msg("Deleting nodes...")
+					config, err = deleteNodes(config, toDelete)
+					if err != nil {
+						log.Error().Err(err)
+					}
+				}
+
+				log.Info().Msgf("Processing config %s", config.Name)
+
+				err = buildConfig(config, c, false)
 				if err != nil {
 					log.Error().Err(err)
 				}
-			}
-
-			log.Info().Msgf("Processing config %s", config.Name)
-
-			err = buildConfig(config, c, false)
-			if err != nil {
-				log.Error().Err(err)
 			}
 		}(config)
 		return nil
@@ -136,7 +144,7 @@ func stateDifference(config *pb.Config) (*pb.Config, map[string]*nodepoolsCounts
 	}
 }
 
-//getNodepoolMap returns a map in a form of map[ClusterName]nodecount{map[NodepoolName]count}
+// getNodepoolMap returns a map in a form of map[ClusterName]nodecount{map[NodepoolName]count}
 func getNodepoolMap(clusters []*pb.K8Scluster) map[string]*nodepoolsCounts {
 	nodepoolMap := make(map[string]*nodepoolsCounts)
 	for _, cluster := range clusters {
@@ -149,9 +157,9 @@ func getNodepoolMap(clusters []*pb.K8Scluster) map[string]*nodepoolsCounts {
 	return nodepoolMap
 }
 
-//findNodepoolDifference will find any difference in nodepool between desired state and current
-//this function should be used only with tmpConfig, since it will augment the desired state in a way, that will not delete the nodes
-//returns count of nodes to delete in form of map[NodepoolName]counts,and booleans about deletion and addition of any nodes
+// findNodepoolDifference will find any difference in nodepool between desired state and current
+// this function should be used only with tmpConfig, since it will augment the desired state in a way, that will not delete the nodes
+// returns count of nodes to delete in form of map[NodepoolName]counts,and booleans about deletion and addition of any nodes
 func findNodepoolDifference(currentNodepoolMap map[string]*nodepoolsCounts, desiredClusterTmp *pb.K8Scluster) (result *nodepoolsCounts, adding bool, deleting bool) {
 	nodepoolCountToDelete := make(map[string]*nodeCount)
 	//iterate over nodepools in desired cluster
@@ -188,8 +196,8 @@ func findNodepoolDifference(currentNodepoolMap map[string]*nodepoolsCounts, desi
 	return result, adding, deleting
 }
 
-//mergeDeleteCounts function will merge two maps which hold info about deletion of the nodes into one
-//return map of the nodes for deletion in for of map[ClusterName]nodecount{map[NodepoolName]count}
+// mergeDeleteCounts function will merge two maps which hold info about deletion of the nodes into one
+// return map of the nodes for deletion in for of map[ClusterName]nodecount{map[NodepoolName]count}
 func mergeDeleteCounts(dst, src map[string]*nodeCount) map[string]*nodeCount {
 	for k, v := range src {
 		dst[k] = v
