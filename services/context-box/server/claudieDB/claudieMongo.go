@@ -2,6 +2,7 @@ package claudieDB
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -225,7 +226,7 @@ func (c *ClaudieMongo) SaveConfig(config *pb.Config) error {
 func (c *ClaudieMongo) UpdateSchedulerTTL(name string, newTTL int32) error {
 	err := c.updateDocument(bson.M{"name": name}, bson.M{"$set": bson.M{"SchedulerTTL": newTTL}})
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			log.Warn().Msgf("Document %s failed to update Scheduler TTL", name)
 		}
 		return err
@@ -238,7 +239,7 @@ func (c *ClaudieMongo) UpdateSchedulerTTL(name string, newTTL int32) error {
 func (c *ClaudieMongo) UpdateBuilderTTL(name string, newTTL int32) error {
 	err := c.updateDocument(bson.M{"name": name}, bson.M{"$set": bson.M{"BuilderTTL": newTTL}})
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			log.Warn().Msgf("Document %s failed to update Scheduler TTL", name)
 		}
 		return err
@@ -254,9 +255,9 @@ func (c *ClaudieMongo) UpdateMsToNull(hexId string) error {
 		return err
 	}
 	// update MsChecksum and manifest to null
-	err = c.updateDocument(bson.M{"_id": id}, bson.M{"$set": bson.M{"manifest": nil, "msChecksum": nil}})
+	err = c.updateDocument(bson.M{"_id": id}, bson.M{"$set": bson.M{"manifest": nil, "msChecksum": nil, "errorMessage": nil}})
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			log.Warn().Msgf("Document with id %s failed to update msChecksum", id)
 		}
 		return err
@@ -267,18 +268,18 @@ func (c *ClaudieMongo) UpdateMsToNull(hexId string) error {
 // UpdateDs will update the desired state related field in DB
 func (c *ClaudieMongo) UpdateDs(config *pb.Config) error {
 	// convert DesiredState to []byte type
-	desiredStateByte, errDS := proto.Marshal(config.DesiredState)
-	if errDS != nil {
-		return fmt.Errorf("error while converting from protobuf to byte: %v", errDS)
+	desiredStateByte, err := proto.Marshal(config.DesiredState)
+	if err != nil {
+		return fmt.Errorf("error while converting from protobuf to byte: %v", err)
 	}
 	// updation query
-	err := c.updateDocument(bson.M{"name": config.Name}, bson.M{"$set": bson.M{
+	err = c.updateDocument(bson.M{"name": config.Name}, bson.M{"$set": bson.M{
 		"dsChecksum":   config.DsChecksum,
 		"desiredState": desiredStateByte,
 		"errorMessage": config.ErrorMessage,
 	}})
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			log.Warn().Msgf("Document with name %s failed to update dsChecksum and desiredState", config.Name)
 		}
 		return err
@@ -289,17 +290,17 @@ func (c *ClaudieMongo) UpdateDs(config *pb.Config) error {
 // UpdateCs will update the current state related field in DB
 func (c *ClaudieMongo) UpdateCs(config *pb.Config) error {
 	// convert CurrentState to []byte type
-	currentStateByte, errCS := proto.Marshal(config.CurrentState)
-	if errCS != nil {
-		return fmt.Errorf("error while converting from protobuf to byte: %v", errCS)
+	currentStateByte, err := proto.Marshal(config.CurrentState)
+	if err != nil {
+		return fmt.Errorf("error while converting from protobuf to byte: %v", err)
 	}
-	err := c.updateDocument(bson.M{"name": config.Name}, bson.M{"$set": bson.M{
+	err = c.updateDocument(bson.M{"name": config.Name}, bson.M{"$set": bson.M{
 		"csChecksum":   config.CsChecksum,
 		"currentState": currentStateByte,
 		"errorMessage": config.ErrorMessage,
 	}})
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			log.Warn().Msgf("Document with name %s failed to update csChecksum and currentState", config.Name)
 		}
 		return err
