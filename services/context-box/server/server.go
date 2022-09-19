@@ -107,7 +107,7 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 	}
 	// check if the DsChecksum from DB and config object are nil.
 	// If they are nill , we want to delete the document from the DB
-	if config.DsChecksum == nil && databaseConfig.DsChecksum == nil {
+	if config.DsChecksum == nil && databaseConfig.DsChecksum == nil && config.ErrorMessage != "" {
 		err = database.DeleteConfig(config.Id, pb.IdType_HASH)
 		if err != nil {
 			return nil, err
