@@ -79,7 +79,7 @@ loadBalancers:
     - name: sam-lb-1
       roles:
         - apiserver-lb
-      dns: # user managed dns
+      dns: 
         dns_zone: lb-zone-2
         provider: gcp-1
       targeted-k8s: sam-c-1
@@ -89,7 +89,9 @@ loadBalancers:
     - name: sam-lb-2
       roles:
         - apiserver-lb
-      #                               berops manged dns
+      dns: 
+        dns_zone: lb-zone-2
+        provider: gcp-1
       targeted-k8s: sam-c-2
       pools:
         - gcp-lb

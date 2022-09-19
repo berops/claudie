@@ -14,18 +14,35 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-//keyPair is a struct containing private and public keys as a string
+// keyPair is a struct containing private and public keys as a string
 type keyPair struct {
 	public  string
 	private string
 }
 
-//createDesiredState is a function which creates desired state based on the manifest state
-//returns *pb.Config fo desired state if successful, error otherwise
+// createDesiredState is a function which creates desired state based on the manifest state
+// returns *pb.Config fo desired state if successful, error otherwise
 func createDesiredState(config *pb.Config) (*pb.Config, error) {
 	if config == nil {
 		return nil, fmt.Errorf("createDesiredState got nil Config")
 	}
+
+	// check if the manifest string is empty and set DesiredState to nil
+	if config.Manifest == "" {
+		return &pb.Config{
+			Id:           config.GetId(),
+			Name:         config.GetName(),
+			Manifest:     config.GetManifest(),
+			DesiredState: nil,
+			CurrentState: config.GetCurrentState(),
+			MsChecksum:   config.GetMsChecksum(),
+			DsChecksum:   config.GetDsChecksum(),
+			CsChecksum:   config.GetCsChecksum(),
+			BuilderTTL:   config.GetBuilderTTL(),
+			SchedulerTTL: config.GetSchedulerTTL(),
+		}, nil
+	}
+
 	//read manifest state
 	manifestState, err := readManifest(config)
 	if err != nil {
@@ -73,8 +90,8 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 	return newConfig, nil
 }
 
-//readManifest will read manifest from config and return it in manifest.Manifest struct
-//returns *manifest.Manifest if successful, error otherwise
+// readManifest will read manifest from config and return it in manifest.Manifest struct
+// returns *manifest.Manifest if successful, error otherwise
 func readManifest(config *pb.Config) (*manifest.Manifest, error) {
 	d := []byte(config.GetManifest())
 	// Parse yaml to protobuf and create desiredState
@@ -86,19 +103,19 @@ func readManifest(config *pb.Config) (*manifest.Manifest, error) {
 	return &desiredState, nil
 }
 
-//updateClusterInfo updates the desired state based on the current state
+// updateClusterInfo updates the desired state based on the current state
 // namely:
-//- Hash
-//- Public key
-//- Private key
+// - Hash
+// - Public key
+// - Private key
 func updateClusterInfo(desired, current *pb.ClusterInfo) {
 	desired.Hash = current.Hash
 	desired.PublicKey = current.PublicKey
 	desired.PrivateKey = current.PrivateKey
 }
 
-//createKeys will create a RSA key-pair and save it into the clusterInfo provided
-//return error if key creation fails
+// createKeys will create a RSA key-pair and save it into the clusterInfo provided
+// return error if key creation fails
 func createKeys(desiredInfo *pb.ClusterInfo) error {
 	// no current cluster found with matching name, create keys/hash
 	if desiredInfo.PublicKey == "" {
@@ -112,8 +129,8 @@ func createKeys(desiredInfo *pb.ClusterInfo) error {
 	return nil
 }
 
-//makeSSHKeyPair function generates SSH key pair
-//returns key pair if successful, nil otherwise
+// makeSSHKeyPair function generates SSH key pair
+// returns key pair if successful, nil otherwise
 func makeSSHKeyPair() (keyPair, error) {
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2042)
 	if err != nil {
