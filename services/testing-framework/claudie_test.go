@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -15,8 +16,6 @@ import (
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 
-	"io/fs"
-	"io/ioutil"
 	"testing"
 )
 
@@ -46,7 +45,7 @@ func TestClaudie(t *testing.T) {
 	log.Info().Msg("----Starting the tests----")
 
 	// loop through the directory and list files inside
-	files, err := ioutil.ReadDir(testDir)
+	files, err := os.ReadDir(testDir)
 	if err != nil {
 		log.Fatal().Msgf("Error while trying to read test sets: %v", err)
 	}
@@ -104,7 +103,7 @@ func applyTestSet(setName, namespace string, c pb.ContextBoxServiceClient) error
 	pathToTestSet := filepath.Join(testDir, setName)
 	log.Info().Msgf("Working on the test set: %s", pathToTestSet)
 
-	manifestFiles, err := ioutil.ReadDir(pathToTestSet)
+	manifestFiles, err := os.ReadDir(pathToTestSet)
 	if err != nil {
 		log.Fatal().Msgf("Error while trying to read test manifests: %v", err)
 	}
@@ -116,7 +115,7 @@ func applyTestSet(setName, namespace string, c pb.ContextBoxServiceClient) error
 
 		// create a path and read the file
 		manifestPath := filepath.Join(pathToTestSet, manifest.Name())
-		yamlFile, err := ioutil.ReadFile(manifestPath)
+		yamlFile, err := os.ReadFile(manifestPath)
 		if err != nil {
 			log.Error().Msgf("Error while reading the manifest %s : %v", manifestPath, err)
 			return err
@@ -136,7 +135,7 @@ func applyTestSet(setName, namespace string, c pb.ContextBoxServiceClient) error
 				return err
 			}
 		} else {
-			idInfo.id, err = localTesting(manifest, yamlFile, manifestName, c)
+			idInfo.id, err = localTesting(yamlFile, manifestName, c)
 			idInfo.idType = pb.IdType_HASH
 			if err != nil {
 				log.Error().Msgf("Error while applying manifest %s : %v", manifest.Name(), err)
@@ -259,7 +258,7 @@ func clusterTesting(yamlFile []byte, setName, pathToTestSet, namespace, manifest
 // localTesting will perform actions needed for testing framework to function in local deployment
 // this option is only used when NAMESPACE env var has NOT been found
 // this option is NOT testing the whole claudie (the frontend is omitted from workflow)
-func localTesting(manifest fs.FileInfo, yamlFile []byte, manifestName string, c pb.ContextBoxServiceClient) (string, error) {
+func localTesting(yamlFile []byte, manifestName string, c pb.ContextBoxServiceClient) (string, error) {
 	// testing locally - NOT TESTING THE FRONTEND!
 	id, err := cbox.SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
 		Config: &pb.Config{

@@ -1,7 +1,7 @@
 package cbox
 
 import (
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/Berops/claudie/internal/envs"
@@ -70,7 +70,7 @@ func TestSaveConfigFrontEnd(t *testing.T) {
 	c, cc := ClientConnection()
 	manifestFile := "./manifest.yaml" // this is manifest from this test file
 
-	manifest, errR := ioutil.ReadFile(manifestFile)
+	manifest, errR := os.ReadFile(manifestFile)
 	if errR != nil {
 		log.Fatal().Msgf("Error reading file %s. %v", manifestFile, errR)
 	}
@@ -88,7 +88,7 @@ func TestSaveConfigScheduler(t *testing.T) {
 	c, cc := ClientConnection()
 	manifestFile := "./manifest.yaml" // this is manifest from this test file
 
-	manifest, errR := ioutil.ReadFile(manifestFile)
+	manifest, errR := os.ReadFile(manifestFile)
 	if errR != nil {
 		log.Fatal().Msgf("Error reading file %s : %v", manifestFile, errR)
 	}
