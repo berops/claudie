@@ -44,7 +44,6 @@ type ConfigInfo struct {
 const (
 	defaultBuilderTTL   = 360
 	defaultSchedulerTTL = 5
-	emptyManifest       = ""
 )
 
 var (
