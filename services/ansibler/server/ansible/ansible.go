@@ -11,7 +11,7 @@ import (
 
 const (
 	defaultAnsibleForks = 30
-	maxAnsibleRetries   = 3
+	maxAnsibleRetries   = 10
 )
 
 type Ansible struct {
