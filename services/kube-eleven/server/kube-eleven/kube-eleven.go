@@ -2,7 +2,6 @@ package kubeEleven
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -97,7 +96,7 @@ func (k *KubeEleven) generateFiles() error {
 	}
 	// Create a cluster-kubeconfig file
 	kubeconfigFilePath := filepath.Join(k.directory, kubeconfigFile)
-	if err := ioutil.WriteFile(kubeconfigFilePath, []byte(k.K8sCluster.GetKubeconfig()), 0600); err != nil {
+	if err := os.WriteFile(kubeconfigFilePath, []byte(k.K8sCluster.GetKubeconfig()), 0600); err != nil {
 		return fmt.Errorf("error while writing cluster-kubeconfig in %s: %v", k.directory, err)
 	}
 	return nil
@@ -168,7 +167,7 @@ func (k *KubeEleven) getClusterNodes() []*pb.Node {
 
 // readKubeconfig reads kubeconfig from a file and returns it as a string
 func readKubeconfig(kubeconfigFile string) (string, error) {
-	kubeconfig, err := ioutil.ReadFile(kubeconfigFile)
+	kubeconfig, err := os.ReadFile(kubeconfigFile)
 	if err != nil {
 		return "", fmt.Errorf("error while reading kubeconfig file %s : %v", kubeconfigFile, err)
 	}

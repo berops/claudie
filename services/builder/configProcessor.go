@@ -88,7 +88,6 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 			err = buildConfig(config, c, false)
 			if err != nil {
 				log.Error().Err(err).Send()
-
 			}
 		}(config)
 		return nil

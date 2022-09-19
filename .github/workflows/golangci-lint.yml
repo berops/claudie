@@ -10,7 +10,7 @@ on:
 jobs:
   golangci:
     name: Run golangci-lint
-    runs-on: self-hosted
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
         with:
