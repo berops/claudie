@@ -53,40 +53,42 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 			if config.DsChecksum == nil && config.CsChecksum != nil {
 				err := destroyConfig(config, c)
 				if err != nil {
-					log.Error().Err(err)
+					log.Error().Err(err).Send()
 				}
-			} else {
-				//tmpConfig is used in operation where config is adding && deleting the nodes
-				//first, tmpConfig is applied which only adds nodes and only then the real config is applied, which will delete nodes
-				var tmpConfig *pb.Config
-				var toDelete map[string]*nodepoolsCounts //[clusterName]nodepoolsCount
-				//if any current state already exist, find difference
-				if len(config.CurrentState.GetClusters()) > 0 {
-					tmpConfig, toDelete = stateDifference(config)
-				}
-				//if tmpConfig is not nil, first apply it
-				if tmpConfig != nil {
-					log.Info().Msg("Processing a tmpConfig...")
-					err := buildConfig(tmpConfig, c, true)
-					if err != nil {
-						log.Error().Err(err)
-					}
-					config.CurrentState = tmpConfig.DesiredState
-				}
-				if toDelete != nil {
-					log.Info().Msg("Deleting nodes...")
-					config, err = deleteNodes(config, toDelete)
-					if err != nil {
-						log.Error().Err(err)
-					}
-				}
+				return
+			}
 
-				log.Info().Msgf("Processing config %s", config.Name)
-
-				err = buildConfig(config, c, false)
+			//tmpConfig is used in operation where config is adding && deleting the nodes
+			//first, tmpConfig is applied which only adds nodes and only then the real config is applied, which will delete nodes
+			var tmpConfig *pb.Config
+			var toDelete map[string]*nodepoolsCounts //[clusterName]nodepoolsCount
+			//if any current state already exist, find difference
+			if len(config.CurrentState.GetClusters()) > 0 {
+				tmpConfig, toDelete = stateDifference(config)
+			}
+			//if tmpConfig is not nil, first apply it
+			if tmpConfig != nil {
+				log.Info().Msg("Processing a tmpConfig...")
+				err := buildConfig(tmpConfig, c, true)
 				if err != nil {
-					log.Error().Err(err)
+					log.Error().Err(err).Send()
 				}
+				config.CurrentState = tmpConfig.DesiredState
+			}
+			if toDelete != nil {
+				log.Info().Msg("Deleting nodes...")
+				config, err = deleteNodes(config, toDelete)
+				if err != nil {
+					log.Error().Err(err).Send()
+				}
+			}
+
+			log.Info().Msgf("Processing config %s", config.Name)
+
+			err = buildConfig(config, c, false)
+			if err != nil {
+				log.Error().Err(err).Send()
+
 			}
 		}(config)
 		return nil
