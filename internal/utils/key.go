@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -10,7 +9,7 @@ import (
 // The key filename is specified by its outputPath and KeyName operands.
 func CreateKeyFile(key string, outputPath string, keyName string) error {
 	keyFileName := filepath.Join(outputPath, keyName)
-	return ioutil.WriteFile(keyFileName, []byte(key), 0600)
+	return os.WriteFile(keyFileName, []byte(key), 0600)
 }
 
 // GetenvOr returns the value of the env variable argument if it exists.
