@@ -2,6 +2,7 @@ package claudieDB
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -17,7 +18,7 @@ import (
 
 const (
 	databaseName   = "claudie"
-	collectionName = "input-manifests"
+	collectionName = "inputManifests"
 )
 
 var (
@@ -46,8 +47,8 @@ type configItem struct {
 	ErrorMessage string             `bson:"errorMessage"`
 }
 
-//Connect tries to connect to the mongo DB until maxConnectionRetries reached
-//if successful, returns mongo client, error otherwise
+// Connect tries to connect to the mongo DB until maxConnectionRetries reached
+// if successful, returns mongo client, error otherwise
 func (c *ClaudieMongo) Connect() error {
 	// establish DB connection, this does not do any deployment checks/IO on the DB
 	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(c.URL))
@@ -71,13 +72,13 @@ func (c *ClaudieMongo) Connect() error {
 	}
 }
 
-//Disconnect closes the connection to MongoDB
-//returns error if closing was not successful
+// Disconnect closes the connection to MongoDB
+// returns error if closing was not successful
 func (c *ClaudieMongo) Disconnect() error {
 	return c.client.Disconnect(context.Background())
 }
 
-//Init will initialise database and collections
+// Init will initialise database and collections
 // returns error if initialisation failed, nil otherwise
 func (c *ClaudieMongo) Init() error {
 	c.collection = c.client.Database(databaseName).Collection(collectionName)
@@ -117,8 +118,8 @@ func (c *ClaudieMongo) DeleteConfig(id string, idType pb.IdType) error {
 	return nil
 }
 
-//GetConfig will get the config from the database, based on id and id type
-//returns error if not successful, nil otherwise
+// GetConfig will get the config from the database, based on id and id type
+// returns error if not successful, nil otherwise
 func (c *ClaudieMongo) GetConfig(id string, idType pb.IdType) (*pb.Config, error) {
 	var d configItem
 	var err error
@@ -140,8 +141,8 @@ func (c *ClaudieMongo) GetConfig(id string, idType pb.IdType) (*pb.Config, error
 	return config, nil
 }
 
-//GetAllConfig gets all configs from database
-//returns slice of pb.Config if successful, error otherwise
+// GetAllConfig gets all configs from database
+// returns slice of pb.Config if successful, error otherwise
 func (c *ClaudieMongo) GetAllConfigs() ([]*pb.Config, error) {
 	var res []*pb.Config             //slice of configs
 	configs, err := c.getAllFromDB() //get all configs from database
@@ -159,9 +160,9 @@ func (c *ClaudieMongo) GetAllConfigs() ([]*pb.Config, error) {
 	return res, nil
 }
 
-//SaveConfig will save specified config in the database
-//if config has been encoutered before, based on id and name, it will update existing record
-//return error if not successful, nil otherwise
+// SaveConfig will save specified config in the database
+// if config has been encountered before, based on id and name, it will update existing record
+// return error if not successful, nil otherwise
 func (c *ClaudieMongo) SaveConfig(config *pb.Config) error {
 	// Convert desiredState and currentState to byte[] because we want to save them to the database
 	desiredStateByte, errDS := proto.Marshal(config.DesiredState)
@@ -220,12 +221,12 @@ func (c *ClaudieMongo) SaveConfig(config *pb.Config) error {
 	return nil
 }
 
-//UpdateSchedulerTTL will update a schedulerTTL based on the name of the config
-//returns error if not successful, nil otherwise
+// UpdateSchedulerTTL will update a schedulerTTL based on the name of the config
+// returns error if not successful, nil otherwise
 func (c *ClaudieMongo) UpdateSchedulerTTL(name string, newTTL int32) error {
 	err := c.updateDocument(bson.M{"name": name}, bson.M{"$set": bson.M{"SchedulerTTL": newTTL}})
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			log.Warn().Msgf("Document %s failed to update Scheduler TTL", name)
 		}
 		return err
@@ -233,12 +234,12 @@ func (c *ClaudieMongo) UpdateSchedulerTTL(name string, newTTL int32) error {
 	return nil
 }
 
-//UpdateBuilderTTL will update a builderTTL based on the name of the config
-//returns error if not successful, nil otherwise
+// UpdateBuilderTTL will update a builderTTL based on the name of the config
+// returns error if not successful, nil otherwise
 func (c *ClaudieMongo) UpdateBuilderTTL(name string, newTTL int32) error {
 	err := c.updateDocument(bson.M{"name": name}, bson.M{"$set": bson.M{"BuilderTTL": newTTL}})
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			log.Warn().Msgf("Document %s failed to update Scheduler TTL", name)
 		}
 		return err
@@ -246,8 +247,69 @@ func (c *ClaudieMongo) UpdateBuilderTTL(name string, newTTL int32) error {
 	return nil
 }
 
-//getByNameFromDB will try to get a config from the databased based on the name field
-//returns config from database if successful, error otherwise
+// UpdateMsToNull will update the msChecksum and manifest based on the id of the config
+// returns error if not successful, nil otherwise
+func (c *ClaudieMongo) UpdateMsToNull(hexId string) error {
+	id, err := primitive.ObjectIDFromHex(hexId)
+	if err != nil {
+		return err
+	}
+	// update MsChecksum and manifest to null
+	err = c.updateDocument(bson.M{"_id": id}, bson.M{"$set": bson.M{"manifest": nil, "msChecksum": nil, "errorMessage": nil}})
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			log.Warn().Msgf("Document with id %s failed to update msChecksum", id)
+		}
+		return err
+	}
+	return nil
+}
+
+// UpdateDs will update the desired state related field in DB
+func (c *ClaudieMongo) UpdateDs(config *pb.Config) error {
+	// convert DesiredState to []byte type
+	desiredStateByte, err := proto.Marshal(config.DesiredState)
+	if err != nil {
+		return fmt.Errorf("error while converting from protobuf to byte: %v", err)
+	}
+	// updation query
+	err = c.updateDocument(bson.M{"name": config.Name}, bson.M{"$set": bson.M{
+		"dsChecksum":   config.DsChecksum,
+		"desiredState": desiredStateByte,
+		"errorMessage": config.ErrorMessage,
+	}})
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			log.Warn().Msgf("Document with name %s failed to update dsChecksum and desiredState", config.Name)
+		}
+		return err
+	}
+	return nil
+}
+
+// UpdateCs will update the current state related field in DB
+func (c *ClaudieMongo) UpdateCs(config *pb.Config) error {
+	// convert CurrentState to []byte type
+	currentStateByte, err := proto.Marshal(config.CurrentState)
+	if err != nil {
+		return fmt.Errorf("error while converting from protobuf to byte: %v", err)
+	}
+	err = c.updateDocument(bson.M{"name": config.Name}, bson.M{"$set": bson.M{
+		"csChecksum":   config.CsChecksum,
+		"currentState": currentStateByte,
+		"errorMessage": config.ErrorMessage,
+	}})
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			log.Warn().Msgf("Document with name %s failed to update csChecksum and currentState", config.Name)
+		}
+		return err
+	}
+	return nil
+}
+
+// getByNameFromDB will try to get a config from the database based on the name field
+// returns config from database if successful, error otherwise
 func (c *ClaudieMongo) getByNameFromDB(name string) (configItem, error) {
 	var data configItem
 	filter := bson.M{"name": name}
@@ -257,8 +319,8 @@ func (c *ClaudieMongo) getByNameFromDB(name string) (configItem, error) {
 	return data, nil
 }
 
-//getByIDFromDB will try to get a config from the databased based on the id field
-//returns config from database if successful, error otherwise
+// getByIDFromDB will try to get a config from the database based on the id field
+// returns config from database if successful, error otherwise
 func (c *ClaudieMongo) getByIDFromDB(id string) (configItem, error) {
 	var data configItem
 	oid, err := primitive.ObjectIDFromHex(id) // convert id to mongo id type (oid)
@@ -272,9 +334,9 @@ func (c *ClaudieMongo) getByIDFromDB(id string) (configItem, error) {
 	return data, nil
 }
 
-//updateDocument will update at most one document from database based on the filter and operation
-//returns error if not successful, nil otherwise
-//return mongo.ErrNoDocuments if no document was found based on the filter
+// updateDocument will update at most one document from database based on the filter and operation
+// returns error if not successful, nil otherwise
+// return mongo.ErrNoDocuments if no document was found based on the filter
 func (c *ClaudieMongo) updateDocument(filter, operation primitive.M) error {
 	res := c.collection.FindOneAndUpdate(context.Background(), filter, operation)
 	var r configItem
@@ -328,7 +390,7 @@ func pingTheDB(client *mongo.Client) error {
 	return nil
 }
 
-//getAllFromDB gets all configs from the database and returns slice of *configItem
+// getAllFromDB gets all configs from the database and returns slice of *configItem
 func (c *ClaudieMongo) getAllFromDB() ([]*configItem, error) {
 	var configs []*configItem
 	cur, err := c.collection.Find(context.Background(), primitive.D{{}}) //primitive.D{{}} finds all records in the collection

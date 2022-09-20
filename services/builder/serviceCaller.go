@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/Berops/claudie/internal/envs"
 	"github.com/Berops/claudie/internal/utils"
@@ -72,7 +73,36 @@ func buildConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig bo
 	return nil
 }
 
-//callTerraformer passes config to terraformer for building the infra
+// destroyConfig destroys existing clusters infra for a config using terraformer and kuber
+func destroyConfig(config *pb.Config, c pb.ContextBoxServiceClient) error {
+	// call terraform destroy
+	err := destroyConfigTerraformer(config)
+	if err != nil {
+		err1 := saveErrorMessage(config, c, err)
+		if err1 != nil {
+			return fmt.Errorf("error in DestroyConfig: %v; failed to run terraform destroy %v", err, err1)
+		}
+		return fmt.Errorf("error in destroy config: %v", err)
+	}
+	// delete the existing kubeconfig of the clusters
+	err = deleteKubeconfig(config)
+	if err != nil {
+		err1 := saveErrorMessage(config, c, err)
+		if err1 != nil {
+			return fmt.Errorf("error in DestroyConfig: %v; failed to delete kubeconfig %v", err, err1)
+		}
+		return fmt.Errorf("error in destroy config: %v", err)
+	}
+	// save changes to DB
+	err = cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
+	if err != nil {
+		config.CurrentState = config.DesiredState
+		return fmt.Errorf("error while saving the config %s: %v", config.Name, err)
+	}
+	return nil
+}
+
+// callTerraformer passes config to terraformer for building the infra
 func callTerraformer(currentState *pb.Project, desiredState *pb.Project) (*pb.Project, *pb.Project, error) {
 	// Create connection to Terraformer
 	cc, err := utils.GrpcDialWithInsecure("terraformer", envs.TerraformerURL)
@@ -97,7 +127,7 @@ func callTerraformer(currentState *pb.Project, desiredState *pb.Project) (*pb.Pr
 	return res.GetCurrentState(), res.GetDesiredState(), nil
 }
 
-//callAnsibler passes config to ansibler to set up VPN
+// callAnsibler passes config to ansibler to set up VPN
 func callAnsibler(desiredState, currentState *pb.Project) (*pb.Project, error) {
 	cc, err := utils.GrpcDialWithInsecure("ansibler", envs.AnsiblerURL)
 	if err != nil {
@@ -148,7 +178,7 @@ func callKubeEleven(desiredState *pb.Project) (*pb.Project, error) {
 	return res.GetDesiredState(), nil
 }
 
-//callKuber passes config to Kuber to apply any additional resources via kubectl
+// callKuber passes config to Kuber to apply any additional resources via kubectl
 func callKuber(desiredState *pb.Project) (*pb.Project, error) {
 	cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL)
 	if err != nil {
@@ -175,7 +205,7 @@ func callKuber(desiredState *pb.Project) (*pb.Project, error) {
 	return resStorage.GetDesiredState(), nil
 }
 
-//callDeleteNodes calls Kuber.DeleteNodes which will safely delete nodes from cluster
+// callDeleteNodes calls Kuber.DeleteNodes which will safely delete nodes from cluster
 func callDeleteNodes(master, worker []string, cluster *pb.K8Scluster) (*pb.K8Scluster, error) {
 	cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL)
 	if err != nil {
@@ -193,6 +223,47 @@ func callDeleteNodes(master, worker []string, cluster *pb.K8Scluster) (*pb.K8Scl
 		return nil, err
 	}
 	return resDelete.Cluster, nil
+}
+
+// destroyConfigTerraformer calls terraformer's DestroyInfrastructure function
+func destroyConfigTerraformer(config *pb.Config) error {
+	// Trim "tcp://" substring from envs.TerraformerURL
+	trimmedTerraformerURL := strings.ReplaceAll(envs.TerraformerURL, ":tcp://", "")
+	log.Info().Msgf("Dial Terraformer: %s", trimmedTerraformerURL)
+	// Create connection to Terraformer
+	cc, err := utils.GrpcDialWithInsecure("terraformer", trimmedTerraformerURL)
+	if err != nil {
+		return err
+	}
+	defer func() { utils.CloseClientConnection(cc) }()
+	// Creating the client
+	c := pb.NewTerraformerServiceClient(cc)
+	_, err = terraformer.DestroyInfrastructure(c, &pb.DestroyInfrastructureRequest{Config: config})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// deleteKubeconfig calls kuber's DeleteKubeconfig function
+func deleteKubeconfig(config *pb.Config) error {
+	trimmedKuberURL := strings.ReplaceAll(envs.KuberURL, ":tcp://", "")
+	log.Info().Msgf("Dial Terraformer: %s", trimmedKuberURL)
+	// Create connection to Terraformer
+	cc, err := utils.GrpcDialWithInsecure("kuber", trimmedKuberURL)
+	if err != nil {
+		return err
+	}
+	defer func() { utils.CloseClientConnection(cc) }()
+
+	c := pb.NewKuberServiceClient(cc)
+	for _, cluster := range config.CurrentState.Clusters {
+		_, err := kuber.DeleteKubeconfig(c, &pb.DeleteKubeconfigRequest{Cluster: cluster})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // saveErrorMessage saves error message to config

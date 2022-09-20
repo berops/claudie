@@ -2,15 +2,12 @@ package main
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/Berops/claudie/internal/envs"
-	"github.com/Berops/claudie/internal/utils"
 	"github.com/Berops/claudie/proto/pb"
+	"github.com/Berops/claudie/services/context-box/server/checksum"
 	"github.com/Berops/claudie/services/context-box/server/claudieDB"
 	"github.com/Berops/claudie/services/context-box/server/queue"
-	kuber "github.com/Berops/claudie/services/kuber/client"
-	terraformer "github.com/Berops/claudie/services/terraformer/client"
 	"github.com/rs/zerolog/log"
 )
 
@@ -26,6 +23,9 @@ type ClaudieDB interface {
 	SaveConfig(config *pb.Config) error
 	UpdateSchedulerTTL(name string, newTTL int32) error
 	UpdateBuilderTTL(name string, newTTL int32) error
+	UpdateMsToNull(id string) error
+	UpdateDs(config *pb.Config) error
+	UpdateCs(config *pb.Config) error
 }
 
 // ConfigInfo struct describes data which cbox needs to hold in order to function properly
@@ -56,7 +56,7 @@ func (ci *ConfigInfo) GetName() string {
 	return ci.Name
 }
 
-//getConfigInfos returns a slice of ConfigInfos based on the configs currently in database
+// getConfigInfos returns a slice of ConfigInfos based on the configs currently in database
 func getConfigInfos() ([]*ConfigInfo, error) {
 	configs, err := database.GetAllConfigs()
 	if err != nil {
@@ -64,8 +64,15 @@ func getConfigInfos() ([]*ConfigInfo, error) {
 	}
 	var result []*ConfigInfo
 	for _, config := range configs {
-		configInfo := &ConfigInfo{Name: config.Name, MsChecksum: config.MsChecksum, CsChecksum: config.CsChecksum, DsChecksum: config.DsChecksum,
-			BuilderTTL: config.BuilderTTL, SchedulerTTL: config.SchedulerTTL, ErrorMessage: config.ErrorMessage}
+		configInfo := &ConfigInfo{
+			Name:         config.Name,
+			MsChecksum:   config.MsChecksum,
+			CsChecksum:   config.CsChecksum,
+			DsChecksum:   config.DsChecksum,
+			BuilderTTL:   config.BuilderTTL,
+			SchedulerTTL: config.SchedulerTTL,
+			ErrorMessage: config.ErrorMessage,
+		}
 		result = append(result, configInfo)
 	}
 	return result, nil
@@ -86,13 +93,14 @@ func configCheck() error {
 		}
 
 		// check for Scheduler
-		if string(config.DsChecksum) != string(config.MsChecksum) {
+		if !checksum.CompareChecksums(config.DsChecksum, config.MsChecksum) {
 			// if scheduler ttl is 0 or smaller AND config has no errorMessage, add to scheduler Q
 			if config.SchedulerTTL <= 0 && len(config.ErrorMessage) == 0 {
 				if err := database.UpdateSchedulerTTL(config.Name, defaultSchedulerTTL); err != nil {
 					return err
 				}
 				queueScheduler.Enqueue(config)
+				config.SchedulerTTL = defaultSchedulerTTL
 				continue
 			} else {
 				config.SchedulerTTL = config.SchedulerTTL - 1
@@ -100,13 +108,14 @@ func configCheck() error {
 		}
 
 		// check for Builder
-		if string(config.DsChecksum) != string(config.CsChecksum) {
+		if !checksum.CompareChecksums(config.DsChecksum, config.CsChecksum) {
 			// if builder ttl is 0 or smaller AND config has no errorMessage, add to builder Q
 			if config.BuilderTTL <= 0 && len(config.ErrorMessage) == 0 {
 				if err := database.UpdateBuilderTTL(config.Name, defaultBuilderTTL); err != nil {
 					return err
 				}
 				queueBuilder.Enqueue(config)
+				config.BuilderTTL = defaultBuilderTTL
 				continue
 
 			} else {
@@ -120,47 +129,6 @@ func configCheck() error {
 		}
 		if err := database.UpdateBuilderTTL(config.Name, config.BuilderTTL); err != nil {
 			return nil
-		}
-	}
-	return nil
-}
-
-// destroyConfigTerraformer calls terraformer's DestroyInfrastructure function
-func destroyConfigTerraformer(config *pb.Config) error {
-	// Trim "tcp://" substring from envs.TerraformerURL
-	trimmedTerraformerURL := strings.ReplaceAll(envs.TerraformerURL, ":tcp://", "")
-	log.Info().Msgf("Dial Terraformer: %s", trimmedTerraformerURL)
-	// Create connection to Terraformer
-	cc, err := utils.GrpcDialWithInsecure("terraformer", trimmedTerraformerURL)
-	if err != nil {
-		return err
-	}
-	defer func() { utils.CloseClientConnection(cc) }()
-	// Creating the client
-	c := pb.NewTerraformerServiceClient(cc)
-	_, err = terraformer.DestroyInfrastructure(c, &pb.DestroyInfrastructureRequest{Config: config})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// deleteKubeconfig calls kuber's DeleteKubeconfig function
-func deleteKubeconfig(config *pb.Config) error {
-	trimmedKuberURL := strings.ReplaceAll(envs.KuberURL, ":tcp://", "")
-	log.Info().Msgf("Dial Terraformer: %s", trimmedKuberURL)
-	// Create connection to Terraformer
-	cc, err := utils.GrpcDialWithInsecure("kuber", trimmedKuberURL)
-	if err != nil {
-		return err
-	}
-	defer func() { utils.CloseClientConnection(cc) }()
-
-	c := pb.NewKuberServiceClient(cc)
-	for _, cluster := range config.CurrentState.Clusters {
-		_, err := kuber.DeleteKubeconfig(c, &pb.DeleteKubeconfigRequest{Cluster: cluster})
-		if err != nil {
-			return err
 		}
 	}
 	return nil

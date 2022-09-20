@@ -22,9 +22,9 @@ images:
 - name: claudieio/ansibler
   newTag: 12598fe-744
 - name: claudieio/builder
-  newTag: 754a5f6-742
+  newTag: cf831c9-745
 - name: claudieio/context-box
-  newTag: 754a5f6-742
+  newTag: cf831c9-745
 - name: claudieio/frontend
   newTag: 754a5f6-742
 - name: claudieio/kube-eleven
@@ -32,6 +32,6 @@ images:
 - name: claudieio/kuber
   newTag: 754a5f6-742
 - name: claudieio/scheduler
-  newTag: 754a5f6-742
+  newTag: cf831c9-745
 - name: claudieio/terraformer
   newTag: 754a5f6-742
