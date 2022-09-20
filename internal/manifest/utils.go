@@ -30,12 +30,24 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("Failed to find provider with name: %s", providerSpecName)
+	return nil, fmt.Errorf("failed to find provider with name: %s", providerSpecName)
+}
+
+// IsKubernetesClusterPresent checks in the manifests if a cluster
+// was defined with the specified name.
+func (m *Manifest) IsKubernetesClusterPresent(name string) bool {
+	for _, c := range m.Kubernetes.Clusters {
+		if c.Name == name {
+			return true
+		}
+	}
+
+	return false
 }
 
 // FindNodePool will search for the nodepool in manifest.DynamicNodePool based on the nodepool name
 // returns *manifest.DynamicNodePool if found, nil otherwise
-func (ds Manifest) FindNodePool(nodePoolName string) *DynamicNodePool {
+func (ds *Manifest) FindNodePool(nodePoolName string) *DynamicNodePool {
 	for _, nodePool := range ds.NodePools.Dynamic {
 		if nodePool.Name == nodePoolName {
 			return &nodePool
