@@ -13,6 +13,7 @@ type Manifest struct {
 type Provider struct {
 	GCP     []GCP     `yaml:"gcp"`
 	Hetzner []Hetzner `yaml:"hetzner"`
+	OCI     []OCI     `yaml:"oci"`
 }
 
 type GCP struct {
@@ -24,6 +25,15 @@ type GCP struct {
 type Hetzner struct {
 	Name        string `yaml:"name"`
 	Credentials string `yaml:"credentials"`
+}
+
+type OCI struct {
+	Name           string `yaml:"name"`
+	PrivateKey     string `yaml:"private_key"`
+	KeyFingerprint string `yaml:"key_fingerprint"`
+	TenancyOCID    string `yaml:"tenancy_ocid"`
+	UserOCID       string `yaml:"user_ocid"`
+	CompartmentID  string `yaml:"compartment_id"`
 }
 
 type NodePool struct {
