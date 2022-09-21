@@ -53,7 +53,7 @@ func (s *server) SetUpStorage(ctx context.Context, req *pb.SetUpStorageRequest) 
 	}
 	err := errGroup.Wait()
 	if err != nil {
-		return &pb.SetUpStorageResponse{DesiredState: desiredState, ErrorMessage: fmt.Sprintf("Error encountered in SetUpStorage: %w", err)}, err
+		return &pb.SetUpStorageResponse{DesiredState: desiredState, ErrorMessage: fmt.Sprintf("Error encountered in SetUpStorage: %v", err)}, err
 	}
 	return &pb.SetUpStorageResponse{DesiredState: desiredState, ErrorMessage: ""}, nil
 }
