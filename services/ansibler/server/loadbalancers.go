@@ -76,7 +76,7 @@ func setUpLoadbalancers(lbInfos map[string]*LBInfo) error {
 			//generate inventory for all LBs with k8s nodes
 			err := generateK8sBaseFiles(k8sDirectory, lbInfo)
 			if err != nil {
-				log.Error().Msgf("error while generating base directory for %s : %v", k8sClusterName, err)
+				log.Error().Msgf("error while generating base directory for %s : %w", k8sClusterName, err)
 				return //continue with the next k8s cluster LBs
 			}
 			//process LB clusters for single K8s cluster
@@ -92,13 +92,13 @@ func setUpLoadbalancers(lbInfos map[string]*LBInfo) error {
 							//set up nginx
 							err := setUpNginx(lb.LbCluster, lbInfo.TargetK8sNodepool, directory)
 							if err != nil {
-								return fmt.Errorf("error while setting up the nginx %s : %v", lb.LbCluster.ClusterInfo.Name, err)
+								return fmt.Errorf("error while setting up the nginx %s : %w", lb.LbCluster.ClusterInfo.Name, err)
 							}
 							//check for DNS change
 							if utils.ChangedAPIEndpoint(lb.CurrentDNS, lb.LbCluster.Dns) {
 								err = changedAPIEp(lb, k8sDirectory)
 								if err != nil {
-									return fmt.Errorf("error while changing the endpoint for %s : %v", lb.LbCluster.ClusterInfo.Name, err)
+									return fmt.Errorf("error while changing the endpoint for %s : %w", lb.LbCluster.ClusterInfo.Name, err)
 								}
 							}
 							return nil
@@ -107,11 +107,11 @@ func setUpLoadbalancers(lbInfos map[string]*LBInfo) error {
 				}
 				err := errGroupLB.Wait()
 				if err != nil {
-					return fmt.Errorf("error while setting up the loadbalancers for k8s cluster %s : %v", k8sClusterName, err)
+					return fmt.Errorf("error while setting up the loadbalancers for k8s cluster %s : %w", k8sClusterName, err)
 				}
 				//Clean up
 				if err := os.RemoveAll(k8sDirectory); err != nil {
-					return fmt.Errorf("error while deleting files: %v", err)
+					return fmt.Errorf("error while deleting files: %w", err)
 				}
 				return nil
 			})
@@ -119,7 +119,7 @@ func setUpLoadbalancers(lbInfos map[string]*LBInfo) error {
 	}
 	err := errGroupK8s.Wait()
 	if err != nil {
-		return fmt.Errorf("error while setting up the loadbalancers : %v", err)
+		return fmt.Errorf("error while setting up the loadbalancers : %w", err)
 	}
 	return nil
 }
@@ -133,7 +133,7 @@ func changedAPIEp(lbInfo *LBData, directory string) error {
 	ansible := ansible.Ansible{Playbook: apiChangePlaybook, Inventory: inventoryFile, Flags: flag, Directory: directory}
 	err := ansible.RunAnsiblePlaybook(fmt.Sprintf("EP - %s", lbInfo.LbCluster.ClusterInfo.Name))
 	if err != nil {
-		return fmt.Errorf("error while running ansible for EP change for %s : %v ", lbInfo.LbCluster.ClusterInfo.Name, err)
+		return fmt.Errorf("error while running ansible for EP change for %s : %w ", lbInfo.LbCluster.ClusterInfo.Name, err)
 	}
 	return nil
 }
@@ -144,18 +144,18 @@ func setUpNginx(lb *pb.LBcluster, targetedNodepool []*pb.NodePool, directory str
 	//create key files for lb nodepools
 	if _, err := os.Stat(directory); os.IsNotExist(err) {
 		if err := os.MkdirAll(directory, os.ModePerm); err != nil {
-			return fmt.Errorf("failed to create directory %s : %v", directory, err)
+			return fmt.Errorf("failed to create directory %s : %w", directory, err)
 		}
 	}
 	if err := utils.CreateKeyFile(lb.ClusterInfo.PrivateKey, directory, fmt.Sprintf("key.%s", privateKeyExt)); err != nil {
-		return fmt.Errorf("failed to create key file for %s : %v", lb.ClusterInfo.Name, err)
+		return fmt.Errorf("failed to create key file for %s : %w", lb.ClusterInfo.Name, err)
 	}
 	//prepare data for .conf
 	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.AnsiblerTemplates}
 	template := templateUtils.Templates{Directory: directory}
 	tpl, err := templateLoader.LoadTemplate(confFile)
 	if err != nil {
-		return fmt.Errorf("error while loading %s template for %v", confFile, err)
+		return fmt.Errorf("error while loading %s template for %w", confFile, err)
 	}
 	//get control and compute nodes
 	controlTarget, computeTarget := splitNodesByType(targetedNodepool)
@@ -170,21 +170,21 @@ func setUpNginx(lb *pb.LBcluster, targetedNodepool []*pb.NodePool, directory str
 	//create .conf file
 	err = template.Generate(tpl, "lb.conf", ConfData{Roles: lbRoles})
 	if err != nil {
-		return fmt.Errorf("error while generating lb.conf for %s : %v", lb.ClusterInfo.Name, err)
+		return fmt.Errorf("error while generating lb.conf for %s : %w", lb.ClusterInfo.Name, err)
 	}
 	tpl, err = templateLoader.LoadTemplate(nginxPlaybookTpl)
 	if err != nil {
-		return fmt.Errorf("error while loading %s for %s : %v", nginxPlaybook, lb.ClusterInfo.Name, err)
+		return fmt.Errorf("error while loading %s for %s : %w", nginxPlaybook, lb.ClusterInfo.Name, err)
 	}
 	err = template.Generate(tpl, "nginx.yml", NginxPlaybookData{Loadbalancer: lb.ClusterInfo.Name})
 	if err != nil {
-		return fmt.Errorf("error while generating %s for %s : %v", nginxPlaybook, lb.ClusterInfo.Name, err)
+		return fmt.Errorf("error while generating %s for %s : %w", nginxPlaybook, lb.ClusterInfo.Name, err)
 	}
 	//run the playbook
 	ansible := ansible.Ansible{Playbook: nginxPlaybook, Inventory: filepath.Join("..", inventoryFile), Directory: directory}
 	err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s", lb.ClusterInfo.Name))
 	if err != nil {
-		return fmt.Errorf("error while running ansible for %s : %v", lb.ClusterInfo.Name, err)
+		return fmt.Errorf("error while running ansible for %s : %w", lb.ClusterInfo.Name, err)
 	}
 	return nil
 }
@@ -208,11 +208,11 @@ func splitNodesByType(nodepools []*pb.NodePool) (controlNodes, ComputeNodes []*p
 func generateK8sBaseFiles(k8sDirectory string, lbInfo *LBInfo) error {
 	if _, err := os.Stat(k8sDirectory); os.IsNotExist(err) {
 		if err := os.MkdirAll(k8sDirectory, os.ModePerm); err != nil {
-			return fmt.Errorf("failed to create dir: %v", err)
+			return fmt.Errorf("failed to create dir: %w", err)
 		}
 	}
 	if err := utils.CreateKeyFile(lbInfo.TargetK8sNodepoolKey, k8sDirectory, "k8s.pem"); err != nil {
-		return fmt.Errorf("failed to create key file: %v", err)
+		return fmt.Errorf("failed to create key file: %w", err)
 	}
 	var lbSlice []*pb.LBcluster
 	for _, lb := range lbInfo.LbClusters {
@@ -221,7 +221,7 @@ func generateK8sBaseFiles(k8sDirectory string, lbInfo *LBInfo) error {
 	//generate inventory
 	err := generateInventoryFile(lbInventoryFile, k8sDirectory, LbInventoryData{K8sNodepools: lbInfo.TargetK8sNodepool, LBClusters: lbSlice})
 	if err != nil {
-		return fmt.Errorf("error while generating inventory file for %s : %v", k8sDirectory, err)
+		return fmt.Errorf("error while generating inventory file for %s : %w", k8sDirectory, err)
 	}
 	return nil
 }

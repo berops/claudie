@@ -36,25 +36,25 @@ func (d *Deleter) DeleteNodes() (*pb.K8Scluster, error) {
 	realNodeNamesBytes, err := kubectl.KubectlGetNodeNames()
 	realNodeNames := strings.Split(string(realNodeNamesBytes), "\n")
 	if err != nil {
-		return nil, fmt.Errorf("error while getting nodes from cluster %s : %v", d.cluster.ClusterInfo.Name, err)
+		return nil, fmt.Errorf("error while getting nodes from cluster %s : %w", d.cluster.ClusterInfo.Name, err)
 	}
 	//delete master nodes + etcd
 	err = d.deleteFromEtcd(kubectl)
 	if err != nil {
-		return nil, fmt.Errorf("error while deleting nodes from etcd for %s : %v", d.cluster.ClusterInfo.Name, err)
+		return nil, fmt.Errorf("error while deleting nodes from etcd for %s : %w", d.cluster.ClusterInfo.Name, err)
 	}
 	err = deleteNodesByName(kubectl, d.masterNodes, realNodeNames)
 	if err != nil {
-		return nil, fmt.Errorf("error while deleting nodes from master nodes for %s : %v", d.cluster.ClusterInfo.Name, err)
+		return nil, fmt.Errorf("error while deleting nodes from master nodes for %s : %w", d.cluster.ClusterInfo.Name, err)
 	}
 	//delete worker nodes + nodes.longhorn.io
 	err = d.deleteFromLonghorn(kubectl)
 	if err != nil {
-		return nil, fmt.Errorf("error while deleting nodes.longhorn.io for %s : %v", d.cluster.ClusterInfo.Name, err)
+		return nil, fmt.Errorf("error while deleting nodes.longhorn.io for %s : %w", d.cluster.ClusterInfo.Name, err)
 	}
 	err = deleteNodesByName(kubectl, d.workerNodes, realNodeNames)
 	if err != nil {
-		return nil, fmt.Errorf("error while deleting nodes from worker nodes for %s : %v", d.cluster.ClusterInfo.Name, err)
+		return nil, fmt.Errorf("error while deleting nodes from worker nodes for %s : %w", d.cluster.ClusterInfo.Name, err)
 	}
 	//update the current cluster
 	d.updateClusterData()
@@ -73,12 +73,12 @@ func deleteNodesByName(kc kubectl.Kubectl, nodesToDelete, realNodeNames []string
 			//kubectl drain <node-name> --ignore-daemonsets --delete-emptydir-data
 			err := kc.KubectlDrain(realNodeName)
 			if err != nil {
-				return fmt.Errorf("error while draining node %s : %v", nodeName, err)
+				return fmt.Errorf("error while draining node %s : %w", nodeName, err)
 			}
 			//kubectl delete node <node-name>
 			err = kc.KubectlDeleteResource("nodes", realNodeName, "")
 			if err != nil {
-				return fmt.Errorf("error while deleting node %s : %v", nodeName, err)
+				return fmt.Errorf("error while deleting node %s : %w", nodeName, err)
 			}
 		} else {
 			log.Error().Msgf("Node name that contains %s not found ", nodeName)
@@ -99,12 +99,12 @@ func (d *Deleter) deleteFromEtcd(kc kubectl.Kubectl) error {
 	etcdPods, err := getEtcdPodNames(kc, mainMasterNode.Name)
 	if err != nil {
 		log.Error().Msgf("Cannot find etcd pods in cluster %s : %v", d.cluster.ClusterInfo.Name, err)
-		return fmt.Errorf("cannot find etcd pods in cluster %s  : %v", d.cluster.ClusterInfo.Name, err)
+		return fmt.Errorf("cannot find etcd pods in cluster %s  : %w", d.cluster.ClusterInfo.Name, err)
 	}
 	etcdMembers, err := getEtcdMembers(kc, etcdPods[0])
 	if err != nil {
 		log.Error().Msgf("Cannot find etcd members in cluster %s : %v", d.cluster.ClusterInfo.Name, err)
-		return fmt.Errorf("cannot find etcd members in cluster %s : %v", d.cluster.ClusterInfo.Name, err)
+		return fmt.Errorf("cannot find etcd members in cluster %s : %w", d.cluster.ClusterInfo.Name, err)
 	}
 	//get pod info, like name of a node where pod is deployed and etcd member hash
 	etcdPodInfos := getEtcdPodInfo(etcdMembers)
@@ -117,7 +117,7 @@ func (d *Deleter) deleteFromEtcd(kc kubectl.Kubectl) error {
 				_, err := kc.KubectlExecEtcd(etcdPods[0], etcdctlCmd)
 				if err != nil {
 					log.Error().Msgf("Error while etcdctl member remove: %v", err)
-					return fmt.Errorf("error while executing \"etcdctl member remove\" on node %s, cluster %s: %v", etcdPodInfo.nodeName, d.cluster.ClusterInfo.Name, err)
+					return fmt.Errorf("error while executing \"etcdctl member remove\" on node %s, cluster %s: %w", etcdPodInfo.nodeName, d.cluster.ClusterInfo.Name, err)
 				}
 			}
 		}
@@ -170,7 +170,7 @@ func getMainMaster(cluster *pb.K8Scluster) *pb.Node {
 func getEtcdPodNames(kc kubectl.Kubectl, masterNodeName string) ([]string, error) {
 	etcdPodsBytes, err := kc.KubectlGetEtcdPods(masterNodeName)
 	if err != nil {
-		return nil, fmt.Errorf("cannot find etcd pods in cluster with master node %s  : %v", masterNodeName, err)
+		return nil, fmt.Errorf("cannot find etcd pods in cluster with master node %s  : %w", masterNodeName, err)
 	}
 	return strings.Split(string(etcdPodsBytes), "\n"), nil
 }
@@ -186,7 +186,7 @@ func getEtcdMembers(kc kubectl.Kubectl, etcdPod string) ([]string, error) {
 	//get etcd members
 	etcdMembersBytes, err := kc.KubectlExecEtcd(etcdPod, "etcdctl member list")
 	if err != nil {
-		return nil, fmt.Errorf("cannot find etcd members in cluster with etcd pod %s : %v", etcdPod, err)
+		return nil, fmt.Errorf("cannot find etcd members in cluster with etcd pod %s : %w", etcdPod, err)
 	}
 	// Convert output into []string, each line of output is a separate string
 	etcdMembersStrings := strings.Split(string(etcdMembersBytes), "\n")

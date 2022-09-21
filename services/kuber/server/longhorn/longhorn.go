@@ -40,13 +40,13 @@ func (l Longhorn) SetUp() error {
 	// apply longhorn.yaml
 	err := kubectl.KubectlApply(longhornYaml, "")
 	if err != nil {
-		return fmt.Errorf("error while applying longhorn.yaml : %v", err)
+		return fmt.Errorf("error while applying longhorn.yaml : %w", err)
 	}
 
 	//get existing sc so we can delete them if we do not need them any more
 	existingSC, err := l.getStorageClasses(kubectl)
 	if err != nil {
-		return fmt.Errorf("error while getting existing storage classes for %s : %v", l.Cluster.ClusterInfo.Name, err)
+		return fmt.Errorf("error while getting existing storage classes for %s : %w", l.Cluster.ClusterInfo.Name, err)
 	}
 	//save applied sc so we can find a difference with existing ones and remove the redundant ones
 	var appliedSC []string
@@ -84,11 +84,11 @@ func (l Longhorn) SetUp() error {
 					realNodeName := utils.FindName(realNodeNames, node.Name)
 					err := kubectl.KubectlAnnotate("node", realNodeName, annotation)
 					if err != nil {
-						return fmt.Errorf("error while annotating the node %s via kubectl annotate : %v", realNodeName, err)
+						return fmt.Errorf("error while annotating the node %s via kubectl annotate : %w", realNodeName, err)
 					}
 					err = kubectl.KubectlLabel("node", realNodeName, claudieWorkerLabel, true)
 					if err != nil {
-						return fmt.Errorf("error while labeling the node %s via kubectl label : %v", realNodeName, err)
+						return fmt.Errorf("error while labeling the node %s via kubectl label : %w", realNodeName, err)
 					}
 				}
 			}
@@ -99,14 +99,14 @@ func (l Longhorn) SetUp() error {
 			manifest := fmt.Sprintf("%s.yaml", storageClassName)
 			err := template.Generate(storageTpl, manifest, zoneData)
 			if err != nil {
-				return fmt.Errorf("error while generating %s manifest : %v", manifest, err)
+				return fmt.Errorf("error while generating %s manifest : %w", manifest, err)
 			}
 			//update the kubectl working directory
 			kubectl.Directory = l.Directory
 			// apply manifest
 			err = kubectl.KubectlApply(manifest, "")
 			if err != nil {
-				return fmt.Errorf("error while applying %s manifest : %v", manifest, err)
+				return fmt.Errorf("error while applying %s manifest : %w", manifest, err)
 			}
 			appliedSC = append(appliedSC, storageClassName)
 		}
@@ -120,7 +120,7 @@ func (l Longhorn) SetUp() error {
 	log.Info().Msgf("Longhorn successfully set-up on the %s", l.Directory)
 	// Clean up
 	if err := os.RemoveAll(l.Directory); err != nil {
-		return fmt.Errorf("error while deleting files: %v", err)
+		return fmt.Errorf("error while deleting files: %w", err)
 	}
 	return nil
 }
@@ -184,7 +184,7 @@ func (l *Longhorn) deleteOldStorageClasses(existing, applied []string, kc kubect
 			err := kc.KubectlDeleteResource("sc", ex, "")
 			log.Info().Msgf("Deleting storage class %s", ex)
 			if err != nil {
-				return fmt.Errorf("error while deleting storage class %s due to no nodes backing it : %v", ex, err)
+				return fmt.Errorf("error while deleting storage class %s due to no nodes backing it : %w", ex, err)
 			}
 		}
 	}

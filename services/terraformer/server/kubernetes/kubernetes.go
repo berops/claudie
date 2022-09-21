@@ -26,7 +26,7 @@ func (k K8Scluster) Build() error {
 		ClusterType: pb.ClusterType_K8s}
 	err := cluster.CreateNodepools()
 	if err != nil {
-		return fmt.Errorf("error while creating the K8s cluster %s : %v", k.DesiredK8s.ClusterInfo.Name, err)
+		return fmt.Errorf("error while creating the K8s cluster %s : %w", k.DesiredK8s.ClusterInfo.Name, err)
 	}
 	return nil
 }
@@ -39,7 +39,7 @@ func (k K8Scluster) Destroy() error {
 		ClusterType: pb.ClusterType_K8s}
 	err := cluster.DestroyNodepools()
 	if err != nil {
-		return fmt.Errorf("error while destroying the K8s cluster %s : %v", k.CurrentK8s.ClusterInfo.Name, err)
+		return fmt.Errorf("error while destroying the K8s cluster %s : %w", k.CurrentK8s.ClusterInfo.Name, err)
 	}
 	return nil
 }

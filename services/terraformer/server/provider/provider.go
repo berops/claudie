@@ -26,11 +26,11 @@ func (p Provider) CreateProvider(clusterInfo *pb.ClusterInfo) error {
 	data := getProvidersUsed(clusterInfo)
 	tpl, err := templateLoader.LoadTemplate("providers.tpl")
 	if err != nil {
-		return fmt.Errorf("error while parsing template file backend.tpl: %v", err)
+		return fmt.Errorf("error while parsing template file backend.tpl: %w", err)
 	}
 	err = template.Generate(tpl, "providers.tf", data)
 	if err != nil {
-		return fmt.Errorf("error while creating backend files: %v", err)
+		return fmt.Errorf("error while creating backend files: %w", err)
 	}
 	return nil
 }

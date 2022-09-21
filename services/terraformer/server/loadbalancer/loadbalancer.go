@@ -31,7 +31,7 @@ func (l LBcluster) Build() error {
 
 	err := cl.CreateNodepools()
 	if err != nil {
-		return fmt.Errorf("error while creating the LB cluster %s : %v", l.DesiredLB.ClusterInfo.Name, err)
+		return fmt.Errorf("error while creating the LB cluster %s : %w", l.DesiredLB.ClusterInfo.Name, err)
 	}
 	nodeIPs := getNodeIPs(l.DesiredLB.ClusterInfo.NodePools)
 	dns := DNS{
@@ -45,7 +45,7 @@ func (l LBcluster) Build() error {
 	}
 	endpoint, err := dns.CreateDNSrecords()
 	if err != nil {
-		return fmt.Errorf("error while creating the DNS for %s : %v", l.DesiredLB.ClusterInfo.Name, err)
+		return fmt.Errorf("error while creating the DNS for %s : %w", l.DesiredLB.ClusterInfo.Name, err)
 	}
 	l.DesiredLB.Dns.Endpoint = endpoint
 	return nil
@@ -68,11 +68,11 @@ func (l LBcluster) Destroy() error {
 
 	err := cluster.DestroyNodepools()
 	if err != nil {
-		return fmt.Errorf("error while destroying the K8s cluster %s : %v", l.CurrentLB.ClusterInfo.Name, err)
+		return fmt.Errorf("error while destroying the K8s cluster %s : %w", l.CurrentLB.ClusterInfo.Name, err)
 	}
 	err = dns.DestroyDNSrecords()
 	if err != nil {
-		return fmt.Errorf("error while destroying the DNS records %s : %v", l.CurrentLB.ClusterInfo.Name, err)
+		return fmt.Errorf("error while destroying the DNS records %s : %w", l.CurrentLB.ClusterInfo.Name, err)
 	}
 	return nil
 }

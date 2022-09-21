@@ -12,7 +12,7 @@ import (
 func InstallVPN(c pb.AnsiblerServiceClient, req *pb.InstallRequest) (*pb.InstallResponse, error) {
 	res, err := c.InstallVPN(context.Background(), req)
 	if err != nil {
-		return res, fmt.Errorf("error while calling InstallVPN on Ansibler: %v", err)
+		return res, fmt.Errorf("error while calling InstallVPN on Ansibler: %w", err)
 	}
 	log.Info().Msg("VPN was successfully installed")
 	return res, nil
@@ -22,7 +22,7 @@ func InstallVPN(c pb.AnsiblerServiceClient, req *pb.InstallRequest) (*pb.Install
 func InstallNodeRequirements(c pb.AnsiblerServiceClient, req *pb.InstallRequest) (*pb.InstallResponse, error) {
 	res, err := c.InstallNodeRequirements(context.Background(), req)
 	if err != nil {
-		return res, fmt.Errorf("error while calling InstallNodeRequirements on Ansibler: %v", err)
+		return res, fmt.Errorf("error while calling InstallNodeRequirements on Ansibler: %w", err)
 	}
 	log.Info().Msg("Node requirements were successfully installed")
 	return res, nil
@@ -32,7 +32,7 @@ func InstallNodeRequirements(c pb.AnsiblerServiceClient, req *pb.InstallRequest)
 func SetUpLoadbalancers(c pb.AnsiblerServiceClient, req *pb.SetUpLBRequest) (*pb.SetUpLBResponse, error) {
 	res, err := c.SetUpLoadbalancers(context.Background(), req)
 	if err != nil {
-		return res, fmt.Errorf("error while calling SetUpLoadbalancers on Ansibler: %v", err)
+		return res, fmt.Errorf("error while calling SetUpLoadbalancers on Ansibler: %w", err)
 	}
 	log.Info().Msg("Loadbalancers were successfully set up")
 	return res, nil

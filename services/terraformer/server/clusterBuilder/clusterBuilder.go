@@ -55,11 +55,11 @@ func (c ClusterBuilder) CreateNodepools() error {
 	// create nodepool with terraform
 	err = terraform.TerraformInit()
 	if err != nil {
-		return fmt.Errorf("error while running terraform init in %s : %v", clusterID, err)
+		return fmt.Errorf("error while running terraform init in %s : %w", clusterID, err)
 	}
 	err = terraform.TerraformApply()
 	if err != nil {
-		return fmt.Errorf("error while running terraform apply in %s : %v", clusterID, err)
+		return fmt.Errorf("error while running terraform apply in %s : %w", clusterID, err)
 	}
 
 	// get slice of old nodes
@@ -82,7 +82,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 
 	// Clean after terraform
 	if err := os.RemoveAll(clusterDir); err != nil {
-		return fmt.Errorf("error while deleting files: %v", err)
+		return fmt.Errorf("error while deleting files: %w", err)
 	}
 
 	return nil
@@ -102,15 +102,15 @@ func (c ClusterBuilder) DestroyNodepools() error {
 	// destroy nodepools with terraform
 	err = terraform.TerraformInit()
 	if err != nil {
-		return fmt.Errorf("error while running terraform init in %s : %v", clusterID, err)
+		return fmt.Errorf("error while running terraform init in %s : %w", clusterID, err)
 	}
 	err = terraform.TerraformDestroy()
 	if err != nil {
-		return fmt.Errorf("error while running terraform apply in %s : %v", clusterID, err)
+		return fmt.Errorf("error while running terraform apply in %s : %w", clusterID, err)
 	}
 	// Clean after terraform
 	if err := os.RemoveAll(clusterDir); err != nil {
-		return fmt.Errorf("error while deleting files: %v", err)
+		return fmt.Errorf("error while deleting files: %w", err)
 	}
 	return nil
 }
@@ -154,13 +154,13 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 		// Load TF files of the specific cloud provider
 		tpl, err := templateLoader.LoadTemplate(fmt.Sprintf("%s%s", nodepools[0].Provider.CloudProviderName, tplType))
 		if err != nil {
-			return fmt.Errorf("error while parsing template file backend.tpl: %v", err)
+			return fmt.Errorf("error while parsing template file backend.tpl: %w", err)
 		}
 
 		// Parse the templates and create Tf files
 		err = template.Generate(tpl, fmt.Sprintf("%s-%s.tf", clusterID, providerSpecName), nodepoolData)
 		if err != nil {
-			return fmt.Errorf("error while generating .tf files : %v", err)
+			return fmt.Errorf("error while generating .tf files : %w", err)
 		}
 
 		// Create publicKey file for a cluster

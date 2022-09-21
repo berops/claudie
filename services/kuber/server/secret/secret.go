@@ -62,16 +62,16 @@ func (s *Secret) Apply(namespace, kubeconfig string) error {
 
 	err := s.saveSecretManifest(path)
 	if err != nil {
-		return fmt.Errorf("error while saving secret.yaml for %s : %v", s.YamlManifest.Metadata.Name, err)
+		return fmt.Errorf("error while saving secret.yaml for %s : %w", s.YamlManifest.Metadata.Name, err)
 	}
 	err = kubectl.KubectlApply(path, namespace)
 	if err != nil {
-		return fmt.Errorf("error while applying secret.yaml for %s : %v", s.YamlManifest.Metadata.Name, err)
+		return fmt.Errorf("error while applying secret.yaml for %s : %w", s.YamlManifest.Metadata.Name, err)
 	}
 
 	// cleanup
 	if err = os.RemoveAll(s.Directory); err != nil {
-		return fmt.Errorf("error while delete the secret.yaml for %s : %v", s.YamlManifest.Metadata.Name, err)
+		return fmt.Errorf("error while delete the secret.yaml for %s : %w", s.YamlManifest.Metadata.Name, err)
 	}
 	return nil
 }

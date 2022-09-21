@@ -53,7 +53,7 @@ func (c Cmd) RetryCommand(numOfRetries int) error {
 			log.Info().Msgf("The %s was successful on %d retry", c.Command, i)
 			return nil
 		}
-		log.Warn().Msgf("Error encountered while executing %s : %v", c.Command, err)
+		log.Warn().Msgf("Error encountered while executing %s : %w", c.Command, err)
 		backoff := 5 * i
 		log.Info().Msgf("Next retry in %ds...", backoff)
 		time.Sleep(time.Duration(backoff) * time.Second)
@@ -77,7 +77,7 @@ func (c Cmd) RetryCommandWithOutput(numOfRetries int) ([]byte, error) {
 			log.Info().Msgf("The %s was successful after %d retry", c.Command, i)
 			return out, nil
 		}
-		log.Warn().Msgf("Error encountered while executing %s : %v", c.Command, err)
+		log.Warn().Msgf("Error encountered while executing %s : %w", c.Command, err)
 		backoff := 5 * i
 		log.Info().Msgf("Next retry in %ds...", backoff)
 		time.Sleep(time.Duration(backoff) * time.Second)

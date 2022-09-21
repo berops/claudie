@@ -51,7 +51,7 @@ func (d DNS) CreateDNSrecords() (string, error) {
 		//destroy old DNS records
 		err := d.generateFiles(dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs)
 		if err != nil {
-			return "", fmt.Errorf("error while creating dns .tf files for %s : %v", dnsID, err)
+			return "", fmt.Errorf("error while creating dns .tf files for %s : %w", dnsID, err)
 		}
 		// destroy old dns records with terraform
 		err = terraform.TerraformInit()
@@ -66,7 +66,7 @@ func (d DNS) CreateDNSrecords() (string, error) {
 	// create files
 	err := d.generateFiles(dnsID, dnsDir, d.DesiredDNS, d.DesiredNodeIPs)
 	if err != nil {
-		return "", fmt.Errorf("error while creating dns .tf files for %s : %v", dnsID, err)
+		return "", fmt.Errorf("error while creating dns .tf files for %s : %w", dnsID, err)
 	}
 	// create dns records with terraform
 	err = terraform.TerraformInit()
@@ -92,7 +92,7 @@ func (d DNS) CreateDNSrecords() (string, error) {
 	}
 	// Clean after terraform
 	if err := os.RemoveAll(dnsDir); err != nil {
-		return validateDomain(out.Domain[outputID]), fmt.Errorf("error while deleting files: %v", err)
+		return validateDomain(out.Domain[outputID]), fmt.Errorf("error while deleting files: %w", err)
 	}
 	return validateDomain(out.Domain[outputID]), nil
 }
@@ -103,7 +103,7 @@ func (d DNS) DestroyDNSrecords() error {
 	// create files
 	err := d.generateFiles(dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs)
 	if err != nil {
-		return fmt.Errorf("error while creating dns records for %s : %v", dnsID, err)
+		return fmt.Errorf("error while creating dns records for %s : %w", dnsID, err)
 	}
 	// create dns records with terraform
 	terraform := terraform.Terraform{Directory: dnsDir, StdOut: comm.GetStdOut(dnsID), StdErr: comm.GetStdErr(dnsID)}
@@ -118,7 +118,7 @@ func (d DNS) DestroyDNSrecords() error {
 
 	// Clean after terraform
 	if err := os.RemoveAll(dnsDir); err != nil {
-		return fmt.Errorf("error while deleting files: %v", err)
+		return fmt.Errorf("error while deleting files: %w", err)
 	}
 	return nil
 }
@@ -141,7 +141,7 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *pb.DNS, nodeIPs []string) 
 	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.TerraformerTemplates}
 	tpl, err := templateLoader.LoadTemplate("dns.tpl")
 	if err != nil {
-		return fmt.Errorf("error while parsing template file backend.tpl: %v", err)
+		return fmt.Errorf("error while parsing template file backend.tpl: %w", err)
 	}
 	dnsData := d.getDNSData(dns, nodeIPs)
 	return DNSTemplates.Generate(tpl, "dns.tf", dnsData)

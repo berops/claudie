@@ -45,18 +45,18 @@ func (k *KubeEleven) BuildCluster() error {
 	//generate files needed for kubeone
 	err := k.generateFiles()
 	if err != nil {
-		return fmt.Errorf("error while generating files for %s :%v", k.K8sCluster.ClusterInfo.Name, err)
+		return fmt.Errorf("error while generating files for %s :%w", k.K8sCluster.ClusterInfo.Name, err)
 	}
 	//run kubeone apply
 	kubeone := kubeone.Kubeone{Directory: k.directory}
 	err = kubeone.Apply()
 	if err != nil {
-		return fmt.Errorf("error while reading cluster-config in %s: %v", k.directory, err)
+		return fmt.Errorf("error while reading cluster-config in %s: %w", k.directory, err)
 	}
 	// Save generated kubeconfig file to cluster config
 	kc, err := readKubeconfig(filepath.Join(k.directory, kubeconfigFile))
 	if err != nil {
-		return fmt.Errorf("error while reading cluster-config in %s: %v", k.directory, err)
+		return fmt.Errorf("error while reading cluster-config in %s: %w", k.directory, err)
 
 	}
 	//check if kubeconfig is not empty and set it
@@ -66,7 +66,7 @@ func (k *KubeEleven) BuildCluster() error {
 	}
 	// Clean up
 	if err := os.RemoveAll(k.directory); err != nil {
-		log.Info().Msgf("error while removing files from %s: %v", k.directory, err)
+		log.Info().Msgf("error while removing files from %s: %w", k.directory, err)
 		return err
 	}
 	log.Info().Msgf("Kube-eleven has finished setting up the cluster %s", k.K8sCluster.ClusterInfo.Name)
@@ -81,23 +81,23 @@ func (k *KubeEleven) generateFiles() error {
 	//load template file
 	tpl, err := templateLoader.LoadTemplate(kubeoneTemplate)
 	if err != nil {
-		return fmt.Errorf("error while loading a template %s : %v", kubeoneTemplate, err)
+		return fmt.Errorf("error while loading a template %s : %w", kubeoneTemplate, err)
 	}
 	//generate data for template
 	d := k.generateTemplateData()
 	//generate template
 	err = template.Generate(tpl, kubeoneManifest, d)
 	if err != nil {
-		return fmt.Errorf("error while generating %s from %s : %v", kubeoneManifest, kubeoneTemplate, err)
+		return fmt.Errorf("error while generating %s from %s : %w", kubeoneManifest, kubeoneTemplate, err)
 	}
 	// create key file
 	if err := utils.CreateKeyFile(k.K8sCluster.ClusterInfo.GetPrivateKey(), k.directory, keyFile); err != nil {
-		return fmt.Errorf("error while creating key file: %v", err)
+		return fmt.Errorf("error while creating key file: %w", err)
 	}
 	// Create a cluster-kubeconfig file
 	kubeconfigFilePath := filepath.Join(k.directory, kubeconfigFile)
 	if err := os.WriteFile(kubeconfigFilePath, []byte(k.K8sCluster.GetKubeconfig()), 0600); err != nil {
-		return fmt.Errorf("error while writing cluster-kubeconfig in %s: %v", k.directory, err)
+		return fmt.Errorf("error while writing cluster-kubeconfig in %s: %w", k.directory, err)
 	}
 	return nil
 }
@@ -169,7 +169,7 @@ func (k *KubeEleven) getClusterNodes() []*pb.Node {
 func readKubeconfig(kubeconfigFile string) (string, error) {
 	kubeconfig, err := os.ReadFile(kubeconfigFile)
 	if err != nil {
-		return "", fmt.Errorf("error while reading kubeconfig file %s : %v", kubeconfigFile, err)
+		return "", fmt.Errorf("error while reading kubeconfig file %s : %w", kubeconfigFile, err)
 	}
 	return string(kubeconfig), nil
 }
