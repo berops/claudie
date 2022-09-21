@@ -37,7 +37,7 @@ func (a *Ansible) RunAnsiblePlaybook(prefix string) error {
 	cmd.Stderr = comm.GetStdErr(prefix)
 	err = cmd.Run()
 	if err != nil {
-		log.Warn().Msgf("Error encountered while executing %s from %s : %w", command, a.Directory, err)
+		log.Warn().Msgf("Error encountered while executing %s from %s : %v", command, a.Directory, err)
 		retryCmd := comm.Cmd{Command: command, Dir: a.Directory, Stdout: cmd.Stdout, Stderr: cmd.Stderr}
 		err := retryCmd.RetryCommand(maxAnsibleRetries)
 		if err != nil {

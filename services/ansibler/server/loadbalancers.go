@@ -76,7 +76,7 @@ func setUpLoadbalancers(lbInfos map[string]*LBInfo) error {
 			//generate inventory for all LBs with k8s nodes
 			err := generateK8sBaseFiles(k8sDirectory, lbInfo)
 			if err != nil {
-				log.Error().Msgf("error while generating base directory for %s : %w", k8sClusterName, err)
+				log.Error().Msgf("error while generating base directory for %s : %v", k8sClusterName, err)
 				return //continue with the next k8s cluster LBs
 			}
 			//process LB clusters for single K8s cluster

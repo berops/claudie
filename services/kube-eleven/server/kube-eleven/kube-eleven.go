@@ -66,7 +66,7 @@ func (k *KubeEleven) BuildCluster() error {
 	}
 	// Clean up
 	if err := os.RemoveAll(k.directory); err != nil {
-		log.Info().Msgf("error while removing files from %s: %w", k.directory, err)
+		log.Error().Msgf("error while removing files from %s: %v", k.directory, err)
 		return err
 	}
 	log.Info().Msgf("Kube-eleven has finished setting up the cluster %s", k.K8sCluster.ClusterInfo.Name)

@@ -118,7 +118,7 @@ func main() {
 	serviceAddr := net.JoinHostPort("0.0.0.0", ansiblerPort)
 	lis, err := net.Listen("tcp", serviceAddr)
 	if err != nil {
-		log.Fatal().Msgf("Failed to listen on %s : %w", serviceAddr, err)
+		log.Fatal().Msgf("Failed to listen on %s : %v", serviceAddr, err)
 	}
 	log.Info().Msgf("Ansibler service is listening on %s", serviceAddr)
 	// creating a new server
@@ -147,5 +147,5 @@ func main() {
 		}
 		return nil
 	})
-	log.Info().Msgf("Stopping Ansibler: %w", g.Wait())
+	log.Info().Msgf("Stopping Ansibler: %v", g.Wait())
 }

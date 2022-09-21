@@ -89,7 +89,7 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 				CurrentState: currentState,
 				DesiredState: desiredState,
 				ErrorMessage: err.Error()},
-			fmt.Errorf("template generator failed: %w", err)
+			fmt.Errorf("BuildInfrastructure got error: %w", err)
 	}
 	log.Info().Msg("Infrastructure was successfully generated")
 	return &pb.BuildInfrastructureResponse{
