@@ -212,9 +212,9 @@ var jsonData = "{\"compute\":{\"test-cluster-compute1\":\"0.0.0.65\",\n\"test-cl
 
 var ociNp = &pb.NodePool{
 	Name:       "test-np",
-	Region:     "TEST_REGION",
-	ServerType: "TEST_SERVER_TYPE",
-	Image:      "TEST_IMAGE",
+	Region:     "eu-frankfurt-1",
+	ServerType: "VM.Standard.E2.1.Micro",
+	Image:      "Canonical-Ubuntu-20.04-2022.08.15-0",
 	DiskSize:   50,
 	Zone:       "TEST_ZONE",
 	Count:      3,
