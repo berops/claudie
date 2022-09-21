@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/Berops/claudie/internal/templateUtils"
 	"github.com/Berops/claudie/proto/pb"
 	"github.com/stretchr/testify/require"
 )
@@ -209,6 +210,26 @@ var desiredState *pb.Project = &pb.Project{
 
 var jsonData = "{\"compute\":{\"test-cluster-compute1\":\"0.0.0.65\",\n\"test-cluster-compute2\":\"0.0.0.512\"},\n\"control\":{\"test-cluster-control1\":\"0.0.0.72\",\n\"test-cluster-control2\":\"0.0.0.65\"}}"
 
+var ociNp = &pb.NodePool{
+	Name:       "test-np",
+	Region:     "TEST_REGION",
+	ServerType: "TEST_SERVER_TYPE",
+	Image:      "TEST_IMAGE",
+	DiskSize:   50,
+	Zone:       "TEST_ZONE",
+	Count:      3,
+	Nodes:      []*pb.Node{},
+	IsControl:  true,
+	Provider: &pb.Provider{
+		CloudProviderName: "oci",
+		Credentials:       "TEST_PRIVATE_KEY",
+		OciFingerprint:    "TEST_FINGERPRINT",
+		TenancyOcid:       "TEST_TENANCY",
+		UserOcid:          "TEST_USER",
+		OciCompartmentId:  "TEST_COMPARTMENT",
+	},
+}
+
 func TestReadOutput(t *testing.T) {
 	out, err := readIPs(jsonData)
 	if err == nil {
@@ -224,5 +245,14 @@ func TestFillNodes(t *testing.T) {
 		fillNodes(&out, m, desiredState.Clusters[0].ClusterInfo.NodePools[0].Nodes)
 		fmt.Println(m)
 	}
+	require.NoError(t, err)
+}
+
+func TestGenerateTf(t *testing.T) {
+	templateLoader := templateUtils.TemplateLoader{Directory: "../../templates"}
+	template := templateUtils.Templates{Directory: "."}
+	tpl, err := templateLoader.LoadTemplate("oci.tpl")
+	require.NoError(t, err)
+	err = template.Generate(tpl, "oci-test.tf", &NodepoolsData{ClusterName: "TEST_NAME", ClusterHash: "TEST_HASH", NodePools: []*pb.NodePool{ociNp}})
 	require.NoError(t, err)
 }
