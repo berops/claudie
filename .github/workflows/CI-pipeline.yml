@@ -190,7 +190,7 @@ jobs:
         uses: google-github-actions/auth@v0.4.0
         with:
           workload_identity_provider: projects/159052430932/locations/global/workloadIdentityPools/github-action-pool/providers/github-action-provider
-          service_account: docker-registry@platform-infrastructure-316112.iam.gserviceaccount.com
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
 
       - name: Configure kubectl
         uses: google-github-actions/get-gke-credentials@v0.4.0
