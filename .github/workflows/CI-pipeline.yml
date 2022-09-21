@@ -164,6 +164,8 @@ jobs:
   deploy-and-monitor:
     runs-on: self-hosted
     needs: [build-and-push, edit-kustomization]
+    permissions:
+      id-token: write
     if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES && github.event.pull_request.draft == false }}
     steps:
       - uses: actions/checkout@v2
