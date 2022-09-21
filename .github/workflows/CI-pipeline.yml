@@ -189,7 +189,7 @@ jobs:
       - name: Login to GCP
         uses: google-github-actions/auth@v0.4.0
         with:
-          workload_identity_provider: projects/159052430932/locations/global/workloadIdentityPools/github-action-pool/providers/github-action-provider
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
 
       - name: Configure kubectl
