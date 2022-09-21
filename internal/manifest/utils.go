@@ -30,6 +30,17 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
 		}
 	}
 
+	for _, awsConf := range ds.Providers.AWS {
+		if awsConf.Name == providerSpecName {
+			return &pb.Provider{
+				SpecName:          awsConf.Name,
+				Credentials:       awsConf.SecretKey,
+				AccessKey:         awsConf.AccessKey,
+				CloudProviderName: "aws",
+			}, nil
+		}
+	}
+
 	return nil, fmt.Errorf("Failed to find provider with name: %s", providerSpecName)
 }
 

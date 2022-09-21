@@ -13,6 +13,7 @@ type Manifest struct {
 type Provider struct {
 	GCP     []GCP     `yaml:"gcp"`
 	Hetzner []Hetzner `yaml:"hetzner"`
+	AWS     []AWS     `yaml:"aws"`
 }
 
 type GCP struct {
@@ -24,6 +25,12 @@ type GCP struct {
 type Hetzner struct {
 	Name        string `yaml:"name"`
 	Credentials string `yaml:"credentials"`
+}
+
+type AWS struct {
+	Name      string `yaml:"name"`
+	AccessKey string `yaml:"access_key"`
+	SecretKey string `yaml:"secret_key"`
 }
 
 type NodePool struct {
