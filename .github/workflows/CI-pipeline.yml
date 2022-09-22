@@ -177,7 +177,7 @@ jobs:
         run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
 
       - name: install kubectl
-        uses: azure/setup-kubectl@v2.0
+        uses: azure/setup-kubectl@v3.0
         with:
           version: latest
 
