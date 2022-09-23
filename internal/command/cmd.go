@@ -38,7 +38,7 @@ const (
 	colorReset = "\x1b[0m"
 )
 
-// function RetryCommand will retry the given command, every 5 sec until either successful or reached numOfRetries
+// RetryCommand will retry the given command, every 5 sec until either successful or reached numOfRetries
 // returns error if all retries fail, nil otherwise
 func (c Cmd) RetryCommand(numOfRetries int) error {
 	var err error
@@ -62,7 +62,7 @@ func (c Cmd) RetryCommand(numOfRetries int) error {
 	return err
 }
 
-// function RetryCommandWithOutput will retry the given command, every 5 sec until either successful or reached numOfRetries
+// RetryCommandWithOutput will retry the given command, every 5 sec until either successful or reached numOfRetries
 // returns (nil, error) if all retries fail, (output, nil) otherwise
 func (c Cmd) RetryCommandWithOutput(numOfRetries int) ([]byte, error) {
 	var err error
@@ -86,13 +86,13 @@ func (c Cmd) RetryCommandWithOutput(numOfRetries int) ([]byte, error) {
 	return nil, err
 }
 
-// function GetStdOut returns an io.Writer for exec with the defined prefix
+// GetStdOut returns an io.Writer for exec with the defined prefix
 // Cannot be used with cmd.CombinedOutput()
 func GetStdOut(prefix string) Wrapper {
 	return getWrapper(prefix, STDOUT)
 }
 
-// function GetStdErr returns an io.Writer for exec with the defined prefix
+// GetStdErr returns an io.Writer for exec with the defined prefix
 // Cannot be used with cmd.CombinedOutput()
 func GetStdErr(prefix string) Wrapper {
 	return getWrapper(prefix, STDERR)
@@ -107,7 +107,7 @@ func getWrapper(prefix string, logType int) Wrapper {
 	return w
 }
 
-// function Write is implementation of the function from io.Writer interface
+// Write is implementation of the function from io.Writer interface
 func (w Wrapper) Write(p []byte) (n int, err error) {
 	if n, err = w.buf.Write(p); err != nil {
 		return n, err
@@ -116,7 +116,7 @@ func (w Wrapper) Write(p []byte) (n int, err error) {
 	return len(p), err
 }
 
-// function outputLines will output strings from current buffer
+// outputLines will output strings from current buffer
 func (w *Wrapper) outputLines() error {
 	for {
 		line, err := w.buf.ReadString('\n')
@@ -144,7 +144,7 @@ func (w *Wrapper) outputLines() error {
 	return nil
 }
 
-// function printWithPrefix will append a colour if supported and outputs the line with prefix
+// printWithPrefix will append a colour if supported and outputs the line with prefix
 func (w *Wrapper) printWithPrefix(str string) {
 	if len(str) < 1 {
 		return
