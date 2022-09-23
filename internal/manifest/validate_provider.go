@@ -11,18 +11,18 @@ import (
 // the manifest.
 func (p *Provider) Validate() error {
 	// check for unique names across all cloud providers.
-	m := make(map[string]bool)
+	names := make(map[string]bool)
 
 	for _, c := range p.GCP {
 		if err := c.Validate(); err != nil {
 			return fmt.Errorf("failed to validate provider %q: %w", c.Name, err)
 		}
 
-		if _, ok := m[c.Name]; ok {
+		if _, ok := names[c.Name]; ok {
 			return fmt.Errorf("name %q is used across multiple providers, must be unique", c.Name)
 		}
 
-		m[c.Name] = true
+		names[c.Name] = true
 	}
 
 	for _, c := range p.Hetzner {
@@ -30,11 +30,11 @@ func (p *Provider) Validate() error {
 			return fmt.Errorf("failed to validate provider %q: %w", c.Name, err)
 		}
 
-		if _, ok := m[c.Name]; ok {
+		if _, ok := names[c.Name]; ok {
 			return fmt.Errorf("name %q is used across multiple providers, must be unique", c.Name)
 		}
 
-		m[c.Name] = true
+		names[c.Name] = true
 	}
 
 	return nil

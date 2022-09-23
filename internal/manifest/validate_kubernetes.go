@@ -24,10 +24,19 @@ var (
 // It checks for missing/invalid filled out values defined in the Kubernetes section
 // of the manifest.
 func (k *Kubernetes) Validate(m *Manifest) error {
+	// check for name uniqueness across clusters.
+	names := make(map[string]bool)
+
 	for _, cluster := range k.Clusters {
 		if err := cluster.Validate(); err != nil {
 			return fmt.Errorf("failed to validate kubernetes cluster %s: %w", cluster.Name, err)
 		}
+
+		// check if the name is already used by a different cluster
+		if _, ok := names[cluster.Name]; ok {
+			return fmt.Errorf("name %q is used across multiple clusters, must be unique", cluster.Name)
+		}
+		names[cluster.Name] = true
 
 		for _, pool := range cluster.Pools.Control {
 			if p := m.FindNodePool(pool); p == nil {
