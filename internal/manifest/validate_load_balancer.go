@@ -41,6 +41,7 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 		if _, ok := clusters[cluster.Name]; ok {
 			return fmt.Errorf("name %q is used across multiple clusters, must be unique", cluster.Name)
 		}
+
 		clusters[cluster.Name] = true
 
 		if err := cluster.Validate(); err != nil {
