@@ -153,7 +153,7 @@ func healthCheck() error {
 	}
 	return nil
 }
-
+fdsf
 func main() {
 	// initialize logger
 	utils.InitLog("terraformer")
