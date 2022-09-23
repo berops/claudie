@@ -67,6 +67,11 @@ func (s *server) processConfigs() error {
 				return
 			}
 
+			if err := m.Validate(); err != nil {
+				log.Error().Msgf("skipping over file %v due to error: %v", path, err)
+				return
+			}
+
 			dataChan <- &data{
 				name:        m.Name,
 				rawManifest: rawManifest,
