@@ -264,11 +264,6 @@ jobs:
         run: |
           kubectl wait --for=condition=complete --timeout=10800s job/testing-framework -n claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
 
-      - name: Dump logs from testing framework
-        if: ${{ always() }}
-        run: |
-          gcloud logging read "resource.labels.container_name = "testing-framework" AND severity >= ERROR AND  resource.labels.namespace_name = "claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}""
-
       - name: Wait until frontend will clean up the infra from tests
         run: |
           # wait max 5min until the frontend will pick up the change + 10min until everything is destroyed
