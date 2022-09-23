@@ -192,7 +192,7 @@ jobs:
           token_format: 'access_token'
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
-          access_token_lifetime: '3600s'
+          access_token_lifetime: '21600s'
 
       - name: Configure kubectl
         uses: google-github-actions/get-gke-credentials@v0.4.0
