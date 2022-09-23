@@ -199,6 +199,7 @@ jobs:
         with:
           cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
           location: ${{ secrets.GKE_ZONE }}
+          use_auth_provider: true
 
       # Deploy services to new namespace
       - name: Deploy to new namespace
