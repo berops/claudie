@@ -3,7 +3,7 @@ package manifest
 ////////////////////YAML STRUCT//////////////////////////////////////////////////
 
 type Manifest struct {
-	Name         string       `yaml:"name"`
+	Name         string       `validate:"required" yaml:"name"`
 	Providers    Provider     `yaml:"providers"`
 	NodePools    NodePool     `yaml:"nodePools"`
 	Kubernetes   Kubernetes   `yaml:"kubernetes"`
@@ -17,14 +17,22 @@ type Provider struct {
 }
 
 type GCP struct {
-	Name        string `yaml:"name"`
-	Credentials string `yaml:"credentials"`
-	GCPProject  string `yaml:"gcp_project"`
+	Name string `validate:"required" yaml:"name"`
+	// We can only validate that the supplied string is a
+	// valid formatted JSON.
+	Credentials string `validate:"required,json" yaml:"credentials"`
+	GCPProject  string `validate:"required" yaml:"gcp_project"`
 }
 
 type Hetzner struct {
-	Name        string `yaml:"name"`
-	Credentials string `yaml:"credentials"`
+	Name string `validate:"required" yaml:"name"`
+
+	// We can only validate the length of the token
+	// as Hetzner doesn't specify the structure of the token,
+	// only that it's a hash. We can also validate that the characters
+	// are alphanumeric (i.e. excluding characters like !#@$%^&*...)
+	// https://docs.hetzner.com/cloud/technical-details/faq#how-are-api-tokens-stored
+	Credentials string `validate:"required,alphanum,len=64" yaml:"credentials"`
 }
 
 type OCI struct {
@@ -51,34 +59,34 @@ type Kubernetes struct {
 }
 
 type DynamicNodePool struct {
-	Name         string       `yaml:"name"`
-	ProviderSpec ProviderSpec `yaml:"providerSpec"`
+	Name         string       `validate:"required" yaml:"name"`
+	ProviderSpec ProviderSpec `validate:"required" yaml:"providerSpec"`
 	Count        int64        `yaml:"count"`
-	ServerType   string       `yaml:"server_type"`
-	Image        string       `yaml:"image"`
-	DiskSize     int64        `yaml:"disk_size"`
+	ServerType   string       `validate:"required" yaml:"server_type"`
+	Image        string       `validate:"required" yaml:"image"`
+	DiskSize     int64        `validate:"required" yaml:"disk_size"`
 }
 
 type ProviderSpec struct {
-	Name   string `yaml:"name"`
-	Region string `yaml:"region"`
-	Zone   string `yaml:"zone"`
+	Name   string `validate:"required" yaml:"name"`
+	Region string `validate:"required" yaml:"region"`
+	Zone   string `validate:"required" yaml:"zone"`
 }
 
 type StaticNodePool struct {
-	Name  string `yaml:"name"`
-	Nodes []Node `yaml:"nodes"`
+	Name  string `validate:"required" yaml:"name"`
+	Nodes []Node `validate:"dive" yaml:"nodes"`
 }
 
 type Node struct {
-	PublicIP      string `yaml:"publicIP"`
-	PrivateSSHKey string `yaml:"privateSshKey"`
+	PublicIP      string `validate:"required,ip_addr" yaml:"publicIP"`
+	PrivateSSHKey string `validate:"required" yaml:"privateSshKey"`
 }
 
 type Cluster struct {
-	Name    string `yaml:"name"`
-	Version string `yaml:"version"`
-	Network string `yaml:"network"`
+	Name    string `validate:"required" yaml:"name"`
+	Version string `validate:"required,ver" yaml:"version"`
+	Network string `validate:"required,cidrv4" yaml:"network"`
 	Pools   Pool   `yaml:"pools"`
 }
 
@@ -88,24 +96,24 @@ type Pool struct {
 }
 
 type Role struct {
-	Name       string `yaml:"name"`
-	Protocol   string `yaml:"protocol"`
-	Port       int32  `yaml:"port"`
-	TargetPort int32  `yaml:"target_port"`
-	Target     string `yaml:"target"`
+	Name       string `validate:"required" yaml:"name"`
+	Protocol   string `validate:"required,oneof=tcp udp" yaml:"protocol"`
+	Port       int32  `validate:"min=0,max=65535" yaml:"port"`
+	TargetPort int32  `validate:"min=0,max=65535" yaml:"target_port"`
+	Target     string `validate:"required,oneof=k8sAllNodes k8sControlPlane k8sComputePlane" yaml:"target"`
 }
 
 type LoadBalancerCluster struct {
-	Name        string   `yaml:"name"`
+	Name        string   `validate:"required" yaml:"name"`
 	Roles       []string `yaml:"roles"`
-	DNS         DNS      `yaml:"dns,omitempty"`
-	TargetedK8s string   `yaml:"targeted-k8s"`
+	DNS         DNS      `validate:"required" yaml:"dns,omitempty"`
+	TargetedK8s string   `validate:"required" yaml:"targeted-k8s"`
 	Pools       []string `yaml:"pools"`
 }
 
 type DNS struct {
-	DNSZone  string `yaml:"dns_zone"`
-	Provider string `yaml:"provider"`
+	DNSZone  string `validate:"required" yaml:"dns_zone"`
+	Provider string `validate:"required" yaml:"provider"`
 	Hostname string `yaml:"hostname,omitempty"`
 }
 
