@@ -36,7 +36,7 @@ func (*server) InstallNodeRequirements(_ context.Context, req *pb.InstallRequest
 	err := installLonghornRequirements(k8sNodepools)
 	if err != nil {
 		log.Error().Msgf("Error encountered while installing node requirements : %v", err)
-		return nil, fmt.Errorf("error encountered while installing node requirements : %v", err)
+		return nil, fmt.Errorf("error encountered while installing node requirements : %w", err)
 	}
 	return &pb.InstallResponse{DesiredState: req.DesiredState}, nil
 }
@@ -60,7 +60,7 @@ func (*server) InstallVPN(_ context.Context, req *pb.InstallRequest) (*pb.Instal
 	err := installWireguardVPN(vpnNodepools)
 	if err != nil {
 		log.Error().Msgf("Error encountered while installing VPN : %v", err)
-		return nil, fmt.Errorf("error encountered while installing VPN : %v", err)
+		return nil, fmt.Errorf("error encountered while installing VPN : %w", err)
 	}
 	return &pb.InstallResponse{DesiredState: req.DesiredState}, nil
 }
@@ -105,7 +105,7 @@ func (*server) SetUpLoadbalancers(_ context.Context, req *pb.SetUpLBRequest) (*p
 	err := setUpLoadbalancers(lbInfos)
 	if err != nil {
 		log.Error().Msgf("Error encountered while setting up the loadbalancers : %v", err)
-		return nil, fmt.Errorf("error encountered while setting up the loadbalancers : %v", err)
+		return nil, fmt.Errorf("error encountered while setting up the loadbalancers : %w", err)
 	}
 	return &pb.SetUpLBResponse{DesiredState: req.DesiredState}, nil
 }
@@ -143,7 +143,7 @@ func main() {
 	g.Go(func() error {
 		// s.Serve() will create a service goroutine for each connection
 		if err := s.Serve(lis); err != nil {
-			return fmt.Errorf("ansibler failed to serve: %v", err)
+			return fmt.Errorf("ansibler failed to serve: %w", err)
 		}
 		return nil
 	})

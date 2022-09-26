@@ -28,28 +28,28 @@ func healthCheck() error {
 		return err
 	} else {
 		if err := cc.Close(); err != nil {
-			log.Error().Msgf("Error closing the connection in health check function : %v", err)
+			return fmt.Errorf("error closing the connection in health check function : %w", err)
 		}
 	}
 	if cc, err := utils.GrpcDialWithInsecure("ansibler", envs.AnsiblerURL); err != nil {
 		return err
 	} else {
 		if err := cc.Close(); err != nil {
-			log.Error().Msgf("Error closing the connection in health check function : %v", err)
+			return fmt.Errorf("error closing the connection in health check function : %w", err)
 		}
 	}
 	if cc, err := utils.GrpcDialWithInsecure("kubeEleven", envs.KubeElevenURL); err != nil {
 		return err
 	} else {
 		if err := cc.Close(); err != nil {
-			log.Error().Msgf("Error closing the connection in health check function : %v", err)
+			return fmt.Errorf("error closing the connection in health check function : %w", err)
 		}
 	}
 	if cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL); err != nil {
 		return err
 	} else {
 		if err := cc.Close(); err != nil {
-			log.Error().Msgf("Error closing the connection in health check function : %v", err)
+			return fmt.Errorf("error closing the connection in health check function : %w", err)
 		}
 	}
 	return nil

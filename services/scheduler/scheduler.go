@@ -29,13 +29,13 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient) error {
 	//create desired state
 	config, err := createDesiredState(config)
 	if err != nil {
-		return fmt.Errorf("error while creating a desired state: %v", err)
+		return fmt.Errorf("error while creating a desired state: %w", err)
 	}
 
 	//save config with new desired state
 	err = cbox.SaveConfigScheduler(c, &pb.SaveConfigRequest{Config: config})
 	if err != nil {
-		return fmt.Errorf("error while saving the config: %v", err)
+		return fmt.Errorf("error while saving the config: %w", err)
 	}
 
 	return nil
@@ -48,7 +48,7 @@ func configProcessor(c pb.ContextBoxServiceClient) func() error {
 		//pull an item from a queue in cbox
 		res, err := cbox.GetConfigScheduler(c)
 		if err != nil {
-			return fmt.Errorf("error while getting Scheduler config: %v", err)
+			return fmt.Errorf("error while getting Scheduler config: %w", err)
 		}
 
 		//process config
@@ -78,7 +78,7 @@ func saveErrorMessage(config *pb.Config, c pb.ContextBoxServiceClient, err error
 	config.ErrorMessage = err.Error()
 	errSave := cbox.SaveConfigScheduler(c, &pb.SaveConfigRequest{Config: config})
 	if errSave != nil {
-		return fmt.Errorf("error while saving the config: %v", err)
+		return fmt.Errorf("error while saving the config: %w", err)
 	}
 	return nil
 }

@@ -70,7 +70,7 @@ func TestClaudie(t *testing.T) {
 				err := applyTestSet(path, namespace, c)
 				if err != nil {
 					log.Error().Msgf("Error in %s : %v", path, err)
-					return fmt.Errorf("error in %s : %v", path, err)
+					return fmt.Errorf("error in %s : %w", path, err)
 				}
 				return nil
 			})

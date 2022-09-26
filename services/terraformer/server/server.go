@@ -89,7 +89,7 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 				CurrentState: currentState,
 				DesiredState: desiredState,
 				ErrorMessage: err.Error()},
-			fmt.Errorf("template generator failed: %v", err)
+			fmt.Errorf("BuildInfrastructure got error: %w", err)
 	}
 	log.Info().Msg("Infrastructure was successfully generated")
 	return &pb.BuildInfrastructureResponse{
@@ -129,7 +129,7 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 	err := errGroup.Wait()
 	if err != nil {
 		config.ErrorMessage = err.Error()
-		return &pb.DestroyInfrastructureResponse{Config: config}, fmt.Errorf("error while destroying the infrastructure: %v", err)
+		return &pb.DestroyInfrastructureResponse{Config: config}, fmt.Errorf("error while destroying the infrastructure: %w", err)
 	}
 	config.ErrorMessage = ""
 	return &pb.DestroyInfrastructureResponse{Config: config}, nil
@@ -148,7 +148,7 @@ func healthCheck() error {
 
 	exists, err := mc.BucketExists(context.Background(), "claudie-tf-state-files")
 	if !exists || err != nil {
-		return fmt.Errorf("error: bucket exists %t || err: %v", exists, err)
+		return fmt.Errorf("error: bucket exists %t || err: %w", exists, err)
 	}
 	return nil
 }
@@ -193,7 +193,7 @@ func main() {
 	g.Go(func() error {
 		// s.Serve() will create a service goroutine for each connection
 		if err := s.Serve(lis); err != nil {
-			return fmt.Errorf("terraformer failed to serve: %v", err)
+			return fmt.Errorf("terraformer failed to serve: %w", err)
 		}
 		return nil
 	})

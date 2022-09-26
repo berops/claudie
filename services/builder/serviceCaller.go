@@ -23,9 +23,9 @@ func buildConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig bo
 	if err != nil {
 		err1 := saveErrorMessage(config, c, err)
 		if err1 != nil {
-			return fmt.Errorf("error in Terraformer: %v; unable to save error message config: %v", err, err1)
+			return fmt.Errorf("error in Terraformer: %v; unable to save error message config: %w", err, err1)
 		}
-		return fmt.Errorf("error in Terraformer: %v", err)
+		return fmt.Errorf("error in Terraformer: %w", err)
 	}
 	config.CurrentState = currentState
 	config.DesiredState = desiredState
@@ -34,9 +34,9 @@ func buildConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig bo
 	if err != nil {
 		err1 := saveErrorMessage(config, c, err)
 		if err1 != nil {
-			return fmt.Errorf("error in Ansibler: %v; unable to save error message config: %v", err, err1)
+			return fmt.Errorf("error in Ansibler: %v; unable to save error message config: %w", err, err1)
 		}
-		return fmt.Errorf("error in Ansibler: %v", err)
+		return fmt.Errorf("error in Ansibler: %w", err)
 	}
 	config.DesiredState = desiredState
 	// call Kube-eleven to create K8s clusters
@@ -44,9 +44,9 @@ func buildConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig bo
 	if err != nil {
 		err1 := saveErrorMessage(config, c, err)
 		if err1 != nil {
-			return fmt.Errorf("error in KubeEleven: %v; unable to save error message config: %v", err, err1)
+			return fmt.Errorf("error in KubeEleven: %v; unable to save error message config: %w", err, err1)
 		}
-		return fmt.Errorf("error in KubeEleven: %v", err)
+		return fmt.Errorf("error in KubeEleven: %w", err)
 	}
 	config.DesiredState = desiredState
 
@@ -55,9 +55,9 @@ func buildConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig bo
 	if err != nil {
 		err1 := saveErrorMessage(config, c, err)
 		if err1 != nil {
-			return fmt.Errorf("error in Kuber: %v; unable to save error message config: %v", err, err1)
+			return fmt.Errorf("error in Kuber: %v; unable to save error message config: %w", err, err1)
 		}
-		return fmt.Errorf("error in Kuber: %v", err)
+		return fmt.Errorf("error in Kuber: %w", err)
 	}
 	config.DesiredState = desiredState
 
@@ -66,7 +66,7 @@ func buildConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig bo
 		config.CurrentState = config.DesiredState // Update currentState
 		err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 		if err != nil {
-			return fmt.Errorf("error while saving the config %s: %v", config.GetName(), err)
+			return fmt.Errorf("error while saving the config %s: %w", config.GetName(), err)
 		}
 	}
 
@@ -80,24 +80,24 @@ func destroyConfig(config *pb.Config, c pb.ContextBoxServiceClient) error {
 	if err != nil {
 		err1 := saveErrorMessage(config, c, err)
 		if err1 != nil {
-			return fmt.Errorf("error in DestroyConfig: %v; failed to run terraform destroy %v", err, err1)
+			return fmt.Errorf("error in DestroyConfig: %v; failed to run terraform destroy %w", err, err1)
 		}
-		return fmt.Errorf("error in destroy config: %v", err)
+		return fmt.Errorf("error in destroy config: %w", err)
 	}
 	// delete the existing kubeconfig of the clusters
 	err = deleteKubeconfig(config)
 	if err != nil {
 		err1 := saveErrorMessage(config, c, err)
 		if err1 != nil {
-			return fmt.Errorf("error in DestroyConfig: %v; failed to delete kubeconfig %v", err, err1)
+			return fmt.Errorf("error in DestroyConfig: %v; failed to delete kubeconfig %w", err, err1)
 		}
-		return fmt.Errorf("error in destroy config: %v", err)
+		return fmt.Errorf("error in destroy config: %w", err)
 	}
 	// save changes to DB
 	err = cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 	if err != nil {
 		config.CurrentState = config.DesiredState
-		return fmt.Errorf("error while saving the config %s: %v", config.Name, err)
+		return fmt.Errorf("error while saving the config %s: %w", config.Name, err)
 	}
 	return nil
 }
@@ -272,7 +272,7 @@ func saveErrorMessage(config *pb.Config, c pb.ContextBoxServiceClient, err error
 	config.ErrorMessage = err.Error()
 	errSave := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 	if errSave != nil {
-		return fmt.Errorf("error while saving the config in Builder: %v", err)
+		return fmt.Errorf("error while saving the config in Builder: %w", err)
 	}
 	return nil
 }
