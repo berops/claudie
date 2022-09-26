@@ -50,7 +50,6 @@ jobs:
         with:
           cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
           location: ${{ secrets.GKE_ZONE }}
-          credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
           use_auth_provider: true
 
       # Deploy services to new namespace
