@@ -15,9 +15,12 @@ env:
 jobs:
   deploy-and-monitor:
     if: github.event.pull_request.draft == false
+    permissions:
+      id-token: write
+      contents: read
     runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           ref: ${{ github.head_ref }}
 
@@ -25,7 +28,7 @@ jobs:
         run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
 
       - name: install kubectl
-        uses: azure/setup-kubectl@v2.0
+        uses: azure/setup-kubectl@v3.0
         with:
           version: latest
 
@@ -35,20 +38,18 @@ jobs:
           version: 3.6.1
 
       - name: Login to GCP
-        uses: google-github-actions/setup-gcloud@v0.6.0
+        uses: google-github-actions/auth@v0.4.0
         with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-          service_account_email: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
-          service_account_key: ${{ secrets.GCP_DOCKER_REGISTRY_KEY }}
-          export_default_credentials: true
-          cleanup_credentials: true
+          token_format: 'access_token'
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+          access_token_lifetime: '21600s'
 
       - name: Configure kubectl
-        uses: google-github-actions/get-gke-credentials@v0.3.0
+        uses: google-github-actions/get-gke-credentials@v0.4.0
         with:
           cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
           location: ${{ secrets.GKE_ZONE }}
-          credentials: ${{ secrets.GKE_SERVICE_ACC_KEY }}
           use_auth_provider: true
 
       # Deploy services to new namespace
@@ -113,11 +114,6 @@ jobs:
       - name: Monitor E2E test
         run: |
           kubectl wait --for=condition=complete --timeout=10800s job/testing-framework -n claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
-
-      - name: Dump logs from testing framework
-        if: ${{ always() }}
-        run: |
-          gcloud logging read "resource.labels.container_name = "testing-framework" AND severity >= ERROR AND  resource.labels.namespace_name = "claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}""
 
       - name: Wait until frontend will clean up the infra from tests
         run: |
