@@ -132,7 +132,7 @@ func createKeys(desiredInfo *pb.ClusterInfo) error {
 // makeSSHKeyPair function generates SSH key pair
 // returns key pair if successful, nil otherwise
 func makeSSHKeyPair() (keyPair, error) {
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2042)
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return keyPair{}, err
 	}
