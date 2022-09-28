@@ -213,20 +213,20 @@ var jsonData = "{\"compute\":{\"test-cluster-compute1\":\"0.0.0.65\",\n\"test-cl
 var ociNp = &pb.NodePool{
 	Name:       "test-np",
 	Region:     "eu-frankfurt-1",
-	ServerType: "VM.Standard.E2.1.Micro",
-	Image:      "Canonical-Ubuntu-20.04-2022.08.15-0",
+	ServerType: "VM.Standard1.1",
+	Image:      "",
 	DiskSize:   50,
-	Zone:       "TEST_ZONE",
+	Zone:       "",
 	Count:      3,
 	Nodes:      []*pb.Node{},
 	IsControl:  true,
 	Provider: &pb.Provider{
 		CloudProviderName: "oci",
-		Credentials:       "TEST_PRIVATE_KEY",
-		OciFingerprint:    "TEST_FINGERPRINT",
-		TenancyOcid:       "TEST_TENANCY",
-		UserOcid:          "TEST_USER",
-		OciCompartmentId:  "TEST_COMPARTMENT",
+		Credentials:       "",
+		OciFingerprint:    "",
+		TenancyOcid:       "",
+		UserOcid:          "",
+		OciCompartmentId:  "",
 	},
 }
 
@@ -253,6 +253,6 @@ func TestGenerateTf(t *testing.T) {
 	template := templateUtils.Templates{Directory: "."}
 	tpl, err := templateLoader.LoadTemplate("oci.tpl")
 	require.NoError(t, err)
-	err = template.Generate(tpl, "oci-test.tf", &NodepoolsData{ClusterName: "TEST_NAME", ClusterHash: "TEST_HASH", NodePools: []*pb.NodePool{ociNp}})
+	err = template.Generate(tpl, "oci-test.tf", &NodepoolsData{ClusterName: "oci-test", ClusterHash: "kjasn5", NodePools: []*pb.NodePool{ociNp}})
 	require.NoError(t, err)
 }
