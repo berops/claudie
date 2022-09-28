@@ -41,7 +41,7 @@ type OCI struct {
 	KeyFingerprint string `yaml:"key_fingerprint"`
 	TenancyOCID    string `yaml:"tenancy_ocid"`
 	UserOCID       string `yaml:"user_ocid"`
-	CompartmentID  string `yaml:"compartment_id"`
+	CompartmentID  string `yaml:"compartment_ocid"`
 }
 
 type NodePool struct {
