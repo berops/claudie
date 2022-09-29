@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/Berops/claudie/internal/envs"
@@ -41,34 +43,47 @@ func processConfig(config *pb.Config, c pb.ContextBoxServiceClient) error {
 	return nil
 }
 
-//configProcessor is worker function which invokes the processConfig() function
-//returns func()error which will carry out the processConfig() execution
-func configProcessor(c pb.ContextBoxServiceClient) func() error {
-	return func() error {
-		//pull an item from a queue in cbox
-		res, err := cbox.GetConfigScheduler(c)
-		if err != nil {
-			return fmt.Errorf("error while getting Scheduler config: %w", err)
-		}
+// configProcessor will fetch new configs from the supplied connection
+// to the context-box service. Each received config will be processed in
+// a separate go-routine. If a sync.WaitGroup is supplied it will call
+// the Add(1) and then the Done() method on it after the go-routine finishes
+// the work, if nil it will be ignored.
+func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
+	//pull an item from a queue in cbox
+	res, err := cbox.GetConfigScheduler(c)
+	if err != nil {
+		return fmt.Errorf("error while getting Scheduler config: %w", err)
+	}
 
-		//process config
-		config := res.GetConfig()
-		if config != nil {
-			go func(config *pb.Config) {
-				log.Info().Msgf("Processing %s ", config.Name)
-				err := processConfig(config, c)
-				if err != nil {
-					log.Error().Msgf("processConfig() failed: %s", err)
-					//save error message to config
-					errSave := saveErrorMessage(config, c, err)
-					if errSave != nil {
-						log.Error().Msgf("scheduler:failed to save error to the config: %s : processConfig failed: %s", errSave, err)
-					}
-				}
-			}(config)
-		}
+	//process config
+	config := res.GetConfig()
+	if config == nil {
 		return nil
 	}
+
+	if wg != nil {
+		// we received a non-nil config thus we add a new worker to the wait group.
+		wg.Add(1)
+	}
+
+	go func() {
+		if wg != nil {
+			defer wg.Done()
+		}
+
+		log.Info().Msgf("Processing %s ", config.Name)
+		err := processConfig(config, c)
+		if err != nil {
+			log.Error().Msgf("processConfig() failed: %s", err)
+			//save error message to config
+			errSave := saveErrorMessage(config, c, err)
+			if errSave != nil {
+				log.Error().Msgf("scheduler:failed to save error to the config: %s : processConfig failed: %s", errSave, err)
+			}
+		}
+	}()
+
+	return nil
 }
 
 //saveErrorMessage saves error message to config
@@ -102,27 +117,63 @@ func main() {
 		log.Fatal().Err(err)
 	}
 	defer func() { utils.CloseClientConnection(cc) }()
-	// Creating the client
-	c := pb.NewContextBoxServiceClient(cc)
 	// Initialize health probes
 	healthChecker := healthcheck.NewClientHealthChecker(fmt.Sprint(defaultSchedulerPort), healthCheck)
 	healthChecker.StartProbes()
 
 	g, ctx := errgroup.WithContext(context.Background())
-	w := worker.NewWorker(ctx, 10*time.Second, configProcessor(c), worker.ErrorLogger)
 
 	// listen for system interrupts to gracefully shut down
 	g.Go(func() error {
 		ch := make(chan os.Signal, 1)
-		signal.Notify(ch, os.Interrupt)
+		signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
 		defer signal.Stop(ch)
-		<-ch
-		return errors.New("scheduler interrupt signal")
+
+		// wait for either the received signal or
+		// check if an error occurred in other
+		// go-routines.
+		var err error
+		select {
+		case <-ctx.Done():
+			err = ctx.Err()
+		case sig := <-ch:
+			log.Info().Msgf("Received signal %v", sig)
+			err = errors.New("scheduler interrupt signal")
+		}
+
+		// Sometimes when the container terminates gRPC logs the following message:
+		// rpc error: code = Unknown desc = Error: No such container: hash of the container...
+		// It does not affect anything as everything will get terminated gracefully
+		// this time.Sleep is more of a 'cosmetic' fix if you will, to not have this
+		// message in the logs.
+		time.Sleep(1 * time.Second)
+
+		return err
 	})
+
 	// scheduler goroutine
 	g.Go(func() error {
-		w.Run()
+		client := pb.NewContextBoxServiceClient(cc)
+		group := sync.WaitGroup{}
+
+		worker.NewWorker(
+			ctx,
+			10*time.Second,
+			func() error {
+				return configProcessor(client, &group)
+			},
+			worker.ErrorLogger,
+		).Run()
+
+		log.Info().Msg("Exited worker loop and stopped checking for new configs")
+		log.Info().Msgf("Waiting for spawned go-routines to finish processing their work")
+
+		group.Wait()
+
+		log.Info().Msgf("All spawned go-routines finished")
+
 		return nil
 	})
+
 	log.Info().Msgf("Stopping Scheduler: %v", g.Wait())
 }

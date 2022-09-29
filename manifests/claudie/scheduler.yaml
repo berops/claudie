@@ -14,6 +14,7 @@ spec:
       labels:
         app: scheduler
     spec:
+      terminationGracePeriodSeconds: 300
       containers:
         - name: scheduler
           imagePullPolicy: Always

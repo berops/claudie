@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"github.com/Berops/claudie/internal/envs"
 	"github.com/Berops/claudie/internal/healthcheck"
@@ -57,15 +59,27 @@ func run() error {
 
 	group.Go(func() error {
 		ch := make(chan os.Signal, 1)
-		signal.Notify(ch, os.Interrupt)
+		signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
+		defer signal.Stop(ch)
 
+		// wait for either the received signal or
+		// check if an error occurred in other
+		// go-routines.
+		var err error
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
-		case <-ch:
-			log.Info().Msg("frontend interrupt signal")
-			return s.Shutdown()
+			err = ctx.Err()
+		case sig := <-ch:
+			log.Info().Msgf("Received signal %v", sig)
+			err = errors.New("frontend interrupt signal")
 		}
+
+		log.Info().Msg("Gracefully shutting down server")
+		if serverErr := s.GracefulShutdown(); serverErr != nil {
+			err = fmt.Errorf("%w: failed to gracefully shutdown server", err)
+		}
+
+		return err
 	})
 
 	return group.Wait()

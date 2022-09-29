@@ -7,6 +7,8 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/Berops/claudie/internal/healthcheck"
 	"github.com/Berops/claudie/internal/utils"
@@ -127,25 +129,49 @@ func main() {
 	// Add health service to gRPC
 	healthService := healthcheck.NewServerHealthChecker(ansiblerPort, "ANSIBLER_PORT", nil)
 	grpc_health_v1.RegisterHealthServer(s, healthService)
-	g, _ := errgroup.WithContext(context.Background())
+
+	g, ctx := errgroup.WithContext(context.Background())
 
 	// listen for system interrupts to gracefully shut down
 	g.Go(func() error {
 		ch := make(chan os.Signal, 1)
-		signal.Notify(ch, os.Interrupt)
+		signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
 		defer signal.Stop(ch)
-		<-ch
-		signal.Stop(ch)
+
+		// wait for either the received signal or
+		// check if an error occurred in other
+		// go-routines.
+		var err error
+		select {
+		case <-ctx.Done():
+			err = ctx.Err()
+		case sig := <-ch:
+			log.Info().Msgf("Received signal %v", sig)
+			err = errors.New("ansibler interrupt signal")
+		}
+
+		log.Info().Msg("Gracefully shutting down gRPC server")
 		s.GracefulStop()
-		return errors.New("ansibler Interrupt signal")
+
+		// Sometimes when the container terminates gRPC logs the following message:
+		// rpc error: code = Unknown desc = Error: No such container: hash of the container...
+		// It does not affect anything as everything will get terminated gracefully
+		// this time.Sleep is more of a 'cosmetic' fix if you will, to not have this
+		// message in the logs.
+		time.Sleep(1 * time.Second)
+
+		return err
 	})
+
 	//server goroutine
 	g.Go(func() error {
 		// s.Serve() will create a service goroutine for each connection
 		if err := s.Serve(lis); err != nil {
 			return fmt.Errorf("ansibler failed to serve: %w", err)
 		}
+		log.Info().Msg("Finished listening for incoming connections")
 		return nil
 	})
+
 	log.Info().Msgf("Stopping Ansibler: %v", g.Wait())
 }
