@@ -157,7 +157,7 @@ func (*server) GetConfigScheduler(ctx context.Context, req *pb.GetConfigRequest)
 		}
 		return &pb.GetConfigResponse{Config: config}, nil
 	}
-	return nil, fmt.Errorf("empty Scheduler queue")
+	return &pb.GetConfigResponse{Config: nil}, nil
 }
 
 // GetConfigBuilder is a gRPC service: function returns oldest config from the queueBuilder
@@ -171,7 +171,7 @@ func (*server) GetConfigBuilder(ctx context.Context, req *pb.GetConfigRequest) (
 		}
 		return &pb.GetConfigResponse{Config: config}, nil
 	}
-	return nil, fmt.Errorf("empty Builder queue")
+	return &pb.GetConfigResponse{Config: nil}, nil
 }
 
 // GetAllConfigs is a gRPC service: function returns all configs from the DB

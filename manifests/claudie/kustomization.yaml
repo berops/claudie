@@ -24,7 +24,7 @@ images:
 - name: claudieio/builder
   newTag: 7554bc1-749
 - name: claudieio/context-box
-  newTag: 7554bc1-749
+  newTag: 70c5529-783
 - name: claudieio/frontend
   newTag: 7554bc1-749
 - name: claudieio/kube-eleven
