@@ -32,13 +32,13 @@ func testLonghornDeployment(config *pb.GetConfigFromDBResponse) error {
 		kubectl := kubectl.Kubectl{Kubeconfig: cluster.Kubeconfig}
 		err := checkLonghornNodes(cluster, kubectl)
 		if err != nil {
-			return fmt.Errorf("error while checking the nodes.longhorn.io : %v", err)
+			return fmt.Errorf("error while checking the nodes.longhorn.io : %w", err)
 
 		}
 		// check if all pods from longhorn-system are ready
 		err = checkLonghornPods(cluster.Kubeconfig, cluster.ClusterInfo.Name, kubectl)
 		if err != nil {
-			return fmt.Errorf("error while checking if all pods from longhorn-system are ready : %v", err)
+			return fmt.Errorf("error while checking if all pods from longhorn-system are ready : %w", err)
 		}
 	}
 	return nil
@@ -60,11 +60,11 @@ func checkLonghornNodes(cluster *pb.K8Scluster, kubectl kubectl.Kubectl) error {
 	for readyCheck < maxLonghornCheck {
 		out, err := kubectl.KubectlGet("nodes.longhorn.io -A -o json", "")
 		if err != nil {
-			return fmt.Errorf(fmt.Sprintf("error while getting the nodes.longhorn.io in cluster %s : %v", cluster.ClusterInfo.Name, err))
+			return fmt.Errorf("error while getting the nodes.longhorn.io in cluster %s : %w", cluster.ClusterInfo.Name, err)
 		}
 		allNodesFound, count, err = parseNodesOutput(out, workerCount)
 		if err != nil {
-			return fmt.Errorf(fmt.Sprintf("error while checking the kubectl output for  nodes.longhorn.io in cluster  %s : %v", cluster.ClusterInfo.Name, err))
+			return fmt.Errorf("error while checking the kubectl output for  nodes.longhorn.io in cluster  %s : %w", cluster.ClusterInfo.Name, err)
 		}
 		// the number of worker nodes should be equal to number of scheduled nodes in longhorn
 		// NOTE: by default, master nodes will not be used to schedule pods, however, if this changes the condition will be broken
@@ -89,7 +89,7 @@ func checkLonghornPods(config, clusterName string, kubectl kubectl.Kubectl) erro
 	for readyCheck < maxLonghornCheck {
 		out, err := kubectl.KubectlGet("pods -o json", "longhorn-system")
 		if err != nil {
-			return fmt.Errorf("error while getting the status of the pods in longhorn-system in cluster %s : %v", clusterName, err)
+			return fmt.Errorf("error while getting the status of the pods in longhorn-system in cluster %s : %w", clusterName, err)
 		}
 		ready, err := parsePodsOutput(out)
 		if err != nil {
@@ -118,7 +118,7 @@ func parseNodesOutput(out []byte, nodesExpected int) (bool, int, error) {
 	var parsedJSON KubectlOutputJSON
 	err := json.Unmarshal(out, &parsedJSON)
 	if err != nil {
-		return false, -1, fmt.Errorf("error while unmarshalling output data : %v", err)
+		return false, -1, fmt.Errorf("error while unmarshalling output data : %w", err)
 	}
 	// get number of nodes currently
 	nodes := len(parsedJSON.Items)
@@ -137,7 +137,7 @@ func parsePodsOutput(out []byte) (bool, error) {
 	var parsedJSON KubectlOutputJSON
 	err := json.Unmarshal(out, &parsedJSON)
 	if err != nil {
-		return false, fmt.Errorf("error while unmarshalling output data : %v", err)
+		return false, fmt.Errorf("error while unmarshalling output data : %w", err)
 	}
 	// iterate over all returned items
 	for _, item := range parsedJSON.Items {

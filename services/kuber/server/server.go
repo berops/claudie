@@ -85,7 +85,7 @@ func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigReq
 				fmt.Println(c.Kubeconfig)
 				err := os.RemoveAll(sec.Directory)
 				if err != nil {
-					return fmt.Errorf("error while cleaning up the temporary directory %s : %v", sec.Directory, err)
+					return fmt.Errorf("error while cleaning up the temporary directory %s : %w", sec.Directory, err)
 				}
 				return nil
 			}
@@ -185,7 +185,7 @@ func main() {
 	g.Go(func() error {
 		// s.Serve() will create a service goroutine for each connection
 		if err := s.Serve(lis); err != nil {
-			return fmt.Errorf("kuber failed to serve: %v", err)
+			return fmt.Errorf("kuber failed to serve: %w", err)
 		}
 		return nil
 	})

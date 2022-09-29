@@ -39,12 +39,12 @@ func installWireguardVPN(vpnNodepools map[string]*VPNInfo) error {
 				//generate key files
 				if _, err := os.Stat(directory); os.IsNotExist(err) {
 					if err := os.MkdirAll(directory, os.ModePerm); err != nil {
-						return fmt.Errorf("failed to create dir: %v", err)
+						return fmt.Errorf("failed to create dir: %w", err)
 					}
 				}
 				for _, nodepoolInfo := range vpnInfo.NodepoolInfo {
 					if err := utils.CreateKeyFile(nodepoolInfo.PrivateKey, directory, fmt.Sprintf("%s.%s", nodepoolInfo.ID, privateKeyExt)); err != nil {
-						return fmt.Errorf("failed to create key file: %v", err)
+						return fmt.Errorf("failed to create key file: %w", err)
 					}
 				}
 				//generate inventory
@@ -60,7 +60,7 @@ func installWireguardVPN(vpnNodepools map[string]*VPNInfo) error {
 				}
 				//Clean up
 				if err := os.RemoveAll(directory); err != nil {
-					return fmt.Errorf("error while deleting files: %v", err)
+					return fmt.Errorf("error while deleting files: %w", err)
 				}
 				return nil
 			})
@@ -78,7 +78,7 @@ func installWireguardVPN(vpnNodepools map[string]*VPNInfo) error {
 func setPrivateAddresses(nodepools []*pb.NodePool, network string) error {
 	_, ipNet, err := net.ParseCIDR(network)
 	if err != nil {
-		return fmt.Errorf("failed to parse CIDR: %v", err)
+		return fmt.Errorf("failed to parse CIDR: %w", err)
 	}
 	var addressesToAssign []*pb.Node
 

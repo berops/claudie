@@ -33,12 +33,12 @@ func (b Backend) CreateFiles() error {
 	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.TerraformerTemplates}
 	tpl, err := templateLoader.LoadTemplate("backend.tpl")
 	if err != nil {
-		return fmt.Errorf("error while parsing template file backend.tpl: %v", err)
+		return fmt.Errorf("error while parsing template file backend.tpl: %w", err)
 	}
 	data := templateData{ProjectName: b.ProjectName, ClusterName: b.ClusterName, MinioURL: minioURL, AccessKey: accessKey, SecretKey: secretKey}
 	err = template.Generate(tpl, "backend.tf", data)
 	if err != nil {
-		return fmt.Errorf("error while creating backend files: %v", err)
+		return fmt.Errorf("error while creating backend files: %w", err)
 	}
 	return nil
 }

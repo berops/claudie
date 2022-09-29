@@ -27,11 +27,11 @@ func createK8sCluster(manifestState *manifest.Manifest) ([]*pb.K8Scluster, error
 		// createNodepools
 		controlNodePools, err := manifestState.CreateNodepools(cluster.Pools.Control, true)
 		if err != nil {
-			return nil, fmt.Errorf("error while creating control nodepool for %s : %v", cluster.Name, err)
+			return nil, fmt.Errorf("error while creating control nodepool for %s : %w", cluster.Name, err)
 		}
 		computeNodePools, err := manifestState.CreateNodepools(cluster.Pools.Compute, false)
 		if err != nil {
-			return nil, fmt.Errorf("error while creating compute nodepool for %s : %v", cluster.Name, err)
+			return nil, fmt.Errorf("error while creating compute nodepool for %s : %w", cluster.Name, err)
 		}
 		newCluster.ClusterInfo.NodePools = append(controlNodePools, computeNodePools...)
 		clusters = append(clusters, newCluster)
@@ -59,7 +59,7 @@ clusterDesired:
 		if clusterDesired.ClusterInfo.PublicKey == "" {
 			err := createKeys(clusterDesired.ClusterInfo)
 			if err != nil {
-				return fmt.Errorf("error encountered while creating desired state for %s : %v", clusterDesired.ClusterInfo.Name, err)
+				return fmt.Errorf("error encountered while creating desired state for %s : %w", clusterDesired.ClusterInfo.Name, err)
 			}
 		}
 	}

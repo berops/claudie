@@ -89,7 +89,7 @@ func main() {
 	g.Go(func() error {
 		// s.Serve() will create a service goroutine for each connection
 		if err := s.Serve(lis); err != nil {
-			return fmt.Errorf("KubeEleven failed to serve: %v", err)
+			return fmt.Errorf("KubeEleven failed to serve: %w", err)
 		}
 		return nil
 	})

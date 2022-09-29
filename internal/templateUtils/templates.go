@@ -41,16 +41,16 @@ func (t Templates) Generate(tpl *template.Template, outputFile string, d interfa
 	// make sure the t.Directory exists, if not, create it
 	if _, err := os.Stat(t.Directory); os.IsNotExist(err) {
 		if err := os.MkdirAll(t.Directory, os.ModePerm); err != nil {
-			return fmt.Errorf("failed to create dir: %v", err)
+			return fmt.Errorf("failed to create dir: %w", err)
 		}
 	}
 	log.Info().Msgf("Creating %s", generatedFile)
 	f, err := os.Create(generatedFile)
 	if err != nil {
-		return fmt.Errorf("failed to create the %s file: %v", t.Directory, err)
+		return fmt.Errorf("failed to create the %s file: %w", t.Directory, err)
 	}
 	if err := tpl.Execute(f, d); err != nil {
-		return fmt.Errorf("failed to execute the template file: %v", err)
+		return fmt.Errorf("failed to execute the template file: %w", err)
 	}
 	return nil
 }
@@ -71,7 +71,7 @@ func (t Templates) GenerateToString(tpl *template.Template, d interface{}) (stri
 func (tl TemplateLoader) LoadTemplate(tplFile string) (*template.Template, error) {
 	tpl, err := template.ParseFiles(filepath.Join(baseDirectory, tl.Directory, tplFile))
 	if err != nil {
-		return nil, fmt.Errorf("failed to load the template file: %v", err)
+		return nil, fmt.Errorf("failed to load the template file: %w", err)
 	}
 	return tpl, nil
 }
