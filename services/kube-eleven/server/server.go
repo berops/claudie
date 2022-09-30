@@ -100,8 +100,7 @@ func main() {
 		// Sometimes when the container terminates gRPC logs the following message:
 		// rpc error: code = Unknown desc = Error: No such container: hash of the container...
 		// It does not affect anything as everything will get terminated gracefully
-		// this time.Sleep is more of a 'cosmetic' fix if you will, to not have this
-		// message in the logs.
+		// this time.Sleep fixes it so that the message won't be logged.
 		time.Sleep(1 * time.Second)
 
 		return err
