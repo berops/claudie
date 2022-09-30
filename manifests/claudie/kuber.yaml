@@ -14,6 +14,7 @@ spec:
       labels:
         app: kuber
     spec:
+      terminationGracePeriodSeconds: 1320
       containers:
         - name: kuber
           imagePullPolicy: Always
