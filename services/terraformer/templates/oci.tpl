@@ -85,30 +85,6 @@ resource "oci_core_default_security_list" "claudie_security_rules" {
   }
 }
 
-resource "oci_core_network_security_group" "claudie_network_security_group" {
-   compartment_id = var.default_compartment_id
-   vcn_id = oci_core_vcn.claudie_vcn.id
-   display_name = "{{ $clusterName }}-{{ $clusterHash }}-nsg"
-}
-
-resource "oci_core_network_security_group_security_rule" "egress_security_group_security_rule" {
-    network_security_group_id = oci_core_network_security_group.claudie_network_security_group.id
-    direction = "EGRESS"
-    protocol = "all"
-    description = "All Egress connections"
-    source = "0.0.0.0/0"
-    source_type = "CIDR_BLOCK"
-}
-
-resource "oci_core_network_security_group_security_rule" "ingress_security_group_security_rule" {
-    network_security_group_id = oci_core_network_security_group.claudie_network_security_group.id
-    direction = "INGRESS"
-    protocol = "all"
-    description = "All Egress connections"
-    destination = "0.0.0.0/0"
-    destination_type = "CIDR_BLOCK"
-}
-
 resource "oci_core_default_route_table" "claudie_routes" {
   manage_default_resource_id = oci_core_vcn.claudie_vcn.default_route_table_id
 
@@ -129,15 +105,14 @@ resource "oci_core_instance" "{{ $nodepool.Name }}" {
   
     metadata = {
         ssh_authorized_keys = file("./public.pem")
-        #script to allow Claudie to ssh as root and disable IP tables
         user_data = base64encode(<<EOF
         #cloud-config
         runcmd:
+          # Allow Claudie to ssh as root
           - sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
           - cat /root/.ssh/temp > /root/.ssh/authorized_keys
           - rm /root/.ssh/temp
           - echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config && service sshd restart
-          - sudo iptables-save > ~/iptables-rules
           # Accept all traffic first to avoid ssh lockdown  via iptables firewall rules 
           - iptables -P INPUT ACCEPT
           - iptables -P FORWARD ACCEPT
@@ -158,7 +133,6 @@ resource "oci_core_instance" "{{ $nodepool.Name }}" {
 
     create_vnic_details {
         assign_public_ip = true
-        nsg_ids = [oci_core_network_security_group.claudie_network_security_group.id]
         subnet_id = oci_core_subnet.claudie_subnet.id
     }
 }
