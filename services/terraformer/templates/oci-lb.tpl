@@ -13,18 +13,18 @@ provider "oci" {
   fingerprint = "{{(index .NodePools 0).Provider.OciFingerprint}}"
   private_key_path = "{{(index .NodePools 0).Provider.SpecName}}" 
   region = "{{(index .NodePools 0).Region}}"
-  alias = "k8s-nodepool"
+  alias = "lb-nodepool"
 }
 
 resource "oci_core_vcn" "claudie_vcn" {
-  provider = oci.k8s-nodepool
+  provider = oci.lb-nodepool
   compartment_id = var.default_compartment_id
   display_name = "{{ $clusterName }}-{{ $clusterHash }}-vcn"
   cidr_blocks = ["10.0.0.0/16"]
 }
 
 resource "oci_core_subnet" "claudie_subnet" {
-  provider = oci.k8s-nodepool
+  provider = oci.lb-nodepool
   vcn_id = oci_core_vcn.claudie_vcn.id
   cidr_block = "10.0.0.0/24"
   compartment_id = var.default_compartment_id
@@ -35,7 +35,7 @@ resource "oci_core_subnet" "claudie_subnet" {
 }
 
 resource "oci_core_internet_gateway" "claudie_gateway" {
-  provider = oci.k8s-nodepool
+  provider = oci.lb-nodepool
   compartment_id = var.default_compartment_id
   display_name   = "{{ $clusterName }}-{{ $clusterHash }}-gateway"
   vcn_id         = oci_core_vcn.claudie_vcn.id
@@ -43,7 +43,7 @@ resource "oci_core_internet_gateway" "claudie_gateway" {
 }  
 
 resource "oci_core_default_security_list" "claudie_security_rules" {
-  provider = oci.k8s-nodepool
+  provider = oci.lb-nodepool
   manage_default_resource_id = oci_core_vcn.claudie_vcn.default_security_list_id
   display_name   = "{{ $clusterName }}-{{ $clusterHash }}_security_rules"
 
@@ -91,7 +91,7 @@ resource "oci_core_default_security_list" "claudie_security_rules" {
 }
 
 resource "oci_core_default_route_table" "claudie_routes" {
-  provider = oci.k8s-nodepool
+  provider = oci.lb-nodepool
   manage_default_resource_id = oci_core_vcn.claudie_vcn.default_route_table_id
 
   route_rules {
@@ -103,7 +103,7 @@ resource "oci_core_default_route_table" "claudie_routes" {
 
 {{ range $nodepool := .NodePools }}
 resource "oci_core_instance" "{{ $nodepool.Name }}" {
-  provider = oci.k8s-nodepool
+  provider = oci.lb-nodepool
   compartment_id = var.default_compartment_id
   count = {{ $nodepool.Count }}
   availability_domain = "{{ $nodepool.Zone }}"
