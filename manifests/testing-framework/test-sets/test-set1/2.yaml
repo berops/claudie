@@ -8,6 +8,14 @@ providers:
     - name: gcp-1
       credentials: replaceme-key
       gcp_project: replaceme-project
+  oci:
+    - name: oci-1
+      private_key: |
+        replaceme-key
+      key_fingerprint: replaceme-fingerprint
+      tenancy_ocid: replaceme-tenancy
+      user_ocid: replaceme-user
+      compartment_ocid: replaceme-compartment
 
 nodePools:
   dynamic:
@@ -47,10 +55,32 @@ nodePools:
       server_type: e2-small
       image: ubuntu-os-cloud/ubuntu-2004-focal-v20220610
       disk_size: 50
+    - name: oci-control
+      providerSpec:
+        name: oci-1
+        region: eu-frankfurt-1
+        zone: hsVQ:EU-FRANKFURT-1-AD-1
+      count: 3
+      server_type: VM.Standard2.1
+      # ubuntu minimal
+      # https://docs.oracle.com/en-us/iaas/images/image/7c71896e-e030-4de2-b73e-8856ac44d84c/
+      image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaauj7omj2zxmbh2go5plujbvysvhwojasdywcxrnnkcwehvwpix3ga
+      disk_size: 50
+    - name: oci-compute
+      providerSpec:
+        name: oci-1
+        region: eu-frankfurt-1
+        zone: hsVQ:EU-FRANKFURT-1-AD-1
+      count: 3
+      server_type: VM.Standard1.1
+      # ubuntu minimal
+      # https://docs.oracle.com/en-us/iaas/images/image/7c71896e-e030-4de2-b73e-8856ac44d84c/
+      image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaauj7omj2zxmbh2go5plujbvysvhwojasdywcxrnnkcwehvwpix3ga
+      disk_size: 50
 
 kubernetes:
   clusters:
-    - name: ts1-c-1
+    - name: ts1-c-hetzner
       version: v1.21.0
       network: 192.168.2.0/24
       pools:
@@ -58,7 +88,7 @@ kubernetes:
           - hetzner-control
         compute:
           - hetzner-compute
-    - name: ts1-c-2
+    - name: ts1-c-gcp
       version: v1.21.0
       network: 192.168.2.0/24
       pools:
@@ -66,3 +96,11 @@ kubernetes:
           - gcp-control
         compute:
           - gcp-compute
+    - name: ts1-c-oci
+      version: v1.21.0
+      network: 192.168.2.0/24
+      pools:
+        control:
+          - oci-control
+        compute:
+          - oci-compute
