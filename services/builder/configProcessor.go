@@ -20,6 +20,7 @@ We can have three cases of a operation within the input manifest
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/Berops/claudie/internal/utils"
 	"github.com/Berops/claudie/proto/pb"
@@ -36,62 +37,72 @@ type nodeCount struct {
 	Count uint32
 }
 
-// configProcessor will process the config in a concurrent manner
-func configProcessor(c pb.ContextBoxServiceClient) func() error {
-	return func() error {
-		res, err := cbox.GetConfigBuilder(c) // Get a new config
-		if err != nil {
-			return fmt.Errorf("error while getting config from the Builder: %v", err)
+// configProcessor will fetch new configs from the supplied connection
+// to the context-box service. Each received config will be processed in
+// a separate go-routine. If a sync.WaitGroup is supplied it will call
+// the Add(1) and then the Done() method on it after the go-routine finishes the work,
+// if nil it will be ignored.
+func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
+	res, err := cbox.GetConfigBuilder(c) // Get a new config
+	if err != nil {
+		return fmt.Errorf("error while getting config from the Builder: %v", err)
+	}
+
+	config := res.GetConfig()
+	if config == nil {
+		return nil
+	}
+
+	if wg != nil {
+		// we received a non-nil config thus we add a new worker to the wait group.
+		wg.Add(1)
+	}
+
+	go func() {
+		if wg != nil {
+			defer wg.Done()
 		}
-		config := res.GetConfig()
-		if config == nil {
-			return nil
+
+		// check if Desired state is null and if so we want to delete the existing cluster
+		if config.DsChecksum == nil && config.CsChecksum != nil {
+			if err := destroyConfig(config, c); err != nil {
+				log.Error().Err(err).Send()
+			}
+			return
 		}
-		//process config in goroutine to allow single Builder to work concurrently on multiple configs
-		go func(config *pb.Config) {
-			// check if Desired state is null and if so we want to delete the existing cluster
-			if config.DsChecksum == nil && config.CsChecksum != nil {
-				err := destroyConfig(config, c)
-				if err != nil {
-					log.Error().Err(err).Send()
-				}
-				return
-			}
 
-			//tmpConfig is used in operation where config is adding && deleting the nodes
-			//first, tmpConfig is applied which only adds nodes and only then the real config is applied, which will delete nodes
-			var tmpConfig *pb.Config
-			var toDelete map[string]*nodepoolsCounts //[clusterName]nodepoolsCount
-			//if any current state already exist, find difference
-			if len(config.CurrentState.GetClusters()) > 0 {
-				tmpConfig, toDelete = stateDifference(config)
+		//tmpConfig is used in operation where config is adding && deleting the nodes
+		//first, tmpConfig is applied which only adds nodes and only then the real config is applied, which will delete nodes
+		var tmpConfig *pb.Config
+		var toDelete map[string]*nodepoolsCounts //[clusterName]nodepoolsCount
+		//if any current state already exist, find difference
+		if len(config.CurrentState.GetClusters()) > 0 {
+			tmpConfig, toDelete = stateDifference(config)
+		}
+		//if tmpConfig is not nil, first apply it
+		if tmpConfig != nil {
+			log.Info().Msg("Processing a tmpConfig...")
+			if err := buildConfig(tmpConfig, c, true); err != nil {
+				log.Error().Err(err).Send()
 			}
-			//if tmpConfig is not nil, first apply it
-			if tmpConfig != nil {
-				log.Info().Msg("Processing a tmpConfig...")
-				err := buildConfig(tmpConfig, c, true)
-				if err != nil {
-					log.Error().Err(err).Send()
-				}
-				config.CurrentState = tmpConfig.DesiredState
-			}
-			if toDelete != nil {
-				log.Info().Msg("Deleting nodes...")
-				config, err = deleteNodes(config, toDelete)
-				if err != nil {
-					log.Error().Err(err).Send()
-				}
-			}
-
-			log.Info().Msgf("Processing config %s", config.Name)
-
-			err = buildConfig(config, c, false)
+			config.CurrentState = tmpConfig.DesiredState
+		}
+		if toDelete != nil {
+			log.Info().Msg("Deleting nodes...")
+			config, err = deleteNodes(config, toDelete)
 			if err != nil {
 				log.Error().Err(err).Send()
 			}
-		}(config)
-		return nil
-	}
+		}
+
+		log.Info().Msgf("Processing config %s", config.Name)
+
+		if err = buildConfig(config, c, false); err != nil {
+			log.Error().Err(err).Send()
+		}
+	}()
+
+	return nil
 }
 
 // stateDifference takes config to calculates difference between desired and current state to determine how many nodes  needs to be deleted and added.

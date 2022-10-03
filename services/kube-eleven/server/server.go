@@ -7,6 +7,8 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/Berops/claudie/internal/healthcheck"
 	"github.com/Berops/claudie/internal/utils"
@@ -72,17 +74,36 @@ func main() {
 	healthService := healthcheck.NewServerHealthChecker(kubeElevenPort, "KUBE_ELEVEN_PORT", nil)
 	grpc_health_v1.RegisterHealthServer(s, healthService)
 
-	g, _ := errgroup.WithContext(context.Background())
+	g, ctx := errgroup.WithContext(context.Background())
 
 	//goroutine for interrupt
 	g.Go(func() error {
 		ch := make(chan os.Signal, 1)
-		signal.Notify(ch, os.Interrupt)
-		<-ch
-		signal.Stop(ch)
+		signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
+		defer signal.Stop(ch)
+
+		// wait for either the received signal or
+		// check if an error occurred in other
+		// go-routines.
+		var err error
+		select {
+		case <-ctx.Done():
+			err = ctx.Err()
+		case sig := <-ch:
+			log.Info().Msgf("Received signal %v", sig)
+			err = errors.New("kube-eleven interrupt signal")
+		}
+
+		log.Info().Msg("Gracefully shutting down gRPC server")
 		s.GracefulStop()
 
-		return errors.New("KubeEleven interrupt signal")
+		// Sometimes when the container terminates gRPC logs the following message:
+		// rpc error: code = Unknown desc = Error: No such container: hash of the container...
+		// It does not affect anything as everything will get terminated gracefully
+		// this time.Sleep fixes it so that the message won't be logged.
+		time.Sleep(1 * time.Second)
+
+		return err
 	})
 
 	//server goroutine
@@ -91,7 +112,9 @@ func main() {
 		if err := s.Serve(lis); err != nil {
 			return fmt.Errorf("KubeEleven failed to serve: %w", err)
 		}
+		log.Info().Msg("Finished listening for incoming connections")
 		return nil
 	})
+
 	log.Info().Msgf("Stopping KubeEleven: %s", g.Wait())
 }

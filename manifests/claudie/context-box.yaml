@@ -14,6 +14,7 @@ spec:
       labels:
         app: context-box
     spec:
+      terminationGracePeriodSeconds: 300
       containers:
         - name: context-box
           imagePullPolicy: Always

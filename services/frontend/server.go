@@ -45,6 +45,10 @@ type server struct {
 	// to avoid having multiple go-routines deleting the
 	// same config from the database.
 	deletingConfigs sync.Map
+
+	// groups is used to handle a graceful shutdown of the server.
+	// It will wait for all spawned go-routines to finish their work.
+	group sync.WaitGroup
 }
 
 func newServer(manifestDir string, service string) (*server, error) {
@@ -82,11 +86,16 @@ func newServer(manifestDir string, service string) (*server, error) {
 	return s, s.healthcheck()()
 }
 
-func (s *server) Shutdown() error {
+func (s *server) GracefulShutdown() error {
+	// First shutdown the http server to block any incoming connections.
 	if err := s.server.Shutdown(context.Background()); err != nil {
 		return err
 	}
 
+	// Wait for all go-routines to finish their work.
+	s.group.Wait()
+
+	// Finally close the connection to the context-box.
 	return s.conn.Close()
 }
 
@@ -128,7 +137,11 @@ func (s *server) handleReload(logger zerolog.Logger) http.HandlerFunc {
 
 		logger.Info().Msgf("Received notification about change in the dir: %s", s.manifestDir)
 
+		s.group.Add(1)
+
 		go func() {
+			defer s.group.Done()
+
 			if err := s.processConfigs(); err != nil {
 				logger.Error().Msgf("Failed processing configs from dir: %v due to: %v", s.manifestDir, err)
 			}

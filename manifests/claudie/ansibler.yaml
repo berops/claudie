@@ -14,6 +14,7 @@ spec:
       labels:
         app: ansibler
     spec:
+      terminationGracePeriodSeconds: 1320
       containers:
         - name: ansibler
           imagePullPolicy: Always
