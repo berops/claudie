@@ -189,10 +189,10 @@ jobs:
       - name: Login to GCP
         uses: google-github-actions/auth@v0.4.0
         with:
-          token_format: 'access_token'
+          token_format: "access_token"
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
-          access_token_lifetime: '21600s'
+          access_token_lifetime: "21600s"
 
       - name: Configure kubectl
         uses: google-github-actions/get-gke-credentials@v0.4.0
@@ -236,10 +236,16 @@ jobs:
             for file in $directory/*
             do
             #replace hetzner cred
-            ./yq e '.providers.hetzner.[0].credentials = "${{ secrets.HETZNER_CREDENTIALS}}"' $file -i
+            ./yq e '.providers.hetzner.[].credentials = "${{ secrets.HETZNER_CREDENTIALS}}"' $file -i
             #replace gcp cred & project
-            ./yq e '.providers.gcp.[0].credentials = ${{ secrets.GCP_CREDENTIALS }}' $file -i
-            ./yq e '.providers.gcp.[0].gcp_project = "${{ secrets.GCP_DEV_PROJECT_ID }}"' $file -i
+            ./yq e '.providers.gcp.[].credentials = ${{ secrets.GCP_CREDENTIALS }}' $file -i
+            ./yq e '.providers.gcp.[].gcp_project = "${{ secrets.GCP_DEV_PROJECT_ID }}"' $file -i
+            #replace oci cred
+            ./yq e '.providers.oci.[].private_key = ${{ secrets.OCI_PRIVATE_KEY }}' $file -i
+            ./yq e '.providers.oci.[].key_fingerprint = ${{ secrets.OCI_FINGERPRINT }}' $file -i
+            ./yq e '.providers.oci.[].tenancy_ocid = ${{ secrets.OCI_TENANCY }}' $file -i
+            ./yq e '.providers.oci.[].user_ocid = ${{ secrets.OCI_USER }}' $file -i
+            ./yq e '.providers.oci.[].compartment_ocid = ${{ secrets.OCI_COMPARTMENT }}' $file -i
             done
           done
 
