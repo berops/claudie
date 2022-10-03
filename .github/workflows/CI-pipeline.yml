@@ -227,7 +227,7 @@ jobs:
       - name: Insert cloud credentials to test set
         working-directory: ./manifests/testing-framework/test-sets
         run: |
-          wget https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
+          wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
           tar xz && mv yq_linux_amd64 yq
 
           DIR=( ${{ env.TEST_SETS }} )
@@ -241,11 +241,11 @@ jobs:
             ./yq e '.providers.gcp.[].credentials = ${{ secrets.GCP_CREDENTIALS }}' $file -i
             ./yq e '.providers.gcp.[].gcp_project = "${{ secrets.GCP_DEV_PROJECT_ID }}"' $file -i
             #replace oci cred
-            ./yq e '.providers.oci.[].private_key = ${{ secrets.OCI_PRIVATE_KEY }}' $file -i
-            ./yq e '.providers.oci.[].key_fingerprint = ${{ secrets.OCI_FINGERPRINT }}' $file -i
-            ./yq e '.providers.oci.[].tenancy_ocid = ${{ secrets.OCI_TENANCY }}' $file -i
-            ./yq e '.providers.oci.[].user_ocid = ${{ secrets.OCI_USER }}' $file -i
-            ./yq e '.providers.oci.[].compartment_ocid = ${{ secrets.OCI_COMPARTMENT }}' $file -i
+            ./yq e '.providers.oci.[].private_key = "${{ secrets.OCI_PRIVATE_KEY }}"' $file -i
+            ./yq e '.providers.oci.[].key_fingerprint = "${{ secrets.OCI_FINGERPRINT }}"' $file -i
+            ./yq e '.providers.oci.[].tenancy_ocid = "${{ secrets.OCI_TENANCY }}"' $file -i
+            ./yq e '.providers.oci.[].user_ocid = "${{ secrets.OCI_USER }}"' $file -i
+            ./yq e '.providers.oci.[].compartment_ocid = "${{ secrets.OCI_COMPARTMENT }}"' $file -i
             done
           done
 
