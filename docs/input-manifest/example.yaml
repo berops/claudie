@@ -1,7 +1,7 @@
 name: ExampleManifest
 
 # providers field is used for defining the providers
-# Currently, claudie supports hetzner and gcp only
+# every supported provider has an example in this input manifest
 providers:
   hetzner:
     - name: hetzner-1
