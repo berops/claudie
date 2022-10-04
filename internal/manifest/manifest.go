@@ -36,12 +36,12 @@ type Hetzner struct {
 }
 
 type OCI struct {
-	Name           string `yaml:"name"`
-	PrivateKey     string `yaml:"private_key"`
-	KeyFingerprint string `yaml:"key_fingerprint"`
-	TenancyOCID    string `yaml:"tenancy_ocid"`
-	UserOCID       string `yaml:"user_ocid"`
-	CompartmentID  string `yaml:"compartment_ocid"`
+	Name           string `validate:"required" yaml:"name"`
+	PrivateKey     string `validate:"required" yaml:"private_key"`
+	KeyFingerprint string `validate:"required" yaml:"key_fingerprint"`
+	TenancyOCID    string `validate:"required" yaml:"tenancy_ocid"`
+	UserOCID       string `validate:"required" yaml:"user_ocid"`
+	CompartmentID  string `validate:"required" yaml:"compartment_ocid"`
 }
 
 type NodePool struct {

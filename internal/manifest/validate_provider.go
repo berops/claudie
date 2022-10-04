@@ -37,8 +37,20 @@ func (p *Provider) Validate() error {
 		names[c.Name] = true
 	}
 
+	for _, c := range p.OCI {
+		if err := c.Validate(); err != nil {
+			return fmt.Errorf("failed to validate provider %q: %w", c.Name, err)
+		}
+
+		if _, ok := names[c.Name]; ok {
+			return fmt.Errorf("name %q is used across multiple providers, must be unique", c.Name)
+		}
+		names[c.Name] = true
+	}
+
 	return nil
 }
 
 func (c *GCP) Validate() error     { return validator.New().Struct(c) }
 func (c *Hetzner) Validate() error { return validator.New().Struct(c) }
+func (c *OCI) Validate() error     { return validator.New().Struct(c) }
