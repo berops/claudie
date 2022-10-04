@@ -4,7 +4,7 @@
 
 variable "default_compartment_id" {
   type = string
-  default = "{{(index .NodePools 0).Provider.OciCompartmentId}}"
+  default = "{{(index .NodePools 0).Provider.CompartmentOcid}}"
 }
 
 provider "oci" {
