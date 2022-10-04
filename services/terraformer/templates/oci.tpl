@@ -83,8 +83,8 @@ resource "oci_core_default_security_list" "claudie_security_rules" {
     protocol    = "17"
     source      = "0.0.0.0/0"
     udp_options {
-    max = "51820"
-    min = "51820"
+      max = "51820"
+      min = "51820"
     }
     description = "Allow Wireguard VPN port"
   }
@@ -120,7 +120,8 @@ resource "oci_core_instance" "{{ $nodepool.Name }}" {
         - cat /root/.ssh/temp > /root/.ssh/authorized_keys
         - rm /root/.ssh/temp
         - echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config && service sshd restart
-        # Accept all traffic first to avoid ssh lockdown  via iptables firewall rules 
+        # Disable iptables
+        # Accept all traffic to avoid ssh lockdown via iptables firewall rules
         - iptables -P INPUT ACCEPT
         - iptables -P FORWARD ACCEPT
         - iptables -P OUTPUT ACCEPT
