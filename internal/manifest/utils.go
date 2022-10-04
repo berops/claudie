@@ -41,7 +41,7 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
 				UserOcid:          ociConf.UserOCID,
 				TenancyOcid:       ociConf.TenancyOCID,
 				OciFingerprint:    ociConf.KeyFingerprint,
-				OciCompartmentId:  ociConf.CompartmentID,
+				CompartmentOcid:   ociConf.CompartmentID,
 				//omit rest of the pb.Provider variables
 			}, nil
 		}

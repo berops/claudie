@@ -226,7 +226,7 @@ var ociNp = &pb.NodePool{
 		OciFingerprint:    "",
 		TenancyOcid:       "",
 		UserOcid:          "",
-		OciCompartmentId:  "",
+		CompartmentOcid:   "",
 	},
 }
 

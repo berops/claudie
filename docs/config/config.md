@@ -116,7 +116,7 @@ Provider represent a single provider from manifest
   | UserOcid          | string | OCID of the user                                           |
   | TenancyOcid       | string | OCID of the tenancy                                        |
   | OciFingerprint    | string | Fingerprint of the private key saved in `Credentials`      |
-  | OciCompartmentId  | string | OCID of the compartment                                    |
+  | CompartmentOcid   | string | OCID of the compartment                                    |
 
 
 ## NodeType

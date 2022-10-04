@@ -105,7 +105,7 @@ message Provider {
   string user_ocid = 5;
   string tenancy_ocid = 6;
   string oci_fingerprint = 7;
-  string oci_compartment_id = 8;
+  string compartment_ocid = 8;
 }
 
 enum ClusterType {
