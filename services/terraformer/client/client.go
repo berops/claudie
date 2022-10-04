@@ -12,7 +12,7 @@ import (
 func BuildInfrastructure(c pb.TerraformerServiceClient, req *pb.BuildInfrastructureRequest) (*pb.BuildInfrastructureResponse, error) {
 	res, err := c.BuildInfrastructure(context.Background(), req) //sending request to the server and receiving response
 	if err != nil {
-		return nil, fmt.Errorf("error while calling BuildInfrastructure on Terraformer: %v", err)
+		return nil, fmt.Errorf("error while calling BuildInfrastructure on Terraformer: %w", err)
 	}
 
 	log.Info().Msg("Infrastructure was successfully built")
@@ -23,7 +23,7 @@ func BuildInfrastructure(c pb.TerraformerServiceClient, req *pb.BuildInfrastruct
 func DestroyInfrastructure(c pb.TerraformerServiceClient, req *pb.DestroyInfrastructureRequest) (*pb.DestroyInfrastructureResponse, error) {
 	res, err := c.DestroyInfrastructure(context.Background(), req)
 	if err != nil {
-		return res, fmt.Errorf("error while calling DestroyInfrastructure on Terraformer: %v", err)
+		return res, fmt.Errorf("error while calling DestroyInfrastructure on Terraformer: %w", err)
 	}
 
 	log.Info().Msg("Infrastructure was successfully destroyed")

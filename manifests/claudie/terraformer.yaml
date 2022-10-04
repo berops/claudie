@@ -14,6 +14,7 @@ spec:
       labels:
         app: terraformer
     spec:
+      terminationGracePeriodSeconds: 1320
       containers:
         - name: terraformer
           imagePullPolicy: Always

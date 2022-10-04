@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/Berops/claudie/internal/utils"
@@ -157,7 +158,7 @@ func (*server) GetConfigScheduler(ctx context.Context, req *pb.GetConfigRequest)
 		}
 		return &pb.GetConfigResponse{Config: config}, nil
 	}
-	return nil, fmt.Errorf("empty Scheduler queue")
+	return &pb.GetConfigResponse{Config: nil}, nil
 }
 
 // GetConfigBuilder is a gRPC service: function returns oldest config from the queueBuilder
@@ -171,7 +172,7 @@ func (*server) GetConfigBuilder(ctx context.Context, req *pb.GetConfigRequest) (
 		}
 		return &pb.GetConfigResponse{Config: config}, nil
 	}
-	return nil, fmt.Errorf("empty Builder queue")
+	return &pb.GetConfigResponse{Config: nil}, nil
 }
 
 // GetAllConfigs is a gRPC service: function returns all configs from the DB
@@ -228,28 +229,54 @@ func main() {
 	grpc_health_v1.RegisterHealthServer(s, healthService)
 
 	g, ctx := errgroup.WithContext(context.Background())
-	w := worker.NewWorker(ctx, 10*time.Second, configChecker, worker.ErrorLogger)
+
 	// listen for system interrupts to gracefully shut down
 	g.Go(func() error {
 		ch := make(chan os.Signal, 1)
-		signal.Notify(ch, os.Interrupt)
-		<-ch
-		signal.Stop(ch)
+		signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
+		defer signal.Stop(ch)
+
+		// wait for either the received signal or
+		// check if an error occurred in other
+		// go-routines.
+		var err error
+		select {
+		case <-ctx.Done():
+			err = ctx.Err()
+		case sig := <-ch:
+			log.Info().Msgf("Received signal %v", sig)
+			err = errors.New("context-box interrupt signal")
+		}
+
+		log.Info().Msg("Gracefully shutting down gRPC server")
 		s.GracefulStop()
-		return errors.New("ContextBox interrupt signal")
+
+		// Sometimes when the container terminates gRPC logs the following message:
+		// rpc error: code = Unknown desc = Error: No such container: hash of the container...
+		// It does not affect anything as everything will get terminated gracefully
+		// this time.Sleep fixes it so that the message won't be logged.
+		time.Sleep(1 * time.Second)
+
+		return err
 	})
+
 	// server goroutine
 	g.Go(func() error {
 		// s.Serve() will create a service goroutine for each connection
 		if err := s.Serve(lis); err != nil {
 			return fmt.Errorf("ContextBox failed to serve: %v", err)
 		}
+		log.Info().Msg("Finished listening for incoming connections")
 		return nil
 	})
+
 	//config checker go routine
 	g.Go(func() error {
+		w := worker.NewWorker(ctx, 10*time.Second, configChecker, worker.ErrorLogger)
 		w.Run()
+		log.Info().Msg("Exited worker loop")
 		return nil
 	})
+
 	log.Info().Msgf("Stopping Context-Box: %v", g.Wait())
 }

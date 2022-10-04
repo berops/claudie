@@ -8,6 +8,8 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/Berops/claudie/internal/envs"
 	"github.com/Berops/claudie/internal/healthcheck"
@@ -18,6 +20,7 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/rs/zerolog/log"
+
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health/grpc_health_v1"
@@ -89,7 +92,7 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 				CurrentState: currentState,
 				DesiredState: desiredState,
 				ErrorMessage: err.Error()},
-			fmt.Errorf("template generator failed: %v", err)
+			fmt.Errorf("BuildInfrastructure got error: %w", err)
 	}
 	log.Info().Msg("Infrastructure was successfully generated")
 	return &pb.BuildInfrastructureResponse{
@@ -129,7 +132,7 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 	err := errGroup.Wait()
 	if err != nil {
 		config.ErrorMessage = err.Error()
-		return &pb.DestroyInfrastructureResponse{Config: config}, fmt.Errorf("error while destroying the infrastructure: %v", err)
+		return &pb.DestroyInfrastructureResponse{Config: config}, fmt.Errorf("error while destroying the infrastructure: %w", err)
 	}
 	config.ErrorMessage = ""
 	return &pb.DestroyInfrastructureResponse{Config: config}, nil
@@ -148,7 +151,7 @@ func healthCheck() error {
 
 	exists, err := mc.BucketExists(context.Background(), "claudie-tf-state-files")
 	if !exists || err != nil {
-		return fmt.Errorf("error: bucket exists %t || err: %v", exists, err)
+		return fmt.Errorf("error: bucket exists %t || err: %w", exists, err)
 	}
 	return nil
 }
@@ -176,25 +179,42 @@ func main() {
 	healthService := healthcheck.NewServerHealthChecker(terraformerPort, "TERRAFORMER_PORT", healthCheck)
 	grpc_health_v1.RegisterHealthServer(s, healthService)
 
-	g, _ := errgroup.WithContext(context.Background())
+	g, ctx := errgroup.WithContext(context.Background())
 
 	g.Go(func() error {
 		ch := make(chan os.Signal, 1)
-		signal.Notify(ch, os.Interrupt)
+		signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
 		defer signal.Stop(ch)
-		<-ch
 
-		signal.Stop(ch)
+		// wait for either the received signal or
+		// check if an error occurred in other
+		// go-routines.
+		var err error
+		select {
+		case <-ctx.Done():
+			err = ctx.Err()
+		case sig := <-ch:
+			log.Info().Msgf("Received signal %v", sig)
+			err = errors.New("terraformer interrupt signal")
+		}
+
+		log.Info().Msg("Gracefully shutting down gRPC server")
 		s.GracefulStop()
 
-		return errors.New("terraformer interrupt signal")
+		// Sometimes when the container terminates gRPC logs the following message:
+		// rpc error: code = Unknown desc = Error: No such container: hash of the container...
+		// It does not affect anything as everything will get terminated gracefully
+		// this time.Sleep fixes it so that the message won't be logged.
+		time.Sleep(1 * time.Second)
+
+		return err
 	})
 
 	g.Go(func() error {
-		// s.Serve() will create a service goroutine for each connection
 		if err := s.Serve(lis); err != nil {
-			return fmt.Errorf("terraformer failed to serve: %v", err)
+			return fmt.Errorf("terraformer failed to serve: %w", err)
 		}
+		log.Info().Msg("Finished listening for incoming connections")
 		return nil
 	})
 

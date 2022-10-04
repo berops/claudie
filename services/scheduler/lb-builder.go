@@ -20,11 +20,11 @@ func createLBCluster(manifestState *manifest.Manifest) ([]*pb.LBcluster, error) 
 	for _, lbCluster := range manifestState.LoadBalancer.Clusters {
 		dns, err := getDNS(lbCluster.DNS, manifestState)
 		if err != nil {
-			return nil, fmt.Errorf("error while processing %s : %v", lbCluster.Name, err)
+			return nil, fmt.Errorf("error while processing %s : %w", lbCluster.Name, err)
 		}
 		role, err := getMatchingRoles(manifestState.LoadBalancer.Roles, lbCluster.Roles)
 		if err != nil {
-			return nil, fmt.Errorf("error while processing %s : %v", lbCluster.Name, err)
+			return nil, fmt.Errorf("error while processing %s : %w", lbCluster.Name, err)
 		}
 		newLbCluster := &pb.LBcluster{
 			ClusterInfo: &pb.ClusterInfo{
@@ -37,7 +37,7 @@ func createLBCluster(manifestState *manifest.Manifest) ([]*pb.LBcluster, error) 
 		}
 		nodes, err := manifestState.CreateNodepools(lbCluster.Pools, false)
 		if err != nil {
-			return nil, fmt.Errorf("error while creating nodepools for %s : %v", lbCluster.Name, err)
+			return nil, fmt.Errorf("error while creating nodepools for %s : %w", lbCluster.Name, err)
 		}
 		newLbCluster.ClusterInfo.NodePools = nodes
 		lbClusters = append(lbClusters, newLbCluster)
@@ -66,7 +66,7 @@ clusterLbDesired:
 		if clusterLbDesired.ClusterInfo.PublicKey == "" {
 			err := createKeys(clusterLbDesired.ClusterInfo)
 			if err != nil {
-				return fmt.Errorf("error encountered while creating desired state for %s : %v", clusterLbDesired.ClusterInfo.Name, err)
+				return fmt.Errorf("error encountered while creating desired state for %s : %w", clusterLbDesired.ClusterInfo.Name, err)
 			}
 		}
 		// create hostname if its not set and not present in current state

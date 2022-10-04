@@ -46,17 +46,17 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 	//read manifest state
 	manifestState, err := readManifest(config)
 	if err != nil {
-		return nil, fmt.Errorf("error while parsing manifest from config %s : %v ", config.Name, err)
+		return nil, fmt.Errorf("error while parsing manifest from config %s : %w ", config.Name, err)
 	}
 
 	//create clusters
 	k8sClusters, err := createK8sCluster(manifestState)
 	if err != nil {
-		return nil, fmt.Errorf("error while creating kubernetes clusters for config %s : %v", config.Name, err)
+		return nil, fmt.Errorf("error while creating kubernetes clusters for config %s : %w", config.Name, err)
 	}
 	lbClusters, err := createLBCluster(manifestState)
 	if err != nil {
-		return nil, fmt.Errorf("error while creating Loadbalancer clusters for config %s : %v", config.Name, err)
+		return nil, fmt.Errorf("error while creating Loadbalancer clusters for config %s : %w", config.Name, err)
 	}
 
 	//create new config for desired state
@@ -80,11 +80,11 @@ func createDesiredState(config *pb.Config) (*pb.Config, error) {
 	//update info from current state into the desired state
 	err = updateK8sClusters(newConfig)
 	if err != nil {
-		return nil, fmt.Errorf("error while updating Kubernetes clusters for config %s : %v", config.Name, err)
+		return nil, fmt.Errorf("error while updating Kubernetes clusters for config %s : %w", config.Name, err)
 	}
 	err = updateLBClusters(newConfig)
 	if err != nil {
-		return nil, fmt.Errorf("error while updating Loadbalancer clusters for config %s : %v", config.Name, err)
+		return nil, fmt.Errorf("error while updating Loadbalancer clusters for config %s : %w", config.Name, err)
 	}
 
 	return newConfig, nil
@@ -98,7 +98,7 @@ func readManifest(config *pb.Config) (*manifest.Manifest, error) {
 	var desiredState manifest.Manifest
 	err := yaml.Unmarshal(d, &desiredState)
 	if err != nil {
-		return nil, fmt.Errorf("error while unmarshalling yaml manifest: %v", err)
+		return nil, fmt.Errorf("error while unmarshalling yaml manifest: %w", err)
 	}
 	return &desiredState, nil
 }
@@ -121,7 +121,7 @@ func createKeys(desiredInfo *pb.ClusterInfo) error {
 	if desiredInfo.PublicKey == "" {
 		keys, err := makeSSHKeyPair()
 		if err != nil {
-			return fmt.Errorf("error while filling up the keys for %s : %v", desiredInfo.Name, err)
+			return fmt.Errorf("error while filling up the keys for %s : %w", desiredInfo.Name, err)
 		}
 		desiredInfo.PrivateKey = keys.private
 		desiredInfo.PublicKey = keys.public

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/Berops/claudie/internal/envs"
@@ -28,65 +30,102 @@ func healthCheck() error {
 		return err
 	} else {
 		if err := cc.Close(); err != nil {
-			log.Error().Msgf("Error closing the connection in health check function : %v", err)
+			return fmt.Errorf("error closing the connection in health check function : %w", err)
 		}
 	}
 	if cc, err := utils.GrpcDialWithInsecure("ansibler", envs.AnsiblerURL); err != nil {
 		return err
 	} else {
 		if err := cc.Close(); err != nil {
-			log.Error().Msgf("Error closing the connection in health check function : %v", err)
+			return fmt.Errorf("error closing the connection in health check function : %w", err)
 		}
 	}
 	if cc, err := utils.GrpcDialWithInsecure("kubeEleven", envs.KubeElevenURL); err != nil {
 		return err
 	} else {
 		if err := cc.Close(); err != nil {
-			log.Error().Msgf("Error closing the connection in health check function : %v", err)
+			return fmt.Errorf("error closing the connection in health check function : %w", err)
 		}
 	}
 	if cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL); err != nil {
 		return err
 	} else {
 		if err := cc.Close(); err != nil {
-			log.Error().Msgf("Error closing the connection in health check function : %v", err)
+			return fmt.Errorf("error closing the connection in health check function : %w", err)
 		}
 	}
 	return nil
 }
 
 func main() {
-	// initialize logger
 	utils.InitLog("builder")
 
-	// Create connection to Context-box
-	cc, err := utils.GrpcDialWithInsecure("context-box", envs.ContextBoxURL)
-	log.Info().Msgf("Dial Context-box: %s", envs.ContextBoxURL)
-	if err != nil {
-		log.Fatal().Msgf("Could not connect to Content-box: %v", err)
+	if err := run(); err != nil {
+		log.Fatal().Msg(err.Error())
 	}
-	defer func() { utils.CloseClientConnection(cc) }()
-	// Creating the client
-	c := pb.NewContextBoxServiceClient(cc)
+}
 
-	// Initialize health probes
-	healthChecker := healthcheck.NewClientHealthChecker(fmt.Sprint(defaultBuilderPort), healthCheck)
-	healthChecker.StartProbes()
+func run() error {
+	conn, err := utils.GrpcDialWithInsecure("context-box", envs.ContextBoxURL)
+	if err != nil {
+		return fmt.Errorf("failed to connect to context-box: %w", err)
+	}
+	defer utils.CloseClientConnection(conn)
 
-	g, ctx := errgroup.WithContext(context.Background())
-	w := worker.NewWorker(ctx, 5*time.Second, configProcessor(c), worker.ErrorLogger)
-	// interrupt catching goroutine
-	g.Go(func() error {
+	log.Info().Msgf("Connected to Context-box: %s", envs.ContextBoxURL)
+
+	healthcheck.NewClientHealthChecker(fmt.Sprint(defaultBuilderPort), healthCheck).StartProbes()
+
+	group, ctx := errgroup.WithContext(context.Background())
+
+	group.Go(func() error {
 		ch := make(chan os.Signal, 1)
-		signal.Notify(ch, os.Interrupt)
+		signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
 		defer signal.Stop(ch)
-		<-ch
-		return errors.New("builder interrupt signal")
+
+		// wait for either the received signal or
+		// check if an error occurred in other
+		// go-routines.
+		var err error
+		select {
+		case <-ctx.Done():
+			err = ctx.Err()
+		case sig := <-ch:
+			log.Info().Msgf("Received signal %v", sig)
+			err = errors.New("builder interrupt signal")
+		}
+
+		// Sometimes when the container terminates gRPC logs the following message:
+		// rpc error: code = Unknown desc = Error: No such container: hash of the container...
+		// It does not affect anything as everything will get terminated gracefully
+		// this time.Sleep fixes it so that the message won't be logged.
+		time.Sleep(1 * time.Second)
+
+		return err
 	})
-	//builder goroutine
-	g.Go(func() error {
-		w.Run()
+
+	group.Go(func() error {
+		client := pb.NewContextBoxServiceClient(conn)
+		group := sync.WaitGroup{}
+
+		worker.NewWorker(
+			ctx,
+			5*time.Second,
+			func() error {
+				return configProcessor(client, &group)
+			},
+			worker.ErrorLogger,
+		).Run()
+
+		log.Info().Msg("Exited worker loop and stopped checking for new configs")
+		log.Info().Msgf("Waiting for spawned go-routines to finish processing their work")
+
+		group.Wait()
+
+		log.Info().Msgf("All spawned go-routines finished")
+
 		return nil
 	})
-	log.Info().Msgf("Stopping Builder: %v", g.Wait())
+
+	return group.Wait()
 }
