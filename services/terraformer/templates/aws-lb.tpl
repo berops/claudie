@@ -6,11 +6,11 @@ provider "aws" {
   region     = "{{(index .NodePools 0).Region}}"
   access_key = "{{(index .NodePools 0).Provider.AccessKey}}"
   secret_key = file("{{(index .NodePools 0).Provider.SpecName}}")
-  alias = k8s-nodepool
+  alias = lb-nodepool
 }
 
 resource "aws_vpc" "claudie-vpc" {
-  provider = aws.k8s-nodepool
+  provider = aws.lb-nodepool
   cidr_block = "10.0.0.0/16"
   tags = {
     Name = "{{ $clusterName }}-{{ $clusterHash }}-vpc"
@@ -18,7 +18,7 @@ resource "aws_vpc" "claudie-vpc" {
 }
 
 resource "aws_subnet" "claudie-subnet" {
-  provider = aws.k8s-nodepool
+  provider = aws.lb-nodepool
   vpc_id            = aws_vpc.claudie-vpc.id
   cidr_block        = "10.0.0.0/24"
   map_public_ip_on_launch = true
@@ -29,7 +29,7 @@ resource "aws_subnet" "claudie-subnet" {
 }
 
 resource "aws_internet_gateway" "claudie-gateway" {
-  provider = aws.k8s-nodepool
+  provider = aws.lb-nodepool
   vpc_id = aws_vpc.claudie-vpc.id
   tags = {
     Name = "{{ $clusterName }}-{{ $clusterHash }}-gateway"
@@ -37,7 +37,7 @@ resource "aws_internet_gateway" "claudie-gateway" {
 }
 
 resource "aws_route_table" "claudie-route-table" {
-  provider = aws.k8s-nodepool
+  provider = aws.lb-nodepool
   vpc_id = aws_vpc.claudie-vpc.id
   route {
     cidr_block = "0.0.0.0/0"
@@ -49,13 +49,13 @@ resource "aws_route_table" "claudie-route-table" {
 }
 
 resource "aws_route_table_association" "claudie-rta" {
-  provider = aws.k8s-nodepool
+  provider = aws.lb-nodepool
   subnet_id = aws_subnet.claudie-subnet.id
   route_table_id = aws_route_table.claudie-route-table.id
 }
 
 resource "aws_security_group" "claudie-sg" {
-  provider = aws.k8s-nodepool
+  provider = aws.lb-nodepool
   vpc_id      = aws_vpc.claudie-vpc.id
   revoke_rules_on_delete = true
   tags = {
@@ -64,7 +64,7 @@ resource "aws_security_group" "claudie-sg" {
 }
 
 resource "aws_security_group_rule" "allow-egress" {
-  provider = aws.k8s-nodepool
+  provider = aws.lb-nodepool
   type              = "egress"
   from_port         = 0
   to_port           = 65535
@@ -75,7 +75,7 @@ resource "aws_security_group_rule" "allow-egress" {
 
 
 resource "aws_security_group_rule" "allow-ssh" {
-  provider = aws.k8s-nodepool
+  provider = aws.lb-nodepool
   type              = "ingress"
   from_port         = 22
   to_port           = 22
@@ -85,7 +85,7 @@ resource "aws_security_group_rule" "allow-ssh" {
 }
 
 resource "aws_security_group_rule" "allow-kube-api" {
-  provider = aws.k8s-nodepool
+  provider = aws.lb-nodepool
   type              = "ingress"
   from_port         = 6443
   to_port           = 6443
@@ -96,7 +96,7 @@ resource "aws_security_group_rule" "allow-kube-api" {
 
 
 resource "aws_security_group_rule" "allow-wireguard" {
-  provider = aws.k8s-nodepool
+  provider = aws.lb-nodepool
   type              = "ingress"
   from_port         = 51820
   to_port           = 51820
@@ -106,7 +106,7 @@ resource "aws_security_group_rule" "allow-wireguard" {
 }
 
 resource "aws_security_group_rule" "allow-icmp" {
-  provider = aws.k8s-nodepool
+  provider = aws.lb-nodepool
   type              = "ingress"
   from_port         = -1
   to_port           = -1
@@ -116,14 +116,14 @@ resource "aws_security_group_rule" "allow-icmp" {
 }
 
 resource "aws_key_pair" "claudie-pair" {
-  provider = aws.k8s-nodepool
+  provider = aws.lb-nodepool
   key_name   = "{{ $clusterName }}-{{ $clusterHash }}-key"
   public_key = file("./public.pem")
 }
 
 {{ range $nodepool := .NodePools }}
 resource "aws_instance" "{{ $nodepool.Name }}" {
-  provider = aws.k8s-nodepool
+  provider = aws.lb-nodepool
   count = {{ $nodepool.Count }}
   availability_zone = "{{ $nodepool.Zone }}"
   instance_type = "{{ $nodepool.ServerType }}"
