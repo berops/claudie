@@ -6,7 +6,7 @@ provider "aws" {
   region     = "{{(index .NodePools 0).Region}}"
   access_key = "{{(index .NodePools 0).Provider.AccessKey}}"
   secret_key = file("{{(index .NodePools 0).Provider.SpecName}}")
-  alias = k8s-nodepool
+  alias = "k8s-nodepool"
 }
 
 resource "aws_vpc" "claudie-vpc" {

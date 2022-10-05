@@ -6,7 +6,7 @@ provider "aws" {
   region     = "{{(index .NodePools 0).Region}}"
   access_key = "{{(index .NodePools 0).Provider.AccessKey}}"
   secret_key = file("{{(index .NodePools 0).Provider.SpecName}}")
-  alias = lb-nodepool
+  alias = "lb-nodepool"
 }
 
 resource "aws_vpc" "claudie-vpc" {
