@@ -214,16 +214,16 @@ var testNp = &pb.NodePool{
 	Name:       "test-np",
 	Region:     "eu-central-1",
 	ServerType: "t3.micro",
-	Image:      "",
+	Image:      "ami-06148e0e81e5187c8",
 	DiskSize:   50,
-	Zone:       "TEST_ZONE",
+	Zone:       "eu-central-1c",
 	Count:      3,
 	Nodes:      []*pb.Node{},
 	IsControl:  true,
 	Provider: &pb.Provider{
 		CloudProviderName: "aws",
-		Credentials:       "TEST_SECRET_KEY",
-		AccessKey:         "TEST_ACCESS_KEY",
+		Credentials:       "",
+		AccessKey:         "",
 	},
 }
 
@@ -250,6 +250,6 @@ func TestGenerateTf(t *testing.T) {
 	template := templateUtils.Templates{Directory: "."}
 	tpl, err := templateLoader.LoadTemplate("aws.tpl")
 	require.NoError(t, err)
-	err = template.Generate(tpl, "aws-test.tf", &NodepoolsData{ClusterName: "TEST_NAME", ClusterHash: "TEST_HASH", NodePools: []*pb.NodePool{testNp}})
+	err = template.Generate(tpl, "aws-test.tf", &NodepoolsData{ClusterName: "aws-test", ClusterHash: "abcdef", NodePools: []*pb.NodePool{testNp}})
 	require.NoError(t, err)
 }
