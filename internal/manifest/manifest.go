@@ -39,7 +39,7 @@ type Hetzner struct {
 type AWS struct {
 	Name      string `validate:"required" yaml:"name"`
 	AccessKey string `validate:"required,alphanum,len=20" yaml:"access_key"`
-	SecretKey string `validate:"required,alphanum,len=40" yaml:"secret_key"`
+	SecretKey string `validate:"required,len=40" yaml:"secret_key"`
 }
 type OCI struct {
 	Name           string `validate:"required" yaml:"name"`
