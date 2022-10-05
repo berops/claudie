@@ -102,6 +102,29 @@ func destroyConfig(config *pb.Config, c pb.ContextBoxServiceClient) error {
 	return nil
 }
 
+// destroyClusters destroys cluster infra using terraform and kuber
+func destroyClusters(config *pb.Config, c pb.ContextBoxServiceClient) error {
+	// call terraform destroy
+	err := destroyConfigTerraformer(config)
+	if err != nil {
+		err1 := saveErrorMessage(config, c, err)
+		if err1 != nil {
+			return fmt.Errorf("error in DestroyClusters: %v; failed to run terraform destroy %w", err, err1)
+		}
+		return fmt.Errorf("error in destroy temp config: %w", err)
+	}
+	// delete the existing kubeconfig of the clusters
+	err = deleteKubeconfig(config)
+	if err != nil {
+		err1 := saveErrorMessage(config, c, err)
+		if err1 != nil {
+			return fmt.Errorf("error in DestroyClusters: %v; failed to delete kubeconfig %w", err, err1)
+		}
+		return fmt.Errorf("error in destroy config: %w", err)
+	}
+	return nil
+}
+
 // callTerraformer passes config to terraformer for building the infra
 func callTerraformer(currentState *pb.Project, desiredState *pb.Project) (*pb.Project, *pb.Project, error) {
 	// Create connection to Terraformer

@@ -63,12 +63,18 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			defer wg.Done()
 		}
 
-		// check if Desired state is null and if so we want to delete the existing cluster
+		// check if Desired state is null and if so we want to delete the existing config
 		if config.DsChecksum == nil && config.CsChecksum != nil {
 			if err := destroyConfig(config, c); err != nil {
 				log.Error().Err(err).Send()
 			}
 			return
+		}
+
+		// check for cluster deleting
+		configToDelete := prepareConfigToDelete(config)
+		if err := destroyClusters(configToDelete, c); err != nil {
+			log.Error().Err(err).Send()
 		}
 
 		//tmpConfig is used in operation where config is adding && deleting the nodes
@@ -215,4 +221,43 @@ func mergeDeleteCounts(dst, src map[string]*nodeCount) map[string]*nodeCount {
 		dst[k] = v
 	}
 	return dst
+}
+
+func prepareConfigToDelete(config *pb.Config) *pb.Config {
+	configToDelete := proto.Clone(config).(*pb.Config)
+	var k8sClustersToDelete, newCsK8sClusters []*pb.K8Scluster
+	var LbClustersToDelete, newCsLbClusters []*pb.LBcluster
+
+OuterK8s:
+	for _, csCluster := range config.CurrentState.Clusters {
+		for _, dsCluster := range config.DesiredState.Clusters {
+			if isEqual(dsCluster.ClusterInfo, csCluster.ClusterInfo) {
+				newCsK8sClusters = append(newCsK8sClusters, csCluster)
+				continue OuterK8s
+			}
+		}
+		k8sClustersToDelete = append(k8sClustersToDelete, csCluster)
+	}
+OuterLb:
+	for _, csLbCluster := range config.CurrentState.LoadBalancerClusters {
+		for _, dsLbCluster := range config.DesiredState.LoadBalancerClusters {
+			if isEqual(dsLbCluster.ClusterInfo, csLbCluster.ClusterInfo) {
+				newCsLbClusters = append(newCsLbClusters, csLbCluster)
+				continue OuterLb
+			}
+		}
+		LbClustersToDelete = append(LbClustersToDelete, csLbCluster)
+	}
+	configToDelete.CurrentState.Clusters = k8sClustersToDelete
+	configToDelete.CurrentState.LoadBalancerClusters = LbClustersToDelete
+	config.CurrentState.Clusters = newCsK8sClusters
+	config.CurrentState.LoadBalancerClusters = newCsLbClusters
+	return configToDelete
+}
+
+func isEqual(dsClusterInfo, csClusterInfo *pb.ClusterInfo) bool {
+	if dsClusterInfo.Name == csClusterInfo.Name && dsClusterInfo.Hash == csClusterInfo.Hash {
+		return true
+	}
+	return false
 }
