@@ -8,6 +8,14 @@ providers:
     - name: gcp-1
       credentials: replaceme-key
       gcp_project: replaceme-project
+  oci:
+    - name: oci-1
+      private_key: |
+        replaceme-key
+      key_fingerprint: replaceme-fingerprint
+      tenancy_ocid: replaceme-tenancy
+      user_ocid: replaceme-user
+      compartment_ocid: replaceme-compartment
 
 nodePools:
   dynamic:
@@ -48,6 +56,17 @@ nodePools:
       server_type: cpx11
       image: ubuntu-20.04
       disk_size: 50
+    - name: oci-lb
+      providerSpec:
+        name: oci-1
+        region: eu-frankfurt-1
+        zone: hsVQ:EU-FRANKFURT-1-AD-1
+      count: 1
+      server_type: VM.Standard2.1
+      # ubuntu minimal
+      # https://docs.oracle.com/en-us/iaas/images/image/7c71896e-e030-4de2-b73e-8856ac44d84c/
+      image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaauj7omj2zxmbh2go5plujbvysvhwojasdywcxrnnkcwehvwpix3ga
+      disk_size: 50
 
 kubernetes:
   clusters:
@@ -79,20 +98,22 @@ loadBalancers:
     - name: ts2-lb-1
       roles:
         - apiserver-lb
-      dns: 
+      dns:
         dns_zone: lb-zone-2
         provider: gcp-1
       targeted-k8s: ts2-c-1
       pools:
         - gcp-lb
         - hetzner-lb
+        - oci-lb
     - name: ts2-lb-2
       roles:
         - apiserver-lb
-      dns: 
+      dns:
         dns_zone: lb-zone-2
         provider: gcp-1
       targeted-k8s: ts2-c-2
       pools:
         - gcp-lb
         - hetzner-lb
+        - oci-lb
