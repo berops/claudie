@@ -16,6 +16,10 @@ providers:
       tenancy_ocid: replaceme-tenancy
       user_ocid: replaceme-user
       compartment_ocid: replaceme-compartment
+  aws:
+    - name: aws-1
+      access_key: replaceme-access-key
+      secret_key: replaceme-secret-key
 
 nodePools:
   dynamic:
@@ -77,10 +81,30 @@ nodePools:
       # https://docs.oracle.com/en-us/iaas/images/image/7c71896e-e030-4de2-b73e-8856ac44d84c/
       image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaauj7omj2zxmbh2go5plujbvysvhwojasdywcxrnnkcwehvwpix3ga
       disk_size: 50
+    - name: aws-control
+      providerSpec:
+        name: aws-1
+        region: eu-central-1
+        zone: eu-central-1c
+      count: 3
+      server_type: t3.small
+      #ubuntu
+      image: ami-06148e0e81e5187c8
+      disk_size: 50
+    - name: aws-compute
+      providerSpec:
+        name: aws-1
+        region: eu-central-1
+        zone: eu-central-1c
+      count: 3
+      server_type: t3.micro
+      #ubuntu
+      image: ami-06148e0e81e5187c8
+      disk_size: 50
 
 kubernetes:
   clusters:
-    - name: ts1-c-1
+    - name: ts1-c-hetzner
       version: v1.21.0
       network: 192.168.2.0/24
       pools:
@@ -88,7 +112,7 @@ kubernetes:
           - hetzner-control
         compute:
           - hetzner-compute
-    - name: ts1-c-2
+    - name: ts1-c-gcp
       version: v1.21.0
       network: 192.168.2.0/24
       pools:
@@ -96,7 +120,7 @@ kubernetes:
           - gcp-control
         compute:
           - gcp-compute
-    - name: ts1-c-3
+    - name: ts1-c-oci
       version: v1.21.0
       network: 192.168.2.0/24
       pools:
@@ -104,3 +128,11 @@ kubernetes:
           - oci-control
         compute:
           - oci-compute
+    - name: ts1-c-aws
+      version: v1.21.0
+      network: 192.168.2.0/24
+      pools:
+        control:
+          - aws-control
+        compute:
+          - aws-compute
