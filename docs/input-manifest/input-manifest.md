@@ -36,6 +36,11 @@ Contains configurations for different supported cloud providers. Atleast one pro
   
   List of Hetzner configuration for [Hetzner cloud](https://www.hetzner.com/cloud) . This field is optional.
 
+
+- `oci` [OCI](#oci)
+  
+  List of OCI configuration for [Oracle cloud infrastructure](https://www.oracle.com/uk/cloud/) . This field is optional.
+
 Support for more cloud provider is planned and will be rolled out in future. 
 
 ## GCP
@@ -66,6 +71,33 @@ Collection of data defining Hetzner cloud provider configuration.
 
   Credentials for the provider (API token).
 
+## OCI
+
+Collection of data defining OCI cloud provider configuration. 
+
+- `name`
+
+  Name of the provider spec. Used as a reference further in the input manifest. Should be unique for each provider spec across all the cloud providers.
+
+- `private_key`
+
+  [Private key](https://docs.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm#two) used to authenticate to the OCI.
+
+- `key_fingerprint`
+
+  Fingerprint to the supplied private key.
+
+- `tenancy_ocid`
+  
+  OCID of the tenancy where `private_key` is added as an API key
+
+- `user_ocid`
+  
+  OCID of the user in the supplied tenancy
+
+- `compartment_ocid`
+
+  OCID of the compartment where VMs/VCNs/... will be created
 
 ## Nodepools
 
@@ -175,8 +207,8 @@ Role defines a concrete loadbalancer configuration. Single loadbalancer can have
 
   Protocol of the rule. Allowed values are:
 
-  | Value | Description |
-  |-------|-------------|
+  | Value | Description                |
+  | ----- | -------------------------- |
   | `tcp` | Role will use TCP protocol |
   | `udp` | Role will use UDP protocol |
 
@@ -192,11 +224,11 @@ Role defines a concrete loadbalancer configuration. Single loadbalancer can have
 
   Defines a target group of nodes. Allowed values are:
 
-  | Value | Description |
-  |-------|-------------|
-  |`k8sAllNodes` | All nodes in the cluster |
-  |`k8sControlNodes` | Only control/master nodes in cluster |
-  |`k8sComputeNodes` | Only compute/worker nodes in cluster |
+  | Value             | Description                          |
+  | ----------------- | ------------------------------------ |
+  | `k8sAllNodes`     | All nodes in the cluster             |
+  | `k8sControlNodes` | Only control/master nodes in cluster |
+  | `k8sComputeNodes` | Only compute/worker nodes in cluster |
 
 ## Cluster-lb
 

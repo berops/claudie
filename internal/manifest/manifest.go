@@ -14,6 +14,7 @@ type Provider struct {
 	GCP     []GCP     `yaml:"gcp"`
 	Hetzner []Hetzner `yaml:"hetzner"`
 	AWS     []AWS     `yaml:"aws"`
+	OCI     []OCI     `yaml:"oci"`
 }
 
 type GCP struct {
@@ -39,6 +40,14 @@ type AWS struct {
 	Name      string `yaml:"name"`
 	AccessKey string `yaml:"access_key"`
 	SecretKey string `yaml:"secret_key"`
+}
+type OCI struct {
+	Name           string `validate:"required" yaml:"name"`
+	PrivateKey     string `validate:"required" yaml:"private_key"`
+	KeyFingerprint string `validate:"required" yaml:"key_fingerprint"`
+	TenancyOCID    string `validate:"required" yaml:"tenancy_ocid"`
+	UserOCID       string `validate:"required" yaml:"user_ocid"`
+	CompartmentID  string `validate:"required" yaml:"compartment_ocid"`
 }
 
 type NodePool struct {

@@ -102,7 +102,11 @@ message Provider {
   string credentials = 2;
   string gcp_project = 3;
   string cloudProviderName = 4;
-  string access_key = 5; 
+  string user_ocid = 5;
+  string tenancy_ocid = 6;
+  string oci_fingerprint = 7;
+  string compartment_ocid = 8;
+  string access_key = 9; 
 }
 
 enum ClusterType {

@@ -16,6 +16,7 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
 				Credentials:       gcpConf.Credentials,
 				GcpProject:        gcpConf.GCPProject,
 				CloudProviderName: "gcp",
+				//omit rest of the pb.Provider variables
 			}, nil
 		}
 	}
@@ -26,6 +27,22 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
 				SpecName:          hetznerConf.Name,
 				Credentials:       hetznerConf.Credentials,
 				CloudProviderName: "hetzner",
+				//omit rest of the pb.Provider variables
+			}, nil
+		}
+	}
+
+	for _, ociConf := range ds.Providers.OCI {
+		if ociConf.Name == providerSpecName {
+			return &pb.Provider{
+				SpecName:          ociConf.Name,
+				Credentials:       ociConf.PrivateKey,
+				CloudProviderName: "oci",
+				UserOcid:          ociConf.UserOCID,
+				TenancyOcid:       ociConf.TenancyOCID,
+				OciFingerprint:    ociConf.KeyFingerprint,
+				CompartmentOcid:   ociConf.CompartmentID,
+				//omit rest of the pb.Provider variables
 			}, nil
 		}
 	}

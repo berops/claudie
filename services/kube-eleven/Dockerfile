@@ -2,8 +2,9 @@ FROM golang:1.18 AS build
 
 # download and unzip kube-one binary
 RUN apt-get -qq update && apt-get -qq install unzip
-RUN wget https://github.com/kubermatic/kubeone/releases/download/v1.4.3/kubeone_1.4.3_linux_amd64.zip
-RUN unzip -qq kubeone_1.4.3_linux_amd64.zip -d kubeone_1.4.3_linux_amd64
+RUN KUBEONE_V=1.4.9 && \
+    wget -q https://github.com/kubermatic/kubeone/releases/download/v${KUBEONE_V}/kubeone_${KUBEONE_V}_linux_amd64.zip && \
+    unzip -qq kubeone_${KUBEONE_V}_linux_amd64.zip -d kubeone_dir
 #Unset the GOPATH
 ENV GOPATH=
 
@@ -43,7 +44,7 @@ FROM alpine
 RUN apk update
 RUN apk add -q bash
 
-COPY --from=build /go/kubeone_1.4.3_linux_amd64/kubeone /usr/local/bin
+COPY --from=build /go/kubeone_dir/kubeone /usr/local/bin
 COPY --from=build /go/services/kube-eleven/server/server /bin/services/kube-eleven/server/server
 COPY --from=build /go/services/kube-eleven/server/addons /bin/services/kube-eleven/server/addons
 COPY --from=build /go/services/kube-eleven/templates /bin/services/kube-eleven/templates

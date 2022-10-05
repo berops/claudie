@@ -50,6 +50,8 @@ COPY --from=build /go/services/terraformer/templates /bin/services/terraformer/t
 COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
 COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Liveness
 
+RUN apk add bash
+
 #Run server
 WORKDIR /bin
 ENTRYPOINT [ "./services/terraformer/server/server" ]
