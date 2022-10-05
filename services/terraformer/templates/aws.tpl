@@ -5,7 +5,7 @@
 provider "aws" {
   region     = "{{(index .NodePools 0).Region}}"
   access_key = "{{(index .NodePools 0).Provider.AccessKey}}"
-  secret_key = "{{(index .NodePools 0).Provider.Credentials}}"
+  secret_key = file("{{(index .NodePools 0).Provider.SpecName}}")
 }
 
 resource "aws_vpc" "claudie-vpc" {
@@ -19,6 +19,7 @@ resource "aws_subnet" "claudie-subnet" {
   vpc_id            = aws_vpc.claudie-vpc.id
   cidr_block        = "10.0.0.0/24"
   map_public_ip_on_launch = true
+  availability_zone = "{{(index .NodePools 0).Zone}}"
   tags = {
     Name = "{{ $clusterName }}-{{ $clusterHash }}-subnet"
   }
@@ -33,19 +34,23 @@ resource "aws_internet_gateway" "claudie-gateway" {
 
 resource "aws_route_table" "claudie-route-table" {
     vpc_id = aws_vpc.claudie-vpc.id
+    route {
+      cidr_block = "0.0.0.0/0"
+      gateway_id = aws_internet_gateway.claudie-gateway.id
+    }
     tags = {
       Name = "{{ $clusterName }}-{{ $clusterHash }}-rt"
     }
 }
 
-resource "aws_route" "default-route" {
-  route_table_id         = aws_route_table.claudie-route-table.id
-  destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = aws_internet_gateway.claudie-gateway.id
+resource "aws_route_table_association" "claudie-rta" {
+  subnet_id = aws_subnet.claudie-subnet.id
+  route_table_id = aws_route_table.claudie-route-table.id
 }
 
 resource "aws_security_group" "claudie-sg" {
   vpc_id      = aws_vpc.claudie-vpc.id
+  revoke_rules_on_delete = true
   tags = {
     Name = "{{ $clusterName }}-{{ $clusterHash }}-sg"
   }
@@ -54,7 +59,7 @@ resource "aws_security_group" "claudie-sg" {
 resource "aws_security_group_rule" "allow-egress" {
   type              = "egress"
   from_port         = 0
-  to_port           = 0
+  to_port           = 65535
   protocol          = "-1"
   cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = aws_security_group.claudie-sg.id
@@ -99,7 +104,7 @@ resource "aws_security_group_rule" "allow-icmp" {
 }
 
 resource "aws_key_pair" "claudie-pair" {
-  key_name   = "claudie-key"
+  key_name   = "{{ $clusterName }}-{{ $clusterHash }}-key"
   public_key = file("./public.pem")
 }
 
@@ -111,11 +116,25 @@ resource "aws_instance" "{{ $nodepool.Name }}" {
   ami = "{{ $nodepool.Image }}"
   
   associate_public_ip_address = true
+  key_name = aws_key_pair.claudie-pair.key_name
   subnet_id = aws_subnet.claudie-subnet.id
+  vpc_security_group_ids = [aws_security_group.claudie-sg.id]
+
   tags = {
     Name = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}"
   }
-  key_name = aws_key_pair.claudie-pair.key_name
+  
+  root_block_device {
+    volume_size = {{ $nodepool.DiskSize }}
+  }
+    # Allow ssh connection for root
+    user_data = <<EOF
+#!/bin/bash
+sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
+cat /root/.ssh/temp > /root/.ssh/authorized_keys
+rm /root/.ssh/temp
+echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config && service sshd restart
+EOF
 }
 
 output  "{{ $nodepool.Name }}" {
