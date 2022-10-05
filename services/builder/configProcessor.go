@@ -223,6 +223,9 @@ func mergeDeleteCounts(dst, src map[string]*nodeCount) map[string]*nodeCount {
 	return dst
 }
 
+// prepareConfigToDelete function queries for cluster those needs ro be deleted from current state.
+// It also updated the config object to remove the clusters to be deleted from current state.
+// returns *pb.Config which contains clusters (both k8s and lb) that needs to be deleted.
 func prepareConfigToDelete(config *pb.Config) *pb.Config {
 	configToDelete := proto.Clone(config).(*pb.Config)
 	var k8sClustersToDelete, newCsK8sClusters []*pb.K8Scluster
@@ -255,6 +258,9 @@ OuterLb:
 	return configToDelete
 }
 
+// isEqual function checks if the two cluster from desiredState and Current state are same by comparing
+// names and hashes
+// return boolean value, True if the match otherwise False
 func isEqual(dsClusterInfo, csClusterInfo *pb.ClusterInfo) bool {
 	if dsClusterInfo.Name == csClusterInfo.Name && dsClusterInfo.Hash == csClusterInfo.Hash {
 		return true
