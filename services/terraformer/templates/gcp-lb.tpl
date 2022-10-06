@@ -28,9 +28,16 @@ resource "google_compute_firewall" "firewall" {
   name    = "{{ $clusterName }}-{{ $clusterHash }}-firewall"
   network = google_compute_network.network.self_link
 
+  {{range $role := index .Metadata "roles"}}
+  allow {
+      protocol = "{{ $role.Protocol }}"
+      ports = ["{{ $role.Port }}"]
+  }
+  {{end}}
+
   allow {
       protocol = "TCP"
-      ports    = ["6443","22"]
+      ports    = ["22"]
   }
 
   allow {

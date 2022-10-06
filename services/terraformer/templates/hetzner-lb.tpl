@@ -35,15 +35,17 @@ resource "hcloud_firewall" "firewall" {
     ]
   }
 
+  {{range $role := index .Metadata "roles"}}
   rule {
     direction = "in"
-    protocol  = "tcp"
-    port      = "6443"
+    protocol  = "{{ $role.Protocol }}"
+    port      = "{{ $role.Port }}"
     source_ips = [
       "0.0.0.0/0",
       "::/0"
     ]
   }
+  {{end}}
 
   rule {
     direction = "in"

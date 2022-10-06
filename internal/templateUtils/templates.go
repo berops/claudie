@@ -8,6 +8,7 @@ import (
 
 	"text/template"
 
+	"github.com/Berops/claudie/internal/utils"
 	"github.com/rs/zerolog/log"
 )
 
@@ -69,9 +70,16 @@ func (t Templates) GenerateToString(tpl *template.Template, d interface{}) (stri
 //loads the template from directory specified in TemplateLoader
 // the directory MUST be relative to base directory, i.e. services/terraformer/templates
 func (tl TemplateLoader) LoadTemplate(tplFile string) (*template.Template, error) {
-	tpl, err := template.ParseFiles(filepath.Join(baseDirectory, tl.Directory, tplFile))
+	tpl := template.New(tplFile).
+		Funcs(template.FuncMap{
+			"isMissing":   utils.IsMissing[int],
+			"targetPorts": utils.ExtractTargetPorts,
+		})
+
+	tpl, err := tpl.ParseFiles(filepath.Join(baseDirectory, tl.Directory, tplFile))
 	if err != nil {
 		return nil, fmt.Errorf("failed to load the template file: %w", err)
 	}
+
 	return tpl, nil
 }

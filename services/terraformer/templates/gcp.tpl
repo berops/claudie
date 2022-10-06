@@ -33,9 +33,16 @@ resource "google_compute_firewall" "firewall" {
     ports    = ["51820"]
   }
 
+  {{ if index .Metadata "loadBalancers" | targetPorts | isMissing 6443 }}
   allow {
       protocol = "TCP"
-      ports    = ["22", "6443"]
+      ports    = ["6443"]
+  }
+  {{ end }}
+
+  allow {
+      protocol = "TCP"
+      ports    = ["22"]
   }
 
   allow {
