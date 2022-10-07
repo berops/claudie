@@ -213,7 +213,7 @@ var jsonData = "{\"compute\":{\"test-cluster-compute1\":\"0.0.0.65\",\n\"test-cl
 var testNp = &pb.NodePool{
 	Name:       "test-np",
 	Region:     "eu-central-1",
-	ServerType: "t3.smalll",
+	ServerType: "t3.small",
 	Image:      "ami-06148e0e81e5187c8",
 	DiskSize:   50,
 	Zone:       "eu-central-1c",
