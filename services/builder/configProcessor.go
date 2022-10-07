@@ -73,7 +73,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 
 		// check for cluster deleting
 		configToDelete := prepareConfigToDelete(config)
-		if err := destroyClusters(configToDelete, c); err != nil {
+		if err := destroy(configToDelete, c); err != nil {
 			log.Error().Err(err).Send()
 		}
 
@@ -228,14 +228,14 @@ func mergeDeleteCounts(dst, src map[string]*nodeCount) map[string]*nodeCount {
 // returns *pb.Config which contains clusters (both k8s and lb) that needs to be deleted.
 func prepareConfigToDelete(config *pb.Config) *pb.Config {
 	configToDelete := proto.Clone(config).(*pb.Config)
-	var k8sClustersToDelete, newCsK8sClusters []*pb.K8Scluster
-	var LbClustersToDelete, newCsLbClusters []*pb.LBcluster
+	var k8sClustersToDelete, remainingCsK8sClusters []*pb.K8Scluster
+	var LbClustersToDelete, remainingCsLbClusters []*pb.LBcluster
 
 OuterK8s:
 	for _, csCluster := range config.CurrentState.Clusters {
 		for _, dsCluster := range config.DesiredState.Clusters {
 			if isEqual(dsCluster.ClusterInfo, csCluster.ClusterInfo) {
-				newCsK8sClusters = append(newCsK8sClusters, csCluster)
+				remainingCsK8sClusters = append(remainingCsK8sClusters, csCluster)
 				continue OuterK8s
 			}
 		}
@@ -245,7 +245,7 @@ OuterLb:
 	for _, csLbCluster := range config.CurrentState.LoadBalancerClusters {
 		for _, dsLbCluster := range config.DesiredState.LoadBalancerClusters {
 			if isEqual(dsLbCluster.ClusterInfo, csLbCluster.ClusterInfo) {
-				newCsLbClusters = append(newCsLbClusters, csLbCluster)
+				remainingCsLbClusters = append(remainingCsLbClusters, csLbCluster)
 				continue OuterLb
 			}
 		}
@@ -253,8 +253,7 @@ OuterLb:
 	}
 	configToDelete.CurrentState.Clusters = k8sClustersToDelete
 	configToDelete.CurrentState.LoadBalancerClusters = LbClustersToDelete
-	config.CurrentState.Clusters = newCsK8sClusters
-	config.CurrentState.LoadBalancerClusters = newCsLbClusters
+	updateCurrentState(config, remainingCsK8sClusters, remainingCsLbClusters)
 	return configToDelete
 }
 
@@ -266,4 +265,11 @@ func isEqual(dsClusterInfo, csClusterInfo *pb.ClusterInfo) bool {
 		return true
 	}
 	return false
+}
+
+// updateCurrentState function will update the Clusters and LoadBalancerClusters for the config passed.
+// the function has side effects since it updated the config which is passed as a pointer reference
+func updateCurrentState(config *pb.Config, k8sCluster []*pb.K8Scluster, lbClusters []*pb.LBcluster) {
+	config.CurrentState.Clusters = k8sCluster
+	config.CurrentState.LoadBalancerClusters = lbClusters
 }
