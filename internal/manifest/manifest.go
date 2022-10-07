@@ -13,6 +13,7 @@ type Manifest struct {
 type Provider struct {
 	GCP     []GCP     `yaml:"gcp"`
 	Hetzner []Hetzner `yaml:"hetzner"`
+	OCI     []OCI     `yaml:"oci"`
 }
 
 type GCP struct {
@@ -32,6 +33,15 @@ type Hetzner struct {
 	// are alphanumeric (i.e. excluding characters like !#@$%^&*...)
 	// https://docs.hetzner.com/cloud/technical-details/faq#how-are-api-tokens-stored
 	Credentials string `validate:"required,alphanum,len=64" yaml:"credentials"`
+}
+
+type OCI struct {
+	Name           string `validate:"required" yaml:"name"`
+	PrivateKey     string `validate:"required" yaml:"private_key"`
+	KeyFingerprint string `validate:"required" yaml:"key_fingerprint"`
+	TenancyOCID    string `validate:"required" yaml:"tenancy_ocid"`
+	UserOCID       string `validate:"required" yaml:"user_ocid"`
+	CompartmentID  string `validate:"required" yaml:"compartment_ocid"`
 }
 
 type NodePool struct {

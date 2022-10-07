@@ -6,21 +6,24 @@ import (
 	"github.com/Berops/claudie/proto/pb"
 )
 
-func CheckLengthOfFutureDomain(config *pb.Config) error {
-	// NOTE: In domain, we have .c.<gcpProject-id>.internal, and we cannot see what gcpProjectNameLength will be in future
-	maxLength := 37    // total length of domain = clusterName + hash + nodeName + indexLength + separators
-	currentLength := 1 // "-" separator between clusterName and hash
-	desiredState := config.DesiredState
+const (
+	maxLength  = 80 // total length of domain = 8 + len(publicIP)[15] + 19 + len(NodeName) + margin
+	baseLength = 8 + 19 + 15
+)
 
-	for _, cluster := range desiredState.GetClusters() {
-		currentLength += len(cluster.ClusterInfo.Name) + HashLength
+// CheckLengthOfFutureDomain will check if the possible domain name is too long
+// returns error if domain will be too long, nil if not
+// Described in https://github.com/Berops/claudie/issues/112#issuecomment-1015432224
+func CheckLengthOfFutureDomain(config *pb.Config) error {
+	// https://<public-ip>:6443/<api-path>/<node-name>
+	// <node-name> = clusterName + hash + nodeName + indexLength + separators
+	for _, cluster := range config.DesiredState.GetClusters() {
+		clusterNameLength := len(cluster.ClusterInfo.Name) + HashLength + 1 // "-" separator between clusterName and hash
 		for _, nodepool := range cluster.ClusterInfo.GetNodePools() {
-			nodeNameLength := 1  // "-" separator between hash and nodeName
-			nodeIndexLength := 1 // "-" separator between nodeName and index
-			nodeIndexLength += len(fmt.Sprint(nodepool.Count))
-			nodeNameLength += nodeIndexLength
-			if maxLength <= currentLength+nodeNameLength {
-				return fmt.Errorf("cluster name %s or nodepool name %s is too long, consider shortening it to be bellow %d [total: %d, hash: %d, nodeName: %d]", cluster.ClusterInfo.GetName(), nodepool.GetName(), maxLength, currentLength+nodeNameLength, HashLength, nodeNameLength)
+			nodeNameLength := len(fmt.Sprint(nodepool.Count)) + len(nodepool.Name) + 2 // "-" separator between hash and nodeName AND "-" separator between nodeName and Count
+			if maxLength <= clusterNameLength+nodeNameLength+baseLength {
+				return fmt.Errorf("cluster name %s or nodepool name %s is too long, consider shortening it to be bellow %d [total: %d, hash: %d, nodeName: %d]",
+					cluster.ClusterInfo.GetName(), nodepool.GetName(), maxLength, clusterNameLength+nodeNameLength+baseLength, HashLength, nodeNameLength)
 			}
 		}
 	}
