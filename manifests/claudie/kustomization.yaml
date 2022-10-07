@@ -22,7 +22,7 @@ images:
 - name: claudieio/ansibler
   newTag: 2a701cf-794
 - name: claudieio/builder
-  newTag: 795cfc0-796
+  newTag: 5f591a1-804
 - name: claudieio/context-box
   newTag: 2a701cf-794
 - name: claudieio/frontend
