@@ -64,7 +64,7 @@ resource "google_compute_instance" "{{$nodepool.Name}}" {
   allow_stopping_for_update = true
   boot_disk {
     initialize_params {
-      size = 10
+      size = "{{ $nodepool.DiskSize }}"
       image = "{{$nodepool.Image}}"
     }
   }
@@ -78,12 +78,10 @@ resource "google_compute_instance" "{{$nodepool.Name}}" {
   metadata_startup_script = "echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart"
 }
 
-
 output "{{$nodepool.Name}}" {
   value = {
     for node in google_compute_instance.{{$nodepool.Name}}:
     node.name => node.network_interface.0.access_config.0.nat_ip
   }
 }
-
 {{end}}

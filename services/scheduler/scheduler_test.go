@@ -2,10 +2,13 @@ package main
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestMakeSSHKeyPair(t *testing.T) {
-	priv, pub := makeSSHKeyPair()
-	t.Log(priv)
-	t.Log(pub)
+	pair, err := makeSSHKeyPair()
+	require.NoError(t, err)
+	t.Log(pair.private)
+	t.Log(pair.public)
 }
