@@ -72,8 +72,9 @@ func (t Templates) GenerateToString(tpl *template.Template, d interface{}) (stri
 func (tl TemplateLoader) LoadTemplate(tplFile string) (*template.Template, error) {
 	tpl := template.New(tplFile).
 		Funcs(template.FuncMap{
-			"isMissing":   utils.IsMissing[int],
-			"targetPorts": utils.ExtractTargetPorts,
+			"isMissing":                   utils.IsMissing[int],
+			"targetPorts":                 utils.ExtractTargetPorts,
+			"protocolToOCIProtocolNumber": utils.ProtocolNameToOCIProtocolNumber,
 		})
 
 	tpl, err := tpl.ParseFiles(filepath.Join(baseDirectory, tl.Directory, tplFile))

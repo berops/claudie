@@ -69,6 +69,7 @@ resource "oci_core_default_security_list" "claudie_security_rules" {
     description = "Allow SSH connections"
   }
 
+  {{ if index .Metadata "loadBalancers" | targetPorts | isMissing 6443 }}
   ingress_security_rules {
     protocol    = "6"
     source      = "0.0.0.0/0"
@@ -78,6 +79,7 @@ resource "oci_core_default_security_list" "claudie_security_rules" {
     }
     description = "Allow kube API port"
   }
+  {{ end }}
 
   ingress_security_rules {
     protocol    = "17"
