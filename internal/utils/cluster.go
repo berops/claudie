@@ -76,16 +76,14 @@ func FindName(realNames []string, name string) string {
 func ExtractTargetPorts(loadBalancers []*pb.LBcluster) []int {
 	ports := make(map[int32]struct{})
 
+	var result []int
 	for _, c := range loadBalancers {
 		for _, role := range c.Roles {
+			if _, ok := ports[role.TargetPort]; !ok {
+				result = append(result, int(role.TargetPort))
+			}
 			ports[role.TargetPort] = struct{}{}
 		}
-	}
-
-	var result []int
-
-	for port := range ports {
-		result = append(result, int(port))
 	}
 
 	return result
