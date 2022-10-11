@@ -14,6 +14,10 @@ secretGenerator:
   - test-sets/test-set2/3.yaml
   - test-sets/test-set2/4.yaml
   name: test-set2
+- files:
+  - test-sets/test-set3/1.yaml
+  - test-sets/test-set3/2.yaml
+  name: test-set3
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
