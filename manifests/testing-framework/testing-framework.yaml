@@ -44,6 +44,9 @@ spec:
         - name: test-set2
           secret:
             secretName: test-set2
+        - name: test-set3
+          secret: 
+            secretName: test-set3
       restartPolicy: Never
       serviceAccountName: testing-framework
 ---
