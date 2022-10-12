@@ -29,6 +29,7 @@ resource "hcloud_firewall" "defaultfirewall" {
     ]
   }
 
+  {{ if index .Metadata "loadBalancers" | targetPorts | isMissing 6443 }}
   rule {
     direction = "in"
     protocol  = "tcp"
@@ -38,6 +39,7 @@ resource "hcloud_firewall" "defaultfirewall" {
       "::/0"
     ]
   }
+  {{ end }}
 
   rule {
     direction = "in"
