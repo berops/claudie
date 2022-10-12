@@ -73,18 +73,19 @@ func buildConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig bo
 	return nil
 }
 
-// destroyConfig destroys existing clusters infra for a config using terraformer and kuber
+// destroyConfig destroys existing clusters infra for a config, including the deletion
+// of the config from the database, by calling Terraformer and Kuber and ContextBox services.
 func destroyConfig(config *pb.Config, c pb.ContextBoxServiceClient) error {
 	if err := destroyConfigTerraformer(config); err != nil {
-		if errSave := saveErrorMessage(config, c, err); errSave != nil {
-			return fmt.Errorf("failed to save error message: %w", errSave)
+		if err := saveErrorMessage(config, c, err); err != nil {
+			return fmt.Errorf("failed to save error message: %w", err)
 		}
 		return fmt.Errorf("error in destroy config terraformer: %w", err)
 	}
 
 	if err := deleteKubeconfig(config); err != nil {
-		if errSave := saveErrorMessage(config, c, err); errSave != nil {
-			return fmt.Errorf("failed to save error message: %w", errSave)
+		if err := saveErrorMessage(config, c, err); err != nil {
+			return fmt.Errorf("failed to save error message: %w", err)
 		}
 		return fmt.Errorf("error in delete kubeconfig: %w", err)
 	}
