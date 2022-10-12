@@ -261,10 +261,7 @@ OuterLb:
 // names and hashes
 // return boolean value, True if the match otherwise False
 func isEqual(dsClusterInfo, csClusterInfo *pb.ClusterInfo) bool {
-	if dsClusterInfo.Name == csClusterInfo.Name && dsClusterInfo.Hash == csClusterInfo.Hash {
-		return true
-	}
-	return false
+	return dsClusterInfo.Name == csClusterInfo.Name && dsClusterInfo.Hash == csClusterInfo.Hash
 }
 
 // updateCurrentState function will update the Clusters and LoadBalancerClusters for the config passed.
