@@ -18,5 +18,15 @@ terraform {
       version = "4.94.0"
     }
     {{ end }}
+    {{if .Azure }}
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "3.26.0"
+    }
+    azuread = {
+      source  = "hashicorp/azuread"
+      version = "2.29.0"
+    }
+    {{ end }}
   }
 }

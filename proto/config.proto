@@ -98,14 +98,23 @@ message Node {
 }
 
 message Provider {
+  //general
   string specName = 1;
-  string credentials = 2;
-  string gcp_project = 3;
-  string cloudProviderName = 4; 
-  string user_ocid = 5;
-  string tenancy_ocid = 6;
+  string cloudProviderName = 2; 
+  //credentilas is used as a variable for secret info i.e. private key, api token, etc
+  string credentials = 3;
+  //gcp
+  string gcp_project = 4;
+  //oci
+  string oci_user_ocid = 5;
+  string oci_tenancy_ocid = 6;
   string oci_fingerprint = 7;
-  string compartment_ocid = 8;
+  string oci_compartment_ocid = 8;
+  //azure
+  string azure_subscription_id = 9;
+  string azure_tenant_id = 10;
+  string azure_client_id = 11;
+  string azure_resource_group = 12;
 }
 
 enum ClusterType {

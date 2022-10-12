@@ -223,10 +223,6 @@ var ociNp = &pb.NodePool{
 	Provider: &pb.Provider{
 		CloudProviderName: "oci",
 		Credentials:       "",
-		OciFingerprint:    "",
-		TenancyOcid:       "",
-		UserOcid:          "",
-		CompartmentOcid:   "",
 	},
 }
 

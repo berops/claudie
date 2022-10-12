@@ -14,6 +14,7 @@ type Provider struct {
 	GCP     []GCP     `yaml:"gcp"`
 	Hetzner []Hetzner `yaml:"hetzner"`
 	OCI     []OCI     `yaml:"oci"`
+	Azure   []Azure   `yaml:"azure"`
 }
 
 type GCP struct {
@@ -42,6 +43,15 @@ type OCI struct {
 	TenancyOCID    string `validate:"required" yaml:"tenancy_ocid"`
 	UserOCID       string `validate:"required" yaml:"user_ocid"`
 	CompartmentID  string `validate:"required" yaml:"compartment_ocid"`
+}
+
+type Azure struct {
+	Name           string `validate:"required" yaml:"name"`
+	SubscriptionId string `validate:"required" yaml:"subscription_id"`
+	TenantId       string `validate:"required" yaml:"tenant_id"`
+	ClientId       string `validate:"required" yaml:"client_id"`
+	ResourceGroup  string `validate:"required" yaml:"resource_group"`
+	ClientSecret   string `validate:"required" yaml:"client_secret"`
 }
 
 type NodePool struct {
