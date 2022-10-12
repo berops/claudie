@@ -34,6 +34,7 @@ type ContextBoxServiceClient interface {
 	GetAllConfigs(ctx context.Context, in *GetAllConfigsRequest, opts ...grpc.CallOption) (*GetAllConfigsResponse, error)
 	// Delete
 	DeleteConfig(ctx context.Context, in *DeleteConfigRequest, opts ...grpc.CallOption) (*DeleteConfigResponse, error)
+	DeleteConfigFromDB(ctx context.Context, in *DeleteConfigRequest, opts ...grpc.CallOption) (*DeleteConfigResponse, error)
 }
 
 type contextBoxServiceClient struct {
@@ -125,6 +126,15 @@ func (c *contextBoxServiceClient) DeleteConfig(ctx context.Context, in *DeleteCo
 	return out, nil
 }
 
+func (c *contextBoxServiceClient) DeleteConfigFromDB(ctx context.Context, in *DeleteConfigRequest, opts ...grpc.CallOption) (*DeleteConfigResponse, error) {
+	out := new(DeleteConfigResponse)
+	err := c.cc.Invoke(ctx, "/claudie.ContextBoxService/DeleteConfigFromDB", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ContextBoxServiceServer is the server API for ContextBoxService service.
 // All implementations must embed UnimplementedContextBoxServiceServer
 // for forward compatibility
@@ -141,6 +151,7 @@ type ContextBoxServiceServer interface {
 	GetAllConfigs(context.Context, *GetAllConfigsRequest) (*GetAllConfigsResponse, error)
 	// Delete
 	DeleteConfig(context.Context, *DeleteConfigRequest) (*DeleteConfigResponse, error)
+	DeleteConfigFromDB(context.Context, *DeleteConfigRequest) (*DeleteConfigResponse, error)
 	mustEmbedUnimplementedContextBoxServiceServer()
 }
 
@@ -174,6 +185,9 @@ func (UnimplementedContextBoxServiceServer) GetAllConfigs(context.Context, *GetA
 }
 func (UnimplementedContextBoxServiceServer) DeleteConfig(context.Context, *DeleteConfigRequest) (*DeleteConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteConfig not implemented")
+}
+func (UnimplementedContextBoxServiceServer) DeleteConfigFromDB(context.Context, *DeleteConfigRequest) (*DeleteConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteConfigFromDB not implemented")
 }
 func (UnimplementedContextBoxServiceServer) mustEmbedUnimplementedContextBoxServiceServer() {}
 
@@ -350,6 +364,24 @@ func _ContextBoxService_DeleteConfig_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ContextBoxService_DeleteConfigFromDB_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ContextBoxServiceServer).DeleteConfigFromDB(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/claudie.ContextBoxService/DeleteConfigFromDB",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ContextBoxServiceServer).DeleteConfigFromDB(ctx, req.(*DeleteConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ContextBoxService_ServiceDesc is the grpc.ServiceDesc for ContextBoxService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -392,6 +424,10 @@ var ContextBoxService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteConfig",
 			Handler:    _ContextBoxService_DeleteConfig_Handler,
+		},
+		{
+			MethodName: "DeleteConfigFromDB",
+			Handler:    _ContextBoxService_DeleteConfigFromDB_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -75,31 +75,21 @@ func buildConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig bo
 
 // destroyConfig destroys existing clusters infra for a config using terraformer and kuber
 func destroyConfig(config *pb.Config, c pb.ContextBoxServiceClient) error {
-	// call terraform destroy
-	err := destroyConfigTerraformer(config)
-	if err != nil {
-		err1 := saveErrorMessage(config, c, err)
-		if err1 != nil {
-			return fmt.Errorf("error in DestroyConfig: %v; failed to run terraform destroy %w", err, err1)
+	if err := destroyConfigTerraformer(config); err != nil {
+		if errSave := saveErrorMessage(config, c, err); errSave != nil {
+			return fmt.Errorf("failed to save error message: %w", errSave)
 		}
-		return fmt.Errorf("error in destroy config: %w", err)
+		return fmt.Errorf("error in destroy config terraformer: %w", err)
 	}
-	// delete the existing kubeconfig of the clusters
-	err = deleteKubeconfig(config)
-	if err != nil {
-		err1 := saveErrorMessage(config, c, err)
-		if err1 != nil {
-			return fmt.Errorf("error in DestroyConfig: %v; failed to delete kubeconfig %w", err, err1)
+
+	if err := deleteKubeconfig(config); err != nil {
+		if errSave := saveErrorMessage(config, c, err); errSave != nil {
+			return fmt.Errorf("failed to save error message: %w", errSave)
 		}
-		return fmt.Errorf("error in destroy config: %w", err)
+		return fmt.Errorf("error in delete kubeconfig: %w", err)
 	}
-	// save changes to DB
-	err = cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
-	if err != nil {
-		config.CurrentState = config.DesiredState
-		return fmt.Errorf("error while saving the config %s: %w", config.Name, err)
-	}
-	return nil
+
+	return cbox.DeleteConfigFromDB(c, config.Id, pb.IdType_HASH)
 }
 
 // callTerraformer passes config to terraformer for building the infra
@@ -230,36 +220,32 @@ func destroyConfigTerraformer(config *pb.Config) error {
 	// Trim "tcp://" substring from envs.TerraformerURL
 	trimmedTerraformerURL := strings.ReplaceAll(envs.TerraformerURL, ":tcp://", "")
 	log.Info().Msgf("Dial Terraformer: %s", trimmedTerraformerURL)
-	// Create connection to Terraformer
+
 	cc, err := utils.GrpcDialWithInsecure("terraformer", trimmedTerraformerURL)
 	if err != nil {
 		return err
 	}
-	defer func() { utils.CloseClientConnection(cc) }()
-	// Creating the client
+	defer utils.CloseClientConnection(cc)
+
 	c := pb.NewTerraformerServiceClient(cc)
 	_, err = terraformer.DestroyInfrastructure(c, &pb.DestroyInfrastructureRequest{Config: config})
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // deleteKubeconfig calls kuber's DeleteKubeconfig function
 func deleteKubeconfig(config *pb.Config) error {
 	trimmedKuberURL := strings.ReplaceAll(envs.KuberURL, ":tcp://", "")
-	log.Info().Msgf("Dial Terraformer: %s", trimmedKuberURL)
-	// Create connection to Terraformer
+	log.Info().Msgf("Dial Kuber: %s", trimmedKuberURL)
+
 	cc, err := utils.GrpcDialWithInsecure("kuber", trimmedKuberURL)
 	if err != nil {
 		return err
 	}
-	defer func() { utils.CloseClientConnection(cc) }()
+	defer utils.CloseClientConnection(cc)
 
 	c := pb.NewKuberServiceClient(cc)
 	for _, cluster := range config.CurrentState.Clusters {
-		_, err := kuber.DeleteKubeconfig(c, &pb.DeleteKubeconfigRequest{Cluster: cluster})
-		if err != nil {
+		if _, err := kuber.DeleteKubeconfig(c, &pb.DeleteKubeconfigRequest{Cluster: cluster}); err != nil {
 			return err
 		}
 	}
