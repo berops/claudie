@@ -50,8 +50,11 @@ Context box is "control unit" for the Claudie. It holds pending configs, which n
   rpc GetConfigBuilder(GetConfigRequest) returns (GetConfigResponse);
   //Get all configs from database
   rpc GetAllConfigs(GetAllConfigsRequest) returns (GetAllConfigsResponse);
-  //Delete a single config from database
+  // Sets the manifest to null which forces the deletion of the infra,
+  // defined by the manifest, next time when the config will be picked up.
   rpc DeleteConfig(DeleteConfigRequest) returns (DeleteConfigResponse);
+  // Deletes config from database.
+  rpc DeleteConfigFromDB(DeleteConfigRequest) returns (DeleteConfigResponse);
 ```
 ### Flow
 
