@@ -123,7 +123,7 @@ resource "azurerm_virtual_machine" "{{ $nodepool.Name }}" {
   }
 }
 
-resource "azurerm_virtual_machine_extension" "postcreation-script" {
+resource "azurerm_virtual_machine_extension" "{{ $nodepool.Name }}-postcreation-script" {
   name                 = "postcreation-script"
   for_each             = { for vm in azurerm_virtual_machine.{{$nodepool.Name}} : vm.name => vm }
   virtual_machine_id   = each.value.id
