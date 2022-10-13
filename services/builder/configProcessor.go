@@ -66,7 +66,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 		// check if Desired state is null and if so we want to delete the existing config
 		if config.DsChecksum == nil && config.CsChecksum != nil {
 			if err := destroyConfig(config, c); err != nil {
-				log.Error().Err(err).Send()
+				log.Error().Msgf("failed to delete the config %s: %w", config.Name, err)
 			}
 			return
 		}
@@ -74,7 +74,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 		// check for cluster deleting
 		configToDelete := getDeletedClusterConfig(config)
 		if err := destroy(configToDelete, c); err != nil {
-			log.Error().Err(err).Send()
+			log.Error().Msgf("Failed to delete clusters: %w", err)
 		}
 
 		//tmpConfig is used in operation where config is adding && deleting the nodes
@@ -224,7 +224,8 @@ func mergeDeleteCounts(dst, src map[string]*nodeCount) map[string]*nodeCount {
 }
 
 // getDeletedClusterConfig function queries for cluster those needs ro be deleted from current state.
-// It also updated the config object to remove the clusters to be deleted from current state.
+// It also updated the config object to remove the clusters to be deleted from current state. Thus
+// the function has SIDE EFFECTS and should be used carefully.
 // returns *pb.Config which contains clusters (both k8s and lb) that needs to be deleted.
 func getDeletedClusterConfig(config *pb.Config) *pb.Config {
 	configToDelete := proto.Clone(config).(*pb.Config)
@@ -253,7 +254,10 @@ OuterLb:
 	}
 	configToDelete.CurrentState.Clusters = k8sClustersToDelete
 	configToDelete.CurrentState.LoadBalancerClusters = LbClustersToDelete
-	updateCurrentState(config, remainingCsK8sClusters, remainingCsLbClusters)
+
+	// update the passed config's currentState to remove the clusters which will be deleted
+	config.CurrentState.Clusters = remainingCsK8sClusters
+	config.CurrentState.LoadBalancerClusters = remainingCsLbClusters
 	return configToDelete
 }
 
@@ -262,11 +266,4 @@ OuterLb:
 // return boolean value, True if the match otherwise False
 func isEqual(dsClusterInfo, csClusterInfo *pb.ClusterInfo) bool {
 	return dsClusterInfo.Name == csClusterInfo.Name && dsClusterInfo.Hash == csClusterInfo.Hash
-}
-
-// updateCurrentState function will update the Clusters and LoadBalancerClusters for the config passed.
-// the function has side effects since it updated the config which is passed as a pointer reference
-func updateCurrentState(config *pb.Config, k8sCluster []*pb.K8Scluster, lbClusters []*pb.LBcluster) {
-	config.CurrentState.Clusters = k8sCluster
-	config.CurrentState.LoadBalancerClusters = lbClusters
 }
