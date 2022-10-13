@@ -10,7 +10,7 @@ on:
 env:
   ENV_FILE: .env
   SERVICES: context-box scheduler builder terraformer ansibler kube-eleven kuber frontend testing-framework
-  TEST_SETS: test-set1 test-set2
+  TEST_SETS: test-set1 test-set2 test-set3
 
 jobs:
   deploy-and-monitor:
