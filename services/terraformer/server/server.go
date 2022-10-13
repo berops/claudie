@@ -117,7 +117,7 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 }
 
 func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrastructureRequest) (*pb.DestroyInfrastructureResponse, error) {
-	log.Info().Msgf("DestroyInfrastructure function was invoked with config:", req.GetConfig().GetName())
+	log.Info().Msgf("DestroyInfrastructure function was invoked with config: %v", req.GetConfig().GetName())
 
 	config := req.GetConfig()
 	projectName := config.CurrentState.Name
