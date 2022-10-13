@@ -34,4 +34,4 @@ images:
 - name: claudieio/scheduler
   newTag: 5fd85f5-821
 - name: claudieio/terraformer
-  newTag: 5fd85f5-821
+  newTag: 35d47f3-823
