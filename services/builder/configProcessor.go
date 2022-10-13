@@ -72,7 +72,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 		}
 
 		// check for cluster deleting
-		configToDelete := prepareConfigToDelete(config)
+		configToDelete := getDeletedClusterConfig(config)
 		if err := destroy(configToDelete, c); err != nil {
 			log.Error().Err(err).Send()
 		}
@@ -223,10 +223,10 @@ func mergeDeleteCounts(dst, src map[string]*nodeCount) map[string]*nodeCount {
 	return dst
 }
 
-// prepareConfigToDelete function queries for cluster those needs ro be deleted from current state.
+// getDeletedClusterConfig function queries for cluster those needs ro be deleted from current state.
 // It also updated the config object to remove the clusters to be deleted from current state.
 // returns *pb.Config which contains clusters (both k8s and lb) that needs to be deleted.
-func prepareConfigToDelete(config *pb.Config) *pb.Config {
+func getDeletedClusterConfig(config *pb.Config) *pb.Config {
 	configToDelete := proto.Clone(config).(*pb.Config)
 	var k8sClustersToDelete, remainingCsK8sClusters []*pb.K8Scluster
 	var LbClustersToDelete, remainingCsLbClusters []*pb.LBcluster
