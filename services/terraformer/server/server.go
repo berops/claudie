@@ -49,8 +49,26 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 	currentState := req.GetCurrentState()
 	desiredState := req.GetDesiredState()
 	projectName := desiredState.Name
+	clusterToLBs := make(map[string][]*pb.LBcluster)
+
 	var errGroup errgroup.Group
 	var clusters []Cluster
+
+	// Get LB clusters
+	for _, desiredLB := range desiredState.LoadBalancerClusters {
+		clusterToLBs[desiredLB.TargetedK8S] = append(clusterToLBs[desiredLB.TargetedK8S], desiredLB)
+
+		var existingCluster *pb.LBcluster
+		for _, currentLB := range currentState.LoadBalancerClusters {
+			if desiredLB.ClusterInfo.Name == currentLB.ClusterInfo.Name {
+				existingCluster = currentLB
+				break
+			}
+		}
+
+		clusters = append(clusters, loadbalancer.LBcluster{DesiredLB: desiredLB, CurrentLB: existingCluster, ProjectName: projectName})
+	}
+
 	// Get kubernetes clusters
 	for _, desiredK8s := range desiredState.Clusters {
 		var existingCluster *pb.K8Scluster
@@ -60,19 +78,15 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 				break
 			}
 		}
-		clusters = append(clusters, kubernetes.K8Scluster{DesiredK8s: desiredK8s, CurrentK8s: existingCluster, ProjectName: projectName})
+
+		clusters = append(clusters, kubernetes.K8Scluster{
+			DesiredK8s:    desiredK8s,
+			CurrentK8s:    existingCluster,
+			ProjectName:   projectName,
+			LoadBalancers: clusterToLBs[desiredK8s.ClusterInfo.Name],
+		})
 	}
-	// Get LB clusters
-	for _, desiredLB := range desiredState.LoadBalancerClusters {
-		var existingCluster *pb.LBcluster
-		for _, currentLB := range currentState.LoadBalancerClusters {
-			if desiredLB.ClusterInfo.Name == currentLB.ClusterInfo.Name {
-				existingCluster = currentLB
-				break
-			}
-		}
-		clusters = append(clusters, loadbalancer.LBcluster{DesiredLB: desiredLB, CurrentLB: existingCluster, ProjectName: projectName})
-	}
+
 	// Build clusters concurrently
 	for _, cluster := range clusters {
 		func(c Cluster) {
