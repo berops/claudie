@@ -83,7 +83,7 @@ resource "aws_security_group_rule" "allow-ssh" {
   cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = aws_security_group.claudie-sg.id
 }
-
+{{ if index .Metadata "loadBalancers" | targetPorts | isMissing 6443 }}
 resource "aws_security_group_rule" "allow-kube-api" {
   provider = aws.k8s-nodepool
   type              = "ingress"
@@ -93,7 +93,7 @@ resource "aws_security_group_rule" "allow-kube-api" {
   cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = aws_security_group.claudie-sg.id
 }
-
+{{end}}
 
 resource "aws_security_group_rule" "allow-wireguard" {
   provider = aws.k8s-nodepool

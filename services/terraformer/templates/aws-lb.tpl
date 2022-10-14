@@ -84,17 +84,6 @@ resource "aws_security_group_rule" "allow-ssh" {
   security_group_id = aws_security_group.claudie-sg.id
 }
 
-resource "aws_security_group_rule" "allow-kube-api" {
-  provider = aws.lb-nodepool
-  type              = "ingress"
-  from_port         = 6443
-  to_port           = 6443
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.claudie-sg.id
-}
-
-
 resource "aws_security_group_rule" "allow-wireguard" {
   provider = aws.lb-nodepool
   type              = "ingress"
@@ -104,6 +93,18 @@ resource "aws_security_group_rule" "allow-wireguard" {
   cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = aws_security_group.claudie-sg.id
 }
+
+{{range $role := index .Metadata "roles"}}
+resource "aws_security_group_rule" "allow-{{ $role.Port }}" {
+  provider = aws.lb-nodepool
+  type              = "ingress"
+  from_port         = {{ $role.Port }}
+  to_port           = {{ $role.Port }}
+  protocol          = "{{ $role.Protocol }}"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.claudie-sg.id
+}
+{{end}}
 
 resource "aws_security_group_rule" "allow-icmp" {
   provider = aws.lb-nodepool
