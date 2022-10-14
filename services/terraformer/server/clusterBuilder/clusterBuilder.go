@@ -17,18 +17,31 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// desiredInfo - clusterInfo of desired state, currentInfo - clusterInfo of current state
+// ClusterBuilder wraps data needed for building a cluster.
 type ClusterBuilder struct {
+	// DesiredInfo contains the information about the
+	// desired state of the cluster.
 	DesiredInfo *pb.ClusterInfo
+	// CurrentInfo contains the information about the
+	// current state of the cluster.
 	CurrentInfo *pb.ClusterInfo
+	// ProjectName is the name of the manifest.
 	ProjectName string
+	// ClusterType is the type of the cluster being build
+	// LoadBalancer or K8s.
 	ClusterType pb.ClusterType
+	// Metadata contains data that further describe
+	// the cluster that is to be build. For example,
+	// in the case of LoadBalancer this will contain the defined
+	// roles from the manifest. Can be nil if no data is supplied.
+	Metadata map[string]any
 }
 
 type NodepoolsData struct {
-	NodePools   []*pb.NodePool
 	ClusterName string
 	ClusterHash string
+	NodePools   []*pb.NodePool
+	Metadata    map[string]any
 }
 
 type outputNodepools struct {
@@ -145,10 +158,12 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	//sort nodepools by a provider
 	sortedNodePools := utils.GroupNodepoolsByProviderSpecName(clusterInfo)
 	for providerSpecName, nodepools := range sortedNodePools {
+		// based on the cluster type fill out the nodepools data to be used
 		nodepoolData := NodepoolsData{
 			NodePools:   nodepools,
 			ClusterName: clusterInfo.Name,
 			ClusterHash: clusterInfo.Hash,
+			Metadata:    c.Metadata,
 		}
 
 		// Load TF files of the specific cloud provider

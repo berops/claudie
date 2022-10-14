@@ -65,7 +65,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 
 		// check if Desired state is null and if so we want to delete the existing config
 		if config.DsChecksum == nil && config.CsChecksum != nil {
-			if err := destroyConfig(config, c); err != nil {
+			if err := destroyConfigAndDeleteDoc(config, c); err != nil {
 				log.Error().Msgf("failed to delete the config %s: %w", config.Name, err)
 			}
 			return
@@ -73,7 +73,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 
 		// check for cluster deleting
 		configToDelete := getDeletedClusterConfig(config)
-		if err := destroy(configToDelete, c); err != nil {
+		if err := destroyConfig(configToDelete, c); err != nil {
 			log.Error().Msgf("Failed to delete clusters: %w", err)
 		}
 

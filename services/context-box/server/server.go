@@ -101,38 +101,18 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 	log.Info().Msg("CLIENT REQUEST: SaveConfigBuilder")
 	config := req.GetConfig()
 
-	// Get config with the same ID from the DB
-	databaseConfig, err := database.GetConfig(config.GetName(), pb.IdType_NAME)
-	if err != nil {
-		return nil, err
-	}
-	// check if the DsChecksum from DB and config object are nil.
-	// If they are nill , we want to delete the document from the DB
-	if config.DsChecksum == nil && databaseConfig.DsChecksum == nil && config.ErrorMessage != "" {
-		err = database.DeleteConfig(config.Id, pb.IdType_HASH)
-		if err != nil {
-			return nil, err
-		}
-		return &pb.SaveConfigResponse{Config: config}, nil
-	}
 	// Save new config to the DB
 	config.CsChecksum = config.DsChecksum
 	config.BuilderTTL = 0
-	err = database.UpdateCs(config)
-	if err != nil {
-		return nil, status.Errorf(
-			codes.Internal,
-			fmt.Sprintf("Error while updating current state: %v", err),
-		)
+
+	if err := database.UpdateCs(config); err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("Error while updating current state: %v", err))
 	}
 
-	err = database.UpdateBuilderTTL(config.Name, config.BuilderTTL)
-	if err != nil {
-		return nil, status.Errorf(
-			codes.Internal,
-			fmt.Sprintf("Error while update builderTTL: %v", err),
-		)
+	if err := database.UpdateBuilderTTL(config.Name, config.BuilderTTL); err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("Error while update builderTTL: %v", err))
 	}
+
 	return &pb.SaveConfigResponse{Config: config}, nil
 }
 
@@ -185,11 +165,23 @@ func (*server) GetAllConfigs(ctx context.Context, req *pb.GetAllConfigsRequest) 
 	return &pb.GetAllConfigsResponse{Configs: configs}, nil
 }
 
-// DeleteConfig is a gRPC service: function deletes one specified config from the DB and returns it's ID
+// DeleteConfig sets the manifest to nil so that the iteration workflow for this
+// config destroys the previous build infrastructure.
 func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*pb.DeleteConfigResponse, error) {
 	log.Info().Msg("CLIENT REQUEST: DeleteConfig")
 	err := database.UpdateMsToNull(req.Id)
 	if err != nil {
+		return nil, err
+	}
+
+	return &pb.DeleteConfigResponse{Id: req.GetId()}, nil
+}
+
+// DeleteConfigFromDB removes the config from the request from the mongoDB database.
+func (*server) DeleteConfigFromDB(ctx context.Context, req *pb.DeleteConfigRequest) (*pb.DeleteConfigResponse, error) {
+	log.Info().Msgf("received DeleteConfigFromDB req: %+v", req)
+
+	if err := database.DeleteConfig(req.GetId(), req.GetType()); err != nil {
 		return nil, err
 	}
 
