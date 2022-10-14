@@ -43,4 +43,5 @@ service ContextBoxService {
   rpc GetAllConfigs(GetAllConfigsRequest) returns (GetAllConfigsResponse);
   // Delete
   rpc DeleteConfig(DeleteConfigRequest) returns (DeleteConfigResponse);
+  rpc DeleteConfigFromDB(DeleteConfigRequest) returns (DeleteConfigResponse);
 }

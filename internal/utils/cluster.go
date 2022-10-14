@@ -71,3 +71,20 @@ func FindName(realNames []string, name string) string {
 	log.Error().Msgf("Error: no real name found for %s", name)
 	return ""
 }
+
+// ExtractTargetPorts extracts target ports defined inside the role in the LoadBalancer.
+func ExtractTargetPorts(loadBalancers []*pb.LBcluster) []int {
+	ports := make(map[int32]struct{})
+
+	var result []int
+	for _, c := range loadBalancers {
+		for _, role := range c.Roles {
+			if _, ok := ports[role.TargetPort]; !ok {
+				result = append(result, int(role.TargetPort))
+			}
+			ports[role.TargetPort] = struct{}{}
+		}
+	}
+
+	return result
+}

@@ -66,13 +66,30 @@ func GetAllConfigs(c pb.ContextBoxServiceClient) (*pb.GetAllConfigsResponse, err
 	return res, nil
 }
 
-// DeleteConfig deletes object from the mongoDB database with a specified Id
+// DeleteConfig sets the manifest to null so that the next invocation of the workflow
+// for this config destroys the previous build infrastructure.
 func DeleteConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType) error {
 	res, err := c.DeleteConfig(context.Background(), &pb.DeleteConfigRequest{Id: id, Type: idType})
 	if err != nil {
 		return fmt.Errorf("error deleting: %v", err)
 	}
 	log.Info().Msgf("Config was deleted %v", res)
+	return nil
+}
+
+// DeleteConfigFromDB deletes the config from the mongoDB database.
+func DeleteConfigFromDB(c pb.ContextBoxServiceClient, id string, idType pb.IdType) error {
+	res, err := c.DeleteConfigFromDB(context.Background(), &pb.DeleteConfigRequest{
+		Id:   id,
+		Type: idType,
+	})
+
+	if err != nil {
+		return fmt.Errorf("error deleting config from DB: %w", err)
+	}
+
+	log.Info().Msgf("Config was deleted from DB: %+v", res)
+
 	return nil
 }
 

@@ -69,15 +69,17 @@ resource "oci_core_default_security_list" "claudie_security_rules" {
     description = "Allow SSH connections"
   }
 
+  {{range $role := index .Metadata "roles"}}
   ingress_security_rules {
-    protocol    = "6"
+    protocol    = "{{ protocolToOCIProtocolNumber $role.Protocol}}"
     source      = "0.0.0.0/0"
     tcp_options {
-      max = "6443"
-      min = "6443"
+      max = "{{ $role.Port }}"
+      min = "{{ $role.Port }}"
     }
-    description = "Allow kube API port"
+    description = "LoadBalancer port defined in the manifest"
   }
+  {{end}}
 
   ingress_security_rules {
     protocol    = "17"
