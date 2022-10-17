@@ -101,7 +101,7 @@ message Provider {
   //general
   string specName = 1;
   string cloudProviderName = 2; 
-  //credentilas is used as a variable for secret info i.e. private key, api token, etc
+  //credentilas is used as a variable for secret info i.e. private key, api token, secret etc
   string credentials = 3;
   //gcp
   string gcp_project = 4;
@@ -111,7 +111,7 @@ message Provider {
   string oci_fingerprint = 7;
   string oci_compartment_ocid = 8;
   //aws
-  string access_key = 9; 
+  string aws_access_key = 9; 
   //azure
   string azure_subscription_id = 10;
   string azure_tenant_id = 11;

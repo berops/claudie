@@ -67,7 +67,7 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
 			return &pb.Provider{
 				SpecName:          awsConf.Name,
 				Credentials:       awsConf.SecretKey,
-				AccessKey:         awsConf.AccessKey,
+				AwsAccessKey:      awsConf.AccessKey,
 				CloudProviderName: "aws",
 			}, nil
 		}
