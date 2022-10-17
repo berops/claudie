@@ -8,7 +8,7 @@ provider "azurerm" {
   tenant_id       = "{{(index .NodePools 0).Provider.AzureTenantId}}"
   client_id       = "{{(index .NodePools 0).Provider.AzureClientId}}"
   client_secret   = file("{{(index .NodePools 0).Provider.SpecName}}")
-  alias           = "k8s-nodepool"
+  alias           = "lb-nodepool"
 }
 
 variable "default_rg_name" {
@@ -20,7 +20,7 @@ variable "default_rg_location" {
 }
 
 resource "azurerm_virtual_network" "claudie-vn" {
-  provider = azurerm.k8s-nodepool
+  provider = azurerm.lb-nodepool
   name                = "{{ $clusterName }}-{{ $clusterHash }}-vn"
   address_space       = ["10.0.0.0/16"]
   location            = var.default_rg_location
@@ -28,7 +28,7 @@ resource "azurerm_virtual_network" "claudie-vn" {
 }
 
 resource "azurerm_subnet" "claudie-subnet" {
-  provider = azurerm.k8s-nodepool
+  provider = azurerm.lb-nodepool
   name                 = "{{ $clusterName }}-{{ $clusterHash }}-subnet"
   resource_group_name  = var.default_rg_name
   virtual_network_name = azurerm_virtual_network.claudie-vn.name
@@ -36,7 +36,7 @@ resource "azurerm_subnet" "claudie-subnet" {
 }
 
 resource "azurerm_network_security_group" "claudie-nsg" {
-  provider = azurerm.k8s-nodepool
+  provider = azurerm.lb-nodepool
   name                = "{{ $clusterName }}-{{ $clusterHash }}-nsg"
   location            = var.default_rg_location
   resource_group_name = var.default_rg_name
@@ -76,15 +76,15 @@ resource "azurerm_network_security_group" "claudie-nsg" {
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
-  {{ if index .Metadata "loadBalancers" | targetPorts | isMissing 6443 }}
+  {{range $i,$role := index .Metadata "roles"}}
   security_rule {
-    name                       = "KubeApi"
-    priority                   = 1003
+    name                       = "Allow-{{$role.Name}}"
+    priority                   = {{ assignPriority $i }}
     direction                  = "Inbound"
     access                     = "Allow"
-    protocol                   = "Tcp"
+    protocol                   = "{{protocolToAzureProtocolString $role.Protocol}}"
     source_port_range          = "*"
-    destination_port_range     = "6443"
+    destination_port_range     = "{{$role.Port}}"
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
@@ -92,15 +92,14 @@ resource "azurerm_network_security_group" "claudie-nsg" {
 }
 
 resource "azurerm_subnet_network_security_group_association" "associate-nsg" {
-  provider = azurerm.k8s-nodepool
+  provider = azurerm.lb-nodepool
   subnet_id                 = azurerm_subnet.claudie-subnet.id
   network_security_group_id = azurerm_network_security_group.claudie-nsg.id
 }
 
-
 {{ range $nodepool := .NodePools }}
 resource "azurerm_public_ip" "{{ $nodepool.Name }}-{{ $clusterHash }}-public-ip" {
-  provider = azurerm.k8s-nodepool
+  provider = azurerm.lb-nodepool
   name                = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}-ip"
   count               = {{$nodepool.Count}}
   location            = "{{ $nodepool.Region }}"
@@ -111,7 +110,7 @@ resource "azurerm_public_ip" "{{ $nodepool.Name }}-{{ $clusterHash }}-public-ip"
 }
 
 resource "azurerm_network_interface" "{{ $nodepool.Name }}-{{ $clusterHash }}-ni" {
-  provider = azurerm.k8s-nodepool
+  provider = azurerm.lb-nodepool
   count               = {{$nodepool.Count}}
   name                = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-ni-${count.index + 1}"
   location            = "{{ $nodepool.Region }}"
@@ -127,7 +126,7 @@ resource "azurerm_network_interface" "{{ $nodepool.Name }}-{{ $clusterHash }}-ni
 }
 
 resource "azurerm_virtual_machine" "{{ $nodepool.Name }}" {
-  provider = azurerm.k8s-nodepool
+  provider = azurerm.lb-nodepool
   count                 = {{$nodepool.Count}}
   name                  = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}"
   location              = "{{ $nodepool.Region }}"
@@ -170,7 +169,7 @@ resource "azurerm_virtual_machine" "{{ $nodepool.Name }}" {
 }
 
 resource "azurerm_virtual_machine_extension" "{{ $nodepool.Name }}-{{ $clusterHash }}-postcreation-script" {
-  provider = azurerm.k8s-nodepool
+  provider = azurerm.lb-nodepool
   name                 = "{{ $clusterName }}-{{ $clusterHash }}-postcreation-script"
   for_each             = { for vm in azurerm_virtual_machine.{{$nodepool.Name}} : vm.name => vm }
   virtual_machine_id   = each.value.id
