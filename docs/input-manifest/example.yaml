@@ -23,40 +23,44 @@ providers:
         "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/claudie%40claudie-project-123456.iam.gserviceaccount.com"
         }
       gcp_project: project-id
-oci:
-  - name: oci-1
-    private_key: |
-      -----BEGIN RSA PRIVATE KEY-----
-      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/==
-      -----END RSA PRIVATE KEY-----
-    key_fingerprint: ab:cd:3f:34:33:22:32:34:54:54:45:76:76:78:98:aa
-    tenancy_ocid: ocid2.tenancy.oc2..aaaaaaaayrsfvlvxc34o060kfdygsds21nske76ksjkko21lpsdfsfsgbrtghs
-    user_ocid: ocid2.user.oc2..aaaaaaaaaanyrsfvlvxc34o060kfdygsds21nske76ksjkko21lpsdfsf
-    compartment_ocid: ocid2.compartment.oc2..aaaaaaaaa2rsfvlvxc34o060kfdygsds21nske76ksjkko21lpsdfsf
+  oci:
+    - name: oci-1
+      private_key: |
+        -----BEGIN RSA PRIVATE KEY-----
+        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
+        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
+        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
+        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
+        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
+        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
+        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
+        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
+        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
+        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
+        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
+        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
+        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
+        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
+        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
+        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
+        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
+        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
+        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
+        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
+        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
+        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
+        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
+        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
+        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/==
+        -----END RSA PRIVATE KEY-----
+      key_fingerprint: ab:cd:3f:34:33:22:32:34:54:54:45:76:76:78:98:aa
+      tenancy_ocid: ocid2.tenancy.oc2..aaaaaaaayrsfvlvxc34o060kfdygsds21nske76ksjkko21lpsdfsfsgbrtghs
+      user_ocid: ocid2.user.oc2..aaaaaaaaaanyrsfvlvxc34o060kfdygsds21nske76ksjkko21lpsdfsf
+      compartment_ocid: ocid2.compartment.oc2..aaaaaaaaa2rsfvlvxc34o060kfdygsds21nske76ksjkko21lpsdfsf
+  aws:
+    - name: aws-1
+      accces_key: SLDUTKSHFDMSJKDIALASSD
+      secret_key: iuhbOIJN+oin/olikDSadsnoiSVSDsacoinOUSHD
 
 # nodepools field is used for defining the nodepool spec
 # you can think of them as a blueprints, not actual nodepools that will be created
@@ -123,6 +127,28 @@ nodePools:
       # https://docs.oracle.com/en-us/iaas/images/image/7c71896e-e030-4de2-b73e-8856ac44d84c/
       image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaauj7omj2zxmbh2go5plujbvysvhwojasdywcxrnnkcwehvwpix3ga
       disk_size: 50
+    - name: control-aws
+      providerSpec:
+        name: aws-1
+        region: eu-central-1
+        zone: eu-central-1c
+      count: 2
+      server_type: t3.medium
+      # ubuntu
+      # https://cloud-images.ubuntu.com/query/focal/server/released.current.txt
+      image: ami-01453eb88ba6b047b
+      disk_size: 50
+    - name: compute-aws
+      providerSpec:
+        name: aws-1
+        region: eu-central-1
+        zone: eu-central-1c
+      count: 2
+      server_type: t3.medium
+      # ubuntu
+      # https://cloud-images.ubuntu.com/query/focal/server/released.current.txt
+      image: ami-01453eb88ba6b047b
+      disk_size: 50
       # loadbalancer nodes
     - name: loadbalancer-1
       provider:
@@ -169,10 +195,12 @@ kubernetes:
           - control-hetzner
           - control-gcp
           - control-oci
+          - control-aws
         compute:
           - compute-hetzner
           - compute-gcp
           - compute-oci
+          - compute-aws
 
 # loadbalancers field defines loadbalncers used for the k8s clusters
 loadBalancers:

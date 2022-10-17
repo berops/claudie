@@ -13,6 +13,7 @@ type Manifest struct {
 type Provider struct {
 	GCP     []GCP     `yaml:"gcp"`
 	Hetzner []Hetzner `yaml:"hetzner"`
+	AWS     []AWS     `yaml:"aws"`
 	OCI     []OCI     `yaml:"oci"`
 	Azure   []Azure   `yaml:"azure"`
 }
@@ -36,6 +37,11 @@ type Hetzner struct {
 	Credentials string `validate:"required,alphanum,len=64" yaml:"credentials"`
 }
 
+type AWS struct {
+	Name      string `validate:"required" yaml:"name"`
+	AccessKey string `validate:"required,alphanum,len=20" yaml:"access_key"`
+	SecretKey string `validate:"required,len=40" yaml:"secret_key"`
+}
 type OCI struct {
 	Name           string `validate:"required" yaml:"name"`
 	PrivateKey     string `validate:"required" yaml:"private_key"`

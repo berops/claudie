@@ -110,11 +110,13 @@ message Provider {
   string oci_tenancy_ocid = 6;
   string oci_fingerprint = 7;
   string oci_compartment_ocid = 8;
+  //aws
+  string access_key = 9; 
   //azure
-  string azure_subscription_id = 9;
-  string azure_tenant_id = 10;
-  string azure_client_id = 11;
-  string azure_resource_group = 12;
+  string azure_subscription_id = 10;
+  string azure_tenant_id = 11;
+  string azure_client_id = 12;
+  string azure_resource_group = 13;
 }
 
 enum ClusterType {
