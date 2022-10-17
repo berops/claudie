@@ -3,7 +3,7 @@
 ![Build](https://github.com/Berops/claudie/actions/workflows/CD-pipeline-dev.yml/badge.svg)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-Platform for managing multi-cloud Kubernetes clusters. Claudie is able to build Kubernetes clusters with each nodepool in a different cloud-provider.
+Platform for managing multi-cloud Kubernetes clusters with each nodepool in a different cloud-provider.
 
 # Features
 
