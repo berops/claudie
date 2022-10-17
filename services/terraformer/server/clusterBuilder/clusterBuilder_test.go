@@ -210,23 +210,20 @@ var desiredState *pb.Project = &pb.Project{
 
 var jsonData = "{\"compute\":{\"test-cluster-compute1\":\"0.0.0.65\",\n\"test-cluster-compute2\":\"0.0.0.512\"},\n\"control\":{\"test-cluster-control1\":\"0.0.0.72\",\n\"test-cluster-control2\":\"0.0.0.65\"}}"
 
-var ociNp = &pb.NodePool{
+var testNp = &pb.NodePool{
 	Name:       "test-np",
-	Region:     "eu-frankfurt-1",
-	ServerType: "VM.Standard1.1",
-	Image:      "",
+	Region:     "eu-central-1",
+	ServerType: "t3.small",
+	Image:      "ami-06148e0e81e5187c8",
 	DiskSize:   50,
-	Zone:       "",
+	Zone:       "eu-central-1c",
 	Count:      3,
 	Nodes:      []*pb.Node{},
 	IsControl:  true,
 	Provider: &pb.Provider{
-		CloudProviderName: "oci",
+		CloudProviderName: "aws",
 		Credentials:       "",
-		OciFingerprint:    "",
-		TenancyOcid:       "",
-		UserOcid:          "",
-		CompartmentOcid:   "",
+		AccessKey:         "",
 	},
 }
 
@@ -251,8 +248,8 @@ func TestFillNodes(t *testing.T) {
 func TestGenerateTf(t *testing.T) {
 	templateLoader := templateUtils.TemplateLoader{Directory: "../../templates"}
 	template := templateUtils.Templates{Directory: "."}
-	tpl, err := templateLoader.LoadTemplate("oci.tpl")
+	tpl, err := templateLoader.LoadTemplate("aws.tpl")
 	require.NoError(t, err)
-	err = template.Generate(tpl, "oci-test.tf", &NodepoolsData{ClusterName: "oci-test", ClusterHash: "kjasn5", NodePools: []*pb.NodePool{ociNp}})
+	err = template.Generate(tpl, "aws-test.tf", &NodepoolsData{ClusterName: "aws-test", ClusterHash: "abcdef", NodePools: []*pb.NodePool{testNp}})
 	require.NoError(t, err)
 }

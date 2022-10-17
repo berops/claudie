@@ -97,6 +97,9 @@ jobs:
             ./yq e '.providers.oci.[].tenancy_ocid = "${{ secrets.OCI_TENANCY }}"' $file -i
             ./yq e '.providers.oci.[].user_ocid = "${{ secrets.OCI_USER }}"' $file -i
             ./yq e '.providers.oci.[].compartment_ocid = "${{ secrets.OCI_COMPARTMENT }}"' $file -i
+            #replace aws cred
+            ./yq e '.providers.aws.[].access_key = "${{ secrets.AWS_ACCESS_KEY }}"' $file -i
+            ./yq e '.providers.aws.[].secret_key = "${{ secrets.AWS_SECRET_KEY }}"' $file -i
             done
           done
 
