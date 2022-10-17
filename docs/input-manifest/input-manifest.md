@@ -44,6 +44,10 @@ Contains configurations for different supported cloud providers. Atleast one pro
   
   List of AWS configuration for [Amazon web services](https://aws.amazon.com/) . This field is optional.
 
+- `azure` [Azure](#azure)
+  
+  List of Azure configuration for [Azure](https://azure.microsoft.com/en-gb/) . This field is optional.
+
 Support for more cloud provider is planned and will be rolled out in future. 
 
 ## GCP
@@ -117,6 +121,34 @@ Collection of data defining AWS cloud provider configuration.
 - `secret_key`
 
   Secret key for the Access key specified above.
+
+## Azure
+
+Collection of data defining Azure cloud provider configuration. 
+
+- `name`
+
+  Name of the provider spec. Used as a reference further in the input manifest. Should be unique for each provider spec across all the cloud providers.
+
+- `subscription_id`
+
+  Subscription ID of your subscription in Azure.
+
+- `tenant_id`
+  
+  Tenant ID of your tenancy in Azure.
+
+- `client_id`
+
+  Client ID of your client. The Claudie is design to use a service principal with appropriate permissions.
+
+- `client_secret`
+  
+  Client secret generated for your client.
+
+- `resource_group`
+
+  Resource group name where the infra will be created.
 
 ## Nodepools
 

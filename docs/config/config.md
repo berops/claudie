@@ -107,17 +107,21 @@ Node represent a single node from the nodepool
 ## Provider
 Provider represent a single provider from manifest
 
-  | Name              | Type   | Description                                                |
-  | ----------------- | ------ | ---------------------------------------------------------- |
-  | SpecName          | string | Provider name                                              |
-  | Credentials       | string | Credentials of the provider                                |
-  | GcpProject        | string | GCP project (only required when using GCP as DNS provider) |
-  | CloudProviderName | string | Cloud provider name. e.g. `gcp`, `hetzner` or `oci`        |
-  | UserOcid          | string | OCID of the user                                           |
-  | TenancyOcid       | string | OCID of the tenancy                                        |
-  | OciFingerprint    | string | Fingerprint of the private key saved in `Credentials`      |
-  | CompartmentOcid   | string | OCID of the compartment                                    |
-  | AccessKey         | string | AWS access key                                             |
+  | Name                | Type   | Description                                                        |
+  | ------------------- | ------ | ------------------------------------------------------------------ |
+  | SpecName            | string | Provider name                                                      |
+  | CloudProviderName   | string | Cloud provider name. e.g. `gcp`, `hetzner` or `oci`                |
+  | Credentials         | string | Credentials of the provider                                        |
+  | GcpProject          | string | GCP project (only required when using GCP as DNS provider)         |
+  | OciUserOcid         | string | OCID of the user                                                   |
+  | OciTenancyOcid      | string | OCID of the tenancy                                                |
+  | OciFingerprint      | string | Fingerprint of the private key saved in `Credentials`              |
+  | OciCompartmentOcid  | string | OCID of the compartment                                            |
+  | AwsAccessKey        | string | AWS access key to the secret key saved in the `Credentials`        |
+  | AzureSubscriptionId | string | Azure ID of the subscription                                       |
+  | AzureTenantId       | string | Azure ID of the Tenant                                             |
+  | AzureClientId       | string | AzureID of the Client; the client secret is saved in `Credentials` |
+  | AzureResourceGroup  | string | Resource group name where resources will be created                |
 
 
 ## NodeType
