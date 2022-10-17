@@ -36,10 +36,13 @@ Contains configurations for different supported cloud providers. Atleast one pro
   
   List of Hetzner configuration for [Hetzner cloud](https://www.hetzner.com/cloud) . This field is optional.
 
-
 - `oci` [OCI](#oci)
   
   List of OCI configuration for [Oracle cloud infrastructure](https://www.oracle.com/uk/cloud/) . This field is optional.
+
+- `aws` [AWS](#aws)
+  
+  List of AWS configuration for [Amazon web services](https://aws.amazon.com/) . This field is optional.
 
 Support for more cloud provider is planned and will be rolled out in future. 
 
@@ -98,6 +101,22 @@ Collection of data defining OCI cloud provider configuration.
 - `compartment_ocid`
 
   OCID of the compartment where VMs/VCNs/... will be created
+
+## AWS
+
+Collection of data defining AWS cloud provider configuration. 
+
+- `name`
+
+  Name of the provider spec. Used as a reference further in the input manifest. Should be unique for each provider spec across all the cloud providers.
+
+- `access_key`
+
+  Access key ID for your AWS account.
+
+- `secret_key`
+
+  Secret key for the Access key specified above.
 
 ## Nodepools
 
