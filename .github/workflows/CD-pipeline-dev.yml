@@ -33,7 +33,7 @@ jobs:
           version: latest
 
       - name: install kustomize
-        uses: imranismail/setup-kustomize@v1.6.1
+        uses: imranismail/setup-kustomize@v2
         with:
           version: 3.6.1
 
