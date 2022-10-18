@@ -5,6 +5,51 @@
 
 version: 2
 updates:
+  # Maintain dependencies for Ansibler Docker
+  - package-ecosystem: "docker"
+    directory: "/services/ansibler"
+    schedule:
+      interval: "weekly"
+  # Maintain dependencies for Builder Docker
+  - package-ecosystem: "docker"
+    directory: "/services/builder"
+    schedule:
+      interval: "weekly"
+  # Maintain dependencies for ContextBox Docker
+  - package-ecosystem: "docker"
+    directory: "/services/context-box"
+    schedule:
+      interval: "weekly"
+  # Maintain dependencies for Frontend Docker
+  - package-ecosystem: "docker"
+    directory: "/services/frontend"
+    schedule:
+      interval: "weekly"
+  # Maintain dependencies for KubeEleven Docker
+  - package-ecosystem: "docker"
+    directory: "/services/kube-eleven"
+    schedule:
+      interval: "weekly"
+  # Maintain dependencies for Kuber Docker
+  - package-ecosystem: "docker"
+    directory: "/services/kuber"
+    schedule:
+      interval: "weekly"
+  # Maintain dependencies for Scheduler Docker
+  - package-ecosystem: "docker"
+    directory: "/services/scheduler"
+    schedule:
+      interval: "weekly"
+  # Maintain dependencies for Terraformer Docker
+  - package-ecosystem: "docker"
+    directory: "/services/terraformer"
+    schedule:
+      interval: "weekly"
+  # Maintain dependencies for Testing-Framework Docker
+  - package-ecosystem: "docker"
+    directory: "/services/testing-framework"
+    schedule:
+      interval: "weekly"
   # Maintain dependencies for Github-Actions
   - package-ecosystem: "github-actions"
     directory: "/"
