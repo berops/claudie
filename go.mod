@@ -8,7 +8,7 @@ require (
 	github.com/minio/minio-go/v7 v7.0.0
 	github.com/rs/zerolog v1.28.0
 	github.com/spiffe/go-spiffe/v2 v2.1.1
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.8.0
 	go.mongodb.org/mongo-driver v1.9.1
 	golang.org/x/crypto v0.0.0-20220829220503-c86fa9a7ed90
 	golang.org/x/sync v0.0.0-20220819030929-7fc1605a5dde
