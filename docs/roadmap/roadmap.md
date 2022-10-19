@@ -2,7 +2,7 @@
 
 - Support for more cloud providers
   - [x] OCI
-  - [ ] AWS
+  - [x] AWS
   - [ ] Azure
 - Periodic health checks & sync loops for the managed clusters
 - Hybrid-cloud support (on-premises)

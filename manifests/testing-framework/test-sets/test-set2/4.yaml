@@ -16,6 +16,10 @@ providers:
       tenancy_ocid: replaceme-tenancy
       user_ocid: replaceme-user
       compartment_ocid: replaceme-compartment
+  aws:
+    - name: aws-1
+      access_key: replaceme-access-key
+      secret_key: replaceme-secret-key
 
 nodePools:
   dynamic:
@@ -67,6 +71,16 @@ nodePools:
       # https://docs.oracle.com/en-us/iaas/images/image/7c71896e-e030-4de2-b73e-8856ac44d84c/
       image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaauj7omj2zxmbh2go5plujbvysvhwojasdywcxrnnkcwehvwpix3ga
       disk_size: 50
+    - name: aws-lb
+      providerSpec:
+        name: aws-1
+        region: eu-central-1
+        zone: eu-central-1c
+      count: 2
+      server_type: t3.small
+      #ubuntu
+      image: ami-06148e0e81e5187c8
+      disk_size: 50
 
 kubernetes:
   clusters:
@@ -107,6 +121,7 @@ loadBalancers:
         - gcp-lb
         - hetzner-lb
         - oci-lb
+        - aws-lb
     - name: ts2-lb-2
       roles:
         - apiserver-lb
@@ -118,3 +133,4 @@ loadBalancers:
         - gcp-lb
         - hetzner-lb
         - oci-lb
+        - aws-lb

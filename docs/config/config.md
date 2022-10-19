@@ -117,6 +117,7 @@ Provider represent a single provider from manifest
   | TenancyOcid       | string | OCID of the tenancy                                        |
   | OciFingerprint    | string | Fingerprint of the private key saved in `Credentials`      |
   | CompartmentOcid   | string | OCID of the compartment                                    |
+  | AccessKey         | string | AWS access key                                             |
 
 
 ## NodeType
