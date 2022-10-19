@@ -23,7 +23,7 @@ func checkLengthOfFutureDomain(m *Manifest) error {
 				return err
 			}
 		}
-		for _, nodepoolName := range cluster.Pools.Control {
+		for _, nodepoolName := range cluster.Pools.Compute {
 			if err := m.NodePools.checkNodepoolDomain(nodepoolName, cluster.Name); err != nil {
 				return err
 			}
