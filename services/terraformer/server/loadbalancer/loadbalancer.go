@@ -13,6 +13,10 @@ type LBcluster struct {
 	ProjectName string
 }
 
+func (l LBcluster) Id() string {
+	return fmt.Sprintf("%s-%s", l.CurrentLB.ClusterInfo.Name, l.CurrentLB.ClusterInfo.Hash)
+}
+
 func (l LBcluster) Build() error {
 	var currentInfo *pb.ClusterInfo
 	var currentDNS *pb.DNS

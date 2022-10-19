@@ -27,18 +27,27 @@ type templateData struct {
 	SecretKey   string
 }
 
-// function CreateFiles will create a backend.tf file from template
+// CreateFiles creates backend.tf file using the template from Directory.
 func (b Backend) CreateFiles() error {
 	template := templateUtils.Templates{Directory: b.Directory}
 	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.TerraformerTemplates}
+
 	tpl, err := templateLoader.LoadTemplate("backend.tpl")
 	if err != nil {
-		return fmt.Errorf("error while parsing template file backend.tpl: %w", err)
+		return fmt.Errorf("failed to load template file backend.tpl: %w", err)
 	}
-	data := templateData{ProjectName: b.ProjectName, ClusterName: b.ClusterName, MinioURL: minioURL, AccessKey: accessKey, SecretKey: secretKey}
-	err = template.Generate(tpl, "backend.tf", data)
-	if err != nil {
-		return fmt.Errorf("error while creating backend files: %w", err)
+
+	data := templateData{
+		ProjectName: b.ProjectName,
+		ClusterName: b.ClusterName,
+		MinioURL:    minioURL,
+		AccessKey:   accessKey,
+		SecretKey:   secretKey,
 	}
+
+	if err := template.Generate(tpl, "backend.tf", data); err != nil {
+		return fmt.Errorf("failed to generate backend files: %w", err)
+	}
+
 	return nil
 }
