@@ -16,8 +16,8 @@ type K8Scluster struct {
 	LoadBalancers []*pb.LBcluster
 }
 
-func (l K8Scluster) Id() string {
-	return fmt.Sprintf("%s-%s", l.CurrentK8s.ClusterInfo.Name, l.CurrentK8s.ClusterInfo.Hash)
+func (k K8Scluster) Id() string {
+	return fmt.Sprintf("%s-%s", k.CurrentK8s.ClusterInfo.Name, k.CurrentK8s.ClusterInfo.Hash)
 }
 
 func (k K8Scluster) Build() error {
