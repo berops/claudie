@@ -39,7 +39,7 @@ func (np *NodePool) checkNodepoolDomain(nodepoolName, clusterName string) error 
 	// <node-name> = clusterName + hash + nodeName + indexLength + separators
 	count := np.getCount(nodepoolName)
 	if count == -1 {
-		return fmt.Errorf("Nodepool with %s name was not found, cannot validate the future domain", nodepoolName)
+		return fmt.Errorf("nodepool with %s name was not found, cannot validate the future domain", nodepoolName)
 	}
 	total := 3 /*separator*/ + len(clusterName) + utils.HashLength + len(nodepoolName) + len(strconv.Itoa(count)) /*get length of the string*/
 	if total > maxLength {
