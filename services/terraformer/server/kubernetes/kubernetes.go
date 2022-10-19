@@ -17,7 +17,12 @@ type K8Scluster struct {
 }
 
 func (k K8Scluster) Id() string {
-	return fmt.Sprintf("%s-%s", k.CurrentK8s.ClusterInfo.Name, k.CurrentK8s.ClusterInfo.Hash)
+	state := k.DesiredK8s
+	if state == nil {
+		state = k.CurrentK8s
+	}
+
+	return fmt.Sprintf("%s-%s", state.ClusterInfo.Name, state.ClusterInfo.Hash)
 }
 
 func (k K8Scluster) Build() error {
