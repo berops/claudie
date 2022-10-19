@@ -20,6 +20,13 @@ providers:
     - name: aws-1
       access_key: replaceme-access-key
       secret_key: replaceme-secret-key
+  azure:
+    - name: azure-1
+      subscription_id: replaceme-subscription
+      tenant_id: replaceme-tenant-id
+      client_id: replaceme-client-id
+      client_secret: replaceme-client-secret
+      resource_group: replaceme-rg-name
 
 nodePools:
   dynamic:
@@ -101,6 +108,24 @@ nodePools:
       #ubuntu
       image: ami-06148e0e81e5187c8
       disk_size: 50
+    - name: azure-control
+      providerSpec:
+        name: azure-1
+        region: West Europe
+        zone: 1
+      count: 3
+      server_type: Standard_B2s
+      image: Canonical:UbuntuServer:18.04-LTS:latest
+      disk_size: 50
+    - name: azure-compute
+      providerSpec:
+        name: azure-1
+        region: West Europe
+        zone: 2
+      count: 3
+      server_type: Standard_B2s
+      image: Canonical:UbuntuServer:18.04-LTS:latest
+      disk_size: 50
 
 kubernetes:
   clusters:
@@ -136,3 +161,11 @@ kubernetes:
           - aws-control
         compute:
           - aws-compute
+    - name: ts1-azure
+      version: v1.21.0
+      network: 192.168.2.0/24
+      pools:
+        control:
+          - azure-control
+        compute:
+          - azure-compute
