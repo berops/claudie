@@ -110,8 +110,8 @@ Provider represent a single provider from manifest
   | Name                | Type   | Description                                                        |
   | ------------------- | ------ | ------------------------------------------------------------------ |
   | SpecName            | string | Provider name                                                      |
-  | CloudProviderName   | string | Cloud provider name. e.g. `gcp`, `hetzner` or `oci`                |
-  | Credentials         | string | Credentials of the provider                                        |
+  | CloudProviderName   | string | Cloud provider name. e.g. `gcp`, `hetzner`, `oci`, etc.            |
+  | Credentials         | string | [Secret Credentials](#secret-credentials) of the provider          |
   | GcpProject          | string | GCP project (only required when using GCP as DNS provider)         |
   | OciUserOcid         | string | OCID of the user                                                   |
   | OciTenancyOcid      | string | OCID of the tenancy                                                |
@@ -123,6 +123,15 @@ Provider represent a single provider from manifest
   | AzureClientId       | string | AzureID of the Client; the client secret is saved in `Credentials` |
   | AzureResourceGroup  | string | Resource group name where resources will be created                |
 
+### Secret credentials
+The list of information saved in the `Credentials` field for each provider
+| Provider | Input Manifest field                                         |
+| -------- | ------------------------------------------------------------ |
+| GCP      | [`credentials`](../input-manifest/input-manifest.md#gcp)     |
+| Hetzner  | [`credentials`](../input-manifest/input-manifest.md#hetzner) |
+| AWS      | [`secret_key`](../input-manifest/input-manifest.md#aws)      |
+| OCI      | [`private_key`](../input-manifest/input-manifest.md#oci)     |
+| Azure    | [`client_secret`](../input-manifest/input-manifest.md#azure) |
 
 ## NodeType
 NodeType specifies type of the node
