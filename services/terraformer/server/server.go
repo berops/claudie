@@ -43,6 +43,7 @@ type server struct {
 type Cluster interface {
 	Build() error
 	Destroy() error
+	Id() string
 }
 
 func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastructureRequest) (*pb.BuildInfrastructureResponse, error) {
@@ -91,9 +92,8 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 	for _, cluster := range clusters {
 		func(c Cluster) {
 			errGroup.Go(func() error {
-				err := c.Build()
-				if err != nil {
-					log.Error().Msgf("error encountered in Terraformer - BuildInfrastructure: %v", err)
+				if err := c.Build(); err != nil {
+					log.Error().Msgf("Failed to build cluster %v, due to: %v", cluster.Id(), err)
 					return err
 				}
 				return nil
@@ -117,37 +117,57 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 }
 
 func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrastructureRequest) (*pb.DestroyInfrastructureResponse, error) {
-	fmt.Println("DestroyInfrastructure function was invoked with config:", req.GetConfig().GetName())
+	log.Info().Msgf("DestroyInfrastructure function was invoked with config: %v", req.GetConfig().GetName())
+
 	config := req.GetConfig()
 	projectName := config.CurrentState.Name
-	var errGroup errgroup.Group
-	var clusters []Cluster
+
 	// Get kubernetes clusters
+	var clusters []Cluster
 	for _, k8s := range config.CurrentState.Clusters {
 		clusters = append(clusters, kubernetes.K8Scluster{CurrentK8s: k8s, ProjectName: projectName})
 	}
+
 	// Get LB clusters
 	for _, lb := range config.CurrentState.LoadBalancerClusters {
 		clusters = append(clusters, loadbalancer.LBcluster{CurrentLB: lb, ProjectName: projectName})
 	}
+
+	mc, err := minio.New(minioEndpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(minioAccessKey, minioSecretKey, ""),
+		Secure: false,
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to minIO: %w", err)
+	}
+
 	// Destroy clusters concurrently
+	var errGroup errgroup.Group
 	for _, cluster := range clusters {
 		func(c Cluster) {
 			errGroup.Go(func() error {
-				err := c.Destroy()
-				if err != nil {
-					log.Error().Msgf("error encountered in Terraformer - DestroyInfrastructure: %v", err)
+				if err := c.Destroy(); err != nil {
+					log.Error().Msgf("Failed to destroy cluster %v due to: %v", c.Id(), err)
 					return err
 				}
-				return nil
+
+				// Key under which the state file is stored in minIO.
+				key := fmt.Sprintf("%s/%s", projectName, c.Id())
+
+				return mc.RemoveObject(ctx, "claudie-tf-state-files", key, minio.RemoveObjectOptions{
+					GovernanceBypass: true,
+					VersionID:        "", // currently we don't use version ID's in minIO.
+				})
 			})
 		}(cluster)
 	}
-	err := errGroup.Wait()
-	if err != nil {
+
+	if err := errGroup.Wait(); err != nil {
 		config.ErrorMessage = err.Error()
-		return &pb.DestroyInfrastructureResponse{Config: config}, fmt.Errorf("error while destroying the infrastructure: %w", err)
+		return &pb.DestroyInfrastructureResponse{Config: config}, fmt.Errorf("failed to destroy infrastructure: %w", err)
 	}
+
 	config.ErrorMessage = ""
 	return &pb.DestroyInfrastructureResponse{Config: config}, nil
 }

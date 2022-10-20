@@ -22,7 +22,7 @@ images:
 - name: claudieio/ansibler
   newTag: 7091663-826
 - name: claudieio/builder
-  newTag: 7091663-826
+  newTag: 3b077cb-857
 - name: claudieio/context-box
   newTag: 7091663-826
 - name: claudieio/frontend
@@ -34,4 +34,4 @@ images:
 - name: claudieio/scheduler
   newTag: 7091663-826
 - name: claudieio/terraformer
-  newTag: 7091663-826
+  newTag: 1af9e97-860
