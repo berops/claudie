@@ -42,9 +42,9 @@ func (np *NodePool) checkNodepoolDomain(nodepoolName, clusterName string) error 
 		return fmt.Errorf("nodepool with %s name was not found, cannot validate the future domain", nodepoolName)
 	}
 	total := 3 /*separator*/ + len(clusterName) + utils.HashLength + len(nodepoolName) + len(strconv.Itoa(count)) /*get length of the string*/
-	if total > maxLength {
-		return fmt.Errorf("cluster name %s or nodepool name %s is too long, consider shortening it to be bellow total node name bellow %d [total node name: %d, hash: %d]",
-			clusterName, nodepoolName, maxLength, total, utils.HashLength)
+	if total+baseLength > maxLength {
+		return fmt.Errorf("cluster name %s or nodepool name %s is too long, consider shortening it [total node name: %d]",
+			clusterName, nodepoolName, total)
 	}
 	return nil
 }
