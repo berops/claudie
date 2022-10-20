@@ -71,7 +71,7 @@ nodePools:
       providerSpec:
         name: oci-1
         region: eu-frankfurt-1
-        zone: hsVQ:EU-FRANKFURT-1-AD-1
+        zone: hsVQ:EU-FRANKFURT-1-AD-2
       count: 3
       server_type: VM.Standard2.1
       # ubuntu minimal

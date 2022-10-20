@@ -1,4 +1,4 @@
-name: TestSet-2
+name: TestSet-3
 
 providers:
   hetzner:
@@ -16,17 +16,6 @@ providers:
       tenancy_ocid: replaceme-tenancy
       user_ocid: replaceme-user
       compartment_ocid: replaceme-compartment
-  aws:
-    - name: aws-1
-      access_key: replaceme-access-key
-      secret_key: replaceme-secret-key
-  azure:
-    - name: azure-1
-      subscription_id: replaceme-subscription
-      tenant_id: replaceme-tenant-id
-      client_id: replaceme-client-id
-      client_secret: replaceme-client-secret
-      resource_group: replaceme-rg-name
 
 nodePools:
   dynamic:
@@ -35,7 +24,7 @@ nodePools:
         name: hetzner-1
         region: nbg1
         zone: nbg1-dc3
-      count: 3
+      count: 1
       server_type: cpx11
       image: ubuntu-20.04
       disk_size: 50
@@ -44,20 +33,51 @@ nodePools:
         name: hetzner-1
         region: nbg1
         zone: nbg1-dc3
-      count: 2
+      count: 1
       server_type: cpx11
       image: ubuntu-20.04
       disk_size: 50
-    #-----------LB nodepools----------
-    - name: gcp-lb
+    - name: gcp-control
       providerSpec:
         name: gcp-1
-        region: europe-west1
-        zone: europe-west1-c
-      count: 2
+        region: europe-west2
+        zone: europe-west2-c
+      count: 1
+      server_type: e2-medium
+      image: ubuntu-os-cloud/ubuntu-2004-focal-v20220610
+      disk_size: 50
+    - name: gcp-compute
+      providerSpec:
+        name: gcp-1
+        region: europe-west2
+        zone: europe-west2-c
+      count: 1
       server_type: e2-small
       image: ubuntu-os-cloud/ubuntu-2004-focal-v20220610
       disk_size: 50
+    - name: oci-control
+      providerSpec:
+        name: oci-1
+        region: eu-frankfurt-1
+        zone: hsVQ:EU-FRANKFURT-1-AD-3
+      count: 1
+      server_type: VM.Standard2.1
+      # ubuntu minimal
+      # https://docs.oracle.com/en-us/iaas/images/image/7c71896e-e030-4de2-b73e-8856ac44d84c/
+      image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaauj7omj2zxmbh2go5plujbvysvhwojasdywcxrnnkcwehvwpix3ga
+      disk_size: 50
+    - name: oci-compute
+      providerSpec:
+        name: oci-1
+        region: eu-frankfurt-1
+        zone: hsVQ:EU-FRANKFURT-1-AD-3
+      count: 1
+      server_type: VM.Standard1.1
+      # ubuntu minimal
+      # https://docs.oracle.com/en-us/iaas/images/image/7c71896e-e030-4de2-b73e-8856ac44d84c/
+      image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaauj7omj2zxmbh2go5plujbvysvhwojasdywcxrnnkcwehvwpix3ga
+      disk_size: 50
+    #-----------LB nodepools----------
     - name: hetzner-lb
       providerSpec:
         name: hetzner-1
@@ -67,55 +87,46 @@ nodePools:
       server_type: cpx11
       image: ubuntu-20.04
       disk_size: 50
-    - name: oci-lb
-      providerSpec:
-        name: oci-1
-        region: eu-frankfurt-1
-        zone: hsVQ:EU-FRANKFURT-1-AD-2
-      count: 2
-      server_type: VM.Standard2.1
-      # ubuntu minimal
-      # https://docs.oracle.com/en-us/iaas/images/image/7c71896e-e030-4de2-b73e-8856ac44d84c/
-      image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaauj7omj2zxmbh2go5plujbvysvhwojasdywcxrnnkcwehvwpix3ga
-      disk_size: 50
-    - name: aws-lb
-      providerSpec:
-        name: aws-1
-        region: eu-central-1
-        zone: eu-central-1c
-      count: 2
-      server_type: t3.small
-      #ubuntu
-      image: ami-06148e0e81e5187c8
-      disk_size: 50
-    - name: azure-lb
-      providerSpec:
-        name: azure-1
-        region: West Europe
-        zone: 3
-      count: 2
-      server_type: Standard_B2s
-      image: Canonical:0001-com-ubuntu-minimal-focal:minimal-20_04-lts:20.04.202004230
-      disk_size: 50
 
 kubernetes:
   clusters:
-    - name: ts2-c-1
+    - name: ts3-c-1
       version: v1.21.0
       network: 192.168.2.0/24
       pools:
         control:
           - hetzner-control
+          - gcp-control
+          - oci-control
         compute:
           - hetzner-compute
-    - name: ts2-c-2
+          - gcp-compute
+          - oci-compute
+    - name: ts3-c-2
       version: v1.21.0
       network: 192.168.2.0/24
       pools:
         control:
           - hetzner-control
+          - gcp-control
+          - oci-control
         compute:
           - hetzner-compute
+          - gcp-compute
+          - oci-compute
+    - name: ts3-c-3
+      version: v1.21.0
+      network: 192.168.2.0/24
+      pools:
+        control:
+          - hetzner-control
+          - gcp-control
+          - oci-control
+        compute:
+          - hetzner-compute
+          - gcp-compute
+          - oci-compute          
+
 
 loadBalancers:
   roles:
@@ -125,29 +136,12 @@ loadBalancers:
       target_port: 6443
       target: k8sControlPlane
   clusters:
-    - name: ts2-lb-1
+    - name: ts3-lb-1
       roles:
         - apiserver-lb
       dns:
         dns_zone: lb-zone-2
         provider: gcp-1
-      targeted-k8s: ts2-c-1
+      targeted-k8s: ts3-c-3
       pools:
-        - gcp-lb
         - hetzner-lb
-        - oci-lb
-        - aws-lb
-        - azure-lb
-    - name: ts2-lb-2
-      roles:
-        - apiserver-lb
-      dns:
-        dns_zone: lb-zone-2
-        provider: gcp-1
-      targeted-k8s: ts2-c-2
-      pools:
-        - gcp-lb
-        - hetzner-lb
-        - oci-lb
-        - aws-lb
-        - azure-lb

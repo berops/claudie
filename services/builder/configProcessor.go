@@ -63,12 +63,18 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			defer wg.Done()
 		}
 
-		// check if Desired state is null and if so we want to delete the existing cluster
+		// check if Desired state is null and if so we want to delete the existing config
 		if config.DsChecksum == nil && config.CsChecksum != nil {
-			if err := destroyConfig(config, c); err != nil {
-				log.Error().Err(err).Send()
+			if err := destroyConfigAndDeleteDoc(config, c); err != nil {
+				log.Error().Msgf("failed to delete the config %s: %v", config.Name, err)
 			}
 			return
+		}
+
+		// check for cluster deleting
+		configToDelete := getDeletedClusterConfig(config)
+		if err := destroyConfig(configToDelete, c); err != nil {
+			log.Error().Msgf("Failed to delete clusters: %v", err)
 		}
 
 		//tmpConfig is used in operation where config is adding && deleting the nodes
@@ -215,4 +221,49 @@ func mergeDeleteCounts(dst, src map[string]*nodeCount) map[string]*nodeCount {
 		dst[k] = v
 	}
 	return dst
+}
+
+// getDeletedClusterConfig function queries for cluster those needs ro be deleted from current state.
+// It also updated the config object to remove the clusters to be deleted from current state. Thus
+// the function has SIDE EFFECTS and should be used carefully.
+// returns *pb.Config which contains clusters (both k8s and lb) that needs to be deleted.
+func getDeletedClusterConfig(config *pb.Config) *pb.Config {
+	configToDelete := proto.Clone(config).(*pb.Config)
+	var k8sClustersToDelete, remainingCsK8sClusters []*pb.K8Scluster
+	var LbClustersToDelete, remainingCsLbClusters []*pb.LBcluster
+
+OuterK8s:
+	for _, csCluster := range config.CurrentState.Clusters {
+		for _, dsCluster := range config.DesiredState.Clusters {
+			if isEqual(dsCluster.ClusterInfo, csCluster.ClusterInfo) {
+				remainingCsK8sClusters = append(remainingCsK8sClusters, csCluster)
+				continue OuterK8s
+			}
+		}
+		k8sClustersToDelete = append(k8sClustersToDelete, csCluster)
+	}
+OuterLb:
+	for _, csLbCluster := range config.CurrentState.LoadBalancerClusters {
+		for _, dsLbCluster := range config.DesiredState.LoadBalancerClusters {
+			if isEqual(dsLbCluster.ClusterInfo, csLbCluster.ClusterInfo) {
+				remainingCsLbClusters = append(remainingCsLbClusters, csLbCluster)
+				continue OuterLb
+			}
+		}
+		LbClustersToDelete = append(LbClustersToDelete, csLbCluster)
+	}
+	configToDelete.CurrentState.Clusters = k8sClustersToDelete
+	configToDelete.CurrentState.LoadBalancerClusters = LbClustersToDelete
+
+	// update the passed config's currentState to remove the clusters which will be deleted
+	config.CurrentState.Clusters = remainingCsK8sClusters
+	config.CurrentState.LoadBalancerClusters = remainingCsLbClusters
+	return configToDelete
+}
+
+// isEqual function checks if the two cluster from desiredState and Current state are same by comparing
+// names and hashes
+// return boolean value, True if the match otherwise False
+func isEqual(dsClusterInfo, csClusterInfo *pb.ClusterInfo) bool {
+	return dsClusterInfo.Name == csClusterInfo.Name && dsClusterInfo.Hash == csClusterInfo.Hash
 }
