@@ -95,7 +95,7 @@ nodePools:
         zone: 3
       count: 1
       server_type: Standard_B2s
-      image: Canonical:UbuntuServer:18.04-LTS:latest
+      image: Canonical:0001-com-ubuntu-minimal-focal:minimal-20_04-lts:20.04.202004230
       disk_size: 50
 
 kubernetes:
