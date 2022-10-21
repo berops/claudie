@@ -61,6 +61,13 @@ providers:
     - name: aws-1
       accces_key: SLDUTKSHFDMSJKDIALASSD
       secret_key: iuhbOIJN+oin/olikDSadsnoiSVSDsacoinOUSHD
+  azure:
+    - name: azure-1
+      client_secret: Abcd~EFg~H6Ijkls~ABC15sEFGK54s78X~Olk9
+      subscription_id: 6a4dfsg7-sd4v-f4ad-dsva-ad4v616fd512
+      tenant_id: 54cdafa5-sdvs-45ds-546s-df651sfdt614
+      client_id: 0255sc23-76we-87g6-964f-abc1def2gh3l
+      resource_group: dev-resource-group
 
 # nodepools field is used for defining the nodepool spec
 # you can think of them as a blueprints, not actual nodepools that will be created

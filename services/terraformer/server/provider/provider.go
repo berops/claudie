@@ -20,6 +20,7 @@ type templateData struct {
 	Hetzner bool
 	Aws     bool
 	Oci     bool
+	Azure   bool
 }
 
 func (p Provider) CreateProvider(clusterInfo *pb.ClusterInfo) error {
@@ -38,7 +39,7 @@ func (p Provider) CreateProvider(clusterInfo *pb.ClusterInfo) error {
 }
 
 func getProvidersUsed(clusterInfo *pb.ClusterInfo) templateData {
-	var data = templateData{Gcp: false, Hetzner: false, Oci: false, Aws: false}
+	var data = templateData{Gcp: false, Hetzner: false, Oci: false, Aws: false, Azure: false}
 	for _, nodepool := range clusterInfo.NodePools {
 		if nodepool.Provider.CloudProviderName == "gcp" {
 			data.Gcp = true
@@ -51,6 +52,9 @@ func getProvidersUsed(clusterInfo *pb.ClusterInfo) templateData {
 		}
 		if nodepool.Provider.CloudProviderName == "oci" {
 			data.Oci = true
+		}
+		if nodepool.Provider.CloudProviderName == "azure" {
+			data.Azure = true
 		}
 	}
 	return data

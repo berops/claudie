@@ -20,6 +20,13 @@ providers:
     - name: aws-1
       access_key: replaceme-access-key
       secret_key: replaceme-secret-key
+  azure:
+    - name: azure-1
+      subscription_id: replaceme-subscription
+      tenant_id: replaceme-tenant-id
+      client_id: replaceme-client-id
+      client_secret: replaceme-client-secret
+      resource_group: replaceme-rg-name
 
 nodePools:
   dynamic:
@@ -81,6 +88,15 @@ nodePools:
       #ubuntu
       image: ami-06148e0e81e5187c8
       disk_size: 50
+    - name: azure-lb
+      providerSpec:
+        name: azure-1
+        region: West Europe
+        zone: 3
+      count: 2
+      server_type: Standard_B2s
+      image: Canonical:0001-com-ubuntu-minimal-focal:minimal-20_04-lts:20.04.202004230
+      disk_size: 50
 
 kubernetes:
   clusters:
@@ -121,6 +137,7 @@ loadBalancers:
         - hetzner-lb
         - oci-lb
         - aws-lb
+        - azure-lb
     - name: ts2-lb-2
       roles:
         - apiserver-lb
@@ -133,3 +150,4 @@ loadBalancers:
         - hetzner-lb
         - oci-lb
         - aws-lb
+        - azure-lb
