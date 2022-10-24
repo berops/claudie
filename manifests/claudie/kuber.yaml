@@ -21,11 +21,11 @@ spec:
           image: claudieio/kuber
           resources:
             requests:
-              cpu: 150m
-              memory: 100Mi
-            limits:
               cpu: 300m
               memory: 200Mi
+            limits:
+              cpu: 500m
+              memory: 400Mi
           env:
             - name: KUBER_PORT
               valueFrom:

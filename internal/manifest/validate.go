@@ -14,8 +14,8 @@ func (m *Manifest) Validate() error {
 
 	// check if at least one provider is defined
 	// https://github.com/Berops/claudie/blob/master/docs/input-manifest/input-manifest.md#providers
-	if len(m.Providers.GCP)+len(m.Providers.Hetzner) < 1 {
-		return fmt.Errorf("need to define atleast one provider inside the providers section of the manifest")
+	if len(m.Providers.GCP)+len(m.Providers.Hetzner)+len(m.Providers.AWS)+len(m.Providers.Azure)+len(m.Providers.OCI) < 1 {
+		return fmt.Errorf("need to define at least one provider inside the providers section of the manifest")
 	}
 
 	if err := m.Providers.Validate(); err != nil {

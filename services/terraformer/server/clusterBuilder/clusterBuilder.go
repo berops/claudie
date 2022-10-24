@@ -17,6 +17,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+const Output = "services/terraformer/server/clusters"
+
 // ClusterBuilder wraps data needed for building a cluster.
 type ClusterBuilder struct {
 	// DesiredInfo contains the information about the
@@ -48,30 +50,25 @@ type outputNodepools struct {
 	IPs map[string]interface{} `json:"-"`
 }
 
-const (
-	Output            = "services/terraformer/server/clusters"
-	TemplateDirectory = "services/terraformer/templates"
-)
-
-// tplFile - template file for creation of nodepools
 func (c ClusterBuilder) CreateNodepools() error {
 	clusterID := fmt.Sprintf("%s-%s", c.DesiredInfo.Name, c.DesiredInfo.Hash)
 	clusterDir := filepath.Join(Output, clusterID)
-	fmt.Println(clusterDir)
-	terraform := terraform.Terraform{Directory: clusterDir, StdOut: comm.GetStdOut(clusterID), StdErr: comm.GetStdErr(clusterID)}
-	err := c.generateFiles(clusterID, clusterDir)
-	if err != nil {
-		// description of an error in c.generateFiles()
-		return err
+
+	if err := c.generateFiles(clusterID, clusterDir); err != nil {
+		return fmt.Errorf("failed to generate files: %w", err)
 	}
 
-	// create nodepool with terraform
-	err = terraform.TerraformInit()
-	if err != nil {
+	terraform := terraform.Terraform{
+		Directory: clusterDir,
+		StdOut:    comm.GetStdOut(clusterID),
+		StdErr:    comm.GetStdErr(clusterID),
+	}
+
+	if err := terraform.TerraformInit(); err != nil {
 		return fmt.Errorf("error while running terraform init in %s : %w", clusterID, err)
 	}
-	err = terraform.TerraformApply()
-	if err != nil {
+
+	if err := terraform.TerraformApply(); err != nil {
 		return fmt.Errorf("error while running terraform apply in %s : %w", clusterID, err)
 	}
 
@@ -101,30 +98,33 @@ func (c ClusterBuilder) CreateNodepools() error {
 	return nil
 }
 
-// tplFile - template file for creation of nodepools
 func (c ClusterBuilder) DestroyNodepools() error {
 	clusterID := fmt.Sprintf("%s-%s", c.CurrentInfo.Name, c.CurrentInfo.Hash)
 	clusterDir := filepath.Join(Output, clusterID)
-	terraform := terraform.Terraform{Directory: clusterDir, StdOut: comm.GetStdOut(clusterID), StdErr: comm.GetStdErr(clusterID)}
-	//generate template files
-	err := c.generateFiles(clusterID, clusterDir)
-	if err != nil {
-		// description of an error in c.generateFiles()
-		return err
+
+	if err := c.generateFiles(clusterID, clusterDir); err != nil {
+		return fmt.Errorf("failed to generate files: %w", err)
 	}
-	// destroy nodepools with terraform
-	err = terraform.TerraformInit()
-	if err != nil {
+
+	terraform := terraform.Terraform{
+		Directory: clusterDir,
+		StdOut:    comm.GetStdOut(clusterID),
+		StdErr:    comm.GetStdErr(clusterID),
+	}
+
+	if err := terraform.TerraformInit(); err != nil {
 		return fmt.Errorf("error while running terraform init in %s : %w", clusterID, err)
 	}
-	err = terraform.TerraformDestroy()
-	if err != nil {
+
+	if err := terraform.TerraformDestroy(); err != nil {
 		return fmt.Errorf("error while running terraform apply in %s : %w", clusterID, err)
 	}
-	// Clean after terraform
+
+	// Clean after terraform.
 	if err := os.RemoveAll(clusterDir); err != nil {
 		return fmt.Errorf("error while deleting files: %w", err)
 	}
+
 	return nil
 }
 
