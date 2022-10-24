@@ -244,7 +244,6 @@ func main() {
 		// It does not affect anything as everything will get terminated gracefully
 		// this time.Sleep fixes it so that the message won't be logged.
 		time.Sleep(1 * time.Second)
-
 		return err
 	})
 
