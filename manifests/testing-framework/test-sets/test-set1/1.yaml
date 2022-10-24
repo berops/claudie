@@ -6,7 +6,8 @@ providers:
       credentials: replaceme-token
   gcp:
     - name: gcp-1
-      credentials: replaceme-key
+      credentials: |
+        replaceme-key
       gcp_project: replaceme-project
   oci:
     - name: oci-1
