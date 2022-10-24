@@ -33,20 +33,20 @@ spec:
           volumeMounts:
             - name: test-set1
               mountPath: "/go/services/testing-framework/test-sets/test-set1"
-            - name: test-set2
-              mountPath: "/go/services/testing-framework/test-sets/test-set2"
-            - name: test-set3
-              mountPath: "/go/services/testing-framework/test-sets/test-set3"
+            # - name: test-set2
+            #   mountPath: "/go/services/testing-framework/test-sets/test-set2"
+            # - name: test-set3
+            #   mountPath: "/go/services/testing-framework/test-sets/test-set3"
       volumes:
         - name: test-set1
           secret:
             secretName: test-set1
-        - name: test-set2
-          secret:
-            secretName: test-set2
-        - name: test-set3
-          secret: 
-            secretName: test-set3
+        # - name: test-set2
+        #   secret:
+        #     secretName: test-set2
+        # - name: test-set3
+        #   secret:
+        #     secretName: test-set3
       restartPolicy: Never
       serviceAccountName: testing-framework
 ---
