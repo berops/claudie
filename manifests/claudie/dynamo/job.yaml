@@ -25,7 +25,7 @@ spec:
               "dynamodb",
               "create-table",
               "--table-name",
-              "claudie",
+              "$(DYNAMO_TABLE_NAME)",
               "--attribute-definitions",
               "AttributeName=LockID,AttributeType=S",
               "--key-schema",
@@ -33,14 +33,14 @@ spec:
               "--provisioned-throughput",
               "ReadCapacityUnits=1,WriteCapacityUnits=1",
               "--endpoint-url",
-              "http://dynamo:8000",
+              "http://$(DYNAMO_HOSTNAME):$(DYNAMO_PORT)",
               "--output",
               "json",
               "--region",
               "local",
             ]
           env:
-            - name: DYNAMO_ENDPOINT
+            - name: DYNAMO_HOSTNAME
               valueFrom:
                 configMapKeyRef:
                   name: env
@@ -50,6 +50,11 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: DYNAMO_PORT
+            - name: DYNAMO_TABLE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: DYNAMO_TABLE_NAME
             - name: AWS_ACCESS_KEY_ID
               value: fake
             - name: AWS_SECRET_ACCESS_KEY
