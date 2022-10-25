@@ -8,9 +8,11 @@ import (
 )
 
 var (
-	minioURL  = envs.MinioURL
-	accessKey = envs.MinioAccessKey
-	secretKey = envs.MinioSecretKey
+	minioURL    = envs.MinioURL
+	accessKey   = envs.MinioAccessKey
+	secretKey   = envs.MinioSecretKey
+	dynamoURL   = envs.DynamoURL
+	dynamoTable = envs.DynamoTable
 )
 
 type Backend struct {
@@ -25,6 +27,8 @@ type templateData struct {
 	MinioURL    string
 	AccessKey   string
 	SecretKey   string
+	DynamoURL   string
+	DynamoTable string
 }
 
 // CreateFiles creates backend.tf file using the template from Directory.
@@ -43,6 +47,8 @@ func (b Backend) CreateFiles() error {
 		MinioURL:    minioURL,
 		AccessKey:   accessKey,
 		SecretKey:   secretKey,
+		DynamoURL:   dynamoURL,
+		DynamoTable: dynamoTable,
 	}
 
 	if err := template.Generate(tpl, "backend.tf", data); err != nil {
