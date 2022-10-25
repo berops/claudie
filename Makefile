@@ -42,7 +42,7 @@ test:
 
 # Run all services in docker containers via docker-compose on a local machine
 dockerUp:
-	docker-compose --env-file ./manifests/claudie/.env up
+	docker compose --env-file ./manifests/claudie/.env up
 
 dockerDown:
 	docker compose --env-file ./manifests/claudie/.env down
