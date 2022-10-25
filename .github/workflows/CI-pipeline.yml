@@ -238,7 +238,7 @@ jobs:
             #replace hetzner cred
             ./yq e '.providers.hetzner.[].credentials = "${{ secrets.HETZNER_CREDENTIALS_TF}}"' $file -i
             #replace gcp cred & project
-            ./yq e '.providers.gcp.[].credentials = "${{ secrets.GCP_DEV_CREDENTIALS_TF }}"' $file -i
+            ./yq e ".providers.gcp.[].credentials = '${{ secrets.GCP_DEV_CREDENTIALS_TF }}'" $file -i
             ./yq e '.providers.gcp.[].gcp_project = "${{ secrets.GCP_DEV_PROJECT_ID_TF }}"' $file -i
             #replace oci cred
             ./yq e '.providers.oci.[].private_key = "${{ secrets.OCI_PRIVATE_KEY_TF }}"' $file -i
