@@ -21,10 +21,10 @@ spec:
           image: claudieio/terraformer
           resources:
             requests:
-              cpu: 200m
+              cpu: 500m
               memory: 500Mi
             limits:
-              cpu: 400m
+              cpu: 700m
               memory: 800Mi
           env:
             - name: TERRAFORMER_PORT

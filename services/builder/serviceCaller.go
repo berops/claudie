@@ -266,7 +266,11 @@ func deleteKubeconfig(config *pb.Config) error {
 
 // saveErrorMessage saves error message to config
 func saveErrorMessage(config *pb.Config, c pb.ContextBoxServiceClient, err error) error {
-	config.CurrentState = config.DesiredState // Update currentState, so we can use it for deletion later
+	if config.DesiredState != nil {
+		// Update currentState preemptively, so we can use it for terraform destroy
+		// id DesiredState is null, we are already in deletion process, thus CurrentState should stay as is when error occurs
+		config.CurrentState = config.DesiredState
+	}
 	config.ErrorMessage = err.Error()
 	errSave := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 	if errSave != nil {

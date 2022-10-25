@@ -21,11 +21,11 @@ spec:
           image: claudieio/ansibler
           resources:
             requests:
-              cpu: 300m
-              memory: 500Mi
-            limits:
               cpu: 500m
               memory: 700Mi
+            limits:
+              cpu: 750m
+              memory: 900Mi
           env:
             - name: ANSIBLER_PORT
               valueFrom:
