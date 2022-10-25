@@ -58,6 +58,16 @@ spec:
                 secretKeyRef:
                   name: minio-secret
                   key: MINIO_ROOT_PASSWORD
+            - name: DYNAMO_HOSTNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: DYNAMO_HOSTNAME
+            - name: DYNAMO_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: DYNAMO_PORT
           ports:
             - containerPort: 50052
           readinessProbe:

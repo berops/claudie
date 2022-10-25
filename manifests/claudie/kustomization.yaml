@@ -11,6 +11,7 @@ resources:
 - kuber.yaml
 - minio
 - mongo
+- dynamo
 - network-policy.yaml
 configMapGenerator:
 - envs:

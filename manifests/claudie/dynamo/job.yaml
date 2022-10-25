@@ -1,0 +1,63 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-table-job
+  labels:
+    app: dynamo-create-table-job
+spec:
+  template:
+    metadata:
+      labels:
+        app: dynamo-create-table-job
+    spec:
+      restartPolicy: OnFailure
+      volumes:
+        - name: minio-configuration
+          projected:
+            sources:
+              - configMap:
+                  name: minio-cm
+      containers:
+        - name: awc-cli
+          image: amazon/aws-cli
+          args:
+            [
+              "dynamodb",
+              "create-table",
+              "--table-name",
+              "claudie",
+              "--attribute-definitions",
+              "AttributeName=LockID,AttributeType=S",
+              "--key-schema",
+              "AttributeName=LockID,KeyType=HASH",
+              "--provisioned-throughput",
+              "ReadCapacityUnits=1,WriteCapacityUnits=1",
+              "--endpoint-url",
+              "http://dynamo:8000",
+              "--output",
+              "json",
+              "--region",
+              "local",
+            ]
+          env:
+            - name: DYNAMO_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: DYNAMO_HOSTNAME
+            - name: DYNAMO_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: DYNAMO_PORT
+            - name: AWS_ACCESS_KEY_ID
+              value: fake
+            - name: AWS_SECRET_ACCESS_KEY
+              value: fake
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 10m
+            limits:
+              memory: 200Mi
+              cpu: 35m
