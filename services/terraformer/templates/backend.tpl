@@ -13,5 +13,8 @@ terraform {
     skip_metadata_api_check = true
     skip_region_validation = true
     force_path_style = true
+
+    dynamodb_endpoint="{{ .DynamoURL }}"
+    dynamodb_table="{{.DynamoTable}}"
   }
 }
