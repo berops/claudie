@@ -1,38 +1,38 @@
 namespace: claudie
 resources:
-  - ns.yaml
-  - context-box.yaml
-  - terraformer.yaml
-  - ansibler.yaml
-  - scheduler.yaml
-  - builder.yaml
-  - kube-eleven.yaml
-  - frontend.yaml
-  - kuber.yaml
-  - minio
-  - mongo
-  - dynamo
-  - network-policy.yaml
+- ns.yaml
+- context-box.yaml
+- terraformer.yaml
+- ansibler.yaml
+- scheduler.yaml
+- builder.yaml
+- kube-eleven.yaml
+- frontend.yaml
+- kuber.yaml
+- minio
+- mongo
+- dynamo
+- network-policy.yaml
 configMapGenerator:
-  - envs:
-      - .env
-    name: env
+- envs:
+  - .env
+  name: env
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
-  - name: claudieio/ansibler
-    newTag: f35e130-888
-  - name: claudieio/builder
-    newTag: f35e130-888
-  - name: claudieio/context-box
-    newTag: f35e130-888
-  - name: claudieio/frontend
-    newTag: f35e130-888
-  - name: claudieio/kube-eleven
-    newTag: f35e130-888
-  - name: claudieio/kuber
-    newTag: f35e130-888
-  - name: claudieio/scheduler
-    newTag: f35e130-888
-  - name: claudieio/terraformer
-    newTag: f35e130-888
+- name: claudieio/ansibler
+  newTag: f35e130-888
+- name: claudieio/builder
+  newTag: f35e130-888
+- name: claudieio/context-box
+  newTag: 2c7e038-889
+- name: claudieio/frontend
+  newTag: f35e130-888
+- name: claudieio/kube-eleven
+  newTag: f35e130-888
+- name: claudieio/kuber
+  newTag: f35e130-888
+- name: claudieio/scheduler
+  newTag: f35e130-888
+- name: claudieio/terraformer
+  newTag: f35e130-888
