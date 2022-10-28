@@ -34,5 +34,9 @@ func (m *Manifest) Validate() error {
 		return fmt.Errorf("failed to validate loadbalancers section inside manifest: %w", err)
 	}
 
+	if err := checkLengthOfFutureDomain(m); err != nil {
+		return fmt.Errorf("failed to validate future domains: %v", err)
+	}
+
 	return nil
 }
