@@ -3,6 +3,7 @@ package terraform
 import (
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 
 	comm "github.com/Berops/claudie/internal/command"
@@ -14,6 +15,7 @@ const (
 	// it succeeds. If after 10 retries the commands still fails an error should be
 	// returned containing the reason.
 	maxTerraformRetries = 10
+	cacheDir            = "/opt/claudie-tf-cache"
 )
 
 type Terraform struct {
@@ -24,6 +26,11 @@ type Terraform struct {
 }
 
 func (t *Terraform) TerraformInit() error {
+	if err := setCache(); err != nil {
+		// log the warning but continue executions
+		// error is not process breaking
+		log.Warn().Msgf("Could not set cache for terraform plugins: %v", err)
+	}
 	cmd := exec.Command("terraform", "init")
 	cmd.Dir = t.Directory
 	cmd.Stdout = t.StdOut
@@ -100,4 +107,17 @@ func (t Terraform) TerraformOutput(resourceName string) (string, error) {
 	cmd.Dir = t.Directory
 	out, err := cmd.CombinedOutput()
 	return string(out), err
+}
+
+//setEnv function will set environment variable to the environment before executing ansible
+func setCache() error {
+	if _, err := os.Stat(cacheDir); os.IsNotExist(err) {
+		if err = os.MkdirAll(cacheDir, 0777); err != nil {
+			return fmt.Errorf("failed to create cache dir %s", cacheDir)
+		}
+	}
+	if err := os.Setenv("TF_PLUGIN_CACHE_DIR", cacheDir); err != nil {
+		return fmt.Errorf("failed to set TF_PLUGIN_CACHE_DIR env var as %s: %w", cacheDir, err)
+	}
+	return nil
 }
