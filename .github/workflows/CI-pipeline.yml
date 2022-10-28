@@ -55,6 +55,8 @@ jobs:
               arr=(${SERVICES[@]})
               echo "All services needs to be built"
               break
+            elif [[ $i == "manifest/"* ]]; then
+                run_test=true
             else
               for SERVICE in "${SERVICES[@]}"; do
                 if [[ $i == *"services/$SERVICE"* ]]; then
@@ -62,10 +64,6 @@ jobs:
                 echo "Detected change in $SERVICE"
                 fi
               done
-            else
-              if [[ $i == "manifest/"* ]]; then
-                run_test=true
-              fi
             fi
           done
           echo ::set-output name=ARRAY_OF_CHANGES::"${arr[@]}"

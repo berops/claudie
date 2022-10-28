@@ -27,18 +27,16 @@ jobs:
             if [[ $i == *"internal/"* ]] || [[ $i == *"proto/"* ]]; then
               run_test=true
               break
+            elif [[ $i == "manifest/"* ]]; then
+                run_test=true
+                break
             else
               for SERVICE in "${SERVICES[@]}"; do
                 if [[ $i == *"services/$SERVICE"* ]]; then
                 run_test=true
                 break
                 fi
-              done
-            else
-              if [[ $i == "manifest/"* ]]; then
-                run_test=true
-                break
-              fi
+              done             
             fi
           done
           echo ::set-output name=RUN_TESTS::$run_test
