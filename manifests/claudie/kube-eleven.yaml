@@ -21,11 +21,11 @@ spec:
           image: claudieio/kube-eleven
           resources:
             requests:
-              cpu: 300m
+              cpu: 500m
               memory: 500Mi
             limits:
-              cpu: 500m
-              memory: 600Mi
+              cpu: 700m
+              memory: 700Mi
           env:
             - name: KUBE_ELEVEN_PORT
               valueFrom:

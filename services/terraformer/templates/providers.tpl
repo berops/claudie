@@ -24,5 +24,11 @@ terraform {
       version = "4.94.0"
     }
     {{ end }}
+    {{if .Azure }}
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "3.26.0"
+    }
+    {{ end }}
   }
 }
