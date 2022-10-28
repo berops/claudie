@@ -46,7 +46,7 @@ jobs:
         id: change
         run: |
           arr=()
-          run_test="false"
+          run_test=false
           SERVICES=( ${{ env.SERVICES }} )
           git fetch origin master
           for i in "$(git diff  --name-only origin/master..HEAD)"
@@ -56,7 +56,7 @@ jobs:
               echo "All services needs to be built"
               break
             elif [[ $i == *"manifests/"* ]]; then
-              run_test="true"
+              echo "RUN_TESTS=true" >> $GITHUB_OUTPUT
               echo "E2E test will run"
             else
               for SERVICE in "${SERVICES[@]}"; do
@@ -68,7 +68,6 @@ jobs:
             fi
           done
           echo "ARRAY_OF_CHANGES=$("${arr[@]}")" >> $GITHUB_OUTPUT
-          echo "RUN_TESTS=$(echo $run_test)" >> $GITHUB_OUTPUT
           echo $RUN_TESTS
       # Login to Docker Hub
       - name: Login to DockerHub
