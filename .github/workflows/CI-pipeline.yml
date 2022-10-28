@@ -180,7 +180,7 @@ jobs:
   #--------------------------------------------------------------------------------------------------
   deploy-and-monitor:
     runs-on: self-hosted
-    needs: [build-and-push, edit-kustomization, check-changes]
+    needs: [check-changes]
     permissions:
       id-token: write
       contents: read
