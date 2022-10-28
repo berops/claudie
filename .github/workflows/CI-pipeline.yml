@@ -28,8 +28,7 @@ jobs:
           from_branch: master
           target_branch: ${{ github.head_ref }}
           github_token: ${{ github.token }}
-  #--------------------------------------------------------------------------------------------------
-  build-and-push:
+  check-changes:
     if: github.event.pull_request.draft == false
     runs-on: self-hosted
     needs: merge-branch
@@ -38,12 +37,7 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - name: Set short sha output
-        run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
-
-      # Create an array with modules that were changed by a recent commit via bash script
       - name: Check the repository for a changes
-        id: change
         run: |
           arr=()
           run_test=false
@@ -56,8 +50,8 @@ jobs:
               echo "All services needs to be built"
               break
             elif [[ $i == *"manifests/"* ]]; then
-              echo "RUN_TESTS=true" >> $GITHUB_OUTPUT
               echo "E2E test will run"
+              echo "RUN_TESTS=true" >> $GITHUB_ENV
             else
               for SERVICE in "${SERVICES[@]}"; do
                 if [[ $i == *"services/$SERVICE"* ]]; then
@@ -67,8 +61,25 @@ jobs:
               done
             fi
           done
-          echo "ARRAY_OF_CHANGES=$("${arr[@]}")" >> $GITHUB_OUTPUT
+          echo "ARRAY_OF_CHANGES=$("${arr[@]}")" >> $GITHUB_ENV
           echo $RUN_TESTS
+    outputs:
+      ARRAY_OF_CHANGES: ${{ env.ARRAY_OF_CHANGES }}
+      RUN_TESTS: ${{ env.RUN_TESTS }}
+
+  #--------------------------------------------------------------------------------------------------
+  build-and-push:
+    if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
+    runs-on: self-hosted
+    needs: [merge-branch, check-changes]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Set short sha output
+        run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
+
       # Login to Docker Hub
       - name: Login to DockerHub
         uses: docker/login-action@v2
@@ -99,15 +110,11 @@ jobs:
           do
             docker push ${{secrets.DOCKERHUB_USERNAME}}/$path:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
           done
-
-    outputs:
-      ARRAY_OF_CHANGES: ${{ env.ARRAY_OF_CHANGES }}
-      RUN_TESTS: ${{ env.RUN_TESTS }}
   #--------------------------------------------------------------------------------------------------
   edit-kustomization:
     runs-on: self-hosted
-    needs: [build-and-push, merge-branch]
-    if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
+    needs: [check-changes, build-and-push, merge-branch]
+    if: ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -167,11 +174,11 @@ jobs:
   #--------------------------------------------------------------------------------------------------
   deploy-and-monitor:
     runs-on: self-hosted
-    needs: [build-and-push, edit-kustomization]
+    needs: [build-and-push, edit-kustomization, check-changes]
     permissions:
       id-token: write
       contents: read
-    if: ${{ (needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' || needs.build-and-push.outputs.RUN_TESTS == 'true') && github.event.pull_request.draft == false }}
+    if: ${{ (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' || needs.build-and-push.outputs.RUN_TESTS == 'true') && github.event.pull_request.draft == false }}
     steps:
       - uses: actions/checkout@v3
         with:
