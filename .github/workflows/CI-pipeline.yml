@@ -178,7 +178,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    if: ${{ (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' || needs.build-and-push.outputs.RUN_TESTS == 'true') && github.event.pull_request.draft == false }}
+    if: ${{ (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' || needs.check-changes.outputs.RUN_TESTS == 'true') && github.event.pull_request.draft == false }}
     steps:
       - uses: actions/checkout@v3
         with:
