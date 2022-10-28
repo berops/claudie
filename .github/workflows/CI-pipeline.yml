@@ -49,6 +49,8 @@ jobs:
           run_test=false
           SERVICES=( ${{ env.SERVICES }} )
           git fetch origin master
+          echo "Changed files:"
+          git diff  --name-only origin/master..HEAD
           for i in "$(git diff  --name-only origin/master..HEAD)"
           do
             if [[ $i == *"internal/"* ]] || [[ $i == *"proto/"* ]]; then
