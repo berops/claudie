@@ -4,7 +4,7 @@
 
 provider "aws" {
   region     = "{{(index .NodePools 0).Region}}"
-  access_key = "{{(index .NodePools 0).Provider.AccessKey}}"
+  access_key = "{{(index .NodePools 0).Provider.AwsAccessKey}}"
   secret_key = file("{{(index .NodePools 0).Provider.SpecName}}")
   alias = "lb-nodepool"
 }

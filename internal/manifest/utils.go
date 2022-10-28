@@ -35,13 +35,28 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
 	for _, ociConf := range ds.Providers.OCI {
 		if ociConf.Name == providerSpecName {
 			return &pb.Provider{
-				SpecName:          ociConf.Name,
-				Credentials:       ociConf.PrivateKey,
-				CloudProviderName: "oci",
-				UserOcid:          ociConf.UserOCID,
-				TenancyOcid:       ociConf.TenancyOCID,
-				OciFingerprint:    ociConf.KeyFingerprint,
-				CompartmentOcid:   ociConf.CompartmentID,
+				SpecName:           ociConf.Name,
+				Credentials:        ociConf.PrivateKey,
+				CloudProviderName:  "oci",
+				OciUserOcid:        ociConf.UserOCID,
+				OciTenancyOcid:     ociConf.TenancyOCID,
+				OciFingerprint:     ociConf.KeyFingerprint,
+				OciCompartmentOcid: ociConf.CompartmentID,
+				//omit rest of the pb.Provider variables
+			}, nil
+		}
+	}
+
+	for _, azureConf := range ds.Providers.Azure {
+		if azureConf.Name == providerSpecName {
+			return &pb.Provider{
+				SpecName:            azureConf.Name,
+				CloudProviderName:   "azure",
+				Credentials:         azureConf.ClientSecret,
+				AzureSubscriptionId: azureConf.SubscriptionId,
+				AzureTenantId:       azureConf.TenantId,
+				AzureClientId:       azureConf.ClientId,
+				AzureResourceGroup:  azureConf.ResourceGroup,
 				//omit rest of the pb.Provider variables
 			}, nil
 		}
@@ -52,7 +67,7 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
 			return &pb.Provider{
 				SpecName:          awsConf.Name,
 				Credentials:       awsConf.SecretKey,
-				AccessKey:         awsConf.AccessKey,
+				AwsAccessKey:      awsConf.AccessKey,
 				CloudProviderName: "aws",
 			}, nil
 		}

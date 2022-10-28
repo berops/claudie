@@ -127,3 +127,12 @@ services:
     deploy:
       restart_policy:
         condition: on-failure
+  dynamodb-local:
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
+    image: "amazon/dynamodb-local:latest"
+    container_name: dynamodb-local
+    ports:
+      - "8000:8000"
+    volumes:
+      - "~/dynamodb:/home/dynamodblocal/data"
+    working_dir: /home/dynamodblocal

@@ -40,15 +40,11 @@ var (
 func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
 	log.Info().Msg("CLIENT REQUEST: SaveConfigScheduler")
 	config := req.GetConfig()
-	err := utils.CheckLengthOfFutureDomain(config)
-	if err != nil {
-		return nil, fmt.Errorf("error while checking the length of future domain: %v", err)
-	}
 
 	// Save new config to the DB
 	config.DsChecksum = config.MsChecksum
 	config.SchedulerTTL = 0
-	err = database.UpdateDs(config)
+	err := database.UpdateDs(config)
 	if err != nil {
 		return nil, status.Errorf(
 			codes.Internal,

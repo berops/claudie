@@ -30,8 +30,8 @@ The user and Claudie both share the single "source of truth" for the input manif
 
 # Update
 
-If the user wishes to update the input manifest, they can edit/reapply te secret with the updated input manifest inside of it (the secret name and the data field name will stay the same). The k8s-sidecar will notice the change in the secret data, and will update the file inside the Frontend file system. The Frontend will then apply it to Claudie and the update of the defined infrastructure will be underway.
+If the user wishes to update the input manifest, they can edit/reapply the secret with the updated input manifest inside of it (the secret name and the data field name will stay the same). The k8s-sidecar will notice the change in the secret data, and will update the file inside the Frontend file system. The Frontend will then apply it to Claudie and the update of the defined infrastructure will be underway.
 
 # Delete
 
-When there is no longer need for the infrastructure managed by Claudie, user can simply delete the secret from the cluster, in order to trigger the deletion process. This deletion process will delete the current infra and it also deletes all data related to the particular input manifest.
+If you wish to destroy your cluster along with the infra, you can remove the cluster definition block from the input-manifest and update the k8s secret respectively. If you wish you delete all the clusters defined in an input-manifest, you just simply need to delete the k8s secret containing the manifest. Both the events will trigger the deletion process. This deletion process will delete the current infra and it also deletes all data related to the particular input manifest.
