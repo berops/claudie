@@ -5,6 +5,7 @@ import (
 
 	"github.com/Berops/claudie/proto/pb"
 	"github.com/Berops/claudie/services/terraformer/server/clusterBuilder"
+	"golang.org/x/sync/errgroup"
 )
 
 type LBcluster struct {
@@ -85,15 +86,21 @@ func (l LBcluster) Destroy() error {
 		ProjectName:    l.ProjectName,
 	}
 
-	err := cluster.DestroyNodepools()
-	if err != nil {
-		return fmt.Errorf("error while destroying the K8s cluster %s : %w", l.CurrentLB.ClusterInfo.Name, err)
-	}
-	err = dns.DestroyDNSrecords()
-	if err != nil {
-		return fmt.Errorf("error while destroying the DNS records %s : %w", l.CurrentLB.ClusterInfo.Name, err)
-	}
-	return nil
+	//destroy the infra concurrently
+	var errGroup errgroup.Group
+	errGroup.Go(func() error {
+		if err := cluster.DestroyNodepools(); err != nil {
+			return fmt.Errorf("error while destroying the K8s cluster %s : %w", l.CurrentLB.ClusterInfo.Name, err)
+		}
+		return nil
+	})
+	errGroup.Go(func() error {
+		if err := dns.DestroyDNSrecords(); err != nil {
+			return fmt.Errorf("error while destroying the DNS records %s : %w", l.CurrentLB.ClusterInfo.Name, err)
+		}
+		return nil
+	})
+	return errGroup.Wait()
 }
 
 func getNodeIPs(nodepools []*pb.NodePool) []string {
