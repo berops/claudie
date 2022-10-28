@@ -39,6 +39,7 @@ jobs:
               done             
             fi
           done
+          deprecated
           echo "{RUN_TESTS}={$run_test}" >> $GITHUB_OUTPUT
     outputs:
       RUN_TESTS: ${{ env.RUN_TESTS }}
