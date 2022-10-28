@@ -62,6 +62,8 @@ jobs:
             fi
           done
           echo "ARRAY_OF_CHANGES=$("${arr[@]}")" >> $GITHUB_ENV
+      - name: Test
+        run: |
           echo $RUN_TESTS 
           echo $ARRAY_OF_CHANGES
     outputs:
