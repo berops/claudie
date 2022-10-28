@@ -21,10 +21,10 @@ spec:
           image: claudieio/terraformer
           resources:
             requests:
-              cpu: 200m
+              cpu: 500m
               memory: 500Mi
             limits:
-              cpu: 400m
+              cpu: 700m
               memory: 800Mi
           env:
             - name: TERRAFORMER_PORT
@@ -58,6 +58,16 @@ spec:
                 secretKeyRef:
                   name: minio-secret
                   key: MINIO_ROOT_PASSWORD
+            - name: DYNAMO_HOSTNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: DYNAMO_HOSTNAME
+            - name: DYNAMO_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: DYNAMO_PORT
           ports:
             - containerPort: 50052
           readinessProbe:
