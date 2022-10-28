@@ -33,6 +33,6 @@ images:
 - name: claudieio/kuber
   newTag: f35e130-888
 - name: claudieio/scheduler
-  newTag: f35e130-888
+  newTag: 37fd718-924
 - name: claudieio/terraformer
   newTag: f35e130-888
