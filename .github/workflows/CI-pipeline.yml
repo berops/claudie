@@ -31,7 +31,7 @@ jobs:
   #--------------------------------------------------------------------------------------------------
   check-changes:
     if: github.event.pull_request.draft == false
-    runs-on: self-hosted
+    runs-on: ubuntu-22.04
     #needs: merge-branch
     steps:
       - uses: actions/checkout@v3
