@@ -9,7 +9,7 @@ kubectl apply -k /claudie/kustomization.yaml
 ```
 All the resources will be deployed under `claudie` namespace by default. 
 
-> NOTE: Please make sure to use `manifests/claudie/kustomization.yaml` instead of `manifests/kustomization.yaml` since the later version contains [testing-framework](testing-framework/kustomization.yaml) as part of deployment. This is only used by CI for development purposes.
+> NOTE: Please make sure to use `manifests/claudie/kustomization.yaml` instead of `manifests/kustomization.yaml` since the later version contains [testing-framework](testing-framework/kustomization.yaml) as part of deployment. This is only used by CI for development purposes as of now.
 
 ## For development 
 To run claudie in dev, you can either follow the [getting started](#getting-started) section or run individual components in a terminal windows.
