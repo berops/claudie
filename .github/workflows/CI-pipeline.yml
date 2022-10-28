@@ -31,7 +31,7 @@ jobs:
   #--------------------------------------------------------------------------------------------------
   check-changes:
     if: github.event.pull_request.draft == false
-    runs-on: ubuntu-22.04
+    runs-on: self-hosted
     #needs: merge-branch
     steps:
       - uses: actions/checkout@v3
@@ -51,7 +51,7 @@ jobs:
               break
             elif [[ $i == *"manifests/"* ]]; then
               echo "E2E test will run"
-              echo "RUN_TESTS=true" >> $GITHUB_ENV
+              echo "RUN_TESTS=`echo true`" >> $GITHUB_ENV
             else
               for SERVICE in "${SERVICES[@]}"; do
                 if [[ $i == *"services/$SERVICE"* ]]; then
