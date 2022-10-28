@@ -67,8 +67,8 @@ jobs:
               done
             fi
           done
-          echo "{ARRAY_OF_CHANGES}={"${arr[@]}"}" >> $GITHUB_OUTPUT
-          echo "{RUN_TESTS}={$run_test}" >> $GITHUB_OUTPUT
+          echo "ARRAY_OF_CHANGES=$("${arr[@]}")" >> $GITHUB_OUTPUT
+          echo "RUN_TESTS=$run_test" >> $GITHUB_OUTPUT
           echo $RUN_TESTS
       # Login to Docker Hub
       - name: Login to DockerHub
