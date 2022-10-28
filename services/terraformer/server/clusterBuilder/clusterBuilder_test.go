@@ -223,7 +223,6 @@ var testNp = &pb.NodePool{
 	Provider: &pb.Provider{
 		CloudProviderName: "aws",
 		Credentials:       "",
-		AccessKey:         "",
 	},
 }
 
