@@ -5,6 +5,10 @@ import (
 	"strings"
 )
 
+const (
+	basePriority = 200
+)
+
 // IsMissing checks if item is missing in the list of items.
 func IsMissing[K comparable](item K, items []K) bool {
 	for _, v := range items {
@@ -33,4 +37,21 @@ func ProtocolNameToOCIProtocolNumber(protocol string) int {
 	default:
 		panic(fmt.Sprintf("unexpected protocol %s", protocol))
 	}
+}
+
+func ProtocolNameToAzureProtocolString(protocol string) string {
+	switch strings.ToLower(protocol) {
+	case "tcp":
+		return "Tcp"
+	case "udp":
+		return "Udp"
+	case "icmp":
+		return "Icmp"
+	default:
+		panic(fmt.Sprintf("unexpected protocol %s", protocol))
+	}
+}
+
+func AssignPriority(index int) int {
+	return basePriority + index
 }

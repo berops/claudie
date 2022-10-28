@@ -1,0 +1,6 @@
+kind: Kustomization
+metadata:
+  name: dynamo
+resources:
+  - dynamodb.yaml
+  - job.yaml

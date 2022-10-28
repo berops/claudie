@@ -50,7 +50,7 @@ Everyone is more than welcome to open an issue, a PR or to start a discussion.
 
 For more information about contributing please read the [contribution guidelines](./docs/contributing/contributing.md).
 
-If you want to have a chat with us, feel free to join our [Slack workspace](https://claudie-workspace.slack.com).
+If you want to have a chat with us, feel free to join our ["claudie-workspace" Slack workspace](https://join.slack.com/t/claudie-workspace/shared_invite/zt-1imfso8r4-xwrpZjL9kt61FT1LjvWD5w).
 
 # Roadmap
 <!-- Add a roadmap for claudie so users know which features are being worked on and which will in future -->
