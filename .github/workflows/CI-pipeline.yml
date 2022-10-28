@@ -71,7 +71,7 @@ jobs:
   build-and-push:
     if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
     runs-on: self-hosted
-    needs: [merge-branch, check-changes]
+    needs: [check-changes]
     steps:
       - uses: actions/checkout@v3
         with:
@@ -113,7 +113,7 @@ jobs:
   #--------------------------------------------------------------------------------------------------
   edit-kustomization:
     runs-on: self-hosted
-    needs: [check-changes, build-and-push, merge-branch]
+    needs: [check-changes, build-and-push]
     if: ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
     steps:
       - uses: actions/checkout@v3
