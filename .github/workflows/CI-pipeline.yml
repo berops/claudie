@@ -61,14 +61,14 @@ jobs:
               done
             fi
           done
-          echo "ARRAY_OF_CHANGES=$("${arr[@]}")" >> $GITHUB_ENV
+          echo "ARRAY_OF_CHANGES=$(echo ${arr[@]})" >> $GITHUB_ENV
       - name: Test
         run: |
           echo $RUN_TESTS 
           echo $ARRAY_OF_CHANGES
     outputs:
       ARRAY_OF_CHANGES: ${{ env.ARRAY_OF_CHANGES }}
-      RUN_TESTS: ${{ env.RUN_TESTS }}
+      RUN_TESTS: $RUN_TESTS
 
   #--------------------------------------------------------------------------------------------------
   build-and-push:
