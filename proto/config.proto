@@ -122,5 +122,4 @@ message Provider {
 enum ClusterType {
   K8s = 0;
   LB = 1;
-
 }
