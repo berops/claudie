@@ -56,7 +56,8 @@ jobs:
               echo "All services needs to be built"
               break
             elif [[ $i == "manifest/"* ]]; then
-                run_test=true
+              run_test=true
+              echo "E2E test will run"
             else
               for SERVICE in "${SERVICES[@]}"; do
                 if [[ $i == *"services/$SERVICE"* ]]; then
@@ -68,6 +69,7 @@ jobs:
           done
           echo "{ARRAY_OF_CHANGES}={"${arr[@]}"}" >> $GITHUB_OUTPUT
           echo "{RUN_TESTS}={$run_test}" >> $GITHUB_OUTPUT
+          echo ${{ env.RUN_TESTS }}
       # Login to Docker Hub
       - name: Login to DockerHub
         uses: docker/login-action@v2
