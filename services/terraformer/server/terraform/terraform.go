@@ -109,7 +109,8 @@ func (t Terraform) TerraformOutput(resourceName string) (string, error) {
 	return string(out), err
 }
 
-//setEnv function will set environment variable to the environment before executing ansible
+// setCache function will set environment variable to the environment before executing terraform
+// function also checks if cache directory for plugins exists and creates one if not
 func setCache() error {
 	if _, err := os.Stat(cacheDir); os.IsNotExist(err) {
 		if err = os.MkdirAll(cacheDir, 0777); err != nil {
