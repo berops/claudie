@@ -92,7 +92,7 @@ jobs:
       - name: Build new images
         if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
         run: |
-          arr=(${{ steps.change.outputs.ARRAY_OF_CHANGES }})
+          arr=(${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }})
           for path in "${arr[@]}"
           do
             echo "-----Building $path-----"
@@ -104,7 +104,7 @@ jobs:
       - name: Push new images
         if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
         run: |
-          arr=(${{ steps.change.outputs.ARRAY_OF_CHANGES }})
+          arr=(${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }})
 
           for path in "${arr[@]}"
           do
