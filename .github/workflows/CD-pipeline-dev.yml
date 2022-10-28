@@ -13,8 +13,41 @@ env:
   TEST_SETS: test-set1 test-set2 test-set3
 
 jobs:
+  check-changes:
+    runs-on: self-hosted
+    steps:
+      - name: Check the PR for a changes since last commit
+        id: change
+        run: |
+          run_test=false
+          SERVICES=( ${{ env.SERVICES }} )
+          git fetch origin master
+          for i in "$(git diff  --name-only HEAD^ HEAD)"
+          do
+            if [[ $i == *"internal/"* ]] || [[ $i == *"proto/"* ]]; then
+              run_test=true
+              break
+            else
+              for SERVICE in "${SERVICES[@]}"; do
+                if [[ $i == *"services/$SERVICE"* ]]; then
+                run_test=true
+                break
+                fi
+              done
+            else
+              if [[ $i == "manifest/"* ]]; then
+                run_test=true
+                break
+              fi
+            fi
+          done
+          echo ::set-output name=RUN_TESTS::$run_test
+
+    outputs:
+      RUN_TESTS: ${{ steps.change.outputs.RUN_TESTS }}
+
   deploy-and-monitor:
-    if: github.event.pull_request.draft == false
+    if: ${{ needs.build-and-push.outputs.RUN_TESTS == true }}
     permissions:
       id-token: write
       contents: read

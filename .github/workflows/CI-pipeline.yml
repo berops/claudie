@@ -42,20 +42,19 @@ jobs:
         run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
 
       # Create an array with modules that were changed by a recent commit via bash script
-      - name: Check the files for a change
-        id: array
+      - name: Check the repository for a changes
+        id: change
         run: |
           arr=()
+          run_test=false
           SERVICES=( ${{ env.SERVICES }} )
           git fetch origin master
-          echo "Changed files:"
-          git diff  --name-only origin/master..HEAD
           for i in "$(git diff  --name-only origin/master..HEAD)"
           do
             if [[ $i == *"internal/"* ]] || [[ $i == *"proto/"* ]]; then
               arr=(${SERVICES[@]})
               echo "All services needs to be built"
-              break ;
+              break
             else
               for SERVICE in "${SERVICES[@]}"; do
                 if [[ $i == *"services/$SERVICE"* ]]; then
@@ -63,22 +62,27 @@ jobs:
                 echo "Detected change in $SERVICE"
                 fi
               done
+            else
+              if [[ $i == "manifest/"* ]]; then
+                run_test=true
+              fi
             fi
           done
           echo ::set-output name=ARRAY_OF_CHANGES::"${arr[@]}"
+          echo ::set-output name=RUN_TESTS::$run_test
       # Login to Docker Hub
       - name: Login to DockerHub
         uses: docker/login-action@v2
-        if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
+        if: ${{ steps.change.outputs.ARRAY_OF_CHANGES != '' }}
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN}}
 
       # Build the new images that were changed by a recent commit - tag image latest as well for testing
       - name: Build new images
-        if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
+        if: ${{ steps.change.outputs.ARRAY_OF_CHANGES != '' }}
         run: |
-          arr=(${{ steps.array.outputs.ARRAY_OF_CHANGES }})
+          arr=(${{ steps.change.outputs.ARRAY_OF_CHANGES }})
           for path in "${arr[@]}"
           do
             echo "-----Building $path-----"
@@ -88,9 +92,9 @@ jobs:
 
       # Push images to DockerHub - latest tag is overwritten
       - name: Push new images
-        if: ${{ steps.array.outputs.ARRAY_OF_CHANGES != '' }}
+        if: ${{ steps.change.outputs.ARRAY_OF_CHANGES != '' }}
         run: |
-          arr=(${{ steps.array.outputs.ARRAY_OF_CHANGES }})
+          arr=(${{ steps.change.outputs.ARRAY_OF_CHANGES }})
 
           for path in "${arr[@]}"
           do
@@ -98,7 +102,8 @@ jobs:
           done
 
     outputs:
-      ARRAY_OF_CHANGES: ${{ steps.array.outputs.ARRAY_OF_CHANGES }}
+      ARRAY_OF_CHANGES: ${{ steps.change.outputs.ARRAY_OF_CHANGES }}
+      RUN_TESTS: ${{ steps.change.outputs.RUN_TESTS }}
   #--------------------------------------------------------------------------------------------------
   edit-kustomization:
     runs-on: self-hosted
@@ -167,7 +172,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES && github.event.pull_request.draft == false }}
+    if: ${{ (needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' || needs.build-and-push.outputs.RUN_TESTS == true) && github.event.pull_request.draft == false }}
     steps:
       - uses: actions/checkout@v3
         with:
