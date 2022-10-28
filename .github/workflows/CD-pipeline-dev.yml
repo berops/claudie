@@ -33,12 +33,12 @@ jobs:
           version: latest
 
       - name: install kustomize
-        uses: imranismail/setup-kustomize@v1.6.1
+        uses: imranismail/setup-kustomize@v2
         with:
           version: 3.6.1
 
       - name: Login to GCP
-        uses: google-github-actions/auth@v0.4.0
+        uses: google-github-actions/auth@v0.8.3
         with:
           token_format: "access_token"
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
@@ -46,7 +46,7 @@ jobs:
           access_token_lifetime: "21600s"
 
       - name: Configure kubectl
-        uses: google-github-actions/get-gke-credentials@v0.4.0
+        uses: google-github-actions/get-gke-credentials@v0.8.2
         with:
           cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
           location: ${{ secrets.GKE_ZONE }}
