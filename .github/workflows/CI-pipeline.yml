@@ -52,7 +52,6 @@ jobs:
               break
             elif [[ $i == *"manifests/"* ]]; then
               echo "E2E test will run"
-              echo "RUN_TESTS=true" >> $GITHUB_ENV
               echo "RUN_TESTS=true" >> $GITHUB_OUTPUT
             else
               for SERVICE in "${SERVICES[@]}"; do
@@ -63,12 +62,7 @@ jobs:
               done
             fi
           done
-          echo "ARRAY_OF_CHANGES=$(echo ${arr[@]})" >> $GITHUB_ENV
           echo "ARRAY_OF_CHANGES=$(echo ${arr[@]})" >> $GITHUB_OUTPUT
-      - name: Test
-        run: |
-          echo $RUN_TESTS 
-          echo $ARRAY_OF_CHANGES
     outputs:
       ARRAY_OF_CHANGES: ${{ steps.change.outputs.ARRAY_OF_CHANGES }}
       RUN_TESTS: ${{ steps.change.outputs.RUN_TESTS }}
