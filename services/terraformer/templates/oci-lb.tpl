@@ -4,12 +4,12 @@
 
 variable "default_compartment_id" {
   type = string
-  default = "{{(index .NodePools 0).Provider.CompartmentOcid}}"
+  default = "{{(index .NodePools 0).Provider.OciCompartmentOcid}}"
 }
 
 provider "oci" {
-  tenancy_ocid = "{{(index .NodePools 0).Provider.TenancyOcid}}"
-  user_ocid = "{{(index .NodePools 0).Provider.UserOcid}}"
+  tenancy_ocid = "{{(index .NodePools 0).Provider.OciTenancyOcid}}"
+  user_ocid = "{{(index .NodePools 0).Provider.OciUserOcid}}"
   fingerprint = "{{(index .NodePools 0).Provider.OciFingerprint}}"
   private_key_path = "{{(index .NodePools 0).Provider.SpecName}}" 
   region = "{{(index .NodePools 0).Region}}"

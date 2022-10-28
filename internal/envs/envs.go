@@ -20,6 +20,10 @@ var (
 	KuberURL = os.Getenv("KUBER_HOSTNAME") + ":" + os.Getenv("KUBER_PORT")
 	//MinioURL is a listening URL for Minio deployment
 	MinioURL = "http://" + os.Getenv("MINIO_HOSTNAME") + ":" + os.Getenv("MINIO_PORT")
+	//DynamoURL is a listening URL for DynamoDB local deployment
+	DynamoURL = "http://" + os.Getenv("DYNAMO_HOSTNAME") + ":" + os.Getenv("DYNAMO_PORT")
+	//DynamoTable is the name of the DB table used for state locking
+	DynamoTable = os.Getenv("DYNAMO_TABLE")
 	//MinioAccessKey for backend
 	MinioAccessKey = os.Getenv("MINIO_ROOT_USER")
 	//MinioSecretKey for backend
@@ -53,6 +57,12 @@ func init() {
 	}
 	if MinioURL == "http://:" {
 		MinioURL = "http://localhost:9000"
+	}
+	if DynamoURL == "http://:" {
+		DynamoURL = "http://localhost:8000"
+	}
+	if DynamoTable == "" {
+		DynamoTable = "claudie"
 	}
 	if MinioAccessKey == "" {
 		MinioAccessKey = "minioadmin"

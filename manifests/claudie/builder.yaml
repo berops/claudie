@@ -21,10 +21,10 @@ spec:
           image: claudieio/builder
           resources:
             requests:
-              cpu: 10m
+              cpu: 25m
               memory: 200Mi
             limits:
-              cpu: 50m
+              cpu: 75m
               memory: 400Mi
           env:
             - name: CONTEXT_BOX_PORT

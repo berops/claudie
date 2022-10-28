@@ -1,8 +1,8 @@
-FROM golang:1.18 AS build
+FROM golang:1.19.2 AS build
 
 # download and unzip kube-one binary
 RUN apt-get -qq update && apt-get -qq install unzip
-RUN VERSION=1.2.8 && \
+RUN VERSION=1.3.2 && \
     wget -q https://releases.hashicorp.com/terraform/${VERSION}/terraform_${VERSION}_linux_amd64.zip && \
     unzip -qq terraform_${VERSION}_linux_amd64.zip -d terraform
 

@@ -10,7 +10,7 @@ on:
 env:
   ENV_FILE: .env
   SERVICES: context-box scheduler builder terraformer ansibler kube-eleven kuber frontend testing-framework
-  TEST_SETS: test-set1 test-set2
+  TEST_SETS: test-set1 test-set2 test-set3
 
 jobs:
   deploy-and-monitor:
@@ -100,6 +100,12 @@ jobs:
             #replace aws cred
             ./yq e '.providers.aws.[].access_key = "${{ secrets.AWS_ACCESS_KEY }}"' $file -i
             ./yq e '.providers.aws.[].secret_key = "${{ secrets.AWS_SECRET_KEY }}"' $file -i
+            #replace azure cred
+            ./yq e '.providers.azure.[].subscription_id = "${{ secrets.AZURE_SUBSCRIPTION_ID }}"' $file -i
+            ./yq e '.providers.azure.[].tenant_id = "${{ secrets.AZURE_TENANT_ID }}"' $file -i
+            ./yq e '.providers.azure.[].client_id = "${{ secrets.AZURE_CLIENT_ID }}"' $file -i
+            ./yq e '.providers.azure.[].client_secret = "${{ secrets.AZURE_CLIENT_SECRET }}"' $file -i
+            ./yq e '.providers.azure.[].resource_group = "${{ secrets.AZURE_RESOURCE_GROUP }}"' $file -i
             done
           done
 
