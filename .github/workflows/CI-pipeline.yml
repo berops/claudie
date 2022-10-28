@@ -46,11 +46,9 @@ jobs:
         id: change
         run: |
           arr=()
-          run_test=false
+          run_test="false"
           SERVICES=( ${{ env.SERVICES }} )
           git fetch origin master
-          echo "Changed files:"
-          git diff  --name-only origin/master..HEAD
           for i in "$(git diff  --name-only origin/master..HEAD)"
           do
             if [[ $i == *"internal/"* ]] || [[ $i == *"proto/"* ]]; then
@@ -58,7 +56,7 @@ jobs:
               echo "All services needs to be built"
               break
             elif [[ $i == *"manifests/"* ]]; then
-              run_test=true
+              run_test="true"
               echo "E2E test will run"
             else
               for SERVICE in "${SERVICES[@]}"; do
@@ -174,7 +172,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    if: ${{ (needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' || needs.build-and-push.outputs.RUN_TESTS == true) && github.event.pull_request.draft == false }}
+    if: ${{ (needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' || needs.build-and-push.outputs.RUN_TESTS == "true") && github.event.pull_request.draft == false }}
     steps:
       - uses: actions/checkout@v3
         with:
