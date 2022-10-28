@@ -49,4 +49,5 @@ RUN apk update && apk add -q bash
 #Run server
 WORKDIR /bin
 ENTRYPOINT [ "./services/ansibler/server/server" ]
+
 #NOTE: We cannot use scratch image for our dockerfile since we are using shell commands to execute commands inside the code
