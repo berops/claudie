@@ -46,16 +46,16 @@ jobs:
           git fetch origin master
           for i in "$(git diff  --name-only origin/master..HEAD)"
           do
-            if [[ $i == *"internal/"* ]] || [[ $i == *"proto/"* ]]; then
+            if [[ $i == *"internal/"* ]] || [[ $i == *"proto/"* ]] || [[ $i == "go.mod" ]] || [[ $i == "go.sum" ]] && [[ $i != *".md"*]]; then
               arr=(${SERVICES[@]})
               echo "All services needs to be built"
               break
-            elif [[ $i == *"manifests/"* ]]; then
+            elif [[ $i == *"manifests/"* ]] && [[ $i != *".md"*]]; then
               echo "E2E test will run"
               echo "RUN_TESTS=true" >> $GITHUB_OUTPUT
             else
               for SERVICE in "${SERVICES[@]}"; do
-                if [[ $i == *"services/$SERVICE"* ]]; then
+                if [[ $i == *"services/$SERVICE"* ]] && [[ $i != *".md"*]]; then
                 arr+=($SERVICE)
                 echo "Detected change in $SERVICE"
                 fi
