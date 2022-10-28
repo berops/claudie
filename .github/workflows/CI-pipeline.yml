@@ -75,28 +75,29 @@ jobs:
 
   #--------------------------------------------------------------------------------------------------
   build-and-push:
-    if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
     runs-on: self-hosted
     needs: [check-changes]
     steps:
       - uses: actions/checkout@v3
+        if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
         with:
           ref: ${{ github.head_ref }}
 
       - name: Set short sha output
+        if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
         run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
 
       # Login to Docker Hub
       - name: Login to DockerHub
+        if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
         uses: docker/login-action@v2
-        if: ${{ steps.change.outputs.ARRAY_OF_CHANGES != '' }}
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN}}
 
       # Build the new images that were changed by a recent commit - tag image latest as well for testing
       - name: Build new images
-        if: ${{ steps.change.outputs.ARRAY_OF_CHANGES != '' }}
+        if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
         run: |
           arr=(${{ steps.change.outputs.ARRAY_OF_CHANGES }})
           for path in "${arr[@]}"
@@ -108,7 +109,7 @@ jobs:
 
       # Push images to DockerHub - latest tag is overwritten
       - name: Push new images
-        if: ${{ steps.change.outputs.ARRAY_OF_CHANGES != '' }}
+        if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
         run: |
           arr=(${{ steps.change.outputs.ARRAY_OF_CHANGES }})
 
@@ -120,22 +121,25 @@ jobs:
   edit-kustomization:
     runs-on: self-hosted
     needs: [check-changes, build-and-push]
-    if: ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
     steps:
       - uses: actions/checkout@v3
+        if: ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
         with:
           ref: ${{ github.head_ref }}
 
       - name: Set short sha output
+        if: ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
         run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
 
       - name: install kustomize
+        if: ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
         uses: imranismail/setup-kustomize@v2
         with:
           version: 3.6.1
 
       # Set the new claudie image tags in kustomization.yaml
       - name: Edit claudie kustomization.yaml
+        if: ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
         working-directory: ./manifests/claudie
         run: |
           NEW_SERVICES=( ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES }} )
@@ -151,6 +155,7 @@ jobs:
 
       # Set the new testing-framework image tags in kustomization.yaml
       - name: Edit testing-framework kustomization.yaml
+        if: ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
         working-directory: ./manifests/testing-framework
         run: |
           NEW_SERVICES=( ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES }} )
@@ -166,6 +171,7 @@ jobs:
 
       # Auto commit the changes
       - name: Commit new kustomization.yaml to feature branch
+        if: ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
         working-directory: ./manifests
         run: |
           BRANCH_NAME=${{ github.head_ref }}
@@ -180,7 +186,7 @@ jobs:
   #--------------------------------------------------------------------------------------------------
   deploy-and-monitor:
     runs-on: self-hosted
-    needs: [check-changes]
+    needs: [build-and-push, edit-kustomization, check-changes]
     permissions:
       id-token: write
       contents: read
