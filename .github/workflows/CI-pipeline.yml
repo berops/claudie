@@ -39,6 +39,7 @@ jobs:
           ref: ${{ github.head_ref }}
 
       - name: Check the repository for a changes
+        id: change
         run: |
           arr=()
           SERVICES=( ${{ env.SERVICES }} )
@@ -51,7 +52,8 @@ jobs:
               break
             elif [[ $i == *"manifests/"* ]]; then
               echo "E2E test will run"
-              echo "RUN_TESTS=`echo true`" >> $GITHUB_ENV
+              echo "RUN_TESTS=true" >> $GITHUB_ENV
+              echo "RUN_TESTS=true" >> $GITHUB_OUTPUT
             else
               for SERVICE in "${SERVICES[@]}"; do
                 if [[ $i == *"services/$SERVICE"* ]]; then
@@ -62,13 +64,14 @@ jobs:
             fi
           done
           echo "ARRAY_OF_CHANGES=$(echo ${arr[@]})" >> $GITHUB_ENV
+          echo "ARRAY_OF_CHANGES=$(echo ${arr[@]})" >> $GITHUB_OUTPUT
       - name: Test
         run: |
           echo $RUN_TESTS 
           echo $ARRAY_OF_CHANGES
     outputs:
-      ARRAY_OF_CHANGES: ${{ env.ARRAY_OF_CHANGES }}
-      RUN_TESTS: $RUN_TESTS
+      ARRAY_OF_CHANGES: ${{ steps.change.outputs.ARRAY_OF_CHANGES }}
+      RUN_TESTS: ${{ steps.change.outputs.RUN_TESTS }}
 
   #--------------------------------------------------------------------------------------------------
   build-and-push:
