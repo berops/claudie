@@ -23,7 +23,7 @@ images:
 - name: claudieio/ansibler
   newTag: f35e130-888
 - name: claudieio/builder
-  newTag: f35e130-888
+  newTag: ee54904-895
 - name: claudieio/context-box
   newTag: f35e130-888
 - name: claudieio/frontend
