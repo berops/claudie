@@ -29,7 +29,7 @@ images:
 - name: claudieio/frontend
   newTag: d0fceb4-911
 - name: claudieio/kube-eleven
-  newTag: f35e130-888
+  newTag: a8096f9-928
 - name: claudieio/kuber
   newTag: f35e130-888
 - name: claudieio/scheduler
