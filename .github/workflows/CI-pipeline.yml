@@ -13,21 +13,22 @@ env:
 
 jobs:
   #--------------------------------------------------------------------------------------------------
-  merge-branch:
-    if: github.event.pull_request.draft == false
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          ref: ${{ github.head_ref }}
+  # merge-branch:
+  #   if: github.event.pull_request.draft == false
+  #   runs-on: self-hosted
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         ref: ${{ github.head_ref }}
 
-      - name: Merge with master branch
-        uses: devmasx/merge-branch@1.4.0
-        with:
-          type: now
-          from_branch: master
-          target_branch: ${{ github.head_ref }}
-          github_token: ${{ github.token }}
+  #     - name: Merge with master branch
+  #       uses: devmasx/merge-branch@1.4.0
+  #       with:
+  #         type: now
+  #         from_branch: master
+  #         target_branch: ${{ github.head_ref }}
+  #         github_token: ${{ github.token }}
+  #--------------------------------------------------------------------------------------------------
   check-changes:
     if: github.event.pull_request.draft == false
     runs-on: self-hosted
@@ -40,7 +41,6 @@ jobs:
       - name: Check the repository for a changes
         run: |
           arr=()
-          run_test=false
           SERVICES=( ${{ env.SERVICES }} )
           git fetch origin master
           for i in "$(git diff  --name-only origin/master..HEAD)"
@@ -62,7 +62,7 @@ jobs:
             fi
           done
           echo "ARRAY_OF_CHANGES=$("${arr[@]}")" >> $GITHUB_ENV
-          echo $RUN_TESTS
+          echo ${{ env.RUN_TESTS }}
     outputs:
       ARRAY_OF_CHANGES: ${{ env.ARRAY_OF_CHANGES }}
       RUN_TESTS: ${{ env.RUN_TESTS }}
