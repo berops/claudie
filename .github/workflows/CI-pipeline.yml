@@ -135,7 +135,7 @@ jobs:
         if: ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
         working-directory: ./manifests/claudie
         run: |
-          NEW_SERVICES=( ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES }} )
+          NEW_SERVICES=( ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }} )
           for SERVICE in "${NEW_SERVICES[@]}"
           do
             echo "Setting a new tag for a $SERVICE"
@@ -151,7 +151,7 @@ jobs:
         if: ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
         working-directory: ./manifests/testing-framework
         run: |
-          NEW_SERVICES=( ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES }} )
+          NEW_SERVICES=( ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }} )
           for SERVICE in "${NEW_SERVICES[@]}"
           do
             echo "Setting a new tag for a $SERVICE"
