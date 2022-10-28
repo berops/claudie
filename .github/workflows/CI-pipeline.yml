@@ -57,7 +57,7 @@ jobs:
               arr=(${SERVICES[@]})
               echo "All services needs to be built"
               break
-            elif [[ $i == *"manifest/"* ]]; then
+            elif [[ $i == *"manifests/"* ]]; then
               run_test=true
               echo "E2E test will run"
             else
