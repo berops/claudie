@@ -39,10 +39,9 @@ jobs:
               done             
             fi
           done
-          echo ::set-output name=RUN_TESTS::$run_test
-
+          echo "{RUN_TESTS}={$run_test}" >> $GITHUB_OUTPUT
     outputs:
-      RUN_TESTS: ${{ steps.change.outputs.RUN_TESTS }}
+      RUN_TESTS: ${{ env.RUN_TESTS }}
 
   deploy-and-monitor:
     if: ${{ needs.build-and-push.outputs.RUN_TESTS == true }}
