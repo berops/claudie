@@ -27,15 +27,15 @@ jobs:
           git fetch origin master
           for i in "$(git diff  --name-only HEAD^ HEAD)"
           do
-            if [[ $i == *"internal/"* ]] || [[ $i == *"proto/"* ]] || [[ $i == "go.mod" ]] || [[ $i == "go.sum" ]] && [[ $i != *".md"*]]; then
+            if [[ $i == *"internal/"* ]] || [[ $i == *"proto/"* ]] || [[ $i == "go.mod" ]] || [[ $i == "go.sum" ]] && [[ $i != *".md"* ]]; then
               echo "RUN_TESTS=true" >> $GITHUB_OUTPUT
               break
-            elif [[ $i == *"manifests/"* ]] && [[ $i != *".md"*]]; then
+            elif [[ $i == *"manifests/"* ]] && [[ $i != *".md"* ]]; then
               echo "RUN_TESTS=true" >> $GITHUB_OUTPUT
               break
             else
               for SERVICE in "${SERVICES[@]}"; do
-                if [[ $i == *"services/$SERVICE"* ]] && [[ $i != *".md"*]]; then
+                if [[ $i == *"services/$SERVICE"* ]] && [[ $i != *".md"* ]]; then
                 echo "RUN_TESTS=true" >> $GITHUB_OUTPUT
                 break
                 fi
