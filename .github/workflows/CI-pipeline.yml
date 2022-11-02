@@ -47,19 +47,19 @@ jobs:
           changes=($(git diff  --name-only origin/master))
           for i in "${changes[@]}"
           do
-            if [[ "$i" == *".md"* ]]; then
+            if [[ "${i}" =~ .*\.md.* ]]; then
               echo "Skipping document "$i""
               continue
-            elif [[ "$i" == *"internal/"* ]] || [[ "$i" == *"proto/"* ]] || [[ "$i" == "go.mod" ]] || [[ "$i" == "go.sum" ]]; then
+            elif [[ "${i}" =~ .*(internal|proto)/.* ]] || [[ "${i}" =~ go\.(mod|sum) ]]; then
               arr=(${SERVICES[@]})
               echo "All services needs to be built"
               break
-            elif [[ "$i" == *"manifests/"* ]]; then
+            elif [[ "${i}" =~ .*manifests/.* ]]; then
               echo "E2E test will run"
               echo "RUN_TESTS=true" >> $GITHUB_OUTPUT
             else
               for SERVICE in "${SERVICES[@]}"; do
-                if [[ "$i" == *"services/$SERVICE"* ]]; then
+                if [[ "${i}" =~ .*services/${SERVICE}.* ]]; then
                 arr+=($SERVICE)
                 echo "Detected change in $SERVICE"
                 fi

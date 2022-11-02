@@ -29,18 +29,15 @@ jobs:
           changes=($(git diff  --name-only HEAD^ HEAD))
           for i in "${changes[@]}"
           do
-            if [[ "$i" == *".md"* ]]; then
+            if [[ "${i}" =~ .*\.md.* ]]; then
               echo "Skipping document "$i""
               continue
-            elif [[ "$i" == *"internal/"* ]] || [[ "$i" == *"proto/"* ]] || [[ "$i" == "go.mod" ]] || [[ "$i" == "go.sum" ]]; then
-              echo "RUN_TESTS=true" >> $GITHUB_OUTPUT
-              break
-            elif [[ "$i" == *"manifests/"* ]]; then
+            elif [[ "${i}" =~ .*(internal|proto|manifests)/.* ]] || [[ "${i}" =~ go\.(mod|sum) ]]; then
               echo "RUN_TESTS=true" >> $GITHUB_OUTPUT
               break
             else
               for SERVICE in "${SERVICES[@]}"; do
-                if [[ "$i" == *"services/$SERVICE"* ]]; then
+                if [[ "${i}" =~ .*services/${SERVICE}.* ]]; then
                 echo "RUN_TESTS=true" >> $GITHUB_OUTPUT
                 break
                 fi
