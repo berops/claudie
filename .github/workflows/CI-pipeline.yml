@@ -43,19 +43,20 @@ jobs:
         run: |
           arr=()
           SERVICES=( ${{ env.SERVICES }} )
-          git fetch origin master
-          echo "Changes compared to master"
-          git diff  --name-only origin/master..HEAD
-          for i in "$(git diff  --name-only origin/master..HEAD)"
+          changes=($(git diff  --name-only origin/master..HEAD))
+          for i in "${changes[@]}"
           do
-            if [[ $i == *"internal/"* ]] || [[ $i == *"proto/"* ]] || [[ $i == "go.mod" ]] || [[ $i == "go.sum" ]] && [[ $i != *".md"* ]]; then
+            if [[ $i == *".md"* ]]; then
+              echo "Skipping document $i"
+              continue
+            elif [[ $i == *"internal/"* ]] || [[ $i == *"proto/"* ]] || [[ $i == "go.mod" ]] || [[ $i == "go.sum" ]]; then
               arr=(${SERVICES[@]})
               echo "All services needs to be built"
               break
-            elif [[ $i == *"manifests/"* ]] && [[ $i != *".md"* ]]; then
+            elif [[ $i == *"manifests/"* ]]; then
               echo "E2E test will run"
-              echo "RUN_TESTS=true" >> $GITHUB_OUTPUT
             else
+              
               for SERVICE in "${SERVICES[@]}"; do
                 if [[ $i == *"services/$SERVICE"* ]]; then
                 arr+=($SERVICE)
@@ -64,7 +65,6 @@ jobs:
               done
             fi
           done
-          echo "ARRAY_OF_CHANGES=$(echo ${arr[@]})" >> $GITHUB_OUTPUT
     outputs:
       ARRAY_OF_CHANGES: ${{ steps.change.outputs.ARRAY_OF_CHANGES }}
       RUN_TESTS: ${{ steps.change.outputs.RUN_TESTS }}
