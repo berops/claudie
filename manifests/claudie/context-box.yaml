@@ -21,10 +21,10 @@ spec:
           image: claudieio/context-box
           resources:
             requests:
-              cpu: 5m
+              cpu: 40m
               memory: 50Mi
             limits:
-              cpu: 25m
+              cpu: 80m
               memory: 100Mi
           env:
             - name: DATABASE_PORT
