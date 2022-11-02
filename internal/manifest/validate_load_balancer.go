@@ -47,7 +47,7 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 		roles[role.Name] = true
 	}
 
-	apiServerLBExists := false
+	apiServerLBExists := make(map[string]bool) // [Targetk8sClusterName]bool
 	for _, cluster := range l.Clusters {
 		// check if the name used for the cluster is unique
 		if _, ok := clusters[cluster.Name]; ok {
@@ -67,13 +67,13 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 			}
 
 			// check if this is an ApiServer LB and another ApiServer LB already exists.
-			if role == apiServerRole && apiServerLBExists {
-				return fmt.Errorf("role %q is used across multiple Load-Balancers. Can have only one ApiServer Load-Balancer", role)
+			if role == apiServerRole && apiServerLBExists[cluster.TargetedK8s] {
+				return fmt.Errorf("role %q is used across multiple Load-Balancers for k8s-cluster %s. Can have only one ApiServer Load-Balancer per k8s-cluster", role, cluster.TargetedK8s)
 			}
 
 			// this is the first LB that uses the ApiServer role.
 			if role == apiServerRole {
-				apiServerLBExists = true
+				apiServerLBExists[cluster.TargetedK8s] = true
 			}
 		}
 
