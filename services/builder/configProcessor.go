@@ -73,6 +73,12 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 
 		// check for cluster deleting
 		configToDelete := getDeletedClusterConfig(config)
+
+		// we need to correctly destroy the load-balancers for the new API endpoint.
+		if err := teardownLoadBalancers(configToDelete.CurrentState, config.CurrentState); err != nil {
+			log.Error().Msgf("Failed to teardown LoadBalancers: %v", err)
+		}
+
 		if err := destroyConfig(configToDelete, c); err != nil {
 			log.Error().Msgf("Failed to delete clusters: %v", err)
 		}

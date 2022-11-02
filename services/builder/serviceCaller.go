@@ -73,10 +73,31 @@ func buildConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig bo
 	return nil
 }
 
+// teardownLoadBalancers destroy the Load-Balancers (if any) for the config generated
+// by the getDeletedClusterConfig function.
+func teardownLoadBalancers(deleted, current *pb.Project) error {
+	conn, err := utils.GrpcDialWithInsecure("ansibler", envs.AnsiblerURL)
+	if err != nil {
+		return err
+	}
+
+	log.Info().Msgf("Calling TeardownLoadBalancers on ansibler")
+
+	_, err = ansibler.TeardownLoadBalancers(pb.NewAnsiblerServiceClient(conn), &pb.TeardownLBRequest{
+		CurrentState: current,
+		DeletedState: deleted,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return conn.Close()
+}
+
 // destroyConfig destroys existing clusters infra for a config, including the deletion
 // of the config from the database, by calling Terraformer and Kuber and ContextBox services.
 func destroyConfigAndDeleteDoc(config *pb.Config, c pb.ContextBoxServiceClient) error {
-
 	err := destroyConfig(config, c)
 	if err != nil {
 		return err
