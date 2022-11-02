@@ -67,7 +67,7 @@ spec:
           livenessProbe:
             exec:
               command: ["/bin/grpc_health_probe-Liveness", "-addr=:50055"]
-            initialDelaySeconds: 10
+            initialDelaySeconds: 60
 ---
 kind: Service
 apiVersion: v1
