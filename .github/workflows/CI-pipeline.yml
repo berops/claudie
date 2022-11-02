@@ -44,6 +44,8 @@ jobs:
           arr=()
           SERVICES=( ${{ env.SERVICES }} )
           git fetch origin master
+          echo "Changes compared to master"
+          git diff  --name-only origin/master..HEAD
           for i in "$(git diff  --name-only origin/master..HEAD)"
           do
             if [[ $i == *"internal/"* ]] || [[ $i == *"proto/"* ]] || [[ $i == "go.mod" ]] || [[ $i == "go.sum" ]] && [[ $i != *".md"* ]]; then
