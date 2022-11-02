@@ -15,6 +15,7 @@ import (
 	"github.com/Berops/claudie/internal/healthcheck"
 	"github.com/Berops/claudie/internal/utils"
 	"github.com/Berops/claudie/proto/pb"
+	claudietfcache "github.com/Berops/claudie/services/terraformer/server/claudie-tf-cache"
 	"github.com/Berops/claudie/services/terraformer/server/kubernetes"
 	"github.com/Berops/claudie/services/terraformer/server/loadbalancer"
 	"github.com/minio/minio-go/v7"
@@ -51,6 +52,7 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 	desiredState := req.GetDesiredState()
 	projectName := desiredState.Name
 	clusterToLBs := make(map[string][]*pb.LBcluster)
+	start := time.Now()
 
 	var errGroup errgroup.Group
 	var clusters []Cluster
@@ -108,7 +110,7 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 				ErrorMessage: err.Error()},
 			fmt.Errorf("BuildInfrastructure got error: %w", err)
 	}
-	log.Info().Msg("Infrastructure was successfully generated")
+	log.Info().Msgf("Infrastructure was successfully generated in %s", time.Since(start))
 	return &pb.BuildInfrastructureResponse{
 		CurrentState: currentState,
 		DesiredState: desiredState,
@@ -212,6 +214,13 @@ func main() {
 	// Here we pass our custom readiness probe
 	healthService := healthcheck.NewServerHealthChecker(terraformerPort, "TERRAFORMER_PORT", healthCheck)
 	grpc_health_v1.RegisterHealthServer(s, healthService)
+
+	//init terraform cache
+	if err := claudietfcache.InitProvidersPluginCache(); err != nil {
+		log.Error().Msgf("Failed to initialise terraform provider plugin cache %v", err)
+		log.Warn().Msgf("Continue processing without the cache...")
+	}
+	log.Info().Msgf("Terraform plugin cache successfully initialise")
 
 	g, ctx := errgroup.WithContext(context.Background())
 

@@ -12,6 +12,7 @@ import (
 	"github.com/Berops/claudie/internal/utils"
 	"github.com/Berops/claudie/proto/pb"
 	"github.com/Berops/claudie/services/terraformer/server/backend"
+	claudietfcache "github.com/Berops/claudie/services/terraformer/server/claudie-tf-cache"
 	"github.com/Berops/claudie/services/terraformer/server/provider"
 	"github.com/Berops/claudie/services/terraformer/server/terraform"
 	"github.com/rs/zerolog/log"
@@ -134,6 +135,11 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	err := backend.CreateFiles()
 	if err != nil {
 		return err
+	}
+
+	//copy tf plugins
+	if err := claudietfcache.CopyCache(clusterDir); err != nil {
+		log.Warn().Msgf("Could not copy terraform plugins: %v", err)
 	}
 
 	// generate .tf files for nodepools

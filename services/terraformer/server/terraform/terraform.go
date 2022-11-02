@@ -15,7 +15,6 @@ const (
 	// it succeeds. If after 10 retries the commands still fails an error should be
 	// returned containing the reason.
 	maxTerraformRetries = 10
-	cacheDir            = "/opt/claudie-tf-cache"
 )
 
 type Terraform struct {
@@ -26,11 +25,12 @@ type Terraform struct {
 }
 
 func (t *Terraform) TerraformInit() error {
-	if err := setCache(); err != nil {
+	if err := setCache("."); err != nil {
 		// log the warning but continue executions
 		// error is not process breaking
 		log.Warn().Msgf("Could not set cache for terraform plugins: %v", err)
 	}
+
 	cmd := exec.Command("terraform", "init")
 	cmd.Dir = t.Directory
 	cmd.Stdout = t.StdOut
@@ -109,9 +109,30 @@ func (t Terraform) TerraformOutput(resourceName string) (string, error) {
 	return string(out), err
 }
 
+func (t Terraform) TerraformProvidersMirror(dir string) error {
+	cmd := exec.Command("terraform", "providers", "mirror", dir)
+	cmd.Dir = t.Directory
+
+	if err := cmd.Run(); err != nil {
+		log.Warn().Msgf("Error encountered while executing %s from %s: %v", cmd, t.Directory, err)
+
+		retryCmd := comm.Cmd{
+			Command: fmt.Sprintf("terraform providers mirror %s", dir),
+			Dir:     t.Directory,
+			Stdout:  cmd.Stdout,
+			Stderr:  cmd.Stderr,
+		}
+
+		if err := retryCmd.RetryCommand(maxTerraformRetries); err != nil {
+			return fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
+		}
+	}
+	return nil
+}
+
 // setCache function will set environment variable to the environment before executing terraform
 // function also checks if cache directory for plugins exists and creates one if not
-func setCache() error {
+func setCache(cacheDir string) error {
 	if _, err := os.Stat(cacheDir); os.IsNotExist(err) {
 		if err = os.MkdirAll(cacheDir, 0777); err != nil {
 			return fmt.Errorf("failed to create cache dir %s", cacheDir)
