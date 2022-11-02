@@ -43,6 +43,7 @@ jobs:
         run: |
           arr=()
           SERVICES=( ${{ env.SERVICES }} )
+          git fetch origin master
           changes=($(git diff  --name-only origin/master))
           for i in "${changes[@]}"
           do
