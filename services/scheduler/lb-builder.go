@@ -8,13 +8,10 @@ import (
 	"github.com/Berops/claudie/proto/pb"
 )
 
-const (
-	hostnameHashLength = 17
-	apiserverPort      = 6443
-)
+const hostnameHashLength = 17
 
-//createLBCluster reads manifest state and create loadbalancer clusters based on it
-//returns slice of *pb.LBcluster if successful, nil otherwise
+// createLBCluster reads manifest state and create loadbalancer clusters based on it
+// returns slice of *pb.LBcluster if successful, nil otherwise
 func createLBCluster(manifestState *manifest.Manifest) ([]*pb.LBcluster, error) {
 	var lbClusters []*pb.LBcluster
 	for _, lbCluster := range manifestState.LoadBalancer.Clusters {
@@ -45,8 +42,8 @@ func createLBCluster(manifestState *manifest.Manifest) ([]*pb.LBcluster, error) 
 	return lbClusters, nil
 }
 
-//updateLBClusters updates the desired state of the loadbalancer clusters based on the current state
-//returns error if failed, nil otherwise
+// updateLBClusters updates the desired state of the loadbalancer clusters based on the current state
+// returns error if failed, nil otherwise
 func updateLBClusters(newConfig *pb.Config) error {
 clusterLbDesired:
 	for _, clusterLbDesired := range newConfig.DesiredState.LoadBalancerClusters {
@@ -77,8 +74,8 @@ clusterLbDesired:
 	return nil
 }
 
-//getDNS reads manifest state and returns *pb.DNS based on it
-//return *pb.DNS if successful, error if provider has not been found
+// getDNS reads manifest state and returns *pb.DNS based on it
+// return *pb.DNS if successful, error if provider has not been found
 func getDNS(lbDNS manifest.DNS, manifestState *manifest.Manifest) (*pb.DNS, error) {
 	if lbDNS.DNSZone == "" {
 		return nil, fmt.Errorf("DNS zone not provided")
@@ -95,8 +92,8 @@ func getDNS(lbDNS manifest.DNS, manifestState *manifest.Manifest) (*pb.DNS, erro
 	}
 }
 
-//getMatchingRoles will read roles from manifest state and returns slice of *pb.Role
-//returns slice of *[]pb.Roles if successful, error if Target from manifest state not found
+// getMatchingRoles will read roles from manifest state and returns slice of *pb.Role
+// returns slice of *[]pb.Roles if successful, error if Target from manifest state not found
 func getMatchingRoles(roles []manifest.Role, roleNames []string) ([]*pb.Role, error) {
 	var matchingRoles []*pb.Role
 
@@ -112,7 +109,7 @@ func getMatchingRoles(roles []manifest.Role, roleNames []string) ([]*pb.Role, er
 				target := pb.Target(t)
 				var roleType pb.RoleType
 
-				if role.TargetPort == apiserverPort && target == pb.Target_k8sControlPlane {
+				if role.TargetPort == manifest.ApiServerPort && target == pb.Target_k8sControlPlane {
 					roleType = pb.RoleType_ApiServer
 				} else {
 					roleType = pb.RoleType_Ingress

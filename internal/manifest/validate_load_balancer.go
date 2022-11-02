@@ -6,6 +6,9 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+// ApiServerPort is the port on which the ApiServer listens.
+const ApiServerPort = 6443
+
 // Validate validates the parsed data inside the LoadBalancer section of the manifest.
 // It checks for missing/invalid filled out values defined in the LoadBalancer section
 // of the manifest.
@@ -21,13 +24,21 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 		// https://github.com/Berops/claudie/blob/master/docs/input-manifest/input-manifest.md#dns
 		hostnamesPerDNS = make(map[string]string)
 
-		// check for cluster name uniqueness
+		// check for cluster name uniqueness.
 		clusters = make(map[string]bool)
+
+		// check if the roles in the LB cluster has a role of ApiServer.
+		apiServerRole = ""
 	)
 
 	for _, role := range l.Roles {
 		if err := role.Validate(); err != nil {
 			return fmt.Errorf("failed to validate role %q: %w", role.Name, err)
+		}
+
+		// save the result so we can use it later.
+		if role.TargetPort == ApiServerPort {
+			apiServerRole = role.Name
 		}
 
 		if _, ok := roles[role.Name]; ok {
@@ -36,6 +47,7 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 		roles[role.Name] = true
 	}
 
+	apiServerLBExists := false
 	for _, cluster := range l.Clusters {
 		// check if the name used for the cluster is unique
 		if _, ok := clusters[cluster.Name]; ok {
@@ -52,6 +64,16 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 		for _, role := range cluster.Roles {
 			if _, ok := roles[role]; !ok {
 				return fmt.Errorf("role %q used inside cluster %q is not defined", role, cluster.Name)
+			}
+
+			// check if this is an ApiServer LB and another ApiServer LB already exists.
+			if role == apiServerRole && apiServerLBExists {
+				return fmt.Errorf("role %q is used across multiple Load-Balancers. Can have only one ApiServer Load-Balancer", role)
+			}
+
+			// this is the first LB that uses the ApiServer role.
+			if role == apiServerRole {
+				apiServerLBExists = true
 			}
 		}
 
