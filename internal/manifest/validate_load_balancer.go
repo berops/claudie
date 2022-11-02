@@ -6,8 +6,8 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-// ApiServerPort is the port on which the ApiServer listens.
-const ApiServerPort = 6443
+// APIServerPort is the port on which the ApiServer listens.
+const APIServerPort = 6443
 
 // Validate validates the parsed data inside the LoadBalancer section of the manifest.
 // It checks for missing/invalid filled out values defined in the LoadBalancer section
@@ -37,7 +37,7 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 		}
 
 		// save the result so we can use it later.
-		if role.TargetPort == ApiServerPort {
+		if role.TargetPort == APIServerPort {
 			apiServerRole = role.Name
 		}
 

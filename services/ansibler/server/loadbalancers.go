@@ -40,32 +40,32 @@ const (
 	apiChangePlaybook = "../../ansible-playbooks/apiEndpointChange.yml"
 )
 
-type ApiEndpointChangeState string
+type APIEndpointChangeState string
 
 const (
 	// NoChange represents the 1st. case, no change is needed as LB is currently
 	// attached and the desired spec contains no changes.
-	NoChange ApiEndpointChangeState = "no-change"
+	NoChange APIEndpointChangeState = "no-change"
 
 	// AttachingLoadBalancer represents 2nd. case, the cluster previously
 	// didn't have a LB and the ports needed to communicate with the API server
 	// were exposed. After attaching a LB to the existing cluster the ports
 	// were closed and are no longer accessible, and thus we need to change the API endpoint.
-	AttachingLoadBalancer ApiEndpointChangeState = "attaching-load-balancer"
+	AttachingLoadBalancer APIEndpointChangeState = "attaching-load-balancer"
 
 	// DetachingLoadBalancer represents 3rd. case, the cluster had an existing
 	// LB attached but the new state removed the LB and thus the API endpoint
 	// needs to be changed back to one of the control nodes of the cluster.
-	DetachingLoadBalancer ApiEndpointChangeState = "detaching-load-balancer"
+	DetachingLoadBalancer APIEndpointChangeState = "detaching-load-balancer"
 
 	// EndpointRenamed represents the 4th. case, the cluster had an existing
 	// LB attached and also keeps it but the endpoint has changed.
-	EndpointRenamed ApiEndpointChangeState = "endpoint-renamed"
+	EndpointRenamed APIEndpointChangeState = "endpoint-renamed"
 
 	// RoleChanged represents the 5th case, the cluster had an existing
 	// LB attached that didn't have a ApiServer role attach but the
 	// desired state does.
-	RoleChanged ApiEndpointChangeState = "role-changed"
+	RoleChanged APIEndpointChangeState = "role-changed"
 )
 
 type (
@@ -105,9 +105,9 @@ type (
 	}
 )
 
-// ApiEndpointState determines if the API endpoint should be updated with a new
+// APIEndpointState determines if the API endpoint should be updated with a new
 // address, as otherwise communication with the cluster wouldn't be possible.
-func (lb *LBData) ApiEndpointState() ApiEndpointChangeState {
+func (lb *LBData) APIEndpointState() APIEndpointChangeState {
 	if lb.CurrentLbCluster == nil && lb.DesiredLbCluster == nil {
 		return NoChange
 	}
@@ -125,16 +125,16 @@ func (lb *LBData) ApiEndpointState() ApiEndpointChangeState {
 	}
 
 	// check if role changed.
-	isApiServer := false
+	var isAPIServer bool
 	for _, currentRoles := range lb.CurrentLbCluster.Roles {
 		if currentRoles.RoleType == pb.RoleType_ApiServer {
-			isApiServer = true
+			isAPIServer = true
 			break
 		}
 	}
 
 	for _, desiredRoles := range lb.DesiredLbCluster.Roles {
-		if desiredRoles.RoleType == pb.RoleType_ApiServer && !isApiServer {
+		if desiredRoles.RoleType == pb.RoleType_ApiServer && !isAPIServer {
 			return RoleChanged
 		}
 	}
@@ -168,7 +168,7 @@ func teardownLoadBalancers(deleted map[string]*LBInfo) error {
 				}
 			}
 
-			if err := HandleApiEndpointChange(apiServer, deleted, k8sDirectory); err != nil {
+			if err := HandleAPIEndpointChange(apiServer, deleted, k8sDirectory); err != nil {
 				return err
 			}
 
@@ -224,7 +224,7 @@ func setUpLoadbalancers(lbInfos map[string]*LBInfo) error {
 				return fmt.Errorf("error while setting up the loadbalancers for k8s cluster %s : %w", k8sClusterName, err)
 			}
 
-			if err := HandleApiEndpointChange(apiServerLB, lbInfo, k8sDirectory); err != nil {
+			if err := HandleAPIEndpointChange(apiServerLB, lbInfo, k8sDirectory); err != nil {
 				return fmt.Errorf("failed to find a candidate for the Api Server: %w", err)
 			}
 
@@ -235,7 +235,7 @@ func setUpLoadbalancers(lbInfos map[string]*LBInfo) error {
 	return errGroupK8s.Wait()
 }
 
-func HandleApiEndpointChange(apiServer *LBData, k8sCluster *LBInfo, k8sDirectory string) error {
+func HandleAPIEndpointChange(apiServer *LBData, k8sCluster *LBInfo, k8sDirectory string) error {
 	if apiServer == nil {
 		// if there is no ApiSever LB that means that the ports 6443 are exposed
 		// on the nodes, and thus we don't need to anything.
@@ -245,7 +245,7 @@ func HandleApiEndpointChange(apiServer *LBData, k8sCluster *LBInfo, k8sDirectory
 	var oldEndpoint string
 	var newEndpoint string
 
-	switch apiServer.ApiEndpointState() {
+	switch apiServer.APIEndpointState() {
 	case NoChange:
 		return nil
 	case EndpointRenamed:
@@ -254,34 +254,34 @@ func HandleApiEndpointChange(apiServer *LBData, k8sCluster *LBInfo, k8sDirectory
 	case RoleChanged:
 		newEndpoint = apiServer.DesiredLbCluster.Dns.Endpoint
 		// 1st check if any other LB was previously an ApiServer.
-		var oldApiServer *LBData
+		var oldAPIServer *LBData
 
 		for _, lb := range k8sCluster.LbClusters {
 			for _, role := range lb.CurrentLbCluster.Roles {
 				if role.RoleType == pb.RoleType_ApiServer {
-					oldApiServer = lb
+					oldAPIServer = lb
 					break
 				}
 			}
-			if oldApiServer != nil {
+			if oldAPIServer != nil {
 				break
 			}
 		}
 
-		if oldApiServer != nil {
-			oldEndpoint = oldApiServer.CurrentLbCluster.Dns.Endpoint
+		if oldAPIServer != nil {
+			oldEndpoint = oldAPIServer.CurrentLbCluster.Dns.Endpoint
 			break
 		}
 
 		// 2nd pick the control node as the previous ApiServer.
-		node, err := FindApiEndpointNode(k8sCluster.TargetK8sNodepool)
+		node, err := FindAPIEndpointNode(k8sCluster.TargetK8sNodepool)
 		if err != nil {
 			return fmt.Errorf("failed to find ApiEndpoint k8s node, couldn't update Api server endpoint")
 		}
 
 		oldEndpoint = node.Public
 	case AttachingLoadBalancer:
-		node, err := FindApiEndpointNode(k8sCluster.TargetK8sNodepool)
+		node, err := FindAPIEndpointNode(k8sCluster.TargetK8sNodepool)
 		if err != nil {
 			// If no Node has type ApiEndpoint this means that the cluster
 			// wasn't build yet (i.e. it's the first time the manifest goes
@@ -293,7 +293,7 @@ func HandleApiEndpointChange(apiServer *LBData, k8sCluster *LBInfo, k8sDirectory
 		newEndpoint = apiServer.DesiredLbCluster.Dns.Endpoint
 	case DetachingLoadBalancer:
 		// Choose one of the control nodes as the API endpoint.
-		node, err := FindApiEndpointNode(k8sCluster.TargetK8sNodepool)
+		node, err := FindAPIEndpointNode(k8sCluster.TargetK8sNodepool)
 		if err != nil {
 			return err
 		}
@@ -309,16 +309,16 @@ func HandleApiEndpointChange(apiServer *LBData, k8sCluster *LBInfo, k8sDirectory
 
 	log.Info().Msgf("Changing the API endpoint for the cluster %s", lbCluster.ClusterInfo.Name)
 
-	if err := changeApiEndpoint(lbCluster.ClusterInfo.Name, oldEndpoint, newEndpoint, k8sDirectory); err != nil {
+	if err := changeAPIEndpoint(lbCluster.ClusterInfo.Name, oldEndpoint, newEndpoint, k8sDirectory); err != nil {
 		return fmt.Errorf("error while changing the endpoint for %s : %w", lbCluster.ClusterInfo.Name, err)
 	}
 
 	return nil
 }
 
-// FindApiEndpointNode searches the NodePools for a Node with type ApiEndpoint.
+// FindAPIEndpointNode searches the NodePools for a Node with type ApiEndpoint.
 // If no such node is found an error is returned.
-func FindApiEndpointNode(nodepools []*pb.NodePool) (*pb.Node, error) {
+func FindAPIEndpointNode(nodepools []*pb.NodePool) (*pb.Node, error) {
 	for _, nodePool := range nodepools {
 		for _, node := range nodePool.Nodes {
 			if node.NodeType == pb.NodeType_apiEndpoint {
@@ -330,8 +330,8 @@ func FindApiEndpointNode(nodepools []*pb.NodePool) (*pb.Node, error) {
 	return nil, fmt.Errorf("failed to find node with type %s", pb.NodeType_apiEndpoint.String())
 }
 
-// changeApiEndpoint will change kubeadm configuration to include new EP
-func changeApiEndpoint(clusterName, oldEndpoint, newEndpoint, directory string) error {
+// changeAPIEndpoint will change kubeadm configuration to include new EP
+func changeAPIEndpoint(clusterName, oldEndpoint, newEndpoint, directory string) error {
 	log.Info().Msgf("New endpoint is %s", newEndpoint)
 
 	ansible := ansible.Ansible{

@@ -109,7 +109,7 @@ func getMatchingRoles(roles []manifest.Role, roleNames []string) ([]*pb.Role, er
 				target := pb.Target(t)
 				var roleType pb.RoleType
 
-				if role.TargetPort == manifest.ApiServerPort && target == pb.Target_k8sControlPlane {
+				if role.TargetPort == manifest.APIServerPort && target == pb.Target_k8sControlPlane {
 					roleType = pb.RoleType_ApiServer
 				} else {
 					roleType = pb.RoleType_Ingress
