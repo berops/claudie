@@ -13,8 +13,43 @@ env:
   TEST_SETS: test-set1 test-set2 test-set3
 
 jobs:
+  check-changes:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 2
+
+      - name: Check the PR for changes since the latest commit
+        id: change
+        run: |
+          SERVICES=( ${{ env.SERVICES }} )
+          git fetch origin master
+          changes=($(git diff  --name-only HEAD^ HEAD))
+          for i in "${changes[@]}"
+          do
+            if [[ "${i}" =~ .*\.md.* ]]; then
+              echo "Skipping document "$i""
+              continue
+            elif [[ "${i}" =~ .*(internal|proto|manifests)/.* ]] || [[ "${i}" =~ go\.(mod|sum) ]]; then
+              echo "RUN_TESTS=true" >> $GITHUB_OUTPUT
+              break
+            else
+              for SERVICE in "${SERVICES[@]}"; do
+                if [[ "${i}" =~ .*services/${SERVICE}.* ]]; then
+                echo "RUN_TESTS=true" >> $GITHUB_OUTPUT
+                break
+                fi
+              done
+            fi
+          done
+    outputs:
+      RUN_TESTS: ${{ steps.change.outputs.RUN_TESTS }}
+  #--------------------------------------------------------------------------------------------------
   deploy-and-monitor:
-    if: github.event.pull_request.draft == false
+    if: ${{ needs.build-and-push.outputs.RUN_TESTS == 'true' }}
+    needs: check-changes
     permissions:
       id-token: write
       contents: read
@@ -33,12 +68,12 @@ jobs:
           version: latest
 
       - name: install kustomize
-        uses: imranismail/setup-kustomize@v1.6.1
+        uses: imranismail/setup-kustomize@v2
         with:
           version: 3.6.1
 
       - name: Login to GCP
-        uses: google-github-actions/auth@v0.4.0
+        uses: google-github-actions/auth@v0.8.3
         with:
           token_format: "access_token"
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
@@ -46,7 +81,7 @@ jobs:
           access_token_lifetime: "21600s"
 
       - name: Configure kubectl
-        uses: google-github-actions/get-gke-credentials@v0.4.0
+        uses: google-github-actions/get-gke-credentials@v0.8.2
         with:
           cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
           location: ${{ secrets.GKE_ZONE }}
