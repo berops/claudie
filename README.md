@@ -37,6 +37,8 @@ Deploy Claudie Kubernetes [manifests](https://github.com/Berops/claudie/tree/mas
 kustomize build | kubectl apply -f -
 ```
 
+> NOTE: Please make sure you are in `/manifests/claudie` directory before running `kustomize build` 
+
 Lastly, provide your own manifest via a Kubernetes Secret.
 
 Example of the input manifest can be found [here](https://github.com/Berops/claudie/blob/master/docs/input-manifest/example.yaml).
