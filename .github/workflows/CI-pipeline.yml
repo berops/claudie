@@ -38,7 +38,7 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - name: Check the repository for a changes
+      - name: Check the repository for changes
         id: change
         run: |
           arr=()
@@ -52,7 +52,7 @@ jobs:
               continue
             elif [[ "${i}" =~ .*(internal|proto)/.* ]] || [[ "${i}" =~ go\.(mod|sum) ]]; then
               arr=(${SERVICES[@]})
-              echo "All services needs to be built"
+              echo "All services need to be built"
               break
             elif [[ "${i}" =~ .*manifests/.* ]]; then
               echo "E2E test will run"

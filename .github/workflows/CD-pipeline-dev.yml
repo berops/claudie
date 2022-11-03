@@ -21,7 +21,7 @@ jobs:
           ref: ${{ github.head_ref }}
           fetch-depth: 2
 
-      - name: Check the PR for a changes since last commit
+      - name: Check the PR for changes since the latest commit
         id: change
         run: |
           SERVICES=( ${{ env.SERVICES }} )
