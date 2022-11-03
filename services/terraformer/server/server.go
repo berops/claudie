@@ -195,6 +195,12 @@ func healthCheck() error {
 func main() {
 	// initialize logger
 	utils.InitLog("terraformer")
+	//init terraform cache
+	if err := claudietfcache.InitProvidersPluginCache(); err != nil {
+		log.Error().Msgf("Failed to initialise terraform provider plugin cache %v", err)
+		log.Warn().Msgf("Continue processing without the cache...")
+	}
+	log.Info().Msgf("Terraform plugin cache successfully initialise")
 
 	// Set the context-box port
 	terraformerPort := utils.GetenvOr("TERRAFORMER_PORT", fmt.Sprint(defaultTerraformerPort))
@@ -214,13 +220,6 @@ func main() {
 	// Here we pass our custom readiness probe
 	healthService := healthcheck.NewServerHealthChecker(terraformerPort, "TERRAFORMER_PORT", healthCheck)
 	grpc_health_v1.RegisterHealthServer(s, healthService)
-
-	//init terraform cache
-	if err := claudietfcache.InitProvidersPluginCache(); err != nil {
-		log.Error().Msgf("Failed to initialise terraform provider plugin cache %v", err)
-		log.Warn().Msgf("Continue processing without the cache...")
-	}
-	log.Info().Msgf("Terraform plugin cache successfully initialise")
 
 	g, ctx := errgroup.WithContext(context.Background())
 
