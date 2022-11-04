@@ -45,6 +45,6 @@ func TeardownLoadBalancers(c pb.AnsiblerServiceClient, req *pb.TeardownLBRequest
 		return res, fmt.Errorf("failed to teardown LoadBalancers")
 	}
 
-	log.Info().Msg("LoadBalancers were destroyed successfully")
+	log.Info().Msg("LoadBalancers were torn down successfully")
 	return res, nil
 }

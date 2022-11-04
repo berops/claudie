@@ -125,18 +125,9 @@ func (lb *LBData) APIEndpointState() APIEndpointChangeState {
 	}
 
 	// check if role changed.
-	var isAPIServer bool
-	for _, currentRoles := range lb.CurrentLbCluster.Roles {
-		if currentRoles.RoleType == pb.RoleType_ApiServer {
-			isAPIServer = true
-			break
-		}
-	}
-
-	for _, desiredRoles := range lb.DesiredLbCluster.Roles {
-		if desiredRoles.RoleType == pb.RoleType_ApiServer && !isAPIServer {
-			return RoleChanged
-		}
+	isAPIServer := hasAPIServerRole(lb.CurrentLbCluster.Roles)
+	if hasAPIServerRole(lb.DesiredLbCluster.Roles) && !isAPIServer {
+		return RoleChanged
 	}
 
 	return NoChange
@@ -168,7 +159,7 @@ func teardownLoadBalancers(deleted map[string]*LBInfo) error {
 				}
 			}
 
-			if err := HandleAPIEndpointChange(apiServer, deleted, k8sDirectory); err != nil {
+			if err := handleAPIEndpointChange(apiServer, deleted, k8sDirectory); err != nil {
 				return err
 			}
 
@@ -224,7 +215,7 @@ func setUpLoadbalancers(lbInfos map[string]*LBInfo) error {
 				return fmt.Errorf("error while setting up the loadbalancers for k8s cluster %s : %w", k8sClusterName, err)
 			}
 
-			if err := HandleAPIEndpointChange(apiServerLB, lbInfo, k8sDirectory); err != nil {
+			if err := handleAPIEndpointChange(apiServerLB, lbInfo, k8sDirectory); err != nil {
 				return fmt.Errorf("failed to find a candidate for the Api Server: %w", err)
 			}
 
@@ -235,7 +226,7 @@ func setUpLoadbalancers(lbInfos map[string]*LBInfo) error {
 	return errGroupK8s.Wait()
 }
 
-func HandleAPIEndpointChange(apiServer *LBData, k8sCluster *LBInfo, k8sDirectory string) error {
+func handleAPIEndpointChange(apiServer *LBData, k8sCluster *LBInfo, k8sDirectory string) error {
 	if apiServer == nil {
 		// if there is no ApiSever LB that means that the ports 6443 are exposed
 		// on the nodes, and thus we don't need to anything.
@@ -254,34 +245,20 @@ func HandleAPIEndpointChange(apiServer *LBData, k8sCluster *LBInfo, k8sDirectory
 	case RoleChanged:
 		newEndpoint = apiServer.DesiredLbCluster.Dns.Endpoint
 		// 1st check if any other LB was previously an ApiServer.
-		var oldAPIServer *LBData
-
-		for _, lb := range k8sCluster.LbClusters {
-			for _, role := range lb.CurrentLbCluster.Roles {
-				if role.RoleType == pb.RoleType_ApiServer {
-					oldAPIServer = lb
-					break
-				}
-			}
-			if oldAPIServer != nil {
-				break
-			}
-		}
-
-		if oldAPIServer != nil {
+		if oldAPIServer := findCurrentAPILoadBalancer(k8sCluster.LbClusters); oldAPIServer != nil {
 			oldEndpoint = oldAPIServer.CurrentLbCluster.Dns.Endpoint
 			break
 		}
 
 		// 2nd pick the control node as the previous ApiServer.
-		node, err := FindAPIEndpointNode(k8sCluster.TargetK8sNodepool)
+		node, err := findAPIEndpointNode(k8sCluster.TargetK8sNodepool)
 		if err != nil {
 			return fmt.Errorf("failed to find ApiEndpoint k8s node, couldn't update Api server endpoint")
 		}
 
 		oldEndpoint = node.Public
 	case AttachingLoadBalancer:
-		node, err := FindAPIEndpointNode(k8sCluster.TargetK8sNodepool)
+		node, err := findAPIEndpointNode(k8sCluster.TargetK8sNodepool)
 		if err != nil {
 			// If no Node has type ApiEndpoint this means that the cluster
 			// wasn't build yet (i.e. it's the first time the manifest goes
@@ -293,7 +270,7 @@ func HandleAPIEndpointChange(apiServer *LBData, k8sCluster *LBInfo, k8sDirectory
 		newEndpoint = apiServer.DesiredLbCluster.Dns.Endpoint
 	case DetachingLoadBalancer:
 		// Choose one of the control nodes as the API endpoint.
-		node, err := FindAPIEndpointNode(k8sCluster.TargetK8sNodepool)
+		node, err := findAPIEndpointNode(k8sCluster.TargetK8sNodepool)
 		if err != nil {
 			return err
 		}
@@ -316,9 +293,9 @@ func HandleAPIEndpointChange(apiServer *LBData, k8sCluster *LBInfo, k8sDirectory
 	return nil
 }
 
-// FindAPIEndpointNode searches the NodePools for a Node with type ApiEndpoint.
+// findAPIEndpointNode searches the NodePools for a Node with type ApiEndpoint.
 // If no such node is found an error is returned.
-func FindAPIEndpointNode(nodepools []*pb.NodePool) (*pb.Node, error) {
+func findAPIEndpointNode(nodepools []*pb.NodePool) (*pb.Node, error) {
 	for _, nodePool := range nodepools {
 		for _, node := range nodePool.Nodes {
 			if node.NodeType == pb.NodeType_apiEndpoint {
@@ -328,6 +305,28 @@ func FindAPIEndpointNode(nodepools []*pb.NodePool) (*pb.Node, error) {
 	}
 
 	return nil, fmt.Errorf("failed to find node with type %s", pb.NodeType_apiEndpoint.String())
+}
+
+// findCurrentAPILoadBalancers finds the current Load-Balancer for the API server
+func findCurrentAPILoadBalancer(lbs []*LBData) *LBData {
+	for _, lb := range lbs {
+		if hasAPIServerRole(lb.CurrentLbCluster.Roles) {
+			return lb
+		}
+	}
+
+	return nil
+}
+
+// hasAPIServerRole checks if there is an API server role.
+func hasAPIServerRole(roles []*pb.Role) bool {
+	for _, role := range roles {
+		if role.RoleType == pb.RoleType_ApiServer {
+			return true
+		}
+	}
+
+	return false
 }
 
 // changeAPIEndpoint will change kubeadm configuration to include new EP

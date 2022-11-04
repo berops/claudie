@@ -66,13 +66,13 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 				return fmt.Errorf("role %q used inside cluster %q is not defined", role, cluster.Name)
 			}
 
-			// check if this is an ApiServer LB and another ApiServer LB already exists.
-			if role == apiServerRole && apiServerLBExists[cluster.TargetedK8s] {
-				return fmt.Errorf("role %q is used across multiple Load-Balancers for k8s-cluster %s. Can have only one ApiServer Load-Balancer per k8s-cluster", role, cluster.TargetedK8s)
-			}
-
-			// this is the first LB that uses the ApiServer role.
 			if role == apiServerRole {
+				// check if this is an ApiServer LB and another ApiServer LB already exists.
+				if apiServerLBExists[cluster.TargetedK8s] {
+					return fmt.Errorf("role %q is used across multiple Load-Balancers for k8s-cluster %s. Can have only one ApiServer Load-Balancer per k8s-cluster", role, cluster.TargetedK8s)
+				}
+
+				// this is the first LB that uses the ApiServer role.
 				apiServerLBExists[cluster.TargetedK8s] = true
 			}
 		}
