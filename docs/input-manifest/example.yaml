@@ -59,7 +59,7 @@ providers:
       compartment_ocid: ocid2.compartment.oc2..aaaaaaaaa2rsfvlvxc34o060kfdygsds21nske76ksjkko21lpsdfsf
   aws:
     - name: aws-1
-      accces_key: SLDUTKSHFDMSJKDIALASSD
+      access_key: SLDUTKSHFDMSJKDIALASSD
       secret_key: iuhbOIJN+oin/olikDSadsnoiSVSDsacoinOUSHD
   azure:
     - name: azure-1
