@@ -48,7 +48,7 @@ jobs:
       RUN_TESTS: ${{ steps.change.outputs.RUN_TESTS }}
   #--------------------------------------------------------------------------------------------------
   deploy-and-monitor:
-    if: ${{ needs.build-and-push.outputs.RUN_TESTS == 'true' }}
+    if: ${{ needs.check-changes.outputs.RUN_TESTS == 'true' }}
     needs: check-changes
     permissions:
       id-token: write
