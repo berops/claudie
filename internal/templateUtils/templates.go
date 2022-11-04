@@ -77,6 +77,7 @@ func (tl TemplateLoader) LoadTemplate(tplFile string) (*template.Template, error
 			"protocolToOCIProtocolNumber":   utils.ProtocolNameToOCIProtocolNumber,
 			"protocolToAzureProtocolString": utils.ProtocolNameToAzureProtocolString,
 			"assignPriority":                utils.AssignPriority,
+			"enableAccNett":                 utils.EnableAccNet,
 		})
 
 	tpl, err := tpl.ParseFiles(filepath.Join(baseDirectory, tl.Directory, tplFile))
