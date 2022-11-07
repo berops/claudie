@@ -29,7 +29,7 @@ Claudie has its own managed loadbalancing solution, which you can use for Ingres
 
 Claudie comes with a pre-configured storage solution, with ready-to-use Storage Classes. See [Storage docs](https://github.com/Berops/claudie/tree/master/docs/storage).
 
-# Get started using the Claudie
+# Get started using Claudie
 
 Deploy Claudie Kubernetes [manifests](https://github.com/Berops/claudie/tree/master/manifests/claudie) into a Kubernetes cluster.
 
@@ -54,5 +54,5 @@ If you want to have a chat with us, feel free to join our ["claudie-workspace" S
 
 # Roadmap
 <!-- Add a roadmap for claudie so users know which features are being worked on and which will in future -->
-To see the vision behind the Claudie, please refer to the [roadmap](./docs/roadmap/roadmap.md) document.
+To see the vision behind Claudie, please refer to the [roadmap](./docs/roadmap/roadmap.md) document.
 
