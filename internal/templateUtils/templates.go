@@ -9,7 +9,6 @@ import (
 	"text/template"
 
 	"github.com/Berops/claudie/internal/utils"
-	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -42,22 +41,21 @@ func (t Templates) Generate(tpl *template.Template, outputFile string, d interfa
 	// make sure the t.Directory exists, if not, create it
 	if _, err := os.Stat(t.Directory); os.IsNotExist(err) {
 		if err := os.MkdirAll(t.Directory, os.ModePerm); err != nil {
-			return fmt.Errorf("failed to create dir: %w", err)
+			return fmt.Errorf("failed to create directory %s : %w", t.Directory, err)
 		}
 	}
-	log.Info().Msgf("Creating %s", generatedFile)
 	f, err := os.Create(generatedFile)
 	if err != nil {
-		return fmt.Errorf("failed to create the %s file: %w", t.Directory, err)
+		return fmt.Errorf("failed to create the %s file in %s directory : %w", generatedFile, t.Directory, err)
 	}
 	if err := tpl.Execute(f, d); err != nil {
-		return fmt.Errorf("failed to execute the template file: %w", err)
+		return fmt.Errorf("failed to execute the template file for %s : %w", generatedFile, err)
 	}
 	return nil
 }
 
 // creates a  file from template and returns it as a string variable
-//returns error if not successful, generated template as a string and nil otherwise
+// returns error if not successful, generated template as a string and nil otherwise
 func (t Templates) GenerateToString(tpl *template.Template, d interface{}) (string, error) {
 	var buff bytes.Buffer
 	err := tpl.Execute(&buff, d)
@@ -67,7 +65,7 @@ func (t Templates) GenerateToString(tpl *template.Template, d interface{}) (stri
 	return buff.String(), nil
 }
 
-//loads the template from directory specified in TemplateLoader
+// loads the template from directory specified in TemplateLoader
 // the directory MUST be relative to base directory, i.e. services/terraformer/templates
 func (tl TemplateLoader) LoadTemplate(tplFile string) (*template.Template, error) {
 	tpl := template.New(tplFile).
@@ -81,7 +79,7 @@ func (tl TemplateLoader) LoadTemplate(tplFile string) (*template.Template, error
 
 	tpl, err := tpl.ParseFiles(filepath.Join(baseDirectory, tl.Directory, tplFile))
 	if err != nil {
-		return nil, fmt.Errorf("failed to load the template file: %w", err)
+		return nil, fmt.Errorf("failed to load the template file %s : %w", tplFile, err)
 	}
 
 	return tpl, nil
