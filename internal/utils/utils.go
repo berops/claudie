@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -10,7 +11,8 @@ const (
 )
 
 var (
-	vmSizes = []string{"D3v3", "DS3v2", "D4v2", "DS4v2", "D5v2", "DS5v2", "D12v2", "DS12v2", "D13v2", "DS13v2", "D14v2", "DS14v2", "D15v2", "DS15v2", "F8", "FS8", "F16", "FS16", "M64s", "M64ms", "M128s", "M128ms", "D8", "D8Sv3", "D16", "D16Sv3", "D32", "D32Sv3", "D64", "D64Sv3", "E8", "E8Sv3", "E16", "E16Sv3", "E32", "E32Sv3", "E64", "E64Sv3"}
+	//regex of supported VM sizes
+	vmSizes = []string{"(.D3.*?v3.*)", "(.DS3.*?v2.*)", "(.DS?4.*?v2..*)", "(.DS?5.*?v2.*)", "(.DS?12.*?v2.*)", "(.DS?13.*?v2.*)", "(.DS?14.*?v2.*)", "(.DS?15.*?v2.*)", "(.Fs?8.*)", "(.Fs?16.*)", "(.M64m?s.*)", "(.M128m?s.*)", "(.D8s?.*)", "(.D16s?.*)", "(.D32s?.*)", "(.D64s?.*)", "(.E8s?.*)", "(.E16s?.*)", "(.E32s?.*)", "(.E64s?.*)"}
 )
 
 // IsMissing checks if item is missing in the list of items.
@@ -71,7 +73,8 @@ func EnableAccNet(vmSize string) string {
 
 func checkContains(arr []string, str string) bool {
 	for _, el := range arr {
-		if strings.Contains(str, el) {
+		//if match and no error, return true
+		if match, err := regexp.MatchString(el, str); err == nil && match {
 			return true
 		}
 	}
