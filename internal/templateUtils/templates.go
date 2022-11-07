@@ -57,7 +57,7 @@ func (t Templates) Generate(tpl *template.Template, outputFile string, d interfa
 }
 
 // creates a  file from template and returns it as a string variable
-//returns error if not successful, generated template as a string and nil otherwise
+// returns error if not successful, generated template as a string and nil otherwise
 func (t Templates) GenerateToString(tpl *template.Template, d interface{}) (string, error) {
 	var buff bytes.Buffer
 	err := tpl.Execute(&buff, d)
@@ -67,7 +67,7 @@ func (t Templates) GenerateToString(tpl *template.Template, d interface{}) (stri
 	return buff.String(), nil
 }
 
-//loads the template from directory specified in TemplateLoader
+// loads the template from directory specified in TemplateLoader
 // the directory MUST be relative to base directory, i.e. services/terraformer/templates
 func (tl TemplateLoader) LoadTemplate(tplFile string) (*template.Template, error) {
 	tpl := template.New(tplFile).
@@ -77,7 +77,7 @@ func (tl TemplateLoader) LoadTemplate(tplFile string) (*template.Template, error
 			"protocolToOCIProtocolNumber":   utils.ProtocolNameToOCIProtocolNumber,
 			"protocolToAzureProtocolString": utils.ProtocolNameToAzureProtocolString,
 			"assignPriority":                utils.AssignPriority,
-			"enableAccNett":                 utils.EnableAccNet,
+			"enableAccNet":                  utils.EnableAccNet,
 		})
 
 	tpl, err := tpl.ParseFiles(filepath.Join(baseDirectory, tl.Directory, tplFile))
