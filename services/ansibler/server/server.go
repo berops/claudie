@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -71,6 +72,7 @@ func (*server) InstallVPN(_ context.Context, req *pb.InstallRequest) (*pb.Instal
 func (*server) TeardownLoadBalancers(ctx context.Context, req *pb.TeardownLBRequest) (*pb.TeardownLBResponse, error) {
 	var (
 		deleted         = make(map[string]*LBInfo)        //[k8sClusterName]lbInfo
+		attached        = make(map[string]bool)           // [k8sClusterName]Bool
 		k8sNodepools    = make(map[string][]*pb.NodePool) //[k8sClusterName][]nodepools
 		k8sNodepoolsKey = make(map[string]string)         //[k8sClusterName]keys
 	)
@@ -79,6 +81,13 @@ func (*server) TeardownLoadBalancers(ctx context.Context, req *pb.TeardownLBRequ
 	for _, k8s := range req.CurrentState.Clusters {
 		k8sNodepools[k8s.ClusterInfo.Name] = k8s.ClusterInfo.NodePools
 		k8sNodepoolsKey[k8s.ClusterInfo.Name] = k8s.ClusterInfo.PrivateKey
+	}
+
+	// Look for newly attached LoadBalancers.
+	for _, lb := range req.DesiredState.LoadBalancerClusters {
+		if hasAPIServerRole(lb.Roles) {
+			attached[lb.TargetedK8S] = true
+		}
 	}
 
 	// for each load-balancer that is being deleted collect LbData.
@@ -106,12 +115,19 @@ func (*server) TeardownLoadBalancers(ctx context.Context, req *pb.TeardownLBRequ
 		deleted[lb.TargetedK8S] = newLbInfo
 	}
 
-	if err := teardownLoadBalancers(deleted); err != nil {
+	var oldAPIEndpoints sync.Map
+	if err := teardownLoadBalancers(deleted, attached, &oldAPIEndpoints); err != nil {
 		log.Error().Msgf("Error encountered while setting up the LoadBalancers: %v", err)
 		return nil, fmt.Errorf("failed to teardown LoadBalancers: %w", err)
 	}
 
-	return &pb.TeardownLBResponse{}, nil
+	m := make(map[string]string)
+	oldAPIEndpoints.Range(func(key, value any) bool {
+		m[key.(string)] = value.(string)
+		return true
+	})
+
+	return &pb.TeardownLBResponse{OldApiEndpoinds: m}, nil
 }
 
 // SetUpLoadbalancers sets up the loadbalancers, DNS and verifies their configuration
@@ -145,9 +161,10 @@ func (*server) SetUpLoadbalancers(_ context.Context, req *pb.SetUpLBRequest) (*p
 		newLbInfo, ok := lbInfos[lb.TargetedK8S]
 		if !ok {
 			newLbInfo = &LBInfo{
-				TargetK8sNodepool:    np,
-				LbClusters:           make([]*LBData, 0),
-				TargetK8sNodepoolKey: k8sNodepoolsKey[lb.TargetedK8S],
+				TargetK8sNodepool:     np,
+				LbClusters:            make([]*LBData, 0),
+				TargetK8sNodepoolKey:  k8sNodepoolsKey[lb.TargetedK8S],
+				PreviousAPIEndpointLB: req.OldApiEndpoints[lb.TargetedK8S],
 			}
 		}
 

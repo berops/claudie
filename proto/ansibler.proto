@@ -14,7 +14,8 @@ message InstallResponse {
 
 message SetUpLBRequest { 
   Project desiredState = 1;
-  Project currentState = 2; 
+  Project currentState = 2;
+  map<string, string> oldApiEndpoints = 3;
 }
 message SetUpLBResponse {
   Project desiredState = 1;
@@ -25,9 +26,13 @@ message TeardownLBRequest {
   Project currentState = 1;
   // The deletedState represents the clusters that are going to be deleted.
   Project deletedState = 2;
+  Project desiredState = 3;
 }
 
-message TeardownLBResponse {}
+message TeardownLBResponse {
+  // Maps the K8sClusterName to old ApiEndpoint (if any)
+  map<string, string> oldApiEndpoinds = 1;
+}
 
 service AnsiblerService {
   //InstallNodeRequirements installs any requirments there are on all of the nodes

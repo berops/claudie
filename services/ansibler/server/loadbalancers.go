@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/Berops/claudie/internal/templateUtils"
 	"github.com/Berops/claudie/internal/utils"
@@ -62,10 +63,13 @@ const (
 	// LB attached and also keeps it but the endpoint has changed.
 	EndpointRenamed APIEndpointChangeState = "endpoint-renamed"
 
-	// RoleChanged represents the 5th case, the cluster had an existing
-	// LB attached that didn't have a ApiServer role attach but the
-	// desired state does.
-	RoleChanged APIEndpointChangeState = "role-changed"
+	// RoleChangedToAPIServer represents the 5th case, the cluster had an existing
+	// LB attached that didn't have a ApiServer role attach but the desired state does.
+	RoleChangedToAPIServer APIEndpointChangeState = "role-changed-to-api-server"
+
+	// RoleChangedFromAPIServer represents the 6th case, the cluster had an existing
+	// LB attached that had an ApiServer role attached but the desired state doesn't.
+	RoleChangedFromAPIServer APIEndpointChangeState = "role-changed-from-api-server"
 )
 
 type (
@@ -77,6 +81,9 @@ type (
 		TargetK8sNodepool []*pb.NodePool
 		// TargetK8sNodepoolKey is the key used for the nodepools.
 		TargetK8sNodepoolKey string
+		// PreviousAPIEndpointLB holds the endpoint of the previous Load-Balancer endpoint
+		// if there was any to be able to handle the endpoint change.
+		PreviousAPIEndpointLB string
 	}
 
 	LBData struct {
@@ -127,20 +134,24 @@ func (lb *LBData) APIEndpointState() APIEndpointChangeState {
 	// check if role changed.
 	isAPIServer := hasAPIServerRole(lb.CurrentLbCluster.Roles)
 	if hasAPIServerRole(lb.DesiredLbCluster.Roles) && !isAPIServer {
-		return RoleChanged
+		return RoleChangedToAPIServer
+	}
+
+	if isAPIServer && !hasAPIServerRole(lb.DesiredLbCluster.Roles) {
+		return RoleChangedFromAPIServer
 	}
 
 	return NoChange
 }
 
 // tearDownLoadBalancers will correctly destroy load-balancers including correctly selecting the new ApiServer if present.
-func teardownLoadBalancers(deleted map[string]*LBInfo) error {
+// If for a k8sCluster a new ApiServerLB is being attached instead of handling the apiEndpoint immediately it will be delayed and
+// will send the data to the dataChan which will be used later for the SetupLoadbalancers function to bypass generating the
+// certificates for the endpoint multiple times.
+func teardownLoadBalancers(deleted map[string]*LBInfo, attached map[string]bool, oldAPIEndpoints *sync.Map) error {
 	var k8sGroup errgroup.Group
 
 	for k8sClusterName, deleted := range deleted {
-		k8sClusterName := k8sClusterName
-		deleted := deleted
-
 		k8sDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", k8sClusterName, utils.CreateHash(4)))
 
 		if err := generateK8sBaseFiles(k8sDirectory, deleted); err != nil {
@@ -148,23 +159,24 @@ func teardownLoadBalancers(deleted map[string]*LBInfo) error {
 			continue
 		}
 
-		k8sGroup.Go(func() error {
-			var apiServer *LBData
+		func(deleted *LBInfo, k8sClusterName string) {
+			k8sGroup.Go(func() error {
+				apiServer := findCurrentAPILoadBalancer(deleted.LbClusters)
 
-			for _, lb := range deleted.LbClusters {
-				for _, role := range lb.CurrentLbCluster.Roles {
-					if role.RoleType == pb.RoleType_ApiServer {
-						apiServer = lb
+				// if there was a apiServer that is deleted, and we're attaching a new
+				// api server for the k8s cluster we store the old endpoint that will
+				// be used later in the SetUpLoadbalancers function.
+				if apiServer != nil && attached[k8sClusterName] {
+					oldAPIEndpoints.Store(k8sClusterName, apiServer.CurrentLbCluster.Dns.Endpoint)
+				} else {
+					if err := handleAPIEndpointChange(apiServer, deleted, k8sDirectory); err != nil {
+						return err
 					}
 				}
-			}
 
-			if err := handleAPIEndpointChange(apiServer, deleted, k8sDirectory); err != nil {
-				return err
-			}
-
-			return os.RemoveAll(k8sDirectory)
-		})
+				return os.RemoveAll(k8sDirectory)
+			})
+		}(deleted, k8sClusterName)
 	}
 
 	return k8sGroup.Wait()
@@ -176,9 +188,6 @@ func setUpLoadbalancers(lbInfos map[string]*LBInfo) error {
 	var errGroupK8s errgroup.Group
 	//iterate through k8s clusters LBs
 	for k8sClusterName, lbInfo := range lbInfos {
-		k8sClusterName := k8sClusterName
-		lbInfo := lbInfo
-
 		//set up all lbs for the k8s cluster, since single k8s can have multiple LBs
 		k8sDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", k8sClusterName, utils.CreateHash(4)))
 
@@ -189,38 +198,46 @@ func setUpLoadbalancers(lbInfos map[string]*LBInfo) error {
 			continue
 		}
 
-		//process LB clusters for single K8s cluster
-		errGroupK8s.Go(func() error {
-			var errGroupLB errgroup.Group
-			var apiServerLB *LBData
+		func(lbInfo *LBInfo, k8sClusterName string) {
+			//process LB clusters for single K8s cluster
+			errGroupK8s.Go(func() error {
+				var errGroupLB errgroup.Group
+				var apiServerLB *LBData
 
-			//iterate over all LBs for a single k8s cluster
-			for _, lb := range lbInfo.LbClusters {
-				lb := lb
-				directory := filepath.Join(k8sDirectory, fmt.Sprintf("%s-%s", lb.DesiredLbCluster.ClusterInfo.Name, lb.DesiredLbCluster.ClusterInfo.Hash))
+				//iterate over all LBs for a single k8s cluster
+				for _, lb := range lbInfo.LbClusters {
+					directory := filepath.Join(k8sDirectory, fmt.Sprintf("%s-%s", lb.DesiredLbCluster.ClusterInfo.Name, lb.DesiredLbCluster.ClusterInfo.Hash))
+					func(lb *LBData) {
+						errGroupLB.Go(func() error {
+							log.Info().Msgf("Setting up the LB %s", directory)
+							return setUpNginx(lb.DesiredLbCluster, lbInfo.TargetK8sNodepool, directory)
+						})
 
-				errGroupLB.Go(func() error {
-					log.Info().Msgf("Setting up the LB %s", directory)
-					return setUpNginx(lb.DesiredLbCluster, lbInfo.TargetK8sNodepool, directory)
-				})
-
-				for _, role := range lb.DesiredLbCluster.Roles {
-					if role.RoleType == pb.RoleType_ApiServer {
-						apiServerLB = lb
-					}
+						if hasAPIServerRole(lb.DesiredLbCluster.Roles) {
+							apiServerLB = lb
+						}
+					}(lb)
 				}
-			}
 
-			if err := errGroupLB.Wait(); err != nil {
-				return fmt.Errorf("error while setting up the loadbalancers for k8s cluster %s : %w", k8sClusterName, err)
-			}
+				if err := errGroupLB.Wait(); err != nil {
+					return fmt.Errorf("error while setting up the loadbalancers for k8s cluster %s : %w", k8sClusterName, err)
+				}
 
-			if err := handleAPIEndpointChange(apiServerLB, lbInfo, k8sDirectory); err != nil {
-				return fmt.Errorf("failed to find a candidate for the Api Server: %w", err)
-			}
+				// if we didn't found any ApiServerLB among the desired state LBs
+				// it's possible that we've changed the role from an API server to
+				// some other role. Which won't be caught by the above check, and we
+				// have to do an additional check for the ApiServerLB in the current state.
+				if apiServerLB == nil {
+					apiServerLB = findCurrentAPILoadBalancer(lbInfo.LbClusters)
+				}
 
-			return os.RemoveAll(k8sDirectory)
-		})
+				if err := handleAPIEndpointChange(apiServerLB, lbInfo, k8sDirectory); err != nil {
+					return fmt.Errorf("failed to find a candidate for the Api Server: %w", err)
+				}
+
+				return os.RemoveAll(k8sDirectory)
+			})
+		}(lbInfo, k8sClusterName)
 	}
 
 	return errGroupK8s.Wait()
@@ -242,7 +259,16 @@ func handleAPIEndpointChange(apiServer *LBData, k8sCluster *LBInfo, k8sDirectory
 	case EndpointRenamed:
 		oldEndpoint = apiServer.CurrentLbCluster.Dns.Endpoint
 		newEndpoint = apiServer.DesiredLbCluster.Dns.Endpoint
-	case RoleChanged:
+	case RoleChangedFromAPIServer:
+		// choose one of the control nodes as the api endpoint.
+		node, err := findAPIEndpointNode(k8sCluster.TargetK8sNodepool)
+		if err != nil {
+			return err
+		}
+
+		oldEndpoint = apiServer.CurrentLbCluster.Dns.Endpoint
+		newEndpoint = node.Public
+	case RoleChangedToAPIServer:
 		newEndpoint = apiServer.DesiredLbCluster.Dns.Endpoint
 		// 1st check if any other LB was previously an ApiServer.
 		if oldAPIServer := findCurrentAPILoadBalancer(k8sCluster.LbClusters); oldAPIServer != nil {
@@ -258,6 +284,15 @@ func handleAPIEndpointChange(apiServer *LBData, k8sCluster *LBInfo, k8sDirectory
 
 		oldEndpoint = node.Public
 	case AttachingLoadBalancer:
+		newEndpoint = apiServer.DesiredLbCluster.Dns.Endpoint
+
+		// 1st. check if there was any APIServer-LB previously attached to the k8scluster
+		if k8sCluster.PreviousAPIEndpointLB != "" {
+			oldEndpoint = k8sCluster.PreviousAPIEndpointLB
+			break
+		}
+
+		// 2nd, fallback to choosing one of the control nodes as the old ApiServer endpoint.
 		node, err := findAPIEndpointNode(k8sCluster.TargetK8sNodepool)
 		if err != nil {
 			// If no Node has type ApiEndpoint this means that the cluster
@@ -267,7 +302,6 @@ func handleAPIEndpointChange(apiServer *LBData, k8sCluster *LBInfo, k8sDirectory
 		}
 
 		oldEndpoint = node.Public
-		newEndpoint = apiServer.DesiredLbCluster.Dns.Endpoint
 	case DetachingLoadBalancer:
 		// Choose one of the control nodes as the API endpoint.
 		node, err := findAPIEndpointNode(k8sCluster.TargetK8sNodepool)

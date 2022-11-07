@@ -16,7 +16,7 @@ import (
 )
 
 // buildConfig is function used to build infra based on the desired state concurrently
-func buildConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig bool) (err error) {
+func buildConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig bool, oldAPIEndpoints map[string]string) (err error) {
 	log.Info().Msgf("processConfig received config: %s, is tmpConfig: %t", config.GetName(), isTmpConfig)
 	// call Terraformer to build infra
 	currentState, desiredState, err := callTerraformer(config.GetCurrentState(), config.GetDesiredState())
@@ -30,7 +30,7 @@ func buildConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig bo
 	config.CurrentState = currentState
 	config.DesiredState = desiredState
 	// call Ansibler to build VPN
-	desiredState, err = callAnsibler(config.GetDesiredState(), config.GetCurrentState())
+	desiredState, err = callAnsibler(config.GetDesiredState(), config.GetCurrentState(), oldAPIEndpoints)
 	if err != nil {
 		err1 := saveErrorMessage(config, c, err)
 		if err1 != nil {
@@ -75,24 +75,25 @@ func buildConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig bo
 
 // teardownLoadBalancers destroy the Load-Balancers (if any) for the config generated
 // by the getDeletedClusterConfig function.
-func teardownLoadBalancers(deleted, current *pb.Project) error {
+func teardownLoadBalancers(deleted, current, desired *pb.Project) (map[string]string, error) {
 	conn, err := utils.GrpcDialWithInsecure("ansibler", envs.AnsiblerURL)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	log.Info().Msgf("Calling TeardownLoadBalancers on ansibler")
 
-	_, err = ansibler.TeardownLoadBalancers(pb.NewAnsiblerServiceClient(conn), &pb.TeardownLBRequest{
+	resp, err := ansibler.TeardownLoadBalancers(pb.NewAnsiblerServiceClient(conn), &pb.TeardownLBRequest{
 		CurrentState: current,
 		DeletedState: deleted,
+		DesiredState: desired,
 	})
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return conn.Close()
+	return resp.OldApiEndpoinds, conn.Close()
 }
 
 // destroyConfig destroys existing clusters infra for a config, including the deletion
@@ -151,15 +152,13 @@ func callTerraformer(currentState *pb.Project, desiredState *pb.Project) (*pb.Pr
 }
 
 // callAnsibler passes config to ansibler to set up VPN
-func callAnsibler(desiredState, currentState *pb.Project) (*pb.Project, error) {
+func callAnsibler(desiredState, currentState *pb.Project, oldAPIEndpoints map[string]string) (*pb.Project, error) {
 	cc, err := utils.GrpcDialWithInsecure("ansibler", envs.AnsiblerURL)
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		utils.CloseClientConnection(cc)
-		log.Info().Msgf("Closing the connection for ansibler")
-	}()
+	defer utils.CloseClientConnection(cc)
+
 	// Creating the client
 	c := pb.NewAnsiblerServiceClient(cc)
 	log.Info().Msgf("Calling InstallVPN on ansibler")
@@ -173,7 +172,7 @@ func callAnsibler(desiredState, currentState *pb.Project) (*pb.Project, error) {
 		return nil, err
 	}
 	log.Info().Msgf("Calling SetUpLoadbalancers on ansibler")
-	setUpRes, err := ansibler.SetUpLoadbalancers(c, &pb.SetUpLBRequest{DesiredState: installRes.DesiredState, CurrentState: currentState})
+	setUpRes, err := ansibler.SetUpLoadbalancers(c, &pb.SetUpLBRequest{DesiredState: installRes.DesiredState, CurrentState: currentState, OldApiEndpoints: oldAPIEndpoints})
 	if err != nil {
 		return nil, err
 	}

@@ -75,7 +75,8 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 		configToDelete := getDeletedClusterConfig(config)
 
 		// we need to correctly destroy the load-balancers for the new API endpoint.
-		if err := teardownLoadBalancers(configToDelete.CurrentState, config.CurrentState); err != nil {
+		oldAPIEndpoints, err := teardownLoadBalancers(configToDelete.CurrentState, config.CurrentState, config.DesiredState)
+		if err != nil {
 			log.Error().Msgf("Failed to teardown LoadBalancers: %v", err)
 		}
 
@@ -94,7 +95,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 		//if tmpConfig is not nil, first apply it
 		if tmpConfig != nil {
 			log.Info().Msg("Processing a tmpConfig...")
-			if err := buildConfig(tmpConfig, c, true); err != nil {
+			if err := buildConfig(tmpConfig, c, true, oldAPIEndpoints); err != nil {
 				log.Error().Err(err).Send()
 			}
 			config.CurrentState = tmpConfig.DesiredState
@@ -109,7 +110,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 
 		log.Info().Msgf("Processing config %s", config.Name)
 
-		if err = buildConfig(config, c, false); err != nil {
+		if err = buildConfig(config, c, false, oldAPIEndpoints); err != nil {
 			log.Error().Err(err).Send()
 		}
 	}()
