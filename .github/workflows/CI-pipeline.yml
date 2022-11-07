@@ -87,6 +87,11 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
+      - name: create and use docker context
+        run: |
+          docker context create claudie
+          docker context use claudie
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
