@@ -27,12 +27,13 @@ type server struct {
 	pb.UnimplementedAnsiblerServiceServer
 }
 
-//InstallNodeRequirements installs any requirements there are on all of the nodes
+// InstallNodeRequirements installs any requirements there are on all of the nodes
 func (*server) InstallNodeRequirements(_ context.Context, req *pb.InstallRequest) (*pb.InstallResponse, error) {
 	var k8sNodepools []*NodepoolInfo
 	//add k8s nodes to k8sNodepools
 	for _, cluster := range req.DesiredState.Clusters {
-		k8sNodepools = append(k8sNodepools, &NodepoolInfo{Nodepools: cluster.ClusterInfo.NodePools, PrivateKey: cluster.ClusterInfo.PrivateKey, ID: cluster.ClusterInfo.Name})
+		id := fmt.Sprintf("%s-%s", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
+		k8sNodepools = append(k8sNodepools, &NodepoolInfo{Nodepools: cluster.ClusterInfo.NodePools, PrivateKey: cluster.ClusterInfo.PrivateKey, ID: id})
 	}
 	//since all nodes need to have longhorn req installed, we do not need to sort them in any way
 	err := installLonghornRequirements(k8sNodepools)
@@ -43,19 +44,21 @@ func (*server) InstallNodeRequirements(_ context.Context, req *pb.InstallRequest
 	return &pb.InstallResponse{DesiredState: req.DesiredState}, nil
 }
 
-//InstallVPN installs VPN between nodes in the k8s cluster and lb clusters
+// InstallVPN installs VPN between nodes in the k8s cluster and lb clusters
 func (*server) InstallVPN(_ context.Context, req *pb.InstallRequest) (*pb.InstallResponse, error) {
 	vpnNodepools := make(map[string]*VPNInfo) //[k8sClusterName][]nodepoolInfos
 	//add k8s nodepools to vpn nodepools
 	for _, cluster := range req.DesiredState.Clusters {
 		var np []*NodepoolInfo
-		np = append(np, &NodepoolInfo{Nodepools: cluster.ClusterInfo.NodePools, PrivateKey: cluster.ClusterInfo.PrivateKey, ID: cluster.ClusterInfo.Name})
+		id := fmt.Sprintf("%s-%s", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
+		np = append(np, &NodepoolInfo{Nodepools: cluster.ClusterInfo.NodePools, PrivateKey: cluster.ClusterInfo.PrivateKey, ID: id})
 		vpnNodepools[cluster.ClusterInfo.Name] = &VPNInfo{Network: cluster.Network, NodepoolInfo: np}
 	}
 	//add LB nodepools to vpn nodepools, so LBs will be part of the VPN
 	for _, lbCluster := range req.DesiredState.LoadBalancerClusters {
 		if nodepoolInfos, ok := vpnNodepools[lbCluster.TargetedK8S]; ok {
-			nodepoolInfos.NodepoolInfo = append(nodepoolInfos.NodepoolInfo, &NodepoolInfo{Nodepools: lbCluster.ClusterInfo.NodePools, PrivateKey: lbCluster.ClusterInfo.PrivateKey, ID: lbCluster.ClusterInfo.Name})
+			id := fmt.Sprintf("%s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash)
+			nodepoolInfos.NodepoolInfo = append(nodepoolInfos.NodepoolInfo, &NodepoolInfo{Nodepools: lbCluster.ClusterInfo.NodePools, PrivateKey: lbCluster.ClusterInfo.PrivateKey, ID: id})
 		}
 	}
 	//there will be N VPNs for N clusters, thus we sorted the nodes based on the k8s cluster name
@@ -67,7 +70,7 @@ func (*server) InstallVPN(_ context.Context, req *pb.InstallRequest) (*pb.Instal
 	return &pb.InstallResponse{DesiredState: req.DesiredState}, nil
 }
 
-//SetUpLoadbalancers sets up the loadbalancers, DNS and verifies their configuration
+// SetUpLoadbalancers sets up the loadbalancers, DNS and verifies their configuration
 func (*server) SetUpLoadbalancers(_ context.Context, req *pb.SetUpLBRequest) (*pb.SetUpLBResponse, error) {
 	lbInfos := make(map[string]*LBInfo)             //[k8sClusterName]lbInfo
 	k8sNodepools := make(map[string][]*pb.NodePool) //[k8sClusterName][]nodepools
