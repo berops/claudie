@@ -84,6 +84,19 @@ jobs:
         if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
         run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Create and use docker context
+        run: |
+          docker context create claudie
+          docker context use claudie
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          endpoint: claudie
+
       # Login to Docker Hub
       - name: Login to DockerHub
         if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
@@ -93,27 +106,17 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN}}
 
       # Build the new images that were changed by a recent commit - tag image latest as well for testing
-      - name: Build new images
+      - name: Build and push new images
         if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
         run: |
           arr=(${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }})
           for path in "${arr[@]}"
           do
             echo "-----Building $path-----"
-            IMGTAG="${{secrets.DOCKERHUB_USERNAME}}/$path:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}"
-            DOCKER_BUILDKIT=1 docker build --tag $IMGTAG -f ./services/$path/Dockerfile . 
+            IMGTAG="${{secrets.DOCKERHUB_USERNAME}}/$path:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}" 
+            DOCKER_BUILDKIT=1 docker buildx build --push --platform linux/amd64,linux/arm64 --tag $IMGTAG -f ./services/$path/Dockerfile . 
           done
 
-      # Push images to DockerHub - latest tag is overwritten
-      - name: Push new images
-        if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
-        run: |
-          arr=(${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }})
-
-          for path in "${arr[@]}"
-          do
-            docker push ${{secrets.DOCKERHUB_USERNAME}}/$path:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
-          done
   #--------------------------------------------------------------------------------------------------
   edit-kustomization:
     runs-on: self-hosted
