@@ -103,11 +103,11 @@ type Cluster struct {
 	Name    string `validate:"required" yaml:"name"`
 	Version string `validate:"required,ver" yaml:"version"`
 	Network string `validate:"required,cidrv4" yaml:"network"`
-	Pools   Pool   `yaml:"pools"`
+	Pools   Pool   `validate:"dive" yaml:"pools"`
 }
 
 type Pool struct {
-	Control []string `yaml:"control"`
+	Control []string `validate:"min=1" yaml:"control"`
 	Compute []string `yaml:"compute"`
 }
 
