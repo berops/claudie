@@ -87,7 +87,7 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
-      - name: create and use docker context
+      - name: Create and use docker context
         run: |
           docker context create claudie
           docker context use claudie
@@ -114,13 +114,14 @@ jobs:
           do
             echo "-----Building $path-----"
             IMGTAG="${{secrets.DOCKERHUB_USERNAME}}/$path:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}"
-            DOCKER_BUILDKIT=1 docker buildx build --platform linux/amd64,linux/arm64 --tag $IMGTAG -f ./services/$path/Dockerfile . 
+            DOCKER_BUILDKIT=1 docker buildx build --push --platform linux/amd64,linux/arm64 --tag $IMGTAG -f ./services/$path/Dockerfile . 
           done
 
       # Push images to DockerHub - latest tag is overwritten
       - name: Push new images
         if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
         run: |
+          docker images 
           arr=(${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }})
 
           for path in "${arr[@]}"
