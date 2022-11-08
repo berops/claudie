@@ -152,15 +152,18 @@ Collection of data defining Azure cloud provider configuration.
 
 ## Nodepools
 
-Collection of static and dynamic nodepool specification. These are "blueprints" for the nodepools, which will be created once referenced in the `kubernetes` or `loadBalancer` clusters. This allows you to use the same nodepool for multiple purposes.
+Collection of static and dynamic nodepool specification, to be referenced in the `kubernetes` or `loadBalancer` clusters.
 
 - `dynamic` [Dynamic](#dynamic)
 
-  List of dynamically created nodepools of not yet existing machines, used for Kubernetes or loadbalancer clusters.
+  List of dynamically to-be-created nodepools of not yet existing machines, used for Kubernetes or loadbalancer clusters. 
+  
+  These are only blueprints, and will only be created per reference in `kubernetes` or `loadBalancer` clusters. E.g. if the nodepool isn't used, it won't even be created. Or if the same nodepool is used in two different clusters, it will be created twice.
+In OOP analogy, a dynamic nodepool would be a class that would get instantiated `N >= 0` times depending on which clusters reference it.
 
 - `static` [WORK IN PROGRESS]
 
-  List of statically created nodepools of already existing machines, not created by of Claudie, used for Kubernetes or loadbalancer clusters. Typically, these would be on-premises machines.
+  List of static nodepools of already existing machines, not created by of Claudie, used for Kubernetes or loadbalancer clusters. Typically, these would be on-premises machines.
 
 
 ## Dynamic

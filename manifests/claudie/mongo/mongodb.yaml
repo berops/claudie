@@ -26,10 +26,10 @@ spec:
         image: mongo:5
         resources:
           requests:
-            cpu: 10m
+            cpu: 40m
             memory: 100Mi
           limits:
-            cpu: 35m
+            cpu: 80m
             memory: 200M
         env:
           - name: MONGO_INITDB_ROOT_USERNAME
