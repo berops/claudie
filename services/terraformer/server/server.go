@@ -93,22 +93,21 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 		func(c Cluster) {
 			errGroup.Go(func() error {
 				if err := c.Build(); err != nil {
-					log.Error().Msgf("Failed to build cluster %v, due to: %v", cluster.Id(), err)
-					return err
+					return fmt.Errorf("error while building the cluster %v : %w", cluster.Id(), err)
 				}
 				return nil
 			})
 		}(cluster)
 	}
-	err := errGroup.Wait()
-	if err != nil {
+	if err := errGroup.Wait(); err != nil {
+		log.Error().Msgf("Failed to build infra for project %s : %v", desiredState.Name, err)
 		return &pb.BuildInfrastructureResponse{
 				CurrentState: currentState,
 				DesiredState: desiredState,
 				ErrorMessage: err.Error()},
 			fmt.Errorf("BuildInfrastructure got error: %w", err)
 	}
-	log.Info().Msg("Infrastructure was successfully generated")
+	log.Info().Msgf("Infrastructure was successfully generated for project %s", desiredState.Name)
 	return &pb.BuildInfrastructureResponse{
 		CurrentState: currentState,
 		DesiredState: desiredState,
@@ -117,8 +116,6 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 }
 
 func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrastructureRequest) (*pb.DestroyInfrastructureResponse, error) {
-	log.Info().Msgf("DestroyInfrastructure function was invoked with config: %v", req.GetConfig().GetName())
-
 	config := req.GetConfig()
 	projectName := config.CurrentState.Name
 
@@ -148,8 +145,7 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 		func(c Cluster) {
 			errGroup.Go(func() error {
 				if err := c.Destroy(); err != nil {
-					log.Error().Msgf("Failed to destroy cluster %v due to: %v", c.Id(), err)
-					return err
+					return fmt.Errorf("failed to destroy cluster %v : %w", cluster.Id(), err)
 				}
 
 				// Key under which the state file is stored in minIO.
@@ -165,9 +161,11 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 
 	if err := errGroup.Wait(); err != nil {
 		config.ErrorMessage = err.Error()
+		log.Error().Msgf("Failed to destroy the infra for project %s : %v", req.Config.Name, err)
 		return &pb.DestroyInfrastructureResponse{Config: config}, fmt.Errorf("failed to destroy infrastructure: %w", err)
 	}
 
+	log.Info().Msgf("Infra for project %s was successfully destroyed", req.Config.Name)
 	config.ErrorMessage = ""
 	return &pb.DestroyInfrastructureResponse{Config: config}, nil
 }
