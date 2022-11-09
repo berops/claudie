@@ -21,15 +21,15 @@ type Deleter struct {
 	cluster     *pb.K8Scluster
 }
 
-//New returns new Deleter struct, used for node deletion from a k8s cluster
-//masterNodes - master nodes to DELETE
-//workerNodes - worker nodes to DELETE
+// New returns new Deleter struct, used for node deletion from a k8s cluster
+// masterNodes - master nodes to DELETE
+// workerNodes - worker nodes to DELETE
 func New(masterNodes, workerNodes []string, cluster *pb.K8Scluster) *Deleter {
 	return &Deleter{masterNodes: masterNodes, workerNodes: workerNodes, cluster: cluster}
 }
 
-//DeleteNodes deletes nodes specified in d.masterNodes and d.workerNodes
-//return nil if successful, error otherwise
+// DeleteNodes deletes nodes specified in d.masterNodes and d.workerNodes
+// return nil if successful, error otherwise
 func (d *Deleter) DeleteNodes() (*pb.K8Scluster, error) {
 	kubectl := kubectl.Kubectl{Kubeconfig: d.cluster.Kubeconfig}
 	// get real node names
@@ -61,10 +61,10 @@ func (d *Deleter) DeleteNodes() (*pb.K8Scluster, error) {
 	return d.cluster, nil
 }
 
-//deleteNodesByName deletes node from cluster by performing
-//kubectl drain <node-name> --ignore-daemonsets --delete-emptydir-data
-//kubectl delete node <node-name>
-//return nil if successful, error otherwise
+// deleteNodesByName deletes node from cluster by performing
+// kubectl drain <node-name> --ignore-daemonsets --delete-emptydir-data
+// kubectl delete node <node-name>
+// return nil if successful, error otherwise
 func deleteNodesByName(kc kubectl.Kubectl, nodesToDelete, realNodeNames []string) error {
 	for _, nodeName := range nodesToDelete {
 		realNodeName := utils.FindName(realNodeNames, nodeName)
@@ -88,8 +88,8 @@ func deleteNodesByName(kc kubectl.Kubectl, nodesToDelete, realNodeNames []string
 	return nil
 }
 
-//deleteFromEtcd function deletes members of the etcd cluster. This needs to be done in order to prevent any data corruption in etcd
-//return nil if successful, error otherwise
+// deleteFromEtcd function deletes members of the etcd cluster. This needs to be done in order to prevent any data corruption in etcd
+// return nil if successful, error otherwise
 func (d *Deleter) deleteFromEtcd(kc kubectl.Kubectl) error {
 	mainMasterNode := getMainMaster(d.cluster)
 	if mainMasterNode == nil {
@@ -125,7 +125,7 @@ func (d *Deleter) deleteFromEtcd(kc kubectl.Kubectl) error {
 	return nil
 }
 
-//updateClusterData will remove deleted nodes from nodepools
+// updateClusterData will remove deleted nodes from nodepools
 func (d *Deleter) updateClusterData() {
 	for _, name := range append(d.masterNodes, d.workerNodes...) {
 		for _, nodepool := range d.cluster.ClusterInfo.NodePools {
@@ -139,21 +139,20 @@ func (d *Deleter) updateClusterData() {
 	}
 }
 
-//deleteFromLonghorn will delete node from nodes.longhorn.io
-//return nil if successful, error otherwise
+// deleteFromLonghorn will delete node from nodes.longhorn.io
+// return nil if successful, error otherwise
 func (d *Deleter) deleteFromLonghorn(kc kubectl.Kubectl) error {
 	for _, nodeName := range d.workerNodes {
 		log.Info().Msgf("Deleting node %s from nodes.longhorn.io", nodeName)
-		err := kc.KubectlDeleteResource("nodes.longhorn.io", nodeName, "longhorn-system")
-		if err != nil {
-			return err
+		if err := kc.KubectlDeleteResource("nodes.longhorn.io", nodeName, "longhorn-system"); err != nil {
+			return fmt.Errorf("error while deleting node %s from nodes.longhorn.io : %w", nodeName, err)
 		}
 	}
 	return nil
 }
 
-//getMainMaster iterates over all control nodes in cluster and returns API EP node
-//return API EP node if successful, nil otherwise
+// getMainMaster iterates over all control nodes in cluster and returns API EP node
+// return API EP node if successful, nil otherwise
 func getMainMaster(cluster *pb.K8Scluster) *pb.Node {
 	for _, nodepool := range cluster.ClusterInfo.GetNodePools() {
 		for _, node := range nodepool.Nodes {
@@ -162,20 +161,20 @@ func getMainMaster(cluster *pb.K8Scluster) *pb.Node {
 			}
 		}
 	}
-	log.Error().Msg("APIEndpoint node not found")
+	log.Error().Msgf("APIEndpoint node for cluster %s not found", cluster.ClusterInfo.Name)
 	return nil
 }
 
-//getEtcdPodNames returns slice of strings containing all etcd pod names
+// getEtcdPodNames returns slice of strings containing all etcd pod names
 func getEtcdPodNames(kc kubectl.Kubectl, masterNodeName string) ([]string, error) {
 	etcdPodsBytes, err := kc.KubectlGetEtcdPods(masterNodeName)
 	if err != nil {
-		return nil, fmt.Errorf("cannot find etcd pods in cluster with master node %s  : %w", masterNodeName, err)
+		return nil, fmt.Errorf("cannot find etcd pods in cluster with master node %s : %w", masterNodeName, err)
 	}
 	return strings.Split(string(etcdPodsBytes), "\n"), nil
 }
 
-//getEtcdMembers will return slice of strings, each element containing etcd member info from "etcdctl member list"
+// getEtcdMembers will return slice of strings, each element containing etcd member info from "etcdctl member list"
 //
 // Example output:
 // [
@@ -197,8 +196,8 @@ func getEtcdMembers(kc kubectl.Kubectl, etcdPod string) ([]string, error) {
 	return etcdMembersStrings, nil
 }
 
-//getEtcdPodInfo tokenizes an etcdMemberInfo and data containing node name and etcd member hash for all etcd members
-//return slice of etcdPodInfo containing node name and etcd member hash for all etcd members
+// getEtcdPodInfo tokenizes an etcdMemberInfo and data containing node name and etcd member hash for all etcd members
+// return slice of etcdPodInfo containing node name and etcd member hash for all etcd members
 func getEtcdPodInfo(etcdMembersString []string) []etcdPodInfo {
 	var etcdPodInfos []etcdPodInfo
 	for _, etcdString := range etcdMembersString {

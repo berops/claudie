@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/Berops/claudie/proto/pb"
-	"github.com/rs/zerolog/log"
 )
 
 func SetUpStorage(c pb.KuberServiceClient, req *pb.SetUpStorageRequest) (*pb.SetUpStorageResponse, error) {
@@ -13,7 +12,6 @@ func SetUpStorage(c pb.KuberServiceClient, req *pb.SetUpStorageRequest) (*pb.Set
 	if err != nil {
 		return nil, fmt.Errorf("error while calling SetUpStorage on Kuber: %w", err)
 	}
-	log.Info().Msg("Storage was successfully set up")
 	return res, nil
 }
 
@@ -22,7 +20,6 @@ func StoreKubeconfig(c pb.KuberServiceClient, req *pb.StoreKubeconfigRequest) (*
 	if err != nil {
 		return nil, fmt.Errorf("error while calling StoreKubeconfig on kuber: %w", err)
 	}
-	log.Info().Msg("Saved Kubeconfig Secret successfully")
 	return res, nil
 }
 
@@ -31,7 +28,6 @@ func DeleteKubeconfig(c pb.KuberServiceClient, req *pb.DeleteKubeconfigRequest) 
 	if err != nil {
 		return nil, fmt.Errorf("error while calling DeleteKubeconfig on kuber: %w", err)
 	}
-	log.Info().Msgf("Deleted kubeconfig secret successfully")
 	return res, nil
 }
 
@@ -40,6 +36,5 @@ func DeleteNodes(c pb.KuberServiceClient, req *pb.DeleteNodesRequest) (*pb.Delet
 	if err != nil {
 		return nil, fmt.Errorf("error while calling DeleteNodes on kuber: %w", err)
 	}
-	log.Info().Msgf("Nodes were deleted successfully")
 	return res, nil
 }

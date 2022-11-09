@@ -46,17 +46,18 @@ func (s *server) SetUpStorage(ctx context.Context, req *pb.SetUpStorageRequest) 
 				longhorn := longhorn.Longhorn{Cluster: c, Directory: clusterDir}
 				err := longhorn.SetUp()
 				if err != nil {
-					log.Error().Msgf("Error while setting up the longhorn for %s : %v", c.ClusterInfo.Name, err)
-					return fmt.Errorf("error while setting up the longhorn")
+					return fmt.Errorf("error while setting up the longhorn for %s : %v", clusterID, err)
 				}
+				log.Info().Msgf("Longhorn successfully set up on the cluster %s", clusterID)
 				return nil
 			})
 		}(cluster)
 	}
-	err := errGroup.Wait()
-	if err != nil {
+	if err := errGroup.Wait(); err != nil {
+		log.Error().Msgf("Error encountered in SetUpStorage : %v", err)
 		return &pb.SetUpStorageResponse{DesiredState: desiredState, ErrorMessage: fmt.Sprintf("Error encountered in SetUpStorage: %v", err)}, err
 	}
+	log.Info().Msgf("Storage was successfully set up for project %s", desiredState.Name)
 	return &pb.SetUpStorageResponse{DesiredState: desiredState, ErrorMessage: ""}, nil
 }
 
@@ -70,8 +71,7 @@ func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigReq
 
 			if _, err := os.Stat(clusterDir); os.IsNotExist(err) {
 				if err := os.Mkdir(clusterDir, os.ModePerm); err != nil {
-					log.Error().Msgf("Could not create a directory for %s", c.ClusterInfo.Name)
-					return err
+					return fmt.Errorf("Could not create a directory for %s", c.ClusterInfo.Name)
 				}
 			}
 			sec := secret.New()
@@ -83,8 +83,8 @@ func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigReq
 			if namespace == "" {
 				// the claudie is in local deployment - print kubeconfig
 				log.Info().Msgf("The kubeconfig for %s:", clusterID)
-				//print and clean-up
 				fmt.Println(c.Kubeconfig)
+				//print and clean-up
 				err := os.RemoveAll(sec.Directory)
 				if err != nil {
 					return fmt.Errorf("error while cleaning up the temporary directory %s : %w", sec.Directory, err)
@@ -94,17 +94,16 @@ func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigReq
 			// apply secret
 			err := sec.Apply(namespace, "")
 			if err != nil {
-				log.Error().Msgf("Error while creating the kubeconfig secret for %s", c.ClusterInfo.Name)
-				return fmt.Errorf("error while creating kubeconfig secret")
+				return fmt.Errorf("error while creating the kubeconfig secret for %s", c.ClusterInfo.Name)
 			}
-			log.Info().Msgf("Secret with kubeconfig for cluster %s has been created in namespace %v", c.ClusterInfo.Name, namespace)
 			return nil
 		})
 	}(cluster)
-	err := errGroup.Wait()
-	if err != nil {
-		return &pb.StoreKubeconfigResponse{ErrorMessage: err.Error()}, err
+	if err := errGroup.Wait(); err != nil {
+		log.Error().Msgf("Error encountered in StoreKubeconfig %v", err)
+		return &pb.StoreKubeconfigResponse{ErrorMessage: fmt.Sprintf("Error encountered in StoreKubeconfig %v", err)}, err
 	}
+	log.Info().Msgf("Kubeconfig was successfully stored for cluster %s", cluster.ClusterInfo.Name)
 	return &pb.StoreKubeconfigResponse{ErrorMessage: ""}, nil
 }
 
@@ -124,17 +123,16 @@ func (s *server) DeleteKubeconfig(ctx context.Context, req *pb.DeleteKubeconfigR
 			// delete kubeconfig secret
 			err := kc.KubectlDeleteResource("secret", secretName, namespace)
 			if err != nil {
-				log.Error().Msgf("Failed to delete kubeconfig secret")
-				return err
+				return fmt.Errorf("error while deleting kubeconfig secret for %s : %w", c.ClusterInfo.Name, err)
 			}
-			log.Info().Msgf("Deleted kubeconfig secret: cluster: %s Namespace: %s", secretName, namespace)
 			return nil
 		})
 	}(cluster)
-	err := errGroup.Wait()
-	if err != nil {
-		return &pb.DeleteKubeconfigResponse{ErrorMessage: err.Error()}, err
+	if err := errGroup.Wait(); err != nil {
+		log.Error().Msgf("Error encountered in DeleteKubeconfig %v", err)
+		return &pb.DeleteKubeconfigResponse{ErrorMessage: fmt.Sprintf("Error encountered in DeleteKubeconfig %v", err)}, err
 	}
+	log.Info().Msgf("Deleted kubeconfig secret for cluster %s", cluster.ClusterInfo.Name)
 	return &pb.DeleteKubeconfigResponse{ErrorMessage: ""}, nil
 }
 
@@ -145,6 +143,7 @@ func (s *server) DeleteNodes(ctx context.Context, req *pb.DeleteNodesRequest) (*
 		log.Error().Msgf("Error while deleting nodes for %s : %v", req.Cluster.ClusterInfo.Name, err)
 		return &pb.DeleteNodesResponse{ErrorMessage: err.Error()}, err
 	}
+	log.Info().Msgf("Nodes for cluster %s were successfully deleted", req.Cluster.ClusterInfo.Name)
 	return &pb.DeleteNodesResponse{ErrorMessage: "", Cluster: cluster}, nil
 }
 

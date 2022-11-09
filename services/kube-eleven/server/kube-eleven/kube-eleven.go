@@ -9,7 +9,6 @@ import (
 	"github.com/Berops/claudie/internal/utils"
 	"github.com/Berops/claudie/proto/pb"
 	"github.com/Berops/claudie/services/kube-eleven/server/kubeone"
-	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -66,10 +65,8 @@ func (k *KubeEleven) BuildCluster() error {
 	}
 	// Clean up
 	if err := os.RemoveAll(k.directory); err != nil {
-		log.Error().Msgf("error while removing files from %s: %v", k.directory, err)
-		return err
+		return fmt.Errorf("error while removing files from %s: %v", k.directory, err)
 	}
-	log.Info().Msgf("Cluster %s has been set up", k.K8sCluster.ClusterInfo.Name)
 	return nil
 }
 
