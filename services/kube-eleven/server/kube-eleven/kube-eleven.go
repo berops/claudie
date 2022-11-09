@@ -21,60 +21,60 @@ const (
 	outputDirectory = "clusters"
 )
 
-//KubeEleven struct
-//K8sCluster - *pb.K8sCluster that will be set up
-//LBClusters - slice of *pb.LBClusters which can be used as loadbalancer for specified K8sCluster
-//			   When nil, endpoint is set to be first master node
+// KubeEleven struct
+// K8sCluster - *pb.K8sCluster that will be set up
+// LBClusters - slice of *pb.LBClusters which can be used as loadbalancer for specified K8sCluster
+//
+//	When nil, endpoint is set to be first master node
 type KubeEleven struct {
 	directory  string //directory of files for kubeone
 	K8sCluster *pb.K8Scluster
 	LBClusters []*pb.LBcluster
 }
 
-//templateData struct is data used in template creation
+// templateData struct is data used in template creation
 type templateData struct {
 	APIEndpoint string
 	Kubernetes  string
 	Nodes       []*pb.Node
 }
 
-//Apply will create all necessary files and apply kubeone, which will set up the cluster completely
-//return nil if successful, error otherwise
+// Apply will create all necessary files and apply kubeone, which will set up the cluster completely
+// return nil if successful, error otherwise
 func (k *KubeEleven) BuildCluster() error {
 	k.directory = filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", k.K8sCluster.ClusterInfo.Name, k.K8sCluster.ClusterInfo.Hash))
 	//generate files needed for kubeone
 	err := k.generateFiles()
 	if err != nil {
-		return fmt.Errorf("error while generating files for %s :%w", k.K8sCluster.ClusterInfo.Name, err)
+		return fmt.Errorf("error while generating files for %s : %w", k.K8sCluster.ClusterInfo.Name, err)
 	}
 	//run kubeone apply
 	kubeone := kubeone.Kubeone{Directory: k.directory}
 	err = kubeone.Apply()
 	if err != nil {
-		return fmt.Errorf("error while reading cluster-config in %s: %w", k.directory, err)
+		return fmt.Errorf("error while reading cluster-config in %s : %w", k.directory, err)
 	}
 	// Save generated kubeconfig file to cluster config
 	kc, err := readKubeconfig(filepath.Join(k.directory, kubeconfigFile))
 	if err != nil {
-		return fmt.Errorf("error while reading cluster-config in %s: %w", k.directory, err)
+		return fmt.Errorf("error while reading cluster-config in %s : %w", k.directory, err)
 
 	}
 	//check if kubeconfig is not empty and set it
 	if len(kc) > 0 {
 		k.K8sCluster.Kubeconfig = kc
-		log.Info().Msgf("Kubeconfig has been saved for the cluster %s", k.K8sCluster.ClusterInfo.Name)
 	}
 	// Clean up
 	if err := os.RemoveAll(k.directory); err != nil {
 		log.Error().Msgf("error while removing files from %s: %v", k.directory, err)
 		return err
 	}
-	log.Info().Msgf("Kube-eleven has finished setting up the cluster %s", k.K8sCluster.ClusterInfo.Name)
+	log.Info().Msgf("Cluster %s has been set up", k.K8sCluster.ClusterInfo.Name)
 	return nil
 }
 
-//generateFiles will generate files needed for kubeone execution like kubeone.yaml, key.pem, etc..
-//returns nil if successful, error otherwise
+// generateFiles will generate files needed for kubeone execution like kubeone.yaml, key.pem, etc..
+// returns nil if successful, error otherwise
 func (k *KubeEleven) generateFiles() error {
 	template := templateUtils.Templates{Directory: k.directory}
 	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.KubeElevenTemplates}
@@ -102,8 +102,8 @@ func (k *KubeEleven) generateFiles() error {
 	return nil
 }
 
-//generateTemplateData will create and fill up templateData with appropriate values
-//return templateData with everything already set up
+// generateTemplateData will create and fill up templateData with appropriate values
+// return templateData with everything already set up
 func (k *KubeEleven) generateTemplateData() templateData {
 	var d templateData
 	// Get the API endpoint. If it is not set, use the first control node
@@ -120,8 +120,8 @@ func (k *KubeEleven) generateTemplateData() templateData {
 	return d
 }
 
-//findAPIEndpoint will loop through the slice of LBs and return endpoint, if any loadbalancer is used as API loadbalancer
-//returns API endpoint if LB fulfils prerequisites, empty string otherwise
+// findAPIEndpoint will loop through the slice of LBs and return endpoint, if any loadbalancer is used as API loadbalancer
+// returns API endpoint if LB fulfils prerequisites, empty string otherwise
 func (k *KubeEleven) findAPIEndpoint() string {
 	for _, lbCluster := range k.LBClusters {
 		//check if lb is used for this k8s
@@ -137,9 +137,9 @@ func (k *KubeEleven) findAPIEndpoint() string {
 	return ""
 }
 
-//getClusterNodes will parse the nodepools of the k.K8sCluster and return slice of nodes
-//function also sets pb.NodeType_apiEndpoint flag if has not been set before
-//returns slice of *pb.Node
+// getClusterNodes will parse the nodepools of the k.K8sCluster and return slice of nodes
+// function also sets pb.NodeType_apiEndpoint flag if has not been set before
+// returns slice of *pb.Node
 func (k *KubeEleven) getClusterNodes() []*pb.Node {
 	var controlNodes []*pb.Node
 	var workerNodes []*pb.Node
@@ -174,8 +174,8 @@ func readKubeconfig(kubeconfigFile string) (string, error) {
 	return string(kubeconfig), nil
 }
 
-//prependNode will add node to the start of the slice
-//returns slice with node at the beginning
+// prependNode will add node to the start of the slice
+// returns slice with node at the beginning
 func prependNode(node *pb.Node, arr []*pb.Node) []*pb.Node {
 	if node == nil {
 		return arr
