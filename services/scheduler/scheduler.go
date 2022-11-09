@@ -24,10 +24,9 @@ const (
 	defaultSchedulerPort = 50056
 )
 
-//processConfig is function used to carry out task specific to Scheduler
-//returns error if not successful, nil otherwise
+// processConfig is function used to carry out task specific to Scheduler
+// returns error if not successful, nil otherwise
 func processConfig(config *pb.Config, c pb.ContextBoxServiceClient) error {
-	log.Printf("Processing new config")
 	//create desired state
 	config, err := createDesiredState(config)
 	if err != nil {
@@ -71,23 +70,23 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			defer wg.Done()
 		}
 
-		log.Info().Msgf("Processing %s ", config.Name)
-		err := processConfig(config, c)
-		if err != nil {
+		log.Info().Msgf("Processing config %s ", config.Name)
+		if err := processConfig(config, c); err != nil {
 			log.Error().Msgf("processConfig() failed: %s", err)
 			//save error message to config
 			errSave := saveErrorMessage(config, c, err)
 			if errSave != nil {
-				log.Error().Msgf("scheduler:failed to save error to the config: %s : processConfig failed: %s", errSave, err)
+				log.Error().Msgf("Failed to save error to the config: %s : processConfig failed: %s", errSave, err)
 			}
 		}
+		log.Info().Msgf("Config %s have been successfully processed", config.Name)
 	}()
 
 	return nil
 }
 
-//saveErrorMessage saves error message to config
-//returns error if not successful, nil otherwise
+// saveErrorMessage saves error message to config
+// returns error if not successful, nil otherwise
 func saveErrorMessage(config *pb.Config, c pb.ContextBoxServiceClient, err error) error {
 	config.CurrentState = config.DesiredState // Update currentState, so we can use it for deletion later
 	config.ErrorMessage = err.Error()
@@ -98,7 +97,7 @@ func saveErrorMessage(config *pb.Config, c pb.ContextBoxServiceClient, err error
 	return nil
 }
 
-//healthCheck function is used for querying readiness of the pod running this microservice
+// healthCheck function is used for querying readiness of the pod running this microservice
 func healthCheck() error {
 	res, err := createDesiredState(nil)
 	if res != nil || err == nil {
