@@ -139,8 +139,14 @@ func configChecker() error {
 	if err := configCheck(); err != nil {
 		return fmt.Errorf("error while configCheck: %v", err)
 	}
-	log.Info().Msgf("QueueScheduler content: %v", queueScheduler.GetContent())
-	log.Info().Msgf("QueueBuilder content: %v", queueBuilder.GetContent())
+	qs := queueScheduler.GetContent()
+	qb := queueBuilder.GetContent()
+	if len(qs) > 0 {
+		log.Info().Msgf("QueueScheduler content: %v", qs)
+	}
+	if len(qb) > 0 {
+		log.Info().Msgf("QueueBuilder content: %v", qb)
+	}
 	return nil
 }
 
@@ -149,14 +155,11 @@ func initDatabase() (ClaudieDB, error) {
 	claudieDatabase := &claudieDB.ClaudieMongo{URL: envs.DatabaseURL}
 	err := claudieDatabase.Connect()
 	if err != nil {
-		log.Error().Msgf("Unable to connect to database at %s : %v", envs.DatabaseURL, err)
-		return nil, err
+		return nil, fmt.Errorf("Unable to connect to database at %s : %v", envs.DatabaseURL, err)
 	}
-	log.Info().Msgf("Connected to database at %s", envs.DatabaseURL)
 	err = claudieDatabase.Init()
 	if err != nil {
-		log.Error().Msgf("Unable to initialise to database at %s : %v", envs.DatabaseURL, err)
-		return nil, err
+		return nil, fmt.Errorf("Unable to initialise to database at %s : %v", envs.DatabaseURL, err)
 	}
 	return claudieDatabase, nil
 }
