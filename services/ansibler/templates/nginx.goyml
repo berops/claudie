@@ -19,6 +19,14 @@
         line: "include /etc/nginx/passthrough.conf;"
         insertafter: EOF
       become: yes
+    - name: delete default HTTP server conf (sites-available)
+      file: 
+        path:  "/etc/nginx/sites-available/default"
+        state: absent
+    - name: delete default HTTP server conf (sites-enabled)
+      file: 
+        path:  "/etc/nginx/sites-enabled/default"
+        state: absent
     - name: restart nginx
       service:
         name: nginx
