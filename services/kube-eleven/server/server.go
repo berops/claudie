@@ -48,8 +48,8 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 		}(cluster, desiredState.LoadBalancerClusters)
 	}
 	if err := errGroup.Wait(); err != nil {
-		log.Error().Msgf("Error encounter in BuildCluster for project %s : %v", desiredState.Name, err)
-		return &pb.BuildClusterResponse{DesiredState: desiredState, ErrorMessage: fmt.Sprintf("Error encounter in BuildCluster for project %s : %v", desiredState.Name, err)}, err
+		log.Error().Msgf("Error encounter in BuildCluster for project %s : %s", desiredState.Name, err.Error())
+		return &pb.BuildClusterResponse{DesiredState: desiredState, ErrorMessage: fmt.Sprintf("Error encounter in BuildCluster for project %s : %s", desiredState.Name, err.Error())}, err
 	}
 	log.Info().Msgf("Clusters for project %s were successfully build", desiredState.Name)
 	return &pb.BuildClusterResponse{DesiredState: desiredState, ErrorMessage: ""}, nil

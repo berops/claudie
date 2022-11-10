@@ -32,13 +32,13 @@ func testLonghornDeployment(config *pb.GetConfigFromDBResponse) error {
 		kubectl := kubectl.Kubectl{Kubeconfig: cluster.Kubeconfig}
 		err := checkLonghornNodes(cluster, kubectl)
 		if err != nil {
-			return fmt.Errorf("error while checking the nodes.longhorn.io : %w", err)
+			return fmt.Errorf("error while checking the nodes.longhorn.io in cluster %s : %w", cluster.ClusterInfo.Name, err)
 
 		}
 		// check if all pods from longhorn-system are ready
 		err = checkLonghornPods(cluster.Kubeconfig, cluster.ClusterInfo.Name, kubectl)
 		if err != nil {
-			return fmt.Errorf("error while checking if all pods from longhorn-system are ready : %w", err)
+			return fmt.Errorf("error while checking if all pods from longhorn-system are ready in cluster %s: %w", cluster.ClusterInfo.Name, err)
 		}
 	}
 	return nil
@@ -76,7 +76,7 @@ func checkLonghornNodes(cluster *pb.K8Scluster, kubectl kubectl.Kubectl) error {
 		log.Info().Msgf("Waiting for nodes.longhorn.io to be initialized in cluster %s... [ %ds elapsed ]", cluster.ClusterInfo.Name, readyCheck)
 	}
 	if !allNodesFound {
-		return fmt.Errorf(fmt.Sprintf("the count of schedulable nodes (%d) is not equal to nodes.longhorn.io (%d) in cluster %s", workerCount, count, cluster.ClusterInfo.Name))
+		return fmt.Errorf("the count of schedulable nodes (%d) is not equal to nodes.longhorn.io (%d) in cluster %s", workerCount, count, cluster.ClusterInfo.Name)
 	}
 	return nil
 }
@@ -93,7 +93,7 @@ func checkLonghornPods(config, clusterName string, kubectl kubectl.Kubectl) erro
 		}
 		ready, err := parsePodsOutput(out)
 		if err != nil {
-			log.Error().Msgf("Error while checking longhorn pods : %v", err)
+			log.Warn().Msgf("Error while parsing kubectl output for longhorn pods in %s : %v", clusterName, err)
 		}
 		// if some are not ready, wait sleepSecPods seconds
 		if !ready {

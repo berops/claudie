@@ -7,7 +7,6 @@ import (
 	"github.com/Berops/claudie/internal/kubectl"
 	"github.com/Berops/claudie/internal/manifest"
 	"github.com/Berops/claudie/internal/templateUtils"
-	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 )
 
@@ -28,13 +27,13 @@ func deleteSecret(setName, namespace string) error {
 	return kc.KubectlDeleteResource("secret", setName, namespace)
 }
 
-// manageSecret function will create a secret.yaml file in test set directory, with a specified manifest in data encoded as base64 string
-func manageSecret(manifest []byte, pathToTestSet, secretName, namespace string) error {
+// applySecret function will create a secret.yaml file in test set directory, with a specified manifest in data encoded as base64 string
+func applySecret(manifest []byte, pathToTestSet, secretName, namespace string) error {
 	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.TestingTemplates}
 	template := templateUtils.Templates{Directory: pathToTestSet}
 	tpl, err := templateLoader.LoadTemplate(secretTpl)
 	if err != nil {
-		return err
+		return fmt.Errorf("error while loading secret.goyaml : %w", err)
 	}
 	d := &SecretData{
 		SecretName: secretName,
@@ -44,7 +43,7 @@ func manageSecret(manifest []byte, pathToTestSet, secretName, namespace string) 
 	}
 	secret, err := template.GenerateToString(tpl, d)
 	if err != nil {
-		return err
+		return fmt.Errorf("error while generating string for secret %s : %w", secretName, err)
 	}
 	kc := kubectl.Kubectl{}
 	return kc.KubectlApplyString(secret, namespace)
@@ -56,8 +55,7 @@ func getManifestName(yamlFile []byte) (string, error) {
 	var manifest manifest.Manifest
 	err := yaml.Unmarshal(yamlFile, &manifest)
 	if err != nil {
-		log.Error().Msgf("Error while unmarshalling a manifest file: %v", err)
-		return "", err
+		return "", fmt.Errorf("error while unmarshalling a manifest file: %v", err)
 	}
 
 	if manifest.Name != "" {

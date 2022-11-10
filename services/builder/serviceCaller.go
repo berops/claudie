@@ -115,7 +115,7 @@ func callTerraformer(currentState *pb.Project, desiredState *pb.Project) (*pb.Pr
 	}()
 	// Creating the client
 	c := pb.NewTerraformerServiceClient(cc)
-	log.Info().Msgf("Calling BuildInfrastructure on terraformer")
+	log.Info().Msgf("Calling BuildInfrastructure on terraformer for project %s", desiredState.Name)
 	res, err := terraformer.BuildInfrastructure(c, &pb.BuildInfrastructureRequest{
 		CurrentState: currentState,
 		DesiredState: desiredState,
@@ -225,7 +225,6 @@ func callDeleteNodes(master, worker []string, cluster *pb.K8Scluster) (*pb.K8Scl
 func destroyConfigTerraformer(config *pb.Config) error {
 	// Trim "tcp://" substring from envs.TerraformerURL
 	trimmedTerraformerURL := strings.ReplaceAll(envs.TerraformerURL, ":tcp://", "")
-	log.Info().Msgf("Dial Terraformer: %s", trimmedTerraformerURL)
 
 	cc, err := utils.GrpcDialWithInsecure("terraformer", trimmedTerraformerURL)
 	if err != nil {
@@ -233,6 +232,7 @@ func destroyConfigTerraformer(config *pb.Config) error {
 	}
 	defer utils.CloseClientConnection(cc)
 
+	log.Info().Msgf("Calling DestroyInfrastructure on terraformer for project %s", config.Name)
 	c := pb.NewTerraformerServiceClient(cc)
 	_, err = terraformer.DestroyInfrastructure(c, &pb.DestroyInfrastructureRequest{Config: config})
 	return err
@@ -241,7 +241,6 @@ func destroyConfigTerraformer(config *pb.Config) error {
 // deleteKubeconfig calls kuber's DeleteKubeconfig function
 func deleteKubeconfig(config *pb.Config) error {
 	trimmedKuberURL := strings.ReplaceAll(envs.KuberURL, ":tcp://", "")
-	log.Info().Msgf("Dial Kuber: %s", trimmedKuberURL)
 
 	cc, err := utils.GrpcDialWithInsecure("kuber", trimmedKuberURL)
 	if err != nil {
@@ -251,6 +250,7 @@ func deleteKubeconfig(config *pb.Config) error {
 
 	c := pb.NewKuberServiceClient(cc)
 	for _, cluster := range config.CurrentState.Clusters {
+		log.Info().Msgf("Calling DeleteKubeconfig on kuber for cluster %s", cluster.ClusterInfo.Name)
 		if _, err := kuber.DeleteKubeconfig(c, &pb.DeleteKubeconfigRequest{Cluster: cluster}); err != nil {
 			return err
 		}

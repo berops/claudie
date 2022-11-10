@@ -42,12 +42,13 @@ func TestClaudie(t *testing.T) {
 			log.Error().Msgf("error while closing client connection : %v", err)
 		}
 	}()
-	log.Info().Msg("----Starting the tests----")
+	log.Info().Msg("---- Starting the tests ----")
 
 	// loop through the directory and list files inside
 	files, err := os.ReadDir(testDir)
 	if err != nil {
-		log.Fatal().Msgf("Error while trying to read test sets: %v", err)
+		log.Error().Msgf("Error while trying to read test sets: %v", err)
+		t.Error(err)
 	}
 
 	// save all the test set paths
@@ -69,8 +70,7 @@ func TestClaudie(t *testing.T) {
 			errGroup.Go(func() error {
 				err := applyTestSet(path, namespace, c)
 				if err != nil {
-					log.Error().Msgf("Error in %s : %v", path, err)
-					return fmt.Errorf("error in %s : %w", path, err)
+					return fmt.Errorf("error in test set %s : %w", path, err)
 				}
 				return nil
 			})
@@ -78,8 +78,8 @@ func TestClaudie(t *testing.T) {
 	}
 	err = errGroup.Wait()
 	if err != nil {
+		log.Error().Msgf("Error in one of the test sets : %v", err)
 		t.Error(err)
-		t.Fail()
 	}
 }
 
@@ -87,7 +87,7 @@ func TestClaudie(t *testing.T) {
 func clientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
 	cc, err := utils.GrpcDialWithInsecure("context-box", envs.ContextBoxURL)
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Fatal().Msgf("Failed to create client connection to context-box : %v", err)
 	}
 
 	// Creating the client
@@ -97,19 +97,19 @@ func clientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
 
 // applyTestSet function will apply test set sequentially to Claudie
 func applyTestSet(setName, namespace string, c pb.ContextBoxServiceClient) error {
-	done := make(chan string)
 	idInfo := idInfo{id: "", idType: -1}
 
 	pathToTestSet := filepath.Join(testDir, setName)
-	log.Info().Msgf("Working on the test set: %s", pathToTestSet)
+	log.Info().Msgf("Working on the test set:%s", pathToTestSet)
 
 	manifestFiles, err := os.ReadDir(pathToTestSet)
 	if err != nil {
-		log.Fatal().Msgf("Error while trying to read test manifests: %v", err)
+		return fmt.Errorf("error while trying to read test manifests in %s : %v", pathToTestSet, err)
 	}
 
 	for _, manifest := range manifestFiles {
-		if manifest.IsDir() || manifest.Name()[0:1] == "." { // https://github.com/Berops/claudie/pull/243#issuecomment-1218237412
+		// https://github.com/Berops/claudie/pull/243#issuecomment-1218237412
+		if manifest.IsDir() || manifest.Name()[0:1] == "." {
 			continue
 		}
 
@@ -117,13 +117,11 @@ func applyTestSet(setName, namespace string, c pb.ContextBoxServiceClient) error
 		manifestPath := filepath.Join(pathToTestSet, manifest.Name())
 		yamlFile, err := os.ReadFile(manifestPath)
 		if err != nil {
-			log.Error().Msgf("Error while reading the manifest %s : %v", manifestPath, err)
-			return err
+			return fmt.Errorf("error while reading the manifest %s : %v", manifestPath, err)
 		}
 		manifestName, err := getManifestName(yamlFile)
 		if err != nil {
-			log.Error().Msgf("Error while getting the manifest name from %s : %v", manifestPath, err)
-			return err
+			return fmt.Errorf("error while getting the manifest name from %s : %v", manifestPath, err)
 		}
 
 		if namespace != "" {
@@ -131,42 +129,34 @@ func applyTestSet(setName, namespace string, c pb.ContextBoxServiceClient) error
 			idInfo.id = manifestName
 			idInfo.idType = pb.IdType_NAME
 			if err != nil {
-				log.Error().Msgf("Error while applying manifest %s : %v", manifest.Name(), err)
-				return err
+				return fmt.Errorf("error while applying manifest %s : %v", manifest.Name(), err)
 			}
 		} else {
 			idInfo.id, err = localTesting(yamlFile, manifestName, c)
 			idInfo.idType = pb.IdType_HASH
 			if err != nil {
-				log.Error().Msgf("Error while applying manifest %s : %v", manifest.Name(), err)
-				return err
+				return fmt.Errorf("error while applying manifest %s : %v", manifest.Name(), err)
 			}
 		}
-
-		go configChecker(done, c, pathToTestSet, manifest.Name(), idInfo)
 		// wait until test config has been processed
-		if res := <-done; res != "ok" {
-			log.Error().Msg(res)
-			return fmt.Errorf(res)
+		if err := configChecker(c, pathToTestSet, manifest.Name(), idInfo); err != nil {
+			return fmt.Errorf("Error while monitoring %s : %w", pathToTestSet, err)
 		}
+		log.Info().Msgf("Manifest %s from %s is done...", manifestName, pathToTestSet)
 	}
 
 	// clean up
-	log.Info().Msgf("Deleting the clusters from test set: %s", pathToTestSet)
+	log.Info().Msgf("Deleting the infra from test set %s", pathToTestSet)
 
 	//delete secret from cluster
 	if namespace != "" {
-		err = deleteSecret(setName, namespace)
-		if err != nil {
-			log.Error().Msgf("Error while deleting the secret from %s : %v", pathToTestSet, err)
-			return err
+		if err = deleteSecret(setName, namespace); err != nil {
+			return fmt.Errorf("error while deleting the secret %s from %s : %v", pathToTestSet, namespace, err)
 		}
 	} else {
 		// delete config from database
-		err = cbox.DeleteConfig(c, idInfo.id, pb.IdType_HASH)
-		if err != nil {
-			log.Error().Msgf("Error while deleting the clusters from test set %s : %v", pathToTestSet, err)
-			return err
+		if err = cbox.DeleteConfig(c, idInfo.id, pb.IdType_HASH); err != nil {
+			return fmt.Errorf("error while deleting the manifest from test set %s : %v", pathToTestSet, err)
 		}
 	}
 
@@ -174,7 +164,7 @@ func applyTestSet(setName, namespace string, c pb.ContextBoxServiceClient) error
 }
 
 // configChecker function will check if the config has been applied every 30s
-func configChecker(done chan string, c pb.ContextBoxServiceClient, testSetName, manifestName string, idInfo idInfo) {
+func configChecker(c pb.ContextBoxServiceClient, testSetName, manifestName string, idInfo idInfo) error {
 	counter := 1
 	for {
 		elapsedSec := counter * sleepSec
@@ -183,14 +173,11 @@ func configChecker(done chan string, c pb.ContextBoxServiceClient, testSetName, 
 			Type: idInfo.idType,
 		})
 		if err != nil {
-			log.Fatal().Msg(fmt.Sprintf("Got error while waiting for config to finish: %v", err))
+			return fmt.Errorf("error while waiting for config to finish: %w", err)
 		}
 		if config != nil {
 			if len(config.Config.ErrorMessage) > 0 {
-				emsg := config.Config.ErrorMessage
-				log.Error().Msg(emsg)
-				done <- emsg
-				return
+				return fmt.Errorf("error while checking config %s : %w", config.Config.Name, err)
 			}
 
 			// if checksums are equal, the config has been processed by claudie
@@ -198,25 +185,19 @@ func configChecker(done chan string, c pb.ContextBoxServiceClient, testSetName, 
 				// test longhorn deployment
 				err := testLonghornDeployment(config)
 				if err != nil {
-					log.Fatal().Msg(err.Error())
-					done <- err.Error()
+					return fmt.Errorf("error while checking the longhorn deployment for %s : %w", config.Config.Name, err)
 				}
-				log.Info().Msgf("Manifest %s from %s is done...", manifestName, testSetName)
-				break
+				//manifest is done
+				return nil
 			}
 		}
 		if elapsedSec >= maxTimeout {
-			emsg := fmt.Sprintf("Test took too long... Aborting on timeout %d seconds", maxTimeout)
-			log.Fatal().Msg(emsg)
-			done <- emsg
-			return
+			return fmt.Errorf("Test took too long... Aborting after %d seconds", maxTimeout)
 		}
 		time.Sleep(time.Duration(sleepSec) * time.Second)
 		counter++
 		log.Info().Msgf("Waiting for %s to from %s finish... [ %ds elapsed ]", manifestName, testSetName, elapsedSec)
 	}
-	// send signal that config has been processed, unblock the applyTestSet
-	done <- "ok"
 }
 
 // checksumsEq will check if two checksums are equal
@@ -236,22 +217,18 @@ func clusterTesting(yamlFile []byte, setName, pathToTestSet, namespace, manifest
 	id, err := getManifestName(yamlFile)
 	idType := pb.IdType_NAME
 	if err != nil {
-		log.Error().Msgf("Error while getting an id for %s : %v", manifestName, err)
-		return err
+		return fmt.Errorf("error while getting an id for %s : %v", manifestName, err)
 	}
 
-	if err != nil {
-		return err
+	if err = applySecret(yamlFile, pathToTestSet, setName, namespace); err != nil {
+		return fmt.Errorf("error while applying a secret for %s : %v", setName, err)
 	}
-	err = manageSecret(yamlFile, pathToTestSet, setName, namespace)
-	if err != nil {
-		log.Error().Msgf("Error while creating/editing a secret : %v", err)
-		return err
+	log.Info().Msgf("Secret for config with id %s has been saved...", id)
+
+	if err = checkIfManifestSaved(id, idType, c); err != nil {
+		return fmt.Errorf("error while checking if  with id %s is saved : %w", id, err)
 	}
-	err = checkIfManifestSaved(id, idType, c)
-	if err != nil {
-		return err
-	}
+	log.Info().Msgf("Manifest for config with id %s has been saved...", id)
 	return nil
 }
 
@@ -269,6 +246,7 @@ func localTesting(yamlFile []byte, manifestName string, c pb.ContextBoxServiceCl
 	if err != nil {
 		return "", err
 	}
+	log.Info().Msgf("Manifest for config with id %s has been saved...", id)
 	return id, nil
 }
 
@@ -280,7 +258,7 @@ func checkIfManifestSaved(configID string, idType pb.IdType, c pb.ContextBoxServ
 	for {
 		time.Sleep(20 * time.Second)
 		elapsedSec := counter * 20
-		log.Info().Msgf("Waiting for secret to be picked up by the frontend... [ %ds elapsed...]", elapsedSec)
+		log.Info().Msgf("Waiting for secret for config with id %s to be picked up by the frontend... [ %ds elapsed...]", configID, elapsedSec)
 		counter++
 		config, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{
 			Id:   configID,
@@ -289,16 +267,14 @@ func checkIfManifestSaved(configID string, idType pb.IdType, c pb.ContextBoxServ
 		if err == nil {
 			// if manifest checksum != desired state checksum -> the manifest has been updated
 			if !checksumsEqual(config.Config.MsChecksum, config.Config.CsChecksum) || !checksumsEqual(config.Config.CsChecksum, config.Config.DsChecksum) {
-				log.Info().Msgf("Manifest has been saved...")
-				break
+				return nil
 			} else {
 				if elapsedSec > maxTimeoutSave {
-					return fmt.Errorf("The secret has not been picked up by the frontend in time, aborting...")
+					return fmt.Errorf("The secret for config with id %s has not been picked up by the frontend in time, aborting...", configID)
 				}
 			}
 		} else if elapsedSec > maxTimeoutSave {
-			return fmt.Errorf("The secret has not been picked up by the frontend in time, aborting...")
+			return fmt.Errorf("The secret for config with id %s has not been picked up by the frontend in time, aborting...", configID)
 		}
 	}
-	return nil
 }

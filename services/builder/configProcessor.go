@@ -117,7 +117,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			log.Error().Msgf("error while processing config %s : %w", config.Name, err)
 			return
 		}
-		log.Info().Msgf("Config %s finished building", tmpConfig.Name)
+		log.Info().Msgf("Config %s finished building", config.Name)
 	}()
 
 	return nil

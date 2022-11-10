@@ -54,8 +54,8 @@ func (s *server) SetUpStorage(ctx context.Context, req *pb.SetUpStorageRequest) 
 		}(cluster)
 	}
 	if err := errGroup.Wait(); err != nil {
-		log.Error().Msgf("Error encountered in SetUpStorage : %v", err)
-		return &pb.SetUpStorageResponse{DesiredState: desiredState, ErrorMessage: fmt.Sprintf("Error encountered in SetUpStorage: %v", err)}, err
+		log.Error().Msgf("Error encountered in SetUpStorage : %s", err.Error())
+		return &pb.SetUpStorageResponse{DesiredState: desiredState, ErrorMessage: fmt.Sprintf("Error encountered in SetUpStorage: %s", err.Error())}, err
 	}
 	log.Info().Msgf("Storage was successfully set up for project %s", desiredState.Name)
 	return &pb.SetUpStorageResponse{DesiredState: desiredState, ErrorMessage: ""}, nil
@@ -100,8 +100,8 @@ func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigReq
 		})
 	}(cluster)
 	if err := errGroup.Wait(); err != nil {
-		log.Error().Msgf("Error encountered in StoreKubeconfig %v", err)
-		return &pb.StoreKubeconfigResponse{ErrorMessage: fmt.Sprintf("Error encountered in StoreKubeconfig %v", err)}, err
+		log.Error().Msgf("Error encountered in StoreKubeconfig : %s", err.Error())
+		return &pb.StoreKubeconfigResponse{ErrorMessage: fmt.Sprintf("Error encountered in StoreKubeconfig : %s", err.Error())}, err
 	}
 	log.Info().Msgf("Kubeconfig was successfully stored for cluster %s", cluster.ClusterInfo.Name)
 	return &pb.StoreKubeconfigResponse{ErrorMessage: ""}, nil
@@ -129,8 +129,8 @@ func (s *server) DeleteKubeconfig(ctx context.Context, req *pb.DeleteKubeconfigR
 		})
 	}(cluster)
 	if err := errGroup.Wait(); err != nil {
-		log.Error().Msgf("Error encountered in DeleteKubeconfig %v", err)
-		return &pb.DeleteKubeconfigResponse{ErrorMessage: fmt.Sprintf("Error encountered in DeleteKubeconfig %v", err)}, err
+		log.Error().Msgf("Error encountered in DeleteKubeconfig for cluster %s : %s", cluster.ClusterInfo.Name, err.Error())
+		return &pb.DeleteKubeconfigResponse{ErrorMessage: fmt.Sprintf("Error encountered in DeleteKubeconfig for cluster %s : %s", cluster.ClusterInfo.Name, err.Error())}, err
 	}
 	log.Info().Msgf("Deleted kubeconfig secret for cluster %s", cluster.ClusterInfo.Name)
 	return &pb.DeleteKubeconfigResponse{ErrorMessage: ""}, nil
@@ -140,7 +140,7 @@ func (s *server) DeleteNodes(ctx context.Context, req *pb.DeleteNodesRequest) (*
 	deleter := nodes.New(req.MasterNodes, req.WorkerNodes, req.Cluster)
 	cluster, err := deleter.DeleteNodes()
 	if err != nil {
-		log.Error().Msgf("Error while deleting nodes for %s : %v", req.Cluster.ClusterInfo.Name, err)
+		log.Error().Msgf("Error while deleting nodes for %s : %s", req.Cluster.ClusterInfo.Name, err.Error())
 		return &pb.DeleteNodesResponse{ErrorMessage: err.Error()}, err
 	}
 	log.Info().Msgf("Nodes for cluster %s were successfully deleted", req.Cluster.ClusterInfo.Name)
