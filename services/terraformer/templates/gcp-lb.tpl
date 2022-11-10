@@ -15,14 +15,6 @@ resource "google_compute_network" "network" {
   auto_create_subnetworks = false
 }
 
-resource "google_compute_subnetwork" "subnet" {
-  provider      = google.lb-nodepool
-  name          = "{{ $clusterName }}-{{ $clusterHash }}-subnet"
-  network       = google_compute_network.network.self_link
-  region        = "{{(index .NodePools 0).Region}}"
-  ip_cidr_range = "10.0.0.0/8"
-}
-
 resource "google_compute_firewall" "firewall" {
   provider     = google.lb-nodepool
   name    = "{{ $clusterName }}-{{ $clusterHash }}-firewall"
@@ -54,7 +46,15 @@ resource "google_compute_firewall" "firewall" {
    ]
 }
 
-{{range $nodepool := .NodePools}}
+{{range $i, $nodepool := .NodePools}}
+resource "google_compute_subnetwork" "{{$nodepool.Name}}-subnet" {
+  provider      = google.lb-nodepool
+  name          = "{{ $nodepool.Name }}-{{ $clusterHash }}-subnet"
+  network       = google_compute_network.network.self_link
+  region        = "{{$nodepool.Region}}"
+  ip_cidr_range = "{{getCIDR "10.0.0.0/24" 2 $i}}"
+}
+
 resource "google_compute_instance" "{{$nodepool.Name}}" {
   provider     = google.lb-nodepool
   count        = {{$nodepool.Count}}
@@ -69,7 +69,7 @@ resource "google_compute_instance" "{{$nodepool.Name}}" {
     }
   }
   network_interface {
-    subnetwork = google_compute_subnetwork.subnet.self_link
+    subnetwork = google_compute_subnetwork.{{$nodepool.Name}}-subnet.self_link
     access_config {}
   }
   metadata = {
