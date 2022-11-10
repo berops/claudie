@@ -16,7 +16,7 @@ import (
 // CloseClientConnection is a wrapper around grpc.ClientConn Close function
 func CloseClientConnection(connection *grpc.ClientConn) {
 	if err := connection.Close(); err != nil {
-		log.Error().Msgf("Error while closing the client connection %s : %w", connection.Target(), err)
+		log.Error().Msgf("Error while closing the client connection %s : %v", connection.Target(), err)
 	}
 }
 

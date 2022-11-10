@@ -91,7 +91,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 		if tmpConfig != nil {
 			log.Info().Msgf("Processing a first stage of the config %s", tmpConfig.Name)
 			if err := buildConfig(tmpConfig, c, true); err != nil {
-				log.Error().Msgf("error while processing config %s : %w", tmpConfig.Name, err)
+				log.Error().Msgf("error while processing config %s : %v", tmpConfig.Name, err)
 				//if err in tmpConfig, stop the execution
 				return
 			}
@@ -102,7 +102,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			log.Info().Msgf("Deleting nodes for config %s", config.Name)
 			config, err = deleteNodes(config, toDelete)
 			if err != nil {
-				log.Error().Msgf("error while deleting nodes for config %s : %w", config.Name, err)
+				log.Error().Msgf("error while deleting nodes for config %s : %v", config.Name, err)
 				//if err in node deletions, stop the execution
 				return
 			}
@@ -114,7 +114,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 		log.Info().Msgf(message)
 
 		if err = buildConfig(config, c, false); err != nil {
-			log.Error().Msgf("error while processing config %s : %w", config.Name, err)
+			log.Error().Msgf("error while processing config %s : %v", config.Name, err)
 			return
 		}
 		log.Info().Msgf("Config %s finished building", config.Name)

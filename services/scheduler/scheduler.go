@@ -72,11 +72,11 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 
 		log.Info().Msgf("Processing config %s ", config.Name)
 		if err := processConfig(config, c); err != nil {
-			log.Error().Msgf("processConfig() failed: %s", err)
+			log.Error().Msgf("processConfig() failed: %s", err.Error())
 			//save error message to config
 			errSave := saveErrorMessage(config, c, err)
 			if errSave != nil {
-				log.Error().Msgf("Failed to save error to the config: %s : processConfig failed: %s", errSave, err)
+				log.Error().Msgf("Failed to save error to the config: %s : processConfig failed: %s", errSave.Error(), err.Error())
 			}
 		}
 		log.Info().Msgf("Config %s have been successfully processed", config.Name)

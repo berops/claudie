@@ -78,7 +78,7 @@ func TestClaudie(t *testing.T) {
 	}
 	err = errGroup.Wait()
 	if err != nil {
-		log.Error().Msgf("Error in one of the test sets : %v", err)
+		log.Error().Msgf("Error in one of the test sets : %s", err.Error())
 		t.Error(err)
 	}
 }
@@ -177,7 +177,7 @@ func configChecker(c pb.ContextBoxServiceClient, testSetName, manifestName strin
 		}
 		if config != nil {
 			if len(config.Config.ErrorMessage) > 0 {
-				return fmt.Errorf("error while checking config %s : %w", config.Config.Name, err)
+				return fmt.Errorf("error while checking config %s : %s", config.Config.Name, config.Config.ErrorMessage)
 			}
 
 			// if checksums are equal, the config has been processed by claudie
