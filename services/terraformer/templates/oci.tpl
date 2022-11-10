@@ -23,17 +23,6 @@ resource "oci_core_vcn" "claudie_vcn" {
   cidr_blocks = ["10.0.0.0/16"]
 }
 
-resource "oci_core_subnet" "claudie_subnet" {
-  provider = oci.k8s-nodepool
-  vcn_id = oci_core_vcn.claudie_vcn.id
-  cidr_block = "10.0.0.0/24"
-  compartment_id = var.default_compartment_id
-  display_name = "{{ $clusterName }}-{{ $clusterHash }}-subnet"
-  security_list_ids = [oci_core_vcn.claudie_vcn.default_security_list_id]
-  route_table_id = oci_core_vcn.claudie_vcn.default_route_table_id
-  dhcp_options_id   = oci_core_vcn.claudie_vcn.default_dhcp_options_id
-}
-
 resource "oci_core_internet_gateway" "claudie_gateway" {
   provider = oci.k8s-nodepool
   compartment_id = var.default_compartment_id
@@ -103,7 +92,19 @@ resource "oci_core_default_route_table" "claudie_routes" {
   }
 }
 
-{{ range $nodepool := .NodePools }}
+{{ range $i, $nodepool := .NodePools }}
+resource "oci_core_subnet" "{{ $nodepool.Name }}-subnet" {
+  provider = oci.k8s-nodepool
+  vcn_id = oci_core_vcn.claudie_vcn.id
+  cidr_block = "{{getCIDR "10.0.0.0/24" 2 $i}}"
+  compartment_id = var.default_compartment_id
+  display_name = "{{ $clusterName }}-{{ $clusterHash }}-subnet"
+  security_list_ids = [oci_core_vcn.claudie_vcn.default_security_list_id]
+  route_table_id = oci_core_vcn.claudie_vcn.default_route_table_id
+  dhcp_options_id   = oci_core_vcn.claudie_vcn.default_dhcp_options_id
+  availability_domain = "{{ $nodepool.Zone }}"
+}
+
 resource "oci_core_instance" "{{ $nodepool.Name }}" {
   provider = oci.k8s-nodepool
   compartment_id = var.default_compartment_id
@@ -142,7 +143,7 @@ resource "oci_core_instance" "{{ $nodepool.Name }}" {
   }
   create_vnic_details {
     assign_public_ip = true
-    subnet_id = oci_core_subnet.claudie_subnet.id
+    subnet_id = oci_core_subnet.{{ $nodepool.Name }}-subnet.id
   }
 }
 
