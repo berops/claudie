@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 
 	"text/template"
-
-	"github.com/Berops/claudie/internal/utils"
 )
 
 const (
@@ -70,11 +68,12 @@ func (t Templates) GenerateToString(tpl *template.Template, d interface{}) (stri
 func (tl TemplateLoader) LoadTemplate(tplFile string) (*template.Template, error) {
 	tpl := template.New(tplFile).
 		Funcs(template.FuncMap{
-			"isMissing":                     utils.IsMissing[int],
-			"targetPorts":                   utils.ExtractTargetPorts,
-			"protocolToOCIProtocolNumber":   utils.ProtocolNameToOCIProtocolNumber,
-			"protocolToAzureProtocolString": utils.ProtocolNameToAzureProtocolString,
-			"assignPriority":                utils.AssignPriority,
+			"isMissing":                     IsMissing[int],
+			"targetPorts":                   ExtractTargetPorts,
+			"protocolToOCIProtocolNumber":   ProtocolNameToOCIProtocolNumber,
+			"protocolToAzureProtocolString": ProtocolNameToAzureProtocolString,
+			"assignPriority":                AssignPriority,
+			"getCIDR":                       GetCIDR,
 		})
 
 	tpl, err := tpl.ParseFiles(filepath.Join(baseDirectory, tl.Directory, tplFile))

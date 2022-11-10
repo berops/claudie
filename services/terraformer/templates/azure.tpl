@@ -27,14 +27,6 @@ resource "azurerm_virtual_network" "claudie-vn" {
   resource_group_name = var.default_rg_name
 }
 
-resource "azurerm_subnet" "claudie-subnet" {
-  provider = azurerm.k8s-nodepool
-  name                 = "{{ $clusterName }}-{{ $clusterHash }}-subnet"
-  resource_group_name  = var.default_rg_name
-  virtual_network_name = azurerm_virtual_network.claudie-vn.name
-  address_prefixes     = ["10.0.0.0/24"]
-}
-
 resource "azurerm_network_security_group" "claudie-nsg" {
   provider = azurerm.k8s-nodepool
   name                = "{{ $clusterName }}-{{ $clusterHash }}-nsg"
@@ -91,14 +83,21 @@ resource "azurerm_network_security_group" "claudie-nsg" {
   {{end}}
 }
 
-resource "azurerm_subnet_network_security_group_association" "associate-nsg" {
-  provider = azurerm.k8s-nodepool
-  subnet_id                 = azurerm_subnet.claudie-subnet.id
+{{ range $i, $nodepool := .NodePools }}
+resource "azurerm_subnet" "{{ $nodepool.Name }}-{{ $clusterHash }}-subnet" {
+  provider             = azurerm.k8s-nodepool
+  name                 = "{{ $nodepool.Name }}-{{ $clusterHash }}-subnet"
+  resource_group_name  = var.default_rg_name
+  virtual_network_name = azurerm_virtual_network.claudie-vn.name
+  address_prefixes     = ["{{getCIDR "10.0.0.0/24" 2 $i}}"]
+}
+
+resource "azurerm_subnet_network_security_group_association" "{{ $nodepool.Name }}-associate-nsg" {
+  provider             = azurerm.k8s-nodepool
+  subnet_id                 = azurerm_subnet.{{ $nodepool.Name }}-{{ $clusterHash }}-subnet.id
   network_security_group_id = azurerm_network_security_group.claudie-nsg.id
 }
 
-
-{{ range $nodepool := .NodePools }}
 resource "azurerm_public_ip" "{{ $nodepool.Name }}-{{ $clusterHash }}-public-ip" {
   provider = azurerm.k8s-nodepool
   name                = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}-ip"
@@ -119,7 +118,7 @@ resource "azurerm_network_interface" "{{ $nodepool.Name }}-{{ $clusterHash }}-ni
 
   ip_configuration {
     name                          = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}-ip-conf"
-    subnet_id                     = azurerm_subnet.claudie-subnet.id
+    subnet_id                     = azurerm_subnet.{{ $nodepool.Name }}-{{ $clusterHash }}-subnet.id
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = element(azurerm_public_ip.{{ $nodepool.Name }}-{{ $clusterHash }}-public-ip, count.index).id
     primary                       = true

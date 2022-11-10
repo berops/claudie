@@ -17,17 +17,6 @@ resource "aws_vpc" "claudie-vpc" {
   }
 }
 
-resource "aws_subnet" "claudie-subnet" {
-  provider = aws.k8s-nodepool
-  vpc_id            = aws_vpc.claudie-vpc.id
-  cidr_block        = "10.0.0.0/24"
-  map_public_ip_on_launch = true
-  availability_zone = "{{(index .NodePools 0).Zone}}"
-  tags = {
-    Name = "{{ $clusterName }}-{{ $clusterHash }}-subnet"
-  }
-}
-
 resource "aws_internet_gateway" "claudie-gateway" {
   provider = aws.k8s-nodepool
   vpc_id = aws_vpc.claudie-vpc.id
@@ -46,12 +35,6 @@ resource "aws_route_table" "claudie-route-table" {
   tags = {
     Name = "{{ $clusterName }}-{{ $clusterHash }}-rt"
   }
-}
-
-resource "aws_route_table_association" "claudie-rta" {
-  provider = aws.k8s-nodepool
-  subnet_id = aws_subnet.claudie-subnet.id
-  route_table_id = aws_route_table.claudie-route-table.id
 }
 
 resource "aws_security_group" "claudie-sg" {
@@ -121,7 +104,24 @@ resource "aws_key_pair" "claudie-pair" {
   public_key = file("./public.pem")
 }
 
-{{ range $nodepool := .NodePools }}
+{{ range $i, $nodepool := .NodePools }}
+resource "aws_subnet" "{{ $nodepool.Name }}-subnet" {
+  provider = aws.k8s-nodepool
+  vpc_id            = aws_vpc.claudie-vpc.id
+  cidr_block        = "{{ getCIDR "10.0.0.0/24" 2 $i}}"
+  map_public_ip_on_launch = true
+  availability_zone = "{{$nodepool.Zone}}"
+  tags = {
+    Name = "{{ $nodepool.Name }}-{{ $clusterHash }}-subnet"
+  }
+}
+
+resource "aws_route_table_association" "{{ $nodepool.Name }}-rta" {
+  provider = aws.k8s-nodepool
+  subnet_id = aws_subnet.{{ $nodepool.Name }}-subnet.id
+  route_table_id = aws_route_table.claudie-route-table.id
+}
+
 resource "aws_instance" "{{ $nodepool.Name }}" {
   provider = aws.k8s-nodepool
   count = {{ $nodepool.Count }}
@@ -131,7 +131,7 @@ resource "aws_instance" "{{ $nodepool.Name }}" {
   
   associate_public_ip_address = true
   key_name = aws_key_pair.claudie-pair.key_name
-  subnet_id = aws_subnet.claudie-subnet.id
+  subnet_id = aws_subnet.{{ $nodepool.Name }}-subnet.id
   vpc_security_group_ids = [aws_security_group.claudie-sg.id]
 
   tags = {
