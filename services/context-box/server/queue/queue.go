@@ -66,3 +66,25 @@ func (q *Queue) GetContent() []string {
 	q.lock.Unlock()
 	return content
 }
+
+func (q *Queue) CompareContent(w []string) bool {
+	content := q.GetContent()
+	if len(content) != len(w) {
+		return false
+	}
+	for _, x := range content {
+		if !contains(x, w) {
+			return false
+		}
+	}
+	return true
+}
+
+func contains(el string, slice []string) bool {
+	for _, x := range slice {
+		if x == el {
+			return true
+		}
+	}
+	return false
+}

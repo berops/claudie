@@ -73,10 +73,12 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 
 		// check for cluster deleting
 		configToDelete := getDeletedClusterConfig(config)
-		if err := destroyConfig(configToDelete, c); err != nil {
-			log.Error().Msgf("failed to delete clusters from config %s : %v", config.Name, err)
-			//if err in cluster deletion, stop the execution
-			return
+		if configToDelete != nil {
+			if err := destroyConfig(configToDelete, c); err != nil {
+				log.Error().Msgf("failed to delete clusters from config %s : %v", config.Name, err)
+				//if err in cluster deletion, stop the execution
+				return
+			}
 		}
 
 		//tmpConfig is used in operation where config is adding && deleting the nodes
@@ -240,6 +242,10 @@ func mergeDeleteCounts(dst, src map[string]*nodeCount) map[string]*nodeCount {
 // the function has SIDE EFFECTS and should be used carefully.
 // returns *pb.Config which contains clusters (both k8s and lb) that needs to be deleted.
 func getDeletedClusterConfig(config *pb.Config) *pb.Config {
+	if config.CurrentState.Name == "" {
+		//if first run of config, skip
+		return nil
+	}
 	configToDelete := proto.Clone(config).(*pb.Config)
 	var k8sClustersToDelete, remainingCsK8sClusters []*pb.K8Scluster
 	var LbClustersToDelete, remainingCsLbClusters []*pb.LBcluster

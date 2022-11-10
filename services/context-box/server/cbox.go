@@ -49,6 +49,9 @@ const (
 var (
 	queueScheduler queue.Queue
 	queueBuilder   queue.Queue
+	//vars used for logging
+	lastQB = []string{}
+	lastQS = []string{}
 )
 
 // GetName is function required by queue package to evaluate equivalence
@@ -139,14 +142,14 @@ func configChecker() error {
 	if err := configCheck(); err != nil {
 		return fmt.Errorf("error while configCheck: %v", err)
 	}
-	qs := queueScheduler.GetContent()
-	qb := queueBuilder.GetContent()
-	if len(qs) > 0 {
-		log.Info().Msgf("QueueScheduler content: %v", qs)
+	if !queueScheduler.CompareContent(lastQS) {
+		log.Info().Msgf("QueueScheduler content changed to: %v", queueScheduler.GetContent())
 	}
-	if len(qb) > 0 {
-		log.Info().Msgf("QueueBuilder content: %v", qb)
+	if !queueBuilder.CompareContent(lastQB) {
+		log.Info().Msgf("QueueBuilder content changed to: %v", queueBuilder.GetContent())
 	}
+	lastQS = queueScheduler.GetContent()
+	lastQB = queueBuilder.GetContent()
 	return nil
 }
 
