@@ -108,7 +108,7 @@ COPY --from=ansible-base /usr/bin/ansible /usr/bin/ansible
 COPY --from=ansible-base /usr/bin/ansible-connection /usr/bin/ansible-connection
 
 # Pre-compile Python for better performance
-RUN set -eux && python3 -m compileall /usr/lib/python3.8
+RUN set -eux && python3 -m compileall /usr/lib/python3.10
 
 RUN apk update && apk add -q bash
 
