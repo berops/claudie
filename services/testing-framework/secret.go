@@ -27,7 +27,7 @@ func deleteSecret(setName, namespace string) error {
 	return kc.KubectlDeleteResource("secret", setName, namespace)
 }
 
-// applySecret function will create a secret.yaml file in test set directory, with a specified manifest in data encoded as base64 string
+// applySecret function will create a secret with the specified name in the specified namespace for manifest provided
 func applySecret(manifest []byte, pathToTestSet, secretName, namespace string) error {
 	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.TestingTemplates}
 	template := templateUtils.Templates{Directory: pathToTestSet}
