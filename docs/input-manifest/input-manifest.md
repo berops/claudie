@@ -185,10 +185,14 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 - `server_type`
   
   Type of the machines in the nodepool.
+  
+  Currently, only AMD64 machines are supported.
 
 - `image`
 
-  OS image of the machine. Currently, Claudie only supports ubuntu images.
+  OS image of the machine. 
+  
+  Currently, only Ubuntu AMD64 images are supported.
 
 - `disk_size`
 
