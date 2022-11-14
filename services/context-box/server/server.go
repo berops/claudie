@@ -100,7 +100,12 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 	// Save new config to the DB
 	config.CsChecksum = config.DsChecksum
 	config.BuilderTTL = 0
-
+	// In Builder, the desired state is also updated i.e. in terraformer (node IPs, etc) thus
+	// we need to update it
+	if err := database.UpdateDs(config); err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("Error while updating desired state: %v", err))
+	}
+	// Update the current state so its equal to the desired state
 	if err := database.UpdateCs(config); err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("Error while updating current state: %v", err))
 	}
