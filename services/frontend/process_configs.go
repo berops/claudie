@@ -36,6 +36,7 @@ func (s *server) processConfigs() error {
 		name        string
 		rawManifest []byte
 		path        string
+		err         error
 	}
 
 	dataChan := make(chan *data, len(files))
@@ -51,28 +52,28 @@ func (s *server) processConfigs() error {
 			defer group.Done()
 
 			path := filepath.Join(s.manifestDir, entry.Name())
-			rawManifest, err := os.ReadFile(path)
-			if err != nil {
-				log.Error().Msgf("skipping over file %v due to error: %v", path, err)
+			var rawManifest []byte
+			var err error
+			var m manifest.Manifest
+
+			defer func() {
+				dataChan <- &data{
+					name:        m.Name,
+					rawManifest: rawManifest,
+					path:        path,
+					err:         err,
+				}
+			}()
+
+			if rawManifest, err = os.ReadFile(path); err != nil {
 				return
 			}
 
-			m := manifest.Manifest{}
-			if err := yaml.Unmarshal(rawManifest, &m); err != nil {
-				log.Error().Msgf("skipping over file %v due to error: %v", path, err)
+			if err = yaml.Unmarshal(rawManifest, &m); err != nil {
 				return
 			}
 
-			if err := m.Validate(); err != nil {
-				log.Error().Msgf("skipping over file %v due to error: %v", path, err)
-				return
-			}
-
-			dataChan <- &data{
-				name:        m.Name,
-				rawManifest: rawManifest,
-				path:        path,
-			}
+			err = m.Validate()
 		}(file)
 	}
 
@@ -84,6 +85,11 @@ func (s *server) processConfigs() error {
 	// Collect data from files with no error.
 	for data := range dataChan {
 		configs.Configs = remove(configs.Configs, data.name)
+
+		if data.err != nil {
+			log.Error().Msgf("skipping over file %v due to error: %v", data.path, data.err)
+			continue
+		}
 
 		_, err := cbox.SaveConfigFrontEnd(s.cBox, &pb.SaveConfigRequest{
 			Config: &pb.Config{
