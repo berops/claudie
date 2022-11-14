@@ -19,8 +19,8 @@ type Kubeone struct {
 	Directory string
 }
 
-//Apply will run `kubeone apply -m kubeone.yaml -y` in the specified directory
-//return nil if successful, error otherwise
+// Apply will run `kubeone apply -m kubeone.yaml -y` in the specified directory
+// return nil if successful, error otherwise
 func (k *Kubeone) Apply() error {
 	command := "kubeone apply -m kubeone.yaml -y"
 	cmd := exec.Command("bash", "-c", command)

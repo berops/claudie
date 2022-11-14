@@ -47,7 +47,7 @@ func (d DNS) CreateDNSrecords() (string, error) {
 	terraform := terraform.Terraform{Directory: dnsDir, StdOut: comm.GetStdOut(dnsID), StdErr: comm.GetStdErr(dnsID)}
 	//check if DNS provider is unchanged
 	if utils.ChangedDNSProvider(d.CurrentDNS, d.DesiredDNS) {
-		log.Info().Msgf("Destroying old DNS records")
+		log.Info().Msgf("Destroying old DNS records for %s form cluster %s", d.CurrentDNS.Endpoint, d.ClusterName)
 		//destroy old DNS records
 		err := d.generateFiles(dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs)
 		if err != nil {
@@ -63,6 +63,7 @@ func (d DNS) CreateDNSrecords() (string, error) {
 			return "", err
 		}
 	}
+	log.Info().Msgf("Creating DNS records for %s form cluster %s", d.DesiredDNS.Endpoint, d.ClusterName)
 	// create files
 	err := d.generateFiles(dnsID, dnsDir, d.DesiredDNS, d.DesiredNodeIPs)
 	if err != nil {
@@ -82,17 +83,16 @@ func (d DNS) CreateDNSrecords() (string, error) {
 	outputID := fmt.Sprintf("%s-%s", clusterID, "endpoint")
 	output, err := terraform.TerraformOutput(clusterID)
 	if err != nil {
-		log.Error().Msgf("Error while getting output from terraform: %v", err)
-		return "", err
+		return "", fmt.Errorf("error while getting output from terraform for %s : %w", clusterID, err)
+
 	}
 	out, err := readDomain(output)
 	if err != nil {
-		log.Error().Msgf("Error while reading the terraform output: %v", err)
-		return "", err
+		return "", fmt.Errorf("error while reading output from terraform for %s : %w", clusterID, err)
 	}
 	// Clean after terraform
 	if err := os.RemoveAll(dnsDir); err != nil {
-		return validateDomain(out.Domain[outputID]), fmt.Errorf("error while deleting files: %w", err)
+		return validateDomain(out.Domain[outputID]), fmt.Errorf("error while deleting files in %s: %w", dnsDir, err)
 	}
 	return validateDomain(out.Domain[outputID]), nil
 }
@@ -118,7 +118,7 @@ func (d DNS) DestroyDNSrecords() error {
 
 	// Clean after terraform
 	if err := os.RemoveAll(dnsDir); err != nil {
-		return fmt.Errorf("error while deleting files: %w", err)
+		return fmt.Errorf("error while deleting files in %s : %w", dnsDir, err)
 	}
 	return nil
 }
@@ -133,15 +133,14 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *pb.DNS, nodeIPs []string) 
 
 	// save provider cred file
 	if err = utils.CreateKeyFile(dns.Provider.Credentials, dnsDir, dns.Provider.SpecName); err != nil {
-		log.Error().Msgf("Error creating provider credential key file: %v", err)
-		return err
+		return fmt.Errorf("error creating provider credential key file for provider %s in %s : %v", dns.Provider.SpecName, dnsDir, err)
 	}
 
 	DNSTemplates := templateUtils.Templates{Directory: dnsDir}
 	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.TerraformerTemplates}
 	tpl, err := templateLoader.LoadTemplate("dns.tpl")
 	if err != nil {
-		return fmt.Errorf("error while parsing template file backend.tpl: %w", err)
+		return fmt.Errorf("error while parsing template file dns.tpl for %s : %w", dnsDir, err)
 	}
 	dnsData := d.getDNSData(dns, nodeIPs)
 	return DNSTemplates.Generate(tpl, "dns.tf", dnsData)

@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	"github.com/Berops/claudie/internal/kubectl"
-	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 )
 
@@ -60,34 +59,30 @@ func (s *Secret) Apply(namespace, kubeconfig string) error {
 	kubectl := kubectl.Kubectl{Kubeconfig: kubeconfig}
 	path := filepath.Join(s.Directory, filename)
 
-	err := s.saveSecretManifest(path)
-	if err != nil {
+	if err := s.saveSecretManifest(path); err != nil {
 		return fmt.Errorf("error while saving secret.yaml for %s : %w", s.YamlManifest.Metadata.Name, err)
 	}
-	err = kubectl.KubectlApply(path, namespace)
-	if err != nil {
+
+	if err := kubectl.KubectlApply(path, namespace); err != nil {
 		return fmt.Errorf("error while applying secret.yaml for %s : %w", s.YamlManifest.Metadata.Name, err)
 	}
 
-	// cleanup
-	if err = os.RemoveAll(s.Directory); err != nil {
+	// clean up
+	if err := os.RemoveAll(s.Directory); err != nil {
 		return fmt.Errorf("error while delete the secret.yaml for %s : %w", s.YamlManifest.Metadata.Name, err)
 	}
 	return nil
 }
 
-//saves secret into the file system
+// saves secret into the file system
 func (s *Secret) saveSecretManifest(path string) error {
 	secretYaml, err := yaml.Marshal(&s.YamlManifest)
 	if err != nil {
-		log.Err(err).Msg("Failed to marshal secret manifest yaml")
-		return err
+		return fmt.Errorf("failed to marshal secret manifest yaml for %s : %w", path, err)
 	}
 
-	err = os.WriteFile(path, secretYaml, filePermission)
-	if err != nil {
-		log.Error().Msgf("Error while saving secret manifest file")
-		return err
+	if err = os.WriteFile(path, secretYaml, filePermission); err != nil {
+		return fmt.Errorf("Error while saving secret manifest file %s : %w", path, err)
 	}
 	return nil
 }

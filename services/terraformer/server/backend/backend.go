@@ -38,7 +38,7 @@ func (b Backend) CreateFiles() error {
 
 	tpl, err := templateLoader.LoadTemplate("backend.tpl")
 	if err != nil {
-		return fmt.Errorf("failed to load template file backend.tpl: %w", err)
+		return fmt.Errorf("failed to load template file backend.tpl for %s : %w", b.ClusterName, err)
 	}
 
 	data := templateData{
@@ -52,7 +52,7 @@ func (b Backend) CreateFiles() error {
 	}
 
 	if err := template.Generate(tpl, "backend.tf", data); err != nil {
-		return fmt.Errorf("failed to generate backend files: %w", err)
+		return fmt.Errorf("failed to generate backend files for %s : %w", b.ClusterName, err)
 	}
 
 	return nil

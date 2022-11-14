@@ -23,8 +23,8 @@ type VPNInfo struct {
 	NodepoolInfo []*NodepoolInfo //nodepools which will be inside the VPN
 }
 
-//installWireguardVPN takes a map of [k8sClusterName]*VPNInfo and sets up the wireguard vpn
-//return error if not successful, nil otherwise
+// installWireguardVPN takes a map of [k8sClusterName]*VPNInfo and sets up the wireguard vpn
+// return error if not successful, nil otherwise
 func installWireguardVPN(vpnNodepools map[string]*VPNInfo) error {
 	var errGroup errgroup.Group
 	for k8sClusterName, vpnInfo := range vpnNodepools {
@@ -34,33 +34,33 @@ func installWireguardVPN(vpnNodepools map[string]*VPNInfo) error {
 			errGroup.Go(func() error {
 				err := setPrivateAddresses(groupNodepool(vpnInfo.NodepoolInfo), vpnInfo.Network)
 				if err != nil {
-					return err
+					return fmt.Errorf("error while setting the private IPs for %s : %w", directory, err)
 				}
 				//generate key files
 				if _, err := os.Stat(directory); os.IsNotExist(err) {
 					if err := os.MkdirAll(directory, os.ModePerm); err != nil {
-						return fmt.Errorf("failed to create dir: %w", err)
+						return fmt.Errorf("failed to create directory %s : %w", directory, err)
 					}
 				}
 				for _, nodepoolInfo := range vpnInfo.NodepoolInfo {
 					if err := utils.CreateKeyFile(nodepoolInfo.PrivateKey, directory, fmt.Sprintf("%s.%s", nodepoolInfo.ID, privateKeyExt)); err != nil {
-						return fmt.Errorf("failed to create key file: %w", err)
+						return fmt.Errorf("failed to create key file for %s : %w", nodepoolInfo.ID, err)
 					}
 				}
 				//generate inventory
 				err = generateInventoryFile(nodesInventoryFileTpl, directory, AllNodesInventoryData{NodepoolInfos: vpnInfo.NodepoolInfo})
 				if err != nil {
-					return err
+					return fmt.Errorf("error while creating inventory file for %s : %w", directory, err)
 				}
 				//start ansible playbook
 				ansible := ansible.Ansible{Playbook: wireguardPlaybook, Inventory: inventoryFile, Directory: directory}
 				err = ansible.RunAnsiblePlaybook(fmt.Sprintf("VPN - %s", directory))
 				if err != nil {
-					return err
+					return fmt.Errorf("error while running ansible for %s : %w", directory, err)
 				}
 				//Clean up
 				if err := os.RemoveAll(directory); err != nil {
-					return fmt.Errorf("error while deleting files: %w", err)
+					return fmt.Errorf("error while deleting directory %s : %w", directory, err)
 				}
 				return nil
 			})
@@ -68,17 +68,17 @@ func installWireguardVPN(vpnNodepools map[string]*VPNInfo) error {
 	}
 	err := errGroup.Wait()
 	if err != nil {
-		return err
+		return fmt.Errorf("error while installing VPN : %w", err)
 	}
 	return nil
 }
 
 // setPrivateAddresses will assign private ip addresses from network range
-//it will ignore the addresses which were previously assigned to an existing nodes
+// it will ignore the addresses which were previously assigned to an existing nodes
 func setPrivateAddresses(nodepools []*pb.NodePool, network string) error {
 	_, ipNet, err := net.ParseCIDR(network)
 	if err != nil {
-		return fmt.Errorf("failed to parse CIDR: %w", err)
+		return fmt.Errorf("failed to parse CIDR %s : %w", network, err)
 	}
 	var addressesToAssign []*pb.Node
 
@@ -113,8 +113,8 @@ func setPrivateAddresses(nodepools []*pb.NodePool, network string) error {
 	return nil
 }
 
-//remove removes a value from the given slice
-//if value not found in slice, returns original slice
+// remove removes a value from the given slice
+// if value not found in slice, returns original slice
 func remove(slice []byte, value byte) []byte {
 	for idx, v := range slice {
 		if v == value {
@@ -124,7 +124,7 @@ func remove(slice []byte, value byte) []byte {
 	return slice
 }
 
-//groupNodepool takes a nodepools from slice of Nodepool infos and return slice of all pb.Nodepools
+// groupNodepool takes a nodepools from slice of Nodepool infos and return slice of all pb.Nodepools
 func groupNodepool(nodepoolInfo []*NodepoolInfo) []*pb.NodePool {
 	var nodepools []*pb.NodePool
 	for _, np := range nodepoolInfo {

@@ -53,22 +53,21 @@ func (c *ClaudieMongo) Connect() error {
 	// establish DB connection, this does not do any deployment checks/IO on the DB
 	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(c.URL))
 	if err != nil {
-		log.Error().Msgf("Failed to create a client at %s : %v", c.URL, err)
-		return err
+		return fmt.Errorf("failed to create a client at %s : %w", c.URL, err)
 	} else {
 		//if client creation successful, ping the DB to verify the connection
 		for i := 0; i < maxConnectionRetries; i++ {
-			log.Info().Msg("Trying to ping the DB again")
+			log.Info().Msgf("Trying to ping the DB at %s...", c.URL)
 			err := pingTheDB(client)
 			if err == nil {
-				log.Info().Msgf("The database has been successfully pinged")
+				log.Info().Msgf("The database at %s has been successfully pinged", c.URL)
 				c.client = client
 				return nil
 			}
 			// wait 5s for next retry
 			time.Sleep(defaultPingDelay)
 		}
-		return fmt.Errorf("mongodb connection failed after %d attempts due to unsuccessful ping verification", maxConnectionRetries)
+		return fmt.Errorf("database connection at %s failed after %d attempts due to unsuccessful ping verification", c.URL, maxConnectionRetries)
 	}
 }
 
@@ -90,7 +89,6 @@ func (c *ClaudieMongo) Init() error {
 	if err != nil {
 		return fmt.Errorf("failed to create index %s : %v", indexName, err)
 	}
-	log.Info().Msgf("Created collection with index name %s", indexName)
 	return nil
 }
 
@@ -101,7 +99,7 @@ func (c *ClaudieMongo) DeleteConfig(id string, idType pb.IdType) error {
 	if idType == pb.IdType_HASH {
 		oid, err := primitive.ObjectIDFromHex(id)
 		if err != nil {
-			return fmt.Errorf("error while converting id %s to mongo primitive : %v", id, err)
+			return fmt.Errorf("error while converting id %s to mongo primitive : %w", id, err)
 		}
 		filter = bson.M{"_id": oid} //create filter for searching in the database by hex id
 	} else {
@@ -110,10 +108,10 @@ func (c *ClaudieMongo) DeleteConfig(id string, idType pb.IdType) error {
 
 	res, err := c.collection.DeleteOne(context.Background(), filter) //delete object from the database
 	if err != nil {
-		return fmt.Errorf("error while attempting to delete config in MongoDB: %v", err)
+		return fmt.Errorf("error while attempting to delete config in MongoDB with ID %s : %w", id, err)
 	}
 	if res.DeletedCount == 0 { //check if the object was really deleted
-		return fmt.Errorf("cannot find config with the specified ID %s: %v", id, err)
+		return fmt.Errorf("cannot find config with the specified ID %s : %w", id, err)
 	}
 	return nil
 }
@@ -136,7 +134,7 @@ func (c *ClaudieMongo) GetConfig(id string, idType pb.IdType) (*pb.Config, error
 	}
 	config, err := dataToConfigPb(&d)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error while converting config %s : %w", config.Name, err)
 	}
 	return config, nil
 }
@@ -153,7 +151,7 @@ func (c *ClaudieMongo) GetAllConfigs() ([]*pb.Config, error) {
 		//convert them to *pb.Config
 		c, err := dataToConfigPb(config)
 		if err != nil {
-			return nil, fmt.Errorf("error on config %s : %v", config.Name, err)
+			return nil, fmt.Errorf("error while converting config %s : %w", config.Name, err)
 		}
 		res = append(res, c) // append them to result
 	}
@@ -165,14 +163,14 @@ func (c *ClaudieMongo) GetAllConfigs() ([]*pb.Config, error) {
 // return error if not successful, nil otherwise
 func (c *ClaudieMongo) SaveConfig(config *pb.Config) error {
 	// Convert desiredState and currentState to byte[] because we want to save them to the database
-	desiredStateByte, errDS := proto.Marshal(config.DesiredState)
-	if errDS != nil {
-		return fmt.Errorf("error while converting from protobuf to byte: %v", errDS)
-	}
+	var desiredStateByte, currentStateByte []byte
+	var err error
 
-	currentStateByte, errCS := proto.Marshal(config.CurrentState)
-	if errCS != nil {
-		return fmt.Errorf("error while converting from protobuf to byte: %v", errCS)
+	if desiredStateByte, err = proto.Marshal(config.DesiredState); err != nil {
+		return fmt.Errorf("error while converting config %s from protobuf to byte: %w", config.Name, err)
+	}
+	if currentStateByte, err = proto.Marshal(config.CurrentState); err != nil {
+		return fmt.Errorf("error while converting config %s from protobuf to byte: %w", config.Name, err)
 	}
 
 	// Parse data and map it to the configItem struct
@@ -194,25 +192,25 @@ func (c *ClaudieMongo) SaveConfig(config *pb.Config) error {
 		//Get id from config as oid
 		oid, err := primitive.ObjectIDFromHex(config.GetId())
 		if err != nil {
-			return fmt.Errorf("cannot parse ID : %v", err)
+			return fmt.Errorf("cannot parse ID %s : %w", config.Id, err)
 		}
 		filter := bson.M{"_id": oid}
 
 		_, err = c.collection.ReplaceOne(context.Background(), filter, data)
 		if err != nil {
-			return fmt.Errorf("cannot update config with specified ID: %v", err)
+			return fmt.Errorf("cannot update config with specified ID %s : %w", config.Id, err)
 		}
 	} else {
 		// Add data to the collection if OID doesn't exist
 		res, err := c.collection.InsertOne(context.Background(), data)
 		if err != nil {
 			// Return error in protobuf
-			return fmt.Errorf("internal error: %v", err)
+			return fmt.Errorf("error while inserting config %s into DB: %w", config.Name, err)
 		}
 
 		oid, ok := res.InsertedID.(primitive.ObjectID)
 		if !ok {
-			return fmt.Errorf("cannot convert to OID")
+			return fmt.Errorf("error while getting oid for config %s : cannot convert to oid", config.Name)
 		}
 		data.ID = oid
 		//set new id to config
@@ -226,10 +224,7 @@ func (c *ClaudieMongo) SaveConfig(config *pb.Config) error {
 func (c *ClaudieMongo) UpdateSchedulerTTL(name string, newTTL int32) error {
 	err := c.updateDocument(bson.M{"name": name}, bson.M{"$set": bson.M{"SchedulerTTL": newTTL}})
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			log.Warn().Msgf("Document %s failed to update Scheduler TTL", name)
-		}
-		return err
+		return fmt.Errorf("failed to update Scheduler TTL for document %s : %w", name, err)
 	}
 	return nil
 }
@@ -239,10 +234,7 @@ func (c *ClaudieMongo) UpdateSchedulerTTL(name string, newTTL int32) error {
 func (c *ClaudieMongo) UpdateBuilderTTL(name string, newTTL int32) error {
 	err := c.updateDocument(bson.M{"name": name}, bson.M{"$set": bson.M{"BuilderTTL": newTTL}})
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			log.Warn().Msgf("Document %s failed to update Scheduler TTL", name)
-		}
-		return err
+		return fmt.Errorf("failed to update Builder TTL for document %s : %w", name, err)
 	}
 	return nil
 }
@@ -258,7 +250,7 @@ func (c *ClaudieMongo) UpdateMsToNull(hexId string) error {
 	err = c.updateDocument(bson.M{"_id": id}, bson.M{"$set": bson.M{"manifest": nil, "msChecksum": nil, "errorMessage": nil}})
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			log.Warn().Msgf("Document with id %s failed to update msChecksum", id)
+			log.Error().Msgf("Document with id %s failed to update msChecksum", id)
 		}
 		return err
 	}
@@ -270,7 +262,7 @@ func (c *ClaudieMongo) UpdateDs(config *pb.Config) error {
 	// convert DesiredState to []byte type
 	desiredStateByte, err := proto.Marshal(config.DesiredState)
 	if err != nil {
-		return fmt.Errorf("error while converting from protobuf to byte: %v", err)
+		return fmt.Errorf("error while converting config %s from protobuf to byte: %w", config.Name, err)
 	}
 	// updation query
 	err = c.updateDocument(bson.M{"name": config.Name}, bson.M{"$set": bson.M{
@@ -279,10 +271,7 @@ func (c *ClaudieMongo) UpdateDs(config *pb.Config) error {
 		"errorMessage": config.ErrorMessage,
 	}})
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			log.Warn().Msgf("Document with name %s failed to update dsChecksum and desiredState", config.Name)
-		}
-		return err
+		return fmt.Errorf("failed to update dsChecksum and desiredState for document %s : %w", config.Name, err)
 	}
 	return nil
 }
@@ -292,7 +281,7 @@ func (c *ClaudieMongo) UpdateCs(config *pb.Config) error {
 	// convert CurrentState to []byte type
 	currentStateByte, err := proto.Marshal(config.CurrentState)
 	if err != nil {
-		return fmt.Errorf("error while converting from protobuf to byte: %v", err)
+		return fmt.Errorf("error while converting config %s from protobuf to byte: %w", config.Name, err)
 	}
 	err = c.updateDocument(bson.M{"name": config.Name}, bson.M{"$set": bson.M{
 		"csChecksum":   config.CsChecksum,
@@ -300,10 +289,7 @@ func (c *ClaudieMongo) UpdateCs(config *pb.Config) error {
 		"errorMessage": config.ErrorMessage,
 	}})
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			log.Warn().Msgf("Document with name %s failed to update csChecksum and currentState", config.Name)
-		}
-		return err
+		return fmt.Errorf("failed to update csChecksum and currentState for document %s : %w", config.Name, err)
 	}
 	return nil
 }
@@ -314,7 +300,7 @@ func (c *ClaudieMongo) getByNameFromDB(name string) (configItem, error) {
 	var data configItem
 	filter := bson.M{"name": name}
 	if err := c.collection.FindOne(context.Background(), filter).Decode(&data); err != nil {
-		return data, fmt.Errorf("error while finding name %s in the DB: %v", name, err)
+		return data, fmt.Errorf("error while finding name %s in the DB: %w", name, err)
 	}
 	return data, nil
 }
@@ -325,11 +311,11 @@ func (c *ClaudieMongo) getByIDFromDB(id string) (configItem, error) {
 	var data configItem
 	oid, err := primitive.ObjectIDFromHex(id) // convert id to mongo id type (oid)
 	if err != nil {
-		return data, err
+		return data, fmt.Errorf("error while converting ID %s to oid : %w", id, err)
 	}
 	filter := bson.M{"_id": oid}
 	if err := c.collection.FindOne(context.Background(), filter).Decode(&data); err != nil {
-		return data, fmt.Errorf("error while finding ID in the DB: %v", err)
+		return data, fmt.Errorf("error while finding ID %s in the DB: %w", id, err)
 	}
 	return data, nil
 }
@@ -353,13 +339,13 @@ func dataToConfigPb(data *configItem) (*pb.Config, error) {
 	var desiredState *pb.Project = new(pb.Project)
 	err := proto.Unmarshal(data.DesiredState, desiredState)
 	if err != nil {
-		return nil, fmt.Errorf("error while Unmarshal desiredState: %v", err)
+		return nil, fmt.Errorf("error while unmarshalling desiredState: %w", err)
 	}
 
 	var currentState *pb.Project = new(pb.Project)
 	err = proto.Unmarshal(data.CurrentState, currentState)
 	if err != nil {
-		return nil, fmt.Errorf("error while Unmarshal currentState: %v", err)
+		return nil, fmt.Errorf("error while unmarshalling currentState: %w", err)
 	}
 
 	return &pb.Config{
@@ -384,8 +370,7 @@ func pingTheDB(client *mongo.Client) error {
 	defer cancel()
 	err := client.Ping(ctxWithTimeout, readpref.Primary())
 	if err != nil {
-		log.Warn().Msgf("Unable to ping database: %v", err)
-		return fmt.Errorf("unable to ping the database: %v", err)
+		return fmt.Errorf("unable to ping the database: %w", err)
 	}
 	return nil
 }
@@ -400,14 +385,14 @@ func (c *ClaudieMongo) getAllFromDB() ([]*configItem, error) {
 	defer func() {
 		err := cur.Close(context.Background())
 		if err != nil {
-			log.Fatal().Msgf("Failed to close MongoDB cursor: %v", err)
+			log.Error().Msgf("Failed to close MongoDB cursor: %v", err)
 		}
 	}()
 	for cur.Next(context.Background()) { //Iterate through cur and extract all data
-		data := &configItem{}   //initialize empty struct
+		data := &configItem{}
 		err := cur.Decode(data) //Decode data from cursor to data
-		if err != nil {         //check error
-			return nil, err
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode data from cursor : %w", err)
 		}
 		configs = append(configs, data) //append decoded data (config) to res (response) slice
 	}

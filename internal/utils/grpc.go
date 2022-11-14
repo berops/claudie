@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"time"
 
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -16,7 +16,7 @@ import (
 // CloseClientConnection is a wrapper around grpc.ClientConn Close function
 func CloseClientConnection(connection *grpc.ClientConn) {
 	if err := connection.Close(); err != nil {
-		log.Fatalln("Error while closing the client connection:", err)
+		log.Error().Msgf("Error while closing the client connection %s : %v", connection.Target(), err)
 	}
 }
 
