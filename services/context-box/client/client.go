@@ -107,7 +107,7 @@ func printConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType, stat
 	var printState *pb.Project
 	res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: id, Type: idType})
 	if err != nil {
-		log.Fatal().Msgf("Failed to get config ID %s : %v", id, err)
+		return "", fmt.Errorf("Failed to get config ID %s : %v", id, err)
 	}
 	if state == desired {
 		printState = res.GetConfig().GetDesiredState()
