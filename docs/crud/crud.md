@@ -35,3 +35,11 @@ If the user wishes to update the input manifest, they can edit/reapply the secre
 # Delete
 
 If you wish to destroy your cluster along with the infra, you can remove the cluster definition block from the input-manifest and update the k8s secret respectively. If you wish you delete all the clusters defined in an input-manifest, you just simply need to delete the k8s secret containing the manifest. Both the events will trigger the deletion process. This deletion process will delete the current infra and it also deletes all data related to the particular input manifest.
+
+# Outputs
+
+So far, there is only one output Claudie has, which are kubeconfigs to your clusters. They are outputted in form of a secret, in the namespace, where claudie is deployed. The name of the secret follows the structure `<cluster-name>-<cluster-hash>-kubeconfig`. You can access it by outputting it and decoding it from base64 encoding. 
+
+Example of how to decode it:
+
+`kubectl get secrets -n claudie <cluster-name>-<cluster-hash>-kubeconfig -o jsonpath='{.data.secretdata}' | base64 -d > your_kubeconfig.yaml`
