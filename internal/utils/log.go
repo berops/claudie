@@ -33,7 +33,7 @@ func InitLog(moduleName string) {
 		if err != nil {
 			logger.Err(err)
 		} else {
-			logger.Info().Msgf("Using %s log level %v", logLevel, logLevel)
+			logger.Info().Msgf("Using log with the level \"%v\"", logLevel)
 		}
 		isLogInit = true
 	}
@@ -42,16 +42,11 @@ func InitLog(moduleName string) {
 
 func getLogLevelFromEnv() (zerolog.Level, error) {
 	logLevelStr := envs.LogLevel
-	var logLevel zerolog.Level
-	var e error = nil
 	level, err := convertLogLevelStr(logLevelStr)
 	if err != nil {
-		e = fmt.Errorf("unsupported %s value %s. Assuming log level %v", logLevelStr, logLevelStr, defaultLogLevel)
-		logLevel = defaultLogLevel
-	} else {
-		logLevel = level
+		return defaultLogLevel, fmt.Errorf("unsupported value \"%s\" for log level. Using log level \"%v\"", logLevelStr, defaultLogLevel)
 	}
-	return logLevel, e
+	return level, err
 }
 
 func convertLogLevelStr(logLevelStr string) (zerolog.Level, error) {
@@ -68,7 +63,6 @@ func convertLogLevelStr(logLevelStr string) (zerolog.Level, error) {
 	res, ok := levels[strings.ToLower(logLevelStr)]
 	if !ok {
 		return defaultLogLevel, fmt.Errorf("unsupported log level %s", logLevelStr)
-	} else {
-		return res, nil
 	}
+	return res, nil
 }

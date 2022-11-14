@@ -228,6 +228,9 @@ jobs:
       - name: Deploy to new namespace
         working-directory: ./manifests/claudie
         run: |
+          #set log level to debug
+          sed -i 's/GOLANG_LOG=info/GOLANG_LOG=debug/g' .env
+
           kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
           kustomize build | kubectl apply -f -
 

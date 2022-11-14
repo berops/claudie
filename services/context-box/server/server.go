@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Berops/claudie/internal/envs"
 	"github.com/Berops/claudie/internal/utils"
 	"github.com/Berops/claudie/internal/worker"
 	"github.com/Berops/claudie/services/context-box/server/checksum"
@@ -38,26 +39,19 @@ var (
 
 // SaveConfigScheduler is a gRPC service: the function saves config to the DB after receiving it from Scheduler
 func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
-	log.Info().Msg("CLIENT REQUEST: SaveConfigScheduler")
 	config := req.GetConfig()
-
+	log.Info().Msgf("CLIENT REQUEST: SaveConfigScheduler for %s", config.Name)
 	// Save new config to the DB
 	config.DsChecksum = config.MsChecksum
 	config.SchedulerTTL = 0
 	err := database.UpdateDs(config)
 	if err != nil {
-		return nil, status.Errorf(
-			codes.Internal,
-			fmt.Sprintf("Error while updating dsChecksum and : %v", err),
-		)
+		return nil, fmt.Errorf("error while updating dsChecksum for %s : %v", config.Name, err)
 	}
 
 	err = database.UpdateSchedulerTTL(config.Name, config.SchedulerTTL)
 	if err != nil {
-		return nil, status.Errorf(
-			codes.Internal,
-			fmt.Sprintf("Error while update schedulerTTL: %v", err),
-		)
+		return nil, fmt.Errorf("error while updating schedulerTTL for %s : %v", config.Name, err)
 	}
 
 	return &pb.SaveConfigResponse{Config: config}, nil
@@ -65,15 +59,13 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 
 // SaveConfigFrontEnd is a gRPC service: the function saves config to the DB after receiving it from Frontend
 func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
-	log.Info().Msg("CLIENT REQUEST: SaveConfigFrontEnd")
 	newConfig := req.GetConfig()
+	log.Info().Msgf("CLIENT REQUEST: SaveConfigFrontEnd for %s", newConfig.Name)
 	newConfig.MsChecksum = checksum.CalculateChecksum(newConfig.Manifest)
 
 	//check if any data already present for the newConfig
 	oldConfig, err := database.GetConfig(newConfig.GetName(), pb.IdType_NAME)
-	if err != nil {
-		log.Info().Msgf("No existing doc with name: %v", newConfig.Name)
-	} else {
+	if err == nil {
 		if string(oldConfig.MsChecksum) != string(newConfig.MsChecksum) {
 			oldConfig.MsChecksum = newConfig.MsChecksum
 			oldConfig.Manifest = newConfig.Manifest
@@ -94,10 +86,10 @@ func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest
 
 // SaveConfigBuilder is a gRPC service: the function saves config to the DB after receiving it from Builder
 func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
-	log.Info().Msg("CLIENT REQUEST: SaveConfigBuilder")
 	config := req.GetConfig()
+	log.Info().Msgf("CLIENT REQUEST: SaveConfigBuilder for %s", config.Name)
 
-	// Save new config to the DB
+	// Save new config to the DB, update csState as dsState
 	config.CsChecksum = config.DsChecksum
 	config.BuilderTTL = 0
 	// In Builder, the desired state is also updated i.e. in terraformer (node IPs, etc) thus
@@ -107,11 +99,11 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 	}
 	// Update the current state so its equal to the desired state
 	if err := database.UpdateCs(config); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("Error while updating current state: %v", err))
+		return nil, fmt.Errorf("error while updating csChecksum for %s : %w", config.Name, err)
 	}
 
 	if err := database.UpdateBuilderTTL(config.Name, config.BuilderTTL); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("Error while update builderTTL: %v", err))
+		return nil, fmt.Errorf("error while updating builderTTL for %s : %w", config.Name, err)
 	}
 
 	return &pb.SaveConfigResponse{Config: config}, nil
@@ -119,18 +111,16 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 
 // GetConfigById is a gRPC service: function returns one config from the DB based on the requested index/name
 func (*server) GetConfigFromDB(ctx context.Context, req *pb.GetConfigFromDBRequest) (*pb.GetConfigFromDBResponse, error) {
-	log.Info().Msg("CLIENT REQUEST: GetConfigFromDB")
+	log.Info().Msgf("CLIENT REQUEST: GetConfigFromDB for %s", req.Id)
 	config, err := database.GetConfig(req.Id, req.Type)
 	if err != nil {
-		log.Error().Msgf("Error while getting a config from database : %v", err)
-		return nil, err
+		return nil, fmt.Errorf("error while getting a config %s from database : %w", req.Id, err)
 	}
 	return &pb.GetConfigFromDBResponse{Config: config}, nil
 }
 
 // GetConfigScheduler is a gRPC service: function returns oldest config from the queueScheduler
 func (*server) GetConfigScheduler(ctx context.Context, req *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
-	log.Info().Msg("GetConfigScheduler request")
 	configInfo := queueScheduler.Dequeue()
 	if configInfo != nil {
 		config, err := database.GetConfig(configInfo.GetName(), pb.IdType_NAME)
@@ -144,7 +134,6 @@ func (*server) GetConfigScheduler(ctx context.Context, req *pb.GetConfigRequest)
 
 // GetConfigBuilder is a gRPC service: function returns oldest config from the queueBuilder
 func (*server) GetConfigBuilder(ctx context.Context, req *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
-	log.Info().Msg("GetConfigBuilder request")
 	configInfo := queueBuilder.Dequeue()
 	if configInfo != nil {
 		config, err := database.GetConfig(configInfo.GetName(), pb.IdType_NAME)
@@ -158,7 +147,6 @@ func (*server) GetConfigBuilder(ctx context.Context, req *pb.GetConfigRequest) (
 
 // GetAllConfigs is a gRPC service: function returns all configs from the DB
 func (*server) GetAllConfigs(ctx context.Context, req *pb.GetAllConfigsRequest) (*pb.GetAllConfigsResponse, error) {
-	log.Info().Msg("CLIENT REQUEST: GetAllConfigs")
 	configs, err := database.GetAllConfigs()
 	if err != nil {
 		return nil, fmt.Errorf("error getting all configs : %v", err)
@@ -169,7 +157,7 @@ func (*server) GetAllConfigs(ctx context.Context, req *pb.GetAllConfigsRequest) 
 // DeleteConfig sets the manifest to nil so that the iteration workflow for this
 // config destroys the previous build infrastructure.
 func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*pb.DeleteConfigResponse, error) {
-	log.Info().Msg("CLIENT REQUEST: DeleteConfig")
+	log.Info().Msgf("CLIENT REQUEST: DeleteConfig %s", req.Id)
 	err := database.UpdateMsToNull(req.Id)
 	if err != nil {
 		return nil, err
@@ -180,12 +168,10 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 
 // DeleteConfigFromDB removes the config from the request from the mongoDB database.
 func (*server) DeleteConfigFromDB(ctx context.Context, req *pb.DeleteConfigRequest) (*pb.DeleteConfigResponse, error) {
-	log.Info().Msgf("received DeleteConfigFromDB req: %+v", req)
-
+	log.Info().Msgf("CLIENT REQUEST: DeleteConfigFromDB for %s", req.Id)
 	if err := database.DeleteConfig(req.GetId(), req.GetType()); err != nil {
 		return nil, err
 	}
-
 	return &pb.DeleteConfigResponse{Id: req.GetId()}, nil
 }
 
@@ -197,6 +183,7 @@ func main() {
 	if err != nil {
 		log.Fatal().Msgf("Failed to connect to the database, aborting... : %v", err)
 	}
+	log.Info().Msgf("Connected to database at %s", envs.DatabaseURL)
 	defer func() {
 		err := database.Disconnect()
 		if err != nil {

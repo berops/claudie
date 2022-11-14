@@ -34,12 +34,12 @@ func generateInventoryFile(inventoryTemplate, directory string, data interface{}
 	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.AnsiblerTemplates}
 	tpl, err := templateLoader.LoadTemplate(inventoryTemplate)
 	if err != nil {
-		return fmt.Errorf("error while loading template %s : %w", inventoryTemplate, err)
+		return fmt.Errorf("error while loading template %s for %s : %w", inventoryTemplate, directory, err)
 	}
 	template := templateUtils.Templates{Directory: directory}
 	err = template.Generate(tpl, inventoryFile, data)
 	if err != nil {
-		return fmt.Errorf("error while generating from template %s : %w", inventoryTemplate, err)
+		return fmt.Errorf("error while generating from template %s for %s : %w", inventoryTemplate, directory, err)
 	}
 	return nil
 }

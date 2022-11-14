@@ -27,7 +27,7 @@ type server struct {
 	pb.UnimplementedAnsiblerServiceServer
 }
 
-//InstallNodeRequirements installs any requirements there are on all of the nodes
+// InstallNodeRequirements installs any requirements there are on all of the nodes
 func (*server) InstallNodeRequirements(_ context.Context, req *pb.InstallRequest) (*pb.InstallResponse, error) {
 	var k8sNodepools []*NodepoolInfo
 	//add k8s nodes to k8sNodepools
@@ -35,15 +35,15 @@ func (*server) InstallNodeRequirements(_ context.Context, req *pb.InstallRequest
 		k8sNodepools = append(k8sNodepools, &NodepoolInfo{Nodepools: cluster.ClusterInfo.NodePools, PrivateKey: cluster.ClusterInfo.PrivateKey, ID: cluster.ClusterInfo.Name})
 	}
 	//since all nodes need to have longhorn req installed, we do not need to sort them in any way
-	err := installLonghornRequirements(k8sNodepools)
-	if err != nil {
-		log.Error().Msgf("Error encountered while installing node requirements : %v", err)
-		return nil, fmt.Errorf("error encountered while installing node requirements : %w", err)
+	if err := installLonghornRequirements(k8sNodepools); err != nil {
+		log.Error().Msgf("Error encountered while installing node requirements for project %s : %s", req.DesiredState.Name, err.Error())
+		return nil, fmt.Errorf("error encountered while installing node requirements for project %s : %s", req.DesiredState.Name, err.Error())
 	}
+	log.Info().Msgf("Node requirements for project %s were successfully installed", req.DesiredState.Name)
 	return &pb.InstallResponse{DesiredState: req.DesiredState}, nil
 }
 
-//InstallVPN installs VPN between nodes in the k8s cluster and lb clusters
+// InstallVPN installs VPN between nodes in the k8s cluster and lb clusters
 func (*server) InstallVPN(_ context.Context, req *pb.InstallRequest) (*pb.InstallResponse, error) {
 	vpnNodepools := make(map[string]*VPNInfo) //[k8sClusterName][]nodepoolInfos
 	//add k8s nodepools to vpn nodepools
@@ -59,15 +59,15 @@ func (*server) InstallVPN(_ context.Context, req *pb.InstallRequest) (*pb.Instal
 		}
 	}
 	//there will be N VPNs for N clusters, thus we sorted the nodes based on the k8s cluster name
-	err := installWireguardVPN(vpnNodepools)
-	if err != nil {
-		log.Error().Msgf("Error encountered while installing VPN : %v", err)
-		return nil, fmt.Errorf("error encountered while installing VPN : %w", err)
+	if err := installWireguardVPN(vpnNodepools); err != nil {
+		log.Error().Msgf("Error encountered while installing VPN for project %s : %s", req.DesiredState.Name, err.Error())
+		return nil, fmt.Errorf("error encountered while installing VPN for project %s : %s", req.DesiredState.Name, err.Error())
 	}
+	log.Info().Msgf("VPNs for project %s were successfully installed", req.DesiredState.Name)
 	return &pb.InstallResponse{DesiredState: req.DesiredState}, nil
 }
 
-//SetUpLoadbalancers sets up the loadbalancers, DNS and verifies their configuration
+// SetUpLoadbalancers sets up the loadbalancers, DNS and verifies their configuration
 func (*server) SetUpLoadbalancers(_ context.Context, req *pb.SetUpLBRequest) (*pb.SetUpLBResponse, error) {
 	lbInfos := make(map[string]*LBInfo)             //[k8sClusterName]lbInfo
 	k8sNodepools := make(map[string][]*pb.NodePool) //[k8sClusterName][]nodepools
@@ -101,14 +101,14 @@ func (*server) SetUpLoadbalancers(_ context.Context, req *pb.SetUpLBRequest) (*p
 			//save new values
 			lbInfos[lb.TargetedK8S] = newLbInfo
 		} else {
-			log.Error().Msgf("Loadbalancer %s has not found a target k8s cluster (%s)", lb.ClusterInfo.Name, lb.TargetedK8S)
+			log.Error().Msgf("Loadbalancer %s from project %s has not found a target k8s cluster (%s)", lb.ClusterInfo.Name, req.DesiredState.Name, lb.TargetedK8S)
 		}
 	}
-	err := setUpLoadbalancers(lbInfos)
-	if err != nil {
-		log.Error().Msgf("Error encountered while setting up the loadbalancers : %v", err)
-		return nil, fmt.Errorf("error encountered while setting up the loadbalancers : %w", err)
+	if err := setUpLoadbalancers(lbInfos); err != nil {
+		log.Error().Msgf("Error encountered while setting up the loadbalancers for project %s : %s", req.DesiredState.Name, err.Error())
+		return nil, fmt.Errorf("error encountered while setting up the loadbalancers for project %s : %s", req.DesiredState.Name, err.Error())
 	}
+	log.Info().Msgf("Loadbalancers for project %s were successfully set up", req.DesiredState.Name)
 	return &pb.SetUpLBResponse{DesiredState: req.DesiredState}, nil
 }
 

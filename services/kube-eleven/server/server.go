@@ -41,17 +41,17 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 				ke := kubeEleven.KubeEleven{K8sCluster: cluster, LBClusters: lbClusters}
 				err := ke.BuildCluster()
 				if err != nil {
-					log.Error().Msgf("error encountered in KubeEleven - BuildCluster: %v", err)
-					return err
+					return fmt.Errorf("error while building cluster %s : %v", cluster.ClusterInfo.Name, err)
 				}
 				return nil
 			})
 		}(cluster, desiredState.LoadBalancerClusters)
 	}
-	err := errGroup.Wait()
-	if err != nil {
-		return &pb.BuildClusterResponse{DesiredState: desiredState, ErrorMessage: err.Error()}, err
+	if err := errGroup.Wait(); err != nil {
+		log.Error().Msgf("Error encounter in BuildCluster for project %s : %s", desiredState.Name, err.Error())
+		return &pb.BuildClusterResponse{DesiredState: desiredState, ErrorMessage: fmt.Sprintf("Error encounter in BuildCluster for project %s : %s", desiredState.Name, err.Error())}, err
 	}
+	log.Info().Msgf("Clusters for project %s were successfully build", desiredState.Name)
 	return &pb.BuildClusterResponse{DesiredState: desiredState, ErrorMessage: ""}, nil
 }
 

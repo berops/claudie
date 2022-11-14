@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/Berops/claudie/proto/pb"
-	"github.com/rs/zerolog/log"
 )
 
 // InstallVPN installs a Wireguard VPN on the nodes in the cluster and loadbalancers
@@ -14,7 +13,6 @@ func InstallVPN(c pb.AnsiblerServiceClient, req *pb.InstallRequest) (*pb.Install
 	if err != nil {
 		return res, fmt.Errorf("error while calling InstallVPN on Ansibler: %w", err)
 	}
-	log.Info().Msg("VPN was successfully installed")
 	return res, nil
 }
 
@@ -24,7 +22,6 @@ func InstallNodeRequirements(c pb.AnsiblerServiceClient, req *pb.InstallRequest)
 	if err != nil {
 		return res, fmt.Errorf("error while calling InstallNodeRequirements on Ansibler: %w", err)
 	}
-	log.Info().Msg("Node requirements were successfully installed")
 	return res, nil
 }
 
@@ -34,6 +31,5 @@ func SetUpLoadbalancers(c pb.AnsiblerServiceClient, req *pb.SetUpLBRequest) (*pb
 	if err != nil {
 		return res, fmt.Errorf("error while calling SetUpLoadbalancers on Ansibler: %w", err)
 	}
-	log.Info().Msg("Loadbalancers were successfully set up")
 	return res, nil
 }
