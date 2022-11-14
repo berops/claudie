@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/Berops/claudie/proto/pb"
-	"github.com/rs/zerolog/log"
 )
 
 // BuildInfrastructure uses TerraformServiceClient to build/deploy the infrastructure
@@ -14,8 +13,6 @@ func BuildInfrastructure(c pb.TerraformerServiceClient, req *pb.BuildInfrastruct
 	if err != nil {
 		return nil, fmt.Errorf("error while calling BuildInfrastructure on Terraformer: %w", err)
 	}
-
-	log.Info().Msg("Infrastructure was successfully built")
 	return res, nil
 }
 
@@ -25,7 +22,5 @@ func DestroyInfrastructure(c pb.TerraformerServiceClient, req *pb.DestroyInfrast
 	if err != nil {
 		return res, fmt.Errorf("error while calling DestroyInfrastructure on Terraformer: %w", err)
 	}
-
-	log.Info().Msg("Infrastructure was successfully destroyed")
 	return res, nil
 }

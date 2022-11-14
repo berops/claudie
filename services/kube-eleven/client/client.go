@@ -14,6 +14,5 @@ func BuildCluster(c pb.KubeElevenServiceClient, req *pb.BuildClusterRequest) (*p
 		log.Error().Msgf("Error building cluster: %v", err)
 		return res, err
 	}
-	log.Info().Msg("Clusters were successfully built")
 	return res, nil
 }

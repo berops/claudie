@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/Berops/claudie/proto/pb"
-	"github.com/rs/zerolog/log"
 )
 
 // GetClusterByName will return Cluster that will have same name as specified in parameters
@@ -86,6 +85,5 @@ func FindName(realNames []string, name string) string {
 			return n
 		}
 	}
-	log.Error().Msgf("Error: no real name found for %s", name)
 	return ""
 }

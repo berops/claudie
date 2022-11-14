@@ -15,7 +15,6 @@ import (
 	"github.com/Berops/claudie/services/terraformer/server/backend"
 	"github.com/Berops/claudie/services/terraformer/server/provider"
 	"github.com/Berops/claudie/services/terraformer/server/terraform"
-	"github.com/rs/zerolog/log"
 )
 
 const Output = "services/terraformer/server/clusters"
@@ -81,20 +80,18 @@ func (c ClusterBuilder) CreateNodepools() error {
 	for _, nodepool := range c.DesiredInfo.NodePools {
 		output, err := terraform.TerraformOutput(nodepool.Name)
 		if err != nil {
-			log.Error().Msgf("Error while getting output from terraform: %v", err)
-			return err
+			return fmt.Errorf("error while getting output from terraform for %s : %w", nodepool.Name, err)
 		}
 		out, err := readIPs(output)
 		if err != nil {
-			log.Error().Msgf("Error while reading the terraform output: %v", err)
-			return err
+			return fmt.Errorf("error while reading the terraform output for %s : %w", nodepool.Name, err)
 		}
 		fillNodes(&out, nodepool, oldNodes)
 	}
 
 	// Clean after terraform
 	if err := os.RemoveAll(clusterDir); err != nil {
-		return fmt.Errorf("error while deleting files: %w", err)
+		return fmt.Errorf("error while deleting files in %s : %w", clusterDir, err)
 	}
 
 	return nil
@@ -124,7 +121,7 @@ func (c ClusterBuilder) DestroyNodepools() error {
 
 	// Clean after terraform.
 	if err := os.RemoveAll(clusterDir); err != nil {
-		return fmt.Errorf("error while deleting files: %w", err)
+		return fmt.Errorf("error while deleting files in %s : %w", clusterDir, err)
 	}
 
 	return nil
@@ -176,25 +173,23 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 		// Load TF files of the specific cloud provider
 		tpl, err := templateLoader.LoadTemplate(fmt.Sprintf("%s%s", nodepools[0].Provider.CloudProviderName, tplType))
 		if err != nil {
-			return fmt.Errorf("error while parsing template file backend.tpl: %w", err)
+			return fmt.Errorf("error while parsing template file %s : %w", fmt.Sprintf("%s%s", nodepools[0].Provider.CloudProviderName, tplType), err)
 		}
 
 		// Parse the templates and create Tf files
 		err = template.Generate(tpl, fmt.Sprintf("%s-%s.tf", clusterID, providerSpecName), nodepoolData)
 		if err != nil {
-			return fmt.Errorf("error while generating .tf files : %w", err)
+			return fmt.Errorf("error while generating %s file : %w", fmt.Sprintf("%s-%s.tf", clusterID, providerSpecName), err)
 		}
 
 		// Create publicKey file for a cluster
 		if err := utils.CreateKeyFile(clusterInfo.PublicKey, clusterDir, "public.pem"); err != nil {
-			log.Error().Msgf("Error creating key file: %v", err)
-			return err
+			return fmt.Errorf("error creating key file for %s : %v", clusterDir, err)
 		}
 
 		// save keys
 		if err = utils.CreateKeyFile(nodepools[0].Provider.Credentials, clusterDir, providerSpecName); err != nil {
-			log.Error().Msgf("Error creating provider credential key file: %v", err)
-			return err
+			return fmt.Errorf("error creating provider credential key file for provider %s in %s : %v", providerSpecName, clusterDir, err)
 		}
 
 	}
