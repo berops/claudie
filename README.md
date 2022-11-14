@@ -31,17 +31,21 @@ Claudie comes with a pre-configured storage solution, with ready-to-use Storage 
 
 # Get started using Claudie
 
-Deploy Claudie Kubernetes [manifests](https://github.com/Berops/claudie/tree/master/manifests/claudie) into a Kubernetes cluster.
+Deploy Claudie Kubernetes [manifests/claudie](https://github.com/Berops/claudie/tree/master/manifests/claudie) into a Kubernetes cluster.
 
 ```
 kustomize build | kubectl apply -f -
 ```
+
+> NOTE: Please make sure you are in `/manifests/claudie` directory before running `kustomize build` 
 
 Lastly, provide your own manifest via a Kubernetes Secret.
 
 Example of the input manifest can be found [here](https://github.com/Berops/claudie/blob/master/docs/input-manifest/example.yaml).
 
 To see in detail how you apply the manifest into Claudie, please refer to the [CRUD](./docs/crud/crud.md) document.
+
+After the input manifest is successfully applied the kubeconfig to your newly built clusters will be outputted as a secret in the `claudie` namespace with the name `<cluster-name>-<cluster-hash>-kubeconfig` 
 
 # Get involved
 
