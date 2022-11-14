@@ -117,33 +117,33 @@ func printConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType, stat
 	buffer.WriteString(fmt.Sprintf("\nConfig name: %s\n", res.GetConfig().GetName()))
 	buffer.WriteString(fmt.Sprintf("Config ID: %s\n", res.GetConfig().GetId()))
 	buffer.WriteString(fmt.Sprintf("Project name: %s\n", printState.GetName()))
-	buffer.WriteString(fmt.Sprintf("Project clusters: \n"))
+	buffer.WriteString("Project clusters: \n")
 	for i, cluster := range printState.GetClusters() {
-		buffer.WriteString(fmt.Sprintf("========================================\n"))
+		buffer.WriteString("========================================\n")
 		buffer.WriteString(fmt.Sprintf("Cluster number: %d\n", i))
 		buffer.WriteString(fmt.Sprintf("Name: %s\n", cluster.ClusterInfo.GetName()))
 		buffer.WriteString(fmt.Sprintf("Hash: %s\n", cluster.ClusterInfo.GetHash()))
 		buffer.WriteString(fmt.Sprintf("Kubernetes version: %s\n", cluster.GetKubernetes()))
 		buffer.WriteString(fmt.Sprintf("Network CIDR: %s\n", cluster.GetNetwork()))
-		buffer.WriteString(fmt.Sprintf("Kubeconfig:\n"))
+		buffer.WriteString("Kubeconfig:\n")
 		buffer.WriteString(fmt.Sprintf("%s\n", cluster.GetKubeconfig()))
-		buffer.WriteString(fmt.Sprintf("Public key:\n"))
+		buffer.WriteString("Public key:\n")
 		buffer.WriteString(fmt.Sprintf("%s\n", cluster.ClusterInfo.PublicKey))
-		buffer.WriteString(fmt.Sprintf("Private key:\n"))
+		buffer.WriteString("Private key:\n")
 		buffer.WriteString(fmt.Sprintf("%s\n", cluster.ClusterInfo.PrivateKey))
-		buffer.WriteString(fmt.Sprintf("Node Pools:\n"))
+		buffer.WriteString("Node Pools:\n")
 		for j, nodePool := range cluster.ClusterInfo.GetNodePools() {
-			buffer.WriteString(fmt.Sprintf("----------------------------------------\n"))
+			buffer.WriteString("----------------------------------------\n")
 			buffer.WriteString(fmt.Sprintf("NodePool number: %d \n", j))
 			buffer.WriteString(fmt.Sprintf("Name: %s\n", nodePool.GetName()))
 			buffer.WriteString(fmt.Sprintf("Region %s\n", nodePool.GetRegion()))
 			buffer.WriteString(fmt.Sprintf("Provider specs: %s\n", nodePool.GetProvider()))
-			buffer.WriteString(fmt.Sprintf("Nodes:\n"))
+			buffer.WriteString("Nodes:\n")
 			for _, node := range nodePool.GetNodes() {
 				buffer.WriteString(fmt.Sprintf("Name: %s Public: %s Private: %s NodeType: %s \n", node.Name, node.GetPublic(), node.GetPrivate(), node.GetNodeType().String()))
 			}
 		}
-		buffer.WriteString(fmt.Sprintf("----------------------------------------\n"))
+		buffer.WriteString("----------------------------------------\n")
 	}
 	return buffer.String(), nil
 }
