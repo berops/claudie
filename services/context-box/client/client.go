@@ -12,7 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-//function to be used for saving
+// function to be used for saving
 type saveFunction func(context.Context, *pb.SaveConfigRequest, ...grpc.CallOption) (*pb.SaveConfigResponse, error)
 
 // SaveConfigFrontEnd calls Content-box gRPC server and saves configuration to the database
@@ -73,7 +73,7 @@ func DeleteConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType) err
 	if err != nil {
 		return fmt.Errorf("error deleting: %v", err)
 	}
-	log.Info().Msgf("Config was deleted %v", res)
+	log.Info().Msgf("Config will be deleted %v", res)
 	return nil
 }
 
@@ -88,7 +88,7 @@ func DeleteConfigFromDB(c pb.ContextBoxServiceClient, id string, idType pb.IdTyp
 		return fmt.Errorf("error deleting config from DB: %w", err)
 	}
 
-	log.Info().Msgf("Config was deleted from DB: %+v", res)
+	log.Info().Msgf("Config was deleted from DB: %v", res)
 
 	return nil
 }
