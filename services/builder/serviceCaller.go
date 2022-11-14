@@ -17,7 +17,7 @@ import (
 
 // buildConfig is function used to build infra based on the desired state concurrently
 func buildConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig bool) (err error) {
-	//log.Info().Msgf("processConfig received config: %s, is tmpConfig: %t", config.GetName(), isTmpConfig) NOTE:DEBUG
+	log.Debug().Msgf("processConfig received config: %s, is tmpConfig: %t", config.GetName(), isTmpConfig)
 	// call Terraformer to build infra
 	currentState, desiredState, err := callTerraformer(config.GetCurrentState(), config.GetDesiredState())
 	if err != nil {
@@ -62,7 +62,7 @@ func buildConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig bo
 	config.DesiredState = desiredState
 
 	if !isTmpConfig {
-		//log.Info().Msgf("Saving the config %s", config.GetName()) NOTE:DEBUG
+		log.Debug().Msgf("Saving the config %s", config.GetName())
 		config.CurrentState = config.DesiredState // Update currentState
 		err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 		if err != nil {

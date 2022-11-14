@@ -145,7 +145,7 @@ func stateDifference(config *pb.Config) (*pb.Config, map[string]*nodepoolsCounts
 
 	//if any key left, it means that nodepool is defined in current state but not in the desired, i.e. whole nodepool should be deleted
 	if len(currentNodepoolMap) > 0 {
-		//log.Info().Msgf("Detected deletion of a nodepools") NOTE:DEBUG
+		log.Debug().Msgf("Detected deletion of a nodepools")
 		deleting = true
 		for clusterName, nodepoolsCount := range currentNodepoolMap {
 			//merge maps together so delCounts holds all delete counts
@@ -158,7 +158,7 @@ func stateDifference(config *pb.Config) (*pb.Config, map[string]*nodepoolsCounts
 				if currentCluster != nil {
 					//append nodepool to desired state, since tmpConfig only adds nodes
 					for nodepoolName := range nodepoolsCount.nodepools {
-						//log.Info().Msgf("Nodepool %s from cluster %s will be deleted", nodepoolName, clusterName) NOTE:DEBUG
+						log.Debug().Msgf("Nodepool %s from cluster %s will be deleted", nodepoolName, clusterName)
 						desiredClusterTmp.ClusterInfo.NodePools = append(desiredClusterTmp.ClusterInfo.NodePools, utils.GetNodePoolByName(nodepoolName, currentCluster.ClusterInfo.GetNodePools()))
 					}
 				}

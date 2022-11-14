@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/Berops/claudie/proto/pb"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -22,7 +23,7 @@ func deleteNodes(config *pb.Config, toDelete map[string]*nodepoolsCounts) (*pb.C
 					//prepare data for Kuber
 					master, worker := separateNodepools(clusterNodes, cluster.ClusterInfo)
 					//send request to Kuber to delete nodes
-					//log.Info().Msgf("Deleting nodes for %s cluster", cluster.ClusterInfo.Name) NOTE:DEBUG
+					log.Debug().Msgf("Deleting nodes for %s cluster from config %s", cluster.ClusterInfo.Name, config.Name)
 					newCluster, err := callDeleteNodes(master, worker, cluster)
 					if err != nil {
 						return fmt.Errorf("error while deleting nodes for %s : %v", cluster.ClusterInfo.Name, err)
