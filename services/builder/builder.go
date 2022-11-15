@@ -30,28 +30,28 @@ func healthCheck() error {
 		return err
 	} else {
 		if err := cc.Close(); err != nil {
-			return fmt.Errorf("error closing the connection in health check function : %w", err)
+			return fmt.Errorf("error closing connection in health check function : %w", err)
 		}
 	}
 	if cc, err := utils.GrpcDialWithInsecure("ansibler", envs.AnsiblerURL); err != nil {
 		return err
 	} else {
 		if err := cc.Close(); err != nil {
-			return fmt.Errorf("error closing the connection in health check function : %w", err)
+			return fmt.Errorf("error closing connection in health check function : %w", err)
 		}
 	}
 	if cc, err := utils.GrpcDialWithInsecure("kubeEleven", envs.KubeElevenURL); err != nil {
 		return err
 	} else {
 		if err := cc.Close(); err != nil {
-			return fmt.Errorf("error closing the connection in health check function : %w", err)
+			return fmt.Errorf("error closing connection in health check function : %w", err)
 		}
 	}
 	if cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL); err != nil {
 		return err
 	} else {
 		if err := cc.Close(); err != nil {
-			return fmt.Errorf("error closing the connection in health check function : %w", err)
+			return fmt.Errorf("error closing connection in health check function : %w", err)
 		}
 	}
 	return nil
@@ -68,7 +68,7 @@ func main() {
 func run() error {
 	conn, err := utils.GrpcDialWithInsecure("context-box", envs.ContextBoxURL)
 	if err != nil {
-		return fmt.Errorf("failed to connect to context-box: %w", err)
+		return fmt.Errorf("failed to connect to context-box on %s : %w", envs.ContextBoxURL, err)
 	}
 	defer utils.CloseClientConnection(conn)
 

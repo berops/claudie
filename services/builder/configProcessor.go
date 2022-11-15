@@ -45,7 +45,7 @@ type nodeCount struct {
 func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 	res, err := cbox.GetConfigBuilder(c) // Get a new config
 	if err != nil {
-		return fmt.Errorf("error while getting config from the Builder: %v", err)
+		return fmt.Errorf("error while getting config from the Context-box: %w", err)
 	}
 
 	config := res.GetConfig()
@@ -66,15 +66,28 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 		// check if Desired state is null and if so we want to delete the existing config
 		if config.DsChecksum == nil && config.CsChecksum != nil {
 			if err := destroyConfigAndDeleteDoc(config, c); err != nil {
-				log.Error().Msgf("failed to delete the config %s: %v", config.Name, err)
+				log.Error().Msgf("failed to delete the config %s : %v", config.Name, err)
 			}
 			return
 		}
 
 		// check for cluster deleting
 		configToDelete := getDeletedClusterConfig(config)
-		if err := destroyConfig(configToDelete, c); err != nil {
-			log.Error().Msgf("Failed to delete clusters: %v", err)
+		oldAPIEndpoints := make(map[string]string)
+
+		if configToDelete != nil {
+			// we need to correctly destroy the load-balancers for the new API endpoint.
+			oldAPIEndpoints, err = teardownLoadBalancers(configToDelete.CurrentState, config.CurrentState, config.DesiredState)
+			if err != nil {
+				log.Error().Msgf("Failed to teardown LoadBalancers from config %s %v", config.Name, err)
+				return
+			}
+
+			if err := destroyConfig(configToDelete, c); err != nil {
+				log.Error().Msgf("failed to delete clusters from config %s : %v", config.Name, err)
+				//if err in cluster deletion, stop the execution
+				return
+			}
 		}
 
 		//tmpConfig is used in operation where config is adding && deleting the nodes
@@ -87,25 +100,35 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 		}
 		//if tmpConfig is not nil, first apply it
 		if tmpConfig != nil {
-			log.Info().Msg("Processing a tmpConfig...")
-			if err := buildConfig(tmpConfig, c, true); err != nil {
-				log.Error().Err(err).Send()
+			log.Info().Msgf("Processing a first stage of the config %s", tmpConfig.Name)
+			if err := buildConfig(tmpConfig, c, true, oldAPIEndpoints); err != nil {
+				log.Error().Msgf("error while processing config %s : %v", tmpConfig.Name, err)
+				//if err in tmpConfig, stop the execution
+				return
 			}
+			log.Info().Msgf("First stage of config %s finished building", tmpConfig.Name)
 			config.CurrentState = tmpConfig.DesiredState
 		}
 		if toDelete != nil {
-			log.Info().Msg("Deleting nodes...")
+			log.Info().Msgf("Deleting nodes for config %s", config.Name)
 			config, err = deleteNodes(config, toDelete)
 			if err != nil {
-				log.Error().Err(err).Send()
+				log.Error().Msgf("error while deleting nodes for config %s : %v", config.Name, err)
+				//if err in node deletions, stop the execution
+				return
 			}
 		}
-
-		log.Info().Msgf("Processing config %s", config.Name)
-
-		if err = buildConfig(config, c, false); err != nil {
-			log.Error().Err(err).Send()
+		message := fmt.Sprintf("Processing config %s", config.Name)
+		if tmpConfig != nil {
+			message = fmt.Sprintf("Processing second stage of the config %s", config.Name)
 		}
+		log.Info().Msgf(message)
+
+		if err = buildConfig(config, c, false, oldAPIEndpoints); err != nil {
+			log.Error().Msgf("error while processing config %s : %v", config.Name, err)
+			return
+		}
+		log.Info().Msgf("Config %s finished building", config.Name)
 	}()
 
 	return nil
@@ -131,7 +154,7 @@ func stateDifference(config *pb.Config) (*pb.Config, map[string]*nodepoolsCounts
 
 	//if any key left, it means that nodepool is defined in current state but not in the desired, i.e. whole nodepool should be deleted
 	if len(currentNodepoolMap) > 0 {
-		log.Info().Msgf("Detected deletion of a nodepools")
+		log.Debug().Msgf("Detected deletion of a nodepools")
 		deleting = true
 		for clusterName, nodepoolsCount := range currentNodepoolMap {
 			//merge maps together so delCounts holds all delete counts
@@ -144,7 +167,7 @@ func stateDifference(config *pb.Config) (*pb.Config, map[string]*nodepoolsCounts
 				if currentCluster != nil {
 					//append nodepool to desired state, since tmpConfig only adds nodes
 					for nodepoolName := range nodepoolsCount.nodepools {
-						log.Info().Msgf("Nodepool %s from cluster %s will be deleted", nodepoolName, clusterName)
+						log.Debug().Msgf("Nodepool %s from cluster %s will be deleted", nodepoolName, clusterName)
 						desiredClusterTmp.ClusterInfo.NodePools = append(desiredClusterTmp.ClusterInfo.NodePools, utils.GetNodePoolByName(nodepoolName, currentCluster.ClusterInfo.GetNodePools()))
 					}
 				}
@@ -228,6 +251,10 @@ func mergeDeleteCounts(dst, src map[string]*nodeCount) map[string]*nodeCount {
 // the function has SIDE EFFECTS and should be used carefully.
 // returns *pb.Config which contains clusters (both k8s and lb) that needs to be deleted.
 func getDeletedClusterConfig(config *pb.Config) *pb.Config {
+	if config.CurrentState.Name == "" {
+		//if first run of config, skip
+		return nil
+	}
 	configToDelete := proto.Clone(config).(*pb.Config)
 	var k8sClustersToDelete, remainingCsK8sClusters []*pb.K8Scluster
 	var LbClustersToDelete, remainingCsLbClusters []*pb.LBcluster

@@ -25,21 +25,18 @@ func (s *server) processConfigs() error {
 		return fmt.Errorf("failed to read dir %q: %w", s.manifestDir, err)
 	}
 
-	log.Info().Msgf("Found %d files in %v", len(files), s.manifestDir)
-
-	log.Info().Msg("Retrieving configs from context-box")
-
 	configs, err := cbox.GetAllConfigs(s.cBox)
 	if err != nil {
 		return fmt.Errorf("failed to retrieve configs from context-box: %w", err)
 	}
 
-	log.Info().Msgf("Found %d configs in database", len(configs.Configs))
+	log.Info().Msgf("%d configs in database | %d files in %v", len(configs.Configs), len(files), s.manifestDir)
 
 	type data struct {
 		name        string
 		rawManifest []byte
 		path        string
+		err         error
 	}
 
 	dataChan := make(chan *data, len(files))
@@ -55,28 +52,28 @@ func (s *server) processConfigs() error {
 			defer group.Done()
 
 			path := filepath.Join(s.manifestDir, entry.Name())
-			rawManifest, err := os.ReadFile(path)
-			if err != nil {
-				log.Error().Msgf("skipping over file %v due to error: %v", path, err)
+			var rawManifest []byte
+			var err error
+			var m manifest.Manifest
+
+			defer func() {
+				dataChan <- &data{
+					name:        m.Name,
+					rawManifest: rawManifest,
+					path:        path,
+					err:         err,
+				}
+			}()
+
+			if rawManifest, err = os.ReadFile(path); err != nil {
 				return
 			}
 
-			m := manifest.Manifest{}
-			if err := yaml.Unmarshal(rawManifest, &m); err != nil {
-				log.Error().Msgf("skipping over file %v due to error: %v", path, err)
+			if err = yaml.Unmarshal(rawManifest, &m); err != nil {
 				return
 			}
 
-			if err := m.Validate(); err != nil {
-				log.Error().Msgf("skipping over file %v due to error: %v", path, err)
-				return
-			}
-
-			dataChan <- &data{
-				name:        m.Name,
-				rawManifest: rawManifest,
-				path:        path,
-			}
+			err = m.Validate()
 		}(file)
 	}
 
@@ -88,6 +85,11 @@ func (s *server) processConfigs() error {
 	// Collect data from files with no error.
 	for data := range dataChan {
 		configs.Configs = remove(configs.Configs, data.name)
+
+		if data.err != nil {
+			log.Error().Msgf("skipping over file %v due to error: %v", data.path, data.err)
+			continue
+		}
 
 		_, err := cbox.SaveConfigFrontEnd(s.cBox, &pb.SaveConfigRequest{
 			Config: &pb.Config{
@@ -112,7 +114,7 @@ func (s *server) processConfigs() error {
 		s.deletingConfigs.Store(config.Id, nil)
 
 		go func(config *pb.Config) {
-			log.Info().Msgf("Deleting config: %v", config.Id)
+			log.Info().Msgf("Deleting config %v", config.Id)
 
 			if err := cbox.DeleteConfig(s.cBox, config.Id, pb.IdType_HASH); err != nil {
 				log.Error().Msgf("Failed to the delete %s with id %s : %v", config.Name, config.Id, err)
@@ -120,8 +122,6 @@ func (s *server) processConfigs() error {
 			s.deletingConfigs.Delete(config.Id)
 		}(config)
 	}
-
-	log.Info().Msg("Processed all files")
 
 	return nil
 }

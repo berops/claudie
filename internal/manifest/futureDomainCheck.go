@@ -43,8 +43,8 @@ func (np *NodePool) checkNodepoolDomain(nodepoolName, clusterName string) error 
 	}
 	total := 3 /*separator*/ + len(clusterName) + utils.HashLength + len(nodepoolName) + len(strconv.Itoa(count)) /*get length of the string*/
 	if total+baseLength > maxLength {
-		return fmt.Errorf("cluster name %s or nodepool name %s is too long, consider shortening it [total node name: %d]",
-			clusterName, nodepoolName, total)
+		return fmt.Errorf("cluster name %s or nodepool name %s is too long, consider shortening it. Total node name cannot be longer than %d (<cluster-name>-<cluster-hash>-<node-name>-<index>), the total for this nodepool is %d",
+			clusterName, nodepoolName, maxLength, total)
 	}
 	return nil
 }

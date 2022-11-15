@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -27,7 +28,7 @@ type server struct {
 	pb.UnimplementedAnsiblerServiceServer
 }
 
-//InstallNodeRequirements installs any requirements there are on all of the nodes
+// InstallNodeRequirements installs any requirements there are on all of the nodes
 func (*server) InstallNodeRequirements(_ context.Context, req *pb.InstallRequest) (*pb.InstallResponse, error) {
 	var k8sNodepools []*NodepoolInfo
 	//add k8s nodes to k8sNodepools
@@ -35,15 +36,15 @@ func (*server) InstallNodeRequirements(_ context.Context, req *pb.InstallRequest
 		k8sNodepools = append(k8sNodepools, &NodepoolInfo{Nodepools: cluster.ClusterInfo.NodePools, PrivateKey: cluster.ClusterInfo.PrivateKey, ID: cluster.ClusterInfo.Name})
 	}
 	//since all nodes need to have longhorn req installed, we do not need to sort them in any way
-	err := installLonghornRequirements(k8sNodepools)
-	if err != nil {
-		log.Error().Msgf("Error encountered while installing node requirements : %v", err)
-		return nil, fmt.Errorf("error encountered while installing node requirements : %w", err)
+	if err := installLonghornRequirements(k8sNodepools); err != nil {
+		log.Error().Msgf("Error encountered while installing node requirements for project %s : %s", req.DesiredState.Name, err.Error())
+		return nil, fmt.Errorf("error encountered while installing node requirements for project %s : %s", req.DesiredState.Name, err.Error())
 	}
+	log.Info().Msgf("Node requirements for project %s were successfully installed", req.DesiredState.Name)
 	return &pb.InstallResponse{DesiredState: req.DesiredState}, nil
 }
 
-//InstallVPN installs VPN between nodes in the k8s cluster and lb clusters
+// InstallVPN installs VPN between nodes in the k8s cluster and lb clusters
 func (*server) InstallVPN(_ context.Context, req *pb.InstallRequest) (*pb.InstallResponse, error) {
 	vpnNodepools := make(map[string]*VPNInfo) //[k8sClusterName][]nodepoolInfos
 	//add k8s nodepools to vpn nodepools
@@ -59,56 +60,128 @@ func (*server) InstallVPN(_ context.Context, req *pb.InstallRequest) (*pb.Instal
 		}
 	}
 	//there will be N VPNs for N clusters, thus we sorted the nodes based on the k8s cluster name
-	err := installWireguardVPN(vpnNodepools)
-	if err != nil {
-		log.Error().Msgf("Error encountered while installing VPN : %v", err)
-		return nil, fmt.Errorf("error encountered while installing VPN : %w", err)
+	if err := installWireguardVPN(vpnNodepools); err != nil {
+		log.Error().Msgf("Error encountered while installing VPN for project %s : %s", req.DesiredState.Name, err.Error())
+		return nil, fmt.Errorf("error encountered while installing VPN for project %s : %s", req.DesiredState.Name, err.Error())
 	}
+	log.Info().Msgf("VPNs for project %s were successfully installed", req.DesiredState.Name)
 	return &pb.InstallResponse{DesiredState: req.DesiredState}, nil
 }
 
-//SetUpLoadbalancers sets up the loadbalancers, DNS and verifies their configuration
+// TeardownLoadBalancers correctly destroys loadbalancers by selecting the new ApiServer endpoint
+func (*server) TeardownLoadBalancers(ctx context.Context, req *pb.TeardownLBRequest) (*pb.TeardownLBResponse, error) {
+	var (
+		deleted         = make(map[string]*LBInfo)        //[k8sClusterName]lbInfo
+		attached        = make(map[string]bool)           // [k8sClusterName]Bool
+		k8sNodepools    = make(map[string][]*pb.NodePool) //[k8sClusterName][]nodepools
+		k8sNodepoolsKey = make(map[string]string)         //[k8sClusterName]keys
+	)
+
+	// Collect all NodePools that will exist after the deletion
+	for _, k8s := range req.CurrentState.Clusters {
+		k8sNodepools[k8s.ClusterInfo.Name] = k8s.ClusterInfo.NodePools
+		k8sNodepoolsKey[k8s.ClusterInfo.Name] = k8s.ClusterInfo.PrivateKey
+	}
+
+	// Look for newly attached LoadBalancers.
+	for _, lb := range req.DesiredState.LoadBalancerClusters {
+		if hasAPIServerRole(lb.Roles) {
+			attached[lb.TargetedK8S] = true
+		}
+	}
+
+	// for each load-balancer that is being deleted collect LbData.
+	for _, lb := range req.DeletedState.LoadBalancerClusters {
+		np, ok := k8sNodepools[lb.TargetedK8S]
+		if !ok {
+			log.Error().Msgf("LoadBalancer %s has not found a target k8s cluster %s", lb.ClusterInfo.Name, lb.TargetedK8S)
+			continue
+		}
+
+		newLbInfo, ok := deleted[lb.TargetedK8S]
+		if !ok {
+			newLbInfo = &LBInfo{
+				LbClusters:           make([]*LBData, 0),
+				TargetK8sNodepool:    np,
+				TargetK8sNodepoolKey: k8sNodepoolsKey[lb.TargetedK8S],
+			}
+		}
+
+		newLbInfo.LbClusters = append(newLbInfo.LbClusters, &LBData{
+			DesiredLbCluster: nil,
+			CurrentLbCluster: lb,
+		})
+
+		deleted[lb.TargetedK8S] = newLbInfo
+	}
+
+	var oldAPIEndpoints sync.Map
+	if err := teardownLoadBalancers(deleted, attached, &oldAPIEndpoints); err != nil {
+		log.Error().Msgf("Error encountered while setting up the LoadBalancers: %v", err)
+		return nil, fmt.Errorf("failed to teardown LoadBalancers: %w", err)
+	}
+
+	m := make(map[string]string)
+	oldAPIEndpoints.Range(func(key, value any) bool {
+		m[key.(string)] = value.(string)
+		return true
+	})
+
+	return &pb.TeardownLBResponse{OldApiEndpoinds: m}, nil
+}
+
+// SetUpLoadbalancers sets up the loadbalancers, DNS and verifies their configuration
 func (*server) SetUpLoadbalancers(_ context.Context, req *pb.SetUpLBRequest) (*pb.SetUpLBResponse, error) {
-	lbInfos := make(map[string]*LBInfo)             //[k8sClusterName]lbInfo
-	k8sNodepools := make(map[string][]*pb.NodePool) //[k8sClusterName][]nodepools
-	k8sNodepoolsKey := make(map[string]string)      //[k8sClusterName]keys
-	currentDNS := make(map[string]*pb.DNS)          //[lbClusterName]dns - of the current state LB
+	var (
+		lbInfos         = make(map[string]*LBInfo)        //[k8sClusterName]lbInfo
+		k8sNodepools    = make(map[string][]*pb.NodePool) //[k8sClusterName][]nodepools
+		k8sNodepoolsKey = make(map[string]string)         //[k8sClusterName]keys
+		currentLBs      = make(map[string]*pb.LBcluster)  //[lbClusterName]CurrentStateLB
+	)
+
 	//get all nodepools from clusters
 	for _, k8s := range req.DesiredState.Clusters {
 		k8sNodepools[k8s.ClusterInfo.Name] = k8s.ClusterInfo.NodePools
 		k8sNodepoolsKey[k8s.ClusterInfo.Name] = k8s.ClusterInfo.PrivateKey
 	}
+
 	//get current dns so we can detect a possible change in configuration
 	for _, lb := range req.CurrentState.LoadBalancerClusters {
-		currentDNS[lb.ClusterInfo.Name] = lb.Dns
+		currentLBs[lb.ClusterInfo.Name] = lb
 	}
-	//get lb data
+
 	for _, lb := range req.DesiredState.LoadBalancerClusters {
-		if np, ok := k8sNodepools[lb.TargetedK8S]; ok {
-			var newLbInfo *LBInfo
-			//check if any LB for this k8s have been found
-			if oldLbInfo, ok := lbInfos[lb.TargetedK8S]; ok {
-				newLbInfo = oldLbInfo
-			} else {
-				newLbInfo = &LBInfo{TargetK8sNodepool: np, LbClusters: make([]*LBData, 0), TargetK8sNodepoolKey: k8sNodepoolsKey[lb.TargetedK8S]}
-			}
-			lbData := &LBData{LbCluster: lb}
-			//check if dns in current lb is set
-			if dns, ok := currentDNS[lb.ClusterInfo.Name]; ok {
-				lbData.CurrentDNS = dns
-			}
-			newLbInfo.LbClusters = append(newLbInfo.LbClusters, lbData)
-			//save new values
-			lbInfos[lb.TargetedK8S] = newLbInfo
-		} else {
+		np, ok := k8sNodepools[lb.TargetedK8S]
+		if !ok {
 			log.Error().Msgf("Loadbalancer %s has not found a target k8s cluster (%s)", lb.ClusterInfo.Name, lb.TargetedK8S)
+			continue
 		}
+
+		//check if any LB for this k8s have been found
+		newLbInfo, ok := lbInfos[lb.TargetedK8S]
+		if !ok {
+			newLbInfo = &LBInfo{
+				TargetK8sNodepool:     np,
+				LbClusters:            make([]*LBData, 0),
+				TargetK8sNodepoolKey:  k8sNodepoolsKey[lb.TargetedK8S],
+				PreviousAPIEndpointLB: req.OldApiEndpoints[lb.TargetedK8S],
+			}
+		}
+
+		newLbInfo.LbClusters = append(newLbInfo.LbClusters, &LBData{
+			DesiredLbCluster: lb,
+			// if there is a value in the map it will return it, otherwise nil is returned.
+			CurrentLbCluster: currentLBs[lb.ClusterInfo.Name],
+		})
+
+		lbInfos[lb.TargetedK8S] = newLbInfo
 	}
-	err := setUpLoadbalancers(lbInfos)
-	if err != nil {
-		log.Error().Msgf("Error encountered while setting up the loadbalancers : %v", err)
-		return nil, fmt.Errorf("error encountered while setting up the loadbalancers : %w", err)
+
+	if err := setUpLoadbalancers(lbInfos); err != nil {
+		log.Error().Msgf("Error encountered while setting up the loadbalancers for project %s : %s", req.DesiredState.Name, err.Error())
+		return nil, fmt.Errorf("error encountered while setting up the loadbalancers for project %s : %s", req.DesiredState.Name, err.Error())
 	}
+	log.Info().Msgf("Loadbalancers for project %s were successfully set up", req.DesiredState.Name)
 	return &pb.SetUpLBResponse{DesiredState: req.DesiredState}, nil
 }
 
