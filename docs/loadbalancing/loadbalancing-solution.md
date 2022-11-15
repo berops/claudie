@@ -12,6 +12,8 @@ The Claudie uses concept or roles while configuring the loadbalancers in input m
 
 Loadbalancer is assigned to the kubernetes cluster with a field `targeted-k8s`. This field is using `name` of the kubernetes cluster as a value. Currently, single loadbalancer can be assigned to only single kubernetes cluster.
 
+**For multiple Loadbalancers targeting the same kubernetes cluster only a single one of them can have the API server role (i.e. role with target port 6443) attached to it.**
+
 ### DNS
 
 The Claudie creates and manages DNS for the loadbalancer. If user adds loadbalancer into their infrastructure via Claudie, it will create a DNS A record with the public IP of the loadbalancer machines behind it. When the loadbalancer configuration changes in any way e.g. adds/removes a node, changes hostname, changes target; the DNS record is reconfigured seamlessly by Claudie. This lifts the burden of the DNS management from the user. 

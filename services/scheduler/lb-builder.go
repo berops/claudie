@@ -8,10 +8,7 @@ import (
 	"github.com/Berops/claudie/proto/pb"
 )
 
-const (
-	hostnameHashLength = 17
-	apiserverPort      = 6443
-)
+const hostnameHashLength = 17
 
 // createLBCluster reads manifest state and create loadbalancer clusters based on it
 // returns slice of *pb.LBcluster if successful, nil otherwise
@@ -112,7 +109,7 @@ func getMatchingRoles(roles []manifest.Role, roleNames []string) ([]*pb.Role, er
 				target := pb.Target(t)
 				var roleType pb.RoleType
 
-				if role.TargetPort == apiserverPort && target == pb.Target_k8sControlPlane {
+				if role.TargetPort == manifest.APIServerPort && target == pb.Target_k8sControlPlane {
 					roleType = pb.RoleType_ApiServer
 				} else {
 					roleType = pb.RoleType_Ingress
