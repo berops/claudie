@@ -17,15 +17,15 @@ import (
 
 // buildConfig is function used to build infra based on the desired state concurrently
 func buildConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig bool, oldAPIEndpoints map[string]string) (err error) {
-	log.Info().Msgf("processConfig received config: %s, is tmpConfig: %t", config.GetName(), isTmpConfig)
+	log.Debug().Msgf("processConfig received config: %s, is tmpConfig: %t", config.GetName(), isTmpConfig)
 	// call Terraformer to build infra
 	currentState, desiredState, err := callTerraformer(config.GetCurrentState(), config.GetDesiredState())
 	if err != nil {
 		err1 := saveErrorMessage(config, c, err)
 		if err1 != nil {
-			return fmt.Errorf("error in Terraformer: %v; unable to save error message config: %w", err, err1)
+			return fmt.Errorf("error in Terraformer for config %s : %v; unable to save error message config: %w", config.Name, err, err1)
 		}
-		return fmt.Errorf("error in Terraformer: %w", err)
+		return fmt.Errorf("error in Terraformer for config %s : %w", config.Name, err)
 	}
 	config.CurrentState = currentState
 	config.DesiredState = desiredState
@@ -34,9 +34,9 @@ func buildConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig bo
 	if err != nil {
 		err1 := saveErrorMessage(config, c, err)
 		if err1 != nil {
-			return fmt.Errorf("error in Ansibler: %v; unable to save error message config: %w", err, err1)
+			return fmt.Errorf("error in Ansibler for config %s : %v; unable to save error message config: %w", config.Name, err, err1)
 		}
-		return fmt.Errorf("error in Ansibler: %w", err)
+		return fmt.Errorf("error in Ansibler for config %s : %w", config.Name, err)
 	}
 	config.DesiredState = desiredState
 	// call Kube-eleven to create K8s clusters
@@ -44,9 +44,9 @@ func buildConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig bo
 	if err != nil {
 		err1 := saveErrorMessage(config, c, err)
 		if err1 != nil {
-			return fmt.Errorf("error in KubeEleven: %v; unable to save error message config: %w", err, err1)
+			return fmt.Errorf("error in KubeEleven for config %s : %v; unable to save error message config: %w", config.Name, err, err1)
 		}
-		return fmt.Errorf("error in KubeEleven: %w", err)
+		return fmt.Errorf("error in KubeEleven for config %s : %w", config.Name, err)
 	}
 	config.DesiredState = desiredState
 
@@ -55,14 +55,14 @@ func buildConfig(config *pb.Config, c pb.ContextBoxServiceClient, isTmpConfig bo
 	if err != nil {
 		err1 := saveErrorMessage(config, c, err)
 		if err1 != nil {
-			return fmt.Errorf("error in Kuber: %v; unable to save error message config: %w", err, err1)
+			return fmt.Errorf("error in Kuber for config %s : %v; unable to save error message config: %w", config.Name, err, err1)
 		}
-		return fmt.Errorf("error in Kuber: %w", err)
+		return fmt.Errorf("error in Kuber for config %s : %w", config.Name, err)
 	}
 	config.DesiredState = desiredState
 
 	if !isTmpConfig {
-		log.Info().Msgf("Saving the config %s", config.GetName())
+		log.Debug().Msgf("Saving the config %s", config.GetName())
 		config.CurrentState = config.DesiredState // Update currentState
 		err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 		if err != nil {
@@ -101,7 +101,7 @@ func teardownLoadBalancers(deleted, current, desired *pb.Project) (map[string]st
 func destroyConfigAndDeleteDoc(config *pb.Config, c pb.ContextBoxServiceClient) error {
 	err := destroyConfig(config, c)
 	if err != nil {
-		return err
+		return fmt.Errorf("error while destroying config %s : %w", config.Name, err)
 	}
 
 	return cbox.DeleteConfigFromDB(c, config.Id, pb.IdType_HASH)
@@ -114,14 +114,14 @@ func destroyConfig(config *pb.Config, c pb.ContextBoxServiceClient) error {
 		if err := saveErrorMessage(config, c, err); err != nil {
 			return fmt.Errorf("failed to save error message: %w", err)
 		}
-		return fmt.Errorf("error in destroy config terraformer: %w", err)
+		return fmt.Errorf("error in destroy config terraformer for config %s : %w", config.Name, err)
 	}
 
 	if err := deleteKubeconfig(config); err != nil {
 		if err := saveErrorMessage(config, c, err); err != nil {
-			return fmt.Errorf("failed to save error message: %w", err)
+			return fmt.Errorf("failed to save error message for config %s : %w", config.Name, err)
 		}
-		return fmt.Errorf("error in delete kubeconfig: %w", err)
+		return fmt.Errorf("error in delete kubeconfig for config %s : %w", config.Name, err)
 	}
 	return nil
 }
@@ -133,13 +133,10 @@ func callTerraformer(currentState *pb.Project, desiredState *pb.Project) (*pb.Pr
 	if err != nil {
 		return nil, nil, err
 	}
-	defer func() {
-		utils.CloseClientConnection(cc)
-		log.Info().Msgf("Closing the connection for terraformer")
-	}()
+	defer utils.CloseClientConnection(cc)
 	// Creating the client
 	c := pb.NewTerraformerServiceClient(cc)
-	log.Info().Msgf("Calling BuildInfrastructure on terraformer")
+	log.Info().Msgf("Calling BuildInfrastructure on terraformer for project %s", desiredState.Name)
 	res, err := terraformer.BuildInfrastructure(c, &pb.BuildInfrastructureRequest{
 		CurrentState: currentState,
 		DesiredState: desiredState,
@@ -161,17 +158,17 @@ func callAnsibler(desiredState, currentState *pb.Project, oldAPIEndpoints map[st
 
 	// Creating the client
 	c := pb.NewAnsiblerServiceClient(cc)
-	log.Info().Msgf("Calling InstallVPN on ansibler")
+	log.Info().Msgf("Calling InstallVPN on ansibler for project %s", desiredState.Name)
 	installRes, err := ansibler.InstallVPN(c, &pb.InstallRequest{DesiredState: desiredState})
 	if err != nil {
 		return nil, err
 	}
-	log.Info().Msgf("Calling InstallNodeRequirements on ansibler")
+	log.Info().Msgf("Calling InstallNodeRequirements on ansibler for project %s", desiredState.Name)
 	installRes, err = ansibler.InstallNodeRequirements(c, &pb.InstallRequest{DesiredState: installRes.DesiredState})
 	if err != nil {
 		return nil, err
 	}
-	log.Info().Msgf("Calling SetUpLoadbalancers on ansibler")
+	log.Info().Msgf("Calling SetUpLoadbalancers on ansibler for project %s", desiredState.Name)
 	setUpRes, err := ansibler.SetUpLoadbalancers(c, &pb.SetUpLBRequest{DesiredState: installRes.DesiredState, CurrentState: currentState, OldApiEndpoints: oldAPIEndpoints})
 	if err != nil {
 		return nil, err
@@ -187,11 +184,10 @@ func callKubeEleven(desiredState *pb.Project) (*pb.Project, error) {
 	}
 	defer func() {
 		utils.CloseClientConnection(cc)
-		log.Info().Msgf("Closing the connection for kube-eleven")
 	}()
 	// Creating the client
 	c := pb.NewKubeElevenServiceClient(cc)
-	log.Info().Msgf("Calling BuildCluster on kube-eleven")
+	log.Info().Msgf("Calling BuildCluster on kube-eleven for project %s", desiredState.Name)
 	res, err := kubeEleven.BuildCluster(c, &pb.BuildClusterRequest{DesiredState: desiredState})
 	if err != nil {
 		return nil, err
@@ -208,17 +204,16 @@ func callKuber(desiredState *pb.Project) (*pb.Project, error) {
 	}
 	defer func() {
 		utils.CloseClientConnection(cc)
-		log.Info().Msgf("Closing the connection for kuber")
 	}()
 	// Creating the client
 	c := pb.NewKuberServiceClient(cc)
-	log.Info().Msgf("Calling SetUpStorage on kuber")
+	log.Info().Msgf("Calling SetUpStorage on kuber for project %s", desiredState.Name)
 	resStorage, err := kuber.SetUpStorage(c, &pb.SetUpStorageRequest{DesiredState: desiredState})
 	if err != nil {
 		return nil, err
 	}
 	for _, cluster := range desiredState.Clusters {
-		log.Info().Msgf("Calling StoreKubeconfig on kuber")
+		log.Info().Msgf("Calling StoreKubeconfig on kuber for project %s", desiredState.Name)
 		_, err := kuber.StoreKubeconfig(c, &pb.StoreKubeconfigRequest{Cluster: cluster})
 		if err != nil {
 			return nil, err
@@ -235,11 +230,10 @@ func callDeleteNodes(master, worker []string, cluster *pb.K8Scluster) (*pb.K8Scl
 	}
 	defer func() {
 		utils.CloseClientConnection(cc)
-		log.Info().Msgf("Closing the connection for kuber")
 	}()
 	// Creating the client
 	c := pb.NewKuberServiceClient(cc)
-	log.Info().Msgf("Calling DeleteNodes on kuber")
+	log.Info().Msgf("Calling DeleteNodes on kuber for cluster %s", cluster.ClusterInfo.Name)
 	resDelete, err := kuber.DeleteNodes(c, &pb.DeleteNodesRequest{MasterNodes: master, WorkerNodes: worker, Cluster: cluster})
 	if err != nil {
 		return nil, err
@@ -251,7 +245,6 @@ func callDeleteNodes(master, worker []string, cluster *pb.K8Scluster) (*pb.K8Scl
 func destroyConfigTerraformer(config *pb.Config) error {
 	// Trim "tcp://" substring from envs.TerraformerURL
 	trimmedTerraformerURL := strings.ReplaceAll(envs.TerraformerURL, ":tcp://", "")
-	log.Info().Msgf("Dial Terraformer: %s", trimmedTerraformerURL)
 
 	cc, err := utils.GrpcDialWithInsecure("terraformer", trimmedTerraformerURL)
 	if err != nil {
@@ -259,6 +252,7 @@ func destroyConfigTerraformer(config *pb.Config) error {
 	}
 	defer utils.CloseClientConnection(cc)
 
+	log.Info().Msgf("Calling DestroyInfrastructure on terraformer for project %s", config.Name)
 	c := pb.NewTerraformerServiceClient(cc)
 	_, err = terraformer.DestroyInfrastructure(c, &pb.DestroyInfrastructureRequest{Config: config})
 	return err
@@ -267,7 +261,6 @@ func destroyConfigTerraformer(config *pb.Config) error {
 // deleteKubeconfig calls kuber's DeleteKubeconfig function
 func deleteKubeconfig(config *pb.Config) error {
 	trimmedKuberURL := strings.ReplaceAll(envs.KuberURL, ":tcp://", "")
-	log.Info().Msgf("Dial Kuber: %s", trimmedKuberURL)
 
 	cc, err := utils.GrpcDialWithInsecure("kuber", trimmedKuberURL)
 	if err != nil {
@@ -277,6 +270,7 @@ func deleteKubeconfig(config *pb.Config) error {
 
 	c := pb.NewKuberServiceClient(cc)
 	for _, cluster := range config.CurrentState.Clusters {
+		log.Info().Msgf("Calling DeleteKubeconfig on kuber for cluster %s", cluster.ClusterInfo.Name)
 		if _, err := kuber.DeleteKubeconfig(c, &pb.DeleteKubeconfigRequest{Cluster: cluster}); err != nil {
 			return err
 		}

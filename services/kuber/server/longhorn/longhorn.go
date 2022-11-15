@@ -40,7 +40,7 @@ func (l Longhorn) SetUp() error {
 	// apply longhorn.yaml
 	err := kubectl.KubectlApply(longhornYaml, "")
 	if err != nil {
-		return fmt.Errorf("error while applying longhorn.yaml : %w", err)
+		return fmt.Errorf("error while applying longhorn.yaml in %s : %w", l.Directory, err)
 	}
 
 	//get existing sc so we can delete them if we do not need them any more
@@ -84,11 +84,11 @@ func (l Longhorn) SetUp() error {
 					realNodeName := utils.FindName(realNodeNames, node.Name)
 					err := kubectl.KubectlAnnotate("node", realNodeName, annotation)
 					if err != nil {
-						return fmt.Errorf("error while annotating the node %s via kubectl annotate : %w", realNodeName, err)
+						return fmt.Errorf("error while annotating the node %s from cluster %s via kubectl annotate : %w", realNodeName, l.Cluster.ClusterInfo.Name, err)
 					}
 					err = kubectl.KubectlLabel("node", realNodeName, claudieWorkerLabel, true)
 					if err != nil {
-						return fmt.Errorf("error while labeling the node %s via kubectl label : %w", realNodeName, err)
+						return fmt.Errorf("error while labeling the node %s from cluster %s via kubectl label : %w", realNodeName, l.Cluster.ClusterInfo.Name, err)
 					}
 				}
 			}
@@ -117,16 +117,15 @@ func (l Longhorn) SetUp() error {
 		return err
 	}
 
-	log.Info().Msgf("Longhorn successfully set-up on the %s", l.Directory)
 	// Clean up
 	if err := os.RemoveAll(l.Directory); err != nil {
-		return fmt.Errorf("error while deleting files: %w", err)
+		return fmt.Errorf("error while deleting files %s : %w", l.Directory, err)
 	}
 	return nil
 }
 
-//getStorageClasses returns a slice of names of storage classes currently deployed in cluster
-//returns slice of storage classes if successful, error otherwise
+// getStorageClasses returns a slice of names of storage classes currently deployed in cluster
+// returns slice of storage classes if successful, error otherwise
 func (l *Longhorn) getStorageClasses(kc kubectl.Kubectl) (result []string, err error) {
 	//define output struct
 	type KubectlOutputJSON struct {
@@ -138,7 +137,7 @@ func (l *Longhorn) getStorageClasses(kc kubectl.Kubectl) (result []string, err e
 	//get existing storage classes
 	out, err := kc.KubectlGet("sc -o json", "")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error while getting storage classes from cluster %s : %w", l.Cluster.ClusterInfo.Name, err)
 	}
 	//no storage class defined yet
 	if strings.Contains(string(out), "No resources found") {
@@ -148,7 +147,7 @@ func (l *Longhorn) getStorageClasses(kc kubectl.Kubectl) (result []string, err e
 	var parsedJSON KubectlOutputJSON
 	err = json.Unmarshal(out, &parsedJSON)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error while unmarshalling kubectl output for cluster %s : %w", l.Cluster.ClusterInfo.Name, err)
 	}
 	//return name of the storage classes
 	for _, sc := range parsedJSON.Items {
@@ -165,7 +164,7 @@ func (l *Longhorn) getStorageClasses(kc kubectl.Kubectl) (result []string, err e
 	return result, nil
 }
 
-//deleteOldStorageClasses deletes storage classes, which does not have a worker nodes behind it
+// deleteOldStorageClasses deletes storage classes, which does not have a worker nodes behind it
 func (l *Longhorn) deleteOldStorageClasses(existing, applied []string, kc kubectl.Kubectl) error {
 	for _, ex := range existing {
 		if ex == defaultSC {

@@ -135,15 +135,14 @@ func (s *server) handleReload(logger zerolog.Logger) http.HandlerFunc {
 			return
 		}
 
-		logger.Info().Msgf("Received notification about change in the dir: %s", s.manifestDir)
-
+		logger.Info().Msgf("Received notification about change in the directory %s", s.manifestDir)
 		s.group.Add(1)
 
 		go func() {
 			defer s.group.Done()
 
 			if err := s.processConfigs(); err != nil {
-				logger.Error().Msgf("Failed processing configs from dir: %v due to: %v", s.manifestDir, err)
+				logger.Error().Msgf("Failed processing configs from directory %s : %v", s.manifestDir, err)
 			}
 		}()
 

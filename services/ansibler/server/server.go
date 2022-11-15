@@ -36,11 +36,11 @@ func (*server) InstallNodeRequirements(_ context.Context, req *pb.InstallRequest
 		k8sNodepools = append(k8sNodepools, &NodepoolInfo{Nodepools: cluster.ClusterInfo.NodePools, PrivateKey: cluster.ClusterInfo.PrivateKey, ID: cluster.ClusterInfo.Name})
 	}
 	//since all nodes need to have longhorn req installed, we do not need to sort them in any way
-	err := installLonghornRequirements(k8sNodepools)
-	if err != nil {
-		log.Error().Msgf("Error encountered while installing node requirements : %v", err)
-		return nil, fmt.Errorf("error encountered while installing node requirements : %w", err)
+	if err := installLonghornRequirements(k8sNodepools); err != nil {
+		log.Error().Msgf("Error encountered while installing node requirements for project %s : %s", req.DesiredState.Name, err.Error())
+		return nil, fmt.Errorf("error encountered while installing node requirements for project %s : %s", req.DesiredState.Name, err.Error())
 	}
+	log.Info().Msgf("Node requirements for project %s were successfully installed", req.DesiredState.Name)
 	return &pb.InstallResponse{DesiredState: req.DesiredState}, nil
 }
 
@@ -60,11 +60,11 @@ func (*server) InstallVPN(_ context.Context, req *pb.InstallRequest) (*pb.Instal
 		}
 	}
 	//there will be N VPNs for N clusters, thus we sorted the nodes based on the k8s cluster name
-	err := installWireguardVPN(vpnNodepools)
-	if err != nil {
-		log.Error().Msgf("Error encountered while installing VPN : %v", err)
-		return nil, fmt.Errorf("error encountered while installing VPN : %w", err)
+	if err := installWireguardVPN(vpnNodepools); err != nil {
+		log.Error().Msgf("Error encountered while installing VPN for project %s : %s", req.DesiredState.Name, err.Error())
+		return nil, fmt.Errorf("error encountered while installing VPN for project %s : %s", req.DesiredState.Name, err.Error())
 	}
+	log.Info().Msgf("VPNs for project %s were successfully installed", req.DesiredState.Name)
 	return &pb.InstallResponse{DesiredState: req.DesiredState}, nil
 }
 
@@ -178,10 +178,10 @@ func (*server) SetUpLoadbalancers(_ context.Context, req *pb.SetUpLBRequest) (*p
 	}
 
 	if err := setUpLoadbalancers(lbInfos); err != nil {
-		log.Error().Msgf("Error encountered while setting up the loadbalancers : %v", err)
-		return nil, fmt.Errorf("error encountered while setting up the loadbalancers : %w", err)
+		log.Error().Msgf("Error encountered while setting up the loadbalancers for project %s : %s", req.DesiredState.Name, err.Error())
+		return nil, fmt.Errorf("error encountered while setting up the loadbalancers for project %s : %s", req.DesiredState.Name, err.Error())
 	}
-
+	log.Info().Msgf("Loadbalancers for project %s were successfully set up", req.DesiredState.Name)
 	return &pb.SetUpLBResponse{DesiredState: req.DesiredState}, nil
 }
 

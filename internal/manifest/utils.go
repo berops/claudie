@@ -73,7 +73,7 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("Failed to find provider with name: %s", providerSpecName)
+	return nil, fmt.Errorf("failed to find provider with name: %s", providerSpecName)
 }
 
 // IsKubernetesClusterPresent checks in the manifests if a cluster

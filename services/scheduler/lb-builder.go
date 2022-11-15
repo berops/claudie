@@ -17,11 +17,11 @@ func createLBCluster(manifestState *manifest.Manifest) ([]*pb.LBcluster, error) 
 	for _, lbCluster := range manifestState.LoadBalancer.Clusters {
 		dns, err := getDNS(lbCluster.DNS, manifestState)
 		if err != nil {
-			return nil, fmt.Errorf("error while processing %s : %w", lbCluster.Name, err)
+			return nil, fmt.Errorf("error while building desired state for LB %s : %w", lbCluster.Name, err)
 		}
 		role, err := getMatchingRoles(manifestState.LoadBalancer.Roles, lbCluster.Roles)
 		if err != nil {
-			return nil, fmt.Errorf("error while processing %s : %w", lbCluster.Name, err)
+			return nil, fmt.Errorf("error while building desired state for LB %s : %w", lbCluster.Name, err)
 		}
 		newLbCluster := &pb.LBcluster{
 			ClusterInfo: &pb.ClusterInfo{
@@ -78,11 +78,11 @@ clusterLbDesired:
 // return *pb.DNS if successful, error if provider has not been found
 func getDNS(lbDNS manifest.DNS, manifestState *manifest.Manifest) (*pb.DNS, error) {
 	if lbDNS.DNSZone == "" {
-		return nil, fmt.Errorf("DNS zone not provided")
+		return nil, fmt.Errorf("DNS zone not provided in manifest %s", manifestState.Name)
 	} else {
 		provider, err := manifestState.GetProvider(lbDNS.Provider)
 		if err != nil {
-			return nil, fmt.Errorf("Provider %s was not found", lbDNS.Provider)
+			return nil, fmt.Errorf("Provider %s was not found in manifest %s", lbDNS.Provider, manifestState.Name)
 		}
 		return &pb.DNS{
 			DnsZone:  lbDNS.DNSZone,

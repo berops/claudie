@@ -9,8 +9,8 @@ import (
 	"github.com/Berops/claudie/proto/pb"
 )
 
-//createK8sCluster reads manifest state and create kubernetes clusters based on it
-//returns slice of *pb.K8Scluster if successful, nil otherwise
+// createK8sCluster reads manifest state and create kubernetes clusters based on it
+// returns slice of *pb.K8Scluster if successful, nil otherwise
 func createK8sCluster(manifestState *manifest.Manifest) ([]*pb.K8Scluster, error) {
 	var clusters []*pb.K8Scluster
 	//loop through clusters from manifest
@@ -39,8 +39,8 @@ func createK8sCluster(manifestState *manifest.Manifest) ([]*pb.K8Scluster, error
 	return clusters, nil
 }
 
-//updateK8sClusters updates the desired state of the kubernetes clusters based on the current state
-//returns error if failed, nil otherwise
+// updateK8sClusters updates the desired state of the kubernetes clusters based on the current state
+// returns error if failed, nil otherwise
 func updateK8sClusters(newConfig *pb.Config) error {
 clusterDesired:
 	for _, clusterDesired := range newConfig.DesiredState.Clusters {
