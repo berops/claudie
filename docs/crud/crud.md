@@ -22,7 +22,7 @@ kubectl create secret generic input-manifest --from-file=input-manifest.yaml -n 
 2. Labeling the secret with label claudie.io/input-manifest by running
 
 ```
-kubectl label secret input-manifest claudie.io/input-manifest=my-fancy-manifest
+kubectl label secret input-manifest claudie.io/input-manifest=my-fancy-manifest -n claudie
 ```
 # Read
 
