@@ -33,3 +33,12 @@ func SetUpLoadbalancers(c pb.AnsiblerServiceClient, req *pb.SetUpLBRequest) (*pb
 	}
 	return res, nil
 }
+
+// TeardownLoadBalancers correctly destroys loadbalancers including selecting the new ApiServer endpoint
+func TeardownLoadBalancers(c pb.AnsiblerServiceClient, req *pb.TeardownLBRequest) (*pb.TeardownLBResponse, error) {
+	res, err := c.TeardownLoadBalancers(context.Background(), req)
+	if err != nil {
+		return res, fmt.Errorf("failed to teardown LoadBalancers")
+	}
+	return res, nil
+}
