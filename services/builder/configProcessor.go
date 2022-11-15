@@ -79,7 +79,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			// we need to correctly destroy the load-balancers for the new API endpoint.
 			oldAPIEndpoints, err = teardownLoadBalancers(configToDelete.CurrentState, config.CurrentState, config.DesiredState)
 			if err != nil {
-				log.Error().Msgf("Failed to teardown LoadBalancers: %v", err)
+				log.Error().Msgf("Failed to teardown LoadBalancers from config %s %v", config.Name, err)
 				return
 			}
 

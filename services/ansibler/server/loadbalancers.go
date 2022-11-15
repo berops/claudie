@@ -270,13 +270,20 @@ func handleAPIEndpointChange(apiServer *LBData, k8sCluster *LBInfo, k8sDirectory
 		newEndpoint = node.Public
 	case RoleChangedToAPIServer:
 		newEndpoint = apiServer.DesiredLbCluster.Dns.Endpoint
-		// 1st check if any other LB was previously an ApiServer.
+
+		// 1st check if there was any APISERVER-LB previously attached to the k8scluster.
+		if k8sCluster.PreviousAPIEndpointLB != "" {
+			oldEndpoint = k8sCluster.PreviousAPIEndpointLB
+			break
+		}
+
+		// 2nd check if any other LB was previously an ApiServer.
 		if oldAPIServer := findCurrentAPILoadBalancer(k8sCluster.LbClusters); oldAPIServer != nil {
 			oldEndpoint = oldAPIServer.CurrentLbCluster.Dns.Endpoint
 			break
 		}
 
-		// 2nd pick the control node as the previous ApiServer.
+		// 3rd pick the control node as the previous ApiServer.
 		node, err := findAPIEndpointNode(k8sCluster.TargetK8sNodepool)
 		if err != nil {
 			return fmt.Errorf("failed to find ApiEndpoint k8s node, couldn't update Api server endpoint")
@@ -286,19 +293,28 @@ func handleAPIEndpointChange(apiServer *LBData, k8sCluster *LBInfo, k8sDirectory
 	case AttachingLoadBalancer:
 		newEndpoint = apiServer.DesiredLbCluster.Dns.Endpoint
 
-		// 1st. check if there was any APIServer-LB previously attached to the k8scluster
-		if k8sCluster.PreviousAPIEndpointLB != "" {
-			oldEndpoint = k8sCluster.PreviousAPIEndpointLB
-			break
-		}
-
-		// 2nd, fallback to choosing one of the control nodes as the old ApiServer endpoint.
+		// Try to find if one of the control nodes was the old ApiServer endpoint.
 		node, err := findAPIEndpointNode(k8sCluster.TargetK8sNodepool)
 		if err != nil {
 			// If no Node has type ApiEndpoint this means that the cluster
 			// wasn't build yet (i.e. it's the first time the manifest goes
 			// through the workflow), thus we don't need to change the api endpoint.
 			return nil
+		}
+
+		// We now know that it's not a first run, so before we use the node as the old APIServer
+		// endpoint we check a few other possibilities.
+
+		// 1st. check if there was any APIServer-LB previously attached to the k8scluster
+		if k8sCluster.PreviousAPIEndpointLB != "" {
+			oldEndpoint = k8sCluster.PreviousAPIEndpointLB
+			break
+		}
+
+		// 2nd check if any other LB was previously an APIServer.
+		if oldAPIServer := findCurrentAPILoadBalancer(k8sCluster.LbClusters); oldAPIServer != nil {
+			oldEndpoint = oldAPIServer.CurrentLbCluster.Dns.Endpoint
+			break
 		}
 
 		oldEndpoint = node.Public
@@ -344,8 +360,10 @@ func findAPIEndpointNode(nodepools []*pb.NodePool) (*pb.Node, error) {
 // findCurrentAPILoadBalancers finds the current Load-Balancer for the API server
 func findCurrentAPILoadBalancer(lbs []*LBData) *LBData {
 	for _, lb := range lbs {
-		if hasAPIServerRole(lb.CurrentLbCluster.Roles) {
-			return lb
+		if lb.CurrentLbCluster != nil {
+			if hasAPIServerRole(lb.CurrentLbCluster.Roles) {
+				return lb
+			}
 		}
 	}
 
