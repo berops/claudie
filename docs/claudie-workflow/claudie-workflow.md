@@ -138,9 +138,15 @@ Ansibler uses Ansible to set up:
   rpc InstallVPN(InstallRequest) returns (InstallResponse);
   //SetUpLoadbalancers sets up the loadbalancers, DNS and verifies their configuration
   rpc SetUpLoadbalancers(SetUpLBRequest) returns (SetUpLBResponse);
+  //TeardownLoadBalancers correctly destroys the Load-Balancers attached to a k8s cluster
+  //by correctly choosing the new ApiServer endpoint.
+  rpc TeardownLoadBalancers(TeardownLBRequest) returns (TeardownLBResponse);
 ```
 
 ### Flow
+- Receives `configToDelete` from Builder for `TeardownLoadBalancers()`
+  - Finds the new ApiEndpoing among the control nodes of the k8s-cluster.
+  - Setups up the new certs for the endpoint to be reachable
 - Receives `config` from Builder for `InstallVPN()`
   - Sets up the ansible inventory, and installs the Wireguard full mesh VPN via playbook
   - Updates `currentState` in a `config`

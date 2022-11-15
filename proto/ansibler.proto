@@ -14,10 +14,24 @@ message InstallResponse {
 
 message SetUpLBRequest { 
   Project desiredState = 1;
-  Project currentState = 2; 
+  Project currentState = 2;
+  map<string, string> oldApiEndpoints = 3;
 }
 message SetUpLBResponse {
   Project desiredState = 1;
+}
+
+message TeardownLBRequest {
+  // The currentState represents the clusters that will persists after the deletion.
+  Project currentState = 1;
+  // The deletedState represents the clusters that are going to be deleted.
+  Project deletedState = 2;
+  Project desiredState = 3;
+}
+
+message TeardownLBResponse {
+  // Maps the K8sClusterName to old ApiEndpoint (if any)
+  map<string, string> oldApiEndpoinds = 1;
 }
 
 service AnsiblerService {
@@ -27,4 +41,6 @@ service AnsiblerService {
   rpc InstallVPN(InstallRequest) returns (InstallResponse);
   //SetUpLoadbalancers sets up the loadbalancers, DNS and verifies their configuration
   rpc SetUpLoadbalancers(SetUpLBRequest) returns (SetUpLBResponse);
+  //TeardownLoadBalancers correctly destroys loadbalancers including selecting the new ApiServer endpoint
+  rpc TeardownLoadBalancers(TeardownLBRequest) returns (TeardownLBResponse);
 }
