@@ -3,6 +3,7 @@ package templateUtils
 import (
 	"fmt"
 	"net"
+	"regexp"
 	"strings"
 
 	"github.com/Berops/claudie/proto/pb"
@@ -10,6 +11,11 @@ import (
 
 const (
 	basePriority = 200
+)
+
+var (
+	//regex of supported VM sizes
+	vmSizes = []string{"(.D3.*?v3.*)", "(.DS3.*?v2.*)", "(.DS?4.*?v2..*)", "(.DS?5.*?v2.*)", "(.DS?12.*?v2.*)", "(.DS?13.*?v2.*)", "(.DS?14.*?v2.*)", "(.DS?15.*?v2.*)", "(.Fs?8.*)", "(.Fs?16.*)", "(.M64m?s.*)", "(.M128m?s.*)", "(.D8s?.*)", "(.D16s?.*)", "(.D32s?.*)", "(.D64s?.*)", "(.E8s?.*)", "(.E16s?.*)", "(.E32s?.*)", "(.E64s?.*)"}
 )
 
 // IsMissing checks if item is missing in the list of items.
@@ -92,4 +98,24 @@ func GetCIDR(baseCIDR string, position, value int) string {
 	ip[position] = byte(value)
 	ones, _ := ipNet.Mask.Size()
 	return fmt.Sprintf("%s/%d", ip.String(), ones)
+}
+
+// EnableAccNet will check if accelerated networking can be enabled based on conditions
+// specified here https://azure.microsoft.com/en-us/updates/accelerated-networking-in-expanded-preview/
+// we will look only at VM sizes, since all regions are supported now all reasonable operating systems
+func EnableAccNet(vmSize string) string {
+	if !checkContains(vmSizes, vmSize) {
+		return "false"
+	}
+	return "true"
+}
+
+func checkContains(arr []string, str string) bool {
+	for _, el := range arr {
+		//if match and no error, return true
+		if match, err := regexp.MatchString(el, str); err == nil && match {
+			return true
+		}
+	}
+	return false
 }
