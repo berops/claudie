@@ -212,16 +212,16 @@ var jsonData = "{\"compute\":{\"test-cluster-compute1\":\"0.0.0.65\",\n\"test-cl
 
 var testNp = &pb.NodePool{
 	Name:       "test-np",
-	Region:     "eu-central-1",
-	ServerType: "t3.small",
-	Image:      "ami-06148e0e81e5187c8",
+	Region:     "West Europe",
+	ServerType: "Standard_E64s_v3",
+	Image:      "Canonical:0001-com-ubuntu-minimal-focal:minimal-20_04-lts:20.04.202004230",
 	DiskSize:   50,
-	Zone:       "eu-central-1c",
+	Zone:       "1",
 	Count:      3,
 	Nodes:      []*pb.Node{},
 	IsControl:  true,
 	Provider: &pb.Provider{
-		CloudProviderName: "aws",
+		CloudProviderName: "azure",
 		Credentials:       "",
 	},
 }
@@ -247,8 +247,8 @@ func TestFillNodes(t *testing.T) {
 func TestGenerateTf(t *testing.T) {
 	templateLoader := templateUtils.TemplateLoader{Directory: "../../templates"}
 	template := templateUtils.Templates{Directory: "."}
-	tpl, err := templateLoader.LoadTemplate("aws.tpl")
+	tpl, err := templateLoader.LoadTemplate("azure.tpl")
 	require.NoError(t, err)
-	err = template.Generate(tpl, "aws-test.tf", &NodepoolsData{ClusterName: "aws-test", ClusterHash: "abcdef", NodePools: []*pb.NodePool{testNp}})
+	err = template.Generate(tpl, "az-acc-net.tf", &NodepoolsData{ClusterName: "test", ClusterHash: "abcdef", NodePools: []*pb.NodePool{testNp}})
 	require.NoError(t, err)
 }
