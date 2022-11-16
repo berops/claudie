@@ -3,29 +3,55 @@
 # https://golangci-lint.run/usage/configuration/#config-file
 
 run:
-  timeout: 5m
-  modules-download-mode: readonly
+  timeout: 10m
 
 linters:
+  disable-all: true
   enable:
-    - errcheck
-    - goimports
-    - revive
+    - asciicheck
+    - bidichk
+    - gofmt
     - govet
+    - unconvert
     - staticcheck
+    - ineffassign
+    - unparam
+    - gomodguard
+    - errcheck
+    - errname
+    - errorlint
+    - gosimple
+    - typecheck
+    - unused
+    - bodyclose
+    - durationcheck
+    - exhaustive
+    - exportloopref
+    - goconst
+    - tenv
+    - wastedassign
+    - whitespace
+    - goprintffuncname
+    - misspell
+    - noctx
+    - predeclared
+issues:
+  max-same-issues: 50
 
 linters-settings:
-
-  revive:
-    # see https://github.com/mgechev/revive#available-rules for details.
-    ignore-generated-header: true
-    severity: warning
-    rules:
-      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#var-naming
-      - name: var-naming
-        arguments: [["ID"], ["VM"]]
-
-issues:
-  exclude-use-default: false
-  max-issues-per-linter: 0
-  max-same-issues: 0
+  govet:
+    # Enable all analyzers.
+    # Default: false
+    enable-all: true
+    # Disable analyzers by name.
+    # Run `go tool vet help` to see all analyzers.
+    # Default: []
+    disable:
+      - fieldalignment # too strict
+      - shadow # too strict
+  exhaustive:
+    # Program elements to check for exhaustiveness.
+    # Default: [ switch ]
+    check:
+      - switch
+      - map

@@ -177,14 +177,13 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 
 		// Create publicKey file for a cluster
 		if err := utils.CreateKeyFile(clusterInfo.PublicKey, clusterDir, "public.pem"); err != nil {
-			return fmt.Errorf("error creating key file for %s : %v", clusterDir, err)
+			return fmt.Errorf("error creating key file for %s : %w", clusterDir, err)
 		}
 
 		// save keys
 		if err = utils.CreateKeyFile(nodepools[0].Provider.Credentials, clusterDir, providerSpecName); err != nil {
-			return fmt.Errorf("error creating provider credential key file for provider %s in %s : %v", providerSpecName, clusterDir, err)
+			return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", providerSpecName, clusterDir, err)
 		}
-
 	}
 
 	return nil

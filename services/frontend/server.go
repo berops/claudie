@@ -81,7 +81,7 @@ func newServer(manifestDir string, service string) (*server, error) {
 
 	s.routes()
 
-	s.server = &http.Server{Handler: s.router}
+	s.server = &http.Server{Handler: s.router, ReadHeaderTimeout: 2 * time.Second}
 
 	return s, s.healthcheck()()
 }
