@@ -3,13 +3,11 @@ package manifest
 import (
 	"fmt"
 	"strconv"
-
-	"github.com/Berops/claudie/internal/utils"
 )
 
 const (
 	maxLength  = 80 // total length of domain = 8 + len(publicIP)[15] + 19 + len(NodeName) + margin
-	baseLength = 8 + 19 + 15
+	baseLength = 8 + 15 + 19
 )
 
 // checkLengthOfFutureDomain will check if the possible domain name is too long
@@ -36,15 +34,15 @@ func checkLengthOfFutureDomain(m *Manifest) error {
 // checkNodepoolDomain check the future domain for the nodepool specified in nodepoolName parameter
 // returns nil if domain is not too long, error otherwise
 func (np *NodePool) checkNodepoolDomain(nodepoolName, clusterName string) error {
-	// <node-name> = clusterName + hash + nodeName + indexLength + separators
+	// <node-name> = nodeName + indexLength + 1 [separator]
 	count := np.getCount(nodepoolName)
 	if count == -1 {
 		return fmt.Errorf("nodepool with %s name was not found, cannot validate the future domain", nodepoolName)
 	}
-	total := 3 /*separator*/ + len(clusterName) + utils.HashLength + len(nodepoolName) + len(strconv.Itoa(count)) /*get length of the string*/
+	total := 1 /*separator*/ + len(nodepoolName) + len(strconv.Itoa(count)) /*get length of the string*/
 	if total+baseLength > maxLength {
-		return fmt.Errorf("cluster name %s or nodepool name %s is too long, consider shortening it. Total node name cannot be longer than %d (<cluster-name>-<cluster-hash>-<node-name>-<index>), the total for this nodepool is %d",
-			clusterName, nodepoolName, maxLength, total)
+		return fmt.Errorf("nodepool name %s in cluster %s is too long, consider shortening it. Total node name cannot be longer than %d, the total for nodepool %s is %d",
+			nodepoolName, clusterName, maxLength-baseLength, nodepoolName, total)
 	}
 	return nil
 }

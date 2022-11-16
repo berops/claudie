@@ -31,11 +31,16 @@ type KubeEleven struct {
 	LBClusters []*pb.LBcluster
 }
 
+type NodeInfo struct {
+	Node *pb.Node
+	Name string
+}
+
 // templateData struct is data used in template creation
 type templateData struct {
 	APIEndpoint string
 	Kubernetes  string
-	Nodes       []*pb.Node
+	Nodes       []*NodeInfo
 }
 
 // Apply will create all necessary files and apply kubeone, which will set up the cluster completely
@@ -112,7 +117,7 @@ func (k *KubeEleven) generateTemplateData() templateData {
 	d.Kubernetes = k.K8sCluster.GetKubernetes()
 	//set up API EP if not set by lb
 	if d.APIEndpoint == "" {
-		d.APIEndpoint = d.Nodes[0].GetPublic()
+		d.APIEndpoint = d.Nodes[0].Node.GetPublic()
 	}
 	return d
 }
@@ -137,24 +142,25 @@ func (k *KubeEleven) findAPIEndpoint() string {
 // getClusterNodes will parse the nodepools of the k.K8sCluster and return slice of nodes
 // function also sets pb.NodeType_apiEndpoint flag if has not been set before
 // returns slice of *pb.Node
-func (k *KubeEleven) getClusterNodes() []*pb.Node {
-	var controlNodes []*pb.Node
-	var workerNodes []*pb.Node
-	var ep *pb.Node
+func (k *KubeEleven) getClusterNodes() []*NodeInfo {
+	var controlNodes []*NodeInfo
+	var workerNodes []*NodeInfo
+	var ep *NodeInfo
 	for _, nodepool := range k.K8sCluster.ClusterInfo.GetNodePools() {
-		for _, node := range nodepool.Nodes {
+		for i, node := range nodepool.Nodes {
+			nodeName := fmt.Sprintf("%s-%d", nodepool.Name, i+1)
 			if node.GetNodeType() == pb.NodeType_apiEndpoint {
-				ep = node
+				ep = &NodeInfo{Name: nodeName, Node: node}
 			} else if node.GetNodeType() == pb.NodeType_master {
-				controlNodes = append(controlNodes, node)
+				controlNodes = append(controlNodes, &NodeInfo{Name: nodeName, Node: node})
 			} else {
-				workerNodes = append(workerNodes, node)
+				workerNodes = append(workerNodes, &NodeInfo{Name: nodeName, Node: node})
 			}
 		}
 	}
 	//if no ep found, assign the first control node as API EP
 	if ep == nil {
-		controlNodes[0].NodeType = pb.NodeType_apiEndpoint
+		controlNodes[0].Node.NodeType = pb.NodeType_apiEndpoint
 	}
 	//in case d.Node has API endpoint node , append it to other control nodes
 	controlNodes = prependNode(ep, controlNodes)
@@ -173,7 +179,7 @@ func readKubeconfig(kubeconfigFile string) (string, error) {
 
 // prependNode will add node to the start of the slice
 // returns slice with node at the beginning
-func prependNode(node *pb.Node, arr []*pb.Node) []*pb.Node {
+func prependNode(node *NodeInfo, arr []*NodeInfo) []*NodeInfo {
 	if node == nil {
 		return arr
 	}
