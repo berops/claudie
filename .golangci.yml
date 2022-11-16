@@ -35,6 +35,7 @@ linters:
     - misspell
     - noctx
     - predeclared
+    - dogsled
 issues:
   max-same-issues: 50
 
