@@ -70,7 +70,7 @@ resource "azurerm_network_security_group" "claudie-nsg-{{ $.ReplaceAll $region "
   {{ if index $.Metadata "loadBalancers" | targetPorts | isMissing 6443 }}
   security_rule {
     name                       = "KubeApi"
-    priority                   = 1003
+    priority                   = 103
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
@@ -115,6 +115,7 @@ resource "azurerm_network_interface" "{{ $nodepool.Name }}-{{ $clusterHash }}-ni
   name                = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-ni-${count.index + 1}"
   location            = "{{ $nodepool.Region }}"
   resource_group_name = azurerm_resource_group.rg_{{$.ReplaceAll $nodepool.Region " " "_"  }}.name
+  enable_accelerated_networking = {{ enableAccNet $nodepool.ServerType }}
 
   ip_configuration {
     name                          = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}-ip-conf"

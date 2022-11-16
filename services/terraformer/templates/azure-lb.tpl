@@ -115,6 +115,7 @@ resource "azurerm_network_interface" "{{ $nodepool.Name }}-{{ $clusterHash }}-ni
   name                = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-ni-${count.index + 1}"
   location            = "{{ $nodepool.Region }}"
   resource_group_name = azurerm_resource_group.rg_{{ $.ReplaceAll $nodepool.Region " " "_"}}.name
+  enable_accelerated_networking = {{ enableAccNet $nodepool.ServerType }}
 
   ip_configuration {
     name                          = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}-ip-conf"
