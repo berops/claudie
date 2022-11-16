@@ -74,6 +74,7 @@ func (tl TemplateLoader) LoadTemplate(tplFile string) (*template.Template, error
 			"protocolToAzureProtocolString": ProtocolNameToAzureProtocolString,
 			"assignPriority":                AssignPriority,
 			"getCIDR":                       GetCIDR,
+			"enableAccNet":                  EnableAccNet,
 		})
 
 	tpl, err := tpl.ParseFiles(filepath.Join(baseDirectory, tl.Directory, tplFile))
