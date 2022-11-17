@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	comm "github.com/Berops/claudie/internal/command"
 	"github.com/Berops/claudie/internal/templateUtils"
@@ -44,6 +45,7 @@ type NodepoolsData struct {
 	ClusterHash string
 	NodePools   []*pb.NodePool
 	Metadata    map[string]any
+	Regions     []string
 }
 
 type outputNodepools struct {
@@ -158,12 +160,17 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	//sort nodepools by a provider
 	sortedNodePools := utils.GroupNodepoolsByProviderSpecName(clusterInfo)
 	for providerSpecName, nodepools := range sortedNodePools {
+
+		// list all regions being used for this provider
+		regions := utils.GetRegions(nodepools)
+
 		// based on the cluster type fill out the nodepools data to be used
 		nodepoolData := NodepoolsData{
 			NodePools:   nodepools,
 			ClusterName: clusterInfo.Name,
 			ClusterHash: clusterInfo.Hash,
 			Metadata:    c.Metadata,
+			Regions:     regions,
 		}
 
 		// Load TF files of the specific cloud provider
@@ -204,6 +211,12 @@ func (c ClusterBuilder) getNodes() []*pb.Node {
 		}
 	}
 	return oldNodes
+}
+
+// ReplaceAll is a wrapper function to replace all occurrence of a substring with another
+// substring. Returns modified string
+func (nd NodepoolsData) ReplaceAll(s, old, new string) string {
+	return strings.ReplaceAll(s, old, new)
 }
 
 func fillNodes(terraformOutput *outputNodepools, newNodePool *pb.NodePool, oldNodes []*pb.Node) {

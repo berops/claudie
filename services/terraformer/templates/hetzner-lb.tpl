@@ -1,6 +1,6 @@
-{{- $clusterName := .ClusterName}}
-{{- $clusterHash := .ClusterHash}}
-{{$index :=  0}}
+{{- $clusterName := .ClusterName }}
+{{- $clusterHash := .ClusterHash }}
+{{- $index :=  0 }}
 
 provider "hcloud" {
   token = "{{ (index .NodePools $index).Provider.Credentials }}" 
@@ -35,7 +35,7 @@ resource "hcloud_firewall" "firewall" {
     ]
   }
 
-  {{range $role := index .Metadata "roles"}}
+  {{- range $role := index .Metadata "roles" }}
   rule {
     direction = "in"
     protocol  = "{{ $role.Protocol }}"
@@ -45,7 +45,7 @@ resource "hcloud_firewall" "firewall" {
       "::/0"
     ]
   }
-  {{end}}
+  {{- end }}
 
   rule {
     direction = "in"
@@ -59,8 +59,7 @@ resource "hcloud_firewall" "firewall" {
 }
 
 
-{{range $nodepool := .NodePools}}
-
+{{- range $nodepool := .NodePools }}
 resource "hcloud_server" "{{$nodepool.Name}}" {
   provider     = hcloud.lb-nodepool
   count        = "{{ $nodepool.Count }}"
@@ -68,7 +67,7 @@ resource "hcloud_server" "{{$nodepool.Name}}" {
   server_type  = "{{ $nodepool.ServerType }}"
   image        = "{{ $nodepool.Image }}"
   firewall_ids = [hcloud_firewall.firewall.id]
-  datacenter   = "{{ $nodepool.Zone}}"
+  datacenter   = "{{ $nodepool.Zone }}"
   ssh_keys = [
     hcloud_ssh_key.claudie.id,
   ]
@@ -80,5 +79,4 @@ output "{{$nodepool.Name}}" {
     node.name => node.ipv4_address
   }
 }
-
-{{end}}
+{{- end }}
