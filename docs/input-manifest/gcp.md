@@ -9,7 +9,7 @@ Furthermore, your project should enable a few API, namely
 
 ## DNS requirements
 
-Since Claudie supports DNS on GCP, it is important that you enable DNS API if you are going to use it. Furthermore, you need to manually set up dns zone, since Claudie does not support their dynamic creation. To learn how to do it, please follow instructions [here](https://cloud.google.com/dns/docs/zones). 
+If your GCP provider will be used for DNS, you need to manually set up dns zone, since Claudie does not support their dynamic creation. To learn how to do it, please follow instructions [here](https://cloud.google.com/dns/docs/zones). 
 
 ## Policies required by Claudie:
 - for infrastructure 
