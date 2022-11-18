@@ -27,7 +27,7 @@ type saveFunction func(context.Context, *pb.SaveConfigRequest, ...grpc.CallOptio
 // A new config file with Id will be created if ID is empty
 // if successful, returns id of the saved config, error and empty string otherwise
 func SaveConfigFrontEnd(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest) (string, error) {
-	res, err := saveConfig(c, req, c.SaveConfigFrontEnd)
+	res, err := saveConfig(req, c.SaveConfigFrontEnd)
 	if err != nil {
 		return "", err
 	} else {
@@ -37,13 +37,13 @@ func SaveConfigFrontEnd(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest)
 
 // SaveConfigScheduler saves config from Scheduler
 func SaveConfigScheduler(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest) error {
-	_, err := saveConfig(c, req, c.SaveConfigScheduler)
+	_, err := saveConfig(req, c.SaveConfigScheduler)
 	return err
 }
 
 // SaveConfigBuilder saves config from Builder
 func SaveConfigBuilder(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest) error {
-	_, err := saveConfig(c, req, c.SaveConfigBuilder)
+	_, err := saveConfig(req, c.SaveConfigBuilder)
 	return err
 }
 
@@ -51,7 +51,7 @@ func SaveConfigBuilder(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest) 
 func GetConfigScheduler(c pb.ContextBoxServiceClient) (*pb.GetConfigResponse, error) {
 	res, err := c.GetConfigScheduler(context.Background(), &pb.GetConfigRequest{})
 	if err != nil {
-		return nil, fmt.Errorf("error getting scheduler config: %v", err)
+		return nil, fmt.Errorf("error getting scheduler config: %w", err)
 	}
 	return res, nil
 }
@@ -60,7 +60,7 @@ func GetConfigScheduler(c pb.ContextBoxServiceClient) (*pb.GetConfigResponse, er
 func GetConfigBuilder(c pb.ContextBoxServiceClient) (*pb.GetConfigResponse, error) {
 	res, err := c.GetConfigBuilder(context.Background(), &pb.GetConfigRequest{})
 	if err != nil {
-		return nil, fmt.Errorf("error getting builder config: %v", err)
+		return nil, fmt.Errorf("error getting builder config: %w", err)
 	}
 	return res, nil
 }
@@ -69,7 +69,7 @@ func GetConfigBuilder(c pb.ContextBoxServiceClient) (*pb.GetConfigResponse, erro
 func GetAllConfigs(c pb.ContextBoxServiceClient) (*pb.GetAllConfigsResponse, error) {
 	res, err := c.GetAllConfigs(context.Background(), &pb.GetAllConfigsRequest{})
 	if err != nil {
-		return nil, fmt.Errorf("unexpected error: %v", err)
+		return nil, fmt.Errorf("unexpected error: %w", err)
 	}
 	return res, nil
 }
@@ -79,7 +79,7 @@ func GetAllConfigs(c pb.ContextBoxServiceClient) (*pb.GetAllConfigsResponse, err
 func DeleteConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType) error {
 	res, err := c.DeleteConfig(context.Background(), &pb.DeleteConfigRequest{Id: id, Type: idType})
 	if err != nil {
-		return fmt.Errorf("error deleting: %v", err)
+		return fmt.Errorf("error deleting: %w", err)
 	}
 	log.Info().Msgf("Config will be deleted %v", res)
 	return nil
@@ -107,7 +107,7 @@ func printConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType, stat
 	var printState *pb.Project
 	res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: id, Type: idType})
 	if err != nil {
-		return "", fmt.Errorf("Failed to get config ID %s : %v", id, err)
+		return "", fmt.Errorf("failed to get config ID %s : %w", id, err)
 	}
 	if state == desired {
 		printState = res.GetConfig().GetDesiredState()
@@ -148,10 +148,10 @@ func printConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType, stat
 	return buffer.String(), nil
 }
 
-func saveConfig(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest, saveFun saveFunction) (*pb.SaveConfigResponse, error) {
+func saveConfig(req *pb.SaveConfigRequest, saveFun saveFunction) (*pb.SaveConfigResponse, error) {
 	res, err := saveFun(context.Background(), req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to save config via %s : %v", runtime.FuncForPC(reflect.ValueOf(saveFun).Pointer()).Name() /*prints name of the function*/, err)
+		return nil, fmt.Errorf("failed to save config via %s : %w", runtime.FuncForPC(reflect.ValueOf(saveFun).Pointer()).Name() /*prints name of the function*/, err)
 	}
 	log.Info().Msgf("Config %s has been saved", res.GetConfig().GetName())
 	return res, nil

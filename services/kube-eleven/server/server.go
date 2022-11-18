@@ -41,7 +41,7 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 				ke := kubeEleven.KubeEleven{K8sCluster: cluster, LBClusters: lbClusters}
 				err := ke.BuildCluster()
 				if err != nil {
-					return fmt.Errorf("error while building cluster %s : %v", cluster.ClusterInfo.Name, err)
+					return fmt.Errorf("error while building cluster %s : %w", cluster.ClusterInfo.Name, err)
 				}
 				return nil
 			})

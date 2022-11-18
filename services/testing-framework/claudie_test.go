@@ -104,7 +104,7 @@ func applyTestSet(setName, namespace string, c pb.ContextBoxServiceClient) error
 
 	manifestFiles, err := os.ReadDir(pathToTestSet)
 	if err != nil {
-		return fmt.Errorf("error while trying to read test manifests in %s : %v", pathToTestSet, err)
+		return fmt.Errorf("error while trying to read test manifests in %s : %w", pathToTestSet, err)
 	}
 
 	for _, manifest := range manifestFiles {
@@ -117,11 +117,11 @@ func applyTestSet(setName, namespace string, c pb.ContextBoxServiceClient) error
 		manifestPath := filepath.Join(pathToTestSet, manifest.Name())
 		yamlFile, err := os.ReadFile(manifestPath)
 		if err != nil {
-			return fmt.Errorf("error while reading the manifest %s : %v", manifestPath, err)
+			return fmt.Errorf("error while reading the manifest %s : %w", manifestPath, err)
 		}
 		manifestName, err := getManifestName(yamlFile)
 		if err != nil {
-			return fmt.Errorf("error while getting the manifest name from %s : %v", manifestPath, err)
+			return fmt.Errorf("error while getting the manifest name from %s : %w", manifestPath, err)
 		}
 
 		if namespace != "" {
@@ -129,13 +129,13 @@ func applyTestSet(setName, namespace string, c pb.ContextBoxServiceClient) error
 			idInfo.id = manifestName
 			idInfo.idType = pb.IdType_NAME
 			if err != nil {
-				return fmt.Errorf("error while applying manifest %s : %v", manifest.Name(), err)
+				return fmt.Errorf("error while applying manifest %s : %w", manifest.Name(), err)
 			}
 		} else {
 			idInfo.id, err = localTesting(yamlFile, manifestName, c)
 			idInfo.idType = pb.IdType_HASH
 			if err != nil {
-				return fmt.Errorf("error while applying manifest %s : %v", manifest.Name(), err)
+				return fmt.Errorf("error while applying manifest %s : %w", manifest.Name(), err)
 			}
 		}
 		// wait until test config has been processed
@@ -151,12 +151,12 @@ func applyTestSet(setName, namespace string, c pb.ContextBoxServiceClient) error
 	//delete secret from cluster
 	if namespace != "" {
 		if err = deleteSecret(setName, namespace); err != nil {
-			return fmt.Errorf("error while deleting the secret %s from %s : %v", pathToTestSet, namespace, err)
+			return fmt.Errorf("error while deleting the secret %s from %s : %w", pathToTestSet, namespace, err)
 		}
 	} else {
 		// delete config from database
 		if err = cbox.DeleteConfig(c, idInfo.id, pb.IdType_HASH); err != nil {
-			return fmt.Errorf("error while deleting the manifest from test set %s : %v", pathToTestSet, err)
+			return fmt.Errorf("error while deleting the manifest from test set %s : %w", pathToTestSet, err)
 		}
 	}
 
@@ -217,11 +217,11 @@ func clusterTesting(yamlFile []byte, setName, pathToTestSet, namespace, manifest
 	id, err := getManifestName(yamlFile)
 	idType := pb.IdType_NAME
 	if err != nil {
-		return fmt.Errorf("error while getting an id for %s : %v", manifestName, err)
+		return fmt.Errorf("error while getting an id for %s : %w", manifestName, err)
 	}
 
 	if err = applySecret(yamlFile, pathToTestSet, setName, namespace); err != nil {
-		return fmt.Errorf("error while applying a secret for %s : %v", setName, err)
+		return fmt.Errorf("error while applying a secret for %s : %w", setName, err)
 	}
 	log.Info().Msgf("Secret for config with id %s has been saved...", id)
 

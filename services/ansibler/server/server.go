@@ -39,7 +39,7 @@ func (*server) InstallNodeRequirements(_ context.Context, req *pb.InstallRequest
 	//since all nodes need to have longhorn req installed, we do not need to sort them in any way
 	if err := installLonghornRequirements(k8sNodepools); err != nil {
 		log.Error().Msgf("Error encountered while installing node requirements for project %s : %s", req.DesiredState.Name, err.Error())
-		return nil, fmt.Errorf("error encountered while installing node requirements for project %s : %s", req.DesiredState.Name, err.Error())
+		return nil, fmt.Errorf("error encountered while installing node requirements for project %s : %w", req.DesiredState.Name, err)
 	}
 	log.Info().Msgf("Node requirements for project %s were successfully installed", req.DesiredState.Name)
 	return &pb.InstallResponse{DesiredState: req.DesiredState}, nil
@@ -65,7 +65,7 @@ func (*server) InstallVPN(_ context.Context, req *pb.InstallRequest) (*pb.Instal
 	//there will be N VPNs for N clusters, thus we sorted the nodes based on the k8s cluster name
 	if err := installWireguardVPN(vpnNodepools); err != nil {
 		log.Error().Msgf("Error encountered while installing VPN for project %s : %s", req.DesiredState.Name, err.Error())
-		return nil, fmt.Errorf("error encountered while installing VPN for project %s : %s", req.DesiredState.Name, err.Error())
+		return nil, fmt.Errorf("error encountered while installing VPN for project %s : %w", req.DesiredState.Name, err)
 	}
 	log.Info().Msgf("VPNs for project %s were successfully installed", req.DesiredState.Name)
 	return &pb.InstallResponse{DesiredState: req.DesiredState}, nil
@@ -182,7 +182,7 @@ func (*server) SetUpLoadbalancers(_ context.Context, req *pb.SetUpLBRequest) (*p
 
 	if err := setUpLoadbalancers(lbInfos); err != nil {
 		log.Error().Msgf("Error encountered while setting up the loadbalancers for project %s : %s", req.DesiredState.Name, err.Error())
-		return nil, fmt.Errorf("error encountered while setting up the loadbalancers for project %s : %s", req.DesiredState.Name, err.Error())
+		return nil, fmt.Errorf("error encountered while setting up the loadbalancers for project %s : %w", req.DesiredState.Name, err)
 	}
 	log.Info().Msgf("Loadbalancers for project %s were successfully set up", req.DesiredState.Name)
 	return &pb.SetUpLBResponse{DesiredState: req.DesiredState}, nil
