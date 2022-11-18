@@ -12,7 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-//function to be used for saving
+// function to be used for saving
 type saveFunction func(context.Context, *pb.SaveConfigRequest, ...grpc.CallOption) (*pb.SaveConfigResponse, error)
 
 // SaveConfigFrontEnd calls Content-box gRPC server and saves configuration to the database
@@ -103,7 +103,7 @@ func printConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType) (*pb
 	fmt.Println("Config ID:", res.GetConfig().GetId())
 	fmt.Println("Project name:", res.GetConfig().GetCurrentState().GetName())
 	fmt.Println("Project clusters: ")
-	for i, cluster := range res.GetConfig().GetDesiredState().GetClusters() {
+	for i, cluster := range res.GetConfig().GetCurrentState().GetClusters() {
 		fmt.Println("========================================")
 		fmt.Println("Cluster number:", i)
 		fmt.Println("Name:", cluster.ClusterInfo.GetName())

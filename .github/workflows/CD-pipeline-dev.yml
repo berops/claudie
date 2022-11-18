@@ -140,7 +140,6 @@ jobs:
             ./yq e '.providers.azure.[].tenant_id = "${{ secrets.AZURE_TENANT_ID }}"' $file -i
             ./yq e '.providers.azure.[].client_id = "${{ secrets.AZURE_CLIENT_ID }}"' $file -i
             ./yq e '.providers.azure.[].client_secret = "${{ secrets.AZURE_CLIENT_SECRET }}"' $file -i
-            ./yq e '.providers.azure.[].resource_group = "${{ secrets.AZURE_RESOURCE_GROUP }}"' $file -i
             done
           done
 
