@@ -115,7 +115,11 @@ func TestDeleteConfig(t *testing.T) {
 // To get an output of the test, run this from the test's directory: go test -timeout 30s -run ^TestPrintConfig$ github.com/Berops/claudie/services/context-box/client -v
 func TestPrintConfig(t *testing.T) {
 	c, cc := ClientConnection()
-	out := printConfig(c, configIDDefault, pb.IdType_HASH) // Put desired config ID here
+	defer closeConn(t, cc)
+	out, err := printConfig(c, configIDDefault, pb.IdType_HASH, desired)
+	require.NoError(t, err)
+	out1, err := printConfig(c, configIDDefault, pb.IdType_HASH, current)
+	require.NoError(t, err)
 	t.Log(out)
-	closeConn(t, cc)
+	require.Equal(t, out, out1)
 }

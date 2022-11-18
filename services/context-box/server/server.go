@@ -20,7 +20,9 @@ import (
 	"github.com/Berops/claudie/internal/healthcheck"
 	"github.com/Berops/claudie/proto/pb"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/status"
 )
 
 type server struct {
@@ -90,7 +92,17 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 	// Save new config to the DB, update csState as dsState
 	config.CsChecksum = config.DsChecksum
 	config.BuilderTTL = 0
-
+	// In Builder, the desired state is also updated i.e. in terraformer (node IPs, etc) thus
+	// we need to update it in database,
+	// however, if deletion has been triggered, the desired state should be nil
+	if dbConf, err := database.GetConfig(config.Id, pb.IdType_HASH); err != nil {
+		if dbConf.DesiredState != nil {
+			if err := database.UpdateDs(config); err != nil {
+				return nil, status.Errorf(codes.Internal, fmt.Sprintf("Error while updating desired state: %v", err))
+			}
+		}
+	}
+	// Update the current state so its equal to the desired state
 	if err := database.UpdateCs(config); err != nil {
 		return nil, fmt.Errorf("error while updating csChecksum for %s : %w", config.Name, err)
 	}
