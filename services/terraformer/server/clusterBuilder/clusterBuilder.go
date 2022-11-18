@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 
 	comm "github.com/Berops/claudie/internal/command"
 	"github.com/Berops/claudie/internal/templateUtils"
@@ -206,12 +205,6 @@ func (c ClusterBuilder) getNodes() []*pb.Node {
 		}
 	}
 	return oldNodes
-}
-
-// ReplaceAll is a wrapper function to replace all occurrence of a substring with another
-// substring. Returns modified string
-func (nd NodepoolsData) ReplaceAll(s, old, new string) string {
-	return strings.ReplaceAll(s, old, new)
 }
 
 func fillNodes(terraformOutput *outputNodepools, newNodePool *pb.NodePool, oldNodes []*pb.Node) {

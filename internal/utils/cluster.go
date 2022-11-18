@@ -50,10 +50,8 @@ func GetRegions(nodepools []*pb.NodePool) []string {
 
 	// extract value of set and create a slice
 	regions := make([]string, len(regionSet))
-	i := 0
 	for k := range regionSet {
-		regions[i] = k
-		i++
+		regions = append(regions, k)
 	}
 	return regions
 }

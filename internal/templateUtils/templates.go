@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"text/template"
 )
@@ -75,6 +76,7 @@ func (tl TemplateLoader) LoadTemplate(tplFile string) (*template.Template, error
 			"assignPriority":                AssignPriority,
 			"getCIDR":                       GetCIDR,
 			"enableAccNet":                  EnableAccNet,
+			"replaceAll":                    strings.ReplaceAll,
 		})
 
 	tpl, err := tpl.ParseFiles(filepath.Join(baseDirectory, tl.Directory, tplFile))
