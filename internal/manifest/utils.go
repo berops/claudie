@@ -56,7 +56,6 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
 				AzureSubscriptionId: azureConf.SubscriptionId,
 				AzureTenantId:       azureConf.TenantId,
 				AzureClientId:       azureConf.ClientId,
-				AzureResourceGroup:  azureConf.ResourceGroup,
 				//omit rest of the pb.Provider variables
 			}, nil
 		}
