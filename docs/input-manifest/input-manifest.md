@@ -54,7 +54,7 @@ Support for more cloud provider is planned and will be rolled out in future.
 
 Collection of data defining GCP cloud provider configuration. 
 
-To find out how to configure GCP provider and service account, follow the instructions [here](./gcp.md).
+To find out how to configure GCP provider and service account, follow the instructions [here](./providers/gcp.md).
 
 - `name`
 
@@ -72,7 +72,7 @@ To find out how to configure GCP provider and service account, follow the instru
 
 Collection of data defining Hetzner cloud provider configuration. 
 
-To find out how to configure Hetzner provider and service account, follow the instructions [here](./hetzner.md).
+To find out how to configure Hetzner provider and service account, follow the instructions [here](./providers/hetzner.md).
 
 - `name`
 
@@ -86,7 +86,7 @@ To find out how to configure Hetzner provider and service account, follow the in
 
 Collection of data defining OCI cloud provider configuration. 
 
-To find out how to configure OCI provider and service account, follow the instructions [here](./oci.md).
+To find out how to configure OCI provider and service account, follow the instructions [here](./providers/oci.md).
 
 - `name`
 
@@ -116,7 +116,7 @@ To find out how to configure OCI provider and service account, follow the instru
 
 Collection of data defining AWS cloud provider configuration. 
 
-To find out how to configure AWS provider and service account, follow the instructions [here](./aws.md).
+To find out how to configure AWS provider and service account, follow the instructions [here](./providers/aws.md).
 
 - `name`
 
@@ -134,7 +134,7 @@ To find out how to configure AWS provider and service account, follow the instru
 
 Collection of data defining Azure cloud provider configuration. 
 
-To find out how to configure Azure provider and service account, follow the instructions [here](./azure.md).
+To find out how to configure Azure provider and service account, follow the instructions [here](./providers/azure.md).
 
 - `name`
 
