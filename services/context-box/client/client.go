@@ -1,6 +1,7 @@
 package cbox
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"reflect"
@@ -10,6 +11,13 @@ import (
 
 	"github.com/Berops/claudie/proto/pb"
 	"github.com/rs/zerolog/log"
+)
+
+type State string
+
+const (
+	desired State = "DESIRED"
+	current State = "CURRENT"
 )
 
 // function to be used for saving
@@ -94,45 +102,50 @@ func DeleteConfigFromDB(c pb.ContextBoxServiceClient, id string, idType pb.IdTyp
 }
 
 // printConfig prints a desired config with a current state info
-func printConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType) (*pb.GetConfigFromDBResponse, error) {
+func printConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType, state State) (string, error) {
+	var buffer bytes.Buffer
+	var printState *pb.Project
 	res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: id, Type: idType})
 	if err != nil {
-		log.Fatal().Msgf("Failed to get config ID %s : %v", id, err)
+		return "", fmt.Errorf("Failed to get config ID %s : %v", id, err)
 	}
-	fmt.Println("Config name:", res.GetConfig().GetName())
-	fmt.Println("Config ID:", res.GetConfig().GetId())
-	fmt.Println("Project name:", res.GetConfig().GetCurrentState().GetName())
-	fmt.Println("Project clusters: ")
-	for i, cluster := range res.GetConfig().GetDesiredState().GetClusters() {
-		fmt.Println("========================================")
-		fmt.Println("Cluster number:", i)
-		fmt.Println("Name:", cluster.ClusterInfo.GetName())
-		fmt.Println("Hash:", cluster.ClusterInfo.GetHash())
-		fmt.Println("Kubernetes version:", cluster.GetKubernetes())
-		fmt.Println("Network CIDR:", cluster.GetNetwork())
-		fmt.Println("Kubeconfig:")
-		fmt.Println(cluster.GetKubeconfig())
-		fmt.Println("Public key:")
-		fmt.Println(cluster.ClusterInfo.PublicKey)
-		fmt.Println("Private key:")
-		fmt.Println(cluster.ClusterInfo.PrivateKey)
-		fmt.Println("Node Pools:")
-		for i2, nodePool := range cluster.ClusterInfo.GetNodePools() {
-			fmt.Println("----------------------------------------")
-			fmt.Println("NodePool number:", i2)
-			fmt.Println("Name:", nodePool.GetName())
-			fmt.Println("Region", nodePool.GetRegion())
-			fmt.Println("Provider specs:", nodePool.GetProvider())
-		}
-		fmt.Println("----------------------------------------")
-		fmt.Println("Cluster Nodes:")
-		for _, nodePools := range cluster.ClusterInfo.GetNodePools() {
-			for _, node := range nodePools.GetNodes() {
-				fmt.Println("Name:", node.Name, "Public:", node.GetPublic(), "Private", node.GetPrivate(), "NodeType:", node.GetNodeType().Descriptor())
+	if state == desired {
+		printState = res.GetConfig().GetDesiredState()
+	} else {
+		printState = res.GetConfig().GetCurrentState()
+	}
+	buffer.WriteString(fmt.Sprintf("\nConfig name: %s\n", res.GetConfig().GetName()))
+	buffer.WriteString(fmt.Sprintf("Config ID: %s\n", res.GetConfig().GetId()))
+	buffer.WriteString(fmt.Sprintf("Project name: %s\n", printState.GetName()))
+	buffer.WriteString("Project clusters: \n")
+	for i, cluster := range printState.GetClusters() {
+		buffer.WriteString("========================================\n")
+		buffer.WriteString(fmt.Sprintf("Cluster number: %d\n", i))
+		buffer.WriteString(fmt.Sprintf("Name: %s\n", cluster.ClusterInfo.GetName()))
+		buffer.WriteString(fmt.Sprintf("Hash: %s\n", cluster.ClusterInfo.GetHash()))
+		buffer.WriteString(fmt.Sprintf("Kubernetes version: %s\n", cluster.GetKubernetes()))
+		buffer.WriteString(fmt.Sprintf("Network CIDR: %s\n", cluster.GetNetwork()))
+		buffer.WriteString("Kubeconfig:\n")
+		buffer.WriteString(fmt.Sprintf("%s\n", cluster.GetKubeconfig()))
+		buffer.WriteString("Public key:\n")
+		buffer.WriteString(fmt.Sprintf("%s\n", cluster.ClusterInfo.PublicKey))
+		buffer.WriteString("Private key:\n")
+		buffer.WriteString(fmt.Sprintf("%s\n", cluster.ClusterInfo.PrivateKey))
+		buffer.WriteString("Node Pools:\n")
+		for j, nodePool := range cluster.ClusterInfo.GetNodePools() {
+			buffer.WriteString("----------------------------------------\n")
+			buffer.WriteString(fmt.Sprintf("NodePool number: %d \n", j))
+			buffer.WriteString(fmt.Sprintf("Name: %s\n", nodePool.GetName()))
+			buffer.WriteString(fmt.Sprintf("Region %s\n", nodePool.GetRegion()))
+			buffer.WriteString(fmt.Sprintf("Provider specs: %s\n", nodePool.GetProvider()))
+			buffer.WriteString("Nodes:\n")
+			for _, node := range nodePool.GetNodes() {
+				buffer.WriteString(fmt.Sprintf("Name: %s Public: %s Private: %s NodeType: %s \n", node.Name, node.GetPublic(), node.GetPrivate(), node.GetNodeType().String()))
 			}
 		}
+		buffer.WriteString("----------------------------------------\n")
 	}
-	return res, nil
+	return buffer.String(), nil
 }
 
 func saveConfig(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest, saveFun saveFunction) (*pb.SaveConfigResponse, error) {
