@@ -8,7 +8,7 @@ import (
 const charset = "abcdefghijklmnopqrstuvwxyz" + "0123456789"
 const HashLength = 7
 
-var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
+var seededRand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 func CreateHash(length int) string {
 	return CreateHashWithCharSet(length, charset)

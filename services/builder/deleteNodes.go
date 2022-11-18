@@ -26,7 +26,7 @@ func deleteNodes(config *pb.Config, toDelete map[string]*nodepoolsCounts) (*pb.C
 					log.Debug().Msgf("Deleting nodes for %s cluster from config %s", cluster.ClusterInfo.Name, config.Name)
 					newCluster, err := callDeleteNodes(master, worker, cluster)
 					if err != nil {
-						return fmt.Errorf("error while deleting nodes for %s : %v", cluster.ClusterInfo.Name, err)
+						return fmt.Errorf("error while deleting nodes for %s : %w", cluster.ClusterInfo.Name, err)
 					}
 					//Updation - Delete nodes from a current state Ips map
 					cluster = newCluster

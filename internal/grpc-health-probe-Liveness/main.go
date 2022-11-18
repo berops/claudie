@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,6 +17,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -171,7 +172,7 @@ func buildCredentials(skipVerify bool, caCerts, clientCert, clientKey, serverNam
 	if clientCert != "" && clientKey != "" {
 		keyPair, err := tls.LoadX509KeyPair(clientCert, clientKey)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load tls client cert/key pair. error=%v", err)
+			return nil, fmt.Errorf("failed to load tls client cert/key pair. error=%w", err)
 		}
 		cfg.Certificates = []tls.Certificate{keyPair}
 	}
@@ -183,7 +184,7 @@ func buildCredentials(skipVerify bool, caCerts, clientCert, clientKey, serverNam
 		rootCAs := x509.NewCertPool()
 		pem, err := os.ReadFile(caCerts)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load root CA certificates from file (%s) error=%v", caCerts, err)
+			return nil, fmt.Errorf("failed to load root CA certificates from file (%s) error=%w", caCerts, err)
 		}
 		if !rootCAs.AppendCertsFromPEM(pem) {
 			return nil, fmt.Errorf("no root CA certs parsed from file %s", caCerts)
@@ -264,7 +265,7 @@ func main() {
 	defer dialCancel()
 	conn, err := grpc.DialContext(dialCtx, flAddr, opts...)
 	if err != nil {
-		if err == context.DeadlineExceeded {
+		if errors.Is(err, context.DeadlineExceeded) {
 			log.Printf("timeout: failed to connect service %q within %v", flAddr, flConnTimeout)
 		} else {
 			log.Printf("error: failed to connect service at %q: %+v", flAddr, err)

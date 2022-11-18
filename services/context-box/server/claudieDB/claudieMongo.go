@@ -87,7 +87,7 @@ func (c *ClaudieMongo) Init() error {
 		Options: options.Index().SetUnique(true),
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create index %s : %v", indexName, err)
+		return fmt.Errorf("failed to create index %s : %w", indexName, err)
 	}
 	return nil
 }

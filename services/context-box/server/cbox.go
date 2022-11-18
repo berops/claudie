@@ -120,7 +120,6 @@ func configCheck() error {
 				queueBuilder.Enqueue(config)
 				config.BuilderTTL = defaultBuilderTTL
 				continue
-
 			} else {
 				config.BuilderTTL = config.BuilderTTL - 1
 			}
@@ -140,7 +139,7 @@ func configCheck() error {
 // configChecker is a driver for configCheck function
 func configChecker() error {
 	if err := configCheck(); err != nil {
-		return fmt.Errorf("error while configCheck: %v", err)
+		return fmt.Errorf("error while configCheck: %w", err)
 	}
 	if !queueScheduler.CompareContent(lastQS) {
 		log.Info().Msgf("QueueScheduler content changed to: %v", queueScheduler.GetContent())
@@ -158,11 +157,11 @@ func initDatabase() (ClaudieDB, error) {
 	claudieDatabase := &claudieDB.ClaudieMongo{URL: envs.DatabaseURL}
 	err := claudieDatabase.Connect()
 	if err != nil {
-		return nil, fmt.Errorf("Unable to connect to database at %s : %v", envs.DatabaseURL, err)
+		return nil, fmt.Errorf("unable to connect to database at %s : %w", envs.DatabaseURL, err)
 	}
 	err = claudieDatabase.Init()
 	if err != nil {
-		return nil, fmt.Errorf("Unable to initialise to database at %s : %v", envs.DatabaseURL, err)
+		return nil, fmt.Errorf("unable to initialise to database at %s : %w", envs.DatabaseURL, err)
 	}
 	return claudieDatabase, nil
 }

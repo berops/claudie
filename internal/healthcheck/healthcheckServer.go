@@ -30,7 +30,6 @@ func NewServerHealthChecker(port string, key string, checkFunc checkFunction) *S
 
 // Check is a method function on ServerHealthChecker struct
 func (s *ServerHealthChecker) Check(ctx context.Context, req *grpc_health_v1.HealthCheckRequest) (*grpc_health_v1.HealthCheckResponse, error) {
-
 	// Check if app is ready -> if true, return SERVING
 	timeout := 5 * time.Second
 	servicePort := os.Getenv(envKey)
