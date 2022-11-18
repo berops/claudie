@@ -150,7 +150,6 @@ func (k *Kubectl) KubectlExecEtcd(etcdPod, etcdctlCmd string) ([]byte, error) {
 	kcExecEtcdCmd := fmt.Sprintf("kubectl %s -n kube-system exec -i %s -- /bin/sh -c \" %s && %s \"",
 		kubeconfig, etcdPod, exportEtcdEnvsCmd, etcdctlCmd)
 	return k.runWithOutput(kcExecEtcdCmd)
-
 }
 
 // run will run the command in a bash shell like "bash -c command"

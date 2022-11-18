@@ -451,17 +451,17 @@ func setUpNginx(lb *pb.LBcluster, targetedNodepool []*pb.NodePool, directory str
 }
 
 // splitNodesByType returns two slices of *pb.Node, one for control nodes and one for compute
-func splitNodesByType(nodepools []*pb.NodePool) (controlNodes, ComputeNodes []*pb.Node) {
+func splitNodesByType(nodepools []*pb.NodePool) (controlNodes, computeNodes []*pb.Node) {
 	for _, nodepools := range nodepools {
 		for _, node := range nodepools.Nodes {
 			if node.NodeType == pb.NodeType_apiEndpoint || node.NodeType == pb.NodeType_master {
 				controlNodes = append(controlNodes, node)
 			} else {
-				ComputeNodes = append(ComputeNodes, node)
+				computeNodes = append(computeNodes, node)
 			}
 		}
 	}
-	return controlNodes, ComputeNodes
+	return controlNodes, computeNodes
 }
 
 // generateK8sBaseFiles generates the base loadbalancer files, like inventory, keys, etc.

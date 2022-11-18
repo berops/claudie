@@ -105,7 +105,7 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 				CurrentState: currentState,
 				DesiredState: desiredState,
 				ErrorMessage: fmt.Sprintf("BuildInfrastructure got error: %s", err.Error())},
-			fmt.Errorf("BuildInfrastructure got error: %s", err.Error())
+			fmt.Errorf("BuildInfrastructure got error: %w", err)
 	}
 	log.Info().Msgf("Infrastructure was successfully generated for project %s", desiredState.Name)
 	return &pb.BuildInfrastructureResponse{
@@ -162,7 +162,7 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 	if err := errGroup.Wait(); err != nil {
 		config.ErrorMessage = err.Error()
 		log.Error().Msgf("Failed to destroy the infra for project %s : %s", req.Config.Name, err.Error())
-		return &pb.DestroyInfrastructureResponse{Config: config}, fmt.Errorf("failed to destroy infrastructure: %s", err.Error())
+		return &pb.DestroyInfrastructureResponse{Config: config}, fmt.Errorf("failed to destroy infrastructure: %w", err)
 	}
 
 	log.Info().Msgf("Infra for project %s was successfully destroyed", req.Config.Name)
