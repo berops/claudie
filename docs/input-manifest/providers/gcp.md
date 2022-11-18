@@ -9,8 +9,11 @@ Furthermore, your project should enable a few API, namely
 
 ## DNS requirements
 
-If your GCP provider will be used for DNS, you need to manually set up dns zone, since Claudie does not support their dynamic creation. To learn how to do it, please follow instructions [here](https://cloud.google.com/dns/docs/zones). 
+If your GCP provider will be used for DNS, you need to manually
+- [set up dns zone](https://cloud.google.com/dns/docs/zones)
+- [update domain name server](https://cloud.google.com/dns/docs/update-name-servers)
 
+since Claudie does not support their dynamic creation. 
 ## IAM policies required by Claudie:
 - for infrastructure creation
   - `roles/roles/compute.admin`
