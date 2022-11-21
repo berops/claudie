@@ -222,7 +222,6 @@ func TestBuildInfrastructure(t *testing.T) {
 			for k, node := range nodepool.Nodes {
 				t.Log(i+k, node.GetPublic())
 			}
-
 		}
 	}
 }

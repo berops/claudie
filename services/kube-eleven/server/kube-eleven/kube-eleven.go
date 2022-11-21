@@ -57,7 +57,6 @@ func (k *KubeEleven) BuildCluster() error {
 	kc, err := readKubeconfig(filepath.Join(k.directory, kubeconfigFile))
 	if err != nil {
 		return fmt.Errorf("error while reading cluster-config in %s : %w", k.directory, err)
-
 	}
 	//check if kubeconfig is not empty and set it
 	if len(kc) > 0 {
@@ -65,7 +64,7 @@ func (k *KubeEleven) BuildCluster() error {
 	}
 	// Clean up
 	if err := os.RemoveAll(k.directory); err != nil {
-		return fmt.Errorf("error while removing files from %s: %v", k.directory, err)
+		return fmt.Errorf("error while removing files from %s: %w", k.directory, err)
 	}
 	return nil
 }

@@ -33,10 +33,9 @@ func testLonghornDeployment(config *pb.GetConfigFromDBResponse) error {
 		err := checkLonghornNodes(cluster, kubectl)
 		if err != nil {
 			return fmt.Errorf("error while checking the nodes.longhorn.io in cluster %s : %w", cluster.ClusterInfo.Name, err)
-
 		}
 		// check if all pods from longhorn-system are ready
-		err = checkLonghornPods(cluster.Kubeconfig, cluster.ClusterInfo.Name, kubectl)
+		err = checkLonghornPods(cluster.ClusterInfo.Name, kubectl)
 		if err != nil {
 			return fmt.Errorf("error while checking if all pods from longhorn-system are ready in cluster %s: %w", cluster.ClusterInfo.Name, err)
 		}
@@ -82,7 +81,7 @@ func checkLonghornNodes(cluster *pb.K8Scluster, kubectl kubectl.Kubectl) error {
 }
 
 // checkLonghornPods will check if the pods in longhorn-system namespace are in ready state
-func checkLonghornPods(config, clusterName string, kubectl kubectl.Kubectl) error {
+func checkLonghornPods(clusterName string, kubectl kubectl.Kubectl) error {
 	readyCheck := 0
 	allPodsReady := false
 	// give them time of maxLonghornCheck seconds to be scheduled

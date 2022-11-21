@@ -35,7 +35,7 @@ func (m *Manifest) Validate() error {
 	}
 
 	if err := checkLengthOfFutureDomain(m); err != nil {
-		return fmt.Errorf("failed to validate future domains: %v", err)
+		return fmt.Errorf("failed to validate future domains: %w", err)
 	}
 
 	return nil

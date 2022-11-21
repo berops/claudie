@@ -118,8 +118,8 @@ func getMatchingRoles(roles []manifest.Role, roleNames []string) ([]*pb.Role, er
 				newRole := &pb.Role{
 					Name:       role.Name,
 					Protocol:   role.Protocol,
-					Port:       int32(role.Port),
-					TargetPort: int32(role.TargetPort),
+					Port:       role.Port,
+					TargetPort: role.TargetPort,
 					Target:     target,
 					RoleType:   roleType,
 				}

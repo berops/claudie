@@ -55,7 +55,7 @@ func getManifestName(yamlFile []byte) (string, error) {
 	var manifest manifest.Manifest
 	err := yaml.Unmarshal(yamlFile, &manifest)
 	if err != nil {
-		return "", fmt.Errorf("error while unmarshalling a manifest file: %v", err)
+		return "", fmt.Errorf("error while unmarshalling a manifest file: %w", err)
 	}
 
 	if manifest.Name != "" {

@@ -20,7 +20,9 @@ import (
 	"github.com/Berops/claudie/internal/healthcheck"
 	"github.com/Berops/claudie/proto/pb"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/status"
 )
 
 type server struct {
@@ -44,12 +46,12 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 	config.SchedulerTTL = 0
 	err := database.UpdateDs(config)
 	if err != nil {
-		return nil, fmt.Errorf("error while updating dsChecksum for %s : %v", config.Name, err)
+		return nil, fmt.Errorf("error while updating dsChecksum for %s : %w", config.Name, err)
 	}
 
 	err = database.UpdateSchedulerTTL(config.Name, config.SchedulerTTL)
 	if err != nil {
-		return nil, fmt.Errorf("error while updating schedulerTTL for %s : %v", config.Name, err)
+		return nil, fmt.Errorf("error while updating schedulerTTL for %s : %w", config.Name, err)
 	}
 
 	return &pb.SaveConfigResponse{Config: config}, nil
@@ -76,7 +78,7 @@ func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest
 	// save config to DB
 	err = database.SaveConfig(newConfig)
 	if err != nil {
-		return nil, fmt.Errorf("error while saving config %s in db : %v", newConfig.Name, err)
+		return nil, fmt.Errorf("error while saving config %s in db : %w", newConfig.Name, err)
 	}
 
 	return &pb.SaveConfigResponse{Config: newConfig}, nil
@@ -90,7 +92,17 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 	// Save new config to the DB, update csState as dsState
 	config.CsChecksum = config.DsChecksum
 	config.BuilderTTL = 0
-
+	// In Builder, the desired state is also updated i.e. in terraformer (node IPs, etc) thus
+	// we need to update it in database,
+	// however, if deletion has been triggered, the desired state should be nil
+	if dbConf, err := database.GetConfig(config.Id, pb.IdType_HASH); err != nil {
+		if dbConf.DesiredState != nil {
+			if err := database.UpdateDs(config); err != nil {
+				return nil, status.Errorf(codes.Internal, fmt.Sprintf("Error while updating desired state: %v", err))
+			}
+		}
+	}
+	// Update the current state so its equal to the desired state
 	if err := database.UpdateCs(config); err != nil {
 		return nil, fmt.Errorf("error while updating csChecksum for %s : %w", config.Name, err)
 	}
@@ -142,7 +154,7 @@ func (*server) GetConfigBuilder(ctx context.Context, req *pb.GetConfigRequest) (
 func (*server) GetAllConfigs(ctx context.Context, req *pb.GetAllConfigsRequest) (*pb.GetAllConfigsResponse, error) {
 	configs, err := database.GetAllConfigs()
 	if err != nil {
-		return nil, fmt.Errorf("error getting all configs : %v", err)
+		return nil, fmt.Errorf("error getting all configs : %w", err)
 	}
 	return &pb.GetAllConfigsResponse{Configs: configs}, nil
 }
@@ -237,7 +249,7 @@ func main() {
 	g.Go(func() error {
 		// s.Serve() will create a service goroutine for each connection
 		if err := s.Serve(lis); err != nil {
-			return fmt.Errorf("ContextBox failed to serve: %v", err)
+			return fmt.Errorf("ContextBox failed to serve: %w", err)
 		}
 		log.Info().Msg("Finished listening for incoming connections")
 		return nil

@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-//enter the test kubeconfig
+// enter the test kubeconfig
 const config = ""
 const testStr = `apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
