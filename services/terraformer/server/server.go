@@ -171,32 +171,20 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 				// Key under which the state file is stored in minIO.
 				key := fmt.Sprintf("%s/%s", projectName, c.Id())
 
-				// Type assertion to retrive current cluster Name and Hash
-				currentCluster, ok := cluster.(kubernetes.K8Scluster)
-				if !ok {
-					log.Warn().Msgf("Failed to convert to type K8Scluster %s", config.Name)
-				} else {
-
-					// Generate dynamodb lockfile id
-					dynamoLockId, err := attributevalue.Marshal(
-						fmt.Sprintf("%s/%s/%s-%s-md5",
-							minioBucket, projectName,
-							currentCluster.CurrentK8s.ClusterInfo.Name,
-							currentCluster.CurrentK8s.ClusterInfo.Hash),
-					)
-
-					if err != nil {
-						log.Warn().Msgf("Error composing state lockfile id for cluster %s : %s", c.Id(), config.Name)
-					}
-
-					// Remove the lockfile from dynamodb
-					_, err = dynamoConnection.DeleteItem(ctx, &dynamodb.DeleteItemInput{
-						Key: map[string]types.AttributeValue{"LockID": dynamoLockId}, TableName: aws.String(dynamoTable),
-					})
-					
-					if err != nil {
-						return fmt.Errorf("failed to remove state lock file %v : %w", cluster.Id(), err)
-					}
+				// Key under which the lockfile id is stored in dynamodb
+				dynamoLockId, err := attributevalue.Marshal(
+					fmt.Sprintf("%s/%s/%s-md5", minioBucket, projectName, c.Id()),
+				)
+				if err != nil {
+					log.Warn().Msgf("Error composing state lockfile id for cluster %s : %s", c.Id(), config.Name)
+				}
+				fmt.Println(dynamoLockId)
+				// Remove the lockfile from dynamodb
+				_, err = dynamoConnection.DeleteItem(ctx, &dynamodb.DeleteItemInput{
+					Key: map[string]types.AttributeValue{"LockID": dynamoLockId}, TableName: aws.String(dynamoTable),
+				})
+				if err != nil {
+					return fmt.Errorf("failed to remove state lock file %v : %w", cluster.Id(), err)
 				}
 
 				return mc.RemoveObject(ctx, minioBucket, key, minio.RemoveObjectOptions{
@@ -209,7 +197,7 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 
 	if err := errGroup.Wait(); err != nil {
 		config.ErrorMessage = err.Error()
-		log.Error().Msgf("Failed to destroy the infra for project %s : %s", req.Config.Name, err.Error())
+		log.Error().Msgf("Failed to destroy the infra for project %s : %s", config.Name, err.Error())
 		return &pb.DestroyInfrastructureResponse{Config: config}, fmt.Errorf("failed to destroy infrastructure: %w", err)
 	}
 
