@@ -33,12 +33,13 @@ func (*server) InstallNodeRequirements(_ context.Context, req *pb.InstallRequest
 	var k8sNodepools []*NodepoolInfo
 	//add k8s nodes to k8sNodepools
 	for _, cluster := range req.DesiredState.Clusters {
-		k8sNodepools = append(k8sNodepools, &NodepoolInfo{Nodepools: cluster.ClusterInfo.NodePools, PrivateKey: cluster.ClusterInfo.PrivateKey, ID: cluster.ClusterInfo.Name})
+		id := fmt.Sprintf("%s-%s", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
+		k8sNodepools = append(k8sNodepools, &NodepoolInfo{Nodepools: cluster.ClusterInfo.NodePools, PrivateKey: cluster.ClusterInfo.PrivateKey, ID: id})
 	}
 	//since all nodes need to have longhorn req installed, we do not need to sort them in any way
 	if err := installLonghornRequirements(k8sNodepools); err != nil {
 		log.Error().Msgf("Error encountered while installing node requirements for project %s : %s", req.DesiredState.Name, err.Error())
-		return nil, fmt.Errorf("error encountered while installing node requirements for project %s : %s", req.DesiredState.Name, err.Error())
+		return nil, fmt.Errorf("error encountered while installing node requirements for project %s : %w", req.DesiredState.Name, err)
 	}
 	log.Info().Msgf("Node requirements for project %s were successfully installed", req.DesiredState.Name)
 	return &pb.InstallResponse{DesiredState: req.DesiredState}, nil
@@ -50,19 +51,21 @@ func (*server) InstallVPN(_ context.Context, req *pb.InstallRequest) (*pb.Instal
 	//add k8s nodepools to vpn nodepools
 	for _, cluster := range req.DesiredState.Clusters {
 		var np []*NodepoolInfo
-		np = append(np, &NodepoolInfo{Nodepools: cluster.ClusterInfo.NodePools, PrivateKey: cluster.ClusterInfo.PrivateKey, ID: cluster.ClusterInfo.Name})
+		id := fmt.Sprintf("%s-%s", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
+		np = append(np, &NodepoolInfo{Nodepools: cluster.ClusterInfo.NodePools, PrivateKey: cluster.ClusterInfo.PrivateKey, ID: id})
 		vpnNodepools[cluster.ClusterInfo.Name] = &VPNInfo{Network: cluster.Network, NodepoolInfo: np}
 	}
 	//add LB nodepools to vpn nodepools, so LBs will be part of the VPN
 	for _, lbCluster := range req.DesiredState.LoadBalancerClusters {
 		if nodepoolInfos, ok := vpnNodepools[lbCluster.TargetedK8S]; ok {
-			nodepoolInfos.NodepoolInfo = append(nodepoolInfos.NodepoolInfo, &NodepoolInfo{Nodepools: lbCluster.ClusterInfo.NodePools, PrivateKey: lbCluster.ClusterInfo.PrivateKey, ID: lbCluster.ClusterInfo.Name})
+			id := fmt.Sprintf("%s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash)
+			nodepoolInfos.NodepoolInfo = append(nodepoolInfos.NodepoolInfo, &NodepoolInfo{Nodepools: lbCluster.ClusterInfo.NodePools, PrivateKey: lbCluster.ClusterInfo.PrivateKey, ID: id})
 		}
 	}
 	//there will be N VPNs for N clusters, thus we sorted the nodes based on the k8s cluster name
 	if err := installWireguardVPN(vpnNodepools); err != nil {
 		log.Error().Msgf("Error encountered while installing VPN for project %s : %s", req.DesiredState.Name, err.Error())
-		return nil, fmt.Errorf("error encountered while installing VPN for project %s : %s", req.DesiredState.Name, err.Error())
+		return nil, fmt.Errorf("error encountered while installing VPN for project %s : %w", req.DesiredState.Name, err)
 	}
 	log.Info().Msgf("VPNs for project %s were successfully installed", req.DesiredState.Name)
 	return &pb.InstallResponse{DesiredState: req.DesiredState}, nil
@@ -179,7 +182,7 @@ func (*server) SetUpLoadbalancers(_ context.Context, req *pb.SetUpLBRequest) (*p
 
 	if err := setUpLoadbalancers(lbInfos); err != nil {
 		log.Error().Msgf("Error encountered while setting up the loadbalancers for project %s : %s", req.DesiredState.Name, err.Error())
-		return nil, fmt.Errorf("error encountered while setting up the loadbalancers for project %s : %s", req.DesiredState.Name, err.Error())
+		return nil, fmt.Errorf("error encountered while setting up the loadbalancers for project %s : %w", req.DesiredState.Name, err)
 	}
 	log.Info().Msgf("Loadbalancers for project %s were successfully set up", req.DesiredState.Name)
 	return &pb.SetUpLBResponse{DesiredState: req.DesiredState}, nil

@@ -45,10 +45,10 @@ func (d DNS) CreateDNSrecords() (string, error) {
 	dnsID := fmt.Sprintf("%s-dns", clusterID)
 	dnsDir := filepath.Join(clusterBuilder.Output, dnsID)
 	terraform := terraform.Terraform{Directory: dnsDir, StdOut: comm.GetStdOut(dnsID), StdErr: comm.GetStdErr(dnsID)}
-	//check if DNS provider is unchanged
+	// check if DNS provider is unchanged
 	if utils.ChangedDNSProvider(d.CurrentDNS, d.DesiredDNS) {
 		log.Info().Msgf("Destroying old DNS records for %s form cluster %s", d.CurrentDNS.Endpoint, d.ClusterName)
-		//destroy old DNS records
+		// destroy old DNS records
 		err := d.generateFiles(dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs)
 		if err != nil {
 			return "", fmt.Errorf("error while creating dns .tf files for %s : %w", dnsID, err)
@@ -84,7 +84,6 @@ func (d DNS) CreateDNSrecords() (string, error) {
 	output, err := terraform.TerraformOutput(clusterID)
 	if err != nil {
 		return "", fmt.Errorf("error while getting output from terraform for %s : %w", clusterID, err)
-
 	}
 	out, err := readDomain(output)
 	if err != nil {
@@ -133,7 +132,7 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *pb.DNS, nodeIPs []string) 
 
 	// save provider cred file
 	if err = utils.CreateKeyFile(dns.Provider.Credentials, dnsDir, dns.Provider.SpecName); err != nil {
-		return fmt.Errorf("error creating provider credential key file for provider %s in %s : %v", dns.Provider.SpecName, dnsDir, err)
+		return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", dns.Provider.SpecName, dnsDir, err)
 	}
 
 	DNSTemplates := templateUtils.Templates{Directory: dnsDir}
