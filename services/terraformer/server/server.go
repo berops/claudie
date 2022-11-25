@@ -177,7 +177,7 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 					fmt.Sprintf("%s/%s/%s-md5", minioBucket, projectName, c.Id()),
 				)
 				if err != nil {
-					log.Warn().Msgf("Error composing state lockfile id for cluster %s : %s", c.Id(), config.Name)
+					log.Debug().Msgf("Error composing state lockfile id for cluster %s : %s", c.Id(), config.Name)
 				}
 				fmt.Println(dynamoLockId)
 				// Remove the lockfile from dynamodb
