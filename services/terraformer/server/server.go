@@ -17,13 +17,13 @@ import (
 	"github.com/Berops/claudie/proto/pb"
 	"github.com/Berops/claudie/services/terraformer/server/kubernetes"
 	"github.com/Berops/claudie/services/terraformer/server/loadbalancer"
-	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"	
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/rs/zerolog/log"
 
 	"golang.org/x/sync/errgroup"
@@ -148,17 +148,18 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 	}
 
 	dynamoConfig, err := awsConfig.LoadDefaultConfig(ctx,
-		awsConfig.WithEndpointResolver(aws.EndpointResolverFunc(
-			func(service, region string) (aws.Endpoint, error) {
+		awsConfig.WithEndpointResolverWithOptions(aws.EndpointResolverWithOptionsFunc(
+			func(service, region string, options ...interface{}) (aws.Endpoint, error) {
 				return aws.Endpoint{URL: dynamoURL}, nil
-			})),
+			},
+		)),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to dynamodb: %w", err)
 	}
 
 	dynamoConnection := dynamodb.NewFromConfig(dynamoConfig)
-	
+
 	// Destroy clusters concurrently
 	var errGroup errgroup.Group
 	for _, cluster := range clusters {
