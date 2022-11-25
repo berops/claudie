@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.17.1
 	github.com/aws/aws-sdk-go-v2/config v1.18.2
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.10.5
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.17.6
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.17.7
 	github.com/go-playground/validator/v10 v10.11.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/minio/minio-go/v7 v7.0.43
