@@ -156,7 +156,6 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	//sort nodepools by a provider
 	sortedNodePools := utils.GroupNodepoolsByProviderSpecName(clusterInfo)
 	for providerSpecName, nodepools := range sortedNodePools {
-
 		// list all regions being used for this provider
 		regions := utils.GetRegions(nodepools)
 

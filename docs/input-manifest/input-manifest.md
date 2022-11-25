@@ -146,10 +146,6 @@ Collection of data defining Azure cloud provider configuration.
   
   Client secret generated for your client.
 
-- `resource_group`
-
-  Resource group name where the infra will be created.
-
 ## Nodepools
 
 Collection of static and dynamic nodepool specification, to be referenced in the `kubernetes` or `loadBalancer` clusters.

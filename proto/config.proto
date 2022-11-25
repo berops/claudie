@@ -116,7 +116,6 @@ message Provider {
   string azure_subscription_id = 10;
   string azure_tenant_id = 11;
   string azure_client_id = 12;
-  string azure_resource_group = 13;
 }
 
 enum ClusterType {
