@@ -22,4 +22,4 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
 - name: claudieio/testing-framework
-  newTag: ffbc11d-1110
+  newTag: 84431d6-1112
