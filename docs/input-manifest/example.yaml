@@ -180,7 +180,7 @@ kubernetes:
   clusters:
     # dev cluster
     - name: dev-cluster
-      version: v1.21.0 # kubernetes version must be supported by kubeone
+      version: v1.22.0 # kubernetes version must be supported by kubeone
       network: 192.168.2.0/24 # private network range
       # pools define what type of machines cluster will use
       # only pools metioned here will get created
@@ -191,7 +191,7 @@ kubernetes:
           - compute-hetzner
     # prod cluster
     - name: prod-cluster
-      version: v1.21.0
+      version: v1.22.0
       network: 192.168.2.0/24
       # we can reuse same nodepool spec and claudie will create new nodes
       pools:
