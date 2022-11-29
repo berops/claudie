@@ -13,6 +13,8 @@ Platform for managing multi-cloud Kubernetes clusters with each nodepool in a di
 Create fully-featured Kubernetes clusters composed of multiple different public Cloud providers in an easy and secure manner.
 Simply insert credentials to your cloud projects, define your cluster, and watch how the infra spawns right in front of you.
 
+![Infra Diagram](docs/infra-diagram.png)
+
 ### Management via IaC 
 
 Declaratively define your infrastructure with a simple, easy to understand YAML [syntax](./docs/input-manifest/input-manifest.md).
