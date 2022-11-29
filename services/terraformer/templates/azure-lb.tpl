@@ -14,7 +14,7 @@ provider "azurerm" {
 {{- range $i, $region := .Regions}}
 resource "azurerm_resource_group" "rg_{{ replaceAll $region " " "_" }}" {
   provider = azurerm.lb-nodepool
-  name     = "{{ $clusterName }}-{{ replaceAll $region " " "_" }}"
+  name     = "{{ $clusterName }}-{{ $clusterHash }}-{{ replaceAll $region " " "_" }}"
   location = "{{ $region }}"
 }
 
