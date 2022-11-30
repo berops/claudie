@@ -67,7 +67,6 @@ providers:
       subscription_id: 6a4dfsg7-sd4v-f4ad-dsva-ad4v616fd512
       tenant_id: 54cdafa5-sdvs-45ds-546s-df651sfdt614
       client_id: 0255sc23-76we-87g6-964f-abc1def2gh3l
-      resource_group: dev-resource-group
 
 # nodepools field is used for defining the nodepool spec
 # you can think of them as a blueprints, not actual nodepools that will be created
@@ -142,7 +141,7 @@ nodePools:
       count: 2
       server_type: t3.medium
       # https://cloud-images.ubuntu.com/query/focal/server/released.current.txt
-      image: ami-06148e0e81e5187c8
+      image: ami-0965bd5ba4d59211c
       disk_size: 50
     - name: compute-aws
       providerSpec:
@@ -152,7 +151,7 @@ nodePools:
       count: 2
       server_type: t3.medium 
       # https://cloud-images.ubuntu.com/query/focal/server/released.current.txt
-      image: ami-06148e0e81e5187c8
+      image: ami-0965bd5ba4d59211c
       disk_size: 50
       # loadbalancer nodes
     - name: loadbalancer-1
@@ -181,7 +180,7 @@ kubernetes:
   clusters:
     # dev cluster
     - name: dev-cluster
-      version: v1.21.0 # kubernetes version must be supported by kubeone
+      version: v1.22.0 # kubernetes version must be supported by kubeone
       network: 192.168.2.0/24 # private network range
       # pools define what type of machines cluster will use
       # only pools metioned here will get created
@@ -192,7 +191,7 @@ kubernetes:
           - compute-hetzner
     # prod cluster
     - name: prod-cluster
-      version: v1.21.0
+      version: v1.22.0
       network: 192.168.2.0/24
       # we can reuse same nodepool spec and claudie will create new nodes
       pools:

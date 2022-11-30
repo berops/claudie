@@ -43,6 +43,7 @@ type NodepoolsData struct {
 	ClusterHash string
 	NodePools   []*pb.NodePool
 	Metadata    map[string]any
+	Regions     []string
 }
 
 type outputNodepools struct {
@@ -155,12 +156,16 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	//sort nodepools by a provider
 	sortedNodePools := utils.GroupNodepoolsByProviderSpecName(clusterInfo)
 	for providerSpecName, nodepools := range sortedNodePools {
+		// list all regions being used for this provider
+		regions := utils.GetRegions(nodepools)
+
 		// based on the cluster type fill out the nodepools data to be used
 		nodepoolData := NodepoolsData{
 			NodePools:   nodepools,
 			ClusterName: clusterInfo.Name,
 			ClusterHash: clusterInfo.Hash,
 			Metadata:    c.Metadata,
+			Regions:     regions,
 		}
 
 		// Load TF files of the specific cloud provider

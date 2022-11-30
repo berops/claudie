@@ -1,6 +1,6 @@
 {{- $clusterName := .ClusterName}}
 {{- $clusterHash := .ClusterHash}}
-{{$index :=  0}}
+{{- $index :=  0 }}
 
 provider "hcloud" {
   token = "{{ (index .NodePools $index).Provider.Credentials }}" 
@@ -29,7 +29,7 @@ resource "hcloud_firewall" "defaultfirewall" {
     ]
   }
 
-  {{ if index .Metadata "loadBalancers" | targetPorts | isMissing 6443 }}
+  {{- if index .Metadata "loadBalancers" | targetPorts | isMissing 6443 }}
   rule {
     direction = "in"
     protocol  = "tcp"
@@ -39,7 +39,7 @@ resource "hcloud_firewall" "defaultfirewall" {
       "::/0"
     ]
   }
-  {{ end }}
+  {{- end }}
 
   rule {
     direction = "in"
@@ -58,9 +58,7 @@ resource "hcloud_ssh_key" "claudie" {
   public_key = file("./public.pem")
 }
 
-
-{{range $nodepool := .NodePools}}
-
+{{- range $nodepool := .NodePools }}
 resource "hcloud_server" "{{$nodepool.Name}}" {
   provider      = hcloud.k8s-nodepool
   count         = "{{ $nodepool.Count }}"
@@ -68,7 +66,7 @@ resource "hcloud_server" "{{$nodepool.Name}}" {
   server_type   = "{{ $nodepool.ServerType }}"
   image         = "{{ $nodepool.Image }}"
   firewall_ids  = [hcloud_firewall.defaultfirewall.id]
-  datacenter    = "{{ $nodepool.Zone}}"
+  datacenter    = "{{ $nodepool.Zone }}"
 
   ssh_keys = [
     hcloud_ssh_key.claudie.id,
@@ -81,6 +79,4 @@ output "{{$nodepool.Name}}" {
     node.name => node.ipv4_address
   }
 }
-
-{{end}}
-
+{{- end }}

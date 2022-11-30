@@ -26,7 +26,6 @@ providers:
       tenant_id: replaceme-tenant-id
       client_id: replaceme-client-id
       client_secret: replaceme-client-secret
-      resource_group: replaceme-rg-name
 
 nodePools:
   dynamic:
@@ -86,7 +85,7 @@ nodePools:
       count: 1
       server_type: t3.small
       #ubuntu
-      image: ami-06148e0e81e5187c8
+      image: ami-0965bd5ba4d59211c
       disk_size: 50
     - name: azure-lb
       providerSpec:
@@ -101,7 +100,7 @@ nodePools:
 kubernetes:
   clusters:
     - name: ts2-c-1
-      version: v1.21.0
+      version: v1.22.0
       network: 192.168.2.0/24
       pools:
         control:
@@ -109,7 +108,7 @@ kubernetes:
         compute:
           - hetzner-compute
     - name: ts2-c-2
-      version: v1.21.0
+      version: v1.22.0
       network: 192.168.2.0/24
       pools:
         control:

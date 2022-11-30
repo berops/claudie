@@ -1,31 +1,32 @@
-{{- $clusterName := .ClusterName}}
-{{- $clusterHash := .ClusterHash}}
-{{$index :=  0}}
+{{- $clusterName := .ClusterName }}
+{{- $clusterHash := .ClusterHash }}
+{{- $index :=  0 }}
 
+{{- range $i, $region := .Regions }}
 provider "google" {
-  credentials = "${file("{{(index .NodePools $index).Provider.SpecName}}")}"
-  region      = "{{(index .NodePools 0).Region}}"
-  project     = "{{(index .NodePools 0).Provider.GcpProject}}"
-  alias       = "lb-nodepool"
+  credentials = "${file("{{(index $.NodePools $index).Provider.SpecName}}")}"
+  project     = "{{(index $.NodePools 0).Provider.GcpProject}}"
+  region      = "{{ $region }}"
+  alias       = "lb-nodepool-{{ $region }}"
 }
 
-resource "google_compute_network" "network" {
-  provider                = google.lb-nodepool
+resource "google_compute_network" "network-{{ $region }}" {
+  provider                = google.lb-nodepool-{{ $region }}
   name                    = "{{ $clusterName }}-{{ $clusterHash }}-network"
   auto_create_subnetworks = false
 }
 
-resource "google_compute_firewall" "firewall" {
-  provider     = google.lb-nodepool
-  name    = "{{ $clusterName }}-{{ $clusterHash }}-firewall"
-  network = google_compute_network.network.self_link
+resource "google_compute_firewall" "firewall-{{ $region }}" {
+  provider  = google.lb-nodepool-{{ $region }}
+  name      = "{{ $clusterName }}-{{ $clusterHash }}-firewall"
+  network   = google_compute_network.network-{{ $region }}.self_link
 
-  {{range $role := index .Metadata "roles"}}
+  {{- range $role := index $.Metadata "roles" }}
   allow {
       protocol = "{{ $role.Protocol }}"
       ports = ["{{ $role.Port }}"]
   }
-  {{end}}
+  {{- end }}
 
   allow {
       protocol = "TCP"
@@ -46,19 +47,20 @@ resource "google_compute_firewall" "firewall" {
    ]
 }
 
-{{range $i, $nodepool := .NodePools}}
+{{- end }}
+
+{{- range $i, $nodepool := .NodePools }}
 resource "google_compute_subnetwork" "{{$nodepool.Name}}-subnet" {
-  provider      = google.lb-nodepool
+  provider      = google.lb-nodepool-{{ $nodepool.Region }}
   name          = "{{ $nodepool.Name }}-{{ $clusterHash }}-subnet"
-  network       = google_compute_network.network.self_link
-  region        = "{{$nodepool.Region}}"
+  network       = google_compute_network.network-{{ $nodepool.Region }}.self_link
   ip_cidr_range = "{{getCIDR "10.0.0.0/24" 2 $i}}"
 }
 
 resource "google_compute_instance" "{{$nodepool.Name}}" {
-  provider     = google.lb-nodepool
-  count        = {{$nodepool.Count}}
-  zone         = "{{$nodepool.Zone}}"
+  provider     = google.lb-nodepool-{{ $nodepool.Region }}
+  count        = {{ $nodepool.Count }}
+  zone         = "{{ $nodepool.Zone }}"
   name         = "{{ $clusterName }}-{{ $clusterHash }}-{{$nodepool.Name}}-${count.index + 1}"
   machine_type = "{{$nodepool.ServerType}}"
   allow_stopping_for_update = true
@@ -84,4 +86,4 @@ output "{{$nodepool.Name}}" {
     node.name => node.network_interface.0.access_config.0.nat_ip
   }
 }
-{{end}}
+{{- end }}
