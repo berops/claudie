@@ -13,6 +13,8 @@ import (
 	kuber "github.com/Berops/claudie/services/kuber/client"
 	terraformer "github.com/Berops/claudie/services/terraformer/client"
 	"github.com/rs/zerolog/log"
+
+	"golang.org/x/sync/errgroup"
 )
 
 // buildConfig is function used to build infra based on the desired state concurrently
@@ -117,7 +119,7 @@ func destroyConfig(config *pb.Config, c pb.ContextBoxServiceClient) error {
 		return fmt.Errorf("error in destroy config terraformer for config %s : %w", config.Name, err)
 	}
 
-	if err := deleteKubeconfig(config); err != nil {
+	if err := deleteClusterData(config); err != nil {
 		if err := saveErrorMessage(config, c, err); err != nil {
 			return fmt.Errorf("failed to save error message for config %s : %w", config.Name, err)
 		}
@@ -182,9 +184,7 @@ func callKubeEleven(desiredState *pb.Project) (*pb.Project, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		utils.CloseClientConnection(cc)
-	}()
+	defer utils.CloseClientConnection(cc)
 	// Creating the client
 	c := pb.NewKubeElevenServiceClient(cc)
 	log.Info().Msgf("Calling BuildCluster on kube-eleven for project %s", desiredState.Name)
@@ -202,9 +202,7 @@ func callKuber(desiredState *pb.Project) (*pb.Project, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		utils.CloseClientConnection(cc)
-	}()
+	defer utils.CloseClientConnection(cc)
 	// Creating the client
 	c := pb.NewKuberServiceClient(cc)
 	log.Info().Msgf("Calling SetUpStorage on kuber for project %s", desiredState.Name)
@@ -212,13 +210,25 @@ func callKuber(desiredState *pb.Project) (*pb.Project, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	var group errgroup.Group
 	for _, cluster := range desiredState.Clusters {
-		log.Info().Msgf("Calling StoreKubeconfig on kuber for project %s", desiredState.Name)
-		_, err := kuber.StoreKubeconfig(c, &pb.StoreKubeconfigRequest{Cluster: cluster})
-		if err != nil {
-			return nil, err
-		}
+		group.Go(func() error {
+			log.Info().Msgf("Calling StoreKubeconfig on kuber for cluster %s", cluster.ClusterInfo.Name)
+			if _, err := kuber.StoreKubeconfig(c, &pb.StoreKubeconfigRequest{Cluster: cluster}); err != nil {
+				return err
+			}
+
+			log.Info().Msgf("Calling StoreNodeMetadata on kuber for cluster %s", cluster.ClusterInfo.Name)
+			_, err := kuber.StoreClusterMetadata(c, &pb.StoreClusterMetadataRequest{Cluster: cluster})
+			return err
+		})
 	}
+
+	if err := group.Wait(); err != nil {
+		return nil, err
+	}
+
 	return resStorage.GetDesiredState(), nil
 }
 
@@ -228,9 +238,8 @@ func callDeleteNodes(master, worker []string, cluster *pb.K8Scluster) (*pb.K8Scl
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		utils.CloseClientConnection(cc)
-	}()
+	defer utils.CloseClientConnection(cc)
+
 	// Creating the client
 	c := pb.NewKuberServiceClient(cc)
 	log.Info().Msgf("Calling DeleteNodes on kuber for cluster %s", cluster.ClusterInfo.Name)
@@ -258,8 +267,8 @@ func destroyConfigTerraformer(config *pb.Config) error {
 	return err
 }
 
-// deleteKubeconfig calls kuber's DeleteKubeconfig function
-func deleteKubeconfig(config *pb.Config) error {
+// deleteClusterData deletes the kubeconfig and cluster metadata.
+func deleteClusterData(config *pb.Config) error {
 	trimmedKuberURL := strings.ReplaceAll(envs.KuberURL, ":tcp://", "")
 
 	cc, err := utils.GrpcDialWithInsecure("kuber", trimmedKuberURL)
@@ -269,13 +278,22 @@ func deleteKubeconfig(config *pb.Config) error {
 	defer utils.CloseClientConnection(cc)
 
 	c := pb.NewKuberServiceClient(cc)
+
+	var group errgroup.Group
 	for _, cluster := range config.CurrentState.Clusters {
-		log.Info().Msgf("Calling DeleteKubeconfig on kuber for cluster %s", cluster.ClusterInfo.Name)
-		if _, err := kuber.DeleteKubeconfig(c, &pb.DeleteKubeconfigRequest{Cluster: cluster}); err != nil {
+		group.Go(func() error {
+			log.Info().Msgf("Calling DeleteKubeconfig on kuber for cluster %s", cluster.ClusterInfo.Name)
+			if _, err := kuber.DeleteKubeconfig(c, &pb.DeleteKubeconfigRequest{Cluster: cluster}); err != nil {
+				return err
+			}
+
+			log.Info().Msgf("Calling DeleteClusterMetadata on kuber for cluster %s", cluster.ClusterInfo.Name)
+			_, err := kuber.DeleteClusterMetadata(c, &pb.DeleteClusterMetadataRequest{Cluster: cluster})
 			return err
-		}
+		})
 	}
-	return nil
+
+	return group.Wait()
 }
 
 // saveErrorMessage saves error message to config
