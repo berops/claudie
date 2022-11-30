@@ -56,7 +56,6 @@ type Azure struct {
 	SubscriptionId string `validate:"required" yaml:"subscription_id"`
 	TenantId       string `validate:"required" yaml:"tenant_id"`
 	ClientId       string `validate:"required" yaml:"client_id"`
-	ResourceGroup  string `validate:"required" yaml:"resource_group"`
 	ClientSecret   string `validate:"required" yaml:"client_secret"`
 }
 

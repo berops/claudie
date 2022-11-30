@@ -40,6 +40,22 @@ func GetNodePoolByName(nodePoolName string, nodePools []*pb.NodePool) *pb.NodePo
 	return nil
 }
 
+// GetRegions will return a list of all regions used in list of nodepools
+func GetRegions(nodepools []*pb.NodePool) []string {
+	// create a set of region
+	regionSet := make(map[string]struct{})
+	for _, nodepool := range nodepools {
+		regionSet[nodepool.Region] = struct{}{}
+	}
+
+	// extract value of set and create a slice
+	var regions []string
+	for k := range regionSet {
+		regions = append(regions, k)
+	}
+	return regions
+}
+
 // groups nodepool by provider spec name into the map[Provider Name][]*pb.Nodepool
 func GroupNodepoolsByProviderSpecName(clusterInfo *pb.ClusterInfo) map[string][]*pb.NodePool {
 	sortedNodePools := map[string][]*pb.NodePool{}

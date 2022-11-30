@@ -7,33 +7,34 @@ variable "default_compartment_id" {
   default = "{{(index .NodePools 0).Provider.OciCompartmentOcid}}"
 }
 
+{{ range $i, $region := .Regions }}
 provider "oci" {
-  tenancy_ocid = "{{(index .NodePools 0).Provider.OciTenancyOcid}}"
-  user_ocid = "{{(index .NodePools 0).Provider.OciUserOcid}}"
-  fingerprint = "{{(index .NodePools 0).Provider.OciFingerprint}}"
-  private_key_path = "{{(index .NodePools 0).Provider.SpecName}}" 
-  region = "{{(index .NodePools 0).Region}}"
-  alias = "k8s-nodepool"
+  tenancy_ocid = "{{(index $.NodePools 0).Provider.OciTenancyOcid}}"
+  user_ocid = "{{(index $.NodePools 0).Provider.OciUserOcid}}"
+  fingerprint = "{{(index $.NodePools 0).Provider.OciFingerprint}}"
+  private_key_path = "{{(index $.NodePools 0).Provider.SpecName}}" 
+  region = "{{ $region }}"
+  alias = "k8s-nodepool-{{ $region }}"
 }
 
-resource "oci_core_vcn" "claudie_vcn" {
-  provider = oci.k8s-nodepool
+resource "oci_core_vcn" "claudie_vcn-{{ $region }}" {
+  provider = oci.k8s-nodepool-{{ $region }}
   compartment_id = var.default_compartment_id
   display_name = "{{ $clusterName }}-{{ $clusterHash }}-vcn"
   cidr_blocks = ["10.0.0.0/16"]
 }
 
-resource "oci_core_internet_gateway" "claudie_gateway" {
-  provider = oci.k8s-nodepool
+resource "oci_core_internet_gateway" "claudie_gateway-{{ $region }}" {
+  provider = oci.k8s-nodepool-{{ $region }}
   compartment_id = var.default_compartment_id
   display_name   = "{{ $clusterName }}-{{ $clusterHash }}-gateway"
-  vcn_id         = oci_core_vcn.claudie_vcn.id
+  vcn_id         = oci_core_vcn.claudie_vcn-{{ $region }}.id
   enabled = true
 }  
 
-resource "oci_core_default_security_list" "claudie_security_rules" {
-  provider = oci.k8s-nodepool
-  manage_default_resource_id = oci_core_vcn.claudie_vcn.default_security_list_id
+resource "oci_core_default_security_list" "claudie_security_rules-{{ $region }}" {
+  provider = oci.k8s-nodepool-{{ $region }}
+  manage_default_resource_id = oci_core_vcn.claudie_vcn-{{ $region }}.default_security_list_id
   display_name   = "{{ $clusterName }}-{{ $clusterHash }}_security_rules"
 
   egress_security_rules {  
@@ -58,7 +59,7 @@ resource "oci_core_default_security_list" "claudie_security_rules" {
     description = "Allow SSH connections"
   }
 
-  {{ if index .Metadata "loadBalancers" | targetPorts | isMissing 6443 }}
+  {{ if index $.Metadata "loadBalancers" | targetPorts | isMissing 6443 }}
   ingress_security_rules {
     protocol    = "6"
     source      = "0.0.0.0/0"
@@ -81,32 +82,33 @@ resource "oci_core_default_security_list" "claudie_security_rules" {
   }
 }
 
-resource "oci_core_default_route_table" "claudie_routes" {
-  provider = oci.k8s-nodepool
-  manage_default_resource_id = oci_core_vcn.claudie_vcn.default_route_table_id
+resource "oci_core_default_route_table" "claudie_routes-{{ $region }}" {
+  provider = oci.k8s-nodepool-{{ $region }}
+  manage_default_resource_id = oci_core_vcn.claudie_vcn-{{ $region }}.default_route_table_id
 
   route_rules {
     destination       = "0.0.0.0/0"
-    network_entity_id = oci_core_internet_gateway.claudie_gateway.id
+    network_entity_id = oci_core_internet_gateway.claudie_gateway-{{ $region }}.id
     destination_type  = "CIDR_BLOCK"
   }
 }
+{{- end }}
 
 {{ range $i, $nodepool := .NodePools }}
 resource "oci_core_subnet" "{{ $nodepool.Name }}-subnet" {
-  provider = oci.k8s-nodepool
-  vcn_id = oci_core_vcn.claudie_vcn.id
+  provider = oci.k8s-nodepool-{{ $nodepool.Region }}
+  vcn_id = oci_core_vcn.claudie_vcn-{{ $nodepool.Region }}.id
   cidr_block = "{{getCIDR "10.0.0.0/24" 2 $i}}"
   compartment_id = var.default_compartment_id
   display_name = "{{ $clusterName }}-{{ $clusterHash }}-subnet"
-  security_list_ids = [oci_core_vcn.claudie_vcn.default_security_list_id]
-  route_table_id = oci_core_vcn.claudie_vcn.default_route_table_id
-  dhcp_options_id   = oci_core_vcn.claudie_vcn.default_dhcp_options_id
+  security_list_ids = [oci_core_vcn.claudie_vcn-{{ $nodepool.Region }}.default_security_list_id]
+  route_table_id = oci_core_vcn.claudie_vcn-{{ $nodepool.Region }}.default_route_table_id
+  dhcp_options_id   = oci_core_vcn.claudie_vcn-{{ $nodepool.Region }}.default_dhcp_options_id
   availability_domain = "{{ $nodepool.Zone }}"
 }
 
 resource "oci_core_instance" "{{ $nodepool.Name }}" {
-  provider = oci.k8s-nodepool
+  provider = oci.k8s-nodepool-{{ $nodepool.Region }}
   compartment_id = var.default_compartment_id
   count = {{ $nodepool.Count }}
   availability_domain = "{{ $nodepool.Zone }}"

@@ -1,31 +1,32 @@
 {{- $clusterName := .ClusterName}}
 {{- $clusterHash := .ClusterHash}}
-{{$index :=  0}}
+{{- $index :=  0}}
 
+{{- range $i, $region := .Regions}}
 provider "google" {
-  credentials = "${file("{{(index .NodePools $index).Provider.SpecName}}")}"
-  region      = "{{(index .NodePools 0).Region}}"
-  project     = "{{(index .NodePools 0).Provider.GcpProject}}"
-  alias       = "k8s-nodepool"
+  credentials = "${file("{{(index $.NodePools $index).Provider.SpecName}}")}"
+  project     = "{{(index $.NodePools 0).Provider.GcpProject}}"
+  region      = "{{ $region }}"
+  alias       = "k8s-nodepool-{{ $region }}"
 }
 
-resource "google_compute_network" "network" {
-  provider                = google.k8s-nodepool
-  name                    = "{{ $clusterName }}-{{ $clusterHash }}-network"
+resource "google_compute_network" "network-{{ $region }}" {
+  provider                = google.k8s-nodepool-{{ $region }}
+  name                    = "{{ $clusterName }}-{{ $region }}-network"
   auto_create_subnetworks = false
 }
 
-resource "google_compute_firewall" "firewall" {
-  provider     = google.k8s-nodepool
-  name         = "{{ $clusterName }}-{{ $clusterHash }}-firewall"
-  network      = google_compute_network.network.self_link
+resource "google_compute_firewall" "firewall-{{ $region }}" {
+  provider     = google.k8s-nodepool-{{ $region }}
+  name         = "{{ $clusterName }}-{{ $region }}-firewall"
+  network      = google_compute_network.network-{{ $region }}.self_link
 
   allow {
     protocol = "UDP"
     ports    = ["51820"]
   }
 
-  {{ if index .Metadata "loadBalancers" | targetPorts | isMissing 6443 }}
+  {{ if index $.Metadata "loadBalancers" | targetPorts | isMissing 6443 }}
   allow {
       protocol = "TCP"
       ports    = ["6443"]
@@ -46,19 +47,22 @@ resource "google_compute_firewall" "firewall" {
    ]
 }
 
-{{range $i, $nodepool := .NodePools}}
+{{- end}}
+
+
+{{- range $i, $nodepool := .NodePools }}
+
 resource "google_compute_subnetwork" "{{$nodepool.Name}}-subnet" {
-  provider      = google.k8s-nodepool
+  provider      = google.k8s-nodepool-{{ $nodepool.Region }}
   name          = "{{ $nodepool.Name }}-{{ $clusterHash }}-subnet"
-  network       = google_compute_network.network.self_link
-  region        = "{{$nodepool.Region}}"
+  network       = google_compute_network.network-{{ $nodepool.Region }}.self_link
   ip_cidr_range = "{{getCIDR "10.0.0.0/24" 2 $i}}"
 }
 
 resource "google_compute_instance" "{{ $nodepool.Name }}" {
-  provider     = google.k8s-nodepool
+  provider     = google.k8s-nodepool-{{ $nodepool.Region }}
   count        = {{ $nodepool.Count }}
-  zone         = "{{$nodepool.Zone}}"
+  zone         = "{{ $nodepool.Zone }}"
   name         = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}"
   machine_type = "{{ $nodepool.ServerType }}"
   allow_stopping_for_update = true
@@ -84,6 +88,6 @@ output "{{ $nodepool.Name }}" {
     node.name => node.network_interface.0.access_config.0.nat_ip
   }
 }
-{{end}}
+{{- end }}
 
 

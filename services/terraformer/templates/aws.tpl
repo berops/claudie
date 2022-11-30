@@ -2,140 +2,142 @@
 {{- $clusterHash := .ClusterHash}}
 {{$index :=  0}}
 
+{{- range $i, $region := .Regions }}
 provider "aws" {
-  region     = "{{(index .NodePools 0).Region}}"
-  access_key = "{{(index .NodePools 0).Provider.AwsAccessKey}}"
-  secret_key = file("{{(index .NodePools 0).Provider.SpecName}}")
-  alias = "k8s-nodepool"
+  access_key = "{{(index $.NodePools 0).Provider.AwsAccessKey}}"
+  secret_key = file("{{(index $.NodePools 0).Provider.SpecName}}")
+  region     = "{{ $region }}"
+  alias      = "k8s-nodepool-{{ $region }}"
 }
 
-resource "aws_vpc" "claudie-vpc" {
-  provider = aws.k8s-nodepool
+resource "aws_vpc" "claudie-vpc-{{ $region }}" {
+  provider   = aws.k8s-nodepool-{{ $region }}
   cidr_block = "10.0.0.0/16"
-  tags = {
-    Name = "{{ $clusterName }}-{{ $clusterHash }}-vpc"
+  tags       = {
+    Name     = "{{ $clusterName }}-{{ $clusterHash }}-vpc"
   }
 }
 
-resource "aws_internet_gateway" "claudie-gateway" {
-  provider = aws.k8s-nodepool
-  vpc_id = aws_vpc.claudie-vpc.id
-  tags = {
-    Name = "{{ $clusterName }}-{{ $clusterHash }}-gateway"
+resource "aws_internet_gateway" "claudie-gateway-{{ $region }}" {
+  provider = aws.k8s-nodepool-{{ $region }}
+  vpc_id   = aws_vpc.claudie-vpc-{{ $region }}.id
+  tags     = {
+    Name   = "{{ $clusterName }}-{{ $clusterHash }}-gateway"
   }
 }
 
-resource "aws_route_table" "claudie-route-table" {
-  provider = aws.k8s-nodepool
-  vpc_id = aws_vpc.claudie-vpc.id
+resource "aws_route_table" "claudie-route-table-{{ $region }}" {
+  provider     = aws.k8s-nodepool-{{ $region }}
+  vpc_id       = aws_vpc.claudie-vpc-{{ $region }}.id
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.claudie-gateway.id
+    gateway_id = aws_internet_gateway.claudie-gateway-{{ $region }}.id
   }
-  tags = {
-    Name = "{{ $clusterName }}-{{ $clusterHash }}-rt"
+  tags         = {
+    Name       = "{{ $clusterName }}-{{ $clusterHash }}-rt"
   }
 }
 
-resource "aws_security_group" "claudie-sg" {
-  provider = aws.k8s-nodepool
-  vpc_id      = aws_vpc.claudie-vpc.id
+resource "aws_security_group" "claudie-sg-{{ $region }}" {
+  provider               = aws.k8s-nodepool-{{ $region }}
+  vpc_id                 = aws_vpc.claudie-vpc-{{ $region }}.id
   revoke_rules_on_delete = true
-  tags = {
-    Name = "{{ $clusterName }}-{{ $clusterHash }}-sg"
+  tags                   = {
+    Name                 = "{{ $clusterName }}-{{ $clusterHash }}-sg"
   }
 }
 
-resource "aws_security_group_rule" "allow-egress" {
-  provider = aws.k8s-nodepool
+resource "aws_security_group_rule" "allow-egress-{{ $region }}" {
+  provider          = aws.k8s-nodepool-{{ $region }}
   type              = "egress"
   from_port         = 0
   to_port           = 65535
   protocol          = "-1"
   cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.claudie-sg.id
+  security_group_id = aws_security_group.claudie-sg-{{ $region }}.id
 }
 
 
-resource "aws_security_group_rule" "allow-ssh" {
-  provider = aws.k8s-nodepool
+resource "aws_security_group_rule" "allow-ssh-{{ $region }}" {
+  provider          = aws.k8s-nodepool-{{ $region }}
   type              = "ingress"
   from_port         = 22
   to_port           = 22
   protocol          = "tcp"
   cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.claudie-sg.id
+  security_group_id = aws_security_group.claudie-sg-{{ $region }}.id
 }
-{{ if index .Metadata "loadBalancers" | targetPorts | isMissing 6443 }}
-resource "aws_security_group_rule" "allow-kube-api" {
-  provider = aws.k8s-nodepool
+{{- if index $.Metadata "loadBalancers" | targetPorts | isMissing 6443 }}
+resource "aws_security_group_rule" "allow-kube-api-{{ $region }}" {
+  provider          = aws.k8s-nodepool-{{ $region }}
   type              = "ingress"
   from_port         = 6443
   to_port           = 6443
   protocol          = "tcp"
   cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.claudie-sg.id
+  security_group_id = aws_security_group.claudie-sg-{{ $region }}.id
 }
-{{end}}
+{{- end}}
 
-resource "aws_security_group_rule" "allow-wireguard" {
-  provider = aws.k8s-nodepool
+resource "aws_security_group_rule" "allow-wireguard-{{ $region }}" {
+  provider          = aws.k8s-nodepool-{{ $region }}
   type              = "ingress"
   from_port         = 51820
   to_port           = 51820
   protocol          = "udp"
   cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.claudie-sg.id
+  security_group_id = aws_security_group.claudie-sg-{{ $region }}.id
 }
 
-resource "aws_security_group_rule" "allow-icmp" {
-  provider = aws.k8s-nodepool
+resource "aws_security_group_rule" "allow-icmp-{{ $region }}" {
+  provider          = aws.k8s-nodepool-{{ $region }}
   type              = "ingress"
-  from_port = 8
-  to_port = 0
-  protocol = "icmp"
+  from_port         = 8
+  to_port           = 0
+  protocol          = "icmp"
   cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.claudie-sg.id
+  security_group_id = aws_security_group.claudie-sg-{{ $region }}.id
 }
 
-resource "aws_key_pair" "claudie-pair" {
-  provider = aws.k8s-nodepool
+resource "aws_key_pair" "claudie-pair-{{ $region }}" {
+  provider   = aws.k8s-nodepool-{{ $region }}
   key_name   = "{{ $clusterName }}-{{ $clusterHash }}-key"
   public_key = file("./public.pem")
 }
+{{- end }}
 
-{{ range $i, $nodepool := .NodePools }}
+{{- range $i, $nodepool := .NodePools }}
 resource "aws_subnet" "{{ $nodepool.Name }}-subnet" {
-  provider = aws.k8s-nodepool
-  vpc_id            = aws_vpc.claudie-vpc.id
-  cidr_block        = "{{ getCIDR "10.0.0.0/24" 2 $i}}"
+  provider                = aws.k8s-nodepool-{{ $nodepool.Region  }}
+  vpc_id                  = aws_vpc.claudie-vpc-{{ $nodepool.Region }}.id
+  cidr_block              = "{{ getCIDR "10.0.0.0/24" 2 $i}}"
   map_public_ip_on_launch = true
-  availability_zone = "{{$nodepool.Zone}}"
-  tags = {
-    Name = "{{ $nodepool.Name }}-{{ $clusterHash }}-subnet"
+  availability_zone       = "{{ $nodepool.Zone }}"
+  tags                    = {
+    Name                  = "{{ $nodepool.Name }}-{{ $clusterHash }}-subnet"
   }
 }
 
 resource "aws_route_table_association" "{{ $nodepool.Name }}-rta" {
-  provider = aws.k8s-nodepool
-  subnet_id = aws_subnet.{{ $nodepool.Name }}-subnet.id
-  route_table_id = aws_route_table.claudie-route-table.id
+  provider       = aws.k8s-nodepool-{{ $nodepool.Region  }}
+  subnet_id      = aws_subnet.{{ $nodepool.Name }}-subnet.id
+  route_table_id = aws_route_table.claudie-route-table-{{ $nodepool.Region }}.id
 }
 
 resource "aws_instance" "{{ $nodepool.Name }}" {
-  provider = aws.k8s-nodepool
-  count = {{ $nodepool.Count }}
+  provider          = aws.k8s-nodepool-{{ $nodepool.Region  }}
+  count             = {{ $nodepool.Count }}
   availability_zone = "{{ $nodepool.Zone }}"
-  instance_type = "{{ $nodepool.ServerType }}"
-  ami = "{{ $nodepool.Image }}"
+  instance_type     = "{{ $nodepool.ServerType }}"
+  ami               = "{{ $nodepool.Image }}"
   
   associate_public_ip_address = true
-  key_name = aws_key_pair.claudie-pair.key_name
-  subnet_id = aws_subnet.{{ $nodepool.Name }}-subnet.id
-  vpc_security_group_ids = [aws_security_group.claudie-sg.id]
+  key_name               = aws_key_pair.claudie-pair-{{ $nodepool.Region }}.key_name
+  subnet_id              = aws_subnet.{{ $nodepool.Name }}-subnet.id
+  vpc_security_group_ids = [aws_security_group.claudie-sg-{{ $nodepool.Region }}.id]
 
-  tags = {
-    Name = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}"
+  tags                   = {
+    Name                 = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}"
   }
   
   root_block_device {

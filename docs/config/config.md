@@ -121,7 +121,6 @@ Provider represent a single provider from manifest
   | AzureSubscriptionId | string | Azure ID of the subscription                                       |
   | AzureTenantId       | string | Azure ID of the Tenant                                             |
   | AzureClientId       | string | AzureID of the Client; the client secret is saved in `Credentials` |
-  | AzureResourceGroup  | string | Resource group name where resources will be created                |
 
 ### Secret credentials
 The list of information saved in the `Credentials` field for each provider

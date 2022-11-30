@@ -26,7 +26,6 @@ providers:
       tenant_id: replaceme-tenant-id
       client_id: replaceme-client-id
       client_secret: replaceme-client-secret
-      resource_group: replaceme-rg-name
 
 nodePools:
   dynamic:
@@ -42,8 +41,8 @@ nodePools:
     - name: hetzner-compute
       providerSpec:
         name: hetzner-1
-        region: nbg1
-        zone: nbg1-dc3
+        region: fsn1
+        zone: fsn1-dc14
       count: 4
       server_type: cpx11
       image: ubuntu-20.04
@@ -51,8 +50,8 @@ nodePools:
     - name: gcp-control
       providerSpec:
         name: gcp-1
-        region: europe-west2
-        zone: europe-west2-c
+        region: europe-west1
+        zone: europe-west1-b
       count: 2
       server_type: e2-medium
       image: ubuntu-os-cloud/ubuntu-2004-focal-v20220610
@@ -96,17 +95,17 @@ nodePools:
       count: 2
       server_type: t3.small
       #ubuntu
-      image: ami-06148e0e81e5187c8
+      image: ami-0965bd5ba4d59211c
       disk_size: 50
     - name: aws-compute
       providerSpec:
         name: aws-1
-        region: eu-central-1
-        zone: eu-central-1c
+        region: eu-west-3
+        zone: eu-west-3a
       count: 4
       server_type: t3.small
       #ubuntu
-      image: ami-06148e0e81e5187c8
+      image: ami-0171866b8d95139a7
       disk_size: 50
     - name: azure-control
       providerSpec:
@@ -120,8 +119,8 @@ nodePools:
     - name: azure-compute
       providerSpec:
         name: azure-1
-        region: West Europe
-        zone: 2
+        region: Germany West Central
+        zone: 1
       count: 4
       server_type: Standard_B2s
       image: Canonical:0001-com-ubuntu-minimal-focal:minimal-20_04-lts:20.04.202004230
@@ -130,7 +129,7 @@ nodePools:
 kubernetes:
   clusters:
     - name: ts1-hetzner
-      version: v1.21.0
+      version: v1.22.0
       network: 192.168.2.0/24
       pools:
         control:
@@ -138,7 +137,7 @@ kubernetes:
         compute:
           - hetzner-compute
     - name: ts1-gcp
-      version: v1.21.0
+      version: v1.22.0
       network: 192.168.2.0/24
       pools:
         control:
@@ -146,7 +145,7 @@ kubernetes:
         compute:
           - gcp-compute
     - name: ts1-oci
-      version: v1.21.0
+      version: v1.22.0
       network: 192.168.2.0/24
       pools:
         control:
@@ -154,7 +153,7 @@ kubernetes:
         compute:
           - oci-compute
     - name: ts1-aws
-      version: v1.21.0
+      version: v1.22.0
       network: 192.168.2.0/24
       pools:
         control:
@@ -162,7 +161,7 @@ kubernetes:
         compute:
           - aws-compute
     - name: ts1-azure
-      version: v1.21.0
+      version: v1.22.0
       network: 192.168.2.0/24
       pools:
         control:
