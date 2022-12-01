@@ -32,10 +32,19 @@ const (
 	outputDir        = "services/kuber/server/clusters"
 )
 
-type ClusterMetadata struct {
-	NodeIps    map[string][]net.IP `json:"node_ips"`
-	PrivateKey string              `json:"private_key"`
-}
+type (
+	IPPair struct {
+		PublicIP  net.IP `json:"public_ip"`
+		PrivateIP net.IP `json:"private_ip"`
+	}
+
+	ClusterMetadata struct {
+		// NodeIps maps node-name to public-private ip pairs.
+		NodeIps map[string]IPPair `json:"node_ips"`
+		// PrivateKey is the private SSH key for the nodes.
+		PrivateKey string `json:"private_key"`
+	}
+)
 
 type server struct {
 	pb.UnimplementedKuberServiceServer
@@ -73,19 +82,22 @@ func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterM
 	}
 
 	md := ClusterMetadata{
-		NodeIps:    make(map[string][]net.IP),
+		NodeIps:    make(map[string]IPPair),
 		PrivateKey: req.GetCluster().GetClusterInfo().GetPrivateKey(),
 	}
 
 	for _, pool := range req.GetCluster().GetClusterInfo().GetNodePools() {
 		for _, node := range pool.GetNodes() {
-			md.NodeIps[pool.Name] = append(md.NodeIps[pool.Name], net.ParseIP(node.Public))
+			md.NodeIps[node.Name] = IPPair{
+				PublicIP:  net.ParseIP(node.Public),
+				PrivateIP: net.ParseIP(node.Private),
+			}
 		}
 	}
 
 	b, err := json.Marshal(md)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal cluster metadata: %w", err)
+		return nil, fmt.Errorf("failed to marshal %s cluster metadata: %w", req.GetCluster().GetClusterInfo().GetName(), err)
 	}
 
 	clusterID := fmt.Sprintf("%s-%s", req.GetCluster().ClusterInfo.Name, req.GetCluster().ClusterInfo.Hash)
