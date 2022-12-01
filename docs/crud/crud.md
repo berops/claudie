@@ -38,7 +38,7 @@ If you wish to destroy your cluster along with the infra, you can remove the clu
 
 # Outputs
 
-So far, there is only one output Claudie has, which are kubeconfigs to your clusters. They are outputted in form of a secret, in the namespace, where claudie is deployed. The name of the secret follows the structure `<cluster-name>-<cluster-hash>-kubeconfig`. You can access it by outputting it and decoding it from base64 encoding. 
+Claudie outputs two secret after a successful run of the manifest, which are kubeconfigs and cluster metadata to your clusters. They are outputted in form of a secret, in the namespace, where claudie is deployed. The name of the secret follows the structure `<cluster-name>-<cluster-hash>-kubeconfig/metadata`. You can access it by outputting it and decoding it from base64 encoding. 
 
 Example of how to decode it:
 

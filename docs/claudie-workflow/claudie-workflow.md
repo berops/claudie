@@ -178,6 +178,10 @@ Kuber manipulates the cluster resources using `kubectl`.
 
 ### API
 ```go
+  // StoreClusterMetatada creates secret which holds the private key and public IP addresses of the cluster supplied.
+  rpc StoreClusterMetadata(StoreClusterMetadataRequest) returns (StoreClusterMetadataResponse);
+  // StoreClusterMetatada deletes secret which holds the private key and public IP addresses of the cluster supplied.
+  rpc DeleteClusterMetadata(DeleteClusterMetadataRequest) returns (DeleteClusterMetadataResponse);
   //SetUpStorage installs Longhorn into the cluster
   rpc SetUpStorage(SetUpStorageRequest) returns (SetUpStorageResponse); 
   //StoreKubeconfig will create a secret which holds kubeconfig of the Claudie created cluster
