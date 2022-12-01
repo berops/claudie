@@ -38,6 +38,7 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: GOLANG_LOG
+            # MinIO envs
             - name: MINIO_HOSTNAME
               valueFrom:
                 configMapKeyRef:
@@ -58,6 +59,7 @@ spec:
                 secretKeyRef:
                   name: minio-secret
                   key: MINIO_ROOT_PASSWORD
+            # DynamoDB envs
             - name: DYNAMO_HOSTNAME
               valueFrom:
                 configMapKeyRef:
@@ -68,6 +70,26 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: DYNAMO_PORT
+            - name: DYNAMO_TABLE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: DYNAMO_TABLE_NAME
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: AWS_REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: AWS_REGION
           ports:
             - containerPort: 50052
           readinessProbe:

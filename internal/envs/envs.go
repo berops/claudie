@@ -23,7 +23,13 @@ var (
 	//DynamoURL is a listening URL for DynamoDB local deployment
 	DynamoURL = "http://" + os.Getenv("DYNAMO_HOSTNAME") + ":" + os.Getenv("DYNAMO_PORT")
 	//DynamoTable is the name of the DB table used for state locking
-	DynamoTable = os.Getenv("DYNAMO_TABLE")
+	DynamoTable = os.Getenv("DYNAMO_TABLE_NAME")
+	// AwsAccesskeyId is part of credentials needed for connecting to dynamoDB
+	AwsAccesskeyId = os.Getenv("AWS_ACCESS_KEY_ID")
+	// AwsSecretAccessKey is part of credentials needed for connecting to dynamoDB
+	AwsSecretAccessKey = os.Getenv("AWS_SECRET_ACCESS_KEY")
+	// AwsRegion is part of credentials needed for connecting to dynamoDB
+	AwsRegion = os.Getenv("AWS_REGION")
 	//MinioAccessKey for backend
 	MinioAccessKey = os.Getenv("MINIO_ROOT_USER")
 	//MinioSecretKey for backend
@@ -63,6 +69,15 @@ func init() {
 	}
 	if DynamoTable == "" {
 		DynamoTable = "claudie"
+	}
+	if AwsAccesskeyId == "" {
+		AwsAccesskeyId = "fake"
+	}
+	if AwsSecretAccessKey == "" {
+		AwsSecretAccessKey = "fake"
+	}
+	if AwsRegion == "" {
+		AwsRegion = "local"
 	}
 	if MinioAccessKey == "" {
 		MinioAccessKey = "minioadmin"

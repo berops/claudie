@@ -37,7 +37,7 @@ spec:
               "--output",
               "json",
               "--region",
-              "local",
+              "$(AWS_REGION)",
             ]
           env:
             - name: DYNAMO_HOSTNAME
@@ -56,9 +56,20 @@ spec:
                   name: env
                   key: DYNAMO_TABLE_NAME
             - name: AWS_ACCESS_KEY_ID
-              value: fake
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: AWS_ACCESS_KEY_ID
             - name: AWS_SECRET_ACCESS_KEY
-              value: fake
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: AWS_REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: AWS_REGION
           resources:
             requests:
               memory: 128Mi
