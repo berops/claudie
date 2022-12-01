@@ -81,7 +81,7 @@ jobs:
           access_token_lifetime: "21600s"
 
       - name: Configure kubectl
-        uses: google-github-actions/get-gke-credentials@v0.8.2
+        uses: google-github-actions/get-gke-credentials@v1.0.0
         with:
           cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
           location: ${{ secrets.GKE_ZONE }}
