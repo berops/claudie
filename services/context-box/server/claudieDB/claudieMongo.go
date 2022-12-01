@@ -22,7 +22,7 @@ const (
 )
 
 var (
-	maxConnectionRetries = 10
+	maxConnectionRetries = 20
 	defaultPingTimeout   = 5 * time.Second
 	defaultPingDelay     = 5 * time.Second
 )
