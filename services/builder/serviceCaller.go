@@ -213,16 +213,18 @@ func callKuber(desiredState *pb.Project) (*pb.Project, error) {
 
 	var group errgroup.Group
 	for _, cluster := range desiredState.Clusters {
-		group.Go(func() error {
-			log.Info().Msgf("Calling StoreKubeconfig on kuber for cluster %s", cluster.ClusterInfo.Name)
-			if _, err := kuber.StoreKubeconfig(c, &pb.StoreKubeconfigRequest{Cluster: cluster}); err != nil {
-				return err
-			}
+		func(cluster *pb.K8Scluster) {
+			group.Go(func() error {
+				log.Info().Msgf("Calling StoreKubeconfig on kuber for cluster %s", cluster.ClusterInfo.Name)
+				if _, err := kuber.StoreKubeconfig(c, &pb.StoreKubeconfigRequest{Cluster: cluster}); err != nil {
+					return err
+				}
 
-			log.Info().Msgf("Calling StoreNodeMetadata on kuber for cluster %s", cluster.ClusterInfo.Name)
-			_, err := kuber.StoreClusterMetadata(c, &pb.StoreClusterMetadataRequest{Cluster: cluster})
-			return err
-		})
+				log.Info().Msgf("Calling StoreNodeMetadata on kuber for cluster %s", cluster.ClusterInfo.Name)
+				_, err := kuber.StoreClusterMetadata(c, &pb.StoreClusterMetadataRequest{Cluster: cluster})
+				return err
+			})
+		}(cluster)
 	}
 
 	if err := group.Wait(); err != nil {
@@ -281,16 +283,18 @@ func deleteClusterData(config *pb.Config) error {
 
 	var group errgroup.Group
 	for _, cluster := range config.CurrentState.Clusters {
-		group.Go(func() error {
-			log.Info().Msgf("Calling DeleteKubeconfig on kuber for cluster %s", cluster.ClusterInfo.Name)
-			if _, err := kuber.DeleteKubeconfig(c, &pb.DeleteKubeconfigRequest{Cluster: cluster}); err != nil {
-				return err
-			}
+		func(cluster *pb.K8Scluster) {
+			group.Go(func() error {
+				log.Info().Msgf("Calling DeleteKubeconfig on kuber for cluster %s", cluster.ClusterInfo.Name)
+				if _, err := kuber.DeleteKubeconfig(c, &pb.DeleteKubeconfigRequest{Cluster: cluster}); err != nil {
+					return err
+				}
 
-			log.Info().Msgf("Calling DeleteClusterMetadata on kuber for cluster %s", cluster.ClusterInfo.Name)
-			_, err := kuber.DeleteClusterMetadata(c, &pb.DeleteClusterMetadataRequest{Cluster: cluster})
-			return err
-		})
+				log.Info().Msgf("Calling DeleteClusterMetadata on kuber for cluster %s", cluster.ClusterInfo.Name)
+				_, err := kuber.DeleteClusterMetadata(c, &pb.DeleteClusterMetadataRequest{Cluster: cluster})
+				return err
+			})
+		}(cluster)
 	}
 
 	return group.Wait()

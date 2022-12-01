@@ -96,7 +96,7 @@ func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterM
 	))
 
 	if err := sec.Apply(envs.Namespace, ""); err != nil {
-		log.Error().Msgf("Failed to store cluster metadata for %s: %w", req.Cluster.ClusterInfo.Name, err)
+		log.Error().Msgf("Failed to store cluster metadata for %s: %s", req.Cluster.ClusterInfo.Name, err)
 		return nil, fmt.Errorf("error while creating cluster metadata secret for %s", req.Cluster.ClusterInfo.Name)
 	}
 
@@ -113,7 +113,7 @@ func (s *server) DeleteClusterMetadata(ctx context.Context, req *pb.DeleteCluste
 	kc := kubectl.Kubectl{}
 	secretName := fmt.Sprintf("%s-%s-metadata", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
 	if err := kc.KubectlDeleteResource("secret", secretName, namespace); err != nil {
-		log.Error().Msgf("Failed to remove cluster metadata for %s: %w", req.Cluster.ClusterInfo.Name, err)
+		log.Error().Msgf("Failed to remove cluster metadata for %s: %s", req.Cluster.ClusterInfo.Name, err)
 		return nil, fmt.Errorf("error while deleting kubeconfig secret for %s: %w", req.Cluster.ClusterInfo.Name, err)
 	}
 
@@ -140,7 +140,7 @@ func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigReq
 	))
 
 	if err := sec.Apply(namespace, ""); err != nil {
-		log.Error().Msgf("Failed to store kubeconfig for %s: %w", cluster.ClusterInfo.Name, err)
+		log.Error().Msgf("Failed to store kubeconfig for %s: %s", cluster.ClusterInfo.Name, err)
 		return nil, fmt.Errorf("error while creating the kubeconfig secret for %s", cluster.ClusterInfo.Name)
 	}
 
@@ -159,7 +159,7 @@ func (s *server) DeleteKubeconfig(ctx context.Context, req *pb.DeleteKubeconfigR
 	secretName := fmt.Sprintf("%s-%s-kubeconfig", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
 
 	if err := kc.KubectlDeleteResource("secret", secretName, namespace); err != nil {
-		log.Error().Msgf("Failed to remove kubeconfig for %s: %w", cluster.ClusterInfo.Name, err)
+		log.Error().Msgf("Failed to remove kubeconfig for %s: %s", cluster.ClusterInfo.Name, err)
 		return nil, fmt.Errorf("error while deleting kubeconfig secret for %s : %w", cluster.ClusterInfo.Name, err)
 	}
 
