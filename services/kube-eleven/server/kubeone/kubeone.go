@@ -27,12 +27,15 @@ func (k *Kubeone) Apply() error {
 	cmd.Dir = k.Directory
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		log.Warn().Msgf("Error encountered while executing %s : %v", command, err)
-		retryCmd := comm.Cmd{Command: command, Dir: k.Directory}
-		err := retryCmd.RetryCommand(maxNumOfRetries)
-		if err != nil {
+		retryCmd := comm.Cmd{
+			Command: command,
+			Dir:     k.Directory,
+			Stdout:  os.Stdout,
+			Stderr:  os.Stderr,
+		}
+		if err := retryCmd.RetryCommand(maxNumOfRetries); err != nil {
 			return err
 		}
 	}
