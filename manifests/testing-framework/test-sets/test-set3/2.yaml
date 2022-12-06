@@ -86,9 +86,9 @@ kubernetes:
       pools:
         control:
           - hetzner-control
-          - gcp-control
           - oci-control
+          - gcp-control
         compute:
           - hetzner-compute
+          - oci-compute
           - gcp-compute
-          - oci-compute   

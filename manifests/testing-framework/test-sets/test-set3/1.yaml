@@ -96,36 +96,36 @@ kubernetes:
       pools:
         control:
           - hetzner-control
-          - gcp-control
           - oci-control
+          - gcp-control
         compute:
           - hetzner-compute
-          - gcp-compute
           - oci-compute
+          - gcp-compute
     - name: ts3-c-2
       version: v1.22.0
       network: 192.168.2.0/24
       pools:
         control:
           - hetzner-control
-          - gcp-control
           - oci-control
+          - gcp-control
         compute:
           - hetzner-compute
-          - gcp-compute
           - oci-compute
+          - gcp-compute
     - name: ts3-c-3
       version: v1.22.0
       network: 192.168.2.0/24
       pools:
         control:
           - hetzner-control
-          - gcp-control
           - oci-control
+          - gcp-control
         compute:
           - hetzner-compute
+          - oci-compute
           - gcp-compute
-          - oci-compute          
 
 
 loadBalancers:
