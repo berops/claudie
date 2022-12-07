@@ -150,7 +150,7 @@ jobs:
         working-directory: ./manifests/testing-framework/test-sets
         run: |
           HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ./yq e '.loadBalancers.clusters.[1].dns.hostname = strenv(HOSTNAME)' test-set2/1.yaml -i
-          HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ./yq e '.loadBalancers.clusters.[0].dns.hostname = strenv(HOSTNAME)' test-set2/4.yaml -i
+          HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ./yq e '.loadBalancers.clusters.[0].dns.hostname = strenv(HOSTNAME)' test-set2/3.yaml -i
 
           #Clean up
           rm -f yq 

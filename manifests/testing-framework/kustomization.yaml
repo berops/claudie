@@ -6,13 +6,11 @@ secretGenerator:
   - test-sets/test-set1/1.yaml
   - test-sets/test-set1/2.yaml
   - test-sets/test-set1/3.yaml
-  - test-sets/test-set1/4.yaml
   name: test-set1
 - files:
   - test-sets/test-set2/1.yaml
   - test-sets/test-set2/2.yaml
   - test-sets/test-set2/3.yaml
-  - test-sets/test-set2/4.yaml
   name: test-set2
 - files:
   - test-sets/test-set3/1.yaml

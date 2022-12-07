@@ -115,7 +115,6 @@ kubernetes:
           - hetzner-control
         compute:
           - hetzner-compute
-
 loadBalancers:
   roles:
     - name: apiserver-lb

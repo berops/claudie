@@ -105,7 +105,6 @@ resource "azurerm_public_ip" "{{ $nodepool.Name }}-{{ $clusterHash }}-public-ip"
   location            = "{{ $nodepool.Region }}"
   resource_group_name = azurerm_resource_group.rg_{{ replaceAll $nodepool.Region " " "_" }}.name
   allocation_method   = "Static"
-  zones               = ["{{ $nodepool.Zone }}"]
   sku                 = "Standard"
 }
 
