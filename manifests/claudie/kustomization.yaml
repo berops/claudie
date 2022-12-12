@@ -31,7 +31,7 @@ images:
 - name: claudieio/kube-eleven
   newTag: e71f21c-1114
 - name: claudieio/kuber
-  newTag: e8a66ea-1149
+  newTag: e71f21c-1114
 - name: claudieio/scheduler
   newTag: e71f21c-1114
 - name: claudieio/terraformer
