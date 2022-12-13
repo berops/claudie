@@ -72,9 +72,6 @@ func (c ClusterBuilder) CreateNodepools() error {
 		return fmt.Errorf("error while running terraform apply in %s : %w", clusterID, err)
 	}
 
-	// get slice of old nodes
-	oldNodes := c.getNodes()
-
 	// fill new nodes with output
 	for _, nodepool := range c.DesiredInfo.NodePools {
 		output, err := terraform.TerraformOutput(nodepool.Name)
@@ -85,7 +82,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 		if err != nil {
 			return fmt.Errorf("error while reading the terraform output for %s : %w", nodepool.Name, err)
 		}
-		fillNodes(&out, nodepool, oldNodes)
+		fillNodes(&out, nodepool)
 	}
 
 	// Clean after terraform
@@ -194,24 +191,12 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	return nil
 }
 
-func (c ClusterBuilder) getNodes() []*pb.Node {
-	// group all the nodes together to make searching with respect to IP easy
-	var oldNodes []*pb.Node
-	if c.CurrentInfo != nil {
-		for _, oldNodepool := range c.CurrentInfo.NodePools {
-			oldNodes = append(oldNodes, oldNodepool.Nodes...)
-		}
-	}
-	return oldNodes
-}
-
-func fillNodes(terraformOutput *outputNodepools, newNodePool *pb.NodePool, oldNodes []*pb.Node) {
+func fillNodes(terraformOutput *outputNodepools, newNodePool *pb.NodePool) {
 	// Fill slices from terraformOutput maps with names of nodes to ensure an order
 	var tempNodes []*pb.Node
 	// get sorted list of keys
 	sortedNodeNames := getkeysFromMap(terraformOutput.IPs)
 	for _, nodeName := range sortedNodeNames {
-		var private = ""
 		var control pb.NodeType
 
 		if newNodePool.IsControl {
@@ -220,19 +205,10 @@ func fillNodes(terraformOutput *outputNodepools, newNodePool *pb.NodePool, oldNo
 			control = pb.NodeType_worker
 		}
 
-		if len(oldNodes) > 0 {
-			for _, node := range oldNodes {
-				if fmt.Sprint(terraformOutput.IPs[nodeName]) == node.Public {
-					private = node.Private
-					control = node.NodeType
-					break
-				}
-			}
-		}
 		tempNodes = append(tempNodes, &pb.Node{
 			Name:     nodeName,
 			Public:   fmt.Sprint(terraformOutput.IPs[nodeName]),
-			Private:  private,
+			Private:  "", // will be set in ansibler.
 			NodeType: control,
 		})
 	}
