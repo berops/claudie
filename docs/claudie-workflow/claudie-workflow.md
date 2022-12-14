@@ -29,7 +29,7 @@
 
 
 ## Context-box
-Context box is "control unit" for the Claudie. It holds pending configs, which needs to be processed, periodically checks for the new/changed configs and receives new configs from `frontend`.
+Context box is "control unit" for Claudie. It holds pending configs, which need to be processed, periodically checks for new/changed configs and receives new configs from `frontend`.
 
 ### API
 
@@ -76,13 +76,13 @@ Context box is "control unit" for the Claudie. It holds pending configs, which n
 
 
 ## Scheduler
-Scheduler creates desired state of the infra based on the manifest taken from the config received from Context-box.
+Scheduler brings the infrastructure to a desired the state based on the manifest taken from the config received from Context-box.
 
-Scheduler also monitors health of the current infra and manages any operations based on it, e.g. replacement of broken node, etc. *[work in progress]*
+Scheduler also monitors the health of current infrastructure and manages any operations based on actual health state (e.g. replacement of broken node, etc. *[work in progress]*).
 
 ### API
 ```
-This service is gRPC client, thus it does not provide any API
+This service is a gRPC client, thus it does not provide any API
 ```
 
 ### Flow
@@ -92,11 +92,11 @@ This service is gRPC client, thus it does not provide any API
 
 
 ## Builder
-Builder aligns the current state of the infrastructure with the desired state. It calls methods on `terraformer`, `ansibler`, `kube-eleven` and `kuber` in order to manage the infrastructure. Builder also takes care of deleting nodes from kubernetes cluster by finding difference between `desiredState` and `currentState`.
+Builder aligns the current state of the infrastructure with the desired state. It calls methods on `terraformer`, `ansibler`, `kube-eleven` and `kuber` in order to manage the infrastructure. It follows that Builder also takes care of deleting nodes from a kubernetes cluster by finding differences between `desiredState` and `currentState`.
 
 ### API
 ```
-This service is gRPC client, thus it does not provide any API
+This service is a gRPC client, thus it does not provide any API
 ```
 
 ### Flow
@@ -107,7 +107,7 @@ This service is gRPC client, thus it does not provide any API
 
 
 ## Terraformer
-Terraformer creates or destroys infra specified in the desired state via terraform calls. 
+Terraformer creates or destroys infra specified in the desired state via Terraform calls. 
 
 ### API
 ```go
@@ -119,9 +119,9 @@ Terraformer creates or destroys infra specified in the desired state via terrafo
 
 ### Flow
 - Receives `config` from Builder
-- Uses Terraform to create an infrastructure from `desiredState`
-- Updates `currentState` in a `config`
-- On infra deletion, destroys the infra based on the current state
+- Uses Terraform to create infrastructure from `desiredState`
+- Updates `currentState` in `config`
+- On infrastructure deletion request, destroys the infra based on the current state
 
 ## Ansibler
 Ansibler uses Ansible to set up:
@@ -159,7 +159,8 @@ Ansibler uses Ansible to set up:
 
 
 ## Kube-eleven
-Kube-eleven uses kubeOne to set up kubernetes clusters. If the cluster was build, it assures the cluster is healthy and running as it should.
+Kube-eleven uses kubeOne to set up kubernetes clusters.
+If the cluster has already been built, it assures the cluster is healthy and running smoothly.
 
 ### API
 ```go
@@ -170,8 +171,8 @@ Kube-eleven uses kubeOne to set up kubernetes clusters. If the cluster was build
 ### Flow
 - Receives `config` from Builder
 - Generates kubeOne manifest from `desiredState`
-- Uses kubeOne to provision kubernetes cluster
-- Updates `currentState` in a `config`
+- Uses kubeOne to provision a kubernetes cluster
+- Updates `currentState` in `config`
 
 ## Kuber
 Kuber manipulates the cluster resources using `kubectl`.
@@ -196,22 +197,22 @@ Kuber manipulates the cluster resources using `kubectl`.
 - Receives `config` from Builder for `SetUpStorage()`
 - Applies longhorn deployment
 - Receives `config` from Builder for `StoreKubeconfig()`
-- Create a kubernetes secret which holds kubeconfig of the Claudie created cluster
-- On infra deletion, deletes the secret which holds kubeconfig of deleted cluster
+- Creates a kubernetes secret which holds kubeconfig of the Claudie-created cluster
+- On infra deletion, deletes the secret kubeconfig secret of the cluster being deleted
 
 ## Frontend
-Frontend is a layer between user and the Claudie. 
-The new manifests are added as a secret into the kubernetes cluster where, `k8s-sidecar` will save them into the Frontends file system
-and notify the frontend service via HTTP request that new manifests are available.
+Frontend is a layer between the user and Claudie. 
+New manifests are added as a secret into the kubernetes cluster where `k8s-sidecar` saves them into Frontend's file system
+and notifies the Frontend service via a HTTP request that the new manifests are now available.
 
 ### API
 ```
-This service is gRPC client, thus it does not provide any API
+This service is a gRPC client, thus it does not provide any API
 ```
 
 ### Flow
-- User applies new secret holding a manifest
-- `k8s-sidecar` will detect it and save it to the Frontend's file system
-- `k8s-sidecar` notifies frontend via HTTP request that changes have been made
-- Frontend detects new manifest and saves it to the database
-- On deletion of user created secret, Frontend initiates deletion process of the manifest
+- User applies a new secret holding a manifest
+- `k8s-sidecar` detects it and saves it to Frontend's file system
+- `k8s-sidecar` notifies Frontend via a HTTP request that changes have been made
+- Frontend detects the new manifest and saves it to the database
+- On deletion of user created secrets, Frontend initiates a deletion process of the manifest
