@@ -43,7 +43,7 @@ nodePools:
         name: hetzner-1
         region: fsn1
         zone: fsn1-dc14
-      count: 2
+      count: 3
       server_type: cpx11
       image: ubuntu-20.04
       disk_size: 50
@@ -61,7 +61,7 @@ nodePools:
         name: gcp-1
         region: europe-west1
         zone: europe-west1-b
-      count: 2
+      count: 3
       server_type: e2-small
       image: ubuntu-os-cloud/ubuntu-2004-focal-v20220610
       disk_size: 50
@@ -81,7 +81,7 @@ nodePools:
         name: oci-1
         region: eu-frankfurt-1
         zone: hsVQ:EU-FRANKFURT-1-AD-1
-      count: 2
+      count: 3
       server_type: VM.Standard1.1
       # ubuntu minimal
       # https://docs.oracle.com/en-us/iaas/images/image/7c71896e-e030-4de2-b73e-8856ac44d84c/
@@ -102,7 +102,7 @@ nodePools:
         name: aws-1
         region: eu-west-3
         zone: eu-west-3a
-      count: 2
+      count: 3
       server_type: t3.small
       #ubuntu
       image: ami-0171866b8d95139a7
@@ -121,7 +121,7 @@ nodePools:
         name: azure-1
         region: Germany West Central
         zone: 2
-      count: 2
+      count: 3
       server_type: Standard_B2s
       image: Canonical:0001-com-ubuntu-minimal-focal:minimal-20_04-lts:20.04.202004230
       disk_size: 50
