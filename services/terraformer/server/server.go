@@ -17,11 +17,12 @@ import (
 	"github.com/Berops/claudie/proto/pb"
 	"github.com/Berops/claudie/services/terraformer/server/kubernetes"
 	"github.com/Berops/claudie/services/terraformer/server/loadbalancer"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
-	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/rs/zerolog/log"
@@ -40,8 +41,14 @@ var (
 	minioBucket    = "claudie-tf-state-files"                     // value is hardcoded in services/terraformer/templates/backend.tpl
 	minioAccessKey = envs.MinioAccessKey
 	minioSecretKey = envs.MinioSecretKey
-	dynamoURL      = envs.DynamoURL
-	dynamoTable    = envs.DynamoTable
+)
+
+var (
+	dynamoURL          = envs.DynamoURL
+	dynamoTable        = envs.DynamoTable
+	awsRegion          = envs.AwsRegion
+	awsAccessKeyId     = envs.AwsAccesskeyId
+	awsSecretAccessKey = envs.AwsSecretAccessKey
 )
 
 type server struct {
@@ -147,18 +154,17 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 		return nil, fmt.Errorf("failed to connect to minIO: %w", err)
 	}
 
-	dynamoConfig, err := awsConfig.LoadDefaultConfig(ctx,
-		awsConfig.WithEndpointResolverWithOptions(aws.EndpointResolverWithOptionsFunc(
-			func(service, region string, options ...interface{}) (aws.Endpoint, error) {
-				return aws.Endpoint{URL: dynamoURL}, nil
-			},
-		)),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to dynamodb: %w", err)
-	}
-
-	dynamoConnection := dynamodb.NewFromConfig(dynamoConfig)
+	dynamoConnection := dynamodb.NewFromConfig(aws.Config{
+		Region: awsRegion,
+		Credentials: aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
+			return aws.Credentials{AccessKeyID: awsAccessKeyId, SecretAccessKey: awsSecretAccessKey}, nil
+		}),
+		EndpointResolverWithOptions: aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+			return aws.Endpoint{URL: dynamoURL}, nil
+		}),
+		RetryMaxAttempts: 10,
+		RetryMode:        aws.RetryModeStandard,
+	})
 
 	// Destroy clusters concurrently
 	var errGroup errgroup.Group
@@ -169,25 +175,38 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 					return fmt.Errorf("failed to destroy cluster %v : %w", cluster.Id(), err)
 				}
 
-				// Key under which the state file is stored in minIO.
-				key := fmt.Sprintf("%s/%s", projectName, c.Id())
+				// if it's a load-balancer there is an additional lock-file for the dns in both  MinIO and dynamoDB.
+				if _, ok := c.(loadbalancer.LBcluster); ok {
+					// Key under which the lockfile id is stored in dynamodb
+					dynamoLockId, err := attributevalue.Marshal(fmt.Sprintf("%s/%s/%s-dns-md5", minioBucket, projectName, c.Id()))
+					if err != nil {
+						return fmt.Errorf("error composing state lockfile id for cluster %s/%s: %w", config.Name, c.Id(), err)
+					}
+					log.Debug().Msgf("deleting lockfile under key: %v", dynamoLockId)
+					// Remove the lockfile from dynamodb
+					if _, err := dynamoConnection.DeleteItem(ctx, &dynamodb.DeleteItemInput{Key: map[string]types.AttributeValue{"LockID": dynamoLockId}, TableName: aws.String(dynamoTable)}); err != nil {
+						return fmt.Errorf("failed to remove state lock file %v : %w", cluster.Id(), err)
+					}
+
+					key := fmt.Sprintf("%s/%s-dns", projectName, c.Id())
+					if err := mc.RemoveObject(ctx, minioBucket, key, minio.RemoveObjectOptions{GovernanceBypass: true}); err != nil {
+						return fmt.Errorf("failed to remove dns lock file for %v: %w", cluster.Id(), err)
+					}
+				}
 
 				// Key under which the lockfile id is stored in dynamodb
-				dynamoLockId, err := attributevalue.Marshal(
-					fmt.Sprintf("%s/%s/%s-md5", minioBucket, projectName, c.Id()),
-				)
+				dynamoLockId, err := attributevalue.Marshal(fmt.Sprintf("%s/%s/%s-md5", minioBucket, projectName, c.Id()))
 				if err != nil {
-					log.Debug().Msgf("Error composing state lockfile id for cluster %s : %s", c.Id(), config.Name)
+					return fmt.Errorf("error composing state lockfile id for cluster %s/%s: %w", config.Name, c.Id(), err)
 				}
-				fmt.Println(dynamoLockId)
+				log.Debug().Msgf("deleting lockfile under key: %v", dynamoLockId)
 				// Remove the lockfile from dynamodb
-				_, err = dynamoConnection.DeleteItem(ctx, &dynamodb.DeleteItemInput{
-					Key: map[string]types.AttributeValue{"LockID": dynamoLockId}, TableName: aws.String(dynamoTable),
-				})
-				if err != nil {
+				if _, err := dynamoConnection.DeleteItem(ctx, &dynamodb.DeleteItemInput{Key: map[string]types.AttributeValue{"LockID": dynamoLockId}, TableName: aws.String(dynamoTable)}); err != nil {
 					return fmt.Errorf("failed to remove state lock file %v : %w", cluster.Id(), err)
 				}
 
+				// Key under which the state file is stored in minIO.
+				key := fmt.Sprintf("%s/%s", projectName, c.Id())
 				return mc.RemoveObject(ctx, minioBucket, key, minio.RemoveObjectOptions{
 					GovernanceBypass: true,
 					VersionID:        "", // currently we don't use version ID's in minIO.

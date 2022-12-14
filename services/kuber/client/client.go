@@ -38,3 +38,21 @@ func DeleteNodes(c pb.KuberServiceClient, req *pb.DeleteNodesRequest) (*pb.Delet
 	}
 	return res, nil
 }
+
+func StoreClusterMetadata(c pb.KuberServiceClient, req *pb.StoreClusterMetadataRequest) (*pb.StoreClusterMetadataResponse, error) {
+	res, err := c.StoreClusterMetadata(context.Background(), req)
+	if err != nil {
+		return nil, fmt.Errorf("error while calling StoreClusterMetadata: %w", err)
+	}
+
+	return res, nil
+}
+
+func DeleteClusterMetadata(c pb.KuberServiceClient, req *pb.DeleteClusterMetadataRequest) (*pb.DeleteClusterMetadataResponse, error) {
+	res, err := c.DeleteClusterMetadata(context.Background(), req)
+	if err != nil {
+		return nil, fmt.Errorf("error while calling DeleteClusterMetadata: %w", err)
+	}
+
+	return res, nil
+}
