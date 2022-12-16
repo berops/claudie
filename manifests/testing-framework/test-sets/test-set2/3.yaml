@@ -36,7 +36,7 @@ nodePools:
         zone: nbg1-dc3
       count: 3
       server_type: cpx11
-      image: ubuntu-20.04
+      image: ubuntu-22.04
       disk_size: 50
     - name: hetzner-compute
       providerSpec:
@@ -45,7 +45,7 @@ nodePools:
         zone: nbg1-dc3
       count: 2
       server_type: cpx11
-      image: ubuntu-20.04
+      image: ubuntu-22.04
       disk_size: 50
     #-----------LB nodepools----------
     - name: gcp-lb
