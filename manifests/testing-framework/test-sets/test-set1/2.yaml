@@ -43,7 +43,7 @@ nodePools:
         name: hetzner-1
         region: fsn1
         zone: fsn1-dc14
-      count: 5
+      count: 4
       server_type: cpx11
       image: ubuntu-22.04
       disk_size: 50
@@ -121,7 +121,7 @@ nodePools:
         name: azure-1
         region: Germany West Central
         zone: 1
-      count: 4
+      count: 3
       server_type: Standard_B2s
       image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
       disk_size: 50
