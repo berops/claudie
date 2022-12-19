@@ -54,7 +54,7 @@ nodePools:
         zone: europe-west2-c
       count: 3
       server_type: e2-medium
-      image: ubuntu-os-cloud/ubuntu-2004-focal-v20220610
+      image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
       disk_size: 50
     - name: gcp-compute
       providerSpec:
@@ -63,7 +63,7 @@ nodePools:
         zone: europe-west1-b
       count: 3
       server_type: e2-small
-      image: ubuntu-os-cloud/ubuntu-2004-focal-v20220610
+      image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
       disk_size: 50
     - name: oci-control
       providerSpec:
@@ -73,8 +73,8 @@ nodePools:
       count: 3
       server_type: VM.Standard2.1
       # ubuntu minimal
-      # https://docs.oracle.com/en-us/iaas/images/image/7c71896e-e030-4de2-b73e-8856ac44d84c/
-      image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaauj7omj2zxmbh2go5plujbvysvhwojasdywcxrnnkcwehvwpix3ga
+      # https://docs.oracle.com/en-us/iaas/images/image/674d0b41-aee8-4c0b-bf99-9e100d90f241/
+      image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
       disk_size: 50
     - name: oci-compute
       providerSpec:
@@ -84,8 +84,8 @@ nodePools:
       count: 3
       server_type: VM.Standard1.1
       # ubuntu minimal
-      # https://docs.oracle.com/en-us/iaas/images/image/7c71896e-e030-4de2-b73e-8856ac44d84c/
-      image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaauj7omj2zxmbh2go5plujbvysvhwojasdywcxrnnkcwehvwpix3ga
+      # https://docs.oracle.com/en-us/iaas/images/image/674d0b41-aee8-4c0b-bf99-9e100d90f241/
+      image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
       disk_size: 50
     - name: aws-control
       providerSpec:
@@ -114,7 +114,7 @@ nodePools:
         zone: 1
       count: 3
       server_type: Standard_B2s
-      image: Canonical:0001-com-ubuntu-minimal-focal:minimal-20_04-lts:20.04.202004230
+      image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
       disk_size: 50
     - name: azure-compute
       providerSpec:
@@ -123,7 +123,7 @@ nodePools:
         zone: 2
       count: 3
       server_type: Standard_B2s
-      image: Canonical:0001-com-ubuntu-minimal-focal:minimal-20_04-lts:20.04.202004230
+      image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
       disk_size: 50
 kubernetes:
   clusters:
