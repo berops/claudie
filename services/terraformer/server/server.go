@@ -17,6 +17,12 @@ import (
 	"github.com/Berops/claudie/proto/pb"
 	"github.com/Berops/claudie/services/terraformer/server/kubernetes"
 	"github.com/Berops/claudie/services/terraformer/server/loadbalancer"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/rs/zerolog/log"
@@ -32,8 +38,17 @@ const (
 
 var (
 	minioEndpoint  = strings.TrimPrefix(envs.MinioURL, "http://") //minio go client does not support http/https prefix when creating handle
+	minioBucket    = "claudie-tf-state-files"                     // value is hardcoded in services/terraformer/templates/backend.tpl
 	minioAccessKey = envs.MinioAccessKey
 	minioSecretKey = envs.MinioSecretKey
+)
+
+var (
+	dynamoURL          = envs.DynamoURL
+	dynamoTable        = envs.DynamoTable
+	awsRegion          = envs.AwsRegion
+	awsAccessKeyId     = envs.AwsAccesskeyId
+	awsSecretAccessKey = envs.AwsSecretAccessKey
 )
 
 type server struct {
@@ -100,14 +115,14 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 		}(cluster)
 	}
 	if err := errGroup.Wait(); err != nil {
-		log.Error().Msgf("Failed to build infra for project %s : %s", desiredState.Name, err.Error())
+		log.Error().Msgf("Failed to build infra for project %s : %s", projectName, err.Error())
 		return &pb.BuildInfrastructureResponse{
 				CurrentState: currentState,
 				DesiredState: desiredState,
 				ErrorMessage: fmt.Sprintf("BuildInfrastructure got error: %s", err.Error())},
 			fmt.Errorf("BuildInfrastructure got error: %w", err)
 	}
-	log.Info().Msgf("Infrastructure was successfully generated for project %s", desiredState.Name)
+	log.Info().Msgf("Infrastructure was successfully generated for project %s", projectName)
 	return &pb.BuildInfrastructureResponse{
 		CurrentState: currentState,
 		DesiredState: desiredState,
@@ -139,6 +154,18 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 		return nil, fmt.Errorf("failed to connect to minIO: %w", err)
 	}
 
+	dynamoConnection := dynamodb.NewFromConfig(aws.Config{
+		Region: awsRegion,
+		Credentials: aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
+			return aws.Credentials{AccessKeyID: awsAccessKeyId, SecretAccessKey: awsSecretAccessKey}, nil
+		}),
+		EndpointResolverWithOptions: aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+			return aws.Endpoint{URL: dynamoURL}, nil
+		}),
+		RetryMaxAttempts: 10,
+		RetryMode:        aws.RetryModeStandard,
+	})
+
 	// Destroy clusters concurrently
 	var errGroup errgroup.Group
 	for _, cluster := range clusters {
@@ -148,10 +175,39 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 					return fmt.Errorf("failed to destroy cluster %v : %w", cluster.Id(), err)
 				}
 
+				// if it's a load-balancer there is an additional lock-file for the dns in both  MinIO and dynamoDB.
+				if _, ok := c.(loadbalancer.LBcluster); ok {
+					// Key under which the lockfile id is stored in dynamodb
+					dynamoLockId, err := attributevalue.Marshal(fmt.Sprintf("%s/%s/%s-dns-md5", minioBucket, projectName, c.Id()))
+					if err != nil {
+						return fmt.Errorf("error composing state lockfile id for cluster %s/%s: %w", config.Name, c.Id(), err)
+					}
+					log.Debug().Msgf("deleting lockfile under key: %v", dynamoLockId)
+					// Remove the lockfile from dynamodb
+					if _, err := dynamoConnection.DeleteItem(ctx, &dynamodb.DeleteItemInput{Key: map[string]types.AttributeValue{"LockID": dynamoLockId}, TableName: aws.String(dynamoTable)}); err != nil {
+						return fmt.Errorf("failed to remove state lock file %v : %w", cluster.Id(), err)
+					}
+
+					key := fmt.Sprintf("%s/%s-dns", projectName, c.Id())
+					if err := mc.RemoveObject(ctx, minioBucket, key, minio.RemoveObjectOptions{GovernanceBypass: true}); err != nil {
+						return fmt.Errorf("failed to remove dns lock file for %v: %w", cluster.Id(), err)
+					}
+				}
+
+				// Key under which the lockfile id is stored in dynamodb
+				dynamoLockId, err := attributevalue.Marshal(fmt.Sprintf("%s/%s/%s-md5", minioBucket, projectName, c.Id()))
+				if err != nil {
+					return fmt.Errorf("error composing state lockfile id for cluster %s/%s: %w", config.Name, c.Id(), err)
+				}
+				log.Debug().Msgf("deleting lockfile under key: %v", dynamoLockId)
+				// Remove the lockfile from dynamodb
+				if _, err := dynamoConnection.DeleteItem(ctx, &dynamodb.DeleteItemInput{Key: map[string]types.AttributeValue{"LockID": dynamoLockId}, TableName: aws.String(dynamoTable)}); err != nil {
+					return fmt.Errorf("failed to remove state lock file %v : %w", cluster.Id(), err)
+				}
+
 				// Key under which the state file is stored in minIO.
 				key := fmt.Sprintf("%s/%s", projectName, c.Id())
-
-				return mc.RemoveObject(ctx, "claudie-tf-state-files", key, minio.RemoveObjectOptions{
+				return mc.RemoveObject(ctx, minioBucket, key, minio.RemoveObjectOptions{
 					GovernanceBypass: true,
 					VersionID:        "", // currently we don't use version ID's in minIO.
 				})
@@ -161,11 +217,11 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 
 	if err := errGroup.Wait(); err != nil {
 		config.ErrorMessage = err.Error()
-		log.Error().Msgf("Failed to destroy the infra for project %s : %s", req.Config.Name, err.Error())
+		log.Error().Msgf("Failed to destroy the infra for project %s : %s", config.Name, err.Error())
 		return &pb.DestroyInfrastructureResponse{Config: config}, fmt.Errorf("failed to destroy infrastructure: %w", err)
 	}
 
-	log.Info().Msgf("Infra for project %s was successfully destroyed", req.Config.Name)
+	log.Info().Msgf("Infra for project %s was successfully destroyed", config.Name)
 	config.ErrorMessage = ""
 	return &pb.DestroyInfrastructureResponse{Config: config}, nil
 }
@@ -181,7 +237,7 @@ func healthCheck() error {
 		return err
 	}
 
-	exists, err := mc.BucketExists(context.Background(), "claudie-tf-state-files")
+	exists, err := mc.BucketExists(context.Background(), minioBucket)
 	if !exists || err != nil {
 		return fmt.Errorf("error: bucket exists %t || err: %w", exists, err)
 	}

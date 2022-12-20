@@ -2,7 +2,7 @@ FROM golang:1.19.3 AS build
 
 # download and unzip kube-one binary
 RUN apt-get -qq update && apt-get -qq install unzip
-RUN VERSION=1.3.2 && \
+RUN VERSION=1.3.6 && \
     wget -q https://releases.hashicorp.com/terraform/${VERSION}/terraform_${VERSION}_linux_amd64.zip && \
     unzip -qq terraform_${VERSION}_linux_amd64.zip -d terraform
 
@@ -17,7 +17,7 @@ COPY go.sum .
 RUN go mod download
 
 #Install grpc health probe
-RUN GRPC_HEALTH_PROBE_VERSION=v0.4.4 && \
+RUN GRPC_HEALTH_PROBE_VERSION=v0.4.14 && \
     wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 && \
     chmod +x /bin/grpc_health_probe
 

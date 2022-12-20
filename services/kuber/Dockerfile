@@ -1,7 +1,7 @@
 FROM golang:1.19.3 AS build
 
 #Install kubectl
-RUN wget -q https://storage.googleapis.com/kubernetes-release/release/v1.21.0/bin/linux/amd64/kubectl
+RUN wget -q https://storage.googleapis.com/kubernetes-release/release/v1.22.0/bin/linux/amd64/kubectl
 
 #Unset the GOPATH
 ENV GOPATH=
@@ -14,7 +14,7 @@ COPY go.sum .
 RUN go mod download
 
 #Install grpc health probe
-RUN GRPC_HEALTH_PROBE_VERSION=v0.4.4 && \
+RUN GRPC_HEALTH_PROBE_VERSION=v0.4.14 && \
     wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 && \
     chmod +x /bin/grpc_health_probe
 

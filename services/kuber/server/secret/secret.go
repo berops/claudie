@@ -9,11 +9,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// struct Secret holds information necessary to create a secret
-// Directory - directory where secret will be created
-// YamlManifest - secret specification
+// Secret holds information necessary to create a secret
 type Secret struct {
-	Directory    string
+	// Directory - directory where secret will be created
+	Directory string
+	// YamlManifest - secret specification
 	YamlManifest SecretYaml
 }
 
@@ -39,25 +39,37 @@ const (
 	filename                   = "secret.yaml"
 )
 
-// returns new Secret object with default values
-func New() Secret {
+// New create a k8s Secret manifest object from the specified manifest.
+func New(directory string, secretYaml SecretYaml) Secret {
 	return Secret{
-		YamlManifest: SecretYaml{
-			APIVersion: "v1",
-			Kind:       "Secret",
-			Metadata:   Metadata{},
-			SecretType: "Opaque",
-			Data:       Data{SecretData: ""},
-		},
+		Directory:    directory,
+		YamlManifest: secretYaml,
 	}
 }
 
-// Creates a secret manifests and applies it in the cluster (specified by given kubeconfig) in the specified namespace
+// NewYaml created a template with pre-defined defaults and optional metadata & data fields.
+func NewYaml(md Metadata, data Data) SecretYaml {
+	return SecretYaml{
+		APIVersion: "v1",
+		Kind:       "Secret",
+		Metadata:   md,
+		SecretType: "Opaque",
+		Data:       data,
+	}
+}
+
+// Apply creates a secret manifests and applies it in the cluster (specified by given kubeconfig) in the specified namespace
 // if the kubeconfig is left empty, it uses default kubeconfig
 func (s *Secret) Apply(namespace, kubeconfig string) error {
 	// setting empty string for kubeconfig will create secret on same cluster where claudie is running
 	kubectl := kubectl.Kubectl{Kubeconfig: kubeconfig}
 	path := filepath.Join(s.Directory, filename)
+
+	if _, err := os.Stat(s.Directory); os.IsNotExist(err) {
+		if err := os.Mkdir(s.Directory, os.ModePerm); err != nil {
+			return fmt.Errorf("could not create a directory for %s: %w", s.YamlManifest.Metadata.Name, err)
+		}
+	}
 
 	if err := s.saveSecretManifest(path); err != nil {
 		return fmt.Errorf("error while saving secret.yaml for %s : %w", s.YamlManifest.Metadata.Name, err)
@@ -82,7 +94,7 @@ func (s *Secret) saveSecretManifest(path string) error {
 	}
 
 	if err = os.WriteFile(path, secretYaml, filePermission); err != nil {
-		return fmt.Errorf("Error while saving secret manifest file %s : %w", path, err)
+		return fmt.Errorf("error while saving secret manifest file %s : %w", path, err)
 	}
 	return nil
 }

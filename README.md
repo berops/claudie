@@ -2,6 +2,7 @@
 
 ![Build](https://github.com/Berops/claudie/actions/workflows/CD-pipeline-dev.yml/badge.svg)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Berops/claudie)](https://goreportcard.com/report/github.com/Berops/claudie)
 
 Platform for managing multi-cloud Kubernetes clusters with each nodepool in a different cloud-provider.
 
@@ -11,6 +12,8 @@ Platform for managing multi-cloud Kubernetes clusters with each nodepool in a di
 
 Create fully-featured Kubernetes clusters composed of multiple different public Cloud providers in an easy and secure manner.
 Simply insert credentials to your cloud projects, define your cluster, and watch how the infra spawns right in front of you.
+
+![Infra Diagram](docs/infra-diagram.png)
 
 ### Management via IaC 
 
@@ -34,10 +37,8 @@ Claudie comes with a pre-configured storage solution, with ready-to-use Storage 
 Deploy Claudie Kubernetes [manifests/claudie](https://github.com/Berops/claudie/tree/master/manifests/claudie) into a Kubernetes cluster.
 
 ```
-kustomize build | kubectl apply -f -
+kubectl apply -k manifests/claudie
 ```
-
-> NOTE: Please make sure you are in `/manifests/claudie` directory before running `kustomize build` 
 
 Lastly, provide your own manifest via a Kubernetes Secret.
 

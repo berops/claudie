@@ -218,11 +218,10 @@ jobs:
           access_token_lifetime: "21600s"
 
       - name: Configure kubectl
-        uses: google-github-actions/get-gke-credentials@v0.8.2
+        uses: google-github-actions/get-gke-credentials@v1.0.0
         with:
           cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
           location: ${{ secrets.GKE_ZONE }}
-          use_auth_provider: true
 
       # Deploy services to new namespace
       - name: Deploy to new namespace
@@ -280,7 +279,6 @@ jobs:
             ./yq e '.providers.azure.[].tenant_id = "${{ secrets.AZURE_TENANT_ID }}"' $file -i
             ./yq e '.providers.azure.[].client_id = "${{ secrets.AZURE_CLIENT_ID }}"' $file -i
             ./yq e '.providers.azure.[].client_secret = "${{ secrets.AZURE_CLIENT_SECRET }}"' $file -i
-            ./yq e '.providers.azure.[].resource_group = "${{ secrets.AZURE_RESOURCE_GROUP }}"' $file -i
             done
           done
 
@@ -288,7 +286,7 @@ jobs:
         working-directory: ./manifests/testing-framework/test-sets
         run: |
           HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ./yq e '.loadBalancers.clusters.[1].dns.hostname = strenv(HOSTNAME)' test-set2/1.yaml -i
-          HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ./yq e '.loadBalancers.clusters.[0].dns.hostname = strenv(HOSTNAME)' test-set2/4.yaml -i
+          HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ./yq e '.loadBalancers.clusters.[0].dns.hostname = strenv(HOSTNAME)' test-set2/3.yaml -i
 
           #Clean up
           rm -f yq 
