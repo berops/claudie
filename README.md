@@ -46,7 +46,7 @@ Example of the input manifest can be found [here](https://github.com/Berops/clau
 
 To see in detail how you apply the manifest into Claudie, please refer to the [CRUD](./docs/crud/crud.md) document.
 
-After the input manifest is successfully applied the kubeconfig to your newly built clusters will be outputted as a secret in the `claudie` namespace with the name `<cluster-name>-<cluster-hash>-kubeconfig` 
+After the input manifest is successfully applied, the kubeconfig to your newly built clusters will be output as a secret in the `claudie` namespace with the name `<cluster-name>-<cluster-hash>-kubeconfig`.
 
 # Get involved
 
