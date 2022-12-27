@@ -80,11 +80,14 @@ func (c Cmd) RetryCommandWithOutput(numOfRetries int) ([]byte, error) {
 		cmd.Dir = c.Dir
 		cmd.Stdout = c.Stdout
 		cmd.Stderr = c.Stderr
-		out, err := cmd.CombinedOutput()
+
+		var out []byte
+		out, err = cmd.CombinedOutput()
 		if err == nil {
 			log.Info().Msgf("The %s was successful after %d retry", c.Command, i)
 			return out, nil
 		}
+
 		log.Warn().Msgf("Error encountered while executing %s : %v", c.Command, err)
 		backoff := 10 * i
 		log.Info().Msgf("Next retry in %ds...", backoff)
