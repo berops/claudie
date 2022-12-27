@@ -70,7 +70,9 @@ func TestClaudie(t *testing.T) {
 			errGroup.Go(func() error {
 				err := applyTestSet(path, namespace, c)
 				if err != nil {
-					return fmt.Errorf("error in test set %s : %w", path, err)
+					//in order to get errors from all goroutines in error group, print them here and just return simple error so test will fail
+					log.Error().Msgf("Error in test sets %s : %v", path, err)
+					return fmt.Errorf("error")
 				}
 				return nil
 			})
@@ -78,8 +80,7 @@ func TestClaudie(t *testing.T) {
 	}
 	err = errGroup.Wait()
 	if err != nil {
-		log.Error().Msgf("Error in one of the test sets : %s", err.Error())
-		t.Error(err)
+		t.Fail()
 	}
 }
 
