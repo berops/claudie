@@ -21,18 +21,18 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
 - name: claudieio/ansibler
-  newTag: fa6c153-1178
+  newTag: 293834a-1180
 - name: claudieio/builder
-  newTag: fa6c153-1178
+  newTag: 293834a-1180
 - name: claudieio/context-box
-  newTag: fa6c153-1178
+  newTag: 293834a-1180
 - name: claudieio/frontend
-  newTag: fa6c153-1178
+  newTag: 293834a-1180
 - name: claudieio/kube-eleven
-  newTag: fa6c153-1178
+  newTag: 293834a-1180
 - name: claudieio/kuber
-  newTag: fa6c153-1178
+  newTag: 293834a-1180
 - name: claudieio/scheduler
-  newTag: fa6c153-1178
+  newTag: 293834a-1180
 - name: claudieio/terraformer
-  newTag: fa6c153-1178
+  newTag: 293834a-1180
