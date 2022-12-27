@@ -58,18 +58,6 @@ dynamodb:
 test:
 	go test -v ./services/testing-framework/... -timeout 0 -count=1
 
-# Run all services in docker containers via docker-compose on a local machine
-dockerUp:
-	docker compose --env-file ./manifests/claudie/.env up
-
-# Stop all services in docker containers via docker-compose on a local machine
-dockerDown:
-	docker compose --env-file ./manifests/claudie/.env down
-
-# Build images for all services in via docker-compose on a local machine
-dockerBuild:
-	docker compose --env-file ./manifests/claudie/.env build 
-
 # Run the golang linter
 lint:
 	golangci-lint run
