@@ -75,11 +75,10 @@ func GroupNodepoolsByProvider(clusterInfo *pb.ClusterInfo) map[string][]*pb.Node
 }
 
 // findName will return a real node name based on the user defined one
-// this is needed in case of e.g. GCP, where nodes have some info appended to their which cannot be read from terraform output
-// example: gcp-control-1 -> gcp-control-1.c.project.id
+// example: name defined in cloud provider: gcp-cluster-jkshbdc-gcp-control-1 -> name defined in cluster : gcp-control-1
 func FindName(realNames []string, name string) string {
 	for _, n := range realNames {
-		if strings.Contains(n, name) {
+		if strings.Contains(name, n) {
 			return n
 		}
 	}
