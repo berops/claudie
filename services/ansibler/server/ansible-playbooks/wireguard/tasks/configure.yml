@@ -45,5 +45,18 @@
 - name: Enable wireguard interface
   shell: ip link set up dev wg0
 
+- name: Set MTU size for wg0
+  shell: ifconfig {{ wg_interface_name }} mtu {{ mtu_size }}
+
+- name: Make MTU change persistent across reboots
+  blockinfile:
+    path: /etc/dhcp/dhclient.conf
+    insertbefore: "request"
+    block: |
+      interface "{{ wg_interface_name }}" {
+         default interface-mtu {{ mtu_size }};
+         supersede interface-mtu {{ mtu_size }};
+      }
+
 - name: Enable WireGuard to start automatically at system boot, also enable the systemd service
   shell: systemctl enable wg-quick@wg0
