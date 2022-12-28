@@ -12,7 +12,7 @@ Other than default storage class, Claudie creates custom storage classes, which 
 
 ### [Input manifest](../input-manifest/example.yaml)
 
-When Claudie will apply this input manifest, there will be three storage classes installed. 
+When Claudie will apply this input manifest, there will be a few storage classes installed. 
 
 - `longhorn` - default storage class, which will store data on a random node
 - `longhorn-<provider>-zone` - storage class which will store data only on a nodes from specified provider. To see the list of supported providers, please refer [here](../input-manifest/input-manifest.md#providers)
