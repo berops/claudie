@@ -26,11 +26,21 @@ type Deleter struct {
 // masterNodes - master nodes to DELETE
 // workerNodes - worker nodes to DELETE
 func New(masterNodes, workerNodes []string, cluster *pb.K8Scluster) *Deleter {
+	prefix := fmt.Sprintf("%s-%s-", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
+
+	for i := range masterNodes {
+		masterNodes[i] = strings.TrimPrefix(masterNodes[i], prefix)
+	}
+
+	for i := range workerNodes {
+		workerNodes[i] = strings.TrimPrefix(workerNodes[i], prefix)
+	}
+
 	return &Deleter{
 		masterNodes:   masterNodes,
 		workerNodes:   workerNodes,
 		cluster:       cluster,
-		clusterPrefix: fmt.Sprintf("%s-%s-", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash),
+		clusterPrefix: prefix,
 	}
 }
 
