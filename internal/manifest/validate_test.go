@@ -1,7 +1,6 @@
 package manifest
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -54,7 +53,6 @@ func TestDomain(t *testing.T) {
 	require.NoError(t, err)
 	err = checkLengthOfFutureDomain(testDomainFail)
 	require.Error(t, err)
-	fmt.Println(err)
 }
 
 // TestKubernetes tests the kubernetes version validation
