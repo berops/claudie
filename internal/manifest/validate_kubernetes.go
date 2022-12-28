@@ -10,8 +10,11 @@ import (
 
 var (
 	// semverRegexString is a regex expression used for parsing semantic versioning
-	// https: //github.com/go-playground/validator/blob/master/regexes.go#L65:2
-	semverRegexString = `^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`
+	// based on https://github.com/go-playground/validator/blob/master/regexes.go#L65:2
+	// NOTE:
+	// first/second capturing group MUST be changed whenever new kubeone version is introduced in Claudie
+	// so validation will catch unsupported versions
+	semverRegexString = `^(1)\.(22|23|24)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`
 
 	// semverRegex is a regex using the semverRegexString.
 	// It's used to verify the version inside the manifest,
