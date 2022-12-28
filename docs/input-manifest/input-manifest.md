@@ -198,7 +198,7 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
   OS image of the machine. 
   
-  Currently, only Ubuntu 20.04 AMD64 images are supported.
+  Currently, only Ubuntu 22.04 AMD64 images are supported.
 
 - `disk_size`
 
