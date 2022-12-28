@@ -149,9 +149,27 @@ nodePools:
         region: eu-central-1
         zone: eu-central-1c
       count: 2
-      server_type: t3.medium 
+      server_type: t3.medium
       # https://cloud-images.ubuntu.com/query/focal/server/released.current.txt
       image: ami-0965bd5ba4d59211c
+      disk_size: 50
+    - name: control-azure
+      providerSpec:
+        name: azure-1
+        region: West Europe
+        zone: 1
+      count: 2
+      server_type: Standard_B2s
+      image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
+      disk_size: 50
+    - name: compute-azure
+      providerSpec:
+        name: azure-1
+        region: West Europe
+        zone: 1
+      count: 2
+      server_type: Standard_B2s
+      image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
       disk_size: 50
       # loadbalancer nodes
     - name: loadbalancer-1
@@ -200,11 +218,13 @@ kubernetes:
           - control-gcp
           - control-oci
           - control-aws
+          - control-azure
         compute:
           - compute-hetzner
           - compute-gcp
           - compute-oci
           - compute-aws
+          - compute-azure
 
 # loadbalancers field defines loadbalncers used for the k8s clusters
 loadBalancers:
