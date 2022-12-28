@@ -160,7 +160,7 @@ nodePools:
         zone: 1
       count: 2
       server_type: Standard_B2s
-      image: Canonical:0001-com-ubuntu-minimal-focal:minimal-20_04-lts:20.04.202004230
+      image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
       disk_size: 50
     - name: compute-azure
       providerSpec:
@@ -169,7 +169,7 @@ nodePools:
         zone: 1
       count: 2
       server_type: Standard_B2s
-      image: Canonical:0001-com-ubuntu-minimal-focal:minimal-20_04-lts:20.04.202004230
+      image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
       disk_size: 50
       # loadbalancer nodes
     - name: loadbalancer-1
