@@ -41,6 +41,10 @@ const (
 // RetryCommand will retry the given command, every 5 sec until either successful or reached numOfRetries
 // returns error if all retries fail, nil otherwise
 func (c Cmd) RetryCommand(numOfRetries int) error {
+	// have an initial backoff before trying again.
+	log.Info().Msgf("Next retry in %ds...", 15)
+	time.Sleep(15 * time.Second)
+
 	var err error
 	for i := 1; i <= numOfRetries; i++ {
 		log.Warn().Msgf("Retrying command %s... (%d/%d)", c.Command, i, numOfRetries)
@@ -54,7 +58,7 @@ func (c Cmd) RetryCommand(numOfRetries int) error {
 			return nil
 		}
 		log.Warn().Msgf("Error encountered while executing %s : %v", c.Command, err)
-		backoff := 5 * i
+		backoff := 10 * i
 		log.Info().Msgf("Next retry in %ds...", backoff)
 		time.Sleep(time.Duration(backoff) * time.Second)
 	}
@@ -65,6 +69,10 @@ func (c Cmd) RetryCommand(numOfRetries int) error {
 // RetryCommandWithOutput will retry the given command, every 5 sec until either successful or reached numOfRetries
 // returns (nil, error) if all retries fail, (output, nil) otherwise
 func (c Cmd) RetryCommandWithOutput(numOfRetries int) ([]byte, error) {
+	// have an initial backoff before trying again.
+	log.Info().Msgf("Next retry in %ds...", 15)
+	time.Sleep(15 * time.Second)
+
 	var err error
 	for i := 1; i <= numOfRetries; i++ {
 		log.Warn().Msgf("Retrying command %s... (%d/%d)", c.Command, i, numOfRetries)
@@ -72,13 +80,16 @@ func (c Cmd) RetryCommandWithOutput(numOfRetries int) ([]byte, error) {
 		cmd.Dir = c.Dir
 		cmd.Stdout = c.Stdout
 		cmd.Stderr = c.Stderr
-		out, err := cmd.CombinedOutput()
+
+		var out []byte
+		out, err = cmd.CombinedOutput()
 		if err == nil {
 			log.Info().Msgf("The %s was successful after %d retry", c.Command, i)
 			return out, nil
 		}
+
 		log.Warn().Msgf("Error encountered while executing %s : %v", c.Command, err)
-		backoff := 5 * i
+		backoff := 10 * i
 		log.Info().Msgf("Next retry in %ds...", backoff)
 		time.Sleep(time.Duration(backoff) * time.Second)
 	}
