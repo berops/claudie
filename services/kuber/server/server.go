@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -77,10 +78,6 @@ func (s *server) SetUpStorage(ctx context.Context, req *pb.SetUpStorageRequest) 
 }
 
 func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterMetadataRequest) (*pb.StoreClusterMetadataResponse, error) {
-	if namespace := envs.Namespace; namespace == "" {
-		return &pb.StoreClusterMetadataResponse{}, nil
-	}
-
 	md := ClusterMetadata{
 		NodeIps:    make(map[string]IPPair),
 		PrivateKey: req.GetCluster().GetClusterInfo().GetPrivateKey(),
@@ -98,6 +95,15 @@ func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterM
 	b, err := json.Marshal(md)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal %s cluster metadata: %w", req.GetCluster().GetClusterInfo().GetName(), err)
+	}
+	if namespace := envs.Namespace; namespace == "" {
+		var buffer bytes.Buffer
+		for node, ips := range md.NodeIps {
+			buffer.WriteString(fmt.Sprintf("%s: %v \t| %v \n", node, ips.PublicIP, ips.PrivateIP))
+		}
+		buffer.WriteString(fmt.Sprintf("%s\n", md.PrivateKey))
+		log.Info().Msgf("Cluster metadata from cluster %s \n%s", req.GetCluster().ClusterInfo.Name, buffer.String())
+		return &pb.StoreClusterMetadataResponse{}, nil
 	}
 
 	clusterID := fmt.Sprintf("%s-%s", req.GetCluster().ClusterInfo.Name, req.GetCluster().ClusterInfo.Hash)
