@@ -78,7 +78,7 @@ func (*server) TeardownLoadBalancers(ctx context.Context, req *pb.TeardownLBRequ
 		attached        = make(map[string]bool)           // [k8sClusterName]Bool
 		k8sNodepools    = make(map[string][]*pb.NodePool) //[k8sClusterName][]nodepools
 		k8sNodepoolsKey = make(map[string]string)         //[k8sClusterName]keys
-		clusterIDs      = make(map[string]string)         //[k8sClusterName]prefix (clusterName + hash)
+		clusterIDs      = make(map[string]string)         //[k8sClusterName]clusterID (<clusterName>-<hash>)
 	)
 
 	// Collect all NodePools that will exist after the deletion
@@ -99,7 +99,7 @@ func (*server) TeardownLoadBalancers(ctx context.Context, req *pb.TeardownLBRequ
 	for _, lb := range req.DeletedState.LoadBalancerClusters {
 		np, ok := k8sNodepools[lb.TargetedK8S]
 		if !ok {
-			log.Info().Msgf("LoadBalancer %s has not found a target k8s cluster %s", lb.ClusterInfo.Name, lb.TargetedK8S)
+			log.Error().Msgf("LoadBalancer %s has not found a target k8s cluster %s", lb.ClusterInfo.Name, lb.TargetedK8S)
 			continue
 		}
 
@@ -142,7 +142,7 @@ func (*server) SetUpLoadbalancers(_ context.Context, req *pb.SetUpLBRequest) (*p
 		lbInfos         = make(map[string]*LBInfo)        //[k8sClusterName]lbInfo
 		k8sNodepools    = make(map[string][]*pb.NodePool) //[k8sClusterName][]nodepools
 		k8sNodepoolsKey = make(map[string]string)         //[k8sClusterName]keys
-		clusterIDs      = make(map[string]string)         //[k8sClusterName]prefix (clusterName + hash)
+		clusterIDs      = make(map[string]string)         //[k8sClusterName]clusterID (<clusterName>-<hash>)
 		currentLBs      = make(map[string]*pb.LBcluster)  //[lbClusterName]CurrentStateLB
 	)
 
@@ -161,7 +161,7 @@ func (*server) SetUpLoadbalancers(_ context.Context, req *pb.SetUpLBRequest) (*p
 	for _, lb := range req.DesiredState.LoadBalancerClusters {
 		np, ok := k8sNodepools[lb.TargetedK8S]
 		if !ok {
-			log.Info().Msgf("Loadbalancer %s has not found a target k8s cluster (%s)", lb.ClusterInfo.Name, lb.TargetedK8S)
+			log.Error().Msgf("Loadbalancer %s has not found a target k8s cluster (%s)", lb.ClusterInfo.Name, lb.TargetedK8S)
 			continue
 		}
 

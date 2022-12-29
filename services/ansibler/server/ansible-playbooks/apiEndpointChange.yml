@@ -21,13 +21,13 @@
 
     - name: find file that contains the hostname
       find:
-        contains: ".*{{ansible_hostname}}.*"
+        contains: ".*{{inventory_hostname}}.*"
         path: /root/kubeone/cfg/
       register: file
 
     - name: fail if no file was found
       fail:
-        msg: "No file with {{ansible_hostname}} was found"
+        msg: "No file with {{inventory_hostname}} was found"
       when: file.files == []
 
     - name: replace endpoint
