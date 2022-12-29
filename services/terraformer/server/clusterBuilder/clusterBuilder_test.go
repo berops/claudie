@@ -1,7 +1,6 @@
 package clusterBuilder
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/Berops/claudie/internal/templateUtils"
@@ -31,16 +30,6 @@ func TestReadOutput(t *testing.T) {
 	out, err := readIPs(jsonData)
 	if err == nil {
 		t.Log(out.IPs)
-	}
-	require.NoError(t, err)
-}
-
-func TestFillNodes(t *testing.T) {
-	out, err := readIPs(jsonData)
-	if err == nil {
-		var m = &pb.NodePool{}
-		fillNodes(&out, m)
-		fmt.Println(m)
 	}
 	require.NoError(t, err)
 }
