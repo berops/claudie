@@ -17,4 +17,3 @@ services/kuber
 .gitattributes
 manifests
 docs
-docker-compose.yml
