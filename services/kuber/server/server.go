@@ -147,7 +147,6 @@ func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigReq
 		//NOTE: DEBUG print
 		// log.Info().Msgf("The kubeconfig for %s\n%s:", clusterID,cluster.Kubeconfig)
 		return &pb.StoreKubeconfigResponse{}, nil
-
 	}
 	cluster := req.GetCluster()
 	clusterID := fmt.Sprintf("%s-%s", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
