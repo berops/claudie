@@ -28,6 +28,7 @@ type AllNodesInventoryData struct {
 type LbInventoryData struct {
 	K8sNodepools []*pb.NodePool
 	LBClusters   []*pb.LBcluster
+	ClusterID    string
 }
 
 func generateInventoryFile(inventoryTemplate, directory string, data interface{}) error {
