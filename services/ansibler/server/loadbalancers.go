@@ -84,6 +84,8 @@ type (
 		// PreviousAPIEndpointLB holds the endpoint of the previous Load-Balancer endpoint
 		// if there was any to be able to handle the endpoint change.
 		PreviousAPIEndpointLB string
+		// ClusterID contains the ClusterName-Hash- prefix of the kubernetes cluster
+		ClusterID string
 	}
 
 	LBData struct {
@@ -482,7 +484,11 @@ func generateK8sBaseFiles(k8sDirectory string, lbInfo *LBInfo) error {
 		}
 	}
 	//generate inventory
-	err := generateInventoryFile(lbInventoryFile, k8sDirectory, LbInventoryData{K8sNodepools: lbInfo.TargetK8sNodepool, LBClusters: lbSlice})
+	err := generateInventoryFile(lbInventoryFile, k8sDirectory, LbInventoryData{
+		K8sNodepools: lbInfo.TargetK8sNodepool,
+		LBClusters:   lbSlice,
+		ClusterID:    lbInfo.ClusterID,
+	})
 	if err != nil {
 		return fmt.Errorf("error while generating inventory file for %s : %w", k8sDirectory, err)
 	}

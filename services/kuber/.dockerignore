@@ -17,4 +17,3 @@ services/ansibler
 .gitattributes
 manifests
 docs
-docker-compose.yml
