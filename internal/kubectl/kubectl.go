@@ -16,7 +16,7 @@ type Kubectl struct {
 }
 
 const (
-	maxKubectlRetries = 5
+	maxKubectlRetries = 10
 	getEtcdPodsCmd    = "get pods -n kube-system --no-headers -o custom-columns=\":metadata.name\" | grep etcd"
 	exportEtcdEnvsCmd = `export ETCDCTL_API=3 && 
 		export ETCDCTL_CACERT=/etc/kubernetes/pki/etcd/ca.crt && 
