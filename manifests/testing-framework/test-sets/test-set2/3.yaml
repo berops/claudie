@@ -85,7 +85,7 @@ nodePools:
       count: 2
       server_type: t3.small
       #ubuntu
-      image: ami-0965bd5ba4d59211c
+      image: ami-0039da1f3917fa8e3
       disk_size: 50
     - name: azure-lb
       providerSpec:

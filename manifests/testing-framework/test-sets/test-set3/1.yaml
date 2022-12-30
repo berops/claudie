@@ -66,22 +66,22 @@ nodePools:
     - name: aws-control
       providerSpec:
         name: aws-1
-        region: eu-west-3
-        zone: eu-west-3a
+        region: eu-west-2
+        zone: eu-west-2a
       count: 1
       server_type: t3.small
       #ubuntu
-      image: ami-0171866b8d95139a7
+      image: ami-01b8d743224353ffe
       disk_size: 50
     - name: aws-compute
       providerSpec:
         name: aws-1
-        region: eu-west-3
-        zone: eu-west-3a
+        region: eu-west-2
+        zone: eu-west-2a
       count: 1
       server_type: t3.small
       #ubuntu
-      image: ami-0171866b8d95139a7
+      image: ami-01b8d743224353ffe
       disk_size: 50
     #-----------LB nodepools----------
     - name: hetzner-lb
