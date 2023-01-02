@@ -102,15 +102,12 @@ func testClaudie(ctx context.Context) error {
 		}
 	}
 
-	// retrieve namespace from ENV
-	namespace := envs.Namespace
-
 	// apply the test sets
 	var errGroup errgroup.Group
 	for _, path := range setNames {
-		func(path, namespace string, c pb.ContextBoxServiceClient) {
+		func(path string, c pb.ContextBoxServiceClient) {
 			errGroup.Go(func() error {
-				err := applyTestSet(ctx, path, namespace, c)
+				err := applyTestSet(ctx, path, c)
 				if err != nil {
 					//in order to get errors from all goroutines in error group, print them here and just return simple error so test will fail
 					log.Error().Msgf("Error in test sets %s : %v", path, err)
@@ -118,10 +115,9 @@ func testClaudie(ctx context.Context) error {
 				}
 				return nil
 			})
-		}(path, namespace, c)
+		}(path, c)
 	}
-	err = errGroup.Wait()
-	if err != nil {
+	if err = errGroup.Wait(); err != nil {
 		return fmt.Errorf("one or more test sets returned with error")
 	}
 	return nil
@@ -140,7 +136,7 @@ func clientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
 }
 
 // applyTestSet function will apply test set sequentially to Claudie
-func applyTestSet(ctx context.Context, setName, namespace string, c pb.ContextBoxServiceClient) error {
+func applyTestSet(ctx context.Context, setName string, c pb.ContextBoxServiceClient) error {
 	idInfo := idInfo{id: "", idType: -1}
 
 	pathToTestSet := filepath.Join(testDir, setName)
@@ -168,8 +164,8 @@ func applyTestSet(ctx context.Context, setName, namespace string, c pb.ContextBo
 			return fmt.Errorf("error while getting the manifest name from %s : %w", manifestPath, err)
 		}
 
-		if namespace != "" {
-			err = clusterTesting(yamlFile, setName, pathToTestSet, namespace, manifestName, c)
+		if envs.Namespace != "" {
+			err = clusterTesting(yamlFile, setName, pathToTestSet, manifestName, c)
 			idInfo.id = manifestName
 			idInfo.idType = pb.IdType_NAME
 			if err != nil {
@@ -187,7 +183,7 @@ func applyTestSet(ctx context.Context, setName, namespace string, c pb.ContextBo
 			if cleanUpFlag == "TRUE" {
 				log.Info().Msgf("Deleting infra even after error due to flag \"-auto-clean-up\" set to %v : %v", cleanUpFlag, err)
 				//delete manifest from DB to clean up the infra
-				if err := cleanUp(idInfo.id, namespace, c); err != nil {
+				if err := cleanUp(idInfo.id, c); err != nil {
 					return fmt.Errorf("error while cleaning up the infra for test set %s : %w", setName, err)
 				}
 			}
@@ -205,7 +201,7 @@ func applyTestSet(ctx context.Context, setName, namespace string, c pb.ContextBo
 	log.Info().Msgf("Deleting the infra from test set %s", pathToTestSet)
 
 	//delete manifest from DB to clean up the infra after configChecker is done without error
-	if err := cleanUp(idInfo.id, namespace, c); err != nil {
+	if err := cleanUp(idInfo.id, c); err != nil {
 		return fmt.Errorf("error while cleaning up the infra for test set %s : %w", setName, err)
 	}
 
@@ -267,7 +263,7 @@ func checksumsEqual(checksum1 []byte, checksum2 []byte) bool {
 // clusterTesting will perform actions needed for testing framework to function in k8s cluster deployment
 // this option is only used when NAMESPACE env var has been found
 // this option is testing the whole claudie
-func clusterTesting(yamlFile []byte, setName, pathToTestSet, namespace, manifestName string, c pb.ContextBoxServiceClient) error {
+func clusterTesting(yamlFile []byte, setName, pathToTestSet, manifestName string, c pb.ContextBoxServiceClient) error {
 	// get the id from manifest file
 	id, err := getManifestName(yamlFile)
 	idType := pb.IdType_NAME
@@ -275,7 +271,7 @@ func clusterTesting(yamlFile []byte, setName, pathToTestSet, namespace, manifest
 		return fmt.Errorf("error while getting an id for %s : %w", manifestName, err)
 	}
 
-	if err = applySecret(yamlFile, pathToTestSet, setName, namespace); err != nil {
+	if err = applySecret(yamlFile, pathToTestSet, setName); err != nil {
 		return fmt.Errorf("error while applying a secret for %s : %w", setName, err)
 	}
 	log.Info().Msgf("Secret for config with id %s has been saved...", id)
@@ -337,11 +333,11 @@ func checkIfManifestSaved(configID string, idType pb.IdType, c pb.ContextBoxServ
 // cleanUp will delete manifest from claudie which will trigger infra deletion
 // it deletes a secret if claudie is deployed in k8s cluster
 // it calls for a deletion from database directly if claudie is deployed locally
-func cleanUp(id, namespace string, c pb.ContextBoxServiceClient) error {
-	if namespace != "" {
+func cleanUp(id string, c pb.ContextBoxServiceClient) error {
+	if envs.Namespace != "" {
 		//delete secret from namespace
-		if err := deleteSecret(id, namespace); err != nil {
-			return fmt.Errorf("error while deleting the secret %s from %s : %w", id, namespace, err)
+		if err := deleteSecret(id); err != nil {
+			return fmt.Errorf("error while deleting the secret %s from %s : %w", id, envs.Namespace, err)
 		}
 	} else {
 		// delete config from database
