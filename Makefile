@@ -1,4 +1,4 @@
-.PHONY: gen contextbox scheduler builder terraformer ansibler kubeEleven test dockerUp dockerDown dockerBuild database minio
+.PHONY: gen contextbox scheduler builder terraformer ansibler kubeEleven test database minio
 
 # Generate all .proto files
 gen:
@@ -6,37 +6,37 @@ gen:
 
 # Start Context-box service on a local environment, exposed on port 50055
 contextbox:
-	go run ./services/context-box/server
+	GOLANG_LOG=debug go run ./services/context-box/server
 
 # Start Scheduler service on a local environment
 scheduler:
-	go run ./services/scheduler
+	GOLANG_LOG=debug go run ./services/scheduler
 
 # Start Builder service on a local environment
 builder:
-	go run ./services/builder
+	GOLANG_LOG=debug go run ./services/builder
 # Start Terraformer service on a local environment, exposed on port 50052
 terraformer:
-	go run services/terraformer/server/server.go 
+	GOLANG_LOG=debug go run services/terraformer/server/server.go 
 
 # Start Ansibler service on a local environment, exposed on port 50053
 ansibler:
-	go run ./services/ansibler/server
+	GOLANG_LOG=debug go run ./services/ansibler/server
 
 # Start Kube-eleven service on a local environment, exposed on port 50054
 kube-eleven:
-	go run services/kube-eleven/server/server.go
+	GOLANG_LOG=debug go run services/kube-eleven/server/server.go
 
 # Start Kuber service on a local environment, exposed on port 50057
 kuber:
-	go run services/kuber/server/server.go
+	GOLANG_LOG=debug go run services/kuber/server/server.go
 
 # Start Frontend service on a local environment
 # This is not necessary to have running on local environtment, to inject input manifest,
 # use API directly from either /services/context-box/client/client_test.go -run TestSaveConfigFrontEnd,
 # or use testing-framework
 frontend:
-	go run ./services/frontend
+	GOLANG_LOG=debug go run ./services/frontend
 
 # Start the database for configs, containing input manifests
 database:
@@ -57,18 +57,6 @@ dynamodb:
 # Successful test will end with infrastructure being destroyed
 test:
 	go test -v ./services/testing-framework/... -timeout 0 -count=1
-
-# Run all services in docker containers via docker-compose on a local machine
-dockerUp:
-	docker compose --env-file ./manifests/claudie/.env up
-
-# Stop all services in docker containers via docker-compose on a local machine
-dockerDown:
-	docker compose --env-file ./manifests/claudie/.env down
-
-# Build images for all services in via docker-compose on a local machine
-dockerBuild:
-	docker compose --env-file ./manifests/claudie/.env build 
 
 # Run the golang linter
 lint:

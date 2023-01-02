@@ -14,6 +14,7 @@ import (
 	"github.com/Berops/claudie/services/terraformer/server/backend"
 	"github.com/Berops/claudie/services/terraformer/server/provider"
 	"github.com/Berops/claudie/services/terraformer/server/terraform"
+	"github.com/rs/zerolog/log"
 )
 
 const Output = "services/terraformer/server/clusters"
@@ -71,6 +72,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 	if err := terraform.TerraformApply(); err != nil {
 		return fmt.Errorf("error while running terraform apply in %s : %w", clusterID, err)
 	}
+	oldNodes := c.getCurrentNodes()
 
 	// fill new nodes with output
 	for _, nodepool := range c.DesiredInfo.NodePools {
@@ -82,7 +84,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 		if err != nil {
 			return fmt.Errorf("error while reading the terraform output for %s : %w", nodepool.Name, err)
 		}
-		fillNodes(&out, nodepool)
+		fillNodes(&out, nodepool, oldNodes)
 	}
 
 	// Clean after terraform
@@ -191,32 +193,59 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	return nil
 }
 
-func fillNodes(terraformOutput *outputNodepools, newNodePool *pb.NodePool) {
-	// Fill slices from terraformOutput maps with names of nodes to ensure an order
+// getCurrentNodes returns all nodes which are in a current state
+func (c *ClusterBuilder) getCurrentNodes() []*pb.Node {
+	// group all the nodes together to make searching with respect to IP easy
+	var oldNodes []*pb.Node
+	if c.CurrentInfo != nil {
+		for _, oldNodepool := range c.CurrentInfo.NodePools {
+			oldNodes = append(oldNodes, oldNodepool.Nodes...)
+		}
+	}
+	return oldNodes
+}
+
+// fillNodes creates pb.Node slices in desired state, with the new nodes and old nodes
+func fillNodes(terraformOutput *outputNodepools, newNodePool *pb.NodePool, oldNodes []*pb.Node) {
+	// fill slices from terraformOutput maps with names of nodes to ensure an order
 	var tempNodes []*pb.Node
 	// get sorted list of keys
-	sortedNodeNames := getkeysFromMap(terraformOutput.IPs)
+	sortedNodeNames := getKeysFromMap(terraformOutput.IPs)
 	for _, nodeName := range sortedNodeNames {
-		var control pb.NodeType
+		var nodeType pb.NodeType
+		var private string
 
 		if newNodePool.IsControl {
-			control = pb.NodeType_master
+			nodeType = pb.NodeType_master
 		} else {
-			control = pb.NodeType_worker
+			nodeType = pb.NodeType_worker
+		}
+		if len(oldNodes) > 0 {
+			for _, node := range oldNodes {
+				//check if node was defined before
+				if fmt.Sprint(terraformOutput.IPs[nodeName]) == node.Public && nodeName == node.Name {
+					log.Debug().Msgf("Carrying information to desired state for node %s", nodeName)
+					// carry privateIP to desired state, so it will not get overwritten in Ansibler
+					private = node.Private
+					// carry node type since it might be API endpoint, which should not change once set
+					nodeType = node.NodeType
+					break
+				}
+			}
 		}
 
 		tempNodes = append(tempNodes, &pb.Node{
 			Name:     nodeName,
 			Public:   fmt.Sprint(terraformOutput.IPs[nodeName]),
-			Private:  "", // will be set in ansibler.
-			NodeType: control,
+			Private:  private,
+			NodeType: nodeType,
 		})
 	}
 	newNodePool.Nodes = tempNodes
 }
 
 // getKeysFromMap returns an array of all keys in a map
-func getkeysFromMap(data map[string]interface{}) []string {
+func getKeysFromMap(data map[string]interface{}) []string {
 	var keys []string
 	for key := range data {
 		keys = append(keys, key)
