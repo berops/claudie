@@ -26,14 +26,18 @@ The user and Claudie both share the single "source of truth" for the input manif
 This forces users to store input manifests in an [IaC](https://en.wikipedia.org/wiki/Infrastructure_as_code) manner and can easily be configured for GitOps synchronization (i.e. via FluxCD).
 
 # Update
-If the user wishes to update the input manifest, they can edit/reapply the secret with the updated input manifest inside of it (the secret name and the data field name will stay the same). `k8s-sidecar` will notice the change in the secret data, and will update the file inside Frontend's file system. Frontend will then apply it to Claudie and the update of the defined infrastructure will be underway.
+If you want to update the input manifest, you can edit/reapply the secret with the updated input manifest inside of it (the secret name and the data field name will stay the same). `k8s-sidecar` will notice the change in the secret data, and will update the file inside Frontend's file system. Frontend will then apply it to Claudie and the update of the defined infrastructure will be underway.
 
 # Delete
 If you wish to destroy your cluster along with the infrastructure, you can remove the cluster definition block from the input-manifest and update the k8s secret accordinglt.
 If you wish you delete all the clusters defined in an input-manifest, you simply need to delete the k8s secret containing the manifest. Both events will trigger the deletion process. This deletion process will delete the current infrastructure and it also deletes all data related to the particular input manifest.
 
 # Outputs
-Claudie outputs two secret after a successful run of the manifest, which are kubeconfigs and cluster metadata to your clusters. They are output in form of a secret, in the namespace where Claudie is deployed. The name of the secret follows the structure `<cluster-name>-<cluster-hash>-kubeconfig/metadata`. The secret can be accessed by printing+decoding it from `base64`. 
+Claudie outputs two secrets in the namespace where Claudie is deployed after a successful run of the manifest:
+* kubeconfigs
+* cluster metadata to your clusters.
+
+The names of the secrets are derived as follows: `<cluster-name>-<cluster-hash>-{kubeconfig,metadata}`. The secrets can be accessed by printing and `base64`-decoding them.
 
 Example of how to decode the secret:
 ```sh
