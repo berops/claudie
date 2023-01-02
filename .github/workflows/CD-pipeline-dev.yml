@@ -86,12 +86,23 @@ jobs:
           cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
           location: ${{ secrets.GKE_ZONE }}
 
+      - name: Set auto clean up environment variable based on the label
+        if: ${{ github.event.label.name == 'Disable clean up' }}
+        working-directory: ./manifests/claudie
+        run: |
+          echo "AUTO_CLEAN_UP=FALSE" >> .env
+
       # Deploy services to new namespace
       - name: Deploy to new namespace
         working-directory: ./manifests/claudie
         run: |
           #set log level to debug
           sed -i 's/GOLANG_LOG=info/GOLANG_LOG=debug/g' .env
+          #check if clean up was disabled, if not, enable
+          TEMP=$(cat .env | grep "AUTO_CLEAN_UP=FALSE")
+          if [ $TEMP == "" ]; then
+            echo "AUTO_CLEAN_UP=TRUE" >> .env
+          fi 
 
           kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
           kustomize build | kubectl apply -f - 

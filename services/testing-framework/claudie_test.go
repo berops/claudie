@@ -3,9 +3,12 @@ package testingframework
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 	"time"
 
 	"github.com/Berops/claudie/internal/envs"
@@ -32,9 +35,49 @@ const (
 	maxTimeoutSave = 60 * 12 // max allowed time for config to be found in the database
 )
 
+var (
+	//get env var from runtime directly so we do not pollute original envs package by unnecessary variables
+	cleanUpFlag = os.Getenv("AUTO_CLEAN_UP")
+	// interrupt error
+	errInterrupt = errors.New("interrupt")
+)
+
 // TestClaudie will start all the test cases specified in tests directory
 func TestClaudie(t *testing.T) {
 	utils.InitLog("testing-framework")
+	group, ctx := errgroup.WithContext(context.Background())
+
+	// start goroutine to check for SIGTERM in case pod is being deleted
+	// or interrupt in case local testing is aborted
+	group.Go(func() error {
+		ch := make(chan os.Signal, 1)
+		signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
+		defer signal.Stop(ch)
+
+		var err error
+		select {
+		case <-ctx.Done():
+			err = ctx.Err()
+		case sig := <-ch:
+			log.Warn().Msgf("Received signal %v", sig)
+			err = errors.New("testing-framework received interrupt signal")
+		}
+
+		return err
+	})
+
+	//start E2E tests in separate goroutines
+	group.Go(func() error {
+		return testClaudie(ctx)
+	})
+
+	//wait for either test to finish or interrupt signal to occur
+	if err := group.Wait(); err != nil {
+		t.Error(err)
+	}
+}
+
+func testClaudie(ctx context.Context) error {
 	c, cc := clientConnection()
 	defer func() {
 		err := cc.Close()
@@ -47,8 +90,7 @@ func TestClaudie(t *testing.T) {
 	// loop through the directory and list files inside
 	files, err := os.ReadDir(testDir)
 	if err != nil {
-		log.Error().Msgf("Error while trying to read test sets: %v", err)
-		t.Error(err)
+		return fmt.Errorf("error while trying to read test sets: %w", err)
 	}
 
 	// save all the test set paths
@@ -68,7 +110,7 @@ func TestClaudie(t *testing.T) {
 	for _, path := range setNames {
 		func(path, namespace string, c pb.ContextBoxServiceClient) {
 			errGroup.Go(func() error {
-				err := applyTestSet(path, namespace, c)
+				err := applyTestSet(ctx, path, namespace, c)
 				if err != nil {
 					//in order to get errors from all goroutines in error group, print them here and just return simple error so test will fail
 					log.Error().Msgf("Error in test sets %s : %v", path, err)
@@ -80,8 +122,9 @@ func TestClaudie(t *testing.T) {
 	}
 	err = errGroup.Wait()
 	if err != nil {
-		t.Fail()
+		return fmt.Errorf("one or more test sets returned with error")
 	}
+	return nil
 }
 
 // clientConnection will return new client connection to Context-box
@@ -97,7 +140,7 @@ func clientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
 }
 
 // applyTestSet function will apply test set sequentially to Claudie
-func applyTestSet(setName, namespace string, c pb.ContextBoxServiceClient) error {
+func applyTestSet(ctx context.Context, setName, namespace string, c pb.ContextBoxServiceClient) error {
 	idInfo := idInfo{id: "", idType: -1}
 
 	pathToTestSet := filepath.Join(testDir, setName)
@@ -140,7 +183,19 @@ func applyTestSet(setName, namespace string, c pb.ContextBoxServiceClient) error
 			}
 		}
 		// wait until test config has been processed
-		if err := configChecker(c, pathToTestSet, manifest.Name(), idInfo); err != nil {
+		if err := configChecker(ctx, c, pathToTestSet, manifest.Name(), idInfo); err != nil {
+			if cleanUpFlag == "TRUE" {
+				log.Info().Msgf("Deleting infra even after error due to flag \"-auto-clean-up\" set to %v : %v", cleanUpFlag, err)
+				//delete manifest from DB to clean up the infra
+				if err := cleanUp(idInfo.id, namespace, c); err != nil {
+					return fmt.Errorf("error while cleaning up the infra for test set %s : %w", setName, err)
+				}
+			}
+			if errors.Is(err, errInterrupt) {
+				// do not return error, since it was an interrupt
+				log.Warn().Msgf("Testing-framework received interrupt signal, aborting test checking")
+				break
+			}
 			return fmt.Errorf("Error while monitoring %s : %w", pathToTestSet, err)
 		}
 		log.Info().Msgf("Manifest %s from %s is done...", manifestName, pathToTestSet)
@@ -149,55 +204,54 @@ func applyTestSet(setName, namespace string, c pb.ContextBoxServiceClient) error
 	// clean up
 	log.Info().Msgf("Deleting the infra from test set %s", pathToTestSet)
 
-	//delete secret from cluster
-	if namespace != "" {
-		if err = deleteSecret(setName, namespace); err != nil {
-			return fmt.Errorf("error while deleting the secret %s from %s : %w", pathToTestSet, namespace, err)
-		}
-	} else {
-		// delete config from database
-		if err = cbox.DeleteConfig(c, idInfo.id, pb.IdType_HASH); err != nil {
-			return fmt.Errorf("error while deleting the manifest from test set %s : %w", pathToTestSet, err)
-		}
+	//delete manifest from DB to clean up the infra after configChecker is done without error
+	if err := cleanUp(idInfo.id, namespace, c); err != nil {
+		return fmt.Errorf("error while cleaning up the infra for test set %s : %w", setName, err)
 	}
 
 	return nil
 }
 
 // configChecker function will check if the config has been applied every 30s
-func configChecker(c pb.ContextBoxServiceClient, testSetName, manifestName string, idInfo idInfo) error {
+// it returns an interruptError if the pod/process is being terminated
+func configChecker(ctx context.Context, c pb.ContextBoxServiceClient, testSetName, manifestName string, idInfo idInfo) error {
 	counter := 1
 	for {
-		elapsedSec := counter * sleepSec
-		config, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{
-			Id:   idInfo.id,
-			Type: idInfo.idType,
-		})
-		if err != nil {
-			return fmt.Errorf("error while waiting for config to finish: %w", err)
-		}
-		if config != nil {
-			if len(config.Config.ErrorMessage) > 0 {
-				return fmt.Errorf("error while checking config %s : %s", config.Config.Name, config.Config.ErrorMessage)
+		select {
+		case <-ctx.Done():
+			return errInterrupt
+		default:
+			elapsedSec := counter * sleepSec
+			config, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{
+				Id:   idInfo.id,
+				Type: idInfo.idType,
+			})
+			if err != nil {
+				return fmt.Errorf("error while waiting for config to finish: %w", err)
 			}
-
-			// if checksums are equal, the config has been processed by claudie
-			if checksumsEqual(config.Config.MsChecksum, config.Config.CsChecksum) && checksumsEqual(config.Config.CsChecksum, config.Config.DsChecksum) {
-				// test longhorn deployment
-				err := testLonghornDeployment(config)
-				if err != nil {
-					return fmt.Errorf("error while checking the longhorn deployment for %s : %w", config.Config.Name, err)
+			if config != nil {
+				if len(config.Config.ErrorMessage) > 0 {
+					return fmt.Errorf("error while checking config %s : %s", config.Config.Name, config.Config.ErrorMessage)
 				}
-				//manifest is done
-				return nil
+
+				// if checksums are equal, the config has been processed by claudie
+				if checksumsEqual(config.Config.MsChecksum, config.Config.CsChecksum) && checksumsEqual(config.Config.CsChecksum, config.Config.DsChecksum) {
+					// test longhorn deployment
+					err := testLonghornDeployment(config)
+					if err != nil {
+						return fmt.Errorf("error while checking the longhorn deployment for %s : %w", config.Config.Name, err)
+					}
+					//manifest is done
+					return nil
+				}
 			}
+			if elapsedSec >= maxTimeout {
+				return fmt.Errorf("Test took too long... Aborting after %d seconds", maxTimeout)
+			}
+			time.Sleep(time.Duration(sleepSec) * time.Second)
+			counter++
+			log.Info().Msgf("Waiting for %s to from %s finish... [ %ds elapsed ]", manifestName, testSetName, elapsedSec)
 		}
-		if elapsedSec >= maxTimeout {
-			return fmt.Errorf("Test took too long... Aborting after %d seconds", maxTimeout)
-		}
-		time.Sleep(time.Duration(sleepSec) * time.Second)
-		counter++
-		log.Info().Msgf("Waiting for %s to from %s finish... [ %ds elapsed ]", manifestName, testSetName, elapsedSec)
 	}
 }
 
@@ -278,4 +332,22 @@ func checkIfManifestSaved(configID string, idType pb.IdType, c pb.ContextBoxServ
 			return fmt.Errorf("The secret for config with id %s has not been picked up by the frontend in time, aborting...", configID)
 		}
 	}
+}
+
+// cleanUp will delete manifest from claudie which will trigger infra deletion
+// it deletes a secret if claudie is deployed in k8s cluster
+// it calls for a deletion from database directly if claudie is deployed locally
+func cleanUp(id, namespace string, c pb.ContextBoxServiceClient) error {
+	if namespace != "" {
+		//delete secret from namespace
+		if err := deleteSecret(id, namespace); err != nil {
+			return fmt.Errorf("error while deleting the secret %s from %s : %w", id, namespace, err)
+		}
+	} else {
+		// delete config from database
+		if err := cbox.DeleteConfig(c, id, pb.IdType_HASH); err != nil {
+			return fmt.Errorf("error while deleting the manifest from test set %s : %w", id, err)
+		}
+	}
+	return nil
 }

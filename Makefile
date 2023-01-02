@@ -56,7 +56,7 @@ dynamodb:
 # -timeout 0 will disable default timeout
 # Successful test will end with infrastructure being destroyed
 test:
-	go test -v ./services/testing-framework/... -timeout 0 -count=1
+	AUTO_CLEAN_UP=TRUE go test -v ./services/testing-framework -timeout 0 -count=1 -run TestClaudie
 
 # Run the golang linter
 lint:
