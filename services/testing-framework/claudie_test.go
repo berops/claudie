@@ -36,7 +36,7 @@ const (
 )
 
 var (
-	//get env var from runtime directly so we do not pollute original envs package by unnecessary variables
+	// get env var from runtime directly so we do not pollute original envs package by unnecessary variables
 	cleanUpFlag = os.Getenv("AUTO_CLEAN_UP")
 	// interrupt error
 	errInterrupt = errors.New("interrupt")
@@ -47,8 +47,7 @@ func TestClaudie(t *testing.T) {
 	utils.InitLog("testing-framework")
 	group, ctx := errgroup.WithContext(context.Background())
 
-	// start goroutine to check for SIGTERM in case pod is being deleted
-	// or interrupt in case local testing is aborted
+	// start goroutine to check for SIGTERM
 	group.Go(func() error {
 		ch := make(chan os.Signal, 1)
 		signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
@@ -66,12 +65,12 @@ func TestClaudie(t *testing.T) {
 		return err
 	})
 
-	//start E2E tests in separate goroutines
+	// start E2E tests in separate goroutines
 	group.Go(func() error {
 		return testClaudie(ctx)
 	})
 
-	//wait for either test to finish or interrupt signal to occur
+	// wait for either test to finish or interrupt signal to occur
 	if err := group.Wait(); err != nil {
 		t.Error(err)
 	}
@@ -182,7 +181,7 @@ func applyTestSet(ctx context.Context, setName string, c pb.ContextBoxServiceCli
 		if err := configChecker(ctx, c, pathToTestSet, manifest.Name(), idInfo); err != nil {
 			if cleanUpFlag == "TRUE" {
 				log.Info().Msgf("Deleting infra even after error due to flag \"-auto-clean-up\" set to %v : %v", cleanUpFlag, err)
-				//delete manifest from DB to clean up the infra
+				// delete manifest from DB to clean up the infra
 				if err := cleanUp(idInfo.id, c); err != nil {
 					return fmt.Errorf("error while cleaning up the infra for test set %s : %w", setName, err)
 				}
@@ -200,7 +199,7 @@ func applyTestSet(ctx context.Context, setName string, c pb.ContextBoxServiceCli
 	// clean up
 	log.Info().Msgf("Deleting the infra from test set %s", pathToTestSet)
 
-	//delete manifest from DB to clean up the infra after configChecker is done without error
+	// delete manifest from DB to clean up the infra after configChecker is done without error
 	if err := cleanUp(idInfo.id, c); err != nil {
 		return fmt.Errorf("error while cleaning up the infra for test set %s : %w", setName, err)
 	}
@@ -237,7 +236,7 @@ func configChecker(ctx context.Context, c pb.ContextBoxServiceClient, testSetNam
 					if err != nil {
 						return fmt.Errorf("error while checking the longhorn deployment for %s : %w", config.Config.Name, err)
 					}
-					//manifest is done
+					// manifest is done
 					return nil
 				}
 			}
@@ -246,7 +245,7 @@ func configChecker(ctx context.Context, c pb.ContextBoxServiceClient, testSetNam
 			}
 			time.Sleep(time.Duration(sleepSec) * time.Second)
 			counter++
-			log.Info().Msgf("Waiting for %s to from %s finish... [ %ds elapsed ]", manifestName, testSetName, elapsedSec)
+			log.Info().Msgf("Waiting for %s from %s to finish... [ %ds elapsed ]", manifestName, testSetName, elapsedSec)
 		}
 	}
 }
@@ -335,7 +334,7 @@ func checkIfManifestSaved(configID string, idType pb.IdType, c pb.ContextBoxServ
 // it calls for a deletion from database directly if claudie is deployed locally
 func cleanUp(id string, c pb.ContextBoxServiceClient) error {
 	if envs.Namespace != "" {
-		//delete secret from namespace
+		// delete secret from namespace
 		if err := deleteSecret(id); err != nil {
 			return fmt.Errorf("error while deleting the secret %s from %s : %w", id, envs.Namespace, err)
 		}
