@@ -2,6 +2,7 @@ package command
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"os"
 	"os/exec"
@@ -31,36 +32,29 @@ type Wrapper struct {
 }
 
 const (
-	STDOUT     = 0
-	STDERR     = 1
-	colorOkay  = "\x1b[32m"
-	colorFail  = "\x1b[31m"
-	colorReset = "\x1b[0m"
+	STDOUT         = 0
+	STDERR         = 1
+	colorOkay      = "\x1b[32m"
+	colorFail      = "\x1b[31m"
+	colorReset     = "\x1b[0m"
+	contextTimeout = 15 * time.Minute // max time for a single command to complete [15 min]
+	maxBackoff     = 5 * 60           // max backoff time [5 min]
 )
 
 // RetryCommand will retry the given command, every 5 sec until either successful or reached numOfRetries
 // returns error if all retries fail, nil otherwise
 func (c Cmd) RetryCommand(numOfRetries int) error {
-	// have an initial backoff before trying again.
-	log.Info().Msgf("Next retry in %ds...", 15)
-	time.Sleep(15 * time.Second)
-
 	var err error
 	for i := 1; i <= numOfRetries; i++ {
-		log.Warn().Msgf("Retrying command %s... (%d/%d)", c.Command, i, numOfRetries)
-		cmd := exec.Command("bash", "-c", c.Command)
-		cmd.Dir = c.Dir
-		cmd.Stdout = c.Stdout
-		cmd.Stderr = c.Stderr
-		err = cmd.Run()
-		if err == nil {
+		backoff := getNewBackoff(i)
+		log.Info().Msgf("Next retry in %ds...", backoff)
+		time.Sleep(time.Duration(backoff) * time.Second)
+
+		if err = c.execute(i, numOfRetries); err == nil {
 			log.Info().Msgf("The %s was successful on %d retry", c.Command, i)
 			return nil
 		}
 		log.Warn().Msgf("Error encountered while executing %s : %v", c.Command, err)
-		backoff := 10 * i
-		log.Info().Msgf("Next retry in %ds...", backoff)
-		time.Sleep(time.Duration(backoff) * time.Second)
 	}
 	log.Error().Msgf("Command %s was not successful after %d retries", c.Command, numOfRetries)
 	return err
@@ -69,32 +63,51 @@ func (c Cmd) RetryCommand(numOfRetries int) error {
 // RetryCommandWithOutput will retry the given command, every 5 sec until either successful or reached numOfRetries
 // returns (nil, error) if all retries fail, (output, nil) otherwise
 func (c Cmd) RetryCommandWithOutput(numOfRetries int) ([]byte, error) {
-	// have an initial backoff before trying again.
-	log.Info().Msgf("Next retry in %ds...", 15)
-	time.Sleep(15 * time.Second)
-
 	var err error
 	for i := 1; i <= numOfRetries; i++ {
-		log.Warn().Msgf("Retrying command %s... (%d/%d)", c.Command, i, numOfRetries)
-		cmd := exec.Command("bash", "-c", c.Command)
-		cmd.Dir = c.Dir
-		cmd.Stdout = c.Stdout
-		cmd.Stderr = c.Stderr
+		backoff := getNewBackoff(i)
+		log.Info().Msgf("Next retry in %ds...", backoff)
+		time.Sleep(time.Duration(backoff) * time.Second)
 
-		var out []byte
-		out, err = cmd.CombinedOutput()
-		if err == nil {
+		if out, err := c.executeWithOutput(i, numOfRetries); err == nil {
 			log.Info().Msgf("The %s was successful after %d retry", c.Command, i)
 			return out, nil
 		}
-
 		log.Warn().Msgf("Error encountered while executing %s : %v", c.Command, err)
-		backoff := 10 * i
-		log.Info().Msgf("Next retry in %ds...", backoff)
-		time.Sleep(time.Duration(backoff) * time.Second)
 	}
 	log.Error().Msgf("Command %s was not successful after %d retries", c.Command, numOfRetries)
 	return nil, err
+}
+
+func (c *Cmd) buildCmd(ctx context.Context) *exec.Cmd {
+	cmd := exec.CommandContext(ctx, "bash", "-c", c.Command)
+	cmd.Dir = c.Dir
+	cmd.Stdout = c.Stdout
+	cmd.Stderr = c.Stderr
+	return cmd
+}
+
+func (c *Cmd) execute(i, numOfRetries int) error {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+	log.Warn().Msgf("Retrying command %s... (%d/%d)", c.Command, i, numOfRetries)
+	return c.buildCmd(ctx).Run()
+}
+
+func (c *Cmd) executeWithOutput(i, numOfRetries int) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+	log.Warn().Msgf("Retrying command %s... (%d/%d)", c.Command, i, numOfRetries)
+	return c.buildCmd(ctx).CombinedOutput()
+}
+
+func getNewBackoff(iteration int) int {
+	backoff := (2 ^ iteration)
+	if backoff > maxBackoff {
+		// set hard max for exponential backoff
+		return maxBackoff
+	}
+	return backoff
 }
 
 // GetStdOut returns an io.Writer for exec with the defined prefix
