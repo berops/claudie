@@ -182,7 +182,7 @@ func applyTestSet(ctx context.Context, setName string, c pb.ContextBoxServiceCli
 			if cleanUpFlag == "TRUE" {
 				log.Info().Msgf("Deleting infra even after error due to flag \"-auto-clean-up\" set to %v : %v", cleanUpFlag, err)
 				// delete manifest from DB to clean up the infra
-				if err := cleanUp(idInfo.id, c); err != nil {
+				if err := cleanUp(setName, idInfo.id, c); err != nil {
 					return fmt.Errorf("error while cleaning up the infra for test set %s : %w", setName, err)
 				}
 			}
@@ -200,7 +200,7 @@ func applyTestSet(ctx context.Context, setName string, c pb.ContextBoxServiceCli
 	log.Info().Msgf("Deleting the infra from test set %s", pathToTestSet)
 
 	// delete manifest from DB to clean up the infra after configChecker is done without error
-	if err := cleanUp(idInfo.id, c); err != nil {
+	if err := cleanUp(setName, idInfo.id, c); err != nil {
 		return fmt.Errorf("error while cleaning up the infra for test set %s : %w", setName, err)
 	}
 
@@ -332,10 +332,10 @@ func checkIfManifestSaved(configID string, idType pb.IdType, c pb.ContextBoxServ
 // cleanUp will delete manifest from claudie which will trigger infra deletion
 // it deletes a secret if claudie is deployed in k8s cluster
 // it calls for a deletion from database directly if claudie is deployed locally
-func cleanUp(id string, c pb.ContextBoxServiceClient) error {
+func cleanUp(setName, id string, c pb.ContextBoxServiceClient) error {
 	if envs.Namespace != "" {
 		// delete secret from namespace
-		if err := deleteSecret(id); err != nil {
+		if err := deleteSecret(setName); err != nil {
 			return fmt.Errorf("error while deleting the secret %s from %s : %w", id, envs.Namespace, err)
 		}
 	} else {
