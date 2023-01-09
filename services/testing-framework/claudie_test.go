@@ -73,7 +73,7 @@ func TestClaudie(t *testing.T) {
 
 	// start E2E tests in separate goroutines
 	group.Go(func() error {
-		// cancel the context so monitoring goroutine will exit
+		// cancel the context so monitoring goroutine (SIGTERM) will exit
 		defer cancel()
 		// return error from testClaudie(), if any
 		return testClaudie(ctx)
