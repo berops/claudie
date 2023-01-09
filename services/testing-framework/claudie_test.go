@@ -45,7 +45,8 @@ var (
 // TestClaudie will start all the test cases specified in tests directory
 func TestClaudie(t *testing.T) {
 	utils.InitLog("testing-framework")
-	group, ctx := errgroup.WithContext(context.Background())
+	group := errgroup.Group{}
+	ctx, cancel := context.WithCancel(context.Background())
 
 	// start goroutine to check for SIGTERM
 	group.Go(func() error {
@@ -57,9 +58,14 @@ func TestClaudie(t *testing.T) {
 		select {
 		case <-ctx.Done():
 			err = ctx.Err()
+			//if error is due to ctx being cancel, return nil
+			if errors.Is(err, context.Canceled) {
+				return nil
+			}
 		case sig := <-ch:
 			log.Warn().Msgf("Received signal %v", sig)
 			err = errors.New("testing-framework received interrupt signal")
+			cancel()
 		}
 
 		return err
@@ -67,10 +73,14 @@ func TestClaudie(t *testing.T) {
 
 	// start E2E tests in separate goroutines
 	group.Go(func() error {
+		// cancel the context so monitoring goroutine will exit
+		defer cancel()
+		// return error from testClaudie(), if any
 		return testClaudie(ctx)
 	})
 
 	// wait for either test to finish or interrupt signal to occur
+	// return either error from ctx, or error from testClaudie()
 	if err := group.Wait(); err != nil {
 		t.Error(err)
 	}
