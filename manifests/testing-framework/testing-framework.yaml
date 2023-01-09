@@ -35,6 +35,7 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: AUTO_CLEAN_UP
+                  optional: true
           volumeMounts:
             - name: test-set1
               mountPath: "/go/services/testing-framework/test-sets/test-set1"
