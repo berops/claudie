@@ -37,7 +37,7 @@ const (
 
 var (
 	// get env var from runtime directly so we do not pollute original envs package by unnecessary variables
-	cleanUpFlag = os.Getenv("AUTO_CLEAN_UP")
+	autoCleanUpFlag = os.Getenv("AUTO_CLEAN_UP")
 	// interrupt error
 	errInterrupt = errors.New("interrupt")
 )
@@ -179,8 +179,8 @@ func applyTestSet(ctx context.Context, setName string, c pb.ContextBoxServiceCli
 		}
 		// wait until test config has been processed
 		if err := configChecker(ctx, c, pathToTestSet, manifest.Name(), idInfo); err != nil {
-			if cleanUpFlag == "TRUE" {
-				log.Info().Msgf("Deleting infra even after error due to flag \"-auto-clean-up\" set to %v : %v", cleanUpFlag, err)
+			if autoCleanUpFlag == "TRUE" {
+				log.Info().Msgf("Deleting infra even after error due to flag \"-auto-clean-up\" set to %v : %v", autoCleanUpFlag, err)
 				// delete manifest from DB to clean up the infra
 				if err := cleanUp(setName, idInfo.id, c); err != nil {
 					return fmt.Errorf("error while cleaning up the infra for test set %s : %w", setName, err)
