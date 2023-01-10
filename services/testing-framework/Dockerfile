@@ -22,6 +22,10 @@ WORKDIR /go/services/testing-framework
 RUN CGO_ENABLED=0 go test -c -run TestClaudie
 
 FROM alpine
+#Add repository label
+LABEL org.opencontainers.image.source https://github.com/berops/claudie
+#Add description to the image
+LABEL org.opencontainers.image.description "Image for Testing-framework from Claudie"
 
 COPY --from=build /usr/local/bin/kubectl /usr/local/bin/kubectl
 COPY --from=build /go/services/testing-framework/testing-framework.test /go/services/testing-framework/testing-framework.test

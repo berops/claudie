@@ -36,6 +36,10 @@ RUN CGO_ENABLED=0 go build
 
 #Use empty base image
 FROM scratch
+#Add repository label
+LABEL org.opencontainers.image.source https://github.com/berops/claudie
+#Add description to the image
+LABEL org.opencontainers.image.description "Image for Context-box from Claudie"
 
 #Copy the binaries to empty base image
 COPY --from=build  /go/services/context-box/server/server /bin/services/context-box/server/server
