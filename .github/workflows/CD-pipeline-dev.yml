@@ -92,6 +92,8 @@ jobs:
         run: |
           #set log level to debug
           sed -i 's/GOLANG_LOG=info/GOLANG_LOG=debug/g' .env
+          #automatically enable clean up, CD is not used for debugging
+          echo "AUTO_CLEAN_UP=TRUE" >> .env
 
           kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
           kustomize build | kubectl apply -f - 
