@@ -52,7 +52,7 @@ jobs:
           for PATH in "${ARR[@]}"
           do
             echo "-----Building $PATH-----"
-            IMGTAG="ghcr.io/berops/claudie/$PATH:$RELEASE" 
+            IMGTAG="ghcr.io/berops/claudie/$PATH:${RELEASE}" 
             DOCKER_BUILDKIT=1 docker buildx build --push --platform linux/amd64,linux/arm64 --tag $IMGTAG -f ./services/$path/Dockerfile . 
           done
 
@@ -62,7 +62,7 @@ jobs:
           ARR=( ${{ env.SERVICES }} )
           for PATH in "${ARR[@]}"
           do
-            kustomize edit set image "ghcr.io/berops/claudie/$PATH:$RELEASE" 
+            kustomize edit set image "ghcr.io/berops/claudie/$PATH:${RELEASE}" 
           done
 
       - name: Add manifests to the release
