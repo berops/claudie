@@ -58,14 +58,8 @@ Context box is Claudie's "control unit". It holds pending configs, which need to
 - Receives a `config` from Frontend, calculates its `msChecksum` and saves it to the database
 - Periodically checks for `config` changes and pushes the `config` to the `schedulerQueue` if `msChecksum` != `dsChecksum`
 - Periodically checks for `config` changes and pushes the `config` to the `builderQueue` if `dsChecksum` != `csChecksum`
-- Receives a `config` with the `desiredState` from Scheduler
-- Checks if `dsChecksum` == `msChecksum`
-  - `true` ⇒ ignores this `config`
-  - `false` ⇒ saves the `config` to the database
-- Receives a `config` with `currentState` from Builder and saves it to the database
-- Checks if `csChecksum` == `dsChecksum`
-  - `true` ⇒ ignores this `config`
-  - `false` ⇒ saves the `config` to the database
+- Receives a `config` with the `desiredState` from Scheduler and saves it to the database
+- Receives a `config` with the `currentState` from Builder and saves it to the database
 
 ### Variables used
 | variable     | meaning                |
