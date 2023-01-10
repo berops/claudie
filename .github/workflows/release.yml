@@ -1,4 +1,4 @@
-name: golangci-lint
+name: Release
 on:
   # Run when release is published
   release:
