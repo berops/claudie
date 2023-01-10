@@ -1,4 +1,4 @@
-FROM golang:1.19.4 AS build
+FROM docker.io/library/golang:1.19.4 AS build
 
 # download and unzip kube-one binary
 RUN apt-get -qq update && apt-get -qq install unzip
@@ -40,7 +40,7 @@ WORKDIR /go/services/terraformer/server
 #Compile the golang code to /out, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build
 
-FROM alpine
+FROM docker.io/library/alpine
 
 #Copy the binaries to empty base image
 COPY --from=build /go/terraform/terraform /usr/local/bin
