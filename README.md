@@ -62,3 +62,5 @@ If you want to have a chat with us, feel free to join our ["claudie-workspace" S
 <!-- Add a roadmap for claudie so users know which features are being worked on and which will in future -->
 To see the vision behind Claudie, please refer to the [roadmap](./docs/roadmap/roadmap.md) document.
 
+### LICENSE
+Apache-2.0 (see [LICENSE](LICENSE) for details).
