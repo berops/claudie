@@ -30,6 +30,8 @@ To deploy the Claudie `v0.1.X`, please:
 
 3. Lastly, unpack the archive and deploy using `kubectl`
 
+    > We strongly recommend changing the default credentials for MongoDB, MinIO and DynamoDB before you deploy it. To do this, change contents of the files in `mongo/secrets`, `minio/secrets` and `dynamo/secrets` respectively.
+
     ```sh
     kubectl apply -k .
     ```
