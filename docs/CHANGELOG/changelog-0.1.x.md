@@ -17,6 +17,5 @@ The first official release of Claudie
 
 # Known issues
 
-- `Terraformer` sometimes timeouts when provisioning `Azure` VMs #386
 - `iptables` reset after reboot and block all traffic on `OCI` node #466
 - Numerous issues when deploying on `arm64` based machines
