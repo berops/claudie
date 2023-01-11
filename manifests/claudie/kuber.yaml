@@ -47,10 +47,12 @@ spec:
             exec:
               command: ["/bin/grpc_health_probe", "-addr=:50057"]
             initialDelaySeconds: 5
+            periodSeconds: 30
           livenessProbe:
             exec:
               command: ["/bin/grpc_health_probe-Liveness", "-addr=:50057"]
             initialDelaySeconds: 10
+            periodSeconds: 30
       serviceAccountName: kuber
 ---
 kind: Service

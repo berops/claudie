@@ -21,10 +21,10 @@ spec:
           image: claudieio/context-box
           resources:
             requests:
-              cpu: 40m
+              cpu: 80m
               memory: 50Mi
             limits:
-              cpu: 80m
+              cpu: 160m
               memory: 100Mi
           env:
             - name: DATABASE_PORT
@@ -64,10 +64,12 @@ spec:
             exec:
               command: ["/bin/grpc_health_probe", "-addr=:50055"]
             initialDelaySeconds: 5
+            periodSeconds: 30
           livenessProbe:
             exec:
               command: ["/bin/grpc_health_probe-Liveness", "-addr=:50055"]
             initialDelaySeconds: 120
+            periodSeconds: 30
 ---
 kind: Service
 apiVersion: v1

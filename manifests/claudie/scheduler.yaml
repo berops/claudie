@@ -21,10 +21,10 @@ spec:
           image: claudieio/scheduler
           resources:
             requests:
-              cpu: 30m
+              cpu: 45m
               memory: 50Mi
             limits:
-              cpu: 80m
+              cpu: 100m
               memory: 100Mi
           env:
             - name: CONTEXT_BOX_PORT
@@ -47,8 +47,10 @@ spec:
               path: /ready
               port: 50056
             initialDelaySeconds: 5
+            periodSeconds: 30
           livenessProbe:
             httpGet:
               path: /live
               port: 50056
             initialDelaySeconds: 10
+            periodSeconds: 30
