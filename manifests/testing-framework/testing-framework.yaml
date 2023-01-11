@@ -9,7 +9,7 @@ spec:
       containers:
         - name: testing-framework
           imagePullPolicy: Always
-          image: claudieio/testing-framework
+          image: ghcr.io/berops/claudie/testing-framework
           env:
             - name: CONTEXT_BOX_PORT
               valueFrom:

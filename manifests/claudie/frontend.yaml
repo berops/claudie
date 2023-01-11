@@ -19,7 +19,7 @@ spec:
       containers:
         - name: frontend
           imagePullPolicy: Always
-          image: claudieio/frontend
+          image: ghcr.io/berops/claudie/frontend
           resources:
             requests:
               cpu: 10m
