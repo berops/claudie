@@ -57,13 +57,13 @@ spec:
                   key: DYNAMO_TABLE_NAME
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
-                configMapKeyRef:
-                  name: env
+                secretKeyRef:
+                  name: dynamo-secret
                   key: AWS_ACCESS_KEY_ID
             - name: AWS_SECRET_ACCESS_KEY
               valueFrom:
-                configMapKeyRef:
-                  name: env
+                secretKeyRef:
+                  name: dynamo-secret
                   key: AWS_SECRET_ACCESS_KEY
             - name: AWS_REGION
               valueFrom:
