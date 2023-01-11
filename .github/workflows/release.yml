@@ -34,7 +34,7 @@ jobs:
         with:
           endpoint: claudie
 
-      - name: install kustomize
+      - name: Install kustomize
         uses: imranismail/setup-kustomize@v2
         with:
           version: 3.6.1
@@ -55,7 +55,7 @@ jobs:
             IMGTAG="ghcr.io/berops/claudie/$PATH:${RELEASE}" 
             echo $IMGTAG
 
-            DOCKER_BUILDKIT=1 docker buildx build --push --platform linux/amd64,linux/arm64 --tag $IMGTAG -f ./services/$path/Dockerfile . 
+            DOCKER_BUILDKIT=1 docker buildx build --push --platform linux/amd64,linux/arm64 --tag $IMGTAG -f ./services/$PATH/Dockerfile . 
           done
 
       - name: Set new tag to manifests
