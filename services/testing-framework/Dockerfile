@@ -21,7 +21,7 @@ COPY . .
 WORKDIR /go/services/testing-framework
 RUN CGO_ENABLED=0 go test -c -run TestClaudie
 
-FROM docker.io/library/alpine
+FROM docker.io/library/alpine:3.17.1
 
 COPY --from=build /usr/local/bin/kubectl /usr/local/bin/kubectl
 COPY --from=build /go/services/testing-framework/testing-framework.test /go/services/testing-framework/testing-framework.test
