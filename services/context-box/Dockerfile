@@ -37,7 +37,9 @@ RUN CGO_ENABLED=0 go build
 #Use empty base image
 FROM scratch
 #Add repository label
-LABEL org.opencontainers.image.source https://github.com/berops/claudie
+LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
+#Add base image name as a label
+LABEL org.opencontainers.image.base.name "scratch"
 #Add description to the image
 LABEL org.opencontainers.image.description "Image for Context-box from Claudie"
 

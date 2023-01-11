@@ -37,7 +37,9 @@ RUN CGO_ENABLED=0 go build
 #Use alpine based ansible image
 FROM cytopia/ansible:2.13
 #Add repository label
-LABEL org.opencontainers.image.source https://github.com/berops/claudie
+LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
+#Add image name as a label
+LABEL org.opencontainers.image.base.name "docker.io/cytopia/ansible:2.13"
 #Add description to the image
 LABEL org.opencontainers.image.description "Image for Ansibler from Claudie"
 
