@@ -5,7 +5,7 @@ on:
     types: [published]
 
 env:
-  SERVICES: context-box scheduler builder terraformer ansibler kube-eleven kuber frontend
+  SERVICES: context-box #scheduler builder terraformer ansibler kube-eleven kuber frontend
 
 jobs:
   build-and-publish:
