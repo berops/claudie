@@ -1,23 +1,23 @@
 namespace: claudie
 resources:
-  - testing-framework.yaml
+- testing-framework.yaml
 secretGenerator:
-  - files:
-      - test-sets/test-set1/1.yaml
-      - test-sets/test-set1/2.yaml
-      - test-sets/test-set1/3.yaml
-    name: test-set1
-  - files:
-      - test-sets/test-set2/1.yaml
-      - test-sets/test-set2/2.yaml
-      - test-sets/test-set2/3.yaml
-    name: test-set2
-  - files:
-      - test-sets/test-set3/1.yaml
-      - test-sets/test-set3/2.yaml
-    name: test-set3
+- files:
+  - test-sets/test-set1/1.yaml
+  - test-sets/test-set1/2.yaml
+  - test-sets/test-set1/3.yaml
+  name: test-set1
+- files:
+  - test-sets/test-set2/1.yaml
+  - test-sets/test-set2/2.yaml
+  - test-sets/test-set2/3.yaml
+  name: test-set2
+- files:
+  - test-sets/test-set3/1.yaml
+  - test-sets/test-set3/2.yaml
+  name: test-set3
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
-  - name: claudieio/testing-framework
-    newTag: cfb11e2-1222
+- name: claudieio/testing-framework
+  newTag: 2cd5ee3-1248
