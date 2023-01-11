@@ -56,13 +56,13 @@ jobs:
             DOCKER_BUILDKIT=1 docker buildx build --push --platform linux/amd64,linux/arm64 --tag $IMGTAG -f ./services/$SERVICE/Dockerfile . 
           done
 
-      - name: Set new tag to manifests
+      - name: Set new image & tag to manifests
         working-directory: manifests/claudie
         run: |
           ARR=( ${{ env.SERVICES }} )
           for SERVICE in "${ARR[@]}"
           do
-            kustomize edit set image "ghcr.io/berops/claudie/$SERVICE:${RELEASE}" 
+            kustomize edit set image "claudieio/$SERVICE"="ghcr.io/berops/claudie/$SERVICE:${RELEASE}" 
           done
 
       - name: Create archives for manifests
