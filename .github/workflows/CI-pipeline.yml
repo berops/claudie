@@ -217,11 +217,20 @@ jobs:
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
           access_token_lifetime: "21600s"
 
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+
       - name: Configure kubectl
-        uses: google-github-actions/get-gke-credentials@v1.0.1
-        with:
-          cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
-          location: ${{ secrets.GKE_ZONE }}
+        env:
+          USE_GKE_GCLOUD_AUTH_PLUGIN: True
+        run: |-
+          gcloud components install gke-gcloud-auth-plugin
+          gke-gcloud-auth-plugin --version
+          gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER_NAME }} --zone ${{ secrets.GKE_ZONE }}
+
+      - name: Get PR labels
+        id: pr-labels
+        uses: joerick/pr-labels-action@v1.0.6
 
       # Deploy services to new namespace
       - name: Deploy to new namespace
@@ -229,6 +238,12 @@ jobs:
         run: |
           #set log level to debug
           sed -i 's/GOLANG_LOG=info/GOLANG_LOG=debug/g' .env
+          #check if auto clean up is enabled/disabled
+          if [ -n "$GITHUB_PR_LABEL_DISABLE_CLEAN_UP" ]; then
+            echo "AUTO_CLEAN_UP=FALSE" >> .env
+          else
+            echo "AUTO_CLEAN_UP=TRUE" >> .env
+          fi
 
           kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
           kustomize build | kubectl apply -f -
