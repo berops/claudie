@@ -12,7 +12,7 @@ Whoever is responsible for creating a new release has to:
 
 ## Automated steps
 
-After a new release is published, a [release pipeline](https://github.com/Berops/claudie/blob/master/.github/workflows/release.yml) will run which will:
+After a new release is published, a [release pipeline](https://github.com/Berops/claudie/blob/master/.github/workflows/release.yml) runs, which will:
 
 1. Build new images tagged with the release tag
 2. Push them to the container registry where anyone can pull them
