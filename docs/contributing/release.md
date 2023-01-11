@@ -16,4 +16,4 @@ After a new release is published, a [release pipeline](https://github.com/Berops
 
 1. Build new images tagged with the release tag
 2. Push them to the container registry where anyone can pull them
-3. Append Claudie manifest files to the release, containing reference to the images from a release
+3. Add Claudie manifest files to the release assets, with image tags referencing this release
