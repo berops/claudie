@@ -217,11 +217,16 @@ jobs:
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
           access_token_lifetime: "21600s"
 
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+
       - name: Configure kubectl
-        uses: google-github-actions/get-gke-credentials@v1.0.1
-        with:
-          cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
-          location: ${{ secrets.GKE_ZONE }}
+        env:
+          USE_GKE_GCLOUD_AUTH_PLUGIN: True
+        run: |-
+          gcloud components install gke-gcloud-auth-plugin
+          gke-gcloud-auth-plugin --version
+          gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER_NAME }} --zone ${{ secrets.GKE_ZONE }}
 
       - name: Get PR labels
         id: pr-labels
