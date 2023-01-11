@@ -1,4 +1,4 @@
-FROM golang:1.19.3 AS build
+FROM golang:1.19.4 AS build
 
 #Unset the GOPATH
 ENV GOPATH=

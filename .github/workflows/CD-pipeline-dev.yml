@@ -63,7 +63,7 @@ jobs:
         run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
 
       - name: install kubectl
-        uses: azure/setup-kubectl@v3.0
+        uses: azure/setup-kubectl@v3.1
         with:
           version: latest
 
@@ -81,7 +81,7 @@ jobs:
           access_token_lifetime: "21600s"
 
       - name: Configure kubectl
-        uses: google-github-actions/get-gke-credentials@v1.0.0
+        uses: google-github-actions/get-gke-credentials@v1.0.1
         with:
           cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
           location: ${{ secrets.GKE_ZONE }}
@@ -92,6 +92,8 @@ jobs:
         run: |
           #set log level to debug
           sed -i 's/GOLANG_LOG=info/GOLANG_LOG=debug/g' .env
+          #automatically enable clean up, CD is not used for debugging
+          echo "AUTO_CLEAN_UP=TRUE" >> .env
 
           kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
           kustomize build | kubectl apply -f - 
