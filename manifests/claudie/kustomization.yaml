@@ -27,7 +27,7 @@ images:
 - name: claudieio/context-box
   newTag: e29a83d-1218
 - name: claudieio/frontend
-  newTag: e29a83d-1218
+  newTag: 2d44fa8-1249
 - name: claudieio/kube-eleven
   newTag: e29a83d-1218
 - name: claudieio/kuber
