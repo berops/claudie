@@ -1,10 +1,13 @@
-FROM golang:1.19.4 AS build
+FROM docker.io/library/golang:1.19.4 AS build
+
+ARG TARGETARCH
 
 # download and unzip kube-one binary
 RUN apt-get -qq update && apt-get -qq install unzip
 RUN KUBEONE_V=1.5.3 && \
-    wget -q https://github.com/kubermatic/kubeone/releases/download/v${KUBEONE_V}/kubeone_${KUBEONE_V}_linux_amd64.zip && \
-    unzip -qq kubeone_${KUBEONE_V}_linux_amd64.zip -d kubeone_dir
+    wget -q https://github.com/kubermatic/kubeone/releases/download/v${KUBEONE_V}/kubeone_${KUBEONE_V}_linux_$TARGETARCH.zip && \
+    unzip -qq kubeone_${KUBEONE_V}_linux_$TARGETARCH.zip -d kubeone_dir
+
 #Unset the GOPATH
 ENV GOPATH=
 
@@ -17,7 +20,7 @@ RUN go mod download
 
 #Install grpc health probe
 RUN GRPC_HEALTH_PROBE_VERSION=v0.4.14 && \
-    wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 && \
+    wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-$TARGETARCH && \
     chmod +x /bin/grpc_health_probe
 
 COPY ./internal/grpc-health-probe-Liveness ./grpc-health-probe-Liveness
@@ -40,6 +43,7 @@ WORKDIR /go/services/kube-eleven/server
 RUN CGO_ENABLED=0 go build
 
 FROM alpine
+FROM docker.io/library/alpine:3.17.1
 #Add repository label
 LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
 #Add image name as a label
