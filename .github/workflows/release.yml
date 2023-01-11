@@ -1,4 +1,4 @@
-name: Release
+name: Release pipeline
 on:
   # Run when release is published
   release:
