@@ -49,22 +49,20 @@ jobs:
       - name: Build and push new images
         run: |
           ARR=( ${{ env.SERVICES }} )
-          for PATH in "${ARR[@]}"
+          for SERVICE in "${ARR[@]}"
           do
-            echo "-----Building $PATH-----"
-            IMGTAG="ghcr.io/berops/claudie/$PATH:${RELEASE}" 
-            echo $IMGTAG
-
-            DOCKER_BUILDKIT=1 docker buildx build --push --platform linux/amd64,linux/arm64 --tag $IMGTAG -f ./services/$PATH/Dockerfile . 
+            echo "-----Building $SERVICE-----"
+            IMGTAG="ghcr.io/berops/claudie/$SERVICE:${RELEASE}" 
+            DOCKER_BUILDKIT=1 docker buildx build --push --platform linux/amd64,linux/arm64 --tag $IMGTAG -f ./services/$SERVICE/Dockerfile . 
           done
 
       - name: Set new tag to manifests
         working-directory: manifests/claudie
         run: |
           ARR=( ${{ env.SERVICES }} )
-          for PATH in "${ARR[@]}"
+          for SERVICE in "${ARR[@]}"
           do
-            kustomize edit set image "ghcr.io/berops/claudie/$PATH:${RELEASE}" 
+            kustomize edit set image "ghcr.io/berops/claudie/$SERVICE:${RELEASE}" 
           done
 
       - name: Add manifests to the release
