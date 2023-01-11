@@ -10,7 +10,7 @@ env:
 jobs:
   build-and-publish:
     name: Create a new release
-    runs-on: self-hosted
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
         with:
@@ -68,7 +68,7 @@ jobs:
       - name: Create archives for manifests
         working-directory: manifests/claudie
         run: |
-          apt install -y zip tar
+          sudo apt install -y zip tar
           tar -czvf ../../claudie.tar.gz .
           zip -r ../../claudie.zip .
 
