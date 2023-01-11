@@ -5,7 +5,7 @@ on:
     types: [published]
 
 env:
-  SERVICES: context-box #scheduler builder terraformer ansibler kube-eleven kuber frontend
+  SERVICES: context-box scheduler builder terraformer ansibler kube-eleven kuber frontend
 
 jobs:
   build-and-publish:
@@ -72,6 +72,12 @@ jobs:
           tar -czvf ../../claudie.tar.gz .
           zip -r ../../claudie.zip .
 
+      - name: Get checksums of the archives
+        run: |
+          touch claudie_checksums.txt
+          sha256sum claudie.tar.gz >> claudie_checksums.txt
+          sha256sum claudie.zip >> claudie_checksums.txt
+
       - name: Add manifests to the release
         uses: svenstaro/upload-release-action@v2
         with:
@@ -79,3 +85,10 @@ jobs:
           tag: ${{ github.ref }}
           file: claudie.*
           file_glob: true
+
+      - name: Add checksums file to the release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }}
+          file: claudie_checksums.txt
