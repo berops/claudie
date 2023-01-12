@@ -1,38 +1,38 @@
 namespace: claudie
 resources:
-- ns.yaml
-- context-box.yaml
-- terraformer.yaml
-- ansibler.yaml
-- scheduler.yaml
-- builder.yaml
-- kube-eleven.yaml
-- frontend.yaml
-- kuber.yaml
-- minio
-- mongo
-- dynamo
-- network-policy.yaml
+  - ns.yaml
+  - context-box.yaml
+  - terraformer.yaml
+  - ansibler.yaml
+  - scheduler.yaml
+  - builder.yaml
+  - kube-eleven.yaml
+  - frontend.yaml
+  - kuber.yaml
+  - minio
+  - mongo
+  - dynamo
+  - network-policy.yaml
 configMapGenerator:
-- envs:
-  - .env
-  name: env
+  - envs:
+      - .env
+    name: env
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
-- name: claudieio/ansibler
-  newTag: 2cd5ee3-1248
-- name: claudieio/builder
-  newTag: 2cd5ee3-1248
-- name: claudieio/context-box
-  newTag: 2cd5ee3-1248
-- name: claudieio/frontend
-  newTag: 2cd5ee3-1248
-- name: claudieio/kube-eleven
-  newTag: 2cd5ee3-1248
-- name: claudieio/kuber
-  newTag: 2cd5ee3-1248
-- name: claudieio/scheduler
-  newTag: 2cd5ee3-1248
-- name: claudieio/terraformer
-  newTag: 2cd5ee3-1248
+  - name: ghcr.io/berops/claudie/ansibler
+    newTag: 99b9675-1271
+  - name: ghcr.io/berops/claudie/builder
+    newTag: 99b9675-1271
+  - name: ghcr.io/berops/claudie/context-box
+    newTag: 99b9675-1271
+  - name: ghcr.io/berops/claudie/frontend
+    newTag: 99b9675-1271
+  - name: ghcr.io/berops/claudie/kube-eleven
+    newTag: 99b9675-1271
+  - name: ghcr.io/berops/claudie/kuber
+    newTag: 99b9675-1271
+  - name: ghcr.io/berops/claudie/scheduler
+    newTag: 99b9675-1271
+  - name: ghcr.io/berops/claudie/terraformer
+    newTag: 99b9675-1271
