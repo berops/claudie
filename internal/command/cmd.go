@@ -110,9 +110,9 @@ func (c *Cmd) buildCmd(ctx context.Context) *exec.Cmd {
 	return cmd
 }
 
-// return a new backoff (2 ^ iteration), with the hard limit set at maxBackoff
+// return a new backoff 5 * (2 ^ iteration), with the hard limit set at maxBackoff
 func getNewBackoff(iteration int) int {
-	backoff := (2 ^ iteration)
+	backoff := 5 * (2 ^ iteration)
 	if backoff > maxBackoff {
 		// set hard max for exponential backoff
 		return maxBackoff
