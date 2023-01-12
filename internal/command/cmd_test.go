@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestCmd will test a command retry and cancellation
 func TestCmd(t *testing.T) {
 	cmd := Cmd{"sleep 2 && ls", "", nil, nil}
 	err := cmd.RetryCommand(1, 1)

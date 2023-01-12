@@ -40,7 +40,7 @@ const (
 	maxBackoff = 5 * 60 // max backoff time [5 min]
 )
 
-// RetryCommand will retry the given command, with exponential backoff, maxing at 5 min, numOfRetries times
+// RetryCommand will retry the given command, with exponential backoff, maxing at 5 min, for numOfRetries times
 // commandTimeout is used to terminate the command after specified time, regardless if it was successful or not
 // this prevents commands to be executing indefinitely
 // returns error if all retries fail, nil otherwise
@@ -61,7 +61,7 @@ func (c *Cmd) RetryCommand(numOfRetries, commandTimeout int) error {
 	return err
 }
 
-// RetryCommandWithOutput will retry the given command,  with exponential backoff, maxing at 5 min, numOfRetries times
+// RetryCommandWithOutput will retry the given command,  with exponential backoff, maxing at 5 min, for numOfRetries times
 // commandTimeout is used to terminate the command after specified time, regardless if it was successful or not
 // this prevents commands to be executing indefinitely
 // returns (nil, error) if all retries fail, (output, nil) otherwise
@@ -110,7 +110,7 @@ func (c *Cmd) buildCmd(ctx context.Context) *exec.Cmd {
 	return cmd
 }
 
-// return a new backoff 5 * (2 ^ iteration), with the hard limit set at maxBackoff
+// getNewBackoff returns a new backoff 5 * (2 ^ iteration), with the hard limit set at maxBackoff
 func getNewBackoff(iteration int) int {
 	backoff := 5 * (2 ^ iteration)
 	if backoff > maxBackoff {
