@@ -62,9 +62,7 @@ jobs:
           ARR=( ${{ env.SERVICES }} )
           for SERVICE in "${ARR[@]}"
           do
-            # since we are still using mainly dockerhub,
-            # we have to replace whole image, not just a tag
-            kustomize edit set image "claudieio/$SERVICE"="ghcr.io/berops/claudie/$SERVICE:${RELEASE}" 
+            kustomize edit set image ghcr.io/berops/claudie/$SERVICE:${RELEASE}
           done
 
       - name: Create archives for manifests

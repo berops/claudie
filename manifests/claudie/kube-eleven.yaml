@@ -18,7 +18,7 @@ spec:
       containers:
         - name: kube-eleven
           imagePullPolicy: Always
-          image: claudieio/kube-eleven
+          image: ghcr.io/berops/claudie/kube-eleven
           resources:
             requests:
               cpu: 500m
