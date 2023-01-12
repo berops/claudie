@@ -12,6 +12,7 @@ import (
 const (
 	defaultAnsibleForks = 30
 	maxAnsibleRetries   = 10
+	ansibleTimeout      = 600 // cancel ansible command after ansibleTimeout seconds
 )
 
 type Ansible struct {
@@ -39,7 +40,7 @@ func (a *Ansible) RunAnsiblePlaybook(prefix string) error {
 	if err != nil {
 		log.Warn().Msgf("Error encountered while executing %s from %s : %v", command, a.Directory, err)
 		retryCmd := comm.Cmd{Command: command, Dir: a.Directory, Stdout: cmd.Stdout, Stderr: cmd.Stderr}
-		err := retryCmd.RetryCommand(maxAnsibleRetries)
+		err := retryCmd.RetryCommand(maxAnsibleRetries, ansibleTimeout)
 		if err != nil {
 			return err
 		}

@@ -22,6 +22,7 @@ const (
 		export ETCDCTL_CACERT=/etc/kubernetes/pki/etcd/ca.crt && 
 		export ETCDCTL_CERT=/etc/kubernetes/pki/etcd/healthcheck-client.crt && 
 		export ETCDCTL_KEY=/etc/kubernetes/pki/etcd/healthcheck-client.key`
+	kubectlTimeout = 60 // cancel kubectl command after kubectlTimeout seconds
 )
 
 // KubectlApply runs kubectl apply in k.Directory directory, with specified manifest and specified namespace
@@ -162,7 +163,7 @@ func (k Kubectl) run(command string) error {
 			Dir:     k.Directory,
 		}
 
-		if err = retryCmd.RetryCommand(maxKubectlRetries); err != nil {
+		if err = retryCmd.RetryCommand(maxKubectlRetries, kubectlTimeout); err != nil {
 			return err
 		}
 	}
@@ -178,7 +179,7 @@ func (k Kubectl) runWithOutput(command string) ([]byte, error) {
 	result, err = cmd.CombinedOutput()
 	if err != nil {
 		cmd := comm.Cmd{Command: command, Dir: k.Directory}
-		result, err = cmd.RetryCommandWithOutput(maxKubectlRetries)
+		result, err = cmd.RetryCommandWithOutput(maxKubectlRetries, kubectlTimeout)
 		if err != nil {
 			return nil, err
 		}
