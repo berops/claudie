@@ -40,6 +40,12 @@ WORKDIR /go/services/kube-eleven/server
 RUN CGO_ENABLED=0 go build
 
 FROM alpine
+#Add repository label
+LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
+#Add image name as a label
+LABEL org.opencontainers.image.base.name "docker.io/library/alpine"
+#Add description to the image
+LABEL org.opencontainers.image.description "Image for Kube-eleven from Claudie"
 
 RUN apk update
 RUN apk add -q bash
