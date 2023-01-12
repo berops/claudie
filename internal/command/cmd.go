@@ -32,25 +32,26 @@ type Wrapper struct {
 }
 
 const (
-	STDOUT         = 0
-	STDERR         = 1
-	colorOkay      = "\x1b[32m"
-	colorFail      = "\x1b[31m"
-	colorReset     = "\x1b[0m"
-	contextTimeout = 15 * time.Minute // max time for a single command to complete [15 min]
-	maxBackoff     = 5 * 60           // max backoff time [5 min]
+	STDOUT     = 0
+	STDERR     = 1
+	colorOkay  = "\x1b[32m"
+	colorFail  = "\x1b[31m"
+	colorReset = "\x1b[0m"
+	maxBackoff = 5 * 60 // max backoff time [5 min]
 )
 
-// RetryCommand will retry the given command, every 5 sec until either successful or reached numOfRetries
+// RetryCommand will retry the given command, with exponential backoff, maxing at 5 min, numOfRetries times
+// commandTimeout is used to terminate the command after specified time, regardless if it was successful or not
+// this prevents commands to be executing indefinitely
 // returns error if all retries fail, nil otherwise
-func (c Cmd) RetryCommand(numOfRetries int) error {
+func (c *Cmd) RetryCommand(numOfRetries, commandTimeout int) error {
 	var err error
 	for i := 1; i <= numOfRetries; i++ {
 		backoff := getNewBackoff(i)
 		log.Info().Msgf("Next retry in %ds...", backoff)
 		time.Sleep(time.Duration(backoff) * time.Second)
 
-		if err = c.execute(i, numOfRetries); err == nil {
+		if err = c.execute(i, numOfRetries, commandTimeout); err == nil {
 			log.Info().Msgf("The %s was successful on %d retry", c.Command, i)
 			return nil
 		}
@@ -60,16 +61,19 @@ func (c Cmd) RetryCommand(numOfRetries int) error {
 	return err
 }
 
-// RetryCommandWithOutput will retry the given command, every 5 sec until either successful or reached numOfRetries
+// RetryCommandWithOutput will retry the given command,  with exponential backoff, maxing at 5 min, numOfRetries times
+// commandTimeout is used to terminate the command after specified time, regardless if it was successful or not
+// this prevents commands to be executing indefinitely
 // returns (nil, error) if all retries fail, (output, nil) otherwise
-func (c Cmd) RetryCommandWithOutput(numOfRetries int) ([]byte, error) {
+func (c *Cmd) RetryCommandWithOutput(numOfRetries, commandTimeout int) ([]byte, error) {
 	var err error
+	var out []byte
 	for i := 1; i <= numOfRetries; i++ {
 		backoff := getNewBackoff(i)
 		log.Info().Msgf("Next retry in %ds...", backoff)
 		time.Sleep(time.Duration(backoff) * time.Second)
 
-		if out, err := c.executeWithOutput(i, numOfRetries); err == nil {
+		if out, err = c.executeWithOutput(i, numOfRetries, commandTimeout); err == nil {
 			log.Info().Msgf("The %s was successful after %d retry", c.Command, i)
 			return out, nil
 		}
@@ -79,26 +83,26 @@ func (c Cmd) RetryCommandWithOutput(numOfRetries int) ([]byte, error) {
 	return nil, err
 }
 
+func (c *Cmd) execute(i, numOfRetries, commandTimeout int) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(commandTimeout)*time.Second)
+	defer cancel()
+	log.Warn().Msgf("Retrying command %s... (%d/%d)", c.Command, i, numOfRetries)
+	return c.buildCmd(ctx).Run()
+}
+
+func (c *Cmd) executeWithOutput(i, numOfRetries, commandTimeout int) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(commandTimeout)*time.Second)
+	defer cancel()
+	log.Warn().Msgf("Retrying command %s... (%d/%d)", c.Command, i, numOfRetries)
+	return c.buildCmd(ctx).CombinedOutput()
+}
+
 func (c *Cmd) buildCmd(ctx context.Context) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, "bash", "-c", c.Command)
 	cmd.Dir = c.Dir
 	cmd.Stdout = c.Stdout
 	cmd.Stderr = c.Stderr
 	return cmd
-}
-
-func (c *Cmd) execute(i, numOfRetries int) error {
-	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
-	defer cancel()
-	log.Warn().Msgf("Retrying command %s... (%d/%d)", c.Command, i, numOfRetries)
-	return c.buildCmd(ctx).Run()
-}
-
-func (c *Cmd) executeWithOutput(i, numOfRetries int) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
-	defer cancel()
-	log.Warn().Msgf("Retrying command %s... (%d/%d)", c.Command, i, numOfRetries)
-	return c.buildCmd(ctx).CombinedOutput()
 }
 
 func getNewBackoff(iteration int) int {
