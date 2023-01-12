@@ -78,12 +78,14 @@ func (*server) TeardownLoadBalancers(ctx context.Context, req *pb.TeardownLBRequ
 		attached        = make(map[string]bool)           // [k8sClusterName]Bool
 		k8sNodepools    = make(map[string][]*pb.NodePool) //[k8sClusterName][]nodepools
 		k8sNodepoolsKey = make(map[string]string)         //[k8sClusterName]keys
+		clusterIDs      = make(map[string]string)         //[k8sClusterName]clusterID (<clusterName>-<hash>)
 	)
 
 	// Collect all NodePools that will exist after the deletion
 	for _, k8s := range req.CurrentState.Clusters {
 		k8sNodepools[k8s.ClusterInfo.Name] = k8s.ClusterInfo.NodePools
 		k8sNodepoolsKey[k8s.ClusterInfo.Name] = k8s.ClusterInfo.PrivateKey
+		clusterIDs[k8s.ClusterInfo.Name] = fmt.Sprintf("%s-%s", k8s.ClusterInfo.Name, k8s.ClusterInfo.Hash)
 	}
 
 	// Look for newly attached LoadBalancers.
@@ -107,6 +109,7 @@ func (*server) TeardownLoadBalancers(ctx context.Context, req *pb.TeardownLBRequ
 				LbClusters:           make([]*LBData, 0),
 				TargetK8sNodepool:    np,
 				TargetK8sNodepoolKey: k8sNodepoolsKey[lb.TargetedK8S],
+				ClusterID:            clusterIDs[lb.TargetedK8S],
 			}
 		}
 
@@ -139,6 +142,7 @@ func (*server) SetUpLoadbalancers(_ context.Context, req *pb.SetUpLBRequest) (*p
 		lbInfos         = make(map[string]*LBInfo)        //[k8sClusterName]lbInfo
 		k8sNodepools    = make(map[string][]*pb.NodePool) //[k8sClusterName][]nodepools
 		k8sNodepoolsKey = make(map[string]string)         //[k8sClusterName]keys
+		clusterIDs      = make(map[string]string)         //[k8sClusterName]clusterID (<clusterName>-<hash>)
 		currentLBs      = make(map[string]*pb.LBcluster)  //[lbClusterName]CurrentStateLB
 	)
 
@@ -146,6 +150,7 @@ func (*server) SetUpLoadbalancers(_ context.Context, req *pb.SetUpLBRequest) (*p
 	for _, k8s := range req.DesiredState.Clusters {
 		k8sNodepools[k8s.ClusterInfo.Name] = k8s.ClusterInfo.NodePools
 		k8sNodepoolsKey[k8s.ClusterInfo.Name] = k8s.ClusterInfo.PrivateKey
+		clusterIDs[k8s.ClusterInfo.Name] = fmt.Sprintf("%s-%s", k8s.ClusterInfo.Name, k8s.ClusterInfo.Hash)
 	}
 
 	//get current dns so we can detect a possible change in configuration
@@ -168,6 +173,7 @@ func (*server) SetUpLoadbalancers(_ context.Context, req *pb.SetUpLBRequest) (*p
 				LbClusters:            make([]*LBData, 0),
 				TargetK8sNodepoolKey:  k8sNodepoolsKey[lb.TargetedK8S],
 				PreviousAPIEndpointLB: req.OldApiEndpoints[lb.TargetedK8S],
+				ClusterID:             clusterIDs[lb.TargetedK8S],
 			}
 		}
 

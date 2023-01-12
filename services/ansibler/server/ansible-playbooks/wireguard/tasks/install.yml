@@ -8,6 +8,11 @@
   apt:
     name: python3-pip
 
-- name: install wireguard via pip
+- name: Install wireguard via pip
   pip:
     name: wireguard
+
+- name: Install net-tools
+  apt:
+    name: net-tools
+    state: present

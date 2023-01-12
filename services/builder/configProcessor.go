@@ -110,10 +110,11 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			config.CurrentState = tmpConfig.DesiredState
 		}
 		if toDelete != nil {
-			log.Info().Msgf("Deleting nodes for config %s", config.Name)
+			name := config.Name
+			log.Info().Msgf("Deleting nodes for config %s", name)
 			config, err = deleteNodes(config, toDelete)
 			if err != nil {
-				log.Error().Msgf("error while deleting nodes for config %s : %v", config.Name, err)
+				log.Error().Msgf("error while deleting nodes for config %s : %v", name, err)
 				//if err in node deletions, stop the execution
 				return
 			}

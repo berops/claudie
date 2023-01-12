@@ -26,13 +26,13 @@ apiEndpoint:
 controlPlane:
   hosts:
 {{- $privateKey := "./private.pem" }}
-{{- range $value := .Nodes }}
-{{- if ge $value.NodeType 1}}
-  - publicAddress: '{{ $value.Public }}'
-    privateAddress: '{{ $value.Private }}'
+{{- range $nodeInfo := .Nodes }}
+{{- if ge $nodeInfo.Node.NodeType 1}}
+  - publicAddress: '{{ $nodeInfo.Node.Public }}'
+    privateAddress: '{{ $nodeInfo.Node.Private }}'
     sshUsername: root
     sshPrivateKeyFile: '{{ $privateKey }}'
-    hostname: '{{ $value.Name }}'
+    hostname: '{{ $nodeInfo.Name }}'
     taints:
     - key: "node-role.kubernetes.io/master"
       effect: "NoSchedule"
@@ -41,13 +41,13 @@ controlPlane:
 
 staticWorkers:
   hosts:
-{{- range $value := .Nodes }}
-{{- if eq $value.NodeType 0}}
-  - publicAddress: '{{ $value.Public }}'
-    privateAddress: '{{ $value.Private }}'
+{{- range $nodeInfo := .Nodes }}
+{{- if eq $nodeInfo.Node.NodeType 0}}
+  - publicAddress: '{{ $nodeInfo.Node.Public }}'
+    privateAddress: '{{ $nodeInfo.Node.Private }}'
     sshUsername: root
     sshPrivateKeyFile: '{{ $privateKey }}'
-    hostname: '{{ $value.Name }}'
+    hostname: '{{ $nodeInfo.Name }}'
 {{- end}}
 {{- end}}
 

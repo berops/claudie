@@ -77,10 +77,6 @@ func (s *server) SetUpStorage(ctx context.Context, req *pb.SetUpStorageRequest) 
 }
 
 func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterMetadataRequest) (*pb.StoreClusterMetadataResponse, error) {
-	if namespace := envs.Namespace; namespace == "" {
-		return &pb.StoreClusterMetadataResponse{}, nil
-	}
-
 	md := ClusterMetadata{
 		NodeIps:    make(map[string]IPPair),
 		PrivateKey: req.GetCluster().GetClusterInfo().GetPrivateKey(),
@@ -98,6 +94,18 @@ func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterM
 	b, err := json.Marshal(md)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal %s cluster metadata: %w", req.GetCluster().GetClusterInfo().GetName(), err)
+	}
+
+	// local deployment - print metadata
+	if namespace := envs.Namespace; namespace == "" {
+		// NOTE: DEBUG print
+		// var buffer bytes.Buffer
+		// for node, ips := range md.NodeIps {
+		// 	buffer.WriteString(fmt.Sprintf("%s: %v \t| %v \n", node, ips.PublicIP, ips.PrivateIP))
+		// }
+		// buffer.WriteString(fmt.Sprintf("%s\n", md.PrivateKey))
+		// log.Info().Msgf("Cluster metadata from cluster %s \n%s", req.GetCluster().ClusterInfo.Name, buffer.String())
+		return &pb.StoreClusterMetadataResponse{}, nil
 	}
 
 	clusterID := fmt.Sprintf("%s-%s", req.GetCluster().ClusterInfo.Name, req.GetCluster().ClusterInfo.Hash)
@@ -134,16 +142,14 @@ func (s *server) DeleteClusterMetadata(ctx context.Context, req *pb.DeleteCluste
 }
 
 func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigRequest) (*pb.StoreKubeconfigResponse, error) {
-	cluster := req.GetCluster()
-	clusterID := fmt.Sprintf("%s-%s", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
-	namespace := envs.Namespace
-
 	// local deployment - print kubeconfig
-	if namespace == "" {
-		log.Info().Msgf("The kubeconfig for %s:", clusterID)
-		fmt.Println(cluster.Kubeconfig)
+	if namespace := envs.Namespace; namespace == "" {
+		//NOTE: DEBUG print
+		// log.Info().Msgf("The kubeconfig for %s\n%s:", clusterID,cluster.Kubeconfig)
 		return &pb.StoreKubeconfigResponse{}, nil
 	}
+	cluster := req.GetCluster()
+	clusterID := fmt.Sprintf("%s-%s", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
 
 	clusterDir := filepath.Join(outputDir, clusterID)
 	sec := secret.New(clusterDir, secret.NewYaml(
@@ -151,7 +157,7 @@ func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigReq
 		secret.Data{SecretData: base64.StdEncoding.EncodeToString([]byte(cluster.GetKubeconfig()))},
 	))
 
-	if err := sec.Apply(namespace, ""); err != nil {
+	if err := sec.Apply(envs.Namespace, ""); err != nil {
 		log.Error().Msgf("Failed to store kubeconfig for %s: %s", cluster.ClusterInfo.Name, err)
 		return nil, fmt.Errorf("error while creating the kubeconfig secret for %s", cluster.ClusterInfo.Name)
 	}

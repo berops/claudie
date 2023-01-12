@@ -16,7 +16,7 @@ type Kubectl struct {
 }
 
 const (
-	maxKubectlRetries = 5
+	maxKubectlRetries = 10
 	getEtcdPodsCmd    = "get pods -n kube-system --no-headers -o custom-columns=\":metadata.name\" | grep etcd"
 	exportEtcdEnvsCmd = `export ETCDCTL_API=3 && 
 		export ETCDCTL_CACERT=/etc/kubernetes/pki/etcd/ca.crt && 
@@ -156,11 +156,13 @@ func (k *Kubectl) KubectlExecEtcd(etcdPod, etcdctlCmd string) ([]byte, error) {
 func (k Kubectl) run(command string) error {
 	cmd := exec.Command("bash", "-c", command)
 	cmd.Dir = k.Directory
-	err := cmd.Run()
-	if err != nil {
-		retryCmd := comm.Cmd{Command: command, Dir: k.Directory}
-		err = retryCmd.RetryCommand(maxKubectlRetries)
-		if err != nil {
+	if err := cmd.Run(); err != nil {
+		retryCmd := comm.Cmd{
+			Command: command,
+			Dir:     k.Directory,
+		}
+
+		if err = retryCmd.RetryCommand(maxKubectlRetries); err != nil {
 			return err
 		}
 	}

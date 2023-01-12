@@ -16,16 +16,32 @@ type etcdPodInfo struct {
 }
 
 type Deleter struct {
-	masterNodes []string
-	workerNodes []string
-	cluster     *pb.K8Scluster
+	masterNodes   []string
+	workerNodes   []string
+	cluster       *pb.K8Scluster
+	clusterPrefix string
 }
 
 // New returns new Deleter struct, used for node deletion from a k8s cluster
 // masterNodes - master nodes to DELETE
 // workerNodes - worker nodes to DELETE
 func New(masterNodes, workerNodes []string, cluster *pb.K8Scluster) *Deleter {
-	return &Deleter{masterNodes: masterNodes, workerNodes: workerNodes, cluster: cluster}
+	prefix := fmt.Sprintf("%s-%s-", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
+
+	for i := range masterNodes {
+		masterNodes[i] = strings.TrimPrefix(masterNodes[i], prefix)
+	}
+
+	for i := range workerNodes {
+		workerNodes[i] = strings.TrimPrefix(workerNodes[i], prefix)
+	}
+
+	return &Deleter{
+		masterNodes:   masterNodes,
+		workerNodes:   workerNodes,
+		cluster:       cluster,
+		clusterPrefix: prefix,
+	}
 }
 
 // DeleteNodes deletes nodes specified in d.masterNodes and d.workerNodes
@@ -95,8 +111,9 @@ func (d *Deleter) deleteFromEtcd(kc kubectl.Kubectl) error {
 	if mainMasterNode == nil {
 		return fmt.Errorf("failed to find any API endpoint node in cluster %s", d.cluster.ClusterInfo.Name)
 	}
+
 	//get etcd pods
-	etcdPods, err := getEtcdPodNames(kc, mainMasterNode.Name)
+	etcdPods, err := getEtcdPodNames(kc, strings.TrimPrefix(mainMasterNode.Name, d.clusterPrefix))
 	if err != nil {
 		log.Error().Msgf("Cannot find etcd pods in cluster %s : %v", d.cluster.ClusterInfo.Name, err)
 		return fmt.Errorf("cannot find etcd pods in cluster %s  : %w", d.cluster.ClusterInfo.Name, err)

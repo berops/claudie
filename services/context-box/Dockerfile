@@ -1,4 +1,4 @@
-FROM golang:1.19.3 AS build
+FROM golang:1.19.4 AS build
 
 #Unset the GOPATH
 ENV GOPATH=
@@ -36,6 +36,12 @@ RUN CGO_ENABLED=0 go build
 
 #Use empty base image
 FROM scratch
+#Add repository label
+LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
+#Add base image name as a label
+LABEL org.opencontainers.image.base.name "scratch"
+#Add description to the image
+LABEL org.opencontainers.image.description "Image for Context-box from Claudie"
 
 #Copy the binaries to empty base image
 COPY --from=build  /go/services/context-box/server/server /bin/services/context-box/server/server
