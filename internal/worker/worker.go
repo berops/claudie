@@ -39,5 +39,3 @@ func (w *Worker) Run() {
 		}
 	}
 }
-
-//DELETE ME BEFORE MERGE - used to build all images and push them to new registry
