@@ -1,4 +1,4 @@
-FROM golang:1.19.3 AS build
+FROM golang:1.19.4 AS build
 
 #Install kubectl
 RUN wget -q https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
@@ -22,6 +22,12 @@ WORKDIR /go/services/testing-framework
 RUN CGO_ENABLED=0 go test -c -run TestClaudie
 
 FROM alpine
+#Add repository label
+LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
+#Add image name as a label
+LABEL org.opencontainers.image.base.name "docker.io/library/alpine"
+#Add description to the image
+LABEL org.opencontainers.image.description "Image for Testing-framework from Claudie"
 
 COPY --from=build /usr/local/bin/kubectl /usr/local/bin/kubectl
 COPY --from=build /go/services/testing-framework/testing-framework.test /go/services/testing-framework/testing-framework.test

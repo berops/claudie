@@ -97,24 +97,23 @@ jobs:
         with:
           endpoint: claudie
 
-      # Login to Docker Hub
-      - name: Login to DockerHub
-        if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
+      - name: Set up docker
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN}}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       # Build the new images that were changed by a recent commit - tag image latest as well for testing
       - name: Build and push new images
         if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
         run: |
-          arr=(${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }})
-          for path in "${arr[@]}"
+          ARR=(${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }})
+          for SERVICE in "${ARR[@]}"
           do
-            echo "-----Building $path-----"
-            IMGTAG="${{secrets.DOCKERHUB_USERNAME}}/$path:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}" 
-            DOCKER_BUILDKIT=1 docker buildx build --push --platform linux/amd64,linux/arm64 --tag $IMGTAG -f ./services/$path/Dockerfile . 
+            echo "-----Building $SERVICE-----"
+            IMGTAG="ghcr.io/berops/claudie/$SERVICE:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}" 
+            DOCKER_BUILDKIT=1 docker buildx build --push --platform linux/amd64,linux/arm64 --tag $IMGTAG -f ./services/$SERVICE/Dockerfile . 
           done
 
   #--------------------------------------------------------------------------------------------------
@@ -147,7 +146,7 @@ jobs:
           do
             echo "Setting a new tag for a $SERVICE"
             if [ "$SERVICE" != "testing-framework" ]; then
-              kustomize edit set image ${{ secrets.DOCKERHUB_USERNAME }}/$SERVICE:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+              kustomize edit set image ghcr.io/berops/claudie/$SERVICE:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
             fi
           done
 
@@ -163,7 +162,7 @@ jobs:
           do
             echo "Setting a new tag for a $SERVICE"
             if [ "$SERVICE" == "testing-framework" ]; then
-              kustomize edit set image ${{ secrets.DOCKERHUB_USERNAME }}/$SERVICE:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+              kustomize edit set image ghcr.io/berops/claudie/$SERVICE:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
             fi
           done
 
@@ -200,7 +199,7 @@ jobs:
         run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
 
       - name: install kubectl
-        uses: azure/setup-kubectl@v3.0
+        uses: azure/setup-kubectl@v3.1
         with:
           version: latest
 
@@ -217,11 +216,20 @@ jobs:
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
           access_token_lifetime: "21600s"
 
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+
       - name: Configure kubectl
-        uses: google-github-actions/get-gke-credentials@v1.0.0
-        with:
-          cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
-          location: ${{ secrets.GKE_ZONE }}
+        env:
+          USE_GKE_GCLOUD_AUTH_PLUGIN: True
+        run: |-
+          gcloud components install gke-gcloud-auth-plugin
+          gke-gcloud-auth-plugin --version
+          gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER_NAME }} --zone ${{ secrets.GKE_ZONE }}
+
+      - name: Get PR labels
+        id: pr-labels
+        uses: joerick/pr-labels-action@v1.0.6
 
       # Deploy services to new namespace
       - name: Deploy to new namespace
@@ -229,6 +237,12 @@ jobs:
         run: |
           #set log level to debug
           sed -i 's/GOLANG_LOG=info/GOLANG_LOG=debug/g' .env
+          #check if auto clean up is enabled/disabled
+          if [ -n "$GITHUB_PR_LABEL_DISABLE_CLEAN_UP" ]; then
+            echo "AUTO_CLEAN_UP=FALSE" >> .env
+          else
+            echo "AUTO_CLEAN_UP=TRUE" >> .env
+          fi
 
           kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
           kustomize build | kubectl apply -f -
