@@ -83,6 +83,8 @@ func (c *Cmd) RetryCommandWithOutput(numOfRetries, commandTimeout int) ([]byte, 
 	return nil, err
 }
 
+// execute executes the cmd with context canceled after commandTimeout seconds
+// returns error if unsuccessful, nil otherwise
 func (c *Cmd) execute(i, numOfRetries, commandTimeout int) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(commandTimeout)*time.Second)
 	defer cancel()
@@ -90,6 +92,8 @@ func (c *Cmd) execute(i, numOfRetries, commandTimeout int) error {
 	return c.buildCmd(ctx).Run()
 }
 
+// executeWithOutput executes the cmd with context canceled after commandTimeout seconds
+// returns error, nil if unsuccessful, nil, output otherwise
 func (c *Cmd) executeWithOutput(i, numOfRetries, commandTimeout int) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(commandTimeout)*time.Second)
 	defer cancel()
@@ -97,6 +101,7 @@ func (c *Cmd) executeWithOutput(i, numOfRetries, commandTimeout int) ([]byte, er
 	return c.buildCmd(ctx).CombinedOutput()
 }
 
+// buildCmd prepares a exec.Cmd datastructure with context
 func (c *Cmd) buildCmd(ctx context.Context) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, "bash", "-c", c.Command)
 	cmd.Dir = c.Dir
@@ -105,6 +110,7 @@ func (c *Cmd) buildCmd(ctx context.Context) *exec.Cmd {
 	return cmd
 }
 
+// return a new backoff (2 ^ iteration), with the hard limit set at maxBackoff
 func getNewBackoff(iteration int) int {
 	backoff := (2 ^ iteration)
 	if backoff > maxBackoff {
