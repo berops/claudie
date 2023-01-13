@@ -21,12 +21,12 @@ type Cmd struct {
 	Stderr  io.Writer
 }
 
-// Wrapper struct holds data for the wrapper around stdout & stderr
+// Wrapper struct holds data for the wrapper around stdout & stderr.
 type Wrapper struct {
 	logger *stdLog.Logger
 	buf    *bytes.Buffer
 	prefix string
-	// Adds color to stdout & stderr if terminal supports it
+	// Adds color to stdout & stderr if terminal supports it.
 	useColours bool
 	logType    int
 }
@@ -40,10 +40,10 @@ const (
 	maxBackoff = 5 * 60 // max backoff time [5 min]
 )
 
-// RetryCommand will retry the given command, with exponential backoff, maxing at 5 min, for numOfRetries times
-// commandTimeout is used to terminate the command after specified time, regardless if it was successful or not
-// this prevents commands to be executing indefinitely
-// returns error if all retries fail, nil otherwise
+// RetryCommand retries the given command, with exponential backoff, maxing at 5 min, for numOfRetries times.
+// commandTimeout is used to terminate the command after specified time, regardless if it was successful or not.
+// This prevents commands to be executing indefinitely.
+// Returns error if all retries fail, nil otherwise.
 func (c *Cmd) RetryCommand(numOfRetries, commandTimeout int) error {
 	var err error
 	for i := 1; i <= numOfRetries; i++ {
@@ -61,10 +61,10 @@ func (c *Cmd) RetryCommand(numOfRetries, commandTimeout int) error {
 	return err
 }
 
-// RetryCommandWithOutput will retry the given command,  with exponential backoff, maxing at 5 min, for numOfRetries times
-// commandTimeout is used to terminate the command after specified time, regardless if it was successful or not
-// this prevents commands to be executing indefinitely
-// returns (nil, error) if all retries fail, (output, nil) otherwise
+// RetryCommandWithOutput retries the given command, with exponential backoff, maxing at 5 min, for numOfRetries times.
+// commandTimeout is used to terminate the command after specified time, regardless if it was successful or not.
+// This prevents commands to be executing indefinitely.
+// returns (nil, error) if all retries fail, (output, nil) otherwise.
 func (c *Cmd) RetryCommandWithOutput(numOfRetries, commandTimeout int) ([]byte, error) {
 	var err error
 	var out []byte
@@ -83,8 +83,8 @@ func (c *Cmd) RetryCommandWithOutput(numOfRetries, commandTimeout int) ([]byte, 
 	return nil, err
 }
 
-// execute executes the cmd with context canceled after commandTimeout seconds
-// returns error if unsuccessful, nil otherwise
+// execute executes the cmd with context canceled after commandTimeout seconds.
+// Returns error if unsuccessful, nil otherwise.
 func (c *Cmd) execute(i, numOfRetries, commandTimeout int) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(commandTimeout)*time.Second)
 	defer cancel()
@@ -92,8 +92,8 @@ func (c *Cmd) execute(i, numOfRetries, commandTimeout int) error {
 	return c.buildCmd(ctx).Run()
 }
 
-// executeWithOutput executes the cmd with context canceled after commandTimeout seconds
-// returns error, nil if unsuccessful, nil, output otherwise
+// executeWithOutput executes the cmd with context canceled after commandTimeout seconds.
+// Returns error, nil if unsuccessful, nil, output otherwise.
 func (c *Cmd) executeWithOutput(i, numOfRetries, commandTimeout int) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(commandTimeout)*time.Second)
 	defer cancel()
@@ -101,7 +101,7 @@ func (c *Cmd) executeWithOutput(i, numOfRetries, commandTimeout int) ([]byte, er
 	return c.buildCmd(ctx).CombinedOutput()
 }
 
-// buildCmd prepares a exec.Cmd datastructure with context
+// buildCmd prepares a exec.Cmd datastructure with context.
 func (c *Cmd) buildCmd(ctx context.Context) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, "bash", "-c", c.Command)
 	cmd.Dir = c.Dir
@@ -110,7 +110,7 @@ func (c *Cmd) buildCmd(ctx context.Context) *exec.Cmd {
 	return cmd
 }
 
-// getNewBackoff returns a new backoff 5 * (2 ^ iteration), with the hard limit set at maxBackoff
+// getNewBackoff returns a new backoff 5 * (2 ^ iteration), with the hard limit set at maxBackoff.
 func getNewBackoff(iteration int) int {
 	backoff := 5 * (2 ^ iteration)
 	if backoff > maxBackoff {
@@ -120,14 +120,14 @@ func getNewBackoff(iteration int) int {
 	return backoff
 }
 
-// GetStdOut returns an io.Writer for exec with the defined prefix
-// Cannot be used with cmd.CombinedOutput()
+// GetStdOut returns an io.Writer for exec with the defined prefix.
+// Cannot be used with cmd.CombinedOutput().
 func GetStdOut(prefix string) Wrapper {
 	return getWrapper(prefix, STDOUT)
 }
 
-// GetStdErr returns an io.Writer for exec with the defined prefix
-// Cannot be used with cmd.CombinedOutput()
+// GetStdErr returns an io.Writer for exec with the defined prefix.
+// Cannot be used with cmd.CombinedOutput().
 func GetStdErr(prefix string) Wrapper {
 	return getWrapper(prefix, STDERR)
 }
@@ -141,7 +141,7 @@ func getWrapper(prefix string, logType int) Wrapper {
 	return w
 }
 
-// Write is implementation of the function from io.Writer interface
+// Write is implementation of the function from io.Writer interface.
 func (w Wrapper) Write(p []byte) (n int, err error) {
 	if n, err = w.buf.Write(p); err != nil {
 		return n, err
@@ -150,7 +150,7 @@ func (w Wrapper) Write(p []byte) (n int, err error) {
 	return len(p), err
 }
 
-// outputLines will output strings from current buffer
+// outputLines will output strings from current buffer.
 func (w *Wrapper) outputLines() error {
 	for {
 		line, err := w.buf.ReadString('\n')
@@ -178,7 +178,7 @@ func (w *Wrapper) outputLines() error {
 	return nil
 }
 
-// printWithPrefix will append a colour if supported and outputs the line with prefix
+// printWithPrefix will append a colour if supported and outputs the line with prefix.
 func (w *Wrapper) printWithPrefix(str string) {
 	if len(str) < 1 {
 		return
