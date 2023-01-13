@@ -122,7 +122,7 @@ jobs:
       - name: Insert cloud credentials to test set
         working-directory: ./manifests/testing-framework/test-sets
         run: |
-          sudo apt install -y wget tar
+          sudo apt update && sudo apt install -y wget tar
           wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
           tar xz && mv yq_linux_amd64 yq
 
