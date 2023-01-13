@@ -15,10 +15,11 @@ import (
 )
 
 type Cmd struct {
-	Command string
-	Dir     string
-	Stdout  io.Writer
-	Stderr  io.Writer
+	Command        string
+	Dir            string
+	Stdout         io.Writer
+	Stderr         io.Writer
+	CommandTimeout int
 }
 
 // Wrapper struct holds data for the wrapper around stdout & stderr.
@@ -41,17 +42,15 @@ const (
 )
 
 // RetryCommand retries the given command, with exponential backoff, maxing at 5 min, for numOfRetries times.
-// commandTimeout is used to terminate the command after specified time, regardless if it was successful or not.
-// This prevents commands to be executing indefinitely.
 // Returns error if all retries fail, nil otherwise.
-func (c *Cmd) RetryCommand(numOfRetries, commandTimeout int) error {
+func (c *Cmd) RetryCommand(numOfRetries int) error {
 	var err error
 	for i := 1; i <= numOfRetries; i++ {
 		backoff := getNewBackoff(i)
 		log.Info().Msgf("Next retry in %ds...", backoff)
 		time.Sleep(time.Duration(backoff) * time.Second)
 
-		if err = c.execute(i, numOfRetries, commandTimeout); err == nil {
+		if err = c.execute(i, numOfRetries); err == nil {
 			log.Info().Msgf("The %s was successful on %d retry", c.Command, i)
 			return nil
 		}
@@ -62,10 +61,8 @@ func (c *Cmd) RetryCommand(numOfRetries, commandTimeout int) error {
 }
 
 // RetryCommandWithOutput retries the given command, with exponential backoff, maxing at 5 min, for numOfRetries times.
-// commandTimeout is used to terminate the command after specified time, regardless if it was successful or not.
-// This prevents commands to be executing indefinitely.
 // returns (nil, error) if all retries fail, (output, nil) otherwise.
-func (c *Cmd) RetryCommandWithOutput(numOfRetries, commandTimeout int) ([]byte, error) {
+func (c *Cmd) RetryCommandWithOutput(numOfRetries int) ([]byte, error) {
 	var err error
 	var out []byte
 	for i := 1; i <= numOfRetries; i++ {
@@ -73,7 +70,7 @@ func (c *Cmd) RetryCommandWithOutput(numOfRetries, commandTimeout int) ([]byte, 
 		log.Info().Msgf("Next retry in %ds...", backoff)
 		time.Sleep(time.Duration(backoff) * time.Second)
 
-		if out, err = c.executeWithOutput(i, numOfRetries, commandTimeout); err == nil {
+		if out, err = c.executeWithOutput(i, numOfRetries); err == nil {
 			log.Info().Msgf("The %s was successful after %d retry", c.Command, i)
 			return out, nil
 		}
@@ -85,29 +82,41 @@ func (c *Cmd) RetryCommandWithOutput(numOfRetries, commandTimeout int) ([]byte, 
 
 // execute executes the cmd with context canceled after commandTimeout seconds.
 // Returns error if unsuccessful, nil otherwise.
-func (c *Cmd) execute(i, numOfRetries, commandTimeout int) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(commandTimeout)*time.Second)
-	defer cancel()
+func (c *Cmd) execute(i, numOfRetries int) error {
+	cmd, cancel := c.buildCmd()
+	if cancel != nil {
+		defer cancel()
+	}
 	log.Warn().Msgf("Retrying command %s... (%d/%d)", c.Command, i, numOfRetries)
-	return c.buildCmd(ctx).Run()
+	return cmd.Run()
 }
 
 // executeWithOutput executes the cmd with context canceled after commandTimeout seconds.
 // Returns error, nil if unsuccessful, nil, output otherwise.
-func (c *Cmd) executeWithOutput(i, numOfRetries, commandTimeout int) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(commandTimeout)*time.Second)
-	defer cancel()
+func (c *Cmd) executeWithOutput(i, numOfRetries int) ([]byte, error) {
+	cmd, cancel := c.buildCmd()
+	if cancel != nil {
+		defer cancel()
+	}
 	log.Warn().Msgf("Retrying command %s... (%d/%d)", c.Command, i, numOfRetries)
-	return c.buildCmd(ctx).CombinedOutput()
+	return cmd.CombinedOutput()
 }
 
 // buildCmd prepares a exec.Cmd datastructure with context.
-func (c *Cmd) buildCmd(ctx context.Context) *exec.Cmd {
-	cmd := exec.CommandContext(ctx, "bash", "-c", c.Command)
+func (c *Cmd) buildCmd() (*exec.Cmd, context.CancelFunc) {
+	var cmd *exec.Cmd
+	var cancelFun context.CancelFunc = nil
+	if c.CommandTimeout > 0 {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(c.CommandTimeout)*time.Second)
+		cmd = exec.CommandContext(ctx, "bash", "-c", c.Command)
+		cancelFun = cancel
+	} else {
+		cmd = exec.Command("bash", "-c", c.Command)
+	}
 	cmd.Dir = c.Dir
 	cmd.Stdout = c.Stdout
 	cmd.Stderr = c.Stderr
-	return cmd
+	return cmd, cancelFun
 }
 
 // getNewBackoff returns a new backoff 5 * (2 ^ iteration), with the hard limit set at maxBackoff.

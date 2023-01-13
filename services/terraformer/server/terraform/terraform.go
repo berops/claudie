@@ -14,8 +14,6 @@ const (
 	// it succeeds. If after 10 retries the commands still fails an error should be
 	// returned containing the reason.
 	maxTerraformRetries = 10
-	// cancel terraform command after terraformTimeout seconds
-	terraformTimeout = 600
 )
 
 type Terraform struct {
@@ -41,7 +39,7 @@ func (t *Terraform) TerraformInit() error {
 			Stderr:  cmd.Stderr,
 		}
 
-		if err := retryCmd.RetryCommand(maxTerraformRetries, terraformTimeout); err != nil {
+		if err := retryCmd.RetryCommand(maxTerraformRetries); err != nil {
 			return fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
 		}
 	}
@@ -65,7 +63,7 @@ func (t *Terraform) TerraformApply() error {
 			Stderr:  cmd.Stderr,
 		}
 
-		if err := retryCmd.RetryCommand(maxTerraformRetries, terraformTimeout); err != nil {
+		if err := retryCmd.RetryCommand(maxTerraformRetries); err != nil {
 			return fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
 		}
 	}
@@ -89,7 +87,7 @@ func (t *Terraform) TerraformDestroy() error {
 			Stderr:  cmd.Stderr,
 		}
 
-		if err := retryCmd.RetryCommand(maxTerraformRetries, terraformTimeout); err != nil {
+		if err := retryCmd.RetryCommand(maxTerraformRetries); err != nil {
 			return fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
 		}
 	}

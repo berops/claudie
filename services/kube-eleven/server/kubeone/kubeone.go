@@ -10,8 +10,7 @@ import (
 )
 
 const (
-	maxNumOfRetries = 5   //max number of retries for kubeone apply
-	kubeoneTimeout  = 600 // cancel kubeone command after kubeoneTimeout seconds
+	maxNumOfRetries = 5 //max number of retries for kubeone apply
 )
 
 // Kubeone struct
@@ -36,7 +35,7 @@ func (k *Kubeone) Apply() error {
 			Stdout:  os.Stdout,
 			Stderr:  os.Stderr,
 		}
-		if err := retryCmd.RetryCommand(maxNumOfRetries, kubeoneTimeout); err != nil {
+		if err := retryCmd.RetryCommand(maxNumOfRetries); err != nil {
 			return err
 		}
 	}
