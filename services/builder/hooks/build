@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# $IMAGE_NAME var is automatically injected into the build so the tag is correct.
+
+function dockerbuild() {
+    docker build --build-arg TARGETARCH="$1" -t "$IMAGE_NAME" .
+}
+
+export DOCKER_BUILDKIT=1
+echo "Build hook running"
+
+if [ -n "$TARGETARCH" ]; then
+    docker build --build-arg TARGETARCH="$TARGETARCH" -t "$IMAGE_NAME" .
+elif [ -z "$TARGETARCH" ]; then
+    # list of possible architectures reported by `uname` that
+    # uses the `newuname` syscall:
+    # https://stackoverflow.com/a/45125525
+    LOCALARCH="$(uname -m)"
+
+    case "$LOCALARCH" in
+        "x86_64")
+            TARGETARCH="$LOCALARCH"
+        ;;
+        "arm64")
+            TARGETARCH="$LOCALARCH"
+        ;;
+        "arm")
+            TARGETARCH="$LOCALARCH"
+        ;;
+        "ppc64le")
+            TARGETARCH="$LOCALARCH"
+        ;;
+        *)
+            echo "unsupported architecture $LOCALARCH, exiting..." && exit 1
+        ;;
+    esac
+
+    dockerbuild "$TARGETARCH"
+fi
