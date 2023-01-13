@@ -70,7 +70,7 @@ jobs:
       - name: Install kustomize
         uses: imranismail/setup-kustomize@v2
         with:
-          kustomize-version: 3.6.1
+          kustomize-version: 4.5.2
 
       - name: Login to GCP
         uses: google-github-actions/auth@v1.0.0
