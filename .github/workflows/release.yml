@@ -68,7 +68,7 @@ jobs:
       - name: Create archives for manifests
         working-directory: manifests/claudie
         run: |
-          sudo apt install -y zip tar
+          sudo apt update && sudo apt install -y zip tar
           tar -czvf ../../claudie.tar.gz .
           zip -r ../../claudie.zip .
 
