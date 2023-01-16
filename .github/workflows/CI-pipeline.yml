@@ -134,7 +134,7 @@ jobs:
         if: ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
         uses: imranismail/setup-kustomize@v2
         with:
-          version: 3.6.1
+          kustomize-version: 4.5.2
 
       # Set the new claudie image tags in kustomization.yaml
       - name: Edit claudie kustomization.yaml
@@ -203,10 +203,10 @@ jobs:
         with:
           version: latest
 
-      - name: install kustomize
+      - name: Install kustomize
         uses: imranismail/setup-kustomize@v2
         with:
-          version: 3.6.1
+          kustomize-version: 4.5.2
 
       - name: Login to GCP
         uses: google-github-actions/auth@v1.0.0
@@ -229,7 +229,7 @@ jobs:
 
       - name: Get PR labels
         id: pr-labels
-        uses: joerick/pr-labels-action@v1.0.6
+        uses: joerick/pr-labels-action@v1.0.7
 
       # Deploy services to new namespace
       - name: Deploy to new namespace
@@ -266,6 +266,7 @@ jobs:
       - name: Insert cloud credentials to test set
         working-directory: ./manifests/testing-framework/test-sets
         run: |
+          sudo apt update && sudo apt install -y wget tar
           wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
           tar xz && mv yq_linux_amd64 yq
 
