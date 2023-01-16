@@ -80,7 +80,7 @@ func setPrivateAddresses(nodepools []*pb.NodePool, network string) error {
 	if err != nil {
 		return fmt.Errorf("failed to parse CIDR %s : %w", network, err)
 	}
-	var addressesToAssign []*pb.Node
+	var nodesToAssignIP []*pb.Node
 
 	// initialize slice of possible last octet
 	lastOctets := make([]byte, 255)
@@ -91,24 +91,28 @@ func setPrivateAddresses(nodepools []*pb.NodePool, network string) error {
 
 	ip := ipNet.IP
 	ip = ip.To4()
+	// remove last octets from slice of all possible ones
 	for _, nodepool := range nodepools {
 		for _, node := range nodepool.Nodes {
 			// If address already assigned, skip
 			if node.Private != "" {
 				lastOctet := strings.Split(node.Private, ".")[3]
-				lastOctetInt, _ := strconv.Atoi(lastOctet)
+				lastOctetInt, err := strconv.Atoi(lastOctet)
+				if err != nil {
+					return fmt.Errorf("failed to parse last octet %s of IP %s from node %s : %w", lastOctet, node.Private, node.Name, err)
+				}
 				lastOctets = remove(lastOctets, byte(lastOctetInt))
 				continue
 			}
-			addressesToAssign = append(addressesToAssign, node)
+			// add to slice of nodes which need new Ip assigned
+			nodesToAssignIP = append(nodesToAssignIP, node)
 		}
 	}
 
-	var temp int
-	for _, address := range addressesToAssign {
-		ip[3] = lastOctets[temp]
-		address.Private = ip.String()
-		temp++
+	// assign new private IP to new nodes
+	for i, node := range nodesToAssignIP {
+		ip[3] = lastOctets[i]
+		node.Private = ip.String()
 	}
 	return nil
 }

@@ -1,4 +1,4 @@
-FROM golang:1.19.3 AS build
+FROM golang:1.19.4 AS build
 
 #Install kubectl
 RUN wget -q https://storage.googleapis.com/kubernetes-release/release/v1.22.0/bin/linux/amd64/kubectl
@@ -38,6 +38,12 @@ WORKDIR /go/services/kuber/server
 RUN CGO_ENABLED=0 go build
 
 FROM alpine
+#Add repository label
+LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
+#Add image name as a label
+LABEL org.opencontainers.image.base.name "docker.io/library/alpine"
+#Add description to the image
+LABEL org.opencontainers.image.description "Image for Kuber from Claudie"
 
 #Copy the binaries to empty base image
 COPY --from=build /go/kubectl /usr/local/bin/kubectl

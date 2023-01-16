@@ -30,7 +30,7 @@ nodePools:
         zone: nbg1-dc3
       count: 1
       server_type: cpx11
-      image: ubuntu-20.04
+      image: ubuntu-22.04
       disk_size: 50
     - name: hetzner-compute
       providerSpec:
@@ -39,7 +39,7 @@ nodePools:
         zone: nbg1-dc3
       count: 1
       server_type: cpx11
-      image: ubuntu-20.04
+      image: ubuntu-22.04
       disk_size: 50
     - name: oci-control
       providerSpec:
@@ -49,8 +49,8 @@ nodePools:
       count: 1
       server_type: VM.Standard2.1
       # ubuntu minimal
-      # https://docs.oracle.com/en-us/iaas/images/image/7c71896e-e030-4de2-b73e-8856ac44d84c/
-      image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaauj7omj2zxmbh2go5plujbvysvhwojasdywcxrnnkcwehvwpix3ga
+      # https://docs.oracle.com/en-us/iaas/images/image/674d0b41-aee8-4c0b-bf99-9e100d90f241/
+      image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
       disk_size: 50
     - name: oci-compute
       providerSpec:
@@ -60,28 +60,28 @@ nodePools:
       count: 1
       server_type: VM.Standard1.1
       # ubuntu minimal
-      # https://docs.oracle.com/en-us/iaas/images/image/7c71896e-e030-4de2-b73e-8856ac44d84c/
-      image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaauj7omj2zxmbh2go5plujbvysvhwojasdywcxrnnkcwehvwpix3ga
+      # https://docs.oracle.com/en-us/iaas/images/image/674d0b41-aee8-4c0b-bf99-9e100d90f241/
+      image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
       disk_size: 50
     - name: aws-control
       providerSpec:
         name: aws-1
-        region: eu-west-3
-        zone: eu-west-3a
+        region: eu-west-2
+        zone: eu-west-2a
       count: 1
       server_type: t3.small
       #ubuntu
-      image: ami-0171866b8d95139a7
+      image: ami-01b8d743224353ffe
       disk_size: 50
     - name: aws-compute
       providerSpec:
         name: aws-1
-        region: eu-west-3
-        zone: eu-west-3a
+        region: eu-west-2
+        zone: eu-west-2a
       count: 1
       server_type: t3.small
       #ubuntu
-      image: ami-0171866b8d95139a7
+      image: ami-01b8d743224353ffe
       disk_size: 50
     #-----------LB nodepools----------
     - name: hetzner-lb
@@ -91,7 +91,7 @@ nodePools:
         zone: nbg1-dc3
       count: 2
       server_type: cpx11
-      image: ubuntu-20.04
+      image: ubuntu-22.04
       disk_size: 50
 
 kubernetes:

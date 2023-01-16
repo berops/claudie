@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	maxNumOfRetries = 3 //max number of retries for kubeone apply
+	maxNumOfRetries = 5 //max number of retries for kubeone apply
 )
 
 // Kubeone struct

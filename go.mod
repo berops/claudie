@@ -3,31 +3,31 @@ module github.com/Berops/claudie
 go 1.19
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.17.1
-	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.10.5
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.17.6
+	github.com/aws/aws-sdk-go-v2 v1.17.3
+	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.10.9
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.18.0
 	github.com/go-playground/validator/v10 v10.11.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
-	github.com/minio/minio-go/v7 v7.0.43
+	github.com/minio/minio-go/v7 v7.0.46
 	github.com/rs/zerolog v1.28.0
 	github.com/spiffe/go-spiffe/v2 v2.1.1
 	github.com/stretchr/testify v1.8.1
-	go.mongodb.org/mongo-driver v1.11.0
+	go.mongodb.org/mongo-driver v1.11.1
 	golang.org/x/crypto v0.0.0-20220829220503-c86fa9a7ed90
 	golang.org/x/sync v0.0.0-20220819030929-7fc1605a5dde
-	google.golang.org/grpc v1.50.1
+	google.golang.org/grpc v1.51.0
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
 	github.com/Microsoft/go-winio v0.5.2 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.25 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.19 // indirect
-	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.13.25 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.10 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.7.19 // indirect
-	github.com/aws/smithy-go v1.13.4 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.27 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.21 // indirect
+	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.14.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.11 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.7.21 // indirect
+	github.com/aws/smithy-go v1.13.5 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect

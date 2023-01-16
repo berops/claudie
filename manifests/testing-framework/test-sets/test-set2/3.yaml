@@ -34,18 +34,18 @@ nodePools:
         name: hetzner-1
         region: nbg1
         zone: nbg1-dc3
-      count: 3
+      count: 2
       server_type: cpx11
-      image: ubuntu-20.04
+      image: ubuntu-22.04
       disk_size: 50
     - name: hetzner-compute
       providerSpec:
         name: hetzner-1
         region: nbg1
         zone: nbg1-dc3
-      count: 2
+      count: 3
       server_type: cpx11
-      image: ubuntu-20.04
+      image: ubuntu-22.04
       disk_size: 50
     #-----------LB nodepools----------
     - name: gcp-lb
@@ -55,7 +55,7 @@ nodePools:
         zone: europe-west1-c
       count: 2
       server_type: e2-small
-      image: ubuntu-os-cloud/ubuntu-2004-focal-v20220610
+      image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
       disk_size: 50
     - name: hetzner-lb
       providerSpec:
@@ -64,7 +64,7 @@ nodePools:
         zone: nbg1-dc3
       count: 2
       server_type: cpx11
-      image: ubuntu-20.04
+      image: ubuntu-22.04
       disk_size: 50
     - name: oci-lb
       providerSpec:
@@ -74,8 +74,8 @@ nodePools:
       count: 2
       server_type: VM.Standard2.1
       # ubuntu minimal
-      # https://docs.oracle.com/en-us/iaas/images/image/7c71896e-e030-4de2-b73e-8856ac44d84c/
-      image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaauj7omj2zxmbh2go5plujbvysvhwojasdywcxrnnkcwehvwpix3ga
+      # https://docs.oracle.com/en-us/iaas/images/image/674d0b41-aee8-4c0b-bf99-9e100d90f241/
+      image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
       disk_size: 50
     - name: aws-lb
       providerSpec:
@@ -85,7 +85,7 @@ nodePools:
       count: 2
       server_type: t3.small
       #ubuntu
-      image: ami-0965bd5ba4d59211c
+      image: ami-0039da1f3917fa8e3
       disk_size: 50
     - name: azure-lb
       providerSpec:
@@ -94,7 +94,7 @@ nodePools:
         zone: 3
       count: 2
       server_type: Standard_B2s
-      image: Canonical:0001-com-ubuntu-minimal-focal:minimal-20_04-lts:20.04.202004230
+      image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
       disk_size: 50
 kubernetes:
   clusters:

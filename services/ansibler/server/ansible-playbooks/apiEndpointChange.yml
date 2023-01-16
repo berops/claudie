@@ -9,46 +9,51 @@
         name: "{{ item }}"
         state: stopped
       loop:
-      - "kubelet"
-    
+        - "kubelet"
+
     - name: remove old apiserver.crt, apiserver.key
       file:
         path: "{{ item }}"
         state: absent
-      loop: 
-      - "/etc/kubernetes/pki/apiserver.crt"
-      - "/etc/kubernetes/pki/apiserver.key"
+      loop:
+        - "/etc/kubernetes/pki/apiserver.crt"
+        - "/etc/kubernetes/pki/apiserver.key"
 
-    - name: find file that contains the hostname 
+    - name: find file that contains the hostname
       find:
-        contains: ".*{{ansible_hostname}}.*"
+        contains: ".*{{inventory_hostname}}.*"
         path: /root/kubeone/cfg/
       register: file
-    
-    - name: replace endpoint 
+
+    - name: fail if no file was found
+      fail:
+        msg: "No file with {{inventory_hostname}} was found"
+      when: file.files == []
+
+    - name: replace endpoint
       replace:
         path: "{{file.files[0].path}}"
-        regexp: '{{ OldEndpoint}}'
-        replace: '{{ NewEndpoint}}'
-    
+        regexp: '{{ OldEndpoint }}'
+        replace: '{{ NewEndpoint }}'
+
     - name: generate new certs
       shell: "kubeadm init phase certs apiserver --config {{file.files[0].path}}"
-    
+
     - name: remove old /etc/kubernetes/*.conf
       file:
         path: "{{ item }}"
         state: absent
-      loop: 
-      - "/etc/kubernetes/admin.conf"
-      - "/etc/kubernetes/controller-manager.conf"
-      - "/etc/kubernetes/kubelet.conf"
-      - "/etc/kubernetes/scheduler.conf"
-    
-    - name: generate kubeconfig 
+      loop:
+        - "/etc/kubernetes/admin.conf"
+        - "/etc/kubernetes/controller-manager.conf"
+        - "/etc/kubernetes/kubelet.conf"
+        - "/etc/kubernetes/scheduler.conf"
+
+    - name: generate kubeconfig
       shell: "kubeadm init phase kubeconfig all --config {{file.files[0].path}}"
-    
+
     - name: restart kubelet
-      ansible.builtin.service: 
+      ansible.builtin.service:
         name: "{{ item }}"
         state: restarted
       register: serviceDetails
@@ -56,13 +61,13 @@
       retries: 5
       delay: 20
       loop:
-      - "kubelet"
-    
+        - "kubelet"
+
     - name: upload config map
       shell: "kubeadm init phase upload-config all --config {{file.files[0].path}}"
-    
+
     - name: restart containerd and kubelet
-      ansible.builtin.service: 
+      ansible.builtin.service:
         name: "{{ item }}"
         state: restarted
       register: serviceDetails
@@ -70,8 +75,8 @@
       retries: 10
       delay: 20
       loop:
-      - "kubelet"
-      - "containerd"
+        - "kubelet"
+        - "containerd"
 
 - hosts: compute
   gather_facts: true
@@ -79,18 +84,18 @@
   remote_user: root
   tasks:
     - name: stop kubelet
-      ansible.builtin.service: 
+      ansible.builtin.service:
         name: kubelet
         state: stopped
-    
-    - name: replace endpoint 
+
+    - name: replace endpoint
       replace:
         path: "/etc/kubernetes/kubelet.conf"
         regexp: '{{ OldEndpoint}}'
         replace: '{{ NewEndpoint}}'
-    
+
     - name: restart kubelet
-      ansible.builtin.service: 
+      ansible.builtin.service:
         name: kubelet
         state: restarted
       register: serviceDetails

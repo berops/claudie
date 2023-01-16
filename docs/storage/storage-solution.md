@@ -1,5 +1,11 @@
 # Claudie storage solution
 
+## Concept
+
+The ability to run stateful workloads is a must. At the same time, running stateful workloads is a complex task, even more so when considering the {multi,hybrid}-cloud environment. Therefore, Claudie needs to be able to accommodate the stateful workloads, regardless of the underlying infrastructure providers.
+
+Claudie orchestrates storage on the kubernetes cluster nodes by creating one storage cluster across multiple providers. This storage cluster has a series of `zones`, one for each cloud provider. Each `zone` then stores its own persistent volume data.
+
 ## Longhorn
 
 A Claudie-created cluster comes with the `longhorn` deployment preinstalled and ready to be used. By default, only **worker** nodes are used to store data.
@@ -14,9 +20,6 @@ To follow along, have a look at the reference [example input manifest file](../i
 
 When Claudie applies this input manifest, there are three storage classes installed:
 - `longhorn` - the default storage class, which stores data on random nodes
-- `longhorn-gcp-zone` - storage class that stores data on GCP nodes **only**
-- `longhorn-hetzner-zone` - storage class, which stores data only on Hetzner nodes
-
-## More information
+- `longhorn-<provider>-zone` - storage class, which stores data only on nodes of the specified providier (see the [list of supported providers](../input-manifest/input-manifest.md#providers))
 
 For more information on how Longorn works you can check out [Longhorn's official documentation](https://longhorn.io/docs/1.3.0/what-is-longhorn/).
