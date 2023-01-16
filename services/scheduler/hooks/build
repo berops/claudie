@@ -13,8 +13,7 @@ if [ -n "$TARGETARCH" ]; then
     docker build --build-arg TARGETARCH="$TARGETARCH" -t "$IMAGE_NAME" .
 elif [ -z "$TARGETARCH" ]; then
     # list of possible architectures reported by `uname` that
-    # uses the `newuname` syscall:
-    # https://stackoverflow.com/a/45125525
+    # uses the `newuname` syscall: https://stackoverflow.com/a/45125525
     LOCALARCH="$(uname -m)"
 
     case "$LOCALARCH" in
