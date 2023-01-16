@@ -18,7 +18,7 @@ elif [ -z "$TARGETARCH" ]; then
 
     case "$LOCALARCH" in
         "x86_64")
-            TARGETARCH="$LOCALARCH"
+            TARGETARCH="amd64"
         ;;
         "arm64")
             TARGETARCH="$LOCALARCH"
