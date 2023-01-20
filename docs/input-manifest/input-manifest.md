@@ -26,29 +26,30 @@ Manifest is a definition of the user's infrastructure. It contains cloud provide
 
 ## Providers 
 
-Contains configurations for different supported cloud providers. Atleast one provider needs to be defined out of the following supported providers 
+Contains configurations for supported cloud providers. At least one provider
+needs to be defined.
 
 - `gcp` [GCP](#gcp)
   
-  List of GCP configurations for [Google cloud](https://cloud.google.com/). This field is optional.
+  List of configuration options for [Google Cloud](https://cloud.google.com/). This field is optional.
 
 - `hetzner` [Hetzner](#hetzner)
   
-  List of Hetzner configuration for [Hetzner cloud](https://www.hetzner.com/cloud) . This field is optional.
+  List of configuration options for [Hetzner Cloud](https://www.hetzner.com/cloud) . This field is optional.
 
 - `oci` [OCI](#oci)
   
-  List of OCI configuration for [Oracle cloud infrastructure](https://www.oracle.com/uk/cloud/) . This field is optional.
+  List of configuration options for [Oracle Cloud Infrastructure](https://www.oracle.com/uk/cloud/). This field is optional.
 
 - `aws` [AWS](#aws)
   
-  List of AWS configuration for [Amazon web services](https://aws.amazon.com/) . This field is optional.
+  List of configuration options for [Amazon Web Services](https://aws.amazon.com/). This field is optional.
 
 - `azure` [Azure](#azure)
   
-  List of Azure configuration for [Azure](https://azure.microsoft.com/en-gb/) . This field is optional.
+  List of configuration options for [Azure](https://azure.microsoft.com/en-gb/). This field is optional.
 
-Support for more cloud provider is planned and will be rolled out in future. 
+Support for more cloud providers is in the [roadmap](https://github.com/Berops/claudie/blob/master/docs/roadmap/roadmap.md). 
 
 ## GCP
 
@@ -66,7 +67,7 @@ To find out how to configure GCP provider and service account, follow the instru
 
 - `gcp_project`
 
-  GCP project id of an already existing GCP project.
+  project id of an already existing GCP project.
 
 ## Hetzner
 
@@ -98,7 +99,7 @@ To find out how to configure OCI provider and service account, follow the instru
 
 - `key_fingerprint`
 
-  Fingerprint to the supplied private key.
+  Fingerprint of the user-supplied private key.
 
 - `tenancy_ocid`
   
@@ -110,7 +111,7 @@ To find out how to configure OCI provider and service account, follow the instru
 
 - `compartment_ocid`
 
-  OCID of the compartment where VMs/VCNs/... will be created
+  OCID of the [compartment](https://docs.oracle.com/en/cloud/paas/integration-cloud/oracle-integration-oci/creating-oci-compartment.html) where VMs/VCNs/... will be created
 
 ## AWS
 
