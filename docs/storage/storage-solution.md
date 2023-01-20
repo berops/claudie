@@ -2,7 +2,7 @@
 
 ## Concept
 
-The ability to run stateful workloads is a must. At the same time, running stateful workloads is a complex task, even more so when considering the {multi,hybrid}-cloud environment. Therefore, Claudie needs to be able to accommodate the stateful workloads, regardless of the underlying infrastructure providers.
+Running stateful workloads is a complex task, even more so when considering the {multi,hybrid}-cloud environment. Claudie therefore needs to be able to accommodate stateful workloads, regardless of the underlying infrastructure providers.
 
 Claudie orchestrates storage on the kubernetes cluster nodes by creating one storage cluster across multiple providers. This storage cluster has a series of `zones`, one for each cloud provider. Each `zone` then stores its own persistent volume data.
 
@@ -18,7 +18,7 @@ Besides the default storage class, Claudie can also create custom storage classe
 
 To follow along, have a look at the reference [example input manifest file](../input-manifest/example.yaml).
 
-When Claudie applies this input manifest, there are three storage classes installed:
+When Claudie applies this input manifest, the following storage classes are installed:
 - `longhorn` - the default storage class, which stores data on random nodes
 - `longhorn-<provider>-zone` - storage class, which stores data only on nodes of the specified providier (see the [list of supported providers](../input-manifest/input-manifest.md#providers))
 

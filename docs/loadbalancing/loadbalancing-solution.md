@@ -30,7 +30,7 @@ To create a highly available kubernetes cluster, Claudie creates load balancers 
 
 ### Role 
 
-Claudie uses the concept or roles while configuring the load balancers from the input manifest. Each role represents a loadbalancer configuration for a particular use. Roles are then assigned to the load balancer cluster. A single load balancer cluster can have multiple roles assigned.
+Claudie uses the concept of roles while configuring the load balancers from the input manifest. Each role represents a loadbalancer configuration for a particular use. Roles are then assigned to the load balancer cluster. A single load balancer cluster can have multiple roles assigned.
 
 ### Targeted kubernetes cluster
 

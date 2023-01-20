@@ -25,7 +25,7 @@ The user and Claudie both share a single "source of truth" for the input manifes
 This makes users store input manifests in an [IaC](https://en.wikipedia.org/wiki/Infrastructure_as_code) manner and can easily be configured for GitOps synchronization (i.e. via FluxCD).
 
 # Update
-When you want to update the input manifest, you can edit/reapply the secret with the updated input manifest inside of it (the secret name and the data field name will stay the same). `k8s-sidecar` notices the change in the secret data and subsequently updates the file inside Frontend's file system. Frontend then applies it to Claudie and the update of the defined infrastructure is be underway.
+When you want to update the input manifest, you can edit/reapply the secret with the updated input manifest inside of it (the secret name and the data field name will stay the same). `k8s-sidecar` notices the change in the secret data and subsequently updates the file inside Frontend's file system. Frontend then applies it to Claudie and the update of the defined infrastructure is underway.
 
 # Delete
 If you wish to destroy your cluster along with the infrastructure, you can remove the cluster definition block from the input-manifest and update the k8s secret accordingly.

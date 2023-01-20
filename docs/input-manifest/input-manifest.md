@@ -31,11 +31,11 @@ needs to be defined.
 
 - `gcp` [GCP](#gcp)
   
-  List of configurations for [Google Cloud ](https://cloud.google.com/). This field is optional.
+  List of configuration options for [Google Cloud](https://cloud.google.com/). This field is optional.
 
 - `hetzner` [Hetzner](#hetzner)
   
-  List of configuration options for [Hetzner cloud](https://www.hetzner.com/cloud) . This field is optional.
+  List of configuration options for [Hetzner Cloud](https://www.hetzner.com/cloud) . This field is optional.
 
 - `oci` [OCI](#oci)
   
