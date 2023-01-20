@@ -1,4 +1,6 @@
-FROM golang:1.19.4 AS build
+FROM docker.io/library/golang:1.19.4 AS build
+
+ARG TARGETARCH
 
 #Unset the GOPATH
 ENV GOPATH=
@@ -12,7 +14,7 @@ RUN go mod download
 
 #Install grpc health probe
 RUN GRPC_HEALTH_PROBE_VERSION=v0.4.14 && \
-    wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 && \
+    wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-$TARGETARCH && \
     chmod +x /bin/grpc_health_probe
 
 COPY ./internal/grpc-health-probe-Liveness ./grpc-health-probe-Liveness

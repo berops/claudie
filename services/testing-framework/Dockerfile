@@ -1,7 +1,9 @@
-FROM golang:1.19.4 AS build
+FROM docker.io/library/golang:1.19.4 AS build
+
+ARG TARGETARCH
 
 #Install kubectl
-RUN wget -q https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
+RUN wget -q https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/$TARGETARCH/kubectl
 RUN mv kubectl /usr/local/bin/
 
 #Unset the GOPATH
@@ -21,7 +23,7 @@ COPY . .
 WORKDIR /go/services/testing-framework
 RUN CGO_ENABLED=0 go test -c -run TestClaudie
 
-FROM alpine
+FROM docker.io/library/alpine:3.17.1
 #Add repository label
 LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
 #Add image name as a label

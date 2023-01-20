@@ -1,4 +1,4 @@
-.PHONY: gen contextbox scheduler builder terraformer ansibler kubeEleven test database minio
+.PHONY: gen contextbox scheduler builder terraformer ansibler kubeEleven test database minio containerimgs
 
 # Generate all .proto files
 gen:
@@ -80,3 +80,14 @@ dynamodb-create-table:
 
 dynamodb-scan-table:
 	aws dynamodb scan --table-name claudie --endpoint-url http://localhost:8000 --no-cli-pager
+
+# we need the value of local architecture to pass to docker as a build arg and
+# Go already needs to be installed so we make use of it here.
+TARGETARCH = $$(go env GOHOSTARCH)
+REV = $$(git rev-parse --short HEAD)
+SERVICES = $$(command ls services/)
+containerimgs:
+	for service in $(SERVICES) ; do \
+		echo " --- building $$service"; \
+		DOCKER_BUILDKIT=1 docker build --build-arg=TARGETARCH="$(TARGETARCH)" -t "ghcr.io/claudie/$$service:$(REV)" -f ./services/$$service/Dockerfile . ; \
+	done
