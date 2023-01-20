@@ -275,6 +275,10 @@ jobs:
           do
             for file in $directory/*
             do
+            #replace cloudflare token
+            ./yq e '.providers.hetznerdns.[].api_token = "${{ secrets.HETZNERDNS_TOKEN}}"' $file -i
+            #replace hetznerdns token
+            ./yq e '.providers.cloudflare.[].api_token = "${{ secrets.CLOUDFLARE_TOKEN}}"' $file -i
             #replace hetzner cred
             ./yq e '.providers.hetzner.[].credentials = "${{ secrets.HETZNER_CREDENTIALS}}"' $file -i
             #replace gcp cred & project

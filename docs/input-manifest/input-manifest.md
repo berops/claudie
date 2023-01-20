@@ -324,7 +324,7 @@ Collection of data Claudie uses to create a DNS record for the loadbalancer.
 
 - `dns_zone`
 
-  DNS zone inside of which the records will be created. For now, only a GCP DNS zone is accepted, thus making definition of the GCP provider necessary.
+  DNS zone inside of which the records will be created. GCP/AWS/OCI/Azure/Cloudflare/Hetzner DNS zone is accepted
 
 - `provider`
 

@@ -1,6 +1,12 @@
 name: TestSet-3
 
 providers:
+  hetznerdns:
+    - name: hetznerdns-1
+      api_token: replaceme-token
+  cloudflare:
+    - name: cloudflare-1
+      api_token: replaceme-token
   hetzner:
     - name: hetzner-1
       credentials: replaceme-token
@@ -120,6 +126,18 @@ kubernetes:
           - hetzner-compute
           - oci-compute
           - aws-compute
+    - name: ts3-c-3
+      version: v1.21.0
+      network: 192.168.2.0/24
+      pools:
+        control:
+          - hetzner-control
+          - gcp-control
+          - oci-control
+        compute:
+          - hetzner-compute
+          - gcp-compute
+          - oci-compute
 loadBalancers:
   roles:
     - name: apiserver-lb
@@ -132,8 +150,17 @@ loadBalancers:
       roles:
         - apiserver-lb
       dns:
-        dns_zone: lb-zone-2
-        provider: gcp-1
+        dns_zone: claudie.dev
+        provider: cloudflare-1
+      targeted-k8s: ts3-c-2
+      pools:
+        - hetzner-lb
+    - name: ts3-lb-2
+      roles:
+        - apiserver-lb
+      dns:
+        dns_zone: claudie.org
+        provider: hetznerdns-1
       targeted-k8s: ts3-c-2
       pools:
         - hetzner-lb

@@ -30,5 +30,17 @@ terraform {
       version = "3.26.0"
     }
     {{ end }}
+    {{ if .Cloudflare }}
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 3.32.0"
+    }
+    {{ end }}
+    {{ if .HetznerDNS }}
+    hetznerdns = {
+      source = "timohirt/hetznerdns"
+      version = "2.2.0"
+    }
+    {{ end }}
   }
 }

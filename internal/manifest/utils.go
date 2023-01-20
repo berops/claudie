@@ -72,6 +72,26 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
 		}
 	}
 
+	for _, cloudflaceConf := range ds.Providers.Cloudflare {
+		if cloudflaceConf.Name == providerSpecName {
+			return &pb.Provider{
+				SpecName:          providerSpecName,
+				Credentials:       cloudflaceConf.ApiToken,
+				CloudProviderName: "cloudflare",
+			}, nil
+		}
+	}
+
+	for _, hetznerDNSConfg := range ds.Providers.HetznerDNS {
+		if hetznerDNSConfg.Name == providerSpecName {
+			return &pb.Provider{
+				SpecName:          providerSpecName,
+				Credentials:       hetznerDNSConfg.ApiToken,
+				CloudProviderName: "hetznerdns",
+			}, nil
+		}
+	}
+
 	return nil, fmt.Errorf("failed to find provider with name: %s", providerSpecName)
 }
 
