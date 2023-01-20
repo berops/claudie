@@ -18,7 +18,7 @@ spec:
       containers:
         - name: scheduler
           imagePullPolicy: Always
-          image: claudieio/scheduler
+          image: ghcr.io/berops/claudie/scheduler
           resources:
             requests:
               cpu: 30m

@@ -67,10 +67,10 @@ jobs:
         with:
           version: latest
 
-      - name: install kustomize
+      - name: Install kustomize
         uses: imranismail/setup-kustomize@v2
         with:
-          version: 3.6.1
+          kustomize-version: 4.5.2
 
       - name: Login to GCP
         uses: google-github-actions/auth@v1.0.0
@@ -80,11 +80,16 @@ jobs:
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
           access_token_lifetime: "21600s"
 
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+
       - name: Configure kubectl
-        uses: google-github-actions/get-gke-credentials@v1.0.1
-        with:
-          cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
-          location: ${{ secrets.GKE_ZONE }}
+        env:
+          USE_GKE_GCLOUD_AUTH_PLUGIN: True
+        run: |-
+          gcloud components install gke-gcloud-auth-plugin
+          gke-gcloud-auth-plugin --version
+          gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER_NAME }} --zone ${{ secrets.GKE_ZONE }}
 
       # Deploy services to new namespace
       - name: Deploy to new namespace
@@ -117,6 +122,7 @@ jobs:
       - name: Insert cloud credentials to test set
         working-directory: ./manifests/testing-framework/test-sets
         run: |
+          sudo apt update && sudo apt install -y wget tar
           wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
           tar xz && mv yq_linux_amd64 yq
 
