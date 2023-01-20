@@ -2,6 +2,7 @@ package command
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"os"
 	"os/exec"
@@ -14,18 +15,19 @@ import (
 )
 
 type Cmd struct {
-	Command string
-	Dir     string
-	Stdout  io.Writer
-	Stderr  io.Writer
+	Command        string
+	Dir            string
+	Stdout         io.Writer
+	Stderr         io.Writer
+	CommandTimeout int
 }
 
-// Wrapper struct holds data for the wrapper around stdout & stderr
+// Wrapper struct holds data for the wrapper around stdout & stderr.
 type Wrapper struct {
 	logger *stdLog.Logger
 	buf    *bytes.Buffer
 	prefix string
-	// Adds color to stdout & stderr if terminal supports it
+	// Adds color to stdout & stderr if terminal supports it.
 	useColours bool
 	logType    int
 }
@@ -36,75 +38,105 @@ const (
 	colorOkay  = "\x1b[32m"
 	colorFail  = "\x1b[31m"
 	colorReset = "\x1b[0m"
+	maxBackoff = 5 * 60 // max backoff time [5 min]
 )
 
-// RetryCommand will retry the given command, every 5 sec until either successful or reached numOfRetries
-// returns error if all retries fail, nil otherwise
-func (c Cmd) RetryCommand(numOfRetries int) error {
-	// have an initial backoff before trying again.
-	log.Info().Msgf("Next retry in %ds...", 15)
-	time.Sleep(15 * time.Second)
-
+// RetryCommand retries the given command, with exponential backoff, maxing at 5 min, for numOfRetries times.
+// Returns error if all retries fail, nil otherwise.
+func (c *Cmd) RetryCommand(numOfRetries int) error {
 	var err error
 	for i := 1; i <= numOfRetries; i++ {
-		log.Warn().Msgf("Retrying command %s... (%d/%d)", c.Command, i, numOfRetries)
-		cmd := exec.Command("bash", "-c", c.Command)
-		cmd.Dir = c.Dir
-		cmd.Stdout = c.Stdout
-		cmd.Stderr = c.Stderr
-		err = cmd.Run()
-		if err == nil {
+		backoff := getNewBackoff(i)
+		log.Info().Msgf("Next retry in %ds...", backoff)
+		time.Sleep(time.Duration(backoff) * time.Second)
+
+		if err = c.execute(i, numOfRetries); err == nil {
 			log.Info().Msgf("The %s was successful on %d retry", c.Command, i)
 			return nil
 		}
 		log.Warn().Msgf("Error encountered while executing %s : %v", c.Command, err)
-		backoff := 10 * i
-		log.Info().Msgf("Next retry in %ds...", backoff)
-		time.Sleep(time.Duration(backoff) * time.Second)
 	}
 	log.Error().Msgf("Command %s was not successful after %d retries", c.Command, numOfRetries)
 	return err
 }
 
-// RetryCommandWithOutput will retry the given command, every 5 sec until either successful or reached numOfRetries
-// returns (nil, error) if all retries fail, (output, nil) otherwise
-func (c Cmd) RetryCommandWithOutput(numOfRetries int) ([]byte, error) {
-	// have an initial backoff before trying again.
-	log.Info().Msgf("Next retry in %ds...", 15)
-	time.Sleep(15 * time.Second)
-
+// RetryCommandWithOutput retries the given command, with exponential backoff, maxing at 5 min, for numOfRetries times.
+// returns (nil, error) if all retries fail, (output, nil) otherwise.
+func (c *Cmd) RetryCommandWithOutput(numOfRetries int) ([]byte, error) {
 	var err error
+	var out []byte
 	for i := 1; i <= numOfRetries; i++ {
-		log.Warn().Msgf("Retrying command %s... (%d/%d)", c.Command, i, numOfRetries)
-		cmd := exec.Command("bash", "-c", c.Command)
-		cmd.Dir = c.Dir
-		cmd.Stdout = c.Stdout
-		cmd.Stderr = c.Stderr
+		backoff := getNewBackoff(i)
+		log.Info().Msgf("Next retry in %ds...", backoff)
+		time.Sleep(time.Duration(backoff) * time.Second)
 
-		var out []byte
-		out, err = cmd.CombinedOutput()
-		if err == nil {
+		if out, err = c.executeWithOutput(i, numOfRetries); err == nil {
 			log.Info().Msgf("The %s was successful after %d retry", c.Command, i)
 			return out, nil
 		}
-
 		log.Warn().Msgf("Error encountered while executing %s : %v", c.Command, err)
-		backoff := 10 * i
-		log.Info().Msgf("Next retry in %ds...", backoff)
-		time.Sleep(time.Duration(backoff) * time.Second)
 	}
 	log.Error().Msgf("Command %s was not successful after %d retries", c.Command, numOfRetries)
 	return nil, err
 }
 
-// GetStdOut returns an io.Writer for exec with the defined prefix
-// Cannot be used with cmd.CombinedOutput()
+// execute executes the cmd with context canceled after commandTimeout seconds.
+// Returns error if unsuccessful, nil otherwise.
+func (c *Cmd) execute(i, numOfRetries int) error {
+	cmd, cancel := c.buildCmd()
+	if cancel != nil {
+		defer cancel()
+	}
+	log.Warn().Msgf("Retrying command %s... (%d/%d)", c.Command, i, numOfRetries)
+	return cmd.Run()
+}
+
+// executeWithOutput executes the cmd with context canceled after commandTimeout seconds.
+// Returns error, nil if unsuccessful, nil, output otherwise.
+func (c *Cmd) executeWithOutput(i, numOfRetries int) ([]byte, error) {
+	cmd, cancel := c.buildCmd()
+	if cancel != nil {
+		defer cancel()
+	}
+	log.Warn().Msgf("Retrying command %s... (%d/%d)", c.Command, i, numOfRetries)
+	return cmd.CombinedOutput()
+}
+
+// buildCmd prepares a exec.Cmd datastructure with context.
+func (c *Cmd) buildCmd() (*exec.Cmd, context.CancelFunc) {
+	var cmd *exec.Cmd
+	var cancelFun context.CancelFunc = nil
+	if c.CommandTimeout > 0 {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(c.CommandTimeout)*time.Second)
+		cmd = exec.CommandContext(ctx, "bash", "-c", c.Command)
+		cancelFun = cancel
+	} else {
+		cmd = exec.Command("bash", "-c", c.Command)
+	}
+	cmd.Dir = c.Dir
+	cmd.Stdout = c.Stdout
+	cmd.Stderr = c.Stderr
+	return cmd, cancelFun
+}
+
+// getNewBackoff returns a new backoff 5 * (2 ^ iteration), with the hard limit set at maxBackoff.
+func getNewBackoff(iteration int) int {
+	backoff := 5 * (2 ^ iteration)
+	if backoff > maxBackoff {
+		// set hard max for exponential backoff
+		return maxBackoff
+	}
+	return backoff
+}
+
+// GetStdOut returns an io.Writer for exec with the defined prefix.
+// Cannot be used with cmd.CombinedOutput().
 func GetStdOut(prefix string) Wrapper {
 	return getWrapper(prefix, STDOUT)
 }
 
-// GetStdErr returns an io.Writer for exec with the defined prefix
-// Cannot be used with cmd.CombinedOutput()
+// GetStdErr returns an io.Writer for exec with the defined prefix.
+// Cannot be used with cmd.CombinedOutput().
 func GetStdErr(prefix string) Wrapper {
 	return getWrapper(prefix, STDERR)
 }
@@ -118,7 +150,7 @@ func getWrapper(prefix string, logType int) Wrapper {
 	return w
 }
 
-// Write is implementation of the function from io.Writer interface
+// Write is implementation of the function from io.Writer interface.
 func (w Wrapper) Write(p []byte) (n int, err error) {
 	if n, err = w.buf.Write(p); err != nil {
 		return n, err
@@ -127,7 +159,7 @@ func (w Wrapper) Write(p []byte) (n int, err error) {
 	return len(p), err
 }
 
-// outputLines will output strings from current buffer
+// outputLines will output strings from current buffer.
 func (w *Wrapper) outputLines() error {
 	for {
 		line, err := w.buf.ReadString('\n')
@@ -155,7 +187,7 @@ func (w *Wrapper) outputLines() error {
 	return nil
 }
 
-// printWithPrefix will append a colour if supported and outputs the line with prefix
+// printWithPrefix will append a colour if supported and outputs the line with prefix.
 func (w *Wrapper) printWithPrefix(str string) {
 	if len(str) < 1 {
 		return

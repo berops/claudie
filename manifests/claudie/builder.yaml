@@ -18,7 +18,7 @@ spec:
       containers:
         - name: builder
           imagePullPolicy: Always
-          image: claudieio/builder
+          image: ghcr.io/berops/claudie/builder
           resources:
             requests:
               cpu: 25m

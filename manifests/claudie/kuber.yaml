@@ -18,7 +18,7 @@ spec:
       containers:
         - name: kuber
           imagePullPolicy: Always
-          image: claudieio/kuber
+          image: ghcr.io/berops/claudie/kuber
           resources:
             requests:
               cpu: 300m
