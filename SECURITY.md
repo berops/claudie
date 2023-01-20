@@ -4,7 +4,7 @@ Thanks for helping to make this project safe for everyone.
 
 ## Reporting security issues
 If you discover a security issue in this repo, please report it to us at
-**[security@claudie.io](mailto:security@claudie.io)**.
+**[security@berops.com](mailto:security@berops.com)**.
 
 You will receive a response from us within a few days.
 
