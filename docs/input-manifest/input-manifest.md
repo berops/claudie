@@ -48,7 +48,43 @@ Contains configurations for different supported cloud providers. Atleast one pro
   
   List of Azure configuration for [Azure](https://azure.microsoft.com/en-gb/) . This field is optional.
 
+- `cloudflare` [Cloudflare](#cloudflare)
+
+  List of Cloudflare configuration for [Cloudflare](https://www.cloudflare.com/en-gb/). This field is optional.
+
+- `hetznerdns` [HetznerDNS](#hetznerdns)
+
+  List of HetznerDNS configuration for [HetznerDNS](https://www.hetzner.com/dns-console). This field is optional.
+
 Support for more cloud provider is planned and will be rolled out in future. 
+
+## Cloudflare
+
+Collection of data defining Cloudflare provider configuration.
+
+To find out how to configure Cloudflare follow the instructions [here](./providers/cloudflare.md)
+
+- `name`
+
+  Name of the provider. Used as a reference further in the input manifest. Should be unique for each provider spec across all the providers.
+
+- `api_token`
+
+  Credentials for the provider (API token).
+
+## HetznerDNS
+
+Collection of data defining HetznerDNS provider configuration.
+
+To find out how to configure HetznerDNS follow the instructions [here](./providers/hetzner.md)
+
+- `name`
+
+  Name of the provider. Used as a reference further in the input manifest. Should be unique for each provider spec across all the providers.
+
+- `api_token`
+
+  Credentials for the provider (API token).
 
 ## GCP
 
