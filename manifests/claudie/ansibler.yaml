@@ -18,7 +18,7 @@ spec:
       containers:
         - name: ansibler
           imagePullPolicy: Always
-          image: claudieio/ansibler
+          image: ghcr.io/berops/claudie/ansibler
           resources:
             requests:
               cpu: 500m
