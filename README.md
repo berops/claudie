@@ -58,6 +58,12 @@ For more information about contributing please read the [contribution guidelines
 
 If you want to have a chat with us, feel free to join our ["claudie-workspace" Slack workspace](https://join.slack.com/t/claudie-workspace/shared_invite/zt-1imfso8r4-xwrpZjL9kt61FT1LjvWD5w).
 
+# Security
+While we strive to create secure software, there is always a chance that we
+miss something.
+If you've discovered something that requires our attention, see [our security
+policy](SECURITY.md) to learn how to proceed.
+
 # Roadmap
 <!-- Add a roadmap for claudie so users know which features are being worked on and which will in future -->
 To see the vision behind Claudie, please refer to the [roadmap](./docs/roadmap/roadmap.md) document.
