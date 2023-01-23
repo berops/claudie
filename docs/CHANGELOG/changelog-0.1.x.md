@@ -54,6 +54,6 @@ To deploy the Claudie `v0.1.X`, please:
 
 ## Known issues
 
-- `iptables` reset after reboot and block all traffic on `OCI` node #466
-- Occasional connection issues between Claudie created clusters and Claudie on Hetzner and GCP #276
-- Unable to easily recover after error #528
+- `iptables` reset after reboot and block all traffic on `OCI` node [#466](https://github.com/Berops/claudie/issues/466)
+- Occasional connection issues between Claudie created clusters and Claudie on Hetzner and GCP [#276](https://github.com/Berops/claudie/issues/276)
+- Unable to easily recover after error [#528](https://github.com/Berops/claudie/issues/528)
