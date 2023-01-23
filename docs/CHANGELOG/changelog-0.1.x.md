@@ -45,7 +45,7 @@ To deploy the Claudie `v0.1.X`, please:
 - Fast scale-up/scale-down of defined infrastructure
 - Persistent storage via Longhorn
 - Support for AWS, Azure, GCP, OCI and Hetzner
-- Support for Cloud DNS on GCP only
+- GCP DNS zone support
 - Claudie deployment on `amd64` and `arm64` clusters
 
 ## Bugfixes
