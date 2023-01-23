@@ -1,6 +1,5 @@
 # Claudie
-### Single platform for multiple clouds
-
+### A single platform for multiple clouds
 ![claudie schema](claudie-diagram.jpg)
 
 ### Microservices
@@ -29,189 +28,187 @@
 
 
 ## Context-box
-Context box is "control unit" for the Claudie. It holds pending configs, which needs to be processed, periodically checks for the new/changed configs and receives new configs from `frontend`.
+Context box is Claudie's "control unit". It holds pending configs, which need to be processed, periodically checks for new/changed configs and receives new configs from `frontend`.
 
 ### API
-
 ```go
-  //Save config parsed by Frontend
+  // Saves the config parsed by Frontend.
   rpc SaveConfigFrontEnd(SaveConfigRequest) returns (SaveConfigResponse);
-  //Save config parsed by Scheduler
+  // Saves the config parsed by Scheduler.
   rpc SaveConfigScheduler(SaveConfigRequest) returns (SaveConfigResponse);
-  //Save config parsed by Builder
+  // Saves the config parsed by Builder.
   rpc SaveConfigBuilder(SaveConfigRequest) returns (SaveConfigResponse);
-  //Get single config from database
+  // Gets a single config from the database.
   rpc GetConfigFromDB(GetConfigFromDBRequest) returns (GetConfigFromDBResponse);
   // *(NEEDS DELETION)*
   rpc GetConfigByName(GetConfigByNameRequest) returns (GetConfigByNameResponse);
-  //Get config from scheduler queue of pending configs
+  // Gets a config from Scheduler's queue of pending configs.
   rpc GetConfigScheduler(GetConfigRequest) returns (GetConfigResponse);
-  //Get config from builder queue of pending configs
+  // Gets a config from Builder's queue of pending configs.
   rpc GetConfigBuilder(GetConfigRequest) returns (GetConfigResponse);
-  //Get all configs from database
+  // Gets all configs from the database.
   rpc GetAllConfigs(GetAllConfigsRequest) returns (GetAllConfigsResponse);
-  // Sets the manifest to null which forces the deletion of the infra,
-  // defined by the manifest, next time when the config will be picked up.
+  // Sets the manifest to null, effectively forcing the deletion of the infrastructure
+  // defined by the manifest on the very next config (diff-) check.
   rpc DeleteConfig(DeleteConfigRequest) returns (DeleteConfigResponse);
-  // Deletes config from database.
+  // Deletes the config from the database.
   rpc DeleteConfigFromDB(DeleteConfigRequest) returns (DeleteConfigResponse);
 ```
 ### Flow
+- Receives a `config` from Frontend, calculates its `msChecksum` and saves it to the database
+- Periodically checks for `config` changes and pushes the `config` to the `schedulerQueue` if `msChecksum` != `dsChecksum`
+- Periodically checks for `config` changes and pushes the `config` to the `builderQueue` if `dsChecksum` != `csChecksum`
+- Receives a `config` with the `desiredState` from Scheduler and saves it to the database
+- Receives a `config` with the `currentState` from Builder and saves it to the database
 
-- Receives config file from Frontend calculates `msChecksum` and saves it to the database
-- Periodically push config where `msChecksum` != `dsChecksum` to the schedulerQueue
-- Periodically push config where `dsChecksum` != `csChecksum` to the builderQueue
-- Receives config with desiredState from Scheduler
-- Checks if `dsChecksum` == `msChecksum`
-    - `true` -> saves it to the database
-    - `false` -> it ignores this config
-- Receives config with currentState from Builder and saves it to the database
-- Checks if `csChecksum` == `dsChecksum`
-    - `true` -> saves it to the database
-    - `false` -> it ignores this config
-
-##### `msChecksum` - manifest checksum
-##### `dsChecksum` - desired state checksum
-##### `csChecksum` - current state checksum
+### Variables used
+| variable     | meaning                |
+| ------------ | ---------------------- |
+| `msChecksum` | manifest checksum      |
+| `dsChecksum` | desired state checksum |
+| `csChecksum` | current state checksum |
 
 
 ## Scheduler
-Scheduler creates desired state of the infra based on the manifest taken from the config received from Context-box.
+Scheduler brings the infrastructure to a desired the state based on the manifest contained in the config that is received from Context-box.
 
-Scheduler also monitors health of the current infra and manages any operations based on it, e.g. replacement of broken node, etc. *[work in progress]*
+Scheduler also monitors the health of current infrastructure and manages any operations based on actual health state (e.g. replacement of broken nodes, etc. *[work in progress]*).
 
 ### API
 ```
-This service is gRPC client, thus it does not provide any API
+This service is a gRPC client, thus it does not provide any API
 ```
 
 ### Flow
 - Periodically pulls `config` from Context-Box's `schedulerQueue`
-- Creates desiredState with `dsChecksum` from config
-- Sends `config` file back to Context-box
+- Creates `desiredState` with `dsChecksum` based on the `config`
+- Sends the `config` file back to Context-box
 
 
 ## Builder
-Builder aligns the current state of the infrastructure with the desired state. It calls methods on `terraformer`, `ansibler`, `kube-eleven` and `kuber` in order to manage the infrastructure. Builder also takes care of deleting nodes from kubernetes cluster by finding difference between `desiredState` and `currentState`.
+Builder aligns the current state of the infrastructure with the desired state. It calls methods on `terraformer`, `ansibler`, `kube-eleven` and `kuber` in order to manage the infrastructure. It follows that Builder also takes care of deleting nodes from a kubernetes cluster by finding differences between `desiredState` and `currentState`.
 
 ### API
 ```
-This service is gRPC client, thus it does not provide any API
+This service is a gRPC client, thus it does not provide any API
 ```
 
 ### Flow
-- Periodically pulls `config` from Context-Box's `builderQueue`
+- Periodically polls Context-Box's `builderQueue` for changes in `config`, pulls it when changed
 - Calls Terraformer, Ansibler, Kube-eleven and Kuber
 - Creates `currentState`
-- Sends updated config with `currentState` to Context-box
+- Sends updated `config` with the `currentState` to Context-box
 
 
 ## Terraformer
-Terraformer creates or destroys infra specified in the desired state via terraform calls. 
+Terraformer creates or destroys infrastructure (specified in the desired state) via Terraform calls.
 
 ### API
 ```go
-  //Builds the infrastructure based on the provided desired state (includes addition/deletion of stuff)
+  // Builds the infrastructure based on the provided desired state (includes addition/deletion of *stuff*).
   rpc BuildInfrastructure(BuildInfrastructureRequest) returns (BuildInfrastructureResponse);
-  //Destroys the infrastructure completely
+  // Destroys the infrastructure completely.
   rpc DestroyInfrastructure(DestroyInfrastructureRequest) returns (DestroyInfrastructureResponse);
 ```
 
 ### Flow
-- Receives `config` from Builder
-- Uses Terraform to create an infrastructure from `desiredState`
-- Updates `currentState` in a `config`
-- On infra deletion, destroys the infra based on the current state
+- Receives a `config` from Builder
+- Uses Terraform to create infrastructure based on the `desiredState`
+- Updates the `currentState` in the `config`
+- Upon receiving a deletion request, Terraformer destroys the infrastructure based on the current state
+
 
 ## Ansibler
-Ansibler uses Ansible to set up:
-  - Wireguard VPN between the nodes
-  - nginx loadbalancer
-  - installs dependencies for nodes in kubernetes cluster
+Ansibler uses Ansible to:
+  - set up Wireguard VPN between the nodes
+  - set up nginx load balancer
+  - install dependencies for nodes in a kubernetes cluster
 
 ### API
-
 ```go
-  //InstallNodeRequirements installs any requirements there are on all of the nodes
+  // InstallNodeRequirements installs any requirements there are on all of the nodes.
   rpc InstallNodeRequirements(InstallRequest) returns (InstallResponse);
-  //InstallVPN installs VPN between nodes in the k8s cluster and lb clusters
+  // InstallVPN sets up a VPN between the nodes in the k8s cluster and lb clusters.
   rpc InstallVPN(InstallRequest) returns (InstallResponse);
-  //SetUpLoadbalancers sets up the loadbalancers, DNS and verifies their configuration
+  // SetUpLoadbalancers sets up the load balancers, the DNS and verifies their configuration.
   rpc SetUpLoadbalancers(SetUpLBRequest) returns (SetUpLBResponse);
-  //TeardownLoadBalancers correctly destroys the Load-Balancers attached to a k8s cluster
-  //by correctly choosing the new ApiServer endpoint.
+  // TeardownLoadBalancers correctly destroys the load balancers attached to a k8s
+  // cluster by choosing a new ApiServer endpoint.
   rpc TeardownLoadBalancers(TeardownLBRequest) returns (TeardownLBResponse);
 ```
 
 ### Flow
-- Receives `configToDelete` from Builder for `TeardownLoadBalancers()`
-  - Finds the new ApiEndpoing among the control nodes of the k8s-cluster.
-  - Setups up the new certs for the endpoint to be reachable
-- Receives `config` from Builder for `InstallVPN()`
-  - Sets up the ansible inventory, and installs the Wireguard full mesh VPN via playbook
-  - Updates `currentState` in a `config`
-- Receives `config` from Builder for `InstallNodeRequirements()`
-  - Sets up the ansible inventory, and install any requirements nodes in the infra might need
-  - Updates `currentState` in a `config`
-- Receives `config` from Builder for `SetUpLoadbalancers()`
-  - Sets up the ansible inventory, and installs nginx loadbalancers
-  - Creates and verifies the DNS configuration for the loadbalancers
+- Receives a `configToDelete` from Builder for `TeardownLoadBalancers()`
+  - Finds the new ApiEndpoint among the control nodes of the k8s-cluster.
+  - Sets up new certs for the endpoint to be reachable
+- Receives a `config` from Builder for `InstallVPN()`
+  - Sets up ansible *inventory*, and installs the Wireguard full mesh VPN using a playbook
+  - Updates the `currentState` in a `config`
+- Receives a `config` from Builder for `InstallNodeRequirements()`
+  - Sets up ansible *inventory*, and installs any prerequisities, as per individual nodes' requirements
+  - Updates the `currentState` in a `config`
+- Receives a `config` from Builder for `SetUpLoadbalancers()`
+  - Sets up the ansible inventory, and installs nginx load balancers
+  - Creates and verifies the DNS configuration for the load balancers
 
 
 ## Kube-eleven
-Kube-eleven uses kubeOne to set up kubernetes clusters. If the cluster was build, it assures the cluster is healthy and running as it should.
+Kube-eleven uses [KubeOne](https://github.com/kubermatic/kubeone) to set up kubernetes clusters.
+After cluster creation, it assures the cluster stays healthy and keeps running smoothly.
 
 ### API
 ```go
-  //BuildCluster will build the kubernetes clusters as specified in provided config
+  // BuildCluster builds the kubernetes clusters specified in the provided config.
   rpc BuildCluster(BuildClusterRequest) returns (BuildClusterResponse);
 ```
 
 ### Flow
-- Receives `config` from Builder
-- Generates kubeOne manifest from `desiredState`
-- Uses kubeOne to provision kubernetes cluster
-- Updates `currentState` in a `config`
+- Receives a `config` object from Builder
+- Generates KubeOne manifest based on the `desiredState`
+- Uses KubeOne to provision a kubernetes cluster
+- Updates the `currentState` in the `config`
+
 
 ## Kuber
 Kuber manipulates the cluster resources using `kubectl`.
 
 ### API
 ```go
-  // StoreClusterMetatada creates secret which holds the private key and public IP addresses of the cluster supplied.
+  // StoreClusterMetatada creates a secret, which holds the private key and a list of public IP addresses of the cluster supplied.
   rpc StoreClusterMetadata(StoreClusterMetadataRequest) returns (StoreClusterMetadataResponse);
-  // StoreClusterMetatada deletes secret which holds the private key and public IP addresses of the cluster supplied.
+  // DeleteClusterMetatada deletes the secret holding the private key and public IP addresses of the cluster supplied.
   rpc DeleteClusterMetadata(DeleteClusterMetadataRequest) returns (DeleteClusterMetadataResponse);
-  //SetUpStorage installs Longhorn into the cluster
+  // SetUpStorage installs Longhorn into the cluster.
   rpc SetUpStorage(SetUpStorageRequest) returns (SetUpStorageResponse); 
-  //StoreKubeconfig will create a secret which holds kubeconfig of the Claudie created cluster
+  // StoreKubeconfig creates a secret, which holds the kubeconfig of a Claudie-created cluster.
   rpc StoreKubeconfig(StoreKubeconfigRequest) returns (StoreKubeconfigResponse);
-  //DeleteKubeconfig will remove a secret that holds kubeconfig of Claudie created cluster
+  // DeleteKubeconfig removes the secret that holds the kubeconfig of a Claudie-created cluster.
   rpc DeleteKubeconfig(DeleteKubeconfigRequest) returns (DeleteKubeconfigResponse);
-  //DeleteNodes will delete specified nodes from a specified k8s cluster
+  // DeleteNodes deletes the specified nodes from a k8s cluster.
   rpc DeleteNodes(DeleteNodesRequest) returns (DeleteNodesResponse);
 ```
 
 ### Flow
-- Receives `config` from Builder for `SetUpStorage()`
-- Applies longhorn deployment
-- Receives `config` from Builder for `StoreKubeconfig()`
-- Create a kubernetes secret which holds kubeconfig of the Claudie created cluster
-- On infra deletion, deletes the secret which holds kubeconfig of deleted cluster
+- Receives a `config` from Builder for `SetUpStorage()`
+- Applies the `longhorn` deployment
+- Receives a `config` from Builder for `StoreKubeconfig()`
+- Creates a kubernetes secret that holds the kubeconfig of the Claudie-created cluster
+- Upon infrastructure deletion request, Kuber deletes the kubeconfig secret of the cluster being deleted
+
 
 ## Frontend
-Frontend is a layer between user and the Claudie. 
-The new manifests are added as a secret into the kubernetes cluster where, `k8s-sidecar` will save them into the Frontends file system
-and notify the frontend service via HTTP request that new manifests are available.
+Frontend is a layer between the user and Claudie.
+New manifests are added as secrets into the kubernetes cluster where `k8s-sidecar` saves them into Frontend's file system
+and notifies the Frontend service via a HTTP request that the new manifests are now available.
 
 ### API
 ```
-This service is gRPC client, thus it does not provide any API
+This service is a gRPC client, thus it does not provide any API
 ```
 
 ### Flow
-- User applies new secret holding a manifest
-- `k8s-sidecar` will detect it and save it to the Frontend's file system
-- `k8s-sidecar` notifies frontend via HTTP request that changes have been made
-- Frontend detects new manifest and saves it to the database
-- On deletion of user created secret, Frontend initiates deletion process of the manifest
+- User applies a new secret holding a manifest
+- `k8s-sidecar` detects it and saves it to Frontend's file system
+- `k8s-sidecar` notifies Frontend via a HTTP request that changes have been made
+- Frontend detects the new manifest and saves it to the database
+- Upon deletion of user-created secrets, Frontend initiates a deletion process of the manifest

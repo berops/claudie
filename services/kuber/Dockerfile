@@ -1,7 +1,9 @@
-FROM golang:1.19.4 AS build
+FROM docker.io/library/golang:1.19.4 AS build
+
+ARG TARGETARCH
 
 #Install kubectl
-RUN wget -q https://storage.googleapis.com/kubernetes-release/release/v1.22.0/bin/linux/amd64/kubectl
+RUN wget -q https://storage.googleapis.com/kubernetes-release/release/v1.22.0/bin/linux/$TARGETARCH/kubectl
 
 #Unset the GOPATH
 ENV GOPATH=
@@ -15,7 +17,7 @@ RUN go mod download
 
 #Install grpc health probe
 RUN GRPC_HEALTH_PROBE_VERSION=v0.4.14 && \
-    wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 && \
+    wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-$TARGETARCH && \
     chmod +x /bin/grpc_health_probe
 
 COPY ./internal/grpc-health-probe-Liveness ./grpc-health-probe-Liveness
@@ -37,7 +39,7 @@ WORKDIR /go/services/kuber/server
 #Compile the golang code, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build
 
-FROM alpine
+FROM docker.io/library/alpine:3.17.1
 #Add repository label
 LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
 #Add image name as a label
