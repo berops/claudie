@@ -45,7 +45,8 @@ To deploy the Claudie `v0.1.X`, please:
 - Fast scale-up/scale-down of defined infrastructure
 - Persistent storage via Longhorn
 - Support for AWS, Azure, GCP, OCI and Hetzner
-- Support for Cloud DNS on GCP only (for now)
+- GCP DNS zone support
+- Claudie deployment on `amd64` and `arm64` clusters
 
 ## Bugfixes
 
@@ -53,5 +54,6 @@ To deploy the Claudie `v0.1.X`, please:
 
 ## Known issues
 
-- `iptables` reset after reboot and block all traffic on `OCI` node #466
-- Numerous issues when deploying on `arm64` based machines
+- `iptables` reset after reboot and block all traffic on `OCI` node [#466](https://github.com/Berops/claudie/issues/466)
+- Occasional connection issues between Claudie created clusters and Claudie on Hetzner and GCP [#276](https://github.com/Berops/claudie/issues/276)
+- Unable to easily recover after error [#528](https://github.com/Berops/claudie/issues/528)
