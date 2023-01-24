@@ -92,7 +92,7 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 	config.BuilderTTL = 0
 	// Update the whole config after processing
 	if err := database.SaveConfig(config); err != nil {
-		return nil, fmt.Errorf("error while updating csChecksum for %s : %w", config.Name, err)
+		return nil, fmt.Errorf("error while updating config %s : %w", config.Name, err)
 	}
 
 	if err := database.UpdateBuilderTTL(config.Name, config.BuilderTTL); err != nil {
