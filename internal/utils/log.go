@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/Berops/claudie/internal/envs"
@@ -65,4 +66,20 @@ func convertLogLevelStr(logLevelStr string) (zerolog.Level, error) {
 		return defaultLogLevel, fmt.Errorf("unsupported log level %s", logLevelStr)
 	}
 	return res, nil
+}
+
+// SanitiseURI replaces passwords with '*****' in connection strings that are
+// in the form of <scheme>://<username>:<password>@<domain>.<tld> or
+// <scheme>://<username>:<password>@<pqdn>.
+func SanitiseURI(s string) string {
+	// Match the password part (between ':' and '@)' of the connection string.
+	cred := regexp.MustCompile(":(.*?):(.*?)@")
+
+	// The scheme substring ({http,mongodb}://) is the first match ($1) of ':'
+	// and the remaining characters are placed back to the sanitised string,
+	// since that's not the credential.
+	// The remaining regex delimiters ':' and '@' are then respectively
+	// prepended and appended to the second match (the credential, or rather,
+	// it's replacement '*****').
+	return cred.ReplaceAllString(s, ":$1:*****@")
 }
