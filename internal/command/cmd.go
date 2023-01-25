@@ -11,6 +11,7 @@ import (
 
 	stdLog "log"
 
+	"github.com/Berops/claudie/internal/utils"
 	"github.com/rs/zerolog/log"
 )
 
@@ -45,18 +46,26 @@ const (
 // Returns error if all retries fail, nil otherwise.
 func (c *Cmd) RetryCommand(numOfRetries int) error {
 	var err error
+
+	// Have a cmd that is safe for printing.
+	printSafeCmd := utils.SanitiseKubeconfig(c.Command)
+
 	for i := 1; i <= numOfRetries; i++ {
 		backoff := getNewBackoff(i)
 		log.Info().Msgf("Next retry in %ds...", backoff)
 		time.Sleep(time.Duration(backoff) * time.Second)
 
 		if err = c.execute(i, numOfRetries); err == nil {
-			log.Info().Msgf("The %s was successful on %d retry", c.Command, i)
+			log.Info().Msgf("The %s was successful on %d retry", printSafeCmd, i)
+
 			return nil
 		}
-		log.Warn().Msgf("Error encountered while executing %s : %v", c.Command, err)
+
+		log.Warn().Msgf("Error encountered while executing %s : %v", printSafeCmd, err)
 	}
-	log.Error().Msgf("Command %s was not successful after %d retries", c.Command, numOfRetries)
+
+	log.Error().Msgf("Command %s was not successful after %d retries", printSafeCmd, numOfRetries)
+
 	return err
 }
 
@@ -65,18 +74,26 @@ func (c *Cmd) RetryCommand(numOfRetries int) error {
 func (c *Cmd) RetryCommandWithOutput(numOfRetries int) ([]byte, error) {
 	var err error
 	var out []byte
+
+	// Have a cmd that is safe for printing.
+	printSafeCmd := utils.SanitiseKubeconfig(c.Command)
+
 	for i := 1; i <= numOfRetries; i++ {
 		backoff := getNewBackoff(i)
 		log.Info().Msgf("Next retry in %ds...", backoff)
 		time.Sleep(time.Duration(backoff) * time.Second)
 
 		if out, err = c.executeWithOutput(i, numOfRetries); err == nil {
-			log.Info().Msgf("The %s was successful after %d retry", c.Command, i)
+			log.Info().Msgf("The %s was successful after %d retry", printSafeCmd, i)
+
 			return out, nil
 		}
-		log.Warn().Msgf("Error encountered while executing %s : %v", c.Command, err)
+
+		log.Warn().Msgf("Error encountered while executing %s : %v", printSafeCmd, err)
 	}
-	log.Error().Msgf("Command %s was not successful after %d retries", c.Command, numOfRetries)
+
+	log.Error().Msgf("Command %s was not successful after %d retries", printSafeCmd, numOfRetries)
+
 	return nil, err
 }
 
@@ -87,7 +104,12 @@ func (c *Cmd) execute(i, numOfRetries int) error {
 	if cancel != nil {
 		defer cancel()
 	}
-	log.Warn().Msgf("Retrying command %s... (%d/%d)", c.Command, i, numOfRetries)
+
+	// Have a cmd that is safe for printing.
+	printSafeCmd := utils.SanitiseKubeconfig(c.Command)
+
+	log.Warn().Msgf("Retrying command %s... (%d/%d)", printSafeCmd, i, numOfRetries)
+
 	return cmd.Run()
 }
 
@@ -98,7 +120,12 @@ func (c *Cmd) executeWithOutput(i, numOfRetries int) ([]byte, error) {
 	if cancel != nil {
 		defer cancel()
 	}
-	log.Warn().Msgf("Retrying command %s... (%d/%d)", c.Command, i, numOfRetries)
+
+	// Have a cmd that is safe for printing.
+	printSafeCmd := utils.SanitiseKubeconfig(c.Command)
+
+	log.Warn().Msgf("Retrying command %s... (%d/%d)", printSafeCmd, i, numOfRetries)
+
 	return cmd.CombinedOutput()
 }
 

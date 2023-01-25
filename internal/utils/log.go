@@ -83,3 +83,19 @@ func SanitiseURI(s string) string {
 	// it's replacement '*****').
 	return cred.ReplaceAllString(s, ":$1:*****@")
 }
+
+// SanitiseKubeconfig replaces the entire kubeconfig found after the
+// '--kubeconfig' flag with '*****'. This has been decided to be the superior
+// option when compared to matching sensitive fields and obscuring just those.
+func SanitiseKubeconfig(s string) string {
+	// (?s) enables matching through newline whitespace (lf,crlf..), which is
+	// relevant because the kubeconfig is likely multi-line.
+	// This regex only matches ''-delimited kubeconfig as that is how it's
+	// currently being passed in (i.e. double quotes are currently not
+	// handled).
+	kubeconfig := regexp.MustCompile(`(?s)--kubeconfig '(.*?)'`)
+
+	// The entire kubeconfig passed in after the flag is replaced with stars
+	// and returned.
+	return kubeconfig.ReplaceAllLiteralString(s, "--kubeconfig '*****'")
+}
