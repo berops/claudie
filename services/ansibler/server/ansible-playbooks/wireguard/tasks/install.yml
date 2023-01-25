@@ -3,6 +3,10 @@
   apt:
     name: wireguard
     update_cache: yes
+  retries: 10
+  delay: 10
+  register: res
+  until: res is not failed
 
 - name: Install pip
   apt:
