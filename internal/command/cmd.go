@@ -106,7 +106,7 @@ func (c *Cmd) execute(i, numOfRetries int) error {
 	}
 
 	// Have a cmd that is safe for printing.
-	printSafeCmd := utils.SanitiseKubeconfig(c.Command)
+	printSafeCmd := c.sanitisedCmd()
 
 	log.Warn().Msgf("Retrying command %s... (%d/%d)", printSafeCmd, i, numOfRetries)
 
@@ -122,7 +122,7 @@ func (c *Cmd) executeWithOutput(i, numOfRetries int) ([]byte, error) {
 	}
 
 	// Have a cmd that is safe for printing.
-	printSafeCmd := utils.SanitiseKubeconfig(c.Command)
+	printSafeCmd := c.sanitisedCmd()
 
 	log.Warn().Msgf("Retrying command %s... (%d/%d)", printSafeCmd, i, numOfRetries)
 
@@ -144,6 +144,34 @@ func (c *Cmd) buildCmd() (*exec.Cmd, context.CancelFunc) {
 	cmd.Stdout = c.Stdout
 	cmd.Stderr = c.Stderr
 	return cmd, cancelFun
+}
+
+func (c *Cmd) sanitisedCmd() string {
+	if c.Command == "" {
+		return c.Command
+	}
+
+	// split the command string on " ".
+	cmdStrings := strings.Split(c.Command, " ")
+
+	// bail out early.
+	if len(cmdStrings) == 0 {
+		return c.Command
+	}
+
+	// extract the first argument - the main command.
+	arg0 := cmdStrings[0]
+	printSafeCmd := ""
+
+	switch arg0 {
+	case "kubectl":
+		printSafeCmd = utils.SanitiseKubeconfig(c.Command)
+	default:
+		// don't sanitise a thing.
+		printSafeCmd = c.Command
+	}
+
+	return printSafeCmd
 }
 
 // getNewBackoff returns a new backoff 5 * (2 ^ iteration), with the hard limit set at maxBackoff.

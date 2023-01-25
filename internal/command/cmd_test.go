@@ -27,3 +27,48 @@ func TestCmd(t *testing.T) {
 	_, err = cmd3.RetryCommandWithOutput(1)
 	require.NoError(t, err)
 }
+
+// TestSanitisedCmd checks that sanitisedCmd method only sanitises the wanted
+// cases.
+func TestSanitisedCmd(t *testing.T) {
+	testCmd := &Cmd{}
+	testCases := []struct {
+		desc string
+		in   string
+		out  string
+	}{
+		{
+			desc: "Sanitise kubectl command",
+			in:   "kubectl blah --kubeconfig 'not valid but needs obscuring' --more-stuff",
+			out:  "kubectl blah --kubeconfig '*****' --more-stuff",
+		},
+		{
+			desc: "Sanitise kubectl command with invalid kubeconfig (should not change)",
+			in:   "kubectl stuff --kubeconfig --more-args",
+			out:  "kubectl stuff --kubeconfig --more-args",
+		},
+		{
+			desc: "Don't touch the arg to --kubeconfig for unknown commands",
+			in:   "idontknowthisone --kubeconfig 'the real kubeconfig is here'",
+			out:  "idontknowthisone --kubeconfig 'the real kubeconfig is here'",
+		},
+		{
+			desc: "Don't touch the thing for unknown commands (even when the arg to --kubeconfig is invalid)",
+			in:   "idontknowthisone --kubeconfig --forgot-the-kubeconfig",
+			out:  "idontknowthisone --kubeconfig --forgot-the-kubeconfig",
+		},
+	}
+
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			want := tC.out
+
+			testCmd.Command = tC.in
+
+			if got := testCmd.sanitisedCmd(); got != want {
+				t.Errorf("Unexpected output for %q: expected %q, actual %q",
+					tC.desc, want, got)
+			}
+		})
+	}
+}
