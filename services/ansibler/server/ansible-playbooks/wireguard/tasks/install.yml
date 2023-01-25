@@ -1,22 +1,18 @@
 ---
-- name: Install wireguard
-  apt:
-    name: wireguard
-    update_cache: yes
+- name: Install Wireguard and dependencies
+  ansible.builtin.apt:
+    pkg:
+      - wireguard
+      - python3-pip
+      - net-tools
+    state: present
+    update_cache: true
   retries: 10
   delay: 10
   register: res
   until: res is not failed
 
-- name: Install pip
-  apt:
-    name: python3-pip
-
 - name: Install wireguard via pip
-  pip:
+  ansible.builtin.pip:
     name: wireguard
-
-- name: Install net-tools
-  apt:
-    name: net-tools
-    state: present
+...
