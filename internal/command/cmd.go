@@ -48,7 +48,7 @@ func (c *Cmd) RetryCommand(numOfRetries int) error {
 	var err error
 
 	// Have a cmd that is safe for printing.
-	printSafeCmd := utils.SanitiseKubeconfig(c.Command)
+	printSafeCmd := c.sanitisedCmd()
 
 	for i := 1; i <= numOfRetries; i++ {
 		backoff := getNewBackoff(i)
