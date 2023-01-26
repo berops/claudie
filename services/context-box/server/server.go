@@ -90,9 +90,22 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 	// Save new config to the DB, update csState as dsState
 	config.CsChecksum = config.DsChecksum
 	config.BuilderTTL = 0
-	// Update the whole config after processing
-	if err := database.SaveConfig(config); err != nil {
-		return nil, fmt.Errorf("error while updating config %s : %w", config.Name, err)
+	// In Builder, the desired state is also updated i.e. in terraformer (node IPs, etc) thus
+	// we need to update it in database,
+	// however, if deletion has been triggered, the desired state should be nil
+	if dbConf, err := database.GetConfig(config.Id, pb.IdType_HASH); err != nil {
+		log.Warn().Msgf("Got error while checking the desired state in the database : %v", err)
+	} else {
+		if dbConf.DesiredState != nil {
+			if err := database.UpdateDs(config); err != nil {
+				return nil, fmt.Errorf("Error while updating desired state: %v", err)
+			}
+		}
+	}
+
+	// Update the current state so its equal to the desired state
+	if err := database.UpdateCs(config); err != nil {
+		return nil, fmt.Errorf("error while updating csChecksum for %s : %w", config.Name, err)
 	}
 
 	if err := database.UpdateBuilderTTL(config.Name, config.BuilderTTL); err != nil {
