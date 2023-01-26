@@ -80,7 +80,7 @@ func SanitiseURI(s string) string {
 	// since that's not the credential.
 	// The remaining regex delimiters ':' and '@' are then respectively
 	// prepended and appended to the second match (the credential, or rather,
-	// it's replacement '*****').
+	// its replacement '*****').
 	return cred.ReplaceAllString(s, ":$1:*****@")
 }
 
