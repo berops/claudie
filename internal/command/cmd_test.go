@@ -43,19 +43,29 @@ func TestSanitisedCmd(t *testing.T) {
 			out:  "kubectl blah --kubeconfig '*****' --more-stuff",
 		},
 		{
-			desc: "Sanitise kubectl command with invalid kubeconfig (should not change)",
+			desc: "Sanitise the arg to --kubeconfig for unknown commands",
+			in:   "idontknowthisone --kubeconfig 'the real kubeconfig is here'",
+			out:  "idontknowthisone --kubeconfig '*****'",
+		},
+		{
+			desc: "Sanitise unknown command chain, invalid arg to --kubeconfig and URI with password",
+			in:   "sth | piped-to-cmd https://a:notapassword@b.c --kube --none",
+			out:  "sth | piped-to-cmd https://a:*****@b.c --kube --none",
+		},
+		{
+			desc: "Don't touch - kubectl command with invalid kubeconfig arg",
 			in:   "kubectl stuff --kubeconfig --more-args",
 			out:  "kubectl stuff --kubeconfig --more-args",
 		},
 		{
-			desc: "Don't touch the arg to --kubeconfig for unknown commands",
-			in:   "idontknowthisone --kubeconfig 'the real kubeconfig is here'",
-			out:  "idontknowthisone --kubeconfig 'the real kubeconfig is here'",
-		},
-		{
-			desc: "Don't touch the thing for unknown commands (even when the arg to --kubeconfig is invalid)",
+			desc: "Don't touch - unknown command, invalid arg to --kubeconfig",
 			in:   "idontknowthisone --kubeconfig --forgot-the-kubeconfig",
 			out:  "idontknowthisone --kubeconfig --forgot-the-kubeconfig",
+		},
+		{
+			desc: "Don't touch - unknown command, invalid arg to --kubeconfig and a URI",
+			in:   "cmd --kubeconfig --none https://a@blah.com",
+			out:  "cmd --kubeconfig --none https://a@blah.com",
 		},
 	}
 

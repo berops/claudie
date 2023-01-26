@@ -151,25 +151,10 @@ func (c *Cmd) sanitisedCmd() string {
 		return c.Command
 	}
 
-	// split the command string on " ".
-	cmdStrings := strings.Split(c.Command, " ")
-
-	// bail out early.
-	if len(cmdStrings) == 0 {
-		return c.Command
-	}
-
-	// extract the first argument - the main command.
-	arg0 := cmdStrings[0]
-	printSafeCmd := ""
-
-	switch arg0 {
-	case "kubectl":
-		printSafeCmd = utils.SanitiseKubeconfig(c.Command)
-	default:
-		// don't sanitise a thing.
-		printSafeCmd = c.Command
-	}
+	// sanitise any kubeconfigs found.
+	printSafeCmd := utils.SanitiseKubeconfig(c.Command)
+	// sanitise any URIs with passwords.
+	printSafeCmd = utils.SanitiseURI(printSafeCmd)
 
 	return printSafeCmd
 }
