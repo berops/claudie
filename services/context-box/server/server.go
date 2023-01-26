@@ -188,7 +188,11 @@ func main() {
 	if err != nil {
 		log.Fatal().Msgf("Failed to connect to the database, aborting... : %v", err)
 	}
-	log.Info().Msgf("Connected to database at %s", envs.DatabaseURL)
+
+	// have a URI safe for printing to console/logs.
+	safeURI := utils.SanitiseURI(envs.DatabaseURL)
+
+	log.Info().Msgf("Connected to database at %s", safeURI)
 	defer func() {
 		err := database.Disconnect()
 		if err != nil {
