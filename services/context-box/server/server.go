@@ -98,7 +98,7 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 	} else {
 		if dbConf.DesiredState != nil {
 			if err := database.UpdateDs(config); err != nil {
-				return nil, fmt.Errorf("Error while updating desired state: %v", err)
+				return nil, fmt.Errorf("Error while updating desired state: %w", err)
 			}
 		}
 	}
