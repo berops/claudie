@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Berops/claudie/internal/utils"
 	"github.com/Berops/claudie/proto/pb"
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/bson"
@@ -52,22 +53,26 @@ type configItem struct {
 func (c *ClaudieMongo) Connect() error {
 	// establish DB connection, this does not do any deployment checks/IO on the DB
 	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(c.URL))
+	// safeURI represents the version of the connection string safe for
+	// printing to console/logs.
+	safeURI := utils.SanitiseURI(c.URL)
+
 	if err != nil {
-		return fmt.Errorf("failed to create a client at %s : %w", c.URL, err)
+		return fmt.Errorf("failed to create a client at %s: %w", safeURI, err)
 	} else {
 		//if client creation successful, ping the DB to verify the connection
 		for i := 0; i < maxConnectionRetries; i++ {
-			log.Info().Msgf("Trying to ping the DB at %s...", c.URL)
+			log.Info().Msgf("Trying to ping the DB at %s...", safeURI)
 			err := pingTheDB(client)
 			if err == nil {
-				log.Info().Msgf("The database at %s has been successfully pinged", c.URL)
+				log.Info().Msgf("The database at %s has been successfully pinged", safeURI)
 				c.client = client
 				return nil
 			}
 			// wait 5s for next retry
 			time.Sleep(defaultPingDelay)
 		}
-		return fmt.Errorf("database connection at %s failed after %d attempts due to unsuccessful ping verification", c.URL, maxConnectionRetries)
+		return fmt.Errorf("database connection at %s failed after %d attempts due to unsuccessful ping verification", safeURI, maxConnectionRetries)
 	}
 }
 
