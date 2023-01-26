@@ -124,6 +124,11 @@ users:
 			out:  "--kubeconfig --argzz",
 		},
 		{
+			desc: "Don't sanitise when no kubeconfig passed 2",
+			in:   "randomcmd --kubeconfig --forgot-the-kubeconfig",
+			out:  "randomcmd --kubeconfig --forgot-the-kubeconfig",
+		},
+		{
 			desc: "Don't sanitise random text",
 			in:   "random text",
 			out:  "random text",
