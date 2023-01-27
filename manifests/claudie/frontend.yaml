@@ -50,11 +50,13 @@ spec:
               path: /ready
               port: 50058
             initialDelaySeconds: 5
+            periodSeconds: 30
           livenessProbe:
             httpGet:
               path: /live
               port: 50058
             initialDelaySeconds: 10
+            periodSeconds: 30
           volumeMounts:
             - name: input-manifests
               mountPath: /input-manifests/
