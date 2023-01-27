@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/Berops/claudie/internal/templateUtils"
 	"github.com/Berops/claudie/internal/utils"
 	"github.com/Berops/claudie/proto/pb"
 	"github.com/Berops/claudie/services/kube-eleven/server/kubeone"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -18,6 +20,7 @@ const (
 	kubeconfigFile  = "cluster-kubeconfig"
 	baseDirectory   = "services/kube-eleven/server"
 	outputDirectory = "clusters"
+	labelRegex      = "[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*"
 )
 
 // KubeEleven struct
@@ -36,11 +39,20 @@ type NodeInfo struct {
 	Name string
 }
 
+type NodepoolInfo struct {
+	Nodes             []*NodeInfo
+	NodepoolName      string
+	Region            string
+	Zone              string
+	CloudProviderName string
+	ProviderName      string
+}
+
 // templateData struct is data used in template creation
 type templateData struct {
 	APIEndpoint string
 	Kubernetes  string
-	Nodes       []*NodeInfo
+	Nodepools   []*NodepoolInfo
 }
 
 // Apply will create all necessary files and apply kubeone, which will set up the cluster completely
@@ -107,64 +119,75 @@ func (k *KubeEleven) generateFiles() error {
 // return templateData with everything already set up
 func (k *KubeEleven) generateTemplateData() templateData {
 	var d templateData
+	var ep *pb.Node
 	// Get the API endpoint. If it is not set, use the first control node
-	d.APIEndpoint = k.findAPIEndpoint()
+	d.APIEndpoint = k.findAPIEndpoint(ep)
 	//Prepare the nodes for template
-	d.Nodes = k.getClusterNodes()
-
+	d.Nodepools, ep = k.getClusterNodes()
 	//save k8s version
 	d.Kubernetes = k.K8sCluster.GetKubernetes()
-	//set up API EP if not set by lb
-	if d.APIEndpoint == "" {
-		d.APIEndpoint = d.Nodes[0].Node.GetPublic()
-	}
 	return d
 }
 
-// findAPIEndpoint will loop through the slice of LBs and return endpoint, if any loadbalancer is used as API loadbalancer
-// returns API endpoint if LB fulfils prerequisites, empty string otherwise
-func (k *KubeEleven) findAPIEndpoint() string {
+// findAPIEndpoint loops through the slice of LBs and return endpoint, if any loadbalancer is used as API loadbalancer.
+// Returns API endpoint if LB fulfils prerequisites, if not, returns the public IP of the node provided.
+func (k *KubeEleven) findAPIEndpoint(ep *pb.Node) string {
+	apiEndpoint := ""
+lb:
 	for _, lbCluster := range k.LBClusters {
 		//check if lb is used for this k8s
 		if lbCluster.TargetedK8S == k.K8sCluster.ClusterInfo.Name {
 			//check if the lb is api-lb
 			for _, role := range lbCluster.Roles {
 				if role.RoleType == pb.RoleType_ApiServer {
-					return lbCluster.Dns.Endpoint
+					apiEndpoint = lbCluster.Dns.Endpoint
+					break lb
 				}
 			}
 		}
 	}
-	return ""
-}
-
-// getClusterNodes will parse the nodepools of the k.K8sCluster and return slice of nodes
-// function also sets pb.NodeType_apiEndpoint flag if has not been set before
-// returns slice of *pb.Node
-func (k *KubeEleven) getClusterNodes() []*NodeInfo {
-	var controlNodes []*NodeInfo
-	var workerNodes []*NodeInfo
-	var ep *NodeInfo
-	for _, nodepool := range k.K8sCluster.ClusterInfo.GetNodePools() {
-		for i, node := range nodepool.Nodes {
-			nodeName := fmt.Sprintf("%s-%d", nodepool.Name, i+1)
-			if node.GetNodeType() == pb.NodeType_apiEndpoint {
-				ep = &NodeInfo{Name: nodeName, Node: node}
-			} else if node.GetNodeType() == pb.NodeType_master {
-				controlNodes = append(controlNodes, &NodeInfo{Name: nodeName, Node: node})
-			} else {
-				workerNodes = append(workerNodes, &NodeInfo{Name: nodeName, Node: node})
-			}
+	if apiEndpoint == "" {
+		if ep != nil {
+			apiEndpoint = ep.Public
+			ep.NodeType = pb.NodeType_apiEndpoint
+		} else {
+			log.Error().Msgf("Cluster %s does not have any API endpoint specified", k.K8sCluster.ClusterInfo.Name)
 		}
 	}
-	//if no ep found, assign the first control node as API EP
-	if ep == nil {
-		controlNodes[0].Node.NodeType = pb.NodeType_apiEndpoint
+	return apiEndpoint
+}
+
+// getClusterNodes will parse the nodepools of the k.K8sCluster and return slice of node, and potential endpoint node
+// returns slice of *pb.Node
+func (k *KubeEleven) getClusterNodes() ([]*NodepoolInfo, *pb.Node) {
+	nodepoolInfos := make([]*NodepoolInfo, 0, len(k.K8sCluster.ClusterInfo.NodePools))
+	var ep *pb.Node
+	// build template data
+	for _, nodepool := range k.K8sCluster.ClusterInfo.GetNodePools() {
+		nodepoolInfo := &NodepoolInfo{
+			NodepoolName:      nodepool.Name,
+			Region:            sanitiseLabel(nodepool.Region),
+			Zone:              sanitiseLabel(nodepool.Zone),
+			CloudProviderName: sanitiseLabel(nodepool.Provider.CloudProviderName),
+			ProviderName:      sanitiseLabel(nodepool.Provider.SpecName),
+			Nodes:             make([]*NodeInfo, 0, len(nodepool.Nodes)),
+		}
+		for i, node := range nodepool.Nodes {
+			nodeName := fmt.Sprintf("%s-%d", nodepool.Name, i+1)
+			nodepoolInfo.Nodes = append(nodepoolInfo.Nodes, &NodeInfo{Name: nodeName, Node: node})
+			// save API endpoint in case there is no LB
+			if node.GetNodeType() == pb.NodeType_apiEndpoint {
+				// if endpoint set, use it
+				ep = node
+			} else if node.GetNodeType() == pb.NodeType_master && ep == nil {
+				//if no endpoint set, choose one master node
+				ep = node
+			}
+		}
+		nodepoolInfos = append(nodepoolInfos, nodepoolInfo)
 	}
-	//in case d.Node has API endpoint node , append it to other control nodes
-	controlNodes = prependNode(ep, controlNodes)
-	//append all nodes and return
-	return append(controlNodes, workerNodes...)
+
+	return nodepoolInfos, ep
 }
 
 // readKubeconfig reads kubeconfig from a file and returns it as a string
@@ -189,4 +212,14 @@ func prependNode(node *NodeInfo, arr []*NodeInfo) []*NodeInfo {
 	//set element as first
 	arr[0] = node
 	return arr
+}
+
+func sanitiseLabel(s string) string {
+	// convert to lower case
+	sanitised := strings.ToLower(s)
+	// replace all white space with "-"
+	sanitised = strings.ReplaceAll(sanitised, " ", "-")
+	// replace all ":" with "-"
+	sanitised = strings.ReplaceAll(sanitised, ":", "-")
+	return sanitised
 }
