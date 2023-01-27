@@ -1,8 +1,8 @@
-# Claudie Loadbalancer solution
+# Claudie load balancing solution
 
 ## Loadbalancer
 
-For creating a highly available kubernetes cluster, Loadbalancers for kubeAPI server are created by Claudie which use Nginx to loadbalance the traffic into the cluster nodes. Claudie also supports definition of a custom Loadbalancer, for the applications running inside the cluster.
+To create a highly available kubernetes cluster, Claudie creates load balancers for the `kubeAPI` server. These load balancers use Nginx to load balance the traffic among the cluster nodes. Claudie also supports definition of custom load balancers for the applications running inside the cluster.
 
 ## Concept
 
@@ -30,21 +30,21 @@ For creating a highly available kubernetes cluster, Loadbalancers for kubeAPI se
 
 ### Role 
 
-The Claudie uses concept or roles while configuring the loadbalancers in input manifest. Each role represents a loadbalancer configuration for a particular use. Roles are then assigned to the Loadbalancer cluster. Single loadbalancer cluster can have multiple roles assigned.
+Claudie uses the concept of roles while configuring the load balancers from the input manifest. Each role represents a loadbalancer configuration for a particular use. Roles are then assigned to the load balancer cluster. A single load balancer cluster can have multiple roles assigned.
 
 ### Targeted kubernetes cluster
 
-Loadbalancer is assigned to the kubernetes cluster with a field `targeted-k8s`. This field is using `name` of the kubernetes cluster as a value. Currently, single loadbalancer can be assigned to only single kubernetes cluster.
+Load balancer gets assigned to a kubernetes cluster with the field `targeted-k8s`. This field is using the `name` of the kubernetes cluster as a value. Currently, a single load balancer can only be assigned to a single kubernetes cluster.
 
-**For multiple Loadbalancers targeting the same kubernetes cluster only a single one of them can have the API server role (i.e. role with target port 6443) attached to it.**
+**Among multiple load balancers targeting the same kubernetes cluster only one of them can have the API server role (i.e. the role with target port 6443) attached to it.**
 
 ### DNS
 
-The Claudie creates and manages DNS for the loadbalancer. If user adds loadbalancer into their infrastructure via Claudie, it will create a DNS A record with the public IP of the loadbalancer machines behind it. When the loadbalancer configuration changes in any way e.g. adds/removes a node, changes hostname, changes target; the DNS record is reconfigured seamlessly by Claudie. This lifts the burden of the DNS management from the user. 
+Claudie creates and manages the DNS for the load balancer. If the user adds a load balancer into their infrastructure via Claudie, Claudie creates a DNS A record with the public IP of the load balancer machines behind it. When the load balancer configuration changes in any way, that is a node is added/removed, the hostname or the target changes, the DNS record is reconfigured by Claudie on the fly. This rids the user of the need to manage DNS.
 
 ### Nodepools
 
-Loadbalancers are build from user defined nodepools in `pools` field, similar to how kubernetes clusters are defined. These nodepools allows user to change/scale the loadbalancers according to their needs without any fuss. See nodepool definition for more information.
+Loadbalancers are build from user defined nodepools in `pools` field, similar to how kubernetes clusters are defined. These nodepools allow the user to change/scale the load balancers according to their needs without any fuss. See the nodepool definition for more information.
 
-# Example of loadbalancer definition
-Example of loadbalancer definition can be found in [example manifest](../input-manifest/example.yaml)
+# An example of load balancer definition
+See an example load balancer definition in our reference [example input manifest](../input-manifest/example.yaml).
