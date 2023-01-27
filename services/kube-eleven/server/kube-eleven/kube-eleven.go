@@ -20,7 +20,6 @@ const (
 	kubeconfigFile  = "cluster-kubeconfig"
 	baseDirectory   = "services/kube-eleven/server"
 	outputDirectory = "clusters"
-	labelRegex      = "[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*"
 )
 
 // KubeEleven struct
@@ -120,10 +119,10 @@ func (k *KubeEleven) generateFiles() error {
 func (k *KubeEleven) generateTemplateData() templateData {
 	var d templateData
 	var ep *pb.Node
-	// Get the API endpoint. If it is not set, use the first control node
-	d.APIEndpoint = k.findAPIEndpoint(ep)
 	//Prepare the nodes for template
 	d.Nodepools, ep = k.getClusterNodes()
+	// Get the API endpoint. If it is not set, use the first control node
+	d.APIEndpoint = k.findAPIEndpoint(ep)
 	//save k8s version
 	d.Kubernetes = k.K8sCluster.GetKubernetes()
 	return d
@@ -199,21 +198,7 @@ func readKubeconfig(kubeconfigFile string) (string, error) {
 	return string(kubeconfig), nil
 }
 
-// prependNode will add node to the start of the slice
-// returns slice with node at the beginning
-func prependNode(node *NodeInfo, arr []*NodeInfo) []*NodeInfo {
-	if node == nil {
-		return arr
-	}
-	//put node at the end
-	arr = append(arr, node)
-	//shift elements towards the end
-	copy(arr[1:], arr)
-	//set element as first
-	arr[0] = node
-	return arr
-}
-
+// sanitiseLabel replaces all white spaces and ":" in the string to "-".
 func sanitiseLabel(s string) string {
 	// convert to lower case
 	sanitised := strings.ToLower(s)
