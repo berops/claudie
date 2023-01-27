@@ -21,11 +21,11 @@ spec:
           image: ghcr.io/berops/claudie/ansibler
           resources:
             requests:
-              cpu: 500m
-              memory: 700Mi
+              cpu: 700m
+              memory: 768Mi
             limits:
-              cpu: 750m
-              memory: 900Mi
+              cpu: 1024m
+              memory: 1248Mi
           env:
             - name: ANSIBLER_PORT
               valueFrom:
@@ -44,10 +44,12 @@ spec:
             exec:
               command: ["/bin/grpc_health_probe", "-addr=:50053"]
             initialDelaySeconds: 5
+            periodSeconds: 30
           livenessProbe:
             exec:
               command: ["/bin/grpc_health_probe-Liveness", "-addr=:50053"]
             initialDelaySeconds: 10
+            periodSeconds: 30
 ---
 kind: Service
 apiVersion: v1
