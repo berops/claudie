@@ -161,6 +161,6 @@ loadBalancers:
       dns:
         dns_zone: claudie.org
         provider: hetznerdns-1
-      targeted-k8s: ts3-c-2
+      targeted-k8s: ts3-c-3
       pools:
         - hetzner-lb
