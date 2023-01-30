@@ -4,8 +4,10 @@
     name: unattended-upgrades
     state: stopped
     enabled: false
-  when:
-    - "ansible_distribution == 'Ubuntu' and ansible_distribution_version == '22.04'"
+  when: |
+    ansible_distribution == 'Ubuntu'
+    and
+    ansible_distribution_version == '22.04'
 
 - name: "Kill unattended upgrades"
   ansible.builtin.apt:
@@ -14,6 +16,8 @@
     purge: true
     update_cache: true
     force_apt_get: true
-  when:
-    - "ansible_distribution == 'Ubuntu' and ansible_distribution_version == '22.04'"
+  when: |
+    ansible_distribution == 'Ubuntu'
+    and
+    ansible_distribution_version == '22.04'
 ...
