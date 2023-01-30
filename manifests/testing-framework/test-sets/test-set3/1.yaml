@@ -127,7 +127,7 @@ kubernetes:
           - oci-compute
           - aws-compute
     - name: ts3-c-3
-      version: v1.21.0
+      version: v1.22.0
       network: 192.168.2.0/24
       pools:
         control:
