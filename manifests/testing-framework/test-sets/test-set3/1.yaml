@@ -137,23 +137,11 @@ kubernetes:
       network: 192.168.2.0/24
       pools:
         control:
-          - hetzner-control
-          - oci-control
           - aws-control
-        compute:
-          - hetzner-compute
-          - oci-compute
-          - aws-compute
-    - name: ts3-c-3
-      version: v1.22.0
-      network: 192.168.2.0/24
-      pools:
-        control:
-          - hetzner-control
           - gcp-control
           - oci-control
         compute:
-          - hetzner-compute
+          - aws-compute
           - gcp-compute
           - oci-compute
 loadBalancers:
@@ -170,7 +158,7 @@ loadBalancers:
       dns:
         dns_zone: claudie.dev
         provider: cloudflare-1
-      targeted-k8s: ts3-c-2
+      targeted-k8s: ts3-c-1
       pools:
         - hetzner-lb
     - name: ts3-lb-2
@@ -179,6 +167,6 @@ loadBalancers:
       dns:
         dns_zone: claudie.org
         provider: hetznerdns-1
-      targeted-k8s: ts3-c-3
+      targeted-k8s: ts3-c-2
       pools:
         - hetzner-lb
