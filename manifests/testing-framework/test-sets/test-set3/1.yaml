@@ -89,6 +89,24 @@ nodePools:
       #ubuntu
       image: ami-01b8d743224353ffe
       disk_size: 50
+    - name: gcp-control
+      providerSpec:
+        name: gcp-1
+        region: europe-west2
+        zone: europe-west2-c
+      count: 1
+      server_type: e2-medium
+      image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
+      disk_size: 50
+    - name: gcp-compute
+      providerSpec:
+        name: gcp-1
+        region: europe-west1
+        zone: europe-west1-b
+      count: 2
+      server_type: e2-small
+      image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
+      disk_size: 50
     #-----------LB nodepools----------
     - name: hetzner-lb
       providerSpec:
