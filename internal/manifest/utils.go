@@ -83,7 +83,6 @@ func (m *Manifest) IsKubernetesClusterPresent(name string) bool {
 			return true
 		}
 	}
-
 	return false
 }
 
