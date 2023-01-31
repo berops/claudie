@@ -23,16 +23,16 @@ images:
 - name: ghcr.io/berops/claudie/ansibler
   newTag: 12617d8-1348
 - name: ghcr.io/berops/claudie/builder
-  newTag: 69fb5b3-1339
+  newTag: 32381f2-1352
 - name: ghcr.io/berops/claudie/context-box
-  newTag: 69fb5b3-1339
+  newTag: 32381f2-1352
 - name: ghcr.io/berops/claudie/frontend
-  newTag: 69fb5b3-1339
+  newTag: 32381f2-1352
 - name: ghcr.io/berops/claudie/kube-eleven
-  newTag: 69fb5b3-1339
+  newTag: 32381f2-1352
 - name: ghcr.io/berops/claudie/kuber
-  newTag: 69fb5b3-1339
+  newTag: 32381f2-1352
 - name: ghcr.io/berops/claudie/scheduler
-  newTag: 69fb5b3-1339
+  newTag: 32381f2-1352
 - name: ghcr.io/berops/claudie/terraformer
-  newTag: 69fb5b3-1339
+  newTag: 32381f2-1352
