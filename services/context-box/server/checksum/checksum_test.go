@@ -149,9 +149,9 @@ kubernetes:
 			out: "325f04bb5560e14e0b162ea3a70aa3368182fff4d433622f3aba20a7837803a8",
 		},
 		{
-			desc: "trololol test",
-			in:   " trololol ",
-			out:  "754bf6189867b54a764c37acc9cfa8507c43f469f28b28163f63c30487295a68",
+			desc: "test case containing unprintable characters",
+			in:   " unprintable ",
+			out:  "9969c5f9e2813e38773d38cb64a898e691423b2c5848c9b3a82f0a14d0f92f7b",
 		},
 	}
 
@@ -186,15 +186,15 @@ func TestCompareChecksums(t *testing.T) {
 			out:  false,
 		},
 		{
-			desc: "false - trololol test",
-			in1:  []byte(" trololol "),
+			desc: "false - test case containing unprintable characters",
+			in1:  []byte(" unprintable characters follow "),
 			in2:  []byte("098098987987876876765765756654463"),
 			out:  false,
 		},
 		{
-			desc: "true - trololol test",
-			in1:  []byte(" trololol "),
-			in2:  []byte(" trololol "),
+			desc: "true - test case containing unprintable characters",
+			in1:  []byte(" sth then unprintable "),
+			in2:  []byte(" sth then unprintable "),
 			out:  true,
 		},
 	}
