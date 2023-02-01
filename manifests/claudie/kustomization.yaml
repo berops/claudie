@@ -29,9 +29,9 @@ images:
 - name: ghcr.io/berops/claudie/frontend
   newTag: 32381f2-1352
 - name: ghcr.io/berops/claudie/kube-eleven
-  newTag: 32381f2-1352
+  newTag: f0a68db-1354
 - name: ghcr.io/berops/claudie/kuber
-  newTag: 32381f2-1352
+  newTag: f0a68db-1354
 - name: ghcr.io/berops/claudie/scheduler
   newTag: 32381f2-1352
 - name: ghcr.io/berops/claudie/terraformer
