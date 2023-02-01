@@ -175,7 +175,6 @@ func teardownLoadBalancers(deleted map[string]*LBInfo, attached map[string]bool,
 						return err
 					}
 				}
-
 				return os.RemoveAll(k8sDirectory)
 			})
 		}(deleted, k8sClusterName)

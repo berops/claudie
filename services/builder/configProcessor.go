@@ -37,19 +37,17 @@ type nodeCount struct {
 	Count uint32
 }
 
-// configProcessor will fetch new configs from the supplied connection
-// to the context-box service. Each received config will be processed in
-// a separate go-routine. If a sync.WaitGroup is supplied it will call
-// the Add(1) and then the Done() method on it after the go-routine finishes the work,
-// if nil it will be ignored.
+// configProcessor will fetch new configs from the context-box service. Each received config will be processed in
+// a separate go-routine. If a sync.WaitGroup is supplied it will call the Add(1) and then the Done() method on it
+// after the go-routine finishes the work, if nil it will be ignored.
 func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 	res, err := cbox.GetConfigBuilder(c) // Get a new config
 	if err != nil {
 		return fmt.Errorf("error while getting config from the Context-box: %w", err)
 	}
 
-	config := res.GetConfig()
-	if config == nil {
+	builderCtx := &BuilderContext{Config: res.GetConfig()}
+	if builderCtx.Config == nil {
 		return nil
 	}
 
@@ -64,72 +62,61 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 		}
 
 		// check if Desired state is null and if so we want to delete the existing config
-		if config.DsChecksum == nil && config.CsChecksum != nil {
-			if err := destroyConfigAndDeleteDoc(config, c); err != nil {
-				log.Error().Msgf("failed to delete the config %s : %v", config.Name, err)
+		if builderCtx.Config.DsChecksum == nil && builderCtx.Config.CsChecksum != nil {
+			if err := destroyConfigAndDeleteDoc(builderCtx.Config, c); err != nil {
+				log.Error().Msgf("failed to delete the config %s : %v", builderCtx.Config.Name, err)
 			}
 			return
 		}
 
-		// check for cluster deleting
-		configToDelete := getDeletedClusterConfig(config)
-		oldAPIEndpoints := make(map[string]string)
-
-		if configToDelete != nil {
-			// we need to correctly destroy the load-balancers for the new API endpoint.
-			oldAPIEndpoints, err = teardownLoadBalancers(configToDelete.CurrentState, config.CurrentState, config.DesiredState)
-			if err != nil {
-				log.Error().Msgf("Failed to teardown LoadBalancers from config %s %v", config.Name, err)
-				return
-			}
-
-			if err := destroyConfig(configToDelete, c); err != nil {
-				log.Error().Msgf("failed to delete clusters from config %s : %v", config.Name, err)
-				//if err in cluster deletion, stop the execution
+		if builderCtx.DeletedConfig = getDeletedClusterConfig(builderCtx.Config); builderCtx.DeletedConfig != nil {
+			if err := destroyConfig(builderCtx.DeletedConfig, c); err != nil {
+				log.Error().Msgf("failed to delete clusters from config %s : %v", builderCtx.Config.Name, err)
 				return
 			}
 		}
 
 		//tmpConfig is used in operation where config is adding && deleting the nodes
 		//first, tmpConfig is applied which only adds nodes and only then the real config is applied, which will delete nodes
-		var tmpConfig *pb.Config
+		tmpCtx := &BuilderContext{DeletedConfig: builderCtx.DeletedConfig}
 		var toDelete map[string]*nodepoolsCounts //[clusterName]nodepoolsCount
+
 		//if any current state already exist, find difference
-		if len(config.CurrentState.GetClusters()) > 0 {
-			tmpConfig, toDelete = stateDifference(config)
+		if len(builderCtx.Config.CurrentState.GetClusters()) > 0 {
+			tmpCtx.Config, toDelete = stateDifference(builderCtx.Config)
 		}
-		//if tmpConfig is not nil, first apply it
-		if tmpConfig != nil {
-			log.Info().Msgf("Processing a first stage of the config %s", tmpConfig.Name)
-			if err := buildConfig(tmpConfig, c, true, oldAPIEndpoints); err != nil {
-				log.Error().Msgf("error while processing config %s : %v", tmpConfig.Name, err)
-				//if err in tmpConfig, stop the execution
+
+		if tmpCtx.Config != nil {
+			log.Info().Msgf("Processing stage [1/2] for config %s", tmpCtx.Config.Name)
+			if err := buildConfig(tmpCtx, c, true); err != nil {
+				log.Error().Msgf("error while processing config %s : %v", tmpCtx.Config.Name, err)
 				return
 			}
-			log.Info().Msgf("First stage of config %s finished building", tmpConfig.Name)
-			config.CurrentState = tmpConfig.DesiredState
+			log.Info().Msgf("First stage of config %s finished building", tmpCtx.Config.Name)
+			builderCtx.Config.CurrentState = tmpCtx.Config.DesiredState
 		}
+
 		if toDelete != nil {
-			name := config.Name
+			name := builderCtx.Config.Name
 			log.Info().Msgf("Deleting nodes for config %s", name)
-			config, err = deleteNodes(config, toDelete)
+			builderCtx.Config, err = deleteNodes(builderCtx.Config, toDelete)
 			if err != nil {
 				log.Error().Msgf("error while deleting nodes for config %s : %v", name, err)
-				//if err in node deletions, stop the execution
 				return
 			}
 		}
-		message := fmt.Sprintf("Processing config %s", config.Name)
-		if tmpConfig != nil {
-			message = fmt.Sprintf("Processing second stage of the config %s", config.Name)
+
+		message := fmt.Sprintf("Processing config %s", builderCtx.Config.Name)
+		if tmpCtx.Config != nil {
+			message = fmt.Sprintf("Processing stage [2/2] for config %s", builderCtx.Config.Name)
 		}
 		log.Info().Msgf(message)
 
-		if err = buildConfig(config, c, false, oldAPIEndpoints); err != nil {
-			log.Error().Msgf("error while processing config %s : %v", config.Name, err)
+		if err = buildConfig(builderCtx, c, false); err != nil {
+			log.Error().Msgf("error while processing config %s : %v", builderCtx.Config.Name, err)
 			return
 		}
-		log.Info().Msgf("Config %s finished building", config.Name)
+		log.Info().Msgf("Config %s finished building", builderCtx.Config.Name)
 	}()
 
 	return nil
@@ -264,21 +251,21 @@ OuterK8s:
 	for _, csCluster := range config.CurrentState.Clusters {
 		for _, dsCluster := range config.DesiredState.Clusters {
 			if isEqual(dsCluster.ClusterInfo, csCluster.ClusterInfo) {
-				remainingCsK8sClusters = append(remainingCsK8sClusters, csCluster)
+				remainingCsK8sClusters = append(remainingCsK8sClusters, proto.Clone(csCluster).(*pb.K8Scluster))
 				continue OuterK8s
 			}
 		}
-		k8sClustersToDelete = append(k8sClustersToDelete, csCluster)
+		k8sClustersToDelete = append(k8sClustersToDelete, proto.Clone(csCluster).(*pb.K8Scluster))
 	}
 OuterLb:
 	for _, csLbCluster := range config.CurrentState.LoadBalancerClusters {
 		for _, dsLbCluster := range config.DesiredState.LoadBalancerClusters {
 			if isEqual(dsLbCluster.ClusterInfo, csLbCluster.ClusterInfo) {
-				remainingCsLbClusters = append(remainingCsLbClusters, csLbCluster)
+				remainingCsLbClusters = append(remainingCsLbClusters, proto.Clone(csLbCluster).(*pb.LBcluster))
 				continue OuterLb
 			}
 		}
-		LbClustersToDelete = append(LbClustersToDelete, csLbCluster)
+		LbClustersToDelete = append(LbClustersToDelete, proto.Clone(csLbCluster).(*pb.LBcluster))
 	}
 	configToDelete.CurrentState.Clusters = k8sClustersToDelete
 	configToDelete.CurrentState.LoadBalancerClusters = LbClustersToDelete

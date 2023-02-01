@@ -73,6 +73,10 @@ func (*server) InstallVPN(_ context.Context, req *pb.InstallRequest) (*pb.Instal
 
 // TeardownLoadBalancers correctly destroys loadbalancers by selecting the new ApiServer endpoint
 func (*server) TeardownLoadBalancers(ctx context.Context, req *pb.TeardownLBRequest) (*pb.TeardownLBResponse, error) {
+	if req.DeletedState == nil {
+		return &pb.TeardownLBResponse{OldApiEndpoinds: nil}, nil
+	}
+
 	var (
 		deleted         = make(map[string]*LBInfo)        //[k8sClusterName]lbInfo
 		attached        = make(map[string]bool)           // [k8sClusterName]Bool

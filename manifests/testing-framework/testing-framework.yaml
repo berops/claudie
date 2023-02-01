@@ -6,6 +6,7 @@ spec:
   backoffLimit: 0
   template:
     spec:
+      terminationGracePeriodSeconds: 7200 # 2 hours
       containers:
         - name: testing-framework
           imagePullPolicy: Always
