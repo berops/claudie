@@ -21,7 +21,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
 - name: ghcr.io/berops/claudie/ansibler
-  newTag: 4d5d526-1367
+  newTag: 5f22d6c-1368
 - name: ghcr.io/berops/claudie/builder
   newTag: 32381f2-1352
 - name: ghcr.io/berops/claudie/context-box
