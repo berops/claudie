@@ -23,11 +23,12 @@ apiEndpoint:
   host: '{{ .APIEndpoint }}'
   port: 6443
 
+{{- $privateKey := "./private.pem" }}
 controlPlane:
   hosts:
-{{- $privateKey := "./private.pem" }}
-{{- range $nodeInfo := .Nodes }}
-{{- if ge $nodeInfo.Node.NodeType 1}}
+{{- range $nodepool := .Nodepools }}
+  {{- range $nodeInfo := $nodepool.Nodes }}
+    {{- if ge $nodeInfo.Node.NodeType 1}}
   - publicAddress: '{{ $nodeInfo.Node.Public }}'
     privateAddress: '{{ $nodeInfo.Node.Private }}'
     sshUsername: root
@@ -36,19 +37,36 @@ controlPlane:
     taints:
     - key: "node-role.kubernetes.io/master"
       effect: "NoSchedule"
-{{- end}}
+    labels: 
+      topology.kubernetes.io/region: '{{ $nodepool.Region }}'
+      topology.kubernetes.io/zone: '{{ $nodepool.Zone }}'
+      claudie.io/nodepool: '{{ $nodepool.NodepoolName }}'
+      claudie.io/provider: '{{ $nodepool.CloudProviderName }}'
+      claudie.io/provider-instance: '{{ $nodepool.ProviderName }}'
+      claudie.io/worker-node: 'false'
+    {{- end}}
+  {{- end}}
 {{- end}}
 
 staticWorkers:
   hosts:
-{{- range $nodeInfo := .Nodes }}
-{{- if eq $nodeInfo.Node.NodeType 0}}
+{{- range $nodepool := .Nodepools }}
+  {{- range $nodeInfo := $nodepool.Nodes }}
+    {{- if eq $nodeInfo.Node.NodeType 0}}
   - publicAddress: '{{ $nodeInfo.Node.Public }}'
     privateAddress: '{{ $nodeInfo.Node.Private }}'
     sshUsername: root
     sshPrivateKeyFile: '{{ $privateKey }}'
     hostname: '{{ $nodeInfo.Name }}'
-{{- end}}
+    labels: 
+      topology.kubernetes.io/region: '{{ $nodepool.Region }}'
+      topology.kubernetes.io/zone: '{{ $nodepool.Zone }}'
+      claudie.io/nodepool: '{{ $nodepool.NodepoolName }}'
+      claudie.io/provider: '{{ $nodepool.CloudProviderName }}'
+      claudie.io/provider-instance: '{{ $nodepool.ProviderName }}'
+      claudie.io/worker-node: 'true'
+    {{- end}}
+  {{- end}}
 {{- end}}
 
 machineController:
