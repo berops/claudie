@@ -111,7 +111,6 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 			}
 		}
 	}
-
 	return nil
 }
 
