@@ -16,11 +16,27 @@ type Provider struct {
 
 // Data structure passed to providers.tpl
 type templateData struct {
-	Gcp     bool
-	Hetzner bool
-	Aws     bool
-	Oci     bool
-	Azure   bool
+	Gcp        bool
+	Hetzner    bool
+	Aws        bool
+	Oci        bool
+	Azure      bool
+	Cloudflare bool
+	HetznerDNS bool
+}
+
+func (p Provider) CreateProviderDNS(dns *pb.DNS) error {
+	template := templateUtils.Templates{Directory: p.Directory}
+	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.TerraformerTemplates}
+
+	tpl, err := templateLoader.LoadTemplate("providers.tpl")
+	if err != nil {
+		return fmt.Errorf("error while parsing template file providers.tpl for cluster %s: %w", p.ClusterName, err)
+	}
+
+	var data templateData
+	getDNSProvider(dns, &data)
+	return template.Generate(tpl, "providers.tf", data)
 }
 
 func (p Provider) CreateProvider(clusterInfo *pb.ClusterInfo) error {
@@ -58,4 +74,27 @@ func getProvidersUsed(clusterInfo *pb.ClusterInfo) templateData {
 		}
 	}
 	return data
+}
+
+func getDNSProvider(dns *pb.DNS, data *templateData) {
+	if dns == nil {
+		return
+	}
+
+	switch dns.Provider.CloudProviderName {
+	case "gcp":
+		data.Gcp = true
+	case "hetzner":
+		data.Hetzner = true
+	case "aws":
+		data.Aws = true
+	case "oci":
+		data.Oci = true
+	case "azure":
+		data.Azure = true
+	case "cloudflare":
+		data.Cloudflare = true
+	case "hetznerdns":
+		data.HetznerDNS = true
+	}
 }

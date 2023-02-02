@@ -11,11 +11,23 @@ type Manifest struct {
 }
 
 type Provider struct {
-	GCP     []GCP     `yaml:"gcp"`
-	Hetzner []Hetzner `yaml:"hetzner"`
-	AWS     []AWS     `yaml:"aws"`
-	OCI     []OCI     `yaml:"oci"`
-	Azure   []Azure   `yaml:"azure"`
+	GCP        []GCP        `yaml:"gcp"`
+	Hetzner    []Hetzner    `yaml:"hetzner"`
+	AWS        []AWS        `yaml:"aws"`
+	OCI        []OCI        `yaml:"oci"`
+	Azure      []Azure      `yaml:"azure"`
+	Cloudflare []Cloudflare `yaml:"cloudflare"`
+	HetznerDNS []HetznerDNS `yaml:"hetznerdns"`
+}
+
+type HetznerDNS struct {
+	Name     string `validate:"required" yaml:"name"`
+	ApiToken string `validate:"required" yaml:"api_token"`
+}
+
+type Cloudflare struct {
+	Name     string `validate:"required" yaml:"name"`
+	ApiToken string `validate:"required" yaml:"api_token"`
 }
 
 type GCP struct {

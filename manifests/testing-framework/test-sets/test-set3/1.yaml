@@ -1,6 +1,12 @@
 name: TestSet-3
 
 providers:
+  hetznerdns:
+    - name: hetznerdns-1
+      api_token: replaceme-token
+  cloudflare:
+    - name: cloudflare-1
+      api_token: replaceme-token
   hetzner:
     - name: hetzner-1
       credentials: replaceme-token
@@ -83,6 +89,24 @@ nodePools:
       #ubuntu
       image: ami-01b8d743224353ffe
       disk_size: 50
+    - name: gcp-control
+      providerSpec:
+        name: gcp-1
+        region: europe-west2
+        zone: europe-west2-c
+      count: 1
+      server_type: e2-medium
+      image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
+      disk_size: 50
+    - name: gcp-compute
+      providerSpec:
+        name: gcp-1
+        region: europe-west1
+        zone: europe-west1-b
+      count: 2
+      server_type: e2-small
+      image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
+      disk_size: 50
     #-----------LB nodepools----------
     - name: hetzner-lb
       providerSpec:
@@ -113,13 +137,13 @@ kubernetes:
       network: 192.168.2.0/24
       pools:
         control:
-          - hetzner-control
-          - oci-control
           - aws-control
+          - gcp-control
+          - oci-control
         compute:
-          - hetzner-compute
-          - oci-compute
           - aws-compute
+          - gcp-compute
+          - oci-compute
 loadBalancers:
   roles:
     - name: apiserver-lb
@@ -132,8 +156,17 @@ loadBalancers:
       roles:
         - apiserver-lb
       dns:
-        dns_zone: lb-zone-2
-        provider: gcp-1
+        dns_zone: claudie.dev
+        provider: cloudflare-1
+      targeted-k8s: ts3-c-1
+      pools:
+        - hetzner-lb
+    - name: ts3-lb-2
+      roles:
+        - apiserver-lb
+      dns:
+        dns_zone: claudie.org
+        provider: hetznerdns-1
       targeted-k8s: ts3-c-2
       pools:
         - hetzner-lb
