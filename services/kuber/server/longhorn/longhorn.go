@@ -30,8 +30,7 @@ const (
 	longhornYaml       = "services/kuber/server/manifests/longhorn.yaml"
 	storageManifestTpl = "storage-class.goyaml"
 	defaultSC          = "longhorn"
-	claudieLabel       = "claudie.io/storage-class"
-	claudieWorkerLabel = "claudie.io/worker-node=true"
+	storageClassLabel  = "claudie.io/provider-instance"
 )
 
 // SetUp function will set up the longhorn on the k8s cluster saved in l.Longhorn
@@ -59,7 +58,7 @@ func (l Longhorn) SetUp() error {
 		return err
 	}
 
-	sortedNodePools := utils.GroupNodepoolsByProvider(l.Cluster.ClusterInfo)
+	sortedNodePools := utils.GroupNodepoolsByProviderSpecName(l.Cluster.ClusterInfo)
 	// get real nodes names in a case when provider appends some string to the set name
 	realNodesInfo, err := kubectl.KubectlGetNodeNames()
 	if err != nil {
@@ -82,13 +81,8 @@ func (l Longhorn) SetUp() error {
 					// add tag to the node via kubectl annotate, use --overwrite to avoid getting error of already tagged node
 					annotation := fmt.Sprintf("node.longhorn.io/default-node-tags='[\"%s\"]' --overwrite", zoneName)
 					realNodeName := utils.FindName(realNodeNames, node.Name)
-					err := kubectl.KubectlAnnotate("node", realNodeName, annotation)
-					if err != nil {
+					if err := kubectl.KubectlAnnotate("node", realNodeName, annotation); err != nil {
 						return fmt.Errorf("error while annotating the node %s from cluster %s via kubectl annotate : %w", realNodeName, l.Cluster.ClusterInfo.Name, err)
-					}
-					err = kubectl.KubectlLabel("node", realNodeName, claudieWorkerLabel, true)
-					if err != nil {
-						return fmt.Errorf("error while labeling the node %s from cluster %s via kubectl label : %w", realNodeName, l.Cluster.ClusterInfo.Name, err)
 					}
 				}
 			}
@@ -156,7 +150,7 @@ func (l *Longhorn) getStorageClasses(kc kubectl.Kubectl) (result []string, err e
 		//check if storage class has a claudie label
 		if labels, ok := metadata["labels"]; ok {
 			labelsMap := labels.(map[string]interface{})
-			if _, ok := labelsMap[claudieLabel]; ok {
+			if _, ok := labelsMap[storageClassLabel]; ok {
 				result = append(result, name)
 			}
 		}

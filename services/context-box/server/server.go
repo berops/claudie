@@ -20,9 +20,7 @@ import (
 	"github.com/Berops/claudie/internal/healthcheck"
 	"github.com/Berops/claudie/proto/pb"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/health/grpc_health_v1"
-	"google.golang.org/grpc/status"
 )
 
 type server struct {
@@ -96,12 +94,15 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 	// we need to update it in database,
 	// however, if deletion has been triggered, the desired state should be nil
 	if dbConf, err := database.GetConfig(config.Id, pb.IdType_HASH); err != nil {
+		log.Warn().Msgf("Got error while checking the desired state in the database : %v", err)
+	} else {
 		if dbConf.DesiredState != nil {
 			if err := database.UpdateDs(config); err != nil {
-				return nil, status.Errorf(codes.Internal, fmt.Sprintf("Error while updating desired state: %v", err))
+				return nil, fmt.Errorf("Error while updating desired state: %w", err)
 			}
 		}
 	}
+
 	// Update the current state so its equal to the desired state
 	if err := database.UpdateCs(config); err != nil {
 		return nil, fmt.Errorf("error while updating csChecksum for %s : %w", config.Name, err)

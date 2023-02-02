@@ -21,10 +21,10 @@ spec:
           image: ghcr.io/berops/claudie/builder
           resources:
             requests:
-              cpu: 25m
+              cpu: 80m
               memory: 200Mi
             limits:
-              cpu: 75m
+              cpu: 160m
               memory: 400Mi
           env:
             - name: CONTEXT_BOX_PORT
@@ -87,8 +87,10 @@ spec:
               path: /ready
               port: 50051
             initialDelaySeconds: 5
+            periodSeconds: 30
           livenessProbe:
             httpGet:
               path: /live
               port: 50051
             initialDelaySeconds: 10
+            periodSeconds: 30
