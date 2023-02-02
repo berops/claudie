@@ -9,7 +9,7 @@ require (
 	github.com/go-playground/validator/v10 v10.11.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/minio/minio-go/v7 v7.0.47
-	github.com/rs/zerolog v1.28.0
+	github.com/rs/zerolog v1.29.0
 	github.com/spiffe/go-spiffe/v2 v2.1.2
 	github.com/stretchr/testify v1.8.1
 	go.mongodb.org/mongo-driver v1.11.1
