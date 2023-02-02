@@ -69,27 +69,6 @@ func buildConfig(ctx *BuilderContext, c pb.ContextBoxServiceClient, isTmpConfig 
 	return nil
 }
 
-// teardownLoadBalancers destroy the Load-Balancers (if any) for the config generated
-// by the getDeletedClusterConfig function.
-func teardownLoadBalancers(deleted, current, desired *pb.Project) (map[string]string, error) {
-	conn, err := utils.GrpcDialWithInsecure("ansibler", envs.AnsiblerURL)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := ansibler.TeardownLoadBalancers(pb.NewAnsiblerServiceClient(conn), &pb.TeardownLBRequest{
-		CurrentState: current,
-		DeletedState: deleted,
-		DesiredState: desired,
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return resp.OldApiEndpoinds, conn.Close()
-}
-
 // destroyConfig destroys existing clusters infra for a config, including the deletion
 // of the config from the database, by calling Terraformer and Kuber and ContextBox services.
 func destroyConfigAndDeleteDoc(config *pb.Config, c pb.ContextBoxServiceClient) error {
@@ -157,12 +136,12 @@ func callAnsibler(ctx *BuilderContext) error {
 	c := pb.NewAnsiblerServiceClient(cc)
 
 	log.Info().Msgf("Calling TearDownLoadbalancers on ansibler for project %s", ctx.Config.GetDesiredState().Name)
-	oldAPIEndpoints, err := teardownLoadBalancers(ctx.DeletedConfig.GetCurrentState(), ctx.Config.GetCurrentState(), ctx.Config.GetDesiredState())
+	teardownRes, err := ansibler.TeardownLoadBalancers(c, &pb.TeardownLBRequest{DeletedState: ctx.DeletedConfig.GetCurrentState(), DesiredState: ctx.Config.GetDesiredState()})
 	if err != nil {
 		return err
 	}
 	log.Info().Msgf("Calling InstallVPN on ansibler for project %s", ctx.Config.GetDesiredState().Name)
-	installRes, err := ansibler.InstallVPN(c, &pb.InstallRequest{DesiredState: ctx.Config.GetDesiredState()})
+	installRes, err := ansibler.InstallVPN(c, &pb.InstallRequest{DesiredState: teardownRes.DesiredState})
 	if err != nil {
 		return err
 	}
@@ -172,7 +151,7 @@ func callAnsibler(ctx *BuilderContext) error {
 		return err
 	}
 	log.Info().Msgf("Calling SetUpLoadbalancers on ansibler for project %s", ctx.Config.GetDesiredState().Name)
-	setUpRes, err := ansibler.SetUpLoadbalancers(c, &pb.SetUpLBRequest{DesiredState: installRes.DesiredState, CurrentState: ctx.Config.GetCurrentState(), OldApiEndpoints: oldAPIEndpoints})
+	setUpRes, err := ansibler.SetUpLoadbalancers(c, &pb.SetUpLBRequest{DesiredState: installRes.DesiredState, CurrentState: ctx.Config.GetCurrentState(), OldApiEndpoints: teardownRes.OldApiEndpoinds})
 	if err != nil {
 		return err
 	}

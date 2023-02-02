@@ -261,13 +261,22 @@ func handleAPIEndpointChange(apiServer *LBData, k8sCluster *LBInfo, k8sDirectory
 		oldEndpoint = apiServer.CurrentLbCluster.Dns.Endpoint
 		newEndpoint = apiServer.DesiredLbCluster.Dns.Endpoint
 	case RoleChangedFromAPIServer:
-		// choose one of the control nodes as the api endpoint.
-		node, err := findAPIEndpointNode(k8sCluster.TargetK8sNodepool)
+		oldEndpoint = apiServer.CurrentLbCluster.Dns.Endpoint
+
+		// 1st find if any control node was an API server.
+		if node, err := findAPIEndpointNode(k8sCluster.TargetK8sNodepool); err == nil {
+			newEndpoint = node.Public
+			break
+		}
+
+		// 2nd choose one of the control nodes as the api endpoint.
+		node, err := findControlNode(k8sCluster.TargetK8sNodepool)
 		if err != nil {
 			return err
 		}
 
-		oldEndpoint = apiServer.CurrentLbCluster.Dns.Endpoint
+		node.NodeType = pb.NodeType_apiEndpoint
+
 		newEndpoint = node.Public
 	case RoleChangedToAPIServer:
 		newEndpoint = apiServer.DesiredLbCluster.Dns.Endpoint
@@ -320,13 +329,22 @@ func handleAPIEndpointChange(apiServer *LBData, k8sCluster *LBInfo, k8sDirectory
 
 		oldEndpoint = node.Public
 	case DetachingLoadBalancer:
-		// Choose one of the control nodes as the API endpoint.
-		node, err := findAPIEndpointNode(k8sCluster.TargetK8sNodepool)
+		oldEndpoint = apiServer.CurrentLbCluster.Dns.Endpoint
+
+		// 1st find if any control node was an API server.
+		if node, err := findAPIEndpointNode(k8sCluster.TargetK8sNodepool); err == nil {
+			newEndpoint = node.Public
+			break
+		}
+
+		// 2nd choose one of the control nodes as the api endpoint.
+		node, err := findControlNode(k8sCluster.TargetK8sNodepool)
 		if err != nil {
 			return err
 		}
 
-		oldEndpoint = apiServer.CurrentLbCluster.Dns.Endpoint
+		node.NodeType = pb.NodeType_apiEndpoint
+
 		newEndpoint = node.Public
 	}
 
@@ -342,6 +360,18 @@ func handleAPIEndpointChange(apiServer *LBData, k8sCluster *LBInfo, k8sDirectory
 	}
 
 	return nil
+}
+
+func findControlNode(nodepools []*pb.NodePool) (*pb.Node, error) {
+	for _, nodepool := range nodepools {
+		for _, node := range nodepool.Nodes {
+			if node.NodeType == pb.NodeType_master {
+				return node, nil
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("failed to find node with type %s", pb.NodeType_master.String())
 }
 
 // findAPIEndpointNode searches the NodePools for a Node with type ApiEndpoint.
