@@ -20,4 +20,4 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
 - name: ghcr.io/berops/claudie/testing-framework
-  newTag: 32381f2-1352
+  newTag: 716aa14-1372
