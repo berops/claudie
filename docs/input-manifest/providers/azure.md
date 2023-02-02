@@ -18,3 +18,11 @@ permissions {
       ]
   }
 ``` 
+
+## DNS requirements
+
+If your Azure provider will be used for DNS, you need to manually
+- [set up dns zone](https://learn.microsoft.com/en-us/azure/dns/dns-getstarted-portal)
+- [update domain name server](https://learn.microsoft.com/en-us/azure/dns/dns-getstarted-portal#test-the-name-resolution)
+
+since Claudie does not support their dynamic creation.

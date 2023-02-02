@@ -2,6 +2,7 @@ package loadbalancer
 
 import (
 	"fmt"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/Berops/claudie/proto/pb"
 	"github.com/Berops/claudie/services/terraformer/server/clusterBuilder"
@@ -60,7 +61,7 @@ func (l LBcluster) Build() error {
 		ProjectName:    l.ProjectName,
 	}
 
-	endpoint, err := dns.CreateDNSrecords()
+	endpoint, err := dns.CreateDNSRecords()
 	if err != nil {
 		return fmt.Errorf("error while creating the DNS for %s : %w", l.DesiredLB.ClusterInfo.Name, err)
 	}
@@ -71,29 +72,30 @@ func (l LBcluster) Build() error {
 }
 
 func (l LBcluster) Destroy() error {
-	cluster := clusterBuilder.ClusterBuilder{
-		//DesiredInfo: , //desired state is not used in DestroyNodepools
-		CurrentInfo: l.CurrentLB.ClusterInfo,
-		ProjectName: l.ProjectName,
-		ClusterType: pb.ClusterType_LB}
-	nodeIPs := getNodeIPs(l.CurrentLB.ClusterInfo.NodePools)
-	dns := DNS{
-		ClusterName:    l.CurrentLB.ClusterInfo.Name,
-		ClusterHash:    l.CurrentLB.ClusterInfo.Hash,
-		CurrentNodeIPs: nodeIPs,
-		CurrentDNS:     l.CurrentLB.Dns,
-		ProjectName:    l.ProjectName,
-	}
+	group := errgroup.Group{}
 
-	err := cluster.DestroyNodepools()
-	if err != nil {
-		return fmt.Errorf("error while destroying the K8s cluster %s : %w", l.CurrentLB.ClusterInfo.Name, err)
-	}
-	err = dns.DestroyDNSrecords()
-	if err != nil {
-		return fmt.Errorf("error while destroying the DNS records %s : %w", l.CurrentLB.ClusterInfo.Name, err)
-	}
-	return nil
+	group.Go(func() error {
+		cluster := clusterBuilder.ClusterBuilder{
+			//DesiredInfo: desired state is not used in Destroy
+			CurrentInfo: l.CurrentLB.ClusterInfo,
+			ProjectName: l.ProjectName,
+			ClusterType: pb.ClusterType_LB,
+		}
+		return cluster.DestroyNodepools()
+	})
+
+	group.Go(func() error {
+		dns := DNS{
+			ClusterName:    l.CurrentLB.ClusterInfo.Name,
+			ClusterHash:    l.CurrentLB.ClusterInfo.Hash,
+			CurrentNodeIPs: getNodeIPs(l.CurrentLB.ClusterInfo.NodePools),
+			CurrentDNS:     l.CurrentLB.Dns,
+			ProjectName:    l.ProjectName,
+		}
+		return dns.DestroyDNSRecords()
+	})
+
+	return group.Wait()
 }
 
 func getNodeIPs(nodepools []*pb.NodePool) []string {

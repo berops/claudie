@@ -132,27 +132,26 @@ func (k *KubeEleven) generateTemplateData() templateData {
 // Returns API endpoint if LB fulfils prerequisites, if not, returns the public IP of the node provided.
 func (k *KubeEleven) findAPIEndpoint(ep *pb.Node) string {
 	apiEndpoint := ""
-lb:
+
 	for _, lbCluster := range k.LBClusters {
 		//check if lb is used for this k8s
 		if lbCluster.TargetedK8S == k.K8sCluster.ClusterInfo.Name {
 			//check if the lb is api-lb
 			for _, role := range lbCluster.Roles {
 				if role.RoleType == pb.RoleType_ApiServer {
-					apiEndpoint = lbCluster.Dns.Endpoint
-					break lb
+					return lbCluster.Dns.Endpoint
 				}
 			}
 		}
 	}
-	if apiEndpoint == "" {
-		if ep != nil {
-			apiEndpoint = ep.Public
-			ep.NodeType = pb.NodeType_apiEndpoint
-		} else {
-			log.Error().Msgf("Cluster %s does not have any API endpoint specified", k.K8sCluster.ClusterInfo.Name)
-		}
+
+	if ep != nil {
+		apiEndpoint = ep.Public
+		ep.NodeType = pb.NodeType_apiEndpoint
+	} else {
+		log.Error().Msgf("Cluster %s does not have any API endpoint specified", k.K8sCluster.ClusterInfo.Name)
 	}
+
 	return apiEndpoint
 }
 

@@ -49,7 +49,43 @@ needs to be defined.
   
   List of configuration options for [Azure](https://azure.microsoft.com/en-gb/). This field is optional.
 
+- `cloudflare` [Cloudflare](#cloudflare)
+
+  List of Cloudflare configuration for [Cloudflare](https://www.cloudflare.com/en-gb/). This field is optional.
+
+- `hetznerdns` [HetznerDNS](#hetznerdns)
+
+  List of HetznerDNS configuration for [HetznerDNS](https://www.hetzner.com/dns-console). This field is optional.
+
 Support for more cloud providers is in the [roadmap](https://github.com/Berops/claudie/blob/master/docs/roadmap/roadmap.md). 
+
+## Cloudflare
+
+Collection of data defining Cloudflare provider configuration.
+
+To find out how to configure Cloudflare follow the instructions [here](./providers/cloudflare.md)
+
+- `name`
+
+  Name of the provider. Used as a reference further in the input manifest. Should be unique for each provider spec across all the providers.
+
+- `api_token`
+
+  Credentials for the provider (API token).
+
+## HetznerDNS
+
+Collection of data defining HetznerDNS provider configuration.
+
+To find out how to configure HetznerDNS follow the instructions [here](./providers/hetzner.md)
+
+- `name`
+
+  Name of the provider. Used as a reference further in the input manifest. Should be unique for each provider spec across all the providers.
+
+- `api_token`
+
+  Credentials for the provider (API token).
 
 ## GCP
 
@@ -327,7 +363,7 @@ Collection of data Claudie uses to create a DNS record for the loadbalancer.
 
 - `dns_zone`
 
-  DNS zone inside of which the records will be created. For now, only a GCP DNS zone is accepted, thus making definition of the GCP provider necessary.
+  DNS zone inside of which the records will be created. GCP/AWS/OCI/Azure/Cloudflare/Hetzner DNS zone is accepted
 
 - `provider`
 

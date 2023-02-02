@@ -2,6 +2,7 @@ package manifest
 
 import (
 	"fmt"
+	"github.com/Berops/claudie/internal/templateUtils"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -94,8 +95,8 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 			return fmt.Errorf("provider %q used inside cluster %q is not defined", cluster.DNS.Provider, cluster.Name)
 		}
 
-		if provider.CloudProviderName != "gcp" {
-			return fmt.Errorf("provider %q used inside cluster %q exists but is not GCP (Google Cloud Platform)", cluster.DNS.Provider, cluster.Name)
+		if templateUtils.IsMissing(provider.CloudProviderName, []string{"gcp", "aws", "azure", "oci", "cloudflare", "hetznerdns"}) {
+			return fmt.Errorf("provider %q used inside cluster %q exists but is not a supported provider", cluster.DNS.Provider, cluster.Name)
 		}
 
 		// check if k8s cluster was defined in the manifest.

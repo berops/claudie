@@ -3,6 +3,12 @@ name: ExampleManifest
 # providers field is used for defining the providers
 # every supported provider has an example in this input manifest
 providers:
+  hetznerdns:
+    - name: hetznerdns-1
+      api_token: kslISA878a6etYAfXYcg5iYyrFGNlCxc
+  cloudflare:
+    - name: cloudflare-1
+      api_token: kslISA878a6etYAfXYcg5iYyrFGNlCxc
   hetzner:
     - name: hetzner-1
       #examaple token
@@ -249,7 +255,7 @@ loadBalancers:
       # dns spec where claudie will create DNS records for LB
       dns:
         dns_zone: dns-zone
-        provider: gcp-1
+        provider: hetznerdns-1
         #hostname: #left empty means the Claudie will create random hash as a hostname
       # name of targeted k8s cluster
       targeted-k8s: dev-cluster
@@ -261,7 +267,7 @@ loadBalancers:
         - apiserver
       dns:
         dns_zone: dns-zone
-        provider: gcp-1
+        provider: cloudflare-1
         # this hostname will be used for DNS records
         # keep in mind that DNS zone will be included
         hostname: my.fancy.url
