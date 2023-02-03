@@ -5,6 +5,7 @@ In Claudie, the AWS cloud provider requires you to input the credentials as an `
 ## DNS requirements
 
 If your AWS provider will be used for DNS, you need to manually
+
 - [set up dns zone](https://aws.amazon.com/route53/)
 - [update domain name server](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/GetInfoAboutHostedZone.html)
 
