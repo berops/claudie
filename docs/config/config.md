@@ -1,7 +1,9 @@
 # Config spec
+
 Config is a datastructure, which holds all of the data for Claudie microservices. It is saved in the database and passed from service to service.
 
 ## Config
+
 Config holds data for a single manifest.
 
   | Name         | Type                | Description                                           |
@@ -19,14 +21,16 @@ Config holds data for a single manifest.
   | errorMessage | string              | Error message from error encountered during execution |
 
 ## Project
-Project represents the desired state of the manifest and the current state of the manifest.
-  | Name                 | Type                        | Description                  |
-  | -------------------- | --------------------------- | ---------------------------- |
-  | Name                 | string                      | Name of the project          |
-  | Clusters             | [][K8scluster](#k8scluster) | Slice of kubernetes clusters |
-  | LoadBalancerClusters | [][LBcluster](#lbcluster)   | Slice of load balancers      |
+
+Project represents the desired and current state of the manifest.
+  | Name                 | Type                         | Description                  |
+  | -------------------- | ---------------------------- | ---------------------------- |
+  | Name                 | string                       | Name of the project          |
+  | Clusters             | [] [K8scluster](#k8scluster) | Slice of kubernetes clusters |
+  | LoadBalancerClusters | [] [LBcluster](#lbcluster)   | Slice of load balancers      |
 
 ## K8scluster
+
 K8scluster represents a single kubernetes cluster specified in the manifest.
   | Name        | Type                        | Description                    |
   | ----------- | --------------------------- | ------------------------------ |
@@ -35,25 +39,28 @@ K8scluster represents a single kubernetes cluster specified in the manifest.
   | Kubernetes  | string                      | Kubernetes version             |
 
 ## LBcluster
+
 LBcluster represents a single load balancer cluster specified in the manifest.
   | Name        | Type                        | Description                                                          |
   | ----------- | --------------------------- | -------------------------------------------------------------------- |
   | ClusterInfo | [ClusterInfo](#clusterinfo) | General info about the cluster                                       |
-  | Roles       | [][Role](#role)             | Load balancer role                                                   |
+  | Roles       | [] [Role](#role)            | Load balancer role                                                   |
   | DNS         | [Dns](#dns)                 | DNS information                                                      |
   | TargetedK8s | string                      | Kubernetes cluster name of cluster this load balancer is assigned to |
 
 ## ClusterInfo
+
 ClusterInfo holds general information about the clusters.
-  | Name        | Type                    | Description                                 |
-  | ----------- | ----------------------- | ------------------------------------------- |
-  | Name        | string                  | Name of the cluster                         |
-  | Hash        | string                  | Random hash of the cluster                  |
-  | Public_key  | string                  | Public ssh key for the nodes                |
-  | Private_key | string                  | Private ssh key for the nodes               |
-  | Nodepools   | [][Nodepool](#nodepool) | Slice of node pools this cluster is made of |
+  | Name        | Type                     | Description                                 |
+  | ----------- | ------------------------ | ------------------------------------------- |
+  | Name        | string                   | Name of the cluster                         |
+  | Hash        | string                   | Random hash of the cluster                  |
+  | Public_key  | string                   | Public ssh key for the nodes                |
+  | Private_key | string                   | Private ssh key for the nodes               |
+  | Nodepools   | [] [Nodepool](#nodepool) | Slice of node pools this cluster is made of |
 
 ## Role
+
 Role represents a single loadbalancer role from the manifest.
   | Name       | Type                  | Description                             |
   | ---------- | --------------------- | --------------------------------------- |
@@ -65,6 +72,7 @@ Role represents a single loadbalancer role from the manifest.
   | RoleType   | [RoleType](#roletype) | Type of the role                        |
 
 ## DNS
+
 DNS holds general information about the DNS records.
   | Name     | Type                  | Description                          |
   | -------- | --------------------- | ------------------------------------ |
@@ -74,6 +82,7 @@ DNS holds general information about the DNS records.
   | Endpoint | string                | The whole hostname of the DNS record |
 
 ## NodePool
+
 NodePool represents a single nodepool from the manifest.
   | Name       | Type                  | Description                                             |
   | ---------- | --------------------- | ------------------------------------------------------- |
@@ -84,11 +93,12 @@ NodePool represents a single nodepool from the manifest.
   | DiskSize   | int32                 | Disk size of the nodes                                  |
   | Zone       | string                | Zone for the nodes                                      |
   | Count      | int32                 | Count of the nodes                                      |
-  | Nodes      | [][Node](#node)       | Slice of Nodes                                          |
+  | Nodes      | [] [Node](#node)      | Slice of Nodes                                          |
   | Provider   | [Provider](#provider) | Provider of the nodepools                               |
   | IsControl  | bool                  | Flag to differentiate between control and compute nodes |
 
 ## Node
+
 Node represents a single node from the nodepool.
   | Name     | Type                  | Description                       |
   | -------- | --------------------- | --------------------------------- |
@@ -98,6 +108,7 @@ Node represents a single node from the nodepool.
   | NodeType | [NodeType](#nodetype) | Type of the node                  |
   
 ## Provider
+
 Provider represents a single provider from the manifest.
   | Name                | Type   | Description                                                        |
   | ------------------- | ------ | ------------------------------------------------------------------ |
@@ -115,16 +126,20 @@ Provider represents a single provider from the manifest.
   | AzureClientId       | string | AzureID of the Client; the client secret is saved in `Credentials` |
 
 ### Secret credentials
+
 The list of information saved in the `Credentials` field for each provider.
-  | Provider | Input Manifest field                                         |
-  | -------- | ------------------------------------------------------------ |
-  | GCP      | [`credentials`](../input-manifest/input-manifest.md#gcp)     |
-  | Hetzner  | [`credentials`](../input-manifest/input-manifest.md#hetzner) |
-  | AWS      | [`secret_key`](../input-manifest/input-manifest.md#aws)      |
-  | OCI      | [`private_key`](../input-manifest/input-manifest.md#oci)     |
-  | Azure    | [`client_secret`](../input-manifest/input-manifest.md#azure) |
+  | Provider    | Input Manifest field                                          |
+  | ----------- | ------------------------------------------------------------- |
+  | GCP         | [`credentials`](../input-manifest/input-manifest.md#gcp)      |
+  | Hetzner     | [`credentials`](../input-manifest/input-manifest.md#hetzner)  |
+  | AWS         | [`secret_key`](../input-manifest/input-manifest.md#aws)       |
+  | OCI         | [`private_key`](../input-manifest/input-manifest.md#oci)      |
+  | Azure       | [`client_secret`](../input-manifest/input-manifest.md#azure)  |
+  | Hetzner DNS | [`api_token`](../input-manifest/input-manifest.md#hetznerdns) |
+  | Cloudflare  | [`api_token`](../input-manifest/input-manifest.md#cloudflare) |
 
 ## NodeType
+
 NodeType specifies the type of the node.
   | Value       | Description                                |
   | ----------- | ------------------------------------------ |
@@ -133,6 +148,7 @@ NodeType specifies the type of the node.
   | ApiEndpoint | Master node, which is also an API endpoint |
 
 ## Target
+
 Target specifies which nodes are targeted by the load balancer.
   | Value           | Description          |
   | --------------- | -------------------- |
@@ -141,6 +157,7 @@ Target specifies which nodes are targeted by the load balancer.
   | K8sComputePlane | Only Compute nodes   |
 
 ## RoleType
+
 RoleType specifies the type of the role.
   | Value     | Description              |
   | --------- | ------------------------ |
@@ -148,6 +165,7 @@ RoleType specifies the type of the role.
   | Ingress   | Ingress load balancer    |
 
 ## ClusterType
+
 ClusterType specifies the type of the cluster.
   | Value | Description           |
   | ----- | --------------------- |
