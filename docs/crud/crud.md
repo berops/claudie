@@ -18,15 +18,15 @@ If you define an input manifest called `claudie-manifest.yaml` (see the example 
 
 1. Creating the secret by running
 
-  ```sh
-  kubectl create secret generic input-manifest --from-file=input-manifest.yaml -n claudie
-  ```
+    ```sh
+    kubectl create secret generic input-manifest --from-file=input-manifest.yaml -n claudie
+    ```
 
 2. Labeling the secret with label `claudie.io/input-manifest` by running
 
-  ```sh
-  kubectl label secret input-manifest claudie.io/input-manifest=my-fancy-manifest -n claudie
-  ```
+    ```sh
+    kubectl label secret input-manifest claudie.io/input-manifest=my-fancy-manifest -n claudie
+    ```
 
 ## Read
 
