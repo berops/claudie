@@ -122,16 +122,16 @@ providers:
 nodePools:
   # Dynamic nodepools are created by Claudie, in one of the cloud providers specified.
   # Definition specification:
-  #
-  # - name:           # Name of the nodepool, which is used as a refference to it. Needs to be unique.
-  #   providerSpec:   # Provider specification for this nodepool.
-  #     name:         # Name of the provider instance, referencing one of the providers define above.
-  #     region:       # Region of the nodepool.
-  #     zone:         # Zone of the nodepool.
-  #   count:          # Static number of nodes in this nodepool.
-  #   server_type:    # Machine type of the nodes in this nodepool.
-  #   image:          # OS image of the nodes in the nodepool.
-  #   disk_size:      # Disk size, nodes in the nodepool will have.
+  # dynamic:
+  #   - name:           # Name of the nodepool, which is used as a refference to it. Needs to be unique.
+  #     providerSpec:   # Provider specification for this nodepool.
+  #       name:         # Name of the provider instance, referencing one of the providers define above.
+  #       region:       # Region of the nodepool.
+  #       zone:         # Zone of the nodepool.
+  #     count:          # Static number of nodes in this nodepool.
+  #     server_type:    # Machine type of the nodes in this nodepool.
+  #     image:          # OS image of the nodes in the nodepool.
+  #     disk_size:      # Disk size, nodes in the nodepool will have.
   #
   # Example definitions for each provider
   dynamic:
@@ -259,12 +259,13 @@ nodePools:
 # Kubernetes field is used to define the kubernetes clusters.
 # Definition specification:
 #
-# - name:           # Name of the cluster. The name will be appended to the created node name.
-#   version:        # Kubernetes version in semver scheme, must be supported by KubeOne.
-#   network:        # Private network IP range.
-#   pools:          # Nodepool names which cluster will be composed of. User can reuse same nodepool specification on multiple clusters.
-#     control:      # List of nodepool names, which will be used as control nodes.
-#     compute:      # List of nodepool names, which will be used as compute nodes.
+# clusters:
+#   - name:           # Name of the cluster. The name will be appended to the created node name.
+#     version:        # Kubernetes version in semver scheme, must be supported by KubeOne.
+#     network:        # Private network IP range.
+#     pools:          # Nodepool names which cluster will be composed of. User can reuse same nodepool specification on multiple clusters.
+#       control:      # List of nodepool names, which will be used as control nodes.
+#       compute:      # List of nodepool names, which will be used as compute nodes.
 #
 # Example definitions:
 kubernetes:
@@ -301,22 +302,24 @@ kubernetes:
 # Loadbalancers field defines loadbalancers used for the kubernetes clusters and roles for the loadbalancers.
 # Definition specification for role:
 #
-# - name:         # Name of the role, used as a reference later. Must be unique.
-#   protocol:     # Protocol, this role will use.
-#   port:         # Port, where trafic will be coming.
-#   target_port:  # Port, where loadbalancer will forward traffic to.
-#   target:       # Targeted nodes on kubernetes cluster. Can be "k8sControlPlane", "k8sComputePlane" or "k8sAllNodes".
+# roles:
+#   - name:         # Name of the role, used as a reference later. Must be unique.
+#     protocol:     # Protocol, this role will use.
+#     port:         # Port, where trafic will be coming.
+#     target_port:  # Port, where loadbalancer will forward traffic to.
+#     target:       # Targeted nodes on kubernetes cluster. Can be "k8sControlPlane", "k8sComputePlane" or "k8sAllNodes".
 #
 # Definition specification for loadbalancer:
 #
-# - name:         # Loadbalancer cluster name
-#   roles:        # List of role names this loadbalancer will fullfil.
-#   dns:          # DNS specification, where DNS records will be created.
-#     dns_zone:   # DNS zone name in your provider.
-#     provider:   # Provider name for the DNS.
-#     hostname:   # Hostname for the DNS record. Keep in mind the zone will be included automaticaly. If left empty the Claudie will create random hash as a hostname.
-#   targeted-k8s: # Name of the targeted kubernetes cluster
-#   pools:        # List of nodepool names used for loadbalancer
+# clusters:
+#   - name:         # Loadbalancer cluster name
+#     roles:        # List of role names this loadbalancer will fullfil.
+#     dns:          # DNS specification, where DNS records will be created.
+#       dns_zone:   # DNS zone name in your provider.
+#       provider:   # Provider name for the DNS.
+#       hostname:   # Hostname for the DNS record. Keep in mind the zone will be included automaticaly. If left empty the Claudie will create random hash as a hostname.
+#     targeted-k8s: # Name of the targeted kubernetes cluster
+#     pools:        # List of nodepool names used for loadbalancer
 # Example definitons:
 loadBalancers:
   roles:
@@ -325,6 +328,7 @@ loadBalancers:
       port: 6443
       target_port: 6443
       target: k8sControlPlane
+
   clusters:
     - name: apiserver-lb-dev
       roles:
