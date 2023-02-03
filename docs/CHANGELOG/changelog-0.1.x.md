@@ -35,6 +35,21 @@ To deploy the Claudie `v0.1.X`, please:
     ```sh
     kubectl apply -k .
     ```
+# v0.1.1
+
+## Features
+
+- Support DNS zone for Cloudflare, AWS, Azure, HetznerDNS, OCI [#530](https://github.com/Berops/claudie/pull/530)
+- Add default node labels [#543](https://github.com/Berops/claudie/pull/543)
+
+## Bugfixed
+
+- Logs in all services have been modified to not output sensitive information. [#535](https://github.com/Berops/claudie/pull/535)
+- Correctly update desiredState after workflow for a given manifest completes. [#536](https://github.com/Berops/claudie/pull/536)
+
+## Known issues
+
+- Wireguard interface `wg0` is missing ip address after reboot. Will be fixed in next release [#557](https://github.com/Berops/claudie/pull/557)
 
 # v0.1.0
 
