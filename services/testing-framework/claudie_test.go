@@ -112,13 +112,22 @@ func testClaudie(ctx context.Context) error {
 	}
 
 	// apply the test sets
+	var errGroup errgroup.Group
 	for _, path := range setNames {
-		err := applyTestSet(ctx, path, c)
-		if err != nil {
-			//in order to get errors from all goroutines in error group, print them here and just return simple error so test will fail
-			log.Error().Msgf("Error in test sets %s : %v", path, err)
-			return fmt.Errorf("error")
-		}
+		func(path string, c pb.ContextBoxServiceClient) {
+			errGroup.Go(func() error {
+				err := applyTestSet(ctx, path, c)
+				if err != nil {
+					//in order to get errors from all goroutines in error group, print them here and just return simple error so test will fail
+					log.Error().Msgf("Error in test sets %s : %v", path, err)
+					return fmt.Errorf("error")
+				}
+				return nil
+			})
+		}(path, c)
+	}
+	if err = errGroup.Wait(); err != nil {
+		return fmt.Errorf("one or more test sets returned with error")
 	}
 	return nil
 }
