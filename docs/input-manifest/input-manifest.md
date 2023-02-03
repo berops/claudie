@@ -367,7 +367,7 @@ Collection of data Claudie uses to create a DNS record for the loadbalancer.
 
 - `provider`
 
-  Name of [provider](#providers) to be used for creating an A record entry in defined dns zone.
+  Name of [provider](#providers) to be used for creating an A record entry in defined DNS zone.
 
 - `hostname`
   
