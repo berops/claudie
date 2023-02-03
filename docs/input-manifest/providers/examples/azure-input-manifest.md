@@ -28,6 +28,7 @@ nodePools:
         # zone of the nodepool
         zone: 1
       count: 2
+      # VM size name
       server_type: Standard_B2s
       # URN of the image
       image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
@@ -42,6 +43,7 @@ nodePools:
         # zone of the nodepool
         zone: 1
       count: 2
+      # VM size name
       server_type: Standard_B2s
       # URN of the image
       image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
@@ -56,6 +58,7 @@ nodePools:
         # zone of the nodepool
         zone: 1
       count: 2
+      # VM size name
       server_type: Standard_B2s
       # URN of the image
       image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
@@ -112,6 +115,7 @@ nodePools:
         # zone of the nodepool
         zone: 1
       count: 1
+      # VM size name
       server_type: Standard_B2s
       # URN of the image
       image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
@@ -126,6 +130,7 @@ nodePools:
         # zone of the nodepool
         zone: 2
       count: 2
+      # VM size name
       server_type: Standard_B2s
       # URN of the image
       image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
@@ -140,6 +145,7 @@ nodePools:
         # zone of the nodepool
         zone: 2
       count: 2
+      # VM size name
       server_type: Standard_B2s
       # URN of the image
       image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
@@ -154,6 +160,7 @@ nodePools:
         # zone of the nodepool
         zone: 3
       count: 2
+      # VM size name
       server_type: Standard_B2s
       # URN of the image
       image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120

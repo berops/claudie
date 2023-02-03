@@ -24,6 +24,7 @@ nodePools:
         # availability zone of the nodepool
         zone: eu-central-1a
       count: 1
+      # instance type name
       server_type: t3.medium
       # ami ID of the image
       # make sure to update it according to the region 
@@ -39,6 +40,7 @@ nodePools:
         # availability zone of the nodepool
         zone: eu-central-2a
       count: 2
+      # instance type name
       server_type: t3.medium
       # ami ID of the image
       # make sure to update it according to the region 
@@ -53,6 +55,7 @@ nodePools:
         # availability zone of the nodepool
         zone: eu-central-3a
       count: 2
+      # instance type name
       server_type: t3.medium
       # ami ID of the image
       # make sure to update it according to the region 
@@ -101,6 +104,7 @@ nodePools:
         # availability zone of the nodepool
         zone: eu-central-1a
       count: 1
+      # instance type name
       server_type: t3.medium
       # ami ID of the image
       # make sure to update it according to the region 
@@ -116,6 +120,7 @@ nodePools:
         # availability zone of the nodepool
         zone: eu-north-1a
       count: 2
+      # instance type name
       server_type: t3.medium
       # ami ID of the image
       # make sure to update it according to the region 
@@ -131,6 +136,7 @@ nodePools:
         # availability zone of the nodepool
         zone: eu-central-2a
       count: 2
+      # instance type name
       server_type: t3.medium
       # ami ID of the image
       # make sure to update it according to the region 
@@ -145,6 +151,7 @@ nodePools:
         # availability zone of the nodepool
         zone: eu-north-3a
       count: 2
+      # instance type name
       server_type: t3.medium
       # ami ID of the image
       # make sure to update it according to the region 
