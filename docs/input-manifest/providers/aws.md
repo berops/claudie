@@ -11,7 +11,7 @@ If your AWS provider will be used for DNS, you need to manually
 
 since Claudie does not support their dynamic creation.
 
-## IAM policies required by Claudie:
+## IAM policies required by Claudie
 
 ```json
 {
