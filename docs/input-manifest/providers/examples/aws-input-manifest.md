@@ -17,9 +17,9 @@ nodePools:
   dynamic:
     - name: control-aws
       providerSpec:
-        # name of the provider instance
+        # Name of the provider instance.
         name: aws-1
-        # region of the nodepool
+        # Region of the nodepool.
         region: eu-central-1
         # availability zone of the nodepool
         zone: eu-central-1a
@@ -27,15 +27,15 @@ nodePools:
       # instance type name
       server_type: t3.medium
       # ami ID of the image
-      # make sure to update it according to the region 
+      # Make sure to update it according to the region. 
       image: ami-0965bd5ba4d59211c
       disk_size: 50
       
     - name: compute-1-aws
       providerSpec:
-        # name of the provider instance
+        # Name of the provider instance.
         name: aws-1
-        # region of the nodepool
+        # Region of the nodepool.
         region: eu-central-2
         # availability zone of the nodepool
         zone: eu-central-2a
@@ -43,14 +43,14 @@ nodePools:
       # instance type name
       server_type: t3.medium
       # ami ID of the image
-      # make sure to update it according to the region 
+      # Make sure to update it according to the region. 
       image: ami-0965bd5ba4d59211c
 
     - name: compute-2-aws
       providerSpec:
-        # name of the provider instance
+        # Name of the provider instance.
         name: aws-1
-        # region of the nodepool
+        # Region of the nodepool.
         region: eu-central-3
         # availability zone of the nodepool
         zone: eu-central-3a
@@ -58,7 +58,7 @@ nodePools:
       # instance type name
       server_type: t3.medium
       # ami ID of the image
-      # make sure to update it according to the region 
+      # Make sure to update it according to the region. 
       image: ami-0965bd5ba4d59211c
 
 kubernetes:
@@ -98,7 +98,7 @@ nodePools:
   dynamic:
     - name: control-aws-1
       providerSpec:
-        # name of the provider instance
+        # Name of the provider instance.
         name: aws-1
         region: eu-central-1
         # availability zone of the nodepool
@@ -107,15 +107,15 @@ nodePools:
       # instance type name
       server_type: t3.medium
       # ami ID of the image
-      # make sure to update it according to the region 
+      # Make sure to update it according to the region. 
       image: ami-0965bd5ba4d59211c
       disk_size: 50
 
     - name: control-aws-2
       providerSpec:
-        # name of the provider instance
+        # Name of the provider instance.
         name: aws-2
-        # region of the nodepool
+        # Region of the nodepool.
         region: eu-north-1
         # availability zone of the nodepool
         zone: eu-north-1a
@@ -123,15 +123,15 @@ nodePools:
       # instance type name
       server_type: t3.medium
       # ami ID of the image
-      # make sure to update it according to the region 
+      # Make sure to update it according to the region. 
       image: ami-03df6dea56f8aa618
       disk_size: 50
 
     - name: compute-aws-1
       providerSpec:
-        # name of the provider instance
+        # Name of the provider instance.
         name: aws-1
-        # region of the nodepool
+        # Region of the nodepool.
         region: eu-central-2
         # availability zone of the nodepool
         zone: eu-central-2a
@@ -139,14 +139,14 @@ nodePools:
       # instance type name
       server_type: t3.medium
       # ami ID of the image
-      # make sure to update it according to the region 
+      # Make sure to update it according to the region. 
       image: ami-0965bd5ba4d59211c
 
     - name: compute-aws-2
       providerSpec:
-        # name of the provider instance
+        # Name of the provider instance.
         name: aws-2
-        # region of the nodepool
+        # Region of the nodepool.
         region: eu-north-3
         # availability zone of the nodepool
         zone: eu-north-3a
@@ -154,7 +154,7 @@ nodePools:
       # instance type name
       server_type: t3.medium
       # ami ID of the image
-      # make sure to update it according to the region 
+      # Make sure to update it according to the region. 
       image: ami-03df6dea56f8aa618
 
 kubernetes:

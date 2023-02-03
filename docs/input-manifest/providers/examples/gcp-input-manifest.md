@@ -8,9 +8,9 @@ name: GCPExampleManifest
 providers:
   gcp:
     - name: gcp-1
-      # gcp project for the service account
+      # GCP project for the service account.
       gcp_project: project-claudie
-      # service acount key
+      # Service account key.
       credentials: |
         {
         "type": "service_account",
@@ -28,46 +28,46 @@ nodePools:
   dynamic:
     - name: control-gcp
       providerSpec:
-        # name of the provider instance
+        # Name of the provider instance.
         name: gcp-1
-        # region of the nodepool
+        # Region of the nodepool.
         region: europe-west1
-        # zone of the nodepool
+        # Zone of the nodepool.
         zone: europe-west1-c
       count: 1
-      # machine type name
+      # Machine type name.
       server_type: e2-medium
-      # os image name
+      # OS image name.
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
       disk_size: 50
 
     - name: compute-1-gcp
       providerSpec:
-        # name of the provider instance
+        # Name of the provider instance.
         name: gcp-1
-        # region of the nodepool
+        # Region of the nodepool.
         region: europe-west3
-        # zone of the nodepool
+        # Zone of the nodepool.
         zone: europe-west3-a
       count: 2
-      # machine type name
+      # Machine type name.
       server_type: e2-medium
-      # os image name
+      # OS image name.
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
       disk_size: 50
 
     - name: compute-2-gcp
       providerSpec:
-        # name of the provider instance
+        # Name of the provider instance.
         name: gcp-1
-        # region of the nodepool
+        # Region of the nodepool.
         region: europe-west2
-        # zone of the nodepool
+        # Zone of the nodepool.
         zone: europe-west2-a
       count: 2
-      # machine type name
+      # Machine type name.
       server_type: e2-medium
-      # os image name
+      # OS image name.
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
       disk_size: 50
 
@@ -92,9 +92,9 @@ name: GCPExampleManifest
 providers:
   gcp:
     - name: gcp-1
-      # gcp project for the service account
+      # GCP project for the service account.
       gcp_project: project-claudie-1
-      # service acount key
+      # Service account key.
       credentials: |
         {
         "type": "service_account",
@@ -108,9 +108,9 @@ providers:
         "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/claudie%40claudie-project-123456.iam.gserviceaccount.com"
         }
     - name: gcp-2
-      # gcp project for the service account
+      # GCP project for the service account.
       gcp_project: project-claudie-1
-      # service acount key
+      # Service account key.
       credentials: |
         {
         "type": "service_account",
@@ -128,61 +128,61 @@ nodePools:
   dynamic:
     - name: control-gcp-1
       providerSpec:
-        # name of the provider instance
+        # Name of the provider instance.
         name: gcp-1
-        # region of the nodepool
+        # Region of the nodepool.
         region: europe-west1
-        # zone of the nodepool
+        # Zone of the nodepool.
         zone: europe-west1-c
       count: 1
-      # machine type name
+      # Machine type name.
       server_type: e2-medium
-      # os image name
+      # OS image name.
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
       disk_size: 50
 
     - name: control-gcp-2
       providerSpec:
-        # name of the provider instance
+        # Name of the provider instance.
         name: gcp-2
-        # region of the nodepool
+        # Region of the nodepool.
         region: europe-west1
-        # zone of the nodepool
+        # Zone of the nodepool.
         zone: europe-west1-a
       count: 2
-      # machine type name
+      # Machine type name.
       server_type: e2-medium
-      # os image name
+      # OS image name.
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
       disk_size: 50
 
     - name: compute-gcp-1
       providerSpec:
-        # name of the provider instance
+        # Name of the provider instance.
         name: gcp-1
-        # region of the nodepool
+        # Region of the nodepool.
         region: europe-west3
-        # zone of the nodepool
+        # Zone of the nodepool.
         zone: europe-west3-a
       count: 2
-      # machine type name
+      # Machine type name.
       server_type: e2-medium
-      # os image name
+      # OS image name.
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
       disk_size: 50
 
     - name: compute-gcp-2
       providerSpec:
-        # name of the provider instance
+        # Name of the provider instance.
         name: gcp-2
-        # region of the nodepool
+        # Region of the nodepool.
         region: europe-west1
-        # zone of the nodepool
+        # Zone of the nodepool.
         zone: europe-west1-c
       count: 2
-      # machine type name
+      # Machine type name.
       server_type: e2-medium
-      # os image name
+      # OS image name.
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
       disk_size: 50
 

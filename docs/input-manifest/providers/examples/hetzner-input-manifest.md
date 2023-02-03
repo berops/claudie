@@ -8,53 +8,53 @@ name: HetznerExampleManifest
 providers:
   hetzner:
     - name: hetzner-1
-      # api token
+      # API access token.
       credentials: kslISA878a6etYAfXYcg5iYyrFGNlCxcICo060HVEygjFs21nske76ksjKko21lp
 
 nodePools:
   dynamic:
     - name: control-hetzner
       providerSpec:
-        # provider instance name
+        # Name of the provider instance.
         name: hetzner-1
-        # region of the nodepool
+        # Region of the nodepool.
         region: hel1
-        # datacenter of the nodepool
+        # Datacenter of the nodepool.
         zone: hel1-dc2
       count: 1
-      # machine type name
+      # Machine type name.
       server_type: cpx11
-      # os image name
+      # OS image name.
       image: ubuntu-22.04
       disk_size: 50
 
     - name: compute-1-hetzner
       providerSpec:
-        # provider instance name
+        # Name of the provider instance.
         name: hetzner-1
-        # region of the nodepool
+        # Region of the nodepool.
         region: fsn1
-        # datacenter of the nodepool
+        # Datacenter of the nodepool.
         zone: fsn1-dc14
       count: 2
-      # machine type name
+      # Machine type name.
       server_type: cpx11
-      # os image name
+      # OS image name.
       image: ubuntu-22.04
       disk_size: 50
 
     - name: compute-2-hetzner
       providerSpec:
-        # provider instance name
+        # Name of the provider instance.
         name: hetzner-1
-        # region of the nodepool
+        # Region of the nodepool.
         region: nbg1
-        # datacenter of the nodepool
+        # Datacenter of the nodepool.
         zone: nbg1-dc3
       count: 2
-      # machine type name
+      # Machine type name.
       server_type: cpx11
-      # os image name
+      # OS image name.
       image: ubuntu-22.04
       disk_size: 50
 
@@ -79,72 +79,72 @@ name: HetznerExampleManifest
 providers:
   hetzner:
     - name: hetzner-1
-      # api token
+      # API access token.
       credentials: kslISA878a6etYAfXYcg5iYyrFGNlCxcICo060HVEygjFs21nske76ksjKko21lp
 
     - name: hetzner-2
-      # api token
+      # API access token.
       credentials: kslIIOUYBiuui7iGBYIUiuybpiUB87bgPyuCo060HVEygjFs21nske76ksjKko21l
 
 nodePools:
   dynamic:
     - name: control-hetzner-1
       providerSpec:
-        # provider instance name
+        # Name of the provider instance.
         name: hetzner-1
-        # region of the nodepool
+        # Region of the nodepool.
         region: hel1
-        # datacenter of the nodepool
+        # Datacenter of the nodepool.
         zone: hel1-dc2
       count: 1
-      # machine type name
+      # Machine type name.
       server_type: cpx11
-      # os image name
+      # OS image name.
       image: ubuntu-22.04
       disk_size: 50
 
     - name: control-hetzner-2
       providerSpec:
-        # provider instance name
+        # Name of the provider instance.
         name: hetzner-2
-        # region of the nodepool
+        # Region of the nodepool.
         region: fsn1
-        # datacenter of the nodepool
+        # Datacenter of the nodepool.
         zone: fsn1-dc14
       count: 2
-      # machine type name
+      # Machine type name.
       server_type: cpx11
-      # os image name
+      # OS image name.
       image: ubuntu-22.04
       disk_size: 50
 
     - name: compute-hetzner-1
       providerSpec:
-        # provider instance name
+        # Name of the provider instance.
         name: hetzner-1
-        # region of the nodepool
+        # Region of the nodepool.
         region: fsn1
-        # datacenter of the nodepool
+        # Datacenter of the nodepool.
         zone: fsn1-dc14
       count: 2
-      # machine type name
+      # Machine type name.
       server_type: cpx11
-      # os image name
+      # OS image name.
       image: ubuntu-22.04
       disk_size: 50
 
     - name: compute-hetzner-2
       providerSpec:
-        # provider instance name
+        # Name of the provider instance.
         name: hetzner-2
-        # region of the nodepool
+        # Region of the nodepool.
         region: nbg1
-        # datacenter of the nodepool
+        # Datacenter of the nodepool.
         zone: nbg1-dc3
       count: 2
-      # machine type name
+      # Machine type name.
       server_type: cpx11
-      # os image name
+      # OS image name.
       image: ubuntu-22.04
       disk_size: 50
 
