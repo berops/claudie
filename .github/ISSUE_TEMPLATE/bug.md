@@ -10,22 +10,22 @@ assignees: ''
 Note: Please search to see if an issue already exists for the bug you encountered.
 -->
 
-### Current Behavior:
+### Current Behaviour
 <!-- A concise description of what you're experiencing. -->
 
-### Expected Behavior:
+### Expected Behaviour
 <!-- A concise description of what you expected to happen. -->
 
-### Steps To Reproduce:
+### Steps To Reproduce
 <!--
-Example: steps to reproduce the behavior:
+Example: steps to reproduce the behaviour:
 1. In this environment...
 2. With this config...
 3. Run '...'
 4. See error...
 -->
 
-### Anything else to note:
+### Anything else to note
 <!--
-Similiar bugs found online? Links? Possible solution?
+Similar bugs found online? Links? Possible solution?
 -->
