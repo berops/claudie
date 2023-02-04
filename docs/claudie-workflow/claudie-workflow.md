@@ -19,7 +19,7 @@
 
 - [MongoDB](https://github.com/Berops/claudie/tree/master/manifests/claudie/mongo)
 - [Minio](https://github.com/Berops/claudie/tree/master/manifests/claudie/minio)
-- [DynamoDB](https://aws.amazon.com/dynamodb/)
+- [DynamoDB](https://github.com/Berops/claudie/tree/master/manifests/claudie/dynamo)
 
 ### Tools used
 
