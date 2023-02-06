@@ -86,9 +86,7 @@ Scheduler also monitors the health of current infrastructure and manages any ope
 
 ### API
 
-```sh
-This service is a gRPC client, thus it does not provide any API
-```
+>This service is a gRPC client, thus it does not provide any API
 
 ### Flow
 
@@ -102,9 +100,7 @@ Builder aligns the current state of the infrastructure with the desired state. I
 
 ### API
 
-```sh
-This service is a gRPC client, thus it does not provide any API
-```
+>This service is a gRPC client, thus it does not provide any API
 
 ### Flow
 
@@ -226,9 +222,7 @@ and notifies the Frontend service via a HTTP request that the new manifests are 
 
 ### API
 
-```sh
-This service is a gRPC client, thus it does not provide any API
-```
+>This service is a gRPC client, thus it does not provide any API
 
 ### Flow
 
