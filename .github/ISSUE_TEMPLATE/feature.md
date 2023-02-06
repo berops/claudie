@@ -10,13 +10,14 @@ assignees: ''
 Note: Please search to see if an issue already exists for the feature you request.
 -->
 
-### Motivation:
+### Motivation
 <!-- A concise description of what you're experiencing. -->
 
-### Description:
+### Description
 <!-- A concise description of what you expected to happen. -->
 
-### Exit criteria:
+### Exit criteria
+
 - [ ] Task...
 <!--
 Example:
