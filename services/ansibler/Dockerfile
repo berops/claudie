@@ -37,7 +37,7 @@ WORKDIR /go/services/ansibler/server
 RUN CGO_ENABLED=0 go build
 
 #Use alpine based ansible image
-FROM docker.io/cytopia/ansible:2.13
+FROM docker.io/cytopia/ansible:2.13-0.50
 #Add repository label
 LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
 #Add image name as a label
