@@ -9,6 +9,7 @@ For DNS the instructions for the token can be found [here](https://docs.hetzner.
 ## DNS requirements
 
 If your Hetzner provider will be used for DNS, you need to manually
+
 - [set up dns zone](https://www.hetzner.com/dns-console)
 - [update domain name server](https://docs.hetzner.com/dns-console/dns/general/dns-overview/#the-hetzner-online-name-servers-are)
 
