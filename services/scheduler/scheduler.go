@@ -18,6 +18,8 @@ import (
 	cbox "github.com/Berops/claudie/services/context-box/client"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
+
+	"google.golang.org/grpc/connectivity"
 )
 
 const (
@@ -107,15 +109,16 @@ func healthCheck() error {
 }
 
 func main() {
-	// initialize logger
 	utils.InitLog("scheduler")
-	// Create connection to Context-box
-	log.Info().Msgf("Dial Context-box: %s", envs.ContextBoxURL)
+
 	cc, err := utils.GrpcDialWithInsecure("context-box", envs.ContextBoxURL)
 	if err != nil {
 		log.Fatal().Err(err)
 	}
 	defer func() { utils.CloseClientConnection(cc) }()
+
+	log.Info().Msgf("Initiated connection Context-box: %s, waiting for connection to be in state: %s", envs.ContextBoxURL, connectivity.Ready)
+
 	// Initialize health probes
 	healthChecker := healthcheck.NewClientHealthChecker(fmt.Sprint(defaultSchedulerPort), healthCheck)
 	healthChecker.StartProbes()
@@ -152,12 +155,27 @@ func main() {
 	// scheduler goroutine
 	g.Go(func() error {
 		client := pb.NewContextBoxServiceClient(cc)
+		prevState := cc.GetState()
 		group := sync.WaitGroup{}
 
 		worker.NewWorker(
 			ctx,
 			10*time.Second,
 			func() error {
+				if cc.GetState() == connectivity.Ready {
+					if prevState != connectivity.Ready {
+						log.Info().Msgf("connection to Context-box is %s", cc.GetState().String())
+					}
+					prevState = connectivity.Ready
+				} else {
+					log.Warn().Msgf("connection to Context-box is not %s", connectivity.Ready.String())
+					log.Debug().Msgf("connection to Context-box is %s, waiting for the service to be reachable", cc.GetState().String())
+
+					prevState = cc.GetState()
+					cc.Connect() // try connecting to the service.
+
+					return nil
+				}
 				return configProcessor(client, &group)
 			},
 			worker.ErrorLogger,

@@ -18,6 +18,8 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/Berops/claudie/proto/pb"
+
+	"google.golang.org/grpc/connectivity"
 )
 
 const defaultBuilderPort = 50051
@@ -72,7 +74,7 @@ func run() error {
 	}
 	defer utils.CloseClientConnection(conn)
 
-	log.Info().Msgf("Connected to Context-box: %s", envs.ContextBoxURL)
+	log.Info().Msgf("Initiated connection Context-box: %s, waiting for connection to be in state: %s", envs.ContextBoxURL, connectivity.Ready)
 
 	healthcheck.NewClientHealthChecker(fmt.Sprint(defaultBuilderPort), healthCheck).StartProbes()
 
@@ -106,12 +108,27 @@ func run() error {
 
 	group.Go(func() error {
 		client := pb.NewContextBoxServiceClient(conn)
+		prevState := conn.GetState()
 		group := sync.WaitGroup{}
 
 		worker.NewWorker(
 			ctx,
 			5*time.Second,
 			func() error {
+				if conn.GetState() == connectivity.Ready {
+					if prevState != connectivity.Ready {
+						log.Info().Msgf("connection to Context-box is %s", conn.GetState().String())
+					}
+					prevState = connectivity.Ready
+				} else {
+					log.Warn().Msgf("connection to Context-box is not %s", connectivity.Ready.String())
+					log.Debug().Msgf("connection to Context-box is %s, waiting for the service to be reachable", conn.GetState().String())
+
+					prevState = conn.GetState()
+					conn.Connect() // try connecting to the service.
+
+					return nil
+				}
 				return configProcessor(client, &group)
 			},
 			worker.ErrorLogger,
