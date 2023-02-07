@@ -29,7 +29,7 @@
   register: ipa_contents
 
 - name: Configure an IP address for an interface
-  ansible.builtin.shell: "ip address add dev wg0 {{ private_ip }}/24"
+  ansible.builtin.shell: "ip address add dev wg0 {{ private_ip }}/{{ netmask }}"
   when: "ipa_contents.stdout.find( private_ip ) == -1"
 
 - name: Template wireguard config file to a node
@@ -63,7 +63,7 @@
     path: /etc/wireguard/wg0.conf
     insertbefore: "PrivateKey"
     block: |
-      Address = {{ private_ip }}/24
+      Address = {{ private_ip }}/{{ netmask }}
 
 - name: Enable systemd service for wg-quick@wg0
   ansible.builtin.systemd:
