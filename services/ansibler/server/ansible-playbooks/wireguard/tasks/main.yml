@@ -1,4 +1,7 @@
 ---
+- include_tasks: kill_unattended_upgrades.yml
+  tags: install
+
 - include_tasks: install.yml
   tags: install
 
