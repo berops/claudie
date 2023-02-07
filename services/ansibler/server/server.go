@@ -73,6 +73,10 @@ func (*server) InstallVPN(_ context.Context, req *pb.InstallRequest) (*pb.Instal
 
 // TeardownLoadBalancers correctly destroys loadbalancers by selecting the new ApiServer endpoint
 func (*server) TeardownLoadBalancers(ctx context.Context, req *pb.TeardownLBRequest) (*pb.TeardownLBResponse, error) {
+	if req.DeletedState == nil {
+		return &pb.TeardownLBResponse{OldApiEndpoinds: nil, DesiredState: req.DesiredState}, nil
+	}
+
 	var (
 		deleted         = make(map[string]*LBInfo)        //[k8sClusterName]lbInfo
 		attached        = make(map[string]bool)           // [k8sClusterName]Bool
@@ -82,7 +86,7 @@ func (*server) TeardownLoadBalancers(ctx context.Context, req *pb.TeardownLBRequ
 	)
 
 	// Collect all NodePools that will exist after the deletion
-	for _, k8s := range req.CurrentState.Clusters {
+	for _, k8s := range req.DesiredState.Clusters {
 		k8sNodepools[k8s.ClusterInfo.Name] = k8s.ClusterInfo.NodePools
 		k8sNodepoolsKey[k8s.ClusterInfo.Name] = k8s.ClusterInfo.PrivateKey
 		clusterIDs[k8s.ClusterInfo.Name] = fmt.Sprintf("%s-%s", k8s.ClusterInfo.Name, k8s.ClusterInfo.Hash)
@@ -133,7 +137,7 @@ func (*server) TeardownLoadBalancers(ctx context.Context, req *pb.TeardownLBRequ
 		return true
 	})
 
-	return &pb.TeardownLBResponse{OldApiEndpoinds: m}, nil
+	return &pb.TeardownLBResponse{OldApiEndpoinds: m, DesiredState: req.DesiredState}, nil
 }
 
 // SetUpLoadbalancers sets up the loadbalancers, DNS and verifies their configuration

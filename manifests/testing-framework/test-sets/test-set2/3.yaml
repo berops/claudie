@@ -126,8 +126,8 @@ loadBalancers:
       roles:
         - apiserver-lb
       dns:
-        dns_zone: lb-zone-2
-        provider: gcp-1
+        dns_zone: aws.e2e.claudie.io
+        provider: aws-1
         hostname: claudiets2lb1
       targeted-k8s: ts2-c-1
       pools:

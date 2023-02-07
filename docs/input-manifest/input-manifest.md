@@ -2,7 +2,7 @@
 
 ## Manifest
 
-Manifest is a definition of the user's infrastructure. It contains cloud provider specification, nodepool specification, Kubernetes and loadbalancer clusters. 
+Manifest is a definition of the user's infrastructure. It contains cloud provider specification, nodepool specification, Kubernetes and loadbalancer clusters.
 
 - `name`
 
@@ -24,7 +24,7 @@ Manifest is a definition of the user's infrastructure. It contains cloud provide
 
   List of loadbalancer clusters the Kubernetes clusters may use.
 
-## Providers 
+## Providers
 
 Contains configurations for supported cloud providers. At least one provider
 needs to be defined.
@@ -49,11 +49,47 @@ needs to be defined.
   
   List of configuration options for [Azure](https://azure.microsoft.com/en-gb/). This field is optional.
 
-Support for more cloud providers is in the [roadmap](https://github.com/Berops/claudie/blob/master/docs/roadmap/roadmap.md). 
+- `cloudflare` [Cloudflare](#cloudflare)
+
+  List of Cloudflare configuration for [Cloudflare](https://www.cloudflare.com/en-gb/). This field is optional.
+
+- `hetznerdns` [HetznerDNS](#hetznerdns)
+
+  List of HetznerDNS configuration for [HetznerDNS](https://www.hetzner.com/dns-console). This field is optional.
+
+Support for more cloud providers is in the [roadmap](https://github.com/Berops/claudie/blob/master/docs/roadmap/roadmap.md).
+
+## Cloudflare
+
+Collection of data defining Cloudflare provider configuration.
+
+To find out how to configure Cloudflare follow the instructions [here](./providers/cloudflare.md)
+
+- `name`
+
+  Name of the provider. Used as a reference further in the input manifest. Should be unique for each provider spec across all the providers.
+
+- `api_token`
+
+  Credentials for the provider (API token).
+
+## HetznerDNS
+
+Collection of data defining HetznerDNS provider configuration.
+
+To find out how to configure HetznerDNS follow the instructions [here](./providers/hetzner.md)
+
+- `name`
+
+  Name of the provider. Used as a reference further in the input manifest. Should be unique for each provider spec across all the providers.
+
+- `api_token`
+
+  Credentials for the provider (API token).
 
 ## GCP
 
-Collection of data defining GCP cloud provider configuration. 
+Collection of data defining GCP cloud provider configuration.
 
 To find out how to configure GCP provider and service account, follow the instructions [here](./providers/gcp.md).
 
@@ -71,7 +107,7 @@ To find out how to configure GCP provider and service account, follow the instru
 
 ## Hetzner
 
-Collection of data defining Hetzner cloud provider configuration. 
+Collection of data defining Hetzner cloud provider configuration.
 
 To find out how to configure Hetzner provider and service account, follow the instructions [here](./providers/hetzner.md).
 
@@ -85,7 +121,7 @@ To find out how to configure Hetzner provider and service account, follow the in
 
 ## OCI
 
-Collection of data defining OCI cloud provider configuration. 
+Collection of data defining OCI cloud provider configuration.
 
 To find out how to configure OCI provider and service account, follow the instructions [here](./providers/oci.md).
 
@@ -115,7 +151,7 @@ To find out how to configure OCI provider and service account, follow the instru
 
 ## AWS
 
-Collection of data defining AWS cloud provider configuration. 
+Collection of data defining AWS cloud provider configuration.
 
 To find out how to configure AWS provider and service account, follow the instructions [here](./providers/aws.md).
 
@@ -133,7 +169,7 @@ To find out how to configure AWS provider and service account, follow the instru
 
 ## Azure
 
-Collection of data defining Azure cloud provider configuration. 
+Collection of data defining Azure cloud provider configuration.
 
 To find out how to configure Azure provider and service account, follow the instructions [here](./providers/azure.md).
 
@@ -163,7 +199,7 @@ Collection of static and dynamic nodepool specification, to be referenced in the
 
 - `dynamic` [Dynamic](#dynamic)
 
-  List of dynamically to-be-created nodepools of not yet existing machines, used for Kubernetes or loadbalancer clusters. 
+  List of dynamically to-be-created nodepools of not yet existing machines, used for Kubernetes or loadbalancer clusters.
   
   These are only blueprints, and will only be created per reference in `kubernetes` or `loadBalancer` clusters. E.g. if the nodepool isn't used, it won't even be created. Or if the same nodepool is used in two different clusters, it will be created twice.
 In OOP analogy, a dynamic nodepool would be a class that would get instantiated `N >= 0` times depending on which clusters reference it.
@@ -171,7 +207,6 @@ In OOP analogy, a dynamic nodepool would be a class that would get instantiated 
 - `static` [WORK IN PROGRESS]
 
   List of static nodepools of already existing machines, not created by of Claudie, used for Kubernetes or loadbalancer clusters. Typically, these would be on-premises machines.
-
 
 ## Dynamic
 
@@ -197,7 +232,7 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
 - `image`
 
-  OS image of the machine. 
+  OS image of the machine.
   
   Currently, only Ubuntu 22.04 AMD64 images are supported.
 
@@ -207,19 +242,20 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
 ## Provider Spec
 
-Provider spec is further specification build on top of the data from either [GCP](#gcp) or [Hetzner](#hetzner)
+Provider spec is further specification build on top of the data from any of the provider instance. To see simple examples of Provider spec, see the [provider examples](./providers/examples).
 
 - `name`
 
-  Name of the provider specified in either [GCP](#gcp) or [Hetzner](#hetzner)
+  Name of the provider instance specified in [providers](#providers)
 
 - `region`
 
-  Region of the nodepool. [NOTE: only used in GCP nodepools]
+  Region of the nodepool.
 
 - `zone`
 
-  Zone of the nodepool. Zone can be either GCP zone or Hetzner datacenter.
+  Zone of the nodepool.
+
 ## Kubernetes
 
 Defines Kubernetes clusters.
@@ -248,7 +284,7 @@ Collection of data used to define a Kubernetes cluster.
 
 - `pools`
 
-  List of nodepool names this cluster will use. Remember that nodepools defined in [nodepools](#nodepools) are only "blueprints". The actual nodepool will be created once referenced here. 
+  List of nodepool names this cluster will use. Remember that nodepools defined in [nodepools](#nodepools) are only "blueprints". The actual nodepool will be created once referenced here.
 
 ## LoadBalancer
 
@@ -287,7 +323,7 @@ Role defines a concrete loadbalancer configuration. Single loadbalancer can have
 
   Port where loadbalancer forwards the traffic.
 
-- `target` 
+- `target`
 
   Defines a target group of nodes. Allowed values are:
 
@@ -319,7 +355,7 @@ Collection of data used to define a loadbalancer cluster.
 
 - `pools`
 
-  List of nodepool names this loadbalancer will use. Remember, that nodepools defined in [nodepools](#nodepools) are only "blueprints". The actual nodepool will be created once referenced here. 
+  List of nodepool names this loadbalancer will use. Remember, that nodepools defined in [nodepools](#nodepools) are only "blueprints". The actual nodepool will be created once referenced here.
 
 ## DNS
 
@@ -327,11 +363,11 @@ Collection of data Claudie uses to create a DNS record for the loadbalancer.
 
 - `dns_zone`
 
-  DNS zone inside of which the records will be created. For now, only a GCP DNS zone is accepted, thus making definition of the GCP provider necessary.
+  DNS zone inside of which the records will be created. GCP/AWS/OCI/Azure/Cloudflare/Hetzner DNS zone is accepted
 
 - `provider`
 
-  Name of [provider](#providers) to be used for creating an A record entry in defined dns zone.
+  Name of [provider](#providers) to be used for creating an A record entry in defined DNS zone.
 
 - `hostname`
   

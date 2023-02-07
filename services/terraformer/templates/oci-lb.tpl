@@ -132,7 +132,9 @@ resource "oci_core_instance" "{{ $nodepool.Name }}" {
         # Flush and cleanup
         - iptables -F
         - iptables -X
-        - iptables -Z 
+        - iptables -Z
+        # Make changes persistent
+        - netfilter-persistent save
       EOF
       )
   }

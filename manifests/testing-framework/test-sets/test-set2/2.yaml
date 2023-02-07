@@ -126,8 +126,8 @@ loadBalancers:
       roles:
         - apiserver-lb
       dns:
-        dns_zone: lb-zone-2
-        provider: gcp-1
+        dns_zone: azure.e2e.claudie.io
+        provider: azure-1
       targeted-k8s: ts2-c-1
       pools:
         - gcp-lb
@@ -139,8 +139,8 @@ loadBalancers:
       roles:
         - apiserver-lb
       dns:
-        dns_zone: lb-zone-2
-        provider: gcp-1
+        dns_zone: oci.e2e.claudie.io
+        provider: oci-1
       targeted-k8s: ts2-c-2
       pools:
         - gcp-lb
