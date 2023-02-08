@@ -96,7 +96,7 @@ func assignPrivateAddresses(nodepools []*pb.NodePool, cidr string) error {
 	}
 
 	if len(nodes) > 0 {
-		return errors.New("failed to assigned private IPs to all nodes")
+		return errors.New("failed to assign private IPs to all nodes")
 	}
 
 	return nil

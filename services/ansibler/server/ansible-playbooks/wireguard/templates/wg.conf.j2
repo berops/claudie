@@ -7,7 +7,7 @@ ListenPort = {{ wg_listen_port }}
 [Peer]
 PublicKey = {{ hostvars[host].publickey.stdout }}
 Endpoint = {{ hostvars[host].ansible_host }}:{{ wg_listen_port }}
-AllowedIps = {{ hostvars[host].private_ip }}/{{ hostvars[host].netmask }}
+AllowedIps = {{ hostvars[host].private_ip }}/32
 PersistentKeepalive = 60
 {% endif %}
 {% endfor %}
