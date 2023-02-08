@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/netip"
 	"os"
@@ -86,12 +87,16 @@ func assignPrivateAddresses(nodepools []*pb.NodePool, cidr string) error {
 		}
 	}
 
-	for address := network.Addr(); network.Contains(address) && len(nodes) > 0; address = address.Next() {
+	for address := network.Addr().Next(); network.Contains(address) && len(nodes) > 0; address = address.Next() {
 		if _, ok := assignedIPs[address.String()]; ok {
 			continue
 		}
 		nodes[len(nodes)-1].Private = address.String()
 		nodes = nodes[:len(nodes)-1]
+	}
+
+	if len(nodes) > 0 {
+		return errors.New("failed to assigned private IPs to all nodes")
 	}
 
 	return nil
