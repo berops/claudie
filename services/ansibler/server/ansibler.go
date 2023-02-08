@@ -19,6 +19,7 @@ type NodepoolInfo struct {
 	Nodepools  []*pb.NodePool
 	PrivateKey string
 	ID         string
+	Network    string
 }
 
 type AllNodesInventoryData struct {
