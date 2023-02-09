@@ -78,6 +78,7 @@ func (tl TemplateLoader) LoadTemplate(tplFile string) (*template.Template, error
 			"enableAccNet":                  EnableAccNet,
 			"replaceAll":                    strings.ReplaceAll,
 			"trimPrefix":                    strings.TrimPrefix,
+			"extractNetmaskFromCIDR":        ExtractNetmaskFromCIDR,
 		})
 
 	tpl, err := tpl.ParseFiles(filepath.Join(baseDirectory, tl.Directory, tplFile))

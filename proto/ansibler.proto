@@ -22,16 +22,14 @@ message SetUpLBResponse {
 }
 
 message TeardownLBRequest {
-  // The currentState represents the clusters that will persists after the deletion.
-  Project currentState = 1;
-  // The deletedState represents the clusters that are going to be deleted.
-  Project deletedState = 2;
-  Project desiredState = 3;
+  Project deletedState = 1;
+  Project desiredState = 2;
 }
 
 message TeardownLBResponse {
   // Maps the K8sClusterName to old ApiEndpoint (if any)
   map<string, string> oldApiEndpoinds = 1;
+  Project desiredState = 2;
 }
 
 service AnsiblerService {

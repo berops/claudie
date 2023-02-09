@@ -125,53 +125,44 @@ resource "azurerm_network_interface" "{{ $nodepool.Name }}-{{ $clusterHash }}-ni
   }
 }
 
-resource "azurerm_virtual_machine" "{{ $nodepool.Name }}" {
+resource "azurerm_linux_virtual_machine" "{{ $nodepool.Name }}" {
   provider              = azurerm.k8s-nodepool
   count                 = {{$nodepool.Count}}
   name                  = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}"
   location              = "{{ $nodepool.Region }}"
   resource_group_name   = azurerm_resource_group.rg_{{ replaceAll $nodepool.Region " " "_"  }}.name
   network_interface_ids = [element(azurerm_network_interface.{{ $nodepool.Name }}-{{ $clusterHash }}-ni, count.index).id]
-  vm_size               = "{{$nodepool.ServerType}}"
-  zones                 = ["{{$nodepool.Zone}}"]
+  size                  = "{{$nodepool.ServerType}}"
+  zone                  = "{{$nodepool.Zone}}"
 
-  delete_os_disk_on_termination = true
-  delete_data_disks_on_termination = true
-
-  storage_image_reference {
+  source_image_reference {
     publisher = split(":", "{{$nodepool.Image}}")[0]
     offer     = split(":", "{{$nodepool.Image}}")[1]
     sku       = split(":", "{{$nodepool.Image}}")[2]
     version   = split(":", "{{$nodepool.Image}}")[3]
   }
 
-  storage_os_disk {
-    name              = "{{ $nodepool.Name }}-{{ $clusterHash }}-osdisk-${count.index+1}"
-    caching           = "ReadWrite"
-    create_option     = "FromImage"
-    managed_disk_type = "Standard_LRS"
-    disk_size_gb      = "{{ $nodepool.DiskSize }}"
+  os_disk {
+      name                 = "{{ $nodepool.Name }}-{{ $clusterHash }}-osdisk-${count.index+1}"
+      caching              = "ReadWrite"
+      storage_account_type = "Standard_LRS"
+      disk_size_gb         = "{{ $nodepool.DiskSize }}"
   }
 
-  os_profile_linux_config {
-    disable_password_authentication = true
-    ssh_keys {
-      key_data = file("public.pem")
-      path     = "/home/claudie/.ssh/authorized_keys"
-
-    }
+  disable_password_authentication = true
+  admin_ssh_key {
+    public_key = file("public.pem")
+    username   = "claudie"
   }
 
-  os_profile {
-    computer_name  = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}"
-    admin_username = "claudie"
-  }
+  computer_name  = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}"
+  admin_username = "claudie"
 }
 
 resource "azurerm_virtual_machine_extension" "{{ $nodepool.Name }}-{{ $clusterHash }}-postcreation-script" {
   provider             = azurerm.k8s-nodepool
   name                 = "{{ $clusterName }}-{{ $clusterHash }}-postcreation-script"
-  for_each             = { for vm in azurerm_virtual_machine.{{$nodepool.Name}} : vm.name => vm }
+  for_each             = { for vm in azurerm_linux_virtual_machine.{{$nodepool.Name}} : vm.name => vm }
   virtual_machine_id   = each.value.id
   publisher            = "Microsoft.Azure.Extensions"
   type                 = "CustomScript"

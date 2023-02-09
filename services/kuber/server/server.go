@@ -133,8 +133,8 @@ func (s *server) DeleteClusterMetadata(ctx context.Context, req *pb.DeleteCluste
 	kc := kubectl.Kubectl{}
 	secretName := fmt.Sprintf("%s-%s-metadata", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
 	if err := kc.KubectlDeleteResource("secret", secretName, namespace); err != nil {
-		log.Error().Msgf("Failed to remove cluster metadata for %s: %s", req.Cluster.ClusterInfo.Name, err)
-		return nil, fmt.Errorf("error while deleting kubeconfig secret for %s: %w", req.Cluster.ClusterInfo.Name, err)
+		log.Warn().Msgf("Failed to remove cluster metadata for %s: %s", req.Cluster.ClusterInfo.Name, err)
+		return &pb.DeleteClusterMetadataResponse{}, nil
 	}
 
 	log.Info().Msgf("Deleted ClusterMetadata secret for cluster %s", req.Cluster.ClusterInfo.Name)
@@ -177,8 +177,8 @@ func (s *server) DeleteKubeconfig(ctx context.Context, req *pb.DeleteKubeconfigR
 	secretName := fmt.Sprintf("%s-%s-kubeconfig", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
 
 	if err := kc.KubectlDeleteResource("secret", secretName, namespace); err != nil {
-		log.Error().Msgf("Failed to remove kubeconfig for %s: %s", cluster.ClusterInfo.Name, err)
-		return nil, fmt.Errorf("error while deleting kubeconfig secret for %s : %w", cluster.ClusterInfo.Name, err)
+		log.Warn().Msgf("Failed to remove kubeconfig for %s: %s", cluster.ClusterInfo.Name, err)
+		return &pb.DeleteKubeconfigResponse{}, nil
 	}
 
 	log.Info().Msgf("Deleted kubeconfig secret for cluster %s", cluster.ClusterInfo.Name)

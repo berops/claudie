@@ -1,7 +1,7 @@
 ---
 - hosts: nodes
   remote_user: root
-  gather_facts: no
+  gather_facts: true
   become: yes
 
   pre_tasks:
