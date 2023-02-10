@@ -42,7 +42,7 @@ To deploy the Claudie `v0.1.X`, please:
 
 - Update to Go `v1.20` [#559](https://github.com/Berops/claudie/pull/559)
 - The VPN now respects netmask from defined CIDR [#571](https://github.com/Berops/claudie/pull/571)
-- Connections attempt are more readable [#573](https://github.com/Berops/claudie/pull/573)
+- Connections attempt are more readable [#570](https://github.com/Berops/claudie/pull/570)
 
 ## Bugfixes
 
