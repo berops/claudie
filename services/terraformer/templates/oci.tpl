@@ -24,7 +24,8 @@ resource "oci_core_vcn" "claudie_vcn-{{ $region }}" {
   cidr_blocks     = ["10.0.0.0/16"]
 
   freeform_tags = {
-    "Environment" = "Managed by Claudie"
+    "Managed-by"      = "Claudie"
+    "Claudie-cluster" = "{{ $clusterName }}-{{ $clusterHash }}"
   } 
 }
 
@@ -36,7 +37,8 @@ resource "oci_core_internet_gateway" "claudie_gateway_{{ $region }}" {
   enabled         = true
 
   freeform_tags = {
-    "Environment" = "Managed by Claudie"
+    "Managed-by"      = "Claudie"
+    "Claudie-cluster" = "{{ $clusterName }}-{{ $clusterHash }}"
   } 
 }  
 
@@ -90,7 +92,8 @@ resource "oci_core_default_security_list" "claudie_security_rules_{{ $region }}"
   }
 
   freeform_tags = {
-    "Environment" = "Managed by Claudie"
+    "Managed-by"      = "Claudie"
+    "Claudie-cluster" = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
 
@@ -105,7 +108,8 @@ resource "oci_core_default_route_table" "claudie_routes_{{ $region }}" {
   }
 
   freeform_tags = {
-    "Environment" = "Managed by Claudie"
+    "Managed-by"      = "Claudie"
+    "Claudie-cluster" = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
 {{- end }}
@@ -123,7 +127,8 @@ resource "oci_core_subnet" "{{ $nodepool.Name }}_subnet" {
   availability_domain = "{{ $nodepool.Zone }}"
 
   freeform_tags = {
-    "Environment" = "Managed by Claudie"
+    "Managed-by"      = "Claudie"
+    "Claudie-cluster" = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
 
@@ -172,7 +177,8 @@ resource "oci_core_instance" "{{ $nodepool.Name }}" {
   }
 
   freeform_tags = {
-    "Environment" = "Managed by Claudie"
+    "Managed-by"      = "Claudie"
+    "Claudie-cluster" = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
 
