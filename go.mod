@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.18.2
 	github.com/go-playground/validator/v10 v10.11.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
-	github.com/minio/minio-go/v7 v7.0.47
+	github.com/minio/minio-go/v7 v7.0.48
 	github.com/rs/zerolog v1.29.0
 	github.com/spiffe/go-spiffe/v2 v2.1.2
 	github.com/stretchr/testify v1.8.1
