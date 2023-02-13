@@ -129,17 +129,30 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 			if err != nil {
 				return nil, err
 			}
+			// check if autoscaler is defined
+			count := nodePool.Count
+			var autoscalerConf *pb.AutoscalerConf
+			if nodePool.AutoscalerConfig.isDefined() {
+				//if count is smaller than AutoscalerConfig.Min, use AutoscalerConfig.Min.
+				if nodePool.Count < nodePool.AutoscalerConfig.Min {
+					count = nodePool.AutoscalerConfig.Min
+				}
+				autoscalerConf = &pb.AutoscalerConf{}
+				autoscalerConf.Min = nodePool.AutoscalerConfig.Min
+				autoscalerConf.Max = nodePool.AutoscalerConfig.Max
+			}
 
 			nodePools = append(nodePools, &pb.NodePool{
-				Name:       nodePool.Name,
-				Region:     nodePool.ProviderSpec.Region,
-				Zone:       nodePool.ProviderSpec.Zone,
-				ServerType: nodePool.ServerType,
-				Image:      nodePool.Image,
-				DiskSize:   uint32(nodePool.DiskSize),
-				Count:      uint32(nodePool.Count),
-				Provider:   provider,
-				IsControl:  isControl,
+				Name:             nodePool.Name,
+				Region:           nodePool.ProviderSpec.Region,
+				Zone:             nodePool.ProviderSpec.Zone,
+				ServerType:       nodePool.ServerType,
+				Image:            nodePool.Image,
+				DiskSize:         uint32(nodePool.DiskSize),
+				Count:            uint32(count),
+				Provider:         provider,
+				IsControl:        isControl,
+				AutoscalerConfig: autoscalerConf,
 			})
 		} else {
 			return nil, fmt.Errorf("nodepool %s not defined", nodePoolName)

@@ -82,6 +82,12 @@ message NodePool {
   repeated Node nodes = 10;
   Provider provider = 11 ;
   bool isControl = 12;
+  AutoscalerConf AutoscalerConfig = 13;
+}
+
+message AutoscalerConf {
+  int32 min = 1;
+  int32 max = 2;
 }
 
 enum NodeType {

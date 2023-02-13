@@ -86,12 +86,18 @@ type Kubernetes struct {
 }
 
 type DynamicNodePool struct {
-	Name         string       `validate:"required" yaml:"name"`
-	ProviderSpec ProviderSpec `validate:"required" yaml:"providerSpec"`
-	Count        int64        `yaml:"count"`
-	ServerType   string       `validate:"required" yaml:"server_type"`
-	Image        string       `validate:"required" yaml:"image"`
-	DiskSize     int64        `validate:"required" yaml:"disk_size"`
+	Name             string           `validate:"required" yaml:"name"`
+	ProviderSpec     ProviderSpec     `validate:"required" yaml:"providerSpec"`
+	Count            int32            `yaml:"count"`
+	ServerType       string           `validate:"required" yaml:"server_type"`
+	Image            string           `validate:"required" yaml:"image"`
+	DiskSize         int64            `validate:"required" yaml:"disk_size"`
+	AutoscalerConfig AutoscalerConfig `yaml:"autoscaler"`
+}
+
+type AutoscalerConfig struct {
+	Min int32 `validate:"required" yaml:"min"`
+	Max int32 `validate:"required" yaml:"max"`
 }
 
 type ProviderSpec struct {
