@@ -22,9 +22,8 @@ resource "oci_core_vcn" "claudie_vcn_{{ $region }}" {
   display_name    = "{{ $clusterName }}-{{ $clusterHash }}-vcn"
   cidr_blocks     = ["10.0.0.0/16"]
   
-  defined_tags = {
+  freeform_tags = {
     "Environment" = "Managed by Claudie"
-    "Region"      = "OCI {{ $region }}"
   } 
 }
 
@@ -35,9 +34,8 @@ resource "oci_core_internet_gateway" "claudie_gateway_{{ $region }}" {
   vcn_id          = oci_core_vcn.claudie_vcn_{{ $region }}.id
   enabled         = true
   
-  defined_tags = {
+  freeform_tags = {
     "Environment" = "Managed by Claudie"
-    "Region"      = "OCI {{ $region }}"
   } 
 }  
 
@@ -90,9 +88,8 @@ resource "oci_core_default_security_list" "claudie_security_rules_{{ $region }}"
     description = "Allow Wireguard VPN port"
   }
 
-  defined_tags = {
+  freeform_tags = {
     "Environment" = "Managed by Claudie"
-    "Region"      = "OCI {{ $region }}"
   }
 }
 
@@ -106,9 +103,8 @@ resource "oci_core_default_route_table" "claudie_routes_{{ $region }}" {
     destination_type  = "CIDR_BLOCK"
   }
 
-  defined_tags = {
+  freeform_tags = {
     "Environment" = "Managed by Claudie"
-    "Region"      = "OCI {{ $region }}"
   }
 }
 {{- end }}
@@ -125,9 +121,8 @@ resource "oci_core_subnet" "{{ $nodepool.Name }}_subnet" {
   dhcp_options_id     = oci_core_vcn.claudie_vcn_{{ $nodepool.Region }}.default_dhcp_options_id
   availability_domain = "{{ $nodepool.Zone }}"
 
-  defined_tags = {
+  freeform_tags = {
     "Environment" = "Managed by Claudie"
-    "Region"      = "OCI {{ $nodepool.Region }}"
   }
 }
 
@@ -175,9 +170,8 @@ resource "oci_core_instance" "{{ $nodepool.Name }}" {
     subnet_id         = oci_core_subnet.{{ $nodepool.Name }}_subnet.id
   }
 
-  defined_tags = {
+  freeform_tags = {
     "Environment" = "Managed by Claudie"
-    "Region"      = "OCI {{ $nodepool.Region }}"
   }
 }
 
