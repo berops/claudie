@@ -60,12 +60,12 @@ resource "google_compute_subnetwork" "{{ $nodepool.Name }}_subnet" {
 }
 
 resource "google_compute_instance" "{{ $nodepool.Name }}" {
-  provider     = google.lb_nodepool_{{ $nodepool.Region }}
-  count        = {{ $nodepool.Count }}
-  zone         = "{{ $nodepool.Zone }}"
-  name         = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}"
-  machine_type = "{{ $nodepool.ServerType }}"
-  description  = "Managed by Claudie"
+  provider                  = google.lb_nodepool_{{ $nodepool.Region }}
+  count                     = {{ $nodepool.Count }}
+  zone                      = "{{ $nodepool.Zone }}"
+  name                      = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}"
+  machine_type              = "{{ $nodepool.ServerType }}"
+  description               = "Managed by Claudie"
   allow_stopping_for_update = true
   boot_disk {
     initialize_params {
@@ -81,6 +81,10 @@ resource "google_compute_instance" "{{ $nodepool.Name }}" {
     ssh-keys = "root:${file("./public.pem")}"
   }
   metadata_startup_script = "echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart"
+
+  labels = {
+    environment = "claudie"
+  }
 }
 
 output "{{ $nodepool.Name }}" {
