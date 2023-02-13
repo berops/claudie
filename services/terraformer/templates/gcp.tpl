@@ -13,14 +13,14 @@ resource "google_compute_network" "network_{{ $region }}" {
   provider                = google.k8s_nodepool_{{ $region }}
   name                    = "{{ $clusterName }}-{{ $region }}-network"
   auto_create_subnetworks = false
-  description             = "Managed by Claudie"
+  description   = "Managed by Claudie for cluster {{ $clusterName }}-{{ $clusterHash }}"
 }
 
 resource "google_compute_firewall" "firewall_{{ $region }}" {
   provider     = google.k8s_nodepool_{{ $region }}
   name         = "{{ $clusterName }}-{{ $region }}-firewall"
   network      = google_compute_network.network_{{ $region }}.self_link
-  description  = "Managed by Claudie"
+  description   = "Managed by Claudie for cluster {{ $clusterName }}-{{ $clusterHash }}"
 
   allow {
     protocol = "UDP"
@@ -57,7 +57,7 @@ resource "google_compute_subnetwork" "{{ $nodepool.Name }}_subnet" {
   name          = "{{ $nodepool.Name }}-{{ $clusterHash }}-subnet"
   network       = google_compute_network.network_{{ $nodepool.Region }}.self_link
   ip_cidr_range = "{{getCIDR "10.0.0.0/24" 2 $i}}"
-  description   = "Managed by Claudie"
+  description   = "Managed by Claudie for cluster {{ $clusterName }}-{{ $clusterHash }}"
 }
 
 resource "google_compute_instance" "{{ $nodepool.Name }}" {
@@ -66,7 +66,7 @@ resource "google_compute_instance" "{{ $nodepool.Name }}" {
   zone                      = "{{ $nodepool.Zone }}"
   name                      = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}"
   machine_type              = "{{ $nodepool.ServerType }}"
-  description               = "Managed by Claudie"
+  description   = "Managed by Claudie for cluster {{ $clusterName }}-{{ $clusterHash }}"
   allow_stopping_for_update = true
   boot_disk {
     initialize_params {
@@ -82,8 +82,10 @@ resource "google_compute_instance" "{{ $nodepool.Name }}" {
     ssh-keys = "root:${file("./public.pem")}"
   }
   metadata_startup_script = "echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart"
+  
   labels = {
-    environment = "claudie"
+    managed-by = "claudie"
+    claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
 
