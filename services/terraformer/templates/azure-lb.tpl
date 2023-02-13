@@ -13,10 +13,11 @@ provider "azurerm" {
 {{- range $i, $region := .Regions }}
 resource "azurerm_resource_group" "rg_{{ replaceAll $region " " "_" }}" {
   provider = azurerm.lb_nodepool
-  name     = "{{ $clusterName }}-{{ $clusterHash }}-{{ replaceAll $region " " "_" }}"
+  name     = "{{ $clusterName }}-{{ $clusterHash }}-{{ replaceAll $region " " "-" }}"
   location = "{{ $region }}"
   tags = {
-    environment = "Managed by Claudie"
+    managed-by      = "Claudie"
+    claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
 
@@ -26,8 +27,10 @@ resource "azurerm_virtual_network" "claudie_vn_{{ replaceAll $region " " "_" }}"
   address_space       = ["10.0.0.0/16"]
   location            = "{{ $region }}"
   resource_group_name = azurerm_resource_group.rg_{{ replaceAll $region " " "_" }}.name
+
   tags = {
-    environment = "Managed by Claudie"
+    managed-by      = "Claudie"
+    claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
 
@@ -85,8 +88,10 @@ resource "azurerm_network_security_group" "claudie_nsg_{{ replaceAll $region " "
     destination_address_prefix = "*"
   }
   {{- end }}
+
   tags = {
-    environment = "Managed by Claudie"
+    managed-by      = "Claudie"
+    claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
 {{- end }}
@@ -114,8 +119,10 @@ resource "azurerm_public_ip" "{{ $nodepool.Name }}_{{ $clusterHash }}_public_ip"
   resource_group_name = azurerm_resource_group.rg_{{ replaceAll $nodepool.Region " " "_"}}.name
   allocation_method   = "Static"
   sku                 = "Standard"
+
   tags = {
-    environment = "Managed by Claudie"
+    managed-by      = "Claudie"
+    claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
 
@@ -134,8 +141,10 @@ resource "azurerm_network_interface" "{{ $nodepool.Name }}_{{ $clusterHash }}_ni
     public_ip_address_id          = element(azurerm_public_ip.{{ $nodepool.Name }}_{{ $clusterHash }}_public_ip, count.index).id
     primary                       = true
   }
+
   tags = {
-    environment = "Managed by Claudie"
+    managed-by      = "Claudie"
+    claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
 
@@ -171,8 +180,10 @@ resource "azurerm_linux_virtual_machine" "{{ $nodepool.Name }}" {
 
   computer_name  = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}"
   admin_username = "claudie"
+  
   tags = {
-    environment = "Managed by Claudie"
+    managed-by      = "Claudie"
+    claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
 
@@ -196,8 +207,10 @@ resource "azurerm_virtual_machine_extension" "{{ $nodepool.Name }}_{{ $clusterHa
       )}"
   }
 PROT
+
   tags = {
-    environment = "Managed by Claudie"
+    managed-by      = "Claudie"
+    claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
 
