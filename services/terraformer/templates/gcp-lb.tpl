@@ -13,14 +13,14 @@ resource "google_compute_network" "network_{{ $region }}" {
   provider                = google.lb_nodepool_{{ $region }}
   name                    = "{{ $clusterName }}-{{ $clusterHash }}-network"
   auto_create_subnetworks = false
-  description             = "Managed by Claudie; GCP {{ $region }}"
+  description             = "Managed by Claudie"
 }
 
 resource "google_compute_firewall" "firewall_{{ $region }}" {
   provider    = google.lb_nodepool_{{ $region }}
   name        = "{{ $clusterName }}-{{ $clusterHash }}-firewall"
   network     = google_compute_network.network_{{ $region }}.self_link
-  description = "Managed by Claudie; GCP {{ $region }}"
+  description = "Managed by Claudie"
 
   {{- range $role := index $.Metadata "roles" }}
   allow {
@@ -54,9 +54,9 @@ resource "google_compute_firewall" "firewall_{{ $region }}" {
 resource "google_compute_subnetwork" "{{ $nodepool.Name }}_subnet" {
   provider      = google.lb_nodepool_{{ $nodepool.Region }}
   name          = "{{ $nodepool.Name }}-{{ $clusterHash }}-subnet"
-  network       = google_compute_network.network-{{ $nodepool.Region }}.self_link
+  network       = google_compute_network.network_{{ $nodepool.Region }}.self_link
   ip_cidr_range = "{{ getCIDR "10.0.0.0/24" 2 $i }}"
-  description   = "Managed by Claudie; GCP {{ $region }}"
+  description   = "Managed by Claudie"
 }
 
 resource "google_compute_instance" "{{ $nodepool.Name }}" {
@@ -65,7 +65,7 @@ resource "google_compute_instance" "{{ $nodepool.Name }}" {
   zone         = "{{ $nodepool.Zone }}"
   name         = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}"
   machine_type = "{{ $nodepool.ServerType }}"
-  description  = "Managed by Claudie; GCP {{ $region }}"
+  description  = "Managed by Claudie"
   allow_stopping_for_update = true
   boot_disk {
     initialize_params {

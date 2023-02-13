@@ -11,8 +11,7 @@ resource "hcloud_ssh_key" "claudie" {
   name       = "key-{{ $clusterName }}-{{ $clusterHash }}"
   public_key = file("./public.pem")
   labels = {
-    environment : "Managed by Claudie"
-    name        : "Hetzner {{ $region }}"
+    "environment" : "Claudie"
   }
 }
 
@@ -61,8 +60,7 @@ resource "hcloud_firewall" "firewall" {
   }
 
   labels = {
-    environment : "Managed by Claudie"
-    name        : "Hetzner {{ $region }}"
+    "environment" : "Claudie"
   }
 }
 
@@ -80,8 +78,7 @@ resource "hcloud_server" "{{ $nodepool.Name }}" {
     hcloud_ssh_key.claudie.id,
   ]
   labels = {
-    environment : "Managed by Claudie"
-    name        : "Hetzner {{ $nodepool.Region }}"
+    "environment" : "Claudie"
   }
 }
 

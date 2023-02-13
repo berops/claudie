@@ -17,7 +17,6 @@ resource "azurerm_resource_group" "rg_{{ replaceAll $region " " "_" }}" {
   location = "{{ $region }}"
   tags = {
     environment = "Managed by Claudie"
-    name        = "Azure {{ $region }}"
   }
 }
 
@@ -29,7 +28,6 @@ resource "azurerm_virtual_network" "claudie_vn_{{ replaceAll $region " " "_" }}"
   resource_group_name = azurerm_resource_group.rg_{{ replaceAll $region " " "_" }}.name
   tags = {
     environment = "Managed by Claudie"
-    name        = "Azure {{ $region }}"
   }
 }
 
@@ -89,7 +87,6 @@ resource "azurerm_network_security_group" "claudie_nsg_{{ replaceAll $region " "
   {{- end }}
   tags = {
     environment = "Managed by Claudie"
-    name        = "Azure {{ $region }}"
   }
 }
 {{- end }}
@@ -101,20 +98,12 @@ resource "azurerm_subnet" "{{ $nodepool.Name }}_{{ $clusterHash }}_subnet" {
   resource_group_name  = azurerm_resource_group.rg_{{ replaceAll $nodepool.Region " " "_"}}.name
   virtual_network_name = azurerm_virtual_network.claudie_vn_{{ replaceAll $nodepool.Region " " "_" }}.name
   address_prefixes     = ["{{ getCIDR "10.0.0.0/24" 2 $i }}"]
-  tags = {
-    environment = "Managed by Claudie"
-    name        = "Azure {{ $region }}"
-  }
 }
 
 resource "azurerm_subnet_network_security_group_association" "{{ $nodepool.Name }}_associate_nsg" {
   provider                  = azurerm.lb_nodepool
   subnet_id                 = azurerm_subnet.{{ $nodepool.Name }}_{{ $clusterHash }}_subnet.id
   network_security_group_id = azurerm_network_security_group.claudie_nsg_{{ replaceAll $nodepool.Region " " "_" }}.id
-  tags = {
-    environment = "Managed by Claudie"
-    name        = "Azure {{ $region }}"
-  }
 }
 
 resource "azurerm_public_ip" "{{ $nodepool.Name }}_{{ $clusterHash }}_public_ip" {
@@ -127,7 +116,6 @@ resource "azurerm_public_ip" "{{ $nodepool.Name }}_{{ $clusterHash }}_public_ip"
   sku                 = "Standard"
   tags = {
     environment = "Managed by Claudie"
-    name        = "Azure {{ $region }}"
   }
 }
 
@@ -148,7 +136,6 @@ resource "azurerm_network_interface" "{{ $nodepool.Name }}_{{ $clusterHash }}_ni
   }
   tags = {
     environment = "Managed by Claudie"
-    name        = "Azure {{ $region }}"
   }
 }
 
@@ -186,7 +173,6 @@ resource "azurerm_linux_virtual_machine" "{{ $nodepool.Name }}" {
   admin_username = "claudie"
   tags = {
     environment = "Managed by Claudie"
-    name        = "Azure {{ $region }}"
   }
 }
 
@@ -212,7 +198,6 @@ resource "azurerm_virtual_machine_extension" "{{ $nodepool.Name }}_{{ $clusterHa
 PROT
   tags = {
     environment = "Managed by Claudie"
-    name        = "Azure {{ $region }}"
   }
 }
 

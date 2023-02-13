@@ -10,7 +10,6 @@ provider "aws" {
   default_tags {
     tags = {
       Environment = "Managed by Claudie"
-      Name        = "AWS {{ $region }}"
     }
   }
 }
@@ -18,16 +17,18 @@ provider "aws" {
 resource "aws_vpc" "claudie_vpc_{{ $region }}" {
   provider   = aws.lb_nodepool_{{ $region }}
   cidr_block = "10.0.0.0/16"
-  tags       = {
-    Name     = "{{ $clusterName }}-{{ $clusterHash }}-vpc"
+
+  tags = {
+    Name = "{{ $clusterName }}-{{ $clusterHash }}-vpc"
   }
 }
 
 resource "aws_internet_gateway" "claudie_gateway_{{ $region }}" {
   provider = aws.lb_nodepool_{{ $region }}
   vpc_id   = aws_vpc.claudie_vpc_{{ $region }}.id
-  tags     = {
-    Name   = "{{ $clusterName }}-{{ $clusterHash }}-gateway"
+
+  tags = {
+    Name = "{{ $clusterName }}-{{ $clusterHash }}-gateway"
   }
 }
 
@@ -38,6 +39,7 @@ resource "aws_route_table" "claudie_route_table_{{ $region }}" {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.claudie_gateway_{{ $region }}.id
   }
+
   tags = {
     Name = "{{ $clusterName }}-{{ $clusterHash }}-rt"
   }
@@ -47,6 +49,7 @@ resource "aws_security_group" "claudie_sg_{{ $region }}" {
   provider               = aws.lb_nodepool_{{ $region }}
   vpc_id                 = aws_vpc.claudie_vpc_{{ $region }}.id
   revoke_rules_on_delete = true
+
   tags = {
     Name = "{{ $clusterName }}-{{ $clusterHash }}-sg"
   }
@@ -119,6 +122,7 @@ resource "aws_subnet" "{{ $nodepool.Name }}_subnet" {
   cidr_block              = "{{ getCIDR "10.0.0.0/24" 2 $i}}"
   map_public_ip_on_launch = true
   availability_zone       = "{{ $nodepool.Zone }}"
+
   tags = {
     Name = "{{ $nodepool.Name }}-{{ $clusterHash }}-subnet"
   }
@@ -138,7 +142,7 @@ resource "aws_instance" "{{ $nodepool.Name }}" {
   ami               = "{{ $nodepool.Image }}"
   
   associate_public_ip_address = true
-  key_name               = aws_key_pair.claudie_pair_{{ $region }}.key_name
+  key_name               = aws_key_pair.claudie_pair_{{ $nodepool.Region }}.key_name
   subnet_id              = aws_subnet.{{ $nodepool.Name }}_subnet.id
   vpc_security_group_ids = [aws_security_group.claudie_sg_{{ $nodepool.Region }}.id]
 

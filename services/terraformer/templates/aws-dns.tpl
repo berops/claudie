@@ -8,7 +8,6 @@ provider "aws" {
   default_tags {
     tags = {
       Environment = "Managed by Claudie"
-      Name        = "AWS DNS {{ .DNSZone }}"
     }
   }
 }
