@@ -51,7 +51,8 @@ resource "hcloud_firewall" "defaultfirewall" {
   }
 
   labels = {
-    "environment" : "Claudie"
+    "managed-by"      : "Claudie"
+    "claudie-cluster" : "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
 
@@ -59,8 +60,10 @@ resource "hcloud_ssh_key" "claudie" {
   provider   = hcloud.k8s_nodepool
   name       = "key-{{ $clusterName }}-{{ $clusterHash }}"
   public_key = file("./public.pem")
+
   labels = {
-    "environment" : "Claudie"
+    "managed-by"      : "Claudie"
+    "claudie-cluster" : "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
 
@@ -79,7 +82,8 @@ resource "hcloud_server" "{{ $nodepool.Name }}" {
   ]
 
   labels = {
-    "environment" : "Claudie"
+    "managed-by"      : "Claudie"
+    "claudie-cluster" : "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
 

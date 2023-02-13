@@ -10,8 +10,10 @@ resource "hcloud_ssh_key" "claudie" {
   provider   = hcloud.lb_nodepool
   name       = "key-{{ $clusterName }}-{{ $clusterHash }}"
   public_key = file("./public.pem")
+
   labels = {
-    "environment" : "Claudie"
+    "managed-by"      : "Claudie"
+    "claudie-cluster" : "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
 
@@ -60,7 +62,8 @@ resource "hcloud_firewall" "firewall" {
   }
 
   labels = {
-    "environment" : "Claudie"
+    "managed-by"      : "Claudie"
+    "claudie-cluster" : "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
 
@@ -77,8 +80,10 @@ resource "hcloud_server" "{{ $nodepool.Name }}" {
   ssh_keys = [
     hcloud_ssh_key.claudie.id,
   ]
+
   labels = {
-    "environment" : "Claudie"
+    "managed-by"      : "Claudie"
+    "claudie-cluster" : "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
 
