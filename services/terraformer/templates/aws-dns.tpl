@@ -7,7 +7,7 @@ provider "aws" {
   alias      = "dns-aws"
   default_tags {
     tags = {
-      Environment = "Managed by Claudie"
+      Managed-by = "Claudie"
     }
   }
 }

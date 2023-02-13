@@ -9,7 +9,7 @@ provider "aws" {
   alias      = "lb_nodepool_{{ $region }}"
   default_tags {
     tags = {
-      Environment = "Managed by Claudie"
+      Managed-by = "Claudie"
     }
   }
 }
@@ -19,7 +19,8 @@ resource "aws_vpc" "claudie_vpc_{{ $region }}" {
   cidr_block = "10.0.0.0/16"
 
   tags = {
-    Name = "{{ $clusterName }}-{{ $clusterHash }}-vpc"
+    Name            = "{{ $clusterName }}-{{ $clusterHash }}-{{ $region }}-vpc"
+    Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
 
@@ -28,7 +29,8 @@ resource "aws_internet_gateway" "claudie_gateway_{{ $region }}" {
   vpc_id   = aws_vpc.claudie_vpc_{{ $region }}.id
 
   tags = {
-    Name = "{{ $clusterName }}-{{ $clusterHash }}-gateway"
+    Name            = "{{ $clusterName }}-{{ $clusterHash }}-{{ $region }}-gateway"
+    Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
 
@@ -41,7 +43,8 @@ resource "aws_route_table" "claudie_route_table_{{ $region }}" {
   }
 
   tags = {
-    Name = "{{ $clusterName }}-{{ $clusterHash }}-rt"
+    Name            = "{{ $clusterName }}-{{ $clusterHash }}-{{ $region }}-rt"
+    Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}""
   }
 }
 
@@ -51,7 +54,8 @@ resource "aws_security_group" "claudie_sg_{{ $region }}" {
   revoke_rules_on_delete = true
 
   tags = {
-    Name = "{{ $clusterName }}-{{ $clusterHash }}-sg"
+    Name            = "{{ $clusterName }}-{{ $clusterHash }}-{{ $region }}-sg"
+    Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}""
   }
 }
 
@@ -112,6 +116,10 @@ resource "aws_key_pair" "claudie_pair_{{ $region }}" {
   provider   = aws.lb_nodepool_{{ $region }}
   key_name   = "{{ $clusterName }}-{{ $clusterHash }}-key"
   public_key = file("./public.pem")
+  tags = {
+    Name            = "{{ $clusterName }}-{{ $clusterHash }}-{{ $region }}-key"
+    Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}""
+  }
 }
 {{- end }}
 
@@ -124,7 +132,8 @@ resource "aws_subnet" "{{ $nodepool.Name }}_subnet" {
   availability_zone       = "{{ $nodepool.Zone }}"
 
   tags = {
-    Name = "{{ $nodepool.Name }}-{{ $clusterHash }}-subnet"
+    Name            = "{{ $nodepool.Name }}-{{ $clusterHash }}-subnet"
+    Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}""
   }
 }
 
@@ -147,7 +156,8 @@ resource "aws_instance" "{{ $nodepool.Name }}" {
   vpc_security_group_ids = [aws_security_group.claudie_sg_{{ $nodepool.Region }}.id]
 
   tags = {
-    Name = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}"
+    Name            = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}"
+    Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}""
   }
   
   root_block_device {
