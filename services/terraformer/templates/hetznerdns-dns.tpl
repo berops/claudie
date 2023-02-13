@@ -12,7 +12,7 @@ data "hetznerdns_zone" "hetzner-zone" {
 resource "hetznerdns_record" "record_{{ replaceAll $IP "." "-" }}" {
   provider = hetznerdns.hetzner_dns
   zone_id = data.hetznerdns_zone.hetzner-zone.id
-  name = "{{ .HostnameHash }}"
+  name = "{{ $.HostnameHash }}"
   value = "{{ $IP }}"
   type = "A"
   ttl= 300
