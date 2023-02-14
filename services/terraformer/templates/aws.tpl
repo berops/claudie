@@ -20,7 +20,7 @@ resource "aws_vpc" "claudie_vpc_{{ $region }}" {
 
   tags = {
     Name            = "{{ $clusterName }}-{{ $clusterHash }}-{{ $region }}-vpc"
-    Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}""
+    Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
 
@@ -30,7 +30,7 @@ resource "aws_internet_gateway" "claudie_gateway_{{ $region }}" {
 
   tags = {
     Name            = "{{ $clusterName }}-{{ $clusterHash }}-{{ $region }}-gateway"
-    Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}""
+    Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
 
@@ -44,7 +44,7 @@ resource "aws_route_table" "claudie_route_table_{{ $region }}" {
 
   tags = {
     Name            = "{{ $clusterName }}-{{ $clusterHash }}-{{ $region }}-rt"
-    Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}""
+    Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
 
@@ -55,7 +55,7 @@ resource "aws_security_group" "claudie_sg_{{ $region }}" {
 
   tags = {
     Name            = "{{ $clusterName }}-{{ $clusterHash }}-{{ $region }}-sg"
-    Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}""
+    Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
 
@@ -117,7 +117,7 @@ resource "aws_key_pair" "claudie_pair_{{ $region }}" {
   public_key = file("./public.pem")
   tags = {
     Name            = "{{ $clusterName }}-{{ $clusterHash }}-{{ $region }}-key"
-    Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}""
+    Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
 {{- end }}
@@ -132,7 +132,7 @@ resource "aws_subnet" "{{ $nodepool.Name }}_subnet" {
 
   tags = {
     Name            = "{{ $nodepool.Name }}-{{ $clusterHash }}-subnet"
-    Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}""
+    Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
 
@@ -156,7 +156,7 @@ resource "aws_instance" "{{ $nodepool.Name }}" {
 
   tags = {
     Name            = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}"
-    Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}""
+    Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
   
   root_block_device {
