@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"math"
 	"os"
 	"os/exec"
 	"strings"
@@ -161,12 +162,12 @@ func (c *Cmd) sanitisedCmd() string {
 
 // getNewBackoff returns a new backoff 5 * (2 ^ iteration), with the hard limit set at maxBackoff.
 func getNewBackoff(iteration int) int {
-	backoff := 5 * (2 ^ iteration)
+	backoff := 5 * (math.Pow(2, float64(iteration)))
 	if backoff > maxBackoff {
 		// set hard max for exponential backoff
 		return maxBackoff
 	}
-	return backoff
+	return int(backoff)
 }
 
 // GetStdOut returns an io.Writer for exec with the defined prefix.
