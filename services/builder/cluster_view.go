@@ -137,7 +137,7 @@ func (view *ClusterView) UpdateFromBuild(ctx *BuilderContext) {
 }
 
 // AllClusters returns a slice of cluster all cluster names, from both the current state and desired state.
-// This is usefull to be abe to distinguish which clusters were deleted and which were not.
+// This is useful to be abe to distinguish which clusters were deleted and which were not.
 func (view *ClusterView) AllClusters() []string {
 	clusters := make(map[string]struct{})
 

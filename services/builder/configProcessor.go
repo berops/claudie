@@ -150,7 +150,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 		log.Debug().Msgf("Saving the config %s", config.Name)
 		config.CurrentState = config.DesiredState
 		if err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config}); err != nil {
-			log.Error().Msgf("error while saving the config %s: %w", config.GetName(), err)
+			log.Error().Msgf("error while saving the config %s: %s", config.GetName(), err)
 			return
 		}
 
@@ -272,7 +272,6 @@ func getNodeNames(nodepool *pb.NodePool, count int) (names []string) {
 }
 
 func deleteNodes(cluster *pb.K8Scluster, nodes map[string]uint32) (*pb.K8Scluster, error) {
-
 	master, worker := separateNodepools(nodes, cluster.ClusterInfo)
 	newCluster, err := callDeleteNodes(master, worker, cluster)
 	if err != nil {
