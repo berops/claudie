@@ -21,18 +21,18 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
 - name: ghcr.io/berops/claudie/ansibler
-  newTag: eefc117-1419
+  newTag: 1714319-1422
 - name: ghcr.io/berops/claudie/builder
-  newTag: eefc117-1419
+  newTag: 1714319-1422
 - name: ghcr.io/berops/claudie/context-box
-  newTag: eefc117-1419
+  newTag: 1714319-1422
 - name: ghcr.io/berops/claudie/frontend
-  newTag: eefc117-1419
+  newTag: 1714319-1422
 - name: ghcr.io/berops/claudie/kube-eleven
-  newTag: eefc117-1419
+  newTag: 1714319-1422
 - name: ghcr.io/berops/claudie/kuber
-  newTag: eefc117-1419
+  newTag: 1714319-1422
 - name: ghcr.io/berops/claudie/scheduler
-  newTag: eefc117-1419
+  newTag: 1714319-1422
 - name: ghcr.io/berops/claudie/terraformer
-  newTag: eefc117-1419
+  newTag: 1714319-1422
