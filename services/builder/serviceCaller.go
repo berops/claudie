@@ -263,6 +263,10 @@ func destroyConfigTerraformer(ctx *BuilderContext) error {
 
 // deleteClusterData deletes the kubeconfig and cluster metadata.
 func deleteClusterData(ctx *BuilderContext) error {
+	if ctx.cluster == nil {
+		return nil
+	}
+
 	cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL)
 	if err != nil {
 		return err
