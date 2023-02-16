@@ -6,6 +6,8 @@ import (
 )
 
 // ClusterView contains the per-cluster view on a given config.
+// No mutex is needed when processing concurrently as long as each cluster only
+// works with related values.
 type ClusterView struct {
 	// Clusters are the individual clusters defined in the kubernetes section of the config of the current state.
 	Clusters map[string]*pb.K8Scluster
