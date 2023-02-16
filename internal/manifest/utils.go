@@ -3,7 +3,7 @@ package manifest
 import (
 	"fmt"
 
-	"github.com/Berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb"
 )
 
 // GetProvider will search for a Provider config by matching name from providerSpec
@@ -149,7 +149,7 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 				ServerType:       nodePool.ServerType,
 				Image:            nodePool.Image,
 				DiskSize:         uint32(nodePool.DiskSize),
-				Count:            uint32(count),
+				Count:            count,
 				Provider:         provider,
 				IsControl:        isControl,
 				AutoscalerConfig: autoscalerConf,

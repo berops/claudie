@@ -10,15 +10,15 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Berops/claudie/internal/envs"
-	"github.com/Berops/claudie/internal/utils"
-	"github.com/Berops/claudie/internal/worker"
-	"github.com/Berops/claudie/services/context-box/server/checksum"
+	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/worker"
+	"github.com/berops/claudie/services/context-box/server/checksum"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/Berops/claudie/internal/healthcheck"
-	"github.com/Berops/claudie/proto/pb"
+	"github.com/berops/claudie/internal/healthcheck"
+	"github.com/berops/claudie/proto/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
@@ -179,6 +179,40 @@ func (*server) DeleteConfigFromDB(ctx context.Context, req *pb.DeleteConfigReque
 		return nil, err
 	}
 	return &pb.DeleteConfigResponse{Id: req.GetId()}, nil
+}
+
+// UpdateNodepool updates the Nodepool struct in the database, which also initiates build. This function might return an error if the updation is
+// not allowed at this time (i.e.when config is being build).
+func (*server) UpdateNodepool(ctx context.Context, req *pb.UpdateNodepoolRequest) (*pb.UpdateNodepoolResponse, error) {
+	log.Info().Msgf("CLIENT REQUEST: UpdateNodepoolCount for Project %s, Cluster %s Nodepool %s", req.ProjectName, req.ClusterName, req.Nodepool.Name)
+	var config *pb.Config
+	var err error
+	if config, err = database.GetConfig(req.ProjectName, pb.IdType_NAME); err != nil {
+		return nil, fmt.Errorf("The project %s was not found in the database : %w ", req.ProjectName, err)
+	}
+	// Check if config is currently not in any build stage
+	if config.BuilderTTL == 0 && config.SchedulerTTL == 0 {
+		// Check if all checksums are equal, meaning config is not about to get pushed to the queue || is in the queue
+		if checksum.CompareChecksums(config.MsChecksum, config.DsChecksum) && checksum.CompareChecksums(config.DsChecksum, config.CsChecksum) {
+			// Find and update correct nodepool.
+			for _, cluster := range config.DesiredState.Clusters {
+				if cluster.ClusterInfo.Name == req.ClusterName {
+					for _, nodepool := range cluster.ClusterInfo.NodePools {
+						if nodepool.Name == req.Nodepool.Name {
+							// Update count and nodes
+							nodepool.Count = req.Nodepool.Count
+							nodepool.Nodes = req.Nodepool.Nodes
+							// Save new config in the database with dummy CsChecksum to initiate a build.
+							config.CsChecksum = checksum.CalculateChecksum(utils.CreateHash(8))
+							database.SaveConfig(config)
+							return &pb.UpdateNodepoolResponse{}, nil
+						}
+					}
+				}
+			}
+		}
+	}
+	return nil, fmt.Errorf("The nodepool %s, in cluster %s in project %s was not found.", req.Nodepool.Name, req.ClusterName, req.ProjectName)
 }
 
 func main() {

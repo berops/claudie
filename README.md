@@ -1,8 +1,8 @@
 # Claudie
 
-![Build](https://github.com/Berops/claudie/actions/workflows/CD-pipeline-dev.yml/badge.svg)
+![Build](https://github.com/berops/claudie/actions/workflows/CD-pipeline-dev.yml/badge.svg)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Go Report Card](https://goreportcard.com/badge/github.com/Berops/claudie)](https://goreportcard.com/report/github.com/Berops/claudie)
+[![Go Report Card](https://goreportcard.com/badge/github.com/berops/claudie)](https://goreportcard.com/report/github.com/berops/claudie)
 
 Platform for managing multi-cloud Kubernetes clusters with each nodepool in a different cloud-provider.
 
@@ -26,15 +26,15 @@ To scale-up or scale-down, simply change a few lines in the input manifest and C
 
 ### Loadbalancing
 
-Claudie has its own managed load-balancing solution, which you can use for Ingresses, the Kubernetes API server, or generally anything. Check out our [LB docs](https://github.com/Berops/claudie/tree/master/docs/loadbalancing).
+Claudie has its own managed load-balancing solution, which you can use for Ingresses, the Kubernetes API server, or generally anything. Check out our [LB docs](https://github.com/berops/claudie/tree/master/docs/loadbalancing).
 
 ### Persistent storage volumes
 
-Claudie comes pre-configured with a storage solution, with ready-to-use Storage Classes. See [Storage docs](https://github.com/Berops/claudie/tree/master/docs/storage) to learn more.
+Claudie comes pre-configured with a storage solution, with ready-to-use Storage Classes. See [Storage docs](https://github.com/berops/claudie/tree/master/docs/storage) to learn more.
 
 ## Get started using Claudie
 
-1. Deploy Claudie Kubernetes [manifests/claudie](https://github.com/Berops/claudie/tree/master/manifests/claudie) into a Kubernetes cluster:
+1. Deploy Claudie Kubernetes [manifests/claudie](https://github.com/berops/claudie/tree/master/manifests/claudie) into a Kubernetes cluster:
 
    ```sh
    kubectl apply -k manifests/claudie
@@ -42,7 +42,7 @@ Claudie comes pre-configured with a storage solution, with ready-to-use Storage 
 
 2. provide your own manifest via a Kubernetes Secret.
 
-Have a look at our [reference example input manifest](https://github.com/Berops/claudie/blob/master/docs/input-manifest/example.yaml) to explore what's possible.
+Have a look at our [reference example input manifest](https://github.com/berops/claudie/blob/master/docs/input-manifest/example.yaml) to explore what's possible.
 
 To see in detail how to correctly apply the manifest into Claudie, please refer to the [CRUD](./docs/crud/crud.md) document.
 

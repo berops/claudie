@@ -89,5 +89,8 @@ SERVICES = $$(command ls services/)
 containerimgs:
 	for service in $(SERVICES) ; do \
 		echo " --- building $$service"; \
-		DOCKER_BUILDKIT=1 docker build --build-arg=TARGETARCH="$(TARGETARCH)" -t "ghcr.io/claudie/$$service:$(REV)" -f ./services/$$service/Dockerfile . ; \
+		DOCKER_BUILDKIT=1 docker build --build-arg=TARGETARCH="$(TARGETARCH)" -t "ghcr.io/berops/claudie/$$service:$(REV)" -f ./services/$$service/Dockerfile . ; \
 	done
+
+buildAdapter:
+	DOCKER_BUILDKIT=1 docker build -t "ghcr.io/berops/claudie/autoscaler-adapter:test2" -f ./services/autoscaler-adapter/Dockerfile .

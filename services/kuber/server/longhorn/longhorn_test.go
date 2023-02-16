@@ -3,7 +3,7 @@ package longhorn
 import (
 	"testing"
 
-	"github.com/Berops/claudie/internal/kubectl"
+	"github.com/berops/claudie/internal/kubectl"
 	"github.com/stretchr/testify/require"
 )
 

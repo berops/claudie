@@ -6,7 +6,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	comm "github.com/Berops/claudie/internal/command"
+	comm "github.com/berops/claudie/internal/command"
 )
 
 const (

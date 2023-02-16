@@ -3,8 +3,8 @@ package kubernetes
 import (
 	"fmt"
 
-	"github.com/Berops/claudie/proto/pb"
-	"github.com/Berops/claudie/services/terraformer/server/clusterBuilder"
+	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/services/terraformer/server/clusterBuilder"
 )
 
 type K8Scluster struct {

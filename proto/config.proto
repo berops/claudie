@@ -78,7 +78,7 @@ message NodePool {
   string image = 4;
   uint32 diskSize = 5;
   string zone = 6;
-  uint32 count = 9;
+  int32 count = 9;
   repeated Node nodes = 10;
   Provider provider = 11 ;
   bool isControl = 12;

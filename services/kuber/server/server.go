@@ -13,14 +13,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Berops/claudie/internal/envs"
-	"github.com/Berops/claudie/internal/healthcheck"
-	"github.com/Berops/claudie/internal/kubectl"
-	"github.com/Berops/claudie/internal/utils"
-	"github.com/Berops/claudie/proto/pb"
-	"github.com/Berops/claudie/services/kuber/server/longhorn"
-	"github.com/Berops/claudie/services/kuber/server/nodes"
-	"github.com/Berops/claudie/services/kuber/server/secret"
+	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/internal/healthcheck"
+	"github.com/berops/claudie/internal/kubectl"
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/services/kuber/server/longhorn"
+	"github.com/berops/claudie/services/kuber/server/nodes"
+	"github.com/berops/claudie/services/kuber/server/secret"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -112,7 +112,7 @@ func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterM
 	clusterDir := filepath.Join(outputDir, clusterID)
 	sec := secret.New(clusterDir, secret.NewYaml(
 		secret.Metadata{Name: fmt.Sprintf("%s-metadata", clusterID)},
-		secret.Data{SecretData: base64.StdEncoding.EncodeToString(b)},
+		map[string]string{"metadata": base64.StdEncoding.EncodeToString(b)},
 	))
 
 	if err := sec.Apply(envs.Namespace, ""); err != nil {
@@ -154,7 +154,7 @@ func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigReq
 	clusterDir := filepath.Join(outputDir, clusterID)
 	sec := secret.New(clusterDir, secret.NewYaml(
 		secret.Metadata{Name: fmt.Sprintf("%s-kubeconfig", clusterID)},
-		secret.Data{SecretData: base64.StdEncoding.EncodeToString([]byte(cluster.GetKubeconfig()))},
+		map[string]string{"kubeconfig": base64.StdEncoding.EncodeToString([]byte(cluster.GetKubeconfig()))},
 	))
 
 	if err := sec.Apply(envs.Namespace, ""); err != nil {

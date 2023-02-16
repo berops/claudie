@@ -2,7 +2,8 @@ package manifest
 
 import (
 	"fmt"
-	"github.com/Berops/claudie/internal/templateUtils"
+
+	"github.com/berops/claudie/internal/templateUtils"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -22,7 +23,7 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 		// There is a edge-case. If an empty string is supplied
 		// for the hostname a random hash will be generated.
 		// Thus, we only check for non-empty string.
-		// https://github.com/Berops/claudie/blob/master/docs/input-manifest/input-manifest.md#dns
+		// https://github.com/berops/claudie/blob/master/docs/input-manifest/input-manifest.md#dns
 		hostnamesPerDNS = make(map[string]string)
 
 		// check for cluster name uniqueness.
@@ -89,7 +90,7 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 
 		// check if the requested provider for the DNS zone
 		// is defined in the manifest and if it's a GCP provider.
-		// https://github.com/Berops/claudie/blob/master/docs/input-manifest/input-manifest.md#dns
+		// https://github.com/berops/claudie/blob/master/docs/input-manifest/input-manifest.md#dns
 		provider, err := m.GetProvider(cluster.DNS.Provider)
 		if err != nil {
 			return fmt.Errorf("provider %q used inside cluster %q is not defined", cluster.DNS.Provider, cluster.Name)

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb"
 )
 
 // InstallVPN installs a Wireguard VPN on the nodes in the cluster and loadbalancers

@@ -6,7 +6,7 @@ The first official release of Claudie
 
 To deploy the Claudie `v0.1.X`, please:
 
-1. Download the archive and checksums from the [release page](https://github.com/Berops/claudie/releases)
+1. Download the archive and checksums from the [release page](https://github.com/berops/claudie/releases)
 
 2. Verify the archive with the `sha256` (optional)
 
@@ -39,17 +39,17 @@ To deploy the Claudie `v0.1.X`, please:
 
 ## Features
 
-- Support DNS zone for Cloudflare, AWS, Azure, HetznerDNS, OCI [#530](https://github.com/Berops/claudie/pull/530)
-- Add default node labels [#543](https://github.com/Berops/claudie/pull/543)
+- Support DNS zone for Cloudflare, AWS, Azure, HetznerDNS, OCI [#530](https://github.com/berops/claudie/pull/530)
+- Add default node labels [#543](https://github.com/berops/claudie/pull/543)
 
 ## Bugfixed
 
-- Logs in all services have been modified to not output sensitive information. [#535](https://github.com/Berops/claudie/pull/535)
-- Correctly update desiredState after workflow for a given manifest completes. [#536](https://github.com/Berops/claudie/pull/536)
+- Logs in all services have been modified to not output sensitive information. [#535](https://github.com/berops/claudie/pull/535)
+- Correctly update desiredState after workflow for a given manifest completes. [#536](https://github.com/berops/claudie/pull/536)
 
 ## Known issues
 
-- Wireguard interface `wg0` is missing ip address after reboot. Will be fixed in next release [#557](https://github.com/Berops/claudie/pull/557)
+- Wireguard interface `wg0` is missing ip address after reboot. Will be fixed in next release [#557](https://github.com/berops/claudie/pull/557)
 
 # v0.1.0
 
@@ -69,6 +69,6 @@ To deploy the Claudie `v0.1.X`, please:
 
 ## Known issues
 
-- `iptables` reset after reboot and block all traffic on `OCI` node [#466](https://github.com/Berops/claudie/issues/466)
-- Occasional connection issues between Claudie created clusters and Claudie on Hetzner and GCP [#276](https://github.com/Berops/claudie/issues/276)
-- Unable to easily recover after error [#528](https://github.com/Berops/claudie/issues/528)
+- `iptables` reset after reboot and block all traffic on `OCI` node [#466](https://github.com/berops/claudie/issues/466)
+- Occasional connection issues between Claudie created clusters and Claudie on Hetzner and GCP [#276](https://github.com/berops/claudie/issues/276)
+- Unable to easily recover after error [#528](https://github.com/berops/claudie/issues/528)

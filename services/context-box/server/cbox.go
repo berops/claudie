@@ -3,11 +3,11 @@ package main
 import (
 	"fmt"
 
-	"github.com/Berops/claudie/internal/envs"
-	"github.com/Berops/claudie/proto/pb"
-	"github.com/Berops/claudie/services/context-box/server/checksum"
-	"github.com/Berops/claudie/services/context-box/server/claudieDB"
-	"github.com/Berops/claudie/services/context-box/server/queue"
+	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/services/context-box/server/checksum"
+	"github.com/berops/claudie/services/context-box/server/claudieDB"
+	"github.com/berops/claudie/services/context-box/server/queue"
 	"github.com/rs/zerolog/log"
 )
 

@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Berops/claudie/internal/envs"
-	"github.com/Berops/claudie/internal/utils"
-	"github.com/Berops/claudie/proto/pb"
-	ansibler "github.com/Berops/claudie/services/ansibler/client"
-	cbox "github.com/Berops/claudie/services/context-box/client"
-	kubeEleven "github.com/Berops/claudie/services/kube-eleven/client"
-	kuber "github.com/Berops/claudie/services/kuber/client"
-	terraformer "github.com/Berops/claudie/services/terraformer/client"
+	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb"
+	ansibler "github.com/berops/claudie/services/ansibler/client"
+	cbox "github.com/berops/claudie/services/context-box/client"
+	kubeEleven "github.com/berops/claudie/services/kube-eleven/client"
+	kuber "github.com/berops/claudie/services/kuber/client"
+	terraformer "github.com/berops/claudie/services/terraformer/client"
 	"github.com/rs/zerolog/log"
 
 	"golang.org/x/sync/errgroup"
@@ -77,7 +77,7 @@ func destroyConfigAndDeleteDoc(config *pb.Config, c pb.ContextBoxServiceClient) 
 		return fmt.Errorf("error while destroying config %s : %w", config.Name, err)
 	}
 
-	return cbox.DeleteConfigFromDB(c, config.Id, pb.IdType_HASH)
+	return cbox.DeleteConfigFromDB(c, &pb.DeleteConfigRequest{Id: config.Id, Type: pb.IdType_HASH})
 }
 
 // destroyConfig destroys existing clusters infra for a config by calling Terraformer

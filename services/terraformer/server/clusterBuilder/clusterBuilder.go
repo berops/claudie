@@ -7,13 +7,13 @@ import (
 	"path/filepath"
 	"sort"
 
-	comm "github.com/Berops/claudie/internal/command"
-	"github.com/Berops/claudie/internal/templateUtils"
-	"github.com/Berops/claudie/internal/utils"
-	"github.com/Berops/claudie/proto/pb"
-	"github.com/Berops/claudie/services/terraformer/server/backend"
-	"github.com/Berops/claudie/services/terraformer/server/provider"
-	"github.com/Berops/claudie/services/terraformer/server/terraform"
+	comm "github.com/berops/claudie/internal/command"
+	"github.com/berops/claudie/internal/templateUtils"
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/services/terraformer/server/backend"
+	"github.com/berops/claudie/services/terraformer/server/provider"
+	"github.com/berops/claudie/services/terraformer/server/terraform"
 	"github.com/rs/zerolog/log"
 )
 

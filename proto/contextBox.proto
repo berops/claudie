@@ -10,25 +10,49 @@ enum IdType {
 }
 
 // Save
-message SaveConfigRequest { Config config = 1; }
-message SaveConfigResponse { Config config = 1; }
+message SaveConfigRequest { 
+  Config config = 1; 
+}
+message SaveConfigResponse { 
+  Config config = 1; 
+}
 
 // Get
 message GetConfigRequest {}
-message GetConfigResponse {Config config = 1;}
+message GetConfigResponse {
+  Config config = 1;
+}
 
 message GetAllConfigsRequest {}
-message GetAllConfigsResponse {repeated Config configs = 1;}
+message GetAllConfigsResponse {
+  repeated Config configs = 1;
+}
 
-message GetConfigFromDBRequest {string id = 1; IdType type = 2;}
-message GetConfigFromDBResponse {Config config = 1;}
+message GetConfigFromDBRequest {
+  string id = 1; 
+  IdType type = 2;
+}
+message GetConfigFromDBResponse {
+  Config config = 1;
+}
 
-message GetConfigByNameRequest {string name = 1;}
-message GetConfigByNameResponse {Config config = 1;}
 
 // Delete
-message DeleteConfigRequest {string id = 1; IdType type = 2;}
-message DeleteConfigResponse {string id = 1;}
+message DeleteConfigRequest {
+  string id = 1;
+  IdType type = 2;
+}
+message DeleteConfigResponse {
+  string id = 1;
+}
+
+// Update
+message UpdateNodepoolRequest {
+  string projectName = 1;
+  string clusterName = 2;
+  NodePool nodepool = 3;
+}
+message UpdateNodepoolResponse {}
 
 service ContextBoxService {
   // Save
@@ -37,11 +61,12 @@ service ContextBoxService {
   rpc SaveConfigBuilder(SaveConfigRequest) returns (SaveConfigResponse);
   // Get
   rpc GetConfigFromDB(GetConfigFromDBRequest) returns (GetConfigFromDBResponse);
-  rpc GetConfigByName(GetConfigByNameRequest) returns (GetConfigByNameResponse);
   rpc GetConfigScheduler(GetConfigRequest) returns (GetConfigResponse);
   rpc GetConfigBuilder(GetConfigRequest) returns (GetConfigResponse);
   rpc GetAllConfigs(GetAllConfigsRequest) returns (GetAllConfigsResponse);
   // Delete
   rpc DeleteConfig(DeleteConfigRequest) returns (DeleteConfigResponse);
   rpc DeleteConfigFromDB(DeleteConfigRequest) returns (DeleteConfigResponse);
+  // Update
+  rpc UpdateNodepool(UpdateNodepoolRequest) returns (UpdateNodepoolResponse);
 }

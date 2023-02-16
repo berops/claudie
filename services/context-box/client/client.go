@@ -9,7 +9,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/Berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb"
 	"github.com/rs/zerolog/log"
 )
 
@@ -76,8 +76,8 @@ func GetAllConfigs(c pb.ContextBoxServiceClient) (*pb.GetAllConfigsResponse, err
 
 // DeleteConfig sets the manifest to null so that the next invocation of the workflow
 // for this config destroys the previous build infrastructure.
-func DeleteConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType) error {
-	res, err := c.DeleteConfig(context.Background(), &pb.DeleteConfigRequest{Id: id, Type: idType})
+func DeleteConfig(c pb.ContextBoxServiceClient, req *pb.DeleteConfigRequest) error {
+	res, err := c.DeleteConfig(context.Background(), req)
 	if err != nil {
 		return fmt.Errorf("error deleting: %w", err)
 	}
@@ -86,11 +86,8 @@ func DeleteConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType) err
 }
 
 // DeleteConfigFromDB deletes the config from the mongoDB database.
-func DeleteConfigFromDB(c pb.ContextBoxServiceClient, id string, idType pb.IdType) error {
-	res, err := c.DeleteConfigFromDB(context.Background(), &pb.DeleteConfigRequest{
-		Id:   id,
-		Type: idType,
-	})
+func DeleteConfigFromDB(c pb.ContextBoxServiceClient, req *pb.DeleteConfigRequest) error {
+	res, err := c.DeleteConfigFromDB(context.Background(), req)
 
 	if err != nil {
 		return fmt.Errorf("error deleting config from DB: %w", err)
@@ -99,6 +96,10 @@ func DeleteConfigFromDB(c pb.ContextBoxServiceClient, id string, idType pb.IdTyp
 	log.Info().Msgf("Config was deleted from DB: %v", res)
 
 	return nil
+}
+
+func UpdateNodepoolCount(c pb.ContextBoxServiceClient, req *pb.UpdateNodepoolRequest) (*pb.UpdateNodepoolResponse, error) {
+	return c.UpdateNodepool(context.Background(), req)
 }
 
 // printConfig prints a desired config with a current state info

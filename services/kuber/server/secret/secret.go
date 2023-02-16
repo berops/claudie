@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Berops/claudie/internal/kubectl"
+	"github.com/berops/claudie/internal/kubectl"
 	"gopkg.in/yaml.v3"
 )
 
@@ -18,20 +18,16 @@ type Secret struct {
 }
 
 type SecretYaml struct {
-	APIVersion string   `yaml:"apiVersion"`
-	Kind       string   `yaml:"kind"`
-	Metadata   Metadata `yaml:"metadata"`
-	SecretType string   `yaml:"type"`
-	Data       Data     `yaml:"data"`
+	APIVersion string            `yaml:"apiVersion"`
+	Kind       string            `yaml:"kind"`
+	Metadata   Metadata          `yaml:"metadata"`
+	SecretType string            `yaml:"type"`
+	Data       map[string]string `yaml:"data"`
 }
 
 type Metadata struct {
 	Name   string      `yaml:"name"`
 	Labels interface{} `yaml:"labels"`
-}
-
-type Data struct {
-	SecretData string
 }
 
 const (
@@ -48,7 +44,7 @@ func New(directory string, secretYaml SecretYaml) Secret {
 }
 
 // NewYaml created a template with pre-defined defaults and optional metadata & data fields.
-func NewYaml(md Metadata, data Data) SecretYaml {
+func NewYaml(md Metadata, data map[string]string) SecretYaml {
 	return SecretYaml{
 		APIVersion: "v1",
 		Kind:       "Secret",

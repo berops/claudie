@@ -11,10 +11,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Berops/claudie/internal/envs"
-	"github.com/Berops/claudie/internal/utils"
-	"github.com/Berops/claudie/proto/pb"
-	cbox "github.com/Berops/claudie/services/context-box/client"
+	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb"
+	cbox "github.com/berops/claudie/services/context-box/client"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -157,7 +157,7 @@ func applyTestSet(ctx context.Context, setName string, c pb.ContextBoxServiceCli
 	}
 
 	for _, manifest := range manifestFiles {
-		// https://github.com/Berops/claudie/pull/243#issuecomment-1218237412
+		// https://github.com/berops/claudie/pull/243#issuecomment-1218237412
 		if manifest.IsDir() || manifest.Name()[0:1] == "." {
 			continue
 		}
@@ -350,7 +350,7 @@ func cleanUp(setName, id string, c pb.ContextBoxServiceClient) error {
 		}
 	} else {
 		// delete config from database
-		if err := cbox.DeleteConfig(c, id, pb.IdType_HASH); err != nil {
+		if err := cbox.DeleteConfig(c, &pb.DeleteConfigRequest{Id: id, Type: pb.IdType_HASH}); err != nil {
 			return fmt.Errorf("error while deleting the manifest from test set %s : %w", id, err)
 		}
 	}

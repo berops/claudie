@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Berops/claudie/internal/manifest"
-	"github.com/Berops/claudie/proto/pb"
+	"github.com/berops/claudie/internal/manifest"
+	"github.com/berops/claudie/proto/pb"
 	"golang.org/x/crypto/ssh"
 	"gopkg.in/yaml.v3"
 )
@@ -112,6 +112,18 @@ func updateClusterInfo(desired, current *pb.ClusterInfo) {
 	desired.Hash = current.Hash
 	desired.PublicKey = current.PublicKey
 	desired.PrivateKey = current.PrivateKey
+	// check for autoscaler configuration
+desired:
+	for _, desiredNp := range desired.NodePools {
+		for _, currentNp := range current.NodePools {
+			if desiredNp.Name == currentNp.Name {
+				if desiredNp.AutoscalerConfig != nil {
+					desiredNp.Count = currentNp.Count
+				}
+				continue desired
+			}
+		}
+	}
 }
 
 // createKeys will create a RSA key-pair and save it into the clusterInfo provided

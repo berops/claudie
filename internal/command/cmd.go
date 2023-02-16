@@ -11,7 +11,7 @@ import (
 
 	stdLog "log"
 
-	"github.com/Berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/utils"
 	"github.com/rs/zerolog/log"
 )
 

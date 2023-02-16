@@ -28,13 +28,14 @@ type ContextBoxServiceClient interface {
 	SaveConfigBuilder(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error)
 	// Get
 	GetConfigFromDB(ctx context.Context, in *GetConfigFromDBRequest, opts ...grpc.CallOption) (*GetConfigFromDBResponse, error)
-	GetConfigByName(ctx context.Context, in *GetConfigByNameRequest, opts ...grpc.CallOption) (*GetConfigByNameResponse, error)
 	GetConfigScheduler(ctx context.Context, in *GetConfigRequest, opts ...grpc.CallOption) (*GetConfigResponse, error)
 	GetConfigBuilder(ctx context.Context, in *GetConfigRequest, opts ...grpc.CallOption) (*GetConfigResponse, error)
 	GetAllConfigs(ctx context.Context, in *GetAllConfigsRequest, opts ...grpc.CallOption) (*GetAllConfigsResponse, error)
 	// Delete
 	DeleteConfig(ctx context.Context, in *DeleteConfigRequest, opts ...grpc.CallOption) (*DeleteConfigResponse, error)
 	DeleteConfigFromDB(ctx context.Context, in *DeleteConfigRequest, opts ...grpc.CallOption) (*DeleteConfigResponse, error)
+	// Update
+	UpdateNodepool(ctx context.Context, in *UpdateNodepoolRequest, opts ...grpc.CallOption) (*UpdateNodepoolResponse, error)
 }
 
 type contextBoxServiceClient struct {
@@ -75,15 +76,6 @@ func (c *contextBoxServiceClient) SaveConfigBuilder(ctx context.Context, in *Sav
 func (c *contextBoxServiceClient) GetConfigFromDB(ctx context.Context, in *GetConfigFromDBRequest, opts ...grpc.CallOption) (*GetConfigFromDBResponse, error) {
 	out := new(GetConfigFromDBResponse)
 	err := c.cc.Invoke(ctx, "/claudie.ContextBoxService/GetConfigFromDB", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *contextBoxServiceClient) GetConfigByName(ctx context.Context, in *GetConfigByNameRequest, opts ...grpc.CallOption) (*GetConfigByNameResponse, error) {
-	out := new(GetConfigByNameResponse)
-	err := c.cc.Invoke(ctx, "/claudie.ContextBoxService/GetConfigByName", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -135,6 +127,15 @@ func (c *contextBoxServiceClient) DeleteConfigFromDB(ctx context.Context, in *De
 	return out, nil
 }
 
+func (c *contextBoxServiceClient) UpdateNodepool(ctx context.Context, in *UpdateNodepoolRequest, opts ...grpc.CallOption) (*UpdateNodepoolResponse, error) {
+	out := new(UpdateNodepoolResponse)
+	err := c.cc.Invoke(ctx, "/claudie.ContextBoxService/UpdateNodepool", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ContextBoxServiceServer is the server API for ContextBoxService service.
 // All implementations must embed UnimplementedContextBoxServiceServer
 // for forward compatibility
@@ -145,13 +146,14 @@ type ContextBoxServiceServer interface {
 	SaveConfigBuilder(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error)
 	// Get
 	GetConfigFromDB(context.Context, *GetConfigFromDBRequest) (*GetConfigFromDBResponse, error)
-	GetConfigByName(context.Context, *GetConfigByNameRequest) (*GetConfigByNameResponse, error)
 	GetConfigScheduler(context.Context, *GetConfigRequest) (*GetConfigResponse, error)
 	GetConfigBuilder(context.Context, *GetConfigRequest) (*GetConfigResponse, error)
 	GetAllConfigs(context.Context, *GetAllConfigsRequest) (*GetAllConfigsResponse, error)
 	// Delete
 	DeleteConfig(context.Context, *DeleteConfigRequest) (*DeleteConfigResponse, error)
 	DeleteConfigFromDB(context.Context, *DeleteConfigRequest) (*DeleteConfigResponse, error)
+	// Update
+	UpdateNodepool(context.Context, *UpdateNodepoolRequest) (*UpdateNodepoolResponse, error)
 	mustEmbedUnimplementedContextBoxServiceServer()
 }
 
@@ -171,9 +173,6 @@ func (UnimplementedContextBoxServiceServer) SaveConfigBuilder(context.Context, *
 func (UnimplementedContextBoxServiceServer) GetConfigFromDB(context.Context, *GetConfigFromDBRequest) (*GetConfigFromDBResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetConfigFromDB not implemented")
 }
-func (UnimplementedContextBoxServiceServer) GetConfigByName(context.Context, *GetConfigByNameRequest) (*GetConfigByNameResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetConfigByName not implemented")
-}
 func (UnimplementedContextBoxServiceServer) GetConfigScheduler(context.Context, *GetConfigRequest) (*GetConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetConfigScheduler not implemented")
 }
@@ -188,6 +187,9 @@ func (UnimplementedContextBoxServiceServer) DeleteConfig(context.Context, *Delet
 }
 func (UnimplementedContextBoxServiceServer) DeleteConfigFromDB(context.Context, *DeleteConfigRequest) (*DeleteConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteConfigFromDB not implemented")
+}
+func (UnimplementedContextBoxServiceServer) UpdateNodepool(context.Context, *UpdateNodepoolRequest) (*UpdateNodepoolResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateNodepool not implemented")
 }
 func (UnimplementedContextBoxServiceServer) mustEmbedUnimplementedContextBoxServiceServer() {}
 
@@ -270,24 +272,6 @@ func _ContextBoxService_GetConfigFromDB_Handler(srv interface{}, ctx context.Con
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ContextBoxServiceServer).GetConfigFromDB(ctx, req.(*GetConfigFromDBRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ContextBoxService_GetConfigByName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetConfigByNameRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ContextBoxServiceServer).GetConfigByName(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/claudie.ContextBoxService/GetConfigByName",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ContextBoxServiceServer).GetConfigByName(ctx, req.(*GetConfigByNameRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -382,6 +366,24 @@ func _ContextBoxService_DeleteConfigFromDB_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ContextBoxService_UpdateNodepool_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateNodepoolRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ContextBoxServiceServer).UpdateNodepool(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/claudie.ContextBoxService/UpdateNodepool",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ContextBoxServiceServer).UpdateNodepool(ctx, req.(*UpdateNodepoolRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ContextBoxService_ServiceDesc is the grpc.ServiceDesc for ContextBoxService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -406,10 +408,6 @@ var ContextBoxService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ContextBoxService_GetConfigFromDB_Handler,
 		},
 		{
-			MethodName: "GetConfigByName",
-			Handler:    _ContextBoxService_GetConfigByName_Handler,
-		},
-		{
 			MethodName: "GetConfigScheduler",
 			Handler:    _ContextBoxService_GetConfigScheduler_Handler,
 		},
@@ -428,6 +426,10 @@ var ContextBoxService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteConfigFromDB",
 			Handler:    _ContextBoxService_DeleteConfigFromDB_Handler,
+		},
+		{
+			MethodName: "UpdateNodepool",
+			Handler:    _ContextBoxService_UpdateNodepool_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

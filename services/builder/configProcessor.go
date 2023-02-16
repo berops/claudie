@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/Berops/claudie/internal/utils"
-	"github.com/Berops/claudie/proto/pb"
-	cbox "github.com/Berops/claudie/services/context-box/client"
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb"
+	cbox "github.com/berops/claudie/services/context-box/client"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/protobuf/proto"
 )
@@ -34,7 +34,7 @@ type nodepoolsCounts struct {
 }
 
 type nodeCount struct {
-	Count uint32
+	Count int32
 }
 
 // configProcessor will fetch new configs from the context-box service. Each received config will be processed in
