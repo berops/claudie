@@ -13,35 +13,29 @@ const (
 	longhornReq = "../../ansible-playbooks/longhorn-req.yml"
 )
 
-func installLonghornRequirements(k8sNodepools []*NodepoolInfo) error {
+func installLonghornRequirements(nodepoolInfo *NodepoolInfo) error {
 	//since all nodes will be processed, fabricate dummy directory name with hash
-	idHash := utils.CreateHash(5)
-	directory := filepath.Join(baseDirectory, outputDirectory, idHash)
-	//generate private key files
-	for _, nodepoolInfo := range k8sNodepools {
-		if _, err := os.Stat(directory); os.IsNotExist(err) {
-			if err := os.MkdirAll(directory, os.ModePerm); err != nil {
-				return fmt.Errorf("failed to create directory %s : %w", directory, err)
-			}
-		}
-		if err := utils.CreateKeyFile(nodepoolInfo.PrivateKey, directory, fmt.Sprintf("%s.%s", nodepoolInfo.ID, privateKeyExt)); err != nil {
-			return fmt.Errorf("failed to create key file for %s : %w", nodepoolInfo.ID, err)
+	directory := filepath.Join(baseDirectory, outputDirectory, utils.CreateHash(utils.HashLength))
+
+	if _, err := os.Stat(directory); os.IsNotExist(err) {
+		if err := os.MkdirAll(directory, os.ModePerm); err != nil {
+			return fmt.Errorf("failed to create directory %s : %w", directory, err)
 		}
 	}
-	//generate inventory file
-	err := generateInventoryFile(nodesInventoryFileTpl, directory, AllNodesInventoryData{NodepoolInfos: k8sNodepools})
-	if err != nil {
+
+	//generate private key files
+	if err := utils.CreateKeyFile(nodepoolInfo.PrivateKey, directory, fmt.Sprintf("%s.%s", nodepoolInfo.ID, privateKeyExt)); err != nil {
+		return fmt.Errorf("failed to create key file for %s : %w", nodepoolInfo.ID, err)
+	}
+
+	if err := generateInventoryFile(nodesInventoryFileTpl, directory, AllNodesInventoryData{NodepoolInfos: []*NodepoolInfo{nodepoolInfo}}); err != nil {
 		return fmt.Errorf("failed to generate inventory file for all nodes in %s : %w", directory, err)
 	}
-	//run playbook
+
 	ansible := ansible.Ansible{Playbook: longhornReq, Inventory: inventoryFile, Directory: directory}
-	err = ansible.RunAnsiblePlaybook(fmt.Sprintf("ALL - %s", directory))
-	if err != nil {
+	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("ALL - %s", directory)); err != nil {
 		return fmt.Errorf("error while running ansible to install Longhorn requirements for %s : %w", directory, err)
 	}
-	//Clean up
-	if err := os.RemoveAll(directory); err != nil {
-		return fmt.Errorf("error while deleting files in %s : %w", directory, err)
-	}
-	return nil
+
+	return os.RemoveAll(directory)
 }

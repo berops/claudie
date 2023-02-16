@@ -30,29 +30,19 @@ const (
 
 // BuildCluster builds all cluster defined in the desired state
 func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb.BuildClusterResponse, error) {
-	desiredState := req.GetDesiredState()
-	log.Info().Msgf("BuildCluster request with Project name: %s", desiredState.GetName())
-	var errGroup errgroup.Group
+	log.Info().Msgf("BuildCluster request cluster %s project: %s", req.Desired.ClusterInfo.Name, req.Name)
 
-	// Build all clusters concurrently
-	for _, cluster := range desiredState.GetClusters() {
-		func(cluster *pb.K8Scluster, lbClusters []*pb.LBcluster) {
-			errGroup.Go(func() error {
-				ke := kubeEleven.KubeEleven{K8sCluster: cluster, LBClusters: lbClusters}
-				err := ke.BuildCluster()
-				if err != nil {
-					return fmt.Errorf("error while building cluster %s : %w", cluster.ClusterInfo.Name, err)
-				}
-				return nil
-			})
-		}(cluster, desiredState.LoadBalancerClusters)
+	ke := kubeEleven.KubeEleven{
+		K8sCluster: req.Desired,
+		LBClusters: req.DesiredLbs,
 	}
-	if err := errGroup.Wait(); err != nil {
-		log.Error().Msgf("Error encounter in BuildCluster for project %s : %s", desiredState.Name, err.Error())
-		return &pb.BuildClusterResponse{DesiredState: desiredState, ErrorMessage: fmt.Sprintf("Error encounter in BuildCluster for project %s : %s", desiredState.Name, err.Error())}, err
+
+	if err := ke.BuildCluster(); err != nil {
+		return nil, fmt.Errorf("error while building cluster %s project %s : %w", req.Desired.ClusterInfo.Name, req.Name, err)
 	}
-	log.Info().Msgf("Clusters for project %s were successfully build", desiredState.Name)
-	return &pb.BuildClusterResponse{DesiredState: desiredState, ErrorMessage: ""}, nil
+
+	log.Info().Msgf("cluster %s project %s was successfully build", req.Desired.ClusterInfo.Name, req.Name)
+	return &pb.BuildClusterResponse{Desired: req.Desired, DesiredLbs: req.DesiredLbs}, nil
 }
 
 func main() {

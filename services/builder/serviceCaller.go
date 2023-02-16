@@ -2,124 +2,100 @@ package main
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/Berops/claudie/internal/envs"
 	"github.com/Berops/claudie/internal/utils"
 	"github.com/Berops/claudie/proto/pb"
 	ansibler "github.com/Berops/claudie/services/ansibler/client"
-	cbox "github.com/Berops/claudie/services/context-box/client"
 	kubeEleven "github.com/Berops/claudie/services/kube-eleven/client"
 	kuber "github.com/Berops/claudie/services/kuber/client"
 	terraformer "github.com/Berops/claudie/services/terraformer/client"
 	"github.com/rs/zerolog/log"
-
-	"golang.org/x/sync/errgroup"
 )
 
 type BuilderContext struct {
-	DeletedConfig *pb.Config
-	Config        *pb.Config
+	name string
+
+	cluster        *pb.K8Scluster
+	desiredCluster *pb.K8Scluster
+
+	loadbalancers        []*pb.LBcluster
+	desiredLoadbalancers []*pb.LBcluster
+
+	deletedLoadBalancers []*pb.LBcluster
 }
 
-// buildConfig is function used to build infra based on the desired state concurrently
-func buildConfig(ctx *BuilderContext, c pb.ContextBoxServiceClient, isTmpConfig bool) error {
-	log.Debug().Msgf("processConfig received config: %s, is tmpConfig: %t", ctx.Config.GetName(), isTmpConfig)
+func (ctx *BuilderContext) GetClusterName() string {
+	if ctx.desiredCluster != nil {
+		return ctx.desiredCluster.ClusterInfo.Name
+	}
+	if ctx.cluster != nil {
+		return ctx.cluster.ClusterInfo.Name
+	}
 
+	// try to get the cluster name from the lbs if present
+	if len(ctx.loadbalancers) != 0 {
+		return ctx.loadbalancers[0].TargetedK8S
+	}
+
+	if len(ctx.desiredLoadbalancers) != 0 {
+		return ctx.desiredLoadbalancers[0].TargetedK8S
+	}
+
+	if len(ctx.deletedLoadBalancers) != 0 {
+		return ctx.deletedLoadBalancers[0].TargetedK8S
+	}
+
+	return ""
+}
+
+func buildCluster(ctx *BuilderContext) (*BuilderContext, error) {
 	if err := callTerraformer(ctx); err != nil {
-		err1 := saveErrorMessage(ctx.Config, c, err)
-		if err1 != nil {
-			return fmt.Errorf("error in Terraformer for config %s : %v; unable to save error message config: %w", ctx.Config.Name, err, err1)
-		}
-		return fmt.Errorf("error in Terraformer for config %s : %w", ctx.Config.Name, err)
+		return nil, fmt.Errorf("error in Terraformer for cluster %s project %s : %w", ctx.GetClusterName(), ctx.name, err)
 	}
 
 	if err := callAnsibler(ctx); err != nil {
-		err1 := saveErrorMessage(ctx.Config, c, err)
-		if err1 != nil {
-			return fmt.Errorf("error in Ansibler for config %s : %v; unable to save error message config: %w", ctx.Config.Name, err, err1)
-		}
-		return fmt.Errorf("error in Ansibler for config %s : %w", ctx.Config.Name, err)
+		return nil, fmt.Errorf("error in Ansibler for cluster %s project %s : %w", ctx.GetClusterName(), ctx.name, err)
 	}
 
 	if err := callKubeEleven(ctx); err != nil {
-		err1 := saveErrorMessage(ctx.Config, c, err)
-		if err1 != nil {
-			return fmt.Errorf("error in KubeEleven for config %s : %v; unable to save error message config: %w", ctx.Config.Name, err, err1)
-		}
-		return fmt.Errorf("error in KubeEleven for config %s : %w", ctx.Config.Name, err)
+		return nil, fmt.Errorf("error in KubeEleven for cluster %s project %s : %w", ctx.GetClusterName(), ctx.name, err)
 	}
 
 	if err := callKuber(ctx); err != nil {
-		err1 := saveErrorMessage(ctx.Config, c, err)
-		if err1 != nil {
-			return fmt.Errorf("error in Kuber for config %s : %v; unable to save error message config: %w", ctx.Config.Name, err, err1)
-		}
-		return fmt.Errorf("error in Kuber for config %s : %w", ctx.Config.Name, err)
+		return nil, fmt.Errorf("error in Kuber for cluster %s project %s : %w", ctx.GetClusterName(), ctx.name, err)
 	}
 
-	if !isTmpConfig {
-		log.Debug().Msgf("Saving the config %s", ctx.Config.GetName())
-		ctx.Config.CurrentState = ctx.Config.DesiredState // Update currentState
-		if err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: ctx.Config}); err != nil {
-			return fmt.Errorf("error while saving the config %s: %w", ctx.Config.GetName(), err)
-		}
-	}
-
-	return nil
-}
-
-// destroyConfig destroys existing clusters infra for a config, including the deletion
-// of the config from the database, by calling Terraformer and Kuber and ContextBox services.
-func destroyConfigAndDeleteDoc(config *pb.Config, c pb.ContextBoxServiceClient) error {
-	err := destroyConfig(config, c)
-	if err != nil {
-		return fmt.Errorf("error while destroying config %s : %w", config.Name, err)
-	}
-
-	return cbox.DeleteConfigFromDB(c, config.Id, pb.IdType_HASH)
-}
-
-// destroyConfig destroys existing clusters infra for a config by calling Terraformer
-// and Kuber
-func destroyConfig(config *pb.Config, c pb.ContextBoxServiceClient) error {
-	if err := destroyConfigTerraformer(config); err != nil {
-		if err := saveErrorMessage(config, c, err); err != nil {
-			return fmt.Errorf("failed to save error message: %w", err)
-		}
-		return fmt.Errorf("error in destroy config terraformer for config %s : %w", config.Name, err)
-	}
-
-	if err := deleteClusterData(config); err != nil {
-		if err := saveErrorMessage(config, c, err); err != nil {
-			return fmt.Errorf("failed to save error message for config %s : %w", config.Name, err)
-		}
-		return fmt.Errorf("error in delete kubeconfig for config %s : %w", config.Name, err)
-	}
-	return nil
+	return ctx, nil
 }
 
 // callTerraformer passes config to terraformer for building the infra
 func callTerraformer(ctx *BuilderContext) error {
-	// Create connection to Terraformer
 	cc, err := utils.GrpcDialWithInsecure("terraformer", envs.TerraformerURL)
 	if err != nil {
 		return err
 	}
 	defer utils.CloseClientConnection(cc)
-	// Creating the client
+
 	c := pb.NewTerraformerServiceClient(cc)
-	log.Info().Msgf("Calling BuildInfrastructure on terraformer for project %s", ctx.Config.GetDesiredState().Name)
-	res, err := terraformer.BuildInfrastructure(c, &pb.BuildInfrastructureRequest{
-		CurrentState: ctx.Config.GetCurrentState(),
-		DesiredState: ctx.Config.GetDesiredState(),
-	})
+	log.Info().Msgf("Calling BuildInfrastructure on terraformer for cluster %s project: %s", ctx.GetClusterName(), ctx.name)
+
+	req := &pb.BuildInfrastructureRequest{
+		Current:    ctx.cluster,
+		Desired:    ctx.desiredCluster,
+		Lbs:        ctx.loadbalancers,
+		DesiredLbs: ctx.desiredLoadbalancers,
+		Name:       ctx.name,
+	}
+
+	res, err := terraformer.BuildInfrastructure(c, req)
 	if err != nil {
 		return err
 	}
 
-	ctx.Config.CurrentState = res.GetCurrentState()
-	ctx.Config.DesiredState = res.GetDesiredState()
+	ctx.cluster = res.Current
+	ctx.desiredCluster = res.Desired
+	ctx.loadbalancers = res.Lbs
+	ctx.desiredLoadbalancers = res.DesiredLbs
 
 	return nil
 }
@@ -132,31 +108,64 @@ func callAnsibler(ctx *BuilderContext) error {
 	}
 	defer utils.CloseClientConnection(cc)
 
-	// Creating the client
 	c := pb.NewAnsiblerServiceClient(cc)
 
-	log.Info().Msgf("Calling TearDownLoadbalancers on ansibler for project %s", ctx.Config.GetDesiredState().Name)
-	teardownRes, err := ansibler.TeardownLoadBalancers(c, &pb.TeardownLBRequest{DeletedState: ctx.DeletedConfig.GetCurrentState(), DesiredState: ctx.Config.GetDesiredState()})
-	if err != nil {
-		return err
-	}
-	log.Info().Msgf("Calling InstallVPN on ansibler for project %s", ctx.Config.GetDesiredState().Name)
-	installRes, err := ansibler.InstallVPN(c, &pb.InstallRequest{DesiredState: teardownRes.DesiredState})
-	if err != nil {
-		return err
-	}
-	log.Info().Msgf("Calling InstallNodeRequirements on ansibler for project %s", ctx.Config.GetDesiredState().Name)
-	installRes, err = ansibler.InstallNodeRequirements(c, &pb.InstallRequest{DesiredState: installRes.DesiredState})
-	if err != nil {
-		return err
-	}
-	log.Info().Msgf("Calling SetUpLoadbalancers on ansibler for project %s", ctx.Config.GetDesiredState().Name)
-	setUpRes, err := ansibler.SetUpLoadbalancers(c, &pb.SetUpLBRequest{DesiredState: installRes.DesiredState, CurrentState: ctx.Config.GetCurrentState(), OldApiEndpoints: teardownRes.OldApiEndpoinds})
+	log.Info().Msgf("Calling TearDownLoadbalancers on ansibler for cluster %s project %s", ctx.GetClusterName(), ctx.name)
+	teardownRes, err := ansibler.TeardownLoadBalancers(c, &pb.TeardownLBRequest{
+		Desired:    ctx.desiredCluster,
+		DesiredLbs: ctx.desiredLoadbalancers,
+		DeletedLbs: ctx.deletedLoadBalancers,
+		Name:       ctx.name,
+	})
 	if err != nil {
 		return err
 	}
 
-	ctx.Config.DesiredState = setUpRes.GetDesiredState()
+	ctx.desiredCluster = teardownRes.Desired
+	ctx.desiredLoadbalancers = teardownRes.DesiredLbs
+	ctx.deletedLoadBalancers = teardownRes.DeletedLbs
+
+	log.Info().Msgf("Calling InstallVPN on ansibler for cluster %s project %s", ctx.GetClusterName(), ctx.name)
+	installRes, err := ansibler.InstallVPN(c, &pb.InstallRequest{
+		Desired:    ctx.desiredCluster,
+		DesiredLbs: ctx.desiredLoadbalancers,
+		Name:       ctx.name,
+	})
+	if err != nil {
+		return err
+	}
+
+	ctx.desiredCluster = installRes.Desired
+	ctx.desiredLoadbalancers = installRes.DesiredLbs
+
+	log.Info().Msgf("Calling InstallNodeRequirements on ansibler for cluster %s project %s", ctx.GetClusterName(), ctx.name)
+	installRes, err = ansibler.InstallNodeRequirements(c, &pb.InstallRequest{
+		Desired:    ctx.desiredCluster,
+		DesiredLbs: ctx.desiredLoadbalancers,
+		Name:       ctx.name,
+	})
+	if err != nil {
+		return err
+	}
+
+	ctx.desiredCluster = installRes.Desired
+	ctx.desiredLoadbalancers = installRes.DesiredLbs
+
+	log.Info().Msgf("Calling SetUpLoadbalancers on ansibler for cluster %s project %s", ctx.GetClusterName(), ctx.name)
+	setUpRes, err := ansibler.SetUpLoadbalancers(c, &pb.SetUpLBRequest{
+		Desired:             ctx.desiredCluster,
+		Lbs:                 ctx.loadbalancers,
+		DesiredLbs:          ctx.desiredLoadbalancers,
+		PreviousAPIEndpoint: teardownRes.PreviousAPIEndpoint,
+		Name:                ctx.name,
+	})
+	if err != nil {
+		return err
+	}
+
+	ctx.desiredCluster = setUpRes.Desired
+	ctx.loadbalancers = setUpRes.Lbs
+	ctx.desiredLoadbalancers = setUpRes.DesiredLbs
 
 	return nil
 }
@@ -168,15 +177,23 @@ func callKubeEleven(ctx *BuilderContext) error {
 		return err
 	}
 	defer utils.CloseClientConnection(cc)
-	// Creating the client
+
 	c := pb.NewKubeElevenServiceClient(cc)
-	log.Info().Msgf("Calling BuildCluster on kube-eleven for project %s", ctx.Config.GetDesiredState().Name)
-	res, err := kubeEleven.BuildCluster(c, &pb.BuildClusterRequest{DesiredState: ctx.Config.GetDesiredState()})
+
+	log.Info().Msgf("Calling BuildCluster on kube-eleven for cluster %s project %s", ctx.GetClusterName(), ctx.name)
+
+	res, err := kubeEleven.BuildCluster(c, &pb.BuildClusterRequest{
+		Desired:    ctx.desiredCluster,
+		DesiredLbs: ctx.desiredLoadbalancers,
+		Name:       ctx.name,
+	})
+
 	if err != nil {
 		return err
 	}
 
-	ctx.Config.DesiredState = res.GetDesiredState()
+	ctx.desiredCluster = res.Desired
+	ctx.desiredLoadbalancers = res.DesiredLbs
 
 	return nil
 }
@@ -188,37 +205,80 @@ func callKuber(ctx *BuilderContext) error {
 		return err
 	}
 	defer utils.CloseClientConnection(cc)
-	// Creating the client
+
 	c := pb.NewKuberServiceClient(cc)
-	log.Info().Msgf("Calling SetUpStorage on kuber for project %s", ctx.Config.GetDesiredState().Name)
-	resStorage, err := kuber.SetUpStorage(c, &pb.SetUpStorageRequest{DesiredState: ctx.Config.GetDesiredState()})
+
+	log.Info().Msgf("Calling SetUpStorage on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.name)
+	resStorage, err := kuber.SetUpStorage(c, &pb.SetUpStorageRequest{DesiredCluster: ctx.desiredCluster})
 	if err != nil {
 		return err
 	}
 
-	var group errgroup.Group
-	for _, cluster := range ctx.Config.GetDesiredState().Clusters {
-		func(cluster *pb.K8Scluster) {
-			group.Go(func() error {
-				log.Info().Msgf("Calling StoreKubeconfig on kuber for cluster %s", cluster.ClusterInfo.Name)
-				if _, err := kuber.StoreKubeconfig(c, &pb.StoreKubeconfigRequest{Cluster: cluster}); err != nil {
-					return err
-				}
+	ctx.desiredCluster = resStorage.DesiredCluster
 
-				log.Info().Msgf("Calling StoreNodeMetadata on kuber for cluster %s", cluster.ClusterInfo.Name)
-				_, err := kuber.StoreClusterMetadata(c, &pb.StoreClusterMetadataRequest{Cluster: cluster})
-				return err
-			})
-		}(cluster)
-	}
-
-	if err := group.Wait(); err != nil {
+	log.Info().Msgf("Calling StoreKubeconfig on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.name)
+	if _, err := kuber.StoreKubeconfig(c, &pb.StoreKubeconfigRequest{Cluster: ctx.desiredCluster}); err != nil {
 		return err
 	}
 
-	ctx.Config.DesiredState = resStorage.GetDesiredState()
+	log.Info().Msgf("Calling StoreNodeMetadata on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.name)
+	if _, err := kuber.StoreClusterMetadata(c, &pb.StoreClusterMetadataRequest{Cluster: ctx.desiredCluster}); err != nil {
+		return err
+	}
 
 	return nil
+}
+
+// destroyConfig destroys existing clusters infra for a config by calling Terraformer and Kuber
+func destroyCluster(ctx *BuilderContext) error {
+	if err := destroyConfigTerraformer(ctx); err != nil {
+		return fmt.Errorf("error in destroy config terraformer for config %s project %s : %w", ctx.GetClusterName(), ctx.name, err)
+	}
+
+	if err := deleteClusterData(ctx); err != nil {
+		return fmt.Errorf("error in delete kubeconfig for config %s project %s : %w", ctx.GetClusterName(), ctx.name, err)
+	}
+
+	return nil
+}
+
+// destroyConfigTerraformer calls terraformer's DestroyInfrastructure function
+func destroyConfigTerraformer(ctx *BuilderContext) error {
+	cc, err := utils.GrpcDialWithInsecure("terraformer", envs.TerraformerURL)
+	if err != nil {
+		return err
+	}
+	defer utils.CloseClientConnection(cc)
+
+	log.Info().Msgf("Calling DestroyInfrastructure on terraformer for cluster %s project %s", ctx.GetClusterName(), ctx.name)
+	c := pb.NewTerraformerServiceClient(cc)
+
+	_, err = terraformer.DestroyInfrastructure(c, &pb.DestroyInfrastructureRequest{
+		Name:    ctx.name,
+		Current: ctx.cluster,
+		Lbs:     ctx.loadbalancers,
+	})
+	return err
+}
+
+// deleteClusterData deletes the kubeconfig and cluster metadata.
+func deleteClusterData(ctx *BuilderContext) error {
+	cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL)
+	if err != nil {
+		return err
+	}
+	defer utils.CloseClientConnection(cc)
+
+	c := pb.NewKuberServiceClient(cc)
+
+	log.Info().Msgf("Calling DeleteKubeconfig on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.name)
+	if _, err := kuber.DeleteKubeconfig(c, &pb.DeleteKubeconfigRequest{Cluster: ctx.cluster}); err != nil {
+		return err
+	}
+
+	log.Info().Msgf("Calling DeleteClusterMetadata on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.name)
+	_, err = kuber.DeleteClusterMetadata(c, &pb.DeleteClusterMetadataRequest{Cluster: ctx.cluster})
+	return err
 }
 
 // callDeleteNodes calls Kuber.DeleteNodes which will safely delete nodes from cluster
@@ -237,67 +297,4 @@ func callDeleteNodes(master, worker []string, cluster *pb.K8Scluster) (*pb.K8Scl
 		return nil, err
 	}
 	return resDelete.Cluster, nil
-}
-
-// destroyConfigTerraformer calls terraformer's DestroyInfrastructure function
-func destroyConfigTerraformer(config *pb.Config) error {
-	// Trim "tcp://" substring from envs.TerraformerURL
-	trimmedTerraformerURL := strings.ReplaceAll(envs.TerraformerURL, ":tcp://", "")
-
-	cc, err := utils.GrpcDialWithInsecure("terraformer", trimmedTerraformerURL)
-	if err != nil {
-		return err
-	}
-	defer utils.CloseClientConnection(cc)
-
-	log.Info().Msgf("Calling DestroyInfrastructure on terraformer for project %s", config.Name)
-	c := pb.NewTerraformerServiceClient(cc)
-	_, err = terraformer.DestroyInfrastructure(c, &pb.DestroyInfrastructureRequest{Config: config})
-	return err
-}
-
-// deleteClusterData deletes the kubeconfig and cluster metadata.
-func deleteClusterData(config *pb.Config) error {
-	trimmedKuberURL := strings.ReplaceAll(envs.KuberURL, ":tcp://", "")
-
-	cc, err := utils.GrpcDialWithInsecure("kuber", trimmedKuberURL)
-	if err != nil {
-		return err
-	}
-	defer utils.CloseClientConnection(cc)
-
-	c := pb.NewKuberServiceClient(cc)
-
-	var group errgroup.Group
-	for _, cluster := range config.CurrentState.Clusters {
-		func(cluster *pb.K8Scluster) {
-			group.Go(func() error {
-				log.Info().Msgf("Calling DeleteKubeconfig on kuber for cluster %s", cluster.ClusterInfo.Name)
-				if _, err := kuber.DeleteKubeconfig(c, &pb.DeleteKubeconfigRequest{Cluster: cluster}); err != nil {
-					return err
-				}
-
-				log.Info().Msgf("Calling DeleteClusterMetadata on kuber for cluster %s", cluster.ClusterInfo.Name)
-				_, err := kuber.DeleteClusterMetadata(c, &pb.DeleteClusterMetadataRequest{Cluster: cluster})
-				return err
-			})
-		}(cluster)
-	}
-
-	return group.Wait()
-}
-
-// saveErrorMessage saves error message to config
-func saveErrorMessage(config *pb.Config, c pb.ContextBoxServiceClient, err error) error {
-	if config.DesiredState != nil {
-		// Update currentState preemptively, so we can use it for terraform destroy
-		// id DesiredState is null, we are already in deletion process, thus CurrentState should stay as is when error occurs
-		config.CurrentState = config.DesiredState
-	}
-	config.ErrorMessage = err.Error()
-	errSave := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
-	if errSave != nil {
-		return fmt.Errorf("error while saving the config in Builder: %w", err)
-	}
-	return nil
 }

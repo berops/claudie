@@ -29,14 +29,6 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type nodepoolsCounts struct {
-	nodepools map[string]*nodeCount // [nodepoolName]count which needs to be deleted
-}
-
-type nodeCount struct {
-	Count uint32
-}
-
 // configProcessor will fetch new configs from the context-box service. Each received config will be processed in
 // a separate go-routine. If a sync.WaitGroup is supplied it will call the Add(1) and then the Done() method on it
 // after the go-routine finishes the work, if nil it will be ignored.
@@ -46,8 +38,8 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 		return fmt.Errorf("error while getting config from the Context-box: %w", err)
 	}
 
-	builderCtx := &BuilderContext{Config: res.GetConfig()}
-	if builderCtx.Config == nil {
+	config := res.GetConfig()
+	if config == nil {
 		return nil
 	}
 
@@ -61,111 +53,141 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			defer wg.Done()
 		}
 
-		// check if Desired state is null and if so we want to delete the existing config
-		if builderCtx.Config.DsChecksum == nil && builderCtx.Config.CsChecksum != nil {
-			if err := destroyConfigAndDeleteDoc(builderCtx.Config, c); err != nil {
-				log.Error().Msgf("failed to delete the config %s : %v", builderCtx.Config.Name, err)
+		clusterView := NewClusterView(config)
+
+		// if Desired state is null and current is not we delete the infra for the config.
+		if config.DsChecksum == nil && config.CsChecksum != nil {
+			if err := destroyConfig(config, clusterView, c); err != nil {
+				log.Error().Msgf("failed to destroy clusters for config %s: %s", config.Name, err)
+				return
 			}
 			return
 		}
 
-		if builderCtx.DeletedConfig = getDeletedClusterConfig(builderCtx.Config); builderCtx.DeletedConfig != nil {
-			if err := destroyConfig(builderCtx.DeletedConfig, c); err != nil {
-				log.Error().Msgf("failed to delete clusters from config %s : %v", builderCtx.Config.Name, err)
-				return
-			}
-		}
-
-		//tmpConfig is used in operation where config is adding && deleting the nodes
-		//first, tmpConfig is applied which only adds nodes and only then the real config is applied, which will delete nodes
-		tmpCtx := &BuilderContext{DeletedConfig: builderCtx.DeletedConfig}
-		var toDelete map[string]*nodepoolsCounts //[clusterName]nodepoolsCount
-
-		//if any current state already exist, find difference
-		if len(builderCtx.Config.CurrentState.GetClusters()) > 0 {
-			tmpCtx.Config, toDelete = stateDifference(builderCtx.Config)
-		}
-
-		if tmpCtx.Config != nil {
-			log.Info().Msgf("Processing stage [1/2] for config %s", tmpCtx.Config.Name)
-			if err := buildConfig(tmpCtx, c, true); err != nil {
-				log.Error().Msgf("error while processing config %s : %v", tmpCtx.Config.Name, err)
-				return
-			}
-			log.Info().Msgf("First stage of config %s finished building", tmpCtx.Config.Name)
-			builderCtx.Config.CurrentState = tmpCtx.Config.DesiredState
-		}
-
-		if toDelete != nil {
-			name := builderCtx.Config.Name
-			log.Info().Msgf("Deleting nodes for config %s", name)
-			builderCtx.Config, err = deleteNodes(builderCtx.Config, toDelete)
+		if err := utils.ConcurrentExec(clusterView.AllClusters(), func(clusterName string) error {
+			// Check if we need to destroy the cluster or any Loadbalancers
+			done, err := destroy(config.Name, clusterName, clusterView)
 			if err != nil {
-				log.Error().Msgf("error while deleting nodes for config %s : %v", name, err)
-				return
+				log.Error().Msgf("failed to destroy cluster %s project %s: %s", clusterName, config.Name, err)
+				return err
 			}
-		}
 
-		message := fmt.Sprintf("Processing config %s", builderCtx.Config.Name)
-		if tmpCtx.Config != nil {
-			message = fmt.Sprintf("Processing stage [2/2] for config %s", builderCtx.Config.Name)
-		}
-		log.Info().Msgf(message)
+			if done {
+				log.Info().Msgf("Finished workflow for cluster %s project %s", clusterName, config.Name)
+				return nil
+			}
 
-		if err = buildConfig(builderCtx, c, false); err != nil {
-			log.Error().Msgf("error while processing config %s : %v", builderCtx.Config.Name, err)
+			// Handle deletion and addition of nodes.
+			tmpDesired, toDelete := stateDifference(clusterView.Clusters[clusterName], clusterView.DesiredClusters[clusterName])
+			if tmpDesired != nil {
+				log.Info().Msgf("Processing stage [1/2] for cluster %s config %s", clusterName, config.Name)
+
+				ctx := &BuilderContext{
+					name:                 config.Name,
+					cluster:              clusterView.Clusters[clusterName],
+					desiredCluster:       tmpDesired,
+					loadbalancers:        clusterView.Loadbalancers[clusterName],
+					desiredLoadbalancers: clusterView.DesiredLoadbalancers[clusterName],
+					deletedLoadBalancers: clusterView.DeletedLoadbalancers[clusterName],
+				}
+
+				if ctx, err = buildCluster(ctx); err != nil {
+					log.Error().Msgf("failed to build cluster %s project %s: %s", clusterName, config.Name, err)
+					return err
+				}
+				log.Info().Msgf("First stage for cluster %s finished building", clusterName)
+
+				// make the desired state of the temporary cluster the new current state.
+				clusterView.Clusters[clusterName] = ctx.desiredCluster
+				clusterView.Loadbalancers[clusterName] = ctx.desiredLoadbalancers
+			}
+
+			if toDelete != nil {
+				log.Info().Msgf("Deleting nodes for cluster %s project %s", clusterName, config.Name)
+				if clusterView.Clusters[clusterName], err = deleteNodes(clusterView.Clusters[clusterName], toDelete); err != nil {
+					log.Error().Msgf("failed to delete nodes cluster %s project %s: %s", clusterName, config.Name, err)
+					return err
+				}
+			}
+
+			message := fmt.Sprintf("Processing cluster %s config %s", clusterName, config.Name)
+			if tmpDesired != nil {
+				message = fmt.Sprintf("Processing stage [2/2] for cluster %s config %s", clusterName, config.Name)
+			}
+			log.Info().Msgf(message)
+
+			ctx := &BuilderContext{
+				name:                 config.Name,
+				cluster:              clusterView.Clusters[clusterName],
+				desiredCluster:       clusterView.DesiredClusters[clusterName],
+				loadbalancers:        clusterView.Loadbalancers[clusterName],
+				desiredLoadbalancers: clusterView.DesiredLoadbalancers[clusterName],
+				deletedLoadBalancers: clusterView.DeletedLoadbalancers[clusterName],
+			}
+
+			if ctx, err = buildCluster(ctx); err != nil {
+				log.Error().Msgf("failed to build cluster %s project %s: %s", clusterName, config.Name, err)
+				return err
+			}
+
+			// Propagate the changes made to the cluster back to the View.
+			clusterView.UpdateFromBuild(ctx)
+
+			log.Info().Msgf("Finished building cluster %s project %s", clusterName, config.Name)
+			return nil
+		}); err != nil {
+			log.Error().Msgf("error while processing config %s : %s", config.Name, err)
+			if err := saveErrorMessage(config, c, err); err != nil {
+				log.Error().Msgf("failed to save error message due to: %s", err)
+			}
 			return
 		}
-		log.Info().Msgf("Config %s finished building", builderCtx.Config.Name)
+
+		// Propagate all the changes to the config.
+		clusterView.MergeChanges(config)
+
+		// Update the config and store it to the DB.
+		log.Debug().Msgf("Saving the config %s", config.Name)
+		config.CurrentState = config.DesiredState
+		if err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config}); err != nil {
+			log.Error().Msgf("error while saving the config %s: %w", config.GetName(), err)
+			return
+		}
+
+		log.Info().Msgf("Config %s finished building", config.Name)
 	}()
 
 	return nil
 }
 
 // stateDifference takes config to calculates difference between desired and current state to determine how many nodes  needs to be deleted and added.
-func stateDifference(config *pb.Config) (*pb.Config, map[string]*nodepoolsCounts) {
-	adding, deleting := false, false
-	tmpConfig := proto.Clone(config).(*pb.Config)
-	currentNodepoolMap := getNodepoolMap(tmpConfig.CurrentState.Clusters) //[clusterName][nodepoolName]Count
-	var delCounts = make(map[string]*nodepoolsCounts)                     //[clusterName]nodepoolCount
-	//iterate over clusters and find difference in nodepools
-	for _, desiredClusterTmp := range tmpConfig.GetDesiredState().GetClusters() {
-		npCounts, add, del := findNodepoolDifference(currentNodepoolMap, desiredClusterTmp)
-		delCounts[desiredClusterTmp.ClusterInfo.Name] = npCounts
-		if add {
-			adding = true
-		}
-		if del {
-			deleting = true
-		}
-	}
+func stateDifference(current *pb.K8Scluster, desired *pb.K8Scluster) (*pb.K8Scluster, map[string]uint32) {
+	desired = proto.Clone(desired).(*pb.K8Scluster)
+
+	currentNodepoolCounts := nodepoolsCounts(current)
+	delCounts, adding, deleting := findNodepoolDifference(currentNodepoolCounts, desired)
 
 	//if any key left, it means that nodepool is defined in current state but not in the desired, i.e. whole nodepool should be deleted
-	if len(currentNodepoolMap) > 0 {
-		log.Debug().Msgf("Detected deletion of a nodepools")
+	if len(currentNodepoolCounts) > 0 {
 		deleting = true
-		for clusterName, nodepoolsCount := range currentNodepoolMap {
-			//merge maps together so delCounts holds all delete counts
-			mergeDeleteCounts(delCounts[clusterName].nodepools, nodepoolsCount.nodepools)
-			//since tmpConfig first adds nodes, the deleted nodes needs to be added into tmp Desired state
-			desiredClusterTmp := utils.GetClusterByName(clusterName, tmpConfig.DesiredState.Clusters)
-			if desiredClusterTmp != nil {
-				//find cluster in current state
-				currentCluster := utils.GetClusterByName(clusterName, tmpConfig.CurrentState.Clusters)
-				if currentCluster != nil {
-					//append nodepool to desired state, since tmpConfig only adds nodes
-					for nodepoolName := range nodepoolsCount.nodepools {
-						log.Debug().Msgf("Nodepool %s from cluster %s will be deleted", nodepoolName, clusterName)
-						desiredClusterTmp.ClusterInfo.NodePools = append(desiredClusterTmp.ClusterInfo.NodePools, utils.GetNodePoolByName(nodepoolName, currentCluster.ClusterInfo.GetNodePools()))
-					}
-				}
+		log.Debug().Msgf("Detected deletion of a nodepools")
+
+		// let delCounts hold all delete counts
+		mergeDeleteCounts(delCounts, currentNodepoolCounts)
+
+		// add the deleted nodes to the Desired state
+		if current != nil && desired != nil {
+			//append nodepool to desired state, since tmpConfig only adds nodes
+			for nodepoolName := range currentNodepoolCounts {
+				log.Debug().Msgf("Nodepool %s from cluster %s will be deleted", nodepoolName, current.ClusterInfo.Name)
+				desired.ClusterInfo.NodePools = append(desired.ClusterInfo.NodePools, utils.GetNodePoolByName(nodepoolName, current.ClusterInfo.GetNodePools()))
 			}
 		}
 	}
 
 	switch {
 	case adding && deleting:
-		return tmpConfig, delCounts
+		return desired, delCounts
 	case deleting:
 		return nil, delCounts
 	default:
@@ -173,112 +195,89 @@ func stateDifference(config *pb.Config) (*pb.Config, map[string]*nodepoolsCounts
 	}
 }
 
-// getNodepoolMap returns a map in a form of map[ClusterName]nodecount{map[NodepoolName]count}
-func getNodepoolMap(clusters []*pb.K8Scluster) map[string]*nodepoolsCounts {
-	nodepoolMap := make(map[string]*nodepoolsCounts)
-	for _, cluster := range clusters {
-		npCount := &nodepoolsCounts{nodepools: make(map[string]*nodeCount)}
-		for _, nodePool := range cluster.ClusterInfo.GetNodePools() {
-			npCount.nodepools[nodePool.Name] = &nodeCount{Count: nodePool.Count}
-		}
-		nodepoolMap[cluster.ClusterInfo.Name] = npCount
+// nodepoolsCounts returns a map for the counts in each nodepool for a cluster.
+func nodepoolsCounts(cluster *pb.K8Scluster) map[string]uint32 {
+	counts := make(map[string]uint32)
+
+	for _, nodePool := range cluster.GetClusterInfo().GetNodePools() {
+		counts[nodePool.Name] = nodePool.Count
 	}
-	return nodepoolMap
+
+	return counts
 }
 
-// findNodepoolDifference will find any difference in nodepool between desired state and current
-// this function should be used only with tmpConfig, since it will augment the desired state in a way, that will not delete the nodes
-// returns count of nodes to delete in form of map[NodepoolName]counts,and booleans about deletion and addition of any nodes
-func findNodepoolDifference(currentNodepoolMap map[string]*nodepoolsCounts, desiredClusterTmp *pb.K8Scluster) (result *nodepoolsCounts, adding bool, deleting bool) {
-	nodepoolCountToDelete := make(map[string]*nodeCount)
-	//iterate over nodepools in desired cluster
-	for _, nodePoolDesired := range desiredClusterTmp.ClusterInfo.GetNodePools() {
-		//iterate over nodepools in current cluster
-		if nodepoolsCurrent, ok := currentNodepoolMap[desiredClusterTmp.ClusterInfo.Name]; ok {
-			for nodepoolCurrentName, nodePoolCurrentCount := range nodepoolsCurrent.nodepools {
-				//if desired state contains nodepool from current, check counts
-				if nodePoolDesired.Name == nodepoolCurrentName {
-					var countToDelete nodeCount
-					if nodePoolDesired.Count > nodePoolCurrentCount.Count { //if desired cluster has more nodes than in current nodepool
-						adding = true
-					} else if nodePoolDesired.Count < nodePoolCurrentCount.Count { //if desired cluster has less nodes than in current nodepool
-						countToDelete.Count = nodePoolCurrentCount.Count - nodePoolDesired.Count
-						//since we are working with tmp config, we do not delete nodes in this step, thus save the current node count
-						nodePoolDesired.Count = nodePoolCurrentCount.Count
-						deleting = true
-					}
-					nodepoolCountToDelete[nodePoolDesired.Name] = &countToDelete
-					//delete nodepool from nodepool map, so we can keep track of which nodepools were deleted
-					delete(nodepoolsCurrent.nodepools, nodePoolDesired.Name)
-					//if cluster has no nodepools, delete the reference to cluster
-					if len(nodepoolsCurrent.nodepools) == 0 {
-						delete(currentNodepoolMap, desiredClusterTmp.ClusterInfo.Name)
-					}
-				}
-			}
-		} else {
-			//adding a new nodepool, since not found in current state
+func findNodepoolDifference(currentNodepoolCounts map[string]uint32, desiredClusterTmp *pb.K8Scluster) (result map[string]uint32, adding, deleting bool) {
+	nodepoolCountToDelete := make(map[string]uint32)
+
+	for _, nodePoolDesired := range desiredClusterTmp.GetClusterInfo().GetNodePools() {
+		currentCount, ok := currentNodepoolCounts[nodePoolDesired.Name]
+		if !ok {
+			// not in current state, adding.
+			adding = true
+			continue
+		}
+
+		if nodePoolDesired.Count > currentCount {
 			adding = true
 		}
+
+		var countToDelete uint32
+
+		if nodePoolDesired.Count < currentCount {
+			deleting = true
+			countToDelete = currentCount - nodePoolDesired.Count
+
+			// since we are working with tmp config, we do not delete nodes in this step, thus save the current node count
+			nodePoolDesired.Count = currentCount
+		}
+
+		nodepoolCountToDelete[nodePoolDesired.Name] = countToDelete
+
+		// keep track of which nodepools were deleted
+		delete(currentNodepoolCounts, nodePoolDesired.Name)
 	}
-	result = &nodepoolsCounts{nodepools: nodepoolCountToDelete}
-	return result, adding, deleting
+
+	return nodepoolCountToDelete, adding, deleting
 }
 
-// mergeDeleteCounts function will merge two maps which hold info about deletion of the nodes into one
-// return map of the nodes for deletion in for of map[ClusterName]nodecount{map[NodepoolName]count}
-func mergeDeleteCounts(dst, src map[string]*nodeCount) map[string]*nodeCount {
+func mergeDeleteCounts(dst, src map[string]uint32) map[string]uint32 {
 	for k, v := range src {
 		dst[k] = v
 	}
 	return dst
 }
 
-// getDeletedClusterConfig function queries for cluster those needs ro be deleted from current state.
-// It also updated the config object to remove the clusters to be deleted from current state. Thus
-// the function has SIDE EFFECTS and should be used carefully.
-// returns *pb.Config which contains clusters (both k8s and lb) that needs to be deleted.
-func getDeletedClusterConfig(config *pb.Config) *pb.Config {
-	if config.CurrentState.Name == "" {
-		//if first run of config, skip
-		return nil
-	}
-	configToDelete := proto.Clone(config).(*pb.Config)
-	var k8sClustersToDelete, remainingCsK8sClusters []*pb.K8Scluster
-	var LbClustersToDelete, remainingCsLbClusters []*pb.LBcluster
-
-OuterK8s:
-	for _, csCluster := range config.CurrentState.Clusters {
-		for _, dsCluster := range config.DesiredState.Clusters {
-			if isEqual(dsCluster.ClusterInfo, csCluster.ClusterInfo) {
-				remainingCsK8sClusters = append(remainingCsK8sClusters, proto.Clone(csCluster).(*pb.K8Scluster))
-				continue OuterK8s
+// separateNodepools creates two slices of node names, one for master and one for worker nodes
+func separateNodepools(clusterNodes map[string]uint32, clusterInfo *pb.ClusterInfo) (master []string, worker []string) {
+	for _, nodepool := range clusterInfo.NodePools {
+		if count, ok := clusterNodes[nodepool.Name]; ok && count > 0 {
+			names := getNodeNames(nodepool, int(count))
+			if nodepool.IsControl {
+				master = append(master, names...)
+			} else {
+				worker = append(worker, names...)
 			}
 		}
-		k8sClustersToDelete = append(k8sClustersToDelete, proto.Clone(csCluster).(*pb.K8Scluster))
 	}
-OuterLb:
-	for _, csLbCluster := range config.CurrentState.LoadBalancerClusters {
-		for _, dsLbCluster := range config.DesiredState.LoadBalancerClusters {
-			if isEqual(dsLbCluster.ClusterInfo, csLbCluster.ClusterInfo) {
-				remainingCsLbClusters = append(remainingCsLbClusters, proto.Clone(csLbCluster).(*pb.LBcluster))
-				continue OuterLb
-			}
-		}
-		LbClustersToDelete = append(LbClustersToDelete, proto.Clone(csLbCluster).(*pb.LBcluster))
-	}
-	configToDelete.CurrentState.Clusters = k8sClustersToDelete
-	configToDelete.CurrentState.LoadBalancerClusters = LbClustersToDelete
-
-	// update the passed config's currentState to remove the clusters which will be deleted
-	config.CurrentState.Clusters = remainingCsK8sClusters
-	config.CurrentState.LoadBalancerClusters = remainingCsLbClusters
-	return configToDelete
+	return master, worker
 }
 
-// isEqual function checks if the two cluster from desiredState and Current state are same by comparing
-// names and hashes
-// return boolean value, True if the match otherwise False
-func isEqual(dsClusterInfo, csClusterInfo *pb.ClusterInfo) bool {
-	return dsClusterInfo.Name == csClusterInfo.Name && dsClusterInfo.Hash == csClusterInfo.Hash
+// getNodeNames returns slice of length count with names of the nodes from specified nodepool
+// nodes chosen are from the last element in Nodes slice, up to the first one
+func getNodeNames(nodepool *pb.NodePool, count int) (names []string) {
+	for i := len(nodepool.Nodes) - 1; i >= len(nodepool.Nodes)-count; i-- {
+		names = append(names, nodepool.Nodes[i].Name)
+	}
+	return names
+}
+
+func deleteNodes(cluster *pb.K8Scluster, nodes map[string]uint32) (*pb.K8Scluster, error) {
+
+	master, worker := separateNodepools(nodes, cluster.ClusterInfo)
+	newCluster, err := callDeleteNodes(master, worker, cluster)
+	if err != nil {
+		return nil, fmt.Errorf("error while deleting nodes for %s : %w", cluster.ClusterInfo.Name, err)
+	}
+
+	return newCluster, nil
 }

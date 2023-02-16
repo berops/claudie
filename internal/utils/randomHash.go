@@ -11,10 +11,6 @@ const HashLength = 7
 var seededRand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 func CreateHash(length int) string {
-	return CreateHashWithCharSet(length, charset)
-}
-
-func CreateHashWithCharSet(length int, charset string) string {
 	b := make([]byte, length)
 	for i := range b {
 		b[i] = charset[seededRand.Intn(len(charset))]
