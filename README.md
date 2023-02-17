@@ -1,12 +1,16 @@
 <h1 align="center">
-  ![Claudie Logo](docs/logo claudie blue.svg)
+  ###<img src="https://raw.githubusercontent.com/berops/claudie/4160faff3c2430aec2e6de4b1a6698c6b7df7f2d/docs/logo%20claudie%20blue.svg" width="224px"/><br/>
   Platform for managing multi-cloud Kubernetes clusters with each nodepool in a different cloud-provider.
 </h1>
 
 <p align="center">
-  [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-  [![Go Report Card](https://goreportcard.com/badge/github.com/Berops/claudie)](https://goreportcard.com/report/github.com/Berops/claudie)
+  <a href="https://img.shields.io/badge/License-Apache_2.0-blue.svg" src="https://opensource.org/licenses/Apache-2.0" /></a>
+  <a href="https://goreportcard.com/badge/github.com/Berops/claudie"><img alt="Contributions" src="https://goreportcard.com/report/github.com/Berops/claudie" /></a>
 </p>
+
+
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Berops/claudie)](https://goreportcard.com/report/github.com/Berops/claudie)
 
 ## Features
 
