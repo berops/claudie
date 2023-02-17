@@ -1,6 +1,5 @@
 # Claudie
 
-![Build](https://github.com/Berops/claudie/actions/workflows/CD-pipeline-dev.yml/badge.svg)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Berops/claudie)](https://goreportcard.com/report/github.com/Berops/claudie)
 
