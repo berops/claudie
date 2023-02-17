@@ -20,7 +20,7 @@ import (
 func (c *ClaudieCloudProvider) NodeGroupTargetSize(_ context.Context, req *protos.NodeGroupTargetSizeRequest) (*protos.NodeGroupTargetSizeResponse, error) {
 	log.Info().Msgf("Got NodeGroupTargetSize request")
 	if size, ok := c.nodeGroupTargetSizeCache[req.GetId()]; ok {
-		log.Info().Msgf("Returning target size %d for nodepool %s", size, req.GetId())
+		log.Debug().Msgf("Returning target size %d for nodepool %s", size, req.GetId())
 		return &protos.NodeGroupTargetSizeResponse{TargetSize: size}, nil
 	}
 	return nil, fmt.Errorf("nodeGroup %s was not found", req.Id)
@@ -124,6 +124,7 @@ func (c *ClaudieCloudProvider) NodeGroupNodes(_ context.Context, req *protos.Nod
 			}
 		}
 	}
+	log.Debug().Msgf("NodeGroupForNodes returns %v", nodes)
 	return &protos.NodeGroupNodesResponse{Instances: nodes}, nil
 }
 

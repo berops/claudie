@@ -66,7 +66,7 @@ func getClaudieState(projectName, clusterName string) (*pb.K8Scluster, error) {
 		return nil, fmt.Errorf("Failed to get config for project %s : %w", projectName, err)
 	}
 
-	for _, cluster := range res.Config.DesiredState.Clusters {
+	for _, cluster := range res.Config.CurrentState.Clusters {
 		if cluster.ClusterInfo.Name == clusterName {
 			return cluster, nil
 		}

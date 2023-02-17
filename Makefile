@@ -88,9 +88,15 @@ REV = $$(git rev-parse --short HEAD)
 SERVICES = $$(command ls services/)
 containerimgs:
 	for service in $(SERVICES) ; do \
-		echo " --- building $$service"; \
+		echo " --- building $$service --- "; \
 		DOCKER_BUILDKIT=1 docker build --build-arg=TARGETARCH="$(TARGETARCH)" -t "ghcr.io/berops/claudie/$$service:$(REV)" -f ./services/$$service/Dockerfile . ; \
 	done
 
 buildAdapter:
-	DOCKER_BUILDKIT=1 docker build -t "ghcr.io/berops/claudie/autoscaler-adapter:test" -f ./services/autoscaler-adapter/Dockerfile .
+	DOCKER_BUILDKIT=1 docker build -t "ghcr.io/berops/claudie/autoscaler-adapter:$(REV)" -f ./services/autoscaler-adapter/Dockerfile .
+
+importToMinikube:
+	for service in $(SERVICES) ; do \
+		echo " --- importing $$service --- "; \
+		minikube image load "ghcr.io/berops/claudie/$$service:$(REV)"	;\
+	done

@@ -210,9 +210,11 @@ func (*server) UpdateNodepool(ctx context.Context, req *pb.UpdateNodepoolRequest
 					}
 				}
 			}
+			return nil, fmt.Errorf("The nodepool %s, in cluster %s in project %s was not found.", req.Nodepool.Name, req.ClusterName, req.ProjectName)
 		}
+		return nil, fmt.Errorf("The project %s is about to be in the build stage", req.ProjectName)
 	}
-	return nil, fmt.Errorf("The nodepool %s, in cluster %s in project %s was not found.", req.Nodepool.Name, req.ClusterName, req.ProjectName)
+	return nil, fmt.Errorf("The project %s is currently in the build stage", req.ProjectName)
 }
 
 func main() {
