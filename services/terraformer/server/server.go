@@ -62,87 +62,61 @@ type Cluster interface {
 }
 
 func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastructureRequest) (*pb.BuildInfrastructureResponse, error) {
-	currentState := req.GetCurrentState()
-	desiredState := req.GetDesiredState()
-	projectName := desiredState.Name
-	clusterToLBs := make(map[string][]*pb.LBcluster)
+	clusters := []Cluster{
+		kubernetes.K8Scluster{
+			DesiredK8s:    req.Desired,
+			CurrentK8s:    req.Current,
+			ProjectName:   req.ProjectName,
+			LoadBalancers: req.DesiredLbs,
+		},
+	}
 
-	var errGroup errgroup.Group
-	var clusters []Cluster
-
-	// Get LB clusters
-	for _, desiredLB := range desiredState.LoadBalancerClusters {
-		clusterToLBs[desiredLB.TargetedK8S] = append(clusterToLBs[desiredLB.TargetedK8S], desiredLB)
-
-		var existingCluster *pb.LBcluster
-		for _, currentLB := range currentState.LoadBalancerClusters {
-			if desiredLB.ClusterInfo.Name == currentLB.ClusterInfo.Name {
-				existingCluster = currentLB
+	for _, desired := range req.DesiredLbs {
+		var curr *pb.LBcluster
+		for _, current := range req.CurrentLbs {
+			if desired.ClusterInfo.Name == current.ClusterInfo.Name {
+				curr = current
 				break
 			}
 		}
-
-		clusters = append(clusters, loadbalancer.LBcluster{DesiredLB: desiredLB, CurrentLB: existingCluster, ProjectName: projectName})
+		clusters = append(clusters, loadbalancer.LBcluster{DesiredLB: desired, CurrentLB: curr, ProjectName: req.ProjectName})
 	}
 
-	// Get kubernetes clusters
-	for _, desiredK8s := range desiredState.Clusters {
-		var existingCluster *pb.K8Scluster
-		for _, currentK8s := range currentState.Clusters {
-			if desiredK8s.ClusterInfo.Name == currentK8s.ClusterInfo.Name {
-				existingCluster = currentK8s
-				break
-			}
+	err := utils.ConcurrentExec(clusters, func(cluster Cluster) error {
+		if err := cluster.Build(); err != nil {
+			return fmt.Errorf("error while building the cluster %v : %w", cluster.Id(), err)
 		}
-
-		clusters = append(clusters, kubernetes.K8Scluster{
-			DesiredK8s:    desiredK8s,
-			CurrentK8s:    existingCluster,
-			ProjectName:   projectName,
-			LoadBalancers: clusterToLBs[desiredK8s.ClusterInfo.Name],
-		})
+		return nil
+	})
+	if err != nil {
+		log.Error().Msgf("Failed to build cluster %s for project %s : %s", req.Desired.ClusterInfo.Name, req.ProjectName, err)
+		return nil, fmt.Errorf("failed to build cluster with loadbalancers due to: %w", err)
 	}
 
-	// Build clusters concurrently
-	for _, cluster := range clusters {
-		func(c Cluster) {
-			errGroup.Go(func() error {
-				if err := c.Build(); err != nil {
-					return fmt.Errorf("error while building the cluster %v : %w", cluster.Id(), err)
-				}
-				return nil
-			})
-		}(cluster)
+	log.Info().Msgf("Infrastructure was successfully generated for cluster %s project %s", req.Desired.ClusterInfo.Name, req.ProjectName)
+
+	resp := &pb.BuildInfrastructureResponse{
+		Current:    req.Current,
+		Desired:    req.Desired,
+		CurrentLbs: req.CurrentLbs,
+		DesiredLbs: req.DesiredLbs,
 	}
-	if err := errGroup.Wait(); err != nil {
-		log.Error().Msgf("Failed to build infra for project %s : %s", projectName, err.Error())
-		return &pb.BuildInfrastructureResponse{
-				CurrentState: currentState,
-				DesiredState: desiredState,
-				ErrorMessage: fmt.Sprintf("BuildInfrastructure got error: %s", err.Error())},
-			fmt.Errorf("BuildInfrastructure got error: %w", err)
-	}
-	log.Info().Msgf("Infrastructure was successfully generated for project %s", projectName)
-	return &pb.BuildInfrastructureResponse{
-		CurrentState: currentState,
-		DesiredState: desiredState,
-		ErrorMessage: "",
-	}, nil
+
+	return resp, nil
 }
 
 func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrastructureRequest) (*pb.DestroyInfrastructureResponse, error) {
-	config := req.GetConfig()
-	projectName := config.CurrentState.Name
-
-	// Get kubernetes clusters
 	var clusters []Cluster
-	for _, k8s := range config.CurrentState.Clusters {
-		clusters = append(clusters, kubernetes.K8Scluster{CurrentK8s: k8s, ProjectName: projectName})
+
+	if req.Current != nil {
+		clusters = append(clusters, kubernetes.K8Scluster{
+			CurrentK8s:  req.Current,
+			ProjectName: req.ProjectName,
+		})
 	}
 
-	// Get LB clusters
-	for _, lb := range config.CurrentState.LoadBalancerClusters {
-		clusters = append(clusters, loadbalancer.LBcluster{CurrentLB: lb, ProjectName: projectName})
+	for _, lb := range req.CurrentLbs {
+		clusters = append(clusters, loadbalancer.LBcluster{CurrentLB: lb, ProjectName: req.ProjectName})
 	}
 
 	mc, err := minio.New(minioEndpoint, &minio.Options{
@@ -166,64 +140,56 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 		RetryMode:        aws.RetryModeStandard,
 	})
 
-	// Destroy clusters concurrently
-	var errGroup errgroup.Group
-	for _, cluster := range clusters {
-		func(c Cluster) {
-			errGroup.Go(func() error {
-				if err := c.Destroy(); err != nil {
-					return fmt.Errorf("failed to destroy cluster %v : %w", cluster.Id(), err)
-				}
+	err = utils.ConcurrentExec(clusters, func(cluster Cluster) error {
+		if err := cluster.Destroy(); err != nil {
+			return fmt.Errorf("failed to destroy cluster %v : %w", cluster.Id(), err)
+		}
 
-				// if it's a load-balancer there is an additional lock-file for the dns in both  MinIO and dynamoDB.
-				if _, ok := c.(loadbalancer.LBcluster); ok {
-					// Key under which the lockfile id is stored in dynamodb
-					dynamoLockId, err := attributevalue.Marshal(fmt.Sprintf("%s/%s/%s-dns-md5", minioBucket, projectName, c.Id()))
-					if err != nil {
-						return fmt.Errorf("error composing state lockfile id for cluster %s/%s: %w", config.Name, c.Id(), err)
-					}
-					log.Debug().Msgf("deleting lockfile under key: %v", dynamoLockId)
-					// Remove the lockfile from dynamodb
-					if _, err := dynamoConnection.DeleteItem(ctx, &dynamodb.DeleteItemInput{Key: map[string]types.AttributeValue{"LockID": dynamoLockId}, TableName: aws.String(dynamoTable)}); err != nil {
-						return fmt.Errorf("failed to remove state lock file %v : %w", cluster.Id(), err)
-					}
+		// if it's a load-balancer there is an additional lock-file for the dns in both  MinIO and dynamoDB.
+		if _, ok := cluster.(loadbalancer.LBcluster); ok {
+			// Key under which the lockfile id is stored in dynamodb
+			dynamoLockId, err := attributevalue.Marshal(fmt.Sprintf("%s/%s/%s-dns-md5", minioBucket, req.ProjectName, cluster.Id()))
+			if err != nil {
+				return fmt.Errorf("error composing state lockfile id for cluster %s: %w", cluster.Id(), err)
+			}
+			log.Debug().Msgf("deleting lockfile under key: %v", dynamoLockId)
+			// Remove the lockfile from dynamodb
+			if _, err := dynamoConnection.DeleteItem(ctx, &dynamodb.DeleteItemInput{Key: map[string]types.AttributeValue{"LockID": dynamoLockId}, TableName: aws.String(dynamoTable)}); err != nil {
+				return fmt.Errorf("failed to remove state lock file %v : %w", cluster.Id(), err)
+			}
 
-					key := fmt.Sprintf("%s/%s-dns", projectName, c.Id())
-					if err := mc.RemoveObject(ctx, minioBucket, key, minio.RemoveObjectOptions{GovernanceBypass: true}); err != nil {
-						return fmt.Errorf("failed to remove dns lock file for %v: %w", cluster.Id(), err)
-					}
-				}
+			key := fmt.Sprintf("%s/%s-dns", req.ProjectName, cluster.Id())
+			if err := mc.RemoveObject(ctx, minioBucket, key, minio.RemoveObjectOptions{GovernanceBypass: true}); err != nil {
+				return fmt.Errorf("failed to remove dns lock file for cluster %v: %w", cluster.Id(), err)
+			}
+		}
 
-				// Key under which the lockfile id is stored in dynamodb
-				dynamoLockId, err := attributevalue.Marshal(fmt.Sprintf("%s/%s/%s-md5", minioBucket, projectName, c.Id()))
-				if err != nil {
-					return fmt.Errorf("error composing state lockfile id for cluster %s/%s: %w", config.Name, c.Id(), err)
-				}
-				log.Debug().Msgf("deleting lockfile under key: %v", dynamoLockId)
-				// Remove the lockfile from dynamodb
-				if _, err := dynamoConnection.DeleteItem(ctx, &dynamodb.DeleteItemInput{Key: map[string]types.AttributeValue{"LockID": dynamoLockId}, TableName: aws.String(dynamoTable)}); err != nil {
-					return fmt.Errorf("failed to remove state lock file %v : %w", cluster.Id(), err)
-				}
+		// Key under which the lockfile id is stored in dynamodb
+		dynamoLockId, err := attributevalue.Marshal(fmt.Sprintf("%s/%s/%s-md5", minioBucket, req.ProjectName, cluster.Id()))
+		if err != nil {
+			return fmt.Errorf("error composing state lockfile id for cluster %s: %w", cluster.Id(), err)
+		}
+		log.Debug().Msgf("deleting lockfile under key: %v", dynamoLockId)
+		// Remove the lockfile from dynamodb
+		if _, err := dynamoConnection.DeleteItem(ctx, &dynamodb.DeleteItemInput{Key: map[string]types.AttributeValue{"LockID": dynamoLockId}, TableName: aws.String(dynamoTable)}); err != nil {
+			return fmt.Errorf("failed to remove state lock file for cluster %v : %w", cluster.Id(), err)
+		}
 
-				// Key under which the state file is stored in minIO.
-				key := fmt.Sprintf("%s/%s", projectName, c.Id())
-				return mc.RemoveObject(ctx, minioBucket, key, minio.RemoveObjectOptions{
-					GovernanceBypass: true,
-					VersionID:        "", // currently we don't use version ID's in minIO.
-				})
-			})
-		}(cluster)
+		// Key under which the state file is stored in minIO.
+		key := fmt.Sprintf("%s/%s", req.ProjectName, cluster.Id())
+		return mc.RemoveObject(ctx, minioBucket, key, minio.RemoveObjectOptions{
+			GovernanceBypass: true,
+			VersionID:        "", // currently we don't use version ID's in minIO.
+		})
+	})
+
+	if err != nil {
+		log.Error().Msgf("Failed to destroy the infra for project %s : %s", req.ProjectName, err)
+		return nil, fmt.Errorf("failed to destroy infrastructure: %w", err)
 	}
 
-	if err := errGroup.Wait(); err != nil {
-		config.ErrorMessage = err.Error()
-		log.Error().Msgf("Failed to destroy the infra for project %s : %s", config.Name, err.Error())
-		return &pb.DestroyInfrastructureResponse{Config: config}, fmt.Errorf("failed to destroy infrastructure: %w", err)
-	}
-
-	log.Info().Msgf("Infra for project %s was successfully destroyed", config.Name)
-	config.ErrorMessage = ""
-	return &pb.DestroyInfrastructureResponse{Config: config}, nil
+	log.Info().Msgf("Infra for project %s was successfully destroyed", req.ProjectName)
+	return &pb.DestroyInfrastructureResponse{Current: req.Current, CurrentLbs: req.CurrentLbs}, nil
 }
 
 // healthCheck function is a readiness function defined by terraformer
