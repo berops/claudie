@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/Berops/claudie/internal/envs"
-	"github.com/Berops/claudie/internal/utils"
-	"github.com/Berops/claudie/proto/pb"
-	ansibler "github.com/Berops/claudie/services/ansibler/client"
-	kubeEleven "github.com/Berops/claudie/services/kube-eleven/client"
-	kuber "github.com/Berops/claudie/services/kuber/client"
-	terraformer "github.com/Berops/claudie/services/terraformer/client"
+
+	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb"
+	ansibler "github.com/berops/claudie/services/ansibler/client"
+	kubeEleven "github.com/berops/claudie/services/kube-eleven/client"
+	kuber "github.com/berops/claudie/services/kuber/client"
+	terraformer "github.com/berops/claudie/services/terraformer/client"
 	"github.com/rs/zerolog/log"
 )
 

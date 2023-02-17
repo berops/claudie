@@ -161,7 +161,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 }
 
 // stateDifference takes config to calculates difference between desired and current state to determine how many nodes  needs to be deleted and added.
-func stateDifference(current *pb.K8Scluster, desired *pb.K8Scluster) (*pb.K8Scluster, map[string]uint32) {
+func stateDifference(current *pb.K8Scluster, desired *pb.K8Scluster) (*pb.K8Scluster, map[string]int32) {
 	desired = proto.Clone(desired).(*pb.K8Scluster)
 
 	currentNodepoolCounts := nodepoolsCounts(current)
@@ -196,8 +196,8 @@ func stateDifference(current *pb.K8Scluster, desired *pb.K8Scluster) (*pb.K8Sclu
 }
 
 // nodepoolsCounts returns a map for the counts in each nodepool for a cluster.
-func nodepoolsCounts(cluster *pb.K8Scluster) map[string]uint32 {
-	counts := make(map[string]uint32)
+func nodepoolsCounts(cluster *pb.K8Scluster) map[string]int32 {
+	counts := make(map[string]int32)
 
 	for _, nodePool := range cluster.GetClusterInfo().GetNodePools() {
 		counts[nodePool.Name] = nodePool.Count
@@ -206,8 +206,8 @@ func nodepoolsCounts(cluster *pb.K8Scluster) map[string]uint32 {
 	return counts
 }
 
-func findNodepoolDifference(currentNodepoolCounts map[string]uint32, desiredClusterTmp *pb.K8Scluster) (result map[string]uint32, adding, deleting bool) {
-	nodepoolCountToDelete := make(map[string]uint32)
+func findNodepoolDifference(currentNodepoolCounts map[string]int32, desiredClusterTmp *pb.K8Scluster) (result map[string]int32, adding, deleting bool) {
+	nodepoolCountToDelete := make(map[string]int32)
 
 	for _, nodePoolDesired := range desiredClusterTmp.GetClusterInfo().GetNodePools() {
 		currentCount, ok := currentNodepoolCounts[nodePoolDesired.Name]
@@ -221,7 +221,7 @@ func findNodepoolDifference(currentNodepoolCounts map[string]uint32, desiredClus
 			adding = true
 		}
 
-		var countToDelete uint32
+		var countToDelete int32
 
 		if nodePoolDesired.Count < currentCount {
 			deleting = true
@@ -240,7 +240,7 @@ func findNodepoolDifference(currentNodepoolCounts map[string]uint32, desiredClus
 	return nodepoolCountToDelete, adding, deleting
 }
 
-func mergeDeleteCounts(dst, src map[string]uint32) map[string]uint32 {
+func mergeDeleteCounts(dst, src map[string]int32) map[string]int32 {
 	for k, v := range src {
 		dst[k] = v
 	}
@@ -248,7 +248,7 @@ func mergeDeleteCounts(dst, src map[string]uint32) map[string]uint32 {
 }
 
 // separateNodepools creates two slices of node names, one for master and one for worker nodes
-func separateNodepools(clusterNodes map[string]uint32, clusterInfo *pb.ClusterInfo) (master []string, worker []string) {
+func separateNodepools(clusterNodes map[string]int32, clusterInfo *pb.ClusterInfo) (master []string, worker []string) {
 	for _, nodepool := range clusterInfo.NodePools {
 		if count, ok := clusterNodes[nodepool.Name]; ok && count > 0 {
 			names := getNodeNames(nodepool, int(count))
@@ -271,7 +271,7 @@ func getNodeNames(nodepool *pb.NodePool, count int) (names []string) {
 	return names
 }
 
-func deleteNodes(cluster *pb.K8Scluster, nodes map[string]uint32) (*pb.K8Scluster, error) {
+func deleteNodes(cluster *pb.K8Scluster, nodes map[string]int32) (*pb.K8Scluster, error) {
 	master, worker := separateNodepools(nodes, cluster.ClusterInfo)
 	newCluster, err := callDeleteNodes(master, worker, cluster)
 	if err != nil {

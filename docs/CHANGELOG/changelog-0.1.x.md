@@ -40,20 +40,20 @@ To deploy the Claudie `v0.1.X`, please:
 
 ## Features
 
-- Update to Go `v1.20` [#559](https://github.com/Berops/claudie/pull/559)
-- The VPN now respects netmask from defined CIDR [#571](https://github.com/Berops/claudie/pull/571)
-- Connections attempt are more readable [#570](https://github.com/Berops/claudie/pull/570)
+- Update to Go `v1.20` [#559](https://github.com/berops/claudie/pull/559)
+- The VPN now respects netmask from defined CIDR [#571](https://github.com/berops/claudie/pull/571)
+- Connections attempt are more readable [#570](https://github.com/berops/claudie/pull/570)
 
 ## Bugfixes
 
-- Wireguard IP now persists across reboots [#557](https://github.com/Berops/claudie/pull/557)
-- Deletion of the infrastructure before any outputs were created does not end with error [#569](https://github.com/Berops/claudie/pull/569)
-- Replace the `azurerm_virtual_machine` to the `azurerm_linux_virtual_machine` [#573](https://github.com/Berops/claudie/pull/573)
+- Wireguard IP now persists across reboots [#557](https://github.com/berops/claudie/pull/557)
+- Deletion of the infrastructure before any outputs were created does not end with error [#569](https://github.com/berops/claudie/pull/569)
+- Replace the `azurerm_virtual_machine` to the `azurerm_linux_virtual_machine` [#573](https://github.com/berops/claudie/pull/573)
 
 ## Known issues
 
-- Longhorn replicas are  not properly managed, which might cause issues when deleting nodes [#564](https://github.com/Berops/claudie/issues/564)
-- Naming scheme in input manifest is not uniform [#563](https://github.com/Berops/claudie/issues/563)
+- Longhorn replicas are  not properly managed, which might cause issues when deleting nodes [#564](https://github.com/berops/claudie/issues/564)
+- Naming scheme in input manifest is not uniform [#563](https://github.com/berops/claudie/issues/563)
 
 # v0.1.1
 
