@@ -1,9 +1,12 @@
-# Claudie
+<h1 align="center">
+  ![Claudie Logo](docs/logo claudie blue.svg)
+  Platform for managing multi-cloud Kubernetes clusters with each nodepool in a different cloud-provider.
+</h1>
 
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Go Report Card](https://goreportcard.com/badge/github.com/Berops/claudie)](https://goreportcard.com/report/github.com/Berops/claudie)
-
-Platform for managing multi-cloud Kubernetes clusters with each nodepool in a different cloud-provider.
+<p align="center">
+  [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+  [![Go Report Card](https://goreportcard.com/badge/github.com/Berops/claudie)](https://goreportcard.com/report/github.com/Berops/claudie)
+</p>
 
 ## Features
 
