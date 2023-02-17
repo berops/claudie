@@ -4,10 +4,15 @@ import "proto/config.proto";
 
 option go_package = "proto/pb";
 
-message BuildClusterRequest { Project desiredState = 1; }
+message BuildClusterRequest {
+  K8scluster desired = 1;
+  repeated LBcluster desiredLbs = 2;
+  string projectName = 3;
+}
+
 message BuildClusterResponse {
-  Project desiredState = 1;
-  string errorMessage = 2;
+  K8scluster desired = 1;
+  repeated LBcluster desiredLbs = 2;
 }
 
 service KubeElevenService {

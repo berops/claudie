@@ -4,11 +4,11 @@ import "proto/config.proto";
 
 option go_package = "proto/pb";
 
-message SetUpStorageRequest { 
-  Project desiredState = 1;
+message SetUpStorageRequest {
+  K8scluster desiredCluster = 1;
 }
 message SetUpStorageResponse {
-  Project desiredState = 1;
+  K8scluster desiredCluster = 1;
 }
 
 message StoreKubeconfigRequest {

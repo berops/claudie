@@ -4,32 +4,41 @@ import "proto/config.proto";
 
 option go_package = "proto/pb";
 
-message InstallRequest { 
-  Project desiredState = 1;
-  Project currentState = 2; 
+message InstallRequest {
+  K8scluster desired = 1;
+  repeated LBcluster desiredLbs = 2;
+  string projectName = 3;
 }
 message InstallResponse {
-  Project desiredState = 1;
+  K8scluster desired = 1;
+  repeated LBcluster desiredLbs = 2;
 }
 
-message SetUpLBRequest { 
-  Project desiredState = 1;
-  Project currentState = 2;
-  map<string, string> oldApiEndpoints = 3;
+message SetUpLBRequest {
+  K8scluster desired = 1;
+  repeated LBcluster currentLbs = 2;
+  repeated LBcluster desiredLbs = 3;
+  string previousAPIEndpoint = 4;
+  string projectName = 5;
 }
 message SetUpLBResponse {
-  Project desiredState = 1;
+  K8scluster desired = 1;
+  repeated LBcluster currentLbs = 2;
+  repeated LBcluster desiredLbs = 3;
 }
 
 message TeardownLBRequest {
-  Project deletedState = 1;
-  Project desiredState = 2;
+  K8scluster desired = 1;
+  repeated LBcluster desiredLbs = 2;
+  repeated LBcluster deletedLbs = 3;
+  string projectName = 4;
 }
 
 message TeardownLBResponse {
-  // Maps the K8sClusterName to old ApiEndpoint (if any)
-  map<string, string> oldApiEndpoinds = 1;
-  Project desiredState = 2;
+  string previousAPIEndpoint = 1;
+  K8scluster desired = 2;
+  repeated LBcluster desiredLbs = 3;
+  repeated LBcluster deletedLbs = 4;
 }
 
 service AnsiblerService {

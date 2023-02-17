@@ -10,7 +10,6 @@ import (
 	"github.com/Berops/claudie/internal/utils"
 	"github.com/Berops/claudie/proto/pb"
 	"github.com/Berops/claudie/services/ansibler/server/ansible"
-	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -18,52 +17,40 @@ const (
 )
 
 type VPNInfo struct {
-	Network      string          //network range
-	NodepoolInfo []*NodepoolInfo //nodepools which will be inside the VPN
+	// Network is the network range
+	Network string
+	// NodepoolInfo are the pools used for the VPN
+	NodepoolInfo []*NodepoolInfo
 }
 
-// installWireguardVPN takes a map of [k8sClusterName]*VPNInfo and sets up the wireguard vpn
-// return error if not successful, nil otherwise
-func installWireguardVPN(vpnNodepools map[string]*VPNInfo) error {
-	var errGroup errgroup.Group
-	for k8sClusterName, vpnInfo := range vpnNodepools {
-		directory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", k8sClusterName, utils.CreateHash(4)))
-		func(vpnInfo *VPNInfo) {
-			//concurrent vpn creation on cluster level
-			errGroup.Go(func() error {
-				if err := assignPrivateAddresses(groupNodepool(vpnInfo.NodepoolInfo), vpnInfo.Network); err != nil {
-					return fmt.Errorf("error while setting the private IPs for %s : %w", directory, err)
-				}
-				//generate key files
-				if _, err := os.Stat(directory); os.IsNotExist(err) {
-					if err := os.MkdirAll(directory, os.ModePerm); err != nil {
-						return fmt.Errorf("failed to create directory %s : %w", directory, err)
-					}
-				}
-				for _, nodepoolInfo := range vpnInfo.NodepoolInfo {
-					if err := utils.CreateKeyFile(nodepoolInfo.PrivateKey, directory, fmt.Sprintf("%s.%s", nodepoolInfo.ID, privateKeyExt)); err != nil {
-						return fmt.Errorf("failed to create key file for %s : %w", nodepoolInfo.ID, err)
-					}
-				}
-				//generate inventory
-				if err := generateInventoryFile(nodesInventoryFileTpl, directory, AllNodesInventoryData{NodepoolInfos: vpnInfo.NodepoolInfo}); err != nil {
-					return fmt.Errorf("error while creating inventory file for %s : %w", directory, err)
-				}
-				//start ansible playbook
-				ansible := ansible.Ansible{Playbook: wireguardPlaybook, Inventory: inventoryFile, Directory: directory}
-				if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("VPN - %s", directory)); err != nil {
-					return fmt.Errorf("error while running ansible for %s : %w", directory, err)
-				}
-				//Clean up
-				if err := os.RemoveAll(directory); err != nil {
-					return fmt.Errorf("error while deleting directory %s : %w", directory, err)
-				}
-				return nil
-			})
-		}(vpnInfo)
+// installWireguardVPN sets up wireguard vpn for the nodepools
+func installWireguardVPN(clusterName string, info *VPNInfo) error {
+	directory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterName, utils.CreateHash(utils.HashLength)))
+
+	if err := assignPrivateAddresses(groupNodepool(info.NodepoolInfo), info.Network); err != nil {
+		return fmt.Errorf("error while setting the private IPs for %s : %w", directory, err)
 	}
 
-	return errGroup.Wait()
+	if err := utils.CreateDirectory(directory); err != nil {
+		return fmt.Errorf("failed to create directory %s : %w", directory, err)
+	}
+
+	for _, nodepoolInfo := range info.NodepoolInfo {
+		if err := utils.CreateKeyFile(nodepoolInfo.PrivateKey, directory, fmt.Sprintf("%s.%s", nodepoolInfo.ID, privateKeyExt)); err != nil {
+			return fmt.Errorf("failed to create key file for %s : %w", nodepoolInfo.ID, err)
+		}
+	}
+
+	if err := generateInventoryFile(nodesInventoryFileTpl, directory, AllNodesInventoryData{NodepoolInfos: info.NodepoolInfo}); err != nil {
+		return fmt.Errorf("error while creating inventory file for %s : %w", directory, err)
+	}
+
+	ansible := ansible.Ansible{Playbook: wireguardPlaybook, Inventory: inventoryFile, Directory: directory}
+	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("VPN - %s", directory)); err != nil {
+		return fmt.Errorf("error while running ansible for %s : %w", directory, err)
+	}
+
+	return os.RemoveAll(directory)
 }
 
 // assignPrivateAddresses will assign private IPs addresses from the specified network range
