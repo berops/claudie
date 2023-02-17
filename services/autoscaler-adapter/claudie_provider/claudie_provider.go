@@ -9,6 +9,7 @@ import (
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/services/autoscaler-adapter/node_manager"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/externalgrpc/protos"
@@ -32,7 +33,11 @@ type ClaudieCloudProvider struct {
 	// Map of NodeGroups with their target sizes.
 	nodeGroupTargetSizeCache map[string]int32
 	// Slice of NodeGroups
-	nodeGroupsCache []*protos.NodeGroup
+	nodeGroupsCache map[string]*protos.NodeGroup
+	// Slice of nodepools
+	nodepoolCache map[string]*pb.NodePool
+	// Node manager
+	nodeManager *node_manager.NodeManager
 }
 
 func NewClaudieCloudProvider(projectName, clusterName string) *ClaudieCloudProvider {
@@ -48,6 +53,7 @@ func NewClaudieCloudProvider(projectName, clusterName string) *ClaudieCloudProvi
 		configCluster:            cluster,
 		nodeGroupTargetSizeCache: getNodeGroupTargets(cluster.ClusterInfo.NodePools),
 		nodeGroupsCache:          getNodeGroups(cluster.ClusterInfo.NodePools),
+		nodeManager:              node_manager.NewNodeManager(cluster.ClusterInfo.NodePools),
 	}
 }
 
@@ -75,8 +81,8 @@ func getClaudieState(projectName, clusterName string) (*pb.K8Scluster, error) {
 }
 
 // getNodeGroups returns a slice of node groups, based on the nodepools, which have autoscaling enabled.
-func getNodeGroups(nodepools []*pb.NodePool) []*protos.NodeGroup {
-	var nodeGroups = make([]*protos.NodeGroup, 0, len(nodepools))
+func getNodeGroups(nodepools []*pb.NodePool) map[string]*protos.NodeGroup {
+	var nodeGroups = make(map[string]*protos.NodeGroup, len(nodepools))
 	for _, nodepool := range nodepools {
 		// Find autoscaled nodepool.
 		if nodepool.AutoscalerConfig != nil {
@@ -88,10 +94,18 @@ func getNodeGroups(nodepools []*pb.NodePool) []*protos.NodeGroup {
 				Debug:   fmt.Sprintf("Nodepool %s with autoscaler config %v", nodepool.Name, nodepool.AutoscalerConfig),
 			}
 			// Append ng to the final slice.
-			nodeGroups = append(nodeGroups, ng)
+			nodeGroups[nodepool.Name] = ng
 		}
 	}
 	return nodeGroups
+}
+
+func getNodepools(nodepools []*pb.NodePool) map[string]*pb.NodePool {
+	var nodepoolsCache = make(map[string]*pb.NodePool, len(nodepools))
+	for _, np := range nodepools {
+		nodepoolsCache[np.Name] = np
+	}
+	return nodepoolsCache
 }
 
 // getNodeGroupTargets returns a map which holds target size for each nodepool, which have autoscaling enabled.
@@ -108,7 +122,11 @@ func getNodeGroupTargets(nodepools []*pb.NodePool) map[string]int32 {
 // NodeGroups returns all node groups configured for this cloud provider.
 func (c *ClaudieCloudProvider) NodeGroups(_ context.Context, req *protos.NodeGroupsRequest) (*protos.NodeGroupsResponse, error) {
 	log.Info().Msgf("Got NodeGroups request")
-	return &protos.NodeGroupsResponse{NodeGroups: c.nodeGroupsCache}, nil
+	ngs := make([]*protos.NodeGroup, 0, len(c.nodeGroupsCache))
+	for _, ng := range c.nodeGroupsCache {
+		ngs = append(ngs, ng)
+	}
+	return &protos.NodeGroupsResponse{NodeGroups: ngs}, nil
 }
 
 // NodeGroupForNode returns the node group for the given node.
@@ -120,9 +138,9 @@ func (c *ClaudieCloudProvider) NodeGroupForNode(_ context.Context, req *protos.N
 	// Initialise as empty response.
 	nodeGroup := &protos.NodeGroup{}
 	// Try to find if node is from any NodeGroup
-	for _, ng := range c.nodeGroupsCache {
+	for id, ng := range c.nodeGroupsCache {
 		// If node name contains ng.Id (nodepool name), return this NodeGroup.
-		if strings.Contains(nodeName, ng.Id) {
+		if strings.Contains(nodeName, id) {
 			nodeGroup = ng
 			break
 		}
@@ -187,6 +205,9 @@ func (c *ClaudieCloudProvider) refresh() error {
 		c.configCluster = cluster
 		c.nodeGroupTargetSizeCache = getNodeGroupTargets(cluster.ClusterInfo.NodePools)
 		c.nodeGroupsCache = getNodeGroups(cluster.ClusterInfo.NodePools)
+		c.nodepoolCache = getNodepools(cluster.ClusterInfo.NodePools)
+		c.nodeManager = node_manager.NewNodeManager(cluster.ClusterInfo.NodePools)
+		log.Debug().Msgf("Updated state: \n %v \n %v", c.nodeGroupTargetSizeCache, c.nodeGroupsCache)
 	}
 	return nil
 }
