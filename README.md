@@ -1,7 +1,7 @@
-<h1 align="center">
+<h4 align="center">
   <img src="https://raw.githubusercontent.com/berops/claudie/4160faff3c2430aec2e6de4b1a6698c6b7df7f2d/docs/logo%20claudie%20blue.svg" width="400px"/><br/>
-  Platform for managing multi-cloud Kubernetes clusters with each nodepool in a different cloud-provider.
-</h1>
+  Platform for managing multi-cloud Kubernetes clusters with each nodepool in a different cloud-provider
+</h4>
 
 <p align="center">
   <a href="https://img.shields.io/badge/License-Apache_2.0-blue.svg" src="https://opensource.org/licenses/Apache-2.0" /></a>
