@@ -93,4 +93,4 @@ containerimgs:
 	done
 
 buildAdapter:
-	DOCKER_BUILDKIT=1 docker build -t "ghcr.io/berops/claudie/autoscaler-adapter:test2" -f ./services/autoscaler-adapter/Dockerfile .
+	DOCKER_BUILDKIT=1 docker build -t "ghcr.io/berops/claudie/autoscaler-adapter:test" -f ./services/autoscaler-adapter/Dockerfile .

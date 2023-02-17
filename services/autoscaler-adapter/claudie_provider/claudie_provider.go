@@ -181,6 +181,7 @@ func (c *ClaudieCloudProvider) cleanup() error {
 func (c *ClaudieCloudProvider) refresh() error {
 	log.Info().Msgf("Refreshing the state")
 	if cluster, err := getClaudieState(c.projectName, c.configCluster.ClusterInfo.Name); err != nil {
+		log.Error().Msgf("error while refreshing a state for the cluster %s : %v", c.configCluster.ClusterInfo.Name, err)
 		return fmt.Errorf("error while refreshing a state for the cluster %s : %w", c.configCluster.ClusterInfo.Name, err)
 	} else {
 		c.configCluster = cluster

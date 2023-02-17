@@ -3,6 +3,7 @@ package claudie_provider
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/utils"
@@ -19,6 +20,7 @@ import (
 func (c *ClaudieCloudProvider) NodeGroupTargetSize(_ context.Context, req *protos.NodeGroupTargetSizeRequest) (*protos.NodeGroupTargetSizeResponse, error) {
 	log.Info().Msgf("Got NodeGroupTargetSize request")
 	if size, ok := c.nodeGroupTargetSizeCache[req.GetId()]; ok {
+		log.Info().Msgf("Returning target size %d for nodepool %s", size, req.GetId())
 		return &protos.NodeGroupTargetSizeResponse{TargetSize: size}, nil
 	}
 	return nil, fmt.Errorf("nodeGroup %s was not found", req.Id)
@@ -28,7 +30,7 @@ func (c *ClaudieCloudProvider) NodeGroupTargetSize(_ context.Context, req *proto
 // to explicitly name it and use NodeGroupDeleteNodes. This function should wait until
 // node group size is updated.
 func (c *ClaudieCloudProvider) NodeGroupIncreaseSize(_ context.Context, req *protos.NodeGroupIncreaseSizeRequest) (*protos.NodeGroupIncreaseSizeResponse, error) {
-	log.Info().Msgf("Got NodeGroupIncreaseSize request for nodepool %s", req.GetId())
+	log.Info().Msgf("Got NodeGroupIncreaseSize request for nodepool %s by %d", req.GetId(), req.GetDelta())
 	for _, nodepool := range c.configCluster.ClusterInfo.NodePools {
 		// Find the nodepool.
 		if nodepool.Name == req.GetId() {
@@ -52,7 +54,7 @@ func (c *ClaudieCloudProvider) NodeGroupIncreaseSize(_ context.Context, req *pro
 // of the node group with that). Error is returned either on failure or if the given node
 // doesn't belong to this node group. This function should wait until node group size is updated.
 func (c *ClaudieCloudProvider) NodeGroupDeleteNodes(_ context.Context, req *protos.NodeGroupDeleteNodesRequest) (*protos.NodeGroupDeleteNodesResponse, error) {
-	log.Info().Msgf("Got NodeGroupDeleteNodes request")
+	log.Info().Msgf("Got NodeGroupDeleteNodes request for nodepool %s", req.GetId())
 	for _, nodepool := range c.configCluster.ClusterInfo.NodePools {
 		// Find the nodepool.
 		if nodepool.Name == req.GetId() {
@@ -79,9 +81,10 @@ func (c *ClaudieCloudProvider) NodeGroupDeleteNodes(_ context.Context, req *prot
 			if err := c.updateNodepool(nodepool); err != nil {
 				return nil, fmt.Errorf("failed to update nodepool %s : %w", nodepool.Name, err)
 			}
+			return &protos.NodeGroupDeleteNodesResponse{}, nil
 		}
 	}
-	return &protos.NodeGroupDeleteNodesResponse{}, nil
+	return nil, fmt.Errorf("could not find the nodepool with id %s", req.GetId())
 }
 
 // NodeGroupDecreaseTargetSize decreases the target size of the node group. This function
@@ -138,14 +141,16 @@ func (c *ClaudieCloudProvider) NodeGroupTemplateNodeInfo(_ context.Context, req 
 // Implementation optional
 func (c *ClaudieCloudProvider) NodeGroupGetOptions(_ context.Context, req *protos.NodeGroupAutoscalingOptionsRequest) (*protos.NodeGroupAutoscalingOptionsResponse, error) {
 	log.Info().Msgf("Got NodeGroupGetOptions request")
-	return nil, ErrNotImplemented
+	return &protos.NodeGroupAutoscalingOptionsResponse{NodeGroupAutoscalingOptions: req.GetDefaults()}, nil
 }
 
 func (c *ClaudieCloudProvider) updateNodepool(nodepool *pb.NodePool) error {
 	// Update the nodepool in the Claudie.
 	var cc *grpc.ClientConn
 	var err error
-	if cc, err = utils.GrpcDialWithInsecure("context-box", envs.ContextBoxURL); err != nil {
+
+	cboxURL := strings.ReplaceAll(envs.ContextBoxURL, ":tcp://", "")
+	if cc, err = utils.GrpcDialWithInsecure("context-box", cboxURL); err != nil {
 		return fmt.Errorf("failed to dial context-box at %s : %w", envs.ContextBoxURL, err)
 	}
 	cbox := pb.NewContextBoxServiceClient(cc)
