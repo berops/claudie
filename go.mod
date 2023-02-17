@@ -8,6 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.18.2
 	github.com/go-playground/validator/v10 v10.11.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
+	github.com/hetznercloud/hcloud-go v1.40.0
 	github.com/minio/minio-go/v7 v7.0.47
 	github.com/rs/zerolog v1.29.0
 	github.com/spiffe/go-spiffe/v2 v2.1.2
@@ -19,6 +20,7 @@ require (
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.27.0-alpha.1
+	k8s.io/apimachinery v0.27.0-alpha.1
 	k8s.io/autoscaler/cluster-autoscaler v0.0.0-20230213111530-a4847138d626
 )
 
@@ -42,7 +44,6 @@ require (
 	github.com/golang/snappy v0.0.3 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/hetznercloud/hcloud-go v1.40.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.15.9 // indirect
@@ -80,7 +81,6 @@ require (
 	gopkg.in/ini.v1 v1.66.6 // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	k8s.io/apimachinery v0.27.0-alpha.1 // indirect
 	k8s.io/klog/v2 v2.80.1 // indirect
 	k8s.io/utils v0.0.0-20221128185143-99ec85e7a448 // indirect
 	sigs.k8s.io/json v0.0.0-20220713155537-f223a00ba0e2 // indirect

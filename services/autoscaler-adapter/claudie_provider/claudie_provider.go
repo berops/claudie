@@ -103,7 +103,9 @@ func getNodeGroups(nodepools []*pb.NodePool) map[string]*protos.NodeGroup {
 func getNodepools(nodepools []*pb.NodePool) map[string]*pb.NodePool {
 	var nodepoolsCache = make(map[string]*pb.NodePool, len(nodepools))
 	for _, np := range nodepools {
-		nodepoolsCache[np.Name] = np
+		if np.AutoscalerConfig != nil {
+			nodepoolsCache[np.Name] = np
+		}
 	}
 	return nodepoolsCache
 }

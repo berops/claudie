@@ -3,6 +3,7 @@ package node_manager
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/berops/claudie/proto/pb"
 	"github.com/hetznercloud/hcloud-go/hcloud"
@@ -37,18 +38,21 @@ func NewNodeManager(nodepools []*pb.NodePool) *NodeManager {
 	nm := &NodeManager{}
 	cacheProviderMap := make(map[string]struct{})
 	for _, np := range nodepools {
-		// Check if cache was already set.
-		if _, ok := cacheProviderMap[np.Provider.CloudProviderName]; !ok {
-			switch np.Provider.CloudProviderName {
-			case "hetzner":
-				hc := hcloud.NewClient(hcloud.WithToken(np.Provider.Credentials))
-				if servers, err := hc.ServerType.All(context.Background()); err != nil {
-					panic("Hetzner client got error")
-				} else {
-					nm.hetznerVMs = servers
+		if np.AutoscalerConfig != nil {
+			// Check if cache was already set.
+			if _, ok := cacheProviderMap[np.Provider.CloudProviderName]; !ok {
+				switch np.Provider.CloudProviderName {
+				case "hetzner":
+					hc := hcloud.NewClient(hcloud.WithToken(np.Provider.Credentials))
+
+					if servers, err := hc.ServerType.All(context.Background()); err != nil {
+						panic(fmt.Sprintf("Hetzner client got error %v", err))
+					} else {
+						nm.hetznerVMs = servers
+					}
 				}
+				cacheProviderMap[np.Provider.CloudProviderName] = struct{}{}
 			}
-			cacheProviderMap[np.Provider.CloudProviderName] = struct{}{}
 		}
 	}
 	return nm
@@ -103,9 +107,11 @@ func (nm *NodeManager) getTypeInfo(provider string, np *pb.NodePool) typeInfo {
 	ti := typeInfo{}
 	switch provider {
 	case "hetzner":
+		// cpx versions are called ccx in hcloud-go api.
+		npType := strings.ReplaceAll(np.ServerType, "p", "c")
 		for _, server := range nm.hetznerVMs {
-			if server.Name == np.Name {
-				ti.CPU = int64(server.Cores)
+			if server.Name == npType {
+				ti.CPU = int64(server.Cores * 1000)
 				ti.Memory = int64(server.Memory * 1024 * 1024 * 1024) // Convert to bytes
 				ti.Disk = int64(server.Disk * 1024 * 1024 * 1024)     // Convert to bytes
 			}
