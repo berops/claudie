@@ -1,5 +1,5 @@
 <h4 align="center">
-  <img src="https://raw.githubusercontent.com/berops/claudie/4160faff3c2430aec2e6de4b1a6698c6b7df7f2d/docs/logo%20claudie%20blue.svg" width="400px"/><br/>
+  <img src="https://raw.githubusercontent.com/berops/claudie/17480b6cb809fe795d454588af18355c7543f37e/docs/logo%20claudie_blue_no_BG.svg" width="400px"/><br/>
   Platform for managing multi-cloud Kubernetes clusters with each nodepool in a different cloud-provider
 </h4>
 
