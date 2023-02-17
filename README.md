@@ -1,7 +1,7 @@
 <h4 align="center">
   <img src="https://raw.githubusercontent.com/berops/claudie/17480b6cb809fe795d454588af18355c7543f37e/docs/logo%20claudie_blue_no_BG.svg" width="250px"/><br/>
-   \
-   \
+  <br/><br/>
+  <br/><br/>
   Platform for managing multi-cloud Kubernetes clusters with each nodepool in a different cloud-provider
 </h4>
 
