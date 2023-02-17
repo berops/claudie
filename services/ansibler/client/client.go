@@ -38,7 +38,7 @@ func SetUpLoadbalancers(c pb.AnsiblerServiceClient, req *pb.SetUpLBRequest) (*pb
 func TeardownLoadBalancers(c pb.AnsiblerServiceClient, req *pb.TeardownLBRequest) (*pb.TeardownLBResponse, error) {
 	res, err := c.TeardownLoadBalancers(context.Background(), req)
 	if err != nil {
-		return res, fmt.Errorf("failed to teardown LoadBalancers")
+		return res, fmt.Errorf("error while calling TeardownLoadBalancers on Ansibler: %w", err)
 	}
 	return res, nil
 }

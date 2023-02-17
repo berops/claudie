@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var desiredState *pb.Project = &pb.Project{
+var desiredState = &pb.Project{
 	Name: "TestProjectName",
 	Clusters: []*pb.K8Scluster{
 		{
@@ -209,19 +209,19 @@ func TestBuildInfrastructure(t *testing.T) {
 	c := pb.NewTerraformerServiceClient(cc)
 
 	res, err := BuildInfrastructure(c, &pb.BuildInfrastructureRequest{
-		CurrentState: nil,
-		DesiredState: desiredState,
+		Current:     nil,
+		Desired:     desiredState.Clusters[0],
+		DesiredLbs:  desiredState.LoadBalancerClusters,
+		ProjectName: desiredState.Name,
 	})
 	require.NoError(t, err)
 	t.Log("Terraformer response: ", res)
 
 	// Print just public ip addresses
-	for _, cluster := range res.GetCurrentState().GetClusters() {
-		t.Log(cluster.GetClusterInfo().GetName())
-		for i, nodepool := range cluster.GetClusterInfo().GetNodePools() {
-			for k, node := range nodepool.Nodes {
-				t.Log(i+k, node.GetPublic())
-			}
+	t.Log(res.GetCurrent().GetClusterInfo().GetName())
+	for i, nodepool := range res.GetCurrent().GetClusterInfo().GetNodePools() {
+		for k, node := range nodepool.Nodes {
+			t.Log(i+k, node.GetPublic())
 		}
 	}
 }

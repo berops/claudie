@@ -51,29 +51,16 @@ type server struct {
 }
 
 func (s *server) SetUpStorage(ctx context.Context, req *pb.SetUpStorageRequest) (*pb.SetUpStorageResponse, error) {
-	desiredState := req.GetDesiredState()
-	var errGroup errgroup.Group
-	for _, cluster := range desiredState.GetClusters() {
-		func(c *pb.K8Scluster) {
-			errGroup.Go(func() error {
-				clusterID := fmt.Sprintf("%s-%s", c.ClusterInfo.Name, c.ClusterInfo.Hash)
-				clusterDir := filepath.Join(outputDir, clusterID)
-				longhorn := longhorn.Longhorn{Cluster: c, Directory: clusterDir}
-				err := longhorn.SetUp()
-				if err != nil {
-					return fmt.Errorf("error while setting up the longhorn for %s : %w", clusterID, err)
-				}
-				log.Info().Msgf("Longhorn successfully set up on the cluster %s", clusterID)
-				return nil
-			})
-		}(cluster)
+	clusterID := fmt.Sprintf("%s-%s", req.DesiredCluster.ClusterInfo.Name, req.DesiredCluster.ClusterInfo.Hash)
+	clusterDir := filepath.Join(outputDir, clusterID)
+
+	longhorn := longhorn.Longhorn{Cluster: req.DesiredCluster, Directory: clusterDir}
+	if err := longhorn.SetUp(); err != nil {
+		return nil, fmt.Errorf("error while setting up the longhorn for %s : %w", clusterID, err)
 	}
-	if err := errGroup.Wait(); err != nil {
-		log.Error().Msgf("Error encountered in SetUpStorage : %s", err.Error())
-		return &pb.SetUpStorageResponse{DesiredState: desiredState}, err
-	}
-	log.Info().Msgf("Storage was successfully set up for project %s", desiredState.Name)
-	return &pb.SetUpStorageResponse{DesiredState: desiredState}, nil
+	log.Info().Msgf("Longhorn successfully set up on the cluster %s", clusterID)
+
+	return &pb.SetUpStorageResponse{DesiredCluster: req.DesiredCluster}, nil
 }
 
 func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterMetadataRequest) (*pb.StoreClusterMetadataResponse, error) {
