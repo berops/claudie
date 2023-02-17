@@ -30,7 +30,7 @@ const (
 
 // BuildCluster builds all cluster defined in the desired state
 func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb.BuildClusterResponse, error) {
-	log.Info().Msgf("BuildCluster request cluster %s project: %s", req.Desired.ClusterInfo.Name, req.Name)
+	log.Info().Msgf("BuildCluster request cluster %s project: %s", req.Desired.ClusterInfo.Name, req.ProjectName)
 
 	ke := kubeEleven.KubeEleven{
 		K8sCluster: req.Desired,
@@ -38,10 +38,10 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 	}
 
 	if err := ke.BuildCluster(); err != nil {
-		return nil, fmt.Errorf("error while building cluster %s project %s : %w", req.Desired.ClusterInfo.Name, req.Name, err)
+		return nil, fmt.Errorf("error while building cluster %s project %s : %w", req.Desired.ClusterInfo.Name, req.ProjectName, err)
 	}
 
-	log.Info().Msgf("cluster %s project %s was successfully build", req.Desired.ClusterInfo.Name, req.Name)
+	log.Info().Msgf("cluster %s project %s was successfully build", req.Desired.ClusterInfo.Name, req.ProjectName)
 	return &pb.BuildClusterResponse{Desired: req.Desired, DesiredLbs: req.DesiredLbs}, nil
 }
 

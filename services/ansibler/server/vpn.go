@@ -31,10 +31,8 @@ func installWireguardVPN(clusterName string, info *VPNInfo) error {
 		return fmt.Errorf("error while setting the private IPs for %s : %w", directory, err)
 	}
 
-	if _, err := os.Stat(directory); os.IsNotExist(err) {
-		if err := os.MkdirAll(directory, os.ModePerm); err != nil {
-			return fmt.Errorf("failed to create directory %s : %w", directory, err)
-		}
+	if err := utils.CreateDirectory(directory); err != nil {
+		return fmt.Errorf("failed to create directory %s : %w", directory, err)
 	}
 
 	for _, nodepoolInfo := range info.NodepoolInfo {

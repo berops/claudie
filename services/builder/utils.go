@@ -11,7 +11,7 @@ import (
 func destroyConfig(config *pb.Config, clusterView *ClusterView, c pb.ContextBoxServiceClient) error {
 	if err := utils.ConcurrentExec(config.CurrentState.Clusters, func(cluster *pb.K8Scluster) error {
 		return destroyCluster(&BuilderContext{
-			name:          config.Name,
+			projectName:   config.Name,
 			cluster:       cluster,
 			loadbalancers: clusterView.Loadbalancers[cluster.ClusterInfo.Name],
 		})
@@ -25,7 +25,7 @@ func destroyConfig(config *pb.Config, clusterView *ClusterView, c pb.ContextBoxS
 // destroy destroys any Loadbalancers or the cluster itself.
 func destroy(projectName, clusterName string, clusterView *ClusterView) (bool, error) {
 	deleteCtx := &BuilderContext{
-		name: projectName,
+		projectName: projectName,
 	}
 
 	if clusterView.Clusters[clusterName] != nil && clusterView.DesiredClusters[clusterName] == nil {

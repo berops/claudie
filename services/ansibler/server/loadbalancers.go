@@ -402,11 +402,10 @@ func changeAPIEndpoint(clusterName, oldEndpoint, newEndpoint, directory string) 
 // return error if not successful, nil otherwise
 func setUpNginx(lb *pb.LBcluster, targetedNodepool []*pb.NodePool, directory string) error {
 	//create key files for lb nodepools
-	if _, err := os.Stat(directory); os.IsNotExist(err) {
-		if err := os.MkdirAll(directory, os.ModePerm); err != nil {
-			return fmt.Errorf("failed to create directory %s : %w", directory, err)
-		}
+	if err := utils.CreateDirectory(directory); err != nil {
+		return fmt.Errorf("failed to create directory %s : %w", directory, err)
 	}
+
 	if err := utils.CreateKeyFile(lb.ClusterInfo.PrivateKey, directory, fmt.Sprintf("key.%s", privateKeyExt)); err != nil {
 		return fmt.Errorf("failed to create key file for %s : %w", lb.ClusterInfo.Name, err)
 	}
@@ -466,11 +465,10 @@ func splitNodesByType(nodepools []*pb.NodePool) (controlNodes, computeNodes []*p
 // generateK8sBaseFiles generates the base loadbalancer files, like inventory, keys, etc.
 // return error if not successful, nil otherwise
 func generateK8sBaseFiles(k8sDirectory string, lbInfo *LBInfo) error {
-	if _, err := os.Stat(k8sDirectory); os.IsNotExist(err) {
-		if err := os.MkdirAll(k8sDirectory, os.ModePerm); err != nil {
-			return fmt.Errorf("failed to create dir: %w", err)
-		}
+	if err := utils.CreateDirectory(k8sDirectory); err != nil {
+		return fmt.Errorf("failed to create dir: %w", err)
 	}
+
 	if err := utils.CreateKeyFile(lbInfo.TargetK8sNodepoolKey, k8sDirectory, "k8s.pem"); err != nil {
 		return fmt.Errorf("failed to create key file: %w", err)
 	}

@@ -37,11 +37,11 @@ func (*server) InstallNodeRequirements(_ context.Context, req *pb.InstallRequest
 	}
 
 	if err := installLonghornRequirements(info); err != nil {
-		log.Error().Msgf("Error encountered while installing node requirements for cluster %s project %s : %s", req.Desired.ClusterInfo.Name, req.Name, err)
-		return nil, fmt.Errorf("error encountered while installing node requirements for cluster %s project %s : %w", req.Desired.ClusterInfo.Name, req.Name, err)
+		log.Error().Msgf("Error encountered while installing node requirements for cluster %s project %s : %s", req.Desired.ClusterInfo.Name, req.ProjectName, err)
+		return nil, fmt.Errorf("error encountered while installing node requirements for cluster %s project %s : %w", req.Desired.ClusterInfo.Name, req.ProjectName, err)
 	}
 
-	log.Info().Msgf("Node requirements for cluster %s project %s were successfully installed", req.Desired.ClusterInfo.Name, req.Name)
+	log.Info().Msgf("Node requirements for cluster %s project %s were successfully installed", req.Desired.ClusterInfo.Name, req.ProjectName)
 	return &pb.InstallResponse{Desired: req.Desired, DesiredLbs: req.DesiredLbs}, nil
 }
 
@@ -69,11 +69,11 @@ func (*server) InstallVPN(_ context.Context, req *pb.InstallRequest) (*pb.Instal
 	}
 
 	if err := installWireguardVPN(req.Desired.ClusterInfo.Name, info); err != nil {
-		log.Error().Msgf("Error encountered while installing VPN for cluster %s project %s : %s", req.Desired.ClusterInfo.Name, req.Name, err)
-		return nil, fmt.Errorf("error encountered while installing VPN for cluster %s project %s : %w", req.Desired.ClusterInfo.Name, req.Name, err)
+		log.Error().Msgf("Error encountered while installing VPN for cluster %s project %s : %s", req.Desired.ClusterInfo.Name, req.ProjectName, err)
+		return nil, fmt.Errorf("error encountered while installing VPN for cluster %s project %s : %w", req.Desired.ClusterInfo.Name, req.ProjectName, err)
 	}
 
-	log.Info().Msgf("VPNs for cluster %s project %s were successfully installed", req.Desired.ClusterInfo.Name, req.Name)
+	log.Info().Msgf("VPNs for cluster %s project %s were successfully installed", req.Desired.ClusterInfo.Name, req.ProjectName)
 	return &pb.InstallResponse{Desired: req.Desired, DesiredLbs: req.DesiredLbs}, nil
 }
 
@@ -110,8 +110,8 @@ func (*server) TeardownLoadBalancers(ctx context.Context, req *pb.TeardownLBRequ
 
 	endpoint, err := teardownLoadBalancers(req.Desired.ClusterInfo.Name, info, attached)
 	if err != nil {
-		log.Error().Msgf("Error encountered while setting up the LoadBalancers for cluster %s project %s: %v", err, req.Desired.ClusterInfo.Name, req.Name)
-		return nil, fmt.Errorf("error encountered while tearing down loadbalancers for cluster %s project %s : %w", req.Desired.ClusterInfo.Name, req.Name, err)
+		log.Error().Msgf("Error encountered while setting up the LoadBalancers for cluster %s project %s: %v", err, req.Desired.ClusterInfo.Name, req.ProjectName)
+		return nil, fmt.Errorf("error encountered while tearing down loadbalancers for cluster %s project %s : %w", req.Desired.ClusterInfo.Name, req.ProjectName, err)
 	}
 
 	resp := &pb.TeardownLBResponse{
@@ -127,7 +127,7 @@ func (*server) TeardownLoadBalancers(ctx context.Context, req *pb.TeardownLBRequ
 // SetUpLoadbalancers sets up the loadbalancers, DNS and verifies their configuration
 func (*server) SetUpLoadbalancers(_ context.Context, req *pb.SetUpLBRequest) (*pb.SetUpLBResponse, error) {
 	currentLBs := make(map[string]*pb.LBcluster)
-	for _, lb := range req.Lbs {
+	for _, lb := range req.CurrentLbs {
 		currentLBs[lb.ClusterInfo.Name] = lb
 	}
 
@@ -147,12 +147,12 @@ func (*server) SetUpLoadbalancers(_ context.Context, req *pb.SetUpLBRequest) (*p
 	}
 
 	if err := setUpLoadbalancers(req.Desired.ClusterInfo.Name, info); err != nil {
-		log.Error().Msgf("Error encountered while setting up the loadbalancers for cluster %s project %s : %s", req.Desired.ClusterInfo.Name, req.Name, err)
-		return nil, fmt.Errorf("error encountered while setting up the loadbalancers for cluster %s project %s : %w", req.Desired.ClusterInfo.Name, req.Name, err)
+		log.Error().Msgf("Error encountered while setting up the loadbalancers for cluster %s project %s : %s", req.Desired.ClusterInfo.Name, req.ProjectName, err)
+		return nil, fmt.Errorf("error encountered while setting up the loadbalancers for cluster %s project %s : %w", req.Desired.ClusterInfo.Name, req.ProjectName, err)
 	}
 
-	log.Info().Msgf("Loadbalancers for cluster %s project %s were successfully set up", req.Desired.ClusterInfo.Name, req.Name)
-	return &pb.SetUpLBResponse{Desired: req.Desired, Lbs: req.Lbs, DesiredLbs: req.DesiredLbs}, nil
+	log.Info().Msgf("Loadbalancers for cluster %s project %s were successfully set up", req.Desired.ClusterInfo.Name, req.ProjectName)
+	return &pb.SetUpLBResponse{Desired: req.Desired, CurrentLbs: req.CurrentLbs, DesiredLbs: req.DesiredLbs}, nil
 }
 
 func main() {

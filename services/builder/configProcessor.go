@@ -83,7 +83,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 				log.Info().Msgf("Processing stage [1/2] for cluster %s config %s", clusterName, config.Name)
 
 				ctx := &BuilderContext{
-					name:                 config.Name,
+					projectName:          config.Name,
 					cluster:              clusterView.Clusters[clusterName],
 					desiredCluster:       tmpDesired,
 					loadbalancers:        clusterView.Loadbalancers[clusterName],
@@ -117,7 +117,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			log.Info().Msgf(message)
 
 			ctx := &BuilderContext{
-				name:                 config.Name,
+				projectName:          config.Name,
 				cluster:              clusterView.Clusters[clusterName],
 				desiredCluster:       clusterView.DesiredClusters[clusterName],
 				loadbalancers:        clusterView.Loadbalancers[clusterName],

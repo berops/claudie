@@ -209,10 +209,10 @@ func TestBuildInfrastructure(t *testing.T) {
 	c := pb.NewTerraformerServiceClient(cc)
 
 	res, err := BuildInfrastructure(c, &pb.BuildInfrastructureRequest{
-		Current:    nil,
-		Desired:    desiredState.Clusters[0],
-		DesiredLbs: desiredState.LoadBalancerClusters,
-		Name:       desiredState.Name,
+		Current:     nil,
+		Desired:     desiredState.Clusters[0],
+		DesiredLbs:  desiredState.LoadBalancerClusters,
+		ProjectName: desiredState.Name,
 	})
 	require.NoError(t, err)
 	t.Log("Terraformer response: ", res)

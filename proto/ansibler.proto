@@ -7,7 +7,7 @@ option go_package = "proto/pb";
 message InstallRequest {
   K8scluster desired = 1;
   repeated LBcluster desiredLbs = 2;
-  string name = 3;
+  string projectName = 3;
 }
 message InstallResponse {
   K8scluster desired = 1;
@@ -16,14 +16,14 @@ message InstallResponse {
 
 message SetUpLBRequest {
   K8scluster desired = 1;
-  repeated LBcluster lbs = 2;
+  repeated LBcluster currentLbs = 2;
   repeated LBcluster desiredLbs = 3;
   string previousAPIEndpoint = 4;
-  string name = 5;
+  string projectName = 5;
 }
 message SetUpLBResponse {
   K8scluster desired = 1;
-  repeated LBcluster lbs = 2;
+  repeated LBcluster currentLbs = 2;
   repeated LBcluster desiredLbs = 3;
 }
 
@@ -31,7 +31,7 @@ message TeardownLBRequest {
   K8scluster desired = 1;
   repeated LBcluster desiredLbs = 2;
   repeated LBcluster deletedLbs = 3;
-  string name = 4;
+  string projectName = 4;
 }
 
 message TeardownLBResponse {

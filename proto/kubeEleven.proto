@@ -7,7 +7,7 @@ option go_package = "proto/pb";
 message BuildClusterRequest {
   K8scluster desired = 1;
   repeated LBcluster desiredLbs = 2;
-  string name = 3;
+  string projectName = 3;
 }
 
 message BuildClusterResponse {
