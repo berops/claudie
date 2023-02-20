@@ -4,8 +4,8 @@ go 1.20
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.17.4
-	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.10.11
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.18.2
+	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.10.13
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.18.3
 	github.com/go-playground/validator/v10 v10.11.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/minio/minio-go/v7 v7.0.47
@@ -24,7 +24,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.28 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.22 // indirect
-	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.14.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.14.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.11 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.7.22 // indirect
 	github.com/aws/smithy-go v1.13.5 // indirect
