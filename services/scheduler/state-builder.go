@@ -108,6 +108,7 @@ func readManifest(config *pb.Config) (*manifest.Manifest, error) {
 // - Hash
 // - Public key
 // - Private key
+// - AutoscalerConfig
 func updateClusterInfo(desired, current *pb.ClusterInfo) {
 	desired.Hash = current.Hash
 	desired.PublicKey = current.PublicKey

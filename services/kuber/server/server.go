@@ -130,13 +130,13 @@ func (s *server) DeleteClusterMetadata(ctx context.Context, req *pb.DeleteCluste
 
 func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigRequest) (*pb.StoreKubeconfigResponse, error) {
 	// local deployment - print kubeconfig
-	if namespace := envs.Namespace; namespace == "" {
-		//NOTE: DEBUG print
-		// log.Info().Msgf("The kubeconfig for %s\n%s:", clusterID,cluster.Kubeconfig)
-		return &pb.StoreKubeconfigResponse{}, nil
-	}
 	cluster := req.GetCluster()
 	clusterID := fmt.Sprintf("%s-%s", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
+	if namespace := envs.Namespace; namespace == "" {
+		//NOTE: DEBUG print
+		log.Info().Msgf("The kubeconfig for %s\n%s:", clusterID, cluster.Kubeconfig)
+		return &pb.StoreKubeconfigResponse{}, nil
+	}
 
 	clusterDir := filepath.Join(outputDir, clusterID)
 	sec := secret.New(clusterDir, secret.NewYaml(
@@ -173,7 +173,7 @@ func (s *server) DeleteKubeconfig(ctx context.Context, req *pb.DeleteKubeconfigR
 }
 
 func (s *server) DeleteNodes(ctx context.Context, req *pb.DeleteNodesRequest) (*pb.DeleteNodesResponse, error) {
-	deleter := nodes.New(req.MasterNodes, req.WorkerNodes, req.Cluster)
+	deleter := nodes.NewDeleter(req.MasterNodes, req.WorkerNodes, req.Cluster)
 	cluster, err := deleter.DeleteNodes()
 	if err != nil {
 		log.Error().Msgf("Error while deleting nodes for %s : %s", req.Cluster.ClusterInfo.Name, err.Error())
@@ -181,6 +181,16 @@ func (s *server) DeleteNodes(ctx context.Context, req *pb.DeleteNodesRequest) (*
 	}
 	log.Info().Msgf("Nodes for cluster %s were successfully deleted", req.Cluster.ClusterInfo.Name)
 	return &pb.DeleteNodesResponse{Cluster: cluster}, nil
+}
+
+func (s *server) PatchNodes(ctx context.Context, req *pb.PatchNodeTemplateRequest) (*pb.PatchNodeTemplateResponse, error) {
+	patcher := nodes.NewPatcher(req.Cluster)
+	if err := patcher.PatchProviderID(); err != nil {
+		log.Error().Msgf("Error while patching nodes for %s : %s", req.Cluster.ClusterInfo.Name, err.Error())
+		return nil, fmt.Errorf("Error while patching nodes for %s : %w", req.Cluster.ClusterInfo.Name, err)
+	}
+	log.Info().Msgf("Nodes for cluster %s were successfully patched", req.Cluster.ClusterInfo.Name)
+	return &pb.PatchNodeTemplateResponse{}, nil
 }
 
 func main() {

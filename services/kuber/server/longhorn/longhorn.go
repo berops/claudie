@@ -27,19 +27,22 @@ type zoneData struct {
 }
 
 const (
-	longhornYaml       = "services/kuber/server/manifests/longhorn.yaml"
-	storageManifestTpl = "storage-class.goyaml"
-	defaultSC          = "longhorn"
-	storageClassLabel  = "claudie.io/provider-instance"
+	longhornYaml         = "services/kuber/server/manifests/longhorn.yaml"
+	longhornSettingsYaml = "services/kuber/server/manifests/settings.yaml"
+	storageManifestTpl   = "storage-class.goyaml"
+	defaultSC            = "longhorn"
+	storageClassLabel    = "claudie.io/provider-instance"
 )
 
 // SetUp function will set up the longhorn on the k8s cluster saved in l.Longhorn
 func (l Longhorn) SetUp() error {
 	kubectl := kubectl.Kubectl{Kubeconfig: l.Cluster.GetKubeconfig()}
-	// apply longhorn.yaml
-	err := kubectl.KubectlApply(longhornYaml, "")
-	if err != nil {
+	// apply longhorn.yaml and settings.yaml
+	if err := kubectl.KubectlApply(longhornYaml, ""); err != nil {
 		return fmt.Errorf("error while applying longhorn.yaml in %s : %w", l.Directory, err)
+	}
+	if err := kubectl.KubectlApply(longhornSettingsYaml, ""); err != nil {
+		return fmt.Errorf("error while applying settings.yaml in %s : %w", l.Directory, err)
 	}
 
 	//get existing sc so we can delete them if we do not need them any more

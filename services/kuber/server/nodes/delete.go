@@ -25,7 +25,7 @@ type Deleter struct {
 // New returns new Deleter struct, used for node deletion from a k8s cluster
 // masterNodes - master nodes to DELETE
 // workerNodes - worker nodes to DELETE
-func New(masterNodes, workerNodes []string, cluster *pb.K8Scluster) *Deleter {
+func NewDeleter(masterNodes, workerNodes []string, cluster *pb.K8Scluster) *Deleter {
 	prefix := fmt.Sprintf("%s-%s-", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
 
 	for i := range masterNodes {

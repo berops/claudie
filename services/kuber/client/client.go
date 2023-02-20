@@ -56,3 +56,12 @@ func DeleteClusterMetadata(c pb.KuberServiceClient, req *pb.DeleteClusterMetadat
 
 	return res, nil
 }
+
+func PatchNodes(c pb.KuberServiceClient, req *pb.PatchNodeTemplateRequest) (*pb.PatchNodeTemplateResponse, error) {
+	res, err := c.PatchNodes(context.Background(), req)
+	if err != nil {
+		return nil, fmt.Errorf("error while calling PatchNodes: %w", err)
+	}
+
+	return res, nil
+}

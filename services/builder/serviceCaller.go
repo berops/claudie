@@ -227,6 +227,11 @@ func callKuber(ctx *BuilderContext) error {
 		return err
 	}
 
+	log.Info().Msgf("Calling PatchNodes on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
+	if _, err := kuber.PatchNodes(c, &pb.PatchNodeTemplateRequest{Cluster: ctx.desiredCluster}); err != nil {
+		return err
+	}
+
 	return nil
 }
 
