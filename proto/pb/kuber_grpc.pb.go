@@ -28,6 +28,7 @@ type KuberServiceClient interface {
 	StoreKubeconfig(ctx context.Context, in *StoreKubeconfigRequest, opts ...grpc.CallOption) (*StoreKubeconfigResponse, error)
 	DeleteKubeconfig(ctx context.Context, in *DeleteKubeconfigRequest, opts ...grpc.CallOption) (*DeleteKubeconfigResponse, error)
 	DeleteNodes(ctx context.Context, in *DeleteNodesRequest, opts ...grpc.CallOption) (*DeleteNodesResponse, error)
+	PatchNodes(ctx context.Context, in *PatchNodeTemplateRequest, opts ...grpc.CallOption) (*PatchNodeTemplateResponse, error)
 }
 
 type kuberServiceClient struct {
@@ -92,6 +93,15 @@ func (c *kuberServiceClient) DeleteNodes(ctx context.Context, in *DeleteNodesReq
 	return out, nil
 }
 
+func (c *kuberServiceClient) PatchNodes(ctx context.Context, in *PatchNodeTemplateRequest, opts ...grpc.CallOption) (*PatchNodeTemplateResponse, error) {
+	out := new(PatchNodeTemplateResponse)
+	err := c.cc.Invoke(ctx, "/claudie.KuberService/PatchNodes", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // KuberServiceServer is the server API for KuberService service.
 // All implementations must embed UnimplementedKuberServiceServer
 // for forward compatibility
@@ -102,6 +112,7 @@ type KuberServiceServer interface {
 	StoreKubeconfig(context.Context, *StoreKubeconfigRequest) (*StoreKubeconfigResponse, error)
 	DeleteKubeconfig(context.Context, *DeleteKubeconfigRequest) (*DeleteKubeconfigResponse, error)
 	DeleteNodes(context.Context, *DeleteNodesRequest) (*DeleteNodesResponse, error)
+	PatchNodes(context.Context, *PatchNodeTemplateRequest) (*PatchNodeTemplateResponse, error)
 	mustEmbedUnimplementedKuberServiceServer()
 }
 
@@ -126,6 +137,9 @@ func (UnimplementedKuberServiceServer) DeleteKubeconfig(context.Context, *Delete
 }
 func (UnimplementedKuberServiceServer) DeleteNodes(context.Context, *DeleteNodesRequest) (*DeleteNodesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteNodes not implemented")
+}
+func (UnimplementedKuberServiceServer) PatchNodes(context.Context, *PatchNodeTemplateRequest) (*PatchNodeTemplateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PatchNodes not implemented")
 }
 func (UnimplementedKuberServiceServer) mustEmbedUnimplementedKuberServiceServer() {}
 
@@ -248,6 +262,24 @@ func _KuberService_DeleteNodes_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _KuberService_PatchNodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PatchNodeTemplateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KuberServiceServer).PatchNodes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/claudie.KuberService/PatchNodes",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KuberServiceServer).PatchNodes(ctx, req.(*PatchNodeTemplateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // KuberService_ServiceDesc is the grpc.ServiceDesc for KuberService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -278,6 +310,10 @@ var KuberService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteNodes",
 			Handler:    _KuberService_DeleteNodes_Handler,
+		},
+		{
+			MethodName: "PatchNodes",
+			Handler:    _KuberService_PatchNodes_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

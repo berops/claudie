@@ -45,6 +45,12 @@ message DeleteClusterMetadataRequest {
 
 message DeleteClusterMetadataResponse {}
 
+message PatchNodeTemplateRequest {
+  K8scluster cluster = 1;
+}
+
+message PatchNodeTemplateResponse {}
+
 service KuberService {
   rpc StoreClusterMetadata(StoreClusterMetadataRequest) returns (StoreClusterMetadataResponse);
   rpc DeleteClusterMetadata(DeleteClusterMetadataRequest) returns (DeleteClusterMetadataResponse);
@@ -52,4 +58,5 @@ service KuberService {
   rpc StoreKubeconfig(StoreKubeconfigRequest) returns (StoreKubeconfigResponse);
   rpc DeleteKubeconfig(DeleteKubeconfigRequest) returns (DeleteKubeconfigResponse);
   rpc DeleteNodes(DeleteNodesRequest) returns (DeleteNodesResponse);
+  rpc PatchNodes(PatchNodeTemplateRequest) returns (PatchNodeTemplateResponse);
 }
