@@ -26,14 +26,20 @@ providers:
     - name: aws-1
       access_key: replaceme-access-key
       secret_key: replaceme-secret-key
+  azure:
+    - name: azure-1
+      subscription_id: replaceme-subscription
+      tenant_id: replaceme-tenant-id
+      client_id: replaceme-client-id
+      client_secret: replaceme-client-secret
 
 nodePools:
   dynamic:
     - name: hetzner-control
       providerSpec:
         name: hetzner-1
-        region: nbg1
-        zone: nbg1-dc3
+        region: hel1
+        zone: hel1-dc2
       count: 1
       server_type: cpx11
       image: ubuntu-22.04
