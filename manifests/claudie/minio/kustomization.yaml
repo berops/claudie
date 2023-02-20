@@ -2,7 +2,8 @@ kind: Kustomization
 metadata:
   name: minio
 resources:
-  - deployment.yaml
+  - sts.yaml
+  - svc.yaml
   - cm.yaml
   - job.yaml
 secretGenerator:
