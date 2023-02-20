@@ -153,6 +153,12 @@ func (k *Kubectl) KubectlExecEtcd(etcdPod, etcdctlCmd string) ([]byte, error) {
 	return k.runWithOutput(kcExecEtcdCmd)
 }
 
+func (k *Kubectl) KubectlPatch(resource, resourceName, patchPath string) error {
+	kubeconfig := k.getKubeconfig()
+	command := fmt.Sprintf("kubectl patch %s %s -p '%s' %s", resource, resourceName, patchPath, kubeconfig)
+	return k.run(command)
+}
+
 // run will run the command in a bash shell like "bash -c command"
 func (k Kubectl) run(command string) error {
 	cmd := exec.Command("bash", "-c", command)
