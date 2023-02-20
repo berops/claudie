@@ -1,7 +1,7 @@
-.PHONY: gen contextbox scheduler builder terraformer ansibler kubeEleven test database minio containerimgs
+.PHONY: proto contextbox scheduler builder terraformer ansibler kubeEleven test database minio containerimgs
 
 # Generate all .proto files
-gen:
+proto:
 	protoc  --go-grpc_out=. --go_out=. proto/*.proto
 
 # Start Context-box service on a local environment, exposed on port 50055
@@ -93,7 +93,7 @@ containerimgs:
 	done
 
 buildAdapter:
-	DOCKER_BUILDKIT=1 docker build -t "ghcr.io/berops/claudie/autoscaler-adapter:$(REV)" -f ./services/autoscaler-adapter/Dockerfile .
+	DOCKER_BUILDKIT=1 docker build -t "ghcr.io/berops/claudie/autoscaler-adapter:test" -f ./services/autoscaler-adapter/Dockerfile .
 
 importToMinikube:
 	for service in $(SERVICES) ; do \
