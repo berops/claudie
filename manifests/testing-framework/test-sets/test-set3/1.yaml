@@ -26,12 +26,6 @@ providers:
     - name: aws-1
       access_key: replaceme-access-key
       secret_key: replaceme-secret-key
-  azure:
-    - name: azure-1
-      subscription_id: replaceme-subscription
-      tenant_id: replaceme-tenant-id
-      client_id: replaceme-client-id
-      client_secret: replaceme-client-secret
 
 nodePools:
   dynamic:
@@ -114,14 +108,14 @@ nodePools:
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
       disk_size: 50
     #-----------LB nodepools----------
-    - name: azure-lb
+    - name: gcp-lb
       providerSpec:
-        name: azure-1
-        region: West Europe
-        zone: 3
+        name: gcp-1
+        region: europe-west1
+        zone: europe-west1-c
       count: 1
-      server_type: Standard_B2s
-      image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
+      server_type: e2-small
+      image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
       disk_size: 50
 
 kubernetes:
@@ -166,7 +160,7 @@ loadBalancers:
         provider: cloudflare-1
       targeted-k8s: ts3-c-1
       pools:
-        - azure-lb
+        - gcp-lb
     - name: ts3-lb-2
       roles:
         - apiserver-lb
@@ -175,4 +169,4 @@ loadBalancers:
         provider: hetznerdns-1
       targeted-k8s: ts3-c-2
       pools:
-        - azure-lb
+        - gcp-lb
