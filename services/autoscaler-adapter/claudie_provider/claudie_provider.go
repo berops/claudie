@@ -23,6 +23,12 @@ var (
 	ErrNotImplemented = errors.New("Not Implemented")
 )
 
+type nodeGroupCache struct {
+	nodeGroup  *protos.NodeGroup
+	nodepool   *pb.NodePool
+	targetSize int32
+}
+
 type ClaudieCloudProvider struct {
 	protos.UnimplementedCloudProviderServer
 
@@ -30,12 +36,8 @@ type ClaudieCloudProvider struct {
 	projectName string
 	// Cluster as described in Claudie config.
 	configCluster *pb.K8Scluster
-	// Map of NodeGroups with their target sizes.
-	nodeGroupTargetSizeCache map[string]int32
-	// Slice of NodeGroups
-	nodeGroupsCache map[string]*protos.NodeGroup
-	// Slice of nodepools
-	nodepoolCache map[string]*pb.NodePool
+	// Map of cached info regarding nodepools
+	nodeGroupCache map[string]*nodeGroupCache
 	// Node manager
 	nodeManager *node_manager.NodeManager
 }
@@ -49,11 +51,9 @@ func NewClaudieCloudProvider(projectName, clusterName string) *ClaudieCloudProvi
 	}
 	// Initialise all other variables.
 	return &ClaudieCloudProvider{
-		projectName:              projectName,
-		configCluster:            cluster,
-		nodeGroupTargetSizeCache: getNodeGroupTargets(cluster.ClusterInfo.NodePools),
-		nodeGroupsCache:          getNodeGroups(cluster.ClusterInfo.NodePools),
-		nodeManager:              node_manager.NewNodeManager(cluster.ClusterInfo.NodePools),
+		projectName:    projectName,
+		configCluster:  cluster,
+		nodeGroupCache: getNodeGroupCache(cluster.ClusterInfo.NodePools),
 	}
 }
 
@@ -72,7 +72,7 @@ func getClaudieState(projectName, clusterName string) (*pb.K8Scluster, error) {
 		return nil, fmt.Errorf("Failed to get config for project %s : %w", projectName, err)
 	}
 
-	for _, cluster := range res.Config.CurrentState.Clusters {
+	for _, cluster := range res.Config.DesiredState.Clusters {
 		if cluster.ClusterInfo.Name == clusterName {
 			return cluster, nil
 		}
@@ -80,53 +80,32 @@ func getClaudieState(projectName, clusterName string) (*pb.K8Scluster, error) {
 	return nil, fmt.Errorf("Failed to find cluster %s in config for a project %s", clusterName, projectName)
 }
 
-// getNodeGroups returns a slice of node groups, based on the nodepools, which have autoscaling enabled.
-func getNodeGroups(nodepools []*pb.NodePool) map[string]*protos.NodeGroup {
-	var nodeGroups = make(map[string]*protos.NodeGroup, len(nodepools))
-	for _, nodepool := range nodepools {
+// getNodeGroupCache returns a map of nodeGroupCache, regarding all information needed based on the nodepools with autoscaling enabled.
+func getNodeGroupCache(nodepools []*pb.NodePool) map[string]*nodeGroupCache {
+	var ngc = make(map[string]*nodeGroupCache, len(nodepools))
+	for _, np := range nodepools {
 		// Find autoscaled nodepool.
-		if nodepool.AutoscalerConfig != nil {
+		if np.AutoscalerConfig != nil {
 			// Create nodeGroup struct.
 			ng := &protos.NodeGroup{
-				Id:      nodepool.Name,
-				MinSize: nodepool.AutoscalerConfig.Min,
-				MaxSize: nodepool.AutoscalerConfig.Max,
-				Debug:   fmt.Sprintf("Nodepool %s with autoscaler config %v", nodepool.Name, nodepool.AutoscalerConfig),
+				Id:      np.Name,
+				MinSize: np.AutoscalerConfig.Min,
+				MaxSize: np.AutoscalerConfig.Max,
+				Debug:   fmt.Sprintf("Nodepool %s with autoscaler config %v", np.Name, np.AutoscalerConfig),
 			}
 			// Append ng to the final slice.
-			nodeGroups[nodepool.Name] = ng
+			ngc[np.Name] = &nodeGroupCache{nodeGroup: ng, nodepool: np, targetSize: np.Count}
 		}
 	}
-	return nodeGroups
-}
-
-func getNodepools(nodepools []*pb.NodePool) map[string]*pb.NodePool {
-	var nodepoolsCache = make(map[string]*pb.NodePool, len(nodepools))
-	for _, np := range nodepools {
-		if np.AutoscalerConfig != nil {
-			nodepoolsCache[np.Name] = np
-		}
-	}
-	return nodepoolsCache
-}
-
-// getNodeGroupTargets returns a map which holds target size for each nodepool, which have autoscaling enabled.
-func getNodeGroupTargets(nodepools []*pb.NodePool) map[string]int32 {
-	m := make(map[string]int32)
-	for _, np := range nodepools {
-		if np.AutoscalerConfig != nil {
-			m[np.Name] = np.Count
-		}
-	}
-	return m
+	return ngc
 }
 
 // NodeGroups returns all node groups configured for this cloud provider.
 func (c *ClaudieCloudProvider) NodeGroups(_ context.Context, req *protos.NodeGroupsRequest) (*protos.NodeGroupsResponse, error) {
 	log.Info().Msgf("Got NodeGroups request")
-	ngs := make([]*protos.NodeGroup, 0, len(c.nodeGroupsCache))
-	for _, ng := range c.nodeGroupsCache {
-		ngs = append(ngs, ng)
+	ngs := make([]*protos.NodeGroup, 0, len(c.nodeGroupCache))
+	for _, ngc := range c.nodeGroupCache {
+		ngs = append(ngs, ngc.nodeGroup)
 	}
 	return &protos.NodeGroupsResponse{NodeGroups: ngs}, nil
 }
@@ -140,10 +119,10 @@ func (c *ClaudieCloudProvider) NodeGroupForNode(_ context.Context, req *protos.N
 	// Initialise as empty response.
 	nodeGroup := &protos.NodeGroup{}
 	// Try to find if node is from any NodeGroup
-	for id, ng := range c.nodeGroupsCache {
+	for id, ngc := range c.nodeGroupCache {
 		// If node name contains ng.Id (nodepool name), return this NodeGroup.
 		if strings.Contains(nodeName, id) {
-			nodeGroup = ng
+			nodeGroup = ngc.nodeGroup
 			break
 		}
 	}
@@ -205,11 +184,8 @@ func (c *ClaudieCloudProvider) refresh() error {
 		return fmt.Errorf("error while refreshing a state for the cluster %s : %w", c.configCluster.ClusterInfo.Name, err)
 	} else {
 		c.configCluster = cluster
-		c.nodeGroupTargetSizeCache = getNodeGroupTargets(cluster.ClusterInfo.NodePools)
-		c.nodeGroupsCache = getNodeGroups(cluster.ClusterInfo.NodePools)
-		c.nodepoolCache = getNodepools(cluster.ClusterInfo.NodePools)
-		c.nodeManager = node_manager.NewNodeManager(cluster.ClusterInfo.NodePools)
-		log.Debug().Msgf("Updated state: \n %v \n %v", c.nodeGroupTargetSizeCache, c.nodeGroupsCache)
+		c.nodeGroupCache = getNodeGroupCache(cluster.ClusterInfo.NodePools)
+		log.Debug().Msgf("Updated state: \n %v ", c.nodeGroupCache)
 	}
 	return nil
 }

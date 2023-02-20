@@ -8,9 +8,15 @@ import (
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/services/kuber/server/nodes"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/externalgrpc/protos"
+)
+
+const (
+	// Cloud provider ID base
+	claudieCloudProvider = "claudie"
 )
 
 // NodeGroupTargetSize returns the current target size of the node group. It is possible
@@ -19,9 +25,9 @@ import (
 // registration or removed nodes are deleted completely).
 func (c *ClaudieCloudProvider) NodeGroupTargetSize(_ context.Context, req *protos.NodeGroupTargetSizeRequest) (*protos.NodeGroupTargetSizeResponse, error) {
 	log.Info().Msgf("Got NodeGroupTargetSize request")
-	if size, ok := c.nodeGroupTargetSizeCache[req.GetId()]; ok {
-		log.Debug().Msgf("Returning target size %d for nodepool %s", size, req.GetId())
-		return &protos.NodeGroupTargetSizeResponse{TargetSize: size}, nil
+	if ngc, ok := c.nodeGroupCache[req.GetId()]; ok {
+		log.Debug().Msgf("Returning target size %d for nodepool %s", ngc.targetSize, req.GetId())
+		return &protos.NodeGroupTargetSizeResponse{TargetSize: ngc.targetSize}, nil
 	}
 	return nil, fmt.Errorf("nodeGroup %s was not found", req.Id)
 }
@@ -32,16 +38,17 @@ func (c *ClaudieCloudProvider) NodeGroupTargetSize(_ context.Context, req *proto
 func (c *ClaudieCloudProvider) NodeGroupIncreaseSize(_ context.Context, req *protos.NodeGroupIncreaseSizeRequest) (*protos.NodeGroupIncreaseSizeResponse, error) {
 	log.Info().Msgf("Got NodeGroupIncreaseSize request for nodepool %s by %d", req.GetId(), req.GetDelta())
 	// Find the nodepool.
-	if nodepool, ok := c.nodepoolCache[req.GetId()]; ok {
+	if ngc, ok := c.nodeGroupCache[req.GetId()]; ok {
 		// Check & update the new Count.
-		newCount := nodepool.Count + req.GetDelta()
-		if newCount > nodepool.AutoscalerConfig.Max {
-			return nil, fmt.Errorf("could not add new nodes, as that would be larger than max size of the nodepool; current size %d, requested delta %d", nodepool.Count, req.GetDelta())
+		newCount := ngc.nodepool.Count + req.GetDelta()
+		if newCount > ngc.nodepool.AutoscalerConfig.Max {
+			return nil, fmt.Errorf("could not add new nodes, as that would be larger than max size of the nodepool; current size %d, requested delta %d", ngc.nodepool.Count, req.GetDelta())
 		}
-		nodepool.Count = newCount
+		ngc.nodepool.Count = newCount
+		ngc.targetSize = newCount
 		// Update nodepool in Claudie.
-		if err := c.updateNodepool(nodepool); err != nil {
-			return nil, fmt.Errorf("failed to update nodepool %s : %w", nodepool.Name, err)
+		if err := c.updateNodepool(ngc.nodepool); err != nil {
+			return nil, fmt.Errorf("failed to update nodepool %s : %w", ngc.nodepool.Name, err)
 		}
 		return &protos.NodeGroupIncreaseSizeResponse{}, nil
 	}
@@ -55,18 +62,19 @@ func (c *ClaudieCloudProvider) NodeGroupIncreaseSize(_ context.Context, req *pro
 func (c *ClaudieCloudProvider) NodeGroupDeleteNodes(_ context.Context, req *protos.NodeGroupDeleteNodesRequest) (*protos.NodeGroupDeleteNodesResponse, error) {
 	log.Info().Msgf("Got NodeGroupDeleteNodes request for nodepool %s", req.GetId())
 	// Find the nodepool.
-	if nodepool, ok := c.nodepoolCache[req.GetId()]; ok {
+	if ngc, ok := c.nodeGroupCache[req.GetId()]; ok {
 		// Check & update the new Count.
-		newCount := nodepool.Count - int32(len(req.GetNodes()))
-		if newCount < nodepool.AutoscalerConfig.Min {
-			return nil, fmt.Errorf("could not remove nodes, as that would be smaller than min size of the nodepool; current size %d, requested removal %d", nodepool.Count, len(req.GetNodes()))
+		newCount := ngc.nodepool.Count - int32(len(req.GetNodes()))
+		if newCount < ngc.nodepool.AutoscalerConfig.Min {
+			return nil, fmt.Errorf("could not remove nodes, as that would be smaller than min size of the nodepool; current size %d, requested removal %d", ngc.nodepool.Count, len(req.GetNodes()))
 		}
-		nodepool.Count = newCount
+		ngc.nodepool.Count = newCount
+		ngc.targetSize = newCount
 		// Update nodes slice
 		deleteNodes := make([]*pb.Node, 0, len(req.Nodes))
-		remainNodes := make([]*pb.Node, 0, len(nodepool.Nodes)-len(req.Nodes))
-		for i, node := range nodepool.Nodes {
-			nodeId := fmt.Sprintf("%s-%d", nodepool.Name, i+1)
+		remainNodes := make([]*pb.Node, 0, len(ngc.nodepool.Nodes)-len(req.Nodes))
+		for i, node := range ngc.nodepool.Nodes {
+			nodeId := fmt.Sprintf("%s-%d", ngc.nodepool.Name, i+1)
 			if containId(req.GetNodes(), nodeId) {
 				deleteNodes = append(deleteNodes, node)
 			} else {
@@ -74,10 +82,10 @@ func (c *ClaudieCloudProvider) NodeGroupDeleteNodes(_ context.Context, req *prot
 			}
 		}
 		// Reorder node, since they are deleted from the end
-		nodepool.Nodes = append(remainNodes, deleteNodes...)
+		ngc.nodepool.Nodes = append(remainNodes, deleteNodes...)
 		// Update nodepool in Claudie.
-		if err := c.updateNodepool(nodepool); err != nil {
-			return nil, fmt.Errorf("failed to update nodepool %s : %w", nodepool.Name, err)
+		if err := c.updateNodepool(ngc.nodepool); err != nil {
+			return nil, fmt.Errorf("failed to update nodepool %s : %w", ngc.nodepool.Name, err)
 		}
 		return &protos.NodeGroupDeleteNodesResponse{}, nil
 	}
@@ -91,13 +99,13 @@ func (c *ClaudieCloudProvider) NodeGroupDeleteNodes(_ context.Context, req *prot
 // to just decrease the target.
 func (c *ClaudieCloudProvider) NodeGroupDecreaseTargetSize(_ context.Context, req *protos.NodeGroupDecreaseTargetSizeRequest) (*protos.NodeGroupDecreaseTargetSizeResponse, error) {
 	log.Info().Msgf("Got NodeGroupDecreaseTargetSize request")
-	if size, ok := c.nodeGroupTargetSizeCache[req.GetId()]; ok {
-		newSize := size + req.GetDelta()
+	if ngc, ok := c.nodeGroupCache[req.GetId()]; ok {
+		newSize := ngc.targetSize + req.GetDelta()
 		if newSize >= 0 {
-			c.nodeGroupTargetSizeCache[req.GetId()] = newSize
+			c.nodeGroupCache[req.GetId()].targetSize = newSize
 			return &protos.NodeGroupDecreaseTargetSizeResponse{}, nil
 		} else {
-			return nil, fmt.Errorf("nodeGroup %s can not decrease target size bellow zero; current target size %d, requested delta %d", req.Id, size, req.Delta)
+			return nil, fmt.Errorf("nodeGroup %s can not decrease target size bellow zero; current target size %d, requested delta %d", req.Id, ngc.targetSize, req.Delta)
 		}
 	}
 	return nil, fmt.Errorf("nodeGroup %s was not found", req.Id)
@@ -106,21 +114,21 @@ func (c *ClaudieCloudProvider) NodeGroupDecreaseTargetSize(_ context.Context, re
 // NodeGroupNodes returns a list of all nodes that belong to this node group.
 func (c *ClaudieCloudProvider) NodeGroupNodes(_ context.Context, req *protos.NodeGroupNodesRequest) (*protos.NodeGroupNodesResponse, error) {
 	log.Info().Msgf("Got NodeGroupNodes request")
-	nodes := make([]*protos.Instance, 0)
-	if np, ok := c.nodepoolCache[req.GetId()]; ok {
-		for i := range np.Nodes {
+	instances := make([]*protos.Instance, 0)
+	if ngc, ok := c.nodeGroupCache[req.GetId()]; ok {
+		for i := range ngc.nodepool.Nodes {
 			instance := &protos.Instance{
-				Id: fmt.Sprintf("%s-%d", np.Name, i+1),
+				Id: fmt.Sprintf(nodes.ProviderIdFormat, fmt.Sprintf("%s-%d", ngc.nodepool.Name, i+1)),
 				Status: &protos.InstanceStatus{
 					// If there is an instance in the config.K8Scluster, then it is always considered running.
 					InstanceState: protos.InstanceStatus_instanceRunning,
 				},
 			}
-			nodes = append(nodes, instance)
+			instances = append(instances, instance)
 		}
 	}
-	log.Debug().Msgf("NodeGroupForNodes returns %v", nodes)
-	return &protos.NodeGroupNodesResponse{Instances: nodes}, nil
+	log.Debug().Msgf("NodeGroupForNodes returns %v", instances)
+	return &protos.NodeGroupNodesResponse{Instances: instances}, nil
 }
 
 // NodeGroupTemplateNodeInfo returns a structure of an empty (as if just started) node,

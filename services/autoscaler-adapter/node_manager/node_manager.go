@@ -111,7 +111,7 @@ func (nm *NodeManager) getTypeInfo(provider string, np *pb.NodePool) typeInfo {
 		npType := strings.ReplaceAll(np.ServerType, "p", "c")
 		for _, server := range nm.hetznerVMs {
 			if server.Name == npType {
-				ti.CPU = int64(server.Cores * 1000)
+				ti.CPU = int64(server.Cores)                          // Convert to milicores
 				ti.Memory = int64(server.Memory * 1024 * 1024 * 1024) // Convert to bytes
 				ti.Disk = int64(server.Disk * 1024 * 1024 * 1024)     // Convert to bytes
 			}
