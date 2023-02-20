@@ -43,7 +43,7 @@ nodePools:
         name: hetzner-1
         region: fsn1
         zone: fsn1-dc14
-      count: 4
+      count: 1
       server_type: cpx11
       image: ubuntu-22.04
       disk_size: 50

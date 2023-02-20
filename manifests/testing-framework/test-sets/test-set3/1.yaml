@@ -113,7 +113,7 @@ nodePools:
         name: hetzner-1
         region: nbg1
         zone: nbg1-dc3
-      count: 2
+      count: 1
       server_type: cpx11
       image: ubuntu-22.04
       disk_size: 50
