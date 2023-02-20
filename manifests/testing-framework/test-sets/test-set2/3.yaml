@@ -32,8 +32,8 @@ nodePools:
     - name: hetzner-control
       providerSpec:
         name: hetzner-1
-        region: nbg1
-        zone: nbg1-dc3
+        region: fsn1
+        zone: fsn1-dc14
       count: 1
       server_type: cpx11
       image: ubuntu-22.04
@@ -46,6 +46,28 @@ nodePools:
       count: 1
       server_type: cpx11
       image: ubuntu-22.04
+      disk_size: 50
+    - name: oci-control
+      providerSpec:
+        name: oci-1
+        region: eu-frankfurt-1
+        zone: hsVQ:EU-FRANKFURT-1-AD-1
+      count: 1
+      server_type: VM.Standard2.1
+      # ubuntu minimal
+      # https://docs.oracle.com/en-us/iaas/images/image/674d0b41-aee8-4c0b-bf99-9e100d90f241/
+      image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
+      disk_size: 50
+    - name: oci-compute
+      providerSpec:
+        name: oci-1
+        region: eu-frankfurt-1
+        zone: hsVQ:EU-FRANKFURT-1-AD-1
+      count: 1
+      server_type: VM.Standard1.1
+      # ubuntu minimal
+      # https://docs.oracle.com/en-us/iaas/images/image/674d0b41-aee8-4c0b-bf99-9e100d90f241/
+      image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
       disk_size: 50
     #-----------LB nodepools----------
     - name: gcp-lb
@@ -111,9 +133,9 @@ kubernetes:
       network: 192.168.2.0/24
       pools:
         control:
-          - hetzner-control
+          - oci-control
         compute:
-          - hetzner-compute
+          - oci-compute
 loadBalancers:
   roles:
     - name: apiserver-lb

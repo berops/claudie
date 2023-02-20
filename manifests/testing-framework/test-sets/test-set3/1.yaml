@@ -108,14 +108,14 @@ nodePools:
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
       disk_size: 50
     #-----------LB nodepools----------
-    - name: hetzner-lb
+    - name: azure-lb
       providerSpec:
-        name: hetzner-1
-        region: nbg1
-        zone: nbg1-dc3
+        name: azure-1
+        region: West Europe
+        zone: 3
       count: 1
-      server_type: cpx11
-      image: ubuntu-22.04
+      server_type: Standard_B2s
+      image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
       disk_size: 50
 
 kubernetes:
@@ -160,7 +160,7 @@ loadBalancers:
         provider: cloudflare-1
       targeted-k8s: ts3-c-1
       pools:
-        - hetzner-lb
+        - azure-lb
     - name: ts3-lb-2
       roles:
         - apiserver-lb
@@ -169,4 +169,4 @@ loadBalancers:
         provider: hetznerdns-1
       targeted-k8s: ts3-c-2
       pools:
-        - hetzner-lb
+        - azure-lb

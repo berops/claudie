@@ -1,9 +1,10 @@
 name: TestSet-3
 
 providers:
-  hetzner:
-    - name: hetzner-1
-      credentials: replaceme-token
+  gcp:
+    - name: gcp-1
+      credentials: replaceme-key
+      gcp_project: replaceme-project
   oci:
     - name: oci-1
       private_key: |
@@ -19,23 +20,23 @@ providers:
 
 nodePools:
   dynamic:
-    - name: hetzner-control
+    - name: gcp-control
       providerSpec:
-        name: hetzner-1
-        region: nbg1
-        zone: nbg1-dc3
+        name: gcp-1
+        region: europe-west2
+        zone: europe-west2-c
       count: 1
-      server_type: cpx11
-      image: ubuntu-22.04
+      server_type: e2-medium
+      image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
       disk_size: 50
-    - name: hetzner-compute
+    - name: gcp-compute
       providerSpec:
-        name: hetzner-1
-        region: nbg1
-        zone: nbg1-dc3
-      count: 1
-      server_type: cpx11
-      image: ubuntu-22.04
+        name: gcp-1
+        region: europe-west1
+        zone: europe-west1-b
+      count: 2
+      server_type: e2-small
+      image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
       disk_size: 50
     - name: oci-control
       providerSpec:
@@ -81,15 +82,15 @@ nodePools:
       disk_size: 50
 kubernetes:
   clusters:
-    - name: ts3-c-1
+    - name: ts3-c-2
       version: v1.22.0
       network: 192.168.2.0/24
       pools:
         control:
-          - hetzner-control
-          - oci-control
           - aws-control
+          - gcp-control
+          - oci-control
         compute:
-          - hetzner-compute
-          - oci-compute
           - aws-compute
+          - gcp-compute
+          - oci-compute
