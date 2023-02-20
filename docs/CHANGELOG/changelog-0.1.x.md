@@ -36,6 +36,22 @@ To deploy the Claudie `v0.1.X`, please:
     kubectl apply -k .
     ```
 
+# v0.1.3
+
+## Features
+
+- Change the workflow of the Claudie, to build the infrastructure on per cluster basis [#584](https://github.com/berops/claudie/pull/584)
+- Add labels on Claudie created resources [#579](https://github.com/berops/claudie/pull/579)
+
+## Bugfixes
+
+No bugfixes since the last release.
+
+## Known issues
+
+- `k8s-sidecar` sometimes misses deletion of the input manifest secret [#588](https://github.com/berops/claudie/issues/588)
+- Deleting nodes in Builder is not idempotent [#587](https://github.com/berops/claudie/issues/587)
+
 # v0.1.2
 
 ## Features
