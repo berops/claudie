@@ -68,10 +68,10 @@ resource "hcloud_ssh_key" "claudie" {
 }
 
 {{- range $nodepool := .NodePools }}
-resource "hcloud_server" "{{ $nodepool.Name }}" {
+{{- range $node := $nodepool.Nodes }}
+resource "hcloud_server" "{{ $node.Name }}" {
   provider      = hcloud.k8s_nodepool
-  count         = "{{ $nodepool.Count }}"
-  name          = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index +1}"
+  name          = "{{ $node.Name }}"
   server_type   = "{{ $nodepool.ServerType }}"
   image         = "{{ $nodepool.Image }}"
   firewall_ids  = [hcloud_firewall.defaultfirewall.id]
@@ -86,11 +86,13 @@ resource "hcloud_server" "{{ $nodepool.Name }}" {
     "claudie-cluster" : "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
+{{- end }}
 
 output "{{ $nodepool.Name }}" {
   value = {
-    for node in hcloud_server.{{ $nodepool.Name }}:
-    node.name => node.ipv4_address
+    {{- range $node := $nodepool.Nodes }}
+    "${hcloud_server.{{ $node.Name }}.name}" = hcloud_server.{{ $node.Name }}.ipv4_address
+    {{- end }}
   }
 }
 {{- end }}

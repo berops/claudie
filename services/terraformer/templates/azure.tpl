@@ -112,10 +112,10 @@ resource "azurerm_subnet_network_security_group_association" "{{ $nodepool.Name 
   network_security_group_id = azurerm_network_security_group.claudie_nsg_{{replaceAll $nodepool.Region " " "_" }}.id
 }
 
-resource "azurerm_public_ip" "{{ $nodepool.Name }}_{{ $clusterHash }}_public_ip" {
+{{- range $node := $nodepool.Nodes }}
+resource "azurerm_public_ip" "{{ $node.Name }}_public_ip" {
   provider            = azurerm.k8s_nodepool
-  name                = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}-ip"
-  count               = {{$nodepool.Count}}
+  name                = "{{ $node.Name }}-ip"
   location            = "{{ $nodepool.Region }}"
   resource_group_name = azurerm_resource_group.rg_{{ replaceAll $nodepool.Region " " "_" }}.name
   allocation_method   = "Static"
@@ -127,19 +127,18 @@ resource "azurerm_public_ip" "{{ $nodepool.Name }}_{{ $clusterHash }}_public_ip"
   }
 }
 
-resource "azurerm_network_interface" "{{ $nodepool.Name }}_{{ $clusterHash }}_ni" {
+resource "azurerm_network_interface" "{{ $node.Name }}_ni" {
   provider            = azurerm.k8s_nodepool
-  count               = {{$nodepool.Count}}
-  name                = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-ni-${count.index + 1}"
+  name                = "{{ $node.Name }}-ni"
   location            = "{{ $nodepool.Region }}"
   resource_group_name = azurerm_resource_group.rg_{{replaceAll $nodepool.Region " " "_"  }}.name
   enable_accelerated_networking = {{ enableAccNet $nodepool.ServerType }}
 
   ip_configuration {
-    name                          = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}-ip-conf"
+    name                          = "{{ $node.Name }}-ip-conf"
     subnet_id                     = azurerm_subnet.{{ $nodepool.Name }}_{{ $clusterHash }}_subnet.id
     private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = element(azurerm_public_ip.{{ $nodepool.Name }}_{{ $clusterHash }}_public_ip, count.index).id
+    public_ip_address_id          = azurerm_public_ip.{{ $node.Name }}_public_ip.id
     primary                       = true
   }
   
@@ -149,25 +148,24 @@ resource "azurerm_network_interface" "{{ $nodepool.Name }}_{{ $clusterHash }}_ni
   }
 }
 
-resource "azurerm_linux_virtual_machine" "{{ $nodepool.Name }}" {
+resource "azurerm_linux_virtual_machine" "{{ $node.Name }}" {
   provider              = azurerm.k8s_nodepool
-  count                 = {{$nodepool.Count}}
-  name                  = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}"
+  name                  = "{{ $node.Name }}"
   location              = "{{ $nodepool.Region }}"
   resource_group_name   = azurerm_resource_group.rg_{{ replaceAll $nodepool.Region " " "_"  }}.name
-  network_interface_ids = [element(azurerm_network_interface.{{ $nodepool.Name }}_{{ $clusterHash }}_ni, count.index).id]
+  network_interface_ids = [azurerm_network_interface.{{ $node.Name }}_ni.id]
   size                  = "{{$nodepool.ServerType}}"
   zone                  = "{{$nodepool.Zone}}"
 
   source_image_reference {
-    publisher = split(":", "{{$nodepool.Image}}")[0]
-    offer     = split(":", "{{$nodepool.Image}}")[1]
-    sku       = split(":", "{{$nodepool.Image}}")[2]
-    version   = split(":", "{{$nodepool.Image}}")[3]
+    publisher = split(":", "{{ $nodepool.Image }}")[0]
+    offer     = split(":", "{{ $nodepool.Image }}")[1]
+    sku       = split(":", "{{ $nodepool.Image }}")[2]
+    version   = split(":", "{{ $nodepool.Image }}")[3]
   }
 
   os_disk {
-      name                 = "{{ $nodepool.Name }}-{{ $clusterHash }}-osdisk-${count.index+1}"
+      name                 = "{{ $node.Name }}-osdisk"
       caching              = "ReadWrite"
       storage_account_type = "Standard_LRS"
       disk_size_gb         = "{{ $nodepool.DiskSize }}"
@@ -179,7 +177,7 @@ resource "azurerm_linux_virtual_machine" "{{ $nodepool.Name }}" {
     username   = "claudie"
   }
 
-  computer_name  = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}"
+  computer_name  = "{{ $node.Name }}"
   admin_username = "claudie"
 
   tags = {
@@ -191,8 +189,7 @@ resource "azurerm_linux_virtual_machine" "{{ $nodepool.Name }}" {
 resource "azurerm_virtual_machine_extension" "{{ $nodepool.Name }}_{{ $clusterHash }}_postcreation_script" {
   provider             = azurerm.k8s_nodepool
   name                 = "{{ $clusterName }}-{{ $clusterHash }}-postcreation-script"
-  for_each             = { for vm in azurerm_linux_virtual_machine.{{$nodepool.Name}} : vm.name => vm }
-  virtual_machine_id   = each.value.id
+  virtual_machine_id   = azurerm_linux_virtual_machine.{{ $node.Name }}.id
   publisher            = "Microsoft.Azure.Extensions"
   type                 = "CustomScript"
   type_handler_version = "2.0"
@@ -214,11 +211,13 @@ PROT
     claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
+{{- end }}
 
 output "{{ $nodepool.Name }}" {
   value = {
-    for index, ip in azurerm_public_ip.{{ $nodepool.Name }}_{{ $clusterHash }}_public_ip:
-    "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${index + 1}" => ip.ip_address
+    {{- range $node := $nodepool.Nodes }}
+    "${azurerm_linux_virtual_machine.{{ $node.Name }}.computer_name}" = azurerm_public_ip.{{ $node.Name }}_public_ip.ip_address
+    {{- end }}
   }
 }
 {{- end }}

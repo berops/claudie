@@ -152,7 +152,32 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	}
 
 	tplType := getTplFile(c.ClusterType)
-	//sort nodepools by a provider
+
+	// Init node slices if needed
+	for _, np := range clusterInfo.NodePools {
+		nodes := make([]*pb.Node, 0, np.Count)
+		nodeNames := make(map[string]struct{}, np.Count)
+		// Copy existing nodes into new slice
+		for i := 0; i < int(np.Count); i++ {
+			if i < len(np.Nodes) {
+				nodes = append(nodes, np.Nodes[i])
+				nodeNames[np.Nodes[i].Name] = struct{}{}
+			} else {
+				break
+			}
+		}
+		// Fill the rest of the nodes with assigned names
+		nodepoolID := fmt.Sprintf("%s-%s", clusterID, np.Name)
+		for len(nodes) < int(np.Count) {
+			// Get a unique name fpr the new node
+			nodeName := getUniqueNodeName(nodepoolID, nodeNames)
+			nodeNames[nodeName] = struct{}{}
+			nodes = append(nodes, &pb.Node{Name: nodeName})
+		}
+		np.Nodes = nodes
+	}
+
+	// sort nodepools by a provider
 	sortedNodePools := utils.GroupNodepoolsByProviderSpecName(clusterInfo)
 	for providerSpecName, nodepools := range sortedNodePools {
 		// list all regions being used for this provider
@@ -270,4 +295,15 @@ func getTplFile(clusterType pb.ClusterType) string {
 		return "-lb.tpl"
 	}
 	return ""
+}
+
+func getUniqueNodeName(nodepoolID string, existingNames map[string]struct{}) string {
+	index := 1
+	for {
+		candidate := fmt.Sprintf("%s-%d", nodepoolID, index)
+		if _, ok := existingNames[candidate]; !ok {
+			return candidate
+		}
+		index++
+	}
 }
