@@ -146,6 +146,29 @@ func printConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType, stat
 		}
 		buffer.WriteString("----------------------------------------\n")
 	}
+	for i, cluster := range printState.LoadBalancerClusters {
+		buffer.WriteString("========================================\n")
+		buffer.WriteString(fmt.Sprintf("Cluster number: %d\n", i))
+		buffer.WriteString(fmt.Sprintf("Name: %s\n", cluster.ClusterInfo.GetName()))
+		buffer.WriteString(fmt.Sprintf("Hash: %s\n", cluster.ClusterInfo.GetHash()))
+		buffer.WriteString("Public key:\n")
+		buffer.WriteString(fmt.Sprintf("%s\n", cluster.ClusterInfo.PublicKey))
+		buffer.WriteString("Private key:\n")
+		buffer.WriteString(fmt.Sprintf("%s\n", cluster.ClusterInfo.PrivateKey))
+		buffer.WriteString("Node Pools:\n")
+		for j, nodePool := range cluster.ClusterInfo.GetNodePools() {
+			buffer.WriteString("----------------------------------------\n")
+			buffer.WriteString(fmt.Sprintf("NodePool number: %d \n", j))
+			buffer.WriteString(fmt.Sprintf("Name: %s\n", nodePool.GetName()))
+			buffer.WriteString(fmt.Sprintf("Region %s\n", nodePool.GetRegion()))
+			buffer.WriteString(fmt.Sprintf("Provider specs: %s\n", nodePool.GetProvider()))
+			buffer.WriteString("Nodes:\n")
+			for _, node := range nodePool.GetNodes() {
+				buffer.WriteString(fmt.Sprintf("Name: %s Public: %s Private: %s NodeType: %s \n", node.Name, node.GetPublic(), node.GetPrivate(), node.GetNodeType().String()))
+			}
+		}
+		buffer.WriteString("----------------------------------------\n")
+	}
 	return buffer.String(), nil
 }
 
