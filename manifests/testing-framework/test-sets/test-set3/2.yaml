@@ -31,8 +31,8 @@ nodePools:
     - name: hetzner-compute
       providerSpec:
         name: hetzner-1
-        region: nbg1
-        zone: nbg1-dc3
+        region: hel1
+        zone: hel1-dc2
       count: 1
       server_type: cpx11
       image: ubuntu-22.04
