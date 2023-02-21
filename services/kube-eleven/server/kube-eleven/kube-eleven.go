@@ -67,7 +67,7 @@ func (k *KubeEleven) BuildCluster() error {
 	kubeone := kubeone.Kubeone{Directory: k.directory}
 	err = kubeone.Apply()
 	if err != nil {
-		return fmt.Errorf("error while reading cluster-config in %s : %w", k.directory, err)
+		return fmt.Errorf("error building cluster via \"kubeone apply\" %s : %w", k.directory, err)
 	}
 	// Save generated kubeconfig file to cluster config
 	kc, err := readKubeconfig(filepath.Join(k.directory, kubeconfigFile))
