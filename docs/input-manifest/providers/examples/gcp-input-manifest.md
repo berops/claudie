@@ -9,7 +9,7 @@ providers:
   gcp:
     - name: gcp-1
       # GCP project for the service account.
-      gcp_project: project-claudie
+      gcpProject: project-claudie
       # Service account key.
       credentials: |
         {
@@ -36,10 +36,10 @@ nodePools:
         zone: europe-west1-c
       count: 1
       # Machine type name.
-      server_type: e2-medium
+      serverType: e2-medium
       # OS image name.
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
-      disk_size: 50
+      diskSize: 50
 
     - name: compute-1-gcp
       providerSpec:
@@ -51,10 +51,10 @@ nodePools:
         zone: europe-west3-a
       count: 2
       # Machine type name.
-      server_type: e2-medium
+      serverType: e2-medium
       # OS image name.
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
-      disk_size: 50
+      diskSize: 50
 
     - name: compute-2-gcp
       providerSpec:
@@ -66,10 +66,10 @@ nodePools:
         zone: europe-west2-a
       count: 2
       # Machine type name.
-      server_type: e2-medium
+      serverType: e2-medium
       # OS image name.
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
-      disk_size: 50
+      diskSize: 50
 
 kubernetes:
   clusters:
@@ -93,7 +93,7 @@ providers:
   gcp:
     - name: gcp-1
       # GCP project for the service account.
-      gcp_project: project-claudie-1
+      gcpProject: project-claudie-1
       # Service account key.
       credentials: |
         {
@@ -109,7 +109,7 @@ providers:
         }
     - name: gcp-2
       # GCP project for the service account.
-      gcp_project: project-claudie-1
+      gcpProject: project-claudie-1
       # Service account key.
       credentials: |
         {
@@ -136,10 +136,10 @@ nodePools:
         zone: europe-west1-c
       count: 1
       # Machine type name.
-      server_type: e2-medium
+      serverType: e2-medium
       # OS image name.
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
-      disk_size: 50
+      diskSize: 50
 
     - name: control-gcp-2
       providerSpec:
@@ -151,10 +151,10 @@ nodePools:
         zone: europe-west1-a
       count: 2
       # Machine type name.
-      server_type: e2-medium
+      serverType: e2-medium
       # OS image name.
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
-      disk_size: 50
+      diskSize: 50
 
     - name: compute-gcp-1
       providerSpec:
@@ -166,10 +166,10 @@ nodePools:
         zone: europe-west3-a
       count: 2
       # Machine type name.
-      server_type: e2-medium
+      serverType: e2-medium
       # OS image name.
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
-      disk_size: 50
+      diskSize: 50
 
     - name: compute-gcp-2
       providerSpec:
@@ -181,10 +181,10 @@ nodePools:
         zone: europe-west1-c
       count: 2
       # Machine type name.
-      server_type: e2-medium
+      serverType: e2-medium
       # OS image name.
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
-      disk_size: 50
+      diskSize: 50
 
 kubernetes:
   clusters:
