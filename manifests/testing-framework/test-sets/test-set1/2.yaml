@@ -32,8 +32,8 @@ nodePools:
     - name: hetzner-control
       providerSpec:
         name: hetzner-1
-        region: nbg1
-        zone: nbg1-dc3
+        region: hel1
+        zone: hel1-dc2
       count: 2
       server_type: cpx11
       image: ubuntu-22.04
@@ -41,9 +41,9 @@ nodePools:
     - name: hetzner-compute
       providerSpec:
         name: hetzner-1
-        region: fsn1
-        zone: fsn1-dc14
-      count: 4
+        region: hel1
+        zone: hel1-dc2
+      count: 1
       server_type: cpx11
       image: ubuntu-22.04
       disk_size: 50
