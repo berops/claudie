@@ -29,6 +29,8 @@ type KuberServiceClient interface {
 	DeleteKubeconfig(ctx context.Context, in *DeleteKubeconfigRequest, opts ...grpc.CallOption) (*DeleteKubeconfigResponse, error)
 	DeleteNodes(ctx context.Context, in *DeleteNodesRequest, opts ...grpc.CallOption) (*DeleteNodesResponse, error)
 	PatchNodes(ctx context.Context, in *PatchNodeTemplateRequest, opts ...grpc.CallOption) (*PatchNodeTemplateResponse, error)
+	SetUpClusterAutoscaler(ctx context.Context, in *SetUpClusterAutoscalerRequest, opts ...grpc.CallOption) (*SetUpClusterAutoscalerResponse, error)
+	DestroyClusterAutoscaler(ctx context.Context, in *DestroyClusterAutoscalerRequest, opts ...grpc.CallOption) (*DestroyClusterAutoscalerResponse, error)
 }
 
 type kuberServiceClient struct {
@@ -102,6 +104,24 @@ func (c *kuberServiceClient) PatchNodes(ctx context.Context, in *PatchNodeTempla
 	return out, nil
 }
 
+func (c *kuberServiceClient) SetUpClusterAutoscaler(ctx context.Context, in *SetUpClusterAutoscalerRequest, opts ...grpc.CallOption) (*SetUpClusterAutoscalerResponse, error) {
+	out := new(SetUpClusterAutoscalerResponse)
+	err := c.cc.Invoke(ctx, "/claudie.KuberService/SetUpClusterAutoscaler", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *kuberServiceClient) DestroyClusterAutoscaler(ctx context.Context, in *DestroyClusterAutoscalerRequest, opts ...grpc.CallOption) (*DestroyClusterAutoscalerResponse, error) {
+	out := new(DestroyClusterAutoscalerResponse)
+	err := c.cc.Invoke(ctx, "/claudie.KuberService/DestroyClusterAutoscaler", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // KuberServiceServer is the server API for KuberService service.
 // All implementations must embed UnimplementedKuberServiceServer
 // for forward compatibility
@@ -113,6 +133,8 @@ type KuberServiceServer interface {
 	DeleteKubeconfig(context.Context, *DeleteKubeconfigRequest) (*DeleteKubeconfigResponse, error)
 	DeleteNodes(context.Context, *DeleteNodesRequest) (*DeleteNodesResponse, error)
 	PatchNodes(context.Context, *PatchNodeTemplateRequest) (*PatchNodeTemplateResponse, error)
+	SetUpClusterAutoscaler(context.Context, *SetUpClusterAutoscalerRequest) (*SetUpClusterAutoscalerResponse, error)
+	DestroyClusterAutoscaler(context.Context, *DestroyClusterAutoscalerRequest) (*DestroyClusterAutoscalerResponse, error)
 	mustEmbedUnimplementedKuberServiceServer()
 }
 
@@ -140,6 +162,12 @@ func (UnimplementedKuberServiceServer) DeleteNodes(context.Context, *DeleteNodes
 }
 func (UnimplementedKuberServiceServer) PatchNodes(context.Context, *PatchNodeTemplateRequest) (*PatchNodeTemplateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PatchNodes not implemented")
+}
+func (UnimplementedKuberServiceServer) SetUpClusterAutoscaler(context.Context, *SetUpClusterAutoscalerRequest) (*SetUpClusterAutoscalerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetUpClusterAutoscaler not implemented")
+}
+func (UnimplementedKuberServiceServer) DestroyClusterAutoscaler(context.Context, *DestroyClusterAutoscalerRequest) (*DestroyClusterAutoscalerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DestroyClusterAutoscaler not implemented")
 }
 func (UnimplementedKuberServiceServer) mustEmbedUnimplementedKuberServiceServer() {}
 
@@ -280,6 +308,42 @@ func _KuberService_PatchNodes_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _KuberService_SetUpClusterAutoscaler_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetUpClusterAutoscalerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KuberServiceServer).SetUpClusterAutoscaler(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/claudie.KuberService/SetUpClusterAutoscaler",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KuberServiceServer).SetUpClusterAutoscaler(ctx, req.(*SetUpClusterAutoscalerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _KuberService_DestroyClusterAutoscaler_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DestroyClusterAutoscalerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KuberServiceServer).DestroyClusterAutoscaler(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/claudie.KuberService/DestroyClusterAutoscaler",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KuberServiceServer).DestroyClusterAutoscaler(ctx, req.(*DestroyClusterAutoscalerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // KuberService_ServiceDesc is the grpc.ServiceDesc for KuberService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -314,6 +378,14 @@ var KuberService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PatchNodes",
 			Handler:    _KuberService_PatchNodes_Handler,
+		},
+		{
+			MethodName: "SetUpClusterAutoscaler",
+			Handler:    _KuberService_SetUpClusterAutoscaler_Handler,
+		},
+		{
+			MethodName: "DestroyClusterAutoscaler",
+			Handler:    _KuberService_DestroyClusterAutoscaler_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

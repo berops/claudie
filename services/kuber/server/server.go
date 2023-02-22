@@ -18,6 +18,7 @@ import (
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/services/kuber/server/autoscaler"
 	"github.com/berops/claudie/services/kuber/server/longhorn"
 	"github.com/berops/claudie/services/kuber/server/nodes"
 	"github.com/berops/claudie/services/kuber/server/secret"
@@ -187,10 +188,47 @@ func (s *server) PatchNodes(ctx context.Context, req *pb.PatchNodeTemplateReques
 	patcher := nodes.NewPatcher(req.Cluster)
 	if err := patcher.PatchProviderID(); err != nil {
 		log.Error().Msgf("Error while patching nodes for %s : %s", req.Cluster.ClusterInfo.Name, err.Error())
-		return nil, fmt.Errorf("Error while patching nodes for %s : %w", req.Cluster.ClusterInfo.Name, err)
+		return nil, fmt.Errorf("error while patching nodes for %s : %w", req.Cluster.ClusterInfo.Name, err)
 	}
+
 	log.Info().Msgf("Nodes for cluster %s were successfully patched", req.Cluster.ClusterInfo.Name)
 	return &pb.PatchNodeTemplateResponse{}, nil
+}
+
+func (s *server) SetUpClusterAutoscaler(ctx context.Context, req *pb.SetUpClusterAutoscalerRequest) (*pb.SetUpClusterAutoscalerResponse, error) {
+	// Create output dir
+	clusterID := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, utils.CreateHash(5))
+	clusterDir := filepath.Join(outputDir, clusterID)
+	if err := utils.CreateDirectory(clusterDir); err != nil {
+		return nil, fmt.Errorf("error while creating directory %s : %w", clusterDir, err)
+	}
+	// Set up cluster autoscaler.
+	autoscalerBuilder := autoscaler.NewAutoscalerBuilder(req.ProjectName, req.Cluster, clusterDir)
+	if err := autoscalerBuilder.SetUpClusterAutoscaler(); err != nil {
+		log.Error().Msgf("Error while setting up cluster autoscaler for %s : %s", req.Cluster.ClusterInfo.Name, err.Error())
+		return nil, fmt.Errorf("error while setting up cluster autoscaler for %s : %w", req.Cluster.ClusterInfo.Name, err)
+	}
+
+	log.Info().Msgf("Cluster %s had cluster autoscaler successfully set up", req.Cluster.ClusterInfo.Name)
+	return &pb.SetUpClusterAutoscalerResponse{}, nil
+}
+
+func (s *server) DestroyClusterAutoscaler(ctx context.Context, req *pb.DestroyClusterAutoscalerRequest) (*pb.DestroyClusterAutoscalerResponse, error) {
+	// Create output dir
+	clusterID := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, utils.CreateHash(5))
+	clusterDir := filepath.Join(outputDir, clusterID)
+	if err := utils.CreateDirectory(clusterDir); err != nil {
+		return nil, fmt.Errorf("error while creating directory %s : %w", clusterDir, err)
+	}
+	// Destroy cluster autoscaler.
+	autoscalerBuilder := autoscaler.NewAutoscalerBuilder(req.ProjectName, req.Cluster, clusterDir)
+	if err := autoscalerBuilder.DestroyClusterAutoscaler(); err != nil {
+		log.Error().Msgf("Error while destroying cluster autoscaler for %s : %s", req.Cluster.ClusterInfo.Name, err.Error())
+		return nil, fmt.Errorf("error while destroying cluster autoscaler for %s : %w", req.Cluster.ClusterInfo.Name, err)
+	}
+
+	log.Info().Msgf("Cluster %s had cluster autoscaler successfully destroyed", req.Cluster.ClusterInfo.Name)
+	return &pb.DestroyClusterAutoscalerResponse{}, nil
 }
 
 func main() {

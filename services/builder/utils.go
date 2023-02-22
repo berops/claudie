@@ -65,3 +65,17 @@ func saveErrorMessage(config *pb.Config, c pb.ContextBoxServiceClient, err error
 	}
 	return nil
 }
+
+// isAutoscaled returns true, if cluster has at least one nodepool with autoscaler config.
+func isAutoscaled(cluster *pb.K8Scluster) bool {
+	if cluster == nil {
+		return false
+	}
+
+	for _, np := range cluster.ClusterInfo.NodePools {
+		if np.AutoscalerConfig != nil {
+			return true
+		}
+	}
+	return false
+}

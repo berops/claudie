@@ -51,6 +51,20 @@ message PatchNodeTemplateRequest {
 
 message PatchNodeTemplateResponse {}
 
+message SetUpClusterAutoscalerRequest{
+  string projectName = 1;
+  K8scluster cluster = 2;
+}
+
+message SetUpClusterAutoscalerResponse {}
+
+message DestroyClusterAutoscalerRequest{
+  string projectName = 1;
+  K8scluster cluster = 2;
+}
+
+message DestroyClusterAutoscalerResponse {}
+
 service KuberService {
   rpc StoreClusterMetadata(StoreClusterMetadataRequest) returns (StoreClusterMetadataResponse);
   rpc DeleteClusterMetadata(DeleteClusterMetadataRequest) returns (DeleteClusterMetadataResponse);
@@ -59,4 +73,6 @@ service KuberService {
   rpc DeleteKubeconfig(DeleteKubeconfigRequest) returns (DeleteKubeconfigResponse);
   rpc DeleteNodes(DeleteNodesRequest) returns (DeleteNodesResponse);
   rpc PatchNodes(PatchNodeTemplateRequest) returns (PatchNodeTemplateResponse);
+  rpc SetUpClusterAutoscaler(SetUpClusterAutoscalerRequest) returns (SetUpClusterAutoscalerResponse);
+  rpc DestroyClusterAutoscaler(DestroyClusterAutoscalerRequest) returns (DestroyClusterAutoscalerResponse);
 }
