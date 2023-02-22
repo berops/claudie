@@ -44,7 +44,7 @@ func (ab *AutoscalerBuilder) SetUpClusterAutoscaler() error {
 		return err
 	}
 	// Apply generated files.
-	kc := kubectl.Kubectl{Kubeconfig: ab.cluster.Kubeconfig, Directory: ab.directory}
+	kc := kubectl.Kubectl{Directory: ab.directory}
 	if err := kc.KubectlApply(autoscalerAdapterDeployment, envs.Namespace); err != nil {
 		return fmt.Errorf("error while applying autoscaler adapter for cluster %s : %w", ab.cluster.ClusterInfo.Name, err)
 	}
@@ -60,7 +60,7 @@ func (ab *AutoscalerBuilder) DestroyClusterAutoscaler() error {
 		return err
 	}
 	// Apply generated files.
-	kc := kubectl.Kubectl{Kubeconfig: ab.cluster.Kubeconfig, Directory: ab.directory}
+	kc := kubectl.Kubectl{Directory: ab.directory}
 	if err := kc.KubectlDeleteManifest(autoscalerAdapterDeployment, envs.Namespace); err != nil {
 		return fmt.Errorf("error while deleting autoscaler adapter for cluster %s : %w", ab.cluster.ClusterInfo.Name, err)
 	}
