@@ -10,6 +10,8 @@
   <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg"></a>
 </p>
 
+[![Claudie](https://img.youtube.com/vi/Yq4xdAiHYxZQ/0.jpg)](https://www.youtube.com/watch?v=q4xdAiHYxZQ)
+
 ## Features
 
 ### Manage multi-cloud Kubernetes clusters
