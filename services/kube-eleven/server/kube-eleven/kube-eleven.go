@@ -171,7 +171,7 @@ func (k *KubeEleven) getClusterNodes() ([]*NodepoolInfo, *pb.Node) {
 			Nodes:             make([]*NodeInfo, 0, len(nodepool.Nodes)),
 		}
 		for _, node := range nodepool.Nodes {
-			nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-%s", k.K8sCluster.ClusterInfo.Name, k.K8sCluster.ClusterInfo.Hash))
+			nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-%s-", k.K8sCluster.ClusterInfo.Name, k.K8sCluster.ClusterInfo.Hash))
 			nodepoolInfo.Nodes = append(nodepoolInfo.Nodes, &NodeInfo{Name: nodeName, Node: node})
 			// save API endpoint in case there is no LB
 			if node.GetNodeType() == pb.NodeType_apiEndpoint {
