@@ -12,7 +12,7 @@
 
 ## Intro video
 
-[![Claudie intro video](https://img.youtube.com/vi/q4xdAiHYxZQ/0.jpg)](https://www.youtube.com/watch?v=q4xdAiHYxZQ)
+[![Claudie intro video](https://markdown-videos.deta.dev/youtube/q4xdAiHYxZQ)](https://youtu.be/q4xdAiHYxZQ)
 
 ## Features
 
