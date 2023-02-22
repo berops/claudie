@@ -165,3 +165,36 @@ func initDatabase() (ClaudieDB, error) {
 	}
 	return claudieDatabase, nil
 }
+
+func updateDesiredNodepool(clusterName, nodepoolName string, count int32, nodes []*pb.Node, desiredState *pb.Project) error {
+	for _, cluster := range desiredState.Clusters {
+		if cluster.ClusterInfo.Name == clusterName {
+			for _, nodepool := range cluster.ClusterInfo.NodePools {
+				if nodepool.Name == nodepoolName {
+					// Update count and nodes
+					nodepool.Count = count
+					nodepool.Nodes = nodes
+					return nil
+				}
+			}
+			return fmt.Errorf("nodepool %s was not found in cluster %s", nodepoolName, clusterName)
+		}
+	}
+	return fmt.Errorf("cluster %s was not found in project %s", clusterName, desiredState.Name)
+}
+
+func updateCurrentNodepool(clusterName, nodepoolName string, nodes []*pb.Node, desiredState *pb.Project) error {
+	for _, cluster := range desiredState.Clusters {
+		if cluster.ClusterInfo.Name == clusterName {
+			for _, nodepool := range cluster.ClusterInfo.NodePools {
+				if nodepool.Name == nodepoolName {
+					// Update nodes
+					nodepool.Nodes = nodes
+					return nil
+				}
+			}
+			return fmt.Errorf("nodepool %s was not found in cluster %s", nodepoolName, clusterName)
+		}
+	}
+	return fmt.Errorf("cluster %s was not found in project %s", clusterName, desiredState.Name)
+}

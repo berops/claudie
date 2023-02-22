@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -25,6 +26,8 @@ import (
 
 type server struct {
 	pb.UnimplementedContextBoxServiceServer
+
+	configChangeMutex sync.Mutex
 }
 
 const (
@@ -56,7 +59,10 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 }
 
 // SaveConfigFrontEnd is a gRPC service: the function saves config to the DB after receiving it from Frontend
-func (*server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
+func (s *server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
+	// Input specification can be changed on two places, by Autoscaler and by User, thus we need to lock it, so one does not overwrite the other.
+	s.configChangeMutex.Lock()
+	defer s.configChangeMutex.Unlock()
 	newConfig := req.GetConfig()
 	log.Info().Msgf("CLIENT REQUEST: SaveConfigFrontEnd for %s", newConfig.Name)
 	newConfig.MsChecksum = checksum.CalculateChecksum(newConfig.Manifest)
@@ -98,7 +104,7 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 	} else {
 		if dbConf.DesiredState != nil {
 			if err := database.UpdateDs(config); err != nil {
-				return nil, fmt.Errorf("Error while updating desired state: %w", err)
+				return nil, fmt.Errorf("error while updating desired state: %w", err)
 			}
 		}
 	}
@@ -183,38 +189,36 @@ func (*server) DeleteConfigFromDB(ctx context.Context, req *pb.DeleteConfigReque
 
 // UpdateNodepool updates the Nodepool struct in the database, which also initiates build. This function might return an error if the updation is
 // not allowed at this time (i.e.when config is being build).
-func (*server) UpdateNodepool(ctx context.Context, req *pb.UpdateNodepoolRequest) (*pb.UpdateNodepoolResponse, error) {
+func (s *server) UpdateNodepool(ctx context.Context, req *pb.UpdateNodepoolRequest) (*pb.UpdateNodepoolResponse, error) {
+	// Input specification can be changed on two places, by Autoscaler and by User, thus we need to lock it, so one does not overwrite the other.
+	s.configChangeMutex.Lock()
+	defer s.configChangeMutex.Unlock()
 	log.Info().Msgf("CLIENT REQUEST: UpdateNodepoolCount for Project %s, Cluster %s Nodepool %s", req.ProjectName, req.ClusterName, req.Nodepool.Name)
 	var config *pb.Config
 	var err error
 	if config, err = database.GetConfig(req.ProjectName, pb.IdType_NAME); err != nil {
-		return nil, fmt.Errorf("The project %s was not found in the database : %w ", req.ProjectName, err)
+		return nil, fmt.Errorf("the project %s was not found in the database : %w ", req.ProjectName, err)
 	}
 	// Check if config is currently not in any build stage
 	if config.BuilderTTL == 0 && config.SchedulerTTL == 0 {
 		// Check if all checksums are equal, meaning config is not about to get pushed to the queue || is in the queue
 		if checksum.CompareChecksums(config.MsChecksum, config.DsChecksum) && checksum.CompareChecksums(config.DsChecksum, config.CsChecksum) {
-			// Find and update correct nodepool.
-			for _, cluster := range config.DesiredState.Clusters {
-				if cluster.ClusterInfo.Name == req.ClusterName {
-					for _, nodepool := range cluster.ClusterInfo.NodePools {
-						if nodepool.Name == req.Nodepool.Name {
-							// Update count and nodes
-							nodepool.Count = req.Nodepool.Count
-							nodepool.Nodes = req.Nodepool.Nodes
-							// Save new config in the database with dummy CsChecksum to initiate a build.
-							config.CsChecksum = checksum.CalculateChecksum(utils.CreateHash(8))
-							database.SaveConfig(config)
-							return &pb.UpdateNodepoolResponse{}, nil
-						}
-					}
-				}
+			// Find and update correct nodepool count & nodes in desired state.
+			if err := updateDesiredNodepool(req.ClusterName, req.Nodepool.Name, req.Nodepool.Count, req.Nodepool.Nodes, config.DesiredState); err != nil {
+				return nil, fmt.Errorf("error while updating desired state in project %s : %w", config.Name, err)
 			}
-			return nil, fmt.Errorf("The nodepool %s, in cluster %s in project %s was not found.", req.Nodepool.Name, req.ClusterName, req.ProjectName)
+			// Find and update correct nodepool nodes in current state.
+			if err := updateCurrentNodepool(req.ClusterName, req.Nodepool.Name, req.Nodepool.Nodes, config.CurrentState); err != nil {
+				return nil, fmt.Errorf("error while updating current state in project %s : %w", config.Name, err)
+			}
+			// Save new config in the database with dummy CsChecksum to initiate a build.
+			config.CsChecksum = checksum.CalculateChecksum(utils.CreateHash(8))
+			database.SaveConfig(config)
+			return &pb.UpdateNodepoolResponse{}, nil
 		}
-		return nil, fmt.Errorf("The project %s is about to be in the build stage", req.ProjectName)
+		return nil, fmt.Errorf("the project %s is about to be in the build stage", req.ProjectName)
 	}
-	return nil, fmt.Errorf("The project %s is currently in the build stage", req.ProjectName)
+	return nil, fmt.Errorf("the project %s is currently in the build stage", req.ProjectName)
 }
 
 func main() {

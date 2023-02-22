@@ -78,13 +78,13 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			}
 
 			// Handle deletion and addition of nodes.
-			tmpDesired, toDelete := stateDifference(clusterView.Clusters[clusterName], clusterView.DesiredClusters[clusterName])
+			tmpDesired, toDelete := stateDifference(clusterView.CurrentClusters[clusterName], clusterView.DesiredClusters[clusterName])
 			if tmpDesired != nil {
 				log.Info().Msgf("Processing stage [1/2] for cluster %s config %s", clusterName, config.Name)
 
 				ctx := &BuilderContext{
 					projectName:          config.Name,
-					cluster:              clusterView.Clusters[clusterName],
+					cluster:              clusterView.CurrentClusters[clusterName],
 					desiredCluster:       tmpDesired,
 					loadbalancers:        clusterView.Loadbalancers[clusterName],
 					desiredLoadbalancers: clusterView.DesiredLoadbalancers[clusterName],
@@ -98,13 +98,13 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 				log.Info().Msgf("First stage for cluster %s finished building", clusterName)
 
 				// make the desired state of the temporary cluster the new current state.
-				clusterView.Clusters[clusterName] = ctx.desiredCluster
+				clusterView.CurrentClusters[clusterName] = ctx.desiredCluster
 				clusterView.Loadbalancers[clusterName] = ctx.desiredLoadbalancers
 			}
 
 			if toDelete != nil {
 				log.Info().Msgf("Deleting nodes for cluster %s project %s", clusterName, config.Name)
-				if clusterView.Clusters[clusterName], err = deleteNodes(clusterView.Clusters[clusterName], toDelete); err != nil {
+				if clusterView.CurrentClusters[clusterName], err = deleteNodes(clusterView.CurrentClusters[clusterName], toDelete); err != nil {
 					log.Error().Msgf("failed to delete nodes cluster %s project %s: %s", clusterName, config.Name, err)
 					return err
 				}
@@ -118,7 +118,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 
 			ctx := &BuilderContext{
 				projectName:          config.Name,
-				cluster:              clusterView.Clusters[clusterName],
+				cluster:              clusterView.CurrentClusters[clusterName],
 				desiredCluster:       clusterView.DesiredClusters[clusterName],
 				loadbalancers:        clusterView.Loadbalancers[clusterName],
 				desiredLoadbalancers: clusterView.DesiredLoadbalancers[clusterName],
@@ -267,6 +267,7 @@ func separateNodepools(clusterNodes map[string]int32, clusterInfo *pb.ClusterInf
 func getNodeNames(nodepool *pb.NodePool, count int) (names []string) {
 	for i := len(nodepool.Nodes) - 1; i >= len(nodepool.Nodes)-count; i-- {
 		names = append(names, nodepool.Nodes[i].Name)
+		log.Debug().Msgf("Choosing node %s for deletion", nodepool.Nodes[i].Name)
 	}
 	return names
 }
