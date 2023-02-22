@@ -22,7 +22,7 @@ type Patcher struct {
 
 func NewPatcher(cluster *pb.K8Scluster) *Patcher {
 	kc := kubectl.Kubectl{Kubeconfig: cluster.Kubeconfig}
-	return &Patcher{kc: kc, nodepools: cluster.ClusterInfo.NodePools}
+	return &Patcher{kc: kc, nodepools: cluster.ClusterInfo.NodePools, clusterID: fmt.Sprintf("%s-%s", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)}
 }
 
 func (p *Patcher) PatchProviderID() error {
