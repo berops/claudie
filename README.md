@@ -12,7 +12,9 @@
 
 ## Intro video
 
-[![Claudie intro video](https://markdown-videos.deta.dev/youtube/q4xdAiHYxZQ)](https://youtu.be/q4xdAiHYxZQ)
+<p align="center">
+  <a href="https://youtu.be/q4xdAiHYxZQ"><img src="https://markdown-videos.deta.dev/youtube/q4xdAiHYxZQ)"></a>
+</p>
 
 ## Features
 
