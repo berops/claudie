@@ -13,7 +13,7 @@
 ## Intro video
 
 <p align="center">
-  <a href="https://youtu.be/q4xdAiHYxZQ"><img src="https://markdown-videos.deta.dev/youtube/q4xdAiHYxZQ)"></a>
+  <a href="https://youtu.be/q4xdAiHYxZQ"><img src="https://markdown-videos.deta.dev/youtube/q4xdAiHYxZQ"></a>
 </p>
 
 ## Features
