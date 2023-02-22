@@ -69,7 +69,7 @@ To find out how to configure Cloudflare follow the instructions [here](./provide
 
   Name of the provider. Used as a reference further in the input manifest. Should be unique for each provider spec across all the providers.
 
-- `api_token`
+- `apiToken`
 
   Credentials for the provider (API token).
 
@@ -83,7 +83,7 @@ To find out how to configure HetznerDNS follow the instructions [here](./provide
 
   Name of the provider. Used as a reference further in the input manifest. Should be unique for each provider spec across all the providers.
 
-- `api_token`
+- `apiToken`
 
   Credentials for the provider (API token).
 
@@ -101,7 +101,7 @@ To find out how to configure GCP provider and service account, follow the instru
 
   Credentials for the provider. Stringified JSON service account key.
 
-- `gcp_project`
+- `gcpProject`
 
   project id of an already existing GCP project.
 
@@ -129,23 +129,23 @@ To find out how to configure OCI provider and service account, follow the instru
 
   Name of the provider spec. Used as a reference further in the input manifest. Should be unique for each provider spec across all the cloud providers.
 
-- `private_key`
+- `privateKey`
 
   [Private key](https://docs.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm#two) used to authenticate to the OCI.
 
-- `key_fingerprint`
+- `keyFingerprint`
 
   Fingerprint of the user-supplied private key.
 
-- `tenancy_ocid`
+- `tenancyOcid`
   
-  OCID of the tenancy where `private_key` is added as an API key
+  OCID of the tenancy where `privateKey` is added as an API key
 
-- `user_ocid`
+- `userOcid`
   
   OCID of the user in the supplied tenancy
 
-- `compartment_ocid`
+- `compartmentOcid`
 
   OCID of the [compartment](https://docs.oracle.com/en/cloud/paas/integration-cloud/oracle-integration-oci/creating-oci-compartment.html) where VMs/VCNs/... will be created
 
@@ -159,11 +159,11 @@ To find out how to configure AWS provider and service account, follow the instru
 
   Name of the provider spec. Used as a reference further in the input manifest. Should be unique for each provider spec across all the cloud providers.
 
-- `access_key`
+- `accessKey`
 
   Access key ID for your AWS account.
 
-- `secret_key`
+- `secretKey`
 
   Secret key for the Access key specified above.
 
@@ -177,19 +177,19 @@ To find out how to configure Azure provider and service account, follow the inst
 
   Name of the provider spec. Used as a reference further in the input manifest. Should be unique for each provider spec across all the cloud providers.
 
-- `subscription_id`
+- `subscriptionId`
 
   Subscription ID of your subscription in Azure.
 
-- `tenant_id`
+- `tenantId`
   
   Tenant ID of your tenancy in Azure.
 
-- `client_id`
+- `clientId`
 
   Client ID of your client. The Claudie is design to use a service principal with appropriate permissions.
 
-- `client_secret`
+- `clientSecret`
   
   Client secret generated for your client.
 
@@ -224,7 +224,7 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
   Number of the nodes in the nodepool.
 
-- `server_type`
+- `serverType`
   
   Type of the machines in the nodepool.
   
@@ -236,7 +236,7 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
   
   Currently, only Ubuntu 22.04 AMD64 images are supported.
 
-- `disk_size`
+- `diskSize`
 
   Size of the disk on the nodes in the nodepool.
 
@@ -319,7 +319,7 @@ Role defines a concrete loadbalancer configuration. Single loadbalancer can have
 
   Port of the incoming traffic on the loadbalancer.
 
-- `target_port`
+- `targetPort`
 
   Port where loadbalancer forwards the traffic.
 
@@ -349,7 +349,7 @@ Collection of data used to define a loadbalancer cluster.
   
   Specification of the loadbalancer's DNS record.
   
-- `targeted-k8s`
+- `targetedK8s`
 
   Name of the Kubernetes cluster targetted by this loadbalancer.
 
@@ -361,7 +361,7 @@ Collection of data used to define a loadbalancer cluster.
 
 Collection of data Claudie uses to create a DNS record for the loadbalancer.
 
-- `dns_zone`
+- `dnsZone`
 
   DNS zone inside of which the records will be created. GCP/AWS/OCI/Azure/Cloudflare/Hetzner DNS zone is accepted
 

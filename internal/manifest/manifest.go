@@ -22,12 +22,12 @@ type Provider struct {
 
 type HetznerDNS struct {
 	Name     string `validate:"required" yaml:"name"`
-	ApiToken string `validate:"required" yaml:"api_token"`
+	ApiToken string `validate:"required" yaml:"apiToken"`
 }
 
 type Cloudflare struct {
 	Name     string `validate:"required" yaml:"name"`
-	ApiToken string `validate:"required" yaml:"api_token"`
+	ApiToken string `validate:"required" yaml:"apiToken"`
 }
 
 type GCP struct {
@@ -35,7 +35,7 @@ type GCP struct {
 	// We can only validate that the supplied string is a
 	// valid formatted JSON.
 	Credentials string `validate:"required,json" yaml:"credentials"`
-	GCPProject  string `validate:"required" yaml:"gcp_project"`
+	GCPProject  string `validate:"required" yaml:"gcpProject"`
 }
 
 type Hetzner struct {
@@ -51,24 +51,24 @@ type Hetzner struct {
 
 type AWS struct {
 	Name      string `validate:"required" yaml:"name"`
-	AccessKey string `validate:"required,alphanum,len=20" yaml:"access_key"`
-	SecretKey string `validate:"required,len=40" yaml:"secret_key"`
+	AccessKey string `validate:"required,alphanum,len=20" yaml:"accessKey"`
+	SecretKey string `validate:"required,len=40" yaml:"secretKey"`
 }
 type OCI struct {
 	Name           string `validate:"required" yaml:"name"`
-	PrivateKey     string `validate:"required" yaml:"private_key"`
-	KeyFingerprint string `validate:"required" yaml:"key_fingerprint"`
-	TenancyOCID    string `validate:"required" yaml:"tenancy_ocid"`
-	UserOCID       string `validate:"required" yaml:"user_ocid"`
-	CompartmentID  string `validate:"required" yaml:"compartment_ocid"`
+	PrivateKey     string `validate:"required" yaml:"privateKey"`
+	KeyFingerprint string `validate:"required" yaml:"keyFingerprint"`
+	TenancyOCID    string `validate:"required" yaml:"tenancyOcid"`
+	UserOCID       string `validate:"required" yaml:"userOcid"`
+	CompartmentID  string `validate:"required" yaml:"compartmentOcid"`
 }
 
 type Azure struct {
 	Name           string `validate:"required" yaml:"name"`
-	SubscriptionId string `validate:"required" yaml:"subscription_id"`
-	TenantId       string `validate:"required" yaml:"tenant_id"`
-	ClientId       string `validate:"required" yaml:"client_id"`
-	ClientSecret   string `validate:"required" yaml:"client_secret"`
+	SubscriptionId string `validate:"required" yaml:"subscriptionId"`
+	TenantId       string `validate:"required" yaml:"tenantId"`
+	ClientId       string `validate:"required" yaml:"clientId"`
+	ClientSecret   string `validate:"required" yaml:"clientSecret"`
 }
 
 type NodePool struct {
@@ -88,10 +88,10 @@ type Kubernetes struct {
 type DynamicNodePool struct {
 	Name             string           `validate:"required" yaml:"name"`
 	ProviderSpec     ProviderSpec     `validate:"required" yaml:"providerSpec"`
-	Count            int32            `validate:"required_without=AutoscalerConfig,excluded_with=AutoscalerConfig" yaml:"count"`
-	ServerType       string           `validate:"required" yaml:"server_type"`
+	Count            int64            `yaml:"count"`
+	ServerType       string           `validate:"required" yaml:"serverType"`
 	Image            string           `validate:"required" yaml:"image"`
-	DiskSize         int64            `validate:"required" yaml:"disk_size"`
+	DiskSize         int64            `validate:"required" yaml:"diskSize"`
 	AutoscalerConfig AutoscalerConfig `validate:"required_without=Count,excluded_with=Count" yaml:"autoscaler"`
 }
 
@@ -132,7 +132,7 @@ type Role struct {
 	Name       string `validate:"required" yaml:"name"`
 	Protocol   string `validate:"required,oneof=tcp udp" yaml:"protocol"`
 	Port       int32  `validate:"min=0,max=65535" yaml:"port"`
-	TargetPort int32  `validate:"min=0,max=65535" yaml:"target_port"`
+	TargetPort int32  `validate:"min=0,max=65535" yaml:"targetPort"`
 	Target     string `validate:"required,oneof=k8sAllNodes k8sControlPlane k8sComputePlane" yaml:"target"`
 }
 
@@ -140,12 +140,12 @@ type LoadBalancerCluster struct {
 	Name        string   `validate:"required" yaml:"name"`
 	Roles       []string `yaml:"roles"`
 	DNS         DNS      `validate:"required" yaml:"dns,omitempty"`
-	TargetedK8s string   `validate:"required" yaml:"targeted-k8s"`
+	TargetedK8s string   `validate:"required" yaml:"targetedK8s"`
 	Pools       []string `yaml:"pools"`
 }
 
 type DNS struct {
-	DNSZone  string `validate:"required" yaml:"dns_zone"`
+	DNSZone  string `validate:"required" yaml:"dnsZone"`
 	Provider string `validate:"required" yaml:"provider"`
 	Hostname string `yaml:"hostname,omitempty"`
 }
