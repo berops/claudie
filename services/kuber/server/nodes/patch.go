@@ -2,6 +2,7 @@ package nodes
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/proto/pb"
@@ -14,6 +15,7 @@ const (
 )
 
 type Patcher struct {
+	clusterID string
 	nodepools []*pb.NodePool
 	kc        kubectl.Kubectl
 }
@@ -26,12 +28,12 @@ func NewPatcher(cluster *pb.K8Scluster) *Patcher {
 func (p *Patcher) PatchProviderID() error {
 	var err error
 	for _, np := range p.nodepools {
-		for i := range np.Nodes {
-			nodeName := fmt.Sprintf("%s-%d", np.Name, i+1)
+		for _, node := range np.Nodes {
+			nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
 			patchPath := fmt.Sprintf(patchPathFormat, fmt.Sprintf(ProviderIdFormat, nodeName))
 			if err1 := p.kc.KubectlPatch("node", nodeName, patchPath); err1 != nil {
 				log.Error().Msgf("Error while patching node %s with patch %s : %v", nodeName, patchPath, err1)
-				err = fmt.Errorf("Error while patching one or more nodes")
+				err = fmt.Errorf("error while patching one or more nodes")
 			}
 		}
 	}

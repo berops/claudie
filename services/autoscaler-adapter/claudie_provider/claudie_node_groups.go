@@ -68,8 +68,8 @@ func (c *ClaudieCloudProvider) NodeGroupDeleteNodes(_ context.Context, req *prot
 		// Update nodes slice
 		deleteNodes := make([]*pb.Node, 0, len(req.Nodes))
 		remainNodes := make([]*pb.Node, 0, len(ngc.nodepool.Nodes)-len(req.Nodes))
-		for i, node := range ngc.nodepool.Nodes {
-			nodeId := fmt.Sprintf("%s-%d", ngc.nodepool.Name, i+1)
+		for _, node := range ngc.nodepool.Nodes {
+			nodeId := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-%s-", c.configCluster.ClusterInfo.Name, c.configCluster.ClusterInfo.Hash))
 			if containId(req.GetNodes(), nodeId) {
 				log.Debug().Msgf("Adding node %s to delete nodes slice", nodeId)
 				deleteNodes = append(deleteNodes, node)
@@ -112,9 +112,10 @@ func (c *ClaudieCloudProvider) NodeGroupNodes(_ context.Context, req *protos.Nod
 	log.Info().Msgf("Got NodeGroupNodes request")
 	instances := make([]*protos.Instance, 0)
 	if ngc, ok := c.nodeGroupCache[req.GetId()]; ok {
-		for i := range ngc.nodepool.Nodes {
+		for _, node := range ngc.nodepool.Nodes {
+			nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-%s-", c.configCluster.ClusterInfo.Name, c.configCluster.ClusterInfo.Hash))
 			instance := &protos.Instance{
-				Id: fmt.Sprintf(nodes.ProviderIdFormat, fmt.Sprintf("%s-%d", ngc.nodepool.Name, i+1)),
+				Id: fmt.Sprintf(nodes.ProviderIdFormat, nodeName),
 				Status: &protos.InstanceStatus{
 					// If there is an instance in the config.K8Scluster, then it is always considered running.
 					InstanceState: protos.InstanceStatus_instanceRunning,
