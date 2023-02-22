@@ -34,7 +34,7 @@ Claudie uses the concept of roles while configuring the load balancers from the 
 
 ### Targeted kubernetes cluster
 
-Load balancer gets assigned to a kubernetes cluster with the field `targeted-k8s`. This field is using the `name` of the kubernetes cluster as a value. Currently, a single load balancer can only be assigned to a single kubernetes cluster.
+Load balancer gets assigned to a kubernetes cluster with the field `targetedK8s`. This field is using the `name` of the kubernetes cluster as a value. Currently, a single load balancer can only be assigned to a single kubernetes cluster.
 
 **Among multiple load balancers targeting the same kubernetes cluster only one of them can have the API server role (i.e. the role with target port 6443) attached to it.**
 
