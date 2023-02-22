@@ -15,24 +15,6 @@ var (
 			Conditions: buildReadyConditions(),
 		},
 	}
-
-	// All labels Claudie puts on nodes by default.
-	claudieLabels = []string{
-		"claudie.io/nodepool",
-		"claudie.io/provider",
-		"claudie.io/provider-instance",
-		"claudie.io/node-type",
-		"topology.kubernetes.io/zone",
-		"topology.kubernetes.io/region",
-	}
-
-	// All default labels
-	defaultLabels = []string{
-		"kubernetes.io/os",
-		"kubernetes.io/hostname",
-		"kubernetes.io/arch",
-		"v1.kubeone.io/operating-system",
-	}
 )
 
 func (c *ClaudieCloudProvider) getNodeGroupTemplateNodeInfo(nodeGroupId string) *k8sV1.Node {

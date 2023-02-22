@@ -29,8 +29,8 @@ func destroy(projectName, clusterName string, clusterView *ClusterView) (bool, e
 		projectName: projectName,
 	}
 
-	if clusterView.Clusters[clusterName] != nil && clusterView.DesiredClusters[clusterName] == nil {
-		deleteCtx.cluster = clusterView.Clusters[clusterName]
+	if clusterView.CurrentClusters[clusterName] != nil && clusterView.DesiredClusters[clusterName] == nil {
+		deleteCtx.cluster = clusterView.CurrentClusters[clusterName]
 	}
 
 	if len(clusterView.DeletedLoadbalancers[clusterName]) != 0 {

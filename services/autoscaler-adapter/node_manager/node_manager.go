@@ -107,7 +107,7 @@ func (nm *NodeManager) getTypeInfo(provider string, np *pb.NodePool) typeInfo {
 	ti := typeInfo{}
 	switch provider {
 	case "hetzner":
-		// cpx versions are called ccx in hcloud-go api.
+		// The cpx versions are called ccx in hcloud-go api.
 		npType := strings.ReplaceAll(np.ServerType, "p", "c")
 		for _, server := range nm.hetznerVMs {
 			if server.Name == npType {

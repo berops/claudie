@@ -14,11 +14,6 @@ import (
 	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/externalgrpc/protos"
 )
 
-const (
-	// Cloud provider ID base
-	claudieCloudProvider = "claudie"
-)
-
 // NodeGroupTargetSize returns the current target size of the node group. It is possible
 // that the number of nodes in Kubernetes is different at the moment but should be equal
 // to the size of a node group once everything stabilizes (new nodes finish startup and
@@ -76,6 +71,7 @@ func (c *ClaudieCloudProvider) NodeGroupDeleteNodes(_ context.Context, req *prot
 		for i, node := range ngc.nodepool.Nodes {
 			nodeId := fmt.Sprintf("%s-%d", ngc.nodepool.Name, i+1)
 			if containId(req.GetNodes(), nodeId) {
+				log.Debug().Msgf("Adding node %s to delete nodes slice", nodeId)
 				deleteNodes = append(deleteNodes, node)
 			} else {
 				remainNodes = append(remainNodes, node)

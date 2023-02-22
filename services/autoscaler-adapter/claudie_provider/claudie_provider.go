@@ -20,7 +20,7 @@ const (
 )
 
 var (
-	ErrNotImplemented = errors.New("Not Implemented")
+	ErrNotImplemented = errors.New("not implemented")
 )
 
 type nodeGroupCache struct {
@@ -65,11 +65,11 @@ func getClaudieState(projectName, clusterName string) (*pb.K8Scluster, error) {
 	cboxURL := strings.ReplaceAll(envs.ContextBoxURL, ":tcp://", "")
 
 	if cc, err = utils.GrpcDialWithInsecure("context-box", cboxURL); err != nil {
-		return nil, fmt.Errorf("Failed to dial context-box at %s : %w", cboxURL, err)
+		return nil, fmt.Errorf("failed to dial context-box at %s : %w", cboxURL, err)
 	}
 	c := pb.NewContextBoxServiceClient(cc)
 	if res, err = c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: projectName, Type: pb.IdType_NAME}); err != nil {
-		return nil, fmt.Errorf("Failed to get config for project %s : %w", projectName, err)
+		return nil, fmt.Errorf("failed to get config for project %s : %w", projectName, err)
 	}
 
 	for _, cluster := range res.Config.DesiredState.Clusters {
@@ -77,7 +77,7 @@ func getClaudieState(projectName, clusterName string) (*pb.K8Scluster, error) {
 			return cluster, nil
 		}
 	}
-	return nil, fmt.Errorf("Failed to find cluster %s in config for a project %s", clusterName, projectName)
+	return nil, fmt.Errorf("failed to find cluster %s in config for a project %s", clusterName, projectName)
 }
 
 // getNodeGroupCache returns a map of nodeGroupCache, regarding all information needed based on the nodepools with autoscaling enabled.
