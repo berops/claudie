@@ -128,7 +128,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 
 			message := fmt.Sprintf("Processing cluster %s config %s", clusterName, config.Name)
 			if tmpDesired != nil {
-				clusterView.ClusterWorkflows[clusterName].Description = "Processing state [2/2]"
+				clusterView.ClusterWorkflows[clusterName].Description = "Processing stage [2/2]"
 				message = fmt.Sprintf("Processing stage [2/2] for cluster %s config %s", clusterName, config.Name)
 			}
 			log.Info().Msgf(message)
