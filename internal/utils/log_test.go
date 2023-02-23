@@ -119,6 +119,19 @@ users:
 			out:  "--more-argz --kubeconfig '*****'",
 		},
 		{
+			desc: "Sanitise bogus kubeconfig passed - form 2",
+			in:   `--argz --kubeconfig "not really a kubeconfig"`,
+			out:  "--argz --kubeconfig '*****'",
+		},
+		{
+			desc: "Sanitise bogus kubeconfig passed - form 3",
+			in: `--argz --kubeconfig <(echo 'not
+			really
+			a
+			kubeconfig')`,
+			out: "--argz --kubeconfig '*****'",
+		},
+		{
 			desc: "Don't sanitise when no kubeconfig passed",
 			in:   "--kubeconfig --argzz",
 			out:  "--kubeconfig --argzz",
