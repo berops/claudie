@@ -42,7 +42,7 @@ spec:
             - --cloud-provider=externalgrpc
             - --cloud-config=/etc/claudie/cloud-config/cloud-config
             - --kubeconfig=/etc/claudie/kubeconfig/kubeconfig
-            - --v=5
+            - --ignore-daemonsets-utilization=true
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: kubeconfig

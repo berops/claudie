@@ -54,6 +54,7 @@ func NewClaudieCloudProvider(projectName, clusterName string) *ClaudieCloudProvi
 		projectName:    projectName,
 		configCluster:  cluster,
 		nodeGroupCache: getNodeGroupCache(cluster.ClusterInfo.NodePools),
+		nodeManager:    node_manager.NewNodeManager(cluster.ClusterInfo.NodePools),
 	}
 }
 
