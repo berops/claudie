@@ -8,8 +8,8 @@ spec:
     app: autoscaler-adapter-{{ .ClusterID }}
   ports:
     - protocol: TCP
-      port: 50000
-      targetPort: 50000
+      port: {{ .AdapterPort }}
+      targetPort: {{ .AdapterPort }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -31,7 +31,7 @@ spec:
           image: ghcr.io/berops/claudie/autoscaler-adapter
           env:
             - name: ADAPTER_PORT
-              value: "50000"
+              value: "{{ .AdapterPort }}"
             - name: CLUSTER_NAME
               value: {{ .ClusterName }}
             - name: PROJECT_NAME
@@ -44,4 +44,4 @@ spec:
               cpu: 160m
               memory: 100Mi
           ports:
-            - containerPort: 50000
+            - containerPort: {{ .AdapterPort }}

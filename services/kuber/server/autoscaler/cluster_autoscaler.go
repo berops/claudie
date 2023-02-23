@@ -16,6 +16,7 @@ const (
 	autoscalerAdapterTemplate   = "autoscaler-adapter.goyaml"
 	clusterAutoscalerDeployment = "ca.yaml"
 	autoscalerAdapterDeployment = "aa.yaml"
+	defaultAdapterPort          = "50000"
 )
 
 type AutoscalerBuilder struct {
@@ -25,13 +26,15 @@ type AutoscalerBuilder struct {
 }
 
 type AutoscalerDeploymentData struct {
-	ClusterID string
+	ClusterID   string
+	AdapterPort string
 }
 
 type AutoscalerAdapterDeploymentData struct {
 	ClusterID   string
 	ClusterName string
 	ProjectName string
+	AdapterPort string
 }
 
 func NewAutoscalerBuilder(projectName string, cluster *pb.K8Scluster, directory string) *AutoscalerBuilder {
@@ -85,8 +88,17 @@ func (ab *AutoscalerBuilder) generateFiles() error {
 	}
 	// Prepare data
 	clusterId := fmt.Sprintf("%s-%s", ab.cluster.ClusterInfo.Name, ab.cluster.ClusterInfo.Hash)
-	aaData := &AutoscalerAdapterDeploymentData{ClusterName: ab.cluster.ClusterInfo.Name, ProjectName: ab.projectName, ClusterID: clusterId}
-	caData := &AutoscalerDeploymentData{ClusterID: clusterId}
+
+	aaData := &AutoscalerAdapterDeploymentData{
+		ClusterName: ab.cluster.ClusterInfo.Name,
+		ProjectName: ab.projectName,
+		ClusterID:   clusterId,
+		AdapterPort: defaultAdapterPort,
+	}
+	caData := &AutoscalerDeploymentData{
+		ClusterID:   clusterId,
+		AdapterPort: defaultAdapterPort,
+	}
 
 	// Generate files
 	if err := tpl.Generate(aa, autoscalerAdapterDeployment, aaData); err != nil {

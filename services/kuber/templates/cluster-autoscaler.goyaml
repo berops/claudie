@@ -4,7 +4,7 @@ metadata:
   name: autoscaler-config-{{ .ClusterID }}
 data:
   cloud-config: |-
-    address: "autoscaler-adapter-{{ .ClusterID }}"
+    address: "autoscaler-adapter-{{ .ClusterID }}:{{ .AdapterPort }}"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -39,16 +39,16 @@ spec:
           command:
             - ./cluster-autoscaler
             - --cloud-provider=externalgrpc
-            - --cloud-config=/etc/claudie/cloud-config
-            - --kubeconfig=/etc/claudie/kubeconfig
+            - --cloud-config=/etc/claudie/cloud-config/cloud-config
+            - --kubeconfig=/etc/claudie/kubeconfig/kubeconfig
             - --v=5
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: kubeconfig
-              mountPath: /etc/claudie
+              mountPath: /etc/claudie/kubeconfig
               readOnly: true
             - name: cloud-config
-              mountPath: /etc/claudie
+              mountPath: /etc/claudie/cloud-config
               readOnly: true
       volumes:
         - name: kubeconfig
