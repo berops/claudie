@@ -130,6 +130,7 @@ spec:
 `
 )
 
+// TestAutoscalerTemplate tests templates generated for autoscaler.
 func TestAutoscalerTemplate(t *testing.T) {
 	// Load
 	tpl := templateUtils.Templates{Directory: "."}
