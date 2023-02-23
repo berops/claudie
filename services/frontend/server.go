@@ -168,6 +168,19 @@ func (s *server) watchConfigs(logger zerolog.Logger) {
 	// keep track of which configs are done so we don't endlessly print the status.
 	inProgress := make(map[string]*pb.Config)
 
+	resp, err := s.cBox.GetAllConfigs(context.Background(), &pb.GetAllConfigsRequest{})
+	if err != nil {
+		logger.Error().Msgf("failed to retrieve configs from contextbox: %s", err)
+	}
+
+	for _, cfg := range resp.GetConfigs() {
+		for cluster, wf := range cfg.State {
+			if wf.Status == pb.Workflow_ERROR || wf.Status == pb.Workflow_DONE {
+				inProgress[cluster] = cfg
+			}
+		}
+	}
+
 	for {
 		select {
 		case <-s.done:
@@ -192,7 +205,7 @@ func (s *server) watchConfigs(logger zerolog.Logger) {
 					if wf.Status == pb.Workflow_ERROR {
 						if ok {
 							delete(inProgress, cluster)
-							logger.Info().Msg(fmt.Sprintf("workflow failed for cluster %s:%s", cluster, wf.Description))
+							logger.Error().Msg(fmt.Sprintf("workflow failed for cluster %s:%s", cluster, wf.Description))
 						}
 						continue
 					}
