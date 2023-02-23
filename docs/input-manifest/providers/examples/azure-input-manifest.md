@@ -9,13 +9,13 @@ providers:
   azure:
     - name: azure-1
       # Service principal secret.
-      client_secret: Abcd~EFg~H6Ijkls~ABC15sEFGK54s78X~Olk9
+      clientSecret: Abcd~EFg~H6Ijkls~ABC15sEFGK54s78X~Olk9
       # ID of your subscription.
-      subscription_id: 6a4dfsg7-sd4v-f4ad-dsva-ad4v616fd512
+      subscriptionId: 6a4dfsg7-sd4v-f4ad-dsva-ad4v616fd512
       # ID of your tenancy.
-      tenant_id: 54cdafa5-sdvs-45ds-546s-df651sfdt614
+      tenantId: 54cdafa5-sdvs-45ds-546s-df651sfdt614
       # ID of your service principal.
-      client_id: 0255sc23-76we-87g6-964f-abc1def2gh3l
+      clientId: 0255sc23-76we-87g6-964f-abc1def2gh3l
 
 nodePools:
   dynamic:
@@ -29,10 +29,10 @@ nodePools:
         zone: 1
       count: 2
       # VM size name.
-      server_type: Standard_B2s
+      serverType: Standard_B2s
       # URN of the image.
       image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
-      disk_size: 50
+      diskSize: 50
 
     - name: compute-1-azure
       providerSpec:
@@ -44,10 +44,10 @@ nodePools:
         zone: 1
       count: 2
       # VM size name.
-      server_type: Standard_B2s
+      serverType: Standard_B2s
       # URN of the image.
       image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
-      disk_size: 50
+      diskSize: 50
 
     - name: compute-2-azure
       providerSpec:
@@ -59,10 +59,10 @@ nodePools:
         zone: 1
       count: 2
       # VM size name.
-      server_type: Standard_B2s
+      serverType: Standard_B2s
       # URN of the image.
       image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
-      disk_size: 50
+      diskSize: 50
 
 kubernetes:
   clusters:
@@ -86,23 +86,23 @@ providers:
   azure:
     - name: azure-1
       # Service principal secret.
-      client_secret: Abcd~EFg~H6Ijkls~ABC15sEFGK54s78X~Olk9
+      clientSecret: Abcd~EFg~H6Ijkls~ABC15sEFGK54s78X~Olk9
       # ID of your subscription.
-      subscription_id: 6a4dfsg7-sd4v-f4ad-dsva-ad4v616fd512
+      subscriptionId: 6a4dfsg7-sd4v-f4ad-dsva-ad4v616fd512
       # ID of your tenancy.
-      tenant_id: 54cdafa5-sdvs-45ds-546s-df651sfdt614
+      tenantId: 54cdafa5-sdvs-45ds-546s-df651sfdt614
       # ID of your service principal.
-      client_id: 0255sc23-76we-87g6-964f-abc1def2gh3l
+      clientId: 0255sc23-76we-87g6-964f-abc1def2gh3l
 
     - name: azure-2
       # Service principal secret.
-      client_secret: Efgh~ijkL~on43noi~NiuscviBUIds78X~UkL7
+      clientSecret: Efgh~ijkL~on43noi~NiuscviBUIds78X~UkL7
       # ID of your subscription.
-      subscription_id: 0965bd5b-usa3-as3c-ads1-csdaba6fd512
+      subscriptionId: 0965bd5b-usa3-as3c-ads1-csdaba6fd512
       # ID of your tenancy.
-      tenant_id: 55safa5d-dsfg-546s-45ds-d51251sfdaba
+      tenantId: 55safa5d-dsfg-546s-45ds-d51251sfdaba
       # ID of your service principal.
-      client_id: 076wsc23-sdv2-09cA-8sd9-oigv23npn1p2
+      clientId: 076wsc23-sdv2-09cA-8sd9-oigv23npn1p2
 
 nodePools:
   dynamic:
@@ -116,10 +116,10 @@ nodePools:
         zone: 1
       count: 1
       # VM size name.
-      server_type: Standard_B2s
+      serverType: Standard_B2s
       # URN of the image.
       image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
-      disk_size: 50
+      diskSize: 50
 
     - name: control-azure-2
       providerSpec:
@@ -131,10 +131,10 @@ nodePools:
         zone: 2
       count: 2
       # VM size name.
-      server_type: Standard_B2s
+      serverType: Standard_B2s
       # URN of the image.
       image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
-      disk_size: 50
+      diskSize: 50
 
     - name: compute-azure-1
       providerSpec:
@@ -146,10 +146,10 @@ nodePools:
         zone: 2
       count: 2
       # VM size name.
-      server_type: Standard_B2s
+      serverType: Standard_B2s
       # URN of the image.
       image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
-      disk_size: 50
+      diskSize: 50
 
     - name: compute-azure-2
       providerSpec:
@@ -161,10 +161,10 @@ nodePools:
         zone: 3
       count: 2
       # VM size name.
-      server_type: Standard_B2s
+      serverType: Standard_B2s
       # URN of the image.
       image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
-      disk_size: 50
+      diskSize: 50
 
 kubernetes:
   clusters:

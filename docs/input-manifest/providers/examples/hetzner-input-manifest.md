@@ -23,10 +23,10 @@ nodePools:
         zone: hel1-dc2
       count: 1
       # Machine type name.
-      server_type: cpx11
+      serverType: cpx11
       # OS image name.
       image: ubuntu-22.04
-      disk_size: 50
+      diskSize: 50
 
     - name: compute-1-hetzner
       providerSpec:
@@ -38,10 +38,10 @@ nodePools:
         zone: fsn1-dc14
       count: 2
       # Machine type name.
-      server_type: cpx11
+      serverType: cpx11
       # OS image name.
       image: ubuntu-22.04
-      disk_size: 50
+      diskSize: 50
 
     - name: compute-2-hetzner
       providerSpec:
@@ -53,10 +53,10 @@ nodePools:
         zone: nbg1-dc3
       count: 2
       # Machine type name.
-      server_type: cpx11
+      serverType: cpx11
       # OS image name.
       image: ubuntu-22.04
-      disk_size: 50
+      diskSize: 50
 
 kubernetes:
   clusters:
@@ -98,10 +98,10 @@ nodePools:
         zone: hel1-dc2
       count: 1
       # Machine type name.
-      server_type: cpx11
+      serverType: cpx11
       # OS image name.
       image: ubuntu-22.04
-      disk_size: 50
+      diskSize: 50
 
     - name: control-hetzner-2
       providerSpec:
@@ -113,10 +113,10 @@ nodePools:
         zone: fsn1-dc14
       count: 2
       # Machine type name.
-      server_type: cpx11
+      serverType: cpx11
       # OS image name.
       image: ubuntu-22.04
-      disk_size: 50
+      diskSize: 50
 
     - name: compute-hetzner-1
       providerSpec:
@@ -128,10 +128,10 @@ nodePools:
         zone: fsn1-dc14
       count: 2
       # Machine type name.
-      server_type: cpx11
+      serverType: cpx11
       # OS image name.
       image: ubuntu-22.04
-      disk_size: 50
+      diskSize: 50
 
     - name: compute-hetzner-2
       providerSpec:
@@ -143,10 +143,10 @@ nodePools:
         zone: nbg1-dc3
       count: 2
       # Machine type name.
-      server_type: cpx11
+      serverType: cpx11
       # OS image name.
       image: ubuntu-22.04
-      disk_size: 50
+      diskSize: 50
 
 kubernetes:
   clusters:

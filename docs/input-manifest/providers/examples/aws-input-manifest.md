@@ -9,9 +9,9 @@ providers:
   aws:
     - name: aws-1
       # Access key to your AWS account.
-      access_key: SLDUTKSHFDMSJKDIALASSD
+      accessKey: SLDUTKSHFDMSJKDIALASSD
       # Secret key to your AWS account.
-      secret_key: iuhbOIJN+oin/olikDSadsnoiSVSDsacoinOUSHD
+      secretKey: iuhbOIJN+oin/olikDSadsnoiSVSDsacoinOUSHD
 
 nodePools:
   dynamic:
@@ -25,11 +25,11 @@ nodePools:
         zone: eu-central-1a
       count: 1
       # Instance type name.
-      server_type: t3.medium
+      serverType: t3.medium
       # AMI ID of the image.
       # Make sure to update it according to the region. 
       image: ami-0965bd5ba4d59211c
-      disk_size: 50
+      diskSize: 50
       
     - name: compute-1-aws
       providerSpec:
@@ -41,10 +41,11 @@ nodePools:
         zone: eu-central-2a
       count: 2
       # Instance type name.
-      server_type: t3.medium
+      serverType: t3.medium
       # AMI ID of the image.
       # Make sure to update it according to the region. 
       image: ami-0965bd5ba4d59211c
+      diskSize: 50
 
     - name: compute-2-aws
       providerSpec:
@@ -56,10 +57,11 @@ nodePools:
         zone: eu-central-3a
       count: 2
       # Instance type name.
-      server_type: t3.medium
+      serverType: t3.medium
       # AMI ID of the image.
       # Make sure to update it according to the region. 
       image: ami-0965bd5ba4d59211c
+      diskSize: 50
 
 kubernetes:
   clusters:
@@ -84,15 +86,15 @@ providers:
   aws:
     - name: aws-1
       # Access key to your AWS account.
-      access_key: SLDUTKSHFDMSJKDIALASSD
+      accessKey: SLDUTKSHFDMSJKDIALASSD
       # Secret key to your AWS account.
-      secret_key: iuhbOIJN+oin/olikDSadsnoiSVSDsacoinOUSHD
+      secretKey: iuhbOIJN+oin/olikDSadsnoiSVSDsacoinOUSHD
 
     - name: aws-2
       # Access key to your AWS account.
-      access_key: ODURNGUISNFAIPUNUGFINB
+      accessKey: ODURNGUISNFAIPUNUGFINB
       # Secret key to your AWS account.
-      secret_key: asduvnva+skd/ounUIBPIUjnpiuBNuNipubnPuip
+      secretKey: asduvnva+skd/ounUIBPIUjnpiuBNuNipubnPuip
 
 nodePools:
   dynamic:
@@ -105,11 +107,11 @@ nodePools:
         zone: eu-central-1a
       count: 1
       # Instance type name.
-      server_type: t3.medium
+      serverType: t3.medium
       # AMI ID of the image.
       # Make sure to update it according to the region. 
       image: ami-0965bd5ba4d59211c
-      disk_size: 50
+      diskSize: 50
 
     - name: control-aws-2
       providerSpec:
@@ -121,11 +123,11 @@ nodePools:
         zone: eu-north-1a
       count: 2
       # Instance type name.
-      server_type: t3.medium
+      serverType: t3.medium
       # AMI ID of the image.
       # Make sure to update it according to the region. 
       image: ami-03df6dea56f8aa618
-      disk_size: 50
+      diskSize: 50
 
     - name: compute-aws-1
       providerSpec:
@@ -137,10 +139,11 @@ nodePools:
         zone: eu-central-2a
       count: 2
       # Instance type name.
-      server_type: t3.medium
+      serverType: t3.medium
       # AMI ID of the image.
       # Make sure to update it according to the region. 
       image: ami-0965bd5ba4d59211c
+      diskSize: 50
 
     - name: compute-aws-2
       providerSpec:
@@ -152,10 +155,11 @@ nodePools:
         zone: eu-north-3a
       count: 2
       # Instance type name.
-      server_type: t3.medium
+      serverType: t3.medium
       # AMI ID of the image.
       # Make sure to update it according to the region. 
       image: ami-03df6dea56f8aa618
+      diskSize: 50
 
 kubernetes:
   clusters:
