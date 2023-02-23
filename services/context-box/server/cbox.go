@@ -26,6 +26,7 @@ type ClaudieDB interface {
 	UpdateMsToNull(id string) error
 	UpdateDs(config *pb.Config) error
 	UpdateCs(config *pb.Config) error
+	UpdateWorkflowState(configName, clusterName string, workflow *pb.Workflow) error
 }
 
 // ConfigInfo struct describes data which cbox needs to hold in order to function properly
@@ -38,7 +39,7 @@ type ConfigInfo struct {
 	DsChecksum   []byte
 	BuilderTTL   int32
 	SchedulerTTL int32
-	ErrorMessage string
+	State        map[string]claudieDB.Workflow
 }
 
 const (
@@ -53,6 +54,16 @@ var (
 	lastQB = []string{}
 	lastQS = []string{}
 )
+
+// HasError returns true if any cluster errored while building.
+func (ci *ConfigInfo) HasError() bool {
+	for _, v := range ci.State {
+		if v.Status == pb.Workflow_ERROR.String() {
+			return true
+		}
+	}
+	return false
+}
 
 // GetName is function required by queue package to evaluate equivalence
 func (ci *ConfigInfo) GetName() string {
@@ -74,7 +85,17 @@ func getConfigInfos() ([]*ConfigInfo, error) {
 			DsChecksum:   config.DsChecksum,
 			BuilderTTL:   config.BuilderTTL,
 			SchedulerTTL: config.SchedulerTTL,
-			ErrorMessage: config.ErrorMessage,
+			State: func() map[string]claudieDB.Workflow {
+				state := make(map[string]claudieDB.Workflow)
+				for key, val := range config.State {
+					state[key] = claudieDB.Workflow{
+						Status:      val.Status.String(),
+						Stage:       val.Stage.String(),
+						Description: val.Description,
+					}
+				}
+				return state
+			}(),
 		}
 		result = append(result, configInfo)
 	}
@@ -97,8 +118,8 @@ func configCheck() error {
 
 		// check for Scheduler
 		if !checksum.CompareChecksums(config.DsChecksum, config.MsChecksum) {
-			// if scheduler ttl is 0 or smaller AND config has no errorMessage, add to scheduler Q
-			if config.SchedulerTTL <= 0 && len(config.ErrorMessage) == 0 {
+			// if scheduler ttl is 0 or smaller AND config has no workflow state yet, add to scheduler Q
+			if config.SchedulerTTL <= 0 && !config.HasError() {
 				if err := database.UpdateSchedulerTTL(config.Name, defaultSchedulerTTL); err != nil {
 					return err
 				}
@@ -112,8 +133,8 @@ func configCheck() error {
 
 		// check for Builder
 		if !checksum.CompareChecksums(config.DsChecksum, config.CsChecksum) {
-			// if builder ttl is 0 or smaller AND config has no errorMessage, add to builder Q
-			if config.BuilderTTL <= 0 && len(config.ErrorMessage) == 0 {
+			// if builder ttl is 0 or smaller AND config has no workflow state yet, add to builder Q
+			if config.BuilderTTL <= 0 && !config.HasError() {
 				if err := database.UpdateBuilderTTL(config.Name, defaultBuilderTTL); err != nil {
 					return err
 				}

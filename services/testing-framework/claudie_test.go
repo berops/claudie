@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -235,8 +236,16 @@ func configChecker(ctx context.Context, c pb.ContextBoxServiceClient, testSetNam
 				return fmt.Errorf("error while waiting for config to finish: %w", err)
 			}
 			if config != nil {
-				if len(config.Config.ErrorMessage) > 0 {
-					return fmt.Errorf("error while checking config %s : %s", config.Config.Name, config.Config.ErrorMessage)
+				builder := new(strings.Builder)
+				for _, wf := range config.Config.State {
+					if wf.Status == pb.Workflow_ERROR {
+						builder.WriteString(wf.Description)
+						builder.WriteString("\n")
+					}
+				}
+
+				if builder.Len() != 0 {
+					return fmt.Errorf("error while checking config %s : %s", config.Config.Name, builder.String())
 				}
 
 				// if checksums are equal, the config has been processed by claudie

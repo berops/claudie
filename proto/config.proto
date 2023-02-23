@@ -13,7 +13,45 @@ message Config {
   bytes csChecksum = 8;
   int32 builderTTL = 9;
   int32 schedulerTTL = 10;
-  string errorMessage = 11;
+  // Per-cluster workflow state.
+  map<string, Workflow> state = 11;
+}
+
+message Workflow {
+  enum Stage {
+    // NONE indicates that no stage is currently executing.
+    NONE = 0;
+    // TERRAFORMER indicates that the cluster is currently being build in terraformer.
+    TERRAFORMER = 1;
+    // ANSIBLER indicates that the cluster is currently being build in ansibler.
+    ANSIBLER = 2;
+    // KUBE_ELEVEN indicates that the cluster is currently being build in kube eleven.
+    KUBE_ELEVEN = 3;
+    // KUBER indicates that the cluster is currently being build in kuber.
+    KUBER = 4;
+    // SCHEDULER indicates that the config is being processed by the scheduler.
+    SCHEDULER = 5;
+    // DESTROY_TERRAFORMER indicates that infra for a cluster is being deleted.
+    DESTROY_TERRAFORMER = 7;
+    // DESTROY_KUBER indicates that data for a cluster is being deleted.
+    DESTROY_KUBER = 8;
+    // DELETE_NODES indicates the nodes are being deleted for the cluster.
+    DELETE_NODES = 9;
+  }
+
+  enum Status {
+    // DONE indicates that the workflow has finished.
+    DONE = 0;
+    // ERROR indicates that an error occurred while building the cluster.
+    ERROR = 1;
+    // IN_PROGRESS indicates that the cluster is currently being build.
+    IN_PROGRESS = 2;
+  }
+
+  Stage stage = 1;
+  Status status = 2;
+  // additional information describing the state and status.
+  string description = 3;
 }
 
 message Project {
@@ -48,8 +86,8 @@ message Role {
   string name = 1;
   string protocol = 2;
   int32 port = 3;
-  int32 targetPort = 4;  
-  Target target = 5;  
+  int32 targetPort = 4;
+  Target target = 5;
   RoleType roleType = 6;
 }
 
@@ -100,7 +138,7 @@ message Node {
 message Provider {
   //general
   string specName = 1;
-  string cloudProviderName = 2; 
+  string cloudProviderName = 2;
   //credentilas is used as a variable for secret info i.e. private key, api token, secret etc
   string credentials = 3;
   //gcp
@@ -111,7 +149,7 @@ message Provider {
   string oci_fingerprint = 7;
   string oci_compartment_ocid = 8;
   //aws
-  string aws_access_key = 9; 
+  string aws_access_key = 9;
   //azure
   string azure_subscription_id = 10;
   string azure_tenant_id = 11;

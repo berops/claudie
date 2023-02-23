@@ -10,8 +10,16 @@ enum IdType {
 }
 
 // Save
-message SaveConfigRequest { Config config = 1; }
-message SaveConfigResponse { Config config = 1; }
+message SaveConfigRequest {Config config = 1;}
+message SaveConfigResponse {Config config = 1;}
+
+message SaveWorkflowStateRequest {
+  string configName = 1;
+  string clusterName = 2;
+  Workflow workflow = 3;
+}
+
+message SaveWorkflowStateResponse {}
 
 // Get
 message GetConfigRequest {}
@@ -35,6 +43,7 @@ service ContextBoxService {
   rpc SaveConfigFrontEnd(SaveConfigRequest) returns (SaveConfigResponse);
   rpc SaveConfigScheduler(SaveConfigRequest) returns (SaveConfigResponse);
   rpc SaveConfigBuilder(SaveConfigRequest) returns (SaveConfigResponse);
+  rpc SaveWorkflowState(SaveWorkflowStateRequest) returns (SaveWorkflowStateResponse);
   // Get
   rpc GetConfigFromDB(GetConfigFromDBRequest) returns (GetConfigFromDBResponse);
   rpc GetConfigByName(GetConfigByNameRequest) returns (GetConfigByNameResponse);

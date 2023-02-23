@@ -91,12 +91,18 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 // returns error if not successful, nil otherwise
 func saveErrorMessage(config *pb.Config, c pb.ContextBoxServiceClient, err error) error {
 	config.CurrentState = config.DesiredState // Update currentState, so we can use it for deletion later
-	config.ErrorMessage = err.Error()
-	errSave := cbox.SaveConfigScheduler(c, &pb.SaveConfigRequest{Config: config})
-	if errSave != nil {
-		return fmt.Errorf("error while saving the config: %w", err)
+
+	if config.State != nil {
+		config.State = make(map[string]*pb.Workflow)
 	}
-	return nil
+
+	config.State["scheduler"] = &pb.Workflow{
+		Stage:       pb.Workflow_SCHEDULER,
+		Status:      pb.Workflow_ERROR,
+		Description: err.Error(),
+	}
+
+	return cbox.SaveConfigScheduler(c, &pb.SaveConfigRequest{Config: config})
 }
 
 // healthCheck function is used for querying readiness of the pod running this microservice

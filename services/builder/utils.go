@@ -10,11 +10,19 @@ import (
 // destroyConfig destroys all the current state of the config.
 func destroyConfig(config *pb.Config, clusterView *ClusterView, c pb.ContextBoxServiceClient) error {
 	if err := utils.ConcurrentExec(config.CurrentState.Clusters, func(cluster *pb.K8Scluster) error {
-		return destroyCluster(&BuilderContext{
+		err := destroyCluster(&BuilderContext{
 			projectName:   config.Name,
 			cluster:       cluster,
 			loadbalancers: clusterView.Loadbalancers[cluster.ClusterInfo.Name],
-		})
+			Workflow:      clusterView.ClusterWorkflows[cluster.ClusterInfo.Name],
+		}, c)
+
+		if err != nil {
+			clusterView.SetWorkflowError(cluster.ClusterInfo.Name, err)
+			return err
+		}
+
+		return nil
 	}); err != nil {
 		return err
 	}
@@ -23,9 +31,10 @@ func destroyConfig(config *pb.Config, clusterView *ClusterView, c pb.ContextBoxS
 }
 
 // destroy destroys any Loadbalancers or the cluster itself.
-func destroy(projectName, clusterName string, clusterView *ClusterView) (bool, error) {
+func destroy(projectName, clusterName string, clusterView *ClusterView, c pb.ContextBoxServiceClient) (bool, error) {
 	deleteCtx := &BuilderContext{
 		projectName: projectName,
+		Workflow:    clusterView.ClusterWorkflows[clusterName],
 	}
 
 	if clusterView.Clusters[clusterName] != nil && clusterView.DesiredClusters[clusterName] == nil {
@@ -37,7 +46,7 @@ func destroy(projectName, clusterName string, clusterView *ClusterView) (bool, e
 	}
 
 	if deleteCtx.cluster != nil || len(deleteCtx.loadbalancers) > 0 {
-		if err := destroyCluster(deleteCtx); err != nil {
+		if err := destroyCluster(deleteCtx, c); err != nil {
 			return false, err
 		}
 
@@ -50,17 +59,31 @@ func destroy(projectName, clusterName string, clusterView *ClusterView) (bool, e
 	return false, nil
 }
 
-// saveErrorMessage saves error message to config
-func saveErrorMessage(config *pb.Config, c pb.ContextBoxServiceClient, err error) error {
+// saveConfigWithWorkflowError saves config with workflow states
+func saveConfigWithWorkflowError(config *pb.Config, c pb.ContextBoxServiceClient, clusterView *ClusterView) error {
 	if config.DesiredState != nil {
 		// Update currentState preemptively, so we can use it for terraform destroy
 		// id DesiredState is null, we are already in deletion process, thus CurrentState should stay as is when error occurs
 		config.CurrentState = config.DesiredState
 	}
-	config.ErrorMessage = err.Error()
-	errSave := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
-	if errSave != nil {
-		return fmt.Errorf("error while saving the config in Builder: %w", err)
+
+	config.State = clusterView.ClusterWorkflows
+
+	return cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
+}
+
+func updateWorkflowStateInDB(configName, clusterName string, wf *pb.Workflow, c pb.ContextBoxServiceClient) error {
+	if configName == "" {
+		return fmt.Errorf("config name must not be empty when updating workflow state")
 	}
-	return nil
+
+	if clusterName == "" {
+		return fmt.Errorf("cluster name must not be empty when updating workflow state")
+	}
+
+	return cbox.SaveWorkflowState(c, &pb.SaveWorkflowStateRequest{
+		ConfigName:  configName,
+		ClusterName: clusterName,
+		Workflow:    wf,
+	})
 }

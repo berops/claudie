@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -49,6 +50,9 @@ type server struct {
 	// groups is used to handle a graceful shutdown of the server.
 	// It will wait for all spawned go-routines to finish their work.
 	group sync.WaitGroup
+
+	// done indicates that the server is in shutdown.
+	done chan struct{}
 }
 
 func newServer(manifestDir string, service string) (*server, error) {
@@ -73,20 +77,25 @@ func newServer(manifestDir string, service string) (*server, error) {
 	}
 
 	s := &server{
+		done:        make(chan struct{}),
 		router:      http.NewServeMux(),
 		manifestDir: manifestDir,
 		conn:        conn,
 		cBox:        pb.NewContextBoxServiceClient(conn),
 	}
 
-	s.routes()
+	s.routes(log.Logger)
 
 	s.server = &http.Server{Handler: s.router, ReadHeaderTimeout: 2 * time.Second}
+
+	go s.watchConfigs(log.Logger)
 
 	return s, s.healthcheck()()
 }
 
 func (s *server) GracefulShutdown() error {
+	close(s.done)
+
 	// First shutdown the http server to block any incoming connections.
 	if err := s.server.Shutdown(context.Background()); err != nil {
 		return err
@@ -104,8 +113,8 @@ func (s *server) ListenAndServe(addr string, port int) error {
 	return s.server.ListenAndServe()
 }
 
-func (s *server) routes() {
-	s.router.HandleFunc("/reload", s.handleReload(log.Logger))
+func (s *server) routes(logger zerolog.Logger) {
+	s.router.HandleFunc("/reload", s.handleReload(logger))
 }
 
 // healthCheck checks if the manifestDir exists and the underlying gRPC
@@ -147,5 +156,64 @@ func (s *server) handleReload(logger zerolog.Logger) http.HandlerFunc {
 		}()
 
 		w.WriteHeader(http.StatusOK)
+	}
+}
+
+func (s *server) watchConfigs(logger zerolog.Logger) {
+	s.group.Add(1)
+	defer s.group.Done()
+
+	ticker := time.NewTicker(40 * time.Second)
+
+	// keep track of which configs are done so we don't endlessly print the status.
+	inProgress := make(map[string]*pb.Config)
+
+	for {
+		select {
+		case <-s.done:
+			return
+		case <-ticker.C:
+			resp, err := s.cBox.GetAllConfigs(context.Background(), &pb.GetAllConfigsRequest{})
+			if err != nil {
+				logger.Error().Msgf("failed to retrieve configs from contextbox: %s", err)
+				break
+			}
+
+			if len(resp.GetConfigs()) == 0 && len(inProgress) > 0 {
+				for cluster, cfg := range inProgress {
+					logger.Info().Msgf(fmt.Sprintf("Config: %s - cluster %s has been deleted", cfg.Name, cluster))
+					delete(inProgress, cluster)
+				}
+			}
+
+			for _, config := range resp.GetConfigs() {
+				for cluster, wf := range config.State {
+					_, ok := inProgress[cluster]
+					if wf.Status == pb.Workflow_ERROR {
+						if ok {
+							delete(inProgress, cluster)
+							logger.Info().Msg(fmt.Sprintf("workflow failed for cluster %s:%s", cluster, wf.Description))
+						}
+						continue
+					}
+					if wf.Status == pb.Workflow_DONE {
+						if ok {
+							delete(inProgress, cluster)
+							logger.Info().Msg(fmt.Sprintf("workflow finished for cluster %s", cluster))
+						}
+						continue
+					}
+
+					inProgress[cluster] = config
+
+					builder := new(strings.Builder)
+					builder.WriteString(fmt.Sprintf("cluster %s currently in stage %s with status %s", cluster, wf.Stage.String(), wf.Status.String()))
+					if wf.Description != "" {
+						builder.WriteString(fmt.Sprintf(" %s", wf.Description))
+					}
+					logger.Info().Msg(fmt.Sprintf("Config: %s - %s", config.Name, builder.String()))
+				}
+			}
+		}
 	}
 }

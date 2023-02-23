@@ -22,6 +22,8 @@ type BuilderContext struct {
 	desiredLoadbalancers []*pb.LBcluster
 
 	deletedLoadBalancers []*pb.LBcluster
+
+	Workflow *pb.Workflow
 }
 
 func (ctx *BuilderContext) GetClusterName() string {
@@ -33,12 +35,12 @@ func (ctx *BuilderContext) GetClusterName() string {
 	}
 
 	// try to get the cluster name from the lbs if present
-	if len(ctx.loadbalancers) != 0 {
-		return ctx.loadbalancers[0].TargetedK8S
-	}
-
 	if len(ctx.desiredLoadbalancers) != 0 {
 		return ctx.desiredLoadbalancers[0].TargetedK8S
+	}
+
+	if len(ctx.loadbalancers) != 0 {
+		return ctx.loadbalancers[0].TargetedK8S
 	}
 
 	if len(ctx.deletedLoadBalancers) != 0 {
@@ -48,20 +50,20 @@ func (ctx *BuilderContext) GetClusterName() string {
 	return ""
 }
 
-func buildCluster(ctx *BuilderContext) (*BuilderContext, error) {
-	if err := callTerraformer(ctx); err != nil {
+func buildCluster(ctx *BuilderContext, c pb.ContextBoxServiceClient) (*BuilderContext, error) {
+	if err := callTerraformer(ctx, c); err != nil {
 		return nil, fmt.Errorf("error in Terraformer for cluster %s project %s : %w", ctx.GetClusterName(), ctx.projectName, err)
 	}
 
-	if err := callAnsibler(ctx); err != nil {
+	if err := callAnsibler(ctx, c); err != nil {
 		return nil, fmt.Errorf("error in Ansibler for cluster %s project %s : %w", ctx.GetClusterName(), ctx.projectName, err)
 	}
 
-	if err := callKubeEleven(ctx); err != nil {
+	if err := callKubeEleven(ctx, c); err != nil {
 		return nil, fmt.Errorf("error in KubeEleven for cluster %s project %s : %w", ctx.GetClusterName(), ctx.projectName, err)
 	}
 
-	if err := callKuber(ctx); err != nil {
+	if err := callKuber(ctx, c); err != nil {
 		return nil, fmt.Errorf("error in Kuber for cluster %s project %s : %w", ctx.GetClusterName(), ctx.projectName, err)
 	}
 
@@ -69,7 +71,12 @@ func buildCluster(ctx *BuilderContext) (*BuilderContext, error) {
 }
 
 // callTerraformer passes config to terraformer for building the infra
-func callTerraformer(ctx *BuilderContext) error {
+func callTerraformer(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+	ctx.Workflow.Stage = pb.Workflow_TERRAFORMER
+	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+		return err
+	}
+
 	cc, err := utils.GrpcDialWithInsecure("terraformer", envs.TerraformerURL)
 	if err != nil {
 		return err
@@ -101,7 +108,12 @@ func callTerraformer(ctx *BuilderContext) error {
 }
 
 // callAnsibler passes config to ansibler to set up VPN
-func callAnsibler(ctx *BuilderContext) error {
+func callAnsibler(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+	ctx.Workflow.Stage = pb.Workflow_ANSIBLER
+	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+		return err
+	}
+
 	cc, err := utils.GrpcDialWithInsecure("ansibler", envs.AnsiblerURL)
 	if err != nil {
 		return err
@@ -171,7 +183,12 @@ func callAnsibler(ctx *BuilderContext) error {
 }
 
 // callKubeEleven passes config to kubeEleven to bootstrap k8s cluster
-func callKubeEleven(ctx *BuilderContext) error {
+func callKubeEleven(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+	ctx.Workflow.Stage = pb.Workflow_KUBE_ELEVEN
+	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+		return err
+	}
+
 	cc, err := utils.GrpcDialWithInsecure("kubeEleven", envs.KubeElevenURL)
 	if err != nil {
 		return err
@@ -199,7 +216,12 @@ func callKubeEleven(ctx *BuilderContext) error {
 }
 
 // callKuber passes config to Kuber to apply any additional resources via kubectl
-func callKuber(ctx *BuilderContext) error {
+func callKuber(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+	ctx.Workflow.Stage = pb.Workflow_KUBER
+	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+		return err
+	}
+
 	cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL)
 	if err != nil {
 		return err
@@ -230,12 +252,12 @@ func callKuber(ctx *BuilderContext) error {
 }
 
 // destroyConfig destroys existing clusters infra for a config by calling Terraformer and Kuber
-func destroyCluster(ctx *BuilderContext) error {
-	if err := destroyConfigTerraformer(ctx); err != nil {
+func destroyCluster(ctx *BuilderContext, c pb.ContextBoxServiceClient) error {
+	if err := destroyConfigTerraformer(ctx, c); err != nil {
 		return fmt.Errorf("error in destroy config terraformer for config %s project %s : %w", ctx.GetClusterName(), ctx.projectName, err)
 	}
 
-	if err := deleteClusterData(ctx); err != nil {
+	if err := deleteClusterData(ctx, c); err != nil {
 		return fmt.Errorf("error in delete kubeconfig for config %s project %s : %w", ctx.GetClusterName(), ctx.projectName, err)
 	}
 
@@ -243,7 +265,12 @@ func destroyCluster(ctx *BuilderContext) error {
 }
 
 // destroyConfigTerraformer calls terraformer's DestroyInfrastructure function
-func destroyConfigTerraformer(ctx *BuilderContext) error {
+func destroyConfigTerraformer(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+	ctx.Workflow.Stage = pb.Workflow_DESTROY_TERRAFORMER
+	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+		return err
+	}
+
 	cc, err := utils.GrpcDialWithInsecure("terraformer", envs.TerraformerURL)
 	if err != nil {
 		return err
@@ -262,9 +289,13 @@ func destroyConfigTerraformer(ctx *BuilderContext) error {
 }
 
 // deleteClusterData deletes the kubeconfig and cluster metadata.
-func deleteClusterData(ctx *BuilderContext) error {
+func deleteClusterData(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
 	if ctx.cluster == nil {
 		return nil
+	}
+	ctx.Workflow.Stage = pb.Workflow_DESTROY_KUBER
+	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+		return err
 	}
 
 	cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL)

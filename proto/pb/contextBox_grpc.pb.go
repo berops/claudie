@@ -26,6 +26,7 @@ type ContextBoxServiceClient interface {
 	SaveConfigFrontEnd(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error)
 	SaveConfigScheduler(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error)
 	SaveConfigBuilder(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error)
+	SaveWorkflowState(ctx context.Context, in *SaveWorkflowStateRequest, opts ...grpc.CallOption) (*SaveWorkflowStateResponse, error)
 	// Get
 	GetConfigFromDB(ctx context.Context, in *GetConfigFromDBRequest, opts ...grpc.CallOption) (*GetConfigFromDBResponse, error)
 	GetConfigByName(ctx context.Context, in *GetConfigByNameRequest, opts ...grpc.CallOption) (*GetConfigByNameResponse, error)
@@ -66,6 +67,15 @@ func (c *contextBoxServiceClient) SaveConfigScheduler(ctx context.Context, in *S
 func (c *contextBoxServiceClient) SaveConfigBuilder(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error) {
 	out := new(SaveConfigResponse)
 	err := c.cc.Invoke(ctx, "/claudie.ContextBoxService/SaveConfigBuilder", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *contextBoxServiceClient) SaveWorkflowState(ctx context.Context, in *SaveWorkflowStateRequest, opts ...grpc.CallOption) (*SaveWorkflowStateResponse, error) {
+	out := new(SaveWorkflowStateResponse)
+	err := c.cc.Invoke(ctx, "/claudie.ContextBoxService/SaveWorkflowState", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -143,6 +153,7 @@ type ContextBoxServiceServer interface {
 	SaveConfigFrontEnd(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error)
 	SaveConfigScheduler(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error)
 	SaveConfigBuilder(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error)
+	SaveWorkflowState(context.Context, *SaveWorkflowStateRequest) (*SaveWorkflowStateResponse, error)
 	// Get
 	GetConfigFromDB(context.Context, *GetConfigFromDBRequest) (*GetConfigFromDBResponse, error)
 	GetConfigByName(context.Context, *GetConfigByNameRequest) (*GetConfigByNameResponse, error)
@@ -167,6 +178,9 @@ func (UnimplementedContextBoxServiceServer) SaveConfigScheduler(context.Context,
 }
 func (UnimplementedContextBoxServiceServer) SaveConfigBuilder(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SaveConfigBuilder not implemented")
+}
+func (UnimplementedContextBoxServiceServer) SaveWorkflowState(context.Context, *SaveWorkflowStateRequest) (*SaveWorkflowStateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SaveWorkflowState not implemented")
 }
 func (UnimplementedContextBoxServiceServer) GetConfigFromDB(context.Context, *GetConfigFromDBRequest) (*GetConfigFromDBResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetConfigFromDB not implemented")
@@ -252,6 +266,24 @@ func _ContextBoxService_SaveConfigBuilder_Handler(srv interface{}, ctx context.C
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ContextBoxServiceServer).SaveConfigBuilder(ctx, req.(*SaveConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ContextBoxService_SaveWorkflowState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SaveWorkflowStateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ContextBoxServiceServer).SaveWorkflowState(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/claudie.ContextBoxService/SaveWorkflowState",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ContextBoxServiceServer).SaveWorkflowState(ctx, req.(*SaveWorkflowStateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -400,6 +432,10 @@ var ContextBoxService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SaveConfigBuilder",
 			Handler:    _ContextBoxService_SaveConfigBuilder_Handler,
+		},
+		{
+			MethodName: "SaveWorkflowState",
+			Handler:    _ContextBoxService_SaveWorkflowState_Handler,
 		},
 		{
 			MethodName: "GetConfigFromDB",

@@ -35,6 +35,12 @@ func SaveConfigFrontEnd(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest)
 	}
 }
 
+// SaveWorkflowState update the workflow state for a config.
+func SaveWorkflowState(c pb.ContextBoxServiceClient, req *pb.SaveWorkflowStateRequest) error {
+	_, err := c.SaveWorkflowState(context.Background(), req)
+	return err
+}
+
 // SaveConfigScheduler saves config from Scheduler
 func SaveConfigScheduler(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest) error {
 	_, err := saveConfig(req, c.SaveConfigScheduler)
@@ -77,11 +83,10 @@ func GetAllConfigs(c pb.ContextBoxServiceClient) (*pb.GetAllConfigsResponse, err
 // DeleteConfig sets the manifest to null so that the next invocation of the workflow
 // for this config destroys the previous build infrastructure.
 func DeleteConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType) error {
-	res, err := c.DeleteConfig(context.Background(), &pb.DeleteConfigRequest{Id: id, Type: idType})
+	_, err := c.DeleteConfig(context.Background(), &pb.DeleteConfigRequest{Id: id, Type: idType})
 	if err != nil {
 		return fmt.Errorf("error deleting: %w", err)
 	}
-	log.Info().Msgf("Config will be deleted %v", res)
 	return nil
 }
 
