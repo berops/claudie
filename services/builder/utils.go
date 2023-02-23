@@ -22,6 +22,7 @@ func destroyConfig(config *pb.Config, clusterView *ClusterView, c pb.ContextBoxS
 			return err
 		}
 
+		clusterView.SetWorkflowDone(cluster.ClusterInfo.Name)
 		return nil
 	}); err != nil {
 		return err
