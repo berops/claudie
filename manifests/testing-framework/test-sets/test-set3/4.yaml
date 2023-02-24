@@ -1,13 +1,6 @@
 name: TestSet-3
 
 providers:
-  cloudflare:
-    - name: cloudflare-1
-      apiToken: replaceme-token
-  gcp:
-    - name: gcp-1
-      credentials: replaceme-key
-      gcpProject: replaceme-project
   hetzner:
     - name: hetzner-1
       credentials: replaceme-token
@@ -23,6 +16,13 @@ providers:
     - name: aws-1
       accessKey: replaceme-access-key
       secretKey: replaceme-secret-key
+  cloudflare:
+    - name: cloudflare-1
+      apiToken: replaceme-token
+  gcp:
+    - name: gcp-1
+      credentials: replaceme-key
+      gcpProject: replaceme-project
 
 nodePools:
   dynamic:
@@ -96,6 +96,7 @@ nodePools:
       serverType: e2-small
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
       diskSize: 50
+
 kubernetes:
   clusters:
     - name: ts3-c-1
