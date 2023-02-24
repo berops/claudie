@@ -92,7 +92,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 func saveErrorMessage(config *pb.Config, c pb.ContextBoxServiceClient, err error) error {
 	config.CurrentState = config.DesiredState // Update currentState, so we can use it for deletion later
 
-	if config.State != nil {
+	if config.State == nil {
 		config.State = make(map[string]*pb.Workflow)
 	}
 

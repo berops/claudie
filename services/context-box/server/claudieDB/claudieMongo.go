@@ -56,7 +56,7 @@ type configItem struct {
 
 // ConvertFromGRPCWorkflow converts the workflow state data from GRPC to the database representation.
 func ConvertFromGRPCWorkflow(w map[string]*pb.Workflow) map[string]Workflow {
-	state := make(map[string]Workflow)
+	state := make(map[string]Workflow, len(w))
 	for key, val := range w {
 		state[key] = Workflow{
 			Status:      val.Status.String(),
@@ -69,7 +69,7 @@ func ConvertFromGRPCWorkflow(w map[string]*pb.Workflow) map[string]Workflow {
 
 // ConvertToGRPCWorkflow converts the database representation fo the workflow state to GRPC.
 func ConvertToGRPCWorkflow(w map[string]Workflow) map[string]*pb.Workflow {
-	state := make(map[string]*pb.Workflow)
+	state := make(map[string]*pb.Workflow, len(w))
 	for key, val := range w {
 		state[key] = &pb.Workflow{
 			Stage:       pb.Workflow_Stage(pb.Workflow_Stage_value[val.Stage]),

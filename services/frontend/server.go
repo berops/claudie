@@ -163,7 +163,7 @@ func (s *server) watchConfigs(logger zerolog.Logger) {
 	s.group.Add(1)
 	defer s.group.Done()
 
-	ticker := time.NewTicker(40 * time.Second)
+	ticker := time.NewTicker(10 * time.Second)
 
 	// keep track of which configs are done so we don't endlessly print the status.
 	inProgress := make(map[string]*pb.Config)
@@ -194,7 +194,7 @@ func (s *server) watchConfigs(logger zerolog.Logger) {
 
 			if len(resp.GetConfigs()) == 0 && len(inProgress) > 0 {
 				for cluster, cfg := range inProgress {
-					logger.Info().Msgf(fmt.Sprintf("Config: %s - cluster %s has been deleted", cfg.Name, cluster))
+					logger.Info().Msgf("Config: %s - cluster %s has been deleted", cfg.Name, cluster)
 					delete(inProgress, cluster)
 				}
 			}
@@ -205,14 +205,14 @@ func (s *server) watchConfigs(logger zerolog.Logger) {
 					if wf.Status == pb.Workflow_ERROR {
 						if ok {
 							delete(inProgress, cluster)
-							logger.Error().Msg(fmt.Sprintf("workflow failed for cluster %s:%s", cluster, wf.Description))
+							logger.Error().Msgf("workflow failed for cluster %s:%s", cluster, wf.Description)
 						}
 						continue
 					}
 					if wf.Status == pb.Workflow_DONE {
 						if ok {
 							delete(inProgress, cluster)
-							logger.Info().Msg(fmt.Sprintf("workflow finished for cluster %s", cluster))
+							logger.Info().Msgf("workflow finished for cluster %s", cluster)
 						}
 						continue
 					}
@@ -222,9 +222,9 @@ func (s *server) watchConfigs(logger zerolog.Logger) {
 					builder := new(strings.Builder)
 					builder.WriteString(fmt.Sprintf("cluster %s currently in stage %s with status %s", cluster, wf.Stage.String(), wf.Status.String()))
 					if wf.Description != "" {
-						builder.WriteString(fmt.Sprintf(" %s", wf.Description))
+						builder.WriteString(fmt.Sprintf(" %s", strings.TrimSpace(wf.Description)))
 					}
-					logger.Info().Msg(fmt.Sprintf("Config: %s - %s", config.Name, builder.String()))
+					logger.Info().Msgf("Config: %s - %s", config.Name, builder.String())
 				}
 			}
 		}
