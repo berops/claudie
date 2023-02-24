@@ -121,7 +121,7 @@ loadBalancers:
   clusters:
     - name: ts3-lb-1
       roles:
-        - apiserver-lb
+        - random-lb
       dns:
         dnsZone: claudie.dev
         provider: cloudflare-1
