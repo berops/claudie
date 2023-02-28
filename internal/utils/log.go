@@ -90,10 +90,10 @@ func SanitiseURI(s string) string {
 func SanitiseKubeconfig(s string) string {
 	// (?s) enables matching through newline whitespace (lf,crlf..), which is
 	// relevant because the kubeconfig is likely multi-line.
-	// This regex only matches ''-delimited kubeconfig as that is how it's
-	// currently being passed in (i.e. double quotes are currently not
-	// handled).
-	kubeconfig := regexp.MustCompile(`(?s)--kubeconfig '(.*?)'`)
+	// This regex matches both single quotes ('')-delimited and double quotes
+	// ("")-delimited kubeconfig, as well as a kubeconfig passed in the
+	// following form: `--kubeconfig <(echo 'blah blah')`.
+	kubeconfig := regexp.MustCompile(`(?s)--kubeconfig ('(.*?)'|(\"(.*?)\")|<\(echo '.*?'\))`)
 
 	// The entire kubeconfig passed in after the flag is replaced with stars
 	// and returned.
