@@ -187,7 +187,7 @@ func setUpLoadbalancers(clusterName string, info *LBInfo) error {
 	err := utils.ConcurrentExec(info.LbClusters, func(lb *LBData) error {
 		directory := filepath.Join(directory, fmt.Sprintf("%s-%s", lb.DesiredLbCluster.ClusterInfo.Name, lb.DesiredLbCluster.ClusterInfo.Hash))
 		log.Info().Msgf("Setting up the LB %s", directory)
-		if err := setUpNodeExporter(lb.DesiredLbCluster, info.TargetK8sNodepool, directory); err != nil {
+		if err := setUpNodeExporter(lb.DesiredLbCluster, directory); err != nil {
 			return err
 		}
 		return setUpNginx(lb.DesiredLbCluster, info.TargetK8sNodepool, directory)
@@ -457,7 +457,7 @@ func setUpNginx(lb *pb.LBcluster, targetedNodepool []*pb.NodePool, directory str
 
 // setUpNodeExporter sets up node-exporter on the LB node
 // return error if not successful, nil otherwise
-func setUpNodeExporter(lb *pb.LBcluster, targetedNodepool []*pb.NodePool, directory string) error {
+func setUpNodeExporter(lb *pb.LBcluster, directory string) error {
 	//create key files for lb nodepools
 	if _, err := os.Stat(directory); os.IsNotExist(err) {
 		if err := os.MkdirAll(directory, os.ModePerm); err != nil {

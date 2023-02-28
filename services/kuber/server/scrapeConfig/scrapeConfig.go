@@ -36,7 +36,6 @@ const (
 // it will create the secret in a applied namespace
 // If there is no loadbalancers it will apply the config with no target endpoints
 func (sc ScrapeConfig) GenerateAndApplyScrapeConfig() error {
-
 	// Generate loadbalancers scrape config
 	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.KuberTemplates}
 	template := templateUtils.Templates{Directory: sc.Directory}
