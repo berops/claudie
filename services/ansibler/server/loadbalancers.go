@@ -101,7 +101,7 @@ type (
 		DesiredLbCluster *pb.LBcluster
 	}
 
-	NginxPlaybookData struct {
+	LbPlaybookData struct {
 		Loadbalancer string
 	}
 
@@ -442,7 +442,7 @@ func setUpNginx(lb *pb.LBcluster, targetedNodepool []*pb.NodePool, directory str
 	if err != nil {
 		return fmt.Errorf("error while loading %s for %s : %w", nginxPlaybookTpl, lb.ClusterInfo.Name, err)
 	}
-	err = template.Generate(tpl, nginxPlaybook, NginxPlaybookData{Loadbalancer: lb.ClusterInfo.Name})
+	err = template.Generate(tpl, nginxPlaybook, LbPlaybookData{Loadbalancer: lb.ClusterInfo.Name})
 	if err != nil {
 		return fmt.Errorf("error while generating %s for %s : %w", nginxPlaybook, lb.ClusterInfo.Name, err)
 	}
@@ -475,7 +475,7 @@ func setUpNodeExporter(lb *pb.LBcluster, targetedNodepool []*pb.NodePool, direct
     if err != nil {
         return fmt.Errorf("error while loading %s template for %s : %w", nodeExporterPlaybookTpl, lb.ClusterInfo.Name, err)
     }
-    err = template.Generate(tpl, nodeExporterPlaybook, NginxPlaybookData{Loadbalancer: lb.ClusterInfo.Name})
+    err = template.Generate(tpl, nodeExporterPlaybook, LbPlaybookData{Loadbalancer: lb.ClusterInfo.Name})
     if err != nil {
         return fmt.Errorf("error while generating %s for %s : %w", nodeExporterPlaybook, lb.ClusterInfo.Name, err)
     }
@@ -485,7 +485,7 @@ func setUpNodeExporter(lb *pb.LBcluster, targetedNodepool []*pb.NodePool, direct
     if err != nil {
         return fmt.Errorf("error while loading %s template for %s : %w", nodeExporterService, lb.ClusterInfo.Name, err)
     }
-    err = template.Generate(tpl, nodeExporterService, NginxPlaybookData{Loadbalancer: lb.ClusterInfo.Name})
+    err = template.Generate(tpl, nodeExporterService, LbPlaybookData{Loadbalancer: lb.ClusterInfo.Name})
     if err != nil {
         return fmt.Errorf("error while generating %s for %s : %w", nodeExporterService, lb.ClusterInfo.Name, err)
     }

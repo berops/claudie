@@ -39,6 +39,13 @@ message StoreClusterMetadataRequest {
 
 message StoreClusterMetadataResponse {}
 
+message StoreLbScrapeConfigRequest {
+  K8scluster cluster = 1;
+  repeated LBcluster desiredLoadbalancers = 2;
+}
+
+message StoreLbScrapeConfigResponse {}
+
 message DeleteClusterMetadataRequest {
   K8scluster cluster = 1;
 }
@@ -46,6 +53,7 @@ message DeleteClusterMetadataRequest {
 message DeleteClusterMetadataResponse {}
 
 service KuberService {
+  rpc StoreLbScrapeConfig(StoreLbScrapeConfigRequest) returns (StoreLbScrapeConfigResponse);
   rpc StoreClusterMetadata(StoreClusterMetadataRequest) returns (StoreClusterMetadataResponse);
   rpc DeleteClusterMetadata(DeleteClusterMetadataRequest) returns (DeleteClusterMetadataResponse);
   rpc SetUpStorage(SetUpStorageRequest) returns (SetUpStorageResponse);
