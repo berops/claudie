@@ -44,7 +44,7 @@ func StoreLbScrapeConfig(c pb.KuberServiceClient, req *pb.StoreLbScrapeConfigReq
 	if err != nil {
 		return nil, fmt.Errorf("error while calling StoreLbScrapeConfig: %w", err)
 	}
-	
+
 	return res, nil
 }
 

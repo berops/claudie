@@ -20,8 +20,8 @@ import (
 	"github.com/Berops/claudie/proto/pb"
 	"github.com/Berops/claudie/services/kuber/server/longhorn"
 	"github.com/Berops/claudie/services/kuber/server/nodes"
-	"github.com/Berops/claudie/services/kuber/server/secret"
 	"github.com/Berops/claudie/services/kuber/server/scrapeConfig"
+	"github.com/Berops/claudie/services/kuber/server/secret"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -69,9 +69,9 @@ func (s *server) StoreLbScrapeConfig(ctx context.Context, req *pb.StoreLbScrapeC
 	clusterDir := filepath.Join(outputDir, clusterID)
 
 	sc := scrapeconfig.ScrapeConfig{
-		Cluster: req.GetCluster(),
+		Cluster:    req.GetCluster(),
 		LBClusters: req.GetDesiredLoadbalancers(),
-		Directory: clusterDir,
+		Directory:  clusterDir,
 	}
 
 	if err := sc.GenerateAndApplyScrapeConfig(); err != nil {

@@ -210,11 +210,11 @@ func callKuber(ctx *BuilderContext) error {
 
 	log.Info().Msgf("Calling StoreLbScrapeConfig on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
 	if _, err := kuber.StoreLbScrapeConfig(c, &pb.StoreLbScrapeConfigRequest{
-			Cluster: ctx.desiredCluster,
-			DesiredLoadbalancers: ctx.desiredLoadbalancers,
-		}); err != nil {
-			return err
-		}
+		Cluster:              ctx.desiredCluster,
+		DesiredLoadbalancers: ctx.desiredLoadbalancers,
+	}); err != nil {
+		return err
+	}
 
 	log.Info().Msgf("Calling SetUpStorage on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
 	resStorage, err := kuber.SetUpStorage(c, &pb.SetUpStorageRequest{DesiredCluster: ctx.desiredCluster})

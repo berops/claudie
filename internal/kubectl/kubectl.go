@@ -58,9 +58,9 @@ func (k *Kubectl) KubectlCreateOrPatchSecretFromFile(secretName string, secretFi
 	if namespace != "" {
 		namespace = fmt.Sprintf("-n %s", namespace)
 	}
-	command := fmt.Sprintf("kubectl create secret generic %s --save-config --dry-run=client --from-file=./%s -o yaml | kubectl  %s %s apply -f -", 
-	secretName, secretFileName, kubeconfig, namespace)
-	return k.run(command)	
+	command := fmt.Sprintf("kubectl create secret generic %s --save-config --dry-run=client --from-file=./%s -o yaml | kubectl  %s %s apply -f -",
+		secretName, secretFileName, kubeconfig, namespace)
+	return k.run(command)
 }
 
 // KubectlDeleteManifest runs kubectl delete in k.Directory, with specified manifest and specified namespace

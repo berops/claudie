@@ -458,46 +458,46 @@ func setUpNginx(lb *pb.LBcluster, targetedNodepool []*pb.NodePool, directory str
 // setUpNodeExporter sets up node-exporter on the LB node
 // return error if not successful, nil otherwise
 func setUpNodeExporter(lb *pb.LBcluster, targetedNodepool []*pb.NodePool, directory string) error {
-    //create key files for lb nodepools
-    if _, err := os.Stat(directory); os.IsNotExist(err) {
-        if err := os.MkdirAll(directory, os.ModePerm); err != nil {
-            return fmt.Errorf("failed to create directory %s : %w", directory, err)
-        }
-    }
-    if err := utils.CreateKeyFile(lb.ClusterInfo.PrivateKey, directory, fmt.Sprintf("key.%s", privateKeyExt)); err != nil {
-        return fmt.Errorf("failed to create key file for %s : %w", lb.ClusterInfo.Name, err)
-    }
+	//create key files for lb nodepools
+	if _, err := os.Stat(directory); os.IsNotExist(err) {
+		if err := os.MkdirAll(directory, os.ModePerm); err != nil {
+			return fmt.Errorf("failed to create directory %s : %w", directory, err)
+		}
+	}
+	if err := utils.CreateKeyFile(lb.ClusterInfo.PrivateKey, directory, fmt.Sprintf("key.%s", privateKeyExt)); err != nil {
+		return fmt.Errorf("failed to create key file for %s : %w", lb.ClusterInfo.Name, err)
+	}
 
-    // generate node-exporter playbook template
-    templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.AnsiblerTemplates}
-    template := templateUtils.Templates{Directory: directory}
-    tpl, err := templateLoader.LoadTemplate(nodeExporterPlaybookTpl)
-    if err != nil {
-        return fmt.Errorf("error while loading %s template for %s : %w", nodeExporterPlaybookTpl, lb.ClusterInfo.Name, err)
-    }
-    err = template.Generate(tpl, nodeExporterPlaybook, LbPlaybookData{Loadbalancer: lb.ClusterInfo.Name})
-    if err != nil {
-        return fmt.Errorf("error while generating %s for %s : %w", nodeExporterPlaybook, lb.ClusterInfo.Name, err)
-    }
+	// generate node-exporter playbook template
+	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.AnsiblerTemplates}
+	template := templateUtils.Templates{Directory: directory}
+	tpl, err := templateLoader.LoadTemplate(nodeExporterPlaybookTpl)
+	if err != nil {
+		return fmt.Errorf("error while loading %s template for %s : %w", nodeExporterPlaybookTpl, lb.ClusterInfo.Name, err)
+	}
+	err = template.Generate(tpl, nodeExporterPlaybook, LbPlaybookData{Loadbalancer: lb.ClusterInfo.Name})
+	if err != nil {
+		return fmt.Errorf("error while generating %s for %s : %w", nodeExporterPlaybook, lb.ClusterInfo.Name, err)
+	}
 
-    // create node-exporter.service.j2 for the node-exporter playbook
-    tpl, err = templateLoader.LoadTemplate(nodeExporterService)
-    if err != nil {
-        return fmt.Errorf("error while loading %s template for %s : %w", nodeExporterService, lb.ClusterInfo.Name, err)
-    }
-    err = template.Generate(tpl, nodeExporterService, LbPlaybookData{Loadbalancer: lb.ClusterInfo.Name})
-    if err != nil {
-        return fmt.Errorf("error while generating %s for %s : %w", nodeExporterService, lb.ClusterInfo.Name, err)
-    }
+	// create node-exporter.service.j2 for the node-exporter playbook
+	tpl, err = templateLoader.LoadTemplate(nodeExporterService)
+	if err != nil {
+		return fmt.Errorf("error while loading %s template for %s : %w", nodeExporterService, lb.ClusterInfo.Name, err)
+	}
+	err = template.Generate(tpl, nodeExporterService, LbPlaybookData{Loadbalancer: lb.ClusterInfo.Name})
+	if err != nil {
+		return fmt.Errorf("error while generating %s for %s : %w", nodeExporterService, lb.ClusterInfo.Name, err)
+	}
 
-    //run the playbook
-    ansible := ansible.Ansible{Playbook: nodeExporterPlaybook, Inventory: filepath.Join("..", inventoryFile), Directory: directory}
-    err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s", lb.ClusterInfo.Name))
-    if err != nil {
-        return fmt.Errorf("error while running ansible for %s : %w", lb.ClusterInfo.Name, err)
-    }
+	//run the playbook
+	ansible := ansible.Ansible{Playbook: nodeExporterPlaybook, Inventory: filepath.Join("..", inventoryFile), Directory: directory}
+	err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s", lb.ClusterInfo.Name))
+	if err != nil {
+		return fmt.Errorf("error while running ansible for %s : %w", lb.ClusterInfo.Name, err)
+	}
 
-    return nil
+	return nil
 }
 
 // splitNodesByType returns two slices of *pb.Node, one for control nodes and one for compute
