@@ -232,13 +232,13 @@ func callKuber(ctx *BuilderContext) error {
 		return err
 	}
 
-	if isAutoscaled(ctx.desiredCluster) {
+	if utils.IsAutoscaled(ctx.desiredCluster) {
 		// Set up Autoscaler if desired state is autoscaled
 		log.Info().Msgf("Calling SetUpClusterAutoscaler on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
 		if _, err := kuber.SetUpClusterAutoscaler(c, &pb.SetUpClusterAutoscalerRequest{ProjectName: ctx.projectName, Cluster: ctx.desiredCluster}); err != nil {
 			return err
 		}
-	} else if isAutoscaled(ctx.cluster) {
+	} else if utils.IsAutoscaled(ctx.cluster) {
 		// Destroy Autoscaler if current state is autoscaled, but desired is not
 		log.Info().Msgf("Calling DestroyClusterAutoscaler on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
 		if _, err := kuber.DestroyClusterAutoscaler(c, &pb.DestroyClusterAutoscalerRequest{ProjectName: ctx.projectName, Cluster: ctx.cluster}); err != nil {
@@ -269,7 +269,7 @@ func destroyCluster(ctx *BuilderContext) error {
 	}
 
 	// Destroy Autoscaler if current state is autoscaled
-	if isAutoscaled(ctx.cluster) {
+	if utils.IsAutoscaled(ctx.cluster) {
 		log.Info().Msgf("Calling DestroyClusterAutoscaler on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
 		if _, err := kuber.DestroyClusterAutoscaler(c, &pb.DestroyClusterAutoscalerRequest{ProjectName: ctx.projectName, Cluster: ctx.cluster}); err != nil {
 			return err
