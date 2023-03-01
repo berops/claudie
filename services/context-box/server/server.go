@@ -201,13 +201,14 @@ func (s *server) UpdateNodepool(ctx context.Context, req *pb.UpdateNodepoolReque
 	}
 	// Check if config is currently not in any build stage
 	if config.BuilderTTL == 0 && config.SchedulerTTL == 0 {
-		// Check if all checksums are equal, meaning config is not about to get pushed to the queue || is in the queue
+		// Check if all checksums are equal, meaning config is not about to get pushed to the queue or is in the queue
 		if checksum.CompareChecksums(config.MsChecksum, config.DsChecksum) && checksum.CompareChecksums(config.DsChecksum, config.CsChecksum) {
 			// Find and update correct nodepool count & nodes in desired state.
 			if err := updateDesiredNodepool(req.ClusterName, req.Nodepool.Name, req.Nodepool.Count, req.Nodepool.Nodes, config.DesiredState); err != nil {
 				return nil, fmt.Errorf("error while updating desired state in project %s : %w", config.Name, err)
 			}
 			// Find and update correct nodepool nodes in current state.
+			// This has to be done in order 
 			if err := updateCurrentNodepool(req.ClusterName, req.Nodepool.Name, req.Nodepool.Nodes, config.CurrentState); err != nil {
 				return nil, fmt.Errorf("error while updating current state in project %s : %w", config.Name, err)
 			}

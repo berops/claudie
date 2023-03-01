@@ -3,14 +3,19 @@ package node_manager
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	compute "cloud.google.com/go/compute/apiv1"
 	"cloud.google.com/go/compute/apiv1/computepb"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/hetznercloud/hcloud-go/hcloud"
+	"github.com/oracle/oci-go-sdk/v65/common"
+	"github.com/oracle/oci-go-sdk/v65/core"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 	k8sV1 "k8s.io/api/core/v1"
@@ -18,29 +23,24 @@ import (
 )
 
 const (
-	amd64                  = "amd64"
-	arm64                  = "arm64"
 	defaultPodAmountsLimit = 110
 )
 
 type NodeManager struct {
-	// TODO merge them to single cache map
 	hetznerVMs map[string]*typeInfo
 	gcpVMs     map[string]*typeInfo
 	awsVMs     map[string]*typeInfo
-	// azureVMs
-	// ociVMs
+	azureVMs   map[string]*typeInfo
+	ociVMs     map[string]*typeInfo
 }
 
 type typeInfo struct {
-	// Cpu cores in milicores
+	// Cpu cores
 	cpu int64
 	// Size in bytes
 	memory int64
 	// Size in bytes
 	disk int64
-	// Architecture
-	arch string
 }
 
 // NewNodeManager returns a NodeManager pointer with initialised caches about nodes.
@@ -49,9 +49,9 @@ func NewNodeManager(nodepools []*pb.NodePool) *NodeManager {
 	cacheProviderMap := make(map[string]struct{})
 	for _, np := range nodepools {
 		if np.AutoscalerConfig != nil {
-			// Check if cache was already set.
-			// TODO check regions as well
-			if _, ok := cacheProviderMap[np.Provider.CloudProviderName]; !ok {
+			// Check if cache was already set. Check together with region and zone as not all instances can be supported everywhere.
+			providerId := fmt.Sprintf("%s-%s-%s", np.Provider.CloudProviderName, np.Region, np.Zone)
+			if _, ok := cacheProviderMap[providerId]; !ok {
 				switch np.Provider.CloudProviderName {
 				case "hetzner":
 					// Create client and create cache.
@@ -83,7 +83,7 @@ func NewNodeManager(nodepools []*pb.NodePool) *NodeManager {
 						if res, err := client.DescribeInstanceTypes(context.Background(), &ec2.DescribeInstanceTypesInput{MaxResults: &maxResults, NextToken: token}); err != nil {
 							panic(fmt.Sprintf("AWS client got error : %v", err))
 						} else {
-							nm.awsVMs = mergeMaps(nm.awsVMs, getTypeInfosAws(res.InstanceTypes))
+							nm.awsVMs = mergeMaps(getTypeInfosAws(res.InstanceTypes), nm.awsVMs)
 							// Check if there are any more results to query.
 							token = res.NextToken
 							if res.NextToken == nil {
@@ -93,17 +93,19 @@ func NewNodeManager(nodepools []*pb.NodePool) *NodeManager {
 					}
 				case "gcp":
 					// Create client and create cache
-					computeService, err := compute.NewMachineTypesRESTClient(context.Background(), option.WithAPIKey(np.Provider.Credentials))
+					computeService, err := compute.NewMachineTypesRESTClient(context.Background(), option.WithCredentialsJSON([]byte(np.Provider.Credentials)))
 					if err != nil {
 						panic(fmt.Sprintf("GCP client got error : %v", err))
 					}
 					defer computeService.Close()
+					// Define request and parameters
 					maxResults := uint32(30)
-
 					req := &computepb.ListMachineTypesRequest{
 						Project:    np.Provider.GcpProject,
 						MaxResults: &maxResults,
+						Zone:       np.Zone,
 					}
+					// List services
 					it := computeService.List(context.Background(), req)
 					machineTypes := make([]*computepb.MachineType, 0)
 					// Use while loop to support paging
@@ -113,18 +115,59 @@ func NewNodeManager(nodepools []*pb.NodePool) *NodeManager {
 							break
 						}
 						if err != nil {
-							panic(fmt.Sprintf("GCP client got error : %v", err))
+							panic(fmt.Sprintf("GCP client got error while looping: %v", err))
 						}
 						machineTypes = append(machineTypes, mt)
 					}
-					nm.gcpVMs = mergeMaps(nm.gcpVMs, getTypeInfosGcp(machineTypes))
+					nm.gcpVMs = mergeMaps(getTypeInfosGcp(machineTypes), nm.gcpVMs)
 
 				case "oci":
-					// TODO
+					conf := common.NewRawConfigurationProvider(np.Provider.OciTenancyOcid, np.Provider.OciUserOcid, np.Region, np.Provider.OciFingerprint, np.Provider.Credentials, nil)
+					client, err := core.NewComputeClientWithConfigurationProvider(conf)
+					if err != nil {
+						panic(fmt.Sprintf("OCI client got error : %v", err))
+					}
+					maxResults := 30
+					req := core.ListShapesRequest{
+						CompartmentId: &np.Provider.OciCompartmentOcid,
+						Limit:         &maxResults,
+					}
+					for {
+						r, err := client.ListShapes(context.Background(), req)
+						if err != nil {
+							panic(fmt.Sprintf("OCI client got error : %v", err))
+						}
+						if r.Items == nil || len(r.Items) == 0 {
+							panic("OCI client got empty response")
+						}
+						nm.ociVMs = mergeMaps(getTypeInfosOci(r.Items), nm.ociVMs)
+						if r.OpcNextPage != nil {
+							req.Page = r.OpcNextPage
+						} else {
+							break
+						}
+					}
 				case "azure":
-					// TODO
+					cred, err := azidentity.NewClientSecretCredential(np.Provider.AzureTenantId, np.Provider.AzureClientId, np.Provider.Credentials, nil)
+					if err != nil {
+						panic(fmt.Sprintf("Azure client got error : %v", err))
+					}
+					client, err := armcompute.NewVirtualMachineSizesClient(np.Provider.AzureSubscriptionId, cred, nil)
+					if err != nil {
+						panic(fmt.Sprintf("Azure client got error : %v", err))
+					}
+					location := strings.ToLower(strings.ReplaceAll(np.Region, " ", ""))
+					pager := client.NewListPager(location, nil)
+					for pager.More() {
+						nextResult, err := pager.NextPage(context.Background())
+						if err != nil {
+							panic(fmt.Sprintf("Azure client got error : %v", err))
+						}
+						nm.azureVMs = mergeMaps(getTypeInfosAzure(nextResult.Value), nm.azureVMs)
+					}
 				}
-				cacheProviderMap[np.Provider.CloudProviderName] = struct{}{}
+				// Save flag for this provider-region-zone combination
+				cacheProviderMap[providerId] = struct{}{}
 			}
 		}
 	}
@@ -134,22 +177,6 @@ func NewNodeManager(nodepools []*pb.NodePool) *NodeManager {
 func (nm *NodeManager) GetOs(image string) string {
 	// Only supported OS
 	return "ubuntu"
-}
-
-func (nm *NodeManager) GetArch(np *pb.NodePool) string {
-	switch np.Provider.CloudProviderName {
-	case "hetzner":
-		// Hetzner only provides amd64 VMs
-		return amd64
-	case "aws":
-		if t, ok := nm.awsVMs[np.ServerType]; ok {
-			return t.arch
-		}
-	case "gcp":
-		//TODO
-		return ""
-	}
-	return ""
 }
 
 // GetCapacity returns a theoretical capacity for a new node from specified nodepool.
@@ -185,7 +212,6 @@ func (nm *NodeManager) GetLabels(np *pb.NodePool) map[string]string {
 	// Other labels.
 	m["kubernetes.io/os"] = "linux" // Only Linux is supported.
 	m["v1.kubeone.io/operating-system"] = nm.GetOs(np.Image)
-	m["kubernetes.io/arch"] = nm.GetArch(np)
 
 	return m
 }
@@ -205,6 +231,15 @@ func (nm *NodeManager) getTypeInfo(provider string, np *pb.NodePool) *typeInfo {
 		if ti, ok := nm.gcpVMs[np.ServerType]; ok {
 			return ti
 		}
+	case "oci":
+		if ti, ok := nm.ociVMs[np.ServerType]; ok {
+			return ti
+		}
+	case "azure":
+		if ti, ok := nm.azureVMs[np.ServerType]; ok {
+			return ti
+		}
 	}
+
 	return nil
 }
