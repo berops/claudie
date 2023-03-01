@@ -12,6 +12,7 @@ services/ansibler
 services/testing-framework
 services/frontend
 services/kuber
+services/autoscaler-adapter
 .github
 .golangci.yml
 .gitattributes

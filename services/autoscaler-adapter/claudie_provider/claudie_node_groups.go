@@ -70,7 +70,7 @@ func (c *ClaudieCloudProvider) NodeGroupDeleteNodes(_ context.Context, req *prot
 		remainNodes := make([]*pb.Node, 0, len(ngc.nodepool.Nodes)-len(req.Nodes))
 		for _, node := range ngc.nodepool.Nodes {
 			nodeId := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-%s-", c.configCluster.ClusterInfo.Name, c.configCluster.ClusterInfo.Hash))
-			if containId(req.GetNodes(), nodeId) {
+			if containsId(req.GetNodes(), nodeId) {
 				log.Debug().Msgf("Adding node %s to delete nodes slice", nodeId)
 				deleteNodes = append(deleteNodes, node)
 			} else {
@@ -167,7 +167,7 @@ func (c *ClaudieCloudProvider) updateNodepool(nodepool *pb.NodePool) error {
 	return nil
 }
 
-func containId(nodes []*protos.ExternalGrpcNode, nodeId string) bool {
+func containsId(nodes []*protos.ExternalGrpcNode, nodeId string) bool {
 	for _, node := range nodes {
 		if node.Name == nodeId {
 			return true
