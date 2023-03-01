@@ -9,7 +9,6 @@ import (
 	"github.com/berops/claudie/proto/pb"
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"github.com/oracle/oci-go-sdk/v65/core"
-	"github.com/rs/zerolog/log"
 )
 
 func getTypeInfosHetzner(rawInfo []*hcloud.ServerType) map[string]*typeInfo {
@@ -64,7 +63,6 @@ func getTypeInfosOci(rawInfo []core.Shape) map[string]*typeInfo {
 func getTypeInfosAzure(rawInfo []*armcompute.VirtualMachineSize) map[string]*typeInfo {
 	m := make(map[string]*typeInfo, len(rawInfo))
 	for _, vm := range rawInfo {
-		log.Info().Msgf("%s", *vm.Name)
 		m[*vm.Name] = &typeInfo{
 			cpu:    int64(*vm.NumberOfCores),
 			memory: int64(*vm.MemoryInMB) * 1024 * 1024, // Convert to bytes
