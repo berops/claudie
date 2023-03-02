@@ -23,11 +23,11 @@ RUN CGO_ENABLED=0 go build -o claudie-autoscaler-adapter
 #Use empty base image
 FROM scratch
 #Add repository label
-LABEL org.opencontainers.image.source "https://github.com/berops/claudie-provider"
+LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
 #Add base image name as a label
 LABEL org.opencontainers.image.base.name "scratch"
 #Add description to the image
-LABEL org.opencontainers.image.description "Image for external gRPC cluster autoscaler provider for Claudie"
+LABEL org.opencontainers.image.description "Image for external gRPC provider for Cluster Autoscaler by Claudie"
 
 #Copy the binaries to empty base image
 COPY --from=build  /go/services/autoscaler-adapter/claudie-autoscaler-adapter /bin/claudie-autoscaler-adapter
