@@ -39,7 +39,7 @@ WORKDIR /go/services/kuber/server
 #Compile the golang code, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build
 
-FROM docker.io/library/alpine:3.17.1
+FROM docker.io/library/alpine:3.17.2
 #Add repository label
 LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
 #Add image name as a label
