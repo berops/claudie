@@ -187,7 +187,7 @@ func setUpLoadbalancers(clusterName string, info *LBInfo) error {
 	err := utils.ConcurrentExec(info.LbClusters, func(lb *LBData) error {
 		directory := filepath.Join(directory, fmt.Sprintf("%s-%s", lb.DesiredLbCluster.ClusterInfo.Name, lb.DesiredLbCluster.ClusterInfo.Hash))
 		log.Info().Msgf("Setting up the LB %s", directory)
-		
+
 		//create key files for lb nodepools
 		if err := utils.CreateDirectory(directory); err != nil {
 			return fmt.Errorf("failed to create directory %s : %w", directory, err)
@@ -195,11 +195,11 @@ func setUpLoadbalancers(clusterName string, info *LBInfo) error {
 		if err := utils.CreateKeyFile(lb.DesiredLbCluster.ClusterInfo.PrivateKey, directory, fmt.Sprintf("key.%s", privateKeyExt)); err != nil {
 			return fmt.Errorf("failed to create key file for %s : %w", lb.DesiredLbCluster.ClusterInfo.Name, err)
 		}
-		
+
 		if err := setUpNodeExporter(lb.DesiredLbCluster, directory); err != nil {
 			return err
 		}
-		
+
 		return setUpNginx(lb.DesiredLbCluster, info.TargetK8sNodepool, directory)
 	})
 
