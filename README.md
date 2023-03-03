@@ -1,9 +1,20 @@
-# Claudie
+<h4 align="center">
+  <img src="https://raw.githubusercontent.com/berops/claudie/17480b6cb809fe795d454588af18355c7543f37e/docs/logo%20claudie_blue_no_BG.svg" width="250px"/><br/>
+  <br/><br/>
+  Platform for managing multi-cloud Kubernetes clusters with each nodepool in a different cloud-provider
+</h4>
 
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Go Report Card](https://goreportcard.com/badge/github.com/Berops/claudie)](https://goreportcard.com/report/github.com/Berops/claudie)
+<p align="center">
+  <a href="https://github.com/berops/claudie/releases/"><img alt="Releases" src="https://img.shields.io/github/release-date/berops/claudie?label=latest%20release" /></a>
+  <a href="https://goreportcard.com/report/github.com/Berops/claudie"><img src="https://goreportcard.com/badge/github.com/Berops/claudie"></a>
+  <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg"></a>
+</p>
 
-Platform for managing multi-cloud Kubernetes clusters with each nodepool in a different cloud-provider.
+## Intro video
+
+<p align="center">
+  <a href="https://youtu.be/q4xdAiHYxZQ"><img src="https://markdown-videos.deta.dev/youtube/q4xdAiHYxZQ"></a>
+</p>
 
 ## Features
 

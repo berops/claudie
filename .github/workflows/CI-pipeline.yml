@@ -264,28 +264,28 @@ jobs:
             for file in $directory/*
             do
             #replace hetznerdns token
-            ./yq e '.providers.hetznerdns.[].api_token = "${{ secrets.HETZNERDNS_TOKEN}}"' $file -i
+            ./yq e '.providers.hetznerdns.[].apiToken = "${{ secrets.HETZNERDNS_TOKEN}}"' $file -i
             #replace cloudflare token
-            ./yq e '.providers.cloudflare.[].api_token = "${{ secrets.CLOUDFLARE_TOKEN}}"' $file -i
+            ./yq e '.providers.cloudflare.[].apiToken = "${{ secrets.CLOUDFLARE_TOKEN}}"' $file -i
             #replace hetzner cred
             ./yq e '.providers.hetzner.[].credentials = "${{ secrets.HETZNER_CREDENTIALS}}"' $file -i
             #replace gcp cred & project
             ./yq e '.providers.gcp.[].credentials = ${{ secrets.GCP_CREDENTIALS }}' $file -i
-            ./yq e '.providers.gcp.[].gcp_project = "${{ secrets.GCP_DEV_PROJECT_ID }}"' $file -i
+            ./yq e '.providers.gcp.[].gcpProject = "${{ secrets.GCP_DEV_PROJECT_ID }}"' $file -i
             #replace oci cred
-            ./yq e '.providers.oci.[].private_key = "${{ secrets.OCI_PRIVATE_KEY }}"' $file -i
-            ./yq e '.providers.oci.[].key_fingerprint = "${{ secrets.OCI_FINGERPRINT }}"' $file -i
-            ./yq e '.providers.oci.[].tenancy_ocid = "${{ secrets.OCI_TENANCY }}"' $file -i
-            ./yq e '.providers.oci.[].user_ocid = "${{ secrets.OCI_USER }}"' $file -i
-            ./yq e '.providers.oci.[].compartment_ocid = "${{ secrets.OCI_COMPARTMENT }}"' $file -i
+            ./yq e '.providers.oci.[].privateKey = "${{ secrets.OCI_PRIVATE_KEY }}"' $file -i
+            ./yq e '.providers.oci.[].keyFingerprint = "${{ secrets.OCI_FINGERPRINT }}"' $file -i
+            ./yq e '.providers.oci.[].tenancyOcid = "${{ secrets.OCI_TENANCY }}"' $file -i
+            ./yq e '.providers.oci.[].userOcid = "${{ secrets.OCI_USER }}"' $file -i
+            ./yq e '.providers.oci.[].compartmentOcid = "${{ secrets.OCI_COMPARTMENT }}"' $file -i
             #replace aws cred
-            ./yq e '.providers.aws.[].access_key = "${{ secrets.AWS_ACCESS_KEY }}"' $file -i
-            ./yq e '.providers.aws.[].secret_key = "${{ secrets.AWS_SECRET_KEY }}"' $file -i
+            ./yq e '.providers.aws.[].accessKey = "${{ secrets.AWS_ACCESS_KEY }}"' $file -i
+            ./yq e '.providers.aws.[].secretKey = "${{ secrets.AWS_SECRET_KEY }}"' $file -i
             #replace azure cred
-            ./yq e '.providers.azure.[].subscription_id = "${{ secrets.AZURE_SUBSCRIPTION_ID }}"' $file -i
-            ./yq e '.providers.azure.[].tenant_id = "${{ secrets.AZURE_TENANT_ID }}"' $file -i
-            ./yq e '.providers.azure.[].client_id = "${{ secrets.AZURE_CLIENT_ID }}"' $file -i
-            ./yq e '.providers.azure.[].client_secret = "${{ secrets.AZURE_CLIENT_SECRET }}"' $file -i
+            ./yq e '.providers.azure.[].subscriptionId = "${{ secrets.AZURE_SUBSCRIPTION_ID }}"' $file -i
+            ./yq e '.providers.azure.[].tenantId = "${{ secrets.AZURE_TENANT_ID }}"' $file -i
+            ./yq e '.providers.azure.[].clientId = "${{ secrets.AZURE_CLIENT_ID }}"' $file -i
+            ./yq e '.providers.azure.[].clientSecret = "${{ secrets.AZURE_CLIENT_SECRET }}"' $file -i
             done
           done
 

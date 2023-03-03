@@ -19,7 +19,7 @@ spec:
                   name: minio-cm
       containers:
         - name: minio-mc
-          image: quay.io/minio/mc:RELEASE.2022-05-09T04-08-26Z
+          image: quay.io/minio/mc
           command: ["/bin/sh", "/config/initialize"]
           env:
             - name: MINIO_ENDPOINT

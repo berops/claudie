@@ -1,19 +1,9 @@
 name: TestSet-3
 
 providers:
-  hetznerdns:
-    - name: hetznerdns-1
-      apiToken: replaceme-token
-  cloudflare:
-    - name: cloudflare-1
-      apiToken: replaceme-token
   hetzner:
     - name: hetzner-1
       credentials: replaceme-token
-  gcp:
-    - name: gcp-1
-      credentials: replaceme-key
-      gcpProject: replaceme-project
   oci:
     - name: oci-1
       privateKey: |
@@ -26,6 +16,13 @@ providers:
     - name: aws-1
       accessKey: replaceme-access-key
       secretKey: replaceme-secret-key
+  cloudflare:
+    - name: cloudflare-1
+      apiToken: replaceme-token
+  gcp:
+    - name: gcp-1
+      credentials: replaceme-key
+      gcpProject: replaceme-project
 
 nodePools:
   dynamic:
@@ -89,24 +86,6 @@ nodePools:
       #ubuntu
       image: ami-01b8d743224353ffe
       diskSize: 50
-    - name: gcp-control
-      providerSpec:
-        name: gcp-1
-        region: europe-west2
-        zone: europe-west2-c
-      count: 1
-      serverType: e2-medium
-      image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
-      diskSize: 50
-    - name: gcp-compute
-      providerSpec:
-        name: gcp-1
-        region: europe-west1
-        zone: europe-west1-b
-      count: 2
-      serverType: e2-small
-      image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
-      diskSize: 50
     #-----------LB nodepools----------
     - name: gcp-lb
       providerSpec:
@@ -132,41 +111,20 @@ kubernetes:
           - hetzner-compute
           - oci-compute
           - aws-compute
-    - name: ts3-c-2
-      version: v1.22.0
-      network: 192.168.2.0/24
-      pools:
-        control:
-          - aws-control
-          - gcp-control
-          - oci-control
-        compute:
-          - aws-compute
-          - gcp-compute
-          - oci-compute
 loadBalancers:
   roles:
-    - name: apiserver-lb
+    - name: random-lb
       protocol: tcp
-      port: 6443
-      targetPort: 6443
+      port: 6440
+      targetPort: 6440
       target: k8sControlPlane
   clusters:
     - name: ts3-lb-1
       roles:
-        - apiserver-lb
+        - random-lb
       dns:
         dnsZone: claudie.dev
         provider: cloudflare-1
       targetedK8s: ts3-c-1
-      pools:
-        - gcp-lb
-    - name: ts3-lb-2
-      roles:
-        - apiserver-lb
-      dns:
-        dnsZone: claudie.org
-        provider: hetznerdns-1
-      targetedK8s: ts3-c-2
       pools:
         - gcp-lb
