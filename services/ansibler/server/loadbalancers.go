@@ -467,8 +467,7 @@ func setUpNodeExporter(lb *pb.LBcluster, directory string) error {
 	if err != nil {
 		return fmt.Errorf("error while loading %s template for %s : %w", nodeExporterPlaybookTpl, lb.ClusterInfo.Name, err)
 	}
-	err = template.Generate(tpl, nodeExporterPlaybook, LbPlaybookData{Loadbalancer: lb.ClusterInfo.Name})
-	if err != nil {
+	if err = template.Generate(tpl, nodeExporterPlaybook, LbPlaybookData{Loadbalancer: lb.ClusterInfo.Name}); err != nil {
 		return fmt.Errorf("error while generating %s for %s : %w", nodeExporterPlaybook, lb.ClusterInfo.Name, err)
 	}
 
