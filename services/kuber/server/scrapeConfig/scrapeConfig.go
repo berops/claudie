@@ -1,6 +1,7 @@
 package scrapeconfig
 
 import (
+	"encoding/base64"
 	"fmt"
 
 	"github.com/Berops/claudie/internal/kubectl"
@@ -18,15 +19,15 @@ type SCData struct {
 	LBClusters []*pb.LBcluster
 }
 
-type NSData struct {
-	Namespace string
+type ScManifestData struct {
+	ScrapeConfigB64 string
+	Namespace       string
 }
 
 const (
-	namespaceFileTpl      = "namespace.goyaml"
-	namespaceFile         = "namespace.yaml"
 	scrapeConfigNamespace = "monitoring"
-	scrapeConfigName      = "additional-scrape-config"
+	scManifestFileTpl     = "scrape-config-manifest.goyaml"
+	scManifestFile        = "scrape-config-manifest.yaml"
 	scrapeConfigFileTpl   = "scrape-config.goyaml"
 	scrapeConfigFile      = "scrape-config.yaml"
 )
@@ -43,31 +44,37 @@ func (sc ScrapeConfig) GenerateAndApplyScrapeConfig() error {
 	// Generate prometheus scrape config to file
 	tpl, err := templateLoader.LoadTemplate(scrapeConfigFileTpl)
 	if err != nil {
-		return fmt.Errorf("error while loading %s on %s: %w", scrapeConfigFileTpl, sc.Cluster.GetClusterInfo(), err)
+		return fmt.Errorf("error while loading %s on %s: %w", scrapeConfigFileTpl, sc.Cluster.ClusterInfo.Name, err)
 	}
-	err = template.Generate(tpl, scrapeConfigFile, SCData{LBClusters: sc.LBClusters})
+	scrapeConfig, err := template.GenerateToString(tpl, SCData{LBClusters: sc.LBClusters})
 	if err != nil {
-		return fmt.Errorf("error while generating %s on %s: %w", scrapeConfigFile, sc.Cluster.GetClusterInfo(), err)
+		return fmt.Errorf("error while generating %s on %s: %w", scrapeConfigFile, sc.Cluster.ClusterInfo.Name, err)
 	}
 
-	// Generate namespace
-	tpl, err = templateLoader.LoadTemplate(namespaceFileTpl)
+	// Generate manifest for namespace and secret
+	tpl, err = templateLoader.LoadTemplate(scManifestFileTpl)
 	if err != nil {
-		return fmt.Errorf("error while loading %s on %s: %w", namespaceFileTpl, sc.Cluster.GetClusterInfo(), err)
+		return fmt.Errorf("error while loading %s on %s: %w", scManifestFileTpl, sc.Cluster.ClusterInfo.Name, err)
 	}
-	err = template.Generate(tpl, namespaceFile, NSData{Namespace: scrapeConfigNamespace})
-	if err != nil {
-		return fmt.Errorf("error while generating %s on %s: %w", namespaceFile, sc.Cluster.GetClusterInfo(), err)
+	if err = template.Generate(tpl, scManifestFile, ScManifestData{Namespace: scrapeConfigNamespace,
+		ScrapeConfigB64: base64.StdEncoding.EncodeToString([]byte(scrapeConfig))}); err != nil {
+		return fmt.Errorf("error while generating %s on %s: %w", scManifestFile, sc.Cluster.ClusterInfo.Name, err)
 	}
 
-	// Apply namespace and scrape-config to the cluster
+	// Apply namespace and secret to the cluster
 	k := kubectl.Kubectl{Kubeconfig: sc.Cluster.Kubeconfig, Directory: sc.Directory}
-	if err = k.KubectlApply(namespaceFile, ""); err != nil {
-		return fmt.Errorf("error while applying %s on %s: %w", namespaceFile, sc.Cluster.GetClusterInfo(), err)
-	}
-	if err = k.KubectlCreateOrPatchSecretFromFile(scrapeConfigName, scrapeConfigFile, scrapeConfigNamespace); err != nil {
-		return fmt.Errorf("error while applying %s on %s: %w", scrapeConfigFile, sc.Cluster.GetClusterInfo(), err)
+	if err = k.KubectlApply(scManifestFile, ""); err != nil {
+		return fmt.Errorf("error while applying %s on %s: %w", scManifestFile, sc.Cluster.ClusterInfo.Name, err)
 	}
 
+	return nil
+}
+
+// RemoveIfNoLbScrapeConfig will remove the LB scrape-config.yml
+func (sc ScrapeConfig) RemoveLbScrapeConfig() error {
+	k := kubectl.Kubectl{Kubeconfig: sc.Cluster.Kubeconfig}
+	if err := k.KubectlDeleteResource("secret", "loadbalancers-scrape-config", scrapeConfigNamespace); err != nil {
+		return fmt.Errorf("error while removing LB scrape-config on %s: %w", sc.Cluster.ClusterInfo.Name, err)
+	}
 	return nil
 }

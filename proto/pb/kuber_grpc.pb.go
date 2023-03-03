@@ -22,6 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type KuberServiceClient interface {
+	RemoveLbScrapeConfig(ctx context.Context, in *RemoveLbScrapeConfigRequest, opts ...grpc.CallOption) (*RemoveLbScrapeConfigResponse, error)
 	StoreLbScrapeConfig(ctx context.Context, in *StoreLbScrapeConfigRequest, opts ...grpc.CallOption) (*StoreLbScrapeConfigResponse, error)
 	StoreClusterMetadata(ctx context.Context, in *StoreClusterMetadataRequest, opts ...grpc.CallOption) (*StoreClusterMetadataResponse, error)
 	DeleteClusterMetadata(ctx context.Context, in *DeleteClusterMetadataRequest, opts ...grpc.CallOption) (*DeleteClusterMetadataResponse, error)
@@ -37,6 +38,15 @@ type kuberServiceClient struct {
 
 func NewKuberServiceClient(cc grpc.ClientConnInterface) KuberServiceClient {
 	return &kuberServiceClient{cc}
+}
+
+func (c *kuberServiceClient) RemoveLbScrapeConfig(ctx context.Context, in *RemoveLbScrapeConfigRequest, opts ...grpc.CallOption) (*RemoveLbScrapeConfigResponse, error) {
+	out := new(RemoveLbScrapeConfigResponse)
+	err := c.cc.Invoke(ctx, "/claudie.KuberService/RemoveLbScrapeConfig", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *kuberServiceClient) StoreLbScrapeConfig(ctx context.Context, in *StoreLbScrapeConfigRequest, opts ...grpc.CallOption) (*StoreLbScrapeConfigResponse, error) {
@@ -106,6 +116,7 @@ func (c *kuberServiceClient) DeleteNodes(ctx context.Context, in *DeleteNodesReq
 // All implementations must embed UnimplementedKuberServiceServer
 // for forward compatibility
 type KuberServiceServer interface {
+	RemoveLbScrapeConfig(context.Context, *RemoveLbScrapeConfigRequest) (*RemoveLbScrapeConfigResponse, error)
 	StoreLbScrapeConfig(context.Context, *StoreLbScrapeConfigRequest) (*StoreLbScrapeConfigResponse, error)
 	StoreClusterMetadata(context.Context, *StoreClusterMetadataRequest) (*StoreClusterMetadataResponse, error)
 	DeleteClusterMetadata(context.Context, *DeleteClusterMetadataRequest) (*DeleteClusterMetadataResponse, error)
@@ -120,6 +131,9 @@ type KuberServiceServer interface {
 type UnimplementedKuberServiceServer struct {
 }
 
+func (UnimplementedKuberServiceServer) RemoveLbScrapeConfig(context.Context, *RemoveLbScrapeConfigRequest) (*RemoveLbScrapeConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveLbScrapeConfig not implemented")
+}
 func (UnimplementedKuberServiceServer) StoreLbScrapeConfig(context.Context, *StoreLbScrapeConfigRequest) (*StoreLbScrapeConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StoreLbScrapeConfig not implemented")
 }
@@ -152,6 +166,24 @@ type UnsafeKuberServiceServer interface {
 
 func RegisterKuberServiceServer(s grpc.ServiceRegistrar, srv KuberServiceServer) {
 	s.RegisterService(&KuberService_ServiceDesc, srv)
+}
+
+func _KuberService_RemoveLbScrapeConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveLbScrapeConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KuberServiceServer).RemoveLbScrapeConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/claudie.KuberService/RemoveLbScrapeConfig",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KuberServiceServer).RemoveLbScrapeConfig(ctx, req.(*RemoveLbScrapeConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _KuberService_StoreLbScrapeConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -287,6 +319,10 @@ var KuberService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "claudie.KuberService",
 	HandlerType: (*KuberServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "RemoveLbScrapeConfig",
+			Handler:    _KuberService_RemoveLbScrapeConfig_Handler,
+		},
 		{
 			MethodName: "StoreLbScrapeConfig",
 			Handler:    _KuberService_StoreLbScrapeConfig_Handler,

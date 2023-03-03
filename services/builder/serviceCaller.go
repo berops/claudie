@@ -208,12 +208,25 @@ func callKuber(ctx *BuilderContext) error {
 
 	c := pb.NewKuberServiceClient(cc)
 
-	log.Info().Msgf("Calling StoreLbScrapeConfig on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
-	if _, err := kuber.StoreLbScrapeConfig(c, &pb.StoreLbScrapeConfigRequest{
-		Cluster:              ctx.desiredCluster,
-		DesiredLoadbalancers: ctx.desiredLoadbalancers,
-	}); err != nil {
-		return err
+	// If previous cluster had loadbalancers, and the new one does not, the old scrape config will be removed.
+	if len(ctx.desiredLoadbalancers) == 0 && len(ctx.loadbalancers) > 0 {
+		log.Info().Msgf("Calling RemoveScrapeConfig on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
+		if _, err := kuber.RemoveLbScrapeConfig(c, &pb.RemoveLbScrapeConfigRequest{
+			Cluster: ctx.desiredCluster,
+		}); err != nil {
+			return err
+		}
+	}
+
+	// Create a scrape-config if there are loadbalancers in the new/updated cluster
+	if len(ctx.desiredLoadbalancers) > 0 {
+		log.Info().Msgf("Calling StoreLbScrapeConfig on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
+		if _, err := kuber.StoreLbScrapeConfig(c, &pb.StoreLbScrapeConfigRequest{
+			Cluster:              ctx.desiredCluster,
+			DesiredLoadbalancers: ctx.desiredLoadbalancers,
+		}); err != nil {
+			return err
+		}
 	}
 
 	log.Info().Msgf("Calling SetUpStorage on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)

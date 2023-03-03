@@ -39,6 +39,14 @@ func DeleteNodes(c pb.KuberServiceClient, req *pb.DeleteNodesRequest) (*pb.Delet
 	return res, nil
 }
 
+func RemoveLbScrapeConfig(c pb.KuberServiceClient, req *pb.RemoveLbScrapeConfigRequest) (*pb.RemoveLbScrapeConfigResponse, error) {
+	res, err := c.RemoveLbScrapeConfig(context.Background(), req)
+	if err != nil {
+		return nil, fmt.Errorf("error while calling RemoveLbScrapeConfig: %w", err)
+	}
+	return res, nil
+}
+
 func StoreLbScrapeConfig(c pb.KuberServiceClient, req *pb.StoreLbScrapeConfigRequest) (*pb.StoreLbScrapeConfigResponse, error) {
 	res, err := c.StoreLbScrapeConfig(context.Background(), req)
 	if err != nil {

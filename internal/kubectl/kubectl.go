@@ -9,16 +9,18 @@ import (
 )
 
 // Kubeconfig - the kubeconfig of the cluster as a string
-// when left empty, kuber uses default kubeconfig
+// when left empty, kuber uses default kubeconfig,
+// MaxKubectlRetries when unset/set=0 will use defaultMaxKubectlRetries = 10
 type Kubectl struct {
-	Kubeconfig string
-	Directory  string
+	Kubeconfig        string
+	Directory         string
+	MaxKubectlRetries int
 }
 
 const (
-	maxKubectlRetries = 10
-	getEtcdPodsCmd    = "get pods -n kube-system --no-headers -o custom-columns=\":metadata.name\" | grep etcd"
-	exportEtcdEnvsCmd = `export ETCDCTL_API=3 && 
+	defaultMaxKubectlRetries = 10
+	getEtcdPodsCmd           = "get pods -n kube-system --no-headers -o custom-columns=\":metadata.name\" | grep etcd"
+	exportEtcdEnvsCmd        = `export ETCDCTL_API=3 && 
 		export ETCDCTL_CACERT=/etc/kubernetes/pki/etcd/ca.crt && 
 		export ETCDCTL_CERT=/etc/kubernetes/pki/etcd/healthcheck-client.crt && 
 		export ETCDCTL_KEY=/etc/kubernetes/pki/etcd/healthcheck-client.key`
@@ -47,19 +49,6 @@ func (k *Kubectl) KubectlApplyString(str, namespace string) error {
 		namespace = fmt.Sprintf("-n %s", namespace)
 	}
 	command := fmt.Sprintf("echo '%s' | kubectl apply -f - %s %s", str, kubeconfig, namespace)
-	return k.run(command)
-}
-
-// KubectlCreateOrPatchSecretFromFile runs kubcectl create --dry-run | kubectl apply -f - in k.Directory directory
-// creates secret with a name given in secretName, from file secretFileName
-// if namespace is empty string, the kubectl apply will not use -n flag
-func (k *Kubectl) KubectlCreateOrPatchSecretFromFile(secretName string, secretFileName string, namespace string) error {
-	kubeconfig := k.getKubeconfig()
-	if namespace != "" {
-		namespace = fmt.Sprintf("-n %s", namespace)
-	}
-	command := fmt.Sprintf("kubectl create secret generic %s --save-config --dry-run=client --from-file=./%s -o yaml | kubectl  %s %s apply -f -",
-		secretName, secretFileName, kubeconfig, namespace)
 	return k.run(command)
 }
 
@@ -171,9 +160,13 @@ func (k Kubectl) run(command string) error {
 	cmd := exec.Command("bash", "-c", command)
 	cmd.Dir = k.Directory
 	if err := cmd.Run(); err != nil {
+		retryCount := k.MaxKubectlRetries
+		if k.MaxKubectlRetries == 0 {
+			retryCount = defaultMaxKubectlRetries
+		}
 		retryCmd := comm.Cmd{
 			Command: command, Dir: k.Directory, CommandTimeout: kubectlTimeout}
-		if err = retryCmd.RetryCommand(maxKubectlRetries); err != nil {
+		if err = retryCmd.RetryCommand(retryCount); err != nil {
 			return err
 		}
 	}
@@ -188,8 +181,12 @@ func (k Kubectl) runWithOutput(command string) ([]byte, error) {
 	cmd.Dir = k.Directory
 	result, err = cmd.CombinedOutput()
 	if err != nil {
+		retryCount := k.MaxKubectlRetries
+		if k.MaxKubectlRetries == 0 {
+			retryCount = defaultMaxKubectlRetries
+		}
 		cmd := comm.Cmd{Command: command, Dir: k.Directory, CommandTimeout: kubectlTimeout}
-		result, err = cmd.RetryCommandWithOutput(maxKubectlRetries)
+		result, err = cmd.RetryCommandWithOutput(retryCount)
 		if err != nil {
 			return nil, err
 		}

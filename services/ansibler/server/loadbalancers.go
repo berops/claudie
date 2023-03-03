@@ -190,6 +190,15 @@ func setUpLoadbalancers(clusterName string, info *LBInfo) error {
 		if err := setUpNodeExporter(lb.DesiredLbCluster, directory); err != nil {
 			return err
 		}
+
+		//create key files for lb nodepools
+		if err := utils.CreateDirectory(directory); err != nil {
+			return fmt.Errorf("failed to create directory %s : %w", directory, err)
+		}
+		if err := utils.CreateKeyFile(lb.DesiredLbCluster.ClusterInfo.PrivateKey, directory, fmt.Sprintf("key.%s", privateKeyExt)); err != nil {
+			return fmt.Errorf("failed to create key file for %s : %w", lb.DesiredLbCluster.ClusterInfo.Name, err)
+		}
+
 		return setUpNginx(lb.DesiredLbCluster, info.TargetK8sNodepool, directory)
 	})
 
@@ -408,14 +417,6 @@ func changeAPIEndpoint(clusterName, oldEndpoint, newEndpoint, directory string) 
 // setUpNginx sets up the nginx loadbalancer based on the input manifest specification
 // return error if not successful, nil otherwise
 func setUpNginx(lb *pb.LBcluster, targetedNodepool []*pb.NodePool, directory string) error {
-	//create key files for lb nodepools
-	if err := utils.CreateDirectory(directory); err != nil {
-		return fmt.Errorf("failed to create directory %s : %w", directory, err)
-	}
-
-	if err := utils.CreateKeyFile(lb.ClusterInfo.PrivateKey, directory, fmt.Sprintf("key.%s", privateKeyExt)); err != nil {
-		return fmt.Errorf("failed to create key file for %s : %w", lb.ClusterInfo.Name, err)
-	}
 	//prepare data for .conf
 	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.AnsiblerTemplates}
 	template := templateUtils.Templates{Directory: directory}
@@ -458,16 +459,6 @@ func setUpNginx(lb *pb.LBcluster, targetedNodepool []*pb.NodePool, directory str
 // setUpNodeExporter sets up node-exporter on the LB node
 // return error if not successful, nil otherwise
 func setUpNodeExporter(lb *pb.LBcluster, directory string) error {
-	//create key files for lb nodepools
-	if _, err := os.Stat(directory); os.IsNotExist(err) {
-		if err := os.MkdirAll(directory, os.ModePerm); err != nil {
-			return fmt.Errorf("failed to create directory %s : %w", directory, err)
-		}
-	}
-	if err := utils.CreateKeyFile(lb.ClusterInfo.PrivateKey, directory, fmt.Sprintf("key.%s", privateKeyExt)); err != nil {
-		return fmt.Errorf("failed to create key file for %s : %w", lb.ClusterInfo.Name, err)
-	}
-
 	// generate node-exporter playbook template
 	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.AnsiblerTemplates}
 	template := templateUtils.Templates{Directory: directory}
@@ -485,15 +476,13 @@ func setUpNodeExporter(lb *pb.LBcluster, directory string) error {
 	if err != nil {
 		return fmt.Errorf("error while loading %s template for %s : %w", nodeExporterService, lb.ClusterInfo.Name, err)
 	}
-	err = template.Generate(tpl, nodeExporterService, LbPlaybookData{Loadbalancer: lb.ClusterInfo.Name})
-	if err != nil {
+	if err = template.Generate(tpl, nodeExporterService, LbPlaybookData{Loadbalancer: lb.ClusterInfo.Name}); err != nil {
 		return fmt.Errorf("error while generating %s for %s : %w", nodeExporterService, lb.ClusterInfo.Name, err)
 	}
 
 	//run the playbook
 	ansible := ansible.Ansible{Playbook: nodeExporterPlaybook, Inventory: filepath.Join("..", inventoryFile), Directory: directory}
-	err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s", lb.ClusterInfo.Name))
-	if err != nil {
+	if err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s", lb.ClusterInfo.Name)); err != nil {
 		return fmt.Errorf("error while running ansible for %s : %w", lb.ClusterInfo.Name, err)
 	}
 

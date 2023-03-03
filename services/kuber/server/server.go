@@ -82,6 +82,23 @@ func (s *server) StoreLbScrapeConfig(ctx context.Context, req *pb.StoreLbScrapeC
 	return &pb.StoreLbScrapeConfigResponse{}, nil
 }
 
+func (s *server) RemoveLbScrapeConfig(ctx context.Context, req *pb.RemoveLbScrapeConfigRequest) (*pb.RemoveLbScrapeConfigResponse, error) {
+	clusterID := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
+	clusterDir := filepath.Join(outputDir, clusterID)
+
+	sc := scrapeconfig.ScrapeConfig{
+		Cluster:   req.GetCluster(),
+		Directory: clusterDir,
+	}
+
+	if err := sc.RemoveLbScrapeConfig(); err != nil {
+		return nil, fmt.Errorf("error while removing old loadbalancer scrape-config for %s : %w", clusterID, err)
+	}
+	log.Info().Msgf("Loadbalancer scrape-config successfully set up on the cluster %s", clusterID)
+
+	return &pb.RemoveLbScrapeConfigResponse{}, nil
+}
+
 func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterMetadataRequest) (*pb.StoreClusterMetadataResponse, error) {
 	md := ClusterMetadata{
 		NodeIps:    make(map[string]IPPair),
