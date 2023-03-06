@@ -32,7 +32,7 @@ jobs:
   check-changes:
     if: github.event.pull_request.draft == false
     runs-on: self-hosted
-    needs: merge-branch
+    # needs: merge-branch
     steps:
       - uses: actions/checkout@v3
         with:
@@ -73,7 +73,7 @@ jobs:
   #--------------------------------------------------------------------------------------------------
   build-and-push:
     runs-on: self-hosted
-    needs: [merge-branch, check-changes]
+    needs: [check-changes]
     steps:
       - uses: actions/checkout@v3
         if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
@@ -122,7 +122,7 @@ jobs:
   #--------------------------------------------------------------------------------------------------
   edit-kustomization:
     runs-on: self-hosted
-    needs: [merge-branch, check-changes, build-and-push]
+    needs: [check-changes, build-and-push]
     steps:
       - uses: actions/checkout@v3
         if: ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
@@ -187,7 +187,7 @@ jobs:
   #--------------------------------------------------------------------------------------------------
   deploy-and-monitor:
     runs-on: self-hosted
-    needs: [merge-branch, build-and-push, edit-kustomization, check-changes]
+    needs: [build-and-push, edit-kustomization, check-changes]
     permissions:
       id-token: write
       contents: read
