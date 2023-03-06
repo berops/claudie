@@ -99,10 +99,10 @@ jobs:
           NEW_SERVICES=( ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }} )
           for SERVICE in "${NEW_SERVICES[@]}"
           do
-            echo "Setting a new tag for a $SERVICE"
             if [ "$SERVICE" == "autoscaler-adapter" ]; then
               TAG=${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
-              sed "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" autoscaler-adapter.goyaml
+              echo "Setting new tag for autoscaler adapter to $TAG"
+              sed "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" autoscaler-adapter.goyaml > autoscaler-adapter.goyaml
             fi
           done
 
@@ -146,9 +146,9 @@ jobs:
         run: |
           NEW_SERVICES=( ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }} )
           for SERVICE in "${NEW_SERVICES[@]}"
-          do
-            echo "Setting a new tag for a $SERVICE"
+          docker
             if [ "$SERVICE" != "testing-framework" || "$SERVICE" != "autoscaler-adapter" ]; then
+              echo "Setting a new tag for a $SERVICE"
               kustomize edit set image ghcr.io/berops/claudie/$SERVICE:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
             fi
           done
@@ -163,8 +163,8 @@ jobs:
           NEW_SERVICES=( ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }} )
           for SERVICE in "${NEW_SERVICES[@]}"
           do
-            echo "Setting a new tag for a $SERVICE"
             if [ "$SERVICE" == "testing-framework" ]; then
+              echo "Setting a new tag for a $SERVICE"
               kustomize edit set image ghcr.io/berops/claudie/$SERVICE:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
             fi
           done
