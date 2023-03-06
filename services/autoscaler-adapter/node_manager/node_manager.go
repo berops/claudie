@@ -3,6 +3,7 @@ package node_manager
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 
 	compute "cloud.google.com/go/compute/apiv1"
@@ -55,7 +56,7 @@ func NewNodeManager(nodepools []*pb.NodePool) *NodeManager {
 				switch np.Provider.CloudProviderName {
 				case "hetzner":
 					// Create client and create cache.
-					hc := hcloud.NewClient(hcloud.WithToken(np.Provider.Credentials))
+					hc := hcloud.NewClient(hcloud.WithToken(np.Provider.Credentials), hcloud.WithHTTPClient(http.DefaultClient))
 					if servers, err := hc.ServerType.All(context.Background()); err != nil {
 						panic(fmt.Sprintf("Hetzner client got error %v", err))
 					} else {
