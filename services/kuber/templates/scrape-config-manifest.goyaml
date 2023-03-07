@@ -6,9 +6,8 @@ metadata:
 apiVersion: v1
 kind: Secret
 metadata:
-    name: loadbalancers-scrape-config
-    namespace: {{ .Namespace }}
-    resourceVersion: "5018"
+  name: loadbalancers-scrape-config
+  namespace: {{ .Namespace }}
 type: Opaque
 data:
   scrape-config.yaml: {{ .ScrapeConfigB64 }}
