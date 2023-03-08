@@ -16,16 +16,21 @@ import (
 )
 
 const (
+	// Default GPU label.
 	GpuLabel = "claudie.io/gpu-node"
 )
 
 var (
+	//Error for functions which are not implemented.
 	ErrNotImplemented = errors.New("not implemented")
 )
 
-type nodeGroupCache struct {
-	nodeGroup  *protos.NodeGroup
-	nodepool   *pb.NodePool
+type nodeCache struct {
+	// Nodegroup as per Cluster Autoscaler definition.
+	nodeGroup *protos.NodeGroup
+	// Nodepool as per Claudie definition.
+	nodepool *pb.NodePool
+	// Target size of node group.
 	targetSize int32
 }
 
@@ -36,12 +41,13 @@ type ClaudieCloudProvider struct {
 	projectName string
 	// Cluster as described in Claudie config.
 	configCluster *pb.K8Scluster
-	// Map of cached info regarding nodepools
-	nodeGroupCache map[string]*nodeGroupCache
-	// Node manager
+	// Map of cached info regarding nodes.
+	nodesCache map[string]*nodeCache
+	// Node manager.
 	nodeManager *node_manager.NodeManager
 }
 
+// NewClaudieCloudProvider returns a ClaudieCloudProvider with initialised caches.
 func NewClaudieCloudProvider(projectName, clusterName string) *ClaudieCloudProvider {
 	// Connect to Claudie and retrieve *pb.K8Scluster
 	var cluster *pb.K8Scluster
@@ -51,14 +57,14 @@ func NewClaudieCloudProvider(projectName, clusterName string) *ClaudieCloudProvi
 	}
 	// Initialise all other variables.
 	return &ClaudieCloudProvider{
-		projectName:    projectName,
-		configCluster:  cluster,
-		nodeGroupCache: getNodeGroupCache(cluster.ClusterInfo.NodePools),
-		nodeManager:    node_manager.NewNodeManager(cluster.ClusterInfo.NodePools),
+		projectName:   projectName,
+		configCluster: cluster,
+		nodesCache:    getNodesCache(cluster.ClusterInfo.NodePools),
+		nodeManager:   node_manager.NewNodeManager(cluster.ClusterInfo.NodePools),
 	}
 }
 
-// getClaudieState returns a *pb.K8Scluster from Claudie, for this particular instance.
+// getClaudieState returns a *pb.K8Scluster from Claudie, for this particular ClaudieCloudProvider instance.
 func getClaudieState(projectName, clusterName string) (*pb.K8Scluster, error) {
 	var cc *grpc.ClientConn
 	var err error
@@ -73,8 +79,8 @@ func getClaudieState(projectName, clusterName string) (*pb.K8Scluster, error) {
 			log.Error().Msgf("Failed to close context-box connection %v", err)
 		}
 	}()
-	c := pb.NewContextBoxServiceClient(cc)
 
+	c := pb.NewContextBoxServiceClient(cc)
 	if res, err = c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: projectName, Type: pb.IdType_NAME}); err != nil {
 		return nil, fmt.Errorf("failed to get config for project %s : %w", projectName, err)
 	}
@@ -87,9 +93,9 @@ func getClaudieState(projectName, clusterName string) (*pb.K8Scluster, error) {
 	return nil, fmt.Errorf("failed to find cluster %s in config for a project %s", clusterName, projectName)
 }
 
-// getNodeGroupCache returns a map of nodeGroupCache, regarding all information needed based on the nodepools with autoscaling enabled.
-func getNodeGroupCache(nodepools []*pb.NodePool) map[string]*nodeGroupCache {
-	var ngc = make(map[string]*nodeGroupCache, len(nodepools))
+// getNodesCache returns a map of nodeCache, regarding all information needed based on the nodepools with autoscaling enabled.
+func getNodesCache(nodepools []*pb.NodePool) map[string]*nodeCache {
+	var ngc = make(map[string]*nodeCache, len(nodepools))
 	for _, np := range nodepools {
 		// Find autoscaled nodepool.
 		if np.AutoscalerConfig != nil {
@@ -101,7 +107,7 @@ func getNodeGroupCache(nodepools []*pb.NodePool) map[string]*nodeGroupCache {
 				Debug:   fmt.Sprintf("Nodepool %s with autoscaler config %v", np.Name, np.AutoscalerConfig),
 			}
 			// Append ng to the final slice.
-			ngc[np.Name] = &nodeGroupCache{nodeGroup: ng, nodepool: np, targetSize: np.Count}
+			ngc[np.Name] = &nodeCache{nodeGroup: ng, nodepool: np, targetSize: np.Count}
 		}
 	}
 	return ngc
@@ -110,8 +116,8 @@ func getNodeGroupCache(nodepools []*pb.NodePool) map[string]*nodeGroupCache {
 // NodeGroups returns all node groups configured for this cloud provider.
 func (c *ClaudieCloudProvider) NodeGroups(_ context.Context, req *protos.NodeGroupsRequest) (*protos.NodeGroupsResponse, error) {
 	log.Info().Msgf("Got NodeGroups request")
-	ngs := make([]*protos.NodeGroup, 0, len(c.nodeGroupCache))
-	for _, ngc := range c.nodeGroupCache {
+	ngs := make([]*protos.NodeGroup, 0, len(c.nodesCache))
+	for _, ngc := range c.nodesCache {
 		ngs = append(ngs, ngc.nodeGroup)
 	}
 	return &protos.NodeGroupsResponse{NodeGroups: ngs}, nil
@@ -126,7 +132,7 @@ func (c *ClaudieCloudProvider) NodeGroupForNode(_ context.Context, req *protos.N
 	// Initialise as empty response.
 	nodeGroup := &protos.NodeGroup{}
 	// Try to find if node is from any NodeGroup
-	for id, ngc := range c.nodeGroupCache {
+	for id, ngc := range c.nodesCache {
 		// If node name contains ng.Id (nodepool name), return this NodeGroup.
 		if strings.Contains(nodeName, id) {
 			nodeGroup = ngc.nodeGroup
@@ -190,7 +196,7 @@ func (c *ClaudieCloudProvider) refresh() error {
 		return fmt.Errorf("error while refreshing a state for the cluster %s : %w", c.configCluster.ClusterInfo.Name, err)
 	} else {
 		c.configCluster = cluster
-		c.nodeGroupCache = getNodeGroupCache(cluster.ClusterInfo.NodePools)
+		c.nodesCache = getNodesCache(cluster.ClusterInfo.NodePools)
 	}
 	return nil
 }

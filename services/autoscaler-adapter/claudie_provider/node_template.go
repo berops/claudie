@@ -10,25 +10,30 @@ import (
 )
 
 var (
-	defaultNodeTemplate = &k8sV1.Node{
+	// Default node template with prefilled conditions.
+	defaultNodeTemplate = k8sV1.Node{
 		Status: k8sV1.NodeStatus{
 			Conditions: buildReadyConditions(),
 		},
 	}
 )
 
+// getNodeGroupTemplateNodeInfo returns a template for the new node from specified node group.
 func (c *ClaudieCloudProvider) getNodeGroupTemplateNodeInfo(nodeGroupId string) *k8sV1.Node {
-	if ngc, ok := c.nodeGroupCache[nodeGroupId]; ok {
+	if ngc, ok := c.nodesCache[nodeGroupId]; ok {
+		// Create a new node struct.
 		node := defaultNodeTemplate
+		// Fill dynamic fields.
 		node.Labels = c.nodeManager.GetLabels(ngc.nodepool)
 		node.Status.Capacity = c.nodeManager.GetCapacity(ngc.nodepool)
 		node.Status.Allocatable = node.Status.Capacity
 		node.Spec.ProviderID = fmt.Sprintf(nodes.ProviderIdFormat, fmt.Sprintf("%s-N", ngc.nodepool.Name))
-		return node
+		return &node
 	}
 	return nil
 }
 
+// buildReadyConditions returns default ready condition for the node.
 func buildReadyConditions() []k8sV1.NodeCondition {
 	lastTransition := time.Now().Add(-time.Minute)
 	return []k8sV1.NodeCondition{

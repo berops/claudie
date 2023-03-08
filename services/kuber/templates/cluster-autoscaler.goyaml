@@ -43,6 +43,8 @@ spec:
             - --cloud-config=/etc/claudie/cloud-config/cloud-config
             - --kubeconfig=/etc/claudie/kubeconfig/kubeconfig
             - --ignore-daemonsets-utilization=true
+            # TODO remove later
+            - --v=2
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: kubeconfig
