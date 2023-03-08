@@ -102,7 +102,7 @@ jobs:
             if [ "$SERVICE" == "autoscaler-adapter" ]; then
               TAG=${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
               echo "Setting new tag for autoscaler adapter to $TAG"
-              sed "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" autoscaler-adapter.goyaml > autoscaler-adapter.goyaml
+              sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" autoscaler-adapter.goyaml
             fi
           done
 
