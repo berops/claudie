@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-const configIDDefault = "6228ab28e655d4721eae5727"
+const configIDDefault = "6392ef6a19abbf9fdd98ac25"
 
 func ClientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
 	cc, err := utils.GrpcDialWithInsecure("context-box", envs.ContextBoxURL)
@@ -68,7 +68,7 @@ func makePbConfig(msg string, manifest []byte, id string) *pb.Config {
 }
 func TestSaveConfigFrontEnd(t *testing.T) {
 	c, cc := ClientConnection()
-	manifestFile := "./manifest.yaml" // this is manifest from this test file
+	manifestFile := "./.manifest-simple.yml" // this is manifest from this test file
 
 	manifest, errR := os.ReadFile(manifestFile)
 	if errR != nil {
@@ -76,7 +76,7 @@ func TestSaveConfigFrontEnd(t *testing.T) {
 	}
 
 	_, cfgErr := SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
-		Config: makePbConfig("Sample config name", manifest, ""),
+		Config: makePbConfig("cloudziu", manifest, ""),
 	})
 	if cfgErr != nil {
 		log.Fatal().Msgf("Error saving FrontEnd configuration to DB connection: %v", cfgErr)
@@ -86,7 +86,7 @@ func TestSaveConfigFrontEnd(t *testing.T) {
 
 func TestSaveConfigScheduler(t *testing.T) {
 	c, cc := ClientConnection()
-	manifestFile := "./manifest.yaml" // this is manifest from this test file
+	manifestFile := "./.manifest-simple.yml" // this is manifest from this test file
 
 	manifest, errR := os.ReadFile(manifestFile)
 	if errR != nil {
@@ -94,7 +94,7 @@ func TestSaveConfigScheduler(t *testing.T) {
 	}
 
 	cfgErr := SaveConfigScheduler(c, &pb.SaveConfigRequest{
-		Config: makePbConfig("TestDeleteNodeSamo", manifest, ""),
+		Config: makePbConfig("cloudziu", manifest, ""),
 	})
 	if cfgErr != nil {
 		log.Fatal().Msgf("Error saving Scheduler configuration to DB connection: %v", cfgErr)
@@ -104,7 +104,7 @@ func TestSaveConfigScheduler(t *testing.T) {
 
 func TestDeleteConfig(t *testing.T) {
 	c, cc := ClientConnection()
-	configID := "636ce11237b549bf20be1c81" //configIDDefault // Put desired config ID here
+	configID := "63776c3e6ddcb00bc716364c" //configIDDefault // Put desired config ID here
 	delErr := DeleteConfig(c, configID, pb.IdType_HASH)
 	if delErr != nil {
 		log.Fatal().Msgf("Error deleting config %s %v", configID, delErr)
