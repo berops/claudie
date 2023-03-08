@@ -68,7 +68,13 @@ func getClaudieState(projectName, clusterName string) (*pb.K8Scluster, error) {
 	if cc, err = utils.GrpcDialWithInsecure("context-box", cboxURL); err != nil {
 		return nil, fmt.Errorf("failed to dial context-box at %s : %w", cboxURL, err)
 	}
+	defer func() {
+		if err := cc.Close(); err != nil {
+			log.Error().Msgf("Failed to close context-box connection %v", err)
+		}
+	}()
 	c := pb.NewContextBoxServiceClient(cc)
+
 	if res, err = c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: projectName, Type: pb.IdType_NAME}); err != nil {
 		return nil, fmt.Errorf("failed to get config for project %s : %w", projectName, err)
 	}
@@ -155,7 +161,6 @@ func (c *ClaudieCloudProvider) GPULabel(_ context.Context, req *protos.GPULabelR
 // GetAvailableGPUTypes return all available GPU types cloud provider supports.
 func (c *ClaudieCloudProvider) GetAvailableGPUTypes(_ context.Context, req *protos.GetAvailableGPUTypesRequest) (*protos.GetAvailableGPUTypesResponse, error) {
 	log.Info().Msgf("Got GetAvailableGPUTypes request")
-	//TODO
 	return &protos.GetAvailableGPUTypesResponse{}, nil
 }
 
@@ -186,7 +191,6 @@ func (c *ClaudieCloudProvider) refresh() error {
 	} else {
 		c.configCluster = cluster
 		c.nodeGroupCache = getNodeGroupCache(cluster.ClusterInfo.NodePools)
-		log.Debug().Msgf("Updated state: \n %v ", c.nodeGroupCache)
 	}
 	return nil
 }
