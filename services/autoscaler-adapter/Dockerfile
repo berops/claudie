@@ -20,16 +20,22 @@ WORKDIR /go/services/autoscaler-adapter
 #Compile the golang code, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build -o claudie-autoscaler-adapter
 
+#Use alpine image to copy certs needed for cloud libraries
+FROM alpine:latest as certs
+RUN apk --update add ca-certificates
+
 #Use empty base image
-FROM docker.io/library/alpine:3.17.2
+FROM scratch
 #Add repository label
 LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
 #Add base image name as a label
-LABEL org.opencontainers.image.base.name "docker.io/library/alpine:3.17.2"
+LABEL org.opencontainers.image.base.name "scratch"
 #Add description to the image
 LABEL org.opencontainers.image.description "Image for external gRPC provider for Cluster Autoscaler by Claudie"
 
-#Copy the binaries to empty base image
+#Copy the binaries & certs to empty base image
+ENV PATH=/bin
+COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=build  /go/services/autoscaler-adapter/claudie-autoscaler-adapter /bin/claudie-autoscaler-adapter
 
 WORKDIR /bin
