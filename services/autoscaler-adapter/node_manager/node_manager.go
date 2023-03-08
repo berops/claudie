@@ -2,6 +2,7 @@ package node_manager
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"github.com/aws/aws-sdk-go-v2/aws"
+	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/berops/claudie/proto/pb"
@@ -64,15 +66,20 @@ func NewNodeManager(nodepools []*pb.NodePool) *NodeManager {
 					}
 				case "aws":
 					// Define option function to set credentials
-					optFunc := func(lo *config.LoadOptions) error {
+					credFunc := func(lo *config.LoadOptions) error {
 						lo.Credentials = aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
 							return aws.Credentials{AccessKeyID: np.Provider.AwsAccessKey, SecretAccessKey: np.Provider.Credentials}, nil
 						})
-						lo.Region = np.Region
 						return nil
 					}
 					// Create client and create cache.
-					cfg, err := config.LoadDefaultConfig(context.Background(), optFunc)
+					httpClient := awshttp.NewBuildableClient().WithTransportOptions(func(tr *http.Transport) {
+						if tr.TLSClientConfig == nil {
+							tr.TLSClientConfig = &tls.Config{}
+						}
+						tr.TLSClientConfig.MinVersion = tls.VersionTLS13
+					})
+					cfg, err := config.LoadDefaultConfig(context.Background(), credFunc, config.WithHTTPClient(httpClient), config.WithRegion(np.Region))
 					if err != nil {
 						panic(fmt.Sprintf("AWS config got error : %v", err))
 					}
