@@ -21,6 +21,7 @@ import (
 	"github.com/berops/claudie/services/kuber/server/autoscaler"
 	"github.com/berops/claudie/services/kuber/server/longhorn"
 	"github.com/berops/claudie/services/kuber/server/nodes"
+	scrapeconfig "github.com/berops/claudie/services/kuber/server/scrapeConfig"
 	"github.com/berops/claudie/services/kuber/server/secret"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
@@ -62,6 +63,41 @@ func (s *server) SetUpStorage(ctx context.Context, req *pb.SetUpStorageRequest) 
 	log.Info().Msgf("Longhorn successfully set up on the cluster %s", clusterID)
 
 	return &pb.SetUpStorageResponse{DesiredCluster: req.DesiredCluster}, nil
+}
+
+func (s *server) StoreLbScrapeConfig(ctx context.Context, req *pb.StoreLbScrapeConfigRequest) (*pb.StoreLbScrapeConfigResponse, error) {
+	clusterID := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
+	clusterDir := filepath.Join(outputDir, clusterID)
+
+	sc := scrapeconfig.ScrapeConfig{
+		Cluster:    req.GetCluster(),
+		LBClusters: req.GetDesiredLoadbalancers(),
+		Directory:  clusterDir,
+	}
+
+	if err := sc.GenerateAndApplyScrapeConfig(); err != nil {
+		return nil, fmt.Errorf("error while setting up the loadbalancer scrape-config for %s : %w", clusterID, err)
+	}
+	log.Info().Msgf("Loadbalancer scrape-config successfully set up on the cluster %s", clusterID)
+
+	return &pb.StoreLbScrapeConfigResponse{}, nil
+}
+
+func (s *server) RemoveLbScrapeConfig(ctx context.Context, req *pb.RemoveLbScrapeConfigRequest) (*pb.RemoveLbScrapeConfigResponse, error) {
+	clusterID := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
+	clusterDir := filepath.Join(outputDir, clusterID)
+
+	sc := scrapeconfig.ScrapeConfig{
+		Cluster:   req.GetCluster(),
+		Directory: clusterDir,
+	}
+
+	if err := sc.RemoveLbScrapeConfig(); err != nil {
+		return nil, fmt.Errorf("error while removing old loadbalancer scrape-config for %s : %w", clusterID, err)
+	}
+	log.Info().Msgf("Loadbalancer scrape-config successfully set up on the cluster %s", clusterID)
+
+	return &pb.RemoveLbScrapeConfigResponse{}, nil
 }
 
 func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterMetadataRequest) (*pb.StoreClusterMetadataResponse, error) {

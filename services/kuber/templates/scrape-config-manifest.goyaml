@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Namespace }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: loadbalancers-scrape-config
+  namespace: {{ .Namespace }}
+type: Opaque
+data:
+  scrape-config.yaml: {{ .ScrapeConfigB64 }}

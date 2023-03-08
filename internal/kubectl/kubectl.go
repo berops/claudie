@@ -9,16 +9,18 @@ import (
 )
 
 // Kubeconfig - the kubeconfig of the cluster as a string
-// when left empty, kuber uses default kubeconfig
+// when left empty, kuber uses default kubeconfig,
+// MaxKubectlRetries when unset/set=0 will use defaultMaxKubectlRetries = 10
 type Kubectl struct {
-	Kubeconfig string
-	Directory  string
+	Kubeconfig        string
+	Directory         string
+	MaxKubectlRetries int
 }
 
 const (
-	maxKubectlRetries = 10
-	getEtcdPodsCmd    = "get pods -n kube-system --no-headers -o custom-columns=\":metadata.name\" | grep etcd"
-	exportEtcdEnvsCmd = `export ETCDCTL_API=3 && 
+	defaultMaxKubectlRetries = 10
+	getEtcdPodsCmd           = "get pods -n kube-system --no-headers -o custom-columns=\":metadata.name\" | grep etcd"
+	exportEtcdEnvsCmd        = `export ETCDCTL_API=3 && 
 		export ETCDCTL_CACERT=/etc/kubernetes/pki/etcd/ca.crt && 
 		export ETCDCTL_CERT=/etc/kubernetes/pki/etcd/healthcheck-client.crt && 
 		export ETCDCTL_KEY=/etc/kubernetes/pki/etcd/healthcheck-client.key`
@@ -164,9 +166,13 @@ func (k Kubectl) run(command string) error {
 	cmd := exec.Command("bash", "-c", command)
 	cmd.Dir = k.Directory
 	if err := cmd.Run(); err != nil {
+		retryCount := k.MaxKubectlRetries
+		if k.MaxKubectlRetries == 0 {
+			retryCount = defaultMaxKubectlRetries
+		}
 		retryCmd := comm.Cmd{
 			Command: command, Dir: k.Directory, CommandTimeout: kubectlTimeout}
-		if err = retryCmd.RetryCommand(maxKubectlRetries); err != nil {
+		if err = retryCmd.RetryCommand(retryCount); err != nil {
 			return err
 		}
 	}
@@ -181,8 +187,12 @@ func (k Kubectl) runWithOutput(command string) ([]byte, error) {
 	cmd.Dir = k.Directory
 	result, err = cmd.CombinedOutput()
 	if err != nil {
+		retryCount := k.MaxKubectlRetries
+		if k.MaxKubectlRetries == 0 {
+			retryCount = defaultMaxKubectlRetries
+		}
 		cmd := comm.Cmd{Command: command, Dir: k.Directory, CommandTimeout: kubectlTimeout}
-		result, err = cmd.RetryCommandWithOutput(maxKubectlRetries)
+		result, err = cmd.RetryCommandWithOutput(retryCount)
 		if err != nil {
 			return nil, err
 		}
