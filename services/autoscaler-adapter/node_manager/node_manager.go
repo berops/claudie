@@ -77,7 +77,7 @@ func NewNodeManager(nodepools []*pb.NodePool) *NodeManager {
 						if tr.TLSClientConfig == nil {
 							tr.TLSClientConfig = &tls.Config{}
 						}
-						tr.TLSClientConfig.MinVersion = tls.VersionTLS13
+						tr.TLSClientConfig.MinVersion = tls.VersionTLS12
 					})
 					cfg, err := config.LoadDefaultConfig(context.Background(), credFunc, config.WithHTTPClient(httpClient), config.WithRegion(np.Region))
 					if err != nil {
