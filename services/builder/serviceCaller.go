@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/Berops/claudie/internal/envs"
 	"github.com/Berops/claudie/internal/utils"
 	"github.com/Berops/claudie/proto/pb"
@@ -72,7 +73,10 @@ func buildCluster(ctx *BuilderContext, c pb.ContextBoxServiceClient) (*BuilderCo
 
 // callTerraformer passes config to terraformer for building the infra
 func callTerraformer(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+	description := ctx.Workflow.Description
+
 	ctx.Workflow.Stage = pb.Workflow_TERRAFORMER
+	ctx.Workflow.Description = fmt.Sprintf("%s building infrastructure", description)
 	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
 		return err
 	}
@@ -104,6 +108,10 @@ func callTerraformer(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient)
 	ctx.loadbalancers = res.CurrentLbs
 	ctx.desiredLoadbalancers = res.DesiredLbs
 
+	ctx.Workflow.Description = description
+	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -158,7 +166,7 @@ func callAnsibler(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) er
 	ctx.desiredCluster = installRes.Desired
 	ctx.desiredLoadbalancers = installRes.DesiredLbs
 
-	ctx.Workflow.Description = fmt.Sprintf("%s installing node requirments", description)
+	ctx.Workflow.Description = fmt.Sprintf("%s installing node requirements", description)
 	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
 		return err
 	}
@@ -207,7 +215,10 @@ func callAnsibler(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) er
 
 // callKubeEleven passes config to kubeEleven to bootstrap k8s cluster
 func callKubeEleven(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+	description := ctx.Workflow.Description
+
 	ctx.Workflow.Stage = pb.Workflow_KUBE_ELEVEN
+	ctx.Workflow.Description = fmt.Sprintf("%s building kubernetes cluster", description)
 	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
 		return err
 	}
@@ -235,6 +246,10 @@ func callKubeEleven(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) 
 	ctx.desiredCluster = res.Desired
 	ctx.desiredLoadbalancers = res.DesiredLbs
 
+	ctx.Workflow.Description = description
+	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -307,7 +322,10 @@ func destroyCluster(ctx *BuilderContext, c pb.ContextBoxServiceClient) error {
 
 // destroyConfigTerraformer calls terraformer's DestroyInfrastructure function
 func destroyConfigTerraformer(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+	description := ctx.Workflow.Description
+
 	ctx.Workflow.Stage = pb.Workflow_DESTROY_TERRAFORMER
+	ctx.Workflow.Description = fmt.Sprintf("%s destroying infrastructure", description)
 	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
 		return err
 	}
@@ -321,12 +339,20 @@ func destroyConfigTerraformer(ctx *BuilderContext, cboxClient pb.ContextBoxServi
 	log.Info().Msgf("Calling DestroyInfrastructure on terraformer for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
 	c := pb.NewTerraformerServiceClient(cc)
 
-	_, err = terraformer.DestroyInfrastructure(c, &pb.DestroyInfrastructureRequest{
+	if _, err = terraformer.DestroyInfrastructure(c, &pb.DestroyInfrastructureRequest{
 		ProjectName: ctx.projectName,
 		Current:     ctx.cluster,
 		CurrentLbs:  ctx.loadbalancers,
-	})
-	return err
+	}); err != nil {
+		return err
+	}
+
+	ctx.Workflow.Description = description
+	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // deleteClusterData deletes the kubeconfig and cluster metadata.
@@ -361,8 +387,7 @@ func deleteClusterData(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClien
 	}
 
 	log.Info().Msgf("Calling DeleteClusterMetadata on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
-	_, err = kuber.DeleteClusterMetadata(c, &pb.DeleteClusterMetadataRequest{Cluster: ctx.cluster})
-	if err != nil {
+	if _, err = kuber.DeleteClusterMetadata(c, &pb.DeleteClusterMetadataRequest{Cluster: ctx.cluster}); err != nil {
 		return err
 	}
 
