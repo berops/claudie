@@ -8,7 +8,7 @@ on:
 
 env:
   ENV_FILE: .env
-  SERVICES: context-box scheduler builder terraformer ansibler kube-eleven kuber frontend testing-framework autoscaler-adapter
+  SERVICES: context-box scheduler builder terraformer ansibler kube-eleven kuber frontend autoscaler-adapter
   TEST_SETS: test-set1 test-set2 test-set3
 
 jobs:
@@ -147,7 +147,7 @@ jobs:
           NEW_SERVICES=( ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }} )
           for SERVICE in "${NEW_SERVICES[@]}"
           docker
-            if [ "$SERVICE" != "testing-framework" || "$SERVICE" != "autoscaler-adapter" ]; then
+            if [ "$SERVICE" != "testing-framework" && "$SERVICE" != "autoscaler-adapter" ]; then
               echo "Setting a new tag for a $SERVICE"
               kustomize edit set image ghcr.io/berops/claudie/$SERVICE:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
             fi
