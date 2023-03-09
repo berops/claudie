@@ -138,7 +138,10 @@ func printConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType, stat
 			buffer.WriteString(fmt.Sprintf("NodePool number: %d \n", j))
 			buffer.WriteString(fmt.Sprintf("Name: %s\n", nodePool.GetName()))
 			buffer.WriteString(fmt.Sprintf("Region %s\n", nodePool.GetRegion()))
-			buffer.WriteString(fmt.Sprintf("Provider specs: %s\n", nodePool.GetProvider()))
+			buffer.WriteString(fmt.Sprintf("Provider specs: %v\n", nodePool.GetProvider()))
+			buffer.WriteString(fmt.Sprintf("Autoscaler conf: %v\n", nodePool.GetAutoscalerConfig()))
+			buffer.WriteString(fmt.Sprintf("Count: %d\n", nodePool.GetCount()))
+
 			buffer.WriteString("Nodes:\n")
 			for _, node := range nodePool.GetNodes() {
 				buffer.WriteString(fmt.Sprintf("Name: %s Public: %s Private: %s NodeType: %s \n", node.Name, node.GetPublic(), node.GetPrivate(), node.GetNodeType().String()))

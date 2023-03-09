@@ -129,14 +129,10 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 			if err != nil {
 				return nil, err
 			}
-			// check if autoscaler is defined
-			count := nodePool.Count
+
+			// Check if autoscaler is defined
 			var autoscalerConf *pb.AutoscalerConf
 			if nodePool.AutoscalerConfig.isDefined() {
-				//if count is smaller than AutoscalerConfig.Min, use AutoscalerConfig.Min.
-				if nodePool.Count < nodePool.AutoscalerConfig.Min {
-					count = nodePool.AutoscalerConfig.Min
-				}
 				autoscalerConf = &pb.AutoscalerConf{}
 				autoscalerConf.Min = nodePool.AutoscalerConfig.Min
 				autoscalerConf.Max = nodePool.AutoscalerConfig.Max
@@ -149,7 +145,7 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 				ServerType:       nodePool.ServerType,
 				Image:            nodePool.Image,
 				DiskSize:         uint32(nodePool.DiskSize),
-				Count:            count,
+				Count:            nodePool.Count,
 				Provider:         provider,
 				IsControl:        isControl,
 				AutoscalerConfig: autoscalerConf,

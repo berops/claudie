@@ -158,18 +158,18 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 		nodes := make([]*pb.Node, 0, np.Count)
 		nodeNames := make(map[string]struct{}, np.Count)
 		// Copy existing nodes into new slice
-		for i := 0; i < int(np.Count); i++ {
-			if i < len(np.Nodes) {
-				nodes = append(nodes, np.Nodes[i])
-				nodeNames[np.Nodes[i].Name] = struct{}{}
-			} else {
+		for i, node := range np.Nodes {
+			if i == int(np.Count) {
 				break
 			}
+			log.Debug().Msgf("Cluster %s, Nodepool %s is reusing node %s", clusterID, np.Name, node.Name)
+			nodes = append(nodes, node)
+			nodeNames[node.Name] = struct{}{}
 		}
 		// Fill the rest of the nodes with assigned names
 		nodepoolID := fmt.Sprintf("%s-%s", clusterID, np.Name)
 		for len(nodes) < int(np.Count) {
-			// Get a unique name fpr the new node
+			// Get a unique name for the new node
 			nodeName := getUniqueNodeName(nodepoolID, nodeNames)
 			nodeNames[nodeName] = struct{}{}
 			nodes = append(nodes, &pb.Node{Name: nodeName})
