@@ -16,6 +16,16 @@
   <a href="https://youtu.be/q4xdAiHYxZQ"><img src="https://markdown-videos.deta.dev/youtube/q4xdAiHYxZQ"></a>
 </p>
 
+## Typical use cases
+
+Claudie has been built to target the following use case in the Kubernetes world.
+- Cloud bursting
+- Service interconnect
+- Managed Kubernetes for providers that do not offer it
+- Cost savings
+
+Read in more details [here](./docs/use-cases/use-cases.md).
+
 ## Features
 
 ### Manage multi-cloud Kubernetes clusters
