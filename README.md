@@ -44,13 +44,18 @@ Claudie comes pre-configured with a storage solution, with ready-to-use Storage 
 
 ### Supported cloud providers
 
-- AWS
-- Azure
-- GCP
-- OCI
-- Hetzner
+- [AWS](./docs/input-manifest/providers/aws.md)
+- [Azure](./docs/input-manifest/providers/azure.md)
+- [GCP](./docs/input-manifest/providers/gcp.md)
+- [OCI](./docs/input-manifest/providers/oci.md)
+- [Hetzner](./docs/input-manifest/providers/hetzner.md)
 
-Adding a support for another cloud provider is easy. Let us know your needs.
+Adding a support for another provider is easy. Let us know your needs.
+
+### Supported DNS providers
+
+- [Cloudflare](./docs/input-manifest/providers/cloudflare.md)
+- [GCP](./docs/input-manifest/providers/gcp.md)
 
 ## Get started using Claudie
 
