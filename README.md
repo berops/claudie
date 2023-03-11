@@ -23,7 +23,9 @@
 Create fully-featured Kubernetes clusters composed of multiple different public Cloud providers in an easy and secure manner.
 Simply insert credentials to your cloud projects, define your cluster, and watch how the infra spawns right in front of you.
 
-![Infra Diagram](docs/infra-diagram.png)
+<p align="center">
+ <img alt="Infra Diagram" src="https://github.com/berops/claudie/raw/master/docs/infra-diagram.png" />
+</p>
 
 ### Management via IaC
 
