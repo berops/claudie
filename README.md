@@ -42,6 +42,16 @@ Claudie has its own managed load-balancing solution, which you can use for Ingre
 
 Claudie comes pre-configured with a storage solution, with ready-to-use Storage Classes. See [Storage docs](https://github.com/Berops/claudie/tree/master/docs/storage) to learn more.
 
+### Supported cloud providers
+
+- AWS
+- Azure
+- GCP
+- OCI
+- Hetzner
+
+Adding a support for another cloud provider is easy. Let us know your needs.
+
 ## Get started using Claudie
 
 1. Deploy Claudie Kubernetes [manifests/claudie](https://github.com/Berops/claudie/tree/master/manifests/claudie) into a Kubernetes cluster:
