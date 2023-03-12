@@ -67,7 +67,11 @@ Adding a support for another provider is easy. Let us know your needs.
 ### Supported DNS providers
 
 - [Cloudflare](./docs/input-manifest/providers/cloudflare.md)
+- [AWS](./docs/input-manifest/providers/aws.md)
+- [Azure](./docs/input-manifest/providers/azure.md)
 - [GCP](./docs/input-manifest/providers/gcp.md)
+- [OCI](./docs/input-manifest/providers/oci.md)
+- [HetznerDNS](./docs/input-manifest/providers/hetzner.md)
 
 ## Get started using Claudie
 
