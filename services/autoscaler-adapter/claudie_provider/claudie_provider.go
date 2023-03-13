@@ -97,18 +97,24 @@ func getClaudieState(projectName, clusterName string) (*pb.K8Scluster, error) {
 func getNodesCache(nodepools []*pb.NodePool) map[string]*nodeCache {
 	var ngc = make(map[string]*nodeCache, len(nodepools))
 	for _, np := range nodepools {
-		// Find autoscaled nodepool.
+		// Check the min and max size of nodepool.
+		var min, max int32 = 0, 0
 		if np.AutoscalerConfig != nil {
-			// Create nodeGroup struct.
-			ng := &protos.NodeGroup{
-				Id:      np.Name,
-				MinSize: np.AutoscalerConfig.Min,
-				MaxSize: np.AutoscalerConfig.Max,
-				Debug:   fmt.Sprintf("Nodepool %s with autoscaler config %v", np.Name, np.AutoscalerConfig),
-			}
-			// Append ng to the final slice.
-			ngc[np.Name] = &nodeCache{nodeGroup: ng, nodepool: np, targetSize: np.Count}
+			min = np.AutoscalerConfig.Min
+			max = np.AutoscalerConfig.Max
+		} else {
+			min = np.Count
+			max = np.Count
 		}
+		// Create nodeGroup struct.
+		ng := &protos.NodeGroup{
+			Id:      np.Name,
+			MinSize: min,
+			MaxSize: max,
+			Debug:   fmt.Sprintf("Nodepool %s, is autoscaled %v, min %d, max %d", np.Name, (np.AutoscalerConfig != nil), min, max),
+		}
+		// Append ng to the final slice.
+		ngc[np.Name] = &nodeCache{nodeGroup: ng, nodepool: np, targetSize: np.Count}
 	}
 	return ngc
 }
