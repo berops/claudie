@@ -162,7 +162,7 @@ func processTestSet(ctx context.Context, setName string, c pb.ContextBoxServiceC
 				log.Info().Msgf("Deleting infra even after error due to flag \"-auto-clean-up\" set to %v", autoCleanUpFlag)
 				// delete manifest from DB to clean up the infra
 				if err := cleanUp(setName, idInfo.id, c); err != nil {
-					log.Error().Msgf("error while cleaning up the infra for test set %s : %w", setName, err)
+					log.Error().Msgf("error while cleaning up the infra for test set %s : %v", setName, err)
 				}
 			}
 		}
