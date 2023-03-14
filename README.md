@@ -19,6 +19,7 @@
 ## Typical use cases
 
 Claudie has been built to target the following use case in the Kubernetes world.
+
 - Cloud bursting
 - Service interconnect
 - Managed Kubernetes for providers that do not offer it
@@ -56,22 +57,14 @@ Claudie comes pre-configured with a storage solution, with ready-to-use Storage 
 
 ### Supported cloud providers
 
-- [AWS](./docs/input-manifest/providers/aws.md)
-- [Azure](./docs/input-manifest/providers/azure.md)
-- [GCP](./docs/input-manifest/providers/gcp.md)
-- [OCI](./docs/input-manifest/providers/oci.md)
-- [Hetzner](./docs/input-manifest/providers/hetzner.md)
-
-Adding a support for another provider is easy. Let us know your needs.
-
-### Supported DNS providers
-
-- [Cloudflare](./docs/input-manifest/providers/cloudflare.md)
-- [AWS](./docs/input-manifest/providers/aws.md)
-- [Azure](./docs/input-manifest/providers/azure.md)
-- [GCP](./docs/input-manifest/providers/gcp.md)
-- [OCI](./docs/input-manifest/providers/oci.md)
-- [HetznerDNS](./docs/input-manifest/providers/hetzner.md)
+| Cloud Provider                                                                                          | Infrastructure support | DNS support |
+| ------------------------------------------------------------------------------------------------------- | ---------------------- | ----------- |
+| [AWS](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/aws.md)               | Supported              | Supported   |
+| [Azure](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/azure.md)           | Supported              | Supported   |
+| [GCP](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/gcp.md)               | Supported              | Supported   |
+| [OCI](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/oci.md)               | Supported              | Supported   |
+| [Hetzner](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/hetzner.md)       | Supported              | Supported   |
+| [Cloudflare](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/cloudflare.md) | Not applicable         | Supported   |
 
 ## Get started using Claudie
 
