@@ -38,5 +38,4 @@ func main() {
 	if err := server.Serve(lis); err != nil {
 		log.Fatal().Msgf("failed to serve: %v", err)
 	}
-
 }

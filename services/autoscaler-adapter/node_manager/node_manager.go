@@ -78,12 +78,12 @@ func (nm *NodeManager) GetCapacity(np *pb.NodePool) k8sV1.ResourceList {
 		} else {
 			disk = int64(np.DiskSize) * 1024 * 1024 * 1024 // Convert to bytes
 		}
-		return k8sV1.ResourceList{
-			k8sV1.ResourcePods:    *resource.NewQuantity(defaultPodAmountsLimit, resource.DecimalSI),
-			k8sV1.ResourceCPU:     *resource.NewQuantity(typeInfo.cpu, resource.DecimalSI),
-			k8sV1.ResourceMemory:  *resource.NewQuantity(typeInfo.memory, resource.DecimalSI),
-			k8sV1.ResourceStorage: *resource.NewQuantity(disk, resource.DecimalSI),
-		}
+		rl := k8sV1.ResourceList{}
+		rl[k8sV1.ResourcePods] = *resource.NewQuantity(defaultPodAmountsLimit, resource.DecimalSI)
+		rl[k8sV1.ResourceCPU] = *resource.NewQuantity(typeInfo.cpu, resource.DecimalSI)
+		rl[k8sV1.ResourceMemory] = *resource.NewQuantity(typeInfo.memory, resource.DecimalSI)
+		rl[k8sV1.ResourceStorage] = *resource.NewQuantity(disk, resource.DecimalSI)
+		return rl
 	}
 	return nil
 }

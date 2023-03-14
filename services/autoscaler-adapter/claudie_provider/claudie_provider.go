@@ -98,7 +98,7 @@ func getNodesCache(nodepools []*pb.NodePool) map[string]*nodeCache {
 	var ngc = make(map[string]*nodeCache, len(nodepools))
 	for _, np := range nodepools {
 		// Check the min and max size of nodepool.
-		var min, max int32 = 0, 0
+		var min, max int32
 		if np.AutoscalerConfig != nil {
 			min = np.AutoscalerConfig.Min
 			max = np.AutoscalerConfig.Max
@@ -179,19 +179,13 @@ func (c *ClaudieCloudProvider) GetAvailableGPUTypes(_ context.Context, req *prot
 // Cleanup cleans up open resources before the cloud provider is destroyed, i.e. go routines etc.
 func (c *ClaudieCloudProvider) Cleanup(_ context.Context, req *protos.CleanupRequest) (*protos.CleanupResponse, error) {
 	log.Info().Msgf("Got Cleanup request")
-	return &protos.CleanupResponse{}, c.cleanup()
+	return &protos.CleanupResponse{}, nil
 }
 
 // Refresh is called before every main loop and can be used to dynamically update cloud provider state.
 func (c *ClaudieCloudProvider) Refresh(_ context.Context, req *protos.RefreshRequest) (*protos.RefreshResponse, error) {
 	log.Info().Msgf("Got Refresh request")
 	return &protos.RefreshResponse{}, c.refresh()
-}
-
-// cleanup cleans up all the resources claudie provider uses.
-func (c *ClaudieCloudProvider) cleanup() error {
-	log.Info().Msgf("Cleaning all resources")
-	return nil
 }
 
 // refresh refreshes the state of the claudie provider based of the state from Claudie.

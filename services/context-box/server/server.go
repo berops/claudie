@@ -208,13 +208,15 @@ func (s *server) UpdateNodepool(ctx context.Context, req *pb.UpdateNodepoolReque
 				return nil, fmt.Errorf("error while updating desired state in project %s : %w", config.Name, err)
 			}
 			// Find and update correct nodepool nodes in current state.
-			// This has to be done in order 
+			// This has to be done in order
 			if err := updateCurrentNodepool(req.ClusterName, req.Nodepool.Name, req.Nodepool.Nodes, config.CurrentState); err != nil {
 				return nil, fmt.Errorf("error while updating current state in project %s : %w", config.Name, err)
 			}
 			// Save new config in the database with dummy CsChecksum to initiate a build.
 			config.CsChecksum = checksum.CalculateChecksum(utils.CreateHash(8))
-			database.SaveConfig(config)
+			if err := database.SaveConfig(config); err != nil {
+				return nil, err
+			}
 			return &pb.UpdateNodepoolResponse{}, nil
 		}
 		return nil, fmt.Errorf("the project %s is about to be in the build stage", req.ProjectName)

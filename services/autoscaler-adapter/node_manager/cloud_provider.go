@@ -3,6 +3,7 @@ package node_manager
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -104,7 +105,7 @@ func (nm *NodeManager) cacheGcp(np *pb.NodePool) {
 	// Use while loop to support paging
 	for {
 		mt, err := it.Next()
-		if err == iterator.Done {
+		if errors.Is(err, iterator.Done) {
 			break
 		}
 		if err != nil {
