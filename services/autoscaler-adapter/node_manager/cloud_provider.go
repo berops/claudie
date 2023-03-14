@@ -30,18 +30,19 @@ const (
 )
 
 // cacheHetzner function uses hcloud-go module to query supported servers and their info. If the query is successful, the server info is saved in cache.
-func (nm *NodeManager) cacheHetzner(np *pb.NodePool) {
+func (nm *NodeManager) cacheHetzner(np *pb.NodePool) error {
 	// Create client and create cache.
 	hc := hcloud.NewClient(hcloud.WithToken(np.Provider.Credentials), hcloud.WithHTTPClient(http.DefaultClient))
 	if servers, err := hc.ServerType.All(context.Background()); err != nil {
-		panic(fmt.Sprintf("Hetzner client got error %v", err))
+		return fmt.Errorf("hetzner client got error %v", err)
 	} else {
 		nm.hetznerVMs = getTypeInfosHetzner(servers)
 	}
+	return nil
 }
 
 // cacheAws function uses aws-sdk-go-v2 module to query supported VMs and their info. If the query is successful, the VM info is saved in cache.
-func (nm *NodeManager) cacheAws(np *pb.NodePool) {
+func (nm *NodeManager) cacheAws(np *pb.NodePool) error {
 	// Define option function to set static credentials
 	credFunc := func(lo *config.LoadOptions) error {
 		lo.Credentials = aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
@@ -60,7 +61,7 @@ func (nm *NodeManager) cacheAws(np *pb.NodePool) {
 
 	cfg, err := config.LoadDefaultConfig(context.Background(), credFunc, config.WithHTTPClient(httpClient), config.WithRegion(np.Region))
 	if err != nil {
-		panic(fmt.Sprintf("AWS config got error : %v", err))
+		return fmt.Errorf("AWS config got error : %v", err)
 	}
 	client := ec2.NewFromConfig(cfg)
 	maxResults := int32(defaultMaxResults)
@@ -68,7 +69,7 @@ func (nm *NodeManager) cacheAws(np *pb.NodePool) {
 	// Use while loop to support paging.
 	for {
 		if res, err := client.DescribeInstanceTypes(context.Background(), &ec2.DescribeInstanceTypesInput{MaxResults: &maxResults, NextToken: token}); err != nil {
-			panic(fmt.Sprintf("AWS client got error : %v", err))
+			return fmt.Errorf("AWS client got error : %v", err)
 		} else {
 			nm.awsVMs = mergeMaps(getTypeInfosAws(res.InstanceTypes), nm.awsVMs)
 			// Check if there are any more results to query.
@@ -78,14 +79,15 @@ func (nm *NodeManager) cacheAws(np *pb.NodePool) {
 			}
 		}
 	}
+	return nil
 }
 
 // cacheGcp function uses google go module to query supported VMs and their info. If the query is successful, the VM info is saved in cache.
-func (nm *NodeManager) cacheGcp(np *pb.NodePool) {
+func (nm *NodeManager) cacheGcp(np *pb.NodePool) error {
 	// Create client and create cache
 	computeService, err := compute.NewMachineTypesRESTClient(context.Background(), option.WithCredentialsJSON([]byte(np.Provider.Credentials)))
 	if err != nil {
-		panic(fmt.Sprintf("GCP client got error : %v", err))
+		return fmt.Errorf("GCP client got error : %v", err)
 	}
 	defer func() {
 		if err := computeService.Close(); err != nil {
@@ -109,19 +111,20 @@ func (nm *NodeManager) cacheGcp(np *pb.NodePool) {
 			break
 		}
 		if err != nil {
-			panic(fmt.Sprintf("GCP client got error while looping: %v", err))
+			return fmt.Errorf("GCP client got error while looping: %v", err)
 		}
 		machineTypes = append(machineTypes, mt)
 	}
 	nm.gcpVMs = mergeMaps(getTypeInfosGcp(machineTypes), nm.gcpVMs)
+	return nil
 }
 
 // cacheOci function uses oci-go-sdk module to query supported shapes and their info. If the query is successful, the shape info is saved in cache.
-func (nm *NodeManager) cacheOci(np *pb.NodePool) {
+func (nm *NodeManager) cacheOci(np *pb.NodePool) error {
 	conf := common.NewRawConfigurationProvider(np.Provider.OciTenancyOcid, np.Provider.OciUserOcid, np.Region, np.Provider.OciFingerprint, np.Provider.Credentials, nil)
 	client, err := core.NewComputeClientWithConfigurationProvider(conf)
 	if err != nil {
-		panic(fmt.Sprintf("OCI client got error : %v", err))
+		return fmt.Errorf("OCI client got error : %v", err)
 	}
 	maxResults := defaultMaxResults
 	req := core.ListShapesRequest{
@@ -131,10 +134,10 @@ func (nm *NodeManager) cacheOci(np *pb.NodePool) {
 	for {
 		r, err := client.ListShapes(context.Background(), req)
 		if err != nil {
-			panic(fmt.Sprintf("OCI client got error : %v", err))
+			return fmt.Errorf("OCI client got error : %v", err)
 		}
 		if r.Items == nil || len(r.Items) == 0 {
-			panic("OCI client got empty response")
+			return fmt.Errorf("OCI client got empty response")
 		}
 		nm.ociVMs = mergeMaps(getTypeInfosOci(r.Items), nm.ociVMs)
 		if r.OpcNextPage != nil {
@@ -143,18 +146,19 @@ func (nm *NodeManager) cacheOci(np *pb.NodePool) {
 			break
 		}
 	}
+	return nil
 }
 
 // cacheOci function uses oci-go-sdk module to query supported VMs and their info. If the query is successful, the VM info is saved in cache.
-func (nm *NodeManager) cacheAzure(np *pb.NodePool) {
+func (nm *NodeManager) cacheAzure(np *pb.NodePool) error {
 	cred, err := azidentity.NewClientSecretCredential(np.Provider.AzureTenantId, np.Provider.AzureClientId, np.Provider.Credentials, nil)
 	if err != nil {
-		panic(fmt.Sprintf("Azure client got error : %v", err))
+		return fmt.Errorf("azure client got error : %v", err)
 	}
 
 	client, err := armcompute.NewVirtualMachineSizesClient(np.Provider.AzureSubscriptionId, cred, nil)
 	if err != nil {
-		panic(fmt.Sprintf("Azure client got error : %v", err))
+		return fmt.Errorf("azure client got error : %v", err)
 	}
 	location := strings.ToLower(strings.ReplaceAll(np.Region, " ", ""))
 	pager := client.NewListPager(location, nil)
@@ -162,8 +166,9 @@ func (nm *NodeManager) cacheAzure(np *pb.NodePool) {
 	for pager.More() {
 		nextResult, err := pager.NextPage(context.Background())
 		if err != nil {
-			panic(fmt.Sprintf("Azure client got error : %v", err))
+			return fmt.Errorf("azure client got error : %v", err)
 		}
 		nm.azureVMs = mergeMaps(getTypeInfosAzure(nextResult.Value), nm.azureVMs)
 	}
+	return nil
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/oracle/oci-go-sdk/v65/core"
 )
 
+// getTypeInfosHetzner converts []*hcloud.ServerType to typeInfo map of instances, where keys are instance types.
 func getTypeInfosHetzner(rawInfo []*hcloud.ServerType) map[string]*typeInfo {
 	m := make(map[string]*typeInfo, len(rawInfo))
 	for _, server := range rawInfo {
@@ -25,6 +26,7 @@ func getTypeInfosHetzner(rawInfo []*hcloud.ServerType) map[string]*typeInfo {
 	return m
 }
 
+// getTypeInfosAws converts []types.InstanceTypeInfo to typeInfo map of instances, where keys are instance types.
 func getTypeInfosAws(rawInfo []types.InstanceTypeInfo) map[string]*typeInfo {
 	m := make(map[string]*typeInfo, len(rawInfo))
 	for _, instance := range rawInfo {
@@ -38,6 +40,7 @@ func getTypeInfosAws(rawInfo []types.InstanceTypeInfo) map[string]*typeInfo {
 	return m
 }
 
+// getTypeInfosAws converts []*computepb.MachineTypeto typeInfo map of instances, where keys are instance types.
 func getTypeInfosGcp(rawInfo []*computepb.MachineType) map[string]*typeInfo {
 	m := make(map[string]*typeInfo, len(rawInfo))
 	for _, instance := range rawInfo {
@@ -49,6 +52,7 @@ func getTypeInfosGcp(rawInfo []*computepb.MachineType) map[string]*typeInfo {
 	return m
 }
 
+// getTypeInfosAws converts []core.Shape to typeInfo map of instances, where keys are instance types.
 func getTypeInfosOci(rawInfo []core.Shape) map[string]*typeInfo {
 	m := make(map[string]*typeInfo, len(rawInfo))
 	for _, shape := range rawInfo {
@@ -60,6 +64,7 @@ func getTypeInfosOci(rawInfo []core.Shape) map[string]*typeInfo {
 	return m
 }
 
+// getTypeInfosAws converts []*armcompute.VirtualMachineSize to typeInfo map of instances, where keys are instance types.
 func getTypeInfosAzure(rawInfo []*armcompute.VirtualMachineSize) map[string]*typeInfo {
 	m := make(map[string]*typeInfo, len(rawInfo))
 	for _, vm := range rawInfo {
@@ -71,6 +76,7 @@ func getTypeInfosAzure(rawInfo []*armcompute.VirtualMachineSize) map[string]*typ
 	return m
 }
 
+// getNodeType returns node type as a string value.
 func getNodeType(np *pb.NodePool) string {
 	if np.IsControl {
 		return "control"
@@ -78,6 +84,7 @@ func getNodeType(np *pb.NodePool) string {
 	return "compute"
 }
 
+// mergeMaps merges two or more maps together, into single map.
 func mergeMaps[M ~map[K]V, K comparable, V any](maps ...M) M {
 	merged := make(M)
 	for _, m := range maps {

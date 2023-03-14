@@ -30,7 +30,7 @@ type typeInfo struct {
 }
 
 // NewNodeManager returns a NodeManager pointer with initialised caches about nodes.
-func NewNodeManager(nodepools []*pb.NodePool) *NodeManager {
+func NewNodeManager(nodepools []*pb.NodePool) (*NodeManager, error) {
 	nm := &NodeManager{}
 	cacheProviderMap := make(map[string]struct{})
 	for _, np := range nodepools {
@@ -43,22 +43,32 @@ func NewNodeManager(nodepools []*pb.NodePool) *NodeManager {
 			if _, ok := cacheProviderMap[providerId]; !ok {
 				switch np.Provider.CloudProviderName {
 				case "hetzner":
-					nm.cacheHetzner(np)
+					if err := nm.cacheHetzner(np); err != nil {
+						return nil, err
+					}
 				case "aws":
-					nm.cacheAws(np)
+					if err := nm.cacheAws(np); err != nil {
+						return nil, err
+					}
 				case "gcp":
-					nm.cacheGcp(np)
+					if err := nm.cacheGcp(np); err != nil {
+						return nil, err
+					}
 				case "oci":
-					nm.cacheOci(np)
+					if err := nm.cacheOci(np); err != nil {
+						return nil, err
+					}
 				case "azure":
-					nm.cacheAzure(np)
+					if err := nm.cacheAzure(np); err != nil {
+						return nil, err
+					}
 				}
 				// Save flag for this provider-region-zone combination.
 				cacheProviderMap[providerId] = struct{}{}
 			}
 		}
 	}
-	return nm
+	return nm, nil
 }
 
 // GetOS returns operating system name as a string.

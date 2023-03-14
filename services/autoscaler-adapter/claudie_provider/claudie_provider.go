@@ -50,17 +50,23 @@ type ClaudieCloudProvider struct {
 // NewClaudieCloudProvider returns a ClaudieCloudProvider with initialised caches.
 func NewClaudieCloudProvider(projectName, clusterName string) *ClaudieCloudProvider {
 	// Connect to Claudie and retrieve *pb.K8Scluster
-	var cluster *pb.K8Scluster
-	var err error
+	var (
+		cluster *pb.K8Scluster
+		err     error
+		nm      *node_manager.NodeManager
+	)
 	if cluster, err = getClaudieState(projectName, clusterName); err != nil {
 		panic(fmt.Sprintf("Error while getting cluster %s : %v", clusterName, err))
+	}
+	if nm, err = node_manager.NewNodeManager(cluster.ClusterInfo.NodePools); err != nil {
+		panic(fmt.Sprintf("Error while creating node manager : %v", err))
 	}
 	// Initialise all other variables.
 	return &ClaudieCloudProvider{
 		projectName:   projectName,
 		configCluster: cluster,
 		nodesCache:    getNodesCache(cluster.ClusterInfo.NodePools),
-		nodeManager:   node_manager.NewNodeManager(cluster.ClusterInfo.NodePools),
+		nodeManager:   nm,
 	}
 }
 
@@ -97,24 +103,18 @@ func getClaudieState(projectName, clusterName string) (*pb.K8Scluster, error) {
 func getNodesCache(nodepools []*pb.NodePool) map[string]*nodeCache {
 	var ngc = make(map[string]*nodeCache, len(nodepools))
 	for _, np := range nodepools {
-		// Check the min and max size of nodepool.
-		var min, max int32
+		// Cache nodepools, which are autoscaled.
 		if np.AutoscalerConfig != nil {
-			min = np.AutoscalerConfig.Min
-			max = np.AutoscalerConfig.Max
-		} else {
-			min = np.Count
-			max = np.Count
+			// Create nodeGroup struct.
+			ng := &protos.NodeGroup{
+				Id:      np.Name,
+				MinSize: np.AutoscalerConfig.Min,
+				MaxSize: np.AutoscalerConfig.Max,
+				Debug:   fmt.Sprintf("Nodepool %s [min %d, max %d]", np.Name, np.AutoscalerConfig.Min, np.AutoscalerConfig.Max),
+			}
+			// Append ng to the final slice.
+			ngc[np.Name] = &nodeCache{nodeGroup: ng, nodepool: np, targetSize: np.Count}
 		}
-		// Create nodeGroup struct.
-		ng := &protos.NodeGroup{
-			Id:      np.Name,
-			MinSize: min,
-			MaxSize: max,
-			Debug:   fmt.Sprintf("Nodepool %s, is autoscaled %v, min %d, max %d", np.Name, (np.AutoscalerConfig != nil), min, max),
-		}
-		// Append ng to the final slice.
-		ngc[np.Name] = &nodeCache{nodeGroup: ng, nodepool: np, targetSize: np.Count}
 	}
 	return ngc
 }
