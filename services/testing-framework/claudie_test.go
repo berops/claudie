@@ -97,6 +97,7 @@ func testClaudie(ctx context.Context) error {
 			log.Info().Msgf("Found test set: %s", f.Name())
 			if f.Name() == "autoscaling" {
 				autoscalingSets = append(autoscalingSets, f.Name())
+				continue
 			}
 			setNames = append(setNames, f.Name())
 		}
