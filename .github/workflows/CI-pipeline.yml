@@ -147,7 +147,7 @@ jobs:
           NEW_SERVICES=( ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }} )
           for SERVICE in "${NEW_SERVICES[@]}"
           do
-            if [ "$SERVICE" != "testing-framework" && "$SERVICE" != "autoscaler-adapter" ]; then
+            if [ "${SERVICE}" != "testing-framework" ] && [ "${SERVICE}" != "autoscaler-adapter" ]; then
               echo "Setting a new tag for a $SERVICE"
               kustomize edit set image ghcr.io/berops/claudie/$SERVICE:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
             fi
