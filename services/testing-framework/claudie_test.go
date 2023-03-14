@@ -194,6 +194,7 @@ func processTestSet(ctx context.Context, setName string, c pb.ContextBoxServiceC
 			var res *pb.GetConfigFromDBResponse
 			if res, errCleanUp = c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: idInfo.id, Type: idInfo.idType}); errCleanUp != nil {
 				if testFunc != nil {
+					log.Info().Msgf("Starting additional tests for config %s", res.Config.Name)
 					if errCleanUp = testFunc(ctx, res.Config); errCleanUp != nil {
 						if errors.Is(errCleanUp, errInterrupt) {
 							// do not return error, since it was an interrupt

@@ -76,6 +76,7 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 		func(cluster *pb.K8Scluster) {
 			clusterGroup.Go(
 				func() error {
+					log.Info().Msgf("Deploying pods which should be ignored by autoscaler for cluster %s", cluster.ClusterInfo.Name)
 					return applyDeployment(cluster, scaleUpDeploymentIgnored)
 				})
 		}(cluster)
@@ -91,6 +92,8 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 	if res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: config.Id, Type: pb.IdType_HASH}); err != nil {
 		if !checksumsEqual(res.Config.DsChecksum, res.Config.CsChecksum) {
 			return fmt.Errorf("some cluster/s in config %s have been scaled up, when they should not", config.Name)
+		} else {
+			log.Info().Msgf("Config %s has successfully passed autoscaling test [1/3]", config.Name)
 		}
 	}
 	// Apply scale up deployment
@@ -98,6 +101,7 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 		func(cluster *pb.K8Scluster) {
 			clusterGroup.Go(
 				func() error {
+					log.Info().Msgf("Deploying pods which should trigger scale up by autoscaler for cluster %s", cluster.ClusterInfo.Name)
 					return applyDeployment(cluster, scaleUpDeployment)
 				})
 		}(cluster)
@@ -114,6 +118,8 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 	if res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: config.Id, Type: pb.IdType_HASH}); err != nil {
 		if checksumsEqual(res.Config.DsChecksum, res.Config.CsChecksum) {
 			return fmt.Errorf("some cluster/s in config %s have not been scaled up, when they should have", config.Name)
+		} else {
+			log.Info().Msgf("Config %s has successfully passed autoscaling test [2/3]", config.Name)
 		}
 	}
 
@@ -130,6 +136,7 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 		func(cluster *pb.K8Scluster) {
 			clusterGroup.Go(
 				func() error {
+					log.Info().Msgf("Removing pods which should trigger scale down by autoscaler for cluster %s", cluster.ClusterInfo.Name)
 					return removeDeployment(cluster, scaleUpDeployment)
 				})
 		}(cluster)
@@ -144,6 +151,8 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 	if res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: config.Id, Type: pb.IdType_HASH}); err != nil {
 		if checksumsEqual(res.Config.DsChecksum, res.Config.CsChecksum) {
 			return fmt.Errorf("some cluster/s in config %s have not been scaled down, when they should have", config.Name)
+		} else {
+			log.Info().Msgf("Config %s has successfully passed autoscaling test [3/3]", config.Name)
 		}
 	}
 	// Wait and check if in build -> if NOT in build, error (Scale down)

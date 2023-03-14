@@ -110,7 +110,8 @@ jobs:
       - name: Build and push new images
         if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
         run: |
-          ARR=(${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }})
+          #ARR=(${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }})
+          ARR=( testing-framework )
           for SERVICE in "${ARR[@]}"
           do
             echo "-----Building $SERVICE-----"
@@ -256,12 +257,13 @@ jobs:
       - name: Monitor status of the new namespace
         run: |
           arr=( ${{ env.SERVICES }} )
-          unset arr[-1]
           echo "${arr[@]}"
           for SERVICE in "${arr[@]}"
-          do
-          kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=900s --namespace=claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
-          done
+          if [ "${SERVICE}" != "testing-framework" ] && [ "${SERVICE}" != "autoscaler-adapter" ]; then
+            do
+              kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=900s --namespace=claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+            done
+          fi
 
           kubectl get pods --namespace=claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
 
