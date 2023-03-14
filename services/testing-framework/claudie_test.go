@@ -21,25 +21,13 @@ import (
 	"testing"
 )
 
-type idInfo struct {
-	id     string
-	idType pb.IdType
-}
-
 const (
 	testDir = "test-sets"
-
-	maxTimeout     = 8000    // max allowed time for one manifest to finish in [seconds]
-	sleepSec       = 30      // seconds for one cycle of config check
-	maxTimeoutSave = 60 * 12 // max allowed time for config to be found in the database
 )
 
 var (
 	// get env var from runtime directly so we do not pollute original envs package by unnecessary variables
 	autoCleanUpFlag = os.Getenv("AUTO_CLEAN_UP")
-	// interrupt error
-	errInterrupt = errors.New("interrupt")
-	errHidden    = errors.New("hidden file")
 )
 
 // TestClaudie will start all the test cases specified in tests directory
@@ -261,44 +249,6 @@ func applyManifest(setName, pathToTestSet string, manifest fs.DirEntry, idInfo *
 		}
 	}
 	return nil
-}
-
-// configChecker function will check if the config has been applied every 30s
-// it returns an interruptError if the pod/process is being terminated
-func configChecker(ctx context.Context, c pb.ContextBoxServiceClient, testSetName, manifestName string, idInfo idInfo) error {
-	counter := 1
-	for {
-		select {
-		case <-ctx.Done():
-			return errInterrupt
-		default:
-			elapsedSec := counter * sleepSec
-			res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{
-				Id:   idInfo.id,
-				Type: idInfo.idType,
-			})
-			if err != nil {
-				return fmt.Errorf("error while waiting for config to finish: %w", err)
-			}
-			if res.Config != nil {
-				if len(res.Config.ErrorMessage) > 0 {
-					return fmt.Errorf("error while checking config %s : %s", res.Config.Name, res.Config.ErrorMessage)
-				}
-
-				// if checksums are equal, the config has been processed by claudie
-				if checksumsEqual(res.Config.MsChecksum, res.Config.CsChecksum) && checksumsEqual(res.Config.CsChecksum, res.Config.DsChecksum) {
-					// manifest is done
-					return nil
-				}
-			}
-			if elapsedSec >= maxTimeout {
-				return fmt.Errorf("Test took too long... Aborting after %d seconds", maxTimeout)
-			}
-			time.Sleep(time.Duration(sleepSec) * time.Second)
-			counter++
-			log.Info().Msgf("Waiting for %s from %s to finish... [ %ds elapsed ]", manifestName, testSetName, elapsedSec)
-		}
-	}
 }
 
 // clusterTesting will perform actions needed for testing framework to function in k8s cluster deployment

@@ -9,7 +9,7 @@ on:
 env:
   ENV_FILE: .env
   SERVICES: context-box scheduler builder terraformer ansibler kube-eleven kuber frontend autoscaler-adapter
-  TEST_SETS: test-set1 test-set2 test-set3
+  TEST_SETS: autoscaling
 
 jobs:
   #--------------------------------------------------------------------------------------------------
@@ -174,6 +174,7 @@ jobs:
       # Auto commit the changes
       - name: Commit new kustomization.yaml to feature branch
         if: ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
+        working-directory: ./manifests
         run: |
           BRANCH_NAME=${{ github.head_ref }}
           git config --global user.name 'CI/CD pipeline'

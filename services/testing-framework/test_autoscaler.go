@@ -1,18 +1,14 @@
 package testingframework
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"time"
 
-	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/kubectl"
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc"
 )
 
 const (
@@ -173,25 +169,4 @@ func removeDeployment(c *pb.K8Scluster, deployment string) error {
 		return fmt.Errorf("failed to remove deployment on cluster %s : %w", c.ClusterInfo.Name, err)
 	}
 	return nil
-}
-
-// clientConnection will return new client connection to Context-box
-func clientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
-	cc, err := utils.GrpcDialWithInsecure("context-box", envs.ContextBoxURL)
-	if err != nil {
-		log.Fatal().Msgf("Failed to create client connection to context-box : %v", err)
-	}
-
-	// Creating the client
-	c := pb.NewContextBoxServiceClient(cc)
-	return c, cc
-}
-
-// checksumsEq will check if two checksums are equal
-func checksumsEqual(checksum1 []byte, checksum2 []byte) bool {
-	if len(checksum1) > 0 && len(checksum2) > 0 && bytes.Equal(checksum1, checksum2) {
-		return true
-	} else {
-		return false
-	}
 }
