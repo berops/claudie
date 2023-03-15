@@ -60,7 +60,7 @@ spec:
           ports:
             - containerPort: 80
           resources:
-            requests
+            requests:
               memory: 500Mi`
 )
 
@@ -169,7 +169,7 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 func applyDeployment(c *pb.K8Scluster, deployment string) error {
 	kc := kubectl.Kubectl{Kubeconfig: c.Kubeconfig, MaxKubectlRetries: 5}
 	log.Debug().Msgf("Kubeconfig: %s", c.Kubeconfig)
-	if err := kc.KubectlApplyString(deployment, ""); err != nil {
+	if err := kc.KubectlApplyString(deployment, "default"); err != nil {
 		return fmt.Errorf("failed to apply deployment on cluster %s : %w", c.ClusterInfo.Name, err)
 	}
 	return nil
@@ -177,7 +177,7 @@ func applyDeployment(c *pb.K8Scluster, deployment string) error {
 
 func removeDeployment(c *pb.K8Scluster, deployment string) error {
 	kc := kubectl.Kubectl{Kubeconfig: c.Kubeconfig, MaxKubectlRetries: 5}
-	if err := kc.KubectlDeleteString(deployment, ""); err != nil {
+	if err := kc.KubectlDeleteString(deployment, "default"); err != nil {
 		return fmt.Errorf("failed to remove deployment on cluster %s : %w", c.ClusterInfo.Name, err)
 	}
 	return nil
