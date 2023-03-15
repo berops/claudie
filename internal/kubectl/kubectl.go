@@ -33,11 +33,7 @@ const (
 // example: kubectl apply -f test.yaml -> k.KubectlApply("test.yaml", "")
 // example: kubectl apply -f test.yaml -n test -> k.KubectlApply("test.yaml", "test")
 func (k *Kubectl) KubectlApply(manifest, namespace string) error {
-	kubeconfig := k.getKubeconfig()
-	if namespace != "" {
-		namespace = fmt.Sprintf("-n %s", namespace)
-	}
-	command := fmt.Sprintf("kubectl apply -f %s %s %s", manifest, kubeconfig, namespace)
+	command := fmt.Sprintf("kubectl apply -f %s %s %s", manifest, k.getKubeconfig(), getNamespace(namespace))
 	return k.run(command)
 }
 
@@ -45,11 +41,7 @@ func (k *Kubectl) KubectlApply(manifest, namespace string) error {
 // if namespace is empty string, the kubectl apply will not use -n flag
 // example: echo 'Kind: Pod ...' | kubectl apply -f - -> k.KubectlApplyString("Kind: Pod ...", "")
 func (k *Kubectl) KubectlApplyString(str, namespace string) error {
-	kubeconfig := k.getKubeconfig()
-	if namespace != "" {
-		namespace = fmt.Sprintf("-n %s", namespace)
-	}
-	command := fmt.Sprintf("echo '%s' | kubectl apply -f - %s %s", str, kubeconfig, namespace)
+	command := fmt.Sprintf("echo '%s' | kubectl apply -f - %s %s", str, k.getKubeconfig(), getNamespace(namespace))
 	return k.run(command)
 }
 
@@ -58,11 +50,7 @@ func (k *Kubectl) KubectlApplyString(str, namespace string) error {
 // example: kubectl delete -f test.yaml -> k.KubectlDelete("test.yaml", "")
 // example: kubectl delete -f test.yaml -n test -> k.KubectlDelete("test.yaml", "test")
 func (k *Kubectl) KubectlDeleteManifest(manifest, namespace string) error {
-	kubeconfig := k.getKubeconfig()
-	if namespace != "" {
-		namespace = fmt.Sprintf("-n %s", namespace)
-	}
-	command := fmt.Sprintf("kubectl delete -f %s %s %s", manifest, kubeconfig, namespace)
+	command := fmt.Sprintf("kubectl delete -f %s %s %s", manifest, k.getKubeconfig(), getNamespace(namespace))
 	return k.run(command)
 }
 
@@ -71,11 +59,7 @@ func (k *Kubectl) KubectlDeleteManifest(manifest, namespace string) error {
 // example: kubectl delete -f test.yaml -> k.KubectlDelete("test.yaml", "")
 // example: echo 'Kind: Pod ...' | kubectl delete -f - -> k.kubectlDeleteString("Kind: Pod ...", "")
 func (k *Kubectl) KubectlDeleteString(str, namespace string) error {
-	kubeconfig := k.getKubeconfig()
-	if namespace != "" {
-		namespace = fmt.Sprintf("-n %s", namespace)
-	}
-	command := fmt.Sprintf("echo '%s' | kubectl delete -f - %s %s", str, kubeconfig, namespace)
+	command := fmt.Sprintf("echo '%s' | kubectl delete -f - %s %s", str, k.getKubeconfig(), getNamespace(namespace))
 	return k.run(command)
 }
 
@@ -84,19 +68,14 @@ func (k *Kubectl) KubectlDeleteString(str, namespace string) error {
 // example: kubectl delete ns test -> k.KubectlDeleteResource("ns","test", "")
 // example: kubectl delete pod busy-box -n test -> k.KubectlDeleteResource("pod","busy-box", "test")
 func (k *Kubectl) KubectlDeleteResource(resource, resourceName, namespace string) error {
-	kubeconfig := k.getKubeconfig()
-	if namespace != "" {
-		namespace = fmt.Sprintf("-n %s", namespace)
-	}
-	command := fmt.Sprintf("kubectl delete %s %s %s %s", resource, resourceName, kubeconfig, namespace)
+	command := fmt.Sprintf("kubectl delete %s %s %s %s", resource, resourceName, k.getKubeconfig(), getNamespace(namespace))
 	return k.run(command)
 }
 
 // KubectlDrain runs kubectl drain in k.Directory, on a specified node with flags --ignore-daemonsets --delete-emptydir-data
 // example: kubectl drain node1 -> k.KubectlDrain("node1")
 func (k *Kubectl) KubectlDrain(nodeName string) error {
-	kubeconfig := k.getKubeconfig()
-	command := fmt.Sprintf("kubectl drain %s --ignore-daemonsets --delete-emptydir-data %s", nodeName, kubeconfig)
+	command := fmt.Sprintf("kubectl drain %s --ignore-daemonsets --delete-emptydir-data %s", nodeName, k.getKubeconfig())
 	return k.run(command)
 }
 
@@ -105,11 +84,7 @@ func (k *Kubectl) KubectlDrain(nodeName string) error {
 // example: kubectl describe pod test -> k.KubectlDescribe("pod","test", "")
 // example: kubectl describe pod busy-box -n test -> k.KubectlDescribe("pod","busy-box", "test")
 func (k *Kubectl) KubectlDescribe(resource, resourceName, namespace string) error {
-	kubeconfig := k.getKubeconfig()
-	if namespace != "" {
-		namespace = fmt.Sprintf("-n %s", namespace)
-	}
-	command := fmt.Sprintf("kubectl describe %s %s %s %s", resource, resourceName, kubeconfig, namespace)
+	command := fmt.Sprintf("kubectl describe %s %s %s %s", resource, resourceName, k.getKubeconfig(), getNamespace(namespace))
 	return k.run(command)
 }
 
@@ -118,60 +93,50 @@ func (k *Kubectl) KubectlDescribe(resource, resourceName, namespace string) erro
 // example: kubectl get ns -> k.KubectlGet("ns", "")
 // example: kubectl get pods -n test -> k.KubectlGet("pods", "test")
 func (k *Kubectl) KubectlGet(resource, namespace string) ([]byte, error) {
-	kubeconfig := k.getKubeconfig()
-	if namespace != "" {
-		namespace = fmt.Sprintf("-n %s", namespace)
-	}
-	command := fmt.Sprintf("kubectl get %s %s %s", resource, kubeconfig, namespace)
+	command := fmt.Sprintf("kubectl get %s %s %s", resource, k.getKubeconfig(), getNamespace(namespace))
 	return k.runWithOutput(command)
 }
 
 // KubectlAnnotate runs kubectl annotate in k.Directory, with the specified annotation on a specified resource and resource name
 // example: kubectl annotate node node-1 node.longhorn.io/default-node-tags='["zone2"]' -> k.KubectlAnnotate("node","node-1","node.longhorn.io/default-node-tags='["zone2"]")
 func (k *Kubectl) KubectlAnnotate(resource, resourceName, annotation string) error {
-	kubeconfig := k.getKubeconfig()
-	command := fmt.Sprintf("kubectl annotate %s %s %s %s", resource, resourceName, annotation, kubeconfig)
+	command := fmt.Sprintf("kubectl annotate %s %s %s %s", resource, resourceName, annotation, k.getKubeconfig())
 	return k.run(command)
 }
 
 // KubectlLabel runs kubectl label in k.Directory, with the specified label on a specified resource and resource name
 // example: kubectl label node node-1 label=value -> k.KubectlLabel("node","node-1","label=value")
 func (k *Kubectl) KubectlLabel(resource, resourceName, label string, overwrite bool) error {
-	kubeconfig := k.getKubeconfig()
+	command := fmt.Sprintf("kubectl label %s %s %s %s", resource, resourceName, label, k.getKubeconfig())
 	if overwrite {
-		kubeconfig = fmt.Sprintf("--overwrite %s", kubeconfig)
+		command = fmt.Sprintf("%s --overwrite", command)
 	}
-	command := fmt.Sprintf("kubectl label %s %s %s %s", resource, resourceName, label, kubeconfig)
 	return k.run(command)
 }
 
 // KubectlGetNodeNames will find a node names for a particular cluster
 // return slice of node names and nil if successful, nil and error otherwise
 func (k *Kubectl) KubectlGetNodeNames() ([]byte, error) {
-	kubeconfig := k.getKubeconfig()
-	nodesQueryCmd := fmt.Sprintf("kubectl get nodes -n kube-system --no-headers -o custom-columns=\":metadata.name\" %s", kubeconfig)
+	nodesQueryCmd := fmt.Sprintf("kubectl get nodes -n kube-system --no-headers -o custom-columns=\":metadata.name\" %s", k.getKubeconfig())
 	return k.runWithOutput(nodesQueryCmd)
 }
 
 // getEtcdPods finds all etcd pods in cluster
 // returns slice of pod names and nil if successful, nil and error otherwise
 func (k *Kubectl) KubectlGetEtcdPods(masterNodeName string) ([]byte, error) {
-	kubeconfig := k.getKubeconfig()
 	// get etcd pods name
-	podsQueryCmd := fmt.Sprintf("kubectl %s %s-%s", kubeconfig, getEtcdPodsCmd, masterNodeName)
+	podsQueryCmd := fmt.Sprintf("kubectl %s %s-%s", k.getKubeconfig(), getEtcdPodsCmd, masterNodeName)
 	return k.runWithOutput(podsQueryCmd)
 }
 
 func (k *Kubectl) KubectlExecEtcd(etcdPod, etcdctlCmd string) ([]byte, error) {
-	kubeconfig := k.getKubeconfig()
 	kcExecEtcdCmd := fmt.Sprintf("kubectl %s -n kube-system exec -i %s -- /bin/sh -c \" %s && %s \"",
-		kubeconfig, etcdPod, exportEtcdEnvsCmd, etcdctlCmd)
+		k.getKubeconfig(), etcdPod, exportEtcdEnvsCmd, etcdctlCmd)
 	return k.runWithOutput(kcExecEtcdCmd)
 }
 
 func (k *Kubectl) KubectlPatch(resource, resourceName, patchPath string) error {
-	kubeconfig := k.getKubeconfig()
-	command := fmt.Sprintf("kubectl patch %s %s -p '%s' %s", resource, resourceName, patchPath, kubeconfig)
+	command := fmt.Sprintf("kubectl patch %s %s -p '%s' %s", resource, resourceName, patchPath, k.getKubeconfig())
 	return k.run(command)
 }
 
@@ -227,4 +192,11 @@ func (k Kubectl) getKubeconfig() string {
 	} else {
 		return fmt.Sprintf("--kubeconfig <(echo '%s')", k.Kubeconfig)
 	}
+}
+
+func getNamespace(n string) string {
+	if n == "" {
+		return "-n default"
+	}
+	return fmt.Sprintf("-n %s", n)
 }
