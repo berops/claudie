@@ -195,8 +195,8 @@ func (k Kubectl) getKubeconfig() string {
 }
 
 func getNamespace(n string) string {
-	if n == "" {
-		return "-n default"
+	if n != "" {
+		return fmt.Sprintf("-n %s", n)
 	}
-	return fmt.Sprintf("-n %s", n)
+	return ""
 }
