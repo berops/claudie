@@ -3,8 +3,8 @@ FROM docker.io/library/golang:1.20.1 AS build
 ARG TARGETARCH
 
 #Install kubectl
-RUN wget -q https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/$TARGETARCH/kubectl
-RUN mv kubectl /usr/local/bin/
+RUN KC_VERSION=v1.24.0 && \
+    wget -q https://storage.googleapis.com/kubernetes-release/release/${KC_VERSION}bin/linux/$TARGETARCH/kubectl
 
 #Unset the GOPATH
 ENV GOPATH=
@@ -31,7 +31,7 @@ LABEL org.opencontainers.image.base.name "docker.io/library/alpine"
 #Add description to the image
 LABEL org.opencontainers.image.description "Image for Testing-framework from Claudie"
 
-COPY --from=build /usr/local/bin/kubectl /usr/local/bin/kubectl
+COPY --from=build /go/kubectl /usr/local/bin/kubectl
 COPY --from=build /go/services/testing-framework/testing-framework.test /go/services/testing-framework/testing-framework.test
 COPY --from=build /go/services/testing-framework/templates /go/services/testing-framework/templates
 
