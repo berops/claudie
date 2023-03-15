@@ -188,7 +188,7 @@ func (k Kubectl) run(command string) error {
 			retryCount = defaultMaxKubectlRetries
 		}
 		retryCmd := comm.Cmd{
-			Command: command, Dir: k.Directory, CommandTimeout: kubectlTimeout}
+			Command: command, Dir: k.Directory, CommandTimeout: kubectlTimeout, Stdout: os.Stdout, Stderr: os.Stderr}
 		if err = retryCmd.RetryCommand(retryCount); err != nil {
 			return err
 		}
