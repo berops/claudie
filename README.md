@@ -59,12 +59,12 @@ Claudie comes pre-configured with a storage solution, with ready-to-use Storage 
 
 | Cloud Provider                                                                                          | Nodepools          | DNS                |
 | ------------------------------------------------------------------------------------------------------- | ------------------ | ------------------ |
-| [AWS](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/aws.md)               | :white_check_mark: | :white_check_mark: |
-| [Azure](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/azure.md)           | :white_check_mark: | :white_check_mark: |
-| [GCP](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/gcp.md)               | :white_check_mark: | :white_check_mark: |
-| [OCI](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/oci.md)               | :white_check_mark: | :white_check_mark: |
-| [Hetzner](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/hetzner.md)       | :white_check_mark: | :white_check_mark: |
-| [Cloudflare](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/cloudflare.md) | N/A                | :white_check_mark: |
+| [AWS](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/aws.md)               | :heavy_check_mark: | :heavy_check_mark: |
+| [Azure](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/azure.md)           | :heavy_check_mark: | :heavy_check_mark: |
+| [GCP](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/gcp.md)               | :heavy_check_mark: | :heavy_check_mark: |
+| [OCI](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/oci.md)               | :heavy_check_mark: | :heavy_check_mark: |
+| [Hetzner](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/hetzner.md)       | :heavy_check_mark: | :heavy_check_mark: |
+| [Cloudflare](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/cloudflare.md) | N/A                | :heavy_check_mark: |
 
 For adding support for other cloud providers, open an issue or propose a PR.
 
