@@ -83,11 +83,14 @@ dynamodb-scan-table:
 
 # we need the value of local architecture to pass to docker as a build arg and
 # Go already needs to be installed so we make use of it here.
+# Use sed to set the image tag for cluster adapter
 TARGETARCH = $$(go env GOHOSTARCH)
 REV = $$(git rev-parse --short HEAD)
 SERVICES = $$(command ls services/)
 containerimgs:
+	sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$(REV)/" services/kuber/templates/autoscaler-adapter.goyaml	
 	for service in $(SERVICES) ; do \
 		echo " --- building $$service --- "; \
 		DOCKER_BUILDKIT=1 docker build --build-arg=TARGETARCH="$(TARGETARCH)" -t "ghcr.io/berops/claudie/$$service:$(REV)" -f ./services/$$service/Dockerfile . ; \
 	done
+	sed -i "/image: ghcr.io\/berops\/claudie\/autoscaler-adapter:/c\          image: ghcr.io\/berops\/claudie\/autoscaler-adapter" services/kuber/templates/autoscaler-adapter.goyaml
