@@ -66,6 +66,8 @@ Claudie comes pre-configured with a storage solution, with ready-to-use Storage 
 | [Hetzner](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/hetzner.md)       | :white_check_mark: | :white_check_mark: |
 | [Cloudflare](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/cloudflare.md) | N/A                | :white_check_mark: |
 
+For adding support for other cloud providers, open an issue or propose a PR.
+
 ## Get started using Claudie
 
 1. Deploy Claudie Kubernetes [manifests/claudie](https://github.com/Berops/claudie/tree/master/manifests/claudie) into a Kubernetes cluster:
