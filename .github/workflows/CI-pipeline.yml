@@ -110,8 +110,7 @@ jobs:
       - name: Build and push new images
         if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
         run: |
-          #ARR=(${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }})
-          ARR=( testing-framework )
+          ARR=(${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }})
           for SERVICE in "${ARR[@]}"
           do
             echo "-----Building $SERVICE-----"
