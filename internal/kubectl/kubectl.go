@@ -3,6 +3,7 @@ package kubectl
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 
 	comm "github.com/berops/claudie/internal/command"
@@ -178,6 +179,9 @@ func (k *Kubectl) KubectlPatch(resource, resourceName, patchPath string) error {
 func (k Kubectl) run(command string) error {
 	cmd := exec.Command("bash", "-c", command)
 	cmd.Dir = k.Directory
+	// NOTE: DEBUGGING
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
 		retryCount := k.MaxKubectlRetries
 		if k.MaxKubectlRetries == 0 {
@@ -198,6 +202,9 @@ func (k Kubectl) runWithOutput(command string) ([]byte, error) {
 	var err error
 	cmd := exec.Command("bash", "-c", command)
 	cmd.Dir = k.Directory
+	// NOTE: DEBUGGING
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	result, err = cmd.CombinedOutput()
 	if err != nil {
 		retryCount := k.MaxKubectlRetries
