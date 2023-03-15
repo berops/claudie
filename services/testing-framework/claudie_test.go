@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -91,23 +92,25 @@ func testClaudie(ctx context.Context) error {
 	}
 
 	// save all the test set paths
-	var setNames, autoscalingSets []string
+	var basicSets, autoscalingSets []string
 	for _, f := range files {
 		if f.IsDir() {
-			log.Info().Msgf("Found test set: %s", f.Name())
-			if f.Name() == "autoscaling" {
+			if strings.Contains(f.Name(), "autoscaling") {
+				log.Info().Msgf("Found autoscaling test set: %s", f.Name())
 				autoscalingSets = append(autoscalingSets, f.Name())
 				continue
 			}
-			setNames = append(setNames, f.Name())
+			log.Info().Msgf("Found basic test set: %s", f.Name())
+			basicSets = append(basicSets, f.Name())
 		}
 	}
 
 	// apply the test sets
 	var errGroup errgroup.Group
-	for _, path := range setNames {
+	for _, path := range basicSets {
 		func(path string, c pb.ContextBoxServiceClient) {
 			errGroup.Go(func() error {
+				log.Info().Msgf("Starting test set: %s", path)
 				err := processTestSet(ctx, path, c, testLonghornDeployment)
 				if err != nil {
 					//in order to get errors from all goroutines in error group, print them here and just return simple error so test will fail
@@ -122,6 +125,7 @@ func testClaudie(ctx context.Context) error {
 		for _, path := range autoscalingSets {
 			func(path string, c pb.ContextBoxServiceClient) {
 				errGroup.Go(func() error {
+					log.Info().Msgf("Starting test set: %s", path)
 					err := processTestSet(ctx, path, c,
 						func(ctx context.Context, c *pb.Config) error {
 							if err := testLonghornDeployment(ctx, c); err != nil {
@@ -175,45 +179,54 @@ func processTestSet(ctx context.Context, setName string, c pb.ContextBoxServiceC
 	}
 
 	for _, manifest := range manifestFiles {
+		// Apply test set manifest
 		if errIgnore = applyManifest(setName, pathToTestSet, manifest, &idInfo, c); errIgnore != nil {
 			// https://github.com/berops/claudie/pull/243#issuecomment-1218237412
 			if errors.Is(errIgnore, errHidden) {
 				continue
 			}
-			return fmt.Errorf("error applying test set %s, manifest %s : %w", setName, manifest.Name(), errIgnore)
+			return fmt.Errorf("error applying test set %s, manifest %s from %s : %w", manifest.Name(), setName, manifest.Name(), errIgnore)
 		}
-		// wait until test config has been processed
+
+		// Wait until test manifest has been processed
 		if errCleanUp = configChecker(ctx, c, pathToTestSet, manifest.Name(), idInfo); errCleanUp != nil {
 			if errors.Is(errCleanUp, errInterrupt) {
-				// do not return error, since it was an interrupt
 				log.Warn().Msgf("Testing-framework received interrupt signal, aborting test checking")
-				break
+				// Do not return error, since it was an interrupt
+				return nil
 			}
-			return fmt.Errorf("error while monitoring %s : %w", pathToTestSet, errCleanUp)
-		} else {
-			// Run additional tests
+			return fmt.Errorf("error while monitoring manifest %s from test set %s : %w", manifest.Name(), setName, errCleanUp)
+		}
+
+		// Run additional tests
+		if testFunc != nil {
+			// Get config from DB
 			var res *pb.GetConfigFromDBResponse
 			if res, errCleanUp = c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: idInfo.id, Type: idInfo.idType}); errCleanUp != nil {
-				if testFunc != nil {
-					log.Info().Msgf("Starting additional tests for config %s", res.Config.Name)
-					if errCleanUp = testFunc(ctx, res.Config); errCleanUp != nil {
-						if errors.Is(errCleanUp, errInterrupt) {
-							// do not return error, since it was an interrupt
-							log.Warn().Msgf("Testing-framework received interrupt signal, aborting test checking")
-							break
-						}
-						return fmt.Errorf("error while checking performing additional test for config %s : %w", res.Config.Name, errCleanUp)
-					}
-				}
+				return fmt.Errorf("error while checking test for config %s from manifest %s, test set %s : %w", res.Config.Name, manifest.Name(), setName, errCleanUp)
 			}
+
+			// Start additional tests
+			log.Info().Msgf("Starting additional tests for manifest %s from %s", manifest.Name(), setName)
+			if errCleanUp = testFunc(ctx, res.Config); errCleanUp != nil {
+				if errors.Is(errCleanUp, errInterrupt) {
+					log.Warn().Msgf("Testing-framework received interrupt signal, aborting test checking")
+					// Do not return error, since it was an interrupt
+					return nil
+				}
+				return fmt.Errorf("error while performing additional test for manifest %s from %s : %w", manifest.Name(), setName, errCleanUp)
+			}
+		} else {
+			log.Debug().Msgf("No additional tests, manifest %s from %s is done", manifest.Name(), setName)
 		}
-		log.Info().Msgf("Manifest %s from %s is done...", manifest.Name(), pathToTestSet)
+
+		log.Info().Msgf("Manifest %s from %s is done...", manifest.Name(), setName)
 	}
 
-	// clean up
-	log.Info().Msgf("Deleting the infra from test set %s", pathToTestSet)
+	// Clean up
+	log.Info().Msgf("Deleting the infra from test set %s", setName)
 
-	// delete manifest from DB to clean up the infra after configChecker is done without error
+	// Delete manifest from DB to clean up the infra after as errCleanUp is nil and deferred function will not clean up.
 	if errIgnore = cleanUp(setName, idInfo.id, c); errIgnore != nil {
 		return fmt.Errorf("error while cleaning up the infra for test set %s : %w", setName, errIgnore)
 	}

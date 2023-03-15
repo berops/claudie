@@ -12,6 +12,7 @@ import (
 )
 
 const (
+	// deployment which should NOT trigger scale up
 	scaleUpDeploymentIgnored = `apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -36,6 +37,7 @@ spec:
           resources:
             requests:
               memory: 8000Mi`
+	// deployment which should trigger scale up
 	scaleUpDeployment = `apiVersion: apps/v1
 kind: Deployment
 metadata:
