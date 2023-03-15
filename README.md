@@ -57,14 +57,14 @@ Claudie comes pre-configured with a storage solution, with ready-to-use Storage 
 
 ### Supported cloud providers
 
-| Cloud Provider                                                                                          | Infrastructure support | DNS support |
-| ------------------------------------------------------------------------------------------------------- | ---------------------- | ----------- |
-| [AWS](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/aws.md)               | Supported              | Supported   |
-| [Azure](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/azure.md)           | Supported              | Supported   |
-| [GCP](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/gcp.md)               | Supported              | Supported   |
-| [OCI](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/oci.md)               | Supported              | Supported   |
-| [Hetzner](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/hetzner.md)       | Supported              | Supported   |
-| [Cloudflare](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/cloudflare.md) | Not applicable         | Supported   |
+| Cloud Provider                                                                                          | Nodepools          | DNS                |
+| ------------------------------------------------------------------------------------------------------- | ------------------ | ------------------ |
+| [AWS](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/aws.md)               | :white_check_mark: | :white_check_mark: |
+| [Azure](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/azure.md)           | :white_check_mark: | :white_check_mark: |
+| [GCP](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/gcp.md)               | :white_check_mark: | :white_check_mark: |
+| [OCI](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/oci.md)               | :white_check_mark: | :white_check_mark: |
+| [Hetzner](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/hetzner.md)       | :white_check_mark: | :white_check_mark: |
+| [Cloudflare](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/cloudflare.md) | N/A                | :white_check_mark: |
 
 ## Get started using Claudie
 
