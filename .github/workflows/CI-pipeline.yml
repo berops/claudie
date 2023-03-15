@@ -258,11 +258,11 @@ jobs:
           arr=( ${{ env.SERVICES }} )
           echo "${arr[@]}"
           for SERVICE in "${arr[@]}"
-          if [ "${SERVICE}" != "testing-framework" ] && [ "${SERVICE}" != "autoscaler-adapter" ]; then
             do
-              kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=900s --namespace=claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+              if [ "${SERVICE}" != "testing-framework" ] && [ "${SERVICE}" != "autoscaler-adapter" ]; then
+                kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=900s --namespace=claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+              fi
             done
-          fi
 
           kubectl get pods --namespace=claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
 
