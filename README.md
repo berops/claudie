@@ -17,7 +17,7 @@
 </p>
 
 ## Request a Demo
-If you would like to request a demo, feel free to contact us at **<a href="mailto:claudie-demo&commat;berops&period;com">claudie-demo&commat;<!--do not scrape me-->berops&period;<!--do not scrape me-->com</a>**
+If you would like to request a demo, feel free to contact us [here]("mailto:claudie-demo&commat;berops&period;com")
 
 ## Typical use cases
 
