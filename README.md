@@ -17,7 +17,7 @@
 </p>
 
 ## Request a Demo
-If you would like to request a demo, feel free to contact us [here]("mailto:claudie-demo&commat;berops&period;com")
+If you would like to request a demo, feel free to contact us [here](mailto:claudie-demo&commat;berops&period;com)
 
 ## Typical use cases
 
