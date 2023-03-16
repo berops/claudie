@@ -150,7 +150,7 @@ kubernetes:
 		},
 		{
 			desc: "test case containing unprintable characters",
-			in:   " unprintable ",
+			in:   " unprintable ",
 			out:  "9969c5f9e2813e38773d38cb64a898e691423b2c5848c9b3a82f0a14d0f92f7b",
 		},
 	}
@@ -171,7 +171,7 @@ kubernetes:
 }
 
 // TestCompareChecksums tests whether the output of CompareCheckums is what we
-// expect.
+// expectEquals
 func TestCompareChecksums(t *testing.T) {
 	testCases := []struct {
 		desc string
@@ -187,14 +187,14 @@ func TestCompareChecksums(t *testing.T) {
 		},
 		{
 			desc: "false - test case containing unprintable characters",
-			in1:  []byte(" unprintable characters follow "),
+			in1:  []byte(" unprintable characters follow "),
 			in2:  []byte("098098987987876876765765756654463"),
 			out:  false,
 		},
 		{
 			desc: "true - test case containing unprintable characters",
-			in1:  []byte(" sth then unprintable "),
-			in2:  []byte(" sth then unprintable "),
+			in1:  []byte(" sth then unprintable "),
+			in2:  []byte(" sth then unprintable "),
 			out:  true,
 		},
 	}
@@ -203,7 +203,7 @@ func TestCompareChecksums(t *testing.T) {
 		t.Run(tC.desc, func(t *testing.T) {
 			want := tC.out
 
-			if got := CompareChecksums(tC.in1, tC.in2); want != got {
+			if got := Equals(tC.in1, tC.in2); want != got {
 				t.Errorf("Unexpected output for %q: expected %t, actual %t",
 					tC.desc, want, got)
 			}

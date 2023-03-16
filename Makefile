@@ -81,9 +81,9 @@ dynamodb-create-table:
 dynamodb-scan-table:
 	aws dynamodb scan --table-name claudie --endpoint-url http://localhost:8000 --no-cli-pager
 
-# we need the value of local architecture to pass to docker as a build arg and
+# We need the value of local architecture to pass to docker as a build arg and
 # Go already needs to be installed so we make use of it here.
-# Use sed to set the image tag for cluster adapter
+# Use sed to set the image tag for cluster adapter, clean up at the end.
 TARGETARCH = $$(go env GOHOSTARCH)
 REV = $$(git rev-parse --short HEAD)
 SERVICES = $$(command ls services/)
