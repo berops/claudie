@@ -199,10 +199,10 @@ func (s *server) UpdateNodepool(ctx context.Context, req *pb.UpdateNodepoolReque
 	if config, err = database.GetConfig(req.ProjectName, pb.IdType_NAME); err != nil {
 		return nil, fmt.Errorf("the project %s was not found in the database : %w ", req.ProjectName, err)
 	}
-	// Check if config is currently not in any build stage
-	if config.BuilderTTL == 0 && config.SchedulerTTL == 0 {
+	// Check if config is currently not in any build stage or in a queue
+	if config.BuilderTTL == 0 && config.SchedulerTTL == 0 && !queueScheduler.Contains(config) && !queueBuilder.Contains(config) {
 		// Check if all checksums are equal, meaning config is not about to get pushed to the queue or is in the queue
-		if checksum.CompareChecksums(config.MsChecksum, config.DsChecksum) && checksum.CompareChecksums(config.DsChecksum, config.CsChecksum) {
+		if checksum.Equals(config.MsChecksum, config.DsChecksum) && checksum.Equals(config.DsChecksum, config.CsChecksum) {
 			// Find and update correct nodepool count & nodes in desired state.
 			if err := updateDesiredNodepool(req.ClusterName, req.Nodepool.Name, req.Nodepool.Count, req.Nodepool.Nodes, config.DesiredState); err != nil {
 				return nil, fmt.Errorf("error while updating desired state in project %s : %w", config.Name, err)

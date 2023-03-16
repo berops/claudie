@@ -96,7 +96,7 @@ func configCheck() error {
 		}
 
 		// check for Scheduler
-		if !checksum.CompareChecksums(config.DsChecksum, config.MsChecksum) {
+		if !checksum.Equals(config.DsChecksum, config.MsChecksum) {
 			// if scheduler ttl is 0 or smaller AND config has no errorMessage, add to scheduler Q
 			if config.SchedulerTTL <= 0 && len(config.ErrorMessage) == 0 {
 				if err := database.UpdateSchedulerTTL(config.Name, defaultSchedulerTTL); err != nil {
@@ -111,7 +111,7 @@ func configCheck() error {
 		}
 
 		// check for Builder
-		if !checksum.CompareChecksums(config.DsChecksum, config.CsChecksum) {
+		if !checksum.Equals(config.DsChecksum, config.CsChecksum) {
 			// if builder ttl is 0 or smaller AND config has no errorMessage, add to builder Q
 			if config.BuilderTTL <= 0 && len(config.ErrorMessage) == 0 {
 				if err := database.UpdateBuilderTTL(config.Name, defaultBuilderTTL); err != nil {
