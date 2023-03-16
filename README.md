@@ -16,6 +16,10 @@
   <a href="https://youtu.be/q4xdAiHYxZQ"><img src="https://markdown-videos.deta.dev/youtube/q4xdAiHYxZQ"></a>
 </p>
 
+## Request a Demo
+
+If you would like to request a demo, feel free to contact us [here](mailto:claudie-demo&commat;berops&period;com)
+
 ## Typical use cases
 
 Claudie has been built to target the following use case in the Kubernetes world.
@@ -93,7 +97,7 @@ Everyone is more than welcome to open an issue, a PR or to start a discussion.
 
 For more information about contributing please read the [contribution guidelines](./docs/contributing/contributing.md).
 
-If you want to have a chat with us, feel free to join our ["claudie-workspace" Slack workspace](https://join.slack.com/t/claudie-workspace/shared_invite/zt-1imfso8r4-xwrpZjL9kt61FT1LjvWD5w).
+If you want to have a chat with us, feel free to join our [Slack workspace](https://join.slack.com/t/claudie-workspace/shared_invite/zt-1imfso8r4-xwrpZjL9kt61FT1LjvWD5w).
 
 ## Security
 
