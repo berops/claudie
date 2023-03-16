@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	// deployment which should NOT trigger scale up
+	// Deployment which should NOT trigger scale up
 	scaleUpDeploymentIgnored = `apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -37,7 +37,7 @@ spec:
           resources:
             requests:
               memory: 8000Mi`
-	// deployment which should trigger scale up
+	// Deployment which should trigger scale up
 	scaleUpDeployment = `apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -62,8 +62,13 @@ spec:
           resources:
             requests:
               memory: 500Mi`
+	// Time in which Autoscaler should trigger scale up
+	scaleUpTimeout = 1
+	// Time in which Autoscaler should trigger scale down
+	scaleDownTimeout = 12
 )
 
+// testAutoscaler tests the Autoscaler deployment.
 func testAutoscaler(ctx context.Context, config *pb.Config) error {
 	c, cc := clientConnection()
 	defer func() {
@@ -88,7 +93,8 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 		return fmt.Errorf("failed to deploy scale up deployment which should be ignored: %w", err)
 	}
 	// Wait before checking for changes
-	time.Sleep(2 * time.Minute)
+	log.Info().Msgf("Waiting %d minutes to see if autoscaler starts the scale up", scaleUpTimeout)
+	time.Sleep(scaleUpTimeout * time.Minute)
 
 	// Check if build has been started, if yes, error
 	if res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: config.Id, Type: pb.IdType_HASH}); err != nil {
@@ -114,7 +120,8 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 	}
 
 	// Wait before checking for changes
-	time.Sleep(2 * time.Minute)
+	log.Info().Msgf("Waiting %d minutes to see if autoscaler starts the scale up", scaleUpTimeout)
+	time.Sleep(scaleUpTimeout * time.Minute)
 
 	// Check if build has been started, if yes, error
 	if res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: config.Id, Type: pb.IdType_HASH}); err != nil {
@@ -148,7 +155,8 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 	}
 
 	// Wait before checking for changes
-	time.Sleep(12 * time.Minute)
+	log.Info().Msgf("Waiting %d minutes to let autoscaler start the scale down", scaleDownTimeout)
+	time.Sleep(scaleDownTimeout * time.Minute)
 	// Check if build has been started, if yes, error
 	if res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: config.Id, Type: pb.IdType_HASH}); err != nil {
 		if checksumsEqual(res.Config.DsChecksum, res.Config.CsChecksum) {
@@ -166,6 +174,7 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 	return testLonghornDeployment(ctx, config)
 }
 
+// applyDeployment applies specified deployment into specified cluster.
 func applyDeployment(c *pb.K8Scluster, deployment string) error {
 	kc := kubectl.Kubectl{Kubeconfig: c.Kubeconfig, MaxKubectlRetries: 5}
 	log.Debug().Msgf("Kubeconfig: %s", c.Kubeconfig)
@@ -175,6 +184,7 @@ func applyDeployment(c *pb.K8Scluster, deployment string) error {
 	return nil
 }
 
+// removeDeployment deletes specified deployment from specified cluster.
 func removeDeployment(c *pb.K8Scluster, deployment string) error {
 	kc := kubectl.Kubectl{Kubeconfig: c.Kubeconfig, MaxKubectlRetries: 5}
 	if err := kc.KubectlDeleteString(deployment, "default"); err != nil {
