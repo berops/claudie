@@ -16,6 +16,21 @@
   <a href="https://youtu.be/q4xdAiHYxZQ"><img src="https://markdown-videos.deta.dev/youtube/q4xdAiHYxZQ"></a>
 </p>
 
+## Request a Demo
+
+If you would like to request a demo, feel free to contact us [here](mailto:claudie-demo&commat;berops&period;com)
+
+## Typical use cases
+
+Claudie has been built to target the following use case in the Kubernetes world.
+
+- Cloud bursting
+- Service interconnect
+- Managed Kubernetes for providers that do not offer it
+- Cost savings
+
+Read in more details [here](./docs/use-cases/use-cases.md).
+
 ## Features
 
 ### Manage multi-cloud Kubernetes clusters
@@ -23,7 +38,9 @@
 Create fully-featured Kubernetes clusters composed of multiple different public Cloud providers in an easy and secure manner.
 Simply insert credentials to your cloud projects, define your cluster, and watch how the infra spawns right in front of you.
 
-![Infra Diagram](docs/infra-diagram.png)
+<p align="center">
+ <img alt="Infra Diagram" src="https://github.com/berops/claudie/raw/master/docs/infra-diagram.png" />
+</p>
 
 ### Management via IaC
 
@@ -41,6 +58,19 @@ Claudie has its own managed load-balancing solution, which you can use for Ingre
 ### Persistent storage volumes
 
 Claudie comes pre-configured with a storage solution, with ready-to-use Storage Classes. See [Storage docs](https://github.com/berops/claudie/tree/master/docs/storage) to learn more.
+
+### Supported cloud providers
+
+| Cloud Provider                                                                                          | Nodepools          | DNS                |
+| ------------------------------------------------------------------------------------------------------- | ------------------ | ------------------ |
+| [AWS](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/aws.md)               | :heavy_check_mark: | :heavy_check_mark: |
+| [Azure](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/azure.md)           | :heavy_check_mark: | :heavy_check_mark: |
+| [GCP](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/gcp.md)               | :heavy_check_mark: | :heavy_check_mark: |
+| [OCI](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/oci.md)               | :heavy_check_mark: | :heavy_check_mark: |
+| [Hetzner](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/hetzner.md)       | :heavy_check_mark: | :heavy_check_mark: |
+| [Cloudflare](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/cloudflare.md) | N/A                | :heavy_check_mark: |
+
+For adding support for other cloud providers, open an issue or propose a PR.
 
 ## Get started using Claudie
 
@@ -67,7 +97,7 @@ Everyone is more than welcome to open an issue, a PR or to start a discussion.
 
 For more information about contributing please read the [contribution guidelines](./docs/contributing/contributing.md).
 
-If you want to have a chat with us, feel free to join our ["claudie-workspace" Slack workspace](https://join.slack.com/t/claudie-workspace/shared_invite/zt-1imfso8r4-xwrpZjL9kt61FT1LjvWD5w).
+If you want to have a chat with us, feel free to join our [Slack workspace](https://join.slack.com/t/claudie-workspace/shared_invite/zt-1imfso8r4-xwrpZjL9kt61FT1LjvWD5w).
 
 ## Security
 
