@@ -177,7 +177,6 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 // applyDeployment applies specified deployment into specified cluster.
 func applyDeployment(c *pb.K8Scluster, deployment string) error {
 	kc := kubectl.Kubectl{Kubeconfig: c.Kubeconfig, MaxKubectlRetries: 5}
-	log.Debug().Msgf("Kubeconfig: %s", c.Kubeconfig)
 	if err := kc.KubectlApplyString(deployment, "default"); err != nil {
 		return fmt.Errorf("failed to apply deployment on cluster %s : %w", c.ClusterInfo.Name, err)
 	}
