@@ -47,8 +47,6 @@ Context box is Claudie's "control unit". It holds pending configs, which need to
   rpc SaveConfigBuilder(SaveConfigRequest) returns (SaveConfigResponse);
   // Gets a single config from the database.
   rpc GetConfigFromDB(GetConfigFromDBRequest) returns (GetConfigFromDBResponse);
-  // *(NEEDS DELETION)*
-  rpc GetConfigByName(GetConfigByNameRequest) returns (GetConfigByNameResponse);
   // Gets a config from Scheduler's queue of pending configs.
   rpc GetConfigScheduler(GetConfigRequest) returns (GetConfigResponse);
   // Gets a config from Builder's queue of pending configs.
@@ -60,6 +58,8 @@ Context box is Claudie's "control unit". It holds pending configs, which need to
   rpc DeleteConfig(DeleteConfigRequest) returns (DeleteConfigResponse);
   // Deletes the config from the database.
   rpc DeleteConfigFromDB(DeleteConfigRequest) returns (DeleteConfigResponse);
+  // UpdateNodepool updates specific nodepool from the config. Used mainly for autoscaling.
+  rpc UpdateNodepool(UpdateNodepoolRequest) returns (UpdateNodepoolResponse);
 ```
 
 ### Flow
@@ -192,6 +192,10 @@ Kuber manipulates the cluster resources using `kubectl`.
 ### API
 
 ```go
+  // RemoveLbScrapeConfig removes scrape config for every LB detached to this cluster.
+  rpc RemoveLbScrapeConfig(RemoveLbScrapeConfigRequest) returns (RemoveLbScrapeConfigResponse);
+  // StoreLbScrapeConfig stores scrape config for every LB attached to this cluster.
+  rpc StoreLbScrapeConfig(StoreLbScrapeConfigRequest) returns (StoreLbScrapeConfigResponse);
   // StoreClusterMetadata creates a secret, which holds the private key and a list of public IP addresses of the cluster supplied.
   rpc StoreClusterMetadata(StoreClusterMetadataRequest) returns (StoreClusterMetadataResponse);
   // DeleteClusterMetadata deletes the secret holding the private key and public IP addresses of the cluster supplied.
@@ -204,6 +208,12 @@ Kuber manipulates the cluster resources using `kubectl`.
   rpc DeleteKubeconfig(DeleteKubeconfigRequest) returns (DeleteKubeconfigResponse);
   // DeleteNodes deletes the specified nodes from a k8s cluster.
   rpc DeleteNodes(DeleteNodesRequest) returns (DeleteNodesResponse);
+  // PatchNodes uses kubectl patch to change the node manifest.
+  rpc PatchNodes(PatchNodeTemplateRequest) returns (PatchNodeTemplateResponse);
+  // SetUpClusterAutoscaler deploys Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
+  rpc SetUpClusterAutoscaler(SetUpClusterAutoscalerRequest) returns (SetUpClusterAutoscalerResponse);
+  // DestroyClusterAutoscaler deletes Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
+  rpc DestroyClusterAutoscaler(DestroyClusterAutoscalerRequest) returns (DestroyClusterAutoscalerResponse);
 ```
 
 ### Flow
@@ -212,7 +222,13 @@ Kuber manipulates the cluster resources using `kubectl`.
 - Applies the `longhorn` deployment
 - Receives a `config` from Builder for `StoreKubeconfig()`
 - Creates a kubernetes secret that holds the kubeconfig of the Claudie-created cluster
-- Upon infrastructure deletion request, Kuber deletes the kubeconfig secret of the cluster being deleted
+- Receives a `config` from Builder for `StoreMetadata()`
+- Creates a kubernetes secret that holds the node metadata of the Claudie-created cluster
+- Recieves a `config` from Buidler for `StoreLbScrapeConfig()`
+- Stores scrape config for any LB attached to the Claudie-made cluster.
+- Receives a `config` from Builder for `PatchNodes()`
+- Patches the node manifests of the Claudie-made cluster.
+- Upon infrastructure deletion request, Kuber deletes the kubeconfig secret, metadata secret, scrape configs and autoscaler of the cluster being deleted
 
 ## Frontend
 

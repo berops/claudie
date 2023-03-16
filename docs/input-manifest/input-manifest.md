@@ -240,6 +240,10 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
   Size of the disk on the nodes in the nodepool.
 
+- `autoscalerConf` [Autoscaler Configuration](#autoscaler-configuration)
+  
+  Autoscaler configuration for this nodepool.
+
 ## Provider Spec
 
 Provider spec is further specification build on top of the data from any of the provider instance. To see simple examples of Provider spec, see the [provider examples](./providers/examples).
@@ -256,6 +260,18 @@ Provider spec is further specification build on top of the data from any of the 
 
   Zone of the nodepool.
 
+## Autoscaler Configuration
+
+Autoscaler configuration on per nodepool basis. Defines the number of nodes, autoscaler will scale up or down specific nodepool.
+
+- `min`
+  
+  Minimum number of nodes in nodepool.
+
+- `max`
+
+  Maximum number of nodes in nodepool.
+  
 ## Kubernetes
 
 Defines Kubernetes clusters.
