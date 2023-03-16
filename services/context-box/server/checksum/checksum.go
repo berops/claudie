@@ -14,7 +14,7 @@ func CalculateChecksum(data string) []byte {
 	return res[:]
 }
 
-// Equals compares checksums passed in as []byte adn returns true if they are equal, false otherwise.
+// Equals compares checksums passed in as []byte and returns true if they are equal, false otherwise.
 func Equals(ch1, ch2 []byte) bool {
 	return bytes.Equal(ch1, ch2)
 }

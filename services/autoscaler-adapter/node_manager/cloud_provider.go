@@ -34,7 +34,7 @@ func (nm *NodeManager) cacheHetzner(np *pb.NodePool) error {
 	// Create client and create cache.
 	hc := hcloud.NewClient(hcloud.WithToken(np.Provider.Credentials), hcloud.WithHTTPClient(http.DefaultClient))
 	if servers, err := hc.ServerType.All(context.Background()); err != nil {
-		return fmt.Errorf("hetzner client got error %v", err)
+		return fmt.Errorf("hetzner client got error %w", err)
 	} else {
 		nm.hetznerVMs = getTypeInfosHetzner(servers)
 	}
@@ -61,7 +61,7 @@ func (nm *NodeManager) cacheAws(np *pb.NodePool) error {
 
 	cfg, err := config.LoadDefaultConfig(context.Background(), credFunc, config.WithHTTPClient(httpClient), config.WithRegion(np.Region))
 	if err != nil {
-		return fmt.Errorf("AWS config got error : %v", err)
+		return fmt.Errorf("AWS config got error : %w", err)
 	}
 	client := ec2.NewFromConfig(cfg)
 	maxResults := int32(defaultMaxResults)
@@ -69,7 +69,7 @@ func (nm *NodeManager) cacheAws(np *pb.NodePool) error {
 	// Use while loop to support paging.
 	for {
 		if res, err := client.DescribeInstanceTypes(context.Background(), &ec2.DescribeInstanceTypesInput{MaxResults: &maxResults, NextToken: token}); err != nil {
-			return fmt.Errorf("AWS client got error : %v", err)
+			return fmt.Errorf("AWS client got error : %w", err)
 		} else {
 			nm.awsVMs = mergeMaps(getTypeInfosAws(res.InstanceTypes), nm.awsVMs)
 			// Check if there are any more results to query.
@@ -87,7 +87,7 @@ func (nm *NodeManager) cacheGcp(np *pb.NodePool) error {
 	// Create client and create cache
 	computeService, err := compute.NewMachineTypesRESTClient(context.Background(), option.WithCredentialsJSON([]byte(np.Provider.Credentials)))
 	if err != nil {
-		return fmt.Errorf("GCP client got error : %v", err)
+		return fmt.Errorf("GCP client got error : %w", err)
 	}
 	defer func() {
 		if err := computeService.Close(); err != nil {
@@ -111,7 +111,7 @@ func (nm *NodeManager) cacheGcp(np *pb.NodePool) error {
 			break
 		}
 		if err != nil {
-			return fmt.Errorf("GCP client got error while looping: %v", err)
+			return fmt.Errorf("GCP client got error while looping: %w", err)
 		}
 		machineTypes = append(machineTypes, mt)
 	}
@@ -124,7 +124,7 @@ func (nm *NodeManager) cacheOci(np *pb.NodePool) error {
 	conf := common.NewRawConfigurationProvider(np.Provider.OciTenancyOcid, np.Provider.OciUserOcid, np.Region, np.Provider.OciFingerprint, np.Provider.Credentials, nil)
 	client, err := core.NewComputeClientWithConfigurationProvider(conf)
 	if err != nil {
-		return fmt.Errorf("OCI client got error : %v", err)
+		return fmt.Errorf("OCI client got error : %w", err)
 	}
 	maxResults := defaultMaxResults
 	req := core.ListShapesRequest{
@@ -134,7 +134,7 @@ func (nm *NodeManager) cacheOci(np *pb.NodePool) error {
 	for {
 		r, err := client.ListShapes(context.Background(), req)
 		if err != nil {
-			return fmt.Errorf("OCI client got error : %v", err)
+			return fmt.Errorf("OCI client got error : %w", err)
 		}
 		if r.Items == nil || len(r.Items) == 0 {
 			return fmt.Errorf("OCI client got empty response")
@@ -153,12 +153,12 @@ func (nm *NodeManager) cacheOci(np *pb.NodePool) error {
 func (nm *NodeManager) cacheAzure(np *pb.NodePool) error {
 	cred, err := azidentity.NewClientSecretCredential(np.Provider.AzureTenantId, np.Provider.AzureClientId, np.Provider.Credentials, nil)
 	if err != nil {
-		return fmt.Errorf("azure client got error : %v", err)
+		return fmt.Errorf("azure client got error : %w", err)
 	}
 
 	client, err := armcompute.NewVirtualMachineSizesClient(np.Provider.AzureSubscriptionId, cred, nil)
 	if err != nil {
-		return fmt.Errorf("azure client got error : %v", err)
+		return fmt.Errorf("azure client got error : %w", err)
 	}
 	location := strings.ToLower(strings.ReplaceAll(np.Region, " ", ""))
 	pager := client.NewListPager(location, nil)
@@ -166,7 +166,7 @@ func (nm *NodeManager) cacheAzure(np *pb.NodePool) error {
 	for pager.More() {
 		nextResult, err := pager.NextPage(context.Background())
 		if err != nil {
-			return fmt.Errorf("azure client got error : %v", err)
+			return fmt.Errorf("azure client got error : %w", err)
 		}
 		nm.azureVMs = mergeMaps(getTypeInfosAzure(nextResult.Value), nm.azureVMs)
 	}
