@@ -10,6 +10,7 @@ import (
 	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/externalgrpc/protos"
 )
 
+// TestRefresh tests autoscaler adapter running in local environment.
 func TestRefresh(t *testing.T) {
 	var cc *grpc.ClientConn
 	var err error

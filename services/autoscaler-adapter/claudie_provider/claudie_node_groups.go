@@ -146,6 +146,7 @@ func (c *ClaudieCloudProvider) NodeGroupGetOptions(_ context.Context, req *proto
 	return &protos.NodeGroupAutoscalingOptionsResponse{NodeGroupAutoscalingOptions: req.GetDefaults()}, nil
 }
 
+// updateNodepool will call context-box UpdateNodepool method to save any changes to the database. This will also initiate build of the changed nodepool.
 func (c *ClaudieCloudProvider) updateNodepool(nodepool *pb.NodePool) error {
 	// Update the nodepool in the Claudie.
 	var cc *grpc.ClientConn
@@ -167,6 +168,7 @@ func (c *ClaudieCloudProvider) updateNodepool(nodepool *pb.NodePool) error {
 	return nil
 }
 
+// containsId checks if nodes in specified slice contain specific id.
 func containsId(nodes []*protos.ExternalGrpcNode, nodeId string) bool {
 	for _, node := range nodes {
 		if node.Name == nodeId {

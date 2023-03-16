@@ -20,7 +20,7 @@ func main() {
 	if projectName == "" || clusterName == "" || port == "" {
 		log.Fatal().Msgf("Env vars PROJECT_NAME and CLUSTER_NAME and ADAPTER_PORT must be specified")
 	}
-	utils.InitLog(fmt.Sprintf("%s-%s", clusterName, "claudie-adapter"))
+	utils.InitLog(fmt.Sprintf("%s-%s", "autoscaler-adapter", clusterName))
 
 	server := grpc.NewServer()
 
