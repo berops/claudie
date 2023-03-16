@@ -4,7 +4,7 @@ ARG TARGETARCH
 
 #Install kubectl
 RUN KC_VERSION=v1.24.0 && \
-    wget -q https://storage.googleapis.com/kubernetes-release/release/${KC_VERSION}bin/linux/$TARGETARCH/kubectl
+    wget -q https://storage.googleapis.com/kubernetes-release/release/${KC_VERSION}/bin/linux/$TARGETARCH/kubectl
 
 #Unset the GOPATH
 ENV GOPATH=
