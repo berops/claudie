@@ -96,7 +96,6 @@ spec:
         prometheus.io/port: "8085"
     spec:
       containers:
-        # TODO check which version is compatible (only 1.25)
         - image: k8s.gcr.io/autoscaling/cluster-autoscaler:v1.25.0
           name: cluster-autoscaler
           resources:

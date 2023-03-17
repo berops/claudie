@@ -27,7 +27,6 @@ spec:
         prometheus.io/port: "8085"
     spec:
       containers:
-        # TODO check which version is compatible (only 1.25)
         - image: k8s.gcr.io/autoscaling/cluster-autoscaler:v1.25.0
           name: cluster-autoscaler
           resources:
@@ -43,8 +42,6 @@ spec:
             - --cloud-config=/etc/claudie/cloud-config/cloud-config
             - --kubeconfig=/etc/claudie/kubeconfig/kubeconfig
             - --ignore-daemonsets-utilization=true
-            # TODO remove later
-            - --v=2
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: kubeconfig
