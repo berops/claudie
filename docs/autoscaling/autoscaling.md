@@ -1,6 +1,6 @@
 # Autoscaling in Claudie
 
-Claudie supports autoscaling by installing [Cluster Autoscaler](https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler) for Claudie-made clusters, with a custom implementation of `external gRPC cloud provider`, in Claudie context called `autoscaler-adapter`. This, together with Cluster Autoscaler is automatically managed by Claudie, for any clusters, which have at least one node pool defined with `autoscalerConf`.
+Claudie supports autoscaling by installing [Cluster Autoscaler](https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler) for Claudie-made clusters, with a custom implementation of `external gRPC cloud provider`, in Claudie context called `autoscaler-adapter`. This, together with Cluster Autoscaler is automatically managed by Claudie, for any clusters, which have at least one node pool defined with `autoscalerConf`. Whats more, you can change the nodepool specification freely, from autoscaler configuration to static count or vice versa. Claudie will seamlessly configure Cluster Autoscaler, or even remove it when its no longer needed.
 
 ## Architecture
 
