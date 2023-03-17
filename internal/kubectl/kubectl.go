@@ -4,6 +4,7 @@ package kubectl
 import (
 	"fmt"
 	"os/exec"
+	"strings"
 
 	comm "github.com/Berops/claudie/internal/command"
 )
@@ -132,8 +133,7 @@ func (k *Kubectl) KubectlExecEtcd(etcdPod, etcdctlCmd string) ([]byte, error) {
 
 // run will run the command in a bash shell like "bash -c command options".
 func (k Kubectl) run(command string, options ...string) error {
-	c := append([]string{"-c", command}, options...)
-	cmd := exec.Command("bash", c...)
+	cmd := exec.Command("bash", "-c", strings.Join(append([]string{command}, options...), " "))
 	cmd.Dir = k.Directory
 	if err := cmd.Run(); err != nil {
 		retryCount := k.MaxKubectlRetries
@@ -153,8 +153,7 @@ func (k Kubectl) run(command string, options ...string) error {
 func (k Kubectl) runWithOutput(command string, options ...string) ([]byte, error) {
 	var result []byte
 	var err error
-	c := append([]string{"-c", command}, options...)
-	cmd := exec.Command("bash", c...)
+	cmd := exec.Command("bash", "-c", strings.Join(append([]string{command}, options...), " "))
 	cmd.Dir = k.Directory
 	result, err = cmd.CombinedOutput()
 	if err != nil {

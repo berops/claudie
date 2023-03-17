@@ -218,11 +218,11 @@ func (d *Deleter) assureReplication(kc kubectl.Kubectl) error {
 				if err := deleteReplica(r, kc); err != nil {
 					return err
 				}
-				// Wait 15s until new replica is scheduled.
-				// If new replica is not scheduled by this time,
-				// assume no node can accommodate it.
-				time.Sleep(15 * time.Second)
 			}
+			// Wait 30s until new replica is scheduled.
+			// If new replica is not scheduled by this time,
+			// assume no node can accommodate it.
+			time.Sleep(30 * time.Second)
 		}
 	}
 	return nil
