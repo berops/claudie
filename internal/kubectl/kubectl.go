@@ -27,55 +27,39 @@ const (
 	kubectlTimeout = 3 * 60 // cancel kubectl command after kubectlTimeout seconds
 )
 
-// KubectlApply runs kubectl apply in k.Directory directory, with specified manifest and specified namespace
-// if namespace is empty string, the kubectl apply will not use -n flag
-// example: kubectl apply -f test.yaml -> k.KubectlApply("test.yaml", "")
-// example: kubectl apply -f test.yaml -n test -> k.KubectlApply("test.yaml", "test")
-func (k *Kubectl) KubectlApply(manifest, namespace string) error {
+// KubectlApply runs kubectl apply in k.Directory directory, with specified manifest
+// example: kubectl apply -f test.yaml -> k.KubectlApply("test.yaml")
+// example: kubectl apply -f test.yaml -n test -> k.KubectlApply("test.yaml", "-n", "test")
+func (k *Kubectl) KubectlApply(manifest string, options ...string) error {
 	kubeconfig := k.getKubeconfig()
-	if namespace != "" {
-		namespace = fmt.Sprintf("-n %s", namespace)
-	}
-	command := fmt.Sprintf("kubectl apply -f %s %s %s", manifest, kubeconfig, namespace)
-	return k.run(command)
+	command := fmt.Sprintf("kubectl apply -f %s %s", manifest, kubeconfig)
+	return k.run(command, options...)
 }
 
-// KubectlApplyString runs kubectl apply in k.Directory directory, with specified string data and specified namespace
-// if namespace is empty string, the kubectl apply will not use -n flag
-// example: echo 'Kind: Pod ...' | kubectl apply -f - -> k.KubectlApply("Kind: Pod ...", "")
-func (k *Kubectl) KubectlApplyString(str, namespace string) error {
+// KubectlApplyString runs kubectl apply in k.Directory directory, with specified string data
+// example: echo 'Kind: Pod ...' | kubectl apply -f - -> k.KubectlApply("Kind: Pod ...")
+func (k *Kubectl) KubectlApplyString(str string, options ...string) error {
 	kubeconfig := k.getKubeconfig()
-	if namespace != "" {
-		namespace = fmt.Sprintf("-n %s", namespace)
-	}
-	command := fmt.Sprintf("echo '%s' | kubectl apply -f - %s %s", str, kubeconfig, namespace)
-	return k.run(command)
+	command := fmt.Sprintf("echo '%s' | kubectl apply -f - %s", str, kubeconfig)
+	return k.run(command, options...)
 }
 
-// KubectlDeleteManifest runs kubectl delete in k.Directory, with specified manifest and specified namespace
-// if namespace is empty string, the kubectl apply will not use -n flag
-// example: kubectl delete -f test.yaml -> k.KubectlDelete("test.yaml", "")
-// example: kubectl delete -f test.yaml -n test -> k.KubectlDelete("test.yaml", "test")
-func (k *Kubectl) KubectlDeleteManifest(manifest, namespace string) error {
+// KubectlDeleteManifest runs kubectl delete in k.Directory, with specified manifest
+// example: kubectl delete -f test.yaml -> k.KubectlDelete("test.yaml")
+// example: kubectl delete -f test.yaml -n test -> k.KubectlDelete("test.yaml", "-n", "test")
+func (k *Kubectl) KubectlDeleteManifest(manifest string, options ...string) error {
 	kubeconfig := k.getKubeconfig()
-	if namespace != "" {
-		namespace = fmt.Sprintf("-n %s", namespace)
-	}
-	command := fmt.Sprintf("kubectl delete -f %s %s %s", manifest, kubeconfig, namespace)
-	return k.run(command)
+	command := fmt.Sprintf("kubectl delete -f %s %s", manifest, kubeconfig)
+	return k.run(command, options...)
 }
 
-// KubectlDeleteResource runs kubectl delete in k.Directory, with specified resource, resource name and specified namespace
-// if namespace is empty string, the kubectl apply will not use -n flag
-// example: kubectl delete ns test -> k.KubectlDeleteResource("ns","test", "")
-// example: kubectl delete pod busy-box -n test -> k.KubectlDeleteResource("pod","busy-box", "test")
-func (k *Kubectl) KubectlDeleteResource(resource, resourceName, namespace string) error {
+// KubectlDeleteResource runs kubectl delete in k.Directory, with specified resource, resource name
+// example: kubectl delete ns test -> k.KubectlDeleteResource("ns","test")
+// example: kubectl delete pod busy-box -n test -> k.KubectlDeleteResource("pod","busy-box", "-n","test")
+func (k *Kubectl) KubectlDeleteResource(resource, resourceName string, options ...string) error {
 	kubeconfig := k.getKubeconfig()
-	if namespace != "" {
-		namespace = fmt.Sprintf("-n %s", namespace)
-	}
-	command := fmt.Sprintf("kubectl delete %s %s %s %s", resource, resourceName, kubeconfig, namespace)
-	return k.run(command)
+	command := fmt.Sprintf("kubectl delete %s %s %s", resource, resourceName, kubeconfig)
+	return k.run(command, options...)
 }
 
 // KubectlDrain runs kubectl drain in k.Directory, on a specified node with flags --ignore-daemonsets --delete-emptydir-data
@@ -90,26 +74,20 @@ func (k *Kubectl) KubectlDrain(nodeName string) error {
 // if namespace is empty string, the kubectl apply will not use -n flag
 // example: kubectl describe pod test -> k.KubectlDescribe("pod","test", "")
 // example: kubectl describe pod busy-box -n test -> k.KubectlDescribe("pod","busy-box", "test")
-func (k *Kubectl) KubectlDescribe(resource, resourceName, namespace string) error {
+func (k *Kubectl) KubectlDescribe(resource, resourceName string, options ...string) error {
 	kubeconfig := k.getKubeconfig()
-	if namespace != "" {
-		namespace = fmt.Sprintf("-n %s", namespace)
-	}
-	command := fmt.Sprintf("kubectl describe %s %s %s %s", resource, resourceName, kubeconfig, namespace)
-	return k.run(command)
+	command := fmt.Sprintf("kubectl describe %s %s %s", resource, resourceName, kubeconfig)
+	return k.run(command, options...)
 }
 
 // KubectlGet runs kubectl get in k.Directory, on a specified resource and specified namespace
 // if namespace is empty string, the kubectl apply will not use -n flag
 // example: kubectl get ns -> k.KubectlGet("ns", "")
 // example: kubectl get pods -n test -> k.KubectlGet("pods", "test")
-func (k *Kubectl) KubectlGet(resource, namespace string) ([]byte, error) {
+func (k *Kubectl) KubectlGet(resource string, options ...string) ([]byte, error) {
 	kubeconfig := k.getKubeconfig()
-	if namespace != "" {
-		namespace = fmt.Sprintf("-n %s", namespace)
-	}
-	command := fmt.Sprintf("kubectl get %s %s %s", resource, kubeconfig, namespace)
-	return k.runWithOutput(command)
+	command := fmt.Sprintf("kubectl get %s %s", resource, kubeconfig)
+	return k.runWithOutput(command, options...)
 }
 
 // KubectlAnnotate runs kubectl annotate in k.Directory, with the specified annotation on a specified resource and resource name
@@ -122,13 +100,10 @@ func (k *Kubectl) KubectlAnnotate(resource, resourceName, annotation string) err
 
 // KubectlLabel runs kubectl label in k.Directory, with the specified label on a specified resource and resource name
 // example: kubectl label node node-1 label=value -> k.KubectlLabel("node","node-1","label=value")
-func (k *Kubectl) KubectlLabel(resource, resourceName, label string, overwrite bool) error {
+func (k *Kubectl) KubectlLabel(resource, resourceName, label string, options ...string) error {
 	kubeconfig := k.getKubeconfig()
-	if overwrite {
-		kubeconfig = fmt.Sprintf("--overwrite %s", kubeconfig)
-	}
 	command := fmt.Sprintf("kubectl label %s %s %s %s", resource, resourceName, label, kubeconfig)
-	return k.run(command)
+	return k.run(command, options...)
 }
 
 // KubectlGetNodeNames will find a node names for a particular cluster
@@ -155,9 +130,10 @@ func (k *Kubectl) KubectlExecEtcd(etcdPod, etcdctlCmd string) ([]byte, error) {
 	return k.runWithOutput(kcExecEtcdCmd)
 }
 
-// run will run the command in a bash shell like "bash -c command"
-func (k Kubectl) run(command string) error {
-	cmd := exec.Command("bash", "-c", command)
+// run will run the command in a bash shell like "bash -c command options".
+func (k Kubectl) run(command string, options ...string) error {
+	c := append([]string{"-c", command}, options...)
+	cmd := exec.Command("bash", c...)
 	cmd.Dir = k.Directory
 	if err := cmd.Run(); err != nil {
 		retryCount := k.MaxKubectlRetries
@@ -173,11 +149,12 @@ func (k Kubectl) run(command string) error {
 	return nil
 }
 
-// runWithOutput will run the command in a bash shell like "bash -c command" and return the output
-func (k Kubectl) runWithOutput(command string) ([]byte, error) {
+// runWithOutput will run the command in a bash shell like "bash -c command options" and return the output
+func (k Kubectl) runWithOutput(command string, options ...string) ([]byte, error) {
 	var result []byte
 	var err error
-	cmd := exec.Command("bash", "-c", command)
+	c := append([]string{"-c", command}, options...)
+	cmd := exec.Command("bash", c...)
 	cmd.Dir = k.Directory
 	result, err = cmd.CombinedOutput()
 	if err != nil {
