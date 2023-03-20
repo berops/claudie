@@ -73,8 +73,8 @@ func (k *Kubectl) KubectlDrain(nodeName string) error {
 
 // KubectlDescribe runs kubectl describe in k.Directory, on a specified resource, resource name and specified namespace
 // if namespace is empty string, the kubectl apply will not use -n flag
-// example: kubectl describe pod test -> k.KubectlDescribe("pod","test", "")
-// example: kubectl describe pod busy-box -n test -> k.KubectlDescribe("pod","busy-box", "test")
+// example: kubectl describe pod test -> k.KubectlDescribe("pod","test")
+// example: kubectl describe pod busy-box -n test -> k.KubectlDescribe("pod","busy-box", "-n", "test")
 func (k *Kubectl) KubectlDescribe(resource, resourceName string, options ...string) error {
 	kubeconfig := k.getKubeconfig()
 	command := fmt.Sprintf("kubectl describe %s %s %s", resource, resourceName, kubeconfig)
@@ -83,8 +83,8 @@ func (k *Kubectl) KubectlDescribe(resource, resourceName string, options ...stri
 
 // KubectlGet runs kubectl get in k.Directory, on a specified resource and specified namespace
 // if namespace is empty string, the kubectl apply will not use -n flag
-// example: kubectl get ns -> k.KubectlGet("ns", "")
-// example: kubectl get pods -n test -> k.KubectlGet("pods", "test")
+// example: kubectl get ns -> k.KubectlGet("ns")
+// example: kubectl get pods -n test -> k.KubectlGet("pods","-n", "test")
 func (k *Kubectl) KubectlGet(resource string, options ...string) ([]byte, error) {
 	kubeconfig := k.getKubeconfig()
 	command := fmt.Sprintf("kubectl get %s %s", resource, kubeconfig)
@@ -129,6 +129,11 @@ func (k *Kubectl) KubectlExecEtcd(etcdPod, etcdctlCmd string) ([]byte, error) {
 	kcExecEtcdCmd := fmt.Sprintf("kubectl %s -n kube-system exec -i %s -- /bin/sh -c \" %s && %s \"",
 		kubeconfig, etcdPod, exportEtcdEnvsCmd, etcdctlCmd)
 	return k.runWithOutput(kcExecEtcdCmd)
+}
+
+func (k *Kubectl) KubectlPatch(resource, resourceName, patchPath string, options ...string) error {
+	command := fmt.Sprintf("kubectl patch %s %s -p '%s' %s", resource, resourceName, patchPath, k.getKubeconfig())
+	return k.run(command, options...)
 }
 
 // run will run the command in a bash shell like "bash -c command options".
