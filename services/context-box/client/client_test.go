@@ -12,8 +12,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-const configIDDefault = "6392ef6a19abbf9fdd98ac25"
-
 func ClientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
 	cc, err := utils.GrpcDialWithInsecure("context-box", envs.ContextBoxURL)
 	if err != nil {
