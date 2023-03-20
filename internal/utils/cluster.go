@@ -3,7 +3,7 @@ package utils
 import (
 	"strings"
 
-	"github.com/Berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb"
 )
 
 // GetClusterByName will return Cluster that will have same name as specified in parameters

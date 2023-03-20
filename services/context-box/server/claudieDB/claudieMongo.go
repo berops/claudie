@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Berops/claudie/internal/utils"
-	"github.com/Berops/claudie/proto/pb"
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb"
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"

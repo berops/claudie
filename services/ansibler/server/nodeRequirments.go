@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Berops/claudie/internal/utils"
-	"github.com/Berops/claudie/services/ansibler/server/ansible"
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/services/ansibler/server/ansible"
 )
 
 const (

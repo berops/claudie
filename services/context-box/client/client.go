@@ -9,7 +9,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/Berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb"
 	"github.com/rs/zerolog/log"
 )
 

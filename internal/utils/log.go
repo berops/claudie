@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/Berops/claudie/internal/envs"
+	"github.com/berops/claudie/internal/envs"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )

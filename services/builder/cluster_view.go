@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/Berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb"
 	"google.golang.org/protobuf/proto"
 )
 

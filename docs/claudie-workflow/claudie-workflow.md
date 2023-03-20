@@ -6,20 +6,20 @@
 
 ### Microservices
 
-- [Context-box](https://github.com/Berops/claudie/tree/master/services/context-box)
-- [Scheduler](https://github.com/Berops/claudie/tree/master/services/scheduler)
-- [Builder](https://github.com/Berops/claudie/tree/master/services/builder)
-- [Terraformer](https://github.com/Berops/claudie/tree/master/services/terraformer)
-- [Ansibler](https://github.com/Berops/claudie/tree/master/services/ansibler)
-- [Kube-eleven](https://github.com/Berops/claudie/tree/master/services/kube-eleven)
-- [Kuber](https://github.com/Berops/claudie/tree/master/services/kuber)
-- [Frontend](https://github.com/Berops/claudie/tree/master/services/frontend)
+- [Context-box](https://github.com/berops/claudie/tree/master/services/context-box)
+- [Scheduler](https://github.com/berops/claudie/tree/master/services/scheduler)
+- [Builder](https://github.com/berops/claudie/tree/master/services/builder)
+- [Terraformer](https://github.com/berops/claudie/tree/master/services/terraformer)
+- [Ansibler](https://github.com/berops/claudie/tree/master/services/ansibler)
+- [Kube-eleven](https://github.com/berops/claudie/tree/master/services/kube-eleven)
+- [Kuber](https://github.com/berops/claudie/tree/master/services/kuber)
+- [Frontend](https://github.com/berops/claudie/tree/master/services/frontend)
 
 ### Data stores
 
-- [MongoDB](https://github.com/Berops/claudie/tree/master/manifests/claudie/mongo)
-- [Minio](https://github.com/Berops/claudie/tree/master/manifests/claudie/minio)
-- [DynamoDB](https://github.com/Berops/claudie/tree/master/manifests/claudie/dynamo)
+- [MongoDB](https://github.com/berops/claudie/tree/master/manifests/claudie/mongo)
+- [Minio](https://github.com/berops/claudie/tree/master/manifests/claudie/minio)
+- [DynamoDB](https://github.com/berops/claudie/tree/master/manifests/claudie/dynamo)
 
 ### Tools used
 

@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/Berops/claudie/internal/manifest"
-	"github.com/Berops/claudie/proto/pb"
-	cbox "github.com/Berops/claudie/services/context-box/client"
+	"github.com/berops/claudie/internal/manifest"
+	"github.com/berops/claudie/proto/pb"
+	cbox "github.com/berops/claudie/services/context-box/client"
 	"github.com/rs/zerolog/log"
 
 	"gopkg.in/yaml.v3"

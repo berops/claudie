@@ -3,8 +3,8 @@ package clusterBuilder
 import (
 	"testing"
 
-	"github.com/Berops/claudie/internal/templateUtils"
-	"github.com/Berops/claudie/proto/pb"
+	"github.com/berops/claudie/internal/templateUtils"
+	"github.com/berops/claudie/proto/pb"
 	"github.com/stretchr/testify/require"
 )
 

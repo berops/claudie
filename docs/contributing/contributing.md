@@ -2,7 +2,7 @@
 
 ## Bug reports
 
-When you encounter a bug, please create a new [issue](https://github.com/Berops/claudie/issues/new/choose) and use our bug template.
+When you encounter a bug, please create a new [issue](https://github.com/berops/claudie/issues/new/choose) and use our bug template.
 Before you submit, please check:
 
 - ...that the issue you want to open is not a duplicate
