@@ -175,7 +175,7 @@ func deleteFromLonghorn(kc kubectl.Kubectl, worker string) error {
 	return nil
 }
 
-// assureReplication tries to assure, that replicas for each longhorn volume are migrated to nodes, which will remain in the
+// assureReplication tries to assure, that replicas for each longhorn volume are migrated to nodes, which will remain in the cluster.
 func assureReplication(kc kubectl.Kubectl, worker string) error {
 	// Get replicas and volumes as they can be scheduled on next node, which will be deleted.
 	replicas, err := getReplicas(kc)
@@ -201,7 +201,7 @@ func assureReplication(kc kubectl.Kubectl, worker string) error {
 				if err := revertReplicaCount(v, kc); err != nil {
 					return fmt.Errorf("error while increasing number of replicas in volume %s : %w", v.Metadata.Name, err)
 				}
-				// Delete old replica, on to be deleted node.
+				// Delete old replica, on to-be-deleted node.
 				log.Debug().Msgf("Deleting replica %s from node %s", r.Metadata.Name, r.Status.OwnerID)
 				if err := deleteReplica(r, kc); err != nil {
 					return err
