@@ -3,6 +3,7 @@ package kubectl
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -140,13 +141,15 @@ func (k *Kubectl) KubectlPatch(resource, resourceName, patchPath string, options
 func (k Kubectl) run(command string, options ...string) error {
 	cmd := exec.Command("bash", "-c", strings.Join(append([]string{command}, options...), " "))
 	cmd.Dir = k.Directory
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
 		retryCount := k.MaxKubectlRetries
 		if k.MaxKubectlRetries == 0 {
 			retryCount = defaultMaxKubectlRetries
 		}
 		retryCmd := comm.Cmd{
-			Command: command, Dir: k.Directory, CommandTimeout: kubectlTimeout}
+			Command: command, Dir: k.Directory, CommandTimeout: kubectlTimeout, Stdout: os.Stdout, Stderr: os.Stderr}
 		if err = retryCmd.RetryCommand(retryCount); err != nil {
 			return err
 		}
