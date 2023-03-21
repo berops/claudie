@@ -3,7 +3,7 @@ package manifest
 import (
 	"fmt"
 
-	"github.com/Berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb"
 )
 
 // GetProvider will search for a Provider config by matching name from providerSpec

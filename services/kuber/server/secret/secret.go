@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Berops/claudie/internal/kubectl"
+	"github.com/berops/claudie/internal/kubectl"
 	"gopkg.in/yaml.v3"
 )
 

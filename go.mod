@@ -1,4 +1,4 @@
-module github.com/Berops/claudie
+module github.com/berops/claudie
 
 go 1.20
 

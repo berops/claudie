@@ -6,7 +6,7 @@
 
 To deploy the Claudie `v0.2.X`, please:
 
-1. Download the archive and checksums from the [release page](https://github.com/Berops/claudie/releases)
+1. Download the archive and checksums from the [release page](https://github.com/berops/claudie/releases)
 
 2. Verify the archive with the `sha256` (optional)
 

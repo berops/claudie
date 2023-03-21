@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb"
 )
 
 // BuildInfrastructure uses TerraformServiceClient to build/deploy the infrastructure
