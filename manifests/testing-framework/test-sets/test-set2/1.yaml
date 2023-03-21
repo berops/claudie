@@ -122,7 +122,7 @@ nodePools:
 kubernetes:
   clusters:
     - name: ts2-c-1
-      version: v1.22.0
+      version: v1.24.0
       network: 192.168.2.0/24
       pools:
         control:
@@ -130,7 +130,7 @@ kubernetes:
         compute:
           - hetzner-compute
     - name: ts2-c-2
-      version: v1.22.0
+      version: v1.24.0
       network: 192.168.2.0/24
       pools:
         control:
