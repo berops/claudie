@@ -53,11 +53,11 @@ To scale-up or scale-down, simply change a few lines in the input manifest and C
 
 ### Loadbalancing
 
-Claudie has its own managed load-balancing solution, which you can use for Ingresses, the Kubernetes API server, or generally anything. Check out our [LB docs](https://github.com/Berops/claudie/tree/master/docs/loadbalancing).
+Claudie has its own managed load-balancing solution, which you can use for Ingresses, the Kubernetes API server, or generally anything. Check out our [LB docs](https://github.com/berops/claudie/tree/master/docs/loadbalancing).
 
 ### Persistent storage volumes
 
-Claudie comes pre-configured with a storage solution, with ready-to-use Storage Classes. See [Storage docs](https://github.com/Berops/claudie/tree/master/docs/storage) to learn more.
+Claudie comes pre-configured with a storage solution, with ready-to-use Storage Classes. See [Storage docs](https://github.com/berops/claudie/tree/master/docs/storage) to learn more.
 
 ### Supported cloud providers
 
@@ -74,7 +74,7 @@ For adding support for other cloud providers, open an issue or propose a PR.
 
 ## Get started using Claudie
 
-1. Deploy Claudie Kubernetes [manifests/claudie](https://github.com/Berops/claudie/tree/master/manifests/claudie) into a Kubernetes cluster:
+1. Deploy Claudie Kubernetes [manifests/claudie](https://github.com/berops/claudie/tree/master/manifests/claudie) into a Kubernetes cluster:
 
    ```sh
    kubectl apply -k manifests/claudie
@@ -82,7 +82,7 @@ For adding support for other cloud providers, open an issue or propose a PR.
 
 2. provide your own manifest via a Kubernetes Secret.
 
-Have a look at our [reference example input manifest](https://github.com/Berops/claudie/blob/master/docs/input-manifest/example.yaml) to explore what's possible.
+Have a look at our [reference example input manifest](https://github.com/berops/claudie/blob/master/docs/input-manifest/example.yaml) to explore what's possible.
 
 To see in detail how to correctly apply the manifest into Claudie, please refer to the [CRUD](./docs/crud/crud.md) document.
 

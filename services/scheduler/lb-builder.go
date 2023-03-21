@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/Berops/claudie/internal/manifest"
-	"github.com/Berops/claudie/internal/utils"
-	"github.com/Berops/claudie/proto/pb"
+	"github.com/berops/claudie/internal/manifest"
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb"
 )
 
 const hostnameHashLength = 17

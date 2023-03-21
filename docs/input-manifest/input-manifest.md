@@ -57,7 +57,7 @@ needs to be defined.
 
   List of HetznerDNS configuration for [HetznerDNS](https://www.hetzner.com/dns-console). This field is optional.
 
-Support for more cloud providers is in the [roadmap](https://github.com/Berops/claudie/blob/master/docs/roadmap/roadmap.md).
+Support for more cloud providers is in the [roadmap](https://github.com/berops/claudie/blob/master/docs/roadmap/roadmap.md).
 
 ## Cloudflare
 

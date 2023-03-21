@@ -10,14 +10,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Berops/claudie/internal/envs"
-	"github.com/Berops/claudie/internal/healthcheck"
-	"github.com/Berops/claudie/internal/utils"
-	"github.com/Berops/claudie/internal/worker"
+	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/internal/healthcheck"
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/worker"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/Berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb"
 
 	"google.golang.org/grpc/connectivity"
 )

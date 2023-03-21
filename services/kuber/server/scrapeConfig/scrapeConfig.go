@@ -4,9 +4,9 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/Berops/claudie/internal/kubectl"
-	"github.com/Berops/claudie/internal/templateUtils"
-	"github.com/Berops/claudie/proto/pb"
+	"github.com/berops/claudie/internal/kubectl"
+	"github.com/berops/claudie/internal/templateUtils"
+	"github.com/berops/claudie/proto/pb"
 )
 
 type ScrapeConfig struct {

@@ -5,8 +5,8 @@ import (
 	"log"
 	"testing"
 
-	"github.com/Berops/claudie/internal/envs"
-	"github.com/Berops/claudie/proto/pb"
+	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/proto/pb"
 	"github.com/stretchr/testify/require"
 )
 

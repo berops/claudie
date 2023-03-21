@@ -4,10 +4,10 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/Berops/claudie/internal/envs"
-	"github.com/Berops/claudie/internal/kubectl"
-	"github.com/Berops/claudie/internal/manifest"
-	"github.com/Berops/claudie/internal/templateUtils"
+	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/internal/kubectl"
+	"github.com/berops/claudie/internal/manifest"
+	"github.com/berops/claudie/internal/templateUtils"
 	"gopkg.in/yaml.v3"
 )
 

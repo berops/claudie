@@ -3,18 +3,18 @@ package loadbalancer
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Berops/claudie/services/terraformer/server/provider"
+	"github.com/berops/claudie/services/terraformer/server/provider"
 	"os"
 	"path/filepath"
 
-	comm "github.com/Berops/claudie/internal/command"
+	comm "github.com/berops/claudie/internal/command"
 
-	"github.com/Berops/claudie/internal/templateUtils"
-	"github.com/Berops/claudie/internal/utils"
-	"github.com/Berops/claudie/proto/pb"
-	"github.com/Berops/claudie/services/terraformer/server/backend"
-	"github.com/Berops/claudie/services/terraformer/server/clusterBuilder"
-	"github.com/Berops/claudie/services/terraformer/server/terraform"
+	"github.com/berops/claudie/internal/templateUtils"
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/services/terraformer/server/backend"
+	"github.com/berops/claudie/services/terraformer/server/clusterBuilder"
+	"github.com/berops/claudie/services/terraformer/server/terraform"
 	"github.com/rs/zerolog/log"
 )
 

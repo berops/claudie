@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/Berops/claudie/internal/utils"
-	"github.com/Berops/claudie/proto/pb"
-	cbox "github.com/Berops/claudie/services/context-box/client"
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb"
+	cbox "github.com/berops/claudie/services/context-box/client"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/protobuf/proto"
 )

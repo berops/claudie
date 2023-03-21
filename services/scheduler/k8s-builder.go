@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Berops/claudie/internal/manifest"
-	"github.com/Berops/claudie/internal/utils"
-	"github.com/Berops/claudie/proto/pb"
+	"github.com/berops/claudie/internal/manifest"
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb"
 )
 
 // createK8sCluster reads manifest state and create kubernetes clusters based on it
