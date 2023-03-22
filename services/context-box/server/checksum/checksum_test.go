@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-// TestCompareChecksums tests whether the output of Equal is what we expect.
+// TestCalculateChecksum tests whether the output of CalculateChecksum is what we expect.
 func TestCalculateChecksum(t *testing.T) {
 	testCases := []struct {
 		desc string
@@ -169,9 +169,8 @@ kubernetes:
 	}
 }
 
-// TestCompareChecksums tests whether the output of CompareCheckums is what we
-// expectEquals
-func TestCompareChecksums(t *testing.T) {
+// TestEquals tests whether the output of Equals is what we expect
+func TestEquals(t *testing.T) {
 	testCases := []struct {
 		desc string
 		in1  []byte
