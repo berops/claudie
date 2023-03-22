@@ -13,7 +13,7 @@ var (
 	testClusterVersionFailMajor = &Kubernetes{Clusters: []Cluster{{Name: "cluster1", Network: "10.0.0.0/8", Version: "v2.22.0", Pools: Pool{Control: []string{"np1"}}}}}
 
 	testNodepoolAutoScalerSuccAC = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", DiskSize: 50, AutoscalerConfig: AutoscalerConfig{Min: 1, Max: 3}, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
-	testNodepoolAutoScalerSuccC  = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", DiskSize: 50, Count: 1, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
+	testNodepoolAutoScalerSucc   = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", DiskSize: 50, Count: 1, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
 	testNodepoolAutoScalerFail   = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", DiskSize: 50, Count: 1, AutoscalerConfig: AutoscalerConfig{Min: 1, Max: 3}, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
 	testDomainFail               = &Manifest{
 		Kubernetes: Kubernetes{
@@ -72,7 +72,7 @@ func TestKubernetes(t *testing.T) {
 func TestNodepool(t *testing.T) {
 	err := testNodepoolAutoScalerSuccAC.Validate()
 	require.NoError(t, err)
-	err = testNodepoolAutoScalerSuccC.Validate()
+	err = testNodepoolAutoScalerSucc.Validate()
 	require.NoError(t, err)
 	err = testNodepoolAutoScalerFail.Validate()
 	require.Error(t, err)
