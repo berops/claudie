@@ -22,6 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type KubeElevenServiceClient interface {
+	// BuildCluster builds the kubernetes clusters specified in the provided config.
 	BuildCluster(ctx context.Context, in *BuildClusterRequest, opts ...grpc.CallOption) (*BuildClusterResponse, error)
 }
 
@@ -46,6 +47,7 @@ func (c *kubeElevenServiceClient) BuildCluster(ctx context.Context, in *BuildClu
 // All implementations must embed UnimplementedKubeElevenServiceServer
 // for forward compatibility
 type KubeElevenServiceServer interface {
+	// BuildCluster builds the kubernetes clusters specified in the provided config.
 	BuildCluster(context.Context, *BuildClusterRequest) (*BuildClusterResponse, error)
 	mustEmbedUnimplementedKubeElevenServiceServer()
 }

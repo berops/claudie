@@ -22,19 +22,26 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ContextBoxServiceClient interface {
-	// Save
+	// SaveConfigFrontEnd saves the config parsed by Frontend.
 	SaveConfigFrontEnd(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error)
+	// SaveConfigScheduler saves the config parsed by Scheduler.
 	SaveConfigScheduler(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error)
+	// SaveConfigBuilder saves the config parsed by Builder.
 	SaveConfigBuilder(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error)
-	// Get
+	// GetConfigFromDB gets a single config from the database.
 	GetConfigFromDB(ctx context.Context, in *GetConfigFromDBRequest, opts ...grpc.CallOption) (*GetConfigFromDBResponse, error)
+	// GetConfigScheduler gets a config from Scheduler's queue of pending configs.
 	GetConfigScheduler(ctx context.Context, in *GetConfigRequest, opts ...grpc.CallOption) (*GetConfigResponse, error)
+	// GetConfigBuilder gets a config from Builder's queue of pending configs.
 	GetConfigBuilder(ctx context.Context, in *GetConfigRequest, opts ...grpc.CallOption) (*GetConfigResponse, error)
+	// GetAllConfigs gets all configs from the database.
 	GetAllConfigs(ctx context.Context, in *GetAllConfigsRequest, opts ...grpc.CallOption) (*GetAllConfigsResponse, error)
-	// Delete
+	// DeleteConfig sets the manifest to null, effectively forcing the deletion of the infrastructure
+	// defined by the manifest on the very next config (diff-) check.
 	DeleteConfig(ctx context.Context, in *DeleteConfigRequest, opts ...grpc.CallOption) (*DeleteConfigResponse, error)
+	// DeleteConfigFromDB deletes the config from the database.
 	DeleteConfigFromDB(ctx context.Context, in *DeleteConfigRequest, opts ...grpc.CallOption) (*DeleteConfigResponse, error)
-	// Update
+	// UpdateNodepool updates specific nodepool from the config. Used mainly for autoscaling.
 	UpdateNodepool(ctx context.Context, in *UpdateNodepoolRequest, opts ...grpc.CallOption) (*UpdateNodepoolResponse, error)
 }
 
@@ -140,19 +147,26 @@ func (c *contextBoxServiceClient) UpdateNodepool(ctx context.Context, in *Update
 // All implementations must embed UnimplementedContextBoxServiceServer
 // for forward compatibility
 type ContextBoxServiceServer interface {
-	// Save
+	// SaveConfigFrontEnd saves the config parsed by Frontend.
 	SaveConfigFrontEnd(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error)
+	// SaveConfigScheduler saves the config parsed by Scheduler.
 	SaveConfigScheduler(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error)
+	// SaveConfigBuilder saves the config parsed by Builder.
 	SaveConfigBuilder(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error)
-	// Get
+	// GetConfigFromDB gets a single config from the database.
 	GetConfigFromDB(context.Context, *GetConfigFromDBRequest) (*GetConfigFromDBResponse, error)
+	// GetConfigScheduler gets a config from Scheduler's queue of pending configs.
 	GetConfigScheduler(context.Context, *GetConfigRequest) (*GetConfigResponse, error)
+	// GetConfigBuilder gets a config from Builder's queue of pending configs.
 	GetConfigBuilder(context.Context, *GetConfigRequest) (*GetConfigResponse, error)
+	// GetAllConfigs gets all configs from the database.
 	GetAllConfigs(context.Context, *GetAllConfigsRequest) (*GetAllConfigsResponse, error)
-	// Delete
+	// DeleteConfig sets the manifest to null, effectively forcing the deletion of the infrastructure
+	// defined by the manifest on the very next config (diff-) check.
 	DeleteConfig(context.Context, *DeleteConfigRequest) (*DeleteConfigResponse, error)
+	// DeleteConfigFromDB deletes the config from the database.
 	DeleteConfigFromDB(context.Context, *DeleteConfigRequest) (*DeleteConfigResponse, error)
-	// Update
+	// UpdateNodepool updates specific nodepool from the config. Used mainly for autoscaling.
 	UpdateNodepool(context.Context, *UpdateNodepoolRequest) (*UpdateNodepoolResponse, error)
 	mustEmbedUnimplementedContextBoxServiceServer()
 }

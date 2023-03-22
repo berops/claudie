@@ -22,16 +22,27 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type KuberServiceClient interface {
+	// RemoveLbScrapeConfig removes scrape config for every LB detached to this cluster.
 	RemoveLbScrapeConfig(ctx context.Context, in *RemoveLbScrapeConfigRequest, opts ...grpc.CallOption) (*RemoveLbScrapeConfigResponse, error)
+	// StoreLbScrapeConfig stores scrape config for every LB attached to this cluster.
 	StoreLbScrapeConfig(ctx context.Context, in *StoreLbScrapeConfigRequest, opts ...grpc.CallOption) (*StoreLbScrapeConfigResponse, error)
+	// StoreClusterMetadata creates a secret, which holds the private key and a list of public IP addresses of the cluster supplied.
 	StoreClusterMetadata(ctx context.Context, in *StoreClusterMetadataRequest, opts ...grpc.CallOption) (*StoreClusterMetadataResponse, error)
+	// DeleteClusterMetadata deletes the secret holding the private key and public IP addresses of the cluster supplied.
 	DeleteClusterMetadata(ctx context.Context, in *DeleteClusterMetadataRequest, opts ...grpc.CallOption) (*DeleteClusterMetadataResponse, error)
+	// SetUpStorage installs Longhorn into the cluster.
 	SetUpStorage(ctx context.Context, in *SetUpStorageRequest, opts ...grpc.CallOption) (*SetUpStorageResponse, error)
+	// StoreKubeconfig creates a secret, which holds the kubeconfig of a Claudie-created cluster.
 	StoreKubeconfig(ctx context.Context, in *StoreKubeconfigRequest, opts ...grpc.CallOption) (*StoreKubeconfigResponse, error)
+	// DeleteKubeconfig removes the secret that holds the kubeconfig of a Claudie-created cluster.
 	DeleteKubeconfig(ctx context.Context, in *DeleteKubeconfigRequest, opts ...grpc.CallOption) (*DeleteKubeconfigResponse, error)
+	// DeleteNodes deletes the specified nodes from a k8s cluster.
 	DeleteNodes(ctx context.Context, in *DeleteNodesRequest, opts ...grpc.CallOption) (*DeleteNodesResponse, error)
+	// PatchNodes uses kubectl patch to change the node manifest.
 	PatchNodes(ctx context.Context, in *PatchNodeTemplateRequest, opts ...grpc.CallOption) (*PatchNodeTemplateResponse, error)
+	// SetUpClusterAutoscaler deploys Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
 	SetUpClusterAutoscaler(ctx context.Context, in *SetUpClusterAutoscalerRequest, opts ...grpc.CallOption) (*SetUpClusterAutoscalerResponse, error)
+	// DestroyClusterAutoscaler deletes Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
 	DestroyClusterAutoscaler(ctx context.Context, in *DestroyClusterAutoscalerRequest, opts ...grpc.CallOption) (*DestroyClusterAutoscalerResponse, error)
 }
 
@@ -146,16 +157,27 @@ func (c *kuberServiceClient) DestroyClusterAutoscaler(ctx context.Context, in *D
 // All implementations must embed UnimplementedKuberServiceServer
 // for forward compatibility
 type KuberServiceServer interface {
+	// RemoveLbScrapeConfig removes scrape config for every LB detached to this cluster.
 	RemoveLbScrapeConfig(context.Context, *RemoveLbScrapeConfigRequest) (*RemoveLbScrapeConfigResponse, error)
+	// StoreLbScrapeConfig stores scrape config for every LB attached to this cluster.
 	StoreLbScrapeConfig(context.Context, *StoreLbScrapeConfigRequest) (*StoreLbScrapeConfigResponse, error)
+	// StoreClusterMetadata creates a secret, which holds the private key and a list of public IP addresses of the cluster supplied.
 	StoreClusterMetadata(context.Context, *StoreClusterMetadataRequest) (*StoreClusterMetadataResponse, error)
+	// DeleteClusterMetadata deletes the secret holding the private key and public IP addresses of the cluster supplied.
 	DeleteClusterMetadata(context.Context, *DeleteClusterMetadataRequest) (*DeleteClusterMetadataResponse, error)
+	// SetUpStorage installs Longhorn into the cluster.
 	SetUpStorage(context.Context, *SetUpStorageRequest) (*SetUpStorageResponse, error)
+	// StoreKubeconfig creates a secret, which holds the kubeconfig of a Claudie-created cluster.
 	StoreKubeconfig(context.Context, *StoreKubeconfigRequest) (*StoreKubeconfigResponse, error)
+	// DeleteKubeconfig removes the secret that holds the kubeconfig of a Claudie-created cluster.
 	DeleteKubeconfig(context.Context, *DeleteKubeconfigRequest) (*DeleteKubeconfigResponse, error)
+	// DeleteNodes deletes the specified nodes from a k8s cluster.
 	DeleteNodes(context.Context, *DeleteNodesRequest) (*DeleteNodesResponse, error)
+	// PatchNodes uses kubectl patch to change the node manifest.
 	PatchNodes(context.Context, *PatchNodeTemplateRequest) (*PatchNodeTemplateResponse, error)
+	// SetUpClusterAutoscaler deploys Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
 	SetUpClusterAutoscaler(context.Context, *SetUpClusterAutoscalerRequest) (*SetUpClusterAutoscalerResponse, error)
+	// DestroyClusterAutoscaler deletes Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
 	DestroyClusterAutoscaler(context.Context, *DestroyClusterAutoscalerRequest) (*DestroyClusterAutoscalerResponse, error)
 	mustEmbedUnimplementedKuberServiceServer()
 }

@@ -55,18 +55,25 @@ message UpdateNodepoolRequest {
 message UpdateNodepoolResponse {}
 
 service ContextBoxService {
-  // Save
+  // SaveConfigFrontEnd saves the config parsed by Frontend.
   rpc SaveConfigFrontEnd(SaveConfigRequest) returns (SaveConfigResponse);
+  // SaveConfigScheduler saves the config parsed by Scheduler.
   rpc SaveConfigScheduler(SaveConfigRequest) returns (SaveConfigResponse);
+  // SaveConfigBuilder saves the config parsed by Builder.
   rpc SaveConfigBuilder(SaveConfigRequest) returns (SaveConfigResponse);
-  // Get
+  // GetConfigFromDB gets a single config from the database.
   rpc GetConfigFromDB(GetConfigFromDBRequest) returns (GetConfigFromDBResponse);
+  // GetConfigScheduler gets a config from Scheduler's queue of pending configs.
   rpc GetConfigScheduler(GetConfigRequest) returns (GetConfigResponse);
+  // GetConfigBuilder gets a config from Builder's queue of pending configs.
   rpc GetConfigBuilder(GetConfigRequest) returns (GetConfigResponse);
+  // GetAllConfigs gets all configs from the database.
   rpc GetAllConfigs(GetAllConfigsRequest) returns (GetAllConfigsResponse);
-  // Delete
+  // DeleteConfig sets the manifest to null, effectively forcing the deletion of the infrastructure
+  // defined by the manifest on the very next config (diff-) check.
   rpc DeleteConfig(DeleteConfigRequest) returns (DeleteConfigResponse);
+  // DeleteConfigFromDB deletes the config from the database.
   rpc DeleteConfigFromDB(DeleteConfigRequest) returns (DeleteConfigResponse);
-  // Update
+  // UpdateNodepool updates specific nodepool from the config. Used mainly for autoscaling.
   rpc UpdateNodepool(UpdateNodepoolRequest) returns (UpdateNodepoolResponse);
 }

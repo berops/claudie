@@ -22,7 +22,9 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TerraformerServiceClient interface {
+	// BuildInfrastructure builds the infrastructure based on the provided desired state (includes addition/deletion of *stuff*).
 	BuildInfrastructure(ctx context.Context, in *BuildInfrastructureRequest, opts ...grpc.CallOption) (*BuildInfrastructureResponse, error)
+	// DestroyInfrastructure destroys the infrastructure completely.
 	DestroyInfrastructure(ctx context.Context, in *DestroyInfrastructureRequest, opts ...grpc.CallOption) (*DestroyInfrastructureResponse, error)
 }
 
@@ -56,7 +58,9 @@ func (c *terraformerServiceClient) DestroyInfrastructure(ctx context.Context, in
 // All implementations must embed UnimplementedTerraformerServiceServer
 // for forward compatibility
 type TerraformerServiceServer interface {
+	// BuildInfrastructure builds the infrastructure based on the provided desired state (includes addition/deletion of *stuff*).
 	BuildInfrastructure(context.Context, *BuildInfrastructureRequest) (*BuildInfrastructureResponse, error)
+	// DestroyInfrastructure destroys the infrastructure completely.
 	DestroyInfrastructure(context.Context, *DestroyInfrastructureRequest) (*DestroyInfrastructureResponse, error)
 	mustEmbedUnimplementedTerraformerServiceServer()
 }

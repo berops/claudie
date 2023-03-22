@@ -39,24 +39,24 @@ Context box is Claudie's "control unit". It holds pending configs, which need to
 ### API
 
 ```go
-  // Saves the config parsed by Frontend.
+  // SaveConfigFrontEnd saves the config parsed by Frontend.
   rpc SaveConfigFrontEnd(SaveConfigRequest) returns (SaveConfigResponse);
-  // Saves the config parsed by Scheduler.
+  // SaveConfigScheduler saves the config parsed by Scheduler.
   rpc SaveConfigScheduler(SaveConfigRequest) returns (SaveConfigResponse);
-  // Saves the config parsed by Builder.
+  // SaveConfigBuilder saves the config parsed by Builder.
   rpc SaveConfigBuilder(SaveConfigRequest) returns (SaveConfigResponse);
-  // Gets a single config from the database.
+  // GetConfigFromDB gets a single config from the database.
   rpc GetConfigFromDB(GetConfigFromDBRequest) returns (GetConfigFromDBResponse);
-  // Gets a config from Scheduler's queue of pending configs.
+  // GetConfigScheduler gets a config from Scheduler's queue of pending configs.
   rpc GetConfigScheduler(GetConfigRequest) returns (GetConfigResponse);
-  // Gets a config from Builder's queue of pending configs.
+  // GetConfigBuilder gets a config from Builder's queue of pending configs.
   rpc GetConfigBuilder(GetConfigRequest) returns (GetConfigResponse);
-  // Gets all configs from the database.
+  // GetAllConfigs gets all configs from the database.
   rpc GetAllConfigs(GetAllConfigsRequest) returns (GetAllConfigsResponse);
-  // Sets the manifest to null, effectively forcing the deletion of the infrastructure
+  // DeleteConfig sets the manifest to null, effectively forcing the deletion of the infrastructure
   // defined by the manifest on the very next config (diff-) check.
   rpc DeleteConfig(DeleteConfigRequest) returns (DeleteConfigResponse);
-  // Deletes the config from the database.
+  // DeleteConfigFromDB deletes the config from the database.
   rpc DeleteConfigFromDB(DeleteConfigRequest) returns (DeleteConfigResponse);
   // UpdateNodepool updates specific nodepool from the config. Used mainly for autoscaling.
   rpc UpdateNodepool(UpdateNodepoolRequest) returns (UpdateNodepoolResponse);
@@ -116,9 +116,9 @@ Terraformer creates or destroys infrastructure (specified in the desired state) 
 ### API
 
 ```go
-  // Builds the infrastructure based on the provided desired state (includes addition/deletion of *stuff*).
+  // BuildInfrastructure builds the infrastructure based on the provided desired state (includes addition/deletion of *stuff*).
   rpc BuildInfrastructure(BuildInfrastructureRequest) returns (BuildInfrastructureResponse);
-  // Destroys the infrastructure completely.
+  // DestroyInfrastructure destroys the infrastructure completely.
   rpc DestroyInfrastructure(DestroyInfrastructureRequest) returns (DestroyInfrastructureResponse);
 ```
 
@@ -142,9 +142,9 @@ Ansibler uses Ansible to:
 ```go
   // InstallNodeRequirements installs any requirements there are on all of the nodes.
   rpc InstallNodeRequirements(InstallRequest) returns (InstallResponse);
-  // InstallVPN sets up a VPN between the nodes in the k8s cluster and lb clusters.
+  // InstallVPN sets up a VPN between the nodes in the k8s cluster and LB clusters.
   rpc InstallVPN(InstallRequest) returns (InstallResponse);
-  // SetUpLoadbalancers sets up the load balancers, the DNS and verifies their configuration.
+  // SetUpLoadbalancers sets up the load balancers together with the DNS and verifies their configuration.
   rpc SetUpLoadbalancers(SetUpLBRequest) returns (SetUpLBResponse);
   // TeardownLoadBalancers correctly destroys the load balancers attached to a k8s
   // cluster by choosing a new ApiServer endpoint.
