@@ -101,7 +101,7 @@ func getClaudieState(projectName, clusterName string) (*pb.K8Scluster, error) {
 
 // getNodesCache returns a map of nodeCache, regarding all information needed based on the nodepools with autoscaling enabled.
 func getNodesCache(nodepools []*pb.NodePool) map[string]*nodeCache {
-	var ngc = make(map[string]*nodeCache, len(nodepools))
+	var nc = make(map[string]*nodeCache, len(nodepools))
 	for _, np := range nodepools {
 		// Cache nodepools, which are autoscaled.
 		if np.AutoscalerConfig != nil {
@@ -113,10 +113,10 @@ func getNodesCache(nodepools []*pb.NodePool) map[string]*nodeCache {
 				Debug:   fmt.Sprintf("Nodepool %s [min %d, max %d]", np.Name, np.AutoscalerConfig.Min, np.AutoscalerConfig.Max),
 			}
 			// Append ng to the final slice.
-			ngc[np.Name] = &nodeCache{nodeGroup: ng, nodepool: np, targetSize: np.Count}
+			nc[np.Name] = &nodeCache{nodeGroup: ng, nodepool: np, targetSize: np.Count}
 		}
 	}
-	return ngc
+	return nc
 }
 
 // NodeGroups returns all node groups configured for this cloud provider.

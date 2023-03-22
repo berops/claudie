@@ -100,9 +100,8 @@ func (c *ClaudieCloudProvider) NodeGroupDecreaseTargetSize(_ context.Context, re
 		if newSize >= 0 {
 			c.nodesCache[req.GetId()].targetSize = newSize
 			return &protos.NodeGroupDecreaseTargetSizeResponse{}, nil
-		} else {
-			return nil, fmt.Errorf("nodeGroup %s can not decrease target size bellow zero; current target size %d, requested delta %d", req.Id, ngc.targetSize, req.Delta)
 		}
+		return nil, fmt.Errorf("nodeGroup %s can not decrease target size bellow zero; current target size %d, requested delta %d", req.Id, ngc.targetSize, req.Delta)
 	}
 	return nil, fmt.Errorf("nodeGroup %s was not found", req.Id)
 }
@@ -138,7 +137,7 @@ func (c *ClaudieCloudProvider) NodeGroupTemplateNodeInfo(_ context.Context, req 
 	return &protos.NodeGroupTemplateNodeInfoResponse{NodeInfo: info}, nil
 }
 
-// GetOptions returns NodeGroupAutoscalingOptions that should be used for this particular
+// NodeGroupGetOptions returns NodeGroupAutoscalingOptions that should be used for this particular
 // NodeGroup. Returning a grpc error will result in using default options.
 // Implementation optional
 func (c *ClaudieCloudProvider) NodeGroupGetOptions(_ context.Context, req *protos.NodeGroupAutoscalingOptionsRequest) (*protos.NodeGroupAutoscalingOptionsResponse, error) {

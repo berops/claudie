@@ -71,7 +71,7 @@ func NewNodeManager(nodepools []*pb.NodePool) (*NodeManager, error) {
 	return nm, nil
 }
 
-// GetOS returns operating system name as a string.
+// GetOs returns operating system name as a string.
 func (nm *NodeManager) GetOs(image string) string {
 	// Only supported OS
 	return "ubuntu"

@@ -24,7 +24,7 @@ var (
 	// interrupt error
 	errInterrupt = errors.New("interrupt")
 	// hidden file error
-	errHidden = errors.New("hidden file")
+	errHiddenOrDir = errors.New("hidden file")
 )
 
 type idInfo struct {
@@ -44,13 +44,12 @@ func clientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
 	return c, cc
 }
 
-// checksumsEq will check if two checksums are equal
+// checksumsEqual will check if two checksums are equal
 func checksumsEqual(checksum1 []byte, checksum2 []byte) bool {
 	if len(checksum1) > 0 && len(checksum2) > 0 && bytes.Equal(checksum1, checksum2) {
 		return true
-	} else {
-		return false
 	}
+	return false
 }
 
 // configChecker function will check if the config has been applied every 30s

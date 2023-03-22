@@ -129,7 +129,7 @@ desired:
 				} else if currentNp.AutoscalerConfig == nil && desiredNp.AutoscalerConfig != nil {
 					// Desired is autoscaled, but not current
 					if desiredNp.AutoscalerConfig.Min > currentNp.Count {
-						// Cannot have less nodes than defined min
+						// Cannot have fewer nodes than defined min
 						desiredNp.Count = desiredNp.AutoscalerConfig.Min
 					} else if desiredNp.AutoscalerConfig.Max < currentNp.Count {
 						// Cannot have more nodes than defined max

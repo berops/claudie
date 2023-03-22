@@ -33,11 +33,11 @@ const (
 func (nm *NodeManager) cacheHetzner(np *pb.NodePool) error {
 	// Create client and create cache.
 	hc := hcloud.NewClient(hcloud.WithToken(np.Provider.Credentials), hcloud.WithHTTPClient(http.DefaultClient))
-	if servers, err := hc.ServerType.All(context.Background()); err != nil {
+	servers, err := hc.ServerType.All(context.Background())
+	if err != nil {
 		return fmt.Errorf("hetzner client got error %w", err)
-	} else {
-		nm.hetznerVMs = getTypeInfosHetzner(servers)
 	}
+	nm.hetznerVMs = getTypeInfoHetzner(servers)
 	return nil
 }
 
@@ -68,15 +68,15 @@ func (nm *NodeManager) cacheAws(np *pb.NodePool) error {
 	var token *string
 	// Use while loop to support paging.
 	for {
-		if res, err := client.DescribeInstanceTypes(context.Background(), &ec2.DescribeInstanceTypesInput{MaxResults: &maxResults, NextToken: token}); err != nil {
+		res, err := client.DescribeInstanceTypes(context.Background(), &ec2.DescribeInstanceTypesInput{MaxResults: &maxResults, NextToken: token})
+		if err != nil {
 			return fmt.Errorf("AWS client got error : %w", err)
-		} else {
-			nm.awsVMs = mergeMaps(getTypeInfosAws(res.InstanceTypes), nm.awsVMs)
-			// Check if there are any more results to query.
-			token = res.NextToken
-			if res.NextToken == nil {
-				break
-			}
+		}
+		nm.awsVMs = mergeMaps(getTypeInfoAws(res.InstanceTypes), nm.awsVMs)
+		// Check if there are any more results to query.
+		token = res.NextToken
+		if res.NextToken == nil {
+			break
 		}
 	}
 	return nil
@@ -115,7 +115,7 @@ func (nm *NodeManager) cacheGcp(np *pb.NodePool) error {
 		}
 		machineTypes = append(machineTypes, mt)
 	}
-	nm.gcpVMs = mergeMaps(getTypeInfosGcp(machineTypes), nm.gcpVMs)
+	nm.gcpVMs = mergeMaps(getTypeInfoGcp(machineTypes), nm.gcpVMs)
 	return nil
 }
 
@@ -139,7 +139,7 @@ func (nm *NodeManager) cacheOci(np *pb.NodePool) error {
 		if r.Items == nil || len(r.Items) == 0 {
 			return fmt.Errorf("OCI client got empty response")
 		}
-		nm.ociVMs = mergeMaps(getTypeInfosOci(r.Items), nm.ociVMs)
+		nm.ociVMs = mergeMaps(getTypeInfoOci(r.Items), nm.ociVMs)
 		if r.OpcNextPage != nil {
 			req.Page = r.OpcNextPage
 		} else {
@@ -149,7 +149,7 @@ func (nm *NodeManager) cacheOci(np *pb.NodePool) error {
 	return nil
 }
 
-// cacheOci function uses oci-go-sdk module to query supported VMs and their info. If the query is successful, the VM info is saved in cache.
+// cacheAzure function uses azure-sdk-for-go module to query supported VMs and their info. If the query is successful, the VM info is saved in cache.
 func (nm *NodeManager) cacheAzure(np *pb.NodePool) error {
 	cred, err := azidentity.NewClientSecretCredential(np.Provider.AzureTenantId, np.Provider.AzureClientId, np.Provider.Credentials, nil)
 	if err != nil {
@@ -168,7 +168,7 @@ func (nm *NodeManager) cacheAzure(np *pb.NodePool) error {
 		if err != nil {
 			return fmt.Errorf("azure client got error : %w", err)
 		}
-		nm.azureVMs = mergeMaps(getTypeInfosAzure(nextResult.Value), nm.azureVMs)
+		nm.azureVMs = mergeMaps(getTypeInfoAzure(nextResult.Value), nm.azureVMs)
 	}
 	return nil
 }

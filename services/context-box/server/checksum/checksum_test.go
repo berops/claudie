@@ -6,8 +6,7 @@ import (
 	"testing"
 )
 
-// TestCalculateChecksum tests whether the output of CalculateCheckum is what
-// we expect.
+// TestCompareChecksums tests whether the output of Equal is what we expect.
 func TestCalculateChecksum(t *testing.T) {
 	testCases := []struct {
 		desc string

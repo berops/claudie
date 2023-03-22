@@ -11,8 +11,8 @@ import (
 	"github.com/oracle/oci-go-sdk/v65/core"
 )
 
-// getTypeInfosHetzner converts []*hcloud.ServerType to typeInfo map of instances, where keys are instance types.
-func getTypeInfosHetzner(rawInfo []*hcloud.ServerType) map[string]*typeInfo {
+// getTypeInfoHetzner converts []*hcloud.ServerType to typeInfo map of instances, where keys are instance types.
+func getTypeInfoHetzner(rawInfo []*hcloud.ServerType) map[string]*typeInfo {
 	m := make(map[string]*typeInfo, len(rawInfo))
 	for _, server := range rawInfo {
 		// The cpx versions are called ccx in hcloud-go api.
@@ -26,8 +26,8 @@ func getTypeInfosHetzner(rawInfo []*hcloud.ServerType) map[string]*typeInfo {
 	return m
 }
 
-// getTypeInfosAws converts []types.InstanceTypeInfo to typeInfo map of instances, where keys are instance types.
-func getTypeInfosAws(rawInfo []types.InstanceTypeInfo) map[string]*typeInfo {
+// getTypeInfoAws converts []types.InstanceTypeInfo to typeInfo map of instances, where keys are instance types.
+func getTypeInfoAws(rawInfo []types.InstanceTypeInfo) map[string]*typeInfo {
 	m := make(map[string]*typeInfo, len(rawInfo))
 	for _, instance := range rawInfo {
 		// Ignore disk as it is set on nodepool level
@@ -40,8 +40,8 @@ func getTypeInfosAws(rawInfo []types.InstanceTypeInfo) map[string]*typeInfo {
 	return m
 }
 
-// getTypeInfosAws converts []*computepb.MachineTypeto typeInfo map of instances, where keys are instance types.
-func getTypeInfosGcp(rawInfo []*computepb.MachineType) map[string]*typeInfo {
+// getTypeInfoAws converts []*computepb.MachineTypeto typeInfo map of instances, where keys are instance types.
+func getTypeInfoGcp(rawInfo []*computepb.MachineType) map[string]*typeInfo {
 	m := make(map[string]*typeInfo, len(rawInfo))
 	for _, instance := range rawInfo {
 		m[*instance.Name] = &typeInfo{
@@ -52,8 +52,8 @@ func getTypeInfosGcp(rawInfo []*computepb.MachineType) map[string]*typeInfo {
 	return m
 }
 
-// getTypeInfosAws converts []core.Shape to typeInfo map of instances, where keys are instance types.
-func getTypeInfosOci(rawInfo []core.Shape) map[string]*typeInfo {
+// getTypeInfoAws converts []core.Shape to typeInfo map of instances, where keys are instance types.
+func getTypeInfoOci(rawInfo []core.Shape) map[string]*typeInfo {
 	m := make(map[string]*typeInfo, len(rawInfo))
 	for _, shape := range rawInfo {
 		m[*shape.Shape] = &typeInfo{
@@ -64,8 +64,8 @@ func getTypeInfosOci(rawInfo []core.Shape) map[string]*typeInfo {
 	return m
 }
 
-// getTypeInfosAws converts []*armcompute.VirtualMachineSize to typeInfo map of instances, where keys are instance types.
-func getTypeInfosAzure(rawInfo []*armcompute.VirtualMachineSize) map[string]*typeInfo {
+// getTypeInfoAws converts []*armcompute.VirtualMachineSize to typeInfo map of instances, where keys are instance types.
+func getTypeInfoAzure(rawInfo []*armcompute.VirtualMachineSize) map[string]*typeInfo {
 	m := make(map[string]*typeInfo, len(rawInfo))
 	for _, vm := range rawInfo {
 		m[*vm.Name] = &typeInfo{

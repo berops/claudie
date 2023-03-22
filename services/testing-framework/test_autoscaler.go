@@ -96,7 +96,7 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 	log.Info().Msgf("Waiting %d minutes to see if autoscaler starts the scale up", scaleUpTimeout)
 	time.Sleep(scaleUpTimeout * time.Minute)
 
-	// Check if build has been started, if yes, error
+	// Check if build has been started, if no, error
 	if res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: config.Id, Type: pb.IdType_HASH}); err != nil {
 		if !checksumsEqual(res.Config.DsChecksum, res.Config.CsChecksum) {
 			return fmt.Errorf("some cluster/s in config %s have been scaled up, when they should not", config.Name)
@@ -123,7 +123,7 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 	log.Info().Msgf("Waiting %d minutes to see if autoscaler starts the scale up", scaleUpTimeout)
 	time.Sleep(scaleUpTimeout * time.Minute)
 
-	// Check if build has been started, if yes, error
+	// Check if build has been started, if no, error
 	if res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: config.Id, Type: pb.IdType_HASH}); err != nil {
 		if checksumsEqual(res.Config.DsChecksum, res.Config.CsChecksum) {
 			return fmt.Errorf("some cluster/s in config %s have not been scaled up, when they should have", config.Name)

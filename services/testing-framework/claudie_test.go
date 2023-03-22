@@ -182,7 +182,7 @@ func processTestSet(ctx context.Context, setName string, c pb.ContextBoxServiceC
 		// Apply test set manifest
 		if errIgnore = applyManifest(setName, pathToTestSet, manifest, &idInfo, c); errIgnore != nil {
 			// https://github.com/berops/claudie/pull/243#issuecomment-1218237412
-			if errors.Is(errIgnore, errHidden) {
+			if errors.Is(errIgnore, errHiddenOrDir) {
 				continue
 			}
 			return fmt.Errorf("error applying test set %s, manifest %s from %s : %w", manifest.Name(), setName, manifest.Name(), errIgnore)
@@ -226,7 +226,7 @@ func processTestSet(ctx context.Context, setName string, c pb.ContextBoxServiceC
 	// Clean up
 	log.Info().Msgf("Deleting the infra from test set %s", setName)
 
-	// Delete manifest from DB to clean up the infra after as errCleanUp is nil and deferred function will not clean up.
+	// Delete manifest from DB to clean up the infra as errCleanUp is nil and deferred function will not clean up.
 	if errIgnore = cleanUp(setName, idInfo.id, c); errIgnore != nil {
 		return fmt.Errorf("error while cleaning up the infra for test set %s : %w", setName, errIgnore)
 	}
@@ -235,7 +235,7 @@ func processTestSet(ctx context.Context, setName string, c pb.ContextBoxServiceC
 
 func applyManifest(setName, pathToTestSet string, manifest fs.DirEntry, idInfo *idInfo, c pb.ContextBoxServiceClient) error {
 	if manifest.IsDir() || manifest.Name()[0] == '.' {
-		return errHidden
+		return errHiddenOrDir
 	}
 
 	// create a path and read the file
