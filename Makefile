@@ -93,4 +93,4 @@ containerimgs:
 		echo " --- building $$service --- "; \
 		DOCKER_BUILDKIT=1 docker build --build-arg=TARGETARCH="$(TARGETARCH)" -t "ghcr.io/berops/claudie/$$service:$(REV)" -f ./services/$$service/Dockerfile . ; \
 	done
-	sed -i "/image: ghcr.io\/berops\/claudie\/autoscaler-adapter:/c\          image: ghcr.io\/berops\/claudie\/autoscaler-adapter" services/kuber/templates/autoscaler-adapter.goyaml
+	sed -i "s/adapter:.*$/adapter/" services/kuber/templates/autoscaler-adapter.goyaml
