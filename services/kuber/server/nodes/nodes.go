@@ -13,7 +13,7 @@ import (
 
 const (
 	longhornNamespace     = "longhorn-system"
-	pvcReplicationTimeout = 10
+	pvcReplicationTimeout = 10 * time.Second
 )
 
 type etcdPodInfo struct {
@@ -195,8 +195,8 @@ func assureReplication(kc kubectl.Kubectl, worker string) error {
 					return fmt.Errorf("error while increasing number of replicas in volume %s from cluster : %w", v.Metadata.Name, err)
 				}
 				// Wait pvcReplicationTimeout for Longhorn to create new replica.
-				log.Info().Msgf("Waiting %d seconds for new replicas to be scheduled if possible for node %s", pvcReplicationTimeout, worker)
-				time.Sleep(pvcReplicationTimeout * time.Second)
+				log.Info().Msgf("Waiting %.0f seconds for new replicas to be scheduled if possible for node %s", pvcReplicationTimeout.Seconds(), worker)
+				time.Sleep(pvcReplicationTimeout)
 				// Decrease number of replicas in volume -> original state.
 				if err := revertReplicaCount(v, kc); err != nil {
 					return fmt.Errorf("error while increasing number of replicas in volume %s : %w", v.Metadata.Name, err)
