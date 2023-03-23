@@ -47,11 +47,12 @@ nodePools:
       serverType: cpx11
       image: ubuntu-22.04
       diskSize: 50
+
     - name: gcp-control
       providerSpec:
         name: gcp-1
-        region: europe-west1
-        zone: europe-west1-b
+        region: europe-west2
+        zone: europe-west2-c
       count: 2
       serverType: e2-medium
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
@@ -59,12 +60,13 @@ nodePools:
     - name: gcp-compute
       providerSpec:
         name: gcp-1
-        region: europe-west2
-        zone: europe-west2-c
+        region: europe-west1
+        zone: europe-west1-b
       count: 4
       serverType: e2-small
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
       diskSize: 50
+
     - name: oci-control
       providerSpec:
         name: oci-1
@@ -87,6 +89,7 @@ nodePools:
       # https://docs.oracle.com/en-us/iaas/images/image/674d0b41-aee8-4c0b-bf99-9e100d90f241/
       image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
       diskSize: 50
+
     - name: aws-control
       providerSpec:
         name: aws-1
@@ -107,6 +110,7 @@ nodePools:
       #ubuntu
       image: ami-03c476a1ca8e3ebdc
       diskSize: 50
+
     - name: azure-control
       providerSpec:
         name: azure-1
@@ -125,6 +129,7 @@ nodePools:
       serverType: Standard_B2s
       image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
       diskSize: 50
+
 kubernetes:
   clusters:
     - name: ts1-hetzner
