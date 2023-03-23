@@ -7,10 +7,12 @@ import (
 	"os"
 	"strings"
 
+	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -36,6 +38,11 @@ const (
 // SetUp function will set up the longhorn on the k8s cluster saved in l.Longhorn
 func (l Longhorn) SetUp() error {
 	kubectl := kubectl.Kubectl{Kubeconfig: l.Cluster.GetKubeconfig()}
+	if log.Logger.GetLevel() == zerolog.DebugLevel {
+		prefix := fmt.Sprintf("%s-%s", l.Cluster.ClusterInfo.Name, l.Cluster.ClusterInfo.Hash)
+		kubectl.Stdout = comm.GetStdOut(prefix)
+		kubectl.Stderr = comm.GetStdErr(prefix)
+	}
 	// apply longhorn.yaml
 	err := kubectl.KubectlApply(longhornYaml, "")
 	if err != nil {

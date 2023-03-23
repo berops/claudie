@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"strings"
 
+	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -48,6 +50,11 @@ func New(masterNodes, workerNodes []string, cluster *pb.K8Scluster) *Deleter {
 // return nil if successful, error otherwise
 func (d *Deleter) DeleteNodes() (*pb.K8Scluster, error) {
 	kubectl := kubectl.Kubectl{Kubeconfig: d.cluster.Kubeconfig}
+	if log.Logger.GetLevel() == zerolog.DebugLevel {
+		prefix := fmt.Sprintf("%s-%s", d.cluster.ClusterInfo.Name, d.cluster.ClusterInfo.Hash)
+		kubectl.Stdout = comm.GetStdOut(prefix)
+		kubectl.Stderr = comm.GetStdErr(prefix)
+	}
 	// get real node names
 	realNodeNamesBytes, err := kubectl.KubectlGetNodeNames()
 	realNodeNames := strings.Split(string(realNodeNamesBytes), "\n")

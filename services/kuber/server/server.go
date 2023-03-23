@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/healthcheck"
 	"github.com/berops/claudie/internal/kubectl"
@@ -22,6 +23,7 @@ import (
 	"github.com/berops/claudie/services/kuber/server/nodes"
 	scrapeconfig "github.com/berops/claudie/services/kuber/server/scrapeConfig"
 	"github.com/berops/claudie/services/kuber/server/secret"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -159,6 +161,11 @@ func (s *server) DeleteClusterMetadata(ctx context.Context, req *pb.DeleteCluste
 	log.Info().Msgf("Deleting cluster metadata secret for cluster %s", req.Cluster.ClusterInfo.Name)
 
 	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
+	if log.Logger.GetLevel() == zerolog.DebugLevel {
+		prefix := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
+		kc.Stdout = comm.GetStdOut(prefix)
+		kc.Stderr = comm.GetStdErr(prefix)
+	}
 	secretName := fmt.Sprintf("%s-%s-metadata", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
 	if err := kc.KubectlDeleteResource("secret", secretName, namespace); err != nil {
 		log.Warn().Msgf("Failed to remove cluster metadata for %s: %s", req.Cluster.ClusterInfo.Name, err)
@@ -204,6 +211,11 @@ func (s *server) DeleteKubeconfig(ctx context.Context, req *pb.DeleteKubeconfigR
 	cluster := req.GetCluster()
 	log.Info().Msgf("Deleting kubeconfig secret for cluster %s", cluster.ClusterInfo.Name)
 	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
+	if log.Logger.GetLevel() == zerolog.DebugLevel {
+		prefix := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
+		kc.Stdout = comm.GetStdOut(prefix)
+		kc.Stderr = comm.GetStdErr(prefix)
+	}
 	secretName := fmt.Sprintf("%s-%s-kubeconfig", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
 
 	if err := kc.KubectlDeleteResource("secret", secretName, namespace); err != nil {

@@ -449,7 +449,7 @@ func setUpNginx(lb *pb.LBcluster, targetedNodepool []*pb.NodePool, directory str
 	}
 	//run the playbook
 	ansible := ansible.Ansible{Playbook: nginxPlaybook, Inventory: filepath.Join("..", inventoryFile), Directory: directory}
-	err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s", lb.ClusterInfo.Name))
+	err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s-%s", lb.ClusterInfo.Name, lb.ClusterInfo.Hash))
 	if err != nil {
 		return fmt.Errorf("error while running ansible for %s : %w", lb.ClusterInfo.Name, err)
 	}
@@ -481,7 +481,7 @@ func setUpNodeExporter(lb *pb.LBcluster, directory string) error {
 
 	//run the playbook
 	ansible := ansible.Ansible{Playbook: nodeExporterPlaybook, Inventory: filepath.Join("..", inventoryFile), Directory: directory}
-	if err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s", lb.ClusterInfo.Name)); err != nil {
+	if err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s-%s", lb.ClusterInfo.Name, lb.ClusterInfo.Hash)); err != nil {
 		return fmt.Errorf("error while running ansible for %s : %w", lb.ClusterInfo.Name, err)
 	}
 

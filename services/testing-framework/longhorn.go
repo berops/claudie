@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -30,6 +32,11 @@ func testLonghornDeployment(config *pb.GetConfigFromDBResponse) error {
 		// check number of nodes in nodes.longhorn.io
 
 		kubectl := kubectl.Kubectl{Kubeconfig: cluster.Kubeconfig}
+		if log.Logger.GetLevel() == zerolog.DebugLevel {
+			prefix := fmt.Sprintf("%s-%s", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
+			kubectl.Stdout = comm.GetStdOut(prefix)
+			kubectl.Stderr = comm.GetStdErr(prefix)
+		}
 		err := checkLonghornNodes(cluster, kubectl)
 		if err != nil {
 			return fmt.Errorf("error while checking the nodes.longhorn.io in cluster %s : %w", cluster.ClusterInfo.Name, err)

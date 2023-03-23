@@ -70,7 +70,7 @@ func (*server) InstallVPN(_ context.Context, req *pb.InstallRequest) (*pb.Instal
 		})
 	}
 
-	if err := installWireguardVPN(req.Desired.ClusterInfo.Name, info); err != nil {
+	if err := installWireguardVPN(fmt.Sprintf("%s-%s", req.Desired.ClusterInfo.Name, req.Desired.ClusterInfo.Hash), info); err != nil {
 		log.Error().Msgf("Error encountered while installing VPN for cluster %s project %s : %v", req.Desired.ClusterInfo.Name, req.ProjectName, err)
 		return nil, fmt.Errorf("error encountered while installing VPN for cluster %s project %s : %w", req.Desired.ClusterInfo.Name, req.ProjectName, err)
 	}
