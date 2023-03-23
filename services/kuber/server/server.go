@@ -121,7 +121,6 @@ func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterM
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal %s cluster metadata: %w", req.GetCluster().GetClusterInfo().GetName(), err)
 	}
-	log.Info().Msgf("Storing cluster metadata on cluster %s", req.Cluster.ClusterInfo.Name)
 
 	// local deployment - print metadata
 	if namespace := envs.Namespace; namespace == "" {
@@ -134,6 +133,7 @@ func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterM
 		// log.Info().Msgf("Cluster metadata from cluster %s \n%s", req.GetCluster().ClusterInfo.Name, buffer.String())
 		return &pb.StoreClusterMetadataResponse{}, nil
 	}
+	log.Info().Msgf("Storing cluster metadata on cluster %s", req.Cluster.ClusterInfo.Name)
 
 	clusterID := fmt.Sprintf("%s-%s", req.GetCluster().ClusterInfo.Name, req.GetCluster().ClusterInfo.Hash)
 	clusterDir := filepath.Join(outputDir, clusterID)
