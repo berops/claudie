@@ -81,7 +81,7 @@ func run() error {
 	}
 	defer utils.CloseClientConnection(conn)
 
-	log.Info().Msgf("Initiated connection Context-box: %s, waiting for connection to be in state: %s", envs.ContextBoxURL, connectivity.Ready)
+	log.Info().Msgf("Initiated connection Context-box: %s, waiting for connection to be in ready state", envs.ContextBoxURL)
 
 	healthcheck.NewClientHealthChecker(fmt.Sprint(defaultBuilderPort), healthCheck).StartProbes()
 
@@ -125,12 +125,12 @@ func run() error {
 				if conn.GetState() == connectivity.Ready {
 					// Connection became ready.
 					if prevState != connectivity.Ready {
-						log.Info().Msgf("connection to Context-box is now ready")
+						log.Info().Msgf("Connection to Context-box is now ready")
 					}
 					prevState = connectivity.Ready
 				} else {
-					log.Warn().Msgf("connection to Context-box is not ready yet")
-					log.Debug().Msgf("connection to Context-box is %s, waiting for the service to be reachable", conn.GetState().String())
+					log.Warn().Msgf("Connection to Context-box is not ready yet")
+					log.Debug().Msgf("Connection to Context-box is %s, waiting for the service to be reachable", conn.GetState().String())
 
 					prevState = conn.GetState()
 					conn.Connect() // try connecting to the service.
