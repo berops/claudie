@@ -81,20 +81,20 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 		}
 		clusters = append(clusters, loadbalancer.LBcluster{DesiredLB: desired, CurrentLB: curr, ProjectName: req.ProjectName})
 	}
-	log.Info().Msgf("Creating infrastructure for cluster %s project %s", req.Desired.ClusterInfo.Name, req.ProjectName)
 
 	err := utils.ConcurrentExec(clusters, func(cluster Cluster) error {
+		log.Info().Msgf("Creating infrastructure for cluster %s project %s", cluster.Id(), req.ProjectName)
+
 		if err := cluster.Build(); err != nil {
 			return fmt.Errorf("error while building the cluster %v : %w", cluster.Id(), err)
 		}
+		log.Info().Msgf("Infrastructure was successfully created for cluster %s project %s", cluster.Id(), req.ProjectName)
 		return nil
 	})
 	if err != nil {
 		log.Error().Msgf("Failed to build cluster %s for project %s : %s", req.Desired.ClusterInfo.Name, req.ProjectName, err)
 		return nil, fmt.Errorf("failed to build cluster with loadbalancers due to: %w", err)
 	}
-
-	log.Info().Msgf("Infrastructure was successfully created for cluster %s project %s", req.Desired.ClusterInfo.Name, req.ProjectName)
 
 	resp := &pb.BuildInfrastructureResponse{
 		Current:    req.Current,
@@ -141,8 +141,8 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 		RetryMode:        aws.RetryModeStandard,
 	})
 
-	log.Info().Msgf("Destroying infrastructure for cluster %s project %s", req.Current.ClusterInfo.Name, req.ProjectName)
 	err = utils.ConcurrentExec(clusters, func(cluster Cluster) error {
+		log.Info().Msgf("Destroying infrastructure for cluster %s project %s", cluster.Id(), req.ProjectName)
 		if err := cluster.Destroy(); err != nil {
 			return fmt.Errorf("failed to destroy cluster %v : %w", cluster.Id(), err)
 		}
@@ -165,6 +165,7 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 				return fmt.Errorf("failed to remove dns lock file for cluster %v: %w", cluster.Id(), err)
 			}
 		}
+		log.Info().Msgf("Infrastructure for cluster %s project %s was successfully destroyed", cluster.Id(), req.ProjectName)
 
 		// Key under which the lockfile id is stored in dynamodb
 		dynamoLockId, err := attributevalue.Marshal(fmt.Sprintf("%s/%s/%s-md5", minioBucket, req.ProjectName, cluster.Id()))
@@ -189,8 +190,6 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 		log.Error().Msgf("Failed to destroy the infra for project %s : %s", req.ProjectName, err)
 		return nil, fmt.Errorf("failed to destroy infrastructure: %w", err)
 	}
-
-	log.Info().Msgf("Infrastructure for project %s was successfully destroyed", req.ProjectName)
 	return &pb.DestroyInfrastructureResponse{Current: req.Current, CurrentLbs: req.CurrentLbs}, nil
 }
 
