@@ -57,7 +57,8 @@ type templateData struct {
 // Apply will create all necessary files and apply kubeone, which will set up the cluster completely
 // return nil if successful, error otherwise
 func (k *KubeEleven) BuildCluster() error {
-	k.directory = filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", k.K8sCluster.ClusterInfo.Name, k.K8sCluster.ClusterInfo.Hash))
+	clusterID := fmt.Sprintf("%s-%s", k.K8sCluster.ClusterInfo.Name, k.K8sCluster.ClusterInfo.Hash)
+	k.directory = filepath.Join(baseDirectory, outputDirectory, clusterID)
 	//generate files needed for kubeone
 	err := k.generateFiles()
 	if err != nil {
@@ -65,9 +66,9 @@ func (k *KubeEleven) BuildCluster() error {
 	}
 	//run kubeone apply
 	kubeone := kubeone.Kubeone{Directory: k.directory}
-	err = kubeone.Apply()
+	err = kubeone.Apply(clusterID)
 	if err != nil {
-		return fmt.Errorf("error while reading cluster-config in %s : %w", k.directory, err)
+		return fmt.Errorf("error while running kubeone apply in %s : %w", k.directory, err)
 	}
 	// Save generated kubeconfig file to cluster config
 	kc, err := readKubeconfig(filepath.Join(k.directory, kubeconfigFile))
@@ -132,7 +133,6 @@ func (k *KubeEleven) generateTemplateData() templateData {
 // Returns API endpoint if LB fulfils prerequisites, if not, returns the public IP of the node provided.
 func (k *KubeEleven) findAPIEndpoint(ep *pb.Node) string {
 	apiEndpoint := ""
-
 	for _, lbCluster := range k.LBClusters {
 		//check if lb is used for this k8s
 		if lbCluster.TargetedK8S == k.K8sCluster.ClusterInfo.Name {
