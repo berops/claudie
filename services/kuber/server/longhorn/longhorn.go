@@ -15,7 +15,7 @@ import (
 )
 
 // Cluster - k8s cluster where longhorn will be set up
-// Directory - directory where to create storage class manidests
+// Directory - directory where to create storage class manifest
 type Longhorn struct {
 	Cluster   *pb.K8Scluster
 	Directory string
@@ -175,7 +175,7 @@ func (l *Longhorn) deleteOldStorageClasses(existing, applied []string, kc kubect
 		//if not found in applied, delete the sc
 		if !found {
 			err := kc.KubectlDeleteResource("sc", ex, "")
-			log.Info().Msgf("Deleting storage class %s", ex)
+			log.Debug().Msgf("Deleting storage class %s", ex)
 			if err != nil {
 				return fmt.Errorf("error while deleting storage class %s due to no nodes backing it : %w", ex, err)
 			}

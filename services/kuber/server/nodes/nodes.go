@@ -85,7 +85,7 @@ func deleteNodesByName(kc kubectl.Kubectl, nodesToDelete, realNodeNames []string
 	for _, nodeName := range nodesToDelete {
 		realNodeName := utils.FindName(realNodeNames, nodeName)
 		if realNodeName != "" {
-			log.Info().Msgf("Deleting node %s from k8s cluster", realNodeName)
+			log.Debug().Msgf("Deleting node %s from k8s cluster", realNodeName)
 			//kubectl drain <node-name> --ignore-daemonsets --delete-emptydir-data
 			err := kc.KubectlDrain(realNodeName)
 			if err != nil {
@@ -115,12 +115,10 @@ func (d *Deleter) deleteFromEtcd(kc kubectl.Kubectl) error {
 	//get etcd pods
 	etcdPods, err := getEtcdPodNames(kc, strings.TrimPrefix(mainMasterNode.Name, d.clusterPrefix))
 	if err != nil {
-		log.Error().Msgf("Cannot find etcd pods in cluster %s : %v", d.cluster.ClusterInfo.Name, err)
 		return fmt.Errorf("cannot find etcd pods in cluster %s  : %w", d.cluster.ClusterInfo.Name, err)
 	}
 	etcdMembers, err := getEtcdMembers(kc, etcdPods[0])
 	if err != nil {
-		log.Error().Msgf("Cannot find etcd members in cluster %s : %v", d.cluster.ClusterInfo.Name, err)
 		return fmt.Errorf("cannot find etcd members in cluster %s : %w", d.cluster.ClusterInfo.Name, err)
 	}
 	//get pod info, like name of a node where pod is deployed and etcd member hash
@@ -129,11 +127,10 @@ func (d *Deleter) deleteFromEtcd(kc kubectl.Kubectl) error {
 	for _, nodeName := range d.masterNodes {
 		for _, etcdPodInfo := range etcdPodInfos {
 			if nodeName == etcdPodInfo.nodeName {
-				log.Info().Msgf("Deleting etcd member %s, with hash %s ", etcdPodInfo.nodeName, etcdPodInfo.memberHash)
+				log.Debug().Msgf("Deleting etcd member %s, with hash %s ", etcdPodInfo.nodeName, etcdPodInfo.memberHash)
 				etcdctlCmd := fmt.Sprintf("etcdctl member remove %s", etcdPodInfo.memberHash)
 				_, err := kc.KubectlExecEtcd(etcdPods[0], etcdctlCmd)
 				if err != nil {
-					log.Error().Msgf("Error while etcdctl member remove: %v", err)
 					return fmt.Errorf("error while executing \"etcdctl member remove\" on node %s, cluster %s: %w", etcdPodInfo.nodeName, d.cluster.ClusterInfo.Name, err)
 				}
 			}
