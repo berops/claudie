@@ -185,8 +185,9 @@ func setUpLoadbalancers(clusterName string, info *LBInfo) error {
 	}
 
 	err := utils.ConcurrentExec(info.LbClusters, func(lb *LBData) error {
-		directory := filepath.Join(directory, fmt.Sprintf("%s-%s", lb.DesiredLbCluster.ClusterInfo.Name, lb.DesiredLbCluster.ClusterInfo.Hash))
-		log.Info().Msgf("Setting up the LB %s", directory)
+		lbPrefix := fmt.Sprintf("%s-%s", lb.DesiredLbCluster.ClusterInfo.Name, lb.DesiredLbCluster.ClusterInfo.Hash)
+		directory := filepath.Join(directory, lbPrefix)
+		log.Info().Msgf("Setting up the loadbalancer %s", lbPrefix)
 
 		//create key files for lb nodepools
 		if err := utils.CreateDirectory(directory); err != nil {
@@ -338,7 +339,7 @@ func handleAPIEndpointChange(apiServer *LBData, k8sCluster *LBInfo, k8sDirectory
 		lbCluster = apiServer.CurrentLbCluster
 	}
 
-	log.Info().Msgf("Changing the API endpoint for the cluster %s", lbCluster.ClusterInfo.Name)
+	log.Debug().Msgf("Changing the API endpoint for the cluster %s from %s to %s", lbCluster.ClusterInfo.Name, oldEndpoint, newEndpoint)
 
 	if err := changeAPIEndpoint(lbCluster.ClusterInfo.Name, oldEndpoint, newEndpoint, k8sDirectory); err != nil {
 		return fmt.Errorf("error while changing the endpoint for %s : %w", lbCluster.ClusterInfo.Name, err)
@@ -399,8 +400,6 @@ func hasAPIServerRole(roles []*pb.Role) bool {
 
 // changeAPIEndpoint will change kubeadm configuration to include new EP
 func changeAPIEndpoint(clusterName, oldEndpoint, newEndpoint, directory string) error {
-	log.Info().Msgf("New endpoint is %s", newEndpoint)
-
 	ansible := ansible.Ansible{
 		Playbook:  apiChangePlaybook,
 		Inventory: inventoryFile,
