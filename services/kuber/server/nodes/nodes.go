@@ -127,7 +127,7 @@ func (d *Deleter) deleteNodesByName(kc kubectl.Kubectl, nodeName string, realNod
 // return nil if successful, error otherwise
 func (d *Deleter) deleteFromEtcd(kc kubectl.Kubectl, etcdEpNode *pb.Node) error {
 	//get etcd pods
-	etcdPods, err := getEtcdPodNames(kc, strings.TrimPrefix(etcdEpNode.Name, d.clusterPrefix))
+	etcdPods, err := getEtcdPodNames(kc, strings.TrimPrefix(etcdEpNode.Name, fmt.Sprintf("%s-", d.clusterPrefix)))
 	if err != nil {
 		return fmt.Errorf("cannot find etcd pods in cluster %s  : %w", d.clusterPrefix, err)
 	}
