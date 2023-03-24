@@ -24,8 +24,8 @@ type VPNInfo struct {
 }
 
 // installWireguardVPN sets up wireguard vpn for the nodepools
-func installWireguardVPN(clusterName string, info *VPNInfo) error {
-	directory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterName, utils.CreateHash(utils.HashLength)))
+func installWireguardVPN(clusterID string, info *VPNInfo) error {
+	directory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, utils.CreateHash(utils.HashLength)))
 
 	if err := assignPrivateAddresses(groupNodepool(info.NodepoolInfo), info.Network); err != nil {
 		return fmt.Errorf("error while setting the private IPs for %s : %w", directory, err)
@@ -46,7 +46,7 @@ func installWireguardVPN(clusterName string, info *VPNInfo) error {
 	}
 
 	ansible := ansible.Ansible{Playbook: wireguardPlaybook, Inventory: inventoryFile, Directory: directory}
-	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("VPN - %s", directory)); err != nil {
+	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("VPN - %s", clusterID)); err != nil {
 		return fmt.Errorf("error while running ansible for %s : %w", directory, err)
 	}
 

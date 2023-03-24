@@ -58,8 +58,11 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 		// if Desired state is null and current is not we delete the infra for the config.
 		if config.DsChecksum == nil && config.CsChecksum != nil {
 			if err := destroyConfig(config, clusterView, c); err != nil {
-				log.Error().Msgf("failed to destroy clusters for config %s: %s", config.Name, err)
-				return
+				// Save error to DB.
+				log.Error().Msgf("Error while destroying config %s : %v", config.Name, err)
+				if err := saveErrorMessage(config, c, err); err != nil {
+					log.Error().Msgf("Failed to save error message for config %s:  %v", config.Name, err)
+				}
 			}
 			return
 		}
@@ -68,7 +71,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			// Check if we need to destroy the cluster or any Loadbalancers
 			done, err := destroy(config.Name, clusterName, clusterView)
 			if err != nil {
-				log.Error().Msgf("failed to destroy cluster %s project %s: %s", clusterName, config.Name, err)
+				log.Error().Msgf("Error while destroying cluster %s project %s : %v", clusterName, config.Name, err)
 				return err
 			}
 
@@ -80,7 +83,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			// Handle deletion and addition of nodes.
 			tmpDesired, toDelete := stateDifference(clusterView.Clusters[clusterName], clusterView.DesiredClusters[clusterName])
 			if tmpDesired != nil {
-				log.Info().Msgf("Processing stage [1/2] for cluster %s config %s", clusterName, config.Name)
+				log.Info().Msgf("Processing stage [1/2] for cluster %s project %s", clusterName, config.Name)
 
 				ctx := &BuilderContext{
 					projectName:          config.Name,
@@ -92,10 +95,10 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 				}
 
 				if ctx, err = buildCluster(ctx); err != nil {
-					log.Error().Msgf("failed to build cluster %s project %s: %s", clusterName, config.Name, err)
+					log.Error().Msgf("Failed to build cluster %s project %s : %v", clusterName, config.Name, err)
 					return err
 				}
-				log.Info().Msgf("First stage for cluster %s finished building", clusterName)
+				log.Info().Msgf("First stage for cluster %s project %s finished building", clusterName, config.Name)
 
 				// make the desired state of the temporary cluster the new current state.
 				clusterView.Clusters[clusterName] = ctx.desiredCluster
@@ -103,9 +106,9 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			}
 
 			if toDelete != nil {
-				log.Info().Msgf("Deleting nodes for cluster %s project %s", clusterName, config.Name)
+				log.Info().Msgf("Deleting nodes from cluster %s project %s", clusterName, config.Name)
 				if clusterView.Clusters[clusterName], err = deleteNodes(clusterView.Clusters[clusterName], toDelete); err != nil {
-					log.Error().Msgf("failed to delete nodes cluster %s project %s: %s", clusterName, config.Name, err)
+					log.Error().Msgf("Failed to delete nodes cluster %s project %s : %v", clusterName, config.Name, err)
 					return err
 				}
 			}
@@ -126,19 +129,18 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			}
 
 			if ctx, err = buildCluster(ctx); err != nil {
-				log.Error().Msgf("failed to build cluster %s project %s: %s", clusterName, config.Name, err)
+				log.Error().Msgf("Failed to build cluster %s project %s : %v", clusterName, config.Name, err)
 				return err
 			}
 
 			// Propagate the changes made to the cluster back to the View.
 			clusterView.UpdateFromBuild(ctx)
-
 			log.Info().Msgf("Finished building cluster %s project %s", clusterName, config.Name)
 			return nil
 		}); err != nil {
-			log.Error().Msgf("error while processing config %s : %s", config.Name, err)
+			log.Error().Msgf("Error encountered while processing config %s : %v", config.Name, err)
 			if err := saveErrorMessage(config, c, err); err != nil {
-				log.Error().Msgf("failed to save error message due to: %s", err)
+				log.Error().Msgf("Failed to save error message due to: %s", err)
 			}
 			return
 		}
@@ -170,8 +172,6 @@ func stateDifference(current *pb.K8Scluster, desired *pb.K8Scluster) (*pb.K8Sclu
 	//if any key left, it means that nodepool is defined in current state but not in the desired, i.e. whole nodepool should be deleted
 	if len(currentNodepoolCounts) > 0 {
 		deleting = true
-		log.Debug().Msgf("Detected deletion of a nodepools")
-
 		// let delCounts hold all delete counts
 		mergeDeleteCounts(delCounts, currentNodepoolCounts)
 
