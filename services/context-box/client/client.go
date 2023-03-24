@@ -10,7 +10,6 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/berops/claudie/proto/pb"
-	"github.com/rs/zerolog/log"
 )
 
 type State string
@@ -77,17 +76,16 @@ func GetAllConfigs(c pb.ContextBoxServiceClient) (*pb.GetAllConfigsResponse, err
 // DeleteConfig sets the manifest to null so that the next invocation of the workflow
 // for this config destroys the previous build infrastructure.
 func DeleteConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType) error {
-	res, err := c.DeleteConfig(context.Background(), &pb.DeleteConfigRequest{Id: id, Type: idType})
+	_, err := c.DeleteConfig(context.Background(), &pb.DeleteConfigRequest{Id: id, Type: idType})
 	if err != nil {
 		return fmt.Errorf("error deleting: %w", err)
 	}
-	log.Info().Msgf("Config will be deleted %v", res)
 	return nil
 }
 
 // DeleteConfigFromDB deletes the config from the mongoDB database.
 func DeleteConfigFromDB(c pb.ContextBoxServiceClient, id string, idType pb.IdType) error {
-	res, err := c.DeleteConfigFromDB(context.Background(), &pb.DeleteConfigRequest{
+	_, err := c.DeleteConfigFromDB(context.Background(), &pb.DeleteConfigRequest{
 		Id:   id,
 		Type: idType,
 	})
@@ -95,9 +93,6 @@ func DeleteConfigFromDB(c pb.ContextBoxServiceClient, id string, idType pb.IdTyp
 	if err != nil {
 		return fmt.Errorf("error deleting config from DB: %w", err)
 	}
-
-	log.Info().Msgf("Config was deleted from DB: %v", res)
-
 	return nil
 }
 
@@ -153,6 +148,5 @@ func saveConfig(req *pb.SaveConfigRequest, saveFun saveFunction) (*pb.SaveConfig
 	if err != nil {
 		return nil, fmt.Errorf("failed to save config via %s : %w", runtime.FuncForPC(reflect.ValueOf(saveFun).Pointer()).Name() /*prints name of the function*/, err)
 	}
-	log.Info().Msgf("Config %s has been saved", res.GetConfig().GetName())
 	return res, nil
 }

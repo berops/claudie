@@ -47,6 +47,7 @@ const (
 )
 
 var (
+	//TODO move them to server struct
 	queueScheduler queue.Queue
 	queueBuilder   queue.Queue
 	//vars used for logging

@@ -135,7 +135,7 @@ func (s *server) handleReload(logger zerolog.Logger) http.HandlerFunc {
 			return
 		}
 
-		logger.Info().Msgf("Received notification about change in the directory %s", s.manifestDir)
+		logger.Debug().Msgf("Received notification about change in the directory %s", s.manifestDir)
 		s.group.Add(1)
 
 		go func() {
