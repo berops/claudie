@@ -12,8 +12,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-const configIDDefault = "6392ef6a19abbf9fdd98ac25"
-
 func ClientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
 	cc, err := utils.GrpcDialWithInsecure("context-box", envs.ContextBoxURL)
 	if err != nil {
@@ -116,9 +114,10 @@ func TestDeleteConfig(t *testing.T) {
 func TestPrintConfig(t *testing.T) {
 	c, cc := ClientConnection()
 	defer closeConn(t, cc)
-	out, err := printConfig(c, configIDDefault, pb.IdType_HASH, desired)
+	configID := "64187378ffaca560a3f31850"
+	out, err := printConfig(c, configID, pb.IdType_HASH, desired)
 	require.NoError(t, err)
-	out1, err := printConfig(c, configIDDefault, pb.IdType_HASH, current)
+	out1, err := printConfig(c, configID, pb.IdType_HASH, current)
 	require.NoError(t, err)
 	t.Log(out)
 	require.Equal(t, out, out1)

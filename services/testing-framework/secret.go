@@ -32,7 +32,7 @@ func deleteSecret(setName string) error {
 		kc.Stdout = comm.GetStdOut(setName)
 		kc.Stderr = comm.GetStdErr(setName)
 	}
-	return kc.KubectlDeleteResource("secret", setName, envs.Namespace)
+	return kc.KubectlDeleteResource("secret", setName, "-n", envs.Namespace)
 }
 
 // applySecret function will create a secret with the specified name in the specified namespace for manifest provided
@@ -58,7 +58,7 @@ func applySecret(manifest []byte, pathToTestSet, secretName string) error {
 		kc.Stdout = comm.GetStdOut(pathToTestSet)
 		kc.Stderr = comm.GetStdErr(pathToTestSet)
 	}
-	return kc.KubectlApplyString(secret, envs.Namespace)
+	return kc.KubectlApplyString(secret, "-n", envs.Namespace)
 }
 
 // getManifestName will read the name of the manifest from the file and return it,

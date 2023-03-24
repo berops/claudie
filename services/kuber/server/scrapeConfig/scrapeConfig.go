@@ -72,7 +72,7 @@ func (sc ScrapeConfig) GenerateAndApplyScrapeConfig() error {
 		k.Stdout = comm.GetStdOut(prefix)
 		k.Stderr = comm.GetStdErr(prefix)
 	}
-	if err = k.KubectlApply(scManifestFile, ""); err != nil {
+	if err = k.KubectlApply(scManifestFile); err != nil {
 		return fmt.Errorf("error while applying %s on %s: %w", scManifestFile, sc.Cluster.ClusterInfo.Name, err)
 	}
 
@@ -87,7 +87,7 @@ func (sc ScrapeConfig) RemoveLbScrapeConfig() error {
 		k.Stdout = comm.GetStdOut(prefix)
 		k.Stderr = comm.GetStdErr(prefix)
 	}
-	if err := k.KubectlDeleteResource("secret", "loadbalancers-scrape-config", scrapeConfigNamespace); err != nil {
+	if err := k.KubectlDeleteResource("secret", "loadbalancers-scrape-config", "-n", scrapeConfigNamespace); err != nil {
 		return fmt.Errorf("error while removing LB scrape-config on %s: %w", sc.Cluster.ClusterInfo.Name, err)
 	}
 	return nil

@@ -44,7 +44,7 @@ func (l Longhorn) SetUp() error {
 		kubectl.Stderr = comm.GetStdErr(prefix)
 	}
 	// apply longhorn.yaml
-	err := kubectl.KubectlApply(longhornYaml, "")
+	err := kubectl.KubectlApply(longhornYaml)
 	if err != nil {
 		return fmt.Errorf("error while applying longhorn.yaml in %s : %w", l.Directory, err)
 	}
@@ -136,7 +136,7 @@ func (l *Longhorn) getStorageClasses(kc kubectl.Kubectl) (result []string, err e
 		Metadata   map[string]interface{}   `json:"metadata"`
 	}
 	//get existing storage classes
-	out, err := kc.KubectlGet("sc -o json", "")
+	out, err := kc.KubectlGet("sc", "-o", "json")
 	if err != nil {
 		return nil, fmt.Errorf("error while getting storage classes from cluster %s : %w", l.Cluster.ClusterInfo.Name, err)
 	}
@@ -181,7 +181,7 @@ func (l *Longhorn) deleteOldStorageClasses(existing, applied []string, kc kubect
 		}
 		//if not found in applied, delete the sc
 		if !found {
-			err := kc.KubectlDeleteResource("sc", ex, "")
+			err := kc.KubectlDeleteResource("sc", ex)
 			log.Debug().Msgf("Deleting storage class %s", ex)
 			if err != nil {
 				return fmt.Errorf("error while deleting storage class %s due to no nodes backing it : %w", ex, err)

@@ -81,7 +81,7 @@ func (s *Secret) Apply(namespace, kubeconfig string) error {
 		return fmt.Errorf("error while saving secret.yaml for %s : %w", s.YamlManifest.Metadata.Name, err)
 	}
 
-	if err := kubectl.KubectlApply(path, namespace); err != nil {
+	if err := kubectl.KubectlApply(path, "-n", namespace); err != nil {
 		return fmt.Errorf("error while applying secret.yaml for %s : %w", s.YamlManifest.Metadata.Name, err)
 	}
 

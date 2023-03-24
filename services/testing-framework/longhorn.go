@@ -64,7 +64,7 @@ func checkLonghornNodes(cluster *pb.K8Scluster, kubectl kubectl.Kubectl) error {
 	}
 	// give them time of maxLonghornCheck seconds to be scheduled
 	for readyCheck < maxLonghornCheck {
-		out, err := kubectl.KubectlGet("nodes.longhorn.io -A -o json", "")
+		out, err := kubectl.KubectlGet("nodes.longhorn.io", "-A", "-o", "json")
 		if err != nil {
 			return fmt.Errorf("error while getting the nodes.longhorn.io in cluster %s : %w", cluster.ClusterInfo.Name, err)
 		}
@@ -93,7 +93,7 @@ func checkLonghornPods(clusterName string, kubectl kubectl.Kubectl) error {
 	allPodsReady := false
 	// give them time of maxLonghornCheck seconds to be scheduled
 	for readyCheck < maxLonghornCheck {
-		out, err := kubectl.KubectlGet("pods -o json", "longhorn-system")
+		out, err := kubectl.KubectlGet("pods", "-o", "json", "-n", "longhorn-system")
 		if err != nil {
 			return fmt.Errorf("error while getting the status of the pods in longhorn-system in cluster %s : %w", clusterName, err)
 		}
