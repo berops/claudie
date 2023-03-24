@@ -92,8 +92,8 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 		return nil
 	})
 	if err != nil {
-		log.Error().Msgf("Failed to build cluster %s for project %s : %s", req.Desired.ClusterInfo.Name, req.ProjectName, err)
-		return nil, fmt.Errorf("failed to build cluster with loadbalancers due to: %w", err)
+		log.Error().Msgf("Error while building cluster %s for project %s : %s", req.Desired.ClusterInfo.Name, req.ProjectName, err)
+		return nil, fmt.Errorf("error while building cluster %s for project %s : %w", req.Desired.ClusterInfo.Name, req.ProjectName, err)
 	}
 
 	resp := &pb.BuildInfrastructureResponse{
@@ -144,7 +144,7 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 	err = utils.ConcurrentExec(clusters, func(cluster Cluster) error {
 		log.Info().Msgf("Destroying infrastructure for cluster %s project %s", cluster.Id(), req.ProjectName)
 		if err := cluster.Destroy(); err != nil {
-			return fmt.Errorf("failed to destroy cluster %v : %w", cluster.Id(), err)
+			return fmt.Errorf("error while destroying cluster %v : %w", cluster.Id(), err)
 		}
 
 		// if it's a load-balancer there is an additional lock-file for the dns in both  MinIO and dynamoDB.
@@ -187,8 +187,8 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 	})
 
 	if err != nil {
-		log.Error().Msgf("Failed to destroy the infra for project %s : %s", req.ProjectName, err)
-		return nil, fmt.Errorf("failed to destroy infrastructure: %w", err)
+		log.Error().Msgf("Error while destroying the infrastructure for project %s : %s", req.ProjectName, err)
+		return nil, fmt.Errorf("error while destroying infrastructure for project %s : %w", req.ProjectName, err)
 	}
 	return &pb.DestroyInfrastructureResponse{Current: req.Current, CurrentLbs: req.CurrentLbs}, nil
 }

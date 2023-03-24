@@ -506,7 +506,7 @@ func splitNodesByType(nodepools []*pb.NodePool) (controlNodes, computeNodes []*p
 // return error if not successful, nil otherwise
 func generateK8sBaseFiles(k8sDirectory string, lbInfo *LBInfo) error {
 	if err := utils.CreateDirectory(k8sDirectory); err != nil {
-		return fmt.Errorf("failed to create dir: %w", err)
+		return fmt.Errorf("failed to create directory %s : %w", k8sDirectory, err)
 	}
 
 	if err := utils.CreateKeyFile(lbInfo.TargetK8sNodepoolKey, k8sDirectory, "k8s.pem"); err != nil {
