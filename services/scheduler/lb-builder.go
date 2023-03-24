@@ -82,7 +82,7 @@ func getDNS(lbDNS manifest.DNS, manifestState *manifest.Manifest) (*pb.DNS, erro
 	} else {
 		provider, err := manifestState.GetProvider(lbDNS.Provider)
 		if err != nil {
-			return nil, fmt.Errorf("Provider %s was not found in manifest %s", lbDNS.Provider, manifestState.Name)
+			return nil, fmt.Errorf("provider %s was not found in manifest %s", lbDNS.Provider, manifestState.Name)
 		}
 		return &pb.DNS{
 			DnsZone:  lbDNS.DNSZone,

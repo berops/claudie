@@ -48,7 +48,7 @@ const (
 func getVolumes(kc kubectl.Kubectl) (map[string]LonghornVolume, error) {
 	out, err := kc.KubectlGet(volumes, "-n", longhornNamespace, "-o", "yaml")
 	if err != nil {
-		return nil, fmt.Errorf("failed to list all replicas : %w", err)
+		return nil, fmt.Errorf("failed to list all volumes : %w", err)
 	}
 	var volumeList K8sList[LonghornVolume]
 	if err := yaml.Unmarshal(out, &volumeList); err != nil {

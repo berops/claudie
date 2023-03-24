@@ -64,7 +64,7 @@ func TestClaudie(t *testing.T) {
 			}
 		case sig := <-ch:
 			log.Warn().Msgf("Received signal %v", sig)
-			err = errors.New("testing-framework received interrupt signal")
+			err = errors.New("interrupt signal")
 			cancel()
 		}
 
@@ -106,7 +106,7 @@ func testClaudie(ctx context.Context) error {
 	var setNames []string
 	for _, f := range files {
 		if f.IsDir() {
-			log.Info().Msgf("Found test set: %s", f.Name())
+			log.Info().Msgf("Found test set %s", f.Name())
 			setNames = append(setNames, f.Name())
 		}
 	}
@@ -149,7 +149,7 @@ func applyTestSet(ctx context.Context, setName string, c pb.ContextBoxServiceCli
 	idInfo := idInfo{id: "", idType: -1}
 
 	pathToTestSet := filepath.Join(testDir, setName)
-	log.Info().Msgf("Working on the test set:%s", pathToTestSet)
+	log.Info().Msgf("Working on the test set %s", pathToTestSet)
 
 	manifestFiles, err := os.ReadDir(pathToTestSet)
 	if err != nil {
@@ -203,7 +203,7 @@ func applyTestSet(ctx context.Context, setName string, c pb.ContextBoxServiceCli
 			}
 			return fmt.Errorf("Error while monitoring %s : %w", pathToTestSet, err)
 		}
-		log.Info().Msgf("Manifest %s from %s is done...", manifestName, pathToTestSet)
+		log.Info().Msgf("Manifest %s from %s is done...", manifest.Name(), pathToTestSet)
 	}
 
 	// clean up
