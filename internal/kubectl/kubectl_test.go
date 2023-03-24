@@ -22,13 +22,13 @@ spec:
 
 func TestKubectlGet(t *testing.T) {
 	Kubectl := Kubectl{Kubeconfig: config}
-	_, err := Kubectl.KubectlGet("pods", "kube-system")
-	_, err1 := Kubectl.KubectlGet("pods", "")
+	_, err := Kubectl.KubectlGet("pods", "-n", "kube-system")
+	_, err1 := Kubectl.KubectlGet("pods")
 	require.NoError(t, err, err1)
 }
 
 func TestApplyString(t *testing.T) {
 	Kubectl := Kubectl{}
-	err := Kubectl.KubectlApplyString(testStr, "")
+	err := Kubectl.KubectlApplyString(testStr)
 	require.NoError(t, err)
 }

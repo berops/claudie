@@ -3,7 +3,8 @@ FROM docker.io/library/golang:1.20.1 AS build
 ARG TARGETARCH
 
 #Install kubectl
-RUN wget -q https://storage.googleapis.com/kubernetes-release/release/v1.22.0/bin/linux/$TARGETARCH/kubectl
+RUN KC_VERSION=v1.24.0 && \
+    wget -q https://storage.googleapis.com/kubernetes-release/release/${KC_VERSION}/bin/linux/$TARGETARCH/kubectl
 
 #Unset the GOPATH
 ENV GOPATH=

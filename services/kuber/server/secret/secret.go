@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/berops/claudie/internal/kubectl"
+	"github.com/berops/claudie/internal/utils"
 	"gopkg.in/yaml.v3"
 )
 
@@ -65,17 +66,15 @@ func (s *Secret) Apply(namespace, kubeconfig string) error {
 	kubectl := kubectl.Kubectl{Kubeconfig: kubeconfig}
 	path := filepath.Join(s.Directory, filename)
 
-	if _, err := os.Stat(s.Directory); os.IsNotExist(err) {
-		if err := os.Mkdir(s.Directory, os.ModePerm); err != nil {
-			return fmt.Errorf("could not create a directory for %s: %w", s.YamlManifest.Metadata.Name, err)
-		}
+	if err := utils.CreateDirectory(s.Directory); err != nil {
+		return fmt.Errorf("could not create a directory for %s: %w", s.YamlManifest.Metadata.Name, err)
 	}
 
 	if err := s.saveSecretManifest(path); err != nil {
 		return fmt.Errorf("error while saving secret.yaml for %s : %w", s.YamlManifest.Metadata.Name, err)
 	}
 
-	if err := kubectl.KubectlApply(path, namespace); err != nil {
+	if err := kubectl.KubectlApply(path, "-n", namespace); err != nil {
 		return fmt.Errorf("error while applying secret.yaml for %s : %w", s.YamlManifest.Metadata.Name, err)
 	}
 

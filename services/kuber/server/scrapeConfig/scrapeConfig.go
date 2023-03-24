@@ -63,7 +63,7 @@ func (sc ScrapeConfig) GenerateAndApplyScrapeConfig() error {
 
 	// Apply namespace and secret to the cluster
 	k := kubectl.Kubectl{Kubeconfig: sc.Cluster.Kubeconfig, Directory: sc.Directory}
-	if err = k.KubectlApply(scManifestFile, ""); err != nil {
+	if err = k.KubectlApply(scManifestFile); err != nil {
 		return fmt.Errorf("error while applying %s on %s: %w", scManifestFile, sc.Cluster.ClusterInfo.Name, err)
 	}
 
@@ -73,7 +73,7 @@ func (sc ScrapeConfig) GenerateAndApplyScrapeConfig() error {
 // RemoveIfNoLbScrapeConfig will remove the LB scrape-config.yml
 func (sc ScrapeConfig) RemoveLbScrapeConfig() error {
 	k := kubectl.Kubectl{Kubeconfig: sc.Cluster.Kubeconfig}
-	if err := k.KubectlDeleteResource("secret", "loadbalancers-scrape-config", scrapeConfigNamespace); err != nil {
+	if err := k.KubectlDeleteResource("secret", "loadbalancers-scrape-config", "-n", scrapeConfigNamespace); err != nil {
 		return fmt.Errorf("error while removing LB scrape-config on %s: %w", sc.Cluster.ClusterInfo.Name, err)
 	}
 	return nil
