@@ -47,6 +47,7 @@ nodePools:
       serverType: cpx11
       image: ubuntu-22.04
       diskSize: 50
+
     - name: gcp-control
       providerSpec:
         name: gcp-1
@@ -65,6 +66,7 @@ nodePools:
       serverType: e2-small
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
       diskSize: 50
+
     - name: oci-control
       providerSpec:
         name: oci-1
@@ -87,6 +89,7 @@ nodePools:
       # https://docs.oracle.com/en-us/iaas/images/image/674d0b41-aee8-4c0b-bf99-9e100d90f241/
       image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
       diskSize: 50
+
     - name: aws-control
       providerSpec:
         name: aws-1
@@ -107,6 +110,7 @@ nodePools:
       #ubuntu
       image: ami-03c476a1ca8e3ebdc
       diskSize: 50
+
     - name: azure-control
       providerSpec:
         name: azure-1
@@ -120,15 +124,16 @@ nodePools:
       providerSpec:
         name: azure-1
         region: Germany West Central
-        zone: 2
-      count: 3
+        zone: 1
+      count: 2
       serverType: Standard_B2s
       image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
       diskSize: 50
+
 kubernetes:
   clusters:
     - name: ts1-hetzner
-      version: v1.22.0
+      version: v1.24.0
       network: 192.168.2.0/24
       pools:
         control:
@@ -136,7 +141,7 @@ kubernetes:
         compute:
           - hetzner-compute
     - name: ts1-gcp
-      version: v1.22.0
+      version: v1.24.0
       network: 192.168.2.0/24
       pools:
         control:
@@ -144,7 +149,7 @@ kubernetes:
         compute:
           - gcp-compute
     - name: ts1-oci
-      version: v1.22.0
+      version: v1.24.0
       network: 192.168.2.0/24
       pools:
         control:
@@ -152,7 +157,7 @@ kubernetes:
         compute:
           - oci-compute
     - name: ts1-aws
-      version: v1.22.0
+      version: v1.24.0
       network: 192.168.2.0/24
       pools:
         control:
@@ -160,7 +165,7 @@ kubernetes:
         compute:
           - aws-compute
     - name: ts1-azure
-      version: v1.22.0
+      version: v1.24.0
       network: 192.168.2.0/24
       pools:
         control:

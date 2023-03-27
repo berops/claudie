@@ -6,6 +6,7 @@ import (
 	"os/exec"
 
 	comm "github.com/berops/claudie/internal/command"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -33,10 +34,11 @@ func (a *Ansible) RunAnsiblePlaybook(prefix string) error {
 	command := fmt.Sprintf("ansible-playbook %s -i %s -f %d %s", a.Playbook, a.Inventory, defaultAnsibleForks, a.Flags)
 	cmd := exec.Command("bash", "-c", command)
 	cmd.Dir = a.Directory
-	cmd.Stdout = comm.GetStdOut(prefix)
-	cmd.Stderr = comm.GetStdErr(prefix)
-	err = cmd.Run()
-	if err != nil {
+	if log.Logger.GetLevel() == zerolog.DebugLevel {
+		cmd.Stdout = comm.GetStdOut(prefix)
+		cmd.Stderr = comm.GetStdErr(prefix)
+	}
+	if err = cmd.Run(); err != nil {
 		log.Warn().Msgf("Error encountered while executing %s from %s : %v", command, a.Directory, err)
 		retryCmd := comm.Cmd{Command: command, Dir: a.Directory, Stdout: cmd.Stdout, Stderr: cmd.Stderr}
 		err := retryCmd.RetryCommand(maxAnsibleRetries)

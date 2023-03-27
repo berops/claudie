@@ -29,6 +29,7 @@ type server struct {
 
 // InstallNodeRequirements installs requirements on all nodes
 func (*server) InstallNodeRequirements(_ context.Context, req *pb.InstallRequest) (*pb.InstallResponse, error) {
+	log.Info().Msgf("Installing node requirements for cluster %s project %s", req.Desired.ClusterInfo.Name, req.ProjectName)
 	info := &NodepoolInfo{
 		Nodepools:  req.Desired.ClusterInfo.NodePools,
 		PrivateKey: req.Desired.ClusterInfo.PrivateKey,
@@ -41,12 +42,13 @@ func (*server) InstallNodeRequirements(_ context.Context, req *pb.InstallRequest
 		return nil, fmt.Errorf("error encountered while installing node requirements for cluster %s project %s : %w", req.Desired.ClusterInfo.Name, req.ProjectName, err)
 	}
 
-	log.Info().Msgf("Node requirements for cluster %s project %s were successfully installed", req.Desired.ClusterInfo.Name, req.ProjectName)
+	log.Info().Msgf("Node requirements for cluster %s project %s was successfully installed", req.Desired.ClusterInfo.Name, req.ProjectName)
 	return &pb.InstallResponse{Desired: req.Desired, DesiredLbs: req.DesiredLbs}, nil
 }
 
 // InstallVPN installs VPN between nodes in the k8s cluster and lb clusters
 func (*server) InstallVPN(_ context.Context, req *pb.InstallRequest) (*pb.InstallResponse, error) {
+	log.Info().Msgf("Installing VPN for cluster %s project %s", req.Desired.ClusterInfo.Name, req.ProjectName)
 	info := &VPNInfo{
 		Network: req.Desired.Network,
 		NodepoolInfo: []*NodepoolInfo{
@@ -68,12 +70,12 @@ func (*server) InstallVPN(_ context.Context, req *pb.InstallRequest) (*pb.Instal
 		})
 	}
 
-	if err := installWireguardVPN(req.Desired.ClusterInfo.Name, info); err != nil {
-		log.Error().Msgf("Error encountered while installing VPN for cluster %s project %s : %s", req.Desired.ClusterInfo.Name, req.ProjectName, err)
+	if err := installWireguardVPN(fmt.Sprintf("%s-%s", req.Desired.ClusterInfo.Name, req.Desired.ClusterInfo.Hash), info); err != nil {
+		log.Error().Msgf("Error encountered while installing VPN for cluster %s project %s : %v", req.Desired.ClusterInfo.Name, req.ProjectName, err)
 		return nil, fmt.Errorf("error encountered while installing VPN for cluster %s project %s : %w", req.Desired.ClusterInfo.Name, req.ProjectName, err)
 	}
 
-	log.Info().Msgf("VPNs for cluster %s project %s were successfully installed", req.Desired.ClusterInfo.Name, req.ProjectName)
+	log.Info().Msgf("VPN for cluster %s project %s was successfully installed", req.Desired.ClusterInfo.Name, req.ProjectName)
 	return &pb.InstallResponse{Desired: req.Desired, DesiredLbs: req.DesiredLbs}, nil
 }
 
@@ -87,6 +89,7 @@ func (*server) TeardownLoadBalancers(ctx context.Context, req *pb.TeardownLBRequ
 			DeletedLbs:          req.DeletedLbs,
 		}, nil
 	}
+	log.Info().Msgf("Tearing down the loadbalancers for cluster %s project %s", req.Desired.ClusterInfo.Name, req.ProjectName)
 
 	var attached bool
 	for _, lb := range req.DesiredLbs {
@@ -120,12 +123,13 @@ func (*server) TeardownLoadBalancers(ctx context.Context, req *pb.TeardownLBRequ
 		DesiredLbs:          req.DesiredLbs,
 		DeletedLbs:          req.DeletedLbs,
 	}
-
+	log.Info().Msgf("Loadbalancers for cluster %s project %s were successfully torn down", req.Desired.ClusterInfo.Name, req.ProjectName)
 	return resp, nil
 }
 
 // SetUpLoadbalancers sets up the loadbalancers, DNS and verifies their configuration
 func (*server) SetUpLoadbalancers(_ context.Context, req *pb.SetUpLBRequest) (*pb.SetUpLBResponse, error) {
+	log.Info().Msgf("Setting up the loadbalancers for cluster %s project %s", req.Desired.ClusterInfo.Name, req.ProjectName)
 	currentLBs := make(map[string]*pb.LBcluster)
 	for _, lb := range req.CurrentLbs {
 		currentLBs[lb.ClusterInfo.Name] = lb
@@ -190,7 +194,7 @@ func main() {
 			err = ctx.Err()
 		case sig := <-ch:
 			log.Info().Msgf("Received signal %v", sig)
-			err = errors.New("ansibler interrupt signal")
+			err = errors.New("interrupt signal")
 		}
 
 		log.Info().Msg("Gracefully shutting down gRPC server")

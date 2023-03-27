@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"time"
 
+	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -31,13 +33,16 @@ func testLonghornDeployment(ctx context.Context, config *pb.Config) error {
 		// check number of nodes in nodes.longhorn.io
 
 		kubectl := kubectl.Kubectl{Kubeconfig: cluster.Kubeconfig}
-		err := checkLonghornNodes(ctx, cluster, kubectl)
-		if err != nil {
+		if log.Logger.GetLevel() == zerolog.DebugLevel {
+			prefix := fmt.Sprintf("%s-%s", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
+			kubectl.Stdout = comm.GetStdOut(prefix)
+			kubectl.Stderr = comm.GetStdErr(prefix)
+		}
+		if err := checkLonghornNodes(ctx, cluster, kubectl); err != nil {
 			return fmt.Errorf("error while checking the nodes.longhorn.io in cluster %s : %w", cluster.ClusterInfo.Name, err)
 		}
 		// check if all pods from longhorn-system are ready
-		err = checkLonghornPods(ctx, cluster.ClusterInfo.Name, kubectl)
-		if err != nil {
+		if err := checkLonghornPods(ctx, cluster.ClusterInfo.Name, kubectl); err != nil {
 			return fmt.Errorf("error while checking if all pods from longhorn-system are ready in cluster %s: %w", cluster.ClusterInfo.Name, err)
 		}
 	}
@@ -60,7 +65,7 @@ func checkLonghornNodes(ctx context.Context, cluster *pb.K8Scluster, kubectl kub
 		case <-ctx.Done():
 			return errInterrupt
 		default:
-			out, err := kubectl.KubectlGet("nodes.longhorn.io -n longhorn-system -o json", "")
+			out, err := kubectl.KubectlGet("nodes.longhorn.io", "-A", "-o", "json")
 			if err != nil {
 				return fmt.Errorf("error while getting the nodes.longhorn.io in cluster %s : %w", cluster.ClusterInfo.Name, err)
 			}
@@ -91,7 +96,7 @@ func checkLonghornPods(ctx context.Context, clusterName string, kubectl kubectl.
 		case <-ctx.Done():
 			return errInterrupt
 		default:
-			out, err := kubectl.KubectlGet("pods -o json", "longhorn-system")
+			out, err := kubectl.KubectlGet("pods", "-o", "json", "-n", "longhorn-system")
 			if err != nil {
 				return fmt.Errorf("error while getting the status of the pods in longhorn-system in cluster %s : %w", clusterName, err)
 			}

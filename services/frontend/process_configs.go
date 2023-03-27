@@ -30,7 +30,7 @@ func (s *server) processConfigs() error {
 		return fmt.Errorf("failed to retrieve configs from context-box: %w", err)
 	}
 
-	log.Info().Msgf("%d configs in database | %d files in %v", len(configs.Configs), len(files), s.manifestDir)
+	log.Debug().Msgf("%d configs in database | %d files in %v", len(configs.Configs), len(files), s.manifestDir)
 
 	type data struct {
 		name        string
@@ -87,7 +87,7 @@ func (s *server) processConfigs() error {
 		configs.Configs = remove(configs.Configs, data.name)
 
 		if data.err != nil {
-			log.Error().Msgf("skipping over file %v due to error: %v", data.path, data.err)
+			log.Error().Msgf("Skipping over file %v due to error : %v", data.path, data.err)
 			continue
 		}
 
@@ -99,7 +99,7 @@ func (s *server) processConfigs() error {
 		})
 
 		if err != nil {
-			log.Error().Msgf("skip saving config: %v due to error: %v", data.name, err)
+			log.Error().Msgf("Skip saving config %v due to error : %v", data.name, err)
 			continue
 		}
 

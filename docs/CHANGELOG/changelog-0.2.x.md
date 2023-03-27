@@ -52,3 +52,18 @@ No bugfixes since the last release.
 - Workflow fails to build when a user makes multiple changes of the input manifest, regarding the API endpoint [#606](https://github.com/berops/claudie/issues/606)
 - Longhorn pod longhorn-admission-webhook stuck in Init state [#598](https://github.com/berops/claudie/issues/598)
 - Deletion of config fails if builder crashes after deleting nodes [#588](https://github.com/berops/claudie/issues/588)
+
+# v0.2.1
+
+## Features
+
+- Improve management of Longhorn volume replicas [#648](https://github.com/berops/claudie/pull/648)
+- Improve logging on all services [#657](https://github.com/berops/claudie/pull/657)
+
+## Bugfixes
+
+- Fix unnecessary restarts in Wireguard playbook [#658](https://github.com/berops/claudie/pull/658)
+
+## Known issues
+
+- Certain change in nodepool configuration forces replacement of VMs [#647](https://github.com/berops/claudie/issues/647)

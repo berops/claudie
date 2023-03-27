@@ -14,6 +14,7 @@ import (
 	"github.com/berops/claudie/services/terraformer/server/backend"
 	"github.com/berops/claudie/services/terraformer/server/provider"
 	"github.com/berops/claudie/services/terraformer/server/terraform"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -61,8 +62,11 @@ func (c ClusterBuilder) CreateNodepools() error {
 
 	terraform := terraform.Terraform{
 		Directory: clusterDir,
-		StdOut:    comm.GetStdOut(clusterID),
-		StdErr:    comm.GetStdErr(clusterID),
+	}
+
+	if log.Logger.GetLevel() == zerolog.DebugLevel {
+		terraform.Stdout = comm.GetStdOut(clusterID)
+		terraform.Stderr = comm.GetStdErr(clusterID)
 	}
 
 	if err := terraform.TerraformInit(); err != nil {
@@ -105,8 +109,11 @@ func (c ClusterBuilder) DestroyNodepools() error {
 
 	terraform := terraform.Terraform{
 		Directory: clusterDir,
-		StdOut:    comm.GetStdOut(clusterID),
-		StdErr:    comm.GetStdErr(clusterID),
+	}
+
+	if log.Logger.GetLevel() == zerolog.DebugLevel {
+		terraform.Stdout = comm.GetStdOut(clusterID)
+		terraform.Stderr = comm.GetStdErr(clusterID)
 	}
 
 	if err := terraform.TerraformInit(); err != nil {
@@ -249,7 +256,6 @@ func fillNodes(terraformOutput *outputNodepools, newNodePool *pb.NodePool, oldNo
 			for _, node := range oldNodes {
 				//check if node was defined before
 				if fmt.Sprint(terraformOutput.IPs[nodeName]) == node.Public && nodeName == node.Name {
-					log.Debug().Msgf("Carrying information to desired state for node %s", nodeName)
 					// carry privateIP to desired state, so it will not get overwritten in Ansibler
 					private = node.Private
 					// carry node type since it might be API endpoint, which should not change once set

@@ -44,6 +44,7 @@ nodePools:
       serverType: cpx11
       image: ubuntu-22.04
       diskSize: 50
+
     - name: oci-control
       providerSpec:
         name: oci-1
@@ -66,6 +67,7 @@ nodePools:
       # https://docs.oracle.com/en-us/iaas/images/image/674d0b41-aee8-4c0b-bf99-9e100d90f241/
       image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
       diskSize: 50
+
     - name: aws-control
       providerSpec:
         name: aws-1
@@ -86,6 +88,7 @@ nodePools:
       #ubuntu
       image: ami-01b8d743224353ffe
       diskSize: 50
+
     #-----------LB nodepools----------
     - name: gcp-lb
       providerSpec:
@@ -99,7 +102,7 @@ nodePools:
 kubernetes:
   clusters:
     - name: ts3-c-1
-      version: v1.22.0
+      version: v1.24.0
       network: 192.168.2.0/24
       pools:
         control:

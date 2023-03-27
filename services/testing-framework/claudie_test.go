@@ -53,7 +53,7 @@ func TestClaudie(t *testing.T) {
 			}
 		case sig := <-ch:
 			log.Warn().Msgf("Received signal %v", sig)
-			err = errors.New("testing-framework received interrupt signal")
+			err = errors.New("interrupt signal")
 			cancel()
 		}
 
@@ -158,7 +158,7 @@ func processTestSet(ctx context.Context, setName string, c pb.ContextBoxServiceC
 	var errCleanUp, errIgnore error
 	idInfo := idInfo{id: "", idType: -1}
 	pathToTestSet := filepath.Join(testDir, setName)
-	log.Info().Msgf("Working on the test set:%s", pathToTestSet)
+	log.Info().Msgf("Working on the test set %s", pathToTestSet)
 
 	// Defer clean up function
 	defer func() {
@@ -219,8 +219,7 @@ func processTestSet(ctx context.Context, setName string, c pb.ContextBoxServiceC
 		} else {
 			log.Debug().Msgf("No additional tests, manifest %s from %s is done", manifest.Name(), setName)
 		}
-
-		log.Info().Msgf("Manifest %s from %s is done...", manifest.Name(), setName)
+		log.Info().Msgf("Manifest %s from %s is done...", manifest.Name(), pathToTestSet)
 	}
 
 	// Clean up

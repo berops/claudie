@@ -41,7 +41,7 @@ var (
 // SaveConfigScheduler is a gRPC service: the function saves config to the DB after receiving it from Scheduler
 func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
 	config := req.GetConfig()
-	log.Info().Msgf("CLIENT REQUEST: SaveConfigScheduler for %s", config.Name)
+	log.Info().Msgf("Saving config %s from Scheduler", config.Name)
 	// Save new config to the DB
 	config.DsChecksum = config.MsChecksum
 	config.SchedulerTTL = 0
@@ -55,6 +55,7 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 		return nil, fmt.Errorf("error while updating schedulerTTL for %s : %w", config.Name, err)
 	}
 
+	log.Info().Msgf("Config %s successfully saved from Scheduler", config.Name)
 	return &pb.SaveConfigResponse{Config: config}, nil
 }
 
@@ -64,7 +65,7 @@ func (s *server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigReque
 	s.configChangeMutex.Lock()
 	defer s.configChangeMutex.Unlock()
 	newConfig := req.GetConfig()
-	log.Info().Msgf("CLIENT REQUEST: SaveConfigFrontEnd for %s", newConfig.Name)
+	log.Info().Msgf("Saving config %s from FrontEnd", newConfig.Name)
 	newConfig.MsChecksum = checksum.CalculateChecksum(newConfig.Manifest)
 
 	//check if any data already present for the newConfig
@@ -84,14 +85,14 @@ func (s *server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigReque
 	if err != nil {
 		return nil, fmt.Errorf("error while saving config %s in db : %w", newConfig.Name, err)
 	}
-
+	log.Info().Msgf("Config %s successfully saved from FrontEnd", newConfig.Name)
 	return &pb.SaveConfigResponse{Config: newConfig}, nil
 }
 
 // SaveConfigBuilder is a gRPC service: the function saves config to the DB after receiving it from Builder
 func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
 	config := req.GetConfig()
-	log.Info().Msgf("CLIENT REQUEST: SaveConfigBuilder for %s", config.Name)
+	log.Info().Msgf("Saving config %s from Builder", config.Name)
 
 	// Save new config to the DB, update csState as dsState
 	config.CsChecksum = config.DsChecksum
@@ -118,16 +119,18 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 		return nil, fmt.Errorf("error while updating builderTTL for %s : %w", config.Name, err)
 	}
 
+	log.Info().Msgf("Config %s successfully saved from Builder", config.Name)
 	return &pb.SaveConfigResponse{Config: config}, nil
 }
 
 // GetConfigById is a gRPC service: function returns one config from the DB based on the requested index/name
 func (*server) GetConfigFromDB(ctx context.Context, req *pb.GetConfigFromDBRequest) (*pb.GetConfigFromDBResponse, error) {
-	log.Info().Msgf("CLIENT REQUEST: GetConfigFromDB for %s", req.Id)
+	log.Info().Msgf("Retrieving config %s from database", req.Id)
 	config, err := database.GetConfig(req.Id, req.Type)
 	if err != nil {
 		return nil, fmt.Errorf("error while getting a config %s from database : %w", req.Id, err)
 	}
+	log.Info().Msgf("Config %s successfully retrieved from database", req.Id)
 	return &pb.GetConfigFromDBResponse{Config: config}, nil
 }
 
@@ -135,6 +138,7 @@ func (*server) GetConfigFromDB(ctx context.Context, req *pb.GetConfigFromDBReque
 func (*server) GetConfigScheduler(ctx context.Context, req *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
 	configInfo := queueScheduler.Dequeue()
 	if configInfo != nil {
+		log.Info().Msgf("Sending config %s to Scheduler", configInfo.GetName())
 		config, err := database.GetConfig(configInfo.GetName(), pb.IdType_NAME)
 		if err != nil {
 			return nil, err
@@ -148,6 +152,7 @@ func (*server) GetConfigScheduler(ctx context.Context, req *pb.GetConfigRequest)
 func (*server) GetConfigBuilder(ctx context.Context, req *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
 	configInfo := queueBuilder.Dequeue()
 	if configInfo != nil {
+		log.Info().Msgf("Sending config %s to Builder", configInfo.GetName())
 		config, err := database.GetConfig(configInfo.GetName(), pb.IdType_NAME)
 		if err != nil {
 			return nil, err
@@ -159,31 +164,34 @@ func (*server) GetConfigBuilder(ctx context.Context, req *pb.GetConfigRequest) (
 
 // GetAllConfigs is a gRPC service: function returns all configs from the DB
 func (*server) GetAllConfigs(ctx context.Context, req *pb.GetAllConfigsRequest) (*pb.GetAllConfigsResponse, error) {
+	log.Info().Msgf("Getting all configs from database")
 	configs, err := database.GetAllConfigs()
 	if err != nil {
 		return nil, fmt.Errorf("error getting all configs : %w", err)
 	}
+	log.Info().Msgf("All configs from database retrieved successfully")
 	return &pb.GetAllConfigsResponse{Configs: configs}, nil
 }
 
 // DeleteConfig sets the manifest to nil so that the iteration workflow for this
 // config destroys the previous build infrastructure.
 func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*pb.DeleteConfigResponse, error) {
-	log.Info().Msgf("CLIENT REQUEST: DeleteConfig %s", req.Id)
+	log.Info().Msgf("Deleting config %s", req.Id)
 	err := database.UpdateMsToNull(req.Id)
 	if err != nil {
 		return nil, err
 	}
-
+	log.Info().Msgf("Config %s is successfully deleted", req.Id)
 	return &pb.DeleteConfigResponse{Id: req.GetId()}, nil
 }
 
 // DeleteConfigFromDB removes the config from the request from the mongoDB database.
 func (*server) DeleteConfigFromDB(ctx context.Context, req *pb.DeleteConfigRequest) (*pb.DeleteConfigResponse, error) {
-	log.Info().Msgf("CLIENT REQUEST: DeleteConfigFromDB for %s", req.Id)
+	log.Info().Msgf("Deleting config %s from database", req.Id)
 	if err := database.DeleteConfig(req.GetId(), req.GetType()); err != nil {
 		return nil, err
 	}
+	log.Info().Msgf("Config %s successfully deleted from database", req.Id)
 	return &pb.DeleteConfigResponse{Id: req.GetId()}, nil
 }
 
@@ -278,7 +286,7 @@ func main() {
 			err = ctx.Err()
 		case sig := <-ch:
 			log.Info().Msgf("Received signal %v", sig)
-			err = errors.New("context-box interrupt signal")
+			err = errors.New("interrupt signal")
 		}
 
 		log.Info().Msg("Gracefully shutting down gRPC server")
