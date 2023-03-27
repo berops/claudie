@@ -214,6 +214,7 @@ func (c *ClaudieCloudProvider) refresh() error {
 	} else {
 		c.configCluster = cluster
 		c.nodesCache = getNodesCache(cluster.ClusterInfo.NodePools)
+		c.nodeManager.Refresh(cluster.ClusterInfo.NodePools)
 	}
 	return nil
 }

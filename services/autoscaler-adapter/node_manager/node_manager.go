@@ -13,11 +13,14 @@ const (
 )
 
 type NodeManager struct {
+	// VM type info caches
 	hetznerVMs map[string]*typeInfo
 	gcpVMs     map[string]*typeInfo
 	awsVMs     map[string]*typeInfo
 	azureVMs   map[string]*typeInfo
 	ociVMs     map[string]*typeInfo
+	// Provider-region-zone cache
+	cacheProviderMap map[string]struct{}
 }
 
 type typeInfo struct {
@@ -32,43 +35,16 @@ type typeInfo struct {
 // NewNodeManager returns a NodeManager pointer with initialised caches about nodes.
 func NewNodeManager(nodepools []*pb.NodePool) (*NodeManager, error) {
 	nm := &NodeManager{}
-	cacheProviderMap := make(map[string]struct{})
-	for _, np := range nodepools {
-		// Cache only for nodepools, which are autoscaled.
-		if np.AutoscalerConfig != nil {
-			// Check if cache was already set.
-			// Check together with region and zone as not all instances
-			// are be supported everywhere.
-			providerId := fmt.Sprintf("%s-%s-%s", np.Provider.CloudProviderName, np.Region, np.Zone)
-			if _, ok := cacheProviderMap[providerId]; !ok {
-				switch np.Provider.CloudProviderName {
-				case "hetzner":
-					if err := nm.cacheHetzner(np); err != nil {
-						return nil, err
-					}
-				case "aws":
-					if err := nm.cacheAws(np); err != nil {
-						return nil, err
-					}
-				case "gcp":
-					if err := nm.cacheGcp(np); err != nil {
-						return nil, err
-					}
-				case "oci":
-					if err := nm.cacheOci(np); err != nil {
-						return nil, err
-					}
-				case "azure":
-					if err := nm.cacheAzure(np); err != nil {
-						return nil, err
-					}
-				}
-				// Save flag for this provider-region-zone combination.
-				cacheProviderMap[providerId] = struct{}{}
-			}
-		}
+	nm.cacheProviderMap = make(map[string]struct{})
+	if err := nm.refreshCache(nodepools); err != nil {
+		return nil, err
 	}
 	return nm, nil
+}
+
+// Refresh checks if the information about specified nodepools needs refreshing, and if so, refreshes it.
+func (nm *NodeManager) Refresh(nodepools []*pb.NodePool) error {
+	return nm.refreshCache(nodepools)
 }
 
 // GetOs returns operating system name as a string.
@@ -138,6 +114,46 @@ func (nm *NodeManager) getTypeInfo(provider string, np *pb.NodePool) *typeInfo {
 	case "azure":
 		if ti, ok := nm.azureVMs[np.ServerType]; ok {
 			return ti
+		}
+	}
+	return nil
+}
+
+// refreshCache refreshes node info cache if needed.
+func (nm *NodeManager) refreshCache(nps []*pb.NodePool) error {
+	for _, np := range nps {
+		// Cache only for nodepools, which are autoscaled.
+		if np.AutoscalerConfig != nil {
+			// Check if cache was already set.
+			// Check together with region and zone as not all instances
+			// are be supported everywhere.
+			providerId := fmt.Sprintf("%s-%s-%s", np.Provider.CloudProviderName, np.Region, np.Zone)
+			if _, ok := nm.cacheProviderMap[providerId]; !ok {
+				switch np.Provider.CloudProviderName {
+				case "hetzner":
+					if err := nm.cacheHetzner(np); err != nil {
+						return err
+					}
+				case "aws":
+					if err := nm.cacheAws(np); err != nil {
+						return err
+					}
+				case "gcp":
+					if err := nm.cacheGcp(np); err != nil {
+						return err
+					}
+				case "oci":
+					if err := nm.cacheOci(np); err != nil {
+						return err
+					}
+				case "azure":
+					if err := nm.cacheAzure(np); err != nil {
+						return err
+					}
+				}
+				// Save flag for this provider-region-zone combination.
+				nm.cacheProviderMap[providerId] = struct{}{}
+			}
 		}
 	}
 	return nil
