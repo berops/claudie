@@ -1,6 +1,7 @@
 package clusterBuilder
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/berops/claudie/internal/templateUtils"
@@ -41,4 +42,59 @@ func TestGenerateTf(t *testing.T) {
 	require.NoError(t, err)
 	err = template.Generate(tpl, "az-acc-net.tf", &NodepoolsData{ClusterName: "test", ClusterHash: "abcdef", NodePools: []*pb.NodePool{testNp}})
 	require.NoError(t, err)
+}
+
+// TestGetCIDR tests getCIDR function
+func TestGetCIDR(t *testing.T) {
+	type testCase struct {
+		desc     string
+		baseCIDR string
+		position int
+		value    int
+		out      string
+	}
+
+	testDataSucc := []testCase{
+		{
+			desc:     "Second octet change",
+			baseCIDR: "10.0.0.0/24",
+			position: 1,
+			value:    10,
+			out:      "10.10.0.0/24",
+		},
+
+		{
+			desc:     "Third octet change",
+			baseCIDR: "10.0.0.0/24",
+			position: 2,
+			value:    10,
+			out:      "10.0.10.0/24",
+		},
+	}
+	for _, test := range testDataSucc {
+		if out, err := getCIDR(test.baseCIDR, test.position, test.value); out != test.out || err != nil {
+			t.Error(test.desc, err)
+		}
+	}
+	testDataFail := []testCase{
+		{
+			desc:     "Third octet invalid change",
+			baseCIDR: "10.0.0.0/24",
+			position: 2,
+			value:    300,
+			out:      "10.0.300.0/24",
+		},
+		{
+			desc:     "Invalid base CIDR",
+			baseCIDR: "300.0.0.0/24",
+			position: 2,
+			value:    10,
+			out:      "10.0.10.0/24",
+		},
+	}
+	for _, test := range testDataFail {
+		if _, err := getCIDR(test.baseCIDR, test.position, test.value); err == nil {
+			t.Error(test.desc, fmt.Errorf("test should have failed, but was successful"))
+		}
+	}
 }

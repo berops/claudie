@@ -3,6 +3,7 @@ package clusterBuilder
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"sort"
@@ -18,7 +19,14 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const Output = "services/terraformer/server/clusters"
+const (
+	Output        = "services/terraformer/server/clusters"
+	subnetCidrKey = "VPC_SUBNET_CIDR"
+	// <nodepool-name>-subnet
+	subnetCidrKeyTemplate = "%s-subnet-cidr"
+	baseCIDR              = "10.0.0.0/24"
+	defaultOctetToChange  = 2
+)
 
 // ClusterBuilder wraps data needed for building a cluster.
 type ClusterBuilder struct {
@@ -173,6 +181,9 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 			Metadata:    c.Metadata,
 			Regions:     regions,
 		}
+		// Calculate CIDR, so they do not change if nodepool order changes
+		// https://github.com/berops/claudie/issues/647
+		c.calculateCIDR(&nodepoolData)
 
 		// Load TF files of the specific cloud provider
 		tpl, err := templateLoader.LoadTemplate(fmt.Sprintf("%s%s", nodepools[0].Provider.CloudProviderName, tplType))
@@ -210,6 +221,26 @@ func (c *ClusterBuilder) getCurrentNodes() []*pb.Node {
 		}
 	}
 	return oldNodes
+}
+
+// calculateCIDR will make sure all nodepools have subnet CIDR assigned just once. The value is then saved to data.Metadata as
+// {<nodepool-name>-subnet : <subnet CIDR>} key value pair.
+func (c *ClusterBuilder) calculateCIDR(data *NodepoolsData) error {
+	// Check if nodepool has CIDR assigned, if not, calculate and assign.
+	for i, np := range data.NodePools {
+		// CIDR not assigned yet.
+		if _, ok := np.Metadata[subnetCidrKey]; !ok {
+			cidr, err := getCIDR(baseCIDR, defaultOctetToChange, i)
+			if err != nil {
+				return fmt.Errorf("failed to parse CIDR for nodepool %s", np.Name)
+			}
+			log.Debug().Msgf("Calculating new VPC subnet CIDR for nodepool %s cluster %s. New CIDR [%s]", data.ClusterName, np.Name, cidr)
+			np.Metadata[subnetCidrKey] = &pb.MetaValue{MetaValueOneOf: &pb.MetaValue_Cidr{Cidr: cidr}}
+		}
+		// Save CIDR to template metadata.
+		data.Metadata[fmt.Sprintf(subnetCidrKeyTemplate, np.Name)] = np.Metadata[subnetCidrKey].GetCidr()
+	}
+	return nil
 }
 
 // fillNodes creates pb.Node slices in desired state, with the new nodes and old nodes
@@ -276,4 +307,23 @@ func getTplFile(clusterType pb.ClusterType) string {
 		return "-lb.tpl"
 	}
 	return ""
+}
+
+// getCIDR function returns CIDR in IPv4 format, with position replaced by value
+// The function does not check if it is a valid CIDR/can be used in subnet spec
+// Example
+// getCIDR("10.0.0.0/8", 2, 1) will return "10.0.1.0/8"
+// getCIDR("10.0.0.0/8", 3, 1) will return "10.0.0.1/8"
+func getCIDR(baseCIDR string, position, value int) (string, error) {
+	_, ipNet, err := net.ParseCIDR(baseCIDR)
+	if err != nil {
+		return "", fmt.Errorf("cannot parse a CIDR with base %s, position %d, value %d", baseCIDR, position, value)
+	}
+	ip := ipNet.IP
+	if value > 255 {
+		return "", fmt.Errorf("value specified is too large [%d]", value)
+	}
+	ip[position] = byte(value)
+	ones, _ := ipNet.Mask.Size()
+	return fmt.Sprintf("%s/%d", ip.String(), ones), nil
 }
