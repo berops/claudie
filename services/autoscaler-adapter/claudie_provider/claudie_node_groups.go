@@ -19,6 +19,8 @@ import (
 // to the size of a node group once everything stabilizes (new nodes finish startup and
 // registration or removed nodes are deleted completely).
 func (c *ClaudieCloudProvider) NodeGroupTargetSize(_ context.Context, req *protos.NodeGroupTargetSizeRequest) (*protos.NodeGroupTargetSizeResponse, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	log.Info().Msgf("Got NodeGroupTargetSize request")
 	if ngc, ok := c.nodesCache[req.GetId()]; ok {
 		log.Debug().Msgf("Returning target size %d for nodepool %s", ngc.targetSize, req.GetId())
@@ -31,6 +33,8 @@ func (c *ClaudieCloudProvider) NodeGroupTargetSize(_ context.Context, req *proto
 // to explicitly name it and use NodeGroupDeleteNodes. This function should wait until
 // node group size is updated.
 func (c *ClaudieCloudProvider) NodeGroupIncreaseSize(_ context.Context, req *protos.NodeGroupIncreaseSizeRequest) (*protos.NodeGroupIncreaseSizeResponse, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	log.Info().Msgf("Got NodeGroupIncreaseSize request for nodepool %s by %d", req.GetId(), req.GetDelta())
 	// Find the nodepool.
 	if ngc, ok := c.nodesCache[req.GetId()]; ok {
@@ -55,6 +59,8 @@ func (c *ClaudieCloudProvider) NodeGroupIncreaseSize(_ context.Context, req *pro
 // of the node group with that). Error is returned either on failure or if the given node
 // doesn't belong to this node group. This function should wait until node group size is updated.
 func (c *ClaudieCloudProvider) NodeGroupDeleteNodes(_ context.Context, req *protos.NodeGroupDeleteNodesRequest) (*protos.NodeGroupDeleteNodesResponse, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	log.Info().Msgf("Got NodeGroupDeleteNodes request for nodepool %s", req.GetId())
 	// Find the nodepool.
 	if ngc, ok := c.nodesCache[req.GetId()]; ok {
@@ -94,6 +100,8 @@ func (c *ClaudieCloudProvider) NodeGroupDeleteNodes(_ context.Context, req *prot
 // that cloud provider will not delete the existing nodes if the size when there is an option
 // to just decrease the target.
 func (c *ClaudieCloudProvider) NodeGroupDecreaseTargetSize(_ context.Context, req *protos.NodeGroupDecreaseTargetSizeRequest) (*protos.NodeGroupDecreaseTargetSizeResponse, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	log.Info().Msgf("Got NodeGroupDecreaseTargetSize request")
 	if ngc, ok := c.nodesCache[req.GetId()]; ok {
 		newSize := ngc.targetSize + req.GetDelta()
@@ -108,6 +116,8 @@ func (c *ClaudieCloudProvider) NodeGroupDecreaseTargetSize(_ context.Context, re
 
 // NodeGroupNodes returns a list of all nodes that belong to this node group.
 func (c *ClaudieCloudProvider) NodeGroupNodes(_ context.Context, req *protos.NodeGroupNodesRequest) (*protos.NodeGroupNodesResponse, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	log.Info().Msgf("Got NodeGroupNodes request")
 	instances := make([]*protos.Instance, 0)
 	if ngc, ok := c.nodesCache[req.GetId()]; ok {
@@ -132,6 +142,8 @@ func (c *ClaudieCloudProvider) NodeGroupNodes(_ context.Context, req *protos.Nod
 // scale-up simulations to predict what would a new node look like if a node group was expanded.
 // Implementation optional.
 func (c *ClaudieCloudProvider) NodeGroupTemplateNodeInfo(_ context.Context, req *protos.NodeGroupTemplateNodeInfoRequest) (*protos.NodeGroupTemplateNodeInfoResponse, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	log.Info().Msgf("Got NodeGroupTemplateNodeInfo request")
 	info := c.getNodeGroupTemplateNodeInfo(req.GetId())
 	return &protos.NodeGroupTemplateNodeInfoResponse{NodeInfo: info}, nil
@@ -141,6 +153,8 @@ func (c *ClaudieCloudProvider) NodeGroupTemplateNodeInfo(_ context.Context, req 
 // NodeGroup. Returning a grpc error will result in using default options.
 // Implementation optional
 func (c *ClaudieCloudProvider) NodeGroupGetOptions(_ context.Context, req *protos.NodeGroupAutoscalingOptionsRequest) (*protos.NodeGroupAutoscalingOptionsResponse, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	log.Info().Msgf("Got NodeGroupGetOptions request")
 	return &protos.NodeGroupAutoscalingOptionsResponse{NodeGroupAutoscalingOptions: req.GetDefaults()}, nil
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/utils"
@@ -45,6 +46,8 @@ type ClaudieCloudProvider struct {
 	nodesCache map[string]*nodeCache
 	// Node manager.
 	nodeManager *node_manager.NodeManager
+	// Server mutex
+	lock sync.Mutex
 }
 
 // NewClaudieCloudProvider returns a ClaudieCloudProvider with initialised caches.
@@ -121,6 +124,8 @@ func getNodesCache(nodepools []*pb.NodePool) map[string]*nodeCache {
 
 // NodeGroups returns all node groups configured for this cloud provider.
 func (c *ClaudieCloudProvider) NodeGroups(_ context.Context, req *protos.NodeGroupsRequest) (*protos.NodeGroupsResponse, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	log.Info().Msgf("Got NodeGroups request")
 	ngs := make([]*protos.NodeGroup, 0, len(c.nodesCache))
 	for _, ngc := range c.nodesCache {
@@ -133,6 +138,8 @@ func (c *ClaudieCloudProvider) NodeGroups(_ context.Context, req *protos.NodeGro
 // The node group id is an empty string if the node should not
 // be processed by cluster autoscaler.
 func (c *ClaudieCloudProvider) NodeGroupForNode(_ context.Context, req *protos.NodeGroupForNodeRequest) (*protos.NodeGroupForNodeResponse, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	log.Info().Msgf("Got NodeGroupForNode request")
 	nodeName := req.Node.Name
 	// Initialise as empty response.
@@ -152,6 +159,8 @@ func (c *ClaudieCloudProvider) NodeGroupForNode(_ context.Context, req *protos.N
 // a given period of time on a perfectly matching machine.
 // Implementation optional.
 func (c *ClaudieCloudProvider) PricingNodePrice(_ context.Context, req *protos.PricingNodePriceRequest) (*protos.PricingNodePriceResponse, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	log.Info().Msgf("Got PricingNodePrice request; Not implemented")
 	return nil, ErrNotImplemented
 }
@@ -160,18 +169,24 @@ func (c *ClaudieCloudProvider) PricingNodePrice(_ context.Context, req *protos.P
 // period of time on a perfectly matching machine.
 // Implementation optional.
 func (c *ClaudieCloudProvider) PricingPodPrice(_ context.Context, req *protos.PricingPodPriceRequest) (*protos.PricingPodPriceResponse, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	log.Info().Msgf("Got PricingPodPrice request; Not implemented")
 	return nil, ErrNotImplemented
 }
 
 // GPULabel returns the label added to nodes with GPU resource.
 func (c *ClaudieCloudProvider) GPULabel(_ context.Context, req *protos.GPULabelRequest) (*protos.GPULabelResponse, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	log.Info().Msgf("Got GPULabel request")
 	return &protos.GPULabelResponse{Label: GpuLabel}, nil
 }
 
 // GetAvailableGPUTypes return all available GPU types cloud provider supports.
 func (c *ClaudieCloudProvider) GetAvailableGPUTypes(_ context.Context, req *protos.GetAvailableGPUTypesRequest) (*protos.GetAvailableGPUTypesResponse, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	log.Info().Msgf("Got GetAvailableGPUTypes request")
 	return &protos.GetAvailableGPUTypesResponse{}, nil
 }
@@ -184,6 +199,8 @@ func (c *ClaudieCloudProvider) Cleanup(_ context.Context, req *protos.CleanupReq
 
 // Refresh is called before every main loop and can be used to dynamically update cloud provider state.
 func (c *ClaudieCloudProvider) Refresh(_ context.Context, req *protos.RefreshRequest) (*protos.RefreshResponse, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	log.Info().Msgf("Got Refresh request")
 	return &protos.RefreshResponse{}, c.refresh()
 }
