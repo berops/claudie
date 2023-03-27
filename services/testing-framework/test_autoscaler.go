@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 )
@@ -177,6 +179,11 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 // applyDeployment applies specified deployment into specified cluster.
 func applyDeployment(c *pb.K8Scluster, deployment string) error {
 	kc := kubectl.Kubectl{Kubeconfig: c.Kubeconfig, MaxKubectlRetries: 5}
+	if log.Logger.GetLevel() == zerolog.DebugLevel {
+		prefix := fmt.Sprintf("%s-%s", c.ClusterInfo.Name, c.ClusterInfo.Hash)
+		kc.Stdout = comm.GetStdOut(prefix)
+		kc.Stderr = comm.GetStdErr(prefix)
+	}
 	if err := kc.KubectlApplyString(deployment, "default"); err != nil {
 		return fmt.Errorf("failed to apply deployment on cluster %s : %w", c.ClusterInfo.Name, err)
 	}
@@ -186,7 +193,12 @@ func applyDeployment(c *pb.K8Scluster, deployment string) error {
 // removeDeployment deletes specified deployment from specified cluster.
 func removeDeployment(c *pb.K8Scluster, deployment string) error {
 	kc := kubectl.Kubectl{Kubeconfig: c.Kubeconfig, MaxKubectlRetries: 5}
-	if err := kc.KubectlDeleteString(deployment, "default"); err != nil {
+	if log.Logger.GetLevel() == zerolog.DebugLevel {
+		prefix := fmt.Sprintf("%s-%s", c.ClusterInfo.Name, c.ClusterInfo.Hash)
+		kc.Stdout = comm.GetStdOut(prefix)
+		kc.Stderr = comm.GetStdErr(prefix)
+	}
+	if err := kc.KubectlDeleteString(deployment); err != nil {
 		return fmt.Errorf("failed to remove deployment on cluster %s : %w", c.ClusterInfo.Name, err)
 	}
 	return nil

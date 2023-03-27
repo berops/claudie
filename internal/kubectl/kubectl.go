@@ -66,6 +66,15 @@ func (k *Kubectl) KubectlDeleteResource(resource, resourceName string, options .
 	return k.run(command, options...)
 }
 
+// KubectlDeleteString runs kubectl delete in k.Directory, with specified resource, resource name
+// example: kubectl delete ns test -> k.KubectlDeleteResource("ns","test")
+// example: kubectl delete pod busy-box -n test -> k.KubectlDeleteResource("pod","busy-box", "-n","test")
+func (k *Kubectl) KubectlDeleteString(str string, options ...string) error {
+	kubeconfig := k.getKubeconfig()
+	command := fmt.Sprintf("echo '%s' | kubectl delete -f - %s", str, kubeconfig)
+	return k.run(command, options...)
+}
+
 // KubectlDrain runs kubectl drain in k.Directory, on a specified node with flags --ignore-daemonsets --delete-emptydir-data
 // example: kubectl drain node1 -> k.KubectlDrain("node1")
 func (k *Kubectl) KubectlDrain(nodeName string) error {
