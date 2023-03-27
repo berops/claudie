@@ -1,9 +1,9 @@
 package kubeone
 
 import (
-	"os"
 	"os/exec"
 
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	comm "github.com/berops/claudie/internal/command"
@@ -21,19 +21,21 @@ type Kubeone struct {
 
 // Apply will run `kubeone apply -m kubeone.yaml -y` in the specified directory
 // return nil if successful, error otherwise
-func (k *Kubeone) Apply() error {
+func (k *Kubeone) Apply(prefix string) error {
 	command := "kubeone apply -m kubeone.yaml -y"
 	cmd := exec.Command("bash", "-c", command)
 	cmd.Dir = k.Directory
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	if log.Logger.GetLevel() == zerolog.DebugLevel {
+		cmd.Stdout = comm.GetStdOut(prefix)
+		cmd.Stderr = comm.GetStdErr(prefix)
+	}
 	if err := cmd.Run(); err != nil {
 		log.Warn().Msgf("Error encountered while executing %s : %v", command, err)
 		retryCmd := comm.Cmd{
 			Command: command,
 			Dir:     k.Directory,
-			Stdout:  os.Stdout,
-			Stderr:  os.Stderr,
+			Stdout:  cmd.Stdout,
+			Stderr:  cmd.Stderr,
 		}
 		if err := retryCmd.RetryCommand(maxNumOfRetries); err != nil {
 			return err

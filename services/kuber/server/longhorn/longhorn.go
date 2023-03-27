@@ -7,15 +7,17 @@ import (
 	"os"
 	"strings"
 
+	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
 // Cluster - k8s cluster where longhorn will be set up
-// Directory - directory where to create storage class manidests
+// Directory - directory where to create storage class manifest
 type Longhorn struct {
 	Cluster   *pb.K8Scluster
 	Directory string
@@ -36,6 +38,11 @@ const (
 // SetUp function will set up the longhorn on the k8s cluster saved in l.Longhorn
 func (l Longhorn) SetUp() error {
 	kubectl := kubectl.Kubectl{Kubeconfig: l.Cluster.GetKubeconfig()}
+	if log.Logger.GetLevel() == zerolog.DebugLevel {
+		prefix := fmt.Sprintf("%s-%s", l.Cluster.ClusterInfo.Name, l.Cluster.ClusterInfo.Hash)
+		kubectl.Stdout = comm.GetStdOut(prefix)
+		kubectl.Stderr = comm.GetStdErr(prefix)
+	}
 	// apply longhorn.yaml
 	err := kubectl.KubectlApply(longhornYaml)
 	if err != nil {
@@ -175,7 +182,7 @@ func (l *Longhorn) deleteOldStorageClasses(existing, applied []string, kc kubect
 		//if not found in applied, delete the sc
 		if !found {
 			err := kc.KubectlDeleteResource("sc", ex)
-			log.Info().Msgf("Deleting storage class %s", ex)
+			log.Debug().Msgf("Deleting storage class %s", ex)
 			if err != nil {
 				return fmt.Errorf("error while deleting storage class %s due to no nodes backing it : %w", ex, err)
 			}

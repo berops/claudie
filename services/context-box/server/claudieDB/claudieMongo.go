@@ -62,10 +62,10 @@ func (c *ClaudieMongo) Connect() error {
 	} else {
 		//if client creation successful, ping the DB to verify the connection
 		for i := 0; i < maxConnectionRetries; i++ {
-			log.Info().Msgf("Trying to ping the DB at %s...", safeURI)
+			log.Debug().Msgf("Trying to ping the DB at %s...", safeURI)
 			err := pingTheDB(client)
 			if err == nil {
-				log.Info().Msgf("The database at %s has been successfully pinged", safeURI)
+				log.Debug().Msgf("The database at %s has been successfully pinged", safeURI)
 				c.client = client
 				return nil
 			}
@@ -255,7 +255,7 @@ func (c *ClaudieMongo) UpdateMsToNull(hexId string) error {
 	err = c.updateDocument(bson.M{"_id": id}, bson.M{"$set": bson.M{"manifest": nil, "msChecksum": nil, "errorMessage": nil}})
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			log.Error().Msgf("Document with id %s failed to update msChecksum", id)
+			return fmt.Errorf("document with id %s failed to update msChecksum : %w", id, err)
 		}
 		return err
 	}

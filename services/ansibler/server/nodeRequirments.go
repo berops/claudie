@@ -31,7 +31,7 @@ func installLonghornRequirements(nodepoolInfo *NodepoolInfo) error {
 	}
 
 	ansible := ansible.Ansible{Playbook: longhornReq, Inventory: inventoryFile, Directory: directory}
-	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("ALL - %s", directory)); err != nil {
+	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("ALL - %s", nodepoolInfo.ID)); err != nil {
 		return fmt.Errorf("error while running ansible to install Longhorn requirements for %s : %w", directory, err)
 	}
 

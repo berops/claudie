@@ -30,8 +30,7 @@ const (
 
 // BuildCluster builds all cluster defined in the desired state
 func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb.BuildClusterResponse, error) {
-	log.Info().Msgf("BuildCluster request cluster %s project: %s", req.Desired.ClusterInfo.Name, req.ProjectName)
-
+	log.Info().Msgf("Building kubernetes cluster %s project %s", req.Desired.ClusterInfo.Name, req.ProjectName)
 	ke := kubeEleven.KubeEleven{
 		K8sCluster: req.Desired,
 		LBClusters: req.DesiredLbs,
@@ -41,7 +40,7 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 		return nil, fmt.Errorf("error while building cluster %s project %s : %w", req.Desired.ClusterInfo.Name, req.ProjectName, err)
 	}
 
-	log.Info().Msgf("cluster %s project %s was successfully build", req.Desired.ClusterInfo.Name, req.ProjectName)
+	log.Info().Msgf("Kubernetes cluster %s project %s was successfully build", req.Desired.ClusterInfo.Name, req.ProjectName)
 	return &pb.BuildClusterResponse{Desired: req.Desired, DesiredLbs: req.DesiredLbs}, nil
 }
 
@@ -55,7 +54,7 @@ func main() {
 	if err != nil {
 		log.Fatal().Msgf("Failed to listen on %s : %v", kubeElevenAddr, err)
 	}
-	log.Info().Msgf("KubeEleven service is listening on %s", kubeElevenAddr)
+	log.Info().Msgf("Kube-eleven service is listening on %s", kubeElevenAddr)
 
 	s := grpc.NewServer()
 	pb.RegisterKubeElevenServiceServer(s, &server{})
@@ -81,7 +80,7 @@ func main() {
 			err = ctx.Err()
 		case sig := <-ch:
 			log.Info().Msgf("Received signal %v", sig)
-			err = errors.New("kube-eleven interrupt signal")
+			err = errors.New("interrupt signal")
 		}
 
 		log.Info().Msg("Gracefully shutting down gRPC server")
@@ -100,11 +99,11 @@ func main() {
 	g.Go(func() error {
 		// s.Serve() will create a service goroutine for each connection
 		if err := s.Serve(lis); err != nil {
-			return fmt.Errorf("KubeEleven failed to serve: %w", err)
+			return fmt.Errorf("kube-eleven failed to serve: %w", err)
 		}
 		log.Info().Msg("Finished listening for incoming connections")
 		return nil
 	})
 
-	log.Info().Msgf("Stopping KubeEleven: %s", g.Wait())
+	log.Info().Msgf("Stopping Kube-eleven: %s", g.Wait())
 }

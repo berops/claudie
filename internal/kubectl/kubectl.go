@@ -3,6 +3,7 @@ package kubectl
 
 import (
 	"fmt"
+	"io"
 	"os/exec"
 	"strings"
 
@@ -16,6 +17,8 @@ type Kubectl struct {
 	Kubeconfig        string
 	Directory         string
 	MaxKubectlRetries int
+	Stdout            io.Writer
+	Stderr            io.Writer
 }
 
 const (
@@ -140,12 +143,14 @@ func (k *Kubectl) KubectlPatch(resource, resourceName, patchPath string, options
 func (k Kubectl) run(command string, options ...string) error {
 	cmd := exec.Command("bash", "-c", strings.Join(append([]string{command}, options...), " "))
 	cmd.Dir = k.Directory
+	cmd.Stdout = k.Stdout
+	cmd.Stderr = k.Stderr
 	if err := cmd.Run(); err != nil {
 		retryCount := k.MaxKubectlRetries
 		if k.MaxKubectlRetries == 0 {
 			retryCount = defaultMaxKubectlRetries
 		}
-		retryCmd := comm.Cmd{Command: command, Options: options, Dir: k.Directory, CommandTimeout: kubectlTimeout}
+		retryCmd := comm.Cmd{Command: command, Options: options, Dir: k.Directory, CommandTimeout: kubectlTimeout, Stdout: k.Stdout, Stderr: k.Stderr}
 		if err = retryCmd.RetryCommand(retryCount); err != nil {
 			return err
 		}
@@ -159,6 +164,7 @@ func (k Kubectl) runWithOutput(command string, options ...string) ([]byte, error
 	var err error
 	cmd := exec.Command("bash", "-c", strings.Join(append([]string{command}, options...), " "))
 	cmd.Dir = k.Directory
+	//NOTE: Do not set custom Stdout/Stderr as that would pollute the output.
 	result, err = cmd.CombinedOutput()
 	if err != nil {
 		retryCount := k.MaxKubectlRetries
