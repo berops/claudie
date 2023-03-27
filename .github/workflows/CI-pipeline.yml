@@ -308,7 +308,25 @@ jobs:
 
       - name: Monitor E2E test
         run: |
-          kubectl wait --for=condition=complete --timeout=10800s job/testing-framework -n claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+          # Wait for completion as background process - capture PID
+          kubectl wait --for=condition=complete --timeout=10800s job/testing-framework -n claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER} &
+          completion_pid=$!
+
+          # Wait for failure as background process - capture PID
+          kubectl wait --for=condition=failed --timeout=10800s job/testing-framework -n claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER} && exit 1 &
+          failure_pid=$! 
+
+          # capture exit code of the first subprocess to exit
+          wait -n $completion_pid $failure_pid
+          exit_code=$?
+
+          if (( $exit_code == 0 )); then
+            echo "Testing-framework successful"
+          else
+            echo "Testing-framework received an error"
+          fi
+          # Exit 0 on success, 1 on failure
+          exit $exit_code
 
       - name: Wait until frontend will clean up the infra from tests
         run: |
