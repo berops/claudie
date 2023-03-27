@@ -2,7 +2,7 @@ kind: Kustomization
 metadata:
   name: dynamo
 resources:
-  - dynamodb.yaml
+  # - dynamodb.yaml #For Testing
   - job.yaml
 secretGenerator:
   - name: dynamo-secret
