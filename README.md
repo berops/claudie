@@ -16,9 +16,13 @@
   <a href="https://youtu.be/q4xdAiHYxZQ"><img src="https://markdown-videos.deta.dev/youtube/q4xdAiHYxZQ"></a>
 </p>
 
-## Request a Demo
+## Reach out to us
 
-If you would like to request a demo, feel free to contact us [here](mailto:claudie-demo&commat;berops&period;com)
+Claudie is proudly developed by Berops.
+
+If you would like to request a demo, feel free to contact us [here](mailto:claudie-demo&commat;berops&period;com)A
+
+We'd be happy to offer direct support in order to help you get the most out of Claudie. Feel free to to contact us [here](mailto:claudie&commat;berops&period;com)
 
 ## Typical use cases
 
