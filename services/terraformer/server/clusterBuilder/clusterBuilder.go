@@ -24,7 +24,6 @@ const (
 	subnetCidrKey = "VPC_SUBNET_CIDR"
 	// <nodepool-name>-subnet-cidr
 	subnetCidrKeyTemplate = "%s-subnet-cidr"
-	baseVpcCIDR           = "10.0.0.0/16"
 	baseSubnetCIDR        = "10.0.0.0/24"
 	defaultOctetToChange  = 2
 )
