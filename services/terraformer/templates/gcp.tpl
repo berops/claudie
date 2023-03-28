@@ -11,16 +11,16 @@ provider "google" {
 
 resource "google_compute_network" "network_{{ $region }}" {
   provider                = google.k8s_nodepool_{{ $region }}
-  name                    = "{{ $clusterName }}-{{ $region }}-network"
+  name                    = "{{ $clusterName }}-{{ $clusterHash }}-{{ $region }}-network"
   auto_create_subnetworks = false
-  description   = "Managed by Claudie for cluster {{ $clusterName }}-{{ $clusterHash }}"
+  description             = "Managed by Claudie for cluster {{ $clusterName }}-{{ $clusterHash }}"
 }
 
 resource "google_compute_firewall" "firewall_{{ $region }}" {
   provider     = google.k8s_nodepool_{{ $region }}
-  name         = "{{ $clusterName }}-{{ $region }}-firewall"
+  name         = "{{ $clusterName }}-{{ $clusterHash }}-{{ $region }}-firewall"
   network      = google_compute_network.network_{{ $region }}.self_link
-  description   = "Managed by Claudie for cluster {{ $clusterName }}-{{ $clusterHash }}"
+  description  = "Managed by Claudie for cluster {{ $clusterName }}-{{ $clusterHash }}"
 
   allow {
     protocol = "UDP"
@@ -56,7 +56,7 @@ resource "google_compute_subnetwork" "{{ $nodepool.Name }}_subnet" {
   provider      = google.k8s_nodepool_{{ $nodepool.Region }}
   name          = "{{ $nodepool.Name }}-{{ $clusterHash }}-subnet"
   network       = google_compute_network.network_{{ $nodepool.Region }}.self_link
-  ip_cidr_range = "{{getCIDR "10.0.0.0/24" 2 $i}}"
+  ip_cidr_range = "{{index $.Metadata (printf "%s-subnet-cidr" $nodepool.Name) }}"
   description   = "Managed by Claudie for cluster {{ $clusterName }}-{{ $clusterHash }}"
 }
 

@@ -82,6 +82,13 @@ message NodePool {
   repeated Node nodes = 10;
   Provider provider = 11 ;
   bool isControl = 12;
+  map<string, MetaValue> metadata = 13;
+}
+
+message MetaValue {
+  oneof MetaValueOneOf {
+    string cidr = 1;
+  }
 }
 
 enum NodeType {
