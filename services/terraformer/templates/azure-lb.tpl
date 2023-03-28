@@ -102,7 +102,7 @@ resource "azurerm_subnet" "{{ $nodepool.Name }}_{{ $clusterHash }}_subnet" {
   name                 = "{{ $nodepool.Name }}_{{ $clusterHash }}_subnet"
   resource_group_name  = azurerm_resource_group.rg_{{ replaceAll $nodepool.Region " " "_"}}.name
   virtual_network_name = azurerm_virtual_network.claudie_vn_{{ replaceAll $nodepool.Region " " "_" }}.name
-  address_prefixes     = ["{{ getCIDR "10.0.0.0/24" 2 $i }}"]
+  address_prefixes     = ["{{ index $.Metadata (printf "%s-subnet-cidr" $nodepool.Name)  }}"]
 }
 
 resource "azurerm_subnet_network_security_group_association" "{{ $nodepool.Name }}_associate_nsg" {

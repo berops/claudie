@@ -82,12 +82,19 @@ message NodePool {
   repeated Node nodes = 8;
   Provider provider = 9;
   bool isControl = 10;
-  AutoscalerConf autoscalerConfig = 11;
+  map<string, MetaValue> metadata = 11;
+  AutoscalerConf autoscalerConfig = 12;
 }
 
 message AutoscalerConf {
   int32 min = 1;
   int32 max = 2;
+}
+
+message MetaValue {
+  oneof MetaValueOneOf {
+    string cidr = 1;
+  }
 }
 
 enum NodeType {

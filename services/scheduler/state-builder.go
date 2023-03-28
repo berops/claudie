@@ -110,6 +110,7 @@ func readManifest(config *pb.Config) (*manifest.Manifest, error) {
 // - Private key
 // - AutoscalerConfig
 // - existing nodes
+// - nodepool metadata
 func updateClusterInfo(desired, current *pb.ClusterInfo) {
 	desired.Hash = current.Hash
 	desired.PublicKey = current.PublicKey
@@ -120,8 +121,9 @@ desired:
 		for _, currentNp := range current.NodePools {
 			// Found nodepool in desired and in Current
 			if desiredNp.Name == currentNp.Name {
-				// Save current nodes
+				// Save current nodes and metadata
 				desiredNp.Nodes = currentNp.Nodes
+				desiredNp.Metadata = currentNp.Metadata
 				// Update the count
 				if currentNp.AutoscalerConfig != nil && desiredNp.AutoscalerConfig != nil {
 					// Both have Autoscaler conf defined, use same count as in current

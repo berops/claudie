@@ -126,7 +126,7 @@ resource "aws_key_pair" "claudie_pair_{{ $region }}" {
 resource "aws_subnet" "{{ $nodepool.Name }}_subnet" {
   provider                = aws.k8s_nodepool_{{ $nodepool.Region  }}
   vpc_id                  = aws_vpc.claudie_vpc_{{ $nodepool.Region }}.id
-  cidr_block              = "{{ getCIDR "10.0.0.0/24" 2 $i}}"
+  cidr_block              = "{{ index $.Metadata (printf "%s-subnet-cidr" $nodepool.Name) }}"
   map_public_ip_on_launch = true
   availability_zone       = "{{ $nodepool.Zone }}"
 
