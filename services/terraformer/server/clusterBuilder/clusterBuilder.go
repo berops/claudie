@@ -343,10 +343,9 @@ func getCIDR(baseCIDR string, position int, existing map[string]struct{}) (strin
 			// CIDR already assigned.
 			i++
 			continue
-		} else {
-			// CIDR does not exist yet, break.
-			return fmt.Sprintf("%s/%d", ip.String(), ones), nil
 		}
+		// CIDR does not exist yet, return.
+		return fmt.Sprintf("%s/%d", ip.String(), ones), nil
 	}
 }
 

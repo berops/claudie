@@ -106,7 +106,7 @@ func TestGetCIDR(t *testing.T) {
 	}
 	for _, test := range testDataFail {
 		if _, err := getCIDR(test.baseCIDR, test.position, test.existing); err == nil {
-			t.Error(test.desc, fmt.Errorf("test should have failed, but was successful"))
+			t.Error(test.desc, "test should have failed, but was successful")
 		} else {
 			t.Log(err)
 		}
