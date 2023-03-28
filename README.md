@@ -20,7 +20,7 @@
 
 Claudie is proudly developed by Berops.
 
-If you would like to request a demo, feel free to contact us [here](mailto:claudie-demo&commat;berops&period;com)A
+If you would like to request a demo, feel free to contact us [here](mailto:claudie-demo&commat;berops&period;com)
 
 We'd be happy to offer direct support in order to help you get the most out of Claudie. Feel free to to contact us [here](mailto:claudie&commat;berops&period;com)
 
