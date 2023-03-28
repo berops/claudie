@@ -253,6 +253,8 @@ func (c *ClusterBuilder) calculateCIDR(baseCIDR string, nodepools []*pb.NodePool
 				np.Metadata = make(map[string]*pb.MetaValue)
 			}
 			np.Metadata[subnetCidrKey] = &pb.MetaValue{MetaValueOneOf: &pb.MetaValue_Cidr{Cidr: cidr}}
+			// Cache calculated CIDR.
+			exists[cidr] = struct{}{}
 		}
 	}
 	return nil
