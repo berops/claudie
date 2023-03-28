@@ -112,6 +112,16 @@ func updateClusterInfo(desired, current *pb.ClusterInfo) {
 	desired.Hash = current.Hash
 	desired.PublicKey = current.PublicKey
 	desired.PrivateKey = current.PrivateKey
+desired:
+	for _, desiredNp := range desired.NodePools {
+		for _, currentNp := range current.NodePools {
+			// Found nodepool in desired and in Current
+			if desiredNp.Name == currentNp.Name {
+				desiredNp.Metadata = currentNp.Metadata
+				continue desired
+			}
+		}
+	}
 }
 
 // createKeys will create a RSA key-pair and save it into the clusterInfo provided

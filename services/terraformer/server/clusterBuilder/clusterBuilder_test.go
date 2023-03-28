@@ -50,7 +50,7 @@ func TestGetCIDR(t *testing.T) {
 		desc     string
 		baseCIDR string
 		position int
-		value    int
+		existing map[string]struct{}
 		out      string
 	}
 
@@ -59,42 +59,56 @@ func TestGetCIDR(t *testing.T) {
 			desc:     "Second octet change",
 			baseCIDR: "10.0.0.0/24",
 			position: 1,
-			value:    10,
-			out:      "10.10.0.0/24",
+			existing: map[string]struct{}{
+				"10.1.0.0/24": {},
+			},
+			out: "10.0.0.0/24",
 		},
 
 		{
 			desc:     "Third octet change",
 			baseCIDR: "10.0.0.0/24",
 			position: 2,
-			value:    10,
-			out:      "10.0.10.0/24",
+			existing: map[string]struct{}{
+				"10.0.0.0/24": {},
+			},
+			out: "10.0.1.0/24",
 		},
 	}
 	for _, test := range testDataSucc {
-		if out, err := getCIDR(test.baseCIDR, test.position, test.value); out != test.out || err != nil {
-			t.Error(test.desc, err)
+		if out, err := getCIDR(test.baseCIDR, test.position, test.existing); out != test.out || err != nil {
+			t.Error(test.desc, err, out)
 		}
 	}
 	testDataFail := []testCase{
 		{
-			desc:     "Third octet invalid change",
+			desc:     "Max IP error",
 			baseCIDR: "10.0.0.0/24",
 			position: 2,
-			value:    300,
-			out:      "10.0.300.0/24",
+			existing: func() map[string]struct{} {
+				m := make(map[string]struct{})
+				for i := 0; i < 256; i++ {
+					m[fmt.Sprintf("10.0.%d.0/24", i)] = struct{}{}
+				}
+				return m
+			}(),
+			out: "",
 		},
 		{
 			desc:     "Invalid base CIDR",
 			baseCIDR: "300.0.0.0/24",
 			position: 2,
-			value:    10,
-			out:      "10.0.10.0/24",
+			existing: map[string]struct{}{
+				"10.0.0.0/24": {},
+			},
+			out: "10.0.10.0/24",
 		},
 	}
 	for _, test := range testDataFail {
-		if _, err := getCIDR(test.baseCIDR, test.position, test.value); err == nil {
+		if _, err := getCIDR(test.baseCIDR, test.position, test.existing); err == nil {
 			t.Error(test.desc, fmt.Errorf("test should have failed, but was successful"))
+		} else {
+			t.Log(err)
 		}
 	}
 }

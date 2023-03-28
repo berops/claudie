@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/berops/claudie/proto/pb"
@@ -70,6 +71,16 @@ func GroupNodepoolsByProvider(clusterInfo *pb.ClusterInfo) map[string][]*pb.Node
 	sortedNodePools := map[string][]*pb.NodePool{}
 	for _, nodepool := range clusterInfo.GetNodePools() {
 		sortedNodePools[nodepool.Provider.CloudProviderName] = append(sortedNodePools[nodepool.Provider.CloudProviderName], nodepool)
+	}
+	return sortedNodePools
+}
+
+// groups nodepool by cloud provider instance name and region into the map[<provider-instance-name>-<region>][]*pb.Nodepool
+func GroupNodepoolsByProviderRegion(clusterInfo *pb.ClusterInfo) map[string][]*pb.NodePool {
+	sortedNodePools := map[string][]*pb.NodePool{}
+	for _, nodepool := range clusterInfo.GetNodePools() {
+		key := fmt.Sprintf("%s-%s", nodepool.Provider.SpecName, nodepool.Region)
+		sortedNodePools[key] = append(sortedNodePools[key], nodepool)
 	}
 	return sortedNodePools
 }

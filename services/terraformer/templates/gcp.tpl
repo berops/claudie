@@ -56,7 +56,7 @@ resource "google_compute_subnetwork" "{{ $nodepool.Name }}_subnet" {
   provider      = google.k8s_nodepool_{{ $nodepool.Region }}
   name          = "{{ $nodepool.Name }}-{{ $clusterHash }}-subnet"
   network       = google_compute_network.network_{{ $nodepool.Region }}.self_link
-  ip_cidr_range = "{{index .Metadata (printf "%s-subnet-cidr" $nodepool.Name) }}"
+  ip_cidr_range = "{{index $.Metadata (printf "%s-subnet-cidr" $nodepool.Name) }}"
   description   = "Managed by Claudie for cluster {{ $clusterName }}-{{ $clusterHash }}"
 }
 

@@ -39,7 +39,7 @@ resource "hcloud_firewall" "firewall" {
     ]
   }
 
-  {{- range $role := index .Metadata "roles" }}
+  {{- range $role := index $.Metadata"roles" }}
   rule {
     direction  = "in"
     protocol   = "{{ $role.Protocol }}"
