@@ -243,7 +243,8 @@ func (c *ClusterBuilder) calculateCIDR(baseCIDR string, nodepools []*pb.NodePool
 	}
 	// Calculate new ones if needed.
 	for _, np := range nodepools {
-		if _, ok := np.Metadata[subnetCidrKey]; !ok {
+		// Check if CIDR key is defined and if value is not nil/empty.
+		if cidr, ok := np.Metadata[subnetCidrKey]; !ok || cidr == nil || cidr.GetCidr() == "" {
 			cidr, err := getCIDR(baseCIDR, defaultOctetToChange, exists)
 			if err != nil {
 				return fmt.Errorf("failed to parse CIDR for nodepool %s : %w", np.Name, err)
