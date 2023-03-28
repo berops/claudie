@@ -117,7 +117,7 @@ resource "oci_core_default_route_table" "claudie_routes_{{ $region }}" {
 resource "oci_core_subnet" "{{ $nodepool.Name }}_subnet" {
   provider            = oci.lb_nodepool_{{ $nodepool.Region }}
   vcn_id              = oci_core_vcn.claudie_vcn_{{ $nodepool.Region }}.id
-  cidr_block          = "{{ index $.Metadata(printf "%s-subnet-cidr" $nodepool.Name)  }}"
+  cidr_block          = "{{ index $.Metadata (printf "%s-subnet-cidr" $nodepool.Name)  }}"
   compartment_id      = var.default_compartment_id
   display_name        = "{{ $clusterName }}-{{ $clusterHash }}-subnet"
   security_list_ids   = [oci_core_vcn.claudie_vcn_{{ $nodepool.Region }}.default_security_list_id]
