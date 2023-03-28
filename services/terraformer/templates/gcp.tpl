@@ -11,7 +11,7 @@ provider "google" {
 
 resource "google_compute_network" "network_{{ $region }}" {
   provider                = google.k8s_nodepool_{{ $region }}
-  name                    = {{ $clusterName }}-{{ $clusterHash }}-{{ $region }}-network"
+  name                    = "{{ $clusterName }}-{{ $clusterHash }}-{{ $region }}-network"
   auto_create_subnetworks = false
   description             = "Managed by Claudie for cluster {{ $clusterName }}-{{ $clusterHash }}"
 }
