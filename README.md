@@ -103,8 +103,9 @@ If you've discovered something that requires our attention, see [our security
 policy](SECURITY.md) to learn how to proceed.
 
 ## Roadmap
-
+<!-- Add a roadmap for claudie so users know which features are being worked on and which will in future -->
 To see the vision behind Claudie, please refer to the [roadmap](./docs/roadmap/roadmap.md) document.
+
 
 ## Reach out to us
 
