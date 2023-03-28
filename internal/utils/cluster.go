@@ -57,7 +57,7 @@ func GetRegions(nodepools []*pb.NodePool) []string {
 	return regions
 }
 
-// groups nodepool by provider spec name into the map[Provider Name][]*pb.Nodepool
+// GroupNodepoolsByProviderSpecName groups nodepool by provider spec name into the map[Provider Name][]*pb.Nodepool
 func GroupNodepoolsByProviderSpecName(clusterInfo *pb.ClusterInfo) map[string][]*pb.NodePool {
 	sortedNodePools := map[string][]*pb.NodePool{}
 	for _, nodepool := range clusterInfo.GetNodePools() {
@@ -66,7 +66,7 @@ func GroupNodepoolsByProviderSpecName(clusterInfo *pb.ClusterInfo) map[string][]
 	return sortedNodePools
 }
 
-// groups nodepool by cloud provider name into the map[Provider Name][]*pb.Nodepool
+// GroupNodepoolsByProvider groups nodepool by cloud provider name into the map[Provider Name][]*pb.Nodepool
 func GroupNodepoolsByProvider(clusterInfo *pb.ClusterInfo) map[string][]*pb.NodePool {
 	sortedNodePools := map[string][]*pb.NodePool{}
 	for _, nodepool := range clusterInfo.GetNodePools() {
@@ -75,7 +75,7 @@ func GroupNodepoolsByProvider(clusterInfo *pb.ClusterInfo) map[string][]*pb.Node
 	return sortedNodePools
 }
 
-// groups nodepool by cloud provider instance name and region into the map[<provider-instance-name>-<region>][]*pb.Nodepool
+// GroupNodepoolsByProviderRegion groups nodepool by cloud provider instance name and region into the map[<provider-instance-name>-<region>][]*pb.Nodepool
 func GroupNodepoolsByProviderRegion(clusterInfo *pb.ClusterInfo) map[string][]*pb.NodePool {
 	sortedNodePools := map[string][]*pb.NodePool{}
 	for _, nodepool := range clusterInfo.GetNodePools() {
@@ -85,7 +85,7 @@ func GroupNodepoolsByProviderRegion(clusterInfo *pb.ClusterInfo) map[string][]*p
 	return sortedNodePools
 }
 
-// findName will return a real node name based on the user defined one
+// FindName will return a real node name based on the user defined one
 // example: name defined in cloud provider: gcp-cluster-jkshbdc-gcp-control-1 -> name defined in cluster : gcp-control-1
 func FindName(realNames []string, name string) string {
 	for _, n := range realNames {
