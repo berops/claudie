@@ -72,6 +72,12 @@ spec:
 
 // testAutoscaler tests the Autoscaler deployment.
 func testAutoscaler(ctx context.Context, config *pb.Config) error {
+	autoscaledClusters := getAutoscaledClusters(config)
+	if len(autoscaledClusters) == 0 {
+		// No clusters are currently autoscaled.
+		return testLonghornDeployment(ctx, config)
+	}
+
 	c, cc := clientConnection()
 	defer func() {
 		err := cc.Close()
@@ -81,7 +87,7 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 	}()
 
 	var clusterGroup errgroup.Group
-	for _, cluster := range config.CurrentState.Clusters {
+	for _, cluster := range autoscaledClusters {
 		func(cluster *pb.K8Scluster) {
 			clusterGroup.Go(
 				func() error {
@@ -98,7 +104,7 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 	log.Info().Msgf("Waiting %d minutes to see if autoscaler starts the scale up", scaleUpTimeout)
 	time.Sleep(scaleUpTimeout * time.Minute)
 
-	// Check if build has been started, if no, error
+	// Check if build has been started, if yes, error.
 	if res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: config.Id, Type: pb.IdType_HASH}); err != nil {
 		if !checksumsEqual(res.Config.DsChecksum, res.Config.CsChecksum) {
 			return fmt.Errorf("some cluster/s in config %s have been scaled up, when they should not", config.Name)
@@ -106,8 +112,8 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 			log.Info().Msgf("Config %s has successfully passed autoscaling test [1/3]", config.Name)
 		}
 	}
-	// Apply scale up deployment
-	for _, cluster := range config.CurrentState.Clusters {
+	// Apply scale up deployment.
+	for _, cluster := range autoscaledClusters {
 		func(cluster *pb.K8Scluster) {
 			clusterGroup.Go(
 				func() error {
@@ -121,11 +127,11 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 		return fmt.Errorf("failed to deploy scale up deployment : %w", err)
 	}
 
-	// Wait before checking for changes
+	// Wait before checking for changes.
 	log.Info().Msgf("Waiting %d minutes to see if autoscaler starts the scale up", scaleUpTimeout)
 	time.Sleep(scaleUpTimeout * time.Minute)
 
-	// Check if build has been started, if no, error
+	// Check if build has been started, if no, error (Scale up).
 	if res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: config.Id, Type: pb.IdType_HASH}); err != nil {
 		if checksumsEqual(res.Config.DsChecksum, res.Config.CsChecksum) {
 			return fmt.Errorf("some cluster/s in config %s have not been scaled up, when they should have", config.Name)
@@ -134,16 +140,16 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 		}
 	}
 
-	// Wait and check if in build -> if NOT in build, error (Scale up)
+	// Wait until build is finished.
 	if err := configChecker(ctx, c, "autoscaling", "scale-up-test", idInfo{id: config.Id, idType: pb.IdType_HASH}); err != nil {
 		return err
 	}
-	// Test longhorn
+	// Test longhorn.
 	if err := testLonghornDeployment(ctx, config); err != nil {
 		return err
 	}
 
-	for _, cluster := range config.CurrentState.Clusters {
+	for _, cluster := range autoscaledClusters {
 		func(cluster *pb.K8Scluster) {
 			clusterGroup.Go(
 				func() error {
@@ -156,10 +162,10 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 		return fmt.Errorf("failed to remove scale up deployment : %w", err)
 	}
 
-	// Wait before checking for changes
+	// Wait before checking for changes.
 	log.Info().Msgf("Waiting %d minutes to let autoscaler start the scale down", scaleDownTimeout)
 	time.Sleep(scaleDownTimeout * time.Minute)
-	// Check if build has been started, if yes, error
+	// Check if build has been started, if not, error (Scale down).
 	if res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: config.Id, Type: pb.IdType_HASH}); err != nil {
 		if checksumsEqual(res.Config.DsChecksum, res.Config.CsChecksum) {
 			return fmt.Errorf("some cluster/s in config %s have not been scaled down, when they should have", config.Name)
@@ -167,12 +173,12 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 			log.Info().Msgf("Config %s has successfully passed autoscaling test [3/3]", config.Name)
 		}
 	}
-	// Wait and check if in build -> if NOT in build, error (Scale down)
+	// Wait until build is finished.
 	if err := configChecker(ctx, c, "autoscaling", "scale-down-test", idInfo{id: config.Id, idType: pb.IdType_HASH}); err != nil {
 		return err
 	}
 
-	// Test longhorn
+	// Test longhorn.
 	return testLonghornDeployment(ctx, config)
 }
 

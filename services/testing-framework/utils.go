@@ -89,3 +89,13 @@ func configChecker(ctx context.Context, c pb.ContextBoxServiceClient, testSetNam
 		}
 	}
 }
+
+func getAutoscaledClusters(c *pb.Config) []*pb.K8Scluster {
+	clusters := make([]*pb.K8Scluster, 0, len(c.CurrentState.Clusters))
+	for _, c := range c.CurrentState.Clusters {
+		if utils.IsAutoscaled(c) {
+			clusters = append(clusters, c)
+		}
+	}
+	return clusters
+}
