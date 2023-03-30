@@ -120,6 +120,15 @@ func (c ClusterBuilder) DestroyNodepools() error {
 	clusterID := fmt.Sprintf("%s-%s", c.CurrentInfo.Name, c.CurrentInfo.Hash)
 	clusterDir := filepath.Join(Output, clusterID)
 
+	// Calculate CIDR, in case some nodepools do not have it, due to error.
+	// https://github.com/berops/claudie/issues/647
+	// Order them by provider and region
+	for _, nps := range utils.GroupNodepoolsByProviderRegion(c.CurrentInfo) {
+		if err := c.calculateCIDR(baseSubnetCIDR, nps); err != nil {
+			return fmt.Errorf("error while generating CIDR for nodepools : %w", err)
+		}
+	}
+
 	if err := c.generateFiles(clusterID, clusterDir); err != nil {
 		return fmt.Errorf("failed to generate files: %w", err)
 	}
