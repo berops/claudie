@@ -82,10 +82,8 @@ func (l Longhorn) SetUp() error {
 	}
 	if setting, err := template.GenerateToString(enableCATpl, enableCa); err != nil {
 		return err
-	} else {
-		if err := kubectl.KubectlApplyString(setting, ""); err != nil {
-			return fmt.Errorf("error while applying CA setting for longhorn in cluster %s : %w", l.Cluster.ClusterInfo.Name, err)
-		}
+	} else if err := kubectl.KubectlApplyString(setting); err != nil {
+		return fmt.Errorf("error while applying CA setting for longhorn in cluster %s : %w", l.Cluster.ClusterInfo.Name, err)
 	}
 
 	sortedNodePools := utils.GroupNodepoolsByProviderSpecName(l.Cluster.ClusterInfo)
