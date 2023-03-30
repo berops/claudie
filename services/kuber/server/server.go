@@ -183,7 +183,7 @@ func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigReq
 	clusterID := fmt.Sprintf("%s-%s", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
 	if namespace := envs.Namespace; namespace == "" {
 		//NOTE: DEBUG print
-		log.Info().Msgf("The kubeconfig for %s\n%s:", clusterID, cluster.Kubeconfig)
+		// log.Info().Msgf("The kubeconfig for %s\n%s:", clusterID, cluster.Kubeconfig)
 		return &pb.StoreKubeconfigResponse{}, nil
 	}
 	log.Info().Msgf("Storing kubeconfig for cluster %s", cluster.ClusterInfo.Name)
