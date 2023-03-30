@@ -142,7 +142,7 @@ func testClaudie(ctx context.Context) error {
 				})
 			}(path, c)
 		}
-	} else {
+	} else if len(autoscalingSets) > 0 {
 		log.Warn().Msgf("Autoscaling tests are ignored in local deployment")
 	}
 
