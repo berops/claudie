@@ -190,7 +190,7 @@ func applyDeployment(c *pb.K8Scluster, deployment string) error {
 		kc.Stdout = comm.GetStdOut(prefix)
 		kc.Stderr = comm.GetStdErr(prefix)
 	}
-	if err := kc.KubectlApplyString(deployment, "default"); err != nil {
+	if err := kc.KubectlApplyString(deployment); err != nil {
 		return fmt.Errorf("failed to apply deployment on cluster %s : %w", c.ClusterInfo.Name, err)
 	}
 	return nil

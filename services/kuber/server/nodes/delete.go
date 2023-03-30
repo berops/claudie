@@ -112,7 +112,7 @@ func (d *Deleter) deleteNodesByName(kc kubectl.Kubectl, nodeName string, realNod
 			return fmt.Errorf("error while draining node %s from cluster %s : %w", nodeName, d.clusterPrefix, err)
 		}
 		//kubectl delete node <node-name>
-		err = kc.KubectlDeleteResource("nodes", realNodeName, "")
+		err = kc.KubectlDeleteResource("nodes", realNodeName)
 		if err != nil {
 			return fmt.Errorf("error while deleting node %s from cluster %s : %w", nodeName, d.clusterPrefix, err)
 		}

@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -22,7 +24,12 @@ type Patcher struct {
 
 func NewPatcher(cluster *pb.K8Scluster) *Patcher {
 	kc := kubectl.Kubectl{Kubeconfig: cluster.Kubeconfig}
-	return &Patcher{kc: kc, nodepools: cluster.ClusterInfo.NodePools, clusterID: fmt.Sprintf("%s-%s", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)}
+	clusterID := fmt.Sprintf("%s-%s", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
+	if log.Logger.GetLevel() == zerolog.DebugLevel {
+		kc.Stdout = comm.GetStdOut(clusterID)
+		kc.Stderr = comm.GetStdErr(clusterID)
+	}
+	return &Patcher{kc: kc, nodepools: cluster.ClusterInfo.NodePools, clusterID: clusterID}
 }
 
 func (p *Patcher) PatchProviderID() error {

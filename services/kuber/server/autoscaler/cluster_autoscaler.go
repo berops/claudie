@@ -5,10 +5,13 @@ import (
 	"os"
 	"text/template"
 
+	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -48,10 +51,15 @@ func (ab *AutoscalerBuilder) SetUpClusterAutoscaler() error {
 	}
 	// Apply generated files.
 	kc := kubectl.Kubectl{Directory: ab.directory}
-	if err := kc.KubectlApply(autoscalerAdapterDeployment, envs.Namespace); err != nil {
+	if log.Logger.GetLevel() == zerolog.DebugLevel {
+		prefix := fmt.Sprintf("%s-%s", ab.cluster.ClusterInfo.Name, ab.cluster.ClusterInfo.Hash)
+		kc.Stdout = comm.GetStdOut(prefix)
+		kc.Stderr = comm.GetStdErr(prefix)
+	}
+	if err := kc.KubectlApply(autoscalerAdapterDeployment, "-n", envs.Namespace); err != nil {
 		return fmt.Errorf("error while applying autoscaler adapter for cluster %s : %w", ab.cluster.ClusterInfo.Name, err)
 	}
-	if err := kc.KubectlApply(clusterAutoscalerDeployment, envs.Namespace); err != nil {
+	if err := kc.KubectlApply(clusterAutoscalerDeployment, "-n", envs.Namespace); err != nil {
 		return fmt.Errorf("error while applying cluster autoscaler for cluster %s : %w", ab.cluster.ClusterInfo.Name, err)
 	}
 	return os.RemoveAll(ab.directory)
@@ -64,10 +72,15 @@ func (ab *AutoscalerBuilder) DestroyClusterAutoscaler() error {
 	}
 	// Apply generated files.
 	kc := kubectl.Kubectl{Directory: ab.directory}
-	if err := kc.KubectlDeleteManifest(autoscalerAdapterDeployment, envs.Namespace); err != nil {
+	if log.Logger.GetLevel() == zerolog.DebugLevel {
+		prefix := fmt.Sprintf("%s-%s", ab.cluster.ClusterInfo.Name, ab.cluster.ClusterInfo.Hash)
+		kc.Stdout = comm.GetStdOut(prefix)
+		kc.Stderr = comm.GetStdErr(prefix)
+	}
+	if err := kc.KubectlDeleteManifest(autoscalerAdapterDeployment, "-n", envs.Namespace); err != nil {
 		return fmt.Errorf("error while deleting autoscaler adapter for cluster %s : %w", ab.cluster.ClusterInfo.Name, err)
 	}
-	if err := kc.KubectlDeleteManifest(clusterAutoscalerDeployment, envs.Namespace); err != nil {
+	if err := kc.KubectlDeleteManifest(clusterAutoscalerDeployment, "-n", envs.Namespace); err != nil {
 		return fmt.Errorf("error while deleting cluster autoscaler for cluster %s : %w", ab.cluster.ClusterInfo.Name, err)
 	}
 	return os.RemoveAll(ab.directory)
