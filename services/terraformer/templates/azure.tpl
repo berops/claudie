@@ -186,7 +186,7 @@ resource "azurerm_linux_virtual_machine" "{{ $node.Name }}" {
   }
 }
 
-resource "azurerm_virtual_machine_extension" "{{ $nodepool.Name }}_{{ $clusterHash }}_postcreation_script" {
+resource "azurerm_virtual_machine_extension" "{{ $node.Name }}_{{ $clusterHash }}_postcreation_script" {
   provider             = azurerm.k8s_nodepool
   name                 = "{{ $clusterName }}-{{ $clusterHash }}-postcreation-script"
   virtual_machine_id   = azurerm_linux_virtual_machine.{{ $node.Name }}.id
