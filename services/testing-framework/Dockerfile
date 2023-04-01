@@ -24,7 +24,7 @@ COPY . .
 WORKDIR /go/services/testing-framework
 RUN CGO_ENABLED=0 go test -c -run TestClaudie
 
-FROM docker.io/library/alpine:3.17.2
+FROM docker.io/library/alpine:3.17.3
 #Add repository label
 LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
 #Add image name as a label
