@@ -253,7 +253,7 @@ func main() {
 
 	// Add health service to gRPC
 	healthServer := health.NewServer()
-	// Set liveness to SERVING
+	// Set liveness to SERVING,]
 	healthServer.SetServingStatus("terraformer-liveness", grpc_health_v1.HealthCheckResponse_SERVING)
 	// Set readiness to NOT_SERVING, as it will be changed later.
 	healthServer.SetServingStatus("terraformer-readiness", grpc_health_v1.HealthCheckResponse_NOT_SERVING)
