@@ -88,7 +88,7 @@ type Kubernetes struct {
 type DynamicNodePool struct {
 	Name             string           `validate:"required" yaml:"name"`
 	ProviderSpec     ProviderSpec     `validate:"required" yaml:"providerSpec"`
-	Count            int32            `yaml:"count"`
+	Count            int32            `validate:"required_without=AutoscalerConfig,excluded_with=AutoscalerConfig" yaml:"count"`
 	ServerType       string           `validate:"required" yaml:"serverType"`
 	Image            string           `validate:"required" yaml:"image"`
 	DiskSize         int64            `validate:"required" yaml:"diskSize"`

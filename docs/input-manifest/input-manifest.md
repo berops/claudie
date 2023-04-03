@@ -222,7 +222,7 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
 - `count`
 
-  Number of the nodes in the nodepool.
+  Number of the nodes in the nodepool. Mutually exclusive with `autoscalerConf`.
 
 - `serverType`
   
@@ -242,7 +242,7 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
 - `autoscalerConf` [Autoscaler Configuration](#autoscaler-configuration)
   
-  Autoscaler configuration for this nodepool.
+  Autoscaler configuration for this nodepool. Mutually exclusive with `count`.
 
 ## Provider Spec
 

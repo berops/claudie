@@ -70,7 +70,7 @@ service ContextBoxService {
   // GetAllConfigs gets all configs from the database.
   rpc GetAllConfigs(GetAllConfigsRequest) returns (GetAllConfigsResponse);
   // DeleteConfig sets the manifest to null, effectively forcing the deletion of the infrastructure
-  // defined by the manifest on the very next config (diff-) check.
+  // defined by the manifest on the very next config (diff) check.
   rpc DeleteConfig(DeleteConfigRequest) returns (DeleteConfigResponse);
   // DeleteConfigFromDB deletes the config from the database.
   rpc DeleteConfigFromDB(DeleteConfigRequest) returns (DeleteConfigResponse);

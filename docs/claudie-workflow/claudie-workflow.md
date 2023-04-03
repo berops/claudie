@@ -192,7 +192,7 @@ Kuber manipulates the cluster resources using `kubectl`.
 ### API
 
 ```go
-  // RemoveLbScrapeConfig removes scrape config for every LB detached to this cluster.
+  // RemoveLbScrapeConfig removes scrape config for every LB detached from this cluster.
   rpc RemoveLbScrapeConfig(RemoveLbScrapeConfigRequest) returns (RemoveLbScrapeConfigResponse);
   // StoreLbScrapeConfig stores scrape config for every LB attached to this cluster.
   rpc StoreLbScrapeConfig(StoreLbScrapeConfigRequest) returns (StoreLbScrapeConfigResponse);
@@ -224,7 +224,7 @@ Kuber manipulates the cluster resources using `kubectl`.
 - Creates a kubernetes secret that holds the kubeconfig of the Claudie-created cluster
 - Receives a `config` from Builder for `StoreMetadata()`
 - Creates a kubernetes secret that holds the node metadata of the Claudie-created cluster
-- Recieves a `config` from Buidler for `StoreLbScrapeConfig()`
+- Receives a `config` from Builder for `StoreLbScrapeConfig()`
 - Stores scrape config for any LB attached to the Claudie-made cluster.
 - Receives a `config` from Builder for `PatchNodes()`
 - Patches the node manifests of the Claudie-made cluster.

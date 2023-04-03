@@ -79,7 +79,7 @@ message DestroyClusterAutoscalerRequest{
 message DestroyClusterAutoscalerResponse {}
 
 service KuberService {
-  // RemoveLbScrapeConfig removes scrape config for every LB detached to this cluster.
+  // RemoveLbScrapeConfig removes scrape config for every LB detached from this cluster.
   rpc RemoveLbScrapeConfig(RemoveLbScrapeConfigRequest) returns (RemoveLbScrapeConfigResponse);
   // StoreLbScrapeConfig stores scrape config for every LB attached to this cluster.
   rpc StoreLbScrapeConfig(StoreLbScrapeConfigRequest) returns (StoreLbScrapeConfigResponse);
