@@ -238,7 +238,7 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
 - `diskSize`
 
-  Size of the disk on the nodes in the nodepool.
+  Size of the storage disk on the nodes in the nodepool in `GB`. The OS disk is created automatically with predefined size. Minimum value is `10`.
 
 ## Provider Spec
 
