@@ -88,6 +88,7 @@ func main() {
 
 		log.Info().Msg("Gracefully shutting down gRPC server")
 		s.GracefulStop()
+		healthServer.Shutdown()
 
 		// Sometimes when the container terminates gRPC logs the following message:
 		// rpc error: code = Unknown desc = Error: No such container: hash of the container...
