@@ -120,8 +120,7 @@ func main() {
 	log.Info().Msgf("Initiated connection Context-box: %s, waiting for connection to be in state ready", envs.ContextBoxURL)
 
 	// Initialize health probes
-	healthChecker := healthcheck.NewClientHealthChecker(fmt.Sprint(defaultSchedulerPort), healthCheck)
-	healthChecker.StartProbes()
+	healthcheck.NewClientHealthChecker(fmt.Sprint(defaultSchedulerPort), healthCheck).StartProbes()
 
 	g, ctx := errgroup.WithContext(context.Background())
 

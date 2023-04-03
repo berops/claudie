@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/berops/claudie/internal/envs"
-	"github.com/berops/claudie/internal/healthcheck"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/terraformer/server/kubernetes"
@@ -29,6 +28,7 @@ import (
 
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
@@ -194,8 +194,9 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 }
 
 // healthCheck function is a readiness function defined by terraformer
-// it checks whether bucket exists. If true, returns nil, error otherwise
+// it checks whether MinIO bucket exists and if dynamoDB table exists. If true, returns nil, error otherwise.
 func healthCheck() error {
+	// Minio bucket
 	mc, err := minio.New(minioEndpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(minioAccessKey, minioSecretKey, ""),
 		Secure: false,
@@ -203,12 +204,33 @@ func healthCheck() error {
 	if err != nil {
 		return err
 	}
-
 	exists, err := mc.BucketExists(context.Background(), minioBucket)
 	if !exists || err != nil {
 		return fmt.Errorf("error: bucket exists %t || err: %w", exists, err)
 	}
-	return nil
+	// dynamoDB Table
+	dc := dynamodb.NewFromConfig(aws.Config{
+		Region: awsRegion,
+		Credentials: aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
+			return aws.Credentials{AccessKeyID: awsAccessKeyId, SecretAccessKey: awsSecretAccessKey}, nil
+		}),
+		EndpointResolverWithOptions: aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+			return aws.Endpoint{URL: dynamoURL}, nil
+		}),
+		RetryMaxAttempts: 10,
+		RetryMode:        aws.RetryModeStandard,
+	})
+	tables, err := dc.ListTables(context.Background(), nil)
+	if err != nil {
+		return err
+	}
+
+	for _, t := range tables.TableNames {
+		if t == dynamoTable {
+			return nil
+		}
+	}
+	return fmt.Errorf("dynamoDB does not contain %s table", dynamoTable)
 }
 
 func main() {
@@ -230,11 +252,32 @@ func main() {
 	pb.RegisterTerraformerServiceServer(s, &server{})
 
 	// Add health service to gRPC
-	// Here we pass our custom readiness probe
-	healthService := healthcheck.NewServerHealthChecker(terraformerPort, "TERRAFORMER_PORT", healthCheck)
-	grpc_health_v1.RegisterHealthServer(s, healthService)
+	healthServer := health.NewServer()
+	// Set liveness to SERVING,]
+	healthServer.SetServingStatus("terraformer-liveness", grpc_health_v1.HealthCheckResponse_SERVING)
+	// Set readiness to NOT_SERVING, as it will be changed later.
+	healthServer.SetServingStatus("terraformer-readiness", grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+	grpc_health_v1.RegisterHealthServer(s, healthServer)
 
 	g, ctx := errgroup.WithContext(context.Background())
+
+	g.Go(func() error {
+		// Check if terraform is in ready state every 30s
+		ticker := time.NewTicker(30 * time.Second)
+		for {
+			select {
+			case <-ctx.Done():
+				ticker.Stop()
+				return nil
+			case <-ticker.C:
+				if err := healthCheck(); err != nil {
+					healthServer.SetServingStatus("terraformer-readiness", grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+				} else {
+					healthServer.SetServingStatus("terraformer-readiness", grpc_health_v1.HealthCheckResponse_SERVING)
+				}
+			}
+		}
+	})
 
 	g.Go(func() error {
 		ch := make(chan os.Signal, 1)

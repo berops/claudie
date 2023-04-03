@@ -47,7 +47,7 @@ func run() error {
 
 	healthcheck.NewClientHealthChecker(
 		fmt.Sprint(healthcheckPort),
-		s.healthcheck(),
+		s.healthcheck,
 	).StartProbes()
 
 	group, ctx := errgroup.WithContext(context.Background())

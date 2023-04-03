@@ -10,12 +10,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/berops/claudie/internal/healthcheck"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
@@ -173,9 +173,13 @@ func main() {
 	// creating a new server
 	s := grpc.NewServer()
 	pb.RegisterAnsiblerServiceServer(s, &server{})
+
 	// Add health service to gRPC
-	healthService := healthcheck.NewServerHealthChecker(ansiblerPort, "ANSIBLER_PORT", nil)
-	grpc_health_v1.RegisterHealthServer(s, healthService)
+	healthServer := health.NewServer()
+	// Ansibler does not have any custom health check functions, thus always serving.
+	healthServer.SetServingStatus("ansibler-liveness", grpc_health_v1.HealthCheckResponse_SERVING)
+	healthServer.SetServingStatus("ansibler-readiness", grpc_health_v1.HealthCheckResponse_SERVING)
+	grpc_health_v1.RegisterHealthServer(s, healthServer)
 
 	g, ctx := errgroup.WithContext(context.Background())
 

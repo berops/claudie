@@ -16,22 +16,6 @@ COPY go.sum .
 #Check if any modules need downloading
 RUN go mod download
 
-#Install grpc health probe
-RUN GRPC_HEALTH_PROBE_VERSION=v0.4.14 && \
-    wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-$TARGETARCH && \
-    chmod +x /bin/grpc_health_probe
-
-COPY ./internal/grpc-health-probe-Liveness ./grpc-health-probe-Liveness
-
-#Change workdir to modified health probe directory
-WORKDIR /go/grpc-health-probe-Liveness
-
-#Compile modified health probe
-RUN CGO_ENABLED=0 go build -o /bin/grpc_health_probe-Liveness
-RUN chmod +x /bin/grpc_health_probe-Liveness
-
-#Copy all files apart from the ones in .dockerignore
-WORKDIR /go
 COPY . .
 
 #Change the directory
@@ -53,8 +37,6 @@ COPY --from=build /go/kubectl /usr/local/bin/kubectl
 COPY --from=build /go/services/kuber/server/server /bin/services/kuber/server/server
 COPY --from=build /go/services/kuber/server/manifests /bin/services/kuber/server/manifests
 COPY --from=build /go/services/kuber/templates /bin/services/kuber/templates
-COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
-COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Liveness
 RUN chmod +x /usr/local/bin/kubectl && apk add -q bash
 
 #Run server
