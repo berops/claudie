@@ -110,10 +110,8 @@ To see the vision behind Claudie, please refer to the [roadmap](./docs/roadmap/r
 ## Reach out to us
 
 Claudie is proudly developed by Berops.
-
-If you would like to request a demo, feel free to contact us [here](mailto:claudie-demo&commat;berops&period;com)
-
-We'd be happy to offer direct support in order to help you get the most out of Claudie. Feel free to to contact us [here](mailto:claudie&commat;berops&period;com)
+Feel free to request a demo [here](mailto:claudie-demo&commat;berops&period;com).
+For information on enterprise support, contact us [here](mailto:claudie&commat;berops&period;com).
 
 ## LICENSE
 
