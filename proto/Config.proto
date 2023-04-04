@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package claudie;
+option go_package = "claudie/proto/generated";
+
+message Config {
+
+  string id= 1;
+  string name= 2;
+
+  string content= 3;
+}

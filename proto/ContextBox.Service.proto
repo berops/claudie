@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+import "Config.proto";
+
+package claudie;
+option go_package = "claudie/proto/generated";
+
+service ContextBox {
+
+  rpc GetConfigList(GetConfigListRequest) returns(GetConfigListResponse) { }
+  rpc SaveConfig(SaveConfigRequest) returns(SaveConfigResponse) { }
+  rpc DeleteConfig(DeleteConfigRequest) returns(DeleteConfigResponse) { }
+
+}
+
+message GetConfigListRequest { }
+
+message GetConfigListResponse {
+  repeated Config configList= 1;
+}
+
+message SaveConfigRequest {
+  Config config= 1;
+}
+
+message SaveConfigResponse {
+  Config config= 1;
+}
+
+message DeleteConfigRequest {
+  string id= 1;
+}
+
+message DeleteConfigResponse {
+  string id= 1;
+}
