@@ -12,7 +12,7 @@ require (
 	github.com/rs/zerolog v1.29.0
 	github.com/spiffe/go-spiffe/v2 v2.1.2
 	github.com/stretchr/testify v1.8.2
-	go.mongodb.org/mongo-driver v1.11.2
+	go.mongodb.org/mongo-driver v1.11.3
 	golang.org/x/crypto v0.7.0
 	golang.org/x/sync v0.1.0
 	google.golang.org/grpc v1.53.0
