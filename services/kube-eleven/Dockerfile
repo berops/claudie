@@ -18,22 +18,6 @@ COPY go.sum .
 #Check if any modules need downloading
 RUN go mod download
 
-#Install grpc health probe
-RUN GRPC_HEALTH_PROBE_VERSION=v0.4.14 && \
-    wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-$TARGETARCH && \
-    chmod +x /bin/grpc_health_probe
-
-COPY ./internal/grpc-health-probe-Liveness ./grpc-health-probe-Liveness
-
-#Change workdir to modified health probe directory
-WORKDIR /go/grpc-health-probe-Liveness
-
-#Compile modified health probe
-RUN CGO_ENABLED=0 go build -o /bin/grpc_health_probe-Liveness
-RUN chmod +x /bin/grpc_health_probe-Liveness
-
-#Copy all files apart from the ones in .dockerignore
-WORKDIR /go
 COPY . .
 
 #Change the directory
@@ -57,8 +41,6 @@ COPY --from=build /go/kubeone_dir/kubeone /usr/local/bin
 COPY --from=build /go/services/kube-eleven/server/server /bin/services/kube-eleven/server/server
 COPY --from=build /go/services/kube-eleven/server/addons /bin/services/kube-eleven/server/addons
 COPY --from=build /go/services/kube-eleven/templates /bin/services/kube-eleven/templates
-COPY --from=build /bin/grpc_health_probe /bin/grpc_health_probe
-COPY --from=build /bin/grpc_health_probe-Liveness /bin/grpc_health_probe-Liveness
 
 #Run server
 WORKDIR /bin

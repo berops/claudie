@@ -1,22 +1,20 @@
 package healthcheck
 
 import (
-	"fmt"
 	"net"
 	"net/http"
-)
 
-// Function to check the readiness
-type checkFunction func() error
+	"github.com/rs/zerolog/log"
+)
 
 // ClientHealthChecker contains the port and check function callback
 type ClientHealthChecker struct {
 	portForProbes string
-	checkFunc     checkFunction
+	checkFunc     func() error
 }
 
 // NewClientHealthChecker function will return new ClientHealthChecker struct with specified port and checkFunction
-func NewClientHealthChecker(port string, f checkFunction) *ClientHealthChecker {
+func NewClientHealthChecker(port string, f func() error) *ClientHealthChecker {
 	return &ClientHealthChecker{
 		portForProbes: port,
 		checkFunc:     f,
@@ -29,16 +27,15 @@ func (s *ClientHealthChecker) StartProbes() {
 	http.HandleFunc("/ready", s.ready)
 	// Port close to other services
 	go func() {
-		serverErr := http.ListenAndServe(net.JoinHostPort("0.0.0.0", s.portForProbes), nil)
-		if serverErr != nil {
-			fmt.Println(serverErr)
+		if err := http.ListenAndServe(net.JoinHostPort("0.0.0.0", s.portForProbes), nil); err != nil {
+			log.Debug().Msgf("Error in health probe : %v", err)
 		}
 	}()
 }
 
 func writeMsg(w http.ResponseWriter, msg string) {
 	if _, err := w.Write([]byte(msg)); err != nil {
-		fmt.Println("HealthCheckClient write error: ", err)
+		log.Debug().Msgf("HealthCheckClient write error: ", err)
 	}
 }
 
@@ -52,10 +49,9 @@ func live(w http.ResponseWriter, req *http.Request) {
 // ready function is testing readiness state of the microservice
 // uses checkFunction provided in ClientHealthChecker -> if no error thrown, microservice is ready
 func (s *ClientHealthChecker) ready(w http.ResponseWriter, req *http.Request) {
-	result := s.checkFunc()
-	if result != nil {
-		fmt.Println(result)
-		fmt.Println("Readiness probe check: ERROR")
+	err := s.checkFunc()
+	if err != nil {
+		log.Debug().Msgf("Error in health probe: %v", err)
 		w.WriteHeader(500)
 		writeMsg(w, "not ready")
 		return

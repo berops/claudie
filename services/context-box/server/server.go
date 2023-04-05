@@ -18,9 +18,9 @@ import (
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/berops/claudie/internal/healthcheck"
 	"github.com/berops/claudie/proto/pb"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
@@ -266,8 +266,11 @@ func main() {
 	pb.RegisterContextBoxServiceServer(s, &server{})
 
 	// Add health service to gRPC
-	healthService := healthcheck.NewServerHealthChecker(contextboxPort, "CONTEXT_BOX_PORT", nil)
-	grpc_health_v1.RegisterHealthServer(s, healthService)
+	healthServer := health.NewServer()
+	// Context-box does not have any custom health check functions, thus always serving.
+	healthServer.SetServingStatus("context-box-liveness", grpc_health_v1.HealthCheckResponse_SERVING)
+	healthServer.SetServingStatus("context-box-readiness", grpc_health_v1.HealthCheckResponse_SERVING)
+	grpc_health_v1.RegisterHealthServer(s, healthServer)
 
 	g, ctx := errgroup.WithContext(context.Background())
 
@@ -291,6 +294,7 @@ func main() {
 
 		log.Info().Msg("Gracefully shutting down gRPC server")
 		s.GracefulStop()
+		healthServer.Shutdown()
 
 		// Sometimes when the container terminates gRPC logs the following message:
 		// rpc error: code = Unknown desc = Error: No such container: hash of the container...

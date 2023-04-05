@@ -83,7 +83,7 @@ func newServer(manifestDir string, service string) (*server, error) {
 
 	s.server = &http.Server{Handler: s.router, ReadHeaderTimeout: 2 * time.Second}
 
-	return s, s.healthcheck()()
+	return s, s.healthcheck()
 }
 
 func (s *server) GracefulShutdown() error {
@@ -111,18 +111,16 @@ func (s *server) routes() {
 // healthCheck checks if the manifestDir exists and the underlying gRPC
 // connection to the context-box service is valid. As long as the directory
 // exists and the connection is healthy the service is considered healthy.
-func (s *server) healthcheck() func() error {
-	return func() error {
-		if _, err := os.Stat(s.manifestDir); os.IsNotExist(err) {
-			return fmt.Errorf("%v: %w", s.manifestDir, err)
-		}
-
-		if s.conn.GetState() == connectivity.Shutdown {
-			return errors.New("unhealthy connection to context-box")
-		}
-
-		return nil
+func (s *server) healthcheck() error {
+	if _, err := os.Stat(s.manifestDir); os.IsNotExist(err) {
+		return fmt.Errorf("%v: %w", s.manifestDir, err)
 	}
+
+	if s.conn.GetState() == connectivity.Shutdown {
+		return errors.New("unhealthy connection to context-box")
+	}
+
+	return nil
 }
 
 // handleReload handles incoming notifications from k8s-sidecar about changes
