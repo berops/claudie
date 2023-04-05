@@ -66,11 +66,19 @@ func (k *Kubectl) KubectlDeleteResource(resource, resourceName string, options .
 	return k.run(command, options...)
 }
 
+// KubectlDeleteString runs kubectl delete in k.Directory, with specified resource, resource name
+// example: echo 'kind: Namespace...' | kubectl delete -f - -> k.KubectlDeleteResource("kind: Namespace ...")
+// example: echo 'kind: Namespace...' | kubectl delete -f - -n test -> k.KubectlDeleteResource("kind: Namespace ...", "-n","test")
+func (k *Kubectl) KubectlDeleteString(str string, options ...string) error {
+	kubeconfig := k.getKubeconfig()
+	command := fmt.Sprintf("echo '%s' | kubectl delete -f - %s", str, kubeconfig)
+	return k.run(command, options...)
+}
+
 // KubectlDrain runs kubectl drain in k.Directory, on a specified node with flags --ignore-daemonsets --delete-emptydir-data
 // example: kubectl drain node1 -> k.KubectlDrain("node1")
 func (k *Kubectl) KubectlDrain(nodeName string) error {
-	kubeconfig := k.getKubeconfig()
-	command := fmt.Sprintf("kubectl drain %s --ignore-daemonsets --delete-emptydir-data %s", nodeName, kubeconfig)
+	command := fmt.Sprintf("kubectl drain %s --ignore-daemonsets --delete-emptydir-data %s", nodeName, k.getKubeconfig())
 	return k.run(command)
 }
 
@@ -97,8 +105,7 @@ func (k *Kubectl) KubectlGet(resource string, options ...string) ([]byte, error)
 // KubectlAnnotate runs kubectl annotate in k.Directory, with the specified annotation on a specified resource and resource name
 // example: kubectl annotate node node-1 node.longhorn.io/default-node-tags='["zone2"]' -> k.KubectlAnnotate("node","node-1","node.longhorn.io/default-node-tags='["zone2"]")
 func (k *Kubectl) KubectlAnnotate(resource, resourceName, annotation string) error {
-	kubeconfig := k.getKubeconfig()
-	command := fmt.Sprintf("kubectl annotate %s %s %s %s", resource, resourceName, annotation, kubeconfig)
+	command := fmt.Sprintf("kubectl annotate %s %s %s %s", resource, resourceName, annotation, k.getKubeconfig())
 	return k.run(command)
 }
 
@@ -110,27 +117,24 @@ func (k *Kubectl) KubectlLabel(resource, resourceName, label string, options ...
 	return k.run(command, options...)
 }
 
-// KubectlGetNodeNames will find a node names for a particular cluster
+// KubectlGetNodeNames will find node names for a particular cluster
 // return slice of node names and nil if successful, nil and error otherwise
 func (k *Kubectl) KubectlGetNodeNames() ([]byte, error) {
-	kubeconfig := k.getKubeconfig()
-	nodesQueryCmd := fmt.Sprintf("kubectl get nodes -n kube-system --no-headers -o custom-columns=\":metadata.name\" %s", kubeconfig)
+	nodesQueryCmd := fmt.Sprintf("kubectl get nodes -n kube-system --no-headers -o custom-columns=\":metadata.name\" %s", k.getKubeconfig())
 	return k.runWithOutput(nodesQueryCmd)
 }
 
 // getEtcdPods finds all etcd pods in cluster
 // returns slice of pod names and nil if successful, nil and error otherwise
 func (k *Kubectl) KubectlGetEtcdPods(masterNodeName string) ([]byte, error) {
-	kubeconfig := k.getKubeconfig()
 	// get etcd pods name
-	podsQueryCmd := fmt.Sprintf("kubectl %s %s-%s", kubeconfig, getEtcdPodsCmd, masterNodeName)
+	podsQueryCmd := fmt.Sprintf("kubectl %s %s-%s", k.getKubeconfig(), getEtcdPodsCmd, masterNodeName)
 	return k.runWithOutput(podsQueryCmd)
 }
 
 func (k *Kubectl) KubectlExecEtcd(etcdPod, etcdctlCmd string) ([]byte, error) {
-	kubeconfig := k.getKubeconfig()
 	kcExecEtcdCmd := fmt.Sprintf("kubectl %s -n kube-system exec -i %s -- /bin/sh -c \" %s && %s \"",
-		kubeconfig, etcdPod, exportEtcdEnvsCmd, etcdctlCmd)
+		k.getKubeconfig(), etcdPod, exportEtcdEnvsCmd, etcdctlCmd)
 	return k.runWithOutput(kcExecEtcdCmd)
 }
 

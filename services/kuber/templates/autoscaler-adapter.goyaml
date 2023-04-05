@@ -1,0 +1,47 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: autoscaler-adapter-{{ .ClusterID }}
+spec:
+  selector:
+    app: autoscaler-adapter-{{ .ClusterID }}
+  ports:
+    - protocol: TCP
+      port: {{ .AdapterPort }}
+      targetPort: {{ .AdapterPort }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: autoscaler-adapter-{{ .ClusterID }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: autoscaler-adapter-{{ .ClusterID }}
+  template:
+    metadata:
+      labels:
+        app: autoscaler-adapter-{{ .ClusterID }}
+    spec:
+      containers:
+        - name: claudie-ca
+          imagePullPolicy: IfNotPresent
+          image: ghcr.io/berops/claudie/autoscaler-adapter
+          env:
+            - name: ADAPTER_PORT
+              value: "{{ .AdapterPort }}"
+            - name: CLUSTER_NAME
+              value: {{ .ClusterName }}
+            - name: PROJECT_NAME
+              value: {{ .ProjectName }}
+          resources:
+            requests:
+              cpu: 80m
+              memory: 50Mi
+            limits:
+              cpu: 160m
+              memory: 100Mi
+          ports:
+            - containerPort: {{ .AdapterPort }}

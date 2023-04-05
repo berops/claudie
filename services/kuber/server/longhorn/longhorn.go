@@ -28,25 +28,34 @@ type zoneData struct {
 	StorageClassName string
 }
 
+type enableCA struct {
+	IsAutoscaled string
+}
+
 const (
-	longhornYaml       = "services/kuber/server/manifests/longhorn.yaml"
-	storageManifestTpl = "storage-class.goyaml"
-	defaultSC          = "longhorn"
-	storageClassLabel  = "claudie.io/provider-instance"
+	longhornYaml             = "services/kuber/server/manifests/longhorn.yaml"
+	longhornNodeSelectorYaml = "services/kuber/server/manifests/node-selector.yaml"
+	longhornEnableCaTpl      = "enable-ca.goyaml"
+	storageManifestTpl       = "storage-class.goyaml"
+	defaultSC                = "longhorn"
+	storageClassLabel        = "claudie.io/provider-instance"
 )
 
 // SetUp function will set up the longhorn on the k8s cluster saved in l.Longhorn
 func (l Longhorn) SetUp() error {
 	kubectl := kubectl.Kubectl{Kubeconfig: l.Cluster.GetKubeconfig()}
+	// apply longhorn.yaml and settings
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
 		prefix := fmt.Sprintf("%s-%s", l.Cluster.ClusterInfo.Name, l.Cluster.ClusterInfo.Hash)
 		kubectl.Stdout = comm.GetStdOut(prefix)
 		kubectl.Stderr = comm.GetStdErr(prefix)
 	}
 	// apply longhorn.yaml
-	err := kubectl.KubectlApply(longhornYaml)
-	if err != nil {
+	if err := kubectl.KubectlApply(longhornYaml); err != nil {
 		return fmt.Errorf("error while applying longhorn.yaml in %s : %w", l.Directory, err)
+	}
+	if err := kubectl.KubectlApply(longhornNodeSelectorYaml, ""); err != nil {
+		return fmt.Errorf("error while applying settings node-selector.yaml in %s : %w", l.Directory, err)
 	}
 
 	//get existing sc so we can delete them if we do not need them any more
@@ -63,6 +72,18 @@ func (l Longhorn) SetUp() error {
 	storageTpl, err := templateLoader.LoadTemplate(storageManifestTpl)
 	if err != nil {
 		return err
+	}
+
+	// Apply setting about CA
+	enableCa := enableCA{fmt.Sprintf("%v", utils.IsAutoscaled(l.Cluster))}
+	enableCATpl, err := templateLoader.LoadTemplate(longhornEnableCaTpl)
+	if err != nil {
+		return err
+	}
+	if setting, err := template.GenerateToString(enableCATpl, enableCa); err != nil {
+		return err
+	} else if err := kubectl.KubectlApplyString(setting); err != nil {
+		return fmt.Errorf("error while applying CA setting for longhorn in cluster %s : %w", l.Cluster.ClusterInfo.Name, err)
 	}
 
 	sortedNodePools := utils.GroupNodepoolsByProviderSpecName(l.Cluster.ClusterInfo)

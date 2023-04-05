@@ -4,7 +4,7 @@ ARG TARGETARCH
 
 # download and unzip kube-one binary
 RUN apt-get -qq update && apt-get -qq install unzip
-RUN VERSION=1.3.6 && \
+RUN VERSION=1.4.4 && \
     wget -q https://releases.hashicorp.com/terraform/${VERSION}/terraform_${VERSION}_linux_$TARGETARCH.zip && \
     unzip -qq terraform_${VERSION}_linux_$TARGETARCH.zip -d terraform
 

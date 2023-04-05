@@ -120,6 +120,15 @@ func (c ClusterBuilder) DestroyNodepools() error {
 	clusterID := fmt.Sprintf("%s-%s", c.CurrentInfo.Name, c.CurrentInfo.Hash)
 	clusterDir := filepath.Join(Output, clusterID)
 
+	// Calculate CIDR, in case some nodepools do not have it, due to error.
+	// https://github.com/berops/claudie/issues/647
+	// Order them by provider and region
+	for _, nps := range utils.GroupNodepoolsByProviderRegion(c.CurrentInfo) {
+		if err := c.calculateCIDR(baseSubnetCIDR, nps); err != nil {
+			return fmt.Errorf("error while generating CIDR for nodepools : %w", err)
+		}
+	}
+
 	if err := c.generateFiles(clusterID, clusterDir); err != nil {
 		return fmt.Errorf("failed to generate files: %w", err)
 	}
@@ -176,7 +185,32 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	}
 
 	tplType := getTplFile(c.ClusterType)
-	//sort nodepools by a provider
+
+	// Init node slices if needed
+	for _, np := range clusterInfo.NodePools {
+		nodes := make([]*pb.Node, 0, np.Count)
+		nodeNames := make(map[string]struct{}, np.Count)
+		// Copy existing nodes into new slice
+		for i, node := range np.Nodes {
+			if i == int(np.Count) {
+				break
+			}
+			log.Debug().Msgf("Cluster %s, Nodepool %s is reusing node %s", clusterID, np.Name, node.Name)
+			nodes = append(nodes, node)
+			nodeNames[node.Name] = struct{}{}
+		}
+		// Fill the rest of the nodes with assigned names
+		nodepoolID := fmt.Sprintf("%s-%s", clusterID, np.Name)
+		for len(nodes) < int(np.Count) {
+			// Get a unique name for the new node
+			nodeName := getUniqueNodeName(nodepoolID, nodeNames)
+			nodeNames[nodeName] = struct{}{}
+			nodes = append(nodes, &pb.Node{Name: nodeName})
+		}
+		np.Nodes = nodes
+	}
+
+	// sort nodepools by a provider
 	sortedNodePools := utils.GroupNodepoolsByProviderSpecName(clusterInfo)
 	for providerSpecName, nodepools := range sortedNodePools {
 		// list all regions being used for this provider
@@ -325,6 +359,18 @@ func getTplFile(clusterType pb.ClusterType) string {
 		return "-lb.tpl"
 	}
 	return ""
+}
+
+// getUniqueNodeName returns new node name, which is guaranteed to be unique, based on the provided existing names.
+func getUniqueNodeName(nodepoolID string, existingNames map[string]struct{}) string {
+	index := 1
+	for {
+		candidate := fmt.Sprintf("%s-%d", nodepoolID, index)
+		if _, ok := existingNames[candidate]; !ok {
+			return candidate
+		}
+		index++
+	}
 }
 
 // getCIDR function returns CIDR in IPv4 format, with position replaced by value

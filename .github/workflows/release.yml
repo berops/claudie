@@ -46,6 +46,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Update autoscaler-adapter manifest in this steps as new kuber would need to contain manifest with the correct image tag
+      - name: Edit autoscaler-adapter image tag in the manifest
+        working-directory: ./services/kuber/templates
+        run: |
+          TAG=${RELEASE}
+          sed "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" autoscaler-adapter.goyaml
+
       - name: Build and push new images
         run: |
           ARR=( ${{ env.SERVICES }} )

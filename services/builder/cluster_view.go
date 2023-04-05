@@ -9,8 +9,8 @@ import (
 // No mutex is needed when processing concurrently as long as each cluster only
 // works with related values.
 type ClusterView struct {
-	// Clusters are the individual clusters defined in the kubernetes section of the config of the current state.
-	Clusters map[string]*pb.K8Scluster
+	// CurrentClusters are the individual clusters defined in the kubernetes section of the config of the current state.
+	CurrentClusters map[string]*pb.K8Scluster
 	// DesiredClusters are the individual clusters defined in the kubernetes section of the config of the desired state.
 	DesiredClusters map[string]*pb.K8Scluster
 
@@ -59,7 +59,7 @@ Lb:
 	}
 
 	return &ClusterView{
-		Clusters:             clusters,
+		CurrentClusters:      clusters,
 		DesiredClusters:      desiredClusters,
 		Loadbalancers:        loadbalancers,
 		DesiredLoadbalancers: desiredLoadbalancers,
@@ -70,7 +70,7 @@ Lb:
 // MergeChanges propagates the changes made back to the config.
 func (view *ClusterView) MergeChanges(config *pb.Config) {
 	for i, current := range config.CurrentState.Clusters {
-		if updated, ok := view.Clusters[current.ClusterInfo.Name]; ok {
+		if updated, ok := view.CurrentClusters[current.ClusterInfo.Name]; ok {
 			config.CurrentState.Clusters[i] = updated
 		}
 	}
@@ -103,7 +103,7 @@ func (view *ClusterView) MergeChanges(config *pb.Config) {
 // UpdateFromBuild takes the changes after a successful workflow of a given cluster
 func (view *ClusterView) UpdateFromBuild(ctx *BuilderContext) {
 	if ctx.cluster != nil {
-		view.Clusters[ctx.cluster.ClusterInfo.Name] = ctx.cluster
+		view.CurrentClusters[ctx.cluster.ClusterInfo.Name] = ctx.cluster
 	}
 
 	if ctx.desiredCluster != nil {
@@ -143,7 +143,7 @@ func (view *ClusterView) UpdateFromBuild(ctx *BuilderContext) {
 func (view *ClusterView) AllClusters() []string {
 	clusters := make(map[string]struct{})
 
-	for _, current := range view.Clusters {
+	for _, current := range view.CurrentClusters {
 		clusters[current.ClusterInfo.Name] = struct{}{}
 	}
 

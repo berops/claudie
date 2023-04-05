@@ -28,6 +28,11 @@ func (p *NodePool) Validate(m *Manifest) error {
 			return fmt.Errorf("name %q is used across multiple node pools, must be unique", n.Name)
 		}
 		names[n.Name] = true
+
+		// check if the count and autoscaler are mutually exclusive
+		if n.Count != 0 && n.AutoscalerConfig.isDefined() {
+			return fmt.Errorf("nodepool %s cannot have both, autoscaler enabled and \"count\" defined", n.Name)
+		}
 	}
 
 	for _, n := range p.Static {
@@ -47,3 +52,5 @@ func (p *NodePool) Validate(m *Manifest) error {
 
 func (d *DynamicNodePool) Validate() error { return validator.New().Struct(d) }
 func (s *StaticNodePool) Validate() error  { return validator.New().Struct(s) }
+
+func (a *AutoscalerConfig) isDefined() bool { return a.Min >= 0 && a.Max > 0 }

@@ -73,3 +73,30 @@ func DeleteClusterMetadata(c pb.KuberServiceClient, req *pb.DeleteClusterMetadat
 
 	return res, nil
 }
+
+func PatchNodes(c pb.KuberServiceClient, req *pb.PatchNodeTemplateRequest) (*pb.PatchNodeTemplateResponse, error) {
+	res, err := c.PatchNodes(context.Background(), req)
+	if err != nil {
+		return nil, fmt.Errorf("error while calling PatchNodes: %w", err)
+	}
+
+	return res, nil
+}
+
+func SetUpClusterAutoscaler(c pb.KuberServiceClient, req *pb.SetUpClusterAutoscalerRequest) (*pb.SetUpClusterAutoscalerResponse, error) {
+	res, err := c.SetUpClusterAutoscaler(context.Background(), req)
+	if err != nil {
+		return nil, fmt.Errorf("error while calling SetUpClusterAutoscaler: %w", err)
+	}
+
+	return res, nil
+}
+
+func DestroyClusterAutoscaler(c pb.KuberServiceClient, req *pb.DestroyClusterAutoscalerRequest) (*pb.DestroyClusterAutoscalerResponse, error) {
+	res, err := c.DestroyClusterAutoscaler(context.Background(), req)
+	if err != nil {
+		return nil, fmt.Errorf("error while calling DestroyClusterAutoscaler: %w", err)
+	}
+
+	return res, nil
+}

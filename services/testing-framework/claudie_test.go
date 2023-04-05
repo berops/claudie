@@ -1,13 +1,14 @@
 package testingframework
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -17,29 +18,17 @@ import (
 	cbox "github.com/berops/claudie/services/context-box/client"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc"
 
 	"testing"
 )
 
-type idInfo struct {
-	id     string
-	idType pb.IdType
-}
-
 const (
 	testDir = "test-sets"
-
-	maxTimeout     = 8000    // max allowed time for one manifest to finish in [seconds]
-	sleepSec       = 30      // seconds for one cycle of config check
-	maxTimeoutSave = 60 * 12 // max allowed time for config to be found in the database
 )
 
 var (
 	// get env var from runtime directly so we do not pollute original envs package by unnecessary variables
 	autoCleanUpFlag = os.Getenv("AUTO_CLEAN_UP")
-	// interrupt error
-	errInterrupt = errors.New("interrupt")
 )
 
 // TestClaudie will start all the test cases specified in tests directory
@@ -103,20 +92,26 @@ func testClaudie(ctx context.Context) error {
 	}
 
 	// save all the test set paths
-	var setNames []string
+	var basicSets, autoscalingSets []string
 	for _, f := range files {
 		if f.IsDir() {
-			log.Info().Msgf("Found test set %s", f.Name())
-			setNames = append(setNames, f.Name())
+			if strings.Contains(f.Name(), "autoscaling") {
+				log.Info().Msgf("Found autoscaling test set: %s", f.Name())
+				autoscalingSets = append(autoscalingSets, f.Name())
+				continue
+			}
+			log.Info().Msgf("Found basic test set: %s", f.Name())
+			basicSets = append(basicSets, f.Name())
 		}
 	}
 
 	// apply the test sets
 	var errGroup errgroup.Group
-	for _, path := range setNames {
+	for _, path := range basicSets {
 		func(path string, c pb.ContextBoxServiceClient) {
 			errGroup.Go(func() error {
-				err := applyTestSet(ctx, path, c)
+				log.Info().Msgf("Starting test set: %s", path)
+				err := processTestSet(ctx, path, c, testLonghornDeployment)
 				if err != nil {
 					//in order to get errors from all goroutines in error group, print them here and just return simple error so test will fail
 					log.Error().Msgf("Error in test sets %s : %v", path, err)
@@ -126,147 +121,148 @@ func testClaudie(ctx context.Context) error {
 			})
 		}(path, c)
 	}
+	if envs.Namespace != "" {
+		for _, path := range autoscalingSets {
+			func(path string, c pb.ContextBoxServiceClient) {
+				errGroup.Go(func() error {
+					log.Info().Msgf("Starting test set: %s", path)
+					err := processTestSet(ctx, path, c,
+						func(ctx context.Context, c *pb.Config) error {
+							if err := testLonghornDeployment(ctx, c); err != nil {
+								return err
+							}
+							return testAutoscaler(ctx, c)
+						})
+					if err != nil {
+						//in order to get errors from all goroutines in error group, print them here and just return simple error so test will fail
+						log.Error().Msgf("Error in test sets %s : %v", path, err)
+						return fmt.Errorf("error")
+					}
+					return nil
+				})
+			}(path, c)
+		}
+	} else if len(autoscalingSets) > 0 {
+		log.Warn().Msgf("Autoscaling tests are ignored in local deployment")
+	}
+
 	if err = errGroup.Wait(); err != nil {
 		return fmt.Errorf("one or more test sets returned with error")
 	}
 	return nil
 }
 
-// clientConnection will return new client connection to Context-box
-func clientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
-	cc, err := utils.GrpcDialWithInsecure("context-box", envs.ContextBoxURL)
-	if err != nil {
-		log.Fatal().Msgf("Failed to create client connection to context-box : %v", err)
-	}
-
-	// Creating the client
-	c := pb.NewContextBoxServiceClient(cc)
-	return c, cc
-}
-
-// applyTestSet function will apply test set sequentially to Claudie
-func applyTestSet(ctx context.Context, setName string, c pb.ContextBoxServiceClient) error {
+// processTestSet function will apply test set sequentially to Claudie
+func processTestSet(ctx context.Context, setName string, c pb.ContextBoxServiceClient, testFunc func(ctx context.Context, c *pb.Config) error) error {
+	// Set errCleanUp to clean up the infra on failure
+	var errCleanUp, errIgnore error
 	idInfo := idInfo{id: "", idType: -1}
-
 	pathToTestSet := filepath.Join(testDir, setName)
 	log.Info().Msgf("Working on the test set %s", pathToTestSet)
 
-	manifestFiles, err := os.ReadDir(pathToTestSet)
-	if err != nil {
-		return fmt.Errorf("error while trying to read test manifests in %s : %w", pathToTestSet, err)
+	// Defer clean up function
+	defer func() {
+		if errCleanUp != nil {
+			if autoCleanUpFlag == "TRUE" {
+				log.Info().Msgf("Deleting infra even after error due to flag \"-auto-clean-up\" set to %v", autoCleanUpFlag)
+				// delete manifest from DB to clean up the infra
+				if err := cleanUp(setName, idInfo.id, c); err != nil {
+					log.Error().Msgf("error while cleaning up the infra for test set %s : %v", setName, err)
+				}
+			}
+		}
+	}()
+
+	manifestFiles, errIgnore := os.ReadDir(pathToTestSet)
+	if errIgnore != nil {
+		return fmt.Errorf("error while trying to read test manifests in %s : %w", pathToTestSet, errIgnore)
 	}
 
 	for _, manifest := range manifestFiles {
-		// https://github.com/berops/claudie/pull/243#issuecomment-1218237412
-		if manifest.IsDir() || manifest.Name()[0:1] == "." {
-			continue
+		// Apply test set manifest
+		if errIgnore = applyManifest(setName, pathToTestSet, manifest, &idInfo, c); errIgnore != nil {
+			// https://github.com/berops/claudie/pull/243#issuecomment-1218237412
+			if errors.Is(errIgnore, errHiddenOrDir) {
+				continue
+			}
+			return fmt.Errorf("error applying test set %s, manifest %s from %s : %w", manifest.Name(), setName, manifest.Name(), errIgnore)
 		}
 
-		// create a path and read the file
-		manifestPath := filepath.Join(pathToTestSet, manifest.Name())
-		yamlFile, err := os.ReadFile(manifestPath)
-		if err != nil {
-			return fmt.Errorf("error while reading the manifest %s : %w", manifestPath, err)
-		}
-		manifestName, err := getManifestName(yamlFile)
-		if err != nil {
-			return fmt.Errorf("error while getting the manifest name from %s : %w", manifestPath, err)
+		// Wait until test manifest has been processed
+		if errCleanUp = configChecker(ctx, c, pathToTestSet, manifest.Name(), idInfo); errCleanUp != nil {
+			if errors.Is(errCleanUp, errInterrupt) {
+				log.Warn().Msgf("Testing-framework received interrupt signal, aborting test checking")
+				// Do not return error, since it was an interrupt
+				return nil
+			}
+			return fmt.Errorf("error while monitoring manifest %s from test set %s : %w", manifest.Name(), setName, errCleanUp)
 		}
 
-		if envs.Namespace != "" {
-			err = clusterTesting(yamlFile, setName, pathToTestSet, manifestName, c)
-			idInfo.id = manifestName
-			idInfo.idType = pb.IdType_NAME
-			if err != nil {
-				return fmt.Errorf("error while applying manifest %s : %w", manifest.Name(), err)
+		// Run additional tests
+		if testFunc != nil {
+			// Get config from DB
+			var res *pb.GetConfigFromDBResponse
+			if res, errCleanUp = c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: idInfo.id, Type: idInfo.idType}); errCleanUp != nil {
+				return fmt.Errorf("error while checking test for config %s from manifest %s, test set %s : %w", res.Config.Name, manifest.Name(), setName, errCleanUp)
+			}
+
+			// Start additional tests
+			log.Info().Msgf("Starting additional tests for manifest %s from %s", manifest.Name(), setName)
+			if errCleanUp = testFunc(ctx, res.Config); errCleanUp != nil {
+				if errors.Is(errCleanUp, errInterrupt) {
+					log.Warn().Msgf("Testing-framework received interrupt signal, aborting test checking")
+					// Do not return error, since it was an interrupt
+					return nil
+				}
+				return fmt.Errorf("error while performing additional test for manifest %s from %s : %w", manifest.Name(), setName, errCleanUp)
 			}
 		} else {
-			idInfo.id, err = localTesting(yamlFile, manifestName, c)
-			idInfo.idType = pb.IdType_HASH
-			if err != nil {
-				return fmt.Errorf("error while applying manifest %s : %w", manifest.Name(), err)
-			}
-		}
-		// wait until test config has been processed
-		if err := configChecker(ctx, c, pathToTestSet, manifest.Name(), idInfo); err != nil {
-			if autoCleanUpFlag == "TRUE" {
-				log.Info().Msgf("Deleting infra even after error due to flag \"-auto-clean-up\" set to %v : %v", autoCleanUpFlag, err)
-				// delete manifest from DB to clean up the infra
-				if err := cleanUp(setName, idInfo.id, c); err != nil {
-					return fmt.Errorf("error while cleaning up the infra for test set %s : %w", setName, err)
-				}
-			}
-			if errors.Is(err, errInterrupt) {
-				// do not return error, since it was an interrupt
-				log.Warn().Msgf("Testing-framework received interrupt signal, aborting test checking")
-				break
-			}
-			return fmt.Errorf("Error while monitoring %s : %w", pathToTestSet, err)
+			log.Debug().Msgf("No additional tests, manifest %s from %s is done", manifest.Name(), setName)
 		}
 		log.Info().Msgf("Manifest %s from %s is done...", manifest.Name(), pathToTestSet)
 	}
 
-	// clean up
-	log.Info().Msgf("Deleting the infra from test set %s", pathToTestSet)
+	// Clean up
+	log.Info().Msgf("Deleting the infra from test set %s", setName)
 
-	// delete manifest from DB to clean up the infra after configChecker is done without error
-	if err := cleanUp(setName, idInfo.id, c); err != nil {
-		return fmt.Errorf("error while cleaning up the infra for test set %s : %w", setName, err)
+	// Delete manifest from DB to clean up the infra as errCleanUp is nil and deferred function will not clean up.
+	if errIgnore = cleanUp(setName, idInfo.id, c); errIgnore != nil {
+		return fmt.Errorf("error while cleaning up the infra for test set %s : %w", setName, errIgnore)
 	}
-
 	return nil
 }
 
-// configChecker function will check if the config has been applied every 30s
-// it returns an interruptError if the pod/process is being terminated
-func configChecker(ctx context.Context, c pb.ContextBoxServiceClient, testSetName, manifestName string, idInfo idInfo) error {
-	counter := 1
-	for {
-		select {
-		case <-ctx.Done():
-			return errInterrupt
-		default:
-			elapsedSec := counter * sleepSec
-			config, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{
-				Id:   idInfo.id,
-				Type: idInfo.idType,
-			})
-			if err != nil {
-				return fmt.Errorf("error while waiting for config to finish: %w", err)
-			}
-			if config != nil {
-				if len(config.Config.ErrorMessage) > 0 {
-					return fmt.Errorf("error while checking config %s : %s", config.Config.Name, config.Config.ErrorMessage)
-				}
+func applyManifest(setName, pathToTestSet string, manifest fs.DirEntry, idInfo *idInfo, c pb.ContextBoxServiceClient) error {
+	if manifest.IsDir() || manifest.Name()[0] == '.' {
+		return errHiddenOrDir
+	}
 
-				// if checksums are equal, the config has been processed by claudie
-				if checksumsEqual(config.Config.MsChecksum, config.Config.CsChecksum) && checksumsEqual(config.Config.CsChecksum, config.Config.DsChecksum) {
-					// test longhorn deployment
-					err := testLonghornDeployment(config)
-					if err != nil {
-						return fmt.Errorf("error while checking the longhorn deployment for %s : %w", config.Config.Name, err)
-					}
-					// manifest is done
-					return nil
-				}
-			}
-			if elapsedSec >= maxTimeout {
-				return fmt.Errorf("Test took too long... Aborting after %d seconds", maxTimeout)
-			}
-			time.Sleep(time.Duration(sleepSec) * time.Second)
-			counter++
-			log.Info().Msgf("Waiting for %s from %s to finish... [ %ds elapsed ]", manifestName, testSetName, elapsedSec)
+	// create a path and read the file
+	manifestPath := filepath.Join(pathToTestSet, manifest.Name())
+	yamlFile, err := os.ReadFile(manifestPath)
+	if err != nil {
+		return fmt.Errorf("error while reading the manifest %s : %w", manifestPath, err)
+	}
+	manifestName, err := getManifestName(yamlFile)
+	if err != nil {
+		return fmt.Errorf("error while getting the manifest name from %s : %w", manifestPath, err)
+	}
+
+	if envs.Namespace != "" {
+		err = clusterTesting(yamlFile, setName, pathToTestSet, manifestName, c)
+		idInfo.id = manifestName
+		idInfo.idType = pb.IdType_NAME
+		if err != nil {
+			return fmt.Errorf("error while applying manifest %s : %w", manifest.Name(), err)
+		}
+	} else {
+		idInfo.id, err = localTesting(yamlFile, manifestName, c)
+		idInfo.idType = pb.IdType_HASH
+		if err != nil {
+			return fmt.Errorf("error while applying manifest %s : %w", manifest.Name(), err)
 		}
 	}
-}
-
-// checksumsEq will check if two checksums are equal
-func checksumsEqual(checksum1 []byte, checksum2 []byte) bool {
-	if len(checksum1) > 0 && len(checksum2) > 0 && bytes.Equal(checksum1, checksum2) {
-		return true
-	} else {
-		return false
-	}
+	return nil
 }
 
 // clusterTesting will perform actions needed for testing framework to function in k8s cluster deployment
@@ -350,7 +346,7 @@ func cleanUp(setName, id string, c pb.ContextBoxServiceClient) error {
 		}
 	} else {
 		// delete config from database
-		if err := cbox.DeleteConfig(c, id, pb.IdType_HASH); err != nil {
+		if err := cbox.DeleteConfig(c, &pb.DeleteConfigRequest{Id: id, Type: pb.IdType_HASH}); err != nil {
 			return fmt.Errorf("error while deleting the manifest from test set %s : %w", id, err)
 		}
 	}

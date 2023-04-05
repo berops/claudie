@@ -142,9 +142,9 @@ resource "aws_route_table_association" "{{ $nodepool.Name }}_rta" {
   route_table_id = aws_route_table.claudie_route_table_{{ $nodepool.Region }}.id
 }
 
-resource "aws_instance" "{{ $nodepool.Name }}" {
-  provider          = aws.k8s_nodepool_{{ $nodepool.Region  }}
-  count             = {{ $nodepool.Count }}
+{{- range $j, $node := $nodepool.Nodes }}
+resource "aws_instance" "{{ $node.Name }}" {
+  provider          = aws.k8s_nodepool_{{ $nodepool.Region }}
   availability_zone = "{{ $nodepool.Zone }}"
   instance_type     = "{{ $nodepool.ServerType }}"
   ami               = "{{ $nodepool.Image }}"
@@ -155,7 +155,7 @@ resource "aws_instance" "{{ $nodepool.Name }}" {
   vpc_security_group_ids = [aws_security_group.claudie_sg_{{ $nodepool.Region }}.id]
 
   tags = {
-    Name            = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}"
+    Name            = "{{ $node.Name }}"
     Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
   
@@ -171,11 +171,14 @@ rm /root/.ssh/temp
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config && service sshd restart
 EOF
 }
+{{- end }}
 
 output  "{{ $nodepool.Name }}" {
   value = {
-    for node in aws_instance.{{ $nodepool.Name }}:
-    node.tags_all.Name => node.public_ip
+    {{- range $j, $node := $nodepool.Nodes }}
+    {{- $name := (printf "%s-%s-%s-%d" $clusterName $clusterHash $nodepool.Name $j ) }}
+    "${aws_instance.{{ $node.Name }}.tags_all.Name}" =  aws_instance.{{ $node.Name }}.public_ip
+    {{- end }}
   }
 }
 {{- end }}

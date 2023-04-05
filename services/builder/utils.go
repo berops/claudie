@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	cbox "github.com/berops/claudie/services/context-box/client"
@@ -19,7 +20,7 @@ func destroyConfig(config *pb.Config, clusterView *ClusterView, c pb.ContextBoxS
 		return err
 	}
 
-	return cbox.DeleteConfigFromDB(c, config.Id, pb.IdType_HASH)
+	return cbox.DeleteConfigFromDB(c, &pb.DeleteConfigRequest{Id: config.Id, Type: pb.IdType_HASH})
 }
 
 // destroy destroys any Loadbalancers or the cluster itself.
@@ -28,8 +29,8 @@ func destroy(projectName, clusterName string, clusterView *ClusterView) (bool, e
 		projectName: projectName,
 	}
 
-	if clusterView.Clusters[clusterName] != nil && clusterView.DesiredClusters[clusterName] == nil {
-		deleteCtx.cluster = clusterView.Clusters[clusterName]
+	if clusterView.CurrentClusters[clusterName] != nil && clusterView.DesiredClusters[clusterName] == nil {
+		deleteCtx.cluster = clusterView.CurrentClusters[clusterName]
 	}
 
 	if len(clusterView.DeletedLoadbalancers[clusterName]) != 0 {
