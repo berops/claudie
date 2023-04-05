@@ -39,8 +39,8 @@ message LBcluster {
 message ClusterInfo {
   string name = 1;
   string hash = 2;
-  string public_key = 3;
-  string private_key = 4;
+  string publicKey = 3;
+  string privateKey = 4;
   repeated NodePool nodePools = 5;
 }
 
@@ -68,7 +68,7 @@ message DNS {
   string dnsZone = 1;
   string hostname = 2;
   Provider provider = 3;
-  string endpoint = 5;
+  string endpoint = 4;
 }
 
 message NodePool {
@@ -78,11 +78,17 @@ message NodePool {
   string image = 4;
   uint32 diskSize = 5;
   string zone = 6;
-  uint32 count = 9;
-  repeated Node nodes = 10;
-  Provider provider = 11 ;
-  bool isControl = 12;
-  map<string, MetaValue> metadata = 13;
+  int32 count = 7;
+  repeated Node nodes = 8;
+  Provider provider = 9;
+  bool isControl = 10;
+  map<string, MetaValue> metadata = 11;
+  AutoscalerConf autoscalerConfig = 12;
+}
+
+message AutoscalerConf {
+  int32 min = 1;
+  int32 max = 2;
 }
 
 message MetaValue {
@@ -111,18 +117,18 @@ message Provider {
   //credentilas is used as a variable for secret info i.e. private key, api token, secret etc
   string credentials = 3;
   //gcp
-  string gcp_project = 4;
+  string gcpProject = 4;
   //oci
-  string oci_user_ocid = 5;
-  string oci_tenancy_ocid = 6;
-  string oci_fingerprint = 7;
-  string oci_compartment_ocid = 8;
+  string ociUserOcid = 5;
+  string ociTenancyOcid = 6;
+  string ociFingerprint = 7;
+  string ociCompartmentOcid = 8;
   //aws
-  string aws_access_key = 9; 
+  string awsAccessKey = 9; 
   //azure
-  string azure_subscription_id = 10;
-  string azure_tenant_id = 11;
-  string azure_client_id = 12;
+  string azureSubscriptionId = 10;
+  string azureTenantId = 11;
+  string azureClientId = 12;
 }
 
 enum ClusterType {

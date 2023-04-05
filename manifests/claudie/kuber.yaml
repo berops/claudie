@@ -79,7 +79,10 @@ metadata:
   name: kuber
 rules:
   - apiGroups: [""]
-    resources: ["secrets"]
+    resources: ["secrets", "configmaps", "services"]
+    verbs: ["create", "patch", "update", "get", "list", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
     verbs: ["create", "patch", "update", "get", "list", "delete"]
 ---
 kind: RoleBinding

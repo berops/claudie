@@ -2,6 +2,7 @@ package manifest
 
 import (
 	"fmt"
+
 	"github.com/berops/claudie/internal/templateUtils"
 
 	"github.com/go-playground/validator/v10"

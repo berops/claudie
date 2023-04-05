@@ -10,38 +10,70 @@ enum IdType {
 }
 
 // Save
-message SaveConfigRequest { Config config = 1; }
-message SaveConfigResponse { Config config = 1; }
+message SaveConfigRequest { 
+  Config config = 1; 
+}
+message SaveConfigResponse { 
+  Config config = 1; 
+}
 
 // Get
 message GetConfigRequest {}
-message GetConfigResponse {Config config = 1;}
+message GetConfigResponse {
+  Config config = 1;
+}
 
 message GetAllConfigsRequest {}
-message GetAllConfigsResponse {repeated Config configs = 1;}
+message GetAllConfigsResponse {
+  repeated Config configs = 1;
+}
 
-message GetConfigFromDBRequest {string id = 1; IdType type = 2;}
-message GetConfigFromDBResponse {Config config = 1;}
+message GetConfigFromDBRequest {
+  string id = 1; 
+  IdType type = 2;
+}
+message GetConfigFromDBResponse {
+  Config config = 1;
+}
 
-message GetConfigByNameRequest {string name = 1;}
-message GetConfigByNameResponse {Config config = 1;}
 
 // Delete
-message DeleteConfigRequest {string id = 1; IdType type = 2;}
-message DeleteConfigResponse {string id = 1;}
+message DeleteConfigRequest {
+  string id = 1;
+  IdType type = 2;
+}
+message DeleteConfigResponse {
+  string id = 1;
+}
+
+// Update
+message UpdateNodepoolRequest {
+  string projectName = 1;
+  string clusterName = 2;
+  NodePool nodepool = 3;
+}
+message UpdateNodepoolResponse {}
 
 service ContextBoxService {
-  // Save
+  // SaveConfigFrontEnd saves the config parsed by Frontend.
   rpc SaveConfigFrontEnd(SaveConfigRequest) returns (SaveConfigResponse);
+  // SaveConfigScheduler saves the config parsed by Scheduler.
   rpc SaveConfigScheduler(SaveConfigRequest) returns (SaveConfigResponse);
+  // SaveConfigBuilder saves the config parsed by Builder.
   rpc SaveConfigBuilder(SaveConfigRequest) returns (SaveConfigResponse);
-  // Get
+  // GetConfigFromDB gets a single config from the database.
   rpc GetConfigFromDB(GetConfigFromDBRequest) returns (GetConfigFromDBResponse);
-  rpc GetConfigByName(GetConfigByNameRequest) returns (GetConfigByNameResponse);
+  // GetConfigScheduler gets a config from Scheduler's queue of pending configs.
   rpc GetConfigScheduler(GetConfigRequest) returns (GetConfigResponse);
+  // GetConfigBuilder gets a config from Builder's queue of pending configs.
   rpc GetConfigBuilder(GetConfigRequest) returns (GetConfigResponse);
+  // GetAllConfigs gets all configs from the database.
   rpc GetAllConfigs(GetAllConfigsRequest) returns (GetAllConfigsResponse);
-  // Delete
+  // DeleteConfig sets the manifest to null, effectively forcing the deletion of the infrastructure
+  // defined by the manifest on the very next config (diff) check.
   rpc DeleteConfig(DeleteConfigRequest) returns (DeleteConfigResponse);
+  // DeleteConfigFromDB deletes the config from the database.
   rpc DeleteConfigFromDB(DeleteConfigRequest) returns (DeleteConfigResponse);
+  // UpdateNodepool updates specific nodepool from the config. Used mainly for autoscaling.
+  rpc UpdateNodepool(UpdateNodepoolRequest) returns (UpdateNodepoolResponse);
 }

@@ -132,6 +132,9 @@ nodePools:
   #     serverType:     # Machine type of the nodes in this nodepool.
   #     image:          # OS image of the nodes in the nodepool.
   #     diskSize:       # Disk size, nodes in the nodepool will have.
+  #     autoscalerConf: # Autoscaler configuration. Mutually exclusive with Count.
+  #       min:          # Minimum number of nodes in nodepool.
+  #       max:          # Maximum number of nodes in nodepool.
   #
   # Example definitions for each provider
   dynamic:
@@ -154,6 +157,18 @@ nodePools:
       serverType: cpx11
       image: ubuntu-22.04
       diskSize: 50
+
+    - name: compute-hetzner-autoscaled
+      providerSpec:
+        name: hetzner-1
+        region: hel1
+        zone: hel1-dc2
+      serverType: cpx11
+      image: ubuntu-22.04
+      diskSize: 50
+      autoscalerConf:
+        min: 1
+        max: 5
 
     - name: control-gcp
       providerSpec:

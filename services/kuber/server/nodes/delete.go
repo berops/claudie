@@ -33,7 +33,7 @@ type Deleter struct {
 // New returns new Deleter struct, used for node deletion from a k8s cluster
 // masterNodes - master nodes to DELETE
 // workerNodes - worker nodes to DELETE
-func New(masterNodes, workerNodes []string, cluster *pb.K8Scluster) *Deleter {
+func NewDeleter(masterNodes, workerNodes []string, cluster *pb.K8Scluster) *Deleter {
 	prefix := fmt.Sprintf("%s-%s", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
 
 	for i := range masterNodes {
@@ -112,7 +112,7 @@ func (d *Deleter) deleteNodesByName(kc kubectl.Kubectl, nodeName string, realNod
 			return fmt.Errorf("error while draining node %s from cluster %s : %w", nodeName, d.clusterPrefix, err)
 		}
 		//kubectl delete node <node-name>
-		err = kc.KubectlDeleteResource("nodes", realNodeName, "")
+		err = kc.KubectlDeleteResource("nodes", realNodeName)
 		if err != nil {
 			return fmt.Errorf("error while deleting node %s from cluster %s : %w", nodeName, d.clusterPrefix, err)
 		}

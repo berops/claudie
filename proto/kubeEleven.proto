@@ -16,5 +16,6 @@ message BuildClusterResponse {
 }
 
 service KubeElevenService {
+  // BuildCluster builds the kubernetes clusters specified in the provided config.
   rpc BuildCluster(BuildClusterRequest) returns (BuildClusterResponse);
 }
