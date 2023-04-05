@@ -165,10 +165,10 @@ resource "azurerm_linux_virtual_machine" "{{ $node.Name }}" {
   }
 
   os_disk {
-      name                 = "{{ $node.Name }}-osdisk"
-      caching              = "ReadWrite"
-      storage_account_type = "Standard_LRS"
-      disk_size_gb         = "{{ $nodepool.DiskSize }}"
+    name                 = "{{ $node.Name }}-osdisk"
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+    disk_size_gb         = "25"
   }
 
   disable_password_authentication = true
@@ -210,6 +210,25 @@ PROT
     managed-by      = "Claudie"
     claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
+}
+
+resource "azurerm_managed_disk" "{{ $node.Name }}_disk" {
+  provider             = azurerm.lb_nodepool
+  name                 = "{{ $node.Name }}-disk"
+  location             = azurerm_resource_group.rg_{{ replaceAll $nodepool.Region " " "_" }}.location
+  zone                 = {{ $nodepool.Zone }}
+  resource_group_name  = azurerm_resource_group.rg_{{ replaceAll $nodepool.Region " " "_" }}.name
+  storage_account_type = "Standard_LRS"
+  create_option        = "Empty"
+  disk_size_gb         = {{ $nodepool.DiskSize }}
+}
+
+resource "azurerm_virtual_machine_data_disk_attachment" "{{ $node.Name }}_disk_att" {
+  provider             = azurerm.lb_nodepool
+  managed_disk_id    = azurerm_managed_disk.{{ $node.Name }}_disk.id
+  virtual_machine_id = azurerm_virtual_machine.{{ $node.Name }}.id
+  lun                = "10"
+  caching            = "ReadWrite"
 }
 {{- end }}
 

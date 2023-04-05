@@ -176,6 +176,7 @@ EOF
 }
 
 resource "aws_ebs_volume" "{{ $node.Name }}_volume" {
+  provider          = aws.k8s_nodepool_{{ $nodepool.Region }}
   availability_zone = "{{ $nodepool.Zone }}"
   size              = {{ $nodepool.DiskSize }}
 
@@ -186,6 +187,7 @@ resource "aws_ebs_volume" "{{ $node.Name }}_volume" {
 }
 
 resource "aws_volume_attachment" "{{ $node.Name }}_volume_att" {
+  provider    = aws.k8s_nodepool_{{ $nodepool.Region }}
   device_name = "/dev/sdf"
   volume_id   = aws_ebs_volume.{{ $node.Name }}_volume.id
   instance_id = aws_instance.{{ $node.Name }}.id
