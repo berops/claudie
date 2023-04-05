@@ -142,7 +142,7 @@ resource "aws_route_table_association" "{{ $nodepool.Name }}_rta" {
   route_table_id = aws_route_table.claudie_route_table_{{ $nodepool.Region }}.id
 }
 
-{{- range $j, $node := $nodepool.Nodes }}
+{{- range $node := $nodepool.Nodes }}
 resource "aws_instance" "{{ $node.Name }}" {
   provider          = aws.k8s_nodepool_{{ $nodepool.Region }}
   availability_zone = "{{ $nodepool.Zone }}"
@@ -160,16 +160,33 @@ resource "aws_instance" "{{ $node.Name }}" {
   }
   
   root_block_device {
-    volume_size = {{ $nodepool.DiskSize }}
+    volume_size = 25
   }
-    # Allow ssh connection for root
-    user_data = <<EOF
+ 
+  # Allow ssh connection for root
+  user_data = <<EOF
 #!/bin/bash
 sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
 cat /root/.ssh/temp > /root/.ssh/authorized_keys
 rm /root/.ssh/temp
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config && service sshd restart
 EOF
+}
+
+resource "aws_ebs_volume" "{{ $node.Name }}_volume" {
+  availability_zone = "{{ $nodepool.Zone }}"
+  size              = {{ $nodepool.DiskSize }}
+
+  tags = {
+    Name            = "{{ $nodepool.Name }}-{{ $clusterHash }}-disk"
+    Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
+  }
+}
+
+resource "aws_volume_attachment" "{{ $node.Name }}_volume_att" {
+  device_name = "/dev/sdf"
+  volume_id   = aws_ebs_volume.{{ $node.Name }}_volume.id
+  instance_id = aws_instance.{{ $node.Name }}.id
 }
 {{- end }}
 
