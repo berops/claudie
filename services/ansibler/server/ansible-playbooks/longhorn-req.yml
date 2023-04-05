@@ -12,11 +12,13 @@
   # Install longhorn  dependencies
   tasks:
     - name: install open-iscsi
-      apt:
+      ansible.builtin.apt:
         name: open-iscsi
         state: present
+        update_cache: true
 
     - name: install nfs-common
-      apt:
+      ansible.builtin.apt:
         name: nfs-common
         state: present
+        update_cache: true

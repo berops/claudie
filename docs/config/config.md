@@ -36,6 +36,7 @@ K8scluster represents a single kubernetes cluster specified in the manifest.
   | ----------- | --------------------------- | ------------------------------ |
   | ClusterInfo | [ClusterInfo](#clusterinfo) | General info about the cluster |
   | Network     | string                      | Network range for the VPN      |
+  | Kubeconfig  | string                      | Kubeconfig of the cluster      |
   | Kubernetes  | string                      | Kubernetes version             |
 
 ## LBcluster
@@ -51,13 +52,13 @@ LBcluster represents a single load balancer cluster specified in the manifest.
 ## ClusterInfo
 
 ClusterInfo holds general information about the clusters.
-  | Name        | Type                     | Description                                 |
-  | ----------- | ------------------------ | ------------------------------------------- |
-  | Name        | string                   | Name of the cluster                         |
-  | Hash        | string                   | Random hash of the cluster                  |
-  | Public_key  | string                   | Public ssh key for the nodes                |
-  | Private_key | string                   | Private ssh key for the nodes               |
-  | Nodepools   | [] [Nodepool](#nodepool) | Slice of node pools this cluster is made of |
+  | Name       | Type                     | Description                                 |
+  | ---------- | ------------------------ | ------------------------------------------- |
+  | Name       | string                   | Name of the cluster                         |
+  | Hash       | string                   | Random hash of the cluster                  |
+  | PublicKey  | string                   | Public ssh key for the nodes                |
+  | PrivateKey | string                   | Private ssh key for the nodes               |
+  | Nodepools  | [] [Nodepool](#nodepool) | Slice of node pools this cluster is made of |
 
 ## Role
 
@@ -84,18 +85,19 @@ DNS holds general information about the DNS records.
 ## NodePool
 
 NodePool represents a single nodepool from the manifest.
-  | Name       | Type                  | Description                                             |
-  | ---------- | --------------------- | ------------------------------------------------------- |
-  | Name       | string                | Name of the node pool                                   |
-  | Region     | string                | Region of the nodes                                     |
-  | ServerType | string                | Machine type of the nodes                               |
-  | Image      | string                | OS image of the nodes                                   |
-  | DiskSize   | int32                 | Disk size of the nodes                                  |
-  | Zone       | string                | Zone for the nodes                                      |
-  | Count      | int32                 | Count of the nodes                                      |
-  | Nodes      | [] [Node](#node)      | Slice of Nodes                                          |
-  | Provider   | [Provider](#provider) | Provider of the nodepools                               |
-  | IsControl  | bool                  | Flag to differentiate between control and compute nodes |
+  | Name             | Type                                | Description                                             |
+  | ---------------- | ----------------------------------- | ------------------------------------------------------- |
+  | Name             | string                              | Name of the node pool                                   |
+  | Region           | string                              | Region of the nodes                                     |
+  | ServerType       | string                              | Machine type of the nodes                               |
+  | Image            | string                              | OS image of the nodes                                   |
+  | DiskSize         | int32                               | Disk size of the nodes                                  |
+  | Zone             | string                              | Zone for the nodes                                      |
+  | Count            | int32                               | Count of the nodes                                      |
+  | Nodes            | [] [Node](#node)                    | Slice of Nodes                                          |
+  | Provider         | [Provider](#provider)               | Provider of the nodepools                               |
+  | IsControl        | bool                                | Flag to differentiate between control and compute nodes |
+  | AutoscalerConfig | [AutoscalerConf](#autoscalerconfig) | Autoscaler configuration                                |
 
 ## Node
 
@@ -124,6 +126,14 @@ Provider represents a single provider from the manifest.
   | AzureSubscriptionId | string | Azure ID of the subscription                                       |
   | AzureTenantId       | string | Azure ID of the Tenant                                             |
   | AzureClientId       | string | AzureID of the Client; the client secret is saved in `Credentials` |
+
+## AutoscalerConfig
+
+Autoscaler configuration on per node pool basis.
+| Name | Type  | Description                           |
+| ---- | ----- | ------------------------------------- |
+| Min  | int32 | Minimum number of nodes in node pool. |
+| Max  | int32 | Maximum number of nodes in node pool. |
 
 ### Secret credentials
 

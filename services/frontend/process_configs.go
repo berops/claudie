@@ -116,7 +116,7 @@ func (s *server) processConfigs() error {
 		go func(config *pb.Config) {
 			log.Info().Msgf("Deleting config %v", config.Id)
 
-			if err := cbox.DeleteConfig(s.cBox, config.Id, pb.IdType_HASH); err != nil {
+			if err := cbox.DeleteConfig(s.cBox, &pb.DeleteConfigRequest{Id: config.Id, Type: pb.IdType_HASH}); err != nil {
 				log.Error().Msgf("Failed to the delete %s with id %s : %v", config.Name, config.Id, err)
 			}
 			s.deletingConfigs.Delete(config.Id)

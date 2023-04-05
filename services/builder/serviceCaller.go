@@ -263,17 +263,53 @@ func callKuber(ctx *BuilderContext) error {
 	}
 	log.Info().Msgf("StoreNodeMetadata on Kuber for cluster %s project %s finished successfully", ctx.GetClusterName(), ctx.projectName)
 
+	log.Info().Msgf("Calling PatchNodes on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
+	if _, err := kuber.PatchNodes(c, &pb.PatchNodeTemplateRequest{Cluster: ctx.desiredCluster}); err != nil {
+		return err
+	}
+
+	if utils.IsAutoscaled(ctx.desiredCluster) {
+		// Set up Autoscaler if desired state is autoscaled
+		log.Info().Msgf("Calling SetUpClusterAutoscaler on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
+		if _, err := kuber.SetUpClusterAutoscaler(c, &pb.SetUpClusterAutoscalerRequest{ProjectName: ctx.projectName, Cluster: ctx.desiredCluster}); err != nil {
+			return err
+		}
+	} else if utils.IsAutoscaled(ctx.cluster) {
+		// Destroy Autoscaler if current state is autoscaled, but desired is not
+		log.Info().Msgf("Calling DestroyClusterAutoscaler on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
+		if _, err := kuber.DestroyClusterAutoscaler(c, &pb.DestroyClusterAutoscalerRequest{ProjectName: ctx.projectName, Cluster: ctx.cluster}); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
 // destroyConfig destroys existing clusters infra for a config by calling Terraformer and Kuber
 func destroyCluster(ctx *BuilderContext) error {
+	// Destroy infra
 	if err := destroyConfigTerraformer(ctx); err != nil {
 		return fmt.Errorf("error in destroy config Terraformer for config %s project %s : %w", ctx.GetClusterName(), ctx.projectName, err)
 	}
 
-	if err := deleteClusterData(ctx); err != nil {
+	cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL)
+	if err != nil {
+		return err
+	}
+	defer utils.CloseClientConnection(cc)
+	c := pb.NewKuberServiceClient(cc)
+
+	// Delete cluster metadata
+	if err := deleteClusterData(ctx, c); err != nil {
 		return fmt.Errorf("error in delete kubeconfig for config %s project %s : %w", ctx.GetClusterName(), ctx.projectName, err)
+	}
+
+	// Destroy Autoscaler if current state is autoscaled
+	if utils.IsAutoscaled(ctx.cluster) {
+		log.Info().Msgf("Calling DestroyClusterAutoscaler on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
+		if _, err := kuber.DestroyClusterAutoscaler(c, &pb.DestroyClusterAutoscalerRequest{ProjectName: ctx.projectName, Cluster: ctx.cluster}); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -303,18 +339,10 @@ func destroyConfigTerraformer(ctx *BuilderContext) error {
 }
 
 // deleteClusterData deletes the kubeconfig and cluster metadata.
-func deleteClusterData(ctx *BuilderContext) error {
+func deleteClusterData(ctx *BuilderContext, c pb.KuberServiceClient) error {
 	if ctx.cluster == nil {
 		return nil
 	}
-
-	cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL)
-	if err != nil {
-		return err
-	}
-	defer utils.CloseClientConnection(cc)
-
-	c := pb.NewKuberServiceClient(cc)
 
 	log.Info().Msgf("Calling DeleteKubeconfig on Kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
 	if _, err := kuber.DeleteKubeconfig(c, &pb.DeleteKubeconfigRequest{Cluster: ctx.cluster}); err != nil {
@@ -322,7 +350,7 @@ func deleteClusterData(ctx *BuilderContext) error {
 	}
 
 	log.Info().Msgf("Calling DeleteClusterMetadata on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
-	if _, err = kuber.DeleteClusterMetadata(c, &pb.DeleteClusterMetadataRequest{Cluster: ctx.cluster}); err != nil {
+	if _, err := kuber.DeleteClusterMetadata(c, &pb.DeleteClusterMetadataRequest{Cluster: ctx.cluster}); err != nil {
 		return fmt.Errorf("error while deleting metadata for cluster %s project %s : %w", ctx.GetClusterName(), ctx.projectName, err)
 	}
 	log.Info().Msgf("DeleteKubeconfig on Kuber for cluster %s project %s finished successfully", ctx.GetClusterName(), ctx.projectName)

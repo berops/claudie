@@ -2,6 +2,7 @@ package loadbalancer
 
 import (
 	"fmt"
+
 	"golang.org/x/sync/errgroup"
 
 	"github.com/berops/claudie/proto/pb"

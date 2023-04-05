@@ -19,6 +19,7 @@ import (
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/services/kuber/server/autoscaler"
 	"github.com/berops/claudie/services/kuber/server/longhorn"
 	"github.com/berops/claudie/services/kuber/server/nodes"
 	scrapeconfig "github.com/berops/claudie/services/kuber/server/scrapeConfig"
@@ -141,7 +142,7 @@ func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterM
 	clusterDir := filepath.Join(outputDir, clusterID)
 	sec := secret.New(clusterDir, secret.NewYaml(
 		secret.Metadata{Name: fmt.Sprintf("%s-metadata", clusterID)},
-		secret.Data{SecretData: base64.StdEncoding.EncodeToString(b)},
+		map[string]string{"metadata": base64.StdEncoding.EncodeToString(b)},
 	))
 
 	if err := sec.Apply(envs.Namespace, ""); err != nil {
@@ -178,20 +179,19 @@ func (s *server) DeleteClusterMetadata(ctx context.Context, req *pb.DeleteCluste
 
 func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigRequest) (*pb.StoreKubeconfigResponse, error) {
 	// local deployment - print kubeconfig
+	cluster := req.GetCluster()
+	clusterID := fmt.Sprintf("%s-%s", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
 	if namespace := envs.Namespace; namespace == "" {
 		//NOTE: DEBUG print
-		// log.Info().Msgf("The kubeconfig for %s\n%s:", clusterID,cluster.Kubeconfig)
+		// log.Info().Msgf("The kubeconfig for %s\n%s:", clusterID, cluster.Kubeconfig)
 		return &pb.StoreKubeconfigResponse{}, nil
 	}
-	cluster := req.GetCluster()
 	log.Info().Msgf("Storing kubeconfig for cluster %s", cluster.ClusterInfo.Name)
-
-	clusterID := fmt.Sprintf("%s-%s", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
 
 	clusterDir := filepath.Join(outputDir, clusterID)
 	sec := secret.New(clusterDir, secret.NewYaml(
 		secret.Metadata{Name: fmt.Sprintf("%s-kubeconfig", clusterID)},
-		secret.Data{SecretData: base64.StdEncoding.EncodeToString([]byte(cluster.GetKubeconfig()))},
+		map[string]string{"kubeconfig": base64.StdEncoding.EncodeToString([]byte(cluster.GetKubeconfig()))},
 	))
 
 	if err := sec.Apply(envs.Namespace, ""); err != nil {
@@ -229,7 +229,7 @@ func (s *server) DeleteKubeconfig(ctx context.Context, req *pb.DeleteKubeconfigR
 
 func (s *server) DeleteNodes(ctx context.Context, req *pb.DeleteNodesRequest) (*pb.DeleteNodesResponse, error) {
 	log.Info().Msgf("Deleting nodes from cluster %s, control nodes [%d], compute nodes[%d]", req.Cluster.ClusterInfo.Name, len(req.MasterNodes), len(req.WorkerNodes))
-	deleter := nodes.New(req.MasterNodes, req.WorkerNodes, req.Cluster)
+	deleter := nodes.NewDeleter(req.MasterNodes, req.WorkerNodes, req.Cluster)
 	cluster, err := deleter.DeleteNodes()
 	if err != nil {
 		log.Error().Msgf("Error while deleting nodes for %s : %s", req.Cluster.ClusterInfo.Name, err.Error())
@@ -237,6 +237,53 @@ func (s *server) DeleteNodes(ctx context.Context, req *pb.DeleteNodesRequest) (*
 	}
 	log.Info().Msgf("Nodes for cluster %s were successfully deleted", req.Cluster.ClusterInfo.Name)
 	return &pb.DeleteNodesResponse{Cluster: cluster}, nil
+}
+
+func (s *server) PatchNodes(ctx context.Context, req *pb.PatchNodeTemplateRequest) (*pb.PatchNodeTemplateResponse, error) {
+	patcher := nodes.NewPatcher(req.Cluster)
+	if err := patcher.PatchProviderID(); err != nil {
+		log.Error().Msgf("Error while patching nodes for %s : %s", req.Cluster.ClusterInfo.Name, err.Error())
+		return nil, fmt.Errorf("error while patching nodes for %s : %w", req.Cluster.ClusterInfo.Name, err)
+	}
+
+	log.Info().Msgf("Nodes for cluster %s were successfully patched", req.Cluster.ClusterInfo.Name)
+	return &pb.PatchNodeTemplateResponse{}, nil
+}
+
+func (s *server) SetUpClusterAutoscaler(ctx context.Context, req *pb.SetUpClusterAutoscalerRequest) (*pb.SetUpClusterAutoscalerResponse, error) {
+	// Create output dir
+	clusterID := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, utils.CreateHash(5))
+	clusterDir := filepath.Join(outputDir, clusterID)
+	if err := utils.CreateDirectory(clusterDir); err != nil {
+		return nil, fmt.Errorf("error while creating directory %s : %w", clusterDir, err)
+	}
+	// Set up cluster autoscaler.
+	autoscalerBuilder := autoscaler.NewAutoscalerBuilder(req.ProjectName, req.Cluster, clusterDir)
+	if err := autoscalerBuilder.SetUpClusterAutoscaler(); err != nil {
+		log.Error().Msgf("Error while setting up cluster autoscaler for %s : %s", req.Cluster.ClusterInfo.Name, err.Error())
+		return nil, fmt.Errorf("error while setting up cluster autoscaler for %s : %w", req.Cluster.ClusterInfo.Name, err)
+	}
+
+	log.Info().Msgf("Cluster %s had cluster autoscaler successfully set up", req.Cluster.ClusterInfo.Name)
+	return &pb.SetUpClusterAutoscalerResponse{}, nil
+}
+
+func (s *server) DestroyClusterAutoscaler(ctx context.Context, req *pb.DestroyClusterAutoscalerRequest) (*pb.DestroyClusterAutoscalerResponse, error) {
+	// Create output dir
+	clusterID := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, utils.CreateHash(5))
+	clusterDir := filepath.Join(outputDir, clusterID)
+	if err := utils.CreateDirectory(clusterDir); err != nil {
+		return nil, fmt.Errorf("error while creating directory %s : %w", clusterDir, err)
+	}
+	// Destroy cluster autoscaler.
+	autoscalerBuilder := autoscaler.NewAutoscalerBuilder(req.ProjectName, req.Cluster, clusterDir)
+	if err := autoscalerBuilder.DestroyClusterAutoscaler(); err != nil {
+		log.Error().Msgf("Error while destroying cluster autoscaler for %s : %s", req.Cluster.ClusterInfo.Name, err.Error())
+		return nil, fmt.Errorf("error while destroying cluster autoscaler for %s : %w", req.Cluster.ClusterInfo.Name, err)
+	}
+
+	log.Info().Msgf("Cluster %s had cluster autoscaler successfully destroyed", req.Cluster.ClusterInfo.Name)
+	return &pb.DestroyClusterAutoscalerResponse{}, nil
 }
 
 func main() {

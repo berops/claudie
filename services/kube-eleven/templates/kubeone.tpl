@@ -43,7 +43,7 @@ controlPlane:
       claudie.io/nodepool: '{{ $nodepool.NodepoolName }}'
       claudie.io/provider: '{{ $nodepool.CloudProviderName }}'
       claudie.io/provider-instance: '{{ $nodepool.ProviderName }}'
-      claudie.io/worker-node: 'false'
+      claudie.io/node-type: 'control'
     {{- end}}
   {{- end}}
 {{- end}}
@@ -64,7 +64,7 @@ staticWorkers:
       claudie.io/nodepool: '{{ $nodepool.NodepoolName }}'
       claudie.io/provider: '{{ $nodepool.CloudProviderName }}'
       claudie.io/provider-instance: '{{ $nodepool.ProviderName }}'
-      claudie.io/worker-node: 'true'
+      claudie.io/node-type: 'compute'
     {{- end}}
   {{- end}}
 {{- end}}

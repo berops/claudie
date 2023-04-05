@@ -27,7 +27,7 @@ func (k K8Scluster) Id() string {
 
 func (k K8Scluster) Build() error {
 	var currentInfo *pb.ClusterInfo
-	// check if current cluster was defined, to avoid access of unrefferenced memory
+	// check if current cluster was defined, to avoid access of unreferenced memory
 	if k.CurrentK8s != nil {
 		currentInfo = k.CurrentK8s.ClusterInfo
 	}

@@ -97,7 +97,7 @@ func configCheck() error {
 		}
 
 		// check for Scheduler
-		if !checksum.CompareChecksums(config.DsChecksum, config.MsChecksum) {
+		if !checksum.Equals(config.DsChecksum, config.MsChecksum) {
 			// if scheduler ttl is 0 or smaller AND config has no errorMessage, add to scheduler Q
 			if config.SchedulerTTL <= 0 && len(config.ErrorMessage) == 0 {
 				if err := database.UpdateSchedulerTTL(config.Name, defaultSchedulerTTL); err != nil {
@@ -112,7 +112,7 @@ func configCheck() error {
 		}
 
 		// check for Builder
-		if !checksum.CompareChecksums(config.DsChecksum, config.CsChecksum) {
+		if !checksum.Equals(config.DsChecksum, config.CsChecksum) {
 			// if builder ttl is 0 or smaller AND config has no errorMessage, add to builder Q
 			if config.BuilderTTL <= 0 && len(config.ErrorMessage) == 0 {
 				if err := database.UpdateBuilderTTL(config.Name, defaultBuilderTTL); err != nil {
@@ -165,4 +165,23 @@ func initDatabase() (ClaudieDB, error) {
 		return nil, fmt.Errorf("unable to initialise to database at %s : %w", envs.DatabaseURL, err)
 	}
 	return claudieDatabase, nil
+}
+
+func updateNodepool(state *pb.Project, clusterName, nodepoolName string, nodes []*pb.Node, count *int32) error {
+	for _, cluster := range state.Clusters {
+		if cluster.ClusterInfo.Name == clusterName {
+			for _, nodepool := range cluster.ClusterInfo.NodePools {
+				if nodepool.Name == nodepoolName {
+					// Update nodes
+					nodepool.Nodes = nodes
+					if count != nil {
+						nodepool.Count = *count
+					}
+					return nil
+				}
+			}
+			return fmt.Errorf("nodepool %s was not found in cluster %s", nodepoolName, clusterName)
+		}
+	}
+	return fmt.Errorf("cluster %s was not found in project %s", clusterName, state.Name)
 }

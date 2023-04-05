@@ -35,6 +35,8 @@ message DestroyInfrastructureResponse {
 }
 
 service TerraformerService {
+  // BuildInfrastructure builds the infrastructure based on the provided desired state (includes addition/deletion of *stuff*).
   rpc BuildInfrastructure(BuildInfrastructureRequest) returns (BuildInfrastructureResponse);
+  // DestroyInfrastructure destroys the infrastructure completely.
   rpc DestroyInfrastructure(DestroyInfrastructureRequest) returns (DestroyInfrastructureResponse);
 }

@@ -9,7 +9,7 @@ provider "google" {
   alias       = "k8s_nodepool_{{ $region }}"
 }
 
-resource "google_compute_network" "network_{{ $region }}" {
+resource "google_compute_network" "network_{{ $clusterName}}_{{ $clusterHash}}_{{ $region }}" {
   provider                = google.k8s_nodepool_{{ $region }}
   name                    = "{{ $clusterName }}-{{ $clusterHash }}-{{ $region }}-network"
   auto_create_subnetworks = false
@@ -19,7 +19,7 @@ resource "google_compute_network" "network_{{ $region }}" {
 resource "google_compute_firewall" "firewall_{{ $region }}" {
   provider     = google.k8s_nodepool_{{ $region }}
   name         = "{{ $clusterName }}-{{ $clusterHash }}-{{ $region }}-firewall"
-  network      = google_compute_network.network_{{ $region }}.self_link
+  network      = google_compute_network.network_{{ $clusterName}}_{{ $clusterHash}}_{{ $region }}.self_link
   description  = "Managed by Claudie for cluster {{ $clusterName }}-{{ $clusterHash }}"
 
   allow {
@@ -48,23 +48,22 @@ resource "google_compute_firewall" "firewall_{{ $region }}" {
    ]
 }
 
-{{- end}}
-
+{{- end }}
 
 {{- range $i, $nodepool := .NodePools }}
 resource "google_compute_subnetwork" "{{ $nodepool.Name }}_subnet" {
   provider      = google.k8s_nodepool_{{ $nodepool.Region }}
   name          = "{{ $nodepool.Name }}-{{ $clusterHash }}-subnet"
-  network       = google_compute_network.network_{{ $nodepool.Region }}.self_link
+  network       = google_compute_network.network_{{ $clusterName}}_{{ $clusterHash}}_{{ $nodepool.Region }}.self_link
   ip_cidr_range = "{{index $.Metadata (printf "%s-subnet-cidr" $nodepool.Name) }}"
   description   = "Managed by Claudie for cluster {{ $clusterName }}-{{ $clusterHash }}"
 }
 
-resource "google_compute_instance" "{{ $nodepool.Name }}" {
+{{- range $node := $nodepool.Nodes }}
+resource "google_compute_instance" "{{ $node.Name }}" {
   provider                  = google.k8s_nodepool_{{ $nodepool.Region }}
-  count                     = {{ $nodepool.Count }}
   zone                      = "{{ $nodepool.Zone }}"
-  name                      = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}"
+  name                      = "{{ $node.Name }}"
   machine_type              = "{{ $nodepool.ServerType }}"
   description   = "Managed by Claudie for cluster {{ $clusterName }}-{{ $clusterHash }}"
   allow_stopping_for_update = true
@@ -88,11 +87,13 @@ resource "google_compute_instance" "{{ $nodepool.Name }}" {
     claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
+{{- end }}
 
 output "{{ $nodepool.Name }}" {
   value = {
-    for node in google_compute_instance.{{ $nodepool.Name }}:
-    node.name => node.network_interface.0.access_config.0.nat_ip
+  {{- range $node := $nodepool.Nodes }}
+    "${google_compute_instance.{{ $node.Name }}.name}" = google_compute_instance.{{ $node.Name }}.network_interface.0.access_config.0.nat_ip
+  {{- end }}
   }
 }
 {{- end }}

@@ -1,7 +1,7 @@
-.PHONY: gen contextbox scheduler builder terraformer ansibler kubeEleven test database minio containerimgs
+.PHONY: proto contextbox scheduler builder terraformer ansibler kubeEleven test database minio containerimgs
 
 # Generate all .proto files
-gen:
+proto:
 	protoc  --go-grpc_out=. --go_out=. proto/*.proto
 
 # Start Context-box service on a local environment, exposed on port 50055
@@ -81,13 +81,16 @@ dynamodb-create-table:
 dynamodb-scan-table:
 	aws dynamodb scan --table-name claudie --endpoint-url http://localhost:8000 --no-cli-pager
 
-# we need the value of local architecture to pass to docker as a build arg and
+# We need the value of local architecture to pass to docker as a build arg and
 # Go already needs to be installed so we make use of it here.
+# Use sed to set the image tag for cluster adapter, clean up at the end.
 TARGETARCH = $$(go env GOHOSTARCH)
 REV = $$(git rev-parse --short HEAD)
 SERVICES = $$(command ls services/)
 containerimgs:
+	sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$(REV)/" services/kuber/templates/autoscaler-adapter.goyaml	
 	for service in $(SERVICES) ; do \
-		echo " --- building $$service"; \
-		DOCKER_BUILDKIT=1 docker build --build-arg=TARGETARCH="$(TARGETARCH)" -t "ghcr.io/claudie/$$service:$(REV)" -f ./services/$$service/Dockerfile . ; \
+		echo " --- building $$service --- "; \
+		DOCKER_BUILDKIT=1 docker build --build-arg=TARGETARCH="$(TARGETARCH)" -t "ghcr.io/berops/claudie/$$service:$(REV)" -f ./services/$$service/Dockerfile . ; \
 	done
+	sed -i "s/adapter:.*$/adapter/" services/kuber/templates/autoscaler-adapter.goyaml

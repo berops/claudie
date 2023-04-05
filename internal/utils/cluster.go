@@ -95,3 +95,17 @@ func FindName(realNames []string, name string) string {
 	}
 	return ""
 }
+
+// IsAutoscaled returns true, if cluster has at least one nodepool with autoscaler config.
+func IsAutoscaled(cluster *pb.K8Scluster) bool {
+	if cluster == nil {
+		return false
+	}
+
+	for _, np := range cluster.ClusterInfo.NodePools {
+		if np.AutoscalerConfig != nil {
+			return true
+		}
+	}
+	return false
+}
