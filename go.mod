@@ -18,7 +18,7 @@ require (
 	github.com/oracle/oci-go-sdk/v65 v65.31.1
 	github.com/rs/zerolog v1.29.0
 	github.com/stretchr/testify v1.8.2
-	go.mongodb.org/mongo-driver v1.11.2
+	go.mongodb.org/mongo-driver v1.11.4
 	golang.org/x/crypto v0.7.0
 	golang.org/x/sync v0.1.0
 	google.golang.org/api v0.110.0
