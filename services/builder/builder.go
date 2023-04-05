@@ -39,9 +39,6 @@ func healthCheck() error {
 		if cc, err := utils.GrpcDialWithInsecure(service, url); err != nil {
 			return err
 		} else {
-			if cc.GetState() != connectivity.Ready {
-				return fmt.Errorf("connection to %s is not ready yet", service)
-			}
 			if err := cc.Close(); err != nil {
 				return fmt.Errorf("error closing connection for %s in health check function : %w", service, err)
 			}
