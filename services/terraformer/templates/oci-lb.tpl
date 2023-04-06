@@ -167,7 +167,7 @@ resource "oci_core_instance" "{{ $node.Name }}" {
   source_details {
     source_id               = "{{ $nodepool.Image }}"
     source_type             = "image"
-    boot_volume_size_in_gbs = "25"
+    boot_volume_size_in_gbs = "30"
   }
 
   create_vnic_details {
@@ -179,27 +179,6 @@ resource "oci_core_instance" "{{ $node.Name }}" {
     "Managed-by"      = "Claudie"
     "Claudie-cluster" = "{{ $clusterName }}-{{ $clusterHash }}"
   }
-}
-
-resource "oci_core_volume" "{{ $node.Name }}_volume" {
-  provider            = oci.lb_nodepool_{{ $nodepool.Region }}
-  compartment_id      = var.default_compartment_id
-  availability_domain = "{{ $nodepool.Zone }}"
-  size_in_gbs         = "{{ $nodepool.DiskSize }}"
-  display_name        = "{{ $node.Name }}-volume"
-
-  freeform_tags = {
-    "Managed-by"      = "Claudie"
-    "Claudie-cluster" = "{{ $clusterName }}-{{ $clusterHash }}"
-  }
-}
-
-resource "oci_core_volume_attachment" "{{ $node.Name }}_volume_att" {
-  provider        = oci.lb_nodepool_{{ $nodepool.Region }}
-  attachment_type = "paravirtualized"
-  instance_id     = oci_core_instance.{{ $node.Name }}.id
-  volume_id       = oci_core_volume.{{ $node.Name }}_volume.id
-  display_name    = "{{ $node.Name }}-volume-att"
 }
 {{- end }}
 
