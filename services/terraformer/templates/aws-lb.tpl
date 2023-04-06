@@ -179,13 +179,20 @@ resource "aws_instance" "{{ $node.Name }}" {
     }
   }
  
-  # Allow ssh connection for root
   user_data = <<EOF
-#!/bin/bash
+# Allow ssh connection for root
 sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
 cat /root/.ssh/temp > /root/.ssh/authorized_keys
 rm /root/.ssh/temp
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config && service sshd restart
+
+# Mount EBS volume only when not mounted yet
+if ! grep -qs "/dev/nvme1n1" /proc/mounts; then
+  mkdir -p /data
+  mkfs.xfs /dev/nvme1n1
+  mount /dev/nvme1n1 /data
+  echo "/dev/nvme1n1 /data xfs defaults 0 0" >> /etc/fstab
+fi
 EOF
 }
 {{- end }}
