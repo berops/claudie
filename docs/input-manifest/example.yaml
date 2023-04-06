@@ -131,7 +131,7 @@ nodePools:
   #     count:          # Static number of nodes in this nodepool.
   #     serverType:     # Machine type of the nodes in this nodepool.
   #     image:          # OS image of the nodes in the nodepool.
-  #     diskSize:       # Disk size, nodes in the nodepool will have.
+  #     diskSize:       # Disk size, of the storage disk for compute nodepool.
   #     autoscalerConf: # Autoscaler configuration. Mutually exclusive with Count.
   #       min:          # Minimum number of nodes in nodepool.
   #       max:          # Maximum number of nodes in nodepool.
@@ -146,7 +146,6 @@ nodePools:
       count: 3
       serverType: cpx11
       image: ubuntu-22.04
-      diskSize: 50
 
     - name: compute-hetzner
       providerSpec:
@@ -178,7 +177,6 @@ nodePools:
       count: 3
       serverType: e2-medium
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
-      diskSize: 50
 
     - name: compute-gcp
       providerSpec:
@@ -198,7 +196,6 @@ nodePools:
       count: 3
       serverType: VM.Standard2.1
       image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
-      diskSize: 50
 
     - name: compute-oci
       providerSpec:
@@ -218,7 +215,6 @@ nodePools:
       count: 2
       serverType: t3.medium
       image: ami-0965bd5ba4d59211c
-      diskSize: 50
 
     - name: compute-aws
       providerSpec:
@@ -238,7 +234,6 @@ nodePools:
       count: 2
       serverType: Standard_B2s
       image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
-      diskSize: 50
 
     - name: compute-azure
       providerSpec:
@@ -259,7 +254,6 @@ nodePools:
       count: 2
       serverType: e2-small
       image: ubuntu-os-cloud/ubuntu-2004-focal-v20220610
-      diskSize: 50
 
     - name: loadbalancer-2
       providerSpec:
@@ -269,7 +263,6 @@ nodePools:
       count: 2
       serverType: cpx11
       image: ubuntu-20.04
-      diskSize: 50
 
 # Kubernetes field is used to define the kubernetes clusters.
 # Definition specification:
