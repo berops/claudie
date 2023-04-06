@@ -170,7 +170,7 @@ resource "azurerm_linux_virtual_machine" "{{ $node.Name }}" {
     name                 = "{{ $node.Name }}-osdisk"
     caching              = "ReadWrite"
     storage_account_type = "StandardSSD_LRS"
-    disk_size_gb         = "30"
+    disk_size_gb         = "100"
   }
 
   disable_password_authentication = true
@@ -205,6 +205,7 @@ resource "azurerm_virtual_machine_extension" "{{ $node.Name }}_{{ $clusterHash }
       sudo rm /root/.ssh/temp
       sudo echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config && service sshd restart
       
+      {{- if not $node.IsControl }}
       # Mount managed disk only when not mounted yet
       if ! grep -qs "/dev/sdc" /proc/mounts; then
         mkdir -p /data
@@ -212,6 +213,7 @@ resource "azurerm_virtual_machine_extension" "{{ $node.Name }}_{{ $clusterHash }
         mount /dev/sdc /data
         echo "/dev/sdc /data xfs defaults 0 0" >> /etc/fstab
       fi
+      {{- end }}
       EOF
       )}"
   }
@@ -223,6 +225,7 @@ PROT
   }
 }
 
+{{- if not $node.IsControl }}
 resource "azurerm_managed_disk" "{{ $node.Name }}_disk" {
   provider             = azurerm.k8s_nodepool
   name                 = "{{ $node.Name }}-disk"
@@ -246,6 +249,7 @@ resource "azurerm_virtual_machine_data_disk_attachment" "{{ $node.Name }}_disk_a
   lun                = "10"
   caching            = "ReadWrite"
 }
+{{- end }}
 {{- end }}
 
 output "{{ $nodepool.Name }}" {

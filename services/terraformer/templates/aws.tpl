@@ -160,22 +160,24 @@ resource "aws_instance" "{{ $node.Name }}" {
   }
   
   root_block_device {
-    volume_size           = 25
+    volume_size           = 100
     delete_on_termination = true
     volume_type           = "gp2"
   }
 
+
+  {{- if not $node.IsControl }}
   ebs_block_device {
     volume_size           = {{ $nodepool.DiskSize }}
     volume_type           = "gp2"
     delete_on_termination = true
-    device_name           = "/dev/sdf"
 
     tags = {
       Name            = "{{ $node.Name }}-storage"
       Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
     }
   }
+  {{- end }}
  
   user_data = <<EOF
 #!/bin/bash
@@ -185,6 +187,7 @@ cat /root/.ssh/temp > /root/.ssh/authorized_keys
 rm /root/.ssh/temp
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config && service sshd restart
 
+{{- if not $node.IsControl }}
 # Mount EBS volume only when not mounted yet
 if ! grep -qs "/dev/nvme1n1" /proc/mounts; then
   mkdir -p /data
@@ -192,6 +195,7 @@ if ! grep -qs "/dev/nvme1n1" /proc/mounts; then
   mount /dev/nvme1n1 /data
   echo "/dev/nvme1n1 /data xfs defaults 0 0" >> /etc/fstab
 fi
+{{- end }}
 EOF
 }
 {{- end }}

@@ -161,6 +161,13 @@ resource "oci_core_instance" "{{ $node.Name }}" {
         - iptables -Z
         # Make changes persistent
         - netfilter-persistent save
+        {{- if not $node.IsControl }}
+        # Mount volume
+        - mkdir -p /data
+        - mkfs.xfs /dev/sdb
+        - mount /dev/sdb /data
+        - echo "/dev/sdb /data xfs defaults 0 0" >> /etc/fstab
+        {{- end }}
       EOF
       )
   }
@@ -168,7 +175,7 @@ resource "oci_core_instance" "{{ $node.Name }}" {
   source_details {
     source_id               = "{{ $nodepool.Image }}"
     source_type             = "image"
-    boot_volume_size_in_gbs = "25"
+    boot_volume_size_in_gbs = "100"
   }
 
   create_vnic_details {
@@ -182,12 +189,14 @@ resource "oci_core_instance" "{{ $node.Name }}" {
   }
 }
 
+{{- if not $node.IsControl }}
 resource "oci_core_volume" "{{ $node.Name }}_volume" {
   provider            = oci.k8s_nodepool_{{ $nodepool.Region }}
   compartment_id      = var.default_compartment_id
   availability_domain = "{{ $nodepool.Zone }}"
   size_in_gbs         = "{{ $nodepool.DiskSize }}"
   display_name        = "{{ $node.Name }}-volume"
+  vpus_per_gb         = 10
 
   freeform_tags = {
     "Managed-by"      = "Claudie"
@@ -202,6 +211,7 @@ resource "oci_core_volume_attachment" "{{ $node.Name }}_volume_att" {
   volume_id       = oci_core_volume.{{ $node.Name }}_volume.id
   display_name    = "{{ $node.Name }}-volume-att"
 }
+{{- end }}
 {{- end }}
 
 output "{{ $nodepool.Name }}" {

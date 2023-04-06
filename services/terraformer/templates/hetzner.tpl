@@ -86,6 +86,7 @@ resource "hcloud_server" "{{ $node.Name }}" {
     "claudie-cluster" : "{{ $clusterName }}-{{ $clusterHash }}"
   }
 
+{{- if not $node.IsControl }}
   user_data = <<-EOF
 #!/bin/bash
 # Mount volume only when not mounted yet
@@ -96,8 +97,10 @@ if ! grep -qs "/dev/sdb" /proc/mounts; then
   echo "/dev/sdb /data xfs defaults 0 0" >> /etc/fstab
 fi
 EOF
+{{- end }}
 }
 
+{{- if not $node.IsControl }}
 resource "hcloud_volume" "{{ $node.Name }}_volume" {
   provider  = hcloud.k8s_nodepool
   name      = "{{ $node.Name }}-volume"
@@ -105,6 +108,7 @@ resource "hcloud_volume" "{{ $node.Name }}_volume" {
   server_id = hcloud_server.{{ $node.Name }}.id
   format    = "xfs"
 }
+{{- end }}
 {{- end }}
 
 output "{{ $nodepool.Name }}" {

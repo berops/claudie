@@ -69,7 +69,7 @@ resource "google_compute_instance" "{{ $node.Name }}" {
   allow_stopping_for_update = true
   boot_disk {
     initialize_params {
-      size = "50"
+      size = "100"
       image = "{{ $nodepool.Image }}"
     }
   }
@@ -84,6 +84,7 @@ resource "google_compute_instance" "{{ $node.Name }}" {
 # Allow ssh as root
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart
 
+{{- if not $node.IsControl }}
 # Mount managed disk only when not mounted yet
 if ! grep -qs "/dev/sdb" /proc/mounts; then
   mkdir -p /data
@@ -91,6 +92,7 @@ if ! grep -qs "/dev/sdb" /proc/mounts; then
   mount /dev/sdb /data
   echo "/dev/sdb /data xfs defaults 0 0" >> /etc/fstab
 fi
+{{- end }}
 EOF
   
   labels = {
@@ -99,6 +101,7 @@ EOF
   }
 }
 
+{{- if not $node.IsControl }}
 resource "google_compute_disk" "{{ $node.Name }}_disk" {
   provider = google.k8s_nodepool_{{ $nodepool.Region }}
   name     = "{{ $node.Name }}-disk"
@@ -117,8 +120,8 @@ resource "google_compute_attached_disk" "{{ $node.Name }}_disk_att" {
   disk        = google_compute_disk.{{ $node.Name }}_disk.id
   instance    = google_compute_instance.{{ $node.Name }}.id
   zone        = "{{ $nodepool.Zone }}"
-  device_name = "{{ $node.Name }}" # /dev/disk/by-id/google-<node name>
 }
+{{- end }}
 {{- end }}
 
 output "{{ $nodepool.Name }}" {
