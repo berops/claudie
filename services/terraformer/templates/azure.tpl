@@ -205,7 +205,7 @@ resource "azurerm_virtual_machine_extension" "{{ $node.Name }}_{{ $clusterHash }
       sudo rm /root/.ssh/temp
       sudo echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config && service sshd restart
       
-      {{- if not $node.IsControl }}
+      {{- if not $nodepool.IsControl }}
       # Mount managed disk only when not mounted yet
       if ! grep -qs "/dev/sdc" /proc/mounts; then
         mkdir -p /data
@@ -225,7 +225,7 @@ PROT
   }
 }
 
-{{- if not $node.IsControl }}
+{{- if not $nodepool.IsControl }}
 resource "azurerm_managed_disk" "{{ $node.Name }}_disk" {
   provider             = azurerm.k8s_nodepool
   name                 = "{{ $node.Name }}-disk"

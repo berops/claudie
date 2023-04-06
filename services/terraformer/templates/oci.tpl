@@ -161,7 +161,7 @@ resource "oci_core_instance" "{{ $node.Name }}" {
         - iptables -Z
         # Make changes persistent
         - netfilter-persistent save
-        {{- if not $node.IsControl }}
+        {{- if not $nodepool.IsControl }}
         # Mount volume
         - mkdir -p /data
         - mkfs.xfs /dev/sdb
@@ -189,7 +189,7 @@ resource "oci_core_instance" "{{ $node.Name }}" {
   }
 }
 
-{{- if not $node.IsControl }}
+{{- if not $nodepool.IsControl }}
 resource "oci_core_volume" "{{ $node.Name }}_volume" {
   provider            = oci.k8s_nodepool_{{ $nodepool.Region }}
   compartment_id      = var.default_compartment_id

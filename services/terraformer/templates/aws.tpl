@@ -166,7 +166,7 @@ resource "aws_instance" "{{ $node.Name }}" {
   }
 
 
-  {{- if not $node.IsControl }}
+  {{- if not $nodepool.IsControl }}
   ebs_block_device {
     volume_size           = {{ $nodepool.DiskSize }}
     volume_type           = "gp2"
@@ -187,7 +187,7 @@ cat /root/.ssh/temp > /root/.ssh/authorized_keys
 rm /root/.ssh/temp
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config && service sshd restart
 
-{{- if not $node.IsControl }}
+{{- if not $nodepool.IsControl }}
 # Mount EBS volume only when not mounted yet
 if ! grep -qs "/dev/nvme1n1" /proc/mounts; then
   mkdir -p /data

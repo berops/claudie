@@ -86,7 +86,7 @@ resource "hcloud_server" "{{ $node.Name }}" {
     "claudie-cluster" : "{{ $clusterName }}-{{ $clusterHash }}"
   }
 
-{{- if not $node.IsControl }}
+{{- if not $nodepool.IsControl }}
   user_data = <<-EOF
 #!/bin/bash
 # Mount volume only when not mounted yet
@@ -100,7 +100,7 @@ EOF
 {{- end }}
 }
 
-{{- if not $node.IsControl }}
+{{- if not $nodepool.IsControl }}
 resource "hcloud_volume" "{{ $node.Name }}_volume" {
   provider  = hcloud.k8s_nodepool
   name      = "{{ $node.Name }}-volume"

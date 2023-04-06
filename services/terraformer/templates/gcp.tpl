@@ -84,7 +84,7 @@ resource "google_compute_instance" "{{ $node.Name }}" {
 # Allow ssh as root
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart
 
-{{- if not $node.IsControl }}
+{{- if not $nodepool.IsControl }}
 # Mount managed disk only when not mounted yet
 if ! grep -qs "/dev/sdb" /proc/mounts; then
   mkdir -p /data
@@ -101,7 +101,7 @@ EOF
   }
 }
 
-{{- if not $node.IsControl }}
+{{- if not $nodepool.IsControl }}
 resource "google_compute_disk" "{{ $node.Name }}_disk" {
   provider = google.k8s_nodepool_{{ $nodepool.Region }}
   name     = "{{ $node.Name }}-disk"
