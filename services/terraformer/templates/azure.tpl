@@ -208,10 +208,10 @@ resource "azurerm_virtual_machine_extension" "{{ $node.Name }}_{{ $clusterHash }
       {{- if not $nodepool.IsControl }}
       # Mount managed disk only when not mounted yet
       if ! grep -qs "/dev/sdc" /proc/mounts; then
-        mkdir -p /data
+        mkdir -p /opt/claudie/data
         mkfs.xfs /dev/sdc
-        mount /dev/sdc /data
-        echo "/dev/sdc /data xfs defaults 0 0" >> /etc/fstab
+        mount /dev/sdc /opt/claudie/data
+        echo "/dev/sdc /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
       fi
       {{- end }}
       EOF

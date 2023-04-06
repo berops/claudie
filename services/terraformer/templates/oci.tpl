@@ -163,10 +163,10 @@ resource "oci_core_instance" "{{ $node.Name }}" {
         - netfilter-persistent save
         {{- if not $nodepool.IsControl }}
         # Mount volume
-        - mkdir -p /data
+        - mkdir -p /opt/claudie/data
         - mkfs.xfs /dev/sdb
-        - mount /dev/sdb /data
-        - echo "/dev/sdb /data xfs defaults 0 0" >> /etc/fstab
+        - mount /dev/sdb /opt/claudie/data
+        - echo "/dev/sdb /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
         {{- end }}
       EOF
       )

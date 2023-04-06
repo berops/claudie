@@ -190,10 +190,10 @@ echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyA
 {{- if not $nodepool.IsControl }}
 # Mount EBS volume only when not mounted yet
 if ! grep -qs "/dev/nvme1n1" /proc/mounts; then
-  mkdir -p /data
+  mkdir -p /opt/claudie/data
   mkfs.xfs /dev/nvme1n1
-  mount /dev/nvme1n1 /data
-  echo "/dev/nvme1n1 /data xfs defaults 0 0" >> /etc/fstab
+  mount /dev/nvme1n1 /opt/claudie/data
+  echo "/dev/nvme1n1 /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
 fi
 {{- end }}
 EOF

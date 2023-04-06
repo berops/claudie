@@ -91,10 +91,10 @@ resource "hcloud_server" "{{ $node.Name }}" {
 #!/bin/bash
 # Mount volume only when not mounted yet
 if ! grep -qs "/dev/sdb" /proc/mounts; then
-  mkdir -p /data
+  mkdir -p /opt/claudie/data
   mkfs.xfs /dev/sdb
-  mount /dev/sdb /data
-  echo "/dev/sdb /data xfs defaults 0 0" >> /etc/fstab
+  mount /dev/sdb /opt/claudie/data
+  echo "/dev/sdb /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
 fi
 EOF
 {{- end }}

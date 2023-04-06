@@ -12,4 +12,4 @@ kind: Setting
 metadata:
   name: default-data-path
   namespace: longhorn-system
-value: /data
+value: /opt/claudie/data
