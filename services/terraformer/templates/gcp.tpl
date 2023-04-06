@@ -69,7 +69,7 @@ resource "google_compute_instance" "{{ $node.Name }}" {
   allow_stopping_for_update = true
   boot_disk {
     initialize_params {
-      size = "25"
+      size = "50"
       image = "{{ $nodepool.Image }}"
     }
   }
@@ -80,7 +80,18 @@ resource "google_compute_instance" "{{ $node.Name }}" {
   metadata = {
     ssh-keys = "root:${file("./public.pem")}"
   }
-  metadata_startup_script = "echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart"
+  metadata_startup_script = <<EOF
+# Allow ssh as root
+echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart
+
+# Mount managed disk only when not mounted yet
+if ! grep -qs "/dev/sdb" /proc/mounts; then
+  mkdir -p /data
+  mkfs.xfs /dev/sdb
+  mount /dev/sdb /data
+  echo "/dev/sdb /data xfs defaults 0 0" >> /etc/fstab
+fi
+EOF
   
   labels = {
     managed-by = "claudie"
@@ -93,7 +104,7 @@ resource "google_compute_disk" "{{ $node.Name }}_disk" {
   name     = "{{ $node.Name }}-disk"
   type     = "pd-ssd"
   zone     = "{{ $nodepool.Zone }}"
-  size     = {{ $node.DiskSize }}
+  size     = {{ $nodepool.DiskSize }}
 
   labels = {
     managed-by = "claudie"
