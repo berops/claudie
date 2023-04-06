@@ -85,22 +85,25 @@ resource "hcloud_server" "{{ $node.Name }}" {
     "managed-by"      : "Claudie"
     "claudie-cluster" : "{{ $clusterName }}-{{ $clusterHash }}"
   }
+
+  user_data = <<-EOF
+#!/bin/bash
+# Mount volume only when not mounted yet
+if ! grep -qs "/dev/sdb" /proc/mounts; then
+  mkdir -p /data
+  mkfs.xfs /dev/sdb
+  mount /dev/sdb /data
+  echo "/dev/sdb /data xfs defaults 0 0" >> /etc/fstab
+fi
+EOF
 }
 
 resource "hcloud_volume" "{{ $node.Name }}_volume" {
   provider  = hcloud.k8s_nodepool
   name      = "{{ $node.Name }}-volume"
-  size      = {{ $node.DiskSize }}
+  size      = {{ $nodepool.DiskSize }}
   server_id = hcloud_server.{{ $node.Name }}.id
-  automount = true
-  format    = "ext4"
-}
-
-resource "hcloud_volume_attachment" "{{ $node.Name }}_volume_att" {
-  provider  = hcloud.k8s_nodepool
-  volume_id = hcloud_volume.{{ $node.Name }}_volume.id
-  server_id = hcloud_server.{{ $node.Name }}.id
-  automount = true
+  format    = "xfs"
 }
 {{- end }}
 
