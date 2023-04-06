@@ -170,7 +170,7 @@ resource "azurerm_linux_virtual_machine" "{{ $node.Name }}" {
     name                 = "{{ $node.Name }}-osdisk"
     caching              = "ReadWrite"
     storage_account_type = "StandardSSD_LRS"
-    disk_size_gb         = "30"
+    disk_size_gb         = "50"
   }
 
   disable_password_authentication = true
@@ -204,14 +204,6 @@ resource "azurerm_virtual_machine_extension" "{{ $node.Name }}_{{ $clusterHash }
       sudo cat /root/.ssh/temp > /root/.ssh/authorized_keys
       sudo rm /root/.ssh/temp
       sudo echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config && service sshd restart
-      
-      # Mount managed disk only when not mounted yet
-      if ! grep -qs "/dev/sdc" /proc/mounts; then
-        mkdir -p /data
-        mkfs.xfs /dev/sdc
-        mount /dev/sdc /data
-        echo "/dev/sdc /data xfs defaults 0 0" >> /etc/fstab
-      fi
       EOF
       )}"
   }
@@ -221,30 +213,6 @@ PROT
     managed-by      = "Claudie"
     claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
-}
-
-resource "azurerm_managed_disk" "{{ $node.Name }}_disk" {
-  provider             = azurerm.lb_nodepool
-  name                 = "{{ $node.Name }}-disk"
-  location             = "{{ $nodepool.Region }}"
-  zone                 = {{ $nodepool.Zone }}
-  resource_group_name  = azurerm_resource_group.rg_{{ $sanitisedRegion }}.name
-  storage_account_type = "StandardSSD_LRS"
-  create_option        = "Empty"
-  disk_size_gb         = {{ $nodepool.DiskSize }}
-
-  tags = {
-    managed-by      = "Claudie"
-    claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
-  }
-}
-
-resource "azurerm_virtual_machine_data_disk_attachment" "{{ $node.Name }}_disk_att" {
-  provider           = azurerm.lb_nodepool
-  managed_disk_id    = azurerm_managed_disk.{{ $node.Name }}_disk.id
-  virtual_machine_id = azurerm_linux_virtual_machine.{{ $node.Name }}.id
-  lun                = "10"
-  caching            = "ReadWrite"
 }
 {{- end }}
 

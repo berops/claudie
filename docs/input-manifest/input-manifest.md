@@ -238,7 +238,9 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
 - `diskSize`
 
-  Size of the storage disk on the nodes in the nodepool in `GB`. The OS disk is created automatically with predefined size. Minimum value is `10`.
+  Size of the storage disk on the nodes in the nodepool in `GB`. The OS disk is created automatically with predefined size of `50GB`. Minimum value is `30`.
+
+  This field is ignored when nodepool is used in the Loadbalancer cluster, as they do not require any additional storage.
 
 - `autoscalerConf` [Autoscaler Configuration](#autoscaler-configuration)
   

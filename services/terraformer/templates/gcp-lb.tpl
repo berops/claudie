@@ -69,7 +69,7 @@ resource "google_compute_instance" "{{ $node.Name }}" {
   allow_stopping_for_update = true
   boot_disk {
     initialize_params {
-      size = "25"
+      size = "50"
       image = "{{ $nodepool.Image }}"
     }
   }
@@ -86,27 +86,6 @@ resource "google_compute_instance" "{{ $node.Name }}" {
     managed-by = "claudie"
     claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
-}
-
-resource "google_compute_disk" "{{ $node.Name }}_disk" {
-  provider = google.lb_nodepool_{{ $nodepool.Region }}
-  name     = "{{ $node.Name }}-disk"
-  type     = "pd-ssd"
-  zone     = "{{ $nodepool.Zone }}"
-  size     = {{ $node.DiskSize }}
-
-  labels = {
-    managed-by = "claudie"
-    claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
-  }
-}
-
-resource "google_compute_attached_disk" "{{ $node.Name }}_disk_att" {
-  provider    = google.lb_nodepool_{{ $nodepool.Region }}
-  disk        = google_compute_disk.{{ $node.Name }}_disk.id
-  instance    = google_compute_instance.{{ $node.Name }}.id
-  zone        = "{{ $nodepool.Zone }}"
-  device_name = "{{ $node.Name }}" # /dev/disk/by-id/google-<node name>
 }
 {{- end }}
 
