@@ -240,7 +240,7 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
   Size of the storage disk on the nodes in the nodepool in `GB`. The OS disk is created automatically with predefined size of `100GB` for kubernetes nodes and `30GB` for Loadbalancer nodes. Default value is `30`, minimum value is `30`.
 
-  This field is optional, however, if compute nodepool does not define it, default value is used for creation of storage disk.
+  This field is optional, however, if compute nodepool does not define it, default value is used for creation of storage disk. Control nodepools and Loadbalancer nodepools ignore this field.
 
 - `autoscalerConf` [Autoscaler Configuration](#autoscaler-configuration)
   
