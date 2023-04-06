@@ -178,6 +178,7 @@ resource "aws_instance" "{{ $node.Name }}" {
   }
  
   user_data = <<EOF
+#!/bin/bash
 # Allow ssh connection for root
 sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
 cat /root/.ssh/temp > /root/.ssh/authorized_keys
