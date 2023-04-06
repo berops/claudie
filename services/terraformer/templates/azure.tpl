@@ -12,14 +12,9 @@ provider "azurerm" {
 
 {{- range $i, $region := .Regions }}
 {{- $sanitisedRegion := replaceAll $region " " "_"}}
-variable "default_resource_group_name_{{ $sanitisedRegion }}" {
-  type    = string
-  default = "{{ $clusterName }}-{{ $clusterHash }}-{{ replaceAll $region " " "-" }}"
-}
-
 resource "azurerm_resource_group" "rg_{{ $sanitisedRegion }}" {
   provider = azurerm.k8s_nodepool
-  name     = var.default_resource_group_name_{{ $sanitisedRegion }}
+  name     = "{{ $clusterName }}-{{ $clusterHash }}-{{ $sanitisedRegion }}"
   location = "{{ $region }}"
 
   tags = {
@@ -33,7 +28,7 @@ resource "azurerm_virtual_network" "claudie_vn_{{ $sanitisedRegion }}" {
   name                = "{{ $clusterName }}-{{ $clusterHash }}-vn"
   address_space       = ["10.0.0.0/16"]
   location            = "{{ $region }}"
-  resource_group_name = var.default_resource_group_name_{{ $sanitisedRegion }}
+  resource_group_name = azurerm_resource_group.rg_{{ $sanitisedRegion }}.name
 
   tags = {
     managed-by      = "Claudie"
@@ -45,7 +40,7 @@ resource "azurerm_network_security_group" "claudie_nsg_{{ $sanitisedRegion }}" {
   provider            = azurerm.k8s_nodepool
   name                = "{{ $clusterName }}-{{ $clusterHash }}-nsg"
   location            = "{{ $region }}"
-  resource_group_name = var.default_resource_group_name_{{ $sanitisedRegion }}
+  resource_group_name = azurerm_resource_group.rg_{{ $sanitisedRegion }}.name
 
   security_rule {
     name                       = "SSH"
@@ -108,7 +103,7 @@ resource "azurerm_network_security_group" "claudie_nsg_{{ $sanitisedRegion }}" {
 resource "azurerm_subnet" "{{ $nodepool.Name }}_{{ $clusterHash }}_subnet" {
   provider             = azurerm.k8s_nodepool
   name                 = "{{ $nodepool.Name }}_{{ $clusterHash }}_subnet"
-  resource_group_name   = var.default_resource_group_name_{{ $sanitisedRegion }}
+  resource_group_name   = azurerm_resource_group.rg_{{ $sanitisedRegion }}.name
   virtual_network_name = azurerm_virtual_network.claudie_vn_{{ $sanitisedRegion }}.name
   address_prefixes     = ["{{index $.Metadata (printf "%s-subnet-cidr" $nodepool.Name) }}"]
 }
@@ -124,7 +119,7 @@ resource "azurerm_public_ip" "{{ $node.Name }}_public_ip" {
   provider            = azurerm.k8s_nodepool
   name                = "{{ $node.Name }}-ip"
   location            = "{{ $nodepool.Region }}"
-  resource_group_name = var.default_resource_group_name_{{ $sanitisedRegion }}
+  resource_group_name = azurerm_resource_group.rg_{{ $sanitisedRegion }}.name
   allocation_method   = "Static"
   sku                 = "Standard"
 
@@ -138,7 +133,7 @@ resource "azurerm_network_interface" "{{ $node.Name }}_ni" {
   provider            = azurerm.k8s_nodepool
   name                = "{{ $node.Name }}-ni"
   location            = "{{ $nodepool.Region }}"
-  resource_group_name = var.default_resource_group_name_{{ $sanitisedRegion }}
+  resource_group_name = azurerm_resource_group.rg_{{ $sanitisedRegion }}.name
   enable_accelerated_networking = {{ enableAccNet $nodepool.ServerType }}
 
   ip_configuration {
@@ -159,7 +154,7 @@ resource "azurerm_linux_virtual_machine" "{{ $node.Name }}" {
   provider              = azurerm.k8s_nodepool
   name                  = "{{ $node.Name }}"
   location              = "{{ $nodepool.Region }}"
-  resource_group_name   = var.default_resource_group_name_{{ $sanitisedRegion }}
+  resource_group_name   = azurerm_resource_group.rg_{{ $sanitisedRegion }}.name
   network_interface_ids = [azurerm_network_interface.{{ $node.Name }}_ni.id]
   size                  = "{{$nodepool.ServerType}}"
   zone                  = "{{$nodepool.Zone}}"
@@ -233,7 +228,7 @@ resource "azurerm_managed_disk" "{{ $node.Name }}_disk" {
   name                 = "{{ $node.Name }}-disk"
   location             = "{{ $nodepool.Region }}"
   zone                 = {{ $nodepool.Zone }}
-  resource_group_name  = var.default_resource_group_name_{{ $sanitisedRegion }}
+  resource_group_name  = azurerm_resource_group.rg_{{ $sanitisedRegion }}.name
   storage_account_type = "StandardSSD_LRS"
   create_option        = "Empty"
   disk_size_gb         = {{ $nodepool.DiskSize }} 
