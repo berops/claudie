@@ -118,6 +118,7 @@ resource "azurerm_subnet_network_security_group_association" "{{ $nodepool.Name 
 }
 
 {{- range $node := $nodepool.Nodes }}
+{{- $sanitisedRegion := replaceAll $nodepool.Region " " "_"}}
 resource "azurerm_public_ip" "{{ $node.Name }}_public_ip" {
   provider            = azurerm.lb_nodepool
   name                = "{{ $node.Name }}-ip"
@@ -172,8 +173,8 @@ resource "azurerm_linux_virtual_machine" "{{ $node.Name }}" {
   os_disk {
     name                 = "{{ $node.Name }}-osdisk"
     caching              = "ReadWrite"
-    storage_account_type = "Standard_LRS"
-    disk_size_gb         = "25"
+    storage_account_type = "StandardSSD_LRS"
+    disk_size_gb         = "30"
   }
 
   disable_password_authentication = true
@@ -202,10 +203,19 @@ resource "azurerm_virtual_machine_extension" "{{ $node.Name }}_{{ $clusterHash }
   protected_settings = <<PROT
   {
       "script": "${base64encode(<<EOF
+      # Allow ssh as root
       sudo sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
       sudo cat /root/.ssh/temp > /root/.ssh/authorized_keys
       sudo rm /root/.ssh/temp
       sudo echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config && service sshd restart
+      
+      # Mount managed disk only when not mounted yet
+      if ! grep -qs "/dev/sdc" /proc/mounts; then
+        mkdir -p /data
+        mkfs.xfs /dev/sdc
+        mount /dev/sdc /data
+        echo "/dev/sdc /data xfs defaults 0 0" >> /etc/fstab
+      fi
       EOF
       )}"
   }
@@ -223,15 +233,20 @@ resource "azurerm_managed_disk" "{{ $node.Name }}_disk" {
   location             = "{{ $nodepool.Region }}"
   zone                 = {{ $nodepool.Zone }}
   resource_group_name  = var.default_resource_group_name_{{ $sanitisedRegion }}
-  storage_account_type = "Standard_LRS"
+  storage_account_type = "StandardSSD_LRS"
   create_option        = "Empty"
   disk_size_gb         = {{ $nodepool.DiskSize }}
+
+  tags = {
+    managed-by      = "Claudie"
+    claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
+  }
 }
 
 resource "azurerm_virtual_machine_data_disk_attachment" "{{ $node.Name }}_disk_att" {
   provider             = azurerm.lb_nodepool
   managed_disk_id    = azurerm_managed_disk.{{ $node.Name }}_disk.id
-  virtual_machine_id = azurerm_virtual_machine.{{ $node.Name }}.id
+  virtual_machine_id = azurerm_linux_virtual_machine.{{ $node.Name }}.id
   lun                = "10"
   caching            = "ReadWrite"
 }
