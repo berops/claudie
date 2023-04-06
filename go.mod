@@ -13,7 +13,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.86.1
 	github.com/go-playground/validator/v10 v10.11.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
-	github.com/hetznercloud/hcloud-go v1.40.0
+	github.com/hetznercloud/hcloud-go v1.41.0
 	github.com/minio/minio-go/v7 v7.0.49
 	github.com/oracle/oci-go-sdk/v65 v65.31.1
 	github.com/rs/zerolog v1.29.0
