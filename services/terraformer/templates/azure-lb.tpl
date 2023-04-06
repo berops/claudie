@@ -1,7 +1,6 @@
 {{- $clusterName := .ClusterName}}
 {{- $clusterHash := .ClusterHash}}
 {{- $index :=  0 }}
-{{- $resourceGroupName := replaceAll $region " " "_" }}
 provider "azurerm" {
   features {}
   subscription_id = "{{ (index $.NodePools 0).Provider.AzureSubscriptionId }}"
@@ -12,9 +11,15 @@ provider "azurerm" {
 }
 
 {{- range $i, $region := .Regions }}
-resource "azurerm_resource_group" "rg_{{ replaceAll $region " " "_" }}" {
+{{- $sanitisedRegion := replaceAll $region " " "_"}}
+variable "default_resource_group_name_{{ $sanitisedRegion }}" {
+  type    = string
+  default = "{{ $clusterName }}-{{ $clusterHash }}-{{ replaceAll $region " " "-" }}"
+}
+
+resource "azurerm_resource_group" "rg_{{ $sanitisedRegion }}" {
   provider = azurerm.lb_nodepool
-  name     = "{{ $clusterName }}-{{ $clusterHash }}-{{ replaceAll $region " " "-" }}"
+  name     = var.default_resource_group_name_{{ $sanitisedRegion }}
   location = "{{ $region }}"
   tags = {
     managed-by      = "Claudie"
@@ -22,12 +27,12 @@ resource "azurerm_resource_group" "rg_{{ replaceAll $region " " "_" }}" {
   }
 }
 
-resource "azurerm_virtual_network" "claudie_vn_{{ replaceAll $region " " "_" }}" {
+resource "azurerm_virtual_network" "claudie_vn_{{ $sanitisedRegion }}" {
   provider            = azurerm.lb_nodepool
   name                = "{{ $clusterName }}-{{ $clusterHash }}-vn"
   address_space       = ["10.0.0.0/16"]
   location            = "{{ $region }}"
-  resource_group_name = azurerm_resource_group.rg_{{ replaceAll $region " " "_" }}.name
+  resource_group_name = var.default_resource_group_name_{{ $sanitisedRegion }}
 
   tags = {
     managed-by      = "Claudie"
@@ -35,11 +40,11 @@ resource "azurerm_virtual_network" "claudie_vn_{{ replaceAll $region " " "_" }}"
   }
 }
 
-resource "azurerm_network_security_group" "claudie_nsg_{{ replaceAll $region " " "_" }}" {
+resource "azurerm_network_security_group" "claudie_nsg_{{ $sanitisedRegion }}" {
   provider            = azurerm.lb_nodepool
   name                = "{{ $clusterName }}-{{ $clusterHash }}-nsg"
   location            = "{{ $region }}"
-  resource_group_name = azurerm_resource_group.rg_{{ replaceAll $region " " "_" }}.name
+  resource_group_name = var.default_resource_group_name_{{ $sanitisedRegion }}
 
   security_rule {
     name                       = "SSH"
@@ -101,15 +106,15 @@ resource "azurerm_network_security_group" "claudie_nsg_{{ replaceAll $region " "
 resource "azurerm_subnet" "{{ $nodepool.Name }}_{{ $clusterHash }}_subnet" {
   provider             = azurerm.lb_nodepool
   name                 = "{{ $nodepool.Name }}_{{ $clusterHash }}_subnet"
-  resource_group_name  = azurerm_resource_group.rg_{{ replaceAll $nodepool.Region " " "_"}}.name
-  virtual_network_name = azurerm_virtual_network.claudie_vn_{{ replaceAll $nodepool.Region " " "_" }}.name
+  resource_group_name  = var.default_resource_group_name_{{ $sanitisedRegion }}
+  virtual_network_name = azurerm_virtual_network.claudie_vn_{{ $sanitisedRegion }}.name
   address_prefixes     = ["{{ index $.Metadata (printf "%s-subnet-cidr" $nodepool.Name)  }}"]
 }
 
 resource "azurerm_subnet_network_security_group_association" "{{ $nodepool.Name }}_associate_nsg" {
   provider                  = azurerm.lb_nodepool
   subnet_id                 = azurerm_subnet.{{ $nodepool.Name }}_{{ $clusterHash }}_subnet.id
-  network_security_group_id = azurerm_network_security_group.claudie_nsg_{{ replaceAll $nodepool.Region " " "_" }}.id
+  network_security_group_id = azurerm_network_security_group.claudie_nsg_{{ $sanitisedRegion }}.id
 }
 
 {{- range $node := $nodepool.Nodes }}
@@ -117,7 +122,7 @@ resource "azurerm_public_ip" "{{ $node.Name }}_public_ip" {
   provider            = azurerm.lb_nodepool
   name                = "{{ $node.Name }}-ip"
   location            = "{{ $nodepool.Region }}"
-  resource_group_name = azurerm_resource_group.rg_{{ replaceAll $nodepool.Region " " "_" }}.name
+  resource_group_name = var.default_resource_group_name_{{ $sanitisedRegion }}
   allocation_method   = "Static"
   sku                 = "Standard"
 
@@ -131,7 +136,7 @@ resource "azurerm_network_interface" "{{ $node.Name }}_ni" {
   provider            = azurerm.lb_nodepool
   name                = "{{ $node.Name }}-ni"
   location            = "{{ $nodepool.Region }}"
-  resource_group_name = azurerm_resource_group.rg_{{replaceAll $nodepool.Region " " "_"  }}.name
+  resource_group_name = var.default_resource_group_name_{{ $sanitisedRegion }}
   enable_accelerated_networking = {{ enableAccNet $nodepool.ServerType }}
 
   ip_configuration {
@@ -152,7 +157,7 @@ resource "azurerm_linux_virtual_machine" "{{ $node.Name }}" {
   provider              = azurerm.lb_nodepool
   name                  = "{{ $node.Name }}"
   location              = "{{ $nodepool.Region }}"
-  resource_group_name   = azurerm_resource_group.rg_{{ replaceAll $nodepool.Region " " "_"  }}.name
+  resource_group_name   = var.default_resource_group_name_{{ $sanitisedRegion }}
   network_interface_ids = [azurerm_network_interface.{{ $node.Name }}_ni.id]
   size                  = "{{$nodepool.ServerType}}"
   zone                  = "{{$nodepool.Zone}}"
@@ -215,9 +220,9 @@ PROT
 resource "azurerm_managed_disk" "{{ $node.Name }}_disk" {
   provider             = azurerm.lb_nodepool
   name                 = "{{ $node.Name }}-disk"
-  location             = azurerm_resource_group.rg_{{ replaceAll $nodepool.Region " " "_" }}.location
+  location             = "{{ $nodepool.Region }}"
   zone                 = {{ $nodepool.Zone }}
-  resource_group_name  = azurerm_resource_group.rg_{{ replaceAll $nodepool.Region " " "_" }}.name
+  resource_group_name  = var.default_resource_group_name_{{ $sanitisedRegion }}
   storage_account_type = "Standard_LRS"
   create_option        = "Empty"
   disk_size_gb         = {{ $nodepool.DiskSize }}

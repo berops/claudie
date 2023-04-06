@@ -160,7 +160,21 @@ resource "aws_instance" "{{ $node.Name }}" {
   }
   
   root_block_device {
-    volume_size = 25
+    volume_size           = 25
+    delete_on_termination = true
+    volume_type           = "gp2"
+  }
+
+  ebs_block_device {
+    volume_size           = {{ $nodepool.DiskSize }}
+    volume_type           = "gp2"
+    delete_on_termination = true
+    device_name           = "/dev/sdf"
+
+    tags = {
+      Name            = "{{ $node.Name }}-storage"
+      Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
+    }
   }
  
   # Allow ssh connection for root
@@ -171,24 +185,6 @@ cat /root/.ssh/temp > /root/.ssh/authorized_keys
 rm /root/.ssh/temp
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config && service sshd restart
 EOF
-}
-
-resource "aws_ebs_volume" "{{ $node.Name }}_volume" {
-  availability_zone = "{{ $nodepool.Zone }}"
-  size              = {{ $nodepool.DiskSize }}
-  provider          = aws.k8s_nodepool_{{ $nodepool.Region }}
-
-  tags = {
-    Name            = "{{ $nodepool.Name }}-{{ $clusterHash }}-disk"
-    Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
-  }
-}
-
-resource "aws_volume_attachment" "{{ $node.Name }}_volume_att" {
-  provider    = aws.k8s_nodepool_{{ $nodepool.Region }}
-  device_name = "/dev/sdf"
-  volume_id   = aws_ebs_volume.{{ $node.Name }}_volume.id
-  instance_id = aws_instance.{{ $node.Name }}.id
 }
 {{- end }}
 

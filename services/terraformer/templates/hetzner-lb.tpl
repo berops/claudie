@@ -86,6 +86,22 @@ resource "hcloud_server" "{{ $node.Name }}" {
     "claudie-cluster" : "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
+
+resource "hcloud_volume" "{{ $node.Name }}_volume" {
+  provider  = hcloud.lb_nodepool
+  name      = "{{ $node.Name }}-volume"
+  size      = {{ $node.DiskSize }}
+  server_id = hcloud_server.{{ $node.Name }}.id
+  automount = true
+  format    = "ext4"
+}
+
+resource "hcloud_volume_attachment" "{{ $node.Name }}_volume_att" {
+  provider  = hcloud.lb_nodepool
+  volume_id = hcloud_volume.{{ $node.Name }}_volume.id
+  server_id = hcloud_server.{{ $node.Name }}.id
+  automount = true
+}
 {{- end }}
 
 output "{{ $nodepool.Name }}" {
