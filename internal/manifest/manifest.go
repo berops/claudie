@@ -91,7 +91,7 @@ type DynamicNodePool struct {
 	Count            int32            `validate:"required_without=AutoscalerConfig,excluded_with=AutoscalerConfig" yaml:"count"`
 	ServerType       string           `validate:"required" yaml:"serverType"`
 	Image            string           `validate:"required" yaml:"image"`
-	DiskSize         int64            `validate:"required" yaml:"diskSize"`
+	DiskSize         int64            `validate:"omitempty, gte=30" yaml:"diskSize"`
 	AutoscalerConfig AutoscalerConfig `validate:"required_without=Count,excluded_with=Count" yaml:"autoscaler"`
 }
 

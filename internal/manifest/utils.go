@@ -6,6 +6,10 @@ import (
 	"github.com/berops/claudie/proto/pb"
 )
 
+const (
+	defaultDiskSize = 30
+)
+
 // GetProvider will search for a Provider config by matching name from providerSpec
 // returns *pb.Provider,nil if matching Provider config found otherwise returns nil,error
 func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
@@ -138,6 +142,11 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 				autoscalerConf.Min = nodePool.AutoscalerConfig.Min
 				autoscalerConf.Max = nodePool.AutoscalerConfig.Max
 				count = nodePool.AutoscalerConfig.Min
+			}
+
+			// Set default disk size if not defined. (Value only used in compute nodepools)
+			if nodePool.DiskSize == 0 {
+				nodePool.DiskSize = defaultDiskSize
 			}
 
 			nodePools = append(nodePools, &pb.NodePool{
