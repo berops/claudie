@@ -211,12 +211,13 @@ func (l *Longhorn) deleteOldStorageClasses(existing, applied []string, kc kubect
 }
 
 func (l *Longhorn) applyManifests(kc kubectl.Kubectl) error {
-	// apply longhorn.yaml
+	// Apply longhorn.yaml
 	if err := kc.KubectlApply(longhornYaml); err != nil {
 		return fmt.Errorf("error while applying longhorn.yaml in %s : %w", l.Directory, err)
 	}
+	// Apply longhorn setting
 	if err := kc.KubectlApply(longhornDefaultsYaml, ""); err != nil {
-		return fmt.Errorf("error while applying settings node-selector.yaml in %s : %w", l.Directory, err)
+		return fmt.Errorf("error while applying settings for longhorn in %s : %w", l.Directory, err)
 	}
 	return nil
 }
