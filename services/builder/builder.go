@@ -26,41 +26,22 @@ const defaultBuilderPort = 50051
 
 // healthCheck function is function used for querying readiness of the pod running this microservice
 func healthCheck() error {
-	//Check if Builder can connect to Terraformer/Ansibler/Kube-eleven/Kuber/Context-box
-	//Connection to these services are crucial for Builder, without them, the builder is NOT Ready
-	if cc, err := utils.GrpcDialWithInsecure("terraformer", envs.TerraformerURL); err != nil {
-		return err
-	} else {
-		if err := cc.Close(); err != nil {
-			return fmt.Errorf("error closing connection in health check function : %w", err)
-		}
+	// Check if Builder can connect to Terraformer/Ansibler/Kube-eleven/Kuber/Context-box
+	// Connection to these services are crucial for Builder, without them, the builder is NOT Ready
+	services := map[string]string{
+		"context-box": envs.ContextBoxURL,
+		"terraformer": envs.TerraformerURL,
+		"ansibler":    envs.AnsiblerURL,
+		"kube-eleven": envs.KubeElevenURL,
+		"kuber":       envs.KuberURL,
 	}
-	if cc, err := utils.GrpcDialWithInsecure("ansibler", envs.AnsiblerURL); err != nil {
-		return err
-	} else {
-		if err := cc.Close(); err != nil {
-			return fmt.Errorf("error closing connection in health check function : %w", err)
-		}
-	}
-	if cc, err := utils.GrpcDialWithInsecure("kubeEleven", envs.KubeElevenURL); err != nil {
-		return err
-	} else {
-		if err := cc.Close(); err != nil {
-			return fmt.Errorf("error closing connection in health check function : %w", err)
-		}
-	}
-	if cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL); err != nil {
-		return err
-	} else {
-		if err := cc.Close(); err != nil {
-			return fmt.Errorf("error closing connection in health check function : %w", err)
-		}
-	}
-	if cc, err := utils.GrpcDialWithInsecure("context-box", envs.ContextBoxURL); err != nil {
-		return err
-	} else {
-		if err := cc.Close(); err != nil {
-			return fmt.Errorf("error closing connection in health check function : %w", err)
+	for service, url := range services {
+		if cc, err := utils.GrpcDialWithInsecure(service, url); err != nil {
+			return err
+		} else {
+			if err := cc.Close(); err != nil {
+				return fmt.Errorf("error closing connection for %s in health check function : %w", service, err)
+			}
 		}
 	}
 	return nil

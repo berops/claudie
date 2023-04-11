@@ -41,14 +41,16 @@ spec:
           ports:
             - containerPort: 50054
           readinessProbe:
-            exec:
-              command: ["/bin/grpc_health_probe", "-addr=:50054"]
+            grpc:
+              port: 50054
+              service: kube-eleven-readiness
             initialDelaySeconds: 5
             periodSeconds: 30
           livenessProbe:
-            exec:
-              command: ["/bin/grpc_health_probe-Liveness", "-addr=:50054"]
-            initialDelaySeconds: 10
+            grpc:
+              port: 50054
+              service: kube-eleven-liveness
+            initialDelaySeconds: 5
             periodSeconds: 30
 ---
 kind: Service

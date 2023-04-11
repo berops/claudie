@@ -93,14 +93,16 @@ spec:
           ports:
             - containerPort: 50052
           readinessProbe:
-            exec:
-              command: ["/bin/grpc_health_probe", "-addr=:50052"]
+            grpc:
+              port: 50052
+              service: terraformer-readiness
             initialDelaySeconds: 5
             periodSeconds: 30
           livenessProbe:
-            exec:
-              command: ["/bin/grpc_health_probe-Liveness", "-addr=:50052"]
-            initialDelaySeconds: 30
+            grpc:
+              port: 50052
+              service: terraformer-liveness
+            initialDelaySeconds: 5
             periodSeconds: 30
 ---
 kind: Service

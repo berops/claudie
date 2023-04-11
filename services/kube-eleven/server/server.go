@@ -10,13 +10,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/berops/claudie/internal/healthcheck"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	kubeEleven "github.com/berops/claudie/services/kube-eleven/server/kube-eleven"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
@@ -60,8 +60,11 @@ func main() {
 	pb.RegisterKubeElevenServiceServer(s, &server{})
 
 	// Add health service to gRPC
-	healthService := healthcheck.NewServerHealthChecker(kubeElevenPort, "KUBE_ELEVEN_PORT", nil)
-	grpc_health_v1.RegisterHealthServer(s, healthService)
+	healthServer := health.NewServer()
+	// Kube-eleven does not have any custom health check functions, thus always serving.
+	healthServer.SetServingStatus("kube-eleven-liveness", grpc_health_v1.HealthCheckResponse_SERVING)
+	healthServer.SetServingStatus("kube-eleven-readiness", grpc_health_v1.HealthCheckResponse_SERVING)
+	grpc_health_v1.RegisterHealthServer(s, healthServer)
 
 	g, ctx := errgroup.WithContext(context.Background())
 
@@ -85,6 +88,7 @@ func main() {
 
 		log.Info().Msg("Gracefully shutting down gRPC server")
 		s.GracefulStop()
+		healthServer.Shutdown()
 
 		// Sometimes when the container terminates gRPC logs the following message:
 		// rpc error: code = Unknown desc = Error: No such container: hash of the container...
