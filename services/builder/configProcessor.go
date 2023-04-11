@@ -98,7 +98,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 					Workflow:             clusterView.ClusterWorkflows[clusterName],
 				}
 
-				if ctx, err = buildCluster(ctx); err != nil {
+				if ctx, err = buildCluster(ctx, c); err != nil {
 					clusterView.SetWorkflowError(clusterName, err)
 					log.Error().Msgf("Failed to build cluster %s project %s : %v", clusterName, config.Name, err)
 					return err
@@ -141,7 +141,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 				Workflow:             clusterView.ClusterWorkflows[clusterName],
 			}
 
-			if ctx, err = buildCluster(ctx); err != nil {
+			if ctx, err = buildCluster(ctx, c); err != nil {
 				clusterView.SetWorkflowError(clusterName, err)
 				log.Error().Msgf("Failed to build cluster %s project %s : %v", clusterName, config.Name, err)
 				return err
