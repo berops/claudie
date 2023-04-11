@@ -117,7 +117,7 @@ resource "oci_core_default_route_table" "claudie_routes_{{ $region }}" {
 resource "oci_core_subnet" "{{ $nodepool.Name }}_subnet" {
   provider            = oci.lb_nodepool_{{ $nodepool.Region }}
   vcn_id              = oci_core_vcn.claudie_vcn_{{ $nodepool.Region }}.id
-  cidr_block          = "{{ getCIDR "10.0.0.0/24" 2 $i }}"
+  cidr_block          = "{{ index $.Metadata (printf "%s-subnet-cidr" $nodepool.Name)  }}"
   compartment_id      = var.default_compartment_id
   display_name        = "{{ $clusterName }}-{{ $clusterHash }}-subnet"
   security_list_ids   = [oci_core_vcn.claudie_vcn_{{ $nodepool.Region }}.default_security_list_id]
@@ -131,13 +131,13 @@ resource "oci_core_subnet" "{{ $nodepool.Name }}_subnet" {
   }
 }
 
-resource "oci_core_instance" "{{ $nodepool.Name }}" {
+{{- range $node := $nodepool.Nodes }}
+resource "oci_core_instance" "{{ $node.Name }}" {
   provider            = oci.lb_nodepool_{{ $nodepool.Region }}
   compartment_id      = var.default_compartment_id
-  count               = {{ $nodepool.Count }}
   availability_domain = "{{ $nodepool.Zone }}"
   shape               = "{{ $nodepool.ServerType }}"
-  display_name        = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}"
+  display_name        = "{{ $node.Name }}"
 
   metadata = {
       ssh_authorized_keys = file("./public.pem")
@@ -180,11 +180,13 @@ resource "oci_core_instance" "{{ $nodepool.Name }}" {
     "Claudie-cluster" = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
+{{- end }}
 
 output "{{ $nodepool.Name }}" {
   value = {
-    for node in oci_core_instance.{{ $nodepool.Name }}:
-    node.display_name => node.public_ip
+  {{- range $node := $nodepool.Nodes }}
+    "${oci_core_instance.{{ $node.Name }}.display_name}" = oci_core_instance.{{ $node.Name }}.public_ip
+  {{- end }}
   }
 }
 {{- end }}

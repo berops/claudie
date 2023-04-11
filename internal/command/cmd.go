@@ -12,12 +12,13 @@ import (
 
 	stdLog "log"
 
-	"github.com/Berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/utils"
 	"github.com/rs/zerolog/log"
 )
 
 type Cmd struct {
 	Command        string
+	Options        []string
 	Dir            string
 	Stdout         io.Writer
 	Stderr         io.Writer
@@ -136,10 +137,10 @@ func (c *Cmd) buildCmd() (*exec.Cmd, context.CancelFunc) {
 	var cancelFun context.CancelFunc = nil
 	if c.CommandTimeout > 0 {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(c.CommandTimeout)*time.Second)
-		cmd = exec.CommandContext(ctx, "bash", "-c", c.Command)
+		cmd = exec.CommandContext(ctx, "bash", "-c", strings.Join(append([]string{c.Command}, c.Options...), " "))
 		cancelFun = cancel
 	} else {
-		cmd = exec.Command("bash", "-c", c.Command)
+		cmd = exec.Command("bash", "-c", strings.Join(append([]string{c.Command}, c.Options...), " "))
 	}
 	cmd.Dir = c.Dir
 	cmd.Stdout = c.Stdout

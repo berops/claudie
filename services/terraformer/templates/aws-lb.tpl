@@ -127,7 +127,7 @@ resource "aws_key_pair" "claudie_pair_{{ $region }}" {
 resource "aws_subnet" "{{ $nodepool.Name }}_subnet" {
   provider                = aws.lb_nodepool_{{ $nodepool.Region }}
   vpc_id                  = aws_vpc.claudie_vpc_{{ $nodepool.Region }}.id
-  cidr_block              = "{{ getCIDR "10.0.0.0/24" 2 $i}}"
+  cidr_block              = "{{ index $.Metadata (printf "%s-subnet-cidr" $nodepool.Name) }}"
   map_public_ip_on_launch = true
   availability_zone       = "{{ $nodepool.Zone }}"
 
@@ -143,9 +143,10 @@ resource "aws_route_table_association" "{{ $nodepool.Name }}_rta" {
   route_table_id = aws_route_table.claudie_route_table_{{ $nodepool.Region }}.id
 }
 
-resource "aws_instance" "{{ $nodepool.Name }}" {
+
+{{- range $node := $nodepool.Nodes }}
+resource "aws_instance" "{{ $node.Name }}" {
   provider          = aws.lb_nodepool_{{ $nodepool.Region }}
-  count             = {{ $nodepool.Count }}
   availability_zone = "{{ $nodepool.Zone }}"
   instance_type     = "{{ $nodepool.ServerType }}"
   ami               = "{{ $nodepool.Image }}"
@@ -156,7 +157,7 @@ resource "aws_instance" "{{ $nodepool.Name }}" {
   vpc_security_group_ids = [aws_security_group.claudie_sg_{{ $nodepool.Region }}.id]
 
   tags = {
-    Name            = "{{ $clusterName }}-{{ $clusterHash }}-{{ $nodepool.Name }}-${count.index + 1}"
+    Name            = "{{ $node.Name }}"
     Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
   
@@ -172,11 +173,13 @@ rm /root/.ssh/temp
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config && service sshd restart
 EOF
 }
+{{- end }}
 
 output  "{{ $nodepool.Name }}" {
   value = {
-    for node in aws_instance.{{ $nodepool.Name }}:
-    node.tags_all.Name => node.public_ip
+    {{- range $node := $nodepool.Nodes }}
+    "${aws_instance.{{ $node.Name }}.tags_all.Name}" =  aws_instance.{{ $node.Name }}.public_ip
+    {{- end }}
   }
 }
 {{- end }}

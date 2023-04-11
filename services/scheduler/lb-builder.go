@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/Berops/claudie/internal/manifest"
-	"github.com/Berops/claudie/internal/utils"
-	"github.com/Berops/claudie/proto/pb"
+	"github.com/berops/claudie/internal/manifest"
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb"
 )
 
 const hostnameHashLength = 17
@@ -82,7 +82,7 @@ func getDNS(lbDNS manifest.DNS, manifestState *manifest.Manifest) (*pb.DNS, erro
 	} else {
 		provider, err := manifestState.GetProvider(lbDNS.Provider)
 		if err != nil {
-			return nil, fmt.Errorf("Provider %s was not found in manifest %s", lbDNS.Provider, manifestState.Name)
+			return nil, fmt.Errorf("provider %s was not found in manifest %s", lbDNS.Provider, manifestState.Name)
 		}
 		return &pb.DNS{
 			DnsZone:  lbDNS.DNSZone,

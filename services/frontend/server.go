@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb"
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -90,7 +90,7 @@ func newServer(manifestDir string, service string) (*server, error) {
 
 	go s.watchConfigs(log.Logger)
 
-	return s, s.healthcheck()()
+	return s, s.healthcheck()
 }
 
 func (s *server) GracefulShutdown() error {
@@ -120,18 +120,16 @@ func (s *server) routes(logger zerolog.Logger) {
 // healthCheck checks if the manifestDir exists and the underlying gRPC
 // connection to the context-box service is valid. As long as the directory
 // exists and the connection is healthy the service is considered healthy.
-func (s *server) healthcheck() func() error {
-	return func() error {
-		if _, err := os.Stat(s.manifestDir); os.IsNotExist(err) {
-			return fmt.Errorf("%v: %w", s.manifestDir, err)
-		}
-
-		if s.conn.GetState() == connectivity.Shutdown {
-			return errors.New("unhealthy connection to context-box")
-		}
-
-		return nil
+func (s *server) healthcheck() error {
+	if _, err := os.Stat(s.manifestDir); os.IsNotExist(err) {
+		return fmt.Errorf("%v: %w", s.manifestDir, err)
 	}
+
+	if s.conn.GetState() == connectivity.Shutdown {
+		return errors.New("unhealthy connection to context-box")
+	}
+
+	return nil
 }
 
 // handleReload handles incoming notifications from k8s-sidecar about changes
@@ -144,7 +142,7 @@ func (s *server) handleReload(logger zerolog.Logger) http.HandlerFunc {
 			return
 		}
 
-		logger.Info().Msgf("Received notification about change in the directory %s", s.manifestDir)
+		logger.Debug().Msgf("Received notification about change in the directory %s", s.manifestDir)
 		s.group.Add(1)
 
 		go func() {

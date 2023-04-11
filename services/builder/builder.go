@@ -10,14 +10,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Berops/claudie/internal/envs"
-	"github.com/Berops/claudie/internal/healthcheck"
-	"github.com/Berops/claudie/internal/utils"
-	"github.com/Berops/claudie/internal/worker"
+	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/internal/healthcheck"
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/worker"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/Berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb"
 
 	"google.golang.org/grpc/connectivity"
 )
@@ -26,34 +26,22 @@ const defaultBuilderPort = 50051
 
 // healthCheck function is function used for querying readiness of the pod running this microservice
 func healthCheck() error {
-	//Check if Builder can connect to Terraformer/Ansibler/Kube-eleven/Kuber
-	//Connection to these services are crucial for Builder, without them, the builder is NOT Ready
-	if cc, err := utils.GrpcDialWithInsecure("terraformer", envs.TerraformerURL); err != nil {
-		return err
-	} else {
-		if err := cc.Close(); err != nil {
-			return fmt.Errorf("error closing connection in health check function : %w", err)
-		}
+	// Check if Builder can connect to Terraformer/Ansibler/Kube-eleven/Kuber/Context-box
+	// Connection to these services are crucial for Builder, without them, the builder is NOT Ready
+	services := map[string]string{
+		"context-box": envs.ContextBoxURL,
+		"terraformer": envs.TerraformerURL,
+		"ansibler":    envs.AnsiblerURL,
+		"kube-eleven": envs.KubeElevenURL,
+		"kuber":       envs.KuberURL,
 	}
-	if cc, err := utils.GrpcDialWithInsecure("ansibler", envs.AnsiblerURL); err != nil {
-		return err
-	} else {
-		if err := cc.Close(); err != nil {
-			return fmt.Errorf("error closing connection in health check function : %w", err)
-		}
-	}
-	if cc, err := utils.GrpcDialWithInsecure("kubeEleven", envs.KubeElevenURL); err != nil {
-		return err
-	} else {
-		if err := cc.Close(); err != nil {
-			return fmt.Errorf("error closing connection in health check function : %w", err)
-		}
-	}
-	if cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL); err != nil {
-		return err
-	} else {
-		if err := cc.Close(); err != nil {
-			return fmt.Errorf("error closing connection in health check function : %w", err)
+	for service, url := range services {
+		if cc, err := utils.GrpcDialWithInsecure(service, url); err != nil {
+			return err
+		} else {
+			if err := cc.Close(); err != nil {
+				return fmt.Errorf("error closing connection for %s in health check function : %w", service, err)
+			}
 		}
 	}
 	return nil
@@ -74,7 +62,7 @@ func run() error {
 	}
 	defer utils.CloseClientConnection(conn)
 
-	log.Info().Msgf("Initiated connection Context-box: %s, waiting for connection to be in state: %s", envs.ContextBoxURL, connectivity.Ready)
+	log.Info().Msgf("Initiated connection Context-box: %s, waiting for connection to be in ready state", envs.ContextBoxURL)
 
 	healthcheck.NewClientHealthChecker(fmt.Sprint(defaultBuilderPort), healthCheck).StartProbes()
 
@@ -94,7 +82,7 @@ func run() error {
 			err = ctx.Err()
 		case sig := <-ch:
 			log.Info().Msgf("Received signal %v", sig)
-			err = errors.New("builder interrupt signal")
+			err = errors.New("interrupt signal")
 		}
 
 		// Sometimes when the container terminates gRPC logs the following message:
@@ -116,13 +104,14 @@ func run() error {
 			5*time.Second,
 			func() error {
 				if conn.GetState() == connectivity.Ready {
+					// Connection became ready.
 					if prevState != connectivity.Ready {
-						log.Info().Msgf("connection to Context-box is %s", conn.GetState().String())
+						log.Info().Msgf("Connection to Context-box is now ready")
 					}
 					prevState = connectivity.Ready
 				} else {
-					log.Warn().Msgf("connection to Context-box is not %s", connectivity.Ready.String())
-					log.Debug().Msgf("connection to Context-box is %s, waiting for the service to be reachable", conn.GetState().String())
+					log.Warn().Msgf("Connection to Context-box is not ready yet")
+					log.Debug().Msgf("Connection to Context-box is %s, waiting for the service to be reachable", conn.GetState().String())
 
 					prevState = conn.GetState()
 					conn.Connect() // try connecting to the service.
@@ -134,12 +123,11 @@ func run() error {
 			worker.ErrorLogger,
 		).Run()
 
-		log.Info().Msg("Exited worker loop and stopped checking for new configs")
-		log.Info().Msgf("Waiting for spawned go-routines to finish processing their work")
+		log.Info().Msg("Builder stopped checking for new configs")
+		log.Info().Msgf("Waiting for already started configs to finish processing")
 
 		group.Wait()
-
-		log.Info().Msgf("All spawned go-routines finished")
+		log.Debug().Msgf("All spawned go-routines finished")
 
 		return nil
 	})

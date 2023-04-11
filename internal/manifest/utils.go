@@ -3,7 +3,7 @@ package manifest
 import (
 	"fmt"
 
-	"github.com/Berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb"
 )
 
 // GetProvider will search for a Provider config by matching name from providerSpec
@@ -130,16 +130,27 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 				return nil, err
 			}
 
+			// Check if autoscaler is defined
+			var autoscalerConf *pb.AutoscalerConf
+			count := nodePool.Count
+			if nodePool.AutoscalerConfig.isDefined() {
+				autoscalerConf = &pb.AutoscalerConf{}
+				autoscalerConf.Min = nodePool.AutoscalerConfig.Min
+				autoscalerConf.Max = nodePool.AutoscalerConfig.Max
+				count = nodePool.AutoscalerConfig.Min
+			}
+
 			nodePools = append(nodePools, &pb.NodePool{
-				Name:       nodePool.Name,
-				Region:     nodePool.ProviderSpec.Region,
-				Zone:       nodePool.ProviderSpec.Zone,
-				ServerType: nodePool.ServerType,
-				Image:      nodePool.Image,
-				DiskSize:   uint32(nodePool.DiskSize),
-				Count:      uint32(nodePool.Count),
-				Provider:   provider,
-				IsControl:  isControl,
+				Name:             nodePool.Name,
+				Region:           nodePool.ProviderSpec.Region,
+				Zone:             nodePool.ProviderSpec.Zone,
+				ServerType:       nodePool.ServerType,
+				Image:            nodePool.Image,
+				DiskSize:         uint32(nodePool.DiskSize),
+				Count:            count,
+				Provider:         provider,
+				IsControl:        isControl,
+				AutoscalerConfig: autoscalerConf,
 			})
 		} else {
 			return nil, fmt.Errorf("nodepool %s not defined", nodePoolName)

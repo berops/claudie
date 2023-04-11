@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/Berops/claudie/internal/manifest"
-	"github.com/Berops/claudie/proto/pb"
-	cbox "github.com/Berops/claudie/services/context-box/client"
+	"github.com/berops/claudie/internal/manifest"
+	"github.com/berops/claudie/proto/pb"
+	cbox "github.com/berops/claudie/services/context-box/client"
 	"github.com/rs/zerolog/log"
 
 	"gopkg.in/yaml.v3"
@@ -30,7 +30,7 @@ func (s *server) processConfigs() error {
 		return fmt.Errorf("failed to retrieve configs from context-box: %w", err)
 	}
 
-	log.Info().Msgf("%d configs in database | %d files in %v", len(configs.Configs), len(files), s.manifestDir)
+	log.Debug().Msgf("%d configs in database | %d files in %v", len(configs.Configs), len(files), s.manifestDir)
 
 	type data struct {
 		name        string
@@ -87,7 +87,7 @@ func (s *server) processConfigs() error {
 		configs.Configs = remove(configs.Configs, data.name)
 
 		if data.err != nil {
-			log.Error().Msgf("skipping over file %v due to error: %v", data.path, data.err)
+			log.Error().Msgf("Skipping over file %v due to error : %v", data.path, data.err)
 			continue
 		}
 
@@ -99,7 +99,7 @@ func (s *server) processConfigs() error {
 		})
 
 		if err != nil {
-			log.Error().Msgf("skip saving config: %v due to error: %v", data.name, err)
+			log.Error().Msgf("Skip saving config %v due to error : %v", data.name, err)
 			continue
 		}
 
@@ -116,7 +116,7 @@ func (s *server) processConfigs() error {
 		go func(config *pb.Config) {
 			log.Info().Msgf("Deleting config: %v", config.Name)
 
-			if err := cbox.DeleteConfig(s.cBox, config.Id, pb.IdType_HASH); err != nil {
+			if err := cbox.DeleteConfig(s.cBox, &pb.DeleteConfigRequest{Id: config.Id, Type: pb.IdType_HASH}); err != nil {
 				log.Error().Msgf("Failed to the delete %s with id %s : %v", config.Name, config.Id, err)
 			}
 			s.deletingConfigs.Delete(config.Id)

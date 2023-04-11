@@ -13,17 +13,21 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Berops/claudie/internal/envs"
-	"github.com/Berops/claudie/internal/healthcheck"
-	"github.com/Berops/claudie/internal/kubectl"
-	"github.com/Berops/claudie/internal/utils"
-	"github.com/Berops/claudie/proto/pb"
-	"github.com/Berops/claudie/services/kuber/server/longhorn"
-	"github.com/Berops/claudie/services/kuber/server/nodes"
-	"github.com/Berops/claudie/services/kuber/server/secret"
+	comm "github.com/berops/claudie/internal/command"
+	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/internal/kubectl"
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/services/kuber/server/autoscaler"
+	"github.com/berops/claudie/services/kuber/server/longhorn"
+	"github.com/berops/claudie/services/kuber/server/nodes"
+	scrapeconfig "github.com/berops/claudie/services/kuber/server/scrapeConfig"
+	"github.com/berops/claudie/services/kuber/server/secret"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
@@ -54,6 +58,7 @@ func (s *server) SetUpStorage(ctx context.Context, req *pb.SetUpStorageRequest) 
 	clusterID := fmt.Sprintf("%s-%s", req.DesiredCluster.ClusterInfo.Name, req.DesiredCluster.ClusterInfo.Hash)
 	clusterDir := filepath.Join(outputDir, clusterID)
 
+	log.Info().Msgf("Setting up the longhorn on the cluster %s", clusterID)
 	longhorn := longhorn.Longhorn{Cluster: req.DesiredCluster, Directory: clusterDir}
 	if err := longhorn.SetUp(); err != nil {
 		return nil, fmt.Errorf("error while setting up the longhorn for %s : %w", clusterID, err)
@@ -61,6 +66,43 @@ func (s *server) SetUpStorage(ctx context.Context, req *pb.SetUpStorageRequest) 
 	log.Info().Msgf("Longhorn successfully set up on the cluster %s", clusterID)
 
 	return &pb.SetUpStorageResponse{DesiredCluster: req.DesiredCluster}, nil
+}
+
+func (s *server) StoreLbScrapeConfig(ctx context.Context, req *pb.StoreLbScrapeConfigRequest) (*pb.StoreLbScrapeConfigResponse, error) {
+	clusterID := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
+	clusterDir := filepath.Join(outputDir, clusterID)
+	log.Info().Msgf("Storing load balancer scrape-config on the cluster %s", clusterID)
+
+	sc := scrapeconfig.ScrapeConfig{
+		Cluster:    req.GetCluster(),
+		LBClusters: req.GetDesiredLoadbalancers(),
+		Directory:  clusterDir,
+	}
+
+	if err := sc.GenerateAndApplyScrapeConfig(); err != nil {
+		return nil, fmt.Errorf("error while setting up the loadbalancer scrape-config for %s : %w", clusterID, err)
+	}
+	log.Info().Msgf("Load balancer scrape-config successfully set up on the cluster %s", clusterID)
+
+	return &pb.StoreLbScrapeConfigResponse{}, nil
+}
+
+func (s *server) RemoveLbScrapeConfig(ctx context.Context, req *pb.RemoveLbScrapeConfigRequest) (*pb.RemoveLbScrapeConfigResponse, error) {
+	clusterID := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
+	clusterDir := filepath.Join(outputDir, clusterID)
+	log.Info().Msgf("Deleting load balancer scrape-config from cluster %s", clusterID)
+
+	sc := scrapeconfig.ScrapeConfig{
+		Cluster:   req.GetCluster(),
+		Directory: clusterDir,
+	}
+
+	if err := sc.RemoveLbScrapeConfig(); err != nil {
+		return nil, fmt.Errorf("error while removing old loadbalancer scrape-config for %s : %w", clusterID, err)
+	}
+	log.Info().Msgf("Load balancer scrape-config successfully deleted from cluster %s", clusterID)
+
+	return &pb.RemoveLbScrapeConfigResponse{}, nil
 }
 
 func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterMetadataRequest) (*pb.StoreClusterMetadataResponse, error) {
@@ -94,12 +136,13 @@ func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterM
 		// log.Info().Msgf("Cluster metadata from cluster %s \n%s", req.GetCluster().ClusterInfo.Name, buffer.String())
 		return &pb.StoreClusterMetadataResponse{}, nil
 	}
+	log.Info().Msgf("Storing cluster metadata on cluster %s", req.Cluster.ClusterInfo.Name)
 
 	clusterID := fmt.Sprintf("%s-%s", req.GetCluster().ClusterInfo.Name, req.GetCluster().ClusterInfo.Hash)
 	clusterDir := filepath.Join(outputDir, clusterID)
 	sec := secret.New(clusterDir, secret.NewYaml(
 		secret.Metadata{Name: fmt.Sprintf("%s-metadata", clusterID)},
-		secret.Data{SecretData: base64.StdEncoding.EncodeToString(b)},
+		map[string]string{"metadata": base64.StdEncoding.EncodeToString(b)},
 	))
 
 	if err := sec.Apply(envs.Namespace, ""); err != nil {
@@ -107,7 +150,7 @@ func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterM
 		return nil, fmt.Errorf("error while creating cluster metadata secret for %s", req.Cluster.ClusterInfo.Name)
 	}
 
-	log.Info().Msgf("Cluster Metadata was successfully stored for cluster %s", req.Cluster.ClusterInfo.Name)
+	log.Info().Msgf("Cluster metadata was successfully stored for cluster %s", req.Cluster.ClusterInfo.Name)
 	return &pb.StoreClusterMetadataResponse{}, nil
 }
 
@@ -116,32 +159,39 @@ func (s *server) DeleteClusterMetadata(ctx context.Context, req *pb.DeleteCluste
 	if namespace == "" {
 		return &pb.DeleteClusterMetadataResponse{}, nil
 	}
+	log.Info().Msgf("Deleting cluster metadata secret for cluster %s", req.Cluster.ClusterInfo.Name)
 
-	kc := kubectl.Kubectl{}
+	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
+	if log.Logger.GetLevel() == zerolog.DebugLevel {
+		prefix := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
+		kc.Stdout = comm.GetStdOut(prefix)
+		kc.Stderr = comm.GetStdErr(prefix)
+	}
 	secretName := fmt.Sprintf("%s-%s-metadata", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
-	if err := kc.KubectlDeleteResource("secret", secretName, namespace); err != nil {
+	if err := kc.KubectlDeleteResource("secret", secretName, "-n", namespace); err != nil {
 		log.Warn().Msgf("Failed to remove cluster metadata for %s: %s", req.Cluster.ClusterInfo.Name, err)
 		return &pb.DeleteClusterMetadataResponse{}, nil
 	}
 
-	log.Info().Msgf("Deleted ClusterMetadata secret for cluster %s", req.Cluster.ClusterInfo.Name)
+	log.Info().Msgf("Deleted cluster metadata secret for cluster %s", req.Cluster.ClusterInfo.Name)
 	return &pb.DeleteClusterMetadataResponse{}, nil
 }
 
 func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigRequest) (*pb.StoreKubeconfigResponse, error) {
 	// local deployment - print kubeconfig
-	if namespace := envs.Namespace; namespace == "" {
-		//NOTE: DEBUG print
-		// log.Info().Msgf("The kubeconfig for %s\n%s:", clusterID,cluster.Kubeconfig)
-		return &pb.StoreKubeconfigResponse{}, nil
-	}
 	cluster := req.GetCluster()
 	clusterID := fmt.Sprintf("%s-%s", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
+	if namespace := envs.Namespace; namespace == "" {
+		//NOTE: DEBUG print
+		// log.Info().Msgf("The kubeconfig for %s\n%s:", clusterID, cluster.Kubeconfig)
+		return &pb.StoreKubeconfigResponse{}, nil
+	}
+	log.Info().Msgf("Storing kubeconfig for cluster %s", cluster.ClusterInfo.Name)
 
 	clusterDir := filepath.Join(outputDir, clusterID)
 	sec := secret.New(clusterDir, secret.NewYaml(
 		secret.Metadata{Name: fmt.Sprintf("%s-kubeconfig", clusterID)},
-		secret.Data{SecretData: base64.StdEncoding.EncodeToString([]byte(cluster.GetKubeconfig()))},
+		map[string]string{"kubeconfig": base64.StdEncoding.EncodeToString([]byte(cluster.GetKubeconfig()))},
 	))
 
 	if err := sec.Apply(envs.Namespace, ""); err != nil {
@@ -158,12 +208,17 @@ func (s *server) DeleteKubeconfig(ctx context.Context, req *pb.DeleteKubeconfigR
 	if namespace == "" {
 		return &pb.DeleteKubeconfigResponse{}, nil
 	}
-
-	kc := kubectl.Kubectl{}
-	cluster := req.Cluster
+	cluster := req.GetCluster()
+	log.Info().Msgf("Deleting kubeconfig secret for cluster %s", cluster.ClusterInfo.Name)
+	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
+	if log.Logger.GetLevel() == zerolog.DebugLevel {
+		prefix := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
+		kc.Stdout = comm.GetStdOut(prefix)
+		kc.Stderr = comm.GetStdErr(prefix)
+	}
 	secretName := fmt.Sprintf("%s-%s-kubeconfig", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
 
-	if err := kc.KubectlDeleteResource("secret", secretName, namespace); err != nil {
+	if err := kc.KubectlDeleteResource("secret", secretName, "-n", namespace); err != nil {
 		log.Warn().Msgf("Failed to remove kubeconfig for %s: %s", cluster.ClusterInfo.Name, err)
 		return &pb.DeleteKubeconfigResponse{}, nil
 	}
@@ -173,7 +228,8 @@ func (s *server) DeleteKubeconfig(ctx context.Context, req *pb.DeleteKubeconfigR
 }
 
 func (s *server) DeleteNodes(ctx context.Context, req *pb.DeleteNodesRequest) (*pb.DeleteNodesResponse, error) {
-	deleter := nodes.New(req.MasterNodes, req.WorkerNodes, req.Cluster)
+	log.Info().Msgf("Deleting nodes from cluster %s, control nodes [%d], compute nodes[%d]", req.Cluster.ClusterInfo.Name, len(req.MasterNodes), len(req.WorkerNodes))
+	deleter := nodes.NewDeleter(req.MasterNodes, req.WorkerNodes, req.Cluster)
 	cluster, err := deleter.DeleteNodes()
 	if err != nil {
 		log.Error().Msgf("Error while deleting nodes for %s : %s", req.Cluster.ClusterInfo.Name, err.Error())
@@ -181,6 +237,53 @@ func (s *server) DeleteNodes(ctx context.Context, req *pb.DeleteNodesRequest) (*
 	}
 	log.Info().Msgf("Nodes for cluster %s were successfully deleted", req.Cluster.ClusterInfo.Name)
 	return &pb.DeleteNodesResponse{Cluster: cluster}, nil
+}
+
+func (s *server) PatchNodes(ctx context.Context, req *pb.PatchNodeTemplateRequest) (*pb.PatchNodeTemplateResponse, error) {
+	patcher := nodes.NewPatcher(req.Cluster)
+	if err := patcher.PatchProviderID(); err != nil {
+		log.Error().Msgf("Error while patching nodes for %s : %s", req.Cluster.ClusterInfo.Name, err.Error())
+		return nil, fmt.Errorf("error while patching nodes for %s : %w", req.Cluster.ClusterInfo.Name, err)
+	}
+
+	log.Info().Msgf("Nodes for cluster %s were successfully patched", req.Cluster.ClusterInfo.Name)
+	return &pb.PatchNodeTemplateResponse{}, nil
+}
+
+func (s *server) SetUpClusterAutoscaler(ctx context.Context, req *pb.SetUpClusterAutoscalerRequest) (*pb.SetUpClusterAutoscalerResponse, error) {
+	// Create output dir
+	clusterID := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, utils.CreateHash(5))
+	clusterDir := filepath.Join(outputDir, clusterID)
+	if err := utils.CreateDirectory(clusterDir); err != nil {
+		return nil, fmt.Errorf("error while creating directory %s : %w", clusterDir, err)
+	}
+	// Set up cluster autoscaler.
+	autoscalerBuilder := autoscaler.NewAutoscalerBuilder(req.ProjectName, req.Cluster, clusterDir)
+	if err := autoscalerBuilder.SetUpClusterAutoscaler(); err != nil {
+		log.Error().Msgf("Error while setting up cluster autoscaler for %s : %s", req.Cluster.ClusterInfo.Name, err.Error())
+		return nil, fmt.Errorf("error while setting up cluster autoscaler for %s : %w", req.Cluster.ClusterInfo.Name, err)
+	}
+
+	log.Info().Msgf("Cluster %s had cluster autoscaler successfully set up", req.Cluster.ClusterInfo.Name)
+	return &pb.SetUpClusterAutoscalerResponse{}, nil
+}
+
+func (s *server) DestroyClusterAutoscaler(ctx context.Context, req *pb.DestroyClusterAutoscalerRequest) (*pb.DestroyClusterAutoscalerResponse, error) {
+	// Create output dir
+	clusterID := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, utils.CreateHash(5))
+	clusterDir := filepath.Join(outputDir, clusterID)
+	if err := utils.CreateDirectory(clusterDir); err != nil {
+		return nil, fmt.Errorf("error while creating directory %s : %w", clusterDir, err)
+	}
+	// Destroy cluster autoscaler.
+	autoscalerBuilder := autoscaler.NewAutoscalerBuilder(req.ProjectName, req.Cluster, clusterDir)
+	if err := autoscalerBuilder.DestroyClusterAutoscaler(); err != nil {
+		log.Error().Msgf("Error while destroying cluster autoscaler for %s : %s", req.Cluster.ClusterInfo.Name, err.Error())
+		return nil, fmt.Errorf("error while destroying cluster autoscaler for %s : %w", req.Cluster.ClusterInfo.Name, err)
+	}
+
+	log.Info().Msgf("Cluster %s had cluster autoscaler successfully destroyed", req.Cluster.ClusterInfo.Name)
+	return &pb.DestroyClusterAutoscalerResponse{}, nil
 }
 
 func main() {
@@ -202,8 +305,11 @@ func main() {
 	pb.RegisterKuberServiceServer(s, &server{})
 
 	// Add health service to gRPC
-	healthService := healthcheck.NewServerHealthChecker(kuberPort, "KUBER_PORT", nil)
-	grpc_health_v1.RegisterHealthServer(s, healthService)
+	healthServer := health.NewServer()
+	// Kuber does not have any custom health check functions, thus always serving.
+	healthServer.SetServingStatus("kuber-liveness", grpc_health_v1.HealthCheckResponse_SERVING)
+	healthServer.SetServingStatus("kuber-readiness", grpc_health_v1.HealthCheckResponse_SERVING)
+	grpc_health_v1.RegisterHealthServer(s, healthServer)
 
 	g, ctx := errgroup.WithContext(context.Background())
 
@@ -221,11 +327,12 @@ func main() {
 			err = ctx.Err()
 		case sig := <-ch:
 			log.Info().Msgf("Received signal %v", sig)
-			err = errors.New("kuber interrupt signal")
+			err = errors.New("interrupt signal")
 		}
 
 		log.Info().Msg("Gracefully shutting down gRPC server")
 		s.GracefulStop()
+		healthServer.Shutdown()
 
 		// Sometimes when the container terminates gRPC logs the following message:
 		// rpc error: code = Unknown desc = Error: No such container: hash of the container...

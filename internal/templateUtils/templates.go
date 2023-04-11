@@ -74,7 +74,6 @@ func (tl TemplateLoader) LoadTemplate(tplFile string) (*template.Template, error
 			"protocolToOCIProtocolNumber":   ProtocolNameToOCIProtocolNumber,
 			"protocolToAzureProtocolString": ProtocolNameToAzureProtocolString,
 			"assignPriority":                AssignPriority,
-			"getCIDR":                       GetCIDR,
 			"enableAccNet":                  EnableAccNet,
 			"replaceAll":                    strings.ReplaceAll,
 			"trimPrefix":                    strings.TrimPrefix,

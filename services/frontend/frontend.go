@@ -8,9 +8,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/Berops/claudie/internal/envs"
-	"github.com/Berops/claudie/internal/healthcheck"
-	"github.com/Berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/internal/healthcheck"
+	"github.com/berops/claudie/internal/utils"
 	"github.com/rs/zerolog/log"
 
 	"golang.org/x/sync/errgroup"
@@ -47,7 +47,7 @@ func run() error {
 
 	healthcheck.NewClientHealthChecker(
 		fmt.Sprint(healthcheckPort),
-		s.healthcheck(),
+		s.healthcheck,
 	).StartProbes()
 
 	group, ctx := errgroup.WithContext(context.Background())
@@ -71,7 +71,7 @@ func run() error {
 			err = ctx.Err()
 		case sig := <-ch:
 			log.Info().Msgf("Received signal %v", sig)
-			err = errors.New("frontend interrupt signal")
+			err = errors.New("interrupt signal")
 		}
 
 		log.Info().Msg("Gracefully shutting down server")

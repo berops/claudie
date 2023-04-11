@@ -10,12 +10,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Berops/claudie/internal/envs"
-	"github.com/Berops/claudie/internal/healthcheck"
-	"github.com/Berops/claudie/internal/utils"
-	"github.com/Berops/claudie/internal/worker"
-	"github.com/Berops/claudie/proto/pb"
-	cbox "github.com/Berops/claudie/services/context-box/client"
+	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/internal/healthcheck"
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/worker"
+	"github.com/berops/claudie/proto/pb"
+	cbox "github.com/berops/claudie/services/context-box/client"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 
@@ -73,12 +73,12 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 		}
 
 		log.Info().Msgf("Processing config %s ", config.Name)
+
 		if err := processConfig(config, c); err != nil {
-			log.Error().Msgf("processConfig() failed: %s", err.Error())
+			log.Error().Msgf("Error while processing config %s : %v", config.Name, err)
 			//save error message to config
-			errSave := saveErrorMessage(config, c, err)
-			if errSave != nil {
-				log.Error().Msgf("Failed to save error to the config: %s : processConfig failed: %s", errSave.Error(), err.Error())
+			if err := saveErrorMessage(config, c, err); err != nil {
+				log.Error().Msgf("Failed to save error to the config %s : %v", config.Name, err)
 			}
 		}
 		log.Info().Msgf("Config %s have been successfully processed", config.Name)
@@ -123,11 +123,10 @@ func main() {
 	}
 	defer func() { utils.CloseClientConnection(cc) }()
 
-	log.Info().Msgf("Initiated connection Context-box: %s, waiting for connection to be in state: %s", envs.ContextBoxURL, connectivity.Ready)
+	log.Info().Msgf("Initiated connection Context-box: %s, waiting for connection to be in state ready", envs.ContextBoxURL)
 
 	// Initialize health probes
-	healthChecker := healthcheck.NewClientHealthChecker(fmt.Sprint(defaultSchedulerPort), healthCheck)
-	healthChecker.StartProbes()
+	healthcheck.NewClientHealthChecker(fmt.Sprint(defaultSchedulerPort), healthCheck).StartProbes()
 
 	g, ctx := errgroup.WithContext(context.Background())
 
@@ -146,7 +145,7 @@ func main() {
 			err = ctx.Err()
 		case sig := <-ch:
 			log.Info().Msgf("Received signal %v", sig)
-			err = errors.New("scheduler interrupt signal")
+			err = errors.New("interrupt signal")
 		}
 
 		// Sometimes when the container terminates gRPC logs the following message:
@@ -170,12 +169,12 @@ func main() {
 			func() error {
 				if cc.GetState() == connectivity.Ready {
 					if prevState != connectivity.Ready {
-						log.Info().Msgf("connection to Context-box is %s", cc.GetState().String())
+						log.Info().Msgf("Connection to Context-box is now ready")
 					}
 					prevState = connectivity.Ready
 				} else {
-					log.Warn().Msgf("connection to Context-box is not %s", connectivity.Ready.String())
-					log.Debug().Msgf("connection to Context-box is %s, waiting for the service to be reachable", cc.GetState().String())
+					log.Warn().Msgf("Connection to Context-box is not ready yet")
+					log.Debug().Msgf("Connection to Context-box is %s, waiting for the service to be reachable", cc.GetState().String())
 
 					prevState = cc.GetState()
 					cc.Connect() // try connecting to the service.
@@ -187,12 +186,11 @@ func main() {
 			worker.ErrorLogger,
 		).Run()
 
-		log.Info().Msg("Exited worker loop and stopped checking for new configs")
-		log.Info().Msgf("Waiting for spawned go-routines to finish processing their work")
+		log.Info().Msg("Scheduler stopped checking for new configs")
+		log.Info().Msgf("Waiting for already started configs to finish processing")
 
 		group.Wait()
-
-		log.Info().Msgf("All spawned go-routines finished")
+		log.Debug().Msgf("All spawned go-routines finished")
 
 		return nil
 	})

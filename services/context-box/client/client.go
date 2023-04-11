@@ -9,8 +9,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/Berops/claudie/proto/pb"
-	"github.com/rs/zerolog/log"
+	"github.com/berops/claudie/proto/pb"
 )
 
 type State string
@@ -82,28 +81,23 @@ func GetAllConfigs(c pb.ContextBoxServiceClient) (*pb.GetAllConfigsResponse, err
 
 // DeleteConfig sets the manifest to null so that the next invocation of the workflow
 // for this config destroys the previous build infrastructure.
-func DeleteConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType) error {
-	_, err := c.DeleteConfig(context.Background(), &pb.DeleteConfigRequest{Id: id, Type: idType})
-	if err != nil {
+func DeleteConfig(c pb.ContextBoxServiceClient, req *pb.DeleteConfigRequest) error {
+	if _, err := c.DeleteConfig(context.Background(), req); err != nil {
 		return fmt.Errorf("error deleting: %w", err)
 	}
 	return nil
 }
 
 // DeleteConfigFromDB deletes the config from the mongoDB database.
-func DeleteConfigFromDB(c pb.ContextBoxServiceClient, id string, idType pb.IdType) error {
-	res, err := c.DeleteConfigFromDB(context.Background(), &pb.DeleteConfigRequest{
-		Id:   id,
-		Type: idType,
-	})
-
-	if err != nil {
+func DeleteConfigFromDB(c pb.ContextBoxServiceClient, req *pb.DeleteConfigRequest) error {
+	if _, err := c.DeleteConfigFromDB(context.Background(), req); err != nil {
 		return fmt.Errorf("error deleting config from DB: %w", err)
 	}
-
-	log.Info().Msgf("Config was deleted from DB: %v", res)
-
 	return nil
+}
+
+func UpdateNodepoolCount(c pb.ContextBoxServiceClient, req *pb.UpdateNodepoolRequest) (*pb.UpdateNodepoolResponse, error) {
+	return c.UpdateNodepool(context.Background(), req)
 }
 
 // printConfig prints a desired config with a current state info
@@ -142,6 +136,32 @@ func printConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType, stat
 			buffer.WriteString(fmt.Sprintf("NodePool number: %d \n", j))
 			buffer.WriteString(fmt.Sprintf("Name: %s\n", nodePool.GetName()))
 			buffer.WriteString(fmt.Sprintf("Region %s\n", nodePool.GetRegion()))
+			buffer.WriteString(fmt.Sprintf("Provider specs: %v\n", nodePool.GetProvider()))
+			buffer.WriteString(fmt.Sprintf("Autoscaler conf: %v\n", nodePool.GetAutoscalerConfig()))
+			buffer.WriteString(fmt.Sprintf("Count: %d\n", nodePool.GetCount()))
+
+			buffer.WriteString("Nodes:\n")
+			for _, node := range nodePool.GetNodes() {
+				buffer.WriteString(fmt.Sprintf("Name: %s Public: %s Private: %s NodeType: %s \n", node.Name, node.GetPublic(), node.GetPrivate(), node.GetNodeType().String()))
+			}
+		}
+		buffer.WriteString("----------------------------------------\n")
+	}
+	for i, cluster := range printState.LoadBalancerClusters {
+		buffer.WriteString("========================================\n")
+		buffer.WriteString(fmt.Sprintf("Cluster number: %d\n", i))
+		buffer.WriteString(fmt.Sprintf("Name: %s\n", cluster.ClusterInfo.GetName()))
+		buffer.WriteString(fmt.Sprintf("Hash: %s\n", cluster.ClusterInfo.GetHash()))
+		buffer.WriteString("Public key:\n")
+		buffer.WriteString(fmt.Sprintf("%s\n", cluster.ClusterInfo.PublicKey))
+		buffer.WriteString("Private key:\n")
+		buffer.WriteString(fmt.Sprintf("%s\n", cluster.ClusterInfo.PrivateKey))
+		buffer.WriteString("Node Pools:\n")
+		for j, nodePool := range cluster.ClusterInfo.GetNodePools() {
+			buffer.WriteString("----------------------------------------\n")
+			buffer.WriteString(fmt.Sprintf("NodePool number: %d \n", j))
+			buffer.WriteString(fmt.Sprintf("Name: %s\n", nodePool.GetName()))
+			buffer.WriteString(fmt.Sprintf("Region %s\n", nodePool.GetRegion()))
 			buffer.WriteString(fmt.Sprintf("Provider specs: %s\n", nodePool.GetProvider()))
 			buffer.WriteString("Nodes:\n")
 			for _, node := range nodePool.GetNodes() {
@@ -158,6 +178,5 @@ func saveConfig(req *pb.SaveConfigRequest, saveFun saveFunction) (*pb.SaveConfig
 	if err != nil {
 		return nil, fmt.Errorf("failed to save config via %s : %w", runtime.FuncForPC(reflect.ValueOf(saveFun).Pointer()).Name() /*prints name of the function*/, err)
 	}
-	log.Info().Msgf("Config %s has been saved", res.GetConfig().GetName())
 	return res, nil
 }

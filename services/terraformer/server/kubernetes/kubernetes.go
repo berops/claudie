@@ -3,8 +3,8 @@ package kubernetes
 import (
 	"fmt"
 
-	"github.com/Berops/claudie/proto/pb"
-	"github.com/Berops/claudie/services/terraformer/server/clusterBuilder"
+	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/services/terraformer/server/clusterBuilder"
 )
 
 type K8Scluster struct {
@@ -27,7 +27,7 @@ func (k K8Scluster) Id() string {
 
 func (k K8Scluster) Build() error {
 	var currentInfo *pb.ClusterInfo
-	// check if current cluster was defined, to avoid access of unrefferenced memory
+	// check if current cluster was defined, to avoid access of unreferenced memory
 	if k.CurrentK8s != nil {
 		currentInfo = k.CurrentK8s.ClusterInfo
 	}

@@ -8,8 +8,8 @@ on:
 
 env:
   ENV_FILE: .env
-  SERVICES: context-box scheduler builder terraformer ansibler kube-eleven kuber frontend testing-framework
-  TEST_SETS: test-set1 test-set2 test-set3
+  SERVICES: context-box scheduler builder terraformer ansibler kube-eleven kuber frontend autoscaler-adapter testing-framework
+  TEST_SETS: test-set1 test-set2 test-set3 autoscaling
 
 jobs:
   #--------------------------------------------------------------------------------------------------
@@ -91,6 +91,21 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Update autoscaler-adapter manifest in this steps as new kuber would need to contain manifest with the correct image tag
+      - name: Edit autoscaler-adapter image tag in the manifest
+        if: ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
+        working-directory: ./services/kuber/templates
+        run: |
+          NEW_SERVICES=( ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }} )
+          for SERVICE in "${NEW_SERVICES[@]}"
+          do
+            if [ "$SERVICE" == "autoscaler-adapter" ]; then
+              TAG=${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+              echo "Setting new tag for autoscaler adapter to $TAG"
+              sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" autoscaler-adapter.goyaml
+            fi
+          done
+
       # Build the new images that were changed by a recent commit - tag image latest as well for testing
       - name: Build and push new images
         if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
@@ -132,8 +147,8 @@ jobs:
           NEW_SERVICES=( ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }} )
           for SERVICE in "${NEW_SERVICES[@]}"
           do
-            echo "Setting a new tag for a $SERVICE"
-            if [ "$SERVICE" != "testing-framework" ]; then
+            if [ "${SERVICE}" != "testing-framework" ] && [ "${SERVICE}" != "autoscaler-adapter" ]; then
+              echo "Setting a new tag for a $SERVICE"
               kustomize edit set image ghcr.io/berops/claudie/$SERVICE:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
             fi
           done
@@ -148,8 +163,8 @@ jobs:
           NEW_SERVICES=( ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }} )
           for SERVICE in "${NEW_SERVICES[@]}"
           do
-            echo "Setting a new tag for a $SERVICE"
             if [ "$SERVICE" == "testing-framework" ]; then
+              echo "Setting a new tag for a $SERVICE"
               kustomize edit set image ghcr.io/berops/claudie/$SERVICE:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
             fi
           done
@@ -217,7 +232,7 @@ jobs:
 
       - name: Get PR labels
         id: pr-labels
-        uses: joerick/pr-labels-action@v1.0.7
+        uses: joerick/pr-labels-action@v1.0.8
 
       # Deploy services to new namespace
       - name: Deploy to new namespace
@@ -241,12 +256,13 @@ jobs:
       - name: Monitor status of the new namespace
         run: |
           arr=( ${{ env.SERVICES }} )
-          unset arr[-1]
           echo "${arr[@]}"
           for SERVICE in "${arr[@]}"
-          do
-          kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=900s --namespace=claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
-          done
+            do
+              if [ "${SERVICE}" != "testing-framework" ] && [ "${SERVICE}" != "autoscaler-adapter" ]; then
+                kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=900s --namespace=claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+              fi
+            done
 
           kubectl get pods --namespace=claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
 
@@ -308,7 +324,25 @@ jobs:
 
       - name: Monitor E2E test
         run: |
-          kubectl wait --for=condition=complete --timeout=10800s job/testing-framework -n claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+          # Wait for completion as background process - capture PID
+          kubectl wait --for=condition=complete --timeout=10800s job/testing-framework -n claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER} &
+          completion_pid=$!
+
+          # Wait for failure as background process - capture PID
+          kubectl wait --for=condition=failed --timeout=10800s job/testing-framework -n claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER} && exit 1 &
+          failure_pid=$! 
+
+          # capture exit code of the first subprocess to exit
+          wait -n $completion_pid $failure_pid
+          exit_code=$?
+
+          if (( $exit_code == 0 )); then
+            echo "Testing-framework successful"
+          else
+            echo "Testing-framework received an error"
+          fi
+          # Exit 0 on success, 1 on failure
+          exit $exit_code
 
       - name: Wait until frontend will clean up the infra from tests
         run: |

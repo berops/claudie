@@ -1,10 +1,11 @@
 package clusterBuilder
 
 import (
+	"fmt"
 	"testing"
 
-	"github.com/Berops/claudie/internal/templateUtils"
-	"github.com/Berops/claudie/proto/pb"
+	"github.com/berops/claudie/internal/templateUtils"
+	"github.com/berops/claudie/proto/pb"
 	"github.com/stretchr/testify/require"
 )
 
@@ -41,4 +42,73 @@ func TestGenerateTf(t *testing.T) {
 	require.NoError(t, err)
 	err = template.Generate(tpl, "az-acc-net.tf", &NodepoolsData{ClusterName: "test", ClusterHash: "abcdef", NodePools: []*pb.NodePool{testNp}})
 	require.NoError(t, err)
+}
+
+// TestGetCIDR tests getCIDR function
+func TestGetCIDR(t *testing.T) {
+	type testCase struct {
+		desc     string
+		baseCIDR string
+		position int
+		existing map[string]struct{}
+		out      string
+	}
+
+	testDataSucc := []testCase{
+		{
+			desc:     "Second octet change",
+			baseCIDR: "10.0.0.0/24",
+			position: 1,
+			existing: map[string]struct{}{
+				"10.1.0.0/24": {},
+			},
+			out: "10.0.0.0/24",
+		},
+
+		{
+			desc:     "Third octet change",
+			baseCIDR: "10.0.0.0/24",
+			position: 2,
+			existing: map[string]struct{}{
+				"10.0.0.0/24": {},
+			},
+			out: "10.0.1.0/24",
+		},
+	}
+	for _, test := range testDataSucc {
+		if out, err := getCIDR(test.baseCIDR, test.position, test.existing); out != test.out || err != nil {
+			t.Error(test.desc, err, out)
+		}
+	}
+	testDataFail := []testCase{
+		{
+			desc:     "Max IP error",
+			baseCIDR: "10.0.0.0/24",
+			position: 2,
+			existing: func() map[string]struct{} {
+				m := make(map[string]struct{})
+				for i := 0; i < 256; i++ {
+					m[fmt.Sprintf("10.0.%d.0/24", i)] = struct{}{}
+				}
+				return m
+			}(),
+			out: "",
+		},
+		{
+			desc:     "Invalid base CIDR",
+			baseCIDR: "300.0.0.0/24",
+			position: 2,
+			existing: map[string]struct{}{
+				"10.0.0.0/24": {},
+			},
+			out: "10.0.10.0/24",
+		},
+	}
+	for _, test := range testDataFail {
+		if _, err := getCIDR(test.baseCIDR, test.position, test.existing); err == nil {
+			t.Error(test.desc, "test should have failed, but was successful")
+		} else {
+			t.Log(err)
+		}
+	}
 }

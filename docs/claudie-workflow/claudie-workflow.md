@@ -6,20 +6,20 @@
 
 ### Microservices
 
-- [Context-box](https://github.com/Berops/claudie/tree/master/services/context-box)
-- [Scheduler](https://github.com/Berops/claudie/tree/master/services/scheduler)
-- [Builder](https://github.com/Berops/claudie/tree/master/services/builder)
-- [Terraformer](https://github.com/Berops/claudie/tree/master/services/terraformer)
-- [Ansibler](https://github.com/Berops/claudie/tree/master/services/ansibler)
-- [Kube-eleven](https://github.com/Berops/claudie/tree/master/services/kube-eleven)
-- [Kuber](https://github.com/Berops/claudie/tree/master/services/kuber)
-- [Frontend](https://github.com/Berops/claudie/tree/master/services/frontend)
+- [Context-box](https://github.com/berops/claudie/tree/master/services/context-box)
+- [Scheduler](https://github.com/berops/claudie/tree/master/services/scheduler)
+- [Builder](https://github.com/berops/claudie/tree/master/services/builder)
+- [Terraformer](https://github.com/berops/claudie/tree/master/services/terraformer)
+- [Ansibler](https://github.com/berops/claudie/tree/master/services/ansibler)
+- [Kube-eleven](https://github.com/berops/claudie/tree/master/services/kube-eleven)
+- [Kuber](https://github.com/berops/claudie/tree/master/services/kuber)
+- [Frontend](https://github.com/berops/claudie/tree/master/services/frontend)
 
 ### Data stores
 
-- [MongoDB](https://github.com/Berops/claudie/tree/master/manifests/claudie/mongo)
-- [Minio](https://github.com/Berops/claudie/tree/master/manifests/claudie/minio)
-- [DynamoDB](https://github.com/Berops/claudie/tree/master/manifests/claudie/dynamo)
+- [MongoDB](https://github.com/berops/claudie/tree/master/manifests/claudie/mongo)
+- [Minio](https://github.com/berops/claudie/tree/master/manifests/claudie/minio)
+- [DynamoDB](https://github.com/berops/claudie/tree/master/manifests/claudie/dynamo)
 
 ### Tools used
 
@@ -39,27 +39,27 @@ Context box is Claudie's "control unit". It holds pending configs, which need to
 ### API
 
 ```go
-  // Saves the config parsed by Frontend.
+  // SaveConfigFrontEnd saves the config parsed by Frontend.
   rpc SaveConfigFrontEnd(SaveConfigRequest) returns (SaveConfigResponse);
-  // Saves the config parsed by Scheduler.
+  // SaveConfigScheduler saves the config parsed by Scheduler.
   rpc SaveConfigScheduler(SaveConfigRequest) returns (SaveConfigResponse);
-  // Saves the config parsed by Builder.
+  // SaveConfigBuilder saves the config parsed by Builder.
   rpc SaveConfigBuilder(SaveConfigRequest) returns (SaveConfigResponse);
-  // Gets a single config from the database.
+  // GetConfigFromDB gets a single config from the database.
   rpc GetConfigFromDB(GetConfigFromDBRequest) returns (GetConfigFromDBResponse);
-  // *(NEEDS DELETION)*
-  rpc GetConfigByName(GetConfigByNameRequest) returns (GetConfigByNameResponse);
-  // Gets a config from Scheduler's queue of pending configs.
+  // GetConfigScheduler gets a config from Scheduler's queue of pending configs.
   rpc GetConfigScheduler(GetConfigRequest) returns (GetConfigResponse);
-  // Gets a config from Builder's queue of pending configs.
+  // GetConfigBuilder gets a config from Builder's queue of pending configs.
   rpc GetConfigBuilder(GetConfigRequest) returns (GetConfigResponse);
-  // Gets all configs from the database.
+  // GetAllConfigs gets all configs from the database.
   rpc GetAllConfigs(GetAllConfigsRequest) returns (GetAllConfigsResponse);
-  // Sets the manifest to null, effectively forcing the deletion of the infrastructure
+  // DeleteConfig sets the manifest to null, effectively forcing the deletion of the infrastructure
   // defined by the manifest on the very next config (diff-) check.
   rpc DeleteConfig(DeleteConfigRequest) returns (DeleteConfigResponse);
-  // Deletes the config from the database.
+  // DeleteConfigFromDB deletes the config from the database.
   rpc DeleteConfigFromDB(DeleteConfigRequest) returns (DeleteConfigResponse);
+  // UpdateNodepool updates specific nodepool from the config. Used mainly for autoscaling.
+  rpc UpdateNodepool(UpdateNodepoolRequest) returns (UpdateNodepoolResponse);
 ```
 
 ### Flow
@@ -116,9 +116,9 @@ Terraformer creates or destroys infrastructure (specified in the desired state) 
 ### API
 
 ```go
-  // Builds the infrastructure based on the provided desired state (includes addition/deletion of *stuff*).
+  // BuildInfrastructure builds the infrastructure based on the provided desired state (includes addition/deletion of *stuff*).
   rpc BuildInfrastructure(BuildInfrastructureRequest) returns (BuildInfrastructureResponse);
-  // Destroys the infrastructure completely.
+  // DestroyInfrastructure destroys the infrastructure completely.
   rpc DestroyInfrastructure(DestroyInfrastructureRequest) returns (DestroyInfrastructureResponse);
 ```
 
@@ -142,9 +142,9 @@ Ansibler uses Ansible to:
 ```go
   // InstallNodeRequirements installs any requirements there are on all of the nodes.
   rpc InstallNodeRequirements(InstallRequest) returns (InstallResponse);
-  // InstallVPN sets up a VPN between the nodes in the k8s cluster and lb clusters.
+  // InstallVPN sets up a VPN between the nodes in the k8s cluster and LB clusters.
   rpc InstallVPN(InstallRequest) returns (InstallResponse);
-  // SetUpLoadbalancers sets up the load balancers, the DNS and verifies their configuration.
+  // SetUpLoadbalancers sets up the load balancers together with the DNS and verifies their configuration.
   rpc SetUpLoadbalancers(SetUpLBRequest) returns (SetUpLBResponse);
   // TeardownLoadBalancers correctly destroys the load balancers attached to a k8s
   // cluster by choosing a new ApiServer endpoint.
@@ -192,6 +192,10 @@ Kuber manipulates the cluster resources using `kubectl`.
 ### API
 
 ```go
+  // RemoveLbScrapeConfig removes scrape config for every LB detached from this cluster.
+  rpc RemoveLbScrapeConfig(RemoveLbScrapeConfigRequest) returns (RemoveLbScrapeConfigResponse);
+  // StoreLbScrapeConfig stores scrape config for every LB attached to this cluster.
+  rpc StoreLbScrapeConfig(StoreLbScrapeConfigRequest) returns (StoreLbScrapeConfigResponse);
   // StoreClusterMetadata creates a secret, which holds the private key and a list of public IP addresses of the cluster supplied.
   rpc StoreClusterMetadata(StoreClusterMetadataRequest) returns (StoreClusterMetadataResponse);
   // DeleteClusterMetadata deletes the secret holding the private key and public IP addresses of the cluster supplied.
@@ -204,6 +208,12 @@ Kuber manipulates the cluster resources using `kubectl`.
   rpc DeleteKubeconfig(DeleteKubeconfigRequest) returns (DeleteKubeconfigResponse);
   // DeleteNodes deletes the specified nodes from a k8s cluster.
   rpc DeleteNodes(DeleteNodesRequest) returns (DeleteNodesResponse);
+  // PatchNodes uses kubectl patch to change the node manifest.
+  rpc PatchNodes(PatchNodeTemplateRequest) returns (PatchNodeTemplateResponse);
+  // SetUpClusterAutoscaler deploys Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
+  rpc SetUpClusterAutoscaler(SetUpClusterAutoscalerRequest) returns (SetUpClusterAutoscalerResponse);
+  // DestroyClusterAutoscaler deletes Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
+  rpc DestroyClusterAutoscaler(DestroyClusterAutoscalerRequest) returns (DestroyClusterAutoscalerResponse);
 ```
 
 ### Flow
@@ -212,7 +222,13 @@ Kuber manipulates the cluster resources using `kubectl`.
 - Applies the `longhorn` deployment
 - Receives a `config` from Builder for `StoreKubeconfig()`
 - Creates a kubernetes secret that holds the kubeconfig of the Claudie-created cluster
-- Upon infrastructure deletion request, Kuber deletes the kubeconfig secret of the cluster being deleted
+- Receives a `config` from Builder for `StoreMetadata()`
+- Creates a kubernetes secret that holds the node metadata of the Claudie-created cluster
+- Receives a `config` from Builder for `StoreLbScrapeConfig()`
+- Stores scrape config for any LB attached to the Claudie-made cluster.
+- Receives a `config` from Builder for `PatchNodes()`
+- Patches the node manifests of the Claudie-made cluster.
+- Upon infrastructure deletion request, Kuber deletes the kubeconfig secret, metadata secret, scrape configs and autoscaler of the cluster being deleted
 
 ## Frontend
 

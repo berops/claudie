@@ -5,7 +5,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Berops/claudie/internal/kubectl"
+	comm "github.com/berops/claudie/internal/command"
+	"github.com/berops/claudie/internal/kubectl"
+	"github.com/berops/claudie/internal/utils"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 )
 
@@ -18,20 +22,16 @@ type Secret struct {
 }
 
 type SecretYaml struct {
-	APIVersion string   `yaml:"apiVersion"`
-	Kind       string   `yaml:"kind"`
-	Metadata   Metadata `yaml:"metadata"`
-	SecretType string   `yaml:"type"`
-	Data       Data     `yaml:"data"`
+	APIVersion string            `yaml:"apiVersion"`
+	Kind       string            `yaml:"kind"`
+	Metadata   Metadata          `yaml:"metadata"`
+	SecretType string            `yaml:"type"`
+	Data       map[string]string `yaml:"data"`
 }
 
 type Metadata struct {
 	Name   string      `yaml:"name"`
 	Labels interface{} `yaml:"labels"`
-}
-
-type Data struct {
-	SecretData string
 }
 
 const (
@@ -48,7 +48,7 @@ func New(directory string, secretYaml SecretYaml) Secret {
 }
 
 // NewYaml created a template with pre-defined defaults and optional metadata & data fields.
-func NewYaml(md Metadata, data Data) SecretYaml {
+func NewYaml(md Metadata, data map[string]string) SecretYaml {
 	return SecretYaml{
 		APIVersion: "v1",
 		Kind:       "Secret",
@@ -63,19 +63,21 @@ func NewYaml(md Metadata, data Data) SecretYaml {
 func (s *Secret) Apply(namespace, kubeconfig string) error {
 	// setting empty string for kubeconfig will create secret on same cluster where claudie is running
 	kubectl := kubectl.Kubectl{Kubeconfig: kubeconfig}
+	if log.Logger.GetLevel() == zerolog.DebugLevel {
+		kubectl.Stdout = comm.GetStdOut(s.YamlManifest.Metadata.Name)
+		kubectl.Stderr = comm.GetStdErr(s.YamlManifest.Metadata.Name)
+	}
 	path := filepath.Join(s.Directory, filename)
 
-	if _, err := os.Stat(s.Directory); os.IsNotExist(err) {
-		if err := os.Mkdir(s.Directory, os.ModePerm); err != nil {
-			return fmt.Errorf("could not create a directory for %s: %w", s.YamlManifest.Metadata.Name, err)
-		}
+	if err := utils.CreateDirectory(s.Directory); err != nil {
+		return fmt.Errorf("error while creating directory %s : %w", s.Directory, err)
 	}
 
 	if err := s.saveSecretManifest(path); err != nil {
 		return fmt.Errorf("error while saving secret.yaml for %s : %w", s.YamlManifest.Metadata.Name, err)
 	}
 
-	if err := kubectl.KubectlApply(path, namespace); err != nil {
+	if err := kubectl.KubectlApply(path, "-n", namespace); err != nil {
 		return fmt.Errorf("error while applying secret.yaml for %s : %w", s.YamlManifest.Metadata.Name, err)
 	}
 

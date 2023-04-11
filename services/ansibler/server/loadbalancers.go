@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/Berops/claudie/internal/templateUtils"
-	"github.com/Berops/claudie/internal/utils"
-	"github.com/Berops/claudie/proto/pb"
-	"github.com/Berops/claudie/services/ansibler/server/ansible"
-	"github.com/rs/zerolog/log"
 	"os"
 	"path/filepath"
+
+	"github.com/berops/claudie/internal/templateUtils"
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/services/ansibler/server/ansible"
+	"github.com/rs/zerolog/log"
 )
 
 /*
@@ -31,11 +32,14 @@ clusters/
 */
 
 const (
-	lbInventoryFile   = "lb-inventory.goini"
-	confFile          = "conf.gotpl"
-	nginxPlaybookTpl  = "nginx.goyml"
-	nginxPlaybook     = "nginx.yml"
-	apiChangePlaybook = "../../ansible-playbooks/apiEndpointChange.yml"
+	lbInventoryFile         = "lb-inventory.goini"
+	confFile                = "conf.gotpl"
+	nginxPlaybookTpl        = "nginx.goyml"
+	nginxPlaybook           = "nginx.yml"
+	nodeExporterPlaybookTpl = "node-exporter.goyml"
+	nodeExporterPlaybook    = "node-exporter.yml"
+	nodeExporterService     = "node-exporter.service.j2"
+	apiChangePlaybook       = "../../ansible-playbooks/apiEndpointChange.yml"
 )
 
 type APIEndpointChangeState string
@@ -97,7 +101,7 @@ type (
 		DesiredLbCluster *pb.LBcluster
 	}
 
-	NginxPlaybookData struct {
+	LbPlaybookData struct {
 		Loadbalancer string
 	}
 
@@ -181,8 +185,22 @@ func setUpLoadbalancers(clusterName string, info *LBInfo) error {
 	}
 
 	err := utils.ConcurrentExec(info.LbClusters, func(lb *LBData) error {
-		directory := filepath.Join(directory, fmt.Sprintf("%s-%s", lb.DesiredLbCluster.ClusterInfo.Name, lb.DesiredLbCluster.ClusterInfo.Hash))
-		log.Info().Msgf("Setting up the LB %s", directory)
+		lbPrefix := fmt.Sprintf("%s-%s", lb.DesiredLbCluster.ClusterInfo.Name, lb.DesiredLbCluster.ClusterInfo.Hash)
+		directory := filepath.Join(directory, lbPrefix)
+		log.Info().Msgf("Setting up the loadbalancer %s", lbPrefix)
+
+		//create key files for lb nodepools
+		if err := utils.CreateDirectory(directory); err != nil {
+			return fmt.Errorf("failed to create directory %s : %w", directory, err)
+		}
+		if err := utils.CreateKeyFile(lb.DesiredLbCluster.ClusterInfo.PrivateKey, directory, fmt.Sprintf("key.%s", privateKeyExt)); err != nil {
+			return fmt.Errorf("failed to create key file for %s : %w", lb.DesiredLbCluster.ClusterInfo.Name, err)
+		}
+
+		if err := setUpNodeExporter(lb.DesiredLbCluster, directory); err != nil {
+			return err
+		}
+
 		return setUpNginx(lb.DesiredLbCluster, info.TargetK8sNodepool, directory)
 	})
 
@@ -321,7 +339,7 @@ func handleAPIEndpointChange(apiServer *LBData, k8sCluster *LBInfo, k8sDirectory
 		lbCluster = apiServer.CurrentLbCluster
 	}
 
-	log.Info().Msgf("Changing the API endpoint for the cluster %s", lbCluster.ClusterInfo.Name)
+	log.Debug().Msgf("Changing the API endpoint for the cluster %s from %s to %s", lbCluster.ClusterInfo.Name, oldEndpoint, newEndpoint)
 
 	if err := changeAPIEndpoint(lbCluster.ClusterInfo.Name, oldEndpoint, newEndpoint, k8sDirectory); err != nil {
 		return fmt.Errorf("error while changing the endpoint for %s : %w", lbCluster.ClusterInfo.Name, err)
@@ -382,8 +400,6 @@ func hasAPIServerRole(roles []*pb.Role) bool {
 
 // changeAPIEndpoint will change kubeadm configuration to include new EP
 func changeAPIEndpoint(clusterName, oldEndpoint, newEndpoint, directory string) error {
-	log.Info().Msgf("New endpoint is %s", newEndpoint)
-
 	ansible := ansible.Ansible{
 		Playbook:  apiChangePlaybook,
 		Inventory: inventoryFile,
@@ -401,14 +417,6 @@ func changeAPIEndpoint(clusterName, oldEndpoint, newEndpoint, directory string) 
 // setUpNginx sets up the nginx loadbalancer based on the input manifest specification
 // return error if not successful, nil otherwise
 func setUpNginx(lb *pb.LBcluster, targetedNodepool []*pb.NodePool, directory string) error {
-	//create key files for lb nodepools
-	if err := utils.CreateDirectory(directory); err != nil {
-		return fmt.Errorf("failed to create directory %s : %w", directory, err)
-	}
-
-	if err := utils.CreateKeyFile(lb.ClusterInfo.PrivateKey, directory, fmt.Sprintf("key.%s", privateKeyExt)); err != nil {
-		return fmt.Errorf("failed to create key file for %s : %w", lb.ClusterInfo.Name, err)
-	}
 	//prepare data for .conf
 	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.AnsiblerTemplates}
 	template := templateUtils.Templates{Directory: directory}
@@ -433,18 +441,50 @@ func setUpNginx(lb *pb.LBcluster, targetedNodepool []*pb.NodePool, directory str
 	}
 	tpl, err = templateLoader.LoadTemplate(nginxPlaybookTpl)
 	if err != nil {
-		return fmt.Errorf("error while loading %s for %s : %w", nginxPlaybook, lb.ClusterInfo.Name, err)
+		return fmt.Errorf("error while loading %s for %s : %w", nginxPlaybookTpl, lb.ClusterInfo.Name, err)
 	}
-	err = template.Generate(tpl, "nginx.yml", NginxPlaybookData{Loadbalancer: lb.ClusterInfo.Name})
+	err = template.Generate(tpl, nginxPlaybook, LbPlaybookData{Loadbalancer: lb.ClusterInfo.Name})
 	if err != nil {
 		return fmt.Errorf("error while generating %s for %s : %w", nginxPlaybook, lb.ClusterInfo.Name, err)
 	}
 	//run the playbook
 	ansible := ansible.Ansible{Playbook: nginxPlaybook, Inventory: filepath.Join("..", inventoryFile), Directory: directory}
-	err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s", lb.ClusterInfo.Name))
+	err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s-%s", lb.ClusterInfo.Name, lb.ClusterInfo.Hash))
 	if err != nil {
 		return fmt.Errorf("error while running ansible for %s : %w", lb.ClusterInfo.Name, err)
 	}
+	return nil
+}
+
+// setUpNodeExporter sets up node-exporter on the LB node
+// return error if not successful, nil otherwise
+func setUpNodeExporter(lb *pb.LBcluster, directory string) error {
+	// generate node-exporter playbook template
+	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.AnsiblerTemplates}
+	template := templateUtils.Templates{Directory: directory}
+	tpl, err := templateLoader.LoadTemplate(nodeExporterPlaybookTpl)
+	if err != nil {
+		return fmt.Errorf("error while loading %s template for %s : %w", nodeExporterPlaybookTpl, lb.ClusterInfo.Name, err)
+	}
+	if err = template.Generate(tpl, nodeExporterPlaybook, LbPlaybookData{Loadbalancer: lb.ClusterInfo.Name}); err != nil {
+		return fmt.Errorf("error while generating %s for %s : %w", nodeExporterPlaybook, lb.ClusterInfo.Name, err)
+	}
+
+	// create node-exporter.service.j2 for the node-exporter playbook
+	tpl, err = templateLoader.LoadTemplate(nodeExporterService)
+	if err != nil {
+		return fmt.Errorf("error while loading %s template for %s : %w", nodeExporterService, lb.ClusterInfo.Name, err)
+	}
+	if err = template.Generate(tpl, nodeExporterService, LbPlaybookData{Loadbalancer: lb.ClusterInfo.Name}); err != nil {
+		return fmt.Errorf("error while generating %s for %s : %w", nodeExporterService, lb.ClusterInfo.Name, err)
+	}
+
+	//run the playbook
+	ansible := ansible.Ansible{Playbook: nodeExporterPlaybook, Inventory: filepath.Join("..", inventoryFile), Directory: directory}
+	if err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s-%s", lb.ClusterInfo.Name, lb.ClusterInfo.Hash)); err != nil {
+		return fmt.Errorf("error while running ansible for %s : %w", lb.ClusterInfo.Name, err)
+	}
+
 	return nil
 }
 
@@ -466,7 +506,7 @@ func splitNodesByType(nodepools []*pb.NodePool) (controlNodes, computeNodes []*p
 // return error if not successful, nil otherwise
 func generateK8sBaseFiles(k8sDirectory string, lbInfo *LBInfo) error {
 	if err := utils.CreateDirectory(k8sDirectory); err != nil {
-		return fmt.Errorf("failed to create dir: %w", err)
+		return fmt.Errorf("failed to create directory %s : %w", k8sDirectory, err)
 	}
 
 	if err := utils.CreateKeyFile(lbInfo.TargetK8sNodepoolKey, k8sDirectory, "k8s.pem"); err != nil {

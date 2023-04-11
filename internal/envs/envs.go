@@ -2,6 +2,7 @@ package envs
 
 import (
 	"os"
+	"strings"
 )
 
 // Hostnames and ports on what services are listening
@@ -46,21 +47,32 @@ func init() {
 	if TerraformerURL == ":" {
 		TerraformerURL = "localhost:50052"
 	}
+	TerraformerURL = strings.ReplaceAll(TerraformerURL, ":tcp://", "")
+
 	if AnsiblerURL == ":" {
 		AnsiblerURL = "localhost:50053"
 	}
+	AnsiblerURL = strings.ReplaceAll(AnsiblerURL, ":tcp://", "")
+
 	if KubeElevenURL == ":" {
 		KubeElevenURL = "localhost:50054"
 	}
+	KubeElevenURL = strings.ReplaceAll(KubeElevenURL, ":tcp://", "")
+
 	if ContextBoxURL == ":" {
 		ContextBoxURL = "localhost:50055"
 	}
+	ContextBoxURL = strings.ReplaceAll(ContextBoxURL, ":tcp://", "")
+
 	if DatabaseURL == "mongodb://:@:" {
 		DatabaseURL = "mongodb://localhost:27017"
 	}
+
 	if KuberURL == ":" {
 		KuberURL = "localhost:50057"
 	}
+	KuberURL = strings.ReplaceAll(KuberURL, ":tcp://", "")
+
 	if MinioURL == "http://:" {
 		MinioURL = "http://localhost:9000"
 	}

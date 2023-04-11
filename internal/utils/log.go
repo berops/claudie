@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/Berops/claudie/internal/envs"
+	"github.com/berops/claudie/internal/envs"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -28,9 +28,12 @@ func InitLog(moduleName string) {
 		logLevel, err := getLogLevelFromEnv()
 		baseLogger := zerolog.New(os.Stderr)
 		// create sub logger
-		logger = baseLogger.With().Str("module", moduleName).Caller().Logger()        // add module name to log
-		logger = logger.Level(logLevel).Output(zerolog.ConsoleWriter{Out: os.Stderr}) //prettify the output
-		logger = logger.With().Timestamp().Logger()                                   //add time stamp
+		logger = baseLogger.With().Str("module", moduleName).Logger()                 // Add module name to log
+		logger = logger.Level(logLevel).Output(zerolog.ConsoleWriter{Out: os.Stderr}) // Prettify the output
+		logger = logger.With().Timestamp().Logger()                                   // Add time stamp
+		if logLevel == zerolog.DebugLevel {
+			logger = logger.With().Caller().Logger() // Add caller (line number where log message was called)
+		}
 		if err != nil {
 			logger.Err(err)
 		} else {

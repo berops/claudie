@@ -22,10 +22,10 @@ spec:
           resources:
             requests:
               cpu: 700m
-              memory: 768Mi
+              memory: 1200Mi
             limits:
               cpu: 1024m
-              memory: 1248Mi
+              memory: 1700Mi
           env:
             - name: TERRAFORMER_PORT
               valueFrom:
@@ -93,14 +93,16 @@ spec:
           ports:
             - containerPort: 50052
           readinessProbe:
-            exec:
-              command: ["/bin/grpc_health_probe", "-addr=:50052"]
+            grpc:
+              port: 50052
+              service: terraformer-readiness
             initialDelaySeconds: 5
             periodSeconds: 30
           livenessProbe:
-            exec:
-              command: ["/bin/grpc_health_probe-Liveness", "-addr=:50052"]
-            initialDelaySeconds: 30
+            grpc:
+              port: 50052
+              service: terraformer-liveness
+            initialDelaySeconds: 5
             periodSeconds: 30
 ---
 kind: Service

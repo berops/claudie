@@ -5,7 +5,7 @@ import (
 	"io"
 	"os/exec"
 
-	comm "github.com/Berops/claudie/internal/command"
+	comm "github.com/berops/claudie/internal/command"
 	"github.com/rs/zerolog/log"
 )
 
@@ -19,15 +19,15 @@ const (
 type Terraform struct {
 	// Directory represents the directory of .tf files
 	Directory string
-	StdOut    io.Writer
-	StdErr    io.Writer
+	Stdout    io.Writer
+	Stderr    io.Writer
 }
 
 func (t *Terraform) TerraformInit() error {
 	cmd := exec.Command("terraform", "init")
 	cmd.Dir = t.Directory
-	cmd.Stdout = t.StdOut
-	cmd.Stderr = t.StdErr
+	cmd.Stdout = t.Stdout
+	cmd.Stderr = t.Stderr
 
 	if err := cmd.Run(); err != nil {
 		log.Warn().Msgf("Error encountered while executing %s from %s: %v", cmd, t.Directory, err)
@@ -50,8 +50,8 @@ func (t *Terraform) TerraformInit() error {
 func (t *Terraform) TerraformApply() error {
 	cmd := exec.Command("terraform", "apply", "--auto-approve")
 	cmd.Dir = t.Directory
-	cmd.Stdout = t.StdOut
-	cmd.Stderr = t.StdErr
+	cmd.Stdout = t.Stdout
+	cmd.Stderr = t.Stderr
 
 	if err := cmd.Run(); err != nil {
 		log.Warn().Msgf("Error encountered while executing %s from %s: %v", cmd, t.Directory, err)
@@ -74,8 +74,8 @@ func (t *Terraform) TerraformApply() error {
 func (t *Terraform) TerraformDestroy() error {
 	cmd := exec.Command("terraform", "destroy", "--auto-approve")
 	cmd.Dir = t.Directory
-	cmd.Stdout = t.StdOut
-	cmd.Stderr = t.StdErr
+	cmd.Stdout = t.Stdout
+	cmd.Stderr = t.Stderr
 
 	if err := cmd.Run(); err != nil {
 		log.Warn().Msgf("Error encountered while executing %s from %s: %v", cmd, t.Directory, err)

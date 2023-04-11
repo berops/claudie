@@ -1,0 +1,59 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: autoscaler-config-{{ .ClusterID }}
+data:
+  cloud-config: |-
+    address: "autoscaler-adapter-{{ .ClusterID }}:{{ .AdapterPort }}"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: autoscaler-{{ .ClusterID }}
+  labels:
+    app: autoscaler-{{ .ClusterID }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: autoscaler-{{ .ClusterID }}
+  template:
+    metadata:
+      labels:
+        app: autoscaler-{{ .ClusterID }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8085"
+    spec:
+      containers:
+        - image: registry.k8s.io/autoscaling/cluster-autoscaler:v1.25.0
+          name: cluster-autoscaler
+          resources:
+            limits:
+              cpu: 100m
+              memory: 300Mi
+            requests:
+              cpu: 100m
+              memory: 300Mi
+          command:
+            - ./cluster-autoscaler
+            - --cloud-provider=externalgrpc
+            - --cloud-config=/etc/claudie/cloud-config/cloud-config
+            - --kubeconfig=/etc/claudie/kubeconfig/kubeconfig
+            - --ignore-daemonsets-utilization=true
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: kubeconfig
+              mountPath: /etc/claudie/kubeconfig
+              readOnly: true
+            - name: cloud-config
+              mountPath: /etc/claudie/cloud-config
+              readOnly: true
+      volumes:
+        - name: kubeconfig
+          secret:
+            secretName: {{ .ClusterID }}-kubeconfig
+        - name: cloud-config
+          configMap:
+            name: autoscaler-config-{{ .ClusterID }}

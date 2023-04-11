@@ -11,12 +11,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Berops/claudie/internal/envs"
-	"github.com/Berops/claudie/internal/healthcheck"
-	"github.com/Berops/claudie/internal/utils"
-	"github.com/Berops/claudie/proto/pb"
-	"github.com/Berops/claudie/services/terraformer/server/kubernetes"
-	"github.com/Berops/claudie/services/terraformer/server/loadbalancer"
+	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/services/terraformer/server/kubernetes"
+	"github.com/berops/claudie/services/terraformer/server/loadbalancer"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
@@ -29,6 +28,7 @@ import (
 
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
@@ -83,17 +83,18 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 	}
 
 	err := utils.ConcurrentExec(clusters, func(cluster Cluster) error {
+		log.Info().Msgf("Creating infrastructure for cluster %s project %s", cluster.Id(), req.ProjectName)
+
 		if err := cluster.Build(); err != nil {
 			return fmt.Errorf("error while building the cluster %v : %w", cluster.Id(), err)
 		}
+		log.Info().Msgf("Infrastructure was successfully created for cluster %s project %s", cluster.Id(), req.ProjectName)
 		return nil
 	})
 	if err != nil {
-		log.Error().Msgf("Failed to build cluster %s for project %s : %s", req.Desired.ClusterInfo.Name, req.ProjectName, err)
-		return nil, fmt.Errorf("failed to build cluster with loadbalancers due to: %w", err)
+		log.Error().Msgf("Error while building cluster %s for project %s : %s", req.Desired.ClusterInfo.Name, req.ProjectName, err)
+		return nil, fmt.Errorf("error while building cluster %s for project %s : %w", req.Desired.ClusterInfo.Name, req.ProjectName, err)
 	}
-
-	log.Info().Msgf("Infrastructure was successfully generated for cluster %s project %s", req.Desired.ClusterInfo.Name, req.ProjectName)
 
 	resp := &pb.BuildInfrastructureResponse{
 		Current:    req.Current,
@@ -141,8 +142,9 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 	})
 
 	err = utils.ConcurrentExec(clusters, func(cluster Cluster) error {
+		log.Info().Msgf("Destroying infrastructure for cluster %s project %s", cluster.Id(), req.ProjectName)
 		if err := cluster.Destroy(); err != nil {
-			return fmt.Errorf("failed to destroy cluster %v : %w", cluster.Id(), err)
+			return fmt.Errorf("error while destroying cluster %v : %w", cluster.Id(), err)
 		}
 
 		// if it's a load-balancer there is an additional lock-file for the dns in both  MinIO and dynamoDB.
@@ -163,6 +165,7 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 				return fmt.Errorf("failed to remove dns lock file for cluster %v: %w", cluster.Id(), err)
 			}
 		}
+		log.Info().Msgf("Infrastructure for cluster %s project %s was successfully destroyed", cluster.Id(), req.ProjectName)
 
 		// Key under which the lockfile id is stored in dynamodb
 		dynamoLockId, err := attributevalue.Marshal(fmt.Sprintf("%s/%s/%s-md5", minioBucket, req.ProjectName, cluster.Id()))
@@ -184,17 +187,16 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 	})
 
 	if err != nil {
-		log.Error().Msgf("Failed to destroy the infra for project %s : %s", req.ProjectName, err)
-		return nil, fmt.Errorf("failed to destroy infrastructure: %w", err)
+		log.Error().Msgf("Error while destroying the infrastructure for project %s : %s", req.ProjectName, err)
+		return nil, fmt.Errorf("error while destroying infrastructure for project %s : %w", req.ProjectName, err)
 	}
-
-	log.Info().Msgf("Infra for project %s was successfully destroyed", req.ProjectName)
 	return &pb.DestroyInfrastructureResponse{Current: req.Current, CurrentLbs: req.CurrentLbs}, nil
 }
 
 // healthCheck function is a readiness function defined by terraformer
-// it checks whether bucket exists. If true, returns nil, error otherwise
+// it checks whether MinIO bucket exists and if dynamoDB table exists. If true, returns nil, error otherwise.
 func healthCheck() error {
+	// Minio bucket
 	mc, err := minio.New(minioEndpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(minioAccessKey, minioSecretKey, ""),
 		Secure: false,
@@ -202,12 +204,33 @@ func healthCheck() error {
 	if err != nil {
 		return err
 	}
-
 	exists, err := mc.BucketExists(context.Background(), minioBucket)
 	if !exists || err != nil {
 		return fmt.Errorf("error: bucket exists %t || err: %w", exists, err)
 	}
-	return nil
+	// dynamoDB Table
+	dc := dynamodb.NewFromConfig(aws.Config{
+		Region: awsRegion,
+		Credentials: aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
+			return aws.Credentials{AccessKeyID: awsAccessKeyId, SecretAccessKey: awsSecretAccessKey}, nil
+		}),
+		EndpointResolverWithOptions: aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+			return aws.Endpoint{URL: dynamoURL}, nil
+		}),
+		RetryMaxAttempts: 10,
+		RetryMode:        aws.RetryModeStandard,
+	})
+	tables, err := dc.ListTables(context.Background(), nil)
+	if err != nil {
+		return err
+	}
+
+	for _, t := range tables.TableNames {
+		if t == dynamoTable {
+			return nil
+		}
+	}
+	return fmt.Errorf("dynamoDB does not contain %s table", dynamoTable)
 }
 
 func main() {
@@ -229,11 +252,32 @@ func main() {
 	pb.RegisterTerraformerServiceServer(s, &server{})
 
 	// Add health service to gRPC
-	// Here we pass our custom readiness probe
-	healthService := healthcheck.NewServerHealthChecker(terraformerPort, "TERRAFORMER_PORT", healthCheck)
-	grpc_health_v1.RegisterHealthServer(s, healthService)
+	healthServer := health.NewServer()
+	// Set liveness to SERVING
+	healthServer.SetServingStatus("terraformer-liveness", grpc_health_v1.HealthCheckResponse_SERVING)
+	// Set readiness to NOT_SERVING, as it will be changed later.
+	healthServer.SetServingStatus("terraformer-readiness", grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+	grpc_health_v1.RegisterHealthServer(s, healthServer)
 
 	g, ctx := errgroup.WithContext(context.Background())
+
+	g.Go(func() error {
+		// Check if terraform is in ready state every 30s
+		ticker := time.NewTicker(30 * time.Second)
+		for {
+			select {
+			case <-ctx.Done():
+				ticker.Stop()
+				return nil
+			case <-ticker.C:
+				if err := healthCheck(); err != nil {
+					healthServer.SetServingStatus("terraformer-readiness", grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+				} else {
+					healthServer.SetServingStatus("terraformer-readiness", grpc_health_v1.HealthCheckResponse_SERVING)
+				}
+			}
+		}
+	})
 
 	g.Go(func() error {
 		ch := make(chan os.Signal, 1)
@@ -249,11 +293,12 @@ func main() {
 			err = ctx.Err()
 		case sig := <-ch:
 			log.Info().Msgf("Received signal %v", sig)
-			err = errors.New("terraformer interrupt signal")
+			err = errors.New("interrupt signal")
 		}
 
 		log.Info().Msg("Gracefully shutting down gRPC server")
 		s.GracefulStop()
+		healthServer.Shutdown()
 
 		// Sometimes when the container terminates gRPC logs the following message:
 		// rpc error: code = Unknown desc = Error: No such container: hash of the container...

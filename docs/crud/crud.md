@@ -51,8 +51,8 @@ Claudie outputs two secrets in the namespace where it is deployed, after a succe
 
 The names of the secrets are derived as follows: `<cluster-name>-<cluster-hash>-{kubeconfig,metadata}`. The secrets can be accessed by printing and `base64`-decoding them.
 
-Example of how to decode a secret:
+Example of how to decode a kubeconfig from secret:
 
 ```sh
-kubectl get secrets -n claudie <cluster-name>-<cluster-hash>-kubeconfig -o jsonpath='{.data.secretdata}' | base64 -d > your_kubeconfig.yaml
+kubectl get secrets -n claudie <cluster-name>-<cluster-hash>-kubeconfig -o jsonpath='{.data.kubeconfig}' | base64 -d > your_kubeconfig.yaml
 ```

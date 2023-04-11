@@ -3,11 +3,11 @@ package main
 import (
 	"fmt"
 
-	"github.com/Berops/claudie/internal/envs"
-	"github.com/Berops/claudie/proto/pb"
-	"github.com/Berops/claudie/services/context-box/server/checksum"
-	"github.com/Berops/claudie/services/context-box/server/claudieDB"
-	"github.com/Berops/claudie/services/context-box/server/queue"
+	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/services/context-box/server/checksum"
+	"github.com/berops/claudie/services/context-box/server/claudieDB"
+	"github.com/berops/claudie/services/context-box/server/queue"
 	"github.com/rs/zerolog/log"
 )
 
@@ -48,6 +48,7 @@ const (
 )
 
 var (
+	//TODO move them to server struct
 	queueScheduler queue.Queue
 	queueBuilder   queue.Queue
 	//vars used for logging
@@ -117,8 +118,9 @@ func configCheck() error {
 		}
 
 		// check for Scheduler
-		if !checksum.CompareChecksums(config.DsChecksum, config.MsChecksum) {
-			// if scheduler ttl is 0 or smaller AND config has no workflow state yet, add to scheduler Q
+
+		if !checksum.Equals(config.DsChecksum, config.MsChecksum) {
+			// if scheduler ttl is 0 or smaller AND config has no errorMessage, add to scheduler Q
 			if config.SchedulerTTL <= 0 && !config.HasError() {
 				if err := database.UpdateSchedulerTTL(config.Name, defaultSchedulerTTL); err != nil {
 					return err
@@ -132,8 +134,8 @@ func configCheck() error {
 		}
 
 		// check for Builder
-		if !checksum.CompareChecksums(config.DsChecksum, config.CsChecksum) {
-			// if builder ttl is 0 or smaller AND config has no workflow state yet, add to builder Q
+		if !checksum.Equals(config.DsChecksum, config.CsChecksum) {
+			// if builder ttl is 0 or smaller AND config has no errorMessage, add to builder Q
 			if config.BuilderTTL <= 0 && !config.HasError() {
 				if err := database.UpdateBuilderTTL(config.Name, defaultBuilderTTL); err != nil {
 					return err
@@ -185,4 +187,23 @@ func initDatabase() (ClaudieDB, error) {
 		return nil, fmt.Errorf("unable to initialise to database at %s : %w", envs.DatabaseURL, err)
 	}
 	return claudieDatabase, nil
+}
+
+func updateNodepool(state *pb.Project, clusterName, nodepoolName string, nodes []*pb.Node, count *int32) error {
+	for _, cluster := range state.Clusters {
+		if cluster.ClusterInfo.Name == clusterName {
+			for _, nodepool := range cluster.ClusterInfo.NodePools {
+				if nodepool.Name == nodepoolName {
+					// Update nodes
+					nodepool.Nodes = nodes
+					if count != nil {
+						nodepool.Count = *count
+					}
+					return nil
+				}
+			}
+			return fmt.Errorf("nodepool %s was not found in cluster %s", nodepoolName, clusterName)
+		}
+	}
+	return fmt.Errorf("cluster %s was not found in project %s", clusterName, state.Name)
 }

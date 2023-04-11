@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/Berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb"
 )
 
 const (
@@ -82,22 +82,6 @@ func ProtocolNameToAzureProtocolString(protocol string) string {
 // AssignPriority returns a priority for firewall rule with basePriority + index
 func AssignPriority(index int) int {
 	return basePriority + index
-}
-
-// GetCIDR function returns CIDR in IPv4 format, with position replaced by value
-// The function does not check if it is a valid CIDR/can be used in subnet spec
-// Example
-// GetCIDR("10.0.0.0/8", 2, 1) will return "10.0.1.0/8"
-// GetCIDR("10.0.0.0/8", 3, 1) will return "10.0.0.1/8"
-func GetCIDR(baseCIDR string, position, value int) string {
-	_, ipNet, err := net.ParseCIDR(baseCIDR)
-	if err != nil {
-		return fmt.Sprintf("Cannot parse a CIDR with base %s, position %d, value %d", baseCIDR, position, value)
-	}
-	ip := ipNet.IP
-	ip[position] = byte(value)
-	ones, _ := ipNet.Mask.Size()
-	return fmt.Sprintf("%s/%d", ip.String(), ones)
 }
 
 // ExtractNetmaskFromCIDR extracts the netmask from the CIDR notation.

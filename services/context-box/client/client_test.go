@@ -4,15 +4,13 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Berops/claudie/internal/envs"
-	"github.com/Berops/claudie/internal/utils"
-	"github.com/Berops/claudie/proto/pb"
+	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 )
-
-const configIDDefault = "6228ab28e655d4721eae5727"
 
 func ClientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
 	cc, err := utils.GrpcDialWithInsecure("context-box", envs.ContextBoxURL)
@@ -68,7 +66,7 @@ func makePbConfig(msg string, manifest []byte, id string) *pb.Config {
 }
 func TestSaveConfigFrontEnd(t *testing.T) {
 	c, cc := ClientConnection()
-	manifestFile := "./manifest.yaml" // this is manifest from this test file
+	manifestFile := "./.manifest-simple.yml" // this is manifest from this test file
 
 	manifest, errR := os.ReadFile(manifestFile)
 	if errR != nil {
@@ -76,7 +74,7 @@ func TestSaveConfigFrontEnd(t *testing.T) {
 	}
 
 	_, cfgErr := SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
-		Config: makePbConfig("Sample config name", manifest, ""),
+		Config: makePbConfig("cloudziu", manifest, ""),
 	})
 	if cfgErr != nil {
 		log.Fatal().Msgf("Error saving FrontEnd configuration to DB connection: %v", cfgErr)
@@ -86,7 +84,7 @@ func TestSaveConfigFrontEnd(t *testing.T) {
 
 func TestSaveConfigScheduler(t *testing.T) {
 	c, cc := ClientConnection()
-	manifestFile := "./manifest.yaml" // this is manifest from this test file
+	manifestFile := "./.manifest-simple.yml" // this is manifest from this test file
 
 	manifest, errR := os.ReadFile(manifestFile)
 	if errR != nil {
@@ -94,7 +92,7 @@ func TestSaveConfigScheduler(t *testing.T) {
 	}
 
 	cfgErr := SaveConfigScheduler(c, &pb.SaveConfigRequest{
-		Config: makePbConfig("TestDeleteNodeSamo", manifest, ""),
+		Config: makePbConfig("cloudziu", manifest, ""),
 	})
 	if cfgErr != nil {
 		log.Fatal().Msgf("Error saving Scheduler configuration to DB connection: %v", cfgErr)
@@ -105,20 +103,21 @@ func TestSaveConfigScheduler(t *testing.T) {
 func TestDeleteConfig(t *testing.T) {
 	c, cc := ClientConnection()
 	configID := "636ce11237b549bf20be1c81" //configIDDefault // Put desired config ID here
-	delErr := DeleteConfig(c, configID, pb.IdType_HASH)
+	delErr := DeleteConfig(c, &pb.DeleteConfigRequest{Id: configID, Type: pb.IdType_HASH})
 	if delErr != nil {
 		log.Fatal().Msgf("Error deleting config %s %v", configID, delErr)
 	}
 	closeConn(t, cc)
 }
 
-// To get an output of the test, run this from the test's directory: go test -timeout 30s -run ^TestPrintConfig$ github.com/Berops/claudie/services/context-box/client -v
+// To get an output of the test, run this from the test's directory: go test -timeout 30s -run ^TestPrintConfig$ github.com/berops/claudie/services/context-box/client -v
 func TestPrintConfig(t *testing.T) {
 	c, cc := ClientConnection()
 	defer closeConn(t, cc)
-	out, err := printConfig(c, configIDDefault, pb.IdType_HASH, desired)
+	configID := "64187378ffaca560a3f31850"
+	out, err := printConfig(c, configID, pb.IdType_HASH, desired)
 	require.NoError(t, err)
-	out1, err := printConfig(c, configIDDefault, pb.IdType_HASH, current)
+	out1, err := printConfig(c, configID, pb.IdType_HASH, current)
 	require.NoError(t, err)
 	t.Log(out)
 	require.Equal(t, out, out1)

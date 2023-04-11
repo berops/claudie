@@ -39,17 +39,66 @@ message StoreClusterMetadataRequest {
 
 message StoreClusterMetadataResponse {}
 
+message StoreLbScrapeConfigRequest {
+  K8scluster cluster = 1;
+  repeated LBcluster desiredLoadbalancers = 2;
+}
+
+message StoreLbScrapeConfigResponse {}
+
+message RemoveLbScrapeConfigRequest {
+  K8scluster cluster = 1;
+}
+
+message RemoveLbScrapeConfigResponse {}
+
 message DeleteClusterMetadataRequest {
   K8scluster cluster = 1;
 }
 
 message DeleteClusterMetadataResponse {}
 
+message PatchNodeTemplateRequest {
+  K8scluster cluster = 1;
+}
+
+message PatchNodeTemplateResponse {}
+
+message SetUpClusterAutoscalerRequest{
+  string projectName = 1;
+  K8scluster cluster = 2;
+}
+
+message SetUpClusterAutoscalerResponse {}
+
+message DestroyClusterAutoscalerRequest{
+  string projectName = 1;
+  K8scluster cluster = 2;
+}
+
+message DestroyClusterAutoscalerResponse {}
+
 service KuberService {
+  // RemoveLbScrapeConfig removes scrape config for every LB detached from this cluster.
+  rpc RemoveLbScrapeConfig(RemoveLbScrapeConfigRequest) returns (RemoveLbScrapeConfigResponse);
+  // StoreLbScrapeConfig stores scrape config for every LB attached to this cluster.
+  rpc StoreLbScrapeConfig(StoreLbScrapeConfigRequest) returns (StoreLbScrapeConfigResponse);
+  // StoreClusterMetadata creates a secret, which holds the private key and a list of public IP addresses of the cluster supplied.
   rpc StoreClusterMetadata(StoreClusterMetadataRequest) returns (StoreClusterMetadataResponse);
+  // DeleteClusterMetadata deletes the secret holding the private key and public IP addresses of the cluster supplied.
   rpc DeleteClusterMetadata(DeleteClusterMetadataRequest) returns (DeleteClusterMetadataResponse);
-  rpc SetUpStorage(SetUpStorageRequest) returns (SetUpStorageResponse);
+  // SetUpStorage installs Longhorn into the cluster.
+  rpc SetUpStorage(SetUpStorageRequest) returns (SetUpStorageResponse); 
+  // StoreKubeconfig creates a secret, which holds the kubeconfig of a Claudie-created cluster.
   rpc StoreKubeconfig(StoreKubeconfigRequest) returns (StoreKubeconfigResponse);
+  // DeleteKubeconfig removes the secret that holds the kubeconfig of a Claudie-created cluster.
   rpc DeleteKubeconfig(DeleteKubeconfigRequest) returns (DeleteKubeconfigResponse);
+  // DeleteNodes deletes the specified nodes from a k8s cluster.
   rpc DeleteNodes(DeleteNodesRequest) returns (DeleteNodesResponse);
+  // PatchNodes uses kubectl patch to change the node manifest.
+  rpc PatchNodes(PatchNodeTemplateRequest) returns (PatchNodeTemplateResponse);
+  // SetUpClusterAutoscaler deploys Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
+  rpc SetUpClusterAutoscaler(SetUpClusterAutoscalerRequest) returns (SetUpClusterAutoscalerResponse);
+  // DestroyClusterAutoscaler deletes Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
+  rpc DestroyClusterAutoscaler(DestroyClusterAutoscalerRequest) returns (DestroyClusterAutoscalerResponse);
 }
