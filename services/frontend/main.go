@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -11,30 +12,20 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/internal/healthcheck"
 	"github.com/berops/claudie/internal/utils"
 	inboundAdapters "github.com/berops/claudie/services/frontend/adapters/inbound"
 	outboundAdapters "github.com/berops/claudie/services/frontend/adapters/outbound"
 	"github.com/berops/claudie/services/frontend/domain/usecases"
 )
 
-// manifestDir stores manifests that should be sent
-// to the context-box to be processed.
-var manifestDir = os.Getenv("MANIFEST_DIR")
-
 const (
-	// healthcheckPort is the port on which the frontend service
-	// listens for health checks.
+	// healthcheckPort is the port on which Kubernetes readiness and liveness probes send request
+	// for performing health checks.
 	healthcheckPort = 50058
 
-	// sidecarPort is the port on which the frontend service
-	// listens for notification from the k8s-sidecar service
-	// about changes in the manifestDir.
-	sidecarPort = 50059
-)
-
-const (
 	// k8sSidecarNotificationsReceiverPort is the port at which the frontend microservice listens for notifications
-	// from the K8s-sidecar service about changes in the directory containing the claudie manifest files.
+	// from the k8s-sidecar service about changes in the directory containing the claudie manifest files.
 	k8sSidecarNotificationsReceiverPort = 50059
 )
 
@@ -54,7 +45,7 @@ func run() error {
 	}
 
 	usecases := &usecases.Usecases{
-		ContextBox: contextBoxConnector,
+		ContextBoxGrpcClient: contextBoxConnector.GrpcClient,
 	}
 
 	k8sSidecarNotificationsReceiver, err := inboundAdapters.NewK8sSidecarNotificationsReceiver(usecases)
@@ -62,8 +53,27 @@ func run() error {
 		return err
 	}
 
+	// Start Kubernetes liveness and readiness probe responders
+	healthcheck.NewClientHealthChecker(fmt.Sprint(healthcheckPort),
+		func() error {
+			err := k8sSidecarNotificationsReceiver.PerformHealthCheck()
+			if err != nil {
+				return err
+			}
+
+			return contextBoxConnector.PerformHealthCheck()
+		},
+	).StartProbes()
+
 	waitGroup, waitGroupContext := errgroup.WithContext(context.Background())
 
+	// Start receiving notifications from the k8s-sidecar container
+	waitGroup.Go(func() error {
+		log.Info().Msgf("Listening for notifications from K8s-sidecar at port: %v", k8sSidecarNotificationsReceiverPort)
+		return k8sSidecarNotificationsReceiver.Start("0.0.0.0", k8sSidecarNotificationsReceiverPort)
+	})
+
+	// Listen for program interruption signals and shut it down gracefully
 	waitGroup.Go(func() error {
 		shutdownSignalChan := make(chan os.Signal, 1)
 		signal.Notify(shutdownSignalChan, os.Interrupt, syscall.SIGTERM)

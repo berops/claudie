@@ -1,7 +1,7 @@
 package usecases
 
-import "github.com/berops/claudie/services/frontend/domain/ports"
+import "github.com/berops/claudie/proto/pb"
 
 type Usecases struct {
-	ContextBox ports.ContextBoxPort
+	ContextBoxGrpcClient pb.ContextBoxServiceClient
 }

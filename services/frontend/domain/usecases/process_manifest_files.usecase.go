@@ -12,12 +12,15 @@ import (
 
 	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/proto/pb"
+	cbox "github.com/berops/claudie/services/context-box/client"
 )
 
+// TODO: Decouple context-box gRPC client (cbox) from ProcessManifestFiles which contains the business logic
+
 // ProcessManifestFiles processes the manifest files concurrently. If an error occurs while the file
-// is being processed it's skipped and continues with the next one until all are processed. Nothing
-// is done with files for which an error occurred, they'll be skipped until either corrected or
-// deleted.
+// is being processed, it's skipped and the function continues with the next one until all files are
+// processed. Nothing is done with those files for which errors occurred, they'll be skipped until either
+// corrected or deleted.
 func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 
 	manifestFiles, err := os.ReadDir(manifestDir)
@@ -25,10 +28,11 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 		return fmt.Errorf("Failed to read manifest files from dir %q: %w", manifestDir, err)
 	}
 
-	configList, err := u.ContextBox.GetConfigList()
+	response, err := cbox.GetAllConfigs(u.ContextBoxGrpcClient)
 	if err != nil {
 		return fmt.Errorf("Failed to retrieve manifests details from context-box: %w", err)
 	}
+	configList := response.GetConfigs()
 
 	log.Debug().Msgf("%d configs present in database | %d configs in %v", len(configList), len(manifestFiles), manifestDir)
 
@@ -39,7 +43,7 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 	for _, manifestFile := range manifestFiles {
 		waitGroup.Add(1)
 
-		// Process each of the files concurrently in a separate go-routine skipping over file for which
+		// Process each of the files concurrently in a separate go-routine skipping over files for which
 		// an error occurs.
 		// By processing, we mean unmarshalling the claudie manifest
 		go func(manifestFile fs.DirEntry) {
@@ -90,10 +94,12 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 
 		configList = removeConfig(configList, manifestProcessingResult.manifestName)
 
-		err = u.ContextBox.SaveConfig(
-			&pb.Config{
-				Name:     manifestProcessingResult.manifestName,
-				Manifest: string(manifestProcessingResult.rawManifestData),
+		_, err = cbox.SaveConfigFrontEnd(u.ContextBoxGrpcClient,
+			&pb.SaveConfigRequest{
+				Config: &pb.Config{
+					Name:     manifestProcessingResult.manifestName,
+					Manifest: string(manifestProcessingResult.rawManifestData),
+				},
 			},
 		)
 		if err != nil {
@@ -118,7 +124,13 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 		go func(config *pb.Config) {
 			log.Info().Msgf("Deleting config %v from context-box DB", config.Id)
 
-			if err := u.ContextBox.DeleteConfig(config.Id); err != nil {
+			err := cbox.DeleteConfig(u.ContextBoxGrpcClient,
+				&pb.DeleteConfigRequest{
+					Id:   config.Id,
+					Type: pb.IdType_HASH,
+				},
+			)
+			if err != nil {
 				log.Error().Msgf("Failed to delete config %s of manifest %s : %v", config.Id, config.Name, err)
 			}
 
