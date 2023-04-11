@@ -123,18 +123,18 @@ nodePools:
   # Dynamic nodepools are created by Claudie, in one of the cloud providers specified.
   # Definition specification:
   # dynamic:
-  #   - name:           # Name of the nodepool, which is used as a refference to it. Needs to be unique.
-  #     providerSpec:   # Provider specification for this nodepool.
-  #       name:         # Name of the provider instance, referencing one of the providers define above.
-  #       region:       # Region of the nodepool.
-  #       zone:         # Zone of the nodepool.
-  #     count:          # Static number of nodes in this nodepool.
-  #     serverType:     # Machine type of the nodes in this nodepool.
-  #     image:          # OS image of the nodes in the nodepool.
-  #     storageDiskSize:       # Disk size, of the storage disk for compute nodepool.
-  #     autoscalerConf: # Autoscaler configuration. Mutually exclusive with Count.
-  #       min:          # Minimum number of nodes in nodepool.
-  #       max:          # Maximum number of nodes in nodepool.
+  #   - name:             # Name of the nodepool, which is used as a refference to it. Needs to be unique.
+  #     providerSpec:     # Provider specification for this nodepool.
+  #       name:           # Name of the provider instance, referencing one of the providers define above.
+  #       region:         # Region of the nodepool.
+  #       zone:           # Zone of the nodepool.
+  #     count:            # Static number of nodes in this nodepool.
+  #     serverType:       # Machine type of the nodes in this nodepool.
+  #     image:            # OS image of the nodes in the nodepool.
+  #     storageDiskSize:  # Disk size of the storage disk for compute nodepool.
+  #     autoscalerConf:   # Autoscaler configuration. Mutually exclusive with Count.
+  #       min:            # Minimum number of nodes in nodepool.
+  #       max:            # Maximum number of nodes in nodepool.
   #
   # Example definitions for each provider
   dynamic:
