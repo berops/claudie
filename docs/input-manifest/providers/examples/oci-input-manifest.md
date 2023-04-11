@@ -62,7 +62,6 @@ nodePools:
       # OCID of the image.
       # Make sure to update it according to the region.
       image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
-      diskSize: 50
 
     - name: compute-1-oci
       providerSpec:
@@ -209,7 +208,6 @@ nodePools:
       # OCID of the image.
       # Make sure to update it according to the region.
       image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
-      diskSize: 50
 
     - name: control-oci-2
       providerSpec:
@@ -225,7 +223,6 @@ nodePools:
       # OCID of the image.
       # Make sure to update it according to the region.
       image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
-      diskSize: 50
 
     - name: compute-oci-1
       providerSpec:
