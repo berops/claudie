@@ -155,10 +155,6 @@ func callAnsibler(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) er
 		apiEndpoint = teardownRes.PreviousAPIEndpoint
 	}
 
-	ctx.desiredCluster = teardownRes.Desired
-	ctx.desiredLoadbalancers = teardownRes.DesiredLbs
-	ctx.deletedLoadBalancers = teardownRes.DeletedLbs
-
 	ctx.Workflow.Description = fmt.Sprintf("%s installing VPN", description)
 	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
 		return err
@@ -379,17 +375,17 @@ func destroyCluster(ctx *BuilderContext, c pb.ContextBoxServiceClient) error {
 		return err
 	}
 	defer utils.CloseClientConnection(cc)
-	c := pb.NewKuberServiceClient(cc)
+	kc := pb.NewKuberServiceClient(cc)
 
 	// Delete cluster metadata
-	if err := deleteClusterData(ctx, c); err != nil {
+	if err := deleteClusterData(ctx, c, kc); err != nil {
 		return fmt.Errorf("error in delete kubeconfig for config %s project %s : %w", ctx.GetClusterName(), ctx.projectName, err)
 	}
 
 	// Destroy Autoscaler if current state is autoscaled
 	if utils.IsAutoscaled(ctx.cluster) {
 		log.Info().Msgf("Calling DestroyClusterAutoscaler on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
-		if _, err := kuber.DestroyClusterAutoscaler(c, &pb.DestroyClusterAutoscalerRequest{ProjectName: ctx.projectName, Cluster: ctx.cluster}); err != nil {
+		if _, err := kuber.DestroyClusterAutoscaler(kc, &pb.DestroyClusterAutoscalerRequest{ProjectName: ctx.projectName, Cluster: ctx.cluster}); err != nil {
 			return err
 		}
 	}
@@ -432,7 +428,7 @@ func destroyConfigTerraformer(ctx *BuilderContext, cboxClient pb.ContextBoxServi
 }
 
 // deleteClusterData deletes the kubeconfig and cluster metadata.
-func deleteClusterData(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+func deleteClusterData(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient, kuberClient pb.KuberServiceClient) error {
 	if ctx.cluster == nil {
 		return nil
 	}
@@ -445,7 +441,7 @@ func deleteClusterData(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClien
 	}
 
 	log.Info().Msgf("Calling DeleteKubeconfig on Kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
-	if _, err := kuber.DeleteKubeconfig(c, &pb.DeleteKubeconfigRequest{Cluster: ctx.cluster}); err != nil {
+	if _, err := kuber.DeleteKubeconfig(kuberClient, &pb.DeleteKubeconfigRequest{Cluster: ctx.cluster}); err != nil {
 		return fmt.Errorf("error while deleting kubeconfig for cluster %s project %s : %w", ctx.GetClusterName(), ctx.projectName, err)
 	}
 
@@ -455,7 +451,7 @@ func deleteClusterData(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClien
 	}
 
 	log.Info().Msgf("Calling DeleteClusterMetadata on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
-	if _, err := kuber.DeleteClusterMetadata(c, &pb.DeleteClusterMetadataRequest{Cluster: ctx.cluster}); err != nil {
+	if _, err := kuber.DeleteClusterMetadata(kuberClient, &pb.DeleteClusterMetadataRequest{Cluster: ctx.cluster}); err != nil {
 		return fmt.Errorf("error while deleting metadata for cluster %s project %s : %w", ctx.GetClusterName(), ctx.projectName, err)
 	}
 	log.Info().Msgf("DeleteKubeconfig on Kuber for cluster %s project %s finished successfully", ctx.GetClusterName(), ctx.projectName)
