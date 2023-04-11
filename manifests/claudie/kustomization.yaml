@@ -27,7 +27,7 @@ images:
 - name: ghcr.io/berops/claudie/context-box
   newTag: 7a02632-1631
 - name: ghcr.io/berops/claudie/frontend
-  newTag: e1e8534-1637
+  newTag: ce726ff-1638
 - name: ghcr.io/berops/claudie/kube-eleven
   newTag: 7a02632-1631
 - name: ghcr.io/berops/claudie/kuber
@@ -35,4 +35,4 @@ images:
 - name: ghcr.io/berops/claudie/scheduler
   newTag: 7a02632-1631
 - name: ghcr.io/berops/claudie/terraformer
-  newTag: e1e8534-1637
+  newTag: ce726ff-1638
