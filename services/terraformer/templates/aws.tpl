@@ -164,20 +164,6 @@ resource "aws_instance" "{{ $node.Name }}" {
     delete_on_termination = true
     volume_type           = "gp2"
   }
-
-
-  {{- if not $nodepool.IsControl }}
-  ebs_block_device {
-    volume_size           = {{ $nodepool.DiskSize }}
-    volume_type           = "gp2"
-    delete_on_termination = true
-
-    tags = {
-      Name            = "{{ $node.Name }}-storage"
-      Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
-    }
-  }
-  {{- end }}
  
   user_data = <<EOF
 #!/bin/bash
@@ -198,6 +184,27 @@ fi
 {{- end }}
 EOF
 }
+
+{{- if not $nodepool.IsControl }}
+resource "aws_ebs_volume" "{{ $node.Name }}_volume" {
+  provider          = aws.k8s_nodepool_{{ $nodepool.Region }}
+  availability_zone = "{{ $nodepool.Zone }}"
+  size              = {{ $nodepool.DiskSize }}
+  type              = "gp2"
+
+  tags = {
+    Name            = "{{ $node.Name }}-storage"
+    Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
+  }
+}
+
+resource "aws_volume_attachment" "{{ $node.Name }}_volume_att" {
+  provider    = aws.k8s_nodepool_{{ $nodepool.Region }}
+  device_name = "/dev/sdh"
+  volume_id   = aws_ebs_volume.{{ $node.Name }}_volume.id
+  instance_id = aws_instance.{{ $node.Name }}.id
+}
+{{- end }}
 {{- end }}
 
 output  "{{ $nodepool.Name }}" {
