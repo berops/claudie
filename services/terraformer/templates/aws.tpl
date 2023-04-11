@@ -189,7 +189,7 @@ EOF
 resource "aws_ebs_volume" "{{ $node.Name }}_volume" {
   provider          = aws.k8s_nodepool_{{ $nodepool.Region }}
   availability_zone = "{{ $nodepool.Zone }}"
-  size              = {{ $nodepool.DiskSize }}
+  size              = {{ $nodepool.StorageDiskSize }}
   type              = "gp2"
 
   tags = {

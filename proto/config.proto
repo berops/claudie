@@ -76,7 +76,7 @@ message NodePool {
   string region = 2;
   string serverType = 3;
   string image = 4;
-  uint32 diskSize = 5;
+  uint32 storageDiskSize = 5;
   string zone = 6;
   int32 count = 7;
   repeated Node nodes = 8;

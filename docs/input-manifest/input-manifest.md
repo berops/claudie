@@ -236,7 +236,7 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
   
   Currently, only Ubuntu 22.04 AMD64 images are supported.
 
-- `diskSize`
+- `storageDiskSize`
 
   Size of the storage disk on the nodes in the nodepool in `GB`. The OS disk is created automatically with predefined size of `100GB` for kubernetes nodes and `30GB` for Loadbalancer nodes. Default value is `30`, minimum value is `30`. Value is used only for compute nodes.
 

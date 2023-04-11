@@ -40,7 +40,7 @@ nodePools:
       serverType: cpx11
       # OS image name.
       image: ubuntu-22.04
-      diskSize: 50
+      storageDiskSize: 50
 
     - name: compute-2-hetzner
       providerSpec:
@@ -55,7 +55,7 @@ nodePools:
       serverType: cpx11
       # OS image name.
       image: ubuntu-22.04
-      diskSize: 50
+      storageDiskSize: 50
 
 kubernetes:
   clusters:
@@ -128,7 +128,7 @@ nodePools:
       serverType: cpx11
       # OS image name.
       image: ubuntu-22.04
-      diskSize: 50
+      storageDiskSize: 50
 
     - name: compute-hetzner-2
       providerSpec:
@@ -143,7 +143,7 @@ nodePools:
       serverType: cpx11
       # OS image name.
       image: ubuntu-22.04
-      diskSize: 50
+      storageDiskSize: 50
 
 kubernetes:
   clusters:

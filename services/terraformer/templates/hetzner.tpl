@@ -104,7 +104,7 @@ EOF
 resource "hcloud_volume" "{{ $node.Name }}_volume" {
   provider  = hcloud.k8s_nodepool
   name      = "{{ $node.Name }}-volume"
-  size      = {{ $nodepool.DiskSize }}
+  size      = {{ $nodepool.StorageDiskSize }}
   server_id = hcloud_server.{{ $node.Name }}.id
   format    = "xfs"
 }

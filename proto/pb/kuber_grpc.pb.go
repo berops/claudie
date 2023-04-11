@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type KuberServiceClient interface {
-	// RemoveLbScrapeConfig removes scrape config for every LB detached to this cluster.
+	// RemoveLbScrapeConfig removes scrape config for every LB detached from this cluster.
 	RemoveLbScrapeConfig(ctx context.Context, in *RemoveLbScrapeConfigRequest, opts ...grpc.CallOption) (*RemoveLbScrapeConfigResponse, error)
 	// StoreLbScrapeConfig stores scrape config for every LB attached to this cluster.
 	StoreLbScrapeConfig(ctx context.Context, in *StoreLbScrapeConfigRequest, opts ...grpc.CallOption) (*StoreLbScrapeConfigResponse, error)
@@ -157,7 +157,7 @@ func (c *kuberServiceClient) DestroyClusterAutoscaler(ctx context.Context, in *D
 // All implementations must embed UnimplementedKuberServiceServer
 // for forward compatibility
 type KuberServiceServer interface {
-	// RemoveLbScrapeConfig removes scrape config for every LB detached to this cluster.
+	// RemoveLbScrapeConfig removes scrape config for every LB detached from this cluster.
 	RemoveLbScrapeConfig(context.Context, *RemoveLbScrapeConfigRequest) (*RemoveLbScrapeConfigResponse, error)
 	// StoreLbScrapeConfig stores scrape config for every LB attached to this cluster.
 	StoreLbScrapeConfig(context.Context, *StoreLbScrapeConfigRequest) (*StoreLbScrapeConfigResponse, error)

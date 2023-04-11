@@ -234,7 +234,7 @@ resource "azurerm_managed_disk" "{{ $node.Name }}_disk" {
   resource_group_name  = azurerm_resource_group.rg_{{ $sanitisedRegion }}.name
   storage_account_type = "StandardSSD_LRS"
   create_option        = "Empty"
-  disk_size_gb         = {{ $nodepool.DiskSize }} 
+  disk_size_gb         = {{ $nodepool.StorageDiskSize }} 
 
   tags = {
     managed-by      = "Claudie"

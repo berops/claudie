@@ -194,7 +194,7 @@ resource "oci_core_volume" "{{ $node.Name }}_volume" {
   provider            = oci.k8s_nodepool_{{ $nodepool.Region }}
   compartment_id      = var.default_compartment_id
   availability_domain = "{{ $nodepool.Zone }}"
-  size_in_gbs         = "{{ $nodepool.DiskSize }}"
+  size_in_gbs         = "{{ $nodepool.StorageDiskSize }}"
   display_name        = "{{ $node.Name }}-volume"
   vpus_per_gb         = 10
 

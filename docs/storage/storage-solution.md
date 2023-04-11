@@ -6,7 +6,7 @@ Running stateful workloads is a complex task, even more so when considering the 
 
 Claudie orchestrates storage on the kubernetes cluster nodes by creating one "storage cluster" across multiple providers. This "storage cluster" has a series of `zones`, one for each cloud provider instance. Each `zone` then stores its own persistent volume data.
 
-This concept is translated into longhorn implementation, where each `zone` is represented by a Storage Class which is backed up by the nodes defined under the same cloud provider instance. Furthermore, each node uses separate disk to the one, where OS is installed, to assure clear data separation. The size of the storage disk can be configured in `diskSize` field of the nodepool specification.
+This concept is translated into longhorn implementation, where each `zone` is represented by a Storage Class which is backed up by the nodes defined under the same cloud provider instance. Furthermore, each node uses separate disk to the one, where OS is installed, to assure clear data separation. The size of the storage disk can be configured in `storageDiskSize` field of the nodepool specification.
 
 ## Longhorn
 

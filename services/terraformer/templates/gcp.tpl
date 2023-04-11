@@ -107,7 +107,7 @@ resource "google_compute_disk" "{{ $node.Name }}_disk" {
   name     = "{{ $node.Name }}-disk"
   type     = "pd-ssd"
   zone     = "{{ $nodepool.Zone }}"
-  size     = {{ $nodepool.DiskSize }}
+  size     = {{ $nodepool.StorageDiskSize }}
 
   labels = {
     managed-by = "claudie"

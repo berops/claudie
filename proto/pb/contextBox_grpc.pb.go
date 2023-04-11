@@ -37,7 +37,7 @@ type ContextBoxServiceClient interface {
 	// GetAllConfigs gets all configs from the database.
 	GetAllConfigs(ctx context.Context, in *GetAllConfigsRequest, opts ...grpc.CallOption) (*GetAllConfigsResponse, error)
 	// DeleteConfig sets the manifest to null, effectively forcing the deletion of the infrastructure
-	// defined by the manifest on the very next config (diff-) check.
+	// defined by the manifest on the very next config (diff) check.
 	DeleteConfig(ctx context.Context, in *DeleteConfigRequest, opts ...grpc.CallOption) (*DeleteConfigResponse, error)
 	// DeleteConfigFromDB deletes the config from the database.
 	DeleteConfigFromDB(ctx context.Context, in *DeleteConfigRequest, opts ...grpc.CallOption) (*DeleteConfigResponse, error)
@@ -162,7 +162,7 @@ type ContextBoxServiceServer interface {
 	// GetAllConfigs gets all configs from the database.
 	GetAllConfigs(context.Context, *GetAllConfigsRequest) (*GetAllConfigsResponse, error)
 	// DeleteConfig sets the manifest to null, effectively forcing the deletion of the infrastructure
-	// defined by the manifest on the very next config (diff-) check.
+	// defined by the manifest on the very next config (diff) check.
 	DeleteConfig(context.Context, *DeleteConfigRequest) (*DeleteConfigResponse, error)
 	// DeleteConfigFromDB deletes the config from the database.
 	DeleteConfigFromDB(context.Context, *DeleteConfigRequest) (*DeleteConfigResponse, error)

@@ -145,8 +145,8 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 			}
 
 			// Set default disk size if not defined. (Value only used in compute nodepools)
-			if nodePool.DiskSize == 0 {
-				nodePool.DiskSize = defaultDiskSize
+			if nodePool.StorageDiskSize == 0 {
+				nodePool.StorageDiskSize = defaultDiskSize
 			}
 
 			nodePools = append(nodePools, &pb.NodePool{
@@ -155,7 +155,7 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 				Zone:             nodePool.ProviderSpec.Zone,
 				ServerType:       nodePool.ServerType,
 				Image:            nodePool.Image,
-				DiskSize:         uint32(nodePool.DiskSize),
+				StorageDiskSize:  uint32(nodePool.StorageDiskSize),
 				Count:            count,
 				Provider:         provider,
 				IsControl:        isControl,
