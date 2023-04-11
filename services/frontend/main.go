@@ -45,7 +45,7 @@ func run() error {
 	}
 
 	usecases := &usecases.Usecases{
-		ContextBoxGrpcClient: contextBoxConnector.GrpcClient,
+		ContextBox: contextBoxConnector,
 	}
 
 	k8sSidecarNotificationsReceiver, err := inboundAdapters.NewK8sSidecarNotificationsReceiver(usecases)

@@ -12,10 +12,7 @@ import (
 
 	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/proto/pb"
-	cbox "github.com/berops/claudie/services/context-box/client"
 )
-
-// TODO: Decouple context-box gRPC client (cbox) from ProcessManifestFiles which contains the business logic
 
 // ProcessManifestFiles processes the manifest files concurrently. If an error occurs while the file
 // is being processed, it's skipped and the function continues with the next one until all files are
@@ -28,13 +25,12 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 		return fmt.Errorf("Failed to read manifest files from dir %q: %w", manifestDir, err)
 	}
 
-	response, err := cbox.GetAllConfigs(u.ContextBoxGrpcClient)
+	configs, err := u.ContextBox.GetAllConfigs()
 	if err != nil {
 		return fmt.Errorf("Failed to retrieve manifests details from context-box: %w", err)
 	}
-	configList := response.GetConfigs()
 
-	log.Debug().Msgf("%d configs present in database | %d configs in %v", len(configList), len(manifestFiles), manifestDir)
+	log.Debug().Msgf("%d configs present in database | %d configs in %v", len(configs), len(manifestFiles), manifestDir)
 
 	manifestProcessingResultsChan := make(chan *ManifestProcessingResult, len(manifestFiles))
 
@@ -92,14 +88,12 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 			continue
 		}
 
-		configList = removeConfig(configList, manifestProcessingResult.manifestName)
+		configs = removeConfig(configs, manifestProcessingResult.manifestName)
 
-		_, err = cbox.SaveConfigFrontEnd(u.ContextBoxGrpcClient,
-			&pb.SaveConfigRequest{
-				Config: &pb.Config{
-					Name:     manifestProcessingResult.manifestName,
-					Manifest: string(manifestProcessingResult.rawManifestData),
-				},
+		err = u.ContextBox.SaveConfig(
+			&pb.Config{
+				Name:     manifestProcessingResult.manifestName,
+				Manifest: string(manifestProcessingResult.rawManifestData),
 			},
 		)
 		if err != nil {
@@ -114,7 +108,7 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 	// to avoid having multiple go-routines deleting the same configs from MongoDB (of contextBox microservice).
 	var threadSafeMap sync.Map
 
-	for _, config := range configList {
+	for _, config := range configs {
 		if _, isConfigBeingDeleted := threadSafeMap.Load(config.Id); isConfigBeingDeleted {
 			continue
 		}
@@ -124,12 +118,7 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 		go func(config *pb.Config) {
 			log.Info().Msgf("Deleting config %v from context-box DB", config.Id)
 
-			err := cbox.DeleteConfig(u.ContextBoxGrpcClient,
-				&pb.DeleteConfigRequest{
-					Id:   config.Id,
-					Type: pb.IdType_HASH,
-				},
-			)
+			err := u.ContextBox.DeleteConfig(config.Id)
 			if err != nil {
 				log.Error().Msgf("Failed to delete config %s of manifest %s : %v", config.Id, config.Name, err)
 			}
@@ -143,18 +132,18 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 }
 
 // removeConfig filters out the config representing the manifest with
-// the specified name from the configList slice. If not present the original slice is
+// the specified name from the configs slice. If not present the original slice is
 // returned.
-func removeConfig(configList []*pb.Config, manifestName string) []*pb.Config {
+func removeConfig(configs []*pb.Config, manifestName string) []*pb.Config {
 
-	for index, config := range configList {
+	for index, config := range configs {
 		if config.Name == manifestName {
-			configList = append(configList[0:index], configList[index+1:]...)
+			configs = append(configs[0:index], configs[index+1:]...)
 			break
 		}
 	}
 
-	return configList
+	return configs
 }
 
 type ManifestProcessingResult struct {

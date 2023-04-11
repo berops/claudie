@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/berops/claudie/proto/pb"
+	cbox "github.com/berops/claudie/services/context-box/client"
 )
 
 // communicates with the gRPC server of context-box microservice
@@ -66,6 +67,33 @@ func (c *ContextBoxConnector) PerformHealthCheck() error {
 	}
 
 	return nil
+}
+
+func (c *ContextBoxConnector) GetAllConfigs() ([]*pb.Config, error) {
+
+	response, err := cbox.GetAllConfigs(c.GrpcClient)
+	if err != nil {
+		return []*pb.Config{}, err
+	}
+
+	return response.GetConfigs(), nil
+}
+
+func (c *ContextBoxConnector) SaveConfig(config *pb.Config) error {
+
+	_, err := cbox.SaveConfigFrontEnd(c.GrpcClient, &pb.SaveConfigRequest{Config: config})
+	return err
+}
+
+func (c *ContextBoxConnector) DeleteConfig(id string) error {
+
+	err := cbox.DeleteConfig(c.GrpcClient,
+		&pb.DeleteConfigRequest{
+			Id:   id,
+			Type: pb.IdType_HASH,
+		},
+	)
+	return err
 }
 
 func (c *ContextBoxConnector) Disconnect() error {
