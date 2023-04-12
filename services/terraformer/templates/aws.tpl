@@ -167,6 +167,7 @@ resource "aws_instance" "{{ $node.Name }}" {
  
   user_data = <<EOF
 #!/bin/bash
+set -euxo pipefail
 # Allow ssh connection for root
 sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
 cat /root/.ssh/temp > /root/.ssh/authorized_keys
@@ -175,11 +176,26 @@ echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyA
 
 {{- if not $nodepool.IsControl }}
 # Mount EBS volume only when not mounted yet
-if ! grep -qs "/dev/nvme1n1" /proc/mounts; then
-  mkdir -p /opt/claudie/data
-  mkfs.xfs /dev/nvme1n1
-  mount /dev/nvme1n1 /opt/claudie/data
-  echo "/dev/nvme1n1 /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
+apt install -y jq
+# Sleep for 50s so disk gets attached by terraform
+sleep 50
+lsblk -o +SERIAL --json
+ID=${replace("${aws_ebs_volume.{{ $node.Name }}_volume.id}", "-", "")}
+disk=$(lsblk -o +SERIAL --json | jq -r --arg vol_id "$ID" '.blockdevices[] | select(.serial == $vol_id) | .name')
+# Check if mounted already.
+set +e
+mount_point=$(mount | grep /dev/$disk | awk '{print $3}')
+set -e
+if ! [ -n "$mount_point" ]; then
+  # Check if formatted already.
+  if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
+    mkfs.xfs /dev/$disk
+  fi
+  # Mount the disks.
+  mount_point="/opt/claudie/data"
+  mkdir -p $mount_point
+  mount /dev/$disk $mount_point
+  echo "/dev/$disk $mount_point xfs defaults 0 0" >> /etc/fstab
 fi
 {{- end }}
 EOF

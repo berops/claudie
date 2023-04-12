@@ -197,25 +197,31 @@ resource "azurerm_virtual_machine_extension" "{{ $node.Name }}_{{ $clusterHash }
   type_handler_version = "2.0"
 
   protected_settings = <<PROT
-  {
-      "script": "${base64encode(<<EOF
-      # Allow ssh as root
-      sudo sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
-      sudo cat /root/.ssh/temp > /root/.ssh/authorized_keys
-      sudo rm /root/.ssh/temp
-      sudo echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config && service sshd restart
-      
-      {{- if not $nodepool.IsControl }}
-      # Mount managed disk only when not mounted yet
-      if ! grep -qs "/dev/sdc" /proc/mounts; then
-        mkdir -p /opt/claudie/data
-        mkfs.xfs /dev/sdc
-        mount /dev/sdc /opt/claudie/data
-        echo "/dev/sdc /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
-      fi
-      {{- end }}
-      EOF
-      )}"
+  {      
+  "script": "${base64encode(<<EOF
+#!/bin/bash
+set -euxo pipefail
+
+# Allow ssh as root
+sudo sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
+sudo cat /root/.ssh/temp > /root/.ssh/authorized_keys
+sudo rm /root/.ssh/temp
+sudo echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config && service sshd restart
+{{- if not $nodepool.IsControl }}
+# Mount managed disk only when not mounted yet
+disk=$(ls -l /dev/disk/by-path | grep "lun-${azurerm_virtual_machine_data_disk_attachment.{{ $node.Name }}_disk_att.lun}" | awk '{print $NF}')
+disk=$(basename "$disk")
+if ! grep -qs "/dev/$disk" /proc/mounts; then
+  mkdir -p /opt/claudie/data
+  if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
+    mkfs.xfs /dev/$disk
+  fi
+  mount /dev/$disk /opt/claudie/data
+  echo "/dev/$disk /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
+fi
+{{- end }}
+EOF
+)}"
   }
 PROT
 
@@ -246,7 +252,7 @@ resource "azurerm_virtual_machine_data_disk_attachment" "{{ $node.Name }}_disk_a
   provider           = azurerm.k8s_nodepool
   managed_disk_id    = azurerm_managed_disk.{{ $node.Name }}_disk.id
   virtual_machine_id = azurerm_linux_virtual_machine.{{ $node.Name }}.id
-  lun                = "10"
+  lun                = "1"
   caching            = "ReadWrite"
 }
 {{- end }}
