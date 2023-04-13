@@ -53,6 +53,10 @@ type server struct {
 
 	// done indicates that the server is in shutdown.
 	done chan struct{}
+
+	// inProgress are configs that are being tracked for their current workflow state
+	// to provide more friendly logs in the service.
+	inProgress sync.Map
 }
 
 func newServer(manifestDir string, service string) (*server, error) {
@@ -163,9 +167,6 @@ func (s *server) watchConfigs(logger zerolog.Logger) {
 
 	ticker := time.NewTicker(10 * time.Second)
 
-	// keep track of which configs are done so we don't endlessly print the status.
-	inProgress := make(map[string]*pb.Config)
-
 	resp, err := s.cBox.GetAllConfigs(context.Background(), &pb.GetAllConfigsRequest{})
 	if err != nil {
 		logger.Error().Msgf("failed to retrieve configs from contextbox: %s", err)
@@ -174,7 +175,7 @@ func (s *server) watchConfigs(logger zerolog.Logger) {
 	for _, cfg := range resp.GetConfigs() {
 		for cluster, wf := range cfg.State {
 			if wf.Status == pb.Workflow_ERROR || wf.Status == pb.Workflow_DONE {
-				inProgress[cluster] = cfg
+				s.inProgress.Store(cluster, cfg)
 			}
 		}
 	}
@@ -184,38 +185,47 @@ func (s *server) watchConfigs(logger zerolog.Logger) {
 		case <-s.done:
 			return
 		case <-ticker.C:
-			resp, err := s.cBox.GetAllConfigs(context.Background(), &pb.GetAllConfigsRequest{})
+			resp, err = s.cBox.GetAllConfigs(context.Background(), &pb.GetAllConfigsRequest{})
 			if err != nil {
 				logger.Error().Msgf("failed to retrieve configs from contextbox: %s", err)
 				break
 			}
 
-			if len(resp.GetConfigs()) == 0 && len(inProgress) > 0 {
-				for cluster, cfg := range inProgress {
-					logger.Info().Msgf("Config: %s - cluster %s has been deleted", cfg.Name, cluster)
-					delete(inProgress, cluster)
+			// find configs that have been deleted from the DB.
+			s.inProgress.Range(func(key, value any) bool {
+				cluster := key.(string)
+				cfg := value.(*pb.Config)
+
+				for _, config := range resp.GetConfigs() {
+					if config.Name == cfg.Name {
+						return true // continue
+					}
 				}
-			}
+
+				s.inProgress.Delete(cluster)
+				logger.Info().Msgf("Config: %s - cluster %s has been deleted", cfg.Name, cluster)
+				return true
+			})
 
 			for _, config := range resp.GetConfigs() {
 				for cluster, wf := range config.State {
-					_, ok := inProgress[cluster]
+					_, ok := s.inProgress.Load(cluster)
 					if wf.Status == pb.Workflow_ERROR {
 						if ok {
-							delete(inProgress, cluster)
+							s.inProgress.Delete(cluster)
 							logger.Error().Msgf("workflow failed for cluster %s:%s", cluster, wf.Description)
 						}
 						continue
 					}
 					if wf.Status == pb.Workflow_DONE {
 						if ok {
-							delete(inProgress, cluster)
+							s.inProgress.Delete(cluster)
 							logger.Info().Msgf("workflow finished for cluster %s", cluster)
 						}
 						continue
 					}
 
-					inProgress[cluster] = config
+					s.inProgress.Store(cluster, config)
 
 					builder := new(strings.Builder)
 					builder.WriteString(fmt.Sprintf("cluster %s currently in stage %s with status %s", cluster, wf.Stage.String(), wf.Status.String()))

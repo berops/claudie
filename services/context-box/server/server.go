@@ -191,7 +191,7 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 	if err != nil {
 		return nil, err
 	}
-	log.Info().Msgf("Config %s is successfully deleted", req.Id)
+	log.Info().Msgf("Deletion for config %s will start shortly", req.Id)
 	return &pb.DeleteConfigResponse{Id: req.GetId()}, nil
 }
 
