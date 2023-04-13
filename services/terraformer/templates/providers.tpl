@@ -3,7 +3,7 @@ terraform {
     {{- if .Hetzner }}
     hcloud = {
       source  = "hetznercloud/hcloud"
-      version = "1.37.0"
+      version = "1.38.1"
     }
     {{- end }}
     {{- if .Gcp }}
