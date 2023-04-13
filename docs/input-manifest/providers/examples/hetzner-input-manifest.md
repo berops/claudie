@@ -24,8 +24,8 @@ nodePools:
       count: 1
       # Machine type name.
       serverType: cpx11
-      # OS image name.
-      image: ubuntu-22.04
+      # OS image ID for ubuntu-22.04.
+      image: "67794396"
       diskSize: 50
 
     - name: compute-1-hetzner
@@ -39,8 +39,8 @@ nodePools:
       count: 2
       # Machine type name.
       serverType: cpx11
-      # OS image name.
-      image: ubuntu-22.04
+      # OS image ID for ubuntu-22.04.
+      image: "67794396"
       diskSize: 50
 
     - name: compute-2-hetzner
@@ -54,8 +54,8 @@ nodePools:
       count: 2
       # Machine type name.
       serverType: cpx11
-      # OS image name.
-      image: ubuntu-22.04
+      # OS image ID for ubuntu-22.04.
+      image: "67794396"
       diskSize: 50
 
 kubernetes:
@@ -99,8 +99,8 @@ nodePools:
       count: 1
       # Machine type name.
       serverType: cpx11
-      # OS image name.
-      image: ubuntu-22.04
+      # OS image ID for ubuntu-22.04.
+      image: "67794396"
       diskSize: 50
 
     - name: control-hetzner-2
@@ -114,8 +114,8 @@ nodePools:
       count: 2
       # Machine type name.
       serverType: cpx11
-      # OS image name.
-      image: ubuntu-22.04
+      # OS image ID for ubuntu-22.04.
+      image: "67794396"
       diskSize: 50
 
     - name: compute-hetzner-1
@@ -129,8 +129,8 @@ nodePools:
       count: 2
       # Machine type name.
       serverType: cpx11
-      # OS image name.
-      image: ubuntu-22.04
+      # OS image ID for ubuntu-22.04.
+      image: "67794396"
       diskSize: 50
 
     - name: compute-hetzner-2
@@ -144,8 +144,8 @@ nodePools:
       count: 2
       # Machine type name.
       serverType: cpx11
-      # OS image name.
-      image: ubuntu-22.04
+      # OS image ID for ubuntu-22.04.
+      image: "67794396"
       diskSize: 50
 
 kubernetes:

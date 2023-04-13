@@ -36,7 +36,7 @@ nodePools:
         zone: hel1-dc2
       count: 1
       serverType: cpx11
-      image: ubuntu-22.04
+      image: "67794396"
       diskSize: 50
     - name: hetzner-compute
       providerSpec:
@@ -45,7 +45,7 @@ nodePools:
         zone: nbg1-dc3
       count: 1
       serverType: cpx11
-      image: ubuntu-22.04
+      image: "67794396"
       diskSize: 50
 
     - name: oci-control
@@ -89,7 +89,7 @@ nodePools:
         zone: nbg1-dc3
       count: 2
       serverType: cpx11
-      image: ubuntu-22.04
+      image: "67794396"
       diskSize: 50
 
     - name: oci-lb
