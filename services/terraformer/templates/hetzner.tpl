@@ -87,14 +87,19 @@ resource "hcloud_server" "{{ $node.Name }}" {
   }
 
 {{- if not $nodepool.IsControl }}
-  user_data = <<-EOF
+  user_data = <<EOF
 #!/bin/bash
 # Mount volume only when not mounted yet
-if ! grep -qs "/dev/sdb" /proc/mounts; then
+sleep 50
+disk=$(ls -l /dev/disk/by-id | grep "${hcloud_volume.{{ $node.Name }}_volume.id}" | awk '{print $NF}')
+disk=$(basename "$disk")
+if ! grep -qs "/dev/$disk" /proc/mounts; then
   mkdir -p /opt/claudie/data
-  mkfs.xfs /dev/sdb
-  mount /dev/sdb /opt/claudie/data
-  echo "/dev/sdb /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
+  if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
+    mkfs.xfs /dev/$disk
+  fi
+  mount /dev/$disk /opt/claudie/data
+  echo "/dev/$disk /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
 fi
 EOF
 {{- end }}
@@ -105,8 +110,14 @@ resource "hcloud_volume" "{{ $node.Name }}_volume" {
   provider  = hcloud.k8s_nodepool
   name      = "{{ $node.Name }}-volume"
   size      = {{ $nodepool.StorageDiskSize }}
-  server_id = hcloud_server.{{ $node.Name }}.id
   format    = "xfs"
+  location = "{{ $nodepool.Region }}"
+}
+
+resource "hcloud_volume_attachment" "{{ $node.Name }}_volume_att" {
+  volume_id = hcloud_volume.{{ $node.Name }}_volume.id
+  server_id = hcloud_server.{{ $node.Name }}.id
+  automount = false
 }
 {{- end }}
 {{- end }}
