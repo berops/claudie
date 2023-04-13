@@ -81,16 +81,23 @@ resource "google_compute_instance" "{{ $node.Name }}" {
     ssh-keys = "root:${file("./public.pem")}"
   }
   metadata_startup_script = <<EOF
+  #!/bin/bash
+  set -euxo pipefail
 # Allow ssh as root
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart
 
 {{- if not $nodepool.IsControl }}
 # Mount managed disk only when not mounted yet
-if ! grep -qs "/dev/sdb" /proc/mounts; then
+sleep 50
+disk=$(ls -l /dev/disk/by-id | grep "google-${var.storage_disk_name}" | awk '{print $NF}')
+disk=$(basename "$disk")
+if ! grep -qs "/dev/$disk" /proc/mounts; then
   mkdir -p /opt/claudie/data
-  mkfs.xfs /dev/sdb
-  mount /dev/sdb /opt/claudie/data
-  echo "/dev/sdb /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
+  if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
+    mkfs.xfs /dev/$disk
+  fi
+  mount /dev/$disk /opt/claudie/data
+  echo "/dev/$disk /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
 fi
 {{- end }}
 EOF
@@ -102,6 +109,11 @@ EOF
 }
 
 {{- if not $nodepool.IsControl }}
+variable "storage_disk_name" {
+  default = "storage-disk"
+  type    = string
+}
+
 resource "google_compute_disk" "{{ $node.Name }}_disk" {
   provider = google.k8s_nodepool_{{ $nodepool.Region }}
   name     = "{{ $node.Name }}-disk"
@@ -120,6 +132,7 @@ resource "google_compute_attached_disk" "{{ $node.Name }}_disk_att" {
   disk        = google_compute_disk.{{ $node.Name }}_disk.id
   instance    = google_compute_instance.{{ $node.Name }}.id
   zone        = "{{ $nodepool.Zone }}"
+  device_name = var.storage_disk_name
 }
 {{- end }}
 {{- end }}
