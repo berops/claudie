@@ -173,29 +173,18 @@ sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
 cat /root/.ssh/temp > /root/.ssh/authorized_keys
 rm /root/.ssh/temp
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config && service sshd restart
-
 {{- if not $nodepool.IsControl }}
 # Mount EBS volume only when not mounted yet
-apt install -y jq
-# Sleep for 50s so disk gets attached by terraform
 sleep 50
-lsblk -o +SERIAL --json
-ID=${replace("${aws_ebs_volume.{{ $node.Name }}_volume.id}", "-", "")}
-disk=$(lsblk -o +SERIAL --json | jq -r --arg vol_id "$ID" '.blockdevices[] | select(.serial == $vol_id) | .name')
-# Check if mounted already.
-set +e
-mount_point=$(mount | grep /dev/$disk | awk '{print $3}')
-set -e
-if ! [ -n "$mount_point" ]; then
-  # Check if formatted already.
+disk=$(ls -l /dev/disk/by-id | grep "${replace("${aws_ebs_volume.{{ $node.Name }}_volume.id}", "-", "")}" | awk '{print $NF}')
+disk=$(basename "$disk")
+if ! grep -qs "/dev/$disk" /proc/mounts; then
+  mkdir -p /opt/claudie/data
   if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
     mkfs.xfs /dev/$disk
   fi
-  # Mount the disks.
-  mount_point="/opt/claudie/data"
-  mkdir -p $mount_point
-  mount /dev/$disk $mount_point
-  echo "/dev/$disk $mount_point xfs defaults 0 0" >> /etc/fstab
+  mount /dev/$disk /opt/claudie/data
+  echo "/dev/$disk /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
 fi
 {{- end }}
 EOF
