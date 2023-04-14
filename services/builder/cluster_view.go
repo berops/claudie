@@ -21,10 +21,14 @@ type ClusterView struct {
 
 	// DeletedLoadbalancers are the loadbalancers that will be deleted (present in the current state but missing in the desired state)
 	DeletedLoadbalancers map[string][]*pb.LBcluster
+
+	// ClusterWorkflows is additional information per-cluster workflow (current stage of execution, if any error occurred etc..)
+	ClusterWorkflows map[string]*pb.Workflow
 }
 
 func NewClusterView(config *pb.Config) *ClusterView {
 	var (
+		clusterWorkflows     = make(map[string]*pb.Workflow)
 		clusters             = make(map[string]*pb.K8Scluster)
 		desiredClusters      = make(map[string]*pb.K8Scluster)
 		loadbalancers        = make(map[string][]*pb.LBcluster)
@@ -34,10 +38,22 @@ func NewClusterView(config *pb.Config) *ClusterView {
 
 	for _, current := range config.CurrentState.Clusters {
 		clusters[current.ClusterInfo.Name] = current
+
+		// store the cluster name with default workflow state.
+		clusterWorkflows[current.ClusterInfo.Name] = &pb.Workflow{
+			Stage:  pb.Workflow_NONE,
+			Status: pb.Workflow_IN_PROGRESS,
+		}
 	}
 
 	for _, desired := range config.DesiredState.Clusters {
 		desiredClusters[desired.ClusterInfo.Name] = desired
+
+		// store the cluster name with default workflow state.
+		clusterWorkflows[desired.ClusterInfo.Name] = &pb.Workflow{
+			Stage:  pb.Workflow_NONE,
+			Status: pb.Workflow_IN_PROGRESS,
+		}
 	}
 
 	for _, current := range config.CurrentState.LoadBalancerClusters {
@@ -64,11 +80,14 @@ Lb:
 		Loadbalancers:        loadbalancers,
 		DesiredLoadbalancers: desiredLoadbalancers,
 		DeletedLoadbalancers: deletedLoadbalancers,
+		ClusterWorkflows:     clusterWorkflows,
 	}
 }
 
 // MergeChanges propagates the changes made back to the config.
 func (view *ClusterView) MergeChanges(config *pb.Config) {
+	config.State = view.ClusterWorkflows
+
 	for i, current := range config.CurrentState.Clusters {
 		if updated, ok := view.CurrentClusters[current.ClusterInfo.Name]; ok {
 			config.CurrentState.Clusters[i] = updated
@@ -108,6 +127,10 @@ func (view *ClusterView) UpdateFromBuild(ctx *BuilderContext) {
 
 	if ctx.desiredCluster != nil {
 		view.DesiredClusters[ctx.desiredCluster.ClusterInfo.Name] = ctx.desiredCluster
+	}
+
+	if ctx.Workflow != nil {
+		view.ClusterWorkflows[ctx.GetClusterName()] = ctx.Workflow
 	}
 
 	for _, current := range ctx.loadbalancers {
@@ -157,4 +180,15 @@ func (view *ClusterView) AllClusters() []string {
 	}
 
 	return c
+}
+
+func (view *ClusterView) SetWorkflowError(clusterName string, err error) {
+	view.ClusterWorkflows[clusterName].Status = pb.Workflow_ERROR
+	view.ClusterWorkflows[clusterName].Description = err.Error()
+}
+
+func (view *ClusterView) SetWorkflowDone(clusterName string) {
+	view.ClusterWorkflows[clusterName].Status = pb.Workflow_DONE
+	view.ClusterWorkflows[clusterName].Stage = pb.Workflow_NONE
+	view.ClusterWorkflows[clusterName].Description = ""
 }
