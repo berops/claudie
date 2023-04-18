@@ -27,7 +27,7 @@ images:
 - name: ghcr.io/berops/claudie/context-box
   newTag: 280dd8c-1653
 - name: ghcr.io/berops/claudie/frontend
-  newTag: 280dd8c-1653
+  newTag: a5b7378-1655
 - name: ghcr.io/berops/claudie/kube-eleven
   newTag: 280dd8c-1653
 - name: ghcr.io/berops/claudie/kuber
