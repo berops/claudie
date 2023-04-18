@@ -84,7 +84,8 @@ func (s *server) processConfigs() error {
 
 	// Collect data from files with no error.
 	for data := range dataChan {
-		configs.Configs = remove(configs.Configs, data.manifest.Name)
+		var removed bool
+		configs.Configs, removed = remove(configs.Configs, data.manifest.Name)
 
 		if data.err != nil {
 			log.Error().Msgf("Skipping over file %v due to error : %v", data.path, data.err)
@@ -103,10 +104,12 @@ func (s *server) processConfigs() error {
 
 		log.Info().Msgf("File %s has been saved to the database", data.path)
 
-		// keep progress of the stored config.
-		for _, cluster := range data.manifest.Kubernetes.Clusters {
-			if _, ok := s.inProgress.Load(cluster.Name); !ok {
-				s.inProgress.Store(cluster.Name, cfg)
+		// if the config is not in the DB we start to track it.
+		if !removed {
+			for _, cluster := range data.manifest.Kubernetes.Clusters {
+				if _, ok := s.inProgress.Load(cluster.Name); !ok {
+					s.inProgress.Store(cluster.Name, cfg)
+				}
 			}
 		}
 	}
@@ -139,13 +142,12 @@ func (s *server) processConfigs() error {
 
 // remove deletes the config with the specified name from the slice.
 // If not present the original slice is returned.
-func remove(configs []*pb.Config, configName string) []*pb.Config {
+func remove(configs []*pb.Config, configName string) ([]*pb.Config, bool) {
 	for index, config := range configs {
 		if config.Name == configName {
 			configs = append(configs[0:index], configs[index+1:]...)
-			break
+			return configs, true
 		}
 	}
-
-	return configs
+	return configs, false
 }
