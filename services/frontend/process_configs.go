@@ -104,11 +104,12 @@ func (s *server) processConfigs() error {
 
 		log.Info().Msgf("File %s has been saved to the database", data.path)
 
-		// keep progress of the stored config.
-		for _, cluster := range data.manifest.Kubernetes.Clusters {
-			// if the config is not in the DB we start to track it.
-			if _, ok := s.inProgress.Load(cluster.Name); !ok && !removed {
-				s.inProgress.Store(cluster.Name, cfg)
+		// if the config is not in the DB we start to track it.
+		if !removed {
+			for _, cluster := range data.manifest.Kubernetes.Clusters {
+				if _, ok := s.inProgress.Load(cluster.Name); !ok {
+					s.inProgress.Store(cluster.Name, cfg)
+				}
 			}
 		}
 	}
