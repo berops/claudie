@@ -88,9 +88,12 @@ echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyA
 # Mount managed disk only when not mounted yet
 if ! grep -qs "/dev/sdb" /proc/mounts; then
   mkdir -p /opt/claudie/data
-  mkfs.xfs /dev/sdb
-  mount /dev/sdb /opt/claudie/data
-  echo "/dev/sdb /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
+  # turns out this can be whatever we want it to be.
+  # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_attached_disk#device_name
+  DISK="/dev/disk/by-id/google-{{ $node.Name }}"
+  mkfs.xfs "$DISK" || return
+  mount "$DISK" /opt/claudie/data
+  echo "$DISK /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
 fi
 {{- end }}
 EOF
@@ -120,6 +123,7 @@ resource "google_compute_attached_disk" "{{ $node.Name }}_disk_att" {
   disk        = google_compute_disk.{{ $node.Name }}_disk.id
   instance    = google_compute_instance.{{ $node.Name }}.id
   zone        = "{{ $nodepool.Zone }}"
+  device_name = "{{ $node.Name }}"
 }
 {{- end }}
 {{- end }}
