@@ -32,11 +32,19 @@ type K8sSidecarNotificationsReceiver struct {
 	waitGroup sync.WaitGroup
 }
 
+// NewK8sSidecarNotificationsReceiver creates an instance of the K8sSidecarNotificationsReceiver struct.
+// It registers the notification handling route to the underlying HTTP server.
+// Then performs an initial healthcheck of K8sSidecarNotificationsReceiver.
 func NewK8sSidecarNotificationsReceiver(usecases *usecases.Usecases) (*K8sSidecarNotificationsReceiver, error) {
+
+	manifestDir, isEnvFound := os.LookupEnv("MANIFEST_DIR")
+	if !isEnvFound {
+		return nil, fmt.Errorf("env MANIFES_DIR not found")
+	}
 
 	k8sSidecarNotificationsReceiver := &K8sSidecarNotificationsReceiver{
 
-		manifestDir: os.Getenv("MANIFEST_DIR"),
+		manifestDir: manifestDir,
 		usecases:    usecases,
 
 		server: &http.Server{ReadHeaderTimeout: 2 * time.Second},
@@ -47,6 +55,8 @@ func NewK8sSidecarNotificationsReceiver(usecases *usecases.Usecases) (*K8sSideca
 	return k8sSidecarNotificationsReceiver, k8sSidecarNotificationsReceiver.PerformHealthCheck()
 }
 
+// registerNotificationHandlers registers a router to the underlying HTTP server.
+// The router contains a route ("/reload") that handles incoming notifications from the K8s-sidecar.
 func (k *K8sSidecarNotificationsReceiver) registerNotificationHandlers() {
 
 	var router *http.ServeMux = http.NewServeMux()
@@ -57,12 +67,16 @@ func (k *K8sSidecarNotificationsReceiver) registerNotificationHandlers() {
 	k.server.Handler = router
 }
 
+// Start receiving notifications sent by the K8s sidecar.
+// The underlying HTTP server is started.
 func (k *K8sSidecarNotificationsReceiver) Start(host string, port int) error {
 	k.server.Addr = net.JoinHostPort(host, fmt.Sprint(port))
 
 	return k.server.ListenAndServe()
 }
 
+// Performs a healthcheck for K8sSidecarNotificationsReceiver.
+// Checks whether the provided manifest directory exists or not.
 func (k *K8sSidecarNotificationsReceiver) PerformHealthCheck() error {
 	if _, err := os.Stat(k.manifestDir); os.IsNotExist(err) {
 		return fmt.Errorf("Manifest directory %v doesn't exist: %w", k.manifestDir, err)
@@ -71,6 +85,8 @@ func (k *K8sSidecarNotificationsReceiver) PerformHealthCheck() error {
 	return nil
 }
 
+// Stop receiving notifications sent by the K8s sidecar.
+// The underlying HTTP server is stopped.
 func (k *K8sSidecarNotificationsReceiver) Stop() error {
 
 	// First shutdown the HTTP server to block any incoming notifications.

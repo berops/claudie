@@ -14,7 +14,7 @@ import (
 	cbox "github.com/berops/claudie/services/context-box/client"
 )
 
-// communicates with the gRPC server of context-box microservice
+// Communicates with the gRPC server of context-box microservice
 type ContextBoxConnector struct {
 	connectionUri string
 
@@ -25,15 +25,18 @@ type ContextBoxConnector struct {
 	GrpcClient pb.ContextBoxServiceClient
 }
 
+// Creates and returns an instance of the ContextBoxConnector struct
 func NewContextBoxConnector(connectionUri string) *ContextBoxConnector {
 	return &ContextBoxConnector{
 		connectionUri: connectionUri,
 	}
 }
 
+// Creates a gRPC connection to the context-box microservice.
+// If the connection is established, then performs a healthcheck.
 func (c *ContextBoxConnector) Connect() error {
 
-	// since the k8sSidecarNotificationsReceiver will be responding to incoming notifications we can't
+	// Since the k8sSidecarNotificationsReceiver will be responding to incoming notifications we can't
 	// use a blocking gRPC dial to the context-box service. Thus we default to a non-blocking
 	// connection with a retry policy of ~4 seconds instead.
 	interceptorOptions := []grpc_retry.CallOption{
@@ -61,6 +64,7 @@ func (c *ContextBoxConnector) Connect() error {
 
 }
 
+// PerformHealthCheck checks health of the underlying gRPC connection to context-box microservice
 func (c *ContextBoxConnector) PerformHealthCheck() error {
 	if c.grpcConnection.GetState() == connectivity.Shutdown {
 		return errors.New("Unhealthy gRPC connection to context-box microservice")
@@ -69,6 +73,7 @@ func (c *ContextBoxConnector) PerformHealthCheck() error {
 	return nil
 }
 
+// Fetches all configs present in context-box DB
 func (c *ContextBoxConnector) GetAllConfigs() ([]*pb.Config, error) {
 
 	response, err := cbox.GetAllConfigs(c.GrpcClient)
@@ -79,12 +84,14 @@ func (c *ContextBoxConnector) GetAllConfigs() ([]*pb.Config, error) {
 	return response.GetConfigs(), nil
 }
 
+// Sends request to the context-box microservice, to save a config in context-box DB.
 func (c *ContextBoxConnector) SaveConfig(config *pb.Config) error {
 
 	_, err := cbox.SaveConfigFrontEnd(c.GrpcClient, &pb.SaveConfigRequest{Config: config})
 	return err
 }
 
+// Sends request to the context-box microservice, to delete a config with the given id, from context-box DB.
 func (c *ContextBoxConnector) DeleteConfig(id string) error {
 
 	err := cbox.DeleteConfig(c.GrpcClient,
@@ -96,6 +103,7 @@ func (c *ContextBoxConnector) DeleteConfig(id string) error {
 	return err
 }
 
+// Closes the gRPC connection to context-box microservice
 func (c *ContextBoxConnector) Disconnect() error {
 	return c.grpcConnection.Close()
 }
