@@ -34,18 +34,50 @@ type ClaudieMongo struct {
 	collection *mongo.Collection
 }
 
+type Workflow struct {
+	Status      string
+	Stage       string
+	Description string
+}
+
 type configItem struct {
-	ID           primitive.ObjectID `bson:"_id,omitempty"`
-	Name         string             `bson:"name"`
-	Manifest     string             `bson:"manifest"`
-	DesiredState []byte             `bson:"desiredState"`
-	CurrentState []byte             `bson:"currentState"`
-	MsChecksum   []byte             `bson:"msChecksum"`
-	DsChecksum   []byte             `bson:"dsChecksum"`
-	CsChecksum   []byte             `bson:"csChecksum"`
-	BuilderTTL   int                `bson:"BuilderTTL"`
-	SchedulerTTL int                `bson:"SchedulerTTL"`
-	ErrorMessage string             `bson:"errorMessage"`
+	ID           primitive.ObjectID  `bson:"_id,omitempty"`
+	Name         string              `bson:"name"`
+	Manifest     string              `bson:"manifest"`
+	DesiredState []byte              `bson:"desiredState"`
+	CurrentState []byte              `bson:"currentState"`
+	MsChecksum   []byte              `bson:"msChecksum"`
+	DsChecksum   []byte              `bson:"dsChecksum"`
+	CsChecksum   []byte              `bson:"csChecksum"`
+	BuilderTTL   int                 `bson:"BuilderTTL"`
+	SchedulerTTL int                 `bson:"SchedulerTTL"`
+	State        map[string]Workflow `bson:"state"`
+}
+
+// ConvertFromGRPCWorkflow converts the workflow state data from GRPC to the database representation.
+func ConvertFromGRPCWorkflow(w map[string]*pb.Workflow) map[string]Workflow {
+	state := make(map[string]Workflow, len(w))
+	for key, val := range w {
+		state[key] = Workflow{
+			Status:      val.Status.String(),
+			Stage:       val.Stage.String(),
+			Description: val.Description,
+		}
+	}
+	return state
+}
+
+// ConvertToGRPCWorkflow converts the database representation fo the workflow state to GRPC.
+func ConvertToGRPCWorkflow(w map[string]Workflow) map[string]*pb.Workflow {
+	state := make(map[string]*pb.Workflow, len(w))
+	for key, val := range w {
+		state[key] = &pb.Workflow{
+			Stage:       pb.Workflow_Stage(pb.Workflow_Stage_value[val.Stage]),
+			Status:      pb.Workflow_Status(pb.Workflow_Status_value[val.Status]),
+			Description: val.Description,
+		}
+	}
+	return state
 }
 
 // Connect tries to connect to the mongo DB until maxConnectionRetries reached
@@ -189,7 +221,7 @@ func (c *ClaudieMongo) SaveConfig(config *pb.Config) error {
 	data.CsChecksum = config.GetCsChecksum()
 	data.BuilderTTL = int(config.GetBuilderTTL())
 	data.SchedulerTTL = int(config.GetSchedulerTTL())
-	data.ErrorMessage = config.ErrorMessage
+	data.State = ConvertFromGRPCWorkflow(config.State)
 
 	// Check if ID exists
 	// If config has already some ID:
@@ -252,7 +284,7 @@ func (c *ClaudieMongo) UpdateMsToNull(hexId string) error {
 		return err
 	}
 	// update MsChecksum and manifest to null
-	err = c.updateDocument(bson.M{"_id": id}, bson.M{"$set": bson.M{"manifest": nil, "msChecksum": nil, "errorMessage": nil}})
+	err = c.updateDocument(bson.M{"_id": id}, bson.M{"$set": bson.M{"manifest": nil, "msChecksum": nil, "state": map[string]Workflow{}}})
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return fmt.Errorf("document with id %s failed to update msChecksum : %w", id, err)
@@ -273,12 +305,23 @@ func (c *ClaudieMongo) UpdateDs(config *pb.Config) error {
 	err = c.updateDocument(bson.M{"name": config.Name}, bson.M{"$set": bson.M{
 		"dsChecksum":   config.DsChecksum,
 		"desiredState": desiredStateByte,
-		"errorMessage": config.ErrorMessage,
+		"state":        ConvertFromGRPCWorkflow(config.State),
 	}})
 	if err != nil {
 		return fmt.Errorf("failed to update dsChecksum and desiredState for document %s : %w", config.Name, err)
 	}
 	return nil
+}
+
+// UpdateWorkflowState updates the state of the config with the given workflow
+func (c *ClaudieMongo) UpdateWorkflowState(configName, clusterName string, workflow *pb.Workflow) error {
+	return c.updateDocument(bson.M{"name": configName}, bson.M{"$set": bson.M{
+		fmt.Sprintf("state.%s", clusterName): Workflow{
+			Status:      workflow.Status.String(),
+			Stage:       workflow.Stage.String(),
+			Description: workflow.Description,
+		},
+	}})
 }
 
 // UpdateCs will update the current state related field in DB
@@ -291,7 +334,7 @@ func (c *ClaudieMongo) UpdateCs(config *pb.Config) error {
 	err = c.updateDocument(bson.M{"name": config.Name}, bson.M{"$set": bson.M{
 		"csChecksum":   config.CsChecksum,
 		"currentState": currentStateByte,
-		"errorMessage": config.ErrorMessage,
+		"state":        ConvertFromGRPCWorkflow(config.State),
 	}})
 	if err != nil {
 		return fmt.Errorf("failed to update csChecksum and currentState for document %s : %w", config.Name, err)
@@ -364,7 +407,7 @@ func dataToConfigPb(data *configItem) (*pb.Config, error) {
 		CsChecksum:   data.CsChecksum,
 		BuilderTTL:   int32(data.BuilderTTL),
 		SchedulerTTL: int32(data.SchedulerTTL),
-		ErrorMessage: data.ErrorMessage,
+		State:        ConvertToGRPCWorkflow(data.State),
 	}, nil
 }
 

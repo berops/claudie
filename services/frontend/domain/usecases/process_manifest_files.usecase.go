@@ -14,13 +14,6 @@ import (
 	"github.com/berops/claudie/proto/pb"
 )
 
-type ManifestProcessingResult struct {
-	manifestName     string
-	rawManifestData  []byte
-	manifestFilepath string
-	processingError  error
-}
-
 // ProcessManifestFiles processes the manifest files concurrently. If an error occurs while the file
 // is being processed, it's skipped and the function continues with the next one until all files are
 // processed. Nothing is done with those files for which errors occurred, they'll be skipped until either
@@ -39,6 +32,13 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 
 	log.Debug().Msgf("%d configs present in database | %d configs in %v", len(configs), len(manifestFiles), manifestDir)
 
+	type ManifestProcessingResult struct {
+		unmarshalledManifest *manifest.Manifest
+		rawManifestData      []byte
+		manifestFilepath     string
+		processingError      error
+	}
+
 	manifestProcessingResultsChan := make(chan *ManifestProcessingResult, len(manifestFiles))
 
 	waitGroup := sync.WaitGroup{}
@@ -48,24 +48,24 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 
 		// Process each of the files concurrently in a separate go-routine skipping over files for which
 		// an error occurs.
-		// By processing, we mean unmarshalling the claudie manifest
+		// By processing, we mean reading, unmarshalling and validating the claudie manifest
 		go func(manifestFile fs.DirEntry) {
 			defer waitGroup.Done()
 
 			manifestFilepath := filepath.Join(manifestDir, manifestFile.Name())
 
 			var (
-				rawManifestData []byte
-				manifest        manifest.Manifest
-				processingError error = nil
+				rawManifestData      []byte
+				unmarshalledManifest *manifest.Manifest
+				processingError      error = nil
 			)
 
 			defer func() {
 				manifestProcessingResultsChan <- &ManifestProcessingResult{
-					manifestName:     manifest.Name,
-					rawManifestData:  rawManifestData,
-					manifestFilepath: manifestFilepath,
-					processingError:  processingError,
+					unmarshalledManifest: unmarshalledManifest,
+					rawManifestData:      rawManifestData,
+					manifestFilepath:     manifestFilepath,
+					processingError:      processingError,
 				}
 			}()
 
@@ -73,11 +73,11 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 				return
 			}
 
-			if processingError = yaml.Unmarshal(rawManifestData, &manifest); processingError != nil {
+			if processingError = yaml.Unmarshal(rawManifestData, &unmarshalledManifest); processingError != nil {
 				return
 			}
 
-			processingError = manifest.Validate()
+			processingError = unmarshalledManifest.Validate()
 		}(manifestFile)
 	}
 
@@ -90,42 +90,60 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 	// Collect processing results of manifest files which were processed successfully
 	for manifestProcessingResult := range manifestProcessingResultsChan {
 
+		var manifestName = manifestProcessingResult.unmarshalledManifest.Name
+		var isConfigRemoved bool
+
 		// Remove the config from configs.
 		// After the for loop finishes, the configs variable will contain only those configs which represent
 		// deleted manifest files.
-		configs = removeConfig(configs, manifestProcessingResult.manifestName)
+		configs, isConfigRemoved = removeConfig(configs, manifestName)
 
 		if manifestProcessingResult.processingError != nil {
 			log.Error().Msgf("Skipping over file %v due to processing error : %v", manifestProcessingResult.manifestFilepath, manifestProcessingResult.processingError)
 			continue
 		}
 
-		err = u.ContextBox.SaveConfig(
-			&pb.Config{
-				Name:     manifestProcessingResult.manifestName,
-				Manifest: string(manifestProcessingResult.rawManifestData),
-			},
-		)
+		config := &pb.Config{
+			Name:     manifestName,
+			Manifest: string(manifestProcessingResult.rawManifestData),
+		}
+
+		err = u.ContextBox.SaveConfig(config)
 		if err != nil {
-			log.Error().Msgf("Failed to save config %v due to error : %v", manifestProcessingResult.manifestName, err)
+			log.Error().Msgf("Failed to save config %v due to error : %v", manifestName, err)
 			continue
 		}
 
-		log.Info().Msgf("Details of manifest file %s has been saved to context-box database", manifestProcessingResult.manifestFilepath)
+		log.Info().Msgf("Details of the manifest file %s has been saved to context-box database", manifestProcessingResult.manifestFilepath)
+
+		// if the config is not in the context-box DB we start to track it.
+		if !isConfigRemoved {
+			for _, k8sCluster := range manifestProcessingResult.unmarshalledManifest.Kubernetes.Clusters {
+				if _, ok := u.inProgress.Load(k8sCluster.Name); !ok {
+					u.inProgress.Store(k8sCluster.Name, config)
+				}
+			}
+		}
 	}
 
-	// threadSafeMap is a go-routine safe map that stores id of configs that are being currently deleted
+	// configsBeingDeleted is a go-routine safe map that stores id of configs that are being currently deleted
 	// to avoid having multiple go-routines deleting the same configs from MongoDB (of contextBox microservice).
-	var threadSafeMap sync.Map
+	var configsBeingDeleted sync.Map
 
 	// The configs variable now contains only those configs which represent deleted manifests.
 	// Loop over each config and request the context-box microservice to delete the config from its database as well.
 	for _, config := range configs {
-		if _, isConfigBeingDeleted := threadSafeMap.Load(config.Id); isConfigBeingDeleted {
+
+		if _, isConfigBeingDeleted := configsBeingDeleted.Load(config.Id); isConfigBeingDeleted {
 			continue
 		}
+		configsBeingDeleted.Store(config.Id, nil)
 
-		threadSafeMap.Store(config.Id, nil)
+		for _, k8sCluster := range config.GetCurrentState().GetClusters() {
+			if _, ok := u.inProgress.Load(k8sCluster.ClusterInfo.Name); !ok {
+				u.inProgress.Store(k8sCluster.ClusterInfo.Name, config)
+			}
+		}
 
 		go func(config *pb.Config) {
 			log.Info().Msgf("Deleting config %v from context-box DB", config.Id)
@@ -135,7 +153,7 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 				log.Error().Msgf("Failed to delete config %s of manifest %s : %v", config.Id, config.Name, err)
 			}
 
-			threadSafeMap.Delete(config.Id)
+			configsBeingDeleted.Delete(config.Id)
 		}(config)
 	}
 
@@ -146,14 +164,18 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 // removeConfig filters out the config representing the manifest with
 // the specified name from the configs slice. If not present the original slice is
 // returned.
-func removeConfig(configs []*pb.Config, manifestName string) []*pb.Config {
+func removeConfig(configs []*pb.Config, manifestName string) ([]*pb.Config, bool) {
+
+	var isConfigFound bool = false
 
 	for index, config := range configs {
 		if config.Name == manifestName {
 			configs = append(configs[0:index], configs[index+1:]...)
-			break
+			isConfigFound = true
+
+			return configs, isConfigFound
 		}
 	}
 
-	return configs
+	return configs, isConfigFound
 }

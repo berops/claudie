@@ -67,3 +67,16 @@ No bugfixes since the last release.
 ## Known issues
 
 - Certain change in nodepool configuration forces replacement of VMs [#647](https://github.com/berops/claudie/issues/647)
+
+# v0.2.2
+
+## Features
+
+- Cluster Autoscaler integration [#644](https://github.com/berops/claudie/pull/644)
+- Drop using grpc-health-probe in favour of Kubernetes native grpc health probes. [#691](https://github.com/berops/claudie/pull/691)
+- Centralized information about the current workflow state of a cluster in the frontend service [#605](https://github.com/berops/claudie/pull/605)
+
+## Bugfixes
+
+- Certain change in nodepool configuration forces replacement of VMs [#647](https://github.com/berops/claudie/issues/647)
+

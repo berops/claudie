@@ -34,6 +34,12 @@ func SaveConfigFrontEnd(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest)
 	}
 }
 
+// SaveWorkflowState update the workflow state for a config.
+func SaveWorkflowState(c pb.ContextBoxServiceClient, req *pb.SaveWorkflowStateRequest) error {
+	_, err := c.SaveWorkflowState(context.Background(), req)
+	return err
+}
+
 // SaveConfigScheduler saves config from Scheduler
 func SaveConfigScheduler(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest) error {
 	_, err := saveConfig(req, c.SaveConfigScheduler)

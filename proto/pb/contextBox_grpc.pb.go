@@ -28,6 +28,8 @@ type ContextBoxServiceClient interface {
 	SaveConfigScheduler(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error)
 	// SaveConfigBuilder saves the config parsed by Builder.
 	SaveConfigBuilder(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error)
+	// SaveWorkflowState saves the information about the state of the config.
+	SaveWorkflowState(ctx context.Context, in *SaveWorkflowStateRequest, opts ...grpc.CallOption) (*SaveWorkflowStateResponse, error)
 	// GetConfigFromDB gets a single config from the database.
 	GetConfigFromDB(ctx context.Context, in *GetConfigFromDBRequest, opts ...grpc.CallOption) (*GetConfigFromDBResponse, error)
 	// GetConfigScheduler gets a config from Scheduler's queue of pending configs.
@@ -37,7 +39,7 @@ type ContextBoxServiceClient interface {
 	// GetAllConfigs gets all configs from the database.
 	GetAllConfigs(ctx context.Context, in *GetAllConfigsRequest, opts ...grpc.CallOption) (*GetAllConfigsResponse, error)
 	// DeleteConfig sets the manifest to null, effectively forcing the deletion of the infrastructure
-	// defined by the manifest on the very next config (diff-) check.
+	// defined by the manifest on the very next config (diff) check.
 	DeleteConfig(ctx context.Context, in *DeleteConfigRequest, opts ...grpc.CallOption) (*DeleteConfigResponse, error)
 	// DeleteConfigFromDB deletes the config from the database.
 	DeleteConfigFromDB(ctx context.Context, in *DeleteConfigRequest, opts ...grpc.CallOption) (*DeleteConfigResponse, error)
@@ -74,6 +76,15 @@ func (c *contextBoxServiceClient) SaveConfigScheduler(ctx context.Context, in *S
 func (c *contextBoxServiceClient) SaveConfigBuilder(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error) {
 	out := new(SaveConfigResponse)
 	err := c.cc.Invoke(ctx, "/claudie.ContextBoxService/SaveConfigBuilder", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *contextBoxServiceClient) SaveWorkflowState(ctx context.Context, in *SaveWorkflowStateRequest, opts ...grpc.CallOption) (*SaveWorkflowStateResponse, error) {
+	out := new(SaveWorkflowStateResponse)
+	err := c.cc.Invoke(ctx, "/claudie.ContextBoxService/SaveWorkflowState", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -153,6 +164,8 @@ type ContextBoxServiceServer interface {
 	SaveConfigScheduler(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error)
 	// SaveConfigBuilder saves the config parsed by Builder.
 	SaveConfigBuilder(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error)
+	// SaveWorkflowState saves the information about the state of the config.
+	SaveWorkflowState(context.Context, *SaveWorkflowStateRequest) (*SaveWorkflowStateResponse, error)
 	// GetConfigFromDB gets a single config from the database.
 	GetConfigFromDB(context.Context, *GetConfigFromDBRequest) (*GetConfigFromDBResponse, error)
 	// GetConfigScheduler gets a config from Scheduler's queue of pending configs.
@@ -162,7 +175,7 @@ type ContextBoxServiceServer interface {
 	// GetAllConfigs gets all configs from the database.
 	GetAllConfigs(context.Context, *GetAllConfigsRequest) (*GetAllConfigsResponse, error)
 	// DeleteConfig sets the manifest to null, effectively forcing the deletion of the infrastructure
-	// defined by the manifest on the very next config (diff-) check.
+	// defined by the manifest on the very next config (diff) check.
 	DeleteConfig(context.Context, *DeleteConfigRequest) (*DeleteConfigResponse, error)
 	// DeleteConfigFromDB deletes the config from the database.
 	DeleteConfigFromDB(context.Context, *DeleteConfigRequest) (*DeleteConfigResponse, error)
@@ -183,6 +196,9 @@ func (UnimplementedContextBoxServiceServer) SaveConfigScheduler(context.Context,
 }
 func (UnimplementedContextBoxServiceServer) SaveConfigBuilder(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SaveConfigBuilder not implemented")
+}
+func (UnimplementedContextBoxServiceServer) SaveWorkflowState(context.Context, *SaveWorkflowStateRequest) (*SaveWorkflowStateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SaveWorkflowState not implemented")
 }
 func (UnimplementedContextBoxServiceServer) GetConfigFromDB(context.Context, *GetConfigFromDBRequest) (*GetConfigFromDBResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetConfigFromDB not implemented")
@@ -268,6 +284,24 @@ func _ContextBoxService_SaveConfigBuilder_Handler(srv interface{}, ctx context.C
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ContextBoxServiceServer).SaveConfigBuilder(ctx, req.(*SaveConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ContextBoxService_SaveWorkflowState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SaveWorkflowStateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ContextBoxServiceServer).SaveWorkflowState(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/claudie.ContextBoxService/SaveWorkflowState",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ContextBoxServiceServer).SaveWorkflowState(ctx, req.(*SaveWorkflowStateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -416,6 +450,10 @@ var ContextBoxService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SaveConfigBuilder",
 			Handler:    _ContextBoxService_SaveConfigBuilder_Handler,
+		},
+		{
+			MethodName: "SaveWorkflowState",
+			Handler:    _ContextBoxService_SaveWorkflowState_Handler,
 		},
 		{
 			MethodName: "GetConfigFromDB",

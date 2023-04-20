@@ -60,7 +60,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			if err := destroyConfig(config, clusterView, c); err != nil {
 				// Save error to DB.
 				log.Error().Msgf("Error while destroying config %s : %v", config.Name, err)
-				if err := saveErrorMessage(config, c, err); err != nil {
+				if err := saveConfigWithWorkflowError(config, c, clusterView); err != nil {
 					log.Error().Msgf("Failed to save error message for config %s:  %v", config.Name, err)
 				}
 			}
@@ -69,21 +69,24 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 
 		if err := utils.ConcurrentExec(clusterView.AllClusters(), func(clusterName string) error {
 			// Check if we need to destroy the cluster or any Loadbalancers
-			done, err := destroy(config.Name, clusterName, clusterView)
+			done, err := destroy(config.Name, clusterName, clusterView, c)
 			if err != nil {
+				clusterView.SetWorkflowError(clusterName, err)
 				log.Error().Msgf("Error while destroying cluster %s project %s : %v", clusterName, config.Name, err)
 				return err
 			}
 
 			if done {
+				clusterView.SetWorkflowDone(clusterName)
 				log.Info().Msgf("Finished workflow for cluster %s project %s", clusterName, config.Name)
-				return nil
+				return updateWorkflowStateInDB(config.Name, clusterName, clusterView.ClusterWorkflows[clusterName], c)
 			}
 
 			// Handle deletion and addition of nodes.
 			tmpDesired, toDelete := stateDifference(clusterView.CurrentClusters[clusterName], clusterView.DesiredClusters[clusterName])
 			if tmpDesired != nil {
-				log.Info().Msgf("Processing stage [1/2] for cluster %s project %s", clusterName, config.Name)
+				clusterView.ClusterWorkflows[clusterName].Description = "Processing stage [1/2]"
+				log.Info().Msgf("Processing stage [1/2] for cluster %s config %s", clusterName, config.Name)
 
 				ctx := &BuilderContext{
 					projectName:          config.Name,
@@ -92,9 +95,11 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 					loadbalancers:        clusterView.Loadbalancers[clusterName],
 					desiredLoadbalancers: clusterView.DesiredLoadbalancers[clusterName],
 					deletedLoadBalancers: clusterView.DeletedLoadbalancers[clusterName],
+					Workflow:             clusterView.ClusterWorkflows[clusterName],
 				}
 
-				if ctx, err = buildCluster(ctx); err != nil {
+				if ctx, err = buildCluster(ctx, c); err != nil {
+					clusterView.SetWorkflowError(clusterName, err)
 					log.Error().Msgf("Failed to build cluster %s project %s : %v", clusterName, config.Name, err)
 					return err
 				}
@@ -106,8 +111,14 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			}
 
 			if toDelete != nil {
+				clusterView.ClusterWorkflows[clusterName].Stage = pb.Workflow_DELETE_NODES
+				if err := updateWorkflowStateInDB(config.Name, clusterName, clusterView.ClusterWorkflows[clusterName], c); err != nil {
+					clusterView.SetWorkflowError(clusterName, err)
+					return err
+				}
 				log.Info().Msgf("Deleting nodes from cluster %s project %s", clusterName, config.Name)
 				if clusterView.CurrentClusters[clusterName], err = deleteNodes(clusterView.CurrentClusters[clusterName], toDelete); err != nil {
+					clusterView.SetWorkflowError(clusterName, err)
 					log.Error().Msgf("Failed to delete nodes cluster %s project %s : %v", clusterName, config.Name, err)
 					return err
 				}
@@ -115,6 +126,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 
 			message := fmt.Sprintf("Processing cluster %s config %s", clusterName, config.Name)
 			if tmpDesired != nil {
+				clusterView.ClusterWorkflows[clusterName].Description = "Processing stage [2/2]"
 				message = fmt.Sprintf("Processing stage [2/2] for cluster %s config %s", clusterName, config.Name)
 			}
 			log.Info().Msgf(message)
@@ -126,10 +138,20 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 				loadbalancers:        clusterView.Loadbalancers[clusterName],
 				desiredLoadbalancers: clusterView.DesiredLoadbalancers[clusterName],
 				deletedLoadBalancers: clusterView.DeletedLoadbalancers[clusterName],
+				Workflow:             clusterView.ClusterWorkflows[clusterName],
 			}
 
-			if ctx, err = buildCluster(ctx); err != nil {
+			if ctx, err = buildCluster(ctx, c); err != nil {
+				clusterView.SetWorkflowError(clusterName, err)
 				log.Error().Msgf("Failed to build cluster %s project %s : %v", clusterName, config.Name, err)
+				return err
+			}
+
+			clusterView.SetWorkflowDone(clusterName)
+
+			if err := updateWorkflowStateInDB(config.Name, clusterName, ctx.Workflow, c); err != nil {
+				clusterView.SetWorkflowError(clusterName, err)
+				log.Error().Msgf("failed to save workflow for cluster %s project %s: %s", clusterName, config.Name, err)
 				return err
 			}
 
@@ -139,7 +161,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			return nil
 		}); err != nil {
 			log.Error().Msgf("Error encountered while processing config %s : %v", config.Name, err)
-			if err := saveErrorMessage(config, c, err); err != nil {
+			if err := saveConfigWithWorkflowError(config, c, clusterView); err != nil {
 				log.Error().Msgf("Failed to save error message due to: %s", err)
 			}
 			return

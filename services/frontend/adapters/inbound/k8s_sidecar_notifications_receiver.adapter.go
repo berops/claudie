@@ -24,7 +24,7 @@ type K8sSidecarNotificationsReceiver struct {
 	manifestDir string
 
 	// server is the underlying HTTP server which receives notifications
-	// from the k8s sidecar container when the manifest files are created / updated /deleted.
+	// from the k8s sidecar container when the manifest files are created/updated/deleted.
 	server *http.Server
 
 	// waitGroup is used to handle a graceful shutdown of the HTTP server.
@@ -52,6 +52,8 @@ func NewK8sSidecarNotificationsReceiver(usecases *usecases.Usecases) (*K8sSideca
 
 	k8sSidecarNotificationsReceiver.registerNotificationHandlers()
 
+	go k8sSidecarNotificationsReceiver.watchConfigs()
+
 	return k8sSidecarNotificationsReceiver, k8sSidecarNotificationsReceiver.PerformHealthCheck()
 }
 
@@ -65,6 +67,13 @@ func (k *K8sSidecarNotificationsReceiver) registerNotificationHandlers() {
 	router.HandleFunc("/reload", k.processManifestFilesHandler)
 
 	k.server.Handler = router
+}
+
+func (k *K8sSidecarNotificationsReceiver) watchConfigs() {
+	k.waitGroup.Add(1)
+	defer k.waitGroup.Done()
+
+	k.usecases.WatchConfigs()
 }
 
 // Start receiving notifications sent by the K8s sidecar.
