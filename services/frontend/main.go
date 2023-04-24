@@ -90,21 +90,17 @@ func run() error {
 			err = errors.New("Program interruption signal")
 		}
 
-		// Performs graceful shutdown.
+		// Performing graceful shutdown.
+
 		// First shutdown the HTTP server to block any incoming connections.
-		// And wait for all the go-routines to finish their work.
-		func() {
-			log.Info().Msg("Gracefully shutting down K8sSidecarNotificationsReceiver and ContextBoxCommunicator")
-
-			if err := k8sSidecarNotificationsReceiver.Stop(); err != nil {
-				log.Error().Msgf("Failed to gracefully shutdown K8sSidecarNotificationsReceiver: %w", err)
-			}
-
-			if err := contextBoxConnector.Disconnect(); err != nil {
-				log.Error().Msgf("Failed to gracefully shutdown ContextBoxConnector: %w", err)
-			}
-
-		}()
+		log.Info().Msg("Gracefully shutting down K8sSidecarNotificationsReceiver and ContextBoxCommunicator")
+		if err := k8sSidecarNotificationsReceiver.Stop(); err != nil {
+			log.Error().Msgf("Failed to gracefully shutdown K8sSidecarNotificationsReceiver: %v", err)
+		}
+		// Wait for all the go-routines to finish their work.
+		if err := contextBoxConnector.Disconnect(); err != nil {
+			log.Error().Msgf("Failed to gracefully shutdown ContextBoxConnector: %v", err)
+		}
 
 		return err
 	})

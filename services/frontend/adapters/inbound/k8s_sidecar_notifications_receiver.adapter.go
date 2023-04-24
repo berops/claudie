@@ -63,7 +63,6 @@ func (k *K8sSidecarNotificationsReceiver) registerNotificationHandlers() {
 
 	var router *http.ServeMux = http.NewServeMux()
 
-	// TODO: rename the route "/reload" to "/process-manifest-files"
 	router.HandleFunc("/reload", k.processManifestFilesHandler)
 
 	k.server.Handler = router
@@ -98,6 +97,8 @@ func (k *K8sSidecarNotificationsReceiver) PerformHealthCheck() error {
 // The underlying HTTP server is stopped.
 func (k *K8sSidecarNotificationsReceiver) Stop() error {
 
+	close(k.usecases.Done)
+
 	// First shutdown the HTTP server to block any incoming notifications.
 	if err := k.server.Shutdown(context.Background()); err != nil {
 		return err
@@ -124,7 +125,9 @@ func (k *K8sSidecarNotificationsReceiver) processManifestFilesHandler(responseWr
 	go func() {
 		defer k.waitGroup.Done()
 
-		k.usecases.ProcessManifestFiles(k.manifestDir)
+		if err := k.usecases.ProcessManifestFiles(k.manifestDir); err != nil {
+			log.Error().Msgf("Failed processing manifest files from directory %s : %v", k.manifestDir, err)
+		}
 	}()
 
 	responseWriter.WriteHeader(http.StatusOK)

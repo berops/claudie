@@ -126,18 +126,14 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 		}
 	}
 
-	// configsBeingDeleted is a go-routine safe map that stores id of configs that are being currently deleted
-	// to avoid having multiple go-routines deleting the same configs from MongoDB (of contextBox microservice).
-	var configsBeingDeleted sync.Map
-
 	// The configs variable now contains only those configs which represent deleted manifests.
 	// Loop over each config and request the context-box microservice to delete the config from its database as well.
 	for _, config := range configs {
 
-		if _, isConfigBeingDeleted := configsBeingDeleted.Load(config.Id); isConfigBeingDeleted {
+		if _, isConfigBeingDeleted := u.configsBeingDeleted.Load(config.Id); isConfigBeingDeleted {
 			continue
 		}
-		configsBeingDeleted.Store(config.Id, nil)
+		u.configsBeingDeleted.Store(config.Id, nil)
 
 		for _, k8sCluster := range config.GetCurrentState().GetClusters() {
 			if _, ok := u.inProgress.Load(k8sCluster.ClusterInfo.Name); !ok {
@@ -153,7 +149,7 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 				log.Error().Msgf("Failed to delete config %s of manifest %s : %v", config.Id, config.Name, err)
 			}
 
-			configsBeingDeleted.Delete(config.Id)
+			u.configsBeingDeleted.Delete(config.Id)
 		}(config)
 	}
 

@@ -28,7 +28,7 @@ func (u *Usecases) WatchConfigs() {
 
 	for {
 		select {
-		case <-u.done:
+		case <-u.Done:
 			return
 		case <-ticker.C:
 			{
