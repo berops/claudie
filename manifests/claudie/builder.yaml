@@ -4,17 +4,20 @@ metadata:
   name: builder
   labels:
     app.kubernetes.io/part-of: claudie
+    app: builder
     app.kubernetes.io/name: builder
 spec:
   replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/part-of: claudie
+      app: builder
       app.kubernetes.io/name: builder
   template:
     metadata:
       labels:
         app.kubernetes.io/part-of: claudie
+        app: builder
         app.kubernetes.io/name: builder
     spec:
       terminationGracePeriodSeconds: 5400

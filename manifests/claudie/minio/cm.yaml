@@ -3,8 +3,9 @@ kind: ConfigMap
 metadata:
   name: minio-cm
   labels:
-    app.kubernetes.io/name: minio-cm
     app.kubernetes.io/part-of: claudie
+    app: minio-cm
+    app.kubernetes.io/name: minio-cm
 data:
   initialize: |
     set -e ; # Have script exit in the event of a failed command.

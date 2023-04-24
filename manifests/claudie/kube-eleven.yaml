@@ -4,17 +4,20 @@ metadata:
   name: kube-eleven
   labels:
     app.kubernetes.io/part-of: claudie
+    app: kube-eleven
     app.kubernetes.io/name: kube-eleven
 spec:
   replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/part-of: claudie
+      app: kube-eleven
       app.kubernetes.io/name: kube-eleven
   template:
     metadata:
       labels:
         app.kubernetes.io/part-of: claudie
+        app: kube-eleven
         app.kubernetes.io/name: kube-eleven
     spec:
       terminationGracePeriodSeconds: 1320
@@ -62,10 +65,12 @@ metadata:
   name: kube-eleven
   labels:
     app.kubernetes.io/part-of: claudie
+    app: kube-eleven
     app.kubernetes.io/name: kube-eleven
 spec:
   selector:
     app.kubernetes.io/part-of: claudie
+    app: kube-eleven
     app.kubernetes.io/name: kube-eleven
   ports:
     - protocol: TCP

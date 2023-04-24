@@ -4,17 +4,20 @@ metadata:
   name: kuber
   labels:
     app.kubernetes.io/part-of: claudie
+    app: kuber
     app.kubernetes.io/name: kuber
 spec:
   replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/part-of: claudie
+      app: kuber
       app.kubernetes.io/name: kuber
   template:
     metadata:
       labels:
         app.kubernetes.io/part-of: claudie
+        app: kuber
         app.kubernetes.io/name: kuber
     spec:
       terminationGracePeriodSeconds: 1320
@@ -66,10 +69,12 @@ metadata:
   name: kuber
   labels:
     app.kubernetes.io/part-of: claudie
+    app: kuber
     app.kubernetes.io/name: kuber
 spec:
   selector:
     app.kubernetes.io/part-of: claudie
+    app: kuber
     app.kubernetes.io/name: kuber
   ports:
     - protocol: TCP
@@ -83,6 +88,7 @@ metadata:
   name: kuber
   labels:
     app.kubernetes.io/part-of: claudie
+    app: kuber
     app.kubernetes.io/name: kuber
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -91,6 +97,7 @@ metadata:
   name: kuber
   labels:
     app.kubernetes.io/part-of: claudie
+    app: kuber
     app.kubernetes.io/name: kuber
 rules:
   - apiGroups: [""]
@@ -106,6 +113,7 @@ metadata:
   name: kuber
   labels:
     app.kubernetes.io/part-of: claudie
+    app: kuber
     app.kubernetes.io/name: kuber
 roleRef:
   kind: Role

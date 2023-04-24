@@ -3,13 +3,15 @@ kind: Job
 metadata:
   name: make-bucket-job
   labels:
-    app.kubernetes.io/name: make-bucket-job
     app.kubernetes.io/part-of: claudie
+    app: make-bucket-job
+    app.kubernetes.io/name: make-bucket-job
 spec:
   template:
     metadata:
       labels:
         app.kubernetes.io/part-of: claudie
+        app: make-bucket-job
         app.kubernetes.io/name: make-bucket-job
     spec:
       restartPolicy: OnFailure

@@ -4,6 +4,7 @@ metadata:
   name: minio
   labels:
     app.kubernetes.io/part-of: claudie
+    app: minio
     app.kubernetes.io/name: minio
 spec:
   publishNotReadyAddresses: true
@@ -11,6 +12,7 @@ spec:
   clusterIP: None
   selector:
     app.kubernetes.io/part-of: claudie
+    app: minio
     app.kubernetes.io/name: minio
   ports:
     - protocol: TCP

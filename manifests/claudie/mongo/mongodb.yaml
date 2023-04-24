@@ -4,17 +4,20 @@ metadata:
   name: mongodb
   labels:
     app.kubernetes.io/part-of: claudie
+    app: mongodb
     app.kubernetes.io/name: mongodb
 spec:
   replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/part-of: claudie
+      app: mongodb
       app.kubernetes.io/name: mongodb
   template:
     metadata:
       labels:
         app.kubernetes.io/part-of: claudie
+        app: mongodb
         app.kubernetes.io/name: mongodb
     spec:
       volumes:
@@ -54,10 +57,12 @@ metadata:
   name: mongodb
   labels:
     app.kubernetes.io/part-of: claudie
+    app: mongodb
     app.kubernetes.io/name: mongodb
 spec:
   selector:
     app.kubernetes.io/part-of: claudie
+    app: mongodb
     app.kubernetes.io/name: mongodb
   ports:
     - protocol: TCP
@@ -70,6 +75,7 @@ metadata:
   name: mongo-pvc
   labels:
     app.kubernetes.io/part-of: claudie
+    app: mongo-vpc
     app.kubernetes.io/name: mongo-pvc
 spec:
   resources:

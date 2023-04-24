@@ -4,17 +4,20 @@ metadata:
   name: context-box
   labels:
     app.kubernetes.io/part-of: claudie
+    app: context-box
     app.kubernetes.io/name: context-box
 spec:
   replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/part-of: claudie
+      app: context-box
       app.kubernetes.io/name: context-box
   template:
     metadata:
       labels:
         app.kubernetes.io/part-of: claudie
+        app: context-box
         app.kubernetes.io/name: context-box
     spec:
       terminationGracePeriodSeconds: 300
@@ -82,10 +85,12 @@ metadata:
   name: context-box
   labels:
     app.kubernetes.io/part-of: claudie
+    app: context-box
     app.kubernetes.io/name: context-box
 spec:
   selector:
     app.kubernetes.io/part-of: claudie
+    app: context-box
     app.kubernetes.io/name: context-box
   ports:
     - protocol: TCP
