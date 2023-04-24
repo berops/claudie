@@ -2,12 +2,16 @@ kind: Service
 apiVersion: v1
 metadata:
   name: minio
+  labels:
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: minio
 spec:
   publishNotReadyAddresses: true
   type: ClusterIP
   clusterIP: None
   selector:
-    app: minio
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: minio
   ports:
     - protocol: TCP
       name: minio

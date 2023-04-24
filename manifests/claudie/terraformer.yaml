@@ -3,16 +3,19 @@ kind: Deployment
 metadata:
   name: terraformer
   labels:
-    app: terraformer
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: terraformer
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: terraformer
+      app.kubernetes.io/part-of: claudie
+      app.kubernetes.io/name: terraformer
   template:
     metadata:
       labels:
-        app: terraformer
+        app.kubernetes.io/part-of: claudie
+        app.kubernetes.io/name: terraformer
     spec:
       terminationGracePeriodSeconds: 1320
       containers:
@@ -109,9 +112,13 @@ kind: Service
 apiVersion: v1
 metadata:
   name: terraformer
+  labels:
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: terraformer
 spec:
   selector:
-    app: terraformer
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: terraformer
   ports:
     - protocol: TCP
       port: 50052

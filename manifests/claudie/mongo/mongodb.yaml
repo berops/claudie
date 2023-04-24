@@ -3,16 +3,19 @@ kind: Deployment
 metadata:
   name: mongodb
   labels:
-    app: database
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: mongodb
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: database
+      app.kubernetes.io/part-of: claudie
+      app.kubernetes.io/name: mongodb
   template:
     metadata:
       labels:
-        app: database
+        app.kubernetes.io/part-of: claudie
+        app.kubernetes.io/name: mongodb
     spec:
       volumes:
         - name: data
@@ -49,9 +52,13 @@ kind: Service
 apiVersion: v1
 metadata:
   name: mongodb
+  labels:
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: mongodb
 spec:
   selector:
-    app: database
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: mongodb
   ports:
     - protocol: TCP
       port: 27017
@@ -61,6 +68,9 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: mongo-pvc
+  labels:
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: mongo-pvc
 spec:
   resources:
     requests:
