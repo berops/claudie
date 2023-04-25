@@ -1,6 +1,11 @@
 {{- $clusterName := .ClusterName}}
 {{- $clusterHash := .ClusterHash}}
 {{- $index :=  0}}
+variable "storage_disk_name" {
+  default = "storage-disk"
+  type    = string
+}
+
 {{- range $i, $region := .Regions}}
 provider "google" {
   credentials = "${file("{{ (index $.NodePools $index).Provider.SpecName }}")}"
@@ -108,11 +113,6 @@ EOF
 }
 
 {{- if not $nodepool.IsControl }}
-variable "storage_disk_name" {
-  default = "storage-disk"
-  type    = string
-}
-
 resource "google_compute_disk" "{{ $node.Name }}_disk" {
   provider = google.k8s_nodepool_{{ $nodepool.Region }}
   name     = "{{ $node.Name }}-disk"

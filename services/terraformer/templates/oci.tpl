@@ -7,6 +7,11 @@ variable "default_compartment_id" {
   default = "{{ (index .NodePools 0).Provider.OciCompartmentOcid }}"
 }
 
+variable "storage_disk_name" {
+  default = "oraclevdb"
+  type    = string
+}
+
 {{- range $i, $region := .Regions }}
 provider "oci" {
   tenancy_ocid      = "{{( index $.NodePools 0).Provider.OciTenancyOcid }}"
@@ -198,11 +203,6 @@ resource "oci_core_instance" "{{ $node.Name }}" {
 }
 
 {{- if not $nodepool.IsControl }}
-variable "storage_disk_name" {
-  default = "oraclevdb"
-  type    = string
-}
-
 resource "oci_core_volume" "{{ $node.Name }}_volume" {
   provider            = oci.k8s_nodepool_{{ $nodepool.Region }}
   compartment_id      = var.default_compartment_id
