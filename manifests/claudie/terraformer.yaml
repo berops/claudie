@@ -4,20 +4,17 @@ metadata:
   name: terraformer
   labels:
     app.kubernetes.io/part-of: claudie
-    app: terraformer
     app.kubernetes.io/name: terraformer
 spec:
   replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/part-of: claudie
-      app: terraformer
       app.kubernetes.io/name: terraformer
   template:
     metadata:
       labels:
         app.kubernetes.io/part-of: claudie
-        app: terraformer
         app.kubernetes.io/name: terraformer
     spec:
       terminationGracePeriodSeconds: 1320
@@ -117,12 +114,10 @@ metadata:
   name: terraformer
   labels:
     app.kubernetes.io/part-of: claudie
-    app: terraformer
     app.kubernetes.io/name: terraformer
 spec:
   selector:
     app.kubernetes.io/part-of: claudie
-    app: terraformer
     app.kubernetes.io/name: terraformer
   ports:
     - protocol: TCP

@@ -4,20 +4,17 @@ metadata:
   name: frontend
   labels:
     app.kubernetes.io/part-of: claudie
-    app: frontend
     app.kubernetes.io/name: frontend
 spec:
   replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/part-of: claudie
-      app: frontend
       app.kubernetes.io/name: frontend
   template:
     metadata:
       labels:
         app.kubernetes.io/part-of: claudie
-        app: frontend
         app.kubernetes.io/name: frontend
     spec:
       terminationGracePeriodSeconds: 300
@@ -101,8 +98,8 @@ metadata:
   name: k8s-sidecar
   labels:
     app.kubernetes.io/part-of: claudie
-    app: k8s-sidecar
-    app.kubernetes.io/name: k8s-sidecar
+    app: frontend
+    app.kubernetes.io/name: frontend
 rules:
   - apiGroups: [""]
     resources: ["configmaps", "secrets"]
@@ -114,8 +111,8 @@ metadata:
   name: k8s-sidecar
   labels:
     app.kubernetes.io/part-of: claudie
-    app: k8s-sidecar
-    app.kubernetes.io/name: k8s-sidecar
+    app: frontend
+    app.kubernetes.io/name: frontend
 ---
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
@@ -123,8 +120,8 @@ metadata:
   name: k8s-sidecar
   labels:
     app.kubernetes.io/part-of: claudie
-    app: k8s-sidecar
-    app.kubernetes.io/name: k8s-sidecar
+    app: frontend
+    app.kubernetes.io/name: frontend
 roleRef:
   kind: Role
   name: k8s-sidecar
