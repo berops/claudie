@@ -46,6 +46,7 @@ func run() error {
 
 	usecases := &usecases.Usecases{
 		ContextBox: contextBoxConnector,
+		Done:       make(chan struct{}),
 	}
 
 	k8sSidecarNotificationsReceiver, err := inboundAdapters.NewK8sSidecarNotificationsReceiver(usecases)
