@@ -5,8 +5,9 @@ import (
 	"io"
 	"os/exec"
 
-	comm "github.com/berops/claudie/internal/command"
 	"github.com/rs/zerolog/log"
+
+	comm "github.com/berops/claudie/internal/command"
 )
 
 const (
