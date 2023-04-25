@@ -93,7 +93,7 @@ echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyA
 {{- if not $nodepool.IsControl }}
 # Mount managed disk only when not mounted yet
 sleep 50
-disk=$(ls -l /dev/disk/by-id | grep "google-${var.storage_disk_name}" | awk '{print $NF}')
+disk=$(ls -l /dev/disk/by-id | grep "google-${var.gcp_storage_disk_name}" | awk '{print $NF}')
 disk=$(basename "$disk")
 if ! grep -qs "/dev/$disk" /proc/mounts; then
   mkdir -p /opt/claudie/data

@@ -170,7 +170,7 @@ resource "oci_core_instance" "{{ $node.Name }}" {
         # Mount volume
         - |
           sleep 50
-          disk=$(ls -l /dev/oracleoci | grep "${var.storage_disk_name}" | awk '{print $NF}')
+          disk=$(ls -l /dev/oracleoci | grep "${var.oci_storage_disk_name}" | awk '{print $NF}')
           disk=$(basename "$disk")
           if ! grep -qs "/dev/$disk" /proc/mounts; then
             mkdir -p /opt/claudie/data
