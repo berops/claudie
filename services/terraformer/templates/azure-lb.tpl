@@ -99,6 +99,7 @@ resource "azurerm_network_security_group" "claudie_nsg_{{ $sanitisedRegion }}" {
 {{- end }}
 
 {{- range $i, $nodepool := .NodePools }}
+{{- $sanitisedRegion := replaceAll $nodepool.Region " " "_"}}
 resource "azurerm_subnet" "{{ $nodepool.Name }}_{{ $clusterHash }}_subnet" {
   provider             = azurerm.lb_nodepool
   name                 = "{{ $nodepool.Name }}_{{ $clusterHash }}_subnet"
@@ -114,7 +115,6 @@ resource "azurerm_subnet_network_security_group_association" "{{ $nodepool.Name 
 }
 
 {{- range $node := $nodepool.Nodes }}
-{{- $sanitisedRegion := replaceAll $nodepool.Region " " "_"}}
 resource "azurerm_public_ip" "{{ $node.Name }}_public_ip" {
   provider            = azurerm.lb_nodepool
   name                = "{{ $node.Name }}-ip"

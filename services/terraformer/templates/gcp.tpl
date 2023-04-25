@@ -1,7 +1,7 @@
 {{- $clusterName := .ClusterName}}
 {{- $clusterHash := .ClusterHash}}
 {{- $index :=  0}}
-variable "storage_disk_name" {
+variable "gcp_storage_disk_name" {
   default = "storage-disk"
   type    = string
 }
@@ -131,7 +131,7 @@ resource "google_compute_attached_disk" "{{ $node.Name }}_disk_att" {
   disk        = google_compute_disk.{{ $node.Name }}_disk.id
   instance    = google_compute_instance.{{ $node.Name }}.id
   zone        = "{{ $nodepool.Zone }}"
-  device_name = var.storage_disk_name
+  device_name = var.gcp_storage_disk_name
 }
 {{- end }}
 {{- end }}

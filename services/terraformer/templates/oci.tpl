@@ -7,7 +7,7 @@ variable "default_compartment_id" {
   default = "{{ (index .NodePools 0).Provider.OciCompartmentOcid }}"
 }
 
-variable "storage_disk_name" {
+variable "oci_storage_disk_name" {
   default = "oraclevdb"
   type    = string
 }
@@ -223,7 +223,7 @@ resource "oci_core_volume_attachment" "{{ $node.Name }}_volume_att" {
   instance_id     = oci_core_instance.{{ $node.Name }}.id
   volume_id       = oci_core_volume.{{ $node.Name }}_volume.id
   display_name    = "{{ $node.Name }}-volume-att"
-  device          = "/dev/oracleoci/${var.storage_disk_name}"
+  device          = "/dev/oracleoci/${var.oci_storage_disk_name}"
 }
 {{- end }}
 {{- end }}
