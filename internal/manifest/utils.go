@@ -7,7 +7,9 @@ import (
 )
 
 const (
-	defaultDiskSize = 30
+	// defaultDiskSize defines size of the disk if not specified in manifest.
+	// 50GB is smallest common size for all cloud providers supported share.
+	defaultDiskSize = 50
 )
 
 // GetProvider will search for a Provider config by matching name from providerSpec
