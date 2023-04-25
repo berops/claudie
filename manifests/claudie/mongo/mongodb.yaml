@@ -70,7 +70,7 @@ metadata:
   name: mongo-pvc
   labels:
     app.kubernetes.io/part-of: claudie
-    app.kubernetes.io/name: mongo-pvc
+    app.kubernetes.io/name: mongo
 spec:
   resources:
     requests:
