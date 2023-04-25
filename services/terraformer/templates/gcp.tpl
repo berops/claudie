@@ -85,7 +85,6 @@ resource "google_compute_instance" "{{ $node.Name }}" {
   set -euxo pipefail
 # Allow ssh as root
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart
-
 {{- if not $nodepool.IsControl }}
 # Mount managed disk only when not mounted yet
 sleep 50

@@ -163,10 +163,18 @@ resource "oci_core_instance" "{{ $node.Name }}" {
         - netfilter-persistent save
         {{- if not $nodepool.IsControl }}
         # Mount volume
-        - mkdir -p /opt/claudie/data
-        - mkfs.xfs /dev/sdb
-        - mount /dev/sdb /opt/claudie/data
-        - echo "/dev/sdb /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
+        - |
+          sleep 50
+          disk=$(ls -l /dev/oracleoci | grep "${var.storage_disk_name}" | awk '{print $NF}')
+          disk=$(basename "$disk")
+          if ! grep -qs "/dev/$disk" /proc/mounts; then
+            mkdir -p /opt/claudie/data
+            if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
+              mkfs.xfs /dev/$disk
+            fi
+            mount /dev/$disk /opt/claudie/data
+            echo "/dev/$disk /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
+          fi
         {{- end }}
       EOF
       )
@@ -190,6 +198,11 @@ resource "oci_core_instance" "{{ $node.Name }}" {
 }
 
 {{- if not $nodepool.IsControl }}
+variable "storage_disk_name" {
+  default = "oraclevdb"
+  type    = string
+}
+
 resource "oci_core_volume" "{{ $node.Name }}_volume" {
   provider            = oci.k8s_nodepool_{{ $nodepool.Region }}
   compartment_id      = var.default_compartment_id
@@ -205,11 +218,12 @@ resource "oci_core_volume" "{{ $node.Name }}_volume" {
 }
 
 resource "oci_core_volume_attachment" "{{ $node.Name }}_volume_att" {
-  provider         = oci.k8s_nodepool_{{ $nodepool.Region }}
+  provider        = oci.k8s_nodepool_{{ $nodepool.Region }}
   attachment_type = "paravirtualized"
   instance_id     = oci_core_instance.{{ $node.Name }}.id
   volume_id       = oci_core_volume.{{ $node.Name }}_volume.id
   display_name    = "{{ $node.Name }}-volume-att"
+  device          = "/dev/oracleoci/${var.storage_disk_name}"
 }
 {{- end }}
 {{- end }}
