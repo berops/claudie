@@ -23,8 +23,6 @@ items:
           nodeSelector: {{ .ZoneName }}
     labels:
       claudie.io/storage-class: {{ .StorageClassName }}
-      app.kubernetes.io/part-of: claudie
-      app.kubernetes.io/name: cluster-autoscaler
     name: {{ .StorageClassName }}
   parameters:
     fromBackup: ""

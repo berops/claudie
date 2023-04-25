@@ -5,7 +5,4 @@ kind: Setting
 metadata:
   name: kubernetes-cluster-autoscaler-enabled
   namespace: longhorn-system
-  labels:
-    app.kubernetes.io/part-of: claudie
-    app.kubernetes.io/name: cluster-autoscaler
 value: "{{ .IsAutoscaled }}"
