@@ -33,7 +33,7 @@ func (s *server) processConfigs() error {
 	log.Debug().Msgf("%d configs in database | %d files in %v", len(configs.Configs), len(files), s.manifestDir)
 
 	type data struct {
-		name        string
+		manifest    *manifest.Manifest
 		rawManifest []byte
 		path        string
 		err         error
@@ -58,7 +58,7 @@ func (s *server) processConfigs() error {
 
 			defer func() {
 				dataChan <- &data{
-					name:        m.Name,
+					manifest:    &m,
 					rawManifest: rawManifest,
 					path:        path,
 					err:         err,
@@ -84,26 +84,34 @@ func (s *server) processConfigs() error {
 
 	// Collect data from files with no error.
 	for data := range dataChan {
-		configs.Configs = remove(configs.Configs, data.name)
+		var removed bool
+		configs.Configs, removed = remove(configs.Configs, data.manifest.Name)
 
 		if data.err != nil {
 			log.Error().Msgf("Skipping over file %v due to error : %v", data.path, data.err)
 			continue
 		}
 
-		_, err := cbox.SaveConfigFrontEnd(s.cBox, &pb.SaveConfigRequest{
-			Config: &pb.Config{
-				Name:     data.name,
-				Manifest: string(data.rawManifest),
-			},
-		})
+		cfg := &pb.Config{
+			Name:     data.manifest.Name,
+			Manifest: string(data.rawManifest),
+		}
 
-		if err != nil {
-			log.Error().Msgf("Skip saving config %v due to error : %v", data.name, err)
+		if _, err := cbox.SaveConfigFrontEnd(s.cBox, &pb.SaveConfigRequest{Config: cfg}); err != nil {
+			log.Error().Msgf("Skip saving config %v due to error : %v", data.manifest.Name, err)
 			continue
 		}
 
 		log.Info().Msgf("File %s has been saved to the database", data.path)
+
+		// if the config is not in the DB we start to track it.
+		if !removed {
+			for _, cluster := range data.manifest.Kubernetes.Clusters {
+				if _, ok := s.inProgress.Load(cluster.Name); !ok {
+					s.inProgress.Store(cluster.Name, cfg)
+				}
+			}
+		}
 	}
 
 	for _, config := range configs.Configs {
@@ -113,8 +121,14 @@ func (s *server) processConfigs() error {
 
 		s.deletingConfigs.Store(config.Id, nil)
 
+		for _, cluster := range config.GetCurrentState().GetClusters() {
+			if _, ok := s.inProgress.Load(cluster.ClusterInfo.Name); !ok {
+				s.inProgress.Store(cluster.ClusterInfo.Name, config)
+			}
+		}
+
 		go func(config *pb.Config) {
-			log.Info().Msgf("Deleting config %v", config.Id)
+			log.Info().Msgf("Deleting config: %v", config.Name)
 
 			if err := cbox.DeleteConfig(s.cBox, &pb.DeleteConfigRequest{Id: config.Id, Type: pb.IdType_HASH}); err != nil {
 				log.Error().Msgf("Failed to the delete %s with id %s : %v", config.Name, config.Id, err)
@@ -128,13 +142,12 @@ func (s *server) processConfigs() error {
 
 // remove deletes the config with the specified name from the slice.
 // If not present the original slice is returned.
-func remove(configs []*pb.Config, configName string) []*pb.Config {
+func remove(configs []*pb.Config, configName string) ([]*pb.Config, bool) {
 	for index, config := range configs {
 		if config.Name == configName {
 			configs = append(configs[0:index], configs[index+1:]...)
-			break
+			return configs, true
 		}
 	}
-
-	return configs
+	return configs, false
 }

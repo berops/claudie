@@ -70,8 +70,8 @@ func configChecker(ctx context.Context, c pb.ContextBoxServiceClient, testSetNam
 				return fmt.Errorf("error while waiting for config to finish: %w", err)
 			}
 			if res.Config != nil {
-				if len(res.Config.ErrorMessage) > 0 {
-					return fmt.Errorf("error while checking config %s : %s", res.Config.Name, res.Config.ErrorMessage)
+				if err := getError(res.Config); err != nil {
+					return fmt.Errorf("error while checking config %s : %w", res.Config.Name, err)
 				}
 
 				// if checksums are equal, the config has been processed by claudie
@@ -98,4 +98,14 @@ func getAutoscaledClusters(c *pb.Config) []*pb.K8Scluster {
 		}
 	}
 	return clusters
+}
+
+func getError(c *pb.Config) error {
+	var err error
+	for cluster, state := range c.State {
+		if state.Status == pb.Workflow_ERROR {
+			err = fmt.Errorf("----\nerror in cluster %s\n----\nStage: %s \n State: %s\n Description: %s \n %w", cluster, state.Stage, state.Status, state.Description, err)
+		}
+	}
+	return err
 }

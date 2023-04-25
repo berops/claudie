@@ -38,7 +38,17 @@ var (
 	database ClaudieDB //database handle
 )
 
-// SaveConfigScheduler is a gRPC service: the function saves config to the DB after receiving it from Scheduler
+// SaveWorkflowState updates the workflow for a single cluster
+func (*server) SaveWorkflowState(ctx context.Context, req *pb.SaveWorkflowStateRequest) (*pb.SaveWorkflowStateResponse, error) {
+	if req.Workflow == nil {
+		return &pb.SaveWorkflowStateResponse{}, nil
+	}
+
+	err := database.UpdateWorkflowState(req.ConfigName, req.ClusterName, req.Workflow)
+	return &pb.SaveWorkflowStateResponse{}, err
+}
+
+// SaveConfigScheduler is a gRPC servie: the function saves config to the DB after receiving it from Scheduler
 func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
 	config := req.GetConfig()
 	log.Info().Msgf("Saving config %s from Scheduler", config.Name)
@@ -181,7 +191,7 @@ func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*
 	if err != nil {
 		return nil, err
 	}
-	log.Info().Msgf("Config %s is successfully deleted", req.Id)
+	log.Info().Msgf("Deletion for config %s will start shortly", req.Id)
 	return &pb.DeleteConfigResponse{Id: req.GetId()}, nil
 }
 
