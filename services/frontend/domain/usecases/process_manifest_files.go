@@ -19,7 +19,6 @@ import (
 // processed. Nothing is done with those files for which errors occurred, they'll be skipped until either
 // corrected or deleted.
 func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
-
 	manifestFiles, err := os.ReadDir(manifestDir)
 	if err != nil {
 		return fmt.Errorf("Failed to read manifest files from dir %q: %w", manifestDir, err)
@@ -89,7 +88,6 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 
 	// Collect processing results of manifest files which were processed successfully
 	for manifestProcessingResult := range manifestProcessingResultsChan {
-
 		var manifestName = manifestProcessingResult.unmarshalledManifest.Name
 		var isConfigRemoved bool
 
@@ -129,7 +127,6 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 	// The configs variable now contains only those configs which represent deleted manifests.
 	// Loop over each config and request the context-box microservice to delete the config from its database as well.
 	for _, config := range configs {
-
 		if _, isConfigBeingDeleted := u.configsBeingDeleted.Load(config.Id); isConfigBeingDeleted {
 			continue
 		}
@@ -154,14 +151,12 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 	}
 
 	return nil
-
 }
 
 // removeConfig filters out the config representing the manifest with
 // the specified name from the configs slice. If not present the original slice is
 // returned.
 func removeConfig(configs []*pb.Config, manifestName string) ([]*pb.Config, bool) {
-
 	var isConfigFound bool = false
 
 	for index, config := range configs {

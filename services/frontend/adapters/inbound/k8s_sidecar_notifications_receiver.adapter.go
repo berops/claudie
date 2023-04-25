@@ -36,7 +36,6 @@ type K8sSidecarNotificationsReceiver struct {
 // It registers the notification handling route to the underlying HTTP server.
 // Then performs an initial healthcheck of K8sSidecarNotificationsReceiver.
 func NewK8sSidecarNotificationsReceiver(usecases *usecases.Usecases) (*K8sSidecarNotificationsReceiver, error) {
-
 	manifestDir, isEnvFound := os.LookupEnv("MANIFEST_DIR")
 	if !isEnvFound {
 		return nil, fmt.Errorf("env MANIFES_DIR not found")
@@ -60,7 +59,6 @@ func NewK8sSidecarNotificationsReceiver(usecases *usecases.Usecases) (*K8sSideca
 // registerNotificationHandlers registers a router to the underlying HTTP server.
 // The router contains a route ("/reload") that handles incoming notifications from the K8s-sidecar.
 func (k *K8sSidecarNotificationsReceiver) registerNotificationHandlers() {
-
 	var router *http.ServeMux = http.NewServeMux()
 
 	router.HandleFunc("/reload", k.processManifestFilesHandler)
@@ -96,7 +94,6 @@ func (k *K8sSidecarNotificationsReceiver) PerformHealthCheck() error {
 // Stop stops receiving notifications sent by the K8s sidecar.
 // The underlying HTTP server is stopped.
 func (k *K8sSidecarNotificationsReceiver) Stop() error {
-
 	close(k.usecases.Done)
 
 	// First shutdown the HTTP server to block any incoming notifications.
