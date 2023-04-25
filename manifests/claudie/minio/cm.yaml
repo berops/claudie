@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: minio-cm
   labels:
-    app.kubernetes.io/part-of: minio
+    app.kubernetes.io/part-of: claudie
     app.kubernetes.io/name: minio
 data:
   initialize: |

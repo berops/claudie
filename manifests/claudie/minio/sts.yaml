@@ -4,7 +4,6 @@ metadata:
   name: minio
   labels:
     app.kubernetes.io/part-of: claudie
-    app: minio
     app.kubernetes.io/name: minio
 spec:
   updateStrategy:
@@ -15,14 +14,12 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/part-of: claudie
-      app: minio
       app.kubernetes.io/name: minio
   template:
     metadata:
       name: minio
       labels:
         app.kubernetes.io/part-of: claudie
-        app: minio
         app.kubernetes.io/name: minio
     spec:
       securityContext:

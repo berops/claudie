@@ -3,13 +3,13 @@ kind: Job
 metadata:
   name: make-bucket-job
   labels:
-    app.kubernetes.io/part-of: minio
+    app.kubernetes.io/part-of: claudie
     app.kubernetes.io/name: minio
 spec:
   template:
     metadata:
       labels:
-        app.kubernetes.io/part-of: minio
+        app.kubernetes.io/part-of: claudie
         app.kubernetes.io/name: minio
     spec:
       restartPolicy: OnFailure

@@ -98,7 +98,6 @@ metadata:
   name: k8s-sidecar
   labels:
     app.kubernetes.io/part-of: claudie
-    app: frontend
     app.kubernetes.io/name: frontend
 rules:
   - apiGroups: [""]
@@ -111,7 +110,6 @@ metadata:
   name: k8s-sidecar
   labels:
     app.kubernetes.io/part-of: claudie
-    app: frontend
     app.kubernetes.io/name: frontend
 ---
 kind: RoleBinding
@@ -120,7 +118,6 @@ metadata:
   name: k8s-sidecar
   labels:
     app.kubernetes.io/part-of: claudie
-    app: frontend
     app.kubernetes.io/name: frontend
 roleRef:
   kind: Role
