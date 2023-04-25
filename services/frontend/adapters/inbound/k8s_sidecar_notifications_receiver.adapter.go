@@ -83,7 +83,7 @@ func (k *K8sSidecarNotificationsReceiver) Start(host string, port int) error {
 	return k.server.ListenAndServe()
 }
 
-// Performs a healthcheck for K8sSidecarNotificationsReceiver.
+// PerformHealthCheck performs a healthcheck for K8sSidecarNotificationsReceiver.
 // Checks whether the provided manifest directory exists or not.
 func (k *K8sSidecarNotificationsReceiver) PerformHealthCheck() error {
 	if _, err := os.Stat(k.manifestDir); os.IsNotExist(err) {
@@ -93,7 +93,7 @@ func (k *K8sSidecarNotificationsReceiver) PerformHealthCheck() error {
 	return nil
 }
 
-// Stop receiving notifications sent by the K8s sidecar.
+// Stop stops receiving notifications sent by the K8s sidecar.
 // The underlying HTTP server is stopped.
 func (k *K8sSidecarNotificationsReceiver) Stop() error {
 

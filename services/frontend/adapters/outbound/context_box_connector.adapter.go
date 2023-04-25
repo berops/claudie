@@ -21,18 +21,18 @@ type ContextBoxConnector struct {
 	// grpcConnection is the underlying gRPC connection to context-box microservice.
 	grpcConnection *grpc.ClientConn
 
-	// GrpcClient is a gRPC client connection to context-box microservice.
-	GrpcClient pb.ContextBoxServiceClient
+	// grpcClient is a gRPC client connection to context-box microservice.
+	grpcClient pb.ContextBoxServiceClient
 }
 
-// Creates and returns an instance of the ContextBoxConnector struct
+// NewContextBoxConnector creates and returns an instance of the ContextBoxConnector struct
 func NewContextBoxConnector(connectionUri string) *ContextBoxConnector {
 	return &ContextBoxConnector{
 		connectionUri: connectionUri,
 	}
 }
 
-// Creates a gRPC connection to the context-box microservice.
+// Connect creates a gRPC connection to the context-box microservice.
 // If the connection is established, then performs a healthcheck.
 func (c *ContextBoxConnector) Connect() error {
 
@@ -58,7 +58,7 @@ func (c *ContextBoxConnector) Connect() error {
 	}
 
 	c.grpcConnection = grpcConnection
-	c.GrpcClient = pb.NewContextBoxServiceClient(grpcConnection)
+	c.grpcClient = pb.NewContextBoxServiceClient(grpcConnection)
 
 	return c.PerformHealthCheck()
 
@@ -73,10 +73,10 @@ func (c *ContextBoxConnector) PerformHealthCheck() error {
 	return nil
 }
 
-// Fetches all configs present in context-box DB
+// GetAllConfigs fetches all configs present in context-box DB
 func (c *ContextBoxConnector) GetAllConfigs() ([]*pb.Config, error) {
 
-	response, err := cbox.GetAllConfigs(c.GrpcClient)
+	response, err := cbox.GetAllConfigs(c.grpcClient)
 	if err != nil {
 		return []*pb.Config{}, err
 	}
@@ -84,17 +84,17 @@ func (c *ContextBoxConnector) GetAllConfigs() ([]*pb.Config, error) {
 	return response.GetConfigs(), nil
 }
 
-// Sends request to the context-box microservice, to save a config in context-box DB.
+// SaveConfig sends request to the context-box microservice, to save a config in context-box DB.
 func (c *ContextBoxConnector) SaveConfig(config *pb.Config) error {
 
-	_, err := cbox.SaveConfigFrontEnd(c.GrpcClient, &pb.SaveConfigRequest{Config: config})
+	_, err := cbox.SaveConfigFrontEnd(c.grpcClient, &pb.SaveConfigRequest{Config: config})
 	return err
 }
 
-// Sends request to the context-box microservice, to delete a config with the given id, from context-box DB.
+// DeleteConfig sends request to the context-box microservice, to delete a config with the given id, from context-box DB.
 func (c *ContextBoxConnector) DeleteConfig(id string) error {
 
-	err := cbox.DeleteConfig(c.GrpcClient,
+	err := cbox.DeleteConfig(c.grpcClient,
 		&pb.DeleteConfigRequest{
 			Id:   id,
 			Type: pb.IdType_HASH,
@@ -103,7 +103,7 @@ func (c *ContextBoxConnector) DeleteConfig(id string) error {
 	return err
 }
 
-// Closes the gRPC connection to context-box microservice
+// Disconnect closes the gRPC connection to context-box microservice
 func (c *ContextBoxConnector) Disconnect() error {
 	return c.grpcConnection.Close()
 }

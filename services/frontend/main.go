@@ -65,16 +65,16 @@ func run() error {
 		},
 	).StartProbes()
 
-	waitGroup, waitGroupContext := errgroup.WithContext(context.Background())
+	errGroup, errGroupContext := errgroup.WithContext(context.Background())
 
 	// Start receiving notifications from the k8s-sidecar container
-	waitGroup.Go(func() error {
+	errGroup.Go(func() error {
 		log.Info().Msgf("Listening for notifications from K8s-sidecar at port: %v", k8sSidecarNotificationsReceiverPort)
 		return k8sSidecarNotificationsReceiver.Start("0.0.0.0", k8sSidecarNotificationsReceiverPort)
 	})
 
 	// Listen for program interruption signals and shut it down gracefully
-	waitGroup.Go(func() error {
+	errGroup.Go(func() error {
 		shutdownSignalChan := make(chan os.Signal, 1)
 		signal.Notify(shutdownSignalChan, os.Interrupt, syscall.SIGTERM)
 		defer signal.Stop(shutdownSignalChan)
@@ -82,8 +82,8 @@ func run() error {
 		var err error
 
 		select {
-		case <-waitGroupContext.Done():
-			err = waitGroupContext.Err()
+		case <-errGroupContext.Done():
+			err = errGroupContext.Err()
 
 		case shutdownSignal := <-shutdownSignalChan:
 			log.Info().Msgf("Received program shutdown signal %v", shutdownSignal)
@@ -105,5 +105,5 @@ func run() error {
 		return err
 	})
 
-	return waitGroup.Wait()
+	return errGroup.Wait()
 }
