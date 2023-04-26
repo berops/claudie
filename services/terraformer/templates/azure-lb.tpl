@@ -13,7 +13,7 @@ provider "azurerm" {
 {{- range $i, $region := .Regions }}
 {{- $sanitisedRegion := replaceAll $region " " "_"}}
 resource "azurerm_resource_group" "rg_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}_{{ $clusterName }}_{{ $clusterHash }}" {
-  provider = azurerm.k8s_nodepool
+  provider = azurerm.lb_nodepool
   name     = "{{ $clusterName }}-{{ $clusterHash }}-{{ $sanitisedRegion }}"
   location = "{{ $region }}"
 
