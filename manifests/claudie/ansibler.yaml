@@ -3,16 +3,19 @@ kind: Deployment
 metadata:
   name: ansibler
   labels:
-    app: ansibler
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: ansibler
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: ansibler
+      app.kubernetes.io/part-of: claudie
+      app.kubernetes.io/name: ansibler
   template:
     metadata:
       labels:
-        app: ansibler
+        app.kubernetes.io/part-of: claudie
+        app.kubernetes.io/name: ansibler
     spec:
       terminationGracePeriodSeconds: 1320
       containers:
@@ -57,9 +60,13 @@ kind: Service
 apiVersion: v1
 metadata:
   name: ansibler
+  labels:
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: ansibler
 spec:
   selector:
-    app: ansibler
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: ansibler
   ports:
     - protocol: TCP
       port: 50053

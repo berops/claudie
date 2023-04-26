@@ -3,16 +3,19 @@ kind: Deployment
 metadata:
   name: context-box
   labels:
-    app: context-box
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: context-box
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: context-box
+      app.kubernetes.io/part-of: claudie
+      app.kubernetes.io/name: context-box
   template:
     metadata:
       labels:
-        app: context-box
+        app.kubernetes.io/part-of: claudie
+        app.kubernetes.io/name: context-box
     spec:
       terminationGracePeriodSeconds: 300
       containers:
@@ -77,9 +80,13 @@ kind: Service
 apiVersion: v1
 metadata:
   name: context-box
+  labels:
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: context-box
 spec:
   selector:
-    app: context-box
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: context-box
   ports:
     - protocol: TCP
       port: 50055

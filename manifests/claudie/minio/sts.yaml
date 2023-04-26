@@ -3,7 +3,8 @@ kind: StatefulSet
 metadata:
   name: minio
   labels:
-    app: minio
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: minio
 spec:
   updateStrategy:
     type: RollingUpdate
@@ -12,12 +13,14 @@ spec:
   replicas: 4
   selector:
     matchLabels:
-      app: minio
+      app.kubernetes.io/part-of: claudie
+      app.kubernetes.io/name: minio
   template:
     metadata:
       name: minio
       labels:
-        app: minio
+        app.kubernetes.io/part-of: claudie
+        app.kubernetes.io/name: minio
     spec:
       securityContext:
         runAsUser: 1000

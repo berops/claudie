@@ -3,16 +3,19 @@ kind: Deployment
 metadata:
   name: scheduler
   labels:
-    app: scheduler
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: scheduler
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: scheduler
+      app.kubernetes.io/part-of: claudie
+      app.kubernetes.io/name: scheduler
   template:
     metadata:
       labels:
-        app: scheduler
+        app.kubernetes.io/part-of: claudie
+        app.kubernetes.io/name: scheduler
     spec:
       terminationGracePeriodSeconds: 300
       containers:

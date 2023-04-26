@@ -3,16 +3,19 @@ kind: Deployment
 metadata:
   name: kube-eleven
   labels:
-    app: kube-eleven
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: kube-eleven
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: kube-eleven
+      app.kubernetes.io/part-of: claudie
+      app.kubernetes.io/name: kube-eleven
   template:
     metadata:
       labels:
-        app: kube-eleven
+        app.kubernetes.io/part-of: claudie
+        app.kubernetes.io/name: kube-eleven
     spec:
       terminationGracePeriodSeconds: 1320
       containers:
@@ -57,9 +60,13 @@ kind: Service
 apiVersion: v1
 metadata:
   name: kube-eleven
+  labels:
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: kube-eleven
 spec:
   selector:
-    app: kube-eleven
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: kube-eleven
   ports:
     - protocol: TCP
       port: 50054

@@ -260,7 +260,7 @@ jobs:
           for SERVICE in "${arr[@]}"
             do
               if [ "${SERVICE}" != "testing-framework" ] && [ "${SERVICE}" != "autoscaler-adapter" ]; then
-                kubectl wait deployment -l app=$SERVICE --for=condition=available --timeout=900s --namespace=claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+                kubectl wait deployment -l app.kubernetes.io/name=$SERVICE --for=condition=available --timeout=900s --namespace=claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
               fi
             done
 
