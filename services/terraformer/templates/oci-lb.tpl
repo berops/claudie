@@ -167,7 +167,7 @@ resource "oci_core_instance" "{{ $node.Name }}" {
   source_details {
     source_id               = "{{ $nodepool.Image }}"
     source_type             = "image"
-    boot_volume_size_in_gbs = "30"
+    boot_volume_size_in_gbs = "50"
   }
 
   create_vnic_details {
