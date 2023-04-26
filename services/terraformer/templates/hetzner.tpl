@@ -115,6 +115,7 @@ resource "hcloud_volume" "{{ $node.Name }}_volume" {
 }
 
 resource "hcloud_volume_attachment" "{{ $node.Name }}_volume_att" {
+  provider  = hcloud.k8s_nodepool
   volume_id = hcloud_volume.{{ $node.Name }}_volume.id
   server_id = hcloud_server.{{ $node.Name }}.id
   automount = false
