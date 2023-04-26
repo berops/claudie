@@ -3,6 +3,11 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: autoscaler-config-{{ .ClusterID }}
+  labels:
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: cluster-autoscaler
+    app.kubernetes.io/instance: cluster-autoscaler-{{ .ClusterID }}
+    app.kubernetes.io/component: cluster-autoscaler
 data:
   cloud-config: |-
     address: "autoscaler-adapter-{{ .ClusterID }}:{{ .AdapterPort }}"
@@ -12,16 +17,25 @@ kind: Deployment
 metadata:
   name: autoscaler-{{ .ClusterID }}
   labels:
-    app: autoscaler-{{ .ClusterID }}
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: cluster-autoscaler
+    app.kubernetes.io/instance: cluster-autoscaler-{{ .ClusterID }}
+    app.kubernetes.io/component: cluster-autoscaler
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: autoscaler-{{ .ClusterID }}
+      app.kubernetes.io/part-of: claudie
+      app.kubernetes.io/name: cluster-autoscaler
+      app.kubernetes.io/instance: cluster-autoscaler-{{ .ClusterID }}
+      app.kubernetes.io/component: cluster-autoscaler
   template:
     metadata:
       labels:
-        app: autoscaler-{{ .ClusterID }}
+        app.kubernetes.io/part-of: claudie
+        app.kubernetes.io/name: cluster-autoscaler
+        app.kubernetes.io/instance: cluster-autoscaler-{{ .ClusterID }}
+        app.kubernetes.io/component: cluster-autoscaler
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8085"

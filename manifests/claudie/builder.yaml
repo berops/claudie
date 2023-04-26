@@ -3,16 +3,19 @@ kind: Deployment
 metadata:
   name: builder
   labels:
-    app: builder
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: builder
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: builder
+      app.kubernetes.io/part-of: claudie
+      app.kubernetes.io/name: builder
   template:
     metadata:
       labels:
-        app: builder
+        app.kubernetes.io/part-of: claudie
+        app.kubernetes.io/name: builder
     spec:
       terminationGracePeriodSeconds: 5400
       containers:
