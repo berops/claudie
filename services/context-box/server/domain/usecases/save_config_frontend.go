@@ -9,7 +9,7 @@ import (
 	"github.com/berops/claudie/services/context-box/server/utils"
 )
 
-func (u *Usecases) SaveConfigFromFrontend(request *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
+func (u *Usecases) SaveConfigFrontend(request *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
 
 	// Input specs can be changed by 2 entities - by Autoscaler or by User. There is a possibility that both of them can do it
 	// at the same time. Thus, we need to lock the config while one entity updates it in the database, so the other entity does

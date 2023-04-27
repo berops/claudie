@@ -77,6 +77,52 @@ type ContextBoxGrpcServiceImplementation struct {
 }
 
 // Saves config to MongoDB after receiving it from the frontend microservice
-func (c *ContextBoxGrpcServiceImplementation) SaveConfigFromFrontend(ctx context.Context, request *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
-	return c.usecases.SaveConfigFromFrontend(request)
+func (c *ContextBoxGrpcServiceImplementation) SaveConfigFrontend(ctx context.Context, request *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
+	return c.usecases.SaveConfigFrontend(request)
+}
+
+// SaveWorkflowState updates the workflow for a single cluster
+func (c *ContextBoxGrpcServiceImplementation) SaveWorkflowState(ctx context.Context, request *pb.SaveWorkflowStateRequest) (*pb.SaveWorkflowStateResponse, error) {
+	return c.usecases.SaveWorkflowState(request)
+}
+
+// SaveConfigScheduler is a gRPC servie: the function saves config to the DB after receiving it from Scheduler
+func (c *ContextBoxGrpcServiceImplementation) SaveConfigScheduler(ctx context.Context, request *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
+	return c.usecases.SaveConfigScheduler(request)
+}
+
+// SaveConfigBuilder is a gRPC service: the function saves config to the DB after receiving it from Builder
+func (c *ContextBoxGrpcServiceImplementation) SaveConfigBuilder(ctx context.Context, request *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
+	return c.usecases.SaveConfigBuilder(request)
+}
+
+// GetConfigById is a gRPC service: function returns one config from the DB based on the requested index/name
+func (c *ContextBoxGrpcServiceImplementation) GetConfigFromDB(ctx context.Context, request *pb.GetConfigFromDBRequest) (*pb.GetConfigFromDBResponse, error) {
+	return c.usecases.GetConfigFromDB(request)
+}
+
+// GetConfigScheduler is a gRPC service: function returns oldest config from the queueScheduler
+func (c *ContextBoxGrpcServiceImplementation) GetConfigScheduler(ctx context.Context, request *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
+	return c.usecases.GetConfigScheduler(request)
+}
+
+// GetConfigBuilder is a gRPC service: function returns oldest config from the queueBuilder
+func (c *ContextBoxGrpcServiceImplementation) GetConfigBuilder(ctx context.Context, request *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
+	return c.usecases.GetConfigBuilder(request)
+}
+
+// GetAllConfigs is a gRPC service: function returns all configs from the DB
+func (c *ContextBoxGrpcServiceImplementation) GetAllConfigs(ctx context.Context, request *pb.GetAllConfigsRequest) (*pb.GetAllConfigsResponse, error) {
+	return c.usecases.GetAllConfigs(request)
+}
+
+// DeleteConfig sets the manifest to nil so that the iteration workflow for this
+// config destroys the previous build infrastructure.
+func (c *ContextBoxGrpcServiceImplementation) DeleteConfig(ctx context.Context, request *pb.DeleteConfigRequest) (*pb.DeleteConfigResponse, error) {
+	return c.usecases.DeleteConfig(request)
+}
+
+// DeleteConfigFromDB removes the config from the request from the mongoDB c.usecases.MongoDB.
+func (c *ContextBoxGrpcServiceImplementation) DeleteConfigFromDB(ctx context.Context, request *pb.DeleteConfigRequest) (*pb.DeleteConfigResponse, error) {
+	return c.usecases.DeleteConfigFromDB(request)
 }
