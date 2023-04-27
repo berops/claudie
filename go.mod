@@ -12,7 +12,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.19.2
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.86.1
 	github.com/go-playground/validator/v10 v10.12.0
-	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
+	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/hetznercloud/hcloud-go v1.43.0
 	github.com/minio/minio-go/v7 v7.0.52
 	github.com/oracle/oci-go-sdk/v65 v65.31.1
