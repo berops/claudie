@@ -16,7 +16,7 @@ require (
 	github.com/hetznercloud/hcloud-go v1.43.0
 	github.com/minio/minio-go/v7 v7.0.52
 	github.com/oracle/oci-go-sdk/v65 v65.31.1
-	github.com/rs/zerolog v1.29.0
+	github.com/rs/zerolog v1.29.1
 	github.com/stretchr/testify v1.8.2
 	go.mongodb.org/mongo-driver v1.11.4
 	golang.org/x/crypto v0.7.0
