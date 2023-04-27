@@ -33,6 +33,7 @@ func (c *ConfigInfo) HasError() bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -107,7 +108,7 @@ func (u *Usecases) EnqueueConfigs() error {
 	}
 	elementNameListForBuilderQueueWithPreviousState = u.builderQueue.GetElementNames()
 
-	if !u.schedulerQueue.CompareElementNameList(elementNameListForBuilderQueueWithPreviousState) {
+	if !u.schedulerQueue.CompareElementNameList(elementNameListForSchedulerQueueWithPreviousState) {
 		log.Info().Msgf("Scheduler queue with current state has element names: %v", u.schedulerQueue.GetElementNames())
 	}
 	elementNameListForSchedulerQueueWithPreviousState = u.schedulerQueue.GetElementNames()
@@ -126,7 +127,6 @@ func getConfigInfosFromDB(mongoDB ports.DBPort) ([]*ConfigInfo, error) {
 	var configInfos []*ConfigInfo
 
 	for _, configAsBSON := range configAsBSONList {
-
 		configInfo := &ConfigInfo{
 			Name:         configAsBSON.Name,
 			MsChecksum:   configAsBSON.MsChecksum,

@@ -25,7 +25,6 @@ type GrpcAdapter struct {
 }
 
 func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
-
 	port := utils.GetenvOr("CONTEXT_BOX_PORT", fmt.Sprint(defaultContextBoxPort))
 	listeningAddress := net.JoinHostPort("0.0.0.0", port)
 
@@ -51,7 +50,7 @@ func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
 func (g *GrpcAdapter) Serve() error {
 	// g.server.Serve( ) will create a service goroutine for each connection
 	if err := g.server.Serve(g.tcpListener); err != nil {
-		return fmt.Errorf("Context-box microservice grpc server failed to serve: %v", err)
+		return fmt.Errorf("Context-box microservice grpc server failed to serve: %w", err)
 	}
 
 	log.Info().Msgf("Finished listening for incomig gRPC connections")

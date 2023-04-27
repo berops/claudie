@@ -80,7 +80,6 @@ func (q *Queue) CompareElementNameList(givenList []string) bool {
 	}
 
 	for _, elementName := range currentList {
-
 		doesGivenListContainElementName := func(targetElementName string) bool {
 			for _, elementName := range givenList {
 				if elementName == targetElementName {

@@ -82,7 +82,7 @@ func (m *MongoDBConnector) Connect() error {
 
 			err := client.Ping(contextWithTimeout, readpref.Primary())
 			if err != nil {
-				return fmt.Errorf("Unable to ping mongoDB: %v", err)
+				return fmt.Errorf("Unable to ping mongoDB: %w", err)
 			}
 
 			return nil
@@ -99,7 +99,7 @@ func (m *MongoDBConnector) Connect() error {
 		time.Sleep(pingRetrialDelay)
 	}
 
-	return fmt.Errorf("MongoDB connection at %s failed after %d unsuccessfull ping attempts", sensoredUri, maxConnectionRetriesCount)
+	return fmt.Errorf("MongoDB connection at %s failed after %d unsuccessful ping attempts", sensoredUri, maxConnectionRetriesCount)
 }
 
 // Init performs the initialization tasks after connection is established with MongoDB
@@ -113,7 +113,7 @@ func (m *MongoDBConnector) Init() error {
 		},
 	)
 	if err != nil {
-		return fmt.Errorf("Failed to create index %s: %v", indexName, err)
+		return fmt.Errorf("Failed to create index %s: %w", indexName, err)
 	}
 
 	return nil

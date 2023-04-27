@@ -10,7 +10,6 @@ import (
 )
 
 func (u *Usecases) SaveConfigFrontend(request *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
-
 	// Input specs can be changed by 2 entities - by Autoscaler or by User. There is a possibility that both of them can do it
 	// at the same time. Thus, we need to lock the config while one entity updates it in the database, so the other entity does
 	// not overwrite it.
@@ -25,14 +24,11 @@ func (u *Usecases) SaveConfigFrontend(request *pb.SaveConfigRequest) (*pb.SaveCo
 	// Check if config with this name already exists in MongoDB
 	existingConfig, err := u.DB.GetConfig(newConfig.GetName(), pb.IdType_NAME)
 	if err == nil {
-
 		// TODO: understand this portion
 
 		if string(existingConfig.MsChecksum) != string(newConfig.MsChecksum) {
-
 			existingConfig.Manifest = newConfig.Manifest
 			existingConfig.MsChecksum = newConfig.MsChecksum
-
 		}
 		newConfig = existingConfig
 	}
