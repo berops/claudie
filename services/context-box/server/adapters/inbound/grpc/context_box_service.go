@@ -63,3 +63,9 @@ func (c *ContextBoxGrpcService) DeleteConfig(ctx context.Context, request *pb.De
 func (c *ContextBoxGrpcService) DeleteConfigFromDB(ctx context.Context, request *pb.DeleteConfigRequest) (*pb.DeleteConfigResponse, error) {
 	return c.usecases.DeleteConfigFromDB(request)
 }
+
+// UpdateNodepool updates the Nodepool struct in the database, which also initiates build. This function might return an error if the updation is
+// not allowed at this time (i.e.when config is being build).
+func (c *ContextBoxGrpcService) UpdateNodepool(ctx context.Context, request *pb.UpdateNodepoolRequest) (*pb.UpdateNodepoolResponse, error) {
+	return c.usecases.UpdateNodepool(request)
+}
