@@ -10,15 +10,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func exclude(q []*pb.NodePool, p *pb.NodePool) []*pb.NodePool {
-	for i, np := range q {
-		if np.Name == p.Name {
-			return append(q[:i], q[i+1:]...)
-		}
-	}
-	return q
-}
-
 // configProcessor will fetch new configs from the context-box service. Each received config will be processed in
 // a separate go-routine. If a sync.WaitGroup is supplied it will call the Add(1) and then the Done() method on it
 // after the go-routine finishes the work, if nil it will be ignored.

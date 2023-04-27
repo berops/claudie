@@ -72,9 +72,6 @@ func (s *server) PatchClusterInfoConfigMap(_ context.Context, req *pb.PatchClust
 	}
 
 	configMapKubeconfig := gjson.Get(string(configMap), "data.kubeconfig")
-	if err != nil {
-		return nil, fmt.Errorf("failed to update cluster info config map, malformed json")
-	}
 
 	var rawKubeconfig map[string]interface{}
 	if err := yaml.Unmarshal([]byte(req.DesiredCluster.Kubeconfig), &rawKubeconfig); err != nil {
