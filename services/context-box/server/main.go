@@ -14,7 +14,7 @@ import (
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/internal/worker"
-	inboundAdapters "github.com/berops/claudie/services/context-box/server/adapters/inbound"
+	"github.com/berops/claudie/services/context-box/server/adapters/inbound/grpc"
 	outboundAdapters "github.com/berops/claudie/services/context-box/server/adapters/outbound"
 	"github.com/berops/claudie/services/context-box/server/domain/usecases"
 )
@@ -41,7 +41,7 @@ func main() {
 		DB: mongoDBConnector,
 	}
 
-	grpcAdapter := inboundAdapters.NewGrpcAdapter()
+	grpcAdapter := &grpc.GrpcAdapter{}
 	grpcAdapter.Init(usecases)
 
 	errGroup, errGroupContext := errgroup.WithContext(context.Background())
