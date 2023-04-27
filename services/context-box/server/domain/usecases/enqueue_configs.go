@@ -62,36 +62,48 @@ func (u *Usecases) EnqueueConfigs() error {
 			continue
 		}
 
-		// TODO: understand trailing code
-
-		// check for Scheduler
+		// Initially when the config is received from the frontend microservice, the desired state of the config is not built,
+		// due to which the DsChecksum will be nil.
 		if !utils.CompareChecksum(configInfo.DsChecksum, configInfo.MsChecksum) {
-			// if scheduler ttl is 0 or smaller AND config has no errorMessage, add to scheduler Q
+			// If scheduler TTL is <= 0 AND config has no errorMessage, add item to the scheduler queue
 			if configInfo.SchedulerTTL <= 0 && !configInfo.HasError() {
 				if err := u.DB.UpdateSchedulerTTL(configInfo.Name, defaultSchedulerTTL); err != nil {
 					return err
 				}
+
+				// The item is put in the scheduler queue. The scheduler microservice will eventually pull the corresponding
+				// config and build its desired state
 				u.schedulerQueue.Enqueue(configInfo)
 				configInfo.SchedulerTTL = defaultSchedulerTTL
+
 				continue
-			} else {
-				configInfo.SchedulerTTL = configInfo.SchedulerTTL - 1
 			}
+
+			// If the item is already present in the scheduler queue but the config is still not pulled by the scheduler
+			// microservice, then reduce its scheduler TTL by 1.
+			configInfo.SchedulerTTL = configInfo.SchedulerTTL - 1
 		}
 
-		// check for Builder
+		// After the config has its desired state built, the infrastructure needs to be provisioned. The DsChecksum and CsChecksum
+		// doesn't match since the infrastructure is not built yet.
 		if !utils.CompareChecksum(configInfo.DsChecksum, configInfo.CsChecksum) {
-			// if builder ttl is 0 or smaller AND config has no errorMessage, add to builder Q
+			// If builder TTL <= 0 AND config has no errorMessage, add item to the builder queue
 			if configInfo.BuilderTTL <= 0 && !configInfo.HasError() {
 				if err := u.DB.UpdateBuilderTTL(configInfo.Name, defaultBuilderTTL); err != nil {
 					return err
 				}
+
+				// The item is put in the builder queue. The builder microservice will eventually pull the corresponding
+				// config and provision the corresponding infrastructure.
 				u.builderQueue.Enqueue(configInfo)
 				configInfo.BuilderTTL = defaultBuilderTTL
+
 				continue
-			} else {
-				configInfo.BuilderTTL = configInfo.BuilderTTL - 1
 			}
+
+			// If the item is already present in the builder queue but the config is still not pulled by the builder
+			// microservice, then reduce its scheduler TTL by 1.
+			configInfo.BuilderTTL = configInfo.BuilderTTL - 1
 		}
 
 		// save data if both TTL were subtracted

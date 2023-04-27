@@ -16,9 +16,9 @@ func (u *Usecases) SaveConfigBuilder(request *pb.SaveConfigRequest) (*pb.SaveCon
 	// Save new config to the DB, update csState as dsState
 	config.CsChecksum = config.DsChecksum
 	config.BuilderTTL = 0
-	// In Builder, the desired state is also updated i.e. in terraformer (node IPs, etc) thus
-	// we need to update it in database,
-	// however, if deletion has been triggered, the desired state should be nil
+	// In builder microservice, the desired state is also updated i.e. in terraformer (node IPs, etc) thus
+	// we need to update it in the database.
+	// However, if deletion has been triggered, the desired state should be nil
 	if dbConf, err := u.DB.GetConfig(config.Id, pb.IdType_HASH); err != nil {
 		log.Warn().Msgf("Got error while checking the desired state in the database : %v", err)
 	} else {

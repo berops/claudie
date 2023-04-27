@@ -10,32 +10,16 @@ import (
 	utils "github.com/berops/claudie/services/context-box/server/utils"
 )
 
-// UpdateNodepool updates the Nodepool struct in the database, which also initiates build. This function might return an error if the updation is
-// not allowed at this time (i.e.when config is being build).
-func updateNodepool(state *pb.Project, clusterName, nodepoolName string, nodes []*pb.Node, count *int32) error {
-	for _, cluster := range state.Clusters {
-		if cluster.ClusterInfo.Name == clusterName {
-			for _, nodepool := range cluster.ClusterInfo.NodePools {
-				if nodepool.Name == nodepoolName {
-					// Update nodes
-					nodepool.Nodes = nodes
-					if count != nil {
-						nodepool.Count = *count
-					}
-					return nil
-				}
-			}
-			return fmt.Errorf("nodepool %s was not found in cluster %s", nodepoolName, clusterName)
-		}
-	}
-	return fmt.Errorf("cluster %s was not found in project %s", clusterName, state.Name)
-}
-
+// UpdateNodepool updates the Nodepool struct in the database, which also initiates build. This function might return an
+// error if the update is not allowed at this time (i.e.when config is being built).
 func (u *Usecases) UpdateNodepool(request *pb.UpdateNodepoolRequest) (*pb.UpdateNodepoolResponse, error) {
-	// Input specification can be changed on two places, by Autoscaler and by User, thus we need to lock it, so one does not overwrite the other.
+	// Input specification can be changed on two places, by Autoscaler and by User.
+	// Thus we need to lock it, so one does not overwrite the other.
 	u.configChangeMutex.Lock()
 	defer u.configChangeMutex.Unlock()
+
 	log.Info().Msgf("CLIENT REQUEST: UpdateNodepoolCount for Project %s, Cluster %s Nodepool %s", request.ProjectName, request.ClusterName, request.Nodepool.Name)
+
 	var config *pb.Config
 	var err error
 	if config, err = u.DB.GetConfig(request.ProjectName, pb.IdType_NAME); err != nil {
@@ -64,4 +48,24 @@ func (u *Usecases) UpdateNodepool(request *pb.UpdateNodepoolRequest) (*pb.Update
 		return nil, fmt.Errorf("the project %s is about to be in the build stage", request.ProjectName)
 	}
 	return nil, fmt.Errorf("the project %s is currently in the build stage", request.ProjectName)
+}
+
+// updateNodepool updates the nodepool count and nodes in the given claudie project state (desired / current state)
+func updateNodepool(state *pb.Project, clusterName, nodepoolName string, nodes []*pb.Node, count *int32) error {
+	for _, cluster := range state.Clusters {
+		if cluster.ClusterInfo.Name == clusterName {
+			for _, nodepool := range cluster.ClusterInfo.NodePools {
+				if nodepool.Name == nodepoolName {
+					// Update nodes
+					nodepool.Nodes = nodes
+					if count != nil {
+						nodepool.Count = *count
+					}
+					return nil
+				}
+			}
+			return fmt.Errorf("nodepool %s was not found in cluster %s", nodepoolName, clusterName)
+		}
+	}
+	return fmt.Errorf("cluster %s was not found in project %s", clusterName, state.Name)
 }
