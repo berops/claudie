@@ -49,7 +49,7 @@ const (
 	defaultSchedulerTTL = 5
 )
 
-// EnqueueConfigs checks all configs, decides if they should be enqueued and updates their TTLs
+// EnqueueConfigs checks all configs, decides if they should be enqueued or not and updates their TTLs
 func (u *Usecases) EnqueueConfigs() error {
 	configInfos, err := getConfigInfosFromDB(u.DB)
 	if err != nil {

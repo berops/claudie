@@ -10,6 +10,8 @@ import (
 	utils "github.com/berops/claudie/services/context-box/server/utils"
 )
 
+// UpdateNodepool updates the Nodepool struct in the database, which also initiates build. This function might return an error if the updation is
+// not allowed at this time (i.e.when config is being build).
 func updateNodepool(state *pb.Project, clusterName, nodepoolName string, nodes []*pb.Node, count *int32) error {
 	for _, cluster := range state.Clusters {
 		if cluster.ClusterInfo.Name == clusterName {

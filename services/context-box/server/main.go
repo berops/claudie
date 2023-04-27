@@ -51,7 +51,7 @@ func main() {
 		return grpcAdapter.Serve()
 	})
 
-	// config checker go routine
+	// go routine to check and enqueue configs periodically
 	errGroup.Go(func() error {
 		w := worker.NewWorker(
 			errGroupContext, 10*time.Second, usecases.EnqueueConfigs, worker.ErrorLogger)

@@ -8,6 +8,7 @@ import (
 	"github.com/berops/claudie/proto/pb"
 )
 
+// SaveConfigBuilder is a gRPC service: the function saves config to the DB after receiving it from Builder
 func (u *Usecases) SaveConfigBuilder(request *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
 	config := request.GetConfig()
 	log.Info().Msgf("Saving config %s from Builder", config.Name)

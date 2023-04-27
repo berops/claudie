@@ -8,6 +8,7 @@ import (
 	"github.com/berops/claudie/proto/pb"
 )
 
+// GetAllConfigs is a gRPC service: function returns all configs from the DB
 func (u *Usecases) GetAllConfigs(request *pb.GetAllConfigsRequest) (*pb.GetAllConfigsResponse, error) {
 	log.Info().Msgf("Getting all configs from database")
 	configs, err := u.DB.GetAllConfigs()

@@ -8,6 +8,7 @@ import (
 	"github.com/berops/claudie/proto/pb"
 )
 
+// GetConfigById is a gRPC service: function returns one config from the DB based on the requested index/name
 func (u *Usecases) GetConfigFromDB(request *pb.GetConfigFromDBRequest) (*pb.GetConfigFromDBResponse, error) {
 	log.Info().Msgf("Retrieving config %s from database", request.Id)
 	config, err := u.DB.GetConfig(request.Id, request.Type)

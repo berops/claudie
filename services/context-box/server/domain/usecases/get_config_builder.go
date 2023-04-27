@@ -6,6 +6,7 @@ import (
 	"github.com/berops/claudie/proto/pb"
 )
 
+// GetConfigBuilder is a gRPC service: function returns oldest config from the queueBuilder
 func (u *Usecases) GetConfigBuilder(request *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
 	configInfo := u.builderQueue.Dequeue()
 	if configInfo != nil {

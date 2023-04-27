@@ -8,6 +8,7 @@ import (
 	"github.com/berops/claudie/proto/pb"
 )
 
+// SaveConfigScheduler is a gRPC servie: the function saves config to the DB after receiving it from Scheduler
 func (u *Usecases) SaveConfigScheduler(request *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
 	config := request.GetConfig()
 	log.Info().Msgf("Saving config %s from Scheduler", config.Name)

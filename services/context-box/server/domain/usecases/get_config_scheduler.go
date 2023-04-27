@@ -6,6 +6,7 @@ import (
 	"github.com/berops/claudie/proto/pb"
 )
 
+// GetConfigScheduler is a gRPC service: function returns oldest config from the queueScheduler
 func (u *Usecases) GetConfigScheduler(request *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
 	configInfo := u.schedulerQueue.Dequeue()
 	if configInfo != nil {
