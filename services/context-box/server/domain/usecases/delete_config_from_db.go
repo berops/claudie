@@ -8,7 +8,7 @@ import (
 
 func (u *Usecases) DeleteConfigFromDB(request *pb.DeleteConfigRequest) (*pb.DeleteConfigResponse, error) {
 	log.Info().Msgf("Deleting config %s from database", request.Id)
-	if err := u.MongoDB.DeleteConfig(request.GetId(), request.GetType()); err != nil {
+	if err := u.DB.DeleteConfig(request.GetId(), request.GetType()); err != nil {
 		return nil, err
 	}
 	log.Info().Msgf("Config %s successfully deleted from database", request.Id)

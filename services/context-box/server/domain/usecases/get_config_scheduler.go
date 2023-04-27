@@ -10,7 +10,7 @@ func (u *Usecases) GetConfigScheduler(request *pb.GetConfigRequest) (*pb.GetConf
 	configInfo := u.schedulerQueue.Dequeue()
 	if configInfo != nil {
 		log.Info().Msgf("Sending config %s to Scheduler", configInfo.GetName())
-		config, err := u.MongoDB.GetConfig(configInfo.GetName(), pb.IdType_NAME)
+		config, err := u.DB.GetConfig(configInfo.GetName(), pb.IdType_NAME)
 		if err != nil {
 			return nil, err
 		}

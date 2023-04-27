@@ -14,12 +14,12 @@ func (u *Usecases) SaveConfigScheduler(request *pb.SaveConfigRequest) (*pb.SaveC
 	// Save new config to the DB
 	config.DsChecksum = config.MsChecksum
 	config.SchedulerTTL = 0
-	err := u.MongoDB.UpdateDs(config)
+	err := u.DB.UpdateDs(config)
 	if err != nil {
 		return nil, fmt.Errorf("error while updating dsChecksum for %s : %w", config.Name, err)
 	}
 
-	err = u.MongoDB.UpdateSchedulerTTL(config.Name, config.SchedulerTTL)
+	err = u.DB.UpdateSchedulerTTL(config.Name, config.SchedulerTTL)
 	if err != nil {
 		return nil, fmt.Errorf("error while updating schedulerTTL for %s : %w", config.Name, err)
 	}

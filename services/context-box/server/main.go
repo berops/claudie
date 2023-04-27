@@ -38,7 +38,7 @@ func main() {
 	defer mongoDBConnector.Disconnect()
 
 	usecases := &usecases.Usecases{
-		MongoDB: mongoDBConnector,
+		DB: mongoDBConnector,
 	}
 
 	grpcAdapter := inboundAdapters.NewGrpcAdapter()

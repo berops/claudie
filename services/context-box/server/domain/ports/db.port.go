@@ -2,7 +2,7 @@ package ports
 
 import "github.com/berops/claudie/proto/pb"
 
-type MongoDBPort interface {
+type DBPort interface {
 	GetConfig(id string, idType pb.IdType) (*pb.Config, error)
 	DeleteConfig(id string, idType pb.IdType) error
 	GetAllConfigs() ([]*pb.Config, error)

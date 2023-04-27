@@ -18,22 +18,22 @@ func (u *Usecases) SaveConfigBuilder(request *pb.SaveConfigRequest) (*pb.SaveCon
 	// In Builder, the desired state is also updated i.e. in terraformer (node IPs, etc) thus
 	// we need to update it in database,
 	// however, if deletion has been triggered, the desired state should be nil
-	if dbConf, err := u.MongoDB.GetConfig(config.Id, pb.IdType_HASH); err != nil {
+	if dbConf, err := u.DB.GetConfig(config.Id, pb.IdType_HASH); err != nil {
 		log.Warn().Msgf("Got error while checking the desired state in the database : %v", err)
 	} else {
 		if dbConf.DesiredState != nil {
-			if err := u.MongoDB.UpdateDs(config); err != nil {
+			if err := u.DB.UpdateDs(config); err != nil {
 				return nil, fmt.Errorf("error while updating desired state: %w", err)
 			}
 		}
 	}
 
 	// Update the current state so its equal to the desired state
-	if err := u.MongoDB.UpdateCs(config); err != nil {
+	if err := u.DB.UpdateCs(config); err != nil {
 		return nil, fmt.Errorf("error while updating csChecksum for %s : %w", config.Name, err)
 	}
 
-	if err := u.MongoDB.UpdateBuilderTTL(config.Name, config.BuilderTTL); err != nil {
+	if err := u.DB.UpdateBuilderTTL(config.Name, config.BuilderTTL); err != nil {
 		return nil, fmt.Errorf("error while updating builderTTL for %s : %w", config.Name, err)
 	}
 

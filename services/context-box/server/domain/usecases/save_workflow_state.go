@@ -7,6 +7,6 @@ func (u *Usecases) SaveWorkflowState(request *pb.SaveWorkflowStateRequest) (*pb.
 		return &pb.SaveWorkflowStateResponse{}, nil
 	}
 
-	err := u.MongoDB.UpdateWorkflowState(request.ConfigName, request.ClusterName, request.Workflow)
+	err := u.DB.UpdateWorkflowState(request.ConfigName, request.ClusterName, request.Workflow)
 	return &pb.SaveWorkflowStateResponse{}, err
 }

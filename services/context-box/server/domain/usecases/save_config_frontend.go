@@ -23,7 +23,7 @@ func (u *Usecases) SaveConfigFrontend(request *pb.SaveConfigRequest) (*pb.SaveCo
 	newConfig.MsChecksum = utils.CalculateChecksum(newConfig.Manifest)
 
 	// Check if config with this name already exists in MongoDB
-	existingConfig, err := u.MongoDB.GetConfig(newConfig.GetName(), pb.IdType_NAME)
+	existingConfig, err := u.DB.GetConfig(newConfig.GetName(), pb.IdType_NAME)
 	if err == nil {
 
 		// TODO: understand this portion
@@ -37,7 +37,7 @@ func (u *Usecases) SaveConfigFrontend(request *pb.SaveConfigRequest) (*pb.SaveCo
 		newConfig = existingConfig
 	}
 
-	err = u.MongoDB.SaveConfig(newConfig)
+	err = u.DB.SaveConfig(newConfig)
 	if err != nil {
 		return nil, fmt.Errorf("Error while saving config %s in MongoDB: %w", newConfig.Name, err)
 	}

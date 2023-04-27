@@ -50,7 +50,7 @@ const (
 
 // EnqueueConfigs checks all configs, decides if they should be enqueued and updates their TTLs
 func (u *Usecases) EnqueueConfigs() error {
-	configInfos, err := getConfigInfosFromDB(u.MongoDB)
+	configInfos, err := getConfigInfosFromDB(u.DB)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func (u *Usecases) EnqueueConfigs() error {
 		if !utils.CompareChecksum(configInfo.DsChecksum, configInfo.MsChecksum) {
 			// if scheduler ttl is 0 or smaller AND config has no errorMessage, add to scheduler Q
 			if configInfo.SchedulerTTL <= 0 && !configInfo.HasError() {
-				if err := u.MongoDB.UpdateSchedulerTTL(configInfo.Name, defaultSchedulerTTL); err != nil {
+				if err := u.DB.UpdateSchedulerTTL(configInfo.Name, defaultSchedulerTTL); err != nil {
 					return err
 				}
 				u.schedulerQueue.Enqueue(configInfo)
@@ -82,7 +82,7 @@ func (u *Usecases) EnqueueConfigs() error {
 		if !utils.CompareChecksum(configInfo.DsChecksum, configInfo.CsChecksum) {
 			// if builder ttl is 0 or smaller AND config has no errorMessage, add to builder Q
 			if configInfo.BuilderTTL <= 0 && !configInfo.HasError() {
-				if err := u.MongoDB.UpdateBuilderTTL(configInfo.Name, defaultBuilderTTL); err != nil {
+				if err := u.DB.UpdateBuilderTTL(configInfo.Name, defaultBuilderTTL); err != nil {
 					return err
 				}
 				u.builderQueue.Enqueue(configInfo)
@@ -94,10 +94,10 @@ func (u *Usecases) EnqueueConfigs() error {
 		}
 
 		// save data if both TTL were subtracted
-		if err := u.MongoDB.UpdateSchedulerTTL(configInfo.Name, configInfo.SchedulerTTL); err != nil {
+		if err := u.DB.UpdateSchedulerTTL(configInfo.Name, configInfo.SchedulerTTL); err != nil {
 			break
 		}
-		if err := u.MongoDB.UpdateBuilderTTL(configInfo.Name, configInfo.BuilderTTL); err != nil {
+		if err := u.DB.UpdateBuilderTTL(configInfo.Name, configInfo.BuilderTTL); err != nil {
 			break
 		}
 	}
@@ -117,7 +117,7 @@ func (u *Usecases) EnqueueConfigs() error {
 
 // Fetches all configAsBSON from MongoDB and converts each configAsBSON to ConfigInfo
 // Then returns the list
-func getConfigInfosFromDB(mongoDB ports.MongoDBPort) ([]*ConfigInfo, error) {
+func getConfigInfosFromDB(mongoDB ports.DBPort) ([]*ConfigInfo, error) {
 	configAsBSONList, err := mongoDB.GetAllConfigs()
 	if err != nil {
 		return nil, err

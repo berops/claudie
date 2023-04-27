@@ -8,7 +8,7 @@ import (
 )
 
 type Usecases struct {
-	MongoDB           ports.MongoDBPort
+	DB                ports.DBPort
 	configChangeMutex sync.Mutex
 
 	// queue containing configs which needs to be processed by the builder microservice

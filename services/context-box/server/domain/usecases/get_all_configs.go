@@ -10,7 +10,7 @@ import (
 
 func (u *Usecases) GetAllConfigs(request *pb.GetAllConfigsRequest) (*pb.GetAllConfigsResponse, error) {
 	log.Info().Msgf("Getting all configs from database")
-	configs, err := u.MongoDB.GetAllConfigs()
+	configs, err := u.DB.GetAllConfigs()
 	if err != nil {
 		return nil, fmt.Errorf("error getting all configs : %w", err)
 	}

@@ -10,7 +10,7 @@ func (u *Usecases) GetConfigBuilder(request *pb.GetConfigRequest) (*pb.GetConfig
 	configInfo := u.builderQueue.Dequeue()
 	if configInfo != nil {
 		log.Info().Msgf("Sending config %s to Builder", configInfo.GetName())
-		config, err := u.MongoDB.GetConfig(configInfo.GetName(), pb.IdType_NAME)
+		config, err := u.DB.GetConfig(configInfo.GetName(), pb.IdType_NAME)
 		if err != nil {
 			return nil, err
 		}

@@ -10,7 +10,7 @@ import (
 
 func (u *Usecases) GetConfigFromDB(request *pb.GetConfigFromDBRequest) (*pb.GetConfigFromDBResponse, error) {
 	log.Info().Msgf("Retrieving config %s from database", request.Id)
-	config, err := u.MongoDB.GetConfig(request.Id, request.Type)
+	config, err := u.DB.GetConfig(request.Id, request.Type)
 	if err != nil {
 		return nil, fmt.Errorf("error while getting a config %s from database : %w", request.Id, err)
 	}
