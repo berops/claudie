@@ -96,11 +96,10 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 				log.Info().Msgf("Processing stage [%d/%d] for cluster %s config %s", currentStage, stages, clusterName, config.Name)
 
 				ctx := &BuilderContext{
-					projectName:          config.Name,
-					cluster:              clusterView.CurrentClusters[clusterName],
-					desiredCluster:       clusterView.DesiredClusters[clusterName],
-					desiredLoadbalancers: clusterView.DesiredLoadbalancers[clusterName],
-					Workflow:             clusterView.ClusterWorkflows[clusterName],
+					projectName:    config.Name,
+					cluster:        clusterView.CurrentClusters[clusterName],
+					desiredCluster: clusterView.DesiredClusters[clusterName],
+					Workflow:       clusterView.ClusterWorkflows[clusterName],
 				}
 
 				if err := callUpdateAPIEndpoint(ctx, c); err != nil {
