@@ -170,7 +170,7 @@ resource "azurerm_linux_virtual_machine" "{{ $node.Name }}" {
     name                 = "{{ $node.Name }}-osdisk"
     caching              = "ReadWrite"
     storage_account_type = "StandardSSD_LRS"
-    disk_size_gb         = "30"
+    disk_size_gb         = "50"
   }
 
   disable_password_authentication = true

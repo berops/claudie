@@ -162,7 +162,7 @@ resource "aws_instance" "{{ $node.Name }}" {
   }
   
   root_block_device {
-    volume_size           = 30
+    volume_size           = 50
     delete_on_termination = true
     volume_type           = "gp2"
   }
