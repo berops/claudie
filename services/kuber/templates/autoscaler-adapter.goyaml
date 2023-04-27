@@ -3,9 +3,17 @@ apiVersion: v1
 kind: Service
 metadata:
   name: autoscaler-adapter-{{ .ClusterID }}
+  labels:
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: cluster-autoscaler-adapter
+    app.kubernetes.io/instance: cluster-autoscaler-adapter-{{ .ClusterID }}
+    app.kubernetes.io/component: cluster-autoscaler
 spec:
   selector:
-    app: autoscaler-adapter-{{ .ClusterID }}
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: cluster-autoscaler-adapter
+    app.kubernetes.io/instance: cluster-autoscaler-adapter-{{ .ClusterID }}
+    app.kubernetes.io/component: cluster-autoscaler
   ports:
     - protocol: TCP
       port: {{ .AdapterPort }}
@@ -19,11 +27,17 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: autoscaler-adapter-{{ .ClusterID }}
+      app.kubernetes.io/part-of: claudie
+      app.kubernetes.io/name: cluster-autoscaler-adapter
+      app.kubernetes.io/instance: cluster-autoscaler-adapter-{{ .ClusterID }}
+      app.kubernetes.io/component: cluster-autoscaler
   template:
     metadata:
       labels:
-        app: autoscaler-adapter-{{ .ClusterID }}
+        app.kubernetes.io/part-of: claudie
+        app.kubernetes.io/name: cluster-autoscaler-adapter
+        app.kubernetes.io/instance: cluster-autoscaler-adapter-{{ .ClusterID }}
+        app.kubernetes.io/component: cluster-autoscaler
     spec:
       containers:
         - name: claudie-ca
