@@ -1,42 +1,34 @@
-{{- $clusterName := .ClusterName}}
-{{- $clusterHash := .ClusterHash}}
-{{- $index :=  0}}
-{{- range $i, $region := .Regions}}
-provider "google" {
-  credentials = "${file("{{ (index $.NodePools $index).Provider.SpecName }}")}"
-  project     = "{{ (index $.NodePools 0).Provider.GcpProject }}"
-  region      = "{{ $region }}"
-  alias       = "k8s_nodepool_{{ $region }}"
-}
-
+{{- $clusterName := .ClusterName }}
+{{- $clusterHash := .ClusterHash }}
+{{- range $i, $region := .Regions }}
 resource "google_compute_network" "network_{{ $clusterName}}_{{ $clusterHash}}_{{ $region }}" {
-  provider                = google.k8s_nodepool_{{ $region }}
+  provider                = google.lb_nodepool_{{ $region }}
   name                    = "{{ $clusterName }}-{{ $clusterHash }}-{{ $region }}-network"
   auto_create_subnetworks = false
   description             = "Managed by Claudie for cluster {{ $clusterName }}-{{ $clusterHash }}"
 }
 
-resource "google_compute_firewall" "firewall_{{ $region }}" {
-  provider     = google.k8s_nodepool_{{ $region }}
-  name         = "{{ $clusterName }}-{{ $clusterHash }}-{{ $region }}-firewall"
-  network      = google_compute_network.network_{{ $clusterName}}_{{ $clusterHash}}_{{ $region }}.self_link
-  description  = "Managed by Claudie for cluster {{ $clusterName }}-{{ $clusterHash }}"
+resource "google_compute_firewall" "firewall_{{ $clusterName}}_{{ $clusterHash}}_{{ $region }}" {
+  provider    = google.lb_nodepool_{{ $region }}
+  name        = "{{ $clusterName }}-{{ $clusterHash }}-{{ $region }}-firewall"
+  network     = google_compute_network.network_{{ $clusterName}}_{{ $clusterHash}}_{{ $region }}.self_link
+  description = "Managed by Claudie for cluster {{ $clusterName }}-{{ $clusterHash }}"
 
+  {{- range $role := index $.Metadata "roles" }}
   allow {
-    protocol = "UDP"
-    ports    = ["51820"]
-  }
-
-  {{- if index $.Metadata "loadBalancers" | targetPorts | isMissing 6443 }}
-  allow {
-      protocol = "TCP"
-      ports    = ["6443"]
+      protocol = "{{ $role.Protocol }}"
+      ports = ["{{ $role.Port }}"]
   }
   {{- end }}
 
   allow {
       protocol = "TCP"
       ports    = ["22"]
+  }
+
+  allow {
+    protocol = "UDP"
+    ports    = ["51820"]
   }
 
   allow {
@@ -52,16 +44,16 @@ resource "google_compute_firewall" "firewall_{{ $region }}" {
 
 {{- range $i, $nodepool := .NodePools }}
 resource "google_compute_subnetwork" "{{ $nodepool.Name }}_subnet" {
-  provider      = google.k8s_nodepool_{{ $nodepool.Region }}
+  provider      = google.lb_nodepool_{{ $nodepool.Region }}
   name          = "{{ $nodepool.Name }}-{{ $clusterHash }}-subnet"
   network       = google_compute_network.network_{{ $clusterName}}_{{ $clusterHash}}_{{ $nodepool.Region }}.self_link
-  ip_cidr_range = "{{index $.Metadata (printf "%s-subnet-cidr" $nodepool.Name) }}"
+  ip_cidr_range = "{{ index  $.Metadata (printf "%s-subnet-cidr" $nodepool.Name)  }}"
   description   = "Managed by Claudie for cluster {{ $clusterName }}-{{ $clusterHash }}"
 }
 
 {{- range $node := $nodepool.Nodes }}
 resource "google_compute_instance" "{{ $node.Name }}" {
-  provider                  = google.k8s_nodepool_{{ $nodepool.Region }}
+  provider                  = google.lb_nodepool_{{ $nodepool.Region }}
   zone                      = "{{ $nodepool.Zone }}"
   name                      = "{{ $node.Name }}"
   machine_type              = "{{ $nodepool.ServerType }}"
@@ -97,5 +89,3 @@ output "{{ $nodepool.Name }}" {
   }
 }
 {{- end }}
-
-

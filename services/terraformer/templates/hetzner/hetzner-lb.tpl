@@ -1,13 +1,18 @@
-{{- $clusterName := .ClusterName}}
-{{- $clusterHash := .ClusterHash}}
-{{- $index :=  0 }}
-provider "hcloud" {
-  token = "{{ (index .NodePools $index).Provider.Credentials }}" 
-  alias = "k8s_nodepool"
+{{- $clusterName := .ClusterName }}
+{{- $clusterHash := .ClusterHash }}
+resource "hcloud_ssh_key" "claudie" {
+  provider   = hcloud.lb_nodepool
+  name       = "key-{{ $clusterName }}-{{ $clusterHash }}"
+  public_key = file("./public.pem")
+
+  labels = {
+    "managed-by"      : "Claudie"
+    "claudie-cluster" : "{{ $clusterName }}-{{ $clusterHash }}"
+  }
 }
 
-resource "hcloud_firewall" "defaultfirewall" {
-  provider = hcloud.k8s_nodepool
+resource "hcloud_firewall" "firewall" {
+  provider = hcloud.lb_nodepool
   name     = "{{ $clusterName }}-{{ $clusterHash }}-firewall"
   rule {
     direction  = "in"
@@ -28,11 +33,11 @@ resource "hcloud_firewall" "defaultfirewall" {
     ]
   }
 
-  {{- if index $.Metadata "loadBalancers" | targetPorts | isMissing 6443 }}
+  {{- range $role := index $.Metadata "roles" }}
   rule {
     direction  = "in"
-    protocol   = "tcp"
-    port       = "6443"
+    protocol   = "{{ $role.Protocol }}"
+    port       = "{{ $role.Port }}"
     source_ips = [
       "0.0.0.0/0",
       "::/0"
@@ -56,27 +61,16 @@ resource "hcloud_firewall" "defaultfirewall" {
   }
 }
 
-resource "hcloud_ssh_key" "claudie" {
-  provider   = hcloud.k8s_nodepool
-  name       = "key-{{ $clusterName }}-{{ $clusterHash }}"
-  public_key = file("./public.pem")
-
-  labels = {
-    "managed-by"      : "Claudie"
-    "claudie-cluster" : "{{ $clusterName }}-{{ $clusterHash }}"
-  }
-}
 
 {{- range $nodepool := .NodePools }}
 {{- range $node := $nodepool.Nodes }}
 resource "hcloud_server" "{{ $node.Name }}" {
-  provider      = hcloud.k8s_nodepool
-  name          = "{{ $node.Name }}"
-  server_type   = "{{ $nodepool.ServerType }}"
-  image         = "{{ $nodepool.Image }}"
-  firewall_ids  = [hcloud_firewall.defaultfirewall.id]
-  datacenter    = "{{ $nodepool.Zone }}"
-
+  provider     = hcloud.lb_nodepool
+  name         = "{{ $node.Name }}"
+  server_type  = "{{ $nodepool.ServerType }}"
+  image        = "{{ $nodepool.Image }}"
+  firewall_ids = [hcloud_firewall.firewall.id]
+  datacenter   = "{{ $nodepool.Zone }}"
   ssh_keys = [
     hcloud_ssh_key.claudie.id,
   ]

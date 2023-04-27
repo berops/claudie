@@ -33,7 +33,7 @@ func destroyConfig(config *pb.Config, clusterView *ClusterView, c pb.ContextBoxS
 }
 
 // destroy destroys any Loadbalancers or the cluster itself.
-func destroy(projectName, clusterName string, clusterView *ClusterView, c pb.ContextBoxServiceClient) (bool, error) {
+func destroy(projectName, clusterName string, clusterView *ClusterView, c pb.ContextBoxServiceClient) error {
 	deleteCtx := &BuilderContext{
 		projectName: projectName,
 		Workflow:    clusterView.ClusterWorkflows[clusterName],
@@ -49,16 +49,11 @@ func destroy(projectName, clusterName string, clusterView *ClusterView, c pb.Con
 
 	if deleteCtx.cluster != nil || len(deleteCtx.loadbalancers) > 0 {
 		if err := destroyCluster(deleteCtx, c); err != nil {
-			return false, err
-		}
-
-		// if there is no desired state for the cluster there is no more work to be done.
-		if deleteCtx.cluster != nil {
-			return true, nil
+			return err
 		}
 	}
 
-	return false, nil
+	return nil
 }
 
 // saveConfigWithWorkflowError saves config with workflow states

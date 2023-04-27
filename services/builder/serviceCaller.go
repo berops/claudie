@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
@@ -116,6 +115,44 @@ func callTerraformer(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient)
 	return nil
 }
 
+func callUpdateAPIEndpoint(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+	description := ctx.Workflow.Description
+
+	ctx.Workflow.Stage = pb.Workflow_ANSIBLER
+	ctx.Workflow.Description = fmt.Sprintf("%s changing api endpoint to a new control plane node", description)
+	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+		return err
+	}
+
+	cc, err := utils.GrpcDialWithInsecure("ansibler", envs.AnsiblerURL)
+	if err != nil {
+		return err
+	}
+	defer utils.CloseClientConnection(cc)
+
+	c := pb.NewAnsiblerServiceClient(cc)
+
+	resp, err := ansibler.UpdateAPIEndpoint(c, &pb.UpdateAPIEndpointRequest{
+		Current:     ctx.cluster,
+		Desired:     ctx.desiredCluster,
+		ProjectName: ctx.projectName,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	ctx.cluster = resp.Current
+	ctx.desiredCluster = resp.Desired
+
+	ctx.Workflow.Description = description
+	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // callAnsibler passes config to ansibler to set up VPN
 func callAnsibler(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
 	description := ctx.Workflow.Description
@@ -205,6 +242,7 @@ func callAnsibler(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) er
 		DesiredLbs:          ctx.desiredLoadbalancers,
 		PreviousAPIEndpoint: apiEndpoint,
 		ProjectName:         ctx.projectName,
+		FirstRun:            ctx.cluster == nil,
 	})
 	if err != nil {
 		return err
@@ -264,15 +302,9 @@ func callKubeEleven(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) 
 	return nil
 }
 
-// callKuber passes config to Kuber to apply any additional resources via kubectl
-func callKuber(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+func callPatchClusterInfoConfigMap(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
 	description := ctx.Workflow.Description
-
 	ctx.Workflow.Stage = pb.Workflow_KUBER
-	ctx.Workflow.Description = fmt.Sprintf("%s setting up storage", description)
-	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
-		return err
-	}
 
 	cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL)
 	if err != nil {
@@ -281,6 +313,49 @@ func callKuber(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error
 	defer utils.CloseClientConnection(cc)
 
 	c := pb.NewKuberServiceClient(cc)
+
+	ctx.Workflow.Description = fmt.Sprintf("%s patching cluster info config map", description)
+	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+		return err
+	}
+
+	log.Info().Msgf("Calling PatchClusterInfoConfigMap on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
+	if err := kuber.PatchClusterInfoConfigMap(c, &pb.PatchClusterInfoConfigMapRequest{DesiredCluster: ctx.desiredCluster}); err != nil {
+		return err
+	}
+	log.Info().Msgf("PatchClusterInfoConfigMap on Kuber for cluster %s project %s finished successfully", ctx.GetClusterName(), ctx.projectName)
+
+	ctx.Workflow.Description = description
+	return updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient)
+}
+
+// callKuber passes config to Kuber to apply any additional resources via kubectl
+func callKuber(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+	description := ctx.Workflow.Description
+
+	ctx.Workflow.Stage = pb.Workflow_KUBER
+
+	cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL)
+	if err != nil {
+		return err
+	}
+	defer utils.CloseClientConnection(cc)
+
+	c := pb.NewKuberServiceClient(cc)
+
+	// only patch if kubeconfig changed.
+	if ctx.cluster != nil && (ctx.cluster.Kubeconfig != ctx.desiredCluster.Kubeconfig) {
+		ctx.Workflow.Description = fmt.Sprintf("%s patching cluster info config map", description)
+		if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+			return err
+		}
+
+		log.Info().Msgf("Calling PatchClusterInfoConfigMap on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
+		if err := kuber.PatchClusterInfoConfigMap(c, &pb.PatchClusterInfoConfigMapRequest{DesiredCluster: ctx.desiredCluster}); err != nil {
+			return err
+		}
+		log.Info().Msgf("PatchClusterInfoConfigMap on Kuber for cluster %s project %s finished successfully", ctx.GetClusterName(), ctx.projectName)
+	}
 
 	// If previous cluster had loadbalancers, and the new one does not, the old scrape config will be removed.
 	if len(ctx.desiredLoadbalancers) == 0 && len(ctx.loadbalancers) > 0 {
@@ -303,6 +378,11 @@ func callKuber(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error
 			return err
 		}
 		log.Info().Msgf("StoreLbScrapeConfig on Kuber for cluster %s project %s finished successfully", ctx.GetClusterName(), ctx.projectName)
+	}
+
+	ctx.Workflow.Description = fmt.Sprintf("%s setting up storage", description)
+	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+		return err
 	}
 
 	log.Info().Msgf("Calling SetUpStorage on Kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)

@@ -3,11 +3,6 @@ package clusterBuilder
 import (
 	"encoding/json"
 	"fmt"
-	"net"
-	"os"
-	"path/filepath"
-	"sort"
-
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
@@ -17,6 +12,11 @@ import (
 	"github.com/berops/claudie/services/terraformer/server/terraform"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"net"
+	"os"
+	"path"
+	"path/filepath"
+	"sort"
 )
 
 const (
@@ -158,33 +158,34 @@ func (c ClusterBuilder) DestroyNodepools() error {
 	return nil
 }
 
-func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
-	// generate backend
-	backend := backend.Backend{ProjectName: c.ProjectName, ClusterName: clusterID, Directory: clusterDir}
-	err := backend.CreateFiles()
-	if err != nil {
+func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
+	backend := backend.Backend{
+		ProjectName: c.ProjectName,
+		ClusterName: clusterID,
+		Directory:   clusterDir,
+	}
+
+	if err := backend.CreateFiles(); err != nil {
 		return err
 	}
 
-	// generate .tf files for nodepools
-	var clusterInfo *pb.ClusterInfo
-	template := templateUtils.Templates{Directory: clusterDir}
-	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.TerraformerTemplates}
+	// generate Providers terraform configuration
+	providers := provider.Provider{
+		ProjectName: c.ProjectName,
+		ClusterName: clusterID,
+		Directory:   clusterDir,
+	}
 
+	if err := providers.CreateProvider(c.CurrentInfo, c.DesiredInfo); err != nil {
+		return err
+	}
+
+	var clusterInfo *pb.ClusterInfo
 	if c.DesiredInfo != nil {
 		clusterInfo = c.DesiredInfo
 	} else if c.CurrentInfo != nil {
 		clusterInfo = c.CurrentInfo
 	}
-
-	// generate Providers terraform configuration
-	providers := provider.Provider{ProjectName: c.ProjectName, ClusterName: clusterID, Directory: clusterDir}
-	err = providers.CreateProvider(clusterInfo)
-	if err != nil {
-		return err
-	}
-
-	tplType := getTplFile(c.ClusterType)
 
 	// Init node slices if needed
 	for _, np := range clusterInfo.NodePools {
@@ -210,11 +211,16 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 		np.Nodes = nodes
 	}
 
+	suffix := getTplFile(c.ClusterType)
+	// generate providers.tpl for all nodepools (current, desired).
+	if err := generateProviderTemplates(c.CurrentInfo, c.DesiredInfo, clusterID, clusterDir, suffix); err != nil {
+		return fmt.Errorf("error while generating provider templates: %w", err)
+	}
+
 	// sort nodepools by a provider
 	sortedNodePools := utils.GroupNodepoolsByProviderSpecName(clusterInfo)
 	for providerSpecName, nodepools := range sortedNodePools {
-		// list all regions being used for this provider
-		regions := utils.GetRegions(nodepools)
+		providerName := nodepools[0].Provider.CloudProviderName
 
 		// based on the cluster type fill out the nodepools data to be used
 		nodepoolData := NodepoolsData{
@@ -222,21 +228,23 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 			ClusterName: clusterInfo.Name,
 			ClusterHash: clusterInfo.Hash,
 			Metadata:    c.Metadata,
-			Regions:     regions,
+			Regions:     utils.GetRegions(nodepools),
 		}
 
 		// Copy subnets CIDR to metadata
 		copyCIDRsToMetadata(&nodepoolData)
 
 		// Load TF files of the specific cloud provider
-		tpl, err := templateLoader.LoadTemplate(fmt.Sprintf("%s%s", nodepools[0].Provider.CloudProviderName, tplType))
+		targetDirectory := templateUtils.Templates{Directory: clusterDir}
+		sourceDirectory := templateUtils.TemplateLoader{Directory: path.Join(templateUtils.TerraformerTemplates, providerName)}
+
+		//  Generate the infra templates.
+		tpl, err := sourceDirectory.LoadTemplate(fmt.Sprintf("%s%s", providerName, suffix))
 		if err != nil {
-			return fmt.Errorf("error while parsing template file %s : %w", fmt.Sprintf("%s%s", nodepools[0].Provider.CloudProviderName, tplType), err)
+			return fmt.Errorf("error while parsing template file %s : %w", fmt.Sprintf("%s%s", providerName, suffix), err)
 		}
 
-		// Parse the templates and create Tf files
-		err = template.Generate(tpl, fmt.Sprintf("%s-%s.tf", clusterID, providerSpecName), nodepoolData)
-		if err != nil {
+		if err := targetDirectory.Generate(tpl, fmt.Sprintf("%s-%s.tf", clusterID, providerSpecName), nodepoolData); err != nil {
 			return fmt.Errorf("error while generating %s file : %w", fmt.Sprintf("%s-%s.tf", clusterID, providerSpecName), err)
 		}
 
@@ -246,7 +254,7 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 		}
 
 		// save keys
-		if err = utils.CreateKeyFile(nodepools[0].Provider.Credentials, clusterDir, providerSpecName); err != nil {
+		if err := utils.CreateKeyFile(nodepools[0].Provider.Credentials, clusterDir, providerSpecName); err != nil {
 			return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", providerSpecName, clusterDir, err)
 		}
 	}
@@ -406,4 +414,59 @@ func copyCIDRsToMetadata(data *NodepoolsData) {
 	for _, np := range data.NodePools {
 		data.Metadata[fmt.Sprintf(subnetCidrKeyTemplate, np.Name)] = np.Metadata[subnetCidrKey].GetCidr()
 	}
+}
+
+// generateProviderTemplates generates only the `provider.tpl` templates so terraform can
+// destroy the infra if needed.
+func generateProviderTemplates(current, desired *pb.ClusterInfo, clusterID, directory, suffix string) error {
+	currentNodepools := utils.GroupNodepoolsByProvider(current)
+	desiredNodepools := utils.GroupNodepoolsByProvider(desired)
+
+	// merge together into a single map instead of creating a new.
+	for name, np := range desiredNodepools {
+		if _, ok := currentNodepools[name]; !ok {
+			currentNodepools[name] = np
+		}
+	}
+
+	info := desired
+	if info == nil {
+		info = current
+	}
+
+	for providerName, np := range currentNodepools {
+		providerSpecName := np[0].Provider.SpecName
+
+		nodepoolData := NodepoolsData{
+			NodePools:   np,
+			ClusterName: info.Name,
+			ClusterHash: info.Hash,
+			Metadata:    nil, // not needed
+			Regions:     utils.GetRegions(np),
+		}
+
+		// Load TF files of the specific cloud provider
+		sourceDirectory := templateUtils.TemplateLoader{
+			Directory: path.Join(templateUtils.TerraformerTemplates, providerName),
+		}
+
+		targetDirectory := templateUtils.Templates{Directory: directory}
+
+		tpl, err := sourceDirectory.LoadTemplate(fmt.Sprintf("%s-provider%s", providerName, suffix))
+		if err != nil {
+			return fmt.Errorf("error while parsing template file %s : %w", fmt.Sprintf("%s-provider%s", providerName, suffix), err)
+		}
+
+		// Parse the templates and create Tf files
+		if err := targetDirectory.Generate(tpl, fmt.Sprintf("%s-%s-provider.tf", clusterID, providerSpecName), nodepoolData); err != nil {
+			return fmt.Errorf("error while generating %s file : %w", fmt.Sprintf("%s-%s.tf", clusterID, providerSpecName), err)
+		}
+
+		// save keys
+		if err = utils.CreateKeyFile(np[0].Provider.Credentials, directory, providerSpecName); err != nil {
+			return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", providerSpecName, directory, err)
+		}
+	}
+
+	return nil
 }
