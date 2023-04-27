@@ -4,18 +4,18 @@ metadata:
   name: dynamodb
   labels:
     app.kubernetes.io/part-of: claudie
-    app.kubernetes.io/name: dynamodb
+    app.kubernetes.io/name: dynamo
 spec:
   replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/part-of: claudie
-      app.kubernetes.io/name: dynamodb
+      app.kubernetes.io/name: dynamo
   template:
     metadata:
       labels:
         app.kubernetes.io/part-of: claudie
-        app.kubernetes.io/name: dynamodb
+        app.kubernetes.io/name: dynamo
     spec:
       volumes:
         - name: data
@@ -63,7 +63,7 @@ metadata:
 spec:
   selector:
     app.kubernetes.io/part-of: claudie
-    app.kubernetes.io/name: dynamodb
+    app.kubernetes.io/name: dynamo
   ports:
   - protocol: TCP
     port: 8000
@@ -75,6 +75,7 @@ metadata:
   name: dynamo-pvc
   labels:
     app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: dynamo
 spec:
   resources:
     requests:
