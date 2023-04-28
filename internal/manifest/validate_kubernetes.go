@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-
-	"github.com/go-playground/validator/v10"
 )
 
 var (
@@ -14,7 +12,7 @@ var (
 	// NOTE:
 	// first/second capturing group MUST be changed whenever new kubeone version is introduced in Claudie
 	// so validation will catch unsupported versions
-	semverRegexString = `^(1)\.(22|23|24)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`
+	semverRegexString = `^(1)\.(24|25|26)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`
 
 	// semverRegex is a regex using the semverRegexString.
 	// It's used to verify the version inside the manifest,

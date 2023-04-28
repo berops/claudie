@@ -44,6 +44,8 @@ spec:
               mountPath: "/go/services/testing-framework/test-sets/test-set2"
             - name: test-set3
               mountPath: "/go/services/testing-framework/test-sets/test-set3"
+            - name: test-set4
+              mountPath: "/go/services/testing-framework/test-sets/test-set4"
             - name: autoscaling
               mountPath: "/go/services/testing-framework/test-sets/autoscaling"
       volumes:
