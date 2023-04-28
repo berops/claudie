@@ -58,6 +58,9 @@ spec:
         - name: test-set3
           secret:
             secretName: test-set3
+        - name: test-set4
+          secret:
+            secretName: test-set4
         - name: autoscaling
           secret:
             secretName: autoscaling
