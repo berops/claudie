@@ -1,6 +1,7 @@
 package usecases
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -15,7 +16,7 @@ func (u *Usecases) WatchConfigs() {
 
 	configs, err := u.ContextBox.GetAllConfigs()
 	if err != nil {
-		log.Error().Msgf("failed to retrieve configs from contextbox: %s", err)
+		log.Err(err).Msgf("Failed to retrieve configs from context-box")
 	}
 
 	for _, config := range configs {
@@ -34,7 +35,7 @@ func (u *Usecases) WatchConfigs() {
 			{
 				configs, err = u.ContextBox.GetAllConfigs()
 				if err != nil {
-					log.Error().Msgf("Failed to retrieve configs from context-box microservice: %s", err)
+					log.Err(err).Msgf("Failed to retrieve configs from context-box")
 					break
 				}
 
@@ -50,7 +51,10 @@ func (u *Usecases) WatchConfigs() {
 					}
 
 					u.inProgress.Delete(cluster)
-					log.Info().Msgf("Config: %s - cluster %s has been deleted", cfg.Name, cluster)
+					log.Info().
+						Str("manifest", cfg.Name).
+						Str("cluster", cluster).
+						Msgf("Cluster has been deleted")
 					return true
 				})
 
@@ -60,14 +64,20 @@ func (u *Usecases) WatchConfigs() {
 						if workflow.Status == pb.Workflow_ERROR {
 							if ok {
 								u.inProgress.Delete(cluster)
-								log.Error().Msgf("Workflow failed for cluster %s:%s", cluster, workflow.Description)
+
+								log.Err(errors.New(workflow.Description)).
+									Str("cluster", cluster).
+									Msgf("Workflow failed")
 							}
 							continue
 						}
 						if workflow.Status == pb.Workflow_DONE {
 							if ok {
 								u.inProgress.Delete(cluster)
-								log.Info().Msgf("Workflow finished for cluster %s", cluster)
+
+								log.Info().
+									Str("cluster", cluster).
+									Msgf("Workflow finished")
 							}
 							continue
 						}
@@ -76,12 +86,16 @@ func (u *Usecases) WatchConfigs() {
 
 						stringBuilder := new(strings.Builder)
 						stringBuilder.WriteString(
-							fmt.Sprintf("Cluster %s currently in stage %s with status %s", cluster, workflow.Stage.String(), workflow.Status.String()),
+							fmt.Sprintf("Cluster currently in stage %s with status %s", workflow.Stage.String(), workflow.Status.String()),
 						)
 						if workflow.Description != "" {
 							stringBuilder.WriteString(fmt.Sprintf(" %s", strings.TrimSpace(workflow.Description)))
 						}
-						log.Info().Msgf("Config: %s - %s", config.Name, stringBuilder.String())
+
+						log.Info().
+							Str("cluster", cluster).
+							Str("manifest", config.Name).
+							Msgf(stringBuilder.String())
 					}
 				}
 			}

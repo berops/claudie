@@ -5,11 +5,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/rs/zerolog/log"
+
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/ansibler/server/ansible"
-	"github.com/rs/zerolog/log"
 )
 
 /*
@@ -155,7 +156,7 @@ func teardownLoadBalancers(clusterName string, info *LBInfo, attached bool) (str
 	k8sDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, utils.CreateHash(utils.HashLength)))
 
 	if err := generateK8sBaseFiles(k8sDirectory, info); err != nil {
-		log.Error().Msgf(err.Error())
+		log.Err(err)
 		return "", err
 	}
 
@@ -180,14 +181,16 @@ func setUpLoadbalancers(clusterName string, info *LBInfo) error {
 	directory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, utils.CreateHash(utils.HashLength)))
 
 	if err := generateK8sBaseFiles(directory, info); err != nil {
-		log.Error().Msg(err.Error())
+		log.Err(err)
 		return err
 	}
 
 	err := utils.ConcurrentExec(info.LbClusters, func(lb *LBData) error {
 		lbPrefix := fmt.Sprintf("%s-%s", lb.DesiredLbCluster.ClusterInfo.Name, lb.DesiredLbCluster.ClusterInfo.Hash)
 		directory := filepath.Join(directory, lbPrefix)
-		log.Info().Msgf("Setting up the loadbalancer %s", lbPrefix)
+		log.Info().
+			Str("loadbalancer", lbPrefix).
+			Msg("Setting up the loadbalancer")
 
 		//create key files for lb nodepools
 		if err := utils.CreateDirectory(directory); err != nil {
@@ -339,7 +342,9 @@ func handleAPIEndpointChange(apiServer *LBData, k8sCluster *LBInfo, k8sDirectory
 		lbCluster = apiServer.CurrentLbCluster
 	}
 
-	log.Debug().Msgf("Changing the API endpoint for the cluster %s from %s to %s", lbCluster.ClusterInfo.Name, oldEndpoint, newEndpoint)
+	log.Debug().
+		Str("lb-cluster", lbCluster.ClusterInfo.Name).
+		Msgf("Changing the API endpoint for the cluster from %s to %s", oldEndpoint, newEndpoint)
 
 	if err := changeAPIEndpoint(lbCluster.ClusterInfo.Name, oldEndpoint, newEndpoint, k8sDirectory); err != nil {
 		return fmt.Errorf("error while changing the endpoint for %s : %w", lbCluster.ClusterInfo.Name, err)

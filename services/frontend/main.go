@@ -94,7 +94,7 @@ func run() error {
 		// Performing graceful shutdown.
 
 		// First shutdown the HTTP server to block any incoming connections.
-		log.Info().Msg("Gracefully shutting down K8sSidecarNotificationsReceiver and ContextBoxCommunicator")
+		log.Info().Msg("Gracefully shutting down K8sSidecarNotificationsReceiver and ContextBoxConnector")
 		if err := k8sSidecarNotificationsReceiver.Stop(); err != nil {
 			log.Error().Msgf("Failed to gracefully shutdown K8sSidecarNotificationsReceiver: %v", err)
 		}

@@ -10,13 +10,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
+
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb"
 )
 
 const (
@@ -29,7 +30,11 @@ type server struct {
 
 // InstallNodeRequirements installs requirements on all nodes
 func (*server) InstallNodeRequirements(_ context.Context, req *pb.InstallRequest) (*pb.InstallResponse, error) {
-	log.Info().Msgf("Installing node requirements for cluster %s project %s", req.Desired.ClusterInfo.Name, req.ProjectName)
+	log.With().
+		Str("cluster", req.Desired.ClusterInfo.Name).
+		Str("manifest", req.ProjectName)
+
+	log.Info().Msgf("Installing node requirements")
 	info := &NodepoolInfo{
 		Nodepools:  req.Desired.ClusterInfo.NodePools,
 		PrivateKey: req.Desired.ClusterInfo.PrivateKey,
@@ -38,11 +43,11 @@ func (*server) InstallNodeRequirements(_ context.Context, req *pb.InstallRequest
 	}
 
 	if err := installLonghornRequirements(info); err != nil {
-		log.Error().Msgf("Error encountered while installing node requirements for cluster %s project %s : %s", req.Desired.ClusterInfo.Name, req.ProjectName, err)
+		log.Err(err).Msgf("Error encountered while installing node requirements")
 		return nil, fmt.Errorf("error encountered while installing node requirements for cluster %s project %s : %w", req.Desired.ClusterInfo.Name, req.ProjectName, err)
 	}
 
-	log.Info().Msgf("Node requirements for cluster %s project %s was successfully installed", req.Desired.ClusterInfo.Name, req.ProjectName)
+	log.Info().Msgf("Node requirements was successfully installed")
 	return &pb.InstallResponse{Desired: req.Desired, DesiredLbs: req.DesiredLbs}, nil
 }
 
