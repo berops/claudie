@@ -1,6 +1,11 @@
 {{- $clusterName := .ClusterName}}
 {{- $clusterHash := .ClusterHash}}
 {{- $index :=  0}}
+variable "gcp_storage_disk_name" {
+  default = "storage-disk"
+  type    = string
+}
+
 {{- range $i, $region := .Regions}}
 provider "google" {
   credentials = "${file("{{ (index $.NodePools $index).Provider.SpecName }}")}"
@@ -69,7 +74,7 @@ resource "google_compute_instance" "{{ $node.Name }}" {
   allow_stopping_for_update = true
   boot_disk {
     initialize_params {
-      size = "{{ $nodepool.DiskSize }}"
+      size = "100"
       image = "{{ $nodepool.Image }}"
     }
   }
@@ -80,13 +85,55 @@ resource "google_compute_instance" "{{ $node.Name }}" {
   metadata = {
     ssh-keys = "root:${file("./public.pem")}"
   }
-  metadata_startup_script = "echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart"
+  metadata_startup_script = <<EOF
+  #!/bin/bash
+  set -euxo pipefail
+# Allow ssh as root
+echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart
+{{- if not $nodepool.IsControl }}
+# Mount managed disk only when not mounted yet
+sleep 50
+disk=$(ls -l /dev/disk/by-id | grep "google-${var.gcp_storage_disk_name}" | awk '{print $NF}')
+disk=$(basename "$disk")
+if ! grep -qs "/dev/$disk" /proc/mounts; then
+  mkdir -p /opt/claudie/data
+  if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
+    mkfs.xfs /dev/$disk
+  fi
+  mount /dev/$disk /opt/claudie/data
+  echo "/dev/$disk /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
+fi
+{{- end }}
+EOF
   
   labels = {
     managed-by = "claudie"
     claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
+
+{{- if not $nodepool.IsControl }}
+resource "google_compute_disk" "{{ $node.Name }}_disk" {
+  provider = google.k8s_nodepool_{{ $nodepool.Region }}
+  name     = "{{ $node.Name }}-disk"
+  type     = "pd-ssd"
+  zone     = "{{ $nodepool.Zone }}"
+  size     = {{ $nodepool.StorageDiskSize }}
+
+  labels = {
+    managed-by = "claudie"
+    claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
+  }
+}
+
+resource "google_compute_attached_disk" "{{ $node.Name }}_disk_att" {
+  provider    = google.k8s_nodepool_{{ $nodepool.Region }}
+  disk        = google_compute_disk.{{ $node.Name }}_disk.id
+  instance    = google_compute_instance.{{ $node.Name }}.id
+  zone        = "{{ $nodepool.Zone }}"
+  device_name = var.gcp_storage_disk_name
+}
+{{- end }}
 {{- end }}
 
 output "{{ $nodepool.Name }}" {

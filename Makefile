@@ -50,7 +50,7 @@ minio:
 
 # Start DynamoDB backend used for state file locks
 dynamodb:
-	docker run --rm -p 8000:8000 --name dynamodb-local -v ~/dynamodb:/home/dynamodblocal/data amazon/dynamodb-local:latest -jar DynamoDBLocal.jar -sharedDb -dbPath ./data
+	docker run --rm -p 8000:8000 --name dynamodb-local -v ~/dynamodb:/home/dynamodblocal/data amazon/dynamodb-local:1.21.0 -jar DynamoDBLocal.jar -sharedDb -dbPath ./data
 
 # Start Testing-framework, which will inject manifests from /services/testing-framework/test-sets
 # -timeout 0 will disable default timeout
@@ -66,7 +66,7 @@ lint:
 datastoreStart:
 	docker run --rm -d -p 27017:27017 --name mongo -v ~/mongo/data:/data/db mongo:5
 	docker run --rm -d -p 9000:9000 -p 9001:9001 --name minio -v ~/minio/data:/data quay.io/minio/minio server /data --console-address ":9001"
-	docker run --rm -d -p 8000:8000 --name dynamodb -v ~/dynamodb:/home/dynamodblocal/data amazon/dynamodb-local:latest -jar DynamoDBLocal.jar -sharedDb -dbPath ./data
+	docker run --rm -d -p 8000:8000 --name dynamodb -v ~/dynamodb:/home/dynamodblocal/data amazon/dynamodb-local:1.21.0 -jar DynamoDBLocal.jar -sharedDb -dbPath ./data
 
 # Stops all data stores at once, which will also remove docker containers
 datastoreStop:
@@ -76,10 +76,10 @@ datastoreStop:
 
 # DynamoDB utilities 
 dynamodb-create-table:
-	aws dynamodb create-table --attribute-definitions AttributeName=LockID,AttributeType=S --table-name claudie --key-schema AttributeName=LockID,KeyType=HASH --provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1  --output json --endpoint-url http://localhost:8000 --no-cli-pager
+	aws dynamodb create-table --attribute-definitions AttributeName=LockID,AttributeType=S --table-name claudie --key-schema AttributeName=LockID,KeyType=HASH --provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1  --output json --endpoint-url http://localhost:8000 --debug --region local
 
 dynamodb-scan-table:
-	aws dynamodb scan --table-name claudie --endpoint-url http://localhost:8000 --no-cli-pager
+	aws dynamodb scan --table-name claudie --endpoint-url http://localhost:8000 --region local --no-cli-pager --debug
 
 # We need the value of local architecture to pass to docker as a build arg and
 # Go already needs to be installed so we make use of it here.

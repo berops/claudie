@@ -32,7 +32,6 @@ nodePools:
       serverType: Standard_B2s
       # URN of the image.
       image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
-      diskSize: 50
 
     - name: compute-1-azure
       providerSpec:
@@ -47,7 +46,7 @@ nodePools:
       serverType: Standard_B2s
       # URN of the image.
       image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
-      diskSize: 50
+      storageDiskSize: 50
 
     - name: compute-2-azure
       providerSpec:
@@ -62,7 +61,7 @@ nodePools:
       serverType: Standard_B2s
       # URN of the image.
       image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
-      diskSize: 50
+      storageDiskSize: 50
 
 kubernetes:
   clusters:
@@ -119,7 +118,6 @@ nodePools:
       serverType: Standard_B2s
       # URN of the image.
       image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
-      diskSize: 50
 
     - name: control-azure-2
       providerSpec:
@@ -134,7 +132,6 @@ nodePools:
       serverType: Standard_B2s
       # URN of the image.
       image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
-      diskSize: 50
 
     - name: compute-azure-1
       providerSpec:
@@ -149,7 +146,7 @@ nodePools:
       serverType: Standard_B2s
       # URN of the image.
       image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
-      diskSize: 50
+      storageDiskSize: 50
 
     - name: compute-azure-2
       providerSpec:
@@ -164,7 +161,7 @@ nodePools:
       serverType: Standard_B2s
       # URN of the image.
       image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
-      diskSize: 50
+      storageDiskSize: 50
 
 kubernetes:
   clusters:

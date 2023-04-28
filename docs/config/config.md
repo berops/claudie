@@ -91,7 +91,7 @@ NodePool represents a single nodepool from the manifest.
   | Region           | string                              | Region of the nodes                                     |
   | ServerType       | string                              | Machine type of the nodes                               |
   | Image            | string                              | OS image of the nodes                                   |
-  | DiskSize         | int32                               | Disk size of the nodes                                  |
+  | StorageDiskSize  | int32                               | Disk size of the nodes                                  |
   | Zone             | string                              | Zone for the nodes                                      |
   | Count            | int32                               | Count of the nodes                                      |
   | Nodes            | [] [Node](#node)                    | Slice of Nodes                                          |

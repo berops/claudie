@@ -62,7 +62,7 @@ func (nm *NodeManager) GetCapacity(np *pb.NodePool) k8sV1.ResourceList {
 		if typeInfo.disk > 0 {
 			disk = typeInfo.disk
 		} else {
-			disk = int64(np.DiskSize) * 1024 * 1024 * 1024 // Convert to bytes
+			disk = int64(np.StorageDiskSize) * 1024 * 1024 * 1024 // Convert to bytes
 		}
 		rl := k8sV1.ResourceList{}
 		rl[k8sV1.ResourcePods] = *resource.NewQuantity(defaultPodAmountsLimit, resource.DecimalSI)
