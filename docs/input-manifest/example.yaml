@@ -162,6 +162,7 @@ nodePools:
         name: hetzner-1
         region: hel1
         zone: hel1-dc2
+      count: 2
       serverType: cpx11
       image: ubuntu-22.04
       storageDiskSize: 50
