@@ -172,7 +172,7 @@ func (d *Deleter) updateClusterData() {
 // deleteFromLonghorn will delete node from nodes.longhorn.io
 // return nil if successful, error otherwise
 func (d *Deleter) deleteFromLonghorn(kc kubectl.Kubectl, worker string) error {
-	log.Info().Str("cluster", d.clusterPrefix).Msgf("Deleting node %s from nodes.longhorn.io from cluster %s", worker)
+	log.Info().Str("cluster", d.clusterPrefix).Msgf("Deleting node %s from nodes.longhorn.io", worker)
 	if err := kc.KubectlDeleteResource("nodes.longhorn.io", worker, "-n", longhornNamespace); err != nil {
 		return fmt.Errorf("error while deleting node %s from nodes.longhorn.io from cluster %s : %w", worker, d.clusterPrefix, err)
 	}

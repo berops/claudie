@@ -110,7 +110,7 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 
 		err = u.ContextBox.SaveConfig(config)
 		if err != nil {
-			log.Err(err).Str("project", manifestName).Msgf("Failed to save config %v")
+			log.Err(err).Str("project", manifestName).Msgf("Failed to save config")
 			continue
 		}
 

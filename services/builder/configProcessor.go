@@ -129,10 +129,10 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 				}
 			}
 
-			message := fmt.Sprintf("Processing cluster")
+			message := "Processing cluster"
 			if tmpDesired != nil {
 				clusterView.ClusterWorkflows[clusterName].Description = "Processing stage [2/2]"
-				message = fmt.Sprintf("Processing stage [2/2] for cluster")
+				message = "Processing stage [2/2] for cluster"
 			}
 			_logger.Info().Msgf(message)
 
@@ -210,7 +210,7 @@ func stateDifference(current *pb.K8Scluster, desired *pb.K8Scluster) (*pb.K8Sclu
 		if current != nil && desired != nil {
 			//append nodepool to desired state, since tmpConfig only adds nodes
 			for nodepoolName := range currentNodepoolCounts {
-				log.Debug().Str("cluster", current.ClusterInfo.Name).Msgf("Nodepool %s from cluster %s will be deleted", nodepoolName)
+				log.Debug().Str("cluster", current.ClusterInfo.Name).Msgf("Nodepool %s will be deleted", nodepoolName)
 				desired.ClusterInfo.NodePools = append(desired.ClusterInfo.NodePools, utils.GetNodePoolByName(nodepoolName, current.ClusterInfo.GetNodePools()))
 			}
 		}
