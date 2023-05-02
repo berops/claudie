@@ -41,6 +41,7 @@ data:
   typha_service_name: "none"
   # Configure the backend to use.
   calico_backend: "bird"
+
   # Configure the MTU to use for workload interfaces and tunnels.
   # By default, MTU is auto-detected, and explicitly setting this field should not be required.
   # You can override auto-detection by providing a non-zero value.
@@ -154,6 +155,13 @@ spec:
                         pattern: ^(\d+):(\d+)$|^(\d+):(\d+):(\d+)$
                         type: string
                     type: object
+                  type: array
+                ignoredInterfaces:
+                  description:
+                    IgnoredInterfaces indicates the network interfaces that
+                    needs to be excluded when reading device routes.
+                  items:
+                    type: string
                   type: array
                 listenPort:
                   description:
@@ -403,6 +411,12 @@ spec:
                     remote AS number comes from the remote node's NodeBGPSpec.ASNumber,
                     or the global default if that is not set.
                   type: string
+                reachableBy:
+                  description:
+                    Add an exact, i.e. /32, static route toward peer IP in
+                    order to prevent route flapping. ReachableBy contains the address
+                    of the gateway which peer can be reached by.
+                  type: string
                 sourceAddress:
                   description:
                     Specifies whether and how to configure a source address
@@ -410,6 +424,13 @@ spec:
                     "UseNodeIP" means to configure the node IP as the source address.  "None"
                     means not to configure a source address.
                   type: string
+                ttlSecurity:
+                  description:
+                    TTLSecurity enables the generalized TTL security mechanism
+                    (GTSM) which protects against spoofed packets by ignoring received
+                    packets with a smaller than expected TTL value. The provided value
+                    is the number of hops (edges) between the peers.
+                  type: integer
               type: object
           type: object
       served: true
@@ -942,9 +963,10 @@ spec:
                   type: boolean
                 bpfEnforceRPF:
                   description:
-                    "BPFEnforceRPF enforce strict RPF on all interfaces with
-                    BPF programs regardless of what is the per-interfaces or global
-                    setting. Possible values are Disabled or Strict. [Default: Strict]"
+                    "BPFEnforceRPF enforce strict RPF on all host interfaces
+                    with BPF programs regardless of what is the per-interfaces or global
+                    setting. Possible values are Disabled, Strict or Loose. [Default:
+                    Strict]"
                   type: string
                 bpfExtToServiceConnmark:
                   description:
@@ -965,6 +987,12 @@ spec:
                     node appears to use the IP of the ingress node; this requires a
                     permissive L2 network.  [Default: Tunnel]'
                   type: string
+                bpfHostConntrackBypass:
+                  description:
+                    "BPFHostConntrackBypass Controls whether to bypass Linux
+                    conntrack in BPF mode for workloads and services. [Default: true
+                    - bypass Linux conntrack]"
+                  type: boolean
                 bpfKubeProxyEndpointSlicesEnabled:
                   description:
                     BPFKubeProxyEndpointSlicesEnabled in BPF mode, controls
@@ -983,6 +1011,15 @@ spec:
                     minimum time between updates to the dataplane for Felix's embedded
                     kube-proxy.  Lower values give reduced set-up latency.  Higher values
                     reduce Felix CPU usage by batching up more work.  [Default: 1s]"
+                  type: string
+                bpfL3IfacePattern:
+                  description:
+                    BPFL3IfacePattern is a regular expression that allows
+                    to list tunnel devices like wireguard or vxlan (i.e., L3 devices)
+                    in addition to BPFDataIfacePattern. That is, tunnel interfaces not
+                    created by Calico, that Calico workload traffic flows over as well
+                    as any interfaces that handle incoming traffic to nodeports and
+                    services from outside the cluster.
                   type: string
                 bpfLogLevel:
                   description:
@@ -1075,7 +1112,8 @@ spec:
                     used for Felix's (internal) dataplane driver. Increase this value
                     if you experience spurious non-ready or non-live events when Felix
                     is under heavy load. Decrease the value to get felix to report non-live
-                    or non-ready more quickly. [Default: 90s]"
+                    or non-ready more quickly. [Default: 90s] \n Deprecated: replaced
+                    by the generic HealthTimeoutOverrides."
                   type: string
                 debugDisableLogDropping:
                   type: boolean
@@ -1189,16 +1227,23 @@ spec:
                   type: array
                 featureDetectOverride:
                   description:
-                    FeatureDetectOverride is used to override the feature
-                    detection. Values are specified in a comma separated list with no
-                    spaces, example; "SNATFullyRandom=true,MASQFullyRandom=false,RestoreSupportsLock=".
-                    "true" or "false" will force the feature, empty or omitted values
-                    are auto-detected.
+                    FeatureDetectOverride is used to override feature detection
+                    based on auto-detected platform capabilities.  Values are specified
+                    in a comma separated list with no spaces, example; "SNATFullyRandom=true,MASQFullyRandom=false,RestoreSupportsLock=".  "true"
+                    or "false" will force the feature, empty or omitted values are auto-detected.
+                  type: string
+                featureGates:
+                  description:
+                    FeatureGates is used to enable or disable tech-preview
+                    Calico features. Values are specified in a comma separated list
+                    with no spaces, example; "BPFConnectTimeLoadBalancingWorkaround=enabled,XyZ=false".
+                    This is used to enable features that are not fully production ready.
                   type: string
                 floatingIPs:
                   description:
                     FloatingIPs configures whether or not Felix will program
-                    floating IP addresses.
+                    non-OpenStack floating IP addresses.  (OpenStack-derived floating
+                    IPs are always programmed, regardless of this setting.)
                   enum:
                     - Enabled
                     - Disabled
@@ -1216,6 +1261,24 @@ spec:
                   type: string
                 healthPort:
                   type: integer
+                healthTimeoutOverrides:
+                  description:
+                    HealthTimeoutOverrides allows the internal watchdog timeouts
+                    of individual subcomponents to be overriden.  This is useful for
+                    working around "false positive" liveness timeouts that can occur
+                    in particularly stressful workloads or if CPU is constrained.  For
+                    a list of active subcomponents, see Felix's logs.
+                  items:
+                    properties:
+                      name:
+                        type: string
+                      timeout:
+                        type: string
+                    required:
+                      - name
+                      - timeout
+                    type: object
+                  type: array
                 interfaceExclude:
                   description:
                     "InterfaceExclude is a comma-separated list of interfaces
@@ -1264,7 +1327,7 @@ spec:
                 iptablesBackend:
                   description:
                     IptablesBackend specifies which backend of iptables will
-                    be used. The default is legacy.
+                    be used. The default is Auto.
                   type: string
                 iptablesFilterAllowAction:
                   type: string
@@ -1573,8 +1636,8 @@ spec:
                 vxlanEnabled:
                   description:
                     "VXLANEnabled overrides whether Felix should create the
-                    VXLAN tunnel device for VXLAN networking. Optional as Felix determines
-                    this based on the existing IP pools. [Default: nil (unset)]"
+                    VXLAN tunnel device for IPv4 VXLAN networking. Optional as Felix
+                    determines this based on the existing IP pools. [Default: nil (unset)]"
                   type: boolean
                 vxlanMTU:
                   description:
@@ -3156,7 +3219,7 @@ spec:
                   type: boolean
                 natOutgoing:
                   description:
-                    When nat-outgoing is true, packets sent from Calico networked
+                    When natOutgoing is true, packets sent from Calico networked
                     containers in this pool to destinations outside of this pool will
                     be masqueraded.
                   type: boolean
@@ -4854,7 +4917,7 @@ spec:
         # It can be deleted if this is a fresh installation, or if you have already
         # upgraded to use calico-ipam.
         - name: upgrade-ipam
-          image: docker.io/calico/cni:v3.24.1
+          image: docker.io/calico/cni:v3.25.1
           imagePullPolicy: IfNotPresent
           command: ["/opt/cni/bin/calico-ipam", "-upgrade"]
           envFrom:
@@ -4882,7 +4945,7 @@ spec:
         # This container installs the CNI binaries
         # and CNI network config file on each node.
         - name: install-cni
-          image: docker.io/calico/cni:v3.24.1
+          image: docker.io/calico/cni:v3.25.1
           imagePullPolicy: IfNotPresent
           command: ["/opt/cni/bin/install"]
           envFrom:
@@ -4925,7 +4988,7 @@ spec:
         # i.e. bpf at /sys/fs/bpf and cgroup2 at /run/calico/cgroup. Calico-node initialisation is executed
         # in best effort fashion, i.e. no failure for errors, to not disrupt pod creation in iptable mode.
         - name: "mount-bpffs"
-          image: docker.io/calico/node:v3.24.1
+          image: docker.io/calico/node:v3.25.1
           imagePullPolicy: IfNotPresent
           command: ["calico-node", "-init", "-best-effort"]
           volumeMounts:
@@ -4951,7 +5014,7 @@ spec:
         # container programs network policy and routes on each
         # host.
         - name: calico-node
-          image: docker.io/calico/node:v3.24.1
+          image: docker.io/calico/node:v3.25.1
           imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
@@ -5168,7 +5231,7 @@ spec:
       priorityClassName: system-cluster-critical
       containers:
         - name: calico-kube-controllers
-          image: docker.io/calico/kube-controllers:v3.24.1
+          image: docker.io/calico/kube-controllers:v3.25.1
           imagePullPolicy: IfNotPresent
           env:
             # Choose which controllers to run.

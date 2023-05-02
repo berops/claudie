@@ -1,22 +1,24 @@
 {{- $clusterName := .ClusterName}}
 {{- $clusterHash := .ClusterHash}}
 {{- range $i, $region := .Regions }}
-resource "azurerm_resource_group" "rg_{{ replaceAll $region " " "_" }}" {
+{{- $sanitisedRegion := replaceAll $region " " "_"}}
+resource "azurerm_resource_group" "rg_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}" {
   provider = azurerm.lb_nodepool
-  name     = "{{ $clusterName }}-{{ $clusterHash }}-{{ replaceAll $region " " "-" }}"
+  name     = "{{ $clusterName }}-{{ $clusterHash }}-{{ $sanitisedRegion }}"
   location = "{{ $region }}"
+
   tags = {
     managed-by      = "Claudie"
     claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
 
-resource "azurerm_virtual_network" "claudie_vn_{{ replaceAll $region " " "_" }}" {
+resource "azurerm_virtual_network" "claudie_vn_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}" {
   provider            = azurerm.lb_nodepool
   name                = "{{ $clusterName }}-{{ $clusterHash }}-vn"
   address_space       = ["10.0.0.0/16"]
   location            = "{{ $region }}"
-  resource_group_name = azurerm_resource_group.rg_{{ replaceAll $region " " "_" }}.name
+  resource_group_name = azurerm_resource_group.rg_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}.name
 
   tags = {
     managed-by      = "Claudie"
@@ -24,11 +26,11 @@ resource "azurerm_virtual_network" "claudie_vn_{{ replaceAll $region " " "_" }}"
   }
 }
 
-resource "azurerm_network_security_group" "claudie_nsg_{{ replaceAll $region " " "_" }}" {
+resource "azurerm_network_security_group" "claudie_nsg_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}" {
   provider            = azurerm.lb_nodepool
   name                = "{{ $clusterName }}-{{ $clusterHash }}-nsg"
   location            = "{{ $region }}"
-  resource_group_name = azurerm_resource_group.rg_{{ replaceAll $region " " "_" }}.name
+  resource_group_name = azurerm_resource_group.rg_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}.name
 
   security_rule {
     name                       = "SSH"
@@ -87,18 +89,19 @@ resource "azurerm_network_security_group" "claudie_nsg_{{ replaceAll $region " "
 {{- end }}
 
 {{- range $i, $nodepool := .NodePools }}
+{{- $sanitisedRegion := replaceAll $nodepool.Region " " "_"}}
 resource "azurerm_subnet" "{{ $nodepool.Name }}_{{ $clusterHash }}_subnet" {
   provider             = azurerm.lb_nodepool
   name                 = "{{ $nodepool.Name }}_{{ $clusterHash }}_subnet"
-  resource_group_name  = azurerm_resource_group.rg_{{ replaceAll $nodepool.Region " " "_"}}.name
-  virtual_network_name = azurerm_virtual_network.claudie_vn_{{ replaceAll $nodepool.Region " " "_" }}.name
+  resource_group_name  = azurerm_resource_group.rg_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}.name
+  virtual_network_name = azurerm_virtual_network.claudie_vn_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}.name
   address_prefixes     = ["{{ index $.Metadata (printf "%s-subnet-cidr" $nodepool.Name)  }}"]
 }
 
 resource "azurerm_subnet_network_security_group_association" "{{ $nodepool.Name }}_associate_nsg" {
   provider                  = azurerm.lb_nodepool
   subnet_id                 = azurerm_subnet.{{ $nodepool.Name }}_{{ $clusterHash }}_subnet.id
-  network_security_group_id = azurerm_network_security_group.claudie_nsg_{{ replaceAll $nodepool.Region " " "_" }}.id
+  network_security_group_id = azurerm_network_security_group.claudie_nsg_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}.id
 }
 
 {{- range $node := $nodepool.Nodes }}
@@ -106,7 +109,7 @@ resource "azurerm_public_ip" "{{ $node.Name }}_public_ip" {
   provider            = azurerm.lb_nodepool
   name                = "{{ $node.Name }}-ip"
   location            = "{{ $nodepool.Region }}"
-  resource_group_name = azurerm_resource_group.rg_{{ replaceAll $nodepool.Region " " "_" }}.name
+  resource_group_name = azurerm_resource_group.rg_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}.name
   allocation_method   = "Static"
   sku                 = "Standard"
 
@@ -120,7 +123,7 @@ resource "azurerm_network_interface" "{{ $node.Name }}_ni" {
   provider            = azurerm.lb_nodepool
   name                = "{{ $node.Name }}-ni"
   location            = "{{ $nodepool.Region }}"
-  resource_group_name = azurerm_resource_group.rg_{{replaceAll $nodepool.Region " " "_"  }}.name
+  resource_group_name = azurerm_resource_group.rg_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}.name
   enable_accelerated_networking = {{ enableAccNet $nodepool.ServerType }}
 
   ip_configuration {
@@ -141,7 +144,7 @@ resource "azurerm_linux_virtual_machine" "{{ $node.Name }}" {
   provider              = azurerm.lb_nodepool
   name                  = "{{ $node.Name }}"
   location              = "{{ $nodepool.Region }}"
-  resource_group_name   = azurerm_resource_group.rg_{{ replaceAll $nodepool.Region " " "_"  }}.name
+  resource_group_name   = azurerm_resource_group.rg_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}.name
   network_interface_ids = [azurerm_network_interface.{{ $node.Name }}_ni.id]
   size                  = "{{$nodepool.ServerType}}"
   zone                  = "{{$nodepool.Zone}}"
@@ -154,10 +157,10 @@ resource "azurerm_linux_virtual_machine" "{{ $node.Name }}" {
   }
 
   os_disk {
-      name                 = "{{ $node.Name }}-osdisk"
-      caching              = "ReadWrite"
-      storage_account_type = "Standard_LRS"
-      disk_size_gb         = "{{ $nodepool.DiskSize }}"
+    name                 = "{{ $node.Name }}-osdisk"
+    caching              = "ReadWrite"
+    storage_account_type = "StandardSSD_LRS"
+    disk_size_gb         = "50"
   }
 
   disable_password_authentication = true
@@ -186,6 +189,7 @@ resource "azurerm_virtual_machine_extension" "{{ $node.Name }}_{{ $clusterHash }
   protected_settings = <<PROT
   {
       "script": "${base64encode(<<EOF
+      # Allow ssh as root
       sudo sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
       sudo cat /root/.ssh/temp > /root/.ssh/authorized_keys
       sudo rm /root/.ssh/temp

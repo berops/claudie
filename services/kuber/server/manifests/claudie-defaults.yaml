@@ -5,3 +5,11 @@ metadata:
   name: system-managed-components-node-selector
   namespace: longhorn-system
 value: claudie.io/node-type:compute
+---
+# Default path to use for storing data on a host
+apiVersion: longhorn.io/v1beta1
+kind: Setting
+metadata:
+  name: default-data-path
+  namespace: longhorn-system
+value: /opt/claudie/data

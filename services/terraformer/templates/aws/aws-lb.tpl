@@ -149,11 +149,14 @@ resource "aws_instance" "{{ $node.Name }}" {
   }
   
   root_block_device {
-    volume_size = {{ $nodepool.DiskSize }}
+    volume_size           = 50
+    delete_on_termination = true
+    volume_type           = "gp2"
   }
-    # Allow ssh connection for root
-    user_data = <<EOF
+ 
+  user_data = <<EOF
 #!/bin/bash
+# Allow ssh connection for root
 sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
 cat /root/.ssh/temp > /root/.ssh/authorized_keys
 rm /root/.ssh/temp

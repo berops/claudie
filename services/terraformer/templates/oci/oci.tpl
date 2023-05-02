@@ -7,6 +7,11 @@ variable "default_compartment_id" {
   default = "{{ (index .NodePools 0).Provider.OciCompartmentOcid }}"
 }
 
+variable "oci_storage_disk_name" {
+  default = "oraclevdb"
+  type    = string
+}
+
 {{- range $i, $region := .Regions }}
 resource "oci_core_vcn" "claudie_vcn-{{ $region }}" {
   provider        = oci.k8s_nodepool_{{ $region }}
@@ -152,6 +157,21 @@ resource "oci_core_instance" "{{ $node.Name }}" {
         - iptables -Z
         # Make changes persistent
         - netfilter-persistent save
+        {{- if not $nodepool.IsControl }}
+        # Mount volume
+        - |
+          sleep 50
+          disk=$(ls -l /dev/oracleoci | grep "${var.oci_storage_disk_name}" | awk '{print $NF}')
+          disk=$(basename "$disk")
+          if ! grep -qs "/dev/$disk" /proc/mounts; then
+            mkdir -p /opt/claudie/data
+            if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
+              mkfs.xfs /dev/$disk
+            fi
+            mount /dev/$disk /opt/claudie/data
+            echo "/dev/$disk /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
+          fi
+        {{- end }}
       EOF
       )
   }
@@ -159,7 +179,7 @@ resource "oci_core_instance" "{{ $node.Name }}" {
   source_details {
     source_id               = "{{ $nodepool.Image }}"
     source_type             = "image"
-    boot_volume_size_in_gbs = "{{ $nodepool.DiskSize }}"
+    boot_volume_size_in_gbs = "100"
   }
 
   create_vnic_details {
@@ -172,6 +192,31 @@ resource "oci_core_instance" "{{ $node.Name }}" {
     "Claudie-cluster" = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 }
+
+{{- if not $nodepool.IsControl }}
+resource "oci_core_volume" "{{ $node.Name }}_volume" {
+  provider            = oci.k8s_nodepool_{{ $nodepool.Region }}
+  compartment_id      = var.default_compartment_id
+  availability_domain = "{{ $nodepool.Zone }}"
+  size_in_gbs         = "{{ $nodepool.StorageDiskSize }}"
+  display_name        = "{{ $node.Name }}-volume"
+  vpus_per_gb         = 10
+
+  freeform_tags = {
+    "Managed-by"      = "Claudie"
+    "Claudie-cluster" = "{{ $clusterName }}-{{ $clusterHash }}"
+  }
+}
+
+resource "oci_core_volume_attachment" "{{ $node.Name }}_volume_att" {
+  provider        = oci.k8s_nodepool_{{ $nodepool.Region }}
+  attachment_type = "paravirtualized"
+  instance_id     = oci_core_instance.{{ $node.Name }}.id
+  volume_id       = oci_core_volume.{{ $node.Name }}_volume.id
+  display_name    = "{{ $node.Name }}-volume-att"
+  device          = "/dev/oracleoci/${var.oci_storage_disk_name}"
+}
+{{- end }}
 {{- end }}
 
 output "{{ $nodepool.Name }}" {

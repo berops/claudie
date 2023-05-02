@@ -104,9 +104,9 @@ func (k *Kubectl) KubectlGet(resource string, options ...string) ([]byte, error)
 
 // KubectlAnnotate runs kubectl annotate in k.Directory, with the specified annotation on a specified resource and resource name
 // example: kubectl annotate node node-1 node.longhorn.io/default-node-tags='["zone2"]' -> k.KubectlAnnotate("node","node-1","node.longhorn.io/default-node-tags='["zone2"]")
-func (k *Kubectl) KubectlAnnotate(resource, resourceName, annotation string) error {
+func (k *Kubectl) KubectlAnnotate(resource, resourceName, annotation string, options ...string) error {
 	command := fmt.Sprintf("kubectl annotate %s %s %s %s", resource, resourceName, annotation, k.getKubeconfig())
-	return k.run(command)
+	return k.run(command, options...)
 }
 
 // KubectlLabel runs kubectl label in k.Directory, with the specified label on a specified resource and resource name

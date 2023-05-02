@@ -61,7 +61,7 @@ resource "google_compute_instance" "{{ $node.Name }}" {
   allow_stopping_for_update = true
   boot_disk {
     initialize_params {
-      size = "{{ $nodepool.DiskSize }}"
+      size = "50"
       image = "{{ $nodepool.Image }}"
     }
   }

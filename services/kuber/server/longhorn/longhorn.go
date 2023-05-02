@@ -33,16 +33,16 @@ type enableCA struct {
 }
 
 const (
-	longhornYaml             = "services/kuber/server/manifests/longhorn.yaml"
-	longhornNodeSelectorYaml = "services/kuber/server/manifests/node-selector.yaml"
-	longhornEnableCaTpl      = "enable-ca.goyaml"
-	storageManifestTpl       = "storage-class.goyaml"
-	defaultSC                = "longhorn"
-	storageClassLabel        = "claudie.io/provider-instance"
+	longhornYaml         = "services/kuber/server/manifests/longhorn.yaml"
+	longhornDefaultsYaml = "services/kuber/server/manifests/claudie-defaults.yaml"
+	longhornEnableCaTpl  = "enable-ca.goyaml"
+	storageManifestTpl   = "storage-class.goyaml"
+	defaultSC            = "longhorn"
+	storageClassLabel    = "claudie.io/provider-instance"
 )
 
 // SetUp function will set up the longhorn on the k8s cluster saved in l.Longhorn
-func (l Longhorn) SetUp() error {
+func (l *Longhorn) SetUp() error {
 	kubectl := kubectl.Kubectl{Kubeconfig: l.Cluster.GetKubeconfig()}
 	// apply longhorn.yaml and settings
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
@@ -50,12 +50,10 @@ func (l Longhorn) SetUp() error {
 		kubectl.Stdout = comm.GetStdOut(prefix)
 		kubectl.Stderr = comm.GetStdErr(prefix)
 	}
-	// apply longhorn.yaml
-	if err := kubectl.KubectlApply(longhornYaml); err != nil {
-		return fmt.Errorf("error while applying longhorn.yaml in %s : %w", l.Directory, err)
-	}
-	if err := kubectl.KubectlApply(longhornNodeSelectorYaml, ""); err != nil {
-		return fmt.Errorf("error while applying settings node-selector.yaml in %s : %w", l.Directory, err)
+
+	// Apply longhorn manifests after nodes are annotated.
+	if err := l.applyManifests(kubectl); err != nil {
+		return fmt.Errorf("error while applying longhorn manifests in cluster %s : %w", l.Cluster.ClusterInfo.Name, err)
 	}
 
 	//get existing sc so we can delete them if we do not need them any more
@@ -73,13 +71,13 @@ func (l Longhorn) SetUp() error {
 	if err != nil {
 		return err
 	}
-
-	// Apply setting about CA
-	enableCa := enableCA{fmt.Sprintf("%v", utils.IsAutoscaled(l.Cluster))}
 	enableCATpl, err := templateLoader.LoadTemplate(longhornEnableCaTpl)
 	if err != nil {
 		return err
 	}
+
+	// Apply setting about CA
+	enableCa := enableCA{fmt.Sprintf("%v", utils.IsAutoscaled(l.Cluster))}
 	if setting, err := template.GenerateToString(enableCATpl, enableCa); err != nil {
 		return err
 	} else if err := kubectl.KubectlApplyString(setting); err != nil {
@@ -94,8 +92,8 @@ func (l Longhorn) SetUp() error {
 	}
 	realNodeNames := strings.Split(string(realNodesInfo), "\n")
 	// tag nodes based on the zones
-	for provider, nodepools := range sortedNodePools {
-		zoneName := fmt.Sprintf("%s-zone", provider)
+	for providerInstance, nodepools := range sortedNodePools {
+		zoneName := fmt.Sprintf("%s-zone", providerInstance)
 		storageClassName := fmt.Sprintf("longhorn-%s", zoneName)
 		//flag to determine whether we need to create storage class or not
 		isWorkerNodeProvider := false
@@ -106,10 +104,10 @@ func (l Longhorn) SetUp() error {
 			if !nodepool.IsControl {
 				isWorkerNodeProvider = true
 				for _, node := range nodepool.Nodes {
-					// add tag to the node via kubectl annotate, use --overwrite to avoid getting error of already tagged node
-					annotation := fmt.Sprintf("node.longhorn.io/default-node-tags='[\"%s\"]' --overwrite", zoneName)
+					annotation := fmt.Sprintf("node.longhorn.io/default-node-tags='[\"%s\"]'", zoneName)
 					realNodeName := utils.FindName(realNodeNames, node.Name)
-					if err := kubectl.KubectlAnnotate("node", realNodeName, annotation); err != nil {
+					// Add tag to the node via kubectl annotate, use --overwrite to avoid getting error of already tagged node
+					if err := kubectl.KubectlAnnotate("node", realNodeName, annotation, "--overwrite"); err != nil {
 						return fmt.Errorf("error while annotating the node %s from cluster %s via kubectl annotate : %w", realNodeName, l.Cluster.ClusterInfo.Name, err)
 					}
 				}
@@ -208,6 +206,18 @@ func (l *Longhorn) deleteOldStorageClasses(existing, applied []string, kc kubect
 				return fmt.Errorf("error while deleting storage class %s due to no nodes backing it : %w", ex, err)
 			}
 		}
+	}
+	return nil
+}
+
+func (l *Longhorn) applyManifests(kc kubectl.Kubectl) error {
+	// Apply longhorn.yaml
+	if err := kc.KubectlApply(longhornYaml); err != nil {
+		return fmt.Errorf("error while applying longhorn.yaml in %s : %w", l.Directory, err)
+	}
+	// Apply longhorn setting
+	if err := kc.KubectlApply(longhornDefaultsYaml, ""); err != nil {
+		return fmt.Errorf("error while applying settings for longhorn in %s : %w", l.Directory, err)
 	}
 	return nil
 }

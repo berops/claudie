@@ -6,6 +6,13 @@ import (
 	"github.com/berops/claudie/proto/pb"
 )
 
+const (
+	// defaultDiskSize defines size of the disk if not specified in manifest.
+	// 50GB is the smallest disk size commonly supported by all the cloud providers
+	// supported by Claudie.
+	defaultDiskSize = 50
+)
+
 // GetProvider will search for a Provider config by matching name from providerSpec
 // returns *pb.Provider,nil if matching Provider config found otherwise returns nil,error
 func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
@@ -140,13 +147,18 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 				count = nodePool.AutoscalerConfig.Min
 			}
 
+			// Set default disk size if not defined. (Value only used in compute nodepools)
+			if nodePool.StorageDiskSize == 0 {
+				nodePool.StorageDiskSize = defaultDiskSize
+			}
+
 			nodePools = append(nodePools, &pb.NodePool{
 				Name:             nodePool.Name,
 				Region:           nodePool.ProviderSpec.Region,
 				Zone:             nodePool.ProviderSpec.Zone,
 				ServerType:       nodePool.ServerType,
 				Image:            nodePool.Image,
-				DiskSize:         uint32(nodePool.DiskSize),
+				StorageDiskSize:  uint32(nodePool.StorageDiskSize),
 				Count:            count,
 				Provider:         provider,
 				IsControl:        isControl,
