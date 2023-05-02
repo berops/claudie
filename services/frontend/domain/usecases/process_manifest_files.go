@@ -69,7 +69,7 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 			if rawManifestData, processingError = os.ReadFile(manifestFilepath); processingError != nil {
 				return
 			}
-			if processingError = yaml.Unmarshal(rawManifestData, unmarshalledManifest); processingError != nil {
+			if processingError = yaml.Unmarshal(rawManifestData, &unmarshalledManifest); processingError != nil {
 				return
 			}
 			processingError = unmarshalledManifest.Validate()
