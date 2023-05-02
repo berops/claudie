@@ -65,7 +65,7 @@ func (c *ContextBoxConnector) Connect() error {
 // PerformHealthCheck checks health of the underlying gRPC connection to context-box microservice
 func (c *ContextBoxConnector) PerformHealthCheck() error {
 	if c.grpcConnection.GetState() == connectivity.Shutdown {
-		return errors.New("Unhealthy gRPC connection to context-box microservice")
+		return errors.New("unhealthy gRPC connection to context-box microservice")
 	}
 
 	return nil
