@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -15,6 +13,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb"
 )
 
 const (
@@ -433,7 +434,7 @@ func (c *ClaudieMongo) getAllFromDB() ([]*configItem, error) {
 	defer func() {
 		err := cur.Close(context.Background())
 		if err != nil {
-			log.Error().Msgf("Failed to close MongoDB cursor: %v", err)
+			log.Err(err).Msgf("Failed to close MongoDB cursor")
 		}
 	}()
 	for cur.Next(context.Background()) { //Iterate through cur and extract all data

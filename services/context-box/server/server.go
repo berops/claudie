@@ -11,17 +11,17 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/berops/claudie/internal/envs"
-	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/internal/worker"
-	"github.com/berops/claudie/services/context-box/server/checksum"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
-
-	"github.com/berops/claudie/proto/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
+
+	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/worker"
+	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/services/context-box/server/checksum"
 )
 
 type server struct {
@@ -51,7 +51,10 @@ func (*server) SaveWorkflowState(ctx context.Context, req *pb.SaveWorkflowStateR
 // SaveConfigScheduler is a gRPC servie: the function saves config to the DB after receiving it from Scheduler
 func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
 	config := req.GetConfig()
-	log.Info().Msgf("Saving config %s from Scheduler", config.Name)
+
+	_logger := log.With().Str("config", config.Name).Logger()
+
+	_logger.Info().Msgf("Saving config from Scheduler")
 	// Save new config to the DB
 	config.DsChecksum = config.MsChecksum
 	config.SchedulerTTL = 0
@@ -65,7 +68,7 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 		return nil, fmt.Errorf("error while updating schedulerTTL for %s : %w", config.Name, err)
 	}
 
-	log.Info().Msgf("Config %s successfully saved from Scheduler", config.Name)
+	_logger.Info().Msgf("Config successfully saved from Scheduler")
 	return &pb.SaveConfigResponse{Config: config}, nil
 }
 
@@ -75,7 +78,10 @@ func (s *server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigReque
 	s.configChangeMutex.Lock()
 	defer s.configChangeMutex.Unlock()
 	newConfig := req.GetConfig()
-	log.Info().Msgf("Saving config %s from FrontEnd", newConfig.Name)
+
+	_logger := log.With().Str("config", newConfig.Name).Logger()
+
+	_logger.Info().Msgf("Saving config from FrontEnd")
 	newConfig.MsChecksum = checksum.CalculateChecksum(newConfig.Manifest)
 
 	//check if any data already present for the newConfig
@@ -95,14 +101,17 @@ func (s *server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigReque
 	if err != nil {
 		return nil, fmt.Errorf("error while saving config %s in db : %w", newConfig.Name, err)
 	}
-	log.Info().Msgf("Config %s successfully saved from FrontEnd", newConfig.Name)
+	_logger.Info().Msgf("Config successfully saved from FrontEnd")
 	return &pb.SaveConfigResponse{Config: newConfig}, nil
 }
 
 // SaveConfigBuilder is a gRPC service: the function saves config to the DB after receiving it from Builder
 func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
 	config := req.GetConfig()
-	log.Info().Msgf("Saving config %s from Builder", config.Name)
+
+	_logger := log.With().Str("config", config.Name).Logger()
+
+	_logger.Info().Msgf("Saving config from Builder")
 
 	// Save new config to the DB, update csState as dsState
 	config.CsChecksum = config.DsChecksum
@@ -129,7 +138,7 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 		return nil, fmt.Errorf("error while updating builderTTL for %s : %w", config.Name, err)
 	}
 
-	log.Info().Msgf("Config %s successfully saved from Builder", config.Name)
+	_logger.Info().Msgf("Config successfully saved from Builder")
 	return &pb.SaveConfigResponse{Config: config}, nil
 }
 
@@ -148,7 +157,7 @@ func (*server) GetConfigFromDB(ctx context.Context, req *pb.GetConfigFromDBReque
 func (*server) GetConfigScheduler(ctx context.Context, req *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
 	configInfo := queueScheduler.Dequeue()
 	if configInfo != nil {
-		log.Info().Msgf("Sending config %s to Scheduler", configInfo.GetName())
+		log.Info().Str("config", configInfo.GetName()).Msgf("Sending config to Scheduler")
 		config, err := database.GetConfig(configInfo.GetName(), pb.IdType_NAME)
 		if err != nil {
 			return nil, err
@@ -162,7 +171,7 @@ func (*server) GetConfigScheduler(ctx context.Context, req *pb.GetConfigRequest)
 func (*server) GetConfigBuilder(ctx context.Context, req *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
 	configInfo := queueBuilder.Dequeue()
 	if configInfo != nil {
-		log.Info().Msgf("Sending config %s to Builder", configInfo.GetName())
+		log.Info().Str("config", configInfo.GetName()).Msgf("Sending config %s to Builder")
 		config, err := database.GetConfig(configInfo.GetName(), pb.IdType_NAME)
 		if err != nil {
 			return nil, err
@@ -211,7 +220,7 @@ func (s *server) UpdateNodepool(ctx context.Context, req *pb.UpdateNodepoolReque
 	// Input specification can be changed on two places, by Autoscaler and by User, thus we need to lock it, so one does not overwrite the other.
 	s.configChangeMutex.Lock()
 	defer s.configChangeMutex.Unlock()
-	log.Info().Msgf("CLIENT REQUEST: UpdateNodepoolCount for Project %s, Cluster %s Nodepool %s", req.ProjectName, req.ClusterName, req.Nodepool.Name)
+	log.Info().Str("project", req.ProjectName).Str("cluster", req.ClusterName).Msgf("CLIENT REQUEST: UpdateNodepoolCount for Nodepool %s", req.Nodepool.Name)
 	var config *pb.Config
 	var err error
 	if config, err = database.GetConfig(req.ProjectName, pb.IdType_NAME); err != nil {
