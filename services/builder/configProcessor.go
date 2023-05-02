@@ -22,11 +22,12 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/rs/zerolog/log"
+	"google.golang.org/protobuf/proto"
+
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	cbox "github.com/berops/claudie/services/context-box/client"
-	"github.com/rs/zerolog/log"
-	"google.golang.org/protobuf/proto"
 )
 
 // configProcessor will fetch new configs from the context-box service. Each received config will be processed in
@@ -59,9 +60,9 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 		if config.DsChecksum == nil && config.CsChecksum != nil {
 			if err := destroyConfig(config, clusterView, c); err != nil {
 				// Save error to DB.
-				log.Error().Msgf("Error while destroying config %s : %v", config.Name, err)
+				log.Err(err).Str("project", config.Name).Msgf("Error while destroying")
 				if err := saveConfigWithWorkflowError(config, c, clusterView); err != nil {
-					log.Error().Msgf("Failed to save error message for config %s:  %v", config.Name, err)
+					log.Err(err).Str("project", config.Name).Msgf("Failed to save error message")
 				}
 			}
 			return
@@ -72,13 +73,13 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			done, err := destroy(config.Name, clusterName, clusterView, c)
 			if err != nil {
 				clusterView.SetWorkflowError(clusterName, err)
-				log.Error().Msgf("Error while destroying cluster %s project %s : %v", clusterName, config.Name, err)
+				log.Err(err).Str("project", config.Name).Str("cluster", clusterName).Msgf("Error while destroying cluster")
 				return err
 			}
 
 			if done {
 				clusterView.SetWorkflowDone(clusterName)
-				log.Info().Msgf("Finished workflow for cluster %s project %s", clusterName, config.Name)
+				log.Info().Str("project", config.Name).Str("cluster", clusterName).Msgf("Finished workflow for cluster")
 				return updateWorkflowStateInDB(config.Name, clusterName, clusterView.ClusterWorkflows[clusterName], c)
 			}
 
@@ -86,7 +87,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			tmpDesired, toDelete := stateDifference(clusterView.CurrentClusters[clusterName], clusterView.DesiredClusters[clusterName])
 			if tmpDesired != nil {
 				clusterView.ClusterWorkflows[clusterName].Description = "Processing stage [1/2]"
-				log.Info().Msgf("Processing stage [1/2] for cluster %s config %s", clusterName, config.Name)
+				log.Info().Str("project", config.Name).Str("cluster", clusterName).Msgf("Processing stage [1/2] for cluster")
 
 				ctx := &BuilderContext{
 					projectName:          config.Name,
@@ -100,10 +101,10 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 
 				if ctx, err = buildCluster(ctx, c); err != nil {
 					clusterView.SetWorkflowError(clusterName, err)
-					log.Error().Msgf("Failed to build cluster %s project %s : %v", clusterName, config.Name, err)
+					log.Err(err).Str("project", config.Name).Str("cluster", clusterName).Msgf("Failed to build cluster")
 					return err
 				}
-				log.Info().Msgf("First stage for cluster %s project %s finished building", clusterName, config.Name)
+				log.Info().Str("project", config.Name).Str("cluster", clusterName).Msgf("First stage for cluster finished building")
 
 				// make the desired state of the temporary cluster the new current state.
 				clusterView.CurrentClusters[clusterName] = ctx.desiredCluster
@@ -116,20 +117,20 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 					clusterView.SetWorkflowError(clusterName, err)
 					return err
 				}
-				log.Info().Msgf("Deleting nodes from cluster %s project %s", clusterName, config.Name)
+				log.Info().Str("project", config.Name).Str("cluster", clusterName).Msgf("Deleting nodes from cluster")
 				if clusterView.CurrentClusters[clusterName], err = deleteNodes(clusterView.CurrentClusters[clusterName], toDelete); err != nil {
 					clusterView.SetWorkflowError(clusterName, err)
-					log.Error().Msgf("Failed to delete nodes cluster %s project %s : %v", clusterName, config.Name, err)
+					log.Err(err).Msgf("Failed to delete nodes cluster %s project %s : %v", clusterName, config.Name, err)
 					return err
 				}
 			}
 
-			message := fmt.Sprintf("Processing cluster %s config %s", clusterName, config.Name)
+			message := fmt.Sprintf("Processing cluster")
 			if tmpDesired != nil {
 				clusterView.ClusterWorkflows[clusterName].Description = "Processing stage [2/2]"
-				message = fmt.Sprintf("Processing stage [2/2] for cluster %s config %s", clusterName, config.Name)
+				message = fmt.Sprintf("Processing stage [2/2] for cluster")
 			}
-			log.Info().Msgf(message)
+			log.Info().Str("project", config.Name).Str("cluster", clusterName).Msgf(message)
 
 			ctx := &BuilderContext{
 				projectName:          config.Name,
@@ -143,7 +144,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 
 			if ctx, err = buildCluster(ctx, c); err != nil {
 				clusterView.SetWorkflowError(clusterName, err)
-				log.Error().Msgf("Failed to build cluster %s project %s : %v", clusterName, config.Name, err)
+				log.Err(err).Str("project", config.Name).Str("cluster", clusterName).Msgf("Failed to build cluster")
 				return err
 			}
 
@@ -151,18 +152,18 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 
 			if err := updateWorkflowStateInDB(config.Name, clusterName, ctx.Workflow, c); err != nil {
 				clusterView.SetWorkflowError(clusterName, err)
-				log.Error().Msgf("failed to save workflow for cluster %s project %s: %s", clusterName, config.Name, err)
+				log.Err(err).Str("project", config.Name).Str("cluster", clusterName).Msgf("failed to save workflow for cluster")
 				return err
 			}
 
 			// Propagate the changes made to the cluster back to the View.
 			clusterView.UpdateFromBuild(ctx)
-			log.Info().Msgf("Finished building cluster %s project %s", clusterName, config.Name)
+			log.Info().Str("project", config.Name).Str("cluster", clusterName).Msgf("Finished building cluster")
 			return nil
 		}); err != nil {
-			log.Error().Msgf("Error encountered while processing config %s : %v", config.Name, err)
+			log.Err(err).Str("project", config.Name).Msgf("Error encountered while processing config")
 			if err := saveConfigWithWorkflowError(config, c, clusterView); err != nil {
-				log.Error().Msgf("Failed to save error message due to: %s", err)
+				log.Err(err).Msgf("Failed to save error message due to: %s", err)
 			}
 			return
 		}
@@ -174,7 +175,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 		log.Debug().Msgf("Saving the config %s", config.Name)
 		config.CurrentState = config.DesiredState
 		if err := cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config}); err != nil {
-			log.Error().Msgf("error while saving the config %s: %s", config.GetName(), err)
+			log.Err(err).Msgf("error while saving the config %s: %s", config.GetName(), err)
 			return
 		}
 
