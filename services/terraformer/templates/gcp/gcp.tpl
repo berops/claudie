@@ -1,6 +1,5 @@
 {{- $clusterName := .ClusterName}}
 {{- $clusterHash := .ClusterHash}}
-{{- $index :=  0}}
 variable "gcp_storage_disk_name" {
   default = "storage-disk"
   type    = string
