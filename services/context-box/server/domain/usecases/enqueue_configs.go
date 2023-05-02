@@ -73,11 +73,12 @@ func (u *Usecases) EnqueueConfigs() error {
 				configInfo.SchedulerTTL = defaultSchedulerTTL
 
 				continue
-			}
 
-			// If the item is already present in the scheduler queue but the config is still not pulled by the scheduler
-			// microservice, then reduce its scheduler TTL by 1.
-			configInfo.SchedulerTTL = configInfo.SchedulerTTL - 1
+			} else if !configInfo.HasError() {
+				// If the item is already present in the scheduler queue but the config is still not pulled by the scheduler
+				// microservice, then reduce its scheduler TTL by 1.
+				configInfo.SchedulerTTL = configInfo.SchedulerTTL - 1
+			}
 		}
 
 		// After the config has its desired state built, the infrastructure needs to be provisioned. The DsChecksum and CsChecksum
@@ -95,11 +96,12 @@ func (u *Usecases) EnqueueConfigs() error {
 				configInfo.BuilderTTL = defaultBuilderTTL
 
 				continue
-			}
 
-			// If the item is already present in the builder queue but the config is still not pulled by the builder
-			// microservice, then reduce its scheduler TTL by 1.
-			configInfo.BuilderTTL = configInfo.BuilderTTL - 1
+			} else if !configInfo.HasError() {
+				// If the item is already present in the builder queue but the config is still not pulled by the builder
+				// microservice, then reduce its scheduler TTL by 1.
+				configInfo.BuilderTTL = configInfo.BuilderTTL - 1
+			}
 		}
 
 		// save data if both TTL were subtracted
