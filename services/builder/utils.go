@@ -32,30 +32,6 @@ func destroyConfig(config *pb.Config, clusterView *ClusterView, c pb.ContextBoxS
 	return cbox.DeleteConfigFromDB(c, &pb.DeleteConfigRequest{Id: config.Id, Type: pb.IdType_HASH})
 }
 
-// destroy destroys any Loadbalancers or the cluster itself.
-func destroy(projectName, clusterName string, clusterView *ClusterView, c pb.ContextBoxServiceClient) error {
-	deleteCtx := &BuilderContext{
-		projectName: projectName,
-		Workflow:    clusterView.ClusterWorkflows[clusterName],
-	}
-
-	if clusterView.CurrentClusters[clusterName] != nil && clusterView.DesiredClusters[clusterName] == nil {
-		deleteCtx.cluster = clusterView.CurrentClusters[clusterName]
-	}
-
-	if len(clusterView.DeletedLoadbalancers[clusterName]) != 0 {
-		deleteCtx.loadbalancers = clusterView.DeletedLoadbalancers[clusterName]
-	}
-
-	if deleteCtx.cluster != nil || len(deleteCtx.loadbalancers) > 0 {
-		if err := destroyCluster(deleteCtx, c); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 // saveConfigWithWorkflowError saves config with workflow states
 func saveConfigWithWorkflowError(config *pb.Config, c pb.ContextBoxServiceClient, clusterView *ClusterView) error {
 	if config.DesiredState != nil {

@@ -43,6 +43,16 @@ nodePools:
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
       diskSize: 50
 
+    #-----------LB nodepools----------
+    - name: gcp-lb
+      providerSpec:
+        name: gcp-1
+        region: europe-west1
+        zone: europe-west1-c
+      count: 1
+      serverType: e2-small
+      image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
+      diskSize: 50
 
 kubernetes:
   clusters:

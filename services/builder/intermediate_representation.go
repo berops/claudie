@@ -47,6 +47,10 @@ func (ir *IntermediateRepresentation) Stages() int {
 
 // Diff takes the desired and current state to calculate difference between them to determine how many nodes  needs to be deleted and added.
 func Diff(current, desired *pb.K8Scluster, currentLbs, desiredLbs []*pb.LBcluster) *IntermediateRepresentation {
+	// we only care about the diff if both states are present.
+	if current != nil && desired == nil || current == nil && desired != nil {
+		return &IntermediateRepresentation{}
+	}
 	/*
 		How operations with the nodes work:
 

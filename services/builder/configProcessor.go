@@ -49,6 +49,27 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 		}
 
 		if err := utils.ConcurrentExec(clusterView.AllClusters(), func(clusterName string) error {
+			// The workflow doesn't handle the case for the deletion of the cluster
+			// we need to do this as a separate step.
+			if clusterView.DesiredClusters[clusterName] == nil {
+				deleteCtx := &BuilderContext{
+					projectName:   config.Name,
+					cluster:       clusterView.CurrentClusters[clusterName],
+					loadbalancers: clusterView.DeletedLoadbalancers[clusterName],
+					Workflow:      clusterView.ClusterWorkflows[clusterName],
+				}
+
+				if err := destroyCluster(deleteCtx, c); err != nil {
+					clusterView.SetWorkflowError(clusterName, err)
+					log.Error().Msgf("Error while destroying cluster %s project %s : %v", clusterName, config.Name, err)
+					return err
+				}
+
+				clusterView.SetWorkflowDone(clusterName)
+				log.Info().Msgf("Finished workflow for cluster %s project %s", clusterName, config.Name)
+				return updateWorkflowStateInDB(config.Name, clusterName, clusterView.ClusterWorkflows[clusterName], c)
+			}
+
 			var (
 				diff = Diff(
 					clusterView.CurrentClusters[clusterName],
@@ -70,9 +91,12 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 					cluster:        clusterView.CurrentClusters[clusterName],
 					desiredCluster: diff.IR,
 
-					// ignore LBs for this step.
-					loadbalancers:        nil,
-					desiredLoadbalancers: nil,
+					// If there are any Lbs for the current state keep them.
+					// Ignore the desired state for the Lbs for now. Use the
+					// current state for desired to not trigger any changes.
+					// as we only care about addition of nodes in this step.
+					loadbalancers:        clusterView.Loadbalancers[clusterName],
+					desiredLoadbalancers: clusterView.Loadbalancers[clusterName],
 					deletedLoadBalancers: nil,
 
 					Workflow: clusterView.ClusterWorkflows[clusterName],
@@ -180,15 +204,24 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			// Propagate the changes made to the cluster back to the View.
 			clusterView.UpdateFromBuild(ctx)
 
-			// cleanup infra not present in current but not desired state.
-			if err := destroy(config.Name, clusterName, clusterView, c); err != nil {
-				clusterView.SetWorkflowError(clusterName, err)
-				log.Error().Msgf("Error while destroying cluster %s project %s : %v", clusterName, config.Name, err)
-				return err
+			if len(clusterView.DeletedLoadbalancers) > 0 {
+				// perform the deletion of loadbalancers as this won't be handled by the buildCluster Workflow.
+				// The BuildInfrastructure in terraformer only performs creation/update for Lbs.
+				deleteCtx := &BuilderContext{
+					projectName:   config.Name,
+					loadbalancers: clusterView.DeletedLoadbalancers[clusterName],
+					Workflow:      clusterView.ClusterWorkflows[clusterName],
+				}
+
+				if err := destroyCluster(deleteCtx, c); err != nil {
+					clusterView.SetWorkflowError(clusterName, err)
+					log.Error().Msgf("Error while destroying cluster %s project %s : %v", clusterName, config.Name, err)
+					return err
+				}
 			}
 
+			// Workflow finished.
 			clusterView.SetWorkflowDone(clusterName)
-
 			if err := updateWorkflowStateInDB(config.Name, clusterName, ctx.Workflow, c); err != nil {
 				clusterView.SetWorkflowError(clusterName, err)
 				log.Error().Msgf("failed to save workflow for cluster %s project %s: %s", clusterName, config.Name, err)
