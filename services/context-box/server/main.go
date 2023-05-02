@@ -53,9 +53,9 @@ func main() {
 
 	// go routine to check and enqueue configs periodically
 	errGroup.Go(func() error {
-		w := worker.NewWorker(
-			errGroupContext, 10*time.Second, usecases.EnqueueConfigs, worker.ErrorLogger)
-		w.Run()
+		worker.NewWorker(
+			errGroupContext, 10*time.Second, usecases.EnqueueConfigs, worker.ErrorLogger).
+			Run()
 
 		log.Info().Msg("Exited worker loop running EnqueueConfigs")
 		return nil

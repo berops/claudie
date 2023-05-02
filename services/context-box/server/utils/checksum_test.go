@@ -201,7 +201,7 @@ func TestEquals(t *testing.T) {
 		t.Run(tC.desc, func(t *testing.T) {
 			want := tC.out
 
-			if got := CompareChecksum(tC.in1, tC.in2); want != got {
+			if got := Equal(tC.in1, tC.in2); want != got {
 				t.Errorf("Unexpected output for %q: expected %t, actual %t",
 					tC.desc, want, got)
 			}

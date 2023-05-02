@@ -37,15 +37,11 @@ func (c *ConfigInfo) HasError() bool {
 	return false
 }
 
-var (
-	// Used for logging purposes
-	// Logs are generated whenever elements are added/removed to/from the queue
-	elementNameListForBuilderQueueWithPreviousState   []string
-	elementNameListForSchedulerQueueWithPreviousState []string
-)
-
 const (
-	defaultBuilderTTL   = 360
+	// default TTL for an element to be in the builder queue
+	defaultBuilderTTL = 360
+
+	// default TTL for an element to be in the scheduler queue
 	defaultSchedulerTTL = 5
 )
 
@@ -64,7 +60,7 @@ func (u *Usecases) EnqueueConfigs() error {
 
 		// Initially when the config is received from the frontend microservice, the desired state of the config is not built,
 		// due to which the DsChecksum will be nil.
-		if !utils.CompareChecksum(configInfo.DsChecksum, configInfo.MsChecksum) {
+		if !utils.Equal(configInfo.DsChecksum, configInfo.MsChecksum) {
 			// If scheduler TTL is <= 0 AND config has no errorMessage, add item to the scheduler queue
 			if configInfo.SchedulerTTL <= 0 && !configInfo.HasError() {
 				if err := u.DB.UpdateSchedulerTTL(configInfo.Name, defaultSchedulerTTL); err != nil {
@@ -86,7 +82,7 @@ func (u *Usecases) EnqueueConfigs() error {
 
 		// After the config has its desired state built, the infrastructure needs to be provisioned. The DsChecksum and CsChecksum
 		// doesn't match since the infrastructure is not built yet.
-		if !utils.CompareChecksum(configInfo.DsChecksum, configInfo.CsChecksum) {
+		if !utils.Equal(configInfo.DsChecksum, configInfo.CsChecksum) {
 			// If builder TTL <= 0 AND config has no errorMessage, add item to the builder queue
 			if configInfo.BuilderTTL <= 0 && !configInfo.HasError() {
 				if err := u.DB.UpdateBuilderTTL(configInfo.Name, defaultBuilderTTL); err != nil {
@@ -115,15 +111,15 @@ func (u *Usecases) EnqueueConfigs() error {
 		}
 	}
 
-	if !u.builderQueue.CompareElementNameList(elementNameListForBuilderQueueWithPreviousState) {
-		log.Info().Msgf("Builder queue with current state has element names: %v", u.builderQueue.GetElementNames())
+	if !u.builderQueue.CompareElementNameList(u.builderLogQueue) {
+		log.Info().Msgf("Builder queue content changed to: %v", u.builderQueue.GetElementNames())
 	}
-	elementNameListForBuilderQueueWithPreviousState = u.builderQueue.GetElementNames()
+	u.builderLogQueue = u.builderQueue.GetElementNames()
 
-	if !u.schedulerQueue.CompareElementNameList(elementNameListForSchedulerQueueWithPreviousState) {
-		log.Info().Msgf("Scheduler queue with current state has element names: %v", u.schedulerQueue.GetElementNames())
+	if !u.schedulerQueue.CompareElementNameList(u.schedulerLogQueue) {
+		log.Info().Msgf("Scheduler queue content changed to: %v", u.schedulerQueue.GetElementNames())
 	}
-	elementNameListForSchedulerQueueWithPreviousState = u.schedulerQueue.GetElementNames()
+	u.schedulerLogQueue = u.schedulerQueue.GetElementNames()
 
 	return nil
 }

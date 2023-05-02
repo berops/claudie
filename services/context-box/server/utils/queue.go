@@ -59,14 +59,13 @@ func (q *Queue) Contains(targetElement QueueElement) bool {
 
 // GetElementNames returns slice of names of the elements in the queue
 func (q *Queue) GetElementNames() []string {
-	q.threadSafetyLock.Lock()
-	defer q.threadSafetyLock.Unlock()
-
 	var names []string
 
+	q.threadSafetyLock.Lock()
 	for _, element := range q.elements {
 		names = append(names, element.GetName())
 	}
+	defer q.threadSafetyLock.Unlock()
 
 	return names
 }
@@ -80,20 +79,20 @@ func (q *Queue) CompareElementNameList(givenList []string) bool {
 	}
 
 	for _, elementName := range currentList {
-		doesGivenListContainElementName := func(targetElementName string) bool {
-			for _, elementName := range givenList {
-				if elementName == targetElementName {
-					return true
-				}
-			}
-
-			return false
-		}
-
-		if !doesGivenListContainElementName(elementName) {
+		if !doesListContainElementName(elementName, givenList) {
 			return false
 		}
 	}
 
 	return true
+}
+
+func doesListContainElementName(targetElementName string, givenList []string) bool {
+	for _, elementName := range givenList {
+		if elementName == targetElementName {
+			return true
+		}
+	}
+
+	return false
 }

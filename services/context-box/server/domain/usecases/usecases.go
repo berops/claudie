@@ -15,4 +15,9 @@ type Usecases struct {
 	builderQueue utils.Queue
 	// queue containing configs which needs to be processed by the scheduler microservice
 	schedulerQueue utils.Queue
+
+	// Used for logging purposes
+	// Logs are generated whenever elements are added/removed to/from the builder/scheduler queue
+	builderLogQueue   []string
+	schedulerLogQueue []string
 }

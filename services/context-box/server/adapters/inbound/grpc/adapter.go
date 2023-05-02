@@ -24,6 +24,7 @@ type GrpcAdapter struct {
 	healthCheckServer *health.Server
 }
 
+// Init will create the underlying gRPC server and the gRPC healthcheck server
 func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
 	port := utils.GetenvOr("CONTEXT_BOX_PORT", fmt.Sprint(defaultContextBoxPort))
 	listeningAddress := net.JoinHostPort("0.0.0.0", port)
@@ -47,8 +48,8 @@ func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
 	grpc_health_v1.RegisterHealthServer(g.server, g.healthCheckServer)
 }
 
+// Serve will create a service goroutine for each connection
 func (g *GrpcAdapter) Serve() error {
-	// g.server.Serve( ) will create a service goroutine for each connection
 	if err := g.server.Serve(g.tcpListener); err != nil {
 		return fmt.Errorf("Context-box microservice grpc server failed to serve: %w", err)
 	}
@@ -57,6 +58,7 @@ func (g *GrpcAdapter) Serve() error {
 	return nil
 }
 
+// Stop will gracefully shutdown the gRPC server and the healthcheck server
 func (g *GrpcAdapter) Stop() {
 	g.server.GracefulStop()
 	g.healthCheckServer.Shutdown()

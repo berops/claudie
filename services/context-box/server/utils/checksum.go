@@ -14,7 +14,7 @@ func CalculateChecksum(data string) []byte {
 	return checksum[:]
 }
 
-// CompareChecksum compares 2 checksums passed in as []byte and returns whether they are equal or not
-func CompareChecksum(checksumA, checksumB []byte) bool {
+// Equal compares 2 checksums passed in as []byte and returns whether they are equal or not
+func Equal(checksumA, checksumB []byte) bool {
 	return bytes.Equal(checksumA, checksumB)
 }

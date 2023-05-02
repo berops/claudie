@@ -18,7 +18,7 @@ func (u *Usecases) UpdateNodepool(request *pb.UpdateNodepoolRequest) (*pb.Update
 	u.configChangeMutex.Lock()
 	defer u.configChangeMutex.Unlock()
 
-	log.Info().Msgf("CLIENT REQUEST: UpdateNodepoolCount for Project %s, Cluster %s Nodepool %s", request.ProjectName, request.ClusterName, request.Nodepool.Name)
+	log.Info().Msgf("Updating nodepool for project %s, cluster %s, nodepool %s", request.ProjectName, request.ClusterName, request.Nodepool.Name)
 
 	var config *pb.Config
 	var err error
@@ -28,7 +28,7 @@ func (u *Usecases) UpdateNodepool(request *pb.UpdateNodepoolRequest) (*pb.Update
 	// Check if config is currently not in any build stage or in a queue
 	if config.BuilderTTL == 0 && config.SchedulerTTL == 0 && !u.schedulerQueue.Contains(config) && !u.builderQueue.Contains(config) {
 		// Check if all checksums are equal, meaning config is not about to get pushed to the queue or is in the queue
-		if utils.CompareChecksum(config.MsChecksum, config.DsChecksum) && utils.CompareChecksum(config.DsChecksum, config.CsChecksum) {
+		if utils.Equal(config.MsChecksum, config.DsChecksum) && utils.Equal(config.DsChecksum, config.CsChecksum) {
 			// Find and update correct nodepool count & nodes in desired state.
 			if err := updateNodepool(config.DesiredState, request.ClusterName, request.Nodepool.Name, request.Nodepool.Nodes, &request.Nodepool.Count); err != nil {
 				return nil, fmt.Errorf("error while updating desired state in project %s : %w", config.Name, err)

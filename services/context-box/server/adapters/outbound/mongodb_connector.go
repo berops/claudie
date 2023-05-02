@@ -67,29 +67,18 @@ func (m *MongoDBConnector) Connect() error {
 	// Establish DB connection, this does not do any deployment checks/IO on the DB
 	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(m.connectionUri))
 
-	sensoredUri := utils.SanitiseURI(m.connectionUri)
+	censoredUri := utils.SanitiseURI(m.connectionUri)
 
 	if err != nil {
-		return fmt.Errorf("Failed to create a mongoDB client with connection uri %s: %w", sensoredUri, err)
+		return fmt.Errorf("Failed to create a mongoDB client with connection uri %s: %w", censoredUri, err)
 	}
 
 	for i := 0; i < maxConnectionRetriesCount; i++ {
-		log.Debug().Msgf("Trying to ping mongoDB at %s", sensoredUri)
+		log.Debug().Msgf("Trying to ping mongoDB at %s", censoredUri)
 
-		pingDB := func() error {
-			contextWithTimeout, exitContext := context.WithTimeout(context.Background(), pingTimeout)
-			defer exitContext()
-
-			err := client.Ping(contextWithTimeout, readpref.Primary())
-			if err != nil {
-				return fmt.Errorf("Unable to ping mongoDB: %w", err)
-			}
-
-			return nil
-		}
-		err := pingDB()
+		err := pingDB(client)
 		if err == nil {
-			log.Debug().Msgf("MongoDB at %s has been successfully pinged", sensoredUri)
+			log.Debug().Msgf("MongoDB at %s has been successfully pinged", censoredUri)
 
 			m.client = client
 			return nil
@@ -99,7 +88,20 @@ func (m *MongoDBConnector) Connect() error {
 		time.Sleep(pingRetrialDelay)
 	}
 
-	return fmt.Errorf("MongoDB connection at %s failed after %d unsuccessful ping attempts", sensoredUri, maxConnectionRetriesCount)
+	return fmt.Errorf("MongoDB connection at %s failed after %d unsuccessful ping attempts", censoredUri, maxConnectionRetriesCount)
+}
+
+// pingDB pings MongoDB and returns error (if any)
+func pingDB(client *mongo.Client) error {
+	contextWithTimeout, exitContext := context.WithTimeout(context.Background(), pingTimeout)
+	defer exitContext()
+
+	err := client.Ping(contextWithTimeout, readpref.Primary())
+	if err != nil {
+		return fmt.Errorf("Unable to ping mongoDB: %w", err)
+	}
+
+	return nil
 }
 
 // Init performs the initialization tasks after connection is established with MongoDB
@@ -132,7 +134,7 @@ func ConvertFromGRPCWorkflow(w map[string]*pb.Workflow) map[string]Workflow {
 	return state
 }
 
-// ConvertToGRPCWorkflow converts the database representation fo the workflow state to GRPM.
+// ConvertToGRPCWorkflow converts the database representation of the workflow state to GRPC.
 func ConvertToGRPCWorkflow(w map[string]Workflow) map[string]*pb.Workflow {
 	state := make(map[string]*pb.Workflow, len(w))
 	for key, val := range w {
