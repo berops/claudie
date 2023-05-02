@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: Deployment 
+kind: Deployment
 metadata:
   name: dynamodb
   labels:
@@ -22,36 +22,36 @@ spec:
           persistentVolumeClaim:
             claimName: dynamo-pvc
       containers:
-      - name: dynamodb
-        volumeMounts:
+        - name: dynamodb
+          volumeMounts:
             - name: data
               mountPath: /home/dynamodblocal/data
-        image: amazon/dynamodb-local:latest
-        command:
-          - "java"
-        args:
-          - "-jar"
-          - "DynamoDBLocal.jar"
-          - "-sharedDb"
-          - "-dbPath"
-          - "./data"
-        resources:
+          image: amazon/dynamodb-local:1.21.0
+          command:
+            - "java"
+          args:
+            - "-jar"
+            - "DynamoDBLocal.jar"
+            - "-sharedDb"
+            - "-dbPath"
+            - "./data"
+          resources:
             requests:
               memory: 512Mi
               cpu: 100m
             limits:
               memory: 1Gi
               cpu: 200m
-        env:
-          - name: AWS_DEFAULT_REGION
-            value: "local"
-        ports:
-        - containerPort: 8000
-          protocol: TCP
-          name: dynamodb  
-        securityContext:
-          runAsUser: 0
-          allowPrivilegeEscalation: false
+          env:
+            - name: AWS_DEFAULT_REGION
+              value: "local"
+          ports:
+            - containerPort: 8000
+              protocol: TCP
+              name: dynamodb
+          securityContext:
+            runAsUser: 0
+            allowPrivilegeEscalation: false
 ---
 kind: Service
 apiVersion: v1
@@ -65,9 +65,9 @@ spec:
     app.kubernetes.io/part-of: claudie
     app.kubernetes.io/name: dynamo
   ports:
-  - protocol: TCP
-    port: 8000
-    targetPort: 8000
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

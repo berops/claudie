@@ -39,7 +39,6 @@ nodePools:
       serverType: e2-medium
       # OS image name.
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
-      diskSize: 50
 
     - name: compute-1-gcp
       providerSpec:
@@ -54,7 +53,7 @@ nodePools:
       serverType: e2-medium
       # OS image name.
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
-      diskSize: 50
+      storageDiskSize: 50
 
     - name: compute-2-gcp
       providerSpec:
@@ -69,7 +68,7 @@ nodePools:
       serverType: e2-medium
       # OS image name.
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
-      diskSize: 50
+      storageDiskSize: 50
 
 kubernetes:
   clusters:
@@ -139,7 +138,6 @@ nodePools:
       serverType: e2-medium
       # OS image name.
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
-      diskSize: 50
 
     - name: control-gcp-2
       providerSpec:
@@ -154,7 +152,6 @@ nodePools:
       serverType: e2-medium
       # OS image name.
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
-      diskSize: 50
 
     - name: compute-gcp-1
       providerSpec:
@@ -169,7 +166,7 @@ nodePools:
       serverType: e2-medium
       # OS image name.
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
-      diskSize: 50
+      storageDiskSize: 50
 
     - name: compute-gcp-2
       providerSpec:
@@ -184,7 +181,7 @@ nodePools:
       serverType: e2-medium
       # OS image name.
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
-      diskSize: 50
+      storageDiskSize: 50
 
 kubernetes:
   clusters:

@@ -29,7 +29,6 @@ nodePools:
       # AMI ID of the image.
       # Make sure to update it according to the region. 
       image: ami-0965bd5ba4d59211c
-      diskSize: 50
       
     - name: compute-1-aws
       providerSpec:
@@ -45,7 +44,7 @@ nodePools:
       # AMI ID of the image.
       # Make sure to update it according to the region. 
       image: ami-0965bd5ba4d59211c
-      diskSize: 50
+      storageDiskSize: 50
 
     - name: compute-2-aws
       providerSpec:
@@ -61,7 +60,7 @@ nodePools:
       # AMI ID of the image.
       # Make sure to update it according to the region. 
       image: ami-0965bd5ba4d59211c
-      diskSize: 50
+      storageDiskSize: 50
 
 kubernetes:
   clusters:
@@ -111,7 +110,6 @@ nodePools:
       # AMI ID of the image.
       # Make sure to update it according to the region. 
       image: ami-0965bd5ba4d59211c
-      diskSize: 50
 
     - name: control-aws-2
       providerSpec:
@@ -127,7 +125,6 @@ nodePools:
       # AMI ID of the image.
       # Make sure to update it according to the region. 
       image: ami-03df6dea56f8aa618
-      diskSize: 50
 
     - name: compute-aws-1
       providerSpec:
@@ -143,7 +140,7 @@ nodePools:
       # AMI ID of the image.
       # Make sure to update it according to the region. 
       image: ami-0965bd5ba4d59211c
-      diskSize: 50
+      storageDiskSize: 50
 
     - name: compute-aws-2
       providerSpec:
@@ -159,7 +156,7 @@ nodePools:
       # AMI ID of the image.
       # Make sure to update it according to the region. 
       image: ami-03df6dea56f8aa618
-      diskSize: 50
+      storageDiskSize: 50
 
 kubernetes:
   clusters:
