@@ -28,7 +28,6 @@ func main() {
 	if err != nil {
 		log.Fatal().Msgf("Unable to connect to MongoDB: %v", err)
 	}
-
 	err = mongoDBConnector.Init()
 	if err != nil {
 		log.Fatal().Msgf("Unable to perform initialization tasks for MongoDB: %v", err)
@@ -53,8 +52,7 @@ func main() {
 
 	// go routine to check and enqueue configs periodically
 	errGroup.Go(func() error {
-		worker.NewWorker(
-			errGroupContext, 10*time.Second, usecases.EnqueueConfigs, worker.ErrorLogger).
+		worker.NewWorker(errGroupContext, 10*time.Second, usecases.EnqueueConfigs, worker.ErrorLogger).
 			Run()
 
 		log.Info().Msg("Exited worker loop running EnqueueConfigs")

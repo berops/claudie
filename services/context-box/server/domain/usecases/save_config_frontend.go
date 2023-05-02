@@ -23,13 +23,15 @@ func (u *Usecases) SaveConfigFrontend(request *pb.SaveConfigRequest) (*pb.SaveCo
 	newConfig.MsChecksum = utils.CalculateChecksum(newConfig.Manifest)
 
 	// Check if config with this name already exists in MongoDB
-	existingConfig, err := u.DB.GetConfig(newConfig.GetName(), pb.IdType_NAME)
+	oldConfig, err := u.DB.GetConfig(newConfig.GetName(), pb.IdType_NAME)
 	if err == nil {
-		if string(existingConfig.MsChecksum) != string(newConfig.MsChecksum) {
-			existingConfig.Manifest = newConfig.Manifest
-			existingConfig.MsChecksum = newConfig.MsChecksum
+		if string(oldConfig.MsChecksum) != string(newConfig.MsChecksum) {
+			oldConfig.Manifest = newConfig.Manifest
+			oldConfig.MsChecksum = newConfig.MsChecksum
+			oldConfig.SchedulerTTL = 0
+			oldConfig.BuilderTTL = 0
 		}
-		newConfig = existingConfig
+		newConfig = oldConfig
 	}
 
 	err = u.DB.SaveConfig(newConfig)

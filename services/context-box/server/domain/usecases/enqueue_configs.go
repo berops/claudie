@@ -1,6 +1,8 @@
 package usecases
 
 import (
+	"fmt"
+
 	"github.com/rs/zerolog/log"
 
 	"github.com/berops/claudie/proto/pb"
@@ -45,8 +47,27 @@ const (
 	defaultSchedulerTTL = 5
 )
 
-// EnqueueConfigs checks all configs, decides if they should be enqueued or not and updates their TTLs
+// EnqueueConfigs is a driver for enqueueConfigs function
 func (u *Usecases) EnqueueConfigs() error {
+	if err := u.enqueueConfigs(); err != nil {
+		return fmt.Errorf("error while enqueuing configs: %w", err)
+	}
+
+	if !u.builderQueue.CompareElementNameList(u.builderLogQueue) {
+		log.Info().Msgf("Builder queue content changed to: %v", u.builderQueue.GetElementNames())
+	}
+	u.builderLogQueue = u.builderQueue.GetElementNames()
+
+	if !u.schedulerQueue.CompareElementNameList(u.schedulerLogQueue) {
+		log.Info().Msgf("Scheduler queue content changed to: %v", u.schedulerQueue.GetElementNames())
+	}
+	u.schedulerLogQueue = u.schedulerQueue.GetElementNames()
+
+	return nil
+}
+
+// enqueueConfigs checks all configs, decides if they should be enqueued or not and updates their TTLs
+func (u *Usecases) enqueueConfigs() error {
 	configInfos, err := getConfigInfosFromDB(u.DB)
 	if err != nil {
 		return err
@@ -104,22 +125,12 @@ func (u *Usecases) EnqueueConfigs() error {
 
 		// save data if both TTL were subtracted
 		if err := u.DB.UpdateSchedulerTTL(configInfo.Name, configInfo.SchedulerTTL); err != nil {
-			break
+			return nil
 		}
 		if err := u.DB.UpdateBuilderTTL(configInfo.Name, configInfo.BuilderTTL); err != nil {
-			break
+			return nil
 		}
 	}
-
-	if !u.builderQueue.CompareElementNameList(u.builderLogQueue) {
-		log.Info().Msgf("Builder queue content changed to: %v", u.builderQueue.GetElementNames())
-	}
-	u.builderLogQueue = u.builderQueue.GetElementNames()
-
-	if !u.schedulerQueue.CompareElementNameList(u.schedulerLogQueue) {
-		log.Info().Msgf("Scheduler queue content changed to: %v", u.schedulerQueue.GetElementNames())
-	}
-	u.schedulerLogQueue = u.schedulerQueue.GetElementNames()
 
 	return nil
 }
