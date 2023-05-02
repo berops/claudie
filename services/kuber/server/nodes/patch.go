@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/proto/pb"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -39,7 +40,7 @@ func (p *Patcher) PatchProviderID() error {
 			nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
 			patchPath := fmt.Sprintf(patchPathFormat, fmt.Sprintf(ProviderIdFormat, nodeName))
 			if err1 := p.kc.KubectlPatch("node", nodeName, patchPath); err1 != nil {
-				log.Error().Msgf("Error while patching node %s with patch %s : %v", nodeName, patchPath, err1)
+				log.Err(err1).Str("node", nodeName).Msgf("Error while patching node with patch %s", patchPath)
 				err = fmt.Errorf("error while patching one or more nodes")
 			}
 		}

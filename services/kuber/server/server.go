@@ -13,6 +13,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
+
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/kubectl"
@@ -23,12 +30,6 @@ import (
 	"github.com/berops/claudie/services/kuber/server/nodes"
 	scrapeconfig "github.com/berops/claudie/services/kuber/server/scrapeConfig"
 	"github.com/berops/claudie/services/kuber/server/secret"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/health"
-	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
 const (
@@ -55,23 +56,27 @@ type server struct {
 }
 
 func (s *server) SetUpStorage(ctx context.Context, req *pb.SetUpStorageRequest) (*pb.SetUpStorageResponse, error) {
+	_logger := log.With().Str("cluster", req.DesiredCluster.ClusterInfo.Name).Logger()
+
 	clusterID := fmt.Sprintf("%s-%s", req.DesiredCluster.ClusterInfo.Name, req.DesiredCluster.ClusterInfo.Hash)
 	clusterDir := filepath.Join(outputDir, clusterID)
 
-	log.Info().Msgf("Setting up the longhorn on the cluster %s", clusterID)
+	_logger.Info().Msgf("Setting up the longhorn")
 	longhorn := longhorn.Longhorn{Cluster: req.DesiredCluster, Directory: clusterDir}
 	if err := longhorn.SetUp(); err != nil {
 		return nil, fmt.Errorf("error while setting up the longhorn for %s : %w", clusterID, err)
 	}
-	log.Info().Msgf("Longhorn successfully set up on the cluster %s", clusterID)
+	_logger.Info().Msgf("Longhorn successfully set up")
 
 	return &pb.SetUpStorageResponse{DesiredCluster: req.DesiredCluster}, nil
 }
 
 func (s *server) StoreLbScrapeConfig(ctx context.Context, req *pb.StoreLbScrapeConfigRequest) (*pb.StoreLbScrapeConfigResponse, error) {
+	_logger := log.With().Str("cluster", req.Cluster.ClusterInfo.Name).Logger()
+
 	clusterID := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
 	clusterDir := filepath.Join(outputDir, clusterID)
-	log.Info().Msgf("Storing load balancer scrape-config on the cluster %s", clusterID)
+	_logger.Info().Msgf("Storing load balancer scrape-config")
 
 	sc := scrapeconfig.ScrapeConfig{
 		Cluster:    req.GetCluster(),
@@ -82,15 +87,17 @@ func (s *server) StoreLbScrapeConfig(ctx context.Context, req *pb.StoreLbScrapeC
 	if err := sc.GenerateAndApplyScrapeConfig(); err != nil {
 		return nil, fmt.Errorf("error while setting up the loadbalancer scrape-config for %s : %w", clusterID, err)
 	}
-	log.Info().Msgf("Load balancer scrape-config successfully set up on the cluster %s", clusterID)
+	_logger.Info().Msgf("Load balancer scrape-config successfully set up")
 
 	return &pb.StoreLbScrapeConfigResponse{}, nil
 }
 
 func (s *server) RemoveLbScrapeConfig(ctx context.Context, req *pb.RemoveLbScrapeConfigRequest) (*pb.RemoveLbScrapeConfigResponse, error) {
+	_logger := log.With().Str("cluster", req.Cluster.ClusterInfo.Name).Logger()
+
 	clusterID := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
 	clusterDir := filepath.Join(outputDir, clusterID)
-	log.Info().Msgf("Deleting load balancer scrape-config from cluster %s", clusterID)
+	_logger.Info().Msgf("Deleting load balancer scrape-config")
 
 	sc := scrapeconfig.ScrapeConfig{
 		Cluster:   req.GetCluster(),
@@ -100,12 +107,14 @@ func (s *server) RemoveLbScrapeConfig(ctx context.Context, req *pb.RemoveLbScrap
 	if err := sc.RemoveLbScrapeConfig(); err != nil {
 		return nil, fmt.Errorf("error while removing old loadbalancer scrape-config for %s : %w", clusterID, err)
 	}
-	log.Info().Msgf("Load balancer scrape-config successfully deleted from cluster %s", clusterID)
+	_logger.Info().Msgf("Load balancer scrape-config successfully deleted")
 
 	return &pb.RemoveLbScrapeConfigResponse{}, nil
 }
 
 func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterMetadataRequest) (*pb.StoreClusterMetadataResponse, error) {
+	_logger := log.With().Str("cluster", req.Cluster.ClusterInfo.Name).Logger()
+
 	md := ClusterMetadata{
 		NodeIps:    make(map[string]IPPair),
 		PrivateKey: req.GetCluster().GetClusterInfo().GetPrivateKey(),
@@ -136,7 +145,7 @@ func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterM
 		// log.Info().Msgf("Cluster metadata from cluster %s \n%s", req.GetCluster().ClusterInfo.Name, buffer.String())
 		return &pb.StoreClusterMetadataResponse{}, nil
 	}
-	log.Info().Msgf("Storing cluster metadata on cluster %s", req.Cluster.ClusterInfo.Name)
+	_logger.Info().Msgf("Storing cluster metadata")
 
 	clusterID := fmt.Sprintf("%s-%s", req.GetCluster().ClusterInfo.Name, req.GetCluster().ClusterInfo.Hash)
 	clusterDir := filepath.Join(outputDir, clusterID)
@@ -146,11 +155,11 @@ func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterM
 	))
 
 	if err := sec.Apply(envs.Namespace, ""); err != nil {
-		log.Error().Msgf("Failed to store cluster metadata for %s: %s", req.Cluster.ClusterInfo.Name, err)
+		_logger.Err(err).Msgf("Failed to store cluster metadata")
 		return nil, fmt.Errorf("error while creating cluster metadata secret for %s", req.Cluster.ClusterInfo.Name)
 	}
 
-	log.Info().Msgf("Cluster metadata was successfully stored for cluster %s", req.Cluster.ClusterInfo.Name)
+	_logger.Info().Msgf("Cluster metadata was successfully stored")
 	return &pb.StoreClusterMetadataResponse{}, nil
 }
 
@@ -159,7 +168,10 @@ func (s *server) DeleteClusterMetadata(ctx context.Context, req *pb.DeleteCluste
 	if namespace == "" {
 		return &pb.DeleteClusterMetadataResponse{}, nil
 	}
-	log.Info().Msgf("Deleting cluster metadata secret for cluster %s", req.Cluster.ClusterInfo.Name)
+
+	_logger := log.With().Str("cluster", req.Cluster.ClusterInfo.Name).Logger()
+
+	_logger.Info().Msgf("Deleting cluster metadata secret")
 
 	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
@@ -169,11 +181,11 @@ func (s *server) DeleteClusterMetadata(ctx context.Context, req *pb.DeleteCluste
 	}
 	secretName := fmt.Sprintf("%s-%s-metadata", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
 	if err := kc.KubectlDeleteResource("secret", secretName, "-n", namespace); err != nil {
-		log.Warn().Msgf("Failed to remove cluster metadata for %s: %s", req.Cluster.ClusterInfo.Name, err)
+		_logger.Warn().Msgf("Failed to remove cluster metadata: %s", err)
 		return &pb.DeleteClusterMetadataResponse{}, nil
 	}
 
-	log.Info().Msgf("Deleted cluster metadata secret for cluster %s", req.Cluster.ClusterInfo.Name)
+	_logger.Info().Msgf("Deleted cluster metadata secret")
 	return &pb.DeleteClusterMetadataResponse{}, nil
 }
 
@@ -186,7 +198,10 @@ func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigReq
 		// log.Info().Msgf("The kubeconfig for %s\n%s:", clusterID, cluster.Kubeconfig)
 		return &pb.StoreKubeconfigResponse{}, nil
 	}
-	log.Info().Msgf("Storing kubeconfig for cluster %s", cluster.ClusterInfo.Name)
+
+	_logger := log.With().Str("cluster", req.Cluster.ClusterInfo.Name).Logger()
+
+	_logger.Info().Msgf("Storing kubeconfig")
 
 	clusterDir := filepath.Join(outputDir, clusterID)
 	sec := secret.New(clusterDir, secret.NewYaml(
@@ -195,11 +210,11 @@ func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigReq
 	))
 
 	if err := sec.Apply(envs.Namespace, ""); err != nil {
-		log.Error().Msgf("Failed to store kubeconfig for %s: %s", cluster.ClusterInfo.Name, err)
+		_logger.Err(err).Msgf("Failed to store kubeconfig")
 		return nil, fmt.Errorf("error while creating the kubeconfig secret for %s", cluster.ClusterInfo.Name)
 	}
 
-	log.Info().Msgf("Kubeconfig was successfully stored for cluster %s", cluster.ClusterInfo.Name)
+	_logger.Info().Msgf("Kubeconfig was successfully stored")
 	return &pb.StoreKubeconfigResponse{}, nil
 }
 
@@ -209,7 +224,10 @@ func (s *server) DeleteKubeconfig(ctx context.Context, req *pb.DeleteKubeconfigR
 		return &pb.DeleteKubeconfigResponse{}, nil
 	}
 	cluster := req.GetCluster()
-	log.Info().Msgf("Deleting kubeconfig secret for cluster %s", cluster.ClusterInfo.Name)
+
+	_logger := log.With().Str("cluster", req.Cluster.ClusterInfo.Name).Logger()
+
+	_logger.Info().Msgf("Deleting kubeconfig secret")
 	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
 		prefix := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
@@ -219,34 +237,38 @@ func (s *server) DeleteKubeconfig(ctx context.Context, req *pb.DeleteKubeconfigR
 	secretName := fmt.Sprintf("%s-%s-kubeconfig", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
 
 	if err := kc.KubectlDeleteResource("secret", secretName, "-n", namespace); err != nil {
-		log.Warn().Msgf("Failed to remove kubeconfig for %s: %s", cluster.ClusterInfo.Name, err)
+		_logger.Warn().Msgf("Failed to remove kubeconfig: %s", err)
 		return &pb.DeleteKubeconfigResponse{}, nil
 	}
 
-	log.Info().Msgf("Deleted kubeconfig secret for cluster %s", cluster.ClusterInfo.Name)
+	_logger.Info().Msgf("Deleted kubeconfig secret")
 	return &pb.DeleteKubeconfigResponse{}, nil
 }
 
 func (s *server) DeleteNodes(ctx context.Context, req *pb.DeleteNodesRequest) (*pb.DeleteNodesResponse, error) {
-	log.Info().Msgf("Deleting nodes from cluster %s, control nodes [%d], compute nodes[%d]", req.Cluster.ClusterInfo.Name, len(req.MasterNodes), len(req.WorkerNodes))
+	_logger := log.With().Str("cluster", req.Cluster.ClusterInfo.Name).Logger()
+
+	_logger.Info().Msgf("Deleting nodes - control nodes [%d], compute nodes[%d]", len(req.MasterNodes), len(req.WorkerNodes))
 	deleter := nodes.NewDeleter(req.MasterNodes, req.WorkerNodes, req.Cluster)
 	cluster, err := deleter.DeleteNodes()
 	if err != nil {
-		log.Error().Msgf("Error while deleting nodes for %s : %s", req.Cluster.ClusterInfo.Name, err.Error())
+		_logger.Err(err).Msgf("Error while deleting nodes")
 		return &pb.DeleteNodesResponse{}, err
 	}
-	log.Info().Msgf("Nodes for cluster %s were successfully deleted", req.Cluster.ClusterInfo.Name)
+	_logger.Info().Msgf("Nodes were successfully deleted")
 	return &pb.DeleteNodesResponse{Cluster: cluster}, nil
 }
 
 func (s *server) PatchNodes(ctx context.Context, req *pb.PatchNodeTemplateRequest) (*pb.PatchNodeTemplateResponse, error) {
+	_logger := log.With().Str("cluster", req.Cluster.ClusterInfo.Name).Logger()
+
 	patcher := nodes.NewPatcher(req.Cluster)
 	if err := patcher.PatchProviderID(); err != nil {
-		log.Error().Msgf("Error while patching nodes for %s : %s", req.Cluster.ClusterInfo.Name, err.Error())
+		_logger.Err(err).Msgf("Error while patching nodes")
 		return nil, fmt.Errorf("error while patching nodes for %s : %w", req.Cluster.ClusterInfo.Name, err)
 	}
 
-	log.Info().Msgf("Nodes for cluster %s were successfully patched", req.Cluster.ClusterInfo.Name)
+	_logger.Info().Msgf("Nodes were successfully patched")
 	return &pb.PatchNodeTemplateResponse{}, nil
 }
 
@@ -257,14 +279,17 @@ func (s *server) SetUpClusterAutoscaler(ctx context.Context, req *pb.SetUpCluste
 	if err := utils.CreateDirectory(clusterDir); err != nil {
 		return nil, fmt.Errorf("error while creating directory %s : %w", clusterDir, err)
 	}
+
+	_logger := log.With().Str("cluster", req.Cluster.ClusterInfo.Name).Logger()
+
 	// Set up cluster autoscaler.
 	autoscalerBuilder := autoscaler.NewAutoscalerBuilder(req.ProjectName, req.Cluster, clusterDir)
 	if err := autoscalerBuilder.SetUpClusterAutoscaler(); err != nil {
-		log.Error().Msgf("Error while setting up cluster autoscaler for %s : %s", req.Cluster.ClusterInfo.Name, err.Error())
+		_logger.Err(err).Msgf("Error while setting up cluster autoscaler")
 		return nil, fmt.Errorf("error while setting up cluster autoscaler for %s : %w", req.Cluster.ClusterInfo.Name, err)
 	}
 
-	log.Info().Msgf("Cluster %s had cluster autoscaler successfully set up", req.Cluster.ClusterInfo.Name)
+	_logger.Info().Msgf("Cluster autoscaler successfully set up")
 	return &pb.SetUpClusterAutoscalerResponse{}, nil
 }
 
@@ -275,14 +300,17 @@ func (s *server) DestroyClusterAutoscaler(ctx context.Context, req *pb.DestroyCl
 	if err := utils.CreateDirectory(clusterDir); err != nil {
 		return nil, fmt.Errorf("error while creating directory %s : %w", clusterDir, err)
 	}
+
+	_logger := log.With().Str("cluster", req.Cluster.ClusterInfo.Name).Logger()
+
 	// Destroy cluster autoscaler.
 	autoscalerBuilder := autoscaler.NewAutoscalerBuilder(req.ProjectName, req.Cluster, clusterDir)
 	if err := autoscalerBuilder.DestroyClusterAutoscaler(); err != nil {
-		log.Error().Msgf("Error while destroying cluster autoscaler for %s : %s", req.Cluster.ClusterInfo.Name, err.Error())
+		_logger.Err(err).Msgf("Error while destroying cluster autoscaler")
 		return nil, fmt.Errorf("error while destroying cluster autoscaler for %s : %w", req.Cluster.ClusterInfo.Name, err)
 	}
 
-	log.Info().Msgf("Cluster %s had cluster autoscaler successfully destroyed", req.Cluster.ClusterInfo.Name)
+	_logger.Info().Msgf("Cluster autoscaler successfully destroyed")
 	return &pb.DestroyClusterAutoscalerResponse{}, nil
 }
 

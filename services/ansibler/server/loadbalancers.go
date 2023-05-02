@@ -188,9 +188,7 @@ func setUpLoadbalancers(clusterName string, info *LBInfo) error {
 	err := utils.ConcurrentExec(info.LbClusters, func(lb *LBData) error {
 		lbPrefix := fmt.Sprintf("%s-%s", lb.DesiredLbCluster.ClusterInfo.Name, lb.DesiredLbCluster.ClusterInfo.Hash)
 		directory := filepath.Join(directory, lbPrefix)
-		log.Info().
-			Str("loadbalancer", lbPrefix).
-			Msg("Setting up the loadbalancer")
+		log.Info().Str("loadbalancer", lbPrefix).Msg("Setting up the loadbalancer")
 
 		//create key files for lb nodepools
 		if err := utils.CreateDirectory(directory); err != nil {

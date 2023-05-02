@@ -8,6 +8,9 @@ import (
 	"path/filepath"
 	"sort"
 
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
@@ -15,8 +18,6 @@ import (
 	"github.com/berops/claudie/services/terraformer/server/backend"
 	"github.com/berops/claudie/services/terraformer/server/provider"
 	"github.com/berops/claudie/services/terraformer/server/terraform"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -195,7 +196,7 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 			if i == int(np.Count) {
 				break
 			}
-			log.Debug().Msgf("Cluster %s, Nodepool %s is reusing node %s", clusterID, np.Name, node.Name)
+			log.Debug().Str("cluster", clusterID).Str("nodepool", np.Name).Msgf("Nodepool is reusing node %s", node.Name)
 			nodes = append(nodes, node)
 			nodeNames[node.Name] = struct{}{}
 		}
@@ -283,7 +284,7 @@ func (c *ClusterBuilder) calculateCIDR(baseCIDR string, nodepools []*pb.NodePool
 			if err != nil {
 				return fmt.Errorf("failed to parse CIDR for nodepool %s : %w", np.Name, err)
 			}
-			log.Debug().Msgf("Calculating new VPC subnet CIDR for nodepool %s. New CIDR [%s]", np.Name, cidr)
+			log.Debug().Str("nodepool", np.Name).Msgf("Calculating new VPC subnet CIDR for nodepool. New CIDR [%s]", cidr)
 			if np.Metadata == nil {
 				np.Metadata = make(map[string]*pb.MetaValue)
 			}

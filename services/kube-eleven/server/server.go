@@ -10,14 +10,15 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
-	kubeEleven "github.com/berops/claudie/services/kube-eleven/server/kube-eleven"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
+
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb"
+	kubeEleven "github.com/berops/claudie/services/kube-eleven/server/kube-eleven"
 )
 
 type server struct {
@@ -30,7 +31,9 @@ const (
 
 // BuildCluster builds all cluster defined in the desired state
 func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb.BuildClusterResponse, error) {
-	log.Info().Msgf("Building kubernetes cluster %s project %s", req.Desired.ClusterInfo.Name, req.ProjectName)
+	_logger := utils.CreateLoggerWithProjectAndClusterName(req.ProjectName, req.Desired.ClusterInfo.Name)
+
+	_logger.Info().Msgf("Building kubernetes cluster")
 	ke := kubeEleven.KubeEleven{
 		K8sCluster: req.Desired,
 		LBClusters: req.DesiredLbs,
@@ -40,7 +43,7 @@ func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb
 		return nil, fmt.Errorf("error while building cluster %s project %s : %w", req.Desired.ClusterInfo.Name, req.ProjectName, err)
 	}
 
-	log.Info().Msgf("Kubernetes cluster %s project %s was successfully build", req.Desired.ClusterInfo.Name, req.ProjectName)
+	_logger.Info().Msgf("Kubernetes cluster was successfully build")
 	return &pb.BuildClusterResponse{Desired: req.Desired, DesiredLbs: req.DesiredLbs}, nil
 }
 

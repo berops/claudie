@@ -6,11 +6,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/rs/zerolog/log"
+
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/kube-eleven/server/kubeone"
-	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -149,7 +150,7 @@ func (k *KubeEleven) findAPIEndpoint(ep *pb.Node) string {
 		apiEndpoint = ep.Public
 		ep.NodeType = pb.NodeType_apiEndpoint
 	} else {
-		log.Error().Msgf("Cluster %s does not have any API endpoint specified", k.K8sCluster.ClusterInfo.Name)
+		log.Error().Str("cluster", k.K8sCluster.ClusterInfo.Name).Msgf("Cluster does not have any API endpoint specified")
 	}
 
 	return apiEndpoint

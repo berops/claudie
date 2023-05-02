@@ -7,13 +7,14 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/rs/zerolog/log"
+	"google.golang.org/grpc"
+	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/externalgrpc/protos"
+
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/autoscaler-adapter/node_manager"
-	"github.com/rs/zerolog/log"
-	"google.golang.org/grpc"
-	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/externalgrpc/protos"
 )
 
 const (
@@ -209,7 +210,7 @@ func (c *ClaudieCloudProvider) Refresh(_ context.Context, req *protos.RefreshReq
 func (c *ClaudieCloudProvider) refresh() error {
 	log.Info().Msgf("Refreshing the state")
 	if cluster, err := getClaudieState(c.projectName, c.configCluster.ClusterInfo.Name); err != nil {
-		log.Error().Msgf("error while refreshing a state for the cluster %s : %v", c.configCluster.ClusterInfo.Name, err)
+		log.Err(err).Str("cluster", c.configCluster.ClusterInfo.Name).Msgf("error while refreshing a state for the cluster")
 		return fmt.Errorf("error while refreshing a state for the cluster %s : %w", c.configCluster.ClusterInfo.Name, err)
 	} else {
 		c.configCluster = cluster

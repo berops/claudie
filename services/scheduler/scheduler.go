@@ -10,16 +10,16 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/rs/zerolog/log"
+	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc/connectivity"
+
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/healthcheck"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/internal/worker"
 	"github.com/berops/claudie/proto/pb"
 	cbox "github.com/berops/claudie/services/context-box/client"
-	"github.com/rs/zerolog/log"
-	"golang.org/x/sync/errgroup"
-
-	"google.golang.org/grpc/connectivity"
 )
 
 const (
@@ -62,6 +62,8 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 		return nil
 	}
 
+	_logger := log.With().Str("config", config.Name).Logger()
+
 	if wg != nil {
 		// we received a non-nil config thus we add a new worker to the wait group.
 		wg.Add(1)
@@ -72,16 +74,16 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			defer wg.Done()
 		}
 
-		log.Info().Msgf("Processing config %s ", config.Name)
+		_logger.Info().Msgf("Processing config")
 
 		if err := processConfig(config, c); err != nil {
-			log.Error().Msgf("Error while processing config %s : %v", config.Name, err)
+			_logger.Err(err).Msgf("Error while processing config")
 			//save error message to config
 			if err := saveErrorMessage(config, c, err); err != nil {
-				log.Error().Msgf("Failed to save error to the config %s : %v", config.Name, err)
+				_logger.Err(err).Msgf("Failed to save error to the config")
 			}
 		}
-		log.Info().Msgf("Config %s have been successfully processed", config.Name)
+		_logger.Info().Msgf("Config have been successfully processed")
 	}()
 
 	return nil

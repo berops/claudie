@@ -6,18 +6,17 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/berops/claudie/services/terraformer/server/provider"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 
 	comm "github.com/berops/claudie/internal/command"
-
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/terraformer/server/backend"
 	"github.com/berops/claudie/services/terraformer/server/clusterBuilder"
+	"github.com/berops/claudie/services/terraformer/server/provider"
 	"github.com/berops/claudie/services/terraformer/server/terraform"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
 type DNS struct {
@@ -44,6 +43,10 @@ type outputDomain struct {
 }
 
 func (d DNS) CreateDNSRecords() (string, error) {
+	_logger := log.With().
+		Str("cluster", d.ClusterName).Str("endpoint", d.CurrentDNS.Endpoint).
+		Logger()
+
 	clusterID := fmt.Sprintf("%s-%s", d.ClusterName, d.ClusterHash)
 	dnsID := fmt.Sprintf("%s-dns", clusterID)
 	dnsDir := filepath.Join(clusterBuilder.Output, dnsID)
@@ -58,7 +61,7 @@ func (d DNS) CreateDNSRecords() (string, error) {
 	}
 
 	if utils.ChangedDNSProvider(d.CurrentDNS, d.DesiredDNS) {
-		log.Info().Msgf("Destroying old DNS records for %s from cluster %s", d.CurrentDNS.Endpoint, d.ClusterName)
+		_logger.Info().Msgf("Destroying old DNS records")
 		if err := d.generateFiles(dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs); err != nil {
 			return "", fmt.Errorf("error while creating dns .tf files for %s : %w", dnsID, err)
 		}
@@ -74,7 +77,7 @@ func (d DNS) CreateDNSRecords() (string, error) {
 		}
 	}
 
-	log.Info().Msgf("Creating new DNS records for %s from cluster %s", d.DesiredDNS.Endpoint, d.ClusterName)
+	_logger.Info().Msgf("Creating new DNS records")
 	if err := d.generateFiles(dnsID, dnsDir, d.DesiredDNS, d.DesiredNodeIPs); err != nil {
 		return "", fmt.Errorf("error while creating dns .tf files for %s : %w", dnsID, err)
 	}
@@ -96,7 +99,7 @@ func (d DNS) CreateDNSRecords() (string, error) {
 		return "", fmt.Errorf("error while reading output from terraform for %s : %w", clusterID, err)
 	}
 
-	log.Info().Msgf("DNS records for %s from cluster %s were successfully set up", d.DesiredDNS.Endpoint, d.ClusterName)
+	_logger.Info().Msgf("DNS records were successfully set up")
 	if err := os.RemoveAll(dnsDir); err != nil {
 		return validateDomain(out.Domain[outputID]), fmt.Errorf("error while deleting files in %s: %w", dnsDir, err)
 	}
@@ -105,7 +108,11 @@ func (d DNS) CreateDNSRecords() (string, error) {
 }
 
 func (d DNS) DestroyDNSRecords() error {
-	log.Info().Msgf("Destroying DNS records for %s from cluster %s", d.CurrentDNS.Endpoint, d.ClusterName)
+	_logger := log.With().
+		Str("cluster", d.ClusterName).Str("endpoint", d.CurrentDNS.Endpoint).
+		Logger()
+
+	_logger.Info().Msgf("Destroying DNS records")
 	dnsID := fmt.Sprintf("%s-%s-dns", d.ClusterName, d.ClusterHash)
 	dnsDir := filepath.Join(clusterBuilder.Output, dnsID)
 
@@ -128,7 +135,7 @@ func (d DNS) DestroyDNSRecords() error {
 	if err := terraform.TerraformDestroy(); err != nil {
 		return err
 	}
-	log.Info().Msgf("DNS records for %s from cluster %s were successfully destroyed", d.CurrentDNS.Endpoint, d.ClusterName)
+	log.Info().Msgf("DNS records were successfully destroyed")
 
 	if err := os.RemoveAll(dnsDir); err != nil {
 		return fmt.Errorf("error while deleting files in %s : %w", dnsDir, err)

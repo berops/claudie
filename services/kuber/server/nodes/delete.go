@@ -5,12 +5,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -104,8 +105,9 @@ func (d *Deleter) DeleteNodes() (*pb.K8Scluster, error) {
 // return nil if successful, error otherwise
 func (d *Deleter) deleteNodesByName(kc kubectl.Kubectl, nodeName string, realNodeNames []string) error {
 	realNodeName := utils.FindName(realNodeNames, nodeName)
+	_logger := log.With().Str("node", realNodeName).Str("cluster", d.clusterPrefix).Logger()
 	if realNodeName != "" {
-		log.Info().Msgf("Deleting node %s from k8s cluster %s", realNodeName, d.clusterPrefix)
+		_logger.Info().Msgf("Deleting node")
 		//kubectl drain <node-name> --ignore-daemonsets --delete-emptydir-data
 		err := kc.KubectlDrain(realNodeName)
 		if err != nil {
@@ -117,7 +119,7 @@ func (d *Deleter) deleteNodesByName(kc kubectl.Kubectl, nodeName string, realNod
 			return fmt.Errorf("error while deleting node %s from cluster %s : %w", nodeName, d.clusterPrefix, err)
 		}
 	} else {
-		log.Error().Msgf("Node name that contains %s not found in cluster %s", nodeName, d.clusterPrefix)
+		_logger.Error().Msgf("Node name that contains %s not found", nodeName)
 		return fmt.Errorf("no node with name %s found in cluster %s", nodeName, d.clusterPrefix)
 	}
 	return nil
@@ -141,7 +143,7 @@ func (d *Deleter) deleteFromEtcd(kc kubectl.Kubectl, etcdEpNode *pb.Node) error 
 	for _, nodeName := range d.masterNodes {
 		for _, etcdPodInfo := range etcdPodInfos {
 			if nodeName == etcdPodInfo.nodeName {
-				log.Debug().Msgf("Deleting etcd member %s, with hash %s from cluster %s", etcdPodInfo.nodeName, etcdPodInfo.memberHash, d.clusterPrefix)
+				log.Debug().Str("cluster", d.clusterPrefix).Msgf("Deleting etcd member %s, with hash %s", etcdPodInfo.nodeName, etcdPodInfo.memberHash)
 				etcdctlCmd := fmt.Sprintf("etcdctl member remove %s", etcdPodInfo.memberHash)
 				_, err := kc.KubectlExecEtcd(etcdPods[0], etcdctlCmd)
 				if err != nil {
@@ -170,7 +172,7 @@ func (d *Deleter) updateClusterData() {
 // deleteFromLonghorn will delete node from nodes.longhorn.io
 // return nil if successful, error otherwise
 func (d *Deleter) deleteFromLonghorn(kc kubectl.Kubectl, worker string) error {
-	log.Info().Msgf("Deleting node %s from nodes.longhorn.io from cluster %s", worker, d.clusterPrefix)
+	log.Info().Str("cluster", d.clusterPrefix).Msgf("Deleting node %s from nodes.longhorn.io from cluster %s", worker)
 	if err := kc.KubectlDeleteResource("nodes.longhorn.io", worker, "-n", longhornNamespace); err != nil {
 		return fmt.Errorf("error while deleting node %s from nodes.longhorn.io from cluster %s : %w", worker, d.clusterPrefix, err)
 	}
@@ -196,15 +198,18 @@ func (d *Deleter) assureReplication(kc kubectl.Kubectl, worker string) error {
 				if err := increaseReplicaCount(v, kc); err != nil {
 					return fmt.Errorf("error while increasing number of replicas in volume %s from cluster %s : %w", v.Metadata.Name, d.clusterPrefix, err)
 				}
+
+				_logger := log.With().Str("cluster", d.clusterPrefix).Logger()
+
 				// Wait pvcReplicationTimeout for Longhorn to create new replica.
-				log.Info().Msgf("Waiting %.0f seconds for new replicas to be scheduled if possible for node %s cluster %s ", pvcReplicationTimeout.Seconds(), worker, d.clusterPrefix)
+				_logger.Info().Str("node", worker).Msgf("Waiting %.0f seconds for new replicas to be scheduled if possible for node %s", pvcReplicationTimeout.Seconds(), worker)
 				time.Sleep(pvcReplicationTimeout)
 				// Decrease number of replicas in volume -> original state.
 				if err := revertReplicaCount(v, kc); err != nil {
 					return fmt.Errorf("error while increasing number of replicas in volume %s cluster %s : %w", v.Metadata.Name, d.clusterPrefix, err)
 				}
 				// Delete old replica, on to-be-deleted node.
-				log.Debug().Msgf("Deleting replica %s from node %s cluster %s ", r.Metadata.Name, r.Status.OwnerID, d.clusterPrefix)
+				_logger.Debug().Str("node", r.Status.OwnerID).Msgf("Deleting replica %s from node %s", r.Metadata.Name, r.Status.OwnerID)
 				if err := deleteReplica(r, kc); err != nil {
 					return err
 				}

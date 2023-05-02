@@ -8,6 +8,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 )
 
@@ -52,22 +53,21 @@ func (u *Usecases) WatchConfigs() {
 
 					u.inProgress.Delete(cluster)
 					log.Info().
-						Str("manifest", cfg.Name).
-						Str("cluster", cluster).
+						Str("project", cfg.Name).Str("cluster", cluster).
 						Msgf("Cluster has been deleted")
 					return true
 				})
 
 				for _, config := range configs {
 					for cluster, workflow := range config.State {
+						_logger := utils.CreateLoggerWithProjectAndClusterName(config.Name, cluster)
+
 						_, ok := u.inProgress.Load(cluster)
 						if workflow.Status == pb.Workflow_ERROR {
 							if ok {
 								u.inProgress.Delete(cluster)
 
-								log.Err(errors.New(workflow.Description)).
-									Str("cluster", cluster).
-									Msgf("Workflow failed")
+								_logger.Err(errors.New(workflow.Description)).Msgf("Workflow failed")
 							}
 							continue
 						}
@@ -75,9 +75,7 @@ func (u *Usecases) WatchConfigs() {
 							if ok {
 								u.inProgress.Delete(cluster)
 
-								log.Info().
-									Str("cluster", cluster).
-									Msgf("Workflow finished")
+								_logger.Info().Msgf("Workflow finished")
 							}
 							continue
 						}
@@ -92,10 +90,7 @@ func (u *Usecases) WatchConfigs() {
 							stringBuilder.WriteString(fmt.Sprintf(" %s", strings.TrimSpace(workflow.Description)))
 						}
 
-						log.Info().
-							Str("cluster", cluster).
-							Str("manifest", config.Name).
-							Msgf(stringBuilder.String())
+						_logger.Info().Msgf(stringBuilder.String())
 					}
 				}
 			}

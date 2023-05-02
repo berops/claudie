@@ -110,7 +110,7 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 
 		err = u.ContextBox.SaveConfig(config)
 		if err != nil {
-			log.Err(err).Str("manifest", manifestName).Msgf("Failed to save config %v")
+			log.Err(err).Str("project", manifestName).Msgf("Failed to save config %v")
 			continue
 		}
 
@@ -142,13 +142,13 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 
 		go func(config *pb.Config) {
 			log.Info().
-				Str("manifest", config.Name).
+				Str("project", config.Name).
 				Msgf("Deleting config %v from context-box DB", config.Id)
 
 			err := u.ContextBox.DeleteConfig(config.Id)
 			if err != nil {
 				log.Err(err).
-					Str("manifest", config.Name).
+					Str("project", config.Name).
 					Msgf("Failed to delete config %s from MongoDB", config.Id)
 			}
 

@@ -11,25 +11,23 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/rs/zerolog/log"
+	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
+
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/terraformer/server/kubernetes"
 	"github.com/berops/claudie/services/terraformer/server/loadbalancer"
-
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-
-	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
-	"github.com/rs/zerolog/log"
-
-	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/health"
-	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
 const (
@@ -62,6 +60,8 @@ type Cluster interface {
 }
 
 func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastructureRequest) (*pb.BuildInfrastructureResponse, error) {
+	_logger := log.With().Str("project", req.ProjectName).Logger()
+
 	clusters := []Cluster{
 		kubernetes.K8Scluster{
 			DesiredK8s:    req.Desired,
@@ -83,16 +83,16 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 	}
 
 	err := utils.ConcurrentExec(clusters, func(cluster Cluster) error {
-		log.Info().Msgf("Creating infrastructure for cluster %s project %s", cluster.Id(), req.ProjectName)
+		_logger.Info().Str("cluster", cluster.Id()).Msgf("Creating infrastructure")
 
 		if err := cluster.Build(); err != nil {
 			return fmt.Errorf("error while building the cluster %v : %w", cluster.Id(), err)
 		}
-		log.Info().Msgf("Infrastructure was successfully created for cluster %s project %s", cluster.Id(), req.ProjectName)
+		_logger.Info().Str("cluster", cluster.Id()).Msgf("Infrastructure was successfully created")
 		return nil
 	})
 	if err != nil {
-		log.Error().Msgf("Error while building cluster %s for project %s : %s", req.Desired.ClusterInfo.Name, req.ProjectName, err)
+		_logger.Err(err).Str("cluster", req.Desired.ClusterInfo.Name).Msgf("Error while building cluster")
 		return nil, fmt.Errorf("error while building cluster %s for project %s : %w", req.Desired.ClusterInfo.Name, req.ProjectName, err)
 	}
 
@@ -142,7 +142,9 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 	})
 
 	err = utils.ConcurrentExec(clusters, func(cluster Cluster) error {
-		log.Info().Msgf("Destroying infrastructure for cluster %s project %s", cluster.Id(), req.ProjectName)
+		_logger := utils.CreateLoggerWithProjectAndClusterName(req.ProjectName, cluster.Id())
+
+		_logger.Info().Msgf("Destroying infrastructure")
 		if err := cluster.Destroy(); err != nil {
 			return fmt.Errorf("error while destroying cluster %v : %w", cluster.Id(), err)
 		}
@@ -165,7 +167,7 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 				return fmt.Errorf("failed to remove dns lock file for cluster %v: %w", cluster.Id(), err)
 			}
 		}
-		log.Info().Msgf("Infrastructure for cluster %s project %s was successfully destroyed", cluster.Id(), req.ProjectName)
+		_logger.Info().Msgf("Infrastructure for cluster was successfully destroyed")
 
 		// Key under which the lockfile id is stored in dynamodb
 		dynamoLockId, err := attributevalue.Marshal(fmt.Sprintf("%s/%s/%s-md5", minioBucket, req.ProjectName, cluster.Id()))
@@ -187,7 +189,7 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 	})
 
 	if err != nil {
-		log.Error().Msgf("Error while destroying the infrastructure for project %s : %s", req.ProjectName, err)
+		log.Err(err).Str("project", req.ProjectName).Msgf("Error while destroying the infrastructure for project")
 		return nil, fmt.Errorf("error while destroying infrastructure for project %s : %w", req.ProjectName, err)
 	}
 	return &pb.DestroyInfrastructureResponse{Current: req.Current, CurrentLbs: req.CurrentLbs}, nil
