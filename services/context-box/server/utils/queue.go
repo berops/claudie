@@ -65,7 +65,7 @@ func (q *Queue) GetElementNames() []string {
 	for _, element := range q.elements {
 		names = append(names, element.GetName())
 	}
-	defer q.threadSafetyLock.Unlock()
+	q.threadSafetyLock.Unlock()
 
 	return names
 }
