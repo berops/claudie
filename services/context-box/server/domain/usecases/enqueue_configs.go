@@ -73,7 +73,6 @@ func (u *Usecases) EnqueueConfigs() error {
 				configInfo.SchedulerTTL = defaultSchedulerTTL
 
 				continue
-
 			} else if !configInfo.HasError() {
 				// If the item is already present in the scheduler queue but the config is still not pulled by the scheduler
 				// microservice, then reduce its scheduler TTL by 1.
@@ -96,7 +95,6 @@ func (u *Usecases) EnqueueConfigs() error {
 				configInfo.BuilderTTL = defaultBuilderTTL
 
 				continue
-
 			} else if !configInfo.HasError() {
 				// If the item is already present in the builder queue but the config is still not pulled by the builder
 				// microservice, then reduce its scheduler TTL by 1.
