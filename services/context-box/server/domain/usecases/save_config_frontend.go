@@ -25,8 +25,6 @@ func (u *Usecases) SaveConfigFrontend(request *pb.SaveConfigRequest) (*pb.SaveCo
 	// Check if config with this name already exists in MongoDB
 	existingConfig, err := u.DB.GetConfig(newConfig.GetName(), pb.IdType_NAME)
 	if err == nil {
-		// TODO: understand this portion
-
 		if string(existingConfig.MsChecksum) != string(newConfig.MsChecksum) {
 			existingConfig.Manifest = newConfig.Manifest
 			existingConfig.MsChecksum = newConfig.MsChecksum
