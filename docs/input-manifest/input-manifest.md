@@ -222,7 +222,7 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
 - `count`
 
-  Number of the nodes in the nodepool. Mutually exclusive with `autoscalerConf`.
+  Number of the nodes in the nodepool. Mutually exclusive with `autoscaler`.
 
 - `serverType`
   
@@ -244,7 +244,7 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
   This field is optional, however, if compute nodepool does not define it, default value is used for creation of storage disk. Control nodepools and Loadbalancer nodepools ignore this field.
 
-- `autoscalerConf` [Autoscaler Configuration](#autoscaler-configuration)
+- `autoscaler` [Autoscaler Configuration](#autoscaler-configuration)
   
   Autoscaler configuration for this nodepool. Mutually exclusive with `count`.
 
