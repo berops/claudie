@@ -132,7 +132,7 @@ nodePools:
   #     serverType:       # Machine type of the nodes in this nodepool.
   #     image:            # OS image of the nodes in the nodepool.
   #     storageDiskSize:  # Disk size of the storage disk for compute nodepool.
-  #     autoscalerConf:   # Autoscaler configuration. Mutually exclusive with Count.
+  #     autoscaler:       # Autoscaler configuration. Mutually exclusive with Count.
   #       min:            # Minimum number of nodes in nodepool.
   #       max:            # Maximum number of nodes in nodepool.
   #
