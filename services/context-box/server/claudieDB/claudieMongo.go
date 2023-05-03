@@ -41,17 +41,18 @@ type Workflow struct {
 }
 
 type configItem struct {
-	ID           primitive.ObjectID  `bson:"_id,omitempty"`
-	Name         string              `bson:"name"`
-	Manifest     string              `bson:"manifest"`
-	DesiredState []byte              `bson:"desiredState"`
-	CurrentState []byte              `bson:"currentState"`
-	MsChecksum   []byte              `bson:"msChecksum"`
-	DsChecksum   []byte              `bson:"dsChecksum"`
-	CsChecksum   []byte              `bson:"csChecksum"`
-	BuilderTTL   int                 `bson:"BuilderTTL"`
-	SchedulerTTL int                 `bson:"SchedulerTTL"`
-	State        map[string]Workflow `bson:"state"`
+	ID               primitive.ObjectID  `bson:"_id,omitempty"`
+	Name             string              `bson:"name"`
+	Manifest         string              `bson:"manifest"`
+	DesiredState     []byte              `bson:"desiredState"`
+	CurrentState     []byte              `bson:"currentState"`
+	MsChecksum       []byte              `bson:"msChecksum"`
+	DsChecksum       []byte              `bson:"dsChecksum"`
+	CsChecksum       []byte              `bson:"csChecksum"`
+	BuilderTTL       int                 `bson:"builderTTL"`
+	SchedulerTTL     int                 `bson:"schedulerTTL"`
+	State            map[string]Workflow `bson:"state"`
+	ManifestFileName string              `bson:"manifestFileName"`
 }
 
 // ConvertFromGRPCWorkflow converts the workflow state data from GRPC to the database representation.
@@ -222,6 +223,7 @@ func (c *ClaudieMongo) SaveConfig(config *pb.Config) error {
 	data.BuilderTTL = int(config.GetBuilderTTL())
 	data.SchedulerTTL = int(config.GetSchedulerTTL())
 	data.State = ConvertFromGRPCWorkflow(config.State)
+	data.ManifestFileName = config.GetManifestFileName()
 
 	// Check if ID exists
 	// If config has already some ID:
@@ -259,7 +261,7 @@ func (c *ClaudieMongo) SaveConfig(config *pb.Config) error {
 // UpdateSchedulerTTL will update a schedulerTTL based on the name of the config
 // returns error if not successful, nil otherwise
 func (c *ClaudieMongo) UpdateSchedulerTTL(name string, newTTL int32) error {
-	err := c.updateDocument(bson.M{"name": name}, bson.M{"$set": bson.M{"SchedulerTTL": newTTL}})
+	err := c.updateDocument(bson.M{"name": name}, bson.M{"$set": bson.M{"schedulerTTL": newTTL}})
 	if err != nil {
 		return fmt.Errorf("failed to update Scheduler TTL for document %s : %w", name, err)
 	}
@@ -269,7 +271,7 @@ func (c *ClaudieMongo) UpdateSchedulerTTL(name string, newTTL int32) error {
 // UpdateBuilderTTL will update a builderTTL based on the name of the config
 // returns error if not successful, nil otherwise
 func (c *ClaudieMongo) UpdateBuilderTTL(name string, newTTL int32) error {
-	err := c.updateDocument(bson.M{"name": name}, bson.M{"$set": bson.M{"BuilderTTL": newTTL}})
+	err := c.updateDocument(bson.M{"name": name}, bson.M{"$set": bson.M{"builderTTL": newTTL}})
 	if err != nil {
 		return fmt.Errorf("failed to update Builder TTL for document %s : %w", name, err)
 	}
@@ -397,17 +399,18 @@ func dataToConfigPb(data *configItem) (*pb.Config, error) {
 	}
 
 	return &pb.Config{
-		Id:           data.ID.Hex(),
-		Name:         data.Name,
-		Manifest:     data.Manifest,
-		DesiredState: desiredState,
-		CurrentState: currentState,
-		MsChecksum:   data.MsChecksum,
-		DsChecksum:   data.DsChecksum,
-		CsChecksum:   data.CsChecksum,
-		BuilderTTL:   int32(data.BuilderTTL),
-		SchedulerTTL: int32(data.SchedulerTTL),
-		State:        ConvertToGRPCWorkflow(data.State),
+		Id:               data.ID.Hex(),
+		Name:             data.Name,
+		Manifest:         data.Manifest,
+		DesiredState:     desiredState,
+		CurrentState:     currentState,
+		MsChecksum:       data.MsChecksum,
+		DsChecksum:       data.DsChecksum,
+		CsChecksum:       data.CsChecksum,
+		BuilderTTL:       int32(data.BuilderTTL),
+		SchedulerTTL:     int32(data.SchedulerTTL),
+		State:            ConvertToGRPCWorkflow(data.State),
+		ManifestFileName: data.ManifestFileName,
 	}, nil
 }
 

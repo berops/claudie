@@ -17,6 +17,6 @@ type Usecases struct {
 	// to provide more friendly logs in the service.
 	inProgress sync.Map
 
-	// done indicates that the server is in shutdown.
+	// Done indicates that the server is in shutdown.
 	Done chan struct{}
 }
