@@ -118,7 +118,6 @@ func configCheck() error {
 		}
 
 		// check for Scheduler
-
 		if !checksum.Equals(config.DsChecksum, config.MsChecksum) {
 			// if scheduler ttl is 0 or smaller AND config has no errorMessage, add to scheduler Q
 			if config.SchedulerTTL <= 0 && !config.HasError() {

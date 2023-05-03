@@ -21,12 +21,12 @@ import (
 func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 	manifestFiles, err := os.ReadDir(manifestDir)
 	if err != nil {
-		return fmt.Errorf("Failed to read manifest files from dir %q: %w", manifestDir, err)
+		return fmt.Errorf("failed to read manifest files from dir %q: %w", manifestDir, err)
 	}
 
 	configs, err := u.ContextBox.GetAllConfigs()
 	if err != nil {
-		return fmt.Errorf("Failed to retrieve manifests details from context-box: %w", err)
+		return fmt.Errorf("failed to retrieve manifests details from context-box: %w", err)
 	}
 
 	log.Debug().Msgf("%d configs present in database | %d configs in %v", len(configs), len(manifestFiles), manifestDir)
@@ -39,7 +39,6 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 	}
 
 	manifestProcessingResultsChan := make(chan *ManifestProcessingResult, len(manifestFiles))
-
 	waitGroup := sync.WaitGroup{}
 
 	for _, manifestFile := range manifestFiles {
@@ -49,15 +48,14 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 		// an error occurs.
 		// By processing, we mean reading, unmarshalling and validating the claudie manifest
 		go func(manifestFile fs.DirEntry) {
-			defer waitGroup.Done()
-
-			manifestFilepath := filepath.Join(manifestDir, manifestFile.Name())
-
 			var (
 				rawManifestData      []byte
 				unmarshalledManifest *manifest.Manifest
 				processingError      error = nil
 			)
+			defer waitGroup.Done()
+
+			manifestFilepath := filepath.Join(manifestDir, manifestFile.Name())
 
 			defer func() {
 				manifestProcessingResultsChan <- &ManifestProcessingResult{
@@ -71,39 +69,38 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 			if rawManifestData, processingError = os.ReadFile(manifestFilepath); processingError != nil {
 				return
 			}
-
 			if processingError = yaml.Unmarshal(rawManifestData, &unmarshalledManifest); processingError != nil {
 				return
 			}
-
 			processingError = unmarshalledManifest.Validate()
 		}(manifestFile)
 	}
 
 	go func() {
 		waitGroup.Wait()
-
 		close(manifestProcessingResultsChan)
 	}()
 
 	// Collect processing results of manifest files which were processed successfully
 	for manifestProcessingResult := range manifestProcessingResultsChan {
-		var manifestName = manifestProcessingResult.unmarshalledManifest.Name
+		var manifestName string
 		var isConfigRemoved bool
 
-		// Remove the config from configs.
+		// Remove the config from configs slice.
 		// After the for loop finishes, the configs variable will contain only those configs which represent
-		// deleted manifest files.
-		configs, isConfigRemoved = removeConfig(configs, manifestName)
-
+		// deleted manifest files -> configs which needs to be deleted.
+		configs, isConfigRemoved = removeConfig(configs, manifestProcessingResult.manifestFilepath)
+		// Check for the error first, before referencing any variables.
 		if manifestProcessingResult.processingError != nil {
 			log.Error().Msgf("Skipping over file %v due to processing error : %v", manifestProcessingResult.manifestFilepath, manifestProcessingResult.processingError)
 			continue
 		}
+		manifestName = manifestProcessingResult.unmarshalledManifest.Name
 
 		config := &pb.Config{
-			Name:     manifestName,
-			Manifest: string(manifestProcessingResult.rawManifestData),
+			Name:             manifestName,
+			ManifestFileName: manifestProcessingResult.manifestFilepath,
+			Manifest:         string(manifestProcessingResult.rawManifestData),
 		}
 
 		err = u.ContextBox.SaveConfig(config)
@@ -154,19 +151,15 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 }
 
 // removeConfig filters out the config representing the manifest with
-// the specified name from the configs slice. If not present the original slice is
-// returned.
-func removeConfig(configs []*pb.Config, manifestName string) ([]*pb.Config, bool) {
-	var isConfigFound bool = false
-
+// the specified path from the configs slice. If element removed from slice, new slice
+// is returned together with value true. If element was not found in slice,
+// original slice is returned together with value false.
+func removeConfig(configs []*pb.Config, manifestPath string) ([]*pb.Config, bool) {
 	for index, config := range configs {
-		if config.Name == manifestName {
+		if config.ManifestFileName == manifestPath {
 			configs = append(configs[0:index], configs[index+1:]...)
-			isConfigFound = true
-
-			return configs, isConfigFound
+			return configs, true
 		}
 	}
-
-	return configs, isConfigFound
+	return configs, false
 }
