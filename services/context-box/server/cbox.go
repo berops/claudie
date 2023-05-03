@@ -206,3 +206,15 @@ func updateNodepool(state *pb.Project, clusterName, nodepoolName string, nodes [
 	}
 	return fmt.Errorf("cluster %s was not found in project %s", clusterName, state.Name)
 }
+
+// checkStateForError checks if state contains error and if it should be saved. If
+// not, returns original state, otherwise error status is deleted and new description appended.
+func checkStateForError(saveErrors bool, state *pb.Workflow) *pb.Workflow {
+	if !saveErrors {
+		if state.Status == pb.Workflow_ERROR {
+			state.Status = pb.Workflow_DONE
+			state.Description = fmt.Sprintf("Error encountered but ignored due to triggered deletion : %s", state.Description)
+		}
+	}
+	return state
+}

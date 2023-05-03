@@ -55,13 +55,25 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 	// Save new config to the DB
 	config.DsChecksum = config.MsChecksum
 	config.SchedulerTTL = 0
-	err := database.UpdateDs(config)
-	if err != nil {
+	if err := database.UpdateDs(config); err != nil {
 		return nil, fmt.Errorf("error while updating dsChecksum for %s : %w", config.Name, err)
 	}
 
-	err = database.UpdateSchedulerTTL(config.Name, config.SchedulerTTL)
-	if err != nil {
+	if config.DesiredState != nil {
+		// Update workflow state for k8s clusters.
+		for _, cluster := range config.DesiredState.Clusters {
+			if err := database.UpdateWorkflowState(config.Name, cluster.ClusterInfo.Name, config.State[cluster.ClusterInfo.Name]); err != nil {
+				return nil, fmt.Errorf("error while updating workflow state for k8s cluster %s in config %s : %w", cluster.ClusterInfo.Name, config.Name, err)
+			}
+		}
+		// Update workflow state for LB clusters.
+		for _, cluster := range config.DesiredState.LoadBalancerClusters {
+			if err := database.UpdateWorkflowState(config.Name, cluster.ClusterInfo.Name, config.State[cluster.ClusterInfo.Name]); err != nil {
+				return nil, fmt.Errorf("error while updating workflow state for LB cluster %s in config %s : %w", cluster.ClusterInfo.Name, config.Name, err)
+			}
+		}
+	}
+	if err := database.UpdateSchedulerTTL(config.Name, config.SchedulerTTL); err != nil {
 		return nil, fmt.Errorf("error while updating schedulerTTL for %s : %w", config.Name, err)
 	}
 
@@ -109,14 +121,20 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 	config.BuilderTTL = 0
 	// In Builder, the desired state is also updated i.e. in terraformer (node IPs, etc) thus
 	// we need to update it in database,
-	// however, if deletion has been triggered, the desired state should be nil
+	// however, if deletion has been triggered, the desired state should be nil.
+	saveErrors := false
 	if dbConf, err := database.GetConfig(config.Id, pb.IdType_HASH); err != nil {
 		log.Warn().Msgf("Got error while checking the desired state in the database : %v", err)
 	} else {
-		if dbConf.DesiredState != nil {
+		if dbConf.DsChecksum != nil {
+			// Update desired state as config is not flagged for deletion.
 			if err := database.UpdateDs(config); err != nil {
 				return nil, fmt.Errorf("error while updating desired state: %w", err)
 			}
+			// Save errors as infrastructure will be saved.
+			saveErrors = true
+		} else {
+			log.Debug().Msgf("Errors from workflow run on config %s will not be saved", config.Name)
 		}
 	}
 
@@ -125,8 +143,26 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 		return nil, fmt.Errorf("error while updating csChecksum for %s : %w", config.Name, err)
 	}
 
+	// Update BuilderTTL
 	if err := database.UpdateBuilderTTL(config.Name, config.BuilderTTL); err != nil {
 		return nil, fmt.Errorf("error while updating builderTTL for %s : %w", config.Name, err)
+	}
+
+	// Update workflow state for k8s clusters.
+	for _, cluster := range config.DesiredState.Clusters {
+		// Check if error should be saved.
+		state := checkStateForError(saveErrors, config.State[cluster.ClusterInfo.Name])
+		if err := database.UpdateWorkflowState(config.Name, cluster.ClusterInfo.Name, state); err != nil {
+			return nil, fmt.Errorf("error while updating workflow state for k8s cluster %s in config %s : %w", cluster.ClusterInfo.Name, config.Name, err)
+		}
+	}
+	// Update workflow state for LB clusters.
+	for _, cluster := range config.DesiredState.LoadBalancerClusters {
+		// Check if error should be saved.
+		state := checkStateForError(saveErrors, config.State[cluster.ClusterInfo.Name])
+		if err := database.UpdateWorkflowState(config.Name, cluster.ClusterInfo.Name, state); err != nil {
+			return nil, fmt.Errorf("error while updating workflow state for LB cluster %s in config %s : %w", cluster.ClusterInfo.Name, config.Name, err)
+		}
 	}
 
 	log.Info().Msgf("Config %s successfully saved from Builder", config.Name)
