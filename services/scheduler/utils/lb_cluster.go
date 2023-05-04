@@ -1,18 +1,32 @@
-package main
+package utils
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
+	"strings"
+
+	"golang.org/x/crypto/ssh"
 
 	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 )
 
+// keyPair is a struct containing private and public SSH keys as a string.
+// These SSH key-pairs are required to SSH into the VMs in the cluster and execute commands.
+type keyPair struct {
+	public  string
+	private string
+}
+
 const hostnameHashLength = 17
 
-// createLBCluster reads manifest state and create loadbalancer clusters based on it
+// CreateLBCluster reads manifest state and create loadbalancer clusters based on it
 // returns slice of *pb.LBcluster if successful, nil otherwise
-func createLBCluster(manifestState *manifest.Manifest) ([]*pb.LBcluster, error) {
+func CreateLBCluster(manifestState *manifest.Manifest) ([]*pb.LBcluster, error) {
 	var lbClusters []*pb.LBcluster
 	for _, lbCluster := range manifestState.LoadBalancer.Clusters {
 		dns, err := getDNS(lbCluster.DNS, manifestState)
@@ -42,9 +56,9 @@ func createLBCluster(manifestState *manifest.Manifest) ([]*pb.LBcluster, error) 
 	return lbClusters, nil
 }
 
-// updateLBClusters updates the desired state of the loadbalancer clusters based on the current state
+// UpdateLBClusters updates the desired state of the loadbalancer clusters based on the current state
 // returns error if failed, nil otherwise
-func updateLBClusters(newConfig *pb.Config) error {
+func UpdateLBClusters(newConfig *pb.Config) error {
 clusterLbDesired:
 	for _, clusterLbDesired := range newConfig.DesiredState.LoadBalancerClusters {
 		for _, clusterLbCurrent := range newConfig.CurrentState.LoadBalancerClusters {
@@ -128,4 +142,91 @@ func getMatchingRoles(roles []manifest.Role, roleNames []string) ([]*pb.Role, er
 		}
 	}
 	return matchingRoles, nil
+}
+
+// updateClusterInfo updates the desired state based on the current state
+// namely:
+// - Hash
+// - Public key
+// - Private key
+// - AutoscalerConfig
+// - existing nodes
+// - nodepool metadata
+func updateClusterInfo(desired, current *pb.ClusterInfo) {
+	desired.Hash = current.Hash
+	desired.PublicKey = current.PublicKey
+	desired.PrivateKey = current.PrivateKey
+	// check for autoscaler configuration
+desired:
+	for _, desiredNp := range desired.NodePools {
+		for _, currentNp := range current.NodePools {
+			// Found nodepool in desired and in Current
+			if desiredNp.Name == currentNp.Name {
+				// Save current nodes and metadata
+				desiredNp.Nodes = currentNp.Nodes
+				desiredNp.Metadata = currentNp.Metadata
+				// Update the count
+				if currentNp.AutoscalerConfig != nil && desiredNp.AutoscalerConfig != nil {
+					// Both have Autoscaler conf defined, use same count as in current
+					desiredNp.Count = currentNp.Count
+				} else if currentNp.AutoscalerConfig == nil && desiredNp.AutoscalerConfig != nil {
+					// Desired is autoscaled, but not current
+					if desiredNp.AutoscalerConfig.Min > currentNp.Count {
+						// Cannot have fewer nodes than defined min
+						desiredNp.Count = desiredNp.AutoscalerConfig.Min
+					} else if desiredNp.AutoscalerConfig.Max < currentNp.Count {
+						// Cannot have more nodes than defined max
+						desiredNp.Count = desiredNp.AutoscalerConfig.Max
+					} else {
+						// Use same count as in current for now, autoscaler might change it later
+						desiredNp.Count = currentNp.Count
+					}
+				}
+				continue desired
+			}
+		}
+	}
+}
+
+// createKeys will create a RSA key-pair and save it into the clusterInfo provided
+// return error if key creation fails
+func createKeys(desiredInfo *pb.ClusterInfo) error {
+	// no current cluster found with matching name, create keys/hash
+	if desiredInfo.PublicKey == "" {
+		keys, err := makeSSHKeyPair()
+		if err != nil {
+			return fmt.Errorf("error while creating keys for %s : %w", desiredInfo.Name, err)
+		}
+		desiredInfo.PrivateKey = keys.private
+		desiredInfo.PublicKey = keys.public
+	}
+	return nil
+}
+
+// makeSSHKeyPair function generates SSH key pair
+// returns key pair if successful, nil otherwise
+func makeSSHKeyPair() (keyPair, error) {
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return keyPair{}, err
+	}
+
+	// generate and write private key as PEM
+	var privKeyBuf strings.Builder
+
+	privateKeyPEM := &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)}
+	if err := pem.Encode(&privKeyBuf, privateKeyPEM); err != nil {
+		return keyPair{}, err
+	}
+
+	// generate and write public key
+	pub, err := ssh.NewPublicKey(&privateKey.PublicKey)
+	if err != nil {
+		return keyPair{}, err
+	}
+
+	var pubKeyBuf strings.Builder
+	pubKeyBuf.Write(ssh.MarshalAuthorizedKey(pub))
+
+	return keyPair{public: pubKeyBuf.String(), private: privKeyBuf.String()}, nil
 }

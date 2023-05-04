@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"fmt"
@@ -9,9 +9,9 @@ import (
 	"github.com/berops/claudie/proto/pb"
 )
 
-// createK8sCluster reads manifest state and create kubernetes clusters based on it
+// CreateK8sCluster reads manifest state and create kubernetes clusters based on it
 // returns slice of *pb.K8Scluster if successful, nil otherwise
-func createK8sCluster(manifestState *manifest.Manifest) ([]*pb.K8Scluster, error) {
+func CreateK8sCluster(manifestState *manifest.Manifest) ([]*pb.K8Scluster, error) {
 	var clusters []*pb.K8Scluster
 	//loop through clusters from manifest
 	for _, cluster := range manifestState.Kubernetes.Clusters {
@@ -39,9 +39,9 @@ func createK8sCluster(manifestState *manifest.Manifest) ([]*pb.K8Scluster, error
 	return clusters, nil
 }
 
-// updateK8sClusters updates the desired state of the kubernetes clusters based on the current state
+// UpdateK8sClusters updates the desired state of the kubernetes clusters based on the current state
 // returns error if failed, nil otherwise
-func updateK8sClusters(newConfig *pb.Config) error {
+func UpdateK8sClusters(newConfig *pb.Config) error {
 clusterDesired:
 	for _, clusterDesired := range newConfig.DesiredState.Clusters {
 		for _, clusterCurrent := range newConfig.CurrentState.Clusters {
