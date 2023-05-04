@@ -24,8 +24,8 @@ theme:
         icon: material/toggle-switch
         name: Switch to light mode
 
-  # logo: docs/logo claudie_blue_no_BG.svg
-  # favicon: docs/logo claudie_blue_no_BG.svg
+  logo: hexagon_blue.png
+  favicon: hexagon_blue.png
 
 nav:
   - CHANGELOG:
