@@ -51,7 +51,7 @@ func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
 // Serve will create a service goroutine for each connection
 func (g *GrpcAdapter) Serve() error {
 	if err := g.server.Serve(g.tcpListener); err != nil {
-		return fmt.Errorf("Context-box microservice grpc server failed to serve: %w", err)
+		return fmt.Errorf("context-box microservice grpc server failed to serve: %w", err)
 	}
 
 	log.Info().Msgf("Finished listening for incomig gRPC connections")
