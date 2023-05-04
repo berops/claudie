@@ -43,7 +43,7 @@ jobs:
   deploy:
     environment:
       name: github-pages
-      url: https://claudie.io/docs
+      url: https://docs.claudie.io
     runs-on: ubuntu-22.04
     needs: build
     steps:    
