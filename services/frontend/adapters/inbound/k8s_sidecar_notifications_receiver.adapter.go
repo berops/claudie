@@ -53,7 +53,7 @@ func NewK8sSidecarNotificationsReceiver(usecases *usecases.Usecases) (*K8sSideca
 
 	go k8sSidecarNotificationsReceiver.watchConfigs()
 
-	return k8sSidecarNotificationsReceiver, k8sSidecarNotificationsReceiver.PerformHealthCheck()
+	return k8sSidecarNotificationsReceiver, nil
 }
 
 // registerNotificationHandlers registers a router to the underlying HTTP server.
@@ -85,7 +85,7 @@ func (k *K8sSidecarNotificationsReceiver) Start(host string, port int) error {
 // Checks whether the provided manifest directory exists or not.
 func (k *K8sSidecarNotificationsReceiver) PerformHealthCheck() error {
 	if _, err := os.Stat(k.manifestDir); os.IsNotExist(err) {
-		return fmt.Errorf("Manifest directory %v doesn't exist: %w", k.manifestDir, err)
+		return fmt.Errorf("manifest directory %v doesn't exist: %w", k.manifestDir, err)
 	}
 
 	return nil

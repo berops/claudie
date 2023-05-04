@@ -53,15 +53,15 @@ func (u *Usecases) EnqueueConfigs() error {
 		return fmt.Errorf("error while enqueuing configs: %w", err)
 	}
 
-	if !u.builderQueue.CompareElementNameList(u.builderLogQueue) {
-		log.Info().Msgf("Builder queue content changed to: %v", u.builderQueue.GetElementNames())
-	}
-	u.builderLogQueue = u.builderQueue.GetElementNames()
-
 	if !u.schedulerQueue.CompareElementNameList(u.schedulerLogQueue) {
 		log.Info().Msgf("Scheduler queue content changed to: %v", u.schedulerQueue.GetElementNames())
 	}
 	u.schedulerLogQueue = u.schedulerQueue.GetElementNames()
+
+	if !u.builderQueue.CompareElementNameList(u.builderLogQueue) {
+		log.Info().Msgf("Builder queue content changed to: %v", u.builderQueue.GetElementNames())
+	}
+	u.builderLogQueue = u.builderQueue.GetElementNames()
 
 	return nil
 }

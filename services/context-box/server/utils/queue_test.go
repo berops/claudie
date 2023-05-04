@@ -6,10 +6,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var (
-	q = Queue{}
-)
-
 type subConfig struct {
 	Name         string
 	MsChecksum   []byte
@@ -26,6 +22,7 @@ func (subConfig *subConfig) GetName() string {
 }
 
 func TestQueue(t *testing.T) {
+	q := Queue{}
 	q.Enqueue(&subConfig{Name: "foo"})
 	q.Enqueue(&subConfig{Name: "bar"})
 	require.EqualValues(t, 2, len(q.elements))
