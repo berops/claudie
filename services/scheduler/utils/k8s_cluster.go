@@ -9,13 +9,13 @@ import (
 	"github.com/berops/claudie/proto/pb"
 )
 
-// CreateK8sCluster reads manifest state and create kubernetes clusters based on it
+// CreateK8sCluster reads the unmarshalled manifest and create kubernetes clusters based on it
 // returns slice of *pb.K8Scluster if successful, nil otherwise
-func CreateK8sCluster(manifestState *manifest.Manifest) ([]*pb.K8Scluster, error) {
+func CreateK8sCluster(unmarshalledManifest *manifest.Manifest) ([]*pb.K8Scluster, error) {
 	var clusters []*pb.K8Scluster
-	//loop through clusters from manifest
-	for _, cluster := range manifestState.Kubernetes.Clusters {
-		//generate variables
+	// Loop through clusters mentioned in the manifest
+	for _, cluster := range unmarshalledManifest.Kubernetes.Clusters {
+		// Generate variables
 		newCluster := &pb.K8Scluster{
 			ClusterInfo: &pb.ClusterInfo{
 				Name: strings.ToLower(cluster.Name),
@@ -24,12 +24,13 @@ func CreateK8sCluster(manifestState *manifest.Manifest) ([]*pb.K8Scluster, error
 			Kubernetes: cluster.Version,
 			Network:    cluster.Network,
 		}
-		// createNodepools
-		controlNodePools, err := manifestState.CreateNodepools(cluster.Pools.Control, true)
+
+		// create node-pools
+		controlNodePools, err := unmarshalledManifest.CreateNodepools(cluster.Pools.Control, true)
 		if err != nil {
 			return nil, fmt.Errorf("error while creating control nodepool for %s : %w", cluster.Name, err)
 		}
-		computeNodePools, err := manifestState.CreateNodepools(cluster.Pools.Compute, false)
+		computeNodePools, err := unmarshalledManifest.CreateNodepools(cluster.Pools.Compute, false)
 		if err != nil {
 			return nil, fmt.Errorf("error while creating compute nodepool for %s : %w", cluster.Name, err)
 		}

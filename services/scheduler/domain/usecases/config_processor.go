@@ -74,6 +74,7 @@ func (u *Usecases) processConfig(config *pb.Config, contextBoxGrpcClient pb.Cont
 // saveErrorMessageToConfig saves error message to the config
 // Returns error if not successful, nil otherwise
 func (u *Usecases) saveErrorMessageToConfig(config *pb.Config, contextBoxGrpcClient pb.ContextBoxServiceClient, err error) error {
+	// TODO: Investigate this line - @Miro
 	config.CurrentState = config.DesiredState // Update CurrentState, so we can use it for deletion later
 
 	if config.State == nil {
