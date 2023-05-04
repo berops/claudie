@@ -1,0 +1,52 @@
+name: CI/CD Claudie docs
+
+on:
+  push:
+    branches: [ "main", "feature/claudie-docs" ]
+
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9  
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build documentation
+        run: mkdocs build -d site
+        
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          name: "github-pages"
+          path: "site/"
+          
+  deploy:
+    environment:
+      name: github-pages
+      url: https://claudie.io/docs
+    runs-on: ubuntu-22.04
+    needs: build
+    steps:    
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
