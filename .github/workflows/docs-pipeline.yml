@@ -2,7 +2,7 @@ name: CI/CD Claudie docs
 
 on:
   push:
-    branches: [ "main", "feature/claudie-docs" ]
+    branches: [ "master", "feature/claudie-docs" ]
 
   workflow_dispatch:
 
@@ -43,7 +43,7 @@ jobs:
   deploy:
     environment:
       name: github-pages
-      url: https://docs.claudie.io
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-22.04
     needs: build
     steps:    
