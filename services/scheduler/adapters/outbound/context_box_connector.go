@@ -1,21 +1,14 @@
 package outboundAdapters
 
 import (
-	"fmt"
-
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 
 	"github.com/berops/claudie/internal/envs"
-	"github.com/berops/claudie/internal/healthcheck"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	cbox "github.com/berops/claudie/services/context-box/client"
 	"github.com/berops/claudie/services/scheduler/domain/usecases"
-)
-
-const (
-	defaultHealthcheckPort = 50056
 )
 
 type ContextBoxConnector struct {
@@ -23,36 +16,33 @@ type ContextBoxConnector struct {
 	usecases   usecases.Usecases
 }
 
-func (c *ContextBoxConnector) Connect() {
+// Connect establishes a gRPC connection with the context-box microservice
+func (c *ContextBoxConnector) Connect() error {
 	connection, err := utils.GrpcDialWithInsecure("context-box", envs.ContextBoxURL)
 	if err != nil {
-		log.Fatal().Err(err)
+		return err
 	}
 	c.Connection = connection
 
 	log.Info().Msgf("Initiated connection Context-box: %s, waiting for connection to be in state ready", envs.ContextBoxURL)
 
-	// Initialize health probes
-	healthcheck.NewClientHealthChecker(fmt.Sprint(defaultHealthcheckPort), c.healthCheck).StartProbes()
+	return err
 }
 
-// healthCheck function is used for querying readiness of the pod running this microservice
-func (c *ContextBoxConnector) healthCheck() error {
-	res, err := c.usecases.CreateDesiredState(nil)
-	if res != nil || err == nil {
-		return fmt.Errorf("health check function got unexpected result")
-	}
-	return nil
-}
-
+// The context-box microservice has a scheduler queue(FIFO) containing ConfigInfos
+// of those configs whose desired state needs to be built.
+// GetConfigScheduler gets config from context-box DB corresponding to the configInfo
+// present in the front of the scheduler queue.
 func (c ContextBoxConnector) GetConfigScheduler(contextBoxGrpcClient pb.ContextBoxServiceClient) (*pb.GetConfigResponse, error) {
 	return cbox.GetConfigScheduler(contextBoxGrpcClient)
 }
 
+// SaveConfigScheduler saves a config into context-box DB
 func (c ContextBoxConnector) SaveConfigScheduler(config *pb.Config, contextBoxGrpcClient pb.ContextBoxServiceClient) error {
 	return cbox.SaveConfigScheduler(contextBoxGrpcClient, &pb.SaveConfigRequest{Config: config})
 }
 
+// Disconnect closes the underlying gRPC connection to context-box microservice
 func (c *ContextBoxConnector) Disconnect() {
 	utils.CloseClientConnection(c.Connection)
 }

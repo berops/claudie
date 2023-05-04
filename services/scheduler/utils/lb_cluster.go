@@ -1,39 +1,25 @@
 package utils
 
 import (
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
-	"encoding/pem"
 	"fmt"
-	"strings"
-
-	"golang.org/x/crypto/ssh"
 
 	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 )
 
-// keyPair is a struct containing private and public SSH keys as a string.
-// These SSH key-pairs are required to SSH into the VMs in the cluster and execute commands.
-type keyPair struct {
-	public  string
-	private string
-}
-
 const hostnameHashLength = 17
 
-// CreateLBCluster reads manifest state and create loadbalancer clusters based on it
-// returns slice of *pb.LBcluster if successful, nil otherwise
-func CreateLBCluster(manifestState *manifest.Manifest) ([]*pb.LBcluster, error) {
+// CreateLBCluster reads the unmarshalled manifest and creates loadbalancer clusters based on it.
+// Returns slice of *pb.LBcluster if successful, nil otherwise along with the error.
+func CreateLBCluster(unmarshalledManifest *manifest.Manifest) ([]*pb.LBcluster, error) {
 	var lbClusters []*pb.LBcluster
-	for _, lbCluster := range manifestState.LoadBalancer.Clusters {
-		dns, err := getDNS(lbCluster.DNS, manifestState)
+	for _, lbCluster := range unmarshalledManifest.LoadBalancer.Clusters {
+		dns, err := getDNS(lbCluster.DNS, unmarshalledManifest)
 		if err != nil {
 			return nil, fmt.Errorf("error while building desired state for LB %s : %w", lbCluster.Name, err)
 		}
-		role, err := getMatchingRoles(manifestState.LoadBalancer.Roles, lbCluster.Roles)
+		attachedRoles, err := getRolesAttachedToLBCluster(unmarshalledManifest.LoadBalancer.Roles, lbCluster.Roles)
 		if err != nil {
 			return nil, fmt.Errorf("error while building desired state for LB %s : %w", lbCluster.Name, err)
 		}
@@ -42,11 +28,11 @@ func CreateLBCluster(manifestState *manifest.Manifest) ([]*pb.LBcluster, error) 
 				Name: lbCluster.Name,
 				Hash: utils.CreateHash(utils.HashLength),
 			},
-			Roles:       role,
+			Roles:       attachedRoles,
 			Dns:         dns,
 			TargetedK8S: lbCluster.TargetedK8s,
 		}
-		nodes, err := manifestState.CreateNodepools(lbCluster.Pools, false)
+		nodes, err := unmarshalledManifest.CreateNodepools(lbCluster.Pools, false)
 		if err != nil {
 			return nil, fmt.Errorf("error while creating nodepools for %s : %w", lbCluster.Name, err)
 		}
@@ -75,7 +61,7 @@ clusterLbDesired:
 		}
 		// no current cluster found with matching name, create keys
 		if clusterLbDesired.ClusterInfo.PublicKey == "" {
-			err := createKeys(clusterLbDesired.ClusterInfo)
+			err := createSSHKeyPair(clusterLbDesired.ClusterInfo)
 			if err != nil {
 				return fmt.Errorf("error encountered while creating desired state for %s : %w", clusterLbDesired.ClusterInfo.Name, err)
 			}
@@ -88,15 +74,15 @@ clusterLbDesired:
 	return nil
 }
 
-// getDNS reads manifest state and returns *pb.DNS based on it
-// return *pb.DNS if successful, error if provider has not been found
-func getDNS(lbDNS manifest.DNS, manifestState *manifest.Manifest) (*pb.DNS, error) {
+// getDNS reads the unmarshalled manifest and returns *pb.DNS based on it.
+// Return *pb.DNS if successful, error if provider has not been found.
+func getDNS(lbDNS manifest.DNS, unmarshalledManifest *manifest.Manifest) (*pb.DNS, error) {
 	if lbDNS.DNSZone == "" {
-		return nil, fmt.Errorf("DNS zone not provided in manifest %s", manifestState.Name)
+		return nil, fmt.Errorf("DNS zone not provided in manifest %s", unmarshalledManifest.Name)
 	} else {
-		provider, err := manifestState.GetProvider(lbDNS.Provider)
+		provider, err := unmarshalledManifest.GetProvider(lbDNS.Provider)
 		if err != nil {
-			return nil, fmt.Errorf("provider %s was not found in manifest %s", lbDNS.Provider, manifestState.Name)
+			return nil, fmt.Errorf("provider %s was not found in manifest %s", lbDNS.Provider, unmarshalledManifest.Name)
 		}
 		return &pb.DNS{
 			DnsZone:  lbDNS.DNSZone,
@@ -106,9 +92,9 @@ func getDNS(lbDNS manifest.DNS, manifestState *manifest.Manifest) (*pb.DNS, erro
 	}
 }
 
-// getMatchingRoles will read roles from manifest state and returns slice of *pb.Role
-// returns slice of *[]pb.Roles if successful, error if Target from manifest state not found
-func getMatchingRoles(roles []manifest.Role, roleNames []string) ([]*pb.Role, error) {
+// getRolesAttachedToLBCluster will read roles attached to the LB cluster from the unmarshalled manifest and return them.
+// Returns slice of *[]pb.Roles if successful, error if Target from manifest state not found
+func getRolesAttachedToLBCluster(roles []manifest.Role, roleNames []string) ([]*pb.Role, error) {
 	var matchingRoles []*pb.Role
 
 	for _, roleName := range roleNames {
@@ -142,91 +128,4 @@ func getMatchingRoles(roles []manifest.Role, roleNames []string) ([]*pb.Role, er
 		}
 	}
 	return matchingRoles, nil
-}
-
-// updateClusterInfo updates the desired state based on the current state
-// namely:
-// - Hash
-// - Public key
-// - Private key
-// - AutoscalerConfig
-// - existing nodes
-// - nodepool metadata
-func updateClusterInfo(desired, current *pb.ClusterInfo) {
-	desired.Hash = current.Hash
-	desired.PublicKey = current.PublicKey
-	desired.PrivateKey = current.PrivateKey
-	// check for autoscaler configuration
-desired:
-	for _, desiredNp := range desired.NodePools {
-		for _, currentNp := range current.NodePools {
-			// Found nodepool in desired and in Current
-			if desiredNp.Name == currentNp.Name {
-				// Save current nodes and metadata
-				desiredNp.Nodes = currentNp.Nodes
-				desiredNp.Metadata = currentNp.Metadata
-				// Update the count
-				if currentNp.AutoscalerConfig != nil && desiredNp.AutoscalerConfig != nil {
-					// Both have Autoscaler conf defined, use same count as in current
-					desiredNp.Count = currentNp.Count
-				} else if currentNp.AutoscalerConfig == nil && desiredNp.AutoscalerConfig != nil {
-					// Desired is autoscaled, but not current
-					if desiredNp.AutoscalerConfig.Min > currentNp.Count {
-						// Cannot have fewer nodes than defined min
-						desiredNp.Count = desiredNp.AutoscalerConfig.Min
-					} else if desiredNp.AutoscalerConfig.Max < currentNp.Count {
-						// Cannot have more nodes than defined max
-						desiredNp.Count = desiredNp.AutoscalerConfig.Max
-					} else {
-						// Use same count as in current for now, autoscaler might change it later
-						desiredNp.Count = currentNp.Count
-					}
-				}
-				continue desired
-			}
-		}
-	}
-}
-
-// createKeys will create a RSA key-pair and save it into the clusterInfo provided
-// return error if key creation fails
-func createKeys(desiredInfo *pb.ClusterInfo) error {
-	// no current cluster found with matching name, create keys/hash
-	if desiredInfo.PublicKey == "" {
-		keys, err := makeSSHKeyPair()
-		if err != nil {
-			return fmt.Errorf("error while creating keys for %s : %w", desiredInfo.Name, err)
-		}
-		desiredInfo.PrivateKey = keys.private
-		desiredInfo.PublicKey = keys.public
-	}
-	return nil
-}
-
-// makeSSHKeyPair function generates SSH key pair
-// returns key pair if successful, nil otherwise
-func makeSSHKeyPair() (keyPair, error) {
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		return keyPair{}, err
-	}
-
-	// generate and write private key as PEM
-	var privKeyBuf strings.Builder
-
-	privateKeyPEM := &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)}
-	if err := pem.Encode(&privKeyBuf, privateKeyPEM); err != nil {
-		return keyPair{}, err
-	}
-
-	// generate and write public key
-	pub, err := ssh.NewPublicKey(&privateKey.PublicKey)
-	if err != nil {
-		return keyPair{}, err
-	}
-
-	var pubKeyBuf strings.Builder
-	pubKeyBuf.Write(ssh.MarshalAuthorizedKey(pub))
-
-	return keyPair{public: pubKeyBuf.String(), private: privKeyBuf.String()}, nil
 }

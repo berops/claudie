@@ -38,11 +38,11 @@ func (u *Usecases) ConfigProcessor(contextBoxGrpcClient pb.ContextBoxServiceClie
 		log.Info().Msgf("Processing config %s ", config.Name)
 
 		// Process (build desired state) the config
-		if err := u.processConfig(config, contextBoxGrpcClient); err != nil {
-			log.Error().Msgf("Error while processing config %s : %v", config.Name, err)
+		if configProcessingErr := u.processConfig(config, contextBoxGrpcClient); configProcessingErr != nil {
+			log.Error().Msgf("Error while processing config %s : %v", config.Name, configProcessingErr)
 
-			// Save error message to config
-			if err := u.saveErrorMessageToConfig(config, contextBoxGrpcClient, err); err != nil {
+			// Save processing error message to config
+			if err := u.saveErrorMessageToConfig(config, contextBoxGrpcClient, configProcessingErr); err != nil {
 				log.Error().Msgf("Failed to save error to the config %s : %v", config.Name, err)
 			}
 		}
@@ -74,7 +74,7 @@ func (u *Usecases) processConfig(config *pb.Config, contextBoxGrpcClient pb.Cont
 // saveErrorMessageToConfig saves error message to the config
 // Returns error if not successful, nil otherwise
 func (u *Usecases) saveErrorMessageToConfig(config *pb.Config, contextBoxGrpcClient pb.ContextBoxServiceClient, err error) error {
-	// TODO: Investigate this line - @Miro
+	// TODO: Investigate this line - @MiroslavRepka
 	config.CurrentState = config.DesiredState // Update CurrentState, so we can use it for deletion later
 
 	if config.State == nil {

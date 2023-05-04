@@ -7,7 +7,7 @@ import (
 )
 
 func TestMakeSSHKeyPair(t *testing.T) {
-	pair, err := makeSSHKeyPair()
+	pair, err := generateSSHKeyPair()
 	require.NoError(t, err)
 	t.Log(pair.private)
 	t.Log(pair.public)

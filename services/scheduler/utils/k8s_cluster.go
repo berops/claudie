@@ -58,7 +58,7 @@ clusterDesired:
 		}
 		// no current cluster found with matching name, create keys
 		if clusterDesired.ClusterInfo.PublicKey == "" {
-			err := createKeys(clusterDesired.ClusterInfo)
+			err := createSSHKeyPair(clusterDesired.ClusterInfo)
 			if err != nil {
 				return fmt.Errorf("error encountered while creating desired state for %s : %w", clusterDesired.ClusterInfo.Name, err)
 			}

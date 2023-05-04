@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -13,6 +14,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/connectivity"
 
+	"github.com/berops/claudie/internal/healthcheck"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/internal/worker"
 	"github.com/berops/claudie/proto/pb"
@@ -20,16 +22,30 @@ import (
 	"github.com/berops/claudie/services/scheduler/domain/usecases"
 )
 
+const (
+	defaultHealthcheckPort    = 50056
+	defaultConfigPullInterval = 10
+)
+
 func main() {
 	utils.InitLog("scheduler")
 
 	contextBoxConnector := outboundAdapters.ContextBoxConnector{}
-	contextBoxConnector.Connect()
+	err := contextBoxConnector.Connect()
+	if err != nil {
+		log.Fatal().Err(err)
+	}
 	defer contextBoxConnector.Disconnect()
 
-	usecases := usecases.Usecases{
+	usecases := &usecases.Usecases{
 		ContextBox: contextBoxConnector,
 	}
+
+	// Initialize health probes
+	healthcheck.NewClientHealthChecker(
+		fmt.Sprint(defaultHealthcheckPort),
+		func() error { return healthCheck(usecases) },
+	).StartProbes()
 
 	errGroup, errGroupCtx := errgroup.WithContext(context.Background())
 
@@ -42,7 +58,7 @@ func main() {
 
 		worker.NewWorker(
 			errGroupCtx,
-			10*time.Second,
+			defaultConfigPullInterval*time.Second,
 			func() error {
 				if contextBoxConnector.Connection.GetState() == connectivity.Ready {
 					if prevGrpcConnectionState != connectivity.Ready {
@@ -103,4 +119,13 @@ func main() {
 	})
 
 	log.Info().Msgf("Stopping Scheduler: %v", errGroup.Wait())
+}
+
+// healthCheck function is used for querying readiness of the pod running this microservice
+func healthCheck(usecases *usecases.Usecases) error {
+	res, err := usecases.CreateDesiredState(nil)
+	if res != nil || err == nil {
+		return fmt.Errorf("health check function got unexpected result")
+	}
+	return nil
 }
