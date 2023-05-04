@@ -1,6 +1,6 @@
 # Claudie `v0.2`
 
-:warning: Due to a breaking change in the input manifest schema, the `v0.2.x` will not be backwards compatible with `v0.1.x`. :warning:
+!!! warning "Due to a breaking change in the input manifest schema, the `v0.2.x` will not be backwards compatible with `v0.1.x`."
 
 # Deployment
 
