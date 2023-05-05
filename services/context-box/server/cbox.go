@@ -171,7 +171,7 @@ func configCheck() error {
 		if !checksum.Equals(config.DsChecksum, config.CsChecksum) {
 			// if builder ttl is 0 or smaller, add to builder Q
 			if config.BuilderTTL <= 0 {
-				// Pick up if no error OR if triggered for deletion in Builder.
+				// Pick up if no BUILD error OR if triggered for deletion in Builder.
 				if !config.hasAnyError() || config.scheduleDeletion() {
 					if err := database.UpdateBuilderTTL(config.Name, defaultBuilderTTL); err != nil {
 						return err
