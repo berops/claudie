@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/proto/pb"
@@ -56,13 +57,43 @@ var (
 	lastQS = []string{}
 )
 
-// HasError returns true if any cluster errored while building.
-func (ci *ConfigInfo) HasError() bool {
+// hasAnyError returns true if any cluster errored while building or destroying.
+func (ci *ConfigInfo) hasAnyError() bool {
 	for _, v := range ci.State {
 		if v.Status == pb.Workflow_ERROR.String() {
 			return true
 		}
 	}
+	return false
+}
+
+// hasDestroyError returns true if any cluster errored while destroying.
+func (ci *ConfigInfo) hasDestroyError() bool {
+	for _, v := range ci.State {
+		if v.Status == pb.Workflow_ERROR.String() && strings.Contains(v.Stage, "DESTROY") {
+			return true
+		}
+	}
+	return false
+}
+
+// scheduleDeletion returns true if config should be pushed onto any queue due to deletion.
+// This ignores the build errors, as we want to remove infrastructure if secret was deleted,
+// however, respects error from destroy workflow, as we do not want to retry indefinitely.
+func (ci *ConfigInfo) scheduleDeletion() bool {
+	if ci.hasDestroyError() {
+		// Ignore as deletion already errored out
+		return false
+	}
+	if ci.MsChecksum == nil && ci.DsChecksum != nil {
+		// Scheduler queue
+		return true
+	}
+	if ci.MsChecksum == nil && ci.DsChecksum == nil && ci.CsChecksum != nil {
+		// Builder queue
+		return true
+	}
+	// Not scheduled for deletion
 	return false
 }
 
@@ -121,8 +152,8 @@ func configCheck() error {
 		if !checksum.Equals(config.DsChecksum, config.MsChecksum) {
 			// if scheduler ttl is 0 or smaller, add to scheduler Q
 			if config.SchedulerTTL <= 0 {
-				// Pick up if no error OR if triggered for deletion in Scheduler.
-				if !config.HasError() || (config.MsChecksum == nil && config.DsChecksum != nil) {
+				// Pick up if no BUILD error OR if triggered for deletion in Scheduler.
+				if !config.hasAnyError() || config.scheduleDeletion() {
 					if err := database.UpdateSchedulerTTL(config.Name, defaultSchedulerTTL); err != nil {
 						return err
 					}
@@ -141,7 +172,7 @@ func configCheck() error {
 			// if builder ttl is 0 or smaller, add to builder Q
 			if config.BuilderTTL <= 0 {
 				// Pick up if no error OR if triggered for deletion in Builder.
-				if !config.HasError() || (config.MsChecksum == nil && config.DsChecksum == nil && config.CsChecksum != nil) {
+				if !config.hasAnyError() || config.scheduleDeletion() {
 					if err := database.UpdateBuilderTTL(config.Name, defaultBuilderTTL); err != nil {
 						return err
 					}
