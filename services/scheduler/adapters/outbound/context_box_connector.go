@@ -8,12 +8,10 @@ import (
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	cbox "github.com/berops/claudie/services/context-box/client"
-	"github.com/berops/claudie/services/scheduler/domain/usecases"
 )
 
 type ContextBoxConnector struct {
 	Connection *grpc.ClientConn
-	usecases   usecases.Usecases
 }
 
 // Connect establishes a gRPC connection with the context-box microservice

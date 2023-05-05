@@ -30,7 +30,7 @@ const (
 func main() {
 	utils.InitLog("scheduler")
 
-	contextBoxConnector := outboundAdapters.ContextBoxConnector{}
+	contextBoxConnector := &outboundAdapters.ContextBoxConnector{}
 	err := contextBoxConnector.Connect()
 	if err != nil {
 		log.Fatal().Err(err)
