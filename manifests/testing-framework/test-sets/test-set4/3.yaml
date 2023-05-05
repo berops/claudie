@@ -15,7 +15,7 @@ nodePools:
       count: 1
       serverType: cpx11
       image: ubuntu-22.04
-      diskSize: 50
+      storageDiskSize: 50
     - name: hetzner-compute
       providerSpec:
         name: hetzner-1
@@ -24,7 +24,7 @@ nodePools:
       count: 1
       serverType: cpx11
       image: ubuntu-22.04
-      diskSize: 50
+      storageDiskSize: 50
 
 
 kubernetes:
