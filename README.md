@@ -20,10 +20,11 @@
 
 Claudie has been built to target the following use case in the Kubernetes world.
 
+- Cost savings
+- Data locality (e.g. GDPR)
+- Managed Kubernetes for providers that do not offer it
 - Cloud bursting
 - Service interconnect
-- Managed Kubernetes for providers that do not offer it
-- Cost savings
 
 Read in more details [here](./docs/use-cases/use-cases.md).
 
