@@ -16,6 +16,10 @@
   <a href="https://youtu.be/q4xdAiHYxZQ"><img src="https://markdown-videos.deta.dev/youtube/q4xdAiHYxZQ"></a>
 </p>
 
+## Vision of Claudie
+
+The purpose of Claudie is to become the final Kubernetes engine you'll ever need. It aims to provide a cost-efficient and flexible Kubernetes environment for meeting your operational and compliance workload criteria. A Kubernetes that you won't ever need to migrate away from.
+
 ## Typical use cases
 
 Claudie has been built to target the following use case in the Kubernetes world.
