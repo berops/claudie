@@ -161,7 +161,6 @@ func configCheck() error {
 					config.SchedulerTTL = defaultSchedulerTTL
 					continue
 				}
-
 			} else {
 				config.SchedulerTTL = config.SchedulerTTL - 1
 			}
