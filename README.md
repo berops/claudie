@@ -22,10 +22,10 @@ The purpose of Claudie is to become the final Kubernetes engine you'll ever need
 
 ## Typical use cases
 
-Claudie has been built to target the following use case in the Kubernetes world.
+Claudie has been built as an answer to the following Kubernetes challenges.
 
 - Cost savings
-- Data locality (e.g. GDPR)
+- Data locality & compliance (e.g. GDPR)
 - Managed Kubernetes for providers that do not offer it
 - Cloud bursting
 - Service interconnect
