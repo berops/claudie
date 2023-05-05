@@ -134,7 +134,6 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 
 				clusterView.CurrentClusters[clusterName] = ctx.cluster
 				clusterView.DesiredClusters[clusterName] = ctx.desiredCluster
-				clusterView.DesiredLoadbalancers[clusterName] = ctx.desiredLoadbalancers
 
 				ctx = &BuilderContext{
 					projectName:          config.Name,
@@ -170,11 +169,14 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 					return err
 				}
 				log.Info().Msgf("Deleting nodes from cluster %s project %s", clusterName, config.Name)
-				if clusterView.CurrentClusters[clusterName], err = deleteNodes(clusterView.CurrentClusters[clusterName], diff.ToDelete); err != nil {
+				cluster, err := deleteNodes(clusterView.CurrentClusters[clusterName], diff.ToDelete)
+				if err != nil {
 					clusterView.SetWorkflowError(clusterName, err)
 					log.Error().Msgf("Failed to delete nodes cluster %s project %s : %v", clusterName, config.Name, err)
 					return err
 				}
+
+				clusterView.CurrentClusters[clusterName] = cluster
 			}
 
 			message := fmt.Sprintf("Processing cluster %s config %s", clusterName, config.Name)
@@ -232,6 +234,10 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			return nil
 		}); err != nil {
 			log.Error().Msgf("Error encountered while processing config %s : %v", config.Name, err)
+			// Even if the config fails to build merge the changes as it might be in an in-between state
+			// in order to be able to delete it later.
+			clusterView.MergeChanges(config)
+
 			if err := saveConfigWithWorkflowError(config, c, clusterView); err != nil {
 				log.Error().Msgf("Failed to save error message due to: %s", err)
 			}

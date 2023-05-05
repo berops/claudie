@@ -22,17 +22,17 @@ nodePools:
       count: 1
       serverType: cpx11
       image: ubuntu-22.04
-      diskSize: 50
+      storageDiskSize: 50
 
     - name: gcp-control
       providerSpec:
         name: gcp-1
         region: europe-west2
         zone: europe-west2-c
-      count: 2
+      count: 1
       serverType: e2-medium
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
-      diskSize: 50
+      storageDiskSize: 50
     - name: gcp-compute
       providerSpec:
         name: gcp-1
@@ -41,7 +41,7 @@ nodePools:
       count: 1
       serverType: e2-small
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
-      diskSize: 50
+      storageDiskSize: 50
 
     #-----------LB nodepools----------
     - name: gcp-lb
@@ -52,7 +52,7 @@ nodePools:
       count: 1
       serverType: e2-small
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
-      diskSize: 50
+      storageDiskSize: 50
 
 kubernetes:
   clusters:

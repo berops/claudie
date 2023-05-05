@@ -34,14 +34,7 @@ func destroyConfig(config *pb.Config, clusterView *ClusterView, c pb.ContextBoxS
 
 // saveConfigWithWorkflowError saves config with workflow states
 func saveConfigWithWorkflowError(config *pb.Config, c pb.ContextBoxServiceClient, clusterView *ClusterView) error {
-	if config.DesiredState != nil {
-		// Update currentState preemptively, so we can use it for terraform destroy
-		// id DesiredState is null, we are already in deletion process, thus CurrentState should stay as is when error occurs
-		config.CurrentState = config.DesiredState
-	}
-
 	config.State = clusterView.ClusterWorkflows
-
 	return cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 }
 
