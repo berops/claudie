@@ -119,14 +119,18 @@ func configCheck() error {
 
 		// check for Scheduler
 		if !checksum.Equals(config.DsChecksum, config.MsChecksum) {
-			// if scheduler ttl is 0 or smaller AND config has no errorMessage, add to scheduler Q
-			if config.SchedulerTTL <= 0 && !config.HasError() {
-				if err := database.UpdateSchedulerTTL(config.Name, defaultSchedulerTTL); err != nil {
-					return err
+			// if scheduler ttl is 0 or smaller, add to scheduler Q
+			if config.SchedulerTTL <= 0 {
+				// Pick up if no error OR if triggered for deletion in Scheduler.
+				if !config.HasError() || (config.MsChecksum == nil && config.DsChecksum != nil) {
+					if err := database.UpdateSchedulerTTL(config.Name, defaultSchedulerTTL); err != nil {
+						return err
+					}
+					queueScheduler.Enqueue(config)
+					config.SchedulerTTL = defaultSchedulerTTL
+					continue
 				}
-				queueScheduler.Enqueue(config)
-				config.SchedulerTTL = defaultSchedulerTTL
-				continue
+
 			} else {
 				config.SchedulerTTL = config.SchedulerTTL - 1
 			}
@@ -134,14 +138,17 @@ func configCheck() error {
 
 		// check for Builder
 		if !checksum.Equals(config.DsChecksum, config.CsChecksum) {
-			// if builder ttl is 0 or smaller AND config has no errorMessage, add to builder Q
-			if config.BuilderTTL <= 0 && !config.HasError() {
-				if err := database.UpdateBuilderTTL(config.Name, defaultBuilderTTL); err != nil {
-					return err
+			// if builder ttl is 0 or smaller, add to builder Q
+			if config.BuilderTTL <= 0 {
+				// Pick up if no error OR if triggered for deletion in Builder.
+				if !config.HasError() || (config.MsChecksum == nil && config.DsChecksum == nil && config.CsChecksum != nil) {
+					if err := database.UpdateBuilderTTL(config.Name, defaultBuilderTTL); err != nil {
+						return err
+					}
+					queueBuilder.Enqueue(config)
+					config.BuilderTTL = defaultBuilderTTL
+					continue
 				}
-				queueBuilder.Enqueue(config)
-				config.BuilderTTL = defaultBuilderTTL
-				continue
 			} else {
 				config.BuilderTTL = config.BuilderTTL - 1
 			}
@@ -205,21 +212,4 @@ func updateNodepool(state *pb.Project, clusterName, nodepoolName string, nodes [
 		}
 	}
 	return fmt.Errorf("cluster %s was not found in project %s", clusterName, state.Name)
-}
-
-// checkStateForWorkflowError checks if state contains error and if it should be saved. This ignores the errors from any
-// deletion stage (DESTROY_TERRAFORMER or DESTROY_KUBER) If error is present, returns original state, otherwise error status is deleted
-// and new description appended.
-func checkStateForWorkflowError(saveErrors bool, state *pb.Workflow) *pb.Workflow {
-	if !saveErrors {
-		// Check for workflow error
-		if state.Status == pb.Workflow_ERROR {
-			// Ignore if deletion error
-			if state.Stage != pb.Workflow_DESTROY_TERRAFORMER && state.Stage != pb.Workflow_DESTROY_KUBER {
-				state.Status = pb.Workflow_DONE
-				state.Description = fmt.Sprintf("Error encountered but ignored due to triggered deletion : %s", state.Description)
-			}
-		}
-	}
-	return state
 }
