@@ -9,8 +9,8 @@ import (
 	"github.com/berops/claudie/proto/pb"
 )
 
-// CreateK8sCluster reads the unmarshalled manifest and create kubernetes clusters based on it
-// returns slice of *pb.K8Scluster if successful, nil otherwise
+// CreateK8sCluster reads the unmarshalled manifest and creates desired state for Kubernetes clusters.
+// Returns slice of *pb.K8Scluster if successful, nil otherwise
 func CreateK8sCluster(unmarshalledManifest *manifest.Manifest) ([]*pb.K8Scluster, error) {
 	var clusters []*pb.K8Scluster
 	// Loop through clusters mentioned in the manifest
@@ -46,17 +46,18 @@ func UpdateK8sClusters(newConfig *pb.Config) error {
 clusterDesired:
 	for _, clusterDesired := range newConfig.DesiredState.Clusters {
 		for _, clusterCurrent := range newConfig.CurrentState.Clusters {
-			// found current cluster with matching name
+			// Found current cluster with matching name
 			if clusterDesired.ClusterInfo.Name == clusterCurrent.ClusterInfo.Name {
 				updateClusterInfo(clusterDesired.ClusterInfo, clusterCurrent.ClusterInfo)
 				if clusterCurrent.Kubeconfig != "" {
 					clusterDesired.Kubeconfig = clusterCurrent.Kubeconfig
 				}
-				//skip the checks bellow
+				// Skip the checks bellow
 				continue clusterDesired
 			}
 		}
-		// no current cluster found with matching name, create keys
+
+		// No current cluster found with matching name, create keys
 		if clusterDesired.ClusterInfo.PublicKey == "" {
 			err := createSSHKeyPair(clusterDesired.ClusterInfo)
 			if err != nil {
