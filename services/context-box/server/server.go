@@ -122,7 +122,6 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 	// In Builder, the desired state is also updated i.e. in terraformer (node IPs, etc) thus
 	// we need to update it in database,
 	// however, if deletion has been triggered, the desired state should be nil.
-	saveErrors := false
 	if dbConf, err := database.GetConfig(config.Id, pb.IdType_HASH); err != nil {
 		log.Warn().Msgf("Got error while checking the desired state in the database : %v", err)
 	} else {
@@ -131,36 +130,29 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 			if err := database.UpdateDs(config); err != nil {
 				return nil, fmt.Errorf("error while updating desired state: %w", err)
 			}
-			// Save errors as infrastructure will be saved.
-			saveErrors = true
-		} else {
-			log.Debug().Msgf("Errors from workflow run on config %s will not be saved", config.Name)
 		}
 	}
 
-	// Update the current state so its equal to the desired state
-	if err := database.UpdateCs(config); err != nil {
-		return nil, fmt.Errorf("error while updating csChecksum for %s : %w", config.Name, err)
+	// Update the current state only if not nil
+	if config.CurrentState != nil {
+		if err := database.UpdateCs(config); err != nil {
+			return nil, fmt.Errorf("error while updating csChecksum for %s : %w", config.Name, err)
+		}
 	}
-
 	// Update BuilderTTL
 	if err := database.UpdateBuilderTTL(config.Name, config.BuilderTTL); err != nil {
 		return nil, fmt.Errorf("error while updating builderTTL for %s : %w", config.Name, err)
 	}
 
 	// Update workflow state for k8s clusters.
-	for _, cluster := range config.DesiredState.Clusters {
-		// Check if error should be saved.
-		state := checkStateForWorkflowError(saveErrors, config.State[cluster.ClusterInfo.Name])
-		if err := database.UpdateWorkflowState(config.Name, cluster.ClusterInfo.Name, state); err != nil {
+	for _, cluster := range config.CurrentState.Clusters {
+		if err := database.UpdateWorkflowState(config.Name, cluster.ClusterInfo.Name, config.State[cluster.ClusterInfo.Name]); err != nil {
 			return nil, fmt.Errorf("error while updating workflow state for k8s cluster %s in config %s : %w", cluster.ClusterInfo.Name, config.Name, err)
 		}
 	}
 	// Update workflow state for LB clusters.
-	for _, cluster := range config.DesiredState.LoadBalancerClusters {
-		// Check if error should be saved.
-		state := checkStateForWorkflowError(saveErrors, config.State[cluster.ClusterInfo.Name])
-		if err := database.UpdateWorkflowState(config.Name, cluster.ClusterInfo.Name, state); err != nil {
+	for _, cluster := range config.CurrentState.LoadBalancerClusters {
+		if err := database.UpdateWorkflowState(config.Name, cluster.ClusterInfo.Name, config.State[cluster.ClusterInfo.Name]); err != nil {
 			return nil, fmt.Errorf("error while updating workflow state for LB cluster %s in config %s : %w", cluster.ClusterInfo.Name, config.Name, err)
 		}
 	}
