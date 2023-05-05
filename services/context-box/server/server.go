@@ -151,7 +151,7 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 	// Update workflow state for k8s clusters.
 	for _, cluster := range config.DesiredState.Clusters {
 		// Check if error should be saved.
-		state := checkStateForError(saveErrors, config.State[cluster.ClusterInfo.Name])
+		state := checkStateForWorkflowError(saveErrors, config.State[cluster.ClusterInfo.Name])
 		if err := database.UpdateWorkflowState(config.Name, cluster.ClusterInfo.Name, state); err != nil {
 			return nil, fmt.Errorf("error while updating workflow state for k8s cluster %s in config %s : %w", cluster.ClusterInfo.Name, config.Name, err)
 		}
@@ -159,7 +159,7 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 	// Update workflow state for LB clusters.
 	for _, cluster := range config.DesiredState.LoadBalancerClusters {
 		// Check if error should be saved.
-		state := checkStateForError(saveErrors, config.State[cluster.ClusterInfo.Name])
+		state := checkStateForWorkflowError(saveErrors, config.State[cluster.ClusterInfo.Name])
 		if err := database.UpdateWorkflowState(config.Name, cluster.ClusterInfo.Name, state); err != nil {
 			return nil, fmt.Errorf("error while updating workflow state for LB cluster %s in config %s : %w", cluster.ClusterInfo.Name, config.Name, err)
 		}

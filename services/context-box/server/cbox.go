@@ -207,13 +207,18 @@ func updateNodepool(state *pb.Project, clusterName, nodepoolName string, nodes [
 	return fmt.Errorf("cluster %s was not found in project %s", clusterName, state.Name)
 }
 
-// checkStateForError checks if state contains error and if it should be saved. If
-// not, returns original state, otherwise error status is deleted and new description appended.
-func checkStateForError(saveErrors bool, state *pb.Workflow) *pb.Workflow {
+// checkStateForWorkflowError checks if state contains error and if it should be saved. This ignores the errors from any
+// deletion stage (DESTROY_TERRAFORMER or DESTROY_KUBER) If error is present, returns original state, otherwise error status is deleted
+// and new description appended.
+func checkStateForWorkflowError(saveErrors bool, state *pb.Workflow) *pb.Workflow {
 	if !saveErrors {
+		// Check for workflow error
 		if state.Status == pb.Workflow_ERROR {
-			state.Status = pb.Workflow_DONE
-			state.Description = fmt.Sprintf("Error encountered but ignored due to triggered deletion : %s", state.Description)
+			// Ignore if deletion error
+			if state.Stage != pb.Workflow_DESTROY_TERRAFORMER && state.Stage != pb.Workflow_DESTROY_KUBER {
+				state.Status = pb.Workflow_DONE
+				state.Description = fmt.Sprintf("Error encountered but ignored due to triggered deletion : %s", state.Description)
+			}
 		}
 	}
 	return state
