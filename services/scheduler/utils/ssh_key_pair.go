@@ -21,7 +21,8 @@ type sshKeyPair struct {
 }
 
 // createSSHKeyPair will create a RSA key-pair and save it into the clusterInfo provided
-// return error if key pair creation fails
+// if clusterInfo doesn't already have an RSA key-pair related to it.
+// returns error if the key-pair creation fails.
 func createSSHKeyPair(desiredInfo *pb.ClusterInfo) error {
 	// If the cluster doesn't have an SSH keypair associated with it, then generate a new SSH keypair and associate
 	// with the cluster

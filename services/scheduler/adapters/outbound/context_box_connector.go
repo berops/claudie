@@ -24,7 +24,7 @@ func (c *ContextBoxConnector) Connect() error {
 
 	log.Info().Msgf("Initiated connection Context-box: %s, waiting for connection to be in state ready", envs.ContextBoxURL)
 
-	return err
+	return nil
 }
 
 // The context-box microservice has a scheduler queue(FIFO) containing ConfigInfos
