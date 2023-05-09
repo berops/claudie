@@ -10,6 +10,11 @@ markdown_extensions:
   - pymdownx.snippets
   - pymdownx.tasklist:
       custom_checkbox: true
+plugins:
+  - glightbox:
+      width: 100%
+      height: auto
+      zoomable: true
 theme:
   name: material
   features:
