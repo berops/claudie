@@ -30,6 +30,7 @@ theme:
     - navigation.top
   palette:
     - primary: white
+    - accent: black
   logo: hexagon_blue.png
   favicon: hexagon_blue.png
 
@@ -53,7 +54,6 @@ nav:
         - Cloudflare: input-manifest/providers/cloudflare.md
         - Hetzner: input-manifest/providers/hetzner.md
         - OCI: input-manifest/providers/oci.md
-      - Config spec: config/config.md
     - CRUD for Claudie: crud/crud.md
   - How Claudie works:
     - Claudie Workflow: claudie-workflow/claudie-workflow.md
