@@ -27,6 +27,7 @@ theme:
   name: material
   features:
     - content.code.copy
+    - navigation.top
   palette:
     - primary: white
   logo: hexagon_blue.png
