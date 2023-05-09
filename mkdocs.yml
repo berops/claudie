@@ -19,7 +19,8 @@ theme:
   name: material
   features:
     - content.code.copy
-  palette: 
+  palette:
+    - primary: white
     - scheme: default
       toggle:
         icon: material/toggle-switch-off-outline 
