@@ -37,6 +37,7 @@ theme:
 
 nav:
   - Getting Started:
+    - getting-started/get-started-using-claudie.md
     - Input manifest: 
       - input-manifest/input-manifest.md
       - Example yaml file: input-manifest/example.md
@@ -56,7 +57,7 @@ nav:
       - Config spec: config/config.md
   - How Claudie works:
     - Claudie Workflow: claudie-workflow/claudie-workflow.md
-    - Claudie storage solution: storage/storage-solution.md
+    - Claudie Storage solution: storage/storage-solution.md
     - Loadbalancing in Claudie: ./loadbalancing/loadbalancing-solution.md
     - Autoscaling in Claudie: autoscaling/autoscaling.md
     - CRUD for Claudie: crud/crud.md
