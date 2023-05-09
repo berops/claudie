@@ -424,8 +424,16 @@ func generateProviderTemplates(current, desired *pb.ClusterInfo, clusterID, dire
 
 	// merge together into a single map instead of creating a new.
 	for name, np := range desiredNodepools {
-		if _, ok := currentNodepools[name]; !ok {
+		if cnp, ok := currentNodepools[name]; !ok {
 			currentNodepools[name] = np
+		} else {
+			// merge them together as different regions could be used.
+			// (regions are used for generating the providers for various regions)
+			for _, pool := range np {
+				if found := utils.GetNodePoolByName(pool.Name, cnp); found == nil {
+					currentNodepools[name] = append(currentNodepools[name], pool)
+				}
+			}
 		}
 	}
 

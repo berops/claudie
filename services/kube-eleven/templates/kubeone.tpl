@@ -15,9 +15,10 @@ cloudProvider:
 
 addons:
   enable: true
-  # In case when the relative path is provided, the path is relative
-  # to the KubeOne configuration file.
-  path: "../../addons"
+  addons:
+  - name: calico-vxlan
+    params:
+      MTU: "1380"
 
 apiEndpoint:
   host: '{{ .APIEndpoint }}'
