@@ -11,6 +11,8 @@ markdown_extensions:
   - pymdownx.tasklist:
       custom_checkbox: true
 plugins:
+  - search:
+      lang: en
   - glightbox:
       width: 100%
       height: auto
