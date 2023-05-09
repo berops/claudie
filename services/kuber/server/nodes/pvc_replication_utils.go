@@ -40,6 +40,7 @@ type VolumeSpec struct {
 type Status struct {
 	OwnerID      string `yaml:"ownerID"`
 	CurrentState string `yaml:"currentState"`
+	Started      bool   `yaml:"started"`
 }
 
 const (
@@ -141,7 +142,7 @@ func verifyAllReplicasRunning(r LonghornReplica, volumeName string, kc kubectl.K
 	for _, r := range replicaList.Items {
 		if r.Spec.VolumeName == volumeName {
 			// Current state not running, return false.
-			if r.Status.CurrentState != runningState {
+			if !(r.Status.CurrentState == runningState && r.Status.Started) {
 				return false, nil
 			}
 		}
