@@ -6,10 +6,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var (
-	q = Queue{}
-)
-
 type ci struct {
 	Name         string
 	MsChecksum   []byte
@@ -25,6 +21,7 @@ func (ci *ci) GetName() string {
 	return ci.Name
 }
 func TestQueue(t *testing.T) {
+	q := Queue{}
 	q.Enqueue(&ci{Name: "foo"})
 	q.Enqueue(&ci{Name: "bar"})
 	require.EqualValues(t, 2, len(q.queue))

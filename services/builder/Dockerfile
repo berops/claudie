@@ -1,4 +1,4 @@
-FROM docker.io/library/golang:1.20.2 AS build
+FROM docker.io/library/golang:1.20.4 AS build
 
 #Unset the GOPATH
 ENV GOPATH=

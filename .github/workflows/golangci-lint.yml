@@ -19,7 +19,7 @@ jobs:
       - name: Install golang
         uses: actions/setup-go@v4
         with:
-          go-version: "1.20.2"
+          go-version: "1.20.4"
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
@@ -27,7 +27,7 @@ jobs:
           # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
           # It's highly recommended installing a specific version of golangci-lint from
           # https://github.com/golangci/golangci-lint/releases
-          version: v1.51.0
+          version: v1.52.2
 
           # Optional: working directory, useful for monorepos
           # working-directory: somedir
