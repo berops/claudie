@@ -16,14 +16,19 @@
   <a href="https://youtu.be/q4xdAiHYxZQ"><img src="https://markdown-videos.deta.dev/youtube/q4xdAiHYxZQ"></a>
 </p>
 
+## Vision of Claudie
+
+The purpose of Claudie is to become the final Kubernetes engine you'll ever need. It aims to build clusters that leverage features and costs across multiple cloud vendors and on-prem datacenters. A Kubernetes that you won't ever need to migrate away from.
+
 ## Typical use cases
 
-Claudie has been built to target the following use case in the Kubernetes world.
+Claudie has been built as an answer to the following Kubernetes challenges.
 
+- Cost savings
+- Data locality & compliance (e.g. GDPR)
+- Managed Kubernetes for providers that do not offer it
 - Cloud bursting
 - Service interconnect
-- Managed Kubernetes for providers that do not offer it
-- Cost savings
 
 Read in more details [here](./docs/use-cases/use-cases.md).
 
