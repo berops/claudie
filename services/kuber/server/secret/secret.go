@@ -62,7 +62,7 @@ func NewYaml(md Metadata, data map[string]string) SecretYaml {
 // if the kubeconfig is left empty, it uses default kubeconfig
 func (s *Secret) Apply(namespace, kubeconfig string) error {
 	// setting empty string for kubeconfig will create secret on same cluster where claudie is running
-	kubectl := kubectl.Kubectl{Kubeconfig: kubeconfig}
+	kubectl := kubectl.Kubectl{Kubeconfig: kubeconfig, MaxKubectlRetries: 3}
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
 		kubectl.Stdout = comm.GetStdOut(s.YamlManifest.Metadata.Name)
 		kubectl.Stderr = comm.GetStdErr(s.YamlManifest.Metadata.Name)

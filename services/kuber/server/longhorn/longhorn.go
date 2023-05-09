@@ -43,7 +43,7 @@ const (
 
 // SetUp function will set up the longhorn on the k8s cluster saved in l.Longhorn
 func (l *Longhorn) SetUp() error {
-	kubectl := kubectl.Kubectl{Kubeconfig: l.Cluster.GetKubeconfig()}
+	kubectl := kubectl.Kubectl{Kubeconfig: l.Cluster.GetKubeconfig(), MaxKubectlRetries: 3}
 	// apply longhorn.yaml and settings
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
 		prefix := fmt.Sprintf("%s-%s", l.Cluster.ClusterInfo.Name, l.Cluster.ClusterInfo.Hash)
