@@ -123,7 +123,7 @@ func (k *K8sSidecarNotificationsReceiver) processManifestFilesHandler(responseWr
 		defer k.waitGroup.Done()
 
 		if err := k.usecases.ProcessManifestFiles(k.manifestDir); err != nil {
-			log.Err(err).Msgf("Failed processing manifest files from directory %s", k.manifestDir)
+			log.Error().Err(err).Msgf("Failed processing manifest files from directory %s", k.manifestDir)
 		}
 	}()
 

@@ -92,7 +92,7 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 		configs, isConfigRemoved = removeConfig(configs, manifestProcessingResult.manifestFilepath)
 		// Check for the error first, before referencing any variables.
 		if manifestProcessingResult.processingError != nil {
-			log.Err(manifestProcessingResult.processingError).
+			log.Error().Err(manifestProcessingResult.processingError).
 				Msgf("Skipping over processing file %v", manifestProcessingResult.manifestFilepath)
 
 			continue
@@ -107,7 +107,7 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 
 		err = u.ContextBox.SaveConfig(config)
 		if err != nil {
-			log.Err(err).Str("project", manifestName).Msgf("Failed to save config")
+			log.Error().Err(err).Str("project", manifestName).Msgf("Failed to save config")
 			continue
 		}
 
@@ -144,7 +144,7 @@ func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
 
 			err := u.ContextBox.DeleteConfig(config.Id)
 			if err != nil {
-				log.Err(err).
+				log.Error().Err(err).
 					Str("project", config.Name).
 					Msgf("Failed to delete config %s from MongoDB", config.Id)
 			}

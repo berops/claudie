@@ -62,7 +62,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 		return nil
 	}
 
-	_logger := log.With().Str("config", config.Name).Logger()
+	logger := log.With().Str("config", config.Name).Logger()
 
 	if wg != nil {
 		// we received a non-nil config thus we add a new worker to the wait group.
@@ -74,16 +74,16 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			defer wg.Done()
 		}
 
-		_logger.Info().Msgf("Processing config")
+		logger.Info().Msgf("Processing config")
 
 		if err := processConfig(config, c); err != nil {
-			_logger.Err(err).Msgf("Error while processing config")
+			logger.Err(err).Msgf("Error while processing config")
 			//save error message to config
 			if err := saveErrorMessage(config, c, err); err != nil {
-				_logger.Err(err).Msgf("Failed to save error to the config")
+				logger.Err(err).Msgf("Failed to save error to the config")
 			}
 		}
-		_logger.Info().Msgf("Config have been successfully processed")
+		logger.Info().Msgf("Config have been successfully processed")
 	}()
 
 	return nil

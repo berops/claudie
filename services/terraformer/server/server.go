@@ -60,7 +60,7 @@ type Cluster interface {
 }
 
 func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastructureRequest) (*pb.BuildInfrastructureResponse, error) {
-	_logger := log.With().Str("project", req.ProjectName).Logger()
+	logger := log.With().Str("project", req.ProjectName).Logger()
 
 	clusters := []Cluster{
 		kubernetes.K8Scluster{
@@ -83,16 +83,16 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 	}
 
 	err := utils.ConcurrentExec(clusters, func(cluster Cluster) error {
-		_logger.Info().Str("cluster", cluster.Id()).Msgf("Creating infrastructure")
+		logger.Info().Str("cluster", cluster.Id()).Msgf("Creating infrastructure")
 
 		if err := cluster.Build(); err != nil {
 			return fmt.Errorf("error while building the cluster %v : %w", cluster.Id(), err)
 		}
-		_logger.Info().Str("cluster", cluster.Id()).Msgf("Infrastructure was successfully created")
+		logger.Info().Str("cluster", cluster.Id()).Msgf("Infrastructure was successfully created")
 		return nil
 	})
 	if err != nil {
-		_logger.Err(err).Str("cluster", req.Desired.ClusterInfo.Name).Msgf("Error while building cluster")
+		logger.Err(err).Str("cluster", req.Desired.ClusterInfo.Name).Msgf("Error while building cluster")
 		return nil, fmt.Errorf("error while building cluster %s for project %s : %w", req.Desired.ClusterInfo.Name, req.ProjectName, err)
 	}
 
@@ -142,9 +142,9 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 	})
 
 	err = utils.ConcurrentExec(clusters, func(cluster Cluster) error {
-		_logger := utils.CreateLoggerWithProjectAndClusterName(req.ProjectName, cluster.Id())
+		logger := utils.CreateLoggerWithProjectAndClusterName(req.ProjectName, cluster.Id())
 
-		_logger.Info().Msgf("Destroying infrastructure")
+		logger.Info().Msgf("Destroying infrastructure")
 		if err := cluster.Destroy(); err != nil {
 			return fmt.Errorf("error while destroying cluster %v : %w", cluster.Id(), err)
 		}
@@ -156,7 +156,7 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 			if err != nil {
 				return fmt.Errorf("error composing state lockfile id for cluster %s: %w", cluster.Id(), err)
 			}
-			log.Debug().Msgf("deleting lockfile under key: %v", dynamoLockId)
+			logger.Debug().Msgf("deleting lockfile under key: %v", dynamoLockId)
 			// Remove the lockfile from dynamodb
 			if _, err := dynamoConnection.DeleteItem(ctx, &dynamodb.DeleteItemInput{Key: map[string]types.AttributeValue{"LockID": dynamoLockId}, TableName: aws.String(dynamoTable)}); err != nil {
 				return fmt.Errorf("failed to remove state lock file %v : %w", cluster.Id(), err)
@@ -167,14 +167,14 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 				return fmt.Errorf("failed to remove dns lock file for cluster %v: %w", cluster.Id(), err)
 			}
 		}
-		_logger.Info().Msgf("Infrastructure for cluster was successfully destroyed")
+		logger.Info().Msgf("Infrastructure for cluster was successfully destroyed")
 
 		// Key under which the lockfile id is stored in dynamodb
 		dynamoLockId, err := attributevalue.Marshal(fmt.Sprintf("%s/%s/%s-md5", minioBucket, req.ProjectName, cluster.Id()))
 		if err != nil {
 			return fmt.Errorf("error composing state lockfile id for cluster %s: %w", cluster.Id(), err)
 		}
-		log.Debug().Msgf("deleting lockfile under key: %v", dynamoLockId)
+		logger.Debug().Msgf("deleting lockfile under key: %v", dynamoLockId)
 		// Remove the lockfile from dynamodb
 		if _, err := dynamoConnection.DeleteItem(ctx, &dynamodb.DeleteItemInput{Key: map[string]types.AttributeValue{"LockID": dynamoLockId}, TableName: aws.String(dynamoTable)}); err != nil {
 			return fmt.Errorf("failed to remove state lock file for cluster %v : %w", cluster.Id(), err)
@@ -189,7 +189,7 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 	})
 
 	if err != nil {
-		log.Err(err).Str("project", req.ProjectName).Msgf("Error while destroying the infrastructure for project")
+		log.Error().Err(err).Str("project", req.ProjectName).Msgf("Error while destroying the infrastructure for project")
 		return nil, fmt.Errorf("error while destroying infrastructure for project %s : %w", req.ProjectName, err)
 	}
 	return &pb.DestroyInfrastructureResponse{Current: req.Current, CurrentLbs: req.CurrentLbs}, nil

@@ -196,7 +196,7 @@ func (c ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 			if i == int(np.Count) {
 				break
 			}
-			log.Debug().Str("cluster", clusterID).Str("nodepool", np.Name).Msgf("Nodepool is reusing node %s", node.Name)
+			log.Debug().Str("cluster", clusterID).Msgf("Nodepool is reusing node %s", node.Name)
 			nodes = append(nodes, node)
 			nodeNames[node.Name] = struct{}{}
 		}
@@ -284,7 +284,7 @@ func (c *ClusterBuilder) calculateCIDR(baseCIDR string, nodepools []*pb.NodePool
 			if err != nil {
 				return fmt.Errorf("failed to parse CIDR for nodepool %s : %w", np.Name, err)
 			}
-			log.Debug().Str("nodepool", np.Name).Msgf("Calculating new VPC subnet CIDR for nodepool. New CIDR [%s]", cidr)
+			log.Debug().Msgf("Calculating new VPC subnet CIDR for nodepool. New CIDR [%s]", cidr)
 			if np.Metadata == nil {
 				np.Metadata = make(map[string]*pb.MetaValue)
 			}

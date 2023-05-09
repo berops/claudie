@@ -437,7 +437,7 @@ func (c *ClaudieMongo) getAllFromDB() ([]*configItem, error) {
 	defer func() {
 		err := cur.Close(context.Background())
 		if err != nil {
-			log.Err(err).Msgf("Failed to close MongoDB cursor")
+			log.Error().Err(err).Msgf("Failed to close MongoDB cursor")
 		}
 	}()
 	for cur.Next(context.Background()) { //Iterate through cur and extract all data

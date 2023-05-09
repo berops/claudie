@@ -48,6 +48,10 @@ func InitLog(moduleName string) {
 // CreateLoggerWithProjectAndClusterName creates a new logger aware of the project-name and cluster-name
 // Returns the new logger
 func CreateLoggerWithProjectAndClusterName(projectName, clusterName string) zerolog.Logger {
+	if projectName == "" || clusterName == "" {
+		return log.Logger
+	}
+
 	return log.With().
 		Str("project", projectName).Str("cluster", clusterName).
 		Logger()

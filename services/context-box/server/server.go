@@ -52,9 +52,9 @@ func (*server) SaveWorkflowState(ctx context.Context, req *pb.SaveWorkflowStateR
 func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
 	config := req.GetConfig()
 
-	_logger := log.With().Str("config", config.Name).Logger()
+	logger := log.With().Str("config", config.Name).Logger()
 
-	_logger.Info().Msgf("Saving config from Scheduler")
+	logger.Info().Msgf("Saving config from Scheduler")
 	// Save new config to the DB
 	config.DsChecksum = config.MsChecksum
 	config.SchedulerTTL = 0
@@ -68,7 +68,7 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 		return nil, fmt.Errorf("error while updating schedulerTTL for %s : %w", config.Name, err)
 	}
 
-	_logger.Info().Msgf("Config successfully saved from Scheduler")
+	logger.Info().Msgf("Config successfully saved from Scheduler")
 	return &pb.SaveConfigResponse{Config: config}, nil
 }
 
@@ -79,9 +79,9 @@ func (s *server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigReque
 	defer s.configChangeMutex.Unlock()
 	newConfig := req.GetConfig()
 
-	_logger := log.With().Str("config", newConfig.Name).Logger()
+	logger := log.With().Str("config", newConfig.Name).Logger()
 
-	_logger.Info().Msgf("Saving config from FrontEnd")
+	logger.Info().Msgf("Saving config from FrontEnd")
 	newConfig.MsChecksum = checksum.CalculateChecksum(newConfig.Manifest)
 
 	//check if any data already present for the newConfig
@@ -101,7 +101,7 @@ func (s *server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigReque
 	if err != nil {
 		return nil, fmt.Errorf("error while saving config %s in db : %w", newConfig.Name, err)
 	}
-	_logger.Info().Msgf("Config successfully saved from FrontEnd")
+	logger.Info().Msgf("Config successfully saved from FrontEnd")
 	return &pb.SaveConfigResponse{Config: newConfig}, nil
 }
 
@@ -109,9 +109,9 @@ func (s *server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigReque
 func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
 	config := req.GetConfig()
 
-	_logger := log.With().Str("config", config.Name).Logger()
+	logger := log.With().Str("config", config.Name).Logger()
 
-	_logger.Info().Msgf("Saving config from Builder")
+	logger.Info().Msgf("Saving config from Builder")
 
 	// Save new config to the DB, update csState as dsState
 	config.CsChecksum = config.DsChecksum
@@ -138,7 +138,7 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 		return nil, fmt.Errorf("error while updating builderTTL for %s : %w", config.Name, err)
 	}
 
-	_logger.Info().Msgf("Config successfully saved from Builder")
+	logger.Info().Msgf("Config successfully saved from Builder")
 	return &pb.SaveConfigResponse{Config: config}, nil
 }
 

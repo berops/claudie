@@ -105,9 +105,9 @@ func (d *Deleter) DeleteNodes() (*pb.K8Scluster, error) {
 // return nil if successful, error otherwise
 func (d *Deleter) deleteNodesByName(kc kubectl.Kubectl, nodeName string, realNodeNames []string) error {
 	realNodeName := utils.FindName(realNodeNames, nodeName)
-	_logger := log.With().Str("node", realNodeName).Str("cluster", d.clusterPrefix).Logger()
+	logger := log.With().Str("node", realNodeName).Str("cluster", d.clusterPrefix).Logger()
 	if realNodeName != "" {
-		_logger.Info().Msgf("Deleting node")
+		logger.Info().Msgf("Deleting node")
 		//kubectl drain <node-name> --ignore-daemonsets --delete-emptydir-data
 		err := kc.KubectlDrain(realNodeName)
 		if err != nil {
@@ -119,7 +119,7 @@ func (d *Deleter) deleteNodesByName(kc kubectl.Kubectl, nodeName string, realNod
 			return fmt.Errorf("error while deleting node %s from cluster %s : %w", nodeName, d.clusterPrefix, err)
 		}
 	} else {
-		_logger.Error().Msgf("Node name that contains %s not found", nodeName)
+		logger.Error().Msgf("Node name that contains %s not found", nodeName)
 		return fmt.Errorf("no node with name %s found in cluster %s", nodeName, d.clusterPrefix)
 	}
 	return nil
@@ -199,17 +199,17 @@ func (d *Deleter) assureReplication(kc kubectl.Kubectl, worker string) error {
 					return fmt.Errorf("error while increasing number of replicas in volume %s from cluster %s : %w", v.Metadata.Name, d.clusterPrefix, err)
 				}
 
-				_logger := log.With().Str("cluster", d.clusterPrefix).Logger()
+				logger := log.With().Str("cluster", d.clusterPrefix).Logger()
 
 				// Wait pvcReplicationTimeout for Longhorn to create new replica.
-				_logger.Info().Str("node", worker).Msgf("Waiting %.0f seconds for new replicas to be scheduled if possible for node %s", pvcReplicationTimeout.Seconds(), worker)
+				logger.Info().Str("node", worker).Msgf("Waiting %.0f seconds for new replicas to be scheduled if possible for node %s", pvcReplicationTimeout.Seconds(), worker)
 				time.Sleep(pvcReplicationTimeout)
 				// Decrease number of replicas in volume -> original state.
 				if err := revertReplicaCount(v, kc); err != nil {
 					return fmt.Errorf("error while increasing number of replicas in volume %s cluster %s : %w", v.Metadata.Name, d.clusterPrefix, err)
 				}
 				// Delete old replica, on to-be-deleted node.
-				_logger.Debug().Str("node", r.Status.OwnerID).Msgf("Deleting replica %s from node %s", r.Metadata.Name, r.Status.OwnerID)
+				logger.Debug().Str("node", r.Status.OwnerID).Msgf("Deleting replica %s from node %s", r.Metadata.Name, r.Status.OwnerID)
 				if err := deleteReplica(r, kc); err != nil {
 					return err
 				}

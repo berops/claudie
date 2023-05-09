@@ -17,7 +17,7 @@ func (u *Usecases) WatchConfigs() {
 
 	configs, err := u.ContextBox.GetAllConfigs()
 	if err != nil {
-		log.Err(err).Msgf("Failed to retrieve configs from context-box")
+		log.Error().Err(err).Msgf("Failed to retrieve configs from context-box")
 	}
 
 	for _, config := range configs {
@@ -36,7 +36,7 @@ func (u *Usecases) WatchConfigs() {
 			{
 				configs, err = u.ContextBox.GetAllConfigs()
 				if err != nil {
-					log.Err(err).Msgf("Failed to retrieve configs from context-box")
+					log.Error().Err(err).Msgf("Failed to retrieve configs from context-box")
 					break
 				}
 
@@ -60,14 +60,14 @@ func (u *Usecases) WatchConfigs() {
 
 				for _, config := range configs {
 					for cluster, workflow := range config.State {
-						_logger := utils.CreateLoggerWithProjectAndClusterName(config.Name, cluster)
+						logger := utils.CreateLoggerWithProjectAndClusterName(config.Name, cluster)
 
 						_, ok := u.inProgress.Load(cluster)
 						if workflow.Status == pb.Workflow_ERROR {
 							if ok {
 								u.inProgress.Delete(cluster)
 
-								_logger.Err(errors.New(workflow.Description)).Msgf("Workflow failed")
+								logger.Err(errors.New(workflow.Description)).Msgf("Workflow failed")
 							}
 							continue
 						}
@@ -75,7 +75,7 @@ func (u *Usecases) WatchConfigs() {
 							if ok {
 								u.inProgress.Delete(cluster)
 
-								_logger.Info().Msgf("Workflow finished")
+								logger.Info().Msgf("Workflow finished")
 							}
 							continue
 						}
@@ -90,7 +90,7 @@ func (u *Usecases) WatchConfigs() {
 							stringBuilder.WriteString(fmt.Sprintf(" %s", strings.TrimSpace(workflow.Description)))
 						}
 
-						_logger.Info().Msgf(stringBuilder.String())
+						logger.Info().Msgf(stringBuilder.String())
 					}
 				}
 			}
