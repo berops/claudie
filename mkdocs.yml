@@ -22,7 +22,7 @@ plugins:
 # extra:
 #   version:
 #     provider: mike
-
+copyright: Copyright &copy; 2023 BerOps s.r.o.
 theme:
   name: material
   features:
