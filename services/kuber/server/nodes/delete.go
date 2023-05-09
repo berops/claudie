@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	longhornNamespace     = "longhorn-system"
-	pvcReplicationTimeout = 10 * time.Second
+	longhornNamespace         = "longhorn-system"
+	newReplicaCreationTimeout = 10 * time.Second
 )
 
 type etcdPodInfo struct {
@@ -180,7 +180,7 @@ func (d *Deleter) deleteFromLonghorn(kc kubectl.Kubectl, worker string) error {
 // assureReplication tries to assure, that replicas for each longhorn volume are migrated to nodes, which will remain in the cluster.
 func (d *Deleter) assureReplication(kc kubectl.Kubectl, worker string) error {
 	// Get replicas and volumes as they can be scheduled on next node, which will be deleted.
-	replicas, err := getReplicas(kc)
+	replicas, err := getReplicasMap(kc)
 	if err != nil {
 		return fmt.Errorf("error while getting replicas from cluster : %w", err)
 	}
@@ -196,9 +196,16 @@ func (d *Deleter) assureReplication(kc kubectl.Kubectl, worker string) error {
 				if err := increaseReplicaCount(v, kc); err != nil {
 					return fmt.Errorf("error while increasing number of replicas in volume %s from cluster %s : %w", v.Metadata.Name, d.clusterPrefix, err)
 				}
-				// Wait pvcReplicationTimeout for Longhorn to create new replica.
-				log.Info().Msgf("Waiting %.0f seconds for new replicas to be scheduled if possible for node %s cluster %s ", pvcReplicationTimeout.Seconds(), worker, d.clusterPrefix)
-				time.Sleep(pvcReplicationTimeout)
+				// Wait newReplicaCreationTimeout for Longhorn to create new replica.
+				log.Info().Msgf("Waiting %.0f seconds for new replicas to be scheduled if possible for node %s cluster %s ", newReplicaCreationTimeout.Seconds(), worker, d.clusterPrefix)
+				time.Sleep(newReplicaCreationTimeout)
+
+				// Verify all current replicas are running correctly
+				if err := verifyAllReplicasSetUp(r, v.Metadata.Name, kc); err != nil {
+					return fmt.Errorf("error while checking if all longhorn replicas for volume %s are running : %w", v.Metadata.Name, err)
+				}
+				log.Debug().Msgf("Replication for volume %s has been set up", v.Metadata.Name)
+
 				// Decrease number of replicas in volume -> original state.
 				if err := revertReplicaCount(v, kc); err != nil {
 					return fmt.Errorf("error while increasing number of replicas in volume %s cluster %s : %w", v.Metadata.Name, d.clusterPrefix, err)
