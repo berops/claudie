@@ -1,7 +1,6 @@
 site_name: Claudie Docs
 site_url: https://docs.claudie.io/
 repo_url: https://github.com/berops/claudie
-title: Claudie docs
 repo_name: claudie
 markdown_extensions:
   - admonition
@@ -11,6 +10,8 @@ markdown_extensions:
   - pymdownx.snippets
   - pymdownx.tasklist:
       custom_checkbox: true
+  - toc:
+      permalink: true
 plugins:
   - search:
       lang: en
@@ -18,21 +19,16 @@ plugins:
       width: 100%
       height: auto
       zoomable: true
+# extra:
+#   version:
+#     provider: mike
+
 theme:
   name: material
   features:
     - content.code.copy
   palette:
     - primary: white
-    - scheme: default
-      toggle:
-        icon: material/toggle-switch-off-outline 
-        name: Switch to dark mode
-    - scheme: slate 
-      toggle:
-        icon: material/toggle-switch
-        name: Switch to light mode
-
   logo: hexagon_blue.png
   favicon: hexagon_blue.png
 
