@@ -31,8 +31,14 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
-      - name: Build documentation
-        run: mkdocs build -d site
+      - name: Generate mike doc
+        run: mike deploy 0.3
+
+      - name: Set mike default version
+        run: mike set-default 0.3
+
+      # - name: Build documentation
+      #   run: mkdocs build -d site
         
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1

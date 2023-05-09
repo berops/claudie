@@ -2,6 +2,7 @@ site_name: Claudie Docs
 site_url: https://docs.claudie.io/
 repo_url: https://github.com/berops/claudie
 repo_name: claudie
+
 markdown_extensions:
   - admonition
   - pymdownx.details
@@ -12,17 +13,20 @@ markdown_extensions:
       custom_checkbox: true
   - toc:
       permalink: true
+
 plugins:
+  - mike:
+      canonical_version: null
+      version_selector: true
   - search:
       lang: en
   - glightbox:
       width: 100%
       height: auto
       zoomable: true
-# extra:
-#   version:
-#     provider: mike
+
 copyright: Copyright &copy; 2023 BerOps s.r.o.
+
 theme:
   name: material
   features:
@@ -69,3 +73,7 @@ nav:
     - Claudie v0.1: CHANGELOG/changelog-0.1.x.md
     - Claudie v0.2: CHANGELOG/changelog-0.2.x.md
     - Claudie v0.3: CHANGELOG/changelog-0.3.x.md
+
+extra:
+  version:
+    provider: mike
