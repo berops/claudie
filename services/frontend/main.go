@@ -96,11 +96,11 @@ func run() error {
 		// First shutdown the HTTP server to block any incoming connections.
 		log.Info().Msg("Gracefully shutting down K8sSidecarNotificationsReceiver and ContextBoxConnector")
 		if err := k8sSidecarNotificationsReceiver.Stop(); err != nil {
-			log.Error().Err(err).Msgf("Failed to gracefully shutdown K8sSidecarNotificationsReceiver")
+			log.Err(err).Msgf("Failed to gracefully shutdown K8sSidecarNotificationsReceiver")
 		}
 		// Wait for all the go-routines to finish their work.
 		if err := contextBoxConnector.Disconnect(); err != nil {
-			log.Error().Err(err).Msgf("Failed to gracefully shutdown ContextBoxConnector")
+			log.Err(err).Msgf("Failed to gracefully shutdown ContextBoxConnector")
 		}
 
 		return err

@@ -210,7 +210,7 @@ func (c *ClaudieCloudProvider) Refresh(_ context.Context, req *protos.RefreshReq
 func (c *ClaudieCloudProvider) refresh() error {
 	log.Info().Msgf("Refreshing the state")
 	if cluster, err := getClaudieState(c.projectName, c.configCluster.ClusterInfo.Name); err != nil {
-		log.Error().Err(err).Str("cluster", c.configCluster.ClusterInfo.Name).Msgf("Error while refreshing a state of the cluster")
+		log.Err(err).Str("cluster", c.configCluster.ClusterInfo.Name).Msgf("Error while refreshing a state of the cluster")
 		return fmt.Errorf("error while refreshing a state for the cluster %s : %w", c.configCluster.ClusterInfo.Name, err)
 	} else {
 		c.configCluster = cluster

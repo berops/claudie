@@ -60,9 +60,9 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 		if config.DsChecksum == nil && config.CsChecksum != nil {
 			if err := destroyConfig(config, clusterView, c); err != nil {
 				// Save error to DB.
-				log.Error().Err(err).Str("project", config.Name).Msgf("Error while destroying")
+				log.Err(err).Str("project", config.Name).Msgf("Error while destroying")
 				if err := saveConfigWithWorkflowError(config, c, clusterView); err != nil {
-					log.Error().Err(err).Str("project", config.Name).Msgf("Failed to save error message")
+					log.Err(err).Str("project", config.Name).Msgf("Failed to save error message")
 				}
 			}
 			return
@@ -165,9 +165,9 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			logger.Info().Msgf("Finished building cluster")
 			return nil
 		}); err != nil {
-			log.Error().Err(err).Str("project", config.Name).Msgf("Error encountered while processing config")
+			log.Err(err).Str("project", config.Name).Msgf("Error encountered while processing config")
 			if err := saveConfigWithWorkflowError(config, c, clusterView); err != nil {
-				log.Error().Err(err).Msgf("Failed to save error message")
+				log.Err(err).Msgf("Failed to save error message")
 			}
 			return
 		}

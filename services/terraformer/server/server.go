@@ -189,7 +189,7 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 	})
 
 	if err != nil {
-		log.Error().Err(err).Str("project", req.ProjectName).Msgf("Error while destroying the infrastructure for project")
+		log.Err(err).Str("project", req.ProjectName).Msgf("Error while destroying the infrastructure for project")
 		return nil, fmt.Errorf("error while destroying infrastructure for project %s : %w", req.ProjectName, err)
 	}
 	return &pb.DestroyInfrastructureResponse{Current: req.Current, CurrentLbs: req.CurrentLbs}, nil

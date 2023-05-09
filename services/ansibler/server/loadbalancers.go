@@ -156,7 +156,7 @@ func teardownLoadBalancers(clusterName string, info *LBInfo, attached bool) (str
 	k8sDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, utils.CreateHash(utils.HashLength)))
 
 	if err := generateK8sBaseFiles(k8sDirectory, info); err != nil {
-		log.Error().Err(err)
+		log.Err(err).Msg("")
 		return "", err
 	}
 
@@ -181,7 +181,7 @@ func setUpLoadbalancers(clusterName string, info *LBInfo) error {
 	directory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, utils.CreateHash(utils.HashLength)))
 
 	if err := generateK8sBaseFiles(directory, info); err != nil {
-		log.Error().Err(err)
+		log.Err(err).Msg("")
 		return err
 	}
 

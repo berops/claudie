@@ -23,7 +23,7 @@ func TestRefresh(t *testing.T) {
 
 	defer func() {
 		if err := cc.Close(); err != nil {
-			log.Error().Err(err).Msgf("Failed to close adapter connection")
+			log.Err(err).Msgf("Failed to close adapter connection")
 		}
 	}()
 

@@ -40,7 +40,7 @@ func (p *Patcher) PatchProviderID() error {
 			nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
 			patchPath := fmt.Sprintf(patchPathFormat, fmt.Sprintf(ProviderIdFormat, nodeName))
 			if err1 := p.kc.KubectlPatch("node", nodeName, patchPath); err1 != nil {
-				log.Error().Err(err1).Str("node", nodeName).Msgf("Error while patching node with patch %s", patchPath)
+				log.Err(err1).Str("node", nodeName).Msgf("Error while patching node with patch %s", patchPath)
 				err = fmt.Errorf("error while patching one or more nodes")
 			}
 		}
