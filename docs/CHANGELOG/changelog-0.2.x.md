@@ -2,7 +2,7 @@
 
 !!! warning "Due to a breaking change in the input manifest schema, the `v0.2.x` will not be backwards compatible with `v0.1.x`."
 
-# Deployment
+## Deployment
 
 To deploy the Claudie `v0.2.X`, please:
 
@@ -36,47 +36,47 @@ To deploy the Claudie `v0.2.X`, please:
     kubectl apply -k .
     ```
 
-# v0.2.0
+## v0.2.0
 
-## Features
+### Features
 
 - Unify the naming schema in the input manifest [#601](https://github.com/berops/claudie/pull/601)
 - Deploy MinIO in multi-replica fashion [#589](https://github.com/berops/claudie/pull/589)
 
-## Bugfixes
+### Bugfixes
 
 No bugfixes since the last release.
 
-## Known issues
+### Known issues
 
 - Workflow fails to build when a user makes multiple changes of the input manifest, regarding the API endpoint [#606](https://github.com/berops/claudie/issues/606)
 - Longhorn pod longhorn-admission-webhook stuck in Init state [#598](https://github.com/berops/claudie/issues/598)
 - Deletion of config fails if builder crashes after deleting nodes [#588](https://github.com/berops/claudie/issues/588)
 
-# v0.2.1
+## v0.2.1
 
-## Features
+### Features
 
 - Improve management of Longhorn volume replicas [#648](https://github.com/berops/claudie/pull/648)
 - Improve logging on all services [#657](https://github.com/berops/claudie/pull/657)
 
-## Bugfixes
+### Bugfixes
 
 - Fix unnecessary restarts in Wireguard playbook [#658](https://github.com/berops/claudie/pull/658)
 
-## Known issues
+### Known issues
 
 - Certain change in nodepool configuration forces replacement of VMs [#647](https://github.com/berops/claudie/issues/647)
 
-# v0.2.2
+## v0.2.2
 
-## Features
+### Features
 
 - Cluster Autoscaler integration [#644](https://github.com/berops/claudie/pull/644)
 - Drop using grpc-health-probe in favour of Kubernetes native grpc health probes. [#691](https://github.com/berops/claudie/pull/691)
 - Centralized information about the current workflow state of a cluster in the frontend service [#605](https://github.com/berops/claudie/pull/605)
 
-## Bugfixes
+### Bugfixes
 
 - Certain change in nodepool configuration forces replacement of VMs [#647](https://github.com/berops/claudie/issues/647)
 
