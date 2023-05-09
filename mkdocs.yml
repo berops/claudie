@@ -46,6 +46,7 @@ nav:
   - CRUD for Claudie: crud/crud.md
   - Input manifest: 
     - input-manifest/input-manifest.md
+    - Example: input-manifest/example.md
     - Providers:
       - Examples:
         - AWS example: input-manifest/providers/examples/aws-input-manifest.md
