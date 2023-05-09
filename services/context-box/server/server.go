@@ -60,16 +60,10 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 	}
 
 	if config.DesiredState != nil {
-		// Update workflow state for k8s clusters.
+		// Update workflow state for k8s clusters. (LB clusters included)
 		for _, cluster := range config.DesiredState.Clusters {
 			if err := database.UpdateWorkflowState(config.Name, cluster.ClusterInfo.Name, config.State[cluster.ClusterInfo.Name]); err != nil {
 				return nil, fmt.Errorf("error while updating workflow state for k8s cluster %s in config %s : %w", cluster.ClusterInfo.Name, config.Name, err)
-			}
-		}
-		// Update workflow state for LB clusters.
-		for _, cluster := range config.DesiredState.LoadBalancerClusters {
-			if err := database.UpdateWorkflowState(config.Name, cluster.ClusterInfo.Name, config.State[cluster.ClusterInfo.Name]); err != nil {
-				return nil, fmt.Errorf("error while updating workflow state for LB cluster %s in config %s : %w", cluster.ClusterInfo.Name, config.Name, err)
 			}
 		}
 	}
@@ -144,16 +138,10 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 		return nil, fmt.Errorf("error while updating builderTTL for %s : %w", config.Name, err)
 	}
 
-	// Update workflow state for k8s clusters.
+	// Update workflow state for k8s clusters. (LB clusters included)
 	for _, cluster := range config.CurrentState.Clusters {
 		if err := database.UpdateWorkflowState(config.Name, cluster.ClusterInfo.Name, config.State[cluster.ClusterInfo.Name]); err != nil {
 			return nil, fmt.Errorf("error while updating workflow state for k8s cluster %s in config %s : %w", cluster.ClusterInfo.Name, config.Name, err)
-		}
-	}
-	// Update workflow state for LB clusters.
-	for _, cluster := range config.CurrentState.LoadBalancerClusters {
-		if err := database.UpdateWorkflowState(config.Name, cluster.ClusterInfo.Name, config.State[cluster.ClusterInfo.Name]); err != nil {
-			return nil, fmt.Errorf("error while updating workflow state for LB cluster %s in config %s : %w", cluster.ClusterInfo.Name, config.Name, err)
 		}
 	}
 
