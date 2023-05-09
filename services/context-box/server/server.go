@@ -171,7 +171,7 @@ func (*server) GetConfigScheduler(ctx context.Context, req *pb.GetConfigRequest)
 func (*server) GetConfigBuilder(ctx context.Context, req *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
 	configInfo := queueBuilder.Dequeue()
 	if configInfo != nil {
-		log.Info().Str("config", configInfo.GetName()).Msgf("Sending config %s to Builder")
+		log.Info().Str("config", configInfo.GetName()).Msgf("Sending config to Builder")
 		config, err := database.GetConfig(configInfo.GetName(), pb.IdType_NAME)
 		if err != nil {
 			return nil, err
