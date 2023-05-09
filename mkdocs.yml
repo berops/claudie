@@ -38,7 +38,8 @@ nav:
   - index.md
   - Getting Started:
     - getting-started/get-started-using-claudie.md
-    - Input manifest: 
+    - CRUD for Claudie: crud/crud.md
+  - Input manifest: 
       - input-manifest/input-manifest.md
       - Example yaml file: input-manifest/example.md
       - Providers:
@@ -54,7 +55,6 @@ nav:
         - Cloudflare: input-manifest/providers/cloudflare.md
         - Hetzner: input-manifest/providers/hetzner.md
         - OCI: input-manifest/providers/oci.md
-    - CRUD for Claudie: crud/crud.md
   - How Claudie works:
     - Claudie Workflow: claudie-workflow/claudie-workflow.md
     - Claudie Storage solution: storage/storage-solution.md
