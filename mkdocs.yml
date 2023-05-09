@@ -36,6 +36,7 @@ theme:
   favicon: hexagon_blue.png
 
 nav:
+  - index.md
   - Getting Started:
     - getting-started/get-started-using-claudie.md
     - Input manifest: 
@@ -55,12 +56,12 @@ nav:
         - Hetzner: input-manifest/providers/hetzner.md
         - OCI: input-manifest/providers/oci.md
       - Config spec: config/config.md
+    - CRUD for Claudie: crud/crud.md
   - How Claudie works:
     - Claudie Workflow: claudie-workflow/claudie-workflow.md
     - Claudie Storage solution: storage/storage-solution.md
     - Loadbalancing in Claudie: ./loadbalancing/loadbalancing-solution.md
     - Autoscaling in Claudie: autoscaling/autoscaling.md
-    - CRUD for Claudie: crud/crud.md
   - Claudie Use Cases: use-cases/use-cases.md
   - Roadmap for Claudie: roadmap/roadmap.md
   - Contributing:
