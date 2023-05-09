@@ -1,6 +1,7 @@
 site_name: Claudie Docs
 site_url: https://docs.claudie.io/
 repo_url: https://github.com/berops/claudie
+title: Claudie docs
 repo_name: claudie
 markdown_extensions:
   - admonition
