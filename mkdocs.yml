@@ -40,13 +40,8 @@ nav:
     - Claudie v0.1: CHANGELOG/changelog-0.1.x.md
     - Claudie v0.2: CHANGELOG/changelog-0.2.x.md
     - Claudie v0.3: CHANGELOG/changelog-0.3.x.md
+  - Claudie Use Cases: use-cases/use-cases.md
   - Claudie Workflow: claudie-workflow/claudie-workflow.md
-  - Autoscaling in Claudie: autoscaling/autoscaling.md
-  - Config spec: config/config.md
-  - Contributing:
-    - contributing/contributing.md
-    - Release a new version: contributing/release.md
-  - CRUD for Claudie: crud/crud.md
   - Input manifest: 
     - input-manifest/input-manifest.md
     - Example: input-manifest/example.md
@@ -63,7 +58,12 @@ nav:
       - Cloudflare: input-manifest/providers/cloudflare.md
       - Hetzner: input-manifest/providers/hetzner.md
       - OCI: input-manifest/providers/oci.md
-  - Loadbalancing in Claudie: ./loadbalancing/loadbalancing-solution.md
-  - Roadmap for Claudie: roadmap/roadmap.md
+  - Config spec: config/config.md
+  - CRUD for Claudie: crud/crud.md
   - Claudie storage solution: storage/storage-solution.md
-  - Claudie Use Cases: use-cases/use-cases.md
+  - Loadbalancing in Claudie: ./loadbalancing/loadbalancing-solution.md
+  - Autoscaling in Claudie: autoscaling/autoscaling.md
+  - Roadmap for Claudie: roadmap/roadmap.md
+  - Contributing:
+    - contributing/contributing.md
+    - Release a new version: contributing/release.md
