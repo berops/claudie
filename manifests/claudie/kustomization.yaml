@@ -33,6 +33,6 @@ images:
 - name: ghcr.io/berops/claudie/kuber
   newTag: d801197-1787
 - name: ghcr.io/berops/claudie/scheduler
-  newTag: ecd3819-1780
+  newTag: 3271de5-1790
 - name: ghcr.io/berops/claudie/terraformer
   newTag: d801197-1787
