@@ -98,7 +98,7 @@ func verifyAllReplicasSetUp(r LonghornReplica, volumeName string, kc kubectl.Kub
 				if ok {
 					return nil
 				} else {
-					log.Info().Msgf("Volume replication is not ready yet, retrying check for replication status of %s volume", volumeName)
+					log.Debug().Msgf("Volume replication is not ready yet, retrying check for replication status of %s volume", volumeName)
 				}
 			}
 		case <-ctx.Done():

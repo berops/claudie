@@ -11,6 +11,7 @@ import (
 	"github.com/berops/claudie/proto/pb"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -68,6 +69,7 @@ func (d *Deleter) DeleteNodes() (*pb.K8Scluster, error) {
 	}
 
 	etcdEpNode := d.getMainMaster()
+	// Remove master nodes sequentially to minimise risk of faults in etcd
 	for _, master := range d.masterNodes {
 		// delete master nodes from etcd
 		if err := d.deleteFromEtcd(kubectl, etcdEpNode); err != nil {
@@ -79,22 +81,36 @@ func (d *Deleter) DeleteNodes() (*pb.K8Scluster, error) {
 		}
 	}
 
+	// Cordon worker nodes to prevent any new pods/volume replicas being scheduled there
+	var eg errgroup.Group
 	for _, worker := range d.workerNodes {
-		// assure replication of storage
+		func(worker string) {
+			eg.Go(func() error {
+				return kubectl.KubectlCordon(worker)
+			})
+		}(worker)
+	}
+	if err := eg.Wait(); err != nil {
+		return nil, fmt.Errorf("error while cordoning worker nodes from cluster %s which were marked for deletion : %w", d.clusterPrefix, err)
+	}
+
+	// Remove worker nodes sequentially to minimise risk of fault when replicating PVC
+	for _, worker := range d.workerNodes {
+		// Assure replication of storage
 		if err := d.assureReplication(kubectl, worker); err != nil {
 			return nil, fmt.Errorf("error while making sure storage is replicated before deletion on cluster %s : %w", d.clusterPrefix, err)
 		}
-		// delete worker nodes from nodes.longhorn.io
+		// Delete worker nodes from nodes.longhorn.io
 		if err := d.deleteFromLonghorn(kubectl, worker); err != nil {
 			return nil, fmt.Errorf("error while deleting nodes.longhorn.io for %s : %w", d.clusterPrefix, err)
 		}
-		// delete worker nodes
+		// Delete worker nodes
 		if err := d.deleteNodesByName(kubectl, worker, realNodeNames); err != nil {
 			return nil, fmt.Errorf("error while deleting nodes from worker nodes for %s : %w", d.clusterPrefix, err)
 		}
 	}
 
-	// update the current cluster
+	// Update the current cluster
 	d.updateClusterData()
 	return d.cluster, nil
 }
@@ -204,7 +220,7 @@ func (d *Deleter) assureReplication(kc kubectl.Kubectl, worker string) error {
 				if err := verifyAllReplicasSetUp(r, v.Metadata.Name, kc); err != nil {
 					return fmt.Errorf("error while checking if all longhorn replicas for volume %s are running : %w", v.Metadata.Name, err)
 				}
-				log.Debug().Msgf("Replication for volume %s has been set up", v.Metadata.Name)
+				log.Info().Msgf("Replication for volume %s has been set up", v.Metadata.Name)
 
 				// Decrease number of replicas in volume -> original state.
 				if err := revertReplicaCount(v, kc); err != nil {
