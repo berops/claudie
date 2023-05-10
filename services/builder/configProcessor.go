@@ -30,6 +30,11 @@ import (
 	cbox "github.com/berops/claudie/services/context-box/client"
 )
 
+const (
+	// maxDeleteRetry defines how many times the config should try to be deleted before returning an error, if encountered.
+	maxDeleteRetry = 3
+)
+
 // configProcessor will fetch new configs from the context-box service. Each received config will be processed in
 // a separate go-routine. If a sync.WaitGroup is supplied it will call the Add(1) and then the Done() method on it
 // after the go-routine finishes the work, if nil it will be ignored.
@@ -58,9 +63,17 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 
 		// if Desired state is null and current is not we delete the infra for the config.
 		if config.DsChecksum == nil && config.CsChecksum != nil {
-			if err := destroyConfig(config, clusterView, c); err != nil {
-				// Save error to DB.
-				log.Err(err).Str("project", config.Name).Msgf("Error while destroying")
+			var err error
+			// Try maxDeleteRetry to delete the config.
+			for i := 0; i < maxDeleteRetry; i++ {
+				if err = destroyConfig(config, clusterView, c); err == nil {
+					// Deletion successful, break here.
+					break
+				}
+			}
+			// Save error to DB if not nil.
+			if err != nil {
+				log.Error().Msgf("Error while destroying config %s : %v", config.Name, err)
 				if err := saveConfigWithWorkflowError(config, c, clusterView); err != nil {
 					log.Err(err).Str("project", config.Name).Msgf("Failed to save error message")
 				}

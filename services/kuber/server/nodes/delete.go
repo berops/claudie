@@ -56,7 +56,7 @@ func NewDeleter(masterNodes, workerNodes []string, cluster *pb.K8Scluster) *Dele
 // DeleteNodes deletes nodes specified in d.masterNodes and d.workerNodes
 // return nil if successful, error otherwise
 func (d *Deleter) DeleteNodes() (*pb.K8Scluster, error) {
-	kubectl := kubectl.Kubectl{Kubeconfig: d.cluster.Kubeconfig}
+	kubectl := kubectl.Kubectl{Kubeconfig: d.cluster.Kubeconfig, MaxKubectlRetries: 3}
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
 		kubectl.Stdout = comm.GetStdOut(d.clusterPrefix)
 		kubectl.Stderr = comm.GetStdErr(d.clusterPrefix)

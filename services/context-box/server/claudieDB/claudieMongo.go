@@ -308,7 +308,6 @@ func (c *ClaudieMongo) UpdateDs(config *pb.Config) error {
 	err = c.updateDocument(bson.M{"name": config.Name}, bson.M{"$set": bson.M{
 		"dsChecksum":   config.DsChecksum,
 		"desiredState": desiredStateByte,
-		"state":        ConvertFromGRPCWorkflow(config.State),
 	}})
 	if err != nil {
 		return fmt.Errorf("failed to update dsChecksum and desiredState for document %s : %w", config.Name, err)
@@ -318,6 +317,9 @@ func (c *ClaudieMongo) UpdateDs(config *pb.Config) error {
 
 // UpdateWorkflowState updates the state of the config with the given workflow
 func (c *ClaudieMongo) UpdateWorkflowState(configName, clusterName string, workflow *pb.Workflow) error {
+	if workflow == nil {
+		return nil
+	}
 	return c.updateDocument(bson.M{"name": configName}, bson.M{"$set": bson.M{
 		fmt.Sprintf("state.%s", clusterName): Workflow{
 			Status:      workflow.Status.String(),
@@ -337,7 +339,6 @@ func (c *ClaudieMongo) UpdateCs(config *pb.Config) error {
 	err = c.updateDocument(bson.M{"name": config.Name}, bson.M{"$set": bson.M{
 		"csChecksum":   config.CsChecksum,
 		"currentState": currentStateByte,
-		"state":        ConvertFromGRPCWorkflow(config.State),
 	}})
 	if err != nil {
 		return fmt.Errorf("failed to update csChecksum and currentState for document %s : %w", config.Name, err)

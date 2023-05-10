@@ -32,7 +32,7 @@ func testLonghornDeployment(ctx context.Context, config *pb.Config) error {
 	for _, cluster := range clusters {
 		// check number of nodes in nodes.longhorn.io
 
-		kubectl := kubectl.Kubectl{Kubeconfig: cluster.Kubeconfig}
+		kubectl := kubectl.Kubectl{Kubeconfig: cluster.Kubeconfig, MaxKubectlRetries: 5}
 		if log.Logger.GetLevel() == zerolog.DebugLevel {
 			prefix := fmt.Sprintf("%s-%s", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
 			kubectl.Stdout = comm.GetStdOut(prefix)
