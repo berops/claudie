@@ -39,7 +39,6 @@ RUN apk add -q bash
 
 COPY --from=build /go/kubeone_dir/kubeone /usr/local/bin
 COPY --from=build /go/services/kube-eleven/server/server /bin/services/kube-eleven/server/server
-COPY --from=build /go/services/kube-eleven/server/addons /bin/services/kube-eleven/server/addons
 COPY --from=build /go/services/kube-eleven/templates /bin/services/kube-eleven/templates
 
 #Run server
