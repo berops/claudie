@@ -63,9 +63,9 @@ func destroy(projectName, clusterName string, clusterView *ClusterView, c pb.Con
 
 // saveConfigWithWorkflowError saves config with workflow states
 func saveConfigWithWorkflowError(config *pb.Config, c pb.ContextBoxServiceClient, clusterView *ClusterView) error {
-	if config.DesiredState != nil {
-		// Update currentState preemptively, so we can use it for terraform destroy
-		// id DesiredState is null, we are already in deletion process, thus CurrentState should stay as is when error occurs
+	// Update Current state only when config is not marked for deletion
+	// NOTE: reworked in PR https://github.com/berops/claudie/pull/728
+	if config.DsChecksum != nil {
 		config.CurrentState = config.DesiredState
 	}
 
