@@ -12,9 +12,9 @@ import (
 
 const (
 	// maxTerraformRetries is the maximum amount a command can be repeated until
-	// it succeeds. If after 10 retries the commands still fails an error should be
+	// it succeeds. If after maxTerraformRetries retries the commands still fails an error should be
 	// returned containing the reason.
-	maxTerraformRetries = 10
+	maxTerraformRetries = 5
 )
 
 type Terraform struct {

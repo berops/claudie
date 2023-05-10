@@ -11,8 +11,10 @@ import (
 )
 
 const (
-	defaultAnsibleForks = 30
-	maxAnsibleRetries   = 10
+	// defaultAnsibleForks defines how many forks ansible uses (on how many nodes can ansible perform a task at the same time).
+	defaultAnsibleForks = 15
+	// maxAnsibleRetries defines how many times should be playbook retried before returning error.
+	maxAnsibleRetries = 5
 )
 
 type Ansible struct {
