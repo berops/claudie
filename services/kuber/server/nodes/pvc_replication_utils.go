@@ -83,7 +83,7 @@ func getReplicasMap(kc kubectl.Kubectl) (map[string][]LonghornReplica, error) {
 	return m, nil
 }
 
-func verifyAllReplicasSetUp(r LonghornReplica, volumeName string, kc kubectl.Kubectl) error {
+func verifyAllReplicasSetUp(volumeName string, kc kubectl.Kubectl) error {
 	ticker := time.NewTicker(replicaRunningCheck)
 	ctx, cancel := context.WithTimeout(context.Background(), pvcReplicationTimeout)
 	defer cancel()
@@ -91,7 +91,7 @@ func verifyAllReplicasSetUp(r LonghornReplica, volumeName string, kc kubectl.Kub
 	for {
 		select {
 		case <-ticker.C:
-			if ok, err := verifyAllReplicasRunning(r, volumeName, kc); err != nil {
+			if ok, err := verifyAllReplicasRunning(volumeName, kc); err != nil {
 				log.Warn().Msgf("Got error while checking for replication status of %s volume : %v", volumeName, err)
 				log.Info().Msgf("Retrying check for replication status of %s volume", volumeName)
 			} else {
@@ -117,11 +117,12 @@ func increaseReplicaCount(v LonghornVolume, kc kubectl.Kubectl) error {
 	return kc.KubectlPatch(volumes, v.Metadata.Name, fmt.Sprintf(patchNumberOfReplicas, v.Spec.NumberOfReplicas+1), "-n", longhornNamespace, "--type", "merge")
 }
 
-// revertReplicaCount sets the number of replicas for longhorn volume to the original value, taken from the v, via kubectl patch
+// revertReplicaCount sets the number of replicas for longhorn volume to the original value, taken from the v, via kubectl patch.
 func revertReplicaCount(v LonghornVolume, kc kubectl.Kubectl) error {
 	return kc.KubectlPatch(volumes, v.Metadata.Name, fmt.Sprintf(patchNumberOfReplicas, v.Spec.NumberOfReplicas), "-n", longhornNamespace, "--type", "merge")
 }
 
+// getReplicas returns a List of Longhorn replicas currently in cluster.
 func getReplicas(kc kubectl.Kubectl) (K8sList[LonghornReplica], error) {
 	out, err := kc.KubectlGet(replicas, "-n", longhornNamespace, "-o", "yaml")
 	if err != nil {
@@ -134,7 +135,8 @@ func getReplicas(kc kubectl.Kubectl) (K8sList[LonghornReplica], error) {
 	return replicaList, nil
 }
 
-func verifyAllReplicasRunning(r LonghornReplica, volumeName string, kc kubectl.Kubectl) (bool, error) {
+// verifyAllReplicasRunning returns true, if all replicas for specified volume are in running state.
+func verifyAllReplicasRunning(volumeName string, kc kubectl.Kubectl) (bool, error) {
 	replicaList, err := getReplicas(kc)
 	if err != nil {
 		return false, err
