@@ -103,8 +103,7 @@ func (d *Deleter) DeleteNodes() (*pb.K8Scluster, error) {
 // kubectl delete node <node-name>
 // return nil if successful, error otherwise
 func (d *Deleter) deleteNodesByName(kc kubectl.Kubectl, nodeName string, realNodeNames []string) error {
-	realNodeName := utils.FindName(realNodeNames, nodeName)
-	if realNodeName != "" {
+	if realNodeName := utils.FindName(realNodeNames, nodeName); realNodeName != "" {
 		log.Info().Msgf("Deleting node %s from k8s cluster %s", realNodeName, d.clusterPrefix)
 		//kubectl drain <node-name> --ignore-daemonsets --delete-emptydir-data
 		err := kc.KubectlDrain(realNodeName)
@@ -116,10 +115,10 @@ func (d *Deleter) deleteNodesByName(kc kubectl.Kubectl, nodeName string, realNod
 		if err != nil {
 			return fmt.Errorf("error while deleting node %s from cluster %s : %w", nodeName, d.clusterPrefix, err)
 		}
-	} else {
-		log.Error().Msgf("Node name that contains %s not found in cluster %s", nodeName, d.clusterPrefix)
-		return fmt.Errorf("no node with name %s found in cluster %s", nodeName, d.clusterPrefix)
+		return nil
 	}
+
+	log.Warn().Msgf("Node name that contains %s not found in cluster %s", nodeName, d.clusterPrefix)
 	return nil
 }
 
@@ -170,6 +169,15 @@ func (d *Deleter) updateClusterData() {
 // deleteFromLonghorn will delete node from nodes.longhorn.io
 // return nil if successful, error otherwise
 func (d *Deleter) deleteFromLonghorn(kc kubectl.Kubectl, worker string) error {
+	// check if the resource is present before deleting.
+	if logs, err := kc.KubectlGet(fmt.Sprintf("nodes.longhorn.io %s", worker), "-n", longhornNamespace); err != nil {
+		// This is not the ideal path of checking for a NotFound error, this is only done as we shell out to run kubectl.
+		if strings.Contains(string(logs), "NotFound") {
+			log.Warn().Msgf("worker node: %s not found, assuming it was deleted.", worker)
+			return nil
+		}
+	}
+
 	log.Info().Msgf("Deleting node %s from nodes.longhorn.io from cluster %s", worker, d.clusterPrefix)
 	if err := kc.KubectlDeleteResource("nodes.longhorn.io", worker, "-n", longhornNamespace); err != nil {
 		return fmt.Errorf("error while deleting node %s from nodes.longhorn.io from cluster %s : %w", worker, d.clusterPrefix, err)
