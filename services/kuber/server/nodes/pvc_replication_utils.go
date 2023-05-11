@@ -52,7 +52,7 @@ const (
 	pvcReplicationTimeout = 5 * time.Minute
 )
 
-// getVolumes returns a map of volumes currently in the cluster.
+// getVolumes returns a map[volume name]volume of volumes currently in the cluster.
 func getVolumes(kc kubectl.Kubectl) (map[string]LonghornVolume, error) {
 	out, err := kc.KubectlGet(volumes, "-n", longhornNamespace, "-o", "yaml")
 	if err != nil {
