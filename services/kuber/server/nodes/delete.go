@@ -11,7 +11,6 @@ import (
 	"github.com/berops/claudie/proto/pb"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -82,15 +81,9 @@ func (d *Deleter) DeleteNodes() (*pb.K8Scluster, error) {
 	}
 
 	// Cordon worker nodes to prevent any new pods/volume replicas being scheduled there
-	var eg errgroup.Group
-	for _, worker := range d.workerNodes {
-		func(worker string) {
-			eg.Go(func() error {
-				return kubectl.KubectlCordon(worker)
-			})
-		}(worker)
-	}
-	if err := eg.Wait(); err != nil {
+	if err := utils.ConcurrentExec(d.workerNodes, func(worker string) error {
+		return kubectl.KubectlCordon(worker)
+	}); err != nil {
 		return nil, fmt.Errorf("error while cordoning worker nodes from cluster %s which were marked for deletion : %w", d.clusterPrefix, err)
 	}
 
