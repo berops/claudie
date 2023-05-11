@@ -81,7 +81,7 @@ For adding support for other cloud providers, open an issue or propose a PR.
     wget https://github.com/berops/claudie/releases/latest/download/claudie.zip && unzip claudie.zip -d claudie
     ```
 
-2. Deploy Claudie Kubernetes into a Kubernetes cluster.
+2. Deploy Claudie into a Kubernetes cluster.
 
     ```sh
     kubectl apply -k claudie
