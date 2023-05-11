@@ -75,21 +75,23 @@ For adding support for other cloud providers, open an issue or propose a PR.
 
 ## Get started using Claudie
 
-1. Deploy Claudie Kubernetes [manifests/claudie](https://github.com/berops/claudie/tree/master/manifests/claudie) into a Kubernetes cluster:
+1. Download and extract manifests of the lates release from our [release page](https://github.com/berops/claudie/releases).
 
-   ```sh
-   kubectl apply -k manifests/claudie
-   ```
+    ```sh
+    wget https://github.com/berops/claudie/releases/latest/download/claudie.zip && unzip claudie.zip -d claudie
+    ```
 
-2. provide your own manifest via a Kubernetes Secret.
+2. Deploy Claudie into a Kubernetes cluster.
 
-Have a look at our [reference example input manifest](https://github.com/berops/claudie/blob/master/docs/input-manifest/example.yaml) to explore what's possible.
+    ```sh
+    kubectl apply -k claudie
+    ```
 
-To see in detail how to correctly apply the manifest into Claudie, please refer to the [CRUD](./docs/crud/crud.md) document.
+3. Provide your own input manifest via a Kubernetes Secret.
 
-After the input manifest is successfully applied, the kubeconfig to your newly
-built clusters is output as a secret in the `claudie` namespace with a name in
-the form of `<cluster-name>-<cluster-hash>-kubeconfig`.
+    Have a look at our [input manifest documentation](./docs/input-manifest/example.yaml) to explore what's possible.
+
+To see in detail how to correctly apply the manifest into Claudie and how get outputs from Claudie please refer to the [CRUD](./docs/crud/crud.md) document.
 
 ## Get involved
 
