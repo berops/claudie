@@ -101,6 +101,14 @@ EOF
     managed-by = "claudie"
     claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
+
+  {{- if not $nodepool.IsControl}}
+  # As the storage disk is attached via google_compute_attached_disk, 
+  # we must ignore attached_disk property.
+  lifecycle {
+    ignore_changes = [attached_disk]
+  }
+  {{- end }}
 }
 
 {{- if not $nodepool.IsControl }}
