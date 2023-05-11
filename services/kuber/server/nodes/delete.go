@@ -101,12 +101,8 @@ func (d *Deleter) DeleteNodes() (*pb.K8Scluster, error) {
 		if err := d.deleteNodesByName(kubectl, worker, realNodeNames); err != nil {
 			return nil, fmt.Errorf("error while deleting nodes from worker nodes for %s : %w", d.clusterPrefix, err)
 		}
-		// NOTE: Might need to verify if the volume got detached. The issue is still being discussed in #longhorn channel in CNCF slack workspace.
-		// https://cloud-native.slack.com/archives/CNVPEL9U3/p1683744899327089
-		// Issue seen, when once the node is deleted, some volumes might be still attached to the already deleted node, even though all replicas
-		// have moved to other nodes in cluster. Once manually detaching the volume from already deleted node (via UI), it attached again to a new node
-		// with no issues. Since there is no easy way how to verify and detach volume in some CLI way (due to longhorn policy of  doing everything via UI
-		// in ClickOps), leaving this note until discussion with longhorn maintainers concludes.
+		// NOTE: Might need to manually verify if the volume got detached.
+		// https://github.com/berops/claudie/issues/784
 	}
 
 	// Update the current cluster
