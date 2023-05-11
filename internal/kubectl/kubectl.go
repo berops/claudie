@@ -35,16 +35,14 @@ const (
 // example: kubectl apply -f test.yaml -> k.KubectlApply("test.yaml")
 // example: kubectl apply -f test.yaml -n test -> k.KubectlApply("test.yaml", "-n", "test")
 func (k *Kubectl) KubectlApply(manifest string, options ...string) error {
-	kubeconfig := k.getKubeconfig()
-	command := fmt.Sprintf("kubectl apply -f %s %s", manifest, kubeconfig)
+	command := fmt.Sprintf("kubectl apply -f %s %s", manifest, k.getKubeconfig())
 	return k.run(command, options...)
 }
 
 // KubectlApplyString runs kubectl apply in k.Directory directory, with specified string data
 // example: echo 'Kind: Pod ...' | kubectl apply -f - -> k.KubectlApply("Kind: Pod ...")
 func (k *Kubectl) KubectlApplyString(str string, options ...string) error {
-	kubeconfig := k.getKubeconfig()
-	command := fmt.Sprintf("echo '%s' | kubectl apply -f - %s", str, kubeconfig)
+	command := fmt.Sprintf("echo '%s' | kubectl apply -f - %s", str, k.getKubeconfig())
 	return k.run(command, options...)
 }
 
@@ -52,8 +50,7 @@ func (k *Kubectl) KubectlApplyString(str string, options ...string) error {
 // example: kubectl delete -f test.yaml -> k.KubectlDelete("test.yaml")
 // example: kubectl delete -f test.yaml -n test -> k.KubectlDelete("test.yaml", "-n", "test")
 func (k *Kubectl) KubectlDeleteManifest(manifest string, options ...string) error {
-	kubeconfig := k.getKubeconfig()
-	command := fmt.Sprintf("kubectl delete -f %s %s", manifest, kubeconfig)
+	command := fmt.Sprintf("kubectl delete -f %s %s", manifest, k.getKubeconfig())
 	return k.run(command, options...)
 }
 
@@ -61,8 +58,7 @@ func (k *Kubectl) KubectlDeleteManifest(manifest string, options ...string) erro
 // example: kubectl delete ns test -> k.KubectlDeleteResource("ns","test")
 // example: kubectl delete pod busy-box -n test -> k.KubectlDeleteResource("pod","busy-box", "-n","test")
 func (k *Kubectl) KubectlDeleteResource(resource, resourceName string, options ...string) error {
-	kubeconfig := k.getKubeconfig()
-	command := fmt.Sprintf("kubectl delete %s %s %s", resource, resourceName, kubeconfig)
+	command := fmt.Sprintf("kubectl delete %s %s %s", resource, resourceName, k.getKubeconfig())
 	return k.run(command, options...)
 }
 
@@ -70,8 +66,7 @@ func (k *Kubectl) KubectlDeleteResource(resource, resourceName string, options .
 // example: echo 'kind: Namespace...' | kubectl delete -f - -> k.KubectlDeleteResource("kind: Namespace ...")
 // example: echo 'kind: Namespace...' | kubectl delete -f - -n test -> k.KubectlDeleteResource("kind: Namespace ...", "-n","test")
 func (k *Kubectl) KubectlDeleteString(str string, options ...string) error {
-	kubeconfig := k.getKubeconfig()
-	command := fmt.Sprintf("echo '%s' | kubectl delete -f - %s", str, kubeconfig)
+	command := fmt.Sprintf("echo '%s' | kubectl delete -f - %s", str, k.getKubeconfig())
 	return k.run(command, options...)
 }
 
@@ -87,8 +82,7 @@ func (k *Kubectl) KubectlDrain(nodeName string) error {
 // example: kubectl describe pod test -> k.KubectlDescribe("pod","test")
 // example: kubectl describe pod busy-box -n test -> k.KubectlDescribe("pod","busy-box", "-n", "test")
 func (k *Kubectl) KubectlDescribe(resource, resourceName string, options ...string) error {
-	kubeconfig := k.getKubeconfig()
-	command := fmt.Sprintf("kubectl describe %s %s %s", resource, resourceName, kubeconfig)
+	command := fmt.Sprintf("kubectl describe %s %s %s", resource, resourceName, k.getKubeconfig())
 	return k.run(command, options...)
 }
 
@@ -97,8 +91,7 @@ func (k *Kubectl) KubectlDescribe(resource, resourceName string, options ...stri
 // example: kubectl get ns -> k.KubectlGet("ns")
 // example: kubectl get pods -n test -> k.KubectlGet("pods","-n", "test")
 func (k *Kubectl) KubectlGet(resource string, options ...string) ([]byte, error) {
-	kubeconfig := k.getKubeconfig()
-	command := fmt.Sprintf("kubectl get %s %s", resource, kubeconfig)
+	command := fmt.Sprintf("kubectl get %s %s", resource, k.getKubeconfig())
 	return k.runWithOutput(command, options...)
 }
 
@@ -112,8 +105,7 @@ func (k *Kubectl) KubectlAnnotate(resource, resourceName, annotation string, opt
 // KubectlLabel runs kubectl label in k.Directory, with the specified label on a specified resource and resource name
 // example: kubectl label node node-1 label=value -> k.KubectlLabel("node","node-1","label=value")
 func (k *Kubectl) KubectlLabel(resource, resourceName, label string, options ...string) error {
-	kubeconfig := k.getKubeconfig()
-	command := fmt.Sprintf("kubectl label %s %s %s %s", resource, resourceName, label, kubeconfig)
+	command := fmt.Sprintf("kubectl label %s %s %s %s", resource, resourceName, label, k.getKubeconfig())
 	return k.run(command, options...)
 }
 
@@ -138,8 +130,17 @@ func (k *Kubectl) KubectlExecEtcd(etcdPod, etcdctlCmd string) ([]byte, error) {
 	return k.runWithOutput(kcExecEtcdCmd)
 }
 
+// KubectlPatch runs kubectl patch <resource> <resource name> -p <patch path> on specified resource
+// example: kubectl patch node node-1 -p {\"spec\":{\"providerID\":\"claudie://node-1\"}} -> KubectlPatch("node", "node-1", "{\"spec\":{\"providerID\":\"claudie://node-1\"}}")
+// example: kubectl patch node node-1 -p {\"spec\":{\"providerID\":\"claudie://node-1\"}} --type="strategic" -> KubectlPatch("node", "node-1", "{\"spec\":{\"providerID\":\"claudie://node-1\"}}", "--type=\"strategic\"")
 func (k *Kubectl) KubectlPatch(resource, resourceName, patchPath string, options ...string) error {
 	command := fmt.Sprintf("kubectl patch %s %s -p '%s' %s", resource, resourceName, patchPath, k.getKubeconfig())
+	return k.run(command, options...)
+}
+
+// KubectlCordon runs kubectl cordon <node name> for a particular node in cluster
+func (k *Kubectl) KubectlCordon(nodeName string, options ...string) error {
+	command := fmt.Sprintf("kubectl cordon %s %s", nodeName, k.getKubeconfig())
 	return k.run(command, options...)
 }
 
