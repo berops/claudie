@@ -31,25 +31,25 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
+      - name: Set user
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+      - name: Git fetch
+        run: git fetch
+
+      - name: Checkout to gh-pages branch
+        run: git checkout gh-pages
+
+      - name: Pull changes from gh-pages branch
+        run: git pull
+
+      - name: Checkout back to feature/claudie-docs branch
+        run: git checkout feature/claudie-docs
+
       - name: Deploy Mkdocs to GH Pages
         run: mkdocs gh-deploy
-
-      # - name: Set user
-      #   run: |
-      #     git config --local user.email "github-actions[bot]@users.noreply.github.com"
-      #     git config --local user.name "github-actions[bot]"
-
-      # - name: Git fetch
-      #   run: git fetch
-
-      # - name: Checkout to gh-pages branch
-      #   run: git checkout gh-pages
-
-      # - name: Pull changes from gh-pages branch
-      #   run: git pull
-
-      # - name: Checkout back to feature/claudie-docs branch
-      #   run: git checkout feature/claudie-docs
 
       # - name: Get current branch
       #   run:
