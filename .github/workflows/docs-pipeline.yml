@@ -45,8 +45,8 @@ jobs:
       - name: Pull changes from gh-pages branch
         run: git pull
 
-      - name: Checkout back to feature/docs-claudie branch
-        run: git checkout feature/docs-claudie
+      - name: Checkout back to feature/claudie-docs branch
+        run: git checkout feature/claudie-docs
 
       # - name: Get current branch
       #   run:
