@@ -31,22 +31,25 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
-      - name: Set user
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
+      - name: Deploy Mkdocs to GH Pages
+        run: mkdocs 
 
-      - name: Git fetch
-        run: git fetch
+      # - name: Set user
+      #   run: |
+      #     git config --local user.email "github-actions[bot]@users.noreply.github.com"
+      #     git config --local user.name "github-actions[bot]"
 
-      - name: Checkout to gh-pages branch
-        run: git checkout gh-pages
+      # - name: Git fetch
+      #   run: git fetch
 
-      - name: Pull changes from gh-pages branch
-        run: git pull
+      # - name: Checkout to gh-pages branch
+      #   run: git checkout gh-pages
 
-      - name: Checkout back to feature/claudie-docs branch
-        run: git checkout feature/claudie-docs
+      # - name: Pull changes from gh-pages branch
+      #   run: git pull
+
+      # - name: Checkout back to feature/claudie-docs branch
+      #   run: git checkout feature/claudie-docs
 
       # - name: Get current branch
       #   run:
@@ -61,19 +64,19 @@ jobs:
       # - name: Build documentation
       #   run: mkdocs build -d site
         
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v1
-        with:
-          name: "github-pages"
-          path: "site/"
+      # - name: Upload artifact
+      #   uses: actions/upload-pages-artifact@v1
+      #   with:
+      #     name: "github-pages"
+      #     path: "site/"
           
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-22.04
-    needs: build
-    steps:    
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v2
+  # deploy:
+  #   environment:
+  #     name: github-pages
+  #     url: ${{ steps.deployment.outputs.page_url }}
+  #   runs-on: ubuntu-22.04
+  #   needs: build
+  #   steps:    
+  #     - name: Deploy to GitHub Pages
+  #       id: deployment
+  #       uses: actions/deploy-pages@v2
