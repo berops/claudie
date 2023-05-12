@@ -36,11 +36,11 @@ jobs:
           git config --local user.email "test@example.com"
           git config --local user.name "test-docs"
 
-      - name: Set mike default version
-        run: mike set-default 0.3
-
       - name: Generate mike doc
         run: mike deploy --push 0.3
+
+      - name: Set mike default version
+        run: mike set-default 0.3
 
       # - name: Build documentation
       #   run: mkdocs build -d site
