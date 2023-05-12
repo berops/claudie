@@ -36,6 +36,9 @@ jobs:
           git config --local user.email "test@example.com"
           git config --local user.name "test-docs"
 
+      - name: Git fetch
+        run: git fetch
+
       - name: Checkout to gh-pages branch
         run: git checkout gh-pages
 
