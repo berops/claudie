@@ -33,8 +33,8 @@ jobs:
 
       - name: Set user
         run: |
-          git config --local user.email "test@example.com"
-          git config --local user.name "test-docs"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
 
       - name: Git fetch
         run: git fetch
