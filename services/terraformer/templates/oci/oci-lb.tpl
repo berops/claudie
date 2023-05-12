@@ -1,21 +1,11 @@
 {{- $clusterName := .ClusterName}}
 {{- $clusterHash := .ClusterHash}}
-{{- $index :=  0}}
 variable "default_compartment_id" {
   type    = string
   default = "{{ (index .NodePools 0).Provider.OciCompartmentOcid }}"
 }
 
 {{- range $i, $region := .Regions }}
-provider "oci" {
-  tenancy_ocid      = "{{ (index $.NodePools 0).Provider.OciTenancyOcid }}"
-  user_ocid         = "{{ (index $.NodePools 0).Provider.OciUserOcid }}"
-  fingerprint       = "{{ (index $.NodePools 0).Provider.OciFingerprint }}"
-  private_key_path  = "{{ (index $.NodePools 0).Provider.SpecName }}" 
-  region            = "{{ $region }}"
-  alias             = "lb_nodepool_{{ $region }}"
-}
-
 resource "oci_core_vcn" "claudie_vcn_{{ $region }}" {
   provider        = oci.lb_nodepool_{{ $region }}
   compartment_id  = var.default_compartment_id

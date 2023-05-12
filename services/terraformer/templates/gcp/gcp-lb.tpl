@@ -1,14 +1,6 @@
 {{- $clusterName := .ClusterName }}
 {{- $clusterHash := .ClusterHash }}
-{{- $index :=  0 }}
 {{- range $i, $region := .Regions }}
-provider "google" {
-  credentials = "${file("{{ (index $.NodePools $index).Provider.SpecName }}")}"
-  project     = "{{ (index $.NodePools 0).Provider.GcpProject }}"
-  region      = "{{ $region }}"
-  alias       = "lb_nodepool_{{ $region }}"
-}
-
 resource "google_compute_network" "network_{{ $clusterName}}_{{ $clusterHash}}_{{ $region }}" {
   provider                = google.lb_nodepool_{{ $region }}
   name                    = "{{ $clusterName }}-{{ $clusterHash }}-{{ $region }}-network"

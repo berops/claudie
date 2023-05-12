@@ -4,7 +4,7 @@ ARG TARGETARCH
 
 # download and unzip kube-one binary
 RUN apt-get -qq update && apt-get -qq install unzip
-RUN KUBEONE_V=1.5.3 && \
+RUN KUBEONE_V=1.6.2 && \
     wget -q https://github.com/kubermatic/kubeone/releases/download/v${KUBEONE_V}/kubeone_${KUBEONE_V}_linux_$TARGETARCH.zip && \
     unzip -qq kubeone_${KUBEONE_V}_linux_$TARGETARCH.zip -d kubeone_dir
 

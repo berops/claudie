@@ -1,19 +1,11 @@
 {{- $clusterName := .ClusterName}}
 {{- $clusterHash := .ClusterHash}}
-{{- $index :=  0}}
 variable "gcp_storage_disk_name" {
   default = "storage-disk"
   type    = string
 }
 
 {{- range $i, $region := .Regions}}
-provider "google" {
-  credentials = "${file("{{ (index $.NodePools $index).Provider.SpecName }}")}"
-  project     = "{{ (index $.NodePools 0).Provider.GcpProject }}"
-  region      = "{{ $region }}"
-  alias       = "k8s_nodepool_{{ $region }}"
-}
-
 resource "google_compute_network" "network_{{ $clusterName}}_{{ $clusterHash}}_{{ $region }}" {
   provider                = google.k8s_nodepool_{{ $region }}
   name                    = "{{ $clusterName }}-{{ $clusterHash }}-{{ $region }}-network"
@@ -52,7 +44,6 @@ resource "google_compute_firewall" "firewall_{{ $region }}" {
       "0.0.0.0/0",
    ]
 }
-
 {{- end }}
 
 {{- range $i, $nodepool := .NodePools }}
@@ -152,5 +143,3 @@ output "{{ $nodepool.Name }}" {
   }
 }
 {{- end }}
-
-
