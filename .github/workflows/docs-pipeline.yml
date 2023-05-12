@@ -31,6 +31,11 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
+      - name: Set user
+        run: |
+          git config --local user.email "test@example.com"
+          git config --local user.name "test-docs"
+
       - name: Generate mike doc
         run: mike deploy 0.3
 
