@@ -36,36 +36,41 @@ jobs:
           git config --local user.email "test@example.com"
           git config --local user.name "test-docs"
 
+      - name: Checkout to gh-pages branch
+        run: git checkout gh-pages
 
-      - name: Get current branch
-        run:
-          git branch --show-current
+      - name: Pull changes from gh-pages branch
+        run: git pull
 
-      # - name: Fetch gh-pages branch
+      - name: Checkout back to feature/docs-claudie branch
+        run: git checkout feature/docs-claudie
+
+      # - name: Get current branch
       #   run:
+      #     git branch --show-current
 
-  #     - name: Generate mike doc
-  #       run: mike deploy --push 0.3
+      - name: Generate mike doc
+        run: mike deploy --push 0.3
 
-  #     - name: Set mike default version
-  #       run: mike set-default 0.3
+      - name: Set mike default version
+        run: mike set-default 0.3
 
-  #     # - name: Build documentation
-  #     #   run: mkdocs build -d site
+      # - name: Build documentation
+      #   run: mkdocs build -d site
         
-  #     - name: Upload artifact
-  #       uses: actions/upload-pages-artifact@v1
-  #       with:
-  #         name: "github-pages"
-  #         path: "site/"
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          name: "github-pages"
+          path: "site/"
           
-  # deploy:
-  #   environment:
-  #     name: github-pages
-  #     url: ${{ steps.deployment.outputs.page_url }}
-  #   runs-on: ubuntu-22.04
-  #   needs: build
-  #   steps:    
-  #     - name: Deploy to GitHub Pages
-  #       id: deployment
-  #       uses: actions/deploy-pages@v2
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-22.04
+    needs: build
+    steps:    
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
