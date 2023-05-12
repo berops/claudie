@@ -45,11 +45,12 @@ func run() error {
 	}
 
 	usecases := &usecases.Usecases{
-		ContextBox: contextBoxConnector,
-		Done:       make(chan struct{}),
+		ContextBox:    contextBoxConnector,
+		CreateChannel: make(chan *usecases.RawManifest),
+		DeleteChannel: make(chan *usecases.RawManifest),
 	}
 
-	k8sSidecarNotificationsReceiver, err := inboundAdapters.NewK8sSidecarNotificationsReceiver(usecases)
+	secretWatcher, err := inboundAdapters.NewSecretWatcher(usecases)
 	if err != nil {
 		return err
 	}
@@ -57,21 +58,21 @@ func run() error {
 	// Start Kubernetes liveness and readiness probe responders
 	healthcheck.NewClientHealthChecker(fmt.Sprint(healthcheckPort),
 		func() error {
-			err := k8sSidecarNotificationsReceiver.PerformHealthCheck()
-			if err != nil {
-				return err
-			}
-
 			return contextBoxConnector.PerformHealthCheck()
 		},
 	).StartProbes()
 
 	errGroup, errGroupContext := errgroup.WithContext(context.Background())
 
-	// Start receiving notifications from the k8s-sidecar container
+	// Start watching for any input manifests
 	errGroup.Go(func() error {
-		log.Info().Msgf("Listening for notifications from K8s-sidecar at port: %v", k8sSidecarNotificationsReceiverPort)
-		return k8sSidecarNotificationsReceiver.Start("0.0.0.0", k8sSidecarNotificationsReceiverPort)
+		log.Info().Msgf("Frontend is watching for any new input manifest")
+		return secretWatcher.Monitor()
+	})
+
+	errGroup.Go(func() error {
+		log.Info().Msgf("Frontend is ready to process input manifests")
+		return usecases.ProcessManifestFiles()
 	})
 
 	// Listen for program interruption signals and shut it down gracefully
@@ -91,12 +92,10 @@ func run() error {
 			err = errors.New("Program interruption signal")
 		}
 
-		// Performing graceful shutdown.
-
 		// First shutdown the HTTP server to block any incoming connections.
-		log.Info().Msg("Gracefully shutting down K8sSidecarNotificationsReceiver and ContextBoxCommunicator")
-		if err := k8sSidecarNotificationsReceiver.Stop(); err != nil {
-			log.Error().Msgf("Failed to gracefully shutdown K8sSidecarNotificationsReceiver: %v", err)
+		log.Info().Msg("Gracefully shutting down SecretWatcher and ContextBoxConnector")
+		if err := secretWatcher.Stop(); err != nil {
+			log.Error().Msgf("Failed to gracefully shutdown SecretWatcher: %v", err)
 		}
 		// Wait for all the go-routines to finish their work.
 		if err := contextBoxConnector.Disconnect(); err != nil {

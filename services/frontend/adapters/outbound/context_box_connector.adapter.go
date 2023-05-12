@@ -88,11 +88,11 @@ func (c *ContextBoxConnector) SaveConfig(config *pb.Config) error {
 }
 
 // DeleteConfig sends request to the context-box microservice, to delete a config with the given id, from context-box DB.
-func (c *ContextBoxConnector) DeleteConfig(id string) error {
+func (c *ContextBoxConnector) DeleteConfig(configName string) error {
 	err := cbox.DeleteConfig(c.grpcClient,
 		&pb.DeleteConfigRequest{
-			Id:   id,
-			Type: pb.IdType_HASH,
+			Id:   configName,
+			Type: pb.IdType_NAME,
 		},
 	)
 	return err
