@@ -32,7 +32,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Deploy Mkdocs to GH Pages
-        run: mkdocs 
+        run: mkdocs gh-deploy
 
       # - name: Set user
       #   run: |
@@ -55,11 +55,11 @@ jobs:
       #   run:
       #     git branch --show-current
 
-      - name: Generate mike doc
-        run: mike deploy --push 0.3
+      # - name: Generate mike doc
+      #   run: mike deploy --push 0.3
 
-      - name: Set mike default version
-        run: mike set-default 0.3
+      # - name: Set mike default version
+      #   run: mike set-default 0.3
 
       # - name: Build documentation
       #   run: mkdocs build -d site
