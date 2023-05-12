@@ -49,7 +49,7 @@ jobs:
         run: git checkout feature/claudie-docs
 
       - name: Deploy Mkdocs to GH Pages
-        run: mkdocs gh-deploy
+        run: mkdocs gh-deploy --strict --force
 
       # - name: Get current branch
       #   run:
