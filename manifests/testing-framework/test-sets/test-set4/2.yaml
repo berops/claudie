@@ -1,0 +1,84 @@
+name: TestSet-4
+
+providers:
+  cloudflare:
+    - name: cloudflare-1
+      apiToken: replaceme-token
+  hetzner:
+    - name: hetzner-1
+      credentials: replaceme-token
+  gcp:
+    - name: gcp-1
+      credentials: replaceme-key
+      gcpProject: replaceme-project
+
+nodePools:
+  dynamic:
+    - name: hetzner-compute
+      providerSpec:
+        name: hetzner-1
+        region: hel1
+        zone: hel1-dc2
+      count: 1
+      serverType: cpx11
+      image: ubuntu-22.04
+      storageDiskSize: 50
+
+    - name: gcp-control
+      providerSpec:
+        name: gcp-1
+        region: europe-west2
+        zone: europe-west2-c
+      count: 1
+      serverType: e2-medium
+      image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
+      storageDiskSize: 50
+    - name: gcp-compute
+      providerSpec:
+        name: gcp-1
+        region: europe-west1
+        zone: europe-west1-b
+      count: 1
+      serverType: e2-small
+      image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
+      storageDiskSize: 50
+
+    #-----------LB nodepools----------
+    - name: gcp-lb
+      providerSpec:
+        name: gcp-1
+        region: europe-west1
+        zone: europe-west1-c
+      count: 1
+      serverType: e2-small
+      image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
+      storageDiskSize: 50
+
+kubernetes:
+  clusters:
+    - name: ts4-c-1
+      version: v1.24.0
+      network: 192.168.2.0/24
+      pools:
+        control:
+          - gcp-control
+        compute:
+          - hetzner-compute
+          - gcp-compute
+loadBalancers:
+  roles:
+    - name: apiserver-lb
+      protocol: tcp
+      port: 6443
+      targetPort: 6443
+      target: k8sControlPlane
+  clusters:
+    - name: ts4-lb-1
+      roles:
+        - apiserver-lb
+      dns:
+        dnsZone: claudie.dev
+        provider: cloudflare-1
+      targetedK8s: ts4-c-1
+      pools:
+        - gcp-lb

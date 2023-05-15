@@ -39,23 +39,31 @@ func (p Provider) CreateProviderDNS(dns *pb.DNS) error {
 	return template.Generate(tpl, "providers.tf", data)
 }
 
-func (p Provider) CreateProvider(clusterInfo *pb.ClusterInfo) error {
+func (p Provider) CreateProvider(currentCluster, desiredCluster *pb.ClusterInfo) error {
 	template := templateUtils.Templates{Directory: p.Directory}
 	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.TerraformerTemplates}
-	data := getProvidersUsed(clusterInfo)
+
+	var data templateData
+	getProvidersUsed(currentCluster, &data)
+	getProvidersUsed(desiredCluster, &data)
+
 	tpl, err := templateLoader.LoadTemplate("providers.tpl")
 	if err != nil {
 		return fmt.Errorf("error while parsing template file providers.tpl for cluster %s : %w", p.ClusterName, err)
 	}
-	err = template.Generate(tpl, "providers.tf", data)
-	if err != nil {
+
+	if err := template.Generate(tpl, "providers.tf", data); err != nil {
 		return fmt.Errorf("error while creating provider.tf for %s : %w", p.ClusterName, err)
 	}
+
 	return nil
 }
 
-func getProvidersUsed(clusterInfo *pb.ClusterInfo) templateData {
-	var data = templateData{Gcp: false, Hetzner: false, Oci: false, Aws: false, Azure: false}
+func getProvidersUsed(clusterInfo *pb.ClusterInfo, data *templateData) {
+	if clusterInfo == nil {
+		return
+	}
+
 	for _, nodepool := range clusterInfo.NodePools {
 		if nodepool.Provider.CloudProviderName == "gcp" {
 			data.Gcp = true
@@ -73,7 +81,6 @@ func getProvidersUsed(clusterInfo *pb.ClusterInfo) templateData {
 			data.Azure = true
 		}
 	}
-	return data
 }
 
 func getDNSProvider(dns *pb.DNS, data *templateData) {

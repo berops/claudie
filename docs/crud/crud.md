@@ -46,7 +46,7 @@ If you wish to delete all of the clusters defined in an input-manifest, you simp
 
 Claudie outputs two secrets in the namespace where it is deployed, after a successful run of the (input) manifest:
 
-- kubeconfigs,
+- kubeconfig,
 - cluster metadata to your clusters.
 
 The names of the secrets are derived as follows: `<cluster-name>-<cluster-hash>-{kubeconfig,metadata}`. The secrets can be accessed by printing and `base64`-decoding them.
