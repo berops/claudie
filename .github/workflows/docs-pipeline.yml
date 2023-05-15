@@ -48,20 +48,7 @@ jobs:
 
       - name: Deploy new docs version
         run: |
-          mike deploy 0.3.0 latest --update-aliases --push
-
-      # - name: Get current branch
-      #   run:
-      #     git branch --show-current
-
-      # - name: Generate mike doc
-      #   run: mike deploy --push 0.3
-
-      # - name: Set mike default version
-      #   run: mike set-default 0.3
-
-      # - name: Build documentation
-      #   run: mkdocs build -d site
+          mike deploy v0.3.0 latest --update-aliases --push
         
       # - name: Upload artifact
       #   uses: actions/upload-pages-artifact@v1
