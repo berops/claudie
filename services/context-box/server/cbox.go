@@ -24,7 +24,7 @@ type ClaudieDB interface {
 	SaveConfig(config *pb.Config) error
 	UpdateSchedulerTTL(name string, newTTL int32) error
 	UpdateBuilderTTL(name string, newTTL int32) error
-	UpdateMsToNull(id string) error
+	UpdateMsToNull(id string, idType pb.IdType) error
 	UpdateDs(config *pb.Config) error
 	UpdateCs(config *pb.Config) error
 	UpdateWorkflowState(configName, clusterName string, workflow *pb.Workflow) error

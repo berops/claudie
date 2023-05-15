@@ -203,7 +203,7 @@ func (*server) GetAllConfigs(ctx context.Context, req *pb.GetAllConfigsRequest) 
 // config destroys the previous build infrastructure.
 func (*server) DeleteConfig(ctx context.Context, req *pb.DeleteConfigRequest) (*pb.DeleteConfigResponse, error) {
 	log.Info().Msgf("Deleting config %s", req.Id)
-	err := database.UpdateMsToNull(req.Id)
+	err := database.UpdateMsToNull(req.Id, req.Type)
 	if err != nil {
 		return nil, err
 	}
