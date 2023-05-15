@@ -132,7 +132,9 @@ func (sw *SecretWatcher) Monitor() error {
 					}
 					sw.usecases.DeleteChannel <- manifest
 				}
-
+			case watch.Bookmark, watch.Error:
+				// Due to golangci-lint, this case has to be included.
+				log.Debug().Msgf("Got event Bookmark or Error; not supported")
 			}
 		}
 	}
