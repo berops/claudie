@@ -48,4 +48,14 @@ jobs:
 
       - name: Deploy new docs version
         run: |
-          mike deploy v0.3.0 latest --update-aliases --push
+          mike deploy v0.3.0
+          mike set-default v0.3.0
+          mike deploy v0.3.0 --push
+        
+      # this is only possible, when there is already a version with latest alias
+      # in case there isn't a version like this you have to
+      #   1. mike deploy <version> latest
+      #   2. mike set-default latest
+      #   3. mike deploy <version_from_cmd_1> latest --push
+      # --push flag in the latest cmd is necessary, when you want to apply changes in gh-pages branch and also in GH Pages
+      #mike deploy v0.3.0 latest --update-aliases --push
