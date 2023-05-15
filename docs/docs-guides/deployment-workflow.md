@@ -1,6 +1,6 @@
 Our documentation is hosted on [GitHub Pages](https://pages.github.com/). Whenever a new push to **gh-pages** branch happens, it will deploy a new version of the documentation. 
 
-The older versions of the documentation will still remain in the **gh-pages** branch, because we are supporting the docs versioning by [mike](https://github.com/jimporter/mike). That's also the reason, why we recommend makinng any changes and pushes to **gh-pages** branch with the usage of this tool.
+The older versions of the documentation will still remain in the **gh-pages** branch, because we are supporting the docs versioning by [mike](https://github.com/jimporter/mike). That's also the reason, why we recommend making any changes and pushes to **gh-pages** branch with the usage of this tool.
 
 
 To generate a new version you can run the command below.
@@ -20,5 +20,11 @@ If you want to make that version the default one, you should run this command:
 ```
 mike set-default <version>
 ```
+
+In case you want to deploy a docs from some older GitHub tags to production, you will have to:
+
+* git checkout tags/<tag> -b <branch>
+* create mkdocs.yml
+* mike deploy <version> --push
 
 You can find more [here](https://github.com/jimporter/mike).
