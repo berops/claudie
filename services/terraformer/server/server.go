@@ -25,7 +25,10 @@ func main() {
 	minIOAdapter := outboundAdapters.CreateMinIOAdapter()
 	dynamoDBAdapter := outboundAdapters.CreateDynamoDBAdapter()
 
-	usecases := &usecases.Usecases{}
+	usecases := &usecases.Usecases{
+		DynamoDB: dynamoDBAdapter,
+		MinIO:    minIOAdapter,
+	}
 
 	grpcAdapter := &grpc.GrpcAdapter{}
 	grpcAdapter.Init(usecases)

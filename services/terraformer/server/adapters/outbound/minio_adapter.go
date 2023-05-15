@@ -20,16 +20,30 @@ var (
 )
 
 type MinIOAdapter struct {
+	client            *minio.Client
 	healthcheckClient *minio.Client
 }
 
+func createMinIOClient() (*minio.Client, error) {
+	return minio.New(minioEndpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(minioAccessKey, minioSecretKey, ""),
+		Secure: false,
+	})
+}
+
 func CreateMinIOAdapter() *MinIOAdapter {
+	client, err := createMinIOClient()
+	if err != nil {
+		log.Fatal().Msgf("Error creating client for minIO: %w", err)
+	}
+
 	healthcheckClient, err := createMinIOClient()
 	if err != nil {
 		log.Fatal().Msgf("Error creating healthcheck client for minIO: %w", err)
 	}
 
 	return &MinIOAdapter{
+		client,
 		healthcheckClient,
 	}
 }
@@ -44,9 +58,19 @@ func (m *MinIOAdapter) Healthcheck() error {
 	return nil
 }
 
-func createMinIOClient() (*minio.Client, error) {
-	return minio.New(minioEndpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(minioAccessKey, minioSecretKey, ""),
-		Secure: false,
-	})
+func (m *MinIOAdapter) DeleteTfStateFile(ctx context.Context, projectName, clusterId string, isForDNS bool) error {
+	var keyFormat string
+
+	if isForDNS {
+		keyFormat = "%s/%s-dns"
+	} else {
+		keyFormat = "%s/%s"
+	}
+
+	key := fmt.Sprintf(keyFormat, projectName, clusterId)
+	if err := m.client.RemoveObject(ctx, minioBucketName, key, minio.RemoveObjectOptions{GovernanceBypass: true}); err != nil {
+		return fmt.Errorf("failed to remove dns lock file for cluster %v: %w", clusterId, err)
+	}
+
+	return nil
 }
