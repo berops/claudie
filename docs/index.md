@@ -1,4 +1,4 @@
-# Docs Overview HELLO
+# Docs Overview
 
 ## Getting Started
 

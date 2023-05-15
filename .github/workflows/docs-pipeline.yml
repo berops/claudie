@@ -43,23 +43,12 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
-      - name: Git fetch
-        run: git fetch
-
-      - name: Checkout to gh-pages branch
-        run: git checkout gh-pages
-
-      - name: Pull changes from gh-pages branch
-        run: git pull
-
-      - name: Checkout back to feature/claudie-docs branch
-        run: git checkout feature/claudie-docs
+      - name: Git fetch gh-pages
+        run: git fetch origin gh-pages --depth=0
 
       - name: Deploy new docs version
         run: |
-          mike deploy 0.3
-          mike set-default 0.3
-          mike deploy 0.3 --push
+          mike deploy 0.3.0 latest --update-aliases --push
 
       # - name: Get current branch
       #   run:
