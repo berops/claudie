@@ -75,6 +75,8 @@ For adding support for other cloud providers, open an issue or propose a PR.
 
 ## Get started using Claudie
 
+To try Claudie you can follow this few steps or feel free to visit our [documentation](docs.claudie.io).
+
 1. Download and extract manifests of the lates release from our [release page](https://github.com/berops/claudie/releases).
 
     ```sh
