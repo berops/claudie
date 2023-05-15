@@ -68,6 +68,9 @@ func run() error {
 		log.Info().Msgf("Frontend is ready to process input manifests")
 		go usecases.ProcessManifestFiles()
 
+		log.Info().Msgf("Frontend is ready to watch input manifest statuses")
+		go usecases.WatchConfigs()
+
 		log.Info().Msgf("Frontend is watching for any new input manifest")
 		return secretWatcher.Monitor()
 	})

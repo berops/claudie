@@ -59,7 +59,7 @@ func (c *ContextBoxConnector) Connect() error {
 	c.grpcConnection = grpcConnection
 	c.grpcClient = pb.NewContextBoxServiceClient(grpcConnection)
 
-	return c.PerformHealthCheck()
+	return nil
 }
 
 // PerformHealthCheck checks health of the underlying gRPC connection to context-box microservice

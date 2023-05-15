@@ -40,7 +40,7 @@ func NewSecretWatcher(usecases *usecases.Usecases) (*SecretWatcher, error) {
 	if !isNsFound {
 		return nil, fmt.Errorf("environment variable NAMESPACE not found")
 	}
-	log.Debug().Msgf("Using NAMESPACE %s", label)
+	log.Debug().Msgf("Using NAMESPACE %s", ns)
 
 	config, err := rest.InClusterConfig()
 	if err != nil {
