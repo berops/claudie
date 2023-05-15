@@ -179,7 +179,7 @@ func (k Kubectl) runWithOutput(command string, options ...string) ([]byte, error
 		cmd := comm.Cmd{Command: command, Options: options, Dir: k.Directory, CommandTimeout: kubectlTimeout}
 		result, err = cmd.RetryCommandWithOutput(retryCount)
 		if err != nil {
-			return nil, err
+			return result, err
 		}
 	}
 	return result, nil

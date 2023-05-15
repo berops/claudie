@@ -34,8 +34,11 @@ controlPlane:
     sshUsername: root
     sshPrivateKeyFile: '{{ $privateKey }}'
     hostname: '{{ $nodeInfo.Name }}'
+    {{- if eq $nodeInfo.Node.Public $.APIEndpoint }}
+    isLeader: true
+    {{- end }}
     taints:
-    - key: "node-role.kubernetes.io/master"
+    - key: "node-role.kubernetes.io/control-plane"
       effect: "NoSchedule"
     labels: 
       topology.kubernetes.io/region: '{{ $nodepool.Region }}'

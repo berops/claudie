@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"fmt"
@@ -10,16 +10,16 @@ import (
 
 const hostnameHashLength = 17
 
-// createLBCluster reads manifest state and create loadbalancer clusters based on it
-// returns slice of *pb.LBcluster if successful, nil otherwise
-func createLBCluster(manifestState *manifest.Manifest) ([]*pb.LBcluster, error) {
+// CreateLBCluster reads the unmarshalled manifest and creates loadbalancer clusters based on it.
+// Returns slice of *pb.LBcluster if successful, nil otherwise along with the error.
+func CreateLBCluster(unmarshalledManifest *manifest.Manifest) ([]*pb.LBcluster, error) {
 	var lbClusters []*pb.LBcluster
-	for _, lbCluster := range manifestState.LoadBalancer.Clusters {
-		dns, err := getDNS(lbCluster.DNS, manifestState)
+	for _, lbCluster := range unmarshalledManifest.LoadBalancer.Clusters {
+		dns, err := getDNS(lbCluster.DNS, unmarshalledManifest)
 		if err != nil {
 			return nil, fmt.Errorf("error while building desired state for LB %s : %w", lbCluster.Name, err)
 		}
-		role, err := getMatchingRoles(manifestState.LoadBalancer.Roles, lbCluster.Roles)
+		attachedRoles, err := getRolesAttachedToLBCluster(unmarshalledManifest.LoadBalancer.Roles, lbCluster.Roles)
 		if err != nil {
 			return nil, fmt.Errorf("error while building desired state for LB %s : %w", lbCluster.Name, err)
 		}
@@ -28,11 +28,11 @@ func createLBCluster(manifestState *manifest.Manifest) ([]*pb.LBcluster, error) 
 				Name: lbCluster.Name,
 				Hash: utils.CreateHash(utils.HashLength),
 			},
-			Roles:       role,
+			Roles:       attachedRoles,
 			Dns:         dns,
 			TargetedK8S: lbCluster.TargetedK8s,
 		}
-		nodes, err := manifestState.CreateNodepools(lbCluster.Pools, false)
+		nodes, err := unmarshalledManifest.CreateNodepools(lbCluster.Pools, false)
 		if err != nil {
 			return nil, fmt.Errorf("error while creating nodepools for %s : %w", lbCluster.Name, err)
 		}
@@ -42,9 +42,9 @@ func createLBCluster(manifestState *manifest.Manifest) ([]*pb.LBcluster, error) 
 	return lbClusters, nil
 }
 
-// updateLBClusters updates the desired state of the loadbalancer clusters based on the current state
+// UpdateLBClusters updates the desired state of the loadbalancer clusters based on the current state
 // returns error if failed, nil otherwise
-func updateLBClusters(newConfig *pb.Config) error {
+func UpdateLBClusters(newConfig *pb.Config) error {
 clusterLbDesired:
 	for _, clusterLbDesired := range newConfig.DesiredState.LoadBalancerClusters {
 		for _, clusterLbCurrent := range newConfig.CurrentState.LoadBalancerClusters {
@@ -61,7 +61,7 @@ clusterLbDesired:
 		}
 		// no current cluster found with matching name, create keys
 		if clusterLbDesired.ClusterInfo.PublicKey == "" {
-			err := createKeys(clusterLbDesired.ClusterInfo)
+			err := createSSHKeyPair(clusterLbDesired.ClusterInfo)
 			if err != nil {
 				return fmt.Errorf("error encountered while creating desired state for %s : %w", clusterLbDesired.ClusterInfo.Name, err)
 			}
@@ -74,15 +74,15 @@ clusterLbDesired:
 	return nil
 }
 
-// getDNS reads manifest state and returns *pb.DNS based on it
-// return *pb.DNS if successful, error if provider has not been found
-func getDNS(lbDNS manifest.DNS, manifestState *manifest.Manifest) (*pb.DNS, error) {
+// getDNS reads the unmarshalled manifest and returns *pb.DNS based on it.
+// Return *pb.DNS if successful, error if provider has not been found.
+func getDNS(lbDNS manifest.DNS, unmarshalledManifest *manifest.Manifest) (*pb.DNS, error) {
 	if lbDNS.DNSZone == "" {
-		return nil, fmt.Errorf("DNS zone not provided in manifest %s", manifestState.Name)
+		return nil, fmt.Errorf("DNS zone not provided in manifest %s", unmarshalledManifest.Name)
 	} else {
-		provider, err := manifestState.GetProvider(lbDNS.Provider)
+		provider, err := unmarshalledManifest.GetProvider(lbDNS.Provider)
 		if err != nil {
-			return nil, fmt.Errorf("provider %s was not found in manifest %s", lbDNS.Provider, manifestState.Name)
+			return nil, fmt.Errorf("provider %s was not found in manifest %s", lbDNS.Provider, unmarshalledManifest.Name)
 		}
 		return &pb.DNS{
 			DnsZone:  lbDNS.DNSZone,
@@ -92,9 +92,9 @@ func getDNS(lbDNS manifest.DNS, manifestState *manifest.Manifest) (*pb.DNS, erro
 	}
 }
 
-// getMatchingRoles will read roles from manifest state and returns slice of *pb.Role
-// returns slice of *[]pb.Roles if successful, error if Target from manifest state not found
-func getMatchingRoles(roles []manifest.Role, roleNames []string) ([]*pb.Role, error) {
+// getRolesAttachedToLBCluster will read roles attached to the LB cluster from the unmarshalled manifest and return them.
+// Returns slice of *[]pb.Roles if successful, error if Target from manifest state not found
+func getRolesAttachedToLBCluster(roles []manifest.Role, roleNames []string) ([]*pb.Role, error) {
 	var matchingRoles []*pb.Role
 
 	for _, roleName := range roleNames {

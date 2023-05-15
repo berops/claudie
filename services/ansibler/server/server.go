@@ -27,6 +27,21 @@ type server struct {
 	pb.UnimplementedAnsiblerServiceServer
 }
 
+func (*server) UpdateAPIEndpoint(_ context.Context, req *pb.UpdateAPIEndpointRequest) (*pb.UpdateAPIEndpointResponse, error) {
+	if req.Current == nil {
+		return &pb.UpdateAPIEndpointResponse{Current: req.Current, Desired: req.Desired}, nil
+	}
+
+	log.Info().Msgf("Updating api endpoint for cluster %s project %s", req.Current.ClusterInfo.Name, req.ProjectName)
+
+	if err := updateAPIEndpoint(req.Current.ClusterInfo, req.Desired.ClusterInfo); err != nil {
+		return nil, fmt.Errorf("failed to update api endpoint for cluster %s project %s", req.Current.ClusterInfo.Name, req.ProjectName)
+	}
+
+	log.Info().Msgf("Updated api endpoint for cluster %s project %s", req.Current.ClusterInfo.Name, req.ProjectName)
+	return &pb.UpdateAPIEndpointResponse{Current: req.Current, Desired: req.Desired}, nil
+}
+
 // InstallNodeRequirements installs requirements on all nodes
 func (*server) InstallNodeRequirements(_ context.Context, req *pb.InstallRequest) (*pb.InstallResponse, error) {
 	log.Info().Msgf("Installing node requirements for cluster %s project %s", req.Desired.ClusterInfo.Name, req.ProjectName)
@@ -93,7 +108,7 @@ func (*server) TeardownLoadBalancers(ctx context.Context, req *pb.TeardownLBRequ
 
 	var attached bool
 	for _, lb := range req.DesiredLbs {
-		if hasAPIServerRole(lb.Roles) {
+		if utils.HasAPIServerRole(lb.Roles) {
 			attached = true
 		}
 	}
@@ -136,6 +151,7 @@ func (*server) SetUpLoadbalancers(_ context.Context, req *pb.SetUpLBRequest) (*p
 	}
 
 	info := &LBInfo{
+		FirstRun:              req.FirstRun,
 		TargetK8sNodepool:     req.Desired.ClusterInfo.NodePools,
 		TargetK8sNodepoolKey:  req.Desired.ClusterInfo.PrivateKey,
 		PreviousAPIEndpointLB: req.PreviousAPIEndpoint,

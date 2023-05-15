@@ -96,7 +96,7 @@ func (c *Cmd) RetryCommandWithOutput(numOfRetries int) ([]byte, error) {
 
 	log.Error().Msgf("Command %s was not successful after %d retries", printSafeCmd, numOfRetries)
 
-	return nil, err
+	return out, err
 }
 
 // execute executes the cmd with context canceled after commandTimeout seconds.

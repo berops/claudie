@@ -1,11 +1,5 @@
 {{- $clusterName := .ClusterName }}
 {{- $clusterHash := .ClusterHash }}
-{{- $index :=  0 }}
-provider "hcloud" {
-  token = "{{ (index .NodePools $index).Provider.Credentials }}" 
-  alias = "lb_nodepool"
-}
-
 resource "hcloud_ssh_key" "claudie" {
   provider   = hcloud.lb_nodepool
   name       = "key-{{ $clusterName }}-{{ $clusterHash }}"
