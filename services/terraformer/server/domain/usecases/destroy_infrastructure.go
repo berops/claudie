@@ -54,7 +54,7 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 		if err := u.MinIO.DeleteTfStateFile(ctx, request.ProjectName, cluster.Id(), false); err != nil {
 			return err
 		}
-		log.Info().Msgf("Successfully deleted Terraform state and state-lock files for cluster %S in project %S", cluster.Id(), request.ProjectName)
+		log.Info().Msgf("Successfully deleted Terraform state and state-lock files for cluster %s in project %S", cluster.Id(), request.ProjectName)
 
 		// In case of LoadBalancer type cluster,
 		// there are additional DNS related Terraform state and state-lock files.
@@ -65,7 +65,7 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 			if err := u.MinIO.DeleteTfStateFile(ctx, request.ProjectName, cluster.Id(), true); err != nil {
 				return err
 			}
-			log.Info().Msgf("Successfully deleted DNS related Terraform state and state-lock files for cluster %S in project %S", cluster.Id(), request.ProjectName)
+			log.Info().Msgf("Successfully deleted DNS related Terraform state and state-lock files for cluster %s in project %S", cluster.Id(), request.ProjectName)
 		}
 
 		return nil

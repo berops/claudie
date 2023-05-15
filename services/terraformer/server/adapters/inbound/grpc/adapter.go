@@ -19,8 +19,6 @@ const (
 )
 
 type GrpcAdapter struct {
-	usecases *usecases.Usecases
-
 	tcpListener  net.Listener
 	server       *grpc.Server
 	HealthServer *health.Server
