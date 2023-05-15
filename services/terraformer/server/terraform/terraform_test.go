@@ -13,7 +13,7 @@ const (
 
 func TestOutputTerraform(t *testing.T) {
 	terraform := Terraform{Directory: clusterDir}
-	out, err := terraform.TerraformOutput(outputName)
+	out, err := terraform.Output(outputName)
 	t.Log(out)
 	require.NoError(t, err)
 }

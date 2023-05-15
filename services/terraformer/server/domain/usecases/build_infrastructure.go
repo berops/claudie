@@ -21,26 +21,33 @@ func (u *Usecases) BuildInfrastructure(request *pb.BuildInfrastructureRequest) (
 		kubernetes.K8Scluster{
 			ProjectName: request.ProjectName,
 
-			DesiredK8s: request.Desired,
-			CurrentK8s: request.Current,
+			DesiredState: request.Desired,
+			CurrentState: request.Current,
 
-			LoadBalancers: request.DesiredLbs,
+			AttachedLBClusters: request.DesiredLbs,
 		},
 	}
 
-	// LB clusters which appear in both request.CurrentLbs and request.DesiredLbs
+	// LB clusters which appear in both request.CurrentLbClusters and request.DesiredLBClusters
 	// are appended to the "clusters" slice
-	for _, desiredLb := range request.DesiredLbs {
+	for _, desiredLBCluster := range request.DesiredLbs {
 		var commonLb *pb.LBcluster
 
-		for _, currentLb := range request.CurrentLbs {
-			if desiredLb.ClusterInfo.Name == currentLb.ClusterInfo.Name {
-				commonLb = currentLb
+		for _, currentLbCluster := range request.CurrentLbs {
+			if desiredLBCluster.ClusterInfo.Name == currentLbCluster.ClusterInfo.Name {
+				commonLb = currentLbCluster
 				break
 			}
 		}
 
-		clusters = append(clusters, loadbalancer.LBcluster{DesiredLB: desiredLb, CurrentLB: commonLb, ProjectName: request.ProjectName})
+		clusters = append(clusters,
+			loadbalancer.LBcluster{
+				DesiredState: desiredLBCluster,
+				CurrentState: commonLb,
+
+				ProjectName: request.ProjectName,
+			},
+		)
 	}
 
 	// Concurrently build infrastructure for each cluster in the "clusters" slice
@@ -60,6 +67,7 @@ func (u *Usecases) BuildInfrastructure(request *pb.BuildInfrastructureRequest) (
 	}
 
 	response := &pb.BuildInfrastructureResponse{
+		//  related to the K8s cluster
 		Current: request.Current,
 		Desired: request.Desired,
 

@@ -242,13 +242,13 @@ var testState *pb.Project = &pb.Project{
 }
 
 func TestBuildInfrastructure(t *testing.T) {
-	clusterBuilder := clusterBuilder.ClusterBuilder{DesiredInfo: testState.Clusters[0].ClusterInfo, CurrentInfo: nil, ProjectName: "GO TEST", ClusterType: pb.ClusterType_K8s}
+	clusterBuilder := clusterBuilder.ClusterBuilder{DesiredClusterInfo: testState.Clusters[0].ClusterInfo, CurrentClusterInfo: nil, ProjectName: "GO TEST", ClusterType: pb.ClusterType_K8s}
 	err := clusterBuilder.CreateNodepools()
 	require.NoError(t, err)
 }
 
 func TestBuildLBNodepools(t *testing.T) {
-	clusterBuilder := clusterBuilder.ClusterBuilder{DesiredInfo: desiredState.LoadBalancerClusters[0].ClusterInfo, CurrentInfo: nil, ProjectName: "GO TEST", ClusterType: pb.ClusterType_LB}
+	clusterBuilder := clusterBuilder.ClusterBuilder{DesiredClusterInfo: desiredState.LoadBalancerClusters[0].ClusterInfo, CurrentClusterInfo: nil, ProjectName: "GO TEST", ClusterType: pb.ClusterType_LB}
 	err := clusterBuilder.CreateNodepools()
 	require.NoError(t, err)
 }

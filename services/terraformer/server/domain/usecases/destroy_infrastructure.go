@@ -20,14 +20,21 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 	// If infrastructure for a Kuberenetes cluster needs to be destroyed
 	// then add the Kubernetes cluster to the "clusters" slice.
 	if request.Current != nil {
-		clusters = append(clusters, kubernetes.K8Scluster{
-			ProjectName: request.ProjectName,
-			CurrentK8s:  request.Current,
-		})
+		clusters = append(clusters,
+			kubernetes.K8Scluster{
+				ProjectName:  request.ProjectName,
+				CurrentState: request.Current,
+			},
+		)
 	}
 
-	for _, lb := range request.CurrentLbs {
-		clusters = append(clusters, loadbalancer.LBcluster{ProjectName: request.ProjectName, CurrentLB: lb})
+	for _, currentLB := range request.CurrentLbs {
+		clusters = append(clusters,
+			loadbalancer.LBcluster{
+				ProjectName:  request.ProjectName,
+				CurrentState: currentLB,
+			},
+		)
 	}
 
 	// Concurrently destroy the infrastructure, Terraform state and state-lock files for each cluster

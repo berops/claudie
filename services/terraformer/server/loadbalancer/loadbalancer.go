@@ -10,64 +10,65 @@ import (
 )
 
 type LBcluster struct {
-	DesiredLB   *pb.LBcluster
-	CurrentLB   *pb.LBcluster
+	DesiredState *pb.LBcluster
+	CurrentState *pb.LBcluster
+
 	ProjectName string
 }
 
 func (l LBcluster) Id() string {
-	state := l.DesiredLB
+	state := l.DesiredState
 	if state == nil {
-		state = l.CurrentLB
+		state = l.CurrentState
 	}
 
 	return fmt.Sprintf("%s-%s", state.ClusterInfo.Name, state.ClusterInfo.Hash)
 }
 
 func (l LBcluster) Build() error {
-	var currentInfo *pb.ClusterInfo
+	var currentClusterInfo *pb.ClusterInfo
 	var currentDNS *pb.DNS
 	var currentNodeIPs []string
 
-	// check if current cluster was defined, to avoid access of unrefferenced memory
-	if l.CurrentLB != nil {
-		currentInfo = l.CurrentLB.ClusterInfo
-		currentDNS = l.CurrentLB.Dns
-		currentNodeIPs = getNodeIPs(l.CurrentLB.ClusterInfo.NodePools)
+	// Check if current cluster was defined, to avoid access of unrefferenced memory
+	if l.CurrentState != nil {
+		currentClusterInfo = l.CurrentState.ClusterInfo
+		currentDNS = l.CurrentState.Dns
+		currentNodeIPs = getNodeIPs(l.CurrentState.ClusterInfo.NodePools)
 	}
 
-	cl := clusterBuilder.ClusterBuilder{
-		DesiredInfo: l.DesiredLB.ClusterInfo,
-		CurrentInfo: currentInfo,
+	clusterBuilder := clusterBuilder.ClusterBuilder{
+		DesiredClusterInfo: l.DesiredState.ClusterInfo,
+		CurrentClusterInfo: currentClusterInfo,
+
 		ProjectName: l.ProjectName,
 		ClusterType: pb.ClusterType_LB,
 		Metadata: map[string]any{
-			"roles": l.DesiredLB.Roles,
+			"roles": l.DesiredState.Roles,
 		},
 	}
 
-	err := cl.CreateNodepools()
+	err := clusterBuilder.CreateNodepools()
 	if err != nil {
-		return fmt.Errorf("error while creating the LB cluster %s : %w", l.DesiredLB.ClusterInfo.Name, err)
+		return fmt.Errorf("error while creating the LB cluster %s : %w", l.DesiredState.ClusterInfo.Name, err)
 	}
 
-	nodeIPs := getNodeIPs(l.DesiredLB.ClusterInfo.NodePools)
+	nodeIPs := getNodeIPs(l.DesiredState.ClusterInfo.NodePools)
 	dns := DNS{
-		ClusterName:    l.DesiredLB.ClusterInfo.Name,
-		ClusterHash:    l.DesiredLB.ClusterInfo.Hash,
+		ClusterName:    l.DesiredState.ClusterInfo.Name,
+		ClusterHash:    l.DesiredState.ClusterInfo.Hash,
 		CurrentNodeIPs: currentNodeIPs,
 		DesiredNodeIPs: nodeIPs,
 		CurrentDNS:     currentDNS,
-		DesiredDNS:     l.DesiredLB.Dns,
+		DesiredDNS:     l.DesiredState.Dns,
 		ProjectName:    l.ProjectName,
 	}
-
 	endpoint, err := dns.CreateDNSRecords()
 	if err != nil {
-		return fmt.Errorf("error while creating the DNS for %s : %w", l.DesiredLB.ClusterInfo.Name, err)
+		return fmt.Errorf("error while creating the DNS for %s : %w", l.DesiredState.ClusterInfo.Name, err)
 	}
 
-	l.DesiredLB.Dns.Endpoint = endpoint
+	l.DesiredState.Dns.Endpoint = endpoint
 
 	return nil
 }
@@ -77,20 +78,19 @@ func (l LBcluster) Destroy() error {
 
 	group.Go(func() error {
 		cluster := clusterBuilder.ClusterBuilder{
-			//DesiredInfo: desired state is not used in Destroy
-			CurrentInfo: l.CurrentLB.ClusterInfo,
-			ProjectName: l.ProjectName,
-			ClusterType: pb.ClusterType_LB,
+			CurrentClusterInfo: l.CurrentState.ClusterInfo,
+			ProjectName:        l.ProjectName,
+			ClusterType:        pb.ClusterType_LB,
 		}
 		return cluster.DestroyNodepools()
 	})
 
 	group.Go(func() error {
 		dns := DNS{
-			ClusterName:    l.CurrentLB.ClusterInfo.Name,
-			ClusterHash:    l.CurrentLB.ClusterInfo.Hash,
-			CurrentNodeIPs: getNodeIPs(l.CurrentLB.ClusterInfo.NodePools),
-			CurrentDNS:     l.CurrentLB.Dns,
+			ClusterName:    l.CurrentState.ClusterInfo.Name,
+			ClusterHash:    l.CurrentState.ClusterInfo.Hash,
+			CurrentNodeIPs: getNodeIPs(l.CurrentState.ClusterInfo.NodePools),
+			CurrentDNS:     l.CurrentState.Dns,
 			ProjectName:    l.ProjectName,
 		}
 		return dns.DestroyDNSRecords()
@@ -101,10 +101,12 @@ func (l LBcluster) Destroy() error {
 
 func getNodeIPs(nodepools []*pb.NodePool) []string {
 	var ips []string
+
 	for _, nodepool := range nodepools {
 		for _, node := range nodepool.Nodes {
 			ips = append(ips, node.Public)
 		}
 	}
+
 	return ips
 }

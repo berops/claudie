@@ -22,13 +22,15 @@ import (
 )
 
 type DNS struct {
-	ClusterName    string
-	ClusterHash    string
+	ProjectName string
+	ClusterName string
+	ClusterHash string
+
 	DesiredNodeIPs []string
 	CurrentNodeIPs []string
-	CurrentDNS     *pb.DNS
-	DesiredDNS     *pb.DNS
-	ProjectName    string
+
+	CurrentDNS *pb.DNS
+	DesiredDNS *pb.DNS
 }
 
 type DNSData struct {
@@ -63,10 +65,10 @@ func (d DNS) CreateDNSRecords() (string, error) {
 		if err := d.generateFiles(dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs); err != nil {
 			return "", fmt.Errorf("error while creating dns .tf files for %s : %w", dnsID, err)
 		}
-		if err := terraform.TerraformInit(); err != nil {
+		if err := terraform.Init(); err != nil {
 			return "", err
 		}
-		if err := terraform.TerraformDestroy(); err != nil {
+		if err := terraform.Destroy(); err != nil {
 			return "", err
 		}
 
@@ -79,15 +81,15 @@ func (d DNS) CreateDNSRecords() (string, error) {
 	if err := d.generateFiles(dnsID, dnsDir, d.DesiredDNS, d.DesiredNodeIPs); err != nil {
 		return "", fmt.Errorf("error while creating dns .tf files for %s : %w", dnsID, err)
 	}
-	if err := terraform.TerraformInit(); err != nil {
+	if err := terraform.Init(); err != nil {
 		return "", err
 	}
-	if err := terraform.TerraformApply(); err != nil {
+	if err := terraform.Apply(); err != nil {
 		return "", err
 	}
 
 	outputID := fmt.Sprintf("%s-%s", clusterID, "endpoint")
-	output, err := terraform.TerraformOutput(clusterID)
+	output, err := terraform.Output(clusterID)
 	if err != nil {
 		return "", fmt.Errorf("error while getting output from terraform for %s : %w", clusterID, err)
 	}
@@ -123,10 +125,10 @@ func (d DNS) DestroyDNSRecords() error {
 		terraform.Stderr = comm.GetStdErr(dnsID)
 	}
 
-	if err := terraform.TerraformInit(); err != nil {
+	if err := terraform.Init(); err != nil {
 		return err
 	}
-	if err := terraform.TerraformDestroy(); err != nil {
+	if err := terraform.Destroy(); err != nil {
 		return err
 	}
 	log.Info().Msgf("DNS records for %s from cluster %s were successfully destroyed", d.CurrentDNS.Endpoint, d.ClusterName)
@@ -145,7 +147,7 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *pb.DNS, nodeIPs []string) 
 		Directory:   dnsDir,
 	}
 
-	if err := backend.CreateFiles(); err != nil {
+	if err := backend.CreateTFFile(); err != nil {
 		return err
 	}
 
