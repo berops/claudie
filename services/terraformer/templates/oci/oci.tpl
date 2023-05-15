@@ -13,15 +13,6 @@ variable "oci_storage_disk_name" {
 }
 
 {{- range $i, $region := .Regions }}
-provider "oci" {
-  tenancy_ocid      = "{{( index $.NodePools 0).Provider.OciTenancyOcid }}"
-  user_ocid         = "{{( index $.NodePools 0).Provider.OciUserOcid }}"
-  fingerprint       = "{{( index $.NodePools 0).Provider.OciFingerprint }}"
-  private_key_path  = "{{( index $.NodePools 0).Provider.SpecName }}" 
-  region            = "{{ $region }}"
-  alias             = "k8s_nodepool_{{ $region }}"
-}
-
 resource "oci_core_vcn" "claudie_vcn-{{ $region }}" {
   provider        = oci.k8s_nodepool_{{ $region }}
   compartment_id  = var.default_compartment_id
