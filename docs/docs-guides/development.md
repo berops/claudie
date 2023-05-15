@@ -1,3 +1,5 @@
+First of all, it is worth to mention, that we are using [MkDocs](https://www.mkdocs.org/) to generate HTML documents from markdown ones. To make our documentation prettier, we have used [Material theme](https://squidfunk.github.io/mkdocs-material/) for MkDocs. Regarding the version of our docs we are using [mike](https://github.com/jimporter/mike).
+
 ## How to run
 
 First of all you have to install the dependencies from **requirements.txt** in your local machine. However before doing that we recommend creating a virtual enviroment by running the command below.
