@@ -10,38 +10,43 @@ import (
 	"github.com/berops/claudie/proto/pb"
 )
 
-// ProcessManifestFiles processes the manifest files concurrently. If an error occurs while the file
-// is being processed, it's skipped and the function continues with the next one until all files are
-// processed. Nothing is done with those files for which errors occurred, they'll be skipped until either
-// corrected or deleted.
-func (u *Usecases) ProcessManifestFiles() error {
-
-	select {
-	case newManifest := <-u.CreateChannel:
-		go u.createConfig(newManifest)
-	case newManifest := <-u.DeleteChannel:
-		go u.deleteConfig(newManifest)
+func (u *Usecases) ProcessManifestFiles() {
+	for {
+		select {
+		case newManifest := <-u.SaveChannel:
+			go u.createConfig(newManifest)
+		case newManifest := <-u.DeleteChannel:
+			go u.deleteConfig(newManifest)
+		case <-u.Context.Done():
+			// Close channels and return
+			close(u.SaveChannel)
+			close(u.DeleteChannel)
+			return
+		}
 	}
-	return nil
 }
 
 func (u *Usecases) createConfig(rawManifest *RawManifest) {
 	unmarshalledManifest := &manifest.Manifest{}
+	// Unmarshal
 	if err := yaml.Unmarshal(rawManifest.Manifest, &unmarshalledManifest); err != nil {
 		log.Err(err).Msgf("Failed to unmarshal manifest from YAML file %s form secret %s. Skipping...", rawManifest.FileName, rawManifest.SecretName)
 		return
 	}
+
+	// Validate
 	if err := unmarshalledManifest.Validate(); err != nil {
 		log.Err(err).Msgf("Failed to validate manifest %s from secret %s. Skipping...", unmarshalledManifest.Name, rawManifest.SecretName)
+		return
 	}
+	// Define config
 	config := &pb.Config{
 		Name:             unmarshalledManifest.Name,
 		ManifestFileName: fmt.Sprintf("secret_%s.file_%s", rawManifest.SecretName, rawManifest.FileName),
 		Manifest:         string(rawManifest.Manifest),
 	}
 
-	err := u.ContextBox.SaveConfig(config)
-	if err != nil {
+	if err := u.ContextBox.SaveConfig(config); err != nil {
 		log.Err(err).Msgf("Failed to save config %v due to error. Skipping...", unmarshalledManifest.Name)
 		return
 	}
@@ -54,10 +59,11 @@ func (u *Usecases) deleteConfig(rawManifest *RawManifest) {
 		log.Err(err).Msgf("Failed to unmarshal manifest from YAML file %s form secret %s. Skipping...", rawManifest.FileName, rawManifest.SecretName)
 		return
 	}
-	err := u.ContextBox.DeleteConfig(unmarshalledManifest.Name)
-	if err != nil {
+
+	if err := u.ContextBox.DeleteConfig(unmarshalledManifest.Name); err != nil {
 		log.Err(err).Msgf("Failed to trigger deletion for config %v due to error. Skipping...", unmarshalledManifest.Name)
 		return
 	}
+
 	log.Info().Msgf("Config %s was successfully marked for deletion", unmarshalledManifest.Name)
 }
