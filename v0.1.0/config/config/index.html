@@ -1,0 +1,1090 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://docs.claudie.io/v0.1.0/config/config/">
+      
+      
+      
+      <link rel="icon" href="../../hexagon_blue.png">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.1.8">
+    
+    
+      
+        <title>Config spec - Claudie Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ded33207.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.a0c5b2b5.min.css">
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+   <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"/><style>
+        html.glightbox-open { overflow: initial; height: 100%; }
+        .gslide-title { margin-top: 0px; user-select: text; }
+        .gslide-desc { color: #666; user-select: text; }
+        .gslide-image img { background: white; }
+        
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color);}
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color);}
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color);}
+            </style> <script src="../../assets/javascripts/glightbox.min.js"></script></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="indigo">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#config-spec" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Claudie Docs" class="md-header__button md-logo" aria-label="Claudie Docs" data-md-component="logo">
+      
+  <img src="../../hexagon_blue.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Claudie Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Config spec
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="indigo"  aria-hidden="true"  type="radio" name="__palette" id="__palette_1">
+            
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="black"  aria-hidden="true"  type="radio" name="__palette" id="__palette_2">
+            
+          
+        </form>
+      
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/JKBGIT1/claudie-docs" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    claudie
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Claudie Docs" class="md-nav__button md-logo" aria-label="Claudie Docs" data-md-component="logo">
+      
+  <img src="../../hexagon_blue.png" alt="logo">
+
+    </a>
+    Claudie Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/JKBGIT1/claudie-docs" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    claudie
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        Docs Overview
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          Getting Started
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Getting Started
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../crud/crud/" class="md-nav__link">
+        CRUD for Claudie
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          Input manifest
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Input manifest
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/input-manifest/" class="md-nav__link">
+        Input manifest
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/example/" class="md-nav__link">
+        Example yaml file
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+          Providers
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_3_3">
+          <span class="md-nav__icon md-icon"></span>
+          Providers
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/providers/aws/" class="md-nav__link">
+        AWS
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/providers/azure/" class="md-nav__link">
+        Azure
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/providers/gcp/" class="md-nav__link">
+        GCP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/providers/hetzner/" class="md-nav__link">
+        Hetzner
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/providers/oci/" class="md-nav__link">
+        OCI
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          How Claudie works
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          How Claudie works
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../claudie-workflow/claudie-workflow/" class="md-nav__link">
+        Claudie Workflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../storage/storage-solution/" class="md-nav__link">
+        Claudie Storage solution
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../loadbalancing/loadbalancing-solution/" class="md-nav__link">
+        Loadbalancing in Claudie
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../use-cases/use-cases/" class="md-nav__link">
+        Claudie Use Cases
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../roadmap/roadmap/" class="md-nav__link">
+        Roadmap for Claudie
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+          Contributing
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_7">
+          <span class="md-nav__icon md-icon"></span>
+          Contributing
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/contributing/" class="md-nav__link">
+        Contributing
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/release/" class="md-nav__link">
+        Release a new version
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+          CHANGELOG
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_8">
+          <span class="md-nav__icon md-icon"></span>
+          CHANGELOG
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CHANGELOG/changelog-0.1.x/" class="md-nav__link">
+        Claudie v0.1
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#config" class="md-nav__link">
+    Config
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#project" class="md-nav__link">
+    Project
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#k8scluster" class="md-nav__link">
+    K8scluster
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lbcluster" class="md-nav__link">
+    LBcluster
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clusterinfo" class="md-nav__link">
+    ClusterInfo
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#role" class="md-nav__link">
+    Role
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dns" class="md-nav__link">
+    DNS
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nodepool" class="md-nav__link">
+    NodePool
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#node" class="md-nav__link">
+    Node
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#provider" class="md-nav__link">
+    Provider
+  </a>
+  
+    <nav class="md-nav" aria-label="Provider">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#secret-credentials" class="md-nav__link">
+    Secret credentials
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nodetype" class="md-nav__link">
+    NodeType
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#target" class="md-nav__link">
+    Target
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#roletype" class="md-nav__link">
+    RoleType
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clustertype" class="md-nav__link">
+    ClusterType
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="config-spec">Config spec<a class="headerlink" href="#config-spec" title="Permanent link">&para;</a></h1>
+<p>Config is a datastructure, which holds all of the data for Claudie microservices. It is saved in the database and passed from service to service.</p>
+<h2 id="config">Config<a class="headerlink" href="#config" title="Permanent link">&para;</a></h2>
+<p>Config holds data for a single manifest.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>string</td>
+<td>Config id</td>
+</tr>
+<tr>
+<td>name</td>
+<td>string</td>
+<td>Config name</td>
+</tr>
+<tr>
+<td>manifest</td>
+<td>string</td>
+<td>Client defined manifest</td>
+</tr>
+<tr>
+<td>desiredState</td>
+<td><a href="#project">Project</a></td>
+<td>Desired state from the manifest</td>
+</tr>
+<tr>
+<td>currentState</td>
+<td><a href="#project">Project</a></td>
+<td>Current state of the infra</td>
+</tr>
+<tr>
+<td>msChecksum</td>
+<td>bytes</td>
+<td>Manifest state checksum</td>
+</tr>
+<tr>
+<td>dsChecksum</td>
+<td>bytes</td>
+<td>Desired state checksum</td>
+</tr>
+<tr>
+<td>csChecksum</td>
+<td>bytes</td>
+<td>Current state checksum</td>
+</tr>
+<tr>
+<td>builderTTL</td>
+<td>int32</td>
+<td>Builder time to live counter</td>
+</tr>
+<tr>
+<td>schedulerTTL</td>
+<td>int32</td>
+<td>Scheduler time to live counter</td>
+</tr>
+<tr>
+<td>errorMessage</td>
+<td>string</td>
+<td>Error message from error encountered during execution</td>
+</tr>
+</tbody>
+</table>
+<h2 id="project">Project<a class="headerlink" href="#project" title="Permanent link">&para;</a></h2>
+<p>Project represents the desired state of the manifest and the current state of the manifest.
+  | Name                 | Type                        | Description                  |
+  | -------------------- | --------------------------- | ---------------------------- |
+  | Name                 | string                      | Name of the project          |
+  | Clusters             | []<a href="#k8scluster">K8scluster</a> | Slice of kubernetes clusters |
+  | LoadBalancerClusters | []<a href="#lbcluster">LBcluster</a>   | Slice of load balancers      |</p>
+<h2 id="k8scluster">K8scluster<a class="headerlink" href="#k8scluster" title="Permanent link">&para;</a></h2>
+<p>K8scluster represents a single kubernetes cluster specified in the manifest.
+  | Name        | Type                        | Description                    |
+  | ----------- | --------------------------- | ------------------------------ |
+  | ClusterInfo | <a href="#clusterinfo">ClusterInfo</a> | General info about the cluster |
+  | Network     | string                      | Network range for the VPN      |
+  | Kubernetes  | string                      | Kubernetes version             |</p>
+<h2 id="lbcluster">LBcluster<a class="headerlink" href="#lbcluster" title="Permanent link">&para;</a></h2>
+<p>LBcluster represents a single load balancer cluster specified in the manifest.
+  | Name        | Type                        | Description                                                          |
+  | ----------- | --------------------------- | -------------------------------------------------------------------- |
+  | ClusterInfo | <a href="#clusterinfo">ClusterInfo</a> | General info about the cluster                                       |
+  | Roles       | []<a href="#role">Role</a>             | Load balancer role                                                   |
+  | DNS         | <a href="#dns">Dns</a>                 | DNS information                                                      |
+  | TargetedK8s | string                      | Kubernetes cluster name of cluster this load balancer is assigned to |</p>
+<h2 id="clusterinfo">ClusterInfo<a class="headerlink" href="#clusterinfo" title="Permanent link">&para;</a></h2>
+<p>ClusterInfo holds general information about the clusters.
+  | Name        | Type                    | Description                                 |
+  | ----------- | ----------------------- | ------------------------------------------- |
+  | Name        | string                  | Name of the cluster                         |
+  | Hash        | string                  | Random hash of the cluster                  |
+  | Public_key  | string                  | Public ssh key for the nodes                |
+  | Private_key | string                  | Private ssh key for the nodes               |
+  | Nodepools   | []<a href="#nodepool">Nodepool</a> | Slice of node pools this cluster is made of |</p>
+<h2 id="role">Role<a class="headerlink" href="#role" title="Permanent link">&para;</a></h2>
+<p>Role represents a single loadbalancer role from the manifest.
+  | Name       | Type                  | Description                             |
+  | ---------- | --------------------- | --------------------------------------- |
+  | Name       | string                | Name of the role                        |
+  | Protocol   | string                | Protocol that load balancer will use    |
+  | Port       | int32                 | Load balancer port                      |
+  | TargetPort | int32                 | Port that load balancer will forward to |
+  | Target     | <a href="#target">Target</a>     | Targeted nodes                          |
+  | RoleType   | <a href="#roletype">RoleType</a> | Type of the role                        |</p>
+<h2 id="dns">DNS<a class="headerlink" href="#dns" title="Permanent link">&para;</a></h2>
+<p>DNS holds general information about the DNS records.
+  | Name     | Type                  | Description                          |
+  | -------- | --------------------- | ------------------------------------ |
+  | DnsZone  | string                | DNS zone for the DNS records         |
+  | Hostname | string                | User specified hostname              |
+  | Provider | <a href="#provider">Provider</a> | Provider for the DNS records         |
+  | Endpoint | string                | The whole hostname of the DNS record |</p>
+<h2 id="nodepool">NodePool<a class="headerlink" href="#nodepool" title="Permanent link">&para;</a></h2>
+<p>NodePool represents a single nodepool from the manifest.
+  | Name       | Type                  | Description                                             |
+  | ---------- | --------------------- | ------------------------------------------------------- |
+  | Name       | string                | Name of the node pool                                   |
+  | Region     | string                | Region of the nodes                                     |
+  | ServerType | string                | Machine type of the nodes                               |
+  | Image      | string                | OS image of the nodes                                   |
+  | DiskSize   | int32                 | Disk size of the nodes                                  |
+  | Zone       | string                | Zone for the nodes                                      |
+  | Count      | int32                 | Count of the nodes                                      |
+  | Nodes      | []<a href="#node">Node</a>       | Slice of Nodes                                          |
+  | Provider   | <a href="#provider">Provider</a> | Provider of the nodepools                               |
+  | IsControl  | bool                  | Flag to differentiate between control and compute nodes |</p>
+<h2 id="node">Node<a class="headerlink" href="#node" title="Permanent link">&para;</a></h2>
+<p>Node represents a single node from the nodepool.
+  | Name     | Type                  | Description                       |
+  | -------- | --------------------- | --------------------------------- |
+  | Name     | string                | Name of the node                  |
+  | Private  | string                | Private IP of the node in the VPN |
+  | Public   | string                | Public IP of the node             |
+  | NodeType | <a href="#nodetype">NodeType</a> | Type of the node                  |</p>
+<h2 id="provider">Provider<a class="headerlink" href="#provider" title="Permanent link">&para;</a></h2>
+<p>Provider represents a single provider from the manifest.
+  | Name                | Type   | Description                                                        |
+  | ------------------- | ------ | ------------------------------------------------------------------ |
+  | SpecName            | string | Provider name                                                      |
+  | CloudProviderName   | string | Cloud provider name. e.g. <code>gcp</code>, <code>hetzner</code>, <code>oci</code>, etc.            |
+  | Credentials         | string | <a href="#secret-credentials">Secret Credentials</a> of the provider          |
+  | GcpProject          | string | GCP project (only required when using GCP as DNS provider)         |
+  | OciUserOcid         | string | OCID of the user                                                   |
+  | OciTenancyOcid      | string | OCID of the tenancy                                                |
+  | OciFingerprint      | string | Fingerprint of the private key saved in <code>Credentials</code>              |
+  | OciCompartmentOcid  | string | OCID of the compartment                                            |
+  | AwsAccessKey        | string | AWS access key to the secret key saved in the <code>Credentials</code>        |
+  | AzureSubscriptionId | string | Azure ID of the subscription                                       |
+  | AzureTenantId       | string | Azure ID of the Tenant                                             |
+  | AzureClientId       | string | AzureID of the Client; the client secret is saved in <code>Credentials</code> |</p>
+<h3 id="secret-credentials">Secret credentials<a class="headerlink" href="#secret-credentials" title="Permanent link">&para;</a></h3>
+<p>The list of information saved in the <code>Credentials</code> field for each provider.
+  | Provider | Input Manifest field                                         |
+  | -------- | ------------------------------------------------------------ |
+  | GCP      | <a href="../../input-manifest/input-manifest/#gcp"><code>credentials</code></a>     |
+  | Hetzner  | <a href="../../input-manifest/input-manifest/#hetzner"><code>credentials</code></a> |
+  | AWS      | <a href="../../input-manifest/input-manifest/#aws"><code>secret_key</code></a>      |
+  | OCI      | <a href="../../input-manifest/input-manifest/#oci"><code>private_key</code></a>     |
+  | Azure    | <a href="../../input-manifest/input-manifest/#azure"><code>client_secret</code></a> |</p>
+<h2 id="nodetype">NodeType<a class="headerlink" href="#nodetype" title="Permanent link">&para;</a></h2>
+<p>NodeType specifies the type of the node.
+  | Value       | Description                                |
+  | ----------- | ------------------------------------------ |
+  | Worker      | Worker node                                |
+  | Master      | Master node                                |
+  | ApiEndpoint | Master node, which is also an API endpoint |</p>
+<h2 id="target">Target<a class="headerlink" href="#target" title="Permanent link">&para;</a></h2>
+<p>Target specifies which nodes are targeted by the load balancer.
+  | Value           | Description          |
+  | --------------- | -------------------- |
+  | K8sAllNodes     | All nodes in cluster |
+  | K8sControlPlane | Only Master nodes    |
+  | K8sComputePlane | Only Compute nodes   |</p>
+<h2 id="roletype">RoleType<a class="headerlink" href="#roletype" title="Permanent link">&para;</a></h2>
+<p>RoleType specifies the type of the role.
+  | Value     | Description              |
+  | --------- | ------------------------ |
+  | ApiServer | API server load balancer |
+  | Ingress   | Ingress load balancer    |</p>
+<h2 id="clustertype">ClusterType<a class="headerlink" href="#clustertype" title="Permanent link">&para;</a></h2>
+<p>ClusterType specifies the type of the cluster.
+  | Value | Description           |
+  | ----- | --------------------- |
+  | K8s   | Kubernetes cluster    |
+  | LB    | Load balancer cluster |</p>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2023 BerOps s.r.o.
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.copy", "navigation.top"], "search": "../../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.51198bba.min.js"></script>
+      
+    
+  <script>document$.subscribe(() => {const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});})</script></body>
+</html>
