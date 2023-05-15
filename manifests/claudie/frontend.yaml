@@ -17,8 +17,8 @@ spec:
         app.kubernetes.io/part-of: claudie
         app.kubernetes.io/name: frontend
     spec:
-      terminationGracePeriodSeconds: 300
-      serviceAccountName: k8s-sidecar
+      terminationGracePeriodSeconds: 30
+      serviceAccountName: frontend-sa
       containers:
         - name: frontend
           imagePullPolicy: Always
@@ -46,8 +46,12 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: GOLANG_LOG
-            - name: MANIFEST_DIR
-              value: /input-manifests
+            - name: LABEL
+              value: "claudie.io/input-manifest"
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
           readinessProbe:
             httpGet:
               path: /ready
@@ -60,69 +64,38 @@ spec:
               port: 50058
             initialDelaySeconds: 10
             periodSeconds: 30
-          volumeMounts:
-            - name: input-manifests
-              mountPath: /input-manifests/
-        - name: k8s-sidecar
-          imagePullPolicy: Always
-          image: quay.io/kiwigrid/k8s-sidecar:1.15.7
-          resources:
-            requests:
-              cpu: 50m
-              memory: 75Mi
-            limits:
-              cpu: 100m
-              memory: 150Mi
-          env:
-            - name: LABEL
-              value: "claudie.io/input-manifest"
-            - name: FOLDER
-              value: /input-manifests/
-            - name: RESOURCE
-              value: secret
-              # notify frontend service on changes in the dir.
-            - name: REQ_URL
-              value: "http://localhost:50059/reload"
-            - name: REQ_METHOD
-              value: "GET"
-          volumeMounts:
-            - name: input-manifests
-              mountPath: /input-manifests/
-      volumes:
-        - name: input-manifests
-          emptyDir: {}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: frontend-sa
+  labels:
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: frontend
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: k8s-sidecar
+  name: frontend-role
   labels:
     app.kubernetes.io/part-of: claudie
     app.kubernetes.io/name: frontend
 rules:
   - apiGroups: [""]
-    resources: ["configmaps", "secrets"]
-    verbs: ["get", "watch", "list"]
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: k8s-sidecar
-  labels:
-    app.kubernetes.io/part-of: claudie
-    app.kubernetes.io/name: frontend
+    resources: ["secrets"]
+    verbs: ["watch", "list"]
 ---
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: k8s-sidecar
+  name: frontend-role-binding
   labels:
     app.kubernetes.io/part-of: claudie
     app.kubernetes.io/name: frontend
-roleRef:
-  kind: Role
-  name: k8s-sidecar
-  apiGroup: rbac.authorization.k8s.io
 subjects:
   - kind: ServiceAccount
-    name: k8s-sidecar
+    name: frontend-sa
+roleRef:
+  kind: Role
+  name: frontend-role
+  apiGroup: rbac.authorization.k8s.io

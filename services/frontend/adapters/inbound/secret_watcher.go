@@ -18,11 +18,13 @@ import (
 // SecretWatcher uses kubernetes API (Watch method) to scan through secrets in the specified namespace.
 // If the secret contains input manifest label, it is send through one of the channels in usecases for processing.
 type SecretWatcher struct {
-	// usecases is used to pass changed input manifests
+	// usecases is used to pass changed input manifests.
 	usecases *usecases.Usecases
-	// label is used to identify input manifest secret
+	// label is used to identify input manifest secret.
 	label string
-	// kubeClient is used to communicate with API server
+	// namespace is used to identify namespace where secrets are created.
+	namespace string
+	// kubeClient is used to communicate with API server.
 	kubeClient *kubernetes.Clientset
 }
 
@@ -33,6 +35,12 @@ func NewSecretWatcher(usecases *usecases.Usecases) (*SecretWatcher, error) {
 		return nil, fmt.Errorf("environment variable LABEL not found")
 	}
 	log.Debug().Msgf("Using LABEL %s", label)
+
+	ns, isNsFound := os.LookupEnv("NAMESPACE")
+	if !isNsFound {
+		return nil, fmt.Errorf("environment variable NAMESPACE not found")
+	}
+	log.Debug().Msgf("Using NAMESPACE %s", label)
 
 	config, err := rest.InClusterConfig()
 	if err != nil {
@@ -47,6 +55,7 @@ func NewSecretWatcher(usecases *usecases.Usecases) (*SecretWatcher, error) {
 		usecases:   usecases,
 		label:      label,
 		kubeClient: clientset,
+		namespace:  ns,
 	}
 
 	return secretWatcher, nil
@@ -55,7 +64,7 @@ func NewSecretWatcher(usecases *usecases.Usecases) (*SecretWatcher, error) {
 // Monitor will continuously watch for any changes regarding input manifest secrets. This function will exit once usecases context will get canceled.
 func (sw *SecretWatcher) Monitor() error {
 	// Continuously watch for secrets in current namespace with specified label, until usecases context will be cancelled.
-	w, err := sw.kubeClient.CoreV1().Secrets("").Watch(sw.usecases.Context, metav1.ListOptions{LabelSelector: sw.label})
+	w, err := sw.kubeClient.CoreV1().Secrets(sw.namespace).Watch(sw.usecases.Context, metav1.ListOptions{LabelSelector: sw.label})
 	if err != nil {
 		return fmt.Errorf("error while creating WATCH interface : %w", err)
 	}
