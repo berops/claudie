@@ -15,14 +15,18 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+// SecretWatcher uses kubernetes API (Watch method) to scan through secrets in the specified namespace.
+// If the secret contains input manifest label, it is send through one of the channels in usecases for processing.
 type SecretWatcher struct {
+	// usecases is used to pass changed input manifests
 	usecases *usecases.Usecases
-	label    string
-
+	// label is used to identify input manifest secret
+	label string
+	// kubeClient is used to communicate with API server
 	kubeClient *kubernetes.Clientset
-	debug      int
 }
 
+// NewSecretWatcher returns new SecretWatcher with initialised variables. Returns error if initialisation failed.
 func NewSecretWatcher(usecases *usecases.Usecases) (*SecretWatcher, error) {
 	label, isLabelFound := os.LookupEnv("LABEL")
 	if !isLabelFound {
@@ -48,7 +52,7 @@ func NewSecretWatcher(usecases *usecases.Usecases) (*SecretWatcher, error) {
 	return secretWatcher, nil
 }
 
-// Monitor will continuously watch for any changes regarding input manifests. This function will exit once usecases context will get canceled.
+// Monitor will continuously watch for any changes regarding input manifest secrets. This function will exit once usecases context will get canceled.
 func (sw *SecretWatcher) Monitor() error {
 	// Continuously watch for secrets in current namespace with specified label, until usecases context will be cancelled.
 	w, err := sw.kubeClient.CoreV1().Secrets("").Watch(sw.usecases.Context, metav1.ListOptions{LabelSelector: sw.label})
@@ -58,29 +62,15 @@ func (sw *SecretWatcher) Monitor() error {
 
 	for event := range w.ResultChan() {
 		if secret, ok := event.Object.(*v1.Secret); ok {
-			sw.debug++
-			log.Info().Msgf("DEBUG: event number %d", sw.debug)
-			//TODO REMOVE LATER ^^^
-			manifestsData, err := sw.getManifests(secret)
-			if err != nil {
-				log.Err(err).Msgf("Got error while decoding manifests from secret %s", secret.Name)
-			}
 			switch event.Type {
-			// Added secret
-			case watch.Added:
-				log.Debug().Msgf("ADDED")
-				// All manifest in the secret were added.
-				for _, manifest := range manifestsData {
-					sw.usecases.SaveChannel <- manifest
-				}
-			// Modified secret
-			case watch.Modified:
-				log.Debug().Msgf("MODIFIED")
+			// Modified/Added secret
+			case watch.Modified, watch.Added:
 				configs, err := sw.usecases.ContextBox.GetAllConfigs()
 				if err != nil {
 					log.Err(err).Msgf("Failed to retrieve configs from Context-box, to verify secret %s modification, skipping...", secret.Name)
 					break
 				}
+				// Save configs which are already in DB
 				inDB := make(map[string]struct{})
 				// Check with configs in DB
 				for _, config := range configs {
@@ -92,11 +82,21 @@ func (sw *SecretWatcher) Monitor() error {
 						if file, ok := secret.Data[fileName]; ok {
 							// File exists, save it to Context-box
 							log.Debug().Msgf("Assuming file %s from secret %s was modified", fileName, secret.Name)
-							sw.usecases.SaveChannel <- sw.getManifest(file, secret.Name, fileName)
+							manifest, err := sw.getManifest(file, secret.Name, fileName)
+							if err != nil {
+								log.Err(err).Msgf("Failed to decode file %s from secret %s, skipping...", fileName, secret.Name)
+								continue
+							}
+							sw.usecases.SaveChannel <- manifest
 						} else {
 							// File does not exists, trigger deletion
 							log.Debug().Msgf("Assuming file %s from secret %s was removed", fileName, secret.Name)
-							sw.usecases.DeleteChannel <- sw.getManifest([]byte(config.Manifest), secret.Name, fileName)
+							manifest, err := sw.getManifest(file, secret.Name, fileName)
+							if err != nil {
+								log.Err(err).Msgf("Failed to decode file %s from secret %s, skipping...", fileName, secret.Name)
+								continue
+							}
+							sw.usecases.DeleteChannel <- manifest
 						}
 					}
 				}
@@ -104,52 +104,51 @@ func (sw *SecretWatcher) Monitor() error {
 				for name, file := range secret.Data {
 					// Manifest not in the database yet, save
 					if _, ok := inDB[name]; !ok {
-						sw.usecases.SaveChannel <- sw.getManifest(file, secret.Name, name)
+						manifest, err := sw.getManifest(file, secret.Name, name)
+						if err != nil {
+							log.Err(err).Msgf("Failed to decode file %s from secret %s, skipping...", name, secret.Name)
+							continue
+						}
+						sw.usecases.SaveChannel <- manifest
 					}
 				}
 			// Deleted secret
 			case watch.Deleted:
-				log.Debug().Msgf("DELETED")
 				// All manifest in the secret were deleted.
-				for _, manifest := range manifestsData {
+				for name, file := range secret.Data {
+					manifest, err := sw.getManifest(file, secret.Name, name)
+					if err != nil {
+						log.Err(err).Msgf("Failed to decode file %s from secret %s, skipping...", name, secret.Name)
+						continue
+					}
 					sw.usecases.DeleteChannel <- manifest
 				}
+
 			}
 		}
 	}
 	return nil
 }
 
-func (sw *SecretWatcher) getManifests(secret *v1.Secret) ([]*usecases.RawManifest, error) {
-	manifests := make([]*usecases.RawManifest, 0, len(secret.Data))
-	for name, file := range secret.Data {
-		content, err := sw.decodeContent(file)
-		//TODO make best effort
-		if err != nil {
-			return nil, err
-		}
-		manifests = append(manifests, &usecases.RawManifest{
-			Manifest:   content,
-			SecretName: secret.Name,
-			FileName:   name,
-		})
+// getManifest returns usecases.RawManifest from the given file.
+func (sw *SecretWatcher) getManifest(file []byte, secretName, fileName string) (*usecases.RawManifest, error) {
+	decoded, err := sw.decodeContent(file)
+	if err != nil {
+		return nil, err
 	}
-	return manifests, nil
-}
-
-func (sw *SecretWatcher) getManifest(content []byte, secretName, fileName string) *usecases.RawManifest {
 	return &usecases.RawManifest{
-		Manifest:   content,
+		Manifest:   decoded,
 		SecretName: secretName,
 		FileName:   fileName,
-	}
+	}, nil
 }
 
+// decodeContent tries to decode base64 files and returns decoded version. If decoding fails,
+// it might assume the content is not base64 based and returns original content.
 func (sw *SecretWatcher) decodeContent(content []byte) ([]byte, error) {
 	decoded := make([]byte, len(content)*(4/3))
-	log.Info().Msgf("File: %s", string(content))
 	if _, err := base64.StdEncoding.Decode(decoded, content); err != nil {
-		// cant use errors.Is as base64 package builds error dynamically in base64.CorruptInputError()
+		// Cant use errors.Is() as base64 package builds error dynamically in base64.CorruptInputError()
 		if strings.Contains(err.Error(), "illegal base64 data") {
 			log.Debug().Msgf("File not base64 compatible, assuming it is string data")
 			return content, nil

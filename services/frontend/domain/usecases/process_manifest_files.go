@@ -10,6 +10,8 @@ import (
 	"github.com/berops/claudie/proto/pb"
 )
 
+// ProcessManifestFiles processes the manifest coming from SaveChannel and DeleteChannel.
+// Function exits once Usecases.Context is canceled.
 func (u *Usecases) ProcessManifestFiles() {
 	for {
 		select {
@@ -26,6 +28,7 @@ func (u *Usecases) ProcessManifestFiles() {
 	}
 }
 
+// createConfig generates and saves config into the DB. Used for new configs and updated configs.
 func (u *Usecases) createConfig(rawManifest *RawManifest) {
 	unmarshalledManifest := &manifest.Manifest{}
 	// Unmarshal
@@ -53,6 +56,7 @@ func (u *Usecases) createConfig(rawManifest *RawManifest) {
 	log.Info().Msgf("Created config for input manifest %s", unmarshalledManifest.Name)
 }
 
+// deleteConfig generates and triggers deletion of config into the DB.
 func (u *Usecases) deleteConfig(rawManifest *RawManifest) {
 	unmarshalledManifest := &manifest.Manifest{}
 	if err := yaml.Unmarshal(rawManifest.Manifest, &unmarshalledManifest); err != nil {

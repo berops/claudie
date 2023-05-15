@@ -25,8 +25,12 @@ type Usecases struct {
 	Context context.Context
 }
 
+// RawManifest represents manifest and its metadata directly from secret.
 type RawManifest struct {
-	Manifest   []byte
+	// Raw decoded manifest.
+	Manifest []byte
+	// Secret name for this manifest.
 	SecretName string
-	FileName   string
+	// File name for this manifest.
+	FileName string
 }
