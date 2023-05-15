@@ -1,15 +1,5 @@
 {{- $clusterName := .ClusterName}}
 {{- $clusterHash := .ClusterHash}}
-{{- $index :=  0}}
-provider "azurerm" {
-  features {}
-  subscription_id = "{{ (index $.NodePools 0).Provider.AzureSubscriptionId }}"
-  tenant_id       = "{{ (index $.NodePools 0).Provider.AzureTenantId }}"
-  client_id       = "{{ (index $.NodePools 0).Provider.AzureClientId }}"
-  client_secret   = file("{{ (index $.NodePools 0).Provider.SpecName }}")
-  alias           = "k8s_nodepool"
-}
-
 {{- range $i, $region := .Regions }}
 {{- $sanitisedRegion := replaceAll $region " " "_"}}
 resource "azurerm_resource_group" "rg_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}" {
@@ -197,7 +187,7 @@ resource "azurerm_virtual_machine_extension" "{{ $node.Name }}_{{ $clusterHash }
   type_handler_version = "2.0"
 
   protected_settings = <<PROT
-  {      
+  {
   "script": "${base64encode(<<EOF
 #!/bin/bash
 set -euxo pipefail
@@ -241,7 +231,7 @@ resource "azurerm_managed_disk" "{{ $node.Name }}_disk" {
   resource_group_name  = azurerm_resource_group.rg_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}.name
   storage_account_type = "StandardSSD_LRS"
   create_option        = "Empty"
-  disk_size_gb         = {{ $nodepool.StorageDiskSize }} 
+  disk_size_gb         = {{ $nodepool.StorageDiskSize }}
 
   tags = {
     managed-by      = "Claudie"
