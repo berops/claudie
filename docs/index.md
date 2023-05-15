@@ -1,5 +1,7 @@
 # Docs Overview
 
+In case you are reading our documentation in our [GitHub repository](https://github.com/berops/claudie/), you might want to read the prettier version of it on [docs.claudie.io](docs.claudie.io)
+
 ## Getting Started
 
 The "Getting Started" section is where you'll learn how to begin using Claudie. We'll guide you through the initial steps and show you how to set things up, so you can start using the software right away. 
