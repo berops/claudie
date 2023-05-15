@@ -18,10 +18,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
+        with:
+            fetch-depth: 0
+
+      - name: Set up git author
+        run: |
+          remote_repo="https://${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git config --global user.name "${GITHUB_ACTOR}"
+          git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+          git remote rm origin
+          git remote add origin "${remote_repo}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -30,11 +42,6 @@ jobs:
 
       - name: Install Python dependencies
         run: pip install -r requirements.txt
-
-      - name: Set user
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
 
       - name: Git fetch
         run: git fetch
@@ -48,8 +55,11 @@ jobs:
       - name: Checkout back to feature/claudie-docs branch
         run: git checkout feature/claudie-docs
 
-      - name: Deploy Mkdocs to GH Pages
-        run: mkdocs gh-deploy --strict --force
+      - name: Deploy new docs version
+        run: |
+          mike deploy 0.3
+          mike set-default 0.3
+          mike deploy 0.3 --push
 
       # - name: Get current branch
       #   run:
