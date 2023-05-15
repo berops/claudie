@@ -44,7 +44,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Git fetch gh-pages
-        run: git fetch origin gh-pages --depth=0
+        run: git fetch origin gh-pages
 
       - name: Deploy new docs version
         run: |
