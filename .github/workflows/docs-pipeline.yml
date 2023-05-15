@@ -49,20 +49,3 @@ jobs:
       - name: Deploy new docs version
         run: |
           mike deploy v0.3.0 latest --update-aliases --push
-        
-      # - name: Upload artifact
-      #   uses: actions/upload-pages-artifact@v1
-      #   with:
-      #     name: "github-pages"
-      #     path: "site/"
-          
-  # deploy:
-  #   environment:
-  #     name: github-pages
-  #     url: ${{ steps.deployment.outputs.page_url }}
-  #   runs-on: ubuntu-22.04
-  #   needs: build
-  #   steps:    
-  #     - name: Deploy to GitHub Pages
-  #       id: deployment
-  #       uses: actions/deploy-pages@v2
