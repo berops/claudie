@@ -1099,14 +1099,14 @@
       
       
         <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
-          CHANGELOG
+          Changelog
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
         <label class="md-nav__title" for="__nav_8">
           <span class="md-nav__icon md-icon"></span>
-          CHANGELOG
+          Changelog
         </label>
         <ul class="md-nav__list" data-md-scrollfix>
           
@@ -1146,6 +1146,69 @@
     <li class="md-nav__item">
       <a href="../../CHANGELOG/changelog-0.3.x/" class="md-nav__link">
         Claudie v0.3
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+          How to work with docs
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_9">
+          <span class="md-nav__icon md-icon"></span>
+          How to work with docs
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docs-guides/development/" class="md-nav__link">
+        Development
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docs-guides/deployment-workflow/" class="md-nav__link">
+        Deployment workflow
       </a>
     </li>
   
@@ -1604,6 +1667,9 @@
 <span class="w">  </span><span class="c1">// TeardownLoadBalancers correctly destroys the load balancers attached to a k8s</span>
 <span class="w">  </span><span class="c1">// cluster by choosing a new ApiServer endpoint.</span>
 <span class="w">  </span><span class="nx">rpc</span><span class="w"> </span><span class="nx">TeardownLoadBalancers</span><span class="p">(</span><span class="nx">TeardownLBRequest</span><span class="p">)</span><span class="w"> </span><span class="nx">returns</span><span class="w"> </span><span class="p">(</span><span class="nx">TeardownLBResponse</span><span class="p">);</span>
+<span class="w">  </span><span class="c1">// UpdateAPIEndpoint handles changes of API endpoint between control nodes.</span>
+<span class="w">  </span><span class="c1">// It will update the current stage based on the information from the desired state.</span>
+<span class="w">  </span><span class="nx">rpc</span><span class="w"> </span><span class="nx">UpdateAPIEndpoint</span><span class="p">(</span><span class="nx">UpdateAPIEndpointRequest</span><span class="p">)</span><span class="w"> </span><span class="nx">returns</span><span class="w"> </span><span class="p">(</span><span class="nx">UpdateAPIEndpointResponse</span><span class="p">);</span>
 </code></pre></div>
 <h3 id="flow_4">Flow<a class="headerlink" href="#flow_4" title="Permanent link">&para;</a></h3>
 <ul>
@@ -1618,7 +1684,13 @@
 <li>Updates the <code>currentState</code> in a <code>config</code></li>
 <li>Receives a <code>config</code> from Builder for <code>SetUpLoadbalancers()</code></li>
 <li>Sets up the ansible inventory, and installs nginx load balancers</li>
-<li>Creates and verifies the DNS configuration for the load balancers</li>
+<li>
+<p>Creates and verifies the DNS configuration for the load balancers</p>
+</li>
+<li>
+<p><code>UpdateAPIEndpoint()</code> is called in specific use cases when there is change 
+in the api endpoint of a control plane.</p>
+</li>
 </ul>
 <h2 id="kube-eleven">Kube-eleven<a class="headerlink" href="#kube-eleven" title="Permanent link">&para;</a></h2>
 <p>Kube-eleven uses <a href="https://github.com/kubermatic/kubeone">KubeOne</a> to set up kubernetes clusters.
@@ -1659,9 +1731,15 @@ After cluster creation, it assures the cluster stays healthy and keeps running s
 <span class="w">  </span><span class="nx">rpc</span><span class="w"> </span><span class="nx">SetUpClusterAutoscaler</span><span class="p">(</span><span class="nx">SetUpClusterAutoscalerRequest</span><span class="p">)</span><span class="w"> </span><span class="nx">returns</span><span class="w"> </span><span class="p">(</span><span class="nx">SetUpClusterAutoscalerResponse</span><span class="p">);</span>
 <span class="w">  </span><span class="c1">// DestroyClusterAutoscaler deletes Cluster Autoscaler and Autoscaler Adapter for every cluster specified.</span>
 <span class="w">  </span><span class="nx">rpc</span><span class="w"> </span><span class="nx">DestroyClusterAutoscaler</span><span class="p">(</span><span class="nx">DestroyClusterAutoscalerRequest</span><span class="p">)</span><span class="w"> </span><span class="nx">returns</span><span class="w"> </span><span class="p">(</span><span class="nx">DestroyClusterAutoscalerResponse</span><span class="p">);</span>
+<span class="w">  </span><span class="c1">// PatchClusterInfoConfigMap updates the cluster-info config map in the kube-public namespace with the new</span>
+<span class="w">  </span><span class="c1">// kubeconfig. This needs to be done after an api endpoint change as the config map in the kube-public namespace</span>
+<span class="w">  </span><span class="c1">// is used by kubeadm when joining.</span>
+<span class="w">  </span><span class="nx">rpc</span><span class="w"> </span><span class="nx">PatchClusterInfoConfigMap</span><span class="p">(</span><span class="nx">PatchClusterInfoConfigMapRequest</span><span class="p">)</span><span class="w"> </span><span class="nx">returns</span><span class="w"> </span><span class="p">(</span><span class="nx">PatchClusterInfoConfigMapResponse</span><span class="p">);</span>
 </code></pre></div>
 <h3 id="flow_6">Flow<a class="headerlink" href="#flow_6" title="Permanent link">&para;</a></h3>
 <ul>
+<li>Recieves a <code>config</code> from Builder for <code>PatchClusterInfoConfigMap</code></li>
+<li>updatedes kubeconfig to reflect the new changed endpoint.</li>
 <li>Receives a <code>config</code> from Builder for <code>SetUpStorage()</code></li>
 <li>Applies the <code>longhorn</code> deployment</li>
 <li>Receives a <code>config</code> from Builder for <code>StoreKubeconfig()</code></li>
