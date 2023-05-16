@@ -186,7 +186,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 					clusterView.SetWorkflowError(clusterName, err)
 					return err
 				}
-				logger.Info().Msgf("Deleting nodes from cluster", clusterName, config.Name)
+				logger.Info().Msgf("Deleting nodes from cluster")
 				cluster, err := deleteNodes(clusterView.CurrentClusters[clusterName], diff.ToDelete)
 				if err != nil {
 					clusterView.SetWorkflowError(clusterName, err)
@@ -197,7 +197,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 				clusterView.CurrentClusters[clusterName] = cluster
 			}
 
-			message := fmt.Sprintf("Processing cluster")
+			message := "Processing cluster"
 			if diff.Stages() > 0 {
 				currentStage++
 				clusterView.ClusterWorkflows[clusterName].Description = fmt.Sprintf("Processing stage [%d/%d]", currentStage, stages)
