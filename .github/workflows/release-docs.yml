@@ -40,8 +40,13 @@ jobs:
           git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
           git remote rm origin
           git remote add origin "${remote_repo}"
+          git push --set-upstream origin master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add new changelog file to mkdocs.yml navigation under CHANGELOG section
+        run: |
+          /bin/bash ./update_mkdocs.sh
 
       # NOTE: the pipeline will fail, if gh-pages branch isn't created!!!
       - name: Git fetch gh-pages
