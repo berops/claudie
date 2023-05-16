@@ -40,13 +40,6 @@ func run() error {
 		return err
 	}
 
-	// Start Kubernetes liveness and readiness probe responders
-	healthcheck.NewClientHealthChecker(fmt.Sprint(healthcheckPort),
-		func() error {
-			return contextBoxConnector.PerformHealthCheck()
-		},
-	).StartProbes()
-
 	errGroup, errGroupContext := errgroup.WithContext(context.Background())
 	usecaseContext, usecaseCancel := context.WithCancel(context.Background())
 
@@ -63,24 +56,34 @@ func run() error {
 		return err
 	}
 
-	// Start watching for any input manifests and process them as needed.
-	errGroup.Go(func() error {
-		log.Info().Msgf("Frontend is ready to process input manifests")
-		go usecases.ProcessManifestFiles()
-
-		log.Info().Msgf("Frontend is ready to watch input manifest statuses")
-		go usecases.WatchConfigs()
-
-		log.Info().Msgf("Frontend is watching for any new input manifest")
-		return secretWatcher.Monitor()
-	})
+	// Start Kubernetes liveness and readiness probe responders
+	healthcheck.NewClientHealthChecker(fmt.Sprint(healthcheckPort),
+		func() error {
+			if err := secretWatcher.PerformHealthCheck(); err != nil {
+				return err
+			}
+			return contextBoxConnector.PerformHealthCheck()
+		},
+	).StartProbes()
 
 	// Listen for program interruption signals and shut it down gracefully
 	errGroup.Go(func() error {
+		log.Info().Msgf("Frontend is ready to process input manifests")
+		// usecases.ProcessManifestFiles() goroutine returns on usecases.Context cancels
+		go usecases.ProcessManifestFiles()
+
+		log.Info().Msgf("Frontend is ready to watch input manifest statuses")
+		// usecases.WatchConfigs() goroutine returns on usecases.Context cancels
+		go usecases.WatchConfigs()
+
+		log.Info().Msgf("Frontend is watching for any new input manifest")
+		// secretWatcher.Monitor() goroutine returns on usecases.Context cancels
+		go secretWatcher.Monitor()
+
 		shutdownSignalChan := make(chan os.Signal, 1)
 		signal.Notify(shutdownSignalChan, os.Interrupt, syscall.SIGTERM)
 		defer signal.Stop(shutdownSignalChan)
-		// Cancel context for usecases functions
+		// Cancel context for usecases functions to terminate goroutines.
 		defer usecaseCancel()
 
 		var err error
