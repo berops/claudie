@@ -1,10 +1,10 @@
 #!/bin/bash
 
 filename="mkdocs.yml"
-start_line=$(sed -n '/CHANGELOG:/=' "$filename")
+start_line=$(sed -n '/- Changelog:/=' "$filename")
 
 changelogs_from_dir=$(ls ./docs/CHANGELOG) 
-changelogs_from_mkdocs_file=$(grep -Eo "CHANGELOG/changelog-[0-9]+\.[0-9]+\.x\.md" mkdocs.yml | awk -F'/' '{print $2}')
+changelogs_from_mkdocs_file=$(grep -Eo "CHANGELOG/changelog-[0-9]+\.[0-9]+\.x\.md" "$filename" | awk -F'/' '{print $2}')
 
 changelogs_mkdocs_arr=( $changelogs_from_mkdocs_file )
 changelogs_dir_arr=( $changelogs_from_dir )
@@ -37,7 +37,7 @@ if [[ -n "$new_changelog_file" ]]; then
 
     git push
 
-    echo "Altered mkdocs.yml with new CHANGELOG navigation entry was commited and pushed to origin"
+    echo "Altered mkdocs.yml with new Changelog navigation entry was commited and pushed to origin"
 else
     echo "There isn't a new changelog file"
 fi

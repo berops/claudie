@@ -44,7 +44,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Add new changelog file to mkdocs.yml navigation under CHANGELOG section
+      - name: Add new changelog file to mkdocs.yml navigation under Changelog section
         run: |
           /bin/bash ./update_mkdocs.sh
 

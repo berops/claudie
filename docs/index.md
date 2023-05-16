@@ -34,6 +34,6 @@ In this section, we've gathered all the information you'll need if you want to h
 
 By checking out this section, you'll get a better sense of what's involved in contributing and how you can be part of making Claudie even better.
 
-## CHANGELOG
+## Changelog
 
-The "CHANGELOG" section is where you can find information about all the changes, updates, and issues related to each version of Claudie. 
+The "changelog" section is where you can find information about all the changes, updates, and issues related to each version of Claudie. 
