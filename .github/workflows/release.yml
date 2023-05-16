@@ -4,17 +4,6 @@ on:
   release:
     types: [published]
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
-permissions:
-  contents: write
-  pages: write
-  id-token: write
-
-# Allow one concurrent deployment
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
-
 env:
   SERVICES: context-box scheduler builder terraformer ansibler kube-eleven kuber frontend
 
@@ -110,26 +99,3 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
           file: claudie_checksums.txt
-
-      - name: Set up git author
-        run: |
-          remote_repo="https://${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git config --global user.name "${GITHUB_ACTOR}"
-          git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
-          git remote rm origin
-          git remote add origin "${remote_repo}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # NOTE: the pipeline will fail, if gh-pages branch isn't created!!!
-      - name: Git fetch gh-pages
-        run: git fetch origin gh-pages
-
-      # this is only possible, when there is already a version with latest alias
-      # in case there isn't a version like this you have to
-      #   1. mike deploy <version> latest
-      #   2. mike set-default latest
-      #   3. mike deploy <version_from_cmd_1> latest --push
-      # --push flag in the latest cmd is necessary, when you want to apply changes in gh-pages branch and also in GH Pages
-      - name: Deploy new docs version
-        run: mike deploy ${RELEASE} latest --update-aliases --push
