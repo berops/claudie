@@ -40,7 +40,7 @@ func (c *ConfigInfo) HasError() bool {
 	return false
 }
 
-// hasDestroyError returns true if error occured in any of the clusters
+// hasDestroyError returns true if error occurred in any of the clusters
 // while getting destroyed.
 func (c *ConfigInfo) hasDestroyError() bool {
 	for _, v := range c.State {
