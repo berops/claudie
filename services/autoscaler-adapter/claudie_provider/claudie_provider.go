@@ -66,6 +66,7 @@ func NewClaudieCloudProvider(projectName, clusterName string) *ClaudieCloudProvi
 		panic(fmt.Sprintf("Error while creating node manager : %v", err))
 	}
 	// Initialise all other variables.
+	log.Logger = log.Logger.With().Str("cluster", utils.GetClusterID(cluster.ClusterInfo)).Logger()
 	return &ClaudieCloudProvider{
 		projectName:   projectName,
 		configCluster: cluster,
@@ -86,7 +87,7 @@ func getClaudieState(projectName, clusterName string) (*pb.K8Scluster, error) {
 	}
 	defer func() {
 		if err := cc.Close(); err != nil {
-			log.Error().Msgf("Failed to close context-box connection %v", err)
+			log.Err(err).Msgf("Failed to close context-box connection")
 		}
 	}()
 
@@ -210,7 +211,7 @@ func (c *ClaudieCloudProvider) Refresh(_ context.Context, req *protos.RefreshReq
 func (c *ClaudieCloudProvider) refresh() error {
 	log.Info().Msgf("Refreshing the state")
 	if cluster, err := getClaudieState(c.projectName, c.configCluster.ClusterInfo.Name); err != nil {
-		log.Err(err).Str("cluster", c.configCluster.ClusterInfo.Name).Msgf("Error while refreshing a state of the cluster")
+		log.Err(err).Msgf("Error while refreshing a state of the cluster")
 		return fmt.Errorf("error while refreshing a state for the cluster %s : %w", c.configCluster.ClusterInfo.Name, err)
 	} else {
 		c.configCluster = cluster

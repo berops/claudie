@@ -17,6 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -54,14 +55,13 @@ type server struct {
 }
 
 type Cluster interface {
-	Build() error
-	Destroy() error
+	Build(logger zerolog.Logger) error
+	Destroy(logger zerolog.Logger) error
 	Id() string
 }
 
 func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastructureRequest) (*pb.BuildInfrastructureResponse, error) {
-	logger := utils.CreateLoggerWithProjectName(req.ProjectName)
-
+	logger := utils.CreateLoggerWithProjectAndClusterName(req.ProjectName, utils.GetClusterID(req.Desired.ClusterInfo))
 	clusters := []Cluster{
 		kubernetes.K8Scluster{
 			DesiredK8s:    req.Desired,
@@ -83,16 +83,16 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 	}
 
 	err := utils.ConcurrentExec(clusters, func(cluster Cluster) error {
-		logger.Info().Str("cluster", cluster.Id()).Msgf("Creating infrastructure")
+		logger.Info().Msg("Creating infrastructure")
 
-		if err := cluster.Build(); err != nil {
+		if err := cluster.Build(logger); err != nil {
 			return fmt.Errorf("error while building the cluster %v : %w", cluster.Id(), err)
 		}
-		logger.Info().Str("cluster", cluster.Id()).Msgf("Infrastructure was successfully created")
+		logger.Info().Msg("Infrastructure was successfully created")
 		return nil
 	})
 	if err != nil {
-		logger.Err(err).Str("cluster", req.Desired.ClusterInfo.Name).Msgf("Error while building cluster")
+		logger.Err(err).Msgf("Error encountered while building cluster")
 		return nil, fmt.Errorf("error while building cluster %s for project %s : %w", req.Desired.ClusterInfo.Name, req.ProjectName, err)
 	}
 
@@ -107,6 +107,7 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 }
 
 func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrastructureRequest) (*pb.DestroyInfrastructureResponse, error) {
+	logger := utils.CreateLoggerWithProjectAndClusterName(req.ProjectName, utils.GetClusterID(req.Current.ClusterInfo))
 	var clusters []Cluster
 
 	if req.Current != nil {
@@ -142,10 +143,9 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 	})
 
 	err = utils.ConcurrentExec(clusters, func(cluster Cluster) error {
-		logger := utils.CreateLoggerWithProjectAndClusterName(req.ProjectName, cluster.Id())
 
 		logger.Info().Msgf("Destroying infrastructure")
-		if err := cluster.Destroy(); err != nil {
+		if err := cluster.Destroy(logger); err != nil {
 			return fmt.Errorf("error while destroying cluster %v : %w", cluster.Id(), err)
 		}
 
@@ -156,7 +156,7 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 			if err != nil {
 				return fmt.Errorf("error composing state lockfile id for cluster %s: %w", cluster.Id(), err)
 			}
-			logger.Debug().Msgf("deleting lockfile under key: %v", dynamoLockId)
+			logger.Debug().Msgf("Deleting lockfile under key: %v", dynamoLockId)
 			// Remove the lockfile from dynamodb
 			if _, err := dynamoConnection.DeleteItem(ctx, &dynamodb.DeleteItemInput{Key: map[string]types.AttributeValue{"LockID": dynamoLockId}, TableName: aws.String(dynamoTable)}); err != nil {
 				return fmt.Errorf("failed to remove state lock file %v : %w", cluster.Id(), err)
@@ -167,14 +167,14 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 				return fmt.Errorf("failed to remove dns lock file for cluster %v: %w", cluster.Id(), err)
 			}
 		}
-		logger.Info().Msgf("Infrastructure for cluster was successfully destroyed")
+		logger.Info().Msgf("Infrastructure was successfully destroyed")
 
 		// Key under which the lockfile id is stored in dynamodb
 		dynamoLockId, err := attributevalue.Marshal(fmt.Sprintf("%s/%s/%s-md5", minioBucket, req.ProjectName, cluster.Id()))
 		if err != nil {
 			return fmt.Errorf("error composing state lockfile id for cluster %s: %w", cluster.Id(), err)
 		}
-		logger.Debug().Msgf("deleting lockfile under key: %v", dynamoLockId)
+		logger.Debug().Msgf("Deleting lockfile under key: %v", dynamoLockId)
 		// Remove the lockfile from dynamodb
 		if _, err := dynamoConnection.DeleteItem(ctx, &dynamodb.DeleteItemInput{Key: map[string]types.AttributeValue{"LockID": dynamoLockId}, TableName: aws.String(dynamoTable)}); err != nil {
 			return fmt.Errorf("failed to remove state lock file for cluster %v : %w", cluster.Id(), err)
@@ -189,8 +189,8 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 	})
 
 	if err != nil {
-		log.Err(err).Str("project", req.ProjectName).Msgf("Error while destroying the infrastructure for project")
-		return nil, fmt.Errorf("error while destroying infrastructure for project %s : %w", req.ProjectName, err)
+		logger.Err(err).Msgf("Error while destroying the infrastructure")
+		return nil, fmt.Errorf("error while destroying infrastructure for cluster %s : %w", req.Current.ClusterInfo.Name, err)
 	}
 	return &pb.DestroyInfrastructureResponse{Current: req.Current, CurrentLbs: req.CurrentLbs}, nil
 }

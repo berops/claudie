@@ -59,6 +59,18 @@ type server struct {
 }
 
 func (s *server) PatchClusterInfoConfigMap(_ context.Context, req *pb.PatchClusterInfoConfigMapRequest) (*pb.PatchClusterInfoConfigMapResponse, error) {
+	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(req.DesiredCluster.ClusterInfo))
+	logger.Info().Msgf("Patching cluster info ConfigMap")
+	var err error
+	// Log error if any
+	defer func() {
+		if err != nil {
+			logger.Err(err).Msgf("Error while patching cluster info Config Map")
+		} else {
+			logger.Info().Msgf("Cluster info Config Map patched successfully")
+		}
+	}()
+
 	k := kubectl.Kubectl{
 		Kubeconfig: req.DesiredCluster.Kubeconfig,
 	}
@@ -75,12 +87,12 @@ func (s *server) PatchClusterInfoConfigMap(_ context.Context, req *pb.PatchClust
 	configMapKubeconfig := gjson.Get(string(configMap), "data.kubeconfig")
 
 	var rawKubeconfig map[string]interface{}
-	if err := yaml.Unmarshal([]byte(req.DesiredCluster.Kubeconfig), &rawKubeconfig); err != nil {
+	if err = yaml.Unmarshal([]byte(req.DesiredCluster.Kubeconfig), &rawKubeconfig); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal kubeconfig, malformed yaml")
 	}
 
 	var rawConfigMapKubeconfig map[string]interface{}
-	if err := yaml.Unmarshal([]byte(configMapKubeconfig.String()), &rawConfigMapKubeconfig); err != nil {
+	if err = yaml.Unmarshal([]byte(configMapKubeconfig.String()), &rawConfigMapKubeconfig); err != nil {
 		return nil, fmt.Errorf("failed to update cluster info config map, malformed yaml")
 	}
 
@@ -113,7 +125,7 @@ func (s *server) PatchClusterInfoConfigMap(_ context.Context, req *pb.PatchClust
 		return nil, fmt.Errorf("failed to update config map with new kubeconfig")
 	}
 
-	if err := k.KubectlApplyString(patchedConfigMap, "-n kube-public"); err != nil {
+	if err = k.KubectlApplyString(patchedConfigMap, "-n kube-public"); err != nil {
 		return nil, fmt.Errorf("failed to patch config map: %w", err)
 	}
 
@@ -121,7 +133,7 @@ func (s *server) PatchClusterInfoConfigMap(_ context.Context, req *pb.PatchClust
 }
 
 func (s *server) SetUpStorage(ctx context.Context, req *pb.SetUpStorageRequest) (*pb.SetUpStorageResponse, error) {
-	logger := utils.CreateLoggerWithClusterName(req.DesiredCluster.ClusterInfo.Name)
+	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(req.DesiredCluster.ClusterInfo))
 
 	clusterID := fmt.Sprintf("%s-%s", req.DesiredCluster.ClusterInfo.Name, req.DesiredCluster.ClusterInfo.Hash)
 	clusterDir := filepath.Join(outputDir, clusterID)
@@ -137,7 +149,7 @@ func (s *server) SetUpStorage(ctx context.Context, req *pb.SetUpStorageRequest) 
 }
 
 func (s *server) StoreLbScrapeConfig(ctx context.Context, req *pb.StoreLbScrapeConfigRequest) (*pb.StoreLbScrapeConfigResponse, error) {
-	logger := utils.CreateLoggerWithClusterName(req.Cluster.ClusterInfo.Name)
+	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(req.Cluster.ClusterInfo))
 
 	clusterID := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
 	clusterDir := filepath.Join(outputDir, clusterID)
@@ -158,7 +170,7 @@ func (s *server) StoreLbScrapeConfig(ctx context.Context, req *pb.StoreLbScrapeC
 }
 
 func (s *server) RemoveLbScrapeConfig(ctx context.Context, req *pb.RemoveLbScrapeConfigRequest) (*pb.RemoveLbScrapeConfigResponse, error) {
-	logger := utils.CreateLoggerWithClusterName(req.Cluster.ClusterInfo.Name)
+	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(req.Cluster.ClusterInfo))
 
 	clusterID := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
 	clusterDir := filepath.Join(outputDir, clusterID)
@@ -178,7 +190,7 @@ func (s *server) RemoveLbScrapeConfig(ctx context.Context, req *pb.RemoveLbScrap
 }
 
 func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterMetadataRequest) (*pb.StoreClusterMetadataResponse, error) {
-	logger := utils.CreateLoggerWithClusterName(req.Cluster.ClusterInfo.Name)
+	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(req.Cluster.ClusterInfo))
 
 	md := ClusterMetadata{
 		NodeIps:    make(map[string]IPPair),
@@ -234,8 +246,7 @@ func (s *server) DeleteClusterMetadata(ctx context.Context, req *pb.DeleteCluste
 		return &pb.DeleteClusterMetadataResponse{}, nil
 	}
 
-	logger := utils.CreateLoggerWithClusterName(req.Cluster.ClusterInfo.Name)
-
+	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(req.Cluster.ClusterInfo))
 	logger.Info().Msgf("Deleting cluster metadata secret")
 
 	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
@@ -257,14 +268,13 @@ func (s *server) DeleteClusterMetadata(ctx context.Context, req *pb.DeleteCluste
 func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigRequest) (*pb.StoreKubeconfigResponse, error) {
 	// local deployment - print kubeconfig
 	cluster := req.GetCluster()
-	clusterID := fmt.Sprintf("%s-%s", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
+	clusterID := utils.GetClusterID(req.Cluster.ClusterInfo)
+	logger := utils.CreateLoggerWithClusterName(clusterID)
 	if namespace := envs.Namespace; namespace == "" {
 		//NOTE: DEBUG print
-		// log.Info().Msgf("The kubeconfig for %s\n%s:", clusterID, cluster.Kubeconfig)
+		// logger.Info().Msgf("The kubeconfig for %s\n%s:", clusterID, cluster.Kubeconfig)
 		return &pb.StoreKubeconfigResponse{}, nil
 	}
-
-	logger := utils.CreateLoggerWithClusterName(req.Cluster.ClusterInfo.Name)
 
 	logger.Info().Msgf("Storing kubeconfig")
 
@@ -289,8 +299,7 @@ func (s *server) DeleteKubeconfig(ctx context.Context, req *pb.DeleteKubeconfigR
 		return &pb.DeleteKubeconfigResponse{}, nil
 	}
 	cluster := req.GetCluster()
-
-	logger := utils.CreateLoggerWithClusterName(req.Cluster.ClusterInfo.Name)
+	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(req.Cluster.ClusterInfo))
 
 	logger.Info().Msgf("Deleting kubeconfig secret")
 	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
@@ -311,7 +320,7 @@ func (s *server) DeleteKubeconfig(ctx context.Context, req *pb.DeleteKubeconfigR
 }
 
 func (s *server) DeleteNodes(ctx context.Context, req *pb.DeleteNodesRequest) (*pb.DeleteNodesResponse, error) {
-	logger := utils.CreateLoggerWithClusterName(req.Cluster.ClusterInfo.Name)
+	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(req.Cluster.ClusterInfo))
 
 	logger.Info().Msgf("Deleting nodes - control nodes [%d], compute nodes[%d]", len(req.MasterNodes), len(req.WorkerNodes))
 	deleter := nodes.NewDeleter(req.MasterNodes, req.WorkerNodes, req.Cluster)
@@ -325,10 +334,10 @@ func (s *server) DeleteNodes(ctx context.Context, req *pb.DeleteNodesRequest) (*
 }
 
 func (s *server) PatchNodes(ctx context.Context, req *pb.PatchNodeTemplateRequest) (*pb.PatchNodeTemplateResponse, error) {
-	logger := utils.CreateLoggerWithClusterName(req.Cluster.ClusterInfo.Name)
+	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(req.Cluster.ClusterInfo))
 
 	patcher := nodes.NewPatcher(req.Cluster)
-	if err := patcher.PatchProviderID(); err != nil {
+	if err := patcher.PatchProviderID(logger); err != nil {
 		logger.Err(err).Msgf("Error while patching nodes")
 		return nil, fmt.Errorf("error while patching nodes for %s : %w", req.Cluster.ClusterInfo.Name, err)
 	}
@@ -345,7 +354,7 @@ func (s *server) SetUpClusterAutoscaler(ctx context.Context, req *pb.SetUpCluste
 		return nil, fmt.Errorf("error while creating directory %s : %w", clusterDir, err)
 	}
 
-	logger := utils.CreateLoggerWithClusterName(req.Cluster.ClusterInfo.Name)
+	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(req.Cluster.ClusterInfo))
 
 	// Set up cluster autoscaler.
 	autoscalerBuilder := autoscaler.NewAutoscalerBuilder(req.ProjectName, req.Cluster, clusterDir)
@@ -366,7 +375,7 @@ func (s *server) DestroyClusterAutoscaler(ctx context.Context, req *pb.DestroyCl
 		return nil, fmt.Errorf("error while creating directory %s : %w", clusterDir, err)
 	}
 
-	logger := utils.CreateLoggerWithClusterName(req.Cluster.ClusterInfo.Name)
+	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(req.Cluster.ClusterInfo))
 
 	// Destroy cluster autoscaler.
 	autoscalerBuilder := autoscaler.NewAutoscalerBuilder(req.ProjectName, req.Cluster, clusterDir)

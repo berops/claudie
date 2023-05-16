@@ -225,7 +225,7 @@ func (d *Deleter) assureReplication(kc kubectl.Kubectl, worker string) error {
 				time.Sleep(newReplicaCreationTimeout)
 
 				// Verify all current replicas are running correctly
-				if err := verifyAllReplicasSetUp(v.Metadata.Name, kc); err != nil {
+				if err := verifyAllReplicasSetUp(v.Metadata.Name, kc, d.logger); err != nil {
 					return fmt.Errorf("error while checking if all longhorn replicas for volume %s are running : %w", v.Metadata.Name, err)
 				}
 				d.logger.Info().Msgf("Replication for volume %s has been set up", v.Metadata.Name)

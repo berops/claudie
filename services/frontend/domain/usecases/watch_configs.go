@@ -52,9 +52,7 @@ func (u *Usecases) WatchConfigs() {
 					}
 
 					u.inProgress.Delete(cluster)
-					log.Info().
-						Str("project", cfg.Name).Str("cluster", cluster).
-						Msgf("Cluster has been deleted")
+					log.Info().Str("project", cfg.Name).Str("cluster", cluster).Msgf("Cluster has been deleted")
 					return true
 				})
 

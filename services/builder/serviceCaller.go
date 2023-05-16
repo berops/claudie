@@ -52,6 +52,30 @@ func (ctx *BuilderContext) GetClusterName() string {
 	return ""
 }
 
+func (ctx *BuilderContext) GetClusterID() string {
+	if ctx.desiredCluster != nil {
+		return utils.GetClusterID(ctx.desiredCluster.ClusterInfo)
+	}
+	if ctx.cluster != nil {
+		return utils.GetClusterID(ctx.cluster.ClusterInfo)
+	}
+
+	// try to get the cluster name from the lbs if present
+	if len(ctx.desiredLoadbalancers) != 0 {
+		return ctx.desiredLoadbalancers[0].TargetedK8S
+	}
+
+	if len(ctx.loadbalancers) != 0 {
+		return ctx.loadbalancers[0].TargetedK8S
+	}
+
+	if len(ctx.deletedLoadBalancers) != 0 {
+		return ctx.deletedLoadBalancers[0].TargetedK8S
+	}
+
+	return ""
+}
+
 func buildCluster(ctx *BuilderContext, c pb.ContextBoxServiceClient) (*BuilderContext, error) {
 	if err := callTerraformer(ctx, c); err != nil {
 		return nil, fmt.Errorf("error in Terraformer for cluster %s project %s : %w", ctx.GetClusterName(), ctx.projectName, err)
@@ -74,7 +98,7 @@ func buildCluster(ctx *BuilderContext, c pb.ContextBoxServiceClient) (*BuilderCo
 
 // callTerraformer passes config to terraformer for building the infra
 func callTerraformer(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
-	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.projectName, ctx.GetClusterName())
+	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.projectName, ctx.GetClusterID())
 
 	description := ctx.Workflow.Description
 
@@ -159,7 +183,7 @@ func callUpdateAPIEndpoint(ctx *BuilderContext, cboxClient pb.ContextBoxServiceC
 
 // callAnsibler passes config to ansibler to set up VPN
 func callAnsibler(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
-	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.projectName, ctx.GetClusterName())
+	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.projectName, ctx.GetClusterID())
 
 	description := ctx.Workflow.Description
 
@@ -269,7 +293,7 @@ func callAnsibler(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) er
 
 // callKubeEleven passes config to kubeEleven to bootstrap k8s cluster
 func callKubeEleven(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
-	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.projectName, ctx.GetClusterName())
+	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.projectName, ctx.GetClusterID())
 
 	description := ctx.Workflow.Description
 
@@ -311,7 +335,7 @@ func callKubeEleven(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) 
 }
 
 func callPatchClusterInfoConfigMap(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
-	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.projectName, ctx.GetClusterName())
+	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.projectName, ctx.GetClusterID())
 
 	description := ctx.Workflow.Description
 	ctx.Workflow.Stage = pb.Workflow_KUBER
@@ -341,7 +365,7 @@ func callPatchClusterInfoConfigMap(ctx *BuilderContext, cboxClient pb.ContextBox
 
 // callKuber passes config to Kuber to apply any additional resources via kubectl
 func callKuber(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
-	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.projectName, ctx.GetClusterName())
+	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.projectName, ctx.GetClusterID())
 
 	description := ctx.Workflow.Description
 	ctx.Workflow.Stage = pb.Workflow_KUBER
@@ -486,7 +510,7 @@ func destroyCluster(ctx *BuilderContext, c pb.ContextBoxServiceClient) error {
 
 // destroyConfigTerraformer calls terraformer's DestroyInfrastructure function
 func destroyConfigTerraformer(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
-	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.projectName, ctx.GetClusterName())
+	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.projectName, ctx.GetClusterID())
 
 	description := ctx.Workflow.Description
 
@@ -527,7 +551,7 @@ func deleteClusterData(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClien
 	}
 	description := ctx.Workflow.Description
 
-	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.projectName, ctx.GetClusterName())
+	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.projectName, ctx.GetClusterID())
 
 	ctx.Workflow.Stage = pb.Workflow_DESTROY_KUBER
 	ctx.Workflow.Description = fmt.Sprintf("%s deleting kubeconfig secret", description)
@@ -559,7 +583,7 @@ func deleteClusterData(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClien
 
 // callDeleteNodes calls Kuber.DeleteNodes which will safely delete nodes from cluster
 func callDeleteNodes(master, worker []string, cluster *pb.K8Scluster) (*pb.K8Scluster, error) {
-	logger := utils.CreateLoggerWithClusterName(cluster.ClusterInfo.Name)
+	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(cluster.ClusterInfo))
 
 	cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL)
 	if err != nil {

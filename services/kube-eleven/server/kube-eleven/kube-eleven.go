@@ -150,7 +150,7 @@ func (k *KubeEleven) findAPIEndpoint(ep *pb.Node) string {
 		apiEndpoint = ep.Public
 		ep.NodeType = pb.NodeType_apiEndpoint
 	} else {
-		log.Error().Str("cluster", k.K8sCluster.ClusterInfo.Name).Msgf("Cluster does not have any API endpoint specified")
+		log.Err(fmt.Errorf("cluster does not have any API endpoint specified")).Str("cluster", k.K8sCluster.ClusterInfo.Name).Msgf("Error while looking for API endpoint")
 	}
 
 	return apiEndpoint

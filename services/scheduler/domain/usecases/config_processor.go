@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/rs/zerolog/log"
-
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 )
@@ -46,10 +44,10 @@ func (u *Usecases) ConfigProcessor(contextBoxGrpcClient pb.ContextBoxServiceClie
 
 			// Save processing error message to config
 			if err := u.saveErrorMessageToConfig(config, contextBoxGrpcClient, configProcessingErr); err != nil {
-				log.Err(err).Msgf("Failed to save error to the config")
+				logger.Err(err).Msgf("Failed to save error to the config")
 			}
 		}
-		log.Info().Msgf("Config have been successfully processed")
+		logger.Info().Msgf("Config have been successfully processed")
 	}()
 
 	return nil

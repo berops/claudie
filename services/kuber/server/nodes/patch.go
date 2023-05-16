@@ -33,14 +33,14 @@ func NewPatcher(cluster *pb.K8Scluster) *Patcher {
 	return &Patcher{kc: kc, nodepools: cluster.ClusterInfo.NodePools, clusterID: clusterID}
 }
 
-func (p *Patcher) PatchProviderID() error {
+func (p *Patcher) PatchProviderID(logger zerolog.Logger) error {
 	var err error
 	for _, np := range p.nodepools {
 		for _, node := range np.Nodes {
 			nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
 			patchPath := fmt.Sprintf(patchPathFormat, fmt.Sprintf(ProviderIdFormat, nodeName))
 			if err1 := p.kc.KubectlPatch("node", nodeName, patchPath); err1 != nil {
-				log.Err(err1).Str("node", nodeName).Msgf("Error while patching node with patch %s", patchPath)
+				logger.Err(err1).Str("node", nodeName).Msgf("Error while patching node with patch %s", patchPath)
 				err = fmt.Errorf("error while patching one or more nodes")
 			}
 		}

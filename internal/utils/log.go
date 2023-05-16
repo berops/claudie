@@ -10,6 +10,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/proto/pb"
 )
 
 const defaultLogLevel = zerolog.InfoLevel
@@ -43,6 +44,13 @@ func InitLog(moduleName string) {
 		isLogInit = true
 	}
 	log.Logger = logger
+}
+
+func GetClusterID(clusterInfo *pb.ClusterInfo) string {
+	if clusterInfo != nil {
+		return fmt.Sprintf("%s-%s", clusterInfo.Name, clusterInfo.Hash)
+	}
+	return ""
 }
 
 // CreateLoggerWithProjectName creates a new logger aware of the project-name.

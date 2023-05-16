@@ -31,7 +31,7 @@ const (
 
 // BuildCluster builds all cluster defined in the desired state
 func (*server) BuildCluster(_ context.Context, req *pb.BuildClusterRequest) (*pb.BuildClusterResponse, error) {
-	logger := utils.CreateLoggerWithProjectAndClusterName(req.ProjectName, req.Desired.ClusterInfo.Name)
+	logger := utils.CreateLoggerWithProjectAndClusterName(req.ProjectName, utils.GetClusterID(req.Desired.ClusterInfo))
 
 	logger.Info().Msgf("Building kubernetes cluster")
 	ke := kubeEleven.KubeEleven{

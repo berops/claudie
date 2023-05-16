@@ -29,7 +29,7 @@ type server struct {
 }
 
 func (*server) UpdateAPIEndpoint(_ context.Context, req *pb.UpdateAPIEndpointRequest) (*pb.UpdateAPIEndpointResponse, error) {
-	logger := utils.CreateLoggerWithProjectAndClusterName(req.ProjectName, req.Current.ClusterInfo.Name)
+	logger := utils.CreateLoggerWithProjectAndClusterName(req.ProjectName, utils.GetClusterID(req.Desired.ClusterInfo))
 
 	if req.Current == nil {
 		return &pb.UpdateAPIEndpointResponse{Current: req.Current, Desired: req.Desired}, nil
@@ -158,11 +158,9 @@ func (*server) TeardownLoadBalancers(ctx context.Context, req *pb.TeardownLBRequ
 
 // SetUpLoadbalancers sets up the loadbalancers, DNS and verifies their configuration
 func (*server) SetUpLoadbalancers(_ context.Context, req *pb.SetUpLBRequest) (*pb.SetUpLBResponse, error) {
-	logger := log.With().
-		Str("project", req.ProjectName).Str("cluster", req.Desired.ClusterInfo.Name).
-		Logger()
+	logger := utils.CreateLoggerWithProjectAndClusterName(req.ProjectName, utils.GetClusterID(req.Desired.ClusterInfo))
 
-	logger.Info().Msgf("Setting up the loadbalancers for cluster")
+	logger.Info().Msgf("Setting up the loadbalancers")
 	currentLBs := make(map[string]*pb.LBcluster)
 	for _, lb := range req.CurrentLbs {
 		currentLBs[lb.ClusterInfo.Name] = lb
@@ -184,7 +182,7 @@ func (*server) SetUpLoadbalancers(_ context.Context, req *pb.SetUpLBRequest) (*p
 		})
 	}
 
-	if err := setUpLoadbalancers(req.Desired.ClusterInfo.Name, info); err != nil {
+	if err := setUpLoadbalancers(req.Desired.ClusterInfo.Name, info, logger); err != nil {
 		logger.Err(err).Msgf("Error encountered while setting up the loadbalancers")
 		return nil, fmt.Errorf("error encountered while setting up the loadbalancers for cluster %s project %s : %w", req.Desired.ClusterInfo.Name, req.ProjectName, err)
 	}
