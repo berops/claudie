@@ -1,5 +1,5 @@
 name: Release docs pipeline
-# Only trigger, when the release workflow succeeded
+# Only trigger, when the release workflow has completed
 on:
   workflow_run:
     workflows: ["Release pipeline"]
@@ -21,6 +21,8 @@ jobs:
   build-and-publish:
     name: Create a new  docs release
     runs-on: ubuntu-22.04
+    # runs only, when the workflow was succeeded
+    if: ${{ github.event.workflow_run.conclusion == 'success' }} 
     steps:
       - uses: actions/checkout@v3
         with:
