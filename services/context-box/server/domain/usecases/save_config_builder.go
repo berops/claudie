@@ -38,6 +38,13 @@ func (u *Usecases) SaveConfigBuilder(request *pb.SaveConfigRequest) (*pb.SaveCon
 		return nil, fmt.Errorf("error while updating builderTTL for %s : %w", config.Name, err)
 	}
 
+	// Update workflow state for k8s clusters. (attached LB clusters included)
+	for _, cluster := range config.CurrentState.Clusters {
+		if err := u.DB.UpdateWorkflowState(config.Name, cluster.ClusterInfo.Name, config.State[cluster.ClusterInfo.Name]); err != nil {
+			return nil, fmt.Errorf("error while updating workflow state for k8s cluster %s in config %s : %w", cluster.ClusterInfo.Name, config.Name, err)
+		}
+	}
+
 	log.Info().Msgf("Config %s successfully saved from Builder", config.Name)
 	return &pb.SaveConfigResponse{Config: config}, nil
 }

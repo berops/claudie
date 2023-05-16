@@ -20,8 +20,15 @@ func (u *Usecases) SaveConfigScheduler(request *pb.SaveConfigRequest) (*pb.SaveC
 		return nil, fmt.Errorf("error while updating dsChecksum for %s : %w", config.Name, err)
 	}
 
-	err = u.DB.UpdateSchedulerTTL(config.Name, config.SchedulerTTL)
-	if err != nil {
+	if config.DesiredState != nil {
+		// Update workflow state for K8s clusters. (attached LB clusters included)
+		for _, cluster := range config.DesiredState.Clusters {
+			if err := u.DB.UpdateWorkflowState(config.Name, cluster.ClusterInfo.Name, config.State[cluster.ClusterInfo.Name]); err != nil {
+				return nil, fmt.Errorf("error while updating workflow state for k8s cluster %s in config %s : %w", cluster.ClusterInfo.Name, config.Name, err)
+			}
+		}
+	}
+	if err := u.DB.UpdateSchedulerTTL(config.Name, config.SchedulerTTL); err != nil {
 		return nil, fmt.Errorf("error while updating schedulerTTL for %s : %w", config.Name, err)
 	}
 

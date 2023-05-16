@@ -27,7 +27,7 @@ type SecretData struct {
 
 // deleteSecret will delete a secret in the cluster in the specified namespace
 func deleteSecret(setName string) error {
-	kc := kubectl.Kubectl{}
+	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
 		kc.Stdout = comm.GetStdOut(setName)
 		kc.Stderr = comm.GetStdErr(setName)
@@ -53,7 +53,7 @@ func applySecret(manifest []byte, pathToTestSet, secretName string) error {
 	if err != nil {
 		return fmt.Errorf("error while generating string for secret %s : %w", secretName, err)
 	}
-	kc := kubectl.Kubectl{}
+	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
 		kc.Stdout = comm.GetStdOut(pathToTestSet)
 		kc.Stderr = comm.GetStdErr(pathToTestSet)

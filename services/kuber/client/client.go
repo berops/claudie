@@ -100,3 +100,8 @@ func DestroyClusterAutoscaler(c pb.KuberServiceClient, req *pb.DestroyClusterAut
 
 	return res, nil
 }
+
+func PatchClusterInfoConfigMap(c pb.KuberServiceClient, req *pb.PatchClusterInfoConfigMapRequest) error {
+	_, err := c.PatchClusterInfoConfigMap(context.Background(), req)
+	return err
+}

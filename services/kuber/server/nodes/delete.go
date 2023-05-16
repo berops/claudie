@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	longhornNamespace     = "longhorn-system"
-	pvcReplicationTimeout = 10 * time.Second
+	longhornNamespace         = "longhorn-system"
+	newReplicaCreationTimeout = 10 * time.Second
 )
 
 type etcdPodInfo struct {
@@ -55,7 +55,7 @@ func NewDeleter(masterNodes, workerNodes []string, cluster *pb.K8Scluster) *Dele
 // DeleteNodes deletes nodes specified in d.masterNodes and d.workerNodes
 // return nil if successful, error otherwise
 func (d *Deleter) DeleteNodes() (*pb.K8Scluster, error) {
-	kubectl := kubectl.Kubectl{Kubeconfig: d.cluster.Kubeconfig}
+	kubectl := kubectl.Kubectl{Kubeconfig: d.cluster.Kubeconfig, MaxKubectlRetries: 3}
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
 		kubectl.Stdout = comm.GetStdOut(d.clusterPrefix)
 		kubectl.Stderr = comm.GetStdErr(d.clusterPrefix)
@@ -68,6 +68,7 @@ func (d *Deleter) DeleteNodes() (*pb.K8Scluster, error) {
 	}
 
 	etcdEpNode := d.getMainMaster()
+	// Remove master nodes sequentially to minimise risk of faults in etcd
 	for _, master := range d.masterNodes {
 		// delete master nodes from etcd
 		if err := d.deleteFromEtcd(kubectl, etcdEpNode); err != nil {
@@ -79,22 +80,32 @@ func (d *Deleter) DeleteNodes() (*pb.K8Scluster, error) {
 		}
 	}
 
+	// Cordon worker nodes to prevent any new pods/volume replicas being scheduled there
+	if err := utils.ConcurrentExec(d.workerNodes, func(worker string) error {
+		return kubectl.KubectlCordon(worker)
+	}); err != nil {
+		return nil, fmt.Errorf("error while cordoning worker nodes from cluster %s which were marked for deletion : %w", d.clusterPrefix, err)
+	}
+
+	// Remove worker nodes sequentially to minimise risk of fault when replicating PVC
 	for _, worker := range d.workerNodes {
-		// assure replication of storage
+		// Assure replication of storage
 		if err := d.assureReplication(kubectl, worker); err != nil {
 			return nil, fmt.Errorf("error while making sure storage is replicated before deletion on cluster %s : %w", d.clusterPrefix, err)
 		}
-		// delete worker nodes from nodes.longhorn.io
+		// Delete worker nodes from nodes.longhorn.io
 		if err := d.deleteFromLonghorn(kubectl, worker); err != nil {
 			return nil, fmt.Errorf("error while deleting nodes.longhorn.io for %s : %w", d.clusterPrefix, err)
 		}
-		// delete worker nodes
+		// Delete worker nodes
 		if err := d.deleteNodesByName(kubectl, worker, realNodeNames); err != nil {
 			return nil, fmt.Errorf("error while deleting nodes from worker nodes for %s : %w", d.clusterPrefix, err)
 		}
+		// NOTE: Might need to manually verify if the volume got detached.
+		// https://github.com/berops/claudie/issues/784
 	}
 
-	// update the current cluster
+	// Update the current cluster
 	d.updateClusterData()
 	return d.cluster, nil
 }
@@ -103,8 +114,7 @@ func (d *Deleter) DeleteNodes() (*pb.K8Scluster, error) {
 // kubectl delete node <node-name>
 // return nil if successful, error otherwise
 func (d *Deleter) deleteNodesByName(kc kubectl.Kubectl, nodeName string, realNodeNames []string) error {
-	realNodeName := utils.FindName(realNodeNames, nodeName)
-	if realNodeName != "" {
+	if realNodeName := utils.FindName(realNodeNames, nodeName); realNodeName != "" {
 		log.Info().Msgf("Deleting node %s from k8s cluster %s", realNodeName, d.clusterPrefix)
 		//kubectl drain <node-name> --ignore-daemonsets --delete-emptydir-data
 		err := kc.KubectlDrain(realNodeName)
@@ -116,10 +126,10 @@ func (d *Deleter) deleteNodesByName(kc kubectl.Kubectl, nodeName string, realNod
 		if err != nil {
 			return fmt.Errorf("error while deleting node %s from cluster %s : %w", nodeName, d.clusterPrefix, err)
 		}
-	} else {
-		log.Error().Msgf("Node name that contains %s not found in cluster %s", nodeName, d.clusterPrefix)
-		return fmt.Errorf("no node with name %s found in cluster %s", nodeName, d.clusterPrefix)
+		return nil
 	}
+
+	log.Warn().Msgf("Node name that contains %s not found in cluster %s", nodeName, d.clusterPrefix)
 	return nil
 }
 
@@ -170,6 +180,15 @@ func (d *Deleter) updateClusterData() {
 // deleteFromLonghorn will delete node from nodes.longhorn.io
 // return nil if successful, error otherwise
 func (d *Deleter) deleteFromLonghorn(kc kubectl.Kubectl, worker string) error {
+	// check if the resource is present before deleting.
+	if logs, err := kc.KubectlGet(fmt.Sprintf("nodes.longhorn.io %s", worker), "-n", longhornNamespace); err != nil {
+		// This is not the ideal path of checking for a NotFound error, this is only done as we shell out to run kubectl.
+		if strings.Contains(string(logs), "NotFound") {
+			log.Warn().Msgf("worker node: %s not found, assuming it was deleted.", worker)
+			return nil
+		}
+	}
+
 	log.Info().Msgf("Deleting node %s from nodes.longhorn.io from cluster %s", worker, d.clusterPrefix)
 	if err := kc.KubectlDeleteResource("nodes.longhorn.io", worker, "-n", longhornNamespace); err != nil {
 		return fmt.Errorf("error while deleting node %s from nodes.longhorn.io from cluster %s : %w", worker, d.clusterPrefix, err)
@@ -180,13 +199,13 @@ func (d *Deleter) deleteFromLonghorn(kc kubectl.Kubectl, worker string) error {
 // assureReplication tries to assure, that replicas for each longhorn volume are migrated to nodes, which will remain in the cluster.
 func (d *Deleter) assureReplication(kc kubectl.Kubectl, worker string) error {
 	// Get replicas and volumes as they can be scheduled on next node, which will be deleted.
-	replicas, err := getReplicas(kc)
+	replicas, err := getReplicasMap(kc)
 	if err != nil {
-		return fmt.Errorf("error while getting replicas from cluster : %w", err)
+		return fmt.Errorf("error while getting replicas from cluster %s : %w", d.clusterPrefix, err)
 	}
 	volumes, err := getVolumes(kc)
 	if err != nil {
-		return fmt.Errorf("error while getting volumes from cluster  : %w", err)
+		return fmt.Errorf("error while getting volumes from cluster  %s : %w", d.clusterPrefix, err)
 	}
 	if reps, ok := replicas[worker]; ok {
 		for _, r := range reps {
@@ -196,9 +215,16 @@ func (d *Deleter) assureReplication(kc kubectl.Kubectl, worker string) error {
 				if err := increaseReplicaCount(v, kc); err != nil {
 					return fmt.Errorf("error while increasing number of replicas in volume %s from cluster %s : %w", v.Metadata.Name, d.clusterPrefix, err)
 				}
-				// Wait pvcReplicationTimeout for Longhorn to create new replica.
-				log.Info().Msgf("Waiting %.0f seconds for new replicas to be scheduled if possible for node %s cluster %s ", pvcReplicationTimeout.Seconds(), worker, d.clusterPrefix)
-				time.Sleep(pvcReplicationTimeout)
+				// Wait newReplicaCreationTimeout for Longhorn to create new replica.
+				log.Info().Msgf("Waiting %.0f seconds for new replicas to be scheduled if possible for node %s cluster %s ", newReplicaCreationTimeout.Seconds(), worker, d.clusterPrefix)
+				time.Sleep(newReplicaCreationTimeout)
+
+				// Verify all current replicas are running correctly
+				if err := verifyAllReplicasSetUp(v.Metadata.Name, kc); err != nil {
+					return fmt.Errorf("error while checking if all longhorn replicas for volume %s are running : %w", v.Metadata.Name, err)
+				}
+				log.Info().Msgf("Replication for volume %s has been set up", v.Metadata.Name)
+
 				// Decrease number of replicas in volume -> original state.
 				if err := revertReplicaCount(v, kc); err != nil {
 					return fmt.Errorf("error while increasing number of replicas in volume %s cluster %s : %w", v.Metadata.Name, d.clusterPrefix, err)
@@ -211,7 +237,6 @@ func (d *Deleter) assureReplication(kc kubectl.Kubectl, worker string) error {
 			}
 		}
 	}
-
 	return nil
 }
 

@@ -1,11 +1,5 @@
 {{- $clusterName := .ClusterName}}
 {{- $clusterHash := .ClusterHash}}
-{{- $index :=  0 }}
-provider "hcloud" {
-  token = "{{ (index .NodePools $index).Provider.Credentials }}" 
-  alias = "k8s_nodepool"
-}
-
 resource "hcloud_firewall" "defaultfirewall" {
   provider = hcloud.k8s_nodepool
   name     = "{{ $clusterName }}-{{ $clusterHash }}-firewall"

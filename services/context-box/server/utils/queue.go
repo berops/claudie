@@ -57,8 +57,8 @@ func (q *Queue) Contains(targetElement QueueElement) bool {
 	return false
 }
 
-// GetElementNames returns slice of names of the elements in the queue
-func (q *Queue) GetElementNames() []string {
+// GetElementnames returns slice of names of the elements in the queue
+func (q *Queue) GetElementnames() []string {
 	var names []string
 
 	q.threadSafetyLock.Lock()
@@ -70,16 +70,16 @@ func (q *Queue) GetElementNames() []string {
 	return names
 }
 
-// CompareElementNameList compares given element-name list with the current element-name list of the queue
-func (q *Queue) CompareElementNameList(givenList []string) bool {
-	currentList := q.GetElementNames()
+// CompareElementnameList compares given element-name list with the current element-name list of the queue
+func (q *Queue) CompareElementnameList(givenList []string) bool {
+	currentList := q.GetElementnames()
 
 	if len(givenList) != len(currentList) {
 		return false
 	}
 
-	for _, elementName := range currentList {
-		if !doesListContainElementName(elementName, givenList) {
+	for _, Elementname := range currentList {
+		if !doesListContainElementname(Elementname, givenList) {
 			return false
 		}
 	}
@@ -87,9 +87,9 @@ func (q *Queue) CompareElementNameList(givenList []string) bool {
 	return true
 }
 
-func doesListContainElementName(targetElementName string, givenList []string) bool {
-	for _, elementName := range givenList {
-		if elementName == targetElementName {
+func doesListContainElementname(targetElementname string, givenList []string) bool {
+	for _, Elementname := range givenList {
+		if Elementname == targetElementname {
 			return true
 		}
 	}

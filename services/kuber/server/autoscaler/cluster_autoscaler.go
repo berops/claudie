@@ -50,7 +50,7 @@ func (ab *AutoscalerBuilder) SetUpClusterAutoscaler() error {
 		return err
 	}
 	// Apply generated files.
-	kc := kubectl.Kubectl{Directory: ab.directory}
+	kc := kubectl.Kubectl{Directory: ab.directory, MaxKubectlRetries: 3}
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
 		prefix := fmt.Sprintf("%s-%s", ab.cluster.ClusterInfo.Name, ab.cluster.ClusterInfo.Hash)
 		kc.Stdout = comm.GetStdOut(prefix)
@@ -71,7 +71,7 @@ func (ab *AutoscalerBuilder) DestroyClusterAutoscaler() error {
 		return err
 	}
 	// Apply generated files.
-	kc := kubectl.Kubectl{Directory: ab.directory}
+	kc := kubectl.Kubectl{Directory: ab.directory, MaxKubectlRetries: 3}
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
 		prefix := fmt.Sprintf("%s-%s", ab.cluster.ClusterInfo.Name, ab.cluster.ClusterInfo.Hash)
 		kc.Stdout = comm.GetStdOut(prefix)

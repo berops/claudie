@@ -104,7 +104,12 @@ func getError(c *pb.Config) error {
 	var err error
 	for cluster, state := range c.State {
 		if state.Status == pb.Workflow_ERROR {
-			err = fmt.Errorf("----\nerror in cluster %s\n----\nStage: %s \n State: %s\n Description: %s \n %w", cluster, state.Stage, state.Status, state.Description, err)
+			err1 := fmt.Errorf("----\nerror in cluster %s\n----\nStage: %s \n State: %s\n Description: %s", cluster, state.Stage, state.Status, state.Description)
+			if err == nil {
+				err = err1
+			} else {
+				err = fmt.Errorf("%w \n %w", err1, err)
+			}
 		}
 	}
 	return err

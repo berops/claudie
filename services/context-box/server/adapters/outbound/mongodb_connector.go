@@ -325,7 +325,6 @@ func (m *MongoDBConnector) UpdateDs(config *pb.Config) error {
 	err = m.updateDocument(bson.M{"name": config.Name}, bson.M{"$set": bson.M{
 		"dsChecksum":   config.DsChecksum,
 		"desiredState": desiredStateByte,
-		"state":        ConvertFromGRPCWorkflow(config.State),
 	}})
 	if err != nil {
 		return fmt.Errorf("failed to update dsChecksum and desiredState for document %s : %w", config.Name, err)
@@ -335,6 +334,9 @@ func (m *MongoDBConnector) UpdateDs(config *pb.Config) error {
 
 // UpdateWorkflowState updates the state of the config with the given workflow
 func (m *MongoDBConnector) UpdateWorkflowState(configName, clusterName string, workflow *pb.Workflow) error {
+	if workflow == nil {
+		return nil
+	}
 	return m.updateDocument(bson.M{"name": configName}, bson.M{"$set": bson.M{
 		fmt.Sprintf("state.%s", clusterName): Workflow{
 			Status:      workflow.Status.String(),
@@ -354,7 +356,6 @@ func (m *MongoDBConnector) UpdateCs(config *pb.Config) error {
 	err = m.updateDocument(bson.M{"name": config.Name}, bson.M{"$set": bson.M{
 		"csChecksum":   config.CsChecksum,
 		"currentState": currentStateByte,
-		"state":        ConvertFromGRPCWorkflow(config.State),
 	}})
 	if err != nil {
 		return fmt.Errorf("failed to update csChecksum and currentState for document %s : %w", config.Name, err)

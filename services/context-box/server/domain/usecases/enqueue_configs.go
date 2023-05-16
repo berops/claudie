@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 
@@ -39,6 +40,39 @@ func (c *ConfigInfo) HasError() bool {
 	return false
 }
 
+// hasDestroyError returns true if error occured in any of the clusters
+// while getting destroyed.
+func (c *ConfigInfo) hasDestroyError() bool {
+	for _, v := range c.State {
+		if v.Status == pb.Workflow_ERROR.String() && strings.Contains(v.Stage, "DESTROY") {
+			return true
+		}
+	}
+	return false
+}
+
+// scheduleDeletion returns true if config should be pushed onto any queue due to deletion.
+// This ignores the build errors, as we want to remove infrastructure if secret was deleted,
+// However, respects error from destroy workflow, as we do not want to retry indefinitely.
+func (c *ConfigInfo) scheduleDeletion() bool {
+	// Ignore as deletion already errored out
+	if c.hasDestroyError() {
+		return false
+	}
+
+	// Scheduler queue
+	if c.MsChecksum == nil && c.DsChecksum != nil {
+		return true
+	}
+	// Builder queue
+	if c.MsChecksum == nil && c.DsChecksum == nil && c.CsChecksum != nil {
+		return true
+	}
+
+	// Not scheduled for deletion
+	return false
+}
+
 const (
 	// default TTL for an element to be in the builder queue
 	defaultBuilderTTL = 360
@@ -53,15 +87,15 @@ func (u *Usecases) EnqueueConfigs() error {
 		return fmt.Errorf("error while enqueuing configs: %w", err)
 	}
 
-	if !u.schedulerQueue.CompareElementNameList(u.schedulerLogQueue) {
-		log.Info().Msgf("Scheduler queue content changed to: %v", u.schedulerQueue.GetElementNames())
+	if !u.schedulerQueue.CompareElementnameList(u.schedulerLogQueue) {
+		log.Info().Msgf("Scheduler queue content changed to: %v", u.schedulerQueue.GetElementnames())
 	}
-	u.schedulerLogQueue = u.schedulerQueue.GetElementNames()
+	u.schedulerLogQueue = u.schedulerQueue.GetElementnames()
 
-	if !u.builderQueue.CompareElementNameList(u.builderLogQueue) {
-		log.Info().Msgf("Builder queue content changed to: %v", u.builderQueue.GetElementNames())
+	if !u.builderQueue.CompareElementnameList(u.builderLogQueue) {
+		log.Info().Msgf("Builder queue content changed to: %v", u.builderQueue.GetElementnames())
 	}
-	u.builderLogQueue = u.builderQueue.GetElementNames()
+	u.builderLogQueue = u.builderQueue.GetElementnames()
 
 	return nil
 }
@@ -74,7 +108,7 @@ func (u *Usecases) enqueueConfigs() error {
 	}
 
 	for _, configInfo := range configInfos {
-		// if item is already in some queue (scheduler / builder) then skip and move to the next item
+		// If item is already in some queue (scheduler / builder) then skip and move to the next item
 		if u.builderQueue.Contains(configInfo) || u.schedulerQueue.Contains(configInfo) {
 			continue
 		}
@@ -105,17 +139,20 @@ func (u *Usecases) enqueueConfigs() error {
 		// doesn't match since the infrastructure is not built yet.
 		if !utils.Equal(configInfo.DsChecksum, configInfo.CsChecksum) {
 			// If builder TTL <= 0 AND config has no errorMessage, add item to the builder queue
-			if configInfo.BuilderTTL <= 0 && !configInfo.HasError() {
-				if err := u.DB.UpdateBuilderTTL(configInfo.Name, defaultBuilderTTL); err != nil {
-					return err
+			if configInfo.BuilderTTL <= 0 {
+				// If no BUILD error OR if triggered for deletion in builder microservice.
+				if !configInfo.HasError() || configInfo.scheduleDeletion() {
+					if err := u.DB.UpdateBuilderTTL(configInfo.Name, defaultBuilderTTL); err != nil {
+						return err
+					}
+
+					// The item is put in the builder queue. The builder microservice will eventually pull the corresponding
+					// config and provision the corresponding infrastructure.
+					u.builderQueue.Enqueue(configInfo)
+					configInfo.BuilderTTL = defaultBuilderTTL
+
+					continue
 				}
-
-				// The item is put in the builder queue. The builder microservice will eventually pull the corresponding
-				// config and provision the corresponding infrastructure.
-				u.builderQueue.Enqueue(configInfo)
-				configInfo.BuilderTTL = defaultBuilderTTL
-
-				continue
 			} else if !configInfo.HasError() {
 				// If the item is already present in the builder queue but the config is still not pulled by the builder
 				// microservice, then reduce its scheduler TTL by 1.
@@ -147,10 +184,12 @@ func getConfigInfosFromDB(mongoDB ports.DBPort) ([]*ConfigInfo, error) {
 
 	for _, configAsBSON := range configAsBSONList {
 		configInfo := &ConfigInfo{
-			Name:         configAsBSON.Name,
-			MsChecksum:   configAsBSON.MsChecksum,
-			CsChecksum:   configAsBSON.CsChecksum,
-			DsChecksum:   configAsBSON.DsChecksum,
+			Name: configAsBSON.Name,
+
+			MsChecksum: configAsBSON.MsChecksum,
+			CsChecksum: configAsBSON.CsChecksum,
+			DsChecksum: configAsBSON.DsChecksum,
+
 			BuilderTTL:   configAsBSON.BuilderTTL,
 			SchedulerTTL: configAsBSON.SchedulerTTL,
 

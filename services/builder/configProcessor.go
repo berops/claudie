@@ -1,23 +1,5 @@
 package main
 
-/*
-How operations with the nodes work:
-
-We can have three cases of a operation within the input manifest
-
-- just addition of a nodes
-  - the config is processed right away
-
-- just deletion of a nodes
-  - firstly, the nodes are deleted from the cluster (via kubectl)
-  - secondly, the config is  processed which will delete the nodes from infra
-
-- addition AND deletion of the nodes
-  - firstly the tmpConfig is applied, which will only add nodes into the cluster
-  - secondly, the nodes are deleted from the cluster (via kubectl)
-  - lastly, the config is processed, which will delete the nodes from infra
-*/
-
 import (
 	"fmt"
 	"sync"
@@ -26,7 +8,11 @@ import (
 	"github.com/berops/claudie/proto/pb"
 	cbox "github.com/berops/claudie/services/context-box/client"
 	"github.com/rs/zerolog/log"
-	"google.golang.org/protobuf/proto"
+)
+
+const (
+	// maxDeleteRetry defines how many times the config should try to be deleted before returning an error, if encountered.
+	maxDeleteRetry = 3
 )
 
 // configProcessor will fetch new configs from the context-box service. Each received config will be processed in
@@ -57,8 +43,16 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 
 		// if Desired state is null and current is not we delete the infra for the config.
 		if config.DsChecksum == nil && config.CsChecksum != nil {
-			if err := destroyConfig(config, clusterView, c); err != nil {
-				// Save error to DB.
+			var err error
+			// Try maxDeleteRetry to delete the config.
+			for i := 0; i < maxDeleteRetry; i++ {
+				if err = destroyConfig(config, clusterView, c); err == nil {
+					// Deletion successful, break here.
+					break
+				}
+			}
+			// Save error to DB if not nil.
+			if err != nil {
 				log.Error().Msgf("Error while destroying config %s : %v", config.Name, err)
 				if err := saveConfigWithWorkflowError(config, c, clusterView); err != nil {
 					log.Error().Msgf("Failed to save error message for config %s:  %v", config.Name, err)
@@ -68,34 +62,57 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 		}
 
 		if err := utils.ConcurrentExec(clusterView.AllClusters(), func(clusterName string) error {
-			// Check if we need to destroy the cluster or any Loadbalancers
-			done, err := destroy(config.Name, clusterName, clusterView, c)
-			if err != nil {
-				clusterView.SetWorkflowError(clusterName, err)
-				log.Error().Msgf("Error while destroying cluster %s project %s : %v", clusterName, config.Name, err)
-				return err
-			}
+			// The workflow doesn't handle the case for the deletion of the cluster
+			// we need to do this as a separate step.
+			if clusterView.DesiredClusters[clusterName] == nil {
+				deleteCtx := &BuilderContext{
+					projectName:   config.Name,
+					cluster:       clusterView.CurrentClusters[clusterName],
+					loadbalancers: clusterView.DeletedLoadbalancers[clusterName],
+					Workflow:      clusterView.ClusterWorkflows[clusterName],
+				}
 
-			if done {
+				if err := destroyCluster(deleteCtx, c); err != nil {
+					clusterView.SetWorkflowError(clusterName, err)
+					log.Error().Msgf("Error while destroying cluster %s project %s : %v", clusterName, config.Name, err)
+					return err
+				}
+
 				clusterView.SetWorkflowDone(clusterName)
 				log.Info().Msgf("Finished workflow for cluster %s project %s", clusterName, config.Name)
 				return updateWorkflowStateInDB(config.Name, clusterName, clusterView.ClusterWorkflows[clusterName], c)
 			}
 
-			// Handle deletion and addition of nodes.
-			tmpDesired, toDelete := stateDifference(clusterView.CurrentClusters[clusterName], clusterView.DesiredClusters[clusterName])
-			if tmpDesired != nil {
-				clusterView.ClusterWorkflows[clusterName].Description = "Processing stage [1/2]"
-				log.Info().Msgf("Processing stage [1/2] for cluster %s config %s", clusterName, config.Name)
+			var (
+				diff = Diff(
+					clusterView.CurrentClusters[clusterName],
+					clusterView.DesiredClusters[clusterName],
+					clusterView.Loadbalancers[clusterName],
+					clusterView.DesiredLoadbalancers[clusterName],
+				)
+				stages       = diff.Stages() + 1 // + 1 as we start indexing from 1.
+				currentStage = 0
+			)
+
+			if diff.IR != nil {
+				currentStage++
+				clusterView.ClusterWorkflows[clusterName].Description = fmt.Sprintf("Processing stage [%d/%d]", currentStage, stages)
+				log.Info().Msgf("Processing stage [%d/%d] for cluster %s config %s", currentStage, stages, clusterName, config.Name)
 
 				ctx := &BuilderContext{
-					projectName:          config.Name,
-					cluster:              clusterView.CurrentClusters[clusterName],
-					desiredCluster:       tmpDesired,
+					projectName:    config.Name,
+					cluster:        clusterView.CurrentClusters[clusterName],
+					desiredCluster: diff.IR,
+
+					// If there are any Lbs for the current state keep them.
+					// Ignore the desired state for the Lbs for now. Use the
+					// current state for desired to not trigger any changes.
+					// as we only care about addition of nodes in this step.
 					loadbalancers:        clusterView.Loadbalancers[clusterName],
-					desiredLoadbalancers: clusterView.DesiredLoadbalancers[clusterName],
-					deletedLoadBalancers: clusterView.DeletedLoadbalancers[clusterName],
-					Workflow:             clusterView.ClusterWorkflows[clusterName],
+					desiredLoadbalancers: clusterView.Loadbalancers[clusterName],
+					deletedLoadBalancers: nil,
+
+					Workflow: clusterView.ClusterWorkflows[clusterName],
 				}
 
 				if ctx, err = buildCluster(ctx, c); err != nil {
@@ -110,24 +127,76 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 				clusterView.Loadbalancers[clusterName] = ctx.desiredLoadbalancers
 			}
 
-			if toDelete != nil {
+			if diff.ControlPlaneWithAPIEndpointReplace {
+				currentStage++
+				clusterView.ClusterWorkflows[clusterName].Description = fmt.Sprintf("Processing stage [%d/%d]", currentStage, stages)
+				log.Info().Msgf("Processing stage [%d/%d] for cluster %s config %s", currentStage, stages, clusterName, config.Name)
+
+				ctx := &BuilderContext{
+					projectName:    config.Name,
+					cluster:        clusterView.CurrentClusters[clusterName],
+					desiredCluster: clusterView.DesiredClusters[clusterName],
+					Workflow:       clusterView.ClusterWorkflows[clusterName],
+				}
+
+				if err := callUpdateAPIEndpoint(ctx, c); err != nil {
+					clusterView.SetWorkflowError(clusterName, err)
+					log.Error().Msgf("Failed to build cluster %s project %s : %v", clusterName, config.Name, err)
+					return err
+				}
+
+				clusterView.CurrentClusters[clusterName] = ctx.cluster
+				clusterView.DesiredClusters[clusterName] = ctx.desiredCluster
+
+				ctx = &BuilderContext{
+					projectName:          config.Name,
+					desiredCluster:       clusterView.CurrentClusters[clusterName],
+					desiredLoadbalancers: clusterView.Loadbalancers[clusterName],
+					Workflow:             clusterView.ClusterWorkflows[clusterName],
+				}
+
+				if err := callKubeEleven(ctx, c); err != nil {
+					clusterView.SetWorkflowError(clusterName, err)
+					log.Error().Msgf("Failed to build cluster %s project %s : %v", clusterName, config.Name, err)
+					return err
+				}
+
+				clusterView.CurrentClusters[clusterName] = ctx.desiredCluster
+				clusterView.Loadbalancers[clusterName] = ctx.desiredLoadbalancers
+
+				if err := callPatchClusterInfoConfigMap(ctx, c); err != nil {
+					clusterView.SetWorkflowError(clusterName, err)
+					log.Error().Msgf("Failed to build cluster %s project %s : %v", clusterName, config.Name, err)
+					return err
+				}
+			}
+
+			if len(diff.ToDelete) > 0 {
+				currentStage++
+				clusterView.ClusterWorkflows[clusterName].Description = fmt.Sprintf("Processing stage [%d/%d]", currentStage, stages)
+				log.Info().Msgf("Processing stage [%d/%d] for cluster %s config %s", currentStage, stages, clusterName, config.Name)
+
 				clusterView.ClusterWorkflows[clusterName].Stage = pb.Workflow_DELETE_NODES
 				if err := updateWorkflowStateInDB(config.Name, clusterName, clusterView.ClusterWorkflows[clusterName], c); err != nil {
 					clusterView.SetWorkflowError(clusterName, err)
 					return err
 				}
 				log.Info().Msgf("Deleting nodes from cluster %s project %s", clusterName, config.Name)
-				if clusterView.CurrentClusters[clusterName], err = deleteNodes(clusterView.CurrentClusters[clusterName], toDelete); err != nil {
+				cluster, err := deleteNodes(clusterView.CurrentClusters[clusterName], diff.ToDelete)
+				if err != nil {
 					clusterView.SetWorkflowError(clusterName, err)
 					log.Error().Msgf("Failed to delete nodes cluster %s project %s : %v", clusterName, config.Name, err)
 					return err
 				}
+
+				clusterView.CurrentClusters[clusterName] = cluster
 			}
 
 			message := fmt.Sprintf("Processing cluster %s config %s", clusterName, config.Name)
-			if tmpDesired != nil {
-				clusterView.ClusterWorkflows[clusterName].Description = "Processing stage [2/2]"
-				message = fmt.Sprintf("Processing stage [2/2] for cluster %s config %s", clusterName, config.Name)
+			if diff.Stages() > 0 {
+				currentStage++
+				clusterView.ClusterWorkflows[clusterName].Description = fmt.Sprintf("Processing stage [%d/%d]", currentStage, stages)
+				message = fmt.Sprintf("Processing stage [%d/%d] for cluster %s config %s", currentStage, stages, clusterName, config.Name)
 			}
 			log.Info().Msgf(message)
 
@@ -147,20 +216,41 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 				return err
 			}
 
-			clusterView.SetWorkflowDone(clusterName)
+			// Propagate the changes made to the cluster back to the View.
+			clusterView.UpdateFromBuild(ctx)
 
+			if len(clusterView.DeletedLoadbalancers) > 0 {
+				// perform the deletion of loadbalancers as this won't be handled by the buildCluster Workflow.
+				// The BuildInfrastructure in terraformer only performs creation/update for Lbs.
+				deleteCtx := &BuilderContext{
+					projectName:   config.Name,
+					loadbalancers: clusterView.DeletedLoadbalancers[clusterName],
+					Workflow:      clusterView.ClusterWorkflows[clusterName],
+				}
+
+				if err := destroyCluster(deleteCtx, c); err != nil {
+					clusterView.SetWorkflowError(clusterName, err)
+					log.Error().Msgf("Error while destroying cluster %s project %s : %v", clusterName, config.Name, err)
+					return err
+				}
+			}
+
+			// Workflow finished.
+			clusterView.SetWorkflowDone(clusterName)
 			if err := updateWorkflowStateInDB(config.Name, clusterName, ctx.Workflow, c); err != nil {
 				clusterView.SetWorkflowError(clusterName, err)
 				log.Error().Msgf("failed to save workflow for cluster %s project %s: %s", clusterName, config.Name, err)
 				return err
 			}
 
-			// Propagate the changes made to the cluster back to the View.
-			clusterView.UpdateFromBuild(ctx)
 			log.Info().Msgf("Finished building cluster %s project %s", clusterName, config.Name)
 			return nil
 		}); err != nil {
 			log.Error().Msgf("Error encountered while processing config %s : %v", config.Name, err)
+			// Even if the config fails to build merge the changes as it might be in an in-between state
+			// in order to be able to delete it later.
+			clusterView.MergeChanges(config)
+
 			if err := saveConfigWithWorkflowError(config, c, clusterView); err != nil {
 				log.Error().Msgf("Failed to save error message due to: %s", err)
 			}
@@ -182,91 +272,6 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 	}()
 
 	return nil
-}
-
-// stateDifference takes config to calculates difference between desired and current state to determine how many nodes  needs to be deleted and added.
-func stateDifference(current *pb.K8Scluster, desired *pb.K8Scluster) (*pb.K8Scluster, map[string]int32) {
-	desired = proto.Clone(desired).(*pb.K8Scluster)
-
-	currentNodepoolCounts := nodepoolsCounts(current)
-	delCounts, adding, deleting := findNodepoolDifference(currentNodepoolCounts, desired)
-
-	//if any key left, it means that nodepool is defined in current state but not in the desired, i.e. whole nodepool should be deleted
-	if len(currentNodepoolCounts) > 0 {
-		deleting = true
-		// let delCounts hold all delete counts
-		mergeDeleteCounts(delCounts, currentNodepoolCounts)
-
-		// add the deleted nodes to the Desired state
-		if current != nil && desired != nil {
-			//append nodepool to desired state, since tmpConfig only adds nodes
-			for nodepoolName := range currentNodepoolCounts {
-				log.Debug().Msgf("Nodepool %s from cluster %s will be deleted", nodepoolName, current.ClusterInfo.Name)
-				desired.ClusterInfo.NodePools = append(desired.ClusterInfo.NodePools, utils.GetNodePoolByName(nodepoolName, current.ClusterInfo.GetNodePools()))
-			}
-		}
-	}
-
-	switch {
-	case adding && deleting:
-		return desired, delCounts
-	case deleting:
-		return nil, delCounts
-	default:
-		return nil, nil
-	}
-}
-
-// nodepoolsCounts returns a map for the counts in each nodepool for a cluster.
-func nodepoolsCounts(cluster *pb.K8Scluster) map[string]int32 {
-	counts := make(map[string]int32)
-
-	for _, nodePool := range cluster.GetClusterInfo().GetNodePools() {
-		counts[nodePool.Name] = nodePool.Count
-	}
-
-	return counts
-}
-
-func findNodepoolDifference(currentNodepoolCounts map[string]int32, desiredClusterTmp *pb.K8Scluster) (result map[string]int32, adding, deleting bool) {
-	nodepoolCountToDelete := make(map[string]int32)
-
-	for _, nodePoolDesired := range desiredClusterTmp.GetClusterInfo().GetNodePools() {
-		currentCount, ok := currentNodepoolCounts[nodePoolDesired.Name]
-		if !ok {
-			// not in current state, adding.
-			adding = true
-			continue
-		}
-
-		if nodePoolDesired.Count > currentCount {
-			adding = true
-		}
-
-		var countToDelete int32
-
-		if nodePoolDesired.Count < currentCount {
-			deleting = true
-			countToDelete = currentCount - nodePoolDesired.Count
-
-			// since we are working with tmp config, we do not delete nodes in this step, thus save the current node count
-			nodePoolDesired.Count = currentCount
-		}
-
-		nodepoolCountToDelete[nodePoolDesired.Name] = countToDelete
-
-		// keep track of which nodepools were deleted
-		delete(currentNodepoolCounts, nodePoolDesired.Name)
-	}
-
-	return nodepoolCountToDelete, adding, deleting
-}
-
-func mergeDeleteCounts(dst, src map[string]int32) map[string]int32 {
-	for k, v := range src {
-		dst[k] = v
-	}
-	return dst
 }
 
 // separateNodepools creates two slices of node names, one for master and one for worker nodes
