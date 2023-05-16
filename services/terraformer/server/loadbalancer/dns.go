@@ -44,7 +44,7 @@ type outputDomain struct {
 }
 
 func (d DNS) CreateDNSRecords(logger zerolog.Logger) (string, error) {
-	sublogger := logger.With().Str("endpoint", d.CurrentDNS.Endpoint).Logger()
+	sublogger := logger.With().Str("endpoint", d.DesiredDNS.Endpoint).Logger()
 
 	clusterID := fmt.Sprintf("%s-%s", d.ClusterName, d.ClusterHash)
 	dnsID := fmt.Sprintf("%s-dns", clusterID)
