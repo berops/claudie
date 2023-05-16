@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/rs/zerolog"
@@ -61,7 +62,7 @@ func (d DNS) CreateDNSRecords() (string, error) {
 	}
 
 	if utils.ChangedDNSProvider(d.CurrentDNS, d.DesiredDNS) {
-		logger.Info().Msgf("Destroying old DNS records")
+		logger.Info().Msg("Destroying old DNS records")
 		if err := d.generateFiles(dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs); err != nil {
 			return "", fmt.Errorf("error while creating dns .tf files for %s : %w", dnsID, err)
 		}
@@ -77,7 +78,7 @@ func (d DNS) CreateDNSRecords() (string, error) {
 		}
 	}
 
-	logger.Info().Msgf("Creating new DNS records")
+	logger.Info().Msg("Creating new DNS records")
 	if err := d.generateFiles(dnsID, dnsDir, d.DesiredDNS, d.DesiredNodeIPs); err != nil {
 		return "", fmt.Errorf("error while creating dns .tf files for %s : %w", dnsID, err)
 	}
@@ -99,7 +100,7 @@ func (d DNS) CreateDNSRecords() (string, error) {
 		return "", fmt.Errorf("error while reading output from terraform for %s : %w", clusterID, err)
 	}
 
-	logger.Info().Msgf("DNS records were successfully set up")
+	logger.Info().Msg("DNS records were successfully set up")
 	if err := os.RemoveAll(dnsDir); err != nil {
 		return validateDomain(out.Domain[outputID]), fmt.Errorf("error while deleting files in %s: %w", dnsDir, err)
 	}
@@ -112,7 +113,7 @@ func (d DNS) DestroyDNSRecords() error {
 		Str("cluster", d.ClusterName).Str("endpoint", d.CurrentDNS.Endpoint).
 		Logger()
 
-	logger.Info().Msgf("Destroying DNS records")
+	logger.Info().Msg("Destroying DNS records")
 	dnsID := fmt.Sprintf("%s-%s-dns", d.ClusterName, d.ClusterHash)
 	dnsDir := filepath.Join(clusterBuilder.Output, dnsID)
 
@@ -135,7 +136,7 @@ func (d DNS) DestroyDNSRecords() error {
 	if err := terraform.TerraformDestroy(); err != nil {
 		return err
 	}
-	logger.Info().Msgf("DNS records were successfully destroyed")
+	logger.Info().Msg("DNS records were successfully destroyed")
 
 	if err := os.RemoveAll(dnsDir); err != nil {
 		return fmt.Errorf("error while deleting files in %s : %w", dnsDir, err)
@@ -169,14 +170,17 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *pb.DNS, nodeIPs []string) 
 		return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", dns.Provider.SpecName, dnsDir, err)
 	}
 
-	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.TerraformerTemplates}
-	tpl, err := templateLoader.LoadTemplate(fmt.Sprintf("%s-dns.tpl", dns.Provider.CloudProviderName))
+	sourceDirectory := templateUtils.TemplateLoader{
+		Directory: path.Join(templateUtils.TerraformerTemplates, dns.GetProvider().GetCloudProviderName(), "dns"),
+	}
+
+	tpl, err := sourceDirectory.LoadTemplate(fmt.Sprintf("%s-dns.tpl", dns.Provider.CloudProviderName))
 	if err != nil {
 		return fmt.Errorf("error while parsing template file dns.tpl for %s : %w", dnsDir, err)
 	}
 
-	dnsTemplates := templateUtils.Templates{Directory: dnsDir}
-	return dnsTemplates.Generate(tpl, fmt.Sprintf("%s-dns.tf", dns.Provider.CloudProviderName), DNSData{
+	targetDirectory := templateUtils.Templates{Directory: dnsDir}
+	return targetDirectory.Generate(tpl, fmt.Sprintf("%s-dns.tf", dns.Provider.CloudProviderName), DNSData{
 		DNSZone:      dns.DnsZone,
 		HostnameHash: dns.Hostname,
 		ClusterName:  d.ClusterName,

@@ -15,10 +15,13 @@ import (
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
+	"gopkg.in/yaml.v3"
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/envs"
@@ -55,8 +58,70 @@ type server struct {
 	pb.UnimplementedKuberServiceServer
 }
 
+func (s *server) PatchClusterInfoConfigMap(_ context.Context, req *pb.PatchClusterInfoConfigMapRequest) (*pb.PatchClusterInfoConfigMapResponse, error) {
+	k := kubectl.Kubectl{
+		Kubeconfig: req.DesiredCluster.Kubeconfig,
+	}
+
+	configMap, err := k.KubectlGet("cm cluster-info", "-ojson", "-n kube-public")
+	if err != nil {
+		return nil, err
+	}
+
+	if configMap == nil {
+		return &pb.PatchClusterInfoConfigMapResponse{}, nil
+	}
+
+	configMapKubeconfig := gjson.Get(string(configMap), "data.kubeconfig")
+
+	var rawKubeconfig map[string]interface{}
+	if err := yaml.Unmarshal([]byte(req.DesiredCluster.Kubeconfig), &rawKubeconfig); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal kubeconfig, malformed yaml")
+	}
+
+	var rawConfigMapKubeconfig map[string]interface{}
+	if err := yaml.Unmarshal([]byte(configMapKubeconfig.String()), &rawConfigMapKubeconfig); err != nil {
+		return nil, fmt.Errorf("failed to update cluster info config map, malformed yaml")
+	}
+
+	// Kubeadm uses this config when joining nodes thus we need to update it with the new endpoint
+	// https://kubernetes.io/docs/reference/setup-tools/kubeadm/implementation-details/#shared-token-discovery
+
+	// only update the certificate-authority-data and server
+	newClusters := rawKubeconfig["clusters"].([]interface{})
+	if len(newClusters) == 0 {
+		return nil, fmt.Errorf("desired state kubeconfig has no clusters")
+	}
+	newClusterInfo := newClusters[0].(map[string]interface{})["cluster"].(map[string]interface{})
+
+	configMapClusters := rawConfigMapKubeconfig["clusters"].([]interface{})
+	if len(configMapClusters) == 0 {
+		return nil, fmt.Errorf("config-map kubeconfig has no clusters")
+	}
+	oldClusterInfo := configMapClusters[0].(map[string]interface{})["cluster"].(map[string]interface{})
+
+	oldClusterInfo["server"] = newClusterInfo["server"]
+	oldClusterInfo["certificate-authority-data"] = newClusterInfo["certificate-authority-data"]
+
+	b, err := yaml.Marshal(rawConfigMapKubeconfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal patched config map")
+	}
+
+	patchedConfigMap, err := sjson.Set(string(configMap), "data.kubeconfig", b)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update config map with new kubeconfig")
+	}
+
+	if err := k.KubectlApplyString(patchedConfigMap, "-n kube-public"); err != nil {
+		return nil, fmt.Errorf("failed to patch config map: %w", err)
+	}
+
+	return &pb.PatchClusterInfoConfigMapResponse{}, nil
+}
+
 func (s *server) SetUpStorage(ctx context.Context, req *pb.SetUpStorageRequest) (*pb.SetUpStorageResponse, error) {
-	logger := log.With().Str("cluster", req.DesiredCluster.ClusterInfo.Name).Logger()
+	logger := utils.CreateLoggerWithClusterName(req.DesiredCluster.ClusterInfo.Name)
 
 	clusterID := fmt.Sprintf("%s-%s", req.DesiredCluster.ClusterInfo.Name, req.DesiredCluster.ClusterInfo.Hash)
 	clusterDir := filepath.Join(outputDir, clusterID)
@@ -72,7 +137,7 @@ func (s *server) SetUpStorage(ctx context.Context, req *pb.SetUpStorageRequest) 
 }
 
 func (s *server) StoreLbScrapeConfig(ctx context.Context, req *pb.StoreLbScrapeConfigRequest) (*pb.StoreLbScrapeConfigResponse, error) {
-	logger := log.With().Str("cluster", req.Cluster.ClusterInfo.Name).Logger()
+	logger := utils.CreateLoggerWithClusterName(req.Cluster.ClusterInfo.Name)
 
 	clusterID := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
 	clusterDir := filepath.Join(outputDir, clusterID)
@@ -93,7 +158,7 @@ func (s *server) StoreLbScrapeConfig(ctx context.Context, req *pb.StoreLbScrapeC
 }
 
 func (s *server) RemoveLbScrapeConfig(ctx context.Context, req *pb.RemoveLbScrapeConfigRequest) (*pb.RemoveLbScrapeConfigResponse, error) {
-	logger := log.With().Str("cluster", req.Cluster.ClusterInfo.Name).Logger()
+	logger := utils.CreateLoggerWithClusterName(req.Cluster.ClusterInfo.Name)
 
 	clusterID := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
 	clusterDir := filepath.Join(outputDir, clusterID)
@@ -113,7 +178,7 @@ func (s *server) RemoveLbScrapeConfig(ctx context.Context, req *pb.RemoveLbScrap
 }
 
 func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterMetadataRequest) (*pb.StoreClusterMetadataResponse, error) {
-	logger := log.With().Str("cluster", req.Cluster.ClusterInfo.Name).Logger()
+	logger := utils.CreateLoggerWithClusterName(req.Cluster.ClusterInfo.Name)
 
 	md := ClusterMetadata{
 		NodeIps:    make(map[string]IPPair),
@@ -169,7 +234,7 @@ func (s *server) DeleteClusterMetadata(ctx context.Context, req *pb.DeleteCluste
 		return &pb.DeleteClusterMetadataResponse{}, nil
 	}
 
-	logger := log.With().Str("cluster", req.Cluster.ClusterInfo.Name).Logger()
+	logger := utils.CreateLoggerWithClusterName(req.Cluster.ClusterInfo.Name)
 
 	logger.Info().Msgf("Deleting cluster metadata secret")
 
@@ -199,7 +264,7 @@ func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigReq
 		return &pb.StoreKubeconfigResponse{}, nil
 	}
 
-	logger := log.With().Str("cluster", req.Cluster.ClusterInfo.Name).Logger()
+	logger := utils.CreateLoggerWithClusterName(req.Cluster.ClusterInfo.Name)
 
 	logger.Info().Msgf("Storing kubeconfig")
 
@@ -225,7 +290,7 @@ func (s *server) DeleteKubeconfig(ctx context.Context, req *pb.DeleteKubeconfigR
 	}
 	cluster := req.GetCluster()
 
-	logger := log.With().Str("cluster", req.Cluster.ClusterInfo.Name).Logger()
+	logger := utils.CreateLoggerWithClusterName(req.Cluster.ClusterInfo.Name)
 
 	logger.Info().Msgf("Deleting kubeconfig secret")
 	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
@@ -246,7 +311,7 @@ func (s *server) DeleteKubeconfig(ctx context.Context, req *pb.DeleteKubeconfigR
 }
 
 func (s *server) DeleteNodes(ctx context.Context, req *pb.DeleteNodesRequest) (*pb.DeleteNodesResponse, error) {
-	logger := log.With().Str("cluster", req.Cluster.ClusterInfo.Name).Logger()
+	logger := utils.CreateLoggerWithClusterName(req.Cluster.ClusterInfo.Name)
 
 	logger.Info().Msgf("Deleting nodes - control nodes [%d], compute nodes[%d]", len(req.MasterNodes), len(req.WorkerNodes))
 	deleter := nodes.NewDeleter(req.MasterNodes, req.WorkerNodes, req.Cluster)
@@ -260,7 +325,7 @@ func (s *server) DeleteNodes(ctx context.Context, req *pb.DeleteNodesRequest) (*
 }
 
 func (s *server) PatchNodes(ctx context.Context, req *pb.PatchNodeTemplateRequest) (*pb.PatchNodeTemplateResponse, error) {
-	logger := log.With().Str("cluster", req.Cluster.ClusterInfo.Name).Logger()
+	logger := utils.CreateLoggerWithClusterName(req.Cluster.ClusterInfo.Name)
 
 	patcher := nodes.NewPatcher(req.Cluster)
 	if err := patcher.PatchProviderID(); err != nil {
@@ -280,7 +345,7 @@ func (s *server) SetUpClusterAutoscaler(ctx context.Context, req *pb.SetUpCluste
 		return nil, fmt.Errorf("error while creating directory %s : %w", clusterDir, err)
 	}
 
-	logger := log.With().Str("cluster", req.Cluster.ClusterInfo.Name).Logger()
+	logger := utils.CreateLoggerWithClusterName(req.Cluster.ClusterInfo.Name)
 
 	// Set up cluster autoscaler.
 	autoscalerBuilder := autoscaler.NewAutoscalerBuilder(req.ProjectName, req.Cluster, clusterDir)
@@ -301,7 +366,7 @@ func (s *server) DestroyClusterAutoscaler(ctx context.Context, req *pb.DestroyCl
 		return nil, fmt.Errorf("error while creating directory %s : %w", clusterDir, err)
 	}
 
-	logger := log.With().Str("cluster", req.Cluster.ClusterInfo.Name).Logger()
+	logger := utils.CreateLoggerWithClusterName(req.Cluster.ClusterInfo.Name)
 
 	// Destroy cluster autoscaler.
 	autoscalerBuilder := autoscaler.NewAutoscalerBuilder(req.ProjectName, req.Cluster, clusterDir)

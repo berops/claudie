@@ -60,7 +60,7 @@ type Cluster interface {
 }
 
 func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastructureRequest) (*pb.BuildInfrastructureResponse, error) {
-	logger := log.With().Str("project", req.ProjectName).Logger()
+	logger := utils.CreateLoggerWithProjectName(req.ProjectName)
 
 	clusters := []Cluster{
 		kubernetes.K8Scluster{

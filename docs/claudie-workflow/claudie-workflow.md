@@ -149,6 +149,9 @@ Ansibler uses Ansible to:
   // TeardownLoadBalancers correctly destroys the load balancers attached to a k8s
   // cluster by choosing a new ApiServer endpoint.
   rpc TeardownLoadBalancers(TeardownLBRequest) returns (TeardownLBResponse);
+  // UpdateAPIEndpoint handles changes of API endpoint between control nodes.
+  // It will update the current stage based on the information from the desired state.
+  rpc UpdateAPIEndpoint(UpdateAPIEndpointRequest) returns (UpdateAPIEndpointResponse);
 ```
 
 ### Flow
@@ -165,6 +168,9 @@ Ansibler uses Ansible to:
 - Receives a `config` from Builder for `SetUpLoadbalancers()`
   - Sets up the ansible inventory, and installs nginx load balancers
   - Creates and verifies the DNS configuration for the load balancers
+
+- `UpdateAPIEndpoint()` is called in specific use cases when there is change 
+in the api endpoint of a control plane.
 
 ## Kube-eleven
 
@@ -214,20 +220,25 @@ Kuber manipulates the cluster resources using `kubectl`.
   rpc SetUpClusterAutoscaler(SetUpClusterAutoscalerRequest) returns (SetUpClusterAutoscalerResponse);
   // DestroyClusterAutoscaler deletes Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
   rpc DestroyClusterAutoscaler(DestroyClusterAutoscalerRequest) returns (DestroyClusterAutoscalerResponse);
+  // PatchClusterInfoConfigMap updates the cluster-info config map in the kube-public namespace with the new
+  // kubeconfig. This needs to be done after an api endpoint change as the config map in the kube-public namespace
+  // is used by kubeadm when joining.
+  rpc PatchClusterInfoConfigMap(PatchClusterInfoConfigMapRequest) returns (PatchClusterInfoConfigMapResponse);
 ```
 
 ### Flow
-
+- Recieves a `config` from Builder for `PatchClusterInfoConfigMap`
+  - updatedes kubeconfig to reflect the new changed endpoint.
 - Receives a `config` from Builder for `SetUpStorage()`
-- Applies the `longhorn` deployment
+  - Applies the `longhorn` deployment
 - Receives a `config` from Builder for `StoreKubeconfig()`
-- Creates a kubernetes secret that holds the kubeconfig of the Claudie-created cluster
+  - Creates a kubernetes secret that holds the kubeconfig of the Claudie-created cluster
 - Receives a `config` from Builder for `StoreMetadata()`
-- Creates a kubernetes secret that holds the node metadata of the Claudie-created cluster
+  - Creates a kubernetes secret that holds the node metadata of the Claudie-created cluster
 - Receives a `config` from Builder for `StoreLbScrapeConfig()`
-- Stores scrape config for any LB attached to the Claudie-made cluster.
+  - Stores scrape config for any LB attached to the Claudie-made cluster.
 - Receives a `config` from Builder for `PatchNodes()`
-- Patches the node manifests of the Claudie-made cluster.
+  - Patches the node manifests of the Claudie-made cluster.
 - Upon infrastructure deletion request, Kuber deletes the kubeconfig secret, metadata secret, scrape configs and autoscaler of the cluster being deleted
 
 ## Frontend

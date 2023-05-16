@@ -52,7 +52,7 @@ func (*server) SaveWorkflowState(ctx context.Context, req *pb.SaveWorkflowStateR
 func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
 	config := req.GetConfig()
 
-	logger := log.With().Str("config", config.Name).Logger()
+	logger := utils.CreateLoggerWithProjectName(config.Name)
 
 	logger.Info().Msgf("Saving config from Scheduler")
 	// Save new config to the DB
@@ -85,7 +85,7 @@ func (s *server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigReque
 	defer s.configChangeMutex.Unlock()
 	newConfig := req.GetConfig()
 
-	logger := log.With().Str("config", newConfig.Name).Logger()
+	logger := utils.CreateLoggerWithProjectName(newConfig.Name)
 
 	logger.Info().Msgf("Saving config from FrontEnd")
 	newConfig.MsChecksum = checksum.CalculateChecksum(newConfig.Manifest)
@@ -115,7 +115,7 @@ func (s *server) SaveConfigFrontEnd(ctx context.Context, req *pb.SaveConfigReque
 func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
 	config := req.GetConfig()
 
-	logger := log.With().Str("config", config.Name).Logger()
+	logger := utils.CreateLoggerWithProjectName(config.Name)
 
 	logger.Info().Msgf("Saving config from Builder")
 
