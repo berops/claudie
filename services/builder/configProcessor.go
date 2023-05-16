@@ -49,6 +49,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			var err error
 			// Try maxDeleteRetry to delete the config.
 			for i := 0; i < maxDeleteRetry; i++ {
+				logger.Info().Msgf("Destroying config")
 				if err = destroyConfig(config, clusterView, c); err == nil {
 					// Deletion successful, break here.
 					break

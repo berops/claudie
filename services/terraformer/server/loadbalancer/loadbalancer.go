@@ -26,7 +26,7 @@ func (l LBcluster) Id() string {
 }
 
 func (l LBcluster) Build(logger zerolog.Logger) error {
-	logger.Info().Msgf("Building LB Cluster %s and DNS", l.CurrentLB.ClusterInfo.Name)
+	logger.Info().Msgf("Building LB Cluster %s and DNS", l.DesiredLB.ClusterInfo.Name)
 	var currentInfo *pb.ClusterInfo
 	var currentDNS *pb.DNS
 	var currentNodeIPs []string
