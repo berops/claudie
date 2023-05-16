@@ -2,14 +2,12 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/rs/zerolog/log"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/healthcheck"
@@ -40,9 +38,7 @@ func run() error {
 		return err
 	}
 
-	errGroup, errGroupContext := errgroup.WithContext(context.Background())
 	usecaseContext, usecaseCancel := context.WithCancel(context.Background())
-
 	usecases := &usecases.Usecases{
 		ContextBox:    contextBoxConnector,
 		SaveChannel:   make(chan *usecases.RawManifest),
@@ -66,44 +62,33 @@ func run() error {
 		},
 	).StartProbes()
 
-	// Listen for program interruption signals and shut it down gracefully
-	errGroup.Go(func() error {
-		log.Info().Msgf("Frontend is ready to process input manifests")
-		// usecases.ProcessManifestFiles() goroutine returns on usecases.Context cancels
-		go usecases.ProcessManifestFiles()
+	// usecases.ProcessManifestFiles() goroutine returns on usecases.Context cancels
+	go usecases.ProcessManifestFiles()
+	log.Info().Msgf("Frontend is ready to process input manifests")
 
-		log.Info().Msgf("Frontend is ready to watch input manifest statuses")
-		// usecases.WatchConfigs() goroutine returns on usecases.Context cancels
-		go usecases.WatchConfigs()
+	// usecases.WatchConfigs() goroutine returns on usecases.Context cancels
+	go usecases.WatchConfigs()
+	log.Info().Msgf("Frontend is ready to watch input manifest statuses")
 
-		log.Info().Msgf("Frontend is watching for any new input manifest")
-		// secretWatcher.Monitor() goroutine returns on usecases.Context cancels
-		go secretWatcher.Monitor()
+	// secretWatcher.Monitor() goroutine returns on usecases.Context cancels
+	go secretWatcher.Monitor()
+	log.Info().Msgf("Frontend is watching for any new input manifest")
 
-		shutdownSignalChan := make(chan os.Signal, 1)
-		signal.Notify(shutdownSignalChan, os.Interrupt, syscall.SIGTERM)
-		defer signal.Stop(shutdownSignalChan)
-		// Cancel context for usecases functions to terminate goroutines.
-		defer usecaseCancel()
+	// Cancel context for usecases functions to terminate goroutines.
+	defer usecaseCancel()
 
-		var err error
+	// Interrupt signal listener
+	shutdownSignalChan := make(chan os.Signal, 1)
+	signal.Notify(shutdownSignalChan, os.Interrupt, syscall.SIGTERM)
+	sig := <-shutdownSignalChan
 
-		select {
-		case <-errGroupContext.Done():
-			err = errGroupContext.Err()
+	log.Info().Msgf("Received program shutdown signal %v", sig)
 
-		case shutdownSignal := <-shutdownSignalChan:
-			log.Info().Msgf("Received program shutdown signal %v", shutdownSignal)
-			err = errors.New("program interrupt signal")
-		}
+	// Disconnect from context-box
+	if err := contextBoxConnector.Disconnect(); err != nil {
+		log.Error().Msgf("Failed to gracefully shutdown ContextBoxConnector: %v", err)
+	}
+	defer signal.Stop(shutdownSignalChan)
 
-		// Wait for all the go-routines to finish their work.
-		if err := contextBoxConnector.Disconnect(); err != nil {
-			log.Error().Msgf("Failed to gracefully shutdown ContextBoxConnector: %v", err)
-		}
-
-		return err
-	})
-
-	return errGroup.Wait()
+	return fmt.Errorf("program interrupt signal")
 }
