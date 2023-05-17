@@ -96,75 +96,78 @@ func (sw *SecretWatcher) Monitor() {
 func (sw *SecretWatcher) monitor(w watch.Interface) string {
 	rsv := ""
 	for event := range w.ResultChan() {
-		if secret, ok := event.Object.(*v1.Secret); ok {
-			// Save resource version to continue from there once channel gets closed
-			rsv = secret.ResourceVersion
-			switch event.Type {
-			// Modified/Added secret
-			case watch.Modified, watch.Added:
-				configs, err := sw.usecases.ContextBox.GetAllConfigs()
-				if err != nil {
-					log.Err(err).Msgf("Failed to retrieve configs from Context-box, to verify secret %s modification, skipping...", secret.Name)
-					break
-				}
-				// Save configs which are already in DB
-				inDB := make(map[string]struct{})
-				// Check with configs in DB
-				for _, config := range configs {
-					// Find config which was defined from this secret.
-					filePathPrefix := fmt.Sprintf("secret_%s.file_", secret.Name)
-					if strings.Contains(config.ManifestFileName, filePathPrefix) {
-						fileName := strings.TrimPrefix(config.ManifestFileName, filePathPrefix)
-						inDB[fileName] = struct{}{}
-						//Check if file is present in the modified secret
-						if file, ok := secret.Data[fileName]; ok {
-							// File exists, save it to Context-box
-							log.Debug().Msgf("Assuming file %s from secret %s was modified", fileName, secret.Name)
-							manifest, err := sw.getRawManifest(file, secret.Name, fileName)
-							if err != nil {
-								log.Err(err).Msgf("Failed to decode file %s from secret %s, skipping...", fileName, secret.Name)
-								continue
-							}
-							sw.usecases.SaveChannel <- manifest
-						} else {
-							// File does not exists, trigger deletion
-							log.Debug().Msgf("Assuming file %s from secret %s was removed", fileName, secret.Name)
-							manifest, err := sw.getRawManifest(file, secret.Name, fileName)
-							if err != nil {
-								log.Err(err).Msgf("Failed to decode file %s from secret %s, skipping...", fileName, secret.Name)
-								continue
-							}
-							sw.usecases.DeleteChannel <- manifest
-						}
-					}
-				}
-				// Check if any files from secret needs to be saved in DB
-				for name, file := range secret.Data {
-					// Manifest not in the database yet, save
-					if _, ok := inDB[name]; !ok {
-						manifest, err := sw.getRawManifest(file, secret.Name, name)
+		secret, ok := event.Object.(*v1.Secret)
+		if !ok {
+			// Skip if event is not Secret type.
+			continue
+		}
+		// Save resource version to continue from there once channel gets closed
+		rsv = secret.ResourceVersion
+		switch event.Type {
+		// Modified/Added secret
+		case watch.Modified, watch.Added:
+			configs, err := sw.usecases.ContextBox.GetAllConfigs()
+			if err != nil {
+				log.Err(err).Msgf("Failed to retrieve configs from Context-box, to verify secret %s modification, skipping...", secret.Name)
+				break
+			}
+			// Save configs which are already in DB
+			inDB := make(map[string]struct{})
+			// Check with configs in DB
+			for _, config := range configs {
+				// Find config which was defined from this secret.
+				filePathPrefix := fmt.Sprintf("secret_%s.file_", secret.Name)
+				if strings.Contains(config.ManifestFileName, filePathPrefix) {
+					fileName := strings.TrimPrefix(config.ManifestFileName, filePathPrefix)
+					inDB[fileName] = struct{}{}
+					//Check if file is present in the modified secret
+					if file, ok := secret.Data[fileName]; ok {
+						// File exists, save it to Context-box
+						log.Debug().Msgf("Assuming file %s from secret %s was modified", fileName, secret.Name)
+						manifest, err := sw.getRawManifest(file, secret.Name, fileName)
 						if err != nil {
-							log.Err(err).Msgf("Failed to decode file %s from secret %s, skipping...", name, secret.Name)
+							log.Err(err).Msgf("Failed to decode file %s from secret %s, skipping...", fileName, secret.Name)
 							continue
 						}
 						sw.usecases.SaveChannel <- manifest
+					} else {
+						// File does not exists, trigger deletion
+						log.Debug().Msgf("Assuming file %s from secret %s was removed", fileName, secret.Name)
+						manifest, err := sw.getRawManifest(file, secret.Name, fileName)
+						if err != nil {
+							log.Err(err).Msgf("Failed to decode file %s from secret %s, skipping...", fileName, secret.Name)
+							continue
+						}
+						sw.usecases.DeleteChannel <- manifest
 					}
 				}
-			// Deleted secret
-			case watch.Deleted:
-				// All manifest in the secret were deleted.
-				for name, file := range secret.Data {
+			}
+			// Check if any files from secret needs to be saved in DB
+			for name, file := range secret.Data {
+				// Manifest not in the database yet, save
+				if _, ok := inDB[name]; !ok {
 					manifest, err := sw.getRawManifest(file, secret.Name, name)
 					if err != nil {
 						log.Err(err).Msgf("Failed to decode file %s from secret %s, skipping...", name, secret.Name)
 						continue
 					}
-					sw.usecases.DeleteChannel <- manifest
+					sw.usecases.SaveChannel <- manifest
 				}
-			case watch.Bookmark, watch.Error:
-				// Due to golangci-lint, this case has to be included.
-				log.Debug().Msgf("Got event Bookmark or Error; not supported")
 			}
+		// Deleted secret
+		case watch.Deleted:
+			// All manifest in the secret were deleted.
+			for name, file := range secret.Data {
+				manifest, err := sw.getRawManifest(file, secret.Name, name)
+				if err != nil {
+					log.Err(err).Msgf("Failed to decode file %s from secret %s, skipping...", name, secret.Name)
+					continue
+				}
+				sw.usecases.DeleteChannel <- manifest
+			}
+		case watch.Bookmark, watch.Error:
+			// Due to golangci-lint, this case has to be included.
+			log.Debug().Msgf("Got event Bookmark or Error; not supported")
 		}
 	}
 	return rsv
@@ -188,8 +191,8 @@ func (sw *SecretWatcher) getRawManifest(file []byte, secretName, fileName string
 func (sw *SecretWatcher) decodeContent(content []byte) ([]byte, error) {
 	decoded := make([]byte, len(content)*(4/3))
 	if _, err := base64.StdEncoding.Decode(decoded, content); err != nil {
-		// Cant use errors.Is() as base64 package builds error dynamically in base64.CorruptInputError()
-		if strings.Contains(err.Error(), "illegal base64 data") {
+		// Cant use errors.Is() as base64 package builds error dynamically via base64.CorruptInputError type
+		if _, ok := err.(base64.CorruptInputError); ok {
 			log.Debug().Msgf("File not base64 compatible, assuming it is string data")
 			return content, nil
 		}

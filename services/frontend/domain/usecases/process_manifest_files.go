@@ -54,6 +54,13 @@ func (u *Usecases) createConfig(rawManifest *RawManifest) {
 		return
 	}
 	log.Info().Msgf("Created config for input manifest %s", unmarshalledManifest.Name)
+
+	// Put it into inProgress map to track it
+	for _, k8sCluster := range unmarshalledManifest.Kubernetes.Clusters {
+		if _, ok := u.inProgress.Load(k8sCluster.Name); !ok {
+			u.inProgress.Store(k8sCluster.Name, config)
+		}
+	}
 }
 
 // deleteConfig generates and triggers deletion of config into the DB.
@@ -70,4 +77,15 @@ func (u *Usecases) deleteConfig(rawManifest *RawManifest) {
 	}
 
 	log.Info().Msgf("Config %s was successfully marked for deletion", unmarshalledManifest.Name)
+
+	// Put it into inProgress map to track it
+	for _, k8sCluster := range unmarshalledManifest.Kubernetes.Clusters {
+		if _, ok := u.inProgress.Load(k8sCluster.Name); !ok {
+			// Use dummy config initially, it gets rewritten in new track cycle
+			dummyConfig := &pb.Config{
+				Name: unmarshalledManifest.Name,
+			}
+			u.inProgress.Store(k8sCluster.Name, dummyConfig)
+		}
+	}
 }

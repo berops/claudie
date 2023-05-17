@@ -15,7 +15,7 @@ func (u *Usecases) WatchConfigs() {
 
 	configs, err := u.ContextBox.GetAllConfigs()
 	if err != nil {
-		log.Error().Msgf("failed to retrieve configs from contextbox: %s", err)
+		log.Err(err).Msgf("failed to retrieve configs from contextbox")
 	}
 
 	for _, config := range configs {
@@ -34,7 +34,7 @@ func (u *Usecases) WatchConfigs() {
 			{
 				configs, err = u.ContextBox.GetAllConfigs()
 				if err != nil {
-					log.Error().Msgf("Failed to retrieve configs from context-box microservice: %s", err)
+					log.Err(err).Msgf("Failed to retrieve configs from context-box")
 					break
 				}
 

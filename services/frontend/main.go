@@ -86,7 +86,7 @@ func run() error {
 
 	// Disconnect from context-box
 	if err := contextBoxConnector.Disconnect(); err != nil {
-		log.Error().Msgf("Failed to gracefully shutdown ContextBoxConnector: %v", err)
+		log.Err(err).Msgf("Failed to gracefully shutdown ContextBoxConnector")
 	}
 	defer signal.Stop(shutdownSignalChan)
 
