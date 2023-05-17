@@ -12,6 +12,14 @@ import (
 	"github.com/berops/claudie/services/context-box/server/utils"
 )
 
+const (
+	// default TTL for an element to be in the builder queue
+	defaultBuilderTTL = 360
+
+	// default TTL for an element to be in the scheduler queue
+	defaultSchedulerTTL = 5
+)
+
 // ConfigInfo is a data structure which holds data that context-box needs in order to function properly.
 // This data is required by EnqueueConfigs to decide which configs should be enqueued and which should not
 type ConfigInfo struct {
@@ -29,8 +37,8 @@ func (c *ConfigInfo) GetName() string {
 	return c.Name
 }
 
-// HasError returns true if any cluster errored while building.
-func (c *ConfigInfo) HasError() bool {
+// hasError returns true if any cluster errored while building.
+func (c *ConfigInfo) hasError() bool {
 	for _, v := range c.State {
 		if v.Status == pb.Workflow_ERROR.String() {
 			return true
@@ -73,29 +81,21 @@ func (c *ConfigInfo) scheduleDeletion() bool {
 	return false
 }
 
-const (
-	// default TTL for an element to be in the builder queue
-	defaultBuilderTTL = 360
-
-	// default TTL for an element to be in the scheduler queue
-	defaultSchedulerTTL = 5
-)
-
 // EnqueueConfigs is a driver for enqueueConfigs function
 func (u *Usecases) EnqueueConfigs() error {
 	if err := u.enqueueConfigs(); err != nil {
 		return fmt.Errorf("error while enqueuing configs: %w", err)
 	}
 
-	if !u.schedulerQueue.CompareElementnameList(u.schedulerLogQueue) {
-		log.Info().Msgf("Scheduler queue content changed to: %v", u.schedulerQueue.GetElementnames())
+	if !u.schedulerQueue.CompareElementNameList(u.schedulerLogQueue) {
+		log.Info().Msgf("Scheduler queue content changed to: %v", u.schedulerQueue.GetElementNames())
 	}
-	u.schedulerLogQueue = u.schedulerQueue.GetElementnames()
+	u.schedulerLogQueue = u.schedulerQueue.GetElementNames()
 
-	if !u.builderQueue.CompareElementnameList(u.builderLogQueue) {
-		log.Info().Msgf("Builder queue content changed to: %v", u.builderQueue.GetElementnames())
+	if !u.builderQueue.CompareElementNameList(u.builderLogQueue) {
+		log.Info().Msgf("Builder queue content changed to: %v", u.builderQueue.GetElementNames())
 	}
-	u.builderLogQueue = u.builderQueue.GetElementnames()
+	u.builderLogQueue = u.builderQueue.GetElementNames()
 
 	return nil
 }
@@ -117,7 +117,7 @@ func (u *Usecases) enqueueConfigs() error {
 		// due to which the DsChecksum will be nil.
 		if !utils.Equal(configInfo.DsChecksum, configInfo.MsChecksum) {
 			// If scheduler TTL is <= 0 AND config has no errorMessage, add item to the scheduler queue
-			if configInfo.SchedulerTTL <= 0 && !configInfo.HasError() {
+			if configInfo.SchedulerTTL <= 0 && !configInfo.hasError() {
 				if err := u.DB.UpdateSchedulerTTL(configInfo.Name, defaultSchedulerTTL); err != nil {
 					return err
 				}
@@ -128,7 +128,7 @@ func (u *Usecases) enqueueConfigs() error {
 				configInfo.SchedulerTTL = defaultSchedulerTTL
 
 				continue
-			} else if !configInfo.HasError() {
+			} else if !configInfo.hasError() {
 				// If the item is already present in the scheduler queue but the config is still not pulled by the scheduler
 				// microservice, then reduce its scheduler TTL by 1.
 				configInfo.SchedulerTTL = configInfo.SchedulerTTL - 1
@@ -141,7 +141,7 @@ func (u *Usecases) enqueueConfigs() error {
 			// If builder TTL <= 0 AND config has no errorMessage, add item to the builder queue
 			if configInfo.BuilderTTL <= 0 {
 				// If no BUILD error OR if triggered for deletion in builder microservice.
-				if !configInfo.HasError() || configInfo.scheduleDeletion() {
+				if !configInfo.hasError() || configInfo.scheduleDeletion() {
 					if err := u.DB.UpdateBuilderTTL(configInfo.Name, defaultBuilderTTL); err != nil {
 						return err
 					}
@@ -153,7 +153,7 @@ func (u *Usecases) enqueueConfigs() error {
 
 					continue
 				}
-			} else if !configInfo.HasError() {
+			} else if !configInfo.hasError() {
 				// If the item is already present in the builder queue but the config is still not pulled by the builder
 				// microservice, then reduce its scheduler TTL by 1.
 				configInfo.BuilderTTL = configInfo.BuilderTTL - 1
@@ -162,10 +162,10 @@ func (u *Usecases) enqueueConfigs() error {
 
 		// save data if both TTL were subtracted
 		if err := u.DB.UpdateSchedulerTTL(configInfo.Name, configInfo.SchedulerTTL); err != nil {
-			return nil
+			return err
 		}
 		if err := u.DB.UpdateBuilderTTL(configInfo.Name, configInfo.BuilderTTL); err != nil {
-			return nil
+			return err
 		}
 	}
 
@@ -175,14 +175,14 @@ func (u *Usecases) enqueueConfigs() error {
 // Fetches all configAsBSON from MongoDB and converts each configAsBSON to ConfigInfo
 // Then returns the list
 func getConfigInfosFromDB(mongoDB ports.DBPort) ([]*ConfigInfo, error) {
-	configAsBSONList, err := mongoDB.GetAllConfigs()
+	configs, err := mongoDB.GetAllConfigs()
 	if err != nil {
 		return nil, err
 	}
 
 	var configInfos []*ConfigInfo
 
-	for _, configAsBSON := range configAsBSONList {
+	for _, configAsBSON := range configs {
 		configInfo := &ConfigInfo{
 			Name: configAsBSON.Name,
 

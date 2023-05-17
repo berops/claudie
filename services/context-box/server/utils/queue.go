@@ -12,25 +12,25 @@ type QueueElement interface {
 // slice
 // Queue is also thread safe and support usage over multiple go-routines
 type Queue struct {
-	elements         []QueueElement
-	threadSafetyLock sync.Mutex
+	elements []QueueElement
+	lock     sync.Mutex
 }
 
 // Enqueue will add a new element into the end of the queue
 func (q *Queue) Enqueue(element QueueElement) {
-	q.threadSafetyLock.Lock()
+	q.lock.Lock()
 
 	// appends element to last index
 	q.elements = append(q.elements, element)
 
-	q.threadSafetyLock.Unlock()
+	q.lock.Unlock()
 }
 
 // Dequeue will delete oldest element in the queue and return it
 // Returns nil if queue is empty
 func (q *Queue) Dequeue() QueueElement {
-	q.threadSafetyLock.Lock()
-	defer q.threadSafetyLock.Unlock()
+	q.lock.Lock()
+	defer q.lock.Unlock()
 
 	if len(q.elements) == 0 {
 		return nil
@@ -45,8 +45,8 @@ func (q *Queue) Dequeue() QueueElement {
 // Checks if the queue holds the specified elements
 // checking is done by name of the element
 func (q *Queue) Contains(targetElement QueueElement) bool {
-	q.threadSafetyLock.Lock()
-	defer q.threadSafetyLock.Unlock()
+	q.lock.Lock()
+	defer q.lock.Unlock()
 
 	for _, element := range q.elements {
 		if element.GetName() == targetElement.GetName() {
@@ -57,29 +57,29 @@ func (q *Queue) Contains(targetElement QueueElement) bool {
 	return false
 }
 
-// GetElementnames returns slice of names of the elements in the queue
-func (q *Queue) GetElementnames() []string {
+// GetElementNames returns slice of names of the elements in the queue
+func (q *Queue) GetElementNames() []string {
 	var names []string
 
-	q.threadSafetyLock.Lock()
+	q.lock.Lock()
 	for _, element := range q.elements {
 		names = append(names, element.GetName())
 	}
-	q.threadSafetyLock.Unlock()
+	q.lock.Unlock()
 
 	return names
 }
 
-// CompareElementnameList compares given element-name list with the current element-name list of the queue
-func (q *Queue) CompareElementnameList(givenList []string) bool {
-	currentList := q.GetElementnames()
+// CompareElementNameList compares given element-name list with the current element-name list of the queue
+func (q *Queue) CompareElementNameList(givenList []string) bool {
+	currentList := q.GetElementNames()
 
 	if len(givenList) != len(currentList) {
 		return false
 	}
 
-	for _, Elementname := range currentList {
-		if !doesListContainElementname(Elementname, givenList) {
+	for _, ElementName := range currentList {
+		if !containsElementName(ElementName, givenList) {
 			return false
 		}
 	}
@@ -87,9 +87,9 @@ func (q *Queue) CompareElementnameList(givenList []string) bool {
 	return true
 }
 
-func doesListContainElementname(targetElementname string, givenList []string) bool {
-	for _, Elementname := range givenList {
-		if Elementname == targetElementname {
+func containsElementName(targetElementName string, givenList []string) bool {
+	for _, ElementName := range givenList {
+		if ElementName == targetElementName {
 			return true
 		}
 	}

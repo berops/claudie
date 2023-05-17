@@ -463,6 +463,6 @@ func (m *MongoDBConnector) getAllFromDB() ([]*configItem, error) {
 func (m *MongoDBConnector) Disconnect() {
 	err := m.client.Disconnect(context.Background())
 	if err != nil {
-		log.Fatal().Msgf("Error while closing the connection to MongoDB : %v", err)
+		log.Error().Msgf("Error while closing the connection to MongoDB : %v", err)
 	}
 }
