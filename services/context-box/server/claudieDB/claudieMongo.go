@@ -333,15 +333,7 @@ func (c *ClaudieMongo) UpdateAllStates(configName string, states map[string]*pb.
 	if states == nil {
 		return nil
 	}
-	m := make(map[string]Workflow, len(states))
-	for cluster, state := range states {
-		m[cluster] = Workflow{
-			Status:      state.Status.String(),
-			Stage:       state.Stage.String(),
-			Description: state.Description,
-		}
-	}
-	return c.updateDocument(bson.M{"name": configName}, bson.M{"$set": bson.M{"state": m}})
+	return c.updateDocument(bson.M{"name": configName}, bson.M{"$set": bson.M{"state": ConvertFromGRPCWorkflow(states)}})
 }
 
 // UpdateCs will update the current state related field in DB
