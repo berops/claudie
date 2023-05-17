@@ -35,9 +35,9 @@ type ClaudieMongo struct {
 }
 
 type Workflow struct {
-	Status      string
-	Stage       string
-	Description string
+	Status      string `bson:"status"`
+	Stage       string `bson:"stage"`
+	Description string `bson:"description"`
 }
 
 type configItem struct {
@@ -326,6 +326,22 @@ func (c *ClaudieMongo) UpdateWorkflowState(configName, clusterName string, workf
 			Description: workflow.Description,
 		},
 	}})
+}
+
+// UpdateAllStates updates all states of the config specified.
+func (c *ClaudieMongo) UpdateAllStates(configName string, states map[string]*pb.Workflow) error {
+	if states == nil {
+		return nil
+	}
+	m := make(map[string]Workflow, len(states))
+	for cluster, state := range states {
+		m[cluster] = Workflow{
+			Status:      state.Status.String(),
+			Stage:       state.Stage.String(),
+			Description: state.Description,
+		}
+	}
+	return c.updateDocument(bson.M{"name": configName}, bson.M{"$set": bson.M{"state": m}})
 }
 
 // UpdateCs will update the current state related field in DB
