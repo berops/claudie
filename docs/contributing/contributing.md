@@ -7,4 +7,6 @@ Before you submit, please check:
 
 - ...that the issue you want to open is not a duplicate
 - ...that you submitted the logs/screenshots of any errors and a concise way to reproduce the issue
-- ...the input manifest you used :warning:**be careful not to include your cloud credentials**:warning:
+- ...the input manifest you used 
+
+!!! warning "be careful not to include your cloud credentials"
