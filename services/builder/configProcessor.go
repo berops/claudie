@@ -54,7 +54,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			// Save error to DB if not nil.
 			if err != nil {
 				log.Error().Msgf("Error while destroying config %s : %v", config.Name, err)
-				if err := saveConfigWithWorkflowError(config, c); err != nil {
+				if err := saveConfigWithWorkflowError(config, c, clusterView); err != nil {
 					log.Error().Msgf("Failed to save error message for config %s:  %v", config.Name, err)
 				}
 			}
@@ -251,7 +251,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			// in order to be able to delete it later.
 			clusterView.MergeChanges(config)
 
-			if err := saveConfigWithWorkflowError(config, c); err != nil {
+			if err := saveConfigWithWorkflowError(config, c, clusterView); err != nil {
 				log.Error().Msgf("Failed to save error message due to: %s", err)
 			}
 			return

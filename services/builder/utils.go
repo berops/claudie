@@ -33,7 +33,9 @@ func destroyConfig(config *pb.Config, clusterView *ClusterView, c pb.ContextBoxS
 }
 
 // saveConfigWithWorkflowError saves config with workflow states
-func saveConfigWithWorkflowError(config *pb.Config, c pb.ContextBoxServiceClient) error {
+func saveConfigWithWorkflowError(config *pb.Config, c pb.ContextBoxServiceClient, clusterView *ClusterView) error {
+	// Make sure state in the config is based on the cluster view
+	config.State = clusterView.ClusterWorkflows
 	if config.DsChecksum != nil {
 		config.CurrentState = config.DesiredState
 	}
