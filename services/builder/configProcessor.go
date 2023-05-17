@@ -247,6 +247,10 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			return nil
 		}); err != nil {
 			log.Error().Msgf("Error encountered while processing config %s : %v", config.Name, err)
+			// Even if the config fails to build merge the changes as it might be in an in-between state
+			// in order to be able to delete it later.
+			clusterView.MergeChanges(config)
+
 			if err := saveConfigWithWorkflowError(config, c, clusterView); err != nil {
 				log.Error().Msgf("Failed to save error message due to: %s", err)
 			}
