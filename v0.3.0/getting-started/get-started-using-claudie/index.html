@@ -977,6 +977,9 @@
 <h1 id="get-started-using-claudie">Get started using Claudie<a class="headerlink" href="#get-started-using-claudie" title="Permanent link">&para;</a></h1>
 <h2 id="first-steps">First steps<a class="headerlink" href="#first-steps" title="Permanent link">&para;</a></h2>
 <ol>
+<li>Download and extract manifests of the lates release from our <a href="https://github.com/berops/claudie/releases">release page</a>.
+   <div class="highlight"><pre><span></span><code>wget<span class="w"> </span>https://github.com/berops/claudie/releases/latest/download/claudie.zip<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>unzip<span class="w"> </span>claudie.zip<span class="w"> </span>-d<span class="w"> </span>claudie
+</code></pre></div></li>
 <li>Deploy Claudie Kubernetes <a href="https://github.com/berops/claudie/tree/master/manifests/claudie">manifests/claudie</a> into a Kubernetes cluster:
    <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-k<span class="w"> </span>manifests/claudie
 </code></pre></div></li>
