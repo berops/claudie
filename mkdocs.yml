@@ -66,8 +66,7 @@ nav:
     - Autoscaling in Claudie: autoscaling/autoscaling.md
   - Claudie Use Cases: use-cases/use-cases.md
   - Roadmap for Claudie: roadmap/roadmap.md
-  - Contributing:
-    - contributing/contributing.md
+  - Contributing: contributing/contributing.md
   - Changelog:
     - Claudie v0.1: CHANGELOG/changelog-0.1.x.md
     - Claudie v0.2: CHANGELOG/changelog-0.2.x.md
