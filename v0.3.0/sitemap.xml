@@ -2,152 +2,152 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://docs.claudie.io/v0.3.0/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/CHANGELOG/changelog-0.1.x/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/CHANGELOG/changelog-0.2.x/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/CHANGELOG/changelog-0.3.x/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/autoscaling/autoscaling/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/claudie-workflow/claudie-workflow/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/config/config/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/contributing/contributing/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/contributing/release/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/crud/crud/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/docs-guides/deployment-workflow/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/docs-guides/development/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/getting-started/get-started-using-claudie/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/input-manifest/example/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/input-manifest/input-manifest/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/input-manifest/providers/aws/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/input-manifest/providers/azure/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/input-manifest/providers/cloudflare/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/input-manifest/providers/gcp/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/input-manifest/providers/hetzner/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/input-manifest/providers/oci/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/input-manifest/providers/examples/aws-input-manifest/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/input-manifest/providers/examples/azure-input-manifest/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/input-manifest/providers/examples/gcp-input-manifest/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/input-manifest/providers/examples/hetzner-input-manifest/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/input-manifest/providers/examples/oci-input-manifest/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/loadbalancing/loadbalancing-solution/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/roadmap/roadmap/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/storage/storage-solution/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.3.0/use-cases/use-cases/</loc>
-         <lastmod>2023-05-16</lastmod>
+         <lastmod>2023-05-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>
