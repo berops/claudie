@@ -46,7 +46,7 @@ jobs:
 
       - name: Add new changelog file to mkdocs.yml navigation under Changelog section
         run: |
-          /bin/bash ./update_mkdocs.sh
+          /bin/bash ./hack/update_mkdocs.sh
 
       # NOTE: the pipeline will fail, if gh-pages branch isn't created!!!
       - name: Git fetch gh-pages
