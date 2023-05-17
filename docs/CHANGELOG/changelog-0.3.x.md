@@ -1,8 +1,8 @@
 # Claudie `v0.3`
 
-:warning: Due to a breaking change in the input manifest schema, the `v0.3.x` will not be backwards compatible with `v0.2.x`. :warning:
+!!! warning "Due to a breaking change in the input manifest schema, the `v0.3.x` will not be backwards compatible with `v0.2.x`"
 
-# Deployment
+## Deployment
 
 To deploy the Claudie `v0.3.X`, please:
 
@@ -36,19 +36,19 @@ To deploy the Claudie `v0.3.X`, please:
     kubectl apply -k .
     ```
 
-# v0.3.0
+## v0.3.0
 
-## Features
+### Features
 
 - Use separate storage disk for longhorn [#689](https://github.com/berops/claudie/pull/698)
 - Apply proper kubernetes labels to Claudie resources [#714](https://github.com/berops/claudie/pull/714)
 - Implement clean architecture for the Frontend [#701](https://github.com/berops/claudie/pull/701)
 
-## Bugfixes
+### Bugfixes
 
 - Fix logging issues in Frontend [#713](https://github.com/berops/claudie/pull/713)
 
-## Known issues
+### Known issues
 
 - Infrastructure might not get deleted if workflow encounters and error [#712](https://github.com/berops/claudie/issues/712)
 - Certain cluster manipulation can result in workflow failing to build the clusters [#606](https://github.com/berops/claudie/issues/606)
