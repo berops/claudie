@@ -5,17 +5,44 @@ import (
 	"os"
 	"os/exec"
 
-	comm "github.com/berops/claudie/internal/command"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+
+	comm "github.com/berops/claudie/internal/command"
+	"github.com/berops/claudie/internal/templateUtils"
 )
 
 const (
+	baseDirectory   = "services/ansibler/server"
+	outputDirectory = "clusters"
+
+	inventoryFile         = "inventory.ini"
+	nodesInventoryFileTpl = "all-node-inventory.goini"
+
+	privateKeyExt = "pem"
+
 	// defaultAnsibleForks defines how many forks ansible uses (on how many nodes can ansible perform a task at the same time).
 	defaultAnsibleForks = 15
 	// maxAnsibleRetries defines how many times should be playbook retried before returning error.
 	maxAnsibleRetries = 5
 )
+
+// In Ansible, an inventory file is a configuration file that defines
+// the hosts and groups of hosts that Ansible can manage.
+// generateInventoryFile generates the Ansible inventory file
+func GenerateInventoryFile(inventoryTemplate, directory string, data interface{}) error {
+	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.AnsiblerTemplates}
+	tpl, err := templateLoader.LoadTemplate(inventoryTemplate)
+	if err != nil {
+		return fmt.Errorf("Error while loading Ansible inventory template %s for %s : %w", inventoryTemplate, directory, err)
+	}
+	template := templateUtils.Templates{Directory: directory}
+	err = template.Generate(tpl, inventoryFile, data)
+	if err != nil {
+		return fmt.Errorf("error while generating from template %s for %s : %w", inventoryTemplate, directory, err)
+	}
+	return nil
+}
 
 type Ansible struct {
 	Playbook  string
