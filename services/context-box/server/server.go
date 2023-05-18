@@ -62,14 +62,11 @@ func (*server) SaveConfigScheduler(ctx context.Context, req *pb.SaveConfigReques
 		return nil, fmt.Errorf("error while updating dsChecksum for %s : %w", config.Name, err)
 	}
 
-	if config.DesiredState != nil {
-		// Update workflow state for k8s clusters. (LB clusters included)
-		for _, cluster := range config.DesiredState.Clusters {
-			if err := database.UpdateWorkflowState(config.Name, cluster.ClusterInfo.Name, config.State[cluster.ClusterInfo.Name]); err != nil {
-				return nil, fmt.Errorf("error while updating workflow state for k8s cluster %s in config %s : %w", cluster.ClusterInfo.Name, config.Name, err)
-			}
-		}
+	// Update workflow state
+	if err := database.UpdateAllStates(config.Name, config.State); err != nil {
+		return nil, fmt.Errorf("error while updating workflow state for config %s : %w", config.Name, err)
 	}
+
 	if err := database.UpdateSchedulerTTL(config.Name, config.SchedulerTTL); err != nil {
 		return nil, fmt.Errorf("error while updating schedulerTTL for %s : %w", config.Name, err)
 	}
@@ -147,11 +144,9 @@ func (*server) SaveConfigBuilder(ctx context.Context, req *pb.SaveConfigRequest)
 		return nil, fmt.Errorf("error while updating builderTTL for %s : %w", config.Name, err)
 	}
 
-	// Update workflow state for k8s clusters. (LB clusters included)
-	for _, cluster := range config.CurrentState.Clusters {
-		if err := database.UpdateWorkflowState(config.Name, cluster.ClusterInfo.Name, config.State[cluster.ClusterInfo.Name]); err != nil {
-			return nil, fmt.Errorf("error while updating workflow state for k8s cluster %s in config %s : %w", cluster.ClusterInfo.Name, config.Name, err)
-		}
+	// Update workflow state
+	if err := database.UpdateAllStates(config.Name, config.State); err != nil {
+		return nil, fmt.Errorf("error while updating workflow state for config %s : %w", config.Name, err)
 	}
 
 	log.Info().Msgf("Config %s successfully saved from Builder", config.Name)

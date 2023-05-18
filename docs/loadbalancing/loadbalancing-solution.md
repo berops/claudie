@@ -7,16 +7,16 @@ To create a highly available kubernetes cluster, Claudie creates load balancers 
 ## Concept
 
 - The load balancer machines will join the Wireguard private network of Claudie clusters relevant to it.
-  - This is necessary so that the LB machines can send traffic to the cluster machines over the `wireguard VPN`.
+    - This is necessary so that the LB machines can send traffic to the cluster machines over the `wireguard VPN`.
   
 - DNS A records will be created and managed by Claudie on 1 or more cloud providers.
-  - There will be a DNS A record for the public IP of each LB machine that is currently passing the health checks.
+    - There will be a DNS A record for the public IP of each LB machine that is currently passing the health checks.
 
 - The LB machines will run an `Nginx` to carry out the actual load balancing.
-  - There will be a DNS A record for the public IP of each LB machine that is currently passing the health checks.
-  - Therefore, there will be actually 2 layers of load balancing.
-    1. DNS-based load balancing to determine the LB machine to be used.
-    2. Software load balancing on the chosen LB machine.
+    - There will be a DNS A record for the public IP of each LB machine that is currently passing the health checks.
+    - Therefore, there will be actually 2 layers of load balancing.
+        1. DNS-based load balancing to determine the LB machine to be used.
+        2. Software load balancing on the chosen LB machine.
 
 - Claudie will dynamically manage the LB configuration, e.g. if some cluster node is removed, the LB configuration changes or DNS configuration changes (hostname change).
 
