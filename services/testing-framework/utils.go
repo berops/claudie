@@ -7,11 +7,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/rs/zerolog/log"
+	"google.golang.org/grpc"
+
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
-	"github.com/rs/zerolog/log"
-	"google.golang.org/grpc"
 )
 
 const (
@@ -36,7 +37,7 @@ type idInfo struct {
 func clientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
 	cc, err := utils.GrpcDialWithInsecure("context-box", envs.ContextBoxURL)
 	if err != nil {
-		log.Fatal().Msgf("Failed to create client connection to context-box : %v", err)
+		log.Fatal().Err(err).Msgf("Failed to create client connection to context-box")
 	}
 
 	// Creating the client
