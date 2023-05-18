@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/rs/zerolog/log"
-
+	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 )
 
@@ -35,18 +34,20 @@ func (u *Usecases) ConfigProcessor(contextBoxGrpcClient pb.ContextBoxServiceClie
 			defer waitGroup.Done()
 		}
 
-		log.Info().Msgf("Processing config %s ", config.Name)
+		logger := utils.CreateLoggerWithProjectName(config.Name)
+
+		logger.Info().Msgf("Processing config")
 
 		// Process (build desired state) the config
 		if configProcessingErr := u.processConfig(config, contextBoxGrpcClient); configProcessingErr != nil {
-			log.Error().Msgf("Error while processing config %s : %v", config.Name, configProcessingErr)
+			logger.Err(configProcessingErr).Msgf("Error while processing config")
 
 			// Save processing error message to config
 			if err := u.saveErrorMessageToConfig(config, contextBoxGrpcClient, configProcessingErr); err != nil {
-				log.Error().Msgf("Failed to save error to the config %s : %v", config.Name, err)
+				logger.Err(err).Msgf("Failed to save error to the config")
 			}
 		}
-		log.Info().Msgf("Config %s have been successfully processed", config.Name)
+		logger.Info().Msgf("Config have been successfully processed")
 	}()
 
 	return nil
