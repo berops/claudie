@@ -143,7 +143,6 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 	})
 
 	err = utils.ConcurrentExec(clusters, func(cluster Cluster) error {
-
 		logger.Info().Msgf("Destroying infrastructure")
 		if err := cluster.Destroy(logger); err != nil {
 			return fmt.Errorf("error while destroying cluster %v : %w", cluster.Id(), err)
