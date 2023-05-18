@@ -7,6 +7,7 @@ import (
 
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/terraformer/server/clusterBuilder"
+	"github.com/rs/zerolog"
 )
 
 type LBcluster struct {
@@ -24,7 +25,8 @@ func (l LBcluster) Id() string {
 	return fmt.Sprintf("%s-%s", state.ClusterInfo.Name, state.ClusterInfo.Hash)
 }
 
-func (l LBcluster) Build() error {
+func (l LBcluster) Build(logger zerolog.Logger) error {
+	logger.Info().Msgf("Building LB Cluster %s and DNS", l.DesiredLB.ClusterInfo.Name)
 	var currentInfo *pb.ClusterInfo
 	var currentDNS *pb.DNS
 	var currentNodeIPs []string
@@ -62,7 +64,7 @@ func (l LBcluster) Build() error {
 		ProjectName:    l.ProjectName,
 	}
 
-	endpoint, err := dns.CreateDNSRecords()
+	endpoint, err := dns.CreateDNSRecords(logger)
 	if err != nil {
 		return fmt.Errorf("error while creating the DNS for %s : %w", l.DesiredLB.ClusterInfo.Name, err)
 	}
@@ -72,8 +74,9 @@ func (l LBcluster) Build() error {
 	return nil
 }
 
-func (l LBcluster) Destroy() error {
+func (l LBcluster) Destroy(logger zerolog.Logger) error {
 	group := errgroup.Group{}
+	logger.Info().Msgf("Destroying LB Cluster %s and DNS", l.CurrentLB.ClusterInfo.Name)
 
 	group.Go(func() error {
 		cluster := clusterBuilder.ClusterBuilder{
@@ -93,7 +96,7 @@ func (l LBcluster) Destroy() error {
 			CurrentDNS:     l.CurrentLB.Dns,
 			ProjectName:    l.ProjectName,
 		}
-		return dns.DestroyDNSRecords()
+		return dns.DestroyDNSRecords(logger)
 	})
 
 	return group.Wait()

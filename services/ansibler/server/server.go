@@ -10,13 +10,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
+
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb"
 )
 
 const (
@@ -27,9 +28,29 @@ type server struct {
 	pb.UnimplementedAnsiblerServiceServer
 }
 
+func (*server) UpdateAPIEndpoint(_ context.Context, req *pb.UpdateAPIEndpointRequest) (*pb.UpdateAPIEndpointResponse, error) {
+	logger := utils.CreateLoggerWithProjectAndClusterName(req.ProjectName, utils.GetClusterID(req.Desired.ClusterInfo))
+
+	if req.Current == nil {
+		return &pb.UpdateAPIEndpointResponse{Current: req.Current, Desired: req.Desired}, nil
+	}
+
+	logger.Info().Msgf("Updating api endpoint")
+	if err := updateAPIEndpoint(req.Current.ClusterInfo, req.Desired.ClusterInfo); err != nil {
+		return nil, fmt.Errorf("failed to update api endpoint for cluster %s project %s", req.Current.ClusterInfo.Name, req.ProjectName)
+	}
+
+	logger.Info().Msgf("Updated api endpoint")
+	return &pb.UpdateAPIEndpointResponse{Current: req.Current, Desired: req.Desired}, nil
+}
+
 // InstallNodeRequirements installs requirements on all nodes
 func (*server) InstallNodeRequirements(_ context.Context, req *pb.InstallRequest) (*pb.InstallResponse, error) {
-	log.Info().Msgf("Installing node requirements for cluster %s project %s", req.Desired.ClusterInfo.Name, req.ProjectName)
+	logger := log.With().
+		Str("project", req.ProjectName).Str("cluster", req.Desired.ClusterInfo.Name).
+		Logger()
+
+	logger.Info().Msgf("Installing node requirements")
 	info := &NodepoolInfo{
 		Nodepools:  req.Desired.ClusterInfo.NodePools,
 		PrivateKey: req.Desired.ClusterInfo.PrivateKey,
@@ -38,17 +59,21 @@ func (*server) InstallNodeRequirements(_ context.Context, req *pb.InstallRequest
 	}
 
 	if err := installLonghornRequirements(info); err != nil {
-		log.Error().Msgf("Error encountered while installing node requirements for cluster %s project %s : %s", req.Desired.ClusterInfo.Name, req.ProjectName, err)
+		logger.Err(err).Msgf("Error encountered while installing node requirements")
 		return nil, fmt.Errorf("error encountered while installing node requirements for cluster %s project %s : %w", req.Desired.ClusterInfo.Name, req.ProjectName, err)
 	}
 
-	log.Info().Msgf("Node requirements for cluster %s project %s was successfully installed", req.Desired.ClusterInfo.Name, req.ProjectName)
+	logger.Info().Msgf("Node requirements was successfully installed")
 	return &pb.InstallResponse{Desired: req.Desired, DesiredLbs: req.DesiredLbs}, nil
 }
 
 // InstallVPN installs VPN between nodes in the k8s cluster and lb clusters
 func (*server) InstallVPN(_ context.Context, req *pb.InstallRequest) (*pb.InstallResponse, error) {
-	log.Info().Msgf("Installing VPN for cluster %s project %s", req.Desired.ClusterInfo.Name, req.ProjectName)
+	logger := log.With().
+		Str("project", req.ProjectName).Str("cluster", req.Desired.ClusterInfo.Name).
+		Logger()
+
+	logger.Info().Msgf("Installing VPN")
 	info := &VPNInfo{
 		Network: req.Desired.Network,
 		NodepoolInfo: []*NodepoolInfo{
@@ -71,16 +96,20 @@ func (*server) InstallVPN(_ context.Context, req *pb.InstallRequest) (*pb.Instal
 	}
 
 	if err := installWireguardVPN(fmt.Sprintf("%s-%s", req.Desired.ClusterInfo.Name, req.Desired.ClusterInfo.Hash), info); err != nil {
-		log.Error().Msgf("Error encountered while installing VPN for cluster %s project %s : %v", req.Desired.ClusterInfo.Name, req.ProjectName, err)
+		logger.Err(err).Msgf("Error encountered while installing VPN")
 		return nil, fmt.Errorf("error encountered while installing VPN for cluster %s project %s : %w", req.Desired.ClusterInfo.Name, req.ProjectName, err)
 	}
 
-	log.Info().Msgf("VPN for cluster %s project %s was successfully installed", req.Desired.ClusterInfo.Name, req.ProjectName)
+	logger.Info().Msgf("VPN was successfully installed")
 	return &pb.InstallResponse{Desired: req.Desired, DesiredLbs: req.DesiredLbs}, nil
 }
 
 // TeardownLoadBalancers correctly destroys loadbalancers by selecting the new ApiServer endpoint
 func (*server) TeardownLoadBalancers(ctx context.Context, req *pb.TeardownLBRequest) (*pb.TeardownLBResponse, error) {
+	logger := log.With().
+		Str("project", req.ProjectName).Str("cluster", req.Desired.ClusterInfo.Name).
+		Logger()
+
 	if len(req.DeletedLbs) == 0 {
 		return &pb.TeardownLBResponse{
 			PreviousAPIEndpoint: "",
@@ -89,11 +118,11 @@ func (*server) TeardownLoadBalancers(ctx context.Context, req *pb.TeardownLBRequ
 			DeletedLbs:          req.DeletedLbs,
 		}, nil
 	}
-	log.Info().Msgf("Tearing down the loadbalancers for cluster %s project %s", req.Desired.ClusterInfo.Name, req.ProjectName)
+	logger.Info().Msgf("Tearing down the loadbalancers")
 
 	var attached bool
 	for _, lb := range req.DesiredLbs {
-		if hasAPIServerRole(lb.Roles) {
+		if utils.HasAPIServerRole(lb.Roles) {
 			attached = true
 		}
 	}
@@ -113,7 +142,7 @@ func (*server) TeardownLoadBalancers(ctx context.Context, req *pb.TeardownLBRequ
 
 	endpoint, err := teardownLoadBalancers(req.Desired.ClusterInfo.Name, info, attached)
 	if err != nil {
-		log.Error().Msgf("Error encountered while setting up the LoadBalancers for cluster %s project %s: %v", err, req.Desired.ClusterInfo.Name, req.ProjectName)
+		logger.Err(err).Msgf("Error encountered while setting up the LoadBalancers")
 		return nil, fmt.Errorf("error encountered while tearing down loadbalancers for cluster %s project %s : %w", req.Desired.ClusterInfo.Name, req.ProjectName, err)
 	}
 
@@ -123,19 +152,22 @@ func (*server) TeardownLoadBalancers(ctx context.Context, req *pb.TeardownLBRequ
 		DesiredLbs:          req.DesiredLbs,
 		DeletedLbs:          req.DeletedLbs,
 	}
-	log.Info().Msgf("Loadbalancers for cluster %s project %s were successfully torn down", req.Desired.ClusterInfo.Name, req.ProjectName)
+	logger.Info().Msgf("Loadbalancers were successfully torn down")
 	return resp, nil
 }
 
 // SetUpLoadbalancers sets up the loadbalancers, DNS and verifies their configuration
 func (*server) SetUpLoadbalancers(_ context.Context, req *pb.SetUpLBRequest) (*pb.SetUpLBResponse, error) {
-	log.Info().Msgf("Setting up the loadbalancers for cluster %s project %s", req.Desired.ClusterInfo.Name, req.ProjectName)
+	logger := utils.CreateLoggerWithProjectAndClusterName(req.ProjectName, utils.GetClusterID(req.Desired.ClusterInfo))
+
+	logger.Info().Msgf("Setting up the loadbalancers")
 	currentLBs := make(map[string]*pb.LBcluster)
 	for _, lb := range req.CurrentLbs {
 		currentLBs[lb.ClusterInfo.Name] = lb
 	}
 
 	info := &LBInfo{
+		FirstRun:              req.FirstRun,
 		TargetK8sNodepool:     req.Desired.ClusterInfo.NodePools,
 		TargetK8sNodepoolKey:  req.Desired.ClusterInfo.PrivateKey,
 		PreviousAPIEndpointLB: req.PreviousAPIEndpoint,
@@ -150,12 +182,12 @@ func (*server) SetUpLoadbalancers(_ context.Context, req *pb.SetUpLBRequest) (*p
 		})
 	}
 
-	if err := setUpLoadbalancers(req.Desired.ClusterInfo.Name, info); err != nil {
-		log.Error().Msgf("Error encountered while setting up the loadbalancers for cluster %s project %s : %s", req.Desired.ClusterInfo.Name, req.ProjectName, err)
+	if err := setUpLoadbalancers(req.Desired.ClusterInfo.Name, info, logger); err != nil {
+		logger.Err(err).Msgf("Error encountered while setting up the loadbalancers")
 		return nil, fmt.Errorf("error encountered while setting up the loadbalancers for cluster %s project %s : %w", req.Desired.ClusterInfo.Name, req.ProjectName, err)
 	}
 
-	log.Info().Msgf("Loadbalancers for cluster %s project %s were successfully set up", req.Desired.ClusterInfo.Name, req.ProjectName)
+	logger.Info().Msgf("Loadbalancers were successfully set up")
 	return &pb.SetUpLBResponse{Desired: req.Desired, CurrentLbs: req.CurrentLbs, DesiredLbs: req.DesiredLbs}, nil
 }
 

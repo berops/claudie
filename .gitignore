@@ -13,3 +13,5 @@ cluster-kubeconfig
 *.conf
 __debug_bin
 services/testing-framework/test-sets
+/venv/
+/site/

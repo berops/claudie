@@ -78,6 +78,12 @@ message DestroyClusterAutoscalerRequest{
 
 message DestroyClusterAutoscalerResponse {}
 
+message PatchClusterInfoConfigMapRequest {
+  K8scluster desiredCluster = 1;
+}
+
+message PatchClusterInfoConfigMapResponse {}
+
 service KuberService {
   // RemoveLbScrapeConfig removes scrape config for every LB detached from this cluster.
   rpc RemoveLbScrapeConfig(RemoveLbScrapeConfigRequest) returns (RemoveLbScrapeConfigResponse);
@@ -101,4 +107,8 @@ service KuberService {
   rpc SetUpClusterAutoscaler(SetUpClusterAutoscalerRequest) returns (SetUpClusterAutoscalerResponse);
   // DestroyClusterAutoscaler deletes Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
   rpc DestroyClusterAutoscaler(DestroyClusterAutoscalerRequest) returns (DestroyClusterAutoscalerResponse);
+  // PatchClusterInfoConfigMap updates the cluster-info config map in the kube-public namespace with the the
+  // kubeconfig. This needs to be done after an api endpoint change as the config map in the kube-public namespace
+  // is used by kubeadm when joining.
+  rpc PatchClusterInfoConfigMap(PatchClusterInfoConfigMapRequest) returns (PatchClusterInfoConfigMapResponse);
 }

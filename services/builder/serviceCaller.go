@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 
+	"github.com/rs/zerolog/log"
+
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
@@ -10,7 +12,6 @@ import (
 	kubeEleven "github.com/berops/claudie/services/kube-eleven/client"
 	kuber "github.com/berops/claudie/services/kuber/client"
 	terraformer "github.com/berops/claudie/services/terraformer/client"
-	"github.com/rs/zerolog/log"
 )
 
 type BuilderContext struct {
@@ -51,6 +52,30 @@ func (ctx *BuilderContext) GetClusterName() string {
 	return ""
 }
 
+func (ctx *BuilderContext) GetClusterID() string {
+	if ctx.desiredCluster != nil {
+		return utils.GetClusterID(ctx.desiredCluster.ClusterInfo)
+	}
+	if ctx.cluster != nil {
+		return utils.GetClusterID(ctx.cluster.ClusterInfo)
+	}
+
+	// try to get the cluster name from the lbs if present
+	if len(ctx.desiredLoadbalancers) != 0 {
+		return ctx.desiredLoadbalancers[0].TargetedK8S
+	}
+
+	if len(ctx.loadbalancers) != 0 {
+		return ctx.loadbalancers[0].TargetedK8S
+	}
+
+	if len(ctx.deletedLoadBalancers) != 0 {
+		return ctx.deletedLoadBalancers[0].TargetedK8S
+	}
+
+	return ""
+}
+
 func buildCluster(ctx *BuilderContext, c pb.ContextBoxServiceClient) (*BuilderContext, error) {
 	if err := callTerraformer(ctx, c); err != nil {
 		return nil, fmt.Errorf("error in Terraformer for cluster %s project %s : %w", ctx.GetClusterName(), ctx.projectName, err)
@@ -73,6 +98,8 @@ func buildCluster(ctx *BuilderContext, c pb.ContextBoxServiceClient) (*BuilderCo
 
 // callTerraformer passes config to terraformer for building the infra
 func callTerraformer(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.projectName, ctx.GetClusterID())
+
 	description := ctx.Workflow.Description
 
 	ctx.Workflow.Stage = pb.Workflow_TERRAFORMER
@@ -88,7 +115,7 @@ func callTerraformer(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient)
 	defer utils.CloseClientConnection(cc)
 
 	c := pb.NewTerraformerServiceClient(cc)
-	log.Info().Msgf("Calling BuildInfrastructure on Terraformer for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
+	logger.Info().Msgf("Calling BuildInfrastructure on Terraformer")
 
 	req := &pb.BuildInfrastructureRequest{
 		Current:     ctx.cluster,
@@ -112,12 +139,52 @@ func callTerraformer(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient)
 	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
 		return err
 	}
-	log.Info().Msgf("BuildInfrastructure on Terraformer for cluster %s project %s finished successfully", ctx.GetClusterName(), ctx.projectName)
+	logger.Info().Msgf("BuildInfrastructure on Terraformer finished successfully")
+	return nil
+}
+
+func callUpdateAPIEndpoint(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+	description := ctx.Workflow.Description
+
+	ctx.Workflow.Stage = pb.Workflow_ANSIBLER
+	ctx.Workflow.Description = fmt.Sprintf("%s changing api endpoint to a new control plane node", description)
+	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+		return err
+	}
+
+	cc, err := utils.GrpcDialWithInsecure("ansibler", envs.AnsiblerURL)
+	if err != nil {
+		return err
+	}
+	defer utils.CloseClientConnection(cc)
+
+	c := pb.NewAnsiblerServiceClient(cc)
+
+	resp, err := ansibler.UpdateAPIEndpoint(c, &pb.UpdateAPIEndpointRequest{
+		Current:     ctx.cluster,
+		Desired:     ctx.desiredCluster,
+		ProjectName: ctx.projectName,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	ctx.cluster = resp.Current
+	ctx.desiredCluster = resp.Desired
+
+	ctx.Workflow.Description = description
+	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // callAnsibler passes config to ansibler to set up VPN
 func callAnsibler(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.projectName, ctx.GetClusterID())
+
 	description := ctx.Workflow.Description
 
 	ctx.Workflow.Stage = pb.Workflow_ANSIBLER
@@ -137,7 +204,7 @@ func callAnsibler(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) er
 	// Call TearDownLoadbalancers only when its needed.
 	apiEndpoint := ""
 	if len(ctx.deletedLoadBalancers) > 0 {
-		log.Info().Msgf("Calling TearDownLoadbalancers on Ansibler for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
+		logger.Info().Msgf("Calling TearDownLoadbalancers on Ansibler")
 		teardownRes, err := ansibler.TeardownLoadBalancers(c, &pb.TeardownLBRequest{
 			Desired:     ctx.desiredCluster,
 			DesiredLbs:  ctx.desiredLoadbalancers,
@@ -147,7 +214,7 @@ func callAnsibler(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) er
 		if err != nil {
 			return err
 		}
-		log.Info().Msgf("TearDownLoadbalancers on Ansibler for cluster %s project %s finished successfully", ctx.GetClusterName(), ctx.projectName)
+		logger.Info().Msgf("TearDownLoadbalancers on Ansibler finished successfully")
 
 		ctx.desiredCluster = teardownRes.Desired
 		ctx.desiredLoadbalancers = teardownRes.DesiredLbs
@@ -160,7 +227,7 @@ func callAnsibler(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) er
 		return err
 	}
 
-	log.Info().Msgf("Calling InstallVPN on Ansibler for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
+	logger.Info().Msgf("Calling InstallVPN on Ansibler")
 	installRes, err := ansibler.InstallVPN(c, &pb.InstallRequest{
 		Desired:     ctx.desiredCluster,
 		DesiredLbs:  ctx.desiredLoadbalancers,
@@ -169,7 +236,7 @@ func callAnsibler(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) er
 	if err != nil {
 		return err
 	}
-	log.Info().Msgf("InstallVPN on Ansibler for cluster %s project %s finished successfully", ctx.GetClusterName(), ctx.projectName)
+	logger.Info().Msgf("InstallVPN on Ansibler finished successfully")
 
 	ctx.desiredCluster = installRes.Desired
 	ctx.desiredLoadbalancers = installRes.DesiredLbs
@@ -179,7 +246,7 @@ func callAnsibler(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) er
 		return err
 	}
 
-	log.Info().Msgf("Calling InstallNodeRequirements on Ansibler for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
+	logger.Info().Msgf("Calling InstallNodeRequirements on Ansibler")
 	installRes, err = ansibler.InstallNodeRequirements(c, &pb.InstallRequest{
 		Desired:     ctx.desiredCluster,
 		DesiredLbs:  ctx.desiredLoadbalancers,
@@ -188,7 +255,7 @@ func callAnsibler(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) er
 	if err != nil {
 		return err
 	}
-	log.Info().Msgf("InstallNodeRequirements on Ansibler for cluster %s project %s finished successfully", ctx.GetClusterName(), ctx.projectName)
+	logger.Info().Msgf("InstallNodeRequirements on Ansibler finished successfully")
 
 	ctx.desiredCluster = installRes.Desired
 	ctx.desiredLoadbalancers = installRes.DesiredLbs
@@ -198,18 +265,19 @@ func callAnsibler(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) er
 		return err
 	}
 
-	log.Info().Msgf("Calling SetUpLoadbalancers on Ansibler for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
+	logger.Info().Msgf("Calling SetUpLoadbalancers on Ansibler")
 	setUpRes, err := ansibler.SetUpLoadbalancers(c, &pb.SetUpLBRequest{
 		Desired:             ctx.desiredCluster,
 		CurrentLbs:          ctx.loadbalancers,
 		DesiredLbs:          ctx.desiredLoadbalancers,
 		PreviousAPIEndpoint: apiEndpoint,
 		ProjectName:         ctx.projectName,
+		FirstRun:            ctx.cluster == nil,
 	})
 	if err != nil {
 		return err
 	}
-	log.Info().Msgf("SetUpLoadbalancers on Ansibler for cluster %s project %s finished successfully", ctx.GetClusterName(), ctx.projectName)
+	logger.Info().Msgf("SetUpLoadbalancers on Ansibler finished successfully")
 
 	ctx.desiredCluster = setUpRes.Desired
 	ctx.loadbalancers = setUpRes.CurrentLbs
@@ -225,6 +293,8 @@ func callAnsibler(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) er
 
 // callKubeEleven passes config to kubeEleven to bootstrap k8s cluster
 func callKubeEleven(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.projectName, ctx.GetClusterID())
+
 	description := ctx.Workflow.Description
 
 	ctx.Workflow.Stage = pb.Workflow_KUBE_ELEVEN
@@ -241,7 +311,7 @@ func callKubeEleven(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) 
 
 	c := pb.NewKubeElevenServiceClient(cc)
 
-	log.Info().Msgf("Calling BuildCluster on Kube-eleven for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
+	logger.Info().Msgf("Calling BuildCluster on Kube-eleven")
 
 	res, err := kubeEleven.BuildCluster(c, &pb.BuildClusterRequest{
 		Desired:     ctx.desiredCluster,
@@ -252,7 +322,7 @@ func callKubeEleven(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) 
 	if err != nil {
 		return err
 	}
-	log.Info().Msgf("BuildCluster on Kube-eleven for cluster %s project %s finished successfully", ctx.GetClusterName(), ctx.projectName)
+	logger.Info().Msgf("BuildCluster on Kube-eleven finished successfully")
 
 	ctx.desiredCluster = res.Desired
 	ctx.desiredLoadbalancers = res.DesiredLbs
@@ -264,15 +334,11 @@ func callKubeEleven(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) 
 	return nil
 }
 
-// callKuber passes config to Kuber to apply any additional resources via kubectl
-func callKuber(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
-	description := ctx.Workflow.Description
+func callPatchClusterInfoConfigMap(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.projectName, ctx.GetClusterID())
 
+	description := ctx.Workflow.Description
 	ctx.Workflow.Stage = pb.Workflow_KUBER
-	ctx.Workflow.Description = fmt.Sprintf("%s setting up storage", description)
-	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
-		return err
-	}
 
 	cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL)
 	if err != nil {
@@ -282,35 +348,84 @@ func callKuber(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error
 
 	c := pb.NewKuberServiceClient(cc)
 
+	ctx.Workflow.Description = fmt.Sprintf("%s patching cluster info config map", description)
+	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+		return err
+	}
+
+	logger.Info().Msg("Calling PatchClusterInfoConfigMap on kuber for cluster")
+	if err := kuber.PatchClusterInfoConfigMap(c, &pb.PatchClusterInfoConfigMapRequest{DesiredCluster: ctx.desiredCluster}); err != nil {
+		return err
+	}
+	logger.Info().Msg("PatchClusterInfoConfigMap on Kuber for cluster finished successfully")
+
+	ctx.Workflow.Description = description
+	return updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient)
+}
+
+// callKuber passes config to Kuber to apply any additional resources via kubectl
+func callKuber(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.projectName, ctx.GetClusterID())
+
+	description := ctx.Workflow.Description
+	ctx.Workflow.Stage = pb.Workflow_KUBER
+
+	cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL)
+	if err != nil {
+		return err
+	}
+	defer utils.CloseClientConnection(cc)
+
+	c := pb.NewKuberServiceClient(cc)
+
+	// only patch if kubeconfig changed.
+	if ctx.cluster != nil && (ctx.cluster.Kubeconfig != ctx.desiredCluster.Kubeconfig) {
+		ctx.Workflow.Description = fmt.Sprintf("%s patching cluster info config map", description)
+		if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+			return err
+		}
+
+		logger.Info().Msg("Calling PatchClusterInfoConfigMap on kuber for cluster")
+		if err := kuber.PatchClusterInfoConfigMap(c, &pb.PatchClusterInfoConfigMapRequest{DesiredCluster: ctx.desiredCluster}); err != nil {
+			return err
+		}
+		logger.Info().Msg("PatchClusterInfoConfigMap on Kuber for cluster finished successfully")
+	}
+
 	// If previous cluster had loadbalancers, and the new one does not, the old scrape config will be removed.
 	if len(ctx.desiredLoadbalancers) == 0 && len(ctx.loadbalancers) > 0 {
-		log.Info().Msgf("Calling RemoveScrapeConfig on Kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
+		logger.Info().Msg("Calling RemoveScrapeConfig on Kuber")
 		if _, err := kuber.RemoveLbScrapeConfig(c, &pb.RemoveLbScrapeConfigRequest{
 			Cluster: ctx.desiredCluster,
 		}); err != nil {
 			return err
 		}
-		log.Info().Msgf("RemoveScrapeConfig on Kuber for cluster %s project %s finished successfully", ctx.GetClusterName(), ctx.projectName)
+		logger.Info().Msg("RemoveScrapeConfig on Kuber finished successfully")
 	}
 
 	// Create a scrape-config if there are loadbalancers in the new/updated cluster
 	if len(ctx.desiredLoadbalancers) > 0 {
-		log.Info().Msgf("Calling StoreLbScrapeConfig on Kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
+		logger.Info().Msg("Calling StoreLbScrapeConfig on Kuber")
 		if _, err := kuber.StoreLbScrapeConfig(c, &pb.StoreLbScrapeConfigRequest{
 			Cluster:              ctx.desiredCluster,
 			DesiredLoadbalancers: ctx.desiredLoadbalancers,
 		}); err != nil {
 			return err
 		}
-		log.Info().Msgf("StoreLbScrapeConfig on Kuber for cluster %s project %s finished successfully", ctx.GetClusterName(), ctx.projectName)
+		logger.Info().Msg("StoreLbScrapeConfig on Kuber finished successfully")
 	}
 
-	log.Info().Msgf("Calling SetUpStorage on Kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
+	ctx.Workflow.Description = fmt.Sprintf("%s setting up storage", description)
+	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+		return err
+	}
+
+	log.Info().Msg("Calling SetUpStorage on Kuber for cluster")
 	resStorage, err := kuber.SetUpStorage(c, &pb.SetUpStorageRequest{DesiredCluster: ctx.desiredCluster})
 	if err != nil {
 		return err
 	}
-	log.Info().Msgf("SetUpStorage on Kuber for cluster %s project %s finished successfully", ctx.GetClusterName(), ctx.projectName)
+	logger.Info().Msg("SetUpStorage on Kuber finished successfully")
 
 	ctx.desiredCluster = resStorage.DesiredCluster
 
@@ -319,37 +434,37 @@ func callKuber(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error
 		return err
 	}
 
-	log.Info().Msgf("Calling StoreKubeconfig on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
+	logger.Info().Msg("Calling StoreKubeconfig on kuber")
 	if _, err := kuber.StoreKubeconfig(c, &pb.StoreKubeconfigRequest{Cluster: ctx.desiredCluster}); err != nil {
 		return err
 	}
-	log.Info().Msgf("StoreKubeconfig on Kuber for cluster %s project %s finished successfully", ctx.GetClusterName(), ctx.projectName)
+	logger.Info().Msg("StoreKubeconfig on Kuber finished successfully")
 
 	ctx.Workflow.Description = fmt.Sprintf("%s creating cluster metadata as secret", description)
 	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
 		return err
 	}
 
-	log.Info().Msgf("Calling StoreNodeMetadata on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
+	logger.Info().Msg("Calling StoreNodeMetadata on kuber")
 	if _, err := kuber.StoreClusterMetadata(c, &pb.StoreClusterMetadataRequest{Cluster: ctx.desiredCluster}); err != nil {
 		return err
 	}
-	log.Info().Msgf("StoreNodeMetadata on Kuber for cluster %s project %s finished successfully", ctx.GetClusterName(), ctx.projectName)
+	logger.Info().Msg("StoreNodeMetadata on Kuber finished successfully")
 
-	log.Info().Msgf("Calling PatchNodes on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
+	logger.Info().Msg("Calling PatchNodes on kuber")
 	if _, err := kuber.PatchNodes(c, &pb.PatchNodeTemplateRequest{Cluster: ctx.desiredCluster}); err != nil {
 		return err
 	}
 
 	if utils.IsAutoscaled(ctx.desiredCluster) {
 		// Set up Autoscaler if desired state is autoscaled
-		log.Info().Msgf("Calling SetUpClusterAutoscaler on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
+		logger.Info().Msg("Calling SetUpClusterAutoscaler on kuber")
 		if _, err := kuber.SetUpClusterAutoscaler(c, &pb.SetUpClusterAutoscalerRequest{ProjectName: ctx.projectName, Cluster: ctx.desiredCluster}); err != nil {
 			return err
 		}
 	} else if utils.IsAutoscaled(ctx.cluster) {
 		// Destroy Autoscaler if current state is autoscaled, but desired is not
-		log.Info().Msgf("Calling DestroyClusterAutoscaler on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
+		logger.Info().Msg("Calling DestroyClusterAutoscaler on kuber")
 		if _, err := kuber.DestroyClusterAutoscaler(c, &pb.DestroyClusterAutoscalerRequest{ProjectName: ctx.projectName, Cluster: ctx.cluster}); err != nil {
 			return err
 		}
@@ -384,7 +499,7 @@ func destroyCluster(ctx *BuilderContext, c pb.ContextBoxServiceClient) error {
 
 	// Destroy Autoscaler if current state is autoscaled
 	if utils.IsAutoscaled(ctx.cluster) {
-		log.Info().Msgf("Calling DestroyClusterAutoscaler on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
+		log.Info().Str("project", ctx.projectName).Str("cluster", ctx.GetClusterName()).Msg("Calling DestroyClusterAutoscaler on kuber")
 		if _, err := kuber.DestroyClusterAutoscaler(kc, &pb.DestroyClusterAutoscalerRequest{ProjectName: ctx.projectName, Cluster: ctx.cluster}); err != nil {
 			return err
 		}
@@ -395,6 +510,8 @@ func destroyCluster(ctx *BuilderContext, c pb.ContextBoxServiceClient) error {
 
 // destroyConfigTerraformer calls terraformer's DestroyInfrastructure function
 func destroyConfigTerraformer(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.projectName, ctx.GetClusterID())
+
 	description := ctx.Workflow.Description
 
 	ctx.Workflow.Stage = pb.Workflow_DESTROY_TERRAFORMER
@@ -409,7 +526,7 @@ func destroyConfigTerraformer(ctx *BuilderContext, cboxClient pb.ContextBoxServi
 	}
 	defer utils.CloseClientConnection(cc)
 
-	log.Info().Msgf("Calling DestroyInfrastructure on Terraformer for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
+	logger.Info().Msg("Calling DestroyInfrastructure on Terraformer")
 	c := pb.NewTerraformerServiceClient(cc)
 
 	if _, err = terraformer.DestroyInfrastructure(c, &pb.DestroyInfrastructureRequest{
@@ -417,13 +534,13 @@ func destroyConfigTerraformer(ctx *BuilderContext, cboxClient pb.ContextBoxServi
 		Current:     ctx.cluster,
 		CurrentLbs:  ctx.loadbalancers,
 	}); err != nil {
-		return fmt.Errorf("error while destroying infrastructure  cluster %s project %s : %w", ctx.GetClusterName(), ctx.projectName, err)
+		return fmt.Errorf("error while destroying infrastructure for cluster %s project %s : %w", ctx.GetClusterName(), ctx.projectName, err)
 	}
 	ctx.Workflow.Description = description
 	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
 		return err
 	}
-	log.Info().Msgf("DestroyInfrastructure on Terraformer for cluster %s project %s finished successfully", ctx.GetClusterName(), ctx.projectName)
+	logger.Info().Msg("DestroyInfrastructure on Terraformer finished successfully")
 	return nil
 }
 
@@ -434,13 +551,15 @@ func deleteClusterData(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClien
 	}
 	description := ctx.Workflow.Description
 
+	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.projectName, ctx.GetClusterID())
+
 	ctx.Workflow.Stage = pb.Workflow_DESTROY_KUBER
 	ctx.Workflow.Description = fmt.Sprintf("%s deleting kubeconfig secret", description)
 	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
 		return err
 	}
 
-	log.Info().Msgf("Calling DeleteKubeconfig on Kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
+	logger.Info().Msgf("Calling DeleteKubeconfig on Kuber")
 	if _, err := kuber.DeleteKubeconfig(kuberClient, &pb.DeleteKubeconfigRequest{Cluster: ctx.cluster}); err != nil {
 		return fmt.Errorf("error while deleting kubeconfig for cluster %s project %s : %w", ctx.GetClusterName(), ctx.projectName, err)
 	}
@@ -450,11 +569,11 @@ func deleteClusterData(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClien
 		return err
 	}
 
-	log.Info().Msgf("Calling DeleteClusterMetadata on kuber for cluster %s project %s", ctx.GetClusterName(), ctx.projectName)
+	logger.Info().Msg("Calling DeleteClusterMetadata on kuber")
 	if _, err := kuber.DeleteClusterMetadata(kuberClient, &pb.DeleteClusterMetadataRequest{Cluster: ctx.cluster}); err != nil {
 		return fmt.Errorf("error while deleting metadata for cluster %s project %s : %w", ctx.GetClusterName(), ctx.projectName, err)
 	}
-	log.Info().Msgf("DeleteKubeconfig on Kuber for cluster %s project %s finished successfully", ctx.GetClusterName(), ctx.projectName)
+	logger.Info().Msg("DeleteKubeconfig on Kuber finished successfully")
 	ctx.Workflow.Description = description
 	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
 		return err
@@ -464,6 +583,8 @@ func deleteClusterData(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClien
 
 // callDeleteNodes calls Kuber.DeleteNodes which will safely delete nodes from cluster
 func callDeleteNodes(master, worker []string, cluster *pb.K8Scluster) (*pb.K8Scluster, error) {
+	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(cluster.ClusterInfo))
+
 	cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL)
 	if err != nil {
 		return nil, err
@@ -472,11 +593,11 @@ func callDeleteNodes(master, worker []string, cluster *pb.K8Scluster) (*pb.K8Scl
 
 	// Creating the client
 	c := pb.NewKuberServiceClient(cc)
-	log.Info().Msgf("Calling DeleteNodes on Kuber for cluster %s", cluster.ClusterInfo.Name)
+	logger.Info().Msg("Calling DeleteNodes on Kuber")
 	resDelete, err := kuber.DeleteNodes(c, &pb.DeleteNodesRequest{MasterNodes: master, WorkerNodes: worker, Cluster: cluster})
 	if err != nil {
 		return nil, err
 	}
-	log.Info().Msgf("DeleteNodes on Kuber for cluster %s finished successfully", cluster.ClusterInfo.Name)
+	logger.Info().Msg("DeleteNodes on Kuber finished successfully")
 	return resDelete.Cluster, nil
 }
