@@ -281,13 +281,19 @@ func (c *ClaudieMongo) UpdateBuilderTTL(name string, newTTL int32) error {
 
 // UpdateMsToNull will update the msChecksum and manifest based on the id of the config
 // returns error if not successful, nil otherwise
-func (c *ClaudieMongo) UpdateMsToNull(hexId string) error {
-	id, err := primitive.ObjectIDFromHex(hexId)
-	if err != nil {
-		return err
+func (c *ClaudieMongo) UpdateMsToNull(id string, idType pb.IdType) error {
+	var filter primitive.M
+	if idType == pb.IdType_HASH {
+		oid, err := primitive.ObjectIDFromHex(id)
+		if err != nil {
+			return fmt.Errorf("error while converting id %s to mongo primitive : %w", id, err)
+		}
+		filter = bson.M{"_id": oid} //create filter for searching in the database by hex id
+	} else {
+		filter = bson.M{"name": id} //create filter for searching in the database by name
 	}
 	// update MsChecksum and manifest to null
-	err = c.updateDocument(bson.M{"_id": id}, bson.M{"$set": bson.M{"manifest": nil, "msChecksum": nil, "state": map[string]Workflow{}}})
+	err := c.updateDocument(filter, bson.M{"$set": bson.M{"manifest": nil, "msChecksum": nil, "state": map[string]Workflow{}}})
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return fmt.Errorf("document with id %s failed to update msChecksum : %w", id, err)

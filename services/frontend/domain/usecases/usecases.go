@@ -1,22 +1,36 @@
 package usecases
 
 import (
+	"context"
 	"sync"
 
 	"github.com/berops/claudie/services/frontend/domain/ports"
 )
 
 type Usecases struct {
+	// ContextBox is a connector used to query request from context-box.
 	ContextBox ports.ContextBoxPort
-
-	// configsBeingDeleted is a go-routine safe map that stores id of configs that are being currently deleted
-	// to avoid having multiple go-routines deleting the same configs from MongoDB (of contextBox microservice).
-	configsBeingDeleted sync.Map
 
 	// inProgress are configs that are being tracked for their current workflow state
 	// to provide more friendly logs in the service.
 	inProgress sync.Map
 
-	// Done indicates that the server is in shutdown.
-	Done chan struct{}
+	// SaveChannel is channel which is used to pass manifests which needs to be saved.
+	SaveChannel chan *RawManifest
+
+	// DeleteChannel is channel which is used to pass manifests which needs to be deleted.
+	DeleteChannel chan *RawManifest
+
+	// Context which when cancelled will close all channel/goroutines.
+	Context context.Context
+}
+
+// RawManifest represents manifest and its metadata directly from secret.
+type RawManifest struct {
+	// Raw decoded manifest.
+	Manifest []byte
+	// Secret name for this manifest.
+	SecretName string
+	// File name for this manifest.
+	FileName string
 }

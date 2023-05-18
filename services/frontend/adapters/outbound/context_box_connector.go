@@ -35,20 +35,17 @@ func NewContextBoxConnector(connectionUri string) *ContextBoxConnector {
 // Connect creates a gRPC connection to the context-box microservice.
 // If the connection is established, then performs a healthcheck.
 func (c *ContextBoxConnector) Connect() error {
-	// Since the k8sSidecarNotificationsReceiver will be responding to incoming notifications we can't
-	// use a blocking gRPC dial to the context-box service. Thus we default to a non-blocking
-	// connection with a retry policy of ~4 seconds instead.
+	// Since the secretWatcher will be creating new context-box request per manifest added,
+	// we default to a non-blocking connection with a retry policy of ~4 seconds instead.
 	interceptorOptions := []grpc_retry.CallOption{
-
-		grpc_retry.WithBackoff(grpc_retry.BackoffExponentialWithJitter(4*time.Second, 0.2)),
-		grpc_retry.WithMax(7),
+		grpc_retry.WithBackoff(grpc_retry.BackoffExponentialWithJitter(2*time.Second, 0.2)),
+		grpc_retry.WithMax(3),
 		grpc_retry.WithCodes(codes.Unavailable),
 	}
 
 	grpcConnection, err := grpc.Dial(
 		c.connectionUri,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-
 		grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor(interceptorOptions...)),
 		grpc.WithStreamInterceptor(grpc_retry.StreamClientInterceptor(interceptorOptions...)),
 	)
@@ -59,12 +56,12 @@ func (c *ContextBoxConnector) Connect() error {
 	c.grpcConnection = grpcConnection
 	c.grpcClient = pb.NewContextBoxServiceClient(grpcConnection)
 
-	return c.PerformHealthCheck()
+	return nil
 }
 
 // PerformHealthCheck checks health of the underlying gRPC connection to context-box microservice
 func (c *ContextBoxConnector) PerformHealthCheck() error {
-	if c.grpcConnection.GetState() == connectivity.Shutdown {
+	if c.grpcConnection.GetState() != connectivity.Ready {
 		return errors.New("unhealthy gRPC connection to context-box microservice")
 	}
 
@@ -75,7 +72,7 @@ func (c *ContextBoxConnector) PerformHealthCheck() error {
 func (c *ContextBoxConnector) GetAllConfigs() ([]*pb.Config, error) {
 	response, err := cbox.GetAllConfigs(c.grpcClient)
 	if err != nil {
-		return []*pb.Config{}, err
+		return nil, err
 	}
 
 	return response.GetConfigs(), nil
@@ -88,14 +85,13 @@ func (c *ContextBoxConnector) SaveConfig(config *pb.Config) error {
 }
 
 // DeleteConfig sends request to the context-box microservice, to delete a config with the given id, from context-box DB.
-func (c *ContextBoxConnector) DeleteConfig(id string) error {
-	err := cbox.DeleteConfig(c.grpcClient,
+func (c *ContextBoxConnector) DeleteConfig(configName string) error {
+	return cbox.DeleteConfig(c.grpcClient,
 		&pb.DeleteConfigRequest{
-			Id:   id,
-			Type: pb.IdType_HASH,
+			Id:   configName,
+			Type: pb.IdType_NAME,
 		},
 	)
-	return err
 }
 
 // Disconnect closes the gRPC connection to context-box microservice

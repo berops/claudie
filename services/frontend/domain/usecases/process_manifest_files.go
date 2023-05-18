@@ -2,10 +2,6 @@ package usecases
 
 import (
 	"fmt"
-	"io/fs"
-	"os"
-	"path/filepath"
-	"sync"
 
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
@@ -14,158 +10,82 @@ import (
 	"github.com/berops/claudie/proto/pb"
 )
 
-// ProcessManifestFiles processes the manifest files concurrently. If an error occurs while the file
-// is being processed, it's skipped and the function continues with the next one until all files are
-// processed. Nothing is done with those files for which errors occurred, they'll be skipped until either
-// corrected or deleted.
-func (u *Usecases) ProcessManifestFiles(manifestDir string) error {
-	manifestFiles, err := os.ReadDir(manifestDir)
-	if err != nil {
-		return fmt.Errorf("failed to read manifest files from dir %q: %w", manifestDir, err)
-	}
-
-	configs, err := u.ContextBox.GetAllConfigs()
-	if err != nil {
-		return fmt.Errorf("failed to retrieve manifests details from context-box: %w", err)
-	}
-
-	log.Debug().Msgf("%d configs present in database | %d configs in %v", len(configs), len(manifestFiles), manifestDir)
-
-	type ManifestProcessingResult struct {
-		unmarshalledManifest *manifest.Manifest
-		rawManifestData      []byte
-		manifestFilepath     string
-		processingError      error
-	}
-
-	manifestProcessingResultsChan := make(chan *ManifestProcessingResult, len(manifestFiles))
-	waitGroup := sync.WaitGroup{}
-
-	for _, manifestFile := range manifestFiles {
-		waitGroup.Add(1)
-
-		// Process each of the files concurrently in a separate go-routine skipping over files for which
-		// an error occurs.
-		// By processing, we mean reading, unmarshalling and validating the claudie manifest
-		go func(manifestFile fs.DirEntry) {
-			var (
-				rawManifestData      []byte
-				unmarshalledManifest *manifest.Manifest
-				processingError      error = nil
-			)
-			defer waitGroup.Done()
-
-			manifestFilepath := filepath.Join(manifestDir, manifestFile.Name())
-
-			defer func() {
-				manifestProcessingResultsChan <- &ManifestProcessingResult{
-					unmarshalledManifest: unmarshalledManifest,
-					rawManifestData:      rawManifestData,
-					manifestFilepath:     manifestFilepath,
-					processingError:      processingError,
-				}
-			}()
-
-			if rawManifestData, processingError = os.ReadFile(manifestFilepath); processingError != nil {
-				return
-			}
-			if processingError = yaml.Unmarshal(rawManifestData, &unmarshalledManifest); processingError != nil {
-				return
-			}
-			processingError = unmarshalledManifest.Validate()
-		}(manifestFile)
-	}
-
-	go func() {
-		waitGroup.Wait()
-		close(manifestProcessingResultsChan)
-	}()
-
-	// Collect processing results of manifest files which were processed successfully
-	for manifestProcessingResult := range manifestProcessingResultsChan {
-		var manifestName string
-		var isConfigRemoved bool
-
-		// Remove the config from configs slice.
-		// After the for loop finishes, the configs variable will contain only those configs which represent
-		// deleted manifest files -> configs which needs to be deleted.
-		configs, isConfigRemoved = removeConfig(configs, manifestProcessingResult.manifestFilepath)
-		// Check for the error first, before referencing any variables.
-		if manifestProcessingResult.processingError != nil {
-			log.Err(manifestProcessingResult.processingError).
-				Msgf("Skipping over processing file %v", manifestProcessingResult.manifestFilepath)
-
-			continue
-		}
-		manifestName = manifestProcessingResult.unmarshalledManifest.Name
-
-		config := &pb.Config{
-			Name:             manifestName,
-			ManifestFileName: manifestProcessingResult.manifestFilepath,
-			Manifest:         string(manifestProcessingResult.rawManifestData),
-		}
-
-		err = u.ContextBox.SaveConfig(config)
-		if err != nil {
-			log.Err(err).Str("project", manifestName).Msgf("Failed to save config")
-			continue
-		}
-
-		log.Info().Msgf("Details of the manifest file %s has been saved to context-box database", manifestProcessingResult.manifestFilepath)
-
-		// if the config is not in the context-box DB we start to track it.
-		if !isConfigRemoved {
-			for _, k8sCluster := range manifestProcessingResult.unmarshalledManifest.Kubernetes.Clusters {
-				if _, ok := u.inProgress.Load(k8sCluster.Name); !ok {
-					u.inProgress.Store(k8sCluster.Name, config)
-				}
-			}
+// ProcessManifestFiles processes the manifest coming from SaveChannel and DeleteChannel.
+// Function exits once Usecases.Context is canceled.
+func (u *Usecases) ProcessManifestFiles() {
+	for {
+		select {
+		case newManifest := <-u.SaveChannel:
+			go u.createConfig(newManifest)
+		case newManifest := <-u.DeleteChannel:
+			go u.deleteConfig(newManifest)
+		case <-u.Context.Done():
+			// Close channels and return
+			close(u.SaveChannel)
+			close(u.DeleteChannel)
+			return
 		}
 	}
-
-	// The configs variable now contains only those configs which represent deleted manifests.
-	// Loop over each config and request the context-box microservice to delete the config from its database as well.
-	for _, config := range configs {
-		if _, isConfigBeingDeleted := u.configsBeingDeleted.Load(config.Id); isConfigBeingDeleted {
-			continue
-		}
-		u.configsBeingDeleted.Store(config.Id, nil)
-
-		for _, k8sCluster := range config.GetCurrentState().GetClusters() {
-			if _, ok := u.inProgress.Load(k8sCluster.ClusterInfo.Name); !ok {
-				u.inProgress.Store(k8sCluster.ClusterInfo.Name, config)
-			}
-		}
-
-		go func(config *pb.Config) {
-			log.Info().
-				Str("project", config.Name).
-				Msgf("Deleting config %v from context-box DB", config.Id)
-
-			err := u.ContextBox.DeleteConfig(config.Id)
-			if err != nil {
-				log.Err(err).
-					Str("project", config.Name).
-					Msgf("Failed to delete config %s from MongoDB", config.Id)
-			}
-
-			u.configsBeingDeleted.Delete(config.Id)
-		}(config)
-	}
-
-	return nil
 }
 
-// removeConfig filters out the config representing the manifest with
-// the specified path from the configs slice. If element removed from slice, new slice
-// is returned together with value true. If element was not found in slice,
-// original slice is returned together with value false.
-func removeConfig(configs []*pb.Config, manifestPath string) ([]*pb.Config, bool) {
-	for index, config := range configs {
-		if config.ManifestFileName == manifestPath {
-			configs = append(configs[0:index], configs[index+1:]...)
-			return configs, true
+// createConfig generates and saves config into the DB. Used for new configs and updated configs.
+func (u *Usecases) createConfig(rawManifest *RawManifest) {
+	unmarshalledManifest := &manifest.Manifest{}
+	// Unmarshal
+	if err := yaml.Unmarshal(rawManifest.Manifest, &unmarshalledManifest); err != nil {
+		log.Err(err).Msgf("Failed to unmarshal manifest from YAML file %s form secret %s. Skipping...", rawManifest.FileName, rawManifest.SecretName)
+		return
+	}
+
+	// Validate
+	if err := unmarshalledManifest.Validate(); err != nil {
+		log.Err(err).Msgf("Failed to validate manifest %s from secret %s. Skipping...", unmarshalledManifest.Name, rawManifest.SecretName)
+		return
+	}
+	// Define config
+	config := &pb.Config{
+		Name:             unmarshalledManifest.Name,
+		ManifestFileName: fmt.Sprintf("secret_%s.file_%s", rawManifest.SecretName, rawManifest.FileName),
+		Manifest:         string(rawManifest.Manifest),
+	}
+
+	if err := u.ContextBox.SaveConfig(config); err != nil {
+		log.Err(err).Msgf("Failed to save config %v due to error. Skipping...", unmarshalledManifest.Name)
+		return
+	}
+	log.Info().Msgf("Created config for input manifest %s", unmarshalledManifest.Name)
+
+	// Put it into inProgress map to track it
+	for _, k8sCluster := range unmarshalledManifest.Kubernetes.Clusters {
+		if _, ok := u.inProgress.Load(k8sCluster.Name); !ok {
+			u.inProgress.Store(k8sCluster.Name, config)
 		}
 	}
-	return configs, false
+}
+
+// deleteConfig generates and triggers deletion of config into the DB.
+func (u *Usecases) deleteConfig(rawManifest *RawManifest) {
+	unmarshalledManifest := &manifest.Manifest{}
+	if err := yaml.Unmarshal(rawManifest.Manifest, &unmarshalledManifest); err != nil {
+		log.Err(err).Msgf("Failed to unmarshal manifest from YAML file %s form secret %s. Skipping...", rawManifest.FileName, rawManifest.SecretName)
+		return
+	}
+
+	if err := u.ContextBox.DeleteConfig(unmarshalledManifest.Name); err != nil {
+		log.Err(err).Msgf("Failed to trigger deletion for config %v due to error. Skipping...", unmarshalledManifest.Name)
+		return
+	}
+
+	log.Info().Msgf("Config %s was successfully marked for deletion", unmarshalledManifest.Name)
+
+	// Put it into inProgress map to track it
+	for _, k8sCluster := range unmarshalledManifest.Kubernetes.Clusters {
+		if _, ok := u.inProgress.Load(k8sCluster.Name); !ok {
+			// Use dummy config initially, it gets rewritten in new track cycle
+			dummyConfig := &pb.Config{
+				Name: unmarshalledManifest.Name,
+			}
+			u.inProgress.Store(k8sCluster.Name, dummyConfig)
+		}
+	}
 }

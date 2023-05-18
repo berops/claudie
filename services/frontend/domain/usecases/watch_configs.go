@@ -30,7 +30,7 @@ func (u *Usecases) WatchConfigs() {
 
 	for {
 		select {
-		case <-u.Done:
+		case <-u.Context.Done():
 			return
 		case <-ticker.C:
 			{
