@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,35 +12,41 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/services/kube-eleven/server/adapters/inbound/grpc"
+	"github.com/berops/claudie/services/kube-eleven/server/domain/usecases"
 )
 
 func main() {
 	// Initialize logger
 	utils.InitLog("kube-eleven")
 
-	g, ctx := errgroup.WithContext(context.Background())
+	usecases := &usecases.Usecases{}
+	grpcAdapter := grpc.CreateGrpcAdapter(usecases)
 
-	//goroutine for interrupt
-	g.Go(func() error {
-		ch := make(chan os.Signal, 1)
-		signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
-		defer signal.Stop(ch)
+	errGroup, errGroupContext := errgroup.WithContext(context.Background())
 
-		// wait for either the received signal or
-		// check if an error occurred in other
-		// go-routines.
+	// Start receiving gRPC requests
+	errGroup.Go(grpcAdapter.Serve)
+
+	// Listen for program interruption signals and shut it down gracefully
+	errGroup.Go(func() error {
+		shutdownSignalChan := make(chan os.Signal, 1)
+		signal.Notify(shutdownSignalChan, os.Interrupt, syscall.SIGTERM)
+		defer signal.Stop(shutdownSignalChan)
+
 		var err error
+
 		select {
-		case <-ctx.Done():
-			err = ctx.Err()
-		case sig := <-ch:
-			log.Info().Msgf("Received signal %v", sig)
-			err = errors.New("interrupt signal")
+		case <-errGroupContext.Done():
+			err = errGroupContext.Err()
+
+		case shutdownSignal := <-shutdownSignalChan:
+			log.Info().Msgf("Received program shutdown signal %v", shutdownSignal)
+			err = errors.New("Program interruption signal")
 		}
 
-		log.Info().Msg("Gracefully shutting down gRPC server")
-		s.GracefulStop()
-		healthServer.Shutdown()
+		// Performing graceful shutdown.
+		grpcAdapter.Stop()
 
 		// Sometimes when the container terminates gRPC logs the following message:
 		// rpc error: code = Unknown desc = Error: No such container: hash of the container...
@@ -52,15 +57,5 @@ func main() {
 		return err
 	})
 
-	//server goroutine
-	g.Go(func() error {
-		// s.Serve() will create a service goroutine for each connection
-		if err := s.Serve(lis); err != nil {
-			return fmt.Errorf("kube-eleven failed to serve: %w", err)
-		}
-		log.Info().Msg("Finished listening for incoming connections")
-		return nil
-	})
-
-	log.Info().Msgf("Stopping Kube-eleven: %s", g.Wait())
+	log.Info().Msgf("Stopping Kube-eleven microservice: %s", errGroup.Wait())
 }

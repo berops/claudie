@@ -10,34 +10,38 @@ import (
 )
 
 const (
-	maxNumOfRetries = 5 //max number of retries for kubeone apply
+	// max number of retries for kubeone apply
+	maxRetryCount = 5
+
+	command = "kubeone apply -m kubeone.yaml -y"
 )
 
-// Kubeone struct
-// Directory - directory where kubeone.yaml is located
 type Kubeone struct {
-	Directory string
+	// ConfigDirectory is the directory where the generated kubeone.yaml will be located.
+	ConfigDirectory string
 }
 
-// Apply will run `kubeone apply -m kubeone.yaml -y` in the specified directory
-// return nil if successful, error otherwise
+// Apply will run `kubeone apply -m kubeone.yaml -y` in the ConfigDirectory.
+// Returns nil if successful, error otherwise.
 func (k *Kubeone) Apply(prefix string) error {
-	command := "kubeone apply -m kubeone.yaml -y"
 	cmd := exec.Command("bash", "-c", command)
-	cmd.Dir = k.Directory
+	cmd.Dir = k.ConfigDirectory
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
+		// Here prefix is the cluster id
 		cmd.Stdout = comm.GetStdOut(prefix)
 		cmd.Stderr = comm.GetStdErr(prefix)
 	}
+
 	if err := cmd.Run(); err != nil {
 		log.Warn().Msgf("Error encountered while executing %s : %v", command, err)
+
 		retryCmd := comm.Cmd{
 			Command: command,
-			Dir:     k.Directory,
+			Dir:     k.ConfigDirectory,
 			Stdout:  cmd.Stdout,
 			Stderr:  cmd.Stderr,
 		}
-		if err := retryCmd.RetryCommand(maxNumOfRetries); err != nil {
+		if err := retryCmd.RetryCommand(maxRetryCount); err != nil {
 			return err
 		}
 	}

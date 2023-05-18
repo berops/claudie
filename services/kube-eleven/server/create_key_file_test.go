@@ -55,15 +55,15 @@ var cluster = &pb.K8Scluster{
 	Network:    "192.168.2.0/24",
 }
 
-func Test_createKeyFile(t *testing.T) {
-	privateKeyFile := "private.pem"
-	keyErr := utils.CreateKeyFile(cluster.ClusterInfo.GetPrivateKey(), ".", privateKeyFile)
-	if keyErr != nil {
+func Test_CreateKeyFile(t *testing.T) {
+	const sshPrivateKeyFileName = "private.pem"
+
+	err := utils.CreateKeyFile(cluster.ClusterInfo.GetPrivateKey(), ".", sshPrivateKeyFileName)
+	if err != nil {
 		t.Error("Error writing out .pem file doesn't exist")
 	}
 
-	if _, err := os.Stat(filepath.Join(".", privateKeyFile)); os.IsNotExist(err) {
-		// path/to/whatever does not exist
-		t.Errorf("%s file doesn't exist", privateKeyFile)
+	if _, err := os.Stat(filepath.Join(".", sshPrivateKeyFileName)); os.IsNotExist(err) {
+		t.Errorf("%s file doesn't exist", sshPrivateKeyFileName)
 	}
 }

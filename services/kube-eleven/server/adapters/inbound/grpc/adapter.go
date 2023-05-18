@@ -11,6 +11,7 @@ import (
 
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/services/kube-eleven/server/domain/usecases"
 )
 
 const (
@@ -23,7 +24,7 @@ type GrpcAdapter struct {
 	healthcheckServer *health.Server
 }
 
-func CreateGrpcAdapter() *GrpcAdapter {
+func CreateGrpcAdapter(usecases *usecases.Usecases) *GrpcAdapter {
 	var (
 		g   = &GrpcAdapter{}
 		err error
@@ -38,7 +39,7 @@ func CreateGrpcAdapter() *GrpcAdapter {
 	log.Info().Msgf("Kube-eleven microservice is listening on %s", bindingAddress)
 
 	g.server = grpc.NewServer()
-	pb.RegisterKubeElevenServiceServer(g.server, &KubeElevenGrpcService{})
+	pb.RegisterKubeElevenServiceServer(g.server, &KubeElevenGrpcService{usecases: usecases})
 
 	// Add healthcheck service to the gRPC server
 	g.healthcheckServer = health.NewServer()
@@ -49,4 +50,20 @@ func CreateGrpcAdapter() *GrpcAdapter {
 	grpc_health_v1.RegisterHealthServer(g.server, g.healthcheckServer)
 
 	return g
+}
+
+func (g *GrpcAdapter) Serve() error {
+	// g.Serve() will create a service goroutine for each connection
+	if err := g.server.Serve(g.tcpListener); err != nil {
+		return fmt.Errorf("kube-eleven failed to serve gRPC request: %w", err)
+	}
+
+	log.Info().Msg("Finished listening for incoming gRPC connections")
+	return nil
+}
+
+func (g *GrpcAdapter) Stop() {
+	log.Info().Msg("Gracefully shutting down gRPC server")
+	g.server.GracefulStop()
+	g.healthcheckServer.Shutdown()
 }
