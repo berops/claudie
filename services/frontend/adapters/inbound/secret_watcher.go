@@ -192,6 +192,7 @@ func (sw *SecretWatcher) decodeContent(content []byte) ([]byte, error) {
 	decoded := make([]byte, len(content)*(4/3))
 	if _, err := base64.StdEncoding.Decode(decoded, content); err != nil {
 		// Cant use errors.Is() as base64 package builds error dynamically via base64.CorruptInputError type
+		//nolint:errorlint
 		if _, ok := err.(base64.CorruptInputError); ok {
 			log.Debug().Msgf("File not base64 compatible, assuming it is string data")
 			return content, nil
