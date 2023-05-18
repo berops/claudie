@@ -2,7 +2,7 @@
 
 The first official release of Claudie
 
-# Deployment
+## Deployment
 
 To deploy the Claudie `v0.1.X`, please:
 
@@ -36,60 +36,60 @@ To deploy the Claudie `v0.1.X`, please:
     kubectl apply -k .
     ```
 
-# v0.1.3
+## v0.1.3
 
-## Features
+### Features
 
 - Change the workflow of the Claudie, to build the infrastructure on per cluster basis [#584](https://github.com/berops/claudie/pull/584)
 - Add labels on Claudie created resources [#579](https://github.com/berops/claudie/pull/579)
 
-## Bugfixes
+### Bugfixes
 
 No bugfixes since the last release.
 
-## Known issues
+### Known issues
 
 - `k8s-sidecar` sometimes misses deletion of the input manifest secret [#588](https://github.com/berops/claudie/issues/588)
 - Deleting nodes in Builder is not idempotent [#587](https://github.com/berops/claudie/issues/587)
 
-# v0.1.2
+## v0.1.2
 
-## Features
+### Features
 
 - Update to Go `v1.20` [#559](https://github.com/berops/claudie/pull/559)
 - The VPN now respects netmask from defined CIDR [#571](https://github.com/berops/claudie/pull/571)
 - Connections attempt are more readable [#570](https://github.com/berops/claudie/pull/570)
 
-## Bugfixes
+### Bugfixes
 
 - Wireguard IP now persists across reboots [#557](https://github.com/berops/claudie/pull/557)
 - Deletion of the infrastructure before any outputs were created does not end with error [#569](https://github.com/berops/claudie/pull/569)
 - Replace the `azurerm_virtual_machine` to the `azurerm_linux_virtual_machine` [#573](https://github.com/berops/claudie/pull/573)
 
-## Known issues
+### Known issues
 
 - Longhorn replicas are  not properly managed, which might cause issues when deleting nodes [#564](https://github.com/berops/claudie/issues/564)
 - Naming scheme in input manifest is not uniform [#563](https://github.com/berops/claudie/issues/563)
 
-# v0.1.1
+## v0.1.1
 
-## Features
+### Features
 
 - Support DNS zone for Cloudflare, AWS, Azure, HetznerDNS, OCI [#530](https://github.com/berops/claudie/pull/530)
 - Add default node labels [#543](https://github.com/berops/claudie/pull/543)
 
-## Bugfixes
+### Bugfixes
 
 - Logs in all services have been modified to not output sensitive information. [#535](https://github.com/berops/claudie/pull/535)
 - Correctly update desiredState after workflow for a given manifest completes. [#536](https://github.com/berops/claudie/pull/536)
 
-## Known issues
+### Known issues
 
 - Wireguard interface `wg0` is missing ip address after reboot. Will be fixed in next release [#557](https://github.com/berops/claudie/pull/557)
 
-# v0.1.0
+## v0.1.0
 
-## Features
+### Features
 
 - Multi-cloud kubernetes cluster management
 - Multi-cloud loadbalancer management
@@ -99,11 +99,11 @@ No bugfixes since the last release.
 - GCP DNS zone support
 - Claudie deployment on `amd64` and `arm64` clusters
 
-## Bugfixes
+### Bugfixes
 
 - As this is first release there are no bugfixes
 
-## Known issues
+### Known issues
 
 - `iptables` reset after reboot and block all traffic on `OCI` node [#466](https://github.com/berops/claudie/issues/466)
 - Occasional connection issues between Claudie created clusters and Claudie on Hetzner and GCP [#276](https://github.com/berops/claudie/issues/276)

@@ -1,0 +1,102 @@
+name: Release docs pipeline
+# Only trigger, when the release workflow has completed
+on:
+  workflow_run:
+    workflows: ["Release pipeline"]
+    types:
+      - completed
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build-and-publish:
+    name: Create a new  docs release
+    runs-on: ubuntu-22.04
+    # runs only, when the workflow was succeeded
+    if: ${{ github.event.workflow_run.conclusion == 'success' }} 
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Set release tag
+        run: |
+          R=${GITHUB_REF#"refs/tags/"}
+          echo "RELEASE=$R" >> $GITHUB_ENV
+      
+      - name: Set up git author
+        run: |
+          remote_repo="https://${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git config --global user.name "${GITHUB_ACTOR}"
+          git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+          git remote rm origin
+          git remote add origin "${remote_repo}"
+          git push --set-upstream origin master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add new changelog file to mkdocs.yml navigation under Changelog section
+        run: |
+          filename="mkdocs.yml"
+          start_line=$(sed -n '/- Changelog:/=' "$filename")
+          
+          changelogs_from_dir=$(ls ./docs/CHANGELOG) 
+          changelogs_from_mkdocs_file=$(grep -Eo "CHANGELOG/changelog-[0-9]+\.[0-9]+\.x\.md" "$filename" | awk -F'/' '{print $2}')
+          
+          changelogs_mkdocs_arr=( $changelogs_from_mkdocs_file )
+          changelogs_dir_arr=( $changelogs_from_dir )
+          
+          new_changelog_file=""
+          
+          # check if all files from CHANGELOG dir are present in mkdocs.yml
+          for value in "${changelogs_dir_arr[@]}"; do
+              if [[ ! " ${changelogs_mkdocs_arr[@]} " =~ " $value " ]]; then
+                  # the value of the new_changelog_file will be name of the changelog file, which isn't in mkdocs.yml nav
+                  new_changelog_file=$value
+              fi
+          done
+          
+          # add new navigation entry only, when there is a new changelog file
+          if [[ -n "$new_changelog_file" ]]; then
+              echo "Found new changelog file"
+          
+              version=$(echo $new_changelog_file | grep -oE [0-9]+\.[0-9]+)
+          
+              navigation_entry="Claudie v$version: CHANGELOG/$new_changelog_file"
+          
+              new_entry_line=$(($start_line + ${#changelogs_dir_arr[@]}))
+          
+              sed -i "${new_entry_line}i\\
+              - ${navigation_entry}" $filename
+          
+              # commit and push
+              git commit -am "add new changelog file to mkdocs.yml"
+          
+              git push
+          
+              echo "Altered mkdocs.yml with new Changelog navigation entry was commited and pushed to origin"
+          else
+              echo "There isn't a new changelog file"
+          fi
+
+      # NOTE: the pipeline will fail, if gh-pages branch isn't created!!!
+      - name: Git fetch gh-pages
+        run: git fetch origin gh-pages
+
+      # this is only possible, when there is already a version with latest alias
+      # in case there isn't a version like this you have to
+      #   1. mike deploy <version> latest
+      #   2. mike set-default latest
+      #   3. mike deploy <version_from_cmd_1> latest --push
+      # --push flag in the latest cmd is necessary, when you want to apply changes in gh-pages branch and also in GH Pages
+      - name: Deploy new docs version
+        run: mike deploy ${RELEASE} latest --update-aliases --push

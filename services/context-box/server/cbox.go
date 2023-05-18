@@ -28,6 +28,7 @@ type ClaudieDB interface {
 	UpdateDs(config *pb.Config) error
 	UpdateCs(config *pb.Config) error
 	UpdateWorkflowState(configName, clusterName string, workflow *pb.Workflow) error
+	UpdateAllStates(configName string, state map[string]*pb.Workflow) error
 }
 
 // ConfigInfo struct describes data which cbox needs to hold in order to function properly

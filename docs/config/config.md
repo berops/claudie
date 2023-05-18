@@ -23,6 +23,7 @@ Config holds data for a single manifest.
 ## Project
 
 Project represents the desired and current state of the manifest.
+
   | Name                 | Type                         | Description                  |
   | -------------------- | ---------------------------- | ---------------------------- |
   | Name                 | string                       | Name of the project          |
@@ -32,6 +33,7 @@ Project represents the desired and current state of the manifest.
 ## K8scluster
 
 K8scluster represents a single kubernetes cluster specified in the manifest.
+
   | Name        | Type                        | Description                    |
   | ----------- | --------------------------- | ------------------------------ |
   | ClusterInfo | [ClusterInfo](#clusterinfo) | General info about the cluster |
@@ -42,6 +44,7 @@ K8scluster represents a single kubernetes cluster specified in the manifest.
 ## LBcluster
 
 LBcluster represents a single load balancer cluster specified in the manifest.
+
   | Name        | Type                        | Description                                                          |
   | ----------- | --------------------------- | -------------------------------------------------------------------- |
   | ClusterInfo | [ClusterInfo](#clusterinfo) | General info about the cluster                                       |
@@ -52,6 +55,7 @@ LBcluster represents a single load balancer cluster specified in the manifest.
 ## ClusterInfo
 
 ClusterInfo holds general information about the clusters.
+
   | Name       | Type                     | Description                                 |
   | ---------- | ------------------------ | ------------------------------------------- |
   | Name       | string                   | Name of the cluster                         |
@@ -63,6 +67,7 @@ ClusterInfo holds general information about the clusters.
 ## Role
 
 Role represents a single loadbalancer role from the manifest.
+
   | Name       | Type                  | Description                             |
   | ---------- | --------------------- | --------------------------------------- |
   | Name       | string                | Name of the role                        |
@@ -75,6 +80,7 @@ Role represents a single loadbalancer role from the manifest.
 ## DNS
 
 DNS holds general information about the DNS records.
+
   | Name     | Type                  | Description                          |
   | -------- | --------------------- | ------------------------------------ |
   | DnsZone  | string                | DNS zone for the DNS records         |
@@ -85,6 +91,7 @@ DNS holds general information about the DNS records.
 ## NodePool
 
 NodePool represents a single nodepool from the manifest.
+
   | Name             | Type                                | Description                                             |
   | ---------------- | ----------------------------------- | ------------------------------------------------------- |
   | Name             | string                              | Name of the node pool                                   |
@@ -102,6 +109,7 @@ NodePool represents a single nodepool from the manifest.
 ## Node
 
 Node represents a single node from the nodepool.
+
   | Name     | Type                  | Description                       |
   | -------- | --------------------- | --------------------------------- |
   | Name     | string                | Name of the node                  |
@@ -112,6 +120,7 @@ Node represents a single node from the nodepool.
 ## Provider
 
 Provider represents a single provider from the manifest.
+
   | Name                | Type   | Description                                                        |
   | ------------------- | ------ | ------------------------------------------------------------------ |
   | SpecName            | string | Provider name                                                      |
@@ -130,6 +139,7 @@ Provider represents a single provider from the manifest.
 ## AutoscalerConfig
 
 Autoscaler configuration on per node pool basis.
+
 | Name | Type  | Description                           |
 | ---- | ----- | ------------------------------------- |
 | Min  | int32 | Minimum number of nodes in node pool. |
@@ -138,6 +148,7 @@ Autoscaler configuration on per node pool basis.
 ### Secret credentials
 
 The list of information saved in the `Credentials` field for each provider.
+
   | Provider    | Input Manifest field                                          |
   | ----------- | ------------------------------------------------------------- |
   | GCP         | [`credentials`](../input-manifest/input-manifest.md#gcp)      |
@@ -151,6 +162,7 @@ The list of information saved in the `Credentials` field for each provider.
 ## NodeType
 
 NodeType specifies the type of the node.
+
   | Value       | Description                                |
   | ----------- | ------------------------------------------ |
   | Worker      | Worker node                                |
@@ -160,6 +172,7 @@ NodeType specifies the type of the node.
 ## Target
 
 Target specifies which nodes are targeted by the load balancer.
+
   | Value           | Description          |
   | --------------- | -------------------- |
   | K8sAllNodes     | All nodes in cluster |
@@ -169,6 +182,7 @@ Target specifies which nodes are targeted by the load balancer.
 ## RoleType
 
 RoleType specifies the type of the role.
+
   | Value     | Description              |
   | --------- | ------------------------ |
   | ApiServer | API server load balancer |
@@ -177,6 +191,7 @@ RoleType specifies the type of the role.
 ## ClusterType
 
 ClusterType specifies the type of the cluster.
+
   | Value | Description           |
   | ----- | --------------------- |
   | K8s   | Kubernetes cluster    |

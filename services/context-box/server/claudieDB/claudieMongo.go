@@ -35,9 +35,9 @@ type ClaudieMongo struct {
 }
 
 type Workflow struct {
-	Status      string
-	Stage       string
-	Description string
+	Status      string `bson:"status"`
+	Stage       string `bson:"stage"`
+	Description string `bson:"description"`
 }
 
 type configItem struct {
@@ -332,6 +332,14 @@ func (c *ClaudieMongo) UpdateWorkflowState(configName, clusterName string, workf
 			Description: workflow.Description,
 		},
 	}})
+}
+
+// UpdateAllStates updates all states of the config specified.
+func (c *ClaudieMongo) UpdateAllStates(configName string, states map[string]*pb.Workflow) error {
+	if states == nil {
+		return nil
+	}
+	return c.updateDocument(bson.M{"name": configName}, bson.M{"$set": bson.M{"state": ConvertFromGRPCWorkflow(states)}})
 }
 
 // UpdateCs will update the current state related field in DB
