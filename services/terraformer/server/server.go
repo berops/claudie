@@ -61,7 +61,6 @@ type Cluster interface {
 }
 
 func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastructureRequest) (*pb.BuildInfrastructureResponse, error) {
-	logger := utils.CreateLoggerWithProjectAndClusterName(req.ProjectName, utils.GetClusterID(req.Desired.ClusterInfo))
 	clusters := []Cluster{
 		kubernetes.K8Scluster{
 			DesiredK8s:    req.Desired,
@@ -83,6 +82,7 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 	}
 
 	err := utils.ConcurrentExec(clusters, func(cluster Cluster) error {
+		logger := utils.CreateLoggerWithProjectAndClusterName(req.ProjectName, cluster.Id())
 		logger.Info().Msg("Creating infrastructure")
 
 		if err := cluster.Build(logger); err != nil {
@@ -92,7 +92,7 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 		return nil
 	})
 	if err != nil {
-		logger.Err(err).Msgf("Error encountered while building cluster")
+		log.Err(err).Str("project", req.ProjectName).Msgf("Error encountered while building cluster")
 		return nil, fmt.Errorf("error while building cluster %s for project %s : %w", req.Desired.ClusterInfo.Name, req.ProjectName, err)
 	}
 
@@ -107,7 +107,6 @@ func (*server) BuildInfrastructure(ctx context.Context, req *pb.BuildInfrastruct
 }
 
 func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrastructureRequest) (*pb.DestroyInfrastructureResponse, error) {
-	logger := utils.CreateLoggerWithProjectAndClusterName(req.ProjectName, utils.GetClusterID(req.Current.ClusterInfo))
 	var clusters []Cluster
 
 	if req.Current != nil {
@@ -143,6 +142,7 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 	})
 
 	err = utils.ConcurrentExec(clusters, func(cluster Cluster) error {
+		logger := utils.CreateLoggerWithProjectAndClusterName(req.ProjectName, cluster.Id())
 		logger.Info().Msgf("Destroying infrastructure")
 		if err := cluster.Destroy(logger); err != nil {
 			return fmt.Errorf("error while destroying cluster %v : %w", cluster.Id(), err)
@@ -165,8 +165,8 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 			if err := mc.RemoveObject(ctx, minioBucket, key, minio.RemoveObjectOptions{GovernanceBypass: true}); err != nil {
 				return fmt.Errorf("failed to remove dns lock file for cluster %v: %w", cluster.Id(), err)
 			}
+			logger.Info().Msgf("Infrastructure was successfully destroyed")
 		}
-		logger.Info().Msgf("Infrastructure was successfully destroyed")
 
 		// Key under which the lockfile id is stored in dynamodb
 		dynamoLockId, err := attributevalue.Marshal(fmt.Sprintf("%s/%s/%s-md5", minioBucket, req.ProjectName, cluster.Id()))
@@ -188,7 +188,7 @@ func (*server) DestroyInfrastructure(ctx context.Context, req *pb.DestroyInfrast
 	})
 
 	if err != nil {
-		logger.Err(err).Msgf("Error while destroying the infrastructure")
+		log.Err(err).Str("project", req.ProjectName).Msgf("Error while destroying the infrastructure")
 		return nil, fmt.Errorf("error while destroying infrastructure for cluster %s : %w", req.Current.ClusterInfo.Name, err)
 	}
 	return &pb.DestroyInfrastructureResponse{Current: req.Current, CurrentLbs: req.CurrentLbs}, nil
