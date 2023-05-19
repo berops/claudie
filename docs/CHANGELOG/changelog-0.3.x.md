@@ -70,5 +70,5 @@ To deploy the Claudie `v0.3.X`, please:
 
 ### Known issues
 
-- Subnet CIDR is not carried over from tempState in Builder [#790](https://github.com/berops/claudie/issues/790)
+- Subnet CIDR is not carried over from temporary state in Builder [#790](https://github.com/berops/claudie/issues/790)
 - Longhorn occasionally does not detach volume from node which was deleted [#784](https://github.com/berops/claudie/issues/784)
