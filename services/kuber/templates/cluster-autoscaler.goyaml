@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: autoscaler-{{ .ClusterID }}-config
+  name: autoscaler-config-{{ .ClusterID }}
   labels:
     app.kubernetes.io/part-of: claudie
     app.kubernetes.io/name: cluster-autoscaler
@@ -75,6 +75,7 @@ spec:
             - --cloud-config=/etc/claudie/cloud-config/cloud-config
             - --kubeconfig=/etc/claudie/kubeconfig/kubeconfig
             - --ignore-daemonsets-utilization=true
+            - --balance-similar-node-groups=true
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: kubeconfig
