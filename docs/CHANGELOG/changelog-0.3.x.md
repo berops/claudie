@@ -60,12 +60,13 @@ To deploy the Claudie `v0.3.X`, please:
 - Rework logs in all microservices to enable easier filtering [#742](https://github.com/berops/claudie/pull/742)
 - Improve longhorn volume replication management [#782](https://github.com/berops/claudie/pull/782)
 - Various improvements in cluster manipulation [#728](https://github.com/berops/claudie/pull/728)
-- Removal of `k8s-sidecar` from Frontend [#744](https://github.com/berops/claudie/pull/744)
+- Removal of `k8s-sidecar` from Frontend [#792](https://github.com/berops/claudie/pull/792)
 
 ### Bugfixes
 
 - Fixed bug when infrastructure was not deleted if workflow encountered an error [#773](https://github.com/berops/claudie/pull/773)
 - Fixed error when deletion of nodes from cluster failed [#728](https://github.com/berops/claudie/pull/728)
+- Fixed bug when frontend triggered deletion of incorrect manifest [#744](https://github.com/berops/claudie/pull/744)
 
 ### Known issues
 
