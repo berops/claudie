@@ -29,7 +29,6 @@
 - [Longhorn](https://github.com/longhorn/longhorn)
 - [Nginx](https://www.nginx.com/)
 - [Calico](https://github.com/projectcalico/calico)
-- [K8s-sidecar](https://github.com/kiwigrid/k8s-sidecar)
 - [gRPC](https://grpc.io/)
 
 ## Context-box
@@ -244,8 +243,7 @@ Kuber manipulates the cluster resources using `kubectl`.
 ## Frontend
 
 Frontend is a layer between the user and Claudie.
-New manifests are added as secrets into the kubernetes cluster where `k8s-sidecar` saves them into Frontend's file system
-and notifies the Frontend service via a HTTP request that the new manifests are now available.
+New manifests are added as secrets into the kubernetes cluster where Frontend pulls them and saves them to Claudie.
 
 ### API
 
@@ -254,7 +252,5 @@ and notifies the Frontend service via a HTTP request that the new manifests are 
 ### Flow
 
 - User applies a new secret holding a manifest
-- `k8s-sidecar` detects it and saves it to Frontend's file system
-- `k8s-sidecar` notifies Frontend via a HTTP request that changes have been made
-- Frontend detects the new manifest and saves it to the database
+- Frontend detects it and processes the created/modified input manifest
 - Upon deletion of user-created secrets, Frontend initiates a deletion process of the manifest

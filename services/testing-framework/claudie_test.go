@@ -80,7 +80,7 @@ func testClaudie(ctx context.Context) error {
 	defer func() {
 		err := cc.Close()
 		if err != nil {
-			log.Error().Msgf("error while closing client connection : %v", err)
+			log.Err(err).Msgf("error while closing client connection")
 		}
 	}()
 	log.Info().Msg("---- Starting the tests ----")
@@ -114,7 +114,7 @@ func testClaudie(ctx context.Context) error {
 				err := processTestSet(ctx, path, c, testLonghornDeployment)
 				if err != nil {
 					//in order to get errors from all goroutines in error group, print them here and just return simple error so test will fail
-					log.Error().Msgf("Error in test sets %s : %v", path, err)
+					log.Err(err).Msgf("Error in test sets %s ", path)
 					return fmt.Errorf("error")
 				}
 				return nil
@@ -135,7 +135,7 @@ func testClaudie(ctx context.Context) error {
 						})
 					if err != nil {
 						//in order to get errors from all goroutines in error group, print them here and just return simple error so test will fail
-						log.Error().Msgf("Error in test sets %s : %v", path, err)
+						log.Err(err).Msgf("Error in test sets %s", path)
 						return fmt.Errorf("error")
 					}
 					return nil
@@ -167,7 +167,7 @@ func processTestSet(ctx context.Context, setName string, c pb.ContextBoxServiceC
 				log.Info().Msgf("Deleting infra even after error due to flag \"-auto-clean-up\" set to %v", autoCleanUpFlag)
 				// delete manifest from DB to clean up the infra
 				if err := cleanUp(setName, idInfo.id, c); err != nil {
-					log.Error().Msgf("error while cleaning up the infra for test set %s : %v", setName, err)
+					log.Err(err).Msgf("error while cleaning up the infra for test set %s", setName)
 				}
 			}
 		}

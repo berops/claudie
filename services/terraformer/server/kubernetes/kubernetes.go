@@ -5,6 +5,7 @@ import (
 
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/terraformer/server/clusterBuilder"
+	"github.com/rs/zerolog"
 )
 
 type K8Scluster struct {
@@ -25,7 +26,8 @@ func (k K8Scluster) Id() string {
 	return fmt.Sprintf("%s-%s", state.ClusterInfo.Name, state.ClusterInfo.Hash)
 }
 
-func (k K8Scluster) Build() error {
+func (k K8Scluster) Build(logger zerolog.Logger) error {
+	logger.Info().Msgf("Building K8S Cluster %s", k.DesiredK8s.ClusterInfo.Name)
 	var currentInfo *pb.ClusterInfo
 	// check if current cluster was defined, to avoid access of unreferenced memory
 	if k.CurrentK8s != nil {
@@ -50,7 +52,8 @@ func (k K8Scluster) Build() error {
 	return nil
 }
 
-func (k K8Scluster) Destroy() error {
+func (k K8Scluster) Destroy(logger zerolog.Logger) error {
+	logger.Info().Msgf("Destroying K8S Cluster %s", k.CurrentK8s.ClusterInfo.Name)
 	cluster := clusterBuilder.ClusterBuilder{
 		//DesiredInfo: , //desired state is not used in DestroyNodepools
 		CurrentInfo: k.CurrentK8s.ClusterInfo,
