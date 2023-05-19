@@ -92,6 +92,14 @@ jobs:
       - name: Git fetch gh-pages
         run: git fetch origin gh-pages
 
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9  
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
       # this is only possible, when there is already a version with latest alias
       # in case there isn't a version like this you have to
       #   1. mike deploy <version> latest
