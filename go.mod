@@ -15,7 +15,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/hetznercloud/hcloud-go v1.43.0
 	github.com/minio/minio-go/v7 v7.0.52
-	github.com/oracle/oci-go-sdk/v65 v65.37.0
+	github.com/oracle/oci-go-sdk/v65 v65.38.0
 	github.com/rs/zerolog v1.29.1
 	github.com/stretchr/testify v1.8.2
 	github.com/tidwall/gjson v1.14.4

@@ -236,8 +236,8 @@ github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8m
 github.com/onsi/ginkgo/v2 v2.9.1 h1:zie5Ly042PD3bsCvsSOPvRnFwyo3rKe64TJlD6nu0mk=
 github.com/onsi/gomega v1.27.4 h1:Z2AnStgsdSayCMDiCU42qIz+HLqEPcgiOCXjAU/w+8E=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
-github.com/oracle/oci-go-sdk/v65 v65.37.0 h1:MFkayRy5Ck9EEuT7jiVZJJwEckndwMqj2u6iLK3wCN4=
-github.com/oracle/oci-go-sdk/v65 v65.37.0/go.mod h1:MXMLMzHnnd9wlpgadPkdlkZ9YrwQmCOmbX5kjVEJodw=
+github.com/oracle/oci-go-sdk/v65 v65.38.0 h1:2ITYVHRa3A8DhN6SlG16W3FLJF1xTYDQkHFxYuPlIjg=
+github.com/oracle/oci-go-sdk/v65 v65.38.0/go.mod h1:MXMLMzHnnd9wlpgadPkdlkZ9YrwQmCOmbX5kjVEJodw=
 github.com/pkg/browser v0.0.0-20210115035449-ce105d075bb4 h1:Qj1ukM4GlMWXNdMBuXcXfz/Kw9s1qm0CLY32QxuSImI=
 github.com/pkg/browser v0.0.0-20210115035449-ce105d075bb4/go.mod h1:N6UoU20jOqggOuDwUaBQpluzLNDqif3kq9z2wpdYEfQ=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
