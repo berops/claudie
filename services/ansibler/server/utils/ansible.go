@@ -1,4 +1,4 @@
-package ansible
+package utils
 
 import (
 	"fmt"
@@ -13,13 +13,7 @@ import (
 )
 
 const (
-	baseDirectory   = "services/ansibler/server"
-	outputDirectory = "clusters"
-
-	inventoryFile         = "inventory.ini"
-	nodesInventoryFileTpl = "all-node-inventory.goini"
-
-	privateKeyExt = "pem"
+	inventoryFileName = "inventory.ini"
 
 	// defaultAnsibleForks defines how many forks ansible uses (on how many nodes can ansible perform a task at the same time).
 	defaultAnsibleForks = 15
@@ -29,18 +23,20 @@ const (
 
 // In Ansible, an inventory file is a configuration file that defines
 // the hosts and groups of hosts that Ansible can manage.
-// generateInventoryFile generates the Ansible inventory file
-func GenerateInventoryFile(inventoryTemplate, directory string, data interface{}) error {
+// generateInventoryFile generates the Ansible inventory file.
+func GenerateInventoryFile(inventoryTemplateFileName, outputDirectory string, data interface{}) error {
 	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.AnsiblerTemplates}
-	tpl, err := templateLoader.LoadTemplate(inventoryTemplate)
+	template, err := templateLoader.LoadTemplate(inventoryTemplateFileName)
 	if err != nil {
-		return fmt.Errorf("Error while loading Ansible inventory template %s for %s : %w", inventoryTemplate, directory, err)
+		return fmt.Errorf("Error while loading Ansible inventory template %s for %s : %w", inventoryTemplateFileName, outputDirectory, err)
 	}
-	template := templateUtils.Templates{Directory: directory}
-	err = template.Generate(tpl, inventoryFile, data)
+
+	err = templateUtils.Templates{Directory: outputDirectory}.
+		Generate(template, inventoryFileName, data)
 	if err != nil {
-		return fmt.Errorf("error while generating from template %s for %s : %w", inventoryTemplate, directory, err)
+		return fmt.Errorf("error while generating from template %s for %s : %w", inventoryTemplateFileName, outputDirectory, err)
 	}
+
 	return nil
 }
 

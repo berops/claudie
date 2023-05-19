@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rs/zerolog/log"
+	"google.golang.org/grpc"
+	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/externalgrpc/protos"
+
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/kuber/server/nodes"
-	"github.com/rs/zerolog/log"
-	"google.golang.org/grpc"
-	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/externalgrpc/protos"
 )
 
 // NodeGroupTargetSize returns the current target size of the node group. It is possible
@@ -23,7 +24,7 @@ func (c *ClaudieCloudProvider) NodeGroupTargetSize(_ context.Context, req *proto
 	defer c.lock.Unlock()
 	log.Info().Msgf("Got NodeGroupTargetSize request")
 	if ngc, ok := c.nodesCache[req.GetId()]; ok {
-		log.Debug().Msgf("Returning target size %d for nodepool %s", ngc.targetSize, req.GetId())
+		log.Debug().Str("nodepool", req.GetId()).Msgf("Returning target size %d for nodepool", ngc.targetSize)
 		return &protos.NodeGroupTargetSizeResponse{TargetSize: ngc.targetSize}, nil
 	}
 	return nil, fmt.Errorf("nodeGroup %s was not found", req.Id)
@@ -35,7 +36,7 @@ func (c *ClaudieCloudProvider) NodeGroupTargetSize(_ context.Context, req *proto
 func (c *ClaudieCloudProvider) NodeGroupIncreaseSize(_ context.Context, req *protos.NodeGroupIncreaseSizeRequest) (*protos.NodeGroupIncreaseSizeResponse, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	log.Info().Msgf("Got NodeGroupIncreaseSize request for nodepool %s by %d", req.GetId(), req.GetDelta())
+	log.Info().Str("nodepool", req.GetId()).Msgf("Got NodeGroupIncreaseSize request for nodepool by %d", req.GetDelta())
 	// Find the nodepool.
 	if ngc, ok := c.nodesCache[req.GetId()]; ok {
 		// Check & update the new Count.
@@ -61,7 +62,7 @@ func (c *ClaudieCloudProvider) NodeGroupIncreaseSize(_ context.Context, req *pro
 func (c *ClaudieCloudProvider) NodeGroupDeleteNodes(_ context.Context, req *protos.NodeGroupDeleteNodesRequest) (*protos.NodeGroupDeleteNodesResponse, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	log.Info().Msgf("Got NodeGroupDeleteNodes request for nodepool %s", req.GetId())
+	log.Info().Str("nodepool", req.GetId()).Msgf("Got NodeGroupDeleteNodes request for nodepool")
 	// Find the nodepool.
 	if ngc, ok := c.nodesCache[req.GetId()]; ok {
 		// Check & update the new Count.

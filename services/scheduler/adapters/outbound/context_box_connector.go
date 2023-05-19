@@ -1,7 +1,6 @@
 package outboundAdapters
 
 import (
-	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 
 	"github.com/berops/claudie/internal/envs"
@@ -21,8 +20,6 @@ func (c *ContextBoxConnector) Connect() error {
 		return err
 	}
 	c.Connection = connection
-
-	log.Info().Msgf("Initiated connection Context-box: %s, waiting for connection to be in state ready", envs.ContextBoxURL)
 
 	return nil
 }

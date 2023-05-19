@@ -13,12 +13,6 @@ import (
 )
 
 const (
-	baseDirectory   = "services/ansibler/server"
-	outputDirectory = "clusters"
-
-	inventoryFile   = "inventory.ini"
-	lbInventoryFile = "lb-inventory.goini"
-
 	// TODO: change to appropriate path
 	apiChangePlaybook = "../../ansible-playbooks/apiEndpointChange.yml"
 )
@@ -73,7 +67,7 @@ func updateAPIEndpoint(currentK8sClusterInfo, desiredK8sClusterInfo *pb.ClusterI
 	}
 
 	//
-	err = ansible.GenerateInventoryFile(lbInventoryFile, outputDirectory, LbInventoryFileParameters{
+	err = ansible.GenerateInventoryFile(lbInventoryFileName, outputDirectory, LbInventoryFileParameters{
 		K8sNodepools: currentK8sClusterInfo.GetNodePools(),
 		LBClusters:   nil,
 		ClusterID:    clusterID,

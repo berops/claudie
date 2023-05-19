@@ -2,7 +2,7 @@
 
 This document describes how the user manages/communicates with Claudie deployed in a Kubernetes cluster.
 
-Claudie has a component called Frontend, which functions like an entrypoint to Claudie. Frontend uses `k8s-sidecar`, which is configured to pull secrets with a label `claudie.io/input-manifest` and save them to Frontend's file system. Frontend then picks them up and applies them to Claudie.
+Claudie has a component called Frontend, which functions like an entrypoint to Claudie. Frontend uses k8s Watch API to continuously pull secrets with a label `claudie.io/input-manifest` and save them to Claudie database.
 
 ## Create
 
@@ -10,7 +10,7 @@ In order to create (apply) a new input manifest, the user needs to create a new 
 
 - a label `claudie.io/input-manifest`
 - a unique field name
-  - **IMPORTANT**: If two secrets share the same data field name, the manifest saved by `k8s-sidecar` gets overwritten, which may in turn lead to (unwanted) deletion of infrastructure.
+  - **IMPORTANT**: We highly recommend to have single input manifest per secret.
 
 ### Example
 
@@ -35,7 +35,7 @@ This makes users store input manifests in an [IaC](https://en.wikipedia.org/wiki
 
 ## Update
 
-When you want to update the input manifest, you can edit/reapply the secret with the updated input manifest inside of it (the secret name and the data field name will stay the same). `k8s-sidecar` notices the change in the secret data and subsequently updates the file inside Frontend's file system. Frontend then applies it to Claudie and the update of the defined infrastructure is underway.
+When you want to update the input manifest, you can edit/reapply the secret with the updated input manifest inside of it (the secret name and the data field name will stay the same). Frontend notices the change in the secret data and subsequently notifies the Claudie about change made to the input manifest.
 
 ## Delete
 
