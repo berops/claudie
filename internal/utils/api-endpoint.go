@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+
 	"github.com/berops/claudie/proto/pb"
 )
 
@@ -26,11 +27,13 @@ func HasAPIServerRole(roles []*pb.Role) bool {
 	return false
 }
 
-// FindAPIEndpointNodePoolWithNode searches for a nodepool that has a node with type ApiEndpoint.
-func FindAPIEndpointNodePoolWithNode(nodepools []*pb.NodePool) (*pb.NodePool, *pb.Node, error) {
+// FindNodepoolWithApiEndpointNode searches for a nodepool that has the control node representing
+// the Api endpoint of the cluster.
+// Returns the control node if found and its corresponding nodepool.
+func FindNodepoolWithApiEndpointNode(nodepools []*pb.NodePool) (*pb.NodePool, *pb.Node, error) {
 	for _, nodepool := range nodepools {
 		if nodepool.IsControl {
-			if node, err := FindEndpointNode(nodepool); err == nil {
+			if node, err := FindApiEndpointNode(nodepool); err == nil {
 				return nodepool, node, nil
 			}
 		}
@@ -38,8 +41,9 @@ func FindAPIEndpointNodePoolWithNode(nodepools []*pb.NodePool) (*pb.NodePool, *p
 	return nil, nil, fmt.Errorf("no node found with type: %s", pb.NodeType_apiEndpoint.String())
 }
 
-// FindEndpointNode searches the nodes of the nodepool for a node with type ApiEndpoint.
-func FindEndpointNode(nodepool *pb.NodePool) (*pb.Node, error) {
+// FindApiEndpointNode receives a nodepool of control nodes
+// and searches for the control node representing the Api endpoint of the K8s cluster.
+func FindApiEndpointNode(nodepool *pb.NodePool) (*pb.Node, error) {
 	for _, node := range nodepool.GetNodes() {
 		if node.GetNodeType() == pb.NodeType_apiEndpoint {
 			return node, nil
@@ -64,7 +68,7 @@ func FindControlNode(nodepools []*pb.NodePool) (*pb.Node, error) {
 func FindAPIEndpointNode(nodepools []*pb.NodePool) (*pb.Node, error) {
 	for _, nodePool := range nodepools {
 		if nodePool.IsControl {
-			if node, err := FindEndpointNode(nodePool); err == nil {
+			if node, err := FindApiEndpointNode(nodePool); err == nil {
 				return node, nil
 			}
 		}

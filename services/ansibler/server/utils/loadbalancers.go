@@ -1,17 +1,14 @@
-package main
+package utils
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
-	"github.com/berops/claudie/services/ansibler/server/ansible"
 )
 
 /*
@@ -21,10 +18,12 @@ The layout of the files/directories for a single k8s cluster loadbalancers is:
 
 clusters/
 └── k8s-cluster-1/
+	│
 	├── lb-cluster-1/
 	│	├── key.pem
 	│	├── lb.conf
 	│	└── nginx.yml
+	│
 	├── lb-cluster-2/
 	│	├── key.pem
 	│	├── lb.conf
@@ -77,10 +76,10 @@ const (
 )
 
 type (
-	// LBInfo wraps all Load-balancers and Nodepools used for a single k8s cluster.
-	LBInfo struct {
+	// LBClustersInfo wraps all Load-balancers and Nodepools used for a single k8s cluster.
+	LBClustersInfo struct {
 		// LbClusters are Load-Balancers that share the targeted k8s cluster.
-		LbClusters []*LBData
+		LbClusters []*LBClusterData
 		// TargetK8sNodepool are all nodepools used by the targeted k8s cluster.
 		TargetK8sNodepool []*pb.NodePool
 		// TargetK8sNodepoolKey is the key used for the nodepools.
@@ -94,7 +93,7 @@ type (
 		FirstRun bool
 	}
 
-	LBData struct {
+	LBClusterData struct {
 		// CurrentLbCluster is the current spec.
 		// A value of nil means that the current k8s cluster
 		// didn't have a LB attached to it.
@@ -122,7 +121,7 @@ type (
 
 // APIEndpointState determines if the API endpoint should be updated with a new
 // address, as otherwise communication with the cluster wouldn't be possible.
-func (lb *LBData) APIEndpointState() APIEndpointChangeState {
+func (lb *LBClusterData) APIEndpointState() APIEndpointChangeState {
 	if lb.CurrentLbCluster == nil && lb.DesiredLbCluster == nil {
 		return NoChange
 	}
@@ -152,92 +151,7 @@ func (lb *LBData) APIEndpointState() APIEndpointChangeState {
 	return NoChange
 }
 
-// tearDownLoadBalancers will correctly destroy load-balancers including correctly selecting the new ApiServer if present.
-// If for a k8sCluster a new ApiServerLB is being attached instead of handling the apiEndpoint immediately it will be delayed and
-// will send the data to the dataChan which will be used later for the SetupLoadbalancers function to bypass generating the
-// certificates for the endpoint multiple times.
-func teardownLoadBalancers(clusterName string, info *LBInfo, attached bool) (string, error) {
-	k8sDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, utils.CreateHash(utils.HashLength)))
-
-	if err := generateK8sBaseFiles(k8sDirectory, info); err != nil {
-		return "", fmt.Errorf("error encountered while generating base files for %s", clusterName)
-	}
-
-	apiServer := findCurrentAPILoadBalancer(info.LbClusters)
-
-	// if there was a apiServer that is deleted, and we're attaching a new
-	// api server for the k8s cluster we store the old endpoint that will
-	// be used later in the SetUpLoadbalancers function.
-	if apiServer != nil && attached {
-		return apiServer.CurrentLbCluster.Dns.Endpoint, os.RemoveAll(k8sDirectory)
-	}
-
-	if err := handleAPIEndpointChange(apiServer, info, k8sDirectory); err != nil {
-		return "", err
-	}
-
-	return "", os.RemoveAll(k8sDirectory)
-}
-
-// setUpLoadbalancers sets up and verify the loadbalancer configuration including DNS.
-func setUpLoadbalancers(clusterName string, info *LBInfo, logger zerolog.Logger) error {
-	directory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, utils.CreateHash(utils.HashLength)))
-
-	if err := generateK8sBaseFiles(directory, info); err != nil {
-		return fmt.Errorf("error encountered while generating base files for %s", clusterName)
-	}
-
-	err := utils.ConcurrentExec(info.LbClusters, func(lb *LBData) error {
-		lbPrefix := utils.GetClusterID(lb.DesiredLbCluster.ClusterInfo)
-		directory := filepath.Join(directory, lbPrefix)
-		logger.Info().Str(loggerPrefix, lbPrefix).Msg("Setting up the loadbalancer")
-
-		//create key files for lb nodepools
-		if err := utils.CreateDirectory(directory); err != nil {
-			return fmt.Errorf("failed to create directory %s : %w", directory, err)
-		}
-		if err := utils.CreateKeyFile(lb.DesiredLbCluster.ClusterInfo.PrivateKey, directory, fmt.Sprintf("key.%s", privateKeyExt)); err != nil {
-			return fmt.Errorf("failed to create key file for %s : %w", lb.DesiredLbCluster.ClusterInfo.Name, err)
-		}
-
-		if err := setUpNodeExporter(lb.DesiredLbCluster, directory); err != nil {
-			return err
-		}
-
-		if err := setUpNginx(lb.DesiredLbCluster, info.TargetK8sNodepool, directory); err != nil {
-			return err
-		}
-		logger.Info().Str(loggerPrefix, lbPrefix).Msg("Loadbalancer successfully set up")
-		return nil
-	})
-
-	if err != nil {
-		return fmt.Errorf("error while setting up the loadbalancers for cluster %s : %w", clusterName, err)
-	}
-
-	var apiServerLB *LBData
-	for _, lb := range info.LbClusters {
-		if utils.HasAPIServerRole(lb.DesiredLbCluster.Roles) {
-			apiServerLB = lb
-		}
-	}
-
-	// if we didn't found any ApiServerLB among the desired state LBs
-	// it's possible that we've changed the role from an API server to
-	// some other role. Which won't be caught by the above check, and we
-	// have to do an additional check for the ApiServerLB in the current state.
-	if apiServerLB == nil {
-		apiServerLB = findCurrentAPILoadBalancer(info.LbClusters)
-	}
-
-	if err := handleAPIEndpointChange(apiServerLB, info, directory); err != nil {
-		return fmt.Errorf("failed to find a candidate for the Api Server: %w", err)
-	}
-
-	return os.RemoveAll(directory)
-}
-
-func handleAPIEndpointChange(apiServer *LBData, k8sCluster *LBInfo, k8sDirectory string) error {
+func handleAPIEndpointChange(apiServer *LBClusterData, k8sCluster *LBClustersInfo, k8sDirectory string) error {
 	if apiServer == nil {
 		// if there is no ApiSever LB that means that the ports 6443 are exposed
 		// on the nodes, and thus we don't need to anything.
@@ -359,7 +273,7 @@ func handleAPIEndpointChange(apiServer *LBData, k8sCluster *LBInfo, k8sDirectory
 }
 
 // findCurrentAPILoadBalancers finds the current Load-Balancer for the API server
-func findCurrentAPILoadBalancer(lbs []*LBData) *LBData {
+func findCurrentAPILoadBalancer(lbs []*LBClusterData) *LBClusterData {
 	for _, lb := range lbs {
 		if lb.CurrentLbCluster != nil {
 			if utils.HasAPIServerRole(lb.CurrentLbCluster.Roles) {
@@ -405,7 +319,7 @@ func setUpNginx(lb *pb.LBcluster, targetedNodepool []*pb.NodePool, directory str
 		return fmt.Errorf("error while generating %s for %s : %w", nginxPlaybook, lb.ClusterInfo.Name, err)
 	}
 	//run the playbook
-	ansible := ansible.Ansible{Playbook: nginxPlaybook, Inventory: filepath.Join("..", inventoryFile), Directory: directory}
+	ansible := Ansible{Playbook: nginxPlaybook, Inventory: filepath.Join("..", inventoryFile), Directory: directory}
 	err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s-%s", lb.ClusterInfo.Name, lb.ClusterInfo.Hash))
 	if err != nil {
 		return fmt.Errorf("error while running ansible for %s : %w", lb.ClusterInfo.Name, err)
@@ -437,7 +351,7 @@ func setUpNodeExporter(lb *pb.LBcluster, directory string) error {
 	}
 
 	//run the playbook
-	ansible := ansible.Ansible{Playbook: nodeExporterPlaybook, Inventory: filepath.Join("..", inventoryFile), Directory: directory}
+	ansible := Ansible{Playbook: nodeExporterPlaybook, Inventory: filepath.Join("..", inventoryFile), Directory: directory}
 	if err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s-%s", lb.ClusterInfo.Name, lb.ClusterInfo.Hash)); err != nil {
 		return fmt.Errorf("error while running ansible for %s : %w", lb.ClusterInfo.Name, err)
 	}
@@ -461,7 +375,7 @@ func splitNodesByType(nodepools []*pb.NodePool) (controlNodes, computeNodes []*p
 
 // generateK8sBaseFiles generates the base loadbalancer files, like inventory, keys, etc.
 // return error if not successful, nil otherwise
-func generateK8sBaseFiles(k8sDirectory string, lbInfo *LBInfo) error {
+func generateK8sBaseFiles(k8sDirectory string, lbInfo *LBClustersInfo) error {
 	if err := utils.CreateDirectory(k8sDirectory); err != nil {
 		return fmt.Errorf("failed to create directory %s : %w", k8sDirectory, err)
 	}
