@@ -82,7 +82,7 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 	defer func() {
 		err := cc.Close()
 		if err != nil {
-			log.Error().Msgf("error while closing client connection : %v", err)
+			log.Err(err).Msgf("error while closing client connection")
 		}
 	}()
 

@@ -52,17 +52,18 @@ func (u *Usecases) BuildInfrastructure(request *pb.BuildInfrastructureRequest) (
 
 	// Concurrently build infrastructure for each cluster in the "clusters" slice
 	err := utils.ConcurrentExec(clusters, func(cluster Cluster) error {
-		log.Info().Msgf("Creating infrastructure for cluster %s project %s", cluster.Id(), request.ProjectName)
+		logger := utils.CreateLoggerWithProjectAndClusterName(request.ProjectName, cluster.Id())
+		logger.Info().Msg("Creating infrastructure")
 
-		if err := cluster.Build(); err != nil {
+		if err := cluster.Build(logger); err != nil {
 			return fmt.Errorf("error while building the cluster %v : %w", cluster.Id(), err)
 		}
 
-		log.Info().Msgf("Infrastructure was successfully created for cluster %s project %s", cluster.Id(), request.ProjectName)
+		logger.Info().Msgf("Infrastructure successfully created for cluster")
 		return nil
 	})
 	if err != nil {
-		log.Error().Msgf("Error while building cluster %s for project %s : %s", request.Desired.ClusterInfo.Name, request.ProjectName, err)
+		log.Err(err).Str("project", request.ProjectName).Msgf("Error encountered while building cluster")
 		return nil, fmt.Errorf("error while building cluster %s for project %s : %w", request.Desired.ClusterInfo.Name, request.ProjectName, err)
 	}
 

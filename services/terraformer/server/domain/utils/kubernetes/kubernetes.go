@@ -3,6 +3,8 @@ package kubernetes
 import (
 	"fmt"
 
+	"github.com/rs/zerolog"
+
 	"github.com/berops/claudie/proto/pb"
 	clusterBuilder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
 )
@@ -27,7 +29,9 @@ func (k K8Scluster) Id() string {
 	return fmt.Sprintf("%s-%s", state.ClusterInfo.Name, state.ClusterInfo.Hash)
 }
 
-func (k K8Scluster) Build() error {
+func (k K8Scluster) Build(logger zerolog.Logger) error {
+	logger.Info().Msgf("Building K8S Cluster %s", k.DesiredState.ClusterInfo.Name)
+
 	var currentClusterInfo *pb.ClusterInfo
 	// Check if current cluster was defined, to avoid access of unreferenced memory
 	if k.CurrentState != nil {
@@ -53,7 +57,8 @@ func (k K8Scluster) Build() error {
 	return nil
 }
 
-func (k K8Scluster) Destroy() error {
+func (k K8Scluster) Destroy(logger zerolog.Logger) error {
+	logger.Info().Msgf("Destroying K8S Cluster %s", k.CurrentState.ClusterInfo.Name)
 	cluster := clusterBuilder.ClusterBuilder{
 		CurrentClusterInfo: k.CurrentState.ClusterInfo,
 

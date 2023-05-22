@@ -6,9 +6,11 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/berops/claudie/internal/envs"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+
+	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/proto/pb"
 )
 
 const defaultLogLevel = zerolog.InfoLevel
@@ -42,6 +44,42 @@ func InitLog(moduleName string) {
 		isLogInit = true
 	}
 	log.Logger = logger
+}
+
+func GetClusterID(clusterInfo *pb.ClusterInfo) string {
+	if clusterInfo != nil {
+		return fmt.Sprintf("%s-%s", clusterInfo.Name, clusterInfo.Hash)
+	}
+	return ""
+}
+
+// CreateLoggerWithProjectName creates a new logger aware of the project-name.
+// Returns the new logger
+func CreateLoggerWithProjectName(projectName string) zerolog.Logger {
+	if projectName == "" {
+		return log.Logger
+	}
+	return log.With().Str("project", projectName).Logger()
+}
+
+// CreateLoggerWithClusterName creates a new logger aware of the cluster-name.
+// Returns the new logger
+func CreateLoggerWithClusterName(clusterName string) zerolog.Logger {
+	if clusterName == "" {
+		return log.Logger
+	}
+	return log.With().Str("cluster", clusterName).Logger()
+}
+
+// CreateLoggerWithProjectAndClusterName creates a new logger aware of the project-name and cluster-name.
+// Returns the new logger
+func CreateLoggerWithProjectAndClusterName(projectName, clusterName string) zerolog.Logger {
+	if projectName == "" || clusterName == "" {
+		return log.Logger
+	}
+	return log.With().
+		Str("project", projectName).Str("cluster", clusterName).
+		Logger()
 }
 
 func getLogLevelFromEnv() (zerolog.Level, error) {

@@ -91,7 +91,7 @@ func (nm *NodeManager) cacheGcp(np *pb.NodePool) error {
 	}
 	defer func() {
 		if err := computeService.Close(); err != nil {
-			log.Error().Msgf("Failed to close GCP client")
+			log.Err(err).Msgf("Failed to close GCP client")
 		}
 	}()
 	// Define request and parameters

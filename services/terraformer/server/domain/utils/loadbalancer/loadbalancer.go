@@ -3,6 +3,7 @@ package loadbalancer
 import (
 	"fmt"
 
+	"github.com/rs/zerolog"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/berops/claudie/proto/pb"
@@ -25,7 +26,9 @@ func (l LBcluster) Id() string {
 	return fmt.Sprintf("%s-%s", state.ClusterInfo.Name, state.ClusterInfo.Hash)
 }
 
-func (l LBcluster) Build() error {
+func (l LBcluster) Build(logger zerolog.Logger) error {
+	logger.Info().Msgf("Building LB Cluster %s and DNS", l.DesiredState.ClusterInfo.Name)
+
 	var currentClusterInfo *pb.ClusterInfo
 	var currentDNS *pb.DNS
 	var currentNodeIPs []string
@@ -63,7 +66,8 @@ func (l LBcluster) Build() error {
 		DesiredDNS:     l.DesiredState.Dns,
 		ProjectName:    l.ProjectName,
 	}
-	endpoint, err := dns.CreateDNSRecords()
+
+	endpoint, err := dns.CreateDNSRecords(logger)
 	if err != nil {
 		return fmt.Errorf("error while creating the DNS for %s : %w", l.DesiredState.ClusterInfo.Name, err)
 	}
@@ -73,8 +77,9 @@ func (l LBcluster) Build() error {
 	return nil
 }
 
-func (l LBcluster) Destroy() error {
+func (l LBcluster) Destroy(logger zerolog.Logger) error {
 	group := errgroup.Group{}
+	logger.Info().Msgf("Destroying LB Cluster %s and DNS", l.CurrentState.ClusterInfo.Name)
 
 	group.Go(func() error {
 		cluster := clusterBuilder.ClusterBuilder{
@@ -93,7 +98,7 @@ func (l LBcluster) Destroy() error {
 			CurrentDNS:     l.CurrentState.Dns,
 			ProjectName:    l.ProjectName,
 		}
-		return dns.DestroyDNSRecords()
+		return dns.DestroyDNSRecords(logger)
 	})
 
 	return group.Wait()
