@@ -33,8 +33,6 @@ func main() {
 	grpcAdapter := &grpc.GrpcAdapter{}
 	grpcAdapter.Init(usecases)
 
-	//--
-
 	errGroup, errGroupContext := errgroup.WithContext(context.Background())
 
 	errGroup.Go(grpcAdapter.Start)

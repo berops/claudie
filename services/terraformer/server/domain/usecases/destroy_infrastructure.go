@@ -8,8 +8,16 @@ import (
 
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
-	"github.com/berops/claudie/services/terraformer/server/kubernetes"
-	"github.com/berops/claudie/services/terraformer/server/loadbalancer"
+	"github.com/berops/claudie/services/terraformer/server/domain/utils/kubernetes"
+	"github.com/berops/claudie/services/terraformer/server/domain/utils/loadbalancer"
+)
+
+const (
+	keyFormat_tfStateFile    = "%s/%s"
+	dnsKeyFormat_tfStateFile = "%s/%s-dns"
+
+	keyFormat_tfStateLockFile    = "%s/%s/%s-dns-md5"
+	dnsKeyFormat_tfStateLockFile = "%s/%s/%s-md5"
 )
 
 // DestroyInfrastructure destroys the infrastructure for provided LB clusters
@@ -48,10 +56,10 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 
 		// After the infrastructure is destroyed, we need to delete the Terraform state file from MinIO
 		// and Terraform state-lock file from DynamoDB.
-		if err := u.DynamoDB.DeleteTfStateLockFile(ctx, request.ProjectName, cluster.Id(), false); err != nil {
+		if err := u.DynamoDB.DeleteTfStateLockFile(ctx, request.ProjectName, cluster.Id(), keyFormat_tfStateLockFile); err != nil {
 			return err
 		}
-		if err := u.MinIO.DeleteTfStateFile(ctx, request.ProjectName, cluster.Id(), false); err != nil {
+		if err := u.MinIO.DeleteTfStateFile(ctx, request.ProjectName, cluster.Id(), keyFormat_tfStateFile); err != nil {
 			return err
 		}
 		log.Info().Msgf("Successfully deleted Terraform state and state-lock files for cluster %s in project %s", cluster.Id(), request.ProjectName)
@@ -59,10 +67,10 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 		// In case of LoadBalancer type cluster,
 		// there are additional DNS related Terraform state and state-lock files.
 		if _, ok := cluster.(loadbalancer.LBcluster); ok {
-			if err := u.DynamoDB.DeleteTfStateLockFile(ctx, request.ProjectName, cluster.Id(), true); err != nil {
+			if err := u.DynamoDB.DeleteTfStateLockFile(ctx, request.ProjectName, cluster.Id(), dnsKeyFormat_tfStateLockFile); err != nil {
 				return err
 			}
-			if err := u.MinIO.DeleteTfStateFile(ctx, request.ProjectName, cluster.Id(), true); err != nil {
+			if err := u.MinIO.DeleteTfStateFile(ctx, request.ProjectName, cluster.Id(), dnsKeyFormat_tfStateFile); err != nil {
 				return err
 			}
 			log.Info().Msgf("Successfully deleted DNS related Terraform state and state-lock files for cluster %s in project %s", cluster.Id(), request.ProjectName)

@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/berops/claudie/proto/pb"
-	"github.com/berops/claudie/services/terraformer/server/clusterBuilder"
+	clusterBuilder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
 )
 
 type K8Scluster struct {
@@ -41,7 +41,7 @@ func (k K8Scluster) Build() error {
 		ProjectName: k.ProjectName,
 		ClusterType: pb.ClusterType_K8s,
 		Metadata: map[string]any{
-			"attachedLBClusters": k.AttachedLBClusters,
+			"loadBalancers": k.AttachedLBClusters,
 		},
 	}
 

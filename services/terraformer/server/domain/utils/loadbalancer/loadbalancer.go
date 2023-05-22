@@ -6,7 +6,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/berops/claudie/proto/pb"
-	"github.com/berops/claudie/services/terraformer/server/clusterBuilder"
+	clusterBuilder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
 )
 
 type LBcluster struct {

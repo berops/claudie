@@ -76,15 +76,7 @@ func (d *DynamoDBAdapter) Healthcheck() error {
 	return fmt.Errorf("dynamoDB does not contain %s table", dynamoDBTableName)
 }
 
-func (d *DynamoDBAdapter) DeleteTfStateLockFile(ctx context.Context, projectName, clusterId string, isForDNS bool) error {
-	var keyFormat string
-
-	if isForDNS {
-		keyFormat = "%s/%s/%s-dns-md5"
-	} else {
-		keyFormat = "%s/%s/%s-md5"
-	}
-
+func (d *DynamoDBAdapter) DeleteTfStateLockFile(ctx context.Context, projectName, clusterId string, keyFormat string) error {
 	// Get the DynamoDB key (keyname is LockID) which maps to the Terraform state-lock file
 	key, err := attributevalue.Marshal(fmt.Sprintf(keyFormat, minioBucketName, projectName, clusterId))
 	if err != nil {

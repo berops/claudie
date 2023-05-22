@@ -7,18 +7,17 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/berops/claudie/services/terraformer/server/provider"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 
 	comm "github.com/berops/claudie/internal/command"
-
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
-	"github.com/berops/claudie/services/terraformer/server/backend"
-	"github.com/berops/claudie/services/terraformer/server/clusterBuilder"
-	"github.com/berops/claudie/services/terraformer/server/terraform"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
+	"github.com/berops/claudie/services/terraformer/server/domain/utils/backend"
+	clusterBuilder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
+	"github.com/berops/claudie/services/terraformer/server/domain/utils/provider"
+	"github.com/berops/claudie/services/terraformer/server/domain/utils/terraform"
 )
 
 type DNS struct {

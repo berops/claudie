@@ -3,9 +3,10 @@ package main
 import (
 	"testing"
 
-	"github.com/berops/claudie/proto/pb"
-	"github.com/berops/claudie/services/terraformer/server/clusterBuilder"
 	"github.com/stretchr/testify/require"
+
+	"github.com/berops/claudie/proto/pb"
+	clusterBuilder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
 )
 
 var desiredState *pb.Project = &pb.Project{

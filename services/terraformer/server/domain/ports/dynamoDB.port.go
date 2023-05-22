@@ -5,5 +5,5 @@ import (
 )
 
 type DynamoDBPort interface {
-	DeleteTfStateLockFile(ctx context.Context, projectName, clusterId string, isForDNS bool) error
+	DeleteTfStateLockFile(ctx context.Context, projectName, clusterId string, keyFormat string) error
 }

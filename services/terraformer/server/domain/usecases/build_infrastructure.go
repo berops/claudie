@@ -7,8 +7,8 @@ import (
 
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
-	"github.com/berops/claudie/services/terraformer/server/kubernetes"
-	"github.com/berops/claudie/services/terraformer/server/loadbalancer"
+	"github.com/berops/claudie/services/terraformer/server/domain/utils/kubernetes"
+	"github.com/berops/claudie/services/terraformer/server/domain/utils/loadbalancer"
 )
 
 // BuildInfrastructure builds the required infrastructure for a single Kubernetes cluster
