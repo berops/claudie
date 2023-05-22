@@ -10,8 +10,6 @@ const (
 
 	// Name of the generated Ansible inventory file.
 	inventoryFileName = "inventory.ini"
-	// Name of the generated Ansible inventory file (for LB cluster).
-	lbInventoryFileName = "lb-inventory.goini"
 
 	allNodes_InventoryTemplateFileName = "all-node-inventory.goini"
 )
@@ -30,11 +28,5 @@ type (
 
 	AllNodesInventoryData struct {
 		NodepoolsInfos []*NodepoolsInfoOfCluster
-	}
-
-	LbInventoryData struct {
-		K8sNodepools []*pb.NodePool
-		LBClusters   []*pb.LBcluster
-		ClusterID    string
 	}
 )

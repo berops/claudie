@@ -14,37 +14,52 @@ import (
 )
 
 const (
+	nodeExporterPlaybookTemplateFileName = "node-exporter.goyml"
+	nodeExporterPlaybookFileName         = "node-exporter.yml"
+	nodeExporterServiceFileName          = "node-exporter.service.j2"
+
 	nginxPlaybookName         = "nginx.yml"
 	nginxConfTemplateFileName = "conf.gotpl"
 )
 
-type (
-	LBClusterRolesInfo struct {
-		Role        *pb.Role
-		TargetNodes []*pb.Node
-	}
-
-	NginxConfParameters struct {
-		Roles []LBClusterRolesInfo
-	}
-)
-
-// SetUpLoadbalancers sets up the loadbalancers along with DNS and verifies their configuration
 func (u *Usecases) SetUpLoadbalancers(request *pb.SetUpLBRequest) (*pb.SetUpLBResponse, error) {
 	logger := commonUtils.CreateLoggerWithProjectAndClusterName(request.ProjectName, commonUtils.GetClusterID(request.Desired.ClusterInfo))
 	logger.Info().Msgf("Setting up the loadbalancers")
 
-	// TODO: implement
+	currentLBClusters := make(map[string]*pb.LBcluster)
+	for _, lbCluster := range request.CurrentLbs {
+		currentLBClusters[lbCluster.ClusterInfo.Name] = lbCluster
+	}
+
+	lbClustersInfo := &utils.LBClustersInfo{
+		FirstRun:              request.FirstRun,
+		TargetK8sNodepool:     request.Desired.ClusterInfo.NodePools,
+		TargetK8sNodepoolKey:  request.Desired.ClusterInfo.PrivateKey,
+		PreviousAPIEndpointLB: request.PreviousAPIEndpoint,
+		ClusterID:             fmt.Sprintf("%s-%s", request.Desired.ClusterInfo.Name, request.Desired.ClusterInfo.Hash),
+	}
+	for _, lbCluster := range request.DesiredLbs {
+		lbClustersInfo.LbClusters = append(lbClustersInfo.LbClusters, &utils.LBClusterData{
+			DesiredLbCluster: lbCluster,
+			// if there is a value in the map it will return it, otherwise nil is returned.
+			CurrentLbCluster: currentLBClusters[lbCluster.ClusterInfo.Name],
+		})
+	}
+
+	if err := setUpLoadbalancers(request.Desired.ClusterInfo.Name, lbClustersInfo, logger); err != nil {
+		logger.Err(err).Msgf("Error encountered while setting up the loadbalancers")
+		return nil, fmt.Errorf("error encountered while setting up the loadbalancers for cluster %s project %s : %w", request.Desired.ClusterInfo.Name, request.ProjectName, err)
+	}
 
 	logger.Info().Msgf("Loadbalancers were successfully set up")
 	return &pb.SetUpLBResponse{}, nil
 }
 
-// setUpLoadbalancers sets up and verifies the loadbalancer configuration (including DNS).
+// setUpLoadbalancers sets up the loadbalancers along with DNS and verifies their configuration
 func setUpLoadbalancers(clusterName string, lbClustersInfo *utils.LBClustersInfo, logger zerolog.Logger) error {
 	outputDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, commonUtils.CreateHash(commonUtils.HashLength)))
 
-	if err := generateLBInventoryFile(outputDirectory, lbClustersInfo); err != nil {
+	if err := utils.GenerateLBBaseFiles(outputDirectory, lbClustersInfo); err != nil {
 		return fmt.Errorf("error encountered while generating base files for %s", clusterName)
 	}
 
@@ -84,38 +99,62 @@ func setUpLoadbalancers(clusterName string, lbClustersInfo *utils.LBClustersInfo
 		return fmt.Errorf("error while setting up the loadbalancers for cluster %s : %w", clusterName, err)
 	}
 
-	return os.RemoveAll(outputDirectory)
-}
-
-func generateLBInventoryFile(outputDirectory string, lbClustersInfo *utils.LBClustersInfo) error {
-	// Create the directory where files will be generated
-	if err := commonUtils.CreateDirectory(outputDirectory); err != nil {
-		return fmt.Errorf("failed to create directory %s : %w", outputDirectory, err)
-	}
-
-	// Generate SSH key which will be used by Ansible.
-	if err := commonUtils.CreateKeyFile(lbClustersInfo.TargetK8sNodepoolKey, outputDirectory, "k8s.pem"); err != nil {
-		return fmt.Errorf("failed to create key file: %w", err)
-	}
-
-	var lbClusters []*pb.LBcluster
-	for _, item := range lbClustersInfo.LbClusters {
-		if item.DesiredLbCluster != nil {
-			lbClusters = append(lbClusters, item.DesiredLbCluster)
+	var desiredApiServerTypeLBCluster *utils.LBClusterData
+	for _, lbClusterInfo := range lbClustersInfo.LbClusters {
+		if commonUtils.HasAPIServerRole(lbClusterInfo.DesiredLbCluster.Roles) {
+			desiredApiServerTypeLBCluster = lbClusterInfo
 		}
 	}
 
-	// Generate Ansible inventory file.
-	err := utils.GenerateInventoryFile(lbInventoryFileName, outputDirectory,
-		// Value of Ansible template parameters
-		LbInventoryData{
-			K8sNodepools: lbClustersInfo.TargetK8sNodepool,
-			LBClusters:   lbClusters,
-			ClusterID:    lbClustersInfo.ClusterID,
-		},
+	// If we didn't find any Api server type LB cluster in the desired state,
+	// it's possible that we've changed the role from an API server to some other role.
+	// This won't be caught by the above check.
+	// So we have to do an additional check for the desiredApiServerTypeLBCluster using the current state.
+	if desiredApiServerTypeLBCluster == nil {
+		desiredApiServerTypeLBCluster = utils.FindCurrentAPIServerTypeLBCluster(lbClustersInfo.LbClusters)
+	}
+
+	if err := utils.HandleAPIEndpointChange(desiredApiServerTypeLBCluster, lbClustersInfo, outputDirectory); err != nil {
+		return fmt.Errorf("failed to find a candidate for the Api Server: %w", err)
+	}
+
+	return os.RemoveAll(outputDirectory)
+}
+
+// setUpNodeExporter sets up node-exporter on each node of the LB cluster.
+// Returns error if not successful, nil otherwise.
+func setUpNodeExporter(lbCluster *pb.LBcluster, outputDirectory string) error {
+	var (
+		templateLoader     = templateUtils.TemplateLoader{Directory: templateUtils.AnsiblerTemplates}
+		playbookParameters = utils.LbPlaybookParameters{Loadbalancer: lbCluster.ClusterInfo.Name}
 	)
+
+	// Generate node-exporter Ansible playbook from template
+	template, err := templateLoader.LoadTemplate(nodeExporterPlaybookTemplateFileName)
 	if err != nil {
-		return fmt.Errorf("error while generating inventory file for %s : %w", outputDirectory, err)
+		return fmt.Errorf("error while loading %s template for %s : %w", nodeExporterPlaybookTemplateFileName, lbCluster.ClusterInfo.Name, err)
+	}
+	if (templateUtils.Templates{Directory: outputDirectory}).Generate(template, nodeExporterPlaybookFileName, playbookParameters); err != nil {
+		return fmt.Errorf("error while generating %s for %s : %w", nodeExporterPlaybookFileName, lbCluster.ClusterInfo.Name, err)
+	}
+
+	// Create node-exporter.service.j2 for the node-exporter playbook
+	template, err = templateLoader.LoadTemplate(nodeExporterServiceFileName)
+	if err != nil {
+		return fmt.Errorf("error while loading %s template for %s : %w", nodeExporterServiceFileName, lbCluster.ClusterInfo.Name, err)
+	}
+	if err = (templateUtils.Templates{Directory: outputDirectory}).Generate(template, nodeExporterServiceFileName, playbookParameters); err != nil {
+		return fmt.Errorf("error while generating %s for %s : %w", nodeExporterServiceFileName, lbCluster.ClusterInfo.Name, err)
+	}
+
+	// Run the Ansible playbook
+	ansible := utils.Ansible{
+		Directory: outputDirectory,
+		Playbook:  nodeExporterPlaybookFileName,
+		Inventory: filepath.Join("..", inventoryFileName),
+	}
+	if err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash)); err != nil {
+		return fmt.Errorf("error while running ansible for %s : %w", lbCluster.ClusterInfo.Name, err)
 	}
 
 	return nil
@@ -127,14 +166,14 @@ func setUpNginx(lbCluster *pb.LBcluster, targetK8sNodepool []*pb.NodePool, outpu
 	targetControlNodes, targetComputeNodes := splitNodesByType(targetK8sNodepool)
 
 	// construct []LBClusterRolesInfo for the given LB cluster
-	var lbClusterRolesInfo []LBClusterRolesInfo
+	var lbClusterRolesInfo []utils.LBClusterRolesInfo
 	for _, role := range lbCluster.Roles {
 		target := assignTarget(targetControlNodes, targetComputeNodes, role.Target)
 
 		if target == nil {
 			return fmt.Errorf("target %v did not specify any nodes", role.Target)
 		}
-		lbClusterRolesInfo = append(lbClusterRolesInfo, LBClusterRolesInfo{Role: role, TargetNodes: target})
+		lbClusterRolesInfo = append(lbClusterRolesInfo, utils.LBClusterRolesInfo{Role: role, TargetNodes: target})
 	}
 
 	// Generate the nginx config file
@@ -144,7 +183,7 @@ func setUpNginx(lbCluster *pb.LBcluster, targetK8sNodepool []*pb.NodePool, outpu
 		return fmt.Errorf("error while loading %s template for %w", nginxConfTemplateFileName, err)
 	}
 	templateUtils.Templates{Directory: outputDirectory}.
-		Generate(nginxConfTemplate, "lb.conf", NginxConfParameters{Roles: lbClusterRolesInfo})
+		Generate(nginxConfTemplate, "lb.conf", utils.NginxConfigTemplateParameters{Roles: lbClusterRolesInfo})
 	if err != nil {
 		return fmt.Errorf("error while generating lb.conf for %s : %w", lbCluster.ClusterInfo.Name, err)
 	}

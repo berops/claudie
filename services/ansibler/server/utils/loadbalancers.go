@@ -2,11 +2,9 @@ package utils
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 )
@@ -32,51 +30,48 @@ clusters/
 	└── inventory.ini
 */
 
-const (
-	lbInventoryFile         = "lb-inventory.goini"
-	confFile                = "conf.gotpl"
-	nginxPlaybookTpl        = "nginx.goyml"
-	nginxPlaybook           = "nginx.yml"
-	nodeExporterPlaybookTpl = "node-exporter.goyml"
-	nodeExporterPlaybook    = "node-exporter.yml"
-	nodeExporterService     = "node-exporter.service.j2"
-	apiChangePlaybook       = "../../ansible-playbooks/apiEndpointChange.yml"
-	loggerPrefix            = "LB-cluster"
-)
+// Name of the generated Ansible inventory file (for LB cluster).
+const LBInventoryFileName = "lb-inventory.goini"
 
 type APIEndpointChangeState string
 
 const (
-	// NoChange represents the 1st. case, no change is needed as LB is currently
+	// NoChange represents the 1st case - no change is needed as the LB cluster is currently
 	// attached and the desired spec contains no changes.
 	NoChange APIEndpointChangeState = "no-change"
 
-	// AttachingLoadBalancer represents 2nd. case, the cluster previously
-	// didn't have a LB and the ports needed to communicate with the API server
-	// were exposed. After attaching a LB to the existing cluster the ports
+	// AttachingLoadBalancer represents 2nd case - the K8s cluster previously
+	// didn't have an LB cluster attached and the ports needed to communicate with the API server
+	// were exposed. After attaching an LB cluster to the existing K8s cluster the ports
 	// were closed and are no longer accessible, and thus we need to change the API endpoint.
 	AttachingLoadBalancer APIEndpointChangeState = "attaching-load-balancer"
 
-	// DetachingLoadBalancer represents 3rd. case, the cluster had an existing
-	// LB attached but the new state removed the LB and thus the API endpoint
+	// DetachingLoadBalancer represents 3rd. case - the K8s cluster had an existing
+	// LB cluster attached but the new state removed the LB cluster and thus the API endpoint
 	// needs to be changed back to one of the control nodes of the cluster.
 	DetachingLoadBalancer APIEndpointChangeState = "detaching-load-balancer"
 
-	// EndpointRenamed represents the 4th. case, the cluster had an existing
-	// LB attached and also keeps it but the endpoint has changed.
+	// EndpointRenamed represents the 4th. case - the K8s cluster has an existing
+	// LB cluster attached and also keeps it but the endpoint has changed in the desired state.
 	EndpointRenamed APIEndpointChangeState = "endpoint-renamed"
 
-	// RoleChangedToAPIServer represents the 5th case, the cluster had an existing
-	// LB attached that didn't have a ApiServer role attach but the desired state does.
+	// RoleChangedToAPIServer represents the 5th case - the K8s cluster has an existing
+	// LB cluster attached that didn't have a ApiServer role attached but the desired state does.
 	RoleChangedToAPIServer APIEndpointChangeState = "role-changed-to-api-server"
 
-	// RoleChangedFromAPIServer represents the 6th case, the cluster had an existing
-	// LB attached that had an ApiServer role attached but the desired state doesn't.
+	// RoleChangedFromAPIServer represents the 6th case - the K8s cluster has an existing
+	// LB cluster attached that had an ApiServer role attached but the desired state doesn't.
 	RoleChangedFromAPIServer APIEndpointChangeState = "role-changed-from-api-server"
 )
 
 type (
-	// LBClustersInfo wraps all Load-balancers and Nodepools used for a single k8s cluster.
+	LbInventoryFileParameters struct {
+		K8sNodepools []*pb.NodePool
+		LBClusters   []*pb.LBcluster
+		ClusterID    string
+	}
+
+	// LBClustersInfo wraps all Load-balancers and Nodepools used for a single K8s cluster.
 	LBClustersInfo struct {
 		// LbClusters are Load-Balancers that share the targeted k8s cluster.
 		LbClusters []*LBClusterData
@@ -93,29 +88,29 @@ type (
 		FirstRun bool
 	}
 
+	// LBClusterData holds details about the current and desired state of an LB cluster.
 	LBClusterData struct {
-		// CurrentLbCluster is the current spec.
-		// A value of nil means that the current k8s cluster
-		// didn't have a LB attached to it.
+		// CurrentLbCluster is the current spec of the LB Cluster.
+		// A value of nil means that the LB cluster doesn't exist currently
+		// and will be created in the future.
 		CurrentLbCluster *pb.LBcluster
 
-		// DesiredLbCluster is the desired spec.
-		// A value of nil means that the targeted k8s cluster
-		// will no longer use a LoadBalancer.
+		// DesiredLbCluster is the desired spec of the LB Cluster.
+		// A value of nil means that this LB cluster will be deleted in the future.
 		DesiredLbCluster *pb.LBcluster
 	}
 
-	LbPlaybookData struct {
+	LbPlaybookParameters struct {
 		Loadbalancer string
 	}
 
-	ConfData struct {
-		Roles []LBConfiguration
-	}
-
-	LBConfiguration struct {
+	LBClusterRolesInfo struct {
 		Role        *pb.Role
 		TargetNodes []*pb.Node
+	}
+
+	NginxConfigTemplateParameters struct {
+		Roles []LBClusterRolesInfo
 	}
 )
 
@@ -151,265 +146,172 @@ func (lb *LBClusterData) APIEndpointState() APIEndpointChangeState {
 	return NoChange
 }
 
-func handleAPIEndpointChange(apiServer *LBClusterData, k8sCluster *LBClustersInfo, k8sDirectory string) error {
-	if apiServer == nil {
-		// if there is no ApiSever LB that means that the ports 6443 are exposed
-		// on the nodes, and thus we don't need to anything.
+// GenerateLBBaseFiles generates the files like Ansible inventory file and SSH keys to be used by Ansible.
+// Returns error if not successful, nil otherwise
+func GenerateLBBaseFiles(outputDirectory string, lbClustersInfo *LBClustersInfo) error {
+	// Create the directory where files will be generated
+	if err := utils.CreateDirectory(outputDirectory); err != nil {
+		return fmt.Errorf("failed to create directory %s : %w", outputDirectory, err)
+	}
+
+	// Generate SSH key which will be used by Ansible.
+	if err := utils.CreateKeyFile(lbClustersInfo.TargetK8sNodepoolKey, outputDirectory, "k8s.pem"); err != nil {
+		return fmt.Errorf("failed to create key file: %w", err)
+	}
+
+	var lbClusters []*pb.LBcluster
+	for _, item := range lbClustersInfo.LbClusters {
+		if item.DesiredLbCluster != nil {
+			lbClusters = append(lbClusters, item.DesiredLbCluster)
+		}
+	}
+
+	// Generate Ansible inventory file.
+	err := GenerateInventoryFile(LBInventoryFileName, outputDirectory,
+		// Value of Ansible template parameters
+		LbInventoryFileParameters{
+			K8sNodepools: lbClustersInfo.TargetK8sNodepool,
+			LBClusters:   lbClusters,
+			ClusterID:    lbClustersInfo.ClusterID,
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("error while generating inventory file for %s : %w", outputDirectory, err)
+	}
+
+	return nil
+}
+
+// FindCurrentAPIServerTypeLBCluster finds the current API server type LB cluster.
+func FindCurrentAPIServerTypeLBCluster(lbClusters []*LBClusterData) *LBClusterData {
+	for _, lbClusterData := range lbClusters {
+		if lbClusterData.CurrentLbCluster != nil {
+			if utils.HasAPIServerRole(lbClusterData.CurrentLbCluster.Roles) {
+				return lbClusterData
+			}
+		}
+	}
+
+	return nil
+}
+
+func HandleAPIEndpointChange(apiServerTypeLBCluster *LBClusterData, k8sCluster *LBClustersInfo, outputDirectory string) error {
+	// If there is no ApiSever type LB cluster, that means that the ports 6443 are exposed
+	// on one of the control nodes (which acts as the api endpoint).
+	// Thus we don't need to do anything.
+	if apiServerTypeLBCluster == nil {
 		return nil
 	}
 
-	var oldEndpoint string
-	var newEndpoint string
+	var oldEndpoint, newEndpoint string
 
-	switch apiServer.APIEndpointState() {
+	switch apiServerTypeLBCluster.APIEndpointState() {
 	case NoChange:
 		return nil
-	case EndpointRenamed:
-		oldEndpoint = apiServer.CurrentLbCluster.Dns.Endpoint
-		newEndpoint = apiServer.DesiredLbCluster.Dns.Endpoint
-	case RoleChangedFromAPIServer:
-		oldEndpoint = apiServer.CurrentLbCluster.Dns.Endpoint
 
-		// 1st find if any control node was an API server.
+	case EndpointRenamed:
+		oldEndpoint = apiServerTypeLBCluster.CurrentLbCluster.Dns.Endpoint
+		newEndpoint = apiServerTypeLBCluster.DesiredLbCluster.Dns.Endpoint
+
+	case RoleChangedFromAPIServer:
+		oldEndpoint = apiServerTypeLBCluster.CurrentLbCluster.Dns.Endpoint
+
+		// Find if any control node was acting as the Api endpoint in past.
+		// If so, then we will reuse that control node as the Api endpoint.
 		if node, err := utils.FindAPIEndpointNode(k8sCluster.TargetK8sNodepool); err == nil {
 			newEndpoint = node.Public
 			break
 		}
 
-		// 2nd choose one of the control nodes as the api endpoint.
+		// Otherwise choose one of the control nodes as the api endpoint.
 		node, err := utils.FindControlNode(k8sCluster.TargetK8sNodepool)
 		if err != nil {
 			return err
 		}
-
 		node.NodeType = pb.NodeType_apiEndpoint
-
 		newEndpoint = node.Public
-	case RoleChangedToAPIServer:
-		newEndpoint = apiServer.DesiredLbCluster.Dns.Endpoint
 
-		// 1st check if there was any APISERVER-LB previously attached to the k8scluster.
+	case RoleChangedToAPIServer:
+		newEndpoint = apiServerTypeLBCluster.DesiredLbCluster.Dns.Endpoint
+
+		// 1st - check if there was any Api server type LB cluster previously attached to the K8s cluster.
 		if k8sCluster.PreviousAPIEndpointLB != "" {
 			oldEndpoint = k8sCluster.PreviousAPIEndpointLB
 			break
 		}
 
-		// 2nd check if any other LB was previously an ApiServer.
-		if oldAPIServer := findCurrentAPILoadBalancer(k8sCluster.LbClusters); oldAPIServer != nil {
+		// 2nd - check if any other LB cluster was previously an ApiServer.
+		if oldAPIServer := FindCurrentAPIServerTypeLBCluster(k8sCluster.LbClusters); oldAPIServer != nil {
 			oldEndpoint = oldAPIServer.CurrentLbCluster.Dns.Endpoint
 			break
 		}
 
-		// 3rd pick the control node as the previous ApiServer.
+		// 3rd - pick the control node as the previous ApiServer.
 		node, err := utils.FindAPIEndpointNode(k8sCluster.TargetK8sNodepool)
 		if err != nil {
 			return fmt.Errorf("failed to find ApiEndpoint k8s node, couldn't update Api server endpoint")
 		}
-
 		oldEndpoint = node.Public
-	case AttachingLoadBalancer:
-		newEndpoint = apiServer.DesiredLbCluster.Dns.Endpoint
 
+	case AttachingLoadBalancer:
+		newEndpoint = apiServerTypeLBCluster.DesiredLbCluster.Dns.Endpoint
+
+		// If it's the first time the manifest goes through the workflow,
+		// we don't have an old Api endpoint. So nothing to do here, we will just return.
 		if k8sCluster.FirstRun {
-			// it's the first time the manifest goes through the workflow,
-			// thus we don't need to change the api endpoint.
 			return nil
 		}
 
 		// We know that it's not a first run, so before we use the node as the old APIServer
 		// endpoint we check a few other possibilities.
 
-		// 1st. check if there was any APIServer-LB previously attached to the k8scluster
+		// 1st - check if there was any APIServer-LB previously attached to the k8scluster
 		if k8sCluster.PreviousAPIEndpointLB != "" {
 			oldEndpoint = k8sCluster.PreviousAPIEndpointLB
 			break
 		}
 
-		// 2nd check if any other LB was previously an APIServer.
-		if oldAPIServer := findCurrentAPILoadBalancer(k8sCluster.LbClusters); oldAPIServer != nil {
+		// 2nd - check if any other LB was previously an APIServer.
+		if oldAPIServer := FindCurrentAPIServerTypeLBCluster(k8sCluster.LbClusters); oldAPIServer != nil {
 			oldEndpoint = oldAPIServer.CurrentLbCluster.Dns.Endpoint
 			break
 		}
 
-		// 3rd pick the control node as the previous ApiServer.
+		// 3rd - pick the control node as the previous ApiServer.
 		node, err := utils.FindAPIEndpointNode(k8sCluster.TargetK8sNodepool)
 		if err != nil {
 			return fmt.Errorf("failed to find APIEndpoint k8s node, couldn't update Api server endpoint")
 		}
-
 		node.NodeType = pb.NodeType_master // remove the Endpoint type from the node.
 		oldEndpoint = node.Public
-	case DetachingLoadBalancer:
-		oldEndpoint = apiServer.CurrentLbCluster.Dns.Endpoint
 
-		// 1st find if any control node was an API server.
+	case DetachingLoadBalancer:
+		oldEndpoint = apiServerTypeLBCluster.CurrentLbCluster.Dns.Endpoint
+
+		// 1st - find if any control node was an API server.
 		if node, err := utils.FindAPIEndpointNode(k8sCluster.TargetK8sNodepool); err == nil {
 			newEndpoint = node.Public
 			break
 		}
 
-		// 2nd choose one of the control nodes as the api endpoint.
+		// 2nd - choose one of the control nodes as the api endpoint.
 		node, err := utils.FindControlNode(k8sCluster.TargetK8sNodepool)
 		if err != nil {
 			return err
 		}
-
 		node.NodeType = pb.NodeType_apiEndpoint
-
 		newEndpoint = node.Public
 	}
 
-	lbCluster := apiServer.DesiredLbCluster
+	lbCluster := apiServerTypeLBCluster.DesiredLbCluster
 	if lbCluster == nil {
-		lbCluster = apiServer.CurrentLbCluster
-	}
-	log.Debug().Str(loggerPrefix, utils.GetClusterID(lbCluster.ClusterInfo)).Msgf("Changing the API endpoint from %s to %s", oldEndpoint, newEndpoint)
-
-	if err := changeAPIEndpoint(lbCluster.ClusterInfo.Name, oldEndpoint, newEndpoint, k8sDirectory); err != nil {
-		return fmt.Errorf("error while changing the endpoint for %s : %w", lbCluster.ClusterInfo.Name, err)
+		lbCluster = apiServerTypeLBCluster.CurrentLbCluster
 	}
 
-	return nil
-}
-
-// findCurrentAPILoadBalancers finds the current Load-Balancer for the API server
-func findCurrentAPILoadBalancer(lbs []*LBClusterData) *LBClusterData {
-	for _, lb := range lbs {
-		if lb.CurrentLbCluster != nil {
-			if utils.HasAPIServerRole(lb.CurrentLbCluster.Roles) {
-				return lb
-			}
-		}
-	}
+	log.Debug().Str("LB-cluster", utils.GetClusterID(lbCluster.ClusterInfo)).Msgf("Changing the API endpoint from %s to %s", oldEndpoint, newEndpoint)
+	// if err := changeAPIEndpoint(lbCluster.ClusterInfo.Name, oldEndpoint, newEndpoint, outputDirectory); err != nil {
+	// 	return fmt.Errorf("error while changing the endpoint for %s : %w", lbCluster.ClusterInfo.Name, err)
+	// }
 
 	return nil
-}
-
-// setUpNginx sets up the nginx loadbalancer based on the input manifest specification
-// return error if not successful, nil otherwise
-func setUpNginx(lb *pb.LBcluster, targetedNodepool []*pb.NodePool, directory string) error {
-	//prepare data for .conf
-	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.AnsiblerTemplates}
-	template := templateUtils.Templates{Directory: directory}
-	tpl, err := templateLoader.LoadTemplate(confFile)
-	if err != nil {
-		return fmt.Errorf("error while loading %s template for %w", confFile, err)
-	}
-	//get control and compute nodes
-	controlTarget, computeTarget := splitNodesByType(targetedNodepool)
-	var lbRoles []LBConfiguration
-	for _, role := range lb.Roles {
-		target := assignTarget(controlTarget, computeTarget, role.Target)
-		if target == nil {
-			return fmt.Errorf("target %v did not specify any nodes", role.Target)
-		}
-		lbRoles = append(lbRoles, LBConfiguration{Role: role, TargetNodes: target})
-	}
-	//create .conf file
-	err = template.Generate(tpl, "lb.conf", ConfData{Roles: lbRoles})
-	if err != nil {
-		return fmt.Errorf("error while generating lb.conf for %s : %w", lb.ClusterInfo.Name, err)
-	}
-	tpl, err = templateLoader.LoadTemplate(nginxPlaybookTpl)
-	if err != nil {
-		return fmt.Errorf("error while loading %s for %s : %w", nginxPlaybookTpl, lb.ClusterInfo.Name, err)
-	}
-	err = template.Generate(tpl, nginxPlaybook, LbPlaybookData{Loadbalancer: lb.ClusterInfo.Name})
-	if err != nil {
-		return fmt.Errorf("error while generating %s for %s : %w", nginxPlaybook, lb.ClusterInfo.Name, err)
-	}
-	//run the playbook
-	ansible := Ansible{Playbook: nginxPlaybook, Inventory: filepath.Join("..", inventoryFile), Directory: directory}
-	err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s-%s", lb.ClusterInfo.Name, lb.ClusterInfo.Hash))
-	if err != nil {
-		return fmt.Errorf("error while running ansible for %s : %w", lb.ClusterInfo.Name, err)
-	}
-	return nil
-}
-
-// setUpNodeExporter sets up node-exporter on the LB node
-// return error if not successful, nil otherwise
-func setUpNodeExporter(lb *pb.LBcluster, directory string) error {
-	// generate node-exporter playbook template
-	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.AnsiblerTemplates}
-	template := templateUtils.Templates{Directory: directory}
-	tpl, err := templateLoader.LoadTemplate(nodeExporterPlaybookTpl)
-	if err != nil {
-		return fmt.Errorf("error while loading %s template for %s : %w", nodeExporterPlaybookTpl, lb.ClusterInfo.Name, err)
-	}
-	if err = template.Generate(tpl, nodeExporterPlaybook, LbPlaybookData{Loadbalancer: lb.ClusterInfo.Name}); err != nil {
-		return fmt.Errorf("error while generating %s for %s : %w", nodeExporterPlaybook, lb.ClusterInfo.Name, err)
-	}
-
-	// create node-exporter.service.j2 for the node-exporter playbook
-	tpl, err = templateLoader.LoadTemplate(nodeExporterService)
-	if err != nil {
-		return fmt.Errorf("error while loading %s template for %s : %w", nodeExporterService, lb.ClusterInfo.Name, err)
-	}
-	if err = template.Generate(tpl, nodeExporterService, LbPlaybookData{Loadbalancer: lb.ClusterInfo.Name}); err != nil {
-		return fmt.Errorf("error while generating %s for %s : %w", nodeExporterService, lb.ClusterInfo.Name, err)
-	}
-
-	//run the playbook
-	ansible := Ansible{Playbook: nodeExporterPlaybook, Inventory: filepath.Join("..", inventoryFile), Directory: directory}
-	if err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s-%s", lb.ClusterInfo.Name, lb.ClusterInfo.Hash)); err != nil {
-		return fmt.Errorf("error while running ansible for %s : %w", lb.ClusterInfo.Name, err)
-	}
-
-	return nil
-}
-
-// splitNodesByType returns two slices of *pb.Node, one for control nodes and one for compute
-func splitNodesByType(nodepools []*pb.NodePool) (controlNodes, computeNodes []*pb.Node) {
-	for _, nodepools := range nodepools {
-		for _, node := range nodepools.Nodes {
-			if node.NodeType == pb.NodeType_apiEndpoint || node.NodeType == pb.NodeType_master {
-				controlNodes = append(controlNodes, node)
-			} else {
-				computeNodes = append(computeNodes, node)
-			}
-		}
-	}
-	return controlNodes, computeNodes
-}
-
-// generateK8sBaseFiles generates the base loadbalancer files, like inventory, keys, etc.
-// return error if not successful, nil otherwise
-func generateK8sBaseFiles(k8sDirectory string, lbInfo *LBClustersInfo) error {
-	if err := utils.CreateDirectory(k8sDirectory); err != nil {
-		return fmt.Errorf("failed to create directory %s : %w", k8sDirectory, err)
-	}
-
-	if err := utils.CreateKeyFile(lbInfo.TargetK8sNodepoolKey, k8sDirectory, "k8s.pem"); err != nil {
-		return fmt.Errorf("failed to create key file: %w", err)
-	}
-	var lbSlice []*pb.LBcluster
-	for _, lb := range lbInfo.LbClusters {
-		if lb.DesiredLbCluster != nil {
-			lbSlice = append(lbSlice, lb.DesiredLbCluster)
-		}
-	}
-	//generate inventory
-	err := generateInventoryFile(lbInventoryFile, k8sDirectory, LbInventoryData{
-		K8sNodepools: lbInfo.TargetK8sNodepool,
-		LBClusters:   lbSlice,
-		ClusterID:    lbInfo.ClusterID,
-	})
-	if err != nil {
-		return fmt.Errorf("error while generating inventory file for %s : %w", k8sDirectory, err)
-	}
-	return nil
-}
-
-// assignTarget returns a target nodes for pb.Target
-// if no target matches the pb.Target enum, returns nil
-func assignTarget(controlTarget, computeTarget []*pb.Node, target pb.Target) (targetNodes []*pb.Node) {
-	if target == pb.Target_k8sAllNodes {
-		targetNodes = append(controlTarget, computeTarget...)
-	} else if target == pb.Target_k8sControlPlane {
-		targetNodes = controlTarget
-	} else if target == pb.Target_k8sComputePlane {
-		targetNodes = computeTarget
-	}
-	return targetNodes
 }
