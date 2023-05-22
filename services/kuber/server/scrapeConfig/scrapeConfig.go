@@ -7,6 +7,7 @@ import (
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/services/kuber/templates"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
@@ -42,11 +43,10 @@ const (
 // If there is no loadbalancers it will apply the config with no target endpoints
 func (sc ScrapeConfig) GenerateAndApplyScrapeConfig() error {
 	// Generate loadbalancers scrape config
-	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.KuberTemplates}
 	template := templateUtils.Templates{Directory: sc.Directory}
 
 	// Generate prometheus scrape config to file
-	tpl, err := templateLoader.LoadTemplate(scrapeConfigFileTpl)
+	tpl, err := templateUtils.LoadTemplate(templates.ScrapeConfigTemplate)
 	if err != nil {
 		return fmt.Errorf("error while loading %s on %s: %w", scrapeConfigFileTpl, sc.Cluster.ClusterInfo.Name, err)
 	}
@@ -56,7 +56,7 @@ func (sc ScrapeConfig) GenerateAndApplyScrapeConfig() error {
 	}
 
 	// Generate manifest for namespace and secret
-	tpl, err = templateLoader.LoadTemplate(scManifestFileTpl)
+	tpl, err = templateUtils.LoadTemplate(templates.ScrapeConfigManifestTemplate)
 	if err != nil {
 		return fmt.Errorf("error while loading %s on %s: %w", scManifestFileTpl, sc.Cluster.ClusterInfo.Name, err)
 	}

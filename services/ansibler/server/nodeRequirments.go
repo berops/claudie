@@ -7,6 +7,7 @@ import (
 
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/services/ansibler/server/ansible"
+	"github.com/berops/claudie/services/ansibler/templates"
 )
 
 const (
@@ -26,7 +27,7 @@ func installLonghornRequirements(nodepoolInfo *NodepoolInfo) error {
 		return fmt.Errorf("failed to create key file for %s : %w", nodepoolInfo.ID, err)
 	}
 
-	if err := generateInventoryFile(nodesInventoryFileTpl, directory, AllNodesInventoryData{NodepoolInfos: []*NodepoolInfo{nodepoolInfo}}); err != nil {
+	if err := generateInventoryFile(templates.AllNodesInventoryTemplate, directory, AllNodesInventoryData{NodepoolInfos: []*NodepoolInfo{nodepoolInfo}}); err != nil {
 		return fmt.Errorf("failed to generate inventory file for all nodes in %s : %w", directory, err)
 	}
 

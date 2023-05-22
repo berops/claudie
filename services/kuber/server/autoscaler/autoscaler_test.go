@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/berops/claudie/internal/templateUtils"
+	"github.com/berops/claudie/services/kuber/templates"
 	"github.com/stretchr/testify/require"
 )
 
@@ -133,10 +134,9 @@ spec:
 func TestAutoscalerTemplate(t *testing.T) {
 	// Load
 	tpl := templateUtils.Templates{Directory: "."}
-	templateLoader := templateUtils.TemplateLoader{Directory: "../../templates"}
-	ca, err := templateLoader.LoadTemplate(clusterAutoscalerTemplate)
+	ca, err := templateUtils.LoadTemplate(templates.ClusterAutoscalerTemplate)
 	require.NoError(t, err)
-	aa, err := templateLoader.LoadTemplate(autoscalerAdapterTemplate)
+	aa, err := templateUtils.LoadTemplate(templates.AutoscalerAdapterTemplate)
 	require.NoError(t, err)
 	// Check adapter
 	out, err := tpl.GenerateToString(aa, aaData)

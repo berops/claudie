@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"path"
 	"path/filepath"
 	"sort"
 
@@ -19,6 +18,7 @@ import (
 	"github.com/berops/claudie/services/terraformer/server/backend"
 	"github.com/berops/claudie/services/terraformer/server/provider"
 	"github.com/berops/claudie/services/terraformer/server/terraform"
+	"github.com/berops/claudie/services/terraformer/templates"
 )
 
 const (
@@ -238,12 +238,15 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 
 		// Load TF files of the specific cloud provider
 		targetDirectory := templateUtils.Templates{Directory: clusterDir}
-		sourceDirectory := templateUtils.TemplateLoader{Directory: path.Join(templateUtils.TerraformerTemplates, providerName)}
 
 		//  Generate the infra templates.
-		tpl, err := sourceDirectory.LoadTemplate(fmt.Sprintf("%s%s", providerName, suffix))
+		file, err := templates.CloudProviderTemplates.ReadFile(filepath.Join(providerName, suffix))
 		if err != nil {
-			return fmt.Errorf("error while parsing template file %s : %w", fmt.Sprintf("%s%s", providerName, suffix), err)
+			return fmt.Errorf("error while reading template file %s : %w", fmt.Sprintf("%s/%s", providerName, suffix), err)
+		}
+		tpl, err := templateUtils.LoadTemplate(string(file))
+		if err != nil {
+			return fmt.Errorf("error while parsing template file %s : %w", fmt.Sprintf("%s/%s", providerName, suffix), err)
 		}
 
 		if err := targetDirectory.Generate(tpl, fmt.Sprintf("%s-%s.tf", clusterID, providerSpecName), nodepoolData); err != nil {
@@ -364,9 +367,9 @@ func readIPs(data string) (outputNodepools, error) {
 func getTplFile(clusterType pb.ClusterType) string {
 	switch clusterType {
 	case pb.ClusterType_K8s:
-		return ".tpl"
+		return "k8s.tpl"
 	case pb.ClusterType_LB:
-		return "-lb.tpl"
+		return "lb.tpl"
 	}
 	return ""
 }
@@ -456,15 +459,14 @@ func generateProviderTemplates(current, desired *pb.ClusterInfo, clusterID, dire
 		}
 
 		// Load TF files of the specific cloud provider
-		sourceDirectory := templateUtils.TemplateLoader{
-			Directory: path.Join(templateUtils.TerraformerTemplates, providerName),
-		}
-
 		targetDirectory := templateUtils.Templates{Directory: directory}
-
-		tpl, err := sourceDirectory.LoadTemplate(fmt.Sprintf("%s-provider%s", providerName, suffix))
+		file, err := templates.CloudProviderTemplates.ReadFile(filepath.Join(providerName, fmt.Sprintf("provider-%s", suffix)))
 		if err != nil {
-			return fmt.Errorf("error while parsing template file %s : %w", fmt.Sprintf("%s-provider%s", providerName, suffix), err)
+			return fmt.Errorf("error while reading template file %s : %w", filepath.Join(providerName, fmt.Sprintf("provider-%s", suffix)), err)
+		}
+		tpl, err := templateUtils.LoadTemplate(string(file))
+		if err != nil {
+			return fmt.Errorf("error while parsing template file %s : %w", filepath.Join(providerName, fmt.Sprintf("provider-%s", suffix)), err)
 		}
 
 		// Parse the templates and create Tf files
