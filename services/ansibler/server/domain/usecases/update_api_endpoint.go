@@ -12,11 +12,6 @@ import (
 	"github.com/berops/claudie/services/ansibler/server/utils"
 )
 
-const (
-	// TODO: change to appropriate path
-	apiChangePlaybookFilePath = "../../ansible-playbooks/apiEndpointChange.yml"
-)
-
 func (u *Usecases) UpdateAPIEndpoint(request *pb.UpdateAPIEndpointRequest) (*pb.UpdateAPIEndpointResponse, error) {
 	if request.Current == nil {
 		return &pb.UpdateAPIEndpointResponse{Current: request.Current, Desired: request.Desired}, nil

@@ -134,7 +134,7 @@ func setUpNodeExporter(lbCluster *pb.LBcluster, outputDirectory string) error {
 	if err != nil {
 		return fmt.Errorf("error while loading %s template for %s : %w", nodeExporterPlaybookTemplateFileName, lbCluster.ClusterInfo.Name, err)
 	}
-	if (templateUtils.Templates{Directory: outputDirectory}).Generate(template, nodeExporterPlaybookFileName, playbookParameters); err != nil {
+	if err := (templateUtils.Templates{Directory: outputDirectory}).Generate(template, nodeExporterPlaybookFileName, playbookParameters); err != nil {
 		return fmt.Errorf("error while generating %s for %s : %w", nodeExporterPlaybookFileName, lbCluster.ClusterInfo.Name, err)
 	}
 
@@ -182,7 +182,7 @@ func setUpNginx(lbCluster *pb.LBcluster, targetK8sNodepool []*pb.NodePool, outpu
 	if err != nil {
 		return fmt.Errorf("error while loading %s template for %w", nginxConfTemplateFileName, err)
 	}
-	templateUtils.Templates{Directory: outputDirectory}.
+	err = (templateUtils.Templates{Directory: outputDirectory}).
 		Generate(nginxConfTemplate, "lb.conf", utils.NginxConfigTemplateParameters{Roles: lbClusterRolesInfo})
 	if err != nil {
 		return fmt.Errorf("error while generating lb.conf for %s : %w", lbCluster.ClusterInfo.Name, err)
