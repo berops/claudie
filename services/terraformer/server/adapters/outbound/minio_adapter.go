@@ -24,6 +24,8 @@ type MinIOAdapter struct {
 	healthcheckClient *minio.Client
 }
 
+// createMinIOClient creates and returns a MinIO client.
+// If any error occurs, then it returns the error.
 func createMinIOClient() (*minio.Client, error) {
 	return minio.New(minioEndpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(minioAccessKey, minioSecretKey, ""),
@@ -31,6 +33,8 @@ func createMinIOClient() (*minio.Client, error) {
 	})
 }
 
+// CreateMinIOAdapter creates 2 MinIO clients first - one for healthcheck and one for general purpose.
+// A MinIOAdapter instance is then constructed using those 2 clients and returned.
 func CreateMinIOAdapter() *MinIOAdapter {
 	client, err := createMinIOClient()
 	if err != nil {
@@ -48,6 +52,7 @@ func CreateMinIOAdapter() *MinIOAdapter {
 	}
 }
 
+// Healthcheck checks whether the MinIO bucket exists or not.
 func (m *MinIOAdapter) Healthcheck() error {
 	bucketExists, err := m.healthcheckClient.BucketExists(context.Background(), minioBucketName)
 
@@ -58,6 +63,7 @@ func (m *MinIOAdapter) Healthcheck() error {
 	return nil
 }
 
+// DeleteTfStateFile deletes terraform state file (related to the given cluster), from MinIO bucket.
 func (m *MinIOAdapter) DeleteTfStateFile(ctx context.Context, projectName, clusterId string, keyFormat string) error {
 	key := fmt.Sprintf(keyFormat, projectName, clusterId)
 	if err := m.client.RemoveObject(ctx, minioBucketName, key, minio.RemoveObjectOptions{GovernanceBypass: true}); err != nil {

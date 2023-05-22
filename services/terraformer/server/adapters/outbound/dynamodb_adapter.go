@@ -28,6 +28,7 @@ type DynamoDBAdapter struct {
 	healtcheckClient *dynamodb.Client
 }
 
+// createDynamoDBClient creates a DynamoDB client.
 func createDynamoDBClient() *dynamodb.Client {
 	return dynamodb.NewFromConfig(
 		aws.Config{
@@ -50,6 +51,9 @@ func createDynamoDBClient() *dynamodb.Client {
 	)
 }
 
+// CreateDynamoDBAdapter creates 2 separate dynamoDB clients - one for healthcheck and another for general usage.
+// These 2 dynamoDB clients are then used to construct a DynamoDBAdapter instance.
+// Returns the DynamoDBAdapter instance.
 func CreateDynamoDBAdapter() *DynamoDBAdapter {
 	dynamoDBAdapter := &DynamoDBAdapter{
 		Client:           createDynamoDBClient(),
@@ -60,7 +64,7 @@ func CreateDynamoDBAdapter() *DynamoDBAdapter {
 }
 
 // Healthcheck function checks whether
-// the DynamoDB table for Terraform state locking exists or not
+// the DynamoDB table for Terraform state locking exists or not.
 func (d *DynamoDBAdapter) Healthcheck() error {
 	tables, err := d.healtcheckClient.ListTables(context.Background(), nil)
 	if err != nil {
@@ -76,6 +80,7 @@ func (d *DynamoDBAdapter) Healthcheck() error {
 	return fmt.Errorf("dynamoDB does not contain %s table", dynamoDBTableName)
 }
 
+// DeleteTfStateLockFile deletes terraform state lock file (related to the given cluster), from DynamoDB.
 func (d *DynamoDBAdapter) DeleteTfStateLockFile(ctx context.Context, projectName, clusterId string, keyFormat string) error {
 	// Get the DynamoDB key (keyname is LockID) which maps to the Terraform state-lock file
 	key, err := attributevalue.Marshal(fmt.Sprintf(keyFormat, minioBucketName, projectName, clusterId))

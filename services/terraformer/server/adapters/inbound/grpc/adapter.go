@@ -24,12 +24,13 @@ type GrpcAdapter struct {
 	HealthServer *health.Server
 }
 
+// Init sets up the GrpcAdapter by creating the underlying tcpListener, gRPC server and
+// gRPC health check server.
 func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
 	port := utils.GetenvOr("TERRAFORMER_PORT", fmt.Sprint(defaultTerraformerPort))
 
 	var err error
 
-	// Start Terraformer Service
 	listeningAddress := net.JoinHostPort("0.0.0.0", port)
 	g.tcpListener, err = net.Listen("tcp", listeningAddress)
 	if err != nil {
@@ -49,7 +50,9 @@ func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
 	grpc_health_v1.RegisterHealthServer(g.server, g.HealthServer)
 }
 
+// Start makes the gRPC server start listening for incoming gRPC requests.
 func (g *GrpcAdapter) Start() error {
+	// Process each gRPC request in a separate thread.
 	if err := g.server.Serve(g.tcpListener); err != nil {
 		return fmt.Errorf("terraformer failed to serve: %w", err)
 	}
@@ -58,6 +61,7 @@ func (g *GrpcAdapter) Start() error {
 	return nil
 }
 
+// Stop gracefully shuts down the underlying gRPC server and gRCP health-check server.
 func (g *GrpcAdapter) Stop() {
 	log.Info().Msg("Gracefully shutting down gRPC server")
 
