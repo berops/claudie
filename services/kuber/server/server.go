@@ -46,11 +46,27 @@ type (
 		PrivateIP net.IP `json:"private_ip"`
 	}
 
+	StaticNodeInfo struct {
+		// Endpoint is an endpoint for static nodes in the static node pool
+		Endpoint string `json:"endpoint"`
+		// PrivateKey is the private SSH key for the node.
+		PrivateKey string `json:"node_private_key"`
+	}
+
 	ClusterMetadata struct {
-		// NodeIps maps node-name to public-private ip pairs.
+		DynamicNodepools DynamicNodepool `json:"dynamic_nodepools"`
+		// PrivateKey is the private SSH key for the dynamic nodes.
+		PrivateKey      string         `json:"cluster_private_key"`
+		StaticNodepools StaticNodepool `json:"static_nodepools"`
+	}
+
+	DynamicNodepool struct {
+		// NodeIps maps node-name to public-private ip pairs for dynamic node pools.
 		NodeIps map[string]IPPair `json:"node_ips"`
-		// PrivateKey is the private SSH key for the nodes.
-		PrivateKey string `json:"private_key"`
+	}
+
+	StaticNodepool struct {
+		NodeInfo map[string]StaticNodeInfo `json:"node_info"`
 	}
 )
 
@@ -193,18 +209,28 @@ func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterM
 	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(req.Cluster.ClusterInfo))
 
 	md := ClusterMetadata{
-		NodeIps:    make(map[string]IPPair),
 		PrivateKey: req.GetCluster().GetClusterInfo().GetPrivateKey(),
 	}
 
+	dp := DynamicNodepool{NodeIps: make(map[string]IPPair)}
+	sp := StaticNodepool{NodeInfo: make(map[string]StaticNodeInfo)}
 	for _, pool := range req.GetCluster().GetClusterInfo().GetNodePools() {
-		for _, node := range pool.GetNodes() {
-			md.NodeIps[node.Name] = IPPair{
-				PublicIP:  net.ParseIP(node.Public),
-				PrivateIP: net.ParseIP(node.Private),
+		if np := pool.GetDynamicNodePool(); np != nil {
+			for _, node := range np.GetNodes() {
+				dp.NodeIps[node.GetDynamicNode().GetName()] = IPPair{
+					PublicIP:  net.ParseIP(node.GetDynamicNode().GetPublic()),
+					PrivateIP: net.ParseIP(node.GetDynamicNode().GetPrivate()),
+				}
+			}
+		} else if np := pool.GetStaticNodePool(); np != nil {
+			for _, node := range np.GetNodes() {
+				sp.NodeInfo[node.GetStaticNode().GetName()] = StaticNodeInfo{PrivateKey: node.GetStaticNode().GetKey(), Endpoint: node.GetStaticNode().GetEndpoint()}
 			}
 		}
+
 	}
+	md.DynamicNodepools = dp
+	md.StaticNodepools = sp
 
 	b, err := json.Marshal(md)
 	if err != nil {

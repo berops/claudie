@@ -283,24 +283,43 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 // separateNodepools creates two slices of node names, one for master and one for worker nodes
 func separateNodepools(clusterNodes map[string]int32, clusterInfo *pb.ClusterInfo) (master []string, worker []string) {
 	for _, nodepool := range clusterInfo.NodePools {
-		if count, ok := clusterNodes[nodepool.Name]; ok && count > 0 {
-			names := getNodeNames(nodepool, int(count))
-			if nodepool.IsControl {
-				master = append(master, names...)
-			} else {
-				worker = append(worker, names...)
+		if np := nodepool.GetDynamicNodePool(); np != nil {
+			if count, ok := clusterNodes[np.Name]; ok && count > 0 {
+				names := getNodeNames(nodepool, int(count))
+				if np.IsControl {
+					master = append(master, names...)
+				} else {
+					worker = append(worker, names...)
+				}
+			}
+		} else if np := nodepool.GetStaticNodePool(); np != nil {
+			if count, ok := clusterNodes[np.Name]; ok && count > 0 {
+				names := getNodeNames(nodepool, int(count))
+				if np.IsControl {
+					master = append(master, names...)
+				} else {
+					worker = append(worker, names...)
+				}
 			}
 		}
+
 	}
 	return master, worker
 }
 
 // getNodeNames returns slice of length count with names of the nodes from specified nodepool
 // nodes chosen are from the last element in Nodes slice, up to the first one
-func getNodeNames(nodepool *pb.NodePool, count int) (names []string) {
-	for i := len(nodepool.Nodes) - 1; i >= len(nodepool.Nodes)-count; i-- {
-		names = append(names, nodepool.Nodes[i].Name)
-		log.Debug().Msgf("Choosing node %s for deletion", nodepool.Nodes[i].Name)
+func getNodeNames(np *pb.NodePool, count int) (names []string) {
+	if n := np.GetDynamicNodePool(); n != nil {
+		for i := len(n.GetNodes()) - 1; i >= len(n.GetNodes())-count; i-- {
+			names = append(names, n.GetNodes()[i].GetDynamicNode().GetName())
+			log.Debug().Msgf("Choosing node %s for deletion", n.GetNodes()[i].GetDynamicNode().GetName())
+		}
+	} else if n := np.GetStaticNodePool(); n != nil {
+		for i := len(n.GetNodes()) - 1; i >= len(n.GetNodes())-count; i-- {
+			names = append(names, n.GetNodes()[i].GetDynamicNode().GetName())
+			log.Debug().Msgf("Choosing node %s for deletion", n.GetNodes()[i].GetDynamicNode().GetName())
+		}
 	}
 	return names
 }

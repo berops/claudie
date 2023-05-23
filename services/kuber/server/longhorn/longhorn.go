@@ -101,17 +101,32 @@ func (l *Longhorn) SetUp() error {
 			// tag worker nodes from nodepool based on the future zone
 			// NOTE: the master nodes are by default set to NoSchedule, therefore we do not need to annotate them
 			// If in the future, we add functionality to allow scheduling on master nodes, the longhorn will need add the annotation
-			if !nodepool.IsControl {
-				isWorkerNodeProvider = true
-				for _, node := range nodepool.Nodes {
-					annotation := fmt.Sprintf("node.longhorn.io/default-node-tags='[\"%s\"]'", zoneName)
-					realNodeName := utils.FindName(realNodeNames, node.Name)
-					// Add tag to the node via kubectl annotate, use --overwrite to avoid getting error of already tagged node
-					if err := kubectl.KubectlAnnotate("node", realNodeName, annotation, "--overwrite"); err != nil {
-						return fmt.Errorf("error while annotating the node %s from cluster %s via kubectl annotate : %w", realNodeName, l.Cluster.ClusterInfo.Name, err)
+			if np := nodepool.GetDynamicNodePool(); np != nil {
+				if !np.IsControl {
+					isWorkerNodeProvider = true
+					for _, node := range nodepool.GetDynamicNodePool().GetNodes() {
+						annotation := fmt.Sprintf("node.longhorn.io/default-node-tags='[\"%s\"]'", zoneName)
+						realNodeName := utils.FindName(realNodeNames, node.GetDynamicNode().Name)
+						// Add tag to the node via kubectl annotate, use --overwrite to avoid getting error of already tagged node
+						if err := kubectl.KubectlAnnotate("node", realNodeName, annotation, "--overwrite"); err != nil {
+							return fmt.Errorf("error while annotating the node %s from cluster %s via kubectl annotate : %w", realNodeName, l.Cluster.ClusterInfo.Name, err)
+						}
+					}
+				}
+			} else if np := nodepool.GetStaticNodePool(); np != nil {
+				if !np.IsControl {
+					isWorkerNodeProvider = true
+					for _, node := range nodepool.GetStaticNodePool().GetNodes() {
+						annotation := fmt.Sprintf("node.longhorn.io/default-node-tags='[\"%s\"]'", zoneName)
+						realNodeName := utils.FindName(realNodeNames, node.GetStaticNode().Name)
+						// Add tag to the node via kubectl annotate, use --overwrite to avoid getting error of already tagged node
+						if err := kubectl.KubectlAnnotate("node", realNodeName, annotation, "--overwrite"); err != nil {
+							return fmt.Errorf("error while annotating the node %s from cluster %s via kubectl annotate : %w", realNodeName, l.Cluster.ClusterInfo.Name, err)
+						}
 					}
 				}
 			}
+
 		}
 		if isWorkerNodeProvider {
 			// create storage class manifest based on zones from templates
