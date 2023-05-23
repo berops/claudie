@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dynamodb-cm
+  labels:
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: dynamo
+data:
+  initialize: |
+    aws dynamodb describe-table \
+    --table-name $DYNAMO_TABLE_NAME \
+    --endpoint-url http://$DYNAMO_HOSTNAME:$DYNAMO_PORT > /dev/null 2>&1
+
+    if [ $? -ne 0 ]; then
+        echo "Creating table '$DYNAMO_TABLE_NAME'."
+        aws dynamodb create-table \
+        --table-name $DYNAMO_TABLE_NAME \
+        --attribute-definitions AttributeName=LockID,AttributeType=S \
+        --key-schema AttributeName=LockID,KeyType=HASH \
+        --provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1 \
+        --endpoint-url http://$DYNAMO_HOSTNAME:$DYNAMO_PORT \
+        --region $AWS_REGION \
+        --output json
+    else
+        echo "Table '$DYNAMO_TABLE_NAME' already exists."
+    fi

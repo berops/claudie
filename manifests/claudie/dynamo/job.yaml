@@ -14,33 +14,15 @@ spec:
     spec:
       restartPolicy: OnFailure
       volumes:
-        - name: minio-configuration
+        - name: dynamodb-configuration
           projected:
             sources:
               - configMap:
-                  name: minio-cm
+                  name: dynamodb-cm
       containers:
         - name: awc-cli
           image: amazon/aws-cli
-          args:
-            [
-              "dynamodb",
-              "create-table",
-              "--table-name",
-              "$(DYNAMO_TABLE_NAME)",
-              "--attribute-definitions",
-              "AttributeName=LockID,AttributeType=S",
-              "--key-schema",
-              "AttributeName=LockID,KeyType=HASH",
-              "--provisioned-throughput",
-              "ReadCapacityUnits=1,WriteCapacityUnits=1",
-              "--endpoint-url",
-              "http://$(DYNAMO_HOSTNAME):$(DYNAMO_PORT)",
-              "--output",
-              "json",
-              "--region",
-              "$(AWS_REGION)",
-            ]
+          command: ["/bin/sh", "/config/initialize"]
           env:
             - name: DYNAMO_HOSTNAME
               valueFrom:
@@ -72,10 +54,13 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: AWS_REGION
+          volumeMounts:
+            - name: dynamodb-configuration
+              mountPath: /config
           resources:
             requests:
               memory: 128Mi
-              cpu: 10m
+              cpu: 50m
             limits:
               memory: 200Mi
-              cpu: 35m
+              cpu: 100m
