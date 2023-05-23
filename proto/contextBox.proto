@@ -57,7 +57,7 @@ message DeleteConfigResponse {
 message UpdateNodepoolRequest {
   string projectName = 1;
   string clusterName = 2;
-  NodePool nodepool = 3;
+  DynamicNodePool nodepool = 3;
 }
 message UpdateNodepoolResponse {}
 

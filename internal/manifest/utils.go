@@ -113,10 +113,21 @@ func (m *Manifest) IsKubernetesClusterPresent(name string) bool {
 	return false
 }
 
-// FindNodePool will search for the nodepool in manifest.DynamicNodePool based on the nodepool name
+// FindDynamicNodePool will search for the nodepool in manifest.DynamicNodePool based on the nodepool name
 // returns *manifest.DynamicNodePool if found, nil otherwise
-func (ds *Manifest) FindNodePool(nodePoolName string) *DynamicNodePool {
+func (ds *Manifest) FindDynamicNodePool(nodePoolName string) *DynamicNodePool {
 	for _, nodePool := range ds.NodePools.Dynamic {
+		if nodePool.Name == nodePoolName {
+			return &nodePool
+		}
+	}
+	return nil
+}
+
+// FindStaticNodePool will search for the nodepool in manifest.DynamicNodePool based on the nodepool name
+// returns *manifest.DynamicNodePool if found, nil otherwise
+func (ds *Manifest) FindStaticNodePool(nodePoolName string) *StaticNodePool {
+	for _, nodePool := range ds.NodePools.Static {
 		if nodePool.Name == nodePoolName {
 			return &nodePool
 		}
@@ -130,8 +141,7 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 	var nodePools []*pb.NodePool
 	for _, nodePoolName := range pools {
 		// Check if the nodepool is part of the cluster
-		var nodePool *DynamicNodePool = ds.FindNodePool(nodePoolName)
-		if nodePool != nil {
+		if nodePool := ds.FindDynamicNodePool(nodePoolName); nodePool != nil {
 			provider, err := ds.GetProvider(nodePool.ProviderSpec.Name)
 			if err != nil {
 				return nil, err
@@ -168,9 +178,50 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 					},
 				},
 			})
+		} else if nodePool := ds.FindStaticNodePool(nodePoolName); nodePool != nil {
+			nodes := getStaticNodes(nodePool)
+			nodePools = append(nodePools, &pb.NodePool{
+				NodePoolType: &pb.NodePool_StaticNodePool{
+					StaticNodePool: &pb.StaticNodePool{
+						Name:      nodePool.Name,
+						IsControl: isControl,
+						Nodes:     nodes,
+					},
+				},
+			})
 		} else {
 			return nil, fmt.Errorf("nodepool %s not defined", nodePoolName)
 		}
 	}
 	return nodePools, nil
+}
+
+func getStaticNodes(np *StaticNodePool) []*pb.Node {
+	nodes := make([]*pb.Node, 0, len(np.Nodes))
+	for i, node := range np.Nodes {
+		nodes = append(nodes, &pb.Node{
+			NodeType: &pb.Node_StaticNode{
+				StaticNode: &pb.StaticNode{
+					Name:     fmt.Sprintf("%s-%d", np.Name, i),
+					Key:      node.Key,
+					Endpoint: node.Endpoint,
+				},
+			},
+		})
+	}
+	return nodes
+}
+
+func (ds *Manifest) nodePoolDefined(pool string) bool {
+	for _, nodePool := range ds.NodePools.Static {
+		if nodePool.Name == pool {
+			return true
+		}
+	}
+	for _, nodePool := range ds.NodePools.Dynamic {
+		if nodePool.Name == pool {
+			return true
+		}
+	}
+	return false
 }

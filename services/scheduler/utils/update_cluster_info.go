@@ -43,6 +43,12 @@ desired:
 					}
 					continue desired
 				}
+			} else if dnp, cnp := getStaticNodePools(desiredNp, currentNp); dnp != nil && cnp != nil {
+				// Found nodepool in desired and in Current
+				if dnp.Name == cnp.Name {
+					dnp.Nodes = cnp.Nodes
+					continue desired
+				}
 			}
 		}
 	}
@@ -50,4 +56,8 @@ desired:
 
 func getDynamicNodePools(np1, np2 *pb.NodePool) (*pb.DynamicNodePool, *pb.DynamicNodePool) {
 	return np1.GetDynamicNodePool(), np2.GetDynamicNodePool()
+}
+
+func getStaticNodePools(np1, np2 *pb.NodePool) (*pb.StaticNodePool, *pb.StaticNodePool) {
+	return np1.GetStaticNodePool(), np2.GetStaticNodePool()
 }
