@@ -104,7 +104,7 @@ func (l *Longhorn) SetUp() error {
 			if np := nodepool.GetDynamicNodePool(); np != nil {
 				if !np.IsControl {
 					isWorkerNodeProvider = true
-					for _, node := range nodepool.GetDynamicNodePool().GetNodes() {
+					for _, node := range np.GetNodes() {
 						annotation := fmt.Sprintf("node.longhorn.io/default-node-tags='[\"%s\"]'", zoneName)
 						realNodeName := utils.FindName(realNodeNames, node.GetDynamicNode().Name)
 						// Add tag to the node via kubectl annotate, use --overwrite to avoid getting error of already tagged node
@@ -116,7 +116,7 @@ func (l *Longhorn) SetUp() error {
 			} else if np := nodepool.GetStaticNodePool(); np != nil {
 				if !np.IsControl {
 					isWorkerNodeProvider = true
-					for _, node := range nodepool.GetStaticNodePool().GetNodes() {
+					for _, node := range np.GetNodes() {
 						annotation := fmt.Sprintf("node.longhorn.io/default-node-tags='[\"%s\"]'", zoneName)
 						realNodeName := utils.FindName(realNodeNames, node.GetStaticNode().Name)
 						// Add tag to the node via kubectl annotate, use --overwrite to avoid getting error of already tagged node
