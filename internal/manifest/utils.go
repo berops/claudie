@@ -153,16 +153,20 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 			}
 
 			nodePools = append(nodePools, &pb.NodePool{
-				Name:             nodePool.Name,
-				Region:           nodePool.ProviderSpec.Region,
-				Zone:             nodePool.ProviderSpec.Zone,
-				ServerType:       nodePool.ServerType,
-				Image:            nodePool.Image,
-				StorageDiskSize:  uint32(nodePool.StorageDiskSize),
-				Count:            count,
-				Provider:         provider,
-				IsControl:        isControl,
-				AutoscalerConfig: autoscalerConf,
+				NodePoolType: &pb.NodePool_DynamicNodePool{
+					DynamicNodePool: &pb.DynamicNodePool{
+						Name:             nodePool.Name,
+						Region:           nodePool.ProviderSpec.Region,
+						Zone:             nodePool.ProviderSpec.Zone,
+						ServerType:       nodePool.ServerType,
+						Image:            nodePool.Image,
+						StorageDiskSize:  uint32(nodePool.StorageDiskSize),
+						Count:            count,
+						Provider:         provider,
+						IsControl:        isControl,
+						AutoscalerConfig: autoscalerConf,
+					},
+				},
 			})
 		} else {
 			return nil, fmt.Errorf("nodepool %s not defined", nodePoolName)

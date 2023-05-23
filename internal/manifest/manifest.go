@@ -112,8 +112,8 @@ type StaticNodePool struct {
 }
 
 type Node struct {
-	PublicIP      string `validate:"required,ip_addr" yaml:"publicIP"`
-	PrivateSSHKey string `validate:"required" yaml:"privateSshKey"`
+	Endpoint string `validate:"required,ip_addr" yaml:"endpoint"`
+	Key      string `validate:"required" yaml:"privateKey"`
 }
 
 type Cluster struct {

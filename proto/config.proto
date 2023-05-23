@@ -161,8 +161,16 @@ message DNS {
   string endpoint = 4;
 }
 
-// NodePool represents a single nodepool from the manifest.
+// NodePool represents a single node pool used in cluster.
 message NodePool {
+  oneof NodePoolType {
+    DynamicNodePool dynamicNodePool = 1;
+    StaticNodePool staticNodePool = 2;
+  }
+}
+
+// DynamicNodePool represents dynamic node pool used in cluster.
+message DynamicNodePool {
   // Name of the node pool.
   string name = 1;
   // Machine type of the nodes.
@@ -189,6 +197,16 @@ message NodePool {
   AutoscalerConf autoscalerConfig = 12;
 }
 
+// StaticNodePool represents static node pool used in cluster.
+message StaticNodePool {
+  // Name of static node pool.
+  string name = 1;
+  // Array of nodes in this node pool.
+  repeated Node nodes = 2;
+  //  Flag to differentiate between control and compute nodes.
+  bool isControl = 3;
+}
+
 // Autoscaler configuration on per node pool basis.
 message AutoscalerConf {
   // Minimum number of nodes in node pool.
@@ -197,7 +215,7 @@ message AutoscalerConf {
   int32 max = 2;
 }
 
-// Value for the node pool metadata.
+// MetaValue for the node pool metadata.
 message MetaValue {
   // Possible values for the node pool metadata.
   oneof MetaValueOneOf {
@@ -216,8 +234,18 @@ enum NodeType {
   apiEndpoint = 2;
 }
 
-// Node represents a single node from the node pool.
+// Node value for each type of the node pool.
 message Node {
+  oneof NodeType {
+    // Node from dynamic node pool.
+    DynamicNode dynamicNode = 1;
+    // Node from static node pool.
+    StaticNode staticNode = 2;
+  }
+}
+
+// DynamicNode represents a single node from the dynamic node pool.
+message DynamicNode {
   // Name of the node.
   string name = 1;
   // Private IP of the node in the VPN.
@@ -226,6 +254,26 @@ message Node {
   string public = 3;
   // Type of the node.
   NodeType nodeType = 4;
+}
+
+// StaticNode represents a single node from the static node pool.
+message StaticNode {
+  // Name of the node.
+  string name = 1;
+  // Endpoint of the node in the VPN.
+  string endpoint = 2;
+  // Private key used to SSH into the node.
+  string key = 3;
+  // Type of the node.
+  NodeType nodeType = 4;
+}
+
+enum StaticProvider {
+  STATIC_PROVIDER = 0;
+}
+
+enum StaticRegion {
+  STATIC_REGION = 0;
 }
 
 message Provider {
