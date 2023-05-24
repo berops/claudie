@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 
 	"github.com/rs/zerolog"
@@ -18,6 +17,12 @@ import (
 	"github.com/berops/claudie/services/terraformer/server/clusterBuilder"
 	"github.com/berops/claudie/services/terraformer/server/provider"
 	"github.com/berops/claudie/services/terraformer/server/terraform"
+	"github.com/berops/claudie/services/terraformer/templates"
+)
+
+const (
+	dnsTemplate = "dns.tpl"
+	dnsTfFile   = "%s-dns.tf"
 )
 
 type DNS struct {
@@ -167,17 +172,18 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *pb.DNS, nodeIPs []string) 
 		return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", dns.Provider.SpecName, dnsDir, err)
 	}
 
-	sourceDirectory := templateUtils.TemplateLoader{
-		Directory: path.Join(templateUtils.TerraformerTemplates, dns.GetProvider().GetCloudProviderName(), "dns"),
-	}
-
-	tpl, err := sourceDirectory.LoadTemplate(fmt.Sprintf("%s-dns.tpl", dns.Provider.CloudProviderName))
+	path := filepath.Join(dns.Provider.CloudProviderName, dnsTemplate)
+	file, err := templates.CloudProviderTemplates.ReadFile(path)
 	if err != nil {
-		return fmt.Errorf("error while parsing template file dns.tpl for %s : %w", dnsDir, err)
+		return fmt.Errorf("error while reading template file %s for %s : %w", dnsTemplate, dnsDir, err)
+	}
+	tpl, err := templateUtils.LoadTemplate(string(file))
+	if err != nil {
+		return fmt.Errorf("error while parsing template file %s for %s : %w", dnsTemplate, dnsDir, err)
 	}
 
 	targetDirectory := templateUtils.Templates{Directory: dnsDir}
-	return targetDirectory.Generate(tpl, fmt.Sprintf("%s-dns.tf", dns.Provider.CloudProviderName), DNSData{
+	return targetDirectory.Generate(tpl, fmt.Sprintf(dnsTfFile, dns.Provider.CloudProviderName), DNSData{
 		DNSZone:      dns.DnsZone,
 		HostnameHash: dns.Hostname,
 		ClusterName:  d.ClusterName,
