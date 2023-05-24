@@ -9,65 +9,13 @@ import (
 )
 
 var (
-	aaData = AutoscalerAdapterDeploymentData{
-		ClusterID:   "test-cluster-kjbansc",
-		ClusterName: "test-cluster",
-		ProjectName: "Project1",
-		AdapterPort: "50000",
-	}
 	caData = AutoscalerDeploymentData{
 		ClusterID:   "test-cluster-kjbansc",
 		AdapterPort: "50000",
+		ClusterName: "test-cluster",
+		ProjectName: "Project1",
 	}
 
-	aaDeployment = `---
-apiVersion: v1
-kind: Service
-metadata:
-  name: autoscaler-adapter-test-cluster-kjbansc
-spec:
-  selector:
-    app: autoscaler-adapter-test-cluster-kjbansc
-  ports:
-    - protocol: TCP
-      port: 50000
-      targetPort: 50000
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: autoscaler-adapter-test-cluster-kjbansc
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: autoscaler-adapter-test-cluster-kjbansc
-  template:
-    metadata:
-      labels:
-        app: autoscaler-adapter-test-cluster-kjbansc
-    spec:
-      containers:
-        - name: claudie-ca
-          imagePullPolicy: IfNotPresent
-          image: ghcr.io/berops/claudie/autoscaler-adapter
-          env:
-            - name: ADAPTER_PORT
-              value: "50000"
-            - name: CLUSTER_NAME
-              value: test-cluster
-            - name: PROJECT_NAME
-              value: Project1
-          resources:
-            requests:
-              cpu: 80m
-              memory: 50Mi
-            limits:
-              cpu: 160m
-              memory: 100Mi
-          ports:
-            - containerPort: 50000
-`
 	caDeployment = `---
 apiVersion: v1
 kind: ConfigMap
@@ -136,14 +84,8 @@ func TestAutoscalerTemplate(t *testing.T) {
 	tpl := templateUtils.Templates{Directory: "."}
 	ca, err := templateUtils.LoadTemplate(templates.ClusterAutoscalerTemplate)
 	require.NoError(t, err)
-	aa, err := templateUtils.LoadTemplate(templates.AutoscalerAdapterTemplate)
-	require.NoError(t, err)
-	// Check adapter
-	out, err := tpl.GenerateToString(aa, aaData)
-	require.NoError(t, err)
-	require.Equal(t, out, aaDeployment)
 	// Check Autoscaler
-	out, err = tpl.GenerateToString(ca, caData)
+	out, err := tpl.GenerateToString(ca, caData)
 	require.NoError(t, err)
 	require.Equal(t, out, caDeployment)
 }
