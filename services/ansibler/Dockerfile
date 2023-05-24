@@ -31,7 +31,6 @@ LABEL org.opencontainers.image.description "Image for Ansibler from Claudie"
 
 #Copy the binaries to empty base image
 COPY --from=build /go/services/ansibler/server/server /bin/services/ansibler/server/server
-COPY --from=build /go/services/ansibler/templates /bin/services/ansibler/templates
 COPY --from=build /go/services/ansibler/server/ansible-playbooks /bin/services/ansibler/server/ansible-playbooks
 
 RUN apk update && apk add -q bash

@@ -33,7 +33,6 @@ LABEL org.opencontainers.image.description "Image for Testing-framework from Cla
 
 COPY --from=build /go/kubectl /usr/local/bin/kubectl
 COPY --from=build /go/services/testing-framework/testing-framework.test /go/services/testing-framework/testing-framework.test
-COPY --from=build /go/services/testing-framework/templates /go/services/testing-framework/templates
 
 RUN chmod +x /usr/local/bin/kubectl && \
     apk add -q bash

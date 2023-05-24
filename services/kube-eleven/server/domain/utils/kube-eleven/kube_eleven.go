@@ -12,10 +12,10 @@ import (
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/kube-eleven/server/domain/utils/kubeone"
+	"github.com/berops/claudie/services/kube-eleven/templates"
 )
 
 const (
-	kubeoneTemplateFileName      = "kubeone.tpl"
 	generatedKubeoneManifestName = "kubeone.yaml"
 	sshKeyFileName               = "private.pem"
 	kubeconfigFileName           = "cluster-kubeconfig"
@@ -76,11 +76,10 @@ func (k *KubeEleven) BuildCluster() error {
 // generateFiles will generate those files (kubeone.yaml and key.pem) needed by Kubeone.
 // Returns nil if successful, error otherwise.
 func (k *KubeEleven) generateFiles() error {
-	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.KubeElevenTemplates}
 	// Load the Kubeone template file as *template.Template.
-	template, err := templateLoader.LoadTemplate(kubeoneTemplateFileName)
+	template, err := templateUtils.LoadTemplate(templates.KubeOneTemplate)
 	if err != nil {
-		return fmt.Errorf("error while loading a template %s : %w", kubeoneTemplateFileName, err)
+		return fmt.Errorf("error while loading a kubeone template : %w", err)
 	}
 
 	// Generate templateData for the template.
@@ -90,7 +89,7 @@ func (k *KubeEleven) generateFiles() error {
 	err = templateUtils.Templates{Directory: k.outputDirectory}.
 		Generate(template, generatedKubeoneManifestName, templateParameters)
 	if err != nil {
-		return fmt.Errorf("error while generating %s from %s : %w", generatedKubeoneManifestName, kubeoneTemplateFileName, err)
+		return fmt.Errorf("error while generating %s from kubeone template : %w", generatedKubeoneManifestName, err)
 	}
 
 	// Create file containing SSH key which will be used by Kubeone.

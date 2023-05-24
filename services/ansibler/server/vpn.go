@@ -10,6 +10,7 @@ import (
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/ansibler/server/ansible"
+	"github.com/berops/claudie/services/ansibler/templates"
 )
 
 const (
@@ -41,7 +42,7 @@ func installWireguardVPN(clusterID string, info *VPNInfo) error {
 		}
 	}
 
-	if err := generateInventoryFile(nodesInventoryFileTpl, directory, AllNodesInventoryData{NodepoolInfos: info.NodepoolInfo}); err != nil {
+	if err := generateInventoryFile(templates.AllNodesInventoryTemplate, directory, AllNodesInventoryData{NodepoolInfos: info.NodepoolInfo}); err != nil {
 		return fmt.Errorf("error while creating inventory file for %s : %w", directory, err)
 	}
 
