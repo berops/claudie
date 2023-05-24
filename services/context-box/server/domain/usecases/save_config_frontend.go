@@ -36,7 +36,7 @@ func (u *Usecases) SaveConfigFrontEnd(request *pb.SaveConfigRequest) (*pb.SaveCo
 
 	err = u.DB.SaveConfig(newConfig)
 	if err != nil {
-		return nil, fmt.Errorf("Error while saving config %s in MongoDB: %w", newConfig.Name, err)
+		return nil, fmt.Errorf("error while saving config %s in MongoDB: %w", newConfig.Name, err)
 	}
 
 	log.Info().Msgf("Config %s successfully saved from Frontend", newConfig.Name)
