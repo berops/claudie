@@ -39,10 +39,8 @@ func (u *Usecases) SaveConfigBuilder(request *pb.SaveConfigRequest) (*pb.SaveCon
 	}
 
 	// Update workflow state for k8s clusters. (attached LB clusters included)
-	for _, cluster := range config.CurrentState.Clusters {
-		if err := u.DB.UpdateWorkflowState(config.Name, cluster.ClusterInfo.Name, config.State[cluster.ClusterInfo.Name]); err != nil {
-			return nil, fmt.Errorf("error while updating workflow state for k8s cluster %s in config %s : %w", cluster.ClusterInfo.Name, config.Name, err)
-		}
+	if err := u.DB.UpdateAllStates(config.Name, config.State); err != nil {
+		return nil, fmt.Errorf("error while saving workflow state config %s in MongoDB: %w", config.Name, err)
 	}
 
 	log.Info().Msgf("Config %s successfully saved from Builder", config.Name)

@@ -234,11 +234,12 @@ func TestUpdateTTL(t *testing.T) {
 }
 
 func TestSaveWorkflow(t *testing.T) {
-	cm := ClaudieMongo{URL: envs.DatabaseURL}
+	cm := NewMongoDBConnector(envs.DatabaseURL)
 	err := cm.Connect()
 	require.NoError(t, err)
 	err = cm.Init()
 	require.NoError(t, err)
+	defer cm.Disconnect()
 	conf := &pb.Config{DesiredState: desiredState, Name: "test-pb-config"}
 	err = cm.SaveConfig(conf)
 	require.NoError(t, err)
@@ -261,7 +262,5 @@ func TestSaveWorkflow(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, c2.State["foo"].Description, "Test1")
 	err = cm.DeleteConfig(conf.Name, pb.IdType_NAME)
-	require.NoError(t, err)
-	err = cm.Disconnect()
 	require.NoError(t, err)
 }

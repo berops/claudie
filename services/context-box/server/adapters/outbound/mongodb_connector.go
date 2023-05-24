@@ -71,7 +71,7 @@ func (m *MongoDBConnector) Connect() error {
 	censoredUri := utils.SanitiseURI(m.connectionUri)
 
 	if err != nil {
-		return fmt.Errorf("Failed to create a mongoDB client with connection uri %s: %w", censoredUri, err)
+		return fmt.Errorf("failed to create a mongoDB client with connection uri %s: %w", censoredUri, err)
 	}
 
 	for i := 0; i < maxConnectionRetriesCount; i++ {
@@ -99,7 +99,7 @@ func pingDB(client *mongo.Client) error {
 
 	err := client.Ping(contextWithTimeout, readpref.Primary())
 	if err != nil {
-		return fmt.Errorf("Unable to ping mongoDB: %w", err)
+		return fmt.Errorf("unable to ping mongoDB: %w", err)
 	}
 
 	return nil
@@ -116,7 +116,7 @@ func (m *MongoDBConnector) Init() error {
 		},
 	)
 	if err != nil {
-		return fmt.Errorf("Failed to create index %s: %w", indexName, err)
+		return fmt.Errorf("failed to create index %s: %w", indexName, err)
 	}
 
 	return nil

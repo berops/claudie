@@ -34,8 +34,7 @@ func (u *Usecases) SaveConfigFrontEnd(request *pb.SaveConfigRequest) (*pb.SaveCo
 		newConfig = oldConfig
 	}
 
-	err = u.DB.SaveConfig(newConfig)
-	if err != nil {
+	if err = u.DB.SaveConfig(newConfig); err != nil {
 		return nil, fmt.Errorf("error while saving config %s in MongoDB: %w", newConfig.Name, err)
 	}
 

@@ -33,7 +33,6 @@ func main() {
 		log.Fatal().Msgf("Unable to perform initialization tasks for MongoDB: %v", err)
 	}
 	log.Info().Msgf("Connected to MongoDB")
-
 	defer mongoDBConnector.Disconnect()
 
 	usecases := &usecases.Usecases{
@@ -45,12 +44,12 @@ func main() {
 
 	errGroup, errGroupContext := errgroup.WithContext(context.Background())
 
-	// server goroutine
+	// Server goroutine
 	errGroup.Go(func() error {
 		return grpcAdapter.Serve()
 	})
 
-	// go routine to check and enqueue configs periodically
+	// Go routine to check and enqueue configs periodically
 	errGroup.Go(func() error {
 		worker.NewWorker(errGroupContext, 10*time.Second, usecases.EnqueueConfigs, worker.ErrorLogger).
 			Run()
@@ -59,7 +58,7 @@ func main() {
 		return nil
 	})
 
-	// listen for system interruption signals to gracefully shut down
+	// Listen for system interruption signals to gracefully shut down
 	errGroup.Go(func() error {
 		shutdownSignalChan := make(chan os.Signal, 1)
 		signal.Notify(shutdownSignalChan, os.Interrupt, syscall.SIGTERM)
@@ -75,11 +74,10 @@ func main() {
 
 		case shutdownSignal := <-shutdownSignalChan:
 			log.Info().Msgf("Received program shutdown signal %v", shutdownSignal)
-			err = errors.New("Program interruption signal")
+			err = errors.New("program interruption signal")
 		}
 
-		// perform graceful shutdown
-
+		// Perform graceful shutdown
 		log.Info().Msg("Gracefully shutting down GrpcAdapter")
 		grpcAdapter.Stop()
 		// Sometimes when the container terminates gRPC logs the following message:

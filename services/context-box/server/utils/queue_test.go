@@ -16,7 +16,7 @@ type subConfig struct {
 	ErrorMessage string
 }
 
-// each element of the queue should have a GetName method to evaluate equivalence
+// GetName method used to evaluate equivalence
 func (subConfig *subConfig) GetName() string {
 	return subConfig.Name
 }
