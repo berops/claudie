@@ -2,20 +2,31 @@ syntax = "proto3";
 package claudie;
 option go_package = "proto/pb";
 
+// Config holds data for a single manifest.
 message Config {
+  // Config ID in the DB.
   string id = 1;
+  // Config name - same as input manifest name.
   string name = 2;
+  // Client defined manifest.
   string manifest = 3;
+  // Desired state based on the input manifest manifest.
   Project desiredState = 4;
+  // Current state of the infrastructure.
   Project currentState = 5;
+  // Manifest state checksum.
   bytes msChecksum = 6;
+  // Desired state checksum.
   bytes dsChecksum = 7;
+  // Current state checksum.
   bytes csChecksum = 8;
+  // Builder time to live counter.
   int32 builderTTL = 9;
+  // Scheduler time to live counter.
   int32 schedulerTTL = 10;
   // Per-cluster workflow state.
   map<string, Workflow> state = 11;
-  // File name of the manifest saved in Frontend
+  // File name of the manifest saved in Frontend.
   string manifestFileName = 12;
 }
 
@@ -56,122 +67,205 @@ message Workflow {
   string description = 3;
 }
 
+// Project represents the desired and current state of the manifest.
 message Project {
+  // Name of the project - same as input manifest name.
   string name = 1;
+  // Array of Kubernetes clusters.
   repeated K8scluster clusters = 2;
+  //  Array of Load Balancer clusters.
   repeated LBcluster loadBalancerClusters = 3;
 }
 
+// K8scluster represents a single kubernetes cluster specified in the manifest.
 message K8scluster {
+  // General info about the cluster.
   ClusterInfo clusterInfo = 1;
+  // Network range for the VPN.
   string network = 2;
+  // Kubeconfig of the cluster.
   string kubeconfig = 3;
+  // Kubernetes version.
   string kubernetes = 4;
 }
 
+// LBcluster represents a single load balancer cluster specified in the manifest.
 message LBcluster {
+  // General info about the cluster.
   ClusterInfo clusterInfo = 1;
+  // Array of Load balancer roles.
   repeated Role roles = 2;
+  // DNS information.
   DNS dns = 3;
+  // Kubernetes cluster name of the cluster this load balancer is attached to.
   string targetedK8s = 4;
 }
 
+// ClusterInfo holds general information about the clusters.
 message ClusterInfo {
+  // Name of the cluster.
   string name = 1;
+  // Random hash of the cluster.
   string hash = 2;
+  // Public SSH key for the nodes.
   string publicKey = 3;
+  // Private SSH key for the nodes.
   string privateKey = 4;
+  // Array of node pools this cluster is made of.
   repeated NodePool nodePools = 5;
 }
 
+// Role represents a single loadbalancer role from the manifest.
 message Role {
+  // Name of the role.
   string name = 1;
+  // Protocol that load balancer uses to forward traffic. ["tcp", "udp"]
   string protocol = 2;
+  // Port that load balancer will forward from.
   int32 port = 3;
+  // Port that load balancer will forward to.
   int32 targetPort = 4;
+  // Targeted nodes in Kubernetes clusters.
   Target target = 5;
+  // Type of the role.
   RoleType roleType = 6;
 }
 
+// RoleType specifies the type of the role.
 enum RoleType {
+  // API server load balancer.
   ApiServer = 0;
+  // Ingress load balancer.
   Ingress = 1;
 }
 
+// Target specifies which nodes are targeted by the load balancer.
 enum Target {
+  // All nodes in cluster.
   k8sAllNodes = 0;
+  // Only Control nodes.
   k8sControlPlane = 1;
+  // Only Compute nodes
   k8sComputePlane = 2;
 }
 
+// DNS holds general information about the DNS records.
 message DNS {
+  // DNS zone for the DNS records.
   string dnsZone = 1;
+  // User specified hostname. (optional)
   string hostname = 2;
+  // Provider for the DNS records.
   Provider provider = 3;
+  // The whole hostname of the DNS record.
   string endpoint = 4;
 }
 
+// NodePool represents a single nodepool from the manifest.
 message NodePool {
+  // Name of the node pool.
   string name = 1;
-  string region = 2;
-  string serverType = 3;
-  string image = 4;
-  uint32 storageDiskSize = 5;
+  // Machine type of the nodes.
+  string serverType = 2;
+  // OS image of the nodes.
+  string image = 3;
+  // Storage disk size of the nodes.
+  uint32 storageDiskSize = 4;
+  // Geograhical region of the nodes.
+  string region = 5;
+  // Datacentre zone for the nodes.
   string zone = 6;
+  // Number of the nodes in the node pool.
   int32 count = 7;
+  // Array of nodes of this node pool.
   repeated Node nodes = 8;
+  // Provider configuarion of the node pool.
   Provider provider = 9;
+  //  Flag to differentiate between control and compute nodes.
   bool isControl = 10;
+  // Nodepool metadata.
   map<string, MetaValue> metadata = 11;
+  // Autoscaler configuration. (optional)
   AutoscalerConf autoscalerConfig = 12;
 }
 
+// Autoscaler configuration on per node pool basis.
 message AutoscalerConf {
+  // Minimum number of nodes in node pool.
   int32 min = 1;
+  // Maximum number of nodes in node pool.
   int32 max = 2;
 }
 
+// Value for the node pool metadata.
 message MetaValue {
+  // Possible values for the node pool metadata.
   oneof MetaValueOneOf {
+    // Subnet CIDR in private VPC for the node pool.
     string cidr = 1;
   }
 }
 
+// NodeType specifies the type of the node.
 enum NodeType {
+  // Worker/Compute node.
   worker = 0;
+  // Master/Control node.
   master = 1;
+  // Master node, which is also an API endpoint.
   apiEndpoint = 2;
 }
 
+// Node represents a single node from the node pool.
 message Node {
+  // Name of the node.
   string name = 1;
+  // Private IP of the node in the VPN.
   string private = 2;
+  // Public IP of the node.
   string public = 3;
+  // Type of the node.
   NodeType nodeType = 4;
 }
 
 message Provider {
-  //general
+  // Provider name defined in input manifest.
   string specName = 1;
+  // Cloud provider name.
   string cloudProviderName = 2;
-  //credentilas is used as a variable for secret info i.e. private key, api token, secret etc
+  // Secret Credentials of the provider.
+  // GCP - Service account key.
+  // Hetzner - API token.
+  // HetznerDNS - API token.
+  // OCI - Private key.
+  // AWS - Secret key.
+  // Azure - Client secret.
+  // Cloudflare - API token.
   string credentials = 3;
-  //gcp
+  // GCP project. [GCP provider]
   string gcpProject = 4;
-  //oci
+  // OCID of the user. [OCI provider]
   string ociUserOcid = 5;
+  // OCID of the tenancy. [OCI provider]
   string ociTenancyOcid = 6;
+  // Fingerprint of the private key saved in Credentials. [OCI provider]
   string ociFingerprint = 7;
+  // OCID of the compartment. [OCI provider]
   string ociCompartmentOcid = 8;
-  //aws
+  // AWS access key to the secret key saved in the Credentials [AWS provider]
   string awsAccessKey = 9; 
-  //azure
+  // Azure ID of the subscription. [Azure provider]
   string azureSubscriptionId = 10;
+  // Azure ID of the Tenant. [Azure provider]
   string azureTenantId = 11;
+  // AzureID of the Client. [Azure provider]
   string azureClientId = 12;
 }
 
+// ClusterType specifies the type of the cluster.
 enum ClusterType {
+  // Kubernetes cluster.
   K8s = 0;
+  // Load balancer cluster.
   LB = 1;
 }

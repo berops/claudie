@@ -1,8 +1,15 @@
 .PHONY: proto contextbox scheduler builder terraformer ansibler kubeEleven test database minio containerimgs
 
-# Generate all .proto files
+# Enforce same version of protoc 
+PROTOC_VERSION = "3.21.8"
+CURRENT_VERSION = $$(protoc --version | awk '{print $$2}')
+# Generate all .proto files 
 proto:
-	protoc  --go-grpc_out=. --go_out=. proto/*.proto
+	@if [ "$(CURRENT_VERSION)" = "$(PROTOC_VERSION)" ]; then \
+		protoc --go-grpc_out=. --go_out=. proto/*.proto ;\
+	else \
+		echo "Please update your protoc version. Current $(CURRENT_VERSION) | Required $(PROTOC_VERSION)"; \
+	fi
 
 # Start Context-box service on a local environment, exposed on port 50055
 contextbox:
@@ -88,9 +95,9 @@ TARGETARCH = $$(go env GOHOSTARCH)
 REV = $$(git rev-parse --short HEAD)
 SERVICES = $$(command ls services/)
 containerimgs:
-	sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$(REV)/" services/kuber/templates/autoscaler-adapter.goyaml	
+	sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$(REV)/" services/kuber/templates/cluster-autoscaler.goyaml
 	for service in $(SERVICES) ; do \
 		echo " --- building $$service --- "; \
 		DOCKER_BUILDKIT=1 docker build --build-arg=TARGETARCH="$(TARGETARCH)" -t "ghcr.io/berops/claudie/$$service:$(REV)" -f ./services/$$service/Dockerfile . ; \
 	done
-	sed -i "s/adapter:.*$$/adapter/" services/kuber/templates/autoscaler-adapter.goyaml
+	sed -i "s/adapter:.*$$/adapter/" services/kuber/templates/cluster-autoscaler.goyaml

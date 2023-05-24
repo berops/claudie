@@ -4,10 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/berops/claudie/internal/utils"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/externalgrpc/protos"
+
+	"github.com/berops/claudie/internal/utils"
 )
 
 // TestRefresh tests autoscaler adapter running in local environment.
@@ -22,7 +23,7 @@ func TestRefresh(t *testing.T) {
 
 	defer func() {
 		if err := cc.Close(); err != nil {
-			log.Error().Msgf("Failed to close adapter connection %v", err)
+			log.Err(err).Msgf("Failed to close adapter connection")
 		}
 	}()
 
