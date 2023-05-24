@@ -10,9 +10,9 @@ import (
 )
 
 const (
-	// max number of retries for kubeone apply
+	// maxRetryCount is max number of retries for kubeone apply.
 	maxRetryCount = 5
-
+	// command is command which triggers kubeone apply.
 	command = "kubeone apply -m kubeone.yaml -y"
 )
 

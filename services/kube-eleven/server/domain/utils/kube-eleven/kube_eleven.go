@@ -1,4 +1,4 @@
-package kubeEleven
+package kube_eleven
 
 import (
 	"fmt"
@@ -11,19 +11,16 @@ import (
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
-	"github.com/berops/claudie/services/kube-eleven/server/kubeone"
+	"github.com/berops/claudie/services/kube-eleven/server/domain/utils/kubeone"
 )
 
 const (
 	kubeoneTemplateFileName      = "kubeone.tpl"
 	generatedKubeoneManifestName = "kubeone.yaml"
-
-	sshKeyFileName = "private.pem"
-
-	kubeconfigFileName = "cluster-kubeconfig"
-
-	baseDirectory   = "services/kube-eleven/server"
-	outputDirectory = "clusters"
+	sshKeyFileName               = "private.pem"
+	kubeconfigFileName           = "cluster-kubeconfig"
+	baseDirectory                = "services/kube-eleven/server"
+	outputDirectory              = "clusters"
 )
 
 type KubeEleven struct {

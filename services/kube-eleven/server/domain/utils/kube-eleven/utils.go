@@ -1,4 +1,4 @@
-package kubeEleven
+package kube_eleven
 
 import (
 	"fmt"
