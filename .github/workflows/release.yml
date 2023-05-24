@@ -51,7 +51,7 @@ jobs:
         working-directory: ./services/kuber/templates
         run: |
           TAG=${RELEASE}
-          sed "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" autoscaler-adapter.goyaml
+          sed "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" cluster-autoscaler.goyaml
 
       - name: Build and push new images
         run: |

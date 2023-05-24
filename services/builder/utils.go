@@ -34,7 +34,11 @@ func destroyConfig(config *pb.Config, clusterView *ClusterView, c pb.ContextBoxS
 
 // saveConfigWithWorkflowError saves config with workflow states
 func saveConfigWithWorkflowError(config *pb.Config, c pb.ContextBoxServiceClient, clusterView *ClusterView) error {
+	// Make sure state in the config is based on the cluster view
 	config.State = clusterView.ClusterWorkflows
+	if config.DsChecksum != nil {
+		config.CurrentState = config.DesiredState
+	}
 	return cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 }
 
@@ -52,4 +56,20 @@ func updateWorkflowStateInDB(configName, clusterName string, wf *pb.Workflow, c 
 		ClusterName: clusterName,
 		Workflow:    wf,
 	})
+}
+
+// updateNodepoolMetadata updates the nodepool metadata between stages of the cluster build.
+func updateNodepoolMetadata(src []*pb.NodePool, dst []*pb.NodePool) {
+	if src == nil || dst == nil {
+		return
+	}
+src:
+	for _, npSrc := range src {
+		for _, npDst := range dst {
+			if npSrc.Name == npDst.Name {
+				npDst.Metadata = npSrc.Metadata
+				continue src
+			}
+		}
+	}
 }

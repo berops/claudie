@@ -2,14 +2,12 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/rs/zerolog/log"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/healthcheck"
@@ -23,10 +21,6 @@ const (
 	// healthcheckPort is the port on which Kubernetes readiness and liveness probes send request
 	// for performing health checks.
 	healthcheckPort = 50058
-
-	// k8sSidecarNotificationsReceiverPort is the port at which the frontend microservice listens for notifications
-	// from the k8s-sidecar service about changes in the directory containing the claudie manifest files.
-	k8sSidecarNotificationsReceiverPort = 50059
 )
 
 func main() {
@@ -44,67 +38,57 @@ func run() error {
 		return err
 	}
 
+	usecaseContext, usecaseCancel := context.WithCancel(context.Background())
 	usecases := &usecases.Usecases{
-		ContextBox: contextBoxConnector,
-		Done:       make(chan struct{}),
+		ContextBox:    contextBoxConnector,
+		SaveChannel:   make(chan *usecases.RawManifest),
+		DeleteChannel: make(chan *usecases.RawManifest),
+		Context:       usecaseContext,
 	}
 
-	k8sSidecarNotificationsReceiver, err := inboundAdapters.NewK8sSidecarNotificationsReceiver(usecases)
+	secretWatcher, err := inboundAdapters.NewSecretWatcher(usecases)
 	if err != nil {
+		usecaseCancel()
 		return err
 	}
 
 	// Start Kubernetes liveness and readiness probe responders
 	healthcheck.NewClientHealthChecker(fmt.Sprint(healthcheckPort),
 		func() error {
-			err := k8sSidecarNotificationsReceiver.PerformHealthCheck()
-			if err != nil {
+			if err := secretWatcher.PerformHealthCheck(); err != nil {
 				return err
 			}
-
 			return contextBoxConnector.PerformHealthCheck()
 		},
 	).StartProbes()
 
-	errGroup, errGroupContext := errgroup.WithContext(context.Background())
+	// usecases.ProcessManifestFiles() goroutine returns on usecases.Context cancels
+	go usecases.ProcessManifestFiles()
+	log.Info().Msgf("Frontend is ready to process input manifests")
 
-	// Start receiving notifications from the k8s-sidecar container
-	errGroup.Go(func() error {
-		log.Info().Msgf("Listening for notifications from K8s-sidecar at port: %v", k8sSidecarNotificationsReceiverPort)
-		return k8sSidecarNotificationsReceiver.Start("0.0.0.0", k8sSidecarNotificationsReceiverPort)
-	})
+	// usecases.WatchConfigs() goroutine returns on usecases.Context cancels
+	go usecases.WatchConfigs()
+	log.Info().Msgf("Frontend is ready to watch input manifest statuses")
 
-	// Listen for program interruption signals and shut it down gracefully
-	errGroup.Go(func() error {
-		shutdownSignalChan := make(chan os.Signal, 1)
-		signal.Notify(shutdownSignalChan, os.Interrupt, syscall.SIGTERM)
-		defer signal.Stop(shutdownSignalChan)
+	// secretWatcher.Monitor() goroutine returns on usecases.Context cancels
+	go secretWatcher.Monitor()
+	log.Info().Msgf("Frontend is watching for any new input manifest")
 
-		var err error
+	// Cancel context for usecases functions to terminate goroutines.
+	defer usecaseCancel()
 
-		select {
-		case <-errGroupContext.Done():
-			err = errGroupContext.Err()
+	// Interrupt signal listener
+	shutdownSignalChan := make(chan os.Signal, 1)
+	signal.Notify(shutdownSignalChan, os.Interrupt, syscall.SIGTERM)
+	sig := <-shutdownSignalChan
 
-		case shutdownSignal := <-shutdownSignalChan:
-			log.Info().Msgf("Received program shutdown signal %v", shutdownSignal)
-			err = errors.New("Program interruption signal")
-		}
+	log.Info().Msgf("Received program shutdown signal %v", sig)
 
-		// Performing graceful shutdown.
+	// Disconnect from context-box
+	if err := contextBoxConnector.Disconnect(); err != nil {
+		log.Err(err).Msgf("Failed to gracefully shutdown ContextBoxConnector")
+	}
+	defer signal.Stop(shutdownSignalChan)
 
-		// First shutdown the HTTP server to block any incoming connections.
-		log.Info().Msg("Gracefully shutting down K8sSidecarNotificationsReceiver and ContextBoxCommunicator")
-		if err := k8sSidecarNotificationsReceiver.Stop(); err != nil {
-			log.Error().Msgf("Failed to gracefully shutdown K8sSidecarNotificationsReceiver: %v", err)
-		}
-		// Wait for all the go-routines to finish their work.
-		if err := contextBoxConnector.Disconnect(); err != nil {
-			log.Error().Msgf("Failed to gracefully shutdown ContextBoxConnector: %v", err)
-		}
-
-		return err
-	})
-
-	return errGroup.Wait()
+	return fmt.Errorf("program interrupt signal")
 }

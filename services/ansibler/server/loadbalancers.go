@@ -5,11 +5,13 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/ansibler/server/ansible"
-	"github.com/rs/zerolog/log"
 )
 
 /*
@@ -40,6 +42,7 @@ const (
 	nodeExporterPlaybook    = "node-exporter.yml"
 	nodeExporterService     = "node-exporter.service.j2"
 	apiChangePlaybook       = "../../ansible-playbooks/apiEndpointChange.yml"
+	loggerPrefix            = "LB-cluster"
 )
 
 type APIEndpointChangeState string
@@ -157,8 +160,7 @@ func teardownLoadBalancers(clusterName string, info *LBInfo, attached bool) (str
 	k8sDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, utils.CreateHash(utils.HashLength)))
 
 	if err := generateK8sBaseFiles(k8sDirectory, info); err != nil {
-		log.Error().Msgf(err.Error())
-		return "", err
+		return "", fmt.Errorf("error encountered while generating base files for %s", clusterName)
 	}
 
 	apiServer := findCurrentAPILoadBalancer(info.LbClusters)
@@ -178,18 +180,17 @@ func teardownLoadBalancers(clusterName string, info *LBInfo, attached bool) (str
 }
 
 // setUpLoadbalancers sets up and verify the loadbalancer configuration including DNS.
-func setUpLoadbalancers(clusterName string, info *LBInfo) error {
+func setUpLoadbalancers(clusterName string, info *LBInfo, logger zerolog.Logger) error {
 	directory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, utils.CreateHash(utils.HashLength)))
 
 	if err := generateK8sBaseFiles(directory, info); err != nil {
-		log.Error().Msg(err.Error())
-		return err
+		return fmt.Errorf("error encountered while generating base files for %s", clusterName)
 	}
 
 	err := utils.ConcurrentExec(info.LbClusters, func(lb *LBData) error {
-		lbPrefix := fmt.Sprintf("%s-%s", lb.DesiredLbCluster.ClusterInfo.Name, lb.DesiredLbCluster.ClusterInfo.Hash)
+		lbPrefix := utils.GetClusterID(lb.DesiredLbCluster.ClusterInfo)
 		directory := filepath.Join(directory, lbPrefix)
-		log.Info().Msgf("Setting up the loadbalancer %s", lbPrefix)
+		logger.Info().Str(loggerPrefix, lbPrefix).Msg("Setting up the loadbalancer")
 
 		//create key files for lb nodepools
 		if err := utils.CreateDirectory(directory); err != nil {
@@ -203,7 +204,11 @@ func setUpLoadbalancers(clusterName string, info *LBInfo) error {
 			return err
 		}
 
-		return setUpNginx(lb.DesiredLbCluster, info.TargetK8sNodepool, directory)
+		if err := setUpNginx(lb.DesiredLbCluster, info.TargetK8sNodepool, directory); err != nil {
+			return err
+		}
+		logger.Info().Str(loggerPrefix, lbPrefix).Msg("Loadbalancer successfully set up")
+		return nil
 	})
 
 	if err != nil {
@@ -344,8 +349,7 @@ func handleAPIEndpointChange(apiServer *LBData, k8sCluster *LBInfo, k8sDirectory
 	if lbCluster == nil {
 		lbCluster = apiServer.CurrentLbCluster
 	}
-
-	log.Debug().Msgf("Changing the API endpoint for the cluster %s from %s to %s", lbCluster.ClusterInfo.Name, oldEndpoint, newEndpoint)
+	log.Debug().Str(loggerPrefix, utils.GetClusterID(lbCluster.ClusterInfo)).Msgf("Changing the API endpoint from %s to %s", oldEndpoint, newEndpoint)
 
 	if err := changeAPIEndpoint(lbCluster.ClusterInfo.Name, oldEndpoint, newEndpoint, k8sDirectory); err != nil {
 		return fmt.Errorf("error while changing the endpoint for %s : %w", lbCluster.ClusterInfo.Name, err)

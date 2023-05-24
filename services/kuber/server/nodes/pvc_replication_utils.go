@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/berops/claudie/internal/kubectl"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 	"gopkg.in/yaml.v3"
 )
 
@@ -83,7 +83,7 @@ func getReplicasMap(kc kubectl.Kubectl) (map[string][]LonghornReplica, error) {
 	return m, nil
 }
 
-func verifyAllReplicasSetUp(volumeName string, kc kubectl.Kubectl) error {
+func verifyAllReplicasSetUp(volumeName string, kc kubectl.Kubectl, logger zerolog.Logger) error {
 	ticker := time.NewTicker(replicaRunningCheck)
 	ctx, cancel := context.WithTimeout(context.Background(), pvcReplicationTimeout)
 	defer cancel()
@@ -92,13 +92,13 @@ func verifyAllReplicasSetUp(volumeName string, kc kubectl.Kubectl) error {
 		select {
 		case <-ticker.C:
 			if ok, err := verifyAllReplicasRunning(volumeName, kc); err != nil {
-				log.Warn().Msgf("Got error while checking for replication status of %s volume : %v", volumeName, err)
-				log.Info().Msgf("Retrying check for replication status of %s volume", volumeName)
+				logger.Warn().Msgf("Got error while checking for replication status of %s volume : %v", volumeName, err)
+				logger.Info().Msgf("Retrying check for replication status of %s volume", volumeName)
 			} else {
 				if ok {
 					return nil
 				} else {
-					log.Debug().Msgf("Volume replication is not ready yet, retrying check for replication status of %s volume", volumeName)
+					logger.Debug().Msgf("Volume replication is not ready yet, retrying check for replication status of %s volume", volumeName)
 				}
 			}
 		case <-ctx.Done():
