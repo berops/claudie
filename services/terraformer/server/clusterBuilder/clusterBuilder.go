@@ -460,21 +460,22 @@ func generateProviderTemplates(current, desired *pb.ClusterInfo, clusterID, dire
 
 		// Load TF files of the specific cloud provider
 		targetDirectory := templateUtils.Templates{Directory: directory}
-		file, err := templates.CloudProviderTemplates.ReadFile(filepath.Join(providerName, fmt.Sprintf("provider-%s", suffix)))
+		tplPath := filepath.Join(providerName, fmt.Sprintf("provider-%s", suffix))
+		file, err := templates.CloudProviderTemplates.ReadFile(tplPath)
 		if err != nil {
-			return fmt.Errorf("error while reading template file %s : %w", filepath.Join(providerName, fmt.Sprintf("provider-%s", suffix)), err)
+			return fmt.Errorf("error while reading template file %s : %w", tplPath, err)
 		}
 		tpl, err := templateUtils.LoadTemplate(string(file))
 		if err != nil {
-			return fmt.Errorf("error while parsing template file %s : %w", filepath.Join(providerName, fmt.Sprintf("provider-%s", suffix)), err)
+			return fmt.Errorf("error while parsing template file %s : %w", tplPath, err)
 		}
 
 		// Parse the templates and create Tf files
 		if err := targetDirectory.Generate(tpl, fmt.Sprintf("%s-%s-provider.tf", clusterID, providerSpecName), nodepoolData); err != nil {
-			return fmt.Errorf("error while generating %s file : %w", fmt.Sprintf("%s-%s.tf", clusterID, providerSpecName), err)
+			return fmt.Errorf("error while generating %s file : %w", fmt.Sprintf("%s-%s-provider.tf", clusterID, providerSpecName), err)
 		}
 
-		// save keys
+		// Save keys
 		if err = utils.CreateKeyFile(np[0].Provider.Credentials, directory, providerSpecName); err != nil {
 			return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", providerSpecName, directory, err)
 		}

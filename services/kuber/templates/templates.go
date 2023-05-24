@@ -5,9 +5,6 @@ import (
 )
 
 var (
-	//go:embed autoscaler-adapter.goyaml
-	AutoscalerAdapterTemplate string
-
 	//go:embed cluster-autoscaler.goyaml
 	ClusterAutoscalerTemplate string
 

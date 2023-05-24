@@ -34,12 +34,12 @@ type LbInventoryData struct {
 func generateInventoryFile(inventoryTemplate string, directory string, data interface{}) error {
 	tpl, err := templateUtils.LoadTemplate(inventoryTemplate)
 	if err != nil {
-		return fmt.Errorf("error while loading template for %s : %w", directory, err)
+		return fmt.Errorf("error while loading inventory template for %s : %w", directory, err)
 	}
 	template := templateUtils.Templates{Directory: directory}
 	err = template.Generate(tpl, inventoryFile, data)
 	if err != nil {
-		return fmt.Errorf("error while generating from template for %s : %w", directory, err)
+		return fmt.Errorf("error while generating from inventory template for %s : %w", directory, err)
 	}
 	return nil
 }
