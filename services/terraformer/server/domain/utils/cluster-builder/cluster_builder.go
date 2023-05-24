@@ -1,4 +1,4 @@
-package clusterBuilder
+package cluster_builder
 
 import (
 	"encoding/json"
@@ -15,9 +15,9 @@ import (
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
-	"github.com/berops/claudie/services/terraformer/server/backend"
-	"github.com/berops/claudie/services/terraformer/server/provider"
-	"github.com/berops/claudie/services/terraformer/server/terraform"
+	"github.com/berops/claudie/services/terraformer/server/domain/utils/backend"
+	"github.com/berops/claudie/services/terraformer/server/domain/utils/provider"
+	"github.com/berops/claudie/services/terraformer/server/domain/utils/terraform"
 	"github.com/berops/claudie/services/terraformer/templates"
 )
 
@@ -32,12 +32,12 @@ const (
 
 // ClusterBuilder wraps data needed for building a cluster.
 type ClusterBuilder struct {
-	// DesiredInfo contains the information about the
+	// DesiredClusterInfo contains the information about the
 	// desired state of the cluster.
-	DesiredInfo *pb.ClusterInfo
-	// CurrentInfo contains the information about the
+	DesiredClusterInfo *pb.ClusterInfo
+	// CurrentClusterInfo contains the information about the
 	// current state of the cluster.
-	CurrentInfo *pb.ClusterInfo
+	CurrentClusterInfo *pb.ClusterInfo
 	// ProjectName is the name of the manifest.
 	ProjectName string
 	// ClusterType is the type of the cluster being build
@@ -62,14 +62,15 @@ type outputNodepools struct {
 	IPs map[string]interface{} `json:"-"`
 }
 
+// CreateNodepools creates node pools for the cluster.
 func (c ClusterBuilder) CreateNodepools() error {
-	clusterID := fmt.Sprintf("%s-%s", c.DesiredInfo.Name, c.DesiredInfo.Hash)
+	clusterID := fmt.Sprintf("%s-%s", c.DesiredClusterInfo.Name, c.DesiredClusterInfo.Hash)
 	clusterDir := filepath.Join(Output, clusterID)
 
 	// Calculate CIDR, so they do not change if nodepool order changes
 	// https://github.com/berops/claudie/issues/647
 	// Order them by provider and region
-	for _, nps := range utils.GroupNodepoolsByProviderRegion(c.DesiredInfo) {
+	for _, nps := range utils.GroupNodepoolsByProviderRegion(c.DesiredClusterInfo) {
 		if err := c.calculateCIDR(baseSubnetCIDR, nps); err != nil {
 			return fmt.Errorf("error while generating CIDR for nodepools : %w", err)
 		}
@@ -88,18 +89,18 @@ func (c ClusterBuilder) CreateNodepools() error {
 		terraform.Stderr = comm.GetStdErr(clusterID)
 	}
 
-	if err := terraform.TerraformInit(); err != nil {
+	if err := terraform.Init(); err != nil {
 		return fmt.Errorf("error while running terraform init in %s : %w", clusterID, err)
 	}
 
-	if err := terraform.TerraformApply(); err != nil {
+	if err := terraform.Apply(); err != nil {
 		return fmt.Errorf("error while running terraform apply in %s : %w", clusterID, err)
 	}
 	oldNodes := c.getCurrentNodes()
 
 	// fill new nodes with output
-	for _, nodepool := range c.DesiredInfo.NodePools {
-		output, err := terraform.TerraformOutput(nodepool.Name)
+	for _, nodepool := range c.DesiredClusterInfo.NodePools {
+		output, err := terraform.Output(nodepool.Name)
 		if err != nil {
 			return fmt.Errorf("error while getting output from terraform for %s : %w", nodepool.Name, err)
 		}
@@ -118,14 +119,15 @@ func (c ClusterBuilder) CreateNodepools() error {
 	return nil
 }
 
+// DestroyNodepools destroys nodepools for the cluster.
 func (c ClusterBuilder) DestroyNodepools() error {
-	clusterID := fmt.Sprintf("%s-%s", c.CurrentInfo.Name, c.CurrentInfo.Hash)
+	clusterID := fmt.Sprintf("%s-%s", c.CurrentClusterInfo.Name, c.CurrentClusterInfo.Hash)
 	clusterDir := filepath.Join(Output, clusterID)
 
 	// Calculate CIDR, in case some nodepools do not have it, due to error.
 	// https://github.com/berops/claudie/issues/647
 	// Order them by provider and region
-	for _, nps := range utils.GroupNodepoolsByProviderRegion(c.CurrentInfo) {
+	for _, nps := range utils.GroupNodepoolsByProviderRegion(c.CurrentClusterInfo) {
 		if err := c.calculateCIDR(baseSubnetCIDR, nps); err != nil {
 			return fmt.Errorf("error while generating CIDR for nodepools : %w", err)
 		}
@@ -144,11 +146,11 @@ func (c ClusterBuilder) DestroyNodepools() error {
 		terraform.Stderr = comm.GetStdErr(clusterID)
 	}
 
-	if err := terraform.TerraformInit(); err != nil {
+	if err := terraform.Init(); err != nil {
 		return fmt.Errorf("error while running terraform init in %s : %w", clusterID, err)
 	}
 
-	if err := terraform.TerraformDestroy(); err != nil {
+	if err := terraform.Destroy(); err != nil {
 		return fmt.Errorf("error while running terraform apply in %s : %w", clusterID, err)
 	}
 
@@ -160,6 +162,7 @@ func (c ClusterBuilder) DestroyNodepools() error {
 	return nil
 }
 
+// generateFiles creates all the necessary terraform files used to create/destroy node pools.
 func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	backend := backend.Backend{
 		ProjectName: c.ProjectName,
@@ -167,7 +170,7 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 		Directory:   clusterDir,
 	}
 
-	if err := backend.CreateFiles(); err != nil {
+	if err := backend.CreateTFFile(); err != nil {
 		return err
 	}
 
@@ -178,15 +181,15 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 		Directory:   clusterDir,
 	}
 
-	if err := providers.CreateProvider(c.CurrentInfo, c.DesiredInfo); err != nil {
+	if err := providers.CreateProvider(c.CurrentClusterInfo, c.DesiredClusterInfo); err != nil {
 		return err
 	}
 
 	var clusterInfo *pb.ClusterInfo
-	if c.DesiredInfo != nil {
-		clusterInfo = c.DesiredInfo
-	} else if c.CurrentInfo != nil {
-		clusterInfo = c.CurrentInfo
+	if c.DesiredClusterInfo != nil {
+		clusterInfo = c.DesiredClusterInfo
+	} else if c.CurrentClusterInfo != nil {
+		clusterInfo = c.CurrentClusterInfo
 	}
 
 	// Init node slices if needed
@@ -215,7 +218,7 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 
 	suffix := getTplFile(c.ClusterType)
 	// generate providers.tpl for all nodepools (current, desired).
-	if err := generateProviderTemplates(c.CurrentInfo, c.DesiredInfo, clusterID, clusterDir, suffix); err != nil {
+	if err := generateProviderTemplates(c.CurrentClusterInfo, c.DesiredClusterInfo, clusterID, clusterDir, suffix); err != nil {
 		return fmt.Errorf("error while generating provider templates: %w", err)
 	}
 
@@ -271,8 +274,8 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 func (c *ClusterBuilder) getCurrentNodes() []*pb.Node {
 	// group all the nodes together to make searching with respect to IP easy
 	var oldNodes []*pb.Node
-	if c.CurrentInfo != nil {
-		for _, oldNodepool := range c.CurrentInfo.NodePools {
+	if c.CurrentClusterInfo != nil {
+		for _, oldNodepool := range c.CurrentClusterInfo.NodePools {
 			oldNodes = append(oldNodes, oldNodepool.Nodes...)
 		}
 	}
@@ -356,7 +359,7 @@ func getKeysFromMap(data map[string]interface{}) []string {
 	return keys
 }
 
-// readIPs reads json output format from terraform and unmarshal it into map[string]map[string]string readable by GO
+// readIPs reads json output format from terraform and unmarshal it into map[string]map[string]string readable by Go.
 func readIPs(data string) (outputNodepools, error) {
 	var result outputNodepools
 	// Unmarshal or Decode the JSON to the interface.
@@ -364,6 +367,7 @@ func readIPs(data string) (outputNodepools, error) {
 	return result, err
 }
 
+// getTplFile returns type of the template file.
 func getTplFile(clusterType pb.ClusterType) string {
 	switch clusterType {
 	case pb.ClusterType_K8s:

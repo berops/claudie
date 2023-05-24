@@ -11,20 +11,21 @@ import (
 )
 
 const (
-	// maxTerraformRetries is the maximum amount a command can be repeated until
-	// it succeeds. If after maxTerraformRetries retries the commands still fails an error should be
+	// maxTfCommandRetryCount is the maximum amount a Terraform command can be repeated until
+	// it succeeds. If after "maxTfCommandRetryCount" retries the commands still fails an error should be
 	// returned containing the reason.
-	maxTerraformRetries = 5
+	maxTfCommandRetryCount = 5
 )
 
 type Terraform struct {
 	// Directory represents the directory of .tf files
 	Directory string
-	Stdout    io.Writer
-	Stderr    io.Writer
+
+	Stdout io.Writer
+	Stderr io.Writer
 }
 
-func (t *Terraform) TerraformInit() error {
+func (t *Terraform) Init() error {
 	cmd := exec.Command("terraform", "init")
 	cmd.Dir = t.Directory
 	cmd.Stdout = t.Stdout
@@ -40,7 +41,7 @@ func (t *Terraform) TerraformInit() error {
 			Stderr:  cmd.Stderr,
 		}
 
-		if err := retryCmd.RetryCommand(maxTerraformRetries); err != nil {
+		if err := retryCmd.RetryCommand(maxTfCommandRetryCount); err != nil {
 			return fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
 		}
 	}
@@ -48,7 +49,7 @@ func (t *Terraform) TerraformInit() error {
 	return nil
 }
 
-func (t *Terraform) TerraformApply() error {
+func (t *Terraform) Apply() error {
 	cmd := exec.Command("terraform", "apply", "--auto-approve")
 	cmd.Dir = t.Directory
 	cmd.Stdout = t.Stdout
@@ -64,7 +65,7 @@ func (t *Terraform) TerraformApply() error {
 			Stderr:  cmd.Stderr,
 		}
 
-		if err := retryCmd.RetryCommand(maxTerraformRetries); err != nil {
+		if err := retryCmd.RetryCommand(maxTfCommandRetryCount); err != nil {
 			return fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
 		}
 	}
@@ -72,7 +73,7 @@ func (t *Terraform) TerraformApply() error {
 	return nil
 }
 
-func (t *Terraform) TerraformDestroy() error {
+func (t *Terraform) Destroy() error {
 	cmd := exec.Command("terraform", "destroy", "--auto-approve")
 	cmd.Dir = t.Directory
 	cmd.Stdout = t.Stdout
@@ -88,7 +89,7 @@ func (t *Terraform) TerraformDestroy() error {
 			Stderr:  cmd.Stderr,
 		}
 
-		if err := retryCmd.RetryCommand(maxTerraformRetries); err != nil {
+		if err := retryCmd.RetryCommand(maxTfCommandRetryCount); err != nil {
 			return fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
 		}
 	}
@@ -96,7 +97,7 @@ func (t *Terraform) TerraformDestroy() error {
 	return nil
 }
 
-func (t Terraform) TerraformOutput(resourceName string) (string, error) {
+func (t Terraform) Output(resourceName string) (string, error) {
 	cmd := exec.Command("terraform", "output", "-json", resourceName)
 	cmd.Dir = t.Directory
 	out, err := cmd.CombinedOutput()

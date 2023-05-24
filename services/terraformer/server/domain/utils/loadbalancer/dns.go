@@ -13,10 +13,10 @@ import (
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
-	"github.com/berops/claudie/services/terraformer/server/backend"
-	"github.com/berops/claudie/services/terraformer/server/clusterBuilder"
-	"github.com/berops/claudie/services/terraformer/server/provider"
-	"github.com/berops/claudie/services/terraformer/server/terraform"
+	"github.com/berops/claudie/services/terraformer/server/domain/utils/backend"
+	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
+	"github.com/berops/claudie/services/terraformer/server/domain/utils/provider"
+	"github.com/berops/claudie/services/terraformer/server/domain/utils/terraform"
 	"github.com/berops/claudie/services/terraformer/templates"
 )
 
@@ -26,13 +26,15 @@ const (
 )
 
 type DNS struct {
-	ClusterName    string
-	ClusterHash    string
+	ProjectName string
+	ClusterName string
+	ClusterHash string
+
 	DesiredNodeIPs []string
 	CurrentNodeIPs []string
-	CurrentDNS     *pb.DNS
-	DesiredDNS     *pb.DNS
-	ProjectName    string
+
+	CurrentDNS *pb.DNS
+	DesiredDNS *pb.DNS
 }
 
 type DNSData struct {
@@ -48,12 +50,13 @@ type outputDomain struct {
 	Domain map[string]string `json:"-"`
 }
 
+// CreateDNSRecords creates DNS records for the Loadbalancer cluster.
 func (d DNS) CreateDNSRecords(logger zerolog.Logger) (string, error) {
 	sublogger := logger.With().Str("endpoint", d.DesiredDNS.Endpoint).Logger()
 
 	clusterID := fmt.Sprintf("%s-%s", d.ClusterName, d.ClusterHash)
 	dnsID := fmt.Sprintf("%s-dns", clusterID)
-	dnsDir := filepath.Join(clusterBuilder.Output, dnsID)
+	dnsDir := filepath.Join(cluster_builder.Output, dnsID)
 
 	terraform := terraform.Terraform{
 		Directory: dnsDir,
@@ -69,10 +72,10 @@ func (d DNS) CreateDNSRecords(logger zerolog.Logger) (string, error) {
 		if err := d.generateFiles(dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs); err != nil {
 			return "", fmt.Errorf("error while creating dns .tf files for %s : %w", dnsID, err)
 		}
-		if err := terraform.TerraformInit(); err != nil {
+		if err := terraform.Init(); err != nil {
 			return "", err
 		}
-		if err := terraform.TerraformDestroy(); err != nil {
+		if err := terraform.Destroy(); err != nil {
 			return "", err
 		}
 
@@ -86,15 +89,15 @@ func (d DNS) CreateDNSRecords(logger zerolog.Logger) (string, error) {
 	if err := d.generateFiles(dnsID, dnsDir, d.DesiredDNS, d.DesiredNodeIPs); err != nil {
 		return "", fmt.Errorf("error while creating dns .tf files for %s : %w", dnsID, err)
 	}
-	if err := terraform.TerraformInit(); err != nil {
+	if err := terraform.Init(); err != nil {
 		return "", err
 	}
-	if err := terraform.TerraformApply(); err != nil {
+	if err := terraform.Apply(); err != nil {
 		return "", err
 	}
 
 	outputID := fmt.Sprintf("%s-%s", clusterID, "endpoint")
-	output, err := terraform.TerraformOutput(clusterID)
+	output, err := terraform.Output(clusterID)
 	if err != nil {
 		return "", fmt.Errorf("error while getting output from terraform for %s : %w", clusterID, err)
 	}
@@ -112,12 +115,13 @@ func (d DNS) CreateDNSRecords(logger zerolog.Logger) (string, error) {
 	return validateDomain(out.Domain[outputID]), nil
 }
 
+// DestroyDNSRecords destroys DNS records for the Loadbalancer cluster.
 func (d DNS) DestroyDNSRecords(logger zerolog.Logger) error {
 	sublogger := logger.With().Str("endpoint", d.CurrentDNS.Endpoint).Logger()
 
 	sublogger.Info().Msg("Destroying DNS records")
 	dnsID := fmt.Sprintf("%s-%s-dns", d.ClusterName, d.ClusterHash)
-	dnsDir := filepath.Join(clusterBuilder.Output, dnsID)
+	dnsDir := filepath.Join(cluster_builder.Output, dnsID)
 
 	if err := d.generateFiles(dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs); err != nil {
 		return fmt.Errorf("error while creating dns records for %s : %w", dnsID, err)
@@ -132,10 +136,10 @@ func (d DNS) DestroyDNSRecords(logger zerolog.Logger) error {
 		terraform.Stderr = comm.GetStdErr(dnsID)
 	}
 
-	if err := terraform.TerraformInit(); err != nil {
+	if err := terraform.Init(); err != nil {
 		return err
 	}
-	if err := terraform.TerraformDestroy(); err != nil {
+	if err := terraform.Destroy(); err != nil {
 		return err
 	}
 	sublogger.Info().Msg("DNS records were successfully destroyed")
@@ -147,6 +151,7 @@ func (d DNS) DestroyDNSRecords(logger zerolog.Logger) error {
 	return nil
 }
 
+// generateFiles creates all the necessary terraform files used to create/destroy DNS.
 func (d DNS) generateFiles(dnsID, dnsDir string, dns *pb.DNS, nodeIPs []string) error {
 	backend := backend.Backend{
 		ProjectName: d.ProjectName,
@@ -154,7 +159,7 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *pb.DNS, nodeIPs []string) 
 		Directory:   dnsDir,
 	}
 
-	if err := backend.CreateFiles(); err != nil {
+	if err := backend.CreateTFFile(); err != nil {
 		return err
 	}
 
@@ -193,6 +198,7 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *pb.DNS, nodeIPs []string) 
 	})
 }
 
+// validateDomain validates the domain does not start with ".".
 func validateDomain(s string) string {
 	if s[len(s)-1] == '.' {
 		return s[:len(s)-1]
@@ -200,6 +206,7 @@ func validateDomain(s string) string {
 	return s
 }
 
+// readDomain reads full domain from terraform output.
 func readDomain(data string) (outputDomain, error) {
 	var result outputDomain
 	err := json.Unmarshal([]byte(data), &result.Domain)

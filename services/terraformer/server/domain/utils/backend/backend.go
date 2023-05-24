@@ -32,8 +32,8 @@ type templateData struct {
 	DynamoTable string
 }
 
-// CreateFiles creates backend.tf file using the template from Directory.
-func (b Backend) CreateFiles() error {
+// CreateTFFile creates backend.tf file into specified Directory.
+func (b Backend) CreateTFFile() error {
 	template := templateUtils.Templates{Directory: b.Directory}
 
 	tpl, err := templateUtils.LoadTemplate(templates.BackendTemplate)
