@@ -3,7 +3,7 @@ kind: KubeOneCluster
 name: cluster
 
 versions:
-  kubernetes: '{{ .Kubernetes }}'
+  kubernetes: '{{ .KubernetesVersion }}'
 
 clusterNetwork:
   cni:
