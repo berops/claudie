@@ -5,6 +5,7 @@ import (
 
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/services/terraformer/templates"
 )
 
 // Provider package struct
@@ -27,9 +28,8 @@ type templateData struct {
 
 func (p Provider) CreateProviderDNS(dns *pb.DNS) error {
 	template := templateUtils.Templates{Directory: p.Directory}
-	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.TerraformerTemplates}
 
-	tpl, err := templateLoader.LoadTemplate("providers.tpl")
+	tpl, err := templateUtils.LoadTemplate(templates.ProvidersTemplate)
 	if err != nil {
 		return fmt.Errorf("error while parsing template file providers.tpl for cluster %s: %w", p.ClusterName, err)
 	}
@@ -41,13 +41,12 @@ func (p Provider) CreateProviderDNS(dns *pb.DNS) error {
 
 func (p Provider) CreateProvider(currentCluster, desiredCluster *pb.ClusterInfo) error {
 	template := templateUtils.Templates{Directory: p.Directory}
-	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.TerraformerTemplates}
 
 	var data templateData
 	getProvidersUsed(currentCluster, &data)
 	getProvidersUsed(desiredCluster, &data)
 
-	tpl, err := templateLoader.LoadTemplate("providers.tpl")
+	tpl, err := templateUtils.LoadTemplate(templates.ProvidersTemplate)
 	if err != nil {
 		return fmt.Errorf("error while parsing template file providers.tpl for cluster %s : %w", p.ClusterName, err)
 	}

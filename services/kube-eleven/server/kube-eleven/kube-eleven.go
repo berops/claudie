@@ -12,6 +12,7 @@ import (
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/kube-eleven/server/kubeone"
+	"github.com/berops/claudie/services/kube-eleven/templates"
 )
 
 const (
@@ -91,9 +92,8 @@ func (k *KubeEleven) BuildCluster() error {
 // returns nil if successful, error otherwise
 func (k *KubeEleven) generateFiles() error {
 	template := templateUtils.Templates{Directory: k.directory}
-	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.KubeElevenTemplates}
 	//load template file
-	tpl, err := templateLoader.LoadTemplate(kubeoneTemplate)
+	tpl, err := templateUtils.LoadTemplate(templates.KubeOneTemplate)
 	if err != nil {
 		return fmt.Errorf("error while loading a template %s : %w", kubeoneTemplate, err)
 	}

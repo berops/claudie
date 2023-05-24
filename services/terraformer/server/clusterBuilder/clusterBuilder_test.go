@@ -6,6 +6,7 @@ import (
 
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/services/terraformer/templates"
 	"github.com/stretchr/testify/require"
 )
 
@@ -36,9 +37,10 @@ func TestReadOutput(t *testing.T) {
 }
 
 func TestGenerateTf(t *testing.T) {
-	templateLoader := templateUtils.TemplateLoader{Directory: "../../templates"}
 	template := templateUtils.Templates{Directory: "."}
-	tpl, err := templateLoader.LoadTemplate("azure.tpl")
+	file, err := templates.CloudProviderTemplates.ReadFile("azure/k8s.tpl")
+	require.NoError(t, err)
+	tpl, err := templateUtils.LoadTemplate(string(file))
 	require.NoError(t, err)
 	err = template.Generate(tpl, "az-acc-net.tf", &NodepoolsData{ClusterName: "test", ClusterHash: "abcdef", NodePools: []*pb.NodePool{testNp}})
 	require.NoError(t, err)

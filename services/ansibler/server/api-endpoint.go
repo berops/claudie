@@ -8,6 +8,7 @@ import (
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/ansibler/server/ansible"
+	"github.com/berops/claudie/services/ansibler/templates"
 )
 
 // updateAPIEndpoint handles the case where Control Node with ApiEndpoint where removed from
@@ -37,7 +38,7 @@ func updateAPIEndpoint(current, desired *pb.ClusterInfo) error {
 		}
 
 		// re-use the information for the LB cluster.
-		err := generateInventoryFile(lbInventoryFile, directory, LbInventoryData{
+		err := generateInventoryFile(templates.LoadbalancerInventoryTemplate, directory, LbInventoryData{
 			K8sNodepools: current.GetNodePools(),
 			LBClusters:   nil,
 			ClusterID:    clusterID,
