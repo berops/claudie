@@ -34,7 +34,6 @@ func main() {
 	grpcAdapter.Init(usecases)
 
 	errGroup, errGroupContext := errgroup.WithContext(context.Background())
-
 	errGroup.Go(grpcAdapter.Start)
 
 	// Check if terraformer microservice is in ready state every 30s

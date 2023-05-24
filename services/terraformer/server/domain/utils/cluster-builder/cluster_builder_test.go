@@ -1,4 +1,4 @@
-package clusterBuilder
+package cluster_builder
 
 import (
 	"fmt"

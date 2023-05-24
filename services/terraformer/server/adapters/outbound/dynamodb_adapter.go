@@ -80,8 +80,8 @@ func (d *DynamoDBAdapter) Healthcheck() error {
 	return fmt.Errorf("dynamoDB does not contain %s table", dynamoDBTableName)
 }
 
-// DeleteTfStateLockFile deletes terraform state lock file (related to the given cluster), from DynamoDB.
-func (d *DynamoDBAdapter) DeleteTfStateLockFile(ctx context.Context, projectName, clusterId string, keyFormat string) error {
+// DeleteLockFile deletes terraform state lock file (related to the given cluster), from DynamoDB.
+func (d *DynamoDBAdapter) DeleteLockFile(ctx context.Context, projectName, clusterId string, keyFormat string) error {
 	// Get the DynamoDB key (keyname is LockID) which maps to the Terraform state-lock file
 	key, err := attributevalue.Marshal(fmt.Sprintf(keyFormat, minioBucketName, projectName, clusterId))
 	if err != nil {
@@ -97,7 +97,7 @@ func (d *DynamoDBAdapter) DeleteTfStateLockFile(ctx context.Context, projectName
 			Key:       map[string]types.AttributeValue{"LockID": key},
 		},
 	); err != nil {
-		return fmt.Errorf("Failed to remove Terraform state-lock file %v : %w", clusterId, err)
+		return fmt.Errorf("failed to remove Terraform state-lock file %v : %w", clusterId, err)
 	}
 
 	return nil

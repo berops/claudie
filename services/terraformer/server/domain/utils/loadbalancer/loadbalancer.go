@@ -3,11 +3,11 @@ package loadbalancer
 import (
 	"fmt"
 
+	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
 	"github.com/rs/zerolog"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/berops/claudie/proto/pb"
-	clusterBuilder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
 )
 
 type LBcluster struct {
@@ -40,7 +40,7 @@ func (l LBcluster) Build(logger zerolog.Logger) error {
 		currentNodeIPs = getNodeIPs(l.CurrentState.ClusterInfo.NodePools)
 	}
 
-	clusterBuilder := clusterBuilder.ClusterBuilder{
+	clusterBuilder := cluster_builder.ClusterBuilder{
 		DesiredClusterInfo: l.DesiredState.ClusterInfo,
 		CurrentClusterInfo: currentClusterInfo,
 
@@ -82,7 +82,7 @@ func (l LBcluster) Destroy(logger zerolog.Logger) error {
 	logger.Info().Msgf("Destroying LB Cluster %s and DNS", l.CurrentState.ClusterInfo.Name)
 
 	group.Go(func() error {
-		cluster := clusterBuilder.ClusterBuilder{
+		cluster := cluster_builder.ClusterBuilder{
 			CurrentClusterInfo: l.CurrentState.ClusterInfo,
 			ProjectName:        l.ProjectName,
 			ClusterType:        pb.ClusterType_LB,
@@ -104,6 +104,7 @@ func (l LBcluster) Destroy(logger zerolog.Logger) error {
 	return group.Wait()
 }
 
+// getNodeIPs returns slice of public IPs used in the node pool.
 func getNodeIPs(nodepools []*pb.NodePool) []string {
 	var ips []string
 

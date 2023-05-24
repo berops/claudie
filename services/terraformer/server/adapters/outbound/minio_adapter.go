@@ -63,8 +63,8 @@ func (m *MinIOAdapter) Healthcheck() error {
 	return nil
 }
 
-// DeleteTfStateFile deletes terraform state file (related to the given cluster), from MinIO bucket.
-func (m *MinIOAdapter) DeleteTfStateFile(ctx context.Context, projectName, clusterId string, keyFormat string) error {
+// DeleteStateFile deletes terraform state file (related to the given cluster), from MinIO bucket.
+func (m *MinIOAdapter) DeleteStateFile(ctx context.Context, projectName, clusterId string, keyFormat string) error {
 	key := fmt.Sprintf(keyFormat, projectName, clusterId)
 	if err := m.client.RemoveObject(ctx, minioBucketName, key, minio.RemoveObjectOptions{GovernanceBypass: true}); err != nil {
 		return fmt.Errorf("failed to remove dns lock file for cluster %v: %w", clusterId, err)

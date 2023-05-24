@@ -6,7 +6,7 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/berops/claudie/proto/pb"
-	clusterBuilder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
+	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
 )
 
 type K8Scluster struct {
@@ -38,7 +38,7 @@ func (k K8Scluster) Build(logger zerolog.Logger) error {
 		currentClusterInfo = k.CurrentState.ClusterInfo
 	}
 
-	cluster := clusterBuilder.ClusterBuilder{
+	cluster := cluster_builder.ClusterBuilder{
 		DesiredClusterInfo: k.DesiredState.ClusterInfo,
 		CurrentClusterInfo: currentClusterInfo,
 
@@ -59,7 +59,7 @@ func (k K8Scluster) Build(logger zerolog.Logger) error {
 
 func (k K8Scluster) Destroy(logger zerolog.Logger) error {
 	logger.Info().Msgf("Destroying K8S Cluster %s", k.CurrentState.ClusterInfo.Name)
-	cluster := clusterBuilder.ClusterBuilder{
+	cluster := cluster_builder.ClusterBuilder{
 		CurrentClusterInfo: k.CurrentState.ClusterInfo,
 
 		ProjectName: k.ProjectName,

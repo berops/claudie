@@ -13,11 +13,11 @@ import (
 )
 
 const (
-	keyFormat_tfStateFile    = "%s/%s"
-	dnsKeyFormat_tfStateFile = "%s/%s-dns"
+	keyFormatStateFile    = "%s/%s"
+	dnsKeyFormatStateFile = "%s/%s-dns"
 
-	keyFormat_tfStateLockFile    = "%s/%s/%s-dns-md5"
-	dnsKeyFormat_tfStateLockFile = "%s/%s/%s-md5"
+	keyFormatLockFile    = "%s/%s/%s-dns-md5"
+	dnsKeyFormatLockFile = "%s/%s/%s-md5"
 )
 
 // DestroyInfrastructure destroys the infrastructure for provided LB clusters
@@ -57,10 +57,10 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 
 		// After the infrastructure is destroyed, we need to delete the Terraform state file from MinIO
 		// and Terraform state-lock file from DynamoDB.
-		if err := u.DynamoDB.DeleteTfStateLockFile(ctx, request.ProjectName, cluster.Id(), keyFormat_tfStateLockFile); err != nil {
+		if err := u.DynamoDB.DeleteLockFile(ctx, request.ProjectName, cluster.Id(), keyFormatLockFile); err != nil {
 			return err
 		}
-		if err := u.MinIO.DeleteTfStateFile(ctx, request.ProjectName, cluster.Id(), keyFormat_tfStateFile); err != nil {
+		if err := u.MinIO.DeleteStateFile(ctx, request.ProjectName, cluster.Id(), keyFormatStateFile); err != nil {
 			return err
 		}
 		logger.Info().Msg("Successfully deleted Terraform state and state-lock files")
@@ -68,10 +68,10 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 		// In case of LoadBalancer type cluster,
 		// there are additional DNS related Terraform state and state-lock files.
 		if _, ok := cluster.(loadbalancer.LBcluster); ok {
-			if err := u.DynamoDB.DeleteTfStateLockFile(ctx, request.ProjectName, cluster.Id(), dnsKeyFormat_tfStateLockFile); err != nil {
+			if err := u.DynamoDB.DeleteLockFile(ctx, request.ProjectName, cluster.Id(), dnsKeyFormatLockFile); err != nil {
 				return err
 			}
-			if err := u.MinIO.DeleteTfStateFile(ctx, request.ProjectName, cluster.Id(), dnsKeyFormat_tfStateFile); err != nil {
+			if err := u.MinIO.DeleteStateFile(ctx, request.ProjectName, cluster.Id(), dnsKeyFormatStateFile); err != nil {
 				return err
 			}
 			logger.Info().Msg("Successfully deleted DNS related Terraform state and state-lock files")

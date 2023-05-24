@@ -14,7 +14,7 @@ type Provider struct {
 	Directory   string
 }
 
-// Data structure passed to providers.tpl
+// templateData is data structure passed to providers.tpl
 type templateData struct {
 	Gcp        bool
 	Hetzner    bool
@@ -25,6 +25,7 @@ type templateData struct {
 	HetznerDNS bool
 }
 
+// CreateProviderDNS creates provider file used for DNS management.
 func (p Provider) CreateProviderDNS(dns *pb.DNS) error {
 	template := templateUtils.Templates{Directory: p.Directory}
 	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.TerraformerTemplates}
@@ -39,6 +40,7 @@ func (p Provider) CreateProviderDNS(dns *pb.DNS) error {
 	return template.Generate(tpl, "providers.tf", data)
 }
 
+// CreateProvider creates provider file used for infrastructure management.
 func (p Provider) CreateProvider(currentCluster, desiredCluster *pb.ClusterInfo) error {
 	template := templateUtils.Templates{Directory: p.Directory}
 	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.TerraformerTemplates}
@@ -59,6 +61,7 @@ func (p Provider) CreateProvider(currentCluster, desiredCluster *pb.ClusterInfo)
 	return nil
 }
 
+// getProvidersUsed modifies templateData to reflect current providers used.
 func getProvidersUsed(clusterInfo *pb.ClusterInfo, data *templateData) {
 	if clusterInfo == nil {
 		return
@@ -83,6 +86,7 @@ func getProvidersUsed(clusterInfo *pb.ClusterInfo, data *templateData) {
 	}
 }
 
+// getProvidersUsed modifies templateData to reflect current providers used in DNS.
 func getDNSProvider(dns *pb.DNS, data *templateData) {
 	if dns == nil {
 		return

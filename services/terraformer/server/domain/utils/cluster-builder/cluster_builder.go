@@ -1,4 +1,4 @@
-package clusterBuilder
+package cluster_builder
 
 import (
 	"encoding/json"
@@ -62,6 +62,7 @@ type outputNodepools struct {
 	IPs map[string]interface{} `json:"-"`
 }
 
+// CreateNodepools creates node pools for the cluster.
 func (c ClusterBuilder) CreateNodepools() error {
 	clusterID := fmt.Sprintf("%s-%s", c.DesiredClusterInfo.Name, c.DesiredClusterInfo.Hash)
 	clusterDir := filepath.Join(Output, clusterID)
@@ -118,6 +119,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 	return nil
 }
 
+// DestroyNodepools destroys nodepools for the cluster.
 func (c ClusterBuilder) DestroyNodepools() error {
 	clusterID := fmt.Sprintf("%s-%s", c.CurrentClusterInfo.Name, c.CurrentClusterInfo.Hash)
 	clusterDir := filepath.Join(Output, clusterID)
@@ -160,6 +162,7 @@ func (c ClusterBuilder) DestroyNodepools() error {
 	return nil
 }
 
+// generateFiles creates all the necessary terraform files used to create/destroy node pools.
 func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	backend := backend.Backend{
 		ProjectName: c.ProjectName,
@@ -353,7 +356,7 @@ func getKeysFromMap(data map[string]interface{}) []string {
 	return keys
 }
 
-// readIPs reads json output format from terraform and unmarshal it into map[string]map[string]string readable by GO
+// readIPs reads json output format from terraform and unmarshal it into map[string]map[string]string readable by Go.
 func readIPs(data string) (outputNodepools, error) {
 	var result outputNodepools
 	// Unmarshal or Decode the JSON to the interface.
@@ -361,6 +364,7 @@ func readIPs(data string) (outputNodepools, error) {
 	return result, err
 }
 
+// getTplFile returns type of the template file.
 func getTplFile(clusterType pb.ClusterType) string {
 	switch clusterType {
 	case pb.ClusterType_K8s:

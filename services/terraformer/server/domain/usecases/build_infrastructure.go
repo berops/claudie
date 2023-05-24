@@ -68,7 +68,6 @@ func (u *Usecases) BuildInfrastructure(request *pb.BuildInfrastructureRequest) (
 	}
 
 	response := &pb.BuildInfrastructureResponse{
-		//  related to the K8s cluster
 		Current: request.Current,
 		Desired: request.Desired,
 

@@ -45,6 +45,7 @@ type outputDomain struct {
 	Domain map[string]string `json:"-"`
 }
 
+// CreateDNSRecords creates DNS records for the Loadbalancer cluster.
 func (d DNS) CreateDNSRecords(logger zerolog.Logger) (string, error) {
 	sublogger := logger.With().Str("endpoint", d.DesiredDNS.Endpoint).Logger()
 
@@ -109,6 +110,7 @@ func (d DNS) CreateDNSRecords(logger zerolog.Logger) (string, error) {
 	return validateDomain(out.Domain[outputID]), nil
 }
 
+// DestroyDNSRecords destroys DNS records for the Loadbalancer cluster.
 func (d DNS) DestroyDNSRecords(logger zerolog.Logger) error {
 	sublogger := logger.With().Str("endpoint", d.CurrentDNS.Endpoint).Logger()
 
@@ -144,6 +146,7 @@ func (d DNS) DestroyDNSRecords(logger zerolog.Logger) error {
 	return nil
 }
 
+// generateFiles creates all the necessary terraform files used to create/destroy DNS.
 func (d DNS) generateFiles(dnsID, dnsDir string, dns *pb.DNS, nodeIPs []string) error {
 	backend := backend.Backend{
 		ProjectName: d.ProjectName,
@@ -189,6 +192,7 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *pb.DNS, nodeIPs []string) 
 	})
 }
 
+// validateDomain validates the domain does not start with ".".
 func validateDomain(s string) string {
 	if s[len(s)-1] == '.' {
 		return s[:len(s)-1]
@@ -196,6 +200,7 @@ func validateDomain(s string) string {
 	return s
 }
 
+// readDomain reads full domain from terraform output.
 func readDomain(data string) (outputDomain, error) {
 	var result outputDomain
 	err := json.Unmarshal([]byte(data), &result.Domain)
