@@ -25,9 +25,7 @@ type VPNInfo struct {
 
 // InstallVPN installs VPN between nodes in the k8s cluster and lb clusters
 func (u *Usecases) InstallVPN(request *pb.InstallRequest) (*pb.InstallResponse, error) {
-	logger := log.With().
-		Str("project", request.ProjectName).Str("cluster", request.Desired.ClusterInfo.Name).
-		Logger()
+	logger := log.With().Str("project", request.ProjectName).Str("cluster", request.Desired.ClusterInfo.Name).Logger()
 	logger.Info().Msgf("Installing VPN")
 
 	vpnInfo := &VPNInfo{
@@ -63,6 +61,7 @@ func (u *Usecases) InstallVPN(request *pb.InstallRequest) (*pb.InstallResponse, 
 	return &pb.InstallResponse{}, nil
 }
 
+// installWireguardVPN install wireguard VPN for all nodes in the infrastructure.
 func installWireguardVPN(clusterID string, vpnInfo *VPNInfo) error {
 	// Directory where files (required by Ansible) will be generated.
 	outputDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, commonUtils.CreateHash(commonUtils.HashLength)))
@@ -74,7 +73,7 @@ func installWireguardVPN(clusterID string, vpnInfo *VPNInfo) error {
 		return fmt.Errorf("error while setting the private IPs for %s : %w", outputDirectory, err)
 	}
 
-	if err := utils.GenerateInventoryFile(allNodes_InventoryTemplateFileName, outputDirectory,
+	if err := utils.GenerateInventoryFile(allNodesInventoryTemplateFileName, outputDirectory,
 		// Value of Ansible template parameters
 		AllNodesInventoryData{
 			NodepoolsInfos: vpnInfo.NodepoolsInfoOfClusters,

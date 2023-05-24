@@ -25,9 +25,7 @@ func (a *Usecases) TeardownLoadBalancers(ctx context.Context, request *pb.Teardo
 		}, nil
 	}
 
-	logger := log.With().
-		Str("project", request.ProjectName).Str("cluster", request.Desired.ClusterInfo.Name).
-		Logger()
+	logger := log.With().Str("project", request.ProjectName).Str("cluster", request.Desired.ClusterInfo.Name).Logger()
 	logger.Info().Msgf("Tearing down the loadbalancers")
 
 	var isApiServerTypeDesiredLBClusterPresent bool
@@ -53,7 +51,7 @@ func (a *Usecases) TeardownLoadBalancers(ctx context.Context, request *pb.Teardo
 
 	previousApiEndpoint, err := teardownLoadBalancers(request.Desired.ClusterInfo.Name, lbClustersInfo, isApiServerTypeDesiredLBClusterPresent)
 	if err != nil {
-		logger.Err(err).Msgf("Error encountered while setting up the LoadBalancers")
+		logger.Err(err).Msgf("Error encountered while tearing down the LoadBalancers")
 		return nil, fmt.Errorf("error encountered while tearing down loadbalancers for cluster %s project %s : %w", request.Desired.ClusterInfo.Name, request.ProjectName, err)
 	}
 

@@ -23,25 +23,20 @@ type GrpcAdapter struct {
 	healthcheckServer *health.Server
 }
 
+// CreateGrpcAdapter return new gRPC adapter for Ansibler.
 func CreateGrpcAdapter() *GrpcAdapter {
-	var (
-		g   = &GrpcAdapter{}
-		err error
-	)
-
 	port := utils.GetenvOr("ANSIBLER_PORT", fmt.Sprint(defaultPort))
 	tcpBindingAddress := net.JoinHostPort("0.0.0.0", port)
-	g.tcpListener, err = net.Listen("tcp", tcpBindingAddress)
+	listener, err := net.Listen("tcp", tcpBindingAddress)
 	if err != nil {
 		log.Fatal().Msgf("Failed to listen on %s : %v", tcpBindingAddress, err)
 	}
+
+	g := &GrpcAdapter{tcpListener: listener, server: grpc.NewServer(), healthcheckServer: health.NewServer()}
 	log.Info().Msgf("Ansibler microservice is listening on %s", tcpBindingAddress)
 
-	g.server = grpc.NewServer()
 	pb.RegisterAnsiblerServiceServer(g.server, &AnsiblerGrpcService{})
 
-	// Add healthcheck service to gRPC
-	g.healthcheckServer = health.NewServer()
 	// Ansibler microservice does not have any custom healthcheck functions,
 	// thus always serving.
 	g.healthcheckServer.SetServingStatus("ansibler-liveness", grpc_health_v1.HealthCheckResponse_SERVING)
@@ -51,6 +46,7 @@ func CreateGrpcAdapter() *GrpcAdapter {
 	return g
 }
 
+// Serve starts a gRPC server and blocks until the server stops serving.
 func (g *GrpcAdapter) Serve() error {
 	// g.Serve() will create a service goroutine for each incoming connection
 	if err := g.server.Serve(g.tcpListener); err != nil {
@@ -61,6 +57,7 @@ func (g *GrpcAdapter) Serve() error {
 	return nil
 }
 
+// Stop terminates the gRPC server.
 func (g *GrpcAdapter) Stop() {
 	log.Info().Msg("Gracefully shutting down gRPC server")
 

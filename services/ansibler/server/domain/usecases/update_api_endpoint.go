@@ -19,7 +19,7 @@ func (u *Usecases) UpdateAPIEndpoint(request *pb.UpdateAPIEndpointRequest) (*pb.
 
 	log.Info().Msgf("Updating api endpoint for cluster %s project %s", request.Current.ClusterInfo.Name, request.ProjectName)
 	if err := updateAPIEndpoint(request.Current.ClusterInfo, request.Desired.ClusterInfo); err != nil {
-		return nil, fmt.Errorf("Failed to update api endpoint for cluster %s project %s", request.Current.ClusterInfo.Name, request.ProjectName)
+		return nil, fmt.Errorf("failed to update api endpoint for cluster %s project %s", request.Current.ClusterInfo.Name, request.ProjectName)
 	}
 	log.Info().Msgf("Updated api endpoint for cluster %s project %s", request.Current.ClusterInfo.Name, request.ProjectName)
 
@@ -35,7 +35,7 @@ func updateAPIEndpoint(currentK8sClusterInfo, desiredK8sClusterInfo *pb.ClusterI
 	// Find the ApiEndpoint node from the current state of the K8s cluster.
 	apiEndpointNodePool, apiEndpointNode, err := commonUtils.FindNodepoolWithApiEndpointNode(currentK8sClusterInfo.GetNodePools())
 	if err != nil {
-		return fmt.Errorf("Failed to find the node with type: %s", pb.NodeType_apiEndpoint.String())
+		return fmt.Errorf("failed to find the node with type: %s", pb.NodeType_apiEndpoint.String())
 	}
 	// Check whether that node still exists in the desired state of the cluster or not.
 	apiEndpointNodeExists := commonUtils.Contains(apiEndpointNodePool, desiredK8sClusterInfo.GetNodePools(),
@@ -48,8 +48,6 @@ func updateAPIEndpoint(currentK8sClusterInfo, desiredK8sClusterInfo *pb.ClusterI
 		return nil
 	}
 
-	// If the ApiEndpoint type node doesn't exist
-
 	// This is the directory where files (Ansible inventory files, SSH keys etc.) will be generated.
 	outputDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, commonUtils.CreateHash(commonUtils.HashLength)))
 	if err := commonUtils.CreateDirectory(outputDirectory); err != nil {
@@ -61,7 +59,6 @@ func updateAPIEndpoint(currentK8sClusterInfo, desiredK8sClusterInfo *pb.ClusterI
 		return fmt.Errorf("failed to create key file for %s : %w", clusterID, err)
 	}
 
-	//
 	err = utils.GenerateInventoryFile(utils.LBInventoryFileName, outputDirectory, utils.LbInventoryFileParameters{
 		K8sNodepools: currentK8sClusterInfo.GetNodePools(),
 		LBClusters:   nil,

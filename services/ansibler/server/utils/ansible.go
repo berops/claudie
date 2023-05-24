@@ -28,7 +28,7 @@ func GenerateInventoryFile(inventoryTemplateFileName, outputDirectory string, da
 	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.AnsiblerTemplates}
 	template, err := templateLoader.LoadTemplate(inventoryTemplateFileName)
 	if err != nil {
-		return fmt.Errorf("Error while loading Ansible inventory template %s for %s : %w", inventoryTemplateFileName, outputDirectory, err)
+		return fmt.Errorf("error while loading Ansible inventory template %s for %s : %w", inventoryTemplateFileName, outputDirectory, err)
 	}
 
 	err = templateUtils.Templates{Directory: outputDirectory}.

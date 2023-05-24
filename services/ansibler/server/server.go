@@ -22,7 +22,6 @@ func main() {
 	grpcAdapter := grpc.CreateGrpcAdapter()
 
 	errGroup, errGroupContext := errgroup.WithContext(context.Background())
-
 	errGroup.Go(grpcAdapter.Serve)
 
 	// Listen for system interruptions to gracefully shut down
@@ -40,7 +39,7 @@ func main() {
 
 		case shutdownSignal := <-shutdownSignalChan:
 			log.Info().Msgf("Received program shutdown signal %v", shutdownSignal)
-			err = errors.New("Program interruption signal")
+			err = errors.New("program interruption signal")
 		}
 
 		grpcAdapter.Stop()

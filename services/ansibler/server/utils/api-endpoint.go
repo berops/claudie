@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 
+	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 )
 
@@ -42,6 +43,19 @@ func ChangeAPIEndpoint(clusterName, oldEndpoint, newEndpoint, directory string) 
 
 	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("EP - %s", clusterName)); err != nil {
 		return fmt.Errorf("error while running ansible: %w ", err)
+	}
+
+	return nil
+}
+
+// FindCurrentAPIServerTypeLBCluster finds the current API server type LB cluster.
+func FindCurrentAPIServerTypeLBCluster(lbClusters []*LBClusterData) *LBClusterData {
+	for _, lbClusterData := range lbClusters {
+		if lbClusterData.CurrentLbCluster != nil {
+			if utils.HasAPIServerRole(lbClusterData.CurrentLbCluster.Roles) {
+				return lbClusterData
+			}
+		}
 	}
 
 	return nil
