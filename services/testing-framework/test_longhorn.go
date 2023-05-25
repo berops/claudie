@@ -55,9 +55,16 @@ func checkLonghornNodes(ctx context.Context, cluster *pb.K8Scluster, kubectl kub
 	workerCount := 0
 	//count the worker nodes
 	for _, nodepool := range cluster.ClusterInfo.NodePools {
-		if !nodepool.IsControl {
-			workerCount += int(nodepool.Count)
+		if nodepool.GetDynamicNodePool() != nil {
+			if !nodepool.GetDynamicNodePool().IsControl {
+				workerCount += int(nodepool.GetDynamicNodePool().Count)
+			}
+		} else if nodepool.GetStaticNodePool() != nil {
+			if !nodepool.GetStaticNodePool().IsControl {
+				workerCount += len(nodepool.GetStaticNodePool().Nodes)
+			}
 		}
+
 	}
 	// give them time of maxLonghornCheck seconds to be scheduled
 	for {
