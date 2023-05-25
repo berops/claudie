@@ -12,6 +12,7 @@ import (
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/ansibler/server/ansible"
+	"github.com/berops/claudie/services/ansibler/templates"
 )
 
 /*
@@ -34,15 +35,10 @@ clusters/
 */
 
 const (
-	lbInventoryFile         = "lb-inventory.goini"
-	confFile                = "conf.gotpl"
-	nginxPlaybookTpl        = "nginx.goyml"
-	nginxPlaybook           = "nginx.yml"
-	nodeExporterPlaybookTpl = "node-exporter.goyml"
-	nodeExporterPlaybook    = "node-exporter.yml"
-	nodeExporterService     = "node-exporter.service.j2"
-	apiChangePlaybook       = "../../ansible-playbooks/apiEndpointChange.yml"
-	loggerPrefix            = "LB-cluster"
+	nginxPlaybook        = "nginx.yml"
+	nodeExporterPlaybook = "node-exporter.yml"
+	apiChangePlaybook    = "../../ansible-playbooks/apiEndpointChange.yml"
+	loggerPrefix         = "LB-cluster"
 )
 
 type APIEndpointChangeState string
@@ -375,11 +371,10 @@ func findCurrentAPILoadBalancer(lbs []*LBData) *LBData {
 // return error if not successful, nil otherwise
 func setUpNginx(lb *pb.LBcluster, targetedNodepool []*pb.NodePool, directory string) error {
 	//prepare data for .conf
-	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.AnsiblerTemplates}
 	template := templateUtils.Templates{Directory: directory}
-	tpl, err := templateLoader.LoadTemplate(confFile)
+	tpl, err := templateUtils.LoadTemplate(templates.NginxConfigTemplate)
 	if err != nil {
-		return fmt.Errorf("error while loading %s template for %w", confFile, err)
+		return fmt.Errorf("error while loading template for nginx config %w", err)
 	}
 	//get control and compute nodes
 	controlTarget, computeTarget := splitNodesByType(targetedNodepool)
@@ -396,9 +391,10 @@ func setUpNginx(lb *pb.LBcluster, targetedNodepool []*pb.NodePool, directory str
 	if err != nil {
 		return fmt.Errorf("error while generating lb.conf for %s : %w", lb.ClusterInfo.Name, err)
 	}
-	tpl, err = templateLoader.LoadTemplate(nginxPlaybookTpl)
+
+	tpl, err = templateUtils.LoadTemplate(templates.NginxPlaybookTemplate)
 	if err != nil {
-		return fmt.Errorf("error while loading %s for %s : %w", nginxPlaybookTpl, lb.ClusterInfo.Name, err)
+		return fmt.Errorf("error while loading nginx playbook template for %s : %w", lb.ClusterInfo.Name, err)
 	}
 	err = template.Generate(tpl, nginxPlaybook, LbPlaybookData{Loadbalancer: lb.ClusterInfo.Name})
 	if err != nil {
@@ -416,27 +412,17 @@ func setUpNginx(lb *pb.LBcluster, targetedNodepool []*pb.NodePool, directory str
 // setUpNodeExporter sets up node-exporter on the LB node
 // return error if not successful, nil otherwise
 func setUpNodeExporter(lb *pb.LBcluster, directory string) error {
-	// generate node-exporter playbook template
-	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.AnsiblerTemplates}
+	// Generate node-exporter playbook template
 	template := templateUtils.Templates{Directory: directory}
-	tpl, err := templateLoader.LoadTemplate(nodeExporterPlaybookTpl)
+	tpl, err := templateUtils.LoadTemplate(templates.NodeExporterPlaybookTemplate)
 	if err != nil {
-		return fmt.Errorf("error while loading %s template for %s : %w", nodeExporterPlaybookTpl, lb.ClusterInfo.Name, err)
+		return fmt.Errorf("error while loading node_exporter playbook template for %s : %w", lb.ClusterInfo.Name, err)
 	}
 	if err = template.Generate(tpl, nodeExporterPlaybook, LbPlaybookData{Loadbalancer: lb.ClusterInfo.Name}); err != nil {
 		return fmt.Errorf("error while generating %s for %s : %w", nodeExporterPlaybook, lb.ClusterInfo.Name, err)
 	}
 
-	// create node-exporter.service.j2 for the node-exporter playbook
-	tpl, err = templateLoader.LoadTemplate(nodeExporterService)
-	if err != nil {
-		return fmt.Errorf("error while loading %s template for %s : %w", nodeExporterService, lb.ClusterInfo.Name, err)
-	}
-	if err = template.Generate(tpl, nodeExporterService, LbPlaybookData{Loadbalancer: lb.ClusterInfo.Name}); err != nil {
-		return fmt.Errorf("error while generating %s for %s : %w", nodeExporterService, lb.ClusterInfo.Name, err)
-	}
-
-	//run the playbook
+	// Run the playbook
 	ansible := ansible.Ansible{Playbook: nodeExporterPlaybook, Inventory: filepath.Join("..", inventoryFile), Directory: directory}
 	if err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s-%s", lb.ClusterInfo.Name, lb.ClusterInfo.Hash)); err != nil {
 		return fmt.Errorf("error while running ansible for %s : %w", lb.ClusterInfo.Name, err)
@@ -476,7 +462,7 @@ func generateK8sBaseFiles(k8sDirectory string, lbInfo *LBInfo) error {
 		}
 	}
 	//generate inventory
-	err := generateInventoryFile(lbInventoryFile, k8sDirectory, LbInventoryData{
+	err := generateInventoryFile(templates.LoadbalancerInventoryTemplate, k8sDirectory, LbInventoryData{
 		K8sNodepools: lbInfo.TargetK8sNodepool,
 		LBClusters:   lbSlice,
 		ClusterID:    lbInfo.ClusterID,
