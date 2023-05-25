@@ -55,13 +55,15 @@ func updateNodepool(state *pb.Project, clusterName, nodepoolName string, nodes [
 	for _, cluster := range state.Clusters {
 		if cluster.ClusterInfo.Name == clusterName {
 			for _, nodepool := range cluster.ClusterInfo.NodePools {
-				if nodepool.Name == nodepoolName {
-					// Update nodes
-					nodepool.Nodes = nodes
-					if count != nil {
-						nodepool.Count = *count
+				if np := nodepool.GetDynamicNodePool(); np != nil {
+					if np.Name == nodepoolName {
+						// Update nodes
+						np.Nodes = nodes
+						if count != nil {
+							np.Count = *count
+						}
+						return nil
 					}
-					return nil
 				}
 			}
 			return fmt.Errorf("nodepool %s was not found in cluster %s", nodepoolName, clusterName)
