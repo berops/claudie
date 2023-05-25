@@ -433,13 +433,26 @@ func setUpNodeExporter(lb *pb.LBcluster, directory string) error {
 
 // splitNodesByType returns two slices of *pb.Node, one for control nodes and one for compute
 func splitNodesByType(nodepools []*pb.NodePool) (controlNodes, computeNodes []*pb.Node) {
-	for _, nodepools := range nodepools {
-		for _, node := range nodepools.Nodes {
-			if node.NodeType == pb.NodeType_apiEndpoint || node.NodeType == pb.NodeType_master {
-				controlNodes = append(controlNodes, node)
-			} else {
-				computeNodes = append(computeNodes, node)
-			}
+	for _, nodepool := range nodepools {
+		if np := nodepool.GetDynamicNodePool(); np != nil {
+			con, com := splitNodes(np.Nodes)
+			controlNodes = append(controlNodes, con...)
+			computeNodes = append(computeNodes, com...)
+		} else if np := nodepool.GetStaticNodePool(); np != nil {
+			con, com := splitNodes(np.Nodes)
+			controlNodes = append(controlNodes, con...)
+			computeNodes = append(computeNodes, com...)
+		}
+	}
+	return controlNodes, computeNodes
+}
+
+func splitNodes(nodes []*pb.Node) (controlNodes, computeNodes []*pb.Node) {
+	for _, node := range nodes {
+		if node.NodeType == pb.NodeType_apiEndpoint || node.NodeType == pb.NodeType_master {
+			controlNodes = append(controlNodes, node)
+		} else {
+			computeNodes = append(computeNodes, node)
 		}
 	}
 	return controlNodes, computeNodes

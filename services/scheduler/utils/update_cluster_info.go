@@ -46,8 +46,15 @@ desired:
 			} else if dnp, cnp := getStaticNodePools(desiredNp, currentNp); dnp != nil && cnp != nil {
 				// Found nodepool in desired and in Current
 				if dnp.Name == cnp.Name {
-					dnp.Nodes = cnp.Nodes
-					continue desired
+					for _, dn := range dnp.Nodes {
+						for _, cn := range cnp.Nodes {
+							if dn.Public == cn.Public {
+								dn.Name = cn.Name
+								dn.Private = cn.Private
+								dn.NodeType = cn.NodeType
+							}
+						}
+					}
 				}
 			}
 		}

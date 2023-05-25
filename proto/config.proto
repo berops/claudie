@@ -203,8 +203,10 @@ message StaticNodePool {
   string name = 1;
   // Array of nodes in this node pool.
   repeated Node nodes = 2;
+  // Map of keys for each static node in [<Node Endpoint>]<Key> form.
+  map<string, string> nodeKeys = 3;
   //  Flag to differentiate between control and compute nodes.
-  bool isControl = 3;
+  bool isControl = 4;
 }
 
 // Autoscaler configuration on per node pool basis.
@@ -234,36 +236,14 @@ enum NodeType {
   apiEndpoint = 2;
 }
 
-// Node value for each type of the node pool.
+// Node represents a single node from the node pool.
 message Node {
-  oneof NodeType {
-    // Node from dynamic node pool.
-    DynamicNode dynamicNode = 1;
-    // Node from static node pool.
-    StaticNode staticNode = 2;
-  }
-}
-
-// DynamicNode represents a single node from the dynamic node pool.
-message DynamicNode {
   // Name of the node.
   string name = 1;
   // Private IP of the node in the VPN.
   string private = 2;
   // Public IP of the node.
   string public = 3;
-  // Type of the node.
-  NodeType nodeType = 4;
-}
-
-// StaticNode represents a single node from the static node pool.
-message StaticNode {
-  // Name of the node.
-  string name = 1;
-  // Endpoint of the node in the VPN.
-  string endpoint = 2;
-  // Private key used to SSH into the node.
-  string key = 3;
   // Type of the node.
   NodeType nodeType = 4;
 }

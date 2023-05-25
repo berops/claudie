@@ -143,7 +143,7 @@ func printConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType, stat
 
 				buffer.WriteString("Nodes:\n")
 				for _, node := range np.GetNodes() {
-					buffer.WriteString(fmt.Sprintf("Name: %s Public: %s Private: %s NodeType: %s \n", node.GetDynamicNode().Name, node.GetDynamicNode().GetPublic(), node.GetDynamicNode().GetPrivate(), node.GetDynamicNode().GetNodeType().String()))
+					buffer.WriteString(fmt.Sprintf("Name: %s Public: %s Private: %s NodeType: %s \n", node.Name, node.GetPublic(), node.GetPrivate(), node.GetNodeType().String()))
 				}
 				buffer.WriteString("----------------------------------------\n")
 			} else if np := nodePool.GetStaticNodePool(); np != nil {
@@ -154,7 +154,7 @@ func printConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType, stat
 
 				buffer.WriteString("Nodes:\n")
 				for _, node := range np.GetNodes() {
-					buffer.WriteString(fmt.Sprintf("Name: %s Endpoint: %s Key: %s NodeType: %s \n", node.GetStaticNode().Name, node.GetStaticNode().GetEndpoint(), node.GetStaticNode().GetKey(), node.GetStaticNode().NodeType.String()))
+					buffer.WriteString(fmt.Sprintf("Name: %s Endpoint: %s Key: %s NodeType: %s \n", node.Name, node.GetEndpoint(), node.GetKey(), node.NodeType.String()))
 				}
 				buffer.WriteString("----------------------------------------\n")
 			}
@@ -181,7 +181,7 @@ func printConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType, stat
 
 				buffer.WriteString("Nodes:\n")
 				for _, node := range np.GetNodes() {
-					buffer.WriteString(fmt.Sprintf("Name: %s Public: %s Private: %s NodeType: %s \n", node.GetDynamicNode().Name, node.GetDynamicNode().GetPublic(), node.GetDynamicNode().GetPrivate(), node.GetDynamicNode().GetNodeType().String()))
+					buffer.WriteString(fmt.Sprintf("Name: %s Public: %s Private: %s NodeType: %s \n", node.Name, node.GetPublic(), node.GetPrivate(), node.GetNodeType().String()))
 				}
 				buffer.WriteString("----------------------------------------\n")
 			} else if np := nodePool.GetStaticNodePool(); np != nil {
@@ -191,7 +191,7 @@ func printConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType, stat
 
 				buffer.WriteString("Nodes:\n")
 				for _, node := range np.GetNodes() {
-					buffer.WriteString(fmt.Sprintf("Name: %s Endpoint: %s Key: %s NodeType: %s \n", node.GetStaticNode().Name, node.GetStaticNode().GetEndpoint(), node.GetStaticNode().GetKey(), node.GetStaticNode().NodeType.String()))
+					buffer.WriteString(fmt.Sprintf("Name: %s Endpoint: %s Key: %s NodeType: %s \n", node.Name, node.GetEndpoint(), node.GetKey(), node.NodeType.String()))
 				}
 				buffer.WriteString("----------------------------------------\n")
 			}

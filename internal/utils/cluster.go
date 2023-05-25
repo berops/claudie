@@ -133,3 +133,18 @@ func IsAutoscaled(cluster *pb.K8Scluster) bool {
 	}
 	return false
 }
+
+// GetDynamicNodePools returns slice of dynamic node pools used in specified cluster.
+func GetDynamicNodePools(ci *pb.ClusterInfo) []*pb.DynamicNodePool {
+	if ci == nil {
+		return nil
+	}
+
+	nps := make([]*pb.DynamicNodePool, 0, len(ci.GetNodePools()))
+	for _, np := range ci.GetNodePools() {
+		if n := np.GetDynamicNodePool(); n != nil {
+			nps = append(nps, n)
+		}
+	}
+	return nps
+}

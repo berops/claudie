@@ -186,6 +186,7 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 						Name:      nodePool.Name,
 						IsControl: isControl,
 						Nodes:     nodes,
+						NodeKeys:  getNodeKeys(nodePool),
 					},
 				},
 			})
@@ -200,16 +201,19 @@ func getStaticNodes(np *StaticNodePool) []*pb.Node {
 	nodes := make([]*pb.Node, 0, len(np.Nodes))
 	for i, node := range np.Nodes {
 		nodes = append(nodes, &pb.Node{
-			NodeType: &pb.Node_StaticNode{
-				StaticNode: &pb.StaticNode{
-					Name:     fmt.Sprintf("%s-%d", np.Name, i),
-					Key:      node.Key,
-					Endpoint: node.Endpoint,
-				},
-			},
+			Name:   fmt.Sprintf("%s-%d", np.Name, i),
+			Public: node.Endpoint,
 		})
 	}
 	return nodes
+}
+
+func getNodeKeys(nodepool *StaticNodePool) map[string]string {
+	m := make(map[string]string)
+	for _, n := range nodepool.Nodes {
+		m[n.Endpoint] = n.Key
+	}
+	return m
 }
 
 func (ds *Manifest) nodePoolDefined(pool string) bool {

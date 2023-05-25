@@ -51,13 +51,13 @@ func FindAPIEndpointNodePoolWithNode(nodepools []*pb.NodePool) (*pb.NodePool, *p
 func FindEndpointNode(nodepool *pb.NodePool) (*pb.Node, error) {
 	if np := nodepool.GetDynamicNodePool(); np != nil {
 		for _, node := range np.GetNodes() {
-			if node.GetDynamicNode().GetNodeType() == pb.NodeType_apiEndpoint {
+			if node.GetNodeType() == pb.NodeType_apiEndpoint {
 				return node, nil
 			}
 		}
 	} else if np := nodepool.GetStaticNodePool(); np != nil {
 		for _, node := range np.GetNodes() {
-			if node.GetStaticNode().GetNodeType() == pb.NodeType_apiEndpoint {
+			if node.GetNodeType() == pb.NodeType_apiEndpoint {
 				return node, nil
 			}
 		}
@@ -71,13 +71,13 @@ func FindControlNode(nodepools []*pb.NodePool) (*pb.Node, error) {
 	for _, nodepool := range nodepools {
 		if np := nodepool.GetDynamicNodePool(); np != nil {
 			for _, node := range np.GetNodes() {
-				if node.GetDynamicNode().NodeType == pb.NodeType_master {
+				if node.NodeType == pb.NodeType_master {
 					return node, nil
 				}
 			}
 		} else if np := nodepool.GetStaticNodePool(); np != nil {
 			for _, node := range np.GetNodes() {
-				if node.GetStaticNode().NodeType == pb.NodeType_master {
+				if node.NodeType == pb.NodeType_master {
 					return node, nil
 				}
 			}
