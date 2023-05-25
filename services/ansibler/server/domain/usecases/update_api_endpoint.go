@@ -59,7 +59,7 @@ func updateAPIEndpoint(currentK8sClusterInfo, desiredK8sClusterInfo *pb.ClusterI
 		return fmt.Errorf("failed to create key file for %s : %w", clusterID, err)
 	}
 
-	err = utils.GenerateInventoryFile(utils.LBInventoryFileName, outputDirectory, utils.LbInventoryFileParameters{
+	err = utils.GenerateInventoryFile(utils.LBInventoryFileName, outputDirectory, utils.LBInventoryFileParameters{
 		K8sNodepools: currentK8sClusterInfo.GetNodePools(),
 		LBClusters:   nil,
 		ClusterID:    clusterID,

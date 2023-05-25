@@ -126,7 +126,7 @@ func setUpLoadbalancers(clusterName string, lbClustersInfo *utils.LBClustersInfo
 func setUpNodeExporter(lbCluster *pb.LBcluster, outputDirectory string) error {
 	var (
 		templateLoader     = templateUtils.TemplateLoader{Directory: templateUtils.AnsiblerTemplates}
-		playbookParameters = utils.LbPlaybookParameters{Loadbalancer: lbCluster.ClusterInfo.Name}
+		playbookParameters = utils.LBPlaybookParameters{Loadbalancer: lbCluster.ClusterInfo.Name}
 	)
 
 	// Generate node-exporter Ansible playbook from template

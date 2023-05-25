@@ -65,7 +65,7 @@ const (
 )
 
 type (
-	LbInventoryFileParameters struct {
+	LBInventoryFileParameters struct {
 		K8sNodepools []*pb.NodePool
 		LBClusters   []*pb.LBcluster
 		ClusterID    string
@@ -100,7 +100,7 @@ type (
 		DesiredLbCluster *pb.LBcluster
 	}
 
-	LbPlaybookParameters struct {
+	LBPlaybookParameters struct {
 		Loadbalancer string
 	}
 
@@ -169,7 +169,7 @@ func GenerateLBBaseFiles(outputDirectory string, lbClustersInfo *LBClustersInfo)
 	// Generate Ansible inventory file.
 	err := GenerateInventoryFile(LBInventoryFileName, outputDirectory,
 		// Value of Ansible template parameters
-		LbInventoryFileParameters{
+		LBInventoryFileParameters{
 			K8sNodepools: lbClustersInfo.TargetK8sNodepool,
 			LBClusters:   lbClusters,
 			ClusterID:    lbClustersInfo.ClusterID,
