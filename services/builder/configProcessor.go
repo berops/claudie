@@ -130,6 +130,8 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 
 				// make the desired state of the temporary cluster the new current state.
 				clusterView.CurrentClusters[clusterName] = ctx.desiredCluster
+				// Update nodepool metadata, as they are not carried over
+				updateNodepoolMetadata(ctx.desiredCluster.ClusterInfo.NodePools, clusterView.DesiredClusters[clusterName].ClusterInfo.NodePools)
 				clusterView.Loadbalancers[clusterName] = ctx.desiredLoadbalancers
 			}
 

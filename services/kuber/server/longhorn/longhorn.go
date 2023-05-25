@@ -12,6 +12,7 @@ import (
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/services/kuber/templates"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -66,12 +67,11 @@ func (l *Longhorn) SetUp() error {
 
 	//load the templates
 	template := templateUtils.Templates{Directory: l.Directory}
-	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.KuberTemplates}
-	storageTpl, err := templateLoader.LoadTemplate(storageManifestTpl)
+	storageTpl, err := templateUtils.LoadTemplate(templates.StorageClassTemplate)
 	if err != nil {
 		return err
 	}
-	enableCATpl, err := templateLoader.LoadTemplate(longhornEnableCaTpl)
+	enableCATpl, err := templateUtils.LoadTemplate(templates.EnableClusterAutoscalerTemplate)
 	if err != nil {
 		return err
 	}
