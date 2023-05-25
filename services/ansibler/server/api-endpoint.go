@@ -25,7 +25,16 @@ func updateAPIEndpoint(current, desired *pb.ClusterInfo) error {
 	}
 
 	contains := utils.Contains(apiEndpointNodePool, desired.GetNodePools(), func(item *pb.NodePool, other *pb.NodePool) bool {
-		return item.GetName() == other.GetName()
+		if n1 := item.GetDynamicNodePool(); n1 != nil {
+			if n2 := item.GetDynamicNodePool(); n2 != nil {
+				return n1.Name == n2.Name
+			}
+		} else {
+			if n2 := item.GetStaticNodePool(); n2 != nil {
+				return n1.Name == n2.Name
+			}
+		}
+		return false
 	})
 
 	if !contains {
@@ -54,7 +63,12 @@ func updateAPIEndpoint(current, desired *pb.ClusterInfo) error {
 			return err
 		}
 
-		newEndpointNode := newNp.GetNodes()[0]
+		var newEndpointNode *pb.Node
+		if newNp.GetDynamicNodePool() != nil {
+			newEndpointNode = newNp.GetDynamicNodePool().GetNodes()[0]
+		} else {
+			newEndpointNode = newNp.GetStaticNodePool().GetNodes()[0]
+		}
 
 		// update the current state
 		apiEndpointNode.NodeType = pb.NodeType_master
@@ -91,17 +105,33 @@ func changeAPIEndpoint(clusterName, oldEndpoint, newEndpoint, directory string) 
 func findNewAPIEndpointCandidate(current, desired []*pb.NodePool, exclude *pb.NodePool) (*pb.NodePool, error) {
 	currentPools := make(map[string]*pb.NodePool)
 	for _, np := range current {
-		if np.IsControl && np.Name != exclude.Name {
-			currentPools[np.Name] = np
+		if np.GetDynamicNodePool() != nil {
+			if np.GetDynamicNodePool().IsControl && np.GetDynamicNodePool().Name != exclude.GetDynamicNodePool().Name {
+				currentPools[np.GetDynamicNodePool().Name] = np
+			}
+		} else if np.GetStaticNodePool() != nil {
+			if np.GetStaticNodePool().IsControl && np.GetStaticNodePool().Name != exclude.GetStaticNodePool().Name {
+				currentPools[np.GetStaticNodePool().Name] = np
+			}
 		}
+
 	}
 
 	for _, np := range desired {
-		if np.IsControl {
-			if candidate, ok := currentPools[np.Name]; ok {
-				return candidate, nil
+		if np.GetDynamicNodePool() != nil {
+			if np.GetDynamicNodePool().IsControl {
+				if candidate, ok := currentPools[np.GetDynamicNodePool().Name]; ok {
+					return candidate, nil
+				}
+			}
+		} else if np.GetStaticNodePool() != nil {
+			if np.GetStaticNodePool().IsControl {
+				if candidate, ok := currentPools[np.GetStaticNodePool().Name]; ok {
+					return candidate, nil
+				}
 			}
 		}
+
 	}
 
 	return nil, fmt.Errorf("failed to find control plane nodepool present in both current and desired state")

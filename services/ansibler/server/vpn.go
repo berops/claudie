@@ -66,7 +66,15 @@ func assignPrivateAddresses(nodepools []*pb.NodePool, cidr string) error {
 	var nodes []*pb.Node
 
 	for _, nodepool := range nodepools {
-		for _, node := range nodepool.Nodes {
+
+		var nodes []*pb.Node
+		if nodepool.GetDynamicNodePool() != nil {
+			nodes = nodepool.GetDynamicNodePool().Nodes
+		} else if nodepool.GetStaticNodePool() != nil {
+			nodes = nodepool.GetStaticNodePool().Nodes
+		}
+
+		for _, node := range nodes {
 			if node.Private != "" {
 				assignedIPs[node.Private] = struct{}{}
 			} else {
