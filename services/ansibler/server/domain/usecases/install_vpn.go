@@ -12,6 +12,7 @@ import (
 	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/ansibler/server/utils"
+	"github.com/berops/claudie/services/ansibler/templates"
 )
 
 const wireguardPlaybookFilePath = "../../ansible-playbooks/wireguard.yml"
@@ -73,7 +74,7 @@ func installWireguardVPN(clusterID string, vpnInfo *VPNInfo) error {
 		return fmt.Errorf("error while setting the private IPs for %s : %w", outputDirectory, err)
 	}
 
-	if err := utils.GenerateInventoryFile(allNodesInventoryTemplateFileName, outputDirectory,
+	if err := utils.GenerateInventoryFile(templates.AllNodesInventoryTemplate, outputDirectory,
 		// Value of Ansible template parameters
 		AllNodesInventoryData{
 			NodepoolsInfos: vpnInfo.NodepoolsInfoOfClusters,
@@ -84,7 +85,7 @@ func installWireguardVPN(clusterID string, vpnInfo *VPNInfo) error {
 
 	ansible := utils.Ansible{
 		Playbook:  wireguardPlaybookFilePath,
-		Inventory: inventoryFileName,
+		Inventory: utils.InventoryFileName,
 		Directory: outputDirectory,
 	}
 	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("VPN - %s", clusterID)); err != nil {

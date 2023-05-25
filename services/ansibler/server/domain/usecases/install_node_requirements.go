@@ -10,6 +10,7 @@ import (
 	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/ansibler/server/utils"
+	"github.com/berops/claudie/services/ansibler/templates"
 )
 
 const ansiblePlaybookFilePath = "../../ansible-playbooks/longhorn-req.yml"
@@ -48,7 +49,7 @@ func installLonghornRequirements(nodepoolsInfo *NodepoolsInfoOfCluster) error {
 		return fmt.Errorf("failed to create key file for %s : %w", nodepoolsInfo.ClusterId, err)
 	}
 
-	if err := utils.GenerateInventoryFile(allNodesInventoryTemplateFileName, outputDirectory,
+	if err := utils.GenerateInventoryFile(templates.AllNodesInventoryTemplate, outputDirectory,
 		// Value of Ansible template parameters
 		AllNodesInventoryData{
 			NodepoolsInfos: []*NodepoolsInfoOfCluster{nodepoolsInfo},
@@ -59,7 +60,7 @@ func installLonghornRequirements(nodepoolsInfo *NodepoolsInfoOfCluster) error {
 
 	ansible := utils.Ansible{
 		Playbook:  ansiblePlaybookFilePath,
-		Inventory: inventoryFileName,
+		Inventory: utils.InventoryFileName,
 		Directory: outputDirectory,
 	}
 	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("Node requirements - %s", nodepoolsInfo.ClusterId)); err != nil {

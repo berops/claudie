@@ -9,10 +9,6 @@ const (
 	outputDirectory = "clusters"
 	// sshPrivateKeyFileExtension is a private key file extension.
 	sshPrivateKeyFileExtension = "pem"
-	// inventoryFileName is name of the generated Ansible inventory file.
-	inventoryFileName = "inventory.ini"
-	//allNodesInventoryTemplateFileName is name of the generated Ansible inventory file for all nodes.
-	allNodesInventoryTemplateFileName = "all-node-inventory.goini"
 )
 
 type Usecases struct{}

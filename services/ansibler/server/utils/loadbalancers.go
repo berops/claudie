@@ -7,6 +7,7 @@ import (
 
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/services/ansibler/templates"
 )
 
 /*
@@ -29,9 +30,6 @@ clusters/
 	├── k8s.pem
 	└── inventory.ini
 */
-
-// Name of the generated Ansible inventory file (for LB cluster).
-const LBInventoryFileName = "lb-inventory.goini"
 
 type APIEndpointChangeState string
 
@@ -167,7 +165,7 @@ func GenerateLBBaseFiles(outputDirectory string, lbClustersInfo *LBClustersInfo)
 	}
 
 	// Generate Ansible inventory file.
-	err := GenerateInventoryFile(LBInventoryFileName, outputDirectory,
+	err := GenerateInventoryFile(templates.LoadbalancerInventoryTemplate, outputDirectory,
 		// Value of Ansible template parameters
 		LBInventoryFileParameters{
 			K8sNodepools: lbClustersInfo.TargetK8sNodepool,

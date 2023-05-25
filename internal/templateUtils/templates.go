@@ -9,32 +9,15 @@ import (
 	"text/template"
 )
 
-const (
-	baseDirectory        = "." //NOTE: left it here since it might be changed later
-	TerraformerTemplates = "services/terraformer/templates"
-	AnsiblerTemplates    = "services/ansibler/templates"
-	KuberTemplates       = "services/kuber/templates"
-	KubeElevenTemplates  = "services/kube-eleven/templates"
-	TestingTemplates     = "templates" //due to how tests are run, the path to templates is absolute to testing-framework directory
-)
-
 // directory - output directory
 // MUST be relative to base directory, i.e. services/terraformer/etc
 type Templates struct {
 	Directory string
 }
 
-// directory - template directory
-// MUST be relative to base directory, i.e. services/terraformer/etc
-type TemplateLoader struct {
-	Directory string
-}
-
 // creates a  file from template and saves it to the directory specified in Templates
 // the directory MUST be relative to base directory, i.e. services/terraformer/templates
 func (t Templates) Generate(tpl *template.Template, outputFile string, d interface{}) error {
-	//append the relative path in order to have a path from base directory
-	t.Directory = filepath.Join(baseDirectory, t.Directory)
 	generatedFile := filepath.Join(t.Directory, outputFile)
 	// make sure the t.Directory exists, if not, create it
 	if _, err := os.Stat(t.Directory); os.IsNotExist(err) {
@@ -63,26 +46,21 @@ func (t Templates) GenerateToString(tpl *template.Template, d interface{}) (stri
 	return buff.String(), nil
 }
 
-// loads the template from directory specified in TemplateLoader
-// the directory MUST be relative to base directory, i.e. services/terraformer/templates
-func (tl TemplateLoader) LoadTemplate(tplFile string) (*template.Template, error) {
-	tpl := template.New(tplFile).
-		Funcs(template.FuncMap{
-			"isMissing":                     IsMissing[int],
-			"targetPorts":                   ExtractTargetPorts,
-			"protocolToOCIProtocolNumber":   ProtocolNameToOCIProtocolNumber,
-			"protocolToAzureProtocolString": ProtocolNameToAzureProtocolString,
-			"assignPriority":                AssignPriority,
-			"enableAccNet":                  EnableAccNet,
-			"replaceAll":                    strings.ReplaceAll,
-			"trimPrefix":                    strings.TrimPrefix,
-			"extractNetmaskFromCIDR":        ExtractNetmaskFromCIDR,
-		})
-
-	tpl, err := tpl.ParseFiles(filepath.Join(baseDirectory, tl.Directory, tplFile))
+// LoadTemplate creates template instance with auxiliary functions from specified template.
+func LoadTemplate(tplFile string) (*template.Template, error) {
+	tpl, err := template.New("").Funcs(template.FuncMap{
+		"isMissing":                     IsMissing[int],
+		"targetPorts":                   ExtractTargetPorts,
+		"protocolToOCIProtocolNumber":   ProtocolNameToOCIProtocolNumber,
+		"protocolToAzureProtocolString": ProtocolNameToAzureProtocolString,
+		"assignPriority":                AssignPriority,
+		"enableAccNet":                  EnableAccNet,
+		"replaceAll":                    strings.ReplaceAll,
+		"trimPrefix":                    strings.TrimPrefix,
+		"extractNetmaskFromCIDR":        ExtractNetmaskFromCIDR,
+	}).Parse(tplFile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load the template file %s : %w", tplFile, err)
+		return nil, fmt.Errorf("failed to parse the template file : %w", err)
 	}
-
 	return tpl, nil
 }

@@ -10,6 +10,7 @@ import (
 	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/ansibler/server/utils"
+	"github.com/berops/claudie/services/ansibler/templates"
 )
 
 func (u *Usecases) UpdateAPIEndpoint(request *pb.UpdateAPIEndpointRequest) (*pb.UpdateAPIEndpointResponse, error) {
@@ -59,7 +60,7 @@ func updateAPIEndpoint(currentK8sClusterInfo, desiredK8sClusterInfo *pb.ClusterI
 		return fmt.Errorf("failed to create key file for %s : %w", clusterID, err)
 	}
 
-	err = utils.GenerateInventoryFile(utils.LBInventoryFileName, outputDirectory, utils.LBInventoryFileParameters{
+	err = utils.GenerateInventoryFile(templates.LoadbalancerInventoryTemplate, outputDirectory, utils.LBInventoryFileParameters{
 		K8sNodepools: currentK8sClusterInfo.GetNodePools(),
 		LBClusters:   nil,
 		ClusterID:    clusterID,

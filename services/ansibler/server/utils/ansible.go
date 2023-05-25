@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	inventoryFileName = "inventory.ini"
-
+	// File name for the ansible inventory.
+	InventoryFileName = "inventory.ini"
 	// defaultAnsibleForks defines how many forks ansible uses (on how many nodes can ansible perform a task at the same time).
 	defaultAnsibleForks = 15
 	// maxAnsibleRetries defines how many times should be playbook retried before returning error.
@@ -24,17 +24,16 @@ const (
 // In Ansible, an inventory file is a configuration file that defines
 // the hosts and groups of hosts that Ansible can manage.
 // generateInventoryFile generates the Ansible inventory file.
-func GenerateInventoryFile(inventoryTemplateFileName, outputDirectory string, data interface{}) error {
-	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.AnsiblerTemplates}
-	template, err := templateLoader.LoadTemplate(inventoryTemplateFileName)
+func GenerateInventoryFile(inventoryTemplate, outputDirectory string, data interface{}) error {
+	template, err := templateUtils.LoadTemplate(inventoryTemplate)
 	if err != nil {
-		return fmt.Errorf("error while loading Ansible inventory template %s for %s : %w", inventoryTemplateFileName, outputDirectory, err)
+		return fmt.Errorf("error while loading Ansible inventory template for %s : %w", outputDirectory, err)
 	}
 
 	err = templateUtils.Templates{Directory: outputDirectory}.
-		Generate(template, inventoryFileName, data)
+		Generate(template, InventoryFileName, data)
 	if err != nil {
-		return fmt.Errorf("error while generating from template %s for %s : %w", inventoryTemplateFileName, outputDirectory, err)
+		return fmt.Errorf("error while generating from template for %s : %w", outputDirectory, err)
 	}
 
 	return nil

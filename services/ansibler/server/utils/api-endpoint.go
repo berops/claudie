@@ -36,7 +36,7 @@ func FindNewAPIEndpointCandidate(current, desired []*pb.NodePool, exclude *pb.No
 func ChangeAPIEndpoint(clusterName, oldEndpoint, newEndpoint, directory string) error {
 	ansible := Ansible{
 		Playbook:  apiChangePlaybookFilePath,
-		Inventory: inventoryFileName,
+		Inventory: InventoryFileName,
 		Flags:     fmt.Sprintf("--extra-vars \"NewEndpoint=%s OldEndpoint=%s\"", newEndpoint, oldEndpoint),
 		Directory: directory,
 	}

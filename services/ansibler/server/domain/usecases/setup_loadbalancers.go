@@ -11,15 +11,14 @@ import (
 	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/ansibler/server/utils"
+	"github.com/berops/claudie/services/ansibler/templates"
 )
 
 const (
-	nodeExporterPlaybookTemplateFileName = "node-exporter.goyml"
-	nodeExporterPlaybookFileName         = "node-exporter.yml"
-	nodeExporterServiceFileName          = "node-exporter.service.j2"
-
-	nginxPlaybookName         = "nginx.yml"
-	nginxConfTemplateFileName = "conf.gotpl"
+	// nodeExporterPlaybookFileName defines name for node exporter playbook.
+	nodeExporterPlaybookFileName = "node-exporter.yml"
+	// nodeExporterPlaybookFileName defines name for nginx playbook.
+	nginxPlaybookName = "nginx.yml"
 )
 
 func (u *Usecases) SetUpLoadbalancers(request *pb.SetUpLBRequest) (*pb.SetUpLBResponse, error) {
@@ -124,34 +123,23 @@ func setUpLoadbalancers(clusterName string, lbClustersInfo *utils.LBClustersInfo
 // setUpNodeExporter sets up node-exporter on each node of the LB cluster.
 // Returns error if not successful, nil otherwise.
 func setUpNodeExporter(lbCluster *pb.LBcluster, outputDirectory string) error {
-	var (
-		templateLoader     = templateUtils.TemplateLoader{Directory: templateUtils.AnsiblerTemplates}
-		playbookParameters = utils.LBPlaybookParameters{Loadbalancer: lbCluster.ClusterInfo.Name}
-	)
+
+	var playbookParameters = utils.LBPlaybookParameters{Loadbalancer: lbCluster.ClusterInfo.Name}
 
 	// Generate node-exporter Ansible playbook from template
-	template, err := templateLoader.LoadTemplate(nodeExporterPlaybookTemplateFileName)
+	template, err := templateUtils.LoadTemplate(templates.NodeExporterPlaybookTemplate)
 	if err != nil {
-		return fmt.Errorf("error while loading %s template for %s : %w", nodeExporterPlaybookTemplateFileName, lbCluster.ClusterInfo.Name, err)
+		return fmt.Errorf("error while loading %s template for node_exporter playbook : %w", lbCluster.ClusterInfo.Name, err)
 	}
 	if err := (templateUtils.Templates{Directory: outputDirectory}).Generate(template, nodeExporterPlaybookFileName, playbookParameters); err != nil {
 		return fmt.Errorf("error while generating %s for %s : %w", nodeExporterPlaybookFileName, lbCluster.ClusterInfo.Name, err)
-	}
-
-	// Create node-exporter.service.j2 for the node-exporter playbook
-	template, err = templateLoader.LoadTemplate(nodeExporterServiceFileName)
-	if err != nil {
-		return fmt.Errorf("error while loading %s template for %s : %w", nodeExporterServiceFileName, lbCluster.ClusterInfo.Name, err)
-	}
-	if err = (templateUtils.Templates{Directory: outputDirectory}).Generate(template, nodeExporterServiceFileName, playbookParameters); err != nil {
-		return fmt.Errorf("error while generating %s for %s : %w", nodeExporterServiceFileName, lbCluster.ClusterInfo.Name, err)
 	}
 
 	// Run the Ansible playbook
 	ansible := utils.Ansible{
 		Directory: outputDirectory,
 		Playbook:  nodeExporterPlaybookFileName,
-		Inventory: filepath.Join("..", inventoryFileName),
+		Inventory: filepath.Join("..", utils.InventoryFileName),
 	}
 	if err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash)); err != nil {
 		return fmt.Errorf("error while running ansible for %s : %w", lbCluster.ClusterInfo.Name, err)
@@ -177,10 +165,9 @@ func setUpNginx(lbCluster *pb.LBcluster, targetK8sNodepool []*pb.NodePool, outpu
 	}
 
 	// Generate the nginx config file
-	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.AnsiblerTemplates}
-	nginxConfTemplate, err := templateLoader.LoadTemplate(nginxConfTemplateFileName)
+	nginxConfTemplate, err := templateUtils.LoadTemplate(templates.NginxConfigTemplate)
 	if err != nil {
-		return fmt.Errorf("error while loading %s template for %w", nginxConfTemplateFileName, err)
+		return fmt.Errorf("error while loading nginx config template : %w", err)
 	}
 	err = (templateUtils.Templates{Directory: outputDirectory}).
 		Generate(nginxConfTemplate, "lb.conf", utils.NginxConfigTemplateParameters{Roles: lbClusterRolesInfo})
@@ -190,7 +177,7 @@ func setUpNginx(lbCluster *pb.LBcluster, targetK8sNodepool []*pb.NodePool, outpu
 
 	ansible := utils.Ansible{
 		Playbook:  nginxPlaybookName,
-		Inventory: filepath.Join("..", inventoryFileName),
+		Inventory: filepath.Join("..", utils.InventoryFileName),
 		Directory: outputDirectory,
 	}
 	err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash))
