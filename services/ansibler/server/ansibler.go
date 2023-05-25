@@ -8,11 +8,10 @@ import (
 )
 
 const (
-	baseDirectory         = "services/ansibler/server"
-	inventoryFile         = "inventory.ini"
-	nodesInventoryFileTpl = "all-node-inventory.goini"
-	outputDirectory       = "clusters"
-	privateKeyExt         = "pem"
+	baseDirectory   = "services/ansibler/server"
+	inventoryFile   = "inventory.ini"
+	outputDirectory = "clusters"
+	privateKeyExt   = "pem"
 )
 
 type NodepoolInfo struct {
@@ -32,16 +31,15 @@ type LbInventoryData struct {
 	ClusterID    string
 }
 
-func generateInventoryFile(inventoryTemplate, directory string, data interface{}) error {
-	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.AnsiblerTemplates}
-	tpl, err := templateLoader.LoadTemplate(inventoryTemplate)
+func generateInventoryFile(inventoryTemplate string, directory string, data interface{}) error {
+	tpl, err := templateUtils.LoadTemplate(inventoryTemplate)
 	if err != nil {
-		return fmt.Errorf("error while loading template %s for %s : %w", inventoryTemplate, directory, err)
+		return fmt.Errorf("error while loading inventory template for %s : %w", directory, err)
 	}
 	template := templateUtils.Templates{Directory: directory}
 	err = template.Generate(tpl, inventoryFile, data)
 	if err != nil {
-		return fmt.Errorf("error while generating from template %s for %s : %w", inventoryTemplate, directory, err)
+		return fmt.Errorf("error while generating from inventory template for %s : %w", directory, err)
 	}
 	return nil
 }

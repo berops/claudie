@@ -12,6 +12,7 @@ import (
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/services/kuber/templates"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -82,12 +83,11 @@ func (ab *AutoscalerBuilder) DestroyClusterAutoscaler() error {
 // generateFiles generates all manifests required for deploying Cluster Autoscaler.
 func (ab *AutoscalerBuilder) generateFiles() error {
 	tpl := templateUtils.Templates{Directory: ab.directory}
-	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.KuberTemplates}
 	var ca *template.Template
 	var err error
 
 	// Load templates
-	if ca, err = templateLoader.LoadTemplate(clusterAutoscalerTemplate); err != nil {
+	if ca, err = templateUtils.LoadTemplate(templates.ClusterAutoscalerTemplate); err != nil {
 		return fmt.Errorf("error loading cluster autoscaler template : %w", err)
 	}
 	// Prepare data

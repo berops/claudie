@@ -32,8 +32,23 @@
       notify: restart node_exporter
 
     - name: Copy the node_exporter systemd service file
-      template:
-        src: node-exporter.service.j2
+      copy:
+        content: | 
+          [Unit]
+          Description=Node Exporter
+          After=network-online.target
+          
+          [Service]
+          Type=simple
+          User=root
+          ExecStart=/usr/local/bin/node_exporter --web.listen-address=0.0.0.0:9100 --web.telemetry-path=/metrics
+          SyslogIdentifier=node_exporter
+          Restart=always
+          RestartSec=1
+          StartLimitInterval=0
+          
+          [Install]
+          WantedBy=multi-user.target
         dest: /etc/systemd/system/node_exporter.service
         owner: root
         group: root
