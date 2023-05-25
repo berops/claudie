@@ -21,6 +21,10 @@ const (
 	kubeconfigFileName           = "cluster-kubeconfig"
 	baseDirectory                = "services/kube-eleven/server"
 	outputDirectory              = "clusters"
+	staticRegion                 = "on-premise"
+	staticZone                   = "datacenter"
+	staticProvider               = "on-premise"
+	staticProviderName           = "claudie"
 )
 
 type KubeEleven struct {
@@ -129,32 +133,34 @@ func (k *KubeEleven) getClusterNodes() ([]*NodepoolInfo, *pb.Node) {
 
 	// Construct the slice of *Nodepoolnfo
 	for _, nodepool := range k.K8sCluster.ClusterInfo.GetNodePools() {
-		nodepoolInfo := &NodepoolInfo{
-			NodepoolName:      nodepool.Name,
-			Region:            sanitiseString(nodepool.Region),
-			Zone:              sanitiseString(nodepool.Zone),
-			CloudProviderName: sanitiseString(nodepool.Provider.CloudProviderName),
-			ProviderName:      sanitiseString(nodepool.Provider.SpecName),
-			Nodes:             make([]*NodeInfo, 0, len(nodepool.Nodes)),
-		}
-		// Construct the Nodes slice inside the NodePoolInfo
-		for _, node := range nodepool.Nodes {
-			nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-%s-", k.K8sCluster.ClusterInfo.Name, k.K8sCluster.ClusterInfo.Hash))
-			nodepoolInfo.Nodes = append(nodepoolInfo.Nodes, &NodeInfo{Name: nodeName, Node: node})
+		var nodepoolInfo *NodepoolInfo
 
-			// Find potential control node which can act as the cluster api endpoint
-			// in case there is no LB cluster (of ApiServer type) provided in the Claudie config.
+		if nodepool.GetDynamicNodePool() != nil {
+			var nodes []*NodeInfo
+			nodes, potentialEndpointNode = getNodeData(nodepool.GetDynamicNodePool().Nodes, func(name string) string {
+				return strings.TrimPrefix(name, fmt.Sprintf("%s-%s-", k.K8sCluster.ClusterInfo.Name, k.K8sCluster.ClusterInfo.Hash))
+			})
+			nodepoolInfo = &NodepoolInfo{
+				NodepoolName:      nodepool.GetDynamicNodePool().Name,
+				Region:            sanitiseString(nodepool.GetDynamicNodePool().Region),
+				Zone:              sanitiseString(nodepool.GetDynamicNodePool().Zone),
+				CloudProviderName: sanitiseString(nodepool.GetDynamicNodePool().Provider.CloudProviderName),
+				ProviderName:      sanitiseString(nodepool.GetDynamicNodePool().Provider.SpecName),
+				Nodes:             nodes,
+			}
 
-			// If cluster api endpoint is already set, use it.
-			if node.GetNodeType() == pb.NodeType_apiEndpoint {
-				potentialEndpointNode = node
-
-				// otherwise choose one master node which will act as the cluster api endpoint
-			} else if node.GetNodeType() == pb.NodeType_master && potentialEndpointNode == nil {
-				potentialEndpointNode = node
+		} else if nodepool.GetStaticNodePool() != nil {
+			var nodes []*NodeInfo
+			nodes, potentialEndpointNode = getNodeData(nodepool.GetStaticNodePool().Nodes, func(s string) string { return s })
+			nodepoolInfo = &NodepoolInfo{
+				NodepoolName:      nodepool.GetStaticNodePool().Name,
+				Region:            sanitiseString(staticRegion),
+				Zone:              sanitiseString(staticZone),
+				CloudProviderName: sanitiseString(staticProvider),
+				ProviderName:      sanitiseString(staticProviderName),
+				Nodes:             nodes,
 			}
 		}
-
 		nodepoolInfos = append(nodepoolInfos, nodepoolInfo)
 	}
 
@@ -190,4 +196,27 @@ func (k *KubeEleven) findAPIEndpoint(potentialEndpointNode *pb.Node) string {
 	}
 
 	return apiEndpoint
+}
+
+func getNodeData(nodes []*pb.Node, nameFunc func(string) string) ([]*NodeInfo, *pb.Node) {
+	n := make([]*NodeInfo, 0, len(nodes))
+	var potentialEndpointNode *pb.Node
+	// Construct the Nodes slice inside the NodePoolInfo
+	for _, node := range nodes {
+		nodeName := nameFunc(node.Name)
+		n = append(n, &NodeInfo{Name: nodeName, Node: node})
+
+		// Find potential control node which can act as the cluster api endpoint
+		// in case there is no LB cluster (of ApiServer type) provided in the Claudie config.
+
+		// If cluster api endpoint is already set, use it.
+		if node.GetNodeType() == pb.NodeType_apiEndpoint {
+			potentialEndpointNode = node
+
+			// otherwise choose one master node which will act as the cluster api endpoint
+		} else if node.GetNodeType() == pb.NodeType_master && potentialEndpointNode == nil {
+			potentialEndpointNode = node
+		}
+	}
+	return n, potentialEndpointNode
 }

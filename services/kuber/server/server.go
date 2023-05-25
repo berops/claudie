@@ -217,17 +217,16 @@ func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterM
 	for _, pool := range req.GetCluster().GetClusterInfo().GetNodePools() {
 		if np := pool.GetDynamicNodePool(); np != nil {
 			for _, node := range np.GetNodes() {
-				dp.NodeIps[node.GetDynamicNode().GetName()] = IPPair{
-					PublicIP:  net.ParseIP(node.GetDynamicNode().GetPublic()),
-					PrivateIP: net.ParseIP(node.GetDynamicNode().GetPrivate()),
+				dp.NodeIps[node.GetName()] = IPPair{
+					PublicIP:  net.ParseIP(node.GetPublic()),
+					PrivateIP: net.ParseIP(node.GetPrivate()),
 				}
 			}
 		} else if np := pool.GetStaticNodePool(); np != nil {
 			for _, node := range np.GetNodes() {
-				sp.NodeInfo[node.GetStaticNode().GetName()] = StaticNodeInfo{PrivateKey: node.GetStaticNode().GetKey(), Endpoint: node.GetStaticNode().GetEndpoint()}
+				sp.NodeInfo[node.GetName()] = StaticNodeInfo{PrivateKey: np.NodeKeys[node.Public], Endpoint: node.GetPublic()}
 			}
 		}
-
 	}
 	md.DynamicNodepools = dp
 	md.StaticNodepools = sp

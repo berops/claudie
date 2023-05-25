@@ -38,7 +38,7 @@ func (p *Patcher) PatchProviderID(logger zerolog.Logger) error {
 	for _, np := range p.nodepools {
 		if n := np.GetDynamicNodePool(); n != nil {
 			for _, node := range n.GetNodes() {
-				nodeName := strings.TrimPrefix(node.GetDynamicNode().Name, fmt.Sprintf("%s-", p.clusterID))
+				nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
 				patchPath := fmt.Sprintf(patchPathFormat, fmt.Sprintf(ProviderIdFormat, nodeName))
 				if err1 := p.kc.KubectlPatch("node", nodeName, patchPath); err1 != nil {
 					logger.Err(err1).Str("node", nodeName).Msgf("Error while patching node with patch %s", patchPath)
@@ -47,7 +47,7 @@ func (p *Patcher) PatchProviderID(logger zerolog.Logger) error {
 			}
 		} else if n := np.GetStaticNodePool(); n != nil {
 			for _, node := range n.GetNodes() {
-				nodeName := node.GetStaticNode().Name
+				nodeName := node.Name
 				patchPath := fmt.Sprintf(patchPathFormat, fmt.Sprintf(ProviderIdFormat, nodeName))
 				if err1 := p.kc.KubectlPatch("node", nodeName, patchPath); err1 != nil {
 					logger.Err(err1).Str("node", nodeName).Msgf("Error while patching node with patch %s", patchPath)

@@ -106,7 +106,7 @@ func (l *Longhorn) SetUp() error {
 					isWorkerNodeProvider = true
 					for _, node := range np.GetNodes() {
 						annotation := fmt.Sprintf("node.longhorn.io/default-node-tags='[\"%s\"]'", zoneName)
-						realNodeName := utils.FindName(realNodeNames, node.GetDynamicNode().Name)
+						realNodeName := utils.FindName(realNodeNames, node.Name)
 						// Add tag to the node via kubectl annotate, use --overwrite to avoid getting error of already tagged node
 						if err := kubectl.KubectlAnnotate("node", realNodeName, annotation, "--overwrite"); err != nil {
 							return fmt.Errorf("error while annotating the node %s from cluster %s via kubectl annotate : %w", realNodeName, l.Cluster.ClusterInfo.Name, err)
@@ -118,7 +118,7 @@ func (l *Longhorn) SetUp() error {
 					isWorkerNodeProvider = true
 					for _, node := range np.GetNodes() {
 						annotation := fmt.Sprintf("node.longhorn.io/default-node-tags='[\"%s\"]'", zoneName)
-						realNodeName := utils.FindName(realNodeNames, node.GetStaticNode().Name)
+						realNodeName := utils.FindName(realNodeNames, node.Name)
 						// Add tag to the node via kubectl annotate, use --overwrite to avoid getting error of already tagged node
 						if err := kubectl.KubectlAnnotate("node", realNodeName, annotation, "--overwrite"); err != nil {
 							return fmt.Errorf("error while annotating the node %s from cluster %s via kubectl annotate : %w", realNodeName, l.Cluster.ClusterInfo.Name, err)
