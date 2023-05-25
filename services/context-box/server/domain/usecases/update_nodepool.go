@@ -51,7 +51,7 @@ func (u *Usecases) UpdateNodepool(request *pb.UpdateNodepoolRequest) (*pb.Update
 }
 
 // updateNodepool updates the nodepool count and nodes in the given claudie project state (desired / current state)
-func updateNodepool(state *pb.Project, clusterName, nodepoolName string, nodes []*pb.DynamicNode, count *int32) error {
+func updateNodepool(state *pb.Project, clusterName, nodepoolName string, nodes []*pb.Node, count *int32) error {
 	for _, cluster := range state.Clusters {
 		if cluster.ClusterInfo.Name == clusterName {
 			for _, nodepool := range cluster.ClusterInfo.NodePools {
