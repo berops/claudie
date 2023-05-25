@@ -31,7 +31,7 @@ type nodeCache struct {
 	// Nodegroup as per Cluster Autoscaler definition.
 	nodeGroup *protos.NodeGroup
 	// Nodepool as per Claudie definition.
-	nodepool *pb.NodePool
+	nodepool *pb.DynamicNodePool
 	// Target size of node group.
 	targetSize int32
 }
@@ -62,7 +62,7 @@ func NewClaudieCloudProvider(projectName, clusterName string) *ClaudieCloudProvi
 	if cluster, err = getClaudieState(projectName, clusterName); err != nil {
 		panic(fmt.Sprintf("Error while getting cluster %s : %v", clusterName, err))
 	}
-	if nm, err = node_manager.NewNodeManager(cluster.ClusterInfo.NodePools); err != nil {
+	if nm, err = node_manager.NewNodeManager(utils.GetDynamicNodePools(cluster.ClusterInfo)); err != nil {
 		panic(fmt.Sprintf("Error while creating node manager : %v", err))
 	}
 	// Initialise all other variables.
@@ -108,17 +108,19 @@ func getClaudieState(projectName, clusterName string) (*pb.K8Scluster, error) {
 func getNodesCache(nodepools []*pb.NodePool) map[string]*nodeCache {
 	var nc = make(map[string]*nodeCache, len(nodepools))
 	for _, np := range nodepools {
-		// Cache nodepools, which are autoscaled.
-		if np.AutoscalerConfig != nil {
-			// Create nodeGroup struct.
-			ng := &protos.NodeGroup{
-				Id:      np.Name,
-				MinSize: np.AutoscalerConfig.Min,
-				MaxSize: np.AutoscalerConfig.Max,
-				Debug:   fmt.Sprintf("Nodepool %s [min %d, max %d]", np.Name, np.AutoscalerConfig.Min, np.AutoscalerConfig.Max),
+		if np.GetDynamicNodePool() != nil {
+			// Cache nodepools, which are autoscaled.
+			if np.GetDynamicNodePool().AutoscalerConfig != nil {
+				// Create nodeGroup struct.
+				ng := &protos.NodeGroup{
+					Id:      np.GetDynamicNodePool().Name,
+					MinSize: np.GetDynamicNodePool().AutoscalerConfig.Min,
+					MaxSize: np.GetDynamicNodePool().AutoscalerConfig.Max,
+					Debug:   fmt.Sprintf("Nodepool %s [min %d, max %d]", np.GetDynamicNodePool().Name, np.GetDynamicNodePool().AutoscalerConfig.Min, np.GetDynamicNodePool().AutoscalerConfig.Max),
+				}
+				// Append ng to the final slice.
+				nc[np.GetDynamicNodePool().Name] = &nodeCache{nodeGroup: ng, nodepool: np.GetDynamicNodePool(), targetSize: np.GetDynamicNodePool().Count}
 			}
-			// Append ng to the final slice.
-			nc[np.Name] = &nodeCache{nodeGroup: ng, nodepool: np, targetSize: np.Count}
 		}
 	}
 	return nc
@@ -216,7 +218,7 @@ func (c *ClaudieCloudProvider) refresh() error {
 	} else {
 		c.configCluster = cluster
 		c.nodesCache = getNodesCache(cluster.ClusterInfo.NodePools)
-		if err := c.nodeManager.Refresh(cluster.ClusterInfo.NodePools); err != nil {
+		if err := c.nodeManager.Refresh(utils.GetDynamicNodePools(cluster.ClusterInfo)); err != nil {
 			return fmt.Errorf("failed to refresh node manager : %w", err)
 		}
 	}

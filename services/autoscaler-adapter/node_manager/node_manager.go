@@ -33,7 +33,7 @@ type typeInfo struct {
 }
 
 // NewNodeManager returns a NodeManager pointer with initialised caches about nodes.
-func NewNodeManager(nodepools []*pb.NodePool) (*NodeManager, error) {
+func NewNodeManager(nodepools []*pb.DynamicNodePool) (*NodeManager, error) {
 	nm := &NodeManager{}
 	nm.cacheProviderMap = make(map[string]struct{})
 	if err := nm.refreshCache(nodepools); err != nil {
@@ -43,7 +43,7 @@ func NewNodeManager(nodepools []*pb.NodePool) (*NodeManager, error) {
 }
 
 // Refresh checks if the information about specified nodepools needs refreshing, and if so, refreshes it.
-func (nm *NodeManager) Refresh(nodepools []*pb.NodePool) error {
+func (nm *NodeManager) Refresh(nodepools []*pb.DynamicNodePool) error {
 	return nm.refreshCache(nodepools)
 }
 
@@ -54,7 +54,7 @@ func (nm *NodeManager) GetOs(image string) string {
 }
 
 // GetCapacity returns a theoretical capacity for a new node from specified nodepool.
-func (nm *NodeManager) GetCapacity(np *pb.NodePool) k8sV1.ResourceList {
+func (nm *NodeManager) GetCapacity(np *pb.DynamicNodePool) k8sV1.ResourceList {
 	typeInfo := nm.getTypeInfo(np.Provider.CloudProviderName, np)
 	if typeInfo != nil {
 		var disk int64
@@ -75,7 +75,7 @@ func (nm *NodeManager) GetCapacity(np *pb.NodePool) k8sV1.ResourceList {
 }
 
 // GetLabels returns default labels with their theoretical values for the specified nodepool.
-func (nm *NodeManager) GetLabels(np *pb.NodePool) map[string]string {
+func (nm *NodeManager) GetLabels(np *pb.DynamicNodePool) map[string]string {
 	m := make(map[string]string)
 	// Claudie assigned labels.
 	m["claudie.io/nodepool"] = np.Name
@@ -93,7 +93,7 @@ func (nm *NodeManager) GetLabels(np *pb.NodePool) map[string]string {
 }
 
 // getTypeInfo returns a typeInfo for this nodepool
-func (nm *NodeManager) getTypeInfo(provider string, np *pb.NodePool) *typeInfo {
+func (nm *NodeManager) getTypeInfo(provider string, np *pb.DynamicNodePool) *typeInfo {
 	switch provider {
 	case "hetzner":
 		if ti, ok := nm.hetznerVMs[np.ServerType]; ok {
@@ -120,7 +120,7 @@ func (nm *NodeManager) getTypeInfo(provider string, np *pb.NodePool) *typeInfo {
 }
 
 // refreshCache refreshes node info cache if needed.
-func (nm *NodeManager) refreshCache(nps []*pb.NodePool) error {
+func (nm *NodeManager) refreshCache(nps []*pb.DynamicNodePool) error {
 	for _, np := range nps {
 		// Cache only for nodepools, which are autoscaled.
 		if np.AutoscalerConfig != nil {

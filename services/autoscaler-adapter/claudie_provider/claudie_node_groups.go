@@ -161,7 +161,7 @@ func (c *ClaudieCloudProvider) NodeGroupGetOptions(_ context.Context, req *proto
 }
 
 // updateNodepool will call context-box UpdateNodepool method to save any changes to the database. This will also initiate build of the changed nodepool.
-func (c *ClaudieCloudProvider) updateNodepool(nodepool *pb.NodePool) error {
+func (c *ClaudieCloudProvider) updateNodepool(nodepool *pb.DynamicNodePool) error {
 	// Update the nodepool in the Claudie.
 	var cc *grpc.ClientConn
 	var err error
