@@ -3,7 +3,6 @@ package loadbalancer
 import (
 	"fmt"
 
-	"github.com/berops/claudie/internal/utils"
 	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
 	"github.com/rs/zerolog"
 	"golang.org/x/sync/errgroup"
@@ -95,7 +94,7 @@ func (l LBcluster) Destroy(logger zerolog.Logger) error {
 		dns := DNS{
 			ClusterName:    l.CurrentState.ClusterInfo.Name,
 			ClusterHash:    l.CurrentState.ClusterInfo.Hash,
-			CurrentNodeIPs: getNodeIPs(utils.GetDynamicNodePools(l.CurrentState.ClusterInfo)),
+			CurrentNodeIPs: getNodeIPs(l.CurrentState.ClusterInfo.NodePools),
 			CurrentDNS:     l.CurrentState.Dns,
 			ProjectName:    l.ProjectName,
 		}
@@ -106,12 +105,18 @@ func (l LBcluster) Destroy(logger zerolog.Logger) error {
 }
 
 // getNodeIPs returns slice of public IPs used in the node pool.
-func getNodeIPs(nodepools []*pb.DynamicNodePool) []string {
+func getNodeIPs(nodepools []*pb.NodePool) []string {
 	var ips []string
 
 	for _, nodepool := range nodepools {
-		for _, node := range nodepool.Nodes {
-			ips = append(ips, node.GetDynamicNode().Public)
+		if nodepool.GetDynamicNodePool() != nil {
+			for _, node := range nodepool.GetDynamicNodePool().Nodes {
+				ips = append(ips, node.Public)
+			}
+		} else {
+			for _, node := range nodepool.GetStaticNodePool().Nodes {
+				ips = append(ips, node.Public)
+			}
 		}
 	}
 
