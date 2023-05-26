@@ -21,13 +21,20 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - name: Merge with master branch
-        uses: devmasx/merge-branch@1.4.0
+      - uses: everlytic/branch-merge@1.1.2
         with:
-          type: now
-          from_branch: master
-          target_branch: ${{ github.head_ref }}
           github_token: ${{ github.token }}
+          source_ref: 'master'
+          target_branch: ${{ github.head_ref }}
+          # commit_message_template: '[Automated] Merged {source'
+
+      # - name: Merge with master branch
+      #   uses: devmasx/merge-branch@1.4.0
+      #   with:
+      #     type: now
+      #     from_branch: master
+      #     target_branch: ${{ github.head_ref }}
+      #     github_token: ${{ github.token }}
   #--------------------------------------------------------------------------------------------------
   check-changes:
     if: github.event.pull_request.draft == false
