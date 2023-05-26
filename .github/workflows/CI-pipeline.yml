@@ -27,8 +27,8 @@ jobs:
           github_token: ${{ github.token }}
           source_ref: master
           target_branch: ${{ github.head_ref }}
-          # commit_message_template: '[Automated] Merged {source'
 
+      # has following problem https://github.com/actions/runner/issues/981
       # - name: Merge with master branch
       #   uses: devmasx/merge-branch@1.4.0
       #   with:
