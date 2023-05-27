@@ -70,6 +70,7 @@ func NewSecretWatcher(usecases *usecases.Usecases) (*SecretWatcher, error) {
 
 // Monitor will continuously watch for any changes regarding input manifest secrets. This function will exit once usecases context will get canceled.
 func (sw *SecretWatcher) Monitor() {
+	log.Info().Msgf("Frontend is watching for any new input manifest")
 	// Loop the watching as watch.Interface.ResultChan() gets closed after some time.
 	for {
 		select {
@@ -214,7 +215,9 @@ func (sw *SecretWatcher) getNewWatcher() (watch.Interface, error) {
 // PerformHealthCheck perform health check for secret watcher.
 func (sw *SecretWatcher) PerformHealthCheck() error {
 	if _, err := sw.getNewWatcher(); err != nil {
+		log.Debug().Msgf("health status: failed")
 		return fmt.Errorf("failed to create WATCH interface : %w", err)
 	}
+	log.Debug().Msgf("health status: ok")
 	return nil
 }

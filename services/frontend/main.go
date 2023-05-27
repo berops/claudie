@@ -52,27 +52,37 @@ func run() error {
 		return err
 	}
 
+	manifestController, err  := inboundAdapters.NewManifestController(usecaseContext)
+	if err != nil {
+		usecaseCancel()
+		return err
+	}	
+
+	// usecases.ProcessManifestFiles() goroutine returns on usecases.Context cancels
+	go usecases.ProcessManifestFiles()
+
+	// usecases.WatchConfigs() goroutine returns on usecases.Context cancels
+	go usecases.WatchConfigs()
+
+	// secretWatcher.Monitor() goroutine returns on usecases.Context cancels
+	go secretWatcher.Monitor()
+
+	// run validation webhook in separate goroutine
+	go manifestController.Start()
+
 	// Start Kubernetes liveness and readiness probe responders
 	healthcheck.NewClientHealthChecker(fmt.Sprint(healthcheckPort),
 		func() error {
 			if err := secretWatcher.PerformHealthCheck(); err != nil {
 				return err
 			}
+			if err := manifestController.PerformHealthCheck(); err != nil {
+				return err
+			}
 			return contextBoxConnector.PerformHealthCheck()
 		},
-	).StartProbes()
-
-	// usecases.ProcessManifestFiles() goroutine returns on usecases.Context cancels
-	go usecases.ProcessManifestFiles()
-	log.Info().Msgf("Frontend is ready to process input manifests")
-
-	// usecases.WatchConfigs() goroutine returns on usecases.Context cancels
-	go usecases.WatchConfigs()
-	log.Info().Msgf("Frontend is ready to watch input manifest statuses")
-
-	// secretWatcher.Monitor() goroutine returns on usecases.Context cancels
-	go secretWatcher.Monitor()
-	log.Info().Msgf("Frontend is watching for any new input manifest")
+	).StartProbes()	
+	log.Info().Msgf("Started liveness and readiness probe responders")
 
 	// Cancel context for usecases functions to terminate goroutines.
 	defer usecaseCancel()
