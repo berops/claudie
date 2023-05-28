@@ -4,24 +4,12 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net"
-	"os"
-	"os/signal"
 	"path/filepath"
-	"syscall"
-	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/tidwall/gjson"
-	"github.com/tidwall/sjson"
-	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/health"
-	"google.golang.org/grpc/health/grpc_health_v1"
-	"gopkg.in/yaml.v3"
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/envs"
@@ -36,8 +24,7 @@ import (
 )
 
 const (
-	defaultKuberPort = 50057
-	outputDir        = "services/kuber/server/clusters"
+	outputDir = "services/kuber/server/clusters"
 )
 
 type (
@@ -56,80 +43,6 @@ type (
 
 type server struct {
 	pb.UnimplementedKuberServiceServer
-}
-
-func (s *server) PatchClusterInfoConfigMap(_ context.Context, req *pb.PatchClusterInfoConfigMapRequest) (*pb.PatchClusterInfoConfigMapResponse, error) {
-	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(req.DesiredCluster.ClusterInfo))
-	logger.Info().Msgf("Patching cluster info ConfigMap")
-	var err error
-	// Log error if any
-	defer func() {
-		if err != nil {
-			logger.Err(err).Msgf("Error while patching cluster info Config Map")
-		} else {
-			logger.Info().Msgf("Cluster info Config Map patched successfully")
-		}
-	}()
-
-	k := kubectl.Kubectl{
-		Kubeconfig: req.DesiredCluster.Kubeconfig,
-	}
-
-	configMap, err := k.KubectlGet("cm cluster-info", "-ojson", "-n kube-public")
-	if err != nil {
-		return nil, err
-	}
-
-	if configMap == nil {
-		return &pb.PatchClusterInfoConfigMapResponse{}, nil
-	}
-
-	configMapKubeconfig := gjson.Get(string(configMap), "data.kubeconfig")
-
-	var rawKubeconfig map[string]interface{}
-	if err = yaml.Unmarshal([]byte(req.DesiredCluster.Kubeconfig), &rawKubeconfig); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal kubeconfig, malformed yaml")
-	}
-
-	var rawConfigMapKubeconfig map[string]interface{}
-	if err = yaml.Unmarshal([]byte(configMapKubeconfig.String()), &rawConfigMapKubeconfig); err != nil {
-		return nil, fmt.Errorf("failed to update cluster info config map, malformed yaml")
-	}
-
-	// Kubeadm uses this config when joining nodes thus we need to update it with the new endpoint
-	// https://kubernetes.io/docs/reference/setup-tools/kubeadm/implementation-details/#shared-token-discovery
-
-	// only update the certificate-authority-data and server
-	newClusters := rawKubeconfig["clusters"].([]interface{})
-	if len(newClusters) == 0 {
-		return nil, fmt.Errorf("desired state kubeconfig has no clusters")
-	}
-	newClusterInfo := newClusters[0].(map[string]interface{})["cluster"].(map[string]interface{})
-
-	configMapClusters := rawConfigMapKubeconfig["clusters"].([]interface{})
-	if len(configMapClusters) == 0 {
-		return nil, fmt.Errorf("config-map kubeconfig has no clusters")
-	}
-	oldClusterInfo := configMapClusters[0].(map[string]interface{})["cluster"].(map[string]interface{})
-
-	oldClusterInfo["server"] = newClusterInfo["server"]
-	oldClusterInfo["certificate-authority-data"] = newClusterInfo["certificate-authority-data"]
-
-	b, err := yaml.Marshal(rawConfigMapKubeconfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal patched config map")
-	}
-
-	patchedConfigMap, err := sjson.Set(string(configMap), "data.kubeconfig", b)
-	if err != nil {
-		return nil, fmt.Errorf("failed to update config map with new kubeconfig")
-	}
-
-	if err = k.KubectlApplyString(patchedConfigMap, "-n kube-public"); err != nil {
-		return nil, fmt.Errorf("failed to patch config map: %w", err)
-	}
-
-	return &pb.PatchClusterInfoConfigMapResponse{}, nil
 }
 
 func (s *server) SetUpStorage(ctx context.Context, req *pb.SetUpStorageRequest) (*pb.SetUpStorageResponse, error) {
@@ -386,73 +299,4 @@ func (s *server) DestroyClusterAutoscaler(ctx context.Context, req *pb.DestroyCl
 
 	logger.Info().Msgf("Cluster autoscaler successfully destroyed")
 	return &pb.DestroyClusterAutoscalerResponse{}, nil
-}
-
-func main() {
-	// initialize logger
-	utils.InitLog("kuber")
-
-	// Set the kuber port
-	kuberPort := utils.GetenvOr("KUBER_PORT", fmt.Sprint(defaultKuberPort))
-
-	// Start Terraformer Service
-	trfAddr := net.JoinHostPort("0.0.0.0", kuberPort)
-	lis, err := net.Listen("tcp", trfAddr)
-	if err != nil {
-		log.Fatal().Msgf("Failed to listen on %v", err)
-	}
-	log.Info().Msgf("Kuber service is listening on: %s", trfAddr)
-
-	s := grpc.NewServer()
-	pb.RegisterKuberServiceServer(s, &server{})
-
-	// Add health service to gRPC
-	healthServer := health.NewServer()
-	// Kuber does not have any custom health check functions, thus always serving.
-	healthServer.SetServingStatus("kuber-liveness", grpc_health_v1.HealthCheckResponse_SERVING)
-	healthServer.SetServingStatus("kuber-readiness", grpc_health_v1.HealthCheckResponse_SERVING)
-	grpc_health_v1.RegisterHealthServer(s, healthServer)
-
-	g, ctx := errgroup.WithContext(context.Background())
-
-	g.Go(func() error {
-		ch := make(chan os.Signal, 1)
-		signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
-		defer signal.Stop(ch)
-
-		// wait for either the received signal or
-		// check if an error occurred in other
-		// go-routines.
-		var err error
-		select {
-		case <-ctx.Done():
-			err = ctx.Err()
-		case sig := <-ch:
-			log.Info().Msgf("Received signal %v", sig)
-			err = errors.New("interrupt signal")
-		}
-
-		log.Info().Msg("Gracefully shutting down gRPC server")
-		s.GracefulStop()
-		healthServer.Shutdown()
-
-		// Sometimes when the container terminates gRPC logs the following message:
-		// rpc error: code = Unknown desc = Error: No such container: hash of the container...
-		// It does not affect anything as everything will get terminated gracefully
-		// this time.Sleep fixes it so that the message won't be logged.
-		time.Sleep(1 * time.Second)
-
-		return err
-	})
-
-	g.Go(func() error {
-		// s.Serve() will create a service goroutine for each connection
-		if err := s.Serve(lis); err != nil {
-			return fmt.Errorf("kuber failed to serve: %w", err)
-		}
-		log.Info().Msg("Finished listening for incoming connections")
-		return nil
-	})
-
-	log.Info().Msgf("Stopping Kuber: %v", g.Wait())
 }
