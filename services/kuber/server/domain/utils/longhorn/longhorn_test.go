@@ -3,8 +3,9 @@ package longhorn
 import (
 	"testing"
 
-	"github.com/berops/claudie/internal/kubectl"
 	"github.com/stretchr/testify/require"
+
+	"github.com/berops/claudie/internal/kubectl"
 )
 
 // NOTE: might need to set kubeconfig and comment out stdout and stderr in runWithOutput()

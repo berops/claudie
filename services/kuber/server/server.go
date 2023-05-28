@@ -17,7 +17,6 @@ import (
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/kuber/server/autoscaler"
-	"github.com/berops/claudie/services/kuber/server/longhorn"
 	"github.com/berops/claudie/services/kuber/server/nodes"
 	scrapeconfig "github.com/berops/claudie/services/kuber/server/scrapeConfig"
 	"github.com/berops/claudie/services/kuber/server/secret"
@@ -43,22 +42,6 @@ type (
 
 type server struct {
 	pb.UnimplementedKuberServiceServer
-}
-
-func (s *server) SetUpStorage(ctx context.Context, req *pb.SetUpStorageRequest) (*pb.SetUpStorageResponse, error) {
-	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(req.DesiredCluster.ClusterInfo))
-
-	clusterID := fmt.Sprintf("%s-%s", req.DesiredCluster.ClusterInfo.Name, req.DesiredCluster.ClusterInfo.Hash)
-	clusterDir := filepath.Join(outputDir, clusterID)
-
-	logger.Info().Msgf("Setting up the longhorn")
-	longhorn := longhorn.Longhorn{Cluster: req.DesiredCluster, Directory: clusterDir}
-	if err := longhorn.SetUp(); err != nil {
-		return nil, fmt.Errorf("error while setting up the longhorn for %s : %w", clusterID, err)
-	}
-	logger.Info().Msgf("Longhorn successfully set up")
-
-	return &pb.SetUpStorageResponse{DesiredCluster: req.DesiredCluster}, nil
 }
 
 func (s *server) StoreLbScrapeConfig(ctx context.Context, req *pb.StoreLbScrapeConfigRequest) (*pb.StoreLbScrapeConfigResponse, error) {

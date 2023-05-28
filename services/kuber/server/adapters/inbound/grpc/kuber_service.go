@@ -16,3 +16,7 @@ type KuberGrpcService struct {
 func (k *KuberGrpcService) PatchClusterInfoConfigMap(_ context.Context, request *pb.PatchClusterInfoConfigMapRequest) (*pb.PatchClusterInfoConfigMapResponse, error) {
 	return k.usecases.PatchClusterInfoConfigMap(request)
 }
+
+func (k *KuberGrpcService) SetUpStorage(ctx context.Context, request *pb.SetUpStorageRequest) (*pb.SetUpStorageResponse, error) {
+	return k.usecases.SetUpStorage(ctx, request)
+}
