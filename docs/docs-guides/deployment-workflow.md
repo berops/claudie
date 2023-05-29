@@ -37,6 +37,6 @@ In case the [release-docs.yml](https://github.com/berops/claudie/blob/master/.gi
 * `pip install -r requirements.txt`
 * `mike deploy <version> latest --push`
 
-!!! Warning "Don't forget to use the `latest` tag in the last command, because otherwise the new version will not be loaded as default one, when visiting [docs.claudie.io](docs.claudie.io)"
+:warning: Don't forget to use the `latest` tag in the last command, because otherwise the new version will not be loaded as default one, when visiting [docs.claudie.io](docs.claudie.io)
 
 Find more about how to work with [mike](https://github.com/jimporter/mike).
