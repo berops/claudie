@@ -73,7 +73,6 @@ nav:
     - Claudie v0.3: CHANGELOG/changelog-0.3.x.md
   - How to work with docs:
     - Development: docs-guides/development.md
-    - Deployment workflow: docs-guides/deployment-workflow.md
 
 extra:
   version:
