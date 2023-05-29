@@ -120,7 +120,7 @@ jobs:
             # Check if kuber is going to be built, if so, insert latest tag and add to build.
 
             if [[ "${NEW_SERVICES[*]}" =~ "kuber" ]]; then
-              sudo apt update && sudo apt install skopeo jq
+              sudo apt-get update && sudo apt-get -y install skopeo jq
               TAG=$(skopeo list-tags docker://ghcr.io/berops/claudie/autoscaler-adapter | jq -r '.Tags | last')
               echo "Setting new tag for autoscaler adapter to $TAG"
               sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" cluster-autoscaler.goyaml
