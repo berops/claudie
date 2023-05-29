@@ -22,7 +22,7 @@ jobs:
           ref: ${{ github.head_ref }}
 
       - name: Merge with master branch
-        uses: everlytic/branch-merge@1.1.2
+        uses: everlytic/branch-merge@1.1.5
         with:
           github_token: ${{ github.token }}
           source_ref: master
