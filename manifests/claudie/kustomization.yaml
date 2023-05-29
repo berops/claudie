@@ -31,8 +31,8 @@ images:
 - name: ghcr.io/berops/claudie/kube-eleven
   newTag: b029565-1903
 - name: ghcr.io/berops/claudie/kuber
-  newTag: 196cb32-1911
+  newTag: c4ec5e6-1918
 - name: ghcr.io/berops/claudie/scheduler
   newTag: bc46171-1889
 - name: ghcr.io/berops/claudie/terraformer
-  newTag: 196cb32-1911
+  newTag: c4ec5e6-1918
