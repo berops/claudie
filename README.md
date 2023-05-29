@@ -77,7 +77,7 @@ For adding support for other cloud providers, open an issue or propose a PR.
 
 To try Claudie you can follow these few steps or go to [Getting Started](https://docs.claudie.io/latest/getting-started/get-started-using-claudie/) section in our [documentation](docs.claudie.io).
 
-1. Before you begin, please make sure you have instlled [cert-manager](https://cert-manager.io/docs/installation/). 
+1. Before you begin, please make sure you have installed [cert-manager](https://cert-manager.io/docs/installation/). 
   
     ```sh
     kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml
