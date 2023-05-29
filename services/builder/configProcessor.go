@@ -190,7 +190,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 					return err
 				}
 				logger.Info().Msgf("Deleting nodes from cluster")
-				cluster, err := deleteNodes(clusterView.CurrentClusters[clusterName], diff.ToDelete)
+				cluster, err := deleteNodes(clusterView.CurrentClusters[clusterName], clusterView.DesiredClusters[clusterName], diff.ToDelete)
 				if err != nil {
 					clusterView.SetWorkflowError(clusterName, err)
 					logger.Err(err).Msgf("Failed to delete nodes")
@@ -283,11 +283,11 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 }
 
 // separateNodepools creates two slices of node names, one for master and one for worker nodes
-func separateNodepools(clusterNodes map[string]int32, clusterInfo *pb.ClusterInfo) (master []string, worker []string) {
-	for _, nodepool := range clusterInfo.NodePools {
+func separateNodepools(clusterNodes map[string]int32, currentClusterInfo, desiredClusterInfo *pb.ClusterInfo) (master []string, worker []string) {
+	for _, nodepool := range currentClusterInfo.NodePools {
 		if np := nodepool.GetDynamicNodePool(); np != nil {
 			if count, ok := clusterNodes[np.Name]; ok && count > 0 {
-				names := getNodeNames(nodepool, int(count))
+				names := getDynamicNodeNames(nodepool, int(count))
 				if np.IsControl {
 					master = append(master, names...)
 				} else {
@@ -296,7 +296,7 @@ func separateNodepools(clusterNodes map[string]int32, clusterInfo *pb.ClusterInf
 			}
 		} else if np := nodepool.GetStaticNodePool(); np != nil {
 			if count, ok := clusterNodes[np.Name]; ok && count > 0 {
-				names := getNodeNames(nodepool, int(count))
+				names := getStaticNodeNames(nodepool, desiredClusterInfo)
 				if np.IsControl {
 					master = append(master, names...)
 				} else {
@@ -304,33 +304,53 @@ func separateNodepools(clusterNodes map[string]int32, clusterInfo *pb.ClusterInf
 				}
 			}
 		}
-
 	}
 	return master, worker
 }
 
-// getNodeNames returns slice of length count with names of the nodes from specified nodepool
+// getDynamicNodeNames returns slice of length count with names of the nodes from specified nodepool
 // nodes chosen are from the last element in Nodes slice, up to the first one
-func getNodeNames(np *pb.NodePool, count int) (names []string) {
+func getDynamicNodeNames(np *pb.NodePool, count int) (names []string) {
 	if n := np.GetDynamicNodePool(); n != nil {
 		for i := len(n.GetNodes()) - 1; i >= len(n.GetNodes())-count; i-- {
-			names = append(names, n.GetNodes()[i].GetDynamicNode().GetName())
-			log.Debug().Msgf("Choosing node %s for deletion", n.GetNodes()[i].GetDynamicNode().GetName())
-		}
-	} else if n := np.GetStaticNodePool(); n != nil {
-		for i := len(n.GetNodes()) - 1; i >= len(n.GetNodes())-count; i-- {
-			names = append(names, n.GetNodes()[i].GetDynamicNode().GetName())
-			log.Debug().Msgf("Choosing node %s for deletion", n.GetNodes()[i].GetDynamicNode().GetName())
+			names = append(names, n.GetNodes()[i].GetName())
+			log.Debug().Msgf("Choosing node %s for deletion", n.GetNodes()[i].GetName())
 		}
 	}
 	return names
 }
 
-func deleteNodes(cluster *pb.K8Scluster, nodes map[string]int32) (*pb.K8Scluster, error) {
-	master, worker := separateNodepools(nodes, cluster.ClusterInfo)
-	newCluster, err := callDeleteNodes(master, worker, cluster)
+// getStaticNodeNames returns slice of length count with names of the nodes from specified nodepool
+// nodes chosen are from the last element in Nodes slice, up to the first one
+func getStaticNodeNames(np *pb.NodePool, desiredCluster *pb.ClusterInfo) (names []string) {
+	// Find desired nodes for node pool.
+	desired := make(map[string]struct{})
+	for _, n := range desiredCluster.NodePools {
+		if n.GetStaticNodePool() != nil {
+			if n.GetStaticNodePool().Name == np.GetStaticNodePool().Name {
+				for _, node := range n.GetStaticNodePool().Nodes {
+					desired[node.Name] = struct{}{}
+				}
+			}
+		}
+	}
+	// Find deleted nodes
+	if n := np.GetStaticNodePool(); n != nil {
+		for _, node := range np.GetStaticNodePool().Nodes {
+			if _, ok := desired[node.Name]; !ok {
+				// Append name as it is not defined in desired state.
+				names = append(names, node.Name)
+			}
+		}
+	}
+	return names
+}
+
+func deleteNodes(currentCluster, desiredCluster *pb.K8Scluster, nodes map[string]int32) (*pb.K8Scluster, error) {
+	master, worker := separateNodepools(nodes, currentCluster.ClusterInfo, desiredCluster.ClusterInfo)
+	newCluster, err := callDeleteNodes(master, worker, currentCluster)
 	if err != nil {
-		return nil, fmt.Errorf("error while deleting nodes for %s : %w", cluster.ClusterInfo.Name, err)
+		return nil, fmt.Errorf("error while deleting nodes for %s : %w", currentCluster.ClusterInfo.Name, err)
 	}
 
 	return newCluster, nil
