@@ -57,3 +57,19 @@ func updateWorkflowStateInDB(configName, clusterName string, wf *pb.Workflow, c 
 		Workflow:    wf,
 	})
 }
+
+// updateNodepoolMetadata updates the nodepool metadata between stages of the cluster build.
+func updateNodepoolMetadata(src []*pb.NodePool, dst []*pb.NodePool) {
+	if src == nil || dst == nil {
+		return
+	}
+src:
+	for _, npSrc := range src {
+		for _, npDst := range dst {
+			if npSrc.Name == npDst.Name {
+				npDst.Metadata = npSrc.Metadata
+				continue src
+			}
+		}
+	}
+}

@@ -6,6 +6,7 @@ metadata:
     app.kubernetes.io/part-of: claudie
     app.kubernetes.io/name: minio
 spec:
+  backoffLimit: 8
   template:
     metadata:
       labels:

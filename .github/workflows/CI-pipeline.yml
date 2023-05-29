@@ -22,12 +22,20 @@ jobs:
           ref: ${{ github.head_ref }}
 
       - name: Merge with master branch
-        uses: devmasx/merge-branch@1.4.0
+        uses: everlytic/branch-merge@1.1.2
         with:
-          type: now
-          from_branch: master
-          target_branch: ${{ github.head_ref }}
           github_token: ${{ github.token }}
+          source_ref: master
+          target_branch: ${{ github.head_ref }}
+
+      # has following problem https://github.com/actions/runner/issues/981
+      # - name: Merge with master branch
+      #   uses: devmasx/merge-branch@1.4.0
+      #   with:
+      #     type: now
+      #     from_branch: master
+      #     target_branch: ${{ github.head_ref }}
+      #     github_token: ${{ github.token }}
   #--------------------------------------------------------------------------------------------------
   check-changes:
     if: github.event.pull_request.draft == false
@@ -102,7 +110,7 @@ jobs:
             if [ "$SERVICE" == "autoscaler-adapter" ]; then
               TAG=${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
               echo "Setting new tag for autoscaler adapter to $TAG"
-              sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" autoscaler-adapter.goyaml
+              sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" cluster-autoscaler.goyaml
             fi
           done
 
@@ -211,25 +219,11 @@ jobs:
         with:
           kustomize-version: 4.5.2
 
-      - name: Login to GCP
-        uses: google-github-actions/auth@v1.1.0
+      - name: e2e kubeconfig
+        uses: azure/k8s-set-context@v3.1
         with:
-          token_format: "access_token"
-          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
-          access_token_lifetime: "21600s"
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v1
-
-      - name: Configure kubectl
-        env:
-          USE_GKE_GCLOUD_AUTH_PLUGIN: True
-        run: |-
-          gcloud components install gke-gcloud-auth-plugin
-          gke-gcloud-auth-plugin --version
-          gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER_NAME }} --zone ${{ secrets.GKE_ZONE }}
-
+          kubeconfig: ${{ secrets.E2E_CLUSTER_KUBECONFIG }}
+  
       - name: Get PR labels
         id: pr-labels
         uses: joerick/pr-labels-action@v1.0.8
