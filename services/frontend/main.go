@@ -52,11 +52,11 @@ func run() error {
 		return err
 	}
 
-	manifestController, err  := inboundAdapters.NewManifestController(usecaseContext)
+	manifestController, err := inboundAdapters.NewManifestController(usecaseContext)
 	if err != nil {
 		usecaseCancel()
 		return err
-	}	
+	}
 
 	// usecases.ProcessManifestFiles() goroutine returns on usecases.Context cancels
 	go usecases.ProcessManifestFiles()
@@ -81,7 +81,7 @@ func run() error {
 			}
 			return contextBoxConnector.PerformHealthCheck()
 		},
-	).StartProbes()	
+	).StartProbes()
 	log.Info().Msgf("Started liveness and readiness probe responders")
 
 	// Cancel context for usecases functions to terminate goroutines.

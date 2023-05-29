@@ -31,6 +31,7 @@ var (
 type manifestController struct {
 	mgr                        manager.Manager
 	ctx                        context.Context
+	healthcheckClient          *http.Client
 	validationWebhookPort      int
 	validationWebhookCertDir   string
 	validationWebhookPath      string
@@ -60,9 +61,13 @@ func NewManifestController(ctx context.Context) (*manifestController, error) {
 		return nil, err
 	}
 
+	// create http.Client for healthech requests
+	client := &http.Client{}
+
 	// create ManifestController object
 	var mc = manifestController{
 		ctx:                        ctx,
+		healthcheckClient:          client,
 		validationWebhookPort:      port,
 		validationWebhookNamespace: namespace,
 		validationWebhookPath:      webhookPath,
@@ -97,7 +102,6 @@ func NewManifestController(ctx context.Context) (*manifestController, error) {
 }
 
 func (mc *manifestController) Start() {
-
 	crlog.SetLogger(zerologr.New(&log.Logger))
 	logger := crlog.Log
 
@@ -108,11 +112,16 @@ func (mc *manifestController) Start() {
 }
 
 func (mc *manifestController) PerformHealthCheck() error {
-	resp, err := http.Get(fmt.Sprintf("http://127.0.0.1%s/%s",healthcheckPort, healthcheckPath))
+	req, err := http.NewRequestWithContext(mc.ctx, "GET", fmt.Sprintf("http://127.0.0.1%s/%s", healthcheckPort, healthcheckPath), nil)
+	if err != nil {
+		return err
+	}
+	resp, err := mc.healthcheckClient.Do(req)
 	log.Debug().Msgf("health status: %s", resp.Status)
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	return nil
 }
 
