@@ -108,18 +108,18 @@ jobs:
           NEW_SERVICES=( ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }} )
 
           # Check if autoscaler-adapter is going to be built, if so, insert latest tag and add kuber to array if needed.
-          if [ "$NEW_SERVICES{[*]} " =~ "autoscaler-adapter" ]; then
+          if [[ "${NEW_SERVICES[*]}" =~ "autoscaler-adapter" ]]; then
             TAG=${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
             echo "Setting new tag for autoscaler adapter to $TAG"
             sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" cluster-autoscaler.goyaml
 
-            if [ ! "$NEW_SERVICES{[*]} " =~ "kuber" ]; then
+            if [[ ! "${NEW_SERVICES[*]}" =~ "kuber" ]]; then
               NEW_SERVICES+=(kuber)
             fi
           else
             # Check if kuber is going to be built, if so, insert latest tag and add to build.
 
-            if [ "$NEW_SERVICES{[*]} " =~ "kuber" ]; then
+            if [[ "${NEW_SERVICES[*]}" =~ "kuber" ]]; then
               sudo apt update && sudo apt install skopeo jq
               TAG=$(skopeo list-tags docker://ghcr.io/berops/claudie/autoscaler-adapter | jq -r '.Tags | last')
               echo "Setting new tag for autoscaler adapter to $TAG"
