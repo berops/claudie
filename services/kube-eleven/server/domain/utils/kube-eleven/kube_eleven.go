@@ -147,7 +147,6 @@ func (k *KubeEleven) getClusterNodes() ([]*NodepoolInfo, *pb.Node) {
 				ProviderName:      sanitiseString(nodepool.GetDynamicNodePool().Provider.SpecName),
 				Nodes:             nodes,
 			}
-
 		} else if nodepool.GetStaticNodePool() != nil {
 			var nodes []*NodeInfo
 			nodes, potentialEndpointNode = getNodeData(nodepool.GetStaticNodePool().Nodes, func(s string) string { return s })

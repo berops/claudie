@@ -64,7 +64,6 @@ func checkLonghornNodes(ctx context.Context, cluster *pb.K8Scluster, kubectl kub
 				workerCount += len(nodepool.GetStaticNodePool().Nodes)
 			}
 		}
-
 	}
 	// give them time of maxLonghornCheck seconds to be scheduled
 	for {

@@ -55,7 +55,6 @@ func (p *Patcher) PatchProviderID(logger zerolog.Logger) error {
 				}
 			}
 		}
-
 	}
 	return err
 }

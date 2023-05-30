@@ -73,7 +73,6 @@ func assignPrivateAddresses(nodepools []*pb.NodePool, cidr string) error {
 	var nodesToAssign []*pb.Node
 
 	for _, nodepool := range nodepools {
-
 		var nodes []*pb.Node
 		if nodepool.GetDynamicNodePool() != nil {
 			nodes = nodepool.GetDynamicNodePool().Nodes

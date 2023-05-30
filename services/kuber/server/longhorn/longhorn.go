@@ -126,7 +126,6 @@ func (l *Longhorn) SetUp() error {
 					}
 				}
 			}
-
 		}
 		if isWorkerNodeProvider {
 			// create storage class manifest based on zones from templates

@@ -29,7 +29,7 @@ func updateAPIEndpoint(current, desired *pb.ClusterInfo) error {
 			if n2 := item.GetDynamicNodePool(); n2 != nil {
 				return n1.Name == n2.Name
 			}
-		} else {
+		} else if n1 := item.GetStaticNodePool(); n1 != nil {
 			if n2 := item.GetStaticNodePool(); n2 != nil {
 				return n1.Name == n2.Name
 			}
@@ -125,7 +125,6 @@ func findNewAPIEndpointCandidate(current, desired []*pb.NodePool, exclude *pb.No
 				currentPools[np.GetStaticNodePool().Name] = np
 			}
 		}
-
 	}
 
 	for _, np := range desired {
@@ -142,8 +141,6 @@ func findNewAPIEndpointCandidate(current, desired []*pb.NodePool, exclude *pb.No
 				}
 			}
 		}
-
 	}
-
 	return nil, fmt.Errorf("failed to find control plane nodepool present in both current and desired state")
 }
