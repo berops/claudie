@@ -17,35 +17,34 @@ resources:
 # Alter ValidatingWebhookConfiguration and Certificate fields, so they will match the generated namespace
 replacements:
 - source:
-    kind: Namespace
     fieldPath: metadata.name
+    kind: Namespace
   targets:
-  - select:
-      name: claudie-webhook
+  - fieldPaths:
+    - webhooks.*.namespaceSelector.matchLabels.kubernetes\.io/metadata\.name
+    - webhooks.*.clientConfig.service.namespace
+    select:
       kind: ValidatingWebhookConfiguration
-    fieldPaths:
-      - webhooks.*.namespaceSelector.matchLabels.kubernetes\.io/metadata\.name
-      - webhooks.*.clientConfig.service.namespace
+      name: claudie-webhook
 - source:
-    kind: Namespace
     fieldPath: metadata.name
+    kind: Namespace
   targets:
-  - select:
-      name: claudie-webhook
+  - fieldPaths:
+    - metadata.annotations.cert-manager\.io/inject-ca-from
+    options:
+      delimiter: /
+    select:
       kind: ValidatingWebhookConfiguration
-    fieldPaths:
-      - metadata.annotations.cert-manager\.io/inject-ca-from
+      name: claudie-webhook
+  - fieldPaths:
+    - spec.dnsNames.*
     options:
-      delimiter: '/'
-      index: 0
-  - select:
-      name: claudie-webhook-certificate
-      kind: Certificate
-    fieldPaths:
-      - spec.dnsNames.*
-    options:
-      delimiter: '.'
+      delimiter: .
       index: 1
+    select:
+      kind: Certificate
+      name: claudie-webhook-certificate
 
 configMapGenerator:
 - envs:
@@ -55,18 +54,18 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
 - name: ghcr.io/berops/claudie/ansibler
-  newTag: bc46171-1889
+  newTag: bc7b49a-1927
 - name: ghcr.io/berops/claudie/builder
-  newTag: bc46171-1889
+  newTag: bc7b49a-1927
 - name: ghcr.io/berops/claudie/context-box
-  newTag: 4673c2c-1898
+  newTag: bc7b49a-1927
 - name: ghcr.io/berops/claudie/frontend
-  newTag: bc46171-1889
+  newTag: bc7b49a-1927
 - name: ghcr.io/berops/claudie/kube-eleven
-  newTag: b029565-1903
+  newTag: bc7b49a-1927
 - name: ghcr.io/berops/claudie/kuber
-  newTag: bc46171-1889
+  newTag: bc7b49a-1927
 - name: ghcr.io/berops/claudie/scheduler
-  newTag: bc46171-1889
+  newTag: bc7b49a-1927
 - name: ghcr.io/berops/claudie/terraformer
-  newTag: 7c0a8b6-1901
+  newTag: bc7b49a-1927
