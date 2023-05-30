@@ -11,7 +11,10 @@ import (
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
+	"github.com/berops/claudie/internal/templateUtils"
+	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	kuberGoYAMLTemplates "github.com/berops/claudie/services/kuber/templates"
 )
 
 const (
@@ -29,16 +32,28 @@ const (
 	defaultStorageclassName = "longhorn"
 )
 
-type Longhorn struct {
-	// Target K8s cluster where longhorn will be set up
-	Cluster *pb.K8Scluster
+type (
+	zoneData struct {
+		ZoneName         string
+		StorageClassName string
+	}
 
-	// Output directory where storageclass manifest will be created.
-	OutputDirectory string
-}
+	enableCA struct {
+		IsAutoscaled string
+	}
+
+	Longhorn struct {
+		// Target K8s cluster where longhorn will be set up
+		Cluster *pb.K8Scluster
+
+		// Output directory where storageclass manifest will be created.
+		OutputDirectory string
+	}
+)
 
 // SetUp function will deploy and configure Longhorn on the target K8s cluster
 // (represented by l.Cluster).
+// NOTE - CA stands for Cluster Autoscaler.
 func (l *Longhorn) SetUp() error {
 	kubectl := kubectl.Kubectl{
 		Kubeconfig:        l.Cluster.GetKubeconfig(),
@@ -68,7 +83,72 @@ func (l *Longhorn) SetUp() error {
 	// we will call them active storageclasses.
 	var activeStorageclassNames []string
 
-	// TODO: implement
+	// Load the templates
+	templates := templateUtils.Templates{Directory: l.OutputDirectory}
+	template, err := templateUtils.LoadTemplate(kuberGoYAMLTemplates.StorageClassTemplate)
+	if err != nil {
+		return err
+	}
+	enableCATemplate, err := templateUtils.LoadTemplate(kuberGoYAMLTemplates.EnableClusterAutoscalerTemplate)
+	if err != nil {
+		return err
+	}
+
+	// Apply setting about Cluster Autoscaler
+	enableCA := enableCA{fmt.Sprintf("%v", utils.IsAutoscaled(l.Cluster))}
+	if setting, err := templates.GenerateToString(enableCATemplate, enableCA); err != nil {
+		return err
+	} else if err := kubectl.KubectlApplyString(setting); err != nil {
+		return fmt.Errorf("error while applying CA setting for longhorn in cluster %s : %w", l.Cluster.ClusterInfo.Name, err)
+	}
+
+	sortedNodePools := utils.GroupNodepoolsByProviderSpecName(l.Cluster.ClusterInfo)
+	// get node names in a case when provider appends some string to the set name
+	realNodesInfo, err := kubectl.KubectlGetNodeNames()
+	if err != nil {
+		return err
+	}
+	realNodeNames := strings.Split(string(realNodesInfo), "\n")
+	// tag nodes based on the zones
+	for providerInstance, nodepools := range sortedNodePools {
+		zoneName := fmt.Sprintf("%s-zone", providerInstance)
+		storageClassName := fmt.Sprintf("longhorn-%s", zoneName)
+		//flag to determine whether we need to create storage class or not
+		isWorkerNodeProvider := false
+		for _, nodepool := range nodepools {
+			// tag worker nodes from nodepool based on the future zone
+			// NOTE: the master nodes are by default set to NoSchedule, therefore we do not need to annotate them
+			// If in the future, we add functionality to allow scheduling on master nodes, the longhorn will need add the annotation
+			if !nodepool.IsControl {
+				isWorkerNodeProvider = true
+				for _, node := range nodepool.Nodes {
+					annotation := fmt.Sprintf("node.longhorn.io/default-node-tags='[\"%s\"]'", zoneName)
+					realNodeName := utils.FindName(realNodeNames, node.Name)
+					// Add tag to the node via kubectl annotate, use --overwrite to avoid getting error of already tagged node
+					if err := kubectl.KubectlAnnotate("node", realNodeName, annotation, "--overwrite"); err != nil {
+						return fmt.Errorf("error while annotating the node %s from cluster %s via kubectl annotate : %w", realNodeName, l.Cluster.ClusterInfo.Name, err)
+					}
+				}
+			}
+		}
+		if isWorkerNodeProvider {
+			// create storage class manifest based on zones from templates
+			zoneData := zoneData{ZoneName: zoneName, StorageClassName: storageClassName}
+			manifest := fmt.Sprintf("%s.yaml", storageClassName)
+			err := templates.Generate(template, manifest, zoneData)
+			if err != nil {
+				return fmt.Errorf("error while generating %s manifest : %w", manifest, err)
+			}
+			//update the kubectl working directory
+			kubectl.Directory = l.OutputDirectory
+			// apply manifest
+			err = kubectl.KubectlApply(manifest, "")
+			if err != nil {
+				return fmt.Errorf("error while applying %s manifest : %w", manifest, err)
+			}
+			activeStorageclassNames = append(activeStorageclassNames, storageClassName)
+		}
+	}
 
 	if err = l.deleteUnusedStoragelasses(existingStorageclassNames, activeStorageclassNames, kubectl); err != nil {
 		return err
