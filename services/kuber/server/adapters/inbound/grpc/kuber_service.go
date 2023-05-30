@@ -32,3 +32,7 @@ func (k *KuberGrpcService) RemoveLbScrapeConfig(ctx context.Context, request *pb
 func (k *KuberGrpcService) StoreClusterMetadata(ctx context.Context, request *pb.StoreClusterMetadataRequest) (*pb.StoreClusterMetadataResponse, error) {
 	return k.usecases.StoreClusterMetadata(ctx, request)
 }
+
+func (k *KuberGrpcService) DeleteClusterMetadata(ctx context.Context, request *pb.DeleteClusterMetadataRequest) (*pb.DeleteClusterMetadataResponse, error) {
+	return k.usecases.DeleteClusterMetadata(ctx, request)
+}

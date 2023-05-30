@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"net"
 	"path/filepath"
 
 	"github.com/rs/zerolog"
@@ -24,47 +23,8 @@ const (
 	outputDir = "services/kuber/server/clusters"
 )
 
-type (
-	IPPair struct {
-		PublicIP  net.IP `json:"public_ip"`
-		PrivateIP net.IP `json:"private_ip"`
-	}
-
-	ClusterMetadata struct {
-		// NodeIps maps node-name to public-private ip pairs.
-		NodeIps map[string]IPPair `json:"node_ips"`
-		// PrivateKey is the private SSH key for the nodes.
-		PrivateKey string `json:"private_key"`
-	}
-)
-
 type server struct {
 	pb.UnimplementedKuberServiceServer
-}
-
-func (s *server) DeleteClusterMetadata(ctx context.Context, req *pb.DeleteClusterMetadataRequest) (*pb.DeleteClusterMetadataResponse, error) {
-	namespace := envs.Namespace
-	if namespace == "" {
-		return &pb.DeleteClusterMetadataResponse{}, nil
-	}
-
-	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(req.Cluster.ClusterInfo))
-	logger.Info().Msgf("Deleting cluster metadata secret")
-
-	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
-		prefix := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
-		kc.Stdout = comm.GetStdOut(prefix)
-		kc.Stderr = comm.GetStdErr(prefix)
-	}
-	secretName := fmt.Sprintf("%s-%s-metadata", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
-	if err := kc.KubectlDeleteResource("secret", secretName, "-n", namespace); err != nil {
-		logger.Warn().Msgf("Failed to remove cluster metadata: %s", err)
-		return &pb.DeleteClusterMetadataResponse{}, nil
-	}
-
-	logger.Info().Msgf("Deleted cluster metadata secret")
-	return &pb.DeleteClusterMetadataResponse{}, nil
 }
 
 func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigRequest) (*pb.StoreKubeconfigResponse, error) {
