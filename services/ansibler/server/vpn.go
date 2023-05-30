@@ -70,7 +70,7 @@ func assignPrivateAddresses(nodepools []*pb.NodePool, cidr string) error {
 	}
 
 	assignedIPs := make(map[string]struct{})
-	var nodes []*pb.Node
+	var nodesToAssign []*pb.Node
 
 	for _, nodepool := range nodepools {
 
@@ -85,20 +85,20 @@ func assignPrivateAddresses(nodepools []*pb.NodePool, cidr string) error {
 			if node.Private != "" {
 				assignedIPs[node.Private] = struct{}{}
 			} else {
-				nodes = append(nodes, node)
+				nodesToAssign = append(nodesToAssign, node)
 			}
 		}
 	}
 
-	for address := network.Addr().Next(); network.Contains(address) && len(nodes) > 0; address = address.Next() {
+	for address := network.Addr().Next(); network.Contains(address) && len(nodesToAssign) > 0; address = address.Next() {
 		if _, ok := assignedIPs[address.String()]; ok {
 			continue
 		}
-		nodes[len(nodes)-1].Private = address.String()
-		nodes = nodes[:len(nodes)-1]
+		nodesToAssign[len(nodesToAssign)-1].Private = address.String()
+		nodesToAssign = nodesToAssign[:len(nodesToAssign)-1]
 	}
 
-	if len(nodes) > 0 {
+	if len(nodesToAssign) > 0 {
 		return errors.New("failed to assign private IPs to all nodes")
 	}
 

@@ -27,13 +27,19 @@ type AllNodesInventoryData struct {
 
 type LbInventoryData struct {
 	K8sNodepools NodePools
-	LBClusters   []*pb.LBcluster
+	LBClusters   []*LBcluster
 	ClusterID    string
 }
 
 type NodePools struct {
 	Dynamic []*pb.DynamicNodePool
 	Static  []*pb.StaticNodePool
+}
+
+type LBcluster struct {
+	Name        string
+	Hash        string
+	LBnodepools NodePools
 }
 
 func generateInventoryFile(inventoryTemplate string, directory string, data interface{}) error {

@@ -90,8 +90,7 @@ func (k *KubeEleven) generateFiles() error {
 	templateParameters := k.generateTemplateData()
 
 	// Generate kubeone.yaml file from the template
-	err = templateUtils.Templates{Directory: k.outputDirectory}.
-		Generate(template, generatedKubeoneManifestName, templateParameters)
+	err = templateUtils.Templates{Directory: k.outputDirectory}.Generate(template, generatedKubeoneManifestName, templateParameters)
 	if err != nil {
 		return fmt.Errorf("error while generating %s from kubeone template : %w", generatedKubeoneManifestName, err)
 	}

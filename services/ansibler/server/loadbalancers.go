@@ -156,7 +156,7 @@ func teardownLoadBalancers(clusterName string, info *LBInfo, attached bool) (str
 	k8sDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, utils.CreateHash(utils.HashLength)))
 
 	if err := generateK8sBaseFiles(k8sDirectory, info); err != nil {
-		return "", fmt.Errorf("error encountered while generating base files for %s", clusterName)
+		return "", fmt.Errorf("error encountered while generating base files for %s : %w", clusterName, err)
 	}
 
 	apiServer := findCurrentAPILoadBalancer(info.LbClusters)
@@ -180,7 +180,7 @@ func setUpLoadbalancers(clusterName string, info *LBInfo, logger zerolog.Logger)
 	directory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, utils.CreateHash(utils.HashLength)))
 
 	if err := generateK8sBaseFiles(directory, info); err != nil {
-		return fmt.Errorf("error encountered while generating base files for %s", clusterName)
+		return fmt.Errorf("error encountered while generating base files for %s : %w", clusterName, err)
 	}
 
 	err := utils.ConcurrentExec(info.LbClusters, func(lb *LBData) error {
@@ -495,7 +495,7 @@ func generateK8sBaseFiles(k8sDirectory string, lbInfo *LBInfo) error {
 			Dynamic: utils.GetDynamicNodePools(lbInfo.TargetK8sNodepool),
 			Static:  utils.GetStaticNodePools(lbInfo.TargetK8sNodepool),
 		},
-		LBClusters: lbSlice,
+		LBClusters: getLbData(lbSlice),
 		ClusterID:  lbInfo.ClusterID,
 	})
 	if err != nil {
@@ -515,4 +515,19 @@ func assignTarget(controlTarget, computeTarget []*pb.Node, target pb.Target) (ta
 		targetNodes = computeTarget
 	}
 	return targetNodes
+}
+
+func getLbData(lbs []*pb.LBcluster) []*LBcluster {
+	lbData := make([]*LBcluster, 0, len(lbs))
+	for _, lb := range lbs {
+		lbData = append(lbData, &LBcluster{
+			Name: lb.ClusterInfo.Name,
+			Hash: lb.ClusterInfo.Hash,
+			LBnodepools: NodePools{
+				Static:  utils.GetStaticNodePools(lb.ClusterInfo.NodePools),
+				Dynamic: utils.GetDynamicNodePools(lb.ClusterInfo.NodePools),
+			},
+		})
+	}
+	return lbData
 }
