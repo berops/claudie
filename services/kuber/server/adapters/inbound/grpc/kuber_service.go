@@ -52,3 +52,7 @@ func (k *KuberGrpcService) SetUpClusterAutoscaler(ctx context.Context, request *
 func (k *KuberGrpcService) DestroyClusterAutoscaler(ctx context.Context, request *pb.DestroyClusterAutoscalerRequest) (*pb.DestroyClusterAutoscalerResponse, error) {
 	return k.usecases.DestroyClusterAutoscaler(ctx, request)
 }
+
+func (k *KuberGrpcService) PatchNodes(ctx context.Context, request *pb.PatchNodeTemplateRequest) (*pb.PatchNodeTemplateResponse, error) {
+	return k.usecases.PatchNodes(ctx, request)
+}
