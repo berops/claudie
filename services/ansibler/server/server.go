@@ -52,7 +52,10 @@ func (*server) InstallNodeRequirements(_ context.Context, req *pb.InstallRequest
 
 	logger.Info().Msgf("Installing node requirements")
 	info := &NodepoolInfo{
-		Nodepools:  req.Desired.ClusterInfo.NodePools,
+		Nodepools: NodePools{
+			Dynamic: utils.GetDynamicNodePools(req.Desired.ClusterInfo.NodePools),
+			Static:  utils.GetStaticNodePools(req.Desired.ClusterInfo.NodePools),
+		},
 		PrivateKey: req.Desired.ClusterInfo.PrivateKey,
 		ID:         fmt.Sprintf("%s-%s", req.Desired.ClusterInfo.Name, req.Desired.ClusterInfo.Hash),
 		Network:    req.Desired.Network,
@@ -78,7 +81,10 @@ func (*server) InstallVPN(_ context.Context, req *pb.InstallRequest) (*pb.Instal
 		Network: req.Desired.Network,
 		NodepoolInfo: []*NodepoolInfo{
 			{
-				Nodepools:  req.Desired.ClusterInfo.NodePools,
+				Nodepools: NodePools{
+					Dynamic: utils.GetDynamicNodePools(req.Desired.ClusterInfo.NodePools),
+					Static:  utils.GetStaticNodePools(req.Desired.ClusterInfo.NodePools),
+				},
 				PrivateKey: req.Desired.ClusterInfo.PrivateKey,
 				ID:         fmt.Sprintf("%s-%s", req.Desired.ClusterInfo.Name, req.Desired.ClusterInfo.Hash),
 				Network:    req.Desired.Network,
@@ -88,7 +94,10 @@ func (*server) InstallVPN(_ context.Context, req *pb.InstallRequest) (*pb.Instal
 
 	for _, lb := range req.DesiredLbs {
 		info.NodepoolInfo = append(info.NodepoolInfo, &NodepoolInfo{
-			Nodepools:  lb.ClusterInfo.NodePools,
+			Nodepools: NodePools{
+				Dynamic: utils.GetDynamicNodePools(lb.ClusterInfo.NodePools),
+				Static:  utils.GetStaticNodePools(lb.ClusterInfo.NodePools),
+			},
 			PrivateKey: lb.ClusterInfo.PrivateKey,
 			ID:         fmt.Sprintf("%s-%s", lb.ClusterInfo.Name, lb.ClusterInfo.Hash),
 			Network:    req.Desired.Network,

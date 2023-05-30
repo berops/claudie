@@ -40,6 +40,13 @@ func installWireguardVPN(clusterID string, info *VPNInfo) error {
 		if err := utils.CreateKeyFile(nodepoolInfo.PrivateKey, directory, fmt.Sprintf("%s.%s", nodepoolInfo.ID, privateKeyExt)); err != nil {
 			return fmt.Errorf("failed to create key file for %s : %w", nodepoolInfo.ID, err)
 		}
+		for _, snp := range nodepoolInfo.Nodepools.Static {
+			for ep, key := range snp.NodeKeys {
+				if err := utils.CreateKeyFile(key, directory, fmt.Sprintf("%s.%s", getNodeName(snp, ep), privateKeyExt)); err != nil {
+					return fmt.Errorf("failed to create key file for : %w", err)
+				}
+			}
+		}
 	}
 
 	if err := generateInventoryFile(templates.AllNodesInventoryTemplate, directory, AllNodesInventoryData{NodepoolInfos: info.NodepoolInfo}); err != nil {
@@ -102,7 +109,12 @@ func assignPrivateAddresses(nodepools []*pb.NodePool, cidr string) error {
 func groupNodepool(nodepoolInfo []*NodepoolInfo) []*pb.NodePool {
 	var nodepools []*pb.NodePool
 	for _, np := range nodepoolInfo {
-		nodepools = append(nodepools, np.Nodepools...)
+		for _, snp := range np.Nodepools.Static {
+			nodepools = append(nodepools, &pb.NodePool{NodePoolType: &pb.NodePool_StaticNodePool{StaticNodePool: snp}})
+		}
+		for _, dnp := range np.Nodepools.Dynamic {
+			nodepools = append(nodepools, &pb.NodePool{NodePoolType: &pb.NodePool_DynamicNodePool{DynamicNodePool: dnp}})
+		}
 	}
 	return nodepools
 }

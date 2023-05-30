@@ -15,7 +15,7 @@ const (
 )
 
 type NodepoolInfo struct {
-	Nodepools  []*pb.NodePool
+	Nodepools  NodePools
 	PrivateKey string
 	ID         string
 	Network    string
@@ -26,9 +26,14 @@ type AllNodesInventoryData struct {
 }
 
 type LbInventoryData struct {
-	K8sNodepools []*pb.NodePool
+	K8sNodepools NodePools
 	LBClusters   []*pb.LBcluster
 	ClusterID    string
+}
+
+type NodePools struct {
+	Dynamic []*pb.DynamicNodePool
+	Static  []*pb.StaticNodePool
 }
 
 func generateInventoryFile(inventoryTemplate string, directory string, data interface{}) error {
@@ -42,4 +47,13 @@ func generateInventoryFile(inventoryTemplate string, directory string, data inte
 		return fmt.Errorf("error while generating from inventory template for %s : %w", directory, err)
 	}
 	return nil
+}
+
+func getNodeName(snp *pb.StaticNodePool, ep string) string {
+	for _, node := range snp.Nodes {
+		if node.Public == ep {
+			return node.Name
+		}
+	}
+	return ""
 }

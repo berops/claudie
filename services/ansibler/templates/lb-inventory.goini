@@ -1,21 +1,38 @@
 #K8s
 [control]
-{{- range $nodepool := .K8sNodepools }}
+{{- range $nodepool := .K8sNodepools.Dynamic }}
     {{- if $nodepool.IsControl }}       
         {{- range $node :=  $nodepool.Nodes }}
 {{ trimPrefix $node.Name (printf "%s-" $.ClusterID) }} ansible_host={{ $node.Public }} private_ip={{ $node.Private }} ansible_ssh_private_key_file=k8s.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
         {{- end }}
     {{- end }}
 {{- end }}
+{{- range $nodepool := .K8sNodepools.Static }}
+    {{- if $nodepool.IsControl }}       
+        {{- range $node :=  $nodepool.Nodes }}
+{{ $node.Name }} ansible_host={{ $node.Public }} private_ip={{ $node.Private }} ansible_ssh_private_key_file={{ $node.Name }}.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
+        {{- end }}
+    {{- end }}
+{{- end }}
 
 [compute]
-{{- range $nodepool := .K8sNodepools }}
+{{- range $nodepool := .K8sNodepools.Dynamic }}
     {{- if not $nodepool.IsControl }}       
         {{- range $node :=  $nodepool.Nodes }}
 {{ trimPrefix $node.Name (printf "%s-" $.ClusterID) }} ansible_host={{ $node.Public }} private_ip={{ $node.Private }} ansible_ssh_private_key_file=k8s.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
         {{- end }}
     {{- end }}
 {{- end }}
+{{- range $nodepool := .K8sNodepools.Static }}
+    {{- if not $nodepool.IsControl }}       
+        {{- range $node :=  $nodepool.Nodes }}
+{{ $node.Name }} ansible_host={{ $node.Public }} private_ip={{ $node.Private }} ansible_ssh_private_key_file={{ $node.Name }}.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
+        {{- end }}
+    {{- end }}
+{{- end }}
+
+
+
 
 #Loadbalancers
 {{- range $lbCluster := .LBClusters }}

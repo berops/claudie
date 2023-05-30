@@ -195,7 +195,13 @@ func setUpLoadbalancers(clusterName string, info *LBInfo, logger zerolog.Logger)
 		if err := utils.CreateKeyFile(lb.DesiredLbCluster.ClusterInfo.PrivateKey, directory, fmt.Sprintf("key.%s", privateKeyExt)); err != nil {
 			return fmt.Errorf("failed to create key file for %s : %w", lb.DesiredLbCluster.ClusterInfo.Name, err)
 		}
-
+		for _, snp := range utils.GetStaticNodePools(lb.DesiredLbCluster.ClusterInfo.NodePools) {
+			for ep, key := range snp.NodeKeys {
+				if err := utils.CreateKeyFile(key, directory, fmt.Sprintf("%s.%s", getNodeName(snp, ep), privateKeyExt)); err != nil {
+					return fmt.Errorf("failed to create key file for : %w", err)
+				}
+			}
+		}
 		if err := setUpNodeExporter(lb.DesiredLbCluster, directory); err != nil {
 			return err
 		}
@@ -468,6 +474,15 @@ func generateK8sBaseFiles(k8sDirectory string, lbInfo *LBInfo) error {
 	if err := utils.CreateKeyFile(lbInfo.TargetK8sNodepoolKey, k8sDirectory, "k8s.pem"); err != nil {
 		return fmt.Errorf("failed to create key file: %w", err)
 	}
+
+	for _, snp := range utils.GetStaticNodePools(lbInfo.TargetK8sNodepool) {
+		for ep, key := range snp.NodeKeys {
+			if err := utils.CreateKeyFile(key, k8sDirectory, fmt.Sprintf("%s.pem", getNodeName(snp, ep))); err != nil {
+				return fmt.Errorf("failed to create key file for : %w", err)
+			}
+		}
+	}
+
 	var lbSlice []*pb.LBcluster
 	for _, lb := range lbInfo.LbClusters {
 		if lb.DesiredLbCluster != nil {
@@ -476,9 +491,12 @@ func generateK8sBaseFiles(k8sDirectory string, lbInfo *LBInfo) error {
 	}
 	//generate inventory
 	err := generateInventoryFile(templates.LoadbalancerInventoryTemplate, k8sDirectory, LbInventoryData{
-		K8sNodepools: lbInfo.TargetK8sNodepool,
-		LBClusters:   lbSlice,
-		ClusterID:    lbInfo.ClusterID,
+		K8sNodepools: NodePools{
+			Dynamic: utils.GetDynamicNodePools(lbInfo.TargetK8sNodepool),
+			Static:  utils.GetStaticNodePools(lbInfo.TargetK8sNodepool),
+		},
+		LBClusters: lbSlice,
+		ClusterID:  lbInfo.ClusterID,
 	})
 	if err != nil {
 		return fmt.Errorf("error while generating inventory file for %s : %w", k8sDirectory, err)

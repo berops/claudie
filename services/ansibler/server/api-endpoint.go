@@ -46,11 +46,22 @@ func updateAPIEndpoint(current, desired *pb.ClusterInfo) error {
 			return fmt.Errorf("failed to create key file for %s : %w", clusterID, err)
 		}
 
+		for _, snp := range utils.GetStaticNodePools(current.GetNodePools()) {
+			for ep, key := range snp.NodeKeys {
+				if err := utils.CreateKeyFile(key, directory, fmt.Sprintf("%s.%s", getNodeName(snp, ep), privateKeyExt)); err != nil {
+					return fmt.Errorf("failed to create key file for %s : %w", clusterID, err)
+				}
+			}
+		}
+
 		// re-use the information for the LB cluster.
 		err := generateInventoryFile(templates.LoadbalancerInventoryTemplate, directory, LbInventoryData{
-			K8sNodepools: current.GetNodePools(),
-			LBClusters:   nil,
-			ClusterID:    clusterID,
+			K8sNodepools: NodePools{
+				Dynamic: utils.GetDynamicNodePools(current.GetNodePools()),
+				Static:  utils.GetStaticNodePools(current.GetNodePools()),
+			},
+			LBClusters: nil,
+			ClusterID:  clusterID,
 		})
 
 		if err != nil {

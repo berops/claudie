@@ -175,3 +175,14 @@ func GetDynamicNodePools(nps []*pb.NodePool) []*pb.DynamicNodePool {
 	}
 	return dnps
 }
+
+// GetStaticNodePools returns slice of dynamic node pools.
+func GetStaticNodePools(nps []*pb.NodePool) []*pb.StaticNodePool {
+	snps := make([]*pb.StaticNodePool, 0, len(nps))
+	for _, np := range nps {
+		if n := np.GetStaticNodePool(); n != nil {
+			snps = append(snps, n)
+		}
+	}
+	return snps
+}

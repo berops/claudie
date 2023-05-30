@@ -27,6 +27,14 @@ func installLonghornRequirements(nodepoolInfo *NodepoolInfo) error {
 		return fmt.Errorf("failed to create key file for %s : %w", nodepoolInfo.ID, err)
 	}
 
+	for _, snp := range nodepoolInfo.Nodepools.Static {
+		for ep, key := range snp.NodeKeys {
+			if err := utils.CreateKeyFile(key, directory, fmt.Sprintf("%s.%s", getNodeName(snp, ep), privateKeyExt)); err != nil {
+				return fmt.Errorf("failed to create key file for : %w", err)
+			}
+		}
+	}
+
 	if err := generateInventoryFile(templates.AllNodesInventoryTemplate, directory, AllNodesInventoryData{NodepoolInfos: []*NodepoolInfo{nodepoolInfo}}); err != nil {
 		return fmt.Errorf("failed to generate inventory file for all nodes in %s : %w", directory, err)
 	}
