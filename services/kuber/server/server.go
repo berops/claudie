@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"path/filepath"
 
@@ -16,7 +15,6 @@ import (
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/kuber/server/autoscaler"
 	"github.com/berops/claudie/services/kuber/server/nodes"
-	"github.com/berops/claudie/services/kuber/server/secret"
 )
 
 const (
@@ -25,34 +23,6 @@ const (
 
 type server struct {
 	pb.UnimplementedKuberServiceServer
-}
-
-func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigRequest) (*pb.StoreKubeconfigResponse, error) {
-	// local deployment - print kubeconfig
-	cluster := req.GetCluster()
-	clusterID := utils.GetClusterID(req.Cluster.ClusterInfo)
-	logger := utils.CreateLoggerWithClusterName(clusterID)
-	if namespace := envs.Namespace; namespace == "" {
-		//NOTE: DEBUG print
-		// logger.Info().Msgf("The kubeconfig for %s\n%s:", clusterID, cluster.Kubeconfig)
-		return &pb.StoreKubeconfigResponse{}, nil
-	}
-
-	logger.Info().Msgf("Storing kubeconfig")
-
-	clusterDir := filepath.Join(outputDir, clusterID)
-	sec := secret.New(clusterDir, secret.NewYaml(
-		secret.Metadata{Name: fmt.Sprintf("%s-kubeconfig", clusterID)},
-		map[string]string{"kubeconfig": base64.StdEncoding.EncodeToString([]byte(cluster.GetKubeconfig()))},
-	))
-
-	if err := sec.Apply(envs.Namespace, ""); err != nil {
-		logger.Err(err).Msgf("Failed to store kubeconfig")
-		return nil, fmt.Errorf("error while creating the kubeconfig secret for %s", cluster.ClusterInfo.Name)
-	}
-
-	logger.Info().Msgf("Kubeconfig was successfully stored")
-	return &pb.StoreKubeconfigResponse{}, nil
 }
 
 func (s *server) DeleteKubeconfig(ctx context.Context, req *pb.DeleteKubeconfigRequest) (*pb.DeleteKubeconfigResponse, error) {
