@@ -11,7 +11,7 @@ import (
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
-	"github.com/berops/claudie/services/kuber/server/secret"
+	"github.com/berops/claudie/services/kuber/server/domain/utils/secret"
 )
 
 // StoreClusterMetadata constructs ClusterMetadata for the given K8s cluster, creates a Kubernetes

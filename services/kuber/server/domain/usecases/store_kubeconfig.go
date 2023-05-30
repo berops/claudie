@@ -9,7 +9,7 @@ import (
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
-	"github.com/berops/claudie/services/kuber/server/secret"
+	"github.com/berops/claudie/services/kuber/server/domain/utils/secret"
 )
 
 // StoreKubeconfig creates a Kubernetes secret in the management K8s custer running Claudie.

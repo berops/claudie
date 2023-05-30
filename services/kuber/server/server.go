@@ -5,12 +5,6 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-
-	comm "github.com/berops/claudie/internal/command"
-	"github.com/berops/claudie/internal/envs"
-	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/kuber/server/autoscaler"
@@ -23,32 +17,6 @@ const (
 
 type server struct {
 	pb.UnimplementedKuberServiceServer
-}
-
-func (s *server) DeleteKubeconfig(ctx context.Context, req *pb.DeleteKubeconfigRequest) (*pb.DeleteKubeconfigResponse, error) {
-	namespace := envs.Namespace
-	if namespace == "" {
-		return &pb.DeleteKubeconfigResponse{}, nil
-	}
-	cluster := req.GetCluster()
-	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(req.Cluster.ClusterInfo))
-
-	logger.Info().Msgf("Deleting kubeconfig secret")
-	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
-		prefix := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
-		kc.Stdout = comm.GetStdOut(prefix)
-		kc.Stderr = comm.GetStdErr(prefix)
-	}
-	secretName := fmt.Sprintf("%s-%s-kubeconfig", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
-
-	if err := kc.KubectlDeleteResource("secret", secretName, "-n", namespace); err != nil {
-		logger.Warn().Msgf("Failed to remove kubeconfig: %s", err)
-		return &pb.DeleteKubeconfigResponse{}, nil
-	}
-
-	logger.Info().Msgf("Deleted kubeconfig secret")
-	return &pb.DeleteKubeconfigResponse{}, nil
 }
 
 func (s *server) DeleteNodes(ctx context.Context, req *pb.DeleteNodesRequest) (*pb.DeleteNodesResponse, error) {
@@ -76,27 +44,6 @@ func (s *server) PatchNodes(ctx context.Context, req *pb.PatchNodeTemplateReques
 
 	logger.Info().Msgf("Nodes were successfully patched")
 	return &pb.PatchNodeTemplateResponse{}, nil
-}
-
-func (s *server) SetUpClusterAutoscaler(ctx context.Context, req *pb.SetUpClusterAutoscalerRequest) (*pb.SetUpClusterAutoscalerResponse, error) {
-	// Create output dir
-	clusterID := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, utils.CreateHash(5))
-	clusterDir := filepath.Join(outputDir, clusterID)
-	if err := utils.CreateDirectory(clusterDir); err != nil {
-		return nil, fmt.Errorf("error while creating directory %s : %w", clusterDir, err)
-	}
-
-	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(req.Cluster.ClusterInfo))
-
-	// Set up cluster autoscaler.
-	autoscalerBuilder := autoscaler.NewAutoscalerBuilder(req.ProjectName, req.Cluster, clusterDir)
-	if err := autoscalerBuilder.SetUpClusterAutoscaler(); err != nil {
-		logger.Err(err).Msgf("Error while setting up cluster autoscaler")
-		return nil, fmt.Errorf("error while setting up cluster autoscaler for %s : %w", req.Cluster.ClusterInfo.Name, err)
-	}
-
-	logger.Info().Msgf("Cluster autoscaler successfully set up")
-	return &pb.SetUpClusterAutoscalerResponse{}, nil
 }
 
 func (s *server) DestroyClusterAutoscaler(ctx context.Context, req *pb.DestroyClusterAutoscalerRequest) (*pb.DestroyClusterAutoscalerResponse, error) {
