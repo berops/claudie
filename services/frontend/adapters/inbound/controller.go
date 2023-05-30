@@ -82,7 +82,7 @@ func NewManifestController(ctx context.Context) (*manifestController, error) {
 		HealthProbeBindAddress: healthcheckPort,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("unable to set up manifest-controller: %v", err.Error())
+		return nil, fmt.Errorf("unable to set up manifest-controller: %w", err)
 	}
 
 	// Register a healthcheck endpoint
@@ -130,7 +130,7 @@ func (mc *manifestController) PerformHealthCheck() error {
 }
 
 // lookupEnv take a string representing environment variable as an argument, and returns its value
-// If the environemnt variable is not defined, it will return an error
+// If the environment variable is not defined, it will return an error
 func lookupEnv(env string) (string, error) {
 	value, exists := os.LookupEnv(env)
 	if !exists {

@@ -16,7 +16,7 @@ import (
 type SecretValidator struct{}
 
 // validate takes the context and a kubernetes object as a parameter.
-// It will extract the secret data out of the recived obj and run manifest validation against it
+// It will extract the secret data out of the received obj and run manifest validation against it
 func (v *SecretValidator) validate(ctx context.Context, obj runtime.Object) error {
 	log := crlog.FromContext(ctx)
 
