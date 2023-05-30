@@ -182,6 +182,17 @@ func (k Kubectl) runWithOutput(command string, options ...string) ([]byte, error
 			return result, err
 		}
 	}
+	//local issues
+	temp := string(result)
+	result = make([]byte, 0)
+	for _, s := range strings.Split(temp, "\n") {
+		if len(s) > 0 {
+			if s[0] != 'E' {
+				result = append(result, s...)
+				result = append(result, '\n')
+			}
+		}
+	}
 	return result, nil
 }
 

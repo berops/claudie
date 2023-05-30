@@ -197,6 +197,7 @@ func (k *KubeEleven) findAPIEndpoint(potentialEndpointNode *pb.Node) string {
 	return apiEndpoint
 }
 
+// getNodeData return template data for the nodes from the cluster.
 func getNodeData(nodes []*pb.Node, nameFunc func(string) string) ([]*NodeInfo, *pb.Node) {
 	n := make([]*NodeInfo, 0, len(nodes))
 	var potentialEndpointNode *pb.Node

@@ -7,6 +7,7 @@ import (
 	"github.com/berops/claudie/proto/pb"
 )
 
+// ProviderNames struct hold pair of cloud provider name and user defined name from manifest.
 type ProviderNames struct {
 	SpecName          string
 	CloudProviderName string

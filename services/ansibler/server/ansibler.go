@@ -55,6 +55,7 @@ func generateInventoryFile(inventoryTemplate string, directory string, data inte
 	return nil
 }
 
+// getNodeName returns name of a static node which uses specified endpoint.
 func getNodeName(snp *pb.StaticNodePool, ep string) string {
 	for _, node := range snp.Nodes {
 		if node.Public == ep {

@@ -346,6 +346,7 @@ func getStaticNodeNames(np *pb.NodePool, desiredCluster *pb.ClusterInfo) (names 
 	return names
 }
 
+// deleteNodes deletes nodes from the cluster based on the node map specified.
 func deleteNodes(currentCluster, desiredCluster *pb.K8Scluster, nodes map[string]int32) (*pb.K8Scluster, error) {
 	master, worker := separateNodepools(nodes, currentCluster.ClusterInfo, desiredCluster.ClusterInfo)
 	newCluster, err := callDeleteNodes(master, worker, currentCluster)

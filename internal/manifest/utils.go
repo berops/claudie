@@ -124,8 +124,8 @@ func (ds *Manifest) FindDynamicNodePool(nodePoolName string) *DynamicNodePool {
 	return nil
 }
 
-// FindStaticNodePool will search for the nodepool in manifest.DynamicNodePool based on the nodepool name
-// returns *manifest.DynamicNodePool if found, nil otherwise
+// FindStaticNodePool will search for the nodepool in manifest.StaticNodePool based on the nodepool name
+// returns *manifest.StaticNodePool if found, nil otherwise
 func (ds *Manifest) FindStaticNodePool(nodePoolName string) *StaticNodePool {
 	for _, nodePool := range ds.NodePools.Static {
 		if nodePool.Name == nodePoolName {
@@ -197,6 +197,7 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 	return nodePools, nil
 }
 
+// getStaticNodes returns slice of static nodes with initialised name.
 func getStaticNodes(np *StaticNodePool) []*pb.Node {
 	nodes := make([]*pb.Node, 0, len(np.Nodes))
 	for i, node := range np.Nodes {
@@ -208,6 +209,7 @@ func getStaticNodes(np *StaticNodePool) []*pb.Node {
 	return nodes
 }
 
+// getNodeKeys returns map of keys for static nodes in map[endpoint]key.
 func getNodeKeys(nodepool *StaticNodePool) map[string]string {
 	m := make(map[string]string)
 	for _, n := range nodepool.Nodes {
@@ -216,6 +218,7 @@ func getNodeKeys(nodepool *StaticNodePool) map[string]string {
 	return m
 }
 
+// nodePoolDefined returns true if node pool is defined in manifest, false otherwise.
 func (ds *Manifest) nodePoolDefined(pool string) bool {
 	for _, nodePool := range ds.NodePools.Static {
 		if nodePool.Name == pool {
