@@ -47,8 +47,8 @@ func (p Provider) CreateProvider(currentCluster, desiredCluster *pb.ClusterInfo)
 
 	var data templateData
 
-	getProvidersUsed(utils.GetDynamicNodePools(currentCluster), &data)
-	getProvidersUsed(utils.GetDynamicNodePools(desiredCluster), &data)
+	getProvidersUsed(utils.GetDynamicNodePoolsFromCI(currentCluster), &data)
+	getProvidersUsed(utils.GetDynamicNodePoolsFromCI(desiredCluster), &data)
 
 	tpl, err := templateUtils.LoadTemplate(templates.ProvidersTemplate)
 	if err != nil {

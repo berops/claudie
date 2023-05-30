@@ -62,7 +62,7 @@ func NewClaudieCloudProvider(projectName, clusterName string) *ClaudieCloudProvi
 	if cluster, err = getClaudieState(projectName, clusterName); err != nil {
 		panic(fmt.Sprintf("Error while getting cluster %s : %v", clusterName, err))
 	}
-	if nm, err = node_manager.NewNodeManager(utils.GetDynamicNodePools(cluster.ClusterInfo)); err != nil {
+	if nm, err = node_manager.NewNodeManager(utils.GetDynamicNodePoolsFromCI(cluster.ClusterInfo)); err != nil {
 		panic(fmt.Sprintf("Error while creating node manager : %v", err))
 	}
 	// Initialise all other variables.
@@ -218,7 +218,7 @@ func (c *ClaudieCloudProvider) refresh() error {
 	} else {
 		c.configCluster = cluster
 		c.nodesCache = getNodesCache(cluster.ClusterInfo.NodePools)
-		if err := c.nodeManager.Refresh(utils.GetDynamicNodePools(cluster.ClusterInfo)); err != nil {
+		if err := c.nodeManager.Refresh(utils.GetDynamicNodePoolsFromCI(cluster.ClusterInfo)); err != nil {
 			return fmt.Errorf("failed to refresh node manager : %w", err)
 		}
 	}

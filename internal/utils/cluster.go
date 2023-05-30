@@ -7,6 +7,11 @@ import (
 	"github.com/berops/claudie/proto/pb"
 )
 
+type ProviderNames struct {
+	SpecName          string
+	CloudProviderName string
+}
+
 // GetClusterByName will return Cluster that will have same name as specified in parameters
 // If no name is found, return nil
 func GetClusterByName(clusterName string, clusters []*pb.K8Scluster) *pb.K8Scluster {
@@ -48,15 +53,11 @@ func GetNodePoolByName(nodePoolName string, nodePools []*pb.NodePool) *pb.NodePo
 }
 
 // GetRegions will return a list of all regions used in list of nodepools
-func GetRegions(nodepools []*pb.NodePool) []string {
+func GetRegions(nodepools []*pb.DynamicNodePool) []string {
 	// create a set of region
 	regionSet := make(map[string]struct{})
 	for _, nodepool := range nodepools {
-		if np := nodepool.GetDynamicNodePool(); np != nil {
-			regionSet[np.Region] = struct{}{}
-		} else if np := nodepool.GetStaticNodePool(); np != nil {
-			regionSet[pb.StaticRegion_STATIC_REGION.String()] = struct{}{}
-		}
+		regionSet[nodepool.Region] = struct{}{}
 	}
 
 	// extract value of set and create a slice
@@ -65,6 +66,21 @@ func GetRegions(nodepools []*pb.NodePool) []string {
 		regions = append(regions, k)
 	}
 	return regions
+}
+
+// GroupNodepoolsByProviderNames groups nodepool by provider spec name into the map[Provider Names][]*pb.Nodepool
+func GroupNodepoolsByProviderNames(clusterInfo *pb.ClusterInfo) map[ProviderNames][]*pb.NodePool {
+	sortedNodePools := map[ProviderNames][]*pb.NodePool{}
+	pnStatic := ProviderNames{SpecName: pb.StaticProvider_STATIC_PROVIDER.String(), CloudProviderName: pb.StaticProvider_STATIC_PROVIDER.String()}
+	for _, nodepool := range clusterInfo.GetNodePools() {
+		if np := nodepool.GetDynamicNodePool(); np != nil {
+			pn := ProviderNames{SpecName: np.Provider.SpecName, CloudProviderName: np.Provider.CloudProviderName}
+			sortedNodePools[pn] = append(sortedNodePools[pn], nodepool)
+		} else if np := nodepool.GetStaticNodePool(); np != nil {
+			sortedNodePools[pnStatic] = append(sortedNodePools[pnStatic], nodepool)
+		}
+	}
+	return sortedNodePools
 }
 
 // GroupNodepoolsByProviderSpecName groups nodepool by provider spec name into the map[Provider Name][]*pb.Nodepool
@@ -134,8 +150,8 @@ func IsAutoscaled(cluster *pb.K8Scluster) bool {
 	return false
 }
 
-// GetDynamicNodePools returns slice of dynamic node pools used in specified cluster.
-func GetDynamicNodePools(ci *pb.ClusterInfo) []*pb.DynamicNodePool {
+// GetDynamicNodePoolsFromCI returns slice of dynamic node pools used in specified cluster info.
+func GetDynamicNodePoolsFromCI(ci *pb.ClusterInfo) []*pb.DynamicNodePool {
 	if ci == nil {
 		return nil
 	}
@@ -147,4 +163,15 @@ func GetDynamicNodePools(ci *pb.ClusterInfo) []*pb.DynamicNodePool {
 		}
 	}
 	return nps
+}
+
+// GetDynamicNodePools returns slice of dynamic node pools.
+func GetDynamicNodePools(nps []*pb.NodePool) []*pb.DynamicNodePool {
+	dnps := make([]*pb.DynamicNodePool, 0, len(nps))
+	for _, np := range nps {
+		if n := np.GetDynamicNodePool(); n != nil {
+			dnps = append(dnps, n)
+		}
+	}
+	return dnps
 }
