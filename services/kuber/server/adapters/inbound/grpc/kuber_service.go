@@ -20,3 +20,7 @@ func (k *KuberGrpcService) PatchClusterInfoConfigMap(_ context.Context, request 
 func (k *KuberGrpcService) SetUpStorage(ctx context.Context, request *pb.SetUpStorageRequest) (*pb.SetUpStorageResponse, error) {
 	return k.usecases.SetUpStorage(ctx, request)
 }
+
+func (k *KuberGrpcService) StoreLbScrapeConfig(ctx context.Context, request *pb.StoreLbScrapeConfigRequest) (*pb.StoreLbScrapeConfigResponse, error) {
+	return k.usecases.StoreLbScrapeConfig(ctx, request)
+}

@@ -10,6 +10,8 @@ import (
 	"github.com/berops/claudie/services/kuber/server/domain/utils/longhorn"
 )
 
+// SetUpStorage installs and configures Longhorn in the given K8s cluster.
+// (Installation of Longhorn prerequisites has already been taken care in the ansibler microservice.)
 func (u *Usecases) SetUpStorage(ctx context.Context, request *pb.SetUpStorageRequest) (*pb.SetUpStorageResponse, error) {
 	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(request.DesiredCluster.ClusterInfo))
 

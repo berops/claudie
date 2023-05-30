@@ -37,7 +37,8 @@ type Longhorn struct {
 	OutputDirectory string
 }
 
-// SetUp function will set up Longhorn on the target K8s cluster (represented by l.Cluster).
+// SetUp function will deploy and configure Longhorn on the target K8s cluster
+// (represented by l.Cluster).
 func (l *Longhorn) SetUp() error {
 	kubectl := kubectl.Kubectl{
 		Kubeconfig:        l.Cluster.GetKubeconfig(),
