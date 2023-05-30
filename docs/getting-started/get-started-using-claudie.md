@@ -8,7 +8,7 @@
    ```
 2. Deploy Claudie Kubernetes [manifests/claudie](https://github.com/berops/claudie/tree/master/manifests/claudie) into a Kubernetes cluster:
    ``` sh
-   kubectl apply -k manifests/claudie
+   kubectl apply -k claudie
    ```
 3. Provide your own manifest via a Kubernetes Secret, but before that please have a look at our [reference example input manifest](../input-manifest/example.md) to explore what's possible.
 
