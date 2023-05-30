@@ -17,7 +17,7 @@ require (
 	github.com/minio/minio-go/v7 v7.0.52
 	github.com/oracle/oci-go-sdk/v65 v65.38.0
 	github.com/rs/zerolog v1.29.1
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.4
 	github.com/tidwall/gjson v1.14.4
 	github.com/tidwall/sjson v1.2.5
 	go.mongodb.org/mongo-driver v1.11.6
