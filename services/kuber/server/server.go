@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net"
 	"path/filepath"
@@ -41,57 +40,6 @@ type (
 
 type server struct {
 	pb.UnimplementedKuberServiceServer
-}
-
-func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterMetadataRequest) (*pb.StoreClusterMetadataResponse, error) {
-	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(req.Cluster.ClusterInfo))
-
-	md := ClusterMetadata{
-		NodeIps:    make(map[string]IPPair),
-		PrivateKey: req.GetCluster().GetClusterInfo().GetPrivateKey(),
-	}
-
-	for _, pool := range req.GetCluster().GetClusterInfo().GetNodePools() {
-		for _, node := range pool.GetNodes() {
-			md.NodeIps[node.Name] = IPPair{
-				PublicIP:  net.ParseIP(node.Public),
-				PrivateIP: net.ParseIP(node.Private),
-			}
-		}
-	}
-
-	b, err := json.Marshal(md)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal %s cluster metadata: %w", req.GetCluster().GetClusterInfo().GetName(), err)
-	}
-
-	// local deployment - print metadata
-	if namespace := envs.Namespace; namespace == "" {
-		// NOTE: DEBUG print
-		// var buffer bytes.Buffer
-		// for node, ips := range md.NodeIps {
-		// 	buffer.WriteString(fmt.Sprintf("%s: %v \t| %v \n", node, ips.PublicIP, ips.PrivateIP))
-		// }
-		// buffer.WriteString(fmt.Sprintf("%s\n", md.PrivateKey))
-		// log.Info().Msgf("Cluster metadata from cluster %s \n%s", req.GetCluster().ClusterInfo.Name, buffer.String())
-		return &pb.StoreClusterMetadataResponse{}, nil
-	}
-	logger.Info().Msgf("Storing cluster metadata")
-
-	clusterID := fmt.Sprintf("%s-%s", req.GetCluster().ClusterInfo.Name, req.GetCluster().ClusterInfo.Hash)
-	clusterDir := filepath.Join(outputDir, clusterID)
-	sec := secret.New(clusterDir, secret.NewYaml(
-		secret.Metadata{Name: fmt.Sprintf("%s-metadata", clusterID)},
-		map[string]string{"metadata": base64.StdEncoding.EncodeToString(b)},
-	))
-
-	if err := sec.Apply(envs.Namespace, ""); err != nil {
-		logger.Err(err).Msgf("Failed to store cluster metadata")
-		return nil, fmt.Errorf("error while creating cluster metadata secret for %s", req.Cluster.ClusterInfo.Name)
-	}
-
-	logger.Info().Msgf("Cluster metadata was successfully stored")
-	return &pb.StoreClusterMetadataResponse{}, nil
 }
 
 func (s *server) DeleteClusterMetadata(ctx context.Context, req *pb.DeleteClusterMetadataRequest) (*pb.DeleteClusterMetadataResponse, error) {
