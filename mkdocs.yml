@@ -25,7 +25,13 @@ plugins:
       height: auto
       zoomable: true
 
-copyright: Copyright &copy; 2023 BerOps s.r.o.
+copyright: |
+  For enterprise support reach out via 
+  <a 
+    href="mailto:claudie@berops@@com"
+    onmouseover="this.href=this.href.replace('@@', '.')">
+    claudie@berops.com
+  </a>
 
 theme:
   name: material
