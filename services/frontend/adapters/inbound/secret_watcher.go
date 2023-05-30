@@ -215,9 +215,7 @@ func (sw *SecretWatcher) getNewWatcher() (watch.Interface, error) {
 // PerformHealthCheck perform health check for secret watcher.
 func (sw *SecretWatcher) PerformHealthCheck() error {
 	if _, err := sw.getNewWatcher(); err != nil {
-		log.Debug().Msgf("health status: failed")
 		return fmt.Errorf("failed to create WATCH interface : %w", err)
 	}
-	log.Debug().Msgf("health status: ok")
 	return nil
 }

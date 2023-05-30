@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	corev1 "k8s.io/api/core/v1"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -19,6 +18,7 @@ import (
 	wbhk "sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	"github.com/berops/claudie/services/frontend/domain/usecases"
 	"github.com/go-logr/zerologr"
 	"github.com/rs/zerolog/log"
 )
@@ -38,6 +38,8 @@ type manifestController struct {
 	validationWebhookNamespace string
 }
 
+// NewManifestController creates a new instance of an controller-runtime that will validate the secret with input-manifest
+// It takes a context.Context as a parameter, and retunrs a *manifestController instance
 func NewManifestController(ctx context.Context) (*manifestController, error) {
 	// lookup environment variables
 	portString, err := lookupEnv("WEBHOOK_TLS_PORT")
@@ -80,7 +82,7 @@ func NewManifestController(ctx context.Context) (*manifestController, error) {
 		HealthProbeBindAddress: healthcheckPort,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("unable to set up manifest-controller: " + err.Error())
+		return nil, fmt.Errorf("unable to set up manifest-controller: %v", err.Error())
 	}
 
 	// Register a healthcheck endpoint
@@ -93,7 +95,7 @@ func NewManifestController(ctx context.Context) (*manifestController, error) {
 		Port:    mc.validationWebhookPort,
 		CertDir: mc.validationWebhookCertDir,
 	}
-	hookServer.Register(mc.validationWebhookPath, admission.WithCustomValidator(&corev1.Secret{}, &secretValidator{}))
+	hookServer.Register(mc.validationWebhookPath, admission.WithCustomValidator(&corev1.Secret{}, &usecases.SecretValidator{}))
 	if err := mc.mgr.Add(hookServer); err != nil {
 		return nil, err
 	}
@@ -101,6 +103,8 @@ func NewManifestController(ctx context.Context) (*manifestController, error) {
 	return &mc, nil
 }
 
+// Start starts the registered manifest-controller.
+// Returns an error if there is an error starting any controller.
 func (mc *manifestController) Start() {
 	crlog.SetLogger(zerologr.New(&log.Logger))
 	logger := crlog.Log
@@ -111,13 +115,13 @@ func (mc *manifestController) Start() {
 	}
 }
 
+// PerformHealthCheck perform health check for manifest-controller
 func (mc *manifestController) PerformHealthCheck() error {
 	req, err := http.NewRequestWithContext(mc.ctx, "GET", fmt.Sprintf("http://127.0.0.1%s/%s", healthcheckPort, healthcheckPath), nil)
 	if err != nil {
 		return err
 	}
 	resp, err := mc.healthcheckClient.Do(req)
-	log.Debug().Msgf("health status: %s", resp.Status)
 	if err != nil {
 		return err
 	}
@@ -125,6 +129,8 @@ func (mc *manifestController) PerformHealthCheck() error {
 	return nil
 }
 
+// lookupEnv take a string representing environment variable as an argument, and returns its value
+// If the environemnt variable is not defined, it will return an error
 func lookupEnv(env string) (string, error) {
 	value, exists := os.LookupEnv(env)
 	if !exists {
