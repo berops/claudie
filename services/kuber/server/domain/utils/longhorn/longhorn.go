@@ -45,8 +45,6 @@ func (l *Longhorn) SetUp() error {
 		MaxKubectlRetries: 3,
 	}
 
-	// If the logger is set to debug level,
-	// for every line outputted by std-out / std-err, we will preppend the cluster-id.
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
 		prefix := fmt.Sprintf("%s-%s", l.Cluster.ClusterInfo.Name, l.Cluster.ClusterInfo.Hash)
 

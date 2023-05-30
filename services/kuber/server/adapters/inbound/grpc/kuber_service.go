@@ -24,3 +24,7 @@ func (k *KuberGrpcService) SetUpStorage(ctx context.Context, request *pb.SetUpSt
 func (k *KuberGrpcService) StoreLbScrapeConfig(ctx context.Context, request *pb.StoreLbScrapeConfigRequest) (*pb.StoreLbScrapeConfigResponse, error) {
 	return k.usecases.StoreLbScrapeConfig(ctx, request)
 }
+
+func (k *KuberGrpcService) RemoveLbScrapeConfig(ctx context.Context, request *pb.RemoveLbScrapeConfigRequest) (*pb.RemoveLbScrapeConfigResponse, error) {
+	return k.usecases.RemoveLBScrapeConfig(ctx, request)
+}

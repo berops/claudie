@@ -27,7 +27,7 @@ func (u *Usecases) StoreLbScrapeConfig(ctx context.Context, request *pb.StoreLbS
 		K8sCluster:         request.GetCluster(),
 		AttachedLBClusters: request.GetDesiredLoadbalancers(),
 	}
-	if err := prometheusScrapeConfigManagerForLBClusters.GenerateAndApply(); err != nil {
+	if err := prometheusScrapeConfigManagerForLBClusters.GenerateAndApplyScrapeConfig(); err != nil {
 		return nil, fmt.Errorf("error while setting up the loadbalancer scrape-config for %s : %w", clusterID, err)
 	}
 

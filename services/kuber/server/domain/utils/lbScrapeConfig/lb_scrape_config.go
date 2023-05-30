@@ -42,12 +42,12 @@ type PrometheusScrapeConfigManagerForLBClusters struct {
 	AttachedLBClusters []*pb.LBcluster
 }
 
-// GenerateAndApply will generate a template Kubernetes secret with Prometheus
+// GenerateAndApplyScrapeConfig will generate a template Kubernetes secret with Prometheus
 // configuration, for scraping data from node-exporter endpoints of the LB clusters.
 // It will create a Kubernetes namespace called "monitoring" and the Kubernetes secret will be
 // applied in that namespace.
 // If there is no LB cluster, the Prometheus config will also have no endpoints for scraping.
-func (p *PrometheusScrapeConfigManagerForLBClusters) GenerateAndApply() error {
+func (p *PrometheusScrapeConfigManagerForLBClusters) GenerateAndApplyScrapeConfig() error {
 	templates := templateUtils.Templates{Directory: p.OutputDirectory}
 
 	template, err := templateUtils.LoadTemplate(kuberGoYAMLTemplates.ScrapeConfigTemplate)
@@ -83,6 +83,25 @@ func (p *PrometheusScrapeConfigManagerForLBClusters) GenerateAndApply() error {
 	}
 	if err = k.KubectlApply(manifestFileName); err != nil {
 		return fmt.Errorf("error while applying %s on %s: %w", manifestFileName, p.K8sCluster.ClusterInfo.Name, err)
+	}
+
+	return nil
+}
+
+// RemoveScrapeConfig will delete the Kubernetes secret that was generated for this K8s cluster
+// in GenerateAndApplyScrapeConfig.
+func (p *PrometheusScrapeConfigManagerForLBClusters) RemoveScrapeConfig() error {
+	k := kubectl.Kubectl{Kubeconfig: p.K8sCluster.Kubeconfig, MaxKubectlRetries: 3}
+
+	if log.Logger.GetLevel() == zerolog.DebugLevel {
+		prefix := fmt.Sprintf("%s-%s", p.K8sCluster.ClusterInfo.Name, p.K8sCluster.ClusterInfo.Hash)
+
+		k.Stdout = comm.GetStdOut(prefix)
+		k.Stderr = comm.GetStdErr(prefix)
+	}
+
+	if err := k.KubectlDeleteResource("secret", "loadbalancers-scrape-config", "-n", namespace); err != nil {
+		return fmt.Errorf("error while removing LB scrape-config on %s: %w", p.K8sCluster.ClusterInfo.Name, err)
 	}
 
 	return nil

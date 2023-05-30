@@ -18,7 +18,6 @@ import (
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/kuber/server/autoscaler"
 	"github.com/berops/claudie/services/kuber/server/nodes"
-	scrapeconfig "github.com/berops/claudie/services/kuber/server/scrapeConfig"
 	"github.com/berops/claudie/services/kuber/server/secret"
 )
 
@@ -42,47 +41,6 @@ type (
 
 type server struct {
 	pb.UnimplementedKuberServiceServer
-}
-
-func (s *server) StoreLbScrapeConfig(ctx context.Context, req *pb.StoreLbScrapeConfigRequest) (*pb.StoreLbScrapeConfigResponse, error) {
-	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(req.Cluster.ClusterInfo))
-
-	clusterID := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
-	clusterDir := filepath.Join(outputDir, clusterID)
-	logger.Info().Msgf("Storing load balancer scrape-config")
-
-	sc := scrapeconfig.ScrapeConfig{
-		Cluster:    req.GetCluster(),
-		LBClusters: req.GetDesiredLoadbalancers(),
-		Directory:  clusterDir,
-	}
-
-	if err := sc.GenerateAndApplyScrapeConfig(); err != nil {
-		return nil, fmt.Errorf("error while setting up the loadbalancer scrape-config for %s : %w", clusterID, err)
-	}
-	logger.Info().Msgf("Load balancer scrape-config successfully set up")
-
-	return &pb.StoreLbScrapeConfigResponse{}, nil
-}
-
-func (s *server) RemoveLbScrapeConfig(ctx context.Context, req *pb.RemoveLbScrapeConfigRequest) (*pb.RemoveLbScrapeConfigResponse, error) {
-	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(req.Cluster.ClusterInfo))
-
-	clusterID := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
-	clusterDir := filepath.Join(outputDir, clusterID)
-	logger.Info().Msgf("Deleting load balancer scrape-config")
-
-	sc := scrapeconfig.ScrapeConfig{
-		Cluster:   req.GetCluster(),
-		Directory: clusterDir,
-	}
-
-	if err := sc.RemoveLbScrapeConfig(); err != nil {
-		return nil, fmt.Errorf("error while removing old loadbalancer scrape-config for %s : %w", clusterID, err)
-	}
-	logger.Info().Msgf("Load balancer scrape-config successfully deleted")
-
-	return &pb.RemoveLbScrapeConfigResponse{}, nil
 }
 
 func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterMetadataRequest) (*pb.StoreClusterMetadataResponse, error) {
