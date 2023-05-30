@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	// TODO: By provider do we mean cloud-provider?
+	// TODO: Ask whether by provider do we mean cloud-provider?
 	ProviderIdFormat = "claudie://%s"
 	patchPathFormat  = "{\"spec\":{\"providerID\":\"%s\"}}"
 )
