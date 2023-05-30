@@ -48,3 +48,7 @@ func (k *KuberGrpcService) DeleteKubeconfig(ctx context.Context, request *pb.Del
 func (k *KuberGrpcService) SetUpClusterAutoscaler(ctx context.Context, request *pb.SetUpClusterAutoscalerRequest) (*pb.SetUpClusterAutoscalerResponse, error) {
 	return k.usecases.SetUpClusterAutoscaler(ctx, request)
 }
+
+func (k *KuberGrpcService) DestroyClusterAutoscaler(ctx context.Context, request *pb.DestroyClusterAutoscalerRequest) (*pb.DestroyClusterAutoscalerResponse, error) {
+	return k.usecases.DestroyClusterAutoscaler(ctx, request)
+}

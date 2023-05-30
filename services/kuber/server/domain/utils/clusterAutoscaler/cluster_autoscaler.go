@@ -76,9 +76,9 @@ func (c *ClusterAutoscalerManager) SetupClusterAutoscaler() error {
 	return os.RemoveAll(c.outputDirectory)
 }
 
-// DeleteClusterAutoscaler removes all resources related Cluster Autoscaler
+// DestroyClusterAutoscaler removes all resources related Cluster Autoscaler
 // from the given K8s cluster.
-func (c *ClusterAutoscalerManager) DeleteClusterAutoscaler() error {
+func (c *ClusterAutoscalerManager) DestroyClusterAutoscaler() error {
 	// Create files from templates.
 	if err := c.generateFiles(); err != nil {
 		return err
