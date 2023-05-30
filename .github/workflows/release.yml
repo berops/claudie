@@ -37,7 +37,7 @@ jobs:
       - name: Install kustomize
         uses: imranismail/setup-kustomize@v2
         with:
-          kustomize-version: 3.6.1
+          kustomize-version: 4.5.6
 
       - name: Set up docker
         uses: docker/login-action@v2
