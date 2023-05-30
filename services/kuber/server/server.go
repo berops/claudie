@@ -178,6 +178,7 @@ func (s *server) StoreLbScrapeConfig(ctx context.Context, req *pb.StoreLbScrapeC
 	}
 
 	if err := sc.GenerateAndApplyScrapeConfig(); err != nil {
+		logger.Err(err).Msgf("Error while applying scrape config for Loadbalancer nodes")
 		return nil, fmt.Errorf("error while setting up the loadbalancer scrape-config for %s : %w", clusterID, err)
 	}
 	logger.Info().Msgf("Load balancer scrape-config successfully set up")
@@ -198,6 +199,7 @@ func (s *server) RemoveLbScrapeConfig(ctx context.Context, req *pb.RemoveLbScrap
 	}
 
 	if err := sc.RemoveLbScrapeConfig(); err != nil {
+		logger.Err(err).Msgf("Error while removing scrape config for Loadbalancer nodes")
 		return nil, fmt.Errorf("error while removing old loadbalancer scrape-config for %s : %w", clusterID, err)
 	}
 	logger.Info().Msgf("Load balancer scrape-config successfully deleted")
