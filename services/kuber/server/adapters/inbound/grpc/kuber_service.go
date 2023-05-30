@@ -40,3 +40,7 @@ func (k *KuberGrpcService) DeleteClusterMetadata(ctx context.Context, request *p
 func (k *KuberGrpcService) StoreKubeconfig(ctx context.Context, request *pb.StoreKubeconfigRequest) (*pb.StoreKubeconfigResponse, error) {
 	return k.usecases.StoreKubeconfig(ctx, request)
 }
+
+func (k *KuberGrpcService) DeleteKubeconfig(ctx context.Context, request *pb.DeleteKubeconfigRequest) (*pb.DeleteKubeconfigResponse, error) {
+	return k.usecases.DeleteKubeconfig(ctx, request)
+}
