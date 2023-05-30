@@ -25,13 +25,13 @@ func (v *SecretValidator) validate(ctx context.Context, obj runtime.Object) erro
 		return fmt.Errorf("expected a Secret but got a %T", obj)
 	}
 
-	log.Info("validating secret", "name", secret.Name)
+	log.Info("Validating secret", "name", secret.Name)
 	if err := validateInputManifest(secret); err != nil {
 		log.Error(err, "error validating secret", "name", secret.Name)
 		return err
 	}
 
-	log.V(1).Info("secret seems to be valid", "name", secret.Name)
+	log.Info("secret seems to be valid", "name", secret.Name)
 	return nil
 }
 
