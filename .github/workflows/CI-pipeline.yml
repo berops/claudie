@@ -102,7 +102,6 @@ jobs:
       # Update autoscaler-adapter manifest in this steps as new kuber would need to contain manifest with the correct image tag
       - name: Edit autoscaler-adapter image tag in the manifest
         if: ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
-        working-directory: ./services/kuber/templates
         id: autoscaler-tag
         run: |
           NEW_SERVICES=( ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }} )
@@ -111,7 +110,7 @@ jobs:
           if [[ "${NEW_SERVICES[*]}" =~ "autoscaler-adapter" ]]; then
             TAG=${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
             echo "Setting new tag for autoscaler adapter to $TAG"
-            sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" cluster-autoscaler.goyaml
+            sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" services/kuber/templates/cluster-autoscaler.goyaml
 
             if [[ ! "${NEW_SERVICES[*]}" =~ "kuber" ]]; then
               NEW_SERVICES+=(kuber)
@@ -120,10 +119,10 @@ jobs:
             # Check if kuber is going to be built, if so, insert latest tag and add to build.
 
             if [[ "${NEW_SERVICES[*]}" =~ "kuber" ]]; then
-              sudo apt-get update && sudo apt-get -y install skopeo jq
-              TAG=$(skopeo list-tags docker://ghcr.io/berops/claudie/autoscaler-adapter | jq -r '.Tags | last')
+              sudo apt-get update && sudo apt-get -y yq
+              TAG=$(yq eval '.images[-1].newTag' manifests/claudie/kustomization.yaml)
               echo "Setting new tag for autoscaler adapter to $TAG"
-              sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" cluster-autoscaler.goyaml
+              sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" services/kuber/templates/cluster-autoscaler.goyaml
               NEW_SERVICES+=(kuber)
             fi
           fi
