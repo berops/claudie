@@ -50,7 +50,7 @@ nav:
         - Examples:
           - AWS example: input-manifest/providers/examples/aws-input-manifest.md
           - Azure example: input-manifest/providers/examples/azure-input-manifest.md
-          - GPC example: input-manifest/providers/examples/gcp-input-manifest.md
+          - GCP example: input-manifest/providers/examples/gcp-input-manifest.md
           - Hetzner example: input-manifest/providers/examples/hetzner-input-manifest.md
           - OCI example: input-manifest/providers/examples/oci-input-manifest.md
         - AWS: input-manifest/providers/aws.md
