@@ -13,6 +13,39 @@ resources:
   - mongo
   - dynamo
   - network-policy.yaml
+
+# Alter ValidatingWebhookConfiguration and Certificate fields, so they will match the generated namespace
+replacements:
+  - source:
+      fieldPath: metadata.name
+      kind: Namespace
+    targets:
+      - fieldPaths:
+          - webhooks.*.namespaceSelector.matchLabels.kubernetes\.io/metadata\.name
+          - webhooks.*.clientConfig.service.namespace
+        select:
+          kind: ValidatingWebhookConfiguration
+          name: claudie-webhook
+  - source:
+      fieldPath: metadata.name
+      kind: Namespace
+    targets:
+      - fieldPaths:
+          - metadata.annotations.cert-manager\.io/inject-ca-from
+        options:
+          delimiter: /
+        select:
+          kind: ValidatingWebhookConfiguration
+          name: claudie-webhook
+      - fieldPaths:
+          - spec.dnsNames.*
+        options:
+          delimiter: .
+          index: 1
+        select:
+          kind: Certificate
+          name: claudie-webhook-certificate
+
 configMapGenerator:
   - envs:
       - .env
