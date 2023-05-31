@@ -22,7 +22,7 @@ jobs:
           ref: ${{ github.head_ref }}
 
       - name: Merge with master branch
-        uses: everlytic/branch-merge@1.1.2
+        uses: everlytic/branch-merge@1.1.5
         with:
           github_token: ${{ github.token }}
           source_ref: master
@@ -145,7 +145,7 @@ jobs:
         if: ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
         uses: imranismail/setup-kustomize@v2
         with:
-          kustomize-version: 4.5.2
+          kustomize-version: 4.5.6
 
       # Set the new claudie image tags in kustomization.yaml
       - name: Edit claudie kustomization.yaml
@@ -217,7 +217,7 @@ jobs:
       - name: Install kustomize
         uses: imranismail/setup-kustomize@v2
         with:
-          kustomize-version: 4.5.2
+          kustomize-version: 4.5.6
 
       - name: e2e kubeconfig
         uses: azure/k8s-set-context@v3.1

@@ -13,6 +13,7 @@ import (
 // ProcessManifestFiles processes the manifest coming from SaveChannel and DeleteChannel.
 // Function exits once Usecases.Context is canceled.
 func (u *Usecases) ProcessManifestFiles() {
+	log.Info().Msgf("Frontend is ready to process input manifests")
 	for {
 		select {
 		case newManifest := <-u.SaveChannel:
