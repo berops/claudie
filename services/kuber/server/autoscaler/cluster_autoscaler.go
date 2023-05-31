@@ -122,14 +122,14 @@ func getK8sVersion(version string) (string, error) {
 	match := re.FindStringSubmatch(version)
 
 	if len(match) >= 4 {
-		// Verify version is higher than 1.25.0 as external gRPC provider is not supported in older versions
+		// Verify version is higher than v1.25.0 as external gRPC provider is not supported in older versions
 		// TODO: remove this condition once v1.24.X will not be supported
 		minor, err := strconv.Atoi(match[2])
 		if err != nil {
 			return "", fmt.Errorf("failed to verify kubernetes version vX.%s.Y : %w", match[2], err)
 		}
 		if minor < 25 {
-			return "1.25.0", nil
+			return "v1.25.0", nil
 		}
 		return fmt.Sprintf("v%s.%s.%s", match[1], match[2], match[3]), nil
 	}
