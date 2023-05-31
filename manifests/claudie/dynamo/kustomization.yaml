@@ -4,6 +4,7 @@ metadata:
 resources:
   - dynamodb.yaml
   - job.yaml
+  - cm.yaml
 secretGenerator:
   - name: dynamo-secret
     files:
