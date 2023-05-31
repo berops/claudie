@@ -42,13 +42,13 @@ func (k *Kubernetes) Validate(m *Manifest) error {
 		names[cluster.Name] = true
 
 		for _, pool := range cluster.Pools.Control {
-			if m.nodePoolDefined(pool) {
+			if !m.nodePoolDefined(pool) {
 				return fmt.Errorf("control nodepool %q used inside cluster %q not defined inside manifest", pool, cluster.Name)
 			}
 		}
 
 		for _, pool := range cluster.Pools.Compute {
-			if m.nodePoolDefined(pool) {
+			if !m.nodePoolDefined(pool) {
 				return fmt.Errorf("compute nodepool %q used inside cluster %q not defined inside manifest", pool, cluster.Name)
 			}
 		}
