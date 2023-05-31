@@ -77,19 +77,25 @@ For adding support for other cloud providers, open an issue or propose a PR.
 
 To try Claudie you can follow these few steps or go to [Getting Started](https://docs.claudie.io/latest/getting-started/get-started-using-claudie/) section in our [documentation](docs.claudie.io).
 
-1. Download and extract manifests of the lates release from our [release page](https://github.com/berops/claudie/releases).
+1. Before you begin, please make sure you have installed [cert-manager](https://cert-manager.io/docs/installation/). 
+  
+    ```sh
+    kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml
+    ```
+
+2. Download and extract manifests of the lates release from our [release page](https://github.com/berops/claudie/releases).
 
     ```sh
     wget https://github.com/berops/claudie/releases/latest/download/claudie.zip && unzip claudie.zip -d claudie
     ```
 
-2. Deploy Claudie into a Kubernetes cluster.
+3. Deploy Claudie into a Kubernetes cluster.
 
     ```sh
     kubectl apply -k claudie
     ```
 
-3. Provide your own input manifest via a Kubernetes Secret.
+4. Provide your own input manifest via a Kubernetes Secret.
 
     Have a look at our [input manifest documentation](https://docs.claudie.io/latest/input-manifest/input-manifest/) to explore what's possible.
 

@@ -37,7 +37,7 @@ jobs:
       - name: Install kustomize
         uses: imranismail/setup-kustomize@v2
         with:
-          kustomize-version: 3.6.1
+          kustomize-version: 4.5.6
 
       - name: Set up docker
         uses: docker/login-action@v2
@@ -48,10 +48,11 @@ jobs:
 
       # Update autoscaler-adapter manifest in this steps as new kuber would need to contain manifest with the correct image tag
       - name: Edit autoscaler-adapter image tag in the manifest
-        working-directory: ./services/kuber/templates
         run: |
           TAG=${RELEASE}
-          sed "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" cluster-autoscaler.goyaml
+          sed "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" services/kuber/templates/cluster-autoscaler.goyaml
+          # Remove autoscaler-adapter tag from claudie kustomization.yaml
+          awk '/autoscaler-adapter/{getline; next} 1' manifests/claudie/kustomization.yaml > temp.yaml && mv temp.yaml manifests/claudie/kustomization.yaml
 
       - name: Build and push new images
         run: |
