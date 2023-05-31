@@ -38,12 +38,12 @@ func createMinIOClient() (*minio.Client, error) {
 func CreateMinIOAdapter() *MinIOAdapter {
 	client, err := createMinIOClient()
 	if err != nil {
-		log.Fatal().Msgf("Error creating client for minIO: %w", err)
+		log.Fatal().Msgf("Error creating client for minIO: %v", err)
 	}
 
 	healthcheckClient, err := createMinIOClient()
 	if err != nil {
-		log.Fatal().Msgf("Error creating healthcheck client for minIO: %w", err)
+		log.Fatal().Msgf("Error creating healthcheck client for minIO: %v", err)
 	}
 
 	return &MinIOAdapter{

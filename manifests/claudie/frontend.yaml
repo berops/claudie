@@ -30,6 +30,9 @@ spec:
             limits:
               cpu: 50m
               memory: 150Mi
+          ports:
+            - containerPort: 9443
+              name: webhook-tls      
           env:
             - name: CONTEXT_BOX_PORT
               valueFrom:
@@ -52,6 +55,12 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: WEBHOOK_TLS_PORT
+              value: "9443"
+            - name: WEBHOOK_CERT_DIR
+              value: "/etc/webhook/certs/"  
+            - name: WEBHOOK_PATH
+              value: "/validate-manifest" 
           readinessProbe:
             httpGet:
               path: /ready
@@ -63,7 +72,15 @@ spec:
               path: /live
               port: 50058
             initialDelaySeconds: 10
-            periodSeconds: 30
+            periodSeconds: 30   
+          volumeMounts:
+            - name: webhook-tls-certs
+              mountPath: /etc/webhook/certs/
+              readOnly: true             
+      volumes:
+        - name: webhook-tls-certs
+          secret:
+            secretName: claudie-webhook-certificate
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -99,3 +116,78 @@ roleRef:
   kind: Role
   name: frontend-role
   apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  labels:
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: frontend    
+spec:
+  selector:
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: frontend
+  ports:
+    - port: 443
+      targetPort: webhook-tls
+      name: webhook-tls
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: claudie-webhook
+  annotations:
+    cert-manager.io/inject-ca-from: claudie/claudie-webhook-certificate
+  labels:
+    app.kubernetes.io/part-of: claudie      
+webhooks:
+  - name: validate-manifest.claudie.io
+    admissionReviewVersions:
+      - "v1"
+    sideEffects: "None"
+    failurePolicy: Fail
+    timeoutSeconds: 5
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: claudie
+    objectSelector:
+      matchExpressions:
+        - key: claudie.io/input-manifest
+          operator: Exists
+    clientConfig:
+      service:
+        name: frontend
+        namespace: claudie
+        path: "/validate-manifest"
+    rules:
+      - operations: [ "CREATE", "UPDATE" ]
+        apiGroups: [""]
+        apiVersions: ["v1"]
+        resources: ["secrets"]
+        scope: "Namespaced"
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: claudie-webhook-certificate
+  namespace: claudie
+  labels:
+    app.kubernetes.io/part-of: claudie    
+spec:
+  secretName: claudie-webhook-certificate
+  dnsNames:
+  - frontend.claudie
+  - frontend.claudie.svc
+  - frontend.claudie.svc.cluster
+  - frontend.claudie.svc.cluster.local
+  issuerRef:
+    name: claudie-webhook-ca
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: claudie-webhook-ca
+  namespace: claudie
+spec:
+  selfSigned: {}
