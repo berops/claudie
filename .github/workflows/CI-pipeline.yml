@@ -119,8 +119,10 @@ jobs:
             # Check if kuber is going to be built, if so, insert latest tag and add to build.
 
             if [[ "${NEW_SERVICES[*]}" =~ "kuber" ]]; then
-              sudo apt-get update && sudo apt-get -y install yq
-              TAG=$(yq eval '.images[-1].newTag' manifests/claudie/kustomization.yaml)
+              sudo apt update && sudo apt install -y wget tar
+              wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
+              tar xz && mv yq_linux_amd64 yq
+              TAG=$(./yq eval '.images[-1].newTag' manifests/claudie/kustomization.yaml)
               echo "Setting new tag for autoscaler adapter to $TAG"
               sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" services/kuber/templates/cluster-autoscaler.goyaml
               NEW_SERVICES+=(kuber)
