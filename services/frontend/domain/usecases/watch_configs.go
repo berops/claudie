@@ -28,6 +28,7 @@ func (u *Usecases) WatchConfigs() {
 		}
 	}
 
+	log.Info().Msgf("Frontend is ready to watch input manifest statuses")
 	for {
 		select {
 		case <-u.Context.Done():
