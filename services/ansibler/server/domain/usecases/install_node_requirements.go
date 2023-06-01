@@ -20,14 +20,14 @@ func (u *Usecases) InstallNodeRequirements(request *pb.InstallRequest) (*pb.Inst
 	logger := log.With().Str("project", request.ProjectName).Str("cluster", request.Desired.ClusterInfo.Name).Logger()
 	logger.Info().Msgf("Installing node requirements")
 
-	nodepoolsInfoOfCluster := &NodepoolsInfoOfCluster{
+	NodepoolsInfo := &NodepoolsInfo{
 		Nodepools:      request.Desired.ClusterInfo.NodePools,
 		PrivateKey:     request.Desired.ClusterInfo.PrivateKey,
-		ClusterId:      fmt.Sprintf("%s-%s", request.Desired.ClusterInfo.Name, request.Desired.ClusterInfo.Hash),
+		ClusterID:      fmt.Sprintf("%s-%s", request.Desired.ClusterInfo.Name, request.Desired.ClusterInfo.Hash),
 		ClusterNetwork: request.Desired.Network,
 	}
 
-	if err := installLonghornRequirements(nodepoolsInfoOfCluster); err != nil {
+	if err := installLonghornRequirements(NodepoolsInfo); err != nil {
 		logger.Err(err).Msgf("Error encountered while installing node requirements")
 		return nil, fmt.Errorf("error encountered while installing node requirements for cluster %s project %s : %w", request.Desired.ClusterInfo.Name, request.ProjectName, err)
 	}
@@ -37,7 +37,7 @@ func (u *Usecases) InstallNodeRequirements(request *pb.InstallRequest) (*pb.Inst
 }
 
 // installLonghornRequirements installs pre-requisite tools for LongHorn in all the nodes
-func installLonghornRequirements(nodepoolsInfo *NodepoolsInfoOfCluster) error {
+func installLonghornRequirements(nodepoolsInfo *NodepoolsInfo) error {
 	// Directory where files (required by Ansible) will be generated.
 	outputDirectory := filepath.Join(baseDirectory, outputDirectory, commonUtils.CreateHash(commonUtils.HashLength))
 	if err := commonUtils.CreateDirectory(outputDirectory); err != nil {
@@ -45,14 +45,14 @@ func installLonghornRequirements(nodepoolsInfo *NodepoolsInfoOfCluster) error {
 	}
 
 	// generate private SSH key which will be used by Ansible
-	if err := commonUtils.CreateKeyFile(nodepoolsInfo.PrivateKey, outputDirectory, fmt.Sprintf("%s.%s", nodepoolsInfo.ClusterId, sshPrivateKeyFileExtension)); err != nil {
-		return fmt.Errorf("failed to create key file for %s : %w", nodepoolsInfo.ClusterId, err)
+	if err := commonUtils.CreateKeyFile(nodepoolsInfo.PrivateKey, outputDirectory, fmt.Sprintf("%s.%s", nodepoolsInfo.ClusterID, sshPrivateKeyFileExtension)); err != nil {
+		return fmt.Errorf("failed to create key file for %s : %w", nodepoolsInfo.ClusterID, err)
 	}
 
 	if err := utils.GenerateInventoryFile(templates.AllNodesInventoryTemplate, outputDirectory,
 		// Value of Ansible template parameters
 		AllNodesInventoryData{
-			NodepoolsInfos: []*NodepoolsInfoOfCluster{nodepoolsInfo},
+			NodepoolsInfos: []*NodepoolsInfo{nodepoolsInfo},
 		},
 	); err != nil {
 		return fmt.Errorf("failed to generate inventory file for all nodes in %s : %w", outputDirectory, err)
@@ -63,7 +63,7 @@ func installLonghornRequirements(nodepoolsInfo *NodepoolsInfoOfCluster) error {
 		Inventory: utils.InventoryFileName,
 		Directory: outputDirectory,
 	}
-	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("Node requirements - %s", nodepoolsInfo.ClusterId)); err != nil {
+	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("Node requirements - %s", nodepoolsInfo.ClusterID)); err != nil {
 		return fmt.Errorf("error while running ansible playbook at %s to install Longhorn requirements : %w", outputDirectory, err)
 	}
 

@@ -14,15 +14,14 @@ const (
 type Usecases struct{}
 
 type (
-	// By Cluster here we mean the desired version of the cluster.
-	NodepoolsInfoOfCluster struct {
+	NodepoolsInfo struct {
 		Nodepools      []*pb.NodePool
 		PrivateKey     string
-		ClusterId      string
+		ClusterID      string
 		ClusterNetwork string
 	}
 
 	AllNodesInventoryData struct {
-		NodepoolsInfos []*NodepoolsInfoOfCluster
+		NodepoolsInfos []*NodepoolsInfo
 	}
 )

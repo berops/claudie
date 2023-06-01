@@ -19,9 +19,9 @@ const wireguardPlaybookFilePath = "../../ansible-playbooks/wireguard.yml"
 
 type VPNInfo struct {
 	ClusterNetwork string
-	// NodepoolsInfoOfClusters is a slice with each element of type *DesiredClusterNodepoolsInfo.
+	// NodepoolsInfos is a slice with each element of type *DesiredClusterNodepoolsInfo.
 	// Each element corresponds to a cluster (either a Kubernetes cluster or attached LB clusters).
-	NodepoolsInfoOfClusters []*NodepoolsInfoOfCluster
+	NodepoolsInfos []*NodepoolsInfo
 }
 
 // InstallVPN installs VPN between nodes in the k8s cluster and lb clusters
@@ -31,23 +31,23 @@ func (u *Usecases) InstallVPN(request *pb.InstallRequest) (*pb.InstallResponse, 
 
 	vpnInfo := &VPNInfo{
 		ClusterNetwork: request.Desired.Network,
-		NodepoolsInfoOfClusters: []*NodepoolsInfoOfCluster{
-			// construct and add NodepoolsInfoOfCluster for the Kubernetes cluster
+		NodepoolsInfos: []*NodepoolsInfo{
+			// construct and add NodepoolsInfo for the Kubernetes cluster
 			{
 				Nodepools:      request.Desired.ClusterInfo.NodePools,
 				PrivateKey:     request.Desired.ClusterInfo.PrivateKey,
-				ClusterId:      fmt.Sprintf("%s-%s", request.Desired.ClusterInfo.Name, request.Desired.ClusterInfo.Hash),
+				ClusterID:      fmt.Sprintf("%s-%s", request.Desired.ClusterInfo.Name, request.Desired.ClusterInfo.Hash),
 				ClusterNetwork: request.Desired.Network,
 			},
 		},
 	}
-	// construct and add NodepoolsInfoOfCluster for each of the attached LB clusters
+	// construct and add NodepoolsInfo for each of the attached LB clusters
 	for _, lbCluster := range request.DesiredLbs {
-		vpnInfo.NodepoolsInfoOfClusters = append(vpnInfo.NodepoolsInfoOfClusters,
-			&NodepoolsInfoOfCluster{
+		vpnInfo.NodepoolsInfos = append(vpnInfo.NodepoolsInfos,
+			&NodepoolsInfo{
 				Nodepools:      lbCluster.ClusterInfo.NodePools,
 				PrivateKey:     lbCluster.ClusterInfo.PrivateKey,
-				ClusterId:      fmt.Sprintf("%s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash),
+				ClusterID:      fmt.Sprintf("%s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash),
 				ClusterNetwork: request.Desired.Network,
 			},
 		)
@@ -70,14 +70,14 @@ func installWireguardVPN(clusterID string, vpnInfo *VPNInfo) error {
 		return fmt.Errorf("failed to create directory %s : %w", outputDirectory, err)
 	}
 
-	if err := assignPrivateIPs(getAllNodepools(vpnInfo.NodepoolsInfoOfClusters), vpnInfo.ClusterNetwork); err != nil {
+	if err := assignPrivateIPs(getAllNodepools(vpnInfo.NodepoolsInfos), vpnInfo.ClusterNetwork); err != nil {
 		return fmt.Errorf("error while setting the private IPs for %s : %w", outputDirectory, err)
 	}
 
 	if err := utils.GenerateInventoryFile(templates.AllNodesInventoryTemplate, outputDirectory,
 		// Value of Ansible template parameters
 		AllNodesInventoryData{
-			NodepoolsInfos: vpnInfo.NodepoolsInfoOfClusters,
+			NodepoolsInfos: vpnInfo.NodepoolsInfos,
 		},
 	); err != nil {
 		return fmt.Errorf("error while creating inventory file for %s : %w", outputDirectory, err)
@@ -97,7 +97,7 @@ func installWireguardVPN(clusterID string, vpnInfo *VPNInfo) error {
 
 // getAllNodepools flattens []*DesiredClusterNodepoolsInfo to []*pb.NodePool.
 // Returns a slice of all the nodepools.
-func getAllNodepools(nodepoolsInfo []*NodepoolsInfoOfCluster) []*pb.NodePool {
+func getAllNodepools(nodepoolsInfo []*NodepoolsInfo) []*pb.NodePool {
 	var nodepools []*pb.NodePool
 	for _, nodepoolInfo := range nodepoolsInfo {
 		nodepools = append(nodepools, nodepoolInfo.Nodepools...)
