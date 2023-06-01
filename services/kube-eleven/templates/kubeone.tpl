@@ -1,6 +1,6 @@
 apiVersion: kubeone.k8c.io/v1beta2
 kind: KubeOneCluster
-name: cluster
+name: '{{ .ClusterName }}'
 
 versions:
   kubernetes: '{{ .KubernetesVersion }}'

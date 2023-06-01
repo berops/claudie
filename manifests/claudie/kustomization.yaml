@@ -64,7 +64,7 @@ images:
 - name: ghcr.io/berops/claudie/frontend
   newTag: 688726a-1932
 - name: ghcr.io/berops/claudie/kube-eleven
-  newTag: 688726a-1932
+  newTag: 7b30d06-1951
 - name: ghcr.io/berops/claudie/kuber
   newTag: 3d53853-1947
 - name: ghcr.io/berops/claudie/scheduler

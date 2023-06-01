@@ -18,7 +18,6 @@ import (
 const (
 	generatedKubeoneManifestName = "kubeone.yaml"
 	sshKeyFileName               = "private.pem"
-	kubeconfigFileName           = "cluster-kubeconfig"
 	baseDirectory                = "services/kube-eleven/server"
 	outputDirectory              = "clusters"
 )
@@ -56,7 +55,7 @@ func (k *KubeEleven) BuildCluster() error {
 	// After executing Kubeone apply, the cluster kubeconfig is downloaded by kubeconfig
 	// into the cluster-kubeconfig file we generated before. Now from the cluster-kubeconfig
 	// we will be reading the kubeconfig of the cluster.
-	kubeconfigAsString, err := readKubeconfigFromFile(filepath.Join(k.outputDirectory, kubeconfigFileName))
+	kubeconfigAsString, err := readKubeconfigFromFile(filepath.Join(k.outputDirectory, fmt.Sprintf("%s-kubeconfig", k.K8sCluster.ClusterInfo.Name)))
 	if err != nil {
 		return fmt.Errorf("error while reading cluster-config in %s : %w", k.outputDirectory, err)
 	}
@@ -98,7 +97,7 @@ func (k *KubeEleven) generateFiles() error {
 	}
 
 	// Create a kubeconfig file for the target Kubernetes cluster.
-	kubeconfigFilePath := filepath.Join(k.outputDirectory, kubeconfigFileName)
+	kubeconfigFilePath := filepath.Join(k.outputDirectory, fmt.Sprintf("%s-kubeconfig", k.K8sCluster.ClusterInfo.Name))
 	if err := os.WriteFile(kubeconfigFilePath, []byte(k.K8sCluster.GetKubeconfig()), 0600); err != nil {
 		return fmt.Errorf("error while writing cluster-kubeconfig file in %s: %w", k.outputDirectory, err)
 	}
@@ -117,6 +116,8 @@ func (k *KubeEleven) generateTemplateData() templateData {
 	data.APIEndpoint = k.findAPIEndpoint(potentialEndpointNode)
 
 	data.KubernetesVersion = k.K8sCluster.GetKubernetes()
+
+	data.ClusterName = k.K8sCluster.ClusterInfo.Name
 
 	return data
 }

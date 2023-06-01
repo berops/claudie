@@ -25,6 +25,7 @@ type (
 	templateData struct {
 		APIEndpoint       string
 		KubernetesVersion string
+		ClusterName       string
 		Nodepools         []*NodepoolInfo
 	}
 )
