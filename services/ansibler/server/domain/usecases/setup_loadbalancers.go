@@ -123,7 +123,6 @@ func setUpLoadbalancers(clusterName string, lbClustersInfo *utils.LBClustersInfo
 // setUpNodeExporter sets up node-exporter on each node of the LB cluster.
 // Returns error if not successful, nil otherwise.
 func setUpNodeExporter(lbCluster *pb.LBcluster, outputDirectory string) error {
-
 	var playbookParameters = utils.LBPlaybookParameters{Loadbalancer: lbCluster.ClusterInfo.Name}
 
 	// Generate node-exporter Ansible playbook from template
