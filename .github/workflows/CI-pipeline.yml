@@ -244,7 +244,7 @@ jobs:
 
       - name: Get PR labels
         id: pr-labels
-        uses: joerick/pr-labels-action@v1.0.8
+        uses: joerick/pr-labels-action@v1.0.9
 
       # Deploy services to new namespace
       - name: Deploy to new namespace
