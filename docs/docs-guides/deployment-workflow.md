@@ -22,8 +22,21 @@ mike set-default <version>
 
 In case you want to deploy a docs from some older GitHub tags to production, you will have to:
 
-* git checkout tags/<tag> -b <branch>
-* create mkdocs.yml
-* mike deploy <version> --push
+* `git checkout tags/<tag> -b <branch>`
+* `create mkdocs.yml`
+* `python3 -m venv ./venv`
+* `source ./venv/bin/activate`
+* `pip install -r requirements.txt`
+* `mike deploy <version>` --push`
 
-Find more [here](https://github.com/jimporter/mike).
+In case the [release-docs.yml](https://github.com/berops/claudie/blob/master/.github/workflows/release-docs.yml) fails, you can deploy the new version manually by following this steps:
+
+* `git checkout -b <branch>`
+* `python3 -m venv ./venv`
+* `source ./venv/bin/activate`
+* `pip install -r requirements.txt`
+* `mike deploy <version> latest --push`
+
+:warning: Don't forget to use the `latest` tag in the last command, because otherwise the new version will not be loaded as default one, when visiting [docs.claudie.io](docs.claudie.io)
+
+Find more about how to work with [mike](https://github.com/jimporter/mike).
