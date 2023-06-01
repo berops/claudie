@@ -148,7 +148,7 @@ func findNodepoolDifference(currentNodepoolCounts map[string]int32, desiredClust
 			// keep track of which nodepools were deleted
 			delete(currentNodepoolCounts, nodePoolDesired.GetDynamicNodePool().Name)
 		} else {
-			currentCount, ok := currentNodepoolCounts[nodePoolDesired.GetDynamicNodePool().Name]
+			currentCount, ok := currentNodepoolCounts[nodePoolDesired.GetStaticNodePool().Name]
 			if !ok {
 				// not in current state, adding.
 				adding = true
