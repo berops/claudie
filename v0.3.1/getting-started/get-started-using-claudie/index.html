@@ -515,7 +515,7 @@
   
     <li class="md-nav__item">
       <a href="../../input-manifest/providers/examples/gcp-input-manifest/" class="md-nav__link">
-        GPC example
+        GCP example
       </a>
     </li>
   
@@ -941,7 +941,7 @@ For more advanced cert-manager installation, please refer to the <a href="https:
    <div class="highlight"><pre><span></span><code>wget<span class="w"> </span>https://github.com/berops/claudie/releases/latest/download/claudie.zip<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>unzip<span class="w"> </span>claudie.zip<span class="w"> </span>-d<span class="w"> </span>claudie
 </code></pre></div></li>
 <li>Deploy Claudie Kubernetes <a href="https://github.com/berops/claudie/tree/master/manifests/claudie">manifests/claudie</a> into a Kubernetes cluster:
-   <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-k<span class="w"> </span>manifests/claudie
+   <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-k<span class="w"> </span>claudie
 </code></pre></div></li>
 <li>Provide your own manifest via a Kubernetes Secret, but before that please have a look at our <a href="../../input-manifest/example/">reference example input manifest</a> to explore what's possible.</li>
 </ol>
