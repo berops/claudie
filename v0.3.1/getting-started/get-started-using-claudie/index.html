@@ -327,6 +327,13 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#first-steps" class="md-nav__link">
     First steps
   </a>
@@ -860,69 +867,6 @@
   
 
     
-      
-      
-      
-
-  
-  
-  
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-      
-      
-      
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
-      
-      
-      
-        <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
-          How to work with docs
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
-        <label class="md-nav__title" for="__nav_9">
-          <span class="md-nav__icon md-icon"></span>
-          How to work with docs
-        </label>
-        <ul class="md-nav__list" data-md-scrollfix>
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../docs-guides/development/" class="md-nav__link">
-        Development
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../docs-guides/deployment-workflow/" class="md-nav__link">
-        Deployment workflow
-      </a>
-    </li>
-  
-
-            
-          
-        </ul>
-      </nav>
-    </li>
-  
-
-    
   </ul>
 </nav>
                   </div>
@@ -950,6 +894,13 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#first-steps" class="md-nav__link">
     First steps
   </a>
@@ -975,6 +926,15 @@
 
 
 <h1 id="get-started-using-claudie">Get started using Claudie<a class="headerlink" href="#get-started-using-claudie" title="Permanent link">&para;</a></h1>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
+<p>Before you begin, please make sure you have the following prerequisite installed and set up:</p>
+<ol>
+<li>Cert-manager: 
+Claudie requires cert-manager to be installed in your Kubernetes Manadger cluster, for managing webhooks certificates and ca-injection. To install cert-manager, run the following command:
+    <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml
+</code></pre></div>
+For more advanced cert-manager installation, please refer to the <a href="https://cert-manager.io/docs/installation/">official documentation</a>.</li>
+</ol>
 <h2 id="first-steps">First steps<a class="headerlink" href="#first-steps" title="Permanent link">&para;</a></h2>
 <ol>
 <li>Download and extract manifests of the lates release from our <a href="https://github.com/berops/claudie/releases">release page</a>.
@@ -1015,7 +975,13 @@ the form of <code>&lt;cluster-name&gt;-&lt;cluster-hash&gt;-kubeconfig</code>.</
       <div class="md-copyright">
   
     <div class="md-copyright__highlight">
-      Copyright &copy; 2023 BerOps s.r.o.
+      For enterprise support reach out via 
+<a 
+  href="mailto:claudie@berops,com"
+  onmouseover="this.href=this.href.replace(',', '.')">
+  claudie@berops.com
+</a>
+
     </div>
   
   

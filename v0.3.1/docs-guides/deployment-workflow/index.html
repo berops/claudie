@@ -11,8 +11,6 @@
         <link rel="canonical" href="https://docs.claudie.io/v0.3.1/docs-guides/deployment-workflow/">
       
       
-        <link rel="prev" href="../development/">
-      
       
       <link rel="icon" href="../../hexagon_blue.png">
       <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.1.8">
@@ -810,79 +808,6 @@
   
 
     
-      
-      
-      
-
-  
-  
-    
-  
-  
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
-      
-      
-      
-      
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" checked>
-      
-      
-      
-        <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
-          How to work with docs
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="true">
-        <label class="md-nav__title" for="__nav_9">
-          <span class="md-nav__icon md-icon"></span>
-          How to work with docs
-        </label>
-        <ul class="md-nav__list" data-md-scrollfix>
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../development/" class="md-nav__link">
-        Development
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-    
-  
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
-        Deployment workflow
-      </a>
-      
-    </li>
-  
-
-            
-          
-        </ul>
-      </nav>
-    </li>
-  
-
-    
   </ul>
 </nav>
                   </div>
@@ -932,11 +857,23 @@
 </code></pre></div>
 <p>In case you want to deploy a docs from some older GitHub tags to production, you will have to:</p>
 <ul>
-<li>git checkout tags/<tag> -b <branch></li>
-<li>create mkdocs.yml</li>
-<li>mike deploy <version> --push</li>
+<li><code>git checkout tags/&lt;tag&gt; -b &lt;branch&gt;</code></li>
+<li><code>create mkdocs.yml</code></li>
+<li><code>python3 -m venv ./venv</code></li>
+<li><code>source ./venv/bin/activate</code></li>
+<li><code>pip install -r requirements.txt</code></li>
+<li><code>mike deploy &lt;version&gt;</code> --push`</li>
 </ul>
-<p>Find more <a href="https://github.com/jimporter/mike">here</a>.</p>
+<p>In case the <a href="https://github.com/berops/claudie/blob/master/.github/workflows/release-docs.yml">release-docs.yml</a> fails, you can deploy the new version manually by following this steps:</p>
+<ul>
+<li><code>git checkout -b &lt;branch&gt;</code></li>
+<li><code>python3 -m venv ./venv</code></li>
+<li><code>source ./venv/bin/activate</code></li>
+<li><code>pip install -r requirements.txt</code></li>
+<li><code>mike deploy &lt;version&gt; latest --push</code></li>
+</ul>
+<p>:warning: Don't forget to use the <code>latest</code> tag in the last command, because otherwise the new version will not be loaded as default one, when visiting <a href="docs.claudie.io">docs.claudie.io</a></p>
+<p>Find more about how to work with <a href="https://github.com/jimporter/mike">mike</a>.</p>
 
 
 
@@ -963,7 +900,13 @@
       <div class="md-copyright">
   
     <div class="md-copyright__highlight">
-      Copyright &copy; 2023 BerOps s.r.o.
+      For enterprise support reach out via 
+<a 
+  href="mailto:claudie@berops,com"
+  onmouseover="this.href=this.href.replace(',', '.')">
+  claudie@berops.com
+</a>
+
     </div>
   
   
