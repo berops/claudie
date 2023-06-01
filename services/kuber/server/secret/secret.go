@@ -30,8 +30,8 @@ type SecretYaml struct {
 }
 
 type Metadata struct {
-	Name   string      `yaml:"name"`
-	Labels interface{} `yaml:"labels"`
+	Name   string            `yaml:"name"`
+	Labels map[string]string `yaml:"labels"`
 }
 
 const (
