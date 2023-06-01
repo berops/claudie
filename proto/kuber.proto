@@ -13,6 +13,7 @@ message SetUpStorageResponse {
 
 message StoreKubeconfigRequest {
   K8scluster cluster = 1;
+  string projectName = 2;
 }
 
 message StoreKubeconfigResponse {}
@@ -35,6 +36,7 @@ message DeleteNodesResponse {
 
 message StoreClusterMetadataRequest {
   K8scluster cluster = 1;
+  string projectName = 2;
 }
 
 message StoreClusterMetadataResponse {}

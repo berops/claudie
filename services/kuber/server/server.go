@@ -254,7 +254,7 @@ func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterM
 	clusterID := fmt.Sprintf("%s-%s", req.GetCluster().ClusterInfo.Name, req.GetCluster().ClusterInfo.Hash)
 	clusterDir := filepath.Join(outputDir, clusterID)
 	sec := secret.New(clusterDir, secret.NewYaml(
-		secret.Metadata{Name: fmt.Sprintf("%s-metadata", clusterID)},
+		getSecretMetadata(req.Cluster.ClusterInfo, req.ProjectName, metadataSecret),
 		map[string]string{"metadata": base64.StdEncoding.EncodeToString(b)},
 	))
 
@@ -307,7 +307,7 @@ func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigReq
 
 	clusterDir := filepath.Join(outputDir, clusterID)
 	sec := secret.New(clusterDir, secret.NewYaml(
-		secret.Metadata{Name: fmt.Sprintf("%s-kubeconfig", clusterID)},
+		getSecretMetadata(req.Cluster.ClusterInfo, req.ProjectName, kubeconfigSecret),
 		map[string]string{"kubeconfig": base64.StdEncoding.EncodeToString([]byte(cluster.GetKubeconfig()))},
 	))
 

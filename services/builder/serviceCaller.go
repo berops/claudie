@@ -435,7 +435,7 @@ func callKuber(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error
 	}
 
 	logger.Info().Msg("Calling StoreKubeconfig on kuber")
-	if _, err := kuber.StoreKubeconfig(c, &pb.StoreKubeconfigRequest{Cluster: ctx.desiredCluster}); err != nil {
+	if _, err := kuber.StoreKubeconfig(c, &pb.StoreKubeconfigRequest{Cluster: ctx.desiredCluster, ProjectName: ctx.projectName}); err != nil {
 		return err
 	}
 	logger.Info().Msg("StoreKubeconfig on Kuber finished successfully")
@@ -446,7 +446,7 @@ func callKuber(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error
 	}
 
 	logger.Info().Msg("Calling StoreNodeMetadata on kuber")
-	if _, err := kuber.StoreClusterMetadata(c, &pb.StoreClusterMetadataRequest{Cluster: ctx.desiredCluster}); err != nil {
+	if _, err := kuber.StoreClusterMetadata(c, &pb.StoreClusterMetadataRequest{Cluster: ctx.desiredCluster, ProjectName: ctx.projectName}); err != nil {
 		return err
 	}
 	logger.Info().Msg("StoreNodeMetadata on Kuber finished successfully")
