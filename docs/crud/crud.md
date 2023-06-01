@@ -54,7 +54,7 @@ The names of the secrets are derived as follows: `<cluster-name>-<cluster-hash>-
 Example of how to decode a kubeconfig from secret:
 
 ```sh
-kubectl get secrets -n claudie -l claudie.io/cluster=<cluster name> claudie.io/project=<project name> claudie.io/output=kubeconfig jsonpath='{.data.kubeconfig}' | base64 -d > your_kubeconfig.yaml
+kubectl get secrets -n claudie -l claudie.io/cluster=<cluster name> claudie.io/project=<project name> claudie.io/output=kubeconfig -o jsonpath='{.data.kubeconfig}' | base64 -d > your_kubeconfig.yaml
 ```
 
 Each claudie output will have following labels:
