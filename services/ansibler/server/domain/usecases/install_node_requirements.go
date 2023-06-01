@@ -52,7 +52,7 @@ func installLonghornRequirements(nodepoolsInfo *NodepoolsInfo) error {
 	if err := utils.GenerateInventoryFile(templates.AllNodesInventoryTemplate, outputDirectory,
 		// Value of Ansible template parameters
 		AllNodesInventoryData{
-			NodepoolsInfos: []*NodepoolsInfo{nodepoolsInfo},
+			NodepoolsInfo: []*NodepoolsInfo{nodepoolsInfo},
 		},
 	); err != nil {
 		return fmt.Errorf("failed to generate inventory file for all nodes in %s : %w", outputDirectory, err)

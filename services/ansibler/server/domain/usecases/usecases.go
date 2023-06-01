@@ -22,6 +22,6 @@ type (
 	}
 
 	AllNodesInventoryData struct {
-		NodepoolsInfos []*NodepoolsInfo
+		NodepoolsInfo []*NodepoolsInfo
 	}
 )

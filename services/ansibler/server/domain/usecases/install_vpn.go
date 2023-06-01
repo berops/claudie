@@ -77,7 +77,7 @@ func installWireguardVPN(clusterID string, vpnInfo *VPNInfo) error {
 	if err := utils.GenerateInventoryFile(templates.AllNodesInventoryTemplate, outputDirectory,
 		// Value of Ansible template parameters
 		AllNodesInventoryData{
-			NodepoolsInfos: vpnInfo.NodepoolsInfos,
+			NodepoolsInfo: vpnInfo.NodepoolsInfos,
 		},
 	); err != nil {
 		return fmt.Errorf("error while creating inventory file for %s : %w", outputDirectory, err)
