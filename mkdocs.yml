@@ -28,8 +28,8 @@ plugins:
 copyright: |
   For enterprise support reach out via 
   <a 
-    href="mailto:claudie@berops@@com"
-    onmouseover="this.href=this.href.replace('@@', '.')">
+    href="mailto:claudie@berops,com"
+    onmouseover="this.href=this.href.replace(',', '.')">
     claudie@berops.com
   </a>
 
