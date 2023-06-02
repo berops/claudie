@@ -39,7 +39,6 @@ LABEL org.opencontainers.image.description "Image for Terraformer from Claudie"
 COPY --from=build /go/terraform/terraform /usr/local/bin
 
 COPY --from=build /go/services/terraformer/server/server /bin/services/terraformer/server/server
-COPY --from=build /go/services/terraformer/templates /bin/services/terraformer/templates
 
 RUN apk add bash
 
