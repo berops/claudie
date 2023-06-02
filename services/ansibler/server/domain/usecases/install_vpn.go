@@ -143,8 +143,8 @@ func assignPrivateIPs(nodepools []*pb.NodePool, cidr string) error {
 		}
 
 		// Otherwise assign it to the node.
-		nodesWithoutPrivateIP[len(nodesWithoutPrivateIP)-1].Private = address.String()
-		nodesWithoutPrivateIP = nodesWithoutPrivateIP[:len(nodesWithoutPrivateIP)-1]
+		nodesWithoutPrivateIP[0].Private = address.String()
+		nodesWithoutPrivateIP = nodesWithoutPrivateIP[1:]
 	}
 
 	if len(nodesWithoutPrivateIP) > 0 {
