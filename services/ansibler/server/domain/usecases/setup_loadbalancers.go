@@ -17,8 +17,10 @@ import (
 const (
 	// nodeExporterPlaybookFileName defines name for node exporter playbook.
 	nodeExporterPlaybookFileName = "node-exporter.yml"
-	// nodeExporterPlaybookFileName defines name for nginx playbook.
+	// nginxPlaybookName defines name for nginx playbook.
 	nginxPlaybookName = "nginx.yml"
+	// nginxConfigName defines name for nginx config.
+	nginxConfigName = "lb.conf"
 )
 
 func (u *Usecases) SetUpLoadbalancers(request *pb.SetUpLBRequest) (*pb.SetUpLBResponse, error) {
@@ -130,7 +132,9 @@ func setUpNodeExporter(lbCluster *pb.LBcluster, clusterDirectory string) error {
 	if err != nil {
 		return fmt.Errorf("error while loading %s template for node_exporter playbook : %w", lbCluster.ClusterInfo.Name, err)
 	}
-	if err := (templateUtils.Templates{Directory: clusterDirectory}).Generate(template, nodeExporterPlaybookFileName, playbookParameters); err != nil {
+
+	tpl := templateUtils.Templates{Directory: clusterDirectory}
+	if err := tpl.Generate(template, nodeExporterPlaybookFileName, playbookParameters); err != nil {
 		return fmt.Errorf("error while generating %s for %s : %w", nodeExporterPlaybookFileName, lbCluster.ClusterInfo.Name, err)
 	}
 
@@ -165,13 +169,21 @@ func setUpNginx(lbCluster *pb.LBcluster, targetK8sNodepool []*pb.NodePool, clust
 
 	// Generate the nginx config file
 	nginxConfTemplate, err := templateUtils.LoadTemplate(templates.NginxConfigTemplate)
+	tpl := templateUtils.Templates{Directory: clusterDirectory}
 	if err != nil {
 		return fmt.Errorf("error while loading nginx config template : %w", err)
 	}
-	err = (templateUtils.Templates{Directory: clusterDirectory}).
-		Generate(nginxConfTemplate, "lb.conf", utils.NginxConfigTemplateParameters{Roles: lbClusterRolesInfo})
+	nginxPlaybookTemplate, err := templateUtils.LoadTemplate(templates.NginxPlaybookTemplate)
 	if err != nil {
-		return fmt.Errorf("error while generating lb.conf for %s : %w", lbCluster.ClusterInfo.Name, err)
+		return fmt.Errorf("error while loading nginx playbook template : %w", err)
+	}
+
+	if err := tpl.Generate(nginxConfTemplate, nginxConfigName, utils.NginxConfigTemplateParameters{Roles: lbClusterRolesInfo}); err != nil {
+		return fmt.Errorf("error while generating %s for %s : %w", nginxConfigName, lbCluster.ClusterInfo.Name, err)
+	}
+
+	if err := tpl.Generate(nginxPlaybookTemplate, nginxPlaybookName, utils.LBPlaybookParameters{Loadbalancer: lbCluster.ClusterInfo.Name}); err != nil {
+		return fmt.Errorf("error while generating %s for %s : %w", nginxPlaybookName, lbCluster.ClusterInfo.Name, err)
 	}
 
 	ansible := utils.Ansible{
