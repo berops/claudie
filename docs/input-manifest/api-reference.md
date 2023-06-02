@@ -1,4 +1,4 @@
-# Input manifest
+# Input manifest API reference
 
 ## Manifest
 
