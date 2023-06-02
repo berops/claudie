@@ -72,3 +72,21 @@ To deploy the Claudie `v0.3.X`, please:
 
 - Subnet CIDR is not carried over from temporary state in Builder [#790](https://github.com/berops/claudie/issues/790)
 - Longhorn occasionally does not detach volume from node which was deleted [#784](https://github.com/berops/claudie/issues/784)
+
+## v0.3.2
+
+### Features
+
+- Label Claudie output secrets [#837](https://github.com/berops/claudie/pull/837)
+- Use cluster name in the output kubeconfig context [#830](https://github.com/berops/claudie/pull/830)
+- Make DynamoDB job idempotent [#817](https://github.com/berops/claudie/pull/817)
+- Implement secret validation webhook [#821](https://github.com/berops/claudie/pull/821)
+- Improve Cluster Autoscaler deployment [#805](https://github.com/berops/claudie/pull/805)
+
+### Bugfixes
+
+- Fixed bug when subnet CIDR is not carried over from temporary state in Builder [#812](https://github.com/berops/claudie/pull/812)
+
+### Known issues
+
+No known issues since the last release.
