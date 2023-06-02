@@ -70,8 +70,8 @@ func (a *Usecases) TeardownLoadBalancers(ctx context.Context, request *pb.Teardo
 // it will be delayed and will send the data to the dataChan which will be used later for the SetupLoadbalancers
 // function to bypass generating the certificates for the endpoint multiple times.
 func teardownLoadBalancers(clusterName string, lbClustersInfo *utils.LBClustersInfo, attached bool) (string, error) {
-	outputDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, commonUtils.CreateHash(commonUtils.HashLength)))
-	if err := utils.GenerateLBBaseFiles(outputDirectory, lbClustersInfo); err != nil {
+	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, commonUtils.CreateHash(commonUtils.HashLength)))
+	if err := utils.GenerateLBBaseFiles(clusterDirectory, lbClustersInfo); err != nil {
 		return "", fmt.Errorf("error encountered while generating base files for %s", clusterName)
 	}
 
@@ -81,12 +81,12 @@ func teardownLoadBalancers(clusterName string, lbClustersInfo *utils.LBClustersI
 	// current Api server type LB cluster.
 	// This will be reused later in the SetUpLoadbalancers function.
 	if currentApiServerTypeLBCluster != nil && attached {
-		return currentApiServerTypeLBCluster.CurrentLbCluster.Dns.Endpoint, os.RemoveAll(outputDirectory)
+		return currentApiServerTypeLBCluster.CurrentLbCluster.Dns.Endpoint, os.RemoveAll(clusterDirectory)
 	}
 
-	if err := utils.HandleAPIEndpointChange(currentApiServerTypeLBCluster, lbClustersInfo, outputDirectory); err != nil {
+	if err := utils.HandleAPIEndpointChange(currentApiServerTypeLBCluster, lbClustersInfo, clusterDirectory); err != nil {
 		return "", err
 	}
 
-	return "", os.RemoveAll(outputDirectory)
+	return "", os.RemoveAll(clusterDirectory)
 }

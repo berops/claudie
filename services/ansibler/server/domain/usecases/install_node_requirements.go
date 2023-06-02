@@ -39,33 +39,33 @@ func (u *Usecases) InstallNodeRequirements(request *pb.InstallRequest) (*pb.Inst
 // installLonghornRequirements installs pre-requisite tools for LongHorn in all the nodes
 func installLonghornRequirements(nodepoolsInfo *NodepoolsInfo) error {
 	// Directory where files (required by Ansible) will be generated.
-	outputDirectory := filepath.Join(baseDirectory, outputDirectory, commonUtils.CreateHash(commonUtils.HashLength))
-	if err := commonUtils.CreateDirectory(outputDirectory); err != nil {
-		return fmt.Errorf("failed to create directory %s : %w", outputDirectory, err)
+	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, commonUtils.CreateHash(commonUtils.HashLength))
+	if err := commonUtils.CreateDirectory(clusterDirectory); err != nil {
+		return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 	}
 
 	// generate private SSH key which will be used by Ansible
-	if err := commonUtils.CreateKeyFile(nodepoolsInfo.PrivateKey, outputDirectory, fmt.Sprintf("%s.%s", nodepoolsInfo.ClusterID, sshPrivateKeyFileExtension)); err != nil {
+	if err := commonUtils.CreateKeyFile(nodepoolsInfo.PrivateKey, clusterDirectory, fmt.Sprintf("%s.%s", nodepoolsInfo.ClusterID, sshPrivateKeyFileExtension)); err != nil {
 		return fmt.Errorf("failed to create key file for %s : %w", nodepoolsInfo.ClusterID, err)
 	}
 
-	if err := utils.GenerateInventoryFile(templates.AllNodesInventoryTemplate, outputDirectory,
+	if err := utils.GenerateInventoryFile(templates.AllNodesInventoryTemplate, clusterDirectory,
 		// Value of Ansible template parameters
 		AllNodesInventoryData{
 			NodepoolsInfo: []*NodepoolsInfo{nodepoolsInfo},
 		},
 	); err != nil {
-		return fmt.Errorf("failed to generate inventory file for all nodes in %s : %w", outputDirectory, err)
+		return fmt.Errorf("failed to generate inventory file for all nodes in %s : %w", clusterDirectory, err)
 	}
 
 	ansible := utils.Ansible{
 		Playbook:  ansiblePlaybookFilePath,
 		Inventory: utils.InventoryFileName,
-		Directory: outputDirectory,
+		Directory: clusterDirectory,
 	}
 	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("Node requirements - %s", nodepoolsInfo.ClusterID)); err != nil {
-		return fmt.Errorf("error while running ansible playbook at %s to install Longhorn requirements : %w", outputDirectory, err)
+		return fmt.Errorf("error while running ansible playbook at %s to install Longhorn requirements : %w", clusterDirectory, err)
 	}
 
-	return os.RemoveAll(outputDirectory)
+	return os.RemoveAll(clusterDirectory)
 }

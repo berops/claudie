@@ -50,23 +50,23 @@ func updateAPIEndpoint(currentK8sClusterInfo, desiredK8sClusterInfo *pb.ClusterI
 	}
 
 	// This is the directory where files (Ansible inventory files, SSH keys etc.) will be generated.
-	outputDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, commonUtils.CreateHash(commonUtils.HashLength)))
-	if err := commonUtils.CreateDirectory(outputDirectory); err != nil {
-		return fmt.Errorf("failed to create directory %s : %w", outputDirectory, err)
+	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, commonUtils.CreateHash(commonUtils.HashLength)))
+	if err := commonUtils.CreateDirectory(clusterDirectory); err != nil {
+		return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 	}
 
 	// This SSH key is used by Ansible to SSH into the K8s cluster nodes.
-	if err := commonUtils.CreateKeyFile(currentK8sClusterInfo.PrivateKey, outputDirectory, "k8s.pem"); err != nil {
+	if err := commonUtils.CreateKeyFile(currentK8sClusterInfo.PrivateKey, clusterDirectory, "k8s.pem"); err != nil {
 		return fmt.Errorf("failed to create key file for %s : %w", clusterID, err)
 	}
 
-	err = utils.GenerateInventoryFile(templates.LoadbalancerInventoryTemplate, outputDirectory, utils.LBInventoryFileParameters{
+	err = utils.GenerateInventoryFile(templates.LoadbalancerInventoryTemplate, clusterDirectory, utils.LBInventoryFileParameters{
 		K8sNodepools: currentK8sClusterInfo.GetNodePools(),
 		LBClusters:   nil,
 		ClusterID:    clusterID,
 	})
 	if err != nil {
-		return fmt.Errorf("error while creating inventory file for %s : %w", outputDirectory, err)
+		return fmt.Errorf("error while creating inventory file for %s : %w", clusterDirectory, err)
 	}
 
 	// find control nodepool present in both desired and current state.
@@ -81,10 +81,10 @@ func updateAPIEndpoint(currentK8sClusterInfo, desiredK8sClusterInfo *pb.ClusterI
 	apiEndpointNode.NodeType = pb.NodeType_master
 	newEndpointNode.NodeType = pb.NodeType_apiEndpoint
 
-	if err := utils.ChangeAPIEndpoint(currentK8sClusterInfo.Name, apiEndpointNode.GetPublic(), newEndpointNode.GetPublic(), outputDirectory); err != nil {
+	if err := utils.ChangeAPIEndpoint(currentK8sClusterInfo.Name, apiEndpointNode.GetPublic(), newEndpointNode.GetPublic(), clusterDirectory); err != nil {
 		return err
 	}
 
 	// Cleanup
-	return os.RemoveAll(outputDirectory)
+	return os.RemoveAll(clusterDirectory)
 }

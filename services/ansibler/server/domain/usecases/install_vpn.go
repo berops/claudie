@@ -32,7 +32,7 @@ func (u *Usecases) InstallVPN(request *pb.InstallRequest) (*pb.InstallResponse, 
 	vpnInfo := &VPNInfo{
 		ClusterNetwork: request.Desired.Network,
 		NodepoolsInfos: []*NodepoolsInfo{
-			// construct and add NodepoolsInfo for the Kubernetes cluster
+			// Construct and add NodepoolsInfo for the Kubernetes cluster
 			{
 				Nodepools:      request.Desired.ClusterInfo.NodePools,
 				PrivateKey:     request.Desired.ClusterInfo.PrivateKey,
@@ -41,7 +41,7 @@ func (u *Usecases) InstallVPN(request *pb.InstallRequest) (*pb.InstallResponse, 
 			},
 		},
 	}
-	// construct and add NodepoolsInfo for each of the attached LB clusters
+	// Construct and add NodepoolsInfo for each of the attached LB clusters
 	for _, lbCluster := range request.DesiredLbs {
 		vpnInfo.NodepoolsInfos = append(vpnInfo.NodepoolsInfos,
 			&NodepoolsInfo{
@@ -65,34 +65,39 @@ func (u *Usecases) InstallVPN(request *pb.InstallRequest) (*pb.InstallResponse, 
 // installWireguardVPN install wireguard VPN for all nodes in the infrastructure.
 func installWireguardVPN(clusterID string, vpnInfo *VPNInfo) error {
 	// Directory where files (required by Ansible) will be generated.
-	outputDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, commonUtils.CreateHash(commonUtils.HashLength)))
-	if err := commonUtils.CreateDirectory(outputDirectory); err != nil {
-		return fmt.Errorf("failed to create directory %s : %w", outputDirectory, err)
+	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, commonUtils.CreateHash(commonUtils.HashLength)))
+	if err := commonUtils.CreateDirectory(clusterDirectory); err != nil {
+		return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 	}
 
 	if err := assignPrivateIPs(getAllNodepools(vpnInfo.NodepoolsInfos), vpnInfo.ClusterNetwork); err != nil {
-		return fmt.Errorf("error while setting the private IPs for %s : %w", outputDirectory, err)
+		return fmt.Errorf("error while setting the private IPs for %s : %w", clusterDirectory, err)
 	}
 
-	if err := utils.GenerateInventoryFile(templates.AllNodesInventoryTemplate, outputDirectory,
-		// Value of Ansible template parameters
+	if err := utils.GenerateInventoryFile(templates.AllNodesInventoryTemplate, clusterDirectory,
+		// Value of Ansible template parameters.
 		AllNodesInventoryData{
 			NodepoolsInfo: vpnInfo.NodepoolsInfos,
 		},
 	); err != nil {
-		return fmt.Errorf("error while creating inventory file for %s : %w", outputDirectory, err)
+		return fmt.Errorf("error while creating inventory file for %s : %w", clusterDirectory, err)
 	}
 
+	for _, nodepoolInfo := range vpnInfo.NodepoolsInfos {
+		if err := commonUtils.CreateKeyFile(nodepoolInfo.PrivateKey, clusterDirectory, fmt.Sprintf("%s.%s", nodepoolInfo.ClusterID, sshPrivateKeyFileExtension)); err != nil {
+			return fmt.Errorf("failed to create key file for %s : %w", nodepoolInfo.ClusterID, err)
+		}
+	}
 	ansible := utils.Ansible{
 		Playbook:  wireguardPlaybookFilePath,
 		Inventory: utils.InventoryFileName,
-		Directory: outputDirectory,
+		Directory: clusterDirectory,
 	}
 	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("VPN - %s", clusterID)); err != nil {
-		return fmt.Errorf("error while running ansible for %s : %w", outputDirectory, err)
+		return fmt.Errorf("error while running ansible for %s : %w", clusterDirectory, err)
 	}
 
-	return os.RemoveAll(outputDirectory)
+	return os.RemoveAll(clusterDirectory)
 }
 
 // getAllNodepools flattens []*DesiredClusterNodepoolsInfo to []*pb.NodePool.
@@ -119,7 +124,7 @@ func assignPrivateIPs(nodepools []*pb.NodePool, cidr string) error {
 		nodesWithoutPrivateIP []*pb.Node
 	)
 
-	// construct nodesWithoutPrivateIP
+	// Construct nodesWithoutPrivateIP.
 	for _, nodepool := range nodepools {
 		for _, node := range nodepool.Nodes {
 			if node.Private != "" {

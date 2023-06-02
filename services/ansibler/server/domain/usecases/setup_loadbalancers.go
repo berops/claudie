@@ -56,9 +56,9 @@ func (u *Usecases) SetUpLoadbalancers(request *pb.SetUpLBRequest) (*pb.SetUpLBRe
 
 // setUpLoadbalancers sets up the loadbalancers along with DNS and verifies their configuration
 func setUpLoadbalancers(clusterName string, lbClustersInfo *utils.LBClustersInfo, logger zerolog.Logger) error {
-	outputDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, commonUtils.CreateHash(commonUtils.HashLength)))
+	clusterBaseDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, commonUtils.CreateHash(commonUtils.HashLength)))
 
-	if err := utils.GenerateLBBaseFiles(outputDirectory, lbClustersInfo); err != nil {
+	if err := utils.GenerateLBBaseFiles(clusterBaseDirectory, lbClustersInfo); err != nil {
 		return fmt.Errorf("error encountered while generating base files for %s", clusterName)
 	}
 
@@ -72,21 +72,21 @@ func setUpLoadbalancers(clusterName string, lbClustersInfo *utils.LBClustersInfo
 			logger.Info().Str(loggerPrefix, lbClusterId).Msg("Setting up the loadbalancer cluster")
 
 			// Create the directory where files will be generated
-			outputDirectory = filepath.Join(outputDirectory, lbClusterId)
-			if err := commonUtils.CreateDirectory(outputDirectory); err != nil {
-				return fmt.Errorf("failed to create directory %s : %w", outputDirectory, err)
+			clusterDirectory := filepath.Join(clusterBaseDirectory, lbClusterId)
+			if err := commonUtils.CreateDirectory(clusterDirectory); err != nil {
+				return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 			}
 
 			// Generate SSH key
-			if err := commonUtils.CreateKeyFile(lbCluster.DesiredLbCluster.ClusterInfo.PrivateKey, outputDirectory, fmt.Sprintf("key.%s", sshPrivateKeyFileExtension)); err != nil {
+			if err := commonUtils.CreateKeyFile(lbCluster.DesiredLbCluster.ClusterInfo.PrivateKey, clusterDirectory, fmt.Sprintf("key.%s", sshPrivateKeyFileExtension)); err != nil {
 				return fmt.Errorf("failed to create key file for %s : %w", lbCluster.DesiredLbCluster.ClusterInfo.Name, err)
 			}
 
-			if err := setUpNodeExporter(lbCluster.DesiredLbCluster, outputDirectory); err != nil {
+			if err := setUpNodeExporter(lbCluster.DesiredLbCluster, clusterDirectory); err != nil {
 				return err
 			}
 
-			if err := setUpNginx(lbCluster.DesiredLbCluster, lbClustersInfo.TargetK8sNodepool, outputDirectory); err != nil {
+			if err := setUpNginx(lbCluster.DesiredLbCluster, lbClustersInfo.TargetK8sNodepool, clusterDirectory); err != nil {
 				return err
 			}
 
@@ -113,16 +113,16 @@ func setUpLoadbalancers(clusterName string, lbClustersInfo *utils.LBClustersInfo
 		desiredApiServerTypeLBCluster = utils.FindCurrentAPIServerTypeLBCluster(lbClustersInfo.LbClusters)
 	}
 
-	if err := utils.HandleAPIEndpointChange(desiredApiServerTypeLBCluster, lbClustersInfo, outputDirectory); err != nil {
+	if err := utils.HandleAPIEndpointChange(desiredApiServerTypeLBCluster, lbClustersInfo, clusterBaseDirectory); err != nil {
 		return fmt.Errorf("failed to find a candidate for the Api Server: %w", err)
 	}
 
-	return os.RemoveAll(outputDirectory)
+	return os.RemoveAll(clusterBaseDirectory)
 }
 
 // setUpNodeExporter sets up node-exporter on each node of the LB cluster.
 // Returns error if not successful, nil otherwise.
-func setUpNodeExporter(lbCluster *pb.LBcluster, outputDirectory string) error {
+func setUpNodeExporter(lbCluster *pb.LBcluster, clusterDirectory string) error {
 	var playbookParameters = utils.LBPlaybookParameters{Loadbalancer: lbCluster.ClusterInfo.Name}
 
 	// Generate node-exporter Ansible playbook from template
@@ -130,13 +130,13 @@ func setUpNodeExporter(lbCluster *pb.LBcluster, outputDirectory string) error {
 	if err != nil {
 		return fmt.Errorf("error while loading %s template for node_exporter playbook : %w", lbCluster.ClusterInfo.Name, err)
 	}
-	if err := (templateUtils.Templates{Directory: outputDirectory}).Generate(template, nodeExporterPlaybookFileName, playbookParameters); err != nil {
+	if err := (templateUtils.Templates{Directory: clusterDirectory}).Generate(template, nodeExporterPlaybookFileName, playbookParameters); err != nil {
 		return fmt.Errorf("error while generating %s for %s : %w", nodeExporterPlaybookFileName, lbCluster.ClusterInfo.Name, err)
 	}
 
 	// Run the Ansible playbook
 	ansible := utils.Ansible{
-		Directory: outputDirectory,
+		Directory: clusterDirectory,
 		Playbook:  nodeExporterPlaybookFileName,
 		Inventory: filepath.Join("..", utils.InventoryFileName),
 	}
@@ -149,7 +149,7 @@ func setUpNodeExporter(lbCluster *pb.LBcluster, outputDirectory string) error {
 
 // setUpNginx sets up the nginx loadbalancer based on the input manifest specification.
 // Return error if not successful, nil otherwise
-func setUpNginx(lbCluster *pb.LBcluster, targetK8sNodepool []*pb.NodePool, outputDirectory string) error {
+func setUpNginx(lbCluster *pb.LBcluster, targetK8sNodepool []*pb.NodePool, clusterDirectory string) error {
 	targetControlNodes, targetComputeNodes := splitNodesByType(targetK8sNodepool)
 
 	// construct []LBClusterRolesInfo for the given LB cluster
@@ -168,7 +168,7 @@ func setUpNginx(lbCluster *pb.LBcluster, targetK8sNodepool []*pb.NodePool, outpu
 	if err != nil {
 		return fmt.Errorf("error while loading nginx config template : %w", err)
 	}
-	err = (templateUtils.Templates{Directory: outputDirectory}).
+	err = (templateUtils.Templates{Directory: clusterDirectory}).
 		Generate(nginxConfTemplate, "lb.conf", utils.NginxConfigTemplateParameters{Roles: lbClusterRolesInfo})
 	if err != nil {
 		return fmt.Errorf("error while generating lb.conf for %s : %w", lbCluster.ClusterInfo.Name, err)
@@ -177,7 +177,7 @@ func setUpNginx(lbCluster *pb.LBcluster, targetK8sNodepool []*pb.NodePool, outpu
 	ansible := utils.Ansible{
 		Playbook:  nginxPlaybookName,
 		Inventory: filepath.Join("..", utils.InventoryFileName),
-		Directory: outputDirectory,
+		Directory: clusterDirectory,
 	}
 	err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash))
 	if err != nil {
