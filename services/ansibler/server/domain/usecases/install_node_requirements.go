@@ -33,7 +33,7 @@ func (u *Usecases) InstallNodeRequirements(request *pb.InstallRequest) (*pb.Inst
 	}
 
 	logger.Info().Msgf("Node requirements were successfully installed")
-	return &pb.InstallResponse{}, nil
+	return &pb.InstallResponse{Desired: request.Desired, DesiredLbs: request.DesiredLbs}, nil
 }
 
 // installLonghornRequirements installs pre-requisite tools for LongHorn in all the nodes

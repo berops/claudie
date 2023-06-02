@@ -56,13 +56,13 @@ func (a *Usecases) TeardownLoadBalancers(ctx context.Context, request *pb.Teardo
 	}
 
 	logger.Info().Msgf("Loadbalancers were successfully torn down")
-	response := &pb.TeardownLBResponse{
+
+	return &pb.TeardownLBResponse{
 		PreviousAPIEndpoint: previousApiEndpoint,
 		Desired:             request.Desired,
 		DesiredLbs:          request.DesiredLbs,
 		DeletedLbs:          request.DeletedLbs,
-	}
-	return response, nil
+	}, nil
 }
 
 // tearDownLoadBalancers will correctly destroy LB clusters (including correctly selecting the new ApiServer if present).

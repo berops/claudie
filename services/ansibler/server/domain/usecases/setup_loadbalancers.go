@@ -51,7 +51,7 @@ func (u *Usecases) SetUpLoadbalancers(request *pb.SetUpLBRequest) (*pb.SetUpLBRe
 	}
 
 	logger.Info().Msgf("Loadbalancers were successfully set up")
-	return &pb.SetUpLBResponse{}, nil
+	return &pb.SetUpLBResponse{Desired: request.Desired, CurrentLbs: request.CurrentLbs, DesiredLbs: request.DesiredLbs}, nil
 }
 
 // setUpLoadbalancers sets up the loadbalancers along with DNS and verifies their configuration

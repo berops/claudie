@@ -59,7 +59,7 @@ func (u *Usecases) InstallVPN(request *pb.InstallRequest) (*pb.InstallResponse, 
 	}
 
 	logger.Info().Msgf("VPN was successfully installed")
-	return &pb.InstallResponse{}, nil
+	return &pb.InstallResponse{Desired: request.Desired, DesiredLbs: request.DesiredLbs}, nil
 }
 
 // installWireguardVPN install wireguard VPN for all nodes in the infrastructure.
