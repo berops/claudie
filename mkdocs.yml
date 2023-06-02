@@ -24,6 +24,12 @@ plugins:
       width: 100%
       height: auto
       zoomable: true
+  - material-plausible
+
+extra:
+  analytics:
+    provider: plausible
+    domain: claudie.io
 
 copyright: |
   For enterprise support reach out via 
