@@ -31,6 +31,7 @@ message SetUpLBResponse {
 message TeardownLBRequest {
   K8scluster desired = 1;
   repeated LBcluster desiredLbs = 2;
+  // LB clusters which were deleted from the Claudie manifest.
   repeated LBcluster deletedLbs = 3;
   string projectName = 4;
 }

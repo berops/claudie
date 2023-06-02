@@ -1,21 +1,43 @@
-package ansible
+package utils
 
 import (
 	"fmt"
 	"os"
 	"os/exec"
 
-	comm "github.com/berops/claudie/internal/command"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+
+	comm "github.com/berops/claudie/internal/command"
+	"github.com/berops/claudie/internal/templateUtils"
 )
 
 const (
+	// File name for the ansible inventory.
+	InventoryFileName = "inventory.ini"
 	// defaultAnsibleForks defines how many forks ansible uses (on how many nodes can ansible perform a task at the same time).
 	defaultAnsibleForks = 15
 	// maxAnsibleRetries defines how many times should be playbook retried before returning error.
 	maxAnsibleRetries = 5
 )
+
+// In Ansible, an inventory file is a configuration file that defines
+// the hosts and groups of hosts that Ansible can manage.
+// generateInventoryFile generates the Ansible inventory file.
+func GenerateInventoryFile(inventoryTemplate, outputDirectory string, data interface{}) error {
+	template, err := templateUtils.LoadTemplate(inventoryTemplate)
+	if err != nil {
+		return fmt.Errorf("error while loading Ansible inventory template for %s : %w", outputDirectory, err)
+	}
+
+	err = templateUtils.Templates{Directory: outputDirectory}.
+		Generate(template, InventoryFileName, data)
+	if err != nil {
+		return fmt.Errorf("error while generating from template for %s : %w", outputDirectory, err)
+	}
+
+	return nil
+}
 
 type Ansible struct {
 	Playbook  string

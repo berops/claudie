@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
 	"text/template"
 )
 
