@@ -51,7 +51,7 @@ nav:
     - getting-started/get-started-using-claudie.md
     - CRUD for Claudie: crud/crud.md
   - Input manifest: 
-      - input-manifest/input-manifest.md
+      - input-manifest/api-reference.md
       - Example yaml file: input-manifest/example.md
       - Providers:
         - Examples:

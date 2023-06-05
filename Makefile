@@ -24,7 +24,7 @@ builder:
 	GOLANG_LOG=debug go run ./services/builder
 # Start Terraformer service on a local environment, exposed on port 50052
 terraformer:
-	GOLANG_LOG=debug go run services/terraformer/server/server.go 
+	GOLANG_LOG=debug go run ./services/terraformer/server
 
 # Start Ansibler service on a local environment, exposed on port 50053
 ansibler:
@@ -32,11 +32,11 @@ ansibler:
 
 # Start Kube-eleven service on a local environment, exposed on port 50054
 kube-eleven:
-	GOLANG_LOG=debug go run services/kube-eleven/server/server.go
+	GOLANG_LOG=debug go run ./services/kube-eleven/server
 
 # Start Kuber service on a local environment, exposed on port 50057
 kuber:
-	GOLANG_LOG=debug go run services/kuber/server/server.go
+	GOLANG_LOG=debug go run ./services/kuber/server
 
 # Start Frontend service on a local environment
 # This is not necessary to have running on local environtment, to inject input manifest,
