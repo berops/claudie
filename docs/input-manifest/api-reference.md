@@ -1,4 +1,4 @@
-# Input manifest
+# Input manifest API reference
 
 ## Manifest
 
@@ -103,7 +103,7 @@ To find out how to configure GCP provider and service account, follow the instru
 
 - `gcpProject`
 
-  project id of an already existing GCP project.
+  Project id of an already existing GCP project where the infrastructure is to be created.
 
 ## Hetzner
 

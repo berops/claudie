@@ -26,7 +26,7 @@ WORKDIR /go/services/kube-eleven/server
 #Compile the golang code, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build
 
-FROM docker.io/library/alpine:3.17.3
+FROM docker.io/library/alpine:3.18.0
 #Add repository label
 LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
 #Add image name as a label

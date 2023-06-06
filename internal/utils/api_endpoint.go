@@ -27,8 +27,10 @@ func HasAPIServerRole(roles []*pb.Role) bool {
 	return false
 }
 
-// FindAPIEndpointNodePoolWithNode searches for a nodepool that has a node with type ApiEndpoint.
-func FindAPIEndpointNodePoolWithNode(nodepools []*pb.NodePool) (*pb.NodePool, *pb.Node, error) {
+// FindNodepoolWithApiEndpointNode searches for a nodepool that has the control node representing
+// the Api endpoint of the cluster.
+// Returns the control node if found and its corresponding nodepool.
+func FindNodepoolWithApiEndpointNode(nodepools []*pb.NodePool) (*pb.NodePool, *pb.Node, error) {
 	for _, nodepool := range nodepools {
 		if np := nodepool.GetDynamicNodePool(); np != nil {
 			if np.IsControl {

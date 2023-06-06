@@ -1,11 +1,11 @@
 package main
 
 import (
+	"github.com/rs/zerolog/log"
+	"google.golang.org/protobuf/proto"
+
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
-	"github.com/rs/zerolog/log"
-
-	"google.golang.org/protobuf/proto"
 )
 
 // IntermediateRepresentation represents the intermediate state
@@ -92,7 +92,7 @@ func Diff(current, desired *pb.K8Scluster, currentLbs, desiredLbs []*pb.LBcluste
 				nodepool := utils.GetNodePoolByName(nodepoolName, current.ClusterInfo.GetNodePools())
 
 				// check if the nodepool was an API-endpoint if yes we need to choose the next control nodepool as the endpoint.
-				if _, err := utils.FindEndpointNode(nodepool); err == nil {
+				if _, err := utils.FindApiEndpointNode(nodepool); err == nil {
 					apiEndpointDeleted = true
 				}
 
