@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/services/frontend/domain/ports"
 )
 
@@ -16,10 +17,10 @@ type Usecases struct {
 	inProgress sync.Map
 
 	// SaveChannel is channel which is used to pass manifests which needs to be saved.
-	SaveChannel chan *RawManifest
+	SaveChannel chan *manifest.Manifest
 
 	// DeleteChannel is channel which is used to pass manifests which needs to be deleted.
-	DeleteChannel chan *RawManifest
+	DeleteChannel chan *manifest.Manifest
 
 	// Context which when cancelled will close all channel/goroutines.
 	Context context.Context

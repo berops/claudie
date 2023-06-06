@@ -55,7 +55,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-            - name: WEBHOOK_TLS_PORT
+            - name: CONTROLLER_TLS_PORT
               value: "9443"
             - name: WEBHOOK_CERT_DIR
               value: "/etc/webhook/certs/"  

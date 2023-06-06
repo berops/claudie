@@ -4,7 +4,7 @@ package manifest
 
 type Manifest struct {
 	Name         string       `validate:"required" yaml:"name"`
-	Providers    Provider     `yaml:"providers"`
+	Providers    Provider     `yaml:"providers" json:"providers"`
 	NodePools    NodePool     `yaml:"nodePools"`
 	Kubernetes   Kubernetes   `yaml:"kubernetes"`
 	LoadBalancer LoadBalancer `yaml:"loadBalancers"`
@@ -34,8 +34,8 @@ type GCP struct {
 	Name string `validate:"required" yaml:"name"`
 	// We can only validate that the supplied string is a
 	// valid formatted JSON.
-	Credentials string `validate:"required,json" yaml:"credentials"`
-	GCPProject  string `validate:"required" yaml:"gcpProject"`
+	Credentials string `validate:"required,json" yaml:"credentials" json:"credentials"`
+	GCPProject  string `validate:"required" yaml:"gcpProject" json:"gcpProject"`
 }
 
 type Hetzner struct {
@@ -50,9 +50,9 @@ type Hetzner struct {
 }
 
 type AWS struct {
-	Name      string `validate:"required" yaml:"name"`
-	AccessKey string `validate:"required,alphanum,len=20" yaml:"accessKey"`
-	SecretKey string `validate:"required,len=40" yaml:"secretKey"`
+	Name      string `validate:"required" yaml:"name" json:"name"`
+	AccessKey string `validate:"required,alphanum,len=20" yaml:"accessKey" json:"accessKey"`
+	SecretKey string `validate:"required,len=40" yaml:"secretKey" json:"secretKey"`
 }
 type OCI struct {
 	Name           string `validate:"required" yaml:"name"`
@@ -71,83 +71,93 @@ type Azure struct {
 	ClientSecret   string `validate:"required" yaml:"clientSecret"`
 }
 
+// Nodepools field is used for defining the nodepool specification.
+// You can think of them as a blueprints, not actual nodepools that will be created
 type NodePool struct {
-	Dynamic []DynamicNodePool `yaml:"dynamic"`
-	Static  []StaticNodePool  `yaml:"static"`
+	Dynamic []DynamicNodePool `yaml:"dynamic" json:"dynamic"`
+	// +optional
+	Static  []StaticNodePool  `yaml:"static" json:"static"`
 }
 
 type LoadBalancer struct {
-	Roles    []Role                `yaml:"roles"`
-	Clusters []LoadBalancerCluster `yaml:"clusters"`
+	// +optional
+	Roles    []Role                `yaml:"roles" json:"roles"`
+	// +optional
+	Clusters []LoadBalancerCluster `yaml:"clusters" json:"clusters"`
 }
 
 type Kubernetes struct {
-	Clusters []Cluster `yaml:"clusters"`
+	// +optional
+	Clusters []Cluster `yaml:"clusters" json:"clusters"`
 }
 
 type DynamicNodePool struct {
-	Name             string           `validate:"required" yaml:"name"`
-	ProviderSpec     ProviderSpec     `validate:"required" yaml:"providerSpec"`
-	Count            int32            `validate:"required_without=AutoscalerConfig,excluded_with=AutoscalerConfig" yaml:"count"`
-	ServerType       string           `validate:"required" yaml:"serverType"`
-	Image            string           `validate:"required" yaml:"image"`
-	StorageDiskSize  int64            `validate:"omitempty,gte=50" yaml:"storageDiskSize"`
-	AutoscalerConfig AutoscalerConfig `validate:"required_without=Count,excluded_with=Count" yaml:"autoscaler"`
+	Name             string           `validate:"required" yaml:"name" json:"name"`
+	ProviderSpec     ProviderSpec     `validate:"required" yaml:"providerSpec" json:"providerSpec"`
+	Count            int32            `validate:"required_without=AutoscalerConfig,excluded_with=AutoscalerConfig" yaml:"count" json:"count"`
+	ServerType       string           `validate:"required" yaml:"serverType" json:"serverType"`
+	Image            string           `validate:"required" yaml:"image" json:"image"`
+	// +optional
+	StorageDiskSize  int64            `validate:"omitempty,gte=50" yaml:"storageDiskSize" json:"storageDiskSize"`
+	// +optional
+	AutoscalerConfig AutoscalerConfig `validate:"required_without=Count,excluded_with=Count" yaml:"autoscaler" json:"autoscaler"`
 }
 
 type AutoscalerConfig struct {
-	Min int32 `yaml:"min"`
-	Max int32 `yaml:"max"`
+	// +optional
+	Min int32 `yaml:"min" json:"min"`
+	// +optional
+	Max int32 `yaml:"max" json:"max"`
 }
 
 type ProviderSpec struct {
-	Name   string `validate:"required" yaml:"name"`
-	Region string `validate:"required" yaml:"region"`
-	Zone   string `validate:"required" yaml:"zone"`
+	Name   string `validate:"required" yaml:"name" json:"name"`
+	Region string `validate:"required" yaml:"region" json:"region"`
+	Zone   string `validate:"required" yaml:"zone" json:"zone"`
 }
 
 type StaticNodePool struct {
-	Name  string `validate:"required" yaml:"name"`
-	Nodes []Node `validate:"dive" yaml:"nodes"`
+	Name  string `validate:"required" yaml:"name" json:"name"`
+	Nodes []Node `validate:"dive" yaml:"nodes" json:"nodes"`
 }
 
 type Node struct {
-	PublicIP      string `validate:"required,ip_addr" yaml:"publicIP"`
-	PrivateSSHKey string `validate:"required" yaml:"privateSshKey"`
+	PublicIP      string `validate:"required,ip_addr" yaml:"publicIP" json:"publicIP"`
+	PrivateSSHKey string `validate:"required" yaml:"privateSshKey" json:"privateSshKey"`
 }
 
 type Cluster struct {
-	Name    string `validate:"required" yaml:"name"`
-	Version string `validate:"required,ver" yaml:"version"`
-	Network string `validate:"required,cidrv4" yaml:"network"`
-	Pools   Pool   `validate:"dive" yaml:"pools"`
+	Name    string `validate:"required" yaml:"name" json:"name"`
+	Version string `validate:"required,ver" yaml:"version" json:"version"`
+	Network string `validate:"required,cidrv4" yaml:"network" json:"network"`
+	Pools   Pool   `validate:"dive" yaml:"pools" json:"pools"`
 }
 
 type Pool struct {
-	Control []string `validate:"min=1" yaml:"control"`
-	Compute []string `yaml:"compute"`
+	Control []string `validate:"min=1" yaml:"control" json:"control"`
+	Compute []string `yaml:"compute" json:"compute"`
 }
 
 type Role struct {
-	Name       string `validate:"required" yaml:"name"`
-	Protocol   string `validate:"required,oneof=tcp udp" yaml:"protocol"`
-	Port       int32  `validate:"min=0,max=65535" yaml:"port"`
-	TargetPort int32  `validate:"min=0,max=65535" yaml:"targetPort"`
-	Target     string `validate:"required,oneof=k8sAllNodes k8sControlPlane k8sComputePlane" yaml:"target"`
+	Name       string `validate:"required" yaml:"name" json:"name"`
+	Protocol   string `validate:"required,oneof=tcp udp" yaml:"protocol" json:"protocol"`
+	Port       int32  `validate:"min=0,max=65535" yaml:"port" json:"port"`
+	TargetPort int32  `validate:"min=0,max=65535" yaml:"targetPort" json:"targetPort"`
+	Target     string `validate:"required,oneof=k8sAllNodes k8sControlPlane k8sComputePlane" yaml:"target" json:"target"`
 }
 
 type LoadBalancerCluster struct {
-	Name        string   `validate:"required" yaml:"name"`
-	Roles       []string `yaml:"roles"`
-	DNS         DNS      `validate:"required" yaml:"dns,omitempty"`
-	TargetedK8s string   `validate:"required" yaml:"targetedK8s"`
-	Pools       []string `yaml:"pools"`
+	Name        string   `validate:"required" yaml:"name" json:"name"`
+	Roles       []string `yaml:"roles" json:"roles"`
+	DNS         DNS      `validate:"required" yaml:"dns,omitempty" json:"dns,omitempty"`
+	TargetedK8s string   `validate:"required" yaml:"targetedK8s" json:"targetedK8s"`
+	Pools       []string `yaml:"pools" json:"pools"`
 }
 
 type DNS struct {
-	DNSZone  string `validate:"required" yaml:"dnsZone"`
-	Provider string `validate:"required" yaml:"provider"`
-	Hostname string `yaml:"hostname,omitempty"`
+	DNSZone  string `validate:"required" yaml:"dnsZone" json:"dnsZone"`
+	Provider string `validate:"required" yaml:"provider" json:"provider"`
+	Hostname string `yaml:"hostname,omitempty" json:"hostname,omitempty"`
 }
 
 ////////////////////////////////////////////////////////////////////////////////

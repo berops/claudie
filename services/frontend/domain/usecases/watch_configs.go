@@ -41,7 +41,7 @@ func (u *Usecases) WatchConfigs() {
 					break
 				}
 
-				// Find configs that have been deleted from the DB.
+				// Find configs that have been deleted from the DB. This indicates that the infra from the config has been removed.
 				u.inProgress.Range(func(key, value any) bool {
 					cluster := key.(string)
 					cfg := value.(*pb.Config)
@@ -53,23 +53,28 @@ func (u *Usecases) WatchConfigs() {
 					}
 
 					u.inProgress.Delete(cluster)
+					
 					log.Info().Str("project", cfg.Name).Str("cluster", cluster).Msgf("Cluster has been deleted")
 					return true
 				})
 
+				// Print the state of the configs that are in the workflow (reconcile state)
 				for _, config := range configs {
 					for cluster, workflow := range config.State {
 						logger := utils.CreateLoggerWithProjectAndClusterName(config.Name, cluster)
 
 						_, ok := u.inProgress.Load(cluster)
+						// Config had errors while building
 						if workflow.Status == pb.Workflow_ERROR {
 							if ok {
 								u.inProgress.Delete(cluster)
 
+								
 								logger.Err(errors.New(workflow.Description)).Msgf("Workflow failed")
 							}
 							continue
 						}
+						// Config has been build
 						if workflow.Status == pb.Workflow_DONE {
 							if ok {
 								u.inProgress.Delete(cluster)

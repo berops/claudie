@@ -1,8 +1,6 @@
 package usecases
 
 import (
-	"fmt"
-
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 
@@ -30,34 +28,35 @@ func (u *Usecases) ProcessManifestFiles() {
 }
 
 // createConfig generates and saves config into the DB. Used for new configs and updated configs.
-func (u *Usecases) createConfig(rawManifest *RawManifest) {
-	unmarshalledManifest := &manifest.Manifest{}
-	// Unmarshal
-	if err := yaml.Unmarshal(rawManifest.Manifest, &unmarshalledManifest); err != nil {
-		log.Err(err).Msgf("Failed to unmarshal manifest from YAML file %s form secret %s. Skipping...", rawManifest.FileName, rawManifest.SecretName)
+func (u *Usecases) createConfig(inputManifest *manifest.Manifest) {
+	// Validate
+	// TODO: change this with validation webhook
+	if err := inputManifest.Validate(); err != nil {
+		log.Err(err).Msgf("Failed to validate manifest %s. Skipping...", inputManifest.Name)
 		return
 	}
 
-	// Validate
-	if err := unmarshalledManifest.Validate(); err != nil {
-		log.Err(err).Msgf("Failed to validate manifest %s from secret %s. Skipping...", unmarshalledManifest.Name, rawManifest.SecretName)
-		return
+	inputManifestMarshalled, err := yaml.Marshal(inputManifest)
+	if err != nil {
+		log.Err(err).Msgf("Failed to marshal manifest %s. Skipping...", inputManifest.Name)
+		return		
 	}
+
 	// Define config
 	config := &pb.Config{
-		Name:             unmarshalledManifest.Name,
-		ManifestFileName: fmt.Sprintf("secret_%s.file_%s", rawManifest.SecretName, rawManifest.FileName),
-		Manifest:         string(rawManifest.Manifest),
+		Name:             inputManifest.Name,
+		ManifestFileName: inputManifest.Name,
+		Manifest:         string(inputManifestMarshalled),
 	}
 
 	if err := u.ContextBox.SaveConfig(config); err != nil {
-		log.Err(err).Msgf("Failed to save config %v due to error. Skipping...", unmarshalledManifest.Name)
+		log.Err(err).Msgf("Failed to save config %v due to error. Skipping...", inputManifest.Name)
 		return
 	}
-	log.Info().Msgf("Created config for input manifest %s", unmarshalledManifest.Name)
+	log.Info().Msgf("Created config for input manifest %s", inputManifest.Name)
 
 	// Put it into inProgress map to track it
-	for _, k8sCluster := range unmarshalledManifest.Kubernetes.Clusters {
+	for _, k8sCluster := range inputManifest.Kubernetes.Clusters {
 		if _, ok := u.inProgress.Load(k8sCluster.Name); !ok {
 			u.inProgress.Store(k8sCluster.Name, config)
 		}
@@ -65,26 +64,21 @@ func (u *Usecases) createConfig(rawManifest *RawManifest) {
 }
 
 // deleteConfig generates and triggers deletion of config into the DB.
-func (u *Usecases) deleteConfig(rawManifest *RawManifest) {
-	unmarshalledManifest := &manifest.Manifest{}
-	if err := yaml.Unmarshal(rawManifest.Manifest, &unmarshalledManifest); err != nil {
-		log.Err(err).Msgf("Failed to unmarshal manifest from YAML file %s form secret %s. Skipping...", rawManifest.FileName, rawManifest.SecretName)
+func (u *Usecases) deleteConfig(inputManifest *manifest.Manifest) {
+
+	if err := u.ContextBox.DeleteConfig(inputManifest.Name); err != nil {
+		log.Err(err).Msgf("Failed to trigger deletion for config %v due to error. Skipping...", inputManifest.Name)
 		return
 	}
 
-	if err := u.ContextBox.DeleteConfig(unmarshalledManifest.Name); err != nil {
-		log.Err(err).Msgf("Failed to trigger deletion for config %v due to error. Skipping...", unmarshalledManifest.Name)
-		return
-	}
-
-	log.Info().Msgf("Config %s was successfully marked for deletion", unmarshalledManifest.Name)
+	log.Info().Msgf("Config %s was successfully marked for deletion", inputManifest.Name)
 
 	// Put it into inProgress map to track it
-	for _, k8sCluster := range unmarshalledManifest.Kubernetes.Clusters {
+	for _, k8sCluster := range inputManifest.Kubernetes.Clusters {
 		if _, ok := u.inProgress.Load(k8sCluster.Name); !ok {
 			// Use dummy config initially, it gets rewritten in new track cycle
 			dummyConfig := &pb.Config{
-				Name: unmarshalledManifest.Name,
+				Name: inputManifest.Name,
 			}
 			u.inProgress.Store(k8sCluster.Name, dummyConfig)
 		}
