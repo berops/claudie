@@ -8,21 +8,27 @@
       
       
       
+        <link rel="canonical" href="https://docs.claudie.io/v0.3.2/deploying-claudie/">
       
       
-      <link rel="icon" href="/v0.3.2/hexagon_blue.png">
+        <link rel="prev" href="../crud/crud/">
+      
+      
+        <link rel="next" href="../input-manifest/api-reference/">
+      
+      <link rel="icon" href="../hexagon_blue.png">
       <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.1.8">
     
     
       
-        <title>Claudie Docs</title>
+        <title>Deploying Claudie - Claudie Docs</title>
       
     
     
-      <link rel="stylesheet" href="/v0.3.2/assets/stylesheets/main.ded33207.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ded33207.min.css">
       
         
-        <link rel="stylesheet" href="/v0.3.2/assets/stylesheets/palette.a0c5b2b5.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.a0c5b2b5.min.css">
       
       
 
@@ -38,7 +44,7 @@
       
     
     
-    <script>__md_scope=new URL("/v0.3.2",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
   
@@ -97,7 +103,18 @@
     
     
     
-  </head>
+   <link href="../assets/stylesheets/glightbox.min.css" rel="stylesheet"/><style>
+        html.glightbox-open { overflow: initial; height: 100%; }
+        .gslide-title { margin-top: 0px; user-select: text; }
+        .gslide-desc { color: #666; user-select: text; }
+        .gslide-image img { background: white; }
+        
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color);}
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color);}
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color);}
+            </style> <script src="../assets/javascripts/glightbox.min.js"></script></head>
   
   
     
@@ -118,6 +135,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#deploying-claudie" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -134,9 +156,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/v0.3.2/." title="Claudie Docs" class="md-header__button md-logo" aria-label="Claudie Docs" data-md-component="logo">
+    <a href=".." title="Claudie Docs" class="md-header__button md-logo" aria-label="Claudie Docs" data-md-component="logo">
       
-  <img src="/v0.3.2/hexagon_blue.png" alt="logo">
+  <img src="../hexagon_blue.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -152,7 +174,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              Deploying Claudie
             
           </span>
         </div>
@@ -249,9 +271,9 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/v0.3.2/." title="Claudie Docs" class="md-nav__button md-logo" aria-label="Claudie Docs" data-md-component="logo">
+    <a href=".." title="Claudie Docs" class="md-nav__button md-logo" aria-label="Claudie Docs" data-md-component="logo">
       
-  <img src="/v0.3.2/hexagon_blue.png" alt="logo">
+  <img src="../hexagon_blue.png" alt="logo">
 
     </a>
     Claudie Docs
@@ -279,7 +301,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/v0.3.2/." class="md-nav__link">
+      <a href=".." class="md-nav__link">
         Docs Overview
       </a>
     </li>
@@ -292,14 +314,16 @@
 
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
       
       
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
       
       
       
@@ -308,7 +332,7 @@
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
         <label class="md-nav__title" for="__nav_2">
           <span class="md-nav__icon md-icon"></span>
           Getting Started
@@ -321,7 +345,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/v0.3.2/getting-started/get-started-using-claudie/" class="md-nav__link">
+      <a href="../getting-started/get-started-using-claudie/" class="md-nav__link">
         Get started using Claudie
       </a>
     </li>
@@ -335,7 +359,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/v0.3.2/crud/crud/" class="md-nav__link">
+      <a href="../crud/crud/" class="md-nav__link">
         CRUD for Claudie
       </a>
     </li>
@@ -347,11 +371,52 @@
               
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="/v0.3.2/deploying-claudie/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Deploying Claudie
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         Deploying Claudie
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#customisation" class="md-nav__link">
+    Customisation
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -398,7 +463,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/v0.3.2/input-manifest/api-reference/" class="md-nav__link">
+      <a href="../input-manifest/api-reference/" class="md-nav__link">
         Input manifest API reference
       </a>
     </li>
@@ -412,7 +477,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/v0.3.2/input-manifest/example/" class="md-nav__link">
+      <a href="../input-manifest/example/" class="md-nav__link">
         Example yaml file
       </a>
     </li>
@@ -480,7 +545,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/v0.3.2/input-manifest/providers/examples/aws-input-manifest/" class="md-nav__link">
+      <a href="../input-manifest/providers/examples/aws-input-manifest/" class="md-nav__link">
         AWS example
       </a>
     </li>
@@ -494,7 +559,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/v0.3.2/input-manifest/providers/examples/azure-input-manifest/" class="md-nav__link">
+      <a href="../input-manifest/providers/examples/azure-input-manifest/" class="md-nav__link">
         Azure example
       </a>
     </li>
@@ -508,7 +573,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/v0.3.2/input-manifest/providers/examples/gcp-input-manifest/" class="md-nav__link">
+      <a href="../input-manifest/providers/examples/gcp-input-manifest/" class="md-nav__link">
         GCP example
       </a>
     </li>
@@ -522,7 +587,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/v0.3.2/input-manifest/providers/examples/hetzner-input-manifest/" class="md-nav__link">
+      <a href="../input-manifest/providers/examples/hetzner-input-manifest/" class="md-nav__link">
         Hetzner example
       </a>
     </li>
@@ -536,7 +601,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/v0.3.2/input-manifest/providers/examples/oci-input-manifest/" class="md-nav__link">
+      <a href="../input-manifest/providers/examples/oci-input-manifest/" class="md-nav__link">
         OCI example
       </a>
     </li>
@@ -557,7 +622,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/v0.3.2/input-manifest/providers/aws/" class="md-nav__link">
+      <a href="../input-manifest/providers/aws/" class="md-nav__link">
         AWS
       </a>
     </li>
@@ -571,7 +636,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/v0.3.2/input-manifest/providers/azure/" class="md-nav__link">
+      <a href="../input-manifest/providers/azure/" class="md-nav__link">
         Azure
       </a>
     </li>
@@ -585,7 +650,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/v0.3.2/input-manifest/providers/gcp/" class="md-nav__link">
+      <a href="../input-manifest/providers/gcp/" class="md-nav__link">
         GCP
       </a>
     </li>
@@ -599,7 +664,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/v0.3.2/input-manifest/providers/cloudflare/" class="md-nav__link">
+      <a href="../input-manifest/providers/cloudflare/" class="md-nav__link">
         Cloudflare
       </a>
     </li>
@@ -613,7 +678,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/v0.3.2/input-manifest/providers/hetzner/" class="md-nav__link">
+      <a href="../input-manifest/providers/hetzner/" class="md-nav__link">
         Hetzner
       </a>
     </li>
@@ -627,7 +692,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/v0.3.2/input-manifest/providers/oci/" class="md-nav__link">
+      <a href="../input-manifest/providers/oci/" class="md-nav__link">
         OCI
       </a>
     </li>
@@ -683,7 +748,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/v0.3.2/claudie-workflow/claudie-workflow/" class="md-nav__link">
+      <a href="../claudie-workflow/claudie-workflow/" class="md-nav__link">
         Claudie Workflow
       </a>
     </li>
@@ -697,7 +762,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/v0.3.2/storage/storage-solution/" class="md-nav__link">
+      <a href="../storage/storage-solution/" class="md-nav__link">
         Claudie Storage solution
       </a>
     </li>
@@ -711,7 +776,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/v0.3.2/loadbalancing/loadbalancing-solution/" class="md-nav__link">
+      <a href="../loadbalancing/loadbalancing-solution/" class="md-nav__link">
         Loadbalancing in Claudie
       </a>
     </li>
@@ -725,7 +790,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/v0.3.2/autoscaling/autoscaling/" class="md-nav__link">
+      <a href="../autoscaling/autoscaling/" class="md-nav__link">
         Autoscaling in Claudie
       </a>
     </li>
@@ -747,7 +812,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/v0.3.2/use-cases/use-cases/" class="md-nav__link">
+      <a href="../use-cases/use-cases/" class="md-nav__link">
         Claudie Use Cases
       </a>
     </li>
@@ -762,7 +827,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/v0.3.2/roadmap/roadmap/" class="md-nav__link">
+      <a href="../roadmap/roadmap/" class="md-nav__link">
         Roadmap for Claudie
       </a>
     </li>
@@ -777,7 +842,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/v0.3.2/contributing/contributing/" class="md-nav__link">
+      <a href="../contributing/contributing/" class="md-nav__link">
         Contributing
       </a>
     </li>
@@ -819,7 +884,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/v0.3.2/CHANGELOG/changelog-0.1.x/" class="md-nav__link">
+      <a href="../CHANGELOG/changelog-0.1.x/" class="md-nav__link">
         Claudie v0.1
       </a>
     </li>
@@ -833,7 +898,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/v0.3.2/CHANGELOG/changelog-0.2.x/" class="md-nav__link">
+      <a href="../CHANGELOG/changelog-0.2.x/" class="md-nav__link">
         Claudie v0.2
       </a>
     </li>
@@ -847,7 +912,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/v0.3.2/CHANGELOG/changelog-0.3.x/" class="md-nav__link">
+      <a href="../CHANGELOG/changelog-0.3.x/" class="md-nav__link">
         Claudie v0.3
       </a>
     </li>
@@ -878,6 +943,23 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#customisation" class="md-nav__link">
+    Customisation
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -889,8 +971,195 @@
             <div class="md-content" data-md-component="content">
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+  
+  
+
+
+<!-- BEGIN INCLUDE ../manifests/claudie/README.md -->
+<h1 id="deploying-claudie">Deploying Claudie<a class="headerlink" href="#deploying-claudie" title="Permanent link">&para;</a></h1>
+<p>Claudie is designed to be deployed into the cluster with a single command</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-k<span class="w"> </span>.<span class="w"> </span><span class="c1"># Point it to the directory where Claudie manifests reside</span>
+</code></pre></div>
+<p>This will create all resources necessary to run the Claudie in your management cluster.</p>
+<h2 id="customisation">Customisation<a class="headerlink" href="#customisation" title="Permanent link">&para;</a></h2>
+<p>All of the customisable settings can be found in <code>.env</code> file.</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GOLANG_LOG</code></td>
+<td><code>info</code></td>
+<td>string</td>
+<td>Log level for all services. Can be either <code>info</code> or <code>debug</code>.</td>
+</tr>
+<tr>
+<td><code>DATABASE_HOSTNAME</code></td>
+<td><code>mongodb</code></td>
+<td>string</td>
+<td>Database hostname used for Claudie configs.</td>
+</tr>
+<tr>
+<td><code>CONTEXT_BOX_HOSTNAME</code></td>
+<td><code>context-box</code></td>
+<td>string</td>
+<td>Context-box service hostname.</td>
+</tr>
+<tr>
+<td><code>TERRAFORMER_HOSTNAME</code></td>
+<td><code>terraformer</code></td>
+<td>string</td>
+<td>Terraformer service hostname.</td>
+</tr>
+<tr>
+<td><code>ANSIBLER_HOSTNAME</code></td>
+<td><code>ansibler</code></td>
+<td>string</td>
+<td>Ansibler service hostname.</td>
+</tr>
+<tr>
+<td><code>KUBE_ELEVEN_HOSTNAME</code></td>
+<td><code>kube-eleven</code></td>
+<td>string</td>
+<td>Kube-eleven service hostname.</td>
+</tr>
+<tr>
+<td><code>KUBER_HOSTNAME</code></td>
+<td><code>kuber</code></td>
+<td>string</td>
+<td>Kuber service hostname.</td>
+</tr>
+<tr>
+<td><code>MINIO_HOSTNAME</code></td>
+<td><code>minio</code></td>
+<td>string</td>
+<td>MinIO hostname used for state files.</td>
+</tr>
+<tr>
+<td><code>DYNAMO_HOSTNAME</code></td>
+<td><code>dynamo</code></td>
+<td>string</td>
+<td>DynamoDB hostname used for lock files.</td>
+</tr>
+<tr>
+<td><code>DYNAMO_TABLE_NAME</code></td>
+<td><code>claudie</code></td>
+<td>string</td>
+<td>Table name for DynamoDB lock files.</td>
+</tr>
+<tr>
+<td><code>AWS_REGION</code></td>
+<td><code>local</code></td>
+<td>string</td>
+<td>Region for DynamoDB lock files.</td>
+</tr>
+<tr>
+<td><code>DATABASE_PORT</code></td>
+<td>27017</td>
+<td>int</td>
+<td>Port of the database service.</td>
+</tr>
+<tr>
+<td><code>TERRAFORMER_PORT</code></td>
+<td>50052</td>
+<td>int</td>
+<td>Port of the Terraformer service.</td>
+</tr>
+<tr>
+<td><code>ANSIBLER_PORT</code></td>
+<td>50053</td>
+<td>int</td>
+<td>Port of the Ansibler service.</td>
+</tr>
+<tr>
+<td><code>KUBE_ELEVEN_PORT</code></td>
+<td>50054</td>
+<td>int</td>
+<td>Port of the Kube-eleven service.</td>
+</tr>
+<tr>
+<td><code>CONTEXT_BOX_PORT</code></td>
+<td>50055</td>
+<td>int</td>
+<td>Port of the Context-box service.</td>
+</tr>
+<tr>
+<td><code>KUBER_PORT</code></td>
+<td>50057</td>
+<td>int</td>
+<td>Port of the Kuber service.</td>
+</tr>
+<tr>
+<td><code>MINIO_PORT</code></td>
+<td>9000</td>
+<td>int</td>
+<td>Port of the MinIO service.</td>
+</tr>
+<tr>
+<td><code>DYNAMO_PORT</code></td>
+<td>8000</td>
+<td>int</td>
+<td>Port of the DynamoDB service.</td>
+</tr>
+</tbody>
+</table>
+<!-- END INCLUDE -->
+
+
+  
+
+
+
+  <form class="md-feedback" name="feedback" hidden>
+    <fieldset>
+      <legend class="md-feedback__title">
+        Was this doc helpful?
+      </legend>
+      <div class="md-feedback__inner">
+        <div class="md-feedback__list">
+          
+            <button class="md-feedback__icon md-icon" type="submit" title="Yes, it was" data-md-value="good">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 0-8-8 8 8 0 0 0-8 8 8 8 0 0 0 8 8 8 8 0 0 0 8-8m2 0a10 10 0 0 1-10 10A10 10 0 0 1 2 12 10 10 0 0 1 12 2a10 10 0 0 1 10 10M10 9.5c0 .8-.7 1.5-1.5 1.5S7 10.3 7 9.5 7.7 8 8.5 8s1.5.7 1.5 1.5m7 0c0 .8-.7 1.5-1.5 1.5S14 10.3 14 9.5 14.7 8 15.5 8s1.5.7 1.5 1.5m-5 7.73c-1.75 0-3.29-.73-4.19-1.81L9.23 14c.45.72 1.52 1.23 2.77 1.23s2.32-.51 2.77-1.23l1.42 1.42c-.9 1.08-2.44 1.81-4.19 1.81Z"/></svg>
+            </button>
+          
+            <button class="md-feedback__icon md-icon" type="submit" title="No, it could be a lot better" data-md-value="bad">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 0-8-8 8 8 0 0 0-8 8 8 8 0 0 0 8 8 8 8 0 0 0 8-8m2 0a10 10 0 0 1-10 10A10 10 0 0 1 2 12 10 10 0 0 1 12 2a10 10 0 0 1 10 10m-6.5-4c.8 0 1.5.7 1.5 1.5s-.7 1.5-1.5 1.5-1.5-.7-1.5-1.5.7-1.5 1.5-1.5M10 9.5c0 .8-.7 1.5-1.5 1.5S7 10.3 7 9.5 7.7 8 8.5 8s1.5.7 1.5 1.5m2 4.5c1.75 0 3.29.72 4.19 1.81l-1.42 1.42C14.32 16.5 13.25 16 12 16s-2.32.5-2.77 1.23l-1.42-1.42C8.71 14.72 10.25 14 12 14Z"/></svg>
+            </button>
+          
+        </div>
+        <div class="md-feedback__note">
+          
+            <div data-md-value="good" hidden>
+              
+              
+                
+              
+              Thanks for your feedback!
+            </div>
+          
+            <div data-md-value="bad" hidden>
+              
+              
+                
+              
+              Thanks for your feedback!
+            </div>
+          
+        </div>
+      </div>
+    </fieldset>
+  </form>
+
+
+                
               </article>
             </div>
           
@@ -937,11 +1206,11 @@
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "/v0.3.2", "features": ["content.code.copy", "navigation.top"], "search": "/v0.3.2/assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.copy", "navigation.top"], "search": "../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="/v0.3.2/assets/javascripts/bundle.51198bba.min.js"></script>
+      <script src="../assets/javascripts/bundle.51198bba.min.js"></script>
       
     
-  </body>
+  <script>document$.subscribe(() => {const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});})</script></body>
 </html>

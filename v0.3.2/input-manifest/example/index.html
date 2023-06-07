@@ -360,6 +360,20 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deploying-claudie/" class="md-nav__link">
+        Deploying Claudie
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -910,7 +924,365 @@
 
   <h1>Example yaml file</h1>
 
-<div class="highlight"><span class="filename">example.yaml</span><pre><span></span><code>
+<div class="highlight"><span class="filename">example.yaml</span><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ExampleManifest</span>
+
+<span class="c1"># Providers field is used for defining the providers.</span>
+<span class="c1"># Every supported provider has an example in this input manifest.</span>
+<span class="c1"># All of the sensitive credentials are dummy values, similar to the ones user will supply.</span>
+<span class="nt">providers</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Hetzner DNS provider.</span>
+<span class="w">  </span><span class="c1"># Definition specification:</span>
+<span class="w">  </span><span class="c1"># - name:         # Name of this provider instance.</span>
+<span class="w">  </span><span class="c1">#   apiToken:     # API token of this provider instance.</span>
+<span class="w">  </span><span class="c1"># Example definition:</span>
+<span class="w">  </span><span class="nt">hetznerdns</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetznerdns-1</span>
+<span class="w">      </span><span class="nt">apiToken</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kslISA878a6etYAfXYcg5iYyrFGNlCxc</span>
+<span class="w">  </span><span class="c1"># Cloudflare DNS provider.</span>
+<span class="w">  </span><span class="c1"># Definition specification:</span>
+<span class="w">  </span><span class="c1"># - name:         # Name of this provider instance.</span>
+<span class="w">  </span><span class="c1">#   apiToken:     # API token of this provider instance.</span>
+<span class="w">  </span><span class="c1"># Example definition:</span>
+<span class="w">  </span><span class="nt">cloudflare</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cloudflare-1</span>
+<span class="w">      </span><span class="nt">apiToken</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kslISA878a6etYAfXYcg5iYyrFGNlCxc</span>
+<span class="w">  </span><span class="c1"># Hetzner Cloud provider.</span>
+<span class="w">  </span><span class="c1"># Definition specification:</span>
+<span class="w">  </span><span class="c1"># - name:           # Name of this provider instance.</span>
+<span class="w">  </span><span class="c1">#   credentials:    # API token of this provider instance.</span>
+<span class="w">  </span><span class="c1"># Example definition:</span>
+<span class="w">  </span><span class="nt">hetzner</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-1</span>
+<span class="w">      </span><span class="nt">credentials</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kslISA878a6etYAfXYcg5iYyrFGNlCxcICo060HVEygjFs21nske76ksjKko21lp</span>
+<span class="w">  </span><span class="c1"># GCP cloud provider.</span>
+<span class="w">  </span><span class="c1"># Definition specification:</span>
+<span class="w">  </span><span class="c1"># - name:           # Name of this provider instance.</span>
+<span class="w">  </span><span class="c1">#   credentials:    # Service account key in JSON format.</span>
+<span class="w">  </span><span class="c1">#   gcpProject:     # GCP project of this service account.</span>
+<span class="w">  </span><span class="c1"># Example definition:</span>
+<span class="w">  </span><span class="nt">gcp</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gcp-1</span>
+<span class="w">      </span><span class="nt">credentials</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">        </span><span class="no">{</span>
+<span class="w">        </span><span class="no">&quot;type&quot;: &quot;service_account&quot;,</span>
+<span class="w">        </span><span class="no">&quot;project_id&quot;: &quot;project-claudie&quot;,</span>
+<span class="w">        </span><span class="no">&quot;private_key_id&quot;: &quot;bskdlo875s9087394763eb84e407903lskdimp439&quot;,</span>
+<span class="w">        </span><span class="no">&quot;private_key&quot;: &quot;-----BEGIN PRIVATE KEY-----\nSKLOosKJUSDANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhki\n-----END PRIVATE KEY-----\n&quot;,</span>
+<span class="w">        </span><span class="no">&quot;client_email&quot;: &quot;claudie@project-claudie-123456.iam.gserviceaccount.com&quot;,</span>
+<span class="w">        </span><span class="no">&quot;client_id&quot;: &quot;109876543211234567890&quot;,&quot;auth_uri&quot;: &quot;https://accounts.google.com/o/oauth2/auth&quot;,</span>
+<span class="w">        </span><span class="no">&quot;token_uri&quot;: &quot;https://oauth2.googleapis.com/token&quot;,</span>
+<span class="w">        </span><span class="no">&quot;auth_provider_x509_cert_url&quot;: &quot;https://www.googleapis.com/oauth2/v1/certs&quot;,</span>
+<span class="w">        </span><span class="no">&quot;client_x509_cert_url&quot;: &quot;https://www.googleapis.com/robot/v1/metadata/x509/claudie%40claudie-project-123456.iam.gserviceaccount.com&quot;</span>
+<span class="w">        </span><span class="no">}</span>
+<span class="w">      </span><span class="nt">gcpProject</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">project-id</span>
+<span class="w">  </span><span class="c1"># OCI cloud provider.</span>
+<span class="w">  </span><span class="c1"># Definition specification:</span>
+<span class="w">  </span><span class="c1"># - name:            # Name of this provider instance.</span>
+<span class="w">  </span><span class="c1">#   privateKey:      # Private key of this user account.</span>
+<span class="w">  </span><span class="c1">#   keyFingerprint:  # Fingerprint of the key pair.</span>
+<span class="w">  </span><span class="c1">#   tenancyOcid:     # OCID of the tenancy.</span>
+<span class="w">  </span><span class="c1">#   userOcid:        # OCID of the user.</span>
+<span class="w">  </span><span class="c1">#   compartmentOcid: # OCID of the compartment, where resources will be created.</span>
+<span class="w">  </span><span class="c1"># Example definition:</span>
+<span class="w">  </span><span class="nt">oci</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">oci-1</span>
+<span class="w">      </span><span class="nt">privateKey</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">        </span><span class="no">-----BEGIN RSA PRIVATE KEY-----</span>
+<span class="w">        </span><span class="no">MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad</span>
+<span class="w">        </span><span class="no">MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad</span>
+<span class="w">        </span><span class="no">MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad</span>
+<span class="w">        </span><span class="no">MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad</span>
+<span class="w">        </span><span class="no">MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad</span>
+<span class="w">        </span><span class="no">MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad</span>
+<span class="w">        </span><span class="no">MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad</span>
+<span class="w">        </span><span class="no">MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad</span>
+<span class="w">        </span><span class="no">MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad</span>
+<span class="w">        </span><span class="no">MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad</span>
+<span class="w">        </span><span class="no">MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad</span>
+<span class="w">        </span><span class="no">MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad</span>
+<span class="w">        </span><span class="no">MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad</span>
+<span class="w">        </span><span class="no">MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad</span>
+<span class="w">        </span><span class="no">MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad</span>
+<span class="w">        </span><span class="no">MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad</span>
+<span class="w">        </span><span class="no">MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad</span>
+<span class="w">        </span><span class="no">MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad</span>
+<span class="w">        </span><span class="no">MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad</span>
+<span class="w">        </span><span class="no">MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad</span>
+<span class="w">        </span><span class="no">MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad</span>
+<span class="w">        </span><span class="no">MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad</span>
+<span class="w">        </span><span class="no">MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad</span>
+<span class="w">        </span><span class="no">MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad</span>
+<span class="w">        </span><span class="no">MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/==</span>
+<span class="w">        </span><span class="no">-----END RSA PRIVATE KEY-----</span>
+<span class="w">      </span><span class="nt">keyFingerprint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ab:cd:3f:34:33:22:32:34:54:54:45:76:76:78:98:aa</span>
+<span class="w">      </span><span class="nt">tenancyOcid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ocid2.tenancy.oc2..aaaaaaaayrsfvlvxc34o060kfdygsds21nske76ksjkko21lpsdfsfsgbrtghs</span>
+<span class="w">      </span><span class="nt">userOcid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ocid2.user.oc2..aaaaaaaaaanyrsfvlvxc34o060kfdygsds21nske76ksjkko21lpsdfsf</span>
+<span class="w">      </span><span class="nt">compartmentOcid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ocid2.compartment.oc2..aaaaaaaaa2rsfvlvxc34o060kfdygsds21nske76ksjkko21lpsdfsf</span>
+<span class="w">  </span><span class="c1"># AWS cloud provider.</span>
+<span class="w">  </span><span class="c1"># Definition specification:</span>
+<span class="w">  </span><span class="c1"># - name:            # Name of this provider instance.</span>
+<span class="w">  </span><span class="c1">#   accessKey:       # Access key for the service account</span>
+<span class="w">  </span><span class="c1">#   secretKey:       # Secret key for the service account.</span>
+<span class="w">  </span><span class="c1"># Example definition:</span>
+<span class="w">  </span><span class="nt">aws</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-1</span>
+<span class="w">      </span><span class="nt">accessKey</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SLDUTKSHFDMSJKDIALASSD</span>
+<span class="w">      </span><span class="nt">secretKey</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">iuhbOIJN+oin/olikDSadsnoiSVSDsacoinOUSHD</span>
+<span class="w">  </span><span class="c1"># Azure cloud provider.</span>
+<span class="w">  </span><span class="c1"># Definition specification:</span>
+<span class="w">  </span><span class="c1"># - name:            # Name of this provider instance.</span>
+<span class="w">  </span><span class="c1">#   clientSecret:    # Service principal secret.</span>
+<span class="w">  </span><span class="c1">#   subscriptionId:  # ID of the subscription.</span>
+<span class="w">  </span><span class="c1">#   tenantId:        # ID of the tenancy.</span>
+<span class="w">  </span><span class="c1">#   clientId:        # ID of the client.</span>
+<span class="w">  </span><span class="c1"># Example definition:</span>
+<span class="w">  </span><span class="nt">azure</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">azure-1</span>
+<span class="w">      </span><span class="nt">clientSecret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Abcd~EFg~H6Ijkls~ABC15sEFGK54s78X~Olk9</span>
+<span class="w">      </span><span class="nt">subscriptionId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6a4dfsg7-sd4v-f4ad-dsva-ad4v616fd512</span>
+<span class="w">      </span><span class="nt">tenantId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">54cdafa5-sdvs-45ds-546s-df651sfdt614</span>
+<span class="w">      </span><span class="nt">clientId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0255sc23-76we-87g6-964f-abc1def2gh3l</span>
+
+<span class="c1"># Nodepools field is used for defining the nodepool specification.</span>
+<span class="c1"># You can think of them as a blueprints, not actual nodepools that will be created.</span>
+<span class="nt">nodePools</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Dynamic nodepools are created by Claudie, in one of the cloud providers specified.</span>
+<span class="w">  </span><span class="c1"># Definition specification:</span>
+<span class="w">  </span><span class="c1"># dynamic:</span>
+<span class="w">  </span><span class="c1">#   - name:             # Name of the nodepool, which is used as a refference to it. Needs to be unique.</span>
+<span class="w">  </span><span class="c1">#     providerSpec:     # Provider specification for this nodepool.</span>
+<span class="w">  </span><span class="c1">#       name:           # Name of the provider instance, referencing one of the providers define above.</span>
+<span class="w">  </span><span class="c1">#       region:         # Region of the nodepool.</span>
+<span class="w">  </span><span class="c1">#       zone:           # Zone of the nodepool.</span>
+<span class="w">  </span><span class="c1">#     count:            # Static number of nodes in this nodepool.</span>
+<span class="w">  </span><span class="c1">#     serverType:       # Machine type of the nodes in this nodepool.</span>
+<span class="w">  </span><span class="c1">#     image:            # OS image of the nodes in the nodepool.</span>
+<span class="w">  </span><span class="c1">#     storageDiskSize:  # Disk size of the storage disk for compute nodepool.</span>
+<span class="w">  </span><span class="c1">#     autoscaler:       # Autoscaler configuration. Mutually exclusive with Count.</span>
+<span class="w">  </span><span class="c1">#       min:            # Minimum number of nodes in nodepool.</span>
+<span class="w">  </span><span class="c1">#       max:            # Maximum number of nodes in nodepool.</span>
+<span class="w">  </span><span class="c1">#</span>
+<span class="w">  </span><span class="c1"># Example definitions for each provider</span>
+<span class="w">  </span><span class="nt">dynamic</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-hetzner</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-1</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hel1</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hel1-dc2</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cpx11</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-22.04</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-hetzner</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-1</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hel1</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hel1-dc2</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cpx11</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-22.04</span>
+<span class="w">      </span><span class="nt">storageDiskSize</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-hetzner-autoscaled</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-1</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hel1</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hel1-dc2</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cpx11</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-22.04</span>
+<span class="w">      </span><span class="nt">storageDiskSize</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+<span class="w">      </span><span class="nt">autoscaler</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">min</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">        </span><span class="nt">max</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-gcp</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gcp-1</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">europe-west1</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">europe-west1-c</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">e2-medium</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-os-cloud/ubuntu-2204-jammy-v20221206</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-gcp</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gcp-1</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">europe-west1</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">europe-west1-c</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">e2-small</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-os-cloud/ubuntu-2204-jammy-v20221206</span>
+<span class="w">      </span><span class="nt">storageDiskSize</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-oci</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">oci-1</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eu-milan-1</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hsVQ:EU-MILAN-1-AD-1</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">VM.Standard2.1</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-oci</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">oci-1</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eu-milan-1</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hsVQ:EU-MILAN-1-AD-1</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">VM.Standard2.1</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq</span>
+<span class="w">      </span><span class="nt">storageDiskSize</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-aws</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-1</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eu-central-1</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eu-central-1c</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">t3.medium</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ami-0965bd5ba4d59211c</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-aws</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-1</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eu-central-1</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eu-central-1c</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">t3.medium</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ami-0965bd5ba4d59211c</span>
+<span class="w">      </span><span class="nt">storageDiskSize</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-azure</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">azure-1</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">West Europe</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Standard_B2s</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-azure</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">azure-1</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">West Europe</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Standard_B2s</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120</span>
+<span class="w">      </span><span class="nt">storageDiskSize</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">loadbalancer-1</span>
+<span class="w">      </span><span class="nt">provider</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gcp-1</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">europe-west1</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">europe-west1-c</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">e2-small</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-os-cloud/ubuntu-2004-focal-v20220610</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">loadbalancer-2</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-1</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hel1</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hel1-dc2</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cpx11</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-20.04</span>
+
+<span class="c1"># Kubernetes field is used to define the kubernetes clusters.</span>
+<span class="c1"># Definition specification:</span>
+<span class="c1">#</span>
+<span class="c1"># clusters:</span>
+<span class="c1">#   - name:           # Name of the cluster. The name will be appended to the created node name.</span>
+<span class="c1">#     version:        # Kubernetes version in semver scheme, must be supported by KubeOne.</span>
+<span class="c1">#     network:        # Private network IP range.</span>
+<span class="c1">#     pools:          # Nodepool names which cluster will be composed of. User can reuse same nodepool specification on multiple clusters.</span>
+<span class="c1">#       control:      # List of nodepool names, which will be used as control nodes.</span>
+<span class="c1">#       compute:      # List of nodepool names, which will be used as compute nodes.</span>
+<span class="c1">#</span>
+<span class="c1"># Example definitions:</span>
+<span class="nt">kubernetes</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">clusters</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dev-cluster</span>
+<span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.24.0</span>
+<span class="w">      </span><span class="nt">network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.2.0/24</span>
+<span class="w">      </span><span class="nt">pools</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">control</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-hetzner</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-gcp</span>
+<span class="w">        </span><span class="nt">compute</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-hetzner</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-gcp</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-azure</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prod-cluster</span>
+<span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.24.0</span>
+<span class="w">      </span><span class="nt">network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.2.0/24</span>
+<span class="w">      </span><span class="nt">pools</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">control</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-hetzner</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-gcp</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-oci</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-aws</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-azure</span>
+<span class="w">        </span><span class="nt">compute</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-hetzner</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-gcp</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-oci</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-aws</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-azure</span>
+
+<span class="c1"># Loadbalancers field defines loadbalancers used for the kubernetes clusters and roles for the loadbalancers.</span>
+<span class="c1"># Definition specification for role:</span>
+<span class="c1">#</span>
+<span class="c1"># roles:</span>
+<span class="c1">#   - name:         # Name of the role, used as a reference later. Must be unique.</span>
+<span class="c1">#     protocol:     # Protocol, this role will use.</span>
+<span class="c1">#     port:         # Port, where trafic will be coming.</span>
+<span class="c1">#     targetPort:   # Port, where loadbalancer will forward traffic to.</span>
+<span class="c1">#     target:       # Targeted nodes on kubernetes cluster. Can be &quot;k8sControlPlane&quot;, &quot;k8sComputePlane&quot; or &quot;k8sAllNodes&quot;.</span>
+<span class="c1">#</span>
+<span class="c1"># Definition specification for loadbalancer:</span>
+<span class="c1">#</span>
+<span class="c1"># clusters:</span>
+<span class="c1">#   - name:         # Loadbalancer cluster name</span>
+<span class="c1">#     roles:        # List of role names this loadbalancer will fullfil.</span>
+<span class="c1">#     dns:          # DNS specification, where DNS records will be created.</span>
+<span class="c1">#       dnsZone:    # DNS zone name in your provider.</span>
+<span class="c1">#       provider:   # Provider name for the DNS.</span>
+<span class="c1">#       hostname:   # Hostname for the DNS record. Keep in mind the zone will be included automaticaly. If left empty the Claudie will create random hash as a hostname.</span>
+<span class="c1">#     targetedK8s:  # Name of the targeted kubernetes cluster</span>
+<span class="c1">#     pools:        # List of nodepool names used for loadbalancer</span>
+<span class="c1"># Example definitons:</span>
+<span class="nt">loadBalancers</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">roles</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apiserver</span>
+<span class="w">      </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tcp</span>
+<span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6443</span>
+<span class="w">      </span><span class="nt">targetPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6443</span>
+<span class="w">      </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k8sControlPlane</span>
+
+<span class="w">  </span><span class="nt">clusters</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apiserver-lb-dev</span>
+<span class="w">      </span><span class="nt">roles</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apiserver</span>
+<span class="w">      </span><span class="nt">dns</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">dnsZone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dns-zone</span>
+<span class="w">        </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetznerdns-1</span>
+<span class="w">      </span><span class="nt">targetedK8s</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dev-cluster</span>
+<span class="w">      </span><span class="nt">pools</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">loadbalancer-1</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apiserver-lb-prod</span>
+<span class="w">      </span><span class="nt">roles</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apiserver</span>
+<span class="w">      </span><span class="nt">dns</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">dnsZone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dns-zone</span>
+<span class="w">        </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cloudflare-1</span>
+<span class="w">        </span><span class="nt">hostname</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my.fancy.url</span>
+<span class="w">      </span><span class="nt">targetedK8s</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prod-cluster</span>
+<span class="w">      </span><span class="nt">pools</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">loadbalancer-2</span>
 </code></pre></div>
 
 
@@ -950,7 +1322,7 @@
               
                 
               
-              Thanks for your feedback! Help us improve this page by using our <a href="..." target="_blank" rel="noopener">feedback form</a>.
+              Thanks for your feedback!
             </div>
           
         </div>

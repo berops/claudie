@@ -6,6 +6,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://docs.claudie.io/v0.3.2/deploying-claudie/</loc>
+         <lastmod>2023-06-07</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://docs.claudie.io/v0.3.2/CHANGELOG/changelog-0.1.x/</loc>
          <lastmod>2023-06-07</lastmod>
          <changefreq>daily</changefreq>
