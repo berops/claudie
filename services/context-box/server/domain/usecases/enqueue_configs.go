@@ -135,7 +135,6 @@ func (u *Usecases) enqueueConfigs() error {
 					configInfo.SchedulerTTL = configInfo.SchedulerTTL - 1
 				}
 			}
-
 		}
 
 		// After the config has its desired state built, the infrastructure needs to be provisioned. The DsChecksum and CsChecksum
