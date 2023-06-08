@@ -182,6 +182,7 @@ func GetStaticNodePools(nps []*pb.NodePool) []*pb.StaticNodePool {
 	return snps
 }
 
+// GetCommonStaticNodePools returns slice of common node pools, where every node pool is static.
 func GetCommonStaticNodePools(nps []*pb.NodePool) []*pb.NodePool {
 	static := make([]*pb.NodePool, 0, len(nps))
 	for _, n := range nps {
@@ -192,6 +193,7 @@ func GetCommonStaticNodePools(nps []*pb.NodePool) []*pb.NodePool {
 	return static
 }
 
+// GetCommonStaticNodePools returns slice of common node pools, where every node pool is dynamic.
 func GetCommonDynamicNodePools(nps []*pb.NodePool) []*pb.NodePool {
 	dynamic := make([]*pb.NodePool, 0, len(nps))
 	for _, n := range nps {
