@@ -61,7 +61,7 @@ func setUpLoadbalancers(clusterName string, lbClustersInfo *utils.LBClustersInfo
 	clusterBaseDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, commonUtils.CreateHash(commonUtils.HashLength)))
 
 	if err := utils.GenerateLBBaseFiles(clusterBaseDirectory, lbClustersInfo); err != nil {
-		return fmt.Errorf("error encountered while generating base files for %s", clusterName)
+		return fmt.Errorf("error encountered while generating base files for %s : %w", clusterName, err)
 	}
 
 	err := commonUtils.ConcurrentExec(lbClustersInfo.LbClusters,

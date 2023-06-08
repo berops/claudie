@@ -71,6 +71,7 @@ type (
 
 	LBcluster struct {
 		Name        string
+		Hash        string
 		LBnodepools NodePools
 	}
 
@@ -172,6 +173,7 @@ func GenerateLBBaseFiles(outputDirectory string, lbClustersInfo *LBClustersInfo)
 		if lbData.DesiredLbCluster != nil {
 			lbClusters = append(lbClusters, LBcluster{
 				Name: lbData.DesiredLbCluster.ClusterInfo.Name,
+				Hash: lbData.DesiredLbCluster.ClusterInfo.Hash,
 				LBnodepools: NodePools{
 					Dynamic: GetDynamicNodepools(lbData.DesiredLbCluster.ClusterInfo.NodePools),
 					Static:  GetStaticNodepools(lbData.DesiredLbCluster.ClusterInfo.NodePools),
