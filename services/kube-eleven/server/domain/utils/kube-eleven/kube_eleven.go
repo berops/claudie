@@ -129,17 +129,22 @@ func (k *KubeEleven) generateTemplateData() templateData {
 // Returns the slice of *NodepoolInfo and the potential endpoint node.
 func (k *KubeEleven) getClusterNodes() ([]*NodepoolInfo, *pb.Node) {
 	nodepoolInfos := make([]*NodepoolInfo, 0, len(k.K8sCluster.ClusterInfo.NodePools))
-	var potentialEndpointNode *pb.Node
+	var endpointNode *pb.Node
 
-	// Construct the slice of *Nodepoolnfo
+	// Construct the slice of *NodepoolInfo
 	for _, nodepool := range k.K8sCluster.ClusterInfo.GetNodePools() {
 		var nodepoolInfo *NodepoolInfo
 
 		if nodepool.GetDynamicNodePool() != nil {
 			var nodes []*NodeInfo
-			nodes, potentialEndpointNode = getNodeData(nodepool.Nodes, func(name string) string {
+			nodes, potentialEndpointNode := getNodeData(nodepool.Nodes, func(name string) string {
 				return strings.TrimPrefix(name, fmt.Sprintf("%s-%s-", k.K8sCluster.ClusterInfo.Name, k.K8sCluster.ClusterInfo.Hash))
 			})
+
+			if endpointNode == nil || (potentialEndpointNode != nil && potentialEndpointNode.NodeType == pb.NodeType_apiEndpoint) {
+				endpointNode = potentialEndpointNode
+			}
+
 			nodepoolInfo = &NodepoolInfo{
 				NodepoolName:      nodepool.Name,
 				Region:            sanitiseString(nodepool.GetDynamicNodePool().Region),
@@ -150,7 +155,10 @@ func (k *KubeEleven) getClusterNodes() ([]*NodepoolInfo, *pb.Node) {
 			}
 		} else if nodepool.GetStaticNodePool() != nil {
 			var nodes []*NodeInfo
-			nodes, potentialEndpointNode = getNodeData(nodepool.Nodes, func(s string) string { return s })
+			nodes, potentialEndpointNode := getNodeData(nodepool.Nodes, func(s string) string { return s })
+			if endpointNode == nil || (potentialEndpointNode != nil && potentialEndpointNode.NodeType == pb.NodeType_apiEndpoint) {
+				endpointNode = potentialEndpointNode
+			}
 			nodepoolInfo = &NodepoolInfo{
 				NodepoolName:      nodepool.Name,
 				Region:            sanitiseString(staticRegion),
@@ -163,7 +171,7 @@ func (k *KubeEleven) getClusterNodes() ([]*NodepoolInfo, *pb.Node) {
 		nodepoolInfos = append(nodepoolInfos, nodepoolInfo)
 	}
 
-	return nodepoolInfos, potentialEndpointNode
+	return nodepoolInfos, endpointNode
 }
 
 // findAPIEndpoint returns the cluster api endpoint.
