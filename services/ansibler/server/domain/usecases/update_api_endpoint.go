@@ -62,8 +62,8 @@ func updateAPIEndpoint(currentK8sClusterInfo, desiredK8sClusterInfo *pb.ClusterI
 
 	err = utils.GenerateInventoryFile(templates.LoadbalancerInventoryTemplate, clusterDirectory, utils.LBInventoryFileParameters{
 		K8sNodepools: utils.NodePools{
-			Dynamic: utils.GetDynamicNodepools(currentK8sClusterInfo.NodePools),
-			Static:  utils.GetStaticNodepools(currentK8sClusterInfo.NodePools),
+			Dynamic: commonUtils.GetCommonDynamicNodePools(currentK8sClusterInfo.NodePools),
+			Static:  commonUtils.GetCommonStaticNodePools(currentK8sClusterInfo.NodePools),
 		},
 		LBClusters: nil,
 		ClusterID:  clusterID,

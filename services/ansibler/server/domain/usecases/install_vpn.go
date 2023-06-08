@@ -35,8 +35,8 @@ func (u *Usecases) InstallVPN(request *pb.InstallRequest) (*pb.InstallResponse, 
 			// Construct and add NodepoolsInfo for the Kubernetes cluster
 			{
 				Nodepools: utils.NodePools{
-					Dynamic: utils.GetDynamicNodepools(request.Desired.ClusterInfo.NodePools),
-					Static:  utils.GetStaticNodepools(request.Desired.ClusterInfo.NodePools),
+					Dynamic: commonUtils.GetCommonDynamicNodePools(request.Desired.ClusterInfo.NodePools),
+					Static:  commonUtils.GetCommonStaticNodePools(request.Desired.ClusterInfo.NodePools),
 				},
 				PrivateKey:     request.Desired.ClusterInfo.PrivateKey,
 				ClusterID:      fmt.Sprintf("%s-%s", request.Desired.ClusterInfo.Name, request.Desired.ClusterInfo.Hash),
@@ -49,8 +49,8 @@ func (u *Usecases) InstallVPN(request *pb.InstallRequest) (*pb.InstallResponse, 
 		vpnInfo.NodepoolsInfos = append(vpnInfo.NodepoolsInfos,
 			&NodepoolsInfo{
 				Nodepools: utils.NodePools{
-					Dynamic: utils.GetDynamicNodepools(lbCluster.ClusterInfo.NodePools),
-					Static:  utils.GetStaticNodepools(lbCluster.ClusterInfo.NodePools),
+					Dynamic: commonUtils.GetCommonDynamicNodePools(lbCluster.ClusterInfo.NodePools),
+					Static:  commonUtils.GetCommonStaticNodePools(lbCluster.ClusterInfo.NodePools),
 				},
 				PrivateKey:     lbCluster.ClusterInfo.PrivateKey,
 				ClusterID:      fmt.Sprintf("%s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash),

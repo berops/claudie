@@ -175,8 +175,8 @@ func GenerateLBBaseFiles(outputDirectory string, lbClustersInfo *LBClustersInfo)
 				Name: lbData.DesiredLbCluster.ClusterInfo.Name,
 				Hash: lbData.DesiredLbCluster.ClusterInfo.Hash,
 				LBnodepools: NodePools{
-					Dynamic: GetDynamicNodepools(lbData.DesiredLbCluster.ClusterInfo.NodePools),
-					Static:  GetStaticNodepools(lbData.DesiredLbCluster.ClusterInfo.NodePools),
+					Dynamic: utils.GetCommonDynamicNodePools(lbData.DesiredLbCluster.ClusterInfo.NodePools),
+					Static:  utils.GetCommonStaticNodePools(lbData.DesiredLbCluster.ClusterInfo.NodePools),
 				},
 			})
 		}
@@ -187,8 +187,8 @@ func GenerateLBBaseFiles(outputDirectory string, lbClustersInfo *LBClustersInfo)
 		// Value of Ansible template parameters
 		LBInventoryFileParameters{
 			K8sNodepools: NodePools{
-				Dynamic: GetDynamicNodepools(lbClustersInfo.TargetK8sNodepool),
-				Static:  GetStaticNodepools(lbClustersInfo.TargetK8sNodepool),
+				Dynamic: utils.GetCommonDynamicNodePools(lbClustersInfo.TargetK8sNodepool),
+				Static:  utils.GetCommonStaticNodePools(lbClustersInfo.TargetK8sNodepool),
 			},
 			LBClusters: lbClusters,
 			ClusterID:  lbClustersInfo.ClusterID,

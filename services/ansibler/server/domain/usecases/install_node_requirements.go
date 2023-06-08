@@ -22,8 +22,8 @@ func (u *Usecases) InstallNodeRequirements(request *pb.InstallRequest) (*pb.Inst
 
 	NodepoolsInfo := &NodepoolsInfo{
 		Nodepools: utils.NodePools{
-			Dynamic: utils.GetDynamicNodepools(request.Desired.ClusterInfo.NodePools),
-			Static:  utils.GetStaticNodepools(request.Desired.ClusterInfo.NodePools),
+			Dynamic: commonUtils.GetCommonDynamicNodePools(request.Desired.ClusterInfo.NodePools),
+			Static:  commonUtils.GetCommonStaticNodePools(request.Desired.ClusterInfo.NodePools),
 		},
 		PrivateKey:     request.Desired.ClusterInfo.PrivateKey,
 		ClusterID:      fmt.Sprintf("%s-%s", request.Desired.ClusterInfo.Name, request.Desired.ClusterInfo.Hash),

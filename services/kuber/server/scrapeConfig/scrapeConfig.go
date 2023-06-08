@@ -30,8 +30,8 @@ type LBcluster struct {
 }
 
 type NodePools struct {
-	Dynamic []*pb.DynamicNodePool
-	Static  []*pb.StaticNodePool
+	Dynamic []*pb.NodePool
+	Static  []*pb.NodePool
 }
 
 type ScManifestData struct {
@@ -107,8 +107,8 @@ func (sc *ScrapeConfig) getData() SCData {
 	lbs := make([]*LBcluster, 0, len(sc.LBClusters))
 	for _, l := range sc.LBClusters {
 		lbs = append(lbs, &LBcluster{NodePools: &NodePools{
-			Static:  utils.GetStaticNodePools(l.ClusterInfo.NodePools),
-			Dynamic: utils.GetDynamicNodePools(l.ClusterInfo.NodePools),
+			Dynamic: utils.GetCommonDynamicNodePools(l.ClusterInfo.NodePools),
+			Static:  utils.GetCommonStaticNodePools(l.ClusterInfo.NodePools),
 		}})
 	}
 	return SCData{LBClusters: lbs}

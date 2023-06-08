@@ -181,3 +181,23 @@ func GetStaticNodePools(nps []*pb.NodePool) []*pb.StaticNodePool {
 	}
 	return snps
 }
+
+func GetCommonStaticNodePools(nps []*pb.NodePool) []*pb.NodePool {
+	static := make([]*pb.NodePool, 0, len(nps))
+	for _, n := range nps {
+		if n.GetStaticNodePool() != nil {
+			static = append(static, n)
+		}
+	}
+	return static
+}
+
+func GetCommonDynamicNodePools(nps []*pb.NodePool) []*pb.NodePool {
+	dynamic := make([]*pb.NodePool, 0, len(nps))
+	for _, n := range nps {
+		if n.GetDynamicNodePool() != nil {
+			dynamic = append(dynamic, n)
+		}
+	}
+	return dynamic
+}
