@@ -61,9 +61,12 @@ func updateAPIEndpoint(currentK8sClusterInfo, desiredK8sClusterInfo *pb.ClusterI
 	}
 
 	err = utils.GenerateInventoryFile(templates.LoadbalancerInventoryTemplate, clusterDirectory, utils.LBInventoryFileParameters{
-		K8sNodepools: currentK8sClusterInfo.GetNodePools(),
-		LBClusters:   nil,
-		ClusterID:    clusterID,
+		K8sNodepools: utils.NodePools{
+			Dynamic: utils.GetDynamicNodepools(currentK8sClusterInfo.NodePools),
+			Static:  utils.GetStaticNodepools(currentK8sClusterInfo.NodePools),
+		},
+		LBClusters: nil,
+		ClusterID:  clusterID,
 	})
 	if err != nil {
 		return fmt.Errorf("error while creating inventory file for %s : %w", clusterDirectory, err)

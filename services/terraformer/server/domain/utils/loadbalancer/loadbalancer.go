@@ -109,14 +109,8 @@ func getNodeIPs(nodepools []*pb.NodePool) []string {
 	var ips []string
 
 	for _, nodepool := range nodepools {
-		if nodepool.GetDynamicNodePool() != nil {
-			for _, node := range nodepool.GetDynamicNodePool().Nodes {
-				ips = append(ips, node.Public)
-			}
-		} else {
-			for _, node := range nodepool.GetStaticNodePool().Nodes {
-				ips = append(ips, node.Public)
-			}
+		for _, node := range nodepool.Nodes {
+			ips = append(ips, node.Public)
 		}
 	}
 

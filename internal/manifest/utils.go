@@ -163,9 +163,10 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 			}
 
 			nodePools = append(nodePools, &pb.NodePool{
+				Name:      nodePool.Name,
+				IsControl: isControl,
 				NodePoolType: &pb.NodePool_DynamicNodePool{
 					DynamicNodePool: &pb.DynamicNodePool{
-						Name:             nodePool.Name,
 						Region:           nodePool.ProviderSpec.Region,
 						Zone:             nodePool.ProviderSpec.Zone,
 						ServerType:       nodePool.ServerType,
@@ -173,7 +174,6 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 						StorageDiskSize:  uint32(nodePool.StorageDiskSize),
 						Count:            count,
 						Provider:         provider,
-						IsControl:        isControl,
 						AutoscalerConfig: autoscalerConf,
 					},
 				},
@@ -181,12 +181,12 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 		} else if nodePool := ds.FindStaticNodePool(nodePoolName); nodePool != nil {
 			nodes := getStaticNodes(nodePool)
 			nodePools = append(nodePools, &pb.NodePool{
+				Name:      nodePool.Name,
+				Nodes:     nodes,
+				IsControl: isControl,
 				NodePoolType: &pb.NodePool_StaticNodePool{
 					StaticNodePool: &pb.StaticNodePool{
-						Name:      nodePool.Name,
-						IsControl: isControl,
-						Nodes:     nodes,
-						NodeKeys:  getNodeKeys(nodePool),
+						NodeKeys: getNodeKeys(nodePool),
 					},
 				},
 			})

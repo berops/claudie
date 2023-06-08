@@ -40,14 +40,8 @@ func GetNodePoolByName(nodePoolName string, nodePools []*pb.NodePool) *pb.NodePo
 		return nil
 	}
 	for _, np := range nodePools {
-		if n := np.GetDynamicNodePool(); n != nil {
-			if n.Name == nodePoolName {
-				return np
-			}
-		} else if n := np.GetStaticNodePool(); n != nil {
-			if n.Name == nodePoolName {
-				return np
-			}
+		if np.Name == nodePoolName {
+			return np
 		}
 	}
 	return nil

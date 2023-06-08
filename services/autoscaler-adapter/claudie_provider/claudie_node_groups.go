@@ -40,11 +40,11 @@ func (c *ClaudieCloudProvider) NodeGroupIncreaseSize(_ context.Context, req *pro
 	// Find the nodepool.
 	if ngc, ok := c.nodesCache[req.GetId()]; ok {
 		// Check & update the new Count.
-		newCount := ngc.nodepool.Count + req.GetDelta()
-		if newCount > ngc.nodepool.AutoscalerConfig.Max {
-			return nil, fmt.Errorf("could not add new nodes, as that would be larger than max size of the nodepool; current size %d, requested delta %d", ngc.nodepool.Count, req.GetDelta())
+		newCount := ngc.nodepool.GetDynamicNodePool().Count + req.GetDelta()
+		if newCount > ngc.nodepool.GetDynamicNodePool().AutoscalerConfig.Max {
+			return nil, fmt.Errorf("could not add new nodes, as that would be larger than max size of the nodepool; current size %d, requested delta %d", ngc.nodepool.GetDynamicNodePool().Count, req.GetDelta())
 		}
-		ngc.nodepool.Count = newCount
+		ngc.nodepool.GetDynamicNodePool().Count = newCount
 		ngc.targetSize = newCount
 		// Update nodepool in Claudie.
 		if err := c.updateNodepool(ngc.nodepool); err != nil {
@@ -66,11 +66,11 @@ func (c *ClaudieCloudProvider) NodeGroupDeleteNodes(_ context.Context, req *prot
 	// Find the nodepool.
 	if ngc, ok := c.nodesCache[req.GetId()]; ok {
 		// Check & update the new Count.
-		newCount := ngc.nodepool.Count - int32(len(req.GetNodes()))
-		if newCount < ngc.nodepool.AutoscalerConfig.Min {
-			return nil, fmt.Errorf("could not remove nodes, as that would be smaller than min size of the nodepool; current size %d, requested removal %d", ngc.nodepool.Count, len(req.GetNodes()))
+		newCount := ngc.nodepool.GetDynamicNodePool().GetCount() - int32(len(req.GetNodes()))
+		if newCount < ngc.nodepool.GetDynamicNodePool().AutoscalerConfig.GetMin() {
+			return nil, fmt.Errorf("could not remove nodes, as that would be smaller than min size of the nodepool; current size %d, requested removal %d", ngc.nodepool.GetDynamicNodePool().Count, len(req.GetNodes()))
 		}
-		ngc.nodepool.Count = newCount
+		ngc.nodepool.GetDynamicNodePool().Count = newCount
 		ngc.targetSize = newCount
 		// Update nodes slice
 		deleteNodes := make([]*pb.Node, 0, len(req.Nodes))
@@ -161,7 +161,7 @@ func (c *ClaudieCloudProvider) NodeGroupGetOptions(_ context.Context, req *proto
 }
 
 // updateNodepool will call context-box UpdateNodepool method to save any changes to the database. This will also initiate build of the changed nodepool.
-func (c *ClaudieCloudProvider) updateNodepool(nodepool *pb.DynamicNodePool) error {
+func (c *ClaudieCloudProvider) updateNodepool(nodepool *pb.NodePool) error {
 	// Update the nodepool in the Claudie.
 	var cc *grpc.ClientConn
 	var err error

@@ -218,15 +218,17 @@ func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterM
 	sp := StaticNodepool{NodeInfo: make(map[string]StaticNodeInfo)}
 	for _, pool := range req.GetCluster().GetClusterInfo().GetNodePools() {
 		if np := pool.GetDynamicNodePool(); np != nil {
-			for _, node := range np.GetNodes() {
+			for _, node := range pool.GetNodes() {
 				dp.NodeIps[node.GetName()] = IPPair{
 					PublicIP:  net.ParseIP(node.GetPublic()),
 					PrivateIP: net.ParseIP(node.GetPrivate()),
 				}
 			}
 		} else if np := pool.GetStaticNodePool(); np != nil {
-			for _, node := range np.GetNodes() {
-				sp.NodeInfo[node.GetName()] = StaticNodeInfo{PrivateKey: np.NodeKeys[node.Public], Endpoint: node.GetPublic()}
+			for _, node := range pool.GetNodes() {
+				sp.NodeInfo[node.GetName()] = StaticNodeInfo{
+					PrivateKey: np.NodeKeys[node.Public],
+					Endpoint:   node.GetPublic()}
 			}
 		}
 	}

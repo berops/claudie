@@ -13,17 +13,17 @@ import (
 var jsonData = "{\"compute\":{\"test-cluster-compute1\":\"0.0.0.65\",\n\"test-cluster-compute2\":\"0.0.0.512\"},\n\"control\":{\"test-cluster-control1\":\"0.0.0.72\",\n\"test-cluster-control2\":\"0.0.0.65\"}}"
 
 var testNp = &pb.NodePool{
+	Name:      "test-np",
+	Nodes:     []*pb.Node{},
+	IsControl: true,
 	NodePoolType: &pb.NodePool_DynamicNodePool{
 		DynamicNodePool: &pb.DynamicNodePool{
-			Name:            "test-np",
 			Region:          "West Europe",
 			ServerType:      "Standard_E64s_v3",
 			Image:           "Canonical:0001-com-ubuntu-minimal-focal:minimal-20_04-lts:20.04.202004230",
 			StorageDiskSize: 50,
 			Zone:            "1",
 			Count:           3,
-			Nodes:           []*pb.Node{},
-			IsControl:       true,
 			Provider: &pb.Provider{
 				CloudProviderName: "azure",
 				Credentials:       "",
@@ -46,7 +46,7 @@ func TestGenerateTf(t *testing.T) {
 	require.NoError(t, err)
 	tpl, err := templateUtils.LoadTemplate(string(file))
 	require.NoError(t, err)
-	err = template.Generate(tpl, "az-acc-net.tf", &NodepoolsData{ClusterName: "test", ClusterHash: "abcdef", NodePools: []*pb.DynamicNodePool{testNp.GetDynamicNodePool()}})
+	err = template.Generate(tpl, "az-acc-net.tf", &NodepoolsData{ClusterName: "test", ClusterHash: "abcdef", NodePools: []NodePoolInfo{{NodePool: testNp.GetDynamicNodePool()}}})
 	require.NoError(t, err)
 }
 

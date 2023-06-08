@@ -36,23 +36,12 @@ func NewPatcher(cluster *pb.K8Scluster) *Patcher {
 func (p *Patcher) PatchProviderID(logger zerolog.Logger) error {
 	var err error
 	for _, np := range p.nodepools {
-		if n := np.GetDynamicNodePool(); n != nil {
-			for _, node := range n.GetNodes() {
-				nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
-				patchPath := fmt.Sprintf(patchPathFormat, fmt.Sprintf(ProviderIdFormat, nodeName))
-				if err1 := p.kc.KubectlPatch("node", nodeName, patchPath); err1 != nil {
-					logger.Err(err1).Str("node", nodeName).Msgf("Error while patching node with patch %s", patchPath)
-					err = fmt.Errorf("error while patching one or more nodes")
-				}
-			}
-		} else if n := np.GetStaticNodePool(); n != nil {
-			for _, node := range n.GetNodes() {
-				nodeName := node.Name
-				patchPath := fmt.Sprintf(patchPathFormat, fmt.Sprintf(ProviderIdFormat, nodeName))
-				if err1 := p.kc.KubectlPatch("node", nodeName, patchPath); err1 != nil {
-					logger.Err(err1).Str("node", nodeName).Msgf("Error while patching node with patch %s", patchPath)
-					err = fmt.Errorf("error while patching one or more nodes")
-				}
+		for _, node := range np.GetNodes() {
+			nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
+			patchPath := fmt.Sprintf(patchPathFormat, fmt.Sprintf(ProviderIdFormat, nodeName))
+			if err1 := p.kc.KubectlPatch("node", nodeName, patchPath); err1 != nil {
+				logger.Err(err1).Str("node", nodeName).Msgf("Error while patching node with patch %s", patchPath)
+				err = fmt.Errorf("error while patching one or more nodes")
 			}
 		}
 	}

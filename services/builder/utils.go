@@ -67,7 +67,7 @@ src:
 	for _, npSrc := range src {
 		for _, npDst := range dst {
 			if npSrc.GetDynamicNodePool() != nil && npDst.GetDynamicNodePool() != nil {
-				if npSrc.GetDynamicNodePool().Name == npDst.GetDynamicNodePool().Name {
+				if npSrc.Name == npDst.Name {
 					npDst.GetDynamicNodePool().Metadata = npSrc.GetDynamicNodePool().Metadata
 					continue src
 				}

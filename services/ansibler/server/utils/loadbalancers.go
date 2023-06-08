@@ -64,9 +64,19 @@ const (
 
 type (
 	LBInventoryFileParameters struct {
-		K8sNodepools []*pb.NodePool
-		LBClusters   []*pb.LBcluster
+		K8sNodepools NodePools
+		LBClusters   []LBcluster
 		ClusterID    string
+	}
+
+	LBcluster struct {
+		Name        string
+		LBnodepools NodePools
+	}
+
+	NodePools struct {
+		Dynamic []*pb.NodePool
+		Static  []*pb.NodePool
 	}
 
 	// LBClustersInfo wraps all Load-balancers and Nodepools used for a single K8s cluster.
@@ -157,10 +167,16 @@ func GenerateLBBaseFiles(outputDirectory string, lbClustersInfo *LBClustersInfo)
 		return fmt.Errorf("failed to create key file: %w", err)
 	}
 
-	var lbClusters []*pb.LBcluster
-	for _, item := range lbClustersInfo.LbClusters {
-		if item.DesiredLbCluster != nil {
-			lbClusters = append(lbClusters, item.DesiredLbCluster)
+	var lbClusters []LBcluster
+	for _, lbData := range lbClustersInfo.LbClusters {
+		if lbData.DesiredLbCluster != nil {
+			lbClusters = append(lbClusters, LBcluster{
+				Name: lbData.DesiredLbCluster.ClusterInfo.Name,
+				LBnodepools: NodePools{
+					Dynamic: GetDynamicNodepools(lbData.DesiredLbCluster.ClusterInfo.NodePools),
+					Static:  GetStaticNodepools(lbData.DesiredLbCluster.ClusterInfo.NodePools),
+				},
+			})
 		}
 	}
 
@@ -168,9 +184,12 @@ func GenerateLBBaseFiles(outputDirectory string, lbClustersInfo *LBClustersInfo)
 	err := GenerateInventoryFile(templates.LoadbalancerInventoryTemplate, outputDirectory,
 		// Value of Ansible template parameters
 		LBInventoryFileParameters{
-			K8sNodepools: lbClustersInfo.TargetK8sNodepool,
-			LBClusters:   lbClusters,
-			ClusterID:    lbClustersInfo.ClusterID,
+			K8sNodepools: NodePools{
+				Dynamic: GetDynamicNodepools(lbClustersInfo.TargetK8sNodepool),
+				Static:  GetStaticNodepools(lbClustersInfo.TargetK8sNodepool),
+			},
+			LBClusters: lbClusters,
+			ClusterID:  lbClustersInfo.ClusterID,
 		},
 	)
 	if err != nil {

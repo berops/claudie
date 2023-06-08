@@ -293,8 +293,9 @@ type TeardownLBRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Desired     *K8Scluster  `protobuf:"bytes,1,opt,name=desired,proto3" json:"desired,omitempty"`
-	DesiredLbs  []*LBcluster `protobuf:"bytes,2,rep,name=desiredLbs,proto3" json:"desiredLbs,omitempty"`
+	Desired    *K8Scluster  `protobuf:"bytes,1,opt,name=desired,proto3" json:"desired,omitempty"`
+	DesiredLbs []*LBcluster `protobuf:"bytes,2,rep,name=desiredLbs,proto3" json:"desiredLbs,omitempty"`
+	// LB clusters which were deleted from the Claudie manifest.
 	DeletedLbs  []*LBcluster `protobuf:"bytes,3,rep,name=deletedLbs,proto3" json:"deletedLbs,omitempty"`
 	ProjectName string       `protobuf:"bytes,4,opt,name=projectName,proto3" json:"projectName,omitempty"`
 }

@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	maxLonghornCheck = 30 * 60 // max allowed time for pods of longhorn-system to be ready [seconds]
-	sleepSecPods     = 20      // seconds for one cycle of longhorn checks (the node and pod checks)
+	maxLonghornCheck = 6 * 60 // max allowed time for pods of longhorn-system to be ready [seconds]
+	sleepSecPods     = 20     // seconds for one cycle of longhorn checks (the node and pod checks)
 )
 
 type KubectlOutputJSON struct {
@@ -55,14 +55,13 @@ func checkLonghornNodes(ctx context.Context, cluster *pb.K8Scluster, kubectl kub
 	workerCount := 0
 	//count the worker nodes
 	for _, nodepool := range cluster.ClusterInfo.NodePools {
+		if nodepool.IsControl {
+			continue
+		}
 		if nodepool.GetDynamicNodePool() != nil {
-			if !nodepool.GetDynamicNodePool().IsControl {
-				workerCount += int(nodepool.GetDynamicNodePool().Count)
-			}
+			workerCount += int(nodepool.GetDynamicNodePool().Count)
 		} else if nodepool.GetStaticNodePool() != nil {
-			if !nodepool.GetStaticNodePool().IsControl {
-				workerCount += len(nodepool.GetStaticNodePool().Nodes)
-			}
+			workerCount += len(nodepool.Nodes)
 		}
 	}
 	// give them time of maxLonghornCheck seconds to be scheduled

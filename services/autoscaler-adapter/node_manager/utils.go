@@ -77,7 +77,7 @@ func getTypeInfoAzure(rawInfo []*armcompute.VirtualMachineSize) map[string]*type
 }
 
 // getNodeType returns node type as a string value.
-func getNodeType(np *pb.DynamicNodePool) string {
+func getNodeType(np *pb.NodePool) string {
 	if np.IsControl {
 		return "control"
 	}

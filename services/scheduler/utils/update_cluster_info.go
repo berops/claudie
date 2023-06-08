@@ -18,11 +18,11 @@ func updateClusterInfo(desired, current *pb.ClusterInfo) {
 desired:
 	for _, desiredNp := range desired.NodePools {
 		for _, currentNp := range current.NodePools {
-			if dnp, cnp := getDynamicNodePools(desiredNp, currentNp); dnp != nil && cnp != nil {
-				// Found nodepool in desired and in Current
-				if dnp.Name == cnp.Name {
+			// Found nodepool in desired and in Current
+			if desiredNp.Name == currentNp.Name {
+				if dnp, cnp := getDynamicNodePools(desiredNp, currentNp); dnp != nil && cnp != nil {
 					// Save current nodes and metadata
-					dnp.Nodes = cnp.Nodes
+					desiredNp.Nodes = currentNp.Nodes
 					dnp.Metadata = cnp.Metadata
 					// Update the count
 					if cnp.AutoscalerConfig != nil && dnp.AutoscalerConfig != nil {
@@ -42,12 +42,10 @@ desired:
 						}
 					}
 					continue desired
-				}
-			} else if dnp, cnp := getStaticNodePools(desiredNp, currentNp); dnp != nil && cnp != nil {
-				// Found nodepool in desired and in Current
-				if dnp.Name == cnp.Name {
-					for _, dn := range dnp.Nodes {
-						for _, cn := range cnp.Nodes {
+				} else if dnp, cnp := getStaticNodePools(desiredNp, currentNp); dnp != nil && cnp != nil {
+					// Found nodepool in desired and in Current
+					for _, dn := range desiredNp.Nodes {
+						for _, cn := range currentNp.Nodes {
 							if dn.Public == cn.Public {
 								dn.Name = cn.Name
 								dn.Private = cn.Private
@@ -57,6 +55,7 @@ desired:
 					}
 				}
 			}
+
 		}
 	}
 }

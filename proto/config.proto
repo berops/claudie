@@ -163,50 +163,45 @@ message DNS {
 
 // NodePool represents a single node pool used in cluster.
 message NodePool {
+  // Dynamic or Static node pool info.
   oneof NodePoolType {
     DynamicNodePool dynamicNodePool = 1;
     StaticNodePool staticNodePool = 2;
   }
+  // Name of static node pool.
+  string name = 3;
+  // Array of nodes in this node pool.
+  repeated Node nodes = 4;
+  // Flag to differentiate between control and compute nodes.
+  bool isControl = 5;
 }
 
 // DynamicNodePool represents dynamic node pool used in cluster.
 message DynamicNodePool {
-  // Name of the node pool.
-  string name = 1;
   // Machine type of the nodes.
-  string serverType = 2;
+  string serverType = 1;
   // OS image of the nodes.
-  string image = 3;
+  string image = 2;
   // Storage disk size of the nodes.
-  uint32 storageDiskSize = 4;
+  uint32 storageDiskSize = 3;
   // Geograhical region of the nodes.
-  string region = 5;
+  string region = 4;
   // Datacentre zone for the nodes.
-  string zone = 6;
+  string zone = 5;
   // Number of the nodes in the node pool.
-  int32 count = 7;
-  // Array of nodes of this node pool.
-  repeated Node nodes = 8;
+  int32 count = 6;
   // Provider configuarion of the node pool.
-  Provider provider = 9;
-  //  Flag to differentiate between control and compute nodes.
-  bool isControl = 10;
+  Provider provider = 7;
   // Nodepool metadata.
-  map<string, MetaValue> metadata = 11;
+  map<string, MetaValue> metadata = 8;
   // Autoscaler configuration. (optional)
-  AutoscalerConf autoscalerConfig = 12;
+  AutoscalerConf autoscalerConfig = 9;
 }
 
 // StaticNodePool represents static node pool used in cluster.
 message StaticNodePool {
-  // Name of static node pool.
-  string name = 1;
-  // Array of nodes in this node pool.
-  repeated Node nodes = 2;
   // Map of keys for each static node in [<Node Endpoint>]<Key> form.
-  map<string, string> nodeKeys = 3;
-  //  Flag to differentiate between control and compute nodes.
-  bool isControl = 4;
+  map<string, string> nodeKeys = 1;
 }
 
 // Autoscaler configuration on per node pool basis.

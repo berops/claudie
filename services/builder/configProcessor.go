@@ -285,24 +285,20 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 // separateNodepools creates two slices of node names, one for master and one for worker nodes
 func separateNodepools(clusterNodes map[string]int32, currentClusterInfo, desiredClusterInfo *pb.ClusterInfo) (master []string, worker []string) {
 	for _, nodepool := range currentClusterInfo.NodePools {
+		var names = make([]string, 0, len(nodepool.Nodes))
 		if np := nodepool.GetDynamicNodePool(); np != nil {
-			if count, ok := clusterNodes[np.Name]; ok && count > 0 {
-				names := getDynamicNodeNames(nodepool, int(count))
-				if np.IsControl {
-					master = append(master, names...)
-				} else {
-					worker = append(worker, names...)
-				}
+			if count, ok := clusterNodes[nodepool.Name]; ok && count > 0 {
+				names = getDynamicNodeNames(nodepool, int(count))
 			}
 		} else if np := nodepool.GetStaticNodePool(); np != nil {
-			if count, ok := clusterNodes[np.Name]; ok && count > 0 {
-				names := getStaticNodeNames(nodepool, desiredClusterInfo)
-				if np.IsControl {
-					master = append(master, names...)
-				} else {
-					worker = append(worker, names...)
-				}
+			if count, ok := clusterNodes[nodepool.Name]; ok && count > 0 {
+				names = getStaticNodeNames(nodepool, desiredClusterInfo)
 			}
+		}
+		if nodepool.IsControl {
+			master = append(master, names...)
+		} else {
+			worker = append(worker, names...)
 		}
 	}
 	return master, worker
@@ -311,11 +307,9 @@ func separateNodepools(clusterNodes map[string]int32, currentClusterInfo, desire
 // getDynamicNodeNames returns slice of length count with names of the nodes from specified nodepool
 // nodes chosen are from the last element in Nodes slice, up to the first one
 func getDynamicNodeNames(np *pb.NodePool, count int) (names []string) {
-	if n := np.GetDynamicNodePool(); n != nil {
-		for i := len(n.GetNodes()) - 1; i >= len(n.GetNodes())-count; i-- {
-			names = append(names, n.GetNodes()[i].GetName())
-			log.Debug().Msgf("Choosing node %s for deletion", n.GetNodes()[i].GetName())
-		}
+	for i := len(np.GetNodes()) - 1; i >= len(np.GetNodes())-count; i-- {
+		names = append(names, np.GetNodes()[i].GetName())
+		log.Debug().Msgf("Choosing node %s for deletion", np.GetNodes()[i].GetName())
 	}
 	return names
 }
@@ -326,17 +320,15 @@ func getStaticNodeNames(np *pb.NodePool, desiredCluster *pb.ClusterInfo) (names 
 	// Find desired nodes for node pool.
 	desired := make(map[string]struct{})
 	for _, n := range desiredCluster.NodePools {
-		if n.GetStaticNodePool() != nil {
-			if n.GetStaticNodePool().Name == np.GetStaticNodePool().Name {
-				for _, node := range n.GetStaticNodePool().Nodes {
-					desired[node.Name] = struct{}{}
-				}
+		if n.Name == np.Name {
+			for _, node := range n.Nodes {
+				desired[node.Name] = struct{}{}
 			}
 		}
 	}
 	// Find deleted nodes
 	if n := np.GetStaticNodePool(); n != nil {
-		for _, node := range np.GetStaticNodePool().Nodes {
+		for _, node := range np.Nodes {
 			if _, ok := desired[node.Name]; !ok {
 				// Append name as it is not defined in desired state.
 				names = append(names, node.Name)

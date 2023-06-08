@@ -31,7 +31,7 @@ type nodeCache struct {
 	// Nodegroup as per Cluster Autoscaler definition.
 	nodeGroup *protos.NodeGroup
 	// Nodepool as per Claudie definition.
-	nodepool *pb.DynamicNodePool
+	nodepool *pb.NodePool
 	// Target size of node group.
 	targetSize int32
 }
@@ -62,7 +62,7 @@ func NewClaudieCloudProvider(projectName, clusterName string) *ClaudieCloudProvi
 	if cluster, err = getClaudieState(projectName, clusterName); err != nil {
 		panic(fmt.Sprintf("Error while getting cluster %s : %v", clusterName, err))
 	}
-	if nm, err = node_manager.NewNodeManager(utils.GetDynamicNodePoolsFromCI(cluster.ClusterInfo)); err != nil {
+	if nm, err = node_manager.NewNodeManager(cluster.ClusterInfo.NodePools); err != nil {
 		panic(fmt.Sprintf("Error while creating node manager : %v", err))
 	}
 	// Initialise all other variables.
@@ -113,13 +113,13 @@ func getNodesCache(nodepools []*pb.NodePool) map[string]*nodeCache {
 			if np.GetDynamicNodePool().AutoscalerConfig != nil {
 				// Create nodeGroup struct.
 				ng := &protos.NodeGroup{
-					Id:      np.GetDynamicNodePool().Name,
+					Id:      np.Name,
 					MinSize: np.GetDynamicNodePool().AutoscalerConfig.Min,
 					MaxSize: np.GetDynamicNodePool().AutoscalerConfig.Max,
-					Debug:   fmt.Sprintf("Nodepool %s [min %d, max %d]", np.GetDynamicNodePool().Name, np.GetDynamicNodePool().AutoscalerConfig.Min, np.GetDynamicNodePool().AutoscalerConfig.Max),
+					Debug:   fmt.Sprintf("Nodepool %s [min %d, max %d]", np.Name, np.GetDynamicNodePool().AutoscalerConfig.Min, np.GetDynamicNodePool().AutoscalerConfig.Max),
 				}
 				// Append ng to the final slice.
-				nc[np.GetDynamicNodePool().Name] = &nodeCache{nodeGroup: ng, nodepool: np.GetDynamicNodePool(), targetSize: np.GetDynamicNodePool().Count}
+				nc[np.Name] = &nodeCache{nodeGroup: ng, nodepool: np, targetSize: np.GetDynamicNodePool().Count}
 			}
 		}
 	}
@@ -218,7 +218,7 @@ func (c *ClaudieCloudProvider) refresh() error {
 	} else {
 		c.configCluster = cluster
 		c.nodesCache = getNodesCache(cluster.ClusterInfo.NodePools)
-		if err := c.nodeManager.Refresh(utils.GetDynamicNodePoolsFromCI(cluster.ClusterInfo)); err != nil {
+		if err := c.nodeManager.Refresh(cluster.ClusterInfo.NodePools); err != nil {
 			return fmt.Errorf("failed to refresh node manager : %w", err)
 		}
 	}

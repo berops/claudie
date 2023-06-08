@@ -34,7 +34,10 @@ func (u *Usecases) InstallVPN(request *pb.InstallRequest) (*pb.InstallResponse, 
 		NodepoolsInfos: []*NodepoolsInfo{
 			// Construct and add NodepoolsInfo for the Kubernetes cluster
 			{
-				Nodepools:      request.Desired.ClusterInfo.NodePools,
+				Nodepools: utils.NodePools{
+					Dynamic: utils.GetDynamicNodepools(request.Desired.ClusterInfo.NodePools),
+					Static:  utils.GetStaticNodepools(request.Desired.ClusterInfo.NodePools),
+				},
 				PrivateKey:     request.Desired.ClusterInfo.PrivateKey,
 				ClusterID:      fmt.Sprintf("%s-%s", request.Desired.ClusterInfo.Name, request.Desired.ClusterInfo.Hash),
 				ClusterNetwork: request.Desired.Network,
@@ -45,7 +48,10 @@ func (u *Usecases) InstallVPN(request *pb.InstallRequest) (*pb.InstallResponse, 
 	for _, lbCluster := range request.DesiredLbs {
 		vpnInfo.NodepoolsInfos = append(vpnInfo.NodepoolsInfos,
 			&NodepoolsInfo{
-				Nodepools:      lbCluster.ClusterInfo.NodePools,
+				Nodepools: utils.NodePools{
+					Dynamic: utils.GetDynamicNodepools(lbCluster.ClusterInfo.NodePools),
+					Static:  utils.GetStaticNodepools(lbCluster.ClusterInfo.NodePools),
+				},
 				PrivateKey:     lbCluster.ClusterInfo.PrivateKey,
 				ClusterID:      fmt.Sprintf("%s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash),
 				ClusterNetwork: request.Desired.Network,
@@ -105,7 +111,8 @@ func installWireguardVPN(clusterID string, vpnInfo *VPNInfo) error {
 func getAllNodepools(nodepoolsInfo []*NodepoolsInfo) []*pb.NodePool {
 	var nodepools []*pb.NodePool
 	for _, nodepoolInfo := range nodepoolsInfo {
-		nodepools = append(nodepools, nodepoolInfo.Nodepools...)
+		nodepools = append(nodepools, nodepoolInfo.Nodepools.Dynamic...)
+		nodepools = append(nodepools, nodepoolInfo.Nodepools.Static...)
 	}
 
 	return nodepools

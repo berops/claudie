@@ -172,21 +172,11 @@ func (d *Deleter) deleteFromEtcd(kc kubectl.Kubectl, etcdEpNode *pb.Node) error 
 func (d *Deleter) updateClusterData() {
 nodes:
 	for _, name := range append(d.masterNodes, d.workerNodes...) {
-		for _, nodepool := range d.cluster.ClusterInfo.NodePools {
-			if np := nodepool.GetDynamicNodePool(); np != nil {
-				for i, node := range np.Nodes {
-					if node.Name == name {
-						np.Count--
-						np.Nodes = append(np.Nodes[:i], np.Nodes[i+1:]...)
-						continue nodes
-					}
-				}
-			} else if np := nodepool.GetStaticNodePool(); np != nil {
-				for i, node := range np.Nodes {
-					if node.Name == name {
-						np.Nodes = append(np.Nodes[:i], np.Nodes[i+1:]...)
-						continue nodes
-					}
+		for _, np := range d.cluster.ClusterInfo.NodePools {
+			for i, node := range np.Nodes {
+				if node.Name == name {
+					np.Nodes = append(np.Nodes[:i], np.Nodes[i+1:]...)
+					continue nodes
 				}
 			}
 		}
@@ -260,51 +250,27 @@ func (d *Deleter) assureReplication(kc kubectl.Kubectl, worker string) error {
 // function returns any master node which will not be deleted.
 // return API EP node if successful, nil otherwise
 func (d *Deleter) getMainMaster() *pb.Node {
-	for _, nodepool := range d.cluster.ClusterInfo.GetNodePools() {
-		if np := nodepool.GetDynamicNodePool(); np != nil {
-			for _, node := range np.Nodes {
-				if node.NodeType == pb.NodeType_apiEndpoint {
-					return node
-				}
-			}
-		} else if np := nodepool.GetStaticNodePool(); np != nil {
-			for _, node := range np.Nodes {
-				if node.NodeType == pb.NodeType_apiEndpoint {
-					return node
-				}
+	for _, np := range d.cluster.ClusterInfo.GetNodePools() {
+		for _, node := range np.Nodes {
+			if node.NodeType == pb.NodeType_apiEndpoint {
+				return node
 			}
 		}
 	}
 	// Choose one master, which is not going to be deleted
-	for _, nodepool := range d.cluster.ClusterInfo.GetNodePools() {
-		if np := nodepool.GetDynamicNodePool(); np != nil {
-		n1:
-			for _, node := range np.Nodes {
-				if node.NodeType == pb.NodeType_master {
-					// If node will be deleted, continue.
-					for _, dm := range d.masterNodes {
-						if strings.Contains(node.Name, dm) {
-							continue n1
-						}
+	for _, np := range d.cluster.ClusterInfo.GetNodePools() {
+	np:
+		for _, node := range np.Nodes {
+			if node.NodeType == pb.NodeType_master {
+				// If node will be deleted, continue.
+				for _, dm := range d.masterNodes {
+					if strings.Contains(node.Name, dm) {
+						continue np
 					}
 				}
-				// If loop was not broken by the continue, return this node.
-				return node
 			}
-		} else if np := nodepool.GetStaticNodePool(); np != nil {
-		n2:
-			for _, node := range np.Nodes {
-				if node.NodeType == pb.NodeType_master {
-					// If node will be deleted, continue.
-					for _, dm := range d.masterNodes {
-						if strings.Contains(node.Name, dm) {
-							continue n2
-						}
-					}
-				}
-				// If loop was not broken by the continue, return this node.
-				return node
-			}
+			// If loop was not broken by the continue, return this node.
+			return node
 		}
 	}
 	return nil

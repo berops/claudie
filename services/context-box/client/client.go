@@ -135,25 +135,25 @@ func printConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType, stat
 			if np := nodePool.GetDynamicNodePool(); np != nil {
 				buffer.WriteString("----------------------------------------\n")
 				buffer.WriteString(fmt.Sprintf("NodePool number: %d \n", j))
-				buffer.WriteString(fmt.Sprintf("Name: %s\n", np.GetName()))
+				buffer.WriteString(fmt.Sprintf("Name: %s\n", nodePool.GetName()))
 				buffer.WriteString(fmt.Sprintf("Region %s\n", np.GetRegion()))
 				buffer.WriteString(fmt.Sprintf("Provider specs: %v\n", np.GetProvider()))
 				buffer.WriteString(fmt.Sprintf("Autoscaler conf: %v\n", np.GetAutoscalerConfig()))
 				buffer.WriteString(fmt.Sprintf("Count: %d\n", np.GetCount()))
 
 				buffer.WriteString("Nodes:\n")
-				for _, node := range np.GetNodes() {
+				for _, node := range nodePool.GetNodes() {
 					buffer.WriteString(fmt.Sprintf("Name: %s Public: %s Private: %s NodeType: %s \n", node.Name, node.GetPublic(), node.GetPrivate(), node.GetNodeType().String()))
 				}
 				buffer.WriteString("----------------------------------------\n")
 			} else if np := nodePool.GetStaticNodePool(); np != nil {
 				buffer.WriteString("----------------------------------------\n")
 				buffer.WriteString(fmt.Sprintf("NodePool number: %d \n", j))
-				buffer.WriteString(fmt.Sprintf("Name: %s\n", np.GetName()))
-				buffer.WriteString(fmt.Sprintf("IsControl: %v\n", np.GetIsControl()))
+				buffer.WriteString(fmt.Sprintf("Name: %s\n", nodePool.GetName()))
+				buffer.WriteString(fmt.Sprintf("IsControl: %v\n", nodePool.GetIsControl()))
 
 				buffer.WriteString("Nodes:\n")
-				for _, node := range np.GetNodes() {
+				for _, node := range nodePool.GetNodes() {
 					buffer.WriteString(fmt.Sprintf("Name: %s Endpoint: %s Key: %s NodeType: %s \n", node.Name, node.GetPublic(), node.GetPrivate(), node.GetNodeType().String()))
 				}
 				buffer.WriteString("----------------------------------------\n")
@@ -174,23 +174,23 @@ func printConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType, stat
 			if np := nodePool.GetDynamicNodePool(); np != nil {
 				buffer.WriteString("--------------------Dynamic Node Pool --------------------\n")
 				buffer.WriteString(fmt.Sprintf("NodePool number: %d \n", j))
-				buffer.WriteString(fmt.Sprintf("Name: %s\n", np.GetName()))
+				buffer.WriteString(fmt.Sprintf("Name: %s\n", nodePool.GetName()))
 				buffer.WriteString(fmt.Sprintf("Region %s\n", np.GetRegion()))
 				buffer.WriteString(fmt.Sprintf("Provider specs: %v\n", np.GetProvider()))
 				buffer.WriteString(fmt.Sprintf("Count: %d\n", np.GetCount()))
 
 				buffer.WriteString("Nodes:\n")
-				for _, node := range np.GetNodes() {
+				for _, node := range nodePool.GetNodes() {
 					buffer.WriteString(fmt.Sprintf("Name: %s Public: %s Private: %s NodeType: %s \n", node.Name, node.GetPublic(), node.GetPrivate(), node.GetNodeType().String()))
 				}
 				buffer.WriteString("----------------------------------------\n")
 			} else if np := nodePool.GetStaticNodePool(); np != nil {
 				buffer.WriteString("------------------Static Node Pool----------------------\n")
 				buffer.WriteString(fmt.Sprintf("NodePool number: %d \n", j))
-				buffer.WriteString(fmt.Sprintf("Name: %s\n", np.GetName()))
+				buffer.WriteString(fmt.Sprintf("Name: %s\n", nodePool.GetName()))
 
 				buffer.WriteString("Nodes:\n")
-				for _, node := range np.GetNodes() {
+				for _, node := range nodePool.GetNodes() {
 					buffer.WriteString(fmt.Sprintf("Name: %s Endpoint: %s Key: %s NodeType: %s \n", node.Name, node.GetPublic(), node.GetPrivate(), node.GetNodeType().String()))
 				}
 				buffer.WriteString("----------------------------------------\n")
