@@ -4,7 +4,7 @@
 
 variable "default_compartment_id" {
   type    = string
-  default = "{{ (index .NodePools 0).Provider.OciCompartmentOcid }}"
+  default = "{{ (index .NodePools 0).NodePool.Provider.OciCompartmentOcid }}"
 }
 
 variable "oci_storage_disk_name" {
@@ -112,15 +112,15 @@ resource "oci_core_default_route_table" "claudie_routes_{{ $region }}" {
 
 {{- range $i, $nodepool := .NodePools }}
 resource "oci_core_subnet" "{{ $nodepool.Name }}_subnet" {
-  provider            = oci.k8s_nodepool_{{ $nodepool.Region }}
-  vcn_id              = oci_core_vcn.claudie_vcn-{{ $nodepool.Region }}.id
+  provider            = oci.k8s_nodepool_{{ $nodepool.NodePool.Region }}
+  vcn_id              = oci_core_vcn.claudie_vcn-{{ $nodepool.NodePool.Region }}.id
   cidr_block          = "{{ index $.Metadata (printf "%s-subnet-cidr" $nodepool.Name)  }}"
   compartment_id      = var.default_compartment_id
   display_name        = "{{ $clusterName }}-{{ $clusterHash }}-subnet"
-  security_list_ids   = [oci_core_vcn.claudie_vcn-{{ $nodepool.Region }}.default_security_list_id]
-  route_table_id      = oci_core_vcn.claudie_vcn-{{ $nodepool.Region }}.default_route_table_id
-  dhcp_options_id     = oci_core_vcn.claudie_vcn-{{ $nodepool.Region }}.default_dhcp_options_id
-  availability_domain = "{{ $nodepool.Zone }}"
+  security_list_ids   = [oci_core_vcn.claudie_vcn-{{ $nodepool.NodePool.Region }}.default_security_list_id]
+  route_table_id      = oci_core_vcn.claudie_vcn-{{ $nodepool.NodePool.Region }}.default_route_table_id
+  dhcp_options_id     = oci_core_vcn.claudie_vcn-{{ $nodepool.NodePool.Region }}.default_dhcp_options_id
+  availability_domain = "{{ $nodepool.NodePool.Zone }}"
 
   freeform_tags = {
     "Managed-by"      = "Claudie"
@@ -130,10 +130,10 @@ resource "oci_core_subnet" "{{ $nodepool.Name }}_subnet" {
 
 {{- range $node := $nodepool.Nodes }}
 resource "oci_core_instance" "{{ $node.Name }}" {
-  provider            = oci.k8s_nodepool_{{ $nodepool.Region }}
+  provider            = oci.k8s_nodepool_{{ $nodepool.NodePool.Region }}
   compartment_id      = var.default_compartment_id
-  availability_domain = "{{ $nodepool.Zone }}"
-  shape               = "{{ $nodepool.ServerType }}"
+  availability_domain = "{{ $nodepool.NodePool.Zone }}"
+  shape               = "{{ $nodepool.NodePool.ServerType }}"
   display_name        = "{{ $node.Name }}"
 
   metadata = {
@@ -177,7 +177,7 @@ resource "oci_core_instance" "{{ $node.Name }}" {
   }
   
   source_details {
-    source_id               = "{{ $nodepool.Image }}"
+    source_id               = "{{ $nodepool.NodePool.Image }}"
     source_type             = "image"
     boot_volume_size_in_gbs = "100"
   }
@@ -195,10 +195,10 @@ resource "oci_core_instance" "{{ $node.Name }}" {
 
 {{- if not $nodepool.IsControl }}
 resource "oci_core_volume" "{{ $node.Name }}_volume" {
-  provider            = oci.k8s_nodepool_{{ $nodepool.Region }}
+  provider            = oci.k8s_nodepool_{{ $nodepool.NodePool.Region }}
   compartment_id      = var.default_compartment_id
-  availability_domain = "{{ $nodepool.Zone }}"
-  size_in_gbs         = "{{ $nodepool.StorageDiskSize }}"
+  availability_domain = "{{ $nodepool.NodePool.Zone }}"
+  size_in_gbs         = "{{ $nodepool.NodePool.StorageDiskSize }}"
   display_name        = "{{ $node.Name }}-volume"
   vpus_per_gb         = 10
 
@@ -209,7 +209,7 @@ resource "oci_core_volume" "{{ $node.Name }}_volume" {
 }
 
 resource "oci_core_volume_attachment" "{{ $node.Name }}_volume_att" {
-  provider        = oci.k8s_nodepool_{{ $nodepool.Region }}
+  provider        = oci.k8s_nodepool_{{ $nodepool.NodePool.Region }}
   attachment_type = "paravirtualized"
   instance_id     = oci_core_instance.{{ $node.Name }}.id
   volume_id       = oci_core_volume.{{ $node.Name }}_volume.id

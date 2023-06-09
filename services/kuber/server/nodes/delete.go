@@ -170,12 +170,13 @@ func (d *Deleter) deleteFromEtcd(kc kubectl.Kubectl, etcdEpNode *pb.Node) error 
 
 // updateClusterData will remove deleted nodes from nodepools
 func (d *Deleter) updateClusterData() {
+nodes:
 	for _, name := range append(d.masterNodes, d.workerNodes...) {
-		for _, nodepool := range d.cluster.ClusterInfo.NodePools {
-			for i, node := range nodepool.Nodes {
+		for _, np := range d.cluster.ClusterInfo.NodePools {
+			for i, node := range np.Nodes {
 				if node.Name == name {
-					nodepool.Count--
-					nodepool.Nodes = append(nodepool.Nodes[:i], nodepool.Nodes[i+1:]...)
+					np.Nodes = append(np.Nodes[:i], np.Nodes[i+1:]...)
+					continue nodes
 				}
 			}
 		}
@@ -249,22 +250,22 @@ func (d *Deleter) assureReplication(kc kubectl.Kubectl, worker string) error {
 // function returns any master node which will not be deleted.
 // return API EP node if successful, nil otherwise
 func (d *Deleter) getMainMaster() *pb.Node {
-	for _, nodepool := range d.cluster.ClusterInfo.GetNodePools() {
-		for _, node := range nodepool.Nodes {
+	for _, np := range d.cluster.ClusterInfo.GetNodePools() {
+		for _, node := range np.Nodes {
 			if node.NodeType == pb.NodeType_apiEndpoint {
 				return node
 			}
 		}
 	}
 	// Choose one master, which is not going to be deleted
-	for _, nodepool := range d.cluster.ClusterInfo.GetNodePools() {
-	node:
-		for _, node := range nodepool.Nodes {
+	for _, np := range d.cluster.ClusterInfo.GetNodePools() {
+	np:
+		for _, node := range np.Nodes {
 			if node.NodeType == pb.NodeType_master {
 				// If node will be deleted, continue.
 				for _, dm := range d.masterNodes {
 					if strings.Contains(node.Name, dm) {
-						continue node
+						continue np
 					}
 				}
 			}

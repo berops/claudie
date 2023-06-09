@@ -89,7 +89,7 @@ resource "azurerm_network_security_group" "claudie_nsg_{{ $sanitisedRegion }}_{{
 {{- end }}
 
 {{- range $i, $nodepool := .NodePools }}
-{{- $sanitisedRegion := replaceAll $nodepool.Region " " "_"}}
+{{- $sanitisedRegion := replaceAll $nodepool.NodePool.Region " " "_"}}
 resource "azurerm_subnet" "{{ $nodepool.Name }}_{{ $clusterHash }}_subnet" {
   provider             = azurerm.k8s_nodepool
   name                 = "{{ $nodepool.Name }}_{{ $clusterHash }}_subnet"
@@ -108,7 +108,7 @@ resource "azurerm_subnet_network_security_group_association" "{{ $nodepool.Name 
 resource "azurerm_public_ip" "{{ $node.Name }}_public_ip" {
   provider            = azurerm.k8s_nodepool
   name                = "{{ $node.Name }}-ip"
-  location            = "{{ $nodepool.Region }}"
+  location            = "{{ $nodepool.NodePool.Region }}"
   resource_group_name = azurerm_resource_group.rg_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}.name
   allocation_method   = "Static"
   sku                 = "Standard"
@@ -122,9 +122,9 @@ resource "azurerm_public_ip" "{{ $node.Name }}_public_ip" {
 resource "azurerm_network_interface" "{{ $node.Name }}_ni" {
   provider            = azurerm.k8s_nodepool
   name                = "{{ $node.Name }}-ni"
-  location            = "{{ $nodepool.Region }}"
+  location            = "{{ $nodepool.NodePool.Region }}"
   resource_group_name = azurerm_resource_group.rg_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}.name
-  enable_accelerated_networking = {{ enableAccNet $nodepool.ServerType }}
+  enable_accelerated_networking = {{ enableAccNet $nodepool.NodePool.ServerType }}
 
   ip_configuration {
     name                          = "{{ $node.Name }}-ip-conf"
@@ -143,17 +143,17 @@ resource "azurerm_network_interface" "{{ $node.Name }}_ni" {
 resource "azurerm_linux_virtual_machine" "{{ $node.Name }}" {
   provider              = azurerm.k8s_nodepool
   name                  = "{{ $node.Name }}"
-  location              = "{{ $nodepool.Region }}"
+  location              = "{{ $nodepool.NodePool.Region }}"
   resource_group_name   = azurerm_resource_group.rg_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}.name
   network_interface_ids = [azurerm_network_interface.{{ $node.Name }}_ni.id]
-  size                  = "{{$nodepool.ServerType}}"
-  zone                  = "{{$nodepool.Zone}}"
+  size                  = "{{$nodepool.NodePool.ServerType}}"
+  zone                  = "{{$nodepool.NodePool.Zone}}"
 
   source_image_reference {
-    publisher = split(":", "{{ $nodepool.Image }}")[0]
-    offer     = split(":", "{{ $nodepool.Image }}")[1]
-    sku       = split(":", "{{ $nodepool.Image }}")[2]
-    version   = split(":", "{{ $nodepool.Image }}")[3]
+    publisher = split(":", "{{ $nodepool.NodePool.Image }}")[0]
+    offer     = split(":", "{{ $nodepool.NodePool.Image }}")[1]
+    sku       = split(":", "{{ $nodepool.NodePool.Image }}")[2]
+    version   = split(":", "{{ $nodepool.NodePool.Image }}")[3]
   }
 
   os_disk {
@@ -226,12 +226,12 @@ PROT
 resource "azurerm_managed_disk" "{{ $node.Name }}_disk" {
   provider             = azurerm.k8s_nodepool
   name                 = "{{ $node.Name }}-disk"
-  location             = "{{ $nodepool.Region }}"
-  zone                 = {{ $nodepool.Zone }}
+  location             = "{{ $nodepool.NodePool.Region }}"
+  zone                 = {{ $nodepool.NodePool.Zone }}
   resource_group_name  = azurerm_resource_group.rg_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}.name
   storage_account_type = "StandardSSD_LRS"
   create_option        = "Empty"
-  disk_size_gb         = {{ $nodepool.StorageDiskSize }}
+  disk_size_gb         = {{ $nodepool.NodePool.StorageDiskSize }}
 
   tags = {
     managed-by      = "Claudie"

@@ -11,10 +11,11 @@ const apiChangePlaybookFilePath = "../../ansible-playbooks/apiEndpointChange.yml
 
 // FindNewAPIEndpointCandidate finds control plane nodepools present in both current (excluding the request nodepool)
 // and desired state. Returns the first.
-func FindNewAPIEndpointCandidate(current, desired []*pb.NodePool, exclude *pb.NodePool) (*pb.NodePool, error) {
+func FindNewAPIEndpointCandidate(current, desired []*pb.NodePool, excludeNodepoolName *pb.NodePool) (*pb.NodePool, error) {
 	currentPools := make(map[string]*pb.NodePool)
+	// Identify node pools in current state.
 	for _, np := range current {
-		if np.IsControl && np.Name != exclude.Name {
+		if np.IsControl && np.Name != excludeNodepoolName.Name {
 			currentPools[np.Name] = np
 		}
 	}

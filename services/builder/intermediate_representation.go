@@ -71,7 +71,7 @@ func Diff(current, desired *pb.K8Scluster, currentLbs, desiredLbs []*pb.LBcluste
 	var (
 		ir                          = proto.Clone(desired).(*pb.K8Scluster)
 		currentNodepoolCounts       = nodepoolsCounts(current)
-		delCounts, adding, deleting = findNodepoolDifference(currentNodepoolCounts, ir)
+		delCounts, adding, deleting = findNodepoolDifference(currentNodepoolCounts, ir, current)
 		apiEndpointDeleted          = false
 	)
 
@@ -87,12 +87,12 @@ func Diff(current, desired *pb.K8Scluster, currentLbs, desiredLbs []*pb.LBcluste
 
 		// add the deleted nodes to the Desired state
 		if current != nil && ir != nil {
-			//append nodepool to desired state, since tmpConfig only adds nodes
+			// append nodepool to desired state, since tmpConfig only adds nodes
 			for nodepoolName := range currentNodepoolCounts {
 				nodepool := utils.GetNodePoolByName(nodepoolName, current.ClusterInfo.GetNodePools())
 
 				// check if the nodepool was an API-endpoint if yes we need to choose the next control nodepool as the endpoint.
-				if _, err := utils.FindApiEndpointNode(nodepool); err == nil {
+				if _, err := utils.FindAPIEndpointNode([]*pb.NodePool{nodepool}); err == nil {
 					apiEndpointDeleted = true
 				}
 
@@ -120,47 +120,87 @@ func Diff(current, desired *pb.K8Scluster, currentLbs, desiredLbs []*pb.LBcluste
 	return result
 }
 
-func findNodepoolDifference(currentNodepoolCounts map[string]int32, desiredClusterTmp *pb.K8Scluster) (result map[string]int32, adding, deleting bool) {
+func findNodepoolDifference(currentNodepoolCounts map[string]int32, desiredClusterTmp, currentClusterTmp *pb.K8Scluster) (result map[string]int32, adding, deleting bool) {
 	nodepoolCountToDelete := make(map[string]int32)
 
 	for _, nodePoolDesired := range desiredClusterTmp.GetClusterInfo().GetNodePools() {
-		currentCount, ok := currentNodepoolCounts[nodePoolDesired.Name]
-		if !ok {
-			// not in current state, adding.
-			adding = true
-			continue
+		if nodePoolDesired.GetDynamicNodePool() != nil {
+			currentCount, ok := currentNodepoolCounts[nodePoolDesired.Name]
+			if !ok {
+				// not in current state, adding.
+				adding = true
+				continue
+			}
+
+			if nodePoolDesired.GetDynamicNodePool().Count > currentCount {
+				adding = true
+			}
+
+			var countToDelete int32
+			if nodePoolDesired.GetDynamicNodePool().Count < currentCount {
+				deleting = true
+				countToDelete = currentCount - nodePoolDesired.GetDynamicNodePool().Count
+				// since we are working with tmp config, we do not delete nodes in this step, thus save the current node count
+				nodePoolDesired.GetDynamicNodePool().Count = currentCount
+			}
+
+			nodepoolCountToDelete[nodePoolDesired.Name] = countToDelete
+			// keep track of which nodepools were deleted
+			delete(currentNodepoolCounts, nodePoolDesired.Name)
+		} else {
+			currentCount, ok := currentNodepoolCounts[nodePoolDesired.Name]
+			if !ok {
+				// not in current state, adding.
+				adding = true
+				continue
+			}
+			if int32(len(nodePoolDesired.Nodes)) > currentCount {
+				adding = true
+			}
+
+			var countToDelete int32
+			if int32(len(nodePoolDesired.Nodes)) < currentCount {
+				deleting = true
+				countToDelete = currentCount - int32(len(nodePoolDesired.Nodes))
+				// since we are working with tmp config, we do not delete nodes in this step, thus save the current nodes
+				nodePoolDesired.Nodes = getStaticNodes(currentClusterTmp, nodePoolDesired)
+			}
+
+			nodepoolCountToDelete[nodePoolDesired.Name] = countToDelete
+			// keep track of which nodepools were deleted
+			delete(currentNodepoolCounts, nodePoolDesired.Name)
 		}
-
-		if nodePoolDesired.Count > currentCount {
-			adding = true
-		}
-
-		var countToDelete int32
-
-		if nodePoolDesired.Count < currentCount {
-			deleting = true
-			countToDelete = currentCount - nodePoolDesired.Count
-
-			// since we are working with tmp config, we do not delete nodes in this step, thus save the current node count
-			nodePoolDesired.Count = currentCount
-		}
-
-		nodepoolCountToDelete[nodePoolDesired.Name] = countToDelete
-
-		// keep track of which nodepools were deleted
-		delete(currentNodepoolCounts, nodePoolDesired.Name)
 	}
-
 	return nodepoolCountToDelete, adding, deleting
 }
 
 // nodepoolsCounts returns a map for the counts in each nodepool for a cluster.
 func nodepoolsCounts(cluster *pb.K8Scluster) map[string]int32 {
 	counts := make(map[string]int32)
-
 	for _, nodePool := range cluster.GetClusterInfo().GetNodePools() {
-		counts[nodePool.Name] = nodePool.Count
+		if nodePool.GetDynamicNodePool() != nil {
+			counts[nodePool.GetName()] = nodePool.GetDynamicNodePool().Count
+		}
+		if nodePool.GetStaticNodePool() != nil {
+			counts[nodePool.GetName()] = int32(len(nodePool.Nodes))
+		}
 	}
-
 	return counts
+}
+
+// getStaticNodes returns slice of nodes for the specified cluster from specified node pool.
+func getStaticNodes(cluster *pb.K8Scluster, np *pb.NodePool) []*pb.Node {
+	if np.GetStaticNodePool() == nil {
+		return nil
+	}
+	for _, n := range cluster.ClusterInfo.NodePools {
+		if n.GetStaticNodePool() != nil {
+			if n.Name == np.Name {
+				return np.Nodes
+			}
+		}
+	}
+	// Return desired nodes, and log error
+	log.Warn().Msgf("No current static node pool found with name %s", np.Name)
+	return np.Nodes
 }

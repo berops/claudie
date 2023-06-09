@@ -1,8 +1,13 @@
 [nodes]
 {{- range $nodepoolInfo := .NodepoolsInfo }}
-    {{- range $nodepool := $nodepoolInfo.Nodepools }}
+    {{- range $nodepool := $nodepoolInfo.Nodepools.Dynamic }}
         {{- range $node :=  $nodepool.Nodes }}
 {{ trimPrefix $node.Name (printf "%s-" $nodepoolInfo.ClusterID) }} ansible_host={{ $node.Public }} private_ip={{ $node.Private }} netmask={{ extractNetmaskFromCIDR $nodepoolInfo.ClusterNetwork }} ansible_ssh_private_key_file={{ $nodepoolInfo.ClusterID }}.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
+        {{- end }}
+    {{- end }}
+    {{- range $nodepool := $nodepoolInfo.Nodepools.Static }}
+        {{- range $node :=  $nodepool.Nodes }}
+{{ $node.Name }} ansible_host={{ $node.Public }} private_ip={{ $node.Private }} netmask={{ extractNetmaskFromCIDR $nodepoolInfo.Network }} ansible_ssh_private_key_file={{ $node.Name }}.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
         {{- end }}
     {{- end }}
 {{- end }}

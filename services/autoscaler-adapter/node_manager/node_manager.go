@@ -55,14 +55,14 @@ func (nm *NodeManager) GetOs(image string) string {
 
 // GetCapacity returns a theoretical capacity for a new node from specified nodepool.
 func (nm *NodeManager) GetCapacity(np *pb.NodePool) k8sV1.ResourceList {
-	typeInfo := nm.getTypeInfo(np.Provider.CloudProviderName, np)
+	typeInfo := nm.getTypeInfo(np.GetDynamicNodePool().Provider.CloudProviderName, np.GetDynamicNodePool())
 	if typeInfo != nil {
 		var disk int64
 		// Check if disk is define for the instance.
 		if typeInfo.disk > 0 {
 			disk = typeInfo.disk
 		} else {
-			disk = int64(np.StorageDiskSize) * 1024 * 1024 * 1024 // Convert to bytes
+			disk = int64(np.GetDynamicNodePool().StorageDiskSize) * 1024 * 1024 * 1024 // Convert to bytes
 		}
 		rl := k8sV1.ResourceList{}
 		rl[k8sV1.ResourcePods] = *resource.NewQuantity(defaultPodAmountsLimit, resource.DecimalSI)
@@ -79,21 +79,21 @@ func (nm *NodeManager) GetLabels(np *pb.NodePool) map[string]string {
 	m := make(map[string]string)
 	// Claudie assigned labels.
 	m["claudie.io/nodepool"] = np.Name
-	m["claudie.io/provider"] = np.Provider.CloudProviderName
-	m["claudie.io/provider-instance"] = np.Provider.SpecName
+	m["claudie.io/provider"] = np.GetDynamicNodePool().Provider.CloudProviderName
+	m["claudie.io/provider-instance"] = np.GetDynamicNodePool().Provider.SpecName
 	m["claudie.io/node-type"] = getNodeType(np)
-	m["topology.kubernetes.io/zone"] = np.Zone
-	m["topology.kubernetes.io/region"] = np.Region
+	m["topology.kubernetes.io/zone"] = np.GetDynamicNodePool().Zone
+	m["topology.kubernetes.io/region"] = np.GetDynamicNodePool().Region
 	// Other labels.
 	m["kubernetes.io/os"] = "linux" // Only Linux is supported.
 	//m["kubernetes.io/arch"] = "" // TODO add arch
-	m["v1.kubeone.io/operating-system"] = nm.GetOs(np.Image)
+	m["v1.kubeone.io/operating-system"] = nm.GetOs(np.GetDynamicNodePool().Image)
 
 	return m
 }
 
 // getTypeInfo returns a typeInfo for this nodepool
-func (nm *NodeManager) getTypeInfo(provider string, np *pb.NodePool) *typeInfo {
+func (nm *NodeManager) getTypeInfo(provider string, np *pb.DynamicNodePool) *typeInfo {
 	switch provider {
 	case "hetzner":
 		if ti, ok := nm.hetznerVMs[np.ServerType]; ok {
@@ -121,7 +121,11 @@ func (nm *NodeManager) getTypeInfo(provider string, np *pb.NodePool) *typeInfo {
 
 // refreshCache refreshes node info cache if needed.
 func (nm *NodeManager) refreshCache(nps []*pb.NodePool) error {
-	for _, np := range nps {
+	for _, nodepool := range nps {
+		np := nodepool.GetDynamicNodePool()
+		if np == nil {
+			continue
+		}
 		// Cache only for nodepools, which are autoscaled.
 		if np.AutoscalerConfig != nil {
 			// Check if cache was already set.

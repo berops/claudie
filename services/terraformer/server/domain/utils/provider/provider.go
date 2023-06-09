@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/berops/claudie/internal/templateUtils"
+	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/terraformer/templates"
 )
@@ -45,8 +46,9 @@ func (p Provider) CreateProvider(currentCluster, desiredCluster *pb.ClusterInfo)
 	template := templateUtils.Templates{Directory: p.Directory}
 
 	var data templateData
-	getProvidersUsed(currentCluster, &data)
-	getProvidersUsed(desiredCluster, &data)
+
+	getProvidersUsed(utils.GetDynamicNodePoolsFromCI(currentCluster), &data)
+	getProvidersUsed(utils.GetDynamicNodePoolsFromCI(desiredCluster), &data)
 
 	tpl, err := templateUtils.LoadTemplate(templates.ProvidersTemplate)
 	if err != nil {
@@ -61,12 +63,12 @@ func (p Provider) CreateProvider(currentCluster, desiredCluster *pb.ClusterInfo)
 }
 
 // getProvidersUsed modifies templateData to reflect current providers used.
-func getProvidersUsed(clusterInfo *pb.ClusterInfo, data *templateData) {
-	if clusterInfo == nil {
+func getProvidersUsed(nodepools []*pb.DynamicNodePool, data *templateData) {
+	if len(nodepools) == 0 {
 		return
 	}
 
-	for _, nodepool := range clusterInfo.NodePools {
+	for _, nodepool := range nodepools {
 		if nodepool.Provider.CloudProviderName == "gcp" {
 			data.Gcp = true
 		}

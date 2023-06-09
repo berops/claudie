@@ -46,11 +46,27 @@ type (
 		PrivateIP net.IP `json:"private_ip"`
 	}
 
+	StaticNodeInfo struct {
+		// Endpoint is an endpoint for static nodes in the static node pool
+		Endpoint string `json:"endpoint"`
+		// PrivateKey is the private SSH key for the node.
+		PrivateKey string `json:"node_private_key"`
+	}
+
 	ClusterMetadata struct {
-		// NodeIps maps node-name to public-private ip pairs.
+		DynamicNodepools DynamicNodepool `json:"dynamic_nodepools"`
+		// PrivateKey is the private SSH key for the dynamic nodes.
+		PrivateKey      string         `json:"cluster_private_key"`
+		StaticNodepools StaticNodepool `json:"static_nodepools"`
+	}
+
+	DynamicNodepool struct {
+		// NodeIps maps node-name to public-private ip pairs for dynamic node pools.
 		NodeIps map[string]IPPair `json:"node_ips"`
-		// PrivateKey is the private SSH key for the nodes.
-		PrivateKey string `json:"private_key"`
+	}
+
+	StaticNodepool struct {
+		NodeInfo map[string]StaticNodeInfo `json:"node_info"`
 	}
 )
 
@@ -162,6 +178,7 @@ func (s *server) StoreLbScrapeConfig(ctx context.Context, req *pb.StoreLbScrapeC
 	}
 
 	if err := sc.GenerateAndApplyScrapeConfig(); err != nil {
+		logger.Err(err).Msgf("Error while applying scrape config for Loadbalancer nodes")
 		return nil, fmt.Errorf("error while setting up the loadbalancer scrape-config for %s : %w", clusterID, err)
 	}
 	logger.Info().Msgf("Load balancer scrape-config successfully set up")
@@ -182,6 +199,7 @@ func (s *server) RemoveLbScrapeConfig(ctx context.Context, req *pb.RemoveLbScrap
 	}
 
 	if err := sc.RemoveLbScrapeConfig(); err != nil {
+		logger.Err(err).Msgf("Error while removing scrape config for Loadbalancer nodes")
 		return nil, fmt.Errorf("error while removing old loadbalancer scrape-config for %s : %w", clusterID, err)
 	}
 	logger.Info().Msgf("Load balancer scrape-config successfully deleted")
@@ -193,18 +211,29 @@ func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterM
 	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(req.Cluster.ClusterInfo))
 
 	md := ClusterMetadata{
-		NodeIps:    make(map[string]IPPair),
 		PrivateKey: req.GetCluster().GetClusterInfo().GetPrivateKey(),
 	}
 
+	dp := DynamicNodepool{NodeIps: make(map[string]IPPair)}
+	sp := StaticNodepool{NodeInfo: make(map[string]StaticNodeInfo)}
 	for _, pool := range req.GetCluster().GetClusterInfo().GetNodePools() {
-		for _, node := range pool.GetNodes() {
-			md.NodeIps[node.Name] = IPPair{
-				PublicIP:  net.ParseIP(node.Public),
-				PrivateIP: net.ParseIP(node.Private),
+		if np := pool.GetDynamicNodePool(); np != nil {
+			for _, node := range pool.GetNodes() {
+				dp.NodeIps[node.GetName()] = IPPair{
+					PublicIP:  net.ParseIP(node.GetPublic()),
+					PrivateIP: net.ParseIP(node.GetPrivate()),
+				}
+			}
+		} else if np := pool.GetStaticNodePool(); np != nil {
+			for _, node := range pool.GetNodes() {
+				sp.NodeInfo[node.GetName()] = StaticNodeInfo{
+					PrivateKey: np.NodeKeys[node.Public],
+					Endpoint:   node.GetPublic()}
 			}
 		}
 	}
+	md.DynamicNodepools = dp
+	md.StaticNodepools = sp
 
 	b, err := json.Marshal(md)
 	if err != nil {
