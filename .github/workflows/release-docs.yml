@@ -1,10 +1,9 @@
 name: Release docs pipeline
 # Only trigger, when the release workflow has completed
 on:
-  workflow_run:
-    workflows: ["Release pipeline"]
-    types:
-      - completed
+  # Run when release is published
+  release:
+    types: [published]
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
