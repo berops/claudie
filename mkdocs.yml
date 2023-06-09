@@ -98,21 +98,5 @@ extra:
           name: No, it could be a lot better
           data: bad
           note: >-
-            Thanks for your feedback! Help us improve this page by filling out this feedback form.
-            <br>
-            <br>
-            <form role="form" action="https://formspree.io/f/mzbqlkdj" method="POST">
-              <label>
-                Your email:
-                <br>
-                <input required=true type="email" name="email" style="width: 100%;">
-              </label>
-              <br>
-              <label>
-                Your message:
-                <br>
-                <textarea rows="8" style="width: 100%;" name="message"></textarea>
-              </label>
-              <br>
-              <button type="submit" style="background-color: #4CAF50; color: white; padding: 10px 20px; width: 100%; border: none; cursor: pointer;">Send</button>
-            </form>
+            Thanks for your feedback! Help us improve this page by
+            using our <a href="/feedback/feedback-form/" target="_blank" rel="noopener">feedback form</a>.
