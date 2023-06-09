@@ -19,6 +19,11 @@ func (u *Usecases) CreateDesiredState(config *pb.Config) (*pb.Config, error) {
 
 	// Check if the manifest string is empty and set DesiredState to nil
 	if config.Manifest == "" {
+		// Set the state to SCHEDULED_FOR_DELETION
+		currentState := config.GetState()
+		for clusterName, _ := range config.State {
+			currentState[clusterName].Status = *pb.Workflow_SCHEDULED_FOR_DELETION.Enum()
+		}
 		return &pb.Config{
 			Id:           config.GetId(),
 			Name:         config.GetName(),
@@ -30,6 +35,7 @@ func (u *Usecases) CreateDesiredState(config *pb.Config) (*pb.Config, error) {
 			CsChecksum:   config.GetCsChecksum(),
 			BuilderTTL:   config.GetBuilderTTL(),
 			SchedulerTTL: config.GetSchedulerTTL(),
+			State:        currentState,
 		}, nil
 	}
 

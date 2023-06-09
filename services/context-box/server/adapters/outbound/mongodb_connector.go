@@ -310,7 +310,7 @@ func (c *MongoDBConnector) UpdateMsToNull(id string, idType pb.IdType) error {
 		filter = bson.M{"name": id} //create filter for searching in the database by name
 	}
 	// update MsChecksum and manifest to null
-	err := c.updateDocument(filter, bson.M{"$set": bson.M{"manifest": nil, "msChecksum": nil, "state": map[string]Workflow{}}})
+	err := c.updateDocument(filter, bson.M{"$set": bson.M{"manifest": nil, "msChecksum": nil,}})
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return fmt.Errorf("document with id %s failed to update msChecksum : %w", id, err)

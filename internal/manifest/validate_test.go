@@ -52,9 +52,9 @@ var (
 
 // TestDomain tests the domain which will be formed from node name
 func TestDomain(t *testing.T) {
-	err := checkLengthOfFutureDomain(testDomainSuccess)
+	err := CheckLengthOfFutureDomain(testDomainSuccess)
 	require.NoError(t, err)
-	err = checkLengthOfFutureDomain(testDomainFail)
+	err = CheckLengthOfFutureDomain(testDomainFail)
 	require.Error(t, err)
 }
 

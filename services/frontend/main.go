@@ -59,7 +59,7 @@ func run() error {
 	}
 
 	// usecases.ProcessManifestFiles() goroutine returns on usecases.Context cancels
-	go usecases.ProcessManifestFiles()
+	// go usecases.ProcessManifestFiles()
 
 	// // usecases.WatchConfigs() goroutine returns on usecases.Context cancels
 	// go usecases.WatchConfigs()

@@ -94,19 +94,18 @@ type Kubernetes struct {
 type DynamicNodePool struct {
 	Name             string           `validate:"required" yaml:"name" json:"name"`
 	ProviderSpec     ProviderSpec     `validate:"required" yaml:"providerSpec" json:"providerSpec"`
-	Count            int32            `validate:"required_without=AutoscalerConfig,excluded_with=AutoscalerConfig" yaml:"count" json:"count"`
+	// +optional
+	Count            int32            `validate:"required_without=AutoscalerConfig,excluded_with=AutoscalerConfig" yaml:"count" json:"count,omitempty"`
 	ServerType       string           `validate:"required" yaml:"serverType" json:"serverType"`
 	Image            string           `validate:"required" yaml:"image" json:"image"`
 	// +optional
-	StorageDiskSize  int64            `validate:"omitempty,gte=50" yaml:"storageDiskSize" json:"storageDiskSize"`
+	StorageDiskSize  int64            `validate:"omitempty,gte=50" yaml:"storageDiskSize" json:"storageDiskSize,omitempty"`
 	// +optional
-	AutoscalerConfig AutoscalerConfig `validate:"required_without=Count,excluded_with=Count" yaml:"autoscaler" json:"autoscaler"`
+	AutoscalerConfig AutoscalerConfig `validate:"required_without=Count,excluded_with=Count" yaml:"autoscaler" json:"autoscaler,omitempty"`
 }
 
 type AutoscalerConfig struct {
-	// +optional
 	Min int32 `yaml:"min" json:"min"`
-	// +optional
 	Max int32 `yaml:"max" json:"max"`
 }
 

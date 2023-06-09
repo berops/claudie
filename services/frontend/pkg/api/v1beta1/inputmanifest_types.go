@@ -17,22 +17,10 @@ limitations under the License.
 package v1beta1
 
 import (
-	"fmt"
-
 	"github.com/berops/claudie/internal/manifest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-// Provider defines the desired state of Provider
-type Provider struct {
-	// +kubebuilder:validation:MaxLength=32
-	// +kubebuilder:validation:MinLength=1
-	ProviderName string `json:"name"`
-	// +kubebuilder:validation:Enum=gcp;hetzner;aws;oci;azure;cloudflare;hetznerdns;
-	ProviderType string                 `json:"providerType"`
-	SecretRef    corev1.SecretReference `json:"secretRef"`
-}
 
 // a simple enum type of providers
 type ProviderType string
@@ -68,36 +56,53 @@ const (
 	OCI_COMPARTMENT_OCID    SecretField = "compartmentocid"
 )
 
-// ProviderWithData helper type that help in conversion
+// ProviderWithData helper type that assist in conversion
+// from SecretReference to Secret
 type ProviderWithData struct {
 	ProviderName string
 	ProviderType ProviderType
 	Secret       corev1.Secret
 }
 
-// InputManifestSpec defines the desired state of InputManifest
+// Provider defines the desired state of Provider
+type Provider struct {
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:MinLength=1
+	ProviderName string `json:"name"`
+	// +kubebuilder:validation:Enum=gcp;hetzner;aws;oci;azure;cloudflare;hetznerdns;
+	ProviderType ProviderType           `json:"providerType"`
+	SecretRef    corev1.SecretReference `json:"secretRef"`
+}
+
+// Specification of the desired behavior of the InputManifest
 type InputManifestSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make crds" to regenerate code after modifying this file
 
 	// +optional
-	Providers    []Provider            `json:"providers,omitempty"`
+	Providers []Provider `json:"providers,omitempty"`
 	// +optional
-	NodePools    manifest.NodePool     `json:"nodePools,omitempty"`
+	NodePools manifest.NodePool `json:"nodePools,omitempty"`
 	// +optional
-	Kubernetes   manifest.Kubernetes   `json:"kubernetes,omitempty"`
+	Kubernetes manifest.Kubernetes `json:"kubernetes,omitempty"`
 	// +optional
 	LoadBalancer manifest.LoadBalancer `json:"loadBalancers,omitempty"`
 }
 
-// InputManifestStatus defines the observed state of InputManifest
+// Most recently observed status of the InputManifest
 type InputManifestStatus struct {
+	State    string                    `json:"state,omitempty"`
+	Clusters map[string]ClustersStatus `json:"clusters,omitempty"`
+}
+
+type ClustersStatus struct {
 	State   string `json:"state,omitempty"`
 	Phase   string `json:"phase,omitempty"`
 	Message string `json:"message,omitempty"`
 }
 
 //+kubebuilder:object:root=true
+//+kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.state",description="Status of the input manifest"
 //+kubebuilder:subresource:status
 
 // InputManifest is the Schema for the inputmanifests API
@@ -120,12 +125,4 @@ type InputManifestList struct {
 
 func init() {
 	SchemeBuilder.Register(&InputManifest{}, &InputManifestList{})
-}
-
-func (pwd *ProviderWithData) GetSecretField(name SecretField) (string, error) {
-	if key, ok := pwd.Secret.Data[string(name)]; ok {
-		return string(key), nil
-	} else {
-		return "", fmt.Errorf("fields %s not found", name)
-	}
 }

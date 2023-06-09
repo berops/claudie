@@ -10,25 +10,25 @@ import (
 
 // ProcessManifestFiles processes the manifest coming from SaveChannel and DeleteChannel.
 // Function exits once Usecases.Context is canceled.
-func (u *Usecases) ProcessManifestFiles() {
-	log.Info().Msgf("Frontend is ready to process input manifests")
-	for {
-		select {
-		case newManifest := <-u.SaveChannel:
-			go u.createConfig(newManifest)
-		case newManifest := <-u.DeleteChannel:
-			go u.deleteConfig(newManifest)
-		case <-u.Context.Done():
-			// Close channels and return
-			close(u.SaveChannel)
-			close(u.DeleteChannel)
-			return
-		}
-	}
-}
+// func (u *Usecases) ProcessManifestFiles() {
+// 	log.Info().Msgf("Frontend is ready to process input manifests")
+// 	for {
+// 		select {
+// 		case newManifest := <-u.SaveChannel:
+// 			go u.createConfig(newManifest)
+// 		case newManifest := <-u.DeleteChannel:
+// 			go u.deleteConfig(newManifest)
+// 		case <-u.Context.Done():
+// 			// Close channels and return
+// 			close(u.SaveChannel)
+// 			close(u.DeleteChannel)
+// 			return
+// 		}
+// 	}
+// }
 
 // createConfig generates and saves config into the DB. Used for new configs and updated configs.
-func (u *Usecases) createConfig(inputManifest *manifest.Manifest) {
+func (u *Usecases) CreateConfig(inputManifest *manifest.Manifest) {
 	// Validate
 	// TODO: change this with validation webhook
 	if err := inputManifest.Validate(); err != nil {
@@ -64,7 +64,7 @@ func (u *Usecases) createConfig(inputManifest *manifest.Manifest) {
 }
 
 // deleteConfig generates and triggers deletion of config into the DB.
-func (u *Usecases) deleteConfig(inputManifest *manifest.Manifest) {
+func (u *Usecases) DeleteConfig(inputManifest *manifest.Manifest) {
 
 	if err := u.ContextBox.DeleteConfig(inputManifest.Name); err != nil {
 		log.Err(err).Msgf("Failed to trigger deletion for config %v due to error. Skipping...", inputManifest.Name)

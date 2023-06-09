@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -31,11 +32,10 @@ import (
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/go-logr/zerologr"
-	"github.com/rs/zerolog/log"
-
 	"github.com/berops/claudie/services/frontend/domain/usecases"
 	v1beta "github.com/berops/claudie/services/frontend/pkg/api/v1beta1"
+	"github.com/go-logr/zerologr"
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -61,7 +61,8 @@ type manifestController struct {
 // InputManifestReconciler reconciles a InputManifest object
 type InputManifestReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme   *runtime.Scheme
+	Recorder record.EventRecorder
 
 	usecases.Usecases
 }
@@ -91,7 +92,7 @@ func NewManifestController(usecase *usecases.Usecases) (*manifestController, err
 		return nil, err
 	}
 
-	port = 9443 // change this
+	port = 9443 // TODO:change this
 
 	// create ManifestController object
 	var mc = manifestController{
@@ -119,6 +120,7 @@ func NewManifestController(usecase *usecases.Usecases) (*manifestController, err
 	if err = (&InputManifestReconciler{
 		Client:   mc.mgr.GetClient(),
 		Scheme:   mc.mgr.GetScheme(),
+		Recorder: mc.mgr.GetEventRecorderFor("InputManifest"),
 		Usecases: *usecase,
 	}).SetupWithManager(mc.mgr); err != nil {
 		return nil, err
