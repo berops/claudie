@@ -46,7 +46,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	inputManifest := &v1beta.InputManifest{}
 
 	// Get the inputManifest resource
-	if err := r.Get(ctx, req.NamespacedName, inputManifest); err != nil {
+	if err := r.kc.Get(ctx, req.NamespacedName, inputManifest); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
@@ -121,7 +121,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		var pwd v1beta.ProviderWithData
 		pwd.ProviderName = p.ProviderName
 		pwd.ProviderType = v1beta.ProviderType(p.ProviderType)
-		if err := r.Get(ctx, client.ObjectKey{Name: p.SecretRef.Name, Namespace: p.SecretRef.Namespace}, &pwd.Secret); err != nil {
+		if err := r.kc.Get(ctx, client.ObjectKey{Name: p.SecretRef.Name, Namespace: p.SecretRef.Namespace}, &pwd.Secret); err != nil {
 			r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
 			log.Error(err, "secret not found", "name", p.SecretRef.Name, "namespace", p.SecretRef.Namespace)
 			return ctrl.Result{}, err
@@ -149,7 +149,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			State: v1beta.STATUS_ERROR,
 		})
 
-		if err := r.Status().Update(ctx, inputManifest); err != nil {
+		if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 		}
 		return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
@@ -161,7 +161,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	if inputManifest.GetDeletionTimestamp().IsZero() {
 		if !controllerutil.ContainsFinalizer(inputManifest, finalizerName) {
 			controllerutil.AddFinalizer(inputManifest, finalizerName)
-			if err := r.Update(ctx, inputManifest); err != nil {
+			if err := r.kc.Update(ctx, inputManifest); err != nil {
 				return ctrl.Result{}, fmt.Errorf("failed executing finalizer: %w", err)
 			}
 		}
@@ -174,7 +174,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		if currentState.State == "" {
 			log.Info("Config has been destroyed. Removing finalizer.", "status", currentState.State)
 			controllerutil.RemoveFinalizer(inputManifest, finalizerName)
-			if err := r.Update(ctx, inputManifest); err != nil {
+			if err := r.kc.Update(ctx, inputManifest); err != nil {
 				return ctrl.Result{}, fmt.Errorf("failed removing finalizer: %w", err)
 			}
 			return ctrl.Result{}, nil
@@ -182,7 +182,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 		if currentState.State == v1beta.STATUS_IN_PROGRESS || currentState.State == v1beta.STATUS_SCHEDULED_FOR_DELETION {
 			inputManifest.SetUpdateResourceStatus(currentState)
-			if err := r.Status().Update(ctx, inputManifest); err != nil {
+			if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 				return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 			}
 			log.Info("Refreshing state", "status", currentState.State)
@@ -192,7 +192,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		if controllerutil.ContainsFinalizer(inputManifest, finalizerName) {
 			// schedgule deletion of manifest
 			inputManifest.SetDeletingStatus()
-			if err := r.Status().Update(ctx, inputManifest); err != nil {
+			if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 				return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 			}
 			log.Info("Calling delete config")
@@ -210,7 +210,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				return ctrl.Result{RequeueAfter: REQUEUE_NEW}, nil
 			}
 			inputManifest.SetNewReousrceStatus()
-			if err := r.Status().Update(ctx, inputManifest); err != nil {
+			if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 				return ctrl.Result{}, fmt.Errorf("failed executing finalizer: %w", err)
 			}
 			log.Info("Calling create config")
@@ -222,11 +222,11 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		// Refresh IN_PROGRESS cluster status, requeue the loop
 		if currentState.State == v1beta.STATUS_IN_PROGRESS {
 			inputManifest.SetUpdateResourceStatus(currentState)
-			if err := r.Status().Update(ctx, inputManifest); err != nil {
+			if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 				return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 			}
 			log.Info("Refreshing state", "status", currentState.State)
-			return ctrl.Result{RequeueAfter: REQUEUE_UPDATE}, nil
+			return ctrl.Result{RequeueAfter: REQUEUE_IN_PROGRES}, nil
 		}
 
 		// Error logic
@@ -234,7 +234,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		if currentState.State == v1beta.STATUS_ERROR || currentState.State == v1beta.STATUS_DONE_ERROR {
 			// No updates to the inputManifest, output an error and finish the reconcile
 			inputManifest.SetUpdateResourceStatus(currentState)
-			if err := r.Status().Update(ctx, inputManifest); err != nil {
+			if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 				return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 			}
 			r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", buildProvisioningError(currentState).Error())
@@ -256,21 +256,21 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	// Update logic if the input manifest has been updated
 	// only when the resource is not scheduled for deletion
 	if inputManifestUpdated && inputManifest.DeletionTimestamp.IsZero() {
-		log.Info("InputManifest has been updates", "status", currentState.State)
 		inputManifest.SetUpdateResourceStatus(currentState)
-		if err := r.Status().Update(ctx, inputManifest); err != nil {
+		if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 		}
+		log.Info("InputManifest has been updates", "status", currentState.State)
 		r.createConfig(&rawManifest)
 		return ctrl.Result{RequeueAfter: REQUEUE_UPDATE}, nil
 	}
 
 	// End of reconcile loop, update cluster status - dont'requeue the inputManifest object
-	log.Info("Build compleate", "status", currentState.State)
 	inputManifest.SetUpdateResourceStatus(currentState)
-	if err := r.Status().Update(ctx, inputManifest); err != nil {
+	if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 	}
+	log.Info("Build compleate", "status", currentState.State)
 	return ctrl.Result{}, nil
 }
 

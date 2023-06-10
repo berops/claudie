@@ -18,20 +18,19 @@ package controller
 
 import (
 	"fmt"
-	"os"
 	"time"
-
-	"github.com/rs/zerolog/log"
 
 	"github.com/berops/claudie/internal/manifest"
 	v1beta "github.com/berops/claudie/services/frontend/pkg/api/v1beta1"
 )
 
 const (
-	REQUEUE_NEW         = 15 * time.Second
-	REQUEUE_UPDATE      = 5 * time.Second
-	REQUEUE_DELETE      = 15 * time.Second
+	REQUEUE_NEW         = 30 * time.Second
+	REQUEUE_UPDATE      = 30 * time.Second
+	REQUEUE_IN_PROGRES  = 5 * time.Second
+	REQUEUE_DELETE      = 30 * time.Second
 	REQUEUE_AFTER_ERROR = 30 * time.Second
+	finalizerName       = "v1beta1.claudie.io/finalizer"
 )
 
 // mergeInputManifestWithSecrets takes the v1beta.InputManifest and providersWithSecret and returns a claudie type raw manifest.Manifest type.
@@ -171,18 +170,6 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 		LoadBalancer: crd.Spec.LoadBalancer,
 	}
 	return manifest, nil
-}
-
-// getEnvErr take a string representing environment variable as an argument, and returns its value
-// If the environment variable is not defined, it will return an error
-func getEnvErr(env string) (string, error) {
-	value, exists := os.LookupEnv(env)
-	if !exists {
-		return "", fmt.Errorf("environment variable %s not found", env)
-	}
-	log.Debug().Msgf("Using %s %s", env, value)
-
-	return value, nil
 }
 
 // buildSecretError builds an error with the name of the NamespaceName

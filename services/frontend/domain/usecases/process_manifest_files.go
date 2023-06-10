@@ -8,38 +8,12 @@ import (
 	"github.com/berops/claudie/proto/pb"
 )
 
-// ProcessManifestFiles processes the manifest coming from SaveChannel and DeleteChannel.
-// Function exits once Usecases.Context is canceled.
-// func (u *Usecases) ProcessManifestFiles() {
-// 	log.Info().Msgf("Frontend is ready to process input manifests")
-// 	for {
-// 		select {
-// 		case newManifest := <-u.SaveChannel:
-// 			go u.createConfig(newManifest)
-// 		case newManifest := <-u.DeleteChannel:
-// 			go u.deleteConfig(newManifest)
-// 		case <-u.Context.Done():
-// 			// Close channels and return
-// 			close(u.SaveChannel)
-// 			close(u.DeleteChannel)
-// 			return
-// 		}
-// 	}
-// }
-
 // createConfig generates and saves config into the DB. Used for new configs and updated configs.
 func (u *Usecases) CreateConfig(inputManifest *manifest.Manifest) {
-	// Validate
-	// TODO: change this with validation webhook
-	if err := inputManifest.Validate(); err != nil {
-		log.Err(err).Msgf("Failed to validate manifest %s. Skipping...", inputManifest.Name)
-		return
-	}
-
 	inputManifestMarshalled, err := yaml.Marshal(inputManifest)
 	if err != nil {
 		log.Err(err).Msgf("Failed to marshal manifest %s. Skipping...", inputManifest.Name)
-		return		
+		return
 	}
 
 	// Define config
@@ -47,6 +21,13 @@ func (u *Usecases) CreateConfig(inputManifest *manifest.Manifest) {
 		Name:             inputManifest.Name,
 		ManifestFileName: inputManifest.Name,
 		Manifest:         string(inputManifestMarshalled),
+		State:            make(map[string]*pb.Workflow),
+	}
+	
+	// build IN_PROGRES status for each cluster in the manifest
+	for _, cluster := range inputManifest.Kubernetes.Clusters {
+		config.State[cluster.Name] = &pb.Workflow{}
+		config.State[cluster.Name].Status = pb.Workflow_IN_PROGRESS
 	}
 
 	if err := u.ContextBox.SaveConfig(config); err != nil {

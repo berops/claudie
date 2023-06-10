@@ -6,17 +6,32 @@ import (
 
 	"github.com/berops/claudie/internal/manifest"
 	v1beta "github.com/berops/claudie/services/frontend/pkg/api/v1beta1"
+	wbhk "sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
-	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-// imputManifestValidator validates InputManifest containing the input-manifest
-type ImputManifestValdator struct{}
+// ImputManifestValidator validates InputManifest containing the input-manifest
+type ImputManifestValdator struct {
+	Logger logr.Logger
+}
+
+// NewWebhook returns a new validation webhook for InputManifest resource
+func NewWebhook(port int, dir, path string, log logr.Logger) *wbhk.Server{
+	hookServer := &wbhk.Server{
+		Port:    port,
+		CertDir: dir,
+	}
+	hookServer.Register(path, admission.WithCustomValidator(&v1beta.InputManifest{}, &ImputManifestValdator{log}))
+	return hookServer
+}
 
 // validate takes the context and a kubernetes object as a parameter.
 // It will extract the secret data out of the received obj and run manifest validation against it
 func (v *ImputManifestValdator) validate(ctx context.Context, obj runtime.Object) error {
-	log := crlog.FromContext(ctx)
+	log := v.Logger.WithName("InputManifest Validator")
 
 	inputManifest, ok := obj.(*v1beta.InputManifest)
 	if !ok {
@@ -29,7 +44,6 @@ func (v *ImputManifestValdator) validate(ctx context.Context, obj runtime.Object
 		return err
 	}
 
-	log.Info("InputManifest seems to be valid")
 	return nil
 }
 
@@ -52,7 +66,7 @@ func validateInputManifest(im *v1beta.InputManifest) error {
 
 	var rawManifest manifest.Manifest
 
-	// // Fill providers only with names, to check if there are defined
+	// Fill providers only with names, to check if there are defined
 	for _, p := range im.Spec.Providers {
 		switch p.ProviderType {
 		case v1beta.GCP:
@@ -78,7 +92,7 @@ func validateInputManifest(im *v1beta.InputManifest) error {
 	rawManifest.LoadBalancer = im.Spec.LoadBalancer
 
 	// Run the validation of all field except the Provider Fields.
-	// Providers will be validated separatly in the controller, after 
+	// Providers will be validated separatly in the controller, after
 	// it will gather all the credentials from the K8s Secret resources
 	if err := rawManifest.Kubernetes.Validate(&rawManifest); err != nil {
 		return err

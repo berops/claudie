@@ -35,7 +35,8 @@ func (u *Usecases) CreateDesiredState(config *pb.Config) (*pb.Config, error) {
 			CsChecksum:   config.GetCsChecksum(),
 			BuilderTTL:   config.GetBuilderTTL(),
 			SchedulerTTL: config.GetSchedulerTTL(),
-			State:        currentState,
+			// Set the state to SCHEDULED_FOR_DELETION
+			State:        setStateForExistinClusters(pb.Workflow_SCHEDULED_FOR_DELETION, config.GetState()),
 		}, nil
 	}
 
@@ -84,6 +85,16 @@ func (u *Usecases) CreateDesiredState(config *pb.Config) (*pb.Config, error) {
 	}
 
 	return newConfig, nil
+}
+
+// setStateForExistinClusters will iterate passed map of cluster statuses
+// and will set the state.Status to the passed stats field
+func setStateForExistinClusters(status pb.Workflow_Status ,currentState map[string]*pb.Workflow) map[string]*pb.Workflow {
+	state := currentState
+	for clusterName, _ := range state {
+		state[clusterName].Status = *pb.Workflow_IN_PROGRESS.Enum()
+	}
+	return state
 }
 
 // getUnmarshalledManifest will read manifest from the given config and return it in manifest.Manifest struct
