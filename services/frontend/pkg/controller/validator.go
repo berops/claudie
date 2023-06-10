@@ -62,6 +62,9 @@ func (v *ImputManifestValdator) ValidateDelete(ctx context.Context, obj runtime.
 	return v.validate(ctx, obj)
 }
 
+// validateInputManifest takes v1beta.InputManifest, validate its structure
+// and returns an error when the validation will fail.
+// It doesn't validate .spec.Providers field.
 func validateInputManifest(im *v1beta.InputManifest) error {
 
 	var rawManifest manifest.Manifest

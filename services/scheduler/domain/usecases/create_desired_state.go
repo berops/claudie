@@ -19,11 +19,6 @@ func (u *Usecases) CreateDesiredState(config *pb.Config) (*pb.Config, error) {
 
 	// Check if the manifest string is empty and set DesiredState to nil
 	if config.Manifest == "" {
-		// Set the state to SCHEDULED_FOR_DELETION
-		currentState := config.GetState()
-		for clusterName, _ := range config.State {
-			currentState[clusterName].Status = *pb.Workflow_SCHEDULED_FOR_DELETION.Enum()
-		}
 		return &pb.Config{
 			Id:           config.GetId(),
 			Name:         config.GetName(),
@@ -35,8 +30,6 @@ func (u *Usecases) CreateDesiredState(config *pb.Config) (*pb.Config, error) {
 			CsChecksum:   config.GetCsChecksum(),
 			BuilderTTL:   config.GetBuilderTTL(),
 			SchedulerTTL: config.GetSchedulerTTL(),
-			// Set the state to SCHEDULED_FOR_DELETION
-			State:        setStateForExistinClusters(pb.Workflow_SCHEDULED_FOR_DELETION, config.GetState()),
 		}, nil
 	}
 
@@ -85,16 +78,6 @@ func (u *Usecases) CreateDesiredState(config *pb.Config) (*pb.Config, error) {
 	}
 
 	return newConfig, nil
-}
-
-// setStateForExistinClusters will iterate passed map of cluster statuses
-// and will set the state.Status to the passed stats field
-func setStateForExistinClusters(status pb.Workflow_Status ,currentState map[string]*pb.Workflow) map[string]*pb.Workflow {
-	state := currentState
-	for clusterName, _ := range state {
-		state[clusterName].Status = *pb.Workflow_IN_PROGRESS.Enum()
-	}
-	return state
 }
 
 // getUnmarshalledManifest will read manifest from the given config and return it in manifest.Manifest struct

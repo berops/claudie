@@ -59,8 +59,6 @@ message Workflow {
     ERROR = 1;
     // IN_PROGRESS indicates that the cluster is currently being build.
     IN_PROGRESS = 2;
-    // SCHEDULED_FOR_DELETION indicates that the cluster is schedguled for deletion.
-    SCHEDULED_FOR_DELETION = 3;
   }
 
   Stage stage = 1;

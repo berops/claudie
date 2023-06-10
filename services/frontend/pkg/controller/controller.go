@@ -37,7 +37,8 @@ import (
 //+kubebuilder:rbac:groups=claudie.io,resources=inputmanifests/finalizers,verbs=update
 
 // TODO: RBAC
-// TODO: Add validation webhook
+// TODO: autoscalerConfig in spec
+// TODO: tests
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -48,69 +49,6 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	// Get the inputManifest resource
 	if err := r.kc.Get(ctx, req.NamespacedName, inputManifest); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
-	}
-
-	// Get all configs from context-box
-	configs, err := r.Usecases.ContextBox.GetAllConfigs()
-	if err != nil {
-		return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, err
-	}
-
-	// State of config pulled from the DB
-	currentState := v1beta.InputManifestStatus{
-		Clusters: make(map[string]v1beta.ClustersStatus),
-	}
-	var currentMsChecksum []byte
-
-	// Check inputManifest object status
-	// Build the current inputManifest Status fields
-	for _, config := range configs {
-		if config.Name == inputManifest.GetNamespacedName() {
-			var curretManifestStatus string
-			for cluster, workflow := range config.State {
-				statuses := &v1beta.ClustersStatus{
-					State:   workflow.GetStatus().String(),
-					Phase:   workflow.GetStage().String(),
-					Message: workflow.GetDescription(),
-				}
-				currentState.Clusters[cluster] = *statuses
-
-				if workflow.GetStatus().String() == v1beta.STATUS_IN_PROGRESS {
-					curretManifestStatus = v1beta.STATUS_IN_PROGRESS
-				}
-				// Set status to DONE_WITH_ERROR if at least one cluster has an ERROR and other are in DONE state
-				switch workflow.GetStatus().String() {
-				case v1beta.STATUS_IN_PROGRESS:
-					curretManifestStatus = v1beta.STATUS_IN_PROGRESS
-				case v1beta.STATUS_SCHEDULED_FOR_DELETION:
-					curretManifestStatus = v1beta.STATUS_SCHEDULED_FOR_DELETION
-				case v1beta.STATUS_ERROR:
-					switch curretManifestStatus {
-					case v1beta.STATUS_DONE:
-						curretManifestStatus = v1beta.STATUS_DONE_ERROR
-					case v1beta.STATUS_SCHEDULED_FOR_DELETION:
-						// do nothing
-					case v1beta.STATUS_IN_PROGRESS:
-						// do nothing
-					default:
-						curretManifestStatus = v1beta.STATUS_ERROR
-					}
-				case v1beta.STATUS_DONE:
-					switch curretManifestStatus {
-					case v1beta.STATUS_ERROR:
-						curretManifestStatus = v1beta.STATUS_DONE_ERROR
-					case v1beta.STATUS_SCHEDULED_FOR_DELETION:
-						// do nothing
-					case v1beta.STATUS_IN_PROGRESS:
-						// do nothing
-					default:
-						curretManifestStatus = v1beta.STATUS_DONE
-					}
-				}
-			}
-			currentState.State = curretManifestStatus
-			currentMsChecksum = config.MsChecksum
-		}
 	}
 
 	// Prepare the manifest.Manifest type
@@ -136,23 +74,79 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
 	}
 
-	if err := validateInputManifest(inputManifest); err != nil {
-		log.Error(err, "Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaachuj")
-	}
-
 	// With the rawManifest filled with providers credentials,
 	// the Manifest.Providers{} struct will be properly validated
+	// In case the validation will fail, it will end the reconcile
+	// with an err, and generate an Kubernetes Event
 	if err := rawManifest.Providers.Validate(); err != nil {
 		log.Error(err, "error while validating referenced secrets")
 		r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
 		inputManifest.SetUpdateResourceStatus(v1beta.InputManifestStatus{
 			State: v1beta.STATUS_ERROR,
 		})
-
 		if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 		}
 		return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
+	}
+
+	// Get all configs from context-box
+	configs, err := r.Usecases.ContextBox.GetAllConfigs()
+	if err != nil {
+		return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, err
+	}
+
+	// Build the actual state of inputManifet.
+	// Based on this, reconcile loop will decide
+	// what to do next.
+	currentState := v1beta.InputManifestStatus{
+		Clusters: make(map[string]v1beta.ClustersStatus),
+	}
+	var dbDsChecksum []byte
+	configExists := false
+	configInDesiredState := false
+	configContainsError := false
+
+	for _, config := range configs {
+		if inputManifest.GetNamespacedName() == config.Name {
+			configExists = true
+			dbDsChecksum = config.DsChecksum
+
+			if len(config.CsChecksum) == 0 && len(config.DsChecksum) == 0 {
+				configInDesiredState = false // handle newly created resources
+			} else {
+				configInDesiredState = utils.Equal(config.CsChecksum, config.DsChecksum)
+			}
+			for cluster, workflow := range config.State {
+				currentState.Clusters[cluster] = v1beta.ClustersStatus{
+					State:   workflow.GetStatus().String(),
+					Phase:   workflow.GetStage().String(),
+					Message: workflow.GetDescription(),
+				}
+
+				if workflow.GetStatus().String() == v1beta.STATUS_ERROR {
+					configContainsError = true
+				}
+			}
+		}
+	}
+
+	// Set inputManifest status field - informational only
+	if !configExists {
+		currentState.State = v1beta.STATUS_NEW
+	} else if !configInDesiredState {
+		currentState.State = v1beta.STATUS_IN_PROGRESS
+	} else if configContainsError {
+		// Set manifest state to ERROR, if any DONE cluster will be found 
+		// set it to DONE_WITH_ERROR
+		currentState.State = v1beta.STATUS_ERROR
+		for _, cluster := range currentState.Clusters {
+			if cluster.State == v1beta.STATUS_DONE {
+				currentState.State = v1beta.STATUS_DONE_ERROR
+			}
+		}
+	} else {
+		currentState.State = v1beta.STATUS_DONE
 	}
 
 	// DELETE && FINALIZER LOGIC
@@ -166,12 +160,8 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			}
 		}
 	} else {
-		// Resource schedguled for deletion
-		// if STATE == "" -> Cluster has been removed. Remove finalizer
-		// if STATE == IN_PROGRESS || SCHEDULED_FOR_DELETION -> Wait for all tasks to be finished
-		// other case -> call deleteConfig
 
-		if currentState.State == "" {
+		if !configExists {
 			log.Info("Config has been destroyed. Removing finalizer.", "status", currentState.State)
 			controllerutil.RemoveFinalizer(inputManifest, finalizerName)
 			if err := r.kc.Update(ctx, inputManifest); err != nil {
@@ -180,16 +170,21 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			return ctrl.Result{}, nil
 		}
 
-		if currentState.State == v1beta.STATUS_IN_PROGRESS || currentState.State == v1beta.STATUS_SCHEDULED_FOR_DELETION {
+		if !configInDesiredState {
 			inputManifest.SetUpdateResourceStatus(currentState)
 			if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 				return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 			}
 			log.Info("Refreshing state", "status", currentState.State)
-			return ctrl.Result{RequeueAfter: REQUEUE_UPDATE}, nil
+			return ctrl.Result{RequeueAfter: REQUEUE_IN_PROGRES}, nil
 		}
 
 		if controllerutil.ContainsFinalizer(inputManifest, finalizerName) {
+			// Prevent calling deleteConfig, when the deleteConfig call
+			// won't make it yet to scheduler
+			if inputManifest.Status.State == v1beta.STATUS_SCHEDULED_FOR_DELETION {
+				return ctrl.Result{RequeueAfter: REQUEUE_NEW}, nil
+			}	
 			// schedgule deletion of manifest
 			inputManifest.SetDeletingStatus()
 			if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
@@ -199,13 +194,16 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			r.deleteConfig(&rawManifest)
 			return ctrl.Result{RequeueAfter: REQUEUE_DELETE}, nil
 		}
+		return ctrl.Result{RequeueAfter: REQUEUE_DELETE}, nil
 	}
 
-	// Skip for cluster thath are ready
-	if currentState.State != v1beta.STATUS_DONE {
+	// Skip the inputManifests thath are ready
+	if !configInDesiredState {
 		// CREATE LOGIC
-		// Add initial status labels for the resource, Requeue the loop
-		if currentState.State == ("") {
+		// Call create config if it not present in DB
+		if !configExists {
+			// Prevent calling createConfig, when the inputManifest
+			// won't make it yet to DB
 			if inputManifest.Status.State == v1beta.STATUS_NEW {
 				return ctrl.Result{RequeueAfter: REQUEUE_NEW}, nil
 			}
@@ -219,8 +217,8 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 
 		// PROVISIONING LOGIC
-		// Refresh IN_PROGRESS cluster status, requeue the loop
-		if currentState.State == v1beta.STATUS_IN_PROGRESS {
+		// Refresh inputManifest.status fields
+		if !configInDesiredState {
 			inputManifest.SetUpdateResourceStatus(currentState)
 			if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 				return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
@@ -228,19 +226,19 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			log.Info("Refreshing state", "status", currentState.State)
 			return ctrl.Result{RequeueAfter: REQUEUE_IN_PROGRES}, nil
 		}
+	}
 
-		// Error logic
-		// Refresh cluster status, message an error and end the reconcile, or
-		if currentState.State == v1beta.STATUS_ERROR || currentState.State == v1beta.STATUS_DONE_ERROR {
-			// No updates to the inputManifest, output an error and finish the reconcile
-			inputManifest.SetUpdateResourceStatus(currentState)
-			if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
-				return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
-			}
-			r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", buildProvisioningError(currentState).Error())
-			log.Error(buildProvisioningError(currentState), "Error while building")
-			return ctrl.Result{}, nil
+	// ERROR logic
+	// Refresh cluster status, message an error and end the reconcile, or
+	if configContainsError {
+		// No updates to the inputManifest, output an error and finish the reconcile
+		inputManifest.SetUpdateResourceStatus(currentState)
+		if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 		}
+		r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", buildProvisioningError(currentState).Error())
+		log.Error(buildProvisioningError(currentState), "Error while building")
+		return ctrl.Result{}, nil
 	}
 
 	// Check if input-manifest has been updated
@@ -251,7 +249,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, err
 	}
 	inputManifestChecksum := utils.CalculateChecksum(string(inputManifestMarshalled))
-	inputManifestUpdated := !(utils.Equal(inputManifestChecksum, currentMsChecksum))
+	inputManifestUpdated := !(utils.Equal(inputManifestChecksum, dbDsChecksum))
 
 	// Update logic if the input manifest has been updated
 	// only when the resource is not scheduled for deletion

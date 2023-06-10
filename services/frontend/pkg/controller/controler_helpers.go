@@ -18,19 +18,9 @@ package controller
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/berops/claudie/internal/manifest"
 	v1beta "github.com/berops/claudie/services/frontend/pkg/api/v1beta1"
-)
-
-const (
-	REQUEUE_NEW         = 30 * time.Second
-	REQUEUE_UPDATE      = 30 * time.Second
-	REQUEUE_IN_PROGRES  = 5 * time.Second
-	REQUEUE_DELETE      = 30 * time.Second
-	REQUEUE_AFTER_ERROR = 30 * time.Second
-	finalizerName       = "v1beta1.claudie.io/finalizer"
 )
 
 // mergeInputManifestWithSecrets takes the v1beta.InputManifest and providersWithSecret and returns a claudie type raw manifest.Manifest type.

@@ -17,9 +17,7 @@ limitations under the License.
 package controller
 
 import (
-	"context"
-	// "fmt"
-	// "strconv"
+	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -27,33 +25,24 @@ import (
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	// "sigs.k8s.io/controller-runtime/pkg/client/config"
-	// "sigs.k8s.io/controller-runtime/pkg/healthz"
-	// crlog "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	// "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/services/frontend/domain/usecases"
 	v1beta "github.com/berops/claudie/services/frontend/pkg/api/v1beta1"
 	"github.com/go-logr/logr"
-// 	"github.com/go-logr/zerologr"
-// 	"github.com/rs/zerolog/log"
 )
 
-var (
-	// scheme = runtime.NewScheme()
+const (
+	// Delays for requeing each type of event
+	// For example: when a new cluster is created
+	// first sync of its state will be done after REQUEUE_NEW time,
+	// next sync will be done in REQUEUE_IN_PROGRES
+	REQUEUE_NEW         = 2 * time.Second
+	REQUEUE_UPDATE      = 2 * time.Second
+	REQUEUE_IN_PROGRES  = 5 * time.Second
+	REQUEUE_DELETE      = 2 * time.Second
+	REQUEUE_AFTER_ERROR = 60 * time.Second
+	finalizerName       = "v1beta1.claudie.io/finalizer"
 )
-
-func init() {
-	// utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	// utilruntime.Must(v1beta.AddToScheme(scheme))
-}
-
-type manifestController struct {
-	mgr            manager.Manager
-	controllerPort int
-	ctx            context.Context
-}
 
 // InputManifestReconciler reconciles a InputManifest object
 type InputManifestReconciler struct {
@@ -71,7 +60,7 @@ func New(kclient client.Client,
 	recorder record.EventRecorder,
 	usecase usecases.Usecases) *InputManifestReconciler {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(v1beta.AddToScheme(scheme))		
+	utilruntime.Must(v1beta.AddToScheme(scheme))
 	return &InputManifestReconciler{
 		kc:       kclient,
 		Scheme:   scheme,
@@ -87,4 +76,3 @@ func (r *InputManifestReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&v1beta.InputManifest{}).
 		Complete(r)
 }
-

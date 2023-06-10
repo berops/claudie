@@ -21,13 +21,6 @@ func (u *Usecases) CreateConfig(inputManifest *manifest.Manifest) {
 		Name:             inputManifest.Name,
 		ManifestFileName: inputManifest.Name,
 		Manifest:         string(inputManifestMarshalled),
-		State:            make(map[string]*pb.Workflow),
-	}
-	
-	// build IN_PROGRES status for each cluster in the manifest
-	for _, cluster := range inputManifest.Kubernetes.Clusters {
-		config.State[cluster.Name] = &pb.Workflow{}
-		config.State[cluster.Name].Status = pb.Workflow_IN_PROGRESS
 	}
 
 	if err := u.ContextBox.SaveConfig(config); err != nil {

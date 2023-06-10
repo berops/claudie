@@ -149,9 +149,6 @@ spec:
                             min:
                               format: int32
                               type: integer
-                          required:
-                          - max
-                          - min
                           type: object
                         count:
                           format: int32

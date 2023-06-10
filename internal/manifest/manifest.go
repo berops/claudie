@@ -105,8 +105,8 @@ type DynamicNodePool struct {
 }
 
 type AutoscalerConfig struct {
-	Min int32 `yaml:"min" json:"min"`
-	Max int32 `yaml:"max" json:"max"`
+	Min int32 `yaml:"min" json:"min,omitempty"`
+	Max int32 `yaml:"max" json:"max,omitempty"`
 }
 
 type ProviderSpec struct {
