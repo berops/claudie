@@ -13,8 +13,11 @@
 ## Intro video
 
 <p align="center">
-  <a href="https://youtu.be/q4xdAiHYxZQ"><img src="https://markdown-videos.deta.dev/youtube/q4xdAiHYxZQ"></a>
+  <a href="http://www.youtube.com/watch?feature=player_embedded&v=q4xdAiHYxZQ" target="_blank">
+    <img src="http://img.youtube.com/vi/q4xdAiHYxZQ/0.jpg" alt="Claudie Intro Video" width="480" height="360"/>
+  </a>
 </p>
+
 
 ## Vision of Claudie
 
