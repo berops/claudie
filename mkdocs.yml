@@ -24,6 +24,7 @@ plugins:
       width: 100%
       height: auto
       zoomable: true
+  - include-markdown
   - material-plausible
 
 copyright: |
@@ -50,6 +51,7 @@ nav:
   - Getting Started:
     - getting-started/get-started-using-claudie.md
     - CRUD for Claudie: crud/crud.md
+    - Deploying Claudie: deploying-claudie.md
   - Input manifest: 
       - input-manifest/api-reference.md
       - Example yaml file: input-manifest/example.md
@@ -98,5 +100,4 @@ extra:
           name: No, it could be a lot better
           data: bad
           note: >-
-            Thanks for your feedback! Help us improve this page by
-            using our <a href="..." target="_blank" rel="noopener">feedback form</a>.
+            Thanks for your feedback!
