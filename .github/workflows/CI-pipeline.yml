@@ -102,23 +102,40 @@ jobs:
       # Update autoscaler-adapter manifest in this steps as new kuber would need to contain manifest with the correct image tag
       - name: Edit autoscaler-adapter image tag in the manifest
         if: ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
-        working-directory: ./services/kuber/templates
+        id: autoscaler-tag
         run: |
           NEW_SERVICES=( ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }} )
-          for SERVICE in "${NEW_SERVICES[@]}"
-          do
-            if [ "$SERVICE" == "autoscaler-adapter" ]; then
-              TAG=${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
-              echo "Setting new tag for autoscaler adapter to $TAG"
-              sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" cluster-autoscaler.goyaml
+
+          # Check if autoscaler-adapter is going to be built, if so, insert latest tag and add kuber to array if needed.
+          if [[ "${NEW_SERVICES[*]}" =~ "autoscaler-adapter" ]]; then
+            TAG=${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+            echo "Setting new tag for autoscaler adapter to $TAG"
+            sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" services/kuber/templates/cluster-autoscaler.goyaml
+
+            if [[ ! "${NEW_SERVICES[*]}" =~ "kuber" ]]; then
+              NEW_SERVICES+=(kuber)
             fi
-          done
+          else
+            # Check if kuber is going to be built, if so, insert latest tag and add to build.
+
+            if [[ "${NEW_SERVICES[*]}" =~ "kuber" ]]; then
+              sudo apt update && sudo apt install -y wget tar
+              wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
+              tar xz && mv yq_linux_amd64 yq
+              TAG=$(./yq eval '.images[-1].newTag' manifests/claudie/kustomization.yaml)
+              echo "Setting new tag for autoscaler adapter to $TAG"
+              sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" services/kuber/templates/cluster-autoscaler.goyaml
+              NEW_SERVICES+=(kuber)
+            fi
+          fi
+
+          echo "ARRAY_OF_CHANGES=$(echo ${NEW_SERVICES[@]})" >> $GITHUB_OUTPUT
 
       # Build the new images that were changed by a recent commit - tag image latest as well for testing
       - name: Build and push new images
         if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
         run: |
-          ARR=(${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }})
+          ARR=(${{ steps.autoscaler-tag.outputs.ARRAY_OF_CHANGES }})
           for SERVICE in "${ARR[@]}"
           do
             echo "-----Building $SERVICE-----"
@@ -126,33 +143,34 @@ jobs:
             DOCKER_BUILDKIT=1 docker build --tag $IMGTAG -f ./services/$SERVICE/Dockerfile . 
             docker push $IMGTAG
           done
-
+    outputs:
+      ARRAY_OF_CHANGES: ${{ steps.autoscaler-tag.outputs.ARRAY_OF_CHANGES }}
   #--------------------------------------------------------------------------------------------------
   edit-kustomization:
     runs-on: self-hosted
     needs: [merge-branch, check-changes, build-and-push]
     steps:
       - uses: actions/checkout@v3
-        if: ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
+        if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
         with:
           ref: ${{ github.head_ref }}
 
       - name: Set short sha output
-        if: ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
+        if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
         run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
 
       - name: install kustomize
-        if: ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
+        if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
         uses: imranismail/setup-kustomize@v2
         with:
           kustomize-version: 4.5.6
 
       # Set the new claudie image tags in kustomization.yaml
       - name: Edit claudie kustomization.yaml
-        if: ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
+        if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
         working-directory: ./manifests/claudie
         run: |
-          NEW_SERVICES=( ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }} )
+          NEW_SERVICES=( ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES }} )
           for SERVICE in "${NEW_SERVICES[@]}"
           do
             if [ "${SERVICE}" != "testing-framework" ] && [ "${SERVICE}" != "autoscaler-adapter" ]; then
@@ -165,10 +183,10 @@ jobs:
 
       # Set the new testing-framework image tags in kustomization.yaml
       - name: Edit testing-framework kustomization.yaml
-        if: ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
+        if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
         working-directory: ./manifests/testing-framework
         run: |
-          NEW_SERVICES=( ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }} )
+          NEW_SERVICES=( ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES }} )
           for SERVICE in "${NEW_SERVICES[@]}"
           do
             if [ "$SERVICE" == "testing-framework" ]; then
@@ -181,7 +199,7 @@ jobs:
 
       # Auto commit the changes
       - name: Commit new kustomization.yaml to feature branch
-        if: ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
+        if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
         working-directory: ./manifests
         run: |
           BRANCH_NAME=${{ github.head_ref }}
@@ -200,7 +218,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    if: ${{ (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' || needs.check-changes.outputs.RUN_TESTS == 'true') && github.event.pull_request.draft == false }}
+    if: ${{ (needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' || needs.check-changes.outputs.RUN_TESTS == 'true') && github.event.pull_request.draft == false }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -223,10 +241,10 @@ jobs:
         uses: azure/k8s-set-context@v3.1
         with:
           kubeconfig: ${{ secrets.E2E_CLUSTER_KUBECONFIG }}
-  
+
       - name: Get PR labels
         id: pr-labels
-        uses: joerick/pr-labels-action@v1.0.8
+        uses: joerick/pr-labels-action@v1.0.9
 
       # Deploy services to new namespace
       - name: Deploy to new namespace

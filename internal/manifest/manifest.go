@@ -150,8 +150,8 @@ type StaticNodePool struct {
 }
 // WIP
 type Node struct {
-	PublicIP      string `validate:"required,ip_addr" yaml:"publicIP" json:"publicIP"`
-	PrivateSSHKey string `validate:"required" yaml:"privateSshKey" json:"privateSshKey"`
+	Endpoint string `validate:"required,ip_addr" yaml:"endpoint"`
+	Key      string `validate:"required" yaml:"privateKey"`
 }
 
 // Collection of data used to define a Kubernetes cluster.

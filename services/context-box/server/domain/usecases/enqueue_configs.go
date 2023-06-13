@@ -37,8 +37,8 @@ func (c *ConfigInfo) GetName() string {
 	return c.Name
 }
 
-// hasError returns true if any cluster errored while building.
-func (c *ConfigInfo) hasError() bool {
+// hasAnyError returns true if any cluster errored while building or destroying.
+func (c *ConfigInfo) hasAnyError() bool {
 	for _, v := range c.State {
 		if v.Status == pb.Workflow_ERROR.String() {
 			return true
@@ -117,21 +117,23 @@ func (u *Usecases) enqueueConfigs() error {
 		// due to which the DsChecksum will be nil.
 		if !utils.Equal(configInfo.DsChecksum, configInfo.MsChecksum) {
 			// If scheduler TTL is <= 0 AND config has no errorMessage, add item to the scheduler queue
-			if configInfo.SchedulerTTL <= 0 && !configInfo.hasError() {
-				if err := u.DB.UpdateSchedulerTTL(configInfo.Name, defaultSchedulerTTL); err != nil {
-					return err
+			if configInfo.SchedulerTTL <= 0 {
+				if !configInfo.hasAnyError() || configInfo.scheduleDeletion() {
+					if err := u.DB.UpdateSchedulerTTL(configInfo.Name, defaultSchedulerTTL); err != nil {
+						return err
+					}
+
+					// The item is put in the scheduler queue. The scheduler microservice will eventually pull the corresponding
+					// config and build its desired state
+					u.schedulerQueue.Enqueue(configInfo)
+					configInfo.SchedulerTTL = defaultSchedulerTTL
+
+					continue
+				} else if !configInfo.hasAnyError() {
+					// If the item is already present in the scheduler queue but the config is still not pulled by the scheduler
+					// microservice, then reduce its scheduler TTL by 1.
+					configInfo.SchedulerTTL = configInfo.SchedulerTTL - 1
 				}
-
-				// The item is put in the scheduler queue. The scheduler microservice will eventually pull the corresponding
-				// config and build its desired state
-				u.schedulerQueue.Enqueue(configInfo)
-				configInfo.SchedulerTTL = defaultSchedulerTTL
-
-				continue
-			} else if !configInfo.hasError() {
-				// If the item is already present in the scheduler queue but the config is still not pulled by the scheduler
-				// microservice, then reduce its scheduler TTL by 1.
-				configInfo.SchedulerTTL = configInfo.SchedulerTTL - 1
 			}
 		}
 
@@ -141,7 +143,7 @@ func (u *Usecases) enqueueConfigs() error {
 			// If builder TTL <= 0 AND config has no errorMessage, add item to the builder queue
 			if configInfo.BuilderTTL <= 0 {
 				// If no BUILD error OR if triggered for deletion in builder microservice.
-				if !configInfo.hasError() || configInfo.scheduleDeletion() {
+				if !configInfo.hasAnyError() || configInfo.scheduleDeletion() {
 					if err := u.DB.UpdateBuilderTTL(configInfo.Name, defaultBuilderTTL); err != nil {
 						return err
 					}
@@ -153,7 +155,7 @@ func (u *Usecases) enqueueConfigs() error {
 
 					continue
 				}
-			} else if !configInfo.hasError() {
+			} else if !configInfo.hasAnyError() {
 				// If the item is already present in the builder queue but the config is still not pulled by the builder
 				// microservice, then reduce its scheduler TTL by 1.
 				configInfo.BuilderTTL = configInfo.BuilderTTL - 1

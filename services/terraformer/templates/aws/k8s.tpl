@@ -111,11 +111,11 @@ resource "aws_key_pair" "claudie_pair_{{ $region }}" {
 
 {{- range $i, $nodepool := .NodePools }}
 resource "aws_subnet" "{{ $nodepool.Name }}_subnet" {
-  provider                = aws.k8s_nodepool_{{ $nodepool.Region  }}
-  vpc_id                  = aws_vpc.claudie_vpc_{{ $nodepool.Region }}.id
+  provider                = aws.k8s_nodepool_{{ $nodepool.NodePool.Region  }}
+  vpc_id                  = aws_vpc.claudie_vpc_{{ $nodepool.NodePool.Region }}.id
   cidr_block              = "{{ index $.Metadata (printf "%s-subnet-cidr" $nodepool.Name) }}"
   map_public_ip_on_launch = true
-  availability_zone       = "{{ $nodepool.Zone }}"
+  availability_zone       = "{{ $nodepool.NodePool.Zone }}"
 
   tags = {
     Name            = "{{ $nodepool.Name }}-{{ $clusterHash }}-subnet"
@@ -124,22 +124,22 @@ resource "aws_subnet" "{{ $nodepool.Name }}_subnet" {
 }
 
 resource "aws_route_table_association" "{{ $nodepool.Name }}_rta" {
-  provider       = aws.k8s_nodepool_{{ $nodepool.Region  }}
+  provider       = aws.k8s_nodepool_{{ $nodepool.NodePool.Region  }}
   subnet_id      = aws_subnet.{{ $nodepool.Name }}_subnet.id
-  route_table_id = aws_route_table.claudie_route_table_{{ $nodepool.Region }}.id
+  route_table_id = aws_route_table.claudie_route_table_{{ $nodepool.NodePool.Region }}.id
 }
 
 {{- range $node := $nodepool.Nodes }}
 resource "aws_instance" "{{ $node.Name }}" {
-  provider          = aws.k8s_nodepool_{{ $nodepool.Region }}
-  availability_zone = "{{ $nodepool.Zone }}"
-  instance_type     = "{{ $nodepool.ServerType }}"
-  ami               = "{{ $nodepool.Image }}"
+  provider          = aws.k8s_nodepool_{{ $nodepool.NodePool.Region }}
+  availability_zone = "{{ $nodepool.NodePool.Zone }}"
+  instance_type     = "{{ $nodepool.NodePool.ServerType }}"
+  ami               = "{{ $nodepool.NodePool.Image }}"
   
   associate_public_ip_address = true
-  key_name               = aws_key_pair.claudie_pair_{{ $nodepool.Region }}.key_name
+  key_name               = aws_key_pair.claudie_pair_{{ $nodepool.NodePool.Region }}.key_name
   subnet_id              = aws_subnet.{{ $nodepool.Name }}_subnet.id
-  vpc_security_group_ids = [aws_security_group.claudie_sg_{{ $nodepool.Region }}.id]
+  vpc_security_group_ids = [aws_security_group.claudie_sg_{{ $nodepool.NodePool.Region }}.id]
 
   tags = {
     Name            = "{{ $node.Name }}"
@@ -179,9 +179,9 @@ EOF
 
 {{- if not $nodepool.IsControl }}
 resource "aws_ebs_volume" "{{ $node.Name }}_volume" {
-  provider          = aws.k8s_nodepool_{{ $nodepool.Region }}
-  availability_zone = "{{ $nodepool.Zone }}"
-  size              = {{ $nodepool.StorageDiskSize }}
+  provider          = aws.k8s_nodepool_{{ $nodepool.NodePool.Region }}
+  availability_zone = "{{ $nodepool.NodePool.Zone }}"
+  size              = {{ $nodepool.NodePool.StorageDiskSize }}
   type              = "gp2"
 
   tags = {
@@ -191,7 +191,7 @@ resource "aws_ebs_volume" "{{ $node.Name }}_volume" {
 }
 
 resource "aws_volume_attachment" "{{ $node.Name }}_volume_att" {
-  provider    = aws.k8s_nodepool_{{ $nodepool.Region }}
+  provider    = aws.k8s_nodepool_{{ $nodepool.NodePool.Region }}
   device_name = "/dev/sdh"
   volume_id   = aws_ebs_volume.{{ $node.Name }}_volume.id
   instance_id = aws_instance.{{ $node.Name }}.id

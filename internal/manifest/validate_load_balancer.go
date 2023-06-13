@@ -107,7 +107,7 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 
 		// check if requested pools are defined
 		for _, pool := range cluster.Pools {
-			if p := m.FindNodePool(pool); p == nil {
+			if !m.nodePoolDefined(pool) {
 				return fmt.Errorf("nodepool %q used inside cluster %q is not defined", pool, cluster.Name)
 			}
 		}

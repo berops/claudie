@@ -66,10 +66,10 @@ resource "hcloud_ssh_key" "claudie" {
 resource "hcloud_server" "{{ $node.Name }}" {
   provider      = hcloud.k8s_nodepool
   name          = "{{ $node.Name }}"
-  server_type   = "{{ $nodepool.ServerType }}"
-  image         = "{{ $nodepool.Image }}"
+  server_type   = "{{ $nodepool.NodePool.ServerType }}"
+  image         = "{{ $nodepool.NodePool.Image }}"
   firewall_ids  = [hcloud_firewall.defaultfirewall.id]
-  datacenter    = "{{ $nodepool.Zone }}"
+  datacenter    = "{{ $nodepool.NodePool.Zone }}"
 
   ssh_keys = [
     hcloud_ssh_key.claudie.id,
@@ -103,9 +103,9 @@ EOF
 resource "hcloud_volume" "{{ $node.Name }}_volume" {
   provider  = hcloud.k8s_nodepool
   name      = "{{ $node.Name }}-volume"
-  size      = {{ $nodepool.StorageDiskSize }}
+  size      = {{ $nodepool.NodePool.StorageDiskSize }}
   format    = "xfs"
-  location = "{{ $nodepool.Region }}"
+  location = "{{ $nodepool.NodePool.Region }}"
 }
 
 resource "hcloud_volume_attachment" "{{ $node.Name }}_volume_att" {

@@ -30,7 +30,7 @@ func (u *Usecases) UpdateNodepool(request *pb.UpdateNodepoolRequest) (*pb.Update
 		// Check if all checksums are equal, meaning config is not about to get pushed to the queue or is in the queue
 		if utils.Equal(config.MsChecksum, config.DsChecksum) && utils.Equal(config.DsChecksum, config.CsChecksum) {
 			// Find and update correct nodepool count & nodes in desired state.
-			if err := updateNodepool(config.DesiredState, request.ClusterName, request.Nodepool.Name, request.Nodepool.Nodes, &request.Nodepool.Count); err != nil {
+			if err := updateNodepool(config.DesiredState, request.ClusterName, request.Nodepool.Name, request.Nodepool.Nodes, &request.Nodepool.GetDynamicNodePool().Count); err != nil {
 				return nil, fmt.Errorf("error while updating desired state in project %s : %w", config.Name, err)
 			}
 			// Find and update correct nodepool nodes in current state.
@@ -54,12 +54,12 @@ func (u *Usecases) UpdateNodepool(request *pb.UpdateNodepoolRequest) (*pb.Update
 func updateNodepool(state *pb.Project, clusterName, nodepoolName string, nodes []*pb.Node, count *int32) error {
 	for _, cluster := range state.Clusters {
 		if cluster.ClusterInfo.Name == clusterName {
-			for _, nodepool := range cluster.ClusterInfo.NodePools {
-				if nodepool.Name == nodepoolName {
+			for _, np := range cluster.ClusterInfo.NodePools {
+				if np.Name == nodepoolName {
 					// Update nodes
-					nodepool.Nodes = nodes
+					np.Nodes = nodes
 					if count != nil {
-						nodepool.Count = *count
+						np.GetDynamicNodePool().Count = *count
 					}
 					return nil
 				}

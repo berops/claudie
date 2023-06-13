@@ -67,10 +67,10 @@ resource "hcloud_firewall" "firewall" {
 resource "hcloud_server" "{{ $node.Name }}" {
   provider     = hcloud.lb_nodepool
   name         = "{{ $node.Name }}"
-  server_type  = "{{ $nodepool.ServerType }}"
-  image        = "{{ $nodepool.Image }}"
+  server_type  = "{{ $nodepool.NodePool.ServerType }}"
+  image        = "{{ $nodepool.NodePool.Image }}"
   firewall_ids = [hcloud_firewall.firewall.id]
-  datacenter   = "{{ $nodepool.Zone }}"
+  datacenter   = "{{ $nodepool.NodePool.Zone }}"
   ssh_keys = [
     hcloud_ssh_key.claudie.id,
   ]

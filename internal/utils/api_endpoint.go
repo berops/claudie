@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+
 	"github.com/berops/claudie/proto/pb"
 )
 
@@ -26,12 +27,14 @@ func HasAPIServerRole(roles []*pb.Role) bool {
 	return false
 }
 
-// FindAPIEndpointNodePoolWithNode searches for a nodepool that has a node with type ApiEndpoint.
-func FindAPIEndpointNodePoolWithNode(nodepools []*pb.NodePool) (*pb.NodePool, *pb.Node, error) {
-	for _, nodepool := range nodepools {
-		if nodepool.IsControl {
-			if node, err := FindEndpointNode(nodepool); err == nil {
-				return nodepool, node, nil
+// FindNodepoolWithApiEndpointNode searches for a nodepool that has the control node representing
+// the Api endpoint of the cluster.
+// Returns the control node if found and its corresponding nodepool.
+func FindNodepoolWithApiEndpointNode(nodepools []*pb.NodePool) (*pb.NodePool, *pb.Node, error) {
+	for _, np := range nodepools {
+		if np.IsControl {
+			if node, err := FindEndpointNode(np); err == nil {
+				return np, node, nil
 			}
 		}
 	}
@@ -39,8 +42,8 @@ func FindAPIEndpointNodePoolWithNode(nodepools []*pb.NodePool) (*pb.NodePool, *p
 }
 
 // FindEndpointNode searches the nodes of the nodepool for a node with type ApiEndpoint.
-func FindEndpointNode(nodepool *pb.NodePool) (*pb.Node, error) {
-	for _, node := range nodepool.GetNodes() {
+func FindEndpointNode(np *pb.NodePool) (*pb.Node, error) {
+	for _, node := range np.GetNodes() {
 		if node.GetNodeType() == pb.NodeType_apiEndpoint {
 			return node, nil
 		}
@@ -50,8 +53,8 @@ func FindEndpointNode(nodepool *pb.NodePool) (*pb.Node, error) {
 
 // FindControlNode search the nodepools for a node with type Master.
 func FindControlNode(nodepools []*pb.NodePool) (*pb.Node, error) {
-	for _, nodepool := range nodepools {
-		for _, node := range nodepool.Nodes {
+	for _, np := range nodepools {
+		for _, node := range np.GetNodes() {
 			if node.NodeType == pb.NodeType_master {
 				return node, nil
 			}
@@ -62,9 +65,9 @@ func FindControlNode(nodepools []*pb.NodePool) (*pb.Node, error) {
 
 // FindAPIEndpointNode searches the NodePools for a Node with type ApiEndpoint.
 func FindAPIEndpointNode(nodepools []*pb.NodePool) (*pb.Node, error) {
-	for _, nodePool := range nodepools {
-		if nodePool.IsControl {
-			if node, err := FindEndpointNode(nodePool); err == nil {
+	for _, np := range nodepools {
+		if np.IsControl {
+			if node, err := FindEndpointNode(np); err == nil {
 				return node, nil
 			}
 		}

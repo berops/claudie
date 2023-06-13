@@ -44,25 +44,25 @@ resource "google_compute_firewall" "firewall_{{ $clusterName}}_{{ $clusterHash}}
 
 {{- range $i, $nodepool := .NodePools }}
 resource "google_compute_subnetwork" "{{ $nodepool.Name }}_subnet" {
-  provider      = google.lb_nodepool_{{ $nodepool.Region }}
+  provider      = google.lb_nodepool_{{ $nodepool.NodePool.Region }}
   name          = "{{ $nodepool.Name }}-{{ $clusterHash }}-subnet"
-  network       = google_compute_network.network_{{ $clusterName}}_{{ $clusterHash}}_{{ $nodepool.Region }}.self_link
+  network       = google_compute_network.network_{{ $clusterName}}_{{ $clusterHash}}_{{ $nodepool.NodePool.Region }}.self_link
   ip_cidr_range = "{{ index  $.Metadata (printf "%s-subnet-cidr" $nodepool.Name)  }}"
   description   = "Managed by Claudie for cluster {{ $clusterName }}-{{ $clusterHash }}"
 }
 
 {{- range $node := $nodepool.Nodes }}
 resource "google_compute_instance" "{{ $node.Name }}" {
-  provider                  = google.lb_nodepool_{{ $nodepool.Region }}
-  zone                      = "{{ $nodepool.Zone }}"
+  provider                  = google.lb_nodepool_{{ $nodepool.NodePool.Region }}
+  zone                      = "{{ $nodepool.NodePool.Zone }}"
   name                      = "{{ $node.Name }}"
-  machine_type              = "{{ $nodepool.ServerType }}"
+  machine_type              = "{{ $nodepool.NodePool.ServerType }}"
   description   = "Managed by Claudie for cluster {{ $clusterName }}-{{ $clusterHash }}"
   allow_stopping_for_update = true
   boot_disk {
     initialize_params {
       size = "50"
-      image = "{{ $nodepool.Image }}"
+      image = "{{ $nodepool.NodePool.Image }}"
     }
   }
   network_interface {

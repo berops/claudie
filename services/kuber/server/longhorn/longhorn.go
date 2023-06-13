@@ -97,13 +97,13 @@ func (l *Longhorn) SetUp() error {
 		storageClassName := fmt.Sprintf("longhorn-%s", zoneName)
 		//flag to determine whether we need to create storage class or not
 		isWorkerNodeProvider := false
-		for _, nodepool := range nodepools {
+		for _, np := range nodepools {
 			// tag worker nodes from nodepool based on the future zone
 			// NOTE: the master nodes are by default set to NoSchedule, therefore we do not need to annotate them
 			// If in the future, we add functionality to allow scheduling on master nodes, the longhorn will need add the annotation
-			if !nodepool.IsControl {
+			if !np.IsControl {
 				isWorkerNodeProvider = true
-				for _, node := range nodepool.Nodes {
+				for _, node := range np.GetNodes() {
 					annotation := fmt.Sprintf("node.longhorn.io/default-node-tags='[\"%s\"]'", zoneName)
 					realNodeName := utils.FindName(realNodeNames, node.Name)
 					// Add tag to the node via kubectl annotate, use --overwrite to avoid getting error of already tagged node
