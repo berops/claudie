@@ -9,6 +9,7 @@ import (
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
+	"github.com/berops/claudie/internal/nodes"
 	"github.com/berops/claudie/proto/pb"
 )
 
@@ -84,7 +85,7 @@ func (p *Patcher) PatchTaints(logger zerolog.Logger) error {
 
 func buildTaintString(np *pb.NodePool) string {
 	var sb strings.Builder
-	for _, t := range np.Taints {
+	for _, t := range nodes.GetAllTaints(np) {
 		sb.WriteString(fmt.Sprintf("{\"effect\":\"%s\",\"key\":\"%s\",\"value\":\"%s\"},", t.Effect, t.Key, t.Value))
 	}
 	return strings.TrimRight(sb.String(), ",")
@@ -92,7 +93,7 @@ func buildTaintString(np *pb.NodePool) string {
 
 func buildLabelString(np *pb.NodePool) string {
 	var sb strings.Builder
-	for k, v := range np.Labels {
+	for k, v := range nodes.GetAllLabels(np) {
 		sb.WriteString(fmt.Sprintf("\"%s\":\"%s\",", k, v))
 	}
 	return strings.TrimRight(sb.String(), ",")
