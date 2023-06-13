@@ -23,7 +23,9 @@ spec:
     name: v1beta1
     schema:
       openAPIV3Schema:
-        description: InputManifest is the Schema for the inputmanifests API
+        description: InputManifest is a definition of the user's infrastructure. It
+          contains cloud provider specification, nodepool specification, Kubernetes
+          and loadbalancer clusters.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -41,21 +43,36 @@ spec:
             description: Specification of the desired behavior of the InputManifest
             properties:
               kubernetes:
+                description: Kubernetes list of Kubernetes cluster this manifest will
+                  manage.
                 properties:
                   clusters:
+                    description: List of Kubernetes clusters Claudie will create.
                     items:
+                      description: Collection of data used to define a Kubernetes
+                        cluster.
                       properties:
                         name:
+                          description: Name of the Kubernetes cluster. Each cluster
+                            will have a random hash appended to the name, so the whole
+                            name will be of format <name>-<hash>.
                           type: string
                         network:
+                          description: Network range for the VPN of the cluster. The
+                            value should be defined in format A.B.C.D/mask.
                           type: string
                         pools:
+                          description: List of nodepool names this cluster will use.
                           properties:
                             compute:
+                              description: List of nodepool names, that will represent
+                                compute nodes.
                               items:
                                 type: string
                               type: array
                             control:
+                              description: List of nodepool names, that will represent
+                                control plane nodes.
                               items:
                                 type: string
                               type: array
@@ -64,6 +81,12 @@ spec:
                           - control
                           type: object
                         version:
+                          description: Version should be defined in format vX.Y. In
+                            terms of supported versions of Kubernetes, Claudie follows
+                            kubeone releases and their supported versions. The current
+                            kubeone version used in Claudie is 1.5. To see the list
+                            of supported versions, please refer to kubeone documentation.
+                            https://docs.kubermatic.com/kubeone/v1.5/architecture/compatibility/supported-versions/#supported-kubernetes-versions
                           type: string
                       required:
                       - name
@@ -74,33 +97,54 @@ spec:
                     type: array
                 type: object
               loadBalancers:
+                description: LoadBalancers list of loadbalancer clusters the Kubernetes
+                  clusters may use.
                 properties:
                   clusters:
+                    description: A list of load balancers clusters.
                     items:
+                      description: Collection of data used to define a loadbalancer
+                        cluster. Defines loadbalancer clusters.
                       properties:
                         dns:
+                          description: Specification of the loadbalancer's DNS record.
                           properties:
                             dnsZone:
+                              description: DNS zone inside of which the records will
+                                be created. GCP/AWS/OCI/Azure/Cloudflare/Hetzner DNS
+                                zone is accepted
                               type: string
                             hostname:
+                              description: Custom hostname for your A record. If left
+                                empty, the hostname will be a random hash.
                               type: string
                             provider:
+                              description: Name of provider to be used for creating
+                                an A record entry in defined DNS zone.
                               type: string
                           required:
                           - dnsZone
                           - provider
                           type: object
                         name:
+                          description: Name of the loadbalancer.
                           type: string
                         pools:
+                          description: List of nodepool names this loadbalancer will
+                            use. Remember, that nodepools defined in nodepools are
+                            only "blueprints". The actual nodepool will be created
+                            once referenced here.
                           items:
                             type: string
                           type: array
                         roles:
+                          description: List of roles the loadbalancer uses.
                           items:
                             type: string
                           type: array
                         targetedK8s:
+                          description: Name of the Kubernetes cluster targetted by
+                            this loadbalancer.
                           type: string
                       required:
                       - name
@@ -110,18 +154,38 @@ spec:
                       type: object
                     type: array
                   roles:
+                    description: List of roles loadbalancers use to forward the traffic.
+                      Single role can be used in multiple loadbalancer clusters.
                     items:
+                      description: Role defines a concrete loadbalancer configuration.
+                        Single loadbalancer can have multiple roles.
                       properties:
                         name:
+                          description: Name of the role. Used as a reference in clusters.
                           type: string
                         port:
+                          description: Port of the incoming traffic on the loadbalancer.
                           format: int32
                           type: integer
                         protocol:
+                          description: 'Protocol of the rule. Allowed values are:
+                            tcp, udp.'
+                          enum:
+                          - tcp
+                          - udp
                           type: string
                         target:
+                          description: 'Defines a target group of nodes. Allowed values
+                            are: k8sAllNodes - All nodes in the cluster k8sControlNodes
+                            - Only control/master nodes in cluster k8sComputeNodes
+                            - Only compute/worker nodes in cluster'
+                          enum:
+                          - k8sAllNodes
+                          - k8sControlNodes
+                          - k8sComputeNodes
                           type: string
                         targetPort:
+                          description: Port where loadbalancer forwards the traffic.
                           format: int32
                           type: integer
                       required:
@@ -134,36 +198,63 @@ spec:
                     type: array
                 type: object
               nodePools:
-                description: Nodepools field is used for defining the nodepool specification.
-                  You can think of them as a blueprints, not actual nodepools that
-                  will be created
+                description: NodePools describes nodepools used for either kubernetes
+                  clusters or loadbalancer cluster defined in this manifest.
                 properties:
                   dynamic:
+                    description: List of dynamically to-be-created nodepools of not
+                      yet existing machines, used for Kubernetes or loadbalancer clusters.
                     items:
+                      description: "DynamicNodePool List of dynamically to-be-created
+                        nodepools of not yet existing machines, used for Kubernetes
+                        or loadbalancer clusters. These are only blueprints, and will
+                        only be created per reference in kubernetes or loadBalancer
+                        clusters. \n E.g. if the nodepool isn't used, it won't even
+                        be created. Or if the same nodepool is used in two different
+                        clusters, it will be created twice. In OOP analogy, a dynamic
+                        nodepool would be a class that would get instantiated N >=
+                        0 times depending on which clusters reference it."
                       properties:
                         autoscaler:
+                          description: Autoscaler configuration for this nodepool.
+                            Mutually exclusive with count.
                           properties:
                             max:
+                              description: Maximum number of nodes in nodepool.
                               format: int32
                               type: integer
                             min:
+                              description: Minimum number of nodes in nodepool.
                               format: int32
                               type: integer
                           type: object
                         count:
+                          description: Number of the nodes in the nodepool. Mutually
+                            exclusive with autoscaler.
                           format: int32
                           type: integer
                         image:
+                          description: OS image of the machine. Currently, only Ubuntu
+                            22.04 AMD64 images are supported.
                           type: string
                         name:
+                          description: Name of the nodepool. Each nodepool will have
+                            a random hash appended to the name, so the whole name
+                            will be of format <name>-<hash>.
                           type: string
                         providerSpec:
+                          description: Collection of provider data to be used while
+                            creating the nodepool.
                           properties:
                             name:
+                              description: Name of the provider instance specified
+                                in providers
                               type: string
                             region:
+                              description: Region of the nodepool.
                               type: string
                             zone:
+                              description: Zone of the nodepool.
                               type: string
                           required:
                           - name
@@ -171,8 +262,14 @@ spec:
                           - zone
                           type: object
                         serverType:
+                          description: Type of the machines in the nodepool. Currently,
+                            only AMD64 machines are supported.
                           type: string
                         storageDiskSize:
+                          description: Size of the storage disk on the nodes in the
+                            nodepool in GB. The OS disk is created automatically with
+                            predefined size of 100GB for kubernetes nodes and 50GB
+                            for Loadbalancer nodes.
                           format: int64
                           type: integer
                       required:
@@ -183,12 +280,17 @@ spec:
                       type: object
                     type: array
                   static:
+                    description: '[WORK IN PROGRESS] List of static nodepools of already
+                      existing machines, not created by of Claudie, used for Kubernetes
+                      or loadbalancer clusters.'
                     items:
+                      description: WIP
                       properties:
                         name:
                           type: string
                         nodes:
                           items:
+                            description: WIP
                             properties:
                               privateSshKey:
                                 type: string
@@ -208,15 +310,21 @@ spec:
                 - dynamic
                 type: object
               providers:
+                description: Providers list of defined cloud provider configuration
+                  that will be used while infrastructure provisioning.
                 items:
-                  description: Provider defines the desired state of Provider
+                  description: Providers list of defined cloud provider configuration
+                    that will be used while infrastructure provisioning.
                   properties:
                     name:
+                      description: Name is the name of the provider specyfication.
+                        It has to be unique across all providers.
                       maxLength: 32
                       minLength: 1
                       type: string
                     providerType:
-                      description: a simple enum type of providers
+                      description: ProviderType type of a provider. A list of available
+                        providers can be found at https://docs.claudie.io/v0.3.2/input-manifest/providers/aws/
                       enum:
                       - gcp
                       - hetzner

@@ -1,16 +1,17 @@
 namespace: claudie
 resources:
+- crd
 - ns.yaml
+- mongo
+- frontend.yaml
 - context-box.yaml
-- terraformer.yaml
-- ansibler.yaml
 - scheduler.yaml
 - builder.yaml
+- terraformer.yaml
+- ansibler.yaml
 - kube-eleven.yaml
-- frontend.yaml
 - kuber.yaml
 - minio
-- mongo
 - dynamo
 - network-policy.yaml
 

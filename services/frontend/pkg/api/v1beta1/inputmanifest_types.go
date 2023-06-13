@@ -22,7 +22,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// a simple enum type of providers
+// ProviderType type of a provider.
+// A list of available providers can be found at https://docs.claudie.io/v0.3.2/input-manifest/providers/aws/
 type ProviderType string
 
 const (
@@ -38,22 +39,22 @@ const (
 type SecretField string
 
 const (
-	AWS_ACCESS_KEY          SecretField = "accesskey"
-	AWS_SECRET_KEY          SecretField = "secretkey"
-	AZURE_CLIENT_SECRET     SecretField = "clientsecret"
-	AZURE_SUBSCRIPTION_ID   SecretField = "subscriptionid"
-	AZURE_TENANT_ID         SecretField = "tenantid"
-	AZURE_CLIENT_ID         SecretField = "clientid"
-	CF_API_TOKEN            SecretField = "apitoken"
-	GCP_CREDENTIALS         SecretField = "credentials"
-	GCP_GCP_PROJECT         SecretField = "gcpproject"
-	HETZNER_API_TOKEN       SecretField = "apitoken"
-	HETZNER_DNS_CREDENTIALS SecretField = "credentials"
-	OCI_PRIVATE_KEY         SecretField = "privatekey"
-	OCI_KEY_FINGERPRINT     SecretField = "keyfingerprint"
-	OCI_TENANCT_OCID        SecretField = "tenancyocid"
-	OCI_USER_OCID           SecretField = "userocid"
-	OCI_COMPARTMENT_OCID    SecretField = "compartmentocid"
+	AWS_ACCESS_KEY        SecretField = "accesskey"
+	AWS_SECRET_KEY        SecretField = "secretkey"
+	AZURE_CLIENT_SECRET   SecretField = "clientsecret"
+	AZURE_SUBSCRIPTION_ID SecretField = "subscriptionid"
+	AZURE_TENANT_ID       SecretField = "tenantid"
+	AZURE_CLIENT_ID       SecretField = "clientid"
+	CF_API_TOKEN          SecretField = "apitoken"
+	GCP_CREDENTIALS       SecretField = "credentials"
+	GCP_GCP_PROJECT       SecretField = "gcpproject"
+	HETZNER_CREDENTIALS   SecretField = "credentials"
+	HETZNER_DNS_API_TOKEN SecretField = "apitoken"
+	OCI_PRIVATE_KEY       SecretField = "privatekey"
+	OCI_KEY_FINGERPRINT   SecretField = "keyfingerprint"
+	OCI_TENANCT_OCID      SecretField = "tenancyocid"
+	OCI_USER_OCID         SecretField = "userocid"
+	OCI_COMPARTMENT_OCID  SecretField = "compartmentocid"
 )
 
 // ProviderWithData helper type that assist in conversion
@@ -64,8 +65,10 @@ type ProviderWithData struct {
 	Secret       corev1.Secret
 }
 
-// Provider defines the desired state of Provider
+// Providers list of defined cloud provider configuration
+// that will be used while infrastructure provisioning.
 type Provider struct {
+	// Name is the name of the provider specyfication. It has to be unique across all providers.
 	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:MinLength=1
 	ProviderName string `json:"name"`
@@ -76,9 +79,8 @@ type Provider struct {
 
 // Specification of the desired behavior of the InputManifest
 type InputManifestSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make crds" to regenerate code after modifying this file
-
+	// Providers list of defined cloud provider configuration
+	// that will be used while infrastructure provisioning.
 	// +optional
 	Providers []Provider `json:"providers,omitempty"`
 	// +optional
@@ -105,7 +107,9 @@ type ClustersStatus struct {
 //+kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.state",description="Status of the input manifest"
 //+kubebuilder:subresource:status
 
-// InputManifest is the Schema for the inputmanifests API
+// InputManifest is a definition of the user's infrastructure.
+// It contains cloud provider specification,
+// nodepool specification, Kubernetes and loadbalancer clusters.
 type InputManifest struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

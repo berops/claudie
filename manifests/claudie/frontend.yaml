@@ -21,14 +21,14 @@ spec:
       serviceAccountName: frontend-sa
       containers:
         - name: frontend
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           image: ghcr.io/berops/claudie/frontend
           resources:
             requests:
               cpu: 25m
               memory: 100Mi
             limits:
-              cpu: 50m
+              cpu: 250m
               memory: 150Mi
           ports:
             - containerPort: 9443
@@ -63,15 +63,15 @@ spec:
               value: "/validate-manifest" 
           readinessProbe:
             httpGet:
-              path: /ready
+              path: /readyz
               port: 50058
             initialDelaySeconds: 5
             periodSeconds: 30
           livenessProbe:
             httpGet:
-              path: /live
+              path: /healthz
               port: 50058
-            initialDelaySeconds: 10
+            initialDelaySeconds: 15
             periodSeconds: 30   
           volumeMounts:
             - name: webhook-tls-certs
@@ -91,7 +91,7 @@ metadata:
     app.kubernetes.io/name: frontend
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
+kind: ClusterRole
 metadata:
   name: frontend-role
   labels:
@@ -100,9 +100,39 @@ metadata:
 rules:
   - apiGroups: [""]
     resources: ["secrets"]
-    verbs: ["watch", "list"]
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs:
+    - create
+    - list
+    - watch   
+    - patch 
+  - apiGroups: ["claudie.io"]
+    resources: ["inputmanifests"]
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups: ["claudie.io"]
+    resources: ["inputmanifests/finalizers"]
+    verbs:
+    - update
+  - apiGroups: ["claudie.io"]
+    resources: ["inputmanifests/status"]
+    verbs:
+    - get
+    - patch
+    - update
 ---
-kind: RoleBinding
+kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: frontend-role-binding
@@ -113,7 +143,7 @@ subjects:
   - kind: ServiceAccount
     name: frontend-sa
 roleRef:
-  kind: Role
+  kind: ClusterRole
   name: frontend-role
   apiGroup: rbac.authorization.k8s.io
 ---
@@ -144,17 +174,10 @@ metadata:
 webhooks:
   - name: validate-manifest.claudie.io
     admissionReviewVersions:
-      - "v1"
+      - "v1beta1"
     sideEffects: "None"
     failurePolicy: Fail
-    timeoutSeconds: 5
-    namespaceSelector:
-      matchLabels:
-        kubernetes.io/metadata.name: claudie
-    objectSelector:
-      matchExpressions:
-        - key: claudie.io/input-manifest
-          operator: Exists
+    timeoutSeconds: 10
     clientConfig:
       service:
         name: frontend
@@ -162,10 +185,10 @@ webhooks:
         path: "/validate-manifest"
     rules:
       - operations: [ "CREATE", "UPDATE" ]
-        apiGroups: [""]
-        apiVersions: ["v1"]
-        resources: ["secrets"]
-        scope: "Namespaced"
+        apiGroups: ["claudie.io"]
+        apiVersions: ["v1beta1"]
+        resources: ["inputmanifests"]
+        scope: "*"
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate

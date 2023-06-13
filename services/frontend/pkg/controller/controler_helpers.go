@@ -64,7 +64,7 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 			})
 
 		case v1beta.HETZNER:
-			hetzner_key, err := p.GetSecretField(v1beta.HETZNER_API_TOKEN)
+			hetzner_key, err := p.GetSecretField(v1beta.HETZNER_CREDENTIALS)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
@@ -142,7 +142,7 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 			})
 
 		case v1beta.HETZNER_DNS:
-			hetznerDNSCredentials, err := p.GetSecretField(v1beta.HETZNER_DNS_CREDENTIALS)
+			hetznerDNSCredentials, err := p.GetSecretField(v1beta.HETZNER_DNS_API_TOKEN)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}

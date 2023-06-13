@@ -117,8 +117,12 @@ func run() error {
 		return err
 	}
 
-	// Register a healthcheck endpoint
-	if err := mgr.AddHealthzCheck("/health", healthz.Ping); err != nil {
+	// Register a healthcheck and readiness endpoint, with path /livez and /healthz
+	// https://github.com/kubernetes-sigs/controller-runtime/issues/2127
+	if err := mgr.AddHealthzCheck("live", healthz.Ping); err != nil {
+		return err
+	}
+	if err := mgr.AddReadyzCheck("ready", healthz.Ping); err != nil {
 		return err
 	}
 
@@ -134,6 +138,6 @@ func init() {
 	// lookup environment variables
 	portStr = utils.GetEnvDefault("WEBHOOK_TLS_PORT", "9443")
 	certDir = utils.GetEnvDefault("WEBHOOK_CERT_DIR", "./tls")
-	webhookPath = utils.GetEnvDefault("WEBHOOK_PATH", "/input-manifest-validator")
+	webhookPath = utils.GetEnvDefault("WEBHOOK_PATH", "/validate-manifest")
 
 }

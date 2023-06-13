@@ -1,19 +1,3 @@
-/*
-Copyright 2023 berops.com.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package controller
 
 import (
@@ -61,8 +45,8 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		pwd.ProviderType = v1beta.ProviderType(p.ProviderType)
 		if err := r.kc.Get(ctx, client.ObjectKey{Name: p.SecretRef.Name, Namespace: p.SecretRef.Namespace}, &pwd.Secret); err != nil {
 			r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
-			log.Error(err, "secret not found", "name", p.SecretRef.Name, "namespace", p.SecretRef.Namespace)
-			return ctrl.Result{}, err
+			log.Error(err, "secret not found", "will try again in", REQUEUE_AFTER_ERROR, "name", p.SecretRef.Name, "namespace", p.SecretRef.Namespace)
+			return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
 		}
 		providersSecrets = append(providersSecrets, pwd)
 	}
@@ -70,7 +54,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	// Create a raw input manifest of manifest.Manifest and pull the referenced secrets into it
 	rawManifest, err := mergeInputManifestWithSecrets(*inputManifest, providersSecrets)
 	if err != nil {
-		log.Error(err, "error while using referenced secrets")
+		log.Error(err, "error while using referenced secrets", "will try again in", REQUEUE_AFTER_ERROR,)
 		return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
 	}
 
@@ -79,7 +63,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	// In case the validation will fail, it will end the reconcile
 	// with an err, and generate an Kubernetes Event
 	if err := rawManifest.Providers.Validate(); err != nil {
-		log.Error(err, "error while validating referenced secrets")
+		log.Error(err, "error while validating referenced secrets", "will try again in", REQUEUE_AFTER_ERROR,)
 		r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
 		inputManifest.SetUpdateResourceStatus(v1beta.InputManifestStatus{
 			State: v1beta.STATUS_ERROR,
@@ -93,7 +77,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	// Get all configs from context-box
 	configs, err := r.Usecases.ContextBox.GetAllConfigs()
 	if err != nil {
-		return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, err
+		return ctrl.Result{}, err
 	}
 
 	// Build the actual state of inputManifet.

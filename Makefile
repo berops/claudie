@@ -120,10 +120,10 @@ CONTROLLER_TOOLS_VERSION ?= v0.11.3
 
 # Generate CustomResourceDefinition objects.
 crds: controller-gen 
-	$(CONTROLLER_GEN) crd paths="./..." output:crd:artifacts:config=manifests/claudie/crds
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./..." output:crd:artifacts:config=manifests/claudie/crd
 
 crds-apply: controller-gen 
-	$(CONTROLLER_GEN) crd paths="./..." output:crd:artifacts:config=manifests/claudie/crds && kubectl apply -f ./manifests/claudie/crds/
+	$(CONTROLLER_GEN) crd paths="./..." output:crd:artifacts:config=manifests/claudie/crds && kubectl apply -f ./manifests/claudie/crd/
 
 
 controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary. If wrong version is installed, it will be overwritten.
