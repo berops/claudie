@@ -68,6 +68,6 @@ images:
 - name: ghcr.io/berops/claudie/kuber
   newTag: ab45fa7-1989
 - name: ghcr.io/berops/claudie/scheduler
-  newTag: ab45fa7-1989
+  newTag: a278551-1994
 - name: ghcr.io/berops/claudie/terraformer
   newTag: ab45fa7-1989
