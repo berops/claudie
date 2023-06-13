@@ -12,9 +12,9 @@ var (
 	testClusterVersionFailMinor = &Kubernetes{Clusters: []Cluster{{Name: "cluster1", Network: "10.0.0.0/8", Version: "v1.21.0", Pools: Pool{Control: []string{"np1"}}}}}
 	testClusterVersionFailMajor = &Kubernetes{Clusters: []Cluster{{Name: "cluster1", Network: "10.0.0.0/8", Version: "v2.22.0", Pools: Pool{Control: []string{"np1"}}}}}
 
-	testNodepoolAutoScalerSuccAC = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", DiskSize: 50, AutoscalerConfig: AutoscalerConfig{Min: 1, Max: 3}, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
-	testNodepoolAutoScalerSucc   = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", DiskSize: 50, Count: 1, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
-	testNodepoolAutoScalerFail   = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", DiskSize: 50, Count: 1, AutoscalerConfig: AutoscalerConfig{Min: 1, Max: 3}, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
+	testNodepoolAutoScalerSuccAC = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: 50, AutoscalerConfig: AutoscalerConfig{Min: 1, Max: 3}, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
+	testNodepoolAutoScalerSucc   = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: 50, Count: 1, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
+	testNodepoolAutoScalerFail   = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: 50, Count: 1, AutoscalerConfig: AutoscalerConfig{Min: 1, Max: 3}, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
 	testDomainFail               = &Manifest{
 		Kubernetes: Kubernetes{
 			Clusters: []Cluster{
@@ -48,6 +48,43 @@ var (
 			},
 		},
 	}
+
+	testK8s = &Manifest{
+		Name: "foo",
+		Providers: Provider{
+			Hetzner: []Hetzner{{
+				Name:        "foo",
+				Credentials: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			},
+			},
+		},
+		Kubernetes: Kubernetes{
+			Clusters: []Cluster{
+				{
+					Name:    "foooo",
+					Version: "v1.26.2",
+					Network: "192.168.0.1/16",
+					Pools: Pool{
+						Control: []string{"control-1", "control-2"},
+						Compute: []string{"compute-1", "compute-2"},
+					},
+				},
+			},
+		},
+		NodePools: NodePool{
+			Dynamic: []DynamicNodePool{
+				{Name: "control-1", Count: 10, ServerType: "small", Image: "ubuntu", ProviderSpec: ProviderSpec{Name: "foo", Region: "north", Zone: "1"}},
+				{Name: "compute-1", Count: 100, ServerType: "small", Image: "ubuntu", ProviderSpec: ProviderSpec{Name: "foo", Region: "north", Zone: "1"}},
+			},
+			Static: []StaticNodePool{
+				{
+					Name: "control-2",
+				}, {
+					Name: "compute-2",
+				},
+			},
+		},
+	}
 )
 
 // TestDomain tests the domain which will be formed from node name
@@ -76,4 +113,10 @@ func TestNodepool(t *testing.T) {
 	require.NoError(t, err)
 	err = testNodepoolAutoScalerFail.Validate()
 	require.Error(t, err)
+}
+
+// TestNodepool tests the nodepool spec validation for dynamic and static node pools.
+func TestNodepools(t *testing.T) {
+	err := testK8s.Validate()
+	require.NoError(t, err)
 }

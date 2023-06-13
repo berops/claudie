@@ -1,0 +1,102 @@
+site_name: Claudie Docs
+site_url: https://docs.claudie.io/
+repo_url: https://github.com/berops/claudie
+repo_name: claudie
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - toc:
+      permalink: true
+
+plugins:
+  - mike:
+      canonical_version: null
+      version_selector: true
+  - search:
+      lang: en
+  - glightbox:
+      width: 100%
+      height: auto
+      zoomable: true
+  - material-plausible
+
+copyright: |
+  For enterprise support reach out via 
+  <a 
+    href="mailto:claudie@berops,com"
+    onmouseover="this.href=this.href.replace(',', '.')">
+    claudie@berops.com
+  </a>
+
+theme:
+  name: material
+  features:
+    - content.code.copy
+    - navigation.top
+  palette:
+    - primary: white
+    - accent: black
+  logo: hexagon_blue.png
+  favicon: hexagon_blue.png
+
+nav:
+  - index.md
+  - Getting Started:
+    - getting-started/get-started-using-claudie.md
+    - CRUD for Claudie: crud/crud.md
+  - Input manifest: 
+      - input-manifest/api-reference.md
+      - Example yaml file: input-manifest/example.md
+      - Providers:
+        - Examples:
+          - AWS example: input-manifest/providers/examples/aws-input-manifest.md
+          - Azure example: input-manifest/providers/examples/azure-input-manifest.md
+          - GCP example: input-manifest/providers/examples/gcp-input-manifest.md
+          - Hetzner example: input-manifest/providers/examples/hetzner-input-manifest.md
+          - OCI example: input-manifest/providers/examples/oci-input-manifest.md
+        - AWS: input-manifest/providers/aws.md
+        - Azure: input-manifest/providers/azure.md
+        - GCP: input-manifest/providers/gcp.md
+        - Cloudflare: input-manifest/providers/cloudflare.md
+        - Hetzner: input-manifest/providers/hetzner.md
+        - OCI: input-manifest/providers/oci.md
+  - How Claudie works:
+    - Claudie Workflow: claudie-workflow/claudie-workflow.md
+    - Claudie Storage solution: storage/storage-solution.md
+    - Loadbalancing in Claudie: ./loadbalancing/loadbalancing-solution.md
+    - Autoscaling in Claudie: autoscaling/autoscaling.md
+  - Claudie Use Cases: use-cases/use-cases.md
+  - Roadmap for Claudie: roadmap/roadmap.md
+  - Contributing: contributing/contributing.md
+  - Changelog:
+    - Claudie v0.1: CHANGELOG/changelog-0.1.x.md
+    - Claudie v0.2: CHANGELOG/changelog-0.2.x.md
+    - Claudie v0.3: CHANGELOG/changelog-0.3.x.md
+
+extra:
+  version:
+    provider: mike
+  analytics:
+    provider: plausible
+    domain: docs.claudie.io
+    feedback:
+      title: Was this doc helpful?
+      ratings:
+        - icon: material/emoticon-happy-outline
+          name: Yes, it was
+          data: good
+          note: >-
+            Thanks for your feedback!
+
+        - icon: material/emoticon-sad-outline
+          name: No, it could be a lot better
+          data: bad
+          note: >-
+            Thanks for your feedback! Help us improve this page by
+            using our <a href="..." target="_blank" rel="noopener">feedback form</a>.

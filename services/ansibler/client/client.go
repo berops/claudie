@@ -42,3 +42,11 @@ func TeardownLoadBalancers(c pb.AnsiblerServiceClient, req *pb.TeardownLBRequest
 	}
 	return res, nil
 }
+
+func UpdateAPIEndpoint(c pb.AnsiblerServiceClient, req *pb.UpdateAPIEndpointRequest) (*pb.UpdateAPIEndpointResponse, error) {
+	res, err := c.UpdateAPIEndpoint(context.Background(), req)
+	if err != nil {
+		return res, fmt.Errorf("error while calling UpdateAPIEndpoint on Ansibler: %w", err)
+	}
+	return res, nil
+}

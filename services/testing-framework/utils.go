@@ -7,11 +7,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/rs/zerolog/log"
+	"google.golang.org/grpc"
+
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
-	"github.com/rs/zerolog/log"
-	"google.golang.org/grpc"
 )
 
 const (
@@ -36,7 +37,7 @@ type idInfo struct {
 func clientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
 	cc, err := utils.GrpcDialWithInsecure("context-box", envs.ContextBoxURL)
 	if err != nil {
-		log.Fatal().Msgf("Failed to create client connection to context-box : %v", err)
+		log.Fatal().Err(err).Msgf("Failed to create client connection to context-box")
 	}
 
 	// Creating the client
@@ -70,8 +71,8 @@ func configChecker(ctx context.Context, c pb.ContextBoxServiceClient, testSetNam
 				return fmt.Errorf("error while waiting for config to finish: %w", err)
 			}
 			if res.Config != nil {
-				if len(res.Config.ErrorMessage) > 0 {
-					return fmt.Errorf("error while checking config %s : %s", res.Config.Name, res.Config.ErrorMessage)
+				if err := getError(res.Config); err != nil {
+					return fmt.Errorf("error while checking config %s : %w", res.Config.Name, err)
 				}
 
 				// if checksums are equal, the config has been processed by claudie
@@ -98,4 +99,19 @@ func getAutoscaledClusters(c *pb.Config) []*pb.K8Scluster {
 		}
 	}
 	return clusters
+}
+
+func getError(c *pb.Config) error {
+	var err error
+	for cluster, state := range c.State {
+		if state.Status == pb.Workflow_ERROR {
+			err1 := fmt.Errorf("----\nerror in cluster %s\n----\nStage: %s \n State: %s\n Description: %s", cluster, state.Stage, state.Status, state.Description)
+			if err == nil {
+				err = err1
+			} else {
+				err = fmt.Errorf("%w \n %w", err1, err)
+			}
+		}
+	}
+	return err
 }

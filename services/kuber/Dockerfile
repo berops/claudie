@@ -1,4 +1,4 @@
-FROM docker.io/library/golang:1.20.2 AS build
+FROM docker.io/library/golang:1.20.4 AS build
 
 ARG TARGETARCH
 
@@ -24,7 +24,7 @@ WORKDIR /go/services/kuber/server
 #Compile the golang code, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build
 
-FROM docker.io/library/alpine:3.17.3
+FROM docker.io/library/alpine:3.18.0
 #Add repository label
 LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
 #Add image name as a label
@@ -36,7 +36,6 @@ LABEL org.opencontainers.image.description "Image for Kuber from Claudie"
 COPY --from=build /go/kubectl /usr/local/bin/kubectl
 COPY --from=build /go/services/kuber/server/server /bin/services/kuber/server/server
 COPY --from=build /go/services/kuber/server/manifests /bin/services/kuber/server/manifests
-COPY --from=build /go/services/kuber/templates /bin/services/kuber/templates
 RUN chmod +x /usr/local/bin/kubectl && apk add -q bash
 
 #Run server

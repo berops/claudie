@@ -7,13 +7,14 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/rs/zerolog/log"
+	"google.golang.org/grpc"
+	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/externalgrpc/protos"
+
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/autoscaler-adapter/node_manager"
-	"github.com/rs/zerolog/log"
-	"google.golang.org/grpc"
-	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/externalgrpc/protos"
 )
 
 const (
@@ -65,6 +66,7 @@ func NewClaudieCloudProvider(projectName, clusterName string) *ClaudieCloudProvi
 		panic(fmt.Sprintf("Error while creating node manager : %v", err))
 	}
 	// Initialise all other variables.
+	log.Logger = log.Logger.With().Str("cluster", utils.GetClusterID(cluster.ClusterInfo)).Logger()
 	return &ClaudieCloudProvider{
 		projectName:   projectName,
 		configCluster: cluster,
@@ -85,7 +87,7 @@ func getClaudieState(projectName, clusterName string) (*pb.K8Scluster, error) {
 	}
 	defer func() {
 		if err := cc.Close(); err != nil {
-			log.Error().Msgf("Failed to close context-box connection %v", err)
+			log.Err(err).Msgf("Failed to close context-box connection")
 		}
 	}()
 
@@ -106,17 +108,19 @@ func getClaudieState(projectName, clusterName string) (*pb.K8Scluster, error) {
 func getNodesCache(nodepools []*pb.NodePool) map[string]*nodeCache {
 	var nc = make(map[string]*nodeCache, len(nodepools))
 	for _, np := range nodepools {
-		// Cache nodepools, which are autoscaled.
-		if np.AutoscalerConfig != nil {
-			// Create nodeGroup struct.
-			ng := &protos.NodeGroup{
-				Id:      np.Name,
-				MinSize: np.AutoscalerConfig.Min,
-				MaxSize: np.AutoscalerConfig.Max,
-				Debug:   fmt.Sprintf("Nodepool %s [min %d, max %d]", np.Name, np.AutoscalerConfig.Min, np.AutoscalerConfig.Max),
+		if np.GetDynamicNodePool() != nil {
+			// Cache nodepools, which are autoscaled.
+			if np.GetDynamicNodePool().AutoscalerConfig != nil {
+				// Create nodeGroup struct.
+				ng := &protos.NodeGroup{
+					Id:      np.Name,
+					MinSize: np.GetDynamicNodePool().AutoscalerConfig.Min,
+					MaxSize: np.GetDynamicNodePool().AutoscalerConfig.Max,
+					Debug:   fmt.Sprintf("Nodepool %s [min %d, max %d]", np.Name, np.GetDynamicNodePool().AutoscalerConfig.Min, np.GetDynamicNodePool().AutoscalerConfig.Max),
+				}
+				// Append ng to the final slice.
+				nc[np.Name] = &nodeCache{nodeGroup: ng, nodepool: np, targetSize: np.GetDynamicNodePool().Count}
 			}
-			// Append ng to the final slice.
-			nc[np.Name] = &nodeCache{nodeGroup: ng, nodepool: np, targetSize: np.Count}
 		}
 	}
 	return nc
@@ -209,7 +213,7 @@ func (c *ClaudieCloudProvider) Refresh(_ context.Context, req *protos.RefreshReq
 func (c *ClaudieCloudProvider) refresh() error {
 	log.Info().Msgf("Refreshing the state")
 	if cluster, err := getClaudieState(c.projectName, c.configCluster.ClusterInfo.Name); err != nil {
-		log.Error().Msgf("error while refreshing a state for the cluster %s : %v", c.configCluster.ClusterInfo.Name, err)
+		log.Err(err).Msgf("Error while refreshing a state of the cluster")
 		return fmt.Errorf("error while refreshing a state for the cluster %s : %w", c.configCluster.ClusterInfo.Name, err)
 	} else {
 		c.configCluster = cluster

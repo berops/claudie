@@ -3,12 +3,16 @@ kind: Job
 metadata:
   name: make-bucket-job
   labels:
-    app: minio-make-bucket-job
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: minio
 spec:
+  backoffLimit: 8
+  ttlSecondsAfterFinished: 3600
   template:
     metadata:
       labels:
-        app: minio-make-bucket-job
+        app.kubernetes.io/part-of: claudie
+        app.kubernetes.io/name: minio
     spec:
       restartPolicy: OnFailure
       volumes:

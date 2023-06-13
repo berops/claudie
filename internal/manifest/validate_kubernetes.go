@@ -14,7 +14,7 @@ var (
 	// NOTE:
 	// first/second capturing group MUST be changed whenever new kubeone version is introduced in Claudie
 	// so validation will catch unsupported versions
-	semverRegexString = `^(1)\.(22|23|24)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`
+	semverRegexString = `^(1)\.(24|25|26)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`
 
 	// semverRegex is a regex using the semverRegexString.
 	// It's used to verify the version inside the manifest,
@@ -42,13 +42,13 @@ func (k *Kubernetes) Validate(m *Manifest) error {
 		names[cluster.Name] = true
 
 		for _, pool := range cluster.Pools.Control {
-			if p := m.FindNodePool(pool); p == nil {
+			if !m.nodePoolDefined(pool) {
 				return fmt.Errorf("control nodepool %q used inside cluster %q not defined inside manifest", pool, cluster.Name)
 			}
 		}
 
 		for _, pool := range cluster.Pools.Compute {
-			if p := m.FindNodePool(pool); p == nil {
+			if !m.nodePoolDefined(pool) {
 				return fmt.Errorf("compute nodepool %q used inside cluster %q not defined inside manifest", pool, cluster.Name)
 			}
 		}

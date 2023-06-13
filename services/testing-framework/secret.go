@@ -9,13 +9,10 @@ import (
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/internal/templateUtils"
+	"github.com/berops/claudie/services/testing-framework/templates"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
-)
-
-const (
-	secretTpl = "secret.goyaml"
 )
 
 type SecretData struct {
@@ -27,7 +24,7 @@ type SecretData struct {
 
 // deleteSecret will delete a secret in the cluster in the specified namespace
 func deleteSecret(setName string) error {
-	kc := kubectl.Kubectl{}
+	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
 		kc.Stdout = comm.GetStdOut(setName)
 		kc.Stderr = comm.GetStdErr(setName)
@@ -37,9 +34,8 @@ func deleteSecret(setName string) error {
 
 // applySecret function will create a secret with the specified name in the specified namespace for manifest provided
 func applySecret(manifest []byte, pathToTestSet, secretName string) error {
-	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.TestingTemplates}
 	template := templateUtils.Templates{Directory: pathToTestSet}
-	tpl, err := templateLoader.LoadTemplate(secretTpl)
+	tpl, err := templateUtils.LoadTemplate(templates.SecretTemplate)
 	if err != nil {
 		return fmt.Errorf("error while loading secret.goyaml : %w", err)
 	}
@@ -53,7 +49,7 @@ func applySecret(manifest []byte, pathToTestSet, secretName string) error {
 	if err != nil {
 		return fmt.Errorf("error while generating string for secret %s : %w", secretName, err)
 	}
-	kc := kubectl.Kubectl{}
+	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
 		kc.Stdout = comm.GetStdOut(pathToTestSet)
 		kc.Stderr = comm.GetStdErr(pathToTestSet)

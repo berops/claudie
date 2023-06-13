@@ -1,9 +1,9 @@
 apiVersion: kubeone.k8c.io/v1beta2
 kind: KubeOneCluster
-name: cluster
+name: '{{ .ClusterName }}'
 
 versions:
-  kubernetes: '{{ .Kubernetes }}'
+  kubernetes: '{{ .KubernetesVersion }}'
 
 clusterNetwork:
   cni:
@@ -34,8 +34,11 @@ controlPlane:
     sshUsername: root
     sshPrivateKeyFile: '{{ $privateKey }}'
     hostname: '{{ $nodeInfo.Name }}'
+    {{- if eq $nodeInfo.Node.Public $.APIEndpoint }}
+    isLeader: true
+    {{- end }}
     taints:
-    - key: "node-role.kubernetes.io/master"
+    - key: "node-role.kubernetes.io/control-plane"
       effect: "NoSchedule"
     labels: 
       topology.kubernetes.io/region: '{{ $nodepool.Region }}'

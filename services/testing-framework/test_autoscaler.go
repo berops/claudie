@@ -82,7 +82,7 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 	defer func() {
 		err := cc.Close()
 		if err != nil {
-			log.Error().Msgf("error while closing client connection : %v", err)
+			log.Err(err).Msgf("error while closing client connection")
 		}
 	}()
 
@@ -105,12 +105,14 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 	time.Sleep(scaleUpTimeout * time.Minute)
 
 	// Check if build has been started, if yes, error.
-	if res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: config.Id, Type: pb.IdType_HASH}); err != nil {
+	if res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: config.Id, Type: pb.IdType_HASH}); err == nil {
 		if !checksumsEqual(res.Config.DsChecksum, res.Config.CsChecksum) {
 			return fmt.Errorf("some cluster/s in config %s have been scaled up, when they should not", config.Name)
 		} else {
 			log.Info().Msgf("Config %s has successfully passed autoscaling test [1/3]", config.Name)
 		}
+	} else {
+		return fmt.Errorf("error while retrieving config %s from DB : %w", config.Name, err)
 	}
 	// Apply scale up deployment.
 	for _, cluster := range autoscaledClusters {
@@ -132,12 +134,14 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 	time.Sleep(scaleUpTimeout * time.Minute)
 
 	// Check if build has been started, if no, error (Scale up).
-	if res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: config.Id, Type: pb.IdType_HASH}); err != nil {
+	if res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: config.Id, Type: pb.IdType_HASH}); err == nil {
 		if checksumsEqual(res.Config.DsChecksum, res.Config.CsChecksum) {
 			return fmt.Errorf("some cluster/s in config %s have not been scaled up, when they should have", config.Name)
 		} else {
 			log.Info().Msgf("Config %s has successfully passed autoscaling test [2/3]", config.Name)
 		}
+	} else {
+		return fmt.Errorf("error while retrieving config %s from DB : %w", config.Name, err)
 	}
 
 	// Wait until build is finished.
@@ -166,12 +170,14 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 	log.Info().Msgf("Waiting %d minutes to let autoscaler start the scale down", scaleDownTimeout)
 	time.Sleep(scaleDownTimeout * time.Minute)
 	// Check if build has been started, if not, error (Scale down).
-	if res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: config.Id, Type: pb.IdType_HASH}); err != nil {
+	if res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: config.Id, Type: pb.IdType_HASH}); err == nil {
 		if checksumsEqual(res.Config.DsChecksum, res.Config.CsChecksum) {
 			return fmt.Errorf("some cluster/s in config %s have not been scaled down, when they should have", config.Name)
 		} else {
 			log.Info().Msgf("Config %s has successfully passed autoscaling test [3/3]", config.Name)
 		}
+	} else {
+		return fmt.Errorf("error while retrieving config %s from DB : %w", config.Name, err)
 	}
 	// Wait until build is finished.
 	if err := configChecker(ctx, c, "autoscaling", "scale-down-test", idInfo{id: config.Id, idType: pb.IdType_HASH}); err != nil {

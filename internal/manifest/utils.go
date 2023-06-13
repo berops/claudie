@@ -6,6 +6,13 @@ import (
 	"github.com/berops/claudie/proto/pb"
 )
 
+const (
+	// defaultDiskSize defines size of the disk if not specified in manifest.
+	// 50GB is the smallest disk size commonly supported by all the cloud providers
+	// supported by Claudie.
+	defaultDiskSize = 50
+)
+
 // GetProvider will search for a Provider config by matching name from providerSpec
 // returns *pb.Provider,nil if matching Provider config found otherwise returns nil,error
 func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
@@ -106,10 +113,21 @@ func (m *Manifest) IsKubernetesClusterPresent(name string) bool {
 	return false
 }
 
-// FindNodePool will search for the nodepool in manifest.DynamicNodePool based on the nodepool name
+// FindDynamicNodePool will search for the nodepool in manifest.DynamicNodePool based on the nodepool name
 // returns *manifest.DynamicNodePool if found, nil otherwise
-func (ds *Manifest) FindNodePool(nodePoolName string) *DynamicNodePool {
+func (ds *Manifest) FindDynamicNodePool(nodePoolName string) *DynamicNodePool {
 	for _, nodePool := range ds.NodePools.Dynamic {
+		if nodePool.Name == nodePoolName {
+			return &nodePool
+		}
+	}
+	return nil
+}
+
+// FindStaticNodePool will search for the nodepool in manifest.StaticNodePool based on the nodepool name
+// returns *manifest.StaticNodePool if found, nil otherwise
+func (ds *Manifest) FindStaticNodePool(nodePoolName string) *StaticNodePool {
+	for _, nodePool := range ds.NodePools.Static {
 		if nodePool.Name == nodePoolName {
 			return &nodePool
 		}
@@ -123,8 +141,7 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 	var nodePools []*pb.NodePool
 	for _, nodePoolName := range pools {
 		// Check if the nodepool is part of the cluster
-		var nodePool *DynamicNodePool = ds.FindNodePool(nodePoolName)
-		if nodePool != nil {
+		if nodePool := ds.FindDynamicNodePool(nodePoolName); nodePool != nil {
 			provider, err := ds.GetProvider(nodePool.ProviderSpec.Name)
 			if err != nil {
 				return nil, err
@@ -140,21 +157,78 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 				count = nodePool.AutoscalerConfig.Min
 			}
 
+			// Set default disk size if not defined. (Value only used in compute nodepools)
+			if nodePool.StorageDiskSize == 0 {
+				nodePool.StorageDiskSize = defaultDiskSize
+			}
+
 			nodePools = append(nodePools, &pb.NodePool{
-				Name:             nodePool.Name,
-				Region:           nodePool.ProviderSpec.Region,
-				Zone:             nodePool.ProviderSpec.Zone,
-				ServerType:       nodePool.ServerType,
-				Image:            nodePool.Image,
-				DiskSize:         uint32(nodePool.DiskSize),
-				Count:            count,
-				Provider:         provider,
-				IsControl:        isControl,
-				AutoscalerConfig: autoscalerConf,
+				Name:      nodePool.Name,
+				IsControl: isControl,
+				NodePoolType: &pb.NodePool_DynamicNodePool{
+					DynamicNodePool: &pb.DynamicNodePool{
+						Region:           nodePool.ProviderSpec.Region,
+						Zone:             nodePool.ProviderSpec.Zone,
+						ServerType:       nodePool.ServerType,
+						Image:            nodePool.Image,
+						StorageDiskSize:  uint32(nodePool.StorageDiskSize),
+						Count:            count,
+						Provider:         provider,
+						AutoscalerConfig: autoscalerConf,
+					},
+				},
+			})
+		} else if nodePool := ds.FindStaticNodePool(nodePoolName); nodePool != nil {
+			nodes := getStaticNodes(nodePool)
+			nodePools = append(nodePools, &pb.NodePool{
+				Name:      nodePool.Name,
+				Nodes:     nodes,
+				IsControl: isControl,
+				NodePoolType: &pb.NodePool_StaticNodePool{
+					StaticNodePool: &pb.StaticNodePool{
+						NodeKeys: getNodeKeys(nodePool),
+					},
+				},
 			})
 		} else {
 			return nil, fmt.Errorf("nodepool %s not defined", nodePoolName)
 		}
 	}
 	return nodePools, nil
+}
+
+// getStaticNodes returns slice of static nodes with initialised name.
+func getStaticNodes(np *StaticNodePool) []*pb.Node {
+	nodes := make([]*pb.Node, 0, len(np.Nodes))
+	for i, node := range np.Nodes {
+		nodes = append(nodes, &pb.Node{
+			Name:   fmt.Sprintf("%s-%d", np.Name, i),
+			Public: node.Endpoint,
+		})
+	}
+	return nodes
+}
+
+// getNodeKeys returns map of keys for static nodes in map[endpoint]key.
+func getNodeKeys(nodepool *StaticNodePool) map[string]string {
+	m := make(map[string]string)
+	for _, n := range nodepool.Nodes {
+		m[n.Endpoint] = n.Key
+	}
+	return m
+}
+
+// nodePoolDefined returns true if node pool is defined in manifest, false otherwise.
+func (ds *Manifest) nodePoolDefined(pool string) bool {
+	for _, nodePool := range ds.NodePools.Static {
+		if nodePool.Name == pool {
+			return true
+		}
+	}
+	for _, nodePool := range ds.NodePools.Dynamic {
+		if nodePool.Name == pool {
+			return true
+		}
+	}
+	return false
 }

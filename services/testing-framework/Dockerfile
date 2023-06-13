@@ -1,4 +1,4 @@
-FROM docker.io/library/golang:1.20.2 AS build
+FROM docker.io/library/golang:1.20.4 AS build
 
 ARG TARGETARCH
 
@@ -23,7 +23,7 @@ COPY . .
 WORKDIR /go/services/testing-framework
 RUN CGO_ENABLED=0 go test -c -run TestClaudie
 
-FROM docker.io/library/alpine:3.17.3
+FROM docker.io/library/alpine:3.18.0
 #Add repository label
 LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
 #Add image name as a label
@@ -33,7 +33,6 @@ LABEL org.opencontainers.image.description "Image for Testing-framework from Cla
 
 COPY --from=build /go/kubectl /usr/local/bin/kubectl
 COPY --from=build /go/services/testing-framework/testing-framework.test /go/services/testing-framework/testing-framework.test
-COPY --from=build /go/services/testing-framework/templates /go/services/testing-framework/templates
 
 RUN chmod +x /usr/local/bin/kubectl && \
     apk add -q bash

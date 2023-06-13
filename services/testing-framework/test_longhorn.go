@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	maxLonghornCheck = 30 * 60 // max allowed time for pods of longhorn-system to be ready [seconds]
-	sleepSecPods     = 20      // seconds for one cycle of longhorn checks (the node and pod checks)
+	maxLonghornCheck = 6 * 60 // max allowed time for pods of longhorn-system to be ready [seconds]
+	sleepSecPods     = 20     // seconds for one cycle of longhorn checks (the node and pod checks)
 )
 
 type KubectlOutputJSON struct {
@@ -32,7 +32,7 @@ func testLonghornDeployment(ctx context.Context, config *pb.Config) error {
 	for _, cluster := range clusters {
 		// check number of nodes in nodes.longhorn.io
 
-		kubectl := kubectl.Kubectl{Kubeconfig: cluster.Kubeconfig}
+		kubectl := kubectl.Kubectl{Kubeconfig: cluster.Kubeconfig, MaxKubectlRetries: 5}
 		if log.Logger.GetLevel() == zerolog.DebugLevel {
 			prefix := fmt.Sprintf("%s-%s", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
 			kubectl.Stdout = comm.GetStdOut(prefix)
@@ -55,8 +55,13 @@ func checkLonghornNodes(ctx context.Context, cluster *pb.K8Scluster, kubectl kub
 	workerCount := 0
 	//count the worker nodes
 	for _, nodepool := range cluster.ClusterInfo.NodePools {
-		if !nodepool.IsControl {
-			workerCount += int(nodepool.Count)
+		if nodepool.IsControl {
+			continue
+		}
+		if nodepool.GetDynamicNodePool() != nil {
+			workerCount += int(nodepool.GetDynamicNodePool().Count)
+		} else if nodepool.GetStaticNodePool() != nil {
+			workerCount += len(nodepool.Nodes)
 		}
 	}
 	// give them time of maxLonghornCheck seconds to be scheduled

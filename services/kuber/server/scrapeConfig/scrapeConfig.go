@@ -6,7 +6,9 @@ import (
 
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/templateUtils"
+	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/services/kuber/templates"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
@@ -20,7 +22,16 @@ type ScrapeConfig struct {
 }
 
 type SCData struct {
-	LBClusters []*pb.LBcluster
+	LBClusters []*LBcluster
+}
+
+type LBcluster struct {
+	NodePools *NodePools
+}
+
+type NodePools struct {
+	Dynamic []*pb.NodePool
+	Static  []*pb.NodePool
 }
 
 type ScManifestData struct {
@@ -40,23 +51,22 @@ const (
 // for scraping Loadbalancers node-exporter endpoints
 // it will create the secret in a applied namespace
 // If there is no loadbalancers it will apply the config with no target endpoints
-func (sc ScrapeConfig) GenerateAndApplyScrapeConfig() error {
+func (sc *ScrapeConfig) GenerateAndApplyScrapeConfig() error {
 	// Generate loadbalancers scrape config
-	templateLoader := templateUtils.TemplateLoader{Directory: templateUtils.KuberTemplates}
 	template := templateUtils.Templates{Directory: sc.Directory}
 
 	// Generate prometheus scrape config to file
-	tpl, err := templateLoader.LoadTemplate(scrapeConfigFileTpl)
+	tpl, err := templateUtils.LoadTemplate(templates.ScrapeConfigTemplate)
 	if err != nil {
 		return fmt.Errorf("error while loading %s on %s: %w", scrapeConfigFileTpl, sc.Cluster.ClusterInfo.Name, err)
 	}
-	scrapeConfig, err := template.GenerateToString(tpl, SCData{LBClusters: sc.LBClusters})
+	scrapeConfig, err := template.GenerateToString(tpl, sc.getData())
 	if err != nil {
 		return fmt.Errorf("error while generating %s on %s: %w", scrapeConfigFile, sc.Cluster.ClusterInfo.Name, err)
 	}
 
 	// Generate manifest for namespace and secret
-	tpl, err = templateLoader.LoadTemplate(scManifestFileTpl)
+	tpl, err = templateUtils.LoadTemplate(templates.ScrapeConfigManifestTemplate)
 	if err != nil {
 		return fmt.Errorf("error while loading %s on %s: %w", scManifestFileTpl, sc.Cluster.ClusterInfo.Name, err)
 	}
@@ -80,8 +90,8 @@ func (sc ScrapeConfig) GenerateAndApplyScrapeConfig() error {
 }
 
 // RemoveIfNoLbScrapeConfig will remove the LB scrape-config.yml
-func (sc ScrapeConfig) RemoveLbScrapeConfig() error {
-	k := kubectl.Kubectl{Kubeconfig: sc.Cluster.Kubeconfig}
+func (sc *ScrapeConfig) RemoveLbScrapeConfig() error {
+	k := kubectl.Kubectl{Kubeconfig: sc.Cluster.Kubeconfig, MaxKubectlRetries: 3}
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
 		prefix := fmt.Sprintf("%s-%s", sc.Cluster.ClusterInfo.Name, sc.Cluster.ClusterInfo.Hash)
 		k.Stdout = comm.GetStdOut(prefix)
@@ -91,4 +101,15 @@ func (sc ScrapeConfig) RemoveLbScrapeConfig() error {
 		return fmt.Errorf("error while removing LB scrape-config on %s: %w", sc.Cluster.ClusterInfo.Name, err)
 	}
 	return nil
+}
+
+func (sc *ScrapeConfig) getData() SCData {
+	lbs := make([]*LBcluster, 0, len(sc.LBClusters))
+	for _, l := range sc.LBClusters {
+		lbs = append(lbs, &LBcluster{NodePools: &NodePools{
+			Dynamic: utils.GetCommonDynamicNodePools(l.ClusterInfo.NodePools),
+			Static:  utils.GetCommonStaticNodePools(l.ClusterInfo.NodePools),
+		}})
+	}
+	return SCData{LBClusters: lbs}
 }

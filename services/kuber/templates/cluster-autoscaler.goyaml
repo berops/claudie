@@ -3,32 +3,65 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: autoscaler-config-{{ .ClusterID }}
+  labels:
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: cluster-autoscaler
+    app.kubernetes.io/instance: cluster-autoscaler-{{ .ClusterID }}
+    app.kubernetes.io/component: cluster-autoscaler
 data:
   cloud-config: |-
-    address: "autoscaler-adapter-{{ .ClusterID }}:{{ .AdapterPort }}"
+    address: "localhost:{{ .AdapterPort }}"
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: autoscaler-{{ .ClusterID }}
   labels:
-    app: autoscaler-{{ .ClusterID }}
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: cluster-autoscaler
+    app.kubernetes.io/instance: cluster-autoscaler-{{ .ClusterID }}
+    app.kubernetes.io/component: cluster-autoscaler
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: autoscaler-{{ .ClusterID }}
+      app.kubernetes.io/part-of: claudie
+      app.kubernetes.io/name: cluster-autoscaler
+      app.kubernetes.io/instance: cluster-autoscaler-{{ .ClusterID }}
+      app.kubernetes.io/component: cluster-autoscaler
   template:
     metadata:
       labels:
-        app: autoscaler-{{ .ClusterID }}
+        app.kubernetes.io/part-of: claudie
+        app.kubernetes.io/name: cluster-autoscaler
+        app.kubernetes.io/instance: cluster-autoscaler-{{ .ClusterID }}
+        app.kubernetes.io/component: cluster-autoscaler
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8085"
     spec:
       containers:
-        - image: registry.k8s.io/autoscaling/cluster-autoscaler:v1.25.0
-          name: cluster-autoscaler
+        - name: autoscaler-adapter
+          imagePullPolicy: IfNotPresent
+          image: ghcr.io/berops/claudie/autoscaler-adapter
+          env:
+            - name: ADAPTER_PORT
+              value: "{{ .AdapterPort }}"
+            - name: CLUSTER_NAME
+              value: {{ .ClusterName }}
+            - name: PROJECT_NAME
+              value: {{ .ProjectName }}
+          resources:
+            requests:
+              cpu: 80m
+              memory: 50Mi
+            limits:
+              cpu: 160m
+              memory: 100Mi
+          ports:
+            - containerPort: {{ .AdapterPort }}
+        - name: cluster-autoscaler
+          image: registry.k8s.io/autoscaling/cluster-autoscaler:{{ .KubernetesVersion }}
           resources:
             limits:
               cpu: 100m
@@ -42,6 +75,7 @@ spec:
             - --cloud-config=/etc/claudie/cloud-config/cloud-config
             - --kubeconfig=/etc/claudie/kubeconfig/kubeconfig
             - --ignore-daemonsets-utilization=true
+            - --balance-similar-node-groups=true
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: kubeconfig

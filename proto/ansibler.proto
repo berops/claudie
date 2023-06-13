@@ -20,6 +20,7 @@ message SetUpLBRequest {
   repeated LBcluster desiredLbs = 3;
   string previousAPIEndpoint = 4;
   string projectName = 5;
+  bool firstRun = 6;
 }
 message SetUpLBResponse {
   K8scluster desired = 1;
@@ -30,6 +31,7 @@ message SetUpLBResponse {
 message TeardownLBRequest {
   K8scluster desired = 1;
   repeated LBcluster desiredLbs = 2;
+  // LB clusters which were deleted from the Claudie manifest.
   repeated LBcluster deletedLbs = 3;
   string projectName = 4;
 }
@@ -39,6 +41,17 @@ message TeardownLBResponse {
   K8scluster desired = 2;
   repeated LBcluster desiredLbs = 3;
   repeated LBcluster deletedLbs = 4;
+}
+
+message UpdateAPIEndpointRequest{
+  K8scluster current = 1;
+  K8scluster desired = 2;
+  string projectName = 3;
+}
+
+message UpdateAPIEndpointResponse{
+  K8scluster current = 1;
+  K8scluster desired = 2;
 }
 
 service AnsiblerService {
@@ -51,4 +64,7 @@ service AnsiblerService {
   // TeardownLoadBalancers correctly destroys the load balancers attached to a k8s
   // cluster by choosing a new ApiServer endpoint.
   rpc TeardownLoadBalancers(TeardownLBRequest) returns (TeardownLBResponse);
+  // UpdateAPIEndpoint handles changes of API endpoint between control nodes.
+  // It will update the current stage based on the information from the desired state.
+  rpc UpdateAPIEndpoint(UpdateAPIEndpointRequest) returns (UpdateAPIEndpointResponse);
 }

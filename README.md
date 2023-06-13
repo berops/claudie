@@ -13,19 +13,27 @@
 ## Intro video
 
 <p align="center">
-  <a href="https://youtu.be/q4xdAiHYxZQ"><img src="https://markdown-videos.deta.dev/youtube/q4xdAiHYxZQ"></a>
+  <a href="http://www.youtube.com/watch?feature=player_embedded&v=q4xdAiHYxZQ" target="_blank">
+    <img src="http://img.youtube.com/vi/q4xdAiHYxZQ/0.jpg" alt="Claudie Intro Video" width="480" height="360"/>
+  </a>
 </p>
+
+
+## Vision of Claudie
+
+The purpose of Claudie is to become the final Kubernetes engine you'll ever need. It aims to build clusters that leverage features and costs across multiple cloud vendors and on-prem datacenters. A Kubernetes that you won't ever need to migrate away from.
 
 ## Typical use cases
 
-Claudie has been built to target the following use case in the Kubernetes world.
+Claudie has been built as an answer to the following Kubernetes challenges.
 
+- Cost savings
+- Data locality & compliance (e.g. GDPR)
+- Managed Kubernetes for providers that do not offer it
 - Cloud bursting
 - Service interconnect
-- Managed Kubernetes for providers that do not offer it
-- Cost savings
 
-Read in more details [here](./docs/use-cases/use-cases.md).
+Read in more details [here](https://docs.claudie.io/latest/use-cases/use-cases/).
 
 ## Features
 
@@ -40,8 +48,8 @@ Simply insert credentials to your cloud projects, define your cluster, and watch
 
 ### Management via IaC
 
-Declaratively define your infrastructure with a simple, easy to understand YAML [syntax](./docs/input-manifest/input-manifest.md).
-See example [manifest](./docs/input-manifest/example.yaml).
+Declaratively define your infrastructure with a simple, easy to understand YAML [syntax](https://docs.claudie.io/latest/input-manifest/input-manifest/).
+See example [manifest](https://docs.claudie.io/latest/input-manifest/example/).
 
 ### Fast scale-up/scale-down of your infrastructure
 
@@ -49,49 +57,59 @@ To scale-up or scale-down, simply change a few lines in the input manifest and C
 
 ### Loadbalancing
 
-Claudie has its own managed load-balancing solution, which you can use for Ingresses, the Kubernetes API server, or generally anything. Check out our [LB docs](https://github.com/berops/claudie/tree/master/docs/loadbalancing).
+Claudie has its own managed load-balancing solution, which you can use for Ingresses, the Kubernetes API server, or generally anything. Check out our [LB docs](https://docs.claudie.io/latest/loadbalancing/loadbalancing-solution/).
 
 ### Persistent storage volumes
 
-Claudie comes pre-configured with a storage solution, with ready-to-use Storage Classes. See [Storage docs](https://github.com/berops/claudie/tree/master/docs/storage) to learn more.
+Claudie comes pre-configured with a storage solution, with ready-to-use Storage Classes. See [Storage docs](https://docs.claudie.io/latest/storage/storage-solution/) to learn more.
 
 ### Supported cloud providers
 
-| Cloud Provider                                                                                          | Nodepools          | DNS                |
-| ------------------------------------------------------------------------------------------------------- | ------------------ | ------------------ |
-| [AWS](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/aws.md)               | :heavy_check_mark: | :heavy_check_mark: |
-| [Azure](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/azure.md)           | :heavy_check_mark: | :heavy_check_mark: |
-| [GCP](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/gcp.md)               | :heavy_check_mark: | :heavy_check_mark: |
-| [OCI](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/oci.md)               | :heavy_check_mark: | :heavy_check_mark: |
-| [Hetzner](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/hetzner.md)       | :heavy_check_mark: | :heavy_check_mark: |
-| [Cloudflare](https://github.com/berops/claudie/blob/master/docs/input-manifest/providers/cloudflare.md) | N/A                | :heavy_check_mark: |
+| Cloud Provider                                                                    | Nodepools          | DNS                |
+| --------------------------------------------------------------------------------- | ------------------ | ------------------ |
+| [AWS](https://docs.claudie.io/latest/input-manifest/providers/aws/)               | :heavy_check_mark: | :heavy_check_mark: |
+| [Azure](https://docs.claudie.io/latest/input-manifest/providers/azure/)           | :heavy_check_mark: | :heavy_check_mark: |
+| [GCP](https://docs.claudie.io/latest/input-manifest/providers/gcp/)               | :heavy_check_mark: | :heavy_check_mark: |
+| [OCI](https://docs.claudie.io/latest/input-manifest/providers/oci/)               | :heavy_check_mark: | :heavy_check_mark: |
+| [Hetzner](https://docs.claudie.io/latest/input-manifest/providers/hetzner/)       | :heavy_check_mark: | :heavy_check_mark: |
+| [Cloudflare](https://docs.claudie.io/latest/input-manifest/providers/cloudflare/) | N/A                | :heavy_check_mark: |
 
 For adding support for other cloud providers, open an issue or propose a PR.
 
 ## Get started using Claudie
 
-1. Deploy Claudie Kubernetes [manifests/claudie](https://github.com/berops/claudie/tree/master/manifests/claudie) into a Kubernetes cluster:
+To try Claudie you can follow these few steps or go to [Getting Started](https://docs.claudie.io/latest/getting-started/get-started-using-claudie/) section in our [documentation](docs.claudie.io).
 
-   ```sh
-   kubectl apply -k manifests/claudie
-   ```
+1. Before you begin, please make sure you have installed [cert-manager](https://cert-manager.io/docs/installation/). 
+  
+    ```sh
+    kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml
+    ```
 
-2. provide your own manifest via a Kubernetes Secret.
+2. Download and extract manifests of the lates release from our [release page](https://github.com/berops/claudie/releases).
 
-Have a look at our [reference example input manifest](https://github.com/berops/claudie/blob/master/docs/input-manifest/example.yaml) to explore what's possible.
+    ```sh
+    wget https://github.com/berops/claudie/releases/latest/download/claudie.zip && unzip claudie.zip -d claudie
+    ```
 
-To see in detail how to correctly apply the manifest into Claudie, please refer to the [CRUD](./docs/crud/crud.md) document.
+3. Deploy Claudie into a Kubernetes cluster.
 
-After the input manifest is successfully applied, the kubeconfig to your newly
-built clusters is output as a secret in the `claudie` namespace with a name in
-the form of `<cluster-name>-<cluster-hash>-kubeconfig`.
+    ```sh
+    kubectl apply -k claudie
+    ```
+
+4. Provide your own input manifest via a Kubernetes Secret.
+
+    Have a look at our [input manifest documentation](https://docs.claudie.io/latest/input-manifest/input-manifest/) to explore what's possible.
+
+To see in detail how to correctly apply the manifest into Claudie and how get outputs from Claudie please refer to the [CRUD](https://docs.claudie.io/latest/crud/crud/) document.
 
 ## Get involved
 
 <!-- Contributor guidelines -->
 Everyone is more than welcome to open an issue, a PR or to start a discussion.
 
-For more information about contributing please read the [contribution guidelines](./docs/contributing/contributing.md).
+For more information about contributing please read the [contribution guidelines](https://docs.claudie.io/latest/contributing/contributing/).
 
 If you want to have a chat with us, feel free to join our [Slack workspace](https://join.slack.com/t/claudie-workspace/shared_invite/zt-1imfso8r4-xwrpZjL9kt61FT1LjvWD5w).
 
@@ -104,7 +122,7 @@ policy](SECURITY.md) to learn how to proceed.
 
 ## Roadmap
 <!-- Add a roadmap for claudie so users know which features are being worked on and which will in future -->
-To see the vision behind Claudie, please refer to the [roadmap](./docs/roadmap/roadmap.md) document.
+To see the vision behind Claudie, please refer to the [roadmap](https://docs.claudie.io/latest/roadmap/roadmap/) document.
 
 
 ## Reach out to us

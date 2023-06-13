@@ -9,7 +9,17 @@
 
   static_configs:
 {{- range $lbCluster := .LBClusters }}
-    {{- range $lbNodepool := $lbCluster.ClusterInfo.NodePools }}
+    {{- range $lbNodepool := $lbCluster.NodePools.Dynamic }}
+        {{- range $lbNode :=  $lbNodepool.Nodes }}
+    - targets:
+        - {{ $lbNode.Private }}:9100
+      labels:
+        instance: {{ $lbNode.Name }}
+        component: claudie
+        service: loadbalancer        
+        {{- end }}
+    {{- end }}
+    {{- range $lbNodepool := $lbCluster.NodePools.Static }}
         {{- range $lbNode :=  $lbNodepool.Nodes }}
     - targets:
         - {{ $lbNode.Private }}:9100
@@ -17,7 +27,6 @@
         instance: {{ $lbNode.Name }}
         component: claudie
         service: loadbalancer
-        
         {{- end }}
     {{- end }}        
 {{- end }}

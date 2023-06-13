@@ -1,10 +1,10 @@
-FROM docker.io/library/golang:1.20.2 AS build
+FROM docker.io/library/golang:1.20.4 AS build
 
 ARG TARGETARCH
 
 # download and unzip kube-one binary
 RUN apt-get -qq update && apt-get -qq install unzip
-RUN KUBEONE_V=1.5.3 && \
+RUN KUBEONE_V=1.6.2 && \
     wget -q https://github.com/kubermatic/kubeone/releases/download/v${KUBEONE_V}/kubeone_${KUBEONE_V}_linux_$TARGETARCH.zip && \
     unzip -qq kubeone_${KUBEONE_V}_linux_$TARGETARCH.zip -d kubeone_dir
 
@@ -26,7 +26,7 @@ WORKDIR /go/services/kube-eleven/server
 #Compile the golang code, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build
 
-FROM docker.io/library/alpine:3.17.3
+FROM docker.io/library/alpine:3.18.0
 #Add repository label
 LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
 #Add image name as a label
@@ -40,7 +40,6 @@ RUN apk add -q bash
 COPY --from=build /go/kubeone_dir/kubeone /usr/local/bin
 COPY --from=build /go/services/kube-eleven/server/server /bin/services/kube-eleven/server/server
 COPY --from=build /go/services/kube-eleven/server/addons /bin/services/kube-eleven/server/addons
-COPY --from=build /go/services/kube-eleven/templates /bin/services/kube-eleven/templates
 
 #Run server
 WORKDIR /bin

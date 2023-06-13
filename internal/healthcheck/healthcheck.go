@@ -35,7 +35,7 @@ func (s *ClientHealthChecker) StartProbes() {
 
 func writeMsg(w http.ResponseWriter, msg string) {
 	if _, err := w.Write([]byte(msg)); err != nil {
-		log.Debug().Msgf("HealthCheckClient write error: ", err)
+		log.Debug().Msgf("HealthCheckClient write error: %v", err)
 	}
 }
 

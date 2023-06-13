@@ -30,7 +30,7 @@ const (
 )
 
 // cacheHetzner function uses hcloud-go module to query supported servers and their info. If the query is successful, the server info is saved in cache.
-func (nm *NodeManager) cacheHetzner(np *pb.NodePool) error {
+func (nm *NodeManager) cacheHetzner(np *pb.DynamicNodePool) error {
 	// Create client and create cache.
 	hc := hcloud.NewClient(hcloud.WithToken(np.Provider.Credentials), hcloud.WithHTTPClient(http.DefaultClient))
 	servers, err := hc.ServerType.All(context.Background())
@@ -42,7 +42,7 @@ func (nm *NodeManager) cacheHetzner(np *pb.NodePool) error {
 }
 
 // cacheAws function uses aws-sdk-go-v2 module to query supported VMs and their info. If the query is successful, the VM info is saved in cache.
-func (nm *NodeManager) cacheAws(np *pb.NodePool) error {
+func (nm *NodeManager) cacheAws(np *pb.DynamicNodePool) error {
 	// Define option function to set static credentials
 	credFunc := func(lo *config.LoadOptions) error {
 		lo.Credentials = aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
@@ -83,7 +83,7 @@ func (nm *NodeManager) cacheAws(np *pb.NodePool) error {
 }
 
 // cacheGcp function uses google go module to query supported VMs and their info. If the query is successful, the VM info is saved in cache.
-func (nm *NodeManager) cacheGcp(np *pb.NodePool) error {
+func (nm *NodeManager) cacheGcp(np *pb.DynamicNodePool) error {
 	// Create client and create cache
 	computeService, err := compute.NewMachineTypesRESTClient(context.Background(), option.WithCredentialsJSON([]byte(np.Provider.Credentials)))
 	if err != nil {
@@ -91,7 +91,7 @@ func (nm *NodeManager) cacheGcp(np *pb.NodePool) error {
 	}
 	defer func() {
 		if err := computeService.Close(); err != nil {
-			log.Error().Msgf("Failed to close GCP client")
+			log.Err(err).Msgf("Failed to close GCP client")
 		}
 	}()
 	// Define request and parameters
@@ -120,7 +120,7 @@ func (nm *NodeManager) cacheGcp(np *pb.NodePool) error {
 }
 
 // cacheOci function uses oci-go-sdk module to query supported shapes and their info. If the query is successful, the shape info is saved in cache.
-func (nm *NodeManager) cacheOci(np *pb.NodePool) error {
+func (nm *NodeManager) cacheOci(np *pb.DynamicNodePool) error {
 	conf := common.NewRawConfigurationProvider(np.Provider.OciTenancyOcid, np.Provider.OciUserOcid, np.Region, np.Provider.OciFingerprint, np.Provider.Credentials, nil)
 	client, err := core.NewComputeClientWithConfigurationProvider(conf)
 	if err != nil {
@@ -150,7 +150,7 @@ func (nm *NodeManager) cacheOci(np *pb.NodePool) error {
 }
 
 // cacheAzure function uses azure-sdk-for-go module to query supported VMs and their info. If the query is successful, the VM info is saved in cache.
-func (nm *NodeManager) cacheAzure(np *pb.NodePool) error {
+func (nm *NodeManager) cacheAzure(np *pb.DynamicNodePool) error {
 	cred, err := azidentity.NewClientSecretCredential(np.Provider.AzureTenantId, np.Provider.AzureClientId, np.Provider.Credentials, nil)
 	if err != nil {
 		return fmt.Errorf("azure client got error : %w", err)
