@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/go-playground/validator/v10"
+	k8sV1 "k8s.io/api/core/v1"
 )
 
 // Validate validates the parsed data inside the NodePool section of the manifest.
@@ -33,6 +34,9 @@ func (p *NodePool) Validate(m *Manifest) error {
 		if n.Count != 0 && n.AutoscalerConfig.isDefined() {
 			return fmt.Errorf("nodepool %s cannot have both, autoscaler enabled and \"count\" defined", n.Name)
 		}
+		if err := checkTaints(n.Taints); err != nil {
+			return fmt.Errorf("nodepool %s has incorrectly defined taints : %w", n.Name, err)
+		}
 	}
 
 	for _, n := range p.Static {
@@ -45,6 +49,9 @@ func (p *NodePool) Validate(m *Manifest) error {
 			return fmt.Errorf("name %q is used across multiple node pools, must be unique", n.Name)
 		}
 		names[n.Name] = true
+		if err := checkTaints(n.Taints); err != nil {
+			return fmt.Errorf("nodepool %s has incorrectly defined taints : %w", n.Name, err)
+		}
 	}
 
 	return nil
@@ -54,3 +61,13 @@ func (d *DynamicNodePool) Validate() error { return validator.New().Struct(d) }
 func (s *StaticNodePool) Validate() error  { return validator.New().Struct(s) }
 
 func (a *AutoscalerConfig) isDefined() bool { return a.Min >= 0 && a.Max > 0 }
+
+func checkTaints(taints []Taint) error {
+	for _, t := range taints {
+		// Check if effect is supported
+		if !(t.Effect == string(k8sV1.TaintEffectNoSchedule) || t.Effect == string(k8sV1.TaintEffectNoExecute) || t.Effect == string(k8sV1.TaintEffectPreferNoSchedule)) {
+			return fmt.Errorf("taint effect \"%s\" is not supported", t.Effect)
+		}
+	}
+	return nil
+}

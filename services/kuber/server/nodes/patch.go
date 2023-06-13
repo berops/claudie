@@ -15,25 +15,26 @@ import (
 const (
 	ProviderIdFormat          = "claudie://%s"
 	patchProviderIDPathFormat = "{\"spec\":{\"providerID\":\"%s\"}}"
+	patchTaintsPath           = "{\"spec\":{\"taints\":[%s]}}"
+	patchLabelsPath           = "{\"metadata\":{\"labels\":{%s}}}"
 )
 
 type Patcher struct {
 	clusterID        string
 	desiredNodepools []*pb.NodePool
-	currentNodepools []*pb.NodePool
 	kc               kubectl.Kubectl
 }
 
-func NewPatcher(desiredCluster, currentCluster *pb.K8Scluster) *Patcher {
-	kc := kubectl.Kubectl{Kubeconfig: desiredCluster.Kubeconfig, MaxKubectlRetries: 3}
-	clusterID := fmt.Sprintf("%s-%s", desiredCluster.ClusterInfo.Name, desiredCluster.ClusterInfo.Hash)
+func NewPatcher(cluster *pb.K8Scluster) *Patcher {
+	kc := kubectl.Kubectl{Kubeconfig: cluster.Kubeconfig, MaxKubectlRetries: 3}
+	clusterID := fmt.Sprintf("%s-%s", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
 
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
 		kc.Stdout = comm.GetStdOut(clusterID)
 		kc.Stderr = comm.GetStdErr(clusterID)
 	}
 
-	return &Patcher{kc: kc, currentNodepools: currentCluster.ClusterInfo.NodePools, desiredNodepools: desiredCluster.ClusterInfo.NodePools, clusterID: clusterID}
+	return &Patcher{kc: kc, desiredNodepools: cluster.ClusterInfo.NodePools, clusterID: clusterID}
 }
 
 func (p *Patcher) PatchProviderID(logger zerolog.Logger) error {
@@ -53,28 +54,13 @@ func (p *Patcher) PatchProviderID(logger zerolog.Logger) error {
 
 func (p *Patcher) PatchLabels(logger zerolog.Logger) error {
 	var err error
-	deleteLabels := p.getLabelsToDelete()
-	// Delete labels from nodes
 	for _, np := range p.desiredNodepools {
-		dl := deleteLabels[np.Name]
-		if len(dl) == 0 {
-			continue
-		}
-		labels := mergeDeletedLabels(dl)
+		patchPath := fmt.Sprintf(patchLabelsPath, buildLabelString(np))
 		for _, node := range np.Nodes {
-			if err1 := p.kc.KubectlLabel("node", node.Name, labels); err != nil {
-				logger.Err(err1).Str("node", node.Name).Msgf("Error while removing labels \"%s\"", labels)
-				err = fmt.Errorf("error while labeling one or more nodes")
-			}
-		}
-	}
-	// Apply labels to nodes
-	for _, np := range p.desiredNodepools {
-		labels := mergeAppliedLabels(np.Labels)
-		for _, node := range np.Nodes {
-			if err1 := p.kc.KubectlLabel("node", node.Name, labels, "--overwrite"); err != nil {
-				logger.Err(err1).Str("node", node.Name).Msgf("Error while applying labels \"%s\"", labels)
-				err = fmt.Errorf("error while labeling one or more nodes")
+			nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
+			if err1 := p.kc.KubectlPatch("node", nodeName, patchPath, "--overwrite"); err1 != nil {
+				logger.Err(err1).Str("node", nodeName).Msgf("Failed to patch labels on node with path %s", patchPath)
+				err = fmt.Errorf("error while patching one or more nodes")
 			}
 		}
 	}
@@ -83,84 +69,31 @@ func (p *Patcher) PatchLabels(logger zerolog.Logger) error {
 
 func (p *Patcher) PatchTaints(logger zerolog.Logger) error {
 	var err error
-	deleteTaints := p.getTaintsToDelete()
-	// Delete taints from nodes
 	for _, np := range p.desiredNodepools {
-		dl := deleteTaints[np.Name]
-		if len(dl) == 0 {
-			continue
-		}
-		taints := mergeDeletedTaints(dl)
+		patchPath := fmt.Sprintf(patchTaintsPath, buildTaintString(np))
 		for _, node := range np.Nodes {
-			if err1 := p.kc.KubectlTaint("node", node.Name, taints); err != nil {
-				logger.Err(err1).Str("node", node.Name).Msgf("Error while removing taints \"%s\"", taints)
-				err = fmt.Errorf("error while tainting one or more nodes")
-			}
-		}
-	}
-	// Apply taints to nodes
-	for _, np := range p.desiredNodepools {
-		taints := mergeAppliedTaints(np.Taints)
-		for _, node := range np.Nodes {
-			if err1 := p.kc.KubectlTaint("node", node.Name, taints, "--overwrite"); err != nil {
-				logger.Err(err1).Str("node", node.Name).Msgf("Error while applying taints \"%s\"", taints)
-				err = fmt.Errorf("error while tainting one or more nodes")
+			nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
+			if err1 := p.kc.KubectlPatch("node", nodeName, patchPath, "--overwrite"); err1 != nil {
+				logger.Err(err1).Str("node", nodeName).Msgf("Failed to patch taints on node with path %s", patchPath)
+				err = fmt.Errorf("error while patching one or more nodes")
 			}
 		}
 	}
 	return err
 }
 
-func (p *Patcher) getLabelsToDelete() map[string][]string {
-	delete := make(map[string][]string)
-dnp:
-	for _, dnp := range p.desiredNodepools {
-		for _, cnp := range p.currentNodepools {
-			if dnp.Name == cnp.Name {
-				for ck := range cnp.Labels {
-					if _, ok := dnp.Labels[ck]; !ok {
-						delete[dnp.Name] = append(delete[dnp.Name], ck)
-					}
-				}
-				continue dnp
-			}
-		}
-	}
-	return delete
-}
-
-func mergeDeletedLabels(l []string) string {
+func buildTaintString(np *pb.NodePool) string {
 	var sb strings.Builder
-	for _, s := range l {
-		sb.WriteString(fmt.Sprintf("%s- ", s))
+	for _, t := range np.Taints {
+		sb.WriteString(fmt.Sprintf("{\"effect\":\"%s\",\"key\":\"%s\",\"value\":\"%s\"},", t.Effect, t.Key, t.Value))
 	}
-	return sb.String()
+	return strings.TrimRight(sb.String(), ",")
 }
 
-func mergeAppliedLabels(l map[string]string) string {
+func buildLabelString(np *pb.NodePool) string {
 	var sb strings.Builder
-	for k, v := range l {
-		sb.WriteString(fmt.Sprintf("%s=%s ", k, v))
+	for k, v := range np.Labels {
+		sb.WriteString(fmt.Sprintf("\"%s\":\"%s\",", k, v))
 	}
-	return sb.String()
-}
-
-func (p *Patcher) getTaintsToDelete() map[string][]*pb.Taint {
-
-}
-
-func mergeDeletedTaints(t []*pb.Taint) string {
-	var sb strings.Builder
-	for _, s := range t {
-		sb.WriteString(fmt.Sprintf("%s=%s:%s- ", s.Key, s.Value, s.Effect))
-	}
-	return sb.String()
-}
-
-func mergeAppliedTaints(t []*pb.Taint) string {
-	var sb strings.Builder
-	for _, s := range t {
-		sb.WriteString(fmt.Sprintf("%s=%s:%s ", s.Key, s.Value, s.Effect))
-	}
-	return sb.String()
+	return strings.TrimRight(sb.String(), ",")
 }

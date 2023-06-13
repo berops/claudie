@@ -452,7 +452,7 @@ func callKuber(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error
 	logger.Info().Msg("StoreNodeMetadata on Kuber finished successfully")
 
 	logger.Info().Msg("Calling PatchNodes on kuber")
-	if _, err := kuber.PatchNodes(c, &pb.PatchNodeTemplateRequest{DesiredCluster: ctx.desiredCluster, CurrentCluster: ctx.cluster}); err != nil {
+	if _, err := kuber.PatchNodes(c, &pb.PatchNodeTemplateRequest{Cluster: ctx.desiredCluster}); err != nil {
 		return err
 	}
 
