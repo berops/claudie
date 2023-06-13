@@ -248,6 +248,30 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
   
   Autoscaler configuration for this nodepool. Mutually exclusive with `count`.
 
+- `labels`
+
+  Map of user defined labels, which will be applied on every node in the node pool. This field is optional.
+
+  By default, Claudie applies following labels on every node in the cluster.
+
+  | Key                              | Value                                                |
+  | -------------------------------- | ---------------------------------------------------- |
+  | `claudie.io/nodepool`            | Name of the node pool.                               |
+  | `claudie.io/provider`            | Cloud provider name.                                 |
+  | `claudie.io/provider-instance`   | User defined provider name.                          |
+  | `claudie.io/node-type`           | Type of the node. Either `control` or `compute`.     |
+  | `topology.kubernetes.io/region`  | Region where the node resides.                       |
+  | `topology.kubernetes.io/zone`    | Zone of the region where node resides.               |
+  | `kubernetes.io/os`               | Os family of the node. (Populated by Kubelet)        |
+  | `kubernetes.io/arch`             | Architecture type of the CPU. (Populated by Kubelet) |
+  | `v1.kubeone.io/operating-system` | Os type of the node. (Populated by KubeOne)          |
+
+- `taints`
+
+  Map of user defined taints, which will be applied on every node in the node pool. This field is optional.
+
+  By default, Claudie applies only `node-role.kubernetes.io/control-plane` taint for control nodes, with effect `NoSchedule`.
+
 ## Provider Spec
 
 Provider spec is further specification build on top of the data from any of the provider instance. To see simple examples of Provider spec, see the [provider examples](./providers/examples).

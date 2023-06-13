@@ -174,6 +174,20 @@ message NodePool {
   repeated Node nodes = 4;
   // Flag to differentiate between control and compute nodes.
   bool isControl = 5;
+  // User defined labels.
+  map<string,string> labels = 6;
+  // User defined taints.
+  repeated Taint taints = 7;
+}
+
+// Taint defines a custom defined taint for the node pools.
+message Taint {
+  // Taint key.
+  string key = 1;
+  // Taint value.
+  string value = 2;
+  // Taint effect.
+  string effect = 3;
 }
 
 // DynamicNodePool represents dynamic node pool used in cluster.

@@ -47,12 +47,6 @@ func (nm *NodeManager) Refresh(nodepools []*pb.NodePool) error {
 	return nm.refreshCache(nodepools)
 }
 
-// GetOs returns operating system name as a string.
-func (nm *NodeManager) GetOs(image string) string {
-	// Only supported OS
-	return "ubuntu"
-}
-
 // GetCapacity returns a theoretical capacity for a new node from specified nodepool.
 func (nm *NodeManager) GetCapacity(np *pb.NodePool) k8sV1.ResourceList {
 	typeInfo := nm.getTypeInfo(np.GetDynamicNodePool().Provider.CloudProviderName, np.GetDynamicNodePool())
@@ -72,24 +66,6 @@ func (nm *NodeManager) GetCapacity(np *pb.NodePool) k8sV1.ResourceList {
 		return rl
 	}
 	return nil
-}
-
-// GetLabels returns default labels with their theoretical values for the specified nodepool.
-func (nm *NodeManager) GetLabels(np *pb.NodePool) map[string]string {
-	m := make(map[string]string)
-	// Claudie assigned labels.
-	m["claudie.io/nodepool"] = np.Name
-	m["claudie.io/provider"] = np.GetDynamicNodePool().Provider.CloudProviderName
-	m["claudie.io/provider-instance"] = np.GetDynamicNodePool().Provider.SpecName
-	m["claudie.io/node-type"] = getNodeType(np)
-	m["topology.kubernetes.io/zone"] = np.GetDynamicNodePool().Zone
-	m["topology.kubernetes.io/region"] = np.GetDynamicNodePool().Region
-	// Other labels.
-	m["kubernetes.io/os"] = "linux" // Only Linux is supported.
-	//m["kubernetes.io/arch"] = "" // TODO add arch
-	m["v1.kubeone.io/operating-system"] = nm.GetOs(np.GetDynamicNodePool().Image)
-
-	return m
 }
 
 // getTypeInfo returns a typeInfo for this nodepool

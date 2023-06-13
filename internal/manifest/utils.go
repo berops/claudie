@@ -165,6 +165,8 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 			nodePools = append(nodePools, &pb.NodePool{
 				Name:      nodePool.Name,
 				IsControl: isControl,
+				Labels:    nodePool.Labels,
+				Taints:    getTaints(nodePool.Taints),
 				NodePoolType: &pb.NodePool_DynamicNodePool{
 					DynamicNodePool: &pb.DynamicNodePool{
 						Region:           nodePool.ProviderSpec.Region,
@@ -184,6 +186,8 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 				Name:      nodePool.Name,
 				Nodes:     nodes,
 				IsControl: isControl,
+				Labels:    nodePool.Labels,
+				Taints:    getTaints(nodePool.Taints),
 				NodePoolType: &pb.NodePool_StaticNodePool{
 					StaticNodePool: &pb.StaticNodePool{
 						NodeKeys: getNodeKeys(nodePool),
@@ -231,4 +235,12 @@ func (ds *Manifest) nodePoolDefined(pool string) bool {
 		}
 	}
 	return false
+}
+
+func getTaints(taints []Taint) []*pb.Taint {
+	arr := make([]*pb.Taint, 0, len(taints))
+	for _, t := range taints {
+		arr = append(arr, &pb.Taint{Key: t.Key, Value: t.Value, Effect: t.Effect})
+	}
+	return arr
 }

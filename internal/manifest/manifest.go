@@ -1,7 +1,5 @@
 package manifest
 
-////////////////////YAML STRUCT//////////////////////////////////////////////////
-
 type Manifest struct {
 	Name         string       `validate:"required" yaml:"name"`
 	Providers    Provider     `yaml:"providers"`
@@ -86,13 +84,15 @@ type Kubernetes struct {
 }
 
 type DynamicNodePool struct {
-	Name             string           `validate:"required" yaml:"name"`
-	ProviderSpec     ProviderSpec     `validate:"required" yaml:"providerSpec"`
-	Count            int32            `validate:"required_without=AutoscalerConfig,excluded_with=AutoscalerConfig" yaml:"count"`
-	ServerType       string           `validate:"required" yaml:"serverType"`
-	Image            string           `validate:"required" yaml:"image"`
-	StorageDiskSize  int64            `validate:"omitempty,gte=50" yaml:"storageDiskSize"`
-	AutoscalerConfig AutoscalerConfig `validate:"required_without=Count,excluded_with=Count" yaml:"autoscaler"`
+	Name             string            `validate:"required" yaml:"name"`
+	ProviderSpec     ProviderSpec      `validate:"required" yaml:"providerSpec"`
+	Count            int32             `validate:"required_without=AutoscalerConfig,excluded_with=AutoscalerConfig" yaml:"count"`
+	ServerType       string            `validate:"required" yaml:"serverType"`
+	Image            string            `validate:"required" yaml:"image"`
+	StorageDiskSize  int64             `validate:"omitempty,gte=50" yaml:"storageDiskSize"`
+	AutoscalerConfig AutoscalerConfig  `validate:"required_without=Count,excluded_with=Count" yaml:"autoscaler"`
+	Labels           map[string]string `validate:"omitempty" yaml:"labels"`
+	Taints           []Taint           `validate:"dive" yaml:"taints"`
 }
 
 type AutoscalerConfig struct {
@@ -107,8 +107,16 @@ type ProviderSpec struct {
 }
 
 type StaticNodePool struct {
-	Name  string `validate:"required" yaml:"name"`
-	Nodes []Node `validate:"dive" yaml:"nodes"`
+	Name   string            `validate:"required" yaml:"name"`
+	Nodes  []Node            `validate:"dive" yaml:"nodes"`
+	Labels map[string]string `validate:"omitempty" yaml:"labels"`
+	Taints []Taint           `validate:"dive" yaml:"taints"`
+}
+
+type Taint struct {
+	Effect string `validate:"required" yaml:"effect"`
+	Value  string `validate:"omitempty" yaml:"value"`
+	Key    string `validate:"required" yaml:"key"`
 }
 
 type Node struct {
@@ -149,5 +157,3 @@ type DNS struct {
 	Provider string `validate:"required" yaml:"provider"`
 	Hostname string `yaml:"hostname,omitempty"`
 }
-
-////////////////////////////////////////////////////////////////////////////////

@@ -301,7 +301,7 @@ func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigReq
 	logger := utils.CreateLoggerWithClusterName(clusterID)
 	if namespace := envs.Namespace; namespace == "" {
 		//NOTE: DEBUG print
-		// logger.Info().Msgf("The kubeconfig for %s\n%s:", clusterID, cluster.Kubeconfig)
+		logger.Info().Msgf("The kubeconfig for %s\n%s:", clusterID, cluster.Kubeconfig)
 		return &pb.StoreKubeconfigResponse{}, nil
 	}
 
@@ -363,12 +363,22 @@ func (s *server) DeleteNodes(ctx context.Context, req *pb.DeleteNodesRequest) (*
 }
 
 func (s *server) PatchNodes(ctx context.Context, req *pb.PatchNodeTemplateRequest) (*pb.PatchNodeTemplateResponse, error) {
-	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(req.Cluster.ClusterInfo))
+	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(req.DesiredCluster.ClusterInfo))
 
-	patcher := nodes.NewPatcher(req.Cluster)
+	patcher := nodes.NewPatcher(req.DesiredCluster, req.CurrentCluster)
 	if err := patcher.PatchProviderID(logger); err != nil {
 		logger.Err(err).Msgf("Error while patching nodes")
-		return nil, fmt.Errorf("error while patching nodes for %s : %w", req.Cluster.ClusterInfo.Name, err)
+		return nil, fmt.Errorf("error while patching nodes for %s : %w", req.DesiredCluster.ClusterInfo.Name, err)
+	}
+
+	if err := patcher.PatchLabels(logger); err != nil {
+		logger.Err(err).Msgf("Error while patching nodes")
+		return nil, fmt.Errorf("error while patching nodes for %s : %w", req.DesiredCluster.ClusterInfo.Name, err)
+	}
+
+	if err := patcher.PatchTaints(logger); err != nil {
+		logger.Err(err).Msgf("Error while patching nodes")
+		return nil, fmt.Errorf("error while patching nodes for %s : %w", req.DesiredCluster.ClusterInfo.Name, err)
 	}
 
 	logger.Info().Msgf("Nodes were successfully patched")

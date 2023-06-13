@@ -81,6 +81,21 @@ var (
 					Name: "control-2",
 				}, {
 					Name: "compute-2",
+					Taints: []Taint{
+						{
+							Key:    "test",
+							Value:  "foo",
+							Effect: "NoExecute",
+						},
+						{
+							Key:    "test",
+							Effect: "NoExecute",
+						},
+					},
+					Labels: map[string]string{
+						"test":  "foo",
+						"test1": "bar",
+					},
 				},
 			},
 		},

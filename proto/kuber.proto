@@ -61,7 +61,8 @@ message DeleteClusterMetadataRequest {
 message DeleteClusterMetadataResponse {}
 
 message PatchNodeTemplateRequest {
-  K8scluster cluster = 1;
+  K8scluster currentCluster = 1;
+  K8scluster desiredCluster = 2;
 }
 
 message PatchNodeTemplateResponse {}
@@ -103,7 +104,7 @@ service KuberService {
   rpc DeleteKubeconfig(DeleteKubeconfigRequest) returns (DeleteKubeconfigResponse);
   // DeleteNodes deletes the specified nodes from a k8s cluster.
   rpc DeleteNodes(DeleteNodesRequest) returns (DeleteNodesResponse);
-  // PatchNodes uses kubectl patch to change the node manifest.
+  // PatchNodes applies attributes like providerID, labels or taints to the nodes.
   rpc PatchNodes(PatchNodeTemplateRequest) returns (PatchNodeTemplateResponse);
   // SetUpClusterAutoscaler deploys Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
   rpc SetUpClusterAutoscaler(SetUpClusterAutoscalerRequest) returns (SetUpClusterAutoscalerResponse);
