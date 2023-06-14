@@ -9,11 +9,11 @@ import (
 )
 
 // createConfig generates and saves config into the DB. Used for new configs and updated configs.
-func (u *Usecases) CreateConfig(inputManifest *manifest.Manifest) {
+func (u *Usecases) CreateConfig(inputManifest *manifest.Manifest) error {
 	inputManifestMarshalled, err := yaml.Marshal(inputManifest)
 	if err != nil {
 		log.Err(err).Msgf("Failed to marshal manifest %s. Skipping...", inputManifest.Name)
-		return
+		return err
 	}
 
 	// Define config
@@ -25,7 +25,7 @@ func (u *Usecases) CreateConfig(inputManifest *manifest.Manifest) {
 
 	if err := u.ContextBox.SaveConfig(config); err != nil {
 		log.Err(err).Msgf("Failed to save config %v due to error. Skipping...", inputManifest.Name)
-		return
+		return err
 	}
 	log.Info().Msgf("Created config for input manifest %s", inputManifest.Name)
 
@@ -35,14 +35,15 @@ func (u *Usecases) CreateConfig(inputManifest *manifest.Manifest) {
 			u.inProgress.Store(k8sCluster.Name, config)
 		}
 	}
+	return nil
 }
 
 // deleteConfig generates and triggers deletion of config into the DB.
-func (u *Usecases) DeleteConfig(inputManifest *manifest.Manifest) {
+func (u *Usecases) DeleteConfig(inputManifest *manifest.Manifest) error {
 
 	if err := u.ContextBox.DeleteConfig(inputManifest.Name); err != nil {
 		log.Err(err).Msgf("Failed to trigger deletion for config %v due to error. Skipping...", inputManifest.Name)
-		return
+		return err
 	}
 
 	log.Info().Msgf("Config %s was successfully marked for deletion", inputManifest.Name)
@@ -57,4 +58,5 @@ func (u *Usecases) DeleteConfig(inputManifest *manifest.Manifest) {
 			u.inProgress.Store(k8sCluster.Name, dummyConfig)
 		}
 	}
+	return nil
 }

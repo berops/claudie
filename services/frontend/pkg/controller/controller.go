@@ -16,14 +16,6 @@ import (
 	v1beta "github.com/berops/claudie/services/frontend/pkg/api/v1beta1"
 )
 
-//+kubebuilder:rbac:groups=claudie.io,resources=inputmanifests,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=claudie.io,resources=inputmanifests/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=claudie.io,resources=inputmanifests/finalizers,verbs=update
-
-// TODO: RBAC
-// TODO: autoscalerConfig in spec
-// TODO: tests
-
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -175,7 +167,9 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 			}
 			log.Info("Calling delete config")
-			r.deleteConfig(&rawManifest)
+			if err := r.deleteConfig(&rawManifest); err != nil {
+				return ctrl.Result{}, err
+			}
 			return ctrl.Result{RequeueAfter: REQUEUE_DELETE}, nil
 		}
 		return ctrl.Result{RequeueAfter: REQUEUE_DELETE}, nil
@@ -196,7 +190,9 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				return ctrl.Result{}, fmt.Errorf("failed executing finalizer: %w", err)
 			}
 			log.Info("Calling create config")
-			r.createConfig(&rawManifest)
+			if err := r.createConfig(&rawManifest); err != nil {
+				return ctrl.Result{}, err
+			}
 			return ctrl.Result{RequeueAfter: REQUEUE_NEW}, nil
 		}
 
@@ -243,7 +239,9 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 		}
 		log.Info("InputManifest has been updates", "status", currentState.State)
-		r.createConfig(&rawManifest)
+		if err := r.createConfig(&rawManifest); err != nil {
+			return ctrl.Result{}, err
+		}
 		return ctrl.Result{RequeueAfter: REQUEUE_UPDATE}, nil
 	}
 
@@ -257,11 +255,15 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 }
 
 func (r *InputManifestReconciler) createConfig(im *manifest.Manifest) error {
-	r.Usecases.CreateConfig(im)
+	if err := r.Usecases.CreateConfig(im); err != nil {
+		return err
+	}
 	return nil
 }
 
 func (r *InputManifestReconciler) deleteConfig(im *manifest.Manifest) error {
-	r.Usecases.DeleteConfig(im)
+	if err := r.Usecases.DeleteConfig(im); err != nil {
+		return err
+	}
 	return nil
 }
