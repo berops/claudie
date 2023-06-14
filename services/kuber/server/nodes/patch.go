@@ -59,7 +59,7 @@ func (p *Patcher) PatchLabels(logger zerolog.Logger) error {
 		patchPath := fmt.Sprintf(patchLabelsPath, buildLabelString(np))
 		for _, node := range np.Nodes {
 			nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
-			if err1 := p.kc.KubectlPatch("node", nodeName, patchPath, "--overwrite"); err1 != nil {
+			if err1 := p.kc.KubectlPatch("node", nodeName, patchPath, "--type", "merge"); err1 != nil {
 				logger.Err(err1).Str("node", nodeName).Msgf("Failed to patch labels on node with path %s", patchPath)
 				err = fmt.Errorf("error while patching one or more nodes")
 			}
@@ -74,7 +74,7 @@ func (p *Patcher) PatchTaints(logger zerolog.Logger) error {
 		patchPath := fmt.Sprintf(patchTaintsPath, buildTaintString(np))
 		for _, node := range np.Nodes {
 			nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
-			if err1 := p.kc.KubectlPatch("node", nodeName, patchPath, "--overwrite"); err1 != nil {
+			if err1 := p.kc.KubectlPatch("node", nodeName, patchPath, "--type", "merge"); err1 != nil {
 				logger.Err(err1).Str("node", nodeName).Msgf("Failed to patch taints on node with path %s", patchPath)
 				err = fmt.Errorf("error while patching one or more nodes")
 			}
