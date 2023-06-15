@@ -20,7 +20,7 @@ type K8Scluster struct {
 	AttachedLBClusters []*pb.LBcluster
 }
 
-func (k K8Scluster) Id() string {
+func (k *K8Scluster) Id() string {
 	state := k.DesiredState
 	if state == nil {
 		state = k.CurrentState
@@ -29,7 +29,7 @@ func (k K8Scluster) Id() string {
 	return fmt.Sprintf("%s-%s", state.ClusterInfo.Name, state.ClusterInfo.Hash)
 }
 
-func (k K8Scluster) Build(logger zerolog.Logger) error {
+func (k *K8Scluster) Build(logger zerolog.Logger) error {
 	logger.Info().Msgf("Building K8S Cluster %s", k.DesiredState.ClusterInfo.Name)
 
 	var currentClusterInfo *pb.ClusterInfo
@@ -57,7 +57,7 @@ func (k K8Scluster) Build(logger zerolog.Logger) error {
 	return nil
 }
 
-func (k K8Scluster) Destroy(logger zerolog.Logger) error {
+func (k *K8Scluster) Destroy(logger zerolog.Logger) error {
 	logger.Info().Msgf("Destroying K8S Cluster %s", k.CurrentState.ClusterInfo.Name)
 	cluster := cluster_builder.ClusterBuilder{
 		CurrentClusterInfo: k.CurrentState.ClusterInfo,
@@ -73,3 +73,5 @@ func (k K8Scluster) Destroy(logger zerolog.Logger) error {
 
 	return nil
 }
+
+func (k *K8Scluster) UpdateCurrentState() { k.CurrentState = k.DesiredState }

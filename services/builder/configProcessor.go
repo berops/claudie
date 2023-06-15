@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 
@@ -65,7 +66,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			return
 		}
 
-		if err := utils.ConcurrentExec(clusterView.AllClusters(), func(clusterName string) error {
+		if err := utils.ConcurrentExec(clusterView.AllClusters(), func(_ int, clusterName string) error {
 			logger := logger.With().Str("cluster", clusterName).Logger()
 
 			// The workflow doesn't handle the case for the deletion of the cluster
@@ -122,6 +123,11 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 				}
 
 				if ctx, err = buildCluster(ctx, c); err != nil {
+					if errors.Is(err, FailedToBuildInfrastructureErr) {
+						clusterView.CurrentClusters[clusterName] = ctx.cluster
+						clusterView.Loadbalancers[clusterName] = ctx.loadbalancers
+					}
+
 					clusterView.SetWorkflowError(clusterName, err)
 					logger.Err(err).Msg("Failed to build cluster")
 					return err
@@ -219,6 +225,11 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			}
 
 			if ctx, err = buildCluster(ctx, c); err != nil {
+				if errors.Is(err, FailedToBuildInfrastructureErr) {
+					clusterView.CurrentClusters[clusterName] = ctx.cluster
+					clusterView.Loadbalancers[clusterName] = ctx.loadbalancers
+				}
+
 				clusterView.SetWorkflowError(clusterName, err)
 				logger.Err(err).Msg("Failed to build cluster")
 				return err
@@ -255,7 +266,13 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			return nil
 		}); err != nil {
 			logger.Err(err).Msg("Error encountered while processing config")
-			// Even if the config fails to build merge the changes as it might be in an in-between state
+
+			if !errors.Is(err, FailedToBuildInfrastructureErr) {
+				// The error occurred after the infra was build, set it to desired state.
+				config.CurrentState = config.DesiredState
+			}
+
+			// Even if the config fails to build, merge the changes as it might be in an in-between state
 			// in order to be able to delete it later.
 			clusterView.MergeChanges(config)
 
