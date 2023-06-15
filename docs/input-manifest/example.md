@@ -1,3 +1,3 @@
-``` yaml title="example.yaml"
---8<-- "docs/input-manifest/example.yaml"
+```yaml title="example.yaml"
+{% include "./example.yaml" %}
 ```
