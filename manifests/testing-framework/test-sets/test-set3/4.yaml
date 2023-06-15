@@ -1,29 +1,34 @@
-name: TestSet-3
-
-providers:
-  hetzner:
-    - name: hetzner-1
-      credentials: replaceme-token
-  oci:
-    - name: oci-1
-      privateKey: |
-        replaceme-key
-      keyFingerprint: replaceme-fingerprint
-      tenancyOcid: replaceme-tenancy
-      userOcid: replaceme-user
-      compartmentOcid: replaceme-compartment
-  aws:
-    - name: aws-1
-      accessKey: replaceme-access-key
-      secretKey: replaceme-secret-key
-  cloudflare:
-    - name: cloudflare-1
-      apiToken: replaceme-token
-  gcp:
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: test-set3
+spec:
+  providers:
     - name: gcp-1
-      credentials: replaceme-key
-      gcpProject: replaceme-project
-
+      providerType: gcp
+      secretRef:
+        name: gcp-secret
+        namespace: e2e-secrets
+    - name: hetzner-1
+      providerType: hetzner
+      secretRef:
+        name: hetzner-secret
+        namespace: e2e-secrets   
+    - name: oci-1
+      providerType: oci
+      secretRef:
+        name: oci-secret
+        namespace: e2e-secrets
+    - name: aws-1
+      providerType: aws
+      secretRef:
+        name: aws-secret
+        namespace: e2e-secrets
+    - name: cloudflare-1
+      providerType: cloudflare
+      secretRef:
+        name: cloudflare-secret
+        namespace: e2e-secrets  
 nodePools:
   dynamic:
     - name: hetzner-control

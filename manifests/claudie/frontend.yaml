@@ -21,7 +21,7 @@ spec:
       serviceAccountName: frontend-sa
       containers:
         - name: frontend
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           image: ghcr.io/berops/claudie/frontend
           resources:
             requests:

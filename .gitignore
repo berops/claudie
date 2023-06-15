@@ -16,3 +16,4 @@ services/testing-framework/test-sets
 /venv/
 /site/
 bin
+.manifest*

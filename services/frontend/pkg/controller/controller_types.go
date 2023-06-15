@@ -50,7 +50,7 @@ type InputManifestReconciler struct {
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 	Logger   logr.Logger
-	usecases.Usecases
+	*usecases.Usecases
 }
 
 // New returns a new controller for InputManifest resource
@@ -66,7 +66,7 @@ func New(kclient client.Client,
 		Scheme:   scheme,
 		Recorder: recorder,
 		Logger:   logger,
-		Usecases: usecase,
+		Usecases: &usecase,
 	}
 }
 

@@ -34,7 +34,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	for _, p := range inputManifest.Spec.Providers {
 		var pwd v1beta.ProviderWithData
 		pwd.ProviderName = p.ProviderName
-		pwd.ProviderType = v1beta.ProviderType(p.ProviderType)
+		pwd.ProviderType = p.ProviderType
 		if err := r.kc.Get(ctx, client.ObjectKey{Name: p.SecretRef.Name, Namespace: p.SecretRef.Namespace}, &pwd.Secret); err != nil {
 			r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
 			log.Error(err, "secret not found", "will try again in", REQUEUE_AFTER_ERROR, "name", p.SecretRef.Name, "namespace", p.SecretRef.Namespace)
@@ -46,7 +46,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	// Create a raw input manifest of manifest.Manifest and pull the referenced secrets into it
 	rawManifest, err := mergeInputManifestWithSecrets(*inputManifest, providersSecrets)
 	if err != nil {
-		log.Error(err, "error while using referenced secrets", "will try again in", REQUEUE_AFTER_ERROR,)
+		log.Error(err, "error while using referenced secrets", "will try again in", REQUEUE_AFTER_ERROR)
 		return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
 	}
 
@@ -55,7 +55,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	// In case the validation will fail, it will end the reconcile
 	// with an err, and generate an Kubernetes Event
 	if err := rawManifest.Providers.Validate(); err != nil {
-		log.Error(err, "error while validating referenced secrets", "will try again in", REQUEUE_AFTER_ERROR,)
+		log.Error(err, "error while validating referenced secrets", "will try again in", REQUEUE_AFTER_ERROR)
 		r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
 		inputManifest.SetUpdateResourceStatus(v1beta.InputManifestStatus{
 			State: v1beta.STATUS_ERROR,
@@ -84,7 +84,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	configContainsError := false
 
 	for _, config := range configs {
-		if inputManifest.GetNamespacedName() == config.Name {
+		if inputManifest.GetNamespacedNameDashed() == config.Name {
 			configExists = true
 			dbDsChecksum = config.DsChecksum
 
@@ -113,7 +113,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	} else if !configInDesiredState {
 		currentState.State = v1beta.STATUS_IN_PROGRESS
 	} else if configContainsError {
-		// Set manifest state to ERROR, if any DONE cluster will be found 
+		// Set manifest state to ERROR, if any DONE cluster will be found
 		// set it to DONE_WITH_ERROR
 		currentState.State = v1beta.STATUS_ERROR
 		for _, cluster := range currentState.Clusters {
@@ -136,7 +136,6 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			}
 		}
 	} else {
-
 		if !configExists {
 			log.Info("Config has been destroyed. Removing finalizer.", "status", currentState.State)
 			controllerutil.RemoveFinalizer(inputManifest, finalizerName)
@@ -160,7 +159,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			// won't make it yet to scheduler
 			if inputManifest.Status.State == v1beta.STATUS_SCHEDULED_FOR_DELETION {
 				return ctrl.Result{RequeueAfter: REQUEUE_NEW}, nil
-			}	
+			}
 			// schedgule deletion of manifest
 			inputManifest.SetDeletingStatus()
 			if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
@@ -198,14 +197,12 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 		// PROVISIONING LOGIC
 		// Refresh inputManifest.status fields
-		if !configInDesiredState {
-			inputManifest.SetUpdateResourceStatus(currentState)
-			if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
-				return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
-			}
-			log.Info("Refreshing state", "status", currentState.State)
-			return ctrl.Result{RequeueAfter: REQUEUE_IN_PROGRES}, nil
+		inputManifest.SetUpdateResourceStatus(currentState)
+		if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 		}
+		log.Info("Refreshing state", "status", currentState.State)
+		return ctrl.Result{RequeueAfter: REQUEUE_IN_PROGRES}, nil
 	}
 
 	// ERROR logic

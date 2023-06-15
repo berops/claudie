@@ -14,7 +14,6 @@ import (
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/berops/claudie/internal/envs"
-	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/internal/utils"
 	outboundAdapters "github.com/berops/claudie/services/frontend/adapters/outbound"
 	"github.com/berops/claudie/services/frontend/domain/usecases"
@@ -39,6 +38,11 @@ var (
 )
 
 func main() {
+	// lookup environment variables
+	portStr = utils.GetEnvDefault("WEBHOOK_TLS_PORT", "9443")
+	certDir = utils.GetEnvDefault("WEBHOOK_CERT_DIR", "./tls")
+	webhookPath = utils.GetEnvDefault("WEBHOOK_PATH", "/validate-manifest")
+
 	utils.InitLog("frontend")
 
 	if err := run(); err != nil {
@@ -55,12 +59,10 @@ func run() error {
 
 	usecaseContext, usecaseCancel := context.WithCancel(context.Background())
 	usecases := &usecases.Usecases{
-		ContextBox:    contextBoxConnector,
-		SaveChannel:   make(chan *manifest.Manifest),
-		DeleteChannel: make(chan *manifest.Manifest),
-		Context:       usecaseContext,
+		ContextBox: contextBoxConnector,
+		Context:    usecaseContext,
 	}
-	
+
 	// Interrupt signal listener
 	go func() {
 		shutdownSignalChan := make(chan os.Signal, 1)
@@ -132,12 +134,4 @@ func run() error {
 	}
 
 	return fmt.Errorf("program interrupt signal")
-}
-
-func init() {
-	// lookup environment variables
-	portStr = utils.GetEnvDefault("WEBHOOK_TLS_PORT", "9443")
-	certDir = utils.GetEnvDefault("WEBHOOK_CERT_DIR", "./tls")
-	webhookPath = utils.GetEnvDefault("WEBHOOK_PATH", "/validate-manifest")
-
 }

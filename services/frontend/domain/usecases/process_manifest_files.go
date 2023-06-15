@@ -28,35 +28,16 @@ func (u *Usecases) CreateConfig(inputManifest *manifest.Manifest) error {
 		return err
 	}
 	log.Info().Msgf("Created config for input manifest %s", inputManifest.Name)
-
-	// Put it into inProgress map to track it
-	for _, k8sCluster := range inputManifest.Kubernetes.Clusters {
-		if _, ok := u.inProgress.Load(k8sCluster.Name); !ok {
-			u.inProgress.Store(k8sCluster.Name, config)
-		}
-	}
 	return nil
 }
 
 // deleteConfig generates and triggers deletion of config into the DB.
 func (u *Usecases) DeleteConfig(inputManifest *manifest.Manifest) error {
-
 	if err := u.ContextBox.DeleteConfig(inputManifest.Name); err != nil {
 		log.Err(err).Msgf("Failed to trigger deletion for config %v due to error. Skipping...", inputManifest.Name)
 		return err
 	}
 
 	log.Info().Msgf("Config %s was successfully marked for deletion", inputManifest.Name)
-
-	// Put it into inProgress map to track it
-	for _, k8sCluster := range inputManifest.Kubernetes.Clusters {
-		if _, ok := u.inProgress.Load(k8sCluster.Name); !ok {
-			// Use dummy config initially, it gets rewritten in new track cycle
-			dummyConfig := &pb.Config{
-				Name: inputManifest.Name,
-			}
-			u.inProgress.Store(k8sCluster.Name, dummyConfig)
-		}
-	}
 	return nil
 }

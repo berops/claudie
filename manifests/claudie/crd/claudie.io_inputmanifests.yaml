@@ -292,13 +292,13 @@ spec:
                           items:
                             description: WIP
                             properties:
-                              privateSshKey:
+                              endpoint:
                                 type: string
-                              publicIP:
+                              privatekey:
                                 type: string
                             required:
-                            - privateSshKey
-                            - publicIP
+                            - endpoint
+                            - privatekey
                             type: object
                           type: array
                       required:
@@ -306,8 +306,6 @@ spec:
                       - nodes
                       type: object
                     type: array
-                required:
-                - dynamic
                 type: object
               providers:
                 description: Providers list of defined cloud provider configuration
@@ -353,6 +351,7 @@ spec:
                   - providerType
                   - secretRef
                   type: object
+                minItems: 1
                 type: array
             type: object
           status:

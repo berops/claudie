@@ -1,4 +1,4 @@
-.PHONY: proto contextbox scheduler builder terraformer ansibler kubeEleven test database minio containerimgs crds crds-apply controller-gen
+.PHONY: proto contextbox scheduler builder terraformer ansibler kubeEleven test database minio containerimgs crd crd-apply controller-gen
 
 # Enforce same version of protoc 
 PROTOC_VERSION = "3.21.8"
@@ -119,12 +119,11 @@ CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 CONTROLLER_TOOLS_VERSION ?= v0.11.3
 
 # Generate CustomResourceDefinition objects.
-crds: controller-gen 
+crd: controller-gen 
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./..." output:crd:artifacts:config=manifests/claudie/crd
 
-crds-apply: controller-gen 
-	$(CONTROLLER_GEN) crd paths="./..." output:crd:artifacts:config=manifests/claudie/crds && kubectl apply -f ./manifests/claudie/crd/
-
+crd-apply: controller-gen 
+	$(CONTROLLER_GEN) crd paths="./..." output:crd:artifacts:config=manifests/claudie/crd && kubectl apply -k ./manifests/claudie/crd/
 
 controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary. If wrong version is installed, it will be overwritten.
 $(CONTROLLER_GEN): $(LOCALBIN)

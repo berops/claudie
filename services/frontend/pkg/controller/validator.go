@@ -6,6 +6,7 @@ import (
 
 	"github.com/berops/claudie/internal/manifest"
 	v1beta "github.com/berops/claudie/services/frontend/pkg/api/v1beta1"
+	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 	wbhk "sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -19,7 +20,7 @@ type ImputManifestValdator struct {
 }
 
 // NewWebhook returns a new validation webhook for InputManifest resource
-func NewWebhook(port int, dir, path string, log logr.Logger) *wbhk.Server{
+func NewWebhook(port int, dir, path string, log logr.Logger) *wbhk.Server {
 	hookServer := &wbhk.Server{
 		Port:    port,
 		CertDir: dir,
@@ -31,7 +32,7 @@ func NewWebhook(port int, dir, path string, log logr.Logger) *wbhk.Server{
 // validate takes the context and a kubernetes object as a parameter.
 // It will extract the secret data out of the received obj and run manifest validation against it
 func (v *ImputManifestValdator) validate(ctx context.Context, obj runtime.Object) error {
-	log := v.Logger.WithName("InputManifest Validator")
+	log := crlog.FromContext(ctx).WithName("InputManifest Validator")
 
 	inputManifest, ok := obj.(*v1beta.InputManifest)
 	if !ok {
@@ -66,9 +67,7 @@ func (v *ImputManifestValdator) ValidateDelete(ctx context.Context, obj runtime.
 // and returns an error when the validation will fail.
 // It doesn't validate .spec.Providers field.
 func validateInputManifest(im *v1beta.InputManifest) error {
-
 	var rawManifest manifest.Manifest
-
 	// Fill providers only with names, to check if there are defined
 	for _, p := range im.Spec.Providers {
 		switch p.ProviderType {
@@ -97,18 +96,8 @@ func validateInputManifest(im *v1beta.InputManifest) error {
 	// Run the validation of all field except the Provider Fields.
 	// Providers will be validated separatly in the controller, after
 	// it will gather all the credentials from the K8s Secret resources
-	if err := rawManifest.Kubernetes.Validate(&rawManifest); err != nil {
+	if err := rawManifest.Validate(); err != nil {
 		return err
 	}
-	if err := rawManifest.NodePools.Validate(&rawManifest); err != nil {
-		return err
-	}
-	if err := rawManifest.LoadBalancer.Validate(&rawManifest); err != nil {
-		return err
-	}
-	if err := manifest.CheckLengthOfFutureDomain(&rawManifest); err != nil {
-		return err
-	}
-
 	return nil
 }

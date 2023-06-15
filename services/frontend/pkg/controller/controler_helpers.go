@@ -153,7 +153,7 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 		}
 	}
 	var manifest = manifest.Manifest{
-		Name:         crd.GetNamespacedName(),
+		Name:         crd.GetNamespacedNameDashed(),
 		Providers:    providers,
 		NodePools:    crd.Spec.NodePools,
 		Kubernetes:   crd.Spec.Kubernetes,
