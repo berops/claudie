@@ -123,7 +123,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 				}
 
 				if ctx, err = buildCluster(ctx, c); err != nil {
-					if errors.Is(err, FailedToBuildInfrastructureErr) {
+					if errors.Is(err, ErrFailedToBuildInfrastructure) {
 						clusterView.CurrentClusters[clusterName] = ctx.cluster
 						clusterView.Loadbalancers[clusterName] = ctx.loadbalancers
 					}
@@ -225,7 +225,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			}
 
 			if ctx, err = buildCluster(ctx, c); err != nil {
-				if errors.Is(err, FailedToBuildInfrastructureErr) {
+				if errors.Is(err, ErrFailedToBuildInfrastructure) {
 					clusterView.CurrentClusters[clusterName] = ctx.cluster
 					clusterView.Loadbalancers[clusterName] = ctx.loadbalancers
 				}
@@ -267,7 +267,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 		}); err != nil {
 			logger.Err(err).Msg("Error encountered while processing config")
 
-			if !errors.Is(err, FailedToBuildInfrastructureErr) {
+			if !errors.Is(err, ErrFailedToBuildInfrastructure) {
 				// The error occurred after the infra was build, set it to desired state.
 				config.CurrentState = config.DesiredState
 			}

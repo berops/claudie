@@ -47,7 +47,7 @@ func (u *Usecases) BuildInfrastructure(request *pb.BuildInfrastructureRequest) (
 		logger.Info().Msg("Creating infrastructure")
 
 		if err := cluster.Build(logger); err != nil {
-			if errors.Is(err, loadbalancer.CreateDNSRecordErr) {
+			if errors.Is(err, loadbalancer.ErrCreateDNSRecord) {
 				cluster.UpdateCurrentState()
 			}
 			logger.Err(err).Msgf("Error encountered while building cluster")

@@ -16,9 +16,9 @@ import (
 )
 
 var (
-	// FailedToBuildInfrastructureErr is returned when the infra fails to build in terraformer
+	// ErrFailedToBuildInfrastructure is returned when the infra fails to build in terraformer
 	// including any partial failures.
-	FailedToBuildInfrastructureErr = errors.New("failed to successfully build desired state")
+	ErrFailedToBuildInfrastructure = errors.New("failed to successfully build desired state")
 )
 
 type BuilderContext struct {
@@ -155,7 +155,7 @@ func callTerraformer(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient)
 		ctx.loadbalancers = resp.Fail.CurrentLbs
 		ctx.desiredLoadbalancers = resp.Fail.DesiredLbs
 
-		return FailedToBuildInfrastructureErr
+		return ErrFailedToBuildInfrastructure
 	case *pb.BuildInfrastructureResponse_Ok:
 		ctx.cluster = resp.Ok.Current
 		ctx.desiredCluster = resp.Ok.Desired

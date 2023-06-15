@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	// CreateDNSRecordErr is returned when an error occurs during the creation of the DNS records
-	CreateDNSRecordErr = errors.New("failed to create DNS record")
+	// ErrCreateDNSRecord is returned when an error occurs during the creation of the DNS records
+	ErrCreateDNSRecord = errors.New("failed to create DNS record")
 )
 
 type LBcluster struct {
@@ -75,7 +75,7 @@ func (l *LBcluster) Build(logger zerolog.Logger) error {
 
 	endpoint, err := dns.CreateDNSRecords(logger)
 	if err != nil {
-		return fmt.Errorf("%w for %s: %w", CreateDNSRecordErr, l.DesiredState.ClusterInfo.Name, err)
+		return fmt.Errorf("%w for %s: %w", ErrCreateDNSRecord, l.DesiredState.ClusterInfo.Name, err)
 	}
 
 	l.DesiredState.Dns.Endpoint = endpoint
