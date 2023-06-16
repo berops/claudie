@@ -21,7 +21,7 @@ require (
 	github.com/go-playground/validator/v10 v10.13.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/hetznercloud/hcloud-go v1.43.0
-	github.com/minio/minio-go/v7 v7.0.52
+	github.com/minio/minio-go/v7 v7.0.57
 	github.com/oracle/oci-go-sdk/v65 v65.38.0
 	github.com/rs/zerolog v1.29.1
 	github.com/stretchr/testify v1.8.4
@@ -105,7 +105,7 @@ require (
 	github.com/googleapis/gax-go/v2 v2.10.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.16.0 // indirect
+	github.com/klauspost/compress v1.16.5 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/leodido/go-urn v1.2.3 // indirect
@@ -113,7 +113,7 @@ require (
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/minio/md5-simd v1.1.2 // indirect
-	github.com/minio/sha256-simd v1.0.0 // indirect
+	github.com/minio/sha256-simd v1.0.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/montanaflynn/stats v0.7.0 // indirect
@@ -124,8 +124,8 @@ require (
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
-	github.com/rs/xid v1.4.0 // indirect
-	github.com/sirupsen/logrus v1.9.0 // indirect
+	github.com/rs/xid v1.5.0 // indirect
+	github.com/sirupsen/logrus v1.9.2 // indirect
 	github.com/sony/gobreaker v0.5.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
