@@ -63,7 +63,7 @@ func (p *Patcher) PatchLabels(logger zerolog.Logger) error {
 	for _, np := range p.desiredNodepools {
 		patchPath, err1 := buildJSONPatchString("replace", "/metadata/labels", nodes.GetAllLabels(np))
 		if err1 != nil {
-			return fmt.Errorf("failed to create patch path for %s : %v", np.Name, err)
+			return fmt.Errorf("failed to create labels patch path for %s : %w", np.Name, err)
 		}
 		for _, node := range np.Nodes {
 			nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
@@ -81,7 +81,7 @@ func (p *Patcher) PatchTaints(logger zerolog.Logger) error {
 	for _, np := range p.desiredNodepools {
 		patchPath, err1 := buildJSONPatchString("replace", "/spec/taints", nodes.GetAllTaints(np))
 		if err1 != nil {
-			return fmt.Errorf("failed to create patch path for %s : %v", np.Name, err)
+			return fmt.Errorf("failed to create taints patch path for %s : %w", np.Name, err)
 		}
 		for _, node := range np.Nodes {
 			nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
