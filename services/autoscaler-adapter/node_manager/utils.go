@@ -6,7 +6,6 @@ import (
 	"cloud.google.com/go/compute/apiv1/computepb"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"github.com/berops/claudie/proto/pb"
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"github.com/oracle/oci-go-sdk/v65/core"
 )
@@ -74,14 +73,6 @@ func getTypeInfoAzure(rawInfo []*armcompute.VirtualMachineSize) map[string]*type
 		}
 	}
 	return m
-}
-
-// getNodeType returns node type as a string value.
-func getNodeType(np *pb.NodePool) string {
-	if np.IsControl {
-		return "control"
-	}
-	return "compute"
 }
 
 // mergeMaps merges two or more maps together, into single map.
