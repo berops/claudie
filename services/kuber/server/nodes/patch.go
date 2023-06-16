@@ -1,6 +1,7 @@
 package nodes
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -16,9 +17,13 @@ import (
 const (
 	ProviderIdFormat          = "claudie://%s"
 	patchProviderIDPathFormat = "{\"spec\":{\"providerID\":\"%s\"}}"
-	patchTaintsPath           = "{\"spec\":{\"taints\":[%s]}}"
-	patchLabelsPath           = "{\"metadata\":{\"labels\":{%s}}}"
 )
+
+type patchJson struct {
+	Op    string `json:"op"`
+	Path  string `json:"path"`
+	Value any    `json:"value"`
+}
 
 type Patcher struct {
 	clusterID        string
@@ -46,7 +51,7 @@ func (p *Patcher) PatchProviderID(logger zerolog.Logger) error {
 			patchPath := fmt.Sprintf(patchProviderIDPathFormat, fmt.Sprintf(ProviderIdFormat, nodeName))
 			if err1 := p.kc.KubectlPatch("node", nodeName, patchPath); err1 != nil {
 				logger.Err(err1).Str("node", nodeName).Msgf("Error while patching node with patch %s", patchPath)
-				err = fmt.Errorf("error while patching one or more nodes")
+				err = fmt.Errorf("error while patching one or more nodes with providerID")
 			}
 		}
 	}
@@ -56,12 +61,15 @@ func (p *Patcher) PatchProviderID(logger zerolog.Logger) error {
 func (p *Patcher) PatchLabels(logger zerolog.Logger) error {
 	var err error
 	for _, np := range p.desiredNodepools {
-		patchPath := fmt.Sprintf(patchLabelsPath, buildLabelString(np))
+		patchPath, err1 := buildJSONPatchString("replace", "/metadata/labels", nodes.GetAllLabels(np))
+		if err1 != nil {
+			return fmt.Errorf("failed to create patch path for %s : %v", np.Name, err)
+		}
 		for _, node := range np.Nodes {
 			nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
-			if err1 := p.kc.KubectlPatch("node", nodeName, patchPath, "--type", "merge"); err1 != nil {
+			if err1 := p.kc.KubectlPatch("node", nodeName, patchPath, "--type", "json"); err1 != nil {
 				logger.Err(err1).Str("node", nodeName).Msgf("Failed to patch labels on node with path %s", patchPath)
-				err = fmt.Errorf("error while patching one or more nodes")
+				err = fmt.Errorf("error while patching one or more nodes with labels")
 			}
 		}
 	}
@@ -71,30 +79,26 @@ func (p *Patcher) PatchLabels(logger zerolog.Logger) error {
 func (p *Patcher) PatchTaints(logger zerolog.Logger) error {
 	var err error
 	for _, np := range p.desiredNodepools {
-		patchPath := fmt.Sprintf(patchTaintsPath, buildTaintString(np))
+		patchPath, err1 := buildJSONPatchString("replace", "/spec/taints", nodes.GetAllTaints(np))
+		if err1 != nil {
+			return fmt.Errorf("failed to create patch path for %s : %v", np.Name, err)
+		}
 		for _, node := range np.Nodes {
 			nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
-			if err1 := p.kc.KubectlPatch("node", nodeName, patchPath, "--type", "merge"); err1 != nil {
+			if err1 := p.kc.KubectlPatch("node", nodeName, patchPath, "--type", "json"); err1 != nil {
 				logger.Err(err1).Str("node", nodeName).Msgf("Failed to patch taints on node with path %s", patchPath)
-				err = fmt.Errorf("error while patching one or more nodes")
+				err = fmt.Errorf("error while patching one or more nodes with taints")
 			}
 		}
 	}
 	return err
 }
 
-func buildTaintString(np *pb.NodePool) string {
-	var sb strings.Builder
-	for _, t := range nodes.GetAllTaints(np) {
-		sb.WriteString(fmt.Sprintf("{\"effect\":\"%s\",\"key\":\"%s\",\"value\":\"%s\"},", t.Effect, t.Key, t.Value))
+func buildJSONPatchString(op, path string, value any) (string, error) {
+	patchJson := patchJson{Op: op, Path: path, Value: value}
+	b, err := json.Marshal(patchJson)
+	if err != nil {
+		return "", err
 	}
-	return strings.TrimRight(sb.String(), ",")
-}
-
-func buildLabelString(np *pb.NodePool) string {
-	var sb strings.Builder
-	for k, v := range nodes.GetAllLabels(np) {
-		sb.WriteString(fmt.Sprintf("\"%s\":\"%s\",", k, v))
-	}
-	return strings.TrimRight(sb.String(), ",")
+	return "[" + string(b) + "]", nil
 }
