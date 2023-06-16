@@ -20,16 +20,9 @@ const (
 	KubeoneOs        LabelKey = "v1.kubeone.io/operating-system"
 )
 
-type TaintKey string
-
 const (
 	ControlPlane = "node-role.kubernetes.io/control-plane"
-)
-
-type TaintEffect string
-
-const (
-	NoSchedule = "NoSchedule"
+	NoSchedule   = "NoSchedule"
 )
 
 // GetAllLabels returns default labels with their theoretical values for the specified nodepool.
