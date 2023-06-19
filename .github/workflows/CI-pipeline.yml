@@ -285,8 +285,8 @@ jobs:
           wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
           tar xz && mv yq_linux_amd64 yq
 
-          HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ./yq e '.loadBalancers.clusters.[1].dns.hostname = strenv(HOSTNAME)' test-set2/1.yaml -i
-          HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ./yq e '.loadBalancers.clusters.[0].dns.hostname = strenv(HOSTNAME)' test-set2/3.yaml -i
+          HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ./yq e '.spec.loadBalancers.clusters.[1].dns.hostname = strenv(HOSTNAME)' test-set2/1.yaml -i
+          HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ./yq e '.spec.loadBalancers.clusters.[0].dns.hostname = strenv(HOSTNAME)' test-set2/3.yaml -i
 
           #Clean up
           rm -f yq 

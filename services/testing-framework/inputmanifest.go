@@ -43,8 +43,9 @@ func getInputManifestName(yamlFile []byte) (string, error) {
 		return "", fmt.Errorf("error while unmarshalling a manifest file: %w", err)
 	}
 
-	if manifest.GetNamespacedNameDashed() != "" {
-		return manifest.GetNamespacedNameDashed(), nil
+	// Name is checked before apply, so ID needs to be combined manualy (.metadata.namespace is not present before apply)
+	if manifest.GetName() != "" {
+		return envs.Namespace + "-" + manifest.GetName(), nil
 	}
 	return "", fmt.Errorf("manifest does not have a name defined, which could be used as DB id")
 }
