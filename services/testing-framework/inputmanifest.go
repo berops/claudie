@@ -43,7 +43,7 @@ func getInputManifestName(yamlFile []byte) (string, error) {
 		return "", fmt.Errorf("error while unmarshalling a manifest file: %w", err)
 	}
 
-	// Name is checked before apply, so ID needs to be combined manualy (.metadata.namespace is not present before apply)
+	// Name is checked before apply, so ID needs to be combined manually (.metadata.namespace is not present before apply)
 	if manifest.GetName() != "" {
 		return envs.Namespace + "-" + manifest.GetName(), nil
 	}
