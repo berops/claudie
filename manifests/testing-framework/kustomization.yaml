@@ -27,7 +27,7 @@ secretGenerator:
   - test-sets/autoscaling-1/1.yaml
   - test-sets/autoscaling-1/2.yaml
   - test-sets/autoscaling-1/3.yaml
-  name: autoscaling
+  name: autoscaling-1
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
