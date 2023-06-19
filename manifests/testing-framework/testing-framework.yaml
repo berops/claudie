@@ -61,7 +61,7 @@ spec:
         - name: test-set4
           secret:
             secretName: test-set4
-        - name: autoscaling
+        - name: autoscaling-1
           secret:
             secretName: autoscaling-1
       restartPolicy: Never
