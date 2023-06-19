@@ -80,6 +80,9 @@ rules:
   - apiGroups: [""]
     resources: ["secrets"]
     verbs: ["create", "patch", "update", "get", "list", "delete"]
+  - apiGroups: ["claudie.io"]
+    resources: ["inputmanifests"]
+    verbs: ["create", "patch", "update", "get", "list", "delete", "watch"]
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
