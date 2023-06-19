@@ -47,6 +47,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	rawManifest, err := mergeInputManifestWithSecrets(*inputManifest, providersSecrets)
 	if err != nil {
 		log.Error(err, "error while using referenced secrets", "will try again in", REQUEUE_AFTER_ERROR)
+		r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
 		return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
 	}
 

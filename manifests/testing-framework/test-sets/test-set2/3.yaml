@@ -121,7 +121,7 @@ spec:
         providerSpec:
           name: azure-1
           region: West Europe
-          zone: 3
+          zone: "3"
         count: 2
         serverType: Standard_B2s
         image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120

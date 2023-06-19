@@ -196,7 +196,7 @@ type Role struct {
 	// k8sAllNodes - All nodes in the cluster
 	// k8sControlNodes - Only control/master nodes in cluster
 	// k8sComputeNodes - Only compute/worker nodes in cluster
-	// +kubebuilder:validation:Enum=k8sAllNodes;k8sControlNodes;k8sComputeNodes;
+	// +kubebuilder:validation:Enum=k8sAllNodes;k8sControlPlane;k8sComputePlane;
 	Target string `validate:"required,oneof=k8sAllNodes k8sControlPlane k8sComputePlane" yaml:"target" json:"target"`
 }
 

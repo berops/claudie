@@ -143,7 +143,7 @@ spec:
                             type: string
                           type: array
                         targetedK8s:
-                          description: Name of the Kubernetes cluster targetted by
+                          description: Name of the Kubernetes cluster targeted by
                             this loadbalancer.
                           type: string
                       required:
@@ -181,8 +181,8 @@ spec:
                             - Only compute/worker nodes in cluster'
                           enum:
                           - k8sAllNodes
-                          - k8sControlNodes
-                          - k8sComputeNodes
+                          - k8sControlPlane
+                          - k8sComputePlane
                           type: string
                         targetPort:
                           description: Port where loadbalancer forwards the traffic.
@@ -351,7 +351,6 @@ spec:
                   - providerType
                   - secretRef
                   type: object
-                minItems: 1
                 type: array
             type: object
           status:
