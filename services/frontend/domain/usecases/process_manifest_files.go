@@ -18,9 +18,8 @@ func (u *Usecases) CreateConfig(inputManifest *manifest.Manifest) error {
 
 	// Define config
 	config := &pb.Config{
-		Name:             inputManifest.Name,
-		ManifestFileName: inputManifest.Name,
-		Manifest:         string(inputManifestMarshalled),
+		Name:     inputManifest.Name,
+		Manifest: string(inputManifestMarshalled),
 	}
 
 	if err := u.ContextBox.SaveConfig(config); err != nil {

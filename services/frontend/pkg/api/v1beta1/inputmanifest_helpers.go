@@ -51,7 +51,7 @@ func (im *InputManifest) GetStatuses() InputManifestStatus {
 	return im.Status
 }
 
-func (im *InputManifest) SetNewReousrceStatus() {
+func (im *InputManifest) SetNewResourceStatus() {
 	im.Status.State = STATUS_NEW
 }
 

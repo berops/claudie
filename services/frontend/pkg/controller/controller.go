@@ -184,7 +184,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			if inputManifest.Status.State == v1beta.STATUS_NEW {
 				return ctrl.Result{RequeueAfter: REQUEUE_NEW}, nil
 			}
-			inputManifest.SetNewReousrceStatus()
+			inputManifest.SetNewResourceStatus()
 			if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 				return ctrl.Result{}, fmt.Errorf("failed executing finalizer: %w", err)
 			}

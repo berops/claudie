@@ -40,7 +40,7 @@ const (
 	REQUEUE_UPDATE      = 20 * time.Second
 	REQUEUE_IN_PROGRES  = 10 * time.Second
 	REQUEUE_DELETE      = 20 * time.Second
-	REQUEUE_AFTER_ERROR = 60 * time.Second
+	REQUEUE_AFTER_ERROR = 30 * time.Second
 	finalizerName       = "v1beta1.claudie.io/finalizer"
 )
 
