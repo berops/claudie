@@ -123,6 +123,9 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 				}
 
 				if ctx, err = buildCluster(ctx, c); err != nil {
+					clusterView.CurrentClusters[clusterName] = ctx.desiredCluster
+					clusterView.Loadbalancers[clusterName] = ctx.desiredLoadbalancers
+
 					if errors.Is(err, ErrFailedToBuildInfrastructure) {
 						clusterView.CurrentClusters[clusterName] = ctx.cluster
 						clusterView.Loadbalancers[clusterName] = ctx.loadbalancers
@@ -225,6 +228,9 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			}
 
 			if ctx, err = buildCluster(ctx, c); err != nil {
+				clusterView.CurrentClusters[clusterName] = ctx.desiredCluster
+				clusterView.Loadbalancers[clusterName] = ctx.desiredLoadbalancers
+
 				if errors.Is(err, ErrFailedToBuildInfrastructure) {
 					clusterView.CurrentClusters[clusterName] = ctx.cluster
 					clusterView.Loadbalancers[clusterName] = ctx.loadbalancers
@@ -266,11 +272,6 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			return nil
 		}); err != nil {
 			logger.Err(err).Msg("Error encountered while processing config")
-
-			if !errors.Is(err, ErrFailedToBuildInfrastructure) {
-				// The error occurred after the infra was build, set it to desired state.
-				config.CurrentState = config.DesiredState
-			}
 
 			// Even if the config fails to build, merge the changes as it might be in an in-between state
 			// in order to be able to delete it later.
