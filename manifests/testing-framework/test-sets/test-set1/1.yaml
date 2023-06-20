@@ -34,8 +34,8 @@ spec:
       - name: hetzner-control
         providerSpec:
           name: hetzner-1
-          region: hel1
-          zone: hel1-dc2
+          region: fsn1
+          zone: fsn1-dc14
         count: 1
         serverType: cpx11
         image: ubuntu-22.04
@@ -43,8 +43,8 @@ spec:
       - name: hetzner-compute
         providerSpec:
           name: hetzner-1
-          region: hel1
-          zone: hel1-dc2
+          region: fsn1
+          zone: fsn1-dc14
         count: 1
         serverType: cpx11
         image: ubuntu-22.04
