@@ -77,9 +77,6 @@ kind: ClusterRole
 metadata:
   name: testing-framework
 rules:
-  - apiGroups: [""]
-    resources: ["secrets"]
-    verbs: ["create", "patch", "update", "get", "list", "delete"]
   - apiGroups: ["claudie.io"]
     resources: ["inputmanifests"]
     verbs: ["create", "patch", "update", "get", "list", "delete", "watch"]
