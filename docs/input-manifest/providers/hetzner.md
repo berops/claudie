@@ -123,6 +123,11 @@ providers:
       # API access token.
       credentials: kslIIOUYBiuui7iGBYIUiuybpiUB87bgPyuCo060HVEygjFs21nske76ksjKko21l
 
+  hetznerdns:
+    - name: hetzner-dns
+      # API access token.
+      apiToken: kslIIOUYBiuui7iGBYIUiuybpiUB87bgPyuCo060HVEygjFs21nske76ksjKko21l
+
 nodePools:
   dynamic:
     - name: control-hetzner-1
@@ -183,6 +188,20 @@ nodePools:
       image: ubuntu-22.04
       storageDiskSize: 50
 
+    - name: loadbalancer-1
+      providerSpec:
+        # Name of the provider instance.
+        name: hetzner-2
+        # Region of the nodepool.
+        region: nbg1
+        # Datacenter of the nodepool.
+        zone: nbg1-dc3
+      count: 2
+      # Machine type name.
+      serverType: cpx11
+      # OS image name.
+      image: ubuntu-22.04
+
 kubernetes:
   clusters:
     - name: hetzner-cluster
@@ -195,4 +214,22 @@ kubernetes:
         compute:
           - compute-hetzner-1
           - compute-hetzner-2
+loadBalancers:
+  roles:
+    - name: apiserver
+      protocol: tcp
+      port: 6443
+      targetPort: 6443
+      target: k8sControlPlane
+
+  clusters:
+    - name: apiserver-lb-dev
+      roles:
+        - apiserver
+      dns:
+        dnsZone: example.com
+        provider: hetzner-dns
+      targetedK8s: hetzner-cluster
+      pools:
+        - loadbalancer-1
 ```
