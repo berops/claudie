@@ -180,7 +180,7 @@ func processTestSet(ctx context.Context, setName string, c pb.ContextBoxServiceC
 
 	for _, manifest := range manifestFiles {
 		// Apply test set manifest
-		if errIgnore = applyManifest(setName, pathToTestSet, manifest, &idInfo, c); errIgnore != nil {
+		if errIgnore = applyManifest(pathToTestSet, manifest, &idInfo, c); errIgnore != nil {
 			// https://github.com/berops/claudie/pull/243#issuecomment-1218237412
 			if errors.Is(errIgnore, errHiddenOrDir) {
 				continue
@@ -232,7 +232,7 @@ func processTestSet(ctx context.Context, setName string, c pb.ContextBoxServiceC
 	return nil
 }
 
-func applyManifest(setName, pathToTestSet string, manifest fs.DirEntry, idInfo *idInfo, c pb.ContextBoxServiceClient) error {
+func applyManifest(pathToTestSet string, manifest fs.DirEntry, idInfo *idInfo, c pb.ContextBoxServiceClient) error {
 	if manifest.IsDir() || manifest.Name()[0] == '.' {
 		return errHiddenOrDir
 	}
@@ -243,13 +243,13 @@ func applyManifest(setName, pathToTestSet string, manifest fs.DirEntry, idInfo *
 	if err != nil {
 		return fmt.Errorf("error while reading the manifest %s : %w", manifestPath, err)
 	}
-	manifestName, err := getManifestName(yamlFile)
+	manifestName, err := getInputManifestName(yamlFile)
 	if err != nil {
 		return fmt.Errorf("error while getting the manifest name from %s : %w", manifestPath, err)
 	}
 
 	if envs.Namespace != "" {
-		err = clusterTesting(yamlFile, setName, pathToTestSet, manifestName, c)
+		err = clusterTesting(yamlFile, pathToTestSet, manifestName, c)
 		idInfo.id = manifestName
 		idInfo.idType = pb.IdType_NAME
 		if err != nil {
@@ -268,18 +268,18 @@ func applyManifest(setName, pathToTestSet string, manifest fs.DirEntry, idInfo *
 // clusterTesting will perform actions needed for testing framework to function in k8s cluster deployment
 // this option is only used when NAMESPACE env var has been found
 // this option is testing the whole claudie
-func clusterTesting(yamlFile []byte, setName, pathToTestSet, manifestName string, c pb.ContextBoxServiceClient) error {
-	// get the id from manifest file
-	id, err := getManifestName(yamlFile)
+func clusterTesting(yamlFile []byte, pathToTestSet, manifestName string, c pb.ContextBoxServiceClient) error {
+	//get the id from manifest file
+	id, err := getInputManifestName(yamlFile)
 	idType := pb.IdType_NAME
 	if err != nil {
 		return fmt.Errorf("error while getting an id for %s : %w", manifestName, err)
 	}
 
-	if err = applySecret(yamlFile, pathToTestSet, setName); err != nil {
-		return fmt.Errorf("error while applying a secret for %s : %w", setName, err)
+	if err = applyInputManifest(yamlFile, pathToTestSet); err != nil {
+		return fmt.Errorf("error while applying a inputmanfiest for %s : %w", id, err)
 	}
-	log.Info().Msgf("Secret for config with id %s has been saved...", id)
+	log.Info().Msgf("InputManifest for config with id %s has been saved...", id)
 
 	if err = checkIfManifestSaved(id, idType, c); err != nil {
 		return fmt.Errorf("error while checking if  with id %s is saved : %w", id, err)
@@ -306,15 +306,15 @@ func localTesting(yamlFile []byte, manifestName string, c pb.ContextBoxServiceCl
 	return id, nil
 }
 
-// checkIfManifestSaved function will wait until the manifest has been picked up from the secret by the frontend component and
+// checkIfManifestSaved function will wait until the manifest has been picked up from the inputManifest by the frontend component and
 // that it has been saved in database; throws error after set amount of time
 func checkIfManifestSaved(configID string, idType pb.IdType, c pb.ContextBoxServiceClient) error {
 	counter := 1
-	// wait for the secret to be saved in the database and check if the secret has been updated with the new manifest
+	// wait for the inputManifest to be saved in the database and check if the inputManifest has been updated with the new manifest
 	for {
 		time.Sleep(20 * time.Second)
 		elapsedSec := counter * 20
-		log.Info().Msgf("Waiting for secret for config with id %s to be picked up by the frontend... [ %ds elapsed...]", configID, elapsedSec)
+		log.Info().Msgf("Waiting for inputmanifest for config with id %s to be picked up by the frontend... [ %ds elapsed...]", configID, elapsedSec)
 		counter++
 		config, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{
 			Id:   configID,
@@ -326,23 +326,22 @@ func checkIfManifestSaved(configID string, idType pb.IdType, c pb.ContextBoxServ
 				return nil
 			} else {
 				if elapsedSec > maxTimeoutSave {
-					return fmt.Errorf("The secret for config with id %s has not been picked up by the frontend in time, aborting...", configID)
+					return fmt.Errorf("The inputmanfiest for config with id %s has not been picked up by the frontend in time, aborting...", configID)
 				}
 			}
 		} else if elapsedSec > maxTimeoutSave {
-			return fmt.Errorf("The secret for config with id %s has not been picked up by the frontend in time, aborting...", configID)
+			return fmt.Errorf("The inputmanfiest for config with id %s has not been picked up by the frontend in time, aborting...", configID)
 		}
 	}
 }
 
 // cleanUp will delete manifest from claudie which will trigger infra deletion
-// it deletes a secret if claudie is deployed in k8s cluster
+// it deletes an inputManifest if claudie is deployed in k8s cluster
 // it calls for a deletion from database directly if claudie is deployed locally
 func cleanUp(setName, id string, c pb.ContextBoxServiceClient) error {
 	if envs.Namespace != "" {
-		// delete secret from namespace
-		if err := deleteSecret(setName); err != nil {
-			return fmt.Errorf("error while deleting the secret %s from %s : %w", id, envs.Namespace, err)
+		if err := deleteInputManifest(setName); err != nil {
+			return fmt.Errorf("error while deleting the inputmanfiest %s from %s : %w", id, envs.Namespace, err)
 		}
 	} else {
 		// delete config from database

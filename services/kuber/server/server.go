@@ -422,7 +422,7 @@ func main() {
 	utils.InitLog("kuber")
 
 	// Set the kuber port
-	kuberPort := utils.GetenvOr("KUBER_PORT", fmt.Sprint(defaultKuberPort))
+	kuberPort := utils.GetEnvDefault("KUBER_PORT", fmt.Sprint(defaultKuberPort))
 
 	// Start Terraformer Service
 	trfAddr := net.JoinHostPort("0.0.0.0", kuberPort)

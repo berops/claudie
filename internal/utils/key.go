@@ -12,9 +12,9 @@ func CreateKeyFile(key string, outputPath string, keyName string) error {
 	return os.WriteFile(keyFileName, []byte(key), 0600)
 }
 
-// GetenvOr returns the value of the env variable argument if it exists.
-// Otherwise it returns the provided default value.
-func GetenvOr(envKey string, defaultVal string) string {
+// GetEnvDefault take a string representing environment variable as an argument, and a default value
+// If the environment variable is not defined, it returns the provided default value.
+func GetEnvDefault(envKey string, defaultVal string) string {
 	v, present := os.LookupEnv(envKey)
 	if present {
 		return v

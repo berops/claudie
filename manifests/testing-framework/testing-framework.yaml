@@ -46,8 +46,8 @@ spec:
               mountPath: "/go/services/testing-framework/test-sets/test-set3"
             - name: test-set4
               mountPath: "/go/services/testing-framework/test-sets/test-set4"
-            - name: autoscaling
-              mountPath: "/go/services/testing-framework/test-sets/autoscaling"
+            - name: autoscaling-1
+              mountPath: "/go/services/testing-framework/test-sets/autoscaling-1"
       volumes:
         - name: test-set1
           secret:
@@ -61,9 +61,9 @@ spec:
         - name: test-set4
           secret:
             secretName: test-set4
-        - name: autoscaling
+        - name: autoscaling-1
           secret:
-            secretName: autoscaling
+            secretName: autoscaling-1
       restartPolicy: Never
       serviceAccountName: testing-framework
 ---
@@ -73,20 +73,20 @@ metadata:
   name: testing-framework
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
+kind: ClusterRole
 metadata:
   name: testing-framework
 rules:
-  - apiGroups: [""]
-    resources: ["secrets"]
-    verbs: ["create", "patch", "update", "get", "list", "delete"]
+  - apiGroups: ["claudie.io"]
+    resources: ["inputmanifests"]
+    verbs: ["create", "patch", "update", "get", "list", "delete", "watch"]
 ---
-kind: RoleBinding
+kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: testing-framework
 roleRef:
-  kind: Role
+  kind: ClusterRole
   name: testing-framework
   apiGroup: rbac.authorization.k8s.io
 subjects:
