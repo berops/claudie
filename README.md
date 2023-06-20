@@ -63,46 +63,92 @@ Claudie has its own managed load-balancing solution, which you can use for Ingre
 
 Claudie comes pre-configured with a storage solution, with ready-to-use Storage Classes. See [Storage docs](https://docs.claudie.io/latest/storage/storage-solution/) to learn more.
 
-### Supported cloud providers
-
-| Cloud Provider                                                                    | Nodepools          | DNS                |
-| --------------------------------------------------------------------------------- | ------------------ | ------------------ |
-| [AWS](https://docs.claudie.io/latest/input-manifest/providers/aws/)               | :heavy_check_mark: | :heavy_check_mark: |
-| [Azure](https://docs.claudie.io/latest/input-manifest/providers/azure/)           | :heavy_check_mark: | :heavy_check_mark: |
-| [GCP](https://docs.claudie.io/latest/input-manifest/providers/gcp/)               | :heavy_check_mark: | :heavy_check_mark: |
-| [OCI](https://docs.claudie.io/latest/input-manifest/providers/oci/)               | :heavy_check_mark: | :heavy_check_mark: |
-| [Hetzner](https://docs.claudie.io/latest/input-manifest/providers/hetzner/)       | :heavy_check_mark: | :heavy_check_mark: |
-| [Cloudflare](https://docs.claudie.io/latest/input-manifest/providers/cloudflare/) | N/A                | :heavy_check_mark: |
-
-For adding support for other cloud providers, open an issue or propose a PR.
-
+<!-- steps-start -->
 ## Get started using Claudie
 
-To try Claudie you can follow these few steps or go to [Getting Started](https://docs.claudie.io/latest/getting-started/get-started-using-claudie/) section in our [documentation](docs.claudie.io).
+### Prerequisites
+Before you begin, please make sure you have the following prerequisites installed and set up:
 
-1. Before you begin, please make sure you have installed [cert-manager](https://cert-manager.io/docs/installation/). 
-  
-    ```sh
+1. Claudie needs to be installed on an existing Kubernetes cluster, which it uses to manage the clusters it provisions. For testing, you can use ephemeral clusters like Minikube or Kind. However, for production environments, we recommend using a more resilient solution since Claudie maintains the state of the infrastructure it creates.
+
+2. Claudie requires the installation of cert-manager in your Kubernetes cluster. To install cert-manager, use the following command:
+    ```bash
     kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml
     ```
 
-2. Download and extract manifests of the lates release from our [release page](https://github.com/berops/claudie/releases).
 
-    ```sh
+### Supported providers
+<!-- providers-start -->
+   | Supported Provider                                                                | Node Pools         | DNS                |
+   | --------------------------------------------------------------------------------- | ------------------ | ------------------ |
+   | [AWS](https://docs.claudie.io/latest/input-manifest/providers/aws/)               | :heavy_check_mark: | :heavy_check_mark: |
+   | [Azure](https://docs.claudie.io/latest/input-manifest/providers/azure/)           | :heavy_check_mark: | :heavy_check_mark: |
+   | [GCP](https://docs.claudie.io/latest/input-manifest/providers/gcp/)               | :heavy_check_mark: | :heavy_check_mark: |
+   | [OCI](https://docs.claudie.io/latest/input-manifest/providers/oci/)               | :heavy_check_mark: | :heavy_check_mark: |
+   | [Hetzner](https://docs.claudie.io/latest/input-manifest/providers/hetzner/)       | :heavy_check_mark: | :heavy_check_mark: |
+   | [Cloudflare](https://docs.claudie.io/latest/input-manifest/providers/cloudflare/) | N/A                | :heavy_check_mark: |
+
+For adding support for other cloud providers, open an issue or propose a PR.
+
+<!-- providers-end -->
+
+### Install Claudie
+
+1. Download and extract Claudie manifests from our [release page](https://github.com/berops/claudie/releases):
+    ```bash
     wget https://github.com/berops/claudie/releases/latest/download/claudie.zip && unzip claudie.zip -d claudie
     ```
 
-3. Deploy Claudie into a Kubernetes cluster.
-
-    ```sh
+2. Deploy Claudie into your management Kubernetes cluster:
+    ```bash
     kubectl apply -k claudie
     ```
 
-4. Provide your own input manifest via a Kubernetes Secret.
+### Deploy your cluster
 
-    Have a look at our [input manifest documentation](https://docs.claudie.io/latest/input-manifest/input-manifest/) to explore what's possible.
+3. Deploy input manifest secret which Claudie uses to create infrastructure across various hyperscalers:
+    ```bash
+    kubectl create secret generic input-manifest --from-file=input-manifest.yaml -n claudie
+    ```
 
-To see in detail how to correctly apply the manifest into Claudie and how get outputs from Claudie please refer to the [CRUD](https://docs.claudie.io/latest/crud/crud/) document.
+   Check the [supported providers](#supported-providers) for input manifest examples. For an input manifest spanning all supported hyperscalers checkout out [this example](https://docs.claudie.io/latest/input-manifest/example.md).
+
+4. Label the input-manifest secret created in the previous step to enable the Claudie frontend service to recognize it as part of Claudie and initiate the creation of the specified infrastructure.
+    ```bash
+    kubectl label secret input-manifest claudie.io/input-manifest=claudie-testing -n claudie
+    ```
+
+5. If you wish to adjust your already created input manifest you can do so without deleting or replacing the secret itself:
+    ```bash
+    kubectl create secret generic input-manifest --from-file=input-manifest.yaml -n claudie -oyaml --dry-run=client | kubectl
+    apply -f -
+    ```
+    
+    ***Deleting existing secret deletes provisioned infrastructure!***
+
+### Connect to your cluster
+Claudie outputs base64 encoded kubeconfig secret `<cluster-name>-<cluster-hash>-kubeconfig` in the namespace where it is deployed:
+
+1. Recover kubeconfig of your cluster by running:
+    ```bash
+    kubectl get secrets -n claudie -l claudie.io/output=kubeconfig -o jsonpath='{.items[0].data.kubeconfig}' | base64 -d > your_kubeconfig.yaml
+    ```
+2. Use your new kubeconfig:
+    ```bash
+    kubectl get pods -A --kubeconfig=your_kubeconfig.yaml
+    ```
+
+### Cleanup
+
+1. To remove your cluster and its associated infrastructure, delete the cluster definition block from the input-manifest and update the secret:
+    ```bash
+    kubectl create secret generic input-manifest --from-file=input-manifest.yaml -n claudie -oyaml --dry-run=client | kubectl apply -f -
+    ```
+2. To delete all clusters defined in the input manifest, delete the secret. This triggers the deletion process, removing the infrastructure and all data associated with the manifest.
+    ```bash
+    kubectl delete secret input-manifest -n claudie
+    ```
+<!-- steps-end -->
 
 ## Get involved
 

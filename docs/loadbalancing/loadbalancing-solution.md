@@ -48,4 +48,4 @@ Loadbalancers are build from user defined nodepools in `pools` field, similar to
 
 ## An example of load balancer definition
 
-See an example load balancer definition in our reference [example input manifest](../input-manifest/example.yaml).
+See an example load balancer definition in our reference [example input manifest](../input-manifest/example.md).

@@ -18,11 +18,11 @@ Besides the default storage class, Claudie can also create custom storage classe
 
 ## Example
 
-To follow along, have a look at the reference [example input manifest file](../input-manifest/example.yaml).
+To follow along, have a look at the reference [example input manifest file](../input-manifest/example.md).
 
 When Claudie applies this input manifest, the following storage classes are installed:
 
 - `longhorn` - the default storage class, which stores data on random nodes
-- `longhorn-<provider instance>-zone` - storage class, which stores data only on nodes of the specific provider instance (see the [list of supported providers](../input-manifest/input-manifest.md#providers)), i.e. `longhorn-gcp-1-zone`, `longhorn-gcp-2-zone`, `longhorn-aws-1-zone`, ...
+- `longhorn-<provider instance>-zone` - storage class, which stores data only on nodes of the specific provider instance (see the [list of supported providers](../getting-started/detailed-guide.md#supported-providers)), i.e. `longhorn-gcp-1-zone`, `longhorn-gcp-2-zone`, `longhorn-aws-1-zone`, ...
 
 For more information on how Longhorn works you can check out [Longhorn's official documentation](https://longhorn.io/docs/1.4.0/what-is-longhorn/).
