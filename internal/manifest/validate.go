@@ -18,10 +18,6 @@ func (m *Manifest) Validate() error {
 		return fmt.Errorf("need to define at least one provider inside the providers section of the manifest")
 	}
 
-	if err := m.Providers.Validate(); err != nil {
-		return fmt.Errorf("failed to validate providers section inside manifest: %w", err)
-	}
-
 	if err := m.NodePools.Validate(m); err != nil {
 		return fmt.Errorf("failed to validate nodepools section inside manifest: %w", err)
 	}
@@ -34,7 +30,7 @@ func (m *Manifest) Validate() error {
 		return fmt.Errorf("failed to validate loadbalancers section inside manifest: %w", err)
 	}
 
-	if err := checkLengthOfFutureDomain(m); err != nil {
+	if err := CheckLengthOfFutureDomain(m); err != nil {
 		return fmt.Errorf("failed to validate future domains: %w", err)
 	}
 

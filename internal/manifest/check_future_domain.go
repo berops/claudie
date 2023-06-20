@@ -13,7 +13,7 @@ const (
 // checkLengthOfFutureDomain will check if the possible domain name is too long
 // returns error if domain will be too long, nil if not
 // Described in https://github.com/berops/claudie/issues/112#issuecomment-1015432224
-func checkLengthOfFutureDomain(m *Manifest) error {
+func CheckLengthOfFutureDomain(m *Manifest) error {
 	// https://<public-ip>:6443/<api-path>/<node-name>
 	for _, cluster := range m.Kubernetes.Clusters {
 		for _, nodepoolName := range cluster.Pools.Control {
