@@ -83,6 +83,9 @@ func setUpLoadbalancers(clusterName string, lbClustersInfo *utils.LBClustersInfo
 			if err := commonUtils.CreateKeyFile(lbCluster.DesiredLbCluster.ClusterInfo.PrivateKey, clusterDirectory, fmt.Sprintf("key.%s", sshPrivateKeyFileExtension)); err != nil {
 				return fmt.Errorf("failed to create key file for %s : %w", lbCluster.DesiredLbCluster.ClusterInfo.Name, err)
 			}
+			if err := commonUtils.CreateKeysForStaticNodepools(commonUtils.GetCommonStaticNodePools(lbCluster.DesiredLbCluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
+				return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
+			}
 
 			if err := setUpNodeExporter(lbCluster.DesiredLbCluster, clusterDirectory); err != nil {
 				return err

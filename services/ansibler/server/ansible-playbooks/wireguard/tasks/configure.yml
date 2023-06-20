@@ -34,7 +34,7 @@
 
 - name: Template wireguard config file to a node
   ansible.builtin.template:
-    src: wg.conf.j2
+    src: "{{ 'wg-static.conf.j2' if 'static' in group_names else 'wg-dynamic.conf.j2' }}"
     dest: "{{ wg_conf_dir.path }}/wg0.conf"
 
 - name: Sync configuration file
@@ -69,4 +69,3 @@
   ansible.builtin.systemd:
     name: "wg-quick@wg0"
     enabled: true
-...

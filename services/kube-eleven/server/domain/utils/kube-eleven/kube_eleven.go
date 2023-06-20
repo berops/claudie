@@ -99,6 +99,10 @@ func (k *KubeEleven) generateFiles() error {
 		return fmt.Errorf("error while creating SSH key file: %w", err)
 	}
 
+	if err := utils.CreateKeysForStaticNodepools(utils.GetCommonStaticNodePools(k.K8sCluster.ClusterInfo.NodePools), k.outputDirectory); err != nil {
+		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
+	}
+
 	// Create a kubeconfig file for the target Kubernetes cluster.
 	kubeconfigFilePath := filepath.Join(k.outputDirectory, fmt.Sprintf("%s-kubeconfig", k.K8sCluster.ClusterInfo.Name))
 	if err := os.WriteFile(kubeconfigFilePath, []byte(k.K8sCluster.GetKubeconfig()), 0600); err != nil {
@@ -147,11 +151,12 @@ func (k *KubeEleven) getClusterNodes() ([]*NodepoolInfo, *pb.Node) {
 
 			nodepoolInfo = &NodepoolInfo{
 				NodepoolName:      nodepool.Name,
-				Region:            sanitiseString(nodepool.GetDynamicNodePool().Region),
-				Zone:              sanitiseString(nodepool.GetDynamicNodePool().Zone),
-				CloudProviderName: sanitiseString(nodepool.GetDynamicNodePool().Provider.CloudProviderName),
-				ProviderName:      sanitiseString(nodepool.GetDynamicNodePool().Provider.SpecName),
+				Region:            utils.SanitiseString(nodepool.GetDynamicNodePool().Region),
+				Zone:              utils.SanitiseString(nodepool.GetDynamicNodePool().Zone),
+				CloudProviderName: utils.SanitiseString(nodepool.GetDynamicNodePool().Provider.CloudProviderName),
+				ProviderName:      utils.SanitiseString(nodepool.GetDynamicNodePool().Provider.SpecName),
 				Nodes:             nodes,
+				IsDynamic:         true,
 			}
 		} else if nodepool.GetStaticNodePool() != nil {
 			var nodes []*NodeInfo
@@ -161,11 +166,12 @@ func (k *KubeEleven) getClusterNodes() ([]*NodepoolInfo, *pb.Node) {
 			}
 			nodepoolInfo = &NodepoolInfo{
 				NodepoolName:      nodepool.Name,
-				Region:            sanitiseString(staticRegion),
-				Zone:              sanitiseString(staticZone),
-				CloudProviderName: sanitiseString(staticProvider),
-				ProviderName:      sanitiseString(staticProviderName),
+				Region:            utils.SanitiseString(staticRegion),
+				Zone:              utils.SanitiseString(staticZone),
+				CloudProviderName: utils.SanitiseString(staticProvider),
+				ProviderName:      utils.SanitiseString(staticProviderName),
 				Nodes:             nodes,
+				IsDynamic:         false,
 			}
 		}
 		nodepoolInfos = append(nodepoolInfos, nodepoolInfo)

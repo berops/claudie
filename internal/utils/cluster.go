@@ -136,7 +136,7 @@ func IsAutoscaled(cluster *pb.K8Scluster) bool {
 		return false
 	}
 	for _, np := range cluster.ClusterInfo.NodePools {
-		if n := np.GetDynamicNodePool(); np != nil {
+		if n := np.GetDynamicNodePool(); n != nil {
 			if n.AutoscalerConfig != nil {
 				return true
 			}

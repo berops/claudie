@@ -13,6 +13,7 @@ type (
 	// manifest.
 	NodepoolInfo struct {
 		Nodes             []*NodeInfo
+		IsDynamic         bool
 		NodepoolName      string
 		Region            string
 		Zone              string

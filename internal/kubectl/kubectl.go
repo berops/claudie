@@ -112,7 +112,7 @@ func (k *Kubectl) KubectlLabel(resource, resourceName, label string, options ...
 // KubectlGetNodeNames will find node names for a particular cluster
 // return slice of node names and nil if successful, nil and error otherwise
 func (k *Kubectl) KubectlGetNodeNames() ([]byte, error) {
-	nodesQueryCmd := fmt.Sprintf("kubectl get nodes -n kube-system --no-headers -o custom-columns=\":metadata.name\" %s", k.getKubeconfig())
+	nodesQueryCmd := fmt.Sprintf("kubectl get nodes --no-headers -o custom-columns=\":metadata.name\" %s", k.getKubeconfig())
 	return k.runWithOutput(nodesQueryCmd)
 }
 
