@@ -20,4 +20,6 @@ type Cluster interface {
 	Destroy(logger zerolog.Logger) error
 	// Id returns a cluster ID for the cluster.
 	Id() string
+	// UpdateCurrentState sets the current state equal to the desired state.
+	UpdateCurrentState()
 }

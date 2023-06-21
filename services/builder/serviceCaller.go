@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/rs/zerolog/log"
@@ -14,17 +15,33 @@ import (
 	terraformer "github.com/berops/claudie/services/terraformer/client"
 )
 
+var (
+	// ErrFailedToBuildInfrastructure is returned when the infra fails to build in terraformer
+	// including any partial failures.
+	ErrFailedToBuildInfrastructure = errors.New("failed to successfully build desired state")
+)
+
 type BuilderContext struct {
 	projectName string
 
-	cluster        *pb.K8Scluster
+	// cluster is the current state of the cluster
+	// properties may change during processing.
+	cluster *pb.K8Scluster
+	// desiredCluster is the desired state of the cluster
+	// properties may change during processing.
 	desiredCluster *pb.K8Scluster
 
-	loadbalancers        []*pb.LBcluster
+	// loadbalancers are the current loadbalancers of the cluster
+	// properties may change during processing.
+	loadbalancers []*pb.LBcluster
+	// desiredLoadbalancers are the current loadbalancers of the cluster
+	// properties may change during processing.
 	desiredLoadbalancers []*pb.LBcluster
 
+	// deletedLoadBalancers are the deleted loadbalancers for the cluster.
 	deletedLoadBalancers []*pb.LBcluster
 
+	// Workflow is the current state of processing of the cluster.
 	Workflow *pb.Workflow
 }
 
@@ -78,19 +95,19 @@ func (ctx *BuilderContext) GetClusterID() string {
 
 func buildCluster(ctx *BuilderContext, c pb.ContextBoxServiceClient) (*BuilderContext, error) {
 	if err := callTerraformer(ctx, c); err != nil {
-		return nil, fmt.Errorf("error in Terraformer for cluster %s project %s : %w", ctx.GetClusterName(), ctx.projectName, err)
+		return ctx, fmt.Errorf("error in Terraformer for cluster %s project %s : %w", ctx.GetClusterName(), ctx.projectName, err)
 	}
 
 	if err := callAnsibler(ctx, c); err != nil {
-		return nil, fmt.Errorf("error in Ansibler for cluster %s project %s : %w", ctx.GetClusterName(), ctx.projectName, err)
+		return ctx, fmt.Errorf("error in Ansibler for cluster %s project %s : %w", ctx.GetClusterName(), ctx.projectName, err)
 	}
 
 	if err := callKubeEleven(ctx, c); err != nil {
-		return nil, fmt.Errorf("error in Kube-eleven for cluster %s project %s : %w", ctx.GetClusterName(), ctx.projectName, err)
+		return ctx, fmt.Errorf("error in Kube-eleven for cluster %s project %s : %w", ctx.GetClusterName(), ctx.projectName, err)
 	}
 
 	if err := callKuber(ctx, c); err != nil {
-		return nil, fmt.Errorf("error in Kuber for cluster %s project %s : %w", ctx.GetClusterName(), ctx.projectName, err)
+		return ctx, fmt.Errorf("error in Kuber for cluster %s project %s : %w", ctx.GetClusterName(), ctx.projectName, err)
 	}
 
 	return ctx, nil
@@ -130,10 +147,21 @@ func callTerraformer(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient)
 		return err
 	}
 
-	ctx.cluster = res.Current
-	ctx.desiredCluster = res.Desired
-	ctx.loadbalancers = res.CurrentLbs
-	ctx.desiredLoadbalancers = res.DesiredLbs
+	switch resp := res.GetResponse().(type) {
+	case *pb.BuildInfrastructureResponse_Fail:
+		logger.Error().Msgf("failed to build %s", resp.Fail.Failed)
+		ctx.cluster = resp.Fail.Current
+		ctx.desiredCluster = resp.Fail.Desired
+		ctx.loadbalancers = resp.Fail.CurrentLbs
+		ctx.desiredLoadbalancers = resp.Fail.DesiredLbs
+
+		return ErrFailedToBuildInfrastructure
+	case *pb.BuildInfrastructureResponse_Ok:
+		ctx.cluster = resp.Ok.Current
+		ctx.desiredCluster = resp.Ok.Desired
+		ctx.loadbalancers = resp.Ok.CurrentLbs
+		ctx.desiredLoadbalancers = resp.Ok.DesiredLbs
+	}
 
 	ctx.Workflow.Description = description
 	if err := updateWorkflowStateInDB(ctx.projectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {

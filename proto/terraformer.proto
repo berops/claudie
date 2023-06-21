@@ -15,11 +15,22 @@ message BuildInfrastructureRequest {
 }
 
 message BuildInfrastructureResponse {
-  K8scluster current = 1;
-  K8scluster desired = 2;
+  message InfrastructureData {
+    K8scluster current = 1;
+    K8scluster desired = 2;
 
-  repeated LBcluster currentLbs = 3;
-  repeated LBcluster desiredLbs = 4;
+    repeated LBcluster currentLbs = 3;
+    repeated LBcluster desiredLbs = 4;
+
+    // if any partial failures occur this field will contain them and the
+    // Response will be of type *fail*.
+    repeated string failed = 5;
+  }
+
+  oneof Response {
+    InfrastructureData ok = 6;
+    InfrastructureData fail = 7;
+  }
 }
 
 message DestroyInfrastructureRequest {

@@ -1,6 +1,7 @@
 package loadbalancer
 
 import (
+	"errors"
 	"fmt"
 
 	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
@@ -10,6 +11,11 @@ import (
 	"github.com/berops/claudie/proto/pb"
 )
 
+var (
+	// ErrCreateDNSRecord is returned when an error occurs during the creation of the DNS records
+	ErrCreateDNSRecord = errors.New("failed to create DNS record")
+)
+
 type LBcluster struct {
 	DesiredState *pb.LBcluster
 	CurrentState *pb.LBcluster
@@ -17,7 +23,7 @@ type LBcluster struct {
 	ProjectName string
 }
 
-func (l LBcluster) Id() string {
+func (l *LBcluster) Id() string {
 	state := l.DesiredState
 	if state == nil {
 		state = l.CurrentState
@@ -26,7 +32,7 @@ func (l LBcluster) Id() string {
 	return fmt.Sprintf("%s-%s", state.ClusterInfo.Name, state.ClusterInfo.Hash)
 }
 
-func (l LBcluster) Build(logger zerolog.Logger) error {
+func (l *LBcluster) Build(logger zerolog.Logger) error {
 	logger.Info().Msgf("Building LB Cluster %s and DNS", l.DesiredState.ClusterInfo.Name)
 
 	var currentClusterInfo *pb.ClusterInfo
@@ -69,7 +75,7 @@ func (l LBcluster) Build(logger zerolog.Logger) error {
 
 	endpoint, err := dns.CreateDNSRecords(logger)
 	if err != nil {
-		return fmt.Errorf("error while creating the DNS for %s : %w", l.DesiredState.ClusterInfo.Name, err)
+		return fmt.Errorf("%w for %s: %w", ErrCreateDNSRecord, l.DesiredState.ClusterInfo.Name, err)
 	}
 
 	l.DesiredState.Dns.Endpoint = endpoint
@@ -77,7 +83,7 @@ func (l LBcluster) Build(logger zerolog.Logger) error {
 	return nil
 }
 
-func (l LBcluster) Destroy(logger zerolog.Logger) error {
+func (l *LBcluster) Destroy(logger zerolog.Logger) error {
 	group := errgroup.Group{}
 	logger.Info().Msgf("Destroying LB Cluster %s and DNS", l.CurrentState.ClusterInfo.Name)
 
@@ -103,6 +109,8 @@ func (l LBcluster) Destroy(logger zerolog.Logger) error {
 
 	return group.Wait()
 }
+
+func (l *LBcluster) UpdateCurrentState() { l.CurrentState = l.DesiredState }
 
 // getNodeIPs returns slice of public IPs used in the node pool.
 func getNodeIPs(nodepools []*pb.NodePool) []string {
