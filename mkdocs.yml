@@ -9,6 +9,9 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.inlinehilite
   - pymdownx.snippets
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
   - pymdownx.tasklist:
       custom_checkbox: true
   - toc:
@@ -24,6 +27,7 @@ plugins:
       width: 100%
       height: auto
       zoomable: true
+  - include-markdown
   - material-plausible
 
 copyright: |
@@ -48,24 +52,18 @@ theme:
 nav:
   - index.md
   - Getting Started:
-    - getting-started/get-started-using-claudie.md
-    - CRUD for Claudie: crud/crud.md
+    - Getting started: getting-started/get-started-using-claudie.md
+    - Detailed guide: getting-started/detailed-guide.md
   - Input manifest: 
-      - input-manifest/api-reference.md
-      - Example yaml file: input-manifest/example.md
       - Providers:
-        - Examples:
-          - AWS example: input-manifest/providers/examples/aws-input-manifest.md
-          - Azure example: input-manifest/providers/examples/azure-input-manifest.md
-          - GCP example: input-manifest/providers/examples/gcp-input-manifest.md
-          - Hetzner example: input-manifest/providers/examples/hetzner-input-manifest.md
-          - OCI example: input-manifest/providers/examples/oci-input-manifest.md
         - AWS: input-manifest/providers/aws.md
         - Azure: input-manifest/providers/azure.md
         - GCP: input-manifest/providers/gcp.md
         - Cloudflare: input-manifest/providers/cloudflare.md
         - Hetzner: input-manifest/providers/hetzner.md
         - OCI: input-manifest/providers/oci.md
+      - Example yaml file: input-manifest/example.md
+      - API reference: input-manifest/api-reference.md
   - How Claudie works:
     - Claudie Workflow: claudie-workflow/claudie-workflow.md
     - Claudie Storage solution: storage/storage-solution.md
@@ -78,6 +76,7 @@ nav:
     - Claudie v0.1: CHANGELOG/changelog-0.1.x.md
     - Claudie v0.2: CHANGELOG/changelog-0.2.x.md
     - Claudie v0.3: CHANGELOG/changelog-0.3.x.md
+  - Troubleshooting: troubleshooting/troubleshooting.md
 
 extra:
   version:

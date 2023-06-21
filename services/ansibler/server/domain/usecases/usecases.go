@@ -1,6 +1,6 @@
 package usecases
 
-import "github.com/berops/claudie/proto/pb"
+import "github.com/berops/claudie/services/ansibler/server/utils"
 
 const (
 	// baseDirectory is ansibler base directory
@@ -15,7 +15,7 @@ type Usecases struct{}
 
 type (
 	NodepoolsInfo struct {
-		Nodepools      []*pb.NodePool
+		Nodepools      utils.NodePools
 		PrivateKey     string
 		ClusterID      string
 		ClusterNetwork string

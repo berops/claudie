@@ -108,17 +108,19 @@ func getClaudieState(projectName, clusterName string) (*pb.K8Scluster, error) {
 func getNodesCache(nodepools []*pb.NodePool) map[string]*nodeCache {
 	var nc = make(map[string]*nodeCache, len(nodepools))
 	for _, np := range nodepools {
-		// Cache nodepools, which are autoscaled.
-		if np.AutoscalerConfig != nil {
-			// Create nodeGroup struct.
-			ng := &protos.NodeGroup{
-				Id:      np.Name,
-				MinSize: np.AutoscalerConfig.Min,
-				MaxSize: np.AutoscalerConfig.Max,
-				Debug:   fmt.Sprintf("Nodepool %s [min %d, max %d]", np.Name, np.AutoscalerConfig.Min, np.AutoscalerConfig.Max),
+		if np.GetDynamicNodePool() != nil {
+			// Cache nodepools, which are autoscaled.
+			if np.GetDynamicNodePool().AutoscalerConfig != nil {
+				// Create nodeGroup struct.
+				ng := &protos.NodeGroup{
+					Id:      np.Name,
+					MinSize: np.GetDynamicNodePool().AutoscalerConfig.Min,
+					MaxSize: np.GetDynamicNodePool().AutoscalerConfig.Max,
+					Debug:   fmt.Sprintf("Nodepool %s [min %d, max %d]", np.Name, np.GetDynamicNodePool().AutoscalerConfig.Min, np.GetDynamicNodePool().AutoscalerConfig.Max),
+				}
+				// Append ng to the final slice.
+				nc[np.Name] = &nodeCache{nodeGroup: ng, nodepool: np, targetSize: np.GetDynamicNodePool().Count}
 			}
-			// Append ng to the final slice.
-			nc[np.Name] = &nodeCache{nodeGroup: ng, nodepool: np, targetSize: np.Count}
 		}
 	}
 	return nc

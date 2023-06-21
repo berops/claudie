@@ -31,20 +31,19 @@ func HasAPIServerRole(roles []*pb.Role) bool {
 // the Api endpoint of the cluster.
 // Returns the control node if found and its corresponding nodepool.
 func FindNodepoolWithApiEndpointNode(nodepools []*pb.NodePool) (*pb.NodePool, *pb.Node, error) {
-	for _, nodepool := range nodepools {
-		if nodepool.IsControl {
-			if node, err := FindApiEndpointNode(nodepool); err == nil {
-				return nodepool, node, nil
+	for _, np := range nodepools {
+		if np.IsControl {
+			if node, err := FindEndpointNode(np); err == nil {
+				return np, node, nil
 			}
 		}
 	}
 	return nil, nil, fmt.Errorf("no node found with type: %s", pb.NodeType_apiEndpoint.String())
 }
 
-// FindApiEndpointNode receives a nodepool of control nodes
-// and searches for the control node representing the Api endpoint of the K8s cluster.
-func FindApiEndpointNode(nodepool *pb.NodePool) (*pb.Node, error) {
-	for _, node := range nodepool.GetNodes() {
+// FindEndpointNode searches the nodes of the nodepool for a node with type ApiEndpoint.
+func FindEndpointNode(np *pb.NodePool) (*pb.Node, error) {
+	for _, node := range np.GetNodes() {
 		if node.GetNodeType() == pb.NodeType_apiEndpoint {
 			return node, nil
 		}
@@ -54,8 +53,8 @@ func FindApiEndpointNode(nodepool *pb.NodePool) (*pb.Node, error) {
 
 // FindControlNode search the nodepools for a node with type Master.
 func FindControlNode(nodepools []*pb.NodePool) (*pb.Node, error) {
-	for _, nodepool := range nodepools {
-		for _, node := range nodepool.Nodes {
+	for _, np := range nodepools {
+		for _, node := range np.GetNodes() {
 			if node.NodeType == pb.NodeType_master {
 				return node, nil
 			}
@@ -66,9 +65,9 @@ func FindControlNode(nodepools []*pb.NodePool) (*pb.Node, error) {
 
 // FindAPIEndpointNode searches the NodePools for a Node with type ApiEndpoint.
 func FindAPIEndpointNode(nodepools []*pb.NodePool) (*pb.Node, error) {
-	for _, nodePool := range nodepools {
-		if nodePool.IsControl {
-			if node, err := FindApiEndpointNode(nodePool); err == nil {
+	for _, np := range nodepools {
+		if np.IsControl {
+			if node, err := FindEndpointNode(np); err == nil {
 				return node, nil
 			}
 		}

@@ -7,24 +7,50 @@ import (
 	"github.com/berops/claudie/proto/pb"
 )
 
-// GetClusterByName will return Cluster that will have same name as specified in parameters
-// If no name is found, return nil
-func GetClusterByName(clusterName string, clusters []*pb.K8Scluster) *pb.K8Scluster {
+// ProviderNames struct hold pair of cloud provider name and user defined name from manifest.
+type ProviderNames struct {
+	SpecName          string
+	CloudProviderName string
+}
+
+// GetClusterByName will return index of Cluster that will have same name as specified in parameters
+// If no name is found, return -1
+func GetClusterByName(clusterName string, clusters []*pb.K8Scluster) int {
 	if clusterName == "" {
-		return nil
+		return -1
 	}
 
 	if len(clusters) == 0 {
-		return nil
+		return -1
 	}
 
-	for _, cluster := range clusters {
+	for i, cluster := range clusters {
 		if cluster.ClusterInfo.Name == clusterName {
-			return cluster
+			return i
 		}
 	}
 
-	return nil
+	return -1
+}
+
+// GetLBClusterByName will return index of Cluster that will have same name as specified in parameters
+// If no name is found, return -1
+func GetLBClusterByName(name string, clusters []*pb.LBcluster) int {
+	if name == "" {
+		return -1
+	}
+
+	if len(clusters) == 0 {
+		return -1
+	}
+
+	for i, cluster := range clusters {
+		if cluster.ClusterInfo.Name == name {
+			return i
+		}
+	}
+
+	return -1
 }
 
 // GetNodePoolByName will return first Nodepool that will have same name as specified in parameters
@@ -42,7 +68,7 @@ func GetNodePoolByName(nodePoolName string, nodePools []*pb.NodePool) *pb.NodePo
 }
 
 // GetRegions will return a list of all regions used in list of nodepools
-func GetRegions(nodepools []*pb.NodePool) []string {
+func GetRegions(nodepools []*pb.DynamicNodePool) []string {
 	// create a set of region
 	regionSet := make(map[string]struct{})
 	for _, nodepool := range nodepools {
@@ -57,11 +83,30 @@ func GetRegions(nodepools []*pb.NodePool) []string {
 	return regions
 }
 
+// GroupNodepoolsByProviderNames groups nodepool by provider spec name into the map[Provider Names][]*pb.Nodepool
+func GroupNodepoolsByProviderNames(clusterInfo *pb.ClusterInfo) map[ProviderNames][]*pb.NodePool {
+	sortedNodePools := map[ProviderNames][]*pb.NodePool{}
+	pnStatic := ProviderNames{SpecName: pb.StaticProvider_STATIC_PROVIDER.String(), CloudProviderName: pb.StaticProvider_STATIC_PROVIDER.String()}
+	for _, nodepool := range clusterInfo.GetNodePools() {
+		if np := nodepool.GetDynamicNodePool(); np != nil {
+			pn := ProviderNames{SpecName: np.Provider.SpecName, CloudProviderName: np.Provider.CloudProviderName}
+			sortedNodePools[pn] = append(sortedNodePools[pn], nodepool)
+		} else if np := nodepool.GetStaticNodePool(); np != nil {
+			sortedNodePools[pnStatic] = append(sortedNodePools[pnStatic], nodepool)
+		}
+	}
+	return sortedNodePools
+}
+
 // GroupNodepoolsByProviderSpecName groups nodepool by provider spec name into the map[Provider Name][]*pb.Nodepool
 func GroupNodepoolsByProviderSpecName(clusterInfo *pb.ClusterInfo) map[string][]*pb.NodePool {
 	sortedNodePools := map[string][]*pb.NodePool{}
 	for _, nodepool := range clusterInfo.GetNodePools() {
-		sortedNodePools[nodepool.Provider.SpecName] = append(sortedNodePools[nodepool.Provider.SpecName], nodepool)
+		if np := nodepool.GetDynamicNodePool(); np != nil {
+			sortedNodePools[np.Provider.SpecName] = append(sortedNodePools[np.Provider.SpecName], nodepool)
+		} else if np := nodepool.GetStaticNodePool(); np != nil {
+			sortedNodePools[pb.StaticProvider_STATIC_PROVIDER.String()] = append(sortedNodePools[pb.StaticProvider_STATIC_PROVIDER.String()], nodepool)
+		}
 	}
 	return sortedNodePools
 }
@@ -70,7 +115,11 @@ func GroupNodepoolsByProviderSpecName(clusterInfo *pb.ClusterInfo) map[string][]
 func GroupNodepoolsByProvider(clusterInfo *pb.ClusterInfo) map[string][]*pb.NodePool {
 	sortedNodePools := map[string][]*pb.NodePool{}
 	for _, nodepool := range clusterInfo.GetNodePools() {
-		sortedNodePools[nodepool.Provider.CloudProviderName] = append(sortedNodePools[nodepool.Provider.CloudProviderName], nodepool)
+		if np := nodepool.GetDynamicNodePool(); np != nil {
+			sortedNodePools[np.Provider.CloudProviderName] = append(sortedNodePools[np.Provider.CloudProviderName], nodepool)
+		} else if np := nodepool.GetStaticNodePool(); np != nil {
+			sortedNodePools[pb.StaticProvider_STATIC_PROVIDER.String()] = append(sortedNodePools[pb.StaticProvider_STATIC_PROVIDER.String()], nodepool)
+		}
 	}
 	return sortedNodePools
 }
@@ -79,8 +128,13 @@ func GroupNodepoolsByProvider(clusterInfo *pb.ClusterInfo) map[string][]*pb.Node
 func GroupNodepoolsByProviderRegion(clusterInfo *pb.ClusterInfo) map[string][]*pb.NodePool {
 	sortedNodePools := map[string][]*pb.NodePool{}
 	for _, nodepool := range clusterInfo.GetNodePools() {
-		key := fmt.Sprintf("%s-%s", nodepool.Provider.SpecName, nodepool.Region)
-		sortedNodePools[key] = append(sortedNodePools[key], nodepool)
+		if np := nodepool.GetDynamicNodePool(); np != nil {
+			key := fmt.Sprintf("%s-%s", np.Provider.SpecName, np.Region)
+			sortedNodePools[key] = append(sortedNodePools[key], nodepool)
+		} else if np := nodepool.GetStaticNodePool(); np != nil {
+			key := fmt.Sprintf("%s-%s", pb.StaticProvider_STATIC_PROVIDER.String(), pb.StaticRegion_STATIC_REGION.String())
+			sortedNodePools[key] = append(sortedNodePools[key], nodepool)
+		}
 	}
 	return sortedNodePools
 }
@@ -101,11 +155,71 @@ func IsAutoscaled(cluster *pb.K8Scluster) bool {
 	if cluster == nil {
 		return false
 	}
-
 	for _, np := range cluster.ClusterInfo.NodePools {
-		if np.AutoscalerConfig != nil {
-			return true
+		if n := np.GetDynamicNodePool(); np != nil {
+			if n.AutoscalerConfig != nil {
+				return true
+			}
 		}
 	}
 	return false
+}
+
+// GetDynamicNodePoolsFromCI returns slice of dynamic node pools used in specified cluster info.
+func GetDynamicNodePoolsFromCI(ci *pb.ClusterInfo) []*pb.DynamicNodePool {
+	if ci == nil {
+		return nil
+	}
+
+	nps := make([]*pb.DynamicNodePool, 0, len(ci.GetNodePools()))
+	for _, np := range ci.GetNodePools() {
+		if n := np.GetDynamicNodePool(); n != nil {
+			nps = append(nps, n)
+		}
+	}
+	return nps
+}
+
+// GetDynamicNodePools returns slice of dynamic node pools.
+func GetDynamicNodePools(nps []*pb.NodePool) []*pb.DynamicNodePool {
+	dnps := make([]*pb.DynamicNodePool, 0, len(nps))
+	for _, np := range nps {
+		if n := np.GetDynamicNodePool(); n != nil {
+			dnps = append(dnps, n)
+		}
+	}
+	return dnps
+}
+
+// GetStaticNodePools returns slice of dynamic node pools.
+func GetStaticNodePools(nps []*pb.NodePool) []*pb.StaticNodePool {
+	snps := make([]*pb.StaticNodePool, 0, len(nps))
+	for _, np := range nps {
+		if n := np.GetStaticNodePool(); n != nil {
+			snps = append(snps, n)
+		}
+	}
+	return snps
+}
+
+// GetCommonStaticNodePools returns slice of common node pools, where every node pool is static.
+func GetCommonStaticNodePools(nps []*pb.NodePool) []*pb.NodePool {
+	static := make([]*pb.NodePool, 0, len(nps))
+	for _, n := range nps {
+		if n.GetStaticNodePool() != nil {
+			static = append(static, n)
+		}
+	}
+	return static
+}
+
+// GetCommonDynamicNodePools returns slice of common node pools, where every node pool is dynamic.
+func GetCommonDynamicNodePools(nps []*pb.NodePool) []*pb.NodePool {
+	dynamic := make([]*pb.NodePool, 0, len(nps))
+	for _, n := range nps {
+		if n.GetDynamicNodePool() != nil {
+			dynamic = append(dynamic, n)
+		}
+	}
+	return dynamic
 }

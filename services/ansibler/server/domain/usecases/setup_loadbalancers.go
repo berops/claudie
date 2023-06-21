@@ -61,11 +61,11 @@ func setUpLoadbalancers(clusterName string, lbClustersInfo *utils.LBClustersInfo
 	clusterBaseDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, commonUtils.CreateHash(commonUtils.HashLength)))
 
 	if err := utils.GenerateLBBaseFiles(clusterBaseDirectory, lbClustersInfo); err != nil {
-		return fmt.Errorf("error encountered while generating base files for %s", clusterName)
+		return fmt.Errorf("error encountered while generating base files for %s : %w", clusterName, err)
 	}
 
 	err := commonUtils.ConcurrentExec(lbClustersInfo.LbClusters,
-		func(lbCluster *utils.LBClusterData) error {
+		func(_ int, lbCluster *utils.LBClusterData) error {
 			var (
 				loggerPrefix = "LB-cluster"
 				lbClusterId  = commonUtils.GetClusterID(lbCluster.DesiredLbCluster.ClusterInfo)
@@ -201,8 +201,8 @@ func setUpNginx(lbCluster *pb.LBcluster, targetK8sNodepool []*pb.NodePool, clust
 
 // splitNodesByType returns two slices of *pb.Node, one for control nodes and one for compute nodes.
 func splitNodesByType(nodepools []*pb.NodePool) (controlNodes, computeNodes []*pb.Node) {
-	for _, nodepools := range nodepools {
-		for _, node := range nodepools.Nodes {
+	for _, nodepool := range nodepools {
+		for _, node := range nodepool.Nodes {
 			if node.NodeType == pb.NodeType_apiEndpoint || node.NodeType == pb.NodeType_master {
 				controlNodes = append(controlNodes, node)
 			} else {

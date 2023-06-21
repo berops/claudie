@@ -53,9 +53,16 @@ type ClusterBuilder struct {
 type NodepoolsData struct {
 	ClusterName string
 	ClusterHash string
-	NodePools   []*pb.NodePool
+	NodePools   []NodePoolInfo
 	Metadata    map[string]any
 	Regions     []string
+}
+
+type NodePoolInfo struct {
+	NodePool  *pb.DynamicNodePool
+	Name      string
+	Nodes     []*pb.Node
+	IsControl bool
 }
 
 type outputNodepools struct {
@@ -71,7 +78,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 	// https://github.com/berops/claudie/issues/647
 	// Order them by provider and region
 	for _, nps := range utils.GroupNodepoolsByProviderRegion(c.DesiredClusterInfo) {
-		if err := c.calculateCIDR(baseSubnetCIDR, nps); err != nil {
+		if err := c.calculateCIDR(baseSubnetCIDR, utils.GetDynamicNodePools(nps)); err != nil {
 			return fmt.Errorf("error while generating CIDR for nodepools : %w", err)
 		}
 	}
@@ -100,15 +107,17 @@ func (c ClusterBuilder) CreateNodepools() error {
 
 	// fill new nodes with output
 	for _, nodepool := range c.DesiredClusterInfo.NodePools {
-		output, err := terraform.Output(nodepool.Name)
-		if err != nil {
-			return fmt.Errorf("error while getting output from terraform for %s : %w", nodepool.Name, err)
+		if np := nodepool.GetDynamicNodePool(); np != nil {
+			output, err := terraform.Output(nodepool.Name)
+			if err != nil {
+				return fmt.Errorf("error while getting output from terraform for %s : %w", nodepool.Name, err)
+			}
+			out, err := readIPs(output)
+			if err != nil {
+				return fmt.Errorf("error while reading the terraform output for %s : %w", nodepool.Name, err)
+			}
+			fillNodes(&out, nodepool, oldNodes)
 		}
-		out, err := readIPs(output)
-		if err != nil {
-			return fmt.Errorf("error while reading the terraform output for %s : %w", nodepool.Name, err)
-		}
-		fillNodes(&out, nodepool, oldNodes)
 	}
 
 	// Clean after terraform
@@ -128,7 +137,7 @@ func (c ClusterBuilder) DestroyNodepools() error {
 	// https://github.com/berops/claudie/issues/647
 	// Order them by provider and region
 	for _, nps := range utils.GroupNodepoolsByProviderRegion(c.CurrentClusterInfo) {
-		if err := c.calculateCIDR(baseSubnetCIDR, nps); err != nil {
+		if err := c.calculateCIDR(baseSubnetCIDR, utils.GetDynamicNodePools(nps)); err != nil {
 			return fmt.Errorf("error while generating CIDR for nodepools : %w", err)
 		}
 	}
@@ -194,26 +203,28 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 
 	// Init node slices if needed
 	for _, np := range clusterInfo.NodePools {
-		nodes := make([]*pb.Node, 0, np.Count)
-		nodeNames := make(map[string]struct{}, np.Count)
-		// Copy existing nodes into new slice
-		for i, node := range np.Nodes {
-			if i == int(np.Count) {
-				break
+		if n := np.GetDynamicNodePool(); n != nil {
+			nodes := make([]*pb.Node, 0, n.Count)
+			nodeNames := make(map[string]struct{}, n.Count)
+			// Copy existing nodes into new slice
+			for i, node := range np.Nodes {
+				if i == int(n.Count) {
+					break
+				}
+				log.Debug().Str("cluster", clusterID).Msgf("Nodepool is reusing node %s", node.Name)
+				nodes = append(nodes, node)
+				nodeNames[node.Name] = struct{}{}
 			}
-			log.Debug().Str("cluster", clusterID).Msgf("Nodepool is reusing node %s", node.Name)
-			nodes = append(nodes, node)
-			nodeNames[node.Name] = struct{}{}
+			// Fill the rest of the nodes with assigned names
+			nodepoolID := fmt.Sprintf("%s-%s", clusterID, np.Name)
+			for len(nodes) < int(n.Count) {
+				// Get a unique name for the new node
+				nodeName := getUniqueNodeName(nodepoolID, nodeNames)
+				nodeNames[nodeName] = struct{}{}
+				nodes = append(nodes, &pb.Node{Name: nodeName})
+			}
+			np.Nodes = nodes
 		}
-		// Fill the rest of the nodes with assigned names
-		nodepoolID := fmt.Sprintf("%s-%s", clusterID, np.Name)
-		for len(nodes) < int(np.Count) {
-			// Get a unique name for the new node
-			nodeName := getUniqueNodeName(nodepoolID, nodeNames)
-			nodeNames[nodeName] = struct{}{}
-			nodes = append(nodes, &pb.Node{Name: nodeName})
-		}
-		np.Nodes = nodes
 	}
 
 	suffix := getTplFile(c.ClusterType)
@@ -223,17 +234,33 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	}
 
 	// sort nodepools by a provider
-	sortedNodePools := utils.GroupNodepoolsByProviderSpecName(clusterInfo)
-	for providerSpecName, nodepools := range sortedNodePools {
-		providerName := nodepools[0].Provider.CloudProviderName
+	sortedNodePools := utils.GroupNodepoolsByProviderNames(clusterInfo)
+	for providerNames, nodepools := range sortedNodePools {
+		providerName := providerNames.CloudProviderName
+		// Continue if static node pool provider.
+		if providerName == pb.StaticProvider_STATIC_PROVIDER.String() {
+			continue
+		}
+
+		nps := make([]NodePoolInfo, 0, len(nodepools))
+		for _, np := range nodepools {
+			if np.GetDynamicNodePool() == nil {
+				continue
+			}
+			nps = append(nps, NodePoolInfo{
+				Name:     np.Name,
+				Nodes:    np.Nodes,
+				NodePool: np.GetDynamicNodePool(),
+			})
+		}
 
 		// based on the cluster type fill out the nodepools data to be used
 		nodepoolData := NodepoolsData{
-			NodePools:   nodepools,
+			NodePools:   nps,
 			ClusterName: clusterInfo.Name,
 			ClusterHash: clusterInfo.Hash,
 			Metadata:    c.Metadata,
-			Regions:     utils.GetRegions(nodepools),
+			Regions:     utils.GetRegions(utils.GetDynamicNodePools(nodepools)),
 		}
 
 		// Copy subnets CIDR to metadata
@@ -252,8 +279,8 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 			return fmt.Errorf("error while parsing template file %s : %w", fmt.Sprintf("%s/%s", providerName, suffix), err)
 		}
 
-		if err := targetDirectory.Generate(tpl, fmt.Sprintf("%s-%s.tf", clusterID, providerSpecName), nodepoolData); err != nil {
-			return fmt.Errorf("error while generating %s file : %w", fmt.Sprintf("%s-%s.tf", clusterID, providerSpecName), err)
+		if err := targetDirectory.Generate(tpl, fmt.Sprintf("%s-%s.tf", clusterID, providerNames.SpecName), nodepoolData); err != nil {
+			return fmt.Errorf("error while generating %s file : %w", fmt.Sprintf("%s-%s.tf", clusterID, providerNames.SpecName), err)
 		}
 
 		// Create publicKey file for a cluster
@@ -262,8 +289,8 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 		}
 
 		// save keys
-		if err := utils.CreateKeyFile(nodepools[0].Provider.Credentials, clusterDir, providerSpecName); err != nil {
-			return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", providerSpecName, clusterDir, err)
+		if err := utils.CreateKeyFile(nps[0].NodePool.Provider.Credentials, clusterDir, providerNames.SpecName); err != nil {
+			return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", providerNames.SpecName, clusterDir, err)
 		}
 	}
 
@@ -276,14 +303,16 @@ func (c *ClusterBuilder) getCurrentNodes() []*pb.Node {
 	var oldNodes []*pb.Node
 	if c.CurrentClusterInfo != nil {
 		for _, oldNodepool := range c.CurrentClusterInfo.NodePools {
-			oldNodes = append(oldNodes, oldNodepool.Nodes...)
+			if oldNodepool.GetDynamicNodePool() != nil {
+				oldNodes = append(oldNodes, oldNodepool.Nodes...)
+			}
 		}
 	}
 	return oldNodes
 }
 
 // calculateCIDR will make sure all nodepools have subnet CIDR calculated.
-func (c *ClusterBuilder) calculateCIDR(baseCIDR string, nodepools []*pb.NodePool) error {
+func (c *ClusterBuilder) calculateCIDR(baseCIDR string, nodepools []*pb.DynamicNodePool) error {
 	exists := make(map[string]struct{})
 	// Save CIDRs which already exist.
 	for _, np := range nodepools {
@@ -297,7 +326,7 @@ func (c *ClusterBuilder) calculateCIDR(baseCIDR string, nodepools []*pb.NodePool
 		if cidr, ok := np.Metadata[subnetCidrKey]; !ok || cidr == nil || cidr.GetCidr() == "" {
 			cidr, err := getCIDR(baseCIDR, defaultOctetToChange, exists)
 			if err != nil {
-				return fmt.Errorf("failed to parse CIDR for nodepool %s : %w", np.Name, err)
+				return fmt.Errorf("failed to parse CIDR for nodepool : %w", err)
 			}
 			log.Debug().Msgf("Calculating new VPC subnet CIDR for nodepool. New CIDR [%s]", cidr)
 			if np.Metadata == nil {
@@ -421,25 +450,30 @@ func copyCIDRsToMetadata(data *NodepoolsData) {
 		data.Metadata = make(map[string]any)
 	}
 	for _, np := range data.NodePools {
-		data.Metadata[fmt.Sprintf(subnetCidrKeyTemplate, np.Name)] = np.Metadata[subnetCidrKey].GetCidr()
+		data.Metadata[fmt.Sprintf(subnetCidrKeyTemplate, np.Name)] = np.NodePool.Metadata[subnetCidrKey].GetCidr()
 	}
 }
 
 // generateProviderTemplates generates only the `provider.tpl` templates so terraform can
 // destroy the infra if needed.
 func generateProviderTemplates(current, desired *pb.ClusterInfo, clusterID, directory, suffix string) error {
-	currentNodepools := utils.GroupNodepoolsByProvider(current)
-	desiredNodepools := utils.GroupNodepoolsByProvider(desired)
+	currentNodepools := utils.GroupNodepoolsByProviderNames(current)
+	desiredNodepools := utils.GroupNodepoolsByProviderNames(desired)
 
 	// merge together into a single map instead of creating a new.
 	for name, np := range desiredNodepools {
+		// Continue if static node pool provider.
+		if name.CloudProviderName == pb.StaticProvider_STATIC_PROVIDER.String() {
+			continue
+		}
+
 		if cnp, ok := currentNodepools[name]; !ok {
 			currentNodepools[name] = np
 		} else {
 			// merge them together as different regions could be used.
 			// (regions are used for generating the providers for various regions)
 			for _, pool := range np {
-				if found := utils.GetNodePoolByName(pool.Name, cnp); found == nil {
+				if found := utils.GetNodePoolByName(pool.GetName(), cnp); found == nil {
 					currentNodepools[name] = append(currentNodepools[name], pool)
 				}
 			}
@@ -451,20 +485,36 @@ func generateProviderTemplates(current, desired *pb.ClusterInfo, clusterID, dire
 		info = current
 	}
 
-	for providerName, np := range currentNodepools {
-		providerSpecName := np[0].Provider.SpecName
+	for providerName, nodepools := range currentNodepools {
+		// Continue if static node pool provider.
+		if providerName.CloudProviderName == pb.StaticProvider_STATIC_PROVIDER.String() {
+			continue
+		}
+		nps := make([]NodePoolInfo, 0, len(nodepools))
+		for _, np := range nodepools {
+			if np.GetDynamicNodePool() == nil {
+				continue
+			}
+			nps = append(nps, NodePoolInfo{
+				Name:     np.Name,
+				Nodes:    np.Nodes,
+				NodePool: np.GetDynamicNodePool(),
+			})
+		}
+
+		providerSpecName := providerName.SpecName
 
 		nodepoolData := NodepoolsData{
-			NodePools:   np,
+			NodePools:   nps,
 			ClusterName: info.Name,
 			ClusterHash: info.Hash,
 			Metadata:    nil, // not needed
-			Regions:     utils.GetRegions(np),
+			Regions:     utils.GetRegions(utils.GetDynamicNodePools(nodepools)),
 		}
 
 		// Load TF files of the specific cloud provider
 		targetDirectory := templateUtils.Templates{Directory: directory}
-		tplPath := filepath.Join(providerName, fmt.Sprintf("provider-%s", suffix))
+		tplPath := filepath.Join(providerName.CloudProviderName, fmt.Sprintf("provider-%s", suffix))
 		file, err := templates.CloudProviderTemplates.ReadFile(tplPath)
 		if err != nil {
 			return fmt.Errorf("error while reading template file %s : %w", tplPath, err)
@@ -480,7 +530,7 @@ func generateProviderTemplates(current, desired *pb.ClusterInfo, clusterID, dire
 		}
 
 		// Save keys
-		if err = utils.CreateKeyFile(np[0].Provider.Credentials, directory, providerSpecName); err != nil {
+		if err = utils.CreateKeyFile(nps[0].NodePool.Provider.Credentials, directory, providerSpecName); err != nil {
 			return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", providerSpecName, directory, err)
 		}
 	}

@@ -1,0 +1,5 @@
+kind: Kustomization
+metadata:
+  name: crd
+resources:
+  - claudie.io_inputmanifests.yaml

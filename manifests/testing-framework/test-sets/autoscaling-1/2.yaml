@@ -1,0 +1,42 @@
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: autoscaling-1
+spec:
+  providers:
+    - name: gcp-1
+      providerType: gcp
+      secretRef:
+        name: gcp-secret
+        namespace: e2e-secrets
+  nodePools:
+    dynamic:
+      - name: gcp-control
+        providerSpec:
+          name: gcp-1
+          region: europe-west1
+          zone: europe-west1-c
+        count: 1
+        serverType: e2-medium
+        image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
+        storageDiskSize: 50
+      - name: gcp-compute
+        providerSpec:
+          name: gcp-1
+          region: europe-west2
+          zone: europe-west2-a
+        count: 1
+        serverType: e2-small
+        image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
+        storageDiskSize: 50
+
+  kubernetes:
+    clusters:
+      - name: autoscaling-cluster
+        version: v1.24.0
+        network: 192.168.2.0/24
+        pools:
+          control:
+            - gcp-control
+          compute:
+            - gcp-compute

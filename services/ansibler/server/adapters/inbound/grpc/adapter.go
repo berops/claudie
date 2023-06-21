@@ -25,7 +25,7 @@ type GrpcAdapter struct {
 
 // CreateGrpcAdapter return new gRPC adapter for Ansibler.
 func CreateGrpcAdapter() *GrpcAdapter {
-	port := utils.GetenvOr("ANSIBLER_PORT", fmt.Sprint(defaultPort))
+	port := utils.GetEnvDefault("ANSIBLER_PORT", fmt.Sprint(defaultPort))
 	tcpBindingAddress := net.JoinHostPort("0.0.0.0", port)
 	listener, err := net.Listen("tcp", tcpBindingAddress)
 	if err != nil {

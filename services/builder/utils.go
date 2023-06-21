@@ -10,7 +10,7 @@ import (
 
 // destroyConfig destroys all the current state of the config.
 func destroyConfig(config *pb.Config, clusterView *ClusterView, c pb.ContextBoxServiceClient) error {
-	if err := utils.ConcurrentExec(config.CurrentState.Clusters, func(cluster *pb.K8Scluster) error {
+	if err := utils.ConcurrentExec(config.CurrentState.Clusters, func(_ int, cluster *pb.K8Scluster) error {
 		err := destroyCluster(&BuilderContext{
 			projectName:   config.Name,
 			cluster:       cluster,
@@ -34,11 +34,7 @@ func destroyConfig(config *pb.Config, clusterView *ClusterView, c pb.ContextBoxS
 
 // saveConfigWithWorkflowError saves config with workflow states
 func saveConfigWithWorkflowError(config *pb.Config, c pb.ContextBoxServiceClient, clusterView *ClusterView) error {
-	// Make sure state in the config is based on the cluster view
 	config.State = clusterView.ClusterWorkflows
-	if config.DsChecksum != nil {
-		config.CurrentState = config.DesiredState
-	}
 	return cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 }
 
@@ -66,9 +62,11 @@ func updateNodepoolMetadata(src []*pb.NodePool, dst []*pb.NodePool) {
 src:
 	for _, npSrc := range src {
 		for _, npDst := range dst {
-			if npSrc.Name == npDst.Name {
-				npDst.Metadata = npSrc.Metadata
-				continue src
+			if npSrc.GetDynamicNodePool() != nil && npDst.GetDynamicNodePool() != nil {
+				if npSrc.Name == npDst.Name {
+					npDst.GetDynamicNodePool().Metadata = npSrc.GetDynamicNodePool().Metadata
+					continue src
+				}
 			}
 		}
 	}

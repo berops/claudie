@@ -20,28 +20,49 @@ desired:
 		for _, currentNp := range current.NodePools {
 			// Found nodepool in desired and in Current
 			if desiredNp.Name == currentNp.Name {
-				// Save current nodes and metadata
-				desiredNp.Nodes = currentNp.Nodes
-				desiredNp.Metadata = currentNp.Metadata
-				// Update the count
-				if currentNp.AutoscalerConfig != nil && desiredNp.AutoscalerConfig != nil {
-					// Both have Autoscaler conf defined, use same count as in current
-					desiredNp.Count = currentNp.Count
-				} else if currentNp.AutoscalerConfig == nil && desiredNp.AutoscalerConfig != nil {
-					// Desired is autoscaled, but not current
-					if desiredNp.AutoscalerConfig.Min > currentNp.Count {
-						// Cannot have fewer nodes than defined min
-						desiredNp.Count = desiredNp.AutoscalerConfig.Min
-					} else if desiredNp.AutoscalerConfig.Max < currentNp.Count {
-						// Cannot have more nodes than defined max
-						desiredNp.Count = desiredNp.AutoscalerConfig.Max
-					} else {
-						// Use same count as in current for now, autoscaler might change it later
-						desiredNp.Count = currentNp.Count
+				if dnp, cnp := getDynamicNodePools(desiredNp, currentNp); dnp != nil && cnp != nil {
+					// Save current nodes and metadata
+					desiredNp.Nodes = currentNp.Nodes
+					dnp.Metadata = cnp.Metadata
+					// Update the count
+					if cnp.AutoscalerConfig != nil && dnp.AutoscalerConfig != nil {
+						// Both have Autoscaler conf defined, use same count as in current
+						dnp.Count = cnp.Count
+					} else if cnp.AutoscalerConfig == nil && dnp.AutoscalerConfig != nil {
+						// Desired is autoscaled, but not current
+						if dnp.AutoscalerConfig.Min > cnp.Count {
+							// Cannot have fewer nodes than defined min
+							dnp.Count = dnp.AutoscalerConfig.Min
+						} else if dnp.AutoscalerConfig.Max < cnp.Count {
+							// Cannot have more nodes than defined max
+							dnp.Count = dnp.AutoscalerConfig.Max
+						} else {
+							// Use same count as in current for now, autoscaler might change it later
+							dnp.Count = cnp.Count
+						}
+					}
+					continue desired
+				} else if dnp, cnp := getStaticNodePools(desiredNp, currentNp); dnp != nil && cnp != nil {
+					// Found nodepool in desired and in Current
+					for _, dn := range desiredNp.Nodes {
+						for _, cn := range currentNp.Nodes {
+							if dn.Public == cn.Public {
+								dn.Name = cn.Name
+								dn.Private = cn.Private
+								dn.NodeType = cn.NodeType
+							}
+						}
 					}
 				}
-				continue desired
 			}
 		}
 	}
+}
+
+func getDynamicNodePools(np1, np2 *pb.NodePool) (*pb.DynamicNodePool, *pb.DynamicNodePool) {
+	return np1.GetDynamicNodePool(), np2.GetDynamicNodePool()
+}
+
+func getStaticNodePools(np1, np2 *pb.NodePool) (*pb.StaticNodePool, *pb.StaticNodePool) {
+	return np1.GetStaticNodePool(), np2.GetStaticNodePool()
 }

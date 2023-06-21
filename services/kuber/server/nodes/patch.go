@@ -36,7 +36,7 @@ func NewPatcher(cluster *pb.K8Scluster) *Patcher {
 func (p *Patcher) PatchProviderID(logger zerolog.Logger) error {
 	var err error
 	for _, np := range p.nodepools {
-		for _, node := range np.Nodes {
+		for _, node := range np.GetNodes() {
 			nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
 			patchPath := fmt.Sprintf(patchPathFormat, fmt.Sprintf(ProviderIdFormat, nodeName))
 			if err1 := p.kc.KubectlPatch("node", nodeName, patchPath); err1 != nil {

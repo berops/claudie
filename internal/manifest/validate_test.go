@@ -48,13 +48,50 @@ var (
 			},
 		},
 	}
+
+	testK8s = &Manifest{
+		Name: "foo",
+		Providers: Provider{
+			Hetzner: []Hetzner{{
+				Name:        "foo",
+				Credentials: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			},
+			},
+		},
+		Kubernetes: Kubernetes{
+			Clusters: []Cluster{
+				{
+					Name:    "foooo",
+					Version: "v1.26.2",
+					Network: "192.168.0.1/16",
+					Pools: Pool{
+						Control: []string{"control-1", "control-2"},
+						Compute: []string{"compute-1", "compute-2"},
+					},
+				},
+			},
+		},
+		NodePools: NodePool{
+			Dynamic: []DynamicNodePool{
+				{Name: "control-1", Count: 10, ServerType: "small", Image: "ubuntu", ProviderSpec: ProviderSpec{Name: "foo", Region: "north", Zone: "1"}},
+				{Name: "compute-1", Count: 100, ServerType: "small", Image: "ubuntu", ProviderSpec: ProviderSpec{Name: "foo", Region: "north", Zone: "1"}},
+			},
+			Static: []StaticNodePool{
+				{
+					Name: "control-2",
+				}, {
+					Name: "compute-2",
+				},
+			},
+		},
+	}
 )
 
 // TestDomain tests the domain which will be formed from node name
 func TestDomain(t *testing.T) {
-	err := checkLengthOfFutureDomain(testDomainSuccess)
+	err := CheckLengthOfFutureDomain(testDomainSuccess)
 	require.NoError(t, err)
-	err = checkLengthOfFutureDomain(testDomainFail)
+	err = CheckLengthOfFutureDomain(testDomainFail)
 	require.Error(t, err)
 }
 
@@ -76,4 +113,10 @@ func TestNodepool(t *testing.T) {
 	require.NoError(t, err)
 	err = testNodepoolAutoScalerFail.Validate()
 	require.Error(t, err)
+}
+
+// TestNodepool tests the nodepool spec validation for dynamic and static node pools.
+func TestNodepools(t *testing.T) {
+	err := testK8s.Validate()
+	require.NoError(t, err)
 }

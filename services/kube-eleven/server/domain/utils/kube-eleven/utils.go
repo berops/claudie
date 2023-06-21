@@ -24,5 +24,7 @@ func sanitiseString(s string) string {
 	sanitised = strings.ReplaceAll(sanitised, " ", "-")
 	// replace all ":" with "-"
 	sanitised = strings.ReplaceAll(sanitised, ":", "-")
+	// replace all "_" with "-"
+	sanitised = strings.ReplaceAll(sanitised, "_", "-")
 	return sanitised
 }

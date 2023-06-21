@@ -278,50 +278,15 @@ jobs:
 
           kubectl get pods --namespace=claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
 
-      # Insert cloud credentials to test set if needed at CI runtime
-      - name: Insert cloud credentials to test set
+      - name: Insert random test hostnames to loadbalancer test set
         working-directory: ./manifests/testing-framework/test-sets
         run: |
           sudo apt update && sudo apt install -y wget tar
           wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
           tar xz && mv yq_linux_amd64 yq
 
-          DIR=( ${{ env.TEST_SETS }} )
-          for directory in "${DIR[@]}"
-          do
-            for file in $directory/*
-            do
-            #replace hetznerdns token
-            ./yq e '.providers.hetznerdns.[].apiToken = "${{ secrets.HETZNERDNS_TOKEN}}"' $file -i
-            #replace cloudflare token
-            ./yq e '.providers.cloudflare.[].apiToken = "${{ secrets.CLOUDFLARE_TOKEN}}"' $file -i
-            #replace hetzner cred
-            ./yq e '.providers.hetzner.[].credentials = "${{ secrets.HETZNER_CREDENTIALS}}"' $file -i
-            #replace gcp cred & project
-            ./yq e '.providers.gcp.[].credentials = ${{ secrets.GCP_CREDENTIALS }}' $file -i
-            ./yq e '.providers.gcp.[].gcpProject = "${{ secrets.GCP_DEV_PROJECT_ID }}"' $file -i
-            #replace oci cred
-            ./yq e '.providers.oci.[].privateKey = "${{ secrets.OCI_PRIVATE_KEY }}"' $file -i
-            ./yq e '.providers.oci.[].keyFingerprint = "${{ secrets.OCI_FINGERPRINT }}"' $file -i
-            ./yq e '.providers.oci.[].tenancyOcid = "${{ secrets.OCI_TENANCY }}"' $file -i
-            ./yq e '.providers.oci.[].userOcid = "${{ secrets.OCI_USER }}"' $file -i
-            ./yq e '.providers.oci.[].compartmentOcid = "${{ secrets.OCI_COMPARTMENT }}"' $file -i
-            #replace aws cred
-            ./yq e '.providers.aws.[].accessKey = "${{ secrets.AWS_ACCESS_KEY }}"' $file -i
-            ./yq e '.providers.aws.[].secretKey = "${{ secrets.AWS_SECRET_KEY }}"' $file -i
-            #replace azure cred
-            ./yq e '.providers.azure.[].subscriptionId = "${{ secrets.AZURE_SUBSCRIPTION_ID }}"' $file -i
-            ./yq e '.providers.azure.[].tenantId = "${{ secrets.AZURE_TENANT_ID }}"' $file -i
-            ./yq e '.providers.azure.[].clientId = "${{ secrets.AZURE_CLIENT_ID }}"' $file -i
-            ./yq e '.providers.azure.[].clientSecret = "${{ secrets.AZURE_CLIENT_SECRET }}"' $file -i
-            done
-          done
-
-      - name: Insert random test hostnames to loadbalancer test set
-        working-directory: ./manifests/testing-framework/test-sets
-        run: |
-          HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ./yq e '.loadBalancers.clusters.[1].dns.hostname = strenv(HOSTNAME)' test-set2/1.yaml -i
-          HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ./yq e '.loadBalancers.clusters.[0].dns.hostname = strenv(HOSTNAME)' test-set2/3.yaml -i
+          HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ./yq e '.spec.loadBalancers.clusters.[1].dns.hostname = strenv(HOSTNAME)' test-set2/1.yaml -i
+          HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ./yq e '.spec.loadBalancers.clusters.[0].dns.hostname = strenv(HOSTNAME)' test-set2/3.yaml -i
 
           #Clean up
           rm -f yq 
