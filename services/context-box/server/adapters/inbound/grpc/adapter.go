@@ -26,7 +26,7 @@ type GrpcAdapter struct {
 
 // Init will create the underlying gRPC server and the gRPC healthcheck server
 func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
-	port := utils.GetenvOr("CONTEXT_BOX_PORT", fmt.Sprint(defaultContextBoxPort))
+	port := utils.GetEnvDefault("CONTEXT_BOX_PORT", fmt.Sprint(defaultContextBoxPort))
 	listeningAddress := net.JoinHostPort("0.0.0.0", port)
 
 	tcpListener, err := net.Listen("tcp", listeningAddress)

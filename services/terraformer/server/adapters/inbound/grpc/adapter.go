@@ -27,7 +27,7 @@ type GrpcAdapter struct {
 // Init sets up the GrpcAdapter by creating the underlying tcpListener, gRPC server and
 // gRPC health check server.
 func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
-	port := utils.GetenvOr("TERRAFORMER_PORT", fmt.Sprint(defaultTerraformerPort))
+	port := utils.GetEnvDefault("TERRAFORMER_PORT", fmt.Sprint(defaultTerraformerPort))
 
 	var err error
 

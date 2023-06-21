@@ -30,7 +30,7 @@ func CreateGrpcAdapter(usecases *usecases.Usecases) *GrpcAdapter {
 		err error
 	)
 
-	port := utils.GetenvOr("KUBE_ELEVEN_PORT", fmt.Sprint(defaultPort))
+	port := utils.GetEnvDefault("KUBE_ELEVEN_PORT", fmt.Sprint(defaultPort))
 	bindingAddress := net.JoinHostPort("0.0.0.0", port)
 	g.tcpListener, err = net.Listen("tcp", bindingAddress)
 	if err != nil {
