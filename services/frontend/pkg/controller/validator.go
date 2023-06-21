@@ -68,7 +68,7 @@ func (v *ImputManifestValdator) ValidateDelete(ctx context.Context, obj runtime.
 // It doesn't validate .spec.Providers field.
 func validateInputManifest(im *v1beta.InputManifest) error {
 	var rawManifest manifest.Manifest
-	// Fill providers only with names, to check if there are defined
+	// Fill providers only with names, to check if they are defined
 	for _, p := range im.Spec.Providers {
 		switch p.ProviderType {
 		case v1beta.GCP:
@@ -88,8 +88,13 @@ func validateInputManifest(im *v1beta.InputManifest) error {
 		}
 	}
 
+	// Omit nodes as they contain secret reference to the private key
+	for _, n := range im.Spec.NodePools.Static {
+		rawManifest.NodePools.Static = append(rawManifest.NodePools.Static, manifest.StaticNodePool{Name: n.Name})
+	}
+
 	rawManifest.Name = im.GetNamespacedName()
-	rawManifest.NodePools = im.Spec.NodePools
+	rawManifest.NodePools.Dynamic = im.Spec.NodePools.Dynamic
 	rawManifest.Kubernetes = im.Spec.Kubernetes
 	rawManifest.LoadBalancer = im.Spec.LoadBalancer
 

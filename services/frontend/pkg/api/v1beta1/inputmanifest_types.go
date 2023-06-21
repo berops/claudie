@@ -55,6 +55,7 @@ const (
 	OCI_TENANCT_OCID      SecretField = "tenancyocid"
 	OCI_USER_OCID         SecretField = "userocid"
 	OCI_COMPARTMENT_OCID  SecretField = "compartmentocid"
+	PRIVATE_KEY           SecretField = "privatekey"
 )
 
 // ProviderWithData helper type that assist in conversion
@@ -63,6 +64,11 @@ type ProviderWithData struct {
 	ProviderName string
 	ProviderType ProviderType
 	Secret       corev1.Secret
+}
+
+type StaticNodeWithData struct {
+	Endpoint string
+	Secret   corev1.Secret
 }
 
 // Providers list of defined cloud provider configuration
@@ -77,6 +83,39 @@ type Provider struct {
 	SecretRef    corev1.SecretReference `json:"secretRef"`
 }
 
+// NodePool is a map of dynamic nodepools and static nodepools which will be used to
+// form kubernetes or loadbalancer clusters.
+type NodePool struct {
+	// Dynamic nodepools define nodepools dynamically created by Claudie.
+	// +optional
+	Dynamic []manifest.DynamicNodePool `json:"dynamic"`
+	// Static nodepools define nodepools of already existing nodes.
+	// +optional
+	Static []StaticNodePool `json:"static"`
+}
+
+// StaticNodePool defines nodepool of already existing nodes, managed outside of Claudie.
+type StaticNodePool struct {
+	// Name of the nodepool.
+	Name string `json:"name"`
+	// List of static nodes for a particular static nodepool.
+	Nodes []StaticNode `json:"nodes"`
+}
+
+// StaticNode defines a single static node for a particular static nodepool.
+type StaticNode struct {
+	// Endpoint under which Claudie will access this node.
+	Endpoint string `json:"endpoint"`
+	// Secret reference to the private key of the node.
+	SecretRef corev1.SecretReference `json:"secretRef"`
+}
+
+/*
+
+data:
+	PRIVATE_KEY : <private key>
+*/
+
 // Specification of the desired behavior of the InputManifest
 type InputManifestSpec struct {
 	// Providers list of defined cloud provider configuration
@@ -84,7 +123,7 @@ type InputManifestSpec struct {
 	// +optional
 	Providers []Provider `json:"providers,omitempty"`
 	// +optional
-	NodePools manifest.NodePool `json:"nodePools,omitempty"`
+	NodePools NodePool `json:"nodePools,omitempty"`
 	// +optional
 	Kubernetes manifest.Kubernetes `json:"kubernetes,omitempty"`
 	// +optional

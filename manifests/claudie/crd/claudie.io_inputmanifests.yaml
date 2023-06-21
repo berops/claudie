@@ -198,12 +198,12 @@ spec:
                     type: array
                 type: object
               nodePools:
-                description: NodePools describes nodepools used for either kubernetes
-                  clusters or loadbalancer cluster defined in this manifest.
+                description: NodePool is a map of dynamic nodepools and static nodepools
+                  which will be used to form kubernetes or loadbalancer clusters.
                 properties:
                   dynamic:
-                    description: List of dynamically to-be-created nodepools of not
-                      yet existing machines, used for Kubernetes or loadbalancer clusters.
+                    description: Dynamic nodepools define nodepools dynamically created
+                      by Claudie.
                     items:
                       description: "DynamicNodePool List of dynamically to-be-created
                         nodepools of not yet existing machines, used for Kubernetes
@@ -280,25 +280,43 @@ spec:
                       type: object
                     type: array
                   static:
-                    description: '[WORK IN PROGRESS] List of static nodepools of already
-                      existing machines, not created by of Claudie, used for Kubernetes
-                      or loadbalancer clusters.'
+                    description: Static nodepools define nodepools of already existing
+                      nodes.
                     items:
-                      description: WIP
+                      description: StaticNodePool defines nodepool of already existing
+                        nodes, managed outside of Claudie.
                       properties:
                         name:
+                          description: Name of the nodepool.
                           type: string
                         nodes:
+                          description: List of static nodes for a particular static
+                            nodepool.
                           items:
-                            description: WIP
+                            description: StaticNode defines a single static node for
+                              a particular static nodepool.
                             properties:
                               endpoint:
+                                description: Endpoint under which Claudie will access
+                                  this node.
                                 type: string
-                              privatekey:
-                                type: string
+                              secretRef:
+                                description: Secret reference to the private key of
+                                  the node.
+                                properties:
+                                  name:
+                                    description: name is unique within a namespace
+                                      to reference a secret resource.
+                                    type: string
+                                  namespace:
+                                    description: namespace defines the space within
+                                      which the secret name must be unique.
+                                    type: string
+                                type: object
+                                x-kubernetes-map-type: atomic
                             required:
                             - endpoint
-                            - privatekey
+                            - secretRef
                             type: object
                           type: array
                       required:

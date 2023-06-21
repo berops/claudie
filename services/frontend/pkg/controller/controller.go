@@ -29,7 +29,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	// Prepare the manifest.Manifest type
 	// Refresh the inputManifest object Secret Reference
-	providersSecrets := []v1beta.ProviderWithData{}
+	providersSecrets := make([]v1beta.ProviderWithData, 0, len(inputManifest.Spec.Providers))
 	// Range over Provider objects and request the secret for each provider
 	for _, p := range inputManifest.Spec.Providers {
 		var pwd v1beta.ProviderWithData
@@ -43,8 +43,25 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		providersSecrets = append(providersSecrets, pwd)
 	}
 
+	// Approximate size of the map to 5 nodes per nodepool
+	staticNodeSecrets := make(map[string][]v1beta.StaticNodeWithData, len(inputManifest.Spec.NodePools.Static))
+	// Range over static nodepools an get secret for each static node
+	for _, s := range inputManifest.Spec.NodePools.Static {
+		nodes := make([]v1beta.StaticNodeWithData, 0, len(s.Nodes))
+		for _, n := range s.Nodes {
+			var snwd v1beta.StaticNodeWithData
+			if err := r.kc.Get(ctx, client.ObjectKey{Name: n.SecretRef.Name, Namespace: n.SecretRef.Namespace}, &snwd.Secret); err != nil {
+				r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
+				log.Error(err, "secret not found", "will try again in", REQUEUE_AFTER_ERROR, "name", n.SecretRef.Name, "namespace", n.SecretRef.Namespace)
+				return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
+			}
+			nodes = append(nodes, snwd)
+		}
+		staticNodeSecrets[s.Name] = nodes
+	}
+
 	// Create a raw input manifest of manifest.Manifest and pull the referenced secrets into it
-	rawManifest, err := mergeInputManifestWithSecrets(*inputManifest, providersSecrets)
+	rawManifest, err := mergeInputManifestWithSecrets(*inputManifest, providersSecrets, staticNodeSecrets)
 	if err != nil {
 		log.Error(err, "error while using referenced secrets", "will try again in", REQUEUE_AFTER_ERROR)
 		r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
