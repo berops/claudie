@@ -110,12 +110,6 @@ type StaticNode struct {
 	SecretRef corev1.SecretReference `json:"secretRef"`
 }
 
-/*
-
-data:
-	PRIVATE_KEY : <private key>
-*/
-
 // Specification of the desired behavior of the InputManifest
 type InputManifestSpec struct {
 	// Providers list of defined cloud provider configuration
