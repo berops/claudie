@@ -344,7 +344,7 @@
   
     <li class="md-nav__item">
       <a href="../../../getting-started/get-started-using-claudie/" class="md-nav__link">
-        Get started using Claudie
+        Getting started
       </a>
     </li>
   
@@ -357,22 +357,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../crud/crud/" class="md-nav__link">
-        CRUD for Claudie
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../deploying-claudie/" class="md-nav__link">
-        Deploying Claudie
+      <a href="../../../getting-started/detailed-guide/" class="md-nav__link">
+        Detailed guide
       </a>
     </li>
   
@@ -420,34 +406,6 @@
               
   
   
-  
-    <li class="md-nav__item">
-      <a href="../../api-reference/" class="md-nav__link">
-        Input manifest API reference
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../example/" class="md-nav__link">
-        Example yaml file
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
     
   
   
@@ -457,125 +415,21 @@
       
       
       
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" checked>
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1" checked>
       
       
       
-        <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+        <label class="md-nav__link" for="__nav_3_1" id="__nav_3_1_label" tabindex="0">
           Providers
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="true">
-        <label class="md-nav__title" for="__nav_3_3">
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_1_label" aria-expanded="true">
+        <label class="md-nav__title" for="__nav_3_1">
           <span class="md-nav__icon md-icon"></span>
           Providers
         </label>
         <ul class="md-nav__list" data-md-scrollfix>
-          
-            
-              
-  
-  
-  
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-      
-      
-      
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_1" >
-      
-      
-      
-        <label class="md-nav__link" for="__nav_3_3_1" id="__nav_3_3_1_label" tabindex="0">
-          Examples
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_1_label" aria-expanded="false">
-        <label class="md-nav__title" for="__nav_3_3_1">
-          <span class="md-nav__icon md-icon"></span>
-          Examples
-        </label>
-        <ul class="md-nav__list" data-md-scrollfix>
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/aws-input-manifest/" class="md-nav__link">
-        AWS example
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/azure-input-manifest/" class="md-nav__link">
-        Azure example
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/gcp-input-manifest/" class="md-nav__link">
-        GCP example
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/hetzner-input-manifest/" class="md-nav__link">
-        Hetzner example
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/oci-input-manifest/" class="md-nav__link">
-        OCI example
-      </a>
-    </li>
-  
-
-            
-          
-        </ul>
-      </nav>
-    </li>
-  
-
-            
           
             
               
@@ -673,9 +527,64 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#dns-requirements" class="md-nav__link">
-    DNS requirements
+  <a href="#compute-example" class="md-nav__link">
+    Compute example
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dns-example" class="md-nav__link">
+    DNS example
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-hetzner-api-credentials" class="md-nav__link">
+    Create Hetzner API credentials
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-hetzner-dns-credentials" class="md-nav__link">
+    Create Hetzner DNS credentials
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dns-setup" class="md-nav__link">
+    DNS setup
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#input-manifest-examples" class="md-nav__link">
+    Input manifest examples
+  </a>
+  
+    <nav class="md-nav" aria-label="Input manifest examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#single-provider-multi-region-cluster-example" class="md-nav__link">
+    Single provider, multi region cluster example
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-provider-multi-region-clusters-example" class="md-nav__link">
+    Multi provider, multi region clusters example
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -704,6 +613,34 @@
           
         </ul>
       </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../example/" class="md-nav__link">
+        Example yaml file
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api-reference/" class="md-nav__link">
+        API reference
+      </a>
     </li>
   
 
@@ -928,6 +865,21 @@
   
 
     
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../troubleshooting/troubleshooting/" class="md-nav__link">
+        Troubleshooting
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -955,9 +907,64 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#dns-requirements" class="md-nav__link">
-    DNS requirements
+  <a href="#compute-example" class="md-nav__link">
+    Compute example
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dns-example" class="md-nav__link">
+    DNS example
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-hetzner-api-credentials" class="md-nav__link">
+    Create Hetzner API credentials
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-hetzner-dns-credentials" class="md-nav__link">
+    Create Hetzner DNS credentials
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dns-setup" class="md-nav__link">
+    DNS setup
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#input-manifest-examples" class="md-nav__link">
+    Input manifest examples
+  </a>
+  
+    <nav class="md-nav" aria-label="Input manifest examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#single-provider-multi-region-cluster-example" class="md-nav__link">
+    Single provider, multi region cluster example
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-provider-multi-region-clusters-example" class="md-nav__link">
+    Multi provider, multi region clusters example
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -980,17 +987,189 @@
 
 
 <h1 id="hetzner">Hetzner<a class="headerlink" href="#hetzner" title="Permanent link">&para;</a></h1>
-<p>In Claudie, the Hetzner cloud provider requires you to input the credentials which  contain the API token for your Hetzner project. The API key should have <code>Read &amp; Write</code> permissions.</p>
-<p>To find out how you can create an API token please follow instructions <a href="https://docs.hetzner.com/cloud/api/getting-started/generating-api-token/">here</a>.</p>
-<p>For DNS the instructions for the token can be found <a href="https://docs.hetzner.com/dns-console/dns/general/api-access-token/">here</a></p>
-<h2 id="dns-requirements">DNS requirements<a class="headerlink" href="#dns-requirements" title="Permanent link">&para;</a></h2>
-<p>If your Hetzner provider will be used for DNS, you need to manually</p>
-<ul>
-<li><a href="https://www.hetzner.com/dns-console">set up dns zone</a></li>
-<li><a href="https://docs.hetzner.com/dns-console/dns/general/dns-overview/#the-hetzner-online-name-servers-are">update domain name server</a></li>
-</ul>
-<p>since Claudie does not support their dynamic creation.</p>
-<p>Note the provider for DNS is different from that for the Cloud.</p>
+<p>Hetzner provider requires <code>credentials</code> token field in string format, and Hetzner DNS provider requires <code>apiToken</code> field in string format.</p>
+<h2 id="compute-example">Compute example<a class="headerlink" href="#compute-example" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="nt">providers</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">hetzner</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-1</span>
+<span class="w">      </span><span class="nt">credentials</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">token</span>
+</code></pre></div>
+<h2 id="dns-example">DNS example<a class="headerlink" href="#dns-example" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="nt">providers</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">hetznerdns</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetznerdns-1</span>
+<span class="w">      </span><span class="nt">apiToken</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">token</span>
+</code></pre></div>
+<h2 id="create-hetzner-api-credentials">Create Hetzner API credentials<a class="headerlink" href="#create-hetzner-api-credentials" title="Permanent link">&para;</a></h2>
+<p>You can create Hetzner API credentials by following <a href="https://docs.hetzner.com/cloud/api/getting-started/generating-api-token/">this guide</a>. The required permissions for the zone you want to use are:</p>
+<div class="highlight"><pre><span></span><code>Read<span class="w"> </span><span class="p">&amp;</span><span class="w"> </span>Write
+</code></pre></div>
+<h2 id="create-hetzner-dns-credentials">Create Hetzner DNS credentials<a class="headerlink" href="#create-hetzner-dns-credentials" title="Permanent link">&para;</a></h2>
+<p>You can create Hetzner DNS credentials by following <a href="https://docs.hetzner.com/dns-console/dns/general/api-access-token/">this guide</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">DNS provider specification</p>
+<p>The provider for DNS is different from the one for the Cloud.</p>
+</div>
+<h2 id="dns-setup">DNS setup<a class="headerlink" href="#dns-setup" title="Permanent link">&para;</a></h2>
+<p>If you wish to use Hetzner as your DNS provider where Claudie creates DNS records pointing to Claudie managed clusters, you will need to create a <strong>public DNS zone</strong> by following <a href="https://docs.hetzner.com/dns-console/dns/general/getting-started-dns/">this guide</a>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Hetzner is not my domain registrar</p>
+<p>If you haven't acquired a domain via Hetzner and wish to utilize Hetzner for hosting your zone, you can refer to <a href="https://docs.hetzner.com/dns-console/dns/general/dns-overview#the-hetzner-online-name-servers-are">this guide</a> on Hetzner nameservers. However, if you prefer not to use the entire domain, an alternative option is to delegate a subdomain to Hetzner.</p>
+</div>
+<h2 id="input-manifest-examples">Input manifest examples<a class="headerlink" href="#input-manifest-examples" title="Permanent link">&para;</a></h2>
+<h3 id="single-provider-multi-region-cluster-example">Single provider, multi region cluster example<a class="headerlink" href="#single-provider-multi-region-cluster-example" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HetznerExampleManifest</span>
+
+<span class="nt">providers</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">hetzner</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-1</span>
+<span class="w">      </span><span class="c1"># API access token.</span>
+<span class="w">      </span><span class="nt">credentials</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kslISA878a6etYAfXYcg5iYyrFGNlCxcICo060HVEygjFs21nske76ksjKko21lp</span>
+
+<span class="nt">nodePools</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">dynamic</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-hetzner</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># Name of the provider instance.</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-1</span>
+<span class="w">        </span><span class="c1"># Region of the nodepool.</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hel1</span>
+<span class="w">        </span><span class="c1"># Datacenter of the nodepool.</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hel1-dc2</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="c1"># Machine type name.</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cpx11</span>
+<span class="w">      </span><span class="c1"># OS image name.</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-22.04</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-1-hetzner</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># Name of the provider instance.</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-1</span>
+<span class="w">        </span><span class="c1"># Region of the nodepool.</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fsn1</span>
+<span class="w">        </span><span class="c1"># Datacenter of the nodepool.</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fsn1-dc14</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">      </span><span class="c1"># Machine type name.</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cpx11</span>
+<span class="w">      </span><span class="c1"># OS image name.</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-22.04</span>
+<span class="w">      </span><span class="nt">storageDiskSize</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-2-hetzner</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># Name of the provider instance.</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-1</span>
+<span class="w">        </span><span class="c1"># Region of the nodepool.</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nbg1</span>
+<span class="w">        </span><span class="c1"># Datacenter of the nodepool.</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nbg1-dc3</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">      </span><span class="c1"># Machine type name.</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cpx11</span>
+<span class="w">      </span><span class="c1"># OS image name.</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-22.04</span>
+<span class="w">      </span><span class="nt">storageDiskSize</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+
+<span class="nt">kubernetes</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">clusters</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-cluster</span>
+<span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.24.0</span>
+<span class="w">      </span><span class="nt">network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.2.0/24</span>
+<span class="w">      </span><span class="nt">pools</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">control</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-hetzner</span>
+<span class="w">        </span><span class="nt">compute</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-1-hetzner</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-2-hetzner</span>
+</code></pre></div>
+<h3 id="multi-provider-multi-region-clusters-example">Multi provider, multi region clusters example<a class="headerlink" href="#multi-provider-multi-region-clusters-example" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HetznerExampleManifest</span>
+
+<span class="nt">providers</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">hetzner</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-1</span>
+<span class="w">      </span><span class="c1"># API access token.</span>
+<span class="w">      </span><span class="nt">credentials</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kslISA878a6etYAfXYcg5iYyrFGNlCxcICo060HVEygjFs21nske76ksjKko21lp</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-2</span>
+<span class="w">      </span><span class="c1"># API access token.</span>
+<span class="w">      </span><span class="nt">credentials</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kslIIOUYBiuui7iGBYIUiuybpiUB87bgPyuCo060HVEygjFs21nske76ksjKko21l</span>
+
+<span class="nt">nodePools</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">dynamic</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-hetzner-1</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># Name of the provider instance.</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-1</span>
+<span class="w">        </span><span class="c1"># Region of the nodepool.</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hel1</span>
+<span class="w">        </span><span class="c1"># Datacenter of the nodepool.</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hel1-dc2</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="c1"># Machine type name.</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cpx11</span>
+<span class="w">      </span><span class="c1"># OS image name.</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-22.04</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-hetzner-2</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># Name of the provider instance.</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-2</span>
+<span class="w">        </span><span class="c1"># Region of the nodepool.</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fsn1</span>
+<span class="w">        </span><span class="c1"># Datacenter of the nodepool.</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fsn1-dc14</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">      </span><span class="c1"># Machine type name.</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cpx11</span>
+<span class="w">      </span><span class="c1"># OS image name.</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-22.04</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-hetzner-1</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># Name of the provider instance.</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-1</span>
+<span class="w">        </span><span class="c1"># Region of the nodepool.</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fsn1</span>
+<span class="w">        </span><span class="c1"># Datacenter of the nodepool.</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fsn1-dc14</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">      </span><span class="c1"># Machine type name.</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cpx11</span>
+<span class="w">      </span><span class="c1"># OS image name.</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-22.04</span>
+<span class="w">      </span><span class="nt">storageDiskSize</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-hetzner-2</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># Name of the provider instance.</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-2</span>
+<span class="w">        </span><span class="c1"># Region of the nodepool.</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nbg1</span>
+<span class="w">        </span><span class="c1"># Datacenter of the nodepool.</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nbg1-dc3</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">      </span><span class="c1"># Machine type name.</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cpx11</span>
+<span class="w">      </span><span class="c1"># OS image name.</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-22.04</span>
+<span class="w">      </span><span class="nt">storageDiskSize</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+
+<span class="nt">kubernetes</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">clusters</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-cluster</span>
+<span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.24.0</span>
+<span class="w">      </span><span class="nt">network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.2.0/24</span>
+<span class="w">      </span><span class="nt">pools</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">control</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-hetzner-1</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-hetzner-2</span>
+<span class="w">        </span><span class="nt">compute</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-hetzner-1</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-hetzner-2</span>
+</code></pre></div>
 
 
   
@@ -1029,7 +1208,7 @@
               
                 
               
-              Thanks for your feedback!
+              Thanks for your feedback! Help us improve this page by using our <a href="/feedback/feedback-form/" target="_blank" rel="noopener">feedback form</a>.
             </div>
           
         </div>

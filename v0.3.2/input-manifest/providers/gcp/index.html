@@ -344,7 +344,7 @@
   
     <li class="md-nav__item">
       <a href="../../../getting-started/get-started-using-claudie/" class="md-nav__link">
-        Get started using Claudie
+        Getting started
       </a>
     </li>
   
@@ -357,22 +357,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../crud/crud/" class="md-nav__link">
-        CRUD for Claudie
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../deploying-claudie/" class="md-nav__link">
-        Deploying Claudie
+      <a href="../../../getting-started/detailed-guide/" class="md-nav__link">
+        Detailed guide
       </a>
     </li>
   
@@ -420,34 +406,6 @@
               
   
   
-  
-    <li class="md-nav__item">
-      <a href="../../api-reference/" class="md-nav__link">
-        Input manifest API reference
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../example/" class="md-nav__link">
-        Example yaml file
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
     
   
   
@@ -457,125 +415,21 @@
       
       
       
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" checked>
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1" checked>
       
       
       
-        <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+        <label class="md-nav__link" for="__nav_3_1" id="__nav_3_1_label" tabindex="0">
           Providers
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="true">
-        <label class="md-nav__title" for="__nav_3_3">
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_1_label" aria-expanded="true">
+        <label class="md-nav__title" for="__nav_3_1">
           <span class="md-nav__icon md-icon"></span>
           Providers
         </label>
         <ul class="md-nav__list" data-md-scrollfix>
-          
-            
-              
-  
-  
-  
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-      
-      
-      
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_1" >
-      
-      
-      
-        <label class="md-nav__link" for="__nav_3_3_1" id="__nav_3_3_1_label" tabindex="0">
-          Examples
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_1_label" aria-expanded="false">
-        <label class="md-nav__title" for="__nav_3_3_1">
-          <span class="md-nav__icon md-icon"></span>
-          Examples
-        </label>
-        <ul class="md-nav__list" data-md-scrollfix>
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/aws-input-manifest/" class="md-nav__link">
-        AWS example
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/azure-input-manifest/" class="md-nav__link">
-        Azure example
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/gcp-input-manifest/" class="md-nav__link">
-        GCP example
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/hetzner-input-manifest/" class="md-nav__link">
-        Hetzner example
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/oci-input-manifest/" class="md-nav__link">
-        OCI example
-      </a>
-    </li>
-  
-
-            
-          
-        </ul>
-      </nav>
-    </li>
-  
-
-            
           
             
               
@@ -645,16 +499,70 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#dns-requirements" class="md-nav__link">
-    DNS requirements
+  <a href="#compute-and-dns-example" class="md-nav__link">
+    Compute and DNS example
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#iam-policies-required-by-claudie" class="md-nav__link">
-    IAM policies required by Claudie
+  <a href="#create-gcp-credentials" class="md-nav__link">
+    Create GCP credentials
   </a>
+  
+    <nav class="md-nav" aria-label="Create GCP credentials">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-gcp-credentials-for-claudie" class="md-nav__link">
+    Creating GCP credentials for Claudie
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dns-setup" class="md-nav__link">
+    DNS setup
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#input-manifest-examples" class="md-nav__link">
+    Input manifest examples
+  </a>
+  
+    <nav class="md-nav" aria-label="Input manifest examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#single-provider-multi-region-cluster-example" class="md-nav__link">
+    Single provider, multi region cluster example
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-provider-multi-region-clusters-example" class="md-nav__link">
+    Multi provider, multi region clusters example
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -711,6 +619,34 @@
           
         </ul>
       </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../example/" class="md-nav__link">
+        Example yaml file
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api-reference/" class="md-nav__link">
+        API reference
+      </a>
     </li>
   
 
@@ -935,6 +871,21 @@
   
 
     
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../troubleshooting/troubleshooting/" class="md-nav__link">
+        Troubleshooting
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -962,16 +913,70 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#dns-requirements" class="md-nav__link">
-    DNS requirements
+  <a href="#compute-and-dns-example" class="md-nav__link">
+    Compute and DNS example
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#iam-policies-required-by-claudie" class="md-nav__link">
-    IAM policies required by Claudie
+  <a href="#create-gcp-credentials" class="md-nav__link">
+    Create GCP credentials
   </a>
+  
+    <nav class="md-nav" aria-label="Create GCP credentials">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-gcp-credentials-for-claudie" class="md-nav__link">
+    Creating GCP credentials for Claudie
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dns-setup" class="md-nav__link">
+    DNS setup
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#input-manifest-examples" class="md-nav__link">
+    Input manifest examples
+  </a>
+  
+    <nav class="md-nav" aria-label="Input manifest examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#single-provider-multi-region-cluster-example" class="md-nav__link">
+    Single provider, multi region cluster example
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-provider-multi-region-clusters-example" class="md-nav__link">
+    Multi provider, multi region clusters example
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -994,33 +999,281 @@
 
 
 <h1 id="gcp">GCP<a class="headerlink" href="#gcp" title="Permanent link">&para;</a></h1>
-<p>In Claudie, GCP cloud provider requires you to input <code>credentials</code> as well as specific project where the account resides. The credentials are in form of an account key in JSON. It is important, that account has sufficient IAM roles attached to it, so Claudie can create all resources for your infrastructure.</p>
-<p>Furthermore, your project should enable a few API, namely</p>
-<ul>
-<li><code>Compute Engine API</code></li>
-<li><code>Cloud DNS API</code></li>
-</ul>
-<blockquote>
-<p>when project will be used for Loadbalancers DNS</p>
-</blockquote>
-<h2 id="dns-requirements">DNS requirements<a class="headerlink" href="#dns-requirements" title="Permanent link">&para;</a></h2>
-<p>If your GCP provider will be used for DNS, you need to manually</p>
-<ul>
-<li><a href="https://cloud.google.com/dns/docs/zones">set up dns zone</a></li>
-<li><a href="https://cloud.google.com/dns/docs/update-name-servers">update domain name server</a></li>
-</ul>
-<p>since Claudie does not support their dynamic creation.</p>
-<h2 id="iam-policies-required-by-claudie">IAM policies required by Claudie<a class="headerlink" href="#iam-policies-required-by-claudie" title="Permanent link">&para;</a></h2>
-<ul>
-<li>for infrastructure creation</li>
+<p>GCP provider requires you to input multiline <code>credentials</code> as well as specific GCP project <code>gcpProject</code> where to provision resources.</p>
+<h2 id="compute-and-dns-example">Compute and DNS example<a class="headerlink" href="#compute-and-dns-example" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="nt">providers</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">gcp</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gcp-1</span>
+<span class="w">      </span><span class="nt">gcpProject</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sa-project-name</span>
+<span class="w">      </span><span class="nt">credentials</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">        </span><span class="no">{</span>
+<span class="w">          </span><span class="no">&quot;type&quot;:&quot;service_account&quot;,</span>
+<span class="w">          </span><span class="no">&quot;project_id&quot;:&quot;project-claudie&quot;,</span>
+<span class="w">          </span><span class="no">&quot;private_key_id&quot;:&quot;private_key_id&quot;,</span>
+<span class="w">          </span><span class="no">&quot;private_key&quot;:&quot;private_key_string&quot;,</span>
+<span class="w">          </span><span class="no">&quot;client_email&quot;:&quot;claudie@project-claudie-123456.iam.gserviceaccount.com&quot;,</span>
+<span class="w">          </span><span class="no">&quot;client_id&quot;:&quot;109876543211234567890&quot;,</span>
+<span class="w">          </span><span class="no">&quot;auth_uri&quot;:&quot;https://accounts.google.com/o/oauth2/auth&quot;,</span>
+<span class="w">          </span><span class="no">&quot;token_uri&quot;:&quot;https://oauth2.googleapis.com/token&quot;,</span>
+<span class="w">          </span><span class="no">&quot;auth_provider_x509_cert_url&quot;:&quot;https://www.googleapis.com/oauth2/v1/certs&quot;,</span>
+<span class="w">          </span><span class="no">&quot;client_x509_cert_url&quot;:&quot;https://www.googleapis.com/robot/v1/metadata/x509/claudie%40claudie-project-123456.iam.gserviceaccount.com&quot;</span>
+<span class="w">        </span><span class="no">}</span>
+</code></pre></div>
+<h2 id="create-gcp-credentials">Create GCP credentials<a class="headerlink" href="#create-gcp-credentials" title="Permanent link">&para;</a></h2>
+<h3 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Install gcoud CLI on your machine by following <a href="https://cloud.google.com/sdk/docs/install">this guide</a>.</li>
+<li>Initialize gcloud CLI by following <a href="https://cloud.google.com/sdk/docs/initializing">this guide</a>.</li>
+<li>Authorize cloud CLI by following <a href="https://cloud.google.com/sdk/docs/authorizing">this guide</a></li>
+</ol>
+<h3 id="creating-gcp-credentials-for-claudie">Creating GCP credentials for Claudie<a class="headerlink" href="#creating-gcp-credentials-for-claudie" title="Permanent link">&para;</a></h3>
+<ol>
 <li>
-<p><code>roles/roles/compute.admin</code></p>
+<p>Create a GCP project:
+<div class="highlight"><pre><span></span><code>gcloud<span class="w"> </span>projects<span class="w"> </span>create<span class="w"> </span>claudie-project
+</code></pre></div></p>
 </li>
 <li>
-<p>for DNS</p>
+<p>Set the current project to claudie-project:
+<div class="highlight"><pre><span></span><code>gcloud<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>project<span class="w"> </span>claudie-project
+</code></pre></div></p>
 </li>
-<li><code>roles/dns.admin</code></li>
-</ul>
+<li>
+<p>Attach billing account to your project:
+<div class="highlight"><pre><span></span><code>gcloud<span class="w"> </span>alpha<span class="w"> </span>billing<span class="w"> </span>accounts<span class="w"> </span>projects<span class="w"> </span>link<span class="w"> </span>claudie-project<span class="w"> </span><span class="o">(</span>--account-id<span class="o">=</span>ACCOUNT_ID<span class="w"> </span><span class="p">|</span><span class="w"> </span>--billing-account<span class="o">=</span>ACCOUNT_ID<span class="o">)</span>
+</code></pre></div></p>
+</li>
+<li>
+<p>Enable Compute Engine API and Cloud DNS API:
+<div class="highlight"><pre><span></span><code><span class="o">{</span>
+<span class="w">  </span>gcloud<span class="w"> </span>services<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>compute.googleapis.com
+<span class="w">  </span>gcloud<span class="w"> </span>services<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>dns.googleapis.com
+<span class="o">}</span>
+</code></pre></div></p>
+</li>
+<li>
+<p>Create a service account:
+<div class="highlight"><pre><span></span><code>gcloud<span class="w"> </span>iam<span class="w"> </span>service-accounts<span class="w"> </span>create<span class="w"> </span>claudie-sa
+</code></pre></div></p>
+</li>
+<li>
+<p>Attach roles to the servcie account:
+<div class="highlight"><pre><span></span><code><span class="o">{</span>
+<span class="w">  </span>gcloud<span class="w"> </span>projects<span class="w"> </span>add-iam-policy-binding<span class="w"> </span>claudie-project<span class="w"> </span>--member<span class="o">=</span>serviceAccount:claudie-sa@claudie-project.iam.gserviceaccount.com<span class="w"> </span>--role<span class="o">=</span>roles/compute.admin
+<span class="w">  </span>gcloud<span class="w"> </span>projects<span class="w"> </span>add-iam-policy-binding<span class="w"> </span>claudie-project<span class="w"> </span>--member<span class="o">=</span>serviceAccount:claudie-sa@claudie-project.iam.gserviceaccount.com<span class="w"> </span>--role<span class="o">=</span>roles/dns.admin
+<span class="o">}</span>
+</code></pre></div></p>
+</li>
+<li>
+<p>Recover service account keys for claudie-sa:
+<div class="highlight"><pre><span></span><code>gcloud<span class="w"> </span>iam<span class="w"> </span>service-accounts<span class="w"> </span>keys<span class="w"> </span>create<span class="w"> </span>claudie.json<span class="w"> </span>--iam-account<span class="o">=</span>claudie-sa@claudie-project.iam.gserviceaccount.com
+</code></pre></div></p>
+</li>
+<li>
+<p>You can either manually perform this step or use <code>yq</code> with the <a href="#compute-and-dns-example">provided template</a> to safely replace the credentials field with your generated credentials:
+<div class="highlight"><pre><span></span><code>yq<span class="w"> </span><span class="s1">&#39;.providers.gcp[0].credentials = load_str(&quot;claudie.json&quot;)&#39;</span><span class="w"> </span>template.yaml<span class="w"> </span>&gt;<span class="w"> </span>gcp.yaml
+</code></pre></div></p>
+</li>
+</ol>
+<h2 id="dns-setup">DNS setup<a class="headerlink" href="#dns-setup" title="Permanent link">&para;</a></h2>
+<p>If you wish to use GCP as your DNS provider where Claudie creates DNS records pointing to Claudie managed clusters, you will need to create a <strong>public DNS zone</strong> by following <a href="https://cloud.google.com/dns/docs/zones">this guide</a>.</p>
+<div class="admonition warning">
+<p class="admonition-title">GCP is not my domain registrar</p>
+<p>If you haven't acquired a domain via GCP and wish to utilize GCP for hosting your zone, you can refer to <a href="https://cloud.google.com/dns/docs/update-name-servers">this guide</a> on GCP nameservers. However, if you prefer not to use the entire domain, an alternative option is to delegate a subdomain to GCP.</p>
+</div>
+<h2 id="input-manifest-examples">Input manifest examples<a class="headerlink" href="#input-manifest-examples" title="Permanent link">&para;</a></h2>
+<h3 id="single-provider-multi-region-cluster-example">Single provider, multi region cluster example<a class="headerlink" href="#single-provider-multi-region-cluster-example" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GCPExampleManifest</span>
+
+<span class="nt">providers</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">gcp</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gcp-1</span>
+<span class="w">      </span><span class="c1"># GCP project for the service account.</span>
+<span class="w">      </span><span class="nt">gcpProject</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">project-claudie</span>
+<span class="w">      </span><span class="c1"># Service account key.</span>
+<span class="w">      </span><span class="nt">credentials</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">      </span><span class="p p-Indicator">{</span>
+<span class="w">         </span><span class="s">&quot;type&quot;</span><span class="p p-Indicator">:</span><span class="s">&quot;service_account&quot;</span><span class="p p-Indicator">,</span>
+<span class="w">         </span><span class="s">&quot;project_id&quot;</span><span class="p p-Indicator">:</span><span class="s">&quot;project-claudie&quot;</span><span class="p p-Indicator">,</span>
+<span class="w">         </span><span class="s">&quot;private_key_id&quot;</span><span class="p p-Indicator">:</span><span class="s">&quot;bskdlo875s9087394763eb84e407903lskdimp439&quot;</span><span class="p p-Indicator">,</span>
+<span class="w">         </span><span class="s">&quot;private_key&quot;</span><span class="p p-Indicator">:</span><span class="s">&quot;-----BEGIN</span><span class="nv"> </span><span class="s">PRIVATE</span><span class="nv"> </span><span class="s">KEY-----\nSKLOosKJUSDANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhki\n-----END</span><span class="nv"> </span><span class="s">PRIVATE</span><span class="nv"> </span><span class="s">KEY-----\n&quot;</span><span class="p p-Indicator">,</span>
+<span class="w">         </span><span class="s">&quot;client_email&quot;</span><span class="p p-Indicator">:</span><span class="s">&quot;claudie@project-claudie-123456.iam.gserviceaccount.com&quot;</span><span class="p p-Indicator">,</span>
+<span class="w">         </span><span class="s">&quot;client_id&quot;</span><span class="p p-Indicator">:</span><span class="s">&quot;109876543211234567890&quot;</span><span class="p p-Indicator">,</span>
+<span class="w">         </span><span class="s">&quot;auth_uri&quot;</span><span class="p p-Indicator">:</span><span class="s">&quot;https://accounts.google.com/o/oauth2/auth&quot;</span><span class="p p-Indicator">,</span>
+<span class="w">         </span><span class="s">&quot;token_uri&quot;</span><span class="p p-Indicator">:</span><span class="s">&quot;https://oauth2.googleapis.com/token&quot;</span><span class="p p-Indicator">,</span>
+<span class="w">         </span><span class="s">&quot;auth_provider_x509_cert_url&quot;</span><span class="p p-Indicator">:</span><span class="s">&quot;https://www.googleapis.com/oauth2/v1/certs&quot;</span><span class="p p-Indicator">,</span>
+<span class="w">         </span><span class="s">&quot;client_x509_cert_url&quot;</span><span class="p p-Indicator">:</span><span class="s">&quot;https://www.googleapis.com/robot/v1/metadata/x509/claudie%40claudie-project-123456.iam.gserviceaccount.com&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">}</span>
+
+<span class="nt">nodePools</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">dynamic</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-gcp</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># Name of the provider instance.</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gcp-1</span>
+<span class="w">        </span><span class="c1"># Region of the nodepool.</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">europe-west1</span>
+<span class="w">        </span><span class="c1"># Zone of the nodepool.</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">europe-west1-c</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="c1"># Machine type name.</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">e2-medium</span>
+<span class="w">      </span><span class="c1"># OS image name.</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-os-cloud/ubuntu-2204-jammy-v20221206</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-1-gcp</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># Name of the provider instance.</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gcp-1</span>
+<span class="w">        </span><span class="c1"># Region of the nodepool.</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">europe-west3</span>
+<span class="w">        </span><span class="c1"># Zone of the nodepool.</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">europe-west3-a</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">      </span><span class="c1"># Machine type name.</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">e2-medium</span>
+<span class="w">      </span><span class="c1"># OS image name.</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-os-cloud/ubuntu-2204-jammy-v20221206</span>
+<span class="w">      </span><span class="nt">storageDiskSize</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-2-gcp</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># Name of the provider instance.</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gcp-1</span>
+<span class="w">        </span><span class="c1"># Region of the nodepool.</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">europe-west2</span>
+<span class="w">        </span><span class="c1"># Zone of the nodepool.</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">europe-west2-a</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">      </span><span class="c1"># Machine type name.</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">e2-medium</span>
+<span class="w">      </span><span class="c1"># OS image name.</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-os-cloud/ubuntu-2204-jammy-v20221206</span>
+<span class="w">      </span><span class="nt">storageDiskSize</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+
+<span class="nt">kubernetes</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">clusters</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gcp-cluster</span>
+<span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.24.0</span>
+<span class="w">      </span><span class="nt">network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.2.0/24</span>
+<span class="w">      </span><span class="nt">pools</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">control</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-gcp</span>
+<span class="w">        </span><span class="nt">compute</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-1-gcp</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-2-gcp</span>
+</code></pre></div>
+<h3 id="multi-provider-multi-region-clusters-example">Multi provider, multi region clusters example<a class="headerlink" href="#multi-provider-multi-region-clusters-example" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GCPExampleManifest</span>
+
+<span class="nt">providers</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">gcp</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gcp-1</span>
+<span class="w">      </span><span class="c1"># GCP project for the service account.</span>
+<span class="w">      </span><span class="nt">gcpProject</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">project-claudie-1</span>
+<span class="w">      </span><span class="c1"># Service account key.</span>
+<span class="w">      </span><span class="nt">credentials</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">        </span><span class="no">{</span>
+<span class="w">        </span><span class="no">&quot;type&quot;: &quot;service_account&quot;,</span>
+<span class="w">        </span><span class="no">&quot;project_id&quot;: &quot;project-claudie-1&quot;,</span>
+<span class="w">        </span><span class="no">&quot;private_key_id&quot;: &quot;bskdlo875s9087394763eb84e407903lskdimp439&quot;,</span>
+<span class="w">        </span><span class="no">&quot;private_key&quot;: &quot;-----BEGIN PRIVATE KEY-----\nSKLOosKJUSDANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhki\n-----END PRIVATE KEY-----\n&quot;,</span>
+<span class="w">        </span><span class="no">&quot;client_email&quot;: &quot;claudie@project-claudie-2-123456.iam.gserviceaccount.com&quot;,</span>
+<span class="w">        </span><span class="no">&quot;client_id&quot;: &quot;109876543211234567890&quot;,&quot;auth_uri&quot;: &quot;https://accounts.google.com/o/oauth2/auth&quot;,</span>
+<span class="w">        </span><span class="no">&quot;token_uri&quot;: &quot;https://oauth2.googleapis.com/token&quot;,</span>
+<span class="w">        </span><span class="no">&quot;auth_provider_x509_cert_url&quot;: &quot;https://www.googleapis.com/oauth2/v1/certs&quot;,</span>
+<span class="w">        </span><span class="no">&quot;client_x509_cert_url&quot;: &quot;https://www.googleapis.com/robot/v1/metadata/x509/claudie%40claudie-project-123456.iam.gserviceaccount.com&quot;</span>
+<span class="w">        </span><span class="no">}</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gcp-2</span>
+<span class="w">      </span><span class="c1"># GCP project for the service account.</span>
+<span class="w">      </span><span class="nt">gcpProject</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">project-claudie-1</span>
+<span class="w">      </span><span class="c1"># Service account key.</span>
+<span class="w">      </span><span class="nt">credentials</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">        </span><span class="no">{</span>
+<span class="w">        </span><span class="no">&quot;type&quot;: &quot;service_account&quot;,</span>
+<span class="w">        </span><span class="no">&quot;project_id&quot;: &quot;project-claudie-1&quot;,</span>
+<span class="w">        </span><span class="no">&quot;private_key_id&quot;: &quot;bskdlo875sregergsrh234b84e407903lskdimp439&quot;,</span>
+<span class="w">        </span><span class="no">&quot;private_key&quot;: &quot;-----BEGIN PRIVATE KEY-----\nSKLOosKJUSDANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad\nMIIEvQIBADANBgkqhki\n-----END PRIVATE KEY-----\n&quot;,</span>
+<span class="w">        </span><span class="no">&quot;client_email&quot;: &quot;claudie@project-claudie-2-45y342.iam.gserviceaccount.com&quot;,</span>
+<span class="w">        </span><span class="no">&quot;client_id&quot;: &quot;4566523462523454352435&quot;,&quot;auth_uri&quot;: &quot;https://accounts.google.com/o/oauth2/auth&quot;,</span>
+<span class="w">        </span><span class="no">&quot;token_uri&quot;: &quot;https://oauth2.googleapis.com/token&quot;,</span>
+<span class="w">        </span><span class="no">&quot;auth_provider_x509_cert_url&quot;: &quot;https://www.googleapis.com/oauth2/v1/certs&quot;,</span>
+<span class="w">        </span><span class="no">&quot;client_x509_cert_url&quot;: &quot;https://www.googleapis.com/robot/v1/metadata/x509/claudie%40claudie-project-123456.iam.gserviceaccount.com&quot;</span>
+<span class="w">        </span><span class="no">}</span>
+
+<span class="nt">nodePools</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">dynamic</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-gcp-1</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># Name of the provider instance.</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gcp-1</span>
+<span class="w">        </span><span class="c1"># Region of the nodepool.</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">europe-west1</span>
+<span class="w">        </span><span class="c1"># Zone of the nodepool.</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">europe-west1-c</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="c1"># Machine type name.</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">e2-medium</span>
+<span class="w">      </span><span class="c1"># OS image name.</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-os-cloud/ubuntu-2204-jammy-v20221206</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-gcp-2</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># Name of the provider instance.</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gcp-2</span>
+<span class="w">        </span><span class="c1"># Region of the nodepool.</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">europe-west1</span>
+<span class="w">        </span><span class="c1"># Zone of the nodepool.</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">europe-west1-a</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">      </span><span class="c1"># Machine type name.</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">e2-medium</span>
+<span class="w">      </span><span class="c1"># OS image name.</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-os-cloud/ubuntu-2204-jammy-v20221206</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-gcp-1</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># Name of the provider instance.</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gcp-1</span>
+<span class="w">        </span><span class="c1"># Region of the nodepool.</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">europe-west3</span>
+<span class="w">        </span><span class="c1"># Zone of the nodepool.</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">europe-west3-a</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">      </span><span class="c1"># Machine type name.</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">e2-medium</span>
+<span class="w">      </span><span class="c1"># OS image name.</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-os-cloud/ubuntu-2204-jammy-v20221206</span>
+<span class="w">      </span><span class="nt">storageDiskSize</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-gcp-2</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># Name of the provider instance.</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gcp-2</span>
+<span class="w">        </span><span class="c1"># Region of the nodepool.</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">europe-west1</span>
+<span class="w">        </span><span class="c1"># Zone of the nodepool.</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">europe-west1-c</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">      </span><span class="c1"># Machine type name.</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">e2-medium</span>
+<span class="w">      </span><span class="c1"># OS image name.</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-os-cloud/ubuntu-2204-jammy-v20221206</span>
+<span class="w">      </span><span class="nt">storageDiskSize</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+
+<span class="nt">kubernetes</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">clusters</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gcp-cluster</span>
+<span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.24.0</span>
+<span class="w">      </span><span class="nt">network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.2.0/24</span>
+<span class="w">      </span><span class="nt">pools</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">control</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-gcp-1</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-gcp-2</span>
+<span class="w">        </span><span class="nt">compute</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-gcp-1</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-gcp-2</span>
+</code></pre></div>
 
 
   
@@ -1059,7 +1312,7 @@
               
                 
               
-              Thanks for your feedback!
+              Thanks for your feedback! Help us improve this page by using our <a href="/feedback/feedback-form/" target="_blank" rel="noopener">feedback form</a>.
             </div>
           
         </div>

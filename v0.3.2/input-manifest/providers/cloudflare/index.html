@@ -344,7 +344,7 @@
   
     <li class="md-nav__item">
       <a href="../../../getting-started/get-started-using-claudie/" class="md-nav__link">
-        Get started using Claudie
+        Getting started
       </a>
     </li>
   
@@ -357,22 +357,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../crud/crud/" class="md-nav__link">
-        CRUD for Claudie
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../deploying-claudie/" class="md-nav__link">
-        Deploying Claudie
+      <a href="../../../getting-started/detailed-guide/" class="md-nav__link">
+        Detailed guide
       </a>
     </li>
   
@@ -420,34 +406,6 @@
               
   
   
-  
-    <li class="md-nav__item">
-      <a href="../../api-reference/" class="md-nav__link">
-        Input manifest API reference
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../example/" class="md-nav__link">
-        Example yaml file
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
     
   
   
@@ -457,125 +415,21 @@
       
       
       
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" checked>
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1" checked>
       
       
       
-        <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+        <label class="md-nav__link" for="__nav_3_1" id="__nav_3_1_label" tabindex="0">
           Providers
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="true">
-        <label class="md-nav__title" for="__nav_3_3">
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_1_label" aria-expanded="true">
+        <label class="md-nav__title" for="__nav_3_1">
           <span class="md-nav__icon md-icon"></span>
           Providers
         </label>
         <ul class="md-nav__list" data-md-scrollfix>
-          
-            
-              
-  
-  
-  
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-      
-      
-      
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_1" >
-      
-      
-      
-        <label class="md-nav__link" for="__nav_3_3_1" id="__nav_3_3_1_label" tabindex="0">
-          Examples
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_1_label" aria-expanded="false">
-        <label class="md-nav__title" for="__nav_3_3_1">
-          <span class="md-nav__icon md-icon"></span>
-          Examples
-        </label>
-        <ul class="md-nav__list" data-md-scrollfix>
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/aws-input-manifest/" class="md-nav__link">
-        AWS example
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/azure-input-manifest/" class="md-nav__link">
-        Azure example
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/gcp-input-manifest/" class="md-nav__link">
-        GCP example
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/hetzner-input-manifest/" class="md-nav__link">
-        Hetzner example
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/oci-input-manifest/" class="md-nav__link">
-        OCI example
-      </a>
-    </li>
-  
-
-            
-          
-        </ul>
-      </nav>
-    </li>
-  
-
-            
           
             
               
@@ -659,9 +513,43 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#iam-policies-required-by-claudie" class="md-nav__link">
-    IAM policies required by Claudie
+  <a href="#dns-example" class="md-nav__link">
+    DNS example
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-cloudflare-credentials" class="md-nav__link">
+    Create Cloudflare credentials
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dns-setup" class="md-nav__link">
+    DNS setup
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#input-manifest-examples" class="md-nav__link">
+    Input manifest examples
+  </a>
+  
+    <nav class="md-nav" aria-label="Input manifest examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#load-balancing-example" class="md-nav__link">
+    Load balancing example
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -704,6 +592,34 @@
           
         </ul>
       </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../example/" class="md-nav__link">
+        Example yaml file
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api-reference/" class="md-nav__link">
+        API reference
+      </a>
     </li>
   
 
@@ -928,6 +844,21 @@
   
 
     
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../troubleshooting/troubleshooting/" class="md-nav__link">
+        Troubleshooting
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -955,9 +886,43 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#iam-policies-required-by-claudie" class="md-nav__link">
-    IAM policies required by Claudie
+  <a href="#dns-example" class="md-nav__link">
+    DNS example
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-cloudflare-credentials" class="md-nav__link">
+    Create Cloudflare credentials
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dns-setup" class="md-nav__link">
+    DNS setup
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#input-manifest-examples" class="md-nav__link">
+    Input manifest examples
+  </a>
+  
+    <nav class="md-nav" aria-label="Input manifest examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#load-balancing-example" class="md-nav__link">
+    Load balancing example
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -980,15 +945,79 @@
 
 
 <h1 id="cloudflare">Cloudflare<a class="headerlink" href="#cloudflare" title="Permanent link">&para;</a></h1>
-<p>For using your Cloudflare provider for DNS, you need to manually</p>
-<ul>
-<li><a href="https://developers.cloudflare.com/dns/zone-setups/">set up zone</a></li>
-<li>Update your name servers for you domain with the NS records from the created DNS zone.</li>
-</ul>
-<p>since Claudie does not support their dynamic creation.</p>
-<h2 id="iam-policies-required-by-claudie">IAM policies required by Claudie<a class="headerlink" href="#iam-policies-required-by-claudie" title="Permanent link">&para;</a></h2>
-<p>The token generated by Cloudflare for you zone has to have this policies</p>
-<div class="highlight"><pre><span></span><code>Zone:Read,<span class="w"> </span>DNS:Read,<span class="w"> </span>DNS:Edit
+<p>Cloudflare provider requires <code>apiToken</code> token field in string format.</p>
+<h2 id="dns-example">DNS example<a class="headerlink" href="#dns-example" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="nt">providers</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">cloudflare</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cloudflare-1</span>
+<span class="w">      </span><span class="nt">apiToken</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">token</span>
+</code></pre></div>
+<h2 id="create-cloudflare-credentials">Create Cloudflare credentials<a class="headerlink" href="#create-cloudflare-credentials" title="Permanent link">&para;</a></h2>
+<p>You can create Cloudflare API token by following <a href="https://developers.cloudflare.com/fundamentals/api/get-started/create-token/">this guide</a>. The required permissions for the zone you want to use are:</p>
+<div class="highlight"><pre><span></span><code>Zone:Read
+DNS:Read
+DNS:Edit
+</code></pre></div>
+<h2 id="dns-setup">DNS setup<a class="headerlink" href="#dns-setup" title="Permanent link">&para;</a></h2>
+<p>If you wish to use Cloudflare as your DNS provider where Claudie creates DNS records pointing to Claudie managed clusters, you will need to create a <strong>public DNS zone</strong> by following <a href="https://developers.cloudflare.com/dns/zone-setups/">this guide</a>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Cloudflare is not my domain registrar</p>
+<p>If you haven't acquired a domain via Cloudflare and wish to utilize Cloudflare for hosting your zone, you can refer to <a href="https://developers.cloudflare.com/dns/zone-setups/full-setup/setup/#update-your-nameservers">this guide</a> on Cloudflare nameservers. However, if you prefer not to use the entire domain, an alternative option is to delegate a subdomain to Cloudflare.</p>
+</div>
+<h2 id="input-manifest-examples">Input manifest examples<a class="headerlink" href="#input-manifest-examples" title="Permanent link">&para;</a></h2>
+<h3 id="load-balancing-example">Load balancing example<a class="headerlink" href="#load-balancing-example" title="Permanent link">&para;</a></h3>
+<div class="admonition warning">
+<p class="admonition-title">Showcase example</p>
+<p>To make this example functional, you need to specify control plane and node pools. This current showcase will produce an error if used as is.</p>
+</div>
+<div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CloudflareExampleManifest</span>
+<span class="nt">providers</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">cloudflare</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cloudflare-1</span><span class="w"> </span><span class="c1"># Name of this provider instance.</span>
+<span class="w">      </span><span class="nt">apiToken</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kslISA878a6etYAfXYcg5iYyrFGNlCxc</span><span class="w"> </span><span class="c1"># API token of this provider instance.</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-1</span>
+<span class="w">      </span><span class="nt">accessKey</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SLDUTKSHFDMSJKDIALASSD</span>
+<span class="w">      </span><span class="nt">secretKey</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">iuhbOIJN+oin/olikDSadsnoiSVSDsacoinOUSHD</span>
+
+<span class="nt">nodePools</span><span class="p">:</span><span class="w"> </span>
+<span class="w">  </span><span class="nt">dynamic</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">loadbalancer</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-1</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eu-central-1</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eu-central-1c</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">t3.medium</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ami-0965bd5ba4d59211c</span>
+
+<span class="nt">kubernetes</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">clusters</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cluster</span>
+<span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.24.0</span>
+<span class="w">      </span><span class="nt">network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.2.0/24</span>
+<span class="w">      </span><span class="nt">pools</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">control</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+<span class="w">        </span><span class="nt">compute</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+
+<span class="nt">loadBalancers</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">roles</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apiserver</span>
+<span class="w">      </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tcp</span>
+<span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6443</span>
+<span class="w">      </span><span class="nt">targetPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6443</span>
+<span class="w">      </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k8sControlPlane</span>
+
+<span class="w">  </span><span class="nt">clusters</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apiserver-lb-prod</span>
+<span class="w">      </span><span class="nt">roles</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apiserver</span>
+<span class="w">      </span><span class="nt">dns</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">dnsZone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dns-zone</span>
+<span class="w">        </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cloudflare-1</span>
+<span class="w">        </span><span class="nt">hostname</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my.fancy.url</span>
+<span class="w">      </span><span class="nt">targetedK8s</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prod-cluster</span>
+<span class="w">      </span><span class="nt">pools</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">loadbalancer-2</span>
 </code></pre></div>
 
 
@@ -1028,7 +1057,7 @@
               
                 
               
-              Thanks for your feedback!
+              Thanks for your feedback! Help us improve this page by using our <a href="/feedback/feedback-form/" target="_blank" rel="noopener">feedback form</a>.
             </div>
           
         </div>

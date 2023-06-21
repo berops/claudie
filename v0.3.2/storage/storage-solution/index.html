@@ -344,7 +344,7 @@
   
     <li class="md-nav__item">
       <a href="../../getting-started/get-started-using-claudie/" class="md-nav__link">
-        Get started using Claudie
+        Getting started
       </a>
     </li>
   
@@ -357,22 +357,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../crud/crud/" class="md-nav__link">
-        CRUD for Claudie
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../deploying-claudie/" class="md-nav__link">
-        Deploying Claudie
+      <a href="../../getting-started/detailed-guide/" class="md-nav__link">
+        Detailed guide
       </a>
     </li>
   
@@ -419,159 +405,27 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../../input-manifest/api-reference/" class="md-nav__link">
-        Input manifest API reference
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../input-manifest/example/" class="md-nav__link">
-        Example yaml file
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
     
     <li class="md-nav__item md-nav__item--nested">
       
       
       
       
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1" >
       
       
       
-        <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+        <label class="md-nav__link" for="__nav_3_1" id="__nav_3_1_label" tabindex="0">
           Providers
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
-        <label class="md-nav__title" for="__nav_3_3">
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_1_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_3_1">
           <span class="md-nav__icon md-icon"></span>
           Providers
         </label>
         <ul class="md-nav__list" data-md-scrollfix>
-          
-            
-              
-  
-  
-  
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-      
-      
-      
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_1" >
-      
-      
-      
-        <label class="md-nav__link" for="__nav_3_3_1" id="__nav_3_3_1_label" tabindex="0">
-          Examples
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_1_label" aria-expanded="false">
-        <label class="md-nav__title" for="__nav_3_3_1">
-          <span class="md-nav__icon md-icon"></span>
-          Examples
-        </label>
-        <ul class="md-nav__list" data-md-scrollfix>
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../input-manifest/providers/examples/aws-input-manifest/" class="md-nav__link">
-        AWS example
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../input-manifest/providers/examples/azure-input-manifest/" class="md-nav__link">
-        Azure example
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../input-manifest/providers/examples/gcp-input-manifest/" class="md-nav__link">
-        GCP example
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../input-manifest/providers/examples/hetzner-input-manifest/" class="md-nav__link">
-        Hetzner example
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../input-manifest/providers/examples/oci-input-manifest/" class="md-nav__link">
-        OCI example
-      </a>
-    </li>
-  
-
-            
-          
-        </ul>
-      </nav>
-    </li>
-  
-
-            
           
             
               
@@ -659,6 +513,34 @@
           
         </ul>
       </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/example/" class="md-nav__link">
+        Example yaml file
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/api-reference/" class="md-nav__link">
+        API reference
+      </a>
     </li>
   
 
@@ -940,6 +822,21 @@
   
 
     
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../troubleshooting/troubleshooting/" class="md-nav__link">
+        Troubleshooting
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1015,11 +912,11 @@
 <p>Longhorn installed in the cluster is set up in a way that it provides one default <code>StorageClass</code> called <code>longhorn</code>, which, if used, creates a volume that is then replicated across random nodes in the cluster.</p>
 <p>Besides the default storage class, Claudie can also create custom storage classes, which force persistent volumes to be created on specific nodes based on the provider instance they have. In other words, you can use a specific provider instance to provision nodes for your storage needs, while using another provider instance for computing tasks.</p>
 <h2 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h2>
-<p>To follow along, have a look at the reference <a href="../../input-manifest/example.yaml">example input manifest file</a>.</p>
+<p>To follow along, have a look at the reference <a href="../../input-manifest/example/">example input manifest file</a>.</p>
 <p>When Claudie applies this input manifest, the following storage classes are installed:</p>
 <ul>
 <li><code>longhorn</code> - the default storage class, which stores data on random nodes</li>
-<li><code>longhorn-&lt;provider instance&gt;-zone</code> - storage class, which stores data only on nodes of the specific provider instance (see the <a href="../input-manifest/input-manifest.md#providers">list of supported providers</a>), i.e. <code>longhorn-gcp-1-zone</code>, <code>longhorn-gcp-2-zone</code>, <code>longhorn-aws-1-zone</code>, ...</li>
+<li><code>longhorn-&lt;provider instance&gt;-zone</code> - storage class, which stores data only on nodes of the specific provider instance (see the <a href="../../getting-started/detailed-guide/#supported-providers">list of supported providers</a>), i.e. <code>longhorn-gcp-1-zone</code>, <code>longhorn-gcp-2-zone</code>, <code>longhorn-aws-1-zone</code>, ...</li>
 </ul>
 <p>For more information on how Longhorn works you can check out <a href="https://longhorn.io/docs/1.4.0/what-is-longhorn/">Longhorn's official documentation</a>.</p>
 
@@ -1060,7 +957,7 @@
               
                 
               
-              Thanks for your feedback!
+              Thanks for your feedback! Help us improve this page by using our <a href="/feedback/feedback-form/" target="_blank" rel="noopener">feedback form</a>.
             </div>
           
         </div>

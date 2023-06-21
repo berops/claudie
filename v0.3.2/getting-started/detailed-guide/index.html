@@ -1,0 +1,1635 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://docs.claudie.io/v0.3.2/getting-started/detailed-guide/">
+      
+      
+        <link rel="prev" href="../get-started-using-claudie/">
+      
+      
+        <link rel="next" href="../../input-manifest/providers/aws/">
+      
+      <link rel="icon" href="../../hexagon_blue.png">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.1.8">
+    
+    
+      
+        <title>Detailed guide - Claudie Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ded33207.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.a0c5b2b5.min.css">
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+  
+
+
+  <script
+  defer
+  data-domain="docs.claudie.io"
+  src="https://plausible.io/js/plausible.js"
+></script>
+
+<script>
+  window.plausible = window.plausible || function () { (window.plausible.q = window.plausible.q || []).push(arguments) };
+
+  /* Register event handlers after documented loaded */
+  document.addEventListener("DOMContentLoaded", function () {
+    /* Set up search tracking */
+    if (document.forms.search) {
+      var query = document.forms.search.query;
+      query.addEventListener("blur", function() {
+        if (this.value) plausible("Search", { props: { search_term: this.value } });
+      })
+    }
+
+    /* Set up feedback, i.e. "Was this page helpful?" */
+    document$.subscribe(function () {
+      var feedback = document.forms.feedback;
+      if (typeof feedback === "undefined") return;
+
+      /* Send feedback to Plausible */
+      for (var button of feedback.querySelectorAll("[type=submit]")) {
+        button.addEventListener("click", function (ev) {
+          ev.preventDefault();
+
+          var page = document.location.pathname;
+          var value = this.getAttribute("data-md-value");
+          console.log("[feedback] User clicked", { value });
+          plausible(`Feedback: ${value}`);
+
+          /* Disable form and show note, if given */
+          feedback.firstElementChild.disabled = true;
+          var note = feedback.querySelector(".md-feedback__note [data-md-value='" + value + "']");
+          if (note) note.hidden = false;
+        })
+
+        /* Show feedback */
+        feedback.hidden = false;
+      }
+    });
+  });
+</script>
+  
+    <script>"undefined"!=typeof __md_analytics&&__md_analytics()</script>
+  
+
+    
+    
+    
+   <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"/><style>
+        html.glightbox-open { overflow: initial; height: 100%; }
+        .gslide-title { margin-top: 0px; user-select: text; }
+        .gslide-desc { color: #666; user-select: text; }
+        .gslide-image img { background: white; }
+        
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color);}
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color);}
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color);}
+            </style> <script src="../../assets/javascripts/glightbox.min.js"></script></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="indigo">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#detailed-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Claudie Docs" class="md-header__button md-logo" aria-label="Claudie Docs" data-md-component="logo">
+      
+  <img src="../../hexagon_blue.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Claudie Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Detailed guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="indigo"  aria-hidden="true"  type="radio" name="__palette" id="__palette_1">
+            
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="black"  aria-hidden="true"  type="radio" name="__palette" id="__palette_2">
+            
+          
+        </form>
+      
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/berops/claudie" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    claudie
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Claudie Docs" class="md-nav__button md-logo" aria-label="Claudie Docs" data-md-component="logo">
+      
+  <img src="../../hexagon_blue.png" alt="logo">
+
+    </a>
+    Claudie Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/berops/claudie" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    claudie
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        Docs Overview
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          Getting Started
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Getting Started
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get-started-using-claudie/" class="md-nav__link">
+        Getting started
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Detailed guide
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Detailed guide
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#supported-providers" class="md-nav__link">
+    Supported providers
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#claudie-deployment" class="md-nav__link">
+    Claudie deployment
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#general-tips" class="md-nav__link">
+    General tips
+  </a>
+  
+    <nav class="md-nav" aria-label="General tips">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#control-plane-considerations" class="md-nav__link">
+    Control plane considerations
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#egress-traffic" class="md-nav__link">
+    Egress traffic
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#on-your-own-path" class="md-nav__link">
+    On your own path
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#claudie-customization" class="md-nav__link">
+    Claudie customization
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          Input manifest
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Input manifest
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_1" id="__nav_3_1_label" tabindex="0">
+          Providers
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_1_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_3_1">
+          <span class="md-nav__icon md-icon"></span>
+          Providers
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/providers/aws/" class="md-nav__link">
+        AWS
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/providers/azure/" class="md-nav__link">
+        Azure
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/providers/gcp/" class="md-nav__link">
+        GCP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/providers/cloudflare/" class="md-nav__link">
+        Cloudflare
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/providers/hetzner/" class="md-nav__link">
+        Hetzner
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/providers/oci/" class="md-nav__link">
+        OCI
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/example/" class="md-nav__link">
+        Example yaml file
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/api-reference/" class="md-nav__link">
+        API reference
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          How Claudie works
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          How Claudie works
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../claudie-workflow/claudie-workflow/" class="md-nav__link">
+        Claudie Workflow
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../storage/storage-solution/" class="md-nav__link">
+        Claudie Storage solution
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../loadbalancing/loadbalancing-solution/" class="md-nav__link">
+        Loadbalancing in Claudie
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../autoscaling/autoscaling/" class="md-nav__link">
+        Autoscaling in Claudie
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../use-cases/use-cases/" class="md-nav__link">
+        Claudie Use Cases
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../roadmap/roadmap/" class="md-nav__link">
+        Roadmap for Claudie
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/contributing/" class="md-nav__link">
+        Contributing
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+          Changelog
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_8">
+          <span class="md-nav__icon md-icon"></span>
+          Changelog
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CHANGELOG/changelog-0.1.x/" class="md-nav__link">
+        Claudie v0.1
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CHANGELOG/changelog-0.2.x/" class="md-nav__link">
+        Claudie v0.2
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CHANGELOG/changelog-0.3.x/" class="md-nav__link">
+        Claudie v0.3
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../troubleshooting/troubleshooting/" class="md-nav__link">
+        Troubleshooting
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#supported-providers" class="md-nav__link">
+    Supported providers
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#claudie-deployment" class="md-nav__link">
+    Claudie deployment
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#general-tips" class="md-nav__link">
+    General tips
+  </a>
+  
+    <nav class="md-nav" aria-label="General tips">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#control-plane-considerations" class="md-nav__link">
+    Control plane considerations
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#egress-traffic" class="md-nav__link">
+    Egress traffic
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#on-your-own-path" class="md-nav__link">
+    On your own path
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#claudie-customization" class="md-nav__link">
+    Claudie customization
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="detailed-guide">Detailed guide<a class="headerlink" href="#detailed-guide" title="Permanent link">&para;</a></h1>
+<p>This detailed guide for Claudie serves as a resource for providing an overview of Claudie's features, installation instructions, customization options, and its role in provisioning and managing clusters. We'll start by guiding you through the process of setting up a management cluster, where Claudie will be installed, enabling you to effortlessly monitor and control clusters across multiple hyperscalers.</p>
+<div class="admonition note">
+<p class="admonition-title">Tip!</p>
+<p>Claudie offers extensive customization options for your Kubernetes cluster across multiple hyperscalers. This detailed guide assumes you have AWS and Hetzner accounts. You can customize your deployment across different <a href="#supported-providers">supported providers</a>. If you wish to use different providers, we recommend to follow this guide anyway and create your own input manifest file based on the provided example. Refer to the supported provider table for the input manifest configuration of each provider.</p>
+</div>
+<h2 id="supported-providers">Supported providers<a class="headerlink" href="#supported-providers" title="Permanent link">&para;</a></h2>
+<!-- BEGIN INCLUDE ../../README.md '&lt;!-- providers-start --&gt;' '&lt;!-- providers-end --&gt;' -->
+
+<table>
+<thead>
+<tr>
+<th>Supported Provider</th>
+<th>Node Pools</th>
+<th>DNS</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://docs.claudie.io/latest/input-manifest/providers/aws/">AWS</a></td>
+<td><img alt="✔" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/2714.svg" title=":heavy_check_mark:" /></td>
+<td><img alt="✔" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/2714.svg" title=":heavy_check_mark:" /></td>
+</tr>
+<tr>
+<td><a href="https://docs.claudie.io/latest/input-manifest/providers/azure/">Azure</a></td>
+<td><img alt="✔" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/2714.svg" title=":heavy_check_mark:" /></td>
+<td><img alt="✔" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/2714.svg" title=":heavy_check_mark:" /></td>
+</tr>
+<tr>
+<td><a href="https://docs.claudie.io/latest/input-manifest/providers/gcp/">GCP</a></td>
+<td><img alt="✔" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/2714.svg" title=":heavy_check_mark:" /></td>
+<td><img alt="✔" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/2714.svg" title=":heavy_check_mark:" /></td>
+</tr>
+<tr>
+<td><a href="https://docs.claudie.io/latest/input-manifest/providers/oci/">OCI</a></td>
+<td><img alt="✔" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/2714.svg" title=":heavy_check_mark:" /></td>
+<td><img alt="✔" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/2714.svg" title=":heavy_check_mark:" /></td>
+</tr>
+<tr>
+<td><a href="https://docs.claudie.io/latest/input-manifest/providers/hetzner/">Hetzner</a></td>
+<td><img alt="✔" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/2714.svg" title=":heavy_check_mark:" /></td>
+<td><img alt="✔" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/2714.svg" title=":heavy_check_mark:" /></td>
+</tr>
+<tr>
+<td><a href="https://docs.claudie.io/latest/input-manifest/providers/cloudflare/">Cloudflare</a></td>
+<td>N/A</td>
+<td><img alt="✔" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/2714.svg" title=":heavy_check_mark:" /></td>
+</tr>
+</tbody>
+</table>
+<p>For adding support for other cloud providers, open an issue or propose a PR.</p>
+<!-- END INCLUDE -->
+
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Install Kind by following the <a href="https://kind.sigs.k8s.io/docs/user/quick-start/#installation">Kind documentation</a>.</li>
+<li>Install kubectl tool to communicate with your management cluster by following the <a href="https://kubernetes.io/docs/tasks/tools/#kubectl">Kubernetes documentation</a>. </li>
+<li>Install Kustomize by following <a href="https://kubectl.docs.kubernetes.io/installation/kustomize/">Kustomize documentation</a>.</li>
+<li>Install Docker by following <a href="https://docs.docker.com/engine/install/">Docker documentation</a>.</li>
+</ol>
+<h2 id="claudie-deployment">Claudie deployment<a class="headerlink" href="#claudie-deployment" title="Permanent link">&para;</a></h2>
+<ol>
+<li>
+<p>Create a Kind cluster where you will deploy Claudie, also called management cluster.</p>
+<div class="highlight"><pre><span></span><code>kind<span class="w"> </span>create<span class="w"> </span>cluster<span class="w"> </span>--name<span class="o">=</span>claudie
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Management cluster consideration.</p>
+<p>We recommend using a non-ephemeral management cluster! Deleting the management cluster prevents autoscaling of Claudie node pools as well as loss of state! We recommended to use a managed Kubernetes offerings to ensure management cluster resiliency. Kind cluster is sufficient for this guide.</p>
+</div>
+</li>
+<li>
+<p>Check if have the correct current kubernetes context. The context should be <code>kind-claudie</code>.</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>config<span class="w"> </span>current-context
+</code></pre></div>
+</li>
+<li>
+<p>If context is not <code>kind-claudie</code>, switch to it:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>config<span class="w"> </span>use-context<span class="w"> </span>kind-claudie
+</code></pre></div>
+</li>
+<li>
+<p>One of the prerequisites is <code>cert-manager</code>, deploy it with the following command:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml
+</code></pre></div>
+</li>
+<li>
+<p>Download latest Claudie release and unzip it:</p>
+<div class="highlight"><pre><span></span><code>wget<span class="w"> </span>https://github.com/berops/claudie/releases/latest/download/claudie.zip<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>unzip<span class="w"> </span>claudie.zip<span class="w"> </span>-d<span class="w"> </span>claudie
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Tip!</p>
+<p>For the initial attempt, it's highly recommended to enable debug logs, especially when creating a large cluster with DNS. This helps identify and resolve any permission issues that may occur across different hyperscalers. Edit <code>claudie/.env</code> file, and change <code>GOLANG_LOG=info</code> to <code>GOLANG_LOG=debug</code> to enable debug logging, for more customization refer to <a href="#claudie-customization">this table</a>.</p>
+</div>
+</li>
+<li>
+<p>Deploy Claudie using Kustomize plugin:
+    <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-k<span class="w"> </span>claudie
+</code></pre></div></p>
+</li>
+<li>
+<p>Claudie will be deployed into <code>claudie</code> namespace, you can view if all pods are running:</p>
+<p><div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>NAME                           READY   STATUS      RESTARTS        AGE
+ansibler-5c6c776b75-82c2q      1/1     Running     0               8m10s
+builder-59f9d44596-n2qzm       1/1     Running     0               8m10s
+context-box-5d76c89b4d-tb6h4   1/1     Running     1 (6m37s ago)   8m10s
+create-table-job-jvs9n         0/1     Completed   1               8m10s
+dynamodb-68777f9787-8wjhs      1/1     Running     0               8m10s
+frontend-5755b7bc69-5l84h      1/1     Running     0               8m10s
+kube-eleven-64468cd5bd-qp4d4   1/1     Running     0               8m10s
+kuber-698c4564c-dhsvg          1/1     Running     0               8m10s
+make-bucket-job-fb5sp          0/1     Completed   0               8m10s
+minio-0                        1/1     Running     0               8m10s
+minio-1                        1/1     Running     0               8m10s
+minio-2                        1/1     Running     0               8m10s
+minio-3                        1/1     Running     0               8m10s
+mongodb-67bf769957-9ct5z       1/1     Running     0               8m10s
+scheduler-654cbd4b97-qwtbf     1/1     Running     0               8m10s
+terraformer-fd664b7ff-dd2h7    1/1     Running     0               8m9s
+</code></pre></div></p>
+<div class="admonition warning">
+<p class="admonition-title">Troubleshoot!</p>
+<p>If you experience problems refer to our <a href="https://docs.claudie.io/latest/troubleshooting/troubleshooting/">troubleshooting guide</a>. </p>
+</div>
+</li>
+<li>
+<p>Let's create a AWS high availability cluster which we'll expand later on with Hetzner bursting capacity. Let's start by creating <code>cloud-bursting.yaml</code> with the following content:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cloud-bursting</span>
+<span class="nt">providers</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">aws</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-1</span><span class="w"> </span><span class="c1"># credentials for a user with compute permissions</span>
+<span class="w">      </span><span class="nt">accessKey</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SLDUTKSHFDMSJKDIALASSD</span>
+<span class="w">      </span><span class="nt">secretKey</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">iuhbOIJN+oin/olikDSadsnoiSVSDsacoinOUSHD</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-dns</span><span class="w"> </span><span class="c1"># credentials for a user with dns permissions</span>
+<span class="w">      </span><span class="nt">accessKey</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ODURNGUISNFAIPUNUGFINB</span>
+<span class="w">      </span><span class="nt">secretKey</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">asduvnva+skd/ounUIBPIUjnpiuBNuNipubnPuip</span>
+<span class="nt">nodePools</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">dynamic</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-controlplane</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-1</span>
+<span class="w">          </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eu-central-1</span>
+<span class="w">          </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eu-central-1a</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">t3.medium</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ami-0965bd5ba4d59211c</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-worker</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-1</span>
+<span class="w">          </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eu-north-1</span>
+<span class="w">          </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eu-north-1a</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">t3.medium</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ami-03df6dea56f8aa618</span>
+<span class="w">      </span><span class="nt">storageDiskSize</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">200</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-loadbalancer</span>
+<span class="w">      </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-1</span>
+<span class="w">          </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eu-central-2</span>
+<span class="w">          </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eu-central-2a</span>
+<span class="w">      </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">      </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">t3.small</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ami-0965bd5ba4d59211c</span>
+<span class="nt">kubernetes</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">clusters</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-super-cluster</span>
+<span class="w">      </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.24.0</span>
+<span class="w">      </span><span class="nt">network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.2.0/24</span>
+<span class="w">      </span><span class="nt">pools</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">control</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-controlplane</span>
+<span class="w">          </span><span class="nt">compute</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-worker</span>
+<span class="nt">loadBalancers</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">roles</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apiserver</span>
+<span class="w">      </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tcp</span>
+<span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6443</span>
+<span class="w">      </span><span class="nt">targetPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6443</span>
+<span class="w">      </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k8sControlPlane</span>
+<span class="w">  </span><span class="nt">clusters</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">loadbalance-me</span>
+<span class="w">      </span><span class="nt">roles</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apiserver</span>
+<span class="w">      </span><span class="nt">dns</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">dnsZone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">domain.com</span><span class="w"> </span><span class="c1"># hosted zone domain name where claudie creates dns records for this cluster</span>
+<span class="w">          </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-dns</span>
+<span class="w">          </span><span class="nt">hostname</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">supercluster</span><span class="w"> </span><span class="c1"># the sub domain of the new cluster</span>
+<span class="w">      </span><span class="nt">targetedK8s</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-super-cluster</span>
+<span class="w">      </span><span class="nt">pools</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-loadbalancer</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Tip!</p>
+<p>In this example, two AWS providers are used — one with access to compute resources and the other with access to DNS. However, it is possible to use a single AWS provider with permissions for both services.</p>
+</div>
+</li>
+<li>
+<p>Create the secret with your cluster configuration file in <code>claudie</code> namespace:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>cloud-bursting<span class="w"> </span>--from-file<span class="o">=</span>cloud-bursting.yaml<span class="w"> </span>-n<span class="w"> </span>claudie
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Tip!</p>
+<p>Input manifests serve as a single source of truth for both Claudie and the user, which makes creating infrastructure via input manifests as infrastructure as a code and can be easily integrated into a GitOps workflow.</p>
+</div>
+</li>
+<li>
+<p>You will need to label the secret in order for Claudie to pick it up and start provisioning resources:
+    <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>label<span class="w"> </span>secret<span class="w"> </span>cloud-bursting<span class="w"> </span>claudie.io/input-manifest<span class="o">=</span>cloud-bursting<span class="w"> </span>-n<span class="w"> </span>claudie
+</code></pre></div></p>
+<div class="admonition warning">
+<p class="admonition-title">Errors in input manifest</p>
+<p>Validation webhook will reject the input manifest at this stage if it finds errors within the manifest. Refer to our <a href="https://docs.claudie.io/latest/input-manifest/api-reference/">API guide</a> for details.</p>
+</div>
+</li>
+<li>
+<p>View logs from <code>frontend</code> service to see secret picked up, as well as which service is currently doing the work:</p>
+<p><div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>logs<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/name<span class="o">=</span>frontend<span class="w"> </span>-n<span class="w"> </span>claudie
+</code></pre></div>
+Here’s an example of what frontend might output at this point:</p>
+<div class="highlight"><pre><span></span><code>2:14PM INF Validating secret module=frontend name=-cloud-bursting v=0
+2:14PM INF secret seems to be valid module=frontend name=-cloud-bursting v=0
+2:14PM INF Created config for input manifest -cloud-bursting module=frontend
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Claudie architecture</p>
+<p>Claudie utilizes multiple services for cluster provisioning, refer to our <a href="https://docs.claudie.io/latest/claudie-workflow/claudie-workflow/">workflow documentation</a> as to how it works under the hood. Frontend's consolidated log provides visibility into the ongoing operations of each individual Claudie service. </p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Provisioning times may vary!</p>
+<p>Please note that cluster creation time may vary due to provisioning capacity and machine provisioning times of selected hyperscalers.</p>
+</div>
+<p>After finishing the frontend service reports that the cluster is provisioned.</p>
+<div class="highlight"><pre><span></span><code>2:24PM INF Workflow finished cluster=my-super-cluster module=frontend project=-cloud-bursting
+</code></pre></div>
+</li>
+<li>
+<p>After finishing provisioning the cluster Claudie creates kubeconfig secret in claudie namespace:</p>
+<p><div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>secrets<span class="w"> </span>-l<span class="w"> </span>claudie.io/output<span class="o">=</span>kubeconfig
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>NAME                                  TYPE     DATA   AGE
+my-super-cluster-6ktx6rb-kubeconfig   Opaque   1      134m
+</code></pre></div></p>
+<p>You can recover kubeconfig for your cluster with the following command:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>secrets<span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span>-l<span class="w"> </span>claudie.io/output<span class="o">=</span>kubeconfig<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.items[0].data.kubeconfig}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span>&gt;<span class="w"> </span>my-super-cluster-kubeconfig.yaml
+</code></pre></div>
+<p>If you want to connect to your machines via SSH, you can recover private SSH key:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>secrets<span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span>-l<span class="w"> </span>claudie.io/output<span class="o">=</span>metadata<span class="w"> </span>-ojsonpath<span class="o">=</span><span class="s1">&#39;{.items[0].data.metadata}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span>.private_key<span class="w"> </span>&gt;<span class="w"> </span>~/.ssh/my-super-cluster
+</code></pre></div>
+<p>To recover public IP of a node to connect to via SSH:
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>secrets<span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span>-l<span class="w"> </span>claudie.io/output<span class="o">=</span>metadata<span class="w"> </span>-ojsonpath<span class="o">=</span><span class="s1">&#39;{.items[0].data.metadata}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span>.node_ips
+</code></pre></div></p>
+<p>Each secret created by Claudie has following labels:</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>claudie.io/project</code></td>
+<td>Name of the project.</td>
+</tr>
+<tr>
+<td><code>claudie.io/cluster</code></td>
+<td>Name of the cluster.</td>
+</tr>
+<tr>
+<td><code>claudie.io/cluster-id</code></td>
+<td>ID of the cluster.</td>
+</tr>
+<tr>
+<td><code>claudie.io/output</code></td>
+<td>Output type, either <code>kubeconfig</code> or <code>metadata</code>.</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p>Use your new kubeconfig to see what’s in your new cluster</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-A<span class="w"> </span>--kubeconfig<span class="o">=</span>my-super-cluster-kubeconfig.yaml
+</code></pre></div>
+</li>
+<li>
+<p>Let's add a bursting autoscaling node pool in Hetzner cloud. In order to use other hyperscalers, we'll need to add a new provider with appropriate credentials. Open <code>cloud-bursting.yaml</code> input manifest again and append the new Hetzner node pool configuration.</p>
+<div class="admonition note">
+<p class="admonition-title">Claudie autoscaling</p>
+<p>Autoscaler in Claudie is deployed in Claudie management cluster and provisions additional resources remotely at the time of need. For more information check out how <a href="https://docs.claudie.io/latest/autoscaling/autoscaling.md">Claudie autoscaling</a> works.</p>
+</div>
+<div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cloud-bursting</span>
+<span class="nn">...</span>
+<span class="nt">providers</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">hetzner</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-1</span><span class="w"> </span><span class="c1"># add new hetzner provider along with authentication token</span>
+<span class="w">      </span><span class="nt">credentials</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">xxxxxxxxxxxxxxx</span>
+<span class="nt">nodePools</span><span class="p">:</span>
+<span class="nt">dynamic</span><span class="p">:</span>
+<span class="nn">...</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-worker</span><span class="w">  </span><span class="c1"># add under nodePools.dynamic section</span>
+<span class="w">    </span><span class="nt">providerSpec</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-1</span><span class="w">   </span><span class="c1"># use your new hetzner provider hetzner-1 to create these nodes</span>
+<span class="w">        </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hel1</span>
+<span class="w">        </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hel1-dc2</span>
+<span class="w">    </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cpx51</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-22.04</span>
+<span class="w">    </span><span class="nt">autoscaler</span><span class="p">:</span><span class="w">   </span><span class="c1"># this node pool uses a claudie autoscaler instead of static count of nodes</span>
+<span class="w">        </span><span class="nt">min</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">        </span><span class="nt">max</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="nt">kubernetes</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">clusters</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-super-cluster</span>
+<span class="w">    </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.24.0</span>
+<span class="w">    </span><span class="nt">network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.2.0/24</span>
+<span class="w">    </span><span class="nt">pools</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">control</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-controlplane</span>
+<span class="w">        </span><span class="nt">compute</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-worker</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-worker</span><span class="w"> </span><span class="c1"># add it to the compute list here</span>
+<span class="nn">...</span>
+</code></pre></div>
+</li>
+<li>
+<p>Update the secret with the new input manifest to incorporate the desired changes.</p>
+<div class="admonition danger">
+<p class="admonition-title">Deleting existing secrets!</p>
+<p><strong>Deleting or replacing existing input manifest secrets triggers cluster deletion!</strong> To add new components to your existing clusters, generate a new secret value and apply it using the following command.</p>
+</div>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>cloud-bursting<span class="w"> </span>--from-file<span class="o">=</span>cloud-bursting.yaml<span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span>-oyaml<span class="w"> </span>--dry-run<span class="o">=</span>client<span class="w"> </span><span class="p">|</span><span class="w"> </span>kubectl
+apply<span class="w"> </span>-f<span class="w"> </span>-
+</code></pre></div>
+</li>
+<li>
+<p>You can also passthrough additional ports from load balancers to control plane and or worker node pools by adding additional roles under <code>roles</code>.
+    <div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cloud-bursting</span>
+<span class="nn">...</span>
+<span class="nt">loadBalancers</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">roles</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apiserver</span>
+<span class="w">      </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tcp</span>
+<span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6443</span>
+<span class="w">      </span><span class="nt">targetPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6443</span>
+<span class="w">      </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k8sControlPlane</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https</span>
+<span class="w">      </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tcp</span>
+<span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">443</span>
+<span class="w">      </span><span class="nt">targetPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">443</span>
+<span class="w">      </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k8sComputeNodes</span><span class="w"> </span><span class="c1"># only loadbalance between workers</span>
+<span class="w">  </span><span class="nt">clusters</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">loadbalance-me</span>
+<span class="w">      </span><span class="nt">roles</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apiserver</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https</span><span class="w"> </span><span class="c1"># define it here</span>
+<span class="w">      </span><span class="nt">dns</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">dnsZone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">domain.com</span>
+<span class="w">          </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-dns</span>
+<span class="w">          </span><span class="nt">hostname</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">supercluster</span>
+<span class="w">      </span><span class="nt">targetedK8s</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-super-cluster</span>
+<span class="w">      </span><span class="nt">pools</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-loadbalancer</span>
+</code></pre></div>
+    !!! note Load balancing
+        Please refer how our load balancing works by reading our <a href="https://docs.claudie.io/latest/loadbalancing/loadbalancing-solution/">documentation</a>.</p>
+</li>
+<li>
+<p>Update the secret safely again with the new configuration.
+    <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>cloud-bursting<span class="w"> </span>--from-file<span class="o">=</span>cloud-bursting.yaml<span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span>-oyaml<span class="w"> </span>--dry-run<span class="o">=</span>client<span class="w"> </span><span class="p">|</span><span class="w"> </span>kubectl
+apply<span class="w"> </span>-f<span class="w"> </span>-
+</code></pre></div></p>
+</li>
+<li>
+<p>To delete the cluster just simply delete the secret and wait for Claudie to destroy it.</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>delete<span class="w"> </span>secret<span class="w"> </span>cloud-bursting<span class="w"> </span>-n<span class="w"> </span>claudie
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Removing clusters</p>
+<p>Deleting Claudie or the management cluster does not remove the Claudie managed clusters. Delete the secret first to initiate Claudie's deletion process.</p>
+</div>
+</li>
+<li>
+<p>After frontend finished deletion workflow delete minikube cluster 
+    <div class="highlight"><pre><span></span><code>kind<span class="w"> </span>delete<span class="w"> </span>cluster
+</code></pre></div></p>
+</li>
+</ol>
+<h2 id="general-tips">General tips<a class="headerlink" href="#general-tips" title="Permanent link">&para;</a></h2>
+<h3 id="control-plane-considerations">Control plane considerations<a class="headerlink" href="#control-plane-considerations" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Single Control Plane Node:</strong> Node pool with one machine manages your cluster.</li>
+<li><strong>Multiple Control Plane Nodes:</strong> Control plane node pool that has more than one node.<ul>
+<li><strong>Load Balancer Requirement:</strong> A load balancer is optional for high availability setup, however we recommend it. Include an additional node pool for load balancers.</li>
+<li><strong>DNS Requirement:</strong> If you want to use load balancing, you will need a registered domain name, and a hosted zone. Claudie creates a failover DNS record for the load balancer machines.<ul>
+<li><strong>Supported DNS providers:</strong> If your DNS provider is not supported, delegate a subdomain to a supported DNS provider, refer to supported DNS providers.</li>
+</ul>
+</li>
+<li><strong>Egress Traffic</strong>: Hyperscalers charge for outbound data and multi-region infrastructure. To avoid egress traffic deploy control plane node pools in the same region to one hypoerscaler. If availability is more important than egress traffic costs, you can have multiple control plane node pools spanning across different hyperscalers.</li>
+</ul>
+</li>
+</ul>
+<h3 id="egress-traffic">Egress traffic<a class="headerlink" href="#egress-traffic" title="Permanent link">&para;</a></h3>
+<p>Hyperscalers charge for outbound data and multi-region infrastructure.</p>
+<ul>
+<li>
+<p><strong>Control plane:</strong> To avoid egress traffic deploy control plane node pools in the same region to one hyperscaler. If availability is more important than egress traffic costs, you can have multiple control plane node pools spanning across different hyperscalers.</p>
+</li>
+<li>
+<p><strong>Workloads:</strong> Egress costs associated with workloads are more complicated as they depend on each use case. What we recommend it to try and use localised workloads where possible. </p>
+</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Example</p>
+<p>Consider a scenario where you have a workload that involves processing extensive datasets from GCP storage using Claudie managed AWS GPU instances. To minimize egress network traffic costs, it is recommended to host the datasets in an S3 bucket and limit egress traffic from GCP and keep the workload localised.</p>
+</div>
+<h3 id="on-your-own-path">On your own path<a class="headerlink" href="#on-your-own-path" title="Permanent link">&para;</a></h3>
+<p>Once you've gained a comprehensive understanding of how Claudie operates through this guide, you can deploy it to a reliable management cluster, this could be a cluster that you already have. Tailor your input manifest file to suit your specific requirements and explore a detailed example showcasing providers, load balancing, and DNS records across various hyperscalers by visiting this <a href="https://docs.claudie.io/latest/input-manifest/example/">comprehensive example</a>.</p>
+<h2 id="claudie-customization">Claudie customization<a class="headerlink" href="#claudie-customization" title="Permanent link">&para;</a></h2>
+<p>All of the customisable settings can be found in <code>claudie/.env</code> file.</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GOLANG_LOG</code></td>
+<td><code>info</code></td>
+<td>string</td>
+<td>Log level for all services. Can be either <code>info</code> or <code>debug</code>.</td>
+</tr>
+<tr>
+<td><code>DATABASE_HOSTNAME</code></td>
+<td><code>mongodb</code></td>
+<td>string</td>
+<td>Database hostname used for Claudie configs.</td>
+</tr>
+<tr>
+<td><code>CONTEXT_BOX_HOSTNAME</code></td>
+<td><code>context-box</code></td>
+<td>string</td>
+<td>Context-box service hostname.</td>
+</tr>
+<tr>
+<td><code>TERRAFORMER_HOSTNAME</code></td>
+<td><code>terraformer</code></td>
+<td>string</td>
+<td>Terraformer service hostname.</td>
+</tr>
+<tr>
+<td><code>ANSIBLER_HOSTNAME</code></td>
+<td><code>ansibler</code></td>
+<td>string</td>
+<td>Ansibler service hostname.</td>
+</tr>
+<tr>
+<td><code>KUBE_ELEVEN_HOSTNAME</code></td>
+<td><code>kube-eleven</code></td>
+<td>string</td>
+<td>Kube-eleven service hostname.</td>
+</tr>
+<tr>
+<td><code>KUBER_HOSTNAME</code></td>
+<td><code>kuber</code></td>
+<td>string</td>
+<td>Kuber service hostname.</td>
+</tr>
+<tr>
+<td><code>MINIO_HOSTNAME</code></td>
+<td><code>minio</code></td>
+<td>string</td>
+<td>MinIO hostname used for state files.</td>
+</tr>
+<tr>
+<td><code>DYNAMO_HOSTNAME</code></td>
+<td><code>dynamo</code></td>
+<td>string</td>
+<td>DynamoDB hostname used for lock files.</td>
+</tr>
+<tr>
+<td><code>DYNAMO_TABLE_NAME</code></td>
+<td><code>claudie</code></td>
+<td>string</td>
+<td>Table name for DynamoDB lock files.</td>
+</tr>
+<tr>
+<td><code>AWS_REGION</code></td>
+<td><code>local</code></td>
+<td>string</td>
+<td>Region for DynamoDB lock files.</td>
+</tr>
+<tr>
+<td><code>DATABASE_PORT</code></td>
+<td>27017</td>
+<td>int</td>
+<td>Port of the database service.</td>
+</tr>
+<tr>
+<td><code>TERRAFORMER_PORT</code></td>
+<td>50052</td>
+<td>int</td>
+<td>Port of the Terraformer service.</td>
+</tr>
+<tr>
+<td><code>ANSIBLER_PORT</code></td>
+<td>50053</td>
+<td>int</td>
+<td>Port of the Ansibler service.</td>
+</tr>
+<tr>
+<td><code>KUBE_ELEVEN_PORT</code></td>
+<td>50054</td>
+<td>int</td>
+<td>Port of the Kube-eleven service.</td>
+</tr>
+<tr>
+<td><code>CONTEXT_BOX_PORT</code></td>
+<td>50055</td>
+<td>int</td>
+<td>Port of the Context-box service.</td>
+</tr>
+<tr>
+<td><code>KUBER_PORT</code></td>
+<td>50057</td>
+<td>int</td>
+<td>Port of the Kuber service.</td>
+</tr>
+<tr>
+<td><code>MINIO_PORT</code></td>
+<td>9000</td>
+<td>int</td>
+<td>Port of the MinIO service.</td>
+</tr>
+<tr>
+<td><code>DYNAMO_PORT</code></td>
+<td>8000</td>
+<td>int</td>
+<td>Port of the DynamoDB service.</td>
+</tr>
+</tbody>
+</table>
+
+
+  
+
+
+
+  <form class="md-feedback" name="feedback" hidden>
+    <fieldset>
+      <legend class="md-feedback__title">
+        Was this doc helpful?
+      </legend>
+      <div class="md-feedback__inner">
+        <div class="md-feedback__list">
+          
+            <button class="md-feedback__icon md-icon" type="submit" title="Yes, it was" data-md-value="good">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 0-8-8 8 8 0 0 0-8 8 8 8 0 0 0 8 8 8 8 0 0 0 8-8m2 0a10 10 0 0 1-10 10A10 10 0 0 1 2 12 10 10 0 0 1 12 2a10 10 0 0 1 10 10M10 9.5c0 .8-.7 1.5-1.5 1.5S7 10.3 7 9.5 7.7 8 8.5 8s1.5.7 1.5 1.5m7 0c0 .8-.7 1.5-1.5 1.5S14 10.3 14 9.5 14.7 8 15.5 8s1.5.7 1.5 1.5m-5 7.73c-1.75 0-3.29-.73-4.19-1.81L9.23 14c.45.72 1.52 1.23 2.77 1.23s2.32-.51 2.77-1.23l1.42 1.42c-.9 1.08-2.44 1.81-4.19 1.81Z"/></svg>
+            </button>
+          
+            <button class="md-feedback__icon md-icon" type="submit" title="No, it could be a lot better" data-md-value="bad">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 0-8-8 8 8 0 0 0-8 8 8 8 0 0 0 8 8 8 8 0 0 0 8-8m2 0a10 10 0 0 1-10 10A10 10 0 0 1 2 12 10 10 0 0 1 12 2a10 10 0 0 1 10 10m-6.5-4c.8 0 1.5.7 1.5 1.5s-.7 1.5-1.5 1.5-1.5-.7-1.5-1.5.7-1.5 1.5-1.5M10 9.5c0 .8-.7 1.5-1.5 1.5S7 10.3 7 9.5 7.7 8 8.5 8s1.5.7 1.5 1.5m2 4.5c1.75 0 3.29.72 4.19 1.81l-1.42 1.42C14.32 16.5 13.25 16 12 16s-2.32.5-2.77 1.23l-1.42-1.42C8.71 14.72 10.25 14 12 14Z"/></svg>
+            </button>
+          
+        </div>
+        <div class="md-feedback__note">
+          
+            <div data-md-value="good" hidden>
+              
+              
+                
+              
+              Thanks for your feedback!
+            </div>
+          
+            <div data-md-value="bad" hidden>
+              
+              
+                
+              
+              Thanks for your feedback! Help us improve this page by using our <a href="/feedback/feedback-form/" target="_blank" rel="noopener">feedback form</a>.
+            </div>
+          
+        </div>
+      </div>
+    </fieldset>
+  </form>
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      For enterprise support reach out via 
+<a 
+  href="mailto:claudie@berops,com"
+  onmouseover="this.href=this.href.replace(',', '.')">
+  claudie@berops.com
+</a>
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.copy", "navigation.top"], "search": "../../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.51198bba.min.js"></script>
+      
+    
+  <script>document$.subscribe(() => {const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});})</script></body>
+</html>
