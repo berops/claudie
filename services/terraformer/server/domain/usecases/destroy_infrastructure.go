@@ -28,25 +28,21 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 	// If infrastructure for a Kuberenetes cluster needs to be destroyed
 	// then add the Kubernetes cluster to the "clusters" slice.
 	if request.Current != nil {
-		clusters = append(clusters,
-			kubernetes.K8Scluster{
-				ProjectName:  request.ProjectName,
-				CurrentState: request.Current,
-			},
-		)
+		clusters = append(clusters, &kubernetes.K8Scluster{
+			ProjectName:  request.ProjectName,
+			CurrentState: request.Current,
+		})
 	}
 
 	for _, currentLB := range request.CurrentLbs {
-		clusters = append(clusters,
-			loadbalancer.LBcluster{
-				ProjectName:  request.ProjectName,
-				CurrentState: currentLB,
-			},
-		)
+		clusters = append(clusters, &loadbalancer.LBcluster{
+			ProjectName:  request.ProjectName,
+			CurrentState: currentLB,
+		})
 	}
 
 	// Concurrently destroy the infrastructure, Terraform state and state-lock files for each cluster
-	err := utils.ConcurrentExec(clusters, func(cluster Cluster) error {
+	err := utils.ConcurrentExec(clusters, func(_ int, cluster Cluster) error {
 		logger := utils.CreateLoggerWithProjectAndClusterName(request.ProjectName, cluster.Id())
 		logger.Info().Msgf("Destroying infrastructure")
 
@@ -67,7 +63,7 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 
 		// In case of LoadBalancer type cluster,
 		// there are additional DNS related Terraform state and state-lock files.
-		if _, ok := cluster.(loadbalancer.LBcluster); ok {
+		if _, ok := cluster.(*loadbalancer.LBcluster); ok {
 			if err := u.DynamoDB.DeleteLockFile(ctx, request.ProjectName, cluster.Id(), dnsKeyFormatLockFile); err != nil {
 				return err
 			}
