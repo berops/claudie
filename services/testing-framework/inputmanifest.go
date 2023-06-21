@@ -6,6 +6,7 @@ import (
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/kubectl"
+	"github.com/berops/claudie/internal/manifest"
 	v1beta "github.com/berops/claudie/services/frontend/pkg/api/v1beta1"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -36,8 +37,17 @@ func applyInputManifest(yamlFile []byte, pathToTestSet string) error {
 // getInputManifestName will read the name of the manifest from the file and return it,
 // so it can be used as an id to retrieve it from database in configChecker()
 func getInputManifestName(yamlFile []byte) (string, error) {
-	var manifest v1beta.InputManifest
+	// Local testing
+	if envs.Namespace == "" {
+		var manifest manifest.Manifest
+		if err := yaml.Unmarshal(yamlFile, &manifest); err != nil {
+			return "", fmt.Errorf("error while unmarshalling a manifest file: %w", err)
+		}
+		log.Debug().Msgf("Returning name %s for", manifest.Name)
+		return manifest.Name, nil
+	}
 
+	var manifest v1beta.InputManifest
 	err := yaml.Unmarshal(yamlFile, &manifest)
 	if err != nil {
 		return "", fmt.Errorf("error while unmarshalling a manifest file: %w", err)
