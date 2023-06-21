@@ -242,8 +242,8 @@ Kuber manipulates the cluster resources using `kubectl`.
 
 ## Frontend
 
-Frontend is a layer between the user and Claudie.
-New manifests are added as secrets into the kubernetes cluster where Frontend pulls them and saves them to Claudie.
+Frontend is a layer between the user and Claudie. It is a `inputmanifest` Custom Resource Definition controller, that will communicate with `context-box` to maintain the input manifest state.
+New manifests are added as CRD into the kubernetes cluster where Frontend pulls them and saves them to Claudie.
 
 ### API
 
@@ -251,6 +251,6 @@ New manifests are added as secrets into the kubernetes cluster where Frontend pu
 
 ### Flow
 
-- User applies a new secret holding a manifest
+- User applies a new inputmanifest crd holding a manifest
 - Frontend detects it and processes the created/modified input manifest
 - Upon deletion of user-created secrets, Frontend initiates a deletion process of the manifest

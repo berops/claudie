@@ -1,15 +1,20 @@
 # Azure
-Azure provider requires you to input `clientSecret`, `subscriptionId`, `tenantId`, and `clientId`.
+Azure provider requires you to input `clientsecret`, `subscriptionid`, `tenantid`, and `clientid`.
 
 ## Compute and DNS example
 ```yaml
-providers:
-  azure:
-    - name: azure-1
-      clientSecret: Abcd~EFg~H6Ijkls~ABC15sEFGK54s78X~Olk9
-      subscriptionId: 6a4dfsg7-sd4v-f4ad-dsva-ad4v616fd512 # all resources you define will be charged here
-      tenantId: 54cdafa5-sdvs-45ds-546s-df651sfdt614
-      clientId: 0255sc23-76we-87g6-964f-abc1def2gh3l
+apiVersion: v1
+kind: Secret
+metadata:
+  name: azure-secret
+data:
+  clientid: QWJjZH5FRmd+SDZJamtsc35BQkMxNXNFRkdLNTRzNzhYfk9sazk=
+  # all resources you define will be charged here
+  clientsecret: NmE0ZGZzZzctc2Q0di1mNGFkLWRzdmEtYWQ0djYxNmZkNTEy
+  subscriptionid: NTRjZGFmYTUtc2R2cy00NWRzLTU0NnMtZGY2NTFzZmR0NjE0
+  tenantid: MDI1NXNjMjMtNzZ3ZS04N2c2LTk2NGYtYWJjMWRlZjJnaDNs
+type: Opaque
+
 ```
 
 ## Create Azure credentials
@@ -76,177 +81,182 @@ If you wish to use Azure as your DNS provider where Claudie creates DNS records 
 ## Input manifest examples
 ### Single provider, multi region cluster example
 
+#### Create a secret for Azure provider
+The secret for an Azure provider must include the following mandatory fields: `clientsecret`, `subscriptionid`, `tenantid`, and `clientid`.
+
+```bash
+kubectl create secret generic azure-secret-1 --namespace=mynamespace --from-literal=clientsecret='Abcd~EFg~H6Ijkls~ABC15sEFGK54s78X~Olk9' --from-literal=subscriptionid='6a4dfsg7-sd4v-f4ad-dsva-ad4v616fd512' --from-literal=tenantid='54cdafa5-sdvs-45ds-546s-df651sfdt614' --from-literal=clientid='0255sc23-76we-87g6-964f-abc1def2gh3l'
+```
+
 ```yaml
-name: AzureExampleManifest
-
-providers:
-  azure:
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: AzureExampleManifest
+spec:
+  providers:
     - name: azure-1
-      # Service principal secret.
-      clientSecret: Abcd~EFg~H6Ijkls~ABC15sEFGK54s78X~Olk9
-      # ID of your subscription.
-      subscriptionId: 6a4dfsg7-sd4v-f4ad-dsva-ad4v616fd512
-      # ID of your tenancy.
-      tenantId: 54cdafa5-sdvs-45ds-546s-df651sfdt614
-      # ID of your service principal.
-      clientId: 0255sc23-76we-87g6-964f-abc1def2gh3l
+      providerType: azure
+      secretRef:
+        name: azure-secret-1
+        namespace: mynamespace
+  nodePools:
+    dynamic:
+      - name: control-azure
+        providerSpec:
+          # Name of the provider instance.
+          name: azure-1
+          # Location of the nodepool.
+          region: West Europe
+          # Zone of the nodepool.
+          zone: "1"
+        count: 2
+        # VM size name.
+        serverType: Standard_B2s
+        # URN of the image.
+        image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
 
-nodePools:
-  dynamic:
-    - name: control-azure
-      providerSpec:
-        # Name of the provider instance.
-        name: azure-1
-        # Location of the nodepool.
-        region: West Europe
-        # Zone of the nodepool.
-        zone: 1
-      count: 2
-      # VM size name.
-      serverType: Standard_B2s
-      # URN of the image.
-      image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
+      - name: compute-1-azure
+        providerSpec:
+          # Name of the provider instance.
+          name: azure-1
+          # Location of the nodepool.
+          region: Germany West Central
+          # Zone of the nodepool.
+          zone: "1"
+        count: 2
+        # VM size name.
+        serverType: Standard_B2s
+        # URN of the image.
+        image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
+        storageDiskSize: 50
 
-    - name: compute-1-azure
-      providerSpec:
-        # Name of the provider instance.
-        name: azure-1
-        # Location of the nodepool.
-        region: Germany West Central
-        # Zone of the nodepool.
-        zone: 1
-      count: 2
-      # VM size name.
-      serverType: Standard_B2s
-      # URN of the image.
-      image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
-      storageDiskSize: 50
+      - name: compute-2-azure
+        providerSpec:
+          # Name of the provider instance.
+          name: azure-1
+          # Location of the nodepool.
+          region: West Europe
+          # Zone of the nodepool.
+          zone: "1"
+        count: 2
+        # VM size name.
+        serverType: Standard_B2s
+        # URN of the image.
+        image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
+        storageDiskSize: 50
 
-    - name: compute-2-azure
-      providerSpec:
-        # Name of the provider instance.
-        name: azure-1
-        # Location of the nodepool.
-        region: West Europe
-        # Zone of the nodepool.
-        zone: 1
-      count: 2
-      # VM size name.
-      serverType: Standard_B2s
-      # URN of the image.
-      image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
-      storageDiskSize: 50
-
-kubernetes:
-  clusters:
-    - name: azure-cluster
-      version: v1.24.0
-      network: 192.168.2.0/24
-      pools:
-        control:
-          - control-azure
-        compute:
-          - compute-2-azure
-          - compute-1-azure
+  kubernetes:
+    clusters:
+      - name: azure-cluster
+        version: v1.24.0
+        network: 192.168.2.0/24
+        pools:
+          control:
+            - control-azure
+          compute:
+            - compute-2-azure
+            - compute-1-azure
 ```
 
 ### Multi provider, multi region clusters example
 
+```bash
+kubectl create secret generic azure-secret-1 --namespace=mynamespace --from-literal=clientsecret='Abcd~EFg~H6Ijkls~ABC15sEFGK54s78X~Olk9' --from-literal=subscriptionid='6a4dfsg7-sd4v-f4ad-dsva-ad4v616fd512' --from-literal=tenantid='54cdafa5-sdvs-45ds-546s-df651sfdt614' --from-literal=clientid='0255sc23-76we-87g6-964f-abc1def2gh3l'
+
+kubectl create secret generic azure-secret-2 --namespace=mynamespace --from-literal=clientsecret='Efgh~ijkL~on43noi~NiuscviBUIds78X~UkL7' --from-literal=subscriptionid='0965bd5b-usa3-as3c-ads1-csdaba6fd512' --from-literal=tenantid='55safa5d-dsfg-546s-45ds-d51251sfdaba' --from-literal=clientid='076wsc23-sdv2-09cA-8sd9-oigv23npn1p2'
+```
+
 ```yaml
 name: AzureExampleManifest
-
-providers:
-  azure:
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: AzureExampleManifest
+spec:
+  providers:
     - name: azure-1
-      # Service principal secret.
-      clientSecret: Abcd~EFg~H6Ijkls~ABC15sEFGK54s78X~Olk9
-      # ID of your subscription.
-      subscriptionId: 6a4dfsg7-sd4v-f4ad-dsva-ad4v616fd512
-      # ID of your tenancy.
-      tenantId: 54cdafa5-sdvs-45ds-546s-df651sfdt614
-      # ID of your service principal.
-      clientId: 0255sc23-76we-87g6-964f-abc1def2gh3l
+      providerType: azure
+      secretRef:
+        name: azure-secret-1
+        namespace: mynamespace
 
     - name: azure-2
-      # Service principal secret.
-      clientSecret: Efgh~ijkL~on43noi~NiuscviBUIds78X~UkL7
-      # ID of your subscription.
-      subscriptionId: 0965bd5b-usa3-as3c-ads1-csdaba6fd512
-      # ID of your tenancy.
-      tenantId: 55safa5d-dsfg-546s-45ds-d51251sfdaba
-      # ID of your service principal.
-      clientId: 076wsc23-sdv2-09cA-8sd9-oigv23npn1p2
+      providerType: azure
+      secretRef:
+        name: azure-secret-2
+        namespace: mynamespace
 
-nodePools:
-  dynamic:
-    - name: control-azure-1
-      providerSpec:
-        # Name of the provider instance.
-        name: azure-1
-        # Location of the nodepool.
-        region: West Europe
-        # Zone of the nodepool.
-        zone: 1
-      count: 1
-      # VM size name.
-      serverType: Standard_B2s
-      # URN of the image.
-      image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
+  nodePools:
+    dynamic:
+      - name: control-azure-1
+        providerSpec:
+          # Name of the provider instance.
+          name: azure-1
+          # Location of the nodepool.
+          region: West Europe
+          # Zone of the nodepool.
+          zone: "1"
+        count: 1
+        # VM size name.
+        serverType: Standard_B2s
+        # URN of the image.
+        image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
 
-    - name: control-azure-2
-      providerSpec:
-        # Name of the provider instance.
-        name: azure-2
-        # Location of the nodepool.
-        region: Germany West Central
-        # Zone of the nodepool.
-        zone: 2
-      count: 2
-      # VM size name.
-      serverType: Standard_B2s
-      # URN of the image.
-      image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
+      - name: control-azure-2
+        providerSpec:
+          # Name of the provider instance.
+          name: azure-2
+          # Location of the nodepool.
+          region: Germany West Central
+          # Zone of the nodepool.
+          zone: "2"
+        count: 2
+        # VM size name.
+        serverType: Standard_B2s
+        # URN of the image.
+        image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
 
-    - name: compute-azure-1
-      providerSpec:
-        # Name of the provider instance.
-        name: azure-1
-        # Location of the nodepool.
-        region: Germany West Central
-        # Zone of the nodepool.
-        zone: 2
-      count: 2
-      # VM size name.
-      serverType: Standard_B2s
-      # URN of the image.
-      image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
-      storageDiskSize: 50
+      - name: compute-azure-1
+        providerSpec:
+          # Name of the provider instance.
+          name: azure-1
+          # Location of the nodepool.
+          region: Germany West Central
+          # Zone of the nodepool.
+          zone: "2"
+        count: 2
+        # VM size name.
+        serverType: Standard_B2s
+        # URN of the image.
+        image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
+        storageDiskSize: 50
 
-    - name: compute-azure-2
-      providerSpec:
-        # Name of the provider instance.
-        name: azure-2
-        # Location of the nodepool.
-        region: West Europe
-        # Zone of the nodepool.
-        zone: 3
-      count: 2
-      # VM size name.
-      serverType: Standard_B2s
-      # URN of the image.
-      image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
-      storageDiskSize: 50
+      - name: compute-azure-2
+        providerSpec:
+          # Name of the provider instance.
+          name: azure-2
+          # Location of the nodepool.
+          region: West Europe
+          # Zone of the nodepool.
+          zone: "3"
+        count: 2
+        # VM size name.
+        serverType: Standard_B2s
+        # URN of the image.
+        image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
+        storageDiskSize: 50
 
-kubernetes:
-  clusters:
-    - name: azure-cluster
-      version: v1.24.0
-      network: 192.168.2.0/24
-      pools:
-        control:
-          - control-azure-1
-          - control-azure-2
-        compute:
-          - compute-azure-1
-          - compute-azure-2
+  kubernetes:
+    clusters:
+      - name: azure-cluster
+        version: v1.24.0
+        network: 192.168.2.0/24
+        pools:
+          control:
+            - control-azure-1
+            - control-azure-2
+          compute:
+            - compute-azure-1
+            - compute-azure-2
 ```

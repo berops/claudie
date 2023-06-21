@@ -1,16 +1,16 @@
-# Input manifest API reference
+# InputManifest API reference
+InputManifest is a definition of the user's infrastructure. It contains cloud provider specification, nodepool specification, Kubernetes and loadbalancer clusters.
 
-## Manifest
+## Status
+Most recently observed status of the InputManifest
 
-Manifest is a definition of the user's infrastructure. It contains cloud provider specification, nodepool specification, Kubernetes and loadbalancer clusters.
+## Spec
 
-- `name`
-
-  Name of the manifest. Must be unique across all manifests of the Claudie instance.
+Specification of the desired behavior of the InputManifest
 
 - `providers` [Providers](#providers)
 
-  Defines all your cloud provider configuration that will be used while infrastructure provisioning.
+  Providers list of defined cloud provider configuration that will be used while infrastructure provisioning. Defines all your cloud provider configuration that will be used while infrastructure provisioning.
 
 - `nodepools` [Nodepools](#nodepools)
 
@@ -29,91 +29,78 @@ Manifest is a definition of the user's infrastructure. It contains cloud provide
 Contains configurations for supported cloud providers. At least one provider
 needs to be defined.
 
-- `gcp` [GCP](#gcp)
+- `name`
+
+  The name of the provider specyfication. It has to be unique across all providers.
+
+- `providerType`
+
+  Type of a provider. The providerType defines mandatory fields that has to be included for a specyfic provider. A list of available providers can be found at [providers section](./providers). Allowed values are:
+
+  | Value        | Description                              |
+  | ------------ | ---------------------------------------- |
+  | `aws`        | [AWS](#aws) provider type                |
+  | `azure`      | [Azure](#azure) provider type            |
+  | `cloudflare` | [Cloudflare](#cloudflare) provider type  |
+  | `gcp`        | [GCP](#gcp) provider type                |
+  | `hetzner`    | [Hetzner](#hetzner) provider type        |
+  | `hetznerdns` | [Hetzner](#hetznerdns) DNS provider type |
+  | `oci`        | [OCI](#oci) provider type                |
   
-  List of configuration options for [Google Cloud](https://cloud.google.com/). This field is optional.
+- `secretRef` [SecretRef](#secretref)
 
-- `hetzner` [Hetzner](#hetzner)
-  
-  List of configuration options for [Hetzner Cloud](https://www.hetzner.com/cloud) . This field is optional.
-
-- `oci` [OCI](#oci)
-  
-  List of configuration options for [Oracle Cloud Infrastructure](https://www.oracle.com/uk/cloud/). This field is optional.
-
-- `aws` [AWS](#aws)
-  
-  List of configuration options for [Amazon Web Services](https://aws.amazon.com/). This field is optional.
-
-- `azure` [Azure](#azure)
-  
-  List of configuration options for [Azure](https://azure.microsoft.com/en-gb/). This field is optional.
-
-- `cloudflare` [Cloudflare](#cloudflare)
-
-  List of Cloudflare configuration for [Cloudflare](https://www.cloudflare.com/en-gb/). This field is optional.
-
-- `hetznerdns` [HetznerDNS](#hetznerdns)
-
-  List of HetznerDNS configuration for [HetznerDNS](https://www.hetzner.com/dns-console). This field is optional.
+  Represents a Secret Reference. It has enough information to retrieve secret in any namespace.
 
 Support for more cloud providers is in the [roadmap](https://github.com/berops/claudie/blob/master/docs/roadmap/roadmap.md).
 
-## Cloudflare
 
-Collection of data defining Cloudflare provider configuration.
-
-To find out how to configure Cloudflare follow the instructions [here](./providers/cloudflare.md)
+## SecretRef
+  
+  SecretReference represents a Secret Reference. It has enough information to retrieve secret in any namespace.
 
 - `name`
 
-  Name of the provider. Used as a reference further in the input manifest. Should be unique for each provider spec across all the providers.
+  Name is unique within a namespace to reference a secret resource.
 
-- `apiToken`
+- `namespace`
+
+  Namespace defines the space within which the secret name must be unique.
+
+## Cloudflare
+
+The fields that need to be included in a Kubernetes Secret resource to utilize the Cloudflare provider.
+To find out how to configure Cloudflare follow the instructions [here](./providers/cloudflare.md)
+
+- `apitoken`
 
   Credentials for the provider (API token).
 
 ## HetznerDNS
 
-Collection of data defining HetznerDNS provider configuration.
-
+The fields that need to be included in a Kubernetes Secret resource to utilize the HetznerDNS provider.
 To find out how to configure HetznerDNS follow the instructions [here](./providers/hetzner.md)
 
-- `name`
-
-  Name of the provider. Used as a reference further in the input manifest. Should be unique for each provider spec across all the providers.
-
-- `apiToken`
+- `apitoken`
 
   Credentials for the provider (API token).
 
 ## GCP
 
-Collection of data defining GCP cloud provider configuration.
-
+The fields that need to be included in a Kubernetes Secret resource to utilize the GCP provider.
 To find out how to configure GCP provider and service account, follow the instructions [here](./providers/gcp.md).
-
-- `name`
-
-  Name of the provider. Used as a reference further in the input manifest. Should be unique for each provider spec across all the cloud providers.
 
 - `credentials`
 
   Credentials for the provider. Stringified JSON service account key.
 
-- `gcpProject`
+- `gcpproject`
 
   Project id of an already existing GCP project where the infrastructure is to be created.
 
 ## Hetzner
 
-Collection of data defining Hetzner cloud provider configuration.
-
+The fields that need to be included in a Kubernetes Secret resource to utilize the Hetzner provider.
 To find out how to configure Hetzner provider and service account, follow the instructions [here](./providers/hetzner.md).
-
-- `name`
-
-  Name of the provider spec. Used as a reference further in the input manifest. Should be unique for each provider spec across all the cloud providers.
 
 - `credentials`
 
@@ -121,75 +108,60 @@ To find out how to configure Hetzner provider and service account, follow the in
 
 ## OCI
 
-Collection of data defining OCI cloud provider configuration.
-
+The fields that need to be included in a Kubernetes Secret resource to utilize the OCI provider.
 To find out how to configure OCI provider and service account, follow the instructions [here](./providers/oci.md).
 
-- `name`
-
-  Name of the provider spec. Used as a reference further in the input manifest. Should be unique for each provider spec across all the cloud providers.
-
-- `privateKey`
+- `privatekey`
 
   [Private key](https://docs.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm#two) used to authenticate to the OCI.
 
-- `keyFingerprint`
+- `keyfingerprint`
 
   Fingerprint of the user-supplied private key.
 
-- `tenancyOcid`
+- `tenancyocid`
   
   OCID of the tenancy where `privateKey` is added as an API key
 
-- `userOcid`
+- `userocid`
   
   OCID of the user in the supplied tenancy
 
-- `compartmentOcid`
+- `compartmentocid`
 
   OCID of the [compartment](https://docs.oracle.com/en/cloud/paas/integration-cloud/oracle-integration-oci/creating-oci-compartment.html) where VMs/VCNs/... will be created
 
 ## AWS
 
-Collection of data defining AWS cloud provider configuration.
-
+The fields that need to be included in a Kubernetes Secret resource to utilize the AWS provider.
 To find out how to configure AWS provider and service account, follow the instructions [here](./providers/aws.md).
 
-- `name`
-
-  Name of the provider spec. Used as a reference further in the input manifest. Should be unique for each provider spec across all the cloud providers.
-
-- `accessKey`
+- `accesskey`
 
   Access key ID for your AWS account.
 
-- `secretKey`
+- `secretkey`
 
   Secret key for the Access key specified above.
 
 ## Azure
 
-Collection of data defining Azure cloud provider configuration.
-
+The fields that need to be included in a Kubernetes Secret resource to utilize the Azure provider.
 To find out how to configure Azure provider and service account, follow the instructions [here](./providers/azure.md).
 
-- `name`
-
-  Name of the provider spec. Used as a reference further in the input manifest. Should be unique for each provider spec across all the cloud providers.
-
-- `subscriptionId`
+- `subscriptionid`
 
   Subscription ID of your subscription in Azure.
 
-- `tenantId`
+- `tenantid`
   
   Tenant ID of your tenancy in Azure.
 
-- `clientId`
+- `clientid`
 
   Client ID of your client. The Claudie is design to use a service principal with appropriate permissions.
 
-- `clientSecret`
+- `clientsecret`
   
   Client secret generated for your client.
 
