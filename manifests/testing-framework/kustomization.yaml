@@ -24,12 +24,12 @@ secretGenerator:
   - test-sets/test-set4/3.yaml
   name: test-set4
 - files:
-  - test-sets/autoscaling/1.yaml
-  - test-sets/autoscaling/2.yaml
-  - test-sets/autoscaling/3.yaml
-  name: autoscaling
+  - test-sets/autoscaling-1/1.yaml
+  - test-sets/autoscaling-1/2.yaml
+  - test-sets/autoscaling-1/3.yaml
+  name: autoscaling-1
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
 - name: ghcr.io/berops/claudie/testing-framework
-  newTag: eb1365c-1995
+  newTag: 8a1d4c8-2040

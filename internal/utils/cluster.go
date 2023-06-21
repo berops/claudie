@@ -13,24 +13,44 @@ type ProviderNames struct {
 	CloudProviderName string
 }
 
-// GetClusterByName will return Cluster that will have same name as specified in parameters
-// If no name is found, return nil
-func GetClusterByName(clusterName string, clusters []*pb.K8Scluster) *pb.K8Scluster {
+// GetClusterByName will return index of Cluster that will have same name as specified in parameters
+// If no name is found, return -1
+func GetClusterByName(clusterName string, clusters []*pb.K8Scluster) int {
 	if clusterName == "" {
-		return nil
+		return -1
 	}
 
 	if len(clusters) == 0 {
-		return nil
+		return -1
 	}
 
-	for _, cluster := range clusters {
+	for i, cluster := range clusters {
 		if cluster.ClusterInfo.Name == clusterName {
-			return cluster
+			return i
 		}
 	}
 
-	return nil
+	return -1
+}
+
+// GetLBClusterByName will return index of Cluster that will have same name as specified in parameters
+// If no name is found, return -1
+func GetLBClusterByName(name string, clusters []*pb.LBcluster) int {
+	if name == "" {
+		return -1
+	}
+
+	if len(clusters) == 0 {
+		return -1
+	}
+
+	for i, cluster := range clusters {
+		if cluster.ClusterInfo.Name == name {
+			return i
+		}
+	}
+
+	return -1
 }
 
 // GetNodePoolByName will return first Nodepool that will have same name as specified in parameters

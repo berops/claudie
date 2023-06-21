@@ -4,15 +4,15 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func ConcurrentExec[K any](items []K, f func(item K) error) error {
+func ConcurrentExec[K any](items []K, f func(index int, item K) error) error {
 	group := errgroup.Group{}
 
-	for _, item := range items {
-		func(item K) {
+	for i, item := range items {
+		func(index int, item K) {
 			group.Go(func() error {
-				return f(item)
+				return f(index, item)
 			})
-		}(item)
+		}(i, item)
 	}
 
 	return group.Wait()

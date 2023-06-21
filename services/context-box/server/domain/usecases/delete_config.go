@@ -10,6 +10,7 @@ import (
 // config destroys the previous build infrastructure.
 func (u *Usecases) DeleteConfig(request *pb.DeleteConfigRequest) (*pb.DeleteConfigResponse, error) {
 	log.Info().Msgf("Deleting config %s", request.Id)
+
 	err := u.DB.UpdateMsToNull(request.Id, request.Type)
 	if err != nil {
 		return nil, err

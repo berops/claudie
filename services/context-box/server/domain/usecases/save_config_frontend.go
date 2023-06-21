@@ -30,6 +30,12 @@ func (u *Usecases) SaveConfigFrontEnd(request *pb.SaveConfigRequest) (*pb.SaveCo
 			oldConfig.MsChecksum = newConfig.MsChecksum
 			oldConfig.SchedulerTTL = 0
 			oldConfig.BuilderTTL = 0
+			// clear error states (if any), to push the changed config into the workflow again.
+			for cluster, wf := range oldConfig.State {
+				if wf.Status == pb.Workflow_ERROR {
+					oldConfig.State[cluster] = &pb.Workflow{}
+				}
+			}
 		}
 		newConfig = oldConfig
 	}

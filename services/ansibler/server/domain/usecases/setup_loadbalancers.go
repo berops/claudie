@@ -65,7 +65,7 @@ func setUpLoadbalancers(clusterName string, lbClustersInfo *utils.LBClustersInfo
 	}
 
 	err := commonUtils.ConcurrentExec(lbClustersInfo.LbClusters,
-		func(lbCluster *utils.LBClusterData) error {
+		func(_ int, lbCluster *utils.LBClusterData) error {
 			var (
 				loggerPrefix = "LB-cluster"
 				lbClusterId  = commonUtils.GetClusterID(lbCluster.DesiredLbCluster.ClusterInfo)

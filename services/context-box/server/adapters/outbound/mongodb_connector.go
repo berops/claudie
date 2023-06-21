@@ -40,18 +40,17 @@ type Workflow struct {
 }
 
 type configItem struct {
-	ID               primitive.ObjectID  `bson:"_id,omitempty"`
-	Name             string              `bson:"name"`
-	Manifest         string              `bson:"manifest"`
-	DesiredState     []byte              `bson:"desiredState"`
-	CurrentState     []byte              `bson:"currentState"`
-	MsChecksum       []byte              `bson:"msChecksum"`
-	DsChecksum       []byte              `bson:"dsChecksum"`
-	CsChecksum       []byte              `bson:"csChecksum"`
-	BuilderTTL       int                 `bson:"builderTTL"`
-	SchedulerTTL     int                 `bson:"schedulerTTL"`
-	State            map[string]Workflow `bson:"state"`
-	ManifestFileName string              `bson:"manifestFileName"`
+	ID           primitive.ObjectID  `bson:"_id,omitempty"`
+	Name         string              `bson:"name"`
+	Manifest     string              `bson:"manifest"`
+	DesiredState []byte              `bson:"desiredState"`
+	CurrentState []byte              `bson:"currentState"`
+	MsChecksum   []byte              `bson:"msChecksum"`
+	DsChecksum   []byte              `bson:"dsChecksum"`
+	CsChecksum   []byte              `bson:"csChecksum"`
+	BuilderTTL   int                 `bson:"builderTTL"`
+	SchedulerTTL int                 `bson:"schedulerTTL"`
+	State        map[string]Workflow `bson:"state"`
 }
 
 // NewMongoDBConnector creates a new instance of the MongoDBConnector struct
@@ -241,7 +240,6 @@ func (m *MongoDBConnector) SaveConfig(config *pb.Config) error {
 	data.BuilderTTL = int(config.GetBuilderTTL())
 	data.SchedulerTTL = int(config.GetSchedulerTTL())
 	data.State = ConvertFromGRPCWorkflow(config.State)
-	data.ManifestFileName = config.GetManifestFileName()
 
 	// Check if ID exists
 	// If config has already some ID:
@@ -310,6 +308,7 @@ func (c *MongoDBConnector) UpdateMsToNull(id string, idType pb.IdType) error {
 		filter = bson.M{"name": id} //create filter for searching in the database by name
 	}
 	// update MsChecksum and manifest to null
+	// Empty map allows for removal of inputManifests with an ERROR status
 	err := c.updateDocument(filter, bson.M{"$set": bson.M{"manifest": nil, "msChecksum": nil, "state": map[string]Workflow{}}})
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -432,18 +431,17 @@ func dataToConfigPb(data *configItem) (*pb.Config, error) {
 	}
 
 	return &pb.Config{
-		Id:               data.ID.Hex(),
-		Name:             data.Name,
-		Manifest:         data.Manifest,
-		DesiredState:     desiredState,
-		CurrentState:     currentState,
-		MsChecksum:       data.MsChecksum,
-		DsChecksum:       data.DsChecksum,
-		CsChecksum:       data.CsChecksum,
-		BuilderTTL:       int32(data.BuilderTTL),
-		SchedulerTTL:     int32(data.SchedulerTTL),
-		State:            ConvertToGRPCWorkflow(data.State),
-		ManifestFileName: data.ManifestFileName,
+		Id:           data.ID.Hex(),
+		Name:         data.Name,
+		Manifest:     data.Manifest,
+		DesiredState: desiredState,
+		CurrentState: currentState,
+		MsChecksum:   data.MsChecksum,
+		DsChecksum:   data.DsChecksum,
+		CsChecksum:   data.CsChecksum,
+		BuilderTTL:   int32(data.BuilderTTL),
+		SchedulerTTL: int32(data.SchedulerTTL),
+		State:        ConvertToGRPCWorkflow(data.State),
 	}, nil
 }
 
