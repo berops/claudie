@@ -204,7 +204,7 @@ Collection of static and dynamic nodepool specification, to be referenced in the
   These are only blueprints, and will only be created per reference in `kubernetes` or `loadBalancer` clusters. E.g. if the nodepool isn't used, it won't even be created. Or if the same nodepool is used in two different clusters, it will be created twice.
 In OOP analogy, a dynamic nodepool would be a class that would get instantiated `N >= 0` times depending on which clusters reference it.
 
-- `static` [WORK IN PROGRESS]
+- `static` [Static](#static)
 
   List of static nodepools of already existing machines, not created by of Claudie, used for Kubernetes or loadbalancer clusters. Typically, these would be on-premises machines.
 
@@ -252,7 +252,6 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
 Provider spec is an additional specification built on top of the data from any of the provider instance. Here are provider configuration examples for each individual provider: [aws](providers/aws.md), [azure](providers/azure.md), [gcp](providers/gcp.md), [cloudflare](providers/cloudflare.md), [hetzner](providers/hetzner.md) and [oci](providers/oci.md).
 
-
 - `name`
 
   Name of the provider instance specified in [providers](#providers)
@@ -276,7 +275,43 @@ Autoscaler configuration on per nodepool basis. Defines the number of nodes, aut
 - `max`
 
   Maximum number of nodes in nodepool.
+
+## Static
+
+Static nodepools are defined for static machines which Claudie will not manage. Used for on premise nodes.
+
+- `name`
+
+  Name of the static nodepool.
+
+- `nodes` [Static Node](#static-node)
+
+  List of static nodes for a particular nodepool.
+
+## Static node
+
+Static node defines single static node from a static nodepool.
+
+- `endpoint`
+
+  Endpoint under which Claudie will access this node.
+
+- `secretRef` [SecretRef](#secretref)
+
+  Secret from which private key will be taken used to ssh into the machine.
+
+  The field in the secret must be `privatekey`, i.e.
   
+  ```yaml
+  apiVersion: v1
+  type: Opaque
+  kind: Secret
+    name: private-key-node-1
+    namespace: claudie-secrets
+  data:
+    privatekey: <base64 encoded private key>
+  ```
+
 ## Kubernetes
 
 Defines Kubernetes clusters.
