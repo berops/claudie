@@ -159,7 +159,6 @@ The secret for an GCP provider must include the following mandatory fields: `gcp
 ```bash
 # The ./claudie-credentials.json file is the file created in #Creating GCP credentials for Claudie step 7.
 kubectl create secret generic gcp-secret-1 --namespace=mynamespace --from-literal=gcpproject='project-claudie' --from-file=credentials=./claudie-credentials.json
-
 kubectl create secret generic gcp-secret-2 --namespace=mynamespace --from-literal=gcpproject='project-claudie' --from-file=credentials=./claudie-credentials-2.json
 ```
 

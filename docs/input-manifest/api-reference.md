@@ -37,15 +37,15 @@ needs to be defined.
 
   Type of a provider. The providerType defines mandatory fields that has to be included for a specyfic provider. A list of available providers can be found at [providers section](./providers). Allowed values are:
 
-  | Value        | Description                              |
-  | ------------ | ---------------------------------------- |
-  | `aws`        | [AWS](#aws) provider type                |
-  | `azure`      | [Azure](#azure) provider type            |
-  | `cloudflare` | [Cloudflare](#cloudflare) provider type  |
-  | `gcp`        | [GCP](#gcp) provider type                |
-  | `hetzner`    | [Hetzner](#hetzner) provider type        |
-  | `hetznerdns` | [Hetzner](#hetznerdns) DNS provider type |
-  | `oci`        | [OCI](#oci) provider type                |
+  | Value         | Description                              |
+  | ------------- | ---------------------------------------- |
+  | `aws`         | [AWS](#aws) provider type                |
+  | `azure`       | [Azure](#azure) provider type            |
+  | `cloudflare`  | [Cloudflare](#cloudflare) provider type  |
+  | `gcp`         | [GCP](#gcp) provider type                |
+  | `hetzner`     | [Hetzner](#hetzner) provider type        |
+  | `hetznerdns`  | [Hetzner](#hetznerdns) DNS provider type |
+  | `oci`         | [OCI](#oci) provider type                |
   
 - `secretRef` [SecretRef](#secretref)
 
@@ -56,7 +56,7 @@ Support for more cloud providers is in the [roadmap](https://github.com/berops/c
 
 ## SecretRef
   
-  SecretReference represents a Secret Reference. It has enough information to retrieve secret in any namespace.
+  SecretReference represents a Kubernetes Secret Reference. It has enough information to retrieve secret in any namespace.
 
 - `name`
 
