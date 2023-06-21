@@ -149,7 +149,7 @@ func callTerraformer(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient)
 
 	switch resp := res.GetResponse().(type) {
 	case *pb.BuildInfrastructureResponse_Fail:
-		logger.Error().Msgf("failed to build %s for %s", resp.Fail.Failed)
+		logger.Error().Msgf("failed to build %s", resp.Fail.Failed)
 		ctx.cluster = resp.Fail.Current
 		ctx.desiredCluster = resp.Fail.Desired
 		ctx.loadbalancers = resp.Fail.CurrentLbs
