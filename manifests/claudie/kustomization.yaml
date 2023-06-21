@@ -69,6 +69,6 @@ images:
 - name: ghcr.io/berops/claudie/kuber
   newTag: 8a1d4c8-2040
 - name: ghcr.io/berops/claudie/scheduler
-  newTag: 8a1d4c8-2040
+  newTag: 51b07c7-2041
 - name: ghcr.io/berops/claudie/terraformer
   newTag: 8a1d4c8-2040
