@@ -224,6 +224,14 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
+      - name: Set up terraform
+        uses: hashicorp/setup-terraform@v2
+      
+      - name: Create test static nodes
+        run:
+          echo "${{ secrets.CREATE_STATIC_NODES }}" | terraform init
+          echo "${{ secrets.CREATE_STATIC_NODES }}" | terraform apply -auto-approve
+
       - name: Set short sha output
         run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
 
@@ -329,3 +337,9 @@ jobs:
       - name: Delete temporary namespace
         run: |
           kubectl delete namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+      
+      - name: Destroy test static nodes
+        if: always()
+        run:
+          echo "${{ secrets.CREATE_STATIC_NODES }}" | terraform init
+          echo "${{ secrets.CREATE_STATIC_NODES }}" | terraform destroy -auto-approve
