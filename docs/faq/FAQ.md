@@ -23,14 +23,14 @@ Claudie doesn't make sense when you rely on specific features of a cloud provide
 
 ### Is there any networking performance impact due to the introduction of the VPN layer?
 
-We compared the use of the VPN layer with other solutions and concluded that the impact on performance is negligible.  If you are interested in performed benchmarks, you can visit: https://www.berops.com/traffic-encryption-performance-in-kubernetes-clusters/.
+We compared the use of the VPN layer with other solutions and concluded that the impact on performance is negligible.  If you are interested in performed benchmarks, you can visit this [site](https://www.berops.com/traffic-encryption-performance-in-kubernetes-clusters/).
 
 ### What is the performance impact of a geographically distributed control plane in Claudie?
 
 We have performed several tests and problems start to appear when the control nodes are about 600 km away. Although this is not an answer that fits all scenarios and should only be taken as a reference point.
 
 If you are interested in the tests we have run and a more detailed answer,
-you can read more at https://www.berops.com/evaluating-etcds-performance-in-multi-cloud/.
+you can read more at [evaluating-etcds-performance-in-multi-cloud](https://www.berops.com/evaluating-etcds-performance-in-multi-cloud/).
 
 ### Does the cloud provider traffic egress bill represent a significant part on the overall running costs?
 
@@ -51,7 +51,7 @@ For dynamic nodepools, nodes created by Claudie in specified cloud providers, ea
 ### Is a GUI/CLI/ClusterAPI provider/Terraform provider planned?
 
 A GUI is to be part of the Claudie in the future. Other possibilities are
-openly discussed at https://github.com/berops/claudie/issues/33.
+openly discussed in our [github issues](https://github.com/berops/claudie/issues/33).
 
 ### What is the roadmap for adding support for new cloud IaaS providers?
 
