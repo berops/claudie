@@ -237,6 +237,21 @@ nodePools:
       image: ami-03df6dea56f8aa618
       storageDiskSize: 50
 
+    - name: loadbalancer-1
+      providerSpec:
+        # Name of the provider instance.
+        name: aws-2
+        # Region of the nodepool.
+        region: eu-north-3
+        # Availability zone of the nodepool.
+        zone: eu-north-3a
+      count: 2
+      # Instance type name.
+      serverType: t3.small
+      # AMI ID of the image.
+      # Make sure to update it according to the region.
+      image: ami-03df6dea56f8aa618
+
 kubernetes:
   clusters:
     - name: aws-cluster
@@ -249,4 +264,22 @@ kubernetes:
         compute:
           - compute-aws-1
           - compute-aws-2
+loadBalancers:
+  roles:
+    - name: apiserver
+      protocol: tcp
+      port: 6443
+      targetPort: 6443
+      target: k8sControlPlane
+
+  clusters:
+    - name: apiserver-lb-dev
+      roles:
+        - apiserver
+      dns:
+        dnsZone: example.com
+        provider: aws-2
+      targetedK8s: aws-cluster
+      pools:
+        - loadbalancer-1
 ```

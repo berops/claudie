@@ -268,6 +268,20 @@ nodePools:
       image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
       storageDiskSize: 50
 
+    - name: loadbalancer-1
+      providerSpec:
+        # Name of the provider instance.
+        name: gcp-2
+        # Region of the nodepool.
+        region: europe-west1
+        # Zone of the nodepool.
+        zone: europe-west1-c
+      count: 2
+      # Machine type name.
+      serverType: e2-medium
+      # OS image name.
+      image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
+
 kubernetes:
   clusters:
     - name: gcp-cluster
@@ -280,4 +294,22 @@ kubernetes:
         compute:
           - compute-gcp-1
           - compute-gcp-2
+loadBalancers:
+  roles:
+    - name: apiserver
+      protocol: tcp
+      port: 6443
+      targetPort: 6443
+      target: k8sControlPlane
+
+  clusters:
+    - name: apiserver-lb-dev
+      roles:
+        - apiserver
+      dns:
+        dnsZone: example.com
+        provider: gcp-2
+      targetedK8s: gcp-cluster
+      pools:
+        - loadbalancer-1
 ```
