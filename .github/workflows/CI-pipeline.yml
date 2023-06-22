@@ -9,7 +9,6 @@ on:
 env:
   ENV_FILE: .env
   SERVICES: context-box scheduler builder terraformer ansibler kube-eleven kuber frontend autoscaler-adapter testing-framework
-  TEST_SETS: test-set1 test-set2 test-set3 test-set4 autoscaling
 
 jobs:
   #--------------------------------------------------------------------------------------------------
@@ -28,14 +27,6 @@ jobs:
           source_ref: master
           target_branch: ${{ github.head_ref }}
 
-      # has following problem https://github.com/actions/runner/issues/981
-      # - name: Merge with master branch
-      #   uses: devmasx/merge-branch@1.4.0
-      #   with:
-      #     type: now
-      #     from_branch: master
-      #     target_branch: ${{ github.head_ref }}
-      #     github_token: ${{ github.token }}
   #--------------------------------------------------------------------------------------------------
   check-changes:
     if: github.event.pull_request.draft == false
@@ -226,11 +217,6 @@ jobs:
 
       - name: Set up terraform
         uses: hashicorp/setup-terraform@v2
-      
-      - name: Create test static nodes
-        run:
-          echo "${{ secrets.CREATE_STATIC_NODES }}" | terraform init
-          echo "${{ secrets.CREATE_STATIC_NODES }}" | terraform apply -auto-approve
 
       - name: Set short sha output
         run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
@@ -296,6 +282,24 @@ jobs:
           HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ./yq e '.spec.loadBalancers.clusters.[1].dns.hostname = strenv(HOSTNAME)' test-set2/1.yaml -i
           HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ./yq e '.spec.loadBalancers.clusters.[0].dns.hostname = strenv(HOSTNAME)' test-set2/3.yaml -i
 
+      - name: Create test static nodes
+        working-directory: ./manifests/testing-framework/test-sets
+        run: |
+          sudo apt update && sudo apt install -y jq
+
+          echo "${{ secrets.CREATE_STATIC_NODES }}" | terraform init
+          echo "${{ secrets.CREATE_STATIC_NODES }}" | terraform apply -auto-approve
+          IPS=$(echo "${{ secrets.CREATE_STATIC_NODES }}" | terraform output --json | jq -r '.endpoints.value | values[]')
+          IP_ARR=( echo $IPS )
+          
+          for file in test-set5/*; do
+              if [ -f "$file" ]; then
+                ENDPOINT=${IP_ARR[0]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' test-set5/$file
+                ENDPOINT=${IP_ARR[1]} ./yq e '.spec.nodePools.static.[1].nodes.[0].endpoint = strenv(ENDPOINT)' test-set5/$file
+                ENDPOINT=${IP_ARR[2]} ./yq e '.spec.nodePools.static.[1].nodes.[1].endpoint = strenv(ENDPOINT)' test-set5/$file
+              fi
+          done
+
           #Clean up
           rm -f yq 
           rm -f yq.1 
@@ -340,6 +344,7 @@ jobs:
       
       - name: Destroy test static nodes
         if: always()
+        working-directory: ./manifests/testing-framework/test-sets
         run:
           echo "${{ secrets.CREATE_STATIC_NODES }}" | terraform init
           echo "${{ secrets.CREATE_STATIC_NODES }}" | terraform destroy -auto-approve

@@ -1,0 +1,96 @@
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: test-set5
+spec:
+  providers:
+    - name: hetzner-1
+      providerType: hetzner
+      secretRef:
+        name: hetzner-secret
+        namespace: e2e-secrets
+    - name: cloudflare-1
+      type: cloudflare
+      secretRef:
+        name: cloudflare-secret
+        namespace: e2e-secrets
+
+  nodePools:
+    dynamic:
+      - name: hetzner-control
+        providerSpec:
+          name: hetzner-1
+          region: fsn1
+          zone: fsn1-dc14
+        count: 1
+        serverType: cpx11
+        image: ubuntu-22.04
+        storageDiskSize: 50
+
+      - name: hetzner-compute
+        providerSpec:
+          name: hetzner-1
+          region: fsn1
+          zone: fsn1-dc14
+        count: 1
+        serverType: cpx11
+        image: ubuntu-22.04
+        storageDiskSize: 50
+
+      - name: hetzner-lb
+        providerSpec:
+          name: hetzner-1
+          region: fsn1
+          zone: fsn1-dc14
+        count: 1
+        serverType: cpx11
+        image: ubuntu-22.04
+        storageDiskSize: 50
+
+    static:
+      - name: static-pool-1
+        nodes:
+          - endpoint: replace-me-1
+            secretRef:
+              name: static-nodes-key
+              namespace: e2e-secrets
+
+      - name: static-pool-2
+        nodes:
+          - endpoint: replace-me-2
+            secretRef:
+              name: static-nodes-key
+              namespace: e2e-secrets
+          - endpoint: replace-me-3
+            secretRef:
+              name: static-nodes-key
+              namespace: e2e-secrets
+
+  kubernetes:
+    clusters:
+      - name: hybrid-cluster
+        version: v1.26.2
+        network: 192.168.2.0/24
+        pools:
+          control:
+            - static-pool-1
+          compute:
+            - hetzner-compute
+
+  loadBalancers:
+    roles:
+      - name: apiserver-lb
+        protocol: tcp
+        port: 6443
+        targetPort: 6443
+        target: k8sControlPlane
+    clusters:
+      - name: hybrid-cluster-lb
+        roles:
+          - apiserver-lb
+        dns:
+          dnsZone: claudie.dev
+          provider: cloudflare-1
+        targetedK8s: hybrid-cluster
+        pools:
+          - hetzner-lb
