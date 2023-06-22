@@ -375,6 +375,21 @@ nodePools:
       image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
       storageDiskSize: 50
 
+    - name: loadbalancer-1
+      providerSpec:
+        # Name of the provider instance.
+        name: oci-2
+        # Region of the nodepool.
+        region: eu-milan-1
+        # Availability domain of the nodepool.
+        zone: hsVQ:EU-MILAN-1-AD-1
+      count: 2
+      # VM shape name.
+      serverType: VM.Standard2.1
+      # OCID of the image.
+      # Make sure to update it according to the region..
+      image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
+
 kubernetes:
   clusters:
     - name: oci-cluster
@@ -387,4 +402,22 @@ kubernetes:
         compute:
           - compute-oci-1
           - compute-oci-2
+loadBalancers:
+  roles:
+    - name: apiserver
+      protocol: tcp
+      port: 6443
+      targetPort: 6443
+      target: k8sControlPlane
+
+  clusters:
+    - name: apiserver-lb-dev
+      roles:
+        - apiserver
+      dns:
+        dnsZone: example.com
+        provider: oci-2
+      targetedK8s: oci-cluster
+      pools:
+        - loadbalancer-1
 ```

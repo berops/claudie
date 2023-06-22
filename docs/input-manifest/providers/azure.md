@@ -237,6 +237,20 @@ nodePools:
       image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
       storageDiskSize: 50
 
+    - name: loadbalancer-1
+      providerSpec:
+        # Name of the provider instance.
+        name: azure-2
+        # Location of the nodepool.
+        region: West Europe
+        # Zone of the nodepool.
+        zone: 3
+      count: 2
+      # VM size name.
+      serverType: Standard_B2s
+      # URN of the image.
+      image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
+
 kubernetes:
   clusters:
     - name: azure-cluster
@@ -249,4 +263,22 @@ kubernetes:
         compute:
           - compute-azure-1
           - compute-azure-2
+loadBalancers:
+  roles:
+    - name: apiserver
+      protocol: tcp
+      port: 6443
+      targetPort: 6443
+      target: k8sControlPlane
+
+  clusters:
+    - name: apiserver-lb-dev
+      roles:
+        - apiserver
+      dns:
+        dnsZone: example.com
+        provider: azure-2
+      targetedK8s: azure-cluster
+      pools:
+        - loadbalancer-1
 ```
