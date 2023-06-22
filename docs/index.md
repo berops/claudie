@@ -22,6 +22,10 @@ The "Claudie Use Cases" section includes examples of different ways you can use 
 
 By exploring these use cases, you'll get a better sense of how Claudie can be a valuable tool for your work.
 
+## FAQ
+
+You may find helpful answers in our FAQ section.
+
 ## Roadmap for Claudie
 
 In this section, you'll find a roadmap for Claudie that outlines the features we've already added and those we plan to add in the future.
