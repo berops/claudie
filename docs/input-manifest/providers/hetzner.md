@@ -47,7 +47,7 @@ If you wish to use Hetzner as your DNS provider where Claudie creates DNS record
 
 ### Single provider, multi region cluster example
 #### Create a secret for Hetzner provider
-The secret for an Azure provider must include the following mandatory fields: `credentials`.
+The secret for an Hetzner provider must include the following mandatory fields: `credentials`.
 
 ```bash
 kubectl create secret generic hetzner-secret-1 --namespace=mynamespace --from-literal=credentials='kslISA878a6etYAfXYcg5iYyrFGNlCxcICo060HVEygjFs21nske76ksjKko21lp'
@@ -127,7 +127,7 @@ spec:
 
 ### Multi provider, multi region clusters example
 #### Create a secret for Hetzner provider
-The secret for an Azure provider must include the following mandatory fields: `credentials`.
+The secret for an Hetzner provider must include the following mandatory fields: `credentials`.
 
 ```bash
 kubectl create secret generic hetzner-secret-1 --namespace=mynamespace --from-literal=credentials='kslISA878a6etYAfXYcg5iYyrFGNlCxcICo060HVEygjFs21nske76ksjKko21lp'
@@ -152,76 +152,76 @@ spec:
         name: hetzner-secret-2
         namespace: mynamespace        
 
-nodePools:
-  dynamic:
-    - name: control-hetzner-1
-      providerSpec:
-        # Name of the provider instance.
-        name: hetzner-1
-        # Region of the nodepool.
-        region: hel1
-        # Datacenter of the nodepool.
-        zone: hel1-dc2
-      count: 1
-      # Machine type name.
-      serverType: cpx11
-      # OS image name.
-      image: ubuntu-22.04
+  nodePools:
+    dynamic:
+      - name: control-hetzner-1
+        providerSpec:
+          # Name of the provider instance.
+          name: hetzner-1
+          # Region of the nodepool.
+          region: hel1
+          # Datacenter of the nodepool.
+          zone: hel1-dc2
+        count: 1
+        # Machine type name.
+        serverType: cpx11
+        # OS image name.
+        image: ubuntu-22.04
 
-    - name: control-hetzner-2
-      providerSpec:
-        # Name of the provider instance.
-        name: hetzner-2
-        # Region of the nodepool.
-        region: fsn1
-        # Datacenter of the nodepool.
-        zone: fsn1-dc14
-      count: 2
-      # Machine type name.
-      serverType: cpx11
-      # OS image name.
-      image: ubuntu-22.04
+      - name: control-hetzner-2
+        providerSpec:
+          # Name of the provider instance.
+          name: hetzner-2
+          # Region of the nodepool.
+          region: fsn1
+          # Datacenter of the nodepool.
+          zone: fsn1-dc14
+        count: 2
+        # Machine type name.
+        serverType: cpx11
+        # OS image name.
+        image: ubuntu-22.04
 
-    - name: compute-hetzner-1
-      providerSpec:
-        # Name of the provider instance.
-        name: hetzner-1
-        # Region of the nodepool.
-        region: fsn1
-        # Datacenter of the nodepool.
-        zone: fsn1-dc14
-      count: 2
-      # Machine type name.
-      serverType: cpx11
-      # OS image name.
-      image: ubuntu-22.04
-      storageDiskSize: 50
+      - name: compute-hetzner-1
+        providerSpec:
+          # Name of the provider instance.
+          name: hetzner-1
+          # Region of the nodepool.
+          region: fsn1
+          # Datacenter of the nodepool.
+          zone: fsn1-dc14
+        count: 2
+        # Machine type name.
+        serverType: cpx11
+        # OS image name.
+        image: ubuntu-22.04
+        storageDiskSize: 50
 
-    - name: compute-hetzner-2
-      providerSpec:
-        # Name of the provider instance.
-        name: hetzner-2
-        # Region of the nodepool.
-        region: nbg1
-        # Datacenter of the nodepool.
-        zone: nbg1-dc3
-      count: 2
-      # Machine type name.
-      serverType: cpx11
-      # OS image name.
-      image: ubuntu-22.04
-      storageDiskSize: 50
+      - name: compute-hetzner-2
+        providerSpec:
+          # Name of the provider instance.
+          name: hetzner-2
+          # Region of the nodepool.
+          region: nbg1
+          # Datacenter of the nodepool.
+          zone: nbg1-dc3
+        count: 2
+        # Machine type name.
+        serverType: cpx11
+        # OS image name.
+        image: ubuntu-22.04
+        storageDiskSize: 50
 
-kubernetes:
-  clusters:
-    - name: hetzner-cluster
-      version: v1.24.0
-      network: 192.168.2.0/24
-      pools:
-        control:
-          - control-hetzner-1
-          - control-hetzner-2
-        compute:
-          - compute-hetzner-1
-          - compute-hetzner-2
+  kubernetes:
+    clusters:
+      - name: hetzner-cluster
+        version: v1.24.0
+        network: 192.168.2.0/24
+        pools:
+          control:
+            - control-hetzner-1
+            - control-hetzner-2
+          compute:
+            - compute-hetzner-1
+            - compute-hetzner-2
 ```

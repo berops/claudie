@@ -10,7 +10,7 @@ Specification of the desired behavior of the InputManifest
 
 - `providers` [Providers](#providers)
 
-  Providers list of defined cloud provider configuration that will be used while infrastructure provisioning. Defines all your cloud provider configuration that will be used while infrastructure provisioning.
+  Providers is a list of defined cloud provider configuration that will be used in infrastructure provisioning.
 
 - `nodepools` [Nodepools](#nodepools)
 
@@ -31,11 +31,11 @@ needs to be defined.
 
 - `name`
 
-  The name of the provider specyfication. It has to be unique across all providers.
+  The name of the provider specification. It has to be unique across all providers.
 
 - `providerType`
 
-  Type of a provider. The providerType defines mandatory fields that has to be included for a specyfic provider. A list of available providers can be found at [providers section](./providers). Allowed values are:
+  Type of a provider. The providerType defines mandatory fields that has to be included for a specific provider. A list of available providers can be found at [providers section](./providers). Allowed values are:
 
   | Value         | Description                              |
   | ------------- | ---------------------------------------- |
@@ -60,13 +60,13 @@ Support for more cloud providers is in the [roadmap](https://github.com/berops/c
 
 - `name`
 
-  Name is unique within a namespace to reference a secret resource.
+  Name of the secret, which holds data for the particular cloud provider instance.
 
 - `namespace`
 
-  Namespace defines the space within which the secret name must be unique.
+  Namespace of the secret which holds data for the particular cloud provider instance.
 
-## Cloudflare
+### Cloudflare
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the Cloudflare provider.
 To find out how to configure Cloudflare follow the instructions [here](./providers/cloudflare.md)

@@ -117,7 +117,7 @@ For adding support for other cloud providers, open an issue or propose a PR.
 
     Check the [supported providers](#supported-providers) for input manifest examples. For an input manifest spanning all supported hyperscalers checkout out [this example](https://docs.claudie.io/latest/input-manifest/example.md).
 
-2. Deploy inputmanifest resource which Claudie uses to create infrastructure, include the created secret in `.spec.providers` as follows:
+2. Deploy InputManifest resource which Claudie uses to create infrastructure, include the created secret in `.spec.providers` as follows:
     ```bash
     kubectl apply -f - <<EOF
     apiVersion: claudie.io/v1beta1
@@ -163,7 +163,7 @@ For adding support for other cloud providers, open an issue or propose a PR.
     EOF
     ```
     
-    ***Deleting existing inputmanifest resource deletes provisioned infrastructure!***
+    ***Deleting existing InputManifest resource deletes provisioned infrastructure!***
 
 ### Connect to your cluster
 Claudie outputs base64 encoded kubeconfig secret `<cluster-name>-<cluster-hash>-kubeconfig` in the namespace where it is deployed:
@@ -179,7 +179,7 @@ Claudie outputs base64 encoded kubeconfig secret `<cluster-name>-<cluster-hash>-
 
 ### Cleanup
 
-1. To remove your cluster and its associated infrastructure, delete the cluster definition block from the inputmanifest and update the secret:
+1. To remove your cluster and its associated infrastructure, delete the cluster definition block from the InputManifest:
     ```bash
     kubectl apply -f - <<EOF
     apiVersion: claudie.io/v1beta1
@@ -224,7 +224,7 @@ Claudie outputs base64 encoded kubeconfig secret `<cluster-name>-<cluster-hash>-
     #                - compute-1-aws         
     EOF
     ```
-2. To delete all clusters defined in the input manifest, delete the secret. This triggers the deletion process, removing the infrastructure and all data associated with the manifest.
+2. To delete all clusters defined in the input manifest, delete the InputManifest. This triggers the deletion process, removing the infrastructure and all data associated with the manifest.
 
     ```bash
     kubectl delete inputmanifest examplemanifest

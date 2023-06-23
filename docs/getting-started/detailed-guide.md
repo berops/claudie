@@ -175,21 +175,21 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     !!! note "Tip!"
         In this example, two AWS providers are used — one with access to compute resources and the other with access to DNS. However, it is possible to use a single AWS provider with permissions for both services.
 
-9. Apply the `inputmanifest` crd with your cluster configuration file:
+9. Apply the `InputManifest` crd with your cluster configuration file:
 
     ```bash
     kubectl apply -f ./inputmanifest-bursting.yaml
     ```
 
     !!! note "Tip!"
-        Inputmanifests serve as a single source of truth for both Claudie and the user, which makes creating infrastructure via input manifests as infrastructure as a code and can be easily integrated into a GitOps workflow.
+        InputManifests serve as a single source of truth for both Claudie and the user, which makes creating infrastructure via input manifests as infrastructure as a code and can be easily integrated into a GitOps workflow.
 
     !!! warning "Errors in input manifest"
-        Validation webhook will reject the inputmanifest at this stage if it finds errors within the manifest. Refer to our [API guide](https://docs.claudie.io/latest/input-manifest/api-reference/) for details.
+        Validation webhook will reject the InputManifest at this stage if it finds errors within the manifest. Refer to our [API guide](https://docs.claudie.io/latest/input-manifest/api-reference/) for details.
 
 11. View logs from `frontend` service to see secret picked up, as well as which service is currently doing the work:
 
-    View the `inputmanifest` state with `kubectl`
+    View the `InputManifest` state with `kubectl`
 
     ```bash
     kubectl get inputmanifests.claudie.io cloud-bursting -o jsonpath={.status} | jq .
@@ -215,7 +215,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     !!! warning "Provisioning times may vary!"
         Please note that cluster creation time may vary due to provisioning capacity and machine provisioning times of selected hyperscalers.
 
-    After finishing the `inputmanifest` state reflects that the cluster is provisioned.
+    After finishing the `InputManifest` state reflects that the cluster is provisioned.
 
     ```json
     kubectl get inputmanifests.claudie.io cloud-bursting -o jsonpath={.status} | jq .
@@ -324,7 +324,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     ...
     ```
 
-15. Update the crd with the new inputmanifest to incorporate the desired changes.
+15. Update the crd with the new InputManifest to incorporate the desired changes.
 
     !!! danger "Deleting existing secrets!"
         **Deleting or replacing existing input manifest secrets triggers cluster deletion!** To add new components to your existing clusters, generate a new secret value and apply it using the following command.
@@ -371,7 +371,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     !!! note Load balancing
         Please refer how our load balancing works by reading our [documentation](https://docs.claudie.io/latest/loadbalancing/loadbalancing-solution/).
 
-17. Update the inputmanifest again with the new configuration.
+17. Update the InputManifest again with the new configuration.
     ```bash
     kubectl apply -f ./inputmanifest-bursting.yaml
     ```
