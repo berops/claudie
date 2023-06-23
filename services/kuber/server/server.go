@@ -365,18 +365,18 @@ func (s *server) DeleteNodes(ctx context.Context, req *pb.DeleteNodesRequest) (*
 func (s *server) PatchNodes(ctx context.Context, req *pb.PatchNodeTemplateRequest) (*pb.PatchNodeTemplateResponse, error) {
 	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(req.Cluster.ClusterInfo))
 
-	patcher := nodes.NewPatcher(req.Cluster)
-	if err := patcher.PatchProviderID(logger); err != nil {
+	patcher := nodes.NewPatcher(req.Cluster, logger)
+	if err := patcher.PatchProviderID(); err != nil {
 		logger.Err(err).Msgf("Error while patching nodes")
 		return nil, fmt.Errorf("error while patching nodes for %s : %w", req.Cluster.ClusterInfo.Name, err)
 	}
 
-	if err := patcher.PatchLabels(logger); err != nil {
+	if err := patcher.PatchLabels(); err != nil {
 		logger.Err(err).Msgf("Error while patching nodes")
 		return nil, fmt.Errorf("error while patching nodes for %s : %w", req.Cluster.ClusterInfo.Name, err)
 	}
 
-	if err := patcher.PatchTaints(logger); err != nil {
+	if err := patcher.PatchTaints(); err != nil {
 		logger.Err(err).Msgf("Error while patching nodes")
 		return nil, fmt.Errorf("error while patching nodes for %s : %w", req.Cluster.ClusterInfo.Name, err)
 	}
