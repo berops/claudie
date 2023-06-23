@@ -25,6 +25,8 @@ import (
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/berops/claudie/services/frontend/domain/usecases"
 	v1beta "github.com/berops/claudie/services/frontend/pkg/api/v1beta1"
@@ -46,10 +48,10 @@ const (
 
 // InputManifestReconciler reconciles a InputManifest object
 type InputManifestReconciler struct {
-	kc       client.Client
-	Scheme   *runtime.Scheme
-	Recorder record.EventRecorder
-	Logger   logr.Logger
+	kc             client.Client
+	Scheme         *runtime.Scheme
+	Recorder       record.EventRecorder
+	Logger         logr.Logger
 	*usecases.Usecases
 }
 
@@ -74,5 +76,6 @@ func New(kclient client.Client,
 func (r *InputManifestReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta.InputManifest{}).
+		Watches(&source.Channel{Source: r.Usecases.SaveAutoscalerEvent, DestBufferSize: 1024}, &handler.EnqueueRequestForObject{}).
 		Complete(r)
 }

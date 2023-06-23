@@ -3,6 +3,8 @@ package usecases
 import (
 	"context"
 
+	"sigs.k8s.io/controller-runtime/pkg/event"
+
 	"github.com/berops/claudie/services/frontend/domain/ports"
 )
 
@@ -12,4 +14,7 @@ type Usecases struct {
 
 	// Context which when cancelled will close all channel/goroutines.
 	Context context.Context
+
+	// SaveAutoscalerEvent is channel which is used to pass autoscaler event to controller
+	SaveAutoscalerEvent chan event.GenericEvent
 }

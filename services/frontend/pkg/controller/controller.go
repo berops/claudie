@@ -22,6 +22,8 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	log := crlog.FromContext(ctx)
 	inputManifest := &v1beta.InputManifest{}
 
+	log.Info(req.NamespacedName.String())
+	
 	// Get the inputManifest resource
 	if err := r.kc.Get(ctx, req.NamespacedName, inputManifest); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
@@ -42,7 +44,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 		providersSecrets = append(providersSecrets, pwd)
 	}
-
+	
 	// Create a raw input manifest of manifest.Manifest and pull the referenced secrets into it
 	rawManifest, err := mergeInputManifestWithSecrets(*inputManifest, providersSecrets)
 	if err != nil {

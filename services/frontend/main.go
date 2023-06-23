@@ -2,19 +2,24 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/go-logr/zerologr"
 	"github.com/rs/zerolog/log"
+	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/services/frontend/adapters/inbound/grpc"
 	outboundAdapters "github.com/berops/claudie/services/frontend/adapters/outbound"
 	"github.com/berops/claudie/services/frontend/domain/usecases"
 	"github.com/berops/claudie/services/frontend/pkg/controller"
@@ -57,19 +62,41 @@ func run() error {
 		return err
 	}
 
+	autoscalerChan := make(chan event.GenericEvent)
 	usecaseContext, usecaseCancel := context.WithCancel(context.Background())
 	usecases := &usecases.Usecases{
-		ContextBox: contextBoxConnector,
-		Context:    usecaseContext,
+		ContextBox:          contextBoxConnector,
+		Context:             usecaseContext,
+		SaveAutoscalerEvent: autoscalerChan,
 	}
 
+	grpcAdapter := &grpc.GrpcAdapter{}
+	grpcAdapter.Init(usecases)
+
+	errGroup, errGroupContext := errgroup.WithContext(context.Background())
+
+	// Server goroutine
+	errGroup.Go(func() error {
+		return grpcAdapter.Serve()
+	})
+
 	// Interrupt signal listener
-	go func() {
+	errGroup.Go(func() error {
 		shutdownSignalChan := make(chan os.Signal, 1)
 		signal.Notify(shutdownSignalChan, os.Interrupt, syscall.SIGTERM)
-		sig := <-shutdownSignalChan
 
-		log.Info().Msgf("Received program shutdown signal %v", sig)
+		var err error
+
+		// Wait for either the received signal or
+		// check if an error occurred in other go-routines.
+		select {
+		case <-errGroupContext.Done():
+			err = errGroupContext.Err()
+
+		case sig := <-shutdownSignalChan:
+			log.Info().Msgf("Received program shutdown signal %v", sig)
+			err = errors.New("program interruption signal")
+		}
 
 		// Disconnect from context-box
 		if err := contextBoxConnector.Disconnect(); err != nil {
@@ -78,7 +105,17 @@ func run() error {
 		// Cancel context for usecases functions to terminate manager.
 		defer usecaseCancel()
 		defer signal.Stop(shutdownSignalChan)
-	}()
+		// Perform graceful shutdown
+		log.Info().Msg("Gracefully shutting down GrpcAdapter")
+		grpcAdapter.Stop()
+		// Sometimes when the container terminates gRPC logs the following message:
+		// rpc error: code = Unknown desc = Error: No such container: hash of the container...
+		// It does not affect anything as everything will get terminated gracefully
+		// this time.Sleep fixes it so that the message won't be logged.
+		time.Sleep(1 * time.Second)
+
+		return err
+	})
 
 	// Setup inputManifest controller
 	crlog.SetLogger(zerologr.New(&log.Logger))
@@ -104,6 +141,18 @@ func run() error {
 	).SetupWithManager(mgr); err != nil {
 		return err
 	}
+
+	// go func() {
+	// 	for {
+	// 		time.Sleep(time.Second * 1)
+	// 		fmt.Println("Send test event to reconsiler")
+	// 		im := v1beta1.InputManifest{}
+	// 		im.SetName("testResource")
+	// 		im.SetNamespace("default")
+	// 		ch <- event.GenericEvent{Object: &im}
+	// 	}
+	// }()
+
 	// convert string from env to int
 	port, err := strconv.Atoi(portStr)
 	if err != nil {
