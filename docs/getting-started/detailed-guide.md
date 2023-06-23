@@ -19,7 +19,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
 
 ## Claudie deployment
 
-1. Create a Kind cluster where you will deploy Claudie, also called management cluster.
+1. Create a Kind cluster where you will deploy Claudie, also referred to as the Management Cluster.
 
     ```bash
     kind create cluster --name=claudie

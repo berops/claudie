@@ -42,9 +42,7 @@ Read in more details [here](https://docs.claudie.io/latest/use-cases/use-cases/)
 Create fully-featured Kubernetes clusters composed of multiple different public Cloud providers in an easy and secure manner.
 Simply insert credentials to your cloud projects, define your cluster, and watch how the infra spawns right in front of you.
 
-<p align="center">
- <img alt="Infra Diagram" src="https://github.com/berops/claudie/raw/master/docs/infra-diagram.png" />
-</p>
+![](./docs/infra-diagram.png)
 
 ### Management via IaC
 
@@ -69,9 +67,9 @@ Claudie comes pre-configured with a storage solution, with ready-to-use Storage 
 ### Prerequisites
 Before you begin, please make sure you have the following prerequisites installed and set up:
 
-1. Claudie needs to be installed on an existing Kubernetes cluster, which it uses to manage the clusters it provisions. For testing, you can use ephemeral clusters like Minikube or Kind. However, for production environments, we recommend using a more resilient solution since Claudie maintains the state of the infrastructure it creates.
+1. Claudie needs to be installed on an existing Kubernetes cluster, referred to as the *Management Cluster*, which it uses to manage the clusters it provisions. For testing, you can use ephemeral clusters like Minikube or Kind. However, for production environments, we recommend using a more resilient solution since Claudie maintains the state of the infrastructure it creates.
 
-2. Claudie requires the installation of cert-manager in your Kubernetes cluster. To install cert-manager, use the following command:
+2. Claudie requires the installation of cert-manager in your Management Cluster. To install cert-manager, use the following command:
     ```bash
     kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml
     ```
@@ -99,7 +97,7 @@ For adding support for other cloud providers, open an issue or propose a PR.
     wget https://github.com/berops/claudie/releases/latest/download/claudie.zip && unzip claudie.zip -d claudie
     ```
 
-2. Deploy Claudie into your management Kubernetes cluster:
+2. Deploy Claudie to the Management Cluster:
     ```bash
     kubectl apply -k claudie
     ```
