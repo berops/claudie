@@ -136,8 +136,8 @@ nodePools:
   #     autoscaler:       # Autoscaler configuration. Mutually exclusive with Count.
   #       min:            # Minimum number of nodes in nodepool.
   #       max:            # Maximum number of nodes in nodepool.
-  #     labels:           # Map of custom user defined labels for this nodepool. This field is optional.
-  #     taints:           # Array of custom user defined taints for this nodepool. This field is optional.
+  #     labels:           # Map of custom user defined labels for this nodepool. This field is optional and is ignored if used in Loadbalancer cluster.
+  #     taints:           # Array of custom user defined taints for this nodepool. This field is optional and is ignored if used in Loadbalancer cluster.
   #
   # Example definitions for each provider
   dynamic:

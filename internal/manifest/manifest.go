@@ -125,9 +125,13 @@ type DynamicNodePool struct {
 	StorageDiskSize int64 `validate:"omitempty,gte=50" yaml:"storageDiskSize" json:"storageDiskSize,omitempty"`
 	// Autoscaler configuration for this nodepool. Mutually exclusive with count.
 	// +optional
-	AutoscalerConfig AutoscalerConfig  `validate:"required_without=Count,excluded_with=Count" yaml:"autoscaler" json:"autoscaler,omitempty"`
-	Labels           map[string]string `validate:"omitempty" yaml:"labels"`
-	Taints           []k8sV1.Taint     `validate:"omitempty" yaml:"taints"`
+	AutoscalerConfig AutoscalerConfig `validate:"required_without=Count,excluded_with=Count" yaml:"autoscaler" json:"autoscaler,omitempty"`
+	// User defined labels for this nodepool.
+	// +optional
+	Labels map[string]string `validate:"omitempty" yaml:"labels" json:"labels"`
+	// User defined taints for this nodepool.
+	// +optional
+	Taints []k8sV1.Taint `validate:"omitempty" yaml:"taints" json:"taints"`
 }
 
 // Autoscaler configuration on per nodepool basis. Defines the number of nodes, autoscaler will scale up or down specific nodepool.
@@ -150,10 +154,14 @@ type ProviderSpec struct {
 
 // WIP
 type StaticNodePool struct {
-	Name   string            `validate:"required" yaml:"name" json:"name"`
-	Nodes  []Node            `validate:"dive" yaml:"nodes" json:"nodes"`
-	Labels map[string]string `validate:"omitempty" yaml:"labels"`
-	Taints []k8sV1.Taint     `validate:"omitempty" yaml:"taints"`
+	Name  string `validate:"required" yaml:"name" json:"name"`
+	Nodes []Node `validate:"dive" yaml:"nodes" json:"nodes"`
+	// User defined labels for this nodepool.
+	// +optional
+	Labels map[string]string `validate:"omitempty" yaml:"labels" json:"labels"`
+	// User defined taints for this nodepool.
+	// +optional
+	Taints []k8sV1.Taint `validate:"omitempty" yaml:"taints" json:"taints"`
 }
 
 // WIP
