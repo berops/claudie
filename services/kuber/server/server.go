@@ -301,7 +301,7 @@ func (s *server) StoreKubeconfig(ctx context.Context, req *pb.StoreKubeconfigReq
 	logger := utils.CreateLoggerWithClusterName(clusterID)
 	if namespace := envs.Namespace; namespace == "" {
 		//NOTE: DEBUG print
-		logger.Info().Msgf("The kubeconfig for %s\n%s:", clusterID, cluster.Kubeconfig)
+		// logger.Info().Msgf("The kubeconfig for %s\n%s:", clusterID, cluster.Kubeconfig)
 		return &pb.StoreKubeconfigResponse{}, nil
 	}
 
