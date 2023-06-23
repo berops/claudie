@@ -79,13 +79,20 @@ func (u *Usecases) saveErrorMessageToConfig(config *pb.Config, contextBoxGrpcCli
 	config.CurrentState = config.DesiredState // Update CurrentState, so we can use it for deletion later
 
 	if config.State == nil {
+		// If no state map created yet, set the error under the key "scheduler".
 		config.State = make(map[string]*pb.Workflow)
-	}
-
-	config.State["scheduler"] = &pb.Workflow{
-		Stage:       pb.Workflow_SCHEDULER,
-		Status:      pb.Workflow_ERROR,
-		Description: err.Error(),
+		config.State["scheduler"] = &pb.Workflow{
+			Stage:       pb.Workflow_SCHEDULER,
+			Status:      pb.Workflow_ERROR,
+			Description: err.Error(),
+		}
+	} else {
+		// As scheduler does not process config on per cluster basis, the error will be saved under every cluster.
+		for _, state := range config.State {
+			state.Stage = pb.Workflow_SCHEDULER
+			state.Status = pb.Workflow_ERROR
+			state.Description = fmt.Sprintf("Error encountered in Scheduler, halting processing of all clusters : %v", err)
+		}
 	}
 
 	return u.ContextBox.SaveConfigScheduler(config, contextBoxGrpcClient)

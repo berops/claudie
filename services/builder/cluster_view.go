@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"google.golang.org/protobuf/proto"
 )
@@ -88,33 +89,43 @@ Lb:
 func (view *ClusterView) MergeChanges(config *pb.Config) {
 	config.State = view.ClusterWorkflows
 
-	for i, current := range config.CurrentState.Clusters {
-		if updated, ok := view.CurrentClusters[current.ClusterInfo.Name]; ok {
-			config.CurrentState.Clusters[i] = updated
+	for name, updated := range view.CurrentClusters {
+		idx := utils.GetClusterByName(name, config.CurrentState.Clusters)
+		if idx < 0 {
+			config.CurrentState.Clusters = append(config.CurrentState.Clusters, updated)
+			continue
 		}
+		config.CurrentState.Clusters[idx] = updated
 	}
 
-	for i, desired := range config.DesiredState.Clusters {
-		if updated, ok := view.DesiredClusters[desired.ClusterInfo.Name]; ok {
-			config.DesiredState.Clusters[i] = updated
+	for name, updated := range view.DesiredClusters {
+		idx := utils.GetClusterByName(name, config.DesiredState.Clusters)
+		if idx < 0 {
+			config.DesiredState.Clusters = append(config.DesiredState.Clusters, updated)
+			continue
 		}
+		config.DesiredState.Clusters[idx] = updated
 	}
 
-	for i, current := range config.CurrentState.LoadBalancerClusters {
-		for _, lb := range view.Loadbalancers[current.TargetedK8S] {
-			if current.ClusterInfo.Name == lb.ClusterInfo.Name {
-				config.CurrentState.LoadBalancerClusters[i] = lb
-				break
+	for _, updated := range view.Loadbalancers {
+		for _, lb := range updated {
+			idx := utils.GetLBClusterByName(lb.ClusterInfo.Name, config.CurrentState.LoadBalancerClusters)
+			if idx < 0 {
+				config.CurrentState.LoadBalancerClusters = append(config.CurrentState.LoadBalancerClusters, lb)
+				continue
 			}
+			config.CurrentState.LoadBalancerClusters[idx] = lb
 		}
 	}
 
-	for i, desired := range config.DesiredState.LoadBalancerClusters {
-		for _, lb := range view.DesiredLoadbalancers[desired.TargetedK8S] {
-			if desired.ClusterInfo.Name == lb.ClusterInfo.Name {
-				config.DesiredState.LoadBalancerClusters[i] = lb
-				break
+	for _, updated := range view.DesiredLoadbalancers {
+		for _, lb := range updated {
+			idx := utils.GetLBClusterByName(lb.ClusterInfo.Name, config.DesiredState.LoadBalancerClusters)
+			if idx < 0 {
+				config.DesiredState.LoadBalancerClusters = append(config.DesiredState.LoadBalancerClusters, lb)
+				continue
 			}
+			config.DesiredState.LoadBalancerClusters[idx] = lb
 		}
 	}
 }

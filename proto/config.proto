@@ -26,8 +26,6 @@ message Config {
   int32 schedulerTTL = 10;
   // Per-cluster workflow state.
   map<string, Workflow> state = 11;
-  // File name of the manifest saved in Frontend.
-  string manifestFileName = 12;
 }
 
 message Workflow {

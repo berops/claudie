@@ -89,7 +89,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/go-logr/logr v1.2.4 // indirect
+	github.com/go-logr/logr v1.2.4
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/gofrs/flock v0.8.1 // indirect
@@ -148,3 +148,15 @@ require (
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )
+
+replace k8s.io/dynamic-resource-allocation => k8s.io/dynamic-resource-allocation v0.27.0-alpha.1
+
+replace k8s.io/kube-proxy => k8s.io/kube-proxy v0.27.0-alpha.1
+
+replace k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.27.0-alpha.1
+
+replace k8s.io/kubectl => k8s.io/kubectl v0.27.0-alpha.1
+
+replace k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.27.0-alpha.1
+
+replace k8s.io/cri-api => k8s.io/cri-api v0.27.0-alpha.1
