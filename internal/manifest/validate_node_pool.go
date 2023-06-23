@@ -2,14 +2,10 @@ package manifest
 
 import (
 	"fmt"
-	"regexp"
 
 	"github.com/go-playground/validator/v10"
 	k8sV1 "k8s.io/api/core/v1"
-)
-
-const (
-	labelRegex = "^(?:[a-z0-9A-Z](?:[-_.]?[a-z0-9A-Z]){0,61})?(?:\\.[a-z0-9A-Z](?:[-_.]?[a-z0-9A-Z]){0,61})*(?:\\/[a-z0-9A-Z](?:[-_.]?[a-z0-9A-Z]){0,61})?$"
+	"k8s.io/apimachinery/pkg/util/validation"
 )
 
 // Validate validates the parsed data inside the NodePool section of the manifest.
@@ -84,13 +80,12 @@ func checkTaints(taints []k8sV1.Taint) error {
 }
 
 func checkLabels(labels map[string]string) error {
-	r := regexp.MustCompile(labelRegex)
 	for k, v := range labels {
-		if ok := r.MatchString(k); !ok {
-			return fmt.Errorf("key %s is not a valid key for label", k)
+		if errs := validation.IsQualifiedName(k); len(errs) > 0 {
+			return fmt.Errorf("key %v is not valid  : %v", k, errs)
 		}
-		if ok := r.MatchString(v); !ok {
-			return fmt.Errorf("value %s is not a valid value for label", v)
+		if errs := validation.IsValidLabelValue(v); len(errs) > 0 {
+			return fmt.Errorf("value %v is not valid  : %v", v, errs)
 		}
 	}
 	return nil
