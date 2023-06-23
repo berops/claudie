@@ -45,7 +45,7 @@ To deploy the Claudie `v0.4.X`, please:
 
 ### Bugfixes
 
-- Errors from the scheduler are correctly saved under the clusters state [#868](https://github.com/berops/claudie/pull/868)
+- Errors from the Scheduler are correctly saved under the clusters state [#868](https://github.com/berops/claudie/pull/868)
 - Failure in the Terraformer will correctly saves the created state [#875](https://github.com/berops/claudie/pull/875)
 - The clusters which previously resulted in error no longer block the workflow on input manifest reapply [#883](https://github.com/berops/claudie/pull/883)
 
