@@ -73,7 +73,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, err
 	}
 
-	// Build the actual state of inputManifet.
+	// Build the actual state of inputManifest.
 	// Based on this, reconcile loop will decide
 	// what to do next.
 	currentState := v1beta.InputManifestStatus{
@@ -127,7 +127,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	// DELETE && FINALIZER LOGIC
-	// Check if resource isn't schedguled for deletion,
+	// Check if resource isn't scheduled for deletion,
 	// when true, add finalizer else run delete logic
 	if inputManifest.GetDeletionTimestamp().IsZero() {
 		if !controllerutil.ContainsFinalizer(inputManifest, finalizerName) {
@@ -161,7 +161,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			if inputManifest.Status.State == v1beta.STATUS_SCHEDULED_FOR_DELETION {
 				return ctrl.Result{RequeueAfter: REQUEUE_NEW}, nil
 			}
-			// schedgule deletion of manifest
+			// schedule deletion of manifest
 			inputManifest.SetDeletingStatus()
 			if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 				return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
@@ -175,7 +175,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{RequeueAfter: REQUEUE_DELETE}, nil
 	}
 
-	// Skip the inputManifests thath are ready
+	// Skip the inputManifests that are ready
 	if !configInDesiredState {
 		// CREATE LOGIC
 		// Call create config if it not present in DB
@@ -243,7 +243,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{RequeueAfter: REQUEUE_UPDATE}, nil
 	}
 
-	// End of reconcile loop, update cluster status - dont'requeue the inputManifest object
+	// End of reconcile loop, update cluster status - don't requeue the inputManifest object
 	inputManifest.SetUpdateResourceStatus(currentState)
 	if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)

@@ -68,7 +68,7 @@ type ProviderWithData struct {
 // Providers list of defined cloud provider configuration
 // that will be used while infrastructure provisioning.
 type Provider struct {
-	// Name is the name of the provider specyfication. It has to be unique across all providers.
+	// Name is the name of the provider specification. It has to be unique across all providers.
 	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:MinLength=1
 	ProviderName string `json:"name"`
@@ -77,7 +77,7 @@ type Provider struct {
 	SecretRef    corev1.SecretReference `json:"secretRef"`
 }
 
-// Specification of the desired behavior of the InputManifest
+// Specification of the desired behaviour of the InputManifest
 type InputManifestSpec struct {
 	// Providers list of defined cloud provider configuration
 	// that will be used while infrastructure provisioning.

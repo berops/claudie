@@ -40,7 +40,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: Specification of the desired behavior of the InputManifest
+            description: Specification of the desired behaviour of the InputManifest
             properties:
               kubernetes:
                 description: Kubernetes list of Kubernetes cluster this manifest will
@@ -385,7 +385,7 @@ spec:
                     that will be used while infrastructure provisioning.
                   properties:
                     name:
-                      description: Name is the name of the provider specyfication.
+                      description: Name is the name of the provider specification.
                         It has to be unique across all providers.
                       maxLength: 32
                       minLength: 1

@@ -32,10 +32,10 @@ import (
 )
 
 const (
-	// Delays for requeing each type of event
+	// Delays for requeuing each type of event
 	// For example: when a new cluster is created
 	// first sync of its state will be done after REQUEUE_NEW time,
-	// next sync will be done in REQUEUE_IN_PROGRES
+	// next sync will be done in REQUEUE_IN_PROGRESS
 	REQUEUE_NEW         = 20 * time.Second
 	REQUEUE_UPDATE      = 20 * time.Second
 	REQUEUE_IN_PROGRES  = 10 * time.Second
