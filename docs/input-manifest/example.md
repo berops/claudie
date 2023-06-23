@@ -136,6 +136,8 @@ nodePools:
   #     autoscaler:       # Autoscaler configuration. Mutually exclusive with Count.
   #       min:            # Minimum number of nodes in nodepool.
   #       max:            # Maximum number of nodes in nodepool.
+  #     labels:           # Map of custom user defined labels for this nodepool. This field is optional.
+  #     taints:           # Array of custom user defined taints for this nodepool. This field is optional.
   #
   # Example definitions for each provider
   dynamic:
@@ -147,6 +149,13 @@ nodePools:
       count: 3
       serverType: cpx11
       image: ubuntu-22.04
+      labels:
+        country: finland
+        city: helsinki
+      taints:
+        key: country
+        value: finland
+        effect: NoSchedule
 
     - name: compute-hetzner
       providerSpec:
@@ -157,6 +166,10 @@ nodePools:
       serverType: cpx11
       image: ubuntu-22.04
       storageDiskSize: 50
+      labels:
+        country: finland
+        city: helsinki
+        cpu: fast
 
     - name: compute-hetzner-autoscaled
       providerSpec:
