@@ -252,7 +252,7 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
   Map of user defined labels, which will be applied on every node in the node pool. This field is optional.
 
-  By default, Claudie applies following labels on every node in the cluster.
+  By default, Claudie applies following labels on every node in the cluster, together with those defined by the user.
 
   | Key                              | Value                                            |
   | -------------------------------- | ------------------------------------------------ |
@@ -270,7 +270,7 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
   Array of user defined taints, which will be applied on every node in the node pool. This field is optional.
 
-  By default, Claudie applies only `node-role.kubernetes.io/control-plane` taint for control nodes, with effect `NoSchedule`.
+  By default, Claudie applies only `node-role.kubernetes.io/control-plane` taint for control nodes, with effect `NoSchedule`, together with those defined by the user.
 
 ## Provider Spec
 

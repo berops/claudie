@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/berops/claudie/proto/pb"
+	k8sV1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -237,10 +238,10 @@ func (ds *Manifest) nodePoolDefined(pool string) bool {
 	return false
 }
 
-func getTaints(taints []Taint) []*pb.Taint {
+func getTaints(taints []k8sV1.Taint) []*pb.Taint {
 	arr := make([]*pb.Taint, 0, len(taints))
 	for _, t := range taints {
-		arr = append(arr, &pb.Taint{Key: t.Key, Value: t.Value, Effect: t.Effect})
+		arr = append(arr, &pb.Taint{Key: t.Key, Value: t.Value, Effect: string(t.Effect)})
 	}
 	return arr
 }

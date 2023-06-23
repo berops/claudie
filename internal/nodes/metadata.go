@@ -24,12 +24,16 @@ const (
 
 const (
 	ControlPlane = "node-role.kubernetes.io/control-plane"
-	NoSchedule   = "NoSchedule"
 )
 
 // GetAllLabels returns default labels with their theoretical values for the specified nodepool.
 func GetAllLabels(np *pb.NodePool) map[string]string {
-	m := make(map[string]string)
+	m := make(map[string]string, len(np.Labels)+9)
+	// Add custom user defined labels first in case user will try to overwrite Claudie default labels.
+	for k, v := range np.Labels {
+		m[k] = v
+	}
+
 	// Claudie assigned labels.
 	m[string(Nodepool)] = np.Name
 	m[string(Provider)] = np.GetDynamicNodePool().Provider.CloudProviderName
@@ -42,25 +46,24 @@ func GetAllLabels(np *pb.NodePool) map[string]string {
 	m[string(KubernetesArch)] = "amd64" // TODO add arch https://github.com/berops/claudie/issues/665
 	m[string(KubeoneOs)] = "ubuntu"     // Only supported Os
 
-	// Add custom user defined labels.
-	for k, v := range np.Labels {
-		m[k] = v
-	}
-
 	return m
 }
 
 // GetAllTaints returns default taints with their theoretical values for the specified nodepool.
 func GetAllTaints(np *pb.NodePool) []k8sV1.Taint {
-	taints := make([]k8sV1.Taint, 0)
-	// Claudie assigned taints.
-	if np.IsControl {
-		taints = append(taints, k8sV1.Taint{Key: ControlPlane, Value: "", Effect: NoSchedule})
-	}
-
+	taints := make([]k8sV1.Taint, 0, len(np.Taints)+1)
 	// Add custom user defined taints.
 	for _, t := range np.Taints {
+		if t.Key == ControlPlane && t.Effect == string(k8sV1.TaintEffectNoSchedule) && t.Value == "" {
+			// Skipping as this is Claudie default taint
+			continue
+		}
 		taints = append(taints, k8sV1.Taint{Key: t.Key, Value: t.Value, Effect: k8sV1.TaintEffect(t.Effect)})
+	}
+
+	// Claudie assigned taints.
+	if np.IsControl {
+		taints = append(taints, k8sV1.Taint{Key: ControlPlane, Value: "", Effect: k8sV1.TaintEffectNoSchedule})
 	}
 
 	return taints
