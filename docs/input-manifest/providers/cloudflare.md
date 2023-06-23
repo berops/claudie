@@ -1,12 +1,15 @@
 # Cloudflare
-Cloudflare provider requires `apiToken` token field in string format.
+Cloudflare provider requires `apitoken` token field in string format.
 
 ## DNS example
 ```yaml
-providers:
-  cloudflare:
-    - name: cloudflare-1
-      apiToken: token
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudflare-secret
+data:
+  apitoken: a3NsSVNBODc4YTZldFlBZlhZY2c1aVl5ckZHTmxDeGM=
+type: Opaque
 ```
 
 ## Create Cloudflare credentials
@@ -31,54 +34,74 @@ If you wish to use Cloudflare as your DNS provider where Claudie creates DNS rec
 !!! warning "Showcase example"
     To make this example functional, you need to specify control plane and node pools. This current showcase will produce an error if used as is.
 
+### Create a secret for Cloudflare and AWS providers
+The secret for an Cloudflare provider must include the following mandatory fields: `apitoken`.
+```bash
+kubectl create secret generic cloudflare-secret-1 --namespace=mynamespace --from-literal=apitoken='kslISA878a6etYAfXYcg5iYyrFGNlCxc'
+```
+
+The secret for an AWS provider must include the following mandatory fields: `accesskey` and `secretkey`.
+```bash
+kubectl create secret generic aws-secret-1 --namespace=mynamespace --from-literal=accesskey='SLDUTKSHFDMSJKDIALASSD' --from-literal=secretkey='iuhbOIJN+oin/olikDSadsnoiSVSDsacoinOUSHD'
+```
+
 ``` yaml
-name: CloudflareExampleManifest
-providers:
-  cloudflare:
-    - name: cloudflare-1 # Name of this provider instance.
-      apiToken: kslISA878a6etYAfXYcg5iYyrFGNlCxc # API token of this provider instance.
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: CloudflareExampleManifest
+spec:
+  providers:
+    - name: cloudflare-1
+      providerType: cloudflare
+      secretRef:
+        name: cloudflare-secret-1
+        namespace: mynamespace
+
     - name: aws-1
-      accessKey: SLDUTKSHFDMSJKDIALASSD
-      secretKey: iuhbOIJN+oin/olikDSadsnoiSVSDsacoinOUSHD
+      providerType: aws
+      secretRef:
+        name: aws-secret-1
+        namespace: mynamespace
 
-nodePools: 
-  dynamic:
-    - name: loadbalancer
-      providerSpec:
-        name: aws-1
-        region: eu-central-1
-        zone: eu-central-1c
-      count: 2
-      serverType: t3.medium
-      image: ami-0965bd5ba4d59211c
+  nodePools: 
+    dynamic:
+      - name: loadbalancer
+        providerSpec:
+          name: aws-1
+          region: eu-central-1
+          zone: eu-central-1c
+        count: 2
+        serverType: t3.medium
+        image: ami-0965bd5ba4d59211c
 
-kubernetes:
-  clusters:
-    - name: cluster
-      version: v1.24.0
-      network: 192.168.2.0/24
-      pools:
-        control: []
-        compute: []
+  kubernetes:
+    clusters:
+      - name: cluster
+        version: v1.24.0
+        network: 192.168.2.0/24
+        pools:
+          control: []
+          compute: []
 
-loadBalancers:
-  roles:
-    - name: apiserver
-      protocol: tcp
-      port: 6443
-      targetPort: 6443
-      target: k8sControlPlane
+  loadBalancers:
+    roles:
+      - name: apiserver
+        protocol: tcp
+        port: 6443
+        targetPort: 6443
+        target: k8sControlPlane
 
-  clusters:
-    - name: apiserver-lb-prod
-      roles:
-        - apiserver
-      dns:
-        dnsZone: dns-zone
-        provider: cloudflare-1
-        hostname: my.fancy.url
-      targetedK8s: prod-cluster
-      pools:
-        - loadbalancer-2
+    clusters:
+      - name: apiserver-lb-prod
+        roles:
+          - apiserver
+        dns:
+          dnsZone: dns-zone
+          provider: cloudflare-1
+          hostname: my.fancy.url
+        targetedK8s: prod-cluster
+        pools:
+          - loadbalancer-2
 
 ```
