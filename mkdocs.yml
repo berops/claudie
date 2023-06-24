@@ -70,6 +70,7 @@ nav:
     - Loadbalancing in Claudie: ./loadbalancing/loadbalancing-solution.md
     - Autoscaling in Claudie: autoscaling/autoscaling.md
   - Claudie Use Cases: use-cases/use-cases.md
+  - FAQ: faq/FAQ.md
   - Roadmap for Claudie: roadmap/roadmap.md
   - Contributing: contributing/contributing.md
   - Changelog:
