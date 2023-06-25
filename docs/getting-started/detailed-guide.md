@@ -88,106 +88,125 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     !!! warning "Troubleshoot!" 
         If you experience problems refer to our [troubleshooting guide](https://docs.claudie.io/latest/troubleshooting/troubleshooting/). 
 
-8. Let's create a AWS high availability cluster which we'll expand later on with Hetzner bursting capacity. Let's start by creating `cloud-bursting.yaml` with the following content:
+8. Let's create a AWS high availability cluster which we'll expand later on with Hetzner bursting capacity. Let's start by creating providers secrets for the infrastructure, and next we will reference them in `inputmanifest-bursting.yaml`.
+
+    ```bash
+    # AWS provider requires the secrets to have fields: accesskey and secretkey
+    kubectl create secret generic aws-secret-1 --namespace=mynamespace --from-literal=accesskey='SLDUTKSHFDMSJKDIALASSD' --from-literal=secretkey='iuhbOIJN+oin/olikDSadsnoiSVSDsacoinOUSHD'
+    kubectl create secret generic aws-secret-dns --namespace=mynamespace --from-literal=accesskey='ODURNGUISNFAIPUNUGFINB' --from-literal=secretkey='asduvnva+skd/ounUIBPIUjnpiuBNuNipubnPuip'    
+    ```
 
     ```yaml
-    name: cloud-bursting
-    providers:
-      aws:
-        - name: aws-1 # credentials for a user with compute permissions
-          accessKey: SLDUTKSHFDMSJKDIALASSD
-          secretKey: iuhbOIJN+oin/olikDSadsnoiSVSDsacoinOUSHD
-        - name: aws-dns # credentials for a user with dns permissions
-          accessKey: ODURNGUISNFAIPUNUGFINB
-          secretKey: asduvnva+skd/ounUIBPIUjnpiuBNuNipubnPuip
-    nodePools:
-      dynamic:
-        - name: aws-controlplane
-          providerSpec:
-              name: aws-1
-              region: eu-central-1
-              zone: eu-central-1a
-          count: 3
-          serverType: t3.medium
-          image: ami-0965bd5ba4d59211c
-        - name: aws-worker
-          providerSpec:
-              name: aws-1
-              region: eu-north-1
-              zone: eu-north-1a
-          count: 3
-          serverType: t3.medium
-          image: ami-03df6dea56f8aa618
-          storageDiskSize: 200
-        - name: aws-loadbalancer
-          providerSpec:
-              name: aws-1
-              region: eu-central-2
-              zone: eu-central-2a
-          count: 2
-          serverType: t3.small
-          image: ami-0965bd5ba4d59211c
-    kubernetes:
-      clusters:
-        - name: my-super-cluster
-          version: v1.24.0
-          network: 192.168.2.0/24
-          pools:
-              control:
-              - aws-controlplane
-              compute:
-              - aws-worker
-    loadBalancers:
-      roles:
-        - name: apiserver
-          protocol: tcp
-          port: 6443
-          targetPort: 6443
-          target: k8sControlPlane
-      clusters:
-        - name: loadbalance-me
-          roles:
-              - apiserver
-          dns:
-              dnsZone: domain.com # hosted zone domain name where claudie creates dns records for this cluster
-              provider: aws-dns
-              hostname: supercluster # the sub domain of the new cluster
-          targetedK8s: my-super-cluster
-          pools:
-              - aws-loadbalancer
+    # inputmanifest-bursting.yaml
+
+    apiVersion: claudie.io/v1beta1
+    kind: InputManifest
+    metadata:
+      name: cloud-bursting
+    spec:
+      providers:
+        - name: aws-1
+          providerType: aws
+          secretRef:
+            name: aws-secret-1
+            namespace: mynamespace
+        - name: aws-dns
+          providerType: aws
+          secretRef:
+            name: aws-secret-dns
+            namespace: mynamespace    
+      nodePools:
+        dynamic:
+          - name: aws-controlplane
+            providerSpec:
+                name: aws-1
+                region: eu-central-1
+                zone: eu-central-1a
+            count: 3
+            serverType: t3.medium
+            image: ami-0965bd5ba4d59211c
+          - name: aws-worker
+            providerSpec:
+                name: aws-1
+                region: eu-north-1
+                zone: eu-north-1a
+            count: 3
+            serverType: t3.medium
+            image: ami-03df6dea56f8aa618
+            storageDiskSize: 200
+          - name: aws-loadbalancer
+            providerSpec:
+                name: aws-1
+                region: eu-central-2
+                zone: eu-central-2a
+            count: 2
+            serverType: t3.small
+            image: ami-0965bd5ba4d59211c
+      kubernetes:
+        clusters:
+          - name: my-super-cluster
+            version: v1.24.0
+            network: 192.168.2.0/24
+            pools:
+                control:
+                - aws-controlplane
+                compute:
+                - aws-worker
+      loadBalancers:
+        roles:
+          - name: apiserver
+            protocol: tcp
+            port: 6443
+            targetPort: 6443
+            target: k8sControlPlane
+        clusters:
+          - name: loadbalance-me
+            roles:
+                - apiserver
+            dns:
+                dnsZone: domain.com # hosted zone domain name where claudie creates dns records for this cluster
+                provider: aws-dns
+                hostname: supercluster # the sub domain of the new cluster
+            targetedK8s: my-super-cluster
+            pools:
+                - aws-loadbalancer
     ```
 
     !!! note "Tip!"
         In this example, two AWS providers are used — one with access to compute resources and the other with access to DNS. However, it is possible to use a single AWS provider with permissions for both services.
 
-9. Create the secret with your cluster configuration file in `claudie` namespace:
+9. Apply the `InputManifest` crd with your cluster configuration file:
 
     ```bash
-    kubectl create secret generic cloud-bursting --from-file=cloud-bursting.yaml -n claudie
+    kubectl apply -f ./inputmanifest-bursting.yaml
     ```
 
     !!! note "Tip!"
-        Input manifests serve as a single source of truth for both Claudie and the user, which makes creating infrastructure via input manifests as infrastructure as a code and can be easily integrated into a GitOps workflow.
-
-10. You will need to label the secret in order for Claudie to pick it up and start provisioning resources:
-    ```bash
-    kubectl label secret cloud-bursting claudie.io/input-manifest=cloud-bursting -n claudie
-    ```
+        InputManifests serve as a single source of truth for both Claudie and the user, which makes creating infrastructure via input manifests as infrastructure as a code and can be easily integrated into a GitOps workflow.
 
     !!! warning "Errors in input manifest"
-        Validation webhook will reject the input manifest at this stage if it finds errors within the manifest. Refer to our [API guide](https://docs.claudie.io/latest/input-manifest/api-reference/) for details.
+        Validation webhook will reject the InputManifest at this stage if it finds errors within the manifest. Refer to our [API guide](https://docs.claudie.io/latest/input-manifest/api-reference/) for details.
 
 11. View logs from `frontend` service to see secret picked up, as well as which service is currently doing the work:
 
+    View the `InputManifest` state with `kubectl`
+
     ```bash
-    kubectl logs -l app.kubernetes.io/name=frontend -n claudie
+    kubectl get inputmanifests.claudie.io cloud-bursting -o jsonpath={.status} | jq .
     ```
     Here’s an example of what frontend might output at this point:
 
-    ```text
-    2:14PM INF Validating secret module=frontend name=-cloud-bursting v=0
-    2:14PM INF secret seems to be valid module=frontend name=-cloud-bursting v=0
-    2:14PM INF Created config for input manifest -cloud-bursting module=frontend
+    ```json
+      {
+        "clusters": {
+          "my-super-cluster": {
+            "message": " installing VPN",
+            "phase": "ANSIBLER",
+            "state": "IN_PROGRESS"
+          }
+        },
+        "state": "IN_PROGRESS"
+      }
     ```
 
     !!! note "Claudie architecture"
@@ -196,13 +215,22 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     !!! warning "Provisioning times may vary!"
         Please note that cluster creation time may vary due to provisioning capacity and machine provisioning times of selected hyperscalers.
 
-    After finishing the frontend service reports that the cluster is provisioned.
+    After finishing the `InputManifest` state reflects that the cluster is provisioned.
 
-    ```text
-    2:24PM INF Workflow finished cluster=my-super-cluster module=frontend project=-cloud-bursting
+    ```json
+    kubectl get inputmanifests.claudie.io cloud-bursting -o jsonpath={.status} | jq .
+      {
+        "clusters": {
+          "my-super-cluster": {
+            "phase": "NONE",
+            "state": "DONE"
+          }
+        },
+        "state": "DONE"
+      }    
     ```
 
-12. After finishing provisioning the cluster Claudie creates kubeconfig secret in claudie namespace:
+12. Claudie creates kubeconfig secret in claudie namespace:
 
     ```bash
     kubectl get secrets -l claudie.io/output=kubeconfig
@@ -245,97 +273,113 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     kubectl get pods -A --kubeconfig=my-super-cluster-kubeconfig.yaml
     ```
 
-14. Let's add a bursting autoscaling node pool in Hetzner cloud. In order to use other hyperscalers, we'll need to add a new provider with appropriate credentials. Open `cloud-bursting.yaml` input manifest again and append the new Hetzner node pool configuration.
+14. Let's add a bursting autoscaling node pool in Hetzner cloud. In order to use other hyperscalers, we'll need to add a new provider with appropriate credentials. First we will create a provider secret for Hetzner Cloud, then we open `inputmanifest-bursting.yaml` input manifest again and append the new Hetzner node pool configuration.
+
+    ```bash
+    # Hetzner provider requires the secrets to have field: credentials
+    kubectl create secret generic hetzner-secret-1 --namespace=mynamespace --from-literal=credentials='kslISA878a6etYAfXYcg5iYyrFGNlCxcICo060HVEygjFs21nske76ksjKko21lp'
+    ```
 
     !!! note "Claudie autoscaling"
         Autoscaler in Claudie is deployed in Claudie management cluster and provisions additional resources remotely at the time of need. For more information check out how [Claudie autoscaling](https://docs.claudie.io/latest/autoscaling/autoscaling.md) works.
 
     ```yaml
-    name: cloud-bursting
-    ...
-    providers:
-      hetzner:
-        - name: hetzner-1 # add new hetzner provider along with authentication token
-          credentials: xxxxxxxxxxxxxxx
-    nodePools:
-    dynamic:
-    ...
-      - name: hetzner-worker  # add under nodePools.dynamic section
-        providerSpec:
-            name: hetzner-1   # use your new hetzner provider hetzner-1 to create these nodes
-            region: hel1
-            zone: hel1-dc2
-        serverType: cpx51
-        image: ubuntu-22.04
-        autoscaler:   # this node pool uses a claudie autoscaler instead of static count of nodes
-            min: 1
-            max: 10
-    kubernetes:
-      clusters:
-      - name: my-super-cluster
-        version: v1.24.0
-        network: 192.168.2.0/24
-        pools:
-            control:
-            - aws-controlplane
-            compute:
-            - aws-worker
-            - hetzner-worker # add it to the compute list here
+    # inputmanifest-bursting.yaml
+
+    apiVersion: claudie.io/v1beta1
+    kind: InputManifest
+    metadata:
+      name: cloud-bursting
+    spec:
+      providers:
+        - name: hetzner-1         # add under nodePools.dynamic section
+          providerType: hetzner
+          secretRef:
+            name: hetzner-secret-1
+            namespace: mynamespace        
+      nodePools:
+        dynamic:
+        ...
+          - name: hetzner-worker  # add under nodePools.dynamic section
+            providerSpec:
+                name: hetzner-1   # use your new hetzner provider hetzner-1 to create these nodes
+                region: hel1
+                zone: hel1-dc2
+            serverType: cpx51
+            image: ubuntu-22.04
+            autoscaler:           # this node pool uses a claudie autoscaler instead of static count of nodes
+                min: 1
+                max: 10
+        kubernetes:
+          clusters:
+          - name: my-super-cluster
+            version: v1.24.0
+            network: 192.168.2.0/24
+            pools:
+                control:
+                - aws-controlplane
+                compute:
+                - aws-worker
+                - hetzner-worker  # add it to the compute list here
     ...
     ```
 
-15. Update the secret with the new input manifest to incorporate the desired changes.
+15. Update the crd with the new InputManifest to incorporate the desired changes.
 
     !!! danger "Deleting existing secrets!"
         **Deleting or replacing existing input manifest secrets triggers cluster deletion!** To add new components to your existing clusters, generate a new secret value and apply it using the following command.
 
     ```bash
-    kubectl create secret generic cloud-bursting --from-file=cloud-bursting.yaml -n claudie -oyaml --dry-run=client | kubectl
-    apply -f -
+    kubectl apply -f ./inputmanifest-bursting.yaml
     ```
 
 16. You can also passthrough additional ports from load balancers to control plane and or worker node pools by adding additional roles under `roles`.
     ```yaml
-    name: cloud-bursting
-    ...
-    loadBalancers:
-      roles:
-        - name: apiserver
-          protocol: tcp
-          port: 6443
-          targetPort: 6443
-          target: k8sControlPlane
-        - name: https
-          protocol: tcp
-          port: 443
-          targetPort: 443
-          target: k8sComputeNodes # only loadbalance between workers
-      clusters:
-        - name: loadbalance-me
-          roles:
-              - apiserver
-              - https # define it here
-          dns:
-              dnsZone: domain.com
-              provider: aws-dns
-              hostname: supercluster
-          targetedK8s: my-super-cluster
-          pools:
-              - aws-loadbalancer
+    # inputmanifest-bursting.yaml
+
+    apiVersion: claudie.io/v1beta1
+    kind: InputManifest
+    metadata:
+      name: cloud-bursting
+    spec:
+      ...
+      loadBalancers:
+        roles:
+          - name: apiserver
+            protocol: tcp
+            port: 6443
+            targetPort: 6443
+            target: k8sControlPlane
+          - name: https
+            protocol: tcp
+            port: 443
+            targetPort: 443
+            target: k8sComputeNodes # only loadbalance between workers
+        clusters:
+          - name: loadbalance-me
+            roles:
+                - apiserver
+                - https # define it here
+            dns:
+                dnsZone: domain.com
+                provider: aws-dns
+                hostname: supercluster
+            targetedK8s: my-super-cluster
+            pools:
+                - aws-loadbalancer
     ```
     !!! note Load balancing
         Please refer how our load balancing works by reading our [documentation](https://docs.claudie.io/latest/loadbalancing/loadbalancing-solution/).
 
-17. Update the secret safely again with the new configuration.
+17. Update the InputManifest again with the new configuration.
     ```bash
-    kubectl create secret generic cloud-bursting --from-file=cloud-bursting.yaml -n claudie -oyaml --dry-run=client | kubectl
-    apply -f -
+    kubectl apply -f ./inputmanifest-bursting.yaml
     ```
 
 18. To delete the cluster just simply delete the secret and wait for Claudie to destroy it.
 
     ```bash
-    kubectl delete secret cloud-bursting -n claudie
+    kubectl delete -f ./inputmanifest-bursting.yaml
     ```
 
     !!! warning "Removing clusters"
