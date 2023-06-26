@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/berops/claudie/proto/pb"
-	"github.com/berops/claudie/services/frontend/domain/usecases"
+	"github.com/berops/claudie/services/frontend/server/domain/usecases"
 )
 
 type FrontendGrpcService struct {

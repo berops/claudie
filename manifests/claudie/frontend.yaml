@@ -57,6 +57,12 @@ spec:
                   fieldPath: metadata.namespace
             - name: CONTROLLER_TLS_PORT
               value: "9443"
+            - name: FRONTEND_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: FRONTEND_PORT
+              # No hostname needed              
             - name: WEBHOOK_CERT_DIR
               value: "/etc/webhook/certs/"  
             - name: WEBHOOK_PATH

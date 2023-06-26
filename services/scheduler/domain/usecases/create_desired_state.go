@@ -20,16 +20,18 @@ func (u *Usecases) CreateDesiredState(config *pb.Config) (*pb.Config, error) {
 	// Check if the manifest string is empty and set DesiredState to nil
 	if config.Manifest == "" {
 		return &pb.Config{
-			Id:           config.GetId(),
-			Name:         config.GetName(),
-			Manifest:     config.GetManifest(),
-			DesiredState: nil,
-			CurrentState: config.GetCurrentState(),
-			MsChecksum:   config.GetMsChecksum(),
-			DsChecksum:   config.GetDsChecksum(),
-			CsChecksum:   config.GetCsChecksum(),
-			BuilderTTL:   config.GetBuilderTTL(),
-			SchedulerTTL: config.GetSchedulerTTL(),
+			Id:                config.GetId(),
+			Name:              config.GetName(),
+			ResourceName:      config.GetResourceName(),
+			ResourceNamespace: config.GetResourceNamespace(),
+			Manifest:          config.GetManifest(),
+			DesiredState:      nil,
+			CurrentState:      config.GetCurrentState(),
+			MsChecksum:        config.GetMsChecksum(),
+			DsChecksum:        config.GetDsChecksum(),
+			CsChecksum:        config.GetCsChecksum(),
+			BuilderTTL:        config.GetBuilderTTL(),
+			SchedulerTTL:      config.GetSchedulerTTL(),
 		}, nil
 	}
 
@@ -53,6 +55,8 @@ func (u *Usecases) CreateDesiredState(config *pb.Config) (*pb.Config, error) {
 	newConfig := &pb.Config{
 		Id:       config.GetId(),
 		Name:     config.GetName(),
+		ResourceName:      config.GetResourceName(),
+		ResourceNamespace: config.GetResourceNamespace(),		
 		Manifest: config.GetManifest(),
 		DesiredState: &pb.Project{
 			Name:                 unmarshalledManifest.Name,

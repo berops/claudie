@@ -40,17 +40,19 @@ type Workflow struct {
 }
 
 type configItem struct {
-	ID           primitive.ObjectID  `bson:"_id,omitempty"`
-	Name         string              `bson:"name"`
-	Manifest     string              `bson:"manifest"`
-	DesiredState []byte              `bson:"desiredState"`
-	CurrentState []byte              `bson:"currentState"`
-	MsChecksum   []byte              `bson:"msChecksum"`
-	DsChecksum   []byte              `bson:"dsChecksum"`
-	CsChecksum   []byte              `bson:"csChecksum"`
-	BuilderTTL   int                 `bson:"builderTTL"`
-	SchedulerTTL int                 `bson:"schedulerTTL"`
-	State        map[string]Workflow `bson:"state"`
+	ID                primitive.ObjectID  `bson:"_id,omitempty"`
+	Name              string              `bson:"name"`
+	ResourceName      string              `bson:"resourceName"`
+	ResourceNamespace string              `bson:"resourceNamespace"`
+	Manifest          string              `bson:"manifest"`
+	DesiredState      []byte              `bson:"desiredState"`
+	CurrentState      []byte              `bson:"currentState"`
+	MsChecksum        []byte              `bson:"msChecksum"`
+	DsChecksum        []byte              `bson:"dsChecksum"`
+	CsChecksum        []byte              `bson:"csChecksum"`
+	BuilderTTL        int                 `bson:"builderTTL"`
+	SchedulerTTL      int                 `bson:"schedulerTTL"`
+	State             map[string]Workflow `bson:"state"`
 }
 
 // NewMongoDBConnector creates a new instance of the MongoDBConnector struct
@@ -232,6 +234,8 @@ func (m *MongoDBConnector) SaveConfig(config *pb.Config) error {
 	data := &configItem{}
 	data.Name = config.GetName()
 	data.Manifest = config.GetManifest()
+	data.ResourceName = config.GetResourceName()
+	data.ResourceNamespace = config.GetResourceNamespace()
 	data.DesiredState = desiredStateByte
 	data.CurrentState = currentStateByte
 	data.MsChecksum = config.GetMsChecksum()
@@ -434,6 +438,8 @@ func dataToConfigPb(data *configItem) (*pb.Config, error) {
 		Id:           data.ID.Hex(),
 		Name:         data.Name,
 		Manifest:     data.Manifest,
+		ResourceName: data.ResourceName,
+		ResourceNamespace: data.ResourceNamespace,
 		DesiredState: desiredState,
 		CurrentState: currentState,
 		MsChecksum:   data.MsChecksum,

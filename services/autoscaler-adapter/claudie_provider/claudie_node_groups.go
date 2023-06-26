@@ -182,6 +182,24 @@ func (c *ClaudieCloudProvider) updateNodepool(nodepool *pb.NodePool) error {
 	return nil
 }
 
+func (c *ClaudieCloudProvider) SendAutoscalerEvent() error {
+	var cc *grpc.ClientConn
+	var err error
+
+	frontendURL := strings.ReplaceAll(envs.FrontendURL, ":tcp://", "")
+	if cc, err = utils.GrpcDialWithInsecure("frontend", frontendURL); err != nil {
+		return fmt.Errorf("failed to dial frontend at %s : %w", envs.FrontendURL, err)
+	}
+	frontend := pb.NewFrontendServiceClient(cc)
+	if _, err := frontend.SendAutoscalerEvent(context.Background(), &pb.SendAutoscalerEventRequest{
+		InputManifestName: c.resourceName,
+		InputManifestNamespace: c.resourceNamespace,
+	}); err != nil {
+		return fmt.Errorf("error while sending autoscaling event to Frontend : %w", err)
+	}
+	return nil
+}
+
 // containsId checks if nodes in specified slice contain specific id.
 func containsId(nodes []*protos.ExternalGrpcNode, nodeId string) bool {
 	for _, node := range nodes {

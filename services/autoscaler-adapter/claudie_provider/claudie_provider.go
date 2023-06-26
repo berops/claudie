@@ -41,6 +41,10 @@ type ClaudieCloudProvider struct {
 
 	// Name of the Claudie config.
 	projectName string
+	// Kubernete InputManifest resource name
+	resourceName string
+	// Kubernetes InputManifest resource namespace
+	resourceNamespace string
 	// Cluster as described in Claudie config.
 	configCluster *pb.K8Scluster
 	// Map of cached info regarding nodes.
@@ -55,11 +59,13 @@ type ClaudieCloudProvider struct {
 func NewClaudieCloudProvider(projectName, clusterName string) *ClaudieCloudProvider {
 	// Connect to Claudie and retrieve *pb.K8Scluster
 	var (
-		cluster *pb.K8Scluster
-		err     error
-		nm      *node_manager.NodeManager
+		cluster    *pb.K8Scluster
+		err        error
+		rName      string
+		rNamespace string
+		nm         *node_manager.NodeManager
 	)
-	if cluster, err = getClaudieState(projectName, clusterName); err != nil {
+	if cluster, rName, rNamespace, err = getClaudieState(projectName, clusterName); err != nil {
 		panic(fmt.Sprintf("Error while getting cluster %s : %v", clusterName, err))
 	}
 	if nm, err = node_manager.NewNodeManager(cluster.ClusterInfo.NodePools); err != nil {
@@ -68,22 +74,24 @@ func NewClaudieCloudProvider(projectName, clusterName string) *ClaudieCloudProvi
 	// Initialise all other variables.
 	log.Logger = log.Logger.With().Str("cluster", utils.GetClusterID(cluster.ClusterInfo)).Logger()
 	return &ClaudieCloudProvider{
-		projectName:   projectName,
-		configCluster: cluster,
-		nodesCache:    getNodesCache(cluster.ClusterInfo.NodePools),
-		nodeManager:   nm,
+		projectName:       projectName,
+		configCluster:     cluster,
+		resourceName:      rName,
+		resourceNamespace: rNamespace,
+		nodesCache:        getNodesCache(cluster.ClusterInfo.NodePools),
+		nodeManager:       nm,
 	}
 }
 
-// getClaudieState returns a *pb.K8Scluster from Claudie, for this particular ClaudieCloudProvider instance.
-func getClaudieState(projectName, clusterName string) (*pb.K8Scluster, error) {
+// getClaudieState returns a *pb.K8Scluster, resourceName and resourceNamespace from Claudie, for this particular ClaudieCloudProvider instance.
+func getClaudieState(projectName, clusterName string) (*pb.K8Scluster, string, string, error) {
 	var cc *grpc.ClientConn
 	var err error
 	var res *pb.GetConfigFromDBResponse
 	cboxURL := strings.ReplaceAll(envs.ContextBoxURL, ":tcp://", "")
 
 	if cc, err = utils.GrpcDialWithInsecure("context-box", cboxURL); err != nil {
-		return nil, fmt.Errorf("failed to dial context-box at %s : %w", cboxURL, err)
+		return nil, "", "", fmt.Errorf("failed to dial context-box at %s : %w", cboxURL, err)
 	}
 	defer func() {
 		if err := cc.Close(); err != nil {
@@ -93,15 +101,15 @@ func getClaudieState(projectName, clusterName string) (*pb.K8Scluster, error) {
 
 	c := pb.NewContextBoxServiceClient(cc)
 	if res, err = c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: projectName, Type: pb.IdType_NAME}); err != nil {
-		return nil, fmt.Errorf("failed to get config for project %s : %w", projectName, err)
+		return nil, "", "", fmt.Errorf("failed to get config for project %s : %w", projectName, err)
 	}
 
 	for _, cluster := range res.Config.DesiredState.Clusters {
 		if cluster.ClusterInfo.Name == clusterName {
-			return cluster, nil
+			return cluster, res.Config.ResourceName, res.Config.ResourceNamespace, nil
 		}
 	}
-	return nil, fmt.Errorf("failed to find cluster %s in config for a project %s", clusterName, projectName)
+	return nil, "", "", fmt.Errorf("failed to find cluster %s in config for a project %s", clusterName, projectName)
 }
 
 // getNodesCache returns a map of nodeCache, regarding all information needed based on the nodepools with autoscaling enabled.
@@ -212,11 +220,13 @@ func (c *ClaudieCloudProvider) Refresh(_ context.Context, req *protos.RefreshReq
 // refresh refreshes the state of the claudie provider based of the state from Claudie.
 func (c *ClaudieCloudProvider) refresh() error {
 	log.Info().Msgf("Refreshing the state")
-	if cluster, err := getClaudieState(c.projectName, c.configCluster.ClusterInfo.Name); err != nil {
+	if cluster, rName, rNamespace, err := getClaudieState(c.projectName, c.configCluster.ClusterInfo.Name); err != nil {
 		log.Err(err).Msgf("Error while refreshing a state of the cluster")
 		return fmt.Errorf("error while refreshing a state for the cluster %s : %w", c.configCluster.ClusterInfo.Name, err)
 	} else {
 		c.configCluster = cluster
+		c.resourceName = rName
+		c.resourceNamespace = rNamespace
 		c.nodesCache = getNodesCache(cluster.ClusterInfo.NodePools)
 		if err := c.nodeManager.Refresh(cluster.ClusterInfo.NodePools); err != nil {
 			return fmt.Errorf("failed to refresh node manager : %w", err)

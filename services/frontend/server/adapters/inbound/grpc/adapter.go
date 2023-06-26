@@ -10,7 +10,7 @@ import (
 
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
-	"github.com/berops/claudie/services/frontend/domain/usecases"
+	"github.com/berops/claudie/services/frontend/server/domain/usecases"
 )
 
 const (
@@ -50,8 +50,7 @@ func (g *GrpcAdapter) Serve() error {
 	return nil
 }
 
-// Stop will gracefully shutdown the gRPC server and the healthcheck server
+// Stop will gracefully shutdown the gRPC server
 func (g *GrpcAdapter) Stop() {
 	g.server.GracefulStop()
-	g.healthCheckServer.Shutdown()
 }

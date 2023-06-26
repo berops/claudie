@@ -19,9 +19,9 @@ import (
 
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/services/frontend/adapters/inbound/grpc"
-	outboundAdapters "github.com/berops/claudie/services/frontend/adapters/outbound"
-	"github.com/berops/claudie/services/frontend/domain/usecases"
+	"github.com/berops/claudie/services/frontend/server/adapters/inbound/grpc"
+	outboundAdapters "github.com/berops/claudie/services/frontend/server/adapters/outbound"
+	"github.com/berops/claudie/services/frontend/server/domain/usecases"
 	"github.com/berops/claudie/services/frontend/pkg/controller"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
@@ -84,6 +84,7 @@ func run() error {
 	errGroup.Go(func() error {
 		shutdownSignalChan := make(chan os.Signal, 1)
 		signal.Notify(shutdownSignalChan, os.Interrupt, syscall.SIGTERM)
+		defer signal.Stop(shutdownSignalChan)
 
 		var err error
 
@@ -141,17 +142,6 @@ func run() error {
 	).SetupWithManager(mgr); err != nil {
 		return err
 	}
-
-	// go func() {
-	// 	for {
-	// 		time.Sleep(time.Second * 1)
-	// 		fmt.Println("Send test event to reconsiler")
-	// 		im := v1beta1.InputManifest{}
-	// 		im.SetName("testResource")
-	// 		im.SetNamespace("default")
-	// 		ch <- event.GenericEvent{Object: &im}
-	// 	}
-	// }()
 
 	// convert string from env to int
 	port, err := strconv.Atoi(portStr)

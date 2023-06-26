@@ -5,7 +5,7 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/event"
 
-	"github.com/berops/claudie/services/frontend/domain/ports"
+	"github.com/berops/claudie/services/frontend/server/domain/ports"
 )
 
 type Usecases struct {
