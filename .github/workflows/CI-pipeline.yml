@@ -291,7 +291,7 @@ jobs:
 
           echo "Running terraform script"
           terraform init
-          terraform apply -auto-approve > /dev/null 2>&1
+          terraform apply -auto-approve
           IPS=$(printf '%s\n' "${{ secrets.CREATE_STATIC_NODES }}" | terraform output --json | jq -r '.endpoints.value | values[]')
           IP_ARR=( echo $IPS )
           
