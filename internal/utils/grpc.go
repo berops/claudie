@@ -27,8 +27,8 @@ func NewGRPCServer() *grpc.Server {
 		}),
 		grpc.KeepaliveParams(keepalive.ServerParameters{
 			MaxConnectionIdle:     math.MaxInt64,   // If a client is idle for INFINITE seconds, send a GOAWAY.
-			MaxConnectionAge:      math.MaxInt64,   // If any connection is alive for more than INIFINITE seconds, send a GOAWAY.
-			MaxConnectionAgeGrace: math.MaxInt64,   // Allow INIFNITE seconds for pending RPCs to complete before forcibly closing connections.
+			MaxConnectionAge:      math.MaxInt64,   // If any connection is alive for more than INFINITE seconds, send a GOAWAY.
+			MaxConnectionAgeGrace: math.MaxInt64,   // Allow INFINITE seconds for pending RPCs to complete before forcibly closing connections.
 			Time:                  2 * time.Hour,   // Ping the client if it is idle for 2 Hours to ensure the connection is still active.
 			Timeout:               5 * time.Minute, // Wait 5 minutes for the ping ack before assuming the connection is dead.
 		}),
