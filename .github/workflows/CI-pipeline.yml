@@ -287,11 +287,9 @@ jobs:
         run: |
           sudo apt update && sudo apt install -y jq#
 
-          printf '%s\n' "${{ secrets.CREATE_STATIC_NODES }}" > script.tf
-          
-          terraform init
-          terraform apply -auto-approve
-          IPS=$(terraform output --json | jq -r '.endpoints.value | values[]')
+          printf '%s\n' "${{ secrets.CREATE_STATIC_NODES }}" | terraform init
+          printf '%s\n' "${{ secrets.CREATE_STATIC_NODES }}" | terraform apply -auto-approve
+          IPS=$(printf '%s\n' "${{ secrets.CREATE_STATIC_NODES }}" | terraform output --json | jq -r '.endpoints.value | values[]')
           IP_ARR=( echo $IPS )
           
           for file in test-set5/*; do
@@ -343,5 +341,5 @@ jobs:
         if: always()
         working-directory: ./manifests/testing-framework/test-sets
         run:
-          terraform init
-          terraform destroy -auto-approve
+          printf '%s\n' "${{ secrets.CREATE_STATIC_NODES }}" | terraform init
+          printf '%s\n' "${{ secrets.CREATE_STATIC_NODES }}" | terraform destroy -auto-approve
