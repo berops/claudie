@@ -36,7 +36,7 @@ func healthCheck() error {
 		"kuber":       envs.KuberURL,
 	}
 	for service, url := range services {
-		if cc, err := utils.GrpcDialWithInsecure(service, url); err != nil {
+		if cc, err := utils.GrpcDialWithRetryAndBackoff(service, url); err != nil {
 			return err
 		} else {
 			if err := cc.Close(); err != nil {

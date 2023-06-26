@@ -17,7 +17,7 @@ func TestRefresh(t *testing.T) {
 	var err error
 	URL := "localhost:50000"
 
-	if cc, err = utils.GrpcDialWithInsecure("adapter", URL); err != nil {
+	if cc, err = utils.GrpcDialWithRetryAndBackoff("adapter", URL); err != nil {
 		t.Error(err)
 	}
 
