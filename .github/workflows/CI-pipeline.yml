@@ -217,11 +217,16 @@ jobs:
 
       - name: Set up terraform
         uses: hashicorp/setup-terraform@v2
+      
+      # https://github.com/hashicorp/setup-terraform/issues/84
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
 
       - name: Set short sha output
         run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
 
-      - name: install kubectl
+      - name: Install kubectl
         uses: azure/setup-kubectl@v3.2
         with:
           version: latest
@@ -231,7 +236,7 @@ jobs:
         with:
           kustomize-version: 4.5.6
 
-      - name: e2e kubeconfig
+      - name: Set e2e kubeconfig
         uses: azure/k8s-set-context@v3.1
         with:
           kubeconfig: ${{ secrets.E2E_CLUSTER_KUBECONFIG }}
