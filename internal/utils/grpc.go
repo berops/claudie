@@ -23,8 +23,8 @@ func CloseClientConnection(connection *grpc.ClientConn) {
 // policy of ~10 minutes after which an error is returned that it couldn't connect to the service.
 func GrpcDialWithRetryAndBackoff(serviceName, serviceURL string) (*grpc.ClientConn, error) {
 	kacp := keepalive.ClientParameters{
-		Time:                45 * time.Second, // ping the server every ~60 seconds.
-		Timeout:             5 * time.Minute,  // wait up to 20 minutes for a packet to be acknowledged.
+		Time:                45 * time.Second, // ping the server every ~45 seconds.
+		Timeout:             5 * time.Minute,  // wait up to 5 minutes for a packet to be acknowledged.
 		PermitWithoutStream: true,             // send pings if there are no active streams (RPCs).
 	}
 
