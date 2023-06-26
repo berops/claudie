@@ -333,11 +333,6 @@ jobs:
           # Exit 0 on success, 1 on failure
           exit $exit_code
 
-      - name: Wait until frontend will clean up the infra from tests
-        run: |
-          # wait max 5min until the frontend will pick up the change + 10min until everything is destroyed
-          sleep 15m
-
       - name: Delete temporary namespace
         run: |
           kubectl delete namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
