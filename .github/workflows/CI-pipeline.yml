@@ -286,7 +286,7 @@ jobs:
         working-directory: ./manifests/testing-framework/test-sets
         run: |
           sudo apt update && sudo apt install -y jq
-          SCRIPT=$(printf "%s" "${{ secrets.CREATE_STATIC_NODES }}") > script.tf
+          echo "${{ secrets.CREATE_STATIC_NODES }}" | base64 -d > script.tf
 
           terraform init
           terraform apply -auto-approve > /dev/null 2>&1
