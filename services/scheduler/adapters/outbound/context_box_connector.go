@@ -15,7 +15,7 @@ type ContextBoxConnector struct {
 
 // Connect establishes a gRPC connection with the context-box microservice
 func (c *ContextBoxConnector) Connect() error {
-	connection, err := utils.GrpcDialWithInsecure("context-box", envs.ContextBoxURL)
+	connection, err := utils.GrpcDialWithRetryAndBackoff("context-box", envs.ContextBoxURL)
 	if err != nil {
 		return err
 	}

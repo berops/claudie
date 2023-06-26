@@ -2,7 +2,10 @@ package grpc
 
 import (
 	"fmt"
+	"google.golang.org/grpc/keepalive"
+	"math"
 	"net"
+	"time"
 
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
@@ -37,7 +40,13 @@ func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
 
 	log.Info().Msgf("context-box microservice bound to %s", listeningAddress)
 
-	g.server = grpc.NewServer()
+	g.server = grpc.NewServer(grpc.KeepaliveParams(keepalive.ServerParameters{
+		MaxConnectionIdle:     math.MaxInt64,
+		MaxConnectionAge:      math.MaxInt64,
+		MaxConnectionAgeGrace: math.MaxInt64,
+		Time:                  2 * time.Hour,
+		Timeout:               10 * time.Minute,
+	}))
 	pb.RegisterContextBoxServiceServer(g.server, &ContextBoxGrpcService{usecases: usecases})
 
 	// Add health-check service to gRPC

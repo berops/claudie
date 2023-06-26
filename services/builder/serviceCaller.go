@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-
 	"github.com/rs/zerolog/log"
 
 	"github.com/berops/claudie/internal/envs"
@@ -125,7 +124,7 @@ func callTerraformer(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient)
 		return err
 	}
 
-	cc, err := utils.GrpcDialWithInsecure("terraformer", envs.TerraformerURL)
+	cc, err := utils.GrpcDialWithRetryAndBackoff("terraformer", envs.TerraformerURL)
 	if err != nil {
 		return err
 	}
@@ -180,7 +179,7 @@ func callUpdateAPIEndpoint(ctx *BuilderContext, cboxClient pb.ContextBoxServiceC
 		return err
 	}
 
-	cc, err := utils.GrpcDialWithInsecure("ansibler", envs.AnsiblerURL)
+	cc, err := utils.GrpcDialWithRetryAndBackoff("ansibler", envs.AnsiblerURL)
 	if err != nil {
 		return err
 	}
@@ -221,7 +220,7 @@ func callAnsibler(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) er
 		return err
 	}
 
-	cc, err := utils.GrpcDialWithInsecure("ansibler", envs.AnsiblerURL)
+	cc, err := utils.GrpcDialWithRetryAndBackoff("ansibler", envs.AnsiblerURL)
 	if err != nil {
 		return err
 	}
@@ -331,7 +330,7 @@ func callKubeEleven(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) 
 		return err
 	}
 
-	cc, err := utils.GrpcDialWithInsecure("kube-eleven", envs.KubeElevenURL)
+	cc, err := utils.GrpcDialWithRetryAndBackoff("kube-eleven", envs.KubeElevenURL)
 	if err != nil {
 		return err
 	}
@@ -368,7 +367,7 @@ func callPatchClusterInfoConfigMap(ctx *BuilderContext, cboxClient pb.ContextBox
 	description := ctx.Workflow.Description
 	ctx.Workflow.Stage = pb.Workflow_KUBER
 
-	cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL)
+	cc, err := utils.GrpcDialWithRetryAndBackoff("kuber", envs.KuberURL)
 	if err != nil {
 		return err
 	}
@@ -398,7 +397,7 @@ func callKuber(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error
 	description := ctx.Workflow.Description
 	ctx.Workflow.Stage = pb.Workflow_KUBER
 
-	cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL)
+	cc, err := utils.GrpcDialWithRetryAndBackoff("kuber", envs.KuberURL)
 	if err != nil {
 		return err
 	}
@@ -513,7 +512,7 @@ func destroyCluster(ctx *BuilderContext, c pb.ContextBoxServiceClient) error {
 		return fmt.Errorf("error in destroy config Terraformer for config %s project %s : %w", ctx.GetClusterName(), ctx.projectName, err)
 	}
 
-	cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL)
+	cc, err := utils.GrpcDialWithRetryAndBackoff("kuber", envs.KuberURL)
 	if err != nil {
 		return err
 	}
@@ -548,7 +547,7 @@ func destroyConfigTerraformer(ctx *BuilderContext, cboxClient pb.ContextBoxServi
 		return err
 	}
 
-	cc, err := utils.GrpcDialWithInsecure("terraformer", envs.TerraformerURL)
+	cc, err := utils.GrpcDialWithRetryAndBackoff("terraformer", envs.TerraformerURL)
 	if err != nil {
 		return err
 	}
@@ -613,7 +612,7 @@ func deleteClusterData(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClien
 func callDeleteNodes(master, worker []string, cluster *pb.K8Scluster) (*pb.K8Scluster, error) {
 	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(cluster.ClusterInfo))
 
-	cc, err := utils.GrpcDialWithInsecure("kuber", envs.KuberURL)
+	cc, err := utils.GrpcDialWithRetryAndBackoff("kuber", envs.KuberURL)
 	if err != nil {
 		return nil, err
 	}

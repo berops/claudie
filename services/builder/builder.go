@@ -56,7 +56,7 @@ func main() {
 }
 
 func run() error {
-	conn, err := utils.GrpcDialWithInsecure("context-box", envs.ContextBoxURL)
+	conn, err := utils.GrpcDialWithRetryAndBackoff("context-box", envs.ContextBoxURL)
 	if err != nil {
 		return fmt.Errorf("failed to connect to context-box on %s : %w", envs.ContextBoxURL, err)
 	}
