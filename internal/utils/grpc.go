@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
+	"math"
 	"time"
 )
 
@@ -16,6 +17,22 @@ func CloseClientConnection(connection *grpc.ClientConn) {
 	if err := connection.Close(); err != nil {
 		log.Err(err).Msgf("Error while closing the client connection %s", connection.Target())
 	}
+}
+
+func NewGRPCServer() *grpc.Server {
+	return grpc.NewServer(
+		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
+			MinTime:             45 * time.Second, // If a client pings more than once every 45 seconds, terminate the connection
+			PermitWithoutStream: true,             // Allow pings even when there are no active streams
+		}),
+		grpc.KeepaliveParams(keepalive.ServerParameters{
+			MaxConnectionIdle:     math.MaxInt64,   // If a client is idle for INFINITE seconds, send a GOAWAY.
+			MaxConnectionAge:      math.MaxInt64,   // If any connection is alive for more than INIFINITE seconds, send a GOAWAY.
+			MaxConnectionAgeGrace: math.MaxInt64,   // Allow INIFNITE seconds for pending RPCs to complete before forcibly closing connections.
+			Time:                  2 * time.Hour,   // Ping the client if it is idle for 2 Hours to ensure the connection is still active.
+			Timeout:               5 * time.Minute, // Wait 5 minutes for the ping ack before assuming the connection is dead.
+		}),
+	)
 }
 
 // GrpcDialWithRetryAndBackoff creates an insecure gRPC connection to serviceURL

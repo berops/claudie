@@ -36,7 +36,7 @@ func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
 
 	log.Info().Msgf("context-box microservice bound to %s", listeningAddress)
 
-	g.server = grpc.NewServer()
+	g.server = utils.NewGRPCServer()
 	pb.RegisterContextBoxServiceServer(g.server, &ContextBoxGrpcService{usecases: usecases})
 
 	// Add health-check service to gRPC
