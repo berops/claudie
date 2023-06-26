@@ -285,10 +285,11 @@ jobs:
       - name: Create test static nodes
         working-directory: ./manifests/testing-framework/test-sets
         run: |
-          sudo apt update && sudo apt install -y jq#
+          sudo apt update && sudo apt install -y jq
+          SCRIPT=$(printf "%s" "${{ secrets.CREATE_STATIC_NODES }}") > script.tf
 
-          printf '%s\n' "${{ secrets.CREATE_STATIC_NODES }}" | terraform init
-          printf '%s\n' "${{ secrets.CREATE_STATIC_NODES }}" | terraform apply -auto-approve
+          terraform init
+          terraform apply -auto-approve > /dev/null 2>&1
           IPS=$(printf '%s\n' "${{ secrets.CREATE_STATIC_NODES }}" | terraform output --json | jq -r '.endpoints.value | values[]')
           IP_ARR=( echo $IPS )
           
@@ -341,5 +342,5 @@ jobs:
         if: always()
         working-directory: ./manifests/testing-framework/test-sets
         run:
-          printf '%s\n' "${{ secrets.CREATE_STATIC_NODES }}" | terraform init
-          printf '%s\n' "${{ secrets.CREATE_STATIC_NODES }}" | terraform destroy -auto-approve
+          terraform init
+          terraform destroy -auto-approve > /dev/null 2>&1
