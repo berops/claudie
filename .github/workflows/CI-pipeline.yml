@@ -285,12 +285,13 @@ jobs:
       - name: Create test static nodes
         working-directory: ./manifests/testing-framework/test-sets
         run: |
-          sudo apt update && sudo apt install -y jq
-          echo "${{ secrets.GCP_CREDENTIALS }}" > creds.json
-          echo "${{ secrets.GCP_DEV_PROJECT_ID }}" > project.txt
-          echo "${{ secrets.CREATE_STATIC_NODES }}" | terraform init
-          echo "${{ secrets.CREATE_STATIC_NODES }}" | terraform apply -auto-approve
-          IPS=$(echo "${{ secrets.CREATE_STATIC_NODES }}" | terraform output --json | jq -r '.endpoints.value | values[]')
+          sudo apt update && sudo apt install -y jq#
+
+          printf '%s\n' "${{ secrets.CREATE_STATIC_NODES }}" > script.tf
+          
+          terraform init
+          terraform apply -auto-approve
+          IPS=$(terraform output --json | jq -r '.endpoints.value | values[]')
           IP_ARR=( echo $IPS )
           
           for file in test-set5/*; do
@@ -342,5 +343,5 @@ jobs:
         if: always()
         working-directory: ./manifests/testing-framework/test-sets
         run:
-          echo "${{ secrets.CREATE_STATIC_NODES }}" | terraform init
-          echo "${{ secrets.CREATE_STATIC_NODES }}" | terraform destroy -auto-approve
+          terraform init
+          terraform destroy -auto-approve
