@@ -286,7 +286,8 @@ jobs:
         working-directory: ./manifests/testing-framework/test-sets
         run: |
           sudo apt update && sudo apt install -y jq
-
+          echo "${{ secrets.GCP_CREDENTIALS }}" > creds.json
+          echo "${{ secrets.GCP_DEV_PROJECT_ID }}" > project.txt
           echo "${{ secrets.CREATE_STATIC_NODES }}" | terraform init
           echo "${{ secrets.CREATE_STATIC_NODES }}" | terraform apply -auto-approve
           IPS=$(echo "${{ secrets.CREATE_STATIC_NODES }}" | terraform output --json | jq -r '.endpoints.value | values[]')
