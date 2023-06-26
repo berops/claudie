@@ -42,9 +42,7 @@ Read in more details [here](https://docs.claudie.io/latest/use-cases/use-cases/)
 Create fully-featured Kubernetes clusters composed of multiple different public Cloud providers in an easy and secure manner.
 Simply insert credentials to your cloud projects, define your cluster, and watch how the infra spawns right in front of you.
 
-<p align="center">
- <img alt="Infra Diagram" src="https://github.com/berops/claudie/raw/master/docs/infra-diagram.png" />
-</p>
+![](./docs/infra-diagram.png)
 
 ### Management via IaC
 
@@ -69,9 +67,9 @@ Claudie comes pre-configured with a storage solution, with ready-to-use Storage 
 ### Prerequisites
 Before you begin, please make sure you have the following prerequisites installed and set up:
 
-1. Claudie needs to be installed on an existing Kubernetes cluster, which it uses to manage the clusters it provisions. For testing, you can use ephemeral clusters like Minikube or Kind. However, for production environments, we recommend using a more resilient solution since Claudie maintains the state of the infrastructure it creates.
+1. Claudie needs to be installed on an existing Kubernetes cluster, referred to as the *Management Cluster*, which it uses to manage the clusters it provisions. For testing, you can use ephemeral clusters like Minikube or Kind. However, for production environments, we recommend using a more resilient solution since Claudie maintains the state of the infrastructure it creates.
 
-2. Claudie requires the installation of cert-manager in your Kubernetes cluster. To install cert-manager, use the following command:
+2. Claudie requires the installation of cert-manager in your Management Cluster. To install cert-manager, use the following command:
     ```bash
     kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml
     ```
@@ -99,32 +97,71 @@ For adding support for other cloud providers, open an issue or propose a PR.
     wget https://github.com/berops/claudie/releases/latest/download/claudie.zip && unzip claudie.zip -d claudie
     ```
 
-2. Deploy Claudie into your management Kubernetes cluster:
+2. Deploy Claudie to the Management Cluster:
     ```bash
     kubectl apply -k claudie
     ```
 
 ### Deploy your cluster
 
-3. Deploy input manifest secret which Claudie uses to create infrastructure across various hyperscalers:
+1. Create Kubernetes Secret resource for your provider configuration.
+
     ```bash
-    kubectl create secret generic input-manifest --from-file=input-manifest.yaml -n claudie
+    kubectl create secret generic example-aws-secret-1 \
+      --namespace=mynamespace \
+      --from-literal=accesskey='myAwsAccessKey' \
+      --from-literal=secretkey='myAwsSecretKey'
     ```
 
-   Check the [supported providers](#supported-providers) for input manifest examples. For an input manifest spanning all supported hyperscalers checkout out [this example](https://docs.claudie.io/latest/input-manifest/example.md).
+    Check the [supported providers](#supported-providers) for input manifest examples. For an input manifest spanning all supported hyperscalers checkout out [this example](https://docs.claudie.io/latest/input-manifest/example.md).
 
-4. Label the input-manifest secret created in the previous step to enable the Claudie frontend service to recognize it as part of Claudie and initiate the creation of the specified infrastructure.
+2. Deploy InputManifest resource which Claudie uses to create infrastructure, include the created secret in `.spec.providers` as follows:
     ```bash
-    kubectl label secret input-manifest claudie.io/input-manifest=claudie-testing -n claudie
-    ```
-
-5. If you wish to adjust your already created input manifest you can do so without deleting or replacing the secret itself:
-    ```bash
-    kubectl create secret generic input-manifest --from-file=input-manifest.yaml -n claudie -oyaml --dry-run=client | kubectl
-    apply -f -
+    kubectl apply -f - <<EOF
+    apiVersion: claudie.io/v1beta1
+    kind: InputManifest
+    metadata:
+      name: examplemanifest
+    spec:
+      providers:
+          - name: aws-1
+          providerType: aws
+          secretRef:
+              name: example-aws-secret-1 # reference the secret name
+              namespace: mynamespace     # reference the secret namespace
+      nodePools:
+          dynamic:
+          - name: control-aws
+              providerSpec:
+                name: aws-1
+                region: eu-central-1
+                zone: eu-central-1a
+              count: 1
+              serverType: t3.medium
+              image: ami-0965bd5ba4d59211c
+          - name: compute-1-aws
+              providerSpec:
+                name: aws-1
+                region: eu-central-2
+                zone: eu-central-2a
+              count: 2
+              serverType: t3.medium
+              image: ami-0965bd5ba4d59211c
+              storageDiskSize: 50
+      kubernetes:
+          clusters:
+          - name: aws-cluster
+              version: v1.24.0
+              network: 192.168.2.0/24
+              pools:
+                control:
+                    - control-aws
+                compute:
+                    - compute-1-aws        
+    EOF
     ```
     
-    ***Deleting existing secret deletes provisioned infrastructure!***
+    ***Deleting existing InputManifest resource deletes provisioned infrastructure!***
 
 ### Connect to your cluster
 Claudie outputs base64 encoded kubeconfig secret `<cluster-name>-<cluster-hash>-kubeconfig` in the namespace where it is deployed:
@@ -140,13 +177,55 @@ Claudie outputs base64 encoded kubeconfig secret `<cluster-name>-<cluster-hash>-
 
 ### Cleanup
 
-1. To remove your cluster and its associated infrastructure, delete the cluster definition block from the input-manifest and update the secret:
+1. To remove your cluster and its associated infrastructure, delete the cluster definition block from the InputManifest:
     ```bash
-    kubectl create secret generic input-manifest --from-file=input-manifest.yaml -n claudie -oyaml --dry-run=client | kubectl apply -f -
+    kubectl apply -f - <<EOF
+    apiVersion: claudie.io/v1beta1
+    kind: InputManifest
+    metadata:
+      name: examplemanifest
+    spec:
+      providers:
+          - name: aws-1
+          providerType: aws
+          secretRef:
+              name: example-aws-secret-1 # reference the secret name
+              namespace: mynamespace     # reference the secret namespace
+      nodePools:
+          dynamic:
+          - name: control-aws
+              providerSpec:
+                name: aws-1
+                region: eu-central-1
+                zone: eu-central-1a
+              count: 1
+              serverType: t3.medium
+              image: ami-0965bd5ba4d59211c
+          - name: compute-1-aws
+              providerSpec:
+                name: aws-1
+                region: eu-central-2
+                zone: eu-central-2a
+              count: 2
+              serverType: t3.medium
+              image: ami-0965bd5ba4d59211c
+              storageDiskSize: 50
+      kubernetes:
+        clusters:
+    #      - name: aws-cluster
+    #          version: v1.24.0
+    #          network: 192.168.2.0/24
+    #          pools:
+    #            control:
+    #                - control-aws
+    #            compute:
+    #                - compute-1-aws         
+    EOF
     ```
-2. To delete all clusters defined in the input manifest, delete the secret. This triggers the deletion process, removing the infrastructure and all data associated with the manifest.
+2. To delete all clusters defined in the input manifest, delete the InputManifest. This triggers the deletion process, removing the infrastructure and all data associated with the manifest.
+
     ```bash
-    kubectl delete secret input-manifest -n claudie
+    kubectl delete inputmanifest examplemanifest
     ```
 <!-- steps-end -->
 

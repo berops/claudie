@@ -1,13 +1,16 @@
 # AWS
-AWS cloud provider requires you to input the credentials as an `accessKey` and a `secretKey`.
+AWS cloud provider requires you to input the credentials as an `accesskey` and a `secretkey`.
 
 ## Compute and DNS example
 ```yaml
-providers:
-  aws:
-    - name: aws-1
-      accessKey: access_key_id
-      secretKey: secret_access_key
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aws-secret
+data:
+  accesskey: U0xEVVRLU0hGRE1TSktESUFMQVNTRA==
+  secretkey: aXVoYk9JSk4rb2luL29saWtEU2Fkc25vaVNWU0RzYWNvaW5PVVNIRA==
+type: Opaque
 ```
 
 ## Create AWS credentials
@@ -79,174 +82,192 @@ If you wish to use AWS as your DNS provider where Claudie creates DNS records po
     If you haven't acquired a domain via AWS and wish to utilize AWS for hosting your zone, you can refer to [this guide](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/migrate-dns-domain-in-use.html#migrate-dns-change-name-servers-with-provider) on AWS nameservers. However, if you prefer not to use the entire domain, an alternative option is to delegate a subdomain to AWS.
 
 ## Input manifest examples
+
+### Create a secret for AWS provider
+The secret for an AWS provider must include the following mandatory fields: `accesskey` and `secretkey`.
+
+```bash
+kubectl create secret generic aws-secret-1 --namespace=mynamespace --from-literal=accesskey='SLDUTKSHFDMSJKDIALASSD' --from-literal=secretkey='iuhbOIJN+oin/olikDSadsnoiSVSDsacoinOUSHD'
+```
+
 ### Single provider, multi region cluster example
 
 ```yaml
-name: AWSExampleManifest
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: AWSExampleManifest
+spec:
 
-providers:
-  aws:
+  providers:
     - name: aws-1
-      # Access key to your AWS account.
-      accessKey: SLDUTKSHFDMSJKDIALASSD
-      # Secret key to your AWS account.
-      secretKey: iuhbOIJN+oin/olikDSadsnoiSVSDsacoinOUSHD
+      providerType: aws
+      secretRef:
+        name: aws-secret-1
+        namespace: mynamespace
 
-nodePools:
-  dynamic:
-    - name: control-aws
-      providerSpec:
-        # Name of the provider instance.
-        name: aws-1
-        # Region of the nodepool.
-        region: eu-central-1
-        # Availability zone of the nodepool.
-        zone: eu-central-1a
-      count: 1
-      # Instance type name.
-      serverType: t3.medium
-      # AMI ID of the image.
-      # Make sure to update it according to the region. 
-      image: ami-0965bd5ba4d59211c
-      
-    - name: compute-1-aws
-      providerSpec:
-        # Name of the provider instance.
-        name: aws-1
-        # Region of the nodepool.
-        region: eu-central-2
-        # Availability zone of the nodepool.
-        zone: eu-central-2a
-      count: 2
-      # Instance type name.
-      serverType: t3.medium
-      # AMI ID of the image.
-      # Make sure to update it according to the region. 
-      image: ami-0965bd5ba4d59211c
-      storageDiskSize: 50
+  nodePools:
+    dynamic:
+      - name: control-aws
+        providerSpec:
+          # Name of the provider instance.
+          name: aws-1
+          # Region of the nodepool.
+          region: eu-central-1
+          # Availability zone of the nodepool.
+          zone: eu-central-1a
+        count: 1
+        # Instance type name.
+        serverType: t3.medium
+        # AMI ID of the image.
+        # Make sure to update it according to the region. 
+        image: ami-0965bd5ba4d59211c
+        
+      - name: compute-1-aws
+        providerSpec:
+          # Name of the provider instance.
+          name: aws-1
+          # Region of the nodepool.
+          region: eu-central-2
+          # Availability zone of the nodepool.
+          zone: eu-central-2a
+        count: 2
+        # Instance type name.
+        serverType: t3.medium
+        # AMI ID of the image.
+        # Make sure to update it according to the region. 
+        image: ami-0965bd5ba4d59211c
+        storageDiskSize: 50
 
-    - name: compute-2-aws
-      providerSpec:
-        # Name of the provider instance.
-        name: aws-1
-        # Region of the nodepool.
-        region: eu-central-3
-        # Availability zone of the nodepool.
-        zone: eu-central-3a
-      count: 2
-      # Instance type name.
-      serverType: t3.medium
-      # AMI ID of the image.
-      # Make sure to update it according to the region. 
-      image: ami-0965bd5ba4d59211c
-      storageDiskSize: 50
+      - name: compute-2-aws
+        providerSpec:
+          # Name of the provider instance.
+          name: aws-1
+          # Region of the nodepool.
+          region: eu-central-3
+          # Availability zone of the nodepool.
+          zone: eu-central-3a
+        count: 2
+        # Instance type name.
+        serverType: t3.medium
+        # AMI ID of the image.
+        # Make sure to update it according to the region. 
+        image: ami-0965bd5ba4d59211c
+        storageDiskSize: 50
 
-kubernetes:
-  clusters:
-    - name: aws-cluster
-      version: v1.24.0
-      network: 192.168.2.0/24
-      pools:
-        control:
-          - control-aws
-        compute:
-          - compute-1-aws
-          - compute-2-aws
+  kubernetes:
+    clusters:
+      - name: aws-cluster
+        version: v1.24.0
+        network: 192.168.2.0/24
+        pools:
+          control:
+            - control-aws
+          compute:
+            - compute-1-aws
+            - compute-2-aws
 
 ```
 
 ### Multi provider, multi region clusters example
 
+```bash
+kubectl create secret generic aws-secret-1 --namespace=mynamespace --from-literal=accesskey='SLDUTKSHFDMSJKDIALASSD' --from-literal=secretkey='iuhbOIJN+oin/olikDSadsnoiSVSDsacoinOUSHD'
+kubectl create secret generic aws-secret-2 --namespace=mynamespace --from-literal=accesskey='ODURNGUISNFAIPUNUGFINB' --from-literal=secretkey='asduvnva+skd/ounUIBPIUjnpiuBNuNipubnPuip'
+```
+
 ```yaml
-name: AWSExampleManifest
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: AWSExampleManifest
+spec:
 
-providers:
-  aws:
+  providers:
     - name: aws-1
-      # Access key to your AWS account.
-      accessKey: SLDUTKSHFDMSJKDIALASSD
-      # Secret key to your AWS account.
-      secretKey: iuhbOIJN+oin/olikDSadsnoiSVSDsacoinOUSHD
-
+      providerType: aws
+      secretRef:
+        name: aws-secret-1
+        namespace: mynamespace
     - name: aws-2
-      # Access key to your AWS account.
-      accessKey: ODURNGUISNFAIPUNUGFINB
-      # Secret key to your AWS account.
-      secretKey: asduvnva+skd/ounUIBPIUjnpiuBNuNipubnPuip
+      providerType: aws
+      secretRef:
+        name: aws-secret-2
+        namespace: mynamespace
 
-nodePools:
-  dynamic:
-    - name: control-aws-1
-      providerSpec:
-        # Name of the provider instance.
-        name: aws-1
-        region: eu-central-1
-        # Availability zone of the nodepool.
-        zone: eu-central-1a
-      count: 1
-      # Instance type name.
-      serverType: t3.medium
-      # AMI ID of the image.
-      # Make sure to update it according to the region. 
-      image: ami-0965bd5ba4d59211c
+  nodePools:
+    dynamic:
+      - name: control-aws-1
+        providerSpec:
+          # Name of the provider instance.
+          name: aws-1
+          region: eu-central-1
+          # Availability zone of the nodepool.
+          zone: eu-central-1a
+        count: 1
+        # Instance type name.
+        serverType: t3.medium
+        # AMI ID of the image.
+        # Make sure to update it according to the region. 
+        image: ami-0965bd5ba4d59211c
 
-    - name: control-aws-2
-      providerSpec:
-        # Name of the provider instance.
-        name: aws-2
-        # Region of the nodepool.
-        region: eu-north-1
-        # Availability zone of the nodepool.
-        zone: eu-north-1a
-      count: 2
-      # Instance type name.
-      serverType: t3.medium
-      # AMI ID of the image.
-      # Make sure to update it according to the region. 
-      image: ami-03df6dea56f8aa618
+      - name: control-aws-2
+        providerSpec:
+          # Name of the provider instance.
+          name: aws-2
+          # Region of the nodepool.
+          region: eu-north-1
+          # Availability zone of the nodepool.
+          zone: eu-north-1a
+        count: 2
+        # Instance type name.
+        serverType: t3.medium
+        # AMI ID of the image.
+        # Make sure to update it according to the region. 
+        image: ami-03df6dea56f8aa618
 
-    - name: compute-aws-1
-      providerSpec:
-        # Name of the provider instance.
-        name: aws-1
-        # Region of the nodepool.
-        region: eu-central-2
-        # Availability zone of the nodepool.
-        zone: eu-central-2a
-      count: 2
-      # Instance type name.
-      serverType: t3.medium
-      # AMI ID of the image.
-      # Make sure to update it according to the region. 
-      image: ami-0965bd5ba4d59211c
-      storageDiskSize: 50
+      - name: compute-aws-1
+        providerSpec:
+          # Name of the provider instance.
+          name: aws-1
+          # Region of the nodepool.
+          region: eu-central-2
+          # Availability zone of the nodepool.
+          zone: eu-central-2a
+        count: 2
+        # Instance type name.
+        serverType: t3.medium
+        # AMI ID of the image.
+        # Make sure to update it according to the region. 
+        image: ami-0965bd5ba4d59211c
+        storageDiskSize: 50
 
-    - name: compute-aws-2
-      providerSpec:
-        # Name of the provider instance.
-        name: aws-2
-        # Region of the nodepool.
-        region: eu-north-3
-        # Availability zone of the nodepool.
-        zone: eu-north-3a
-      count: 2
-      # Instance type name.
-      serverType: t3.medium
-      # AMI ID of the image.
-      # Make sure to update it according to the region. 
-      image: ami-03df6dea56f8aa618
-      storageDiskSize: 50
+      - name: compute-aws-2
+        providerSpec:
+          # Name of the provider instance.
+          name: aws-2
+          # Region of the nodepool.
+          region: eu-north-3
+          # Availability zone of the nodepool.
+          zone: eu-north-3a
+        count: 2
+        # Instance type name.
+        serverType: t3.medium
+        # AMI ID of the image.
+        # Make sure to update it according to the region. 
+        image: ami-03df6dea56f8aa618
+        storageDiskSize: 50
 
-kubernetes:
-  clusters:
-    - name: aws-cluster
-      version: v1.24.0
-      network: 192.168.2.0/24
-      pools:
-        control:
-          - control-aws-1
-          - control-aws-2
-        compute:
-          - compute-aws-1
-          - compute-aws-2
+  kubernetes:
+    clusters:
+      - name: aws-cluster
+        version: v1.24.0
+        network: 192.168.2.0/24
+        pools:
+          control:
+            - control-aws-1
+            - control-aws-2
+          compute:
+            - compute-aws-1
+            - compute-aws-2
 ```

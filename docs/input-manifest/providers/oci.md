@@ -1,17 +1,21 @@
 # OCI
-OCI provider requires you to input `privateKey`, `keyFingerprint`, `tenancyOcid`, `userOcid`, and `compartmentOcid`.
+OCI provider requires you to input `privatekey`, `keyfingerprint`, `tenancyocid`, `userocid`, and `compartmentocid`.
 
 ## Compute and DNS example
 
 ```yaml
-providers:
-  oci:
-    - name: oci-1
-      privateKey: private_key
-      keyFingerprint: fingerprint_placeholder
-      tenancyOcid: tenancy_ocid
-      userOcid: user_ocid
-      compartmentOcid: compartment_ocid
+apiVersion: v1
+kind: Secret
+metadata:
+  name: oci-secret
+data:
+  compartmentocid: b2NpZDIuY29tcGFydG1lbnQub2MyLi5hYWFhYWFhYWEycnNmdmx2eGMzNG8wNjBrZmR5Z3NkczIxbnNrZTc2a3Nqa2tvMjFscHNkZnNm    
+  keyfingerprint: YWI6Y2Q6M2Y6MzQ6MzM6MjI6MzI6MzQ6NTQ6NTQ6NDU6NzY6NzY6Nzg6OTg6YWE=
+  privatekey: >-
+    LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQogICAgICAgIE1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2oyL2Fza0pTTG9zYWQKICAgICAgICBNSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUNqMi9hc2tKU0xvc2FkCiAgICAgICAgTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFnRUFBb0lCQVFDajIvYXNrSlNMb3NhZAogICAgICAgIE1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2oyL2Fza0pTTG9zYWQKICAgICAgICBNSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUNqMi9hc2tKU0xvc2FkCiAgICAgICAgTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFnRUFBb0lCQVFDajIvYXNrSlNMb3NhZAogICAgICAgIE1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2oyL2Fza0pTTG9zYWQKICAgICAgICBNSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUNqMi9hc2tKU0xvc2FkCiAgICAgICAgTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFnRUFBb0lCQVFDajIvYXNrSlNMb3NhZAogICAgICAgIE1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2oyL2Fza0pTTG9zYWQKICAgICAgICBNSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUNqMi9hc2tKU0xvc2FkCiAgICAgICAgTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFnRUFBb0lCQVFDajIvYXNrSlNMb3NhZAogICAgICAgIE1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2oyL2Fza0pTTG9zYWQKICAgICAgICBNSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUNqMi9hc2tKU0xvc2FkCiAgICAgICAgTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFnRUFBb0lCQVFDajIvYXNrSlNMb3NhZAogICAgICAgIE1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2oyL2Fza0pTTG9zYWQKICAgICAgICBNSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUNqMi9hc2tKU0xvc2FkCiAgICAgICAgTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFnRUFBb0lCQVFDajIvYXNrSlNMb3NhZAogICAgICAgIE1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2oyL2Fza0pTTG9zYWQKICAgICAgICBNSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUNqMi9hc2tKU0xvc2FkCiAgICAgICAgTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFnRUFBb0lCQVFDajIvYXNrSlNMb3NhZAogICAgICAgIE1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2oyL2Fza0pTTG9zYWQKICAgICAgICBNSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUNqMi9hc2tKU0xvc2FkCiAgICAgICAgTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFnRUFBb0lCQVFDajIvYXNrSlNMb3NhZAogICAgICAgIE1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2oyLz09CiAgICAgICAgLS0tLS1FTkQgUlNBIFBSSVZBVEUgS0VZLS0tLS0=
+  tenancyocid: b2NpZDIudGVuYW5jeS5vYzIuLmFhYWFhYWFheXJzZnZsdnhjMzRvMDYwa2ZkeWdzZHMyMW5za2U3NmtzamtrbzIxbHBzZGZzZnNnYnJ0Z2hz
+  userocid: b2NpZDIudXNlci5vYzIuLmFhYWFhYWFhYWFueXJzZnZsdnhjMzRvMDYwa2ZkeWdzZHMyMW5za2U3NmtzamtrbzIxbHBzZGZzZg==
+type: Opaque
 ```
 
 ## Create OCI credentials
@@ -89,17 +93,10 @@ oci setup keys --key-name claudie-user --output-dir .
 oci iam user api-key upload --user-id $user_ocid --key-file claudie-user_public.pem
 ```
 
-12. You can either manually perform this step or use the following script with the [provided template](#compute-and-dns-example) to safely replace the credentials field with your generated credentials:
+12. Export `compartment_ocid` and `fingerprint`, to use them when creating provider secret.
 ```bash
-{
   compartment_ocid=$(oci iam compartment list | jq -r '.data[] | select(.name == "claudie-compartment") | .id')
   fingerprint=$(oci iam user api-key list --user-id $user_ocid | jq -r '.data[0].fingerprint')
-  yq '.providers.oci[0].privateKey = load_str("claudie-user.pem")' template.yaml > oci.yaml
-  sed -i "s/fingerprint_placeholder/$fingerprint/g" oci.yaml
-  sed -i "s/tenancy_ocid/$tenancy_ocid/g" oci.yaml
-  sed -i "s/user_ocid/$user_ocid/g" oci.yaml
-  sed -i "s/compartment_ocid/$compartment_ocid/g" oci.yaml
-}
 ```
 
 ## DNS setup
@@ -121,270 +118,192 @@ If you wish to use OCI as your DNS provider where Claudie creates DNS records po
 ## Input manifest examples
 ### Single provider, multi region cluster example
 
+#### Create a secret for OCI provider
+The secret for an OCI provider must include the following mandatory fields: `compartmentocid`, `userocid`, `tenancyocid`, `keyfingerprint` and `privatekey`.
+
+```bash
+# Refer to values exported in "Creating OCI credentials for Claudie" section
+kubectl create secret generic oci-secret-1 --namespace=mynamespace --from-literal=compartmentocid=$compartment_ocid --from-literal=userocid=$user_ocid --from-literal=tenancyocid=$tenancy_ocid --from-literal=keyfingerprint=$fingerprint --from-file=privatekey=./claudie-user_public.pem
+```
+
 ```yaml
-name: OCIExampleManifest
-
-providers:
-  oci:
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: OCIExampleManifest
+spec:
+  providers:
     - name: oci-1
-      # Private key to the user account.
-      privateKey: |
-        -----BEGIN RSA PRIVATE KEY-----
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/==
-        -----END RSA PRIVATE KEY-----
-      # Fingerprint of the key pair.
-      keyFingerprint: ab:cd:3f:34:33:22:32:34:54:54:45:76:76:78:98:aa
-      # OCID of the tenancy.
-      tenancyOcid: ocid2.tenancy.oc2..aaaaaaaayrsfvlvxc34o060kfdygsds21nske76ksjkko21lpsdfsfsgbrtghs
-      # OCID of the user.
-      userOcid: ocid2.user.oc2..aaaaaaaaaanyrsfvlvxc34o060kfdygsds21nske76ksjkko21lpsdfsf
-      # OCID of the compartment.
-      compartmentOcid: ocid2.compartment.oc2..aaaaaaaaa2rsfvlvxc34o060kfdygsds21nske76ksjkko21lpsdfsf
+      providerType: oci
+      secretRef:
+        name: oci-secret-1
+        namespace: mynamespace
 
-nodePools:
-  dynamic:
-    - name: control-oci
-      providerSpec:
-        # Name of the provider instance.
-        name: oci-1
-        # Region of the nodepool.
-        region: eu-milan-1
-        # Availability domain of the nodepool.
-        zone: hsVQ:EU-MILAN-1-AD-1
-      count: 1
-      # VM shape name.
-      serverType: VM.Standard2.2
-      # OCID of the image.
-      # Make sure to update it according to the region.
-      image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
+  nodePools:
+    dynamic:
+      - name: control-oci
+        providerSpec:
+          # Name of the provider instance.
+          name: oci-1
+          # Region of the nodepool.
+          region: eu-milan-1
+          # Availability domain of the nodepool.
+          zone: hsVQ:EU-MILAN-1-AD-1
+        count: 1
+        # VM shape name.
+        serverType: VM.Standard2.2
+        # OCID of the image.
+        # Make sure to update it according to the region.
+        image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
 
-    - name: compute-1-oci
-      providerSpec:
-        # Name of the provider instance.
-        name: oci-1
-        # Region of the nodepool.
-        region: eu-frankfurt-1
-        # Availability domain of the nodepool.
-        zone: hsVQ:EU-FRANKFURT-1-AD-1
-      count: 2
-      # VM shape name.
-      serverType: VM.Standard2.1
-      # OCID of the image.
-      # Make sure to update it according to the region.
-      image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
-      storageDiskSize: 50
+      - name: compute-1-oci
+        providerSpec:
+          # Name of the provider instance.
+          name: oci-1
+          # Region of the nodepool.
+          region: eu-frankfurt-1
+          # Availability domain of the nodepool.
+          zone: hsVQ:EU-FRANKFURT-1-AD-1
+        count: 2
+        # VM shape name.
+        serverType: VM.Standard2.1
+        # OCID of the image.
+        # Make sure to update it according to the region.
+        image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
+        storageDiskSize: 50
 
-    - name: compute-2-oci
-      providerSpec:
-        # Name of the provider instance.
-        name: oci-1
-        # Region of the nodepool.
-        region: eu-frankfurt-1
-        # Availability domain of the nodepool.
-        zone: hsVQ:EU-FRANKFURT-1-AD-2
-      count: 2
-      # VM shape name.
-      serverType: VM.Standard2.1
-      # OCID of the image.
-      # Make sure to update it according to the region.
-      image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
-      storageDiskSize: 50
+      - name: compute-2-oci
+        providerSpec:
+          # Name of the provider instance.
+          name: oci-1
+          # Region of the nodepool.
+          region: eu-frankfurt-1
+          # Availability domain of the nodepool.
+          zone: hsVQ:EU-FRANKFURT-1-AD-2
+        count: 2
+        # VM shape name.
+        serverType: VM.Standard2.1
+        # OCID of the image.
+        # Make sure to update it according to the region.
+        image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
+        storageDiskSize: 50
 
-kubernetes:
-  clusters:
-    - name: oci-cluster
-      version: v1.24.0
-      network: 192.168.2.0/24
-      pools:
-        control:
-          - control-oci
-        compute:
-          - compute-1-oci
-          - compute-2-oci
+  kubernetes:
+    clusters:
+      - name: oci-cluster
+        version: v1.24.0
+        network: 192.168.2.0/24
+        pools:
+          control:
+            - control-oci
+          compute:
+            - compute-1-oci
+            - compute-2-oci
 ```
 
 ### Multi provider, multi region clusters example
+#### Create a secret for OCI provider
+The secret for an OCI provider must include the following mandatory fields: `compartmentocid`, `userocid`, `tenancyocid`, `keyfingerprint` and `privatekey`.
+
+```bash
+# Refer to values exported in "Creating OCI credentials for Claudie" section
+kubectl create secret generic oci-secret-1 --namespace=mynamespace --from-literal=compartmentocid=$compartment_ocid --from-literal=userocid=$user_ocid --from-literal=tenancyocid=$tenancy_ocid --from-literal=keyfingerprint=$fingerprint --from-file=privatekey=./claudie-user_public.pem
+
+kubectl create secret generic oci-secret-1 --namespace=mynamespace --from-literal=compartmentocid=$compartment_ocid2 --from-literal=userocid=$user_ocid2 --from-literal=tenancyocid=$tenancy_ocid2 --from-literal=keyfingerprint=$fingerprint2 --from-file=privatekey=./claudie-user_public2.pem
+```
 
 ```yaml
-name: OCIExampleManifest
-
-providers:
-  oci:
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: OCIExampleManifest
+spec:
+  providers:
     - name: oci-1
-      # Private key to the user account.
-      privateKey: |
-        -----BEGIN RSA PRIVATE KEY-----
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/askJSLosad
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/==
-        -----END RSA PRIVATE KEY-----
-      # Fingerprint of the key pair.
-      keyFingerprint: ab:cd:3f:34:33:22:32:34:54:54:45:76:76:78:98:aa
-      # OCID of the tenancy.
-      tenancyOcid: ocid2.tenancy.oc2..aaaaaaaayrsfvlvxc34o060kfdygsds21nske76ksjkko21lpsdfsfsgbrtghs
-      # OCID of the user.
-      userOcid: ocid2.user.oc2..aaaaaaaaaanyrsfvlvxc34o060kfdygsds21nske76ksjkko21lpsdfsf
-      # OCID of the compartment.
-      compartmentOcid: ocid2.compartment.oc2..aaaaaaaaa2rsfvlvxc34o060kfdygsds21nske76ksjkko21lpsdfsf
-
+      providerType: oci
+      secretRef:
+        name: oci-secret-1
+        namespace: mynamespace
     - name: oci-2
-      # Private key to the user account.
-      privateKey: |
-        -----BEGIN RSA PRIVATE KEY-----
-        IUBJNINoisdncNIUBNNpniuniupNPIUNuipbnPIUNPIUBSNUPIbnui/OUINNPOIn
-        IUBJNINoisdncNIUBNNpniuniupNPIUNuipbnPIUNPIUBSNUPIbnui/OUINNPOIn
-        IUBJNINoisdncNIUBNNpniuniupNPIUNuipbnPIUNPIUBSNUPIbnui/OUINNPOIn
-        IUBJNINoisdncNIUBNNpniuniupNPIUNuipbnPIUNPIUBSNUPIbnui/OUINNPOIn
-        IUBJNINoisdncNIUBNNpniuniupNPIUNuipbnPIUNPIUBSNUPIbnui/OUINNPOIn
-        IUBJNINoisdncNIUBNNpniuniupNPIUNuipbnPIUNPIUBSNUPIbnui/OUINNPOIn
-        IUBJNINoisdncNIUBNNpniuniupNPIUNuipbnPIUNPIUBSNUPIbnui/OUINNPOIn
-        IUBJNINoisdncNIUBNNpniuniupNPIUNuipbnPIUNPIUBSNUPIbnui/OUINNPOIn
-        IUBJNINoisdncNIUBNNpniuniupNPIUNuipbnPIUNPIUBSNUPIbnui/OUINNPOIn
-        IUBJNINoisdncNIUBNNpniuniupNPIUNuipbnPIUNPIUBSNUPIbnui/OUINNPOIn
-        IUBJNINoisdncNIUBNNpniuniupNPIUNuipbnPIUNPIUBSNUPIbnui/OUINNPOIn
-        IUBJNINoisdncNIUBNNpniuniupNPIUNuipbnPIUNPIUBSNUPIbnui/OUINNPOIn
-        IUBJNINoisdncNIUBNNpniuniupNPIUNuipbnPIUNPIUBSNUPIbnui/OUINNPOIn
-        IUBJNINoisdncNIUBNNpniuniupNPIUNuipbnPIUNPIUBSNUPIbnui/OUINNPOIn
-        IUBJNINoisdncNIUBNNpniuniupNPIUNuipbnPIUNPIUBSNUPIbnui/OUINNPOIn
-        IUBJNINoisdncNIUBNNpniuniupNPIUNuipbnPIUNPIUBSNUPIbnui/OUINNPOIn
-        IUBJNINoisdncNIUBNNpniuniupNPIUNuipbnPIUNPIUBSNUPIbnui/OUINNPOIn
-        IUBJNINoisdncNIUBNNpniuniupNPIUNuipbnPIUNPIUBSNUPIbnui/OUINNPOIn
-        IUBJNINoisdncNIUBNNpniuniupNPIUNuipbnPIUNPIUBSNUPIbnui/OUINNPOIn
-        IUBJNINoisdncNIUBNNpniuniupNPIUNuipbnPIUNPIUBSNUPIbnui/OUINNPOIn
-        IUBJNINoisdncNIUBNNpniuniupNPIUNuipbnPIUNPIUBSNUPIbnui/OUINNPOIn
-        IUBJNINoisdncNIUBNNpniuniupNPIUNuipbnPIUNPIUBSNUPIbnui/OUINNPOIn
-        IUBJNINoisdncNIUBNNpniuniupNPIUNuipbnPIUNPIUBSNUPIbnui/OUINNPOIn
-        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCj2/==
-        -----END RSA PRIVATE KEY-----
-      # Fingerprint of the key pair.
-      keyFingerprint: 34:54:54:45:76:76:78:98:aa:ab:cd:3f:34:33:22:32
-      # OCID of the tenancy.
-      tenancyOcid: ocid2.tenancy.oc2..aaaaaaaayreragzafbdrfedbfdagagrgregagrrgaregfdgvrehdfsfsgbrtghs
-      # OCID of the user.
-      userOcid: ocid2.user.oc2..aaaaaaaaaanyrsfvlvxc3argaehgaergaregraregaregarsdfsfrgreg2ds
-      # OCID of the compartment.
-      compartmentOcid: ocid2.compartment.oc2..aaaaaaaaa2rsfvlvxc3argaregaregraegzfgragfksjkko21lpsdfsf
+      providerType: oci
+      secretRef:
+        name: oci-secret-2
+        namespace: mynamespace
 
-nodePools:
-  dynamic:
-    - name: control-oci-1
-      providerSpec:
-        # Name of the provider instance.
-        name: oci-1
-        # Region of the nodepool.
-        region: eu-milan-1
-        # Availability domain of the nodepool.
-        zone: hsVQ:EU-MILAN-1-AD-1
-      count: 1
-      # VM shape name.
-      serverType: VM.Standard2.2
-      # OCID of the image.
-      # Make sure to update it according to the region.
-      image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
+  nodePools:
+    dynamic:
+      - name: control-oci-1
+        providerSpec:
+          # Name of the provider instance.
+          name: oci-1
+          # Region of the nodepool.
+          region: eu-milan-1
+          # Availability domain of the nodepool.
+          zone: hsVQ:EU-MILAN-1-AD-1
+        count: 1
+        # VM shape name.
+        serverType: VM.Standard2.2
+        # OCID of the image.
+        # Make sure to update it according to the region.
+        image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
 
-    - name: control-oci-2
-      providerSpec:
-        # Name of the provider instance.
-        name: oci-2
-        # Region of the nodepool.
-        region: eu-frankfurt-1
-        # Availability domain of the nodepool.
-        zone: hsVQ:EU-FRANKFURT-1-AD-3
-      count: 2
-      # VM shape name.
-      serverType: VM.Standard2.1
-      # OCID of the image.
-      # Make sure to update it according to the region.
-      image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
+      - name: control-oci-2
+        providerSpec:
+          # Name of the provider instance.
+          name: oci-2
+          # Region of the nodepool.
+          region: eu-frankfurt-1
+          # Availability domain of the nodepool.
+          zone: hsVQ:EU-FRANKFURT-1-AD-3
+        count: 2
+        # VM shape name.
+        serverType: VM.Standard2.1
+        # OCID of the image.
+        # Make sure to update it according to the region.
+        image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
 
-    - name: compute-oci-1
-      providerSpec:
-        # Name of the provider instance.
-        name: oci-1
-        # Region of the nodepool.
-        region: eu-frankfurt-1
-        # Availability domain of the nodepool.
-        zone: hsVQ:EU-FRANKFURT-1-AD-1
-      count: 2
-      # VM shape name.
-      serverType: VM.Standard2.1
-      # OCID of the image.
-      # Make sure to update it according to the region.
-      image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
-      storageDiskSize: 50
+      - name: compute-oci-1
+        providerSpec:
+          # Name of the provider instance.
+          name: oci-1
+          # Region of the nodepool.
+          region: eu-frankfurt-1
+          # Availability domain of the nodepool.
+          zone: hsVQ:EU-FRANKFURT-1-AD-1
+        count: 2
+        # VM shape name.
+        serverType: VM.Standard2.1
+        # OCID of the image.
+        # Make sure to update it according to the region.
+        image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
+        storageDiskSize: 50
 
-    - name: compute-oci-2
-      providerSpec:
-        # Name of the provider instance.
-        name: oci-2
-        # Region of the nodepool.
-        region: eu-milan-1
-        # Availability domain of the nodepool.
-        zone: hsVQ:EU-MILAN-1-AD-1
-      count: 2
-      # VM shape name.
-      serverType: VM.Standard2.1
-      # OCID of the image.
-      # Make sure to update it according to the region..
-      image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
-      storageDiskSize: 50
+      - name: compute-oci-2
+        providerSpec:
+          # Name of the provider instance.
+          name: oci-2
+          # Region of the nodepool.
+          region: eu-milan-1
+          # Availability domain of the nodepool.
+          zone: hsVQ:EU-MILAN-1-AD-1
+        count: 2
+        # VM shape name.
+        serverType: VM.Standard2.1
+        # OCID of the image.
+        # Make sure to update it according to the region..
+        image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
+        storageDiskSize: 50
 
-kubernetes:
-  clusters:
-    - name: oci-cluster
-      version: v1.24.0
-      network: 192.168.2.0/24
-      pools:
-        control:
-          - control-oci-1
-          - control-oci-2
-        compute:
-          - compute-oci-1
-          - compute-oci-2
+  kubernetes:
+    clusters:
+      - name: oci-cluster
+        version: v1.24.0
+        network: 192.168.2.0/24
+        pools:
+          control:
+            - control-oci-1
+            - control-oci-2
+          compute:
+            - compute-oci-1
+            - compute-oci-2
 ```
