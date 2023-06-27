@@ -304,9 +304,9 @@ jobs:
           
           for file in test-set5/*; do
               if [ -f "$file" ]; then
-                ENDPOINT=${IP_ARR[0]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' test-set5/$file
-                ENDPOINT=${IP_ARR[1]} ./yq e '.spec.nodePools.static.[1].nodes.[0].endpoint = strenv(ENDPOINT)' test-set5/$file
-                ENDPOINT=${IP_ARR[2]} ./yq e '.spec.nodePools.static.[1].nodes.[1].endpoint = strenv(ENDPOINT)' test-set5/$file
+                ENDPOINT=${IP_ARR[0]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file
+                ENDPOINT=${IP_ARR[1]} ./yq e '.spec.nodePools.static.[1].nodes.[0].endpoint = strenv(ENDPOINT)' $file
+                ENDPOINT=${IP_ARR[2]} ./yq e '.spec.nodePools.static.[1].nodes.[1].endpoint = strenv(ENDPOINT)' $file
               fi
           done
 
@@ -350,6 +350,8 @@ jobs:
       - name: Destroy test static nodes
         if: always()
         working-directory: ./manifests/testing-framework/test-sets
-        run:
-          terraform init
+        run: |
+          echo "Running terraform init"
+          terraform init > /dev/null 2>&1
+          echo "Running terraform destroy"
           terraform destroy -auto-approve > /dev/null 2>&1
