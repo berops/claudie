@@ -321,10 +321,10 @@ Role defines a concrete loadbalancer configuration. Single loadbalancer can have
   Defines a target group of nodes. Allowed values are:
 
   | Value             | Description                          |
-  | ----------------- | ------------------------------------ |
+  |-------------------|--------------------------------------|
   | `k8sAllNodes`     | All nodes in the cluster             |
-  | `k8sControlNodes` | Only control/master nodes in cluster |
-  | `k8sComputeNodes` | Only compute/worker nodes in cluster |
+  | `k8sControlPlane` | Only control/master nodes in cluster |
+  | `k8sComputePlane` | Only compute/worker nodes in cluster |
 
 ## Cluster-lb
 
