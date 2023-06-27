@@ -2,14 +2,6 @@ module github.com/berops/claudie
 
 go 1.20
 
-//replace k8s.io/client-go v0.27.2 => k8s.io/client-go v0.26.3
-
-//replace k8s.io/api v0.27.3 => k8s.io/api v0.26.3
-
-//replace k8s.io/apimachinery v0.27.3 => k8s.io/apimachinery v0.26.3
-
-//replace sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.14.6
-
 require (
 	cloud.google.com/go/compute v1.20.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.3.0
