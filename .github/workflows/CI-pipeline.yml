@@ -34,6 +34,7 @@ jobs:
         working-directory: ./manifests/testing-framework/test-sets
         run: |
           sudo apt update && sudo apt install -y jq
+          
           echo "Saving terraform script"
           echo "${{ secrets.CREATE_STATIC_NODES }}" | base64 -d > script.tf
           echo "${{ secrets.CREATE_STATIC_NODES_KEY }}" > key.json
@@ -60,7 +61,7 @@ jobs:
           rm -f yq 
           rm -f yq.1 
           rm -f install-man-page.sh
-          
+
       - name: Destroy
         working-directory: ./manifests/testing-framework/test-sets
         if: always()
