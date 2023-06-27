@@ -32,7 +32,7 @@ func CreateGrpcAdapter() *GrpcAdapter {
 		log.Fatal().Msgf("Failed to listen on %s : %v", tcpBindingAddress, err)
 	}
 
-	g := &GrpcAdapter{tcpListener: listener, server: grpc.NewServer(), healthcheckServer: health.NewServer()}
+	g := &GrpcAdapter{tcpListener: listener, server: utils.NewGRPCServer(), healthcheckServer: health.NewServer()}
 	log.Info().Msgf("Ansibler microservice is listening on %s", tcpBindingAddress)
 
 	pb.RegisterAnsiblerServiceServer(g.server, &AnsiblerGrpcService{})

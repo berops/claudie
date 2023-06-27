@@ -82,7 +82,7 @@ func getClaudieState(projectName, clusterName string) (*pb.K8Scluster, error) {
 	var res *pb.GetConfigFromDBResponse
 	cboxURL := strings.ReplaceAll(envs.ContextBoxURL, ":tcp://", "")
 
-	if cc, err = utils.GrpcDialWithInsecure("context-box", cboxURL); err != nil {
+	if cc, err = utils.GrpcDialWithRetryAndBackoff("context-box", cboxURL); err != nil {
 		return nil, fmt.Errorf("failed to dial context-box at %s : %w", cboxURL, err)
 	}
 	defer func() {
