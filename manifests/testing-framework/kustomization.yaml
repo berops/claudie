@@ -1,6 +1,6 @@
 namespace: claudie
 resources:
-  - testing-framework.yaml
+- testing-framework.yaml
     # - files:
     #     - test-sets/test-set1/1.yaml
     #     - test-sets/test-set1/2.yaml
@@ -23,11 +23,11 @@ resources:
     #     - test-sets/test-set4/3.yaml
     #   name: test-set4
 secretGenerator:
-  - files:
-      - test-sets/test-set5/1.yaml
-      - test-sets/test-set5/2.yaml
-      - test-sets/test-set5/3.yaml
-    name: test-set5
+- files:
+  - test-sets/test-set5/1.yaml
+  - test-sets/test-set5/2.yaml
+  - test-sets/test-set5/3.yaml
+  name: test-set5
     # - files:
     #     - test-sets/autoscaling-1/1.yaml
     #     - test-sets/autoscaling-1/2.yaml
@@ -36,5 +36,5 @@ secretGenerator:
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
-  - name: ghcr.io/berops/claudie/testing-framework
-    newTag: c7e6d35-2085
+- name: ghcr.io/berops/claudie/testing-framework
+  newTag: aaf7bab-2088
