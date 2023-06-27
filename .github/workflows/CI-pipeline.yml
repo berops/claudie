@@ -36,13 +36,11 @@ jobs:
           sudo apt update && sudo apt install -y jq
           echo "Saving terraform script"
           echo "${{ secrets.CREATE_STATIC_NODES }}" | base64 -d > script.tf
-          echo "${{ secrets.GCP_CREDENTIALS }}" > key.json
-          echo "${{ secrets.GCP_DEV_PROJECT_ID }}" > project.txt
 
           echo "Running terraform init"
           terraform init
           echo "Running terraform apply"   
-          terraform apply -auto-approve
+          terraform apply -auto-approve > /dev/null 2>&1
           echo "Running terraform output"   
           IPS=$(terraform output --json | jq -r '.endpoints.value | values[]')
           IP_ARR=( echo $IPS )
@@ -59,6 +57,11 @@ jobs:
           rm -f yq 
           rm -f yq.1 
           rm -f install-man-page.sh
+      - name: Destroy
+        working-directory: ./manifests/testing-framework/test-sets
+        if: always()
+        run: | 
+          terraform destroy -auto-approve
 
   # merge-branch:
   #   if: github.event.pull_request.draft == false
