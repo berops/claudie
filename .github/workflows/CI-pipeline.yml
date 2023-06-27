@@ -294,10 +294,12 @@ jobs:
           sudo apt update && sudo apt install -y jq
           echo "Saving terraform script"
           echo "${{ secrets.CREATE_STATIC_NODES }}" | base64 -d > script.tf
+          echo "${{ secrets.GCP_CREDENTIALS }}" > key.json
+          echo "${{ secrets.GCP_DEV_PROJECT_ID }}" > project.txt
 
           echo "Running terraform script"
           terraform init
-          terraform apply -auto-approve > /dev/null 2>&1
+          terraform apply -auto-approve
           IPS=$(terraform output --json | jq -r '.endpoints.value | values[]')
           IP_ARR=( echo $IPS )
           
