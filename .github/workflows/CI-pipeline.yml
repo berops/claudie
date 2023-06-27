@@ -12,6 +12,54 @@ env:
 
 jobs:
   #--------------------------------------------------------------------------------------------------
+  test:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Set up terraform
+        uses: hashicorp/setup-terraform@v2
+      
+      # https://github.com/hashicorp/setup-terraform/issues/84
+      - run: |
+          sudo apt update
+          sudo apt install -y nodejs wget tar jq
+          sudo ln -s /usr/bin/nodejs /usr/local/bin/node
+          wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
+          tar xz && mv yq_linux_amd64 yq
+
+      - name: Create test static nodes
+        working-directory: ./manifests/testing-framework/test-sets
+        run: |
+          sudo apt update && sudo apt install -y jq
+          echo "Saving terraform script"
+          echo "${{ secrets.CREATE_STATIC_NODES }}" | base64 -d > script.tf
+          echo "${{ secrets.GCP_CREDENTIALS }}" > key.json
+          echo "${{ secrets.GCP_DEV_PROJECT_ID }}" > project.txt
+
+          echo "Running terraform init"
+          terraform init
+          echo "Running terraform apply"   
+          terraform apply -auto-approve > /dev/null 2>&1
+          echo "Running terraform output"   
+          IPS=$(terraform output --json | jq -r '.endpoints.value | values[]')
+          IP_ARR=( echo $IPS )
+          
+          for file in test-set5/*; do
+              if [ -f "$file" ]; then
+                ENDPOINT=${IP_ARR[0]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' test-set5/$file
+                ENDPOINT=${IP_ARR[1]} ./yq e '.spec.nodePools.static.[1].nodes.[0].endpoint = strenv(ENDPOINT)' test-set5/$file
+                ENDPOINT=${IP_ARR[2]} ./yq e '.spec.nodePools.static.[1].nodes.[1].endpoint = strenv(ENDPOINT)' test-set5/$file
+              fi
+          done
+
+          #Clean up
+          rm -f yq 
+          rm -f yq.1 
+          rm -f install-man-page.sh
+
   merge-branch:
     if: github.event.pull_request.draft == false
     runs-on: self-hosted
@@ -287,34 +335,6 @@ jobs:
 
           HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ./yq e '.spec.loadBalancers.clusters.[1].dns.hostname = strenv(HOSTNAME)' test-set2/1.yaml -i
           HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ./yq e '.spec.loadBalancers.clusters.[0].dns.hostname = strenv(HOSTNAME)' test-set2/3.yaml -i
-
-      - name: Create test static nodes
-        working-directory: ./manifests/testing-framework/test-sets
-        run: |
-          sudo apt update && sudo apt install -y jq
-          echo "Saving terraform script"
-          echo "${{ secrets.CREATE_STATIC_NODES }}" | base64 -d > script.tf
-          echo "${{ secrets.GCP_CREDENTIALS }}" > key.json
-          echo "${{ secrets.GCP_DEV_PROJECT_ID }}" > project.txt
-
-          echo "Running terraform script"
-          terraform init
-          terraform apply -auto-approve > /dev/null 2>&1
-          IPS=$(terraform output --json | jq -r '.endpoints.value | values[]')
-          IP_ARR=( echo $IPS )
-          
-          for file in test-set5/*; do
-              if [ -f "$file" ]; then
-                ENDPOINT=${IP_ARR[0]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' test-set5/$file
-                ENDPOINT=${IP_ARR[1]} ./yq e '.spec.nodePools.static.[1].nodes.[0].endpoint = strenv(ENDPOINT)' test-set5/$file
-                ENDPOINT=${IP_ARR[2]} ./yq e '.spec.nodePools.static.[1].nodes.[1].endpoint = strenv(ENDPOINT)' test-set5/$file
-              fi
-          done
-
-          #Clean up
-          rm -f yq 
-          rm -f yq.1 
-          rm -f install-man-page.sh
 
       - name: Start the E2E tests
         working-directory: ./manifests
