@@ -38,7 +38,7 @@ func CreateGrpcAdapter(usecases *usecases.Usecases) *GrpcAdapter {
 	}
 	log.Info().Msgf("Kube-eleven microservice is listening on %s", bindingAddress)
 
-	g.server = grpc.NewServer()
+	g.server = utils.NewGRPCServer()
 	pb.RegisterKubeElevenServiceServer(g.server, &KubeElevenGrpcService{usecases: usecases})
 
 	// Add healthcheck service to the gRPC server

@@ -167,7 +167,7 @@ func (c *ClaudieCloudProvider) updateNodepool(nodepool *pb.NodePool) error {
 	var err error
 
 	cboxURL := strings.ReplaceAll(envs.ContextBoxURL, ":tcp://", "")
-	if cc, err = utils.GrpcDialWithInsecure("context-box", cboxURL); err != nil {
+	if cc, err = utils.GrpcDialWithRetryAndBackoff("context-box", cboxURL); err != nil {
 		return fmt.Errorf("failed to dial context-box at %s : %w", envs.ContextBoxURL, err)
 	}
 	cbox := pb.NewContextBoxServiceClient(cc)

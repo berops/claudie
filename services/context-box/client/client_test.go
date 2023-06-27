@@ -13,7 +13,7 @@ import (
 )
 
 func ClientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
-	cc, err := utils.GrpcDialWithInsecure("context-box", envs.ContextBoxURL)
+	cc, err := utils.GrpcDialWithRetryAndBackoff("context-box", envs.ContextBoxURL)
 	if err != nil {
 		log.Fatal().Err(err)
 	}
