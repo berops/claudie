@@ -60,6 +60,7 @@ jobs:
           rm -f yq 
           rm -f yq.1 
           rm -f install-man-page.sh
+          
       - name: Destroy
         working-directory: ./manifests/testing-framework/test-sets
         if: always()
