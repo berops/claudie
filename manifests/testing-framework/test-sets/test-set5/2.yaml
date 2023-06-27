@@ -10,7 +10,7 @@ spec:
         name: hetzner-secret
         namespace: e2e-secrets
     - name: cloudflare-1
-      type: cloudflare
+      providerType: cloudflare
       secretRef:
         name: cloudflare-secret
         namespace: e2e-secrets

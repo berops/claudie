@@ -300,7 +300,7 @@ jobs:
 
           echo "Running terraform output"   
           IPS=$(terraform output --json | jq -r '.endpoints.value | values[]')
-          IP_ARR=( echo $IPS )
+          IP_ARR=( $IPS )
           
           for file in test-set5/*; do
               if [ -f "$file" ]; then
