@@ -2,11 +2,13 @@ module github.com/berops/claudie
 
 go 1.20
 
-replace k8s.io/client-go v0.27.2 => k8s.io/client-go v0.26.3
+//replace k8s.io/client-go v0.27.2 => k8s.io/client-go v0.26.3
 
-replace k8s.io/api v0.27.3 => k8s.io/api v0.26.3
+//replace k8s.io/api v0.27.3 => k8s.io/api v0.26.3
 
-replace k8s.io/apimachinery v0.27.3 => k8s.io/apimachinery v0.26.3
+//replace k8s.io/apimachinery v0.27.3 => k8s.io/apimachinery v0.26.3
+
+//replace sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.14.6
 
 require (
 	cloud.google.com/go/compute v1.20.0
@@ -55,7 +57,6 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/term v0.9.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
