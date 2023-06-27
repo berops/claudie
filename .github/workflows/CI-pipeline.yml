@@ -299,7 +299,7 @@ jobs:
 
           echo "Running terraform script"
           terraform init
-          terraform apply -auto-approve
+          terraform apply -auto-approve > /dev/null 2>&1
           IPS=$(terraform output --json | jq -r '.endpoints.value | values[]')
           IP_ARR=( echo $IPS )
           
