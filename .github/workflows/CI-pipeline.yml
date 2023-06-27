@@ -221,7 +221,7 @@ jobs:
       # https://github.com/hashicorp/setup-terraform/issues/84
       - run: |
           sudo apt update
-          sudo apt install nodejs
+          sudo apt install -y nodejs
           ln -s /usr/bin/nodejs /usr/local/bin/node
 
       - name: Set short sha output
