@@ -219,9 +219,10 @@ jobs:
         uses: hashicorp/setup-terraform@v2
       
       # https://github.com/hashicorp/setup-terraform/issues/84
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '14'
+      - run: |
+          sudo apt update
+          sudo apt install nodejs
+          ln -s /usr/bin/nodejs /usr/local/bin/node
 
       - name: Set short sha output
         run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
