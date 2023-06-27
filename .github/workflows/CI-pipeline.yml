@@ -37,7 +37,7 @@ jobs:
 
           echo "Saving terraform script and key"
           echo "${{ secrets.CREATE_STATIC_NODES }}" | base64 -d > script.tf
-          echo "${{ secrets.CREATE_STATIC_NODES_KEY }}" > key.json
+          printf "%s" "${{ secrets.CREATE_STATIC_NODES_KEY }}" > key.json
 
           echo "Running terraform init"
           terraform init
