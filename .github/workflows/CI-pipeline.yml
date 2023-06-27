@@ -222,7 +222,7 @@ jobs:
       - run: |
           sudo apt update
           sudo apt install -y nodejs
-          ln -s /usr/bin/nodejs /usr/local/bin/node
+          sudo ln -s /usr/bin/nodejs /usr/local/bin/node
 
       - name: Set short sha output
         run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
