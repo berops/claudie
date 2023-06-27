@@ -37,12 +37,11 @@ jobs:
 
           echo "Saving terraform script and key"
           echo "${{ secrets.CREATE_STATIC_NODES }}" | base64 -d > script.tf
-          printf "%s" "${{ secrets.CREATE_STATIC_NODES_KEY }}" > key.json
 
           echo "Running terraform init"
           terraform init
           echo "Running terraform apply"   
-          terraform apply -auto-approve 
+          terraform apply -auto-approve > /dev/null 2>&1
 
           echo "Running terraform output"   
           IPS=$(terraform output --json | jq -r '.endpoints.value | values[]')
