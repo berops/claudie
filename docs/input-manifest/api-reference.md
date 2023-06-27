@@ -356,7 +356,9 @@ Collection of data Claudie uses to create a DNS record for the loadbalancer.
 
 - `dnsZone`
 
-  DNS zone inside of which the records will be created. GCP/AWS/OCI/Azure/Cloudflare/Hetzner DNS zone is accepted
+  DNS zone inside which the records will be created. GCP/AWS/OCI/Azure/Cloudflare/Hetzner DNS zone is accepted.
+
+  The record created in this zone must be accessible to the public. Therefore, a public DNS zone is required.
 
 - `provider`
 
