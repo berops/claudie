@@ -50,18 +50,18 @@ spec:
     static:
       - name: static-pool-1
         nodes:
-          - endpoint: replace-me-1
+          - endpoint: replace-me
             secretRef:
               name: static-nodes-key
               namespace: e2e-secrets
 
       - name: static-pool-2
         nodes:
-          - endpoint: replace-me-2
+          - endpoint: replace-me
             secretRef:
               name: static-nodes-key
               namespace: e2e-secrets
-          - endpoint: replace-me-3
+          - endpoint: replace-me
             secretRef:
               name: static-nodes-key
               namespace: e2e-secrets
@@ -73,9 +73,10 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - static-pool-1
+            - hetzner-control
           compute:
             - hetzner-compute
+            - static-pool-1
 
   loadBalancers:
     roles:
