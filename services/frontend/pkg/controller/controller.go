@@ -23,7 +23,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	inputManifest := &v1beta.InputManifest{}
 
 	log.Info(req.NamespacedName.String())
-	
+
 	// Get the inputManifest resource
 	if err := r.kc.Get(ctx, req.NamespacedName, inputManifest); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
@@ -44,7 +44,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 		providersSecrets = append(providersSecrets, pwd)
 	}
-	
+
 	// Create a raw input manifest of manifest.Manifest and pull the referenced secrets into it
 	rawManifest, err := mergeInputManifestWithSecrets(*inputManifest, providersSecrets)
 	if err != nil {
@@ -169,7 +169,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 			}
 			log.Info("Calling delete config")
-			if err := r.deleteConfig(&rawManifest, inputManifest.Name, inputManifest.Namespace); err != nil {
+			if err := r.deleteConfig(&rawManifest); err != nil {
 				return ctrl.Result{}, err
 			}
 			return ctrl.Result{RequeueAfter: REQUEUE_DELETE}, nil
@@ -261,7 +261,7 @@ func (r *InputManifestReconciler) createConfig(im *manifest.Manifest, resourceNa
 	return nil
 }
 
-func (r *InputManifestReconciler) deleteConfig(im *manifest.Manifest, resourceName string, resourceNamespace string) error {
+func (r *InputManifestReconciler) deleteConfig(im *manifest.Manifest) error {
 	if err := r.Usecases.DeleteConfig(im); err != nil {
 		return err
 	}

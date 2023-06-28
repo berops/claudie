@@ -50,6 +50,9 @@ func (c *ClaudieCloudProvider) NodeGroupIncreaseSize(_ context.Context, req *pro
 		if err := c.updateNodepool(ngc.nodepool); err != nil {
 			return nil, fmt.Errorf("failed to update nodepool %s : %w", ngc.nodepool.Name, err)
 		}
+		if err := c.sendAutoscalerEvent(); err != nil {
+			return nil, fmt.Errorf("failed to send autoscaler event %s : %w", ngc.nodepool.Name, err)
+		}
 		return &protos.NodeGroupIncreaseSizeResponse{}, nil
 	}
 
@@ -89,6 +92,9 @@ func (c *ClaudieCloudProvider) NodeGroupDeleteNodes(_ context.Context, req *prot
 		// Update nodepool in Claudie.
 		if err := c.updateNodepool(ngc.nodepool); err != nil {
 			return nil, fmt.Errorf("failed to update nodepool %s : %w", ngc.nodepool.Name, err)
+		}
+		if err := c.sendAutoscalerEvent(); err != nil {
+			return nil, fmt.Errorf("failed to send autoscaler event %s : %w", ngc.nodepool.Name, err)
 		}
 		return &protos.NodeGroupDeleteNodesResponse{}, nil
 	}
@@ -178,24 +184,6 @@ func (c *ClaudieCloudProvider) updateNodepool(nodepool *pb.NodePool) error {
 			Nodepool:    nodepool,
 		}); err != nil {
 		return fmt.Errorf("error while updating the state in the Claudie : %w", err)
-	}
-	return nil
-}
-
-func (c *ClaudieCloudProvider) SendAutoscalerEvent() error {
-	var cc *grpc.ClientConn
-	var err error
-
-	frontendURL := strings.ReplaceAll(envs.FrontendURL, ":tcp://", "")
-	if cc, err = utils.GrpcDialWithInsecure("frontend", frontendURL); err != nil {
-		return fmt.Errorf("failed to dial frontend at %s : %w", envs.FrontendURL, err)
-	}
-	frontend := pb.NewFrontendServiceClient(cc)
-	if _, err := frontend.SendAutoscalerEvent(context.Background(), &pb.SendAutoscalerEventRequest{
-		InputManifestName: c.resourceName,
-		InputManifestNamespace: c.resourceNamespace,
-	}); err != nil {
-		return fmt.Errorf("error while sending autoscaling event to Frontend : %w", err)
 	}
 	return nil
 }

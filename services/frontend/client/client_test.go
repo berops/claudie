@@ -30,12 +30,12 @@ func closeConn(t *testing.T, connection *grpc.ClientConn) {
 	require.NoError(t, err)
 }
 
-func TestGetConfigBuilder(t *testing.T) {
+func TestSendAutoscalerEvent(t *testing.T) {
 	c, cc := ClientConnection()
 
 	testEvent := &pb.SendAutoscalerEventRequest{
-		InputManifestName:      "testManifesta2",
-		InputManifestNamespace: "testNamespace2",
+		InputManifestName:      "autoscaling-1",
+		InputManifestNamespace: "default",
 	}
 
 	err := SendAutoscalerEvent(c, testEvent)
@@ -43,5 +43,5 @@ func TestGetConfigBuilder(t *testing.T) {
 		log.Fatal().Msgf("error: %s", err.Error())
 	}
 	closeConn(t, cc)
-	t.Log("Event sent sucesfully")
+	t.Log("Event sent successfully")
 }

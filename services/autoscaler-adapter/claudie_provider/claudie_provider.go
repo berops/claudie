@@ -15,6 +15,7 @@ import (
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/autoscaler-adapter/node_manager"
+	frontend "github.com/berops/claudie/services/frontend/client"
 )
 
 const (
@@ -41,7 +42,7 @@ type ClaudieCloudProvider struct {
 
 	// Name of the Claudie config.
 	projectName string
-	// Kubernete InputManifest resource name
+	// Kubernetes InputManifest resource name
 	resourceName string
 	// Kubernetes InputManifest resource namespace
 	resourceNamespace string
@@ -231,6 +232,26 @@ func (c *ClaudieCloudProvider) refresh() error {
 		if err := c.nodeManager.Refresh(cluster.ClusterInfo.NodePools); err != nil {
 			return fmt.Errorf("failed to refresh node manager : %w", err)
 		}
+	}
+	return nil
+}
+
+// SendAutoscalerEvent will sent the resourceName and resourceNamespace to the InputManifest controller,
+// when a scaleup or scaledown occurs
+func (c *ClaudieCloudProvider) sendAutoscalerEvent() error {
+	var cc *grpc.ClientConn
+	var err error
+	frontendURL := strings.ReplaceAll(envs.FrontendURL, ":tcp://", "")
+	log.Info().Msgf("Sending autoscale event to %s: %s, %s, ", frontendURL, c.resourceName, c.resourceNamespace)
+	if cc, err = utils.GrpcDialWithInsecure("frontend", frontendURL); err != nil {
+		return fmt.Errorf("failed to dial frontend at %s : %w", envs.FrontendURL, err)
+	}
+	client := pb.NewFrontendServiceClient(cc)
+	if err := frontend.SendAutoscalerEvent(client, &pb.SendAutoscalerEventRequest{
+		InputManifestName:      c.resourceName,
+		InputManifestNamespace: c.resourceNamespace,
+	}); err != nil {
+		return fmt.Errorf("error while sending autoscaling event to Frontend : %w", err)
 	}
 	return nil
 }

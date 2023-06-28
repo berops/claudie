@@ -19,10 +19,10 @@ import (
 
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/services/frontend/pkg/controller"
 	"github.com/berops/claudie/services/frontend/server/adapters/inbound/grpc"
 	outboundAdapters "github.com/berops/claudie/services/frontend/server/adapters/outbound"
 	"github.com/berops/claudie/services/frontend/server/domain/usecases"
-	"github.com/berops/claudie/services/frontend/pkg/controller"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 )
@@ -30,7 +30,7 @@ import (
 const (
 	// healthcheckPort is the port on which Kubernetes readiness and liveness probes send request
 	// for performing health checks.
-	healthcheckPort = ":50058"
+	healthcheckPort = ":50000"
 )
 
 var (
@@ -106,6 +106,8 @@ func run() error {
 		// Cancel context for usecases functions to terminate manager.
 		defer usecaseCancel()
 		defer signal.Stop(shutdownSignalChan)
+		defer close(autoscalerChan)
+
 		// Perform graceful shutdown
 		log.Info().Msg("Gracefully shutting down GrpcAdapter")
 		grpcAdapter.Stop()

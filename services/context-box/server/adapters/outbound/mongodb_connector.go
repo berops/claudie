@@ -435,19 +435,19 @@ func dataToConfigPb(data *configItem) (*pb.Config, error) {
 	}
 
 	return &pb.Config{
-		Id:           data.ID.Hex(),
-		Name:         data.Name,
-		Manifest:     data.Manifest,
-		ResourceName: data.ResourceName,
+		Id:                data.ID.Hex(),
+		Name:              data.Name,
+		Manifest:          data.Manifest,
+		ResourceName:      data.ResourceName,
 		ResourceNamespace: data.ResourceNamespace,
-		DesiredState: desiredState,
-		CurrentState: currentState,
-		MsChecksum:   data.MsChecksum,
-		DsChecksum:   data.DsChecksum,
-		CsChecksum:   data.CsChecksum,
-		BuilderTTL:   int32(data.BuilderTTL),
-		SchedulerTTL: int32(data.SchedulerTTL),
-		State:        ConvertToGRPCWorkflow(data.State),
+		DesiredState:      desiredState,
+		CurrentState:      currentState,
+		MsChecksum:        data.MsChecksum,
+		DsChecksum:        data.DsChecksum,
+		CsChecksum:        data.CsChecksum,
+		BuilderTTL:        int32(data.BuilderTTL),
+		SchedulerTTL:      int32(data.SchedulerTTL),
+		State:             ConvertToGRPCWorkflow(data.State),
 	}, nil
 }
 

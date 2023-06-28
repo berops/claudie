@@ -6,7 +6,6 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/health"
 
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
@@ -14,18 +13,17 @@ import (
 )
 
 const (
-	defaultContextBoxPort = 50055
+	defaultFrontendPort = 50058
 )
 
 type GrpcAdapter struct {
-	tcpListener       net.Listener
-	server            *grpc.Server
-	healthCheckServer *health.Server
+	tcpListener net.Listener
+	server      *grpc.Server
 }
 
 // Init will create the underlying gRPC server and the gRPC healthcheck server
 func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
-	port := utils.GetEnvDefault("FRONTEND_PORT", fmt.Sprint(defaultContextBoxPort))
+	port := utils.GetEnvDefault("FRONTEND_PORT", fmt.Sprint(defaultFrontendPort))
 	listeningAddress := net.JoinHostPort("0.0.0.0", port)
 
 	tcpListener, err := net.Listen("tcp", listeningAddress)
@@ -34,7 +32,7 @@ func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
 	}
 	g.tcpListener = tcpListener
 
-	log.Info().Msgf("frontend microservice bound to %s", listeningAddress)
+	log.Info().Msgf("Frontend microservice bound to %s", listeningAddress)
 
 	g.server = grpc.NewServer()
 	pb.RegisterFrontendServiceServer(g.server, &FrontendGrpcService{usecases: usecases})
@@ -46,7 +44,7 @@ func (g *GrpcAdapter) Serve() error {
 		return fmt.Errorf("frontend microservice grpc server failed to serve: %w", err)
 	}
 
-	log.Info().Msgf("Finished listening for incomig gRPC connections")
+	log.Info().Msgf("Finished listening for incoming gRPC connections")
 	return nil
 }
 

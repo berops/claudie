@@ -52,15 +52,9 @@ spec:
             - name: PROJECT_NAME
               value: {{ .ProjectName }}
             - name: FRONTEND_HOSTNAME
-              valueFrom:
-                configMapKeyRef:
-                  name: env
-                  key: FRONTEND_HOSTNAME            
+              value: {{ .FrontendHostname }}
             - name: FRONTEND_PORT
-              valueFrom:
-                configMapKeyRef:
-                  name: env
-                  key: FRONTEND_PORT            
+              value: "{{ .FrontendPort }}"
           resources:
             requests:
               cpu: 80m

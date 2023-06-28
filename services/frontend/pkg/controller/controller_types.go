@@ -28,8 +28,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"github.com/berops/claudie/services/frontend/server/domain/usecases"
 	v1beta "github.com/berops/claudie/services/frontend/pkg/api/v1beta1"
+	"github.com/berops/claudie/services/frontend/server/domain/usecases"
 	"github.com/go-logr/logr"
 )
 
@@ -48,10 +48,10 @@ const (
 
 // InputManifestReconciler reconciles a InputManifest object
 type InputManifestReconciler struct {
-	kc             client.Client
-	Scheme         *runtime.Scheme
-	Recorder       record.EventRecorder
-	Logger         logr.Logger
+	kc       client.Client
+	Scheme   *runtime.Scheme
+	Recorder record.EventRecorder
+	Logger   logr.Logger
 	*usecases.Usecases
 }
 

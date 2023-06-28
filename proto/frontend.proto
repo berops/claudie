@@ -11,6 +11,6 @@ message SendAutoscalerEventRequest {
 message SendAutoscalerEventResponse {}
 
 service FrontendService {
-    // SendAutoscalerEvent sends events to frontend when a scale up/down encures
+    // SendAutoscalerEvent sends events to frontend when a scale up/down occurs
     rpc SendAutoscalerEvent(SendAutoscalerEventRequest) returns (SendAutoscalerEventResponse);
 }

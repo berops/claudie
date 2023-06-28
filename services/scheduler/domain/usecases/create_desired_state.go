@@ -53,11 +53,11 @@ func (u *Usecases) CreateDesiredState(config *pb.Config) (*pb.Config, error) {
 
 	// Create new config for desired state
 	newConfig := &pb.Config{
-		Id:       config.GetId(),
-		Name:     config.GetName(),
+		Id:                config.GetId(),
+		Name:              config.GetName(),
 		ResourceName:      config.GetResourceName(),
-		ResourceNamespace: config.GetResourceNamespace(),		
-		Manifest: config.GetManifest(),
+		ResourceNamespace: config.GetResourceNamespace(),
+		Manifest:          config.GetManifest(),
 		DesiredState: &pb.Project{
 			Name:                 unmarshalledManifest.Name,
 			Clusters:             k8sClusters,

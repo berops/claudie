@@ -16,7 +16,7 @@ var (
 	//ContextBoxURL is a listening URL for ContextBox module
 	ContextBoxURL = os.Getenv("CONTEXT_BOX_HOSTNAME") + ":" + os.Getenv("CONTEXT_BOX_PORT")
 	//FrontendURL is a listening URL for Frontend connection
-	FrontendURL = os.Getenv("FRONTENDT_HOSTNAME") + ":" + os.Getenv("FRONTEND_PORT")
+	FrontendURL = os.Getenv("FRONTEND_HOSTNAME") + ":" + os.Getenv("FRONTEND_PORT")
 	//DatabaseURL is a listening URL for Database
 	DatabaseURL = "mongodb://" + os.Getenv("DATABASE_USERNAME") + ":" + os.Getenv("DATABASE_PASSWORD") + "@" + os.Getenv("DATABASE_HOSTNAME") + ":" + os.Getenv("DATABASE_PORT")
 	//KuberURL is a listening URL for Kuber module
@@ -67,7 +67,7 @@ func init() {
 	ContextBoxURL = strings.ReplaceAll(ContextBoxURL, ":tcp://", "")
 
 	if FrontendURL == ":" {
-		FrontendURL = "localhost:50055"
+		FrontendURL = "localhost:50058"
 	}
 	FrontendURL = strings.ReplaceAll(FrontendURL, ":tcp://", "")
 

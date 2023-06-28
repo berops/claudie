@@ -12,6 +12,6 @@ type FrontendGrpcService struct {
 	usecases *usecases.Usecases
 }
 
-func (f *FrontendGrpcService) SendAutoscalerEvent(ctx context.Context, request *pb.SendAutoscalerEventRequest) (*pb.SendAutoscalerEventResponse, error){
+func (f *FrontendGrpcService) SendAutoscalerEvent(ctx context.Context, request *pb.SendAutoscalerEventRequest) (*pb.SendAutoscalerEventResponse, error) {
 	return f.usecases.SendAutoscalerEvent(request)
 }
