@@ -157,7 +157,7 @@ type Node struct {
 	// Endpoint under which Claudie will connect to the node.
 	Endpoint string `validate:"required,ip_addr" yaml:"endpoint" json:"endpoint"`
 	// Private key used to ssh into the node.
-	Key string `validate:"required" yaml:"privateKey" json:"privatekey"`
+	Key string `validate:"required" yaml:"privateKey" json:"privateKey"`
 }
 
 // Collection of data used to define a Kubernetes cluster.
