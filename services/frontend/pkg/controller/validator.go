@@ -14,24 +14,25 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-// ImputManifestValidator validates InputManifest containing the input-manifest
-type ImputManifestValdator struct {
+// InputManifestValidator validates InputManifest containing the input-manifest
+type InputManifestValidator struct {
 	Logger logr.Logger
 }
 
 // NewWebhook returns a new validation webhook for InputManifest resource
-func NewWebhook(port int, dir, path string, log logr.Logger) *wbhk.Server {
-	hookServer := &wbhk.Server{
+func NewWebhook(scheme *runtime.Scheme, port int, dir, path string, log logr.Logger) wbhk.Server {
+	hookServer := wbhk.NewServer(wbhk.Options{
 		Port:    port,
 		CertDir: dir,
-	}
-	hookServer.Register(path, admission.WithCustomValidator(&v1beta.InputManifest{}, &ImputManifestValdator{log}))
+	})
+
+	hookServer.Register(path, admission.WithCustomValidator(scheme, &v1beta.InputManifest{}, &InputManifestValidator{log}))
 	return hookServer
 }
 
 // validate takes the context and a kubernetes object as a parameter.
 // It will extract the secret data out of the received obj and run manifest validation against it
-func (v *ImputManifestValdator) validate(ctx context.Context, obj runtime.Object) error {
+func (v *InputManifestValidator) validate(ctx context.Context, obj runtime.Object) error {
 	log := crlog.FromContext(ctx).WithName("InputManifest Validator")
 
 	inputManifest, ok := obj.(*v1beta.InputManifest)
@@ -49,18 +50,18 @@ func (v *ImputManifestValdator) validate(ctx context.Context, obj runtime.Object
 }
 
 // ValidateCreate defines the logic when a kubernetes obj resource is created
-func (v *ImputManifestValdator) ValidateCreate(ctx context.Context, obj runtime.Object) error {
-	return v.validate(ctx, obj)
+func (v *InputManifestValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+	return nil, v.validate(ctx, obj)
 }
 
 // ValidateUpdate defines the logic when a kubernetes obj resource is updated
-func (v *ImputManifestValdator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) error {
-	return v.validate(ctx, newObj)
+func (v *InputManifestValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+	return nil, v.validate(ctx, newObj)
 }
 
 // ValidateDelete defines the logic when a kubernetes obj resource is deleted
-func (v *ImputManifestValdator) ValidateDelete(ctx context.Context, obj runtime.Object) error {
-	return v.validate(ctx, obj)
+func (v *InputManifestValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+	return nil, v.validate(ctx, obj)
 }
 
 // validateInputManifest takes v1beta.InputManifest, validate its structure
