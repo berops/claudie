@@ -1,7 +1,7 @@
 # Troubleshooting guide
 
-!!! warning "In progress"
-    As we continue working on our troubleshooting guide, we understand that issues may arise during your usage of Claudie. Although the guide is not yet complete, we encourage you to create a [GitHub issue](https://github.com/berops/claudie/issues) if you encounter any problems. Rest assured that we are committed to promptly responding to your concerns and providing assistance, ensuring a smooth experience even before the troubleshooting guide is finalized. Your feedback and reports are highly valuable to us in improving our platform and addressing any issues you may face.
+!!! note "In progress"
+    As we continue expanding our troubleshooting guide, we understand that issues may arise during your usage of Claudie. Although the guide is not yet complete, we encourage you to create a [GitHub issue](https://github.com/berops/claudie/issues) if you encounter any problems. Your feedback and reports are highly valuable to us in improving our platform and addressing any issues you may face.
 
 ## Claudie cluster not starting
 Claudie relies on all services to be interconnected. If any of these services fail to create due to node unavailability or resource constraints, Claudie will be unable to provision your cluster.
@@ -52,8 +52,11 @@ Claudie relies on all services to be interconnected. If any of these services fa
     !!! note "Debug log level"
         Using debug log level will help here with identifying the issue closely. [This guide](https://docs.claudie.io/v0.4.0/getting-started/detailed-guide/#claudie-deployment) shows how you can set it up during step 5.
 
-    !!! node "Claudie benefit"
+    !!! node "Claudie benefit!"
         The great thing about Claudie is that it utilizes open source tools to set up and configure infrastructure based on your preferences. As a result, the majority of errors can be easily found and resolved through online resources.
+
+### Terraformer service not starting
+Terraformer relies on minio and dynamodb services for proper startup. If these services fail to start, Terraformer will also fail to start.
 
 ### Create table job
 Scheduling problems of dynamodb service or even very slow autoscaling, may cause `create-table-job` to fail to create necessary tables in dynamodb service in time. We have set the `backoffLimit` of the `create-table-job` to fail after approximately 42 minutes of trying. If you encounter any issues with the `create-table-job` or if you feel like the `backoffLimit` has to be extended, please [create an issue](https://github.com/berops/claudie/issues).
