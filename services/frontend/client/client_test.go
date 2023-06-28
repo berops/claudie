@@ -12,7 +12,7 @@ import (
 )
 
 func ClientConnection() (pb.FrontendServiceClient, *grpc.ClientConn) {
-	cc, err := utils.GrpcDialWithInsecure("frontend", envs.FrontendURL)
+	cc, err := utils.GrpcDialWithRetryAndBackoff("frontend", envs.FrontendURL)
 	if err != nil {
 		log.Fatal().Err(err)
 	}
@@ -34,7 +34,7 @@ func TestSendAutoscalerEvent(t *testing.T) {
 	c, cc := ClientConnection()
 
 	testEvent := &pb.SendAutoscalerEventRequest{
-		InputManifestName:      "autoscaling-1",
+		InputManifestName:      "test",
 		InputManifestNamespace: "default",
 	}
 

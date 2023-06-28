@@ -18,7 +18,6 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"gopkg.in/yaml.v3"
@@ -432,7 +431,7 @@ func main() {
 	}
 	log.Info().Msgf("Kuber service is listening on: %s", trfAddr)
 
-	s := grpc.NewServer()
+	s := utils.NewGRPCServer()
 	pb.RegisterKuberServiceServer(s, &server{})
 
 	// Add health service to gRPC

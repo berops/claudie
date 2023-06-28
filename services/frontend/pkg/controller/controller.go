@@ -153,7 +153,9 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 				return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 			}
-			log.Info("Refreshing state", "status", currentState.State)
+			for cluster, wf := range currentState.Clusters {
+				log.Info("Refreshing state", "cluster", cluster, "stage", wf.Phase, "status", wf.State)
+			}
 			return ctrl.Result{RequeueAfter: REQUEUE_IN_PROGRES}, nil
 		}
 
@@ -204,7 +206,9 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 		}
-		log.Info("Refreshing state", "status", currentState.State)
+		for cluster, wf := range currentState.Clusters {
+			log.Info("Refreshing state", "cluster", cluster, "stage", wf.Phase, "status", wf.State)
+		}
 		return ctrl.Result{RequeueAfter: REQUEUE_IN_PROGRES}, nil
 	}
 
@@ -250,7 +254,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 	}
-	log.Info("Build compleate", "status", currentState.State)
+	log.Info("Build completed", "status", currentState.State)
 	return ctrl.Result{}, nil
 }
 

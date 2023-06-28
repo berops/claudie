@@ -91,7 +91,7 @@ func getClaudieState(projectName, clusterName string) (*pb.K8Scluster, string, s
 	var res *pb.GetConfigFromDBResponse
 	cboxURL := strings.ReplaceAll(envs.ContextBoxURL, ":tcp://", "")
 
-	if cc, err = utils.GrpcDialWithInsecure("context-box", cboxURL); err != nil {
+	if cc, err = utils.GrpcDialWithRetryAndBackoff("context-box", cboxURL); err != nil {
 		return nil, "", "", fmt.Errorf("failed to dial context-box at %s : %w", cboxURL, err)
 	}
 	defer func() {
@@ -243,7 +243,7 @@ func (c *ClaudieCloudProvider) sendAutoscalerEvent() error {
 	var err error
 	frontendURL := strings.ReplaceAll(envs.FrontendURL, ":tcp://", "")
 	log.Info().Msgf("Sending autoscale event to %s: %s, %s, ", frontendURL, c.resourceName, c.resourceNamespace)
-	if cc, err = utils.GrpcDialWithInsecure("frontend", frontendURL); err != nil {
+	if cc, err = utils.GrpcDialWithRetryAndBackoff("frontend", frontendURL); err != nil {
 		return fmt.Errorf("failed to dial frontend at %s : %w", envs.FrontendURL, err)
 	}
 	client := pb.NewFrontendServiceClient(cc)

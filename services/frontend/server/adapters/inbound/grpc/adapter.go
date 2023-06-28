@@ -34,7 +34,7 @@ func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
 
 	log.Info().Msgf("Frontend microservice bound to %s", listeningAddress)
 
-	g.server = grpc.NewServer()
+	g.server = utils.NewGRPCServer()
 	pb.RegisterFrontendServiceServer(g.server, &FrontendGrpcService{usecases: usecases})
 }
 

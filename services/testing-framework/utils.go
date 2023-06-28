@@ -35,7 +35,7 @@ type idInfo struct {
 
 // clientConnection will return new client connection to Context-box
 func clientConnection() (pb.ContextBoxServiceClient, *grpc.ClientConn) {
-	cc, err := utils.GrpcDialWithInsecure("context-box", envs.ContextBoxURL)
+	cc, err := utils.GrpcDialWithRetryAndBackoff("context-box", envs.ContextBoxURL)
 	if err != nil {
 		log.Fatal().Err(err).Msgf("Failed to create client connection to context-box")
 	}
