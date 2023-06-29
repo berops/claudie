@@ -78,7 +78,7 @@ func (sc *ScrapeConfig) GenerateAndApplyScrapeConfig() error {
 	// Apply namespace and secret to the cluster
 	k := kubectl.Kubectl{Kubeconfig: sc.Cluster.Kubeconfig, Directory: sc.Directory}
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
-		prefix := fmt.Sprintf("%s-%s", sc.Cluster.ClusterInfo.Name, sc.Cluster.ClusterInfo.Hash)
+		prefix := utils.GetClusterID(sc.Cluster.ClusterInfo)
 		k.Stdout = comm.GetStdOut(prefix)
 		k.Stderr = comm.GetStdErr(prefix)
 	}
@@ -93,7 +93,7 @@ func (sc *ScrapeConfig) GenerateAndApplyScrapeConfig() error {
 func (sc *ScrapeConfig) RemoveLbScrapeConfig() error {
 	k := kubectl.Kubectl{Kubeconfig: sc.Cluster.Kubeconfig, MaxKubectlRetries: 3}
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
-		prefix := fmt.Sprintf("%s-%s", sc.Cluster.ClusterInfo.Name, sc.Cluster.ClusterInfo.Hash)
+		prefix := utils.GetClusterID(sc.Cluster.ClusterInfo)
 		k.Stdout = comm.GetStdOut(prefix)
 		k.Stderr = comm.GetStdErr(prefix)
 	}

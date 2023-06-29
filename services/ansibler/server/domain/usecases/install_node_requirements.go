@@ -26,7 +26,7 @@ func (u *Usecases) InstallNodeRequirements(request *pb.InstallRequest) (*pb.Inst
 			Static:  commonUtils.GetCommonStaticNodePools(request.Desired.ClusterInfo.NodePools),
 		},
 		PrivateKey:     request.Desired.ClusterInfo.PrivateKey,
-		ClusterID:      fmt.Sprintf("%s-%s", request.Desired.ClusterInfo.Name, request.Desired.ClusterInfo.Hash),
+		ClusterID:      commonUtils.GetClusterID(request.Desired.ClusterInfo),
 		ClusterNetwork: request.Desired.Network,
 	}
 
