@@ -98,8 +98,8 @@ func (ab *AutoscalerBuilder) generateFiles() error {
 	// Prepare data
 	clusterId := fmt.Sprintf("%s-%s", ab.cluster.ClusterInfo.Name, ab.cluster.ClusterInfo.Hash)
 	version, err := getK8sVersion(ab.cluster.Kubernetes)
-	frontendHostname := utils.GetEnvDefault("FRONTEND_HOSTNAME", fmt.Sprint(defaultFrontendHostname))
-	frontendPort := utils.GetEnvDefault("FRONTEND_PORT", fmt.Sprint(defaultFrontendPort))
+	frontendHostname := utils.GetEnvDefault("FRONTEND_HOSTNAME", defaultFrontendHostname)
+	frontendPort := utils.GetEnvDefault("FRONTEND_PORT", defaultFrontendPort)
 	if err != nil {
 		return err
 	}

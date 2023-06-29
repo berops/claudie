@@ -22,7 +22,6 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	log := crlog.FromContext(ctx)
 	inputManifest := &v1beta.InputManifest{}
 
-	log.Info(req.NamespacedName.String())
 
 	// Get the inputManifest resource
 	if err := r.kc.Get(ctx, req.NamespacedName, inputManifest); err != nil {
