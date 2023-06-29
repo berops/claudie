@@ -5,6 +5,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -16,8 +17,10 @@ import (
 const defaultLogLevel = zerolog.InfoLevel
 
 var (
-	isLogInit = false
-	logger    zerolog.Logger
+	isLogInit     = false
+	// Available time formats https://pkg.go.dev/time#pkg-constants
+	logTimeFormat = time.RFC3339 // "2006-01-02T15:04:05Z07:00"
+	logger        zerolog.Logger
 )
 
 // Initialize the logging framework.
@@ -30,9 +33,13 @@ func InitLog(moduleName string) {
 		logLevel, err := getLogLevelFromEnv()
 		baseLogger := zerolog.New(os.Stderr)
 		// create sub logger
-		logger = baseLogger.With().Str("module", moduleName).Logger()                 // Add module name to log
-		logger = logger.Level(logLevel).Output(zerolog.ConsoleWriter{Out: os.Stderr}) // Prettify the output
-		logger = logger.With().Timestamp().Logger()                                   // Add time stamp
+		logger = baseLogger.With().Str("module", moduleName).Logger() // Add module name to log
+		logger = logger.Level(logLevel).
+			Output(zerolog.ConsoleWriter{
+				Out:        os.Stderr,
+				TimeFormat: logTimeFormat,
+			}) // Prettify the output
+		logger = logger.With().Timestamp().Logger() // Add time stamp
 		if logLevel == zerolog.DebugLevel {
 			logger = logger.With().Caller().Logger() // Add caller (line number where log message was called)
 		}
