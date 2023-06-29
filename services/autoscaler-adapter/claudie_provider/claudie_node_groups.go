@@ -50,6 +50,9 @@ func (c *ClaudieCloudProvider) NodeGroupIncreaseSize(_ context.Context, req *pro
 		if err := c.updateNodepool(ngc.nodepool); err != nil {
 			return nil, fmt.Errorf("failed to update nodepool %s : %w", ngc.nodepool.Name, err)
 		}
+		if err := c.sendAutoscalerEvent(); err != nil {
+			return nil, fmt.Errorf("failed to send autoscaler event %s : %w", ngc.nodepool.Name, err)
+		}
 		return &protos.NodeGroupIncreaseSizeResponse{}, nil
 	}
 
@@ -89,6 +92,9 @@ func (c *ClaudieCloudProvider) NodeGroupDeleteNodes(_ context.Context, req *prot
 		// Update nodepool in Claudie.
 		if err := c.updateNodepool(ngc.nodepool); err != nil {
 			return nil, fmt.Errorf("failed to update nodepool %s : %w", ngc.nodepool.Name, err)
+		}
+		if err := c.sendAutoscalerEvent(); err != nil {
+			return nil, fmt.Errorf("failed to send autoscaler event %s : %w", ngc.nodepool.Name, err)
 		}
 		return &protos.NodeGroupDeleteNodesResponse{}, nil
 	}

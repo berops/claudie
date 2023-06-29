@@ -53,7 +53,7 @@ func (g *GrpcAdapter) Serve() error {
 		return fmt.Errorf("context-box microservice grpc server failed to serve: %w", err)
 	}
 
-	log.Info().Msgf("Finished listening for incomig gRPC connections")
+	log.Info().Msgf("Finished listening for incoming gRPC connections")
 	return nil
 }
 
