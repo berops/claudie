@@ -6,7 +6,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 )
 
-// SendAutoscalerEvent will recive an autoscaler event, and send it to the autoscaler channel
+// SendAutoscalerEvent will receive an autoscaler event, and send it to the autoscaler channel
 func (u *Usecases) SendAutoscalerEvent(request *pb.SendAutoscalerEventRequest) (*pb.SendAutoscalerEventResponse, error) {
 	im := v1beta1.InputManifest{}
 	im.SetName(request.InputManifestName)

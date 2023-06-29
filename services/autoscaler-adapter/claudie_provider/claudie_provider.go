@@ -56,7 +56,7 @@ type ClaudieCloudProvider struct {
 	lock sync.Mutex
 }
 
-// NewClaudieCloudProvider returns a ClaudieCloudProvider with initialised caches.
+// NewClaudieCloudProvider returns a ClaudieCloudProvider with initialized caches.
 func NewClaudieCloudProvider(projectName, clusterName string) *ClaudieCloudProvider {
 	// Connect to Claudie and retrieve *pb.K8Scluster
 	var (
@@ -72,7 +72,7 @@ func NewClaudieCloudProvider(projectName, clusterName string) *ClaudieCloudProvi
 	if nm, err = node_manager.NewNodeManager(cluster.ClusterInfo.NodePools); err != nil {
 		panic(fmt.Sprintf("Error while creating node manager : %v", err))
 	}
-	// Initialise all other variables.
+	// Initialize all other variables.
 	log.Logger = log.Logger.With().Str("cluster", utils.GetClusterID(cluster.ClusterInfo)).Logger()
 	return &ClaudieCloudProvider{
 		projectName:       projectName,
@@ -155,7 +155,7 @@ func (c *ClaudieCloudProvider) NodeGroupForNode(_ context.Context, req *protos.N
 	defer c.lock.Unlock()
 	log.Info().Msgf("Got NodeGroupForNode request")
 	nodeName := req.Node.Name
-	// Initialise as empty response.
+	// Initialize as empty response.
 	nodeGroup := &protos.NodeGroup{}
 	// Try to find if node is from any NodeGroup
 	for id, ngc := range c.nodesCache {
