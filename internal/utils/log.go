@@ -17,9 +17,9 @@ import (
 const defaultLogLevel = zerolog.InfoLevel
 
 var (
-	isLogInit     = false
+	isLogInit = false
 	// Available time formats https://pkg.go.dev/time#pkg-constants
-	logTimeFormat = time.RFC3339 // "2006-01-02T15:04:05Z07:00"
+	logTimeFormat = time.RFC3339 // c"2006-01-02T15:04:05Z07:00"
 	logger        zerolog.Logger
 )
 
