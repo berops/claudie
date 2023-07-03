@@ -73,10 +73,9 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - hetzner-control
+            - static-pool-1
           compute:
             - hetzner-compute
-            - static-pool-1
 
   loadBalancers:
     roles:
