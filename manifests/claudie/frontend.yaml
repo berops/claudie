@@ -32,7 +32,9 @@ spec:
               memory: 150Mi
           ports:
             - containerPort: 9443
-              name: webhook-tls      
+              name: webhook-tls
+            - containerPort: 50058
+              name: grpc-server                   
           env:
             - name: CONTEXT_BOX_PORT
               valueFrom:
@@ -57,6 +59,12 @@ spec:
                   fieldPath: metadata.namespace
             - name: CONTROLLER_TLS_PORT
               value: "9443"
+            - name: FRONTEND_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: FRONTEND_PORT
+              # No hostname needed              
             - name: WEBHOOK_CERT_DIR
               value: "/etc/webhook/certs/"  
             - name: WEBHOOK_PATH
@@ -64,13 +72,13 @@ spec:
           readinessProbe:
             httpGet:
               path: /readyz
-              port: 50058
+              port: 50000
             initialDelaySeconds: 5
             periodSeconds: 30
           livenessProbe:
             httpGet:
               path: /healthz
-              port: 50058
+              port: 50000
             initialDelaySeconds: 15
             periodSeconds: 30   
           volumeMounts:
@@ -90,63 +98,6 @@ metadata:
     app.kubernetes.io/part-of: claudie
     app.kubernetes.io/name: frontend
 ---
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: frontend-role
-  labels:
-    app.kubernetes.io/part-of: claudie
-    app.kubernetes.io/name: frontend
-rules:
-  - apiGroups: [""]
-    resources: ["secrets"]
-    verbs:
-    - get
-    - list
-    - watch
-  - apiGroups: [""]
-    resources: ["events"]
-    verbs:
-    - create
-    - list
-    - watch   
-    - patch 
-  - apiGroups: ["claudie.io"]
-    resources: ["inputmanifests"]
-    verbs:
-    - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
-  - apiGroups: ["claudie.io"]
-    resources: ["inputmanifests/finalizers"]
-    verbs:
-    - update
-  - apiGroups: ["claudie.io"]
-    resources: ["inputmanifests/status"]
-    verbs:
-    - get
-    - patch
-    - update
----
-kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: frontend-role-binding
-  labels:
-    app.kubernetes.io/part-of: claudie
-    app.kubernetes.io/name: frontend
-subjects:
-  - kind: ServiceAccount
-    name: frontend-sa
-roleRef:
-  kind: ClusterRole
-  name: frontend-role
-  apiGroup: rbac.authorization.k8s.io
----
 apiVersion: v1
 kind: Service
 metadata:
@@ -162,6 +113,9 @@ spec:
     - port: 443
       targetPort: webhook-tls
       name: webhook-tls
+    - port: 50058
+      targetPort: grpc-server    
+      name: grpc-server  
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration

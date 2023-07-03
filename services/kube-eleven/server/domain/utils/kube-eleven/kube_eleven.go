@@ -10,6 +10,7 @@ import (
 
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
+	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/kube-eleven/server/domain/utils/kubeone"
 	"github.com/berops/claudie/services/kube-eleven/templates"
@@ -40,7 +41,7 @@ type KubeEleven struct {
 // BuildCluster is responsible for managing the given K8sCluster along with the attached LBClusters
 // using Kubeone.
 func (k *KubeEleven) BuildCluster() error {
-	clusterID := fmt.Sprintf("%s-%s", k.K8sCluster.ClusterInfo.Name, k.K8sCluster.ClusterInfo.Hash)
+	clusterID := commonUtils.GetClusterID(k.K8sCluster.ClusterInfo)
 
 	k.outputDirectory = filepath.Join(baseDirectory, outputDirectory, clusterID)
 	// Generate files which will be needed by Kubeone.

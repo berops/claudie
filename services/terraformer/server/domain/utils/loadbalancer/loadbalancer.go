@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/berops/claudie/internal/utils"
 	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
 	"github.com/rs/zerolog"
 	"golang.org/x/sync/errgroup"
@@ -29,7 +30,7 @@ func (l *LBcluster) Id() string {
 		state = l.CurrentState
 	}
 
-	return fmt.Sprintf("%s-%s", state.ClusterInfo.Name, state.ClusterInfo.Hash)
+	return utils.GetClusterID(state.ClusterInfo)
 }
 
 func (l *LBcluster) Build(logger zerolog.Logger) error {

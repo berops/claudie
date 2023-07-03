@@ -31,7 +31,7 @@ func (u *Usecases) UpdateAPIEndpoint(request *pb.UpdateAPIEndpointRequest) (*pb.
 // the desired state. Thus a new control node needs to be selected among the existing
 // control nodes. This new control node will then represent the ApiEndpoint of the cluster.
 func updateAPIEndpoint(currentK8sClusterInfo, desiredK8sClusterInfo *pb.ClusterInfo) error {
-	clusterID := fmt.Sprintf("%s-%s", currentK8sClusterInfo.Name, currentK8sClusterInfo.Hash)
+	clusterID := commonUtils.GetClusterID(currentK8sClusterInfo)
 
 	// Find the ApiEndpoint node from the current state of the K8s cluster.
 	apiEndpointNodePool, apiEndpointNode, err := commonUtils.FindNodepoolWithApiEndpointNode(currentK8sClusterInfo.GetNodePools())

@@ -37,7 +37,7 @@ func (u *Usecases) SetUpLoadbalancers(request *pb.SetUpLBRequest) (*pb.SetUpLBRe
 		TargetK8sNodepool:     request.Desired.ClusterInfo.NodePools,
 		TargetK8sNodepoolKey:  request.Desired.ClusterInfo.PrivateKey,
 		PreviousAPIEndpointLB: request.PreviousAPIEndpoint,
-		ClusterID:             fmt.Sprintf("%s-%s", request.Desired.ClusterInfo.Name, request.Desired.ClusterInfo.Hash),
+		ClusterID:             commonUtils.GetClusterID(request.Desired.ClusterInfo),
 	}
 	for _, lbCluster := range request.DesiredLbs {
 		lbClustersInfo.LbClusters = append(lbClustersInfo.LbClusters, &utils.LBClusterData{

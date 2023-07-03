@@ -5,6 +5,7 @@ import (
 
 	"github.com/rs/zerolog"
 
+	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
 )
@@ -26,7 +27,7 @@ func (k *K8Scluster) Id() string {
 		state = k.CurrentState
 	}
 
-	return fmt.Sprintf("%s-%s", state.ClusterInfo.Name, state.ClusterInfo.Hash)
+	return utils.GetClusterID(state.ClusterInfo)
 }
 
 func (k *K8Scluster) Build(logger zerolog.Logger) error {
