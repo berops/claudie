@@ -15,12 +15,18 @@ import (
 func getTypeInfoHetzner(rawInfo []*hcloud.ServerType) map[string]*typeInfo {
 	m := make(map[string]*typeInfo, len(rawInfo))
 	for _, server := range rawInfo {
+		arch := x86
+		if server.Architecture == hcloud.ArchitectureARM {
+			arch = Arm
+		}
+
 		// The cpx versions are called ccx in hcloud-go api.
 		serverName := strings.ReplaceAll(server.Name, "ccx", "cpx")
 		m[serverName] = &typeInfo{
 			cpu:    int64(server.Cores),
 			memory: int64(server.Memory * 1024 * 1024 * 1024), // Convert to bytes
 			disk:   int64(server.Disk * 1024 * 1024 * 1024),   // Convert to bytes
+			arch:   arch,
 		}
 	}
 	return m
@@ -30,11 +36,18 @@ func getTypeInfoHetzner(rawInfo []*hcloud.ServerType) map[string]*typeInfo {
 func getTypeInfoAws(rawInfo []types.InstanceTypeInfo) map[string]*typeInfo {
 	m := make(map[string]*typeInfo, len(rawInfo))
 	for _, instance := range rawInfo {
+		arch := x86
+		for _, architecture := range instance.ProcessorInfo.SupportedArchitectures {
+			if architecture == types.ArchitectureTypeArm64 || architecture == types.ArchitectureTypeArm64Mac {
+				arch = Arm
+			}
+		}
 		// Ignore disk as it is set on nodepool level
 		serverName := string(instance.InstanceType)
 		m[serverName] = &typeInfo{
 			cpu:    int64(*instance.VCpuInfo.DefaultCores),
 			memory: *instance.MemoryInfo.SizeInMiB * 1024 * 1024, // Convert to bytes
+			arch:   arch,
 		}
 	}
 	return m

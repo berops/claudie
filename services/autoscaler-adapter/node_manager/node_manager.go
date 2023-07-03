@@ -12,6 +12,14 @@ const (
 	defaultPodAmountsLimit = 110
 )
 
+type Arch string
+
+// CPU architectures 64bit.
+const (
+	x86 Arch = "amd64"
+	Arm Arch = "arm64"
+)
+
 type NodeManager struct {
 	// VM type info caches
 	hetznerVMs map[string]*typeInfo
@@ -30,6 +38,8 @@ type typeInfo struct {
 	memory int64
 	// Size in bytes
 	disk int64
+	// arch of VM
+	arch Arch
 }
 
 // NewNodeManager returns a NodeManager pointer with initialised caches about nodes.
@@ -86,7 +96,7 @@ func (nm *NodeManager) GetLabels(np *pb.NodePool) map[string]string {
 	m["topology.kubernetes.io/region"] = np.GetDynamicNodePool().Region
 	// Other labels.
 	m["kubernetes.io/os"] = "linux" // Only Linux is supported.
-	//m["kubernetes.io/arch"] = "" // TODO add arch
+	m["kubernetes.io/arch"] = string(nm.getTypeInfo(np.GetDynamicNodePool().GetProvider().CloudProviderName, np.GetDynamicNodePool()).arch)
 	m["v1.kubeone.io/operating-system"] = nm.GetOs(np.GetDynamicNodePool().Image)
 
 	return m
