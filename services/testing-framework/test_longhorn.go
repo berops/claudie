@@ -8,6 +8,7 @@ import (
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
+	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -34,7 +35,7 @@ func testLonghornDeployment(ctx context.Context, config *pb.Config) error {
 
 		kubectl := kubectl.Kubectl{Kubeconfig: cluster.Kubeconfig, MaxKubectlRetries: 5}
 		if log.Logger.GetLevel() == zerolog.DebugLevel {
-			prefix := fmt.Sprintf("%s-%s", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
+			prefix := utils.GetClusterID(cluster.ClusterInfo)
 			kubectl.Stdout = comm.GetStdOut(prefix)
 			kubectl.Stderr = comm.GetStdErr(prefix)
 		}

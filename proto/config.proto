@@ -8,24 +8,28 @@ message Config {
   string id = 1;
   // Config name - same as input manifest name.
   string name = 2;
+  // resourceName represents the input manifest resource name in Kubernetes
+  string resourceName = 3;
+  // resourceNamespace represents the input manifest resource namespace in Kubernetes
+  string resourceNamespace = 4;
   // Client defined manifest.
-  string manifest = 3;
+  string manifest = 5;
   // Desired state based on the input manifest manifest.
-  Project desiredState = 4;
+  Project desiredState = 6;
   // Current state of the infrastructure.
-  Project currentState = 5;
+  Project currentState = 7;
   // Manifest state checksum.
-  bytes msChecksum = 6;
+  bytes msChecksum = 8;
   // Desired state checksum.
-  bytes dsChecksum = 7;
+  bytes dsChecksum = 9;
   // Current state checksum.
-  bytes csChecksum = 8;
+  bytes csChecksum = 10;
   // Builder time to live counter.
-  int32 builderTTL = 9;
+  int32 builderTTL = 11;
   // Scheduler time to live counter.
-  int32 schedulerTTL = 10;
+  int32 schedulerTTL = 12;
   // Per-cluster workflow state.
-  map<string, Workflow> state = 11;
+  map<string, Workflow> state = 13;
 }
 
 message Workflow {

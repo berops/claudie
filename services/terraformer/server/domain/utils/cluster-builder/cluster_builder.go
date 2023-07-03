@@ -71,7 +71,7 @@ type outputNodepools struct {
 
 // CreateNodepools creates node pools for the cluster.
 func (c ClusterBuilder) CreateNodepools() error {
-	clusterID := fmt.Sprintf("%s-%s", c.DesiredClusterInfo.Name, c.DesiredClusterInfo.Hash)
+	clusterID := utils.GetClusterID(c.DesiredClusterInfo)
 	clusterDir := filepath.Join(Output, clusterID)
 
 	// Calculate CIDR, so they do not change if nodepool order changes
@@ -130,7 +130,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 
 // DestroyNodepools destroys nodepools for the cluster.
 func (c ClusterBuilder) DestroyNodepools() error {
-	clusterID := fmt.Sprintf("%s-%s", c.CurrentClusterInfo.Name, c.CurrentClusterInfo.Hash)
+	clusterID := utils.GetClusterID(c.CurrentClusterInfo)
 	clusterDir := filepath.Join(Output, clusterID)
 
 	// Calculate CIDR, in case some nodepools do not have it, due to error.

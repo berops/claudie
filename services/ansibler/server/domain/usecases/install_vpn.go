@@ -39,7 +39,7 @@ func (u *Usecases) InstallVPN(request *pb.InstallRequest) (*pb.InstallResponse, 
 					Static:  commonUtils.GetCommonStaticNodePools(request.Desired.ClusterInfo.NodePools),
 				},
 				PrivateKey:     request.Desired.ClusterInfo.PrivateKey,
-				ClusterID:      fmt.Sprintf("%s-%s", request.Desired.ClusterInfo.Name, request.Desired.ClusterInfo.Hash),
+				ClusterID:      commonUtils.GetClusterID(request.Desired.ClusterInfo),
 				ClusterNetwork: request.Desired.Network,
 			},
 		},
@@ -53,13 +53,13 @@ func (u *Usecases) InstallVPN(request *pb.InstallRequest) (*pb.InstallResponse, 
 					Static:  commonUtils.GetCommonStaticNodePools(lbCluster.ClusterInfo.NodePools),
 				},
 				PrivateKey:     lbCluster.ClusterInfo.PrivateKey,
-				ClusterID:      fmt.Sprintf("%s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash),
+				ClusterID:      commonUtils.GetClusterID(lbCluster.ClusterInfo),
 				ClusterNetwork: request.Desired.Network,
 			},
 		)
 	}
 
-	if err := installWireguardVPN(fmt.Sprintf("%s-%s", request.Desired.ClusterInfo.Name, request.Desired.ClusterInfo.Hash), vpnInfo); err != nil {
+	if err := installWireguardVPN(commonUtils.GetClusterID(request.Desired.ClusterInfo), vpnInfo); err != nil {
 		logger.Err(err).Msgf("Error encountered while installing VPN")
 		return nil, fmt.Errorf("error encountered while installing VPN for cluster %s project %s : %w", request.Desired.ClusterInfo.Name, request.ProjectName, err)
 	}
