@@ -7,6 +7,7 @@ import (
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
+	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -192,7 +193,7 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 func applyDeployment(c *pb.K8Scluster, deployment string) error {
 	kc := kubectl.Kubectl{Kubeconfig: c.Kubeconfig, MaxKubectlRetries: 5}
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
-		prefix := fmt.Sprintf("%s-%s", c.ClusterInfo.Name, c.ClusterInfo.Hash)
+		prefix := utils.GetClusterID(c.ClusterInfo)
 		kc.Stdout = comm.GetStdOut(prefix)
 		kc.Stderr = comm.GetStdErr(prefix)
 	}
@@ -206,7 +207,7 @@ func applyDeployment(c *pb.K8Scluster, deployment string) error {
 func removeDeployment(c *pb.K8Scluster, deployment string) error {
 	kc := kubectl.Kubectl{Kubeconfig: c.Kubeconfig, MaxKubectlRetries: 5}
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
-		prefix := fmt.Sprintf("%s-%s", c.ClusterInfo.Name, c.ClusterInfo.Hash)
+		prefix := utils.GetClusterID(c.ClusterInfo)
 		kc.Stdout = comm.GetStdOut(prefix)
 		kc.Stderr = comm.GetStdErr(prefix)
 	}
