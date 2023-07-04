@@ -25,6 +25,9 @@ func GetClusterByName(clusterName string, clusters []*pb.K8Scluster) int {
 	}
 
 	for i, cluster := range clusters {
+		if cluster == nil {
+			continue
+		}
 		if cluster.ClusterInfo.Name == clusterName {
 			return i
 		}
