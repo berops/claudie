@@ -47,7 +47,7 @@ Claudie relies on all services to be interconnected. If any of these services fa
     !!! note "Debug log level"
         Using debug log level will help here with identifying the issue closely. [This guide](https://docs.claudie.io/v0.4.0/getting-started/detailed-guide/#claudie-deployment) shows how you can set it up during step 5.
 
-    !!! node "Claudie benefit!"
+    !!! note "Claudie benefit!"
         The great thing about Claudie is that it utilizes open source tools to set up and configure infrastructure based on your preferences. As a result, the majority of errors can be easily found and resolved through online resources.
 
 ### Terraformer service not starting
