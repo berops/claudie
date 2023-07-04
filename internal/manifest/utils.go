@@ -2,7 +2,6 @@ package manifest
 
 import (
 	"fmt"
-
 	"github.com/berops/claudie/proto/pb"
 )
 
@@ -137,8 +136,8 @@ func (ds *Manifest) FindStaticNodePool(nodePoolName string) *StaticNodePool {
 
 // CreateNodepools will create a pb.Nodepool structs based on the manifest specification
 // returns error if nodepool/provider not defined, nil otherwise
-func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodePool, error) {
-	var nodePools []*pb.NodePool
+func (ds *Manifest) CreateNodepools(pools []string, isControl bool) (map[string]*pb.NodePool, error) {
+	nodePools := make(map[string]*pb.NodePool)
 	for _, nodePoolName := range pools {
 		// Check if the nodepool is part of the cluster
 		if nodePool := ds.FindDynamicNodePool(nodePoolName); nodePool != nil {
@@ -162,7 +161,7 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 				nodePool.StorageDiskSize = defaultDiskSize
 			}
 
-			nodePools = append(nodePools, &pb.NodePool{
+			nodePools[nodePool.Name] = &pb.NodePool{
 				Name:      nodePool.Name,
 				IsControl: isControl,
 				NodePoolType: &pb.NodePool_DynamicNodePool{
@@ -177,10 +176,10 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 						AutoscalerConfig: autoscalerConf,
 					},
 				},
-			})
+			}
 		} else if nodePool := ds.FindStaticNodePool(nodePoolName); nodePool != nil {
 			nodes := getStaticNodes(nodePool)
-			nodePools = append(nodePools, &pb.NodePool{
+			nodePools[nodePool.Name] = &pb.NodePool{
 				Name:      nodePool.Name,
 				Nodes:     nodes,
 				IsControl: isControl,
@@ -189,7 +188,7 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 						NodeKeys: getNodeKeys(nodePool),
 					},
 				},
-			})
+			}
 		} else {
 			return nil, fmt.Errorf("nodepool %s not defined", nodePoolName)
 		}

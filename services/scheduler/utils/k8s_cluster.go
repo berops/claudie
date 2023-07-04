@@ -34,7 +34,28 @@ func CreateK8sCluster(unmarshalledManifest *manifest.Manifest) ([]*pb.K8Scluster
 		if err != nil {
 			return nil, fmt.Errorf("error while creating compute nodepool for %s : %w", cluster.Name, err)
 		}
-		newCluster.ClusterInfo.NodePools = append(controlNodePools, computeNodePools...)
+
+		mergedPools := utils.MergeMapsFunc(func(merged map[string]*pb.NodePool, key string, val *pb.NodePool) {
+			if _, ok := merged[key]; !ok {
+				merged[key] = val
+				return
+			}
+
+			// if the same nodepool is used in both compute and control just append a string to distinguish between them.
+			// In the validation the same nodepool cannot be re-used multiple times in either control or compute planes.
+			// thus a simple check for `isControl` is suffucient.
+			if val.IsControl {
+				val.Name += "-control"
+				merged[key].Name += "-compute"
+			} else {
+				merged[key].Name += "-control"
+				val.Name += "-compute"
+			}
+
+			merged[val.Name] = val
+		}, computeNodePools, controlNodePools)
+
+		newCluster.ClusterInfo.NodePools = utils.MapValues(mergedPools)
 		clusters = append(clusters, newCluster)
 	}
 	return clusters, nil

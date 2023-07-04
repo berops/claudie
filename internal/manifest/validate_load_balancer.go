@@ -31,6 +31,9 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 
 		// check if the roles in the LB cluster has a role of ApiServer.
 		apiServerRole = ""
+
+		// check for nodepool uniqueness.
+		poolNames = make(map[string]bool)
 	)
 
 	for _, role := range l.Roles {
@@ -110,6 +113,10 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 			if !m.nodePoolDefined(pool) {
 				return fmt.Errorf("nodepool %q used inside cluster %q is not defined", pool, cluster.Name)
 			}
+			if _, ok := poolNames[pool]; ok {
+				return fmt.Errorf("nodepool %q used multiple times as a loadbalancer nodepool, this effect can be achieved by increasing the \"count\" field or adjusting the \"autoscaler\" field", pool)
+			}
+			poolNames[pool] = true
 		}
 	}
 	return nil
