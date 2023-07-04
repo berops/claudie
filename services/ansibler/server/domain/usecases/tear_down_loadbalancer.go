@@ -37,8 +37,7 @@ func (a *Usecases) TeardownLoadBalancers(ctx context.Context, request *pb.Teardo
 
 	// For each load-balancer that is being deleted construct LbClusterData.
 	lbClustersInfo := &utils.LBClustersInfo{
-		ClusterID: fmt.Sprintf("%s-%s", request.Desired.ClusterInfo.Name, request.Desired.ClusterInfo.Hash),
-
+		ClusterID:            commonUtils.GetClusterID(request.Desired.ClusterInfo),
 		TargetK8sNodepool:    request.Desired.ClusterInfo.NodePools,
 		TargetK8sNodepoolKey: request.Desired.ClusterInfo.PrivateKey,
 	}

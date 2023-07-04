@@ -47,7 +47,7 @@ func (l *Longhorn) SetUp() error {
 	kubectl := kubectl.Kubectl{Kubeconfig: l.Cluster.GetKubeconfig(), MaxKubectlRetries: 3}
 	// apply longhorn.yaml and settings
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
-		prefix := fmt.Sprintf("%s-%s", l.Cluster.ClusterInfo.Name, l.Cluster.ClusterInfo.Hash)
+		prefix := utils.GetClusterID(l.Cluster.ClusterInfo)
 		kubectl.Stdout = comm.GetStdOut(prefix)
 		kubectl.Stderr = comm.GetStdErr(prefix)
 	}
