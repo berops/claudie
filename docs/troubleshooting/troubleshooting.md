@@ -32,7 +32,7 @@ Claudie relies on all services to be interconnected. If any of these services fa
     terraformer-fd664b7ff-dd2h7    1/1     Running     0               8m9s
     ```
 
-1. After verifying if any pods in a failed state, you can check the logs of the frontend service for each service. Typically, if all Claudie pods are scheduled but cluster creation fails, it may be due to missing permissions on the credentials used for Claudie providers.
+1. Examine frontend service logs. The frontend service logs will provide insights into any issues during cluster bootstrap and identify the problematic service. If cluster creation fails despite all Claudie pods being scheduled, it may suggest lack of permissions for Claudie providers' credentials. In this case, frontend logs will point to Terrafomer service, and Terraformer service logs will provide detailed error output.
 
     ```bash
     kubectl -n claudie logs -l app.kubernetes.io/name=frontend
@@ -42,11 +42,6 @@ Claudie relies on all services to be interconnected. If any of these services fa
     6:04AM INF Using log with the level "info" module=frontend
     6:04AM INF Frontend is ready to process input manifests module=frontend
     6:04AM INF Frontend is ready to watch input manifest statuses module=frontend
-    ...
-    9:19AM WRN Retrying command terraform apply --auto-approve... (5/10) module=terraformer
-    9:20AM WRN Error encountered while executing terraform apply --auto-approve : exit status 1 module=terraformer
-    9:20AM INF Next retry in 300s... module=terraformer
-    9:25AM WRN Retrying command terraform apply --auto-approve... (6/10) module=terraformer
     ```
 
     !!! note "Debug log level"
@@ -56,14 +51,14 @@ Claudie relies on all services to be interconnected. If any of these services fa
         The great thing about Claudie is that it utilizes open source tools to set up and configure infrastructure based on your preferences. As a result, the majority of errors can be easily found and resolved through online resources.
 
 ### Terraformer service not starting
-Terraformer relies on minio and dynamodb services for proper startup. If these services fail to start, Terraformer will also fail to start.
+Terraformer relies on MinIO and DynamoDB datastores to be configured via jobs `make-bucket-job` and `create-table-job` respectively. If these jobs fail to configure the datastores, or the datastores themselves fail to start, Terraformer will also fail to start.
 
-### Create table job
-Scheduling problems of dynamodb service or even very slow autoscaling, may cause `create-table-job` to fail to create necessary tables in dynamodb service in time. We have set the `backoffLimit` of the `create-table-job` to fail after approximately 42 minutes of trying. If you encounter any issues with the `create-table-job` or if you feel like the `backoffLimit` has to be extended, please [create an issue](https://github.com/berops/claudie/issues).
+### Datastore initialization jobs
+The `create-table-job` is responsible for creating necessary tables in the DynamoDB datastore, while the `make-bucket-job` creates a bucket in the MinIO datastore. If these jobs encounter scheduling problems or experience slow autoscaling, they may fail to complete within the designated time frame. To handle this, we have set the `backoffLimit` of both jobs to fail after approximately 42 minutes. If you encounter any issues with these jobs or believe the `backoffLimit` should be adjusted, please [create an issue](https://github.com/berops/claudie/issues).
 
 ## Networking issues
 ### Wireguard MTU
 We use Wireguard for secure node-to-node connectivity. However, it requires setting the MTU value to match that of Wireguard. While the host system interface MTU value is adjusted accordingly, networking issues may arise for services hosted on Claudie managed Kubernetes clusters. For example, we observed that the GitHub actions runner docker container had to be configured with an MTU value of `1380` to avoid network errors during `docker build` process.
 
 ### Hetzner and OCI node pools
-We're experiencing networking issues caused by the blacklisting of public IPs owned by Hetzner and OCI. This problem affects the kuber service, which fails when attempting to add GPG keys to access the Google repository for package downloads. Unfortunately, there's no straightforward solution to bypass this issue. The recommended approach is to allow the kuber service to fail, remove failed cluster and attempt provisioning a new cluster with IP addresses that are not blocked by Google.
+We're experiencing networking issues caused by the blacklisting of public IPs owned by Hetzner and OCI. This problem affects the Ansibler and Kube-eleven services, which fail when attempting to add GPG keys to access the Google repository for package downloads. Unfortunately, there's no straightforward solution to bypass this issue. The recommended approach is to allow the services to fail, remove failed cluster and attempt provisioning a new cluster with newly allocated IP addresses that are not blocked by Google.
