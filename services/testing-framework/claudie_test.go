@@ -163,6 +163,7 @@ func processTestSet(ctx context.Context, setName string, c pb.ContextBoxServiceC
 	// Defer clean up function
 	defer func() {
 		if errCleanUp != nil {
+			log.Err(errCleanUp).Msgf("Error in test set %s", setName)
 			if autoCleanUpFlag == "TRUE" {
 				log.Info().Msgf("Deleting infra even after error due to flag \"-auto-clean-up\" set to %v", autoCleanUpFlag)
 				// delete manifest from DB to clean up the infra
