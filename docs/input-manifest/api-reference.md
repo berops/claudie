@@ -37,15 +37,15 @@ needs to be defined.
 
   Type of a provider. The providerType defines mandatory fields that has to be included for a specific provider. A list of available providers can be found at [providers section](./providers). Allowed values are:
 
-  | Value         | Description                              |
-  | ------------- | ---------------------------------------- |
-  | `aws`         | [AWS](#aws) provider type                |
-  | `azure`       | [Azure](#azure) provider type            |
-  | `cloudflare`  | [Cloudflare](#cloudflare) provider type  |
-  | `gcp`         | [GCP](#gcp) provider type                |
-  | `hetzner`     | [Hetzner](#hetzner) provider type        |
-  | `hetznerdns`  | [Hetzner](#hetznerdns) DNS provider type |
-  | `oci`         | [OCI](#oci) provider type                |
+  | Value        | Description                              |
+  | ------------ | ---------------------------------------- |
+  | `aws`        | [AWS](#aws) provider type                |
+  | `azure`      | [Azure](#azure) provider type            |
+  | `cloudflare` | [Cloudflare](#cloudflare) provider type  |
+  | `gcp`        | [GCP](#gcp) provider type                |
+  | `hetzner`    | [Hetzner](#hetzner) provider type        |
+  | `hetznerdns` | [Hetzner](#hetznerdns) DNS provider type |
+  | `oci`        | [OCI](#oci) provider type                |
   
 - `secretRef` [SecretRef](#secretref)
 
@@ -258,7 +258,7 @@ Static nodepools are defined for static machines which Claudie will not manage. 
 
 - `nodes` [Static Node](#static-node)
 
-  List of static nodes for a particular nodepool.
+  List of static nodes for a particular static nodepool.
 
 ## Static node
 
@@ -270,7 +270,7 @@ Static node defines single static node from a static nodepool.
 
 - `secretRef` [SecretRef](#secretref)
 
-  Secret from which private key will be taken used to ssh into the machine.
+  Secret from which private key will be taken used to SSH into the machine (as root).
 
   The field in the secret must be `privatekey`, i.e.
   
@@ -356,7 +356,7 @@ Role defines a concrete loadbalancer configuration. Single loadbalancer can have
   Defines a target group of nodes. Allowed values are:
 
   | Value             | Description                          |
-  |-------------------|--------------------------------------|
+  | ----------------- | ------------------------------------ |
   | `k8sAllNodes`     | All nodes in the cluster             |
   | `k8sControlPlane` | Only control/master nodes in cluster |
   | `k8sComputePlane` | Only compute/worker nodes in cluster |
