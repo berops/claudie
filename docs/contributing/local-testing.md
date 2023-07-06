@@ -39,7 +39,7 @@ To start all services, run `make <service name>`, in separate shells. In case yo
 
 ## How to test Claudie locally
 
-Once Claudie is up and running, there are two main ways to test it locally.
+Once Claudie is up and running, there are three main ways to test it locally.
 
 ### Test Claudie using Testing-framework
 
@@ -184,3 +184,19 @@ To test Claudie in a more "manual" way, you can use the test client to inject an
 In this function, the input manifest (in raw YAML format, not CRD) is located based on the `manifestFile` variable and applied to Claudie. It's important to note that this method of testing does not provide automatic clean up or verification of Longhorn deployment. Therefore, exercise caution when using this testing approach.
 
 To trigger a deletion of the input manifest, you can use function `TestDeleteConfig` from the same test client.
+
+## Deploy Claudie in the local cluster
+
+Claudie can be also tested on a local cluster by following these steps.
+
+1. Spin up a local cluster using a tool like Kind, Minikube, or any other preferred method.
+
+2. Build the images for Claudie from the current source code by running the command `make containerimgs`. This command will build all the necessary images for Claudie and assign a new tag; a short hash from the most recent commit.
+
+3. Update the new image tag in the relevant `kustomization.yaml` files. These files can be found in the `./manifests` directory. Additionally, set the `imagePullPolicy` to `Never`.
+
+4. Import the built images into your local cluster. This step will vary depending on the specific tool you're using for the local cluster. Refer to the documentation of the cluster tool for instructions on importing custom images.
+
+5. Apply the Claudie manifests to the local cluster.
+
+By following these steps, you can set up and test Claudie on a local cluster using the newly built images. Remember, these steps are going to be repeated if you will make changes to the source code.
