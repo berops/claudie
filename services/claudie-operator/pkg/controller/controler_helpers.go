@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/berops/claudie/internal/manifest"
-	v1beta "github.com/berops/claudie/services/frontend/pkg/api/v1beta1"
+	v1beta "github.com/berops/claudie/services/claudie-operator/pkg/api/v1beta1"
 )
 
 // mergeInputManifestWithSecrets takes the v1beta.InputManifest and providersWithSecret and returns a claudie type raw manifest.Manifest type.

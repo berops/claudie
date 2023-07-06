@@ -1,4 +1,4 @@
-package frontend
+package client
 
 import (
 	"testing"
@@ -11,14 +11,14 @@ import (
 	"google.golang.org/grpc"
 )
 
-func ClientConnection() (pb.FrontendServiceClient, *grpc.ClientConn) {
-	cc, err := utils.GrpcDialWithRetryAndBackoff("frontend", envs.FrontendURL)
+func ClientConnection() (pb.OperatorServiceClient, *grpc.ClientConn) {
+	cc, err := utils.GrpcDialWithRetryAndBackoff("claudie-operator", envs.OperatorURL)
 	if err != nil {
 		log.Fatal().Err(err)
 	}
 
 	// Creating the client
-	c := pb.NewFrontendServiceClient(cc)
+	c := pb.NewOperatorServiceClient(cc)
 	return c, cc
 }
 

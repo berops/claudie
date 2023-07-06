@@ -35,7 +35,7 @@ spec:
         cidr: 0.0.0.0/0      
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: frontend
+      app.kubernetes.io/name: claudie-operator
       app.kubernetes.io/part-of: claudie
   policyTypes:
   - Ingress

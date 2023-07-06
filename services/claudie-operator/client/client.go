@@ -1,4 +1,4 @@
-package frontend
+package client
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 )
 
 // SendAutoscalerEvent will send the information about
-func SendAutoscalerEvent(c pb.FrontendServiceClient, req *pb.SendAutoscalerEventRequest) error {
+func SendAutoscalerEvent(c pb.OperatorServiceClient, req *pb.SendAutoscalerEventRequest) error {
 	_, err := c.SendAutoscalerEvent(context.Background(), req)
 	return err
 }

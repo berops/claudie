@@ -10,7 +10,7 @@ message SendAutoscalerEventRequest {
 
 message SendAutoscalerEventResponse {}
 
-service FrontendService {
-    // SendAutoscalerEvent sends events to frontend when a scale up/down occurs
+service OperatorService {
+    // SendAutoscalerEvent sends events to claudie-operator when a scale up/down occurs
     rpc SendAutoscalerEvent(SendAutoscalerEventRequest) returns (SendAutoscalerEventResponse);
 }

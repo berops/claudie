@@ -20,9 +20,9 @@ updates:
     directory: "/services/context-box"
     schedule:
       interval: "monthly"
-  # Maintain dependencies for Frontend Docker
+  # Maintain dependencies for Claudie-operator Docker
   - package-ecosystem: "docker"
-    directory: "/services/frontend"
+    directory: "/services/claudie-operator"
     schedule:
       interval: "monthly"
   # Maintain dependencies for KubeEleven Docker

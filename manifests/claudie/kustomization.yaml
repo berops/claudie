@@ -2,7 +2,7 @@ namespace: claudie
 resources:
 - crd
 - ns.yaml
-- frontend.yaml
+- operator.yaml
 - context-box.yaml
 - scheduler.yaml
 - builder.yaml
@@ -63,7 +63,7 @@ images:
   newTag: 26995c5-2140
 - name: ghcr.io/berops/claudie/context-box
   newTag: 26995c5-2140
-- name: ghcr.io/berops/claudie/frontend
+- name: ghcr.io/berops/claudie/claudie-operator
   newTag: 26995c5-2140
 - name: ghcr.io/berops/claudie/kube-eleven
   newTag: 26995c5-2140
