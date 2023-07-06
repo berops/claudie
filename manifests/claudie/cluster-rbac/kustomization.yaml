@@ -1,0 +1,6 @@
+kind: Kustomization
+metadata:
+  name: clusterroles
+resources:
+  - clusterrole.yaml
+  - clusterrolebinding.yaml

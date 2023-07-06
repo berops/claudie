@@ -9,7 +9,7 @@ import (
 )
 
 // createConfig generates and saves config into the DB. Used for new configs and updated configs.
-func (u *Usecases) CreateConfig(inputManifest *manifest.Manifest) error {
+func (u *Usecases) CreateConfig(inputManifest *manifest.Manifest, resourceName string, resourceNamespace string) error {
 	inputManifestMarshalled, err := yaml.Marshal(inputManifest)
 	if err != nil {
 		log.Err(err).Msgf("Failed to marshal manifest %s. Skipping...", inputManifest.Name)
@@ -18,8 +18,10 @@ func (u *Usecases) CreateConfig(inputManifest *manifest.Manifest) error {
 
 	// Define config
 	config := &pb.Config{
-		Name:     inputManifest.Name,
-		Manifest: string(inputManifestMarshalled),
+		Name:              inputManifest.Name,
+		ResourceName:      resourceName,
+		ResourceNamespace: resourceNamespace,
+		Manifest:          string(inputManifestMarshalled),
 	}
 
 	if err := u.ContextBox.SaveConfig(config); err != nil {

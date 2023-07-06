@@ -51,6 +51,10 @@ spec:
               value: {{ .ClusterName }}
             - name: PROJECT_NAME
               value: {{ .ProjectName }}
+            - name: FRONTEND_HOSTNAME
+              value: {{ .FrontendHostname }}
+            - name: FRONTEND_PORT
+              value: "{{ .FrontendPort }}"
           resources:
             requests:
               cpu: 80m

@@ -50,6 +50,9 @@ func (c *ClaudieCloudProvider) NodeGroupIncreaseSize(_ context.Context, req *pro
 		if err := c.updateNodepool(ngc.nodepool); err != nil {
 			return nil, fmt.Errorf("failed to update nodepool %s : %w", ngc.nodepool.Name, err)
 		}
+		if err := c.sendAutoscalerEvent(); err != nil {
+			return nil, fmt.Errorf("failed to send autoscaler event %s : %w", ngc.nodepool.Name, err)
+		}
 		return &protos.NodeGroupIncreaseSizeResponse{}, nil
 	}
 
@@ -89,6 +92,9 @@ func (c *ClaudieCloudProvider) NodeGroupDeleteNodes(_ context.Context, req *prot
 		// Update nodepool in Claudie.
 		if err := c.updateNodepool(ngc.nodepool); err != nil {
 			return nil, fmt.Errorf("failed to update nodepool %s : %w", ngc.nodepool.Name, err)
+		}
+		if err := c.sendAutoscalerEvent(); err != nil {
+			return nil, fmt.Errorf("failed to send autoscaler event %s : %w", ngc.nodepool.Name, err)
 		}
 		return &protos.NodeGroupDeleteNodesResponse{}, nil
 	}
@@ -167,7 +173,7 @@ func (c *ClaudieCloudProvider) updateNodepool(nodepool *pb.NodePool) error {
 	var err error
 
 	cboxURL := strings.ReplaceAll(envs.ContextBoxURL, ":tcp://", "")
-	if cc, err = utils.GrpcDialWithInsecure("context-box", cboxURL); err != nil {
+	if cc, err = utils.GrpcDialWithRetryAndBackoff("context-box", cboxURL); err != nil {
 		return fmt.Errorf("failed to dial context-box at %s : %w", envs.ContextBoxURL, err)
 	}
 	cbox := pb.NewContextBoxServiceClient(cc)

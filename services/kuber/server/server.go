@@ -18,7 +18,6 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"gopkg.in/yaml.v3"
@@ -151,7 +150,7 @@ func (s *server) PatchClusterInfoConfigMap(_ context.Context, req *pb.PatchClust
 func (s *server) SetUpStorage(ctx context.Context, req *pb.SetUpStorageRequest) (*pb.SetUpStorageResponse, error) {
 	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(req.DesiredCluster.ClusterInfo))
 
-	clusterID := fmt.Sprintf("%s-%s", req.DesiredCluster.ClusterInfo.Name, req.DesiredCluster.ClusterInfo.Hash)
+	clusterID := utils.GetClusterID(req.DesiredCluster.ClusterInfo)
 	clusterDir := filepath.Join(outputDir, clusterID)
 
 	logger.Info().Msgf("Setting up the longhorn")
@@ -167,7 +166,7 @@ func (s *server) SetUpStorage(ctx context.Context, req *pb.SetUpStorageRequest) 
 func (s *server) StoreLbScrapeConfig(ctx context.Context, req *pb.StoreLbScrapeConfigRequest) (*pb.StoreLbScrapeConfigResponse, error) {
 	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(req.Cluster.ClusterInfo))
 
-	clusterID := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
+	clusterID := utils.GetClusterID(req.Cluster.ClusterInfo)
 	clusterDir := filepath.Join(outputDir, clusterID)
 	logger.Info().Msgf("Storing load balancer scrape-config")
 
@@ -189,7 +188,7 @@ func (s *server) StoreLbScrapeConfig(ctx context.Context, req *pb.StoreLbScrapeC
 func (s *server) RemoveLbScrapeConfig(ctx context.Context, req *pb.RemoveLbScrapeConfigRequest) (*pb.RemoveLbScrapeConfigResponse, error) {
 	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(req.Cluster.ClusterInfo))
 
-	clusterID := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
+	clusterID := utils.GetClusterID(req.Cluster.ClusterInfo)
 	clusterDir := filepath.Join(outputDir, clusterID)
 	logger.Info().Msgf("Deleting load balancer scrape-config")
 
@@ -253,7 +252,7 @@ func (s *server) StoreClusterMetadata(ctx context.Context, req *pb.StoreClusterM
 	}
 	logger.Info().Msgf("Storing cluster metadata")
 
-	clusterID := fmt.Sprintf("%s-%s", req.GetCluster().ClusterInfo.Name, req.GetCluster().ClusterInfo.Hash)
+	clusterID := utils.GetClusterID(req.GetCluster().ClusterInfo)
 	clusterDir := filepath.Join(outputDir, clusterID)
 	sec := secret.New(clusterDir, secret.NewYaml(
 		getSecretMetadata(req.Cluster.ClusterInfo, req.ProjectName, metadataSecret),
@@ -280,7 +279,7 @@ func (s *server) DeleteClusterMetadata(ctx context.Context, req *pb.DeleteCluste
 
 	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
-		prefix := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
+		prefix := utils.GetClusterID(req.Cluster.ClusterInfo)
 		kc.Stdout = comm.GetStdOut(prefix)
 		kc.Stderr = comm.GetStdErr(prefix)
 	}
@@ -333,7 +332,7 @@ func (s *server) DeleteKubeconfig(ctx context.Context, req *pb.DeleteKubeconfigR
 	logger.Info().Msgf("Deleting kubeconfig secret")
 	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
-		prefix := fmt.Sprintf("%s-%s", req.Cluster.ClusterInfo.Name, req.Cluster.ClusterInfo.Hash)
+		prefix := utils.GetClusterID(req.Cluster.ClusterInfo)
 		kc.Stdout = comm.GetStdOut(prefix)
 		kc.Stderr = comm.GetStdErr(prefix)
 	}
@@ -442,7 +441,7 @@ func main() {
 	}
 	log.Info().Msgf("Kuber service is listening on: %s", trfAddr)
 
-	s := grpc.NewServer()
+	s := utils.NewGRPCServer()
 	pb.RegisterKuberServiceServer(s, &server{})
 
 	// Add health service to gRPC

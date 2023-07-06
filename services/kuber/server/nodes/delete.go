@@ -37,7 +37,7 @@ type Deleter struct {
 // masterNodes - master nodes to DELETE
 // workerNodes - worker nodes to DELETE
 func NewDeleter(masterNodes, workerNodes []string, cluster *pb.K8Scluster) *Deleter {
-	prefix := fmt.Sprintf("%s-%s", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
+	prefix := utils.GetClusterID(cluster.ClusterInfo)
 
 	for i := range masterNodes {
 		masterNodes[i] = strings.TrimPrefix(masterNodes[i], fmt.Sprintf("%s-", prefix))

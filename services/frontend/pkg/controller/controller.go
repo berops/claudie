@@ -151,7 +151,9 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 				return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 			}
-			log.Info("Refreshing state", "status", currentState.State)
+			for cluster, wf := range currentState.Clusters {
+				log.Info("Refreshing state", "cluster", cluster, "stage", wf.Phase, "status", wf.State)
+			}
 			return ctrl.Result{RequeueAfter: REQUEUE_IN_PROGRES}, nil
 		}
 
@@ -190,7 +192,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				return ctrl.Result{}, fmt.Errorf("failed executing finalizer: %w", err)
 			}
 			log.Info("Calling create config")
-			if err := r.createConfig(&rawManifest); err != nil {
+			if err := r.createConfig(&rawManifest, inputManifest.Name, inputManifest.Namespace); err != nil {
 				return ctrl.Result{}, err
 			}
 			return ctrl.Result{RequeueAfter: REQUEUE_NEW}, nil
@@ -202,7 +204,9 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 		}
-		log.Info("Refreshing state", "status", currentState.State)
+		for cluster, wf := range currentState.Clusters {
+			log.Info("Refreshing state", "cluster", cluster, "stage", wf.Phase, "status", wf.State)
+		}
 		return ctrl.Result{RequeueAfter: REQUEUE_IN_PROGRES}, nil
 	}
 
@@ -237,7 +241,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 		}
 		log.Info("InputManifest has been updates", "status", currentState.State)
-		if err := r.createConfig(&rawManifest); err != nil {
+		if err := r.createConfig(&rawManifest, inputManifest.Name, inputManifest.Namespace); err != nil {
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{RequeueAfter: REQUEUE_UPDATE}, nil
@@ -248,12 +252,12 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 	}
-	log.Info("Build compleate", "status", currentState.State)
+	log.Info("Build completed", "status", currentState.State)
 	return ctrl.Result{}, nil
 }
 
-func (r *InputManifestReconciler) createConfig(im *manifest.Manifest) error {
-	if err := r.Usecases.CreateConfig(im); err != nil {
+func (r *InputManifestReconciler) createConfig(im *manifest.Manifest, resourceName string, resourceNamespace string) error {
+	if err := r.Usecases.CreateConfig(im, resourceName, resourceNamespace); err != nil {
 		return err
 	}
 	return nil

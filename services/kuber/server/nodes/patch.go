@@ -11,6 +11,7 @@ import (
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/nodes"
+	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 )
 
@@ -34,8 +35,7 @@ type Patcher struct {
 
 func NewPatcher(cluster *pb.K8Scluster, logger zerolog.Logger) *Patcher {
 	kc := kubectl.Kubectl{Kubeconfig: cluster.Kubeconfig, MaxKubectlRetries: 3}
-	clusterID := fmt.Sprintf("%s-%s", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
-
+	clusterID := utils.GetClusterID(cluster.ClusterInfo)
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
 		kc.Stdout = comm.GetStdOut(clusterID)
 		kc.Stderr = comm.GetStdErr(clusterID)
