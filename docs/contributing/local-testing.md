@@ -4,11 +4,11 @@ In order to speed up the development, Claudie can be run locally for initial tes
 
 ## Limitations of Claudie when running locally
 
-### No Frontend/CRD testing
+### Frontend/CRD testing
 
-The Frontend component heavily relies on the Kubernetes cluster and cannot be executed or tested locally. The same limitation applies to CRD testing since there is no environment to deploy them to.
+The Frontend component as well as CRDs heavily relies on the Kubernetes cluster. However, with a little hacking, you can test them, by creating local cluster (minikube/kind/...), and exporting environment variable `KUBECONFIG` pointing to the local cluster Kubeconfig. Once you start the Frontend, it should pick up the Kubeconfig and you can use local cluster to deploy and test CRDs.
 
-### No Autoscaling testing
+### Autoscaling testing
 
 Testing or simulating the Claudie autoscaling is not feasible when running Claudie locally because it dynamically deploys Cluster Autoscaler and Autoscaler Adapter in the management cluster.
 
@@ -35,7 +35,7 @@ To simplify the deployment of Claudie into local system, we recommend to use rul
 
 To start all the datastores, simply run `make datastoreStart`, which will create containers for each required datastore with preconfigured port-forwarding.
 
-To start all services (excluding Frontend), run `make <service name>`, in separate shells. In case you will make some changes to the code, to apply them, please kill the process and start it again using `make <service name>`.
+To start all services, run `make <service name>`, in separate shells. In case you will make some changes to the code, to apply them, please kill the process and start it again using `make <service name>`.
 
 ## How to test Claudie locally
 
@@ -182,3 +182,5 @@ loadBalancers:
 To test Claudie in a more "manual" way, you can use the test client to inject an input manifest. The code for the client can be found in `services/context-box/client/client_test.go`, specifically in the `TestSaveConfigFrontEnd` function.
 
 In this function, the input manifest (in raw YAML format, not CRD) is located based on the `manifestFile` variable and applied to Claudie. It's important to note that this method of testing does not provide automatic clean up or verification of Longhorn deployment. Therefore, exercise caution when using this testing approach.
+
+To trigger a deletion of the input manifest, you can use function `TestDeleteConfig` from the same test client.
