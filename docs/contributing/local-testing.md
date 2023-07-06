@@ -185,7 +185,7 @@ In this function, the input manifest (in raw YAML format, not CRD) is located ba
 
 To trigger a deletion of the input manifest, you can use function `TestDeleteConfig` from the same test client.
 
-## Deploy Claudie in the local cluster
+### Deploy Claudie in the local cluster for testing
 
 Claudie can be also tested on a local cluster by following these steps.
 
