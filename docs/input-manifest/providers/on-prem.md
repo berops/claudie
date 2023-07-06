@@ -24,6 +24,49 @@ type: Opaque
 
 ## Input manifest example
 
+### Private cluster example
+
+```bash
+kubectl create secret generic static-node-key --namespace=mynamespace --from-file=privatekey=private.pem
+```
+
+```yaml
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: PrivateClusterExample
+spec:
+  nodePools:
+    static:
+        - name: control
+          nodes:
+            - endpoint: "192.168.10.1"
+              secretRef:
+                name: static-node-key
+                namespace: mynamespace
+
+          - name: compute
+            - endpoint: "192.168.10.2"
+              secretRef:
+                name: static-node-key
+                namespace: mynamespace
+            - endpoint: "192.168.10.3"
+              secretRef:
+                name: static-node-key
+                namespace: mynamespace
+
+  kubernetes:
+    clusters:
+      - name: private-cluster
+        version: v1.26.0
+        network: 192.168.2.0/24
+        pools:
+          control:
+            - control
+          compute:
+            - compute
+```
+
 ### Hybrid cloud example
 
 ### Create secret for private key
