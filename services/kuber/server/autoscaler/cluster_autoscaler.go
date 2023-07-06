@@ -56,7 +56,7 @@ func (ab *AutoscalerBuilder) SetUpClusterAutoscaler() error {
 	// Apply generated files.
 	kc := kubectl.Kubectl{Directory: ab.directory, MaxKubectlRetries: 3}
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
-		prefix := fmt.Sprintf("%s-%s", ab.cluster.ClusterInfo.Name, ab.cluster.ClusterInfo.Hash)
+		prefix := utils.GetClusterID(ab.cluster.ClusterInfo)
 		kc.Stdout = comm.GetStdOut(prefix)
 		kc.Stderr = comm.GetStdErr(prefix)
 	}
@@ -75,7 +75,7 @@ func (ab *AutoscalerBuilder) DestroyClusterAutoscaler() error {
 	// Apply generated files.
 	kc := kubectl.Kubectl{Directory: ab.directory, MaxKubectlRetries: 3}
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
-		prefix := fmt.Sprintf("%s-%s", ab.cluster.ClusterInfo.Name, ab.cluster.ClusterInfo.Hash)
+		prefix := utils.GetClusterID(ab.cluster.ClusterInfo)
 		kc.Stdout = comm.GetStdOut(prefix)
 		kc.Stderr = comm.GetStdErr(prefix)
 	}
@@ -96,7 +96,7 @@ func (ab *AutoscalerBuilder) generateFiles() error {
 		return fmt.Errorf("error loading cluster autoscaler template : %w", err)
 	}
 	// Prepare data
-	clusterId := fmt.Sprintf("%s-%s", ab.cluster.ClusterInfo.Name, ab.cluster.ClusterInfo.Hash)
+	clusterId := utils.GetClusterID(ab.cluster.ClusterInfo)
 	version, err := getK8sVersion(ab.cluster.Kubernetes)
 	operatorHostname := utils.GetEnvDefault("OPERATOR_HOSTNAME", defaultOperatorHostname)
 	operatorPort := utils.GetEnvDefault("OPERATOR_PORT", defaultOperatorPort)
