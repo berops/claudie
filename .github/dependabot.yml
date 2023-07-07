@@ -10,53 +10,117 @@ updates:
     directory: "/services/ansibler"
     schedule:
       interval: "monthly"
+    groups: # Group all docker updates into single PR.
+      docker-dependencies:
+        patterns:
+          - "*"
+
   # Maintain dependencies for Builder Docker
   - package-ecosystem: "docker"
     directory: "/services/builder"
     schedule:
       interval: "monthly"
+    groups: # Group all docker updates into single PR.
+      docker-dependencies:
+        patterns:
+          - "*"
+
   # Maintain dependencies for ContextBox Docker
   - package-ecosystem: "docker"
     directory: "/services/context-box"
     schedule:
       interval: "monthly"
+    groups: # Group all docker updates into single PR.
+      docker-dependencies:
+        patterns:
+          - "*"
+
   # Maintain dependencies for Frontend Docker
   - package-ecosystem: "docker"
     directory: "/services/frontend"
     schedule:
       interval: "monthly"
+    groups: # Group all docker updates into single PR.
+      docker-dependencies:
+        patterns:
+          - "*"
+
   # Maintain dependencies for KubeEleven Docker
   - package-ecosystem: "docker"
     directory: "/services/kube-eleven"
     schedule:
       interval: "monthly"
+    groups: # Group all docker updates into single PR.
+      docker-dependencies:
+        patterns:
+          - "*"
+
   # Maintain dependencies for Kuber Docker
   - package-ecosystem: "docker"
     directory: "/services/kuber"
     schedule:
       interval: "monthly"
+    groups: # Group all docker updates into single PR.
+      docker-dependencies:
+        patterns:
+          - "*"
+
   # Maintain dependencies for Scheduler Docker
   - package-ecosystem: "docker"
     directory: "/services/scheduler"
     schedule:
       interval: "monthly"
+    groups: # Group all docker updates into single PR.
+      docker-dependencies:
+        patterns:
+          - "*"
+
   # Maintain dependencies for Terraformer Docker
   - package-ecosystem: "docker"
     directory: "/services/terraformer"
     schedule:
       interval: "monthly"
+    groups: # Group all docker updates into single PR.
+      docker-dependencies:
+        patterns:
+          - "*"
+
   # Maintain dependencies for Testing-Framework Docker
   - package-ecosystem: "docker"
     directory: "/services/testing-framework"
     schedule:
       interval: "monthly"
+    groups: # Group all docker updates into single PR.
+      docker-dependencies:
+        patterns:
+          - "*"
+
   # Maintain dependencies for Github-Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "monthly"
+    groups: # Group all GH actions updates into single PR.
+      gh-actions-dependencies:
+        patterns:
+          - "*"
+
   # Maintain dependencies for Go
   - package-ecosystem: "gomod" # See documentation for possible values
     directory: "/" # Location of package manifests
     schedule:
-      interval: "daily"
+      interval: "weekly"
+    groups: # Group all gomod updates into single PR.
+      go-dependencies:
+        patterns:
+          - "*"
+
+  # Maintain dependencies for mkdocs
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups: # Group all mkdocs dependencies into single PR.
+      mkdocs-dependencies:
+        patterns:
+          - "*"
