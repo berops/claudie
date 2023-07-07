@@ -9,7 +9,7 @@ import (
 )
 
 // destroyConfig destroys all the current state of the config.
-func destroyConfig(config *pb.Config, clusterView *ClusterView, c pb.ContextBoxServiceClient) error {
+func destroyConfig(config *pb.Config, clusterView *utils.ClusterView, c pb.ContextBoxServiceClient) error {
 	if err := utils.ConcurrentExec(config.CurrentState.Clusters, func(_ int, cluster *pb.K8Scluster) error {
 		err := destroyCluster(&BuilderContext{
 			projectName:   config.Name,
@@ -33,7 +33,7 @@ func destroyConfig(config *pb.Config, clusterView *ClusterView, c pb.ContextBoxS
 }
 
 // saveConfigWithWorkflowError saves config with workflow states
-func saveConfigWithWorkflowError(config *pb.Config, c pb.ContextBoxServiceClient, clusterView *ClusterView) error {
+func saveConfigWithWorkflowError(config *pb.Config, c pb.ContextBoxServiceClient, clusterView *utils.ClusterView) error {
 	config.State = clusterView.ClusterWorkflows
 	return cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 }

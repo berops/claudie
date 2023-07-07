@@ -36,7 +36,7 @@ func CreateLBCluster(unmarshalledManifest *manifest.Manifest) ([]*pb.LBcluster, 
 		if err != nil {
 			return nil, fmt.Errorf("error while creating nodepools for %s : %w", lbCluster.Name, err)
 		}
-		newLbCluster.ClusterInfo.NodePools = utils.MapValues(nodes)
+		newLbCluster.ClusterInfo.NodePools = nodes
 		lbClusters = append(lbClusters, newLbCluster)
 	}
 	return lbClusters, nil

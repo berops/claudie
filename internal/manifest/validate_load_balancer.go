@@ -31,9 +31,6 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 
 		// check if the roles in the LB cluster has a role of ApiServer.
 		apiServerRole = ""
-
-		// check for nodepool uniqueness.
-		poolNames = make(map[string]bool)
 	)
 
 	for _, role := range l.Roles {
@@ -108,6 +105,8 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 			return fmt.Errorf("target k8s %q used inside cluster %q is not defined", cluster.TargetedK8s, cluster.Name)
 		}
 
+		// check for nodepool uniqueness.
+		poolNames := make(map[string]bool)
 		// check if requested pools are defined
 		for _, pool := range cluster.Pools {
 			if !m.nodePoolDefined(pool) {

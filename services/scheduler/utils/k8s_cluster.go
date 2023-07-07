@@ -35,27 +35,7 @@ func CreateK8sCluster(unmarshalledManifest *manifest.Manifest) ([]*pb.K8Scluster
 			return nil, fmt.Errorf("error while creating compute nodepool for %s : %w", cluster.Name, err)
 		}
 
-		mergedPools := utils.MergeMapsFunc(func(merged map[string]*pb.NodePool, key string, val *pb.NodePool) {
-			if _, ok := merged[key]; !ok {
-				merged[key] = val
-				return
-			}
-
-			// if the same nodepool is used in both compute and control just append a string to distinguish between them.
-			// In the validation the same nodepool cannot be re-used multiple times in either control or compute planes.
-			// thus a simple check for `isControl` is suffucient.
-			if val.IsControl {
-				val.Name += "-control"
-				merged[key].Name += "-compute"
-			} else {
-				merged[key].Name += "-control"
-				val.Name += "-compute"
-			}
-
-			merged[val.Name] = val
-		}, computeNodePools, controlNodePools)
-
-		newCluster.ClusterInfo.NodePools = utils.MapValues(mergedPools)
+		newCluster.ClusterInfo.NodePools = append(controlNodePools, computeNodePools...)
 		clusters = append(clusters, newCluster)
 	}
 	return clusters, nil
@@ -87,4 +67,94 @@ clusterDesired:
 		}
 	}
 	return nil
+}
+
+// CopyLbNodePoolNamesFromCurrentState copies the generated hash from an existing reference in the current state to the desired state.
+func CopyLbNodePoolNamesFromCurrentState(used map[string]struct{}, nodepool string, current, desired []*pb.LBcluster) {
+	for _, desired := range desired {
+		references := FindNodePoolReferences(nodepool, desired.GetClusterInfo().GetNodePools())
+		switch {
+		case len(references) > 1:
+			panic("unexpected nodepool reference count")
+		case len(references) == 0:
+			continue
+		}
+
+		ref := references[0]
+
+		for _, current := range current {
+			if desired.ClusterInfo.Name != current.ClusterInfo.Name {
+				continue
+			}
+
+			for _, np := range current.GetClusterInfo().GetNodePools() {
+				if len(np.Name) != len(nodepool)+utils.HashLength+1 {
+					continue
+				}
+				idx := strings.LastIndex(np.Name, "-")
+				name := np.Name[:idx]
+				hash := np.Name[idx+1:]
+
+				if name != nodepool {
+					continue
+				}
+
+				used[hash] = struct{}{}
+
+				ref.Name += fmt.Sprintf("-%s", hash)
+				break
+			}
+		}
+	}
+}
+
+// CopyK8sNodePoolsNamesFromCurrentState copies the generated hash from an existing reference in the current state to the desired state.
+func CopyK8sNodePoolsNamesFromCurrentState(used map[string]struct{}, nodepool string, current, desired *pb.K8Scluster) {
+	references := FindNodePoolReferences(nodepool, desired.GetClusterInfo().GetNodePools())
+	switch {
+	case len(references) == 0:
+		return
+	case len(references) > 2:
+		panic("unexpected nodepool reference count")
+	}
+
+	// to avoid extra code for special cases where there is just 1 reference, append a nil.
+	references = append(references, []*pb.NodePool{nil}...)
+
+	control, compute := references[0], references[1]
+	if !references[0].IsControl {
+		control, compute = compute, control
+	}
+
+	for _, np := range current.GetClusterInfo().GetNodePools() {
+		if len(np.Name) != len(nodepool)+utils.HashLength+1 {
+			continue
+		}
+		idx := strings.LastIndex(np.Name, "-")
+		name := np.Name[:idx]
+		hash := np.Name[idx+1:]
+
+		if name != nodepool {
+			continue
+		}
+
+		used[hash] = struct{}{}
+
+		if np.IsControl && control != nil {
+			control.Name += fmt.Sprintf("-%s", hash)
+		} else if !np.IsControl && compute != nil {
+			compute.Name += fmt.Sprintf("-%s", hash)
+		}
+	}
+}
+
+// FindNodePoolReferences find all nodepools that share the given name.
+func FindNodePoolReferences(name string, nodePools []*pb.NodePool) []*pb.NodePool {
+	var references []*pb.NodePool
+	for _, np := range nodePools {
+		if np.Name == name {
+			references = append(references, np)
+		}
+	}
+	return references
 }

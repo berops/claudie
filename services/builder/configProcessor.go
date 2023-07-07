@@ -43,7 +43,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 
 		logger := utils.CreateLoggerWithProjectName(config.Name)
 
-		clusterView := NewClusterView(config)
+		clusterView := utils.NewClusterView(config)
 
 		// if Desired state is null and current is not we delete the infra for the config.
 		if config.DsChecksum == nil && config.CsChecksum != nil {
@@ -242,7 +242,7 @@ func configProcessor(c pb.ContextBoxServiceClient, wg *sync.WaitGroup) error {
 			}
 
 			// Propagate the changes made to the cluster back to the View.
-			clusterView.UpdateFromBuild(ctx)
+			updateFromBuild(ctx, clusterView)
 
 			if len(clusterView.DeletedLoadbalancers) > 0 {
 				// perform the deletion of loadbalancers as this won't be handled by the buildCluster Workflow.
@@ -365,4 +365,46 @@ func deleteNodes(currentCluster, desiredCluster *pb.K8Scluster, nodes map[string
 	}
 
 	return newCluster, nil
+}
+
+// updateFromBuild takes the changes after a successful workflow of a given cluster
+func updateFromBuild(ctx *BuilderContext, view *utils.ClusterView) {
+	if ctx.cluster != nil {
+		view.CurrentClusters[ctx.cluster.ClusterInfo.Name] = ctx.cluster
+	}
+
+	if ctx.desiredCluster != nil {
+		view.DesiredClusters[ctx.desiredCluster.ClusterInfo.Name] = ctx.desiredCluster
+	}
+
+	if ctx.Workflow != nil {
+		view.ClusterWorkflows[ctx.GetClusterName()] = ctx.Workflow
+	}
+
+	for _, current := range ctx.loadbalancers {
+		for i := range view.Loadbalancers[current.TargetedK8S] {
+			if view.Loadbalancers[current.TargetedK8S][i].ClusterInfo.Name == current.ClusterInfo.Name {
+				view.Loadbalancers[current.TargetedK8S][i] = current
+				break
+			}
+		}
+	}
+
+	for _, desired := range ctx.desiredLoadbalancers {
+		for i := range view.DesiredLoadbalancers[desired.TargetedK8S] {
+			if view.DesiredLoadbalancers[desired.TargetedK8S][i].ClusterInfo.Name == desired.ClusterInfo.Name {
+				view.DesiredLoadbalancers[desired.TargetedK8S][i] = desired
+				break
+			}
+		}
+	}
+
+	for _, deleted := range ctx.deletedLoadBalancers {
+		for i := range view.DeletedLoadbalancers[deleted.TargetedK8S] {
+			if view.DeletedLoadbalancers[deleted.TargetedK8S][i].ClusterInfo.Name == deleted.ClusterInfo.Name {
+				view.DeletedLoadbalancers[deleted.TargetedK8S][i] = deleted
+				break
+			}
+		}
+	}
 }
