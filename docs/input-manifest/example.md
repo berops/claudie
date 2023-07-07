@@ -222,7 +222,7 @@ spec:
     #           name:       # Name of the secret resource.
     #           namespace:  # Namespace of the secret resource.
     #
-    # Example definitions for each provider
+    # Example definitions
     static:
       - name: datacenter-1
         nodes:
