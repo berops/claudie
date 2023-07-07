@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type FrontendServiceClient interface {
-	// SendAutoscalerEvent sends events to frontend when a scale up/down encures
+	// SendAutoscalerEvent sends events to frontend when a scale up/down occurs
 	SendAutoscalerEvent(ctx context.Context, in *SendAutoscalerEventRequest, opts ...grpc.CallOption) (*SendAutoscalerEventResponse, error)
 }
 
@@ -47,7 +47,7 @@ func (c *frontendServiceClient) SendAutoscalerEvent(ctx context.Context, in *Sen
 // All implementations must embed UnimplementedFrontendServiceServer
 // for forward compatibility
 type FrontendServiceServer interface {
-	// SendAutoscalerEvent sends events to frontend when a scale up/down encures
+	// SendAutoscalerEvent sends events to frontend when a scale up/down occurs
 	SendAutoscalerEvent(context.Context, *SendAutoscalerEventRequest) (*SendAutoscalerEventResponse, error)
 	mustEmbedUnimplementedFrontendServiceServer()
 }
