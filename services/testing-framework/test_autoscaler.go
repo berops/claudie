@@ -150,8 +150,13 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 		return err
 	}
 	// Test longhorn.
-	if err := testLonghornDeployment(ctx, config); err != nil {
+	// Get new config from DB with updated counts.
+	if res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: config.Id, Type: pb.IdType_HASH}); err != nil {
 		return err
+	} else {
+		if err := testLonghornDeployment(ctx, res.Config); err != nil {
+			return err
+		}
 	}
 
 	for _, cluster := range autoscaledClusters {
@@ -186,7 +191,15 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 	}
 
 	// Test longhorn.
-	return testLonghornDeployment(ctx, config)
+	// Get new config from DB with updated counts.
+	if res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: config.Id, Type: pb.IdType_HASH}); err != nil {
+		return err
+	} else {
+		if err := testLonghornDeployment(ctx, res.Config); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // applyDeployment applies specified deployment into specified cluster.

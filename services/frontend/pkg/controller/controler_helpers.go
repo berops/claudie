@@ -25,7 +25,7 @@ import (
 
 // mergeInputManifestWithSecrets takes the v1beta.InputManifest and providersWithSecret and returns a claudie type raw manifest.Manifest type.
 // It will combine the manifest.Manifest name as object "Namespace/Name".
-func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret []v1beta.ProviderWithData) (manifest.Manifest, error) {
+func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret []v1beta.ProviderWithData, staticNodesWithSecret map[string][]v1beta.StaticNodeWithData) (manifest.Manifest, error) {
 	var providers manifest.Provider
 
 	for _, p := range providersWithSecret {
@@ -152,14 +152,32 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 			})
 		}
 	}
-	var manifest = manifest.Manifest{
+	// Build static nodepools
+	var nodePools manifest.NodePool
+	nodePools.Dynamic = crd.Spec.NodePools.Dynamic
+	nodePools.Static = make([]manifest.StaticNodePool, 0, len(crd.Spec.NodePools.Static))
+	// Iterate over nodepools
+	for nodepool, nws := range staticNodesWithSecret {
+		nodes := make([]manifest.Node, 0, len(nws))
+		// Iterate over nodes and retrieve private key from secret
+		for _, n := range nws {
+			if key, ok := n.Secret.Data[string(v1beta.PRIVATE_KEY)]; ok {
+				nodes = append(nodes, manifest.Node{Endpoint: n.Endpoint, Key: string(key)})
+			} else {
+				secretNamespaceName := n.Secret.Namespace + "/" + n.Secret.Name
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, fmt.Errorf("field %s not found", v1beta.PRIVATE_KEY))
+			}
+		}
+		nodePools.Static = append(nodePools.Static, manifest.StaticNodePool{Name: nodepool, Nodes: nodes})
+	}
+
+	return manifest.Manifest{
 		Name:         crd.GetNamespacedNameDashed(),
 		Providers:    providers,
-		NodePools:    crd.Spec.NodePools,
+		NodePools:    nodePools,
 		Kubernetes:   crd.Spec.Kubernetes,
 		LoadBalancer: crd.Spec.LoadBalancer,
-	}
-	return manifest, nil
+	}, nil
 }
 
 // buildSecretError builds an error with the name of the NamespaceName

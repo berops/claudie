@@ -25,6 +25,9 @@ func GetClusterByName(clusterName string, clusters []*pb.K8Scluster) int {
 	}
 
 	for i, cluster := range clusters {
+		if cluster == nil {
+			continue
+		}
 		if cluster.ClusterInfo.Name == clusterName {
 			return i
 		}
@@ -143,7 +146,7 @@ func IsAutoscaled(cluster *pb.K8Scluster) bool {
 		return false
 	}
 	for _, np := range cluster.ClusterInfo.NodePools {
-		if n := np.GetDynamicNodePool(); np != nil {
+		if n := np.GetDynamicNodePool(); n != nil {
 			if n.AutoscalerConfig != nil {
 				return true
 			}
