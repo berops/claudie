@@ -30,10 +30,6 @@ func (k *Kubernetes) Validate(m *Manifest) error {
 	// check for name uniqueness across clusters.
 	names := make(map[string]bool)
 
-	// check for re-use of the same nodepool
-	computeNames := make(map[string]bool)
-	controlNames := make(map[string]bool)
-
 	for _, cluster := range k.Clusters {
 		if err := cluster.Validate(); err != nil {
 			return fmt.Errorf("failed to validate kubernetes cluster %s: %w", cluster.Name, err)
@@ -45,6 +41,9 @@ func (k *Kubernetes) Validate(m *Manifest) error {
 		}
 		names[cluster.Name] = true
 
+		// check for re-use of the same nodepool
+		computeNames := make(map[string]bool)
+		controlNames := make(map[string]bool)
 		for _, pool := range cluster.Pools.Control {
 			if !m.nodePoolDefined(pool) {
 				return fmt.Errorf("control nodepool %q used inside cluster %q not defined inside manifest", pool, cluster.Name)
