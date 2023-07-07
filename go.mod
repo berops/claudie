@@ -16,17 +16,17 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/hetznercloud/hcloud-go v1.47.0
 	github.com/minio/minio-go/v7 v7.0.58
-	github.com/oracle/oci-go-sdk/v65 v65.41.1
+	github.com/oracle/oci-go-sdk/v65 v65.42.0
 	github.com/rs/zerolog v1.29.1
 	github.com/stretchr/testify v1.8.4
 	github.com/tidwall/gjson v1.14.4
 	github.com/tidwall/sjson v1.2.5
 	go.mongodb.org/mongo-driver v1.11.6
-	golang.org/x/crypto v0.10.0
-	golang.org/x/sync v0.2.0
-	google.golang.org/api v0.125.0
-	google.golang.org/grpc v1.55.0
-	google.golang.org/protobuf v1.30.0
+	golang.org/x/crypto v0.11.0
+	golang.org/x/sync v0.3.0
+	google.golang.org/api v0.130.0
+	google.golang.org/grpc v1.56.1
+	google.golang.org/protobuf v1.31.0
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.27.3
@@ -50,11 +50,11 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	golang.org/x/term v0.9.0 // indirect
+	golang.org/x/term v0.10.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.3.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20230530153820-e85fd2cbaebc // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230530153820-e85fd2cbaebc // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230629202037-9506855d4529 // indirect
 	k8s.io/apiextensions-apiserver v0.27.2 // indirect
 	k8s.io/component-base v0.27.2 // indirect
 	k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f // indirect
@@ -95,8 +95,8 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/s2a-go v0.1.4 // indirect
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
-	github.com/googleapis/gax-go/v2 v2.10.0 // indirect
+	github.com/googleapis/enterprise-certificate-proxy v0.2.5 // indirect
+	github.com/googleapis/gax-go/v2 v2.11.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.16.5 // indirect
@@ -128,15 +128,15 @@ require (
 	github.com/xdg-go/stringprep v1.0.3 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/net v0.11.0 // indirect
-	golang.org/x/oauth2 v0.8.0 // indirect
-	golang.org/x/sys v0.9.0 // indirect
-	golang.org/x/text v0.10.0 // indirect
+	golang.org/x/net v0.12.0 // indirect
+	golang.org/x/oauth2 v0.9.0 // indirect
+	golang.org/x/sys v0.10.0 // indirect
+	golang.org/x/text v0.11.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230530153820-e85fd2cbaebc // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
-	k8s.io/client-go v0.27.2
+	k8s.io/client-go v0.27.3
 	k8s.io/klog/v2 v2.90.1 // indirect
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
