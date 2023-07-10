@@ -113,7 +113,7 @@ func (u *Usecases) enqueueConfigs() error {
 			continue
 		}
 
-		// Initially when the config is received from the frontend microservice, the desired state of the config is not built,
+		// Initially when the config is received from the claudie-operator microservice, the desired state of the config is not built,
 		// due to which the DsChecksum will be nil.
 		if !utils.Equal(configInfo.DsChecksum, configInfo.MsChecksum) {
 			// If scheduler TTL is <= 0 AND config has no errorMessage, add item to the scheduler queue

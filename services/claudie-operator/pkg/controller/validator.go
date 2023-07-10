@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/berops/claudie/internal/manifest"
-	v1beta "github.com/berops/claudie/services/frontend/pkg/api/v1beta1"
+	v1beta "github.com/berops/claudie/services/claudie-operator/pkg/api/v1beta1"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 	wbhk "sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"

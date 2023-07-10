@@ -19,10 +19,10 @@ import (
 
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/services/frontend/pkg/controller"
-	"github.com/berops/claudie/services/frontend/server/adapters/inbound/grpc"
-	outboundAdapters "github.com/berops/claudie/services/frontend/server/adapters/outbound"
-	"github.com/berops/claudie/services/frontend/server/domain/usecases"
+	"github.com/berops/claudie/services/claudie-operator/pkg/controller"
+	"github.com/berops/claudie/services/claudie-operator/server/adapters/inbound/grpc"
+	outboundAdapters "github.com/berops/claudie/services/claudie-operator/server/adapters/outbound"
+	"github.com/berops/claudie/services/claudie-operator/server/domain/usecases"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 )
@@ -48,7 +48,7 @@ func main() {
 	certDir = utils.GetEnvDefault("WEBHOOK_CERT_DIR", "./tls")
 	webhookPath = utils.GetEnvDefault("WEBHOOK_PATH", "/validate-manifest")
 
-	utils.InitLog("frontend")
+	utils.InitLog("claudie-operator")
 
 	if err := run(); err != nil {
 		log.Fatal().Msg(err.Error())

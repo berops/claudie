@@ -12,8 +12,8 @@ import (
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/berops/claudie/internal/manifest"
+	v1beta "github.com/berops/claudie/services/claudie-operator/pkg/api/v1beta1"
 	"github.com/berops/claudie/services/context-box/server/utils"
-	v1beta "github.com/berops/claudie/services/frontend/pkg/api/v1beta1"
 )
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to

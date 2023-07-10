@@ -64,7 +64,7 @@ func makePbConfig(msg string, manifest []byte, id string) *pb.Config {
 		Id:       id,
 	}
 }
-func TestSaveConfigFrontEnd(t *testing.T) {
+func TestSaveConfigOperator(t *testing.T) {
 	c, cc := ClientConnection()
 	manifestFile := "./.manifest-simple.yml" // this is manifest from this test file
 
@@ -73,11 +73,11 @@ func TestSaveConfigFrontEnd(t *testing.T) {
 		log.Fatal().Msgf("Error reading file %s. %v", manifestFile, errR)
 	}
 
-	_, cfgErr := SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
+	_, cfgErr := SaveConfigOperator(c, &pb.SaveConfigRequest{
 		Config: makePbConfig("cloudziu", manifest, ""),
 	})
 	if cfgErr != nil {
-		log.Fatal().Msgf("Error saving FrontEnd configuration to DB connection: %v", cfgErr)
+		log.Fatal().Msgf("Error saving operator configuration to DB connection: %v", cfgErr)
 	}
 	closeConn(t, cc)
 }

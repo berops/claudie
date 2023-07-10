@@ -22,8 +22,8 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ContextBoxServiceClient interface {
-	// SaveConfigFrontEnd saves the config parsed by Frontend.
-	SaveConfigFrontEnd(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error)
+	// SaveConfigOperator saves the config parsed by claudie-operator.
+	SaveConfigOperator(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error)
 	// SaveConfigScheduler saves the config parsed by Scheduler.
 	SaveConfigScheduler(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error)
 	// SaveConfigBuilder saves the config parsed by Builder.
@@ -55,9 +55,9 @@ func NewContextBoxServiceClient(cc grpc.ClientConnInterface) ContextBoxServiceCl
 	return &contextBoxServiceClient{cc}
 }
 
-func (c *contextBoxServiceClient) SaveConfigFrontEnd(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error) {
+func (c *contextBoxServiceClient) SaveConfigOperator(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error) {
 	out := new(SaveConfigResponse)
-	err := c.cc.Invoke(ctx, "/claudie.ContextBoxService/SaveConfigFrontEnd", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/claudie.ContextBoxService/SaveConfigOperator", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -158,8 +158,8 @@ func (c *contextBoxServiceClient) UpdateNodepool(ctx context.Context, in *Update
 // All implementations must embed UnimplementedContextBoxServiceServer
 // for forward compatibility
 type ContextBoxServiceServer interface {
-	// SaveConfigFrontEnd saves the config parsed by Frontend.
-	SaveConfigFrontEnd(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error)
+	// SaveConfigOperator saves the config parsed by claudie-operator.
+	SaveConfigOperator(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error)
 	// SaveConfigScheduler saves the config parsed by Scheduler.
 	SaveConfigScheduler(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error)
 	// SaveConfigBuilder saves the config parsed by Builder.
@@ -188,8 +188,8 @@ type ContextBoxServiceServer interface {
 type UnimplementedContextBoxServiceServer struct {
 }
 
-func (UnimplementedContextBoxServiceServer) SaveConfigFrontEnd(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SaveConfigFrontEnd not implemented")
+func (UnimplementedContextBoxServiceServer) SaveConfigOperator(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SaveConfigOperator not implemented")
 }
 func (UnimplementedContextBoxServiceServer) SaveConfigScheduler(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SaveConfigScheduler not implemented")
@@ -234,20 +234,20 @@ func RegisterContextBoxServiceServer(s grpc.ServiceRegistrar, srv ContextBoxServ
 	s.RegisterService(&ContextBoxService_ServiceDesc, srv)
 }
 
-func _ContextBoxService_SaveConfigFrontEnd_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ContextBoxService_SaveConfigOperator_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SaveConfigRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ContextBoxServiceServer).SaveConfigFrontEnd(ctx, in)
+		return srv.(ContextBoxServiceServer).SaveConfigOperator(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/claudie.ContextBoxService/SaveConfigFrontEnd",
+		FullMethod: "/claudie.ContextBoxService/SaveConfigOperator",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ContextBoxServiceServer).SaveConfigFrontEnd(ctx, req.(*SaveConfigRequest))
+		return srv.(ContextBoxServiceServer).SaveConfigOperator(ctx, req.(*SaveConfigRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -440,8 +440,8 @@ var ContextBoxService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ContextBoxServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "SaveConfigFrontEnd",
-			Handler:    _ContextBoxService_SaveConfigFrontEnd_Handler,
+			MethodName: "SaveConfigOperator",
+			Handler:    _ContextBoxService_SaveConfigOperator_Handler,
 		},
 		{
 			MethodName: "SaveConfigScheduler",

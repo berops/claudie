@@ -22,8 +22,8 @@ const (
 	clusterAutoscalerTemplate   = "cluster-autoscaler.goyaml"
 	clusterAutoscalerDeployment = "ca.yaml"
 	defaultAdapterPort          = "50000"
-	defaultFrontendHostname     = "frontend"
-	defaultFrontendPort         = "50058"
+	defaultOperatorHostname     = "claudie-operator"
+	defaultOperatorPort         = "50058"
 )
 
 type AutoscalerBuilder struct {
@@ -38,8 +38,8 @@ type AutoscalerDeploymentData struct {
 	ClusterName       string
 	ProjectName       string
 	KubernetesVersion string
-	FrontendHostname  string
-	FrontendPort      string
+	OperatorHostname  string
+	OperatorPort      string
 }
 
 // NewAutoscalerBuilder returns configured AutoscalerBuilder which can set up or remove Cluster Autoscaler.
@@ -98,8 +98,8 @@ func (ab *AutoscalerBuilder) generateFiles() error {
 	// Prepare data
 	clusterId := utils.GetClusterID(ab.cluster.ClusterInfo)
 	version, err := getK8sVersion(ab.cluster.Kubernetes)
-	frontendHostname := utils.GetEnvDefault("FRONTEND_HOSTNAME", defaultFrontendHostname)
-	frontendPort := utils.GetEnvDefault("FRONTEND_PORT", defaultFrontendPort)
+	operatorHostname := utils.GetEnvDefault("OPERATOR_HOSTNAME", defaultOperatorHostname)
+	operatorPort := utils.GetEnvDefault("OPERATOR_PORT", defaultOperatorPort)
 	if err != nil {
 		return err
 	}
@@ -110,8 +110,8 @@ func (ab *AutoscalerBuilder) generateFiles() error {
 		ClusterID:         clusterId,
 		AdapterPort:       defaultAdapterPort,
 		KubernetesVersion: version,
-		FrontendHostname:  frontendHostname,
-		FrontendPort:      frontendPort,
+		OperatorHostname:  operatorHostname,
+		OperatorPort:      operatorPort,
 	}
 
 	if err := tpl.Generate(ca, clusterAutoscalerDeployment, caData); err != nil {
