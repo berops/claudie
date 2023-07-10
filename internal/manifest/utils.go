@@ -2,7 +2,6 @@ package manifest
 
 import (
 	"fmt"
-
 	"github.com/berops/claudie/proto/pb"
 	k8sV1 "k8s.io/api/core/v1"
 )
@@ -182,7 +181,7 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 				},
 			})
 		} else if nodePool := ds.FindStaticNodePool(nodePoolName); nodePool != nil {
-			nodes := getStaticNodes(nodePool)
+			nodes := getStaticNodes(nodePool, isControl)
 			nodePools = append(nodePools, &pb.NodePool{
 				Name:      nodePool.Name,
 				Nodes:     nodes,
@@ -203,12 +202,17 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 }
 
 // getStaticNodes returns slice of static nodes with initialised name.
-func getStaticNodes(np *StaticNodePool) []*pb.Node {
+func getStaticNodes(np *StaticNodePool, isControl bool) []*pb.Node {
 	nodes := make([]*pb.Node, 0, len(np.Nodes))
+	nodeType := pb.NodeType_worker
+	if isControl {
+		nodeType = pb.NodeType_master
+	}
 	for i, node := range np.Nodes {
 		nodes = append(nodes, &pb.Node{
-			Name:   fmt.Sprintf("%s-%d", np.Name, i),
-			Public: node.Endpoint,
+			Name:     fmt.Sprintf("%s-%d", np.Name, i+1),
+			Public:   node.Endpoint,
+			NodeType: nodeType,
 		})
 	}
 	return nodes

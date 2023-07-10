@@ -21,16 +21,7 @@ spec:
         namespace: e2e-secrets  
   nodePools:
     dynamic:
-      - name: hetzner-control
-        providerSpec:
-          name: hetzner-1
-          region: fsn1
-          zone: fsn1-dc14
-        count: 1
-        serverType: cpx11
-        image: ubuntu-22.04
-        storageDiskSize: 50
-      - name: hetzner-compute
+      - name: hetzner
         providerSpec:
           name: hetzner-1
           region: fsn1
@@ -40,13 +31,13 @@ spec:
         image: ubuntu-22.04
         storageDiskSize: 50
 
-      - name: gcp-compute
+      - name: gcp
         providerSpec:
           name: gcp-1
-          region: europe-west1
-          zone: europe-west1-b
+          region: europe-west2
+          zone: europe-west2-c
         count: 1
-        serverType: e2-small
+        serverType: e2-medium
         image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
         storageDiskSize: 50
 
@@ -57,7 +48,7 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - hetzner-control
+            - hetzner
           compute:
-            - hetzner-compute
-            - gcp-compute
+            - hetzner
+            - gcp

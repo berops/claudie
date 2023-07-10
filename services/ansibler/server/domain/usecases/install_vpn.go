@@ -93,6 +93,9 @@ func installWireguardVPN(clusterID string, vpnInfo *VPNInfo) error {
 		if err := commonUtils.CreateKeyFile(nodepoolInfo.PrivateKey, clusterDirectory, fmt.Sprintf("%s.%s", nodepoolInfo.ClusterID, sshPrivateKeyFileExtension)); err != nil {
 			return fmt.Errorf("failed to create key file for %s : %w", nodepoolInfo.ClusterID, err)
 		}
+		if err := commonUtils.CreateKeysForStaticNodepools(nodepoolInfo.Nodepools.Static, clusterDirectory); err != nil {
+			return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
+		}
 	}
 	ansible := utils.Ansible{
 		Playbook:  wireguardPlaybookFilePath,

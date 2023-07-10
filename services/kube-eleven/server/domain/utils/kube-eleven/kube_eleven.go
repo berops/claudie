@@ -100,6 +100,10 @@ func (k *KubeEleven) generateFiles() error {
 		return fmt.Errorf("error while creating SSH key file: %w", err)
 	}
 
+	if err := utils.CreateKeysForStaticNodepools(utils.GetCommonStaticNodePools(k.K8sCluster.ClusterInfo.NodePools), k.outputDirectory); err != nil {
+		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
+	}
+
 	// Create a kubeconfig file for the target Kubernetes cluster.
 	kubeconfigFilePath := filepath.Join(k.outputDirectory, fmt.Sprintf("%s-kubeconfig", k.K8sCluster.ClusterInfo.Name))
 	if err := os.WriteFile(kubeconfigFilePath, []byte(k.K8sCluster.GetKubeconfig()), 0600); err != nil {

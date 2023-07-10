@@ -9,7 +9,7 @@ import (
 )
 
 // destroyConfig destroys all the current state of the config.
-func destroyConfig(config *pb.Config, clusterView *ClusterView, c pb.ContextBoxServiceClient) error {
+func destroyConfig(config *pb.Config, clusterView *utils.ClusterView, c pb.ContextBoxServiceClient) error {
 	if err := utils.ConcurrentExec(config.CurrentState.Clusters, func(_ int, cluster *pb.K8Scluster) error {
 		err := destroyCluster(&BuilderContext{
 			projectName:   config.Name,
@@ -33,7 +33,7 @@ func destroyConfig(config *pb.Config, clusterView *ClusterView, c pb.ContextBoxS
 }
 
 // saveConfigWithWorkflowError saves config with workflow states
-func saveConfigWithWorkflowError(config *pb.Config, c pb.ContextBoxServiceClient, clusterView *ClusterView) error {
+func saveConfigWithWorkflowError(config *pb.Config, c pb.ContextBoxServiceClient, clusterView *utils.ClusterView) error {
 	config.State = clusterView.ClusterWorkflows
 	return cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 }
@@ -54,20 +54,33 @@ func updateWorkflowStateInDB(configName, clusterName string, wf *pb.Workflow, c 
 	})
 }
 
-// updateNodepoolMetadata updates the nodepool metadata between stages of the cluster build.
-func updateNodepoolMetadata(src []*pb.NodePool, dst []*pb.NodePool) {
-	if src == nil || dst == nil {
-		return
-	}
+// updateNodePoolInfo updates the nodepool metadata and node private IPs between stages of the cluster build.
+func updateNodePoolInfo(src []*pb.NodePool, dst []*pb.NodePool) {
 src:
 	for _, npSrc := range src {
 		for _, npDst := range dst {
-			if npSrc.GetDynamicNodePool() != nil && npDst.GetDynamicNodePool() != nil {
-				if npSrc.Name == npDst.Name {
-					npDst.GetDynamicNodePool().Metadata = npSrc.GetDynamicNodePool().Metadata
-					continue src
+			if npSrc.Name == npDst.Name {
+				srcNodes := getNodeMap(npSrc.Nodes)
+				dstNodes := getNodeMap(npDst.Nodes)
+				for dstName, dstNode := range dstNodes {
+					if srcNode, ok := srcNodes[dstName]; ok {
+						dstNode.Private = srcNode.Private
+					}
 				}
+				if npSrc.GetDynamicNodePool() != nil && npDst.GetDynamicNodePool() != nil {
+					npDst.GetDynamicNodePool().Metadata = npSrc.GetDynamicNodePool().Metadata
+				}
+				continue src
 			}
 		}
 	}
+}
+
+// getNodeMap returns a map of nodes, where each key is node name.
+func getNodeMap(nodes []*pb.Node) map[string]*pb.Node {
+	m := make(map[string]*pb.Node, len(nodes))
+	for _, node := range nodes {
+		m[node.Name] = node
+	}
+	return m
 }

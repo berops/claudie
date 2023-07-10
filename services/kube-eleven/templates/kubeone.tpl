@@ -32,7 +32,11 @@ controlPlane:
   - publicAddress: '{{ $nodeInfo.Node.Public }}'
     privateAddress: '{{ $nodeInfo.Node.Private }}'
     sshUsername: root
+    {{- if $nodepool.IsDynamic }}
     sshPrivateKeyFile: '{{ $privateKey }}'
+    {{- else }}
+    sshPrivateKeyFile: './{{ $nodeInfo.Name }}.pem'
+    {{- end }}
     hostname: '{{ $nodeInfo.Name }}'
     {{- if eq $nodeInfo.Node.Public $.APIEndpoint }}
     isLeader: true
@@ -52,7 +56,11 @@ staticWorkers:
   - publicAddress: '{{ $nodeInfo.Node.Public }}'
     privateAddress: '{{ $nodeInfo.Node.Private }}'
     sshUsername: root
+    {{- if $nodepool.IsDynamic }}
     sshPrivateKeyFile: '{{ $privateKey }}'
+    {{- else }}
+    sshPrivateKeyFile: './{{ $nodeInfo.Name }}.pem'
+    {{- end }}
     hostname: '{{ $nodeInfo.Name }}'
     {{- end}}
   {{- end}}
