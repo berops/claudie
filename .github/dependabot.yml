@@ -35,7 +35,7 @@ updates:
         patterns:
           - "*"
 
-  # Maintain dependencies for Frontend Docker
+  # Maintain dependencies for Claudie Operator Docker
   - package-ecosystem: "docker"
     directory: "/services/claudie-operator"
     schedule:
