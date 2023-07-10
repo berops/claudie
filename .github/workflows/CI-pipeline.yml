@@ -9,7 +9,6 @@ on:
 env:
   ENV_FILE: .env
   SERVICES: context-box scheduler builder terraformer ansibler kube-eleven kuber claudie-operator autoscaler-adapter testing-framework
-  TEST_SETS: test-set1 test-set2 test-set3 test-set4 autoscaling
 
 jobs:
   #--------------------------------------------------------------------------------------------------
