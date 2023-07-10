@@ -114,19 +114,6 @@ func GroupNodepoolsByProviderSpecName(clusterInfo *pb.ClusterInfo) map[string][]
 	return sortedNodePools
 }
 
-// GroupNodepoolsByProvider groups nodepool by cloud provider name into the map[Provider Name][]*pb.Nodepool
-func GroupNodepoolsByProvider(clusterInfo *pb.ClusterInfo) map[string][]*pb.NodePool {
-	sortedNodePools := map[string][]*pb.NodePool{}
-	for _, nodepool := range clusterInfo.GetNodePools() {
-		if np := nodepool.GetDynamicNodePool(); np != nil {
-			sortedNodePools[np.Provider.CloudProviderName] = append(sortedNodePools[np.Provider.CloudProviderName], nodepool)
-		} else if np := nodepool.GetStaticNodePool(); np != nil {
-			sortedNodePools[pb.StaticProvider_STATIC_PROVIDER.String()] = append(sortedNodePools[pb.StaticProvider_STATIC_PROVIDER.String()], nodepool)
-		}
-	}
-	return sortedNodePools
-}
-
 // GroupNodepoolsByProviderRegion groups nodepool by cloud provider instance name and region into the map[<provider-instance-name>-<region>][]*pb.Nodepool
 func GroupNodepoolsByProviderRegion(clusterInfo *pb.ClusterInfo) map[string][]*pb.NodePool {
 	sortedNodePools := map[string][]*pb.NodePool{}

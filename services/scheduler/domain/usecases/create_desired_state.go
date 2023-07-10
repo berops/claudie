@@ -3,11 +3,11 @@ package usecases
 import (
 	"fmt"
 
-	"gopkg.in/yaml.v2"
-
 	"github.com/berops/claudie/internal/manifest"
+	cutils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/scheduler/utils"
+	"gopkg.in/yaml.v2"
 )
 
 // CreateDesiredState is a function which creates desired state of the project based on the unmarshalled manifest
@@ -17,7 +17,6 @@ func (u *Usecases) CreateDesiredState(config *pb.Config) (*pb.Config, error) {
 		return nil, fmt.Errorf("CreateDesiredState got nil Config")
 	}
 
-	// Check if the manifest string is empty and set DesiredState to nil
 	if config.Manifest == "" {
 		return &pb.Config{
 			Id:                config.GetId(),
@@ -35,13 +34,10 @@ func (u *Usecases) CreateDesiredState(config *pb.Config) (*pb.Config, error) {
 		}, nil
 	}
 
-	// Get the unmarshalled manifest
 	unmarshalledManifest, err := getUnmarshalledManifest(config)
 	if err != nil {
 		return nil, fmt.Errorf("error while unmarshalling manifest from config %s : %w ", config.Name, err)
 	}
-
-	// Construct desired state for clusters
 	k8sClusters, err := utils.CreateK8sCluster(unmarshalledManifest)
 	if err != nil {
 		return nil, fmt.Errorf("error while creating kubernetes clusters for config %s : %w", config.Name, err)
@@ -51,7 +47,6 @@ func (u *Usecases) CreateDesiredState(config *pb.Config) (*pb.Config, error) {
 		return nil, fmt.Errorf("error while creating Loadbalancer clusters for config %s : %w", config.Name, err)
 	}
 
-	// Create new config for desired state
 	newConfig := &pb.Config{
 		Id:                config.GetId(),
 		Name:              config.GetName(),
@@ -71,13 +66,13 @@ func (u *Usecases) CreateDesiredState(config *pb.Config) (*pb.Config, error) {
 		SchedulerTTL: config.GetSchedulerTTL(),
 	}
 
-	// Update info from current state into the desired state
-	err = utils.UpdateK8sClusters(newConfig)
-	if err != nil {
+	if err := fixUpDuplicates(newConfig); err != nil {
+		return nil, fmt.Errorf("failed to fixup duplicates for config %s: %w", config.Name, err)
+	}
+	if err := utils.UpdateK8sClusters(newConfig); err != nil {
 		return nil, fmt.Errorf("error while updating Kubernetes clusters for config %s : %w", config.Name, err)
 	}
-	err = utils.UpdateLBClusters(newConfig)
-	if err != nil {
+	if err := utils.UpdateLBClusters(newConfig); err != nil {
 		return nil, fmt.Errorf("error while updating Loadbalancer clusters for config %s : %w", config.Name, err)
 	}
 
@@ -90,9 +85,48 @@ func getUnmarshalledManifest(config *pb.Config) (*manifest.Manifest, error) {
 	d := []byte(config.GetManifest())
 	// Parse yaml to protobuf and create unmarshalledManifest
 	var unmarshalledManifest manifest.Manifest
-	err := yaml.Unmarshal(d, &unmarshalledManifest)
-	if err != nil {
+	if err := yaml.Unmarshal(d, &unmarshalledManifest); err != nil {
 		return nil, fmt.Errorf("error while unmarshalling yaml manifest for config %s: %w", config.Name, err)
 	}
 	return &unmarshalledManifest, nil
+}
+
+// fixUpDuplicates renames the nodepools if they're referenced multiple times in k8s,lb clusters.
+func fixUpDuplicates(config *pb.Config) error {
+	m, err := getUnmarshalledManifest(config)
+	if err != nil {
+		return err
+	}
+
+	clusterView := cutils.NewClusterView(config)
+	for _, cluster := range clusterView.AllClusters() {
+		desired := clusterView.DesiredClusters[cluster]
+		desiredLbs := clusterView.DesiredLoadbalancers[cluster]
+
+		current := clusterView.CurrentClusters[cluster]
+		currentLbs := clusterView.Loadbalancers[cluster]
+
+		for _, np := range m.NodePools.Dynamic {
+			used := make(map[string]struct{})
+
+			utils.CopyK8sNodePoolsNamesFromCurrentState(used, np.Name, current, desired)
+			utils.CopyLbNodePoolNamesFromCurrentState(used, np.Name, currentLbs, desiredLbs)
+
+			references := utils.FindNodePoolReferences(np.Name, desired.GetClusterInfo().GetNodePools())
+			for _, lb := range desiredLbs {
+				references = append(references, utils.FindNodePoolReferences(np.Name, lb.GetClusterInfo().GetNodePools())...)
+			}
+
+			for _, np := range references {
+				hash := cutils.CreateHash(cutils.HashLength)
+				for _, ok := used[hash]; ok; {
+					hash = cutils.CreateHash(cutils.HashLength)
+				}
+				used[hash] = struct{}{}
+				np.Name += fmt.Sprintf("-%s", hash)
+			}
+		}
+	}
+
+	return nil
 }
