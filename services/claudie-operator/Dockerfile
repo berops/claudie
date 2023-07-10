@@ -16,7 +16,7 @@ RUN go mod download
 COPY . .
 
 #Change the directory
-WORKDIR /go/services/frontend
+WORKDIR /go/services/claudie-operator
 
 #Compile the golang code, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build
@@ -28,11 +28,11 @@ LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
 #Add image name as a label
 LABEL org.opencontainers.image.base.name "scratch"
 #Add description to the image
-LABEL org.opencontainers.image.description "Image for Frontend from Claudie"
+LABEL org.opencontainers.image.description "Image for Claudie-operator from Claudie"
 
 #Copy the binaries to empty base image
-COPY --from=build  /go/services/frontend/frontend /bin/services/frontend/frontend
+COPY --from=build  /go/services/claudie-operator/claudie-operator /bin/services/claudie-operator/claudie-operator
 
 WORKDIR /bin
 #Run server
-ENTRYPOINT [ "./services/frontend/frontend" ]
+ENTRYPOINT [ "./services/claudie-operator/claudie-operator" ]

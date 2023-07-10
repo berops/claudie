@@ -62,8 +62,8 @@ message UpdateNodepoolRequest {
 message UpdateNodepoolResponse {}
 
 service ContextBoxService {
-  // SaveConfigFrontEnd saves the config parsed by Frontend.
-  rpc SaveConfigFrontEnd(SaveConfigRequest) returns (SaveConfigResponse);
+  // SaveConfigOperator saves the config parsed by claudie-operator.
+  rpc SaveConfigOperator(SaveConfigRequest) returns (SaveConfigResponse);
   // SaveConfigScheduler saves the config parsed by Scheduler.
   rpc SaveConfigScheduler(SaveConfigRequest) returns (SaveConfigResponse);
   // SaveConfigBuilder saves the config parsed by Builder.

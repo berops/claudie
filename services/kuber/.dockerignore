@@ -10,7 +10,7 @@ services/scheduler
 services/context-box
 services/builder
 services/testing-framework
-services/frontend
+services/claudie-operator
 services/ansibler
 services/autoscaler-adapter
 .github

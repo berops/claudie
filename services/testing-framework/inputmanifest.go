@@ -7,7 +7,7 @@ import (
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/manifest"
-	v1beta "github.com/berops/claudie/services/frontend/pkg/api/v1beta1"
+	v1beta "github.com/berops/claudie/services/claudie-operator/pkg/api/v1beta1"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	yaml "k8s.io/apimachinery/pkg/util/yaml"

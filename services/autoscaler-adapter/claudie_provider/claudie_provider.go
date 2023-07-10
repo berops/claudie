@@ -15,7 +15,7 @@ import (
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/autoscaler-adapter/node_manager"
-	frontend "github.com/berops/claudie/services/frontend/client"
+	cOperator "github.com/berops/claudie/services/claudie-operator/client"
 )
 
 const (
@@ -241,17 +241,17 @@ func (c *ClaudieCloudProvider) refresh() error {
 func (c *ClaudieCloudProvider) sendAutoscalerEvent() error {
 	var cc *grpc.ClientConn
 	var err error
-	frontendURL := strings.ReplaceAll(envs.FrontendURL, ":tcp://", "")
-	log.Info().Msgf("Sending autoscale event to %s: %s, %s, ", frontendURL, c.resourceName, c.resourceNamespace)
-	if cc, err = utils.GrpcDialWithRetryAndBackoff("frontend", frontendURL); err != nil {
-		return fmt.Errorf("failed to dial frontend at %s : %w", envs.FrontendURL, err)
+	operatorURL := strings.ReplaceAll(envs.OperatorURL, ":tcp://", "")
+	log.Info().Msgf("Sending autoscale event to %s: %s, %s, ", operatorURL, c.resourceName, c.resourceNamespace)
+	if cc, err = utils.GrpcDialWithRetryAndBackoff("claudie-operator", operatorURL); err != nil {
+		return fmt.Errorf("failed to dial claudie-operator at %s : %w", envs.OperatorURL, err)
 	}
-	client := pb.NewFrontendServiceClient(cc)
-	if err := frontend.SendAutoscalerEvent(client, &pb.SendAutoscalerEventRequest{
+	client := pb.NewOperatorServiceClient(cc)
+	if err := cOperator.SendAutoscalerEvent(client, &pb.SendAutoscalerEventRequest{
 		InputManifestName:      c.resourceName,
 		InputManifestNamespace: c.resourceNamespace,
 	}); err != nil {
-		return fmt.Errorf("error while sending autoscaling event to Frontend : %w", err)
+		return fmt.Errorf("error while sending autoscaling event to claudie-operator : %w", err)
 	}
 	return nil
 }

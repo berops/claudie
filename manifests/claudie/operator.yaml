@@ -1,28 +1,28 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: frontend
+  name: claudie-operator
   labels:
     app.kubernetes.io/part-of: claudie
-    app.kubernetes.io/name: frontend
+    app.kubernetes.io/name: claudie-operator
 spec:
   replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/part-of: claudie
-      app.kubernetes.io/name: frontend
+      app.kubernetes.io/name: claudie-operator
   template:
     metadata:
       labels:
         app.kubernetes.io/part-of: claudie
-        app.kubernetes.io/name: frontend
+        app.kubernetes.io/name: claudie-operator
     spec:
       terminationGracePeriodSeconds: 30
-      serviceAccountName: frontend-sa
+      serviceAccountName: claudie-operator-sa
       containers:
-        - name: frontend
+        - name: claudie-operator
           imagePullPolicy: Always
-          image: ghcr.io/berops/claudie/frontend
+          image: ghcr.io/berops/claudie/claudie-operator
           resources:
             requests:
               cpu: 25m
@@ -51,19 +51,17 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: GOLANG_LOG
-            - name: LABEL
-              value: "claudie.io/input-manifest"
             - name: NAMESPACE
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: CONTROLLER_TLS_PORT
               value: "9443"
-            - name: FRONTEND_PORT
+            - name: OPERATOR_PORT
               valueFrom:
                 configMapKeyRef:
                   name: env
-                  key: FRONTEND_PORT
+                  key: OPERATOR_PORT
               # No hostname needed              
             - name: WEBHOOK_CERT_DIR
               value: "/etc/webhook/certs/"  
@@ -93,22 +91,22 @@ spec:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: frontend-sa
+  name: claudie-operator-sa
   labels:
     app.kubernetes.io/part-of: claudie
-    app.kubernetes.io/name: frontend
+    app.kubernetes.io/name: claudie-operator
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: frontend
+  name: claudie-operator
   labels:
     app.kubernetes.io/part-of: claudie
-    app.kubernetes.io/name: frontend    
+    app.kubernetes.io/name: claudie-operator    
 spec:
   selector:
     app.kubernetes.io/part-of: claudie
-    app.kubernetes.io/name: frontend
+    app.kubernetes.io/name: claudie-operator
   ports:
     - port: 443
       targetPort: webhook-tls
@@ -134,7 +132,7 @@ webhooks:
     timeoutSeconds: 10
     clientConfig:
       service:
-        name: frontend
+        name: claudie-operator
         namespace: claudie
         path: "/validate-manifest"
     rules:
@@ -154,10 +152,10 @@ metadata:
 spec:
   secretName: claudie-webhook-certificate
   dnsNames:
-  - frontend.claudie
-  - frontend.claudie.svc
-  - frontend.claudie.svc.cluster
-  - frontend.claudie.svc.cluster.local
+  - claudie-operator.claudie
+  - claudie-operator.claudie.svc
+  - claudie-operator.claudie.svc.cluster
+  - claudie-operator.claudie.svc.cluster.local
   issuerRef:
     name: claudie-webhook-ca
 ---

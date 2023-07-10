@@ -1,14 +1,14 @@
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: frontend-role-binding
+  name: claudie-operator-role-binding
   labels:
     app.kubernetes.io/part-of: claudie
-    app.kubernetes.io/name: frontend
+    app.kubernetes.io/name: claudie-operator
 subjects:
   - kind: ServiceAccount
-    name: frontend-sa
+    name: claudie-operator-sa
 roleRef:
   kind: ClusterRole
-  name: frontend-role
+  name: claudie-operator-role
   apiGroup: rbac.authorization.k8s.io
