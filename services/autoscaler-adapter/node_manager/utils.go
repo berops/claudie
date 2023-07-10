@@ -83,14 +83,3 @@ func getNodeType(np *pb.NodePool) string {
 	}
 	return "compute"
 }
-
-// mergeMaps merges two or more maps together, into single map.
-func mergeMaps[M ~map[K]V, K comparable, V any](maps ...M) M {
-	merged := make(M)
-	for _, m := range maps {
-		for k, v := range m {
-			merged[k] = v
-		}
-	}
-	return merged
-}

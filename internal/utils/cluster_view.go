@@ -1,7 +1,6 @@
-package main
+package utils
 
 import (
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"google.golang.org/protobuf/proto"
 )
@@ -90,7 +89,7 @@ func (view *ClusterView) MergeChanges(config *pb.Config) {
 	config.State = view.ClusterWorkflows
 
 	for name, updated := range view.CurrentClusters {
-		idx := utils.GetClusterByName(name, config.CurrentState.Clusters)
+		idx := GetClusterByName(name, config.CurrentState.Clusters)
 		if idx < 0 {
 			config.CurrentState.Clusters = append(config.CurrentState.Clusters, updated)
 			continue
@@ -99,7 +98,7 @@ func (view *ClusterView) MergeChanges(config *pb.Config) {
 	}
 
 	for name, updated := range view.DesiredClusters {
-		idx := utils.GetClusterByName(name, config.DesiredState.Clusters)
+		idx := GetClusterByName(name, config.DesiredState.Clusters)
 		if idx < 0 {
 			config.DesiredState.Clusters = append(config.DesiredState.Clusters, updated)
 			continue
@@ -109,7 +108,7 @@ func (view *ClusterView) MergeChanges(config *pb.Config) {
 
 	for _, updated := range view.Loadbalancers {
 		for _, lb := range updated {
-			idx := utils.GetLBClusterByName(lb.ClusterInfo.Name, config.CurrentState.LoadBalancerClusters)
+			idx := GetLBClusterByName(lb.ClusterInfo.Name, config.CurrentState.LoadBalancerClusters)
 			if idx < 0 {
 				config.CurrentState.LoadBalancerClusters = append(config.CurrentState.LoadBalancerClusters, lb)
 				continue
@@ -120,54 +119,12 @@ func (view *ClusterView) MergeChanges(config *pb.Config) {
 
 	for _, updated := range view.DesiredLoadbalancers {
 		for _, lb := range updated {
-			idx := utils.GetLBClusterByName(lb.ClusterInfo.Name, config.DesiredState.LoadBalancerClusters)
+			idx := GetLBClusterByName(lb.ClusterInfo.Name, config.DesiredState.LoadBalancerClusters)
 			if idx < 0 {
 				config.DesiredState.LoadBalancerClusters = append(config.DesiredState.LoadBalancerClusters, lb)
 				continue
 			}
 			config.DesiredState.LoadBalancerClusters[idx] = lb
-		}
-	}
-}
-
-// UpdateFromBuild takes the changes after a successful workflow of a given cluster
-func (view *ClusterView) UpdateFromBuild(ctx *BuilderContext) {
-	if ctx.cluster != nil {
-		view.CurrentClusters[ctx.cluster.ClusterInfo.Name] = ctx.cluster
-	}
-
-	if ctx.desiredCluster != nil {
-		view.DesiredClusters[ctx.desiredCluster.ClusterInfo.Name] = ctx.desiredCluster
-	}
-
-	if ctx.Workflow != nil {
-		view.ClusterWorkflows[ctx.GetClusterName()] = ctx.Workflow
-	}
-
-	for _, current := range ctx.loadbalancers {
-		for i := range view.Loadbalancers[current.TargetedK8S] {
-			if view.Loadbalancers[current.TargetedK8S][i].ClusterInfo.Name == current.ClusterInfo.Name {
-				view.Loadbalancers[current.TargetedK8S][i] = current
-				break
-			}
-		}
-	}
-
-	for _, desired := range ctx.desiredLoadbalancers {
-		for i := range view.DesiredLoadbalancers[desired.TargetedK8S] {
-			if view.DesiredLoadbalancers[desired.TargetedK8S][i].ClusterInfo.Name == desired.ClusterInfo.Name {
-				view.DesiredLoadbalancers[desired.TargetedK8S][i] = desired
-				break
-			}
-		}
-	}
-
-	for _, deleted := range ctx.deletedLoadBalancers {
-		for i := range view.DeletedLoadbalancers[deleted.TargetedK8S] {
-			if view.DeletedLoadbalancers[deleted.TargetedK8S][i].ClusterInfo.Name == deleted.ClusterInfo.Name {
-				view.DeletedLoadbalancers[deleted.TargetedK8S][i] = deleted
-				break
-			}
 		}
 	}
 }
