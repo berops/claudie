@@ -51,6 +51,9 @@ func installLonghornRequirements(nodepoolsInfo *NodepoolsInfo) error {
 	if err := commonUtils.CreateKeyFile(nodepoolsInfo.PrivateKey, clusterDirectory, fmt.Sprintf("%s.%s", nodepoolsInfo.ClusterID, sshPrivateKeyFileExtension)); err != nil {
 		return fmt.Errorf("failed to create key file for %s : %w", nodepoolsInfo.ClusterID, err)
 	}
+	if err := commonUtils.CreateKeysForStaticNodepools(nodepoolsInfo.Nodepools.Static, clusterDirectory); err != nil {
+		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
+	}
 
 	if err := utils.GenerateInventoryFile(templates.AllNodesInventoryTemplate, clusterDirectory,
 		// Value of Ansible template parameters

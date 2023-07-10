@@ -37,15 +37,15 @@ needs to be defined.
 
   Type of a provider. The providerType defines mandatory fields that has to be included for a specific provider. A list of available providers can be found at [providers section](./providers). Allowed values are:
 
-  | Value         | Description                              |
-  | ------------- | ---------------------------------------- |
-  | `aws`         | [AWS](#aws) provider type                |
-  | `azure`       | [Azure](#azure) provider type            |
-  | `cloudflare`  | [Cloudflare](#cloudflare) provider type  |
-  | `gcp`         | [GCP](#gcp) provider type                |
-  | `hetzner`     | [Hetzner](#hetzner) provider type        |
-  | `hetznerdns`  | [Hetzner](#hetznerdns) DNS provider type |
-  | `oci`         | [OCI](#oci) provider type                |
+  | Value        | Description                              |
+  | ------------ | ---------------------------------------- |
+  | `aws`        | [AWS](#aws) provider type                |
+  | `azure`      | [Azure](#azure) provider type            |
+  | `cloudflare` | [Cloudflare](#cloudflare) provider type  |
+  | `gcp`        | [GCP](#gcp) provider type                |
+  | `hetzner`    | [Hetzner](#hetzner) provider type        |
+  | `hetznerdns` | [Hetzner](#hetznerdns) DNS provider type |
+  | `oci`        | [OCI](#oci) provider type                |
   
 - `secretRef` [SecretRef](#secretref)
 
@@ -176,7 +176,7 @@ Collection of static and dynamic nodepool specification, to be referenced in the
   These are only blueprints, and will only be created per reference in `kubernetes` or `loadBalancer` clusters. E.g. if the nodepool isn't used, it won't even be created. Or if the same nodepool is used in two different clusters, it will be created twice.
 In OOP analogy, a dynamic nodepool would be a class that would get instantiated `N >= 0` times depending on which clusters reference it.
 
-- `static` [WORK IN PROGRESS]
+- `static` [Static](#static)
 
   List of static nodepools of already existing machines, not created by of Claudie, used for Kubernetes or loadbalancer clusters. Typically, these would be on-premises machines.
 
@@ -224,7 +224,6 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
 Provider spec is an additional specification built on top of the data from any of the provider instance. Here are provider configuration examples for each individual provider: [aws](providers/aws.md), [azure](providers/azure.md), [gcp](providers/gcp.md), [cloudflare](providers/cloudflare.md), [hetzner](providers/hetzner.md) and [oci](providers/oci.md).
 
-
 - `name`
 
   Name of the provider instance specified in [providers](#providers)
@@ -248,7 +247,43 @@ Autoscaler configuration on per nodepool basis. Defines the number of nodes, aut
 - `max`
 
   Maximum number of nodes in nodepool.
+
+## Static
+
+Static nodepools are defined for static machines which Claudie will not manage. Used for on premise nodes.
+
+- `name`
+
+  Name of the static nodepool.
+
+- `nodes` [Static Node](#static-node)
+
+  List of static nodes for a particular static nodepool.
+
+## Static node
+
+Static node defines single static node from a static nodepool.
+
+- `endpoint`
+
+  Endpoint under which Claudie will access this node.
+
+- `secretRef` [SecretRef](#secretref)
+
+  Secret from which private key will be taken used to SSH into the machine (as root).
+
+  The field in the secret must be `privatekey`, i.e.
   
+  ```yaml
+  apiVersion: v1
+  type: Opaque
+  kind: Secret
+    name: private-key-node-1
+    namespace: claudie-secrets
+  data:
+    privatekey: <base64 encoded private key>
+  ```
+
 ## Kubernetes
 
 Defines Kubernetes clusters.
@@ -321,7 +356,7 @@ Role defines a concrete loadbalancer configuration. Single loadbalancer can have
   Defines a target group of nodes. Allowed values are:
 
   | Value             | Description                          |
-  |-------------------|--------------------------------------|
+  | ----------------- | ------------------------------------ |
   | `k8sAllNodes`     | All nodes in the cluster             |
   | `k8sControlPlane` | Only control/master nodes in cluster |
   | `k8sComputePlane` | Only compute/worker nodes in cluster |

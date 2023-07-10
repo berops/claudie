@@ -12,10 +12,13 @@ func (m *Manifest) Validate() error {
 		return fmt.Errorf("failed to validate manifest: %w", err)
 	}
 
-	// check if at least one provider is defined
+	// Check if at least one provider is defined
 	// https://github.com/berops/claudie/blob/master/docs/input-manifest/input-manifest.md#providers
 	if len(m.Providers.GCP)+len(m.Providers.Hetzner)+len(m.Providers.AWS)+len(m.Providers.Azure)+len(m.Providers.OCI) < 1 {
-		return fmt.Errorf("need to define at least one provider inside the providers section of the manifest")
+		// Return error only if at least one dynamic nodepool defined.
+		if len(m.NodePools.Dynamic) > 0 {
+			return fmt.Errorf("need to define at least one provider inside the providers section of the manifest used for dynamic nodepools")
+		}
 	}
 
 	if err := m.NodePools.Validate(m); err != nil {

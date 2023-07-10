@@ -1,13 +1,23 @@
 [Interface]
+Address = {{ private_ip }}/24
 PrivateKey = {{ privatekey.stdout }}
 ListenPort = {{ wg_listen_port }}
 
-{% for host in groups['nodes'] %}
+{% for host in groups['dynamic'] %}
 {% if publickey.stdout != hostvars[host].publickey.stdout %}
 [Peer]
 PublicKey = {{ hostvars[host].publickey.stdout }}
 Endpoint = {{ hostvars[host].ansible_host }}:{{ wg_listen_port }}
 AllowedIps = {{ hostvars[host].private_ip }}/32
 PersistentKeepalive = 60
+{% endif %}
+{% endfor %}
+
+{% for host in groups['static'] %}
+{% if publickey.stdout != hostvars[host].publickey.stdout %}
+[Peer]
+PublicKey = {{ hostvars[host].publickey.stdout }}
+Endpoint = {{ hostvars[host].ansible_host }}:{{ wg_listen_port }}
+AllowedIps = {{ hostvars[host].private_ip }}/32
 {% endif %}
 {% endfor %}

@@ -46,18 +46,20 @@ operator:
 	GOLANG_LOG=debug go run ./services/claudie-operator
 
 # Start the database for configs, containing input manifests
-database:
-	docker run --rm -p 27017:27017 -v ~/mongo/data:/data/db mongo:5
+mongo:
+	mkdir -p ~/mongo/data
+	docker run --name mongo -d --rm -p 27017:27017 -v ~/mongo/data:/data/db mongo:5
 
 # Start minio backend for state files used in terraform
 minio:
 # mkdir will simulate the automatic bucket creation 
 	mkdir -p ~/minio/data/claudie-tf-state-files
-	docker run --rm -p 9000:9000 -p 9001:9001 --name minio -v ~/minio/data:/data quay.io/minio/minio server /data --console-address ":9001"
+	docker run --name minio -d --rm -p 9000:9000 -p 9001:9001 --name minio -v ~/minio/data:/data quay.io/minio/minio server /data --console-address ":9001"
 
 # Start DynamoDB backend used for state file locks
 dynamodb:
-	docker run --rm -p 8000:8000 --name dynamodb-local -v ~/dynamodb:/home/dynamodblocal/data amazon/dynamodb-local:1.21.0 -jar DynamoDBLocal.jar -sharedDb -dbPath ./data
+	mkdir -p ~/dynamodb
+	docker run --name dynamodb -d --rm -p 8000:8000 --name dynamodb-local -v ~/dynamodb:/home/dynamodblocal/data amazon/dynamodb-local:1.21.0 -jar DynamoDBLocal.jar -sharedDb -dbPath ./data
 
 # Start Testing-framework, which will inject manifests from /services/testing-framework/test-sets
 # -timeout 0 will disable default timeout
@@ -70,10 +72,7 @@ lint:
 	golangci-lint run
 
 # Start all data stores at once,in docker containers, to simplify the local development
-datastoreStart:
-	docker run --rm -d -p 27017:27017 --name mongo -v ~/mongo/data:/data/db mongo:5
-	docker run --rm -d -p 9000:9000 -p 9001:9001 --name minio -v ~/minio/data:/data quay.io/minio/minio server /data --console-address ":9001"
-	docker run --rm -d -p 8000:8000 --name dynamodb -v ~/dynamodb:/home/dynamodblocal/data amazon/dynamodb-local:1.21.0 -jar DynamoDBLocal.jar -sharedDb -dbPath ./data
+datastoreStart: mongo minio dynamodb
 
 # Stops all data stores at once, which will also remove docker containers
 datastoreStop:

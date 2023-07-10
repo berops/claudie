@@ -5,15 +5,15 @@ metadata:
   name: ExampleManifest
 spec:
   # Providers field is used for defining the providers. 
-  # It is referncing a secret resource in Kubernetes cluster.
+  # It is referencing a secret resource in Kubernetes cluster.
   # Each provider haves its own mandatory fields that are defined in the secret resource.
   # Every supported provider has an example in this input manifest.
   # providers:
   #   - name: 
-  #       providerType:   # type of the provider secret [aws|azure|gcp|oci|hetzner|hetznerdns|cloudflare]    
-  #       secretRef:      # secret reference specyfication
-  #         name:         # name of the secret resource
-  #         namespace:    # namespace of the secret resoutce
+  #       providerType:   # Type of the provider secret [aws|azure|gcp|oci|hetzner|hetznerdns|cloudflare]. 
+  #       secretRef:      # Secret reference specification.
+  #         name:         # Name of the secret resource.
+  #         namespace:    # Namespace of the secret resource.
   providers:
     # Hetzner DNS provider.
     - name: hetznerdns-1
@@ -71,7 +71,7 @@ spec:
     # Dynamic nodepools are created by Claudie, in one of the cloud providers specified.
     # Definition specification:
     # dynamic:
-    #   - name:             # Name of the nodepool, which is used as a refference to it. Needs to be unique.
+    #   - name:             # Name of the nodepool, which is used as a reference to it. Needs to be unique.
     #     providerSpec:     # Provider specification for this nodepool.
     #       name:           # Name of the provider instance, referencing one of the providers define above.
     #       region:         # Region of the nodepool.
@@ -212,6 +212,36 @@ spec:
         serverType: cpx11
         image: ubuntu-20.04
 
+    # Static nodepools are created by user beforehand.
+    # Definition specification:
+    # static:
+    #   - name:             # Name of the nodepool, which is used as a reference to it. Needs to be unique.
+    #     nodes:            # List of nodes which will be access under this nodepool.
+    #       - endpoint:     # IP under which Claudie will access this node. Can be private as long as Claudie will be able to access it.
+    #         secretRef:    # Secret reference specification, holding private key which will be used to SSH into the node (as root).
+    #           name:       # Name of the secret resource.
+    #           namespace:  # Namespace of the secret resource.
+    #
+    # Example definitions
+    static:
+      - name: datacenter-1
+        nodes:
+          - endpoint: "192.168.10.1"
+            secretRef:
+              name: datacenter-1-key
+              namespace: example-namespace
+
+          - endpoint: "192.168.10.2"
+            secretRef:
+              name: datacenter-1-key
+              namespace: example-namespace
+
+          - endpoint: "192.168.10.3"
+            secretRef:
+              name: datacenter-1-key
+              namespace: example-namespace
+            
+
   # Kubernetes field is used to define the kubernetes clusters.
   # Definition specification:
   #
@@ -227,7 +257,7 @@ spec:
   kubernetes:
     clusters:
       - name: dev-cluster
-        version: v1.24.0
+        version: v1.26.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -239,7 +269,7 @@ spec:
             - compute-azure
 
       - name: prod-cluster
-        version: v1.24.0
+        version: v1.26.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -255,13 +285,24 @@ spec:
             - compute-aws
             - compute-azure
 
+      - name: hybrid-cluster
+        version: v1.26.0
+        network: 192.168.2.0/24
+        pools:
+          control:
+            - datacenter-1
+          compute:
+            - compute-hetzner
+            - compute-gcp
+            - compute-azure
+
   # Loadbalancers field defines loadbalancers used for the kubernetes clusters and roles for the loadbalancers.
   # Definition specification for role:
   #
   # roles:
   #   - name:         # Name of the role, used as a reference later. Must be unique.
   #     protocol:     # Protocol, this role will use.
-  #     port:         # Port, where trafic will be coming.
+  #     port:         # Port, where traffic will be coming.
   #     targetPort:   # Port, where loadbalancer will forward traffic to.
   #     target:       # Targeted nodes on kubernetes cluster. Can be "k8sControlPlane", "k8sComputePlane" or "k8sAllNodes".
   #
@@ -269,14 +310,15 @@ spec:
   #
   # clusters:
   #   - name:         # Loadbalancer cluster name
-  #     roles:        # List of role names this loadbalancer will fullfil.
+  #     roles:        # List of role names this loadbalancer will fulfil.
   #     dns:          # DNS specification, where DNS records will be created.
   #       dnsZone:    # DNS zone name in your provider.
   #       provider:   # Provider name for the DNS.
-  #       hostname:   # Hostname for the DNS record. Keep in mind the zone will be included automaticaly. If left empty the Claudie will create random hash as a hostname.
+  #       hostname:   # Hostname for the DNS record. Keep in mind the zone will be included automatically. If left empty the Claudie will create random hash as a hostname.
   #     targetedK8s:  # Name of the targeted kubernetes cluster
   #     pools:        # List of nodepool names used for loadbalancer
-  # Example definitons:
+  #
+  # Example definitions:
   loadBalancers:
     roles:
       - name: apiserver

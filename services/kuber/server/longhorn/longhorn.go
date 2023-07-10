@@ -93,7 +93,7 @@ func (l *Longhorn) SetUp() error {
 	realNodeNames := strings.Split(string(realNodesInfo), "\n")
 	// tag nodes based on the zones
 	for providerInstance, nodepools := range sortedNodePools {
-		zoneName := fmt.Sprintf("%s-zone", providerInstance)
+		zoneName := utils.SanitiseString(fmt.Sprintf("%s-zone", providerInstance))
 		storageClassName := fmt.Sprintf("longhorn-%s", zoneName)
 		//flag to determine whether we need to create storage class or not
 		isWorkerNodeProvider := false
@@ -106,6 +106,10 @@ func (l *Longhorn) SetUp() error {
 				for _, node := range np.GetNodes() {
 					annotation := fmt.Sprintf("node.longhorn.io/default-node-tags='[\"%s\"]'", zoneName)
 					realNodeName := utils.FindName(realNodeNames, node.Name)
+					if realNodeName == "" {
+						log.Warn().Str("cluster", utils.GetClusterID(l.Cluster.ClusterInfo)).Msgf("Node %s was not found in cluster %v", node.Name, realNodeNames)
+						continue
+					}
 					// Add tag to the node via kubectl annotate, use --overwrite to avoid getting error of already tagged node
 					if err := kubectl.KubectlAnnotate("node", realNodeName, annotation, "--overwrite"); err != nil {
 						return fmt.Errorf("error while annotating the node %s from cluster %s via kubectl annotate : %w", realNodeName, l.Cluster.ClusterInfo.Name, err)

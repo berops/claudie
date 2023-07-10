@@ -59,6 +59,9 @@ func updateAPIEndpoint(currentK8sClusterInfo, desiredK8sClusterInfo *pb.ClusterI
 	if err := commonUtils.CreateKeyFile(currentK8sClusterInfo.PrivateKey, clusterDirectory, "k8s.pem"); err != nil {
 		return fmt.Errorf("failed to create key file for %s : %w", clusterID, err)
 	}
+	if err := commonUtils.CreateKeysForStaticNodepools(commonUtils.GetCommonStaticNodePools(currentK8sClusterInfo.NodePools), clusterDirectory); err != nil {
+		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
+	}
 
 	err = utils.GenerateInventoryFile(templates.LoadbalancerInventoryTemplate, clusterDirectory, utils.LBInventoryFileParameters{
 		K8sNodepools: utils.NodePools{
