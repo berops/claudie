@@ -259,13 +259,13 @@ message Node {
   NodeType nodeType = 4;
 }
 
-enum StaticProvider {
+// Enum used to replace data not present in static nodepools.
+enum StaticNodepoolInfo {
   STATIC_PROVIDER = 0;
+  STATIC_REGION = 1;
+  STATIC_ZONE = 2;
 }
 
-enum StaticRegion {
-  STATIC_REGION = 0;
-}
 
 message Provider {
   // Provider name defined in input manifest.

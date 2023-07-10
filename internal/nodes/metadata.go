@@ -35,16 +35,24 @@ func GetAllLabels(np *pb.NodePool) map[string]string {
 
 	// Claudie assigned labels.
 	m[string(Nodepool)] = np.Name
-	m[string(Provider)] = np.GetDynamicNodePool().Provider.CloudProviderName
-	m[string(ProviderInstance)] = np.GetDynamicNodePool().Provider.SpecName
 	m[string(NodeType)] = getNodeType(np)
-	m[string(KubernetesZone)] = utils.SanitiseString(np.GetDynamicNodePool().Zone)
-	m[string(KubernetesRegion)] = utils.SanitiseString(np.GetDynamicNodePool().Region)
 	// Other labels.
 	m[string(KubernetesOs)] = "linux"   // Only Linux is supported.
 	m[string(KubernetesArch)] = "amd64" // TODO add arch https://github.com/berops/claudie/issues/665
 	m[string(KubeoneOs)] = "ubuntu"     // Only supported Os
-
+	// Dynamic nodepool data.
+	if n := np.GetDynamicNodePool(); n != nil {
+		m[string(Provider)] = n.Provider.CloudProviderName
+		m[string(ProviderInstance)] = n.Provider.SpecName
+		m[string(KubernetesZone)] = utils.SanitiseString(n.Zone)
+		m[string(KubernetesRegion)] = utils.SanitiseString(n.Region)
+		return m
+	}
+	// Static nodepool data.
+	m[string(Provider)] = utils.SanitiseString(pb.StaticNodepoolInfo_STATIC_PROVIDER.String())
+	m[string(ProviderInstance)] = utils.SanitiseString(pb.StaticNodepoolInfo_STATIC_PROVIDER.String())
+	m[string(KubernetesZone)] = utils.SanitiseString(pb.StaticNodepoolInfo_STATIC_ZONE.String())
+	m[string(KubernetesRegion)] = utils.SanitiseString(pb.StaticNodepoolInfo_STATIC_REGION.String())
 	return m
 }
 
@@ -63,37 +71,6 @@ func GetAllTaints(np *pb.NodePool) []k8sV1.Taint {
 	// Claudie assigned taints.
 	if np.IsControl {
 		taints = append(taints, k8sV1.Taint{Key: ControlPlane, Value: "", Effect: k8sV1.TaintEffectNoSchedule})
-	}
-
-	return taints
-}
-
-// GetCustomLabels returns default labels with their theoretical values for the specified nodepool.
-func GetCustomLabels(np *pb.NodePool) map[string]string {
-	m := make(map[string]string)
-	// Claudie assigned labels.
-	m[string(Nodepool)] = np.Name
-	m[string(Provider)] = np.GetDynamicNodePool().Provider.CloudProviderName
-	m[string(ProviderInstance)] = np.GetDynamicNodePool().Provider.SpecName
-	m[string(NodeType)] = getNodeType(np)
-	m[string(KubernetesZone)] = np.GetDynamicNodePool().Zone
-	m[string(KubernetesRegion)] = np.GetDynamicNodePool().Region
-
-	// Add custom user defined labels.
-	for k, v := range np.Labels {
-		m[k] = v
-	}
-
-	return m
-}
-
-// GetCustomTaints returns default taints with their theoretical values for the specified nodepool.
-func GetCustomTaints(np *pb.NodePool) []k8sV1.Taint {
-	taints := make([]k8sV1.Taint, 0)
-
-	// Add custom user defined taints.
-	for _, t := range np.Taints {
-		taints = append(taints, k8sV1.Taint{Key: t.Key, Value: t.Value, Effect: k8sV1.TaintEffect(t.Effect)})
 	}
 
 	return taints

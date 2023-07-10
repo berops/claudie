@@ -175,90 +175,54 @@ func (NodeType) EnumDescriptor() ([]byte, []int) {
 	return file_proto_config_proto_rawDescGZIP(), []int{2}
 }
 
-type StaticProvider int32
+// Enum used to replace data not present in static nodepools.
+type StaticNodepoolInfo int32
 
 const (
-	StaticProvider_STATIC_PROVIDER StaticProvider = 0
+	StaticNodepoolInfo_STATIC_PROVIDER StaticNodepoolInfo = 0
+	StaticNodepoolInfo_STATIC_REGION   StaticNodepoolInfo = 1
+	StaticNodepoolInfo_STATIC_ZONE     StaticNodepoolInfo = 2
 )
 
-// Enum value maps for StaticProvider.
+// Enum value maps for StaticNodepoolInfo.
 var (
-	StaticProvider_name = map[int32]string{
+	StaticNodepoolInfo_name = map[int32]string{
 		0: "STATIC_PROVIDER",
+		1: "STATIC_REGION",
+		2: "STATIC_ZONE",
 	}
-	StaticProvider_value = map[string]int32{
+	StaticNodepoolInfo_value = map[string]int32{
 		"STATIC_PROVIDER": 0,
+		"STATIC_REGION":   1,
+		"STATIC_ZONE":     2,
 	}
 )
 
-func (x StaticProvider) Enum() *StaticProvider {
-	p := new(StaticProvider)
+func (x StaticNodepoolInfo) Enum() *StaticNodepoolInfo {
+	p := new(StaticNodepoolInfo)
 	*p = x
 	return p
 }
 
-func (x StaticProvider) String() string {
+func (x StaticNodepoolInfo) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (StaticProvider) Descriptor() protoreflect.EnumDescriptor {
+func (StaticNodepoolInfo) Descriptor() protoreflect.EnumDescriptor {
 	return file_proto_config_proto_enumTypes[3].Descriptor()
 }
 
-func (StaticProvider) Type() protoreflect.EnumType {
+func (StaticNodepoolInfo) Type() protoreflect.EnumType {
 	return &file_proto_config_proto_enumTypes[3]
 }
 
-func (x StaticProvider) Number() protoreflect.EnumNumber {
+func (x StaticNodepoolInfo) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use StaticProvider.Descriptor instead.
-func (StaticProvider) EnumDescriptor() ([]byte, []int) {
+// Deprecated: Use StaticNodepoolInfo.Descriptor instead.
+func (StaticNodepoolInfo) EnumDescriptor() ([]byte, []int) {
 	return file_proto_config_proto_rawDescGZIP(), []int{3}
-}
-
-type StaticRegion int32
-
-const (
-	StaticRegion_STATIC_REGION StaticRegion = 0
-)
-
-// Enum value maps for StaticRegion.
-var (
-	StaticRegion_name = map[int32]string{
-		0: "STATIC_REGION",
-	}
-	StaticRegion_value = map[string]int32{
-		"STATIC_REGION": 0,
-	}
-)
-
-func (x StaticRegion) Enum() *StaticRegion {
-	p := new(StaticRegion)
-	*p = x
-	return p
-}
-
-func (x StaticRegion) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (StaticRegion) Descriptor() protoreflect.EnumDescriptor {
-	return file_proto_config_proto_enumTypes[4].Descriptor()
-}
-
-func (StaticRegion) Type() protoreflect.EnumType {
-	return &file_proto_config_proto_enumTypes[4]
-}
-
-func (x StaticRegion) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use StaticRegion.Descriptor instead.
-func (StaticRegion) EnumDescriptor() ([]byte, []int) {
-	return file_proto_config_proto_rawDescGZIP(), []int{4}
 }
 
 // ClusterType specifies the type of the cluster.
@@ -294,11 +258,11 @@ func (x ClusterType) String() string {
 }
 
 func (ClusterType) Descriptor() protoreflect.EnumDescriptor {
-	return file_proto_config_proto_enumTypes[5].Descriptor()
+	return file_proto_config_proto_enumTypes[4].Descriptor()
 }
 
 func (ClusterType) Type() protoreflect.EnumType {
-	return &file_proto_config_proto_enumTypes[5]
+	return &file_proto_config_proto_enumTypes[4]
 }
 
 func (x ClusterType) Number() protoreflect.EnumNumber {
@@ -307,7 +271,7 @@ func (x ClusterType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ClusterType.Descriptor instead.
 func (ClusterType) EnumDescriptor() ([]byte, []int) {
-	return file_proto_config_proto_rawDescGZIP(), []int{5}
+	return file_proto_config_proto_rawDescGZIP(), []int{4}
 }
 
 type Workflow_Stage int32
@@ -370,11 +334,11 @@ func (x Workflow_Stage) String() string {
 }
 
 func (Workflow_Stage) Descriptor() protoreflect.EnumDescriptor {
-	return file_proto_config_proto_enumTypes[6].Descriptor()
+	return file_proto_config_proto_enumTypes[5].Descriptor()
 }
 
 func (Workflow_Stage) Type() protoreflect.EnumType {
-	return &file_proto_config_proto_enumTypes[6]
+	return &file_proto_config_proto_enumTypes[5]
 }
 
 func (x Workflow_Stage) Number() protoreflect.EnumNumber {
@@ -422,11 +386,11 @@ func (x Workflow_Status) String() string {
 }
 
 func (Workflow_Status) Descriptor() protoreflect.EnumDescriptor {
-	return file_proto_config_proto_enumTypes[7].Descriptor()
+	return file_proto_config_proto_enumTypes[6].Descriptor()
 }
 
 func (Workflow_Status) Type() protoreflect.EnumType {
-	return &file_proto_config_proto_enumTypes[7]
+	return &file_proto_config_proto_enumTypes[6]
 }
 
 func (x Workflow_Status) Number() protoreflect.EnumNumber {
@@ -2102,15 +2066,15 @@ var file_proto_config_proto_rawDesc = []byte{
 	0x61, 0x6e, 0x65, 0x10, 0x02, 0x2a, 0x33, 0x0a, 0x08, 0x4e, 0x6f, 0x64, 0x65, 0x54, 0x79, 0x70,
 	0x65, 0x12, 0x0a, 0x0a, 0x06, 0x77, 0x6f, 0x72, 0x6b, 0x65, 0x72, 0x10, 0x00, 0x12, 0x0a, 0x0a,
 	0x06, 0x6d, 0x61, 0x73, 0x74, 0x65, 0x72, 0x10, 0x01, 0x12, 0x0f, 0x0a, 0x0b, 0x61, 0x70, 0x69,
-	0x45, 0x6e, 0x64, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x10, 0x02, 0x2a, 0x25, 0x0a, 0x0e, 0x53, 0x74,
-	0x61, 0x74, 0x69, 0x63, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x12, 0x13, 0x0a, 0x0f,
-	0x53, 0x54, 0x41, 0x54, 0x49, 0x43, 0x5f, 0x50, 0x52, 0x4f, 0x56, 0x49, 0x44, 0x45, 0x52, 0x10,
-	0x00, 0x2a, 0x21, 0x0a, 0x0c, 0x53, 0x74, 0x61, 0x74, 0x69, 0x63, 0x52, 0x65, 0x67, 0x69, 0x6f,
-	0x6e, 0x12, 0x11, 0x0a, 0x0d, 0x53, 0x54, 0x41, 0x54, 0x49, 0x43, 0x5f, 0x52, 0x45, 0x47, 0x49,
-	0x4f, 0x4e, 0x10, 0x00, 0x2a, 0x1e, 0x0a, 0x0b, 0x43, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x54,
-	0x79, 0x70, 0x65, 0x12, 0x07, 0x0a, 0x03, 0x4b, 0x38, 0x73, 0x10, 0x00, 0x12, 0x06, 0x0a, 0x02,
-	0x4c, 0x42, 0x10, 0x01, 0x42, 0x0a, 0x5a, 0x08, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x70, 0x62,
-	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x45, 0x6e, 0x64, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x10, 0x02, 0x2a, 0x4d, 0x0a, 0x12, 0x53, 0x74,
+	0x61, 0x74, 0x69, 0x63, 0x4e, 0x6f, 0x64, 0x65, 0x70, 0x6f, 0x6f, 0x6c, 0x49, 0x6e, 0x66, 0x6f,
+	0x12, 0x13, 0x0a, 0x0f, 0x53, 0x54, 0x41, 0x54, 0x49, 0x43, 0x5f, 0x50, 0x52, 0x4f, 0x56, 0x49,
+	0x44, 0x45, 0x52, 0x10, 0x00, 0x12, 0x11, 0x0a, 0x0d, 0x53, 0x54, 0x41, 0x54, 0x49, 0x43, 0x5f,
+	0x52, 0x45, 0x47, 0x49, 0x4f, 0x4e, 0x10, 0x01, 0x12, 0x0f, 0x0a, 0x0b, 0x53, 0x54, 0x41, 0x54,
+	0x49, 0x43, 0x5f, 0x5a, 0x4f, 0x4e, 0x45, 0x10, 0x02, 0x2a, 0x1e, 0x0a, 0x0b, 0x43, 0x6c, 0x75,
+	0x73, 0x74, 0x65, 0x72, 0x54, 0x79, 0x70, 0x65, 0x12, 0x07, 0x0a, 0x03, 0x4b, 0x38, 0x73, 0x10,
+	0x00, 0x12, 0x06, 0x0a, 0x02, 0x4c, 0x42, 0x10, 0x01, 0x42, 0x0a, 0x5a, 0x08, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x2f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -2125,66 +2089,65 @@ func file_proto_config_proto_rawDescGZIP() []byte {
 	return file_proto_config_proto_rawDescData
 }
 
-var file_proto_config_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
+var file_proto_config_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
 var file_proto_config_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_proto_config_proto_goTypes = []interface{}{
 	(RoleType)(0),           // 0: claudie.RoleType
 	(Target)(0),             // 1: claudie.Target
 	(NodeType)(0),           // 2: claudie.NodeType
-	(StaticProvider)(0),     // 3: claudie.StaticProvider
-	(StaticRegion)(0),       // 4: claudie.StaticRegion
-	(ClusterType)(0),        // 5: claudie.ClusterType
-	(Workflow_Stage)(0),     // 6: claudie.Workflow.Stage
-	(Workflow_Status)(0),    // 7: claudie.Workflow.Status
-	(*Config)(nil),          // 8: claudie.Config
-	(*Workflow)(nil),        // 9: claudie.Workflow
-	(*Project)(nil),         // 10: claudie.Project
-	(*K8Scluster)(nil),      // 11: claudie.K8scluster
-	(*LBcluster)(nil),       // 12: claudie.LBcluster
-	(*ClusterInfo)(nil),     // 13: claudie.ClusterInfo
-	(*Role)(nil),            // 14: claudie.Role
-	(*DNS)(nil),             // 15: claudie.DNS
-	(*NodePool)(nil),        // 16: claudie.NodePool
-	(*Taint)(nil),           // 17: claudie.Taint
-	(*DynamicNodePool)(nil), // 18: claudie.DynamicNodePool
-	(*StaticNodePool)(nil),  // 19: claudie.StaticNodePool
-	(*AutoscalerConf)(nil),  // 20: claudie.AutoscalerConf
-	(*MetaValue)(nil),       // 21: claudie.MetaValue
-	(*Node)(nil),            // 22: claudie.Node
-	(*Provider)(nil),        // 23: claudie.Provider
-	nil,                     // 24: claudie.Config.StateEntry
-	nil,                     // 25: claudie.NodePool.LabelsEntry
-	nil,                     // 26: claudie.DynamicNodePool.MetadataEntry
-	nil,                     // 27: claudie.StaticNodePool.NodeKeysEntry
+	(StaticNodepoolInfo)(0), // 3: claudie.StaticNodepoolInfo
+	(ClusterType)(0),        // 4: claudie.ClusterType
+	(Workflow_Stage)(0),     // 5: claudie.Workflow.Stage
+	(Workflow_Status)(0),    // 6: claudie.Workflow.Status
+	(*Config)(nil),          // 7: claudie.Config
+	(*Workflow)(nil),        // 8: claudie.Workflow
+	(*Project)(nil),         // 9: claudie.Project
+	(*K8Scluster)(nil),      // 10: claudie.K8scluster
+	(*LBcluster)(nil),       // 11: claudie.LBcluster
+	(*ClusterInfo)(nil),     // 12: claudie.ClusterInfo
+	(*Role)(nil),            // 13: claudie.Role
+	(*DNS)(nil),             // 14: claudie.DNS
+	(*NodePool)(nil),        // 15: claudie.NodePool
+	(*Taint)(nil),           // 16: claudie.Taint
+	(*DynamicNodePool)(nil), // 17: claudie.DynamicNodePool
+	(*StaticNodePool)(nil),  // 18: claudie.StaticNodePool
+	(*AutoscalerConf)(nil),  // 19: claudie.AutoscalerConf
+	(*MetaValue)(nil),       // 20: claudie.MetaValue
+	(*Node)(nil),            // 21: claudie.Node
+	(*Provider)(nil),        // 22: claudie.Provider
+	nil,                     // 23: claudie.Config.StateEntry
+	nil,                     // 24: claudie.NodePool.LabelsEntry
+	nil,                     // 25: claudie.DynamicNodePool.MetadataEntry
+	nil,                     // 26: claudie.StaticNodePool.NodeKeysEntry
 }
 var file_proto_config_proto_depIdxs = []int32{
-	10, // 0: claudie.Config.desiredState:type_name -> claudie.Project
-	10, // 1: claudie.Config.currentState:type_name -> claudie.Project
-	24, // 2: claudie.Config.state:type_name -> claudie.Config.StateEntry
-	6,  // 3: claudie.Workflow.stage:type_name -> claudie.Workflow.Stage
-	7,  // 4: claudie.Workflow.status:type_name -> claudie.Workflow.Status
-	11, // 5: claudie.Project.clusters:type_name -> claudie.K8scluster
-	12, // 6: claudie.Project.loadBalancerClusters:type_name -> claudie.LBcluster
-	13, // 7: claudie.K8scluster.clusterInfo:type_name -> claudie.ClusterInfo
-	13, // 8: claudie.LBcluster.clusterInfo:type_name -> claudie.ClusterInfo
-	14, // 9: claudie.LBcluster.roles:type_name -> claudie.Role
-	15, // 10: claudie.LBcluster.dns:type_name -> claudie.DNS
-	16, // 11: claudie.ClusterInfo.nodePools:type_name -> claudie.NodePool
+	9,  // 0: claudie.Config.desiredState:type_name -> claudie.Project
+	9,  // 1: claudie.Config.currentState:type_name -> claudie.Project
+	23, // 2: claudie.Config.state:type_name -> claudie.Config.StateEntry
+	5,  // 3: claudie.Workflow.stage:type_name -> claudie.Workflow.Stage
+	6,  // 4: claudie.Workflow.status:type_name -> claudie.Workflow.Status
+	10, // 5: claudie.Project.clusters:type_name -> claudie.K8scluster
+	11, // 6: claudie.Project.loadBalancerClusters:type_name -> claudie.LBcluster
+	12, // 7: claudie.K8scluster.clusterInfo:type_name -> claudie.ClusterInfo
+	12, // 8: claudie.LBcluster.clusterInfo:type_name -> claudie.ClusterInfo
+	13, // 9: claudie.LBcluster.roles:type_name -> claudie.Role
+	14, // 10: claudie.LBcluster.dns:type_name -> claudie.DNS
+	15, // 11: claudie.ClusterInfo.nodePools:type_name -> claudie.NodePool
 	1,  // 12: claudie.Role.target:type_name -> claudie.Target
 	0,  // 13: claudie.Role.roleType:type_name -> claudie.RoleType
-	23, // 14: claudie.DNS.provider:type_name -> claudie.Provider
-	18, // 15: claudie.NodePool.dynamicNodePool:type_name -> claudie.DynamicNodePool
-	19, // 16: claudie.NodePool.staticNodePool:type_name -> claudie.StaticNodePool
-	22, // 17: claudie.NodePool.nodes:type_name -> claudie.Node
-	25, // 18: claudie.NodePool.labels:type_name -> claudie.NodePool.LabelsEntry
-	17, // 19: claudie.NodePool.taints:type_name -> claudie.Taint
-	23, // 20: claudie.DynamicNodePool.provider:type_name -> claudie.Provider
-	26, // 21: claudie.DynamicNodePool.metadata:type_name -> claudie.DynamicNodePool.MetadataEntry
-	20, // 22: claudie.DynamicNodePool.autoscalerConfig:type_name -> claudie.AutoscalerConf
-	27, // 23: claudie.StaticNodePool.nodeKeys:type_name -> claudie.StaticNodePool.NodeKeysEntry
+	22, // 14: claudie.DNS.provider:type_name -> claudie.Provider
+	17, // 15: claudie.NodePool.dynamicNodePool:type_name -> claudie.DynamicNodePool
+	18, // 16: claudie.NodePool.staticNodePool:type_name -> claudie.StaticNodePool
+	21, // 17: claudie.NodePool.nodes:type_name -> claudie.Node
+	24, // 18: claudie.NodePool.labels:type_name -> claudie.NodePool.LabelsEntry
+	16, // 19: claudie.NodePool.taints:type_name -> claudie.Taint
+	22, // 20: claudie.DynamicNodePool.provider:type_name -> claudie.Provider
+	25, // 21: claudie.DynamicNodePool.metadata:type_name -> claudie.DynamicNodePool.MetadataEntry
+	19, // 22: claudie.DynamicNodePool.autoscalerConfig:type_name -> claudie.AutoscalerConf
+	26, // 23: claudie.StaticNodePool.nodeKeys:type_name -> claudie.StaticNodePool.NodeKeysEntry
 	2,  // 24: claudie.Node.nodeType:type_name -> claudie.NodeType
-	9,  // 25: claudie.Config.StateEntry.value:type_name -> claudie.Workflow
-	21, // 26: claudie.DynamicNodePool.MetadataEntry.value:type_name -> claudie.MetaValue
+	8,  // 25: claudie.Config.StateEntry.value:type_name -> claudie.Workflow
+	20, // 26: claudie.DynamicNodePool.MetadataEntry.value:type_name -> claudie.MetaValue
 	27, // [27:27] is the sub-list for method output_type
 	27, // [27:27] is the sub-list for method input_type
 	27, // [27:27] is the sub-list for extension type_name
@@ -2403,7 +2366,7 @@ func file_proto_config_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_proto_config_proto_rawDesc,
-			NumEnums:      8,
+			NumEnums:      7,
 			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   0,
