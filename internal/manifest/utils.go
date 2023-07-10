@@ -2,7 +2,6 @@ package manifest
 
 import (
 	"fmt"
-
 	"github.com/berops/claudie/proto/pb"
 )
 
