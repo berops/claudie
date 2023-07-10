@@ -51,5 +51,23 @@ To deploy the Claudie `v0.4.X`, please:
 
 ### Known issues
 
-- Single node pool definition cannot be used as control plane and as compute plane in the same cluster. [#865](https://github.com/berops/claudie/issues/865)
+- Single node pool definition cannot be used as control plane and as compute plane in the same cluster [#865](https://github.com/berops/claudie/issues/865)
 - Input manifest status is not tracked during autoscaling [#886](https://github.com/berops/claudie/issues/886)
+
+## v0.4.1
+
+### Features
+
+- Add support for static nodepools, enabling Claudie to create hybrid-cloud or private clusters [#902](https://github.com/berops/claudie/pull/902)
+- Use new time format for Claudie generated logs [#919](https://github.com/berops/claudie/pull/919)
+- Allow reuse of the same nodepool definition as a control plane and compute plane [#936](https://github.com/berops/claudie/pull/936)
+- Rename Frontend service to Claudie-controller [#939](https://github.com/berops/claudie/pull/939)
+
+### Bugfixes
+
+- Fix Frontend not recognizing updates from Cluster Autoscaler [#901](https://github.com/berops/claudie/pull/901)
+- Use keep-alive settings to minimise impact of network disturbance between Claudie services [#903](https://github.com/berops/claudie/pull/903)
+
+### Known issues
+
+No known issues since the last release
