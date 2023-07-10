@@ -113,7 +113,7 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 				return fmt.Errorf("nodepool %q used inside cluster %q is not defined", pool, cluster.Name)
 			}
 			if _, ok := poolNames[pool]; ok {
-				return fmt.Errorf("nodepool %q used multiple times as a loadbalancer nodepool, this effect can be achieved by increasing the \"count\" field or adjusting the \"autoscaler\" field", pool)
+				return fmt.Errorf("nodepool %q used multiple times as a loadbalancer nodepool, this effect can be achieved by increasing the \"count\" field or defining a new nodepool with a different name", pool)
 			}
 			poolNames[pool] = true
 		}

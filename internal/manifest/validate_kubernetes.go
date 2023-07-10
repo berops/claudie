@@ -49,7 +49,7 @@ func (k *Kubernetes) Validate(m *Manifest) error {
 				return fmt.Errorf("control nodepool %q used inside cluster %q not defined inside manifest", pool, cluster.Name)
 			}
 			if _, ok := controlNames[pool]; ok {
-				return fmt.Errorf("nodepool %q used multiple times as control nodepool, this effect can be achieved by increasing the \"count\" field or adjusting the \"autoscaler\" field", pool)
+				return fmt.Errorf("nodepool %q used multiple times as control nodepool, this effect can be achieved by increasing the \"count\" field, adjusting the \"autoscaler\" field or defining a new nodepool with a different name", pool)
 			}
 			controlNames[pool] = true
 		}
@@ -59,7 +59,7 @@ func (k *Kubernetes) Validate(m *Manifest) error {
 				return fmt.Errorf("compute nodepool %q used inside cluster %q not defined inside manifest", pool, cluster.Name)
 			}
 			if _, ok := computeNames[pool]; ok {
-				return fmt.Errorf("nodepool %q used multiple times as compute nodepool, this effect can be achieved by increasing the \"count\" field or adjusting the \"autoscaler\" field", pool)
+				return fmt.Errorf("nodepool %q used multiple times as compute nodepool, this effect can be achieved by increasing the \"count\" field, adjusting the \"autoscaler\" field or defining a new nodepool with a different name", pool)
 			}
 			computeNames[pool] = true
 		}
