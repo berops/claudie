@@ -79,12 +79,15 @@ spec:
     #     count:            # Static number of nodes in this nodepool.
     #     serverType:       # Machine type of the nodes in this nodepool.
     #     image:            # OS image of the nodes in the nodepool.
-    #     storageDiskSize:  # Disk size of the storage disk for compute nodepool.
+    #     storageDiskSize:  # Disk size of the storage disk for compute nodepool. (optional)
     #     autoscaler:       # Autoscaler configuration. Mutually exclusive with Count.
     #       min:            # Minimum number of nodes in nodepool.
     #       max:            # Maximum number of nodes in nodepool.
-    #     labels:           # Map of custom user defined labels for this nodepool. This field is optional and is ignored if used in Loadbalancer cluster.
-    #     taints:           # Array of custom user defined taints for this nodepool. This field is optional and is ignored if used in Loadbalancer cluster.
+    #     labels:           # Map of custom user defined labels for this nodepool. This field is optional and is ignored if used in Loadbalancer cluster. (optional)
+    #     taints:           # Array of custom user defined taints for this nodepool. This field is optional and is ignored if used in Loadbalancer cluster. (optional)
+    #       - key:          # The taint key to be applied to a node.
+    #         value:        # The taint value corresponding to the taint key.
+    #         effect:       # The effect of the taint on pods that do not tolerate the taint.
     #
     # Example definitions for each provider
     dynamic:
@@ -246,6 +249,11 @@ spec:
     #         secretRef:    # Secret reference specification, holding private key which will be used to SSH into the node (as root).
     #           name:       # Name of the secret resource.
     #           namespace:  # Namespace of the secret resource.
+    #     labels:           # Map of custom user defined labels for this nodepool. This field is optional and is ignored if used in Loadbalancer cluster. (optional)
+    #     taints:           # Array of custom user defined taints for this nodepool. This field is optional and is ignored if used in Loadbalancer cluster. (optional)
+    #       - key:          # The taint key to be applied to a node.
+    #         value:        # The taint value corresponding to the taint key.
+    #         effect:       # The effect of the taint on pods that do not tolerate the taint.
     #
     # Example definitions
     static:
@@ -265,6 +273,11 @@ spec:
             secretRef:
               name: datacenter-1-key
               namespace: example-namespace
+        labels:
+          datacenter: datacenter-1
+        taints:
+          key: datacenter
+          effect: NoExecute
             
 
   # Kubernetes field is used to define the kubernetes clusters.

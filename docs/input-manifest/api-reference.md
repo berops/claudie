@@ -1,7 +1,9 @@
 # InputManifest API reference
+
 InputManifest is a definition of the user's infrastructure. It contains cloud provider specification, nodepool specification, Kubernetes and loadbalancer clusters.
 
 ## Status
+
 Most recently observed status of the InputManifest
 
 ## Spec
@@ -52,7 +54,6 @@ needs to be defined.
   Represents a Secret Reference. It has enough information to retrieve secret in any namespace.
 
 Support for more cloud providers is in the [roadmap](https://github.com/berops/claudie/blob/master/docs/roadmap/roadmap.md).
-
 
 ## SecretRef
   
@@ -223,26 +224,14 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 - `labels`
 
   Map of user defined labels, which will be applied on every node in the node pool. This field is optional.
-
-  By default, Claudie applies following labels on every node in the cluster, together with those defined by the user.
-
-  | Key                              | Value                                            |
-  | -------------------------------- | ------------------------------------------------ |
-  | `claudie.io/nodepool`            | Name of the node pool.                           |
-  | `claudie.io/provider`            | Cloud provider name.                             |
-  | `claudie.io/provider-instance`   | User defined provider name.                      |
-  | `claudie.io/node-type`           | Type of the node. Either `control` or `compute`. |
-  | `topology.kubernetes.io/region`  | Region where the node resides.                   |
-  | `topology.kubernetes.io/zone`    | Zone of the region where node resides.           |
-  | `kubernetes.io/os`               | Os family of the node.                           |
-  | `kubernetes.io/arch`             | Architecture type of the CPU.                    |
-  | `v1.kubeone.io/operating-system` | Os type of the node.                             |
+  
+  To see the default labels Claudie applies on each node, refer to [this section](#default-labels).
 
 - `taints` [v1.Taint](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#taint-v1-core)
 
   Array of user defined taints, which will be applied on every node in the node pool. This field is optional.
 
-  By default, Claudie applies only `node-role.kubernetes.io/control-plane` taint for control nodes, with effect `NoSchedule`, together with those defined by the user.
+  To see the default taints Claudie applies on each node, refer to [this section](#default-taints).
 
 ## Provider Spec
 
@@ -283,6 +272,18 @@ Static nodepools are defined for static machines which Claudie will not manage. 
 - `nodes` [Static Node](#static-node)
 
   List of static nodes for a particular static nodepool.
+
+- `labels`
+
+  Map of user defined labels, which will be applied on every node in the node pool. This field is optional.
+  
+  To see the default labels Claudie applies on each node, refer to [this section](#default-labels).
+
+- `taints` [v1.Taint](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#taint-v1-core)
+
+  Array of user defined taints, which will be applied on every node in the node pool. This field is optional.
+
+  To see the default taints Claudie applies on each node, refer to [this section](#default-taints).
 
 ## Static node
 
@@ -426,3 +427,23 @@ Collection of data Claudie uses to create a DNS record for the loadbalancer.
 - `hostname`
   
   Custom hostname for your A record. If left empty, the hostname will be a random hash.
+
+### Default labels
+
+  By default, Claudie applies following labels on every node in the cluster, together with those defined by the user.
+
+  | Key                              | Value                                            |
+  | -------------------------------- | ------------------------------------------------ |
+  | `claudie.io/nodepool`            | Name of the node pool.                           |
+  | `claudie.io/provider`            | Cloud provider name.                             |
+  | `claudie.io/provider-instance`   | User defined provider name.                      |
+  | `claudie.io/node-type`           | Type of the node. Either `control` or `compute`. |
+  | `topology.kubernetes.io/region`  | Region where the node resides.                   |
+  | `topology.kubernetes.io/zone`    | Zone of the region where node resides.           |
+  | `kubernetes.io/os`               | Os family of the node.                           |
+  | `kubernetes.io/arch`             | Architecture type of the CPU.                    |
+  | `v1.kubeone.io/operating-system` | Os type of the node.                             |
+
+### Default taints
+
+  By default, Claudie applies only `node-role.kubernetes.io/control-plane` taint for control plane nodes, with effect `NoSchedule`, together with those defined by the user.
