@@ -14,7 +14,13 @@ type (
 	// NodepoolInfo struct holds data necessary to define nodes in kubeone
 	// manifest.
 	NodepoolInfo struct {
-		Nodes []*NodeInfo
+		Nodes             []*NodeInfo
+		IsDynamic         bool
+		NodepoolName      string
+		Region            string
+		Zone              string
+		CloudProviderName string
+		ProviderName      string
 	}
 
 	// templateData struct holds the data which will be used in creating

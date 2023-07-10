@@ -151,7 +151,13 @@ func (k *KubeEleven) getClusterNodes() ([]*NodepoolInfo, *pb.Node) {
 			}
 
 			nodepoolInfo = &NodepoolInfo{
-				Nodes: nodes,
+				NodepoolName:      nodepool.Name,
+				Region:            utils.SanitiseString(nodepool.GetDynamicNodePool().Region),
+				Zone:              utils.SanitiseString(nodepool.GetDynamicNodePool().Zone),
+				CloudProviderName: utils.SanitiseString(nodepool.GetDynamicNodePool().Provider.CloudProviderName),
+				ProviderName:      utils.SanitiseString(nodepool.GetDynamicNodePool().Provider.SpecName),
+				Nodes:             nodes,
+				IsDynamic:         true,
 			}
 		} else if nodepool.GetStaticNodePool() != nil {
 			var nodes []*NodeInfo
@@ -160,7 +166,13 @@ func (k *KubeEleven) getClusterNodes() ([]*NodepoolInfo, *pb.Node) {
 				endpointNode = potentialEndpointNode
 			}
 			nodepoolInfo = &NodepoolInfo{
-				Nodes: nodes,
+				NodepoolName:      nodepool.Name,
+				Region:            utils.SanitiseString(staticRegion),
+				Zone:              utils.SanitiseString(staticZone),
+				CloudProviderName: utils.SanitiseString(staticProvider),
+				ProviderName:      utils.SanitiseString(staticProviderName),
+				Nodes:             nodes,
+				IsDynamic:         false,
 			}
 		}
 		nodepoolInfos = append(nodepoolInfos, nodepoolInfo)
