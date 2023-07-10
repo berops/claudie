@@ -123,10 +123,6 @@ spec:
         #ubuntu
         image: ami-03c476a1ca8e3ebdc
         storageDiskSize: 50
-        taints:
-          - key: test
-            value: test
-            effect: NoSchedule
 
       - name: azure-control
         providerSpec:
