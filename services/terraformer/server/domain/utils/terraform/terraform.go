@@ -55,22 +55,41 @@ func (t *Terraform) Apply() error {
 
 	cmd := exec.Command("terraform", "apply", "-json", "--auto-approve")
 	cmd.Dir = t.Directory
-	cmd.Stdout = io.MultiWriter(t.Stdout, output)
-	cmd.Stderr = io.MultiWriter(t.Stderr, output)
+
+	if cmd.Stdout == nil && cmd.Stderr == nil {
+		cmd.Stdout = output
+		cmd.Stderr = output
+	}
 
 	if err := cmd.Run(); err != nil {
+		command := "terraform apply -json --auto-approve"
+
+		l, err := collectErrors(output)
+		if err == nil {
+			log.Error().Msgf("failed to execute cmd: %s: %s", command, l.prettyPrint())
+		}
+		if err != nil {
+			log.Warn().Msgf("failed to parse errors from terraform logs: %v", err)
+		}
 		output.Reset()
 
 		log.Warn().Msgf("Error encountered while executing %s from %s: %v", cmd, t.Directory, err)
 
 		retryCmd := comm.Cmd{
-			Command: "terraform apply -json --auto-approve",
+			Command: command,
 			Dir:     t.Directory,
 			Stdout:  cmd.Stdout,
 			Stderr:  cmd.Stderr,
 		}
 
-		err := retryCmd.RetryCommandWithCallback(maxTfCommandRetryCount, func() error {
+		err = retryCmd.RetryCommandWithCallback(maxTfCommandRetryCount, func() error {
+			l, err := collectErrors(output)
+			if err != nil {
+				output.Reset()
+				log.Warn().Msgf("failed to parse errors from terraform logs: %v", err)
+				return nil
+			}
+			log.Error().Msgf("failed to execute cmd: %s: %s", retryCmd.Command, l.prettyPrint())
 			output.Reset()
 			return nil
 		})
@@ -95,22 +114,41 @@ func (t *Terraform) Destroy() error {
 
 	cmd := exec.Command("terraform", "destroy", "-json", "--auto-approve")
 	cmd.Dir = t.Directory
-	cmd.Stdout = io.MultiWriter(t.Stdout, output)
-	cmd.Stderr = io.MultiWriter(t.Stderr, output)
+
+	if cmd.Stdout == nil && cmd.Stderr == nil {
+		cmd.Stdout = output
+		cmd.Stderr = output
+	}
 
 	if err := cmd.Run(); err != nil {
+		command := "terraform destroy -json --auto-approve"
+
+		l, err := collectErrors(output)
+		if err == nil {
+			log.Error().Msgf("failed to execute cmd: %s: %s", command, l.prettyPrint())
+		}
+		if err != nil {
+			log.Warn().Msgf("failed to parse errors from terraform logs: %v", err)
+		}
 		output.Reset()
 
 		log.Warn().Msgf("Error encountered while executing %s from %s: %v", cmd, t.Directory, err)
 
 		retryCmd := comm.Cmd{
-			Command: "terraform destroy -json --auto-approve",
+			Command: command,
 			Dir:     t.Directory,
 			Stdout:  cmd.Stdout,
 			Stderr:  cmd.Stderr,
 		}
 
-		err := retryCmd.RetryCommandWithCallback(maxTfCommandRetryCount, func() error {
+		err = retryCmd.RetryCommandWithCallback(maxTfCommandRetryCount, func() error {
+			l, err := collectErrors(output)
+			if err != nil {
+				output.Reset()
+				log.Warn().Msgf("failed to parse errors from terraform logs: %v", err)
+				return nil
+			}
+			log.Error().Msgf("failed to execute cmd: %s: %s", retryCmd.Command, l.prettyPrint())
 			output.Reset()
 			return nil
 		})

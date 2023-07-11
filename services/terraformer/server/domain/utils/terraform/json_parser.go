@@ -109,6 +109,8 @@ func parseJSONLog(line []byte) (JSONLog, error) {
 	return s, nil
 }
 
+// collectErrors parses specific errors from a stream of json data, delimited by a new line, that the terraform
+// tool outputs with the `-json` flag.
 func collectErrors(reader io.Reader) (JSONLogs, error) {
 	s := bufio.NewScanner(reader)
 	s.Split(bufio.ScanLines)
