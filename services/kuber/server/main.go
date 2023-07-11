@@ -12,13 +12,13 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/services/kube-eleven/server/adapters/inbound/grpc"
-	"github.com/berops/claudie/services/kube-eleven/server/domain/usecases"
+	"github.com/berops/claudie/services/kuber/server/adapters/inbound/grpc"
+	"github.com/berops/claudie/services/kuber/server/domain/usecases"
 )
 
 func main() {
 	// Initialize logger
-	utils.InitLog("kube-eleven")
+	utils.InitLog("kuber")
 
 	usecases := &usecases.Usecases{}
 	grpcAdapter := grpc.GrpcAdapter{}
@@ -58,5 +58,5 @@ func main() {
 		return err
 	})
 
-	log.Info().Msgf("Stopping Kube-eleven microservice: %s", errGroup.Wait())
+	log.Info().Msgf("Stopping Kuber microservice: %s", errGroup.Wait())
 }

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/berops/claudie/services/kuber/server/nodes"
+	"github.com/berops/claudie/services/kuber/server/domain/utils/nodes"
 	k8sV1 "k8s.io/api/core/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
