@@ -233,7 +233,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
 12. Claudie creates kubeconfig secret in claudie namespace:
 
     ```bash
-    kubectl get secrets -l claudie.io/output=kubeconfig
+    kubectl get secrets -n claudie -l claudie.io/output=kubeconfig
     ```
     ```
     NAME                                  TYPE     DATA   AGE
