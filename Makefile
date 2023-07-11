@@ -1,4 +1,4 @@
-.PHONY: proto contextbox scheduler builder terraformer ansibler kubeEleven test database minio containerimgs crd crd-apply controller-gen
+.PHONY: proto contextbox scheduler builder terraformer ansibler kubeEleven test database minio containerimgs crd crd-apply controller-gen kind-load-images
 
 # Enforce same version of protoc 
 PROTOC_VERSION = "3.21.8"
@@ -38,12 +38,12 @@ kube-eleven:
 kuber:
 	GOLANG_LOG=debug go run ./services/kuber/server
 
-# Start Frontend service on a local environment
+# Start Claudie-operator service on a local environment
 # This is not necessary to have running on local environtment, to inject input manifest,
-# use API directly from either /services/context-box/client/client_test.go -run TestSaveConfigFrontEnd,
+# use API directly from either /services/context-box/client/client_test.go -run TestSaveConfigOperator,
 # or use testing-framework
-frontend:
-	GOLANG_LOG=debug go run ./services/frontend
+operator:
+	GOLANG_LOG=debug go run ./services/claudie-operator
 
 # Start the database for configs, containing input manifests
 mongo:
@@ -100,6 +100,12 @@ containerimgs:
 		DOCKER_BUILDKIT=1 docker build --build-arg=TARGETARCH="$(TARGETARCH)" -t "ghcr.io/berops/claudie/$$service:$(REV)" -f ./services/$$service/Dockerfile . ; \
 	done
 	sed -i "s/adapter:.*$$/adapter/" services/kuber/templates/cluster-autoscaler.goyaml
+
+kind-load-images:
+	for service in $(SERVICES) ; do \
+		echo " --- loading $$service to kind cluster --- "; \
+		kind load docker-image ghcr.io/berops/claudie/$$service:$(REV); \
+	done
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))

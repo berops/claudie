@@ -25,7 +25,7 @@ For more information, please have a look at [official Cluster Autoscaler documen
 
 As stated earlier, Claudie deploys Cluster Autoscaler and Autoscaler Adapter for every Claudie-made cluster which enables it. These components are deployed within the same cluster as Claudie.
 
-![autoscaling-architecture](autoscaling.jpg)
+![autoscaling-architecture](autoscaling.png)
 
 ## Considerations
 

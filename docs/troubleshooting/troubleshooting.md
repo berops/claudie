@@ -13,35 +13,54 @@ Claudie relies on all services to be interconnected. If any of these services fa
     ```
 
     ```text
-    NAME                           READY   STATUS      RESTARTS        AGE
-    ansibler-5c6c776b75-82c2q      1/1     Running     0               8m10s
-    builder-59f9d44596-n2qzm       1/1     Running     0               8m10s
-    context-box-5d76c89b4d-tb6h4   1/1     Running     1 (6m37s ago)   8m10s
-    create-table-job-jvs9n         0/1     Completed   1               8m10s
-    dynamodb-68777f9787-8wjhs      1/1     Running     0               8m10s
-    frontend-5755b7bc69-5l84h      1/1     Running     0               8m10s
-    kube-eleven-64468cd5bd-qp4d4   1/1     Running     0               8m10s
-    kuber-698c4564c-dhsvg          1/1     Running     0               8m10s
-    make-bucket-job-fb5sp          0/1     Completed   0               8m10s
-    minio-0                        1/1     Running     0               8m10s
-    minio-1                        1/1     Running     0               8m10s
-    minio-2                        1/1     Running     0               8m10s
-    minio-3                        1/1     Running     0               8m10s
-    mongodb-67bf769957-9ct5z       1/1     Running     0               8m10s
-    scheduler-654cbd4b97-qwtbf     1/1     Running     0               8m10s
-    terraformer-fd664b7ff-dd2h7    1/1     Running     0               8m9s
+    NAME                                   READY   STATUS      RESTARTS        AGE
+    ansibler-5c6c776b75-82c2q              1/1     Running     0               8m10s
+    builder-59f9d44596-n2qzm               1/1     Running     0               8m10s
+    context-box-5d76c89b4d-tb6h4           1/1     Running     1 (6m37s ago)   8m10s
+    create-table-job-jvs9n                 0/1     Completed   1               8m10s
+    dynamodb-68777f9787-8wjhs              1/1     Running     0               8m10s
+    claudie-operator-5755b7bc69-5l84h      1/1     Running     0               8m10s
+    kube-eleven-64468cd5bd-qp4d4           1/1     Running     0               8m10s
+    kuber-698c4564c-dhsvg                  1/1     Running     0               8m10s
+    make-bucket-job-fb5sp                  0/1     Completed   0               8m10s
+    minio-0                                1/1     Running     0               8m10s
+    minio-1                                1/1     Running     0               8m10s
+    minio-2                                1/1     Running     0               8m10s
+    minio-3                                1/1     Running     0               8m10s
+    mongodb-67bf769957-9ct5z               1/1     Running     0               8m10s
+    scheduler-654cbd4b97-qwtbf             1/1     Running     0               8m10s
+    terraformer-fd664b7ff-dd2h7            1/1     Running     0               8m9s
     ```
 
-1. Examine frontend service logs. The frontend service logs will provide insights into any issues during cluster bootstrap and identify the problematic service. If cluster creation fails despite all Claudie pods being scheduled, it may suggest lack of permissions for Claudie providers' credentials. In this case, frontend logs will point to Terrafomer service, and Terraformer service logs will provide detailed error output.
+2. Check the `InputManifest` resource status to find out what is the actual cluster state.
 
     ```bash
-    kubectl -n claudie logs -l app.kubernetes.io/name=frontend
+    kubectl get inputmanifests.claudie.io resourceName -o jsonpath={.status}
     ```
 
     ```text
-    6:04AM INF Using log with the level "info" module=frontend
-    6:04AM INF Frontend is ready to process input manifests module=frontend
-    6:04AM INF Frontend is ready to watch input manifest statuses module=frontend
+      {
+        "clusters": {
+          "one-of-my-cluster": {
+            "message": " installing VPN",
+            "phase": "ANSIBLER",
+            "state": "IN_PROGRESS"
+          }
+        },
+        "state": "IN_PROGRESS"
+      }    
+    ```
+
+3. Examine claudie-operator service logs. The claudie-operator service logs will provide insights into any issues during cluster bootstrap and identify the problematic service. If cluster creation fails despite all Claudie pods being scheduled, it may suggest lack of permissions for Claudie providers' credentials. In this case, operator logs will point to Terrafomer service, and Terraformer service logs will provide detailed error output.
+
+    ```bash
+    kubectl -n claudie logs -l app.kubernetes.io/name=claudie-operator
+    ```
+
+    ```text
+    6:04AM INF Using log with the level "info" module=claudie-operator
+    6:04AM INF Claudie-operator is ready to process input manifests module=claudie-operator
+    6:04AM INF Claudie-operator is ready to watch input manifest statuses module=claudie-operator
     ```
 
     !!! note "Debug log level"

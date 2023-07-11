@@ -8,7 +8,7 @@ on:
 
 env:
   ENV_FILE: .env
-  SERVICES: context-box scheduler builder terraformer ansibler kube-eleven kuber frontend autoscaler-adapter testing-framework
+  SERVICES: context-box scheduler builder terraformer ansibler kube-eleven kuber claudie-operator autoscaler-adapter testing-framework
 
 jobs:
   #--------------------------------------------------------------------------------------------------
@@ -260,7 +260,7 @@ jobs:
           wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
           tar xz && mv yq_linux_amd64 yq
 
-          NAME_HASH="frontend-role-binding-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}" ./yq e 'select(di == 0) * (select(.kind == "ClusterRoleBinding") | .metadata.name = strenv(NAME_HASH))' ./cluster-rbac/clusterrolebinding.yaml -i
+          NAME_HASH="claudie-operator-role-binding-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}" ./yq e 'select(di == 0) * (select(.kind == "ClusterRoleBinding") | .metadata.name = strenv(NAME_HASH))' ./cluster-rbac/clusterrolebinding.yaml -i
 
           kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
           kustomize build | kubectl apply -f -

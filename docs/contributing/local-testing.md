@@ -4,9 +4,9 @@ In order to speed up the development, Claudie can be run locally for initial tes
 
 ## Limitations of Claudie when running locally
 
-### Frontend/CRD testing
+### Claudie Operator/CRD testing
 
-The Frontend component as well as CRDs heavily relies on the Kubernetes cluster. However, with a little hacking, you can test them, by creating local cluster (minikube/kind/...), and exporting environment variable `KUBECONFIG` pointing to the local cluster Kubeconfig. Once you start the Frontend, it should pick up the Kubeconfig and you can use local cluster to deploy and test CRDs.
+The Operator component as well as CRDs heavily relies on the Kubernetes cluster. However, with a little hacking, you can test them, by creating local cluster (minikube/kind/...), and exporting environment variable `KUBECONFIG` pointing to the local cluster Kubeconfig. Once you start the Claudie Operator, it should pick up the Kubeconfig and you can use local cluster to deploy and test CRDs.
 
 ### Autoscaling testing
 
@@ -179,7 +179,7 @@ loadBalancers:
 
 ### Test Claudie using manual manifest injection
 
-To test Claudie in a more "manual" way, you can use the test client to inject an input manifest. The code for the client can be found in `services/context-box/client/client_test.go`, specifically in the `TestSaveConfigFrontEnd` function.
+To test Claudie in a more "manual" way, you can use the test client to inject an input manifest. The code for the client can be found in `services/context-box/client/client_test.go`, specifically in the `TestSaveConfigOperator` function.
 
 In this function, the input manifest (in raw YAML format, not CRD) is located based on the `manifestFile` variable and applied to Claudie. It's important to note that this method of testing does not provide automatic clean up or verification of Longhorn deployment. Therefore, exercise caution when using this testing approach.
 

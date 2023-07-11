@@ -80,7 +80,7 @@ func (c *ContextBoxConnector) GetAllConfigs() ([]*pb.Config, error) {
 
 // SaveConfig sends request to the context-box microservice, to save a config in context-box DB.
 func (c *ContextBoxConnector) SaveConfig(config *pb.Config) error {
-	_, err := cbox.SaveConfigFrontEnd(c.grpcClient, &pb.SaveConfigRequest{Config: config})
+	_, err := cbox.SaveConfigOperator(c.grpcClient, &pb.SaveConfigRequest{Config: config})
 	return err
 }
 

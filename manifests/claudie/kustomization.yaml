@@ -2,7 +2,7 @@ namespace: claudie
 resources:
 - crd
 - ns.yaml
-- frontend.yaml
+- operator.yaml
 - context-box.yaml
 - scheduler.yaml
 - builder.yaml
@@ -56,20 +56,20 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
 - name: ghcr.io/berops/claudie/ansibler
-  newTag: e6a6d31-2191
+  newTag: 3400d9a-2195
 - name: ghcr.io/berops/claudie/autoscaler-adapter
   newTag: 688726a-1932
 - name: ghcr.io/berops/claudie/builder
-  newTag: e6a6d31-2191
+  newTag: 3400d9a-2195
+- name: ghcr.io/berops/claudie/claudie-operator
+  newTag: 3400d9a-2195
 - name: ghcr.io/berops/claudie/context-box
-  newTag: e6a6d31-2191
-- name: ghcr.io/berops/claudie/frontend
-  newTag: e6a6d31-2191
+  newTag: 3400d9a-2195
 - name: ghcr.io/berops/claudie/kube-eleven
-  newTag: e6a6d31-2191
+  newTag: 3400d9a-2195
 - name: ghcr.io/berops/claudie/kuber
-  newTag: e6a6d31-2191
+  newTag: 3400d9a-2195
 - name: ghcr.io/berops/claudie/scheduler
-  newTag: e6a6d31-2191
+  newTag: 3400d9a-2195
 - name: ghcr.io/berops/claudie/terraformer
-  newTag: e6a6d31-2191
+  newTag: 3400d9a-2195

@@ -22,11 +22,11 @@ const (
 // function to be used for saving
 type saveFunction func(context.Context, *pb.SaveConfigRequest, ...grpc.CallOption) (*pb.SaveConfigResponse, error)
 
-// SaveConfigFrontEnd calls Content-box gRPC server and saves configuration to the database
+// SaveConfigOperator calls Content-box gRPC server and saves configuration to the database
 // A new config file with Id will be created if ID is empty
 // if successful, returns id of the saved config, error and empty string otherwise
-func SaveConfigFrontEnd(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest) (string, error) {
-	res, err := saveConfig(req, c.SaveConfigFrontEnd)
+func SaveConfigOperator(c pb.ContextBoxServiceClient, req *pb.SaveConfigRequest) (string, error) {
+	res, err := saveConfig(req, c.SaveConfigOperator)
 	if err != nil {
 		return "", err
 	} else {
