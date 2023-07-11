@@ -3,8 +3,10 @@ package terraform
 import (
 	"bytes"
 	"fmt"
+	"github.com/rs/zerolog"
 	"io"
 	"os/exec"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 
@@ -53,7 +55,16 @@ func (t *Terraform) Init() error {
 func (t *Terraform) Apply() error {
 	output := new(bytes.Buffer)
 
-	cmd := exec.Command("terraform", "apply", "-json", "--auto-approve")
+	args := []string{
+		"apply",
+		"--auto-approve",
+	}
+
+	if log.Logger.GetLevel() != zerolog.DebugLevel {
+		args = append(args, "-json")
+	}
+
+	cmd := exec.Command("terraform", args...)
 	cmd.Dir = t.Directory
 
 	if cmd.Stdout == nil && cmd.Stderr == nil {
@@ -62,7 +73,7 @@ func (t *Terraform) Apply() error {
 	}
 
 	if err := cmd.Run(); err != nil {
-		command := "terraform apply -json --auto-approve"
+		command := fmt.Sprintf("terraform %s", strings.Join(args, " "))
 
 		l, err := collectErrors(output)
 		if err == nil {
@@ -112,7 +123,16 @@ func (t *Terraform) Apply() error {
 func (t *Terraform) Destroy() error {
 	output := new(bytes.Buffer)
 
-	cmd := exec.Command("terraform", "destroy", "-json", "--auto-approve")
+	args := []string{
+		"destroy",
+		"--auto-approve",
+	}
+
+	if log.Logger.GetLevel() != zerolog.DebugLevel {
+		args = append(args, "-json")
+	}
+
+	cmd := exec.Command("terraform", args...)
 	cmd.Dir = t.Directory
 
 	if cmd.Stdout == nil && cmd.Stderr == nil {
@@ -121,7 +141,7 @@ func (t *Terraform) Destroy() error {
 	}
 
 	if err := cmd.Run(); err != nil {
-		command := "terraform destroy -json --auto-approve"
+		command := fmt.Sprintf("terraform %s", strings.Join(args, " "))
 
 		l, err := collectErrors(output)
 		if err == nil {
