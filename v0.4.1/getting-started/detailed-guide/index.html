@@ -1292,7 +1292,7 @@ Here’s an example of <code>.status</code> fields in the <code>InputManifest</c
 </li>
 <li>
 <p>Claudie creates kubeconfig secret in claudie namespace:</p>
-<p><div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>secrets<span class="w"> </span>-l<span class="w"> </span>claudie.io/output<span class="o">=</span>kubeconfig
+<p><div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>secrets<span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span>-l<span class="w"> </span>claudie.io/output<span class="o">=</span>kubeconfig
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>NAME                                  TYPE     DATA   AGE
 my-super-cluster-6ktx6rb-kubeconfig   Opaque   1      134m
