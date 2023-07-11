@@ -87,8 +87,8 @@ func (sc *ScrapeConfig) GenerateAndApplyScrapeConfig() error {
 	return nil
 }
 
-// RemoveIfNoLbScrapeConfig will remove the LB scrape-config.yml
-func (sc *ScrapeConfig) RemoveLbScrapeConfig() error {
+// RemoveIfNoLBScrapeConfig will remove the LB scrape-config.yml
+func (sc *ScrapeConfig) RemoveLBScrapeConfig() error {
 	k := kubectl.Kubectl{Kubeconfig: sc.Cluster.Kubeconfig, MaxKubectlRetries: 3}
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
 		prefix := utils.GetClusterID(sc.Cluster.ClusterInfo)

@@ -12,7 +12,7 @@ import (
 
 // RemoveLBScrapeConfig deletes the Kubernetes secret containing Prometheus scrape config related to
 // the LB clusters attached to given K8s cluster.
-func (u *Usecases) RemoveLBScrapeConfig(ctx context.Context, request *pb.RemoveLbScrapeConfigRequest) (*pb.RemoveLbScrapeConfigResponse, error) {
+func (u *Usecases) RemoveLBScrapeConfig(ctx context.Context, request *pb.RemoveLBScrapeConfigRequest) (*pb.RemoveLBScrapeConfigResponse, error) {
 	tempClusterID := fmt.Sprintf("%s-%s", request.Cluster.ClusterInfo.Name, utils.CreateHash(5))
 	clusterID := utils.GetClusterID(request.Cluster.ClusterInfo)
 	clusterDir := filepath.Join(outputDir, tempClusterID)
@@ -25,11 +25,11 @@ func (u *Usecases) RemoveLBScrapeConfig(ctx context.Context, request *pb.RemoveL
 		Directory: clusterDir,
 	}
 
-	if err := sc.RemoveLbScrapeConfig(); err != nil {
+	if err := sc.RemoveLBScrapeConfig(); err != nil {
 		logger.Err(err).Msgf("Error while removing scrape config for Loadbalancer nodes")
 		return nil, fmt.Errorf("error while removing old loadbalancer scrape-config for %s : %w", clusterID, err)
 	}
 	logger.Info().Msgf("Load balancer scrape-config successfully deleted")
 
-	return &pb.RemoveLbScrapeConfigResponse{}, nil
+	return &pb.RemoveLBScrapeConfigResponse{}, nil
 }

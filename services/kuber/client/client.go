@@ -39,18 +39,18 @@ func DeleteNodes(c pb.KuberServiceClient, req *pb.DeleteNodesRequest) (*pb.Delet
 	return res, nil
 }
 
-func RemoveLbScrapeConfig(c pb.KuberServiceClient, req *pb.RemoveLbScrapeConfigRequest) (*pb.RemoveLbScrapeConfigResponse, error) {
-	res, err := c.RemoveLbScrapeConfig(context.Background(), req)
+func RemoveLBScrapeConfig(c pb.KuberServiceClient, req *pb.RemoveLBScrapeConfigRequest) (*pb.RemoveLBScrapeConfigResponse, error) {
+	res, err := c.RemoveLBScrapeConfig(context.Background(), req)
 	if err != nil {
-		return nil, fmt.Errorf("error while calling RemoveLbScrapeConfig: %w", err)
+		return nil, fmt.Errorf("error while calling RemoveLBScrapeConfig: %w", err)
 	}
 	return res, nil
 }
 
-func StoreLbScrapeConfig(c pb.KuberServiceClient, req *pb.StoreLbScrapeConfigRequest) (*pb.StoreLbScrapeConfigResponse, error) {
-	res, err := c.StoreLbScrapeConfig(context.Background(), req)
+func StoreLBScrapeConfig(c pb.KuberServiceClient, req *pb.StoreLBScrapeConfigRequest) (*pb.StoreLBScrapeConfigResponse, error) {
+	res, err := c.StoreLBScrapeConfig(context.Background(), req)
 	if err != nil {
-		return nil, fmt.Errorf("error while calling StoreLbScrapeConfig: %w", err)
+		return nil, fmt.Errorf("error while calling StoreLBScrapeConfig: %w", err)
 	}
 
 	return res, nil

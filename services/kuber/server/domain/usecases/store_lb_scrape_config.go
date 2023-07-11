@@ -10,7 +10,7 @@ import (
 	scrapeconfig "github.com/berops/claudie/services/kuber/server/domain/utils/scrape-config"
 )
 
-func (u *Usecases) StoreLbScrapeConfig(ctx context.Context, req *pb.StoreLbScrapeConfigRequest) (*pb.StoreLbScrapeConfigResponse, error) {
+func (u *Usecases) StoreLBScrapeConfig(ctx context.Context, req *pb.StoreLBScrapeConfigRequest) (*pb.StoreLBScrapeConfigResponse, error) {
 	clusterID := utils.GetClusterID(req.Cluster.ClusterInfo)
 	logger := utils.CreateLoggerWithClusterName(clusterID)
 
@@ -29,5 +29,5 @@ func (u *Usecases) StoreLbScrapeConfig(ctx context.Context, req *pb.StoreLbScrap
 	}
 	logger.Info().Msgf("Loadbalancer scrape-config successfully set up")
 
-	return &pb.StoreLbScrapeConfigResponse{}, nil
+	return &pb.StoreLBScrapeConfigResponse{}, nil
 }
