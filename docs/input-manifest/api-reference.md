@@ -75,7 +75,7 @@ To find out how to configure Cloudflare follow the instructions [here](./provide
 
   Credentials for the provider (API token).
 
-## HetznerDNS
+### HetznerDNS
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the HetznerDNS provider.
 To find out how to configure HetznerDNS follow the instructions [here](./providers/hetzner.md)
@@ -84,7 +84,7 @@ To find out how to configure HetznerDNS follow the instructions [here](./provide
 
   Credentials for the provider (API token).
 
-## GCP
+### GCP
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the GCP provider.
 To find out how to configure GCP provider and service account, follow the instructions [here](./providers/gcp.md).
@@ -97,7 +97,7 @@ To find out how to configure GCP provider and service account, follow the instru
 
   Project id of an already existing GCP project where the infrastructure is to be created.
 
-## Hetzner
+### Hetzner
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the Hetzner provider.
 To find out how to configure Hetzner provider and service account, follow the instructions [here](./providers/hetzner.md).
@@ -106,7 +106,7 @@ To find out how to configure Hetzner provider and service account, follow the in
 
   Credentials for the provider (API token).
 
-## OCI
+### OCI
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the OCI provider.
 To find out how to configure OCI provider and service account, follow the instructions [here](./providers/oci.md).
@@ -131,7 +131,7 @@ To find out how to configure OCI provider and service account, follow the instru
 
   OCID of the [compartment](https://docs.oracle.com/en/cloud/paas/integration-cloud/oracle-integration-oci/creating-oci-compartment.html) where VMs/VCNs/... will be created
 
-## AWS
+### AWS
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the AWS provider.
 To find out how to configure AWS provider and service account, follow the instructions [here](./providers/aws.md).
@@ -144,7 +144,7 @@ To find out how to configure AWS provider and service account, follow the instru
 
   Secret key for the Access key specified above.
 
-## Azure
+### Azure
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the Azure provider.
 To find out how to configure Azure provider and service account, follow the instructions [here](./providers/azure.md).
