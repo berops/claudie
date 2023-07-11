@@ -12,6 +12,7 @@ import (
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/services/kuber/server/manifests"
 	"github.com/berops/claudie/services/kuber/templates"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -34,12 +35,10 @@ type enableCA struct {
 }
 
 const (
-	longhornYaml         = "services/kuber/server/manifests/longhorn.yaml"
-	longhornDefaultsYaml = "services/kuber/server/manifests/claudie-defaults.yaml"
-	longhornEnableCaTpl  = "enable-ca.goyaml"
-	storageManifestTpl   = "storage-class.goyaml"
-	defaultSC            = "longhorn"
-	storageClassLabel    = "claudie.io/provider-instance"
+	longhornEnableCaTpl = "enable-ca.goyaml"
+	storageManifestTpl  = "storage-class.goyaml"
+	defaultSC           = "longhorn"
+	storageClassLabel   = "claudie.io/provider-instance"
 )
 
 // SetUp function will set up the longhorn on the k8s cluster saved in l.Longhorn
@@ -216,12 +215,12 @@ func (l *Longhorn) deleteOldStorageClasses(existing, applied []string, kc kubect
 
 func (l *Longhorn) applyManifests(kc kubectl.Kubectl) error {
 	// Apply longhorn.yaml
-	if err := kc.KubectlApply(longhornYaml); err != nil {
+	if err := kc.KubectlApplyString(manifests.LonghornManifest); err != nil {
 		return fmt.Errorf("error while applying longhorn.yaml in %s : %w", l.Directory, err)
 	}
 	// Apply longhorn setting
-	if err := kc.KubectlApply(longhornDefaultsYaml, ""); err != nil {
-		return fmt.Errorf("error while applying settings for longhorn in %s : %w", l.Directory, err)
+	if err := kc.KubectlApplyString(manifests.ClaudieDefaultSettings); err != nil {
+		return fmt.Errorf("error while applying claudie default settings for longhorn in %s : %w", l.Directory, err)
 	}
 	return nil
 }
