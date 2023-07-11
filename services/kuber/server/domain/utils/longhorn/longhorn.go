@@ -213,6 +213,7 @@ func (l *Longhorn) deleteOldStorageClasses(existing, applied []string, kc kubect
 	return nil
 }
 
+// applyManifests applies longhorn manifests to the managed cluster.
 func (l *Longhorn) applyManifests(kc kubectl.Kubectl) error {
 	// Apply longhorn.yaml
 	if err := kc.KubectlApplyString(manifests.LonghornManifest); err != nil {

@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	caData = AutoscalerDeploymentData{
+	caData = autoscalerDeploymentData{
 		ClusterID:   "test-cluster-kjbansc",
 		AdapterPort: "50000",
 		ClusterName: "test-cluster",

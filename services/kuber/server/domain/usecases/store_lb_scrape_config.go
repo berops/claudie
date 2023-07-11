@@ -7,7 +7,7 @@ import (
 
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
-	scrapeconfig "github.com/berops/claudie/services/kuber/server/domain/utils/scrapeConfig"
+	scrapeconfig "github.com/berops/claudie/services/kuber/server/domain/utils/scrape-config"
 )
 
 func (u *Usecases) StoreLbScrapeConfig(ctx context.Context, req *pb.StoreLbScrapeConfigRequest) (*pb.StoreLbScrapeConfigResponse, error) {

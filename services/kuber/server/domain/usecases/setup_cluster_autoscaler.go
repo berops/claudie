@@ -31,8 +31,8 @@ func (u *Usecases) SetUpClusterAutoscaler(ctx context.Context, request *pb.SetUp
 	}
 
 	// Set up cluster autoscaler.
-	autoscalerBuilder := autoscaler.NewAutoscalerBuilder(request.ProjectName, request.Cluster, clusterDir)
-	if err := autoscalerBuilder.SetUpClusterAutoscaler(); err != nil {
+	autoscalerManager := autoscaler.NewAutoscalerManager(request.ProjectName, request.Cluster, clusterDir)
+	if err := autoscalerManager.SetUpClusterAutoscaler(); err != nil {
 		return nil, fmt.Errorf("error while setting up cluster autoscaler for %s : %w", clusterID, err)
 	}
 	return &pb.SetUpClusterAutoscalerResponse{}, nil

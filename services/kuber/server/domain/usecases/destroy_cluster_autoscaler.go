@@ -34,8 +34,8 @@ func (u *Usecases) DestroyClusterAutoscaler(ctx context.Context, request *pb.Des
 
 	// Destroy cluster autoscaler.
 	logger.Info().Msgf("Destroying Cluster Autoscaler deployment")
-	autoscalerBuilder := autoscaler.NewAutoscalerBuilder(request.ProjectName, request.Cluster, clusterDir)
-	if err = autoscalerBuilder.DestroyClusterAutoscaler(); err != nil {
+	autoscalerManager := autoscaler.NewAutoscalerManager(request.ProjectName, request.Cluster, clusterDir)
+	if err := autoscalerManager.DestroyClusterAutoscaler(); err != nil {
 		return nil, fmt.Errorf("error while destroying cluster autoscaler for %s : %w", clusterID, err)
 	}
 
