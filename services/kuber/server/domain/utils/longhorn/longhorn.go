@@ -12,7 +12,7 @@ import (
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
-	"github.com/berops/claudie/services/kuber/server/manifests"
+	"github.com/berops/claudie/services/kuber/manifests"
 	"github.com/berops/claudie/services/kuber/templates"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"

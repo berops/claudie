@@ -43,7 +43,7 @@ func main() {
 
 		case shutdownSignal := <-shutdownSignalChan:
 			log.Info().Msgf("Received program shutdown signal %v", shutdownSignal)
-			err = errors.New("Program interruption signal")
+			err = errors.New("program interruption signal")
 		}
 
 		// Performing graceful shutdown.
