@@ -1,5 +1,5 @@
 # GCP
-GCP provider requires you to input multiline `credentials` as well as specific GCP project `gcpproject` where to provision resources.
+GCP provider requires you to input multiline `credentials` as well as specific GCP project ID `gcpproject` where to provision resources.
 
 ## Compute and DNS example
 
