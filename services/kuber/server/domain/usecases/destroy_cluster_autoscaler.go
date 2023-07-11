@@ -10,30 +10,34 @@ import (
 	"github.com/berops/claudie/services/kuber/server/domain/utils/autoscaler"
 )
 
-func (u *Usecases) SetUpClusterAutoscaler(ctx context.Context, request *pb.SetUpClusterAutoscalerRequest) (*pb.SetUpClusterAutoscalerResponse, error) {
+// DestroyClusterAutoscaler removes deployment of Cluster Autoscaler from the management cluster for given k8s cluster.
+func (u *Usecases) DestroyClusterAutoscaler(ctx context.Context, request *pb.DestroyClusterAutoscalerRequest) (*pb.DestroyClusterAutoscalerResponse, error) {
 	// Create output dir
 	tempClusterID := fmt.Sprintf("%s-%s", request.Cluster.ClusterInfo.Name, utils.CreateHash(5))
 	clusterID := utils.GetClusterID(request.Cluster.ClusterInfo)
 	clusterDir := filepath.Join(outputDir, tempClusterID)
 	logger := utils.CreateLoggerWithClusterName(clusterID)
+
 	var err error
 	// Log success/error message.
 	defer func() {
 		if err != nil {
-			logger.Err(err).Msgf("Error while setting up cluster autoscaler")
+			logger.Err(err).Msgf("Error while destroying cluster autoscaler")
 		} else {
-			logger.Info().Msgf("Cluster autoscaler successfully set up")
+			logger.Info().Msgf("Cluster autoscaler successfully destroyed")
 		}
 	}()
 
-	if err := utils.CreateDirectory(clusterDir); err != nil {
+	if err = utils.CreateDirectory(clusterDir); err != nil {
 		return nil, fmt.Errorf("error while creating directory %s : %w", clusterDir, err)
 	}
 
-	// Set up cluster autoscaler.
+	// Destroy cluster autoscaler.
+	logger.Info().Msgf("Destroying Cluster Autoscaler deployment")
 	autoscalerBuilder := autoscaler.NewAutoscalerBuilder(request.ProjectName, request.Cluster, clusterDir)
-	if err := autoscalerBuilder.SetUpClusterAutoscaler(); err != nil {
-		return nil, fmt.Errorf("error while setting up cluster autoscaler for %s : %w", clusterID, err)
+	if err = autoscalerBuilder.DestroyClusterAutoscaler(); err != nil {
+		return nil, fmt.Errorf("error while destroying cluster autoscaler for %s : %w", clusterID, err)
 	}
-	return &pb.SetUpClusterAutoscalerResponse{}, nil
+
+	return &pb.DestroyClusterAutoscalerResponse{}, nil
 }

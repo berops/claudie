@@ -9,13 +9,16 @@ import (
 	"github.com/berops/claudie/services/kuber/server/domain/utils/nodes"
 )
 
+// PatchNodes uses kube API patch to set correct metadata for nodes.
 func (u *Usecases) PatchNodes(ctx context.Context, request *pb.PatchNodeTemplateRequest) (*pb.PatchNodeTemplateResponse, error) {
-	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(request.Cluster.ClusterInfo))
+	clusterID := utils.GetClusterID(request.Cluster.ClusterInfo)
+	logger := utils.CreateLoggerWithClusterName(clusterID)
 
+	logger.Info().Msgf("Patching kubernetes nodes")
 	patcher := nodes.NewPatcher(request.Cluster)
 	if err := patcher.PatchProviderID(logger); err != nil {
 		logger.Err(err).Msgf("Error while patching nodes")
-		return nil, fmt.Errorf("error while patching nodes for %s : %w", request.Cluster.ClusterInfo.Name, err)
+		return nil, fmt.Errorf("error while patching nodes for %s : %w", clusterID, err)
 	}
 
 	logger.Info().Msgf("Nodes were successfully patched")

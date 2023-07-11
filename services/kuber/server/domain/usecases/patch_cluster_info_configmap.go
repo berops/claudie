@@ -25,9 +25,9 @@ func (u *Usecases) PatchClusterInfoConfigMap(request *pb.PatchClusterInfoConfigM
 	// Log error if any
 	defer func() {
 		if err != nil {
-			logger.Err(err).Msgf("Error while patching cluster info Config Map")
+			logger.Err(err).Msgf("Error while patching cluster-info Config Map")
 		} else {
-			logger.Info().Msgf("Cluster info Config Map patched successfully")
+			logger.Info().Msgf("Cluster-info Config Map patched successfully")
 		}
 	}()
 
@@ -41,6 +41,7 @@ func (u *Usecases) PatchClusterInfoConfigMap(request *pb.PatchClusterInfoConfigM
 	}
 
 	if configMap == nil {
+		logger.Warn().Msgf("Cluster-info config map was not found in the cluster")
 		return &pb.PatchClusterInfoConfigMapResponse{}, nil
 	}
 
@@ -48,12 +49,12 @@ func (u *Usecases) PatchClusterInfoConfigMap(request *pb.PatchClusterInfoConfigM
 
 	var rawKubeconfig map[string]interface{}
 	if err = yaml.Unmarshal([]byte(request.DesiredCluster.Kubeconfig), &rawKubeconfig); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal kubeconfig, malformed yaml")
+		return nil, fmt.Errorf("failed to unmarshal kubeconfig, malformed yaml : %w", err)
 	}
 
 	var rawConfigMapKubeconfig map[string]interface{}
 	if err = yaml.Unmarshal([]byte(configMapKubeconfig.String()), &rawConfigMapKubeconfig); err != nil {
-		return nil, fmt.Errorf("failed to update cluster info config map, malformed yaml")
+		return nil, fmt.Errorf("failed to update cluster info config map, malformed yaml : %w", err)
 	}
 
 	// Kubeadm uses this config when joining nodes thus we need to update it with the new endpoint
@@ -77,12 +78,12 @@ func (u *Usecases) PatchClusterInfoConfigMap(request *pb.PatchClusterInfoConfigM
 
 	b, err := yaml.Marshal(rawConfigMapKubeconfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal patched config map")
+		return nil, fmt.Errorf("failed to marshal patched config map : %w", err)
 	}
 
 	patchedConfigMap, err := sjson.Set(string(configMap), "data.kubeconfig", b)
 	if err != nil {
-		return nil, fmt.Errorf("failed to update config map with new kubeconfig")
+		return nil, fmt.Errorf("failed to update config map with new kubeconfig : %w", err)
 	}
 
 	if err = k.KubectlApplyString(patchedConfigMap, "-n kube-public"); err != nil {

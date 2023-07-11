@@ -18,24 +18,30 @@ import (
 func (u *Usecases) DeleteClusterMetadata(ctx context.Context, request *pb.DeleteClusterMetadataRequest) (*pb.DeleteClusterMetadataResponse, error) {
 	namespace := envs.Namespace
 	if namespace == "" {
+		// If kuber deployed locally, return.
 		return &pb.DeleteClusterMetadataResponse{}, nil
 	}
+	clusterID := utils.GetClusterID(request.Cluster.ClusterInfo)
+	logger := utils.CreateLoggerWithClusterName(clusterID)
+	var err error
+	// Log success/error message.
+	defer func() {
+		if err != nil {
+			logger.Warn().Msgf("Failed to remove cluster metadata, secret most likely already removed : %v", err)
+		} else {
+			logger.Info().Msgf("Deleted cluster metadata secret")
+		}
+	}()
 
-	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(request.Cluster.ClusterInfo))
 	logger.Info().Msgf("Deleting cluster metadata secret")
-
 	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
 		prefix := utils.GetClusterID(request.Cluster.ClusterInfo)
 		kc.Stdout = comm.GetStdOut(prefix)
 		kc.Stderr = comm.GetStdErr(prefix)
 	}
-	secretName := fmt.Sprintf("%s-%s-metadata", request.Cluster.ClusterInfo.Name, request.Cluster.ClusterInfo.Hash)
-	if err := kc.KubectlDeleteResource("secret", secretName, "-n", namespace); err != nil {
-		logger.Warn().Msgf("Failed to remove cluster metadata: %s", err)
-		return &pb.DeleteClusterMetadataResponse{}, nil
-	}
 
-	logger.Info().Msgf("Deleted cluster metadata secret")
+	// Save error and return as errors are ignored here.
+	err = kc.KubectlDeleteResource("secret", fmt.Sprintf("%s-metadata", clusterID), "-n", namespace)
 	return &pb.DeleteClusterMetadataResponse{}, nil
 }

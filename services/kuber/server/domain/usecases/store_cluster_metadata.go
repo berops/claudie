@@ -51,7 +51,7 @@ func (u *Usecases) StoreClusterMetadata(ctx context.Context, request *pb.StoreCl
 	}
 
 	// local deployment - print metadata
-	if namespace := envs.Namespace; namespace == "" {
+	if envs.Namespace == "" {
 		// NOTE: DEBUG print
 		// var buffer bytes.Buffer
 		// for node, ips := range md.NodeIps {

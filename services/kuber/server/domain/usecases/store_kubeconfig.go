@@ -14,18 +14,17 @@ import (
 )
 
 func (u *Usecases) StoreKubeconfig(ctx context.Context, request *pb.StoreKubeconfigRequest) (*pb.StoreKubeconfigResponse, error) {
-	// local deployment - print kubeconfig
 	cluster := request.GetCluster()
 	clusterID := cutils.GetClusterID(request.Cluster.ClusterInfo)
 	logger := cutils.CreateLoggerWithClusterName(clusterID)
-	if namespace := envs.Namespace; namespace == "" {
+
+	if envs.Namespace == "" {
 		//NOTE: DEBUG print
 		// logger.Info().Msgf("The kubeconfig for %s\n%s:", clusterID, cluster.Kubeconfig)
 		return &pb.StoreKubeconfigResponse{}, nil
 	}
 
 	logger.Info().Msgf("Storing kubeconfig")
-
 	clusterDir := filepath.Join(outputDir, clusterID)
 	sec := secret.New(clusterDir, secret.NewYaml(
 		utils.GetSecretMetadata(request.Cluster.ClusterInfo, request.ProjectName, utils.KubeconfigSecret),

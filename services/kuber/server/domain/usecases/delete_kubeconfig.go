@@ -18,10 +18,20 @@ import (
 func (u *Usecases) DeleteKubeconfig(ctx context.Context, request *pb.DeleteKubeconfigRequest) (*pb.DeleteKubeconfigResponse, error) {
 	namespace := envs.Namespace
 	if namespace == "" {
+		// If kuber deployed locally, return.
 		return &pb.DeleteKubeconfigResponse{}, nil
 	}
-	cluster := request.GetCluster()
-	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(request.Cluster.ClusterInfo))
+	clusterID := utils.GetClusterID(request.Cluster.ClusterInfo)
+	logger := utils.CreateLoggerWithClusterName(clusterID)
+	var err error
+	// Log success/error message.
+	defer func() {
+		if err != nil {
+			logger.Warn().Msgf("Failed to remove kubeconfig, secret most likely already removed : %v", err)
+		} else {
+			logger.Info().Msgf("Deleted kubeconfig secret")
+		}
+	}()
 
 	logger.Info().Msgf("Deleting kubeconfig secret")
 	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
@@ -30,13 +40,8 @@ func (u *Usecases) DeleteKubeconfig(ctx context.Context, request *pb.DeleteKubec
 		kc.Stdout = comm.GetStdOut(prefix)
 		kc.Stderr = comm.GetStdErr(prefix)
 	}
-	secretName := fmt.Sprintf("%s-%s-kubeconfig", cluster.ClusterInfo.Name, cluster.ClusterInfo.Hash)
 
-	if err := kc.KubectlDeleteResource("secret", secretName, "-n", namespace); err != nil {
-		logger.Warn().Msgf("Failed to remove kubeconfig: %s", err)
-		return &pb.DeleteKubeconfigResponse{}, nil
-	}
-
-	logger.Info().Msgf("Deleted kubeconfig secret")
+	// Save error and return as errors are ignored here.
+	err = kc.KubectlDeleteResource("secret", fmt.Sprintf("%s-kubeconfig", clusterID), "-n", namespace)
 	return &pb.DeleteKubeconfigResponse{}, nil
 }

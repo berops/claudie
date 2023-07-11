@@ -21,6 +21,7 @@ func (u *Usecases) SetUpStorage(ctx context.Context, request *pb.SetUpStorageReq
 	logger.Info().Msgf("Setting up the longhorn")
 	longhorn := longhorn.Longhorn{Cluster: request.DesiredCluster, Directory: clusterDir}
 	if err := longhorn.SetUp(); err != nil {
+		logger.Err(err).Msgf("Error while setting up the longhorn")
 		return nil, fmt.Errorf("error while setting up the longhorn for %s : %w", clusterID, err)
 	}
 	logger.Info().Msgf("Longhorn successfully set up")
