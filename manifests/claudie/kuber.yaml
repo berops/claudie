@@ -18,10 +18,39 @@ spec:
         app.kubernetes.io/name: kuber
     spec:
       terminationGracePeriodSeconds: 1320
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 3000
+        fsGroup: 2000
+      volumes:
+        - name: data
+          emptyDir: {}        
       containers:
         - name: kuber
           imagePullPolicy: Always
           image: ghcr.io/berops/claudie/kuber
+          volumeMounts:
+          - mountPath: /bin/services/kuber/server/clusters
+            name: data          
+          securityContext:
+            capabilities:
+              drop:
+                - all
+              add:
+                - chown
+                - dac_override
+                - fowner
+                - fsetid
+                - kill
+                - setgid
+                - setuid
+                - setpcap
+                - net_bind_service
+                - net_raw
+                - sys_chroot
+                - mknod
+                - audit_write
+                - setfcap            
           resources:
             requests:
               cpu: 300m

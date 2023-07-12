@@ -18,6 +18,10 @@ spec:
         app.kubernetes.io/name: context-box
     spec:
       terminationGracePeriodSeconds: 300
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 3000
+        fsGroup: 2000      
       containers:
         - name: context-box
           imagePullPolicy: Always

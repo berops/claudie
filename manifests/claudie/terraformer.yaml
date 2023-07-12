@@ -18,10 +18,39 @@ spec:
         app.kubernetes.io/name: terraformer
     spec:
       terminationGracePeriodSeconds: 1320
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 3000
+        fsGroup: 2000            
+      volumes:
+        - name: data
+          emptyDir: {}
       containers:
         - name: terraformer
           imagePullPolicy: Always
           image: ghcr.io/berops/claudie/terraformer
+          volumeMounts:
+          - mountPath: /bin/services/terraformer/server/clusters
+            name: data
+          securityContext:
+            capabilities:
+              drop:
+                - all
+              add:
+                - chown
+                - dac_override
+                - fowner
+                - fsetid
+                - kill
+                - setgid
+                - setuid
+                - setpcap
+                - net_bind_service
+                - net_raw
+                - sys_chroot
+                - mknod
+                - audit_write
+                - setfcap            
           resources:
             requests:
               cpu: 700m
@@ -92,7 +121,7 @@ spec:
               valueFrom:
                 configMapKeyRef:
                   name: env
-                  key: AWS_REGION
+                  key: AWS_REGION         
           ports:
             - containerPort: 50052
           readinessProbe:
