@@ -7,7 +7,7 @@ import (
 	cutils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/scheduler/utils"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // CreateDesiredState is a function which creates desired state of the project based on the unmarshalled manifest

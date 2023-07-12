@@ -8,7 +8,7 @@ import (
 	"github.com/berops/claudie/proto/pb"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // If the workflow happens correctly, the desired state for the K8s cluster
