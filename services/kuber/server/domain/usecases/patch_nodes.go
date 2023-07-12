@@ -14,11 +14,20 @@ func (u *Usecases) PatchNodes(ctx context.Context, request *pb.PatchNodeTemplate
 	clusterID := utils.GetClusterID(request.Cluster.ClusterInfo)
 	logger := utils.CreateLoggerWithClusterName(clusterID)
 
-	logger.Info().Msgf("Patching kubernetes nodes")
-	patcher := nodes.NewPatcher(request.Cluster)
-	if err := patcher.PatchProviderID(logger); err != nil {
+	patcher := nodes.NewPatcher(request.Cluster, logger)
+	if err := patcher.PatchProviderID(); err != nil {
 		logger.Err(err).Msgf("Error while patching nodes")
-		return nil, fmt.Errorf("error while patching nodes for %s : %w", clusterID, err)
+		return nil, fmt.Errorf("error while patching providerID on nodes for %s : %w", clusterID, err)
+	}
+
+	if err := patcher.PatchLabels(); err != nil {
+		logger.Err(err).Msgf("Error while patching nodes")
+		return nil, fmt.Errorf("error while patching labels on nodes for %s : %w", clusterID, err)
+	}
+
+	if err := patcher.PatchTaints(); err != nil {
+		logger.Err(err).Msgf("Error while patching nodes")
+		return nil, fmt.Errorf("error while patching taints on nodes for %s : %w", clusterID, err)
 	}
 
 	logger.Info().Msgf("Nodes were successfully patched")
