@@ -12,7 +12,7 @@ import (
 )
 
 // maxRetryCount is max number of retries for kubeone apply.
-const maxRetryCount = 1
+const maxRetryCount = 5
 
 type Kubeone struct {
 	// ConfigDirectory is the directory where the generated kubeone.yaml will be located.
@@ -85,8 +85,8 @@ func (k *Kubeone) Apply(prefix string) error {
 }
 
 func structuredLogging() string {
-	//if log.Logger.GetLevel() == zerolog.DebugLevel {
-	//	return ""
-	//}
+	if log.Logger.GetLevel() == zerolog.DebugLevel {
+		return ""
+	}
 	return "--log-format json"
 }
