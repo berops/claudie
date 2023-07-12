@@ -38,7 +38,7 @@ type KuberServiceClient interface {
 	DeleteKubeconfig(ctx context.Context, in *DeleteKubeconfigRequest, opts ...grpc.CallOption) (*DeleteKubeconfigResponse, error)
 	// DeleteNodes deletes the specified nodes from a k8s cluster.
 	DeleteNodes(ctx context.Context, in *DeleteNodesRequest, opts ...grpc.CallOption) (*DeleteNodesResponse, error)
-	// PatchNodes uses kubectl patch to change the node manifest.
+	// PatchNodes applies attributes like providerID, labels or taints to the nodes.
 	PatchNodes(ctx context.Context, in *PatchNodeTemplateRequest, opts ...grpc.CallOption) (*PatchNodeTemplateResponse, error)
 	// SetUpClusterAutoscaler deploys Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
 	SetUpClusterAutoscaler(ctx context.Context, in *SetUpClusterAutoscalerRequest, opts ...grpc.CallOption) (*SetUpClusterAutoscalerResponse, error)
@@ -186,7 +186,7 @@ type KuberServiceServer interface {
 	DeleteKubeconfig(context.Context, *DeleteKubeconfigRequest) (*DeleteKubeconfigResponse, error)
 	// DeleteNodes deletes the specified nodes from a k8s cluster.
 	DeleteNodes(context.Context, *DeleteNodesRequest) (*DeleteNodesResponse, error)
-	// PatchNodes uses kubectl patch to change the node manifest.
+	// PatchNodes applies attributes like providerID, labels or taints to the nodes.
 	PatchNodes(context.Context, *PatchNodeTemplateRequest) (*PatchNodeTemplateResponse, error)
 	// SetUpClusterAutoscaler deploys Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
 	SetUpClusterAutoscaler(context.Context, *SetUpClusterAutoscalerRequest) (*SetUpClusterAutoscalerResponse, error)

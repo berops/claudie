@@ -213,7 +213,7 @@ Kuber manipulates the cluster resources using `kubectl`.
   rpc DeleteKubeconfig(DeleteKubeconfigRequest) returns (DeleteKubeconfigResponse);
   // DeleteNodes deletes the specified nodes from a k8s cluster.
   rpc DeleteNodes(DeleteNodesRequest) returns (DeleteNodesResponse);
-  // PatchNodes uses kubectl patch to change the node manifest.
+  // PatchNodes applies attributes like providerID, labels or taints to the nodes.
   rpc PatchNodes(PatchNodeTemplateRequest) returns (PatchNodeTemplateResponse);
   // SetUpClusterAutoscaler deploys Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
   rpc SetUpClusterAutoscaler(SetUpClusterAutoscalerRequest) returns (SetUpClusterAutoscalerResponse);

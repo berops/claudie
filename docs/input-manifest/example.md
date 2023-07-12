@@ -79,10 +79,15 @@ spec:
     #     count:            # Static number of nodes in this nodepool.
     #     serverType:       # Machine type of the nodes in this nodepool.
     #     image:            # OS image of the nodes in the nodepool.
-    #     storageDiskSize:  # Disk size of the storage disk for compute nodepool.
+    #     storageDiskSize:  # Disk size of the storage disk for compute nodepool. (optional)
     #     autoscaler:       # Autoscaler configuration. Mutually exclusive with Count.
     #       min:            # Minimum number of nodes in nodepool.
     #       max:            # Maximum number of nodes in nodepool.
+    #     labels:           # Map of custom user defined labels for this nodepool. This field is optional and is ignored if used in Loadbalancer cluster. (optional)
+    #     taints:           # Array of custom user defined taints for this nodepool. This field is optional and is ignored if used in Loadbalancer cluster. (optional)
+    #       - key:          # The taint key to be applied to a node.
+    #         value:        # The taint value corresponding to the taint key.
+    #         effect:       # The effect of the taint on pods that do not tolerate the taint.
     #
     # Example definitions for each provider
     dynamic:
@@ -94,6 +99,13 @@ spec:
         count: 3
         serverType: cpx11
         image: ubuntu-22.04
+        labels:
+          country: finland
+          city: helsinki
+        taints:
+          - key: country
+            value: finland
+            effect: NoSchedule
 
       - name: compute-hetzner
         providerSpec:
@@ -104,6 +116,9 @@ spec:
         serverType: cpx11
         image: ubuntu-22.04
         storageDiskSize: 50
+        labels:
+          country: finland
+          city: helsinki
 
       - name: compute-hetzner-autoscaled
         providerSpec:
@@ -116,6 +131,9 @@ spec:
         autoscaler:
           min: 1
           max: 5
+        labels:
+          country: finland
+          city: helsinki
 
       - name: control-gcp
         providerSpec:
@@ -125,6 +143,9 @@ spec:
         count: 3
         serverType: e2-medium
         image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
+        labels:
+          country: germany
+          city: frankfurt
 
       - name: compute-gcp
         providerSpec:
@@ -135,6 +156,13 @@ spec:
         serverType: e2-small
         image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
         storageDiskSize: 50
+        labels:
+          country: germany
+          city: frankfurt
+        taints:
+          - key: city
+            value: frankfurt
+            effect: NoExecute
 
       - name: control-oci
         providerSpec:
@@ -221,6 +249,11 @@ spec:
     #         secretRef:    # Secret reference specification, holding private key which will be used to SSH into the node (as root).
     #           name:       # Name of the secret resource.
     #           namespace:  # Namespace of the secret resource.
+    #     labels:           # Map of custom user defined labels for this nodepool. This field is optional and is ignored if used in Loadbalancer cluster. (optional)
+    #     taints:           # Array of custom user defined taints for this nodepool. This field is optional and is ignored if used in Loadbalancer cluster. (optional)
+    #       - key:          # The taint key to be applied to a node.
+    #         value:        # The taint value corresponding to the taint key.
+    #         effect:       # The effect of the taint on pods that do not tolerate the taint.
     #
     # Example definitions
     static:
@@ -240,6 +273,11 @@ spec:
             secretRef:
               name: datacenter-1-key
               namespace: example-namespace
+        labels:
+          datacenter: datacenter-1
+        taints:
+          key: datacenter
+          effect: NoExecute
             
 
   # Kubernetes field is used to define the kubernetes clusters.
