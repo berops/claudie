@@ -44,13 +44,6 @@ controlPlane:
     taints:
     - key: "node-role.kubernetes.io/control-plane"
       effect: "NoSchedule"
-    labels: 
-      topology.kubernetes.io/region: '{{ $nodepool.Region }}'
-      topology.kubernetes.io/zone: '{{ $nodepool.Zone }}'
-      claudie.io/nodepool: '{{ $nodepool.NodepoolName }}'
-      claudie.io/provider: '{{ $nodepool.CloudProviderName }}'
-      claudie.io/provider-instance: '{{ $nodepool.ProviderName }}'
-      claudie.io/node-type: 'control'
     {{- end}}
   {{- end}}
 {{- end}}
@@ -69,13 +62,6 @@ staticWorkers:
     sshPrivateKeyFile: './{{ $nodeInfo.Name }}.pem'
     {{- end }}
     hostname: '{{ $nodeInfo.Name }}'
-    labels: 
-      topology.kubernetes.io/region: '{{ $nodepool.Region }}'
-      topology.kubernetes.io/zone: '{{ $nodepool.Zone }}'
-      claudie.io/nodepool: '{{ $nodepool.NodepoolName }}'
-      claudie.io/provider: '{{ $nodepool.CloudProviderName }}'
-      claudie.io/provider-instance: '{{ $nodepool.ProviderName }}'
-      claudie.io/node-type: 'compute'
     {{- end}}
   {{- end}}
 {{- end}}
