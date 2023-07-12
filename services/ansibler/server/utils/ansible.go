@@ -69,12 +69,12 @@ func (a *Ansible) RunAnsiblePlaybook(prefix string) error {
 	}
 
 	if err := cmd.Run(); err != nil {
-		if err := collectErrors(output); err != nil {
-			log.Error().Msgf("failed to execute cmd: %s: %s", command, err)
+		if errPlaybook := collectErrors(output); errPlaybook != nil {
+			log.Error().Msgf("failed to execute cmd: %s: %s", command, errPlaybook)
 		}
 		output.Reset()
 
-		log.Warn().Msgf("Error encountered while executing %s from %s : %v", command, a.Directory, err)
+		log.Warn().Msgf("Error encountered while executing %s from %s: %v", command, a.Directory, err)
 
 		retryCmd := comm.Cmd{
 			Command: command,
@@ -84,17 +84,16 @@ func (a *Ansible) RunAnsiblePlaybook(prefix string) error {
 		}
 
 		err := retryCmd.RetryCommandWithCallback(maxAnsibleRetries, func() error {
-			if err := collectErrors(output); err != nil {
-				log.Error().Msgf("failed to execute cmd: %s: %s", retryCmd.Command, err)
+			if errPlaybook := collectErrors(output); errPlaybook != nil {
+				log.Error().Msgf("failed to execute cmd: %s: %s", retryCmd.Command, errPlaybook)
 			}
 			output.Reset()
 			return nil
 		})
 
 		if err != nil {
-			err2 := collectErrors(output)
-			if err2 != nil {
-				err = fmt.Errorf("%w:%w", err, err2)
+			if errPlaybook := collectErrors(output); errPlaybook != nil {
+				err = fmt.Errorf("%w:%w", err, errPlaybook)
 			}
 			return err
 		}

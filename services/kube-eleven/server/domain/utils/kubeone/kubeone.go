@@ -1,6 +1,8 @@
 package kubeone
 
 import (
+	"bytes"
+	"fmt"
 	"os/exec"
 
 	"github.com/rs/zerolog"
@@ -9,12 +11,8 @@ import (
 	comm "github.com/berops/claudie/internal/command"
 )
 
-const (
-	// maxRetryCount is max number of retries for kubeone apply.
-	maxRetryCount = 5
-	// command is command which triggers kubeone apply.
-	command = "kubeone apply -m kubeone.yaml -y"
-)
+// maxRetryCount is max number of retries for kubeone apply.
+const maxRetryCount = 1
 
 type Kubeone struct {
 	// ConfigDirectory is the directory where the generated kubeone.yaml will be located.
@@ -24,8 +22,14 @@ type Kubeone struct {
 // Apply will run `kubeone apply -m kubeone.yaml -y` in the ConfigDirectory.
 // Returns nil if successful, error otherwise.
 func (k *Kubeone) Apply(prefix string) error {
+	output := new(bytes.Buffer)
+
+	command := fmt.Sprintf("kubeone apply -m kubeone.yaml -y %s", structuredLogging())
 	cmd := exec.Command("bash", "-c", command)
 	cmd.Dir = k.ConfigDirectory
+	cmd.Stdout = output
+	cmd.Stderr = output
+
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
 		// Here prefix is the cluster id
 		cmd.Stdout = comm.GetStdOut(prefix)
@@ -33,6 +37,16 @@ func (k *Kubeone) Apply(prefix string) error {
 	}
 
 	if err := cmd.Run(); err != nil {
+		l, errParse := collectErrors(output)
+		if errParse == nil && len(l) > 0 {
+			log.Error().Msgf("failed to execute cmd: %s: %s", command, l.prettyPrint())
+		}
+		if errParse != nil {
+			log.Warn().Msgf("failed to parse errors from kubeone logs: %v", errParse)
+		}
+
+		output.Reset()
+
 		log.Warn().Msgf("Error encountered while executing %s : %v", command, err)
 
 		retryCmd := comm.Cmd{
@@ -41,9 +55,38 @@ func (k *Kubeone) Apply(prefix string) error {
 			Stdout:  cmd.Stdout,
 			Stderr:  cmd.Stderr,
 		}
-		if err := retryCmd.RetryCommand(maxRetryCount); err != nil {
-			return err
+		err = retryCmd.RetryCommandWithCallback(maxRetryCount, func() error {
+			l, errParse := collectErrors(output)
+			if errParse != nil {
+				output.Reset()
+				log.Warn().Msgf("failed to parse errors from kubeone logs: %v", errParse)
+				return nil
+			}
+			if len(l) > 0 {
+				log.Error().Msgf("failed to execute cmd: %s: %s", retryCmd.Command, l.prettyPrint())
+			}
+			output.Reset()
+			return nil
+		})
+
+		if err != nil {
+			l, errParse := collectErrors(output)
+			if errParse != nil {
+				log.Warn().Msgf("failed to parse errors from kubeone logs: %v", errParse)
+				return fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
+			}
+			if len(l) > 0 {
+				err = fmt.Errorf("%w: %s", err, l.prettyPrint())
+			}
+			return fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
 		}
 	}
 	return nil
+}
+
+func structuredLogging() string {
+	//if log.Logger.GetLevel() == zerolog.DebugLevel {
+	//	return ""
+	//}
+	return "--log-format json"
 }

@@ -62,25 +62,25 @@ func (t *Terraform) Apply() error {
 
 	if log.Logger.GetLevel() != zerolog.DebugLevel {
 		args = append(args, "-json")
+
+		t.Stdout = output
+		t.Stderr = output
 	}
 
 	cmd := exec.Command("terraform", args...)
 	cmd.Dir = t.Directory
-
-	if cmd.Stdout == nil && cmd.Stderr == nil {
-		cmd.Stdout = output
-		cmd.Stderr = output
-	}
+	cmd.Stdout = t.Stdout
+	cmd.Stderr = t.Stderr
 
 	if err := cmd.Run(); err != nil {
 		command := fmt.Sprintf("terraform %s", strings.Join(args, " "))
 
-		l, err := collectErrors(output)
-		if err == nil {
+		l, errParse := collectErrors(output)
+		if errParse == nil {
 			log.Error().Msgf("failed to execute cmd: %s: %s", command, l.prettyPrint())
 		}
-		if err != nil {
-			log.Warn().Msgf("failed to parse errors from terraform logs: %v", err)
+		if errParse != nil {
+			log.Warn().Msgf("failed to parse errors from terraform logs: %v", errParse)
 		}
 		output.Reset()
 
@@ -93,11 +93,11 @@ func (t *Terraform) Apply() error {
 			Stderr:  cmd.Stderr,
 		}
 
-		err = retryCmd.RetryCommandWithCallback(maxTfCommandRetryCount, func() error {
-			l, err := collectErrors(output)
-			if err != nil {
+		err := retryCmd.RetryCommandWithCallback(maxTfCommandRetryCount, func() error {
+			l, errParse := collectErrors(output)
+			if errParse != nil {
 				output.Reset()
-				log.Warn().Msgf("failed to parse errors from terraform logs: %v", err)
+				log.Warn().Msgf("failed to parse errors from terraform logs: %v", errParse)
 				return nil
 			}
 			log.Error().Msgf("failed to execute cmd: %s: %s", retryCmd.Command, l.prettyPrint())
@@ -106,13 +106,15 @@ func (t *Terraform) Apply() error {
 		})
 
 		if err != nil {
-			l, err2 := collectErrors(output)
-			if err2 != nil {
-				log.Warn().Msgf("failed to parse errors from terraform logs: %v", err2)
+			l, errParse := collectErrors(output)
+			if errParse != nil {
+				log.Warn().Msgf("failed to parse errors from terraform logs: %v", errParse)
 				return fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
 			}
 
-			err = fmt.Errorf("%w: %s", err, l.prettyPrint())
+			if len(l) > 0 {
+				err = fmt.Errorf("%w: %s", err, l.prettyPrint())
+			}
 			return fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
 		}
 	}
@@ -130,25 +132,25 @@ func (t *Terraform) Destroy() error {
 
 	if log.Logger.GetLevel() != zerolog.DebugLevel {
 		args = append(args, "-json")
+
+		t.Stdout = output
+		t.Stderr = output
 	}
 
 	cmd := exec.Command("terraform", args...)
 	cmd.Dir = t.Directory
-
-	if cmd.Stdout == nil && cmd.Stderr == nil {
-		cmd.Stdout = output
-		cmd.Stderr = output
-	}
+	cmd.Stdout = t.Stdout
+	cmd.Stderr = t.Stderr
 
 	if err := cmd.Run(); err != nil {
 		command := fmt.Sprintf("terraform %s", strings.Join(args, " "))
 
-		l, err := collectErrors(output)
-		if err == nil {
+		l, errParse := collectErrors(output)
+		if errParse == nil {
 			log.Error().Msgf("failed to execute cmd: %s: %s", command, l.prettyPrint())
 		}
-		if err != nil {
-			log.Warn().Msgf("failed to parse errors from terraform logs: %v", err)
+		if errParse != nil {
+			log.Warn().Msgf("failed to parse errors from terraform logs: %v", errParse)
 		}
 		output.Reset()
 
@@ -161,7 +163,7 @@ func (t *Terraform) Destroy() error {
 			Stderr:  cmd.Stderr,
 		}
 
-		err = retryCmd.RetryCommandWithCallback(maxTfCommandRetryCount, func() error {
+		err := retryCmd.RetryCommandWithCallback(maxTfCommandRetryCount, func() error {
 			l, err := collectErrors(output)
 			if err != nil {
 				output.Reset()
@@ -174,13 +176,15 @@ func (t *Terraform) Destroy() error {
 		})
 
 		if err != nil {
-			l, err2 := collectErrors(output)
-			if err2 != nil {
-				log.Warn().Msgf("failed to parse errors from terraform logs: %v", err2)
+			l, errParse := collectErrors(output)
+			if errParse != nil {
+				log.Warn().Msgf("failed to parse errors from terraform logs: %v", errParse)
 				return fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
 			}
 
-			err := fmt.Errorf("%w: %s", err, l.prettyPrint())
+			if len(l) > 0 {
+				err = fmt.Errorf("%w: %s", err, l.prettyPrint())
+			}
 			return fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
 		}
 	}

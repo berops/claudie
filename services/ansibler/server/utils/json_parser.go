@@ -8,7 +8,7 @@ import (
 	"io"
 )
 
-// collectErrors collects error messages from a json output of a single playbook run.
+// collectErrors collects error messages from a single json output that's dumped by an ansible playbook run.
 func collectErrors(reader io.Reader) error {
 	b := new(bytes.Buffer)
 	if _, err := io.Copy(b, reader); err != nil {
@@ -37,7 +37,11 @@ func collectErrors(reader io.Reader) error {
 			for hostName, host := range val.Get("hosts").Map() {
 				if host.Get("failed").Bool() {
 					msg := host.Get("msg")
-					errs = append(errs, fmt.Errorf("%s failed inside task %s due to: %s", hostName, taskName, msg))
+					// formatted as:
+					//        hetzner-50m17fe-1: failed
+					//        task: Wait 300 seconds for target connection to become reachable/usable
+					//        summary: timed out waiting for ping module test: Failed to connect to the host via ssh: ssh: connect to host 116.203.141.58 port 22: Operation timed out
+					errs = append(errs, fmt.Errorf("\n\t%s: failed\n\ttask: %s\n\tsummary: %s", hostName, taskName, msg))
 				}
 			}
 		}
