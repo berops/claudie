@@ -41,9 +41,7 @@ type ScManifestData struct {
 
 const (
 	scrapeConfigNamespace = "monitoring"
-	scManifestFileTpl     = "scrape-config-manifest.goyaml"
 	scManifestFile        = "scrape-config-manifest.yaml"
-	scrapeConfigFileTpl   = "scrape-config.goyaml"
 	scrapeConfigFile      = "scrape-config.yaml"
 )
 
@@ -58,7 +56,7 @@ func (sc *ScrapeConfig) GenerateAndApplyScrapeConfig() error {
 	// Generate prometheus scrape config to file
 	tpl, err := templateUtils.LoadTemplate(templates.ScrapeConfigTemplate)
 	if err != nil {
-		return fmt.Errorf("error while loading %s on %s: %w", scrapeConfigFileTpl, sc.Cluster.ClusterInfo.Name, err)
+		return fmt.Errorf("error while loading scrape config file for %s: %w", sc.Cluster.ClusterInfo.Name, err)
 	}
 	scrapeConfig, err := template.GenerateToString(tpl, sc.getData())
 	if err != nil {
@@ -68,7 +66,7 @@ func (sc *ScrapeConfig) GenerateAndApplyScrapeConfig() error {
 	// Generate manifest for namespace and secret
 	tpl, err = templateUtils.LoadTemplate(templates.ScrapeConfigManifestTemplate)
 	if err != nil {
-		return fmt.Errorf("error while loading %s on %s: %w", scManifestFileTpl, sc.Cluster.ClusterInfo.Name, err)
+		return fmt.Errorf("error while loading scrape config template for %s: %w", sc.Cluster.ClusterInfo.Name, err)
 	}
 	if err = template.Generate(tpl, scManifestFile, ScManifestData{Namespace: scrapeConfigNamespace,
 		ScrapeConfigB64: base64.StdEncoding.EncodeToString([]byte(scrapeConfig))}); err != nil {
@@ -89,8 +87,8 @@ func (sc *ScrapeConfig) GenerateAndApplyScrapeConfig() error {
 	return nil
 }
 
-// RemoveIfNoLbScrapeConfig will remove the LB scrape-config.yml
-func (sc *ScrapeConfig) RemoveLbScrapeConfig() error {
+// RemoveIfNoLBScrapeConfig will remove the LB scrape-config.yml
+func (sc *ScrapeConfig) RemoveLBScrapeConfig() error {
 	k := kubectl.Kubectl{Kubeconfig: sc.Cluster.Kubeconfig, MaxKubectlRetries: 3}
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
 		prefix := utils.GetClusterID(sc.Cluster.ClusterInfo)

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/berops/claudie/internal/nodes"
-	kuberNodes "github.com/berops/claudie/services/kuber/server/nodes"
+	kuberNodes "github.com/berops/claudie/services/kuber/server/domain/utils/nodes"
 	k8sV1 "k8s.io/api/core/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
