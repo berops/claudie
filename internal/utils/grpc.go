@@ -1,16 +1,21 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
+	"math"
+	"time"
+
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
-	"math"
-	"time"
 )
+
+var errConnectionNotReady = errors.New("unhealthy gRPC connection")
 
 // CloseClientConnection is a wrapper around grpc.ClientConn Close function
 func CloseClientConnection(connection *grpc.ClientConn) {
@@ -65,4 +70,11 @@ func GrpcDialWithRetryAndBackoff(serviceName, serviceURL string) (*grpc.ClientCo
 	}
 
 	return conn, nil
+}
+
+func IsConnectionReady(c *grpc.ClientConn) error {
+	if c.GetState() != connectivity.Ready {
+		return errConnectionNotReady
+	}
+	return nil
 }

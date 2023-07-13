@@ -10,7 +10,7 @@ import (
 )
 
 // PatchNodes uses kube API patch to set correct metadata for nodes.
-func (u *Usecases) PatchNodes(ctx context.Context, request *pb.PatchNodeTemplateRequest) (*pb.PatchNodeTemplateResponse, error) {
+func (u *Usecases) PatchNodes(ctx context.Context, request *pb.PatchNodesRequest) (*pb.PatchNodesResponse, error) {
 	clusterID := utils.GetClusterID(request.Cluster.ClusterInfo)
 	logger := utils.CreateLoggerWithClusterName(clusterID)
 
@@ -31,5 +31,5 @@ func (u *Usecases) PatchNodes(ctx context.Context, request *pb.PatchNodeTemplate
 	}
 
 	logger.Info().Msgf("Nodes were successfully patched")
-	return &pb.PatchNodeTemplateResponse{}, nil
+	return &pb.PatchNodesResponse{}, nil
 }
