@@ -422,7 +422,7 @@ func callKuber(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error
 	// If previous cluster had loadbalancers, and the new one does not, the old scrape config will be removed.
 	if len(ctx.desiredLoadbalancers) == 0 && len(ctx.loadbalancers) > 0 {
 		logger.Info().Msg("Calling RemoveScrapeConfig on Kuber")
-		if _, err := kuber.RemoveLbScrapeConfig(c, &pb.RemoveLbScrapeConfigRequest{
+		if _, err := kuber.RemoveLBScrapeConfig(c, &pb.RemoveLBScrapeConfigRequest{
 			Cluster: ctx.desiredCluster,
 		}); err != nil {
 			return err
@@ -432,14 +432,14 @@ func callKuber(ctx *BuilderContext, cboxClient pb.ContextBoxServiceClient) error
 
 	// Create a scrape-config if there are loadbalancers in the new/updated cluster
 	if len(ctx.desiredLoadbalancers) > 0 {
-		logger.Info().Msg("Calling StoreLbScrapeConfig on Kuber")
-		if _, err := kuber.StoreLbScrapeConfig(c, &pb.StoreLbScrapeConfigRequest{
+		logger.Info().Msg("Calling StoreLBScrapeConfig on Kuber")
+		if _, err := kuber.StoreLBScrapeConfig(c, &pb.StoreLBScrapeConfigRequest{
 			Cluster:              ctx.desiredCluster,
 			DesiredLoadbalancers: ctx.desiredLoadbalancers,
 		}); err != nil {
 			return err
 		}
-		logger.Info().Msg("StoreLbScrapeConfig on Kuber finished successfully")
+		logger.Info().Msg("StoreLBScrapeConfig on Kuber finished successfully")
 	}
 
 	ctx.Workflow.Description = fmt.Sprintf("%s setting up storage", description)

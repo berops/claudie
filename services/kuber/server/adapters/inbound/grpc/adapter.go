@@ -11,11 +11,11 @@ import (
 
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
-	"github.com/berops/claudie/services/terraformer/server/domain/usecases"
+	"github.com/berops/claudie/services/kuber/server/domain/usecases"
 )
 
 const (
-	defaultTerraformerPort = 50052
+	defaultKuberPort = 50057
 )
 
 type GrpcAdapter struct {
@@ -27,7 +27,7 @@ type GrpcAdapter struct {
 // Init sets up the GrpcAdapter by creating the underlying tcpListener, gRPC server and
 // gRPC health check server.
 func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
-	port := utils.GetEnvDefault("TERRAFORMER_PORT", fmt.Sprint(defaultTerraformerPort))
+	port := utils.GetEnvDefault("KUBER_PORT", fmt.Sprint(defaultKuberPort))
 
 	var err error
 
@@ -36,17 +36,17 @@ func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
 	if err != nil {
 		log.Fatal().Msgf("Failed to listen on %v", err)
 	}
-	log.Info().Msgf("Terraformer service is listening on: %s", listeningAddress)
+	log.Info().Msgf("Kuber service is listening on: %s", listeningAddress)
 
 	g.server = utils.NewGRPCServer()
-	pb.RegisterTerraformerServiceServer(g.server, &TerraformerGrpcService{usecases: usecases})
+	pb.RegisterKuberServiceServer(g.server, &KuberGrpcService{usecases: usecases})
 
 	// Add health service to gRPC
 	g.HealthServer = health.NewServer()
-	// Set liveness to SERVING
-	g.HealthServer.SetServingStatus("terraformer-liveness", grpc_health_v1.HealthCheckResponse_SERVING)
-	// Set readiness to NOT_SERVING, as it will be changed later.
-	g.HealthServer.SetServingStatus("terraformer-readiness", grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+	// Kuber does not have any custom health check functions, thus always serving.
+	g.HealthServer.SetServingStatus("kuber-liveness", grpc_health_v1.HealthCheckResponse_SERVING)
+	g.HealthServer.SetServingStatus("kuber-readiness", grpc_health_v1.HealthCheckResponse_SERVING)
+
 	grpc_health_v1.RegisterHealthServer(g.server, g.HealthServer)
 }
 
@@ -54,7 +54,7 @@ func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
 func (g *GrpcAdapter) Serve() error {
 	// Process each gRPC request in a separate thread.
 	if err := g.server.Serve(g.tcpListener); err != nil {
-		return fmt.Errorf("terraformer failed to serve: %w", err)
+		return fmt.Errorf("kuber failed to serve: %w", err)
 	}
 
 	log.Info().Msg("Finished listening for incoming connections")

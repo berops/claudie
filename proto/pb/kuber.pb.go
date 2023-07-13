@@ -495,7 +495,7 @@ func (*StoreClusterMetadataResponse) Descriptor() ([]byte, []int) {
 	return file_proto_kuber_proto_rawDescGZIP(), []int{9}
 }
 
-type StoreLbScrapeConfigRequest struct {
+type StoreLBScrapeConfigRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -504,8 +504,8 @@ type StoreLbScrapeConfigRequest struct {
 	DesiredLoadbalancers []*LBcluster `protobuf:"bytes,2,rep,name=desiredLoadbalancers,proto3" json:"desiredLoadbalancers,omitempty"`
 }
 
-func (x *StoreLbScrapeConfigRequest) Reset() {
-	*x = StoreLbScrapeConfigRequest{}
+func (x *StoreLBScrapeConfigRequest) Reset() {
+	*x = StoreLBScrapeConfigRequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_proto_kuber_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -513,13 +513,13 @@ func (x *StoreLbScrapeConfigRequest) Reset() {
 	}
 }
 
-func (x *StoreLbScrapeConfigRequest) String() string {
+func (x *StoreLBScrapeConfigRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*StoreLbScrapeConfigRequest) ProtoMessage() {}
+func (*StoreLBScrapeConfigRequest) ProtoMessage() {}
 
-func (x *StoreLbScrapeConfigRequest) ProtoReflect() protoreflect.Message {
+func (x *StoreLBScrapeConfigRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_proto_kuber_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -531,33 +531,33 @@ func (x *StoreLbScrapeConfigRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use StoreLbScrapeConfigRequest.ProtoReflect.Descriptor instead.
-func (*StoreLbScrapeConfigRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use StoreLBScrapeConfigRequest.ProtoReflect.Descriptor instead.
+func (*StoreLBScrapeConfigRequest) Descriptor() ([]byte, []int) {
 	return file_proto_kuber_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *StoreLbScrapeConfigRequest) GetCluster() *K8Scluster {
+func (x *StoreLBScrapeConfigRequest) GetCluster() *K8Scluster {
 	if x != nil {
 		return x.Cluster
 	}
 	return nil
 }
 
-func (x *StoreLbScrapeConfigRequest) GetDesiredLoadbalancers() []*LBcluster {
+func (x *StoreLBScrapeConfigRequest) GetDesiredLoadbalancers() []*LBcluster {
 	if x != nil {
 		return x.DesiredLoadbalancers
 	}
 	return nil
 }
 
-type StoreLbScrapeConfigResponse struct {
+type StoreLBScrapeConfigResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 }
 
-func (x *StoreLbScrapeConfigResponse) Reset() {
-	*x = StoreLbScrapeConfigResponse{}
+func (x *StoreLBScrapeConfigResponse) Reset() {
+	*x = StoreLBScrapeConfigResponse{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_proto_kuber_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -565,13 +565,13 @@ func (x *StoreLbScrapeConfigResponse) Reset() {
 	}
 }
 
-func (x *StoreLbScrapeConfigResponse) String() string {
+func (x *StoreLBScrapeConfigResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*StoreLbScrapeConfigResponse) ProtoMessage() {}
+func (*StoreLBScrapeConfigResponse) ProtoMessage() {}
 
-func (x *StoreLbScrapeConfigResponse) ProtoReflect() protoreflect.Message {
+func (x *StoreLBScrapeConfigResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_proto_kuber_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -583,12 +583,12 @@ func (x *StoreLbScrapeConfigResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use StoreLbScrapeConfigResponse.ProtoReflect.Descriptor instead.
-func (*StoreLbScrapeConfigResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use StoreLBScrapeConfigResponse.ProtoReflect.Descriptor instead.
+func (*StoreLBScrapeConfigResponse) Descriptor() ([]byte, []int) {
 	return file_proto_kuber_proto_rawDescGZIP(), []int{11}
 }
 
-type RemoveLbScrapeConfigRequest struct {
+type RemoveLBScrapeConfigRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -596,8 +596,8 @@ type RemoveLbScrapeConfigRequest struct {
 	Cluster *K8Scluster `protobuf:"bytes,1,opt,name=cluster,proto3" json:"cluster,omitempty"`
 }
 
-func (x *RemoveLbScrapeConfigRequest) Reset() {
-	*x = RemoveLbScrapeConfigRequest{}
+func (x *RemoveLBScrapeConfigRequest) Reset() {
+	*x = RemoveLBScrapeConfigRequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_proto_kuber_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -605,13 +605,13 @@ func (x *RemoveLbScrapeConfigRequest) Reset() {
 	}
 }
 
-func (x *RemoveLbScrapeConfigRequest) String() string {
+func (x *RemoveLBScrapeConfigRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*RemoveLbScrapeConfigRequest) ProtoMessage() {}
+func (*RemoveLBScrapeConfigRequest) ProtoMessage() {}
 
-func (x *RemoveLbScrapeConfigRequest) ProtoReflect() protoreflect.Message {
+func (x *RemoveLBScrapeConfigRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_proto_kuber_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -623,26 +623,26 @@ func (x *RemoveLbScrapeConfigRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use RemoveLbScrapeConfigRequest.ProtoReflect.Descriptor instead.
-func (*RemoveLbScrapeConfigRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use RemoveLBScrapeConfigRequest.ProtoReflect.Descriptor instead.
+func (*RemoveLBScrapeConfigRequest) Descriptor() ([]byte, []int) {
 	return file_proto_kuber_proto_rawDescGZIP(), []int{12}
 }
 
-func (x *RemoveLbScrapeConfigRequest) GetCluster() *K8Scluster {
+func (x *RemoveLBScrapeConfigRequest) GetCluster() *K8Scluster {
 	if x != nil {
 		return x.Cluster
 	}
 	return nil
 }
 
-type RemoveLbScrapeConfigResponse struct {
+type RemoveLBScrapeConfigResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 }
 
-func (x *RemoveLbScrapeConfigResponse) Reset() {
-	*x = RemoveLbScrapeConfigResponse{}
+func (x *RemoveLBScrapeConfigResponse) Reset() {
+	*x = RemoveLBScrapeConfigResponse{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_proto_kuber_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -650,13 +650,13 @@ func (x *RemoveLbScrapeConfigResponse) Reset() {
 	}
 }
 
-func (x *RemoveLbScrapeConfigResponse) String() string {
+func (x *RemoveLBScrapeConfigResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*RemoveLbScrapeConfigResponse) ProtoMessage() {}
+func (*RemoveLBScrapeConfigResponse) ProtoMessage() {}
 
-func (x *RemoveLbScrapeConfigResponse) ProtoReflect() protoreflect.Message {
+func (x *RemoveLBScrapeConfigResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_proto_kuber_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -668,8 +668,8 @@ func (x *RemoveLbScrapeConfigResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use RemoveLbScrapeConfigResponse.ProtoReflect.Descriptor instead.
-func (*RemoveLbScrapeConfigResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use RemoveLBScrapeConfigResponse.ProtoReflect.Descriptor instead.
+func (*RemoveLBScrapeConfigResponse) Descriptor() ([]byte, []int) {
 	return file_proto_kuber_proto_rawDescGZIP(), []int{13}
 }
 
@@ -1168,7 +1168,7 @@ var file_proto_kuber_proto_rawDesc = []byte{
 	0x74, 0x4e, 0x61, 0x6d, 0x65, 0x22, 0x1e, 0x0a, 0x1c, 0x53, 0x74, 0x6f, 0x72, 0x65, 0x43, 0x6c,
 	0x75, 0x73, 0x74, 0x65, 0x72, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x65, 0x73,
 	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x93, 0x01, 0x0a, 0x1a, 0x53, 0x74, 0x6f, 0x72, 0x65, 0x4c,
-	0x62, 0x53, 0x63, 0x72, 0x61, 0x70, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65, 0x71,
+	0x42, 0x53, 0x63, 0x72, 0x61, 0x70, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65, 0x71,
 	0x75, 0x65, 0x73, 0x74, 0x12, 0x2d, 0x0a, 0x07, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x18,
 	0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x13, 0x2e, 0x63, 0x6c, 0x61, 0x75, 0x64, 0x69, 0x65, 0x2e,
 	0x4b, 0x38, 0x73, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x52, 0x07, 0x63, 0x6c, 0x75, 0x73,
@@ -1177,14 +1177,14 @@ var file_proto_kuber_proto_rawDesc = []byte{
 	0x0b, 0x32, 0x12, 0x2e, 0x63, 0x6c, 0x61, 0x75, 0x64, 0x69, 0x65, 0x2e, 0x4c, 0x42, 0x63, 0x6c,
 	0x75, 0x73, 0x74, 0x65, 0x72, 0x52, 0x14, 0x64, 0x65, 0x73, 0x69, 0x72, 0x65, 0x64, 0x4c, 0x6f,
 	0x61, 0x64, 0x62, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65, 0x72, 0x73, 0x22, 0x1d, 0x0a, 0x1b, 0x53,
-	0x74, 0x6f, 0x72, 0x65, 0x4c, 0x62, 0x53, 0x63, 0x72, 0x61, 0x70, 0x65, 0x43, 0x6f, 0x6e, 0x66,
+	0x74, 0x6f, 0x72, 0x65, 0x4c, 0x42, 0x53, 0x63, 0x72, 0x61, 0x70, 0x65, 0x43, 0x6f, 0x6e, 0x66,
 	0x69, 0x67, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x4c, 0x0a, 0x1b, 0x52, 0x65,
-	0x6d, 0x6f, 0x76, 0x65, 0x4c, 0x62, 0x53, 0x63, 0x72, 0x61, 0x70, 0x65, 0x43, 0x6f, 0x6e, 0x66,
+	0x6d, 0x6f, 0x76, 0x65, 0x4c, 0x42, 0x53, 0x63, 0x72, 0x61, 0x70, 0x65, 0x43, 0x6f, 0x6e, 0x66,
 	0x69, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x2d, 0x0a, 0x07, 0x63, 0x6c, 0x75,
 	0x73, 0x74, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x13, 0x2e, 0x63, 0x6c, 0x61,
 	0x75, 0x64, 0x69, 0x65, 0x2e, 0x4b, 0x38, 0x73, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x52,
 	0x07, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x22, 0x1e, 0x0a, 0x1c, 0x52, 0x65, 0x6d, 0x6f,
-	0x76, 0x65, 0x4c, 0x62, 0x53, 0x63, 0x72, 0x61, 0x70, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67,
+	0x76, 0x65, 0x4c, 0x42, 0x53, 0x63, 0x72, 0x61, 0x70, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67,
 	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x4d, 0x0a, 0x1c, 0x44, 0x65, 0x6c, 0x65,
 	0x74, 0x65, 0x43, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74,
 	0x61, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x2d, 0x0a, 0x07, 0x63, 0x6c, 0x75, 0x73,
@@ -1227,18 +1227,18 @@ var file_proto_kuber_proto_rawDesc = []byte{
 	0x21, 0x50, 0x61, 0x74, 0x63, 0x68, 0x43, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x49, 0x6e, 0x66,
 	0x6f, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x4d, 0x61, 0x70, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
 	0x73, 0x65, 0x32, 0x8d, 0x09, 0x0a, 0x0c, 0x4b, 0x75, 0x62, 0x65, 0x72, 0x53, 0x65, 0x72, 0x76,
-	0x69, 0x63, 0x65, 0x12, 0x63, 0x0a, 0x14, 0x52, 0x65, 0x6d, 0x6f, 0x76, 0x65, 0x4c, 0x62, 0x53,
+	0x69, 0x63, 0x65, 0x12, 0x63, 0x0a, 0x14, 0x52, 0x65, 0x6d, 0x6f, 0x76, 0x65, 0x4c, 0x42, 0x53,
 	0x63, 0x72, 0x61, 0x70, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x24, 0x2e, 0x63, 0x6c,
-	0x61, 0x75, 0x64, 0x69, 0x65, 0x2e, 0x52, 0x65, 0x6d, 0x6f, 0x76, 0x65, 0x4c, 0x62, 0x53, 0x63,
+	0x61, 0x75, 0x64, 0x69, 0x65, 0x2e, 0x52, 0x65, 0x6d, 0x6f, 0x76, 0x65, 0x4c, 0x42, 0x53, 0x63,
 	0x72, 0x61, 0x70, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
 	0x74, 0x1a, 0x25, 0x2e, 0x63, 0x6c, 0x61, 0x75, 0x64, 0x69, 0x65, 0x2e, 0x52, 0x65, 0x6d, 0x6f,
-	0x76, 0x65, 0x4c, 0x62, 0x53, 0x63, 0x72, 0x61, 0x70, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67,
+	0x76, 0x65, 0x4c, 0x42, 0x53, 0x63, 0x72, 0x61, 0x70, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67,
 	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x60, 0x0a, 0x13, 0x53, 0x74, 0x6f, 0x72,
-	0x65, 0x4c, 0x62, 0x53, 0x63, 0x72, 0x61, 0x70, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12,
+	0x65, 0x4c, 0x42, 0x53, 0x63, 0x72, 0x61, 0x70, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12,
 	0x23, 0x2e, 0x63, 0x6c, 0x61, 0x75, 0x64, 0x69, 0x65, 0x2e, 0x53, 0x74, 0x6f, 0x72, 0x65, 0x4c,
-	0x62, 0x53, 0x63, 0x72, 0x61, 0x70, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65, 0x71,
+	0x42, 0x53, 0x63, 0x72, 0x61, 0x70, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65, 0x71,
 	0x75, 0x65, 0x73, 0x74, 0x1a, 0x24, 0x2e, 0x63, 0x6c, 0x61, 0x75, 0x64, 0x69, 0x65, 0x2e, 0x53,
-	0x74, 0x6f, 0x72, 0x65, 0x4c, 0x62, 0x53, 0x63, 0x72, 0x61, 0x70, 0x65, 0x43, 0x6f, 0x6e, 0x66,
+	0x74, 0x6f, 0x72, 0x65, 0x4c, 0x42, 0x53, 0x63, 0x72, 0x61, 0x70, 0x65, 0x43, 0x6f, 0x6e, 0x66,
 	0x69, 0x67, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x63, 0x0a, 0x14, 0x53, 0x74,
 	0x6f, 0x72, 0x65, 0x43, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61,
 	0x74, 0x61, 0x12, 0x24, 0x2e, 0x63, 0x6c, 0x61, 0x75, 0x64, 0x69, 0x65, 0x2e, 0x53, 0x74, 0x6f,
@@ -1327,10 +1327,10 @@ var file_proto_kuber_proto_goTypes = []interface{}{
 	(*DeleteNodesResponse)(nil),               // 7: claudie.DeleteNodesResponse
 	(*StoreClusterMetadataRequest)(nil),       // 8: claudie.StoreClusterMetadataRequest
 	(*StoreClusterMetadataResponse)(nil),      // 9: claudie.StoreClusterMetadataResponse
-	(*StoreLbScrapeConfigRequest)(nil),        // 10: claudie.StoreLbScrapeConfigRequest
-	(*StoreLbScrapeConfigResponse)(nil),       // 11: claudie.StoreLbScrapeConfigResponse
-	(*RemoveLbScrapeConfigRequest)(nil),       // 12: claudie.RemoveLbScrapeConfigRequest
-	(*RemoveLbScrapeConfigResponse)(nil),      // 13: claudie.RemoveLbScrapeConfigResponse
+	(*StoreLBScrapeConfigRequest)(nil),        // 10: claudie.StoreLBScrapeConfigRequest
+	(*StoreLBScrapeConfigResponse)(nil),       // 11: claudie.StoreLBScrapeConfigResponse
+	(*RemoveLBScrapeConfigRequest)(nil),       // 12: claudie.RemoveLBScrapeConfigRequest
+	(*RemoveLBScrapeConfigResponse)(nil),      // 13: claudie.RemoveLBScrapeConfigResponse
 	(*DeleteClusterMetadataRequest)(nil),      // 14: claudie.DeleteClusterMetadataRequest
 	(*DeleteClusterMetadataResponse)(nil),     // 15: claudie.DeleteClusterMetadataResponse
 	(*PatchNodeTemplateRequest)(nil),          // 16: claudie.PatchNodeTemplateRequest
@@ -1352,16 +1352,16 @@ var file_proto_kuber_proto_depIdxs = []int32{
 	24, // 4: claudie.DeleteNodesRequest.cluster:type_name -> claudie.K8scluster
 	24, // 5: claudie.DeleteNodesResponse.cluster:type_name -> claudie.K8scluster
 	24, // 6: claudie.StoreClusterMetadataRequest.cluster:type_name -> claudie.K8scluster
-	24, // 7: claudie.StoreLbScrapeConfigRequest.cluster:type_name -> claudie.K8scluster
-	25, // 8: claudie.StoreLbScrapeConfigRequest.desiredLoadbalancers:type_name -> claudie.LBcluster
-	24, // 9: claudie.RemoveLbScrapeConfigRequest.cluster:type_name -> claudie.K8scluster
+	24, // 7: claudie.StoreLBScrapeConfigRequest.cluster:type_name -> claudie.K8scluster
+	25, // 8: claudie.StoreLBScrapeConfigRequest.desiredLoadbalancers:type_name -> claudie.LBcluster
+	24, // 9: claudie.RemoveLBScrapeConfigRequest.cluster:type_name -> claudie.K8scluster
 	24, // 10: claudie.DeleteClusterMetadataRequest.cluster:type_name -> claudie.K8scluster
 	24, // 11: claudie.PatchNodeTemplateRequest.cluster:type_name -> claudie.K8scluster
 	24, // 12: claudie.SetUpClusterAutoscalerRequest.cluster:type_name -> claudie.K8scluster
 	24, // 13: claudie.DestroyClusterAutoscalerRequest.cluster:type_name -> claudie.K8scluster
 	24, // 14: claudie.PatchClusterInfoConfigMapRequest.desiredCluster:type_name -> claudie.K8scluster
-	12, // 15: claudie.KuberService.RemoveLbScrapeConfig:input_type -> claudie.RemoveLbScrapeConfigRequest
-	10, // 16: claudie.KuberService.StoreLbScrapeConfig:input_type -> claudie.StoreLbScrapeConfigRequest
+	12, // 15: claudie.KuberService.RemoveLBScrapeConfig:input_type -> claudie.RemoveLBScrapeConfigRequest
+	10, // 16: claudie.KuberService.StoreLBScrapeConfig:input_type -> claudie.StoreLBScrapeConfigRequest
 	8,  // 17: claudie.KuberService.StoreClusterMetadata:input_type -> claudie.StoreClusterMetadataRequest
 	14, // 18: claudie.KuberService.DeleteClusterMetadata:input_type -> claudie.DeleteClusterMetadataRequest
 	0,  // 19: claudie.KuberService.SetUpStorage:input_type -> claudie.SetUpStorageRequest
@@ -1372,8 +1372,8 @@ var file_proto_kuber_proto_depIdxs = []int32{
 	18, // 24: claudie.KuberService.SetUpClusterAutoscaler:input_type -> claudie.SetUpClusterAutoscalerRequest
 	20, // 25: claudie.KuberService.DestroyClusterAutoscaler:input_type -> claudie.DestroyClusterAutoscalerRequest
 	22, // 26: claudie.KuberService.PatchClusterInfoConfigMap:input_type -> claudie.PatchClusterInfoConfigMapRequest
-	13, // 27: claudie.KuberService.RemoveLbScrapeConfig:output_type -> claudie.RemoveLbScrapeConfigResponse
-	11, // 28: claudie.KuberService.StoreLbScrapeConfig:output_type -> claudie.StoreLbScrapeConfigResponse
+	13, // 27: claudie.KuberService.RemoveLBScrapeConfig:output_type -> claudie.RemoveLBScrapeConfigResponse
+	11, // 28: claudie.KuberService.StoreLBScrapeConfig:output_type -> claudie.StoreLBScrapeConfigResponse
 	9,  // 29: claudie.KuberService.StoreClusterMetadata:output_type -> claudie.StoreClusterMetadataResponse
 	15, // 30: claudie.KuberService.DeleteClusterMetadata:output_type -> claudie.DeleteClusterMetadataResponse
 	1,  // 31: claudie.KuberService.SetUpStorage:output_type -> claudie.SetUpStorageResponse
@@ -1519,7 +1519,7 @@ func file_proto_kuber_proto_init() {
 			}
 		}
 		file_proto_kuber_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*StoreLbScrapeConfigRequest); i {
+			switch v := v.(*StoreLBScrapeConfigRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1531,7 +1531,7 @@ func file_proto_kuber_proto_init() {
 			}
 		}
 		file_proto_kuber_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*StoreLbScrapeConfigResponse); i {
+			switch v := v.(*StoreLBScrapeConfigResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1543,7 +1543,7 @@ func file_proto_kuber_proto_init() {
 			}
 		}
 		file_proto_kuber_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RemoveLbScrapeConfigRequest); i {
+			switch v := v.(*RemoveLBScrapeConfigRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1555,7 +1555,7 @@ func file_proto_kuber_proto_init() {
 			}
 		}
 		file_proto_kuber_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RemoveLbScrapeConfigResponse); i {
+			switch v := v.(*RemoveLBScrapeConfigResponse); i {
 			case 0:
 				return &v.state
 			case 1:
