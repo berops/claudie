@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/rs/zerolog/log"
 	"github.com/tidwall/gjson"
 	"io"
 )
@@ -16,7 +17,8 @@ func collectErrors(reader io.Reader) error {
 	}
 
 	if !gjson.ValidBytes(b.Bytes()) {
-		return errors.New("failed to parse json from input")
+		log.Debug().Msgf("skip collecting errors, input is not of JSON type")
+		return nil
 	}
 
 	result := gjson.ParseBytes(b.Bytes())

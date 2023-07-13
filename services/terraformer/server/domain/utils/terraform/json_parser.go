@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/tidwall/gjson"
 	"io"
 	"strings"
 )
@@ -117,7 +118,13 @@ func collectErrors(reader io.Reader) (JSONLogs, error) {
 
 	var logs []JSONLog
 	for s.Scan() {
-		l, err := parseJSONLog([]byte(s.Text()))
+		txt := s.Text()
+
+		if !gjson.Valid(txt) {
+			continue
+		}
+
+		l, err := parseJSONLog([]byte(txt))
 		if err != nil {
 			return nil, err
 		}
