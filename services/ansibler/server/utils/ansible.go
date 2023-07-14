@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -21,9 +22,8 @@ const (
 	maxAnsibleRetries = 5
 )
 
-// In Ansible, an inventory file is a configuration file that defines
+// GenerateInventoryFile generates an Ansible inventory file that defines
 // the hosts and groups of hosts that Ansible can manage.
-// generateInventoryFile generates the Ansible inventory file.
 func GenerateInventoryFile(inventoryTemplate, outputDirectory string, data interface{}) error {
 	template, err := templateUtils.LoadTemplate(inventoryTemplate)
 	if err != nil {
@@ -51,25 +51,54 @@ type Ansible struct {
 // if command unsuccessful, the function will retry it until successful or maxAnsibleRetries reached
 // all commands are executed with ANSIBLE_HOST_KEY_CHECKING set to false
 func (a *Ansible) RunAnsiblePlaybook(prefix string) error {
-	err := setEnv()
-	if err != nil {
+	if err := setEnv(); err != nil {
 		return err
 	}
+
+	output := new(bytes.Buffer)
+
 	command := fmt.Sprintf("ansible-playbook %s -i %s -f %d %s", a.Playbook, a.Inventory, defaultAnsibleForks, a.Flags)
 	cmd := exec.Command("bash", "-c", command)
 	cmd.Dir = a.Directory
+	cmd.Stdout = output
+	cmd.Stderr = output
+
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
 		cmd.Stdout = comm.GetStdOut(prefix)
 		cmd.Stderr = comm.GetStdErr(prefix)
 	}
-	if err = cmd.Run(); err != nil {
-		log.Warn().Msgf("Error encountered while executing %s from %s : %v", command, a.Directory, err)
-		retryCmd := comm.Cmd{Command: command, Dir: a.Directory, Stdout: cmd.Stdout, Stderr: cmd.Stderr}
-		err := retryCmd.RetryCommand(maxAnsibleRetries)
+
+	if err := cmd.Run(); err != nil {
+		if errPlaybook := collectErrors(output); errPlaybook != nil {
+			log.Error().Msgf("failed to execute cmd: %s: %s", command, errPlaybook)
+		}
+		output.Reset()
+
+		log.Warn().Msgf("Error encountered while executing %s from %s: %v", command, a.Directory, err)
+
+		retryCmd := comm.Cmd{
+			Command: command,
+			Dir:     a.Directory,
+			Stdout:  cmd.Stdout,
+			Stderr:  cmd.Stderr,
+		}
+
+		err := retryCmd.RetryCommandWithCallback(maxAnsibleRetries, func() error {
+			if errPlaybook := collectErrors(output); errPlaybook != nil {
+				log.Error().Msgf("failed to execute cmd: %s: %s", retryCmd.Command, errPlaybook)
+			}
+			output.Reset()
+			return nil
+		})
+
 		if err != nil {
+			if errPlaybook := collectErrors(output); errPlaybook != nil {
+				err = fmt.Errorf("%w:%w", err, errPlaybook)
+			}
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -78,5 +107,12 @@ func setEnv() error {
 	if err := os.Setenv("ANSIBLE_HOST_KEY_CHECKING", "False"); err != nil {
 		return fmt.Errorf("failed to set ANSIBLE_HOST_KEY_CHECKING environment variable to False : %w", err)
 	}
+
+	if log.Logger.GetLevel() != zerolog.DebugLevel {
+		if err := os.Setenv("ANSIBLE_STDOUT_CALLBACK", "json"); err != nil {
+			return fmt.Errorf("failed to set ANSIBLE_STDOUT_CALLBACK environment variable to json: %w", err)
+		}
+	}
+
 	return nil
 }

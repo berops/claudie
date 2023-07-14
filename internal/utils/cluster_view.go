@@ -91,7 +91,9 @@ func (view *ClusterView) MergeChanges(config *pb.Config) {
 	for name, updated := range view.CurrentClusters {
 		idx := GetClusterByName(name, config.CurrentState.Clusters)
 		if idx < 0 {
-			config.CurrentState.Clusters = append(config.CurrentState.Clusters, updated)
+			if updated != nil { // don't append a nil cluster.
+				config.CurrentState.Clusters = append(config.CurrentState.Clusters, updated)
+			}
 			continue
 		}
 		config.CurrentState.Clusters[idx] = updated
@@ -100,9 +102,7 @@ func (view *ClusterView) MergeChanges(config *pb.Config) {
 	for name, updated := range view.DesiredClusters {
 		idx := GetClusterByName(name, config.DesiredState.Clusters)
 		if idx < 0 {
-			if updated != nil { // don't append a nil cluster.
-				config.CurrentState.Clusters = append(config.CurrentState.Clusters, updated)
-			}
+			config.DesiredState.Clusters = append(config.DesiredState.Clusters, updated)
 			continue
 		}
 		config.DesiredState.Clusters[idx] = updated
