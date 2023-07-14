@@ -16,9 +16,8 @@ var (
 	ErrFailedToBuildInfrastructure = errors.New("failed to successfully build desired state")
 )
 
-func (u *Usecases) reconcileInfrastructure(ctx *utils.BuilderContext) error {
+func (u *Usecases) reconcileInfrastructure(ctx *utils.BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
 	logger := cutils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
-	cboxClient := u.ContextBox.GetClient()
 
 	description := ctx.Workflow.Description
 	ctx.Workflow.Stage = pb.Workflow_TERRAFORMER
@@ -65,9 +64,8 @@ func (u *Usecases) reconcileInfrastructure(ctx *utils.BuilderContext) error {
 	return nil
 }
 
-func (u *Usecases) destroyInfrastructure(ctx *utils.BuilderContext) error {
+func (u *Usecases) destroyInfrastructure(ctx *utils.BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
 	logger := cutils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
-	cboxClient := u.ContextBox.GetClient()
 
 	description := ctx.Workflow.Description
 	ctx.Workflow.Stage = pb.Workflow_DESTROY_TERRAFORMER
