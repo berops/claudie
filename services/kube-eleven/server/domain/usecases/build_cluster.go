@@ -20,7 +20,7 @@ func (u *Usecases) BuildCluster(req *pb.BuildClusterRequest) (*pb.BuildClusterRe
 	}
 
 	if err := k.BuildCluster(); err != nil {
-		logger.Err(err).Msgf("Error while building a cluster")
+		logger.Error().Msgf("Error while building a cluster: %s", err)
 		return nil, fmt.Errorf("error while building cluster %s for project %s : %w", req.Desired.ClusterInfo.Name, req.ProjectName, err)
 	}
 
