@@ -8,7 +8,7 @@ import (
 	"github.com/berops/claudie/services/builder/domain/usecases/utils"
 )
 
-// callAnsibler passes config to ansibler to set up VPN
+// configureInfrastructure configures infrastructure via ansibler.
 func (u *Usecases) configureInfrastructure(ctx *utils.BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
 	logger := cutils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
 	ansClient := u.Ansibler.GetClient()
