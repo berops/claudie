@@ -3,7 +3,6 @@ package usecases
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	cutils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
@@ -23,8 +22,7 @@ func (u *Usecases) reconcileInfrastructure(ctx *utils.BuilderContext, cboxClient
 	// Set workflow state.
 	description := ctx.Workflow.Description
 	ctx.Workflow.Stage = pb.Workflow_TERRAFORMER
-	ctx.Workflow.Description = strings.TrimSpace(fmt.Sprintf("%s building infrastructure", description))
-	if err := u.ContextBox.SaveWorkflowState(ctx.ProjectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+	if err := u.saveWorkflowDescription(ctx, fmt.Sprintf("%s building infrastructure", description), cboxClient); err != nil {
 		return err
 	}
 
@@ -52,8 +50,7 @@ func (u *Usecases) reconcileInfrastructure(ctx *utils.BuilderContext, cboxClient
 	}
 
 	// Set description to original string.
-	ctx.Workflow.Description = description
-	if err := u.ContextBox.SaveWorkflowState(ctx.ProjectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+	if err := u.saveWorkflowDescription(ctx, description, cboxClient); err != nil {
 		return err
 	}
 
@@ -67,8 +64,7 @@ func (u *Usecases) destroyInfrastructure(ctx *utils.BuilderContext, cboxClient p
 	// Set workflow state.
 	description := ctx.Workflow.Description
 	ctx.Workflow.Stage = pb.Workflow_DESTROY_TERRAFORMER
-	ctx.Workflow.Description = fmt.Sprintf("%s destroying infrastructure", description)
-	if err := u.ContextBox.SaveWorkflowState(ctx.ProjectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+	if err := u.saveWorkflowDescription(ctx, fmt.Sprintf("%s destroying infrastructure", description), cboxClient); err != nil {
 		return err
 	}
 
@@ -79,8 +75,7 @@ func (u *Usecases) destroyInfrastructure(ctx *utils.BuilderContext, cboxClient p
 	logger.Info().Msg("DestroyInfrastructure on Terraformer finished successfully")
 
 	// Set description to original string.
-	ctx.Workflow.Description = description
-	if err := u.ContextBox.SaveWorkflowState(ctx.ProjectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+	if err := u.saveWorkflowDescription(ctx, description, cboxClient); err != nil {
 		return err
 	}
 	return nil

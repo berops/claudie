@@ -8,6 +8,7 @@ import (
 type TerraformerPort interface {
 	BuildInfrastructure(builderCtx *utils.BuilderContext, terraformerGrpcClient pb.TerraformerServiceClient) (*pb.BuildInfrastructureResponse, error)
 	DestroyInfrastructure(builderCtx *utils.BuilderContext, terraformerGrpcClient pb.TerraformerServiceClient) (*pb.DestroyInfrastructureResponse, error)
+
 	PerformHealthCheck() error
 	GetClient() pb.TerraformerServiceClient
 }

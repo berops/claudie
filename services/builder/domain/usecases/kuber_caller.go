@@ -13,16 +13,16 @@ func (u *Usecases) reconcileK8sConfiguration(ctx *utils.BuilderContext, cboxClie
 	logger := cutils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
 	kuberClient := u.Kuber.GetClient()
 
+	// Set workflow state.
 	description := ctx.Workflow.Description
 	ctx.Workflow.Stage = pb.Workflow_KUBER
 
-	// only patch if kubeconfig changed.
+	// Only patch cluster-info ConfigMap if kubeconfig changed.
 	if ctx.CurrentCluster != nil && (ctx.CurrentCluster.Kubeconfig != ctx.DesiredCluster.Kubeconfig) {
-		ctx.Workflow.Description = fmt.Sprintf("%s patching cluster info config map", description)
-		if err := u.ContextBox.SaveWorkflowState(ctx.ProjectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+		// Set new description.
+		if err := u.saveWorkflowDescription(ctx, fmt.Sprintf("%s patching cluster info config map", description), cboxClient); err != nil {
 			return err
 		}
-
 		logger.Info().Msg("Calling PatchClusterInfoConfigMap on kuber for cluster")
 		if err := u.Kuber.PatchClusterInfoConfigMap(ctx, kuberClient); err != nil {
 			return err
@@ -32,6 +32,9 @@ func (u *Usecases) reconcileK8sConfiguration(ctx *utils.BuilderContext, cboxClie
 
 	// If previous cluster had loadbalancers, and the new one does not, the old scrape config will be removed.
 	if len(ctx.DesiredLoadbalancers) == 0 && len(ctx.CurrentLoadbalancers) > 0 {
+		if err := u.saveWorkflowDescription(ctx, fmt.Sprintf("%s removing Loadbalancer scrape config", description), cboxClient); err != nil {
+			return err
+		}
 		logger.Info().Msg("Calling RemoveScrapeConfig on Kuber")
 		if err := u.Kuber.RemoveLBScrapeConfig(ctx, kuberClient); err != nil {
 			return err
@@ -39,8 +42,11 @@ func (u *Usecases) reconcileK8sConfiguration(ctx *utils.BuilderContext, cboxClie
 		logger.Info().Msg("RemoveScrapeConfig on Kuber finished successfully")
 	}
 
-	// Create a scrape-config if there are loadbalancers in the new/updated cluster
+	// Create a scrape-config if there are loadbalancers in the new/updated cluster.
 	if len(ctx.DesiredLoadbalancers) > 0 {
+		if err := u.saveWorkflowDescription(ctx, fmt.Sprintf("%s storing Loadbalancer scrape config", description), cboxClient); err != nil {
+			return err
+		}
 		logger.Info().Msg("Calling StoreLBScrapeConfig on Kuber")
 		if err := u.Kuber.StoreLBScrapeConfig(ctx, kuberClient); err != nil {
 			return err
@@ -48,8 +54,7 @@ func (u *Usecases) reconcileK8sConfiguration(ctx *utils.BuilderContext, cboxClie
 		logger.Info().Msg("StoreLBScrapeConfig on Kuber finished successfully")
 	}
 
-	ctx.Workflow.Description = fmt.Sprintf("%s setting up storage", description)
-	if err := u.ContextBox.SaveWorkflowState(ctx.ProjectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+	if err := u.saveWorkflowDescription(ctx, fmt.Sprintf("%s setting up storage", description), cboxClient); err != nil {
 		return err
 	}
 
@@ -61,9 +66,7 @@ func (u *Usecases) reconcileK8sConfiguration(ctx *utils.BuilderContext, cboxClie
 	logger.Info().Msg("SetUpStorage on Kuber finished successfully")
 
 	ctx.DesiredCluster = resStorage.DesiredCluster
-
-	ctx.Workflow.Description = fmt.Sprintf("%s creating kubeconfig as secret", description)
-	if err := u.ContextBox.SaveWorkflowState(ctx.ProjectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+	if err := u.saveWorkflowDescription(ctx, fmt.Sprintf("%s creating kubeconfig secret", description), cboxClient); err != nil {
 		return err
 	}
 
@@ -73,8 +76,7 @@ func (u *Usecases) reconcileK8sConfiguration(ctx *utils.BuilderContext, cboxClie
 	}
 	logger.Info().Msg("StoreKubeconfig on Kuber finished successfully")
 
-	ctx.Workflow.Description = fmt.Sprintf("%s creating cluster metadata as secret", description)
-	if err := u.ContextBox.SaveWorkflowState(ctx.ProjectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+	if err := u.saveWorkflowDescription(ctx, fmt.Sprintf("%s creating cluster metadata secret", description), cboxClient); err != nil {
 		return err
 	}
 
@@ -84,27 +86,36 @@ func (u *Usecases) reconcileK8sConfiguration(ctx *utils.BuilderContext, cboxClie
 	}
 	logger.Info().Msg("StoreNodeMetadata on Kuber finished successfully")
 
+	if err := u.saveWorkflowDescription(ctx, fmt.Sprintf("%s patching k8s nodes", description), cboxClient); err != nil {
+		return err
+	}
+
 	logger.Info().Msg("Calling PatchNodes on kuber")
 	if err := u.Kuber.PatchNodes(ctx, kuberClient); err != nil {
 		return err
 	}
 
 	if cutils.IsAutoscaled(ctx.DesiredCluster) {
-		// Set up Autoscaler if desired state is autoscaled
+		// Set up Autoscaler if desired state is autoscaled.
+		if err := u.saveWorkflowDescription(ctx, fmt.Sprintf("%s deploying Cluster Autoscaler", description), cboxClient); err != nil {
+			return err
+		}
 		logger.Info().Msg("Calling SetUpClusterAutoscaler on kuber")
 		if err := u.Kuber.SetUpClusterAutoscaler(ctx, kuberClient); err != nil {
 			return err
 		}
 	} else if cutils.IsAutoscaled(ctx.CurrentCluster) {
-		// Destroy Autoscaler if current state is autoscaled, but desired is not
+		// Destroy Autoscaler if current state is autoscaled, but desired is not.
+		if err := u.saveWorkflowDescription(ctx, fmt.Sprintf("%s deleting Cluster Autoscaler", description), cboxClient); err != nil {
+			return err
+		}
 		logger.Info().Msg("Calling DestroyClusterAutoscaler on kuber")
 		if err := u.Kuber.DestroyClusterAutoscaler(ctx, kuberClient); err != nil {
 			return err
 		}
 	}
 
-	ctx.Workflow.Description = description
-	if err := u.ContextBox.SaveWorkflowState(ctx.ProjectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+	if err := u.saveWorkflowDescription(ctx, description, cboxClient); err != nil {
 		return err
 	}
 
@@ -121,8 +132,7 @@ func (u *Usecases) deleteClusterData(ctx *utils.BuilderContext, cboxClient pb.Co
 	logger := cutils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
 
 	ctx.Workflow.Stage = pb.Workflow_DESTROY_KUBER
-	ctx.Workflow.Description = fmt.Sprintf("%s deleting kubeconfig secret", description)
-	if err := u.ContextBox.SaveWorkflowState(ctx.ProjectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+	if err := u.saveWorkflowDescription(ctx, fmt.Sprintf("%s deleting kubeconfig secret", description), cboxClient); err != nil {
 		return err
 	}
 
@@ -131,27 +141,28 @@ func (u *Usecases) deleteClusterData(ctx *utils.BuilderContext, cboxClient pb.Co
 		return fmt.Errorf("error while deleting kubeconfig for cluster %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
 	}
 
-	ctx.Workflow.Description = fmt.Sprintf("%s deleting cluster metadata secret", description)
-	if err := u.ContextBox.SaveWorkflowState(ctx.ProjectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+	if err := u.saveWorkflowDescription(ctx, fmt.Sprintf("%s deleting cluster metadata secret", description), cboxClient); err != nil {
 		return err
 	}
-
 	logger.Info().Msg("Calling DeleteClusterMetadata on kuber")
 	if err := u.Kuber.DeleteClusterMetadata(ctx, kuberClient); err != nil {
 		return fmt.Errorf("error while deleting metadata for cluster %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
 	}
 	logger.Info().Msg("DeleteKubeconfig on Kuber finished successfully")
-	ctx.Workflow.Description = description
-	if err := u.ContextBox.SaveWorkflowState(ctx.ProjectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
-		return err
-	}
 
 	// Destroy Autoscaler if current state is autoscaled
 	if cutils.IsAutoscaled(ctx.CurrentCluster) {
-		log.Info().Str("project", ctx.ProjectName).Str("cluster", ctx.GetClusterName()).Msg("Calling DestroyClusterAutoscaler on kuber")
+		if err := u.saveWorkflowDescription(ctx, fmt.Sprintf("%s deleting Cluster Autoscaler", description), cboxClient); err != nil {
+			return err
+		}
+		logger.Info().Msg("Calling DestroyClusterAutoscaler on kuber")
 		if err := u.Kuber.DestroyClusterAutoscaler(ctx, kuberClient); err != nil {
 			return err
 		}
+	}
+
+	if err := u.saveWorkflowDescription(ctx, description, cboxClient); err != nil {
+		return err
 	}
 
 	return nil

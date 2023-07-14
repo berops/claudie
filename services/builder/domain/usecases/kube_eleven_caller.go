@@ -15,8 +15,7 @@ func (u *Usecases) reconcileK8sCluster(ctx *utils.BuilderContext, cboxClient pb.
 	// Set workflow state.
 	description := ctx.Workflow.Description
 	ctx.Workflow.Stage = pb.Workflow_KUBE_ELEVEN
-	ctx.Workflow.Description = fmt.Sprintf("%s building kubernetes cluster", description)
-	if err := u.ContextBox.SaveWorkflowState(ctx.ProjectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+	if err := u.saveWorkflowDescription(ctx, fmt.Sprintf("%s building kubernetes cluster", description), cboxClient); err != nil {
 		return err
 	}
 
@@ -31,8 +30,7 @@ func (u *Usecases) reconcileK8sCluster(ctx *utils.BuilderContext, cboxClient pb.
 	ctx.DesiredCluster = res.Desired
 	ctx.DesiredLoadbalancers = res.DesiredLbs
 	// Set description to original string.
-	ctx.Workflow.Description = description
-	if err := u.ContextBox.SaveWorkflowState(ctx.ProjectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
+	if err := u.saveWorkflowDescription(ctx, description, cboxClient); err != nil {
 		return err
 	}
 	return nil
