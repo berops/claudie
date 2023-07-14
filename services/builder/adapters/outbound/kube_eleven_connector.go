@@ -13,7 +13,7 @@ type KubeElevenConnector struct {
 	Connection *grpc.ClientConn
 }
 
-// Connect establishes a gRPC connection with the context-box microservice
+// Connect establishes a gRPC connection with the kube-eleven microservice
 func (k *KubeElevenConnector) Connect() error {
 	connection, err := cutils.GrpcDialWithRetryAndBackoff("kube-eleven", envs.KubeElevenURL)
 	if err != nil {
@@ -24,6 +24,7 @@ func (k *KubeElevenConnector) Connect() error {
 	return nil
 }
 
+// BuildCluster builds/reconciles given k8s cluster via kube-eleven.
 func (k *KubeElevenConnector) BuildCluster(builderCtx *utils.BuilderContext, kubeElevenGrpcClient pb.KubeElevenServiceClient) (*pb.BuildClusterResponse, error) {
 	return kubeEleven.BuildCluster(kubeElevenGrpcClient,
 		&pb.BuildClusterRequest{
@@ -33,16 +34,17 @@ func (k *KubeElevenConnector) BuildCluster(builderCtx *utils.BuilderContext, kub
 		})
 }
 
-// Disconnect closes the underlying gRPC connection to context-box microservice
+// Disconnect closes the underlying gRPC connection to kube-eleven microservice
 func (k *KubeElevenConnector) Disconnect() {
 	cutils.CloseClientConnection(k.Connection)
 }
 
-// PerformHealthCheck checks health of the underlying gRPC connection to context-box microservice
+// PerformHealthCheck checks health of the underlying gRPC connection to kube-eleven microservice
 func (k *KubeElevenConnector) PerformHealthCheck() error {
 	return cutils.IsConnectionReady(k.Connection)
 }
 
+// GetClient returns a kube-eleven gRPC client.
 func (k *KubeElevenConnector) GetClient() pb.KubeElevenServiceClient {
 	return pb.NewKubeElevenServiceClient(k.Connection)
 }

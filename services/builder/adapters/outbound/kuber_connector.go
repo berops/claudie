@@ -13,7 +13,7 @@ type KuberConnector struct {
 	Connection *grpc.ClientConn
 }
 
-// Connect establishes a gRPC connection with the context-box microservice
+// Connect establishes a gRPC connection with the kuber microservice.
 func (k *KuberConnector) Connect() error {
 	connection, err := cutils.GrpcDialWithRetryAndBackoff("kuber", envs.KuberURL)
 	if err != nil {
@@ -24,6 +24,7 @@ func (k *KuberConnector) Connect() error {
 	return nil
 }
 
+// SetUpStorage configures storage solution on given k8s cluster.
 func (k *KuberConnector) SetUpStorage(builderCtx *utils.BuilderContext, kuberGrpcClient pb.KuberServiceClient) (*pb.SetUpStorageResponse, error) {
 	return kuber.SetUpStorage(kuberGrpcClient,
 		&pb.SetUpStorageRequest{
@@ -31,6 +32,7 @@ func (k *KuberConnector) SetUpStorage(builderCtx *utils.BuilderContext, kuberGrp
 		})
 }
 
+// StoreLBScrapeConfig stores LB scrape config on a given k8s cluster.
 func (k *KuberConnector) StoreLBScrapeConfig(builderCtx *utils.BuilderContext, kuberGrpcClient pb.KuberServiceClient) error {
 	return kuber.StoreLbScrapeConfig(kuberGrpcClient,
 		&pb.StoreLBScrapeConfigRequest{
@@ -39,6 +41,7 @@ func (k *KuberConnector) StoreLBScrapeConfig(builderCtx *utils.BuilderContext, k
 		})
 }
 
+// RemoveLBScrapeConfig removes LB scrape config from a given k8s cluster.
 func (k *KuberConnector) RemoveLBScrapeConfig(builderCtx *utils.BuilderContext, kuberGrpcClient pb.KuberServiceClient) error {
 	return kuber.RemoveLbScrapeConfig(kuberGrpcClient,
 		&pb.RemoveLBScrapeConfigRequest{
@@ -46,6 +49,7 @@ func (k *KuberConnector) RemoveLBScrapeConfig(builderCtx *utils.BuilderContext, 
 		})
 }
 
+// StoreClusterMetadata stores cluster metadata on a management k8s cluster.
 func (k *KuberConnector) StoreClusterMetadata(builderCtx *utils.BuilderContext, kuberGrpcClient pb.KuberServiceClient) error {
 	return kuber.StoreClusterMetadata(kuberGrpcClient,
 		&pb.StoreClusterMetadataRequest{
@@ -54,6 +58,7 @@ func (k *KuberConnector) StoreClusterMetadata(builderCtx *utils.BuilderContext, 
 		})
 }
 
+// DeleteClusterMetadata removes cluster metadata from management k8s cluster.
 func (k *KuberConnector) DeleteClusterMetadata(builderCtx *utils.BuilderContext, kuberGrpcClient pb.KuberServiceClient) error {
 	return kuber.DeleteClusterMetadata(kuberGrpcClient,
 		&pb.DeleteClusterMetadataRequest{
@@ -61,6 +66,7 @@ func (k *KuberConnector) DeleteClusterMetadata(builderCtx *utils.BuilderContext,
 		})
 }
 
+// StoreKubeconfig stores cluster kubeconfig on a management k8s cluster.
 func (k *KuberConnector) StoreKubeconfig(builderCtx *utils.BuilderContext, kuberGrpcClient pb.KuberServiceClient) error {
 	return kuber.StoreKubeconfig(kuberGrpcClient,
 		&pb.StoreKubeconfigRequest{
@@ -69,6 +75,7 @@ func (k *KuberConnector) StoreKubeconfig(builderCtx *utils.BuilderContext, kuber
 		})
 }
 
+// DeleteKubeconfig removes cluster kubeconfig from management k8s cluster.
 func (k *KuberConnector) DeleteKubeconfig(builderCtx *utils.BuilderContext, kuberGrpcClient pb.KuberServiceClient) error {
 	return kuber.DeleteKubeconfig(kuberGrpcClient,
 		&pb.DeleteKubeconfigRequest{
@@ -76,6 +83,7 @@ func (k *KuberConnector) DeleteKubeconfig(builderCtx *utils.BuilderContext, kube
 		})
 }
 
+// SetUpClusterAutoscaler deploys cluster autoscaler on a management k8s cluster for a given k8s cluster.
 func (k *KuberConnector) SetUpClusterAutoscaler(builderCtx *utils.BuilderContext, kuberGrpcClient pb.KuberServiceClient) error {
 	return kuber.SetUpClusterAutoscaler(kuberGrpcClient,
 		&pb.SetUpClusterAutoscalerRequest{
@@ -84,6 +92,7 @@ func (k *KuberConnector) SetUpClusterAutoscaler(builderCtx *utils.BuilderContext
 		})
 }
 
+// DestroyClusterAutoscaler deletes cluster autoscaler from a management k8s cluster for a given k8s cluster.
 func (k *KuberConnector) DestroyClusterAutoscaler(builderCtx *utils.BuilderContext, kuberGrpcClient pb.KuberServiceClient) error {
 	return kuber.DestroyClusterAutoscaler(kuberGrpcClient,
 		&pb.DestroyClusterAutoscalerRequest{
@@ -92,6 +101,7 @@ func (k *KuberConnector) DestroyClusterAutoscaler(builderCtx *utils.BuilderConte
 		})
 }
 
+// PatchClusterInfoConfigMap updates certificates in a cluster-info config map for a given cluster.
 func (k *KuberConnector) PatchClusterInfoConfigMap(builderCtx *utils.BuilderContext, kuberGrpcClient pb.KuberServiceClient) error {
 	return kuber.PatchClusterInfoConfigMap(kuberGrpcClient,
 		&pb.PatchClusterInfoConfigMapRequest{
@@ -99,6 +109,7 @@ func (k *KuberConnector) PatchClusterInfoConfigMap(builderCtx *utils.BuilderCont
 		})
 }
 
+// PatchNodes updates k8s cluster node metadata.
 func (k *KuberConnector) PatchNodes(builderCtx *utils.BuilderContext, kuberGrpcClient pb.KuberServiceClient) error {
 	return kuber.PatchNodes(kuberGrpcClient,
 		&pb.PatchNodesRequest{
@@ -106,6 +117,7 @@ func (k *KuberConnector) PatchNodes(builderCtx *utils.BuilderContext, kuberGrpcC
 		})
 }
 
+// DeleteNodes gracefully removes nodes from a given k8s cluster.
 func (k *KuberConnector) DeleteNodes(cluster *pb.K8Scluster, masterNodes, workerNodes []string, kuberGrpcClient pb.KuberServiceClient) (*pb.DeleteNodesResponse, error) {
 	return kuber.DeleteNodes(kuberGrpcClient,
 		&pb.DeleteNodesRequest{
@@ -115,16 +127,17 @@ func (k *KuberConnector) DeleteNodes(cluster *pb.K8Scluster, masterNodes, worker
 		})
 }
 
-// Disconnect closes the underlying gRPC connection to context-box microservice
+// Disconnect closes the underlying gRPC connection to kuber microservice.
 func (k *KuberConnector) Disconnect() {
 	cutils.CloseClientConnection(k.Connection)
 }
 
-// PerformHealthCheck checks health of the underlying gRPC connection to context-box microservice
+// PerformHealthCheck checks health of the underlying gRPC connection to kuber microservice.
 func (k *KuberConnector) PerformHealthCheck() error {
 	return cutils.IsConnectionReady(k.Connection)
 }
 
+// GetClient returns a kuber gRPC client.
 func (k *KuberConnector) GetClient() pb.KuberServiceClient {
 	return pb.NewKuberServiceClient(k.Connection)
 }

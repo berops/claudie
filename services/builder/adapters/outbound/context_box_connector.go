@@ -23,18 +23,22 @@ func (c *ContextBoxConnector) Connect() error {
 	return nil
 }
 
+// GetConfigBuilder requests a new config for builder from context-box.
 func (c *ContextBoxConnector) GetConfigBuilder(contextBoxGrpcClient pb.ContextBoxServiceClient) (*pb.GetConfigResponse, error) {
 	return cbox.GetConfigBuilder(contextBoxGrpcClient)
 }
 
+// SaveConfigBuilder saves a config from builder to Claudie database via context-box.
 func (c *ContextBoxConnector) SaveConfigBuilder(config *pb.Config, contextBoxGrpcClient pb.ContextBoxServiceClient) error {
 	return cbox.SaveConfigBuilder(contextBoxGrpcClient, &pb.SaveConfigRequest{Config: config})
 }
 
+// SaveWorkflowState saves workflow state for a particular cluster.
 func (c *ContextBoxConnector) SaveWorkflowState(configName, clusterName string, wf *pb.Workflow, contextBoxGrpcClient pb.ContextBoxServiceClient) error {
 	return cbox.SaveWorkflowState(contextBoxGrpcClient, &pb.SaveWorkflowStateRequest{ConfigName: configName, ClusterName: clusterName, Workflow: wf})
 }
 
+// DeleteConfig removes config from Claudie database via context-box.
 func (c *ContextBoxConnector) DeleteConfig(config *pb.Config, contextBoxGrpcClient pb.ContextBoxServiceClient) error {
 	return cbox.DeleteConfig(contextBoxGrpcClient, &pb.DeleteConfigRequest{Id: config.Id, Type: pb.IdType_HASH})
 }
@@ -44,10 +48,12 @@ func (c *ContextBoxConnector) Disconnect() {
 	utils.CloseClientConnection(c.Connection)
 }
 
+// PerformHealthCheck checks health of the underlying gRPC connection to context-box microservice.
 func (c *ContextBoxConnector) PerformHealthCheck() error {
 	return utils.IsConnectionReady(c.Connection)
 }
 
+// GetClient returns a context-box gRPC client.
 func (c *ContextBoxConnector) GetClient() pb.ContextBoxServiceClient {
 	return pb.NewContextBoxServiceClient(c.Connection)
 }

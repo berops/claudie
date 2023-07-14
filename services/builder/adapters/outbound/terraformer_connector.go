@@ -13,7 +13,7 @@ type TerraformerConnector struct {
 	Connection *grpc.ClientConn
 }
 
-// Connect establishes a gRPC connection with the context-box microservice
+// Connect establishes a gRPC connection with the terraformer microservice.
 func (t *TerraformerConnector) Connect() error {
 	connection, err := cutils.GrpcDialWithRetryAndBackoff("terraformer", envs.TerraformerURL)
 	if err != nil {
@@ -24,6 +24,7 @@ func (t *TerraformerConnector) Connect() error {
 	return nil
 }
 
+// BuildInfrastructure builds/reconciles the infrastructure for given k8s cluster via terraformer.
 func (t *TerraformerConnector) BuildInfrastructure(builderCtx *utils.BuilderContext, terraformerGrpcClient pb.TerraformerServiceClient) (*pb.BuildInfrastructureResponse, error) {
 	return terraformer.BuildInfrastructure(terraformerGrpcClient,
 		&pb.BuildInfrastructureRequest{
@@ -35,6 +36,7 @@ func (t *TerraformerConnector) BuildInfrastructure(builderCtx *utils.BuilderCont
 		})
 }
 
+// DestroyInfrastructure destroys the infrastructure for given k8s cluster via terraformer.
 func (t *TerraformerConnector) DestroyInfrastructure(builderCtx *utils.BuilderContext, terraformerGrpcClient pb.TerraformerServiceClient) (*pb.DestroyInfrastructureResponse, error) {
 	return terraformer.DestroyInfrastructure(terraformerGrpcClient, &pb.DestroyInfrastructureRequest{
 		ProjectName: builderCtx.ProjectName,
@@ -43,15 +45,17 @@ func (t *TerraformerConnector) DestroyInfrastructure(builderCtx *utils.BuilderCo
 	})
 }
 
-// Disconnect closes the underlying gRPC connection to context-box microservice
+// Disconnect closes the underlying gRPC connection to terraformer microservice.
 func (t *TerraformerConnector) Disconnect() {
 	cutils.CloseClientConnection(t.Connection)
 }
 
-// PerformHealthCheck checks health of the underlying gRPC connection to context-box microservice
+// PerformHealthCheck checks health of the underlying gRPC connection to terraformer microservice.
 func (t *TerraformerConnector) PerformHealthCheck() error {
 	return cutils.IsConnectionReady(t.Connection)
 }
+
+// GetClient returns a terraformer gRPC client.
 func (t *TerraformerConnector) GetClient() pb.TerraformerServiceClient {
 	return pb.NewTerraformerServiceClient(t.Connection)
 }

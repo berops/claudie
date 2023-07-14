@@ -13,7 +13,7 @@ type AnsiblerConnector struct {
 	Connection *grpc.ClientConn
 }
 
-// Connect establishes a gRPC connection with the context-box microservice
+// Connect establishes a gRPC connection with the ansibler microservice.
 func (a *AnsiblerConnector) Connect() error {
 	connection, err := cutils.GrpcDialWithRetryAndBackoff("ansibler", envs.AnsiblerURL)
 	if err != nil {
@@ -24,6 +24,7 @@ func (a *AnsiblerConnector) Connect() error {
 	return nil
 }
 
+// InstallNodeRequirements installs node requirements on all nodes.
 func (a *AnsiblerConnector) InstallNodeRequirements(builderCtx *utils.BuilderContext, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.InstallResponse, error) {
 	return ansibler.InstallNodeRequirements(ansiblerGrpcClient,
 		&pb.InstallRequest{Desired: builderCtx.DesiredCluster,
@@ -32,6 +33,7 @@ func (a *AnsiblerConnector) InstallNodeRequirements(builderCtx *utils.BuilderCon
 		})
 }
 
+// InstallVPN installs VPN on all nodes of the infrastructure.
 func (a *AnsiblerConnector) InstallVPN(builderCtx *utils.BuilderContext, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.InstallResponse, error) {
 	return ansibler.InstallVPN(ansiblerGrpcClient,
 		&pb.InstallRequest{
@@ -41,6 +43,7 @@ func (a *AnsiblerConnector) InstallVPN(builderCtx *utils.BuilderContext, ansible
 		})
 }
 
+// SetUpLoadbalancers configures loadbalancers for the infrastructure.
 func (a *AnsiblerConnector) SetUpLoadbalancers(builderCtx *utils.BuilderContext, apiEndpoint string, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.SetUpLBResponse, error) {
 	return ansibler.SetUpLoadbalancers(ansiblerGrpcClient,
 		&pb.SetUpLBRequest{
@@ -53,6 +56,7 @@ func (a *AnsiblerConnector) SetUpLoadbalancers(builderCtx *utils.BuilderContext,
 		})
 }
 
+// TeardownLoadBalancers destroys loadbalancers for the infrastructure.
 func (a *AnsiblerConnector) TeardownLoadBalancers(builderCtx *utils.BuilderContext, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.TeardownLBResponse, error) {
 	return ansibler.TeardownLoadBalancers(ansiblerGrpcClient,
 		&pb.TeardownLBRequest{
@@ -63,6 +67,7 @@ func (a *AnsiblerConnector) TeardownLoadBalancers(builderCtx *utils.BuilderConte
 		})
 }
 
+// UpdateAPIEndpoint updates kube API endpoint of the cluster.
 func (a *AnsiblerConnector) UpdateAPIEndpoint(builderCtx *utils.BuilderContext, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.UpdateAPIEndpointResponse, error) {
 	return ansibler.UpdateAPIEndpoint(ansiblerGrpcClient, &pb.UpdateAPIEndpointRequest{
 		Current:     builderCtx.CurrentCluster,
@@ -71,15 +76,17 @@ func (a *AnsiblerConnector) UpdateAPIEndpoint(builderCtx *utils.BuilderContext, 
 	})
 }
 
-// Disconnect closes the underlying gRPC connection to context-box microservice
+// Disconnect closes the underlying gRPC connection to ansibler microservice
 func (a *AnsiblerConnector) Disconnect() {
 	cutils.CloseClientConnection(a.Connection)
 }
 
-// PerformHealthCheck checks health of the underlying gRPC connection to context-box microservice
+// PerformHealthCheck checks health of the underlying gRPC connection to ansibler microservice
 func (a *AnsiblerConnector) PerformHealthCheck() error {
 	return cutils.IsConnectionReady(a.Connection)
 }
+
+// GetClient returns a ansibler gRPC client.
 func (a *AnsiblerConnector) GetClient() pb.AnsiblerServiceClient {
 	return pb.NewAnsiblerServiceClient(a.Connection)
 }
