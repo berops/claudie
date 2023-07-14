@@ -23,7 +23,7 @@ const (
 // after the go-routine finishes the work, if nil it will be ignored.
 func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 	cboxClient := u.ContextBox.GetClient()
-	res, err := cbox.GetConfigBuilder(cboxClient) // Get a new config
+	res, err := cbox.GetConfigBuilder(cboxClient)
 	if err != nil {
 		return fmt.Errorf("error while getting config from the Context-box: %w", err)
 	}
@@ -32,22 +32,15 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 	if config == nil {
 		return nil
 	}
-
-	if wg != nil {
-		// we received a non-nil config thus we add a new worker to the wait group.
-		wg.Add(1)
-	}
+	wg.Add(1)
 
 	go func() {
-		if wg != nil {
-			defer wg.Done()
-		}
+		defer wg.Done()
 
 		logger := cutils.CreateLoggerWithProjectName(config.Name)
-
 		clusterView := cutils.NewClusterView(config)
 
-		// if Desired state is null and current is not we delete the infra for the config.
+		// If Desired state is null and current is not we delete the infra for the config.
 		if config.DsChecksum == nil && config.CsChecksum != nil {
 			var err error
 			// Try maxDeleteRetry to delete the config.
@@ -68,6 +61,7 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 			return
 		}
 
+		// Process each cluster concurrently through the Claudie workflow.
 		if err := cutils.ConcurrentExec(clusterView.AllClusters(), func(_ int, clusterName string) error {
 			logger := logger.With().Str("cluster", clusterName).Logger()
 
@@ -93,6 +87,7 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 			}
 
 			var (
+				// Calculate difference between desired state and current state
 				diff = utils.Diff(
 					clusterView.CurrentClusters[clusterName],
 					clusterView.DesiredClusters[clusterName],
@@ -103,6 +98,7 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 				currentStage = 0
 			)
 
+			// If difference has intermediate representation of states, apply it before real desired state.
 			if diff.IR != nil {
 				currentStage++
 				clusterView.ClusterWorkflows[clusterName].Description = fmt.Sprintf("Processing stage [%d/%d]", currentStage, stages)
@@ -139,13 +135,14 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 				}
 				logger.Info().Msg("Finished building first stage for cluster")
 
-				// make the desired state of the temporary cluster the new current state.
+				// Make the desired state of the temporary cluster the new current state.
 				clusterView.CurrentClusters[clusterName] = ctx.DesiredCluster
-				// Update nodepool info, as they are not carried over
+				// Update nodepool info, as they are not carried over.
 				utils.UpdateNodePoolInfo(ctx.DesiredCluster.ClusterInfo.NodePools, clusterView.DesiredClusters[clusterName].ClusterInfo.NodePools)
 				clusterView.Loadbalancers[clusterName] = ctx.DesiredLoadbalancers
 			}
 
+			// If difference between states replaces control plane, update API endpoint.
 			if diff.ControlPlaneWithAPIEndpointReplace {
 				currentStage++
 				clusterView.ClusterWorkflows[clusterName].Description = fmt.Sprintf("Processing stage [%d/%d]", currentStage, stages)
@@ -174,6 +171,7 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 					Workflow:             clusterView.ClusterWorkflows[clusterName],
 				}
 
+				// Reconcile k8s cluster to assure new API endpoint has correct certificates.
 				if err := u.reconcileK8sCluster(ctx, cboxClient); err != nil {
 					clusterView.SetWorkflowError(clusterName, err)
 					logger.Err(err).Msg("Failed to build cluster")
@@ -183,6 +181,7 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 				clusterView.CurrentClusters[clusterName] = ctx.DesiredCluster
 				clusterView.Loadbalancers[clusterName] = ctx.DesiredLoadbalancers
 
+				// Patch cluster-info config map to update certificates.
 				if err := u.callPatchClusterInfoConfigMap(ctx, cboxClient); err != nil {
 					clusterView.SetWorkflowError(clusterName, err)
 					logger.Err(err).Msg("Failed to build cluster")
@@ -190,6 +189,7 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 				}
 			}
 
+			// If difference between states results in some nodes being deleted, delete them.
 			if len(diff.ToDelete) > 0 {
 				currentStage++
 				clusterView.ClusterWorkflows[clusterName].Description = fmt.Sprintf("Processing stage [%d/%d]", currentStage, stages)
@@ -211,6 +211,7 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 				clusterView.CurrentClusters[clusterName] = cluster
 			}
 
+			// Apply desired state of the infrastructure after all previous steps (if any required).
 			message := "Processing cluster"
 			if diff.Stages() > 0 {
 				currentStage++
@@ -233,6 +234,7 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 				clusterView.CurrentClusters[clusterName] = ctx.DesiredCluster
 				clusterView.Loadbalancers[clusterName] = ctx.DesiredLoadbalancers
 
+				// Save state if error failed to build infrastructure.
 				if errors.Is(err, ErrFailedToBuildInfrastructure) {
 					clusterView.CurrentClusters[clusterName] = ctx.CurrentCluster
 					clusterView.Loadbalancers[clusterName] = ctx.CurrentLoadbalancers
@@ -246,8 +248,9 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 			// Propagate the changes made to the cluster back to the View.
 			updateFromBuild(ctx, clusterView)
 
+			// If any Loadbalancer are removed, remove them in this step.
 			if len(clusterView.DeletedLoadbalancers) > 0 {
-				// perform the deletion of loadbalancers as this won't be handled by the buildCluster Workflow.
+				// Perform the deletion of loadbalancers as this won't be handled by the buildCluster Workflow.
 				// The BuildInfrastructure in terraformer only performs creation/update for Lbs.
 				deleteCtx := &utils.BuilderContext{
 					ProjectName:          config.Name,
@@ -290,12 +293,12 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 
 		// Update the config and store it to the DB.
 		logger.Debug().Msg("Saving the config")
+		// After successful workflow, set desired state as the current state.
 		config.CurrentState = config.DesiredState
 		if err := cbox.SaveConfigBuilder(cboxClient, &pb.SaveConfigRequest{Config: config}); err != nil {
 			logger.Err(err).Msg("Error while saving the config")
 			return
 		}
-
 		logger.Info().Msgf("Config finished building")
 	}()
 
