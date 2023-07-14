@@ -8,10 +8,11 @@ import (
 	"github.com/berops/claudie/services/builder/domain/usecases/utils"
 )
 
-// callKubeEleven passes config to kubeEleven to bootstrap k8s cluster
+// reconcileK8sCluster reconciles desired k8s cluster via kube-eleven.
 func (u *Usecases) reconcileK8sCluster(ctx *utils.BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
 	logger := cutils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
 
+	// Set workflow state.
 	description := ctx.Workflow.Description
 	ctx.Workflow.Stage = pb.Workflow_KUBE_ELEVEN
 	ctx.Workflow.Description = fmt.Sprintf("%s building kubernetes cluster", description)
@@ -26,8 +27,10 @@ func (u *Usecases) reconcileK8sCluster(ctx *utils.BuilderContext, cboxClient pb.
 	}
 	logger.Info().Msgf("BuildCluster on Kube-eleven finished successfully")
 
+	// Update desired state with returned data.
 	ctx.DesiredCluster = res.Desired
 	ctx.DesiredLoadbalancers = res.DesiredLbs
+	// Set description to original string.
 	ctx.Workflow.Description = description
 	if err := u.ContextBox.SaveWorkflowState(ctx.ProjectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
 		return err

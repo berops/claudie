@@ -33,6 +33,7 @@ func (u *Usecases) reconcileInfrastructure(ctx *utils.BuilderContext, cboxClient
 	if err != nil {
 		return fmt.Errorf("error while reconciling infrastructure for cluster %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
 	}
+	logger.Info().Msgf("BuildInfrastructure on Terraformer finished successfully")
 
 	switch resp := res.GetResponse().(type) {
 	case *pb.BuildInfrastructureResponse_Fail:
@@ -56,7 +57,6 @@ func (u *Usecases) reconcileInfrastructure(ctx *utils.BuilderContext, cboxClient
 		return err
 	}
 
-	logger.Info().Msgf("BuildInfrastructure on Terraformer finished successfully")
 	return nil
 }
 
@@ -73,16 +73,15 @@ func (u *Usecases) destroyInfrastructure(ctx *utils.BuilderContext, cboxClient p
 	}
 
 	logger.Info().Msg("Calling DestroyInfrastructure on Terraformer")
-
 	if _, err := u.Terraformer.DestroyInfrastructure(ctx, u.Terraformer.GetClient()); err != nil {
 		return fmt.Errorf("error while destroying infrastructure for cluster %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
 	}
+	logger.Info().Msg("DestroyInfrastructure on Terraformer finished successfully")
 
 	// Set description to original string.
 	ctx.Workflow.Description = description
 	if err := u.ContextBox.SaveWorkflowState(ctx.ProjectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
 		return err
 	}
-	logger.Info().Msg("DestroyInfrastructure on Terraformer finished successfully")
 	return nil
 }
