@@ -3,11 +3,11 @@ package usecases
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	cutils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/builder/domain/usecases/utils"
-	terraformer "github.com/berops/claudie/services/terraformer/client"
 )
 
 var (
@@ -16,26 +16,20 @@ var (
 	ErrFailedToBuildInfrastructure = errors.New("failed to successfully build desired state")
 )
 
+// reconcileInfrastructure reconciles the desired infrastructure via terraformer.
 func (u *Usecases) reconcileInfrastructure(ctx *utils.BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
 	logger := cutils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
 
+	// Set workflow state.
 	description := ctx.Workflow.Description
 	ctx.Workflow.Stage = pb.Workflow_TERRAFORMER
-	ctx.Workflow.Description = fmt.Sprintf("%s building infrastructure", description)
+	ctx.Workflow.Description = strings.TrimSpace(fmt.Sprintf("%s building infrastructure", description))
 	if err := u.ContextBox.SaveWorkflowState(ctx.ProjectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
 		return err
 	}
 
 	logger.Info().Msgf("Calling BuildInfrastructure on Terraformer")
-
-	res, err := terraformer.BuildInfrastructure(u.Terraformer.GetClient(),
-		&pb.BuildInfrastructureRequest{
-			Current:     ctx.CurrentCluster,
-			Desired:     ctx.DesiredCluster,
-			CurrentLbs:  ctx.CurrentLoadbalancers,
-			DesiredLbs:  ctx.DesiredLoadbalancers,
-			ProjectName: ctx.ProjectName,
-		})
+	res, err := u.Terraformer.BuildInfrastructure(ctx, u.Terraformer.GetClient())
 	if err != nil {
 		return fmt.Errorf("error while reconciling infrastructure for cluster %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
 	}
@@ -56,17 +50,21 @@ func (u *Usecases) reconcileInfrastructure(ctx *utils.BuilderContext, cboxClient
 		ctx.DesiredLoadbalancers = resp.Ok.DesiredLbs
 	}
 
+	// Set description to original string.
 	ctx.Workflow.Description = description
 	if err := u.ContextBox.SaveWorkflowState(ctx.ProjectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
 		return err
 	}
+
 	logger.Info().Msgf("BuildInfrastructure on Terraformer finished successfully")
 	return nil
 }
 
+// destroyInfrastructure destroys the current infrastructure via terraformer.
 func (u *Usecases) destroyInfrastructure(ctx *utils.BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
 	logger := cutils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
 
+	// Set workflow state.
 	description := ctx.Workflow.Description
 	ctx.Workflow.Stage = pb.Workflow_DESTROY_TERRAFORMER
 	ctx.Workflow.Description = fmt.Sprintf("%s destroying infrastructure", description)
@@ -76,14 +74,11 @@ func (u *Usecases) destroyInfrastructure(ctx *utils.BuilderContext, cboxClient p
 
 	logger.Info().Msg("Calling DestroyInfrastructure on Terraformer")
 
-	if _, err := terraformer.DestroyInfrastructure(u.Terraformer.GetClient(),
-		&pb.DestroyInfrastructureRequest{
-			ProjectName: ctx.ProjectName,
-			Current:     ctx.CurrentCluster,
-			CurrentLbs:  ctx.CurrentLoadbalancers,
-		}); err != nil {
+	if _, err := u.Terraformer.DestroyInfrastructure(ctx, u.Terraformer.GetClient()); err != nil {
 		return fmt.Errorf("error while destroying infrastructure for cluster %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
 	}
+
+	// Set description to original string.
 	ctx.Workflow.Description = description
 	if err := u.ContextBox.SaveWorkflowState(ctx.ProjectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
 		return err
