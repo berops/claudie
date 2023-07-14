@@ -42,22 +42,14 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 
 		// If Desired state is null and current is not we delete the infra for the config.
 		if config.DsChecksum == nil && config.CsChecksum != nil {
-			var err error
-			// Try maxDeleteRetry to delete the config.
-			for i := 0; i < maxDeleteRetry; i++ {
-				logger.Info().Msgf("Destroying config")
-				if err = u.destroyConfig(config, clusterView, cboxClient); err == nil {
-					// Deletion successful, break here.
-					break
-				}
-			}
-			// Save error to DB if not nil.
-			if err != nil {
+			logger.Info().Msgf("Destroying config")
+			if err := u.deleteConfig(config, clusterView, cboxClient); err != nil {
 				logger.Err(err).Msg("Error while destroying config")
 				if err := utils.SaveConfigWithWorkflowError(config, cboxClient, clusterView); err != nil {
 					logger.Err(err).Msg("Failed to save error message")
 				}
 			}
+			logger.Info().Msgf("Config successfully destroyed")
 			return
 		}
 
@@ -68,19 +60,11 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 			// The workflow doesn't handle the case for the deletion of the cluster
 			// we need to do this as a separate step.
 			if clusterView.DesiredClusters[clusterName] == nil {
-				deleteCtx := &utils.BuilderContext{
-					ProjectName:          config.Name,
-					CurrentCluster:       clusterView.CurrentClusters[clusterName],
-					CurrentLoadbalancers: clusterView.DeletedLoadbalancers[clusterName],
-					Workflow:             clusterView.ClusterWorkflows[clusterName],
-				}
-
-				if err := u.destroyCluster(deleteCtx, cboxClient); err != nil {
+				if err := u.deleteCluster(config.Name, clusterName, clusterView, cboxClient); err != nil {
 					clusterView.SetWorkflowError(clusterName, err)
 					logger.Err(err).Msg("Error while destroying cluster")
 					return err
 				}
-
 				clusterView.SetWorkflowDone(clusterName)
 				logger.Info().Msg("Finished workflow for cluster")
 				return u.ContextBox.SaveWorkflowState(config.Name, clusterName, clusterView.ClusterWorkflows[clusterName], cboxClient)
@@ -104,36 +88,13 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 				clusterView.ClusterWorkflows[clusterName].Description = fmt.Sprintf("Processing stage [%d/%d]", currentStage, stages)
 				logger.Info().Msgf("Processing stage [%d/%d] for cluster", currentStage, stages)
 
-				ctx := &utils.BuilderContext{
-					ProjectName:    config.Name,
-					CurrentCluster: clusterView.CurrentClusters[clusterName],
-					DesiredCluster: diff.IR,
-
-					// If there are any Lbs for the current state keep them.
-					// Ignore the desired state for the Lbs for now. Use the
-					// current state for desired to not trigger any changes.
-					// as we only care about addition of nodes in this step.
-					CurrentLoadbalancers: clusterView.Loadbalancers[clusterName],
-					DesiredLoadbalancers: clusterView.Loadbalancers[clusterName],
-					DeletedLoadBalancers: nil,
-
-					Workflow: clusterView.ClusterWorkflows[clusterName],
-				}
-
-				if ctx, err = u.buildCluster(ctx, cboxClient); err != nil {
-					clusterView.CurrentClusters[clusterName] = ctx.DesiredCluster
-					clusterView.Loadbalancers[clusterName] = ctx.DesiredLoadbalancers
-
-					if errors.Is(err, ErrFailedToBuildInfrastructure) {
-						clusterView.CurrentClusters[clusterName] = ctx.CurrentCluster
-						clusterView.Loadbalancers[clusterName] = ctx.CurrentLoadbalancers
-					}
-
-					clusterView.SetWorkflowError(clusterName, err)
+				ctx, err := u.applyIR(config.Name, clusterName, clusterView, cboxClient, diff)
+				if err != nil {
 					logger.Err(err).Msg("Failed to build cluster")
+					clusterView.SetWorkflowError(clusterName, err)
 					return err
 				}
-				logger.Info().Msg("Finished building first stage for cluster")
+				logger.Info().Msgf("Finished building [%d/%d] stage for cluster", currentStage, stages)
 
 				// Make the desired state of the temporary cluster the new current state.
 				clusterView.CurrentClusters[clusterName] = ctx.DesiredCluster
@@ -148,45 +109,12 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 				clusterView.ClusterWorkflows[clusterName].Description = fmt.Sprintf("Processing stage [%d/%d]", currentStage, stages)
 				logger.Info().Msgf("Processing stage [%d/%d] for cluster", currentStage, stages)
 
-				ctx := &utils.BuilderContext{
-					ProjectName:    config.Name,
-					CurrentCluster: clusterView.CurrentClusters[clusterName],
-					DesiredCluster: clusterView.DesiredClusters[clusterName],
-					Workflow:       clusterView.ClusterWorkflows[clusterName],
-				}
-
-				if err := u.callUpdateAPIEndpoint(ctx, cboxClient); err != nil {
+				if err := u.applyAPIEndpointReplacement(config.Name, clusterName, clusterView, cboxClient); err != nil {
 					clusterView.SetWorkflowError(clusterName, err)
 					logger.Err(err).Msg("Failed to build cluster")
-					return err
 				}
 
-				clusterView.CurrentClusters[clusterName] = ctx.CurrentCluster
-				clusterView.DesiredClusters[clusterName] = ctx.DesiredCluster
-
-				ctx = &utils.BuilderContext{
-					ProjectName:          config.Name,
-					DesiredCluster:       clusterView.CurrentClusters[clusterName],
-					DesiredLoadbalancers: clusterView.Loadbalancers[clusterName],
-					Workflow:             clusterView.ClusterWorkflows[clusterName],
-				}
-
-				// Reconcile k8s cluster to assure new API endpoint has correct certificates.
-				if err := u.reconcileK8sCluster(ctx, cboxClient); err != nil {
-					clusterView.SetWorkflowError(clusterName, err)
-					logger.Err(err).Msg("Failed to build cluster")
-					return err
-				}
-
-				clusterView.CurrentClusters[clusterName] = ctx.DesiredCluster
-				clusterView.Loadbalancers[clusterName] = ctx.DesiredLoadbalancers
-
-				// Patch cluster-info config map to update certificates.
-				if err := u.callPatchClusterInfoConfigMap(ctx, cboxClient); err != nil {
-					clusterView.SetWorkflowError(clusterName, err)
-					logger.Err(err).Msg("Failed to build cluster")
-					return err
-				}
+				logger.Info().Msgf("Finished building [%d/%d] stage for cluster", currentStage, stages)
 			}
 
 			// If difference between states results in some nodes being deleted, delete them.
@@ -246,7 +174,7 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 			}
 
 			// Propagate the changes made to the cluster back to the View.
-			updateFromBuild(ctx, clusterView)
+			utils.UpdateFromBuild(ctx, clusterView)
 
 			// If any Loadbalancer are removed, remove them in this step.
 			if len(clusterView.DeletedLoadbalancers) > 0 {
@@ -303,113 +231,4 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 	}()
 
 	return nil
-}
-
-// separateNodepools creates two slices of node names, one for master and one for worker nodes
-func separateNodepools(clusterNodes map[string]int32, currentClusterInfo, desiredClusterInfo *pb.ClusterInfo) (master []string, worker []string) {
-	for _, nodepool := range currentClusterInfo.NodePools {
-		var names = make([]string, 0, len(nodepool.Nodes))
-		if np := nodepool.GetDynamicNodePool(); np != nil {
-			if count, ok := clusterNodes[nodepool.Name]; ok && count > 0 {
-				names = getDynamicNodeNames(nodepool, int(count))
-			}
-		} else if np := nodepool.GetStaticNodePool(); np != nil {
-			if count, ok := clusterNodes[nodepool.Name]; ok && count > 0 {
-				names = getStaticNodeNames(nodepool, desiredClusterInfo)
-			}
-		}
-		if nodepool.IsControl {
-			master = append(master, names...)
-		} else {
-			worker = append(worker, names...)
-		}
-	}
-	return master, worker
-}
-
-// getDynamicNodeNames returns slice of length count with names of the nodes from specified nodepool
-// nodes chosen are from the last element in Nodes slice, up to the first one
-func getDynamicNodeNames(np *pb.NodePool, count int) (names []string) {
-	for i := len(np.GetNodes()) - 1; i >= len(np.GetNodes())-count; i-- {
-		names = append(names, np.GetNodes()[i].GetName())
-		log.Debug().Msgf("Choosing node %s for deletion", np.GetNodes()[i].GetName())
-	}
-	return names
-}
-
-// getStaticNodeNames returns slice of length count with names of the nodes from specified nodepool
-// nodes chosen are from the last element in Nodes slice, up to the first one
-func getStaticNodeNames(np *pb.NodePool, desiredCluster *pb.ClusterInfo) (names []string) {
-	// Find desired nodes for node pool.
-	desired := make(map[string]struct{})
-	for _, n := range desiredCluster.NodePools {
-		if n.Name == np.Name {
-			for _, node := range n.Nodes {
-				desired[node.Name] = struct{}{}
-			}
-		}
-	}
-	// Find deleted nodes
-	if n := np.GetStaticNodePool(); n != nil {
-		for _, node := range np.Nodes {
-			if _, ok := desired[node.Name]; !ok {
-				// Append name as it is not defined in desired state.
-				names = append(names, node.Name)
-			}
-		}
-	}
-	return names
-}
-
-// deleteNodes deletes nodes from the cluster based on the node map specified.
-func (u *Usecases) deleteNodes(currentCluster, desiredCluster *pb.K8Scluster, nodes map[string]int32) (*pb.K8Scluster, error) {
-	master, worker := separateNodepools(nodes, currentCluster.ClusterInfo, desiredCluster.ClusterInfo)
-	newCluster, err := u.callDeleteNodes(master, worker, currentCluster)
-	if err != nil {
-		return nil, fmt.Errorf("error while deleting nodes for %s : %w", currentCluster.ClusterInfo.Name, err)
-	}
-
-	return newCluster, nil
-}
-
-// updateFromBuild takes the changes after a successful workflow of a given cluster
-func updateFromBuild(ctx *utils.BuilderContext, view *cutils.ClusterView) {
-	if ctx.CurrentCluster != nil {
-		view.CurrentClusters[ctx.CurrentCluster.ClusterInfo.Name] = ctx.CurrentCluster
-	}
-
-	if ctx.DesiredCluster != nil {
-		view.DesiredClusters[ctx.DesiredCluster.ClusterInfo.Name] = ctx.DesiredCluster
-	}
-
-	if ctx.Workflow != nil {
-		view.ClusterWorkflows[ctx.GetClusterName()] = ctx.Workflow
-	}
-
-	for _, current := range ctx.CurrentLoadbalancers {
-		for i := range view.Loadbalancers[current.TargetedK8S] {
-			if view.Loadbalancers[current.TargetedK8S][i].ClusterInfo.Name == current.ClusterInfo.Name {
-				view.Loadbalancers[current.TargetedK8S][i] = current
-				break
-			}
-		}
-	}
-
-	for _, desired := range ctx.DesiredLoadbalancers {
-		for i := range view.DesiredLoadbalancers[desired.TargetedK8S] {
-			if view.DesiredLoadbalancers[desired.TargetedK8S][i].ClusterInfo.Name == desired.ClusterInfo.Name {
-				view.DesiredLoadbalancers[desired.TargetedK8S][i] = desired
-				break
-			}
-		}
-	}
-
-	for _, deleted := range ctx.DeletedLoadBalancers {
-		for i := range view.DeletedLoadbalancers[deleted.TargetedK8S] {
-			if view.DeletedLoadbalancers[deleted.TargetedK8S][i].ClusterInfo.Name == deleted.ClusterInfo.Name {
-				view.DeletedLoadbalancers[deleted.TargetedK8S][i] = deleted
-				break
-			}
-		}
-	}
 }

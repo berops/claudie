@@ -17,6 +17,7 @@ import (
 	"github.com/berops/claudie/services/builder/domain/usecases"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc/connectivity"
 )
 
 const defaultBuilderPort = 50051
@@ -123,22 +124,24 @@ func main() {
 
 	group.Go(func() error {
 		wg := sync.WaitGroup{}
-		var connectionReady bool
+		prevGrpcConnectionState := cbox.Connection.GetState()
 
 		worker.NewWorker(
 			ctx,
 			5*time.Second,
 			func() error {
-				if usecases.ContextBox.PerformHealthCheck() == nil {
-					// Connection became ready.
-					if !connectionReady {
+				if utils.IsConnectionReady(cbox.Connection) == nil {
+					if prevGrpcConnectionState != connectivity.Ready {
 						log.Info().Msgf("Connection to Context-box is now ready")
 					}
-					connectionReady = true
+					prevGrpcConnectionState = connectivity.Ready
 				} else {
 					log.Warn().Msgf("Connection to Context-box is not ready yet")
-					connectionReady = false
-					// Return nil, do not process any configs.
+					log.Debug().Msgf("Connection to Context-box is %s, waiting for the service to be reachable", cbox.Connection.GetState().String())
+
+					prevGrpcConnectionState = cbox.Connection.GetState()
+					cbox.Connection.Connect() // try connecting to the context-box microservice.
+
 					return nil
 				}
 				return usecases.ConfigProcessor(&wg)
@@ -148,8 +151,7 @@ func main() {
 
 		log.Info().Msg("Builder stopped checking for new configs")
 		log.Info().Msgf("Waiting for already started configs to finish processing")
-
-		group.Wait()
+		wg.Wait()
 		log.Debug().Msgf("All spawned go-routines finished")
 
 		return nil
