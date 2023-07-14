@@ -12,7 +12,7 @@ import (
 )
 
 // callAnsibler passes config to ansibler to set up VPN
-func (u *Usecases) callAnsibler(ctx *utils.BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+func (u *Usecases) configureInfrastructure(ctx *utils.BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
 	logger := cutils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
 
 	description := ctx.Workflow.Description

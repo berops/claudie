@@ -174,7 +174,7 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 					Workflow:             clusterView.ClusterWorkflows[clusterName],
 				}
 
-				if err := u.buildK8sCluster(ctx, cboxClient); err != nil {
+				if err := u.reconcileK8sCluster(ctx, cboxClient); err != nil {
 					clusterView.SetWorkflowError(clusterName, err)
 					logger.Err(err).Msg("Failed to build cluster")
 					return err

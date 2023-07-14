@@ -9,7 +9,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func (u *Usecases) reconcileK8s(ctx *utils.BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+func (u *Usecases) reconcileK8sConfiguration(ctx *utils.BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
 	logger := cutils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
 	kuberClient := u.Kuber.GetClient()
 
@@ -145,6 +145,15 @@ func (u *Usecases) deleteClusterData(ctx *utils.BuilderContext, cboxClient pb.Co
 	if err := u.ContextBox.SaveWorkflowState(ctx.ProjectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
 		return err
 	}
+
+	// Destroy Autoscaler if current state is autoscaled
+	if cutils.IsAutoscaled(ctx.CurrentCluster) {
+		log.Info().Str("project", ctx.ProjectName).Str("cluster", ctx.GetClusterName()).Msg("Calling DestroyClusterAutoscaler on kuber")
+		if err := u.Kuber.DestroyClusterAutoscaler(ctx, kuberClient); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

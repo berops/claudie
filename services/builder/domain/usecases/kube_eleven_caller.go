@@ -9,7 +9,7 @@ import (
 )
 
 // callKubeEleven passes config to kubeEleven to bootstrap k8s cluster
-func (u *Usecases) buildK8sCluster(ctx *utils.BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+func (u *Usecases) reconcileK8sCluster(ctx *utils.BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
 	logger := cutils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
 
 	description := ctx.Workflow.Description
