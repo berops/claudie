@@ -9,6 +9,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// reconcileK8sConfiguration reconciles desired k8s cluster configuration via kuber.
 func (u *Usecases) reconcileK8sConfiguration(ctx *utils.BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
 	logger := cutils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
 	kuberClient := u.Kuber.GetClient()
@@ -20,14 +21,9 @@ func (u *Usecases) reconcileK8sConfiguration(ctx *utils.BuilderContext, cboxClie
 	// Only patch cluster-info ConfigMap if kubeconfig changed.
 	if ctx.CurrentCluster != nil && (ctx.CurrentCluster.Kubeconfig != ctx.DesiredCluster.Kubeconfig) {
 		// Set new description.
-		if err := u.saveWorkflowDescription(ctx, fmt.Sprintf("%s patching cluster info config map", description), cboxClient); err != nil {
+		if err := u.callPatchClusterInfoConfigMap(ctx, cboxClient); err != nil {
 			return err
 		}
-		logger.Info().Msg("Calling PatchClusterInfoConfigMap on kuber for cluster")
-		if err := u.Kuber.PatchClusterInfoConfigMap(ctx, kuberClient); err != nil {
-			return err
-		}
-		logger.Info().Msg("PatchClusterInfoConfigMap on Kuber for cluster finished successfully")
 	}
 
 	// If previous cluster had loadbalancers, and the new one does not, the old scrape config will be removed.
@@ -122,7 +118,26 @@ func (u *Usecases) reconcileK8sConfiguration(ctx *utils.BuilderContext, cboxClie
 	return nil
 }
 
-// deleteClusterData deletes the kubeconfig and cluster metadata.
+// callPatchClusterInfoConfigMap patches cluster-info ConfigMap via kuber.
+func (u *Usecases) callPatchClusterInfoConfigMap(ctx *utils.BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+	logger := cutils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
+
+	description := ctx.Workflow.Description
+	ctx.Workflow.Stage = pb.Workflow_KUBER
+
+	if err := u.saveWorkflowDescription(ctx, fmt.Sprintf("%s patching cluster info config map", description), cboxClient); err != nil {
+		return err
+	}
+	logger.Info().Msg("Calling PatchClusterInfoConfigMap on kuber for cluster")
+	if err := u.Kuber.PatchClusterInfoConfigMap(ctx, u.Kuber.GetClient()); err != nil {
+		return err
+	}
+	logger.Info().Msg("PatchClusterInfoConfigMap on Kuber for cluster finished successfully")
+
+	return u.saveWorkflowDescription(ctx, description, cboxClient)
+}
+
+// deleteClusterData deletes the kubeconfig, cluster metadata and cluster autoscaler from management cluster.
 func (u *Usecases) deleteClusterData(ctx *utils.BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
 	if ctx.CurrentCluster == nil {
 		return nil
@@ -168,7 +183,7 @@ func (u *Usecases) deleteClusterData(ctx *utils.BuilderContext, cboxClient pb.Co
 	return nil
 }
 
-// deleteNodes calls Kuber.DeleteNodes which will safely delete nodes from cluster
+// callDeleteNodes calls Kuber.DeleteNodes which will gracefully delete nodes from cluster
 func (u *Usecases) callDeleteNodes(master, worker []string, cluster *pb.K8Scluster) (*pb.K8Scluster, error) {
 	logger := cutils.CreateLoggerWithClusterName(cutils.GetClusterID(cluster.ClusterInfo))
 

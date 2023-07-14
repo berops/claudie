@@ -120,6 +120,7 @@ func Diff(current, desired *pb.K8Scluster, currentLbs, desiredLbs []*pb.LBcluste
 	return result
 }
 
+// findNodepoolDifference calculates difference between desired nodepools and current nodepools.
 func findNodepoolDifference(currentNodepoolCounts map[string]int32, desiredClusterTmp, currentClusterTmp *pb.K8Scluster) (result map[string]int32, adding, deleting bool) {
 	nodepoolCountToDelete := make(map[string]int32)
 

@@ -18,7 +18,7 @@ const (
 	maxDeleteRetry = 3
 )
 
-// configProcessor will fetch new configs from the context-box service. Each received config will be processed in
+// ConfigProcessor will fetch new configs from the context-box service. Each received config will be processed in
 // a separate go-routine. If a sync.WaitGroup is supplied it will call the Add(1) and then the Done() method on it
 // after the go-routine finishes the work, if nil it will be ignored.
 func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {

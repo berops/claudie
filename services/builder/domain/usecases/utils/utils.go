@@ -1,33 +1,15 @@
 package utils
 
 import (
-	"fmt"
-
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	cbox "github.com/berops/claudie/services/context-box/client"
 )
 
-// saveConfigWithWorkflowError saves config with workflow states
+// SaveConfigWithWorkflowError saves config with workflow states
 func SaveConfigWithWorkflowError(config *pb.Config, c pb.ContextBoxServiceClient, clusterView *utils.ClusterView) error {
 	config.State = clusterView.ClusterWorkflows
 	return cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
-}
-
-func UpdateWorkflowStateInDB(configName, clusterName string, wf *pb.Workflow, c pb.ContextBoxServiceClient) error {
-	if configName == "" {
-		return fmt.Errorf("config name must not be empty when updating workflow state")
-	}
-
-	if clusterName == "" {
-		return fmt.Errorf("cluster name must not be empty when updating workflow state")
-	}
-
-	return cbox.SaveWorkflowState(c, &pb.SaveWorkflowStateRequest{
-		ConfigName:  configName,
-		ClusterName: clusterName,
-		Workflow:    wf,
-	})
 }
 
 // updateNodePoolInfo updates the nodepool metadata and node private IPs between stages of the cluster build.

@@ -5,29 +5,32 @@ import (
 	"github.com/berops/claudie/proto/pb"
 )
 
+// BuilderContext provides context for the Claudie workflow for a particular cluster.
 type BuilderContext struct {
+	// ProjectName for this cluster
 	ProjectName string
-	// cluster is the current state of the cluster
+	// CurrentCluster is the current state of the cluster
 	// properties may change during processing.
 	CurrentCluster *pb.K8Scluster
-	// desiredCluster is the desired state of the cluster
+	// DesiredCluster is the desired state of the cluster
 	// properties may change during processing.
 	DesiredCluster *pb.K8Scluster
 
-	// loadbalancers are the current loadbalancers of the cluster
+	// CurrentLoadbalancers are the current loadbalancers of the cluster
 	// properties may change during processing.
 	CurrentLoadbalancers []*pb.LBcluster
-	// desiredLoadbalancers are the current loadbalancers of the cluster
+	// DesiredLoadbalancers are the current loadbalancers of the cluster
 	// properties may change during processing.
 	DesiredLoadbalancers []*pb.LBcluster
 
-	// deletedLoadBalancers are the deleted loadbalancers for the cluster.
+	// DeletedLoadBalancers are the deleted loadbalancers for the cluster.
 	DeletedLoadBalancers []*pb.LBcluster
 
 	// Workflow is the current state of processing of the cluster.
 	Workflow *pb.Workflow
 }
 
+// GetClusterName returns name of the k8s cluster for a given builder context.
 func (ctx *BuilderContext) GetClusterName() string {
 	if ctx.DesiredCluster != nil {
 		return ctx.DesiredCluster.ClusterInfo.Name
@@ -52,6 +55,7 @@ func (ctx *BuilderContext) GetClusterName() string {
 	return ""
 }
 
+// GetClusterID returns ID of the k8s cluster for a given builder context.
 func (ctx *BuilderContext) GetClusterID() string {
 	if ctx.DesiredCluster != nil {
 		return utils.GetClusterID(ctx.DesiredCluster.ClusterInfo)
@@ -76,7 +80,7 @@ func (ctx *BuilderContext) GetClusterID() string {
 	return ""
 }
 
-// updateFromBuild takes the changes after a successful workflow of a given cluster
+// UpdateFromBuild takes the changes after a successful workflow of a given cluster
 func UpdateFromBuild(ctx *BuilderContext, view *utils.ClusterView) {
 	if ctx.CurrentCluster != nil {
 		view.CurrentClusters[ctx.CurrentCluster.ClusterInfo.Name] = ctx.CurrentCluster
