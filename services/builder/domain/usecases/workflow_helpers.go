@@ -10,6 +10,11 @@ import (
 	"github.com/berops/claudie/services/builder/domain/usecases/utils"
 )
 
+const (
+	// maxDeleteRetry defines how many times the config should try to be deleted before returning an error, if encountered.
+	maxDeleteRetry = 3
+)
+
 // buildCluster performs whole Claudie workflow on the given cluster.
 func (u *Usecases) buildCluster(ctx *utils.BuilderContext, cboxClient pb.ContextBoxServiceClient) (*utils.BuilderContext, error) {
 	// Reconcile infrastructure via terraformer.

@@ -168,7 +168,7 @@ func run() error {
 		return err
 	}
 	if err := mgr.AddReadyzCheck("ready", func(req *http.Request) error {
-		if usecases.ContextBox.PerformHealthCheck() != nil {
+		if err := usecases.ContextBox.PerformHealthCheck(); err != nil {
 			return err
 		}
 		return healthz.Ping(req)

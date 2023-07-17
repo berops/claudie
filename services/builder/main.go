@@ -26,19 +26,19 @@ const defaultBuilderPort = 50051
 func healthCheck(usecases *usecases.Usecases) func() error {
 	return func() error {
 		if usecases.Terraformer.PerformHealthCheck() != nil {
-			return fmt.Errorf("terraformer is unhealthy")
+			return errors.New("terraformer is unhealthy")
 		}
 		if usecases.Ansibler.PerformHealthCheck() != nil {
-			return fmt.Errorf("ansibler is unhealthy")
+			return errors.New("ansibler is unhealthy")
 		}
 		if usecases.KubeEleven.PerformHealthCheck() != nil {
-			return fmt.Errorf("kube-eleven is unhealthy")
+			return errors.New("kube-eleven is unhealthy")
 		}
 		if usecases.Kuber.PerformHealthCheck() != nil {
-			return fmt.Errorf("kuber is unhealthy")
+			return errors.New("kuber is unhealthy")
 		}
 		if usecases.ContextBox.PerformHealthCheck() != nil {
-			return fmt.Errorf("context-box is unhealthy")
+			return errors.New("context-box is unhealthy")
 		}
 		return nil
 	}

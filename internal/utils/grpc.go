@@ -15,7 +15,7 @@ import (
 	"google.golang.org/grpc/keepalive"
 )
 
-var errConnectionNotReady = errors.New("unhealthy gRPC connection")
+var ErrConnectionNotReady = errors.New("unhealthy gRPC connection")
 
 // CloseClientConnection is a wrapper around grpc.ClientConn Close function
 func CloseClientConnection(connection *grpc.ClientConn) {
@@ -74,7 +74,7 @@ func GrpcDialWithRetryAndBackoff(serviceName, serviceURL string) (*grpc.ClientCo
 
 func IsConnectionReady(c *grpc.ClientConn) error {
 	if c.GetState() != connectivity.Ready {
-		return errConnectionNotReady
+		return ErrConnectionNotReady
 	}
 	return nil
 }
