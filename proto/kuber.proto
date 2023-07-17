@@ -60,11 +60,11 @@ message DeleteClusterMetadataRequest {
 
 message DeleteClusterMetadataResponse {}
 
-message PatchNodeTemplateRequest {
+message PatchNodesRequest {
   K8scluster cluster = 1;
 }
 
-message PatchNodeTemplateResponse {}
+message PatchNodesResponse {}
 
 message SetUpClusterAutoscalerRequest{
   string projectName = 1;
@@ -104,7 +104,7 @@ service KuberService {
   // DeleteNodes deletes the specified nodes from a k8s cluster.
   rpc DeleteNodes(DeleteNodesRequest) returns (DeleteNodesResponse);
   // PatchNodes applies attributes like providerID, labels or taints to the nodes.
-  rpc PatchNodes(PatchNodeTemplateRequest) returns (PatchNodeTemplateResponse);
+  rpc PatchNodes(PatchNodesRequest) returns (PatchNodesResponse);
   // SetUpClusterAutoscaler deploys Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
   rpc SetUpClusterAutoscaler(SetUpClusterAutoscalerRequest) returns (SetUpClusterAutoscalerResponse);
   // DestroyClusterAutoscaler deletes Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
