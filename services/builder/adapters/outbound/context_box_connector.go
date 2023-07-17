@@ -40,7 +40,7 @@ func (c *ContextBoxConnector) SaveWorkflowState(configName, clusterName string, 
 
 // DeleteConfig removes config from Claudie database via context-box.
 func (c *ContextBoxConnector) DeleteConfig(config *pb.Config, contextBoxGrpcClient pb.ContextBoxServiceClient) error {
-	return cbox.DeleteConfig(contextBoxGrpcClient, &pb.DeleteConfigRequest{Id: config.Id, Type: pb.IdType_HASH})
+	return cbox.DeleteConfigFromDB(contextBoxGrpcClient, &pb.DeleteConfigRequest{Id: config.Id, Type: pb.IdType_HASH})
 }
 
 // Disconnect closes the underlying gRPC connection to context-box microservice
