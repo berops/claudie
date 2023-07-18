@@ -80,6 +80,7 @@ nav:
       - Claudie v0.3: CHANGELOG/changelog-0.3.x.md
       - Claudie v0.4: CHANGELOG/changelog-0.4.x.md
   - Troubleshooting: troubleshooting/troubleshooting.md
+  - Creating Claudie Backup: creating-claudie-backup/creating-claudie-backup.md
 
 extra:
   version:
