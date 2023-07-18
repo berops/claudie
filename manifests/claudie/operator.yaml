@@ -151,6 +151,9 @@ metadata:
     app.kubernetes.io/part-of: claudie    
 spec:
   secretName: claudie-webhook-certificate
+  secretTemplate:
+    labels:
+      app.kubernetes.io/part-of: claudie
   dnsNames:
   - claudie-operator.claudie
   - claudie-operator.claudie.svc

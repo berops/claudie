@@ -52,6 +52,9 @@ configMapGenerator:
 - envs:
   - .env
   name: env
+  options:
+    labels:
+      app.kubernetes.io/part-of: claudie
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
