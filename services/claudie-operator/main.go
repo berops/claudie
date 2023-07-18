@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -166,7 +167,12 @@ func run() error {
 	if err := mgr.AddHealthzCheck("live", healthz.Ping); err != nil {
 		return err
 	}
-	if err := mgr.AddReadyzCheck("ready", healthz.Ping); err != nil {
+	if err := mgr.AddReadyzCheck("ready", func(req *http.Request) error {
+		if err := usecases.ContextBox.PerformHealthCheck(); err != nil {
+			return err
+		}
+		return healthz.Ping(req)
+	}); err != nil {
 		return err
 	}
 

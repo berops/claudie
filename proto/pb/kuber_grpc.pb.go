@@ -39,7 +39,7 @@ type KuberServiceClient interface {
 	// DeleteNodes deletes the specified nodes from a k8s cluster.
 	DeleteNodes(ctx context.Context, in *DeleteNodesRequest, opts ...grpc.CallOption) (*DeleteNodesResponse, error)
 	// PatchNodes applies attributes like providerID, labels or taints to the nodes.
-	PatchNodes(ctx context.Context, in *PatchNodeTemplateRequest, opts ...grpc.CallOption) (*PatchNodeTemplateResponse, error)
+	PatchNodes(ctx context.Context, in *PatchNodesRequest, opts ...grpc.CallOption) (*PatchNodesResponse, error)
 	// SetUpClusterAutoscaler deploys Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
 	SetUpClusterAutoscaler(ctx context.Context, in *SetUpClusterAutoscalerRequest, opts ...grpc.CallOption) (*SetUpClusterAutoscalerResponse, error)
 	// DestroyClusterAutoscaler deletes Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
@@ -130,8 +130,8 @@ func (c *kuberServiceClient) DeleteNodes(ctx context.Context, in *DeleteNodesReq
 	return out, nil
 }
 
-func (c *kuberServiceClient) PatchNodes(ctx context.Context, in *PatchNodeTemplateRequest, opts ...grpc.CallOption) (*PatchNodeTemplateResponse, error) {
-	out := new(PatchNodeTemplateResponse)
+func (c *kuberServiceClient) PatchNodes(ctx context.Context, in *PatchNodesRequest, opts ...grpc.CallOption) (*PatchNodesResponse, error) {
+	out := new(PatchNodesResponse)
 	err := c.cc.Invoke(ctx, "/claudie.KuberService/PatchNodes", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -187,7 +187,7 @@ type KuberServiceServer interface {
 	// DeleteNodes deletes the specified nodes from a k8s cluster.
 	DeleteNodes(context.Context, *DeleteNodesRequest) (*DeleteNodesResponse, error)
 	// PatchNodes applies attributes like providerID, labels or taints to the nodes.
-	PatchNodes(context.Context, *PatchNodeTemplateRequest) (*PatchNodeTemplateResponse, error)
+	PatchNodes(context.Context, *PatchNodesRequest) (*PatchNodesResponse, error)
 	// SetUpClusterAutoscaler deploys Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
 	SetUpClusterAutoscaler(context.Context, *SetUpClusterAutoscalerRequest) (*SetUpClusterAutoscalerResponse, error)
 	// DestroyClusterAutoscaler deletes Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
@@ -227,7 +227,7 @@ func (UnimplementedKuberServiceServer) DeleteKubeconfig(context.Context, *Delete
 func (UnimplementedKuberServiceServer) DeleteNodes(context.Context, *DeleteNodesRequest) (*DeleteNodesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteNodes not implemented")
 }
-func (UnimplementedKuberServiceServer) PatchNodes(context.Context, *PatchNodeTemplateRequest) (*PatchNodeTemplateResponse, error) {
+func (UnimplementedKuberServiceServer) PatchNodes(context.Context, *PatchNodesRequest) (*PatchNodesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PatchNodes not implemented")
 }
 func (UnimplementedKuberServiceServer) SetUpClusterAutoscaler(context.Context, *SetUpClusterAutoscalerRequest) (*SetUpClusterAutoscalerResponse, error) {
@@ -397,7 +397,7 @@ func _KuberService_DeleteNodes_Handler(srv interface{}, ctx context.Context, dec
 }
 
 func _KuberService_PatchNodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PatchNodeTemplateRequest)
+	in := new(PatchNodesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -409,7 +409,7 @@ func _KuberService_PatchNodes_Handler(srv interface{}, ctx context.Context, dec 
 		FullMethod: "/claudie.KuberService/PatchNodes",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KuberServiceServer).PatchNodes(ctx, req.(*PatchNodeTemplateRequest))
+		return srv.(KuberServiceServer).PatchNodes(ctx, req.(*PatchNodesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

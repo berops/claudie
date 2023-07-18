@@ -6,4 +6,5 @@ type ContextBoxPort interface {
 	GetAllConfigs() ([]*pb.Config, error)
 	SaveConfig(config *pb.Config) error
 	DeleteConfig(configName string) error
+	PerformHealthCheck() error
 }

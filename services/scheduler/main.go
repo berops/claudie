@@ -60,7 +60,7 @@ func main() {
 			errGroupCtx,
 			defaultConfigPullInterval*time.Second,
 			func() error {
-				if contextBoxConnector.Connection.GetState() == connectivity.Ready {
+				if utils.IsConnectionReady(contextBoxConnector.Connection) == nil {
 					if prevGrpcConnectionState != connectivity.Ready {
 						log.Info().Msgf("Connection to Context-box is now ready")
 					}

@@ -1,15 +1,9 @@
 package outboundAdapters
 
 import (
-	"errors"
-	"time"
-
-	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/connectivity"
-	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	cbox "github.com/berops/claudie/services/context-box/client"
 )
@@ -35,20 +29,7 @@ func NewContextBoxConnector(connectionUri string) *ContextBoxConnector {
 // Connect creates a gRPC connection to the context-box microservice.
 // If the connection is established, then performs a healthcheck.
 func (c *ContextBoxConnector) Connect() error {
-	// Since the secretWatcher will be creating new context-box request per manifest added,
-	// we default to a non-blocking connection with a retry policy of ~4 seconds instead.
-	interceptorOptions := []grpc_retry.CallOption{
-		grpc_retry.WithBackoff(grpc_retry.BackoffExponentialWithJitter(2*time.Second, 0.2)),
-		grpc_retry.WithMax(3),
-		grpc_retry.WithCodes(codes.Unavailable),
-	}
-
-	grpcConnection, err := grpc.Dial(
-		c.connectionUri,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor(interceptorOptions...)),
-		grpc.WithStreamInterceptor(grpc_retry.StreamClientInterceptor(interceptorOptions...)),
-	)
+	grpcConnection, err := utils.GrpcDialWithRetryAndBackoff("context-box", c.connectionUri)
 	if err != nil {
 		return err
 	}
@@ -61,11 +42,7 @@ func (c *ContextBoxConnector) Connect() error {
 
 // PerformHealthCheck checks health of the underlying gRPC connection to context-box microservice
 func (c *ContextBoxConnector) PerformHealthCheck() error {
-	if c.grpcConnection.GetState() != connectivity.Ready {
-		return errors.New("unhealthy gRPC connection to context-box microservice")
-	}
-
-	return nil
+	return utils.IsConnectionReady(c.grpcConnection)
 }
 
 // GetAllConfigs fetches all configs present in context-box DB
