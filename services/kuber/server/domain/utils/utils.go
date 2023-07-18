@@ -21,10 +21,11 @@ func GetSecretMetadata(ci *pb.ClusterInfo, projectName string, outputType Output
 	return secret.Metadata{
 		Name: fmt.Sprintf("%s-%s", cid, outputType),
 		Labels: map[string]string{
-			"claudie.io/project":    projectName,
-			"claudie.io/cluster":    ci.Name,
-			"claudie.io/cluster-id": cid,
-			"claudie.io/output":     string(outputType),
+			"claudie.io/project":        projectName,
+			"claudie.io/cluster":        ci.Name,
+			"claudie.io/cluster-id":     cid,
+			"claudie.io/output":         string(outputType),
+			"app.kubernetes.io/part-of": "claudie",
 		},
 	}
 }

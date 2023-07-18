@@ -52,6 +52,9 @@ configMapGenerator:
 - envs:
   - .env
   name: env
+  options:
+    labels:
+      app.kubernetes.io/part-of: claudie
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
@@ -68,7 +71,7 @@ images:
 - name: ghcr.io/berops/claudie/kube-eleven
   newTag: ee4001d-2218
 - name: ghcr.io/berops/claudie/kuber
-  newTag: ee4001d-2218
+  newTag: 0addb19-2220
 - name: ghcr.io/berops/claudie/scheduler
   newTag: ee4001d-2218
 - name: ghcr.io/berops/claudie/terraformer
