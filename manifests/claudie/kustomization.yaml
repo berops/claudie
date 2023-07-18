@@ -71,7 +71,7 @@ images:
 - name: ghcr.io/berops/claudie/kube-eleven
   newTag: ee4001d-2218
 - name: ghcr.io/berops/claudie/kuber
-  newTag: ee4001d-2218
+  newTag: 0addb19-2220
 - name: ghcr.io/berops/claudie/scheduler
   newTag: ee4001d-2218
 - name: ghcr.io/berops/claudie/terraformer
