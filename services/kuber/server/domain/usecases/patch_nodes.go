@@ -14,10 +14,7 @@ func (u *Usecases) PatchNodes(ctx context.Context, request *pb.PatchNodesRequest
 	clusterID := utils.GetClusterID(request.Cluster.ClusterInfo)
 	logger := utils.CreateLoggerWithClusterName(clusterID)
 
-	patcher, err := nodes.NewPatcher(request.Cluster, logger)
-	if err != nil {
-		return nil, fmt.Errorf("error while preparing patch on nodes for %s: %w", clusterID, err)
-	}
+	patcher := nodes.NewPatcher(request.Cluster, logger)
 
 	if err := patcher.PatchProviderID(); err != nil {
 		logger.Err(err).Msgf("Error while patching nodes")

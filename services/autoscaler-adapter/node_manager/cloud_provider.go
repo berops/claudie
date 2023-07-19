@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/berops/claudie/internal/utils"
 	"net/http"
-	"regexp"
 	"strings"
 
 	compute "cloud.google.com/go/compute/apiv1"
@@ -97,25 +96,6 @@ func (nm *NodeManager) cacheGcp(np *pb.DynamicNodePool) error {
 		}
 	}()
 
-	imgClient, err := compute.NewImagesRESTClient(context.Background(), nil)
-	if err != nil {
-		return fmt.Errorf("error creating image client: %w", err)
-	}
-
-	defer func() {
-		if err := imgClient.Close(); err != nil {
-			log.Err(err).Msgf("Failed to close GCP client")
-		}
-	}()
-
-	imgInfo, err := imgClient.Get(context.Background(), &computepb.GetImageRequest{
-		Project: np.Provider.GcpProject,
-		Image:   np.Image,
-	}, nil)
-	if err != nil {
-		return fmt.Errorf("error retrieving img info: %w", err)
-	}
-
 	// Define request and parameters
 	maxResults := uint32(defaultMaxResults)
 	req := &computepb.ListMachineTypesRequest{
@@ -139,14 +119,6 @@ func (nm *NodeManager) cacheGcp(np *pb.DynamicNodePool) error {
 	}
 	nm.gcpVMs = utils.MergeMaps(getTypeInfoGcp(machineTypes), nm.gcpVMs)
 
-	arch := x86
-	if *imgInfo.Architecture == string(computepb.Image_ARM64) {
-		arch = Arm
-	}
-
-	for k := range nm.gcpVMs {
-		nm.gcpVMs[k].arch = arch
-	}
 	return nil
 }
 
@@ -178,21 +150,6 @@ func (nm *NodeManager) cacheOci(np *pb.DynamicNodePool) error {
 		}
 	}
 
-	// OCI sdk doesn't have a way to retrieve the Arch thus we default to a regex match
-	// TODO: find a better way to handle this case.
-	arch := x86
-	ok, err := regexp.MatchString("^.+\\.A1\\..+$", np.Image)
-	if err != nil {
-		return err
-	}
-	if ok {
-		arch = Arm
-	}
-
-	for k := range nm.ociVMs {
-		nm.ociVMs[k].arch = arch
-	}
-
 	return nil
 }
 
@@ -210,37 +167,12 @@ func (nm *NodeManager) cacheAzure(np *pb.DynamicNodePool) error {
 	location := strings.ToLower(strings.ReplaceAll(np.Region, " ", ""))
 	pager := client.NewListPager(location, nil)
 
-	imgClient, err := armcompute.NewVirtualMachineImagesClient(np.Provider.AzureSubscriptionId, cred, nil)
-	if err != nil {
-		return fmt.Errorf("azure client errored: %w", err)
-	}
-
-	imgParts := strings.Split(np.Image, ":")
-	publisher := imgParts[0]
-	offer := imgParts[1]
-	sku := imgParts[2]
-	version := imgParts[3]
-
-	resp, err := imgClient.Get(context.Background(), location, publisher, offer, sku, version, nil)
-	if err != nil {
-		return fmt.Errorf("failed to retrieve azure image info: %w", err)
-	}
-
 	for pager.More() {
 		nextResult, err := pager.NextPage(context.Background())
 		if err != nil {
 			return fmt.Errorf("azure client got error : %w", err)
 		}
 		nm.azureVMs = utils.MergeMaps(getTypeInfoAzure(nextResult.Value), nm.azureVMs)
-	}
-
-	arch := x86
-	if *resp.Properties.Architecture == armcompute.ArchitectureTypesArm64 {
-		arch = Arm
-	}
-
-	for k := range nm.azureVMs {
-		nm.azureVMs[k].arch = arch
 	}
 
 	return nil

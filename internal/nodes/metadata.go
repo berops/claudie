@@ -3,8 +3,6 @@ package nodes
 import (
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
-	"github.com/berops/claudie/services/autoscaler-adapter/node_manager"
-
 	k8sV1 "k8s.io/api/core/v1"
 )
 
@@ -27,7 +25,7 @@ const (
 )
 
 // GetAllLabels returns default labels with their theoretical values for the specified nodepool.
-func GetAllLabels(np *pb.NodePool, nm *node_manager.NodeManager) map[string]string {
+func GetAllLabels(np *pb.NodePool, resolver ArchResolver) (map[string]string, error) {
 	m := make(map[string]string, len(np.Labels)+9)
 	// Add custom user defined labels first in case user will try to overwrite Claudie default labels.
 	for k, v := range np.Labels {
@@ -46,16 +44,28 @@ func GetAllLabels(np *pb.NodePool, nm *node_manager.NodeManager) map[string]stri
 		m[string(ProviderInstance)] = n.Provider.SpecName
 		m[string(KubernetesZone)] = utils.SanitiseString(n.Zone)
 		m[string(KubernetesRegion)] = utils.SanitiseString(n.Region)
-		m[string(KubernetesArch)] = string(nm.QueryArch(np.GetDynamicNodePool())) // https://github.com/berops/claudie/issues/665
-		return m
+
+		if resolver != nil {
+			arch, err := resolver.Arch(np)
+			if err != nil {
+				return nil, err
+			}
+
+			// we only need to set this in case of the autoscaler.
+			// The kubernetes.io/arch is otherwise set by kubelet.
+			// https://github.com/berops/claudie/issues/665
+			// https://github.com/berops/claudie/pull/934#issuecomment-1618318914
+			m[string(KubernetesArch)] = string(arch)
+		}
+
+		return m, nil
 	}
 	// Static nodepool data.
 	m[string(Provider)] = utils.SanitiseString(pb.StaticNodepoolInfo_STATIC_PROVIDER.String())
 	m[string(ProviderInstance)] = utils.SanitiseString(pb.StaticNodepoolInfo_STATIC_PROVIDER.String())
 	m[string(KubernetesZone)] = utils.SanitiseString(pb.StaticNodepoolInfo_STATIC_ZONE.String())
 	m[string(KubernetesRegion)] = utils.SanitiseString(pb.StaticNodepoolInfo_STATIC_REGION.String())
-	m[string(KubernetesArch)] = "amd64"
-	return m
+	return m, nil
 }
 
 // GetAllTaints returns default taints with their theoretical values for the specified nodepool.

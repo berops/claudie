@@ -20,3 +20,15 @@ func MergeMaps[M ~map[K]V, K comparable, V any](maps ...M) M {
 	}
 	return merged
 }
+
+// Into traverse the elements in k and calls the supplied function f to
+// convert them into elements if type V.
+func Into[K, V any](k []K, f func(k K) *V) []*V {
+	result := make([]*V, 0, len(k))
+	for _, k := range k {
+		if v := f(k); v != nil {
+			result = append(result, v)
+		}
+	}
+	return result
+}

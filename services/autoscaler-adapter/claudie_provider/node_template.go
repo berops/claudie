@@ -20,19 +20,23 @@ var (
 )
 
 // getNodeGroupTemplateNodeInfo returns a template for the new node from specified node group.
-func (c *ClaudieCloudProvider) getNodeGroupTemplateNodeInfo(nodeGroupId string) *k8sV1.Node {
+func (c *ClaudieCloudProvider) getNodeGroupTemplateNodeInfo(nodeGroupId string) (*k8sV1.Node, error) {
 	if ngc, ok := c.nodesCache[nodeGroupId]; ok {
 		// Create a new node struct.s
 		node := defaultNodeTemplate
 		// Fill dynamic fields.
-		node.Labels = nodes.GetAllLabels(ngc.nodepool, c.nodeManager)
+		l, err := nodes.GetAllLabels(ngc.nodepool, c.nodeManager)
+		if err != nil {
+			return nil, err
+		}
+		node.Labels = l
 		node.Spec.Taints = nodes.GetAllTaints(ngc.nodepool)
 		node.Status.Capacity = c.nodeManager.GetCapacity(ngc.nodepool)
 		node.Status.Allocatable = node.Status.Capacity
 		node.Spec.ProviderID = fmt.Sprintf(kuberNodes.ProviderIdFormat, fmt.Sprintf("%s-N", ngc.nodepool.Name))
-		return &node
+		return &node, nil
 	}
-	return nil
+	return nil, nil
 }
 
 // buildReadyConditions returns default ready condition for the node.
