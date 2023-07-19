@@ -39,14 +39,14 @@ func GetAllLabels(np *pb.NodePool, nm *node_manager.NodeManager) map[string]stri
 	m[string(NodeType)] = getNodeType(np)
 	// Other labels.
 	m[string(KubernetesOs)] = "linux" // Only Linux is supported.
-	m[string(KubernetesArch)] = string(nm.QueryArch(np.GetDynamicNodePool()))
-	m[string(KubeoneOs)] = "ubuntu" // Only supported Os
+	m[string(KubeoneOs)] = "ubuntu"   // Only supported Os
 	// Dynamic nodepool data.
 	if n := np.GetDynamicNodePool(); n != nil {
 		m[string(Provider)] = n.Provider.CloudProviderName
 		m[string(ProviderInstance)] = n.Provider.SpecName
 		m[string(KubernetesZone)] = utils.SanitiseString(n.Zone)
 		m[string(KubernetesRegion)] = utils.SanitiseString(n.Region)
+		m[string(KubernetesArch)] = string(nm.QueryArch(np.GetDynamicNodePool())) // https://github.com/berops/claudie/issues/665
 		return m
 	}
 	// Static nodepool data.
@@ -54,6 +54,7 @@ func GetAllLabels(np *pb.NodePool, nm *node_manager.NodeManager) map[string]stri
 	m[string(ProviderInstance)] = utils.SanitiseString(pb.StaticNodepoolInfo_STATIC_PROVIDER.String())
 	m[string(KubernetesZone)] = utils.SanitiseString(pb.StaticNodepoolInfo_STATIC_ZONE.String())
 	m[string(KubernetesRegion)] = utils.SanitiseString(pb.StaticNodepoolInfo_STATIC_REGION.String())
+	m[string(KubernetesArch)] = "amd64"
 	return m
 }
 
