@@ -1,0 +1,16 @@
+syntax = "proto3";
+package claudie;
+
+option go_package = "proto/pb";
+
+message SendAutoscalerEventRequest {
+    string InputManifestName = 1;
+    string InputManifestNamespace = 2;
+}
+
+message SendAutoscalerEventResponse {}
+
+service OperatorService {
+    // SendAutoscalerEvent sends events to claudie-operator when a scale up/down occurs
+    rpc SendAutoscalerEvent(SendAutoscalerEventRequest) returns (SendAutoscalerEventResponse);
+}

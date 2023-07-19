@@ -50,7 +50,7 @@ func (u *Usecases) BuildInfrastructure(request *pb.BuildInfrastructureRequest) (
 			if errors.Is(err, loadbalancer.ErrCreateDNSRecord) {
 				cluster.UpdateCurrentState()
 			}
-			logger.Err(err).Msgf("Error encountered while building cluster")
+			logger.Error().Msgf("Error encountered while building cluster: %s", err)
 			failed[idx] = err
 			return err
 		}

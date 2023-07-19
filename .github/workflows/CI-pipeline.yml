@@ -8,8 +8,7 @@ on:
 
 env:
   ENV_FILE: .env
-  SERVICES: context-box scheduler builder terraformer ansibler kube-eleven kuber frontend autoscaler-adapter testing-framework
-  TEST_SETS: test-set1 test-set2 test-set3 test-set4 autoscaling
+  SERVICES: context-box scheduler builder terraformer ansibler kube-eleven kuber claudie-operator autoscaler-adapter testing-framework
 
 jobs:
   #--------------------------------------------------------------------------------------------------
@@ -27,15 +26,6 @@ jobs:
           github_token: ${{ github.token }}
           source_ref: master
           target_branch: ${{ github.head_ref }}
-
-      # has following problem https://github.com/actions/runner/issues/981
-      # - name: Merge with master branch
-      #   uses: devmasx/merge-branch@1.4.0
-      #   with:
-      #     type: now
-      #     from_branch: master
-      #     target_branch: ${{ github.head_ref }}
-      #     github_token: ${{ github.token }}
   #--------------------------------------------------------------------------------------------------
   check-changes:
     if: github.event.pull_request.draft == false
@@ -224,10 +214,17 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
+      - name: Install terraform
+        run: | 
+          sudo apt-get update && sudo apt-get install -y wget
+          wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+          sudo apt update && sudo apt install terraform -y
+
       - name: Set short sha output
         run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
 
-      - name: install kubectl
+      - name: Install kubectl
         uses: azure/setup-kubectl@v3.2
         with:
           version: latest
@@ -237,7 +234,7 @@ jobs:
         with:
           kustomize-version: 4.5.6
 
-      - name: e2e kubeconfig
+      - name: Set e2e kubeconfig
         uses: azure/k8s-set-context@v3.1
         with:
           kubeconfig: ${{ secrets.E2E_CLUSTER_KUBECONFIG }}
@@ -263,7 +260,7 @@ jobs:
           wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
           tar xz && mv yq_linux_amd64 yq
 
-          NAME_HASH="frontend-role-binding-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}" ./yq e 'select(di == 0) * (select(.kind == "ClusterRoleBinding") | .metadata.name = strenv(NAME_HASH))' ./cluster-rbac/clusterrolebinding.yaml -i
+          NAME_HASH="claudie-operator-role-binding-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}" ./yq e 'select(di == 0) * (select(.kind == "ClusterRoleBinding") | .metadata.name = strenv(NAME_HASH))' ./cluster-rbac/clusterrolebinding.yaml -i
 
           kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
           kustomize build | kubectl apply -f -
@@ -293,7 +290,32 @@ jobs:
 
           HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ./yq e '.spec.loadBalancers.clusters.[1].dns.hostname = strenv(HOSTNAME)' test-set2/1.yaml -i
           HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ./yq e '.spec.loadBalancers.clusters.[0].dns.hostname = strenv(HOSTNAME)' test-set2/3.yaml -i
+
+      - name: Create test static nodes
+        working-directory: ./manifests/testing-framework/test-sets
+        run: |
+          sudo apt update && sudo apt install -y jq
+
+          echo "Saving terraform script and key"
+          echo "${{ secrets.CREATE_STATIC_NODES }}" | base64 -d > script.tf
+
+          echo "Running terraform init"
+          terraform init > /dev/null 2>&1
+          echo "Running terraform apply"   
+          terraform apply -auto-approve > /dev/null 2>&1
+
+          echo "Running terraform output"   
+          IPS=$(terraform output --json | jq -r '.endpoints.value | values[]')
+          IP_ARR=( $IPS )
           
+          for file in test-set5/*; do
+              if [ -f "$file" ]; then
+                ENDPOINT=${IP_ARR[0]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i 
+                ENDPOINT=${IP_ARR[1]} ./yq e '.spec.nodePools.static.[1].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
+                ENDPOINT=${IP_ARR[2]} ./yq e '.spec.nodePools.static.[1].nodes.[1].endpoint = strenv(ENDPOINT)' $file -i
+              fi
+          done
+
           #Clean up
           rm -f yq 
           rm -f yq.1 
@@ -330,3 +352,12 @@ jobs:
       - name: Delete temporary namespace
         run: |
           kubectl delete namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+      
+      - name: Destroy test static nodes
+        if: always()
+        working-directory: ./manifests/testing-framework/test-sets
+        run: |
+          echo "Running terraform init"
+          terraform init > /dev/null 2>&1
+          echo "Running terraform destroy"
+          terraform destroy -auto-approve > /dev/null 2>&1

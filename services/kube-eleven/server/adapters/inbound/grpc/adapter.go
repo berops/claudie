@@ -24,12 +24,8 @@ type GrpcAdapter struct {
 	healthcheckServer *health.Server
 }
 
-func CreateGrpcAdapter(usecases *usecases.Usecases) *GrpcAdapter {
-	var (
-		g   = &GrpcAdapter{}
-		err error
-	)
-
+func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
+	var err error
 	port := utils.GetEnvDefault("KUBE_ELEVEN_PORT", fmt.Sprint(defaultPort))
 	bindingAddress := net.JoinHostPort("0.0.0.0", port)
 	g.tcpListener, err = net.Listen("tcp", bindingAddress)
@@ -48,8 +44,6 @@ func CreateGrpcAdapter(usecases *usecases.Usecases) *GrpcAdapter {
 	g.healthcheckServer.SetServingStatus("kube-eleven-liveness", grpc_health_v1.HealthCheckResponse_SERVING)
 	g.healthcheckServer.SetServingStatus("kube-eleven-readiness", grpc_health_v1.HealthCheckResponse_SERVING)
 	grpc_health_v1.RegisterHealthServer(g.server, g.healthcheckServer)
-
-	return g
 }
 
 func (g *GrpcAdapter) Serve() error {

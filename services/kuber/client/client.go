@@ -15,20 +15,20 @@ func SetUpStorage(c pb.KuberServiceClient, req *pb.SetUpStorageRequest) (*pb.Set
 	return res, nil
 }
 
-func StoreKubeconfig(c pb.KuberServiceClient, req *pb.StoreKubeconfigRequest) (*pb.StoreKubeconfigResponse, error) {
-	res, err := c.StoreKubeconfig(context.Background(), req)
+func StoreKubeconfig(c pb.KuberServiceClient, req *pb.StoreKubeconfigRequest) error {
+	_, err := c.StoreKubeconfig(context.Background(), req)
 	if err != nil {
-		return nil, fmt.Errorf("error while calling StoreKubeconfig on kuber: %w", err)
+		return fmt.Errorf("error while calling StoreKubeconfig on kuber: %w", err)
 	}
-	return res, nil
+	return nil
 }
 
-func DeleteKubeconfig(c pb.KuberServiceClient, req *pb.DeleteKubeconfigRequest) (*pb.DeleteKubeconfigResponse, error) {
-	res, err := c.DeleteKubeconfig(context.Background(), req)
+func DeleteKubeconfig(c pb.KuberServiceClient, req *pb.DeleteKubeconfigRequest) error {
+	_, err := c.DeleteKubeconfig(context.Background(), req)
 	if err != nil {
-		return nil, fmt.Errorf("error while calling DeleteKubeconfig on kuber: %w", err)
+		return fmt.Errorf("error while calling DeleteKubeconfig on kuber: %w", err)
 	}
-	return res, nil
+	return nil
 }
 
 func DeleteNodes(c pb.KuberServiceClient, req *pb.DeleteNodesRequest) (*pb.DeleteNodesResponse, error) {
@@ -39,66 +39,66 @@ func DeleteNodes(c pb.KuberServiceClient, req *pb.DeleteNodesRequest) (*pb.Delet
 	return res, nil
 }
 
-func RemoveLbScrapeConfig(c pb.KuberServiceClient, req *pb.RemoveLbScrapeConfigRequest) (*pb.RemoveLbScrapeConfigResponse, error) {
-	res, err := c.RemoveLbScrapeConfig(context.Background(), req)
+func RemoveLbScrapeConfig(c pb.KuberServiceClient, req *pb.RemoveLBScrapeConfigRequest) error {
+	_, err := c.RemoveLBScrapeConfig(context.Background(), req)
 	if err != nil {
-		return nil, fmt.Errorf("error while calling RemoveLbScrapeConfig: %w", err)
+		return fmt.Errorf("error while calling RemoveLbScrapeConfig: %w", err)
 	}
-	return res, nil
+	return nil
 }
 
-func StoreLbScrapeConfig(c pb.KuberServiceClient, req *pb.StoreLbScrapeConfigRequest) (*pb.StoreLbScrapeConfigResponse, error) {
-	res, err := c.StoreLbScrapeConfig(context.Background(), req)
+func StoreLbScrapeConfig(c pb.KuberServiceClient, req *pb.StoreLBScrapeConfigRequest) error {
+	_, err := c.StoreLBScrapeConfig(context.Background(), req)
 	if err != nil {
-		return nil, fmt.Errorf("error while calling StoreLbScrapeConfig: %w", err)
+		return fmt.Errorf("error while calling StoreLbScrapeConfig: %w", err)
 	}
 
-	return res, nil
+	return nil
 }
 
-func StoreClusterMetadata(c pb.KuberServiceClient, req *pb.StoreClusterMetadataRequest) (*pb.StoreClusterMetadataResponse, error) {
-	res, err := c.StoreClusterMetadata(context.Background(), req)
+func StoreClusterMetadata(c pb.KuberServiceClient, req *pb.StoreClusterMetadataRequest) error {
+	_, err := c.StoreClusterMetadata(context.Background(), req)
 	if err != nil {
-		return nil, fmt.Errorf("error while calling StoreClusterMetadata: %w", err)
+		return fmt.Errorf("error while calling StoreClusterMetadata: %w", err)
 	}
 
-	return res, nil
+	return nil
 }
 
-func DeleteClusterMetadata(c pb.KuberServiceClient, req *pb.DeleteClusterMetadataRequest) (*pb.DeleteClusterMetadataResponse, error) {
-	res, err := c.DeleteClusterMetadata(context.Background(), req)
+func DeleteClusterMetadata(c pb.KuberServiceClient, req *pb.DeleteClusterMetadataRequest) error {
+	_, err := c.DeleteClusterMetadata(context.Background(), req)
 	if err != nil {
-		return nil, fmt.Errorf("error while calling DeleteClusterMetadata: %w", err)
+		return fmt.Errorf("error while calling DeleteClusterMetadata: %w", err)
 	}
 
-	return res, nil
+	return nil
 }
 
-func PatchNodes(c pb.KuberServiceClient, req *pb.PatchNodeTemplateRequest) (*pb.PatchNodeTemplateResponse, error) {
-	res, err := c.PatchNodes(context.Background(), req)
+func PatchNodes(c pb.KuberServiceClient, req *pb.PatchNodesRequest) error {
+	_, err := c.PatchNodes(context.Background(), req)
 	if err != nil {
-		return nil, fmt.Errorf("error while calling PatchNodes: %w", err)
+		return fmt.Errorf("error while calling PatchNodes: %w", err)
 	}
 
-	return res, nil
+	return nil
 }
 
-func SetUpClusterAutoscaler(c pb.KuberServiceClient, req *pb.SetUpClusterAutoscalerRequest) (*pb.SetUpClusterAutoscalerResponse, error) {
-	res, err := c.SetUpClusterAutoscaler(context.Background(), req)
+func SetUpClusterAutoscaler(c pb.KuberServiceClient, req *pb.SetUpClusterAutoscalerRequest) error {
+	_, err := c.SetUpClusterAutoscaler(context.Background(), req)
 	if err != nil {
-		return nil, fmt.Errorf("error while calling SetUpClusterAutoscaler: %w", err)
+		return fmt.Errorf("error while calling SetUpClusterAutoscaler: %w", err)
 	}
 
-	return res, nil
+	return nil
 }
 
-func DestroyClusterAutoscaler(c pb.KuberServiceClient, req *pb.DestroyClusterAutoscalerRequest) (*pb.DestroyClusterAutoscalerResponse, error) {
-	res, err := c.DestroyClusterAutoscaler(context.Background(), req)
+func DestroyClusterAutoscaler(c pb.KuberServiceClient, req *pb.DestroyClusterAutoscalerRequest) error {
+	_, err := c.DestroyClusterAutoscaler(context.Background(), req)
 	if err != nil {
-		return nil, fmt.Errorf("error while calling DestroyClusterAutoscaler: %w", err)
+		return fmt.Errorf("error while calling DestroyClusterAutoscaler: %w", err)
 	}
 
-	return res, nil
+	return nil
 }
 
 func PatchClusterInfoConfigMap(c pb.KuberServiceClient, req *pb.PatchClusterInfoConfigMapRequest) error {

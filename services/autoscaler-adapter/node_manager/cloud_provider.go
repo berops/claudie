@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/berops/claudie/internal/utils"
 	"net/http"
 	"regexp"
 	"strings"
@@ -73,7 +74,7 @@ func (nm *NodeManager) cacheAws(np *pb.DynamicNodePool) error {
 		if err != nil {
 			return fmt.Errorf("AWS client got error : %w", err)
 		}
-		nm.awsVMs = mergeMaps(getTypeInfoAws(res.InstanceTypes), nm.awsVMs)
+		nm.awsVMs = utils.MergeMaps(getTypeInfoAws(res.InstanceTypes), nm.awsVMs)
 		// Check if there are any more results to query.
 		token = res.NextToken
 		if res.NextToken == nil {
@@ -136,7 +137,7 @@ func (nm *NodeManager) cacheGcp(np *pb.DynamicNodePool) error {
 		}
 		machineTypes = append(machineTypes, mt)
 	}
-	nm.gcpVMs = mergeMaps(getTypeInfoGcp(machineTypes), nm.gcpVMs)
+	nm.gcpVMs = utils.MergeMaps(getTypeInfoGcp(machineTypes), nm.gcpVMs)
 
 	arch := x86
 	if *imgInfo.Architecture == string(computepb.Image_ARM64) {
@@ -146,7 +147,6 @@ func (nm *NodeManager) cacheGcp(np *pb.DynamicNodePool) error {
 	for k := range nm.gcpVMs {
 		nm.gcpVMs[k].arch = arch
 	}
-
 	return nil
 }
 
@@ -170,7 +170,7 @@ func (nm *NodeManager) cacheOci(np *pb.DynamicNodePool) error {
 		if r.Items == nil || len(r.Items) == 0 {
 			return fmt.Errorf("OCI client got empty response")
 		}
-		nm.ociVMs = mergeMaps(getTypeInfoOci(r.Items), nm.ociVMs)
+		nm.ociVMs = utils.MergeMaps(getTypeInfoOci(r.Items), nm.ociVMs)
 		if r.OpcNextPage != nil {
 			req.Page = r.OpcNextPage
 		} else {
@@ -231,7 +231,7 @@ func (nm *NodeManager) cacheAzure(np *pb.DynamicNodePool) error {
 		if err != nil {
 			return fmt.Errorf("azure client got error : %w", err)
 		}
-		nm.azureVMs = mergeMaps(getTypeInfoAzure(nextResult.Value), nm.azureVMs)
+		nm.azureVMs = utils.MergeMaps(getTypeInfoAzure(nextResult.Value), nm.azureVMs)
 	}
 
 	arch := x86

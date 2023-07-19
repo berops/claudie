@@ -10,3 +10,6 @@ secretGenerator:
     files:
       - AWS_ACCESS_KEY_ID=secrets/access-key
       - AWS_SECRET_ACCESS_KEY=secrets/secret-key
+    options:
+      labels:
+        app.kubernetes.io/part-of: claudie

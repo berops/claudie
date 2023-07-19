@@ -21,7 +21,8 @@ func main() {
 	utils.InitLog("kube-eleven")
 
 	usecases := &usecases.Usecases{}
-	grpcAdapter := grpc.CreateGrpcAdapter(usecases)
+	grpcAdapter := grpc.GrpcAdapter{}
+	grpcAdapter.Init(usecases)
 
 	errGroup, errGroupContext := errgroup.WithContext(context.Background())
 

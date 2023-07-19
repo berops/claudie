@@ -35,16 +35,16 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: KUBER_PORT
-            - name: FRONTEND_PORT
+            - name: OPERATOR_PORT
               valueFrom:
                 configMapKeyRef:
                   name: env
-                  key: FRONTEND_PORT
-            - name: FRONTEND_HOSTNAME
+                  key: OPERATOR_PORT
+            - name: OPERATOR_HOSTNAME
               valueFrom:
                 configMapKeyRef:
                   name: env
-                  key: FRONTEND_HOSTNAME
+                  key: OPERATOR_HOSTNAME
             - name: GOLANG_LOG
               valueFrom:
                 configMapKeyRef:

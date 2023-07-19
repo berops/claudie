@@ -277,7 +277,7 @@ func clusterTesting(yamlFile []byte, pathToTestSet, manifestName string, c pb.Co
 	}
 
 	if err = applyInputManifest(yamlFile, pathToTestSet); err != nil {
-		return fmt.Errorf("error while applying a inputmanfiest for %s : %w", id, err)
+		return fmt.Errorf("error while applying a input manifest for %s : %w", id, err)
 	}
 	log.Info().Msgf("InputManifest for config with id %s has been saved...", id)
 
@@ -290,10 +290,10 @@ func clusterTesting(yamlFile []byte, pathToTestSet, manifestName string, c pb.Co
 
 // localTesting will perform actions needed for testing framework to function in local deployment
 // this option is only used when NAMESPACE env var has NOT been found
-// this option is NOT testing the whole claudie (the frontend is omitted from workflow)
+// this option is NOT testing the whole claudie (the claudie-operator is omitted from workflow)
 func localTesting(yamlFile []byte, manifestName string, c pb.ContextBoxServiceClient) (string, error) {
-	// testing locally - NOT TESTING THE FRONTEND!
-	id, err := cbox.SaveConfigFrontEnd(c, &pb.SaveConfigRequest{
+	// testing locally - NOT TESTING THE OPERATOR!
+	id, err := cbox.SaveConfigOperator(c, &pb.SaveConfigRequest{
 		Config: &pb.Config{
 			Name:     manifestName,
 			Manifest: string(yamlFile),
@@ -306,7 +306,7 @@ func localTesting(yamlFile []byte, manifestName string, c pb.ContextBoxServiceCl
 	return id, nil
 }
 
-// checkIfManifestSaved function will wait until the manifest has been picked up from the inputManifest by the frontend component and
+// checkIfManifestSaved function will wait until the manifest has been picked up from the inputManifest by the claudie-operator component and
 // that it has been saved in database; throws error after set amount of time
 func checkIfManifestSaved(configID string, idType pb.IdType, c pb.ContextBoxServiceClient) error {
 	counter := 1
@@ -314,7 +314,7 @@ func checkIfManifestSaved(configID string, idType pb.IdType, c pb.ContextBoxServ
 	for {
 		time.Sleep(20 * time.Second)
 		elapsedSec := counter * 20
-		log.Info().Msgf("Waiting for inputmanifest for config with id %s to be picked up by the frontend... [ %ds elapsed...]", configID, elapsedSec)
+		log.Info().Msgf("Waiting for input manifest for config with id %s to be picked up by the operator... [ %ds elapsed...]", configID, elapsedSec)
 		counter++
 		config, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{
 			Id:   configID,
@@ -326,11 +326,11 @@ func checkIfManifestSaved(configID string, idType pb.IdType, c pb.ContextBoxServ
 				return nil
 			} else {
 				if elapsedSec > maxTimeoutSave {
-					return fmt.Errorf("The inputmanfiest for config with id %s has not been picked up by the frontend in time, aborting...", configID)
+					return fmt.Errorf("The input manifest for config with id %s has not been picked up by the operator in time, aborting...", configID)
 				}
 			}
 		} else if elapsedSec > maxTimeoutSave {
-			return fmt.Errorf("The inputmanfiest for config with id %s has not been picked up by the frontend in time, aborting...", configID)
+			return fmt.Errorf("The input manifest for config with id %s has not been picked up by the operator in time, aborting...", configID)
 		}
 	}
 }
@@ -341,7 +341,7 @@ func checkIfManifestSaved(configID string, idType pb.IdType, c pb.ContextBoxServ
 func cleanUp(setName, id string, c pb.ContextBoxServiceClient) error {
 	if envs.Namespace != "" {
 		if err := deleteInputManifest(setName); err != nil {
-			return fmt.Errorf("error while deleting the inputmanfiest %s from %s : %w", id, envs.Namespace, err)
+			return fmt.Errorf("error while deleting the input manifest %s from %s : %w", id, envs.Namespace, err)
 		}
 	} else {
 		// delete config from database

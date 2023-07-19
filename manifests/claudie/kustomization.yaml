@@ -2,7 +2,7 @@ namespace: claudie
 resources:
 - crd
 - ns.yaml
-- frontend.yaml
+- operator.yaml
 - context-box.yaml
 - scheduler.yaml
 - builder.yaml
@@ -52,24 +52,27 @@ configMapGenerator:
 - envs:
   - .env
   name: env
+  options:
+    labels:
+      app.kubernetes.io/part-of: claudie
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
 - name: ghcr.io/berops/claudie/ansibler
-  newTag: b5fc228-2158
+  newTag: ee4001d-2218
 - name: ghcr.io/berops/claudie/autoscaler-adapter
   newTag: 688726a-1932
 - name: ghcr.io/berops/claudie/builder
-  newTag: b5fc228-2158
+  newTag: ee4001d-2218
+- name: ghcr.io/berops/claudie/claudie-operator
+  newTag: ee4001d-2218
 - name: ghcr.io/berops/claudie/context-box
-  newTag: b5fc228-2158
-- name: ghcr.io/berops/claudie/frontend
-  newTag: b5fc228-2158
+  newTag: ee4001d-2218
 - name: ghcr.io/berops/claudie/kube-eleven
-  newTag: b5fc228-2158
+  newTag: ee4001d-2218
 - name: ghcr.io/berops/claudie/kuber
-  newTag: b5fc228-2158
+  newTag: 0addb19-2220
 - name: ghcr.io/berops/claudie/scheduler
-  newTag: b5fc228-2158
+  newTag: ee4001d-2218
 - name: ghcr.io/berops/claudie/terraformer
-  newTag: b5fc228-2158
+  newTag: ee4001d-2218

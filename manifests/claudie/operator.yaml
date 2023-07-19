@@ -1,0 +1,171 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: claudie-operator
+  labels:
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: claudie-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: claudie
+      app.kubernetes.io/name: claudie-operator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/part-of: claudie
+        app.kubernetes.io/name: claudie-operator
+    spec:
+      terminationGracePeriodSeconds: 30
+      serviceAccountName: claudie-operator-sa
+      containers:
+        - name: claudie-operator
+          imagePullPolicy: Always
+          image: ghcr.io/berops/claudie/claudie-operator
+          resources:
+            requests:
+              cpu: 25m
+              memory: 100Mi
+            limits:
+              cpu: 250m
+              memory: 150Mi
+          ports:
+            - containerPort: 9443
+              name: webhook-tls
+            - containerPort: 50058
+              name: grpc-server                   
+          env:
+            - name: CONTEXT_BOX_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: CONTEXT_BOX_PORT
+            - name: CONTEXT_BOX_HOSTNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: CONTEXT_BOX_HOSTNAME
+            - name: GOLANG_LOG
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: GOLANG_LOG
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: CONTROLLER_TLS_PORT
+              value: "9443"
+            - name: OPERATOR_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: OPERATOR_PORT
+              # No hostname needed              
+            - name: WEBHOOK_CERT_DIR
+              value: "/etc/webhook/certs/"  
+            - name: WEBHOOK_PATH
+              value: "/validate-manifest" 
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 50000
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 50000
+            initialDelaySeconds: 15
+            periodSeconds: 30   
+          volumeMounts:
+            - name: webhook-tls-certs
+              mountPath: /etc/webhook/certs/
+              readOnly: true             
+      volumes:
+        - name: webhook-tls-certs
+          secret:
+            secretName: claudie-webhook-certificate
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: claudie-operator-sa
+  labels:
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: claudie-operator
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: claudie-operator
+  labels:
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: claudie-operator    
+spec:
+  selector:
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: claudie-operator
+  ports:
+    - port: 443
+      targetPort: webhook-tls
+      name: webhook-tls
+    - port: 50058
+      targetPort: grpc-server    
+      name: grpc-server  
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: claudie-webhook
+  annotations:
+    cert-manager.io/inject-ca-from: claudie/claudie-webhook-certificate
+  labels:
+    app.kubernetes.io/part-of: claudie      
+webhooks:
+  - name: validate-manifest.claudie.io
+    admissionReviewVersions:
+      - "v1beta1"
+    sideEffects: "None"
+    failurePolicy: Fail
+    timeoutSeconds: 10
+    clientConfig:
+      service:
+        name: claudie-operator
+        namespace: claudie
+        path: "/validate-manifest"
+    rules:
+      - operations: [ "CREATE", "UPDATE" ]
+        apiGroups: ["claudie.io"]
+        apiVersions: ["v1beta1"]
+        resources: ["inputmanifests"]
+        scope: "*"
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: claudie-webhook-certificate
+  namespace: claudie
+  labels:
+    app.kubernetes.io/part-of: claudie    
+spec:
+  secretName: claudie-webhook-certificate
+  secretTemplate:
+    labels:
+      app.kubernetes.io/part-of: claudie
+  dnsNames:
+  - claudie-operator.claudie
+  - claudie-operator.claudie.svc
+  - claudie-operator.claudie.svc.cluster
+  - claudie-operator.claudie.svc.cluster.local
+  issuerRef:
+    name: claudie-webhook-ca
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: claudie-webhook-ca
+  namespace: claudie
+spec:
+  selfSigned: {}

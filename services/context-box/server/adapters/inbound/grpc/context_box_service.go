@@ -13,8 +13,8 @@ type ContextBoxGrpcService struct {
 	usecases *usecases.Usecases
 }
 
-func (c *ContextBoxGrpcService) SaveConfigFrontEnd(ctx context.Context, request *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
-	return c.usecases.SaveConfigFrontEnd(request)
+func (c *ContextBoxGrpcService) SaveConfigOperator(ctx context.Context, request *pb.SaveConfigRequest) (*pb.SaveConfigResponse, error) {
+	return c.usecases.SaveConfigOperator(request)
 }
 
 func (c *ContextBoxGrpcService) SaveWorkflowState(ctx context.Context, request *pb.SaveWorkflowStateRequest) (*pb.SaveWorkflowStateResponse, error) {

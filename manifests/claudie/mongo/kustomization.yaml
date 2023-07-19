@@ -8,3 +8,6 @@ secretGenerator:
     files:
       - "MONGO_INITDB_ROOT_USERNAME=./secrets/username"
       - "MONGO_INITDB_ROOT_PASSWORD=./secrets/password"
+    options:
+      labels:
+        app.kubernetes.io/part-of: claudie

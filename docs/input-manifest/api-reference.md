@@ -1,7 +1,9 @@
 # InputManifest API reference
+
 InputManifest is a definition of the user's infrastructure. It contains cloud provider specification, nodepool specification, Kubernetes and loadbalancer clusters.
 
 ## Status
+
 Most recently observed status of the InputManifest
 
 ## Spec
@@ -37,22 +39,21 @@ needs to be defined.
 
   Type of a provider. The providerType defines mandatory fields that has to be included for a specific provider. A list of available providers can be found at [providers section](./providers). Allowed values are:
 
-  | Value         | Description                              |
-  | ------------- | ---------------------------------------- |
-  | `aws`         | [AWS](#aws) provider type                |
-  | `azure`       | [Azure](#azure) provider type            |
-  | `cloudflare`  | [Cloudflare](#cloudflare) provider type  |
-  | `gcp`         | [GCP](#gcp) provider type                |
-  | `hetzner`     | [Hetzner](#hetzner) provider type        |
-  | `hetznerdns`  | [Hetzner](#hetznerdns) DNS provider type |
-  | `oci`         | [OCI](#oci) provider type                |
+  | Value        | Description                              |
+  | ------------ | ---------------------------------------- |
+  | `aws`        | [AWS](#aws) provider type                |
+  | `azure`      | [Azure](#azure) provider type            |
+  | `cloudflare` | [Cloudflare](#cloudflare) provider type  |
+  | `gcp`        | [GCP](#gcp) provider type                |
+  | `hetzner`    | [Hetzner](#hetzner) provider type        |
+  | `hetznerdns` | [Hetzner](#hetznerdns) DNS provider type |
+  | `oci`        | [OCI](#oci) provider type                |
   
 - `secretRef` [SecretRef](#secretref)
 
   Represents a Secret Reference. It has enough information to retrieve secret in any namespace.
 
 Support for more cloud providers is in the [roadmap](https://github.com/berops/claudie/blob/master/docs/roadmap/roadmap.md).
-
 
 ## SecretRef
   
@@ -75,7 +76,7 @@ To find out how to configure Cloudflare follow the instructions [here](./provide
 
   Credentials for the provider (API token).
 
-## HetznerDNS
+### HetznerDNS
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the HetznerDNS provider.
 To find out how to configure HetznerDNS follow the instructions [here](./providers/hetzner.md)
@@ -84,7 +85,7 @@ To find out how to configure HetznerDNS follow the instructions [here](./provide
 
   Credentials for the provider (API token).
 
-## GCP
+### GCP
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the GCP provider.
 To find out how to configure GCP provider and service account, follow the instructions [here](./providers/gcp.md).
@@ -97,7 +98,7 @@ To find out how to configure GCP provider and service account, follow the instru
 
   Project id of an already existing GCP project where the infrastructure is to be created.
 
-## Hetzner
+### Hetzner
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the Hetzner provider.
 To find out how to configure Hetzner provider and service account, follow the instructions [here](./providers/hetzner.md).
@@ -106,7 +107,7 @@ To find out how to configure Hetzner provider and service account, follow the in
 
   Credentials for the provider (API token).
 
-## OCI
+### OCI
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the OCI provider.
 To find out how to configure OCI provider and service account, follow the instructions [here](./providers/oci.md).
@@ -131,7 +132,7 @@ To find out how to configure OCI provider and service account, follow the instru
 
   OCID of the [compartment](https://docs.oracle.com/en/cloud/paas/integration-cloud/oracle-integration-oci/creating-oci-compartment.html) where VMs/VCNs/... will be created
 
-## AWS
+### AWS
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the AWS provider.
 To find out how to configure AWS provider and service account, follow the instructions [here](./providers/aws.md).
@@ -144,7 +145,7 @@ To find out how to configure AWS provider and service account, follow the instru
 
   Secret key for the Access key specified above.
 
-## Azure
+### Azure
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the Azure provider.
 To find out how to configure Azure provider and service account, follow the instructions [here](./providers/azure.md).
@@ -176,7 +177,7 @@ Collection of static and dynamic nodepool specification, to be referenced in the
   These are only blueprints, and will only be created per reference in `kubernetes` or `loadBalancer` clusters. E.g. if the nodepool isn't used, it won't even be created. Or if the same nodepool is used in two different clusters, it will be created twice.
 In OOP analogy, a dynamic nodepool would be a class that would get instantiated `N >= 0` times depending on which clusters reference it.
 
-- `static` [WORK IN PROGRESS]
+- `static` [Static](#static)
 
   List of static nodepools of already existing machines, not created by of Claudie, used for Kubernetes or loadbalancer clusters. Typically, these would be on-premises machines.
 
@@ -220,10 +221,21 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
   
   Autoscaler configuration for this nodepool. Mutually exclusive with `count`.
 
+- `labels`
+
+  Map of user defined labels, which will be applied on every node in the node pool. This field is optional.
+  
+  To see the default labels Claudie applies on each node, refer to [this section](#default-labels).
+
+- `taints` [v1.Taint](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#taint-v1-core)
+
+  Array of user defined taints, which will be applied on every node in the node pool. This field is optional.
+
+  To see the default taints Claudie applies on each node, refer to [this section](#default-taints).
+
 ## Provider Spec
 
 Provider spec is an additional specification built on top of the data from any of the provider instance. Here are provider configuration examples for each individual provider: [aws](providers/aws.md), [azure](providers/azure.md), [gcp](providers/gcp.md), [cloudflare](providers/cloudflare.md), [hetzner](providers/hetzner.md) and [oci](providers/oci.md).
-
 
 - `name`
 
@@ -248,7 +260,55 @@ Autoscaler configuration on per nodepool basis. Defines the number of nodes, aut
 - `max`
 
   Maximum number of nodes in nodepool.
+
+## Static
+
+Static nodepools are defined for static machines which Claudie will not manage. Used for on premise nodes.
+
+- `name`
+
+  Name of the static nodepool.
+
+- `nodes` [Static Node](#static-node)
+
+  List of static nodes for a particular static nodepool.
+
+- `labels`
+
+  Map of user defined labels, which will be applied on every node in the node pool. This field is optional.
   
+  To see the default labels Claudie applies on each node, refer to [this section](#default-labels).
+
+- `taints` [v1.Taint](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#taint-v1-core)
+
+  Array of user defined taints, which will be applied on every node in the node pool. This field is optional.
+
+  To see the default taints Claudie applies on each node, refer to [this section](#default-taints).
+
+## Static node
+
+Static node defines single static node from a static nodepool.
+
+- `endpoint`
+
+  Endpoint under which Claudie will access this node.
+
+- `secretRef` [SecretRef](#secretref)
+
+  Secret from which private key will be taken used to SSH into the machine (as root).
+
+  The field in the secret must be `privatekey`, i.e.
+  
+  ```yaml
+  apiVersion: v1
+  type: Opaque
+  kind: Secret
+    name: private-key-node-1
+    namespace: claudie-secrets
+  data:
+    privatekey: <base64 encoded private key>
+  ```
+
 ## Kubernetes
 
 Defines Kubernetes clusters.
@@ -321,7 +381,7 @@ Role defines a concrete loadbalancer configuration. Single loadbalancer can have
   Defines a target group of nodes. Allowed values are:
 
   | Value             | Description                          |
-  |-------------------|--------------------------------------|
+  | ----------------- | ------------------------------------ |
   | `k8sAllNodes`     | All nodes in the cluster             |
   | `k8sControlPlane` | Only control/master nodes in cluster |
   | `k8sComputePlane` | Only compute/worker nodes in cluster |
@@ -367,3 +427,23 @@ Collection of data Claudie uses to create a DNS record for the loadbalancer.
 - `hostname`
   
   Custom hostname for your A record. If left empty, the hostname will be a random hash.
+
+### Default labels
+
+  By default, Claudie applies following labels on every node in the cluster, together with those defined by the user.
+
+  | Key                              | Value                                            |
+  | -------------------------------- | ------------------------------------------------ |
+  | `claudie.io/nodepool`            | Name of the node pool.                           |
+  | `claudie.io/provider`            | Cloud provider name.                             |
+  | `claudie.io/provider-instance`   | User defined provider name.                      |
+  | `claudie.io/node-type`           | Type of the node. Either `control` or `compute`. |
+  | `topology.kubernetes.io/region`  | Region where the node resides.                   |
+  | `topology.kubernetes.io/zone`    | Zone of the region where node resides.           |
+  | `kubernetes.io/os`               | Os family of the node.                           |
+  | `kubernetes.io/arch`             | Architecture type of the CPU.                    |
+  | `v1.kubeone.io/operating-system` | Os type of the node.                             |
+
+### Default taints
+
+  By default, Claudie applies only `node-role.kubernetes.io/control-plane` taint for control plane nodes, with effect `NoSchedule`, together with those defined by the user.

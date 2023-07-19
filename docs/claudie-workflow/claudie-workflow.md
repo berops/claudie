@@ -2,7 +2,7 @@
 
 ## A single platform for multiple clouds
 
-![claudie schema](claudie-diagram.jpg)
+![claudie schema](claudie-diagram.png)
 
 ### Microservices
 
@@ -13,7 +13,7 @@
 - [Ansibler](https://github.com/berops/claudie/tree/master/services/ansibler)
 - [Kube-eleven](https://github.com/berops/claudie/tree/master/services/kube-eleven)
 - [Kuber](https://github.com/berops/claudie/tree/master/services/kuber)
-- [Frontend](https://github.com/berops/claudie/tree/master/services/frontend)
+- [Claudie-operator](https://github.com/berops/claudie/tree/master/services/claudie-operator)
 
 ### Data stores
 
@@ -33,13 +33,13 @@
 
 ## Context-box
 
-Context box is Claudie's "control unit". It holds pending configs, which need to be processed, periodically checks for new/changed configs and receives new configs from `frontend`.
+Context box is Claudie's "control unit". It holds pending configs, which need to be processed, periodically checks for new/changed configs and receives new configs from an InputManifest CRD consumed by the`claudie-operator`.
 
 ### API
 
 ```go
-  // SaveConfigFrontEnd saves the config parsed by Frontend.
-  rpc SaveConfigFrontEnd(SaveConfigRequest) returns (SaveConfigResponse);
+  // SaveConfigOperator saves the InputManifest consumed by Claudie-operator.
+  rpc SaveConfigOperator(SaveConfigRequest) returns (SaveConfigResponse);
   // SaveConfigScheduler saves the config parsed by Scheduler.
   rpc SaveConfigScheduler(SaveConfigRequest) returns (SaveConfigResponse);
   // SaveConfigBuilder saves the config parsed by Builder.
@@ -63,7 +63,7 @@ Context box is Claudie's "control unit". It holds pending configs, which need to
 
 ### Flow
 
-- Receives a `config` from Frontend, calculates its `msChecksum` and saves it to the database
+- Receives an InputManifest CRD from Claudie-operator, calculates its `msChecksum` and saves it to the database
 - Periodically checks for `config` changes and pushes the `config` to the `schedulerQueue` if `msChecksum` != `dsChecksum`
 - Periodically checks for `config` changes and pushes the `config` to the `builderQueue` if `dsChecksum` != `csChecksum`
 - Receives a `config` with the `desiredState` from Scheduler and saves it to the database
@@ -197,10 +197,10 @@ Kuber manipulates the cluster resources using `kubectl`.
 ### API
 
 ```go
-  // RemoveLbScrapeConfig removes scrape config for every LB detached from this cluster.
-  rpc RemoveLbScrapeConfig(RemoveLbScrapeConfigRequest) returns (RemoveLbScrapeConfigResponse);
-  // StoreLbScrapeConfig stores scrape config for every LB attached to this cluster.
-  rpc StoreLbScrapeConfig(StoreLbScrapeConfigRequest) returns (StoreLbScrapeConfigResponse);
+  // RemoveLBScrapeConfig removes scrape config for every LB detached from this cluster.
+  rpc RemoveLBScrapeConfig(RemoveLBScrapeConfigRequest) returns (RemoveLBScrapeConfigResponse);
+  // StoreLBScrapeConfig stores scrape config for every LB attached to this cluster.
+  rpc StoreLBScrapeConfig(StoreLBScrapeConfigRequest) returns (StoreLBScrapeConfigResponse);
   // StoreClusterMetadata creates a secret, which holds the private key and a list of public IP addresses of the cluster supplied.
   rpc StoreClusterMetadata(StoreClusterMetadataRequest) returns (StoreClusterMetadataResponse);
   // DeleteClusterMetadata deletes the secret holding the private key and public IP addresses of the cluster supplied.
@@ -213,7 +213,7 @@ Kuber manipulates the cluster resources using `kubectl`.
   rpc DeleteKubeconfig(DeleteKubeconfigRequest) returns (DeleteKubeconfigResponse);
   // DeleteNodes deletes the specified nodes from a k8s cluster.
   rpc DeleteNodes(DeleteNodesRequest) returns (DeleteNodesResponse);
-  // PatchNodes uses kubectl patch to change the node manifest.
+  // PatchNodes applies attributes like providerID, labels or taints to the nodes.
   rpc PatchNodes(PatchNodeTemplateRequest) returns (PatchNodeTemplateResponse);
   // SetUpClusterAutoscaler deploys Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
   rpc SetUpClusterAutoscaler(SetUpClusterAutoscalerRequest) returns (SetUpClusterAutoscalerResponse);
@@ -234,16 +234,16 @@ Kuber manipulates the cluster resources using `kubectl`.
   - Creates a kubernetes secret that holds the kubeconfig of the Claudie-created cluster
 - Receives a `config` from Builder for `StoreMetadata()`
   - Creates a kubernetes secret that holds the node metadata of the Claudie-created cluster
-- Receives a `config` from Builder for `StoreLbScrapeConfig()`
+- Receives a `config` from Builder for `StoreLBScrapeConfig()`
   - Stores scrape config for any LB attached to the Claudie-made cluster.
 - Receives a `config` from Builder for `PatchNodes()`
   - Patches the node manifests of the Claudie-made cluster.
 - Upon infrastructure deletion request, Kuber deletes the kubeconfig secret, metadata secret, scrape configs and autoscaler of the cluster being deleted
 
-## Frontend
+## Claudie-operator
 
-Frontend is a layer between the user and Claudie. It is a `InputManifest` Custom Resource Definition controller, that will communicate with `context-box` to maintain the input manifest state.
-New manifests are added as CRD into the kubernetes cluster where Frontend pulls them and saves them to Claudie.
+Claudie-operator is a layer between the user and Claudie. It is a `InputManifest` Custom Resource Definition controller, that will communicate with `context-box` to maintain the input manifest state.
+New manifests are added as CRD into the Kubernetes cluster where Claudie-operator pulls them and saves them to Claudie.
 
 ### API
 
@@ -252,5 +252,5 @@ New manifests are added as CRD into the kubernetes cluster where Frontend pulls 
 ### Flow
 
 - User applies a new InputManifest crd holding a manifest
-- Frontend detects it and processes the created/modified input manifest
-- Upon deletion of user-created InputManifest, Frontend initiates a deletion process of the manifest
+- Claudie-operator detects it and processes the created/modified input manifest
+- Upon deletion of user-created InputManifest, Claudie-operator initiates a deletion process of the manifest

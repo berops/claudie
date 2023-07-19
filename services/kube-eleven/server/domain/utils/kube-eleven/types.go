@@ -1,6 +1,8 @@
 package kube_eleven
 
-import "github.com/berops/claudie/proto/pb"
+import (
+	"github.com/berops/claudie/proto/pb"
+)
 
 type (
 	// NodeInfo struct holds data necessary to define node in the node pool.
@@ -13,6 +15,7 @@ type (
 	// manifest.
 	NodepoolInfo struct {
 		Nodes             []*NodeInfo
+		IsDynamic         bool
 		NodepoolName      string
 		Region            string
 		Zone              string

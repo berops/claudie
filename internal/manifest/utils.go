@@ -2,8 +2,8 @@ package manifest
 
 import (
 	"fmt"
-
 	"github.com/berops/claudie/proto/pb"
+	k8sV1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -165,6 +165,8 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 			nodePools = append(nodePools, &pb.NodePool{
 				Name:      nodePool.Name,
 				IsControl: isControl,
+				Labels:    nodePool.Labels,
+				Taints:    getTaints(nodePool.Taints),
 				NodePoolType: &pb.NodePool_DynamicNodePool{
 					DynamicNodePool: &pb.DynamicNodePool{
 						Region:           nodePool.ProviderSpec.Region,
@@ -179,11 +181,13 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 				},
 			})
 		} else if nodePool := ds.FindStaticNodePool(nodePoolName); nodePool != nil {
-			nodes := getStaticNodes(nodePool)
+			nodes := getStaticNodes(nodePool, isControl)
 			nodePools = append(nodePools, &pb.NodePool{
 				Name:      nodePool.Name,
 				Nodes:     nodes,
 				IsControl: isControl,
+				Labels:    nodePool.Labels,
+				Taints:    getTaints(nodePool.Taints),
 				NodePoolType: &pb.NodePool_StaticNodePool{
 					StaticNodePool: &pb.StaticNodePool{
 						NodeKeys: getNodeKeys(nodePool),
@@ -198,12 +202,17 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 }
 
 // getStaticNodes returns slice of static nodes with initialised name.
-func getStaticNodes(np *StaticNodePool) []*pb.Node {
+func getStaticNodes(np *StaticNodePool, isControl bool) []*pb.Node {
 	nodes := make([]*pb.Node, 0, len(np.Nodes))
+	nodeType := pb.NodeType_worker
+	if isControl {
+		nodeType = pb.NodeType_master
+	}
 	for i, node := range np.Nodes {
 		nodes = append(nodes, &pb.Node{
-			Name:   fmt.Sprintf("%s-%d", np.Name, i),
-			Public: node.Endpoint,
+			Name:     fmt.Sprintf("%s-%d", np.Name, i+1),
+			Public:   node.Endpoint,
+			NodeType: nodeType,
 		})
 	}
 	return nodes
@@ -231,4 +240,12 @@ func (ds *Manifest) nodePoolDefined(pool string) bool {
 		}
 	}
 	return false
+}
+
+func getTaints(taints []k8sV1.Taint) []*pb.Taint {
+	arr := make([]*pb.Taint, 0, len(taints))
+	for _, t := range taints {
+		arr = append(arr, &pb.Taint{Key: t.Key, Value: t.Value, Effect: string(t.Effect)})
+	}
+	return arr
 }

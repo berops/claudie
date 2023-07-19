@@ -25,6 +25,9 @@ func GetClusterByName(clusterName string, clusters []*pb.K8Scluster) int {
 	}
 
 	for i, cluster := range clusters {
+		if cluster == nil {
+			continue
+		}
 		if cluster.ClusterInfo.Name == clusterName {
 			return i
 		}
@@ -86,7 +89,7 @@ func GetRegions(nodepools []*pb.DynamicNodePool) []string {
 // GroupNodepoolsByProviderNames groups nodepool by provider spec name into the map[Provider Names][]*pb.Nodepool
 func GroupNodepoolsByProviderNames(clusterInfo *pb.ClusterInfo) map[ProviderNames][]*pb.NodePool {
 	sortedNodePools := map[ProviderNames][]*pb.NodePool{}
-	pnStatic := ProviderNames{SpecName: pb.StaticProvider_STATIC_PROVIDER.String(), CloudProviderName: pb.StaticProvider_STATIC_PROVIDER.String()}
+	pnStatic := ProviderNames{SpecName: pb.StaticNodepoolInfo_STATIC_PROVIDER.String(), CloudProviderName: pb.StaticNodepoolInfo_STATIC_PROVIDER.String()}
 	for _, nodepool := range clusterInfo.GetNodePools() {
 		if np := nodepool.GetDynamicNodePool(); np != nil {
 			pn := ProviderNames{SpecName: np.Provider.SpecName, CloudProviderName: np.Provider.CloudProviderName}
@@ -105,20 +108,7 @@ func GroupNodepoolsByProviderSpecName(clusterInfo *pb.ClusterInfo) map[string][]
 		if np := nodepool.GetDynamicNodePool(); np != nil {
 			sortedNodePools[np.Provider.SpecName] = append(sortedNodePools[np.Provider.SpecName], nodepool)
 		} else if np := nodepool.GetStaticNodePool(); np != nil {
-			sortedNodePools[pb.StaticProvider_STATIC_PROVIDER.String()] = append(sortedNodePools[pb.StaticProvider_STATIC_PROVIDER.String()], nodepool)
-		}
-	}
-	return sortedNodePools
-}
-
-// GroupNodepoolsByProvider groups nodepool by cloud provider name into the map[Provider Name][]*pb.Nodepool
-func GroupNodepoolsByProvider(clusterInfo *pb.ClusterInfo) map[string][]*pb.NodePool {
-	sortedNodePools := map[string][]*pb.NodePool{}
-	for _, nodepool := range clusterInfo.GetNodePools() {
-		if np := nodepool.GetDynamicNodePool(); np != nil {
-			sortedNodePools[np.Provider.CloudProviderName] = append(sortedNodePools[np.Provider.CloudProviderName], nodepool)
-		} else if np := nodepool.GetStaticNodePool(); np != nil {
-			sortedNodePools[pb.StaticProvider_STATIC_PROVIDER.String()] = append(sortedNodePools[pb.StaticProvider_STATIC_PROVIDER.String()], nodepool)
+			sortedNodePools[pb.StaticNodepoolInfo_STATIC_PROVIDER.String()] = append(sortedNodePools[pb.StaticNodepoolInfo_STATIC_PROVIDER.String()], nodepool)
 		}
 	}
 	return sortedNodePools
@@ -132,7 +122,7 @@ func GroupNodepoolsByProviderRegion(clusterInfo *pb.ClusterInfo) map[string][]*p
 			key := fmt.Sprintf("%s-%s", np.Provider.SpecName, np.Region)
 			sortedNodePools[key] = append(sortedNodePools[key], nodepool)
 		} else if np := nodepool.GetStaticNodePool(); np != nil {
-			key := fmt.Sprintf("%s-%s", pb.StaticProvider_STATIC_PROVIDER.String(), pb.StaticRegion_STATIC_REGION.String())
+			key := fmt.Sprintf("%s-%s", pb.StaticNodepoolInfo_STATIC_PROVIDER.String(), pb.StaticNodepoolInfo_STATIC_REGION.String())
 			sortedNodePools[key] = append(sortedNodePools[key], nodepool)
 		}
 	}
@@ -156,7 +146,7 @@ func IsAutoscaled(cluster *pb.K8Scluster) bool {
 		return false
 	}
 	for _, np := range cluster.ClusterInfo.NodePools {
-		if n := np.GetDynamicNodePool(); np != nil {
+		if n := np.GetDynamicNodePool(); n != nil {
 			if n.AutoscalerConfig != nil {
 				return true
 			}

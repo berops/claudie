@@ -167,6 +167,9 @@ func GenerateLBBaseFiles(outputDirectory string, lbClustersInfo *LBClustersInfo)
 	if err := utils.CreateKeyFile(lbClustersInfo.TargetK8sNodepoolKey, outputDirectory, "k8s.pem"); err != nil {
 		return fmt.Errorf("failed to create key file: %w", err)
 	}
+	if err := utils.CreateKeysForStaticNodepools(utils.GetCommonStaticNodePools(lbClustersInfo.TargetK8sNodepool), outputDirectory); err != nil {
+		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
+	}
 
 	var lbClusters []LBcluster
 	for _, lbData := range lbClustersInfo.LbClusters {

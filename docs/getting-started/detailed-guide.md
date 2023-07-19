@@ -72,7 +72,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     context-box-5d76c89b4d-tb6h4   1/1     Running     1 (6m37s ago)   8m10s
     create-table-job-jvs9n         0/1     Completed   1               8m10s
     dynamodb-68777f9787-8wjhs      1/1     Running     0               8m10s
-    frontend-5755b7bc69-5l84h      1/1     Running     0               8m10s
+    claudie-operator-5755b7bc69-5l84h      1/1     Running     0               8m10s
     kube-eleven-64468cd5bd-qp4d4   1/1     Running     0               8m10s
     kuber-698c4564c-dhsvg          1/1     Running     0               8m10s
     make-bucket-job-fb5sp          0/1     Completed   0               8m10s
@@ -187,14 +187,14 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     !!! warning "Errors in input manifest"
         Validation webhook will reject the InputManifest at this stage if it finds errors within the manifest. Refer to our [API guide](https://docs.claudie.io/latest/input-manifest/api-reference/) for details.
 
-11. View logs from `frontend` service to see secret picked up, as well as which service is currently doing the work:
+11. View logs from `claudie-operator` service to see the InputManifest reconcile process:
 
     View the `InputManifest` state with `kubectl`
 
     ```bash
     kubectl get inputmanifests.claudie.io cloud-bursting -o jsonpath={.status} | jq .
     ```
-    Here’s an example of what frontend might output at this point:
+    Here’s an example of `.status` fields in the `InputManifest` resource type:
 
     ```json
       {
@@ -210,7 +210,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     ```
 
     !!! note "Claudie architecture"
-        Claudie utilizes multiple services for cluster provisioning, refer to our [workflow documentation](https://docs.claudie.io/latest/claudie-workflow/claudie-workflow/) as to how it works under the hood. Frontend's consolidated log provides visibility into the ongoing operations of each individual Claudie service. 
+        Claudie utilizes multiple services for cluster provisioning, refer to our [workflow documentation](https://docs.claudie.io/latest/claudie-workflow/claudie-workflow/) as to how it works under the hood.
 
     !!! warning "Provisioning times may vary!"
         Please note that cluster creation time may vary due to provisioning capacity and machine provisioning times of selected hyperscalers.
@@ -233,7 +233,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
 12. Claudie creates kubeconfig secret in claudie namespace:
 
     ```bash
-    kubectl get secrets -l claudie.io/output=kubeconfig
+    kubectl get secrets -n claudie -l claudie.io/output=kubeconfig
     ```
     ```
     NAME                                  TYPE     DATA   AGE
@@ -385,7 +385,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     !!! warning "Removing clusters"
         Deleting Claudie or the management cluster does not remove the Claudie managed clusters. Delete the secret first to initiate Claudie's deletion process.
 
-19. After frontend finished deletion workflow delete minikube cluster 
+19. After Claudie-operator finished deletion workflow delete minikube cluster 
     ```bash
     kind delete cluster
     ```

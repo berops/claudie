@@ -12,7 +12,7 @@ import (
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
-	"github.com/berops/claudie/services/kuber/server/nodes"
+	"github.com/berops/claudie/services/kuber/server/domain/utils/nodes"
 )
 
 // NodeGroupTargetSize returns the current target size of the node group. It is possible
