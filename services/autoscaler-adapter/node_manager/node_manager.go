@@ -78,6 +78,11 @@ func (nm *NodeManager) GetCapacity(np *pb.NodePool) k8sV1.ResourceList {
 	return nil
 }
 
+// Return the Arch for the dynamic nodepool.
+func (nm *NodeManager) QueryArch(np *pb.DynamicNodePool) Arch {
+	return nm.getTypeInfo(np.GetProvider().CloudProviderName, np).arch
+}
+
 // getTypeInfo returns a typeInfo for this nodepool
 func (nm *NodeManager) getTypeInfo(provider string, np *pb.DynamicNodePool) *typeInfo {
 	switch provider {

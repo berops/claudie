@@ -3,6 +3,7 @@ package nodes
 import (
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/services/autoscaler-adapter/node_manager"
 
 	k8sV1 "k8s.io/api/core/v1"
 )
@@ -26,7 +27,7 @@ const (
 )
 
 // GetAllLabels returns default labels with their theoretical values for the specified nodepool.
-func GetAllLabels(np *pb.NodePool) map[string]string {
+func GetAllLabels(np *pb.NodePool, nm *node_manager.NodeManager) map[string]string {
 	m := make(map[string]string, len(np.Labels)+9)
 	// Add custom user defined labels first in case user will try to overwrite Claudie default labels.
 	for k, v := range np.Labels {
@@ -37,9 +38,9 @@ func GetAllLabels(np *pb.NodePool) map[string]string {
 	m[string(Nodepool)] = np.Name
 	m[string(NodeType)] = getNodeType(np)
 	// Other labels.
-	m[string(KubernetesOs)] = "linux"   // Only Linux is supported.
-	m[string(KubernetesArch)] = "amd64" // TODO add arch https://github.com/berops/claudie/issues/665
-	m[string(KubeoneOs)] = "ubuntu"     // Only supported Os
+	m[string(KubernetesOs)] = "linux" // Only Linux is supported.
+	m[string(KubernetesArch)] = string(nm.QueryArch(np.GetDynamicNodePool()))
+	m[string(KubeoneOs)] = "ubuntu" // Only supported Os
 	// Dynamic nodepool data.
 	if n := np.GetDynamicNodePool(); n != nil {
 		m[string(Provider)] = n.Provider.CloudProviderName

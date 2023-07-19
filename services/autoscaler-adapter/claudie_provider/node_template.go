@@ -25,7 +25,7 @@ func (c *ClaudieCloudProvider) getNodeGroupTemplateNodeInfo(nodeGroupId string) 
 		// Create a new node struct.s
 		node := defaultNodeTemplate
 		// Fill dynamic fields.
-		node.Labels = nodes.GetAllLabels(ngc.nodepool)
+		node.Labels = nodes.GetAllLabels(ngc.nodepool, c.nodeManager)
 		node.Spec.Taints = nodes.GetAllTaints(ngc.nodepool)
 		node.Status.Capacity = c.nodeManager.GetCapacity(ngc.nodepool)
 		node.Status.Allocatable = node.Status.Capacity

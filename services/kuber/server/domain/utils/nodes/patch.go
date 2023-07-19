@@ -3,6 +3,7 @@ package nodes
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/berops/claudie/services/autoscaler-adapter/node_manager"
 	"strings"
 
 	"github.com/rs/zerolog"
@@ -31,9 +32,10 @@ type Patcher struct {
 	desiredNodepools []*pb.NodePool
 	kc               kubectl.Kubectl
 	logger           zerolog.Logger
+	m                *node_manager.NodeManager
 }
 
-func NewPatcher(cluster *pb.K8Scluster, logger zerolog.Logger) *Patcher {
+func NewPatcher(cluster *pb.K8Scluster, logger zerolog.Logger) (*Patcher, error) {
 	kc := kubectl.Kubectl{Kubeconfig: cluster.Kubeconfig, MaxKubectlRetries: 3}
 	clusterID := utils.GetClusterID(cluster.ClusterInfo)
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
@@ -41,7 +43,18 @@ func NewPatcher(cluster *pb.K8Scluster, logger zerolog.Logger) *Patcher {
 		kc.Stderr = comm.GetStdErr(clusterID)
 	}
 
-	return &Patcher{kc: kc, desiredNodepools: cluster.ClusterInfo.NodePools, clusterID: clusterID, logger: logger}
+	m, err := node_manager.NewNodeManager(cluster.ClusterInfo.NodePools)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Patcher{
+		kc:               kc,
+		desiredNodepools: cluster.ClusterInfo.NodePools,
+		clusterID:        clusterID,
+		logger:           logger,
+		m:                m,
+	}, nil
 }
 
 func (p *Patcher) PatchProviderID() error {
@@ -62,7 +75,7 @@ func (p *Patcher) PatchProviderID() error {
 func (p *Patcher) PatchLabels() error {
 	var err error
 	for _, np := range p.desiredNodepools {
-		patchPath, err1 := buildJSONPatchString("replace", "/metadata/labels", nodes.GetAllLabels(np))
+		patchPath, err1 := buildJSONPatchString("replace", "/metadata/labels", nodes.GetAllLabels(np, p.m))
 		if err1 != nil {
 			return fmt.Errorf("failed to create labels patch path for %s : %w", np.Name, err)
 		}
