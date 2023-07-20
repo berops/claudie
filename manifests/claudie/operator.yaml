@@ -27,6 +27,13 @@ spec:
         - name: claudie-operator
           imagePullPolicy: Always
           image: ghcr.io/berops/claudie/claudie-operator
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true                    
+            capabilities:
+              drop:
+                - all           
           resources:
             requests:
               cpu: 25m

@@ -18,13 +18,15 @@ spec:
         app.kubernetes.io/name: terraformer
     spec:
       terminationGracePeriodSeconds: 1320
-      securityContext:
+      securityContext:      
         runAsUser: 1000
         runAsGroup: 3000
         fsGroup: 2000            
       volumes:
         - name: data
           emptyDir: {}
+        - name: temp
+          emptyDir: {}             
       containers:
         - name: terraformer
           imagePullPolicy: Always
@@ -32,25 +34,15 @@ spec:
           volumeMounts:
           - mountPath: /bin/services/terraformer/server/clusters
             name: data
+          - mountPath: /tmp
+            name: temp                 
           securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true                    
             capabilities:
               drop:
-                - all
-              add:
-                - chown
-                - dac_override
-                - fowner
-                - fsetid
-                - kill
-                - setgid
-                - setuid
-                - setpcap
-                - net_bind_service
-                - net_raw
-                - sys_chroot
-                - mknod
-                - audit_write
-                - setfcap            
+                - all       
           resources:
             requests:
               cpu: 700m

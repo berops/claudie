@@ -33,6 +33,13 @@ spec:
             limits:
               cpu: 160m
               memory: 400Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true          
+            capabilities:
+              drop:
+                - all               
           env:
             - name: CONTEXT_BOX_PORT
               valueFrom:

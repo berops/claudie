@@ -35,24 +35,12 @@ spec:
           - mountPath: /.ansible
             name: temp                  
           securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop:
-                - all
-              add:
-                - chown
-                - dac_override
-                - fowner
-                - fsetid
-                - kill
-                - setgid
-                - setuid
-                - setpcap
-                - net_bind_service
-                - net_raw
-                - sys_chroot
-                - mknod
-                - audit_write
-                - setfcap              
+                - all         
           imagePullPolicy: Always
           image: ghcr.io/berops/claudie/ansibler
           resources:

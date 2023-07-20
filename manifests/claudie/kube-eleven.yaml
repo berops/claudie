@@ -33,24 +33,12 @@ spec:
           - mountPath: /bin/services/kube-eleven/server/clusters
             name: data          
           securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true                    
             capabilities:
               drop:
                 - all
-              add:
-                - chown
-                - dac_override
-                - fowner
-                - fsetid
-                - kill
-                - setgid
-                - setuid
-                - setpcap
-                - net_bind_service
-                - net_raw
-                - sys_chroot
-                - mknod
-                - audit_write
-                - setfcap
           resources:
             requests:
               cpu: 500m

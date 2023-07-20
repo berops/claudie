@@ -26,6 +26,13 @@ spec:
         - name: scheduler
           imagePullPolicy: Always
           image: ghcr.io/berops/claudie/scheduler
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true                    
+            capabilities:
+              drop:
+                - all           
           resources:
             requests:
               cpu: 45m
