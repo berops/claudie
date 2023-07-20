@@ -220,24 +220,16 @@ func resolveAws(np *pb.DynamicNodePool) (Arch, error) {
 
 	var arch Arch
 	var token *string
-	pageSize := int32(10)
 
 	for {
 		res, err := client.DescribeInstanceTypes(context.Background(), &ec2.DescribeInstanceTypesInput{
-			MaxResults: &pageSize,
-			NextToken:  token,
+			NextToken: token,
 			InstanceTypes: []types.InstanceType{
 				types.InstanceType(np.ServerType),
 			},
 		})
 		if err != nil {
 			return "", fmt.Errorf("failed to list instance types for aws: %w", err)
-		}
-
-		// debug.
-		fmt.Printf("--- %#v\n", res.InstanceTypes)
-		for _, i := range res.InstanceTypes {
-			fmt.Printf("--- %#v\n", i.ProcessorInfo.SupportedArchitectures)
 		}
 
 		if len(res.InstanceTypes) > 0 {
