@@ -2,11 +2,12 @@ package grpc
 
 import (
 	"fmt"
+	"net"
+
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
-	"net"
 
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
@@ -49,8 +50,8 @@ func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
 	grpc_health_v1.RegisterHealthServer(g.server, g.HealthServer)
 }
 
-// Start makes the gRPC server start listening for incoming gRPC requests.
-func (g *GrpcAdapter) Start() error {
+// Serve makes the gRPC server start listening for incoming gRPC requests.
+func (g *GrpcAdapter) Serve() error {
 	// Process each gRPC request in a separate thread.
 	if err := g.server.Serve(g.tcpListener); err != nil {
 		return fmt.Errorf("terraformer failed to serve: %w", err)

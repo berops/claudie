@@ -1,7 +1,9 @@
 # InputManifest API reference
+
 InputManifest is a definition of the user's infrastructure. It contains cloud provider specification, nodepool specification, Kubernetes and loadbalancer clusters.
 
 ## Status
+
 Most recently observed status of the InputManifest
 
 ## Spec
@@ -53,7 +55,6 @@ needs to be defined.
 
 Support for more cloud providers is in the [roadmap](https://github.com/berops/claudie/blob/master/docs/roadmap/roadmap.md).
 
-
 ## SecretRef
   
   SecretReference represents a Kubernetes Secret Reference. It has enough information to retrieve secret in any namespace.
@@ -75,7 +76,7 @@ To find out how to configure Cloudflare follow the instructions [here](./provide
 
   Credentials for the provider (API token).
 
-## HetznerDNS
+### HetznerDNS
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the HetznerDNS provider.
 To find out how to configure HetznerDNS follow the instructions [here](./providers/hetzner.md)
@@ -84,7 +85,7 @@ To find out how to configure HetznerDNS follow the instructions [here](./provide
 
   Credentials for the provider (API token).
 
-## GCP
+### GCP
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the GCP provider.
 To find out how to configure GCP provider and service account, follow the instructions [here](./providers/gcp.md).
@@ -97,7 +98,7 @@ To find out how to configure GCP provider and service account, follow the instru
 
   Project id of an already existing GCP project where the infrastructure is to be created.
 
-## Hetzner
+### Hetzner
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the Hetzner provider.
 To find out how to configure Hetzner provider and service account, follow the instructions [here](./providers/hetzner.md).
@@ -106,7 +107,7 @@ To find out how to configure Hetzner provider and service account, follow the in
 
   Credentials for the provider (API token).
 
-## OCI
+### OCI
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the OCI provider.
 To find out how to configure OCI provider and service account, follow the instructions [here](./providers/oci.md).
@@ -131,7 +132,7 @@ To find out how to configure OCI provider and service account, follow the instru
 
   OCID of the [compartment](https://docs.oracle.com/en/cloud/paas/integration-cloud/oracle-integration-oci/creating-oci-compartment.html) where VMs/VCNs/... will be created
 
-## AWS
+### AWS
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the AWS provider.
 To find out how to configure AWS provider and service account, follow the instructions [here](./providers/aws.md).
@@ -144,7 +145,7 @@ To find out how to configure AWS provider and service account, follow the instru
 
   Secret key for the Access key specified above.
 
-## Azure
+### Azure
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the Azure provider.
 To find out how to configure Azure provider and service account, follow the instructions [here](./providers/azure.md).
@@ -220,6 +221,18 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
   
   Autoscaler configuration for this nodepool. Mutually exclusive with `count`.
 
+- `labels`
+
+  Map of user defined labels, which will be applied on every node in the node pool. This field is optional.
+  
+  To see the default labels Claudie applies on each node, refer to [this section](#default-labels).
+
+- `taints` [v1.Taint](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#taint-v1-core)
+
+  Array of user defined taints, which will be applied on every node in the node pool. This field is optional.
+
+  To see the default taints Claudie applies on each node, refer to [this section](#default-taints).
+
 ## Provider Spec
 
 Provider spec is an additional specification built on top of the data from any of the provider instance. Here are provider configuration examples for each individual provider: [aws](providers/aws.md), [azure](providers/azure.md), [gcp](providers/gcp.md), [cloudflare](providers/cloudflare.md), [hetzner](providers/hetzner.md) and [oci](providers/oci.md).
@@ -259,6 +272,18 @@ Static nodepools are defined for static machines which Claudie will not manage. 
 - `nodes` [Static Node](#static-node)
 
   List of static nodes for a particular static nodepool.
+
+- `labels`
+
+  Map of user defined labels, which will be applied on every node in the node pool. This field is optional.
+  
+  To see the default labels Claudie applies on each node, refer to [this section](#default-labels).
+
+- `taints` [v1.Taint](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#taint-v1-core)
+
+  Array of user defined taints, which will be applied on every node in the node pool. This field is optional.
+
+  To see the default taints Claudie applies on each node, refer to [this section](#default-taints).
 
 ## Static node
 
@@ -402,3 +427,23 @@ Collection of data Claudie uses to create a DNS record for the loadbalancer.
 - `hostname`
   
   Custom hostname for your A record. If left empty, the hostname will be a random hash.
+
+### Default labels
+
+  By default, Claudie applies following labels on every node in the cluster, together with those defined by the user.
+
+  | Key                              | Value                                            |
+  | -------------------------------- | ------------------------------------------------ |
+  | `claudie.io/nodepool`            | Name of the node pool.                           |
+  | `claudie.io/provider`            | Cloud provider name.                             |
+  | `claudie.io/provider-instance`   | User defined provider name.                      |
+  | `claudie.io/node-type`           | Type of the node. Either `control` or `compute`. |
+  | `topology.kubernetes.io/region`  | Region where the node resides.                   |
+  | `topology.kubernetes.io/zone`    | Zone of the region where node resides.           |
+  | `kubernetes.io/os`               | Os family of the node.                           |
+  | `kubernetes.io/arch`             | Architecture type of the CPU.                    |
+  | `v1.kubeone.io/operating-system` | Os type of the node.                             |
+
+### Default taints
+
+  By default, Claudie applies only `node-role.kubernetes.io/control-plane` taint for control plane nodes, with effect `NoSchedule`, together with those defined by the user.

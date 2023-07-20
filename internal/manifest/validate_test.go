@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	k8sV1 "k8s.io/api/core/v1"
 )
 
 var (
@@ -81,6 +82,22 @@ var (
 					Name: "control-2",
 				}, {
 					Name: "compute-2",
+					Taints: []k8sV1.Taint{
+						{
+							Key:    "test",
+							Value:  "foo",
+							Effect: "NoExecute",
+						},
+						{
+							Key:    "test",
+							Effect: "NoExecute",
+						},
+					},
+					Labels: map[string]string{
+						"test":              "foo",
+						"test1":             "bar",
+						"claudie.io/test-1": "success",
+					},
 				},
 			},
 		},

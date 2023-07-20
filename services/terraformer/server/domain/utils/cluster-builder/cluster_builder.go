@@ -238,7 +238,7 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	for providerNames, nodepools := range sortedNodePools {
 		providerName := providerNames.CloudProviderName
 		// Continue if static node pool provider.
-		if providerName == pb.StaticProvider_STATIC_PROVIDER.String() {
+		if providerName == pb.StaticNodepoolInfo_STATIC_PROVIDER.String() {
 			continue
 		}
 
@@ -463,7 +463,7 @@ func generateProviderTemplates(current, desired *pb.ClusterInfo, clusterID, dire
 	// merge together into a single map instead of creating a new.
 	for name, np := range desiredNodepools {
 		// Continue if static node pool provider.
-		if name.CloudProviderName == pb.StaticProvider_STATIC_PROVIDER.String() {
+		if name.CloudProviderName == pb.StaticNodepoolInfo_STATIC_PROVIDER.String() {
 			continue
 		}
 
@@ -487,7 +487,7 @@ func generateProviderTemplates(current, desired *pb.ClusterInfo, clusterID, dire
 
 	for providerName, nodepools := range currentNodepools {
 		// Continue if static node pool provider.
-		if providerName.CloudProviderName == pb.StaticProvider_STATIC_PROVIDER.String() {
+		if providerName.CloudProviderName == pb.StaticNodepoolInfo_STATIC_PROVIDER.String() {
 			continue
 		}
 		nps := make([]NodePoolInfo, 0, len(nodepools))

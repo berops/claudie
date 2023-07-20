@@ -1,6 +1,8 @@
 package manifest
 
-////////////////////YAML STRUCT//////////////////////////////////////////////////
+import (
+	k8sV1 "k8s.io/api/core/v1"
+)
 
 type Manifest struct {
 	Name         string       `validate:"required" yaml:"name"`
@@ -124,6 +126,12 @@ type DynamicNodePool struct {
 	// Autoscaler configuration for this nodepool. Mutually exclusive with count.
 	// +optional
 	AutoscalerConfig AutoscalerConfig `validate:"required_without=Count,excluded_with=Count" yaml:"autoscaler" json:"autoscaler,omitempty"`
+	// User defined labels for this nodepool.
+	// +optional
+	Labels map[string]string `validate:"omitempty" yaml:"labels" json:"labels"`
+	// User defined taints for this nodepool.
+	// +optional
+	Taints []k8sV1.Taint `validate:"omitempty" yaml:"taints" json:"taints"`
 }
 
 // Autoscaler configuration on per nodepool basis. Defines the number of nodes, autoscaler will scale up or down specific nodepool.
@@ -150,6 +158,12 @@ type StaticNodePool struct {
 	Name string `validate:"required" yaml:"name" json:"name"`
 	// List of static nodes assigned to a particular nodepool.
 	Nodes []Node `validate:"dive" yaml:"nodes" json:"nodes"`
+	// User defined labels for this nodepool.
+	// +optional
+	Labels map[string]string `validate:"omitempty" yaml:"labels" json:"labels"`
+	// User defined taints for this nodepool.
+	// +optional
+	Taints []k8sV1.Taint `validate:"omitempty" yaml:"taints" json:"taints"`
 }
 
 // Node represents a static node assigned to a particular static nodepool.
@@ -228,5 +242,3 @@ type DNS struct {
 	// Custom hostname for your A record. If left empty, the hostname will be a random hash.
 	Hostname string `yaml:"hostname,omitempty" json:"hostname,omitempty"`
 }
-
-////////////////////////////////////////////////////////////////////////////////

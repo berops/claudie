@@ -41,18 +41,18 @@ message StoreClusterMetadataRequest {
 
 message StoreClusterMetadataResponse {}
 
-message StoreLbScrapeConfigRequest {
+message StoreLBScrapeConfigRequest {
   K8scluster cluster = 1;
   repeated LBcluster desiredLoadbalancers = 2;
 }
 
-message StoreLbScrapeConfigResponse {}
+message StoreLBScrapeConfigResponse {}
 
-message RemoveLbScrapeConfigRequest {
+message RemoveLBScrapeConfigRequest {
   K8scluster cluster = 1;
 }
 
-message RemoveLbScrapeConfigResponse {}
+message RemoveLBScrapeConfigResponse {}
 
 message DeleteClusterMetadataRequest {
   K8scluster cluster = 1;
@@ -60,11 +60,11 @@ message DeleteClusterMetadataRequest {
 
 message DeleteClusterMetadataResponse {}
 
-message PatchNodeTemplateRequest {
+message PatchNodesRequest {
   K8scluster cluster = 1;
 }
 
-message PatchNodeTemplateResponse {}
+message PatchNodesResponse {}
 
 message SetUpClusterAutoscalerRequest{
   string projectName = 1;
@@ -87,10 +87,10 @@ message PatchClusterInfoConfigMapRequest {
 message PatchClusterInfoConfigMapResponse {}
 
 service KuberService {
-  // RemoveLbScrapeConfig removes scrape config for every LB detached from this cluster.
-  rpc RemoveLbScrapeConfig(RemoveLbScrapeConfigRequest) returns (RemoveLbScrapeConfigResponse);
-  // StoreLbScrapeConfig stores scrape config for every LB attached to this cluster.
-  rpc StoreLbScrapeConfig(StoreLbScrapeConfigRequest) returns (StoreLbScrapeConfigResponse);
+  // RemoveLBScrapeConfig removes scrape config for every LB detached from this cluster.
+  rpc RemoveLBScrapeConfig(RemoveLBScrapeConfigRequest) returns (RemoveLBScrapeConfigResponse);
+  // StoreLBScrapeConfig stores scrape config for every LB attached to this cluster.
+  rpc StoreLBScrapeConfig(StoreLBScrapeConfigRequest) returns (StoreLBScrapeConfigResponse);
   // StoreClusterMetadata creates a secret, which holds the private key and a list of public IP addresses of the cluster supplied.
   rpc StoreClusterMetadata(StoreClusterMetadataRequest) returns (StoreClusterMetadataResponse);
   // DeleteClusterMetadata deletes the secret holding the private key and public IP addresses of the cluster supplied.
@@ -103,8 +103,8 @@ service KuberService {
   rpc DeleteKubeconfig(DeleteKubeconfigRequest) returns (DeleteKubeconfigResponse);
   // DeleteNodes deletes the specified nodes from a k8s cluster.
   rpc DeleteNodes(DeleteNodesRequest) returns (DeleteNodesResponse);
-  // PatchNodes uses kubectl patch to change the node manifest.
-  rpc PatchNodes(PatchNodeTemplateRequest) returns (PatchNodeTemplateResponse);
+  // PatchNodes applies attributes like providerID, labels or taints to the nodes.
+  rpc PatchNodes(PatchNodesRequest) returns (PatchNodesResponse);
   // SetUpClusterAutoscaler deploys Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
   rpc SetUpClusterAutoscaler(SetUpClusterAutoscalerRequest) returns (SetUpClusterAutoscalerResponse);
   // DestroyClusterAutoscaler deletes Cluster Autoscaler and Autoscaler Adapter for every cluster specified.

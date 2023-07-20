@@ -71,6 +71,38 @@ func (c *Cmd) RetryCommand(numOfRetries int) error {
 	return err
 }
 
+// RetryCommandWithCallback retries the given command, with exponential backoff, maxing at 5 min, for numOfRetries times.
+// After every failed attempt the passed in callback is called.
+func (c *Cmd) RetryCommandWithCallback(numOfRetries int, callback func() error) error {
+	var err error
+
+	// Have a cmd that is safe for printing.
+	printSafeCmd := c.sanitisedCmd()
+
+	for i := 1; i <= numOfRetries; i++ {
+		backoff := getNewBackoff(i)
+		log.Info().Msgf("Next retry in %ds...", backoff)
+		time.Sleep(time.Duration(backoff) * time.Second)
+
+		if err = c.execute(i, numOfRetries); err == nil {
+			log.Info().Msgf("The %s was successful on %d retry", printSafeCmd, i)
+			return nil
+		}
+
+		log.Warn().Msgf("Error encountered while executing %s : %v", printSafeCmd, err)
+
+		if i < numOfRetries {
+			if err := callback(); err != nil {
+				return err
+			}
+		}
+	}
+
+	log.Error().Msgf("Command %s was not successful after %d retries", printSafeCmd, numOfRetries)
+
+	return err
+}
+
 // RetryCommandWithOutput retries the given command, with exponential backoff, maxing at 5 min, for numOfRetries times.
 // returns (nil, error) if all retries fail, (output, nil) otherwise.
 func (c *Cmd) RetryCommandWithOutput(numOfRetries int) ([]byte, error) {

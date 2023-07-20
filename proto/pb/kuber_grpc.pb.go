@@ -22,10 +22,10 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type KuberServiceClient interface {
-	// RemoveLbScrapeConfig removes scrape config for every LB detached from this cluster.
-	RemoveLbScrapeConfig(ctx context.Context, in *RemoveLbScrapeConfigRequest, opts ...grpc.CallOption) (*RemoveLbScrapeConfigResponse, error)
-	// StoreLbScrapeConfig stores scrape config for every LB attached to this cluster.
-	StoreLbScrapeConfig(ctx context.Context, in *StoreLbScrapeConfigRequest, opts ...grpc.CallOption) (*StoreLbScrapeConfigResponse, error)
+	// RemoveLBScrapeConfig removes scrape config for every LB detached from this cluster.
+	RemoveLBScrapeConfig(ctx context.Context, in *RemoveLBScrapeConfigRequest, opts ...grpc.CallOption) (*RemoveLBScrapeConfigResponse, error)
+	// StoreLBScrapeConfig stores scrape config for every LB attached to this cluster.
+	StoreLBScrapeConfig(ctx context.Context, in *StoreLBScrapeConfigRequest, opts ...grpc.CallOption) (*StoreLBScrapeConfigResponse, error)
 	// StoreClusterMetadata creates a secret, which holds the private key and a list of public IP addresses of the cluster supplied.
 	StoreClusterMetadata(ctx context.Context, in *StoreClusterMetadataRequest, opts ...grpc.CallOption) (*StoreClusterMetadataResponse, error)
 	// DeleteClusterMetadata deletes the secret holding the private key and public IP addresses of the cluster supplied.
@@ -38,8 +38,8 @@ type KuberServiceClient interface {
 	DeleteKubeconfig(ctx context.Context, in *DeleteKubeconfigRequest, opts ...grpc.CallOption) (*DeleteKubeconfigResponse, error)
 	// DeleteNodes deletes the specified nodes from a k8s cluster.
 	DeleteNodes(ctx context.Context, in *DeleteNodesRequest, opts ...grpc.CallOption) (*DeleteNodesResponse, error)
-	// PatchNodes uses kubectl patch to change the node manifest.
-	PatchNodes(ctx context.Context, in *PatchNodeTemplateRequest, opts ...grpc.CallOption) (*PatchNodeTemplateResponse, error)
+	// PatchNodes applies attributes like providerID, labels or taints to the nodes.
+	PatchNodes(ctx context.Context, in *PatchNodesRequest, opts ...grpc.CallOption) (*PatchNodesResponse, error)
 	// SetUpClusterAutoscaler deploys Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
 	SetUpClusterAutoscaler(ctx context.Context, in *SetUpClusterAutoscalerRequest, opts ...grpc.CallOption) (*SetUpClusterAutoscalerResponse, error)
 	// DestroyClusterAutoscaler deletes Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
@@ -58,18 +58,18 @@ func NewKuberServiceClient(cc grpc.ClientConnInterface) KuberServiceClient {
 	return &kuberServiceClient{cc}
 }
 
-func (c *kuberServiceClient) RemoveLbScrapeConfig(ctx context.Context, in *RemoveLbScrapeConfigRequest, opts ...grpc.CallOption) (*RemoveLbScrapeConfigResponse, error) {
-	out := new(RemoveLbScrapeConfigResponse)
-	err := c.cc.Invoke(ctx, "/claudie.KuberService/RemoveLbScrapeConfig", in, out, opts...)
+func (c *kuberServiceClient) RemoveLBScrapeConfig(ctx context.Context, in *RemoveLBScrapeConfigRequest, opts ...grpc.CallOption) (*RemoveLBScrapeConfigResponse, error) {
+	out := new(RemoveLBScrapeConfigResponse)
+	err := c.cc.Invoke(ctx, "/claudie.KuberService/RemoveLBScrapeConfig", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *kuberServiceClient) StoreLbScrapeConfig(ctx context.Context, in *StoreLbScrapeConfigRequest, opts ...grpc.CallOption) (*StoreLbScrapeConfigResponse, error) {
-	out := new(StoreLbScrapeConfigResponse)
-	err := c.cc.Invoke(ctx, "/claudie.KuberService/StoreLbScrapeConfig", in, out, opts...)
+func (c *kuberServiceClient) StoreLBScrapeConfig(ctx context.Context, in *StoreLBScrapeConfigRequest, opts ...grpc.CallOption) (*StoreLBScrapeConfigResponse, error) {
+	out := new(StoreLBScrapeConfigResponse)
+	err := c.cc.Invoke(ctx, "/claudie.KuberService/StoreLBScrapeConfig", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -130,8 +130,8 @@ func (c *kuberServiceClient) DeleteNodes(ctx context.Context, in *DeleteNodesReq
 	return out, nil
 }
 
-func (c *kuberServiceClient) PatchNodes(ctx context.Context, in *PatchNodeTemplateRequest, opts ...grpc.CallOption) (*PatchNodeTemplateResponse, error) {
-	out := new(PatchNodeTemplateResponse)
+func (c *kuberServiceClient) PatchNodes(ctx context.Context, in *PatchNodesRequest, opts ...grpc.CallOption) (*PatchNodesResponse, error) {
+	out := new(PatchNodesResponse)
 	err := c.cc.Invoke(ctx, "/claudie.KuberService/PatchNodes", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -170,10 +170,10 @@ func (c *kuberServiceClient) PatchClusterInfoConfigMap(ctx context.Context, in *
 // All implementations must embed UnimplementedKuberServiceServer
 // for forward compatibility
 type KuberServiceServer interface {
-	// RemoveLbScrapeConfig removes scrape config for every LB detached from this cluster.
-	RemoveLbScrapeConfig(context.Context, *RemoveLbScrapeConfigRequest) (*RemoveLbScrapeConfigResponse, error)
-	// StoreLbScrapeConfig stores scrape config for every LB attached to this cluster.
-	StoreLbScrapeConfig(context.Context, *StoreLbScrapeConfigRequest) (*StoreLbScrapeConfigResponse, error)
+	// RemoveLBScrapeConfig removes scrape config for every LB detached from this cluster.
+	RemoveLBScrapeConfig(context.Context, *RemoveLBScrapeConfigRequest) (*RemoveLBScrapeConfigResponse, error)
+	// StoreLBScrapeConfig stores scrape config for every LB attached to this cluster.
+	StoreLBScrapeConfig(context.Context, *StoreLBScrapeConfigRequest) (*StoreLBScrapeConfigResponse, error)
 	// StoreClusterMetadata creates a secret, which holds the private key and a list of public IP addresses of the cluster supplied.
 	StoreClusterMetadata(context.Context, *StoreClusterMetadataRequest) (*StoreClusterMetadataResponse, error)
 	// DeleteClusterMetadata deletes the secret holding the private key and public IP addresses of the cluster supplied.
@@ -186,8 +186,8 @@ type KuberServiceServer interface {
 	DeleteKubeconfig(context.Context, *DeleteKubeconfigRequest) (*DeleteKubeconfigResponse, error)
 	// DeleteNodes deletes the specified nodes from a k8s cluster.
 	DeleteNodes(context.Context, *DeleteNodesRequest) (*DeleteNodesResponse, error)
-	// PatchNodes uses kubectl patch to change the node manifest.
-	PatchNodes(context.Context, *PatchNodeTemplateRequest) (*PatchNodeTemplateResponse, error)
+	// PatchNodes applies attributes like providerID, labels or taints to the nodes.
+	PatchNodes(context.Context, *PatchNodesRequest) (*PatchNodesResponse, error)
 	// SetUpClusterAutoscaler deploys Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
 	SetUpClusterAutoscaler(context.Context, *SetUpClusterAutoscalerRequest) (*SetUpClusterAutoscalerResponse, error)
 	// DestroyClusterAutoscaler deletes Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
@@ -203,11 +203,11 @@ type KuberServiceServer interface {
 type UnimplementedKuberServiceServer struct {
 }
 
-func (UnimplementedKuberServiceServer) RemoveLbScrapeConfig(context.Context, *RemoveLbScrapeConfigRequest) (*RemoveLbScrapeConfigResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RemoveLbScrapeConfig not implemented")
+func (UnimplementedKuberServiceServer) RemoveLBScrapeConfig(context.Context, *RemoveLBScrapeConfigRequest) (*RemoveLBScrapeConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveLBScrapeConfig not implemented")
 }
-func (UnimplementedKuberServiceServer) StoreLbScrapeConfig(context.Context, *StoreLbScrapeConfigRequest) (*StoreLbScrapeConfigResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method StoreLbScrapeConfig not implemented")
+func (UnimplementedKuberServiceServer) StoreLBScrapeConfig(context.Context, *StoreLBScrapeConfigRequest) (*StoreLBScrapeConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StoreLBScrapeConfig not implemented")
 }
 func (UnimplementedKuberServiceServer) StoreClusterMetadata(context.Context, *StoreClusterMetadataRequest) (*StoreClusterMetadataResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StoreClusterMetadata not implemented")
@@ -227,7 +227,7 @@ func (UnimplementedKuberServiceServer) DeleteKubeconfig(context.Context, *Delete
 func (UnimplementedKuberServiceServer) DeleteNodes(context.Context, *DeleteNodesRequest) (*DeleteNodesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteNodes not implemented")
 }
-func (UnimplementedKuberServiceServer) PatchNodes(context.Context, *PatchNodeTemplateRequest) (*PatchNodeTemplateResponse, error) {
+func (UnimplementedKuberServiceServer) PatchNodes(context.Context, *PatchNodesRequest) (*PatchNodesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PatchNodes not implemented")
 }
 func (UnimplementedKuberServiceServer) SetUpClusterAutoscaler(context.Context, *SetUpClusterAutoscalerRequest) (*SetUpClusterAutoscalerResponse, error) {
@@ -252,38 +252,38 @@ func RegisterKuberServiceServer(s grpc.ServiceRegistrar, srv KuberServiceServer)
 	s.RegisterService(&KuberService_ServiceDesc, srv)
 }
 
-func _KuberService_RemoveLbScrapeConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RemoveLbScrapeConfigRequest)
+func _KuberService_RemoveLBScrapeConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveLBScrapeConfigRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(KuberServiceServer).RemoveLbScrapeConfig(ctx, in)
+		return srv.(KuberServiceServer).RemoveLBScrapeConfig(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/claudie.KuberService/RemoveLbScrapeConfig",
+		FullMethod: "/claudie.KuberService/RemoveLBScrapeConfig",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KuberServiceServer).RemoveLbScrapeConfig(ctx, req.(*RemoveLbScrapeConfigRequest))
+		return srv.(KuberServiceServer).RemoveLBScrapeConfig(ctx, req.(*RemoveLBScrapeConfigRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _KuberService_StoreLbScrapeConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(StoreLbScrapeConfigRequest)
+func _KuberService_StoreLBScrapeConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StoreLBScrapeConfigRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(KuberServiceServer).StoreLbScrapeConfig(ctx, in)
+		return srv.(KuberServiceServer).StoreLBScrapeConfig(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/claudie.KuberService/StoreLbScrapeConfig",
+		FullMethod: "/claudie.KuberService/StoreLBScrapeConfig",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KuberServiceServer).StoreLbScrapeConfig(ctx, req.(*StoreLbScrapeConfigRequest))
+		return srv.(KuberServiceServer).StoreLBScrapeConfig(ctx, req.(*StoreLBScrapeConfigRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -397,7 +397,7 @@ func _KuberService_DeleteNodes_Handler(srv interface{}, ctx context.Context, dec
 }
 
 func _KuberService_PatchNodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PatchNodeTemplateRequest)
+	in := new(PatchNodesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -409,7 +409,7 @@ func _KuberService_PatchNodes_Handler(srv interface{}, ctx context.Context, dec 
 		FullMethod: "/claudie.KuberService/PatchNodes",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KuberServiceServer).PatchNodes(ctx, req.(*PatchNodeTemplateRequest))
+		return srv.(KuberServiceServer).PatchNodes(ctx, req.(*PatchNodesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -476,12 +476,12 @@ var KuberService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*KuberServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "RemoveLbScrapeConfig",
-			Handler:    _KuberService_RemoveLbScrapeConfig_Handler,
+			MethodName: "RemoveLBScrapeConfig",
+			Handler:    _KuberService_RemoveLBScrapeConfig_Handler,
 		},
 		{
-			MethodName: "StoreLbScrapeConfig",
-			Handler:    _KuberService_StoreLbScrapeConfig_Handler,
+			MethodName: "StoreLBScrapeConfig",
+			Handler:    _KuberService_StoreLBScrapeConfig_Handler,
 		},
 		{
 			MethodName: "StoreClusterMetadata",

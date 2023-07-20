@@ -59,7 +59,7 @@ minio:
 # Start DynamoDB backend used for state file locks
 dynamodb:
 	mkdir -p ~/dynamodb
-	docker run --name dynamodb -d --rm -p 8000:8000 --name dynamodb-local -v ~/dynamodb:/home/dynamodblocal/data amazon/dynamodb-local:1.21.0 -jar DynamoDBLocal.jar -sharedDb -dbPath ./data
+	docker run --name dynamodb -d --rm -p 8000:8000 -v ~/dynamodb:/home/dynamodblocal/data amazon/dynamodb-local:1.21.0 -jar DynamoDBLocal.jar -sharedDb -dbPath ./data
 
 # Start Testing-framework, which will inject manifests from /services/testing-framework/test-sets
 # -timeout 0 will disable default timeout
