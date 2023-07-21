@@ -133,7 +133,7 @@ func resolveOci(np *pb.DynamicNodePool) (Arch, error) {
 	// OCI sdk doesn't have a way to retrieve the Arch thus we default to a regex match
 	// TODO: find a better way to handle this case.
 	arch := Amd64
-	ok, err := regexp.MatchString("^.+\\.A1\\..+$", np.Image)
+	ok, err := regexp.MatchString("^.+\\.A1\\..+$", np.ServerType)
 	if err != nil {
 		return "", fmt.Errorf("%w %w", ErrFailedToResolveArch, err)
 	}
@@ -158,9 +158,23 @@ func resolveGcp(np *pb.DynamicNodePool) (Arch, error) {
 	imgInfo, err := imgClient.Get(context.Background(), &computepb.GetImageRequest{
 		Project: np.Provider.GcpProject,
 		Image:   np.Image,
-	}, nil)
+	})
 	if err != nil {
-		return "", fmt.Errorf("error retrieving img info: %w", err)
+		log.Debug().Msgf("error retrieving img info: %w", err)
+		log.Debug().Msgf("matching against server type to determine the architecture")
+
+		// if the img is not recognized by gcloud we have a situation similar to OCI as to where
+		// there is not way at this time to determine the architecture of the machinte type via the sdk.
+		// thus we default to a regex match againts known ARM server types.
+		arch := Amd64
+		ok, err := regexp.MatchString("^t2a\\-.+$", np.ServerType)
+		if err != nil {
+			return "", fmt.Errorf("%w %w", ErrFailedToResolveArch, err)
+		}
+		if ok {
+			arch = Arm64
+		}
+		return Arch(arch), nil
 	}
 
 	if imgInfo == nil {
