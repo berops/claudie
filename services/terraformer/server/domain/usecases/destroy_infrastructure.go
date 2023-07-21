@@ -46,9 +46,13 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 	// Concurrently destroy the infrastructure, Terraform state and state-lock files for each cluster
 	err := utils.ConcurrentExec(clusters, func(_ int, cluster Cluster) error {
 		logger := utils.CreateLoggerWithProjectAndClusterName(request.ProjectName, cluster.Id())
-		if err := u.MinIO.Stat(ctx, request.ProjectName, cluster.Id(), keyFormatStateFile); errors.Is(err, outboundAdapters.ErrKeyNotExists) {
-			logger.Warn().Msgf("no state file found for cluster %q, assuming the infrastructure was deleted.", cluster.Id())
-			return nil
+		err := u.MinIO.Stat(ctx, request.ProjectName, cluster.Id(), keyFormatStateFile)
+		if err != nil {
+			if errors.Is(err, outboundAdapters.ErrKeyNotExists) {
+				logger.Warn().Msgf("no state file found for cluster %q, assuming the infrastructure was deleted.", cluster.Id())
+				return nil
+			}
+			return fmt.Errorf("failed to check existence of state file for %q: %w", cluster.Id(), err)
 		}
 
 		logger.Info().Msgf("Destroying infrastructure")

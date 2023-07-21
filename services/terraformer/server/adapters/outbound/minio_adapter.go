@@ -84,12 +84,13 @@ func (m *MinIOAdapter) DeleteStateFile(ctx context.Context, projectName, cluster
 func (m *MinIOAdapter) Stat(ctx context.Context, projectName, clusterId, keyFormat string) error {
 	key := fmt.Sprintf(keyFormat, projectName, clusterId)
 	if _, err := m.client.StatObject(ctx, minioBucketName, key, minio.StatObjectOptions{}); err != nil {
-		if err, ok := err.(minio.ErrorResponse); ok {
-			if err.StatusCode == http.StatusNotFound {
+		var errResponse minio.ErrorResponse
+		if errors.As(err, &errResponse) {
+			if errResponse.StatusCode == http.StatusNotFound {
 				return ErrKeyNotExists
 			}
 		}
-		return fmt.Errorf("failed to check existance of object %s: %w", key, err)
+		return fmt.Errorf("failed to check existence of object %s: %w", key, err)
 	}
 	return nil
 }
