@@ -2,6 +2,8 @@ package node_manager
 
 import (
 	"fmt"
+	"github.com/berops/claudie/internal/nodes"
+	"github.com/berops/claudie/internal/utils"
 
 	"github.com/berops/claudie/proto/pb"
 	k8sV1 "k8s.io/api/core/v1"
@@ -21,6 +23,7 @@ type NodeManager struct {
 	ociVMs     map[string]*typeInfo
 	// Provider-region-zone cache
 	cacheProviderMap map[string]struct{}
+	resolver         *nodes.DynamicNodePoolResolver
 }
 
 type typeInfo struct {
@@ -36,7 +39,19 @@ type typeInfo struct {
 func NewNodeManager(nodepools []*pb.NodePool) (*NodeManager, error) {
 	nm := &NodeManager{}
 	nm.cacheProviderMap = make(map[string]struct{})
-	if err := nm.refreshCache(nodepools); err != nil {
+
+	var err error
+
+	dyn := utils.Into(nodepools, func(k *pb.NodePool) *pb.DynamicNodePool {
+		return k.GetDynamicNodePool()
+	})
+
+	nm.resolver, err = nodes.NewDynamicNodePoolResolver(dyn)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = nm.refreshCache(nodepools); err != nil {
 		return nil, err
 	}
 	return nm, nil
@@ -66,6 +81,11 @@ func (nm *NodeManager) GetCapacity(np *pb.NodePool) k8sV1.ResourceList {
 		return rl
 	}
 	return nil
+}
+
+// Arch returns the architecture for the dynamic nodepool.
+func (nm *NodeManager) Arch(np *pb.NodePool) (nodes.Arch, error) {
+	return nm.resolver.Arch(np)
 }
 
 // getTypeInfo returns a typeInfo for this nodepool

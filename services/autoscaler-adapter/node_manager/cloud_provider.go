@@ -95,6 +95,7 @@ func (nm *NodeManager) cacheGcp(np *pb.DynamicNodePool) error {
 			log.Err(err).Msgf("Failed to close GCP client")
 		}
 	}()
+
 	// Define request and parameters
 	maxResults := uint32(defaultMaxResults)
 	req := &computepb.ListMachineTypesRequest{
@@ -117,6 +118,7 @@ func (nm *NodeManager) cacheGcp(np *pb.DynamicNodePool) error {
 		machineTypes = append(machineTypes, mt)
 	}
 	nm.gcpVMs = utils.MergeMaps(getTypeInfoGcp(machineTypes), nm.gcpVMs)
+
 	return nil
 }
 
@@ -147,6 +149,7 @@ func (nm *NodeManager) cacheOci(np *pb.DynamicNodePool) error {
 			break
 		}
 	}
+
 	return nil
 }
 
@@ -171,5 +174,6 @@ func (nm *NodeManager) cacheAzure(np *pb.DynamicNodePool) error {
 		}
 		nm.azureVMs = utils.MergeMaps(getTypeInfoAzure(nextResult.Value), nm.azureVMs)
 	}
+
 	return nil
 }
