@@ -2,7 +2,9 @@ package usecases
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	outboundAdapters "github.com/berops/claudie/services/terraformer/server/adapters/outbound"
 
 	"github.com/rs/zerolog/log"
 
@@ -44,6 +46,11 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 	// Concurrently destroy the infrastructure, Terraform state and state-lock files for each cluster
 	err := utils.ConcurrentExec(clusters, func(_ int, cluster Cluster) error {
 		logger := utils.CreateLoggerWithProjectAndClusterName(request.ProjectName, cluster.Id())
+		if err := u.MinIO.Stat(ctx, request.ProjectName, cluster.Id(), keyFormatStateFile); errors.Is(err, outboundAdapters.ErrKeyNotExists) {
+			logger.Warn().Msgf("no state file found for cluster %q, assuming the infrastructure was deleted.", cluster.Id())
+			return nil
+		}
+
 		logger.Info().Msgf("Destroying infrastructure")
 
 		if err := cluster.Destroy(logger); err != nil {

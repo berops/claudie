@@ -2,7 +2,9 @@ package outboundAdapters
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/minio/minio-go/v7"
@@ -17,6 +19,11 @@ var (
 	minioBucketName = "claudie-tf-state-files"                     // value is hardcoded in services/terraformer/templates/backend.tpl
 	minioAccessKey  = envs.MinioAccessKey
 	minioSecretKey  = envs.MinioSecretKey
+)
+
+var (
+	// ErrKeyNotExists is returned when the key is not present in the object storage.
+	ErrKeyNotExists = errors.New("key is not present in bucket")
 )
 
 type MinIOAdapter struct {
@@ -70,5 +77,19 @@ func (m *MinIOAdapter) DeleteStateFile(ctx context.Context, projectName, cluster
 		return fmt.Errorf("failed to remove dns lock file for cluster %v: %w", clusterId, err)
 	}
 
+	return nil
+}
+
+// Stat checks whether the given object exists in storage.
+func (m *MinIOAdapter) Stat(ctx context.Context, projectName, clusterId, keyFormat string) error {
+	key := fmt.Sprintf(keyFormat, projectName, clusterId)
+	if _, err := m.client.StatObject(ctx, minioBucketName, key, minio.StatObjectOptions{}); err != nil {
+		if err, ok := err.(minio.ErrorResponse); ok {
+			if err.StatusCode == http.StatusNotFound {
+				return ErrKeyNotExists
+			}
+		}
+		return fmt.Errorf("failed to check existance of object %s: %w", key, err)
+	}
 	return nil
 }
