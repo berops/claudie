@@ -165,7 +165,7 @@ func resolveGcp(np *pb.DynamicNodePool) (Arch, error) {
 
 		// if the img is not recognized by gcloud we have a situation similar to OCI as to where
 		// there is not way at this time to determine the architecture of the machinte type via the sdk.
-		// thus we default to a regex match againts known ARM server types.
+		// thus we default to a regex match against known ARM server types.
 		arch := Amd64
 		ok, err := regexp.MatchString("^t2a\\-.+$", np.ServerType)
 		if err != nil {
