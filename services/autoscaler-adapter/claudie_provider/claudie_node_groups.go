@@ -152,7 +152,10 @@ func (c *ClaudieCloudProvider) NodeGroupTemplateNodeInfo(_ context.Context, req 
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	log.Info().Msgf("Got NodeGroupTemplateNodeInfo request")
-	info := c.getNodeGroupTemplateNodeInfo(req.GetId())
+	info, err := c.getNodeGroupTemplateNodeInfo(req.GetId())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get node info template: %w", err)
+	}
 	return &protos.NodeGroupTemplateNodeInfoResponse{NodeInfo: info}, nil
 }
 

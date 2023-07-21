@@ -41,7 +41,12 @@ func NewPatcher(cluster *pb.K8Scluster, logger zerolog.Logger) *Patcher {
 		kc.Stderr = comm.GetStdErr(clusterID)
 	}
 
-	return &Patcher{kc: kc, desiredNodepools: cluster.ClusterInfo.NodePools, clusterID: clusterID, logger: logger}
+	return &Patcher{
+		kc:               kc,
+		desiredNodepools: cluster.ClusterInfo.NodePools,
+		clusterID:        clusterID,
+		logger:           logger,
+	}
 }
 
 func (p *Patcher) PatchProviderID() error {
@@ -62,7 +67,12 @@ func (p *Patcher) PatchProviderID() error {
 func (p *Patcher) PatchLabels() error {
 	var err error
 	for _, np := range p.desiredNodepools {
-		patchPath, err1 := buildJSONPatchString("replace", "/metadata/labels", nodes.GetAllLabels(np))
+		l, err1 := nodes.GetAllLabels(np, nil)
+		if err1 != nil {
+			return fmt.Errorf("failed to create labels for %s : %w", np.Name, err)
+		}
+
+		patchPath, err1 := buildJSONPatchString("replace", "/metadata/labels", l)
 		if err1 != nil {
 			return fmt.Errorf("failed to create labels patch path for %s : %w", np.Name, err)
 		}
