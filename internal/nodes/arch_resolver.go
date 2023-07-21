@@ -160,7 +160,7 @@ func resolveGcp(np *pb.DynamicNodePool) (Arch, error) {
 		Image:   np.Image,
 	})
 	if err != nil {
-		log.Debug().Msgf("error retrieving img info: %w", err)
+		log.Debug().Msgf("error retrieving img info: %s", err)
 		log.Debug().Msgf("matching against server type to determine the architecture")
 
 		// if the img is not recognized by gcloud we have a situation similar to OCI as to where
