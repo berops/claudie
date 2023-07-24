@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	outboundAdapters "github.com/berops/claudie/services/terraformer/server/adapters/outbound"
-
 	"github.com/rs/zerolog/log"
 
 	"github.com/berops/claudie/internal/utils"
@@ -53,6 +52,19 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 				return nil
 			}
 			return fmt.Errorf("failed to check existence of state file for %q: %w", cluster.Id(), err)
+		}
+		logger.Debug().Msgf("infrastructure state file present for cluster %q", cluster.Id())
+
+		if _, ok := cluster.(*loadbalancer.LBcluster); ok {
+			err := u.MinIO.Stat(ctx, request.ProjectName, cluster.Id(), dnsKeyFormatStateFile)
+			if err != nil {
+				if errors.Is(err, outboundAdapters.ErrKeyNotExists) {
+					logger.Warn().Msgf("no dns state file found for cluster %q, assuming the infrastructure was deleted.", cluster.Id())
+					return nil
+				}
+				return fmt.Errorf("failed to check existence of dns state file for %q: %w", cluster.Id(), err)
+			}
+			logger.Debug().Msgf("dns state file present for cluster %q", cluster.Id())
 		}
 
 		logger.Info().Msgf("Destroying infrastructure")
