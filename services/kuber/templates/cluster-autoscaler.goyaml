@@ -40,10 +40,21 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8085"
     spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 3000
+        fsGroup: 2000    
       containers:
         - name: autoscaler-adapter
           imagePullPolicy: IfNotPresent
           image: ghcr.io/berops/claudie/autoscaler-adapter
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true                    
+            capabilities:
+              drop:
+                - all                 
           env:
             - name: ADAPTER_PORT
               value: "{{ .AdapterPort }}"

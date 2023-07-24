@@ -18,10 +18,27 @@ spec:
         app.kubernetes.io/name: kuber
     spec:
       terminationGracePeriodSeconds: 1320
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 3000
+        fsGroup: 2000
+      volumes:
+        - name: data
+          emptyDir: {}
       containers:
         - name: kuber
           imagePullPolicy: Always
           image: ghcr.io/berops/claudie/kuber
+          volumeMounts:
+          - mountPath: /bin/services/kuber/server/clusters
+            name: data
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - all
           resources:
             requests:
               cpu: 300m
