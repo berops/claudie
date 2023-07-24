@@ -18,10 +18,31 @@ spec:
         app.kubernetes.io/name: terraformer
     spec:
       terminationGracePeriodSeconds: 1320
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 3000
+        fsGroup: 2000
+      volumes:
+        - name: data
+          emptyDir: {}
+        - name: temp
+          emptyDir: {}
       containers:
         - name: terraformer
           imagePullPolicy: Always
           image: ghcr.io/berops/claudie/terraformer
+          volumeMounts:
+          - mountPath: /bin/services/terraformer/server/clusters
+            name: data
+          - mountPath: /tmp
+            name: temp
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - all
           resources:
             requests:
               cpu: 700m

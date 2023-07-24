@@ -18,8 +18,29 @@ spec:
         app.kubernetes.io/name: ansibler
     spec:
       terminationGracePeriodSeconds: 1320
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 3000
+        fsGroup: 2000
+      volumes:
+        - name: data
+          emptyDir: {}
+        - name: temp
+          emptyDir: {}
       containers:
         - name: ansibler
+          volumeMounts:
+          - mountPath: /bin/services/ansibler/server/clusters
+            name: data
+          - mountPath: /.ansible
+            name: temp
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - all
           imagePullPolicy: Always
           image: ghcr.io/berops/claudie/ansibler
           resources:
