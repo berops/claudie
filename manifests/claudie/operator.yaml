@@ -21,7 +21,7 @@ spec:
       securityContext:
         runAsUser: 1000
         runAsGroup: 3000
-        fsGroup: 2000            
+        fsGroup: 2000
       serviceAccountName: claudie-operator-sa
       containers:
         - name: claudie-operator
@@ -30,10 +30,10 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
-            readOnlyRootFilesystem: true                    
+            readOnlyRootFilesystem: true
             capabilities:
               drop:
-                - all           
+                - all
           resources:
             requests:
               cpu: 25m
@@ -45,7 +45,7 @@ spec:
             - containerPort: 9443
               name: webhook-tls
             - containerPort: 50058
-              name: grpc-server                   
+              name: grpc-server
           env:
             - name: CONTEXT_BOX_PORT
               valueFrom:
@@ -73,9 +73,9 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: OPERATOR_PORT
-              # No hostname needed              
+              # No hostname needed
             - name: WEBHOOK_CERT_DIR
-              value: "/etc/webhook/certs/"  
+              value: "/etc/webhook/certs/"
             - name: WEBHOOK_PATH
               value: "/validate-manifest" 
           readinessProbe:
@@ -89,11 +89,11 @@ spec:
               path: /healthz
               port: 50000
             initialDelaySeconds: 15
-            periodSeconds: 30   
+            periodSeconds: 30
           volumeMounts:
             - name: webhook-tls-certs
               mountPath: /etc/webhook/certs/
-              readOnly: true             
+              readOnly: true
       volumes:
         - name: webhook-tls-certs
           secret:
@@ -113,7 +113,7 @@ metadata:
   name: claudie-operator
   labels:
     app.kubernetes.io/part-of: claudie
-    app.kubernetes.io/name: claudie-operator    
+    app.kubernetes.io/name: claudie-operator
 spec:
   selector:
     app.kubernetes.io/part-of: claudie
@@ -123,8 +123,8 @@ spec:
       targetPort: webhook-tls
       name: webhook-tls
     - port: 50058
-      targetPort: grpc-server    
-      name: grpc-server  
+      targetPort: grpc-server
+      name: grpc-server
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
@@ -133,7 +133,7 @@ metadata:
   annotations:
     cert-manager.io/inject-ca-from: claudie/claudie-webhook-certificate
   labels:
-    app.kubernetes.io/part-of: claudie      
+    app.kubernetes.io/part-of: claudie
 webhooks:
   - name: validate-manifest.claudie.io
     admissionReviewVersions:
@@ -159,7 +159,7 @@ metadata:
   name: claudie-webhook-certificate
   namespace: claudie
   labels:
-    app.kubernetes.io/part-of: claudie    
+    app.kubernetes.io/part-of: claudie
 spec:
   secretName: claudie-webhook-certificate
   secretTemplate:

@@ -21,21 +21,21 @@ spec:
       securityContext:
         runAsUser: 1000
         runAsGroup: 3000
-        fsGroup: 2000   
+        fsGroup: 2000
       volumes:
         - name: data
-          emptyDir: {}                 
+          emptyDir: {}
       containers:
         - name: kube-eleven
           imagePullPolicy: Always
           image: ghcr.io/berops/claudie/kube-eleven
           volumeMounts:
           - mountPath: /bin/services/kube-eleven/server/clusters
-            name: data          
+            name: data
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
-            readOnlyRootFilesystem: true                    
+            readOnlyRootFilesystem: true
             capabilities:
               drop:
                 - all

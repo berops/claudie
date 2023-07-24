@@ -26,21 +26,21 @@ spec:
         - name: data
           emptyDir: {}
         - name: temp
-          emptyDir: {}        
+          emptyDir: {}
       containers:
         - name: ansibler
           volumeMounts:
           - mountPath: /bin/services/ansibler/server/clusters
             name: data
           - mountPath: /.ansible
-            name: temp                  
+            name: temp
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
             readOnlyRootFilesystem: true
             capabilities:
               drop:
-                - all         
+                - all
           imagePullPolicy: Always
           image: ghcr.io/berops/claudie/ansibler
           resources:

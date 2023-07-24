@@ -24,21 +24,21 @@ spec:
         fsGroup: 2000
       volumes:
         - name: data
-          emptyDir: {}        
+          emptyDir: {}
       containers:
         - name: kuber
           imagePullPolicy: Always
           image: ghcr.io/berops/claudie/kuber
           volumeMounts:
           - mountPath: /bin/services/kuber/server/clusters
-            name: data          
+            name: data
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
-            readOnlyRootFilesystem: true                    
+            readOnlyRootFilesystem: true
             capabilities:
               drop:
-                - all        
+                - all
           resources:
             requests:
               cpu: 300m

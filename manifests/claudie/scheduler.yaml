@@ -21,7 +21,7 @@ spec:
       securityContext:
         runAsUser: 1000
         runAsGroup: 3000
-        fsGroup: 2000            
+        fsGroup: 2000
       containers:
         - name: scheduler
           imagePullPolicy: Always
@@ -29,10 +29,10 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
-            readOnlyRootFilesystem: true                    
+            readOnlyRootFilesystem: true
             capabilities:
               drop:
-                - all           
+                - all
           resources:
             requests:
               cpu: 45m

@@ -18,15 +18,15 @@ spec:
         app.kubernetes.io/name: terraformer
     spec:
       terminationGracePeriodSeconds: 1320
-      securityContext:      
+      securityContext:
         runAsUser: 1000
         runAsGroup: 3000
-        fsGroup: 2000            
+        fsGroup: 2000
       volumes:
         - name: data
           emptyDir: {}
         - name: temp
-          emptyDir: {}             
+          emptyDir: {}
       containers:
         - name: terraformer
           imagePullPolicy: Always
@@ -35,14 +35,14 @@ spec:
           - mountPath: /bin/services/terraformer/server/clusters
             name: data
           - mountPath: /tmp
-            name: temp                 
+            name: temp
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
-            readOnlyRootFilesystem: true                    
+            readOnlyRootFilesystem: true
             capabilities:
               drop:
-                - all       
+                - all
           resources:
             requests:
               cpu: 700m
@@ -113,7 +113,7 @@ spec:
               valueFrom:
                 configMapKeyRef:
                   name: env
-                  key: AWS_REGION         
+                  key: AWS_REGION
           ports:
             - containerPort: 50052
           readinessProbe:

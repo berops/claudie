@@ -32,7 +32,7 @@ spec:
       protocol: TCP
     to:
     - ipBlock:
-        cidr: 0.0.0.0/0      
+        cidr: 0.0.0.0/0
   podSelector:
     matchLabels:
       app.kubernetes.io/name: claudie-operator
