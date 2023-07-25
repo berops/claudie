@@ -34,8 +34,8 @@ spec:
       - name: hetzner
         providerSpec:
           name: hetzner-1
-          region: fsn1
-          zone: fsn1-dc14
+          region: nbg1
+          zone: nbg1-dc3
         count: 1
         serverType: cpx11
         image: ubuntu-22.04
@@ -57,8 +57,8 @@ spec:
       - name: gcp-lb
         providerSpec:
           name: gcp-1
-          region: europe-west1
-          zone: europe-west1-c
+          region: nbg1
+          zone: nbg1-dc3
         count: 3
         serverType: e2-small
         image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
