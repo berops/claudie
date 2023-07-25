@@ -18,6 +18,10 @@ spec:
         app.kubernetes.io/name: builder
     spec:
       terminationGracePeriodSeconds: 5400
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 3000
+        fsGroup: 2000
       containers:
         - name: builder
           imagePullPolicy: Always
@@ -29,6 +33,13 @@ spec:
             limits:
               cpu: 160m
               memory: 400Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - all
           env:
             - name: CONTEXT_BOX_PORT
               valueFrom:
