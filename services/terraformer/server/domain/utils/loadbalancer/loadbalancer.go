@@ -107,7 +107,7 @@ func (l *LBcluster) Destroy(logger zerolog.Logger) error {
 			ProjectName:    l.ProjectName,
 		}
 		// debug log
-		logger.Debug().Msgf("%s", printDNS(dns.CurrentDNS))
+		logger.Debug().Msgf("%s-%s", l.CurrentState.ClusterInfo.Name, printDNS(dns.CurrentDNS))
 		return dns.DestroyDNSRecords(logger)
 	})
 
