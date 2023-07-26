@@ -63,7 +63,7 @@ images:
 - name: ghcr.io/berops/claudie/autoscaler-adapter
   newTag: 688726a-1932
 - name: ghcr.io/berops/claudie/builder
-  newTag: b7c0f0f-2234
+  newTag: 5d9e994-2248
 - name: ghcr.io/berops/claudie/claudie-operator
   newTag: b7c0f0f-2234
 - name: ghcr.io/berops/claudie/context-box
@@ -75,4 +75,4 @@ images:
 - name: ghcr.io/berops/claudie/scheduler
   newTag: b7c0f0f-2234
 - name: ghcr.io/berops/claudie/terraformer
-  newTag: 52f3cae-2246
+  newTag: 5d9e994-2248
