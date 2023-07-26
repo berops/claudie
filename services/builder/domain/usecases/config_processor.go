@@ -34,13 +34,13 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 		logger := cutils.CreateLoggerWithProjectName(config.Name)
 		clusterView := cutils.NewClusterView(config)
 
-		// If Desired state is null and current is not we delete the infra for the config.
-		if config.DsChecksum == nil && config.CsChecksum != nil {
+		if config.DsChecksum == nil && config.CsChecksum != nil { // all current state needs to be deleted.
 			logger.Info().Msgf("Destroying config")
 			if err := u.deleteConfig(config, clusterView, cboxClient); err != nil {
 				logger.Err(err).Msg("Error while destroying config")
 				if err := utils.SaveConfigWithWorkflowError(config, cboxClient, clusterView); err != nil {
 					logger.Err(err).Msg("Failed to save error message")
+					return
 				}
 			}
 			logger.Info().Msgf("Config successfully destroyed")
@@ -49,16 +49,18 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 
 		// Process each cluster concurrently through the Claudie workflow.
 		if err := cutils.ConcurrentExec(clusterView.AllClusters(), func(_ int, clusterName string) error {
-			logger := logger.With().Str("cluster", clusterName).Logger()
+			logger := cutils.CreateLoggerWithClusterName(clusterName)
 
-			// The workflow doesn't handle the case for the deletion of the cluster
-			// we need to do this as a separate step.
+			// Handle deletion of a single cluster as a separate step.
 			if clusterView.DesiredClusters[clusterName] == nil {
 				if err := u.deleteCluster(config.Name, clusterName, clusterView, cboxClient); err != nil {
 					clusterView.SetWorkflowError(clusterName, err)
 					logger.Err(err).Msg("Error while destroying cluster")
 					return err
 				}
+
+				clusterView.UpdateCurrentState(clusterName, nil, nil)
+
 				clusterView.SetWorkflowDone(clusterName)
 				logger.Info().Msg("Finished workflow for cluster")
 				return u.ContextBox.SaveWorkflowState(config.Name, clusterName, clusterView.ClusterWorkflows[clusterName], cboxClient)
@@ -90,10 +92,8 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 				}
 				logger.Info().Msgf("Finished building [%d/%d] stage for cluster", currentStage, stages)
 
-				// Make the desired state of the temporary cluster the new current state.
-				clusterView.CurrentClusters[clusterName] = ctx.DesiredCluster
-				clusterView.Loadbalancers[clusterName] = ctx.DesiredLoadbalancers
-				// Update nodepool info, as they are not carried over.
+				clusterView.UpdateCurrentState(clusterName, ctx.DesiredCluster, ctx.DesiredLoadbalancers)
+				// Carry over metadata and other nodepool info.
 				utils.UpdateNodePoolInfo(ctx.DesiredCluster.ClusterInfo.NodePools, clusterView.DesiredClusters[clusterName].ClusterInfo.NodePools)
 			}
 
@@ -153,22 +153,17 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 			}
 
 			if ctx, err = u.buildCluster(ctx, cboxClient); err != nil {
-				clusterView.CurrentClusters[clusterName] = ctx.DesiredCluster
-				clusterView.Loadbalancers[clusterName] = ctx.DesiredLoadbalancers
-
+				clusterView.UpdateCurrentState(clusterName, ctx.DesiredCluster, ctx.DesiredLoadbalancers)
 				// Save state if error failed to build infrastructure.
 				if errors.Is(err, ErrFailedToBuildInfrastructure) {
-					clusterView.CurrentClusters[clusterName] = ctx.CurrentCluster
-					clusterView.Loadbalancers[clusterName] = ctx.CurrentLoadbalancers
+					clusterView.UpdateCurrentState(clusterName, ctx.CurrentCluster, ctx.CurrentLoadbalancers)
 				}
-
 				clusterView.SetWorkflowError(clusterName, err)
 				logger.Err(err).Msg("Failed to build cluster")
 				return err
 			}
 
-			clusterView.CurrentClusters[clusterName] = ctx.DesiredCluster
-			clusterView.Loadbalancers[clusterName] = ctx.DesiredLoadbalancers
+			clusterView.UpdateCurrentState(clusterName, ctx.DesiredCluster, ctx.DesiredLoadbalancers)
 
 			if len(clusterView.DeletedLoadbalancers) > 0 {
 				// Perform the deletion of loadbalancers as this won't be handled by the buildCluster Workflow.
@@ -178,7 +173,6 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 					CurrentLoadbalancers: clusterView.DeletedLoadbalancers[clusterName],
 					Workflow:             clusterView.ClusterWorkflows[clusterName],
 				}
-
 				if err := u.destroyCluster(deleteCtx, cboxClient); err != nil {
 					clusterView.SetWorkflowError(clusterName, err)
 					logger.Err(err).Msg("Error while destroying cluster")

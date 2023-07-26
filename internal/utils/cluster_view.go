@@ -164,3 +164,8 @@ func (view *ClusterView) SetWorkflowDone(clusterName string) {
 	view.ClusterWorkflows[clusterName].Stage = pb.Workflow_NONE
 	view.ClusterWorkflows[clusterName].Description = ""
 }
+
+func (view *ClusterView) UpdateCurrentState(clusterName string, c *pb.K8Scluster, lbs []*pb.LBcluster) {
+	view.CurrentClusters[clusterName] = c
+	view.Loadbalancers[clusterName] = lbs
+}
