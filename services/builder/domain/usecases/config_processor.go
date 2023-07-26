@@ -59,7 +59,7 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 					return err
 				}
 
-				clusterView.UpdateCurrentState(clusterName, nil, nil)
+				clusterView.RemoveCurrentState(clusterName)
 
 				clusterView.SetWorkflowDone(clusterName)
 				logger.Info().Msg("Finished workflow for cluster")

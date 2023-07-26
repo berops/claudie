@@ -169,3 +169,8 @@ func (view *ClusterView) UpdateCurrentState(clusterName string, c *pb.K8Scluster
 	view.CurrentClusters[clusterName] = c
 	view.Loadbalancers[clusterName] = lbs
 }
+
+func (view *ClusterView) RemoveCurrentState(clusterName string) {
+	delete(view.CurrentClusters, clusterName)
+	delete(view.Loadbalancers, clusterName)
+}
