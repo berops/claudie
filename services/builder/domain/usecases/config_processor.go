@@ -3,9 +3,8 @@ package usecases
 import (
 	"errors"
 	"fmt"
-	"sync"
-
 	"github.com/rs/zerolog/log"
+	"sync"
 
 	cutils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
@@ -93,9 +92,9 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 
 				// Make the desired state of the temporary cluster the new current state.
 				clusterView.CurrentClusters[clusterName] = ctx.DesiredCluster
+				clusterView.Loadbalancers[clusterName] = ctx.DesiredLoadbalancers
 				// Update nodepool info, as they are not carried over.
 				utils.UpdateNodePoolInfo(ctx.DesiredCluster.ClusterInfo.NodePools, clusterView.DesiredClusters[clusterName].ClusterInfo.NodePools)
-				clusterView.Loadbalancers[clusterName] = ctx.DesiredLoadbalancers
 			}
 
 			// If difference between states replaces control plane, update API endpoint.
@@ -168,10 +167,9 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 				return err
 			}
 
-			// Propagate the changes made to the cluster back to the View.
-			utils.UpdateFromBuild(ctx, clusterView)
+			clusterView.CurrentClusters[clusterName] = ctx.DesiredCluster
+			clusterView.Loadbalancers[clusterName] = ctx.DesiredLoadbalancers
 
-			// If any Loadbalancer are removed, remove them in this step.
 			if len(clusterView.DeletedLoadbalancers) > 0 {
 				// Perform the deletion of loadbalancers as this won't be handled by the buildCluster Workflow.
 				// The BuildInfrastructure in terraformer only performs creation/update for Lbs.
@@ -216,12 +214,11 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 
 		// Update the config and store it to the DB.
 		logger.Debug().Msg("Saving the config")
-		// After successful workflow, set desired state as the current state.
-		config.CurrentState = config.DesiredState
 		if err := cbox.SaveConfigBuilder(cboxClient, &pb.SaveConfigRequest{Config: config}); err != nil {
 			logger.Err(err).Msg("Error while saving the config")
 			return
 		}
+
 		logger.Info().Msgf("Config finished building")
 	}()
 

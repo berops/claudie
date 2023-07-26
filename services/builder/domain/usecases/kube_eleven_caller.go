@@ -15,9 +15,7 @@ func (u *Usecases) reconcileK8sCluster(ctx *utils.BuilderContext, cboxClient pb.
 	// Set workflow state.
 	description := ctx.Workflow.Description
 	ctx.Workflow.Stage = pb.Workflow_KUBE_ELEVEN
-	if err := u.saveWorkflowDescription(ctx, fmt.Sprintf("%s building kubernetes cluster", description), cboxClient); err != nil {
-		return err
-	}
+	u.saveWorkflowDescription(ctx, fmt.Sprintf("%s building kubernetes cluster", description), cboxClient)
 
 	logger.Info().Msgf("Calling BuildCluster on Kube-eleven")
 	res, err := u.KubeEleven.BuildCluster(ctx, u.KubeEleven.GetClient())
@@ -30,8 +28,6 @@ func (u *Usecases) reconcileK8sCluster(ctx *utils.BuilderContext, cboxClient pb.
 	ctx.DesiredCluster = res.Desired
 	ctx.DesiredLoadbalancers = res.DesiredLbs
 	// Set description to original string.
-	if err := u.saveWorkflowDescription(ctx, description, cboxClient); err != nil {
-		return err
-	}
+	u.saveWorkflowDescription(ctx, description, cboxClient)
 	return nil
 }

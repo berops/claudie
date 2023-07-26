@@ -3,8 +3,6 @@ package loadbalancer
 import (
 	"errors"
 	"fmt"
-	"strings"
-
 	"github.com/berops/claudie/internal/utils"
 	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
 	"github.com/rs/zerolog"
@@ -106,8 +104,6 @@ func (l *LBcluster) Destroy(logger zerolog.Logger) error {
 			CurrentDNS:     l.CurrentState.Dns,
 			ProjectName:    l.ProjectName,
 		}
-		// debug log
-		logger.Debug().Msgf("%s-%s", l.CurrentState.ClusterInfo.Name, printDNS(dns.CurrentDNS))
 		return dns.DestroyDNSRecords(logger)
 	})
 
@@ -127,21 +123,4 @@ func getNodeIPs(nodepools []*pb.NodePool) []string {
 	}
 
 	return ips
-}
-
-func printDNS(dns *pb.DNS) string {
-	builder := new(strings.Builder)
-	if dns == nil {
-		builder.WriteString("dns is <nil>\n")
-		return builder.String()
-	}
-
-	builder.WriteString("\n")
-	builder.WriteString(fmt.Sprintf("\tDnsZone:\t%s\n", dns.DnsZone))
-	builder.WriteString(fmt.Sprintf("\tHostnnme:\t%s\n", dns.Hostname))
-	builder.WriteString(fmt.Sprintf("\tEndpoint:\t%s\n", dns.Endpoint))
-	builder.WriteString(fmt.Sprintf("\tProvider:\t%s\n", dns.Provider.CloudProviderName))
-	builder.WriteString("\n")
-
-	return builder.String()
 }

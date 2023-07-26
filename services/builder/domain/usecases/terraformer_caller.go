@@ -22,9 +22,7 @@ func (u *Usecases) reconcileInfrastructure(ctx *utils.BuilderContext, cboxClient
 	// Set workflow state.
 	description := ctx.Workflow.Description
 	ctx.Workflow.Stage = pb.Workflow_TERRAFORMER
-	if err := u.saveWorkflowDescription(ctx, fmt.Sprintf("%s building infrastructure", description), cboxClient); err != nil {
-		return err
-	}
+	u.saveWorkflowDescription(ctx, fmt.Sprintf("%s building infrastructure", description), cboxClient)
 
 	logger.Info().Msgf("Calling BuildInfrastructure on Terraformer")
 	res, err := u.Terraformer.BuildInfrastructure(ctx, u.Terraformer.GetClient())
@@ -50,10 +48,7 @@ func (u *Usecases) reconcileInfrastructure(ctx *utils.BuilderContext, cboxClient
 	}
 
 	// Set description to original string.
-	if err := u.saveWorkflowDescription(ctx, description, cboxClient); err != nil {
-		return err
-	}
-
+	u.saveWorkflowDescription(ctx, description, cboxClient)
 	return nil
 }
 
@@ -64,9 +59,7 @@ func (u *Usecases) destroyInfrastructure(ctx *utils.BuilderContext, cboxClient p
 	// Set workflow state.
 	description := ctx.Workflow.Description
 	ctx.Workflow.Stage = pb.Workflow_DESTROY_TERRAFORMER
-	if err := u.saveWorkflowDescription(ctx, fmt.Sprintf("%s destroying infrastructure", description), cboxClient); err != nil {
-		return err
-	}
+	u.saveWorkflowDescription(ctx, fmt.Sprintf("%s destroying infrastructure", description), cboxClient)
 
 	logger.Info().Msg("Calling DestroyInfrastructure on Terraformer")
 	if _, err := u.Terraformer.DestroyInfrastructure(ctx, u.Terraformer.GetClient()); err != nil {
@@ -75,8 +68,6 @@ func (u *Usecases) destroyInfrastructure(ctx *utils.BuilderContext, cboxClient p
 	logger.Info().Msg("DestroyInfrastructure on Terraformer finished successfully")
 
 	// Set description to original string.
-	if err := u.saveWorkflowDescription(ctx, description, cboxClient); err != nil {
-		return err
-	}
+	u.saveWorkflowDescription(ctx, description, cboxClient)
 	return nil
 }

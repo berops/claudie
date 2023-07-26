@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	outboundAdapters "github.com/berops/claudie/services/terraformer/server/adapters/outbound"
 	"github.com/rs/zerolog/log"
 
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	outboundAdapters "github.com/berops/claudie/services/terraformer/server/adapters/outbound"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/kubernetes"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/loadbalancer"
 )
