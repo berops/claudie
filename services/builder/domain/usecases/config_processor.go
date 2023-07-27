@@ -164,6 +164,7 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 			}
 
 			clusterView.UpdateCurrentState(clusterName, ctx.DesiredCluster, ctx.DesiredLoadbalancers)
+			clusterView.UpdateDesiredState(clusterName, ctx.DesiredCluster, ctx.DesiredLoadbalancers)
 
 			if len(clusterView.DeletedLoadbalancers) > 0 {
 				// Perform the deletion of loadbalancers as this won't be handled by the buildCluster Workflow.
