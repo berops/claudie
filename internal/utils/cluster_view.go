@@ -84,20 +84,20 @@ Lb:
 	}
 }
 
-func mergeK8sClusters(old []*pb.K8Scluster, new map[string]*pb.K8Scluster) []*pb.K8Scluster {
+func mergeK8sClusters(old []*pb.K8Scluster, changed map[string]*pb.K8Scluster) []*pb.K8Scluster {
 	// update existing clusters.
 	for i, cluster := range old {
-		cluster, ok := new[cluster.ClusterInfo.Name]
+		cluster, ok := changed[cluster.ClusterInfo.Name]
 		if !ok {
 			old[i] = nil
 			continue
 		}
 		old[i] = cluster
-		delete(new, cluster.ClusterInfo.Name)
+		delete(changed, cluster.ClusterInfo.Name)
 	}
 
 	// append new clusters, if any
-	for _, cluster := range new {
+	for _, cluster := range changed {
 		old = append(old, cluster)
 	}
 
@@ -115,10 +115,10 @@ func mergeK8sClusters(old []*pb.K8Scluster, new map[string]*pb.K8Scluster) []*pb
 	return old
 }
 
-func mergeLbClusters(old []*pb.LBcluster, new map[string][]*pb.LBcluster) []*pb.LBcluster {
+func mergeLbClusters(old []*pb.LBcluster, changed map[string][]*pb.LBcluster) []*pb.LBcluster {
 	// update existing clusters.
 	for i, cluster := range old {
-		updated, ok := new[cluster.TargetedK8S]
+		updated, ok := changed[cluster.TargetedK8S]
 		if !ok {
 			old[i] = nil
 			continue
@@ -133,15 +133,15 @@ func mergeLbClusters(old []*pb.LBcluster, new map[string][]*pb.LBcluster) []*pb.
 
 		copy(updated[present:], updated[present+1:])
 		updated[len(updated)-1] = nil
-		new[cluster.TargetedK8S] = new[cluster.TargetedK8S][:len(updated)-1]
+		changed[cluster.TargetedK8S] = changed[cluster.TargetedK8S][:len(updated)-1]
 
-		if len(new[cluster.TargetedK8S]) == 0 {
-			delete(new, cluster.TargetedK8S)
+		if len(changed[cluster.TargetedK8S]) == 0 {
+			delete(changed, cluster.TargetedK8S)
 		}
 	}
 
 	// append new clusters, if any
-	for _, clusters := range new {
+	for _, clusters := range changed {
 		old = append(old, clusters...)
 	}
 
