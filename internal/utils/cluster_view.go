@@ -203,13 +203,23 @@ func (view *ClusterView) SetWorkflowDone(clusterName string) {
 }
 
 func (view *ClusterView) UpdateCurrentState(clusterName string, c *pb.K8Scluster, lbs []*pb.LBcluster) {
-	view.CurrentClusters[clusterName] = c
-	view.Loadbalancers[clusterName] = lbs
+	cp := make([]*pb.LBcluster, 0, len(lbs))
+	for _, c := range lbs {
+		cp = append(cp, proto.Clone(c).(*pb.LBcluster))
+	}
+
+	view.CurrentClusters[clusterName] = proto.Clone(c).(*pb.K8Scluster)
+	view.Loadbalancers[clusterName] = cp
 }
 
 func (view *ClusterView) UpdateDesiredState(clusterName string, c *pb.K8Scluster, lbs []*pb.LBcluster) {
-	view.DesiredClusters[clusterName] = c
-	view.DesiredLoadbalancers[clusterName] = lbs
+	cp := make([]*pb.LBcluster, 0, len(lbs))
+	for _, c := range lbs {
+		cp = append(cp, proto.Clone(c).(*pb.LBcluster))
+	}
+
+	view.DesiredClusters[clusterName] = proto.Clone(c).(*pb.K8Scluster)
+	view.DesiredLoadbalancers[clusterName] = cp
 }
 
 func (view *ClusterView) RemoveCurrentState(clusterName string) {
