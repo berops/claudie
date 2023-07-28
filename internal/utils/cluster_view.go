@@ -88,7 +88,7 @@ func mergeK8sClusters(old []*pb.K8Scluster, changed map[string]*pb.K8Scluster) [
 	// update existing clusters.
 	for i, cluster := range old {
 		cluster, ok := changed[cluster.ClusterInfo.Name]
-		if !ok {
+		if !ok || cluster == nil {
 			old[i] = nil
 			continue
 		}
@@ -119,7 +119,7 @@ func mergeLbClusters(old []*pb.LBcluster, changed map[string][]*pb.LBcluster) []
 	// update existing clusters.
 	for i, cluster := range old {
 		updated, ok := changed[cluster.TargetedK8S]
-		if !ok {
+		if !ok || updated == nil {
 			old[i] = nil
 			continue
 		}
