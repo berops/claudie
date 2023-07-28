@@ -81,12 +81,12 @@ func (u *Usecases) destroyConfig(config *pb.Config, clusterView *cutils.ClusterV
 }
 
 // saveWorkflowDescription sets description for a given builder context and saves it to Claudie database.
-func (u *Usecases) saveWorkflowDescription(ctx *utils.BuilderContext, description string, cboxClient pb.ContextBoxServiceClient) error {
+func (u *Usecases) saveWorkflowDescription(ctx *utils.BuilderContext, description string, cboxClient pb.ContextBoxServiceClient) {
+	log := cutils.CreateLoggerWithProjectName(ctx.ProjectName)
 	ctx.Workflow.Description = strings.TrimSpace(description)
 	if err := u.ContextBox.SaveWorkflowState(ctx.ProjectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
-		return err
+		log.Err(err).Msgf("failed to update workflow description")
 	}
-	return nil
 }
 
 // deleteConfig calls destroy config to remove all traces of infrastructure from given config.

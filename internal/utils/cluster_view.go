@@ -84,53 +84,90 @@ Lb:
 	}
 }
 
+func mergeK8sClusters(old []*pb.K8Scluster, changed map[string]*pb.K8Scluster) []*pb.K8Scluster {
+	// update existing clusters.
+	for i, cluster := range old {
+		cluster, ok := changed[cluster.ClusterInfo.Name]
+		if !ok || cluster == nil {
+			old[i] = nil
+			continue
+		}
+		old[i] = cluster
+		delete(changed, cluster.ClusterInfo.Name)
+	}
+
+	// append new clusters, if any
+	for _, cluster := range changed {
+		old = append(old, cluster)
+	}
+
+	// remove unused
+	for i := 0; i < len(old); {
+		if old[i] != nil {
+			i++
+			continue
+		}
+		copy(old[i:], old[i+1:])
+		old[len(old)-1] = nil
+		old = old[:len(old)-1]
+	}
+
+	return old
+}
+
+func mergeLbClusters(old []*pb.LBcluster, changed map[string][]*pb.LBcluster) []*pb.LBcluster {
+	// update existing clusters.
+	for i, cluster := range old {
+		updated, ok := changed[cluster.TargetedK8S]
+		if !ok || updated == nil {
+			old[i] = nil
+			continue
+		}
+		present := GetLBClusterByName(cluster.ClusterInfo.Name, updated)
+		if present < 0 {
+			old[i] = nil
+			continue
+		}
+
+		old[i] = updated[present]
+
+		copy(updated[present:], updated[present+1:])
+		updated[len(updated)-1] = nil
+		changed[cluster.TargetedK8S] = changed[cluster.TargetedK8S][:len(updated)-1]
+
+		if len(changed[cluster.TargetedK8S]) == 0 {
+			delete(changed, cluster.TargetedK8S)
+		}
+	}
+
+	// append new clusters, if any
+	for _, clusters := range changed {
+		old = append(old, clusters...)
+	}
+
+	// remove unused
+	for i := 0; i < len(old); {
+		if old[i] != nil {
+			i++
+			continue
+		}
+		copy(old[i:], old[i+1:])
+		old[len(old)-1] = nil
+		old = old[:len(old)-1]
+	}
+
+	return old
+}
+
 // MergeChanges propagates the changes made back to the config.
 func (view *ClusterView) MergeChanges(config *pb.Config) {
 	config.State = view.ClusterWorkflows
 
-	for name, updated := range view.CurrentClusters {
-		idx := GetClusterByName(name, config.CurrentState.Clusters)
-		if idx < 0 {
-			if updated != nil { // don't append a nil cluster.
-				config.CurrentState.Clusters = append(config.CurrentState.Clusters, updated)
-			}
-			continue
-		}
-		config.CurrentState.Clusters[idx] = updated
-	}
+	config.CurrentState.Clusters = mergeK8sClusters(config.CurrentState.Clusters, view.CurrentClusters)
+	config.DesiredState.Clusters = mergeK8sClusters(config.DesiredState.Clusters, view.DesiredClusters)
 
-	for name, updated := range view.DesiredClusters {
-		idx := GetClusterByName(name, config.DesiredState.Clusters)
-		if idx < 0 {
-			config.DesiredState.Clusters = append(config.DesiredState.Clusters, updated)
-			continue
-		}
-		config.DesiredState.Clusters[idx] = updated
-	}
-
-	for _, updated := range view.Loadbalancers {
-		for _, lb := range updated {
-			idx := GetLBClusterByName(lb.ClusterInfo.Name, config.CurrentState.LoadBalancerClusters)
-			if idx < 0 {
-				if lb != nil { // don't append a nil cluster.
-					config.CurrentState.LoadBalancerClusters = append(config.CurrentState.LoadBalancerClusters, lb)
-				}
-				continue
-			}
-			config.CurrentState.LoadBalancerClusters[idx] = lb
-		}
-	}
-
-	for _, updated := range view.DesiredLoadbalancers {
-		for _, lb := range updated {
-			idx := GetLBClusterByName(lb.ClusterInfo.Name, config.DesiredState.LoadBalancerClusters)
-			if idx < 0 {
-				config.DesiredState.LoadBalancerClusters = append(config.DesiredState.LoadBalancerClusters, lb)
-				continue
-			}
-			config.DesiredState.LoadBalancerClusters[idx] = lb
-		}
-	}
+	config.CurrentState.LoadBalancerClusters = mergeLbClusters(config.CurrentState.LoadBalancerClusters, view.Loadbalancers)
+	config.DesiredState.LoadBalancerClusters = mergeLbClusters(config.DesiredState.LoadBalancerClusters, view.DesiredLoadbalancers)
 }
 
 // AllClusters returns a slice of cluster all cluster names, from both the current state and desired state.
@@ -163,4 +200,29 @@ func (view *ClusterView) SetWorkflowDone(clusterName string) {
 	view.ClusterWorkflows[clusterName].Status = pb.Workflow_DONE
 	view.ClusterWorkflows[clusterName].Stage = pb.Workflow_NONE
 	view.ClusterWorkflows[clusterName].Description = ""
+}
+
+func (view *ClusterView) UpdateCurrentState(clusterName string, c *pb.K8Scluster, lbs []*pb.LBcluster) {
+	cp := make([]*pb.LBcluster, 0, len(lbs))
+	for _, c := range lbs {
+		cp = append(cp, proto.Clone(c).(*pb.LBcluster))
+	}
+
+	view.CurrentClusters[clusterName] = proto.Clone(c).(*pb.K8Scluster)
+	view.Loadbalancers[clusterName] = cp
+}
+
+func (view *ClusterView) UpdateDesiredState(clusterName string, c *pb.K8Scluster, lbs []*pb.LBcluster) {
+	cp := make([]*pb.LBcluster, 0, len(lbs))
+	for _, c := range lbs {
+		cp = append(cp, proto.Clone(c).(*pb.LBcluster))
+	}
+
+	view.DesiredClusters[clusterName] = proto.Clone(c).(*pb.K8Scluster)
+	view.DesiredLoadbalancers[clusterName] = cp
+}
+
+func (view *ClusterView) RemoveCurrentState(clusterName string) {
+	delete(view.CurrentClusters, clusterName)
+	delete(view.Loadbalancers, clusterName)
 }

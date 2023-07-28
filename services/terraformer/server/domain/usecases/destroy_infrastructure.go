@@ -4,12 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	outboundAdapters "github.com/berops/claudie/services/terraformer/server/adapters/outbound"
-
 	"github.com/rs/zerolog/log"
 
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	outboundAdapters "github.com/berops/claudie/services/terraformer/server/adapters/outbound"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/kubernetes"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/loadbalancer"
 )
@@ -54,6 +53,7 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 			}
 			return fmt.Errorf("failed to check existence of state file for %q: %w", cluster.Id(), err)
 		}
+		logger.Debug().Msgf("infrastructure state file present for cluster %q", cluster.Id())
 
 		logger.Info().Msgf("Destroying infrastructure")
 

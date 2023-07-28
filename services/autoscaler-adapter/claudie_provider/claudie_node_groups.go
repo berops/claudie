@@ -77,7 +77,7 @@ func (c *ClaudieCloudProvider) NodeGroupDeleteNodes(_ context.Context, req *prot
 		ngc.targetSize = newCount
 		// Update nodes slice
 		deleteNodes := make([]*pb.Node, 0, len(req.Nodes))
-		remainNodes := make([]*pb.Node, 0, len(ngc.nodepool.Nodes)-len(req.Nodes))
+		remainNodes := make([]*pb.Node, 0, len(req.Nodes))
 		for _, node := range ngc.nodepool.Nodes {
 			nodeId := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-%s-", c.configCluster.ClusterInfo.Name, c.configCluster.ClusterInfo.Hash))
 			if containsId(req.GetNodes(), nodeId) {

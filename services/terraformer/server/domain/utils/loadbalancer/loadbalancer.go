@@ -3,7 +3,6 @@ package loadbalancer
 import (
 	"errors"
 	"fmt"
-
 	"github.com/berops/claudie/internal/utils"
 	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
 	"github.com/rs/zerolog"
