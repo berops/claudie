@@ -16,6 +16,7 @@ func (u *Usecases) BuildInfrastructure(request *pb.BuildInfrastructureRequest) (
 		DesiredState:       request.Desired,
 		CurrentState:       request.Current,
 		AttachedLBClusters: request.DesiredLbs,
+		SpawnProcessLimit:  u.SpawnProcessLimit,
 	}
 
 	var lbClusters []*loadbalancer.LBcluster
@@ -30,9 +31,10 @@ func (u *Usecases) BuildInfrastructure(request *pb.BuildInfrastructureRequest) (
 		}
 
 		lbClusters = append(lbClusters, &loadbalancer.LBcluster{
-			DesiredState: desiredLBCluster,
-			CurrentState: current,
-			ProjectName:  request.ProjectName,
+			DesiredState:      desiredLBCluster,
+			CurrentState:      current,
+			ProjectName:       request.ProjectName,
+			SpawnProcessLimit: u.SpawnProcessLimit,
 		})
 	}
 

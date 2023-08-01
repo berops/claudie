@@ -20,7 +20,9 @@ func main() {
 	// Initialize logger
 	utils.InitLog("kube-eleven")
 
-	usecases := &usecases.Usecases{}
+	usecases := &usecases.Usecases{
+		SpawnProcessLimit: make(chan struct{}, usecases.SpawnProcessLimit),
+	}
 	grpcAdapter := grpc.GrpcAdapter{}
 	grpcAdapter.Init(usecases)
 

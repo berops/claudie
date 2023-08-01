@@ -14,7 +14,7 @@ import (
 )
 
 // TeardownLoadBalancers correctly destroys loadbalancers by selecting the new ApiServer endpoint.
-func (a *Usecases) TeardownLoadBalancers(ctx context.Context, request *pb.TeardownLBRequest) (*pb.TeardownLBResponse, error) {
+func (u *Usecases) TeardownLoadBalancers(ctx context.Context, request *pb.TeardownLBRequest) (*pb.TeardownLBResponse, error) {
 	// If no LB clusters were deleted from the manifest, then just return.
 	if len(request.DeletedLbs) == 0 {
 		return &pb.TeardownLBResponse{
@@ -48,7 +48,7 @@ func (a *Usecases) TeardownLoadBalancers(ctx context.Context, request *pb.Teardo
 		})
 	}
 
-	previousApiEndpoint, err := teardownLoadBalancers(request.Desired.ClusterInfo.Name, lbClustersInfo, isApiServerTypeDesiredLBClusterPresent)
+	previousApiEndpoint, err := teardownLoadBalancers(request.Desired.ClusterInfo.Name, lbClustersInfo, isApiServerTypeDesiredLBClusterPresent, u.SpawnProcessLimit)
 	if err != nil {
 		logger.Err(err).Msgf("Error encountered while tearing down the LoadBalancers")
 		return nil, fmt.Errorf("error encountered while tearing down loadbalancers for cluster %s project %s : %w", request.Desired.ClusterInfo.Name, request.ProjectName, err)
@@ -68,7 +68,7 @@ func (a *Usecases) TeardownLoadBalancers(ctx context.Context, request *pb.Teardo
 // If for a K8s cluster a new ApiServerLB is being attached instead of handling the apiEndpoint immediately
 // it will be delayed and will send the data to the dataChan which will be used later for the SetupLoadbalancers
 // function to bypass generating the certificates for the endpoint multiple times.
-func teardownLoadBalancers(clusterName string, lbClustersInfo *utils.LBClustersInfo, attached bool) (string, error) {
+func teardownLoadBalancers(clusterName string, lbClustersInfo *utils.LBClustersInfo, attached bool, spawnProcessLimit chan struct{}) (string, error) {
 	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, commonUtils.CreateHash(commonUtils.HashLength)))
 	if err := utils.GenerateLBBaseFiles(clusterDirectory, lbClustersInfo); err != nil {
 		return "", fmt.Errorf("error encountered while generating base files for %s", clusterName)
@@ -83,7 +83,7 @@ func teardownLoadBalancers(clusterName string, lbClustersInfo *utils.LBClustersI
 		return currentApiServerTypeLBCluster.CurrentLbCluster.Dns.Endpoint, os.RemoveAll(clusterDirectory)
 	}
 
-	if err := utils.HandleAPIEndpointChange(currentApiServerTypeLBCluster, lbClustersInfo, clusterDirectory); err != nil {
+	if err := utils.HandleAPIEndpointChange(currentApiServerTypeLBCluster, lbClustersInfo, clusterDirectory, spawnProcessLimit); err != nil {
 		return "", err
 	}
 

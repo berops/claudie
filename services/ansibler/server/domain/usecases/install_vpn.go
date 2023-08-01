@@ -59,7 +59,7 @@ func (u *Usecases) InstallVPN(request *pb.InstallRequest) (*pb.InstallResponse, 
 		)
 	}
 
-	if err := installWireguardVPN(commonUtils.GetClusterID(request.Desired.ClusterInfo), vpnInfo); err != nil {
+	if err := installWireguardVPN(commonUtils.GetClusterID(request.Desired.ClusterInfo), vpnInfo, u.SpawnProcessLimit); err != nil {
 		logger.Err(err).Msgf("Error encountered while installing VPN")
 		return nil, fmt.Errorf("error encountered while installing VPN for cluster %s project %s : %w", request.Desired.ClusterInfo.Name, request.ProjectName, err)
 	}
@@ -69,7 +69,7 @@ func (u *Usecases) InstallVPN(request *pb.InstallRequest) (*pb.InstallResponse, 
 }
 
 // installWireguardVPN install wireguard VPN for all nodes in the infrastructure.
-func installWireguardVPN(clusterID string, vpnInfo *VPNInfo) error {
+func installWireguardVPN(clusterID string, vpnInfo *VPNInfo, spawnProcessLimit chan struct{}) error {
 	// Directory where files (required by Ansible) will be generated.
 	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, commonUtils.CreateHash(commonUtils.HashLength)))
 	if err := commonUtils.CreateDirectory(clusterDirectory); err != nil {
@@ -98,10 +98,12 @@ func installWireguardVPN(clusterID string, vpnInfo *VPNInfo) error {
 		}
 	}
 	ansible := utils.Ansible{
-		Playbook:  wireguardPlaybookFilePath,
-		Inventory: utils.InventoryFileName,
-		Directory: clusterDirectory,
+		Playbook:          wireguardPlaybookFilePath,
+		Inventory:         utils.InventoryFileName,
+		Directory:         clusterDirectory,
+		SpawnProcessLimit: spawnProcessLimit,
 	}
+
 	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("VPN - %s", clusterID)); err != nil {
 		return fmt.Errorf("error while running ansible for %s : %w", clusterDirectory, err)
 	}

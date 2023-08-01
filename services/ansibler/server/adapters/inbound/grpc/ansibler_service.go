@@ -10,7 +10,7 @@ import (
 type AnsiblerGrpcService struct {
 	pb.UnimplementedAnsiblerServiceServer
 
-	usecases usecases.Usecases
+	usecases *usecases.Usecases
 }
 
 func (a *AnsiblerGrpcService) UpdateAPIEndpoint(_ context.Context, request *pb.UpdateAPIEndpointRequest) (*pb.UpdateAPIEndpointResponse, error) {

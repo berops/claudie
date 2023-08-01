@@ -15,8 +15,9 @@ func (u *Usecases) BuildCluster(req *pb.BuildClusterRequest) (*pb.BuildClusterRe
 	logger.Info().Msgf("Building kubernetes cluster")
 
 	k := kube_eleven.KubeEleven{
-		K8sCluster: req.Desired,
-		LBClusters: req.DesiredLbs,
+		K8sCluster:        req.Desired,
+		LBClusters:        req.DesiredLbs,
+		SpawnProcessLimit: u.SpawnProcessLimit,
 	}
 
 	if err := k.BuildCluster(); err != nil {

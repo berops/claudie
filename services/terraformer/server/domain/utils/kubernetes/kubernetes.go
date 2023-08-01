@@ -19,6 +19,11 @@ type K8Scluster struct {
 	// AttachedLBClusters are the LB clusters that are
 	// attached to this K8s cluster.
 	AttachedLBClusters []*pb.LBcluster
+
+	// SpawnProcessLimit represents a synchronization channel which limits the number of spawned terraform
+	// processes. This values should always be non-nil and be buffered, where the capacity indicates
+	// the limit.
+	SpawnProcessLimit chan struct{}
 }
 
 func (k *K8Scluster) Id() string {
@@ -48,6 +53,7 @@ func (k *K8Scluster) Build(logger zerolog.Logger) error {
 		Metadata: map[string]any{
 			"loadBalancers": k.AttachedLBClusters,
 		},
+		SpawnProcessLimit: k.SpawnProcessLimit,
 	}
 
 	err := cluster.CreateNodepools()
@@ -63,8 +69,9 @@ func (k *K8Scluster) Destroy(logger zerolog.Logger) error {
 	cluster := cluster_builder.ClusterBuilder{
 		CurrentClusterInfo: k.CurrentState.ClusterInfo,
 
-		ProjectName: k.ProjectName,
-		ClusterType: pb.ClusterType_K8s,
+		ProjectName:       k.ProjectName,
+		ClusterType:       pb.ClusterType_K8s,
+		SpawnProcessLimit: k.SpawnProcessLimit,
 	}
 
 	err := cluster.DestroyNodepools()

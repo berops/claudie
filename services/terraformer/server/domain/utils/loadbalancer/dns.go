@@ -35,6 +35,11 @@ type DNS struct {
 
 	CurrentDNS *pb.DNS
 	DesiredDNS *pb.DNS
+
+	// SpawnProcessLimit represents a synchronization channel which limits the number of spawned terraform
+	// processes. This values should always be non-nil and be buffered, where the capacity indicates
+	// the limit.
+	SpawnProcessLimit chan struct{}
 }
 
 type DNSData struct {
@@ -59,7 +64,8 @@ func (d DNS) CreateDNSRecords(logger zerolog.Logger) (string, error) {
 	dnsDir := filepath.Join(cluster_builder.Output, dnsID)
 
 	terraform := terraform.Terraform{
-		Directory: dnsDir,
+		Directory:         dnsDir,
+		SpawnProcessLimit: d.SpawnProcessLimit,
 	}
 
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
@@ -128,7 +134,8 @@ func (d DNS) DestroyDNSRecords(logger zerolog.Logger) error {
 	}
 
 	terraform := terraform.Terraform{
-		Directory: dnsDir,
+		Directory:         dnsDir,
+		SpawnProcessLimit: d.SpawnProcessLimit,
 	}
 
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
