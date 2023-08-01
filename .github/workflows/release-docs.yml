@@ -31,12 +31,8 @@ jobs:
       
       - name: Set up git author
         run: |
-          remote_repo="https://${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git config --global user.name "${GITHUB_ACTOR}"
           git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
-          git remote rm origin
-          git remote add origin "${remote_repo}"
-          git push --set-upstream origin master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -73,17 +69,21 @@ jobs:
           
               sed -i "${new_entry_line}i\\
               - ${navigation_entry}" $filename
-          
+
+              git fetch
+
+              git checkout master
+
               # commit and push
               git commit -am "add new changelog file to mkdocs.yml"
           
-              git push
+              git push origin
           
               echo "Altered mkdocs.yml with new Changelog navigation entry was commited and pushed to origin"
           else
               echo "There isn't a new changelog file"
           fi
-
+          
       # NOTE: the pipeline will fail, if gh-pages branch isn't created!!!
       - name: Git fetch gh-pages
         run: git fetch origin gh-pages
