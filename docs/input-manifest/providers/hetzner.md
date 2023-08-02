@@ -58,6 +58,8 @@ apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: HetznerExampleManifest
+  labels:
+    app.kubernetes.io/part-of: claudie
 spec:
   providers:
     - name: hetzner-1
@@ -139,6 +141,8 @@ apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: HetznerExampleManifest
+  labels:
+    app.kubernetes.io/part-of: claudie
 spec:
   providers:
     - name: hetzner-1
