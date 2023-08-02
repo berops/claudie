@@ -103,6 +103,8 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     kind: InputManifest
     metadata:
       name: cloud-bursting
+      labels:
+        app.kubernetes.io/part-of: claudie
     spec:
       providers:
         - name: aws-1
@@ -290,6 +292,8 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     kind: InputManifest
     metadata:
       name: cloud-bursting
+      labels:
+        app.kubernetes.io/part-of: claudie
     spec:
       providers:
         - name: hetzner-1         # add under nodePools.dynamic section
@@ -341,6 +345,8 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     kind: InputManifest
     metadata:
       name: cloud-bursting
+      labels:
+        app.kubernetes.io/part-of: claudie
     spec:
       ...
       loadBalancers:
