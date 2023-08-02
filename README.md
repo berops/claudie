@@ -113,7 +113,7 @@ For adding support for other cloud providers, open an issue or propose a PR.
       --from-literal=secretkey='myAwsSecretKey'
     ```
 
-    Check the [supported providers](#supported-providers) for input manifest examples. For an input manifest spanning all supported hyperscalers checkout out [this example](https://docs.claudie.io/latest/input-manifest/example.md).
+    Check the [supported providers](#supported-providers) for input manifest examples. For an input manifest spanning all supported hyperscalers checkout out [this example](https://docs.claudie.io/latest/input-manifest/example/).
 
 2. Deploy InputManifest resource which Claudie uses to create infrastructure, include the created secret in `.spec.providers` as follows:
     ```bash
