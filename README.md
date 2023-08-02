@@ -122,6 +122,8 @@ For adding support for other cloud providers, open an issue or propose a PR.
     kind: InputManifest
     metadata:
       name: examplemanifest
+      labels:
+        app.kubernetes.io/part-of: claudie
     spec:
       providers:
           - name: aws-1
