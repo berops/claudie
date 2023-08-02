@@ -186,6 +186,8 @@ Claudie outputs base64 encoded kubeconfig secret `<cluster-name>-<cluster-hash>-
     kind: InputManifest
     metadata:
       name: examplemanifest
+      labels:
+        app.kubernetes.io/part-of: claudie
     spec:
       providers:
           - name: aws-1
