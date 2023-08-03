@@ -71,3 +71,21 @@ To deploy the Claudie `v0.4.X`, please:
 ### Known issues
 
 No known issues since the last release
+
+
+## v0.4.2
+
+### Features
+
+- Improved error logging when Claudie is deployed without debug logging.
+- All resources created by claudie now have the `app.kubernetes.io/part-of: claudie` label.
+- SecurityContext was added to Claudie deployed services.
+- A limit was introduced to how many terraform, ansible, kubeone processes can be spawn at a given time when building multiple clusters.
+
+### Bugfixes
+
+- Fixed correct deletion of a InputManifests with multiple clusters where one of them failed.
+
+### KnownIssues
+
+No new known issues since the last release
