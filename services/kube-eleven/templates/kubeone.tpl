@@ -7,17 +7,13 @@ versions:
 
 clusterNetwork:
   cni:
-    external: {}
+    cilium:
+      enableHubble: false
+      #kubeProxyReplacement: "strict" # or disabled if you don't want kube-proxy replacement
 
 cloudProvider:
   none: {}
   external: false
-
-addons:
-  enable: true
-  # In case when the relative path is provided, the path is relative
-  # to the KubeOne configuration file.
-  path: "../../addons"
 
 apiEndpoint:
   host: '{{ .APIEndpoint }}'
