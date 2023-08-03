@@ -20,7 +20,7 @@ const (
 	maxTfCommandRetryCount = 5
 
 	// Parallelism is the number of resource to be work on in parallel during the apply/destroy commands.
-	Parallelism = 6
+	Parallelism = 8
 )
 
 type Terraform struct {
