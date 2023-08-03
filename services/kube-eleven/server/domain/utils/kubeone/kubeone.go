@@ -17,11 +17,18 @@ const maxRetryCount = 5
 type Kubeone struct {
 	// ConfigDirectory is the directory where the generated kubeone.yaml will be located.
 	ConfigDirectory string
+	// SpawnProcessLimit represents a synchronization channel which limits the number of spawned kubeone
+	// processes. This values must be non-nil and be buffered, where the capacity indicates
+	// the limit.
+	SpawnProcessLimit chan struct{}
 }
 
 // Apply will run `kubeone apply -m kubeone.yaml -y` in the ConfigDirectory.
 // Returns nil if successful, error otherwise.
 func (k *Kubeone) Apply(prefix string) error {
+	k.SpawnProcessLimit <- struct{}{}
+	defer func() { <-k.SpawnProcessLimit }()
+
 	output := new(bytes.Buffer)
 
 	command := fmt.Sprintf("kubeone apply -m kubeone.yaml -y %s", structuredLogging())

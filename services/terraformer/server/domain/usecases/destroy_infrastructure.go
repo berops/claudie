@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/rs/zerolog/log"
 
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	outboundAdapters "github.com/berops/claudie/services/terraformer/server/adapters/outbound"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/kubernetes"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/loadbalancer"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -30,15 +30,17 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 	// then add the Kubernetes cluster to the "clusters" slice.
 	if request.Current != nil {
 		clusters = append(clusters, &kubernetes.K8Scluster{
-			ProjectName:  request.ProjectName,
-			CurrentState: request.Current,
+			ProjectName:       request.ProjectName,
+			CurrentState:      request.Current,
+			SpawnProcessLimit: u.SpawnProcessLimit,
 		})
 	}
 
 	for _, currentLB := range request.CurrentLbs {
 		clusters = append(clusters, &loadbalancer.LBcluster{
-			ProjectName:  request.ProjectName,
-			CurrentState: currentLB,
+			ProjectName:       request.ProjectName,
+			CurrentState:      currentLB,
+			SpawnProcessLimit: u.SpawnProcessLimit,
 		})
 	}
 

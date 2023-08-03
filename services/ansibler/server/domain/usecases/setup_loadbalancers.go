@@ -47,7 +47,7 @@ func (u *Usecases) SetUpLoadbalancers(request *pb.SetUpLBRequest) (*pb.SetUpLBRe
 		})
 	}
 
-	if err := setUpLoadbalancers(request.Desired.ClusterInfo.Name, lbClustersInfo, logger); err != nil {
+	if err := setUpLoadbalancers(request.Desired.ClusterInfo.Name, lbClustersInfo, logger, u.SpawnProcessLimit); err != nil {
 		logger.Err(err).Msgf("Error encountered while setting up the loadbalancers")
 		return nil, fmt.Errorf("error encountered while setting up the loadbalancers for cluster %s project %s : %w", request.Desired.ClusterInfo.Name, request.ProjectName, err)
 	}
@@ -57,7 +57,7 @@ func (u *Usecases) SetUpLoadbalancers(request *pb.SetUpLBRequest) (*pb.SetUpLBRe
 }
 
 // setUpLoadbalancers sets up the loadbalancers along with DNS and verifies their configuration
-func setUpLoadbalancers(clusterName string, lbClustersInfo *utils.LBClustersInfo, logger zerolog.Logger) error {
+func setUpLoadbalancers(clusterName string, lbClustersInfo *utils.LBClustersInfo, logger zerolog.Logger, spawnProcessLimit chan struct{}) error {
 	clusterBaseDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, commonUtils.CreateHash(commonUtils.HashLength)))
 
 	if err := utils.GenerateLBBaseFiles(clusterBaseDirectory, lbClustersInfo); err != nil {
@@ -87,11 +87,11 @@ func setUpLoadbalancers(clusterName string, lbClustersInfo *utils.LBClustersInfo
 				return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 			}
 
-			if err := setUpNodeExporter(lbCluster.DesiredLbCluster, clusterDirectory); err != nil {
+			if err := setUpNodeExporter(lbCluster.DesiredLbCluster, clusterDirectory, spawnProcessLimit); err != nil {
 				return err
 			}
 
-			if err := setUpNginx(lbCluster.DesiredLbCluster, lbClustersInfo.TargetK8sNodepool, clusterDirectory); err != nil {
+			if err := setUpNginx(lbCluster.DesiredLbCluster, lbClustersInfo.TargetK8sNodepool, clusterDirectory, spawnProcessLimit); err != nil {
 				return err
 			}
 
@@ -118,7 +118,7 @@ func setUpLoadbalancers(clusterName string, lbClustersInfo *utils.LBClustersInfo
 		desiredApiServerTypeLBCluster = utils.FindCurrentAPIServerTypeLBCluster(lbClustersInfo.LbClusters)
 	}
 
-	if err := utils.HandleAPIEndpointChange(desiredApiServerTypeLBCluster, lbClustersInfo, clusterBaseDirectory); err != nil {
+	if err := utils.HandleAPIEndpointChange(desiredApiServerTypeLBCluster, lbClustersInfo, clusterBaseDirectory, spawnProcessLimit); err != nil {
 		return fmt.Errorf("failed to find a candidate for the Api Server: %w", err)
 	}
 
@@ -127,7 +127,7 @@ func setUpLoadbalancers(clusterName string, lbClustersInfo *utils.LBClustersInfo
 
 // setUpNodeExporter sets up node-exporter on each node of the LB cluster.
 // Returns error if not successful, nil otherwise.
-func setUpNodeExporter(lbCluster *pb.LBcluster, clusterDirectory string) error {
+func setUpNodeExporter(lbCluster *pb.LBcluster, clusterDirectory string, spawnProcessLimit chan struct{}) error {
 	var playbookParameters = utils.LBPlaybookParameters{Loadbalancer: lbCluster.ClusterInfo.Name}
 
 	// Generate node-exporter Ansible playbook from template
@@ -143,10 +143,12 @@ func setUpNodeExporter(lbCluster *pb.LBcluster, clusterDirectory string) error {
 
 	// Run the Ansible playbook
 	ansible := utils.Ansible{
-		Directory: clusterDirectory,
-		Playbook:  nodeExporterPlaybookFileName,
-		Inventory: filepath.Join("..", utils.InventoryFileName),
+		Directory:         clusterDirectory,
+		Playbook:          nodeExporterPlaybookFileName,
+		Inventory:         filepath.Join("..", utils.InventoryFileName),
+		SpawnProcessLimit: spawnProcessLimit,
 	}
+
 	if err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash)); err != nil {
 		return fmt.Errorf("error while running ansible for %s : %w", lbCluster.ClusterInfo.Name, err)
 	}
@@ -156,7 +158,7 @@ func setUpNodeExporter(lbCluster *pb.LBcluster, clusterDirectory string) error {
 
 // setUpNginx sets up the nginx loadbalancer based on the input manifest specification.
 // Return error if not successful, nil otherwise
-func setUpNginx(lbCluster *pb.LBcluster, targetK8sNodepool []*pb.NodePool, clusterDirectory string) error {
+func setUpNginx(lbCluster *pb.LBcluster, targetK8sNodepool []*pb.NodePool, clusterDirectory string, spawnProcessLimit chan struct{}) error {
 	targetControlNodes, targetComputeNodes := splitNodesByType(targetK8sNodepool)
 
 	// construct []LBClusterRolesInfo for the given LB cluster
@@ -190,10 +192,12 @@ func setUpNginx(lbCluster *pb.LBcluster, targetK8sNodepool []*pb.NodePool, clust
 	}
 
 	ansible := utils.Ansible{
-		Playbook:  nginxPlaybookName,
-		Inventory: filepath.Join("..", utils.InventoryFileName),
-		Directory: clusterDirectory,
+		Playbook:          nginxPlaybookName,
+		Inventory:         filepath.Join("..", utils.InventoryFileName),
+		Directory:         clusterDirectory,
+		SpawnProcessLimit: spawnProcessLimit,
 	}
+
 	err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash))
 	if err != nil {
 		return fmt.Errorf("error while running ansible for %s : %w", lbCluster.ClusterInfo.Name, err)

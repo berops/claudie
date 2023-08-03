@@ -17,10 +17,15 @@ var (
 )
 
 type LBcluster struct {
+	ProjectName string
+
 	DesiredState *pb.LBcluster
 	CurrentState *pb.LBcluster
 
-	ProjectName string
+	// SpawnProcessLimit represents a synchronization channel which limits the number of spawned terraform
+	// processes. This values should always be non-nil and be buffered, where the capacity indicates
+	// the limit.
+	SpawnProcessLimit chan struct{}
 }
 
 func (l *LBcluster) Id() string {
@@ -55,22 +60,24 @@ func (l *LBcluster) Build(logger zerolog.Logger) error {
 		Metadata: map[string]any{
 			"roles": l.DesiredState.Roles,
 		},
+
+		SpawnProcessLimit: l.SpawnProcessLimit,
 	}
 
-	err := clusterBuilder.CreateNodepools()
-	if err != nil {
+	if err := clusterBuilder.CreateNodepools(); err != nil {
 		return fmt.Errorf("error while creating the LB cluster %s : %w", l.DesiredState.ClusterInfo.Name, err)
 	}
 
 	nodeIPs := getNodeIPs(l.DesiredState.ClusterInfo.NodePools)
 	dns := DNS{
-		ClusterName:    l.DesiredState.ClusterInfo.Name,
-		ClusterHash:    l.DesiredState.ClusterInfo.Hash,
-		CurrentNodeIPs: currentNodeIPs,
-		DesiredNodeIPs: nodeIPs,
-		CurrentDNS:     currentDNS,
-		DesiredDNS:     l.DesiredState.Dns,
-		ProjectName:    l.ProjectName,
+		ClusterName:       l.DesiredState.ClusterInfo.Name,
+		ClusterHash:       l.DesiredState.ClusterInfo.Hash,
+		CurrentNodeIPs:    currentNodeIPs,
+		DesiredNodeIPs:    nodeIPs,
+		CurrentDNS:        currentDNS,
+		DesiredDNS:        l.DesiredState.Dns,
+		ProjectName:       l.ProjectName,
+		SpawnProcessLimit: l.SpawnProcessLimit,
 	}
 
 	endpoint, err := dns.CreateDNSRecords(logger)
@@ -92,17 +99,19 @@ func (l *LBcluster) Destroy(logger zerolog.Logger) error {
 			CurrentClusterInfo: l.CurrentState.ClusterInfo,
 			ProjectName:        l.ProjectName,
 			ClusterType:        pb.ClusterType_LB,
+			SpawnProcessLimit:  l.SpawnProcessLimit,
 		}
 		return cluster.DestroyNodepools()
 	})
 
 	group.Go(func() error {
 		dns := DNS{
-			ClusterName:    l.CurrentState.ClusterInfo.Name,
-			ClusterHash:    l.CurrentState.ClusterInfo.Hash,
-			CurrentNodeIPs: getNodeIPs(l.CurrentState.ClusterInfo.NodePools),
-			CurrentDNS:     l.CurrentState.Dns,
-			ProjectName:    l.ProjectName,
+			ClusterName:       l.CurrentState.ClusterInfo.Name,
+			ClusterHash:       l.CurrentState.ClusterInfo.Hash,
+			CurrentNodeIPs:    getNodeIPs(l.CurrentState.ClusterInfo.NodePools),
+			CurrentDNS:        l.CurrentState.Dns,
+			ProjectName:       l.ProjectName,
+			SpawnProcessLimit: l.SpawnProcessLimit,
 		}
 		return dns.DestroyDNSRecords(logger)
 	})

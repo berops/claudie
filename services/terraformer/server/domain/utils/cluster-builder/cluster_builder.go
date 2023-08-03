@@ -48,6 +48,10 @@ type ClusterBuilder struct {
 	// in the case of LoadBalancer this will contain the defined
 	// roles from the manifest. Can be nil if no data is supplied.
 	Metadata map[string]any
+	// SpawnProcessLimit represents a synchronization channel which limits the number of spawned terraform
+	// processes. This values should always be non-nil and be buffered, where the capacity indicates
+	// the limit.
+	SpawnProcessLimit chan struct{}
 }
 
 type NodepoolsData struct {
@@ -88,7 +92,8 @@ func (c ClusterBuilder) CreateNodepools() error {
 	}
 
 	terraform := terraform.Terraform{
-		Directory: clusterDir,
+		Directory:         clusterDir,
+		SpawnProcessLimit: c.SpawnProcessLimit,
 	}
 
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
@@ -147,7 +152,8 @@ func (c ClusterBuilder) DestroyNodepools() error {
 	}
 
 	terraform := terraform.Terraform{
-		Directory: clusterDir,
+		Directory:         clusterDir,
+		SpawnProcessLimit: c.SpawnProcessLimit,
 	}
 
 	if log.Logger.GetLevel() == zerolog.DebugLevel {

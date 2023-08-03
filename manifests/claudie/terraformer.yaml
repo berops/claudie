@@ -46,10 +46,10 @@ spec:
           resources:
             requests:
               cpu: 700m
-              memory: 1200Mi
+              memory: 1024Mi
             limits:
               cpu: 1024m
-              memory: 1700Mi
+              memory: 1200Mi
           env:
             - name: TERRAFORMER_PORT
               valueFrom:

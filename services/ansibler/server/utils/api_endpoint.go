@@ -34,12 +34,13 @@ func FindNewAPIEndpointCandidate(current, desired []*pb.NodePool, excludeNodepoo
 // ChangeAPIEndpoint will change the kubeadm configuration.
 // It will set the Api endpoint of the cluster to the public IP of the
 // newly selected ApiEndpoint node.
-func ChangeAPIEndpoint(clusterName, oldEndpoint, newEndpoint, directory string) error {
+func ChangeAPIEndpoint(clusterName, oldEndpoint, newEndpoint, directory string, spawnProcessLimit chan struct{}) error {
 	ansible := Ansible{
-		Playbook:  apiChangePlaybookFilePath,
-		Inventory: InventoryFileName,
-		Flags:     fmt.Sprintf("--extra-vars \"NewEndpoint=%s OldEndpoint=%s\"", newEndpoint, oldEndpoint),
-		Directory: directory,
+		Playbook:          apiChangePlaybookFilePath,
+		Inventory:         InventoryFileName,
+		Flags:             fmt.Sprintf("--extra-vars \"NewEndpoint=%s OldEndpoint=%s\"", newEndpoint, oldEndpoint),
+		Directory:         directory,
+		SpawnProcessLimit: spawnProcessLimit,
 	}
 
 	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("EP - %s", clusterName)); err != nil {

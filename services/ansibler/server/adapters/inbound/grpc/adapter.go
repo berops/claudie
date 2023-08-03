@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"fmt"
+	"github.com/berops/claudie/services/ansibler/server/domain/usecases"
 	"net"
 
 	"github.com/rs/zerolog/log"
@@ -24,7 +25,7 @@ type GrpcAdapter struct {
 }
 
 // CreateGrpcAdapter return new gRPC adapter for Ansibler.
-func CreateGrpcAdapter() *GrpcAdapter {
+func CreateGrpcAdapter(usecases *usecases.Usecases) *GrpcAdapter {
 	port := utils.GetEnvDefault("ANSIBLER_PORT", fmt.Sprint(defaultPort))
 	tcpBindingAddress := net.JoinHostPort("0.0.0.0", port)
 	listener, err := net.Listen("tcp", tcpBindingAddress)
@@ -35,7 +36,7 @@ func CreateGrpcAdapter() *GrpcAdapter {
 	g := &GrpcAdapter{tcpListener: listener, server: utils.NewGRPCServer(), healthcheckServer: health.NewServer()}
 	log.Info().Msgf("Ansibler microservice is listening on %s", tcpBindingAddress)
 
-	pb.RegisterAnsiblerServiceServer(g.server, &AnsiblerGrpcService{})
+	pb.RegisterAnsiblerServiceServer(g.server, &AnsiblerGrpcService{usecases: usecases})
 
 	// Ansibler microservice does not have any custom healthcheck functions,
 	// thus always serving.

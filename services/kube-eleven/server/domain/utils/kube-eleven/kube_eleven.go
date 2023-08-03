@@ -36,6 +36,11 @@ type KubeEleven struct {
 	// LB clusters attached to the above Kubernetes cluster.
 	// If nil, the first control node becomes the api endpoint of the cluster.
 	LBClusters []*pb.LBcluster
+
+	// SpawnProcessLimit represents a synchronization channel which limits the number of spawned kubeone
+	// processes. This values must be non-nil and be buffered, where the capacity indicates
+	// the limit.
+	SpawnProcessLimit chan struct{}
 }
 
 // BuildCluster is responsible for managing the given K8sCluster along with the attached LBClusters
@@ -51,7 +56,10 @@ func (k *KubeEleven) BuildCluster() error {
 	}
 
 	// Execute Kubeone apply
-	kubeone := kubeone.Kubeone{ConfigDirectory: k.outputDirectory}
+	kubeone := kubeone.Kubeone{
+		ConfigDirectory:   k.outputDirectory,
+		SpawnProcessLimit: k.SpawnProcessLimit,
+	}
 	err = kubeone.Apply(clusterID)
 	if err != nil {
 		return fmt.Errorf("error while running \"kubeone apply\" in %s : %w", k.outputDirectory, err)

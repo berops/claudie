@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"github.com/berops/claudie/services/ansibler/server/domain/usecases"
 	"os"
 	"os/signal"
 	"syscall"
@@ -19,7 +20,9 @@ func main() {
 	// Initialize logger
 	utils.InitLog("ansibler")
 
-	grpcAdapter := grpc.CreateGrpcAdapter()
+	grpcAdapter := grpc.CreateGrpcAdapter(&usecases.Usecases{
+		SpawnProcessLimit: make(chan struct{}, usecases.SpawnProcessLimit),
+	})
 
 	errGroup, errGroupContext := errgroup.WithContext(context.Background())
 	errGroup.Go(grpcAdapter.Serve)
