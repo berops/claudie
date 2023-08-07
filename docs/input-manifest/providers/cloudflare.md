@@ -50,6 +50,8 @@ apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: CloudflareExampleManifest
+  labels:
+    app.kubernetes.io/part-of: claudie
 spec:
   providers:
     - name: cloudflare-1

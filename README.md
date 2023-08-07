@@ -113,7 +113,7 @@ For adding support for other cloud providers, open an issue or propose a PR.
       --from-literal=secretkey='myAwsSecretKey'
     ```
 
-    Check the [supported providers](#supported-providers) for input manifest examples. For an input manifest spanning all supported hyperscalers checkout out [this example](https://docs.claudie.io/latest/input-manifest/example.md).
+    Check the [supported providers](#supported-providers) for input manifest examples. For an input manifest spanning all supported hyperscalers checkout out [this example](https://docs.claudie.io/latest/input-manifest/example/).
 
 2. Deploy InputManifest resource which Claudie uses to create infrastructure, include the created secret in `.spec.providers` as follows:
     ```bash
@@ -122,6 +122,8 @@ For adding support for other cloud providers, open an issue or propose a PR.
     kind: InputManifest
     metadata:
       name: examplemanifest
+      labels:
+        app.kubernetes.io/part-of: claudie
     spec:
       providers:
           - name: aws-1
@@ -184,6 +186,8 @@ Claudie outputs base64 encoded kubeconfig secret `<cluster-name>-<cluster-hash>-
     kind: InputManifest
     metadata:
       name: examplemanifest
+      labels:
+        app.kubernetes.io/part-of: claudie
     spec:
       providers:
           - name: aws-1

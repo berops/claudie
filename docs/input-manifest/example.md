@@ -3,6 +3,8 @@ apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: ExampleManifest
+  labels:
+    app.kubernetes.io/part-of: claudie
 spec:
   # Providers field is used for defining the providers. 
   # It is referencing a secret resource in Kubernetes cluster.

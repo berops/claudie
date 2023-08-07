@@ -131,6 +131,8 @@ apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: OCIExampleManifest
+  labels:
+    app.kubernetes.io/part-of: claudie
 spec:
   providers:
     - name: oci-1
@@ -217,6 +219,8 @@ apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: OCIExampleManifest
+  labels:
+    app.kubernetes.io/part-of: claudie
 spec:
   providers:
     - name: oci-1

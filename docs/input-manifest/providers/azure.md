@@ -93,6 +93,8 @@ apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: AzureExampleManifest
+  labels:
+    app.kubernetes.io/part-of: claudie
 spec:
   providers:
     - name: azure-1
@@ -173,6 +175,8 @@ apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: AzureExampleManifest
+  labels:
+    app.kubernetes.io/part-of: claudie
 spec:
   providers:
     - name: azure-1

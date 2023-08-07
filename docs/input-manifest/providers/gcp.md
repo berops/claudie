@@ -85,6 +85,8 @@ apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: GCPExampleManifest
+  labels:
+    app.kubernetes.io/part-of: claudie
 spec:
   providers:
     - name: gcp-1
@@ -167,6 +169,8 @@ apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: GCPExampleManifest
+  labels:
+    app.kubernetes.io/part-of: claudie
 spec:
   providers:
     - name: gcp-1
