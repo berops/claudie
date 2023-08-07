@@ -30,7 +30,7 @@ func (u *Usecases) InstallNodeRequirements(request *pb.InstallRequest) (*pb.Inst
 		ClusterNetwork: request.Desired.Network,
 	}
 
-	if err := installLonghornRequirements(NodepoolsInfo); err != nil {
+	if err := installLonghornRequirements(NodepoolsInfo, u.SpawnProcessLimit); err != nil {
 		logger.Err(err).Msgf("Error encountered while installing node requirements")
 		return nil, fmt.Errorf("error encountered while installing node requirements for cluster %s project %s : %w", request.Desired.ClusterInfo.Name, request.ProjectName, err)
 	}
@@ -40,7 +40,7 @@ func (u *Usecases) InstallNodeRequirements(request *pb.InstallRequest) (*pb.Inst
 }
 
 // installLonghornRequirements installs pre-requisite tools for LongHorn in all the nodes
-func installLonghornRequirements(nodepoolsInfo *NodepoolsInfo) error {
+func installLonghornRequirements(nodepoolsInfo *NodepoolsInfo, spawnProcessLimit chan struct{}) error {
 	// Directory where files (required by Ansible) will be generated.
 	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, commonUtils.CreateHash(commonUtils.HashLength))
 	if err := commonUtils.CreateDirectory(clusterDirectory); err != nil {
@@ -65,10 +65,12 @@ func installLonghornRequirements(nodepoolsInfo *NodepoolsInfo) error {
 	}
 
 	ansible := utils.Ansible{
-		Playbook:  ansiblePlaybookFilePath,
-		Inventory: utils.InventoryFileName,
-		Directory: clusterDirectory,
+		Playbook:          ansiblePlaybookFilePath,
+		Inventory:         utils.InventoryFileName,
+		Directory:         clusterDirectory,
+		SpawnProcessLimit: spawnProcessLimit,
 	}
+
 	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("Node requirements - %s", nodepoolsInfo.ClusterID)); err != nil {
 		return fmt.Errorf("error while running ansible playbook at %s to install Longhorn requirements : %w", clusterDirectory, err)
 	}

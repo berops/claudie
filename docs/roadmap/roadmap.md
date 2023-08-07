@@ -7,6 +7,6 @@
     - [x] Cloudflare
 - [ ] Periodic health checks & sync loops for the managed clusters
 - [x] Hybrid-cloud support (on-premises)
-- [ ] `arm64` support for the nodepools
+- [x] `arm64` support for the nodepools
 - [ ] Support for Spot instances
 - [x] Autoscaler

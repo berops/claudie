@@ -1,9 +1,13 @@
 package usecases
 
 import (
-	"github.com/rs/zerolog"
-
 	"github.com/berops/claudie/services/terraformer/server/domain/ports"
+	"github.com/rs/zerolog"
+)
+
+const (
+	// SpawnProcessLimit is the number of processes concurrently executing terraform.
+	SpawnProcessLimit = 5
 )
 
 type Usecases struct {
@@ -11,6 +15,10 @@ type Usecases struct {
 	DynamoDB ports.DynamoDBPort
 	// Minio connector.
 	MinIO ports.MinIOPort
+	// SpawnProcessLimit represents a synchronization channel which limits the number of spawned terraform
+	// processes. This values should always be non-nil and be buffered, where the capacity indicates
+	// the limit.
+	SpawnProcessLimit chan struct{}
 }
 
 type Cluster interface {

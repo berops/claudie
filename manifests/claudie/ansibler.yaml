@@ -46,10 +46,10 @@ spec:
           resources:
             requests:
               cpu: 700m
-              memory: 768Mi
+              memory: 500Mi
             limits:
               cpu: 1024m
-              memory: 1248Mi
+              memory: 900Mi
           env:
             - name: ANSIBLER_PORT
               valueFrom:

@@ -18,6 +18,9 @@ const (
 	// it succeeds. If after "maxTfCommandRetryCount" retries the commands still fails an error should be
 	// returned containing the reason.
 	maxTfCommandRetryCount = 5
+
+	// Parallelism is the number of resource to be work on in parallel during the apply/destroy commands.
+	Parallelism = 8
 )
 
 type Terraform struct {
@@ -26,9 +29,20 @@ type Terraform struct {
 
 	Stdout io.Writer
 	Stderr io.Writer
+
+	// Parallelism is the number of resources to be worked on in parallel by terraform.
+	Parallelism int
+
+	// SpawnProcessLimit represents a synchronization channel which limits the number of spawned terraform
+	// processes. This values must be non-nil and be buffered, where the capacity indicates
+	// the limit.
+	SpawnProcessLimit chan struct{}
 }
 
 func (t *Terraform) Init() error {
+	t.SpawnProcessLimit <- struct{}{}
+	defer func() { <-t.SpawnProcessLimit }()
+
 	cmd := exec.Command("terraform", "init")
 	cmd.Dir = t.Directory
 	cmd.Stdout = t.Stdout
@@ -53,11 +67,19 @@ func (t *Terraform) Init() error {
 }
 
 func (t *Terraform) Apply() error {
+	t.SpawnProcessLimit <- struct{}{}
+	defer func() { <-t.SpawnProcessLimit }()
+
 	output := new(bytes.Buffer)
+
+	if t.Parallelism <= 0 {
+		t.Parallelism = Parallelism
+	}
 
 	args := []string{
 		"apply",
 		"--auto-approve",
+		fmt.Sprintf("--parallelism=%v", t.Parallelism),
 	}
 
 	if log.Logger.GetLevel() != zerolog.DebugLevel {
@@ -123,11 +145,19 @@ func (t *Terraform) Apply() error {
 }
 
 func (t *Terraform) Destroy() error {
+	t.SpawnProcessLimit <- struct{}{}
+	defer func() { <-t.SpawnProcessLimit }()
+
 	output := new(bytes.Buffer)
+
+	if t.Parallelism <= 0 {
+		t.Parallelism = Parallelism
+	}
 
 	args := []string{
 		"destroy",
 		"--auto-approve",
+		fmt.Sprintf("--parallelism=%v", t.Parallelism),
 	}
 
 	if log.Logger.GetLevel() != zerolog.DebugLevel {
@@ -192,7 +222,7 @@ func (t *Terraform) Destroy() error {
 	return nil
 }
 
-func (t Terraform) Output(resourceName string) (string, error) {
+func (t *Terraform) Output(resourceName string) (string, error) {
 	cmd := exec.Command("terraform", "output", "-json", resourceName)
 	cmd.Dir = t.Directory
 	out, err := cmd.CombinedOutput()

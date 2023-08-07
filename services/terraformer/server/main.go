@@ -26,8 +26,9 @@ func main() {
 	dynamoDBAdapter := outboundAdapters.CreateDynamoDBAdapter()
 
 	usecases := &usecases.Usecases{
-		DynamoDB: dynamoDBAdapter,
-		MinIO:    minIOAdapter,
+		DynamoDB:          dynamoDBAdapter,
+		MinIO:             minIOAdapter,
+		SpawnProcessLimit: make(chan struct{}, usecases.SpawnProcessLimit),
 	}
 
 	grpcAdapter := &grpc.GrpcAdapter{}

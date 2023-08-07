@@ -44,6 +44,10 @@ type Ansible struct {
 	Inventory string
 	Flags     string
 	Directory string
+	// SpawnProcessLimit represents a synchronization channel which limits the number of spawned ansible
+	// processes. This values must be non-nil and be buffered, where the capacity indicates
+	// the limit.
+	SpawnProcessLimit chan struct{}
 }
 
 // RunAnsiblePlaybook executes ansible-playbook with the default forks of defaultAnsibleForks
@@ -51,6 +55,9 @@ type Ansible struct {
 // if command unsuccessful, the function will retry it until successful or maxAnsibleRetries reached
 // all commands are executed with ANSIBLE_HOST_KEY_CHECKING set to false
 func (a *Ansible) RunAnsiblePlaybook(prefix string) error {
+	a.SpawnProcessLimit <- struct{}{}
+	defer func() { <-a.SpawnProcessLimit }()
+
 	if err := setEnv(); err != nil {
 		return err
 	}
