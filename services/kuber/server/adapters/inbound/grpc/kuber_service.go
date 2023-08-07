@@ -13,6 +13,10 @@ type KuberGrpcService struct {
 	usecases *usecases.Usecases
 }
 
+func (k *KuberGrpcService) CiliumRolloutRestart(ctx context.Context, request *pb.CiliumRolloutRestartRequest) (*pb.CiliumRolloutRestartResponse, error) {
+	return k.usecases.CiliumRolloutRestart(request)
+}
+
 func (k *KuberGrpcService) PatchClusterInfoConfigMap(ctx context.Context, request *pb.PatchClusterInfoConfigMapRequest) (*pb.PatchClusterInfoConfigMapResponse, error) {
 	return k.usecases.PatchClusterInfoConfigMap(request)
 }

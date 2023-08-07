@@ -17,6 +17,10 @@ func (u *Usecases) reconcileK8sConfiguration(ctx *utils.BuilderContext, cboxClie
 	description := ctx.Workflow.Description
 	ctx.Workflow.Stage = pb.Workflow_KUBER
 
+	if err := u.Kuber.CiliumRolloutRestart(ctx.DesiredCluster, kuberClient); err != nil {
+		return err
+	}
+
 	// Only patch cluster-info ConfigMap if kubeconfig changed.
 	if ctx.CurrentCluster != nil && (ctx.CurrentCluster.Kubeconfig != ctx.DesiredCluster.Kubeconfig) {
 		// Set new description.

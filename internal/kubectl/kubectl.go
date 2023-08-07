@@ -185,6 +185,11 @@ func (k Kubectl) runWithOutput(command string, options ...string) ([]byte, error
 	return result, nil
 }
 
+func (k Kubectl) RolloutRestart(resource string, options ...string) error {
+	command := fmt.Sprintf("kubectl rollout restart %s %s", resource, k.getKubeconfig())
+	return k.run(command, options...)
+}
+
 // getKubeconfig function returns either the "--kubeconfig <(echo ...)" if kubeconfig is specified, or empty string of none is given
 func (k Kubectl) getKubeconfig() string {
 	if k.Kubeconfig == "" {

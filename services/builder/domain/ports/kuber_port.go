@@ -18,6 +18,7 @@ type KuberPort interface {
 	PatchClusterInfoConfigMap(builderCtx *utils.BuilderContext, kuberGrpcClient pb.KuberServiceClient) error
 	PatchNodes(builderCtx *utils.BuilderContext, kuberGrpcClient pb.KuberServiceClient) error
 	DeleteNodes(cluster *pb.K8Scluster, masterNodes, workerNodes []string, kuberGrpcClient pb.KuberServiceClient) (*pb.DeleteNodesResponse, error)
+	CiliumRolloutRestart(cluster *pb.K8Scluster, kuberGrpcClient pb.KuberServiceClient) error
 
 	PerformHealthCheck() error
 	GetClient() pb.KuberServiceClient

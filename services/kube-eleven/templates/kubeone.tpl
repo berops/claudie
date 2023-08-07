@@ -5,11 +5,18 @@ name: '{{ .ClusterName }}'
 versions:
   kubernetes: '{{ .KubernetesVersion }}'
 
+features:
+  coreDNS:
+    replicas: 2
+    deployPodDisruptionBudget: true
+
 clusterNetwork:
+  kubeProxy:
+    skipInstallation: true
   cni:
     cilium:
       enableHubble: false
-      #kubeProxyReplacement: "strict" # or disabled if you don't want kube-proxy replacement
+      kubeProxyReplacement: "strict"
 
 cloudProvider:
   none: {}
