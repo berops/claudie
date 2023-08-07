@@ -1107,7 +1107,7 @@
 <span class="w">  </span>--from-literal<span class="o">=</span><span class="nv">accesskey</span><span class="o">=</span><span class="s1">&#39;myAwsAccessKey&#39;</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--from-literal<span class="o">=</span><span class="nv">secretkey</span><span class="o">=</span><span class="s1">&#39;myAwsSecretKey&#39;</span>
 </code></pre></div>
-<p>Check the <a href="../..#supported-providers">supported providers</a> for input manifest examples. For an input manifest spanning all supported hyperscalers checkout out <a href="https://docs.claudie.io/latest/input-manifest/example.md">this example</a>.</p>
+<p>Check the <a href="../..#supported-providers">supported providers</a> for input manifest examples. For an input manifest spanning all supported hyperscalers checkout out <a href="https://docs.claudie.io/latest/input-manifest/example/">this example</a>.</p>
 </li>
 <li>
 <p>Deploy InputManifest resource which Claudie uses to create infrastructure, include the created secret in <code>.spec.providers</code> as follows:
@@ -1116,6 +1116,8 @@
 <span class="s">kind: InputManifest</span>
 <span class="s">metadata:</span>
 <span class="s">  name: examplemanifest</span>
+<span class="s">  labels:</span>
+<span class="s">    app.kubernetes.io/part-of: claudie</span>
 <span class="s">spec:</span>
 <span class="s">  providers:</span>
 <span class="s">      - name: aws-1</span>
@@ -1175,6 +1177,8 @@
 <span class="s">kind: InputManifest</span>
 <span class="s">metadata:</span>
 <span class="s">  name: examplemanifest</span>
+<span class="s">  labels:</span>
+<span class="s">    app.kubernetes.io/part-of: claudie</span>
 <span class="s">spec:</span>
 <span class="s">  providers:</span>
 <span class="s">      - name: aws-1</span>
