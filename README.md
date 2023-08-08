@@ -1,7 +1,7 @@
 <h4 align="center">
   <img src="https://raw.githubusercontent.com/berops/claudie/17480b6cb809fe795d454588af18355c7543f37e/docs/logo%20claudie_blue_no_BG.svg" width="250px"/><br/>
   <br/><br/>
-  Platform for managing multi-cloud Kubernetes clusters with each nodepool in a different cloud-provider
+  Platform for managing multi-cloud and hybrid cloud kubernetes clusters with support for nodepools in different cloud-providers or on-premise data center
 </h4>
 
 <p align="center">
@@ -37,9 +37,9 @@ Read in more details [here](https://docs.claudie.io/latest/use-cases/use-cases/)
 
 ## Features
 
-### Manage multi-cloud Kubernetes clusters
+### Manage multi-cloud or hybrid-cloud Kubernetes clusters
 
-Create fully-featured Kubernetes clusters composed of multiple different public Cloud providers in an easy and secure manner.
+Create fully-featured Kubernetes clusters composed of multiple different public Cloud providers or on-premise data center in an easy and secure manner.
 Simply insert credentials to your cloud projects, define your cluster, and watch how the infra spawns right in front of you.
 
 ![](./docs/infra-diagram.png)
