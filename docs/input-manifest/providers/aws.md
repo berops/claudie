@@ -97,6 +97,8 @@ apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: AWSExampleManifest
+  labels:
+    app.kubernetes.io/part-of: claudie
 spec:
 
   providers:
@@ -181,6 +183,8 @@ apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: AWSExampleManifest
+  labels:
+    app.kubernetes.io/part-of: claudie
 spec:
 
   providers:

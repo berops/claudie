@@ -35,6 +35,8 @@ apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: PrivateClusterExample
+  labels:
+    app.kubernetes.io/part-of: claudie
 spec:
   nodePools:
     static:
@@ -82,6 +84,8 @@ apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: HybridCloudExample
+  labels:
+    app.kubernetes.io/part-of: claudie
 spec:
   providers:
     - name: hetzner-1
