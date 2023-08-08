@@ -55,6 +55,9 @@ needs to be defined.
 
 Support for more cloud providers is in the [roadmap](https://github.com/berops/claudie/blob/master/docs/roadmap/roadmap.md).
 
+!!! note "For static nodepools a provider is not needed, refer to the [static section](#static) for more detailed information."
+
+
 ## SecretRef
   
   SecretReference represents a Kubernetes Secret Reference. It has enough information to retrieve secret in any namespace.
