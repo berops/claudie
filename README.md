@@ -39,7 +39,7 @@ Read in more details [here](https://docs.claudie.io/latest/use-cases/use-cases/)
 
 ### Manage multi-cloud and hybrid-cloud Kubernetes clusters
 
-Create fully-featured Kubernetes clusters composed of multiple different public Cloud providers or on-premise data center in an easy and secure manner.
+Create fully-featured Kubernetes clusters composed of multiple different public Cloud providers and on-premise data center in an easy and secure manner.
 Simply insert credentials to your cloud projects, define your cluster, and watch how the infra spawns right in front of you.
 
 ![](./docs/infra-diagram.png)
