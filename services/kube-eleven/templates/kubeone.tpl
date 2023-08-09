@@ -5,19 +5,22 @@ name: '{{ .ClusterName }}'
 versions:
   kubernetes: '{{ .KubernetesVersion }}'
 
+features:
+  coreDNS:
+    replicas: 2
+    deployPodDisruptionBudget: true
+
 clusterNetwork:
+  kubeProxy:
+    skipInstallation: true
   cni:
-    external: {}
+    cilium:
+      enableHubble: false
+      kubeProxyReplacement: "strict"
 
 cloudProvider:
   none: {}
   external: false
-
-addons:
-  enable: true
-  # In case when the relative path is provided, the path is relative
-  # to the KubeOne configuration file.
-  path: "../../addons"
 
 apiEndpoint:
   host: '{{ .APIEndpoint }}'

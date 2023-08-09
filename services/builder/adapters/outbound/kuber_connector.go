@@ -127,6 +127,13 @@ func (k *KuberConnector) DeleteNodes(cluster *pb.K8Scluster, masterNodes, worker
 		})
 }
 
+func (k *KuberConnector) CiliumRolloutRestart(cluster *pb.K8Scluster, kuberGrpcClient pb.KuberServiceClient) error {
+	return kuber.CiliumRolloutRestart(kuberGrpcClient,
+		&pb.CiliumRolloutRestartRequest{
+			Cluster: cluster,
+		})
+}
+
 // Disconnect closes the underlying gRPC connection to kuber microservice.
 func (k *KuberConnector) Disconnect() {
 	cutils.CloseClientConnection(k.Connection)

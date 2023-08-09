@@ -39,6 +39,14 @@ func DeleteNodes(c pb.KuberServiceClient, req *pb.DeleteNodesRequest) (*pb.Delet
 	return res, nil
 }
 
+func CiliumRolloutRestart(c pb.KuberServiceClient, req *pb.CiliumRolloutRestartRequest) error {
+	_, err := c.CiliumRolloutRestart(context.Background(), req)
+	if err != nil {
+		return fmt.Errorf("error while calling CiliumRolloutRestart on kuber: %w", err)
+	}
+	return nil
+}
+
 func RemoveLbScrapeConfig(c pb.KuberServiceClient, req *pb.RemoveLBScrapeConfigRequest) error {
 	_, err := c.RemoveLBScrapeConfig(context.Background(), req)
 	if err != nil {

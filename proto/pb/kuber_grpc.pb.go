@@ -48,6 +48,8 @@ type KuberServiceClient interface {
 	// kubeconfig. This needs to be done after an api endpoint change as the config map in the kube-public namespace
 	// is used by kubeadm when joining.
 	PatchClusterInfoConfigMap(ctx context.Context, in *PatchClusterInfoConfigMapRequest, opts ...grpc.CallOption) (*PatchClusterInfoConfigMapResponse, error)
+	// CiliumRolloutRestart performs a rollout restart of the cilium daemonset.
+	CiliumRolloutRestart(ctx context.Context, in *CiliumRolloutRestartRequest, opts ...grpc.CallOption) (*CiliumRolloutRestartResponse, error)
 }
 
 type kuberServiceClient struct {
@@ -166,6 +168,15 @@ func (c *kuberServiceClient) PatchClusterInfoConfigMap(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *kuberServiceClient) CiliumRolloutRestart(ctx context.Context, in *CiliumRolloutRestartRequest, opts ...grpc.CallOption) (*CiliumRolloutRestartResponse, error) {
+	out := new(CiliumRolloutRestartResponse)
+	err := c.cc.Invoke(ctx, "/claudie.KuberService/CiliumRolloutRestart", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // KuberServiceServer is the server API for KuberService service.
 // All implementations must embed UnimplementedKuberServiceServer
 // for forward compatibility
@@ -196,6 +207,8 @@ type KuberServiceServer interface {
 	// kubeconfig. This needs to be done after an api endpoint change as the config map in the kube-public namespace
 	// is used by kubeadm when joining.
 	PatchClusterInfoConfigMap(context.Context, *PatchClusterInfoConfigMapRequest) (*PatchClusterInfoConfigMapResponse, error)
+	// CiliumRolloutRestart performs a rollout restart of the cilium daemonset.
+	CiliumRolloutRestart(context.Context, *CiliumRolloutRestartRequest) (*CiliumRolloutRestartResponse, error)
 	mustEmbedUnimplementedKuberServiceServer()
 }
 
@@ -238,6 +251,9 @@ func (UnimplementedKuberServiceServer) DestroyClusterAutoscaler(context.Context,
 }
 func (UnimplementedKuberServiceServer) PatchClusterInfoConfigMap(context.Context, *PatchClusterInfoConfigMapRequest) (*PatchClusterInfoConfigMapResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PatchClusterInfoConfigMap not implemented")
+}
+func (UnimplementedKuberServiceServer) CiliumRolloutRestart(context.Context, *CiliumRolloutRestartRequest) (*CiliumRolloutRestartResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CiliumRolloutRestart not implemented")
 }
 func (UnimplementedKuberServiceServer) mustEmbedUnimplementedKuberServiceServer() {}
 
@@ -468,6 +484,24 @@ func _KuberService_PatchClusterInfoConfigMap_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _KuberService_CiliumRolloutRestart_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CiliumRolloutRestartRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KuberServiceServer).CiliumRolloutRestart(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/claudie.KuberService/CiliumRolloutRestart",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KuberServiceServer).CiliumRolloutRestart(ctx, req.(*CiliumRolloutRestartRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // KuberService_ServiceDesc is the grpc.ServiceDesc for KuberService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -522,6 +556,10 @@ var KuberService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PatchClusterInfoConfigMap",
 			Handler:    _KuberService_PatchClusterInfoConfigMap_Handler,
+		},
+		{
+			MethodName: "CiliumRolloutRestart",
+			Handler:    _KuberService_CiliumRolloutRestart_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
