@@ -92,9 +92,14 @@ For adding support for other cloud providers, open an issue or propose a PR.
 
 ### Install Claudie
 
-1. Deploy Claudie to the Management Cluster:
+1. Download and extract Claudie manifests from our [release page](https://github.com/berops/claudie/releases):
     ```bash
-    kubectl apply -f https://github.com/berops/claudie/releases/latest/download/claudie.yaml
+    wget https://github.com/berops/claudie/releases/latest/download/claudie.zip && unzip claudie.zip -d claudie
+    ```
+
+2. Deploy Claudie to the Management Cluster:
+    ```bash
+    kubectl apply -k claudie
     ```
 
 ### Deploy your cluster

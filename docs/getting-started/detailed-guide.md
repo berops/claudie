@@ -46,18 +46,18 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml
     ```
 
-5. Download latest Claudie release:
+5. Download latest Claudie release and unzip it:
 
     ```bash
-    wget https://github.com/berops/claudie/releases/latest/download/claudie.yaml
+    wget https://github.com/berops/claudie/releases/latest/download/claudie.zip && unzip claudie.zip -d claudie
     ```
 
     !!! note "Tip!"  
-        For the initial attempt, it's highly recommended to enable debug logs, especially when creating a large cluster with DNS. This helps identify and resolve any permission issues that may occur across different hyperscalers. Locate `ConfigMap` with `GOLANG_LOG` variable in `claudie.yaml` file, and change `GOLANG_LOG: info` to `GOLANG_LOG: debug` to enable debug logging, for more customization refer to [this table](#claudie-customization).
+        For the initial attempt, it's highly recommended to enable debug logs, especially when creating a large cluster with DNS. This helps identify and resolve any permission issues that may occur across different hyperscalers. Edit `claudie/.env` file, and change `GOLANG_LOG=info` to `GOLANG_LOG=debug` to enable debug logging, for more customization refer to [this table](#claudie-customization).
 
 6. Deploy Claudie using Kustomize plugin:
     ```bash
-    kubectl apply -f claudie.yaml
+    kubectl apply -k claudie
     ```
 
 7. Claudie will be deployed into `claudie` namespace, you can view if all pods are running:

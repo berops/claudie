@@ -73,24 +73,30 @@ jobs:
             kustomize edit set image ghcr.io/berops/claudie/$SERVICE:${RELEASE}
           done
 
-      - name: Create claudie.yaml file from manifests
+      - name: Create archives for manifests
+        working-directory: manifests/claudie
         run: |
-          kustomize build manifests/claudie > claudie.yaml
+          sudo apt update && sudo apt install -y zip tar
+          tar -czvf ../../claudie.tar.gz .
+          zip -r ../../claudie.zip .
 
-      - name: Get checksum of the claudie.yaml
+      - name: Get checksums of the archives
         run: |
-          sha256sum claudie.yaml >> claudie_checksum.txt
+          touch claudie_checksums.txt
+          sha256sum claudie.tar.gz >> claudie_checksums.txt
+          sha256sum claudie.zip >> claudie_checksums.txt
 
       - name: Add manifests to the release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
-          file: claudie.yaml
+          file: claudie.*
+          file_glob: true
 
       - name: Add checksums file to the release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
-          file: claudie_checksum.txt
+          file: claudie_checksums.txt
