@@ -4,10 +4,10 @@ metadata:
   name: test-set5
 spec:
   providers:
-    - name: hetzner-1
-      providerType: hetzner
+    - name: aws-1
+      providerType: aws
       secretRef:
-        name: hetzner-secret
+        name: aws-secret
         namespace: e2e-secrets
     - name: cloudflare-1
       providerType: cloudflare
@@ -17,34 +17,37 @@ spec:
 
   nodePools:
     dynamic:
-      - name: hetzner-control
+      - name: aws-control
         providerSpec:
-          name: hetzner-1
-          region: fsn1
-          zone: fsn1-dc14
+          name: aws-1
+          region: eu-central-1
+          zone: eu-central-1c
         count: 1
-        serverType: cpx11
-        image: ubuntu-22.04
+        serverType: t3.small
+        #ubuntu
+        image: ami-03df6dea56f8aa618
         storageDiskSize: 50
 
-      - name: hetzner-compute
+      - name: aws-compute
         providerSpec:
-          name: hetzner-1
-          region: fsn1
-          zone: fsn1-dc14
+          name: aws-1
+          region: eu-central-1
+          zone: eu-central-1c
         count: 1
-        serverType: cpx11
-        image: ubuntu-22.04
+        serverType: t3.small
+        #ubuntu
+        image: ami-0039da1f3917fa8e3
         storageDiskSize: 50
 
-      - name: hetzner-lb
+      - name: aws-lb
         providerSpec:
-          name: hetzner-1
-          region: fsn1
-          zone: fsn1-dc14
+          name: aws-1
+          region: eu-central-1
+          zone: eu-central-1c
         count: 1
-        serverType: cpx11
-        image: ubuntu-22.04
+        serverType: t3.small
+        #ubuntu
+        image: ami-0039da1f3917fa8e3
         storageDiskSize: 50
 
     static:
@@ -73,7 +76,7 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - hetzner-control
+            - aws-control
           compute:
             - static-pool-2
 
@@ -93,4 +96,4 @@ spec:
           provider: cloudflare-1
         targetedK8s: hybrid-cluster
         pools:
-          - hetzner-lb
+          - aws-lb

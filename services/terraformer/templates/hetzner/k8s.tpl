@@ -70,6 +70,9 @@ resource "hcloud_server" "{{ $node.Name }}" {
   image         = "{{ $nodepool.NodePool.Image }}"
   firewall_ids  = [hcloud_firewall.defaultfirewall.id]
   datacenter    = "{{ $nodepool.NodePool.Zone }}"
+  public_net {
+     ipv6_enabled = false
+   }
 
   ssh_keys = [
     hcloud_ssh_key.claudie.id,
