@@ -34,16 +34,16 @@ spec:
       - name: hetzner-control
         providerSpec:
           name: hetzner-1
-          region: fsn1
-          zone: fsn1-dc14
+          region: nbg1
+          zone: nbg1-dc3
         count: 1
         serverType: cpx11
         image: ubuntu-22.04
       - name: hetzner-compute
         providerSpec:
           name: hetzner-1
-          region: fsn1
-          zone: fsn1-dc14
+          region: nbg1
+          zone: nbg1-dc3
         count: 2
         serverType: cpx11
         image: ubuntu-22.04
