@@ -162,6 +162,14 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 				nodePool.StorageDiskSize = defaultDiskSize
 			}
 
+			var machineSpec *pb.MachineSpec
+			if nodePool.MachineSpec != nil {
+				machineSpec = &pb.MachineSpec{
+					CpuCount: int32(nodePool.MachineSpec.CpuCount),
+					Memory:   int32(nodePool.MachineSpec.Memory),
+				}
+			}
+
 			nodePools = append(nodePools, &pb.NodePool{
 				Name:      nodePool.Name,
 				IsControl: isControl,
@@ -177,6 +185,7 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 						Count:            count,
 						Provider:         provider,
 						AutoscalerConfig: autoscalerConf,
+						MachineSpec:      machineSpec,
 					},
 				},
 			})
