@@ -66,7 +66,7 @@ spec:
             requests:
               memory: 500Mi`
 	// Time in which Autoscaler should trigger scale up
-	scaleUpTimeout = 1
+	scaleUpTimeout = 3
 	// Time in which Autoscaler should trigger scale down
 	scaleDownTimeout = 12
 )
