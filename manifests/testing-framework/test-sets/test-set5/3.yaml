@@ -25,7 +25,7 @@ spec:
         count: 1
         serverType: t3.small
         #ubuntu
-        image: ami-03df6dea56f8aa618
+        image: ami-0039da1f3917fa8e3
         storageDiskSize: 50
 
       - name: aws-compute
