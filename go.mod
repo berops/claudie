@@ -31,7 +31,7 @@ require (
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.27.3
-	k8s.io/apimachinery v0.27.3
+	k8s.io/apimachinery v0.27.4
 	k8s.io/autoscaler/cluster-autoscaler v0.0.0-20230523093230-982c82176cde
 	sigs.k8s.io/controller-runtime v0.15.0
 )
