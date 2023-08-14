@@ -91,10 +91,8 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - oci
             - aws
           compute:
-            - oci
             - aws
       - name: ts3-c-2
         version: v1.24.0

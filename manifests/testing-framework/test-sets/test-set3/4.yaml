@@ -9,11 +9,6 @@ spec:
       secretRef:
         name: gcp-secret
         namespace: e2e-secrets
-    - name: oci-1
-      providerType: oci
-      secretRef:
-        name: oci-secret
-        namespace: e2e-secrets
     - name: aws-1
       providerType: aws
       secretRef:
@@ -26,18 +21,6 @@ spec:
         namespace: e2e-secrets  
   nodePools:
     dynamic:
-      - name: oci
-        providerSpec:
-          name: oci-1
-          region: eu-frankfurt-1
-          zone: hsVQ:EU-FRANKFURT-1-AD-3
-        count: 1
-        serverType: VM.Standard2.1
-        # ubuntu minimal
-        # https://docs.oracle.com/en-us/iaas/images/image/674d0b41-aee8-4c0b-bf99-9e100d90f241/
-        image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
-        storageDiskSize: 50
-
       - name: aws
         providerSpec:
           name: aws-1
@@ -67,10 +50,8 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - oci
             - aws
           compute:
-            - oci
             - aws
   loadBalancers:
     roles:
