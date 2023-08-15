@@ -138,7 +138,7 @@ spec:
         serverType: t3.medium
         # AMI ID of the image.
         # Make sure to update it according to the region. 
-        image: ami-0965bd5ba4d59211c
+        image: ami-0618becf24e8d2b5f
         storageDiskSize: 50
 
       - name: compute-2-aws
@@ -146,9 +146,9 @@ spec:
           # Name of the provider instance.
           name: aws-1
           # Region of the nodepool.
-          region: eu-central-3
+          region: eu-central-3 # this is just an example, it does not really exists!
           # Availability zone of the nodepool.
-          zone: eu-central-3a
+          zone: eu-central-3a 
         count: 2
         # Instance type name.
         serverType: t3.medium
@@ -243,7 +243,7 @@ spec:
         serverType: t3.medium
         # AMI ID of the image.
         # Make sure to update it according to the region. 
-        image: ami-0965bd5ba4d59211c
+        image: ami-0618becf24e8d2b5f
         storageDiskSize: 50
 
       - name: compute-aws-2
