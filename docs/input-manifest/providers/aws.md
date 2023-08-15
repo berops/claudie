@@ -146,7 +146,7 @@ spec:
           # Name of the provider instance.
           name: aws-1
           # Region of the nodepool.
-          region: eu-central-3 # this is just an example, it does not really exists!
+          region: eu-central-2
           # Availability zone of the nodepool.
           zone: eu-central-3a 
         count: 2
