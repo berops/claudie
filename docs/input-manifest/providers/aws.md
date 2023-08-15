@@ -18,7 +18,7 @@ type: Opaque
 
 1. Install AWS CLI tools by following [this guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
 2. Setup AWS CLI on your machine by following [this guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html).
-3. Ensure that the necessary regions are present in your AWS account. You can check the available regions using this guide [here](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions). If some regions are missing, you may encounter an error suggesting your STS token is invalid.
+3. Ensure that the regions you're planning to use are enabled in your AWS account. You can check the available regions using [this guide](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions), and you can enable them using [this guide](https://docs.aws.amazon.com/accounts/latest/reference/manage-acct-regions.html). Otherwise, you may encounter a misleading error suggesting your STS token is invalid.
 
 ### Creating AWS credentials for Claudie
 
