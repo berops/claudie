@@ -139,11 +139,11 @@ For adding support for other cloud providers, open an issue or propose a PR.
           - name: compute-1-aws
               providerSpec:
                 name: aws-1
-                region: eu-central-2
-                zone: eu-central-2a
+                region: eu-west-3
+                zone: eu-west-3a
               count: 2
               serverType: t3.medium
-              image: ami-0e4d1886bf4bb88d5
+              image: ami-029c608efaef0b395
               storageDiskSize: 50
       kubernetes:
           clusters:
