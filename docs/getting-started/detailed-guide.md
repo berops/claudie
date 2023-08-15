@@ -143,7 +143,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
                 zone: eu-central-2a
             count: 2
             serverType: t3.small
-            image: ami-0618becf24e8d2b5f
+            image: ami-0e4d1886bf4bb88d5
       kubernetes:
         clusters:
           - name: my-super-cluster

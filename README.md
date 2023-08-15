@@ -143,7 +143,7 @@ For adding support for other cloud providers, open an issue or propose a PR.
                 zone: eu-central-2a
               count: 2
               serverType: t3.medium
-              image: ami-0618becf24e8d2b5f
+              image: ami-0e4d1886bf4bb88d5
               storageDiskSize: 50
       kubernetes:
           clusters:
@@ -207,7 +207,7 @@ Claudie outputs base64 encoded kubeconfig secret `<cluster-name>-<cluster-hash>-
                 zone: eu-central-2a
               count: 2
               serverType: t3.medium
-              image: ami-0618becf24e8d2b5f
+              image: ami-0e4d1886bf4bb88d5
               storageDiskSize: 50
       kubernetes:
         clusters:

@@ -138,7 +138,7 @@ spec:
         serverType: t3.medium
         # AMI ID of the image.
         # Make sure to update it according to the region. 
-        image: ami-0618becf24e8d2b5f
+        image: ami-0e4d1886bf4bb88d5
         storageDiskSize: 50
 
       - name: compute-2-aws
@@ -243,7 +243,7 @@ spec:
         serverType: t3.medium
         # AMI ID of the image.
         # Make sure to update it according to the region. 
-        image: ami-0618becf24e8d2b5f
+        image: ami-0e4d1886bf4bb88d5
         storageDiskSize: 50
 
       - name: compute-aws-2
