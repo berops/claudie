@@ -46,3 +46,9 @@ To deploy Claudie `v0.5.X`, please:
 ### Known issues
 
 - No known issues since the last release
+
+## v0.5.1
+
+### Bug fixes
+
+- Fix issue when node deletion from the cluster wouldn't be idempotent [#1008](https://github.com/berops/claudie/pull/1008)
