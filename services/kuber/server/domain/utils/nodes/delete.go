@@ -87,7 +87,11 @@ func (d *Deleter) DeleteNodes() (*pb.K8Scluster, error) {
 
 	// Cordon worker nodes to prevent any new pods/volume replicas being scheduled there
 	if err := utils.ConcurrentExec(d.workerNodes, func(_ int, worker string) error {
-		return kubectl.KubectlCordon(worker)
+		if realNodeName := utils.FindName(realNodeNames, worker); realNodeName != "" {
+			return kubectl.KubectlCordon(worker)
+		}
+		d.logger.Warn().Msgf("Node name %s not found in cluster.", worker)
+		return nil
 	}); err != nil {
 		return nil, fmt.Errorf("error while cordoning worker nodes from cluster %s which were marked for deletion : %w", d.clusterPrefix, err)
 	}
