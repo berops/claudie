@@ -148,7 +148,7 @@ spec:
           # Region of the nodepool.
           region: eu-central-2
           # Availability zone of the nodepool.
-          zone: eu-central-3a 
+          zone: eu-central-2a
         count: 2
         # Instance type name.
         serverType: t3.medium
