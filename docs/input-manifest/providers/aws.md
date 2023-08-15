@@ -18,6 +18,7 @@ type: Opaque
 
 1. Install AWS CLI tools by following [this guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
 2. Setup AWS CLI on your machine by following [this guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html).
+3. Ensure that the regions you're planning to use are enabled in your AWS account. You can check the available regions using [this guide](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions), and you can enable them using [this guide](https://docs.aws.amazon.com/accounts/latest/reference/manage-acct-regions.html). Otherwise, you may encounter a misleading error suggesting your STS token is invalid.
 
 ### Creating AWS credentials for Claudie
 
@@ -138,7 +139,7 @@ spec:
         serverType: t3.medium
         # AMI ID of the image.
         # Make sure to update it according to the region. 
-        image: ami-0965bd5ba4d59211c
+        image: ami-0e4d1886bf4bb88d5
         storageDiskSize: 50
 
       - name: compute-2-aws
@@ -146,9 +147,9 @@ spec:
           # Name of the provider instance.
           name: aws-1
           # Region of the nodepool.
-          region: eu-central-3
+          region: eu-central-2
           # Availability zone of the nodepool.
-          zone: eu-central-3a
+          zone: eu-central-2a
         count: 2
         # Instance type name.
         serverType: t3.medium
@@ -243,7 +244,7 @@ spec:
         serverType: t3.medium
         # AMI ID of the image.
         # Make sure to update it according to the region. 
-        image: ami-0965bd5ba4d59211c
+        image: ami-0e4d1886bf4bb88d5
         storageDiskSize: 50
 
       - name: compute-aws-2
