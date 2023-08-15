@@ -108,8 +108,9 @@ func Diff(current, desired *pb.K8Scluster, currentLbs, desiredLbs []*pb.LBcluste
 
 	// check if we're adding nodes and Api-server.
 	addingLbApiEndpoint := current != nil && (!utils.FindLbAPIEndpoint(currentLbs) && utils.FindLbAPIEndpoint(desiredLbs))
+	deletingLbApiEndpoint := current != nil && (utils.FindLbAPIEndpoint(currentLbs) && !utils.FindLbAPIEndpoint(desiredLbs))
 
-	if adding && deleting || (adding && addingLbApiEndpoint) {
+	if adding && deleting || (adding && addingLbApiEndpoint) || (adding && deletingLbApiEndpoint) {
 		result.IR = ir
 	}
 

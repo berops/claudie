@@ -14,7 +14,7 @@ import (
 
 const (
 	// default TTL for an element to be in the builder queue
-	defaultBuilderTTL = 360
+	defaultBuilderTTL = 450
 
 	// default TTL for an element to be in the scheduler queue
 	defaultSchedulerTTL = 5

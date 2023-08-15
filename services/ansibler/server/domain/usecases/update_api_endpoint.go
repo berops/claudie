@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/rs/zerolog/log"
 
@@ -33,17 +34,14 @@ func (u *Usecases) UpdateAPIEndpoint(request *pb.UpdateAPIEndpointRequest) (*pb.
 func updateAPIEndpoint(currentK8sClusterInfo, desiredK8sClusterInfo *pb.ClusterInfo, spawnProcessLimit chan struct{}) error {
 	clusterID := commonUtils.GetClusterID(currentK8sClusterInfo)
 
-	// Find the ApiEndpoint node from the current state of the K8s cluster.
 	apiEndpointNodePool, apiEndpointNode, err := commonUtils.FindNodepoolWithApiEndpointNode(currentK8sClusterInfo.GetNodePools())
 	if err != nil {
 		return fmt.Errorf("failed to find the node with type: %s", pb.NodeType_apiEndpoint.String())
 	}
-	// Check whether that node still exists in the desired state of the cluster or not.
-	apiEndpointNodeExists := commonUtils.Contains(apiEndpointNodePool, desiredK8sClusterInfo.GetNodePools(),
-		func(item *pb.NodePool, other *pb.NodePool) bool {
-			return item.GetName() == other.GetName()
-		},
-	)
+
+	apiEndpointNodeExists := slices.ContainsFunc(desiredK8sClusterInfo.GetNodePools(), func(pool *pb.NodePool) bool {
+		return pool.GetName() == apiEndpointNodePool.GetName()
+	})
 
 	if apiEndpointNodeExists {
 		return nil
