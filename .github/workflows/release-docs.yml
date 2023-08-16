@@ -85,7 +85,7 @@ jobs:
           
               echo "Altered mkdocs.yml with new Changelog navigation entry was commited and pushed to origin"
 
-              gh pr create --title "Add reference to new Changelog" --body "Add reference to new Changelog file in mkdocs.yml"
+              gh pr create --title "Add reference to new Changelog ${RELEASE}" --body "Add reference to new Changelog file in mkdocs.yml"
           else
               echo "There isn't a new changelog file"
           fi
