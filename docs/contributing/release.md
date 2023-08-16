@@ -26,5 +26,5 @@ A [release-docs pipeline](https://github.com/berops/claudie/blob/master/.github/
 2. In case there is a new Changelog file:
     1. Checkout to a new feature branch
     2. Add reference to that new Changelog file in [mkdocs.yml](https://github.com/berops/claudie/blob/master/mkdocs.yml)
-    3. Create PR to merges changes from new feature branch to master (PR need to be created due to `master` branch protection)
+    3. Create a PR to merge changes from new feature branch to master (PR needs to be created due to `master` branch protection)
 3. Deploy new version of docs on [docs.claudie.io](https://docs.claudie.io)
