@@ -9,6 +9,7 @@ permissions:
   contents: write
   pages: write
   id-token: write
+  pull-requests: write
 
 # Allow one concurrent deployment
 concurrency:
@@ -36,7 +37,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Add new changelog file to mkdocs.yml navigation under Changelog section
+      - name: Handle Changelog file
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           filename="mkdocs.yml"
           start_line=$(sed -n '/- Changelog:/=' "$filename")
@@ -72,14 +75,16 @@ jobs:
 
               git fetch
 
-              git checkout master
+              git checkout -b feat/add-reference-to-new-changelog-${RELEASE}
 
               # commit and push
               git commit -am "add new changelog file to mkdocs.yml"
           
-              git push origin
+              git push --set-upstream origin feat/add-reference-to-new-changelog-${RELEASE}
           
               echo "Altered mkdocs.yml with new Changelog navigation entry was commited and pushed to origin"
+
+              gh pr create --title "Add reference to new Changelog" --body "Add reference to new Changelog file in mkdocs.yml"
           else
               echo "There isn't a new changelog file"
           fi
