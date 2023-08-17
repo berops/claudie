@@ -10,7 +10,6 @@ resources:
 - ansibler.yaml
 - kube-eleven.yaml
 - kuber.yaml
-- network-policy.yaml
 - cluster-rbac
 - mongo
 - minio
