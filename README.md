@@ -97,7 +97,7 @@ For adding support for other cloud providers, open an issue or propose a PR.
     kubectl apply -f https://github.com/berops/claudie/releases/latest/download/claudie.yaml
     ```
 
-   You can deploy our predefined network policies to further harden claudie:
+   To further harden claudie, you may want to deploy our pre-defined network policies:
    ```bash
    # for clusters using cilium as their CNI
    kubectl apply -f https://github.com/berops/claudie/releases/latest/download/network-policy-cilium.yaml
@@ -115,7 +115,7 @@ For adding support for other cloud providers, open an issue or propose a PR.
       --namespace=mynamespace \
       --from-literal=accesskey='myAwsAccessKey' \
       --from-literal=secretkey='myAwsSecretKey'
-    ```[claudie.yml](..%2F..%2F..%2F..%2F..%2FDesktop%2Fclaudie.yml)
+    ```
 
     Check the [supported providers](#supported-providers) for input manifest examples. For an input manifest spanning all supported hyperscalers checkout out [this example](https://docs.claudie.io/latest/input-manifest/example/).
 
