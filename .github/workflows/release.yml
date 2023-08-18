@@ -2,7 +2,7 @@ name: Release pipeline
 on:
   # Run when release is published
   release:
-    types: [published]
+    types: [ published ]
 
 env:
   SERVICES: context-box scheduler builder terraformer ansibler kube-eleven kuber claudie-operator
@@ -77,18 +77,39 @@ jobs:
         run: |
           kustomize build manifests/claudie > claudie.yaml
 
-      - name: Get checksum of the claudie.yaml
+      - name: Add claudie.yaml checksum
         run: |
           sha256sum claudie.yaml >> claudie_checksum.txt
 
-      - name: Add manifests to the release
+      - name: Add network policies checksum
+        run: |
+          sha256sum manifests/network-policies/network-policy.yaml >> claudie_checksum.txt
+          sha256sum manifests/network-policies/network-policy-cilium.yaml >> claudie_checksum.txt
+
+      - name: Add claudie manifest to the release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
           file: claudie.yaml
 
-      - name: Add checksums file to the release
+      - name: Add network-policy manifest to the release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }}
+          file: manifests/network-policies/network-policy.yaml
+          asset_name: network-policy.yaml
+
+      - name: Add cilium-network-policy manifest to the release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }}
+          file: manifests/network-policies/network-policy-cilium.yaml
+          asset_name: network-policy-cilium.yaml
+
+      - name: Add claudie checksums file to the release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}

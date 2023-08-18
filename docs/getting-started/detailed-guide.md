@@ -60,6 +60,18 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     kubectl apply -f claudie.yaml
     ```
 
+    !!! warning "Claudie Hardening"
+        By default network policies are not included in claudie.yaml, instead they're provided as standalone to be deployed separately as the Management cluster
+        to where Claudie is deployed may use different CNI plugin.
+        You can deploy our predefined network policies to further harden claudie:
+        ```bash
+        # for clusters using cilium as their CNI
+        kubectl apply -f https://github.com/berops/claudie/releases/latest/download/network-policy-cilium.yaml
+        ```
+        ```bash
+        # other
+        kubectl apply -f https://github.com/berops/claudie/releases/latest/download/network-policy.yaml
+        ```
 7. Claudie will be deployed into `claudie` namespace, you can view if all pods are running:
 
     ```bash
