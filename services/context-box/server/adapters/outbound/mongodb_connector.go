@@ -37,6 +37,7 @@ type Workflow struct {
 	Status      string `bson:"status"`
 	Stage       string `bson:"stage"`
 	Description string `bson:"description"`
+	Timestamp   string `bson:"timestamp"`
 }
 
 type configItem struct {
