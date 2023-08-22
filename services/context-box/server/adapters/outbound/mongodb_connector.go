@@ -132,6 +132,7 @@ func ConvertFromGRPCWorkflow(w map[string]*pb.Workflow) map[string]Workflow {
 			Status:      val.Status.String(),
 			Stage:       val.Stage.String(),
 			Description: val.Description,
+			Timestamp:   time.Now().Format(time.RFC3339),
 		}
 	}
 	return state
