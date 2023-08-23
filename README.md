@@ -97,6 +97,15 @@ For adding support for other cloud providers, open an issue or propose a PR.
     kubectl apply -f https://github.com/berops/claudie/releases/latest/download/claudie.yaml
     ```
 
+   To further harden claudie, you may want to deploy our pre-defined network policies:
+   ```bash
+   # for clusters using cilium as their CNI
+   kubectl apply -f https://github.com/berops/claudie/releases/latest/download/network-policy-cilium.yaml
+   ```
+   ```bash
+   # other
+   kubectl apply -f https://github.com/berops/claudie/releases/latest/download/network-policy.yaml
+   ```
 ### Deploy your cluster
 
 1. Create Kubernetes Secret resource for your provider configuration.
