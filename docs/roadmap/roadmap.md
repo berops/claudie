@@ -12,5 +12,4 @@
 - [ ] Support for Spot & preemtible instances
 - [ ] App-level metrics
 - [x] Autoscaler
-- [ ] Roadwarrior/Edge mode (on-prem node behind a NAT)
 - [ ] CLI read-only interface
