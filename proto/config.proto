@@ -177,7 +177,7 @@ message NodePool {
   // Flag to differentiate between control and compute nodes.
   bool isControl = 5;
   // User defined labels.
-  map<string,string> labels = 6;
+  map<string, string> labels = 6;
   // User defined taints.
   repeated Taint taints = 7;
 }
@@ -190,6 +190,12 @@ message Taint {
   string value = 2;
   // Taint effect.
   string effect = 3;
+}
+
+// MachineSpec further specifies the requested server type.
+message MachineSpec {
+  int32 cpuCount = 1;
+  int32 memory = 2;
 }
 
 // DynamicNodePool represents dynamic node pool used in cluster.
@@ -212,6 +218,8 @@ message DynamicNodePool {
   map<string, MetaValue> metadata = 8;
   // Autoscaler configuration. (optional)
   AutoscalerConf autoscalerConfig = 9;
+  // MachineSpec configuration. (optional)
+  MachineSpec machineSpec = 10;
 }
 
 // StaticNodePool represents static node pool used in cluster.
@@ -292,7 +300,7 @@ message Provider {
   // OCID of the compartment. [OCI provider]
   string ociCompartmentOcid = 8;
   // AWS access key to the secret key saved in the Credentials [AWS provider]
-  string awsAccessKey = 9; 
+  string awsAccessKey = 9;
   // Azure ID of the subscription. [Azure provider]
   string azureSubscriptionId = 10;
   // Azure ID of the Tenant. [Azure provider]

@@ -211,7 +211,7 @@ The secret for an OCI provider must include the following mandatory fields: `com
 # Refer to values exported in "Creating OCI credentials for Claudie" section
 kubectl create secret generic oci-secret-1 --namespace=mynamespace --from-literal=compartmentocid=$compartment_ocid --from-literal=userocid=$user_ocid --from-literal=tenancyocid=$tenancy_ocid --from-literal=keyfingerprint=$fingerprint --from-file=privatekey=./claudie-user_public.pem
 
-kubectl create secret generic oci-secret-1 --namespace=mynamespace --from-literal=compartmentocid=$compartment_ocid2 --from-literal=userocid=$user_ocid2 --from-literal=tenancyocid=$tenancy_ocid2 --from-literal=keyfingerprint=$fingerprint2 --from-file=privatekey=./claudie-user_public2.pem
+kubectl create secret generic oci-secret-2 --namespace=mynamespace --from-literal=compartmentocid=$compartment_ocid2 --from-literal=userocid=$user_ocid2 --from-literal=tenancyocid=$tenancy_ocid2 --from-literal=keyfingerprint=$fingerprint2 --from-file=privatekey=./claudie-user_public2.pem
 ```
 
 ```yaml
@@ -310,4 +310,64 @@ spec:
           compute:
             - compute-oci-1
             - compute-oci-2
+```
+
+###  Flex instances example
+#### Create a secret for OCI provider
+The secret for an OCI provider must include the following mandatory fields: `compartmentocid`, `userocid`, `tenancyocid`, `keyfingerprint` and `privatekey`.
+
+```bash
+# Refer to values exported in "Creating OCI credentials for Claudie" section
+kubectl create secret generic oci-secret-1 --namespace=mynamespace --from-literal=compartmentocid=$compartment_ocid --from-literal=userocid=$user_ocid --from-literal=tenancyocid=$tenancy_ocid --from-literal=keyfingerprint=$fingerprint --from-file=privatekey=./claudie-user_public.pem
+```
+
+```yaml
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: OCIExampleManifest
+  labels:
+    app.kubernetes.io/part-of: claudie
+spec:
+  providers:
+    - name: oci-1
+      providerType: oci
+      secretRef:
+        name: oci-secret-1
+        namespace: mynamespace
+
+  nodePools:
+    dynamic:
+      - name: oci
+        providerSpec:
+          # Name of the provider instance.
+          name: oci-1
+          # Region of the nodepool.
+          region: eu-frankfurt-1
+          # Availability domain of the nodepool.
+          zone: hsVQ:EU-FRANKFURT-1-AD-1
+        count: 2
+        # VM shape name.
+        serverType: VM.Standard.E4.Flex
+        # further describes the selected server type.
+        machineSpec:
+          # use 2 ocpus.
+          cpuCount: 2
+          # use 8 gb of memory.
+          memory: 8
+        # OCID of the image.
+        # Make sure to update it according to the region.
+        image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
+        storageDiskSize: 50
+
+  kubernetes:
+    clusters:
+      - name: oci-cluster
+        version: v1.24.0
+        network: 192.168.2.0/24
+        pools:
+          control:
+            - oci
+          compute:
+            - oci
 ```

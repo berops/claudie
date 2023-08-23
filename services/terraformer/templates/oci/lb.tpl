@@ -129,6 +129,13 @@ resource "oci_core_instance" "{{ $node.Name }}" {
   shape               = "{{ $nodepool.NodePool.ServerType }}"
   display_name        = "{{ $node.Name }}"
 
+  {{if $nodepool.NodePool.MachineSpec}}
+  shape_config {
+      memory_in_gbs = {{ $nodepool.NodePool.MachineSpec.Memory }}
+      ocpus = {{ $nodepool.NodePool.MachineSpec.CpuCount }}
+  }
+  {{end}}
+
   metadata = {
       ssh_authorized_keys = file("./public.pem")
       user_data = base64encode(<<EOF
