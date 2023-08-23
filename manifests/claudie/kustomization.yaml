@@ -10,7 +10,6 @@ resources:
 - ansibler.yaml
 - kube-eleven.yaml
 - kuber.yaml
-- network-policy.yaml
 - cluster-rbac
 - mongo
 - minio
@@ -69,7 +68,7 @@ images:
 - name: ghcr.io/berops/claudie/context-box
   newTag: 1138d43-2306
 - name: ghcr.io/berops/claudie/kube-eleven
-  newTag: 1138d43-2306
+  newTag: 73439e3-2332
 - name: ghcr.io/berops/claudie/kuber
   newTag: 95cd8d1-2314
 - name: ghcr.io/berops/claudie/scheduler

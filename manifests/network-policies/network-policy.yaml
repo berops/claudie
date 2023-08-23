@@ -1,0 +1,57 @@
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: deny-from-other-namespaces
+  namespace: claudie
+  labels:
+    app.kubernetes.io/part-of: claudie
+spec:
+  podSelector:
+    matchLabels:
+  ingress:
+    - from:
+        - podSelector: { }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: claudie-webhook
+  namespace: claudie
+  labels:
+    app.kubernetes.io/part-of: claudie
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: claudie-operator
+      app.kubernetes.io/part-of: claudie
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    - to:
+        - namespaceSelector: { }
+      ports:
+        - port: 443
+          protocol: TCP
+        - port: 6443
+          protocol: TCP
+    - to:
+        - namespaceSelector: { }
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: context-box
+              app.kubernetes.io/part-of: claudie
+      ports:
+        - port: 50055

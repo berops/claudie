@@ -1,0 +1,58 @@
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: deny-from-other-namespaces
+  namespace: claudie
+  labels:
+    app.kubernetes.io/part-of: claudie
+spec:
+  podSelector:
+    matchLabels:
+  ingress:
+    - from:
+        - podSelector: { }
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: claudie-webhook
+  namespace: claudie
+  labels:
+    app.kubernetes.io/part-of: claudie
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: claudie-operator
+      app.kubernetes.io/part-of: claudie
+  ingress:
+    - fromEntities:
+        - world
+        - cluster
+  egress:
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+    - toEntities:
+        - cluster
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+        - ports:
+            - port: "6443"
+              protocol: TCP
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: context-box
+            app.kubernetes.io/part-of: claudie
+          matchExpressions:
+            - key: io.kubernetes.pod.namespace
+              operator: Exists
+      toPorts:
+        - ports:
+            - port: "50055"

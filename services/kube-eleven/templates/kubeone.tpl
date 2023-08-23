@@ -15,7 +15,7 @@ clusterNetwork:
     skipInstallation: true
   cni:
     cilium:
-      enableHubble: false
+      enableHubble: true
       kubeProxyReplacement: "strict"
 
 cloudProvider:
