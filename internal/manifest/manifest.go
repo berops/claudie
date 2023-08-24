@@ -101,6 +101,13 @@ type Kubernetes struct {
 	Clusters []Cluster `yaml:"clusters" json:"clusters"`
 }
 
+// MachineSpec specifies further the configuration of the requested server type in DynamicNodePool.
+type MachineSpec struct {
+	// CpuCount specifies the number of CPU cores to be used.
+	CpuCount int `validate:"required,gte=1" yaml:"cpuCount" json:"cpuCount"`
+	Memory   int `validate:"required,gte=1" yaml:"memory" json:"memory"`
+}
+
 // DynamicNodePool List of dynamically to-be-created nodepools of not yet existing machines, used for Kubernetes or loadbalancer clusters.
 // These are only blueprints, and will only be created per reference in kubernetes or loadBalancer clusters.
 //
@@ -132,6 +139,8 @@ type DynamicNodePool struct {
 	// User defined taints for this nodepool.
 	// +optional
 	Taints []k8sV1.Taint `validate:"omitempty" yaml:"taints" json:"taints"`
+	// MachineSpec further describe the properties of the selected server type.
+	MachineSpec *MachineSpec `validate:"omitempty" yaml:"machineSpec,omitempty" json:"machineSpec,omitempty"`
 }
 
 // Autoscaler configuration on per nodepool basis. Defines the number of nodes, autoscaler will scale up or down specific nodepool.
