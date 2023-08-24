@@ -17,6 +17,13 @@ resource "oci_core_instance" "{{ $node.Name }}" {
   shape               = "{{ $nodepool.NodePool.ServerType }}"
   display_name        = "{{ $node.Name }}"
 
+{{if $nodepool.NodePool.MachineSpec}}
+   shape_config {
+       memory_in_gbs = {{ $nodepool.NodePool.MachineSpec.Memory }}
+       ocpus = {{ $nodepool.NodePool.MachineSpec.CpuCount }}
+   }
+{{end}}
+
   create_vnic_details {
     assign_public_ip  = true
     subnet_id         = oci_core_subnet.{{ $nodepool.Name }}_subnet.id
