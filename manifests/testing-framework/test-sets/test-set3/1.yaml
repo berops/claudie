@@ -37,7 +37,7 @@ spec:
           region: eu-frankfurt-1
           zone: hsVQ:EU-FRANKFURT-1-AD-3
         count: 1
-        serverType: VM.Standard2.1
+        serverType: VM.Standard.E4.Flex
         machineSpec:
           # use 2 ocpus.
           cpuCount: 2
