@@ -410,17 +410,6 @@ func readIPs(data string) (outputNodepools, error) {
 	return result, err
 }
 
-// getTplFile returns type of the template file.
-func getTplFile(clusterType pb.ClusterType) string {
-	switch clusterType {
-	case pb.ClusterType_K8s:
-		return "k8s.tpl"
-	case pb.ClusterType_LB:
-		return "lb.tpl"
-	}
-	return ""
-}
-
 // getUniqueNodeName returns new node name, which is guaranteed to be unique, based on the provided existing names.
 func getUniqueNodeName(nodepoolID string, existingNames map[string]struct{}) string {
 	index := 1
