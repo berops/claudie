@@ -37,6 +37,7 @@ type Workflow struct {
 	Status      string `bson:"status"`
 	Stage       string `bson:"stage"`
 	Description string `bson:"description"`
+	Timestamp   string `bson:"timestamp"`
 }
 
 type configItem struct {
@@ -131,6 +132,7 @@ func ConvertFromGRPCWorkflow(w map[string]*pb.Workflow) map[string]Workflow {
 			Status:      val.Status.String(),
 			Stage:       val.Stage.String(),
 			Description: val.Description,
+			Timestamp:   time.Now().Format(time.RFC3339),
 		}
 	}
 	return state
@@ -351,6 +353,7 @@ func (m *MongoDBConnector) UpdateWorkflowState(configName, clusterName string, w
 			Status:      workflow.Status.String(),
 			Stage:       workflow.Stage.String(),
 			Description: workflow.Description,
+			Timestamp:   time.Now().Format(time.RFC3339),
 		},
 	}})
 }
