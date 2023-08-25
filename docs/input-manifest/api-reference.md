@@ -206,6 +206,13 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
   
   Currently, only AMD64 machines are supported.
 
+- `machineSpec`
+
+  Further describes the selected server type, if available by the cloud provider.
+  
+  - `cpuCount`: specifies the number of cpu to be used by the `serverType`
+  - `memory`: specifies the memory in GB to be used by the `serverType`
+
 - `image`
 
   OS image of the machine.

@@ -10,7 +10,6 @@ resources:
 - ansibler.yaml
 - kube-eleven.yaml
 - kuber.yaml
-- network-policy.yaml
 - cluster-rbac
 - mongo
 - minio
@@ -59,20 +58,20 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
 - name: ghcr.io/berops/claudie/ansibler
-  newTag: 1138d43-2306
+  newTag: b5fec8a-2335
 - name: ghcr.io/berops/claudie/autoscaler-adapter
   newTag: 688726a-1932
 - name: ghcr.io/berops/claudie/builder
-  newTag: 1138d43-2306
+  newTag: b5fec8a-2335
 - name: ghcr.io/berops/claudie/claudie-operator
-  newTag: 1138d43-2306
+  newTag: b5fec8a-2335
 - name: ghcr.io/berops/claudie/context-box
-  newTag: bb9e47b-2334
+  newTag: b5fec8a-2335
 - name: ghcr.io/berops/claudie/kube-eleven
-  newTag: 1138d43-2306
+  newTag: b5fec8a-2335
 - name: ghcr.io/berops/claudie/kuber
-  newTag: 95cd8d1-2314
+  newTag: b5fec8a-2335
 - name: ghcr.io/berops/claudie/scheduler
-  newTag: 1138d43-2306
+  newTag: b5fec8a-2335
 - name: ghcr.io/berops/claudie/terraformer
-  newTag: 1138d43-2306
+  newTag: 9d293bd-2341

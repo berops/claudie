@@ -5,6 +5,6 @@ provider "oci" {
   fingerprint       = "{{ (index $.NodePools 0).NodePool.Provider.OciFingerprint }}"
   private_key_path  = "{{ (index $.NodePools 0).NodePool.Provider.SpecName }}"
   region            = "{{ $region }}"
-  alias             = "lb_nodepool_{{ $region }}"
+  alias             = "nodepool_{{ $region }}"
 }
 {{- end }}
