@@ -353,7 +353,7 @@ func (m *MongoDBConnector) UpdateWorkflowState(configName, clusterName string, w
 			Status:      workflow.Status.String(),
 			Stage:       workflow.Stage.String(),
 			Description: workflow.Description,
-			Timestamp:	 time.Now().Format(time.RFC3339),
+			Timestamp:   time.Now().Format(time.RFC3339),
 		},
 	}})
 }
