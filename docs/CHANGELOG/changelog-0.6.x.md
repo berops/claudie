@@ -1,10 +1,10 @@
-# Claudie `v0.5`
+# Claudie `v0.6`
 
-!!! warning "Due to a breaking change in swapping the CNI used in the Kubernetes cluster, the `v0.5.x` will not be backwards compatible with `v0.4.x`"
+!!! warning "Due to a breaking change in the terraform files the `v0.6.x` will not be backwards compatible with `v0.5.x`"
 
 ## Deployment
 
-To deploy Claudie `v0.5.X`, please:
+To deploy Claudie `v0.6.X`, please:
 
 1. Download the archive and checksums from the [release page](https://github.com/berops/claudie/releases)
 
