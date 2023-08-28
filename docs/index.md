@@ -41,3 +41,12 @@ By checking out this section, you'll get a better sense of what's involved in co
 ## Changelog
 
 The "changelog" section is where you can find information about all the changes, updates, and issues related to each version of Claudie. 
+
+## Creating Claudie Backup
+
+This section describes steps to back up claudie and its dependencies.
+
+## Claudie Hardening
+
+This section describes how to further configure the default claudie deployment.
+It is highly recommended that you read this section.

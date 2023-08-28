@@ -82,6 +82,7 @@ nav:
     - Claudie v0.5: CHANGELOG/changelog-0.5.x.md
   - Troubleshooting: troubleshooting/troubleshooting.md
   - Creating Claudie Backup: creating-claudie-backup/creating-claudie-backup.md
+  - Claudie Hardening: hardening/hardening.md
 
 extra:
   version:
