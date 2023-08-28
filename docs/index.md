@@ -50,3 +50,7 @@ This section describes steps to back up claudie and its dependencies.
 
 This section describes how to further configure the default claudie deployment.
 It is highly recommended that you read this section.
+
+## Updating Claudie
+
+This section describes how to execute updates, such as OS or kubernetes version, in Claudie.
