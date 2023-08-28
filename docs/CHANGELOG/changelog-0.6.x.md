@@ -51,3 +51,4 @@ To deploy Claudie `v0.6.X`, please:
 - Fix Unknown AMIs and regions in docs [#1009](https://github.com/berops/claudie/pull/1009)
 - Update the Roadmap [#1020](https://github.com/berops/claudie/pull/1020)
 - Add hardening section to docs [#1026](https://github.com/berops/claudie/pull/1026)
+- Add updateing section to docs [#1028](https://github.com/berops/claudie/pull/1028)
