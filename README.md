@@ -244,7 +244,7 @@ Everyone is more than welcome to open an issue, a PR or to start a discussion.
 
 For more information about contributing please read the [contribution guidelines](https://docs.claudie.io/latest/contributing/contributing/).
 
-If you want to have a chat with us, feel free to join our [Slack workspace](https://join.slack.com/t/claudie-workspace/shared_invite/zt-1imfso8r4-xwrpZjL9kt61FT1LjvWD5w).
+If you want to have a chat with us, feel free to join our [Slack workspace](https://kubernetes.slack.com/archives/C05SW4GKPL3).
 
 ## Security
 
