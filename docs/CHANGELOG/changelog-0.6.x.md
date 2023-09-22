@@ -57,4 +57,4 @@ To deploy Claudie `v0.6.X`, please:
 ## v0.6.1
 
 ### Bugfixes
-- Fallback to use Kube-Proxy with Cilium, due to problems with network traffic  [#1035]([https://github.com/berops/claudie/issues/598](https://github.com/berops/claudie/pull/1035)https://github.com/berops/claudie/pull/1035)
+- Fallback to use Kube-Proxy with Cilium, due to problems with network traffic  [#1035](https://github.com/berops/claudie/pull/1035)
