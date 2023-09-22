@@ -52,3 +52,9 @@ To deploy Claudie `v0.6.X`, please:
 - Update the Roadmap [#1020](https://github.com/berops/claudie/pull/1020)
 - Add hardening section to docs [#1026](https://github.com/berops/claudie/pull/1026)
 - Add updating section to docs [#1028](https://github.com/berops/claudie/pull/1028)
+
+
+## v0.6.1
+
+### Bugfixes
+- Fallback to use Kube-Proxy with Cilium, due to problems with network traffic  [#1035]([https://github.com/berops/claudie/issues/598](https://github.com/berops/claudie/pull/1035)https://github.com/berops/claudie/pull/1035)
