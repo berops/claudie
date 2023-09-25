@@ -42,6 +42,11 @@ func (u *Usecases) buildCluster(ctx *utils.BuilderContext, cboxClient pb.Context
 
 // destroyCluster destroys existing clusters infrastructure for a config and cleans up management cluster from any of the cluster data.
 func (u *Usecases) destroyCluster(ctx *utils.BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+	// Destroy K8s cluster.
+	if err := u.destroyK8sCluster(ctx, cboxClient); err != nil {
+		return fmt.Errorf("error in destroy Kube-Eleven for config %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
+	}
+
 	// Destroy infrastructure for the given cluster.
 	if err := u.destroyInfrastructure(ctx, cboxClient); err != nil {
 		return fmt.Errorf("error in destroy config Terraformer for config %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)

@@ -16,3 +16,7 @@ type KubeElevenGrpcService struct {
 func (k *KubeElevenGrpcService) BuildCluster(_ context.Context, request *pb.BuildClusterRequest) (*pb.BuildClusterResponse, error) {
 	return k.usecases.BuildCluster(request)
 }
+
+func (k *KubeElevenGrpcService) DestroyCluster(_ context.Context, request *pb.DestroyClusterRequest) (*pb.DestroyClusterResponse, error) {
+	return k.usecases.DestroyCluster(request)
+}

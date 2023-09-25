@@ -31,3 +31,25 @@ func (u *Usecases) reconcileK8sCluster(ctx *utils.BuilderContext, cboxClient pb.
 	u.saveWorkflowDescription(ctx, description, cboxClient)
 	return nil
 }
+
+func (u *Usecases) destroyK8sCluster(ctx *utils.BuilderContext, cboxCLient pb.ContextBoxServiceClient) error {
+	logger := cutils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
+
+	description := ctx.Workflow.Description
+	ctx.Workflow.Stage = pb.Workflow_KUBE_ELEVEN
+	u.saveWorkflowDescription(ctx, fmt.Sprintf("%s destroying kubernetes cluster", description), cboxCLient)
+
+	logger.Info().Msgf("Calling DestroyCluster on Kube-eleven")
+	res, err := u.KubeEleven.DestroyCluster(ctx, u.KubeEleven.GetClient())
+	if err != nil {
+		return fmt.Errorf("error while destroying kubernetes cluster %s project %s: %w", ctx.GetClusterID(), ctx.ProjectName, err)
+	}
+
+	logger.Info().Msgf("DestroyCluster on Kube-eleven finished sucessfully")
+
+	ctx.CurrentCluster = res.Current
+	ctx.CurrentLoadbalancers = res.CurrentLbs
+
+	u.saveWorkflowDescription(ctx, description, cboxCLient)
+	return nil
+}

@@ -17,3 +17,13 @@ func BuildCluster(c pb.KubeElevenServiceClient, req *pb.BuildClusterRequest) (*p
 	}
 	return res, nil
 }
+
+func DestroyCluster(c pb.KubeElevenServiceClient, req *pb.DestroyClusterRequest) (*pb.DestroyClusterResponse, error) {
+	resp, err := c.DestroyCluster(context.Background(), req)
+	if err != nil {
+		log.Err(err).Msgf("Error building cluster")
+		return resp, err
+	}
+
+	return resp, nil
+}
