@@ -45,7 +45,7 @@ func (u *Usecases) destroyK8sCluster(ctx *utils.BuilderContext, cboxCLient pb.Co
 		return fmt.Errorf("error while destroying kubernetes cluster %s project %s: %w", ctx.GetClusterID(), ctx.ProjectName, err)
 	}
 
-	logger.Info().Msgf("DestroyCluster on Kube-eleven finished sucessfully")
+	logger.Info().Msgf("DestroyCluster on Kube-eleven finished successfully")
 
 	ctx.CurrentCluster = res.Current
 	ctx.CurrentLoadbalancers = res.CurrentLbs
