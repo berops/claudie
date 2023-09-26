@@ -17,3 +17,4 @@ services/testing-framework/test-sets
 /site/
 bin
 .manifest*
+.DS_Store
