@@ -8,11 +8,11 @@ import (
 )
 
 func (u *Usecases) DestroyCluster(req *pb.DestroyClusterRequest) (*pb.DestroyClusterResponse, error) {
-	logger := utils.CreateLoggerWithProjectAndClusterName(req.ProjectName, utils.GetClusterID(req.Current.ClusterInfo))
-
 	if req.Current == nil {
 		return &pb.DestroyClusterResponse{Current: req.Current, CurrentLbs: req.CurrentLbs}, nil
 	}
+
+	logger := utils.CreateLoggerWithProjectAndClusterName(req.ProjectName, utils.GetClusterID(req.Current.ClusterInfo))
 
 	logger.Info().Msgf("Destroying kubernetes cluster")
 
