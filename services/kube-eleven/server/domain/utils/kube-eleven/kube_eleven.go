@@ -85,6 +85,33 @@ func (k *KubeEleven) BuildCluster() error {
 	return nil
 }
 
+func (k *KubeEleven) DestroyCluster() error {
+	clusterID := commonUtils.GetClusterID(k.K8sCluster.ClusterInfo)
+
+	k.outputDirectory = filepath.Join(baseDirectory, outputDirectory, clusterID)
+
+	if err := k.generateFiles(); err != nil {
+		return fmt.Errorf("error while generating files for %s: %w", k.K8sCluster.ClusterInfo.Name, err)
+	}
+
+	kubeone := kubeone.Kubeone{
+		ConfigDirectory:   k.outputDirectory,
+		SpawnProcessLimit: k.SpawnProcessLimit,
+	}
+
+	// Destroying the cluster might fail when deleting the binaries, if its called subsequently,
+	// thus ignore the error.
+	if err := kubeone.Reset(clusterID); err != nil {
+		log.Warn().Msgf("failed to destroy cluster and remove binaries: %s, assuming they were deleted", err)
+	}
+
+	if err := os.RemoveAll(k.outputDirectory); err != nil {
+		return fmt.Errorf("error while removing files from %s: %w", k.outputDirectory, err)
+	}
+
+	return nil
+}
+
 // generateFiles will generate those files (kubeone.yaml and key.pem) needed by Kubeone.
 // Returns nil if successful, error otherwise.
 func (k *KubeEleven) generateFiles() error {

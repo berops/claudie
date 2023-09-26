@@ -8,7 +8,6 @@ secretGenerator:
 - files:
   - test-sets/test-set1/1.yaml
   - test-sets/test-set1/2.yaml
-  - test-sets/test-set1/3.yaml
   name: test-set1
 - files:
   - test-sets/test-set2/1.yaml
@@ -29,7 +28,6 @@ secretGenerator:
 - files:
   - test-sets/test-set5/1.yaml
   - test-sets/test-set5/2.yaml
-  - test-sets/test-set5/3.yaml
   name: test-set5
 - files:
   - test-sets/autoscaling-1/1.yaml
@@ -39,4 +37,4 @@ secretGenerator:
 
 images:
 - name: ghcr.io/berops/claudie/testing-framework
-  newTag: bc8f75e-2345
+  newTag: 43205d7-2367

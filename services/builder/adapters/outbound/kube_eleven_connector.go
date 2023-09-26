@@ -34,6 +34,16 @@ func (k *KubeElevenConnector) BuildCluster(builderCtx *utils.BuilderContext, kub
 		})
 }
 
+// DestroyCluster destroys k8s cluster.
+func (k *KubeElevenConnector) DestroyCluster(builderCtx *utils.BuilderContext, kubeElevenGrpcClient pb.KubeElevenServiceClient) (*pb.DestroyClusterResponse, error) {
+	return kubeEleven.DestroyCluster(kubeElevenGrpcClient,
+		&pb.DestroyClusterRequest{
+			ProjectName: builderCtx.ProjectName,
+			Current:     builderCtx.CurrentCluster,
+			CurrentLbs:  builderCtx.CurrentLoadbalancers,
+		})
+}
+
 // Disconnect closes the underlying gRPC connection to kube-eleven microservice
 func (k *KubeElevenConnector) Disconnect() {
 	cutils.CloseClientConnection(k.Connection)

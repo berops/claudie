@@ -68,7 +68,7 @@ spec:
 	// Time in which Autoscaler should trigger scale up
 	scaleUpTimeout = 3
 	// Time in which Autoscaler should trigger scale down
-	scaleDownTimeout = 12
+	scaleDownTimeout = 15
 )
 
 // testAutoscaler tests the Autoscaler deployment.

@@ -76,7 +76,7 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - aws-control
+            - static-pool-1
           compute:
             - aws-compute
 
