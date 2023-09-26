@@ -28,7 +28,6 @@ secretGenerator:
 - files:
   - test-sets/test-set5/1.yaml
   - test-sets/test-set5/2.yaml
-  - test-sets/test-set5/3.yaml
   name: test-set5
 - files:
   - test-sets/autoscaling-1/1.yaml

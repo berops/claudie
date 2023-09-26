@@ -99,6 +99,8 @@ func (k *KubeEleven) DestroyCluster() error {
 		SpawnProcessLimit: k.SpawnProcessLimit,
 	}
 
+	// Destroying the cluster might fail when deleting the binaries, or if its called subsequently,
+	// thus ignore the error.
 	if err := kubeone.Reset(clusterID); err != nil {
 		log.Warn().Msgf("failed to destroy cluster and remove binaries: %s, assuming they were deleted", err)
 	}
