@@ -100,7 +100,7 @@ func (k *KubeEleven) DestroyCluster() error {
 	}
 
 	if err := kubeone.Reset(clusterID); err != nil {
-		return fmt.Errorf("error while running \"kubeone reset\" in %s: %w", k.outputDirectory, err)
+		log.Warn().Msgf("failed to destroy cluster and remove binaries: %s, assuming they were deleted", err)
 	}
 
 	if err := os.RemoveAll(k.outputDirectory); err != nil {

@@ -96,6 +96,8 @@ func (u *Usecases) saveWorkflowDescription(ctx *utils.BuilderContext, descriptio
 
 // deleteConfig calls destroy config to remove all traces of infrastructure from given config.
 func (u *Usecases) deleteConfig(config *pb.Config, clusterView *cutils.ClusterView, cboxClient pb.ContextBoxServiceClient) error {
+	log := cutils.CreateLoggerWithProjectName(config.Name)
+
 	var err error
 	// Try maxDeleteRetry to delete the config.
 	for i := 0; i < maxDeleteRetry; i++ {
@@ -103,6 +105,7 @@ func (u *Usecases) deleteConfig(config *pb.Config, clusterView *cutils.ClusterVi
 			// Deletion successful, break here.
 			break
 		}
+		log.Err(err).Msg("failed to destroy config")
 	}
 	return err
 }
