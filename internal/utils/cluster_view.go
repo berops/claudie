@@ -168,6 +168,8 @@ func (view *ClusterView) MergeChanges(config *pb.Config) {
 
 	config.CurrentState.LoadBalancerClusters = mergeLbClusters(config.CurrentState.LoadBalancerClusters, view.Loadbalancers)
 	config.DesiredState.LoadBalancerClusters = mergeLbClusters(config.DesiredState.LoadBalancerClusters, view.DesiredLoadbalancers)
+
+	config.CurrentState.Name = config.DesiredState.Name
 }
 
 // AllClusters returns a slice of cluster all cluster names, from both the current state and desired state.
