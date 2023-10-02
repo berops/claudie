@@ -28,11 +28,10 @@ spec:
           image: ghcr.io/berops/claudie/builder
           resources:
             requests:
-              cpu: 80m
-              memory: 200Mi
+              cpu: 10m
+              memory: 15Mi
             limits:
-              cpu: 160m
-              memory: 400Mi
+              memory: 20Mi
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
