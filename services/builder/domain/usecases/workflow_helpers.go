@@ -42,9 +42,14 @@ func (u *Usecases) buildCluster(ctx *utils.BuilderContext, cboxClient pb.Context
 
 // destroyCluster destroys existing clusters infrastructure for a config and cleans up management cluster from any of the cluster data.
 func (u *Usecases) destroyCluster(ctx *utils.BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
-	// Destroy K8s cluster.
-	if err := u.destroyK8sCluster(ctx, cboxClient); err != nil {
-		return fmt.Errorf("error in destroy Kube-Eleven for config %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
+	if s := cutils.GetCommonStaticNodePools(ctx.CurrentCluster.GetClusterInfo().GetNodePools()); len(s) > 0 {
+		if err := u.destroyK8sCluster(ctx, cboxClient); err != nil {
+			return fmt.Errorf("error in destroy Kube-Eleven for config %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
+		}
+
+		if err := u.removeClaudieUtilities(ctx, cboxClient); err != nil {
+			return fmt.Errorf("error while removing claudie installed utilities for config %s project %s: %w", ctx.GetClusterName(), ctx.ProjectName, err)
+		}
 	}
 
 	// Destroy infrastructure for the given cluster.

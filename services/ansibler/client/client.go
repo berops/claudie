@@ -7,6 +7,14 @@ import (
 	"github.com/berops/claudie/proto/pb"
 )
 
+func RemoveClaudieUtilities(c pb.AnsiblerServiceClient, req *pb.RemoveClaudieUtilitiesRequest) (*pb.RemoveClaudieUtilitiesResponse, error) {
+	res, err := c.RemoveClaudieUtilities(context.Background(), req)
+	if err != nil {
+		return res, fmt.Errorf("error while calling RemoveClaudieUtilities on Ansibler: %w", err)
+	}
+	return res, nil
+}
+
 // InstallVPN installs a Wireguard VPN on the nodes in the cluster and loadbalancers
 func InstallVPN(c pb.AnsiblerServiceClient, req *pb.InstallRequest) (*pb.InstallResponse, error) {
 	res, err := c.InstallVPN(context.Background(), req)

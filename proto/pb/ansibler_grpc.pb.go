@@ -34,6 +34,8 @@ type AnsiblerServiceClient interface {
 	// UpdateAPIEndpoint handles changes of API endpoint between control nodes.
 	// It will update the current stage based on the information from the desired state.
 	UpdateAPIEndpoint(ctx context.Context, in *UpdateAPIEndpointRequest, opts ...grpc.CallOption) (*UpdateAPIEndpointResponse, error)
+	// Removes utilities installed by claudie via ansible playbooks.
+	RemoveClaudieUtilities(ctx context.Context, in *RemoveClaudieUtilitiesRequest, opts ...grpc.CallOption) (*RemoveClaudieUtilitiesResponse, error)
 }
 
 type ansiblerServiceClient struct {
@@ -89,6 +91,15 @@ func (c *ansiblerServiceClient) UpdateAPIEndpoint(ctx context.Context, in *Updat
 	return out, nil
 }
 
+func (c *ansiblerServiceClient) RemoveClaudieUtilities(ctx context.Context, in *RemoveClaudieUtilitiesRequest, opts ...grpc.CallOption) (*RemoveClaudieUtilitiesResponse, error) {
+	out := new(RemoveClaudieUtilitiesResponse)
+	err := c.cc.Invoke(ctx, "/claudie.AnsiblerService/RemoveClaudieUtilities", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AnsiblerServiceServer is the server API for AnsiblerService service.
 // All implementations must embed UnimplementedAnsiblerServiceServer
 // for forward compatibility
@@ -105,6 +116,8 @@ type AnsiblerServiceServer interface {
 	// UpdateAPIEndpoint handles changes of API endpoint between control nodes.
 	// It will update the current stage based on the information from the desired state.
 	UpdateAPIEndpoint(context.Context, *UpdateAPIEndpointRequest) (*UpdateAPIEndpointResponse, error)
+	// Removes utilities installed by claudie via ansible playbooks.
+	RemoveClaudieUtilities(context.Context, *RemoveClaudieUtilitiesRequest) (*RemoveClaudieUtilitiesResponse, error)
 	mustEmbedUnimplementedAnsiblerServiceServer()
 }
 
@@ -126,6 +139,9 @@ func (UnimplementedAnsiblerServiceServer) TeardownLoadBalancers(context.Context,
 }
 func (UnimplementedAnsiblerServiceServer) UpdateAPIEndpoint(context.Context, *UpdateAPIEndpointRequest) (*UpdateAPIEndpointResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateAPIEndpoint not implemented")
+}
+func (UnimplementedAnsiblerServiceServer) RemoveClaudieUtilities(context.Context, *RemoveClaudieUtilitiesRequest) (*RemoveClaudieUtilitiesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveClaudieUtilities not implemented")
 }
 func (UnimplementedAnsiblerServiceServer) mustEmbedUnimplementedAnsiblerServiceServer() {}
 
@@ -230,6 +246,24 @@ func _AnsiblerService_UpdateAPIEndpoint_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AnsiblerService_RemoveClaudieUtilities_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveClaudieUtilitiesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AnsiblerServiceServer).RemoveClaudieUtilities(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/claudie.AnsiblerService/RemoveClaudieUtilities",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AnsiblerServiceServer).RemoveClaudieUtilities(ctx, req.(*RemoveClaudieUtilitiesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AnsiblerService_ServiceDesc is the grpc.ServiceDesc for AnsiblerService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -256,6 +290,10 @@ var AnsiblerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateAPIEndpoint",
 			Handler:    _AnsiblerService_UpdateAPIEndpoint_Handler,
+		},
+		{
+			MethodName: "RemoveClaudieUtilities",
+			Handler:    _AnsiblerService_RemoveClaudieUtilities_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

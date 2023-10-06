@@ -54,6 +54,17 @@ message UpdateAPIEndpointResponse{
   K8scluster desired = 2;
 }
 
+message RemoveClaudieUtilitiesRequest {
+  K8scluster current = 1;
+  repeated LBcluster currentLbs = 2;
+  string projectName = 3;
+}
+
+message RemoveClaudieUtilitiesResponse {
+  K8scluster current = 1;
+  repeated LBcluster currentLbs = 2;
+}
+
 service AnsiblerService {
   // InstallNodeRequirements installs any requirements there are on all of the nodes.
   rpc InstallNodeRequirements(InstallRequest) returns (InstallResponse);
@@ -67,4 +78,6 @@ service AnsiblerService {
   // UpdateAPIEndpoint handles changes of API endpoint between control nodes.
   // It will update the current stage based on the information from the desired state.
   rpc UpdateAPIEndpoint(UpdateAPIEndpointRequest) returns (UpdateAPIEndpointResponse);
+  // Removes utilities installed by claudie via ansible playbooks.
+  rpc RemoveClaudieUtilities(RemoveClaudieUtilitiesRequest) returns (RemoveClaudieUtilitiesResponse);
 }

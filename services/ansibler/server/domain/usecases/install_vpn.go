@@ -15,7 +15,10 @@ import (
 	"github.com/berops/claudie/services/ansibler/templates"
 )
 
-const wireguardPlaybookFilePath = "../../ansible-playbooks/wireguard.yml"
+const (
+	wireguardPlaybookFilePath = "../../ansible-playbooks/wireguard.yml"
+	wireguardUninstall        = "../../ansible-playbooks/wireguard-uninstall.yml"
+)
 
 type VPNInfo struct {
 	ClusterNetwork string
