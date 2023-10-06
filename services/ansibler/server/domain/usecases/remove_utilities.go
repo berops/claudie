@@ -82,7 +82,7 @@ func removeWireguard(clusterID string, vpnInfo *VPNInfo, spawnProcessLimit chan 
 
 	// Subsequent calling may fail, thus simply log the error.
 	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("Remove Utils - %s", clusterID)); err != nil {
-		log.Warn().Msgf("error while uninstalling wireguard ansible for %s : %w", clusterID, err)
+		log.Warn().Msgf("error while uninstalling wireguard ansible for %s : %s", clusterID, err)
 	}
 
 	return os.RemoveAll(clusterDirectory)
