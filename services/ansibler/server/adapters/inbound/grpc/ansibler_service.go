@@ -13,6 +13,10 @@ type AnsiblerGrpcService struct {
 	usecases *usecases.Usecases
 }
 
+func (a *AnsiblerGrpcService) RemoveClaudieUtilities(_ context.Context, request *pb.RemoveClaudieUtilitiesRequest) (*pb.RemoveClaudieUtilitiesResponse, error) {
+	return a.usecases.RemoveUtilities(request)
+}
+
 func (a *AnsiblerGrpcService) UpdateAPIEndpoint(_ context.Context, request *pb.UpdateAPIEndpointRequest) (*pb.UpdateAPIEndpointResponse, error) {
 	return a.usecases.UpdateAPIEndpoint(request)
 }

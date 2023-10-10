@@ -79,11 +79,10 @@ spec:
           image: registry.k8s.io/autoscaling/cluster-autoscaler:{{ .KubernetesVersion }}
           resources:
             limits:
-              cpu: 100m
-              memory: 300Mi
+              memory: 120Mi
             requests:
               cpu: 100m
-              memory: 300Mi
+              memory: 100Mi
           command:
             - ./cluster-autoscaler
             - --cloud-provider=externalgrpc

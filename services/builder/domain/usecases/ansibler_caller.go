@@ -8,10 +8,29 @@ import (
 	"github.com/berops/claudie/services/builder/domain/usecases/utils"
 )
 
+// removeClaudieUtilities removes previously installed claudie utilities.
+func (u *Usecases) removeClaudieUtilities(ctx *utils.BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+	description := ctx.Workflow.Description
+	ctx.Workflow.Stage = pb.Workflow_ANSIBLER
+	u.saveWorkflowDescription(ctx, fmt.Sprintf("%s removing claudie installed utilities", description), cboxClient)
+
+	resp, err := u.Ansibler.RemoveClaudieUtilities(ctx, u.Ansibler.GetClient())
+	if err != nil {
+		return err
+	}
+
+	ctx.CurrentCluster = resp.Current
+	ctx.CurrentLoadbalancers = resp.CurrentLbs
+
+	u.saveWorkflowDescription(ctx, description, cboxClient)
+	return nil
+}
+
 // configureInfrastructure configures infrastructure via ansibler.
 func (u *Usecases) configureInfrastructure(ctx *utils.BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
 	logger := cutils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
 	ansClient := u.Ansibler.GetClient()
+
 	description := ctx.Workflow.Description
 	ctx.Workflow.Stage = pb.Workflow_ANSIBLER
 

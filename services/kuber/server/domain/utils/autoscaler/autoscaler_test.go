@@ -49,11 +49,10 @@ spec:
           name: cluster-autoscaler
           resources:
             limits:
-              cpu: 100m
-              memory: 300Mi
+              memory: 120Mi
             requests:
               cpu: 100m
-              memory: 300Mi
+              memory: 100Mi
           command:
             - ./cluster-autoscaler
             - --cloud-provider=externalgrpc
