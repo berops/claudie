@@ -30,10 +30,9 @@ spec:
           resources:
             requests:
               cpu: 100m
-              memory: 300Mi
+              memory: 200Mi
             limits:
-              cpu: 150m
-              memory: 500Mi
+              memory: 300Mi
           env:
             - name: MONGO_INITDB_ROOT_USERNAME
               valueFrom:

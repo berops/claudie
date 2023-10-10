@@ -45,11 +45,10 @@ spec:
           image: ghcr.io/berops/claudie/ansibler
           resources:
             requests:
-              cpu: 700m
-              memory: 500Mi
+              cpu: 200m
+              memory: 600Mi
             limits:
-              cpu: 1024m
-              memory: 900Mi
+              memory: 800Mi
           env:
             - name: ANSIBLER_PORT
               valueFrom:

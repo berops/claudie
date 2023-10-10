@@ -41,11 +41,10 @@ spec:
                 - all
           resources:
             requests:
-              cpu: 500m
-              memory: 150Mi
+              cpu: 100m
+              memory: 120Mi
             limits:
-              cpu: 700m
-              memory: 300Mi
+              memory: 160Mi
           env:
             - name: KUBE_ELEVEN_PORT
               valueFrom:
