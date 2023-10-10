@@ -76,6 +76,15 @@ func (a *AnsiblerConnector) UpdateAPIEndpoint(builderCtx *utils.BuilderContext, 
 	})
 }
 
+// RemoveClaudieUtilities removes claudie installed utilities from the nodes of the cluster.
+func (a *AnsiblerConnector) RemoveClaudieUtilities(builderCtx *utils.BuilderContext, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.RemoveClaudieUtilitiesResponse, error) {
+	return ansibler.RemoveClaudieUtilities(ansiblerGrpcClient, &pb.RemoveClaudieUtilitiesRequest{
+		Current:     builderCtx.CurrentCluster,
+		CurrentLbs:  builderCtx.CurrentLoadbalancers,
+		ProjectName: builderCtx.ProjectName,
+	})
+}
+
 // Disconnect closes the underlying gRPC connection to ansibler microservice
 func (a *AnsiblerConnector) Disconnect() {
 	cutils.CloseClientConnection(a.Connection)
