@@ -62,7 +62,10 @@ To deploy Claudie `v0.6.X`, please:
 
 ## v0.6.2
 
-## Bugfixes
+### Features
+- Limits and Requests of each claudie-deployed pod were adjusted [#1055](https://github.com/berops/claudie/pull/1055)
+
+### Bugfixes
 - Clusters made out of static nodepools should be correctly destroyed [#1038](https://github.com/berops/claudie/pull/1038)
 - Issue when the hashes of current and desired state wouldn't match after config build sucessfully  [#1041](https://github.com/berops/claudie/pull/1041)
 - Wireguard is now removed from static nodepools when the config is deleted [#1059](https://github.com/berops/claudie/pull/1059)
