@@ -1,7 +1,6 @@
 package usecases
 
 import (
-	"errors"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/kubernetes"
@@ -49,9 +48,7 @@ func (u *Usecases) BuildInfrastructure(request *pb.BuildInfrastructureRequest) (
 		logger.Info().Msg("Creating infrastructure")
 
 		if err := cluster.Build(logger); err != nil {
-			if errors.Is(err, loadbalancer.ErrCreateDNSRecord) {
-				cluster.UpdateCurrentState()
-			}
+			cluster.UpdateCurrentState()
 			logger.Error().Msgf("Error encountered while building cluster: %s", err)
 			failed[idx] = err
 			return err
