@@ -8,7 +8,7 @@ import (
 
 type LabelKey string
 
-// To properly escape / in JSONPatch, 
+// To properly escape / in JSONPatch,
 // it has to be replaced with ~1
 // https://jsonpatch.com/#json-pointer
 const (

@@ -75,11 +75,11 @@ func (p *Patcher) PatchLabels() error {
 		for _, node := range np.Nodes {
 			nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
 			for key, value := range l {
-				patchPath, err1 := buildJSONPatchString("replace", "/metadata/labels/" + key, value)
+				patchPath, err1 := buildJSONPatchString("replace", "/metadata/labels/"+key, value)
 				if err1 != nil {
 					return fmt.Errorf("failed to create label %s patch path for %s : %w", key, np.Name, err)
 				}
-				if err1 := p.kc.KubectlPatch("node", nodeName, patchPath , "--type", "json"); err1 != nil {
+				if err1 := p.kc.KubectlPatch("node", nodeName, patchPath, "--type", "json"); err1 != nil {
 					p.logger.Err(err1).Str("node", nodeName).Msgf("Failed to patch labels on node with path %s", patchPath)
 					err = fmt.Errorf("error while patching one or more nodes with labels")
 				}
