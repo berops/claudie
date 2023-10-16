@@ -8,16 +8,19 @@ import (
 
 type LabelKey string
 
+// To properly escape / in JSONPatch, 
+// it has to be replaced with ~1
+// https://jsonpatch.com/#json-pointer
 const (
-	Nodepool         LabelKey = "claudie.io/nodepool"
-	Provider         LabelKey = "claudie.io/provider"
-	ProviderInstance LabelKey = "claudie.io/provider-instance"
-	NodeType         LabelKey = "claudie.io/node-type"
-	KubernetesZone   LabelKey = "topology.kubernetes.io/zone"
-	KubernetesRegion LabelKey = "topology.kubernetes.io/region"
-	KubernetesOs     LabelKey = "kubernetes.io/os"
-	KubernetesArch   LabelKey = "kubernetes.io/arch"
-	KubeoneOs        LabelKey = "v1.kubeone.io/operating-system"
+	Nodepool         LabelKey = "claudie.io~1nodepool"
+	Provider         LabelKey = "claudie.io~1provider"
+	ProviderInstance LabelKey = "claudie.io~1provider-instance"
+	NodeType         LabelKey = "claudie.io~1node-type"
+	KubernetesZone   LabelKey = "topology.kubernetes.io~1zone"
+	KubernetesRegion LabelKey = "topology.kubernetes.io~1region"
+	KubernetesOs     LabelKey = "kubernetes.io~1os"
+	KubernetesArch   LabelKey = "kubernetes.io~1arch"
+	KubeoneOs        LabelKey = "v1.kubeone.io~1operating-system"
 )
 
 const (
