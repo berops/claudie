@@ -69,7 +69,7 @@ func (p *Patcher) PatchLabels() error {
 	for _, np := range p.desiredNodepools {
 		l, err1 := nodes.GetAllLabels(np, nil)
 		if err1 != nil {
-			return fmt.Errorf("failed to create labels for %s : %w", np.Name, err)
+			return fmt.Errorf("failed to create labels for %s : %w, %w", np.Name, err, err1)
 		}
 
 		for _, node := range np.Nodes {
@@ -77,7 +77,7 @@ func (p *Patcher) PatchLabels() error {
 			for key, value := range l {
 				patchPath, err1 := buildJSONPatchString("replace", "/metadata/labels/"+key, value)
 				if err1 != nil {
-					return fmt.Errorf("failed to create label %s patch path for %s : %w", key, np.Name, err)
+					return fmt.Errorf("failed to create label %s patch path for %s : %w, %w", key, np.Name, err, err1)
 				}
 				if err1 := p.kc.KubectlPatch("node", nodeName, patchPath, "--type", "json"); err1 != nil {
 					p.logger.Err(err1).Str("node", nodeName).Msgf("Failed to patch labels on node with path %s", patchPath)

@@ -3,12 +3,13 @@ package loadbalancer
 import (
 	"errors"
 	"fmt"
+
 	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb"
 	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
 	"github.com/rs/zerolog"
-	"golang.org/x/sync/errgroup"
 
-	"github.com/berops/claudie/proto/pb"
+	"golang.org/x/sync/errgroup"
 )
 
 var (
