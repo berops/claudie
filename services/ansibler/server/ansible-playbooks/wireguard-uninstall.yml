@@ -21,8 +21,8 @@
     - name: Stop and disable systemd service for wg-quick@wg0
       ansible.builtin.systemd:
         name: "wg-quick@wg0"
-        enabled: no
-        state: stopped
+        enabled: false
+      ignore_errors: yes
 
     - name: Delete WireGuard configuration directory
       ansible.builtin.file:
