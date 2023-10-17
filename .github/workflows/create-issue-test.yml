@@ -1,0 +1,22 @@
+name: CI pipeline for Claudie
+on:
+  # Manual trigger
+  workflow_dispatch:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  pull_request:
+    branches: ["feat/create-an-issue-in-infra-repo-on-release"]
+
+jobs:
+  create-issue:
+    name: Create issue in infra repo
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dacbd/create-issue-action@v1
+        with:
+          token: ${{ secrets.PAT }} # TODO: use proper token
+          org: octo-org
+          repo: infra
+          title: Test
+          body: |
+            Test issue
