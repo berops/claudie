@@ -1,4 +1,4 @@
-name: CI pipeline for Claudie
+name: Create an issue in infra repository
 on:
   # Manual trigger
   workflow_dispatch:
