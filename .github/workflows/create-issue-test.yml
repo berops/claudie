@@ -17,6 +17,7 @@ jobs:
           token: ${{ secrets.GH_ISSUES_TOKEN }}
           org: berops
           repo: infra
-          title: Test
+          title: Test labels
+          labels: chore
           body: |
-            Test issue
+            Test labels with automatic issue creation
