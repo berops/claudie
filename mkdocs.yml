@@ -48,6 +48,7 @@ theme:
     - accent: black
   logo: hexagon_blue.png
   favicon: hexagon_blue.png
+  custom_dir: docs/overrides
 
 nav:
   - index.md
