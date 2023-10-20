@@ -24,8 +24,10 @@ const (
 )
 
 var (
-	//Error for functions which are not implemented.
+	// ErrNotImplemented used for functions which are not implemented.
 	ErrNotImplemented = errors.New("not implemented")
+	// ErrConfigInDeletion returned when the desired state of the config is nil and cannot perform a refresh operation.
+	ErrConfigInDeletion = errors.New("config is marked for deletion")
 )
 
 type nodeCache struct {
@@ -105,11 +107,16 @@ func getClaudieState(projectName, clusterName string) (*pb.K8Scluster, string, s
 		return nil, "", "", fmt.Errorf("failed to get config for project %s : %w", projectName, err)
 	}
 
-	for _, cluster := range res.Config.DesiredState.Clusters {
+	if res.GetConfig().DsChecksum == nil && res.GetConfig().CsChecksum != nil {
+		return nil, "", "", ErrConfigInDeletion
+	}
+
+	for _, cluster := range res.GetConfig().GetDesiredState().GetClusters() {
 		if cluster.ClusterInfo.Name == clusterName {
 			return cluster, res.Config.ResourceName, res.Config.ResourceNamespace, nil
 		}
 	}
+
 	return nil, "", "", fmt.Errorf("failed to find cluster %s in config for a project %s", clusterName, projectName)
 }
 
@@ -221,18 +228,26 @@ func (c *ClaudieCloudProvider) Refresh(_ context.Context, req *protos.RefreshReq
 // refresh refreshes the state of the claudie provider based of the state from Claudie.
 func (c *ClaudieCloudProvider) refresh() error {
 	log.Info().Msgf("Refreshing the state")
-	if cluster, rName, rNamespace, err := getClaudieState(c.projectName, c.configCluster.ClusterInfo.Name); err != nil {
+
+	cluster, rName, rNamespace, err := getClaudieState(c.projectName, c.configCluster.ClusterInfo.Name)
+	if errors.Is(err, ErrConfigInDeletion) {
+		log.Debug().Msgf("config for cluster %s is being deleted skipping refresh", c.configCluster.ClusterInfo.Name)
+		return nil
+	}
+	if err != nil {
 		log.Err(err).Msgf("Error while refreshing a state of the cluster")
 		return fmt.Errorf("error while refreshing a state for the cluster %s : %w", c.configCluster.ClusterInfo.Name, err)
-	} else {
-		c.configCluster = cluster
-		c.resourceName = rName
-		c.resourceNamespace = rNamespace
-		c.nodesCache = getNodesCache(cluster.ClusterInfo.NodePools)
-		if err := c.nodeManager.Refresh(cluster.ClusterInfo.NodePools); err != nil {
-			return fmt.Errorf("failed to refresh node manager : %w", err)
-		}
 	}
+
+	c.configCluster = cluster
+	c.resourceName = rName
+	c.resourceNamespace = rNamespace
+	c.nodesCache = getNodesCache(cluster.ClusterInfo.NodePools)
+
+	if err := c.nodeManager.Refresh(cluster.ClusterInfo.NodePools); err != nil {
+		return fmt.Errorf("failed to refresh node manager : %w", err)
+	}
+
 	return nil
 }
 
