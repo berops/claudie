@@ -196,7 +196,7 @@ type Cluster struct {
 	// Network range for the VPN of the cluster. The value should be defined in format A.B.C.D/mask.
 	Network string `validate:"required,cidrv4" yaml:"network" json:"network"`
 	// List of nodepool names this cluster will use.
-	Pools Pool `validate:"dive" yaml:"pools" json:"pools"`
+	Pools Pool `yaml:"pools" json:"pools"`
 }
 
 // List of nodepool names this cluster will use. Remember that nodepools defined in nodepools
