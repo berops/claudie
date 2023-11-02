@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/berops/claudie/services/builder/domain/usecases/metrics"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -15,8 +17,11 @@ import (
 	"github.com/berops/claudie/internal/worker"
 	"github.com/berops/claudie/services/builder/adapters/outbound"
 	"github.com/berops/claudie/services/builder/domain/usecases"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
+
 	"golang.org/x/sync/errgroup"
+
 	"google.golang.org/grpc/connectivity"
 )
 
@@ -83,6 +88,9 @@ func main() {
 	}
 	defer kb.Disconnect()
 
+	metricsServer := &http.Server{Addr: ":9090"}
+	metrics.MustRegisterCounters()
+
 	usecases := &usecases.Usecases{
 		ContextBox:  cbox,
 		Terraformer: tf,
@@ -112,6 +120,10 @@ func main() {
 		case sig := <-ch:
 			log.Info().Msgf("Received signal %v", sig)
 			err = errors.New("interrupt signal")
+		}
+
+		if err := metricsServer.Shutdown(ctx); err != nil {
+			log.Err(err).Msgf("Failed to shutdown metrics server")
 		}
 
 		// Sometimes when the container terminates gRPC logs the following message:
@@ -156,5 +168,11 @@ func main() {
 
 		return nil
 	})
+
+	group.Go(func() error {
+		http.Handle("/metrics", promhttp.Handler())
+		return metricsServer.ListenAndServe()
+	})
+
 	log.Info().Msgf("Stopping Builder : %v", group.Wait())
 }

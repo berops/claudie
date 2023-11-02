@@ -1,5 +1,7 @@
 package utils
 
+import "golang.org/x/exp/constraints"
+
 // MergeMaps merges two or more maps together, into single map.
 func MergeMaps[M ~map[K]V, K comparable, V any](maps ...M) M {
 	merged := make(M)
@@ -21,4 +23,12 @@ func Into[K, V any](k []K, f func(k K) *V) []*V {
 		}
 	}
 	return result
+}
+
+func Sum[M ~map[K]V, K comparable, V constraints.Integer | constraints.Float](m M) int {
+	var out int
+	for _, v := range m {
+		out += int(v)
+	}
+	return out
 }
