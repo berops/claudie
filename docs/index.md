@@ -1,6 +1,6 @@
 # Docs Overview
 
-In case you are reading our documentation in our [GitHub repository](https://github.com/berops/claudie/), you might want to read the prettier version of it on [docs.claudie.io](docs.claudie.io)
+In case you are reading our documentation in our [GitHub repository](https://github.com/berops/claudie/), you might want to read the prettier version of it on [docs.claudie.io](https://docs.claudie.io/)
 
 ## Getting Started
 
