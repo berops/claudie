@@ -42,7 +42,6 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 		clusterView := cutils.NewClusterView(config)
 
 		if config.DsChecksum == nil && config.CsChecksum != nil { // all current state needs to be deleted.
-
 			metrics.InputManifestInDeletion.Inc()
 			defer func() { metrics.InputManifestInDeletion.Dec() }()
 
