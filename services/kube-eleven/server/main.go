@@ -3,6 +3,11 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/berops/claudie/internal/utils/metrics"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	grpc2 "google.golang.org/grpc"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -16,6 +21,10 @@ import (
 	"github.com/berops/claudie/services/kube-eleven/server/domain/usecases"
 )
 
+const (
+	defaultPrometheusPort = "9092"
+)
+
 func main() {
 	// Initialize logger
 	utils.InitLog("kube-eleven")
@@ -24,7 +33,10 @@ func main() {
 		SpawnProcessLimit: make(chan struct{}, usecases.SpawnProcessLimit),
 	}
 	grpcAdapter := grpc.GrpcAdapter{}
-	grpcAdapter.Init(usecases)
+	grpcAdapter.Init(usecases, grpc2.UnaryInterceptor(metrics.MetricsMiddleware))
+
+	metricsServer := &http.Server{Addr: fmt.Sprintf(":%s", utils.GetEnvDefault("PROMETHEUS_PORT", defaultPrometheusPort))}
+	metrics.MustRegisterCounters()
 
 	errGroup, errGroupContext := errgroup.WithContext(context.Background())
 
@@ -48,6 +60,10 @@ func main() {
 			err = errors.New("Program interruption signal")
 		}
 
+		if err := metricsServer.Shutdown(errGroupContext); err != nil {
+			log.Err(err).Msgf("Failed to shutdown metrics server")
+		}
+
 		// Performing graceful shutdown.
 		grpcAdapter.Stop()
 
@@ -58,6 +74,11 @@ func main() {
 		time.Sleep(1 * time.Second)
 
 		return err
+	})
+
+	errGroup.Go(func() error {
+		http.Handle("/metrics", promhttp.Handler())
+		return metricsServer.ListenAndServe()
 	})
 
 	log.Info().Msgf("Stopping Kube-eleven microservice: %s", errGroup.Wait())

@@ -3,6 +3,11 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/berops/claudie/internal/utils/metrics"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	grpc2 "google.golang.org/grpc"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -18,6 +23,10 @@ import (
 	"github.com/berops/claudie/services/terraformer/server/domain/usecases"
 )
 
+const (
+	defaultPrometheusPort = "9093"
+)
+
 func main() {
 	// Initialize logger
 	utils.InitLog("terraformer")
@@ -31,8 +40,14 @@ func main() {
 		SpawnProcessLimit: make(chan struct{}, usecases.SpawnProcessLimit),
 	}
 
+	metricsServer := &http.Server{Addr: fmt.Sprintf(":%s", utils.GetEnvDefault("PROMETHEUS_PORT", defaultPrometheusPort))}
+	metrics.MustRegisterCounters()
+
 	grpcAdapter := &grpc.GrpcAdapter{}
-	grpcAdapter.Init(usecases)
+	grpcAdapter.Init(
+		usecases,
+		grpc2.UnaryInterceptor(metrics.MetricsMiddleware),
+	)
 
 	errGroup, errGroupContext := errgroup.WithContext(context.Background())
 	errGroup.Go(grpcAdapter.Serve)
@@ -76,6 +91,10 @@ func main() {
 			err = errors.New("interrupt signal")
 		}
 
+		if err := metricsServer.Shutdown(errGroupContext); err != nil {
+			log.Err(err).Msgf("Failed to shutdown metrics server")
+		}
+
 		// Gracefully shutdown the gRPC adapter
 		grpcAdapter.Stop()
 
@@ -86,6 +105,11 @@ func main() {
 		time.Sleep(1 * time.Second)
 
 		return err
+	})
+
+	errGroup.Go(func() error {
+		http.Handle("/metrics", promhttp.Handler())
+		return metricsServer.ListenAndServe()
 	})
 
 	log.Info().Msgf("Stopping Terraformer: %v", errGroup.Wait())

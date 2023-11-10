@@ -37,10 +37,10 @@ var (
 		Help: "Clusters deleted",
 	})
 
-	InputManifestClusterBuildError = prometheus.NewCounterVec(prometheus.CounterOpts{
+	InputManifestBuildError = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "claudie_cluster_error",
-		Help: "Number of build errors per cluster",
-	}, []string{InputManifestLabel, K8sClusterLabel})
+		Help: "Number of build errors per input manifest",
+	}, []string{InputManifestLabel})
 
 	InputManifestInDeletion = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "claudie_input_manifests_in_deletion",
@@ -108,7 +108,7 @@ func MustRegisterCounters() {
 	prometheus.MustRegister(InputManifestsDeleted)
 	prometheus.MustRegister(ClustersDeleted)
 
-	prometheus.MustRegister(InputManifestClusterBuildError)
+	prometheus.MustRegister(InputManifestBuildError)
 
 	prometheus.MustRegister(InputManifestsInProgress)
 	prometheus.MustRegister(ClustersInProgress)

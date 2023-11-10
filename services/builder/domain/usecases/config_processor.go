@@ -42,7 +42,6 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 		clusterView := cutils.NewClusterView(config)
 
 		if config.DsChecksum == nil && config.CsChecksum != nil { // all current state needs to be deleted.
-			metrics.InputManifestsDeleted.Inc()
 
 			metrics.InputManifestInDeletion.Inc()
 			defer func() { metrics.InputManifestInDeletion.Dec() }()
@@ -50,7 +49,7 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 			logger.Info().Msgf("Destroying config")
 			if err := u.deleteConfig(config, clusterView, cboxClient); err != nil {
 				metrics.InputManifestsErrorCounter.Inc()
-				metrics.InputManifestClusterBuildError.With(prometheus.Labels{
+				metrics.InputManifestBuildError.With(prometheus.Labels{
 					metrics.InputManifestLabel: config.Name,
 				}).Add(1)
 
@@ -61,7 +60,9 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 				}
 			}
 
-			metrics.InputManifestClusterBuildError.Delete(prometheus.Labels{
+			metrics.InputManifestsDeleted.Inc()
+
+			metrics.InputManifestBuildError.Delete(prometheus.Labels{
 				metrics.InputManifestLabel: config.Name,
 			})
 
@@ -97,10 +98,6 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 				}
 
 				clusterView.RemoveCurrentState(clusterName)
-
-				metrics.InputManifestClusterBuildError.Delete(prometheus.Labels{
-					metrics.InputManifestLabel: config.Name,
-				})
 
 				clusterView.SetWorkflowDone(clusterName)
 				logger.Info().Msg("Finished workflow for cluster")
@@ -246,7 +243,7 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 			return nil
 		}); err != nil {
 			metrics.InputManifestsErrorCounter.Inc()
-			metrics.InputManifestClusterBuildError.With(prometheus.Labels{
+			metrics.InputManifestBuildError.With(prometheus.Labels{
 				metrics.InputManifestLabel: config.Name,
 			}).Add(1)
 

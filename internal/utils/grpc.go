@@ -24,8 +24,8 @@ func CloseClientConnection(connection *grpc.ClientConn) {
 	}
 }
 
-func NewGRPCServer() *grpc.Server {
-	return grpc.NewServer(
+func NewGRPCServer(opts ...grpc.ServerOption) *grpc.Server {
+	opts = append(opts,
 		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
 			MinTime:             45 * time.Second, // If a client pings more than once every 45 seconds, terminate the connection
 			PermitWithoutStream: true,             // Allow pings even when there are no active streams
@@ -38,6 +38,8 @@ func NewGRPCServer() *grpc.Server {
 			Timeout:               5 * time.Minute, // Wait 5 minutes for the ping ack before assuming the connection is dead.
 		}),
 	)
+
+	return grpc.NewServer(opts...)
 }
 
 // GrpcDialWithRetryAndBackoff creates an insecure gRPC connection to serviceURL

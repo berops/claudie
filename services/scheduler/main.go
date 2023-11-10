@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/berops/claudie/services/scheduler/domain/usecases/metrics"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -20,11 +22,13 @@ import (
 	"github.com/berops/claudie/proto/pb"
 	outboundAdapters "github.com/berops/claudie/services/scheduler/adapters/outbound"
 	"github.com/berops/claudie/services/scheduler/domain/usecases"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const (
 	defaultHealthcheckPort    = 50056
 	defaultConfigPullInterval = 10
+	defaultPrometheusPort     = "9096"
 )
 
 func main() {
@@ -40,6 +44,9 @@ func main() {
 	usecases := &usecases.Usecases{
 		ContextBox: contextBoxConnector,
 	}
+
+	metricsServer := &http.Server{Addr: fmt.Sprintf(":%s", utils.GetEnvDefault("PROMETHEUS_PORT", defaultPrometheusPort))}
+	metrics.MustRegisterCounters()
 
 	// Initialize health probes
 	healthcheck.NewClientHealthChecker(
@@ -109,6 +116,10 @@ func main() {
 			err = errors.New("interrupt signal")
 		}
 
+		if err := metricsServer.Shutdown(errGroupCtx); err != nil {
+			log.Err(err).Msgf("Failed to shutdown metrics server")
+		}
+
 		// Sometimes when the container terminates gRPC logs the following message:
 		// rpc error: code = Unknown desc = Error: No such container: hash of the container...
 		// It does not affect anything as everything will get terminated gracefully
@@ -116,6 +127,11 @@ func main() {
 		time.Sleep(1 * time.Second)
 
 		return err
+	})
+
+	errGroup.Go(func() error {
+		http.Handle("/metrics", promhttp.Handler())
+		return metricsServer.ListenAndServe()
 	})
 
 	log.Info().Msgf("Stopping Scheduler: %v", errGroup.Wait())
