@@ -74,9 +74,9 @@ To deploy Claudie `v0.6.X`, please:
 ## v0.6.3
 
 ### Features
-* Labels for unique node identification  https://github.com/berops/claudie/pull/1064
+* Labels for unique node identification  [#1064](https://github.com/berops/claudie/pull/1064)
 
 ### Bugfixes
-* Autoscaler crashloop https://github.com/berops/claudie/pull/1062
-* Tracking of partially build infra https://github.com/berops/claudie/pull/1063
+* Autoscaler crashloop [#1062](https://github.com/berops/claudie/pull/1062)
+* Tracking of partially build infra [#1063](https://github.com/berops/claudie/pull/1063)
 
