@@ -24,14 +24,14 @@ spec:
         fsGroup: 2000
       volumes:
         - name: data
-          emptyDir: {}
+          emptyDir: { }
       containers:
         - name: kube-eleven
           imagePullPolicy: Always
           image: ghcr.io/berops/claudie/kube-eleven
           volumeMounts:
-          - mountPath: /bin/services/kube-eleven/server/clusters
-            name: data
+            - mountPath: /bin/services/kube-eleven/server/clusters
+              name: data
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
@@ -59,6 +59,8 @@ spec:
                   key: GOLANG_LOG
           ports:
             - containerPort: 50054
+            - name: "metrics"
+              containerPort: 9090
           readinessProbe:
             grpc:
               port: 50054

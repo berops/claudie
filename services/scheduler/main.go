@@ -28,7 +28,7 @@ import (
 const (
 	defaultHealthcheckPort    = 50056
 	defaultConfigPullInterval = 10
-	defaultPrometheusPort     = "9096"
+	defaultPrometheusPort     = "9090"
 )
 
 func main() {
