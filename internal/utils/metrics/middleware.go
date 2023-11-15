@@ -30,7 +30,7 @@ var (
 
 	Latency = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name: "claudie_grpc_grpc_call_latency_seconds",
+			Name: "claudie__grpc_call_latency_seconds",
 			Help: "Latency of gRPC API calls in seconds.",
 			Buckets: []float64{
 				.005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 10, // up to 10sec
