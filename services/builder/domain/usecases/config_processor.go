@@ -65,6 +65,8 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 				metrics.InputManifestLabel: config.Name,
 			})
 
+			metrics.ClustersDeleted.Add(float64(len(clusterView.CurrentClusters)))
+
 			logger.Info().Msgf("Config successfully destroyed")
 
 			return

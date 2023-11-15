@@ -41,6 +41,22 @@ func (u *Usecases) buildCluster(ctx *utils.BuilderContext, cboxClient pb.Context
 				metrics.InputManifestLabel: ctx.ProjectName,
 			}).Add(-float64(c))
 		}(lb.TargetedK8S, lb.ClusterInfo.Name, adding)
+
+		deleting := -min(cutils.CountLbNodes(lb)-currNodes, 0)
+
+		metrics.LbDeletingNodesInProgress.With(prometheus.Labels{
+			metrics.K8sClusterLabel:    lb.TargetedK8S,
+			metrics.LBClusterLabel:     lb.ClusterInfo.Name,
+			metrics.InputManifestLabel: ctx.ProjectName,
+		}).Add(float64(deleting))
+
+		defer func(k8s, lb string, c int) {
+			metrics.LbDeletingNodesInProgress.With(prometheus.Labels{
+				metrics.K8sClusterLabel:    k8s,
+				metrics.LBClusterLabel:     lb,
+				metrics.InputManifestLabel: ctx.ProjectName,
+			}).Add(-float64(c))
+		}(lb.TargetedK8S, lb.ClusterInfo.Name, deleting)
 	}
 
 	metrics.K8sAddingNodesInProgress.With(prometheus.Labels{
@@ -96,7 +112,7 @@ func (u *Usecases) destroyCluster(ctx *utils.BuilderContext, cboxClient pb.Conte
 	}(cutils.CountNodes(ctx.CurrentCluster))
 
 	// LB delete nodes prometheus metrics.
-	for _, lb := range ctx.DeletedLoadBalancers {
+	for _, lb := range ctx.CurrentLoadbalancers {
 		metrics.LbDeletingNodesInProgress.With(prometheus.Labels{
 			metrics.K8sClusterLabel:    lb.TargetedK8S,
 			metrics.LBClusterLabel:     lb.ClusterInfo.Name,

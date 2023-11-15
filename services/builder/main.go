@@ -25,7 +25,10 @@ import (
 	"google.golang.org/grpc/connectivity"
 )
 
-const defaultBuilderPort = 50051
+const (
+	defaultBuilderPort    = 50051
+	defaultPrometheusPort = "9090"
+)
 
 // healthCheck function is function used for querying readiness of the pod running this microservice
 func healthCheck(usecases *usecases.Usecases) func() error {
@@ -88,7 +91,7 @@ func main() {
 	}
 	defer kb.Disconnect()
 
-	metricsServer := &http.Server{Addr: ":9090"}
+	metricsServer := &http.Server{Addr: fmt.Sprintf(":%s", utils.GetEnvDefault("PROMETHEUS_PORT", defaultPrometheusPort))}
 	metrics.MustRegisterCounters()
 
 	usecases := &usecases.Usecases{
