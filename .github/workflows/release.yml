@@ -5,7 +5,7 @@ on:
     types: [ published ]
 
 env:
-  SERVICES: context-box scheduler builder terraformer ansibler kube-eleven kuber claudie-operator
+  SERVICES: context-box scheduler builder terraformer ansibler kube-eleven kuber claudie-operator autoscaler-adapter
 
 jobs:
   build-and-publish:
@@ -50,7 +50,7 @@ jobs:
       - name: Edit autoscaler-adapter image tag in the manifest
         run: |
           TAG=${RELEASE}
-          sed "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" services/kuber/templates/cluster-autoscaler.goyaml
+          sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" services/kuber/templates/cluster-autoscaler.goyaml
           # Remove autoscaler-adapter tag from claudie kustomization.yaml
           awk '/autoscaler-adapter/{getline; next} 1' manifests/claudie/kustomization.yaml > temp.yaml && mv temp.yaml manifests/claudie/kustomization.yaml
 
