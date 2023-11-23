@@ -36,6 +36,10 @@ var (
 		Name: "claudie_clusters_deleted",
 		Help: "Clusters deleted",
 	})
+	LBClustersDeleted = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "claudie_lb_clusters_deleted",
+		Help: "Loadbalancer clusters deleted",
+	})
 
 	InputManifestBuildError = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "claudie_cluster_error",
@@ -49,6 +53,10 @@ var (
 	ClustersInDeletion = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "claudie_clusters_in_deletion",
 		Help: "Clusters in deletion",
+	})
+	LBClustersInDeletion = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "claudie_lb_clusters_in_deletion",
+		Help: "Loadbalancers clusters in deletion",
 	})
 
 	InputManifestsInProgress = prometheus.NewGauge(prometheus.GaugeOpts{
@@ -105,8 +113,10 @@ func MustRegisterCounters() {
 
 	prometheus.MustRegister(InputManifestInDeletion)
 	prometheus.MustRegister(ClustersInDeletion)
+	prometheus.MustRegister(LBClustersInDeletion)
 	prometheus.MustRegister(InputManifestsDeleted)
 	prometheus.MustRegister(ClustersDeleted)
+	prometheus.MustRegister(LBClustersDeleted)
 
 	prometheus.MustRegister(InputManifestBuildError)
 

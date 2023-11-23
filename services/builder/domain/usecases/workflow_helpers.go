@@ -128,6 +128,9 @@ func (u *Usecases) destroyCluster(ctx *utils.BuilderContext, cboxClient pb.Conte
 		}(lb.TargetedK8S, lb.ClusterInfo.Name, cutils.CountLbNodes(lb))
 	}
 
+	metrics.LBClustersInDeletion.Add(float64(len(ctx.CurrentLoadbalancers)))
+	defer func(c int) { metrics.LBClustersInDeletion.Add(-float64(c)) }(len(ctx.CurrentLoadbalancers))
+
 	if s := cutils.GetCommonStaticNodePools(ctx.CurrentCluster.GetClusterInfo().GetNodePools()); len(s) > 0 {
 		if err := u.destroyK8sCluster(ctx, cboxClient); err != nil {
 			return fmt.Errorf("error in destroy Kube-Eleven for config %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
@@ -147,6 +150,8 @@ func (u *Usecases) destroyCluster(ctx *utils.BuilderContext, cboxClient pb.Conte
 	if err := u.deleteClusterData(ctx, cboxClient); err != nil {
 		return fmt.Errorf("error in delete kubeconfig for config %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
 	}
+
+	metrics.LBClustersDeleted.Add(float64(len(ctx.CurrentLoadbalancers)))
 
 	return nil
 }
