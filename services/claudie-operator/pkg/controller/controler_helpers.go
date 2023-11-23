@@ -18,6 +18,7 @@ package controller
 
 import (
 	"fmt"
+	"unicode/utf8"
 
 	"github.com/berops/claudie/internal/manifest"
 	v1beta "github.com/berops/claudie/services/claudie-operator/pkg/api/v1beta1"
@@ -162,6 +163,10 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 		// Iterate over nodes and retrieve private key from secret
 		for _, n := range nws {
 			if key, ok := n.Secret.Data[string(v1beta.PRIVATE_KEY)]; ok {
+				if !utf8.ValidString(string(key)) {
+					secretNamespaceName := n.Secret.Namespace + "/" + n.Secret.Name
+					return manifest.Manifest{}, buildSecretError(secretNamespaceName, fmt.Errorf("field %s is not a valid UTF-8 string", v1beta.PRIVATE_KEY))
+				}
 				nodes = append(nodes, manifest.Node{Endpoint: n.Endpoint, Key: string(key)})
 			} else {
 				secretNamespaceName := n.Secret.Namespace + "/" + n.Secret.Name
