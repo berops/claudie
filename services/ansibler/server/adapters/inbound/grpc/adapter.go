@@ -25,7 +25,7 @@ type GrpcAdapter struct {
 }
 
 // CreateGrpcAdapter return new gRPC adapter for Ansibler.
-func CreateGrpcAdapter(usecases *usecases.Usecases) *GrpcAdapter {
+func CreateGrpcAdapter(usecases *usecases.Usecases, opts ...grpc.ServerOption) *GrpcAdapter {
 	port := utils.GetEnvDefault("ANSIBLER_PORT", fmt.Sprint(defaultPort))
 	tcpBindingAddress := net.JoinHostPort("0.0.0.0", port)
 	listener, err := net.Listen("tcp", tcpBindingAddress)
@@ -33,7 +33,7 @@ func CreateGrpcAdapter(usecases *usecases.Usecases) *GrpcAdapter {
 		log.Fatal().Msgf("Failed to listen on %s : %v", tcpBindingAddress, err)
 	}
 
-	g := &GrpcAdapter{tcpListener: listener, server: utils.NewGRPCServer(), healthcheckServer: health.NewServer()}
+	g := &GrpcAdapter{tcpListener: listener, server: utils.NewGRPCServer(opts...), healthcheckServer: health.NewServer()}
 	log.Info().Msgf("Ansibler microservice is listening on %s", tcpBindingAddress)
 
 	pb.RegisterAnsiblerServiceServer(g.server, &AnsiblerGrpcService{usecases: usecases})

@@ -3,20 +3,31 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
+	metrics2 "github.com/berops/claudie/services/context-box/server/domain/usecases/metrics"
+
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
+	grpc2 "google.golang.org/grpc"
 
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/utils/metrics"
 	"github.com/berops/claudie/internal/worker"
 	"github.com/berops/claudie/services/context-box/server/adapters/inbound/grpc"
 	outboundAdapters "github.com/berops/claudie/services/context-box/server/adapters/outbound"
 	"github.com/berops/claudie/services/context-box/server/domain/usecases"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rs/zerolog/log"
+)
+
+const (
+	defaultPrometheusPort = "9090"
 )
 
 func main() {
@@ -39,8 +50,12 @@ func main() {
 		DB: mongoDBConnector,
 	}
 
+	metricsServer := &http.Server{Addr: fmt.Sprintf(":%s", utils.GetEnvDefault("PROMETHEUS_PORT", defaultPrometheusPort))}
+	metrics.MustRegisterCounters()
+	metrics2.MustRegisterCounters()
+
 	grpcAdapter := &grpc.GrpcAdapter{}
-	grpcAdapter.Init(usecases)
+	grpcAdapter.Init(usecases, grpc2.UnaryInterceptor(metrics.MetricsMiddleware))
 
 	errGroup, errGroupContext := errgroup.WithContext(context.Background())
 
@@ -75,6 +90,10 @@ func main() {
 			err = errors.New("program interruption signal")
 		}
 
+		if err := metricsServer.Shutdown(errGroupContext); err != nil {
+			log.Err(err).Msgf("Failed to shutdown metrics server")
+		}
+
 		// Perform graceful shutdown
 		log.Info().Msg("Gracefully shutting down GrpcAdapter")
 		grpcAdapter.Stop()
@@ -85,6 +104,11 @@ func main() {
 		time.Sleep(1 * time.Second)
 
 		return err
+	})
+
+	errGroup.Go(func() error {
+		http.Handle("/metrics", promhttp.Handler())
+		return metricsServer.ListenAndServe()
 	})
 
 	log.Info().Msgf("Stopping context-box microservice: %v", errGroup.Wait())

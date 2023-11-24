@@ -24,16 +24,16 @@ spec:
         fsGroup: 2000
       volumes:
         - name: data
-          emptyDir: {}
+          emptyDir: { }
         - name: temp
-          emptyDir: {}
+          emptyDir: { }
       containers:
         - name: ansibler
           volumeMounts:
-          - mountPath: /bin/services/ansibler/server/clusters
-            name: data
-          - mountPath: /.ansible
-            name: temp
+            - mountPath: /bin/services/ansibler/server/clusters
+              name: data
+            - mountPath: /.ansible
+              name: temp
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
@@ -63,6 +63,8 @@ spec:
                   key: GOLANG_LOG
           ports:
             - containerPort: 50053
+            - name: "metrics"
+              containerPort: 9090
           readinessProbe:
             grpc:
               port: 50053

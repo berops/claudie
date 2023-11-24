@@ -95,6 +95,9 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: GOLANG_LOG
+          ports:
+            - name: "metrics"
+              containerPort: 9090
           readinessProbe:
             httpGet:
               path: /ready

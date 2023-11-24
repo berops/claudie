@@ -24,18 +24,18 @@ spec:
         fsGroup: 2000
       volumes:
         - name: data
-          emptyDir: {}
+          emptyDir: { }
         - name: temp
-          emptyDir: {}
+          emptyDir: { }
       containers:
         - name: terraformer
           imagePullPolicy: Always
           image: ghcr.io/berops/claudie/terraformer
           volumeMounts:
-          - mountPath: /bin/services/terraformer/server/clusters
-            name: data
-          - mountPath: /tmp
-            name: temp
+            - mountPath: /bin/services/terraformer/server/clusters
+              name: data
+            - mountPath: /tmp
+              name: temp
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
@@ -115,6 +115,8 @@ spec:
                   key: AWS_REGION
           ports:
             - containerPort: 50052
+            - name: "metrics"
+              containerPort: 9090
           readinessProbe:
             grpc:
               port: 50052
