@@ -202,3 +202,30 @@ func GetCommonDynamicNodePools(nps []*pb.NodePool) []*pb.NodePool {
 	}
 	return dynamic
 }
+
+func CountLbNodes(lb *pb.LBcluster) int {
+	var out int
+	for _, np := range lb.GetClusterInfo().GetNodePools() {
+		switch i := np.GetNodePoolType().(type) {
+		case *pb.NodePool_DynamicNodePool:
+			out += int(i.DynamicNodePool.Count)
+		case *pb.NodePool_StaticNodePool:
+			// Lbs are only dynamic.
+		}
+	}
+
+	return out
+}
+
+func CountNodes(k *pb.K8Scluster) int {
+	var out int
+	for _, np := range k.GetClusterInfo().GetNodePools() {
+		switch i := np.GetNodePoolType().(type) {
+		case *pb.NodePool_DynamicNodePool:
+			out += int(i.DynamicNodePool.Count)
+		case *pb.NodePool_StaticNodePool:
+			out += len(i.StaticNodePool.GetNodeKeys())
+		}
+	}
+	return out
+}

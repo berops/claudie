@@ -24,7 +24,7 @@ type GrpcAdapter struct {
 }
 
 // Init will create the underlying gRPC server and the gRPC healthcheck server
-func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
+func (g *GrpcAdapter) Init(usecases *usecases.Usecases, opts ...grpc.ServerOption) {
 	port := utils.GetEnvDefault("CONTEXT_BOX_PORT", fmt.Sprint(defaultContextBoxPort))
 	listeningAddress := net.JoinHostPort("0.0.0.0", port)
 
@@ -36,7 +36,7 @@ func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
 
 	log.Info().Msgf("context-box microservice bound to %s", listeningAddress)
 
-	g.server = utils.NewGRPCServer()
+	g.server = utils.NewGRPCServer(opts...)
 	pb.RegisterContextBoxServiceServer(g.server, &ContextBoxGrpcService{usecases: usecases})
 
 	// Add health-check service to gRPC

@@ -24,7 +24,7 @@ type GrpcAdapter struct {
 	healthcheckServer *health.Server
 }
 
-func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
+func (g *GrpcAdapter) Init(usecases *usecases.Usecases, opts ...grpc.ServerOption) {
 	var err error
 	port := utils.GetEnvDefault("KUBE_ELEVEN_PORT", fmt.Sprint(defaultPort))
 	bindingAddress := net.JoinHostPort("0.0.0.0", port)
@@ -34,7 +34,7 @@ func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
 	}
 	log.Info().Msgf("Kube-eleven microservice is listening on %s", bindingAddress)
 
-	g.server = utils.NewGRPCServer()
+	g.server = utils.NewGRPCServer(opts...)
 	pb.RegisterKubeElevenServiceServer(g.server, &KubeElevenGrpcService{usecases: usecases})
 
 	// Add healthcheck service to the gRPC server

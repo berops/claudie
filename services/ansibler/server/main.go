@@ -3,7 +3,12 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/berops/claudie/internal/utils/metrics"
 	"github.com/berops/claudie/services/ansibler/server/domain/usecases"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	grpc2 "google.golang.org/grpc"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -16,13 +21,23 @@ import (
 	"github.com/berops/claudie/services/ansibler/server/adapters/inbound/grpc"
 )
 
+const (
+	defaultPrometheusPort = "9090"
+)
+
 func main() {
 	// Initialize logger
 	utils.InitLog("ansibler")
 
-	grpcAdapter := grpc.CreateGrpcAdapter(&usecases.Usecases{
-		SpawnProcessLimit: make(chan struct{}, usecases.SpawnProcessLimit),
-	})
+	grpcAdapter := grpc.CreateGrpcAdapter(
+		&usecases.Usecases{
+			SpawnProcessLimit: make(chan struct{}, usecases.SpawnProcessLimit),
+		},
+		grpc2.UnaryInterceptor(metrics.MetricsMiddleware),
+	)
+
+	metricsServer := &http.Server{Addr: fmt.Sprintf(":%s", utils.GetEnvDefault("PROMETHEUS_PORT", defaultPrometheusPort))}
+	metrics.MustRegisterCounters()
 
 	errGroup, errGroupContext := errgroup.WithContext(context.Background())
 	errGroup.Go(grpcAdapter.Serve)
@@ -45,6 +60,10 @@ func main() {
 			err = errors.New("program interruption signal")
 		}
 
+		if err := metricsServer.Shutdown(errGroupContext); err != nil {
+			log.Err(err).Msgf("Failed to shutdown metrics server")
+		}
+
 		grpcAdapter.Stop()
 
 		// Sometimes when the container terminates gRPC logs the following message:
@@ -54,6 +73,11 @@ func main() {
 		time.Sleep(1 * time.Second)
 
 		return err
+	})
+
+	errGroup.Go(func() error {
+		http.Handle("/metrics", promhttp.Handler())
+		return metricsServer.ListenAndServe()
 	})
 
 	log.Info().Msgf("Stopping ansibler microservice: %v", errGroup.Wait())

@@ -74,6 +74,8 @@ spec:
                   key: GOLANG_LOG
           ports:
             - containerPort: 50055
+            - name: "metrics"
+              containerPort: 9090
           readinessProbe:
             grpc:
               port: 50055
