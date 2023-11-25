@@ -53,7 +53,7 @@ EOF
 }
 
 {{- if eq $.ClusterType "K8s" }}
-    {{- if not $nodepool.IsControl }}
+    {{- if not $nodepool.IsControl and $nodepool.NodePool.StorageDiskSize > 0 }}
 resource "hcloud_volume" "{{ $node.Name }}_volume" {
   provider  = hcloud.nodepool
   name      = "{{ $node.Name }}-volume"
