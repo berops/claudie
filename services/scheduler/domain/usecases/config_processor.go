@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"fmt"
+	"github.com/berops/claudie/services/scheduler/domain/usecases/metrics"
 	"sync"
 
 	"github.com/berops/claudie/internal/utils"
@@ -34,12 +35,18 @@ func (u *Usecases) ConfigProcessor(contextBoxGrpcClient pb.ContextBoxServiceClie
 			defer waitGroup.Done()
 		}
 
+		metrics.InputManifestsProcessedCounter.Inc()
+
+		metrics.InputManifestsInProgress.Inc()
+		defer func() { metrics.InputManifestsInProgress.Dec() }()
+
 		logger := utils.CreateLoggerWithProjectName(config.Name)
 
 		logger.Info().Msgf("Processing config")
 
 		// Process (build desired state) the config
 		if configProcessingErr := u.processConfig(config, contextBoxGrpcClient); configProcessingErr != nil {
+			metrics.InputManifestsErrorCounter.Inc()
 			logger.Err(configProcessingErr).Msgf("Error while processing config")
 
 			// Save processing error message to config

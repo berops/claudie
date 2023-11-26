@@ -3,6 +3,8 @@ package usecases
 import (
 	"errors"
 	"fmt"
+	"github.com/berops/claudie/services/builder/domain/usecases/metrics"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog/log"
 	"sync"
 
@@ -31,28 +33,65 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 	go func() {
 		defer wg.Done()
 
+		metrics.InputManifestsProcessedCounter.Inc()
+
+		metrics.InputManifestsInProgress.Inc()
+		defer func() { metrics.InputManifestsInProgress.Dec() }()
+
 		logger := cutils.CreateLoggerWithProjectName(config.Name)
 		clusterView := cutils.NewClusterView(config)
 
 		if config.DsChecksum == nil && config.CsChecksum != nil { // all current state needs to be deleted.
+			metrics.InputManifestInDeletion.Inc()
+			defer func() { metrics.InputManifestInDeletion.Dec() }()
+
 			logger.Info().Msgf("Destroying config")
 			if err := u.deleteConfig(config, clusterView, cboxClient); err != nil {
+				metrics.InputManifestsErrorCounter.Inc()
+				metrics.InputManifestBuildError.With(prometheus.Labels{
+					metrics.InputManifestLabel: config.Name,
+				}).Add(1)
+
 				logger.Err(err).Msg("Error while destroying config")
 				if err := utils.SaveConfigWithWorkflowError(config, cboxClient, clusterView); err != nil {
 					logger.Err(err).Msg("Failed to save error message")
 					return
 				}
 			}
+
+			metrics.InputManifestsDeleted.Inc()
+
+			metrics.InputManifestBuildError.Delete(prometheus.Labels{
+				metrics.InputManifestLabel: config.Name,
+			})
+
+			metrics.ClustersDeleted.Add(float64(len(clusterView.CurrentClusters)))
+
 			logger.Info().Msgf("Config successfully destroyed")
+
 			return
 		}
 
 		// Process each cluster concurrently through the Claudie workflow.
 		if err := cutils.ConcurrentExec(clusterView.AllClusters(), func(_ int, clusterName string) error {
+			metrics.ClusterProcessedCounter.Inc()
+			metrics.LoadBalancersProcessedCounter.Add(float64(len(clusterView.DesiredLoadbalancers[clusterName])))
+
+			metrics.ClustersInProgress.Inc()
+			defer func() { metrics.ClustersInProgress.Dec() }()
+
+			metrics.LoadBalancersInProgress.Add(float64(len(clusterView.DesiredLoadbalancers[clusterName])))
+			defer func(c int) { metrics.LoadBalancersInProgress.Add(float64(-c)) }(len(clusterView.DesiredLoadbalancers[clusterName]))
+
 			logger := cutils.CreateLoggerWithClusterName(clusterName)
 
 			// Handle deletion of a single cluster as a separate step.
 			if clusterView.DesiredClusters[clusterName] == nil {
+				metrics.ClustersDeleted.Inc()
+
+				metrics.ClustersInDeletion.Inc()
+				defer func() { metrics.ClustersInDeletion.Dec() }()
+
 				if err := u.deleteCluster(config.Name, clusterName, clusterView, cboxClient); err != nil {
 					clusterView.SetWorkflowError(clusterName, err)
 					logger.Err(err).Msg("Error while destroying cluster")
@@ -113,6 +152,18 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 
 			// If difference between states results in some nodes being deleted, delete them.
 			if len(diff.ToDelete) > 0 {
+				metrics.K8sDeletingNodesInProgress.With(prometheus.Labels{
+					metrics.K8sClusterLabel:    clusterName,
+					metrics.InputManifestLabel: config.Name,
+				}).Add(float64(cutils.Sum(diff.ToDelete)))
+
+				defer func(c int) {
+					metrics.K8sDeletingNodesInProgress.With(prometheus.Labels{
+						metrics.K8sClusterLabel:    clusterName,
+						metrics.InputManifestLabel: config.Name,
+					}).Add(-float64(c))
+				}(cutils.Sum(diff.ToDelete))
+
 				currentStage++
 				clusterView.ClusterWorkflows[clusterName].Description = fmt.Sprintf("Processing stage [%d/%d]", currentStage, stages)
 				logger.Info().Msgf("Processing stage [%d/%d] for cluster", currentStage, stages)
@@ -192,6 +243,11 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 			logger.Info().Msg("Finished building cluster")
 			return nil
 		}); err != nil {
+			metrics.InputManifestsErrorCounter.Inc()
+			metrics.InputManifestBuildError.With(prometheus.Labels{
+				metrics.InputManifestLabel: config.Name,
+			}).Add(1)
+
 			logger.Err(err).Msg("Error encountered while processing config")
 
 			// Even if the config fails to build, merge the changes as it might be in an in-between state
