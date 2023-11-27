@@ -44,19 +44,14 @@ func (im *InputManifest) GetNamespacedNameDashed() string {
 // it is also validating if the string is a proper UTF-8 string
 func (pwd *ProviderWithData) GetSecretField(name SecretField) (string, error) {
 	if value, ok := pwd.Secret.Data[string(name)]; ok {
-		if !validateSecretUTF8(string(value)) {
+		// Ref: https://github.com/berops/claudie/issues/1101#issuecomment-1820793262
+		if !utf8.ValidString(string(value)) {
 			return "", fmt.Errorf("field %s is not a valid UTF-8 string", name)
 		}
 		return string(value), nil
 	} else {
 		return "", fmt.Errorf("field %s not found", name)
 	}
-}
-
-// validateSecretUTF8 validates whether s consists entirely of valid UTF-8-encoded runes
-// Ref: https://github.com/berops/claudie/issues/1101#issuecomment-1820793262
-func validateSecretUTF8(data string) bool {
-	return utf8.ValidString(data)
 }
 
 // GetStatuses returns the inputmanifest.Status field
