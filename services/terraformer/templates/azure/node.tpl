@@ -116,7 +116,7 @@ PROT
 }
 
 {{- if eq $.ClusterType "K8s" }}
-    {{- if not $nodepool.IsControl }}
+    {{- if not $nodepool.IsControl and $nodepool.NodePool.StorageDiskSize > 0 }}
 resource "azurerm_managed_disk" "{{ $node.Name }}_disk" {
   provider             = azurerm.nodepool
   name                 = "{{ $node.Name }}-disk"

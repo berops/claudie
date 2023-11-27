@@ -83,7 +83,7 @@ EOF
 }
 
 {{- if eq $.ClusterType "K8s" }}
-    {{- if not $nodepool.IsControl }}
+    {{- if not $nodepool.IsControl and $nodepool.NodePool.StorageDiskSize > 0 }}
 resource "google_compute_disk" "{{ $node.Name }}_disk" {
   provider = google.nodepool_{{ $nodepool.NodePool.Region }}
   name     = "{{ $node.Name }}-disk"

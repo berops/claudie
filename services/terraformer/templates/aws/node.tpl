@@ -82,7 +82,7 @@ EOF
 }
 
 {{- if eq $.ClusterType "K8s" }}
-    {{- if not $nodepool.IsControl }}
+    {{- if not $nodepool.IsControl and $nodepool.NodePool.StorageDiskSize > 0 }}
 resource "aws_ebs_volume" "{{ $node.Name }}_volume" {
   provider          = aws.nodepool_{{ $nodepool.NodePool.Region }}
   availability_zone = "{{ $nodepool.NodePool.Zone }}"

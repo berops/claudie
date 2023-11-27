@@ -117,7 +117,7 @@ resource "oci_core_instance" "{{ $node.Name }}" {
 }
 
 {{- if eq $.ClusterType "K8s" }}
-    {{- if not $nodepool.IsControl }}
+    {{- if not $nodepool.IsControl and $nodepool.NodePool.StorageDiskSize > 0 }}
 resource "oci_core_volume" "{{ $node.Name }}_volume" {
   provider            = oci.nodepool_{{ $nodepool.NodePool.Region }}
   compartment_id      = var.default_compartment_id
