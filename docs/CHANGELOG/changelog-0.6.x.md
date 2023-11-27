@@ -74,9 +74,11 @@ To deploy Claudie `v0.6.X`, please:
 ## v0.6.3
 
 ### Features
-* Labels for unique node identification  [#1064](https://github.com/berops/claudie/pull/1064)
+- Labels for unique node identification  [#1064](https://github.com/berops/claudie/pull/1064)
+- Observability via prometheus metrics [#1095](https://github.com/berops/claudie/pull/1095)
 
 ### Bugfixes
-* Autoscaler crashloop [#1062](https://github.com/berops/claudie/pull/1062)
-* Tracking of partially build infra [#1063](https://github.com/berops/claudie/pull/1063)
+- Autoscaler crashloop [#1062](https://github.com/berops/claudie/pull/1062)
+- Tracking of partially build infra [#1063](https://github.com/berops/claudie/pull/1063)
+- Labels and Taints are now correctly applied for static nodes [#1112](https://github.com/berops/claudie/pull/1112)
 
