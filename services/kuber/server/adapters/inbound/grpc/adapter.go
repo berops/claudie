@@ -26,7 +26,7 @@ type GrpcAdapter struct {
 
 // Init sets up the GrpcAdapter by creating the underlying tcpListener, gRPC server and
 // gRPC health check server.
-func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
+func (g *GrpcAdapter) Init(usecases *usecases.Usecases, opts ...grpc.ServerOption) {
 	port := utils.GetEnvDefault("KUBER_PORT", fmt.Sprint(defaultKuberPort))
 
 	var err error
@@ -38,7 +38,7 @@ func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
 	}
 	log.Info().Msgf("Kuber service is listening on: %s", listeningAddress)
 
-	g.server = utils.NewGRPCServer()
+	g.server = utils.NewGRPCServer(opts...)
 	pb.RegisterKuberServiceServer(g.server, &KuberGrpcService{usecases: usecases})
 
 	// Add health service to gRPC

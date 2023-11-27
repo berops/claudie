@@ -24,14 +24,14 @@ spec:
         fsGroup: 2000
       volumes:
         - name: data
-          emptyDir: {}
+          emptyDir: { }
       containers:
         - name: kuber
           imagePullPolicy: Always
           image: ghcr.io/berops/claudie/kuber
           volumeMounts:
-          - mountPath: /bin/services/kuber/server/clusters
-            name: data
+            - mountPath: /bin/services/kuber/server/clusters
+              name: data
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
@@ -72,6 +72,8 @@ spec:
                   fieldPath: metadata.namespace
           ports:
             - containerPort: 50057
+            - name: "metrics"
+              containerPort: 9090
           readinessProbe:
             grpc:
               port: 50057
@@ -119,12 +121,12 @@ metadata:
     app.kubernetes.io/part-of: claudie
     app.kubernetes.io/name: kuber
 rules:
-  - apiGroups: [""]
-    resources: ["secrets", "configmaps", "services"]
-    verbs: ["create", "patch", "update", "get", "list", "delete"]
-  - apiGroups: ["apps"]
-    resources: ["deployments"]
-    verbs: ["create", "patch", "update", "get", "list", "delete"]
+  - apiGroups: [ "" ]
+    resources: [ "secrets", "configmaps", "services" ]
+    verbs: [ "create", "patch", "update", "get", "list", "delete" ]
+  - apiGroups: [ "apps" ]
+    resources: [ "deployments" ]
+    verbs: [ "create", "patch", "update", "get", "list", "delete" ]
 ---
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1

@@ -99,7 +99,9 @@ type StaticNodePool struct {
 	// Name of the nodepool.
 	Name string `json:"name"`
 	// List of static nodes for a particular static nodepool.
-	Nodes []StaticNode `json:"nodes"`
+	Nodes  []StaticNode      `json:"nodes"`
+	Labels map[string]string `json:"labels"`
+	Taints []corev1.Taint    `json:"taints"`
 }
 
 // StaticNode defines a single static node for a particular static nodepool.

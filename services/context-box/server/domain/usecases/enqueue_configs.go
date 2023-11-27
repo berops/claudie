@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"fmt"
+	"github.com/berops/claudie/services/context-box/server/domain/usecases/metrics"
 	"strings"
 
 	"github.com/rs/zerolog/log"
@@ -128,6 +129,7 @@ func (u *Usecases) enqueueConfigs() error {
 					u.schedulerQueue.Enqueue(configInfo)
 					configInfo.SchedulerTTL = defaultSchedulerTTL
 
+					metrics.InputManifestsEnqueuedScheduler.Inc()
 					continue
 				} else if !configInfo.hasAnyError() {
 					// If the item is already present in the scheduler queue but the config is still not pulled by the scheduler
@@ -152,6 +154,8 @@ func (u *Usecases) enqueueConfigs() error {
 					// config and provision the corresponding infrastructure.
 					u.builderQueue.Enqueue(configInfo)
 					configInfo.BuilderTTL = defaultBuilderTTL
+
+					metrics.InputManifestsEnqueuedBuilder.Inc()
 
 					continue
 				}
