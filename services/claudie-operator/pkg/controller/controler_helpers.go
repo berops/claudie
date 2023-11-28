@@ -19,7 +19,6 @@ package controller
 import (
 	"fmt"
 	"unicode/utf8"
-
 	"github.com/berops/claudie/internal/manifest"
 	v1beta "github.com/berops/claudie/services/claudie-operator/pkg/api/v1beta1"
 )
@@ -173,7 +172,15 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, fmt.Errorf("field %s not found", v1beta.PRIVATE_KEY))
 			}
 		}
-		nodePools.Static = append(nodePools.Static, manifest.StaticNodePool{Name: nodepool, Nodes: nodes})
+
+		np := getStaticNodePool(nodepool, crd.Spec.NodePools.Static)
+
+		nodePools.Static = append(nodePools.Static, manifest.StaticNodePool{
+			Name:   nodepool,
+			Nodes:  nodes,
+			Labels: np.Labels,
+			Taints: np.Taints,
+		})
 	}
 
 	return manifest.Manifest{
@@ -200,4 +207,13 @@ func buildProvisioningError(state v1beta.InputManifestStatus) error {
 		}
 	}
 	return fmt.Errorf(msg)
+}
+
+func getStaticNodePool(name string, nps []v1beta.StaticNodePool) *v1beta.StaticNodePool {
+	for _, v := range nps {
+		if v.Name == name {
+			return &v
+		}
+	}
+	return nil
 }
