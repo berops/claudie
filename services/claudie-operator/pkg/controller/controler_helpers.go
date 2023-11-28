@@ -18,9 +18,9 @@ package controller
 
 import (
 	"fmt"
-	"unicode/utf8"
 	"github.com/berops/claudie/internal/manifest"
 	v1beta "github.com/berops/claudie/services/claudie-operator/pkg/api/v1beta1"
+	"unicode/utf8"
 )
 
 // mergeInputManifestWithSecrets takes the v1beta.InputManifest and providersWithSecret and returns a claudie type raw manifest.Manifest type.
