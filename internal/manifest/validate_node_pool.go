@@ -64,8 +64,8 @@ func (p *NodePool) Validate(m *Manifest) error {
 }
 
 func (d *DynamicNodePool) Validate() error {
-	if d.StorageDiskSize < 0 || d.StorageDiskSize >= 50 {
-		return fmt.Errorf("storageDiskSize size must be either -1 or >= 50")
+	if (d.StorageDiskSize != nil) && !(*d.StorageDiskSize == 0 || *d.StorageDiskSize >= 50) {
+		return fmt.Errorf("storageDiskSize size must be either 0 or >= 50")
 	}
 
 	return validator.New().Struct(d)

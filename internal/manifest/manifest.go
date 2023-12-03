@@ -130,7 +130,7 @@ type DynamicNodePool struct {
 	// with predefined size of 100GB for kubernetes nodes and 50GB for Loadbalancer nodes.
 	// The value must be either -1 (no disk is created), or >= 50. If no value is specified, 50 is used.
 	// +optional
-	StorageDiskSize int32 `validate:"omitempty" yaml:"storageDiskSize" json:"storageDiskSize,omitempty"`
+	StorageDiskSize *int32 `validate:"omitempty" yaml:"storageDiskSize" json:"storageDiskSize,omitempty"`
 	// Autoscaler configuration for this nodepool. Mutually exclusive with count.
 	// +optional
 	AutoscalerConfig AutoscalerConfig `validate:"required_without=Count,excluded_with=Count" yaml:"autoscaler" json:"autoscaler,omitempty"`
