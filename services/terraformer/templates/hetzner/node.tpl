@@ -31,8 +31,8 @@ resource "hcloud_server" "{{ $node.Name }}" {
     "claudie-cluster" : "{{ $clusterName }}-{{ $clusterHash }}"
   }
 
-{{- if and (eq $.ClusterType "K8s") (gt $nodepool.NodePool.StorageDiskSize 0) }}
-    {{- if not $nodepool.IsControl }}
+{{- if eq $.ClusterType "K8s" }}
+    {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
   user_data = <<EOF
 #!/bin/bash
 # Mount volume only when not mounted yet
@@ -52,8 +52,8 @@ EOF
 {{- end }}
 }
 
-{{- if and (eq $.ClusterType "K8s") (gt $nodepool.NodePool.StorageDiskSize 0) }}
-    {{- if not $nodepool.IsControl }}
+{{- if eq $.ClusterType "K8s" }}
+    {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
 resource "hcloud_volume" "{{ $node.Name }}_volume" {
   provider  = hcloud.nodepool
   name      = "{{ $node.Name }}-volume"

@@ -55,7 +55,7 @@ resource "google_compute_instance" "{{ $node.Name }}" {
   set -euxo pipefail
 # Allow ssh as root
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart  
-    {{- if and (eq $.ClusterType "K8s") (gt $nodepool.NodePool.StorageDiskSize 0) }}
+    {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
 # Mount managed disk only when not mounted yet
 sleep 50
 disk=$(ls -l /dev/disk/by-id | grep "google-${var.gcp_storage_disk_name}" | awk '{print $NF}')
@@ -71,7 +71,7 @@ fi
     {{- end }}
 EOF
 
-  {{- if and (eq $.ClusterType "K8s") (gt $nodepool.NodePool.StorageDiskSize 0) }}
+  {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
   # As the storage disk is attached via google_compute_attached_disk,
   # we must ignore attached_disk property.
   lifecycle {
@@ -82,8 +82,8 @@ EOF
 {{- end }}
 }
 
-{{- if and (eq $.ClusterType "K8s") (gt $nodepool.NodePool.StorageDiskSize 0) }}
-    {{- if not $nodepool.IsControl }}
+{{- if eq $.ClusterType "K8s" }}
+    {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
 resource "google_compute_disk" "{{ $node.Name }}_disk" {
   provider = google.nodepool_{{ $nodepool.NodePool.Region }}
   name     = "{{ $node.Name }}-disk"

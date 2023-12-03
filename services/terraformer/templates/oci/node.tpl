@@ -95,7 +95,7 @@ resource "oci_core_instance" "{{ $node.Name }}" {
         - iptables -Z
         # Make changes persistent
         - netfilter-persistent save
-        {{- if and (eq $.ClusterType "K8s") (gt $nodepool.NodePool.StorageDiskSize 0) }}
+        {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
         # Mount volume
         - |
           sleep 50
@@ -116,8 +116,8 @@ resource "oci_core_instance" "{{ $node.Name }}" {
 {{- end }}
 }
 
-{{- if and (eq $.ClusterType "K8s") (gt $nodepool.NodePool.StorageDiskSize 0) }}
-    {{- if not $nodepool.IsControl }}
+{{- if eq $.ClusterType "K8s" }}
+    {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
 resource "oci_core_volume" "{{ $node.Name }}_volume" {
   provider            = oci.nodepool_{{ $nodepool.NodePool.Region }}
   compartment_id      = var.default_compartment_id
