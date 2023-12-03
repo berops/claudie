@@ -224,7 +224,7 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
   This field is optional; however, if a compute node pool does not define it, the default value will be used for the creation of the storage disk. Control node pools and LoadBalancer node pools ignore this field.
 
-  The default value for this field is `50`, with a minimum value also set to `50`. This value is only applicable to compute nodes. If the disk size is set to `-1`, no storage disk will be created for any nodes in the particular node pool.
+  The default value for this field is `50`, with a minimum value also set to `50`. This value is only applicable to compute nodes. If the disk size is set to `0`, no storage disk will be created for any nodes in the particular node pool.
 
 - `autoscaler` [Autoscaler Configuration](#autoscaler-configuration)
   
