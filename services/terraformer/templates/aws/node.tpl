@@ -63,7 +63,7 @@ sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
 cat /root/.ssh/temp > /root/.ssh/authorized_keys
 rm /root/.ssh/temp
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config && service sshd restart
-    {{- if not $nodepool.IsControl }}
+    {{- if and (eq $.ClusterType "K8s") (gt $nodepool.NodePool.StorageDiskSize 0) }}
 # Mount EBS volume only when not mounted yet
 sleep 50
 disk=$(ls -l /dev/disk/by-id | grep "${replace("${aws_ebs_volume.{{ $node.Name }}_volume.id}", "-", "")}" | awk '{print $NF}')
@@ -81,7 +81,7 @@ EOF
 {{- end }}
 }
 
-{{- if eq $.ClusterType "K8s" }}
+{{- if and (eq $.ClusterType "K8s") (gt $nodepool.NodePool.StorageDiskSize 0) }}
     {{- if not $nodepool.IsControl }}
 resource "aws_ebs_volume" "{{ $node.Name }}_volume" {
   provider          = aws.nodepool_{{ $nodepool.NodePool.Region }}

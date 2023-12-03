@@ -13,30 +13,30 @@ proto:
 
 # Start Context-box service on a local environment, exposed on port 50055
 contextbox:
-	GOLANG_LOG=debug go run ./services/context-box/server
+	GOLANG_LOG=debug PROMETHEUS_PORT=9090 go run ./services/context-box/server
 
 # Start Scheduler service on a local environment
 scheduler:
-	GOLANG_LOG=debug go run ./services/scheduler
+	GOLANG_LOG=debug PROMETHEUS_PORT=9091 go run ./services/scheduler
 
 # Start Builder service on a local environment
 builder:
-	GOLANG_LOG=debug go run ./services/builder
+	GOLANG_LOG=debug PROMETHEUS_PORT=9092 go run ./services/builder
 # Start Terraformer service on a local environment, exposed on port 50052
 terraformer:
-	GOLANG_LOG=debug go run ./services/terraformer/server
+	GOLANG_LOG=debug PROMETHEUS_PORT=9093 go run ./services/terraformer/server
 
 # Start Ansibler service on a local environment, exposed on port 50053
 ansibler:
-	GOLANG_LOG=debug go run ./services/ansibler/server
+	GOLANG_LOG=debug PROMETHEUS_PORT=9094 go run ./services/ansibler/server
 
 # Start Kube-eleven service on a local environment, exposed on port 50054
 kube-eleven:
-	GOLANG_LOG=debug go run ./services/kube-eleven/server
+	GOLANG_LOG=debug PROMETHEUS_PORT=9095 go run ./services/kube-eleven/server
 
 # Start Kuber service on a local environment, exposed on port 50057
 kuber:
-	GOLANG_LOG=debug go run ./services/kuber/server
+	GOLANG_LOG=debug PROMETHEUS_PORT=9096 go run ./services/kuber/server
 
 # Start Claudie-operator service on a local environment
 # This is not necessary to have running on local environtment, to inject input manifest,

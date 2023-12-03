@@ -57,7 +57,6 @@ Support for more cloud providers is in the [roadmap](https://github.com/berops/c
 
 !!! note "For static nodepools a provider is not needed, refer to the [static section](#static) for more detailed information."
 
-
 ## SecretRef
   
   SecretReference represents a Kubernetes Secret Reference. It has enough information to retrieve secret in any namespace.
@@ -221,11 +220,11 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
 - `storageDiskSize`
 
-  Size of the storage disk on the nodes in the nodepool in `GB`. The OS disk is created automatically with predefined size of `100GB` for kubernetes nodes and `50GB` for Loadbalancer nodes.
-  
-  Default value is `50`, minimum value is `50`. Value is used only for compute nodes.
+  The size of the storage disk on the nodes in the node pool is specified in `GB`. The OS disk is created automatically with a predefined size of `100GB` for Kubernetes nodes and `50GB` for LoadBalancer nodes.
 
-  This field is optional, however, if compute nodepool does not define it, default value is used for creation of storage disk. Control nodepools and Loadbalancer nodepools ignore this field.
+  This field is optional; however, if a compute node pool does not define it, the default value will be used for the creation of the storage disk. Control node pools and LoadBalancer node pools ignore this field.
+
+  The default value for this field is `50`, with a minimum value also set to `50`. This value is only applicable to compute nodes. If the disk size is set to `-1`, no storage disk will be created for any nodes in the particular node pool.
 
 - `autoscaler` [Autoscaler Configuration](#autoscaler-configuration)
   

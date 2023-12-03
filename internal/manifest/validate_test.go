@@ -102,6 +102,11 @@ var (
 			},
 		},
 	}
+
+	testNpDiskSizeSuccessfulNoDisk  = DynamicNodePool{Name: "control-1", Count: 10, ServerType: "small", Image: "ubuntu", ProviderSpec: ProviderSpec{Name: "foo", Region: "north", Zone: "1"}, StorageDiskSize: -1}
+	testNpDiskSizeSuccessfulFifty   = DynamicNodePool{Name: "control-1", Count: 10, ServerType: "small", Image: "ubuntu", ProviderSpec: ProviderSpec{Name: "foo", Region: "north", Zone: "1"}, StorageDiskSize: 50}
+	testNpDiskSizeSuccessfulDefault = DynamicNodePool{Name: "control-1", Count: 10, ServerType: "small", Image: "ubuntu", ProviderSpec: ProviderSpec{Name: "foo", Region: "north", Zone: "1"}}
+	testNpDiskSizeSuccessfulFail    = DynamicNodePool{Name: "control-1", Count: 10, ServerType: "small", Image: "ubuntu", ProviderSpec: ProviderSpec{Name: "foo", Region: "north", Zone: "1"}, StorageDiskSize: 10}
 )
 
 // TestDomain tests the domain which will be formed from node name
@@ -136,4 +141,13 @@ func TestNodepool(t *testing.T) {
 func TestNodepools(t *testing.T) {
 	err := testK8s.Validate()
 	require.NoError(t, err)
+}
+
+// TestStorageDiskSize tests the storageDiskSize validation.
+func TestStorageDiskSize(t *testing.T) {
+	r := require.New(t)
+	r.NoError(testNpDiskSizeSuccessfulNoDisk.Validate())
+	r.NoError(testNpDiskSizeSuccessfulFifty.Validate())
+	r.NoError(testNpDiskSizeSuccessfulDefault.Validate())
+	r.Error(testNpDiskSizeSuccessfulFail.Validate())
 }
