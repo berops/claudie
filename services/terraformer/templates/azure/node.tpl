@@ -78,13 +78,14 @@ sudo sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/tem
 sudo cat /root/.ssh/temp > /root/.ssh/authorized_keys
 sudo rm /root/.ssh/temp
 sudo echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config && service sshd restart
+# Create longhorn volume directory
+mkdir -p /opt/claudie/data
     {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
 # Mount managed disk only when not mounted yet
 sleep 50
 disk=$(ls -l /dev/disk/by-path | grep "lun-${azurerm_virtual_machine_data_disk_attachment.{{ $node.Name }}_disk_att.lun}" | awk '{print $NF}')
 disk=$(basename "$disk")
 if ! grep -qs "/dev/$disk" /proc/mounts; then
-  mkdir -p /opt/claudie/data
   if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
     mkfs.xfs /dev/$disk
   fi

@@ -95,6 +95,8 @@ resource "oci_core_instance" "{{ $node.Name }}" {
         - iptables -Z
         # Make changes persistent
         - netfilter-persistent save
+        # Create longhorn volume directory
+        - mkdir -p /opt/claudie/data
         {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
         # Mount volume
         - |
@@ -102,7 +104,6 @@ resource "oci_core_instance" "{{ $node.Name }}" {
           disk=$(ls -l /dev/oracleoci | grep "${var.oci_storage_disk_name}" | awk '{print $NF}')
           disk=$(basename "$disk")
           if ! grep -qs "/dev/$disk" /proc/mounts; then
-            mkdir -p /opt/claudie/data
             if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
               mkfs.xfs /dev/$disk
             fi

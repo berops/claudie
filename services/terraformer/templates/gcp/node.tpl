@@ -55,13 +55,14 @@ resource "google_compute_instance" "{{ $node.Name }}" {
   set -euxo pipefail
 # Allow ssh as root
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart  
+# Create longhorn volume directory
+mkdir -p /opt/claudie/data
     {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
 # Mount managed disk only when not mounted yet
 sleep 50
 disk=$(ls -l /dev/disk/by-id | grep "google-${var.gcp_storage_disk_name}" | awk '{print $NF}')
 disk=$(basename "$disk")
 if ! grep -qs "/dev/$disk" /proc/mounts; then
-  mkdir -p /opt/claudie/data
   if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
     mkfs.xfs /dev/$disk
   fi

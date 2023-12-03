@@ -32,23 +32,25 @@ resource "hcloud_server" "{{ $node.Name }}" {
   }
 
 {{- if eq $.ClusterType "K8s" }}
-    {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
   user_data = <<EOF
 #!/bin/bash
+# Create longhorn volume directory
+mkdir -p /opt/claudie/data
+    {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
 # Mount volume only when not mounted yet
 sleep 50
 disk=$(ls -l /dev/disk/by-id | grep "${hcloud_volume.{{ $node.Name }}_volume.id}" | awk '{print $NF}')
 disk=$(basename "$disk")
 if ! grep -qs "/dev/$disk" /proc/mounts; then
-  mkdir -p /opt/claudie/data
+  
   if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
     mkfs.xfs /dev/$disk
   fi
   mount /dev/$disk /opt/claudie/data
   echo "/dev/$disk /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
 fi
-EOF
     {{- end }}
+EOF
 {{- end }}
 }
 
