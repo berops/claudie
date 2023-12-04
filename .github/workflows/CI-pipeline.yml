@@ -19,6 +19,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
 
       - name: Merge with master branch
         uses: everlytic/branch-merge@1.1.5
@@ -35,6 +36,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
 
       - name: Check the repository for changes
         id: change
@@ -77,6 +79,7 @@ jobs:
         if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
         with:
           ref: ${{ github.head_ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
 
       - name: Set short sha output
         if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
@@ -144,6 +147,7 @@ jobs:
         if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
         with:
           ref: ${{ github.head_ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
 
       - name: Set short sha output
         if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
@@ -213,6 +217,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
 
       - name: Install terraform
         run: | 
