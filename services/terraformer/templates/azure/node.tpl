@@ -113,7 +113,7 @@ EOF
 )}"
   }
 PROT
-{{- end}}
+{{- end }}
 }
 
 {{- if eq $.ClusterType "K8s" }}
