@@ -67,6 +67,22 @@ resource "azurerm_virtual_machine_extension" "{{ $node.Name }}_{{ $clusterHash }
     claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 
+{{- if eq $.ClusterType "LB" }}
+  protected_settings = <<PROT
+  {
+      "script": "${base64encode(<<EOF
+      # Allow ssh as root
+      sudo sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
+      sudo cat /root/.ssh/temp > /root/.ssh/authorized_keys
+      sudo rm /root/.ssh/temp
+      sudo echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config && service sshd restart
+      EOF
+      )}"
+  }
+PROT
+{{- end }}
+
+{{- if eq $.ClusterType "K8s" }}
   protected_settings = <<PROT
   {
   "script": "${base64encode(<<EOF
@@ -97,6 +113,7 @@ EOF
 )}"
   }
 PROT
+{{- end}}
 }
 
 {{- if eq $.ClusterType "K8s" }}
