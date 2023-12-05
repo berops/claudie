@@ -34,12 +34,12 @@ func (k *Kubernetes) Validate(m *Manifest) error {
 	for _, cluster := range k.Clusters {
 		if err := cluster.Validate(); err != nil {
 			var ve validator.ValidationErrors
-				if errors.As(err, &ve) {
-					for _, fe := range ve {
-						if fe.Tag() == "ver" {
-							errMsg := "incorrect Kubernetes version, the supported versions are: 1.24.x, 1.25.x, 1.26.x"
-							return fmt.Errorf("failed to validate kubernetes cluster %s:%s", cluster.Name, errMsg)			
-						}
+			if errors.As(err, &ve) {
+				for _, fe := range ve {
+					if fe.Tag() == "ver" {
+						errMsg := "incorrect Kubernetes version, the supported versions are: 1.24.x, 1.25.x, 1.26.x"
+						return fmt.Errorf("failed to validate kubernetes cluster %s:%s", cluster.Name, errMsg)
+					}
 				}
 			}
 			return fmt.Errorf("failed to validate kubernetes cluster %s: %w", cluster.Name, err)
