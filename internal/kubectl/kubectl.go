@@ -42,14 +42,7 @@ func (k *Kubectl) KubectlApply(manifest string, options ...string) error {
 	if err != nil {
 		return err
 	}
-
-	if cleanup != nil {
-		defer func() {
-			if err := cleanup(); err != nil {
-				log.Err(err).Msg("failed to cleanup kubeconfig")
-			}
-		}()
-	}
+	defer cleanup()
 
 	command := fmt.Sprintf("kubectl apply -f %s %s", manifest, arg)
 	return k.run(command, options...)
@@ -62,14 +55,7 @@ func (k *Kubectl) KubectlApplyString(str string, options ...string) error {
 	if err != nil {
 		return err
 	}
-
-	if cleanup != nil {
-		defer func() {
-			if err := cleanup(); err != nil {
-				log.Err(err).Msg("failed to cleanup kubeconfig")
-			}
-		}()
-	}
+	defer cleanup()
 
 	command := fmt.Sprintf("echo '%s' | kubectl apply -f - %s", str, arg)
 	return k.run(command, options...)
@@ -83,14 +69,7 @@ func (k *Kubectl) KubectlDeleteManifest(manifest string, options ...string) erro
 	if err != nil {
 		return err
 	}
-
-	if cleanup != nil {
-		defer func() {
-			if err := cleanup(); err != nil {
-				log.Err(err).Msg("failed to cleanup kubeconfig")
-			}
-		}()
-	}
+	defer cleanup()
 
 	command := fmt.Sprintf("kubectl delete -f %s %s", manifest, arg)
 	return k.run(command, options...)
@@ -104,14 +83,7 @@ func (k *Kubectl) KubectlDeleteResource(resource, resourceName string, options .
 	if err != nil {
 		return err
 	}
-
-	if cleanup != nil {
-		defer func() {
-			if err := cleanup(); err != nil {
-				log.Err(err).Msg("failed to cleanup kubeconfig")
-			}
-		}()
-	}
+	defer cleanup()
 
 	command := fmt.Sprintf("kubectl delete %s %s %s", resource, resourceName, arg)
 	return k.run(command, options...)
@@ -125,14 +97,7 @@ func (k *Kubectl) KubectlDeleteString(str string, options ...string) error {
 	if err != nil {
 		return err
 	}
-
-	if cleanup != nil {
-		defer func() {
-			if err := cleanup(); err != nil {
-				log.Err(err).Msg("failed to cleanup kubeconfig")
-			}
-		}()
-	}
+	defer cleanup()
 
 	command := fmt.Sprintf("echo '%s' | kubectl delete -f - %s", str, arg)
 	return k.run(command, options...)
@@ -145,14 +110,7 @@ func (k *Kubectl) KubectlDrain(nodeName string) error {
 	if err != nil {
 		return err
 	}
-
-	if cleanup != nil {
-		defer func() {
-			if err := cleanup(); err != nil {
-				log.Err(err).Msg("failed to cleanup kubeconfig")
-			}
-		}()
-	}
+	defer cleanup()
 
 	command := fmt.Sprintf("kubectl drain %s --ignore-daemonsets --delete-emptydir-data %s", nodeName, arg)
 	return k.run(command)
@@ -167,14 +125,7 @@ func (k *Kubectl) KubectlDescribe(resource, resourceName string, options ...stri
 	if err != nil {
 		return err
 	}
-
-	if cleanup != nil {
-		defer func() {
-			if err := cleanup(); err != nil {
-				log.Err(err).Msg("failed to cleanup kubeconfig")
-			}
-		}()
-	}
+	defer cleanup()
 
 	command := fmt.Sprintf("kubectl describe %s %s %s", resource, resourceName, arg)
 	return k.run(command, options...)
@@ -189,14 +140,7 @@ func (k *Kubectl) KubectlGet(resource string, options ...string) ([]byte, error)
 	if err != nil {
 		return nil, err
 	}
-
-	if cleanup != nil {
-		defer func() {
-			if err := cleanup(); err != nil {
-				log.Err(err).Msg("failed to cleanup kubeconfig")
-			}
-		}()
-	}
+	defer cleanup()
 
 	command := fmt.Sprintf("kubectl get %s %s", resource, arg)
 	return k.runWithOutput(command, options...)
@@ -209,14 +153,7 @@ func (k *Kubectl) KubectlAnnotate(resource, resourceName, annotation string, opt
 	if err != nil {
 		return err
 	}
-
-	if cleanup != nil {
-		defer func() {
-			if err := cleanup(); err != nil {
-				log.Err(err).Msg("failed to cleanup kubeconfig")
-			}
-		}()
-	}
+	defer cleanup()
 
 	command := fmt.Sprintf("kubectl annotate %s %s %s %s", resource, resourceName, annotation, arg)
 	return k.run(command, options...)
@@ -229,14 +166,7 @@ func (k *Kubectl) KubectlLabel(resource, resourceName, label string, options ...
 	if err != nil {
 		return err
 	}
-
-	if cleanup != nil {
-		defer func() {
-			if err := cleanup(); err != nil {
-				log.Err(err).Msg("failed to cleanup kubeconfig")
-			}
-		}()
-	}
+	defer cleanup()
 
 	command := fmt.Sprintf("kubectl label %s %s %s %s", resource, resourceName, label, arg)
 	return k.run(command, options...)
@@ -249,14 +179,7 @@ func (k *Kubectl) KubectlGetNodeNames() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	if cleanup != nil {
-		defer func() {
-			if err := cleanup(); err != nil {
-				log.Err(err).Msg("failed to cleanup kubeconfig")
-			}
-		}()
-	}
+	defer cleanup()
 
 	nodesQueryCmd := fmt.Sprintf("kubectl get nodes --no-headers -o custom-columns=\":metadata.name\" %s", arg)
 	return k.runWithOutput(nodesQueryCmd)
@@ -269,14 +192,7 @@ func (k *Kubectl) KubectlGetEtcdPods(masterNodeName string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	if cleanup != nil {
-		defer func() {
-			if err := cleanup(); err != nil {
-				log.Err(err).Msg("failed to cleanup kubeconfig")
-			}
-		}()
-	}
+	defer cleanup()
 
 	// get etcd pods name
 	podsQueryCmd := fmt.Sprintf("kubectl %s %s-%s", arg, getEtcdPodsCmd, masterNodeName)
@@ -288,14 +204,7 @@ func (k *Kubectl) KubectlExecEtcd(etcdPod, etcdctlCmd string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	if cleanup != nil {
-		defer func() {
-			if err := cleanup(); err != nil {
-				log.Err(err).Msg("failed to cleanup kubeconfig")
-			}
-		}()
-	}
+	defer cleanup()
 
 	kcExecEtcdCmd := fmt.Sprintf("kubectl %s -n kube-system exec -i %s -- /bin/sh -c \" %s && %s \"",
 		arg, etcdPod, exportEtcdEnvsCmd, etcdctlCmd)
@@ -310,14 +219,7 @@ func (k *Kubectl) KubectlPatch(resource, resourceName, patchPath string, options
 	if err != nil {
 		return err
 	}
-
-	if cleanup != nil {
-		defer func() {
-			if err := cleanup(); err != nil {
-				log.Err(err).Msg("failed to cleanup kubeconfig")
-			}
-		}()
-	}
+	defer cleanup()
 
 	command := fmt.Sprintf("kubectl patch %s %s -p '%s' %s", resource, resourceName, patchPath, arg)
 	return k.run(command, options...)
@@ -329,14 +231,7 @@ func (k *Kubectl) KubectlCordon(nodeName string, options ...string) error {
 	if err != nil {
 		return err
 	}
-
-	if cleanup != nil {
-		defer func() {
-			if err := cleanup(); err != nil {
-				log.Err(err).Msg("failed to cleanup kubeconfig")
-			}
-		}()
-	}
+	defer cleanup()
 
 	command := fmt.Sprintf("kubectl cordon %s %s", nodeName, arg)
 	return k.run(command, options...)
@@ -388,23 +283,16 @@ func (k Kubectl) RolloutRestart(resource string, options ...string) error {
 	if err != nil {
 		return err
 	}
-
-	if cleanup != nil {
-		defer func() {
-			if err := cleanup(); err != nil {
-				log.Err(err).Msg("failed to cleanup kubeconfig")
-			}
-		}()
-	}
+	defer cleanup()
 
 	command := fmt.Sprintf("kubectl rollout restart %s %s", resource, arg)
 	return k.run(command, options...)
 }
 
 // getKubeconfig function returns either the "--kubeconfig <(echo ...)" if kubeconfig is specified, or empty string of none is given
-func (k Kubectl) getKubeconfig() (string, func() error, error) {
+func (k Kubectl) getKubeconfig() (string, func(), error) {
 	if k.Kubeconfig == "" {
-		return "", nil, nil
+		return "", func() {}, nil
 	}
 
 	id := uuid.New()
@@ -413,7 +301,11 @@ func (k Kubectl) getKubeconfig() (string, func() error, error) {
 		return "", nil, err
 	}
 
-	cleanup := func() error { return os.Remove(tmpName) }
+	cleanup := func() {
+		if err := os.Remove(tmpName); err != nil {
+			log.Err(err).Msg("failed to cleanup kubeconfig")
+		}
+	}
 
 	return fmt.Sprintf("--kubeconfig %s", tmpName), cleanup, nil
 }
