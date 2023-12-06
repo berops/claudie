@@ -74,4 +74,4 @@ images:
 - name: ghcr.io/berops/claudie/scheduler
   newTag: 8bfd819-2489
 - name: ghcr.io/berops/claudie/terraformer
-  newTag: 8bfd819-2489
+  newTag: ea417a5-2492
