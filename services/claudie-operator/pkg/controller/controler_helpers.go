@@ -18,9 +18,9 @@ package controller
 
 import (
 	"fmt"
-
 	"github.com/berops/claudie/internal/manifest"
 	v1beta "github.com/berops/claudie/services/claudie-operator/pkg/api/v1beta1"
+	"unicode/utf8"
 )
 
 // mergeInputManifestWithSecrets takes the v1beta.InputManifest and providersWithSecret and returns a claudie type raw manifest.Manifest type.
@@ -162,13 +162,25 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 		// Iterate over nodes and retrieve private key from secret
 		for _, n := range nws {
 			if key, ok := n.Secret.Data[string(v1beta.PRIVATE_KEY)]; ok {
+				if !utf8.ValidString(string(key)) {
+					secretNamespaceName := n.Secret.Namespace + "/" + n.Secret.Name
+					return manifest.Manifest{}, buildSecretError(secretNamespaceName, fmt.Errorf("field %s is not a valid UTF-8 string", v1beta.PRIVATE_KEY))
+				}
 				nodes = append(nodes, manifest.Node{Endpoint: n.Endpoint, Key: string(key)})
 			} else {
 				secretNamespaceName := n.Secret.Namespace + "/" + n.Secret.Name
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, fmt.Errorf("field %s not found", v1beta.PRIVATE_KEY))
 			}
 		}
-		nodePools.Static = append(nodePools.Static, manifest.StaticNodePool{Name: nodepool, Nodes: nodes})
+
+		np := getStaticNodePool(nodepool, crd.Spec.NodePools.Static)
+
+		nodePools.Static = append(nodePools.Static, manifest.StaticNodePool{
+			Name:   nodepool,
+			Nodes:  nodes,
+			Labels: np.Labels,
+			Taints: np.Taints,
+		})
 	}
 
 	return manifest.Manifest{
@@ -195,4 +207,13 @@ func buildProvisioningError(state v1beta.InputManifestStatus) error {
 		}
 	}
 	return fmt.Errorf(msg)
+}
+
+func getStaticNodePool(name string, nps []v1beta.StaticNodePool) *v1beta.StaticNodePool {
+	for _, v := range nps {
+		if v.Name == name {
+			return &v
+		}
+	}
+	return nil
 }

@@ -13,9 +13,9 @@ var (
 	testClusterVersionFailMinor = &Kubernetes{Clusters: []Cluster{{Name: "cluster1", Network: "10.0.0.0/8", Version: "v1.21.0", Pools: Pool{Control: []string{"np1"}}}}}
 	testClusterVersionFailMajor = &Kubernetes{Clusters: []Cluster{{Name: "cluster1", Network: "10.0.0.0/8", Version: "v2.22.0", Pools: Pool{Control: []string{"np1"}}}}}
 
-	testNodepoolAutoScalerSuccAC = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: 50, AutoscalerConfig: AutoscalerConfig{Min: 1, Max: 3}, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
-	testNodepoolAutoScalerSucc   = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: 50, Count: 1, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
-	testNodepoolAutoScalerFail   = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: 50, Count: 1, AutoscalerConfig: AutoscalerConfig{Min: 1, Max: 3}, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
+	testNodepoolAutoScalerSuccAC = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: newIntP(50), AutoscalerConfig: AutoscalerConfig{Min: 1, Max: 3}, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
+	testNodepoolAutoScalerSucc   = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: newIntP(50), Count: 1, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
+	testNodepoolAutoScalerFail   = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: newIntP(50), Count: 1, AutoscalerConfig: AutoscalerConfig{Min: 1, Max: 3}, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
 	testDomainFail               = &Manifest{
 		Kubernetes: Kubernetes{
 			Clusters: []Cluster{
@@ -102,7 +102,16 @@ var (
 			},
 		},
 	}
+
+	testNpDiskSizeSuccessfulNoDisk  = DynamicNodePool{Name: "control-1", Count: 10, ServerType: "small", Image: "ubuntu", ProviderSpec: ProviderSpec{Name: "foo", Region: "north", Zone: "1"}, StorageDiskSize: newIntP(0)}
+	testNpDiskSizeSuccessfulFifty   = DynamicNodePool{Name: "control-1", Count: 10, ServerType: "small", Image: "ubuntu", ProviderSpec: ProviderSpec{Name: "foo", Region: "north", Zone: "1"}, StorageDiskSize: newIntP(50)}
+	testNpDiskSizeSuccessfulDefault = DynamicNodePool{Name: "control-1", Count: 10, ServerType: "small", Image: "ubuntu", ProviderSpec: ProviderSpec{Name: "foo", Region: "north", Zone: "1"}}
+	testNpDiskSizeSuccessfulFail    = DynamicNodePool{Name: "control-1", Count: 10, ServerType: "small", Image: "ubuntu", ProviderSpec: ProviderSpec{Name: "foo", Region: "north", Zone: "1"}, StorageDiskSize: newIntP(10)}
 )
+
+func newIntP(a int32) *int32 {
+	return &a
+}
 
 // TestDomain tests the domain which will be formed from node name
 func TestDomain(t *testing.T) {
@@ -136,4 +145,13 @@ func TestNodepool(t *testing.T) {
 func TestNodepools(t *testing.T) {
 	err := testK8s.Validate()
 	require.NoError(t, err)
+}
+
+// TestStorageDiskSize tests the storageDiskSize validation.
+func TestStorageDiskSize(t *testing.T) {
+	r := require.New(t)
+	r.NoError(testNpDiskSizeSuccessfulNoDisk.Validate())
+	r.NoError(testNpDiskSizeSuccessfulFifty.Validate())
+	r.NoError(testNpDiskSizeSuccessfulDefault.Validate())
+	r.Error(testNpDiskSizeSuccessfulFail.Validate())
 }

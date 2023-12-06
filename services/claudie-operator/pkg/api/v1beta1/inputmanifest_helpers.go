@@ -1,6 +1,9 @@
 package v1beta1
 
-import "fmt"
+import (
+	"fmt"
+	"unicode/utf8"
+)
 
 const (
 	SEPARATOR = "/"
@@ -38,8 +41,13 @@ func (im *InputManifest) GetNamespacedNameDashed() string {
 
 // GetSecretField takes an ENUM string type of SecretField, and returns the value
 // of the that field from the ProviderWithData struct
+// it is also validating if the string is a proper UTF-8 string
 func (pwd *ProviderWithData) GetSecretField(name SecretField) (string, error) {
 	if value, ok := pwd.Secret.Data[string(name)]; ok {
+		// Ref: https://github.com/berops/claudie/issues/1101#issuecomment-1820793262
+		if !utf8.ValidString(string(value)) {
+			return "", fmt.Errorf("field %s is not a valid UTF-8 string", name)
+		}
 		return string(value), nil
 	} else {
 		return "", fmt.Errorf("field %s not found", name)

@@ -2,15 +2,16 @@ package manifest
 
 import (
 	"fmt"
+
 	"github.com/berops/claudie/proto/pb"
 	k8sV1 "k8s.io/api/core/v1"
 )
 
-const (
+var (
 	// defaultDiskSize defines size of the disk if not specified in manifest.
 	// 50GB is the smallest disk size commonly supported by all the cloud providers
 	// supported by Claudie.
-	defaultDiskSize = 50
+	defaultDiskSize int32 = 50
 )
 
 // GetProvider will search for a Provider config by matching name from providerSpec
@@ -79,21 +80,21 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
 		}
 	}
 
-	for _, cloudflaceConf := range ds.Providers.Cloudflare {
-		if cloudflaceConf.Name == providerSpecName {
+	for _, cloudflareConf := range ds.Providers.Cloudflare {
+		if cloudflareConf.Name == providerSpecName {
 			return &pb.Provider{
 				SpecName:          providerSpecName,
-				Credentials:       cloudflaceConf.ApiToken,
+				Credentials:       cloudflareConf.ApiToken,
 				CloudProviderName: "cloudflare",
 			}, nil
 		}
 	}
 
-	for _, hetznerDNSConfg := range ds.Providers.HetznerDNS {
-		if hetznerDNSConfg.Name == providerSpecName {
+	for _, hetznerDNSConfig := range ds.Providers.HetznerDNS {
+		if hetznerDNSConfig.Name == providerSpecName {
 			return &pb.Provider{
 				SpecName:          providerSpecName,
-				Credentials:       hetznerDNSConfg.ApiToken,
+				Credentials:       hetznerDNSConfig.ApiToken,
 				CloudProviderName: "hetznerdns",
 			}, nil
 		}
@@ -158,8 +159,8 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 			}
 
 			// Set default disk size if not defined. (Value only used in compute nodepools)
-			if nodePool.StorageDiskSize == 0 {
-				nodePool.StorageDiskSize = defaultDiskSize
+			if nodePool.StorageDiskSize == nil {
+				nodePool.StorageDiskSize = &defaultDiskSize
 			}
 
 			var machineSpec *pb.MachineSpec
@@ -181,7 +182,7 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 						Zone:             nodePool.ProviderSpec.Zone,
 						ServerType:       nodePool.ServerType,
 						Image:            nodePool.Image,
-						StorageDiskSize:  uint32(nodePool.StorageDiskSize),
+						StorageDiskSize:  *nodePool.StorageDiskSize,
 						Count:            count,
 						Provider:         provider,
 						AutoscalerConfig: autoscalerConf,

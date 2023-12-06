@@ -128,8 +128,9 @@ type DynamicNodePool struct {
 	Image string `validate:"required" yaml:"image" json:"image"`
 	// Size of the storage disk on the nodes in the nodepool in GB. The OS disk is created automatically
 	// with predefined size of 100GB for kubernetes nodes and 50GB for Loadbalancer nodes.
+	// The value must be either -1 (no disk is created), or >= 50. If no value is specified, 50 is used.
 	// +optional
-	StorageDiskSize int64 `validate:"omitempty,gte=50" yaml:"storageDiskSize" json:"storageDiskSize,omitempty"`
+	StorageDiskSize *int32 `validate:"omitempty" yaml:"storageDiskSize" json:"storageDiskSize,omitempty"`
 	// Autoscaler configuration for this nodepool. Mutually exclusive with count.
 	// +optional
 	AutoscalerConfig AutoscalerConfig `validate:"required_without=Count,excluded_with=Count" yaml:"autoscaler" json:"autoscaler,omitempty"`

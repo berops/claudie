@@ -69,3 +69,16 @@ To deploy Claudie `v0.6.X`, please:
 - Clusters made out of static nodepools should be correctly destroyed [#1038](https://github.com/berops/claudie/pull/1038)
 - Issue when the hashes of current and desired state wouldn't match after config build sucessfully  [#1041](https://github.com/berops/claudie/pull/1041)
 - Wireguard is now removed from static nodepools when the config is deleted [#1059](https://github.com/berops/claudie/pull/1059)
+
+
+## v0.6.3
+
+### Features
+- Labels for unique node identification  [#1064](https://github.com/berops/claudie/pull/1064)
+- Observability via prometheus metrics [#1095](https://github.com/berops/claudie/pull/1095)
+
+### Bugfixes
+- Autoscaler crashloop [#1062](https://github.com/berops/claudie/pull/1062)
+- Tracking of partially build infra [#1063](https://github.com/berops/claudie/pull/1063)
+- Labels and Taints are now correctly applied for static nodes [#1112](https://github.com/berops/claudie/pull/1112)
+
