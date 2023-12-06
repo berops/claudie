@@ -54,14 +54,15 @@ resource "google_compute_instance" "{{ $node.Name }}" {
   #!/bin/bash
   set -euxo pipefail
 # Allow ssh as root
-echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart
-    {{- if not $nodepool.IsControl }}
+echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart  
+# Create longhorn volume directory
+mkdir -p /opt/claudie/data
+    {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
 # Mount managed disk only when not mounted yet
 sleep 50
 disk=$(ls -l /dev/disk/by-id | grep "google-${var.gcp_storage_disk_name}" | awk '{print $NF}')
 disk=$(basename "$disk")
 if ! grep -qs "/dev/$disk" /proc/mounts; then
-  mkdir -p /opt/claudie/data
   if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
     mkfs.xfs /dev/$disk
   fi
@@ -71,7 +72,7 @@ fi
     {{- end }}
 EOF
 
-  {{- if not $nodepool.IsControl}}
+  {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
   # As the storage disk is attached via google_compute_attached_disk,
   # we must ignore attached_disk property.
   lifecycle {
@@ -83,7 +84,7 @@ EOF
 }
 
 {{- if eq $.ClusterType "K8s" }}
-    {{- if not $nodepool.IsControl }}
+    {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
 resource "google_compute_disk" "{{ $node.Name }}_disk" {
   provider = google.nodepool_{{ $nodepool.NodePool.Region }}
   name     = "{{ $node.Name }}-disk"

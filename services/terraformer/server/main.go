@@ -66,6 +66,7 @@ func main() {
 				// If healthcheck result is positive then set the microservice as ready otherwise not ready
 				if err := healthCheck(minIOAdapter.Healthcheck, dynamoDBAdapter.Healthcheck); err != nil {
 					grpcAdapter.HealthServer.SetServingStatus("terraformer-readiness", grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+					log.Debug().Msgf("Failed to verify healthcheck: %v", err)
 				} else {
 					grpcAdapter.HealthServer.SetServingStatus("terraformer-readiness", grpc_health_v1.HealthCheckResponse_SERVING)
 				}

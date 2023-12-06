@@ -63,13 +63,14 @@ sed -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys > /root/.ssh/temp
 cat /root/.ssh/temp > /root/.ssh/authorized_keys
 rm /root/.ssh/temp
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && echo "PubkeyAcceptedKeyTypes=+ssh-rsa" >> sshd_config && service sshd restart
-    {{- if not $nodepool.IsControl }}
+# Create longhorn volume directory
+mkdir -p /opt/claudie/data
+    {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
 # Mount EBS volume only when not mounted yet
 sleep 50
 disk=$(ls -l /dev/disk/by-id | grep "${replace("${aws_ebs_volume.{{ $node.Name }}_volume.id}", "-", "")}" | awk '{print $NF}')
 disk=$(basename "$disk")
 if ! grep -qs "/dev/$disk" /proc/mounts; then
-  mkdir -p /opt/claudie/data
   if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
     mkfs.xfs /dev/$disk
   fi
@@ -82,7 +83,7 @@ EOF
 }
 
 {{- if eq $.ClusterType "K8s" }}
-    {{- if not $nodepool.IsControl }}
+    {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
 resource "aws_ebs_volume" "{{ $node.Name }}_volume" {
   provider          = aws.nodepool_{{ $nodepool.NodePool.Region }}
   availability_zone = "{{ $nodepool.NodePool.Zone }}"
