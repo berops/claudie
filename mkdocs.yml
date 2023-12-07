@@ -44,8 +44,24 @@ theme:
     - content.code.copy
     - navigation.top
   palette:
-    - primary: white
-    - accent: black
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/link
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
   logo: hexagon_blue.png
   favicon: hexagon_blue.png
   custom_dir: docs/overrides
