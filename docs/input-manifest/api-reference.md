@@ -181,11 +181,11 @@ In OOP analogy, a dynamic nodepool would be a class that would get instantiated 
 
 - `static` [Static](#static)
 
-  List of static nodepools of already existing machines, not created by of Claudie, used for Kubernetes or loadbalancer clusters. Typically, these would be on-premises machines.
+  List of static nodepools of already existing machines, not provisioned by Claudie, used for Kubernetes or loadbalancer clusters. These can be baremetal servers or VMs with IPs assigned. Claudie is able to join them into existing clusters, or provision clusters solely on the static nodepools. Typically we'll find these being used in on-premises scenarios, or hybrid-cloud clusters.
 
 ## Dynamic
 
-Dynamic nodepools are defined for cloud provider machines that Claudie is expected to create.
+Dynamic nodepools are defined for cloud provider machines that Claudie is expected to provision.
 
 - `name`
 
