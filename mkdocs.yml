@@ -45,13 +45,15 @@ theme:
     - navigation.top
   palette:
     - media: "(prefers-color-scheme)"
+      primary: white
+      accent: black
       toggle:
         icon: material/link
         name: Switch to light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: indigo
-      accent: indigo
+      primary: white
+      accent: black
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
