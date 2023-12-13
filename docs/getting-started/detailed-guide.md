@@ -263,12 +263,12 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     If you want to connect to your machines via SSH, you can recover private SSH key:
 
     ```bash
-    kubectl get secrets -n claudie -l claudie.io/output=metadata -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r .private_key > ~/.ssh/my-super-cluster
+    kubectl get secrets -n claudie -l claudie.io/output=metadata -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r .cluster_private_key > ~/.ssh/my-super-cluster
     ```
 
     To recover public IP of a node to connect to via SSH:
     ```bash
-    kubectl get secrets -n claudie -l claudie.io/output=metadata -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r .node_ips
+    kubectl get secrets -n claudie -l claudie.io/output=metadata -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r .dynamic_nodepools.node_ips
     ```
 
     Each secret created by Claudie has following labels:
