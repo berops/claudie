@@ -19,7 +19,6 @@ func (p *NodePool) Validate(m *Manifest) error {
 		if err := n.Validate(); err != nil {
 			return fmt.Errorf("failed to validate DynamicNodePool %q: %w", n.Name, err)
 		}
-
 		// check if the provider is defined in the manifest
 		if _, err := m.GetProvider(n.ProviderSpec.Name); err != nil {
 			return fmt.Errorf("provider %q specified for DynamicNodePool %q doesn't exists", n.ProviderSpec.Name, n.Name)
@@ -64,8 +63,14 @@ func (p *NodePool) Validate(m *Manifest) error {
 	return nil
 }
 
-func (d *DynamicNodePool) Validate() error { return validator.New().Struct(d) }
-func (s *StaticNodePool) Validate() error  { return validator.New().Struct(s) }
+func (d *DynamicNodePool) Validate() error {
+	if (d.StorageDiskSize != nil) && !(*d.StorageDiskSize == 0 || *d.StorageDiskSize >= 50) {
+		return fmt.Errorf("storageDiskSize size must be either 0 or >= 50")
+	}
+
+	return validator.New().Struct(d)
+}
+func (s *StaticNodePool) Validate() error { return validator.New().Struct(s) }
 
 func (a *AutoscalerConfig) isDefined() bool { return a.Min >= 0 && a.Max > 0 }
 
