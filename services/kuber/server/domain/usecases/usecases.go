@@ -33,6 +33,10 @@ type (
 		PrivateKey string `json:"cluster_private_key"`
 		// StaticNodepools contains metadata for static nodepools.
 		StaticNodepools StaticNodepool `json:"static_nodepools"`
+		// LoadBalancerNodepools contains metadata for lb dynamic nodepools.
+		LoadBalancerNodepools DynamicNodepool `json:"load_balancer_nodepools"`
+		// LoadBalancerPrivateKey is the private SSH key for the lb nodepools.
+		LoadBalancerPrivateKey string `json:"load_balancer_private_key"`
 	}
 
 	// DynamicNodepool contains map of node names and their IP pair.

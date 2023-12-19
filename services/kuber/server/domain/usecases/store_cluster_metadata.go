@@ -45,6 +45,25 @@ func (u *Usecases) StoreClusterMetadata(ctx context.Context, request *pb.StoreCl
 	md.DynamicNodepools = dp
 	md.StaticNodepools = sp
 
+	lbdp := DynamicNodepool{NodeIps: make(map[string]IPPair)}
+	for _, lb := range request.GetLoadbalancers() {
+		for _, pool := range lb.GetClusterInfo().GetNodePools() {
+			if np := pool.GetDynamicNodePool(); np != nil {
+				for _, node := range pool.GetNodes() {
+					lbdp.NodeIps[node.GetName()] = IPPair{
+						PublicIP:  net.ParseIP(node.GetPublic()),
+						PrivateIP: net.ParseIP(node.GetPrivate()),
+					}
+				}
+			}
+		}
+	}
+
+	md.LoadBalancerNodepools = lbdp
+	if len(request.GetLoadbalancers()) > 0 {
+		md.LoadBalancerPrivateKey = request.GetLoadbalancers()[0].ClusterInfo.GetPrivateKey()
+	}
+
 	b, err := json.Marshal(md)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal %s cluster metadata: %w", request.GetCluster().GetClusterInfo().GetName(), err)

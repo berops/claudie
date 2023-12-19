@@ -37,6 +37,7 @@ message DeleteNodesResponse {
 message StoreClusterMetadataRequest {
   K8scluster cluster = 1;
   string projectName = 2;
+  repeated LBcluster loadbalancers = 3;
 }
 
 message StoreClusterMetadataResponse {}
@@ -102,7 +103,7 @@ service KuberService {
   // DeleteClusterMetadata deletes the secret holding the private key and public IP addresses of the cluster supplied.
   rpc DeleteClusterMetadata(DeleteClusterMetadataRequest) returns (DeleteClusterMetadataResponse);
   // SetUpStorage installs Longhorn into the cluster.
-  rpc SetUpStorage(SetUpStorageRequest) returns (SetUpStorageResponse); 
+  rpc SetUpStorage(SetUpStorageRequest) returns (SetUpStorageResponse);
   // StoreKubeconfig creates a secret, which holds the kubeconfig of a Claudie-created cluster.
   rpc StoreKubeconfig(StoreKubeconfigRequest) returns (StoreKubeconfigResponse);
   // DeleteKubeconfig removes the secret that holds the kubeconfig of a Claudie-created cluster.
