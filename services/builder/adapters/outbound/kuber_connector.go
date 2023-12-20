@@ -53,8 +53,9 @@ func (k *KuberConnector) RemoveLBScrapeConfig(builderCtx *utils.BuilderContext, 
 func (k *KuberConnector) StoreClusterMetadata(builderCtx *utils.BuilderContext, kuberGrpcClient pb.KuberServiceClient) error {
 	return kuber.StoreClusterMetadata(kuberGrpcClient,
 		&pb.StoreClusterMetadataRequest{
-			Cluster:     builderCtx.DesiredCluster,
-			ProjectName: builderCtx.ProjectName,
+			Cluster:       builderCtx.DesiredCluster,
+			ProjectName:   builderCtx.ProjectName,
+			Loadbalancers: builderCtx.DesiredLoadbalancers,
 		})
 }
 
