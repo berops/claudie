@@ -48,11 +48,9 @@ spec:
         - image: registry.k8s.io/autoscaling/cluster-autoscaler:v1.25.0
           name: cluster-autoscaler
           resources:
-            limits:
-              memory: 120Mi
             requests:
               cpu: 100m
-              memory: 100Mi
+              memory: 300Mi
           command:
             - ./cluster-autoscaler
             - --cloud-provider=externalgrpc
