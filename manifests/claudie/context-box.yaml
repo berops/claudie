@@ -36,10 +36,10 @@ spec:
           resources:
             requests:
               cpu: 80m
-              memory: 50Mi
+              memory: 100Mi
             limits:
               cpu: 160m
-              memory: 100Mi
+              memory: 150Mi
           env:
             - name: DATABASE_PORT
               valueFrom:
