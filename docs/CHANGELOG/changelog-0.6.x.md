@@ -92,3 +92,10 @@ To deploy Claudie `v0.6.X`, please:
 - Fix subprocesses not terminating [#1137](https://github.com/berops/claudie/pull/1137)
 - Add more informative Kubernetes.Version validation [#1140](https://github.com/berops/claudie/pull/1140)
 
+## v0.6.5
+
+### Features
+- Adjust requests and limits on `context-box`, `autoscaler-adapter` and `cluster-autoscaler` [#1161](https://github.com/berops/claudie/issues/1161)
+
+### Bugfixes
+- Add missing SSH private key and public IPs of LB nodes to Claudie's metadata secret [#1164](https://github.com/berops/claudie/issues/1164)
