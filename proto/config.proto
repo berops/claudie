@@ -205,7 +205,7 @@ message DynamicNodePool {
   // OS image of the nodes.
   string image = 2;
   // Storage disk size of the nodes.
-  uint32 storageDiskSize = 3;
+  int32 storageDiskSize = 3;
   // Geograhical region of the nodes.
   string region = 4;
   // Datacentre zone for the nodes.

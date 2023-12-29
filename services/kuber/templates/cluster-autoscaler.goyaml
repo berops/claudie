@@ -69,20 +69,17 @@ spec:
           resources:
             requests:
               cpu: 80m
-              memory: 50Mi
+              memory: 100Mi
             limits:
               cpu: 160m
-              memory: 100Mi
           ports:
             - containerPort: {{ .AdapterPort }}
         - name: cluster-autoscaler
           image: registry.k8s.io/autoscaling/cluster-autoscaler:{{ .KubernetesVersion }}
           resources:
-            limits:
-              memory: 120Mi
             requests:
               cpu: 100m
-              memory: 100Mi
+              memory: 300Mi
           command:
             - ./cluster-autoscaler
             - --cloud-provider=externalgrpc

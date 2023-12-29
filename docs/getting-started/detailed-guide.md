@@ -260,15 +260,27 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     kubectl get secrets -n claudie -l claudie.io/output=kubeconfig -o jsonpath='{.items[0].data.kubeconfig}' | base64 -d > my-super-cluster-kubeconfig.yaml
     ```
 
-    If you want to connect to your machines via SSH, you can recover private SSH key:
+    If you want to connect to your dynamic k8s nodes via SSH, you can recover private SSH key:
 
     ```bash
-    kubectl get secrets -n claudie -l claudie.io/output=metadata -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r .private_key > ~/.ssh/my-super-cluster
+    kubectl get secrets -n claudie -l claudie.io/output=metadata -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r .cluster_private_key > ~/.ssh/my-super-cluster
     ```
 
-    To recover public IP of a node to connect to via SSH:
+    To recover public IP of your dynamic k8s nodes to connect to via SSH:
     ```bash
-    kubectl get secrets -n claudie -l claudie.io/output=metadata -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r .node_ips
+    kubectl get secrets -n claudie -l claudie.io/output=metadata -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r .dynamic_nodepools.node_ips
+    ```
+
+    In case you want to connect to your load balancer nodes via SSH, you can recover private SSH key:
+
+    ```bash
+    kubectl get secrets -n claudie -l claudie.io/output=metadata -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r .load_balancer_node_pools.cluster_private_key > ~/.ssh/my-super-cluster-lb-key
+    ```
+
+    To recover public IP of your load balancer nodes to connect to via SSH:
+
+    ```bash
+    kubectl get secrets -n claudie -l claudie.io/output=metadata -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r .load_balancer_node_pools.node_ips
     ```
 
     Each secret created by Claudie has following labels:

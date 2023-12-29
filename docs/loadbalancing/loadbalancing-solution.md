@@ -49,3 +49,9 @@ Loadbalancers are build from user defined nodepools in `pools` field, similar to
 ## An example of load balancer definition
 
 See an example load balancer definition in our reference [example input manifest](../input-manifest/example.md).
+
+## Notes
+
+### Cluster ingress controller
+You still need to deploy your own ingress controller to use the load balancer.
+It needs to be set up to use `nodeport` with the ports configured under `roles` in the load balancer definition.

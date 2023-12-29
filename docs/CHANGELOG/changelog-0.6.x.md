@@ -82,3 +82,20 @@ To deploy Claudie `v0.6.X`, please:
 - Tracking of partially build infra [#1063](https://github.com/berops/claudie/pull/1063)
 - Labels and Taints are now correctly applied for static nodes [#1112](https://github.com/berops/claudie/pull/1112)
 
+## v0.6.4
+
+### Features
+- Allow 0 disk size use for disabling additional volumes [#1138](https://github.com/berops/claudie/pull/1138)
+
+### Bugfixes
+- Add secret UTF-8 validation [#1114](https://github.com/berops/claudie/pull/1114)
+- Fix subprocesses not terminating [#1137](https://github.com/berops/claudie/pull/1137)
+- Add more informative Kubernetes.Version validation [#1140](https://github.com/berops/claudie/pull/1140)
+
+## v0.6.5
+
+### Features
+- Adjust requests and limits on `context-box`, `autoscaler-adapter` and `cluster-autoscaler` [#1161](https://github.com/berops/claudie/issues/1161)
+
+### Bugfixes
+- Add missing SSH private key and public IPs of LB nodes to Claudie's metadata secret [#1164](https://github.com/berops/claudie/issues/1164)
