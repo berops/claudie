@@ -211,6 +211,8 @@ func (u *Usecases) deleteConfig(config *pb.Config, clusterView *cutils.ClusterVi
 
 // deleteCluster calls destroy cluster to remove all traces of infrastructure from cluster.
 func (u *Usecases) deleteCluster(configName, clusterName string, clusterView *cutils.ClusterView, cboxClient pb.ContextBoxServiceClient) error {
+	log := cutils.CreateLoggerWithProjectAndClusterName(configName, clusterName)
+
 	deleteCtx := &utils.BuilderContext{
 		ProjectName:          configName,
 		CurrentCluster:       clusterView.CurrentClusters[clusterName],
@@ -220,9 +222,10 @@ func (u *Usecases) deleteCluster(configName, clusterName string, clusterView *cu
 
 	var err error
 	for i := 0; i < maxDeleteRetry; i++ {
-		if err := u.destroyCluster(deleteCtx, cboxClient); err == nil {
+		if err = u.destroyCluster(deleteCtx, cboxClient); err == nil {
 			break
 		}
+		log.Err(err).Msg("failed to destroy cluster")
 	}
 
 	return err
