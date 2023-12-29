@@ -131,6 +131,11 @@ func (u *Usecases) destroyCluster(ctx *utils.BuilderContext, cboxClient pb.Conte
 	metrics.LBClustersInDeletion.Add(float64(len(ctx.CurrentLoadbalancers)))
 	defer func(c int) { metrics.LBClustersInDeletion.Add(-float64(c)) }(len(ctx.CurrentLoadbalancers))
 
+	k8sCtx, lbCtx := ctx.SplitCurrentCtx()
+	if err := u.destroyInfrastructure(lbCtx, cboxClient); err != nil {
+		return fmt.Errorf("error in destroy config Terraformer for config %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
+	}
+
 	if s := cutils.GetCommonStaticNodePools(ctx.CurrentCluster.GetClusterInfo().GetNodePools()); len(s) > 0 {
 		if err := u.destroyK8sCluster(ctx, cboxClient); err != nil {
 			return fmt.Errorf("error in destroy Kube-Eleven for config %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
@@ -142,7 +147,7 @@ func (u *Usecases) destroyCluster(ctx *utils.BuilderContext, cboxClient pb.Conte
 	}
 
 	// Destroy infrastructure for the given cluster.
-	if err := u.destroyInfrastructure(ctx, cboxClient); err != nil {
+	if err := u.destroyInfrastructure(k8sCtx, cboxClient); err != nil {
 		return fmt.Errorf("error in destroy config Terraformer for config %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
 	}
 
@@ -195,10 +200,8 @@ func (u *Usecases) deleteConfig(config *pb.Config, clusterView *cutils.ClusterVi
 	log := cutils.CreateLoggerWithProjectName(config.Name)
 
 	var err error
-	// Try maxDeleteRetry to delete the config.
 	for i := 0; i < maxDeleteRetry; i++ {
 		if err = u.destroyConfig(config, clusterView, cboxClient); err == nil {
-			// Deletion successful, break here.
 			break
 		}
 		log.Err(err).Msg("failed to destroy config")
@@ -215,10 +218,14 @@ func (u *Usecases) deleteCluster(configName, clusterName string, clusterView *cu
 		Workflow:             clusterView.ClusterWorkflows[clusterName],
 	}
 
-	if err := u.destroyCluster(deleteCtx, cboxClient); err != nil {
-		return err
+	var err error
+	for i := 0; i < maxDeleteRetry; i++ {
+		if err := u.destroyCluster(deleteCtx, cboxClient); err == nil {
+			break
+		}
 	}
-	return nil
+
+	return err
 }
 
 // deleteNodes deletes nodes from the cluster based on the node map specified.

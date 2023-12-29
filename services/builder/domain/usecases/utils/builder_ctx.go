@@ -79,3 +79,29 @@ func (ctx *BuilderContext) GetClusterID() string {
 
 	return ""
 }
+
+// SplitCurrentCtx splits the builder current state context into two such that the
+// former contains only the K8s context and the latter LB context.
+func (ctx *BuilderContext) SplitCurrentCtx() (*BuilderContext, *BuilderContext) {
+	k8sContext := &BuilderContext{
+		ProjectName:          ctx.ProjectName,
+		CurrentCluster:       ctx.CurrentCluster,
+		DesiredCluster:       nil,
+		CurrentLoadbalancers: nil,
+		DesiredLoadbalancers: nil,
+		DeletedLoadBalancers: nil,
+		Workflow:             ctx.Workflow,
+	}
+
+	lbContext := &BuilderContext{
+		ProjectName:          ctx.ProjectName,
+		CurrentCluster:       nil,
+		DesiredCluster:       nil,
+		CurrentLoadbalancers: ctx.CurrentLoadbalancers,
+		DesiredLoadbalancers: nil,
+		DeletedLoadBalancers: nil,
+		Workflow:             ctx.Workflow,
+	}
+
+	return k8sContext, lbContext
+}

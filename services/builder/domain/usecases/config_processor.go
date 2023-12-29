@@ -217,7 +217,7 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 			clusterView.UpdateCurrentState(clusterName, ctx.DesiredCluster, ctx.DesiredLoadbalancers)
 			clusterView.UpdateDesiredState(clusterName, ctx.DesiredCluster, ctx.DesiredLoadbalancers)
 
-			if len(clusterView.DeletedLoadbalancers) > 0 {
+			if len(clusterView.DeletedLoadbalancers[clusterName]) > 0 {
 				// Perform the deletion of loadbalancers as this won't be handled by the buildCluster Workflow.
 				// The BuildInfrastructure in terraformer only performs creation/update for Lbs.
 				deleteCtx := &utils.BuilderContext{
