@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/berops/claudie/services/builder/domain/usecases/metrics"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/rs/zerolog/log"
 	"strings"
 
 	cutils "github.com/berops/claudie/internal/utils"
@@ -131,23 +132,18 @@ func (u *Usecases) destroyCluster(ctx *utils.BuilderContext, cboxClient pb.Conte
 	metrics.LBClustersInDeletion.Add(float64(len(ctx.CurrentLoadbalancers)))
 	defer func(c int) { metrics.LBClustersInDeletion.Add(-float64(c)) }(len(ctx.CurrentLoadbalancers))
 
-	k8sCtx, lbCtx := ctx.SplitCurrentCtx()
-	if err := u.destroyInfrastructure(lbCtx, cboxClient); err != nil {
-		return fmt.Errorf("error in destroy config Terraformer for config %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
-	}
-
 	if s := cutils.GetCommonStaticNodePools(ctx.CurrentCluster.GetClusterInfo().GetNodePools()); len(s) > 0 {
 		if err := u.destroyK8sCluster(ctx, cboxClient); err != nil {
-			return fmt.Errorf("error in destroy Kube-Eleven for config %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
+			log.Error().Msgf("error in destroy Kube-Eleven for config %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
 		}
 
 		if err := u.removeClaudieUtilities(ctx, cboxClient); err != nil {
-			return fmt.Errorf("error while removing claudie installed utilities for config %s project %s: %w", ctx.GetClusterName(), ctx.ProjectName, err)
+			log.Error().Msgf("error while removing claudie installed utilities for config %s project %s: %w", ctx.GetClusterName(), ctx.ProjectName, err)
 		}
 	}
 
 	// Destroy infrastructure for the given cluster.
-	if err := u.destroyInfrastructure(k8sCtx, cboxClient); err != nil {
+	if err := u.destroyInfrastructure(ctx, cboxClient); err != nil {
 		return fmt.Errorf("error in destroy config Terraformer for config %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
 	}
 
