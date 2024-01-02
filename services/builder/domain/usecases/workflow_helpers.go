@@ -134,11 +134,11 @@ func (u *Usecases) destroyCluster(ctx *utils.BuilderContext, cboxClient pb.Conte
 
 	if s := cutils.GetCommonStaticNodePools(ctx.CurrentCluster.GetClusterInfo().GetNodePools()); len(s) > 0 {
 		if err := u.destroyK8sCluster(ctx, cboxClient); err != nil {
-			log.Error().Msgf("error in destroy Kube-Eleven for config %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
+			log.Error().Msgf("error in destroy Kube-Eleven for config %s project %s : %v", ctx.GetClusterName(), ctx.ProjectName, err)
 		}
 
 		if err := u.removeClaudieUtilities(ctx, cboxClient); err != nil {
-			log.Error().Msgf("error while removing claudie installed utilities for config %s project %s: %w", ctx.GetClusterName(), ctx.ProjectName, err)
+			log.Error().Msgf("error while removing claudie installed utilities for config %s project %s: %v", ctx.GetClusterName(), ctx.ProjectName, err)
 		}
 	}
 
