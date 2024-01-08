@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/berops/claudie/services/builder/domain/usecases/metrics"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/rs/zerolog/log"
 	"strings"
 
 	cutils "github.com/berops/claudie/internal/utils"
@@ -133,11 +134,11 @@ func (u *Usecases) destroyCluster(ctx *utils.BuilderContext, cboxClient pb.Conte
 
 	if s := cutils.GetCommonStaticNodePools(ctx.CurrentCluster.GetClusterInfo().GetNodePools()); len(s) > 0 {
 		if err := u.destroyK8sCluster(ctx, cboxClient); err != nil {
-			return fmt.Errorf("error in destroy Kube-Eleven for config %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
+			log.Error().Msgf("error in destroy Kube-Eleven for config %s project %s : %v", ctx.GetClusterName(), ctx.ProjectName, err)
 		}
 
 		if err := u.removeClaudieUtilities(ctx, cboxClient); err != nil {
-			return fmt.Errorf("error while removing claudie installed utilities for config %s project %s: %w", ctx.GetClusterName(), ctx.ProjectName, err)
+			log.Error().Msgf("error while removing claudie installed utilities for config %s project %s: %v", ctx.GetClusterName(), ctx.ProjectName, err)
 		}
 	}
 
@@ -195,10 +196,8 @@ func (u *Usecases) deleteConfig(config *pb.Config, clusterView *cutils.ClusterVi
 	log := cutils.CreateLoggerWithProjectName(config.Name)
 
 	var err error
-	// Try maxDeleteRetry to delete the config.
 	for i := 0; i < maxDeleteRetry; i++ {
 		if err = u.destroyConfig(config, clusterView, cboxClient); err == nil {
-			// Deletion successful, break here.
 			break
 		}
 		log.Err(err).Msg("failed to destroy config")
@@ -208,6 +207,8 @@ func (u *Usecases) deleteConfig(config *pb.Config, clusterView *cutils.ClusterVi
 
 // deleteCluster calls destroy cluster to remove all traces of infrastructure from cluster.
 func (u *Usecases) deleteCluster(configName, clusterName string, clusterView *cutils.ClusterView, cboxClient pb.ContextBoxServiceClient) error {
+	log := cutils.CreateLoggerWithProjectAndClusterName(configName, clusterName)
+
 	deleteCtx := &utils.BuilderContext{
 		ProjectName:          configName,
 		CurrentCluster:       clusterView.CurrentClusters[clusterName],
@@ -215,10 +216,15 @@ func (u *Usecases) deleteCluster(configName, clusterName string, clusterView *cu
 		Workflow:             clusterView.ClusterWorkflows[clusterName],
 	}
 
-	if err := u.destroyCluster(deleteCtx, cboxClient); err != nil {
-		return err
+	var err error
+	for i := 0; i < maxDeleteRetry; i++ {
+		if err = u.destroyCluster(deleteCtx, cboxClient); err == nil {
+			break
+		}
+		log.Err(err).Msg("failed to destroy cluster")
 	}
-	return nil
+
+	return err
 }
 
 // deleteNodes deletes nodes from the cluster based on the node map specified.
