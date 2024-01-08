@@ -1,6 +1,7 @@
 package autoscaler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -210,9 +211,13 @@ func getClusterAutoscaleVersions() ([]string, error) {
 	var TagsResponse TagsResponse
 
 	// Query CA registry
-	response, err := http.Get(clusterAutoscalerRegistry)
+	req, err := http.NewRequestWithContext(context.TODO(), http.MethodGet, clusterAutoscalerRegistry, nil)
 	if err != nil {
-		return nil, err
+			return nil, err
+	}
+	response, err := http.DefaultClient.Do(req)
+	if err != nil {
+			return nil, err
 	}
 	defer response.Body.Close()
 
