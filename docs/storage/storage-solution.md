@@ -18,11 +18,123 @@ Besides the default storage class, Claudie can also create custom storage classe
 
 ## Example
 
-To follow along, have a look at the reference [example input manifest file](../input-manifest/example.md).
+To follow along, have a look at the example of `InputManifest` below.
+
+``` yaml title="storage-classes-example.yaml"
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: ExampleManifestForStorageClasses
+  labels:
+    app.kubernetes.io/part-of: claudie
+spec:
+
+  providers:
+    - name: storage-provider
+      providerType: hetzner
+      secretRef:
+        name: storage-provider-secrets
+        namespace: claudie-secrets
+
+    - name: compute-provider
+      providerType: hetzner
+      secretRef:
+        name: storage-provider-secrets
+        namespace: claudie-secrets
+
+    - name: dns-provider
+      providerType: cloudflare
+      secretRef:
+        name: dns-provider-secret
+        namespace: claudie-secrets
+
+  nodePools:
+    dynamic:
+        - name: control-nodepool
+          providerSpec:
+            name: compute-provider
+            region: hel1
+            zone: hel1-dc2
+          count: 3
+          serverType: cpx21
+          image: ubuntu-22.04
+
+        - name: datastore-nodepool
+          providerSpec:
+            name: storage-provider
+            region: hel1
+            zone: hel1-dc2
+          count: 5
+          serverType: cpx21
+          image: ubuntu-22.04
+          storageDiskSize: 800
+          taints:
+            - key: node-type
+              value: datastore
+              effect: NoSchedule
+  
+        - name: compute-nodepool
+          providerSpec:
+            name: compute-provider
+            region: hel1
+            zone: hel1-dc2
+          count: 10
+          serverType: cpx41
+          image: ubuntu-22.04
+          taints:
+            - key: node-type
+              value: compute
+              effect: NoSchedule
+
+        - name: loadbalancer-nodepool
+          providerSpec:
+            name: compute-provider
+            region: hel1
+            zone: hel1-dc2
+          count: 1
+          serverType: cpx21
+          image: ubuntu-22.04
+
+  kubernetes:
+    clusters:
+      - name: my-awesome-claudie-cluster
+        version: v1.26.0
+        network: 192.168.2.0/24
+        pools:
+          control:
+            - control-nodepool
+          compute:
+            - datastore-nodepool
+            - compute-nodepool
+
+  loadBalancers:
+    roles:
+      - name: apiserver
+        protocol: tcp
+        port: 6443
+        targetPort: 6443
+        target: k8sControlPlane
+
+    clusters:
+      - name: apiserver-lb
+        roles:
+          - apiserver
+        dns:
+          dnsZone: dns-zone
+          provider: dns-provider
+        targetedK8s: my-awesome-claudie-cluster
+        pools:
+          - loadbalancer-nodepool
+```
 
 When Claudie applies this input manifest, the following storage classes are installed:
 
 - `longhorn` - the default storage class, which stores data on random nodes
-- `longhorn-<provider instance>-zone` - storage class, which stores data only on nodes of the specific provider instance (see the [list of supported providers](../getting-started/detailed-guide.md#supported-providers)), i.e. `longhorn-gcp-1-zone`, `longhorn-gcp-2-zone`, `longhorn-aws-1-zone`, ...
+- `longhorn-storage-provider-zone` - storage class, which stores data only on nodes of the `storage-provider` provider instance.
+- `longhorn-compute-provider-zone` - storage class, which stores data only on nodes of the `compute-provider` provider instance.
+
+Now all you have to do is specify correct storage class when defining your PVCs.
+
+In case you are interested in using different cloud provider for `datastore-nodepool` or `compute-nodepool` of this `InputManifest` example, see the [list of supported providers instance](../getting-started/detailed-guide.md#supported-providers)
 
 For more information on how Longhorn works you can check out [Longhorn's official documentation](https://longhorn.io/docs/1.4.0/what-is-longhorn/).
