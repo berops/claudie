@@ -1,7 +1,11 @@
 package autoscaler
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"regexp"
 	"strconv"
@@ -27,6 +31,8 @@ const (
 	defaultOperatorHostname = "claudie-operator"
 	// Default port for Claudie operator.
 	defaultOperatorPort = "50058"
+	// CA registry address to query for tags
+	clusterAutoscalerRegistry = "https://registry.k8s.io/v2/autoscaling/cluster-autoscaler/tags/list"
 )
 
 // ClusterAutoscalerManager either creates or destroys Cluster Autoscaler resources for given k8s cluster.
@@ -47,6 +53,11 @@ type autoscalerDeploymentData struct {
 	KubernetesVersion string
 	OperatorHostname  string
 	OperatorPort      string
+}
+
+// TagResponse will carry the information about cluster-autoscaler tags
+type TagsResponse struct {
+	Tags []string `json:"tags"`
 }
 
 // NewAutoscalerManager returns configured AutoscalerManager which can set up or remove Cluster Autoscaler.
@@ -147,7 +158,90 @@ func getK8sVersion(version string) (string, error) {
 		if minor < 25 {
 			return "v1.25.0", nil
 		}
-		return fmt.Sprintf("v%s.%s.%s", match[1], match[2], match[3]), nil
+		// Find latest autoscaler patch version
+		latestVersion, err := getLatestMinorVersion(version)
+		if err != nil {
+			log.Warn().Msg("Could not retrieve latest cluster-autoscaler version, fallback to defined Kubernetes version")
+			return fmt.Sprintf("v%s.%s.%s", match[1], match[2], match[3]), nil
+		}
+		return latestVersion, nil
 	}
 	return "", fmt.Errorf("failed to parse %s into autoscaler image tag [vX.Y.Z]", version)
+}
+
+// getLatestMinorVersion returns latest patch tag for given kubernetes version
+// Example: for v1.25.1 returns v1.25.3
+func getLatestMinorVersion(k8sVersion string) (string, error) {
+	var minor, patch int
+
+	tagList, err := getClusterAutoscaleVersions()
+	if err != nil {
+		return "", err
+	}
+
+	// Extract values from k8sVersion
+	_, err = fmt.Sscanf(k8sVersion, "v1.%d.%d", &minor, &patch)
+	if err != nil {
+		return "", err
+	}
+
+	// Find latest patch version
+	var latestPatch int
+	for _, semver := range tagList {
+		var listMinor, listPatch int
+		_, err := fmt.Sscanf(semver, "v1.%d.%d", &listMinor, &listPatch)
+		if err != nil {
+			return "", err
+		}
+		if minor == listMinor {
+			if listPatch > latestPatch {
+				latestPatch = listPatch
+			}
+		}
+	}
+
+	latestSemver := fmt.Sprintf("v1.%d.%d", minor, latestPatch)
+
+	return latestSemver, nil
+}
+
+// getClusterAutoscaleVersions query the CA registry to retrieve all available tags,
+// extracts proper semver from it, and returns a slice of available tags
+func getClusterAutoscaleVersions() ([]string, error) {
+	var TagsResponse TagsResponse
+
+	// Query CA registry
+	req, err := http.NewRequestWithContext(context.TODO(), http.MethodGet, clusterAutoscalerRegistry, nil)
+	if err != nil {
+		return nil, err
+	}
+	response, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	// Unmarshal tags from the response
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(body, &TagsResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	// Extract semver from the slice
+	var semverList []string
+	semverRegex := regexp.MustCompile(`v\d+\.\d+\.\d+(-[\w\d]+(\.[\w\d]+)*)?`)
+
+	// Iterate through the input slice and filter out non-semver strings
+	for _, str := range TagsResponse.Tags {
+		semverMatches := semverRegex.FindStringSubmatch(str)
+		if len(semverMatches) > 0 {
+			semverList = append(semverList, semverMatches[0])
+		}
+	}
+
+	return semverList, nil
 }
