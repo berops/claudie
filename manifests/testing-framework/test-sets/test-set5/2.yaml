@@ -17,17 +17,6 @@ spec:
 
   nodePools:
     dynamic:
-      - name: aws-control
-        providerSpec:
-          name: aws-1
-          region: eu-central-1
-          zone: eu-central-1c
-        count: 1
-        serverType: t3.small
-        #ubuntu
-        image: ami-0039da1f3917fa8e3
-        storageDiskSize: 50
-
       - name: aws-compute
         providerSpec:
           name: aws-1
