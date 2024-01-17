@@ -47,17 +47,6 @@ spec:
               name: static-nodes-key
               namespace: e2e-secrets
 
-      - name: static-pool-2
-        nodes:
-          - endpoint: replace-me
-            secretRef:
-              name: static-nodes-key
-              namespace: e2e-secrets
-          - endpoint: replace-me
-            secretRef:
-              name: static-nodes-key
-              namespace: e2e-secrets
-
   kubernetes:
     clusters:
       - name: hybrid-cluster
