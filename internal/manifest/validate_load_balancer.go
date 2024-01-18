@@ -109,17 +109,47 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 		poolNames := make(map[string]bool)
 		// check if requested pools are defined
 		for _, pool := range cluster.Pools {
-			if !m.nodePoolDefined(pool) {
+			defined, static := m.nodePoolDefined(pool)
+			if !defined {
 				return fmt.Errorf("nodepool %q used inside cluster %q is not defined", pool, cluster.Name)
 			}
+
 			if _, ok := poolNames[pool]; ok {
-				return fmt.Errorf("nodepool %q used multiple times as a loadbalancer nodepool, this effect can be achieved by increasing the \"count\" field or defining a new nodepool with a different name", pool)
+				if !static {
+					return fmt.Errorf("nodepool %q used multiple times as a loadbalancer nodepool, this effect can be achieved by increasing the \"count\" field or defining a new nodepool with a different name", pool)
+				}
+				return fmt.Errorf("static nodepool %q used multiple times as loadbalancer nodepool, reusing the same static nodepool is discouraged as it can introduce issues within the cluster. Make sure to use a different static nodepool", pool)
 			}
 			poolNames[pool] = true
 		}
 	}
+
+	if err := validateLBStaticNodePool(m, l.Clusters); err != nil {
+		return fmt.Errorf("failed to validate static nodepools: %w", err)
+	}
+
 	return nil
 }
 
 func (r *Role) Validate() error                { return validator.New().Struct(r) }
 func (c *LoadBalancerCluster) Validate() error { return validator.New().Struct(c) }
+
+func validateLBStaticNodePool(m *Manifest, clusters []LoadBalancerCluster) error {
+	for _, cluster := range clusters {
+		for _, pool := range cluster.Pools {
+			if _, static := m.nodePoolDefined(pool); !static {
+				continue
+			}
+
+			// err is checked in the validate k8s part.
+			m, _ := validateStaticNodepool(m, m.Kubernetes.Clusters)
+
+			// check if the static nodepool in the LB cluster is used as a control or compute nodepool.
+			if clstr, ok := m[pool]; ok {
+				clusters := []string{cluster.Name, clstr}
+				return fmt.Errorf("static nodepool %q used multiple times as a loadbalancer and as a control/compute plane nodepool within %q, reusing the same static nodepool is discouraged as it can introduce issues within the cluster. Make sure to use a different static nodepool", pool, clusters)
+			}
+		}
+	}
+	return nil
+}
