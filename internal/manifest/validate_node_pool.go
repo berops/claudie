@@ -2,6 +2,7 @@ package manifest
 
 import (
 	"fmt"
+	"github.com/berops/claudie/internal/utils"
 
 	"github.com/go-playground/validator/v10"
 	k8sV1 "k8s.io/api/core/v1"
@@ -12,10 +13,12 @@ import (
 // It checks for missing/invalid filled out values defined in the NodePool section of
 // the manifest.
 func (p *NodePool) Validate(m *Manifest) error {
-	// check for name uniqueness across node pools.
 	names := make(map[string]bool)
 
 	for _, n := range p.Dynamic {
+		if !IsReferenced(n.Name, m) {
+			return fmt.Errorf("unused nodepool %q, unused nodepools are not alloved", n.Name)
+		}
 		if err := n.Validate(); err != nil {
 			return fmt.Errorf("failed to validate DynamicNodePool %q: %w", n.Name, err)
 		}
@@ -42,9 +45,21 @@ func (p *NodePool) Validate(m *Manifest) error {
 		}
 	}
 
+	reusedStaticIp := make(map[string]string)
 	for _, n := range p.Static {
+		if !IsReferenced(n.Name, m) {
+			return fmt.Errorf("unused nodepool %q, unused nodepools are not alloved", n.Name)
+		}
 		if err := n.Validate(); err != nil {
 			return fmt.Errorf("failed to validate StaticNodePool %q: %w", n.Name, err)
+		}
+
+		for _, sn := range n.Nodes {
+			if otherNodePool, ok := reusedStaticIp[sn.Endpoint]; ok {
+				nodepools := utils.RemoveDuplicates([]string{n.Name, otherNodePool})
+				return fmt.Errorf("same IP %q is referenced by multiple static nodes inside %q", sn.Endpoint, nodepools)
+			}
+			reusedStaticIp[sn.Endpoint] = n.Name
 		}
 
 		// check if the name is already used by a different node pool
@@ -61,6 +76,33 @@ func (p *NodePool) Validate(m *Manifest) error {
 	}
 
 	return nil
+}
+
+// IsReferenced checks whether a nodepool is in use. Unused nodepools are considered as an error.
+func IsReferenced(name string, m *Manifest) bool {
+	for _, k8s := range m.Kubernetes.Clusters {
+		for _, control := range k8s.Pools.Control {
+			if control == name {
+				return true
+			}
+		}
+
+		for _, compute := range k8s.Pools.Compute {
+			if compute == name {
+				return true
+			}
+		}
+	}
+
+	for _, lb := range m.LoadBalancer.Clusters {
+		for _, np := range lb.Pools {
+			if np == name {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func (d *DynamicNodePool) Validate() error {

@@ -238,18 +238,19 @@ func getNodeKeys(nodepool *StaticNodePool) map[string]string {
 }
 
 // nodePoolDefined returns true if node pool is defined in manifest, false otherwise.
-func (ds *Manifest) nodePoolDefined(pool string) bool {
+func (ds *Manifest) nodePoolDefined(pool string) (defined bool, static bool) {
 	for _, nodePool := range ds.NodePools.Static {
 		if nodePool.Name == pool {
-			return true
+			return true, true
 		}
 	}
 	for _, nodePool := range ds.NodePools.Dynamic {
 		if nodePool.Name == pool {
-			return true
+			return true, false
 		}
 	}
-	return false
+
+	return
 }
 
 func getTaints(taints []k8sV1.Taint) []*pb.Taint {
