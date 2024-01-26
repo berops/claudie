@@ -9,6 +9,9 @@ upstream {{ $role.Role.Name }}{
 server  {
     listen {{ $role.Role.Port }};
     proxy_pass {{ $role.Role.Name}};
+    {{- if ne $role.Role.Port 6443 }}
+    proxy_protocol on;
+    {{- end }}
     proxy_next_upstream on;
 }
 {{- end }}
