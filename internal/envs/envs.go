@@ -18,13 +18,15 @@ var (
 	//OperatorURL is a listening URL for claudie-operator connection
 	OperatorURL = os.Getenv("OPERATOR_HOSTNAME") + ":" + os.Getenv("OPERATOR_PORT")
 	//DatabaseURL is a listening URL for Database
-	DatabaseURL = "mongodb://" + os.Getenv("DATABASE_USERNAME") + ":" + os.Getenv("DATABASE_PASSWORD") + "@" + os.Getenv("DATABASE_HOSTNAME") + ":" + os.Getenv("DATABASE_PORT")
+	DatabaseURL = os.Getenv("DATABASE_URL")
 	//KuberURL is a listening URL for Kuber module
 	KuberURL = os.Getenv("KUBER_HOSTNAME") + ":" + os.Getenv("KUBER_PORT")
 	//MinioURL is a listening URL for Minio deployment
 	MinioURL = "http://" + os.Getenv("MINIO_HOSTNAME") + ":" + os.Getenv("MINIO_PORT")
+	//ExternalS3Bucket is the name of an AWS S3 Bucket
+	ExternalS3Bucket = os.Getenv("EXTERNAL_S3_BUCKET")
 	//DynamoURL is a listening URL for DynamoDB local deployment
-	DynamoURL = "http://" + os.Getenv("DYNAMO_HOSTNAME") + ":" + os.Getenv("DYNAMO_PORT")
+	DynamoURL = os.Getenv("DYNAMO_URL")
 	//DynamoTable is the name of the DB table used for state locking
 	DynamoTable = os.Getenv("DYNAMO_TABLE_NAME")
 	// AwsAccesskeyId is part of credentials needed for connecting to dynamoDB
@@ -71,7 +73,7 @@ func init() {
 	}
 	OperatorURL = strings.ReplaceAll(OperatorURL, ":tcp://", "")
 
-	if DatabaseURL == "mongodb://:@:" {
+	if DatabaseURL == "" {
 		DatabaseURL = "mongodb://localhost:27017"
 	}
 

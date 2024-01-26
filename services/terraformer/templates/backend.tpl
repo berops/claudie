@@ -6,8 +6,8 @@ terraform {
     endpoint = "{{ .MinioURL }}"
     region   = "main"
     
-    access_key = "{{ .AccessKey }}"
-    secret_key = "{{ .SecretKey }}"
+    access_key = "{{ .MinioAccessKey }}"
+    secret_key = "{{ .MinioSecretKey }}"
 
     skip_credentials_validation = true
     skip_metadata_api_check     = true

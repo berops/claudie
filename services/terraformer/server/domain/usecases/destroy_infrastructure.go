@@ -47,7 +47,7 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 	// Concurrently destroy the infrastructure, Terraform state and state-lock files for each cluster
 	err := utils.ConcurrentExec(clusters, func(_ int, cluster Cluster) error {
 		logger := utils.CreateLoggerWithProjectAndClusterName(request.ProjectName, cluster.Id())
-		err := u.MinIO.Stat(ctx, request.ProjectName, cluster.Id(), keyFormatStateFile)
+		err := u.StateStorage.Stat(ctx, request.ProjectName, cluster.Id(), keyFormatStateFile)
 		if err != nil {
 			if errors.Is(err, outboundAdapters.ErrKeyNotExists) {
 				logger.Warn().Msgf("no state file found for cluster %q, assuming the infrastructure was deleted.", cluster.Id())
@@ -69,7 +69,7 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 		if err := u.DynamoDB.DeleteLockFile(ctx, request.ProjectName, cluster.Id(), keyFormatLockFile); err != nil {
 			return err
 		}
-		if err := u.MinIO.DeleteStateFile(ctx, request.ProjectName, cluster.Id(), keyFormatStateFile); err != nil {
+		if err := u.StateStorage.DeleteStateFile(ctx, request.ProjectName, cluster.Id(), keyFormatStateFile); err != nil {
 			return err
 		}
 		logger.Info().Msg("Successfully deleted Terraform state and state-lock files")
@@ -80,7 +80,7 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 			if err := u.DynamoDB.DeleteLockFile(ctx, request.ProjectName, cluster.Id(), dnsKeyFormatLockFile); err != nil {
 				return err
 			}
-			if err := u.MinIO.DeleteStateFile(ctx, request.ProjectName, cluster.Id(), dnsKeyFormatStateFile); err != nil {
+			if err := u.StateStorage.DeleteStateFile(ctx, request.ProjectName, cluster.Id(), dnsKeyFormatStateFile); err != nil {
 				return err
 			}
 			logger.Info().Msg("Successfully deleted DNS related Terraform state and state-lock files")

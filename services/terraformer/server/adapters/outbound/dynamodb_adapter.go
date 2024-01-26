@@ -14,18 +14,15 @@ import (
 )
 
 var (
-	awsRegion          = envs.AwsRegion
-	awsAccessKeyId     = envs.AwsAccesskeyId
-	awsSecretAccessKey = envs.AwsSecretAccessKey
-
+	// DynamoDB endpoint
 	dynamoURL = envs.DynamoURL
 	// This DynamoDB table is used for Terraform state locking
 	dynamoDBTableName = envs.DynamoTable
 )
 
 type DynamoDBAdapter struct {
-	Client           *dynamodb.Client
-	healtcheckClient *dynamodb.Client
+	Client            *dynamodb.Client
+	healthcheckClient *dynamodb.Client
 }
 
 // createDynamoDBClient creates a DynamoDB client.
@@ -56,8 +53,8 @@ func createDynamoDBClient() *dynamodb.Client {
 // Returns the DynamoDBAdapter instance.
 func CreateDynamoDBAdapter() *DynamoDBAdapter {
 	dynamoDBAdapter := &DynamoDBAdapter{
-		Client:           createDynamoDBClient(),
-		healtcheckClient: createDynamoDBClient(),
+		Client:            createDynamoDBClient(),
+		healthcheckClient: createDynamoDBClient(),
 	}
 
 	return dynamoDBAdapter
@@ -66,7 +63,7 @@ func CreateDynamoDBAdapter() *DynamoDBAdapter {
 // Healthcheck function checks whether
 // the DynamoDB table for Terraform state locking exists or not.
 func (d *DynamoDBAdapter) Healthcheck() error {
-	tables, err := d.healtcheckClient.ListTables(context.Background(), nil)
+	tables, err := d.healthcheckClient.ListTables(context.Background(), nil)
 	if err != nil {
 		return err
 	}

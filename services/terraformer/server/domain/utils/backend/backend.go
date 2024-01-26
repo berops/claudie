@@ -9,11 +9,15 @@ import (
 )
 
 var (
-	minioURL    = envs.MinioURL
-	accessKey   = envs.MinioAccessKey
-	secretKey   = envs.MinioSecretKey
-	dynamoURL   = envs.DynamoURL
-	dynamoTable = envs.DynamoTable
+	minioURL           = envs.MinioURL
+	minioAccessKey     = envs.MinioAccessKey
+	minioSecretKey     = envs.MinioSecretKey
+	dynamoURL          = envs.DynamoURL
+	dynamoTable        = envs.DynamoTable
+	awsAccessKey       = envs.AwsAccesskeyId
+	awsSecretAccessKey = envs.AwsSecretAccessKey
+	region             = envs.AwsRegion
+	externalBucketName = envs.ExternalS3Bucket
 )
 
 type Backend struct {
@@ -23,37 +27,60 @@ type Backend struct {
 }
 
 type templateData struct {
-	ProjectName string
-	ClusterName string
-	MinioURL    string
-	AccessKey   string
-	SecretKey   string
-	DynamoURL   string
-	DynamoTable string
+	ProjectName    string
+	ClusterName    string
+	MinioURL       string
+	MinioAccessKey string
+	MinioSecretKey string
+	DynamoURL      string
+	DynamoTable    string
+	S3Name         string
+	Region         string
+	AwsAccessKey   string
+	AwsSecretKey   string
 }
 
 // CreateTFFile creates backend.tf file into specified Directory.
 func (b Backend) CreateTFFile() error {
 	template := templateUtils.Templates{Directory: b.Directory}
 
-	tpl, err := templateUtils.LoadTemplate(templates.BackendTemplate)
-	if err != nil {
-		return fmt.Errorf("failed to load template file backend.tpl for %s : %w", b.ClusterName, err)
-	}
+	// If the EXTERNAL_S3_BUCKET env is used, use the external_backend.tpl file
+	if externalBucketName != "" {
+		tpl, err := templateUtils.LoadTemplate(templates.ExternalBackendTemplate)
+		if err != nil {
+			return fmt.Errorf("failed to load template file external_backend.tpl for %s : %w", b.ClusterName, err)
+		}
+		data := templateData{
+			ProjectName:  b.ProjectName,
+			ClusterName:  b.ClusterName,
+			S3Name:       externalBucketName,
+			Region:       region,
+			AwsAccessKey: awsAccessKey,
+			AwsSecretKey: awsSecretAccessKey,
+			DynamoTable:  dynamoTable,
+		}
+		if err := template.Generate(tpl, "backend.tf", data); err != nil {
+			return fmt.Errorf("failed to generate backend files for %s : %w", b.ClusterName, err)
+		}
+	} else {
+		tpl, err := templateUtils.LoadTemplate(templates.BackendTemplate)
+		if err != nil {
+			return fmt.Errorf("failed to load template file backend.tpl for %s : %w", b.ClusterName, err)
+		}
 
-	data := templateData{
-		ProjectName: b.ProjectName,
-		ClusterName: b.ClusterName,
-		MinioURL:    minioURL,
-		AccessKey:   accessKey,
-		SecretKey:   secretKey,
-		DynamoURL:   dynamoURL,
-		DynamoTable: dynamoTable,
-	}
+		data := templateData{
+			ProjectName:    b.ProjectName,
+			ClusterName:    b.ClusterName,
+			MinioURL:       minioURL,
+			MinioAccessKey: minioAccessKey,
+			MinioSecretKey: minioSecretKey,
+			DynamoURL:      dynamoURL,
+			DynamoTable:    dynamoTable,
+		}
 
-	if err := template.Generate(tpl, "backend.tf", data); err != nil {
-		return fmt.Errorf("failed to generate backend files for %s : %w", b.ClusterName, err)
+		if err := template.Generate(tpl, "backend.tf", data); err != nil {
+			return fmt.Errorf("failed to generate backend files for %s : %w", b.ClusterName, err)
+		}
 	}
-
 	return nil
 }

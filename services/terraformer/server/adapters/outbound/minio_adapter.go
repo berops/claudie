@@ -42,6 +42,7 @@ func createMinIOClient() (*minio.Client, error) {
 
 // CreateMinIOAdapter creates 2 MinIO clients first - one for healthcheck and one for general purpose.
 // A MinIOAdapter instance is then constructed using those 2 clients and returned.
+// MinIOAdapter implements StateStoragePort interface
 func CreateMinIOAdapter() *MinIOAdapter {
 	client, err := createMinIOClient()
 	if err != nil {
