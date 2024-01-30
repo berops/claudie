@@ -13,13 +13,14 @@ type Manifest struct {
 }
 
 type Provider struct {
-	GCP        []GCP        `yaml:"gcp"`
-	Hetzner    []Hetzner    `yaml:"hetzner"`
-	AWS        []AWS        `yaml:"aws"`
-	OCI        []OCI        `yaml:"oci"`
-	Azure      []Azure      `yaml:"azure"`
-	Cloudflare []Cloudflare `yaml:"cloudflare"`
-	HetznerDNS []HetznerDNS `yaml:"hetznerdns"`
+	GCP          []GCP          `yaml:"gcp"`
+	Hetzner      []Hetzner      `yaml:"hetzner"`
+	AWS          []AWS          `yaml:"aws"`
+	OCI          []OCI          `yaml:"oci"`
+	Azure        []Azure        `yaml:"azure"`
+	Cloudflare   []Cloudflare   `yaml:"cloudflare"`
+	HetznerDNS   []HetznerDNS   `yaml:"hetznerdns"`
+	GenesisCloud []GenesisCloud `yaml:"genesiscloud"`
 }
 
 type HetznerDNS struct {
@@ -49,6 +50,11 @@ type Hetzner struct {
 	// are alphanumeric (i.e. excluding characters like !#@$%^&*...)
 	// https://docs.hetzner.com/cloud/technical-details/faq#how-are-api-tokens-stored
 	Credentials string `validate:"required,alphanum,len=64" yaml:"credentials"`
+}
+
+type GenesisCloud struct {
+	Name     string `validate:"required" yaml:"name"`
+	ApiToken string `validate:"required,alphanum" yaml:"apiToken"`
 }
 
 type AWS struct {

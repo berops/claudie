@@ -100,6 +100,16 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
 		}
 	}
 
+	for _, gc := range ds.Providers.GenesisCloud {
+		if gc.Name == providerSpecName {
+			return &pb.Provider{
+				SpecName:          providerSpecName,
+				Credentials:       gc.ApiToken,
+				CloudProviderName: "genesiscloud",
+			}, nil
+		}
+	}
+
 	return nil, fmt.Errorf("failed to find provider with name: %s", providerSpecName)
 }
 

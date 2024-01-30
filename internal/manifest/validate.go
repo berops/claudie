@@ -14,7 +14,10 @@ func (m *Manifest) Validate() error {
 
 	// Check if at least one provider is defined
 	// https://github.com/berops/claudie/blob/master/docs/input-manifest/input-manifest.md#providers
-	if len(m.Providers.GCP)+len(m.Providers.Hetzner)+len(m.Providers.AWS)+len(m.Providers.Azure)+len(m.Providers.OCI) < 1 {
+	providers := len(m.Providers.GCP) + len(m.Providers.Hetzner) + len(m.Providers.AWS) +
+		len(m.Providers.Azure) + len(m.Providers.OCI) + len(m.Providers.Cloudflare) +
+		len(m.Providers.GenesisCloud) + len(m.Providers.HetznerDNS)
+	if providers < 1 {
 		// Return error only if at least one dynamic nodepool defined.
 		if len(m.NodePools.Dynamic) > 0 {
 			return fmt.Errorf("need to define at least one provider inside the providers section of the manifest used for dynamic nodepools")
