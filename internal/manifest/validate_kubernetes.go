@@ -51,28 +51,13 @@ func (k *Kubernetes) Validate(m *Manifest) error {
 		}
 		names[cluster.Name] = true
 
-		// check for re-use of the same nodepool
-		computeNames := make(map[string]bool)
-		controlNames := make(map[string]bool)
-		for _, pool := range cluster.Pools.Control {
-			if !m.nodePoolDefined(pool) {
-				return fmt.Errorf("control nodepool %q used inside cluster %q not defined inside manifest", pool, cluster.Name)
-			}
-			if _, ok := controlNames[pool]; ok {
-				return fmt.Errorf("nodepool %q used multiple times as control nodepool, this effect can be achieved by increasing the \"count\" field, adjusting the \"autoscaler\" field or defining a new nodepool with a different name", pool)
-			}
-			controlNames[pool] = true
+		if err := validateNodepools(m, &cluster); err != nil {
+			return fmt.Errorf("failed to validate nodepools: %w", err)
 		}
+	}
 
-		for _, pool := range cluster.Pools.Compute {
-			if !m.nodePoolDefined(pool) {
-				return fmt.Errorf("compute nodepool %q used inside cluster %q not defined inside manifest", pool, cluster.Name)
-			}
-			if _, ok := computeNames[pool]; ok {
-				return fmt.Errorf("nodepool %q used multiple times as compute nodepool, this effect can be achieved by increasing the \"count\" field, adjusting the \"autoscaler\" field or defining a new nodepool with a different name", pool)
-			}
-			computeNames[pool] = true
-		}
+	if _, err := validateStaticNodepool(m, k.Clusters); err != nil {
+		return fmt.Errorf("failed to validate static nodepools: %w", err)
 	}
 
 	return nil
@@ -96,4 +81,81 @@ func validateVersion(fl validator.FieldLevel) bool {
 	semverString = strings.TrimPrefix(semverString, "v")
 
 	return semverRegex.MatchString(semverString)
+}
+
+func validateNodepools(m *Manifest, cluster *Cluster) error {
+	// check for re-use of the same nodepool
+	computeNames := make(map[string]bool)
+	controlNames := make(map[string]bool)
+
+	for _, pool := range cluster.Pools.Control {
+		defined, static := m.nodePoolDefined(pool)
+		if !defined {
+			return fmt.Errorf("control nodepool %q used inside cluster %q not defined inside manifest", pool, cluster.Name)
+		}
+
+		if _, ok := controlNames[pool]; ok {
+			if !static {
+				return fmt.Errorf("nodepool %q used multiple times as control nodepool, this effect can be achieved by increasing the \"count\" field, adjusting the \"autoscaler\" field or defining a new nodepool with a different name", pool)
+			}
+			return fmt.Errorf("static nodepool %q used multiple times as control nodepool, reusing the same static nodepool is discouraged as it can introduce issues within the cluster. Make sure to use a different static nodepool", pool)
+		}
+		controlNames[pool] = true
+	}
+
+	for _, pool := range cluster.Pools.Compute {
+		defined, static := m.nodePoolDefined(pool)
+		if !defined {
+			return fmt.Errorf("compute nodepool %q used inside cluster %q not defined inside manifest", pool, cluster.Name)
+		}
+
+		if _, ok := computeNames[pool]; ok {
+			if !static {
+				return fmt.Errorf("nodepool %q used multiple times as compute nodepool, this effect can be achieved by increasing the \"count\" field, adjusting the \"autoscaler\" field or defining a new nodepool with a different name", pool)
+			}
+			return fmt.Errorf("static nodepool %q used multiple times as control nodepool, reusing the same static nodepool is discouraged as it can introduce issues within the cluster. Make sure to use a different static nodepool", pool)
+		}
+		computeNames[pool] = true
+
+		if static {
+			if _, ok := controlNames[pool]; ok {
+				return fmt.Errorf("static nodepool %q used multiple times across control and compute planes, reusing the same static nodepool is discouraged as it can introduce issues within the cluster. Make sure to use a different static nodepool", pool)
+			}
+		}
+	}
+
+	return nil
+}
+
+// collects a map of static nodepools for each cluster. If a cluster is used across clusters returns an error.
+func validateStaticNodepool(m *Manifest, clusters []Cluster) (map[string]string, error) {
+	reusedStaticPools := make(map[string]string)
+
+	for _, cluster := range clusters {
+		for _, pool := range cluster.Pools.Control {
+			if _, static := m.nodePoolDefined(pool); !static {
+				continue
+			}
+			// is reused across clusters of the same config.
+			if clstr, ok := reusedStaticPools[pool]; ok && clstr != cluster.Name {
+				clusters := []string{cluster.Name, clstr}
+				return nil, fmt.Errorf("static nodepool %q used multiple times across clusters %q, reusing the same static nodepool is discouraged as it can introduce issues within the cluster. Make sure to use a different static nodepool", pool, clusters)
+			}
+			reusedStaticPools[pool] = cluster.Name
+		}
+
+		for _, pool := range cluster.Pools.Compute {
+			if _, static := m.nodePoolDefined(pool); !static {
+				continue
+			}
+			// is reused across clusters of the same config.
+			if clstr, ok := reusedStaticPools[pool]; ok && clstr != cluster.Name {
+				clusters := []string{cluster.Name, clstr}
+				return nil, fmt.Errorf("static nodepool %q used multiple times across clusters %q, reusing the same static nodepool is discouraged as it can introduce issues within the cluster. Make sure to use a different static nodepool", pool, clusters)
+			}
+			reusedStaticPools[pool] = cluster.Name
+		}
+	}
+
+	return reusedStaticPools, nil
 }

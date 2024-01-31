@@ -99,3 +99,12 @@ To deploy Claudie `v0.6.X`, please:
 
 ### Bugfixes
 - Add missing SSH private key and public IPs of LB nodes to Claudie's metadata secret [#1164](https://github.com/berops/claudie/issues/1164)
+
+
+## v0.6.6
+
+### Features
+* Add "proxy_protocol on;" to the LoadBalancer nginx config [#1189](https://github.com/berops/claudie/pull/1189)
+* Cluster-autoscaler tag validation [#1176](https://github.com/berops/claudie/pull/1176)
+### Bugfixes
+* Check for static nodes reuse [#1184](https://github.com/berops/claudie/pull/1184)

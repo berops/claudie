@@ -32,3 +32,15 @@ func Sum[M ~map[K]V, K comparable, V constraints.Integer | constraints.Float](m 
 	}
 	return out
 }
+
+func RemoveDuplicates[K comparable](slice []K) []K {
+	keys := make(map[K]bool)
+	list := []K{}
+	for _, entry := range slice {
+		if _, value := keys[entry]; !value {
+			keys[entry] = true
+			list = append(list, entry)
+		}
+	}
+	return list
+}
