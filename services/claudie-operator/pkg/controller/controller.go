@@ -238,7 +238,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 		r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", buildProvisioningError(currentState).Error())
 		log.Error(buildProvisioningError(currentState), "Error while building")
-		return ctrl.Result{}, nil
+		return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
 	}
 
 	// Check if input-manifest has been updated

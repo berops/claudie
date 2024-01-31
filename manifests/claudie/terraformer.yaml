@@ -61,27 +61,18 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: GOLANG_LOG
-            # MinIO envs
-            - name: MINIO_HOSTNAME
+            # Bucket envs - default to local MinIO
+            # It will use AWS Credentials to auth to MinIO
+            - name: BUCKET_NAME
               valueFrom:
                 configMapKeyRef:
                   name: env
-                  key: MINIO_HOSTNAME
-            - name: MINIO_PORT
+                  key: BUCKET_NAME
+            - name: BUCKET_URL
               valueFrom:
                 configMapKeyRef:
                   name: env
-                  key: MINIO_PORT
-            - name: MINIO_ROOT_USER
-              valueFrom:
-                secretKeyRef:
-                  name: minio-secret
-                  key: MINIO_ROOT_USER
-            - name: MINIO_ROOT_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: minio-secret
-                  key: MINIO_ROOT_PASSWORD
+                  key: BUCKET_URL
             # DynamoDB envs
             - name: DYNAMO_URL
               valueFrom:
@@ -96,12 +87,12 @@ spec:
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
-                  name: dynamo-secret
+                  name: minio-secret
                   key: AWS_ACCESS_KEY_ID
             - name: AWS_SECRET_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
-                  name: dynamo-secret
+                  name: minio-secret
                   key: AWS_SECRET_ACCESS_KEY
             - name: AWS_REGION
               valueFrom:

@@ -10,7 +10,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/utils/metrics"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	grpc2 "google.golang.org/grpc"
@@ -22,7 +21,6 @@ import (
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/services/terraformer/server/adapters/inbound/grpc"
 	outboundAdapters "github.com/berops/claudie/services/terraformer/server/adapters/outbound"
-	"github.com/berops/claudie/services/terraformer/server/domain/ports"
 	"github.com/berops/claudie/services/terraformer/server/domain/usecases"
 )
 
@@ -35,12 +33,7 @@ func main() {
 	utils.InitLog("terraformer")
 
 	dynamoDBAdapter := outboundAdapters.CreateDynamoDBAdapter()
-	var stateAdapter ports.StateStoragePort
-	if envs.ExternalS3Bucket != "" {
-		stateAdapter = outboundAdapters.CreateS3Adapter()
-	} else {
-		stateAdapter = outboundAdapters.CreateMinIOAdapter()
-	}
+	stateAdapter := outboundAdapters.CreateS3Adapter()
 
 	usecases := &usecases.Usecases{
 		DynamoDB:          dynamoDBAdapter,

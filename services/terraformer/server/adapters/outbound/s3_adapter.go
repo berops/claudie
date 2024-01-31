@@ -12,7 +12,8 @@ import (
 )
 
 var (
-	s3Bucket = envs.ExternalS3Bucket
+	s3Endpoint = envs.BucketEndpoint
+	s3Bucket   = envs.BucketName
 )
 
 type S3Adapter struct {
@@ -25,12 +26,40 @@ type S3Adapter struct {
 func createS3Client() *s3.Client {
 	return s3.NewFromConfig(
 		aws.Config{
+			Region: awsRegion,
 			Credentials: aws.CredentialsProviderFunc(
 				func(ctx context.Context) (aws.Credentials, error) {
 					return aws.Credentials{AccessKeyID: awsAccessKeyId, SecretAccessKey: awsSecretAccessKey}, nil
 				},
 			),
+			RetryMaxAttempts: 10,
+			RetryMode:        aws.RetryModeStandard,
+		},
+	)
+}
+
+// createS3ClientWithEndpoint creates and returns a S3 client, with custom endpoint.
+// It will lookup the endpoint from s3Endpoint variable.
+// If any error occurs, then it returns the error.
+func createS3ClientWithEndpoint() *s3.Client {
+	return s3.NewFromConfig(
+		aws.Config{
 			Region: awsRegion,
+			Credentials: aws.CredentialsProviderFunc(
+				func(ctx context.Context) (aws.Credentials, error) {
+					return aws.Credentials{AccessKeyID: awsAccessKeyId, SecretAccessKey: awsSecretAccessKey}, nil
+				},
+			),
+			EndpointResolverWithOptions: aws.EndpointResolverWithOptionsFunc(
+				func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+					return aws.Endpoint{
+						URL:               s3Endpoint,
+						HostnameImmutable: true,
+					}, nil
+				},
+			),
+			RetryMaxAttempts: 10,
+			RetryMode:        aws.RetryModeStandard,
 		},
 	)
 }
@@ -39,9 +68,16 @@ func createS3Client() *s3.Client {
 // A S3Adapter instance is then constructed using those 2 clients and returned.
 // S3Adapter implements StateStoragePort interface
 func CreateS3Adapter() *S3Adapter {
-	return &S3Adapter{
-		client:            createS3Client(),
-		healthcheckClient: createS3Client(),
+	if s3Endpoint != "" {
+		return &S3Adapter{
+			client:            createS3ClientWithEndpoint(),
+			healthcheckClient: createS3ClientWithEndpoint(),
+		}
+	} else {
+		return &S3Adapter{
+			client:            createS3Client(),
+			healthcheckClient: createS3Client(),
+		}
 	}
 }
 
