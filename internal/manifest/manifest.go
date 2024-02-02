@@ -165,7 +165,8 @@ type ProviderSpec struct {
 	// Region of the nodepool.
 	Region string `validate:"required" yaml:"region" json:"region"`
 	// Zone of the nodepool.
-	Zone string `validate:"required" yaml:"zone" json:"zone"`
+	// +optional
+	Zone string `yaml:"zone" json:"zone"`
 }
 
 // StaticNodePool List of static nodepools of already existing machines, not created by Claudie, used for Kubernetes or loadbalancer clusters.

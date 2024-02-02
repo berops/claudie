@@ -2,7 +2,7 @@
 {{- $clusterHash := .ClusterHash }}
 
 {{- range $i, $region := .Regions }}
-resource "genesiscloud_security_group" "claudie_security_group_{{ $region }}" {
+resource "genesiscloud_security_group" "claudie_security_group_{{ $clusterName }}_{{ $clusterHash}}_{{ $region }}" {
   provider = genesiscloud.nodepool_{{ $region }}
   name   = "{{ $clusterName }}-{{ $clusterHash }}-security-group"
   region = "{{ $region }}"

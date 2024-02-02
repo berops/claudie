@@ -38,6 +38,8 @@ resource "genesiscloud_instance" "{{ $node.Name }}" {
   image_id = data.genesiscloud_images.base_os_{{ $nodepool.NodePool.Region }}.images[index(data.genesiscloud_images.base_os_{{ $nodepool.NodePool.Region }}.images.*.name, "{{ $nodepool.NodePool.Image}}")].id
   type     = "{{ $nodepool.NodePool.ServerType }}"
 
+  public_ip_type = "static"
+
 {{- if and (eq $.ClusterType "K8s") (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
   volume_ids = [
     genesiscloud_volume.{{ $node.Name }}_volume.id
@@ -49,7 +51,7 @@ resource "genesiscloud_instance" "{{ $node.Name }}" {
   ]
 
   security_group_ids = [
-    genesiscloud_security_group.claudie_security_group_{{ $nodepool.NodePool.Region }}.id
+    genesiscloud_security_group.claudie_security_group_{{ $clusterName }}_{{ $clusterHash}}_{{ $nodepool.NodePool.Region }}.id
   ]
 
   {{- if eq $.ClusterType "LB" }}
@@ -57,6 +59,7 @@ resource "genesiscloud_instance" "{{ $node.Name }}" {
     startup_script = <<EOF
 #!/bin/bash
 set -eo pipefail
+sudo sed -i -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys
 echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart
 EOF
   }
