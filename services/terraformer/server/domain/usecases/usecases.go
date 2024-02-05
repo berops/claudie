@@ -14,7 +14,7 @@ type Usecases struct {
 	// DynamoDB connector.
 	DynamoDB ports.DynamoDBPort
 	// Minio connector.
-	MinIO ports.MinIOPort
+	StateStorage ports.StateStoragePort
 	// SpawnProcessLimit represents a synchronization channel which limits the number of spawned terraform
 	// processes. This values should always be non-nil and be buffered, where the capacity indicates
 	// the limit.

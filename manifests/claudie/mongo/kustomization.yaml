@@ -6,6 +6,7 @@ resources:
 secretGenerator:
   - name: mongo-secret
     files:
+      - "DATABASE_URL=./secrets/connectionString"
       - "MONGO_INITDB_ROOT_USERNAME=./secrets/username"
       - "MONGO_INITDB_ROOT_PASSWORD=./secrets/password"
     options:

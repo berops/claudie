@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/berops/claudie/internal/utils/metrics"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	grpc2 "google.golang.org/grpc"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/berops/claudie/internal/utils/metrics"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	grpc2 "google.golang.org/grpc"
 
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
@@ -31,12 +32,12 @@ func main() {
 	// Initialize logger
 	utils.InitLog("terraformer")
 
-	minIOAdapter := outboundAdapters.CreateMinIOAdapter()
 	dynamoDBAdapter := outboundAdapters.CreateDynamoDBAdapter()
+	stateAdapter := outboundAdapters.CreateS3Adapter()
 
 	usecases := &usecases.Usecases{
 		DynamoDB:          dynamoDBAdapter,
-		MinIO:             minIOAdapter,
+		StateStorage:      stateAdapter,
 		SpawnProcessLimit: make(chan struct{}, usecases.SpawnProcessLimit),
 	}
 
@@ -64,7 +65,7 @@ func main() {
 
 			case <-ticker.C:
 				// If healthcheck result is positive then set the microservice as ready otherwise not ready
-				if err := healthCheck(minIOAdapter.Healthcheck, dynamoDBAdapter.Healthcheck); err != nil {
+				if err := healthCheck(stateAdapter.Healthcheck, dynamoDBAdapter.Healthcheck); err != nil {
 					grpcAdapter.HealthServer.SetServingStatus("terraformer-readiness", grpc_health_v1.HealthCheckResponse_NOT_SERVING)
 					log.Debug().Msgf("Failed to verify healthcheck: %v", err)
 				} else {

@@ -18,25 +18,30 @@ var (
 	//OperatorURL is a listening URL for claudie-operator connection
 	OperatorURL = os.Getenv("OPERATOR_HOSTNAME") + ":" + os.Getenv("OPERATOR_PORT")
 	//DatabaseURL is a listening URL for Database
-	DatabaseURL = "mongodb://" + os.Getenv("DATABASE_USERNAME") + ":" + os.Getenv("DATABASE_PASSWORD") + "@" + os.Getenv("DATABASE_HOSTNAME") + ":" + os.Getenv("DATABASE_PORT")
+	DatabaseURL = os.Getenv("DATABASE_URL")
 	//KuberURL is a listening URL for Kuber module
 	KuberURL = os.Getenv("KUBER_HOSTNAME") + ":" + os.Getenv("KUBER_PORT")
-	//MinioURL is a listening URL for Minio deployment
-	MinioURL = "http://" + os.Getenv("MINIO_HOSTNAME") + ":" + os.Getenv("MINIO_PORT")
-	//DynamoURL is a listening URL for DynamoDB local deployment
-	DynamoURL = "http://" + os.Getenv("DYNAMO_HOSTNAME") + ":" + os.Getenv("DYNAMO_PORT")
+	//BucketEndpoint is a listening URL for Minio deployment
+	//If not defined it will use and external S3 Bucket,
+	//by using AWS_REGION and BUCKET_NAME variables
+	BucketEndpoint = os.Getenv("BUCKET_URL")
+	//BucketName is the name of the bucket use for state
+	//If not defined it will default to "claudie-tf-state"
+	BucketName = os.Getenv("BUCKET_NAME")
+	//DynamoEndpoint is a listening URL for DynamoDB local deployment
+	//If not defined it will use and external DynamoDB,
+	//by using AWS_REGION and DYNAMO_TABLE_NAME variables
+	DynamoEndpoint = os.Getenv("DYNAMO_URL")
 	//DynamoTable is the name of the DB table used for state locking
+	//If not defined it will default to "claudie"
 	DynamoTable = os.Getenv("DYNAMO_TABLE_NAME")
-	// AwsAccesskeyId is part of credentials needed for connecting to dynamoDB
+	// AwsAccesskeyId is part of credentials needed for connecting to bucket and dynamoDB
 	AwsAccesskeyId = os.Getenv("AWS_ACCESS_KEY_ID")
-	// AwsSecretAccessKey is part of credentials needed for connecting to dynamoDB
+	// AwsSecretAccessKey is part of credentials needed for connecting to bucket and dynamoDB
 	AwsSecretAccessKey = os.Getenv("AWS_SECRET_ACCESS_KEY")
-	// AwsRegion is part of credentials needed for connecting to dynamoDB
+	// AwsRegion is part of credentials needed for connecting to bucket and dynamoDB
 	AwsRegion = os.Getenv("AWS_REGION")
-	//MinioAccessKey for backend
-	MinioAccessKey = os.Getenv("MINIO_ROOT_USER")
-	//MinioSecretKey for backend
-	MinioSecretKey = os.Getenv("MINIO_ROOT_PASSWORD")
+
 	//Namespace of current deployment
 	//NOTE: namespace should be left empty if env var not been set
 	Namespace = os.Getenv("NAMESPACE")
@@ -71,7 +76,7 @@ func init() {
 	}
 	OperatorURL = strings.ReplaceAll(OperatorURL, ":tcp://", "")
 
-	if DatabaseURL == "mongodb://:@:" {
+	if DatabaseURL == "" {
 		DatabaseURL = "mongodb://localhost:27017"
 	}
 
@@ -80,12 +85,10 @@ func init() {
 	}
 	KuberURL = strings.ReplaceAll(KuberURL, ":tcp://", "")
 
-	if MinioURL == "http://:" {
-		MinioURL = "http://localhost:9000"
+	if BucketName == "" {
+		BucketName = "claudie-tf-state-files"
 	}
-	if DynamoURL == "http://:" {
-		DynamoURL = "http://localhost:8000"
-	}
+
 	if DynamoTable == "" {
 		DynamoTable = "claudie"
 	}
@@ -97,12 +100,6 @@ func init() {
 	}
 	if AwsRegion == "" {
 		AwsRegion = "local"
-	}
-	if MinioAccessKey == "" {
-		MinioAccessKey = "minioadmin"
-	}
-	if MinioSecretKey == "" {
-		MinioSecretKey = "minioadmin"
 	}
 	if LogLevel == "" {
 		LogLevel = "info"

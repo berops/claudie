@@ -14,18 +14,15 @@ import (
 )
 
 var (
-	awsRegion          = envs.AwsRegion
-	awsAccessKeyId     = envs.AwsAccesskeyId
-	awsSecretAccessKey = envs.AwsSecretAccessKey
-
-	dynamoURL = envs.DynamoURL
+	// DynamoDB endpoint
+	dynamoEndpoint = envs.DynamoEndpoint
 	// This DynamoDB table is used for Terraform state locking
 	dynamoDBTableName = envs.DynamoTable
 )
 
 type DynamoDBAdapter struct {
-	Client           *dynamodb.Client
-	healtcheckClient *dynamodb.Client
+	Client            *dynamodb.Client
+	healthcheckClient *dynamodb.Client
 }
 
 // createDynamoDBClient creates a DynamoDB client.
@@ -38,13 +35,29 @@ func createDynamoDBClient() *dynamodb.Client {
 					return aws.Credentials{AccessKeyID: awsAccessKeyId, SecretAccessKey: awsSecretAccessKey}, nil
 				},
 			),
+			RetryMaxAttempts: 10,
+			RetryMode:        aws.RetryModeStandard,
+		},
+	)
+}
 
-			EndpointResolverWithOptions: aws.EndpointResolverWithOptionsFunc(
-				func(service, region string, options ...interface{}) (aws.Endpoint, error) {
-					return aws.Endpoint{URL: dynamoURL}, nil
+// createDynamoDBClientWithEndpoint creates a DynamoDB client with a custom defined endpoint.
+// It will lookup the endpoint from dynamoEndpoint variable.
+// If any error occurs, then it returns the error.
+func createDynamoDBClientWithEndpoint() *dynamodb.Client {
+	return dynamodb.NewFromConfig(
+		aws.Config{
+			Region: awsRegion,
+			Credentials: aws.CredentialsProviderFunc(
+				func(ctx context.Context) (aws.Credentials, error) {
+					return aws.Credentials{AccessKeyID: awsAccessKeyId, SecretAccessKey: awsSecretAccessKey}, nil
 				},
 			),
-
+			EndpointResolverWithOptions: aws.EndpointResolverWithOptionsFunc(
+				func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+					return aws.Endpoint{URL: dynamoEndpoint}, nil
+				},
+			),
 			RetryMaxAttempts: 10,
 			RetryMode:        aws.RetryModeStandard,
 		},
@@ -55,18 +68,23 @@ func createDynamoDBClient() *dynamodb.Client {
 // These 2 dynamoDB clients are then used to construct a DynamoDBAdapter instance.
 // Returns the DynamoDBAdapter instance.
 func CreateDynamoDBAdapter() *DynamoDBAdapter {
-	dynamoDBAdapter := &DynamoDBAdapter{
-		Client:           createDynamoDBClient(),
-		healtcheckClient: createDynamoDBClient(),
+	if dynamoEndpoint != "" {
+		return &DynamoDBAdapter{
+			Client:            createDynamoDBClientWithEndpoint(),
+			healthcheckClient: createDynamoDBClientWithEndpoint(),
+		}
+	} else {
+		return &DynamoDBAdapter{
+			Client:            createDynamoDBClient(),
+			healthcheckClient: createDynamoDBClient(),
+		}
 	}
-
-	return dynamoDBAdapter
 }
 
 // Healthcheck function checks whether
 // the DynamoDB table for Terraform state locking exists or not.
 func (d *DynamoDBAdapter) Healthcheck() error {
-	tables, err := d.healtcheckClient.ListTables(context.Background(), nil)
+	tables, err := d.healthcheckClient.ListTables(context.Background(), nil)
 	if err != nil {
 		return err
 	}
@@ -83,7 +101,7 @@ func (d *DynamoDBAdapter) Healthcheck() error {
 // DeleteLockFile deletes terraform state lock file (related to the given cluster), from DynamoDB.
 func (d *DynamoDBAdapter) DeleteLockFile(ctx context.Context, projectName, clusterId string, keyFormat string) error {
 	// Get the DynamoDB key (keyname is LockID) which maps to the Terraform state-lock file
-	key, err := attributevalue.Marshal(fmt.Sprintf(keyFormat, minioBucketName, projectName, clusterId))
+	key, err := attributevalue.Marshal(fmt.Sprintf(keyFormat, s3Bucket, projectName, clusterId))
 	if err != nil {
 		return fmt.Errorf("error composing DynamoDB key for the Terraform state-lock file for cluster %s: %w", clusterId, err)
 	}
