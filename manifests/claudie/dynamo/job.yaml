@@ -26,16 +26,11 @@ spec:
           image: amazon/aws-cli
           command: ["/bin/sh", "/config/initialize"]
           env:
-            - name: DYNAMO_HOSTNAME
+            - name: DYNAMO_URL
               valueFrom:
                 configMapKeyRef:
                   name: env
-                  key: DYNAMO_HOSTNAME
-            - name: DYNAMO_PORT
-              valueFrom:
-                configMapKeyRef:
-                  name: env
-                  key: DYNAMO_PORT
+                  key: DYNAMO_URL
             - name: DYNAMO_TABLE_NAME
               valueFrom:
                 configMapKeyRef:

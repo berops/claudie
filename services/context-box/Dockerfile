@@ -21,6 +21,10 @@ WORKDIR /go/services/context-box/server
 #Compile the golang code, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build
 
+#Use alpine image to copy certs needed for cloud libraries
+FROM alpine:latest as certs
+RUN apk --update add ca-certificates
+
 #Use empty base image
 FROM scratch
 #Add repository label
@@ -31,6 +35,7 @@ LABEL org.opencontainers.image.base.name "scratch"
 LABEL org.opencontainers.image.description "Image for Context-box from Claudie"
 
 #Copy the binaries to empty base image
+COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=build  /go/services/context-box/server/server /bin/services/context-box/server/server
 
 WORKDIR /bin
