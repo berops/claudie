@@ -77,19 +77,25 @@ echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyA
 
 # startup script
 mkdir -p /opt/claudie/data
-    {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
-# Mount volume only when not mounted yet
-sleep 50
-disk=$(ls -l /dev/disk/by-id | grep "${genesiscloud_volume.{{ $node.Name }}_volume.id}" | awk '{print $NF}')
+    {{- if not $nodepool.IsControl }}
+     {{- if gt $nodepool.NodePool.StorageDiskSize 0 }}
+# The IDs listed by `/dev/disk/by-id` are different then the volume ids assigned by genesis cloud.
+# This is a hacky way assuming that only the longhorn volume will be mounted at startup and no other volume
+longhorn_diskuuid=$(blkid | grep genesis_cloud | grep -oP 'UUID="\K[^"]+')
+disk=$(ls -l /dev/disk/by-uuid/ | grep $longhorn_diskuuid | awk '{print $NF}')
 disk=$(basename "$disk")
-if ! grep -qs "/dev/$disk" /proc/mounts; then
 
+# The volume is automatically mounted, since we want it for longhorn specifically we have to re-mount the volume under /opt/claudie/data.
+umount -l /dev/$disk
+
+if ! grep -qs "/dev/$disk" /proc/mounts; then
   if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
-    mkfs.xfs /dev/$disk
+    mkfs.xfs -f /dev/$disk
   fi
   mount /dev/$disk /opt/claudie/data
   echo "/dev/$disk /opt/claudie/data xfs defaults 0 0" >> /etc/fstab
 fi
+     {{- end }}
     {{- end }}
 EOF
 

@@ -24,7 +24,7 @@ builder:
 	GOLANG_LOG=debug PROMETHEUS_PORT=9092 go run ./services/builder
 # Start Terraformer service on a local environment, exposed on port 50052
 terraformer:
-	GOLANG_LOG=debug PROMETHEUS_PORT=9093 go run ./services/terraformer/server
+	AWS_ACCESS_KEY_ID=minioadmin AWS_SECRET_ACCESS_KEY=minioadmin BUCKET_URL=http://127.0.0.1:9000 DYNAMO_URL=http://127.0.0.1:8000 GOLANG_LOG=debug PROMETHEUS_PORT=9093 go run ./services/terraformer/server
 
 # Start Ansibler service on a local environment, exposed on port 50053
 ansibler:
