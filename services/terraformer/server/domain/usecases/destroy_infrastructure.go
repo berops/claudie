@@ -17,8 +17,8 @@ const (
 	keyFormatStateFile    = "%s/%s"
 	dnsKeyFormatStateFile = "%s/%s-dns"
 
-	keyFormatLockFile    = "%s/%s/%s-dns-md5"
-	dnsKeyFormatLockFile = "%s/%s/%s-md5"
+	keyFormatLockFile    = "%s/%s/%s-md5"
+	dnsKeyFormatLockFile = "%s/%s/%s-dns-md5"
 )
 
 // DestroyInfrastructure destroys the infrastructure for provided LB clusters
