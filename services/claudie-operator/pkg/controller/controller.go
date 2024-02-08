@@ -131,17 +131,12 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		currentState.State = v1beta.STATUS_NEW
 	} else if !configInDesiredState {
 		currentState.State = v1beta.STATUS_IN_PROGRESS
-	} else if configContainsError {
-		// Set manifest state to ERROR, if any DONE cluster will be found
-		// set it to DONE_WITH_ERROR
-		currentState.State = v1beta.STATUS_ERROR
-		for _, cluster := range currentState.Clusters {
-			if cluster.State == v1beta.STATUS_DONE {
-				currentState.State = v1beta.STATUS_DONE_ERROR
-			}
-		}
 	} else {
 		currentState.State = v1beta.STATUS_DONE
+	}
+	// In any scenario, if config contains error - set the status to ERROR
+	if configContainsError {
+		currentState.State = v1beta.STATUS_ERROR
 	}
 
 	// DELETE && FINALIZER LOGIC

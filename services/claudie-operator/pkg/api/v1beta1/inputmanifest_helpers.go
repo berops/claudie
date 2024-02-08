@@ -10,9 +10,6 @@ const (
 	// Claudie cluster statuses
 	// IN_PROGRESS is a helper status that indicates that the cluster is currently being build.
 	STATUS_IN_PROGRESS = "IN_PROGRESS"
-	// DONE_WITH_ERROR is a helper status that indicates that
-	// one of the clusters failed while building and the rest completed successfully
-	STATUS_DONE_ERROR = "DONE_WITH_ERROR"
 	// ERROR indicates that an error occurred while building the cluster.
 	STATUS_ERROR = "ERROR"
 	// DONE indicates that the workflow has finished.
