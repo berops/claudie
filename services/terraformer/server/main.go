@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	defaultPrometheusPort = "9097"
+	defaultPrometheusPort = "9090"
 )
 
 func main() {
