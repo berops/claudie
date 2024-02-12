@@ -101,7 +101,7 @@ func (d *DynamoDBAdapter) Healthcheck() error {
 // DeleteLockFile deletes terraform state lock file (related to the given cluster), from DynamoDB.
 func (d *DynamoDBAdapter) DeleteLockFile(ctx context.Context, projectName, clusterId string, keyFormat string) error {
 	// Get the DynamoDB key (keyname is LockID) which maps to the Terraform state-lock file
-	key, err := attributevalue.Marshal(fmt.Sprintf(keyFormat, s3Bucket, projectName, clusterId))
+	key, err := attributevalue.Marshal(fmt.Sprintf(keyFormat, dynamoDBTableName, projectName, clusterId))
 	if err != nil {
 		return fmt.Errorf("error composing DynamoDB key for the Terraform state-lock file for cluster %s: %w", clusterId, err)
 	}
