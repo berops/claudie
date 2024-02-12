@@ -19,12 +19,14 @@ func (p *NodePool) Validate(m *Manifest) error {
 		if !IsReferenced(n.Name, m) {
 			return fmt.Errorf("unused nodepool %q, unused nodepools are not alloved", n.Name)
 		}
-		if err := n.Validate(); err != nil {
-			return fmt.Errorf("failed to validate DynamicNodePool %q: %w", n.Name, err)
-		}
+
 		// check if the provider is defined in the manifest
 		if _, err := m.GetProvider(n.ProviderSpec.Name); err != nil {
 			return fmt.Errorf("provider %q specified for DynamicNodePool %q doesn't exists", n.ProviderSpec.Name, n.Name)
+		}
+
+		if err := n.Validate(m); err != nil {
+			return fmt.Errorf("failed to validate DynamicNodePool %q: %w", n.Name, err)
 		}
 
 		// check if the name is already used by a different node pool
@@ -105,13 +107,30 @@ func IsReferenced(name string, m *Manifest) bool {
 	return false
 }
 
-func (d *DynamicNodePool) Validate() error {
+func (d *DynamicNodePool) Validate(m *Manifest) error {
 	if (d.StorageDiskSize != nil) && !(*d.StorageDiskSize == 0 || *d.StorageDiskSize >= 50) {
 		return fmt.Errorf("storageDiskSize size must be either 0 or >= 50")
 	}
 
-	return validator.New().Struct(d)
+	validate := validator.New()
+	validate.RegisterStructValidation(func(sl validator.StructLevel) {
+		dnp := sl.Current().Interface().(DynamicNodePool)
+
+		found := false
+		for _, p := range m.Providers.GenesisCloud {
+			if p.Name == dnp.ProviderSpec.Name {
+				found = true
+			}
+		}
+
+		if !found && dnp.ProviderSpec.Zone == "" {
+			sl.ReportError(dnp.ProviderSpec.Zone, "Zone", "Zone", "required", "")
+		}
+	}, DynamicNodePool{})
+
+	return validate.Struct(d)
 }
+
 func (s *StaticNodePool) Validate() error { return validator.New().Struct(s) }
 
 func (a *AutoscalerConfig) isDefined() bool { return a.Min >= 0 && a.Max > 0 }

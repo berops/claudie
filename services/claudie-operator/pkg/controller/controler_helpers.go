@@ -62,7 +62,16 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 				AccessKey: awsAccesskey,
 				SecretKey: awsSecretkey,
 			})
-
+		case v1beta.GENESIS_CLOUD:
+			gcToken, err := p.GetSecretField(v1beta.GEN_C_API_TOKEN)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+			var genCloud = manifest.GenesisCloud{
+				Name:     p.ProviderName,
+				ApiToken: gcToken,
+			}
+			providers.GenesisCloud = append(providers.GenesisCloud, genCloud)
 		case v1beta.HETZNER:
 			hetzner_key, err := p.GetSecretField(v1beta.HETZNER_CREDENTIALS)
 			if err != nil {

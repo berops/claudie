@@ -39,15 +39,16 @@ needs to be defined.
 
   Type of a provider. The providerType defines mandatory fields that has to be included for a specific provider. A list of available providers can be found at [providers section](./providers). Allowed values are:
 
-  | Value        | Description                              |
-  | ------------ | ---------------------------------------- |
-  | `aws`        | [AWS](#aws) provider type                |
-  | `azure`      | [Azure](#azure) provider type            |
-  | `cloudflare` | [Cloudflare](#cloudflare) provider type  |
-  | `gcp`        | [GCP](#gcp) provider type                |
-  | `hetzner`    | [Hetzner](#hetzner) provider type        |
-  | `hetznerdns` | [Hetzner](#hetznerdns) DNS provider type |
-  | `oci`        | [OCI](#oci) provider type                |
+  | Value          | Description                                 |
+  |----------------|---------------------------------------------|
+  | `aws`          | [AWS](#aws) provider type                   |
+  | `azure`        | [Azure](#azure) provider type               |
+  | `cloudflare`   | [Cloudflare](#cloudflare) provider type     |
+  | `gcp`          | [GCP](#gcp) provider type                   |
+  | `hetzner`      | [Hetzner](#hetzner) provider type           |
+  | `hetznerdns`   | [Hetzner](#hetznerdns) DNS provider type    |
+  | `oci`          | [OCI](#oci) provider type                   |
+  | `genesiscloud` | [GenesisCloud](#genesiscloud) provider type |
   
 - `secretRef` [SecretRef](#secretref)
 
@@ -99,6 +100,15 @@ To find out how to configure GCP provider and service account, follow the instru
 - `gcpproject`
 
   Project id of an already existing GCP project where the infrastructure is to be created.
+
+### GenesisCloud
+
+The fields that need to be included in a Kubernetes Secret resource to utilize the Genesis Cloud provider.
+To find out how to configure Genesis Cloud provider, follow the instructions [here](./providers/genesiscloud.md).
+
+- `apitoken`
+
+  API token for the provider.
 
 ### Hetzner
 

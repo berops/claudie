@@ -19,6 +19,11 @@ spec:
       secretRef:
         name: oci-secret
         namespace: e2e-secrets
+    - name: genesiscloud-1
+      providerType: genesiscloud
+      secretRef:
+        name: genesiscloud-secret
+        namespace: e2e-secrets
     - name: aws-1
       providerType: aws
       secretRef:
@@ -59,6 +64,15 @@ spec:
         image: ami-01b8d743224353ffe
         storageDiskSize: 50
 
+      - name: genesiscloud
+        providerSpec:
+          name: genesiscloud-1
+          region: ARC-IS-HAF-1
+        count: 2
+        serverType: vcpu-2_memory-4g_disk-80g
+        image: "Ubuntu 22.04"
+        storageDiskSize: 50
+
       - name: gcp-control
         providerSpec:
           name: gcp-1
@@ -96,21 +110,21 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - aws
+            - genesiscloud
           compute:
-            - aws
+            - genesiscloud
       - name: ts3-c-2
         version: v1.24.0
         network: 192.168.2.0/24
         pools:
           control:
-            - aws
+            - genesiscloud
             - gcp-control
             - oci
           compute:
-            - aws
+            - genesiscloud
             - gcp-compute
-            - oci
+            - aws
   loadBalancers:
     roles:
       - name: apiserver-lb

@@ -9,6 +9,7 @@ ListenPort = {{ wg_listen_port }}
 PublicKey = {{ hostvars[host].publickey.stdout }}
 Endpoint = {{ hostvars[host].ansible_host }}:{{ wg_listen_port }}
 AllowedIps = {{ hostvars[host].private_ip }}/32
+PersistentKeepalive = 30
 {% endif %}
 {% endfor %}
 

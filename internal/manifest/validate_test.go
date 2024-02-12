@@ -133,11 +133,11 @@ func TestKubernetes(t *testing.T) {
 
 // TestNodepool tests the nodepool spec validation
 func TestNodepool(t *testing.T) {
-	err := testNodepoolAutoScalerSuccAC.Validate()
+	err := testNodepoolAutoScalerSuccAC.Validate(&Manifest{})
 	require.NoError(t, err)
-	err = testNodepoolAutoScalerSucc.Validate()
+	err = testNodepoolAutoScalerSucc.Validate(&Manifest{})
 	require.NoError(t, err)
-	err = testNodepoolAutoScalerFail.Validate()
+	err = testNodepoolAutoScalerFail.Validate(&Manifest{})
 	require.Error(t, err)
 }
 
@@ -150,8 +150,8 @@ func TestNodepools(t *testing.T) {
 // TestStorageDiskSize tests the storageDiskSize validation.
 func TestStorageDiskSize(t *testing.T) {
 	r := require.New(t)
-	r.NoError(testNpDiskSizeSuccessfulNoDisk.Validate())
-	r.NoError(testNpDiskSizeSuccessfulFifty.Validate())
-	r.NoError(testNpDiskSizeSuccessfulDefault.Validate())
-	r.Error(testNpDiskSizeSuccessfulFail.Validate())
+	r.NoError(testNpDiskSizeSuccessfulNoDisk.Validate(&Manifest{}))
+	r.NoError(testNpDiskSizeSuccessfulFifty.Validate(&Manifest{}))
+	r.NoError(testNpDiskSizeSuccessfulDefault.Validate(&Manifest{}))
+	r.Error(testNpDiskSizeSuccessfulFail.Validate(&Manifest{}))
 }

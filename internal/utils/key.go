@@ -1,19 +1,19 @@
 package utils
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"github.com/berops/claudie/proto/pb"
 	"os"
 	"path/filepath"
-
-	"github.com/berops/claudie/proto/pb"
 )
 
 // CreateKeyFile writes the given key to a file.
 // The key filename is specified by its outputPath and KeyName operands.
 func CreateKeyFile(key string, outputPath string, keyName string) error {
 	keyFileName := filepath.Join(outputPath, keyName)
-	return os.WriteFile(keyFileName, []byte(key), 0600)
+	return os.WriteFile(keyFileName, bytes.TrimSpace([]byte(key)), 0600)
 }
 
 // CreateKeysForStaticNodepools creates private keys files for all nodes in the provided static node pools in form

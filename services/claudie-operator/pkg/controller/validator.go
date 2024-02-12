@@ -78,6 +78,8 @@ func validateInputManifest(im *v1beta.InputManifest) error {
 			rawManifest.Providers.AWS = append(rawManifest.Providers.AWS, manifest.AWS{Name: p.ProviderName})
 		case v1beta.HETZNER:
 			rawManifest.Providers.Hetzner = append(rawManifest.Providers.Hetzner, manifest.Hetzner{Name: p.ProviderName})
+		case v1beta.GENESIS_CLOUD:
+			rawManifest.Providers.GenesisCloud = append(rawManifest.Providers.GenesisCloud, manifest.GenesisCloud{Name: p.ProviderName})
 		case v1beta.OCI:
 			rawManifest.Providers.OCI = append(rawManifest.Providers.OCI, manifest.OCI{Name: p.ProviderName})
 		case v1beta.AZURE:

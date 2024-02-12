@@ -27,13 +27,14 @@ import (
 type ProviderType string
 
 const (
-	AWS         ProviderType = "aws"
-	AZURE       ProviderType = "azure"
-	CLOUDFLARE  ProviderType = "cloudflare"
-	GCP         ProviderType = "gcp"
-	HETZNER     ProviderType = "hetzner"
-	HETZNER_DNS ProviderType = "hetznerdns"
-	OCI         ProviderType = "oci"
+	AWS           ProviderType = "aws"
+	AZURE         ProviderType = "azure"
+	CLOUDFLARE    ProviderType = "cloudflare"
+	GCP           ProviderType = "gcp"
+	GENESIS_CLOUD ProviderType = "genesiscloud"
+	HETZNER       ProviderType = "hetzner"
+	HETZNER_DNS   ProviderType = "hetznerdns"
+	OCI           ProviderType = "oci"
 )
 
 type SecretField string
@@ -56,6 +57,7 @@ const (
 	OCI_USER_OCID         SecretField = "userocid"
 	OCI_COMPARTMENT_OCID  SecretField = "compartmentocid"
 	PRIVATE_KEY           SecretField = "privatekey"
+	GEN_C_API_TOKEN       SecretField = "apitoken"
 )
 
 // ProviderWithData helper type that assist in conversion
@@ -78,7 +80,7 @@ type Provider struct {
 	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:MinLength=1
 	ProviderName string `json:"name"`
-	// +kubebuilder:validation:Enum=gcp;hetzner;aws;oci;azure;cloudflare;hetznerdns;
+	// +kubebuilder:validation:Enum=gcp;hetzner;aws;oci;azure;cloudflare;hetznerdns;genesiscloud;
 	ProviderType ProviderType           `json:"providerType"`
 	SecretRef    corev1.SecretReference `json:"secretRef"`
 }
