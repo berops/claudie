@@ -70,7 +70,7 @@ images:
 - name: ghcr.io/berops/claudie/kube-eleven
   newTag: 2bc5b89-2592
 - name: ghcr.io/berops/claudie/kuber
-  newTag: 2bc5b89-2592
+  newTag: 39ec029-2594
 - name: ghcr.io/berops/claudie/scheduler
   newTag: 2bc5b89-2592
 - name: ghcr.io/berops/claudie/terraformer
