@@ -104,6 +104,7 @@ nav:
   - Creating Claudie Backup: creating-claudie-backup/creating-claudie-backup.md
   - Claudie Hardening: hardening/hardening.md
   - Updating Claudie: update/update.md
+  - Command Cheat Sheet: commands/commands.md
 
 extra:
   version:
