@@ -21,6 +21,7 @@ spec:
         namespace: secrets
 
   nodePools:
+    dynamic:
     - name: genesiscloud-cpu
       providerSpec:
         name: genesiscloud
@@ -121,7 +122,7 @@ spec:
   restartPolicy: OnFailure
   containers:
     - name: cuda-vectoradd
-      image: "nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda11.7.1-ubuntu22.04"
+      image: "nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda11.7.1-ubuntu20.04"
       resources:
         limits:
           nvidia.com/gpu: 1
