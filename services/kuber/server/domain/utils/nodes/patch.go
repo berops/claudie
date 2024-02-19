@@ -89,6 +89,27 @@ func (p *Patcher) PatchLabels() error {
 	return err
 }
 
+func (p *Patcher) PatchAnnotations() error {
+	var err error
+	for _, np := range p.desiredNodepools {
+		nodeAnnotations := np.Annotations
+		for _, node := range np.Nodes {
+			nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
+			for key, value := range nodeAnnotations {
+				patchPath, err1 := buildJSONPatchString("replace", "/metadata/annotations/"+key, value)
+				if err1 != nil {
+					return fmt.Errorf("failed to create label %s patch path for %s : %w, %w", key, np.Name, err, err1)
+				}
+				if err1 := p.kc.KubectlPatch("node", nodeName, patchPath, "--type", "json"); err1 != nil {
+					p.logger.Err(err1).Str("node", nodeName).Msgf("Failed to patch annotations on node with path %s", patchPath)
+					err = fmt.Errorf("error while patching one or more nodes with annotations")
+				}
+			}
+		}
+	}
+	return err
+}
+
 func (p *Patcher) PatchTaints() error {
 	var err error
 	for _, np := range p.desiredNodepools {

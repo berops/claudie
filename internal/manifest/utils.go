@@ -182,10 +182,11 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 			}
 
 			nodePools = append(nodePools, &pb.NodePool{
-				Name:      nodePool.Name,
-				IsControl: isControl,
-				Labels:    nodePool.Labels,
-				Taints:    getTaints(nodePool.Taints),
+				Name:        nodePool.Name,
+				IsControl:   isControl,
+				Labels:      nodePool.Labels,
+				Annotations: nodePool.Annotations,
+				Taints:      getTaints(nodePool.Taints),
 				NodePoolType: &pb.NodePool_DynamicNodePool{
 					DynamicNodePool: &pb.DynamicNodePool{
 						Region:           nodePool.ProviderSpec.Region,
@@ -203,11 +204,12 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 		} else if nodePool := ds.FindStaticNodePool(nodePoolName); nodePool != nil {
 			nodes := getStaticNodes(nodePool, isControl)
 			nodePools = append(nodePools, &pb.NodePool{
-				Name:      nodePool.Name,
-				Nodes:     nodes,
-				IsControl: isControl,
-				Labels:    nodePool.Labels,
-				Taints:    getTaints(nodePool.Taints),
+				Name:        nodePool.Name,
+				Nodes:       nodes,
+				IsControl:   isControl,
+				Labels:      nodePool.Labels,
+				Annotations: nodePool.Annotations,
+				Taints:      getTaints(nodePool.Taints),
 				NodePoolType: &pb.NodePool_StaticNodePool{
 					StaticNodePool: &pb.StaticNodePool{
 						NodeKeys: getNodeKeys(nodePool),
