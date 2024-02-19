@@ -108,3 +108,14 @@ To deploy Claudie `v0.6.X`, please:
 * Cluster-autoscaler tag validation [#1176](https://github.com/berops/claudie/pull/1176)
 ### Bugfixes
 * Check for static nodes reuse [#1184](https://github.com/berops/claudie/pull/1184)
+
+## v0.6.7
+
+### Features
+- Add possibility to use external s3/dynamo/mongo instances [#1191](https://github.com/berops/claudie/pull/1191)
+- Add Genesis Cloud support [#1210](https://github.com/berops/claudie/pull/1210)
+- Add annotations support for nodepools in Input Manifest [#1232](https://github.com/berops/claudie/pull/1232)
+### Bugfixes
+- Fix removing state lock from dynamodb [#1211](https://github.com/berops/claudie/pull/1211)
+- Fix operatur status message [#1215](https://github.com/berops/claudie/pull/1215)
+- Fix custom storage classes [#1219](https://github.com/berops/claudie/pull/1219)
