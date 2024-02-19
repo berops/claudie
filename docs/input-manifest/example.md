@@ -86,6 +86,7 @@ spec:
     #       min:            # Minimum number of nodes in nodepool.
     #       max:            # Maximum number of nodes in nodepool.
     #     labels:           # Map of custom user defined labels for this nodepool. This field is optional and is ignored if used in Loadbalancer cluster. (optional)
+    #     annotations:      # Map of user defined annotations, ch will be applied on every node in the node pool. (optional)
     #     taints:           # Array of custom user defined taints for this nodepool. This field is optional and is ignored if used in Loadbalancer cluster. (optional)
     #       - key:          # The taint key to be applied to a node.
     #         value:        # The taint value corresponding to the taint key.
@@ -104,6 +105,8 @@ spec:
         labels:
           country: finland
           city: helsinki
+        annotations:
+          node.longhorn.io/default-node-tags: '["finland"]'
         taints:
           - key: country
             value: finland
@@ -121,6 +124,8 @@ spec:
         labels:
           country: finland
           city: helsinki
+        annotations:
+          node.longhorn.io/default-node-tags: '["finland"]'
 
       - name: compute-hetzner-autoscaled
         providerSpec:
@@ -136,6 +141,8 @@ spec:
         labels:
           country: finland
           city: helsinki
+        annotations:
+          node.longhorn.io/default-node-tags: '["finland"]'
 
       - name: control-gcp
         providerSpec:
@@ -148,6 +155,8 @@ spec:
         labels:
           country: germany
           city: frankfurt
+        annotations:
+          node.longhorn.io/default-node-tags: '["germany"]'
 
       - name: compute-gcp
         providerSpec:
@@ -165,6 +174,8 @@ spec:
           - key: city
             value: frankfurt
             effect: NoExecute
+        annotations:
+          node.longhorn.io/default-node-tags: '["germany"]'
 
       - name: control-oci
         providerSpec:
@@ -252,6 +263,7 @@ spec:
     #           name:       # Name of the secret resource.
     #           namespace:  # Namespace of the secret resource.
     #     labels:           # Map of custom user defined labels for this nodepool. This field is optional and is ignored if used in Loadbalancer cluster. (optional)
+    #     annotations:      # Map of user defined annotations, ch will be applied on every node in the node pool. (optional)
     #     taints:           # Array of custom user defined taints for this nodepool. This field is optional and is ignored if used in Loadbalancer cluster. (optional)
     #       - key:          # The taint key to be applied to a node.
     #         value:        # The taint value corresponding to the taint key.
@@ -277,6 +289,8 @@ spec:
               namespace: example-namespace
         labels:
           datacenter: datacenter-1
+        annotations:
+          node.longhorn.io/default-node-tags: '["datacenter-1"]'   
         taints:
           key: datacenter
           effect: NoExecute

@@ -246,6 +246,12 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
   
   To see the default labels Claudie applies on each node, refer to [this section](#default-labels).
 
+- `annotations`
+
+  Map of user defined annotations, ch will be applied on every node in the node pool. This field is optional.
+
+  You can use Kubernetes annotations to attach arbitrary non-identifying metadata. Clients such as tools and libraries can retrieve this metadata.
+
 - `taints` [v1.Taint](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#taint-v1-core)
 
   Array of user defined taints, which will be applied on every node in the node pool. This field is optional.
@@ -297,6 +303,13 @@ Static nodepools are defined for static machines which Claudie will not manage. 
   Map of user defined labels, which will be applied on every node in the node pool. This field is optional.
   
   To see the default labels Claudie applies on each node, refer to [this section](#default-labels).
+
+- `annotations`
+
+  Map of user defined annotations, ch will be applied on every node in the node pool. This field is optional.
+
+  You can use Kubernetes annotations to attach arbitrary non-identifying metadata. Clients such as tools and libraries can retrieve this metadata.
+
 
 - `taints` [v1.Taint](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#taint-v1-core)
 
