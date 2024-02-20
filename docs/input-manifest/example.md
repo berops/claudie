@@ -86,7 +86,7 @@ spec:
     #       min:            # Minimum number of nodes in nodepool.
     #       max:            # Maximum number of nodes in nodepool.
     #     labels:           # Map of custom user defined labels for this nodepool. This field is optional and is ignored if used in Loadbalancer cluster. (optional)
-    #     annotations:      # Map of user defined annotations, ch will be applied on every node in the node pool. (optional)
+    #     annotations:      # Map of user defined annotations, which will be applied on every node in the node pool. (optional)
     #     taints:           # Array of custom user defined taints for this nodepool. This field is optional and is ignored if used in Loadbalancer cluster. (optional)
     #       - key:          # The taint key to be applied to a node.
     #         value:        # The taint value corresponding to the taint key.
@@ -263,7 +263,7 @@ spec:
     #           name:       # Name of the secret resource.
     #           namespace:  # Namespace of the secret resource.
     #     labels:           # Map of custom user defined labels for this nodepool. This field is optional and is ignored if used in Loadbalancer cluster. (optional)
-    #     annotations:      # Map of user defined annotations, ch will be applied on every node in the node pool. (optional)
+    #     annotations:      # Map of user defined annotations, which will be applied on every node in the node pool. (optional)
     #     taints:           # Array of custom user defined taints for this nodepool. This field is optional and is ignored if used in Loadbalancer cluster. (optional)
     #       - key:          # The taint key to be applied to a node.
     #         value:        # The taint value corresponding to the taint key.

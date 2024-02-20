@@ -248,7 +248,7 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
 - `annotations`
 
-  Map of user defined annotations, ch will be applied on every node in the node pool. This field is optional.
+  Map of user defined annotations, which will be applied on every node in the node pool. This field is optional.
 
   You can use Kubernetes annotations to attach arbitrary non-identifying metadata. Clients such as tools and libraries can retrieve this metadata.
 
@@ -306,7 +306,7 @@ Static nodepools are defined for static machines which Claudie will not manage. 
 
 - `annotations`
 
-  Map of user defined annotations, ch will be applied on every node in the node pool. This field is optional.
+  Map of user defined annotations, which will be applied on every node in the node pool. This field is optional.
 
   You can use Kubernetes annotations to attach arbitrary non-identifying metadata. Clients such as tools and libraries can retrieve this metadata.
 

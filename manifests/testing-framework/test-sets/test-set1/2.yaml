@@ -42,7 +42,7 @@ spec:
         labels:
           test-set: test-set1-new
         annotations:
-          claudie.io/example-annotation: '["test-set1-new"]'
+          claudie.io/example-annotation: "[\"test-set1-new\"]"
       - name: hetzner-compute
         providerSpec:
           name: hetzner-1
@@ -55,7 +55,7 @@ spec:
         labels:
           test-set: test-set1-new
         annotations:
-          claudie.io/example-annotation: '["test-set1-new"]'
+          claudie.io/example-annotation: "[\"test-set1-new\"]"
 
       - name: gcp-control
         providerSpec:
@@ -68,7 +68,7 @@ spec:
         labels:
           test-set: test-set1-new
         annotations:
-          claudie.io/example-annotation: '["test-set1-new"]'
+          claudie.io/example-annotation: "[\"test-set1-new\"]"
       - name: gcp-compute
         providerSpec:
           name: gcp-1
@@ -81,7 +81,7 @@ spec:
         labels:
           test-set: test-set1-new
         annotations:
-          claudie.io/example-annotation: '["test-set1-new"]'
+          claudie.io/example-annotation: "[\"test-set1-new\"]"
 
       - name: oci-control
         providerSpec:
@@ -144,7 +144,7 @@ spec:
         labels:
           test-set: test-set1-new
         annotations:
-          claudie.io/example-annotation: '["test-set1-new"]'      
+          claudie.io/example-annotation: "[\"test-set1-new\"]"      
       - name: azure-compute
         providerSpec:
           name: azure-1
@@ -157,7 +157,7 @@ spec:
         labels:
           test-set: test-set1-new
         annotations:
-          claudie.io/example-annotation: '["test-set1-new"]'
+          claudie.io/example-annotation: "[\"test-set1-new\"]"
 
   kubernetes:
     clusters:
