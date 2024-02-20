@@ -23,3 +23,19 @@ The network latency has a significant impact on IO performance and total network
 See more [here](https://github.com/longhorn/longhorn/issues/1691#issuecomment-729633995)
 
 ### How to avoid high latency in Longhorn
+
+When using RWO volumes you can avoid high latency issues by setting Longhorn to only use storage on a specific nodes (follow this [tutorial](https://longhorn.io/kb/tip-only-use-storage-on-a-set-of-nodes/)) and using [nodeAffinity](https://kubernetes.io/docs/tasks/configure-pod-container/assign-pods-nodes-using-node-affinity/) or [nodeSelector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) to schedule your workload pods only to nodes that has replicas of the volume or are really close to them.
+
+### How to mitigate high latency problems with RWX volumes
+
+To mitigate high latency issues with RWX volumes you can maximize these Longhorn settings:
+
+* [Engine Replica Timeout](https://longhorn.io/docs/1.6.0/references/settings/#engine-to-replica-timeout) - max 30s
+* [Replica File Sync HTTP Timeout](https://longhorn.io/docs/1.6.0/references/settings/#timeout-of-http-client-to-replica-file-sync-server) - max 120s
+* [Guaranteed Instance Manager CPU](https://longhorn.io/docs/1.6.0/references/settings/#guaranteed-instance-manager-cpu) - max 40%
+
+Thanks to maximizing these settings you will mount a RWX volume that has ~200ms latency between a node with a `share-manager` pod and a node with a workload pod, but it will take from 7 to 10 minutes. However, there are some requirements on these k8s nodes and the maximum size of the volumes. For example, you will not succeed in mounting a RWX volume with a ~200ms latency between node with `share-manager` pod and a node with a workload pod, if your nodes has (2vCPU shared and 4GB RAM). This applies even when there are no other wokloads. You need at least 2vCPU and 8GB RAM. Generally the more CPU you assing to Longhorn manager the more you mitigate issue with high latency and RWX volumes.
+
+Keep in mind, that using machines with higher resources and maximizing these Longhorn settings doesn't necessarily guarantee successful mounting. Successful mount also depends on the size of the RWX volume. For example, even after maximizing these Longhorn settings and using nodes with 2vCPU and 8GB RAM with latency ~200ms you will fail to mount 10Gi volume to the workload pod in case you will try to mount multiple at once. In case you do it one by one, you should be good. 
+
+To conclude this, maximizing the these Longhorn settings can help to mitigate the high latency issue when mounting RWX volumes, but it is really resource-hungry and it also depends on the size of the RWX volume + the total number of the RWX volumes that are attaching at once.
