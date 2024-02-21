@@ -2,11 +2,11 @@
 
 ## etcd limitations
 
-A distance between etcd nodes in the multi-cloud environment to more than 600 km can be detrimental for the cluster health. An average deployment time can double compared to etcd nodes in a different zone within the same cloud provider. Besides this a total number of etcd Slow Applies increases rapidly.
+A distance between etcd nodes in the multi-cloud environment of more than 600 km can be detrimental to cluster health. In a scenario like this, an average deployment time can double compared to a scenario with etcd nodes in different availability zones within the same cloud provider. Besides this, the total number of the etcd Slow Applies increases rapidly, and a Round-trip time varies from ~0.05s to ~0.2s, whereas in a single-cloud scenario with etcd nodes in a different AZs the range is from ~0.003s to ~0.025s. 
 
-Round-trip time from ... to ... increase about %
+In multi-cloud clusters, a request to a KubeAPI lasts from ~0.025s to ~0.25s. On the other hand, in a one-cloud scenario, they last from ~0.005s to ~0.025s.
 
-In a multi-cloud clusters a request to a KubeAPI last from 0.025s to 0.25s. In a one cloud scenario they last from 0.005s to 0.025s
+You can read more about this topic [here](https://www.berops.com/blog/evaluating-etcds-performance-in-multi-cloud).
 
 ## Longhorn limitations
 
