@@ -26,6 +26,14 @@ type patchJson struct {
 	Value any    `json:"value"`
 }
 
+type PatchAnnotations struct {
+	MetadataAnnotations `json:"metadata"`
+}
+
+type MetadataAnnotations struct {
+	Annotations map[string]string `json:"annotations"`
+}
+
 type Patcher struct {
 	clusterID        string
 	desiredNodepools []*pb.NodePool
@@ -95,15 +103,13 @@ func (p *Patcher) PatchAnnotations() error {
 		nodeAnnotations := np.Annotations
 		for _, node := range np.Nodes {
 			nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
-			for key, value := range nodeAnnotations {
-				patchPath, err1 := buildJSONPatchString("replace", "/metadata/annotations/"+key, value)
-				if err1 != nil {
-					return fmt.Errorf("failed to create label %s patch path for %s : %w, %w", key, np.Name, err, err1)
-				}
-				if err1 := p.kc.KubectlPatch("node", nodeName, patchPath, "--type", "json"); err1 != nil {
-					p.logger.Err(err1).Str("node", nodeName).Msgf("Failed to patch annotations on node with path %s", patchPath)
-					err = fmt.Errorf("error while patching one or more nodes with annotations")
-				}
+			patchPath, err1 := buildJSONAnnotationPatch(nodeAnnotations)
+			if err1 != nil {
+				return fmt.Errorf("failed to create annotations patch for %s : %w, %w", np.Name, err, err1)
+			}
+			if err1 := p.kc.KubectlPatch("node", nodeName, patchPath, "--type", "merge"); err1 != nil {
+				p.logger.Err(err1).Str("node", nodeName).Msgf("Failed to patch annotations on node with path %s", patchPath)
+				err = fmt.Errorf("error while patching one or more nodes with annotations")
 			}
 		}
 	}
@@ -126,6 +132,19 @@ func (p *Patcher) PatchTaints() error {
 		}
 	}
 	return err
+}
+
+func buildJSONAnnotationPatch(data map[string]string) (string, error) {
+	metadata := PatchAnnotations{
+		MetadataAnnotations{
+			Annotations: data,
+		},
+	}
+	jsonPatch, err := json.Marshal(metadata)
+	if err != nil {
+		return "", err
+	}
+	return string(jsonPatch), nil
 }
 
 func buildJSONPatchString(op, path string, value any) (string, error) {
