@@ -659,6 +659,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#genesiscloud" class="md-nav__link">
+    GenesisCloud
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#hetzner" class="md-nav__link">
     Hetzner
   </a>
@@ -1088,6 +1095,21 @@
   
   
     <li class="md-nav__item">
+      <a href="../../latency-limitations/latency-limitations/" class="md-nav__link">
+        Latency limitations
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../troubleshooting/troubleshooting/" class="md-nav__link">
         Troubleshooting
       </a>
@@ -1133,8 +1155,38 @@
   
   
     <li class="md-nav__item">
+      <a href="../../monitoring/grafana/" class="md-nav__link">
+        Prometheus Monitoring
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../update/update/" class="md-nav__link">
         Updating Claudie
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../commands/commands/" class="md-nav__link">
+        Command Cheat Sheet
       </a>
     </li>
   
@@ -1212,6 +1264,13 @@
           <li class="md-nav__item">
   <a href="#gcp" class="md-nav__link">
     GCP
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#genesiscloud" class="md-nav__link">
+    GenesisCloud
   </a>
   
 </li>
@@ -1440,6 +1499,10 @@ needs to be defined.</p>
 <td><code>oci</code></td>
 <td><a href="#oci">OCI</a> provider type</td>
 </tr>
+<tr>
+<td><code>genesiscloud</code></td>
+<td><a href="#genesiscloud">GenesisCloud</a> provider type</td>
+</tr>
 </tbody>
 </table>
 <ul>
@@ -1485,6 +1548,13 @@ To find out how to configure GCP provider and service account, follow the instru
 <li><code>gcpproject</code></li>
 </ul>
 <p>Project id of an already existing GCP project where the infrastructure is to be created.</p>
+<h3 id="genesiscloud">GenesisCloud<a class="headerlink" href="#genesiscloud" title="Permanent link">&para;</a></h3>
+<p>The fields that need to be included in a Kubernetes Secret resource to utilize the Genesis Cloud provider.
+To find out how to configure Genesis Cloud provider, follow the instructions <a href="../providers/genesiscloud/">here</a>.</p>
+<ul>
+<li><code>apitoken</code></li>
+</ul>
+<p>API token for the provider.</p>
 <h3 id="hetzner">Hetzner<a class="headerlink" href="#hetzner" title="Permanent link">&para;</a></h3>
 <p>The fields that need to be included in a Kubernetes Secret resource to utilize the Hetzner provider.
 To find out how to configure Hetzner provider and service account, follow the instructions <a href="../providers/hetzner/">here</a>.</p>
