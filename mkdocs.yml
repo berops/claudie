@@ -83,6 +83,7 @@ nav:
       - OCI: input-manifest/providers/oci.md
       - On Premise: input-manifest/providers/on-prem.md
     - Example yaml file: input-manifest/example.md
+    - GPUs example: input-manifest/gpu-example.md
     - API reference: input-manifest/api-reference.md
   - How Claudie works:
     - Claudie Workflow: claudie-workflow/claudie-workflow.md
