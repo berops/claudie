@@ -100,6 +100,7 @@ nav:
     - Claudie v0.4: CHANGELOG/changelog-0.4.x.md
     - Claudie v0.5: CHANGELOG/changelog-0.5.x.md
     - Claudie v0.6: CHANGELOG/changelog-0.6.x.md
+    - Claudie v0.6: CHANGELOG/changelog-0.7.x.md
   - Latency limitations: latency-limitations/latency-limitations.md
   - Troubleshooting: troubleshooting/troubleshooting.md 
   - Creating Claudie Backup: creating-claudie-backup/creating-claudie-backup.md
