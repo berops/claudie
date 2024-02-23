@@ -215,6 +215,11 @@ spec:
                         nodepool would be a class that would get instantiated N >=
                         0 times depending on which clusters reference it."
                       properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          description: User defined annotations for this nodepool.
+                          type: object
                         autoscaler:
                           description: Autoscaler configuration for this nodepool.
                             Mutually exclusive with count.
@@ -336,6 +341,10 @@ spec:
                       description: StaticNodePool defines nodepool of already existing
                         nodes, managed outside of Claudie.
                       properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
                         labels:
                           additionalProperties:
                             type: string

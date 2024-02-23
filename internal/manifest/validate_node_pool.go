@@ -2,12 +2,16 @@ package manifest
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/berops/claudie/internal/utils"
 
 	"github.com/go-playground/validator/v10"
 	k8sV1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
+
+const TotalAnnotationSizeLimitB int = 256 * (1 << 10) // 256 kB
 
 // Validate validates the parsed data inside the NodePool section of the manifest.
 // It checks for missing/invalid filled out values defined in the NodePool section of
@@ -74,6 +78,9 @@ func (p *NodePool) Validate(m *Manifest) error {
 		}
 		if err := checkLabels(n.Labels); err != nil {
 			return fmt.Errorf("nodepool %s has incorrectly defined labels : %w", n.Name, err)
+		}
+		if err := checkAnnotations(n.Annotations); err != nil {
+			return fmt.Errorf("nodepool %s has incorrectly defined annotations : %w", n.Name, err)
 		}
 	}
 
@@ -153,6 +160,21 @@ func checkLabels(labels map[string]string) error {
 		if errs := validation.IsValidLabelValue(v); len(errs) > 0 {
 			return fmt.Errorf("value %v is not valid  : %v", v, errs)
 		}
+	}
+	return nil
+}
+
+func checkAnnotations(annotations map[string]string) error {
+	var totalSize int64
+	for k, v := range annotations {
+		// The rule is QualifiedName except that case doesn't matter, so convert to lowercase before checking.
+		if errs := validation.IsQualifiedName(strings.ToLower(k)); len(errs) > 0 {
+			return fmt.Errorf("key %v is not valid  : %v", k, errs)
+		}
+		totalSize += (int64)(len(k)) + (int64)(len(v))
+	}
+	if totalSize > (int64)(TotalAnnotationSizeLimitB) {
+		return fmt.Errorf("annotations size %d is larger than limit %d", totalSize, TotalAnnotationSizeLimitB)
 	}
 	return nil
 }

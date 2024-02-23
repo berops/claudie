@@ -41,6 +41,9 @@ spec:
         image: ubuntu-22.04
         labels:
           test-set: test-set1
+        annotations:
+          claudie.io/example-annotation: >
+            ["test-set1"]
       - name: hetzner-compute
         providerSpec:
           name: hetzner-1
@@ -52,6 +55,9 @@ spec:
         storageDiskSize: 50
         labels:
           test-set: test-set1
+        annotations:
+          claudie.io/example-annotation: >
+            ["test-set1"]         
 
       - name: gcp-control
         providerSpec:
@@ -74,6 +80,9 @@ spec:
         storageDiskSize: 50
         labels:
           test-set: test-set1
+        annotations:
+          claudie.io/example-annotation: >
+            ["test-set1"]
 
       - name: oci-control
         providerSpec:
@@ -138,6 +147,9 @@ spec:
             effect: NoSchedule
         labels:
           test-set: test-set1
+        annotations:
+          claudie.io/example-annotation: >
+            ["test-set1"]        
       - name: azure-compute
         providerSpec:
           name: azure-1
@@ -149,6 +161,9 @@ spec:
         storageDiskSize: 50
         labels:
           test-set: test-set1
+        annotations:
+          claudie.io/example-annotation: >
+            ["test-set1"]
 
   kubernetes:
     clusters:

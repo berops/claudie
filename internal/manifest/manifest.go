@@ -143,6 +143,9 @@ type DynamicNodePool struct {
 	// User defined labels for this nodepool.
 	// +optional
 	Labels map[string]string `validate:"omitempty" yaml:"labels" json:"labels"`
+	// User defined annotations for this nodepool.
+	// +optional
+	Annotations map[string]string `validate:"omitempty" yaml:"annotations" json:"annotations"`
 	// User defined taints for this nodepool.
 	// +optional
 	Taints []k8sV1.Taint `validate:"omitempty" yaml:"taints" json:"taints"`
@@ -178,6 +181,9 @@ type StaticNodePool struct {
 	// User defined labels for this nodepool.
 	// +optional
 	Labels map[string]string `validate:"omitempty" yaml:"labels" json:"labels"`
+	// User defined annotations for this nodepool.
+	// +optional
+	Annotations map[string]string `validate:"omitempty" yaml:"annotations" json:"annotations"`
 	// User defined taints for this nodepool.
 	// +optional
 	Taints []k8sV1.Taint `validate:"omitempty" yaml:"taints" json:"taints"`
