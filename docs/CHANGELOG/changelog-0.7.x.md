@@ -6,43 +6,29 @@
 
 To deploy Claudie `v0.7.X`, please:
 
-1. Download the archive and checksums from the [release page](https://github.com/berops/claudie/releases)
+1. Download claudie.yaml from [release page](https://github.com/berops/claudie/releases)
 
-2. Verify the archive with the `sha256` (optional)
+2. Verify the checksum with `sha256` (optional)
+   
+    We provide checksums in `claudie_checksum.txt` you can verify the downloaded yaml files againts the provided checksums.
 
-    ```sh
-    sha256sum -c --ignore-missing checksums.txt
-    ```
-
-   If valid, output is, depending on the archive downloaded
-
-    ```sh
-    claudie.tar.gz: OK
-    ```
-
-   or
-
-    ```sh
-    claudie.zip: OK
-    ```
-
-   or both.
-
-3. Lastly, unpack the archive and deploy using `kubectl`
-
-   > We strongly recommend changing the default credentials for MongoDB, MinIO and DynamoDB before you deploy it. To do this, change contents of the files in `mongo/secrets`, `minio/secrets` and `dynamo/secrets` respectively.
-
-    ```sh
-    kubectl apply -k .
-    ```
-
-Alternatively you can deploy claudie by using the generated yaml we provide with each release
+4. Install claudie using `kubectl`
 
  > We strongly recommend changing the default credentials for MongoDB, MinIO and DynamoDB before you deploy it.
 
 ```
 kubectl apply -f https://github.com/berops/claudie/releases/latest/download/claudie.yaml
 ```
+   
+   To further harden claudie, you may want to deploy our pre-defined network policies:
+   ```bash
+   # for clusters using cilium as their CNI
+   kubectl apply -f https://github.com/berops/claudie/releases/latest/download/network-policy-cilium.yaml
+   ```
+   ```bash
+   # other
+   kubectl apply -f https://github.com/berops/claudie/releases/latest/download/network-policy.yaml
+   ```
 
 
 
