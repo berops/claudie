@@ -12,7 +12,7 @@ To deploy Claudie `v0.7.X`, please:
    
     We provide checksums in `claudie_checksum.txt` you can verify the downloaded yaml files againts the provided checksums.
 
-4. Install claudie using `kubectl`
+3. Install claudie using `kubectl`
 
  > We strongly recommend changing the default credentials for MongoDB, MinIO and DynamoDB before you deploy it.
 
