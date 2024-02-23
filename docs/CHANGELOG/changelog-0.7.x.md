@@ -48,7 +48,10 @@ kubectl apply -f https://github.com/berops/claudie/releases/latest/download/clau
 
 ## v0.7.0
 
-If you already have clusters deployed, you need to manually upgrade longhorn to version 1.6.0 ([see](https://longhorn.io/docs/1.6.0/deploy/upgrade/longhorn-manager/#upgrade-with-kubectl-1)), otherwise claudie will fail when a workflow is started for a cluster build using older 0.6.x versions.
+*Upgrade procedure:*
+Before upgrading Claudie, upgrade Longhorn to 1.6.x as per [this guide](https://longhorn.io/docs/1.6.0/deploy/upgrade/longhorn-manager/#upgrade-with-kubectl-1). In most cases this will boil down to running the following command:
+`kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.6.0/deploy/longhorn.yaml`.
+
 
 ### Features
 - Add possibility to use external s3/dynamo/mongo instances [#1191](https://github.com/berops/claudie/pull/1191)
