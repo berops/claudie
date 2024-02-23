@@ -36,6 +36,14 @@ To deploy Claudie `v0.7.X`, please:
     kubectl apply -k .
     ```
 
+Alternatively you can deploy claudie by using the generated yaml we provide with each release
+
+ > We strongly recommend changing the default credentials for MongoDB, MinIO and DynamoDB before you deploy it.
+
+```
+kubectl apply -f https://github.com/berops/claudie/releases/latest/download/claudie.yaml
+```
+
 
 
 ## v0.7.0
