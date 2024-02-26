@@ -46,10 +46,17 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 		if _, ok := roles[role.Name]; ok {
 			return fmt.Errorf("name %q is used across multiple roles, must be unique", role.Name)
 		}
+
+		targetPoolsDuplicates := make(map[string]bool)
+
 		for _, np := range role.TargetPools {
 			if ok, _ := m.nodePoolDefined(np); !ok {
 				return fmt.Errorf("role %q targets undefined nodepool %q", role.Name, np)
 			}
+			if _, ok := targetPoolsDuplicates[np]; ok {
+				return fmt.Errorf("role %q has target pool %q referenced more than once. remove duplicates", role.Name, np)
+			}
+			targetPoolsDuplicates[np] = true
 		}
 		roles[role.Name] = role
 	}

@@ -127,15 +127,22 @@ spec:
             - oci
   loadBalancers:
     roles:
-      - name: apiserver-lb
+      - name: apiserver-lb-hetzner
         protocol: tcp
         port: 6443
         targetPort: 6443
-        target: k8sControlPlane
+        targetPools:
+          - hetzner
+      - name: apiserver-lb-oci
+        protocol: tcp
+        port: 6443
+        targetPort: 6443
+        targetPools:
+          - oci
     clusters:
       - name: ts2-lb-1
         roles:
-          - apiserver-lb
+          - apiserver-lb-hetzner
         dns:
           dnsZone: azure.e2e.claudie.io
           provider: azure-1
@@ -148,7 +155,7 @@ spec:
           - azure-lb
       - name: ts2-lb-2
         roles:
-          - apiserver-lb
+          - apiserver-lb-oci
         dns:
           dnsZone: oci.e2e.claudie.io
           provider: oci-1
