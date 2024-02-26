@@ -183,6 +183,8 @@ message NodePool {
   map<string, string> labels = 6;
   // User defined taints.
   repeated Taint taints = 7;
+  // User definded annotations.
+  map<string, string> annotations = 8;
 }
 
 // Taint defines a custom defined taint for the node pools.

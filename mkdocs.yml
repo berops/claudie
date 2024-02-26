@@ -83,6 +83,7 @@ nav:
       - OCI: input-manifest/providers/oci.md
       - On Premise: input-manifest/providers/on-prem.md
     - Example yaml file: input-manifest/example.md
+    - GPUs example: input-manifest/gpu-example.md
     - API reference: input-manifest/api-reference.md
   - How Claudie works:
     - Claudie Workflow: claudie-workflow/claudie-workflow.md
@@ -100,7 +101,9 @@ nav:
     - Claudie v0.4: CHANGELOG/changelog-0.4.x.md
     - Claudie v0.5: CHANGELOG/changelog-0.5.x.md
     - Claudie v0.6: CHANGELOG/changelog-0.6.x.md
-  - Troubleshooting: troubleshooting/troubleshooting.md
+    - Claudie v0.7: CHANGELOG/changelog-0.7.x.md
+  - Latency limitations: latency-limitations/latency-limitations.md
+  - Troubleshooting: troubleshooting/troubleshooting.md 
   - Creating Claudie Backup: creating-claudie-backup/creating-claudie-backup.md
   - Claudie Hardening: hardening/hardening.md
   - Prometheus Monitoring: monitoring/grafana.md

@@ -105,6 +105,8 @@ type StaticNodePool struct {
 	// +optional
 	Labels map[string]string `json:"labels"`
 	// +optional
+	Annotations map[string]string `json:"annotations"`
+	// +optional
 	Taints []corev1.Taint `json:"taints"`
 }
 
