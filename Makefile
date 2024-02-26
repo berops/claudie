@@ -1,7 +1,7 @@
 .PHONY: proto contextbox scheduler builder terraformer ansibler kubeEleven test database minio containerimgs crd crd-apply controller-gen kind-load-images
 
 # Enforce same version of protoc 
-PROTOC_VERSION = "24.3"
+PROTOC_VERSION = "25.1"
 CURRENT_VERSION = $$(protoc --version | awk '{print $$2}')
 # Generate all .proto files 
 proto:
@@ -94,12 +94,12 @@ TARGETARCH = $$(go env GOHOSTARCH)
 REV = $$(git rev-parse --short HEAD)
 SERVICES = $$(command ls services/)
 containerimgs:
-	sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$(REV)/" services/kuber/templates/cluster-autoscaler.goyaml
+	sed -i "" "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$(REV)/" services/kuber/templates/cluster-autoscaler.goyaml
 	for service in $(SERVICES) ; do \
 		echo " --- building $$service --- "; \
 		DOCKER_BUILDKIT=1 docker build --build-arg=TARGETARCH="$(TARGETARCH)" -t "ghcr.io/berops/claudie/$$service:$(REV)" -f ./services/$$service/Dockerfile . ; \
 	done
-	sed -i "s/adapter:.*$$/adapter/" services/kuber/templates/cluster-autoscaler.goyaml
+	sed -i "" "s/adapter:.*$$/adapter/" services/kuber/templates/cluster-autoscaler.goyaml
 
 kind-load-images:
 	for service in $(SERVICES) ; do \

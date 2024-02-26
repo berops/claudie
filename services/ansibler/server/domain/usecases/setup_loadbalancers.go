@@ -159,19 +159,7 @@ func setUpNodeExporter(lbCluster *pb.LBcluster, clusterDirectory string, spawnPr
 // setUpNginx sets up the nginx loadbalancer based on the input manifest specification.
 // Return error if not successful, nil otherwise
 func setUpNginx(lbCluster *pb.LBcluster, targetK8sNodepool []*pb.NodePool, clusterDirectory string, spawnProcessLimit chan struct{}) error {
-	targetControlNodes, targetComputeNodes := splitNodesByType(targetK8sNodepool)
-
-	// construct []LBClusterRolesInfo for the given LB cluster
-	var lbClusterRolesInfo []utils.LBClusterRolesInfo
-	for _, role := range lbCluster.Roles {
-		target := assignTarget(targetControlNodes, targetComputeNodes, role.Target)
-
-		if target == nil {
-			return fmt.Errorf("target %v did not specify any nodes", role.Target)
-		}
-		lbClusterRolesInfo = append(lbClusterRolesInfo, utils.LBClusterRolesInfo{Role: role, TargetNodes: target})
-	}
-
+	lbClusterRolesInfo := targetPools(lbCluster, targetK8sNodepool)
 	// Generate the nginx config file
 	nginxConfTemplate, err := templateUtils.LoadTemplate(templates.NginxConfigTemplate)
 	tpl := templateUtils.Templates{Directory: clusterDirectory}
@@ -204,6 +192,45 @@ func setUpNginx(lbCluster *pb.LBcluster, targetK8sNodepool []*pb.NodePool, clust
 	}
 
 	return nil
+}
+
+func targetPools(lbCluster *pb.LBcluster, targetK8sNodepool []*pb.NodePool) []utils.LBClusterRolesInfo {
+	//TODO: remove in favor of targetNodepools
+	targetControlNodes, targetComputeNodes := splitNodesByType(targetK8sNodepool)
+
+	var lbClusterRolesInfo []utils.LBClusterRolesInfo
+	for _, role := range lbCluster.Roles {
+		if len(role.TargetPools) == 0 {
+			// TODO: remove in favor of targetNodepools
+			target := assignTarget(targetControlNodes, targetComputeNodes, role.Target)
+			lbClusterRolesInfo = append(lbClusterRolesInfo, utils.LBClusterRolesInfo{Role: role, TargetNodes: target})
+		} else {
+			lbClusterRolesInfo = append(lbClusterRolesInfo, utils.LBClusterRolesInfo{
+				Role:        role,
+				TargetNodes: targetNodes(role.TargetPools, targetK8sNodepool),
+			})
+		}
+	}
+
+	return lbClusterRolesInfo
+}
+
+func targetNodes(targetPools []string, targetk8sPools []*pb.NodePool) (nodes []*pb.Node) {
+	var pools []*pb.NodePool
+
+	for _, target := range targetPools {
+		for _, np := range targetk8sPools {
+			if name, _ := commonUtils.ExtractHashFromNodePool(target, np.Name); name != "" {
+				pools = append(pools, np)
+			}
+		}
+	}
+
+	for _, np := range pools {
+		nodes = append(nodes, np.Nodes...)
+	}
+
+	return
 }
 
 // splitNodesByType returns two slices of *pb.Node, one for control nodes and one for compute nodes.

@@ -174,16 +174,12 @@ spec:
                           - tcp
                           - udp
                           type: string
-                        target:
-                          description: 'Defines a target group of nodes. Allowed values
-                            are: k8sAllNodes - All nodes in the cluster k8sControlNodes
-                            - Only control/master nodes in cluster k8sComputeNodes
-                            - Only compute/worker nodes in cluster'
-                          enum:
-                          - k8sAllNodes
-                          - k8sControlPlane
-                          - k8sComputePlane
-                          type: string
+                        targetPools:
+                          description: Defines nodepools of the targeted K8s cluster,
+                            from which nodes will be used for loadbalancing.
+                          items:
+                            type: string
+                          type: array
                         targetPort:
                           description: Port where loadbalancer forwards the traffic.
                           format: int32
@@ -192,7 +188,7 @@ spec:
                       - name
                       - port
                       - protocol
-                      - target
+                      - targetPools
                       - targetPort
                       type: object
                     type: array

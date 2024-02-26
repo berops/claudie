@@ -17,7 +17,7 @@ const APIServerPort = 6443
 func (l *LoadBalancer) Validate(m *Manifest) error {
 	var (
 		// check if requested roles exists and has a unique name.
-		roles = make(map[string]bool)
+		roles = make(map[string]Role)
 
 		// check if hostnames in the same DNS zone are unique
 		// There is a edge-case. If an empty string is supplied
@@ -30,7 +30,7 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 		clusters = make(map[string]bool)
 
 		// check if the roles in the LB cluster has a role of ApiServer.
-		apiServerRole = ""
+		apiServerRole Role
 	)
 
 	for _, role := range l.Roles {
@@ -40,13 +40,18 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 
 		// save the result so we can use it later.
 		if role.TargetPort == APIServerPort {
-			apiServerRole = role.Name
+			apiServerRole = role
 		}
 
 		if _, ok := roles[role.Name]; ok {
 			return fmt.Errorf("name %q is used across multiple roles, must be unique", role.Name)
 		}
-		roles[role.Name] = true
+		for _, np := range role.TargetPools {
+			if ok, _ := m.nodePoolDefined(np); !ok {
+				return fmt.Errorf("role %q targets undefined nodepool %q", role.Name, np)
+			}
+		}
+		roles[role.Name] = role
 	}
 
 	apiServerLBExists := make(map[string]bool) // [Targetk8sClusterName]bool
@@ -64,11 +69,29 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 
 		// check if requested roles are defined.
 		for _, role := range cluster.Roles {
-			if _, ok := roles[role]; !ok {
+			roleDef, ok := roles[role]
+			if !ok {
 				return fmt.Errorf("role %q used inside cluster %q is not defined", role, cluster.Name)
 			}
+			// check if the target pools of the role are referencing valid nodepools for the k8s cluster.
+			for _, k8s := range m.Kubernetes.Clusters {
+				if k8s.Name == cluster.TargetedK8s {
+					for _, np := range roleDef.TargetPools {
+						var found bool
+						for _, nnp := range k8s.Pools.Control {
+							found = found || np == nnp
+						}
+						for _, nnp := range k8s.Pools.Compute {
+							found = found || np == nnp
+						}
+						if !found {
+							return fmt.Errorf("role definition for %q used for %q targets nodepool %q which is not used by the target k8s cluster %q", roleDef.Name, cluster.Name, np, cluster.TargetedK8s)
+						}
+					}
+				}
+			}
 
-			if role == apiServerRole {
+			if role == apiServerRole.Name {
 				// check if this is an ApiServer LB and another ApiServer LB already exists.
 				if apiServerLBExists[cluster.TargetedK8s] {
 					return fmt.Errorf("role %q is used across multiple Load-Balancers for k8s-cluster %s. Can have only one ApiServer Load-Balancer per k8s-cluster", role, cluster.TargetedK8s)
@@ -76,6 +99,21 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 
 				// this is the first LB that uses the ApiServer role.
 				apiServerLBExists[cluster.TargetedK8s] = true
+
+				// check if the target nodepools are referencing control nodepools.
+				for _, k8s := range m.Kubernetes.Clusters {
+					if k8s.Name == cluster.TargetedK8s {
+						for _, np := range apiServerRole.TargetPools {
+							var found bool
+							for _, cnp := range k8s.Pools.Control {
+								found = found || np == cnp
+							}
+							if !found {
+								return fmt.Errorf("api server role %q used for %q must only target control nodepools, %q is not a control nodepool of kubernetes cluster %q", apiServerRole.Name, cluster.Name, np, cluster.TargetedK8s)
+							}
+						}
+					}
+				}
 			}
 		}
 

@@ -19,10 +19,8 @@ func CreateLBCluster(unmarshalledManifest *manifest.Manifest) ([]*pb.LBcluster, 
 		if err != nil {
 			return nil, fmt.Errorf("error while building desired state for LB %s : %w", lbCluster.Name, err)
 		}
-		attachedRoles, err := getRolesAttachedToLBCluster(unmarshalledManifest.LoadBalancer.Roles, lbCluster.Roles)
-		if err != nil {
-			return nil, fmt.Errorf("error while building desired state for LB %s : %w", lbCluster.Name, err)
-		}
+		attachedRoles := getRolesAttachedToLBCluster(unmarshalledManifest.LoadBalancer.Roles, lbCluster.Roles)
+
 		newLbCluster := &pb.LBcluster{
 			ClusterInfo: &pb.ClusterInfo{
 				Name: lbCluster.Name,
@@ -94,38 +92,35 @@ func getDNS(lbDNS manifest.DNS, unmarshalledManifest *manifest.Manifest) (*pb.DN
 
 // getRolesAttachedToLBCluster will read roles attached to the LB cluster from the unmarshalled manifest and return them.
 // Returns slice of *[]pb.Roles if successful, error if Target from manifest state not found
-func getRolesAttachedToLBCluster(roles []manifest.Role, roleNames []string) ([]*pb.Role, error) {
+func getRolesAttachedToLBCluster(roles []manifest.Role, roleNames []string) []*pb.Role {
 	var matchingRoles []*pb.Role
 
 	for _, roleName := range roleNames {
 		for _, role := range roles {
 			if role.Name == roleName {
-				// find numeric value of a pb.Target specified
-				t, ok := pb.Target_value[role.Target]
-				if !ok {
-					return nil, fmt.Errorf("target %s not found", role.Target)
-				}
-				//parse to the pb.Target type
-				target := pb.Target(t)
 				var roleType pb.RoleType
 
-				if role.TargetPort == manifest.APIServerPort && target == pb.Target_k8sControlPlane {
+				// The manifest validation is handling the check if the target nodepools of the
+				// role are control nodepools and thus can be used as a valid API loadbalancer.
+				// Given this invariant we can simply check for the port.
+				if role.TargetPort == manifest.APIServerPort {
 					roleType = pb.RoleType_ApiServer
 				} else {
 					roleType = pb.RoleType_Ingress
 				}
 
 				newRole := &pb.Role{
-					Name:       role.Name,
-					Protocol:   role.Protocol,
-					Port:       role.Port,
-					TargetPort: role.TargetPort,
-					Target:     target,
-					RoleType:   roleType,
+					Name:        role.Name,
+					Protocol:    role.Protocol,
+					Port:        role.Port,
+					TargetPort:  role.TargetPort,
+					TargetPools: role.TargetPools,
+					RoleType:    roleType,
 				}
 				matchingRoles = append(matchingRoles, newRole)
 			}
 		}
 	}
-	return matchingRoles, nil
+
+	return matchingRoles
 }

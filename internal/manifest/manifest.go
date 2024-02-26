@@ -227,12 +227,8 @@ type Role struct {
 	Port int32 `validate:"min=0,max=65535" yaml:"port" json:"port"`
 	// Port where loadbalancer forwards the traffic.
 	TargetPort int32 `validate:"min=0,max=65535" yaml:"targetPort" json:"targetPort"`
-	// Defines a target group of nodes. Allowed values are:
-	// k8sAllNodes - All nodes in the cluster
-	// k8sControlNodes - Only control/master nodes in cluster
-	// k8sComputeNodes - Only compute/worker nodes in cluster
-	// +kubebuilder:validation:Enum=k8sAllNodes;k8sControlPlane;k8sComputePlane;
-	Target string `validate:"required,oneof=k8sAllNodes k8sControlPlane k8sComputePlane" yaml:"target" json:"target"`
+	// Defines nodepools of the targeted K8s cluster, from which nodes will be used for loadbalancing.
+	TargetPools []string `validate:"required,min=1" yaml:"targetPools" json:"targetPools"`
 }
 
 // Collection of data used to define a loadbalancer cluster. Defines loadbalancer clusters.
