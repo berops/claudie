@@ -45,13 +45,15 @@ func (u *Usecases) StoreClusterMetadata(ctx context.Context, request *pb.StoreCl
 	md.DynamicNodepools = dp
 	md.StaticNodepools = sp
 
-	lbdp := make(map[string]LoadBalancerNodePools)
+	lbdp := make(map[string]DynamicLoadBalancerNodePools)
+	lbst := make(map[string]StaticLoadBalancerNodePools)
 
 	for _, lb := range request.GetLoadbalancers() {
-		lbdp[lb.GetClusterInfo().GetName()] = LoadBalancerNodePools{
+		lbdp[lb.GetClusterInfo().GetName()] = DynamicLoadBalancerNodePools{
 			NodeIps:    make(map[string]IPPair),
 			PrivateKey: lb.GetClusterInfo().GetPrivateKey(),
 		}
+		lbst[lb.GetClusterInfo().GetName()] = StaticLoadBalancerNodePools{NodeInfo: make(map[string]StaticNodeInfo)}
 
 		for _, pool := range lb.GetClusterInfo().GetNodePools() {
 			if np := pool.GetDynamicNodePool(); np != nil {
@@ -61,11 +63,18 @@ func (u *Usecases) StoreClusterMetadata(ctx context.Context, request *pb.StoreCl
 						PrivateIP: net.ParseIP(node.GetPrivate()),
 					}
 				}
+			} else if np := pool.GetStaticNodePool(); np != nil {
+				for _, node := range pool.GetNodes() {
+					sp.NodeInfo[node.GetName()] = StaticNodeInfo{
+						PrivateKey: np.NodeKeys[node.Public],
+						Endpoint:   node.GetPublic()}
+				}
 			}
 		}
 	}
 
-	md.LoadBalancerNodePools = lbdp
+	md.DynamicLoadBalancerNodePools = lbdp
+	md.StaticLoadBalancerNodePools = lbst
 
 	b, err := json.Marshal(md)
 	if err != nil {
