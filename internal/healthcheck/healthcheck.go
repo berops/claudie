@@ -21,10 +21,9 @@ func NewClientHealthChecker(port string, f func() error) *ClientHealthChecker {
 	}
 }
 
-// StartProbes will initilize http endpoints for liviness (/live) and readiness (/ready) checks
+// StartProbes will initilize http endpoint for(/health) check
 func (s *ClientHealthChecker) StartProbes() {
-	http.HandleFunc("/live", live)
-	http.HandleFunc("/ready", s.ready)
+	http.HandleFunc("/health", s.health)
 	// Port close to other services
 	go func() {
 		if err := http.ListenAndServe(net.JoinHostPort("0.0.0.0", s.portForProbes), nil); err != nil {
@@ -39,16 +38,9 @@ func writeMsg(w http.ResponseWriter, msg string) {
 	}
 }
 
-// live function is testing liviness state of the microservice
-// always return 200 -> if microservice is able to respond, it is live
-func live(w http.ResponseWriter, req *http.Request) {
-	w.WriteHeader(200)
-	writeMsg(w, "ok")
-}
-
 // ready function is testing readiness state of the microservice
 // uses checkFunction provided in ClientHealthChecker -> if no error thrown, microservice is ready
-func (s *ClientHealthChecker) ready(w http.ResponseWriter, req *http.Request) {
+func (s *ClientHealthChecker) health(w http.ResponseWriter, req *http.Request) {
 	err := s.checkFunc()
 	if err != nil {
 		log.Debug().Msgf("Error in health probe: %v", err)

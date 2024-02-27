@@ -51,7 +51,7 @@ func main() {
 	// Initialize health probes
 	healthcheck.NewClientHealthChecker(
 		fmt.Sprint(defaultHealthcheckPort),
-		func() error { return healthCheck(usecases) },
+		healthCheck(usecases),
 	).StartProbes()
 
 	errGroup, errGroupCtx := errgroup.WithContext(context.Background())
@@ -137,11 +137,12 @@ func main() {
 	log.Info().Msgf("Stopping Scheduler: %v", errGroup.Wait())
 }
 
-// healthCheck function is used for querying readiness of the pod running this microservice
-func healthCheck(usecases *usecases.Usecases) error {
-	res, err := usecases.CreateDesiredState(nil)
-	if res != nil || err == nil {
-		return fmt.Errorf("health check function got unexpected result")
+// healthCheck function is function used for querying readiness of the pod running this microservice
+func healthCheck(usecases *usecases.Usecases) func() error {
+	return func() error {
+		if usecases.ContextBox.PerformHealthCheck() != nil {
+			return errors.New("context-box is unhealthy")
+		}
+		return nil
 	}
-	return nil
 }

@@ -41,3 +41,8 @@ func (c ContextBoxConnector) SaveConfigScheduler(config *pb.Config, contextBoxGr
 func (c *ContextBoxConnector) Disconnect() {
 	utils.CloseClientConnection(c.Connection)
 }
+
+// PerformHealthCheck checks health of the underlying gRPC connection to context-box microservice.
+func (c *ContextBoxConnector) PerformHealthCheck() error {
+	return utils.IsConnectionReady(c.Connection)
+}

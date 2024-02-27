@@ -80,16 +80,24 @@ spec:
               value: "/validate-manifest" 
           readinessProbe:
             httpGet:
-              path: /readyz
+              path: /healthz
               port: 50000
-            initialDelaySeconds: 5
+              scheme: HTTP
+            initialDelaySeconds: 35
+            timeoutSeconds: 3
             periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 3        
           livenessProbe:
             httpGet:
               path: /healthz
               port: 50000
-            initialDelaySeconds: 15
+              scheme: HTTP
+            initialDelaySeconds: 30
+            timeoutSeconds: 3
             periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 3
           volumeMounts:
             - name: webhook-tls-certs
               mountPath: /etc/webhook/certs/
