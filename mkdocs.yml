@@ -77,8 +77,9 @@ nav:
     - Providers:
       - AWS: input-manifest/providers/aws.md
       - Azure: input-manifest/providers/azure.md
-      - GCP: input-manifest/providers/gcp.md
       - Cloudflare: input-manifest/providers/cloudflare.md
+      - GCP: input-manifest/providers/gcp.md
+      - Genesis: input-manifest/providers/genesiscloud.md
       - Hetzner: input-manifest/providers/hetzner.md
       - OCI: input-manifest/providers/oci.md
       - On Premise: input-manifest/providers/on-prem.md
