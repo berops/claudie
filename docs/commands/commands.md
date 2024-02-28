@@ -54,14 +54,37 @@ Claudie creates kubeconfig secret in claudie namespace:
   kubectl get secrets -n claudie -l claudie.io/output=metadata,claudie.io/cluster=$YOUR-CLUSTER-NAME -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r .dynamic_nodepools.node_ips
   ```
 
-  In case you want to connect to your **load balancer nodes** via SSH, you can **recover private SSH** key:
+  You can display all **dynamic load balancer nodes** metadata by:
 
   ```bash
-  kubectl get secrets -n claudie -l claudie.io/output=metadata,claudie.io/cluster=$YOUR-CLUSTER-NAME -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r '.load_balancer_node_pools[] | .cluster_private_key' > ~/.ssh/my-super-cluster-lb-key
+  kubectl get secrets -n claudie -l claudie.io/output=metadata,claudie.io/cluster=$YOUR-CLUSTER-NAME -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r .dynamic_load_balancer_nodepools
   ```
 
-  To **recover public IP** of your **load balancer** nodes to connect to via SSH:
+  In case you want to connect to your **dynamic load balancer nodes** via SSH, you can **recover private SSH** key:
 
   ```bash
-  kubectl get secrets -n claudie -l claudie.io/output=metadata,claudie.io/cluster=$YOUR-CLUSTER-NAME -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r '.load_balancer_node_pools[] | .node_ips'
+  kubectl get secrets -n claudie -l claudie.io/output=metadata,claudie.io/cluster=$YOUR-CLUSTER-NAME -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r '.dynamic_load_balancer_nodepools.$YOUR-DYNAMIC-LB-CLUSTER-NAME.cluster_private_key' > ~/.ssh/my-super-cluster-dynamic-lb-key
+  ```
+
+  To **recover public IP** of your **dynamic load balancer nodes** to connect to via SSH:
+
+  ```bash
+  kubectl get secrets -n claudie -l claudie.io/output=metadata,claudie.io/cluster=$YOUR-CLUSTER-NAME -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r '.dynamic_load_balancer_nodepools[] | .node_ips'
+  ```
+
+  You can display all **static load balancer nodes** metadata by:
+  ```bash
+  kubectl get secrets -n claudie -l claudie.io/output=metadata,claudie.io/cluster=$YOUR-CLUSTER-NAME -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r .static_load_balancer_nodepools
+  ```
+
+  In order to display **public IPs** and **private SSH** keys of your **static load balancer** nodes by:
+
+  ```bash
+  kubectl get secrets -n claudie -l claudie.io/output=metadata,claudie.io/cluster=$YOUR-CLUSTER-NAME -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r '.static_load_balancer_nodepools[] | .node_info'
+  ```
+
+  To connect to one of your **static load balancer** nodes via SSH, you can **recover private SSH** key:
+
+  ```bash
+  kubectl get secrets -n claudie -l claudie.io/output=metadata,claudie.io/cluster=$YOUR-CLUSTER-NAME -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r '.static_load_balancer_nodepools.$YOUR-STATIC-LB-CLUSTER-NAME.node_info.$YOUR-STATIC-LB-NODE.node_private_key' > ~/.ssh/my-super-cluster-static-lb-key
   ```
