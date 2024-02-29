@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   build-and-publish:
-    name: Create a new  docs release
+    name: Automatically update docs
     if: ${{ github.event.label.name == 'refresh-docs' }}
     runs-on: ubuntu-22.04
     steps:
@@ -26,11 +26,6 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set release tag
-        run: |
-          R=${GITHUB_REF#"refs/tags/"}
-          echo "RELEASE=$R" >> $GITHUB_ENV
       
       - name: Set up git author
         run: |
@@ -39,69 +34,25 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Handle Changelog file
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          filename="mkdocs.yml"
-          start_line=$(sed -n '/- Changelog:/=' "$filename")
-          
-          changelogs_from_dir=$(ls ./docs/CHANGELOG) 
-          changelogs_from_mkdocs_file=$(grep -Eo "CHANGELOG/changelog-[0-9]+\.[0-9]+\.x\.md" "$filename" | awk -F'/' '{print $2}')
-          
-          changelogs_mkdocs_arr=( $changelogs_from_mkdocs_file )
-          changelogs_dir_arr=( $changelogs_from_dir )
-          
-          new_changelog_file=""
-          
-          # check if all files from CHANGELOG dir are present in mkdocs.yml
-          for value in "${changelogs_dir_arr[@]}"; do
-              if [[ ! " ${changelogs_mkdocs_arr[@]} " =~ " $value " ]]; then
-                  # the value of the new_changelog_file will be name of the changelog file, which isn't in mkdocs.yml nav
-                  new_changelog_file=$value
-              fi
-          done
-          
-          # add new navigation entry only, when there is a new changelog file
-          if [[ -n "$new_changelog_file" ]]; then
-              echo "Found new changelog file"
-          
-              version=$(echo $new_changelog_file | grep -oE [0-9]+\.[0-9]+)
-          
-              navigation_entry="Claudie v$version: CHANGELOG/$new_changelog_file"
-          
-              new_entry_line=$(($start_line + ${#changelogs_dir_arr[@]}))
-          
-              sed -i "${new_entry_line}i\\
-              - ${navigation_entry}" $filename
-
-              git fetch
-
-              git checkout -b feat/add-reference-to-new-changelog-${RELEASE}
-
-              # commit and push
-              git commit -am "add new changelog file to mkdocs.yml"
-          
-              git push --set-upstream origin feat/add-reference-to-new-changelog-${RELEASE}
-          
-              echo "Altered mkdocs.yml with new Changelog navigation entry was commited and pushed to origin"
-
-              gh pr create --title "Add reference to new Changelog ${RELEASE}" --body "Add reference to new Changelog file in mkdocs.yml"
-          else
-              echo "There isn't a new changelog file"
-          fi
-          
-      # NOTE: the pipeline will fail, if gh-pages branch isn't created!!!
-      - name: Git fetch gh-pages
-        run: git fetch origin gh-pages
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: 3.9  
-
+  
       - name: Install Python dependencies
         run: pip install -r requirements.txt
+
+      - name: Retrieve latest version tag
+        run: |
+          LATEST_VERSION=$(mike list | grep [latest] | awk '{sub(/\[latest\]/, ""); print}')
+          echo "LATEST_VERSION=$LATEST_VERSION" >> $GITHUB_ENV
+
+      - name: Print latest version tag
+        run : echo ${LATEST_VERSION}
+          
+      # NOTE: the pipeline will fail, if gh-pages branch isn't created!!!
+      - name: Git fetch gh-pages
+        run: git fetch origin gh-pages
 
       # this is only possible, when there is already a version with latest alias
       # in case there isn't a version like this you have to
@@ -110,4 +61,4 @@ jobs:
       #   3. mike deploy <version_from_cmd_1> latest --push
       # --push flag in the latest cmd is necessary, when you want to apply changes in gh-pages branch and also in GH Pages
       - name: Deploy new docs version
-        run: mike deploy ${RELEASE} latest --update-aliases --push
+        run: mike deploy ${LATEST_VERSION} latest --update-aliases --push
