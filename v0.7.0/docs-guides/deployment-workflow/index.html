@@ -1321,9 +1321,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#deploy-docs-from-some-older-github-tags" class="md-nav__link">
+  <a href="#deploy-docs-manually-from-some-older-github-tags" class="md-nav__link">
     <span class="md-ellipsis">
-      Deploy docs from some older GitHub tags
+      Deploy docs manually from some older GitHub tags
     </span>
   </a>
   
@@ -1333,6 +1333,15 @@
   <a href="#deploy-docs-for-a-new-release-manually" class="md-nav__link">
     <span class="md-ellipsis">
       Deploy docs for a new release manually
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#automatic-update-of-the-latest-documentation-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      Automatic update of the latest documentation version
     </span>
   </a>
   
@@ -1375,7 +1384,7 @@
 </ul>
 <div class="highlight"><pre><span></span><code>mike<span class="w"> </span>set-default<span class="w"> </span>&lt;version&gt;
 </code></pre></div>
-<h2 id="deploy-docs-from-some-older-github-tags">Deploy docs from some older GitHub tags<a class="headerlink" href="#deploy-docs-from-some-older-github-tags" title="Permanent link">&para;</a></h2>
+<h2 id="deploy-docs-manually-from-some-older-github-tags">Deploy docs manually from some older GitHub tags<a class="headerlink" href="#deploy-docs-manually-from-some-older-github-tags" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Checkout to the desired tag</li>
 </ul>
@@ -1438,6 +1447,12 @@
 <p><img alt="⚠" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/26a0.svg" title=":warning:" /> Don't forget to use the <code>latest</code> tag in the last command, because otherwise the new version will not be loaded as default one, when visiting <a href="docs.claudie.io">docs.claudie.io</a> <img alt="⚠" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@14.1.2/assets/svg/26a0.svg" title=":warning:" /></p>
 </blockquote>
 <p>Find more about how to work with <a href="https://github.com/jimporter/mike">mike</a>.</p>
+<h2 id="automatic-update-of-the-latest-documentation-version">Automatic update of the latest documentation version<a class="headerlink" href="#automatic-update-of-the-latest-documentation-version" title="Permanent link">&para;</a></h2>
+<p>The <code>automatic-docs-update.yml</code> pipeline will update the docs automatically, in case you add the label <code>refresh-docs</code> or comment <code>/refresh-docs</code> on your PR. In order to trigger this pipeline again you have to re-add <code>refresh-docs</code> label or once again comment <code>/refresh-docs</code> in your PR.</p>
+<blockquote>
+<p>[!NOTE]<br />
+<code>/refresh-docs</code> comment triggers automatic update only when the <code>automatic-docs-update.yml</code> file is in the default branch.</p>
+</blockquote>
 
 
   
