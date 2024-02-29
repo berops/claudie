@@ -1,5 +1,7 @@
 name: Automatic docs update pipeline
 on:
+  issue_comment:
+    types: [created, edited]
   # Run when PR is labeled
   pull_request:
     types: [labeled]
@@ -19,7 +21,7 @@ concurrency:
 jobs:
   build-and-publish:
     name: Automatically update docs
-    if: ${{ github.event.label.name == 'refresh-docs' }}
+    if: ${{ (github.event.issue.pull_request && contains(github.event.comment.body, '/refresh-docs')) || github.event.label.name == 'refresh-docs' }}
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -34,6 +36,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # NOTE: the pipeline will fail, if gh-pages branch isn't created!!!
+      - name: Git fetch gh-pages
+        run: git fetch origin gh-pages
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -46,13 +52,6 @@ jobs:
         run: |
           LATEST_VERSION=$(mike list | grep [latest] | awk '{sub(/\[latest\]/, ""); print}')
           echo "LATEST_VERSION=$LATEST_VERSION" >> $GITHUB_ENV
-
-      - name: Print latest version tag
-        run : echo ${LATEST_VERSION}
-          
-      # NOTE: the pipeline will fail, if gh-pages branch isn't created!!!
-      - name: Git fetch gh-pages
-        run: git fetch origin gh-pages
 
       # this is only possible, when there is already a version with latest alias
       # in case there isn't a version like this you have to
