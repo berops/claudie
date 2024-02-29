@@ -70,6 +70,7 @@ theme:
 
 nav:
   - index.md
+  - Docs Overview: docs-overview/docs-overview.md
   - Getting Started:
     - Getting started: getting-started/get-started-using-claudie.md
     - Detailed guide: getting-started/detailed-guide.md
