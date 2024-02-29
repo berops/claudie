@@ -1,6 +1,6 @@
 # Docs Overview
 
-This section contains a brief subscriptions about the most important part of Claudie's documentation.
+This section contains a brief descriptions about main parts of the Claudie's documentation.
 
 ## Getting Started
 
@@ -9,6 +9,10 @@ The "Getting Started" section is where you'll learn how to begin using Claudie. 
 You'll also find helpful information on how to customize Claudie to suit your needs, including specifications for the settings you can adjust, and examples of how to use configuration files to get started.
 
 By following the steps in this section, you'll have everything you need to start using Claudie with confidence!
+
+## Input manifest
+
+This section contains an example YAML files of the InputManifest CRD that tells Claudie how should your infrastructure look like. Besides these files you cna also find an API reference for the InputManifest CRD there.
 
 ## How Claudie works
 
@@ -42,6 +46,14 @@ By checking out this section, you'll get a better sense of what's involved in co
 
 The "changelog" section is where you can find information about all the changes, updates, and issues related to each version of Claudie. 
 
+## Latency limitations
+
+In this section, we describe a latency limitations, which you should take into an account, when desiging your infrastructure.
+
+## Troubleshooting
+
+In case you run into some issues we recommend following some of the trobleshooting guides in this section.
+
 ## Creating Claudie Backup
 
 This section describes steps to back up claudie and its dependencies.
@@ -51,6 +63,14 @@ This section describes steps to back up claudie and its dependencies.
 This section describes how to further configure the default claudie deployment.
 It is highly recommended that you read this section.
 
+## Prometheus Monitoring
+
+In this section we walk you through the setup of Claudie's Prometheus metrics to gain visibility into various metrics that are exposed by Claudie.
+
 ## Updating Claudie
 
 This section describes how to execute updates, such as OS or kubernetes version, in Claudie.
+
+# Command Cheat Sheet
+
+The "Command Cheat Sheet" section contains a useful `kubectl` commands to interact with Claudie.
