@@ -103,4 +103,4 @@ Find more about how to work with [mike](https://github.com/jimporter/mike).
 The `automatic-docs-update.yml` pipeline will update the docs automatically, in case you add the label `refresh-docs` or comment `/refresh-docs` on your PR. In order to trigger this pipeline again you have to re-add `refresh-docs` label or once again comment `/refresh-docs` in your PR.
 
 > [!NOTE]  
-> `/refresh-docs` comment trigger automatic update only when the `automatic-docs-update.yml` file is in the default branch.
+> `/refresh-docs` comment triggers automatic update only when the `automatic-docs-update.yml` file is in the default branch.
