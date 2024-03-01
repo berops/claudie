@@ -1,4 +1,4 @@
-FROM docker.io/library/golang:1.21.4 AS build
+FROM docker.io/library/golang:1.22.0 AS build
 
 ARG TARGETARCH
 
@@ -27,7 +27,7 @@ WORKDIR /go/services/terraformer/server
 #Compile the golang code to /out, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build
 
-FROM docker.io/library/alpine:3.18.5
+FROM docker.io/library/alpine:3.19.1
 #Add repository label
 LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
 #Add image name as a label
