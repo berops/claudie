@@ -124,7 +124,7 @@ jobs:
     needs: build-and-publish
     steps:
       - uses: actions/checkout@v4
-      - uses: dacbd/create-issue-action@v1
+      - uses: dacbd/create-issue-action@v2
         with:
           token: ${{ secrets.GH_ISSUES_TOKEN }}
           org: berops
