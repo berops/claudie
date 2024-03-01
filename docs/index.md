@@ -28,7 +28,7 @@ Claudie covers you with the following features functionalities:
 * Loadbalancing
 * Persistent storage volumes
 
-See more in How Claudie works.
+See more in How Claudie works sections.
 
 ## What to do next
 
