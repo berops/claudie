@@ -12,7 +12,7 @@ By following the steps in this section, you'll have everything you need to start
 
 ## Input manifest
 
-This section contains an example YAML files of the InputManifest CRD that tells Claudie how should your infrastructure look like. Besides these files you cna also find an API reference for the InputManifest CRD there.
+This section contains examples of YAML files of the InputManifest CRD that tell Claudie what should an infrastructure look like. Besides these files, you can also find an API reference for the InputManifest CRD there.
 
 ## How Claudie works
 
@@ -52,7 +52,7 @@ In this section, we describe a latency limitations, which you should take into a
 
 ## Troubleshooting
 
-In case you run into some issues we recommend following some of the trobleshooting guides in this section.
+In case you run into issues, we recommend following some of the trobleshooting guides in this section.
 
 ## Creating Claudie Backup
 
@@ -65,7 +65,7 @@ It is highly recommended that you read this section.
 
 ## Prometheus Monitoring
 
-In this section we walk you through the setup of Claudie's Prometheus metrics to gain visibility into various metrics that are exposed by Claudie.
+In this section we walk you through the setup of Claudie's Prometheus metrics to gain visibility into various metrics that Claudie exposes.
 
 ## Updating Claudie
 
