@@ -1,4 +1,4 @@
-# Docs Overview
+# Sitemap
 
 This section contains a brief descriptions about main parts of the Claudie's documentation.
 

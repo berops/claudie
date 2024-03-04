@@ -32,4 +32,4 @@ See more in How Claudie works sections.
 
 ## What to do next
 
-In case you are not sure where to go next, you can just simply start with our [Getting Started Guide](./getting-started/get-started-using-claudie.md) or read Claudie's [documenation overview](./docs-overview/docs-overview.md).
+In case you are not sure where to go next, you can just simply start with our [Getting Started Guide](./getting-started/get-started-using-claudie.md) or read our documentation [sitemap](./sitemap/sitemap.md).
