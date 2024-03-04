@@ -15,7 +15,7 @@ var (
 	// NOTE:
 	// first/second capturing group MUST be changed whenever new kubeone version is introduced in Claudie
 	// so validation will catch unsupported versions
-	semverRegexString = `^(1)\.(24|25|26)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`
+	semverRegexString = `^(1)\.(25|26|27)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`
 
 	// semverRegex is a regex using the semverRegexString.
 	// It's used to verify the version inside the manifest,
@@ -37,7 +37,7 @@ func (k *Kubernetes) Validate(m *Manifest) error {
 			if errors.As(err, &ve) {
 				for _, fe := range ve {
 					if fe.Tag() == "ver" {
-						errMsg := "incorrect Kubernetes version, the supported versions are: 1.24.x, 1.25.x, 1.26.x"
+						errMsg := "incorrect Kubernetes version, the supported versions are: 1.25.x, 1.26.x, 1.27.x"
 						return fmt.Errorf("failed to validate kubernetes cluster %s:%s", cluster.Name, errMsg)
 					}
 				}

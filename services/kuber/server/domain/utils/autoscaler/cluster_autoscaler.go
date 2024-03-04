@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"regexp"
-	"strconv"
 	"text/template"
 
 	comm "github.com/berops/claudie/internal/command"
@@ -149,16 +148,6 @@ func getK8sVersion(version string) (string, error) {
 	match := re.FindStringSubmatch(version)
 
 	if len(match) >= 4 {
-		// Verify version is higher than v1.25.0 as external gRPC provider is not supported in older versions
-		// TODO: remove this condition once v1.24.X will not be supported
-		minor, err := strconv.Atoi(match[2])
-		if err != nil {
-			return "", fmt.Errorf("failed to verify kubernetes version vX.%s.Y : %w", match[2], err)
-		}
-		if minor < 25 {
-			return "v1.25.0", nil
-		}
-		// Find latest autoscaler patch version
 		latestVersion, err := getLatestMinorVersion(version)
 		if err != nil {
 			log.Warn().Msg("Could not retrieve latest cluster-autoscaler version, fallback to defined Kubernetes version")
