@@ -162,12 +162,9 @@ func run() error {
 		return err
 	}
 
-	// Register a healthcheck and readiness endpoint, with path /livez and /healthz
+	// Register a healthcheck and readiness endpoint, with path and /healthz
 	// https://github.com/kubernetes-sigs/controller-runtime/issues/2127
-	if err := mgr.AddHealthzCheck("live", healthz.Ping); err != nil {
-		return err
-	}
-	if err := mgr.AddReadyzCheck("ready", func(req *http.Request) error {
+	if err := mgr.AddHealthzCheck("health", func(req *http.Request) error {
 		if err := usecases.ContextBox.PerformHealthCheck(); err != nil {
 			return err
 		}
