@@ -50,6 +50,8 @@ Before upgrading Claudie, upgrade Longhorn to 1.6.x as per [this guide](https://
 - Fix custom storage classes [#1219](https://github.com/berops/claudie/pull/1219)
 
 ## v0.7.1
+Migrate from the legacy package repositories `apt.kubernetes.io, yum.kubernetes.io` to the Kubernetes community-hosted repositories `pkgs.k8s.io`.
+A detailed how to can be found in https://kubernetes.io/blog/2023/08/31/legacy-package-repository-deprecation/
 
 ## Bugfixes
 * Static Loadbalancer metadata secret https://github.com/berops/claudie/pull/1249
