@@ -311,7 +311,7 @@ spec:
   kubernetes:
     clusters:
       - name: dev-cluster
-        version: v1.26.0
+        version: v1.26.13
         network: 192.168.2.0/24
         pools:
           control:
@@ -323,7 +323,7 @@ spec:
             - compute-azure
 
       - name: prod-cluster
-        version: v1.26.0
+        version: v1.26.13
         network: 192.168.2.0/24
         pools:
           control:
@@ -340,7 +340,7 @@ spec:
             - compute-azure
 
       - name: hybrid-cluster
-        version: v1.26.0
+        version: v1.26.13
         network: 192.168.2.0/24
         pools:
           control:

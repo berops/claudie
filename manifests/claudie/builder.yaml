@@ -100,13 +100,17 @@ spec:
               containerPort: 9090
           readinessProbe:
             httpGet:
-              path: /ready
+              path: /health
               port: 50051
-            initialDelaySeconds: 5
+              scheme: HTTP
+            initialDelaySeconds: 30
+            timeoutSeconds: 3
             periodSeconds: 30
           livenessProbe:
             httpGet:
-              path: /live
+              path: /health
               port: 50051
-            initialDelaySeconds: 10
+              scheme: HTTP
+            initialDelaySeconds: 20
+            timeoutSeconds: 3
             periodSeconds: 30
