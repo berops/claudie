@@ -48,3 +48,9 @@ Before upgrading Claudie, upgrade Longhorn to 1.6.x as per [this guide](https://
 - Fix removing state lock from dynamodb [#1211](https://github.com/berops/claudie/pull/1211)
 - Fix operatur status message [#1215](https://github.com/berops/claudie/pull/1215)
 - Fix custom storage classes [#1219](https://github.com/berops/claudie/pull/1219)
+
+## v0.7.1
+
+## Bugfixes
+* Static Loadbalancer metadata secret https://github.com/berops/claudie/pull/1249
+* Update healthcheck endpoints https://github.com/berops/claudie/pull/1245
