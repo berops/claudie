@@ -26,7 +26,7 @@ kubernetes:
 kubernetes:
   clusters:
     - name: claudie-cluster
-      version: v1.26.0
+      version: v1.26.13
       network: 192.168.2.0/24
       pools:
         ...

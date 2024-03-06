@@ -168,7 +168,7 @@ spec:
   kubernetes:
     clusters:
       - name: ts1-hetzner
-        version: v1.24.0
+        version: v1.26.13
         network: 192.168.2.0/24
         pools:
           control:
@@ -176,7 +176,7 @@ spec:
           compute:
             - hetzner-compute
       - name: ts1-gcp
-        version: v1.24.0
+        version: v1.26.13
         network: 192.168.2.0/24
         pools:
           control:
@@ -184,7 +184,7 @@ spec:
           compute:
             - gcp-compute
       - name: ts1-oci
-        version: v1.24.0
+        version: v1.26.13
         network: 192.168.2.0/24
         pools:
           control:
@@ -192,7 +192,7 @@ spec:
           compute:
             - oci-compute
       - name: ts1-aws
-        version: v1.24.0
+        version: v1.26.13
         network: 192.168.2.0/24
         pools:
           control:
@@ -200,7 +200,7 @@ spec:
           compute:
             - aws-compute
       - name: ts1-azure
-        version: v1.24.0
+        version: v1.26.13
         network: 192.168.2.0/24
         pools:
           control:

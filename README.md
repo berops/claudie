@@ -158,7 +158,7 @@ For adding support for other cloud providers, open an issue or propose a PR.
       kubernetes:
           clusters:
           - name: aws-cluster
-              version: v1.24.0
+              version: v1.26.13
               network: 192.168.2.0/24
               pools:
                 control:
@@ -222,7 +222,7 @@ Claudie outputs base64 encoded kubeconfig secret `<cluster-name>-<cluster-hash>-
       kubernetes:
         clusters:
     #      - name: aws-cluster
-    #          version: v1.24.0
+    #          version: v1.26.13
     #          network: 192.168.2.0/24
     #          pools:
     #            control:
