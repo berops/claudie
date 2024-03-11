@@ -42,7 +42,7 @@ func (ir *IntermediateRepresentation) Stages() int {
 		count++
 	}
 
-	if ir.ControlPlaneWithAPIEndpointReplace { // only one of these can occur at the same time
+	if ir.ControlPlaneWithAPIEndpointReplace {
 		count++
 	}
 
