@@ -48,3 +48,15 @@ Before upgrading Claudie, upgrade Longhorn to 1.6.x as per [this guide](https://
 - Fix removing state lock from dynamodb [#1211](https://github.com/berops/claudie/pull/1211)
 - Fix operatur status message [#1215](https://github.com/berops/claudie/pull/1215)
 - Fix custom storage classes [#1219](https://github.com/berops/claudie/pull/1219)
+
+## v0.7.1
+
+Migrate from the legacy package repositories `apt.kubernetes.io, yum.kubernetes.io` to the Kubernetes community-hosted repositories `pkgs.k8s.io`.
+A detailed how to can be found in https://kubernetes.io/blog/2023/08/31/legacy-package-repository-deprecation/
+
+Kubernetes version 1.24 is no longer supported.
+1.25.x 1.26.x 1.27.x are the currently supported versions.
+
+## Bugfixes
+* Static Loadbalancer metadata secret https://github.com/berops/claudie/pull/1249
+* Update healthcheck endpoints https://github.com/berops/claudie/pull/1245
