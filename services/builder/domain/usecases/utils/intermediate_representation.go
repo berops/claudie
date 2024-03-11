@@ -133,11 +133,13 @@ func Diff(current, desired *pb.K8Scluster, currentLbs, desiredLbs []*pb.LBcluste
 					}
 					// No need to check if nextControlNodepool is nil. Validation of the inputmanifest
 					// does not allow for the user to specify an empty list of control nodes
-					//
-					// Each nodepool after the scheduler stage has a hash appended to it.
+					nameWithoutHash := nextControlNodepool.Name
+					// Each dynamic nodepool after the scheduler stage has a hash appended to it.
 					// to get the original nodepool name as defined in the input manifest
 					// we need to strip the hash.
-					nameWithoutHash := nextControlNodepool.Name[:len(nextControlNodepool.Name)-(utils.HashLength+1)] // +1 for '-'
+					if nextControlNodepool.GetDynamicNodePool() != nil {
+						nameWithoutHash = nextControlNodepool.Name[:len(nextControlNodepool.Name)-(utils.HashLength+1)] // +1 for '-'
+					}
 
 					for _, role := range lbcluster.GetRoles() {
 						if role.RoleType == pb.RoleType_ApiServer {
