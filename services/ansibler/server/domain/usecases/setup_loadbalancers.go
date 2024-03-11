@@ -220,7 +220,7 @@ func targetNodes(targetPools []string, targetk8sPools []*pb.NodePool) (nodes []*
 
 	for _, target := range targetPools {
 		for _, np := range targetk8sPools {
-			if name, _ := commonUtils.ExtractHashFromNodePool(target, np.Name); name != "" {
+			if name, _ := commonUtils.GetNameAndHashFromNodepool(target, np.Name); name != "" {
 				pools = append(pools, np)
 			}
 		}

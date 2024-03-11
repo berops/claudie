@@ -19,7 +19,7 @@ func CreateHash(length int) string {
 	return string(b)
 }
 
-func ExtractHashFromNodePool(template, nodepoolName string) (name, hash string) {
+func GetNameAndHashFromNodepool(template, nodepoolName string) (name, hash string) {
 	if len(nodepoolName) != len(template)+HashLength+1 {
 		return
 	}

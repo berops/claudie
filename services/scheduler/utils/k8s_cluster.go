@@ -88,7 +88,7 @@ func CopyLbNodePoolNamesFromCurrentState(used map[string]struct{}, nodepool stri
 			}
 
 			for _, np := range current.GetClusterInfo().GetNodePools() {
-				_, hash := utils.ExtractHashFromNodePool(nodepool, np.Name)
+				_, hash := utils.GetNameAndHashFromNodepool(nodepool, np.Name)
 				if hash == "" {
 					continue
 				}
@@ -121,7 +121,7 @@ func CopyK8sNodePoolsNamesFromCurrentState(used map[string]struct{}, nodepool st
 	}
 
 	for _, np := range current.GetClusterInfo().GetNodePools() {
-		_, hash := utils.ExtractHashFromNodePool(nodepool, np.Name)
+		_, hash := utils.GetNameAndHashFromNodepool(nodepool, np.Name)
 		if hash == "" {
 			continue
 		}

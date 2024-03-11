@@ -6,11 +6,26 @@ import (
 	"github.com/berops/claudie/proto/pb"
 )
 
-// FindLbAPIEndpoint searches for a role with ApiEndpoint among the LBcluster.
-func FindLbAPIEndpoint(lbs []*pb.LBcluster) bool {
-	for _, lb := range lbs {
+func FindLbAPIEndpointCluster(current []*pb.LBcluster) *pb.LBcluster {
+	for _, lb := range current {
 		if HasAPIServerRole(lb.GetRoles()) {
-			return true
+			return lb
+		}
+	}
+	return nil
+}
+
+// HasLbAPIEndpoint searches for a role with ApiEndpoint among the LBcluster.
+func HasLbAPIEndpoint(lbs []*pb.LBcluster) bool { return FindLbAPIEndpointCluster(lbs) != nil }
+
+// IsNodepoolOnlyTargetOfLbAPI checks if nodepool is the only target Pool of the API LB cluster.
+func IsNodepoolOnlyTargetOfLbAPI(current []*pb.LBcluster, nodepool *pb.NodePool) bool {
+	for _, role := range FindLbAPIEndpointCluster(current).GetRoles() {
+		if role.RoleType == pb.RoleType_ApiServer {
+			if len(role.TargetPools) == 1 {
+				name, _ := GetNameAndHashFromNodepool(role.TargetPools[0], nodepool.Name)
+				return name != ""
+			}
 		}
 	}
 	return false
@@ -61,6 +76,19 @@ func FindControlNode(nodepools []*pb.NodePool) (*pb.Node, error) {
 		}
 	}
 	return nil, fmt.Errorf("failed to find node with type %s", pb.NodeType_master.String())
+}
+
+// FindControlNodepools returns control nodepools
+func FindControlNodepools(nodepools []*pb.NodePool) []*pb.NodePool {
+	var result []*pb.NodePool
+
+	for _, np := range nodepools {
+		if np.IsControl {
+			result = append(result, np)
+		}
+	}
+
+	return result
 }
 
 // FindAPIEndpointNode searches the NodePools for a Node with type ApiEndpoint.
