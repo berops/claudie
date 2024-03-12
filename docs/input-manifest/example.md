@@ -358,7 +358,7 @@ spec:
   #     protocol:     # Protocol, this role will use.
   #     port:         # Port, where traffic will be coming.
   #     targetPort:   # Port, where loadbalancer will forward traffic to.
-  #     target:       # Targeted nodes on kubernetes cluster. Can be "k8sControlPlane", "k8sComputePlane" or "k8sAllNodes".
+  #     targetPools:  # Targeted nodes on kubernetes cluster. Specify a nodepool that is used in the targeted K8s cluster.
   #
   # Definition specification for loadbalancer:
   #
@@ -379,8 +379,8 @@ spec:
         protocol: tcp
         port: 6443
         targetPort: 6443
-        target: k8sControlPlane
-
+        targetPools:
+            - k8s-control-gcp # make sure that this nodepools is acutally used by the targeted `dev-cluster` cluster.
     clusters:
       - name: apiserver-lb-dev
         roles:

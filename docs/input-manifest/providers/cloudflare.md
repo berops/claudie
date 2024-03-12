@@ -92,8 +92,7 @@ spec:
         protocol: tcp
         port: 6443
         targetPort: 6443
-        target: k8sControlPlane
-
+        targetPools: []
     clusters:
       - name: apiserver-lb-prod
         roles:

@@ -15,6 +15,10 @@ type IntermediateRepresentation struct {
 	// before actually building the desired state. If nil there is no in-between step.
 	IR *pb.K8Scluster
 
+	// IRLbs are the intermediate representations of LB clusters that should be passed through the workflow
+	// before actually building the desired state of the LB clusters. If nil there is no in-between step.
+	IRLbs []*pb.LBcluster
+
 	// ToDelete are the nodepools from which nodes needs to be deleted. This may be set
 	// even if IR is nil.
 	ToDelete map[string]int32
@@ -45,6 +49,14 @@ func (ir *IntermediateRepresentation) Stages() int {
 	return count
 }
 
+func lbClone(desiredLbs []*pb.LBcluster) []*pb.LBcluster {
+	var result []*pb.LBcluster
+	for _, lb := range desiredLbs {
+		result = append(result, proto.Clone(lb).(*pb.LBcluster))
+	}
+	return result
+}
+
 // Diff takes the desired and current state to calculate difference between them to determine how many nodes  needs to be deleted and added.
 func Diff(current, desired *pb.K8Scluster, currentLbs, desiredLbs []*pb.LBcluster) *IntermediateRepresentation {
 	// we only care about the diff if both states are present.
@@ -70,9 +82,11 @@ func Diff(current, desired *pb.K8Scluster, currentLbs, desiredLbs []*pb.LBcluste
 	*/
 	var (
 		ir                          = proto.Clone(desired).(*pb.K8Scluster)
+		irLbs                       = lbClone(currentLbs)
 		currentNodepoolCounts       = nodepoolsCounts(current)
 		delCounts, adding, deleting = findNodepoolDifference(currentNodepoolCounts, ir, current)
 		apiEndpointDeleted          = false
+		apiLbTargetNodepoolDeleted  = false
 	)
 
 	// if any key left, it means that nodepool is defined in current state but not in the desired
@@ -89,6 +103,7 @@ func Diff(current, desired *pb.K8Scluster, currentLbs, desiredLbs []*pb.LBcluste
 		if current != nil && ir != nil {
 			// append nodepool to desired state, since tmpConfig only adds nodes
 			for nodepoolName := range currentNodepoolCounts {
+				log.Debug().Msgf("Nodepool %s from cluster %s will be deleted", nodepoolName, current.ClusterInfo.Name)
 				nodepool := utils.GetNodePoolByName(nodepoolName, current.ClusterInfo.GetNodePools())
 
 				// check if the nodepool was an API-endpoint if yes we need to choose the next control nodepool as the endpoint.
@@ -96,8 +111,43 @@ func Diff(current, desired *pb.K8Scluster, currentLbs, desiredLbs []*pb.LBcluste
 					apiEndpointDeleted = true
 				}
 
-				log.Debug().Msgf("Nodepool %s from cluster %s will be deleted", nodepoolName, current.ClusterInfo.Name)
 				ir.ClusterInfo.NodePools = append(ir.ClusterInfo.NodePools, nodepool)
+
+				// If There is an API endpoint LoadBalancer that has only one targetNodepool and we are removing
+				// this target nodepool, we need to create an in-between step where we add a control nodepool
+				// from the desired state, otherwise when in the stage deleting nodes, it will delete this nodepool
+				// and the LoadBalancer will not be able to forward the request anywhere and the cluster state will be
+				// corrupted.
+				if utils.IsNodepoolOnlyTargetOfLbAPI(currentLbs, nodepool) {
+					apiLbTargetNodepoolDeleted = true
+
+					lbcluster := utils.FindLbAPIEndpointCluster(irLbs)
+
+					// find other control nodepool that will not be deleted.
+					var nextControlNodepool *pb.NodePool
+					for _, cnp := range utils.FindControlNodepools(ir.GetClusterInfo().GetNodePools()) {
+						if cnp.Name != nodepool.Name {
+							nextControlNodepool = cnp
+							break
+						}
+					}
+					// No need to check if nextControlNodepool is nil. Validation of the inputmanifest
+					// does not allow for the user to specify an empty list of control nodes
+					nameWithoutHash := nextControlNodepool.Name
+					// Each dynamic nodepool after the scheduler stage has a hash appended to it.
+					// to get the original nodepool name as defined in the input manifest
+					// we need to strip the hash.
+					if nextControlNodepool.GetDynamicNodePool() != nil {
+						nameWithoutHash = nextControlNodepool.Name[:len(nextControlNodepool.Name)-(utils.HashLength+1)] // +1 for '-'
+					}
+
+					for _, role := range lbcluster.GetRoles() {
+						if role.RoleType == pb.RoleType_ApiServer {
+							role.TargetPools = append(role.TargetPools, nameWithoutHash)
+							break
+						}
+					}
+				}
 			}
 		}
 	}
@@ -107,11 +157,12 @@ func Diff(current, desired *pb.K8Scluster, currentLbs, desiredLbs []*pb.LBcluste
 	}
 
 	// check if we're adding nodes and Api-server.
-	addingLbApiEndpoint := current != nil && (!utils.FindLbAPIEndpoint(currentLbs) && utils.FindLbAPIEndpoint(desiredLbs))
-	deletingLbApiEndpoint := current != nil && (utils.FindLbAPIEndpoint(currentLbs) && !utils.FindLbAPIEndpoint(desiredLbs))
+	addingLbApiEndpoint := current != nil && (!utils.HasLbAPIEndpoint(currentLbs) && utils.HasLbAPIEndpoint(desiredLbs))
+	deletingLbApiEndpoint := current != nil && (utils.HasLbAPIEndpoint(currentLbs) && !utils.HasLbAPIEndpoint(desiredLbs))
 
-	if adding && deleting || (adding && addingLbApiEndpoint) || (adding && deletingLbApiEndpoint) {
+	if apiLbTargetNodepoolDeleted || adding && deleting || (adding && addingLbApiEndpoint) || (adding && deletingLbApiEndpoint) {
 		result.IR = ir
+		result.IRLbs = irLbs
 	}
 
 	if deleting {

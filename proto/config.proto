@@ -127,8 +127,10 @@ message Role {
   int32 port = 3;
   // Port that load balancer will forward to.
   int32 targetPort = 4;
+  // TODO: remove in favor of targetPools.
   // Targeted nodes in Kubernetes clusters.
   Target target = 5;
+  repeated string targetPools = 7;
   // Type of the role.
   RoleType roleType = 6;
 }
@@ -141,6 +143,7 @@ enum RoleType {
   Ingress = 1;
 }
 
+// TODO: remove in favor of targetPools
 // Target specifies which nodes are targeted by the load balancer.
 enum Target {
   // All nodes in cluster.

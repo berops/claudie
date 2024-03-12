@@ -131,7 +131,16 @@ spec:
         protocol: tcp
         port: 6443
         targetPort: 6443
-        target: k8sControlPlane
+        targetPools:
+          - genesiscloud
+      - name: apiserver-lb-2
+        protocol: tcp
+        port: 6443
+        targetPort: 6443
+        targetPools:
+          - genesiscloud
+          - gcp-control
+          - oci
     clusters:
       - name: ts3-lb-1
         roles:
@@ -144,7 +153,7 @@ spec:
           - gcp-lb
       - name: ts3-lb-2
         roles:
-          - apiserver-lb
+          - apiserver-lb-2
         dns:
           dnsZone: claudie.org
           provider: hetznerdns-1

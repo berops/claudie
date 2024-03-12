@@ -62,7 +62,8 @@ spec:
         protocol: tcp
         port: 6443
         targetPort: 6443
-        target: k8sControlPlane
+        targetPools:
+          - genesiscloud
     clusters:
       - name: ts3-lb-1
         roles:

@@ -241,19 +241,13 @@ func (u *Usecases) deleteNodes(currentCluster, desiredCluster *pb.K8Scluster, no
 // applyIR applies intermediate representation of the infrastructure to the Claudie workflow.
 func (u *Usecases) applyIR(configName, clusterName string, clusterView *cutils.ClusterView, cboxClient pb.ContextBoxServiceClient, diff *utils.IntermediateRepresentation) (*utils.BuilderContext, error) {
 	ctx := &utils.BuilderContext{
-		ProjectName:    configName,
-		CurrentCluster: clusterView.CurrentClusters[clusterName],
-		DesiredCluster: diff.IR,
-
-		// If there are any Lbs for the current state keep them.
-		// Ignore the desired state for the Lbs for now. Use the
-		// current state for desired to not trigger any changes.
-		// as we only care about addition of nodes in this step.
+		ProjectName:          configName,
+		CurrentCluster:       clusterView.CurrentClusters[clusterName],
+		DesiredCluster:       diff.IR,
 		CurrentLoadbalancers: clusterView.Loadbalancers[clusterName],
-		DesiredLoadbalancers: clusterView.Loadbalancers[clusterName],
+		DesiredLoadbalancers: diff.IRLbs,
 		DeletedLoadBalancers: nil,
-
-		Workflow: clusterView.ClusterWorkflows[clusterName],
+		Workflow:             clusterView.ClusterWorkflows[clusterName],
 	}
 
 	if ctx, err := u.buildCluster(ctx, cboxClient); err != nil {
