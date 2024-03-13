@@ -54,6 +54,7 @@ func main() {
 	errGroup.Go(grpcAdapter.Serve)
 
 	// Check if terraformer microservice is in ready state every 30s
+	// just to trigger the pipeline
 	errGroup.Go(func() error {
 		ticker := time.NewTicker(30 * time.Second)
 
