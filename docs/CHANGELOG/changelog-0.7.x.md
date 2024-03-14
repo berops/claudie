@@ -60,3 +60,7 @@ Kubernetes version 1.24 is no longer supported.
 ## Bugfixes
 * Static Loadbalancer metadata secret https://github.com/berops/claudie/pull/1249
 * Update healthcheck endpoints https://github.com/berops/claudie/pull/1245
+
+## v0.7.2
+### Features
+* Target Nodepools [#1241](https://github.com/berops/claudie/pull/1241)
