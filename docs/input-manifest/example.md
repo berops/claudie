@@ -254,6 +254,7 @@ spec:
         image: ubuntu-20.04
 
     # Static nodepools are created by user beforehand.
+    # In case you want to use them in the Kubernetes cluster, make sure they meet the requirements. https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#before-you-begin
     # Definition specification:
     # static:
     #   - name:             # Name of the nodepool, which is used as a reference to it. Needs to be unique.

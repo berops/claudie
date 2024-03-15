@@ -191,7 +191,7 @@ In OOP analogy, a dynamic nodepool would be a class that would get instantiated 
 
 - `static` [Static](#static)
 
-  List of static nodepools of already existing machines, not provisioned by Claudie, used for Kubernetes or loadbalancer clusters. These can be baremetal servers or VMs with IPs assigned. Claudie is able to join them into existing clusters, or provision clusters solely on the static nodepools. Typically we'll find these being used in on-premises scenarios, or hybrid-cloud clusters.
+  List of static nodepools of already existing machines, not provisioned by Claudie, used for Kubernetes (see [requirements](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#before-you-begin)) or loadbalancer clusters. These can be baremetal servers or VMs with IPs assigned. Claudie is able to join them into existing clusters, or provision clusters solely on the static nodepools. Typically we'll find these being used in on-premises scenarios, or hybrid-cloud clusters.
 
 ## Dynamic
 
@@ -289,6 +289,8 @@ Autoscaler configuration on per nodepool basis. Defines the number of nodes, aut
 ## Static
 
 Static nodepools are defined for static machines which Claudie will not manage. Used for on premise nodes.
+
+!!! note "In case you want to use your static nodes in the Kubernetes cluster, make sure they meet the [requirements](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#before-you-begin)."
 
 - `name`
 
