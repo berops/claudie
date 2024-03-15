@@ -8,6 +8,8 @@ Claudie is designed to leverage your existing infrastructure and utilise it for 
 
 3. SSH Access with Root Privileges: Claudie relies on SSH access to the nodes using the SSH key provided in the input manifest. The SSH key should grant root privileges to enable Claudie to perform required operations on the nodes.
 
+4. Meeting the Kubernetes nodes requirements: Learn [more](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#before-you-begin).
+
 By ensuring that these assumptions are met, Claudie can effectively utilise your infrastructure and build Kubernetes clusters while collaborating with the supported cloud providers.
 
 ## Private key example secret
