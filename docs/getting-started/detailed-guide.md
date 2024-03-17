@@ -172,7 +172,8 @@ This detailed guide for Claudie serves as a resource for providing an overview o
             protocol: tcp
             port: 6443
             targetPort: 6443
-            target: k8sControlPlane
+            targetPools:
+                - aws-controlplane
         clusters:
           - name: loadbalance-me
             roles:
@@ -379,12 +380,15 @@ This detailed guide for Claudie serves as a resource for providing an overview o
             protocol: tcp
             port: 6443
             targetPort: 6443
-            target: k8sControlPlane
+            targetPools: # only loadbalances for port 6443 for the aws-controlplane nodepool
+                - aws-controlplane
           - name: https
             protocol: tcp
             port: 443
             targetPort: 443
-            target: k8sComputeNodes # only loadbalance between workers
+            targetPools: # only loadbalances for port 443 for the aws-worker nodepool
+                - aws-worker
+                # possible to add other nodepools, hetzner-worker, for example
         clusters:
           - name: loadbalance-me
             roles:
