@@ -24,7 +24,7 @@ mike deploy <version> --push
 mike set-default <version>
 ```
 
-## Deploy docs from some older GitHub tags
+## Deploy docs manually from some older GitHub tags
 
 - Checkout to the desired tag
 
@@ -97,3 +97,10 @@ mike deploy <release tag> latest --push -u
 > :warning: Don't forget to use the `latest` tag in the last command, because otherwise the new version will not be loaded as default one, when visiting [docs.claudie.io](docs.claudie.io) :warning:
 
 Find more about how to work with [mike](https://github.com/jimporter/mike).
+
+## Automatic update of the latest documentation version
+
+The `automatic-docs-update.yml` pipeline will update the docs automatically, in case you add the label `refresh-docs` or comment `/refresh-docs` on your PR. In order to trigger this pipeline again you have to re-add `refresh-docs` label or once again comment `/refresh-docs` in your PR.
+
+> [!NOTE]  
+> `/refresh-docs` comment triggers automatic update only when the `automatic-docs-update.yml` file is in the default branch.
