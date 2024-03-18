@@ -164,7 +164,8 @@ loadBalancers:
       protocol: tcp
       port: 6443
       targetPort: 6443
-      target: k8sControlPlane
+      targetPools: 
+        - static-pool
   clusters:
     - name: miro-lb
       roles:
