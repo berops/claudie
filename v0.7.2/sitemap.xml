@@ -186,6 +186,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://docs.claudie.io/v0.7.2/sitemap/sitemap/</loc>
+         <lastmod>2024-03-18</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://docs.claudie.io/v0.7.2/storage/storage-solution/</loc>
          <lastmod>2024-03-18</lastmod>
          <changefreq>daily</changefreq>
