@@ -1,6 +1,31 @@
 package utils
 
-import "golang.org/x/exp/constraints"
+import (
+	"golang.org/x/exp/constraints"
+	"slices"
+)
+
+type inorder interface {
+	constraints.Ordered
+	comparable
+}
+
+func IterateInOrder[M ~map[K]V, K inorder, V any](m M, f func(k K, v V) error) error {
+	keys := make([]K, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+
+	slices.Sort(keys)
+
+	for _, k := range keys {
+		if err := f(k, m[k]); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
 
 // MergeMaps merges two or more maps together, into single map.
 func MergeMaps[M ~map[K]V, K comparable, V any](maps ...M) M {
