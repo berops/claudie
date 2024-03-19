@@ -64,3 +64,8 @@ Kubernetes version 1.24 is no longer supported.
 ## v0.7.2
 ### Features
 * Target Nodepools [#1241](https://github.com/berops/claudie/pull/1241)
+
+## v0.7.3
+### Bugfixes
+- Fix endless queueing of manifests with static nodepools, [#1282](https://github.com/berops/claudie/pull/1282)
+
