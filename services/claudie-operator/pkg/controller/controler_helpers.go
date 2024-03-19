@@ -19,6 +19,7 @@ package controller
 import (
 	"fmt"
 	"github.com/berops/claudie/internal/manifest"
+	"github.com/berops/claudie/internal/utils"
 	v1beta "github.com/berops/claudie/services/claudie-operator/pkg/api/v1beta1"
 	"unicode/utf8"
 )
@@ -161,24 +162,24 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 			})
 		}
 	}
-	// Build static nodepools
+
 	var nodePools manifest.NodePool
 	nodePools.Dynamic = crd.Spec.NodePools.Dynamic
 	nodePools.Static = make([]manifest.StaticNodePool, 0, len(crd.Spec.NodePools.Static))
-	// Iterate over nodepools
-	for nodepool, nws := range staticNodesWithSecret {
+
+	err := utils.IterateInOrder(staticNodesWithSecret, func(nodepool string, nws []v1beta.StaticNodeWithData) error {
 		nodes := make([]manifest.Node, 0, len(nws))
 		// Iterate over nodes and retrieve private key from secret
 		for _, n := range nws {
 			if key, ok := n.Secret.Data[string(v1beta.PRIVATE_KEY)]; ok {
 				if !utf8.ValidString(string(key)) {
 					secretNamespaceName := n.Secret.Namespace + "/" + n.Secret.Name
-					return manifest.Manifest{}, buildSecretError(secretNamespaceName, fmt.Errorf("field %s is not a valid UTF-8 string", v1beta.PRIVATE_KEY))
+					return buildSecretError(secretNamespaceName, fmt.Errorf("field %s is not a valid UTF-8 string", v1beta.PRIVATE_KEY))
 				}
 				nodes = append(nodes, manifest.Node{Endpoint: n.Endpoint, Key: string(key)})
 			} else {
 				secretNamespaceName := n.Secret.Namespace + "/" + n.Secret.Name
-				return manifest.Manifest{}, buildSecretError(secretNamespaceName, fmt.Errorf("field %s not found", v1beta.PRIVATE_KEY))
+				return buildSecretError(secretNamespaceName, fmt.Errorf("field %s not found", v1beta.PRIVATE_KEY))
 			}
 		}
 
@@ -190,6 +191,10 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 			Labels: np.Labels,
 			Taints: np.Taints,
 		})
+		return nil
+	})
+	if err != nil {
+		return manifest.Manifest{}, err
 	}
 
 	return manifest.Manifest{
