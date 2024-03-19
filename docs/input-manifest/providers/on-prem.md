@@ -49,7 +49,8 @@ spec:
                 name: static-node-key
                 namespace: mynamespace
 
-          - name: compute
+        - name: compute
+          nodes:
             - endpoint: "192.168.10.2"
               secretRef:
                 name: static-node-key
