@@ -179,7 +179,18 @@ func (c *ClaudieCloudProvider) updateNodepool(nodepool *pb.NodePool) error {
 	if cc, err = utils.GrpcDialWithRetryAndBackoff("context-box", cboxURL); err != nil {
 		return fmt.Errorf("failed to dial context-box at %s : %w", envs.ContextBoxURL, err)
 	}
+
 	cbox := pb.NewContextBoxServiceClient(cc)
+	var res *pb.GetConfigFromDBResponse
+	if res, err = cbox.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: c.projectName, Type: pb.IdType_NAME}); err != nil {
+		return fmt.Errorf("failed to get config from database : %w", err)
+	}
+
+	// Do not send autoscaling request when the InputManifest is in ERROR
+	if res.GetConfig().GetState()[c.configCluster.ClusterInfo.Name].Status == pb.Workflow_ERROR {
+		return nil
+	}
+
 	if _, err := cbox.UpdateNodepool(context.Background(),
 		&pb.UpdateNodepoolRequest{
 			ProjectName: c.projectName,
