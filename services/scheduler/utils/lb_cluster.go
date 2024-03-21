@@ -52,6 +52,7 @@ clusterLbDesired:
 				// copy hostname from current state if not specified in manifest
 				if clusterLbDesired.Dns.Hostname == "" {
 					clusterLbDesired.Dns.Hostname = clusterLbCurrent.Dns.Hostname
+					clusterLbDesired.Dns.Endpoint = clusterLbCurrent.Dns.Endpoint
 				}
 				//skip the checks
 				continue clusterLbDesired
