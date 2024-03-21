@@ -71,7 +71,7 @@ func (u *Usecases) BuildInfrastructure(request *pb.BuildInfrastructureRequest) (
 		}
 
 		for _, cluster := range lbClusters {
-			response.Fail.DesiredLbs = append(response.Fail.CurrentLbs, cluster.DesiredState)
+			response.Fail.DesiredLbs = append(response.Fail.DesiredLbs, cluster.DesiredState)
 			if cluster.CurrentState != nil {
 				response.Fail.CurrentLbs = append(response.Fail.CurrentLbs, cluster.CurrentState)
 			}
