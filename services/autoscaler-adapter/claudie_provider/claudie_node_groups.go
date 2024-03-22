@@ -179,11 +179,26 @@ func (c *ClaudieCloudProvider) updateNodepool(nodepool *pb.NodePool) error {
 	if cc, err = utils.GrpcDialWithRetryAndBackoff("context-box", cboxURL); err != nil {
 		return fmt.Errorf("failed to dial context-box at %s : %w", envs.ContextBoxURL, err)
 	}
+
 	cbox := pb.NewContextBoxServiceClient(cc)
+	var res *pb.GetConfigFromDBResponse
+	if res, err = cbox.GetConfigFromDB(context.Background(),
+		&pb.GetConfigFromDBRequest{Id: c.projectName, Type: pb.IdType_NAME}); err != nil {
+		return fmt.Errorf("failed to get config from database : %w", err)
+	}
+
+	clusterName := c.configCluster.ClusterInfo.Name
+	// Prevent autoscaling request when the InputManifest is in ERROR.
+	if status := res.GetConfig().GetState()[clusterName].Status; status == pb.Workflow_ERROR {
+		log.Error().Msgf("Failed to send autoscaling request. Cluster %s is in ERROR", clusterName)
+		// Error return is necessary in order to prevent to call sendAutoscalerEvent.
+		return fmt.Errorf("failed to send autoscaling request. Cluster: %s is in ERROR", clusterName)
+	}
+
 	if _, err := cbox.UpdateNodepool(context.Background(),
 		&pb.UpdateNodepoolRequest{
 			ProjectName: c.projectName,
-			ClusterName: c.configCluster.ClusterInfo.Name,
+			ClusterName: clusterName,
 			Nodepool:    nodepool,
 		}); err != nil {
 		return fmt.Errorf("error while updating the state in the Claudie : %w", err)
