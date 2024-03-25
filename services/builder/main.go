@@ -43,11 +43,8 @@ func newHealthCheck(usecases *usecases.Usecases) *HealthCheck {
 
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)
-		for {
-			select {
-			case <-ticker.C:
-				hc.check(usecases)
-			}
+		for range ticker.C {
+			hc.check(usecases)
 		}
 	}()
 
