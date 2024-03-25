@@ -19,6 +19,7 @@ func (k *KuberConnector) Connect() error {
 	if err != nil {
 		return err
 	}
+
 	k.Connection = connection
 
 	return nil
@@ -142,7 +143,12 @@ func (k *KuberConnector) Disconnect() {
 
 // PerformHealthCheck checks health of the underlying gRPC connection to kuber microservice.
 func (k *KuberConnector) PerformHealthCheck() error {
-	return cutils.IsConnectionReady(k.Connection)
+	if err := cutils.IsConnectionReady(k.Connection); err == nil {
+		return nil
+	} else {
+		k.Connection.Connect()
+		return err
+	}
 }
 
 // GetClient returns a kuber gRPC client.

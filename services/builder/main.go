@@ -32,23 +32,53 @@ const (
 
 // healthCheck function is function used for querying readiness of the pod running this microservice
 func healthCheck(usecases *usecases.Usecases) func() error {
+	type HealthCheck struct {
+		timeSinceTerraformFailure  *time.Time
+		timeSinceAnsiblerFailure   *time.Time
+		timeSinceKubeElevenFailure *time.Time
+		timeSinceKuberFailure      *time.Time
+		timeSinceContextBoxFailure *time.Time
+	}
+	updateTimeSinceFailure := func(now *time.Time, t **time.Time, err error) {
+		if err == nil {
+			*t = nil
+			return
+		}
+		if *t == nil {
+			*t = now
+		}
+	}
+	healthCheck := func(check *HealthCheck) {
+		now := time.Now()
+		updateTimeSinceFailure(&now, &check.timeSinceTerraformFailure, usecases.Terraformer.PerformHealthCheck())
+		updateTimeSinceFailure(&now, &check.timeSinceAnsiblerFailure, usecases.Ansibler.PerformHealthCheck())
+		updateTimeSinceFailure(&now, &check.timeSinceKubeElevenFailure, usecases.KubeEleven.PerformHealthCheck())
+		updateTimeSinceFailure(&now, &check.timeSinceKuberFailure, usecases.Kuber.PerformHealthCheck())
+		updateTimeSinceFailure(&now, &check.timeSinceContextBoxFailure, usecases.ContextBox.PerformHealthCheck())
+	}
+	checkFailure := func(t *time.Time, service string, perr error) error {
+		if t != nil && time.Since(*t) >= 4*time.Minute {
+			if perr != nil {
+				return fmt.Errorf("%w; %s is unhealthy", perr, service)
+			}
+			return fmt.Errorf("%s is unhealthy", service)
+		}
+		return perr
+	}
+	signalFailure := func(checker *HealthCheck) error {
+		var err error
+		err = checkFailure(checker.timeSinceTerraformFailure, "terraformer", err)
+		err = checkFailure(checker.timeSinceAnsiblerFailure, "ansibler", err)
+		err = checkFailure(checker.timeSinceKubeElevenFailure, "kube-eleven", err)
+		err = checkFailure(checker.timeSinceKuberFailure, "kuber", err)
+		err = checkFailure(checker.timeSinceContextBoxFailure, "context-box", err)
+		return err
+	}
+
+	hc := new(HealthCheck)
 	return func() error {
-		if usecases.Terraformer.PerformHealthCheck() != nil {
-			return errors.New("terraformer is unhealthy")
-		}
-		if usecases.Ansibler.PerformHealthCheck() != nil {
-			return errors.New("ansibler is unhealthy")
-		}
-		if usecases.KubeEleven.PerformHealthCheck() != nil {
-			return errors.New("kube-eleven is unhealthy")
-		}
-		if usecases.Kuber.PerformHealthCheck() != nil {
-			return errors.New("kuber is unhealthy")
-		}
-		if usecases.ContextBox.PerformHealthCheck() != nil {
-			return errors.New("context-box is unhealthy")
-		}
-		return nil
+		healthCheck(hc)
+		return signalFailure(hc)
 	}
 }
 

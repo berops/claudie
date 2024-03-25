@@ -19,6 +19,7 @@ func (k *KubeElevenConnector) Connect() error {
 	if err != nil {
 		return err
 	}
+
 	k.Connection = connection
 
 	return nil
@@ -51,7 +52,12 @@ func (k *KubeElevenConnector) Disconnect() {
 
 // PerformHealthCheck checks health of the underlying gRPC connection to kube-eleven microservice
 func (k *KubeElevenConnector) PerformHealthCheck() error {
-	return cutils.IsConnectionReady(k.Connection)
+	if err := cutils.IsConnectionReady(k.Connection); err == nil {
+		return nil
+	} else {
+		k.Connection.Connect()
+		return err
+	}
 }
 
 // GetClient returns a kube-eleven gRPC client.

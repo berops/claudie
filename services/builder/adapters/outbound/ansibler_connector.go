@@ -19,6 +19,7 @@ func (a *AnsiblerConnector) Connect() error {
 	if err != nil {
 		return err
 	}
+
 	a.Connection = connection
 
 	return nil
@@ -92,7 +93,12 @@ func (a *AnsiblerConnector) Disconnect() {
 
 // PerformHealthCheck checks health of the underlying gRPC connection to ansibler microservice
 func (a *AnsiblerConnector) PerformHealthCheck() error {
-	return cutils.IsConnectionReady(a.Connection)
+	if err := cutils.IsConnectionReady(a.Connection); err == nil {
+		return nil
+	} else {
+		a.Connection.Connect()
+		return err
+	}
 }
 
 // GetClient returns a ansibler gRPC client.
