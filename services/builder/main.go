@@ -21,8 +21,6 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"golang.org/x/sync/errgroup"
-
-	"google.golang.org/grpc/connectivity"
 )
 
 const (
@@ -30,26 +28,82 @@ const (
 	defaultPrometheusPort = "9090"
 )
 
-// healthCheck function is function used for querying readiness of the pod running this microservice
-func healthCheck(usecases *usecases.Usecases) func() error {
-	return func() error {
-		if usecases.Terraformer.PerformHealthCheck() != nil {
-			return errors.New("terraformer is unhealthy")
+type HealthCheck struct {
+	timeSinceTerraformFailure  *time.Time
+	timeSinceAnsiblerFailure   *time.Time
+	timeSinceKubeElevenFailure *time.Time
+	timeSinceKuberFailure      *time.Time
+	timeSinceContextBoxFailure *time.Time
+	lock                       sync.Mutex
+}
+
+func newHealthCheck(usecases *usecases.Usecases) *HealthCheck {
+	hc := new(HealthCheck)
+	hc.check(usecases) // perform initial check
+
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		for range ticker.C {
+			hc.check(usecases)
 		}
-		if usecases.Ansibler.PerformHealthCheck() != nil {
-			return errors.New("ansibler is unhealthy")
+	}()
+
+	return hc
+}
+
+func (c *HealthCheck) check(usecases *usecases.Usecases) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	updateTimeSinceFailure := func(now *time.Time, t **time.Time, err error) {
+		if err == nil {
+			*t = nil
+			return
 		}
-		if usecases.KubeEleven.PerformHealthCheck() != nil {
-			return errors.New("kube-eleven is unhealthy")
+		if *t == nil {
+			*t = now
 		}
-		if usecases.Kuber.PerformHealthCheck() != nil {
-			return errors.New("kuber is unhealthy")
-		}
-		if usecases.ContextBox.PerformHealthCheck() != nil {
-			return errors.New("context-box is unhealthy")
-		}
-		return nil
 	}
+
+	now := time.Now()
+	updateTimeSinceFailure(&now, &c.timeSinceTerraformFailure, usecases.Terraformer.PerformHealthCheck())
+	updateTimeSinceFailure(&now, &c.timeSinceAnsiblerFailure, usecases.Ansibler.PerformHealthCheck())
+	updateTimeSinceFailure(&now, &c.timeSinceKubeElevenFailure, usecases.KubeEleven.PerformHealthCheck())
+	updateTimeSinceFailure(&now, &c.timeSinceKuberFailure, usecases.Kuber.PerformHealthCheck())
+	updateTimeSinceFailure(&now, &c.timeSinceContextBoxFailure, usecases.ContextBox.PerformHealthCheck())
+}
+
+func (c *HealthCheck) checkForFailures() error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	var err error
+	err = c.checkFailure(c.timeSinceTerraformFailure, "terraformer", err)
+	err = c.checkFailure(c.timeSinceAnsiblerFailure, "ansibler", err)
+	err = c.checkFailure(c.timeSinceKubeElevenFailure, "kube-eleven", err)
+	err = c.checkFailure(c.timeSinceKuberFailure, "kuber", err)
+	err = c.checkFailure(c.timeSinceContextBoxFailure, "context-box", err)
+	return err
+}
+
+func (c *HealthCheck) checkFailure(t *time.Time, service string, perr error) error {
+	if t != nil && time.Since(*t) >= 4*time.Minute {
+		if perr != nil {
+			return fmt.Errorf("%w; %s is unhealthy", perr, service)
+		}
+		return fmt.Errorf("%s is unhealthy", service)
+	}
+	return perr
+}
+
+func (c *HealthCheck) anyServiceUnhealthy() bool {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	return (c.timeSinceTerraformFailure != nil) ||
+		(c.timeSinceAnsiblerFailure != nil) ||
+		(c.timeSinceKubeElevenFailure != nil) ||
+		(c.timeSinceKuberFailure != nil) ||
+		(c.timeSinceContextBoxFailure != nil)
 }
 
 func main() {
@@ -102,8 +156,11 @@ func main() {
 		Kuber:       kb,
 	}
 
-	// Start health probes.
-	healthcheck.NewClientHealthChecker(fmt.Sprint(defaultBuilderPort), healthCheck(usecases)).StartProbes()
+	hc := newHealthCheck(usecases)
+
+	healthcheck.NewClientHealthChecker(fmt.Sprint(defaultBuilderPort), func() error {
+		return hc.checkForFailures()
+	}).StartProbes()
 
 	group, ctx := errgroup.WithContext(context.Background())
 
@@ -139,26 +196,25 @@ func main() {
 
 	group.Go(func() error {
 		wg := sync.WaitGroup{}
-		prevGrpcConnectionState := cbox.Connection.GetState()
+		allServicesOk := true
 
 		worker.NewWorker(
 			ctx,
 			5*time.Second,
 			func() error {
-				if utils.IsConnectionReady(cbox.Connection) == nil {
-					if prevGrpcConnectionState != connectivity.Ready {
-						log.Info().Msgf("Connection to Context-box is now ready")
+				if healthIssues := hc.anyServiceUnhealthy(); !healthIssues {
+					if !allServicesOk {
+						log.Info().Msgf("All dependent services are now healthy")
 					}
-					prevGrpcConnectionState = connectivity.Ready
+					allServicesOk = true
 				} else {
-					log.Warn().Msgf("Connection to Context-box is not ready yet")
-					log.Debug().Msgf("Connection to Context-box is %s, waiting for the service to be reachable", cbox.Connection.GetState().String())
-
-					prevGrpcConnectionState = cbox.Connection.GetState()
-					cbox.Connection.Connect() // try connecting to the context-box microservice.
-
+					if allServicesOk {
+						log.Warn().Msgf("Waiting for all dependent services to be healthy")
+					}
+					allServicesOk = false
 					return nil
 				}
+
 				return usecases.ConfigProcessor(&wg)
 			},
 			worker.ErrorLogger,

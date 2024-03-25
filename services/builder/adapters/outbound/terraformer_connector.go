@@ -19,6 +19,7 @@ func (t *TerraformerConnector) Connect() error {
 	if err != nil {
 		return err
 	}
+
 	t.Connection = connection
 
 	return nil
@@ -52,7 +53,12 @@ func (t *TerraformerConnector) Disconnect() {
 
 // PerformHealthCheck checks health of the underlying gRPC connection to terraformer microservice.
 func (t *TerraformerConnector) PerformHealthCheck() error {
-	return cutils.IsConnectionReady(t.Connection)
+	if err := cutils.IsConnectionReady(t.Connection); err == nil {
+		return nil
+	} else {
+		t.Connection.Connect()
+		return err
+	}
 }
 
 // GetClient returns a terraformer gRPC client.
