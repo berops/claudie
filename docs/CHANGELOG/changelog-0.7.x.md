@@ -69,3 +69,9 @@ Kubernetes version 1.24 is no longer supported.
 ### Bugfixes
 - Fix endless queueing of manifests with static nodepools, [#1282](https://github.com/berops/claudie/pull/1282)
 
+
+## v0.7.4
+### Bugfixes
+- Loadbalancer Endpoint missing in current state when workflow fails [#1284](https://github.com/berops/claudie/pull/1284)
+- Prevent autoscaling request when manifest is in error [#1288](https://github.com/berops/claudie/pull/1288)
+- Update healthchecks for builder that resulting in frequent restarts [#1293](https://github.com/berops/claudie/pull/1293)
