@@ -26,7 +26,7 @@ import (
 const (
 	defaultBuilderPort    = 50051
 	defaultPrometheusPort = "9090"
-	healthCheckInterval   = 20 * time.Second
+	healthCheckInterval   = 10 * time.Second
 )
 
 type HealthCheck struct {
