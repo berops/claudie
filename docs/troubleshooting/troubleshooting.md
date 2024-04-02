@@ -93,8 +93,10 @@ First of all you have to get into the directory in the `terraformer` pod, where 
 
 ### Locked state
 
-In case you are already in the directory with all TF files, run the following command (learn [more](https://stackoverflow.com/questions/65595852/terraform-statefile-is-locked-how-do-i-unlock-it)):
+In case you are already in the directory with all TF files, run the following command:
 
 ```
 terraform force-unlock <lock-id>
 ```
+
+The `lock-id` is generally show in the error message.
