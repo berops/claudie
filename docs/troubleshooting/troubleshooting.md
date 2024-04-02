@@ -99,4 +99,4 @@ Once you are in the directory with all TF files, run the following command:
 terraform force-unlock <lock-id>
 ```
 
-The `lock-id` is generally show in the error message.
+The `lock-id` is generally shown in the error message.
