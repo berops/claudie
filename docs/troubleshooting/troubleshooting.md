@@ -81,3 +81,22 @@ We use Wireguard for secure node-to-node connectivity. However, it requires sett
 
 ### Hetzner and OCI node pools
 We're experiencing networking issues caused by the blacklisting of public IPs owned by Hetzner and OCI. This problem affects the Ansibler and Kube-eleven services, which fail when attempting to add GPG keys to access the Google repository for package downloads. Unfortunately, there's no straightforward solution to bypass this issue. The recommended approach is to allow the services to fail, remove failed cluster and attempt provisioning a new cluster with newly allocated IP addresses that are not blocked by Google.
+
+## Resolving issues with Terraform state lock
+
+~During normal operation, the content of this section should not be required. If you ended up here, it means there was likely a bug somewhere in Claudie. Please [open a bug report](https://github.com/berops/claudie/issues/new/choose) in that case and use the content of this section to troubleshoot your way out of it.
+
+First of all you have to get into the directory in the `terraformer` pod, where all terraform files are located. In order to do that, follow these steps:
+
+* `kubectl exec -it -n claudie <terraformer-pod> -- bash`
+* `cd ./services/terraformer/server/clusters/<your-cluster>`
+
+### Locked state
+
+Once you are in the directory with all TF files, run the following command:
+
+```
+terraform force-unlock <lock-id>
+```
+
+The `lock-id` is generally shown in the error message.
