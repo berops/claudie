@@ -93,7 +93,7 @@ First of all you have to get into the directory in the `terraformer` pod, where 
 
 ### Locked state
 
-Once you are already in the directory with all TF files, run the following command:
+Once you are in the directory with all TF files, run the following command:
 
 ```
 terraform force-unlock <lock-id>
