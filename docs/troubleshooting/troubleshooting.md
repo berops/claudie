@@ -84,7 +84,7 @@ We're experiencing networking issues caused by the blacklisting of public IPs ow
 
 ## Resolving issues with Terraform state lock
 
-The way Claudie works should prevent errors mentioned in this section, but just in case, we provide you with some basic troubleshooting.
+~During normal operation, the content of this section should not be required. If you ended up here, it means there was likely a bug somewhere in Claudie. Please [open a bug report](https://github.com/berops/claudie/issues/new/choose) in that case and use the content of this section to troubleshoot your way out of it.
 
 First of all you have to get into the directory in the `terraformer` pod, where all terraform files are located. In order to do that, follow these steps:
 
