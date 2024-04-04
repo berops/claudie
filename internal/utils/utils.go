@@ -14,3 +14,10 @@ func SanitiseString(s string) string {
 	sanitised = strings.ReplaceAll(sanitised, "_", "-")
 	return sanitised
 }
+
+// watchNamespaceList takes a string input of the form "namespace1,namespace-2,namespace3"
+// and splits it into a slice of strings based on the comma separator.
+// It returns the slice containing individual namespace strings.
+func GetWatchNamespaceList(input string) []string {
+	return strings.Split(input, ",")
+}

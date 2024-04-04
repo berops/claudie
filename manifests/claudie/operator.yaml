@@ -47,6 +47,8 @@ spec:
             - containerPort: 50058
               name: grpc-server
           env:
+            - name: CLAUDIE_NAMESPACES
+              value: "claudie"
             - name: CONTEXT_BOX_PORT
               valueFrom:
                 configMapKeyRef:

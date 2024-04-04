@@ -97,6 +97,14 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     terraformer-fd664b7ff-dd2h7    1/1     Running     0               8m9s
     ```
 
+    !!! warning "Changing the namespace" 
+        By default, Claudie will deploy in the `claudie` namespace, and it will watch for `Input Manifest` and provider `Secrets` in this namespace. If you would like to add additional namespace to watch - overwrite `CLAUDIE_NAMESPACES` environment variable in `claudie-operator` deployment. Example:
+        ```
+        env:
+          - name: CLAUDIE_NAMESPACES
+            value: "claudie,different-namespace"
+        ``` 
+
     !!! warning "Troubleshoot!" 
         If you experience problems refer to our [troubleshooting guide](https://docs.claudie.io/latest/troubleshooting/troubleshooting/). 
 
