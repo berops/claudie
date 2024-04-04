@@ -26,6 +26,7 @@ import (
 const (
 	defaultBuilderPort    = 50051
 	defaultPrometheusPort = "9090"
+	healthCheckInterval   = 10 * time.Second
 )
 
 type HealthCheck struct {
@@ -42,7 +43,7 @@ func newHealthCheck(usecases *usecases.Usecases) *HealthCheck {
 	hc.check(usecases) // perform initial check
 
 	go func() {
-		ticker := time.NewTicker(5 * time.Second)
+		ticker := time.NewTicker(healthCheckInterval)
 		for range ticker.C {
 			hc.check(usecases)
 		}
