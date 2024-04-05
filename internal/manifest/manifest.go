@@ -195,6 +195,8 @@ type Node struct {
 	Endpoint string `validate:"required,ip_addr" yaml:"endpoint" json:"endpoint"`
 	// Private key used to ssh into the node.
 	Key string `validate:"required" yaml:"privateKey" json:"privateKey"`
+	// Username with root access. Used in SSH connection also.
+	Username string `validate:"required" yaml:"username" json:"username"`
 }
 
 // Collection of data used to define a Kubernetes cluster.

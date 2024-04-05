@@ -70,6 +70,7 @@ type ProviderWithData struct {
 
 type StaticNodeWithData struct {
 	Endpoint string
+	Username string
 	Secret   corev1.Secret
 }
 
@@ -116,6 +117,8 @@ type StaticNode struct {
 	Endpoint string `json:"endpoint"`
 	// Secret reference to the private key of the node.
 	SecretRef corev1.SecretReference `json:"secretRef"`
+	// Username with root access. Used in SSH connection also.
+	Username string `json:"username,omitempty"`
 }
 
 // Specification of the desired behaviour of the InputManifest
