@@ -98,7 +98,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     ```
 
     !!! warning "Changing the namespace" 
-        By default, Claudie will deploy in the `claudie` namespace, and it will watch for `Input Manifest` and provider `Secrets` in this namespace. If you would like to add additional namespace to watch - overwrite `CLAUDIE_NAMESPACES` environment variable in `claudie-operator` deployment. Example:
+        By default, Claudie will monitor all namespaces, and it will watch for `Input Manifest` and provider `Secrets` in the cluster. If you would like limit the namespaces to watch - overwrite `CLAUDIE_NAMESPACES` environment variable in `claudie-operator` deployment. Example:
         ```
         env:
           - name: CLAUDIE_NAMESPACES

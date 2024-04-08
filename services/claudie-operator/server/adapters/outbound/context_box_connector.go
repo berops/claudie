@@ -72,6 +72,6 @@ func (c *ContextBoxConnector) DeleteConfig(configName string) error {
 }
 
 // Disconnect closes the gRPC connection to context-box microservice
-func (c *ContextBoxConnector) Disconnect() error {
-	return c.grpcConnection.Close()
+func (c *ContextBoxConnector) Disconnect() {
+	utils.CloseClientConnection(c.grpcConnection)
 }

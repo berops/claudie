@@ -55,7 +55,7 @@ func main() {
 	portStr = utils.GetEnvDefault("WEBHOOK_TLS_PORT", "9443")
 	certDir = utils.GetEnvDefault("WEBHOOK_CERT_DIR", "./tls")
 	webhookPath = utils.GetEnvDefault("WEBHOOK_PATH", "/validate-manifest")
-	namespaceSelector = utils.GetEnvDefault("CLAUDIE_NAMESPACES", "claudie")
+	namespaceSelector = utils.GetEnvDefault("CLAUDIE_NAMESPACES", cache.AllNamespaces)
 	watchedNamespaces = utils.GetWatchNamespaceList(namespaceSelector)
 	utils.InitLog("claudie-operator")
 
@@ -109,10 +109,6 @@ func run() error {
 			err = errors.New("program interruption signal")
 		}
 
-		// Disconnect from context-box
-		if err := contextBoxConnector.Disconnect(); err != nil {
-			log.Err(err).Msgf("Failed to gracefully shutdown ContextBoxConnector")
-		}
 		// Cancel context for usecases functions to terminate manager.
 		defer usecaseCancel()
 		defer signal.Stop(shutdownSignalChan)
@@ -143,7 +139,7 @@ func run() error {
 			opts.DefaultNamespaces = make(map[string]cache.Config, len(watchedNamespaces))
 			for _, ns := range watchedNamespaces {
 				opts.DefaultNamespaces[ns] = cache.Config{}
-				log.Info().Msgf("Watching namespace: %s", ns)
+				log.Debug().Msgf("Watching namespace: %s", ns)
 			}
 			return cache.New(config, opts)
 		},
