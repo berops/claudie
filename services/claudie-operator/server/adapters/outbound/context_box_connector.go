@@ -42,7 +42,12 @@ func (c *ContextBoxConnector) Connect() error {
 
 // PerformHealthCheck checks health of the underlying gRPC connection to context-box microservice
 func (c *ContextBoxConnector) PerformHealthCheck() error {
-	return utils.IsConnectionReady(c.grpcConnection)
+	if err := utils.IsConnectionReady(c.grpcConnection); err == nil {
+		return nil
+	} else {
+		c.grpcConnection.Connect()
+		return err
+	}
 }
 
 // GetAllConfigs fetches all configs present in context-box DB
