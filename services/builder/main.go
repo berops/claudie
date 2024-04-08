@@ -25,7 +25,7 @@ import (
 
 const (
 	defaultBuilderPort    = 50051
-	defaultPrometheusPort = "9099"
+	defaultPrometheusPort = "9090"
 	healthCheckInterval   = 10 * time.Second
 )
 
