@@ -134,13 +134,3 @@ func main() {
 
 	log.Info().Msgf("Stopping Scheduler: %v", errGroup.Wait())
 }
-
-// healthCheck function is function used for querying readiness of the pod running this microservice
-func healthCheck(usecases *usecases.Usecases) func() error {
-	return func() error {
-		if usecases.ContextBox.PerformHealthCheck() != nil {
-			return errors.New("context-box is unhealthy")
-		}
-		return nil
-	}
-}

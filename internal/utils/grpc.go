@@ -44,7 +44,7 @@ func clientInfoInterceptor(logger *zerolog.Logger) grpc.UnaryServerInterceptor {
 
 func NewGRPCServer(opts ...grpc.ServerOption) *grpc.Server {
 	interceptors := []grpc.UnaryServerInterceptor{
-		clientInfoInterceptor(&log.Logger), // every time a client makes a RPC call print what method and addr it is comming from.
+		clientInfoInterceptor(&log.Logger), // every time a client makes a RPC call print what method and addr of the peer.
 	}
 
 	opts = append(opts,
@@ -82,7 +82,7 @@ func GrpcDialWithRetryAndBackoff(serviceName, serviceURL string) (*grpc.ClientCo
 		grpc_retry.WithCodes(codes.Unavailable),
 	}
 
-	conn, err := grpc.Dial(
+	conn, err := grpc.NewClient(
 		serviceURL,
 		grpc.WithKeepaliveParams(kacp),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
