@@ -80,6 +80,7 @@ func GrpcDialWithRetryAndBackoff(serviceName, serviceURL string) (*grpc.ClientCo
 	conn, err := grpc.NewClient(
 		serviceURL,
 		grpc.WithKeepaliveParams(kacp),
+		grpc.WithIdleTimeout(0), // Disable idle timeout will try to keep the connection active at all times.
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor(opts...)),
 		grpc.WithStreamInterceptor(grpc_retry.StreamClientInterceptor(opts...)),
