@@ -45,8 +45,8 @@ func PeerInfoInterceptor(logger *zerolog.Logger) grpc.UnaryServerInterceptor {
 func NewGRPCServer(opts ...grpc.ServerOption) *grpc.Server {
 	opts = append(opts,
 		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
-			MinTime:             10 * time.Second, // If a client doesn't wait at least 10 seconds before a ping terminate.
-			PermitWithoutStream: true,             // Allow pings even when there are no active streams
+			MinTime:             5 * time.Second, // If a client doesn't wait at least 5 seconds before a ping terminate.
+			PermitWithoutStream: true,            // Allow pings even when there are no active streams
 		}),
 		grpc.KeepaliveParams(keepalive.ServerParameters{
 			MaxConnectionIdle:     math.MaxInt64,    // If a client is idle for INFINITE seconds, send a GOAWAY.
