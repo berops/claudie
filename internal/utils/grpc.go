@@ -27,7 +27,7 @@ func CloseClientConnection(connection *grpc.ClientConn) {
 	}
 }
 
-func clientInfoInterceptor(logger *zerolog.Logger) grpc.UnaryServerInterceptor {
+func PeerInfoInterceptor(logger *zerolog.Logger) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		p, ok := peer.FromContext(ctx)
 		if ok {
@@ -43,10 +43,6 @@ func clientInfoInterceptor(logger *zerolog.Logger) grpc.UnaryServerInterceptor {
 }
 
 func NewGRPCServer(opts ...grpc.ServerOption) *grpc.Server {
-	interceptors := []grpc.UnaryServerInterceptor{
-		clientInfoInterceptor(&log.Logger), // every time a client makes a RPC call print what method and addr of the peer.
-	}
-
 	opts = append(opts,
 		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
 			MinTime:             10 * time.Second, // If a client doesn't wait at least 10 seconds before a ping terminate.
@@ -59,7 +55,6 @@ func NewGRPCServer(opts ...grpc.ServerOption) *grpc.Server {
 			Time:                  2 * time.Hour,    // Ping the client if it is idle for 2 Hours to ensure the connection is still active.
 			Timeout:               20 * time.Second, // Wait 20 seconds for the ping ack before assuming the connection is dead.
 		}),
-		grpc.ChainUnaryInterceptor(interceptors...),
 	)
 
 	return grpc.NewServer(opts...)

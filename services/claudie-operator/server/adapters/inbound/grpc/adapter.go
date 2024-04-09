@@ -34,7 +34,10 @@ func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
 
 	log.Info().Msgf("Claudie-operator bound to %s", listeningAddress)
 
-	g.server = utils.NewGRPCServer()
+	g.server = utils.NewGRPCServer(
+		grpc.ChainUnaryInterceptor(utils.PeerInfoInterceptor(&log.Logger)),
+	)
+
 	pb.RegisterOperatorServiceServer(g.server, &OperatorGrpcService{usecases: usecases})
 }
 

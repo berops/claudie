@@ -8,6 +8,7 @@ import (
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/services/autoscaler-adapter/claudie_provider"
 	"github.com/rs/zerolog/log"
+	"google.golang.org/grpc"
 	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/externalgrpc/protos"
 )
 
@@ -21,7 +22,9 @@ func main() {
 	}
 	utils.InitLog(fmt.Sprintf("%s-%s", "autoscaler-adapter", clusterName))
 
-	server := utils.NewGRPCServer()
+	server := utils.NewGRPCServer(
+		grpc.ChainUnaryInterceptor(utils.PeerInfoInterceptor(&log.Logger)),
+	)
 
 	// Listen
 	serviceAddr := net.JoinHostPort("0.0.0.0", port)
