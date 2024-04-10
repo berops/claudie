@@ -266,7 +266,7 @@ jobs:
           tar xz && mv yq_linux_amd64 yq
 
           NAME_HASH="claudie-operator-role-binding-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}" ./yq e 'select(di == 0) * (select(.kind == "ClusterRoleBinding") | .metadata.name = strenv(NAME_HASH))' ./cluster-rbac/clusterrolebinding.yaml -i
-
+          NAMESPACES="claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER},e2e-secrets" ./yq eval 'select(documentIndex == 0).spec.template.spec.containers.0.env += [{"name": "CLAUDIE_NAMESPACES", "value": strenv(NAMESPACES)}]' -i operator.yaml
           kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
           kustomize build | kubectl apply -f -
 

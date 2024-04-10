@@ -73,11 +73,11 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: OPERATOR_PORT
-              # No hostname needed
+                  # No hostname needed
             - name: WEBHOOK_CERT_DIR
               value: "/etc/webhook/certs/"
             - name: WEBHOOK_PATH
-              value: "/validate-manifest" 
+              value: "/validate-manifest"
           readinessProbe:
             httpGet:
               path: /healthz
@@ -87,7 +87,7 @@ spec:
             timeoutSeconds: 3
             periodSeconds: 30
             successThreshold: 1
-            failureThreshold: 3        
+            failureThreshold: 3
           livenessProbe:
             httpGet:
               path: /healthz
@@ -155,7 +155,7 @@ webhooks:
         namespace: claudie
         path: "/validate-manifest"
     rules:
-      - operations: [ "CREATE", "UPDATE" ]
+      - operations: ["CREATE", "UPDATE"]
         apiGroups: ["claudie.io"]
         apiVersions: ["v1beta1"]
         resources: ["inputmanifests"]
@@ -174,10 +174,10 @@ spec:
     labels:
       app.kubernetes.io/part-of: claudie
   dnsNames:
-  - claudie-operator.claudie
-  - claudie-operator.claudie.svc
-  - claudie-operator.claudie.svc.cluster
-  - claudie-operator.claudie.svc.cluster.local
+    - claudie-operator.claudie
+    - claudie-operator.claudie.svc
+    - claudie-operator.claudie.svc.cluster
+    - claudie-operator.claudie.svc.cluster.local
   issuerRef:
     name: claudie-webhook-ca
 ---

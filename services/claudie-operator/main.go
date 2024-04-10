@@ -15,6 +15,8 @@ import (
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -37,12 +39,17 @@ const (
 )
 
 var (
-	// port is the port number that the server will serve. It will be defaulted to 9443 if unspecified.
+	// portStr is the port number that the server will serve. It will be defaulted to 9443 if unspecified.
 	portStr string
 	// certDir is the directory that contains the server key and certificate. The server key and certificate.
 	certDir string
 	// path under which the validation webhook will serve
 	webhookPath string
+	// namespaceSelector filters namespaces to watch for inputManifest resources
+	// takes a string input of the form "namespace1,namespace-2,namespace3"
+	namespaceSelector string
+	// watchedNamespaces is a list of namespaces to watch
+	watchedNamespaces []string
 )
 
 func main() {
@@ -50,7 +57,8 @@ func main() {
 	portStr = utils.GetEnvDefault("WEBHOOK_TLS_PORT", "9443")
 	certDir = utils.GetEnvDefault("WEBHOOK_CERT_DIR", "./tls")
 	webhookPath = utils.GetEnvDefault("WEBHOOK_PATH", "/validate-manifest")
-
+	namespaceSelector = utils.GetEnvDefault("CLAUDIE_NAMESPACES", cache.AllNamespaces)
+	watchedNamespaces = utils.GetWatchNamespaceList(namespaceSelector)
 	utils.InitLog("claudie-operator")
 
 	if err := run(); err != nil {
@@ -64,6 +72,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	defer contextBoxConnector.Disconnect()
 
 	autoscalerChan := make(chan event.GenericEvent)
 	usecaseContext, usecaseCancel := context.WithCancel(context.Background())
@@ -102,10 +111,6 @@ func run() error {
 			err = errors.New("program interruption signal")
 		}
 
-		// Disconnect from context-box
-		if err := contextBoxConnector.Disconnect(); err != nil {
-			log.Err(err).Msgf("Failed to gracefully shutdown ContextBoxConnector")
-		}
 		// Cancel context for usecases functions to terminate manager.
 		defer usecaseCancel()
 		defer signal.Stop(shutdownSignalChan)
@@ -132,6 +137,14 @@ func run() error {
 		Scheme:                 scheme,
 		HealthProbeBindAddress: healthcheckPort,
 		Logger:                 logger,
+		NewCache: func(config *rest.Config, opts cache.Options) (cache.Cache, error) {
+			opts.DefaultNamespaces = make(map[string]cache.Config, len(watchedNamespaces))
+			for _, ns := range watchedNamespaces {
+				opts.DefaultNamespaces[ns] = cache.Config{}
+				log.Debug().Msgf("Watching namespace: %s", ns)
+			}
+			return cache.New(config, opts)
+		},
 	})
 	if err != nil {
 		return err
