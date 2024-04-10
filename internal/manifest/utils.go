@@ -235,6 +235,7 @@ func getStaticNodes(np *StaticNodePool, isControl bool) []*pb.Node {
 			Name:     fmt.Sprintf("%s-%d", np.Name, i+1),
 			Public:   node.Endpoint,
 			NodeType: nodeType,
+			Username: node.Username,
 		})
 	}
 	return nodes
