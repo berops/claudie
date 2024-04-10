@@ -1,9 +1,13 @@
 package healthcheck
 
 import (
+	"fmt"
 	"net"
 	"net/http"
+	"sync"
+	"time"
 
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -50,4 +54,91 @@ func (s *ClientHealthChecker) health(w http.ResponseWriter, req *http.Request) {
 	}
 	w.WriteHeader(200)
 	writeMsg(w, "ok")
+}
+
+type HealthCheck struct {
+	Ping             func() error
+	ServiceName      string
+	timeSinceFailure *time.Time
+}
+
+type HealthChecker struct {
+	services []HealthCheck
+	logger   *zerolog.Logger
+	lock     sync.Mutex
+}
+
+func NewHealthCheck(logger *zerolog.Logger, interval time.Duration, services []HealthCheck) *HealthChecker {
+	hc := &HealthChecker{
+		services: services,
+		logger:   logger,
+	}
+
+	hc.check() // perform initial check
+
+	go func() {
+		ticker := time.NewTicker(interval)
+		for range ticker.C {
+			hc.check()
+		}
+	}()
+
+	return hc
+}
+
+func (c *HealthChecker) check() {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	updateTimeSinceFailure := func(n string, now *time.Time, t **time.Time, err error) {
+		if err == nil {
+			if *t != nil {
+				c.logger.Debug().Msgf("service:%v is healthy again", n)
+				*t = nil
+			}
+			return
+		}
+		if *t == nil {
+			c.logger.Debug().Msgf("service:%v return error in ping: %v", n, err)
+			*t = now
+		}
+	}
+
+	now := time.Now()
+	for i := range c.services {
+		updateTimeSinceFailure(c.services[i].ServiceName, &now, &c.services[i].timeSinceFailure, c.services[i].Ping())
+	}
+}
+
+func (c *HealthChecker) CheckForFailures() error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	var err error
+	for _, svc := range c.services {
+		err = c.checkFailure(svc.timeSinceFailure, svc.ServiceName, err)
+	}
+	return err
+}
+
+func (c *HealthChecker) checkFailure(t *time.Time, service string, perr error) error {
+	if t != nil && time.Since(*t) >= 4*time.Minute {
+		if perr != nil {
+			return fmt.Errorf("%w; %s is unhealthy", perr, service)
+		}
+		return fmt.Errorf("%s is unhealthy", service)
+	}
+	return perr
+}
+
+func (c *HealthChecker) AnyServiceUnhealthy() bool {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	ok := false
+	for _, svc := range c.services {
+		ok = ok || (svc.timeSinceFailure != nil)
+	}
+
+	return ok
 }
