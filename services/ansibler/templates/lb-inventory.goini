@@ -43,7 +43,7 @@
     {{- range $lbNodepool := $lbCluster.LBnodepools.Static }}
         {{- range $lbNode :=  $lbNodepool.Nodes }}
 {{/*key.pem is taken from a directory where ansible-playbook is called, thus it does not need to specify path relative to inventory.ini*/}}
-{{ $lbNode.Name }} ansible_user={{ $node.Username }} ansible_host={{ $lbNode.Public }} private_ip={{ $lbNode.Private }} ansible_ssh_private_key_file={{ $lbNode.Name }}.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
+{{ $lbNode.Name }} ansible_user={{ $lbNode.Username }} ansible_host={{ $lbNode.Public }} private_ip={{ $lbNode.Private }} ansible_ssh_private_key_file={{ $lbNode.Name }}.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
         {{- end }}
     {{- end }}
 {{- end }}
