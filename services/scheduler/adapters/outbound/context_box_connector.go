@@ -44,5 +44,10 @@ func (c *ContextBoxConnector) Disconnect() {
 
 // PerformHealthCheck checks health of the underlying gRPC connection to context-box microservice.
 func (c *ContextBoxConnector) PerformHealthCheck() error {
-	return utils.IsConnectionReady(c.Connection)
+	if err := utils.IsConnectionReady(c.Connection); err == nil {
+		return nil
+	} else {
+		c.Connection.Connect()
+		return err
+	}
 }

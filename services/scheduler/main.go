@@ -14,7 +14,6 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc/connectivity"
 
 	"github.com/berops/claudie/internal/healthcheck"
 	"github.com/berops/claudie/internal/utils"
@@ -29,6 +28,7 @@ const (
 	defaultHealthcheckPort    = 50056
 	defaultConfigPullInterval = 10
 	defaultPrometheusPort     = "9090"
+	healthCheckInterval       = 10 * time.Second
 )
 
 func main() {
@@ -48,11 +48,14 @@ func main() {
 	metricsServer := &http.Server{Addr: fmt.Sprintf(":%s", utils.GetEnvDefault("PROMETHEUS_PORT", defaultPrometheusPort))}
 	metrics.MustRegisterCounters()
 
-	// Initialize health probes
-	healthcheck.NewClientHealthChecker(
-		fmt.Sprint(defaultHealthcheckPort),
-		healthCheck(usecases),
-	).StartProbes()
+	hc := healthcheck.NewHealthCheck(&log.Logger, healthCheckInterval, []healthcheck.HealthCheck{{
+		Ping:        usecases.ContextBox.PerformHealthCheck,
+		ServiceName: "contextbox",
+	}})
+
+	healthcheck.NewClientHealthChecker(fmt.Sprint(defaultHealthcheckPort), func() error {
+		return hc.CheckForFailures()
+	}).StartProbes()
 
 	errGroup, errGroupCtx := errgroup.WithContext(context.Background())
 
@@ -60,30 +63,25 @@ func main() {
 	// processing it
 	errGroup.Go(func() error {
 		client := pb.NewContextBoxServiceClient(contextBoxConnector.Connection)
-		prevGrpcConnectionState := contextBoxConnector.Connection.GetState()
 		group := sync.WaitGroup{}
+		allServicesOk := true
 
 		worker.NewWorker(
 			errGroupCtx,
 			defaultConfigPullInterval*time.Second,
 			func() error {
-				if utils.IsConnectionReady(contextBoxConnector.Connection) == nil {
-					if prevGrpcConnectionState != connectivity.Ready {
-						log.Info().Msgf("Connection to Context-box is now ready")
+				if healthIssues := hc.AnyServiceUnhealthy(); !healthIssues {
+					if !allServicesOk {
+						log.Info().Msgf("All dependent services are now healthy")
 					}
-					prevGrpcConnectionState = connectivity.Ready
+					allServicesOk = true
 				} else {
-					log.Warn().Msgf("Connection to Context-box is not ready yet")
-					log.Debug().Msgf("Connection to Context-box is %s, waiting for the service to be reachable", contextBoxConnector.Connection.GetState().String())
-
-					prevGrpcConnectionState = contextBoxConnector.Connection.GetState()
-					contextBoxConnector.Connection.Connect() // try connecting to the context-box microservice.
-
+					if allServicesOk {
+						log.Warn().Msgf("Waiting for all dependent services to be healthy")
+					}
+					allServicesOk = false
 					return nil
 				}
-
-				// After successfully establishing connection with the context-box microservice
-				// Pull a config from scheduler queue of context-box and process (build desired state) that config
 				return usecases.ConfigProcessor(client, &group)
 			},
 			worker.ErrorLogger,
@@ -135,14 +133,4 @@ func main() {
 	})
 
 	log.Info().Msgf("Stopping Scheduler: %v", errGroup.Wait())
-}
-
-// healthCheck function is function used for querying readiness of the pod running this microservice
-func healthCheck(usecases *usecases.Usecases) func() error {
-	return func() error {
-		if usecases.ContextBox.PerformHealthCheck() != nil {
-			return errors.New("context-box is unhealthy")
-		}
-		return nil
-	}
 }

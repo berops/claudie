@@ -33,7 +33,10 @@ func main() {
 		&usecases.Usecases{
 			SpawnProcessLimit: make(chan struct{}, usecases.SpawnProcessLimit),
 		},
-		grpc2.UnaryInterceptor(metrics.MetricsMiddleware),
+		grpc2.ChainUnaryInterceptor(
+			metrics.MetricsMiddleware,
+			utils.PeerInfoInterceptor(&log.Logger),
+		),
 	)
 
 	metricsServer := &http.Server{Addr: fmt.Sprintf(":%s", utils.GetEnvDefault("PROMETHEUS_PORT", defaultPrometheusPort))}

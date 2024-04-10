@@ -47,7 +47,10 @@ func main() {
 	grpcAdapter := &grpc.GrpcAdapter{}
 	grpcAdapter.Init(
 		usecases,
-		grpc2.UnaryInterceptor(metrics.MetricsMiddleware),
+		grpc2.ChainUnaryInterceptor(
+			metrics.MetricsMiddleware,
+			utils.PeerInfoInterceptor(&log.Logger),
+		),
 	)
 
 	errGroup, errGroupContext := errgroup.WithContext(context.Background())

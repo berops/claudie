@@ -29,84 +29,6 @@ const (
 	healthCheckInterval   = 10 * time.Second
 )
 
-type HealthCheck struct {
-	timeSinceTerraformFailure  *time.Time
-	timeSinceAnsiblerFailure   *time.Time
-	timeSinceKubeElevenFailure *time.Time
-	timeSinceKuberFailure      *time.Time
-	timeSinceContextBoxFailure *time.Time
-	lock                       sync.Mutex
-}
-
-func newHealthCheck(usecases *usecases.Usecases) *HealthCheck {
-	hc := new(HealthCheck)
-	hc.check(usecases) // perform initial check
-
-	go func() {
-		ticker := time.NewTicker(healthCheckInterval)
-		for range ticker.C {
-			hc.check(usecases)
-		}
-	}()
-
-	return hc
-}
-
-func (c *HealthCheck) check(usecases *usecases.Usecases) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-
-	updateTimeSinceFailure := func(now *time.Time, t **time.Time, err error) {
-		if err == nil {
-			*t = nil
-			return
-		}
-		if *t == nil {
-			*t = now
-		}
-	}
-
-	now := time.Now()
-	updateTimeSinceFailure(&now, &c.timeSinceTerraformFailure, usecases.Terraformer.PerformHealthCheck())
-	updateTimeSinceFailure(&now, &c.timeSinceAnsiblerFailure, usecases.Ansibler.PerformHealthCheck())
-	updateTimeSinceFailure(&now, &c.timeSinceKubeElevenFailure, usecases.KubeEleven.PerformHealthCheck())
-	updateTimeSinceFailure(&now, &c.timeSinceKuberFailure, usecases.Kuber.PerformHealthCheck())
-	updateTimeSinceFailure(&now, &c.timeSinceContextBoxFailure, usecases.ContextBox.PerformHealthCheck())
-}
-
-func (c *HealthCheck) checkForFailures() error {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-
-	var err error
-	err = c.checkFailure(c.timeSinceTerraformFailure, "terraformer", err)
-	err = c.checkFailure(c.timeSinceAnsiblerFailure, "ansibler", err)
-	err = c.checkFailure(c.timeSinceKubeElevenFailure, "kube-eleven", err)
-	err = c.checkFailure(c.timeSinceKuberFailure, "kuber", err)
-	err = c.checkFailure(c.timeSinceContextBoxFailure, "context-box", err)
-	return err
-}
-
-func (c *HealthCheck) checkFailure(t *time.Time, service string, perr error) error {
-	if t != nil && time.Since(*t) >= 4*time.Minute {
-		if perr != nil {
-			return fmt.Errorf("%w; %s is unhealthy", perr, service)
-		}
-		return fmt.Errorf("%s is unhealthy", service)
-	}
-	return perr
-}
-
-func (c *HealthCheck) anyServiceUnhealthy() bool {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	return (c.timeSinceTerraformFailure != nil) ||
-		(c.timeSinceAnsiblerFailure != nil) ||
-		(c.timeSinceKubeElevenFailure != nil) ||
-		(c.timeSinceKuberFailure != nil) ||
-		(c.timeSinceContextBoxFailure != nil)
-}
-
 func main() {
 	utils.InitLog("builder")
 
@@ -157,10 +79,31 @@ func main() {
 		Kuber:       kb,
 	}
 
-	hc := newHealthCheck(usecases)
+	hc := healthcheck.NewHealthCheck(&log.Logger, healthCheckInterval, []healthcheck.HealthCheck{
+		{
+			Ping:        usecases.Terraformer.PerformHealthCheck,
+			ServiceName: "terraformer",
+		},
+		{
+			Ping:        usecases.Ansibler.PerformHealthCheck,
+			ServiceName: "ansibler",
+		},
+		{
+			Ping:        usecases.KubeEleven.PerformHealthCheck,
+			ServiceName: "kube-eleven",
+		},
+		{
+			Ping:        usecases.Kuber.PerformHealthCheck,
+			ServiceName: "kuber",
+		},
+		{
+			Ping:        usecases.ContextBox.PerformHealthCheck,
+			ServiceName: "contextbox",
+		},
+	})
 
 	healthcheck.NewClientHealthChecker(fmt.Sprint(defaultBuilderPort), func() error {
-		return hc.checkForFailures()
+		return hc.CheckForFailures()
 	}).StartProbes()
 
 	group, ctx := errgroup.WithContext(context.Background())
@@ -203,7 +146,7 @@ func main() {
 			ctx,
 			5*time.Second,
 			func() error {
-				if healthIssues := hc.anyServiceUnhealthy(); !healthIssues {
+				if healthIssues := hc.AnyServiceUnhealthy(); !healthIssues {
 					if !allServicesOk {
 						log.Info().Msgf("All dependent services are now healthy")
 					}

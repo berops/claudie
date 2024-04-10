@@ -21,6 +21,7 @@ import (
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/internal/healthcheck"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/services/claudie-operator/pkg/controller"
 	"github.com/berops/claudie/services/claudie-operator/server/adapters/inbound/grpc"
@@ -33,7 +34,8 @@ import (
 const (
 	// healthcheckPort is the port on which Kubernetes readiness and liveness probes send request
 	// for performing health checks.
-	healthcheckPort = ":50000"
+	healthcheckPort     = ":50000"
+	healthCheckInterval = 10 * time.Second
 )
 
 var (
@@ -175,10 +177,15 @@ func run() error {
 		return err
 	}
 
+	hc := healthcheck.NewHealthCheck(&log.Logger, healthCheckInterval, []healthcheck.HealthCheck{{
+		Ping:        usecases.ContextBox.PerformHealthCheck,
+		ServiceName: "contextbox",
+	}})
+
 	// Register a healthcheck and readiness endpoint, with path and /healthz
 	// https://github.com/kubernetes-sigs/controller-runtime/issues/2127
 	if err := mgr.AddHealthzCheck("health", func(req *http.Request) error {
-		if err := usecases.ContextBox.PerformHealthCheck(); err != nil {
+		if err := hc.CheckForFailures(); err != nil {
 			return err
 		}
 		return healthz.Ping(req)
