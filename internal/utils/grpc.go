@@ -1,18 +1,21 @@
 package utils
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math"
 	"time"
 
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
+	"google.golang.org/grpc/peer"
 )
 
 var ErrConnectionNotReady = errors.New("unhealthy gRPC connection")
@@ -24,11 +27,26 @@ func CloseClientConnection(connection *grpc.ClientConn) {
 	}
 }
 
+func PeerInfoInterceptor(logger *zerolog.Logger) grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		p, ok := peer.FromContext(ctx)
+		if ok {
+			peerAddr := p.Addr.String()
+			logger.Debug().Msgf("incoming request: %v from peer connected with addr: %s\n", info.FullMethod, peerAddr)
+		}
+		if !ok {
+			logger.Debug().Msg("Peer information cannot be extracted")
+		}
+
+		return handler(ctx, req)
+	}
+}
+
 func NewGRPCServer(opts ...grpc.ServerOption) *grpc.Server {
 	opts = append(opts,
 		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
-			MinTime:             20 * time.Second, // If a client pings more than once every 20 seconds, terminate the connection
-			PermitWithoutStream: true,             // Allow pings even when there are no active streams
+			MinTime:             5 * time.Second, // If a client doesn't wait at least 5 seconds before a ping terminate.
+			PermitWithoutStream: true,            // Allow pings even when there are no active streams
 		}),
 		grpc.KeepaliveParams(keepalive.ServerParameters{
 			MaxConnectionIdle:     math.MaxInt64,    // If a client is idle for INFINITE seconds, send a GOAWAY.
@@ -59,9 +77,10 @@ func GrpcDialWithRetryAndBackoff(serviceName, serviceURL string) (*grpc.ClientCo
 		grpc_retry.WithCodes(codes.Unavailable),
 	}
 
-	conn, err := grpc.Dial(
+	conn, err := grpc.NewClient(
 		serviceURL,
 		grpc.WithKeepaliveParams(kacp),
+		grpc.WithIdleTimeout(0), // Disable idle timeout will try to keep the connection active at all times.
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor(opts...)),
 		grpc.WithStreamInterceptor(grpc_retry.StreamClientInterceptor(opts...)),

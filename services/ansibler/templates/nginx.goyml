@@ -26,6 +26,19 @@
       file: 
         path:  "/etc/nginx/sites-enabled/default"
         state: absent
+    - name: Increase worker connections
+      ansible.builtin.lineinfile:
+        path: /etc/nginx/nginx.conf
+        regexp: '^(\s*)worker_connections (\d+);'
+        backrefs: yes
+        line: '\1worker_connections 65535;'
+    - name: Ensure worker_rlimit_nofile is set
+      ansible.builtin.blockinfile:
+        path: /etc/nginx/nginx.conf
+        block: |
+          worker_rlimit_nofile 65535;
+        insertbefore: '^events {'
+        marker: "# {mark} ANSIBLE MANAGED BLOCK"
     - name: restart nginx
       service:
         name: nginx

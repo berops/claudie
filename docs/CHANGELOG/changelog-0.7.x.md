@@ -75,3 +75,10 @@ Kubernetes version 1.24 is no longer supported.
 - Loadbalancer Endpoint missing in current state when workflow fails [#1284](https://github.com/berops/claudie/pull/1284)
 - Prevent autoscaling request when manifest is in error [#1288](https://github.com/berops/claudie/pull/1288)
 - Update healthchecks for builder that resulting in frequent restarts [#1293](https://github.com/berops/claudie/pull/1293)
+
+## v0.7.5
+### Features
+- increase worker_connections per worker process for load balancers [#1328](https://github.com/berops/claudie/pull/1328)
+
+### Bugifxes
+- Fix connection issues across services [#1331](https://github.com/berops/claudie/pull/1331)
