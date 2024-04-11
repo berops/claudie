@@ -3,7 +3,10 @@ package controller
 import (
 	"context"
 	"fmt"
+	"net"
+	"strings"
 
+	"golang.org/x/crypto/ssh"
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -56,12 +59,60 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
 			}
 
+			snwd.Endpoint = n.Endpoint
 			snwd.Username = "root"
 			if n.Username != "" {
 				snwd.Username = n.Username
+
+				// Parse private key.
+				pk, err := ssh.ParsePrivateKey(snwd.Secret.Data["privatekey"])
+				if err != nil {
+					log.Error(err, fmt.Sprintf("Failed to parse private key for %s.", snwd.Endpoint))
+					return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
+				}
+
+				// Define the SSH client configuration.
+				conf := &ssh.ClientConfig{
+					User: snwd.Username,
+					Auth: []ssh.AuthMethod{
+						ssh.PublicKeys(pk),
+					},
+					HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+				}
+
+				// Connect to the SSH server.
+				client, err := ssh.Dial("tcp", net.JoinHostPort(snwd.Endpoint, "22"), conf)
+				if err != nil {
+					log.Error(err, fmt.Sprintf("Error connecting to SSH server with IP %s using %s user.",
+						snwd.Endpoint, snwd.Username))
+					return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
+				}
+				defer client.Close()
+
+				// Create a session
+				session, err := client.NewSession()
+				if err != nil {
+					log.Error(err, fmt.Sprintf("Failed to create SSH session on host %s to verify if user %s has sudo privileges.",
+						snwd.Endpoint, snwd.Username))
+					return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
+				}
+				defer session.Close()
+
+				// Run a command on the remote machine in order to verify that user has sudo privileges
+				output, err := session.CombinedOutput("groups | grep sudo | wc | awk '{print $1}'")
+				if err != nil {
+					log.Error(err, fmt.Sprintf("Failed to verify sudo privileges for user %s on host %s.",
+						snwd.Username, snwd.Endpoint))
+					return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
+				}
+
+				if strings.ReplaceAll(string(output), "\n", "") == "0" {
+					log.Error(nil, fmt.Sprintf("User %s doesn't belong to sudo group, therefore doesn't have required sudo privileges on host %s.",
+						snwd.Username, snwd.Endpoint))
+					return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
+				}
 			}
 
-			snwd.Endpoint = n.Endpoint
 			nodes = append(nodes, snwd)
 		}
 		staticNodeSecrets[s.Name] = nodes
