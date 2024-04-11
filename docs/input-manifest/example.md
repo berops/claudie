@@ -260,7 +260,8 @@ spec:
     #   - name:             # Name of the nodepool, which is used as a reference to it. Needs to be unique.
     #     nodes:            # List of nodes which will be access under this nodepool.
     #       - endpoint:     # IP under which Claudie will access this node. Can be private as long as Claudie will be able to access it.
-    #         secretRef:    # Secret reference specification, holding private key which will be used to SSH into the node (as root).
+    #         username:     # Username of a user with sudo privileges (optional). If not specified user with name "root" will be used
+    #         secretRef:    # Secret reference specification, holding private key which will be used to SSH into the node (as root or as a user specificed in the username attribute).
     #           name:       # Name of the secret resource.
     #           namespace:  # Namespace of the secret resource.
     #     labels:           # Map of custom user defined labels for this nodepool. This field is optional and is ignored if used in Loadbalancer cluster. (optional)
@@ -285,6 +286,7 @@ spec:
               namespace: example-namespace
 
           - endpoint: "192.168.10.3"
+            username: admin
             secretRef:
               name: datacenter-1-key
               namespace: example-namespace
