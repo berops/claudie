@@ -92,22 +92,22 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				// Create a session
 				session, err := client.NewSession()
 				if err != nil {
-					log.Error(err, fmt.Sprintf("Failed to create SSH session on host %s to verify if user %s has sudo privileges.",
+					log.Error(err, fmt.Sprintf("Failed to create SSH session on host %s to verify if user %s has root privileges.",
 						snwd.Endpoint, snwd.Username))
 					return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
 				}
 				defer session.Close()
 
-				// Run a command on the remote machine in order to verify that user has sudo privileges
+				// Run a command on the remote machine in order to verify that user has root privileges
 				output, err := session.CombinedOutput("groups | grep sudo | wc | awk '{print $1}'")
 				if err != nil {
-					log.Error(err, fmt.Sprintf("Failed to verify sudo privileges for user %s on host %s.",
+					log.Error(err, fmt.Sprintf("Failed to verify root privileges for user %s on host %s.",
 						snwd.Username, snwd.Endpoint))
 					return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
 				}
 
 				if strings.ReplaceAll(string(output), "\n", "") == "0" {
-					log.Error(nil, fmt.Sprintf("User %s doesn't belong to sudo group, therefore doesn't have required sudo privileges on host %s.",
+					log.Error(nil, fmt.Sprintf("User %s doesn't belong to sudo group, therefore doesn't have required root privileges on host %s.",
 						snwd.Username, snwd.Endpoint))
 					return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
 				}

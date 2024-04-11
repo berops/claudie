@@ -327,9 +327,13 @@ Static node defines single static node from a static nodepool.
 
   Endpoint under which Claudie will access this node.
 
+- `username`
+
+  Name of a user with root privileges, will be used to SSH into this node and install dependencies. This attribute is optional. In case it isn't specified a `root` username is used.
+
 - `secretRef` [SecretRef](#secretref)
 
-  Secret from which private key will be taken used to SSH into the machine (as root).
+  Secret from which private key will be taken used to SSH into the machine (as root or as a user specificed in the username attribute).
 
   The field in the secret must be `privatekey`, i.e.
   

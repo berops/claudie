@@ -1690,7 +1690,7 @@ type Node struct {
 	Public string `protobuf:"bytes,3,opt,name=public,proto3" json:"public,omitempty"`
 	// Type of the node.
 	NodeType NodeType `protobuf:"varint,4,opt,name=nodeType,proto3,enum=claudie.NodeType" json:"nodeType,omitempty"`
-	// Username of a user with sudo privileges. Also used in SSH connection
+	// Username of a user with root privileges. Also used in SSH connection
 	Username string `protobuf:"bytes,5,opt,name=username,proto3" json:"username,omitempty"`
 }
 

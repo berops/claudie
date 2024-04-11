@@ -260,7 +260,7 @@ spec:
     #   - name:             # Name of the nodepool, which is used as a reference to it. Needs to be unique.
     #     nodes:            # List of nodes which will be access under this nodepool.
     #       - endpoint:     # IP under which Claudie will access this node. Can be private as long as Claudie will be able to access it.
-    #         username:     # Username of a user with sudo privileges (optional). If not specified user with name "root" will be used
+    #         username:     # Username of a user with root privileges (optional). If not specified user with name "root" will be used
     #         secretRef:    # Secret reference specification, holding private key which will be used to SSH into the node (as root or as a user specificed in the username attribute).
     #           name:       # Name of the secret resource.
     #           namespace:  # Namespace of the secret resource.

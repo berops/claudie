@@ -270,7 +270,7 @@ message Node {
   string public = 3;
   // Type of the node.
   NodeType nodeType = 4;
-  // Username of a user with sudo privileges. Also used in SSH connection
+  // Username of a user with root privileges. Also used in SSH connection
   string username = 5;
 }
 
