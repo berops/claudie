@@ -230,7 +230,8 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	// ERROR logic
-	// Refresh cluster status, message an error and end the reconcile, or
+	// Refresh cluster status, message an error and end the reconcile,
+	// Continue the workflow, to update/end reconcile loop.
 	if configContainsError {
 		// No updates to the inputManifest, output an error and finish the reconcile
 		inputManifest.SetUpdateResourceStatus(currentState)
@@ -239,7 +240,6 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 		r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", buildProvisioningError(currentState).Error())
 		log.Error(buildProvisioningError(currentState), "Error while building")
-		return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
 	}
 
 	// Check if input-manifest has been updated
