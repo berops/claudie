@@ -55,6 +55,12 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				log.Error(err, "secret not found", "will try again in", REQUEUE_AFTER_ERROR, "name", n.SecretRef.Name, "namespace", n.SecretRef.Namespace)
 				return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
 			}
+
+			snwd.Username = "root"
+			if n.Username != "" {
+				snwd.Username = n.Username
+			}
+
 			snwd.Endpoint = n.Endpoint
 			nodes = append(nodes, snwd)
 		}

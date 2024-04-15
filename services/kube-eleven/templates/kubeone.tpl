@@ -31,10 +31,11 @@ controlPlane:
     {{- if ge $nodeInfo.Node.NodeType 1}}
   - publicAddress: '{{ $nodeInfo.Node.Public }}'
     privateAddress: '{{ $nodeInfo.Node.Private }}'
-    sshUsername: root
     {{- if $nodepool.IsDynamic }}
+    sshUsername: root
     sshPrivateKeyFile: '{{ $privateKey }}'
     {{- else }}
+    sshUsername: '{{ $nodeInfo.Node.Username }}'
     sshPrivateKeyFile: './{{ $nodeInfo.Name }}.pem'
     {{- end }}
     hostname: '{{ $nodeInfo.Name }}'
@@ -55,10 +56,11 @@ staticWorkers:
     {{- if eq $nodeInfo.Node.NodeType 0}}
   - publicAddress: '{{ $nodeInfo.Node.Public }}'
     privateAddress: '{{ $nodeInfo.Node.Private }}'
-    sshUsername: root
     {{- if $nodepool.IsDynamic }}
+    sshUsername: root
     sshPrivateKeyFile: '{{ $privateKey }}'
     {{- else }}
+    sshUsername: '{{ $nodeInfo.Node.Username }}'
     sshPrivateKeyFile: './{{ $nodeInfo.Name }}.pem'
     {{- end }}
     hostname: '{{ $nodeInfo.Name }}'

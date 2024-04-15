@@ -18,10 +18,11 @@ package controller
 
 import (
 	"fmt"
+	"unicode/utf8"
+
 	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/internal/utils"
 	v1beta "github.com/berops/claudie/services/claudie-operator/pkg/api/v1beta1"
-	"unicode/utf8"
 )
 
 // mergeInputManifestWithSecrets takes the v1beta.InputManifest and providersWithSecret and returns a claudie type raw manifest.Manifest type.
@@ -176,7 +177,7 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 					secretNamespaceName := n.Secret.Namespace + "/" + n.Secret.Name
 					return buildSecretError(secretNamespaceName, fmt.Errorf("field %s is not a valid UTF-8 string", v1beta.PRIVATE_KEY))
 				}
-				nodes = append(nodes, manifest.Node{Endpoint: n.Endpoint, Key: string(key)})
+				nodes = append(nodes, manifest.Node{Endpoint: n.Endpoint, Username: n.Username, Key: string(key)})
 			} else {
 				secretNamespaceName := n.Secret.Namespace + "/" + n.Secret.Name
 				return buildSecretError(secretNamespaceName, fmt.Errorf("field %s not found", v1beta.PRIVATE_KEY))

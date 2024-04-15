@@ -2,7 +2,6 @@
 - hosts: {{ .Loadbalancer }}
   gather_facts: no
   become: yes
-  remote_user: root
   tasks:
     - name: Download node_exporter binary to local folder
       get_url:

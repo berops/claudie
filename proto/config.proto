@@ -270,6 +270,8 @@ message Node {
   string public = 3;
   // Type of the node.
   NodeType nodeType = 4;
+  // Username of a user with root privileges. Also used in SSH connection
+  string username = 5;
 }
 
 // Enum used to replace data not present in static nodepools.

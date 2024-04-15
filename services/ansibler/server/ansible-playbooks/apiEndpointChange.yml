@@ -2,7 +2,6 @@
 - hosts: control
   gather_facts: true
   become: true
-  remote_user: root
   tasks:
     - name: stop kubelet
       service:
@@ -81,7 +80,6 @@
 - hosts: compute
   gather_facts: true
   become: true
-  remote_user: root
   tasks:
     - name: stop kubelet
       ansible.builtin.service:

@@ -2,7 +2,6 @@
 - hosts: {{ .Loadbalancer }}
   gather_facts: no
   become: yes
-  remote_user: root
   tasks:
     - name: ensure nginx is at the latest version
       apt:
