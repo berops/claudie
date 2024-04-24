@@ -542,3 +542,4 @@ func generateProviderTemplates(current, desired *pb.ClusterInfo, clusterID, dire
 
 	return nil
 }
+
