@@ -1,17 +1,14 @@
-{{- $clusterName := .ClusterName}}
-{{- $clusterHash := .ClusterHash}}
+{{- $clusterName := .ClusterData.ClusterName}}
+{{- $clusterHash := .ClusterData.ClusterHash}}
 
-{{- if eq $.ClusterType "K8s" }}
-variable "gcp_storage_disk_name" {
-  default = "storage-disk"
-  type    = string
-}
-{{- end }}
+{{- range $_, $nodepool := .NodePools }}
 
-{{- range $i, $nodepool := .NodePools }}
+{{- $region   := $nodepool.NodePool.Region }}
+{{- $specName := $nodepool.NodePool.Provider.SpecName }}
+
 {{- range $node := $nodepool.Nodes }}
-resource "google_compute_instance" "{{ $node.Name }}" {
-  provider                  = google.nodepool_{{ $nodepool.NodePool.Region }}
+resource "google_compute_instance" "{{ $node.Name }}_{{ $region }}_{{ $specName }}" {
+  provider                  = google.nodepool_{{ $region }}_{{ $specName }}
   zone                      = "{{ $nodepool.NodePool.Zone }}"
   name                      = "{{ $node.Name }}"
   machine_type              = "{{ $nodepool.NodePool.ServerType }}"
@@ -19,7 +16,7 @@ resource "google_compute_instance" "{{ $node.Name }}" {
   allow_stopping_for_update = true
 
   network_interface {
-    subnetwork = google_compute_subnetwork.{{ $nodepool.Name }}_subnet.self_link
+    subnetwork = google_compute_subnetwork.{{ $nodepool.Name }}_{{ $clusterName }}_{{ $clusterHash }}_{{ $region }}_{{ $specName }}_subnet.self_link
     access_config {}
   }
 
@@ -32,7 +29,7 @@ resource "google_compute_instance" "{{ $node.Name }}" {
     claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 
-{{- if eq $.ClusterType "LB" }}
+{{- if eq $.ClusterData.ClusterType "LB" }}
   boot_disk {
     initialize_params {
       size = "50"
@@ -42,7 +39,7 @@ resource "google_compute_instance" "{{ $node.Name }}" {
   metadata_startup_script = "echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart"
 {{- end }}
 
-{{- if eq $.ClusterType "K8s" }}
+{{- if eq $.ClusterData.ClusterType "K8s" }}
   boot_disk {
     initialize_params {
       size = "100"
@@ -60,7 +57,7 @@ mkdir -p /opt/claudie/data
     {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
 # Mount managed disk only when not mounted yet
 sleep 50
-disk=$(ls -l /dev/disk/by-id | grep "google-${var.gcp_storage_disk_name}" | awk '{print $NF}')
+disk=$(ls -l /dev/disk/by-id | grep "google-${var.gcp_storage_disk_name_{{ $region }}_{{ $specName }}}" | awk '{print $NF}')
 disk=$(basename "$disk")
 if ! grep -qs "/dev/$disk" /proc/mounts; then
   if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
@@ -83,11 +80,12 @@ EOF
 {{- end }}
 }
 
-{{- if eq $.ClusterType "K8s" }}
+{{- if eq $.ClusterData.ClusterType "K8s" }}
     {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
-resource "google_compute_disk" "{{ $node.Name }}_disk" {
-  provider = google.nodepool_{{ $nodepool.NodePool.Region }}
-  name     = "{{ $node.Name }}-disk"
+resource "google_compute_disk" "{{ $node.Name }}_{{ $region }}_{{ $specName }}_disk" {
+  provider = google.nodepool_{{ $region }}_{{ $specName }}
+  # suffix 'd' as otherwise the creation of the VM instance and attachment of the disk will fail, if having the same name as the node.
+  name     = "{{ $node.Name }}d"
   type     = "pd-ssd"
   zone     = "{{ $nodepool.NodePool.Zone }}"
   size     = {{ $nodepool.NodePool.StorageDiskSize }}
@@ -98,12 +96,12 @@ resource "google_compute_disk" "{{ $node.Name }}_disk" {
   }
 }
 
-resource "google_compute_attached_disk" "{{ $node.Name }}_disk_att" {
-  provider    = google.nodepool_{{ $nodepool.NodePool.Region }}
-  disk        = google_compute_disk.{{ $node.Name }}_disk.id
-  instance    = google_compute_instance.{{ $node.Name }}.id
+resource "google_compute_attached_disk" "{{ $node.Name }}_{{ $region }}_{{ $specName }}_disk_att" {
+  provider    = google.nodepool_{{ $region }}_{{ $specName }}
+  disk        = google_compute_disk.{{ $node.Name }}_{{ $region }}_{{ $specName }}_disk.id
+  instance    = google_compute_instance.{{ $node.Name }}_{{ $region}}_{{ $specName }}.id
   zone        = "{{ $nodepool.NodePool.Zone }}"
-  device_name = var.gcp_storage_disk_name
+  device_name = var.gcp_storage_disk_name_{{ $region }}_{{ $specName }}
 }
     {{- end }}
 {{- end }}
@@ -113,7 +111,7 @@ resource "google_compute_attached_disk" "{{ $node.Name }}_disk_att" {
 output "{{ $nodepool.Name }}" {
   value = {
   {{- range $node := $nodepool.Nodes }}
-    "${google_compute_instance.{{ $node.Name }}.name}" = google_compute_instance.{{ $node.Name }}.network_interface.0.access_config.0.nat_ip
+    "${google_compute_instance.{{ $node.Name }}_{{ $region}}_{{ $specName }}.name}" = google_compute_instance.{{ $node.Name }}_{{ $region }}_{{ $specName }}.network_interface.0.access_config.0.nat_ip
   {{- end }}
   }
 }

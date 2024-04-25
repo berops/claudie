@@ -1,7 +1,7 @@
-{{- $clusterName := .ClusterName}}
-{{- $clusterHash := .ClusterHash}}
+{{- $clusterName := .ClusterData.ClusterName}}
+{{- $clusterHash := .ClusterData.ClusterHash}}
 
-{{- if eq $.ClusterType "K8s" }}
+{{- if eq $.ClusterData.ClusterType "K8s" }}
 variable "oci_storage_disk_name" {
   default = "oraclevdb"
   type    = string
@@ -34,7 +34,7 @@ resource "oci_core_instance" "{{ $node.Name }}" {
     "Claudie-cluster" = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 
-{{- if eq $.ClusterType "LB" }}
+{{- if eq $.ClusterData.ClusterType "LB" }}
   source_details {
     source_id               = "{{ $nodepool.NodePool.Image }}"
     source_type             = "image"
@@ -67,7 +67,7 @@ resource "oci_core_instance" "{{ $node.Name }}" {
   }
 {{- end }}
 
-{{- if eq $.ClusterType "K8s" }}
+{{- if eq $.ClusterData.ClusterType "K8s" }}
   source_details {
     source_id               = "{{ $nodepool.NodePool.Image }}"
     source_type             = "image"
@@ -117,7 +117,7 @@ resource "oci_core_instance" "{{ $node.Name }}" {
 {{- end }}
 }
 
-{{- if eq $.ClusterType "K8s" }}
+{{- if eq $.ClusterData.ClusterType "K8s" }}
     {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
 resource "oci_core_volume" "{{ $node.Name }}_volume" {
   provider            = oci.nodepool_{{ $nodepool.NodePool.Region }}

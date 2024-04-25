@@ -46,7 +46,7 @@ func TestGenerateTf(t *testing.T) {
 	require.NoError(t, err)
 	tpl, err := templateUtils.LoadTemplate(string(file))
 	require.NoError(t, err)
-	err = template.Generate(tpl, "az-acc-net.tf", &NodepoolsData{ClusterName: "test", ClusterHash: "abcdef", NodePools: []NodePoolInfo{{NodePool: testNp.GetDynamicNodePool()}}})
+	err = template.Generate(tpl, "az-acc-net.tf", &NodepoolsData{ClusterData: ClusterData{ClusterName: "test", ClusterHash: "abcdef"}, NodePools: []NodePoolInfo{{NodePool: testNp.GetDynamicNodePool()}}})
 	require.NoError(t, err)
 }
 

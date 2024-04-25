@@ -1,60 +1,48 @@
-{{- $clusterName := .ClusterName }}
-{{- $clusterHash := .ClusterHash }}
+{{- $clusterName := .ClusterData.ClusterName }}
+{{- $clusterHash := .ClusterData.ClusterHash }}
 
-{{- range $i, $region := .Regions }}
-resource "genesiscloud_ssh_key" "claudie_{{ $clusterName }}_{{ $clusterHash }}_{{ $region }}" {
-  provider   = genesiscloud.nodepool_{{ $region }}
-  name       = "{{ $clusterName }}-{{ $clusterHash }}-key"
-  public_key = file("./public.pem")
-}
+{{- range $_, $nodepool := .NodePools }}
 
-data "genesiscloud_images" "base_os_{{ $region }}" {
-  provider   = genesiscloud.nodepool_{{ $region }}
-  filter = {
-    type   = "base-os"
-    region = "{{ $region }}"
-  }
-}
-{{- end }}
+{{- $region   := $nodepool.NodePool.Region }}
+{{- $specName := $nodepool.NodePool.Provider.SpecName }}
 
-{{- range $i, $nodepool := .NodePools }}
-    {{- range $node := $nodepool.Nodes }}
+{{- range $node := $nodepool.Nodes }}
 
-{{- if and (eq $.ClusterType "K8s") (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
-resource "genesiscloud_volume" "{{ $node.Name }}_volume" {
-  provider = genesiscloud.nodepool_{{ $nodepool.NodePool.Region }}
-  name   = "{{ $node.Name }}-volume"
-  region = "{{ $nodepool.NodePool.Region }}"
+{{- if and (eq $.ClusterData.ClusterType "K8s") (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
+resource "genesiscloud_volume" "{{ $node.Name }}_{{ $specName }}_volume" {
+  provider = genesiscloud.nodepool_{{ $region }}_{{ $specName }}
+  name   = "{{ $node.Name }}d"
+  region = "{{ $region }}"
   size   = {{ $nodepool.NodePool.StorageDiskSize}}
   type   = "hdd"
 }
 {{- end }}
 
-resource "genesiscloud_instance" "{{ $node.Name }}" {
-  provider = genesiscloud.nodepool_{{ $nodepool.NodePool.Region }}
+resource "genesiscloud_instance" "{{ $node.Name }}_{{ $specName }}" {
+  provider = genesiscloud.nodepool_{{ $region }}_{{ $specName }}
   name   = "{{ $node.Name }}"
-  region = "{{ $nodepool.NodePool.Region }}"
+  region = "{{ $region }}"
 
-  image_id = data.genesiscloud_images.base_os_{{ $nodepool.NodePool.Region }}.images[index(data.genesiscloud_images.base_os_{{ $nodepool.NodePool.Region }}.images.*.name, "{{ $nodepool.NodePool.Image}}")].id
+  image_id = data.genesiscloud_images.base_os_{{ $region }}_{{ $specName }}.images[index(data.genesiscloud_images.base_os_{{ $region }}_{{ $specName }}.images.*.name, "{{ $nodepool.NodePool.Image}}")].id
   type     = "{{ $nodepool.NodePool.ServerType }}"
 
   public_ip_type = "static"
 
-{{- if and (eq $.ClusterType "K8s") (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
+{{- if and (eq $.ClusterData.ClusterType "K8s") (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
   volume_ids = [
-    genesiscloud_volume.{{ $node.Name }}_volume.id
+    genesiscloud_volume.{{ $node.Name }}_{{ $specName }}_volume.id
   ]
 {{- end }}
 
   ssh_key_ids = [
-    genesiscloud_ssh_key.claudie_{{ $clusterName }}_{{ $clusterHash }}_{{ $nodepool.NodePool.Region }}.id,
+    genesiscloud_ssh_key.claudie_{{ $region }}_{{ $specName }}.id,
   ]
 
   security_group_ids = [
-    genesiscloud_security_group.claudie_security_group_{{ $clusterName }}_{{ $clusterHash}}_{{ $nodepool.NodePool.Region }}.id
+    genesiscloud_security_group.claudie_security_group_{{ $region }}_{{ $specName }}.id
   ]
 
-  {{- if eq $.ClusterType "LB" }}
+  {{- if eq $.ClusterData.ClusterType "LB" }}
   metadata = {
     startup_script = <<EOF
 #!/bin/bash
@@ -65,7 +53,7 @@ EOF
   }
   {{- end }}
 
-  {{- if eq $.ClusterType "K8s" }}
+  {{- if eq $.ClusterData.ClusterType "K8s" }}
   metadata = {
     startup_script = <<EOF
 #!/bin/bash
@@ -102,12 +90,12 @@ EOF
   }
   {{- end }}
 }
-    {{- end }}
+{{- end }}
 
 output "{{ $nodepool.Name }}" {
   value = {
     {{- range $node := $nodepool.Nodes }}
-    "${genesiscloud_instance.{{ $node.Name }}.name}" = genesiscloud_instance.{{ $node.Name }}.public_ip
+    "${genesiscloud_instance.{{ $node.Name }}_{{ $specName }}.name}" = genesiscloud_instance.{{ $node.Name }}_{{ $specName }}.public_ip
     {{- end }}
   }
 }

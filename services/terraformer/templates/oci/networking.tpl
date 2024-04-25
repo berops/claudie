@@ -1,5 +1,5 @@
-{{- $clusterName := .ClusterName}}
-{{- $clusterHash := .ClusterHash}}
+{{- $clusterName := .ClusterData.ClusterName}}
+{{- $clusterHash := .ClusterData.ClusterHash}}
 
 variable "default_compartment_id" {
   type    = string
@@ -59,7 +59,7 @@ resource "oci_core_default_security_list" "claudie_security_rules_{{ $region }}"
     description = "Allow SSH connections"
   }
 
-{{- if eq $.ClusterType "K8s" }}
+{{- if eq $.ClusterData.ClusterType "K8s" }}
   {{- if index $.Metadata "loadBalancers" | targetPorts | isMissing 6443 }}
   ingress_security_rules {
     protocol    = "6"
@@ -73,7 +73,7 @@ resource "oci_core_default_security_list" "claudie_security_rules_{{ $region }}"
   {{- end }}
 {{- end }}
 
-{{- if eq $.ClusterType "LB" }}
+{{- if eq $.ClusterData.ClusterType "LB" }}
   {{- range $role := index $.Metadata "roles"}}
   ingress_security_rules {
     protocol  = "{{ protocolToOCIProtocolNumber $role.Protocol}}"

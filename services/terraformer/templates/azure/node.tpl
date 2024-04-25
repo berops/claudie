@@ -1,15 +1,17 @@
-{{- $clusterName := .ClusterName}}
-{{- $clusterHash := .ClusterHash}}
+{{- $clusterName := .ClusterData.ClusterName }}
+{{- $clusterHash := .ClusterData.ClusterHash }}
 
 {{- range $i, $nodepool := .NodePools }}
 {{- $sanitisedRegion := replaceAll $nodepool.NodePool.Region " " "_"}}
+{{- $specName := $nodepool.NodePool.Provider.SpecName }}
+
 {{- range $node := $nodepool.Nodes }}
 
-resource "azurerm_linux_virtual_machine" "{{ $node.Name }}" {
-  provider              = azurerm.nodepool
+resource "azurerm_linux_virtual_machine" "{{ $node.Name }}_{{ $sanitisedRegion }}_{{ $specName }}" {
+  provider              = azurerm.nodepool_{{ $sanitisedRegion }}_{{ $specName }}
   name                  = "{{ $node.Name }}"
   location              = "{{ $nodepool.NodePool.Region }}"
-  resource_group_name   = azurerm_resource_group.rg_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}.name
+  resource_group_name   = azurerm_resource_group.rg_{{ $specName }}_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}.name
   network_interface_ids = [azurerm_network_interface.{{ $node.Name }}_ni.id]
   size                  = "{{$nodepool.NodePool.ServerType}}"
   zone                  = "{{$nodepool.NodePool.Zone}}"
@@ -35,7 +37,7 @@ resource "azurerm_linux_virtual_machine" "{{ $node.Name }}" {
     claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 
-{{- if eq $.ClusterType "LB" }}
+{{- if eq $.ClusterData.ClusterType "LB" }}
   os_disk {
     name                 = "{{ $node.Name }}-osdisk"
     caching              = "ReadWrite"
@@ -44,7 +46,7 @@ resource "azurerm_linux_virtual_machine" "{{ $node.Name }}" {
   }
 {{- end }}
 
-{{- if eq $.ClusterType "K8s" }}
+{{- if eq $.ClusterData.ClusterType "K8s" }}
   os_disk {
     name                 = "{{ $node.Name }}-osdisk"
     caching              = "ReadWrite"
@@ -54,10 +56,10 @@ resource "azurerm_linux_virtual_machine" "{{ $node.Name }}" {
 {{- end }}
 }
 
-resource "azurerm_virtual_machine_extension" "{{ $node.Name }}_{{ $clusterHash }}_postcreation_script" {
-  provider             = azurerm.nodepool
-  name                 = "{{ $clusterName }}-{{ $clusterHash }}-postcreation-script"
-  virtual_machine_id   = azurerm_linux_virtual_machine.{{ $node.Name }}.id
+resource "azurerm_virtual_machine_extension" "{{ $node.Name }}_{{ $sanitisedRegion }}_{{ $specName }}_postcreation_script" {
+  provider             = azurerm.nodepool_{{ $sanitisedRegion }}_{{ $specName }}
+  name                 = "vm-ext-{{ $node.Name }}"
+  virtual_machine_id   = azurerm_linux_virtual_machine.{{ $node.Name }}_{{ $sanitisedRegion }}_{{ $specName }}.id
   publisher            = "Microsoft.Azure.Extensions"
   type                 = "CustomScript"
   type_handler_version = "2.0"
@@ -67,7 +69,7 @@ resource "azurerm_virtual_machine_extension" "{{ $node.Name }}_{{ $clusterHash }
     claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
   }
 
-{{- if eq $.ClusterType "LB" }}
+{{- if eq $.ClusterData.ClusterType "LB" }}
   protected_settings = <<PROT
   {
       "script": "${base64encode(<<EOF
@@ -82,7 +84,7 @@ resource "azurerm_virtual_machine_extension" "{{ $node.Name }}_{{ $clusterHash }
 PROT
 {{- end }}
 
-{{- if eq $.ClusterType "K8s" }}
+{{- if eq $.ClusterData.ClusterType "K8s" }}
   protected_settings = <<PROT
   {
   "script": "${base64encode(<<EOF
@@ -99,7 +101,7 @@ mkdir -p /opt/claudie/data
     {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
 # Mount managed disk only when not mounted yet
 sleep 50
-disk=$(ls -l /dev/disk/by-path | grep "lun-${azurerm_virtual_machine_data_disk_attachment.{{ $node.Name }}_disk_att.lun}" | awk '{print $NF}')
+disk=$(ls -l /dev/disk/by-path | grep "lun-${azurerm_virtual_machine_data_disk_attachment.{{ $node.Name }}_{{ $sanitisedRegion }}_{{ $specName }}_disk_att.lun}" | awk '{print $NF}')
 disk=$(basename "$disk")
 if ! grep -qs "/dev/$disk" /proc/mounts; then
   if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
@@ -116,14 +118,14 @@ PROT
 {{- end }}
 }
 
-{{- if eq $.ClusterType "K8s" }}
+{{- if eq $.ClusterData.ClusterType "K8s" }}
     {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
-resource "azurerm_managed_disk" "{{ $node.Name }}_disk" {
-  provider             = azurerm.nodepool
-  name                 = "{{ $node.Name }}-disk"
+resource "azurerm_managed_disk" "{{ $node.Name }}_{{ $sanitisedRegion }}_{{ $specName }}_disk" {
+  provider             = azurerm.nodepool_{{ $sanitisedRegion }}_{{ $specName }}
+  name                 = "{{ $node.Name }}d"
   location             = "{{ $nodepool.NodePool.Region }}"
   zone                 = {{ $nodepool.NodePool.Zone }}
-  resource_group_name  = azurerm_resource_group.rg_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}.name
+  resource_group_name  = azurerm_resource_group.rg_{{ $specName }}_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}.name
   storage_account_type = "StandardSSD_LRS"
   create_option        = "Empty"
   disk_size_gb         = {{ $nodepool.NodePool.StorageDiskSize }}
@@ -134,10 +136,10 @@ resource "azurerm_managed_disk" "{{ $node.Name }}_disk" {
   }
 }
 
-resource "azurerm_virtual_machine_data_disk_attachment" "{{ $node.Name }}_disk_att" {
-  provider           = azurerm.nodepool
-  managed_disk_id    = azurerm_managed_disk.{{ $node.Name }}_disk.id
-  virtual_machine_id = azurerm_linux_virtual_machine.{{ $node.Name }}.id
+resource "azurerm_virtual_machine_data_disk_attachment" "{{ $node.Name }}_{{ $sanitisedRegion }}_{{ $specName }}_disk_att" {
+  provider           = azurerm.nodepool_{{ $sanitisedRegion }}_{{ $specName }}
+  managed_disk_id    = azurerm_managed_disk.{{ $node.Name }}_{{ $sanitisedRegion }}_{{ $specName }}_disk.id
+  virtual_machine_id = azurerm_linux_virtual_machine.{{ $node.Name }}_{{ $sanitisedRegion }}_{{ $specName }}.id
   lun                = "1"
   caching            = "ReadWrite"
 }
@@ -149,7 +151,7 @@ resource "azurerm_virtual_machine_data_disk_attachment" "{{ $node.Name }}_disk_a
 output "{{ $nodepool.Name }}" {
   value = {
     {{- range $node := $nodepool.Nodes }}
-    "${azurerm_linux_virtual_machine.{{ $node.Name }}.computer_name}" = azurerm_public_ip.{{ $node.Name }}_public_ip.ip_address
+    "${azurerm_linux_virtual_machine.{{ $node.Name }}_{{ $sanitisedRegion }}_{{ $specName }}.name}" = azurerm_public_ip.{{ $node.Name }}_public_ip.ip_address
     {{- end }}
   }
 }
