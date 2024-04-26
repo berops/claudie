@@ -105,16 +105,7 @@ providers:
 
 nodePools:
   dynamic:
-    - name: hetzner-control
-      providerSpec:
-        name: hetzner-1
-        region: nbg1
-        zone: nbg1-dc3
-      count: 1
-      serverType: cpx11
-      image: ubuntu-22.04
-
-    - name: hetzner-compute
+    - name: htz-compute
       providerSpec:
         name: hetzner-1
         region: nbg1
@@ -137,11 +128,13 @@ nodePools:
     - name: static-pool
       nodes:
         - endpoint: "192.168.52.1"
+          username: root
           privateKey: |
             -----BEGIN RSA PRIVATE KEY-----
             ...... put the private key here .....
             -----END RSA PRIVATE KEY-----
         - endpoint: "192.168.52.2"
+          username: root
           privateKey: |
             -----BEGIN RSA PRIVATE KEY-----
             ...... put the private key here .....
@@ -156,7 +149,7 @@ kubernetes:
         control:
           - static-pool
         compute:
-          - hetzner-compute
+          - htz-compute
 
 loadBalancers:
   roles:

@@ -16,7 +16,7 @@ resource "google_compute_instance" "{{ $node.Name }}_{{ $region }}_{{ $specName 
   allow_stopping_for_update = true
 
   network_interface {
-    subnetwork = google_compute_subnetwork.{{ $nodepool.Name }}_{{ $clusterName }}_{{ $clusterHash }}_{{ $region }}_{{ $specName }}_subnet.self_link
+    subnetwork = google_compute_subnetwork.{{ $nodepool.Name }}_{{ $region }}_{{ $specName }}_subnet.self_link
     access_config {}
   }
 

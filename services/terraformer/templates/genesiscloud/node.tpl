@@ -9,7 +9,7 @@
 {{- range $node := $nodepool.Nodes }}
 
 {{- if and (eq $.ClusterData.ClusterType "K8s") (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
-resource "genesiscloud_volume" "{{ $node.Name }}_{{ $specName }}_volume" {
+resource "genesiscloud_volume" "{{ $node.Name }}_{{ $region }}_{{ $specName }}_volume" {
   provider = genesiscloud.nodepool_{{ $region }}_{{ $specName }}
   name   = "{{ $node.Name }}d"
   region = "{{ $region }}"
@@ -18,7 +18,7 @@ resource "genesiscloud_volume" "{{ $node.Name }}_{{ $specName }}_volume" {
 }
 {{- end }}
 
-resource "genesiscloud_instance" "{{ $node.Name }}_{{ $specName }}" {
+resource "genesiscloud_instance" "{{ $node.Name }}_{{ $region }}_{{ $specName }}" {
   provider = genesiscloud.nodepool_{{ $region }}_{{ $specName }}
   name   = "{{ $node.Name }}"
   region = "{{ $region }}"
@@ -30,7 +30,7 @@ resource "genesiscloud_instance" "{{ $node.Name }}_{{ $specName }}" {
 
 {{- if and (eq $.ClusterData.ClusterType "K8s") (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
   volume_ids = [
-    genesiscloud_volume.{{ $node.Name }}_{{ $specName }}_volume.id
+    genesiscloud_volume.{{ $node.Name }}_{{ $region }}_{{ $specName }}_volume.id
   ]
 {{- end }}
 
@@ -95,7 +95,7 @@ EOF
 output "{{ $nodepool.Name }}" {
   value = {
     {{- range $node := $nodepool.Nodes }}
-    "${genesiscloud_instance.{{ $node.Name }}_{{ $specName }}.name}" = genesiscloud_instance.{{ $node.Name }}_{{ $specName }}.public_ip
+    "${genesiscloud_instance.{{ $node.Name }}_{{ $region }}_{{ $specName }}.name}" = genesiscloud_instance.{{ $node.Name }}_{{ $region }}_{{ $specName }}.public_ip
     {{- end }}
   }
 }

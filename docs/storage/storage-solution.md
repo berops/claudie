@@ -50,7 +50,7 @@ spec:
 
   nodePools:
     dynamic:
-        - name: control-nodepool
+        - name: control
           providerSpec:
             name: compute-provider
             region: hel1
@@ -59,7 +59,7 @@ spec:
           serverType: cpx21
           image: ubuntu-22.04
 
-        - name: datastore-nodepool
+        - name: datastore
           providerSpec:
             name: storage-provider
             region: hel1
@@ -73,7 +73,7 @@ spec:
               value: datastore
               effect: NoSchedule
   
-        - name: compute-nodepool
+        - name: compute
           providerSpec:
             name: compute-provider
             region: hel1
@@ -86,7 +86,7 @@ spec:
               value: compute
               effect: NoSchedule
 
-        - name: loadbalancer-nodepool
+        - name: loadbalancer
           providerSpec:
             name: compute-provider
             region: hel1
@@ -102,10 +102,10 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - control-nodepool
+            - control
           compute:
-            - datastore-nodepool
-            - compute-nodepool
+            - datastore
+            - compute
 
   loadBalancers:
     roles:
@@ -114,7 +114,7 @@ spec:
         port: 6443
         targetPort: 6443
         targetPools: 
-          - control-nodepool
+          - control
 
     clusters:
       - name: apiserver-lb
@@ -125,7 +125,7 @@ spec:
           provider: dns-provider
         targetedK8s: my-awesome-claudie-cluster
         pools:
-          - loadbalancer-nodepool
+          - loadbalancer
 ```
 
 When Claudie applies this input manifest, the following storage classes are installed:

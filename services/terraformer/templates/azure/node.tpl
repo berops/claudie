@@ -11,7 +11,7 @@ resource "azurerm_linux_virtual_machine" "{{ $node.Name }}_{{ $sanitisedRegion }
   provider              = azurerm.nodepool_{{ $sanitisedRegion }}_{{ $specName }}
   name                  = "{{ $node.Name }}"
   location              = "{{ $nodepool.NodePool.Region }}"
-  resource_group_name   = azurerm_resource_group.rg_{{ $specName }}_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}.name
+  resource_group_name   = azurerm_resource_group.rg_{{ $sanitisedRegion }}_{{ $specName }}.name
   network_interface_ids = [azurerm_network_interface.{{ $node.Name }}_ni.id]
   size                  = "{{$nodepool.NodePool.ServerType}}"
   zone                  = "{{$nodepool.NodePool.Zone}}"
@@ -125,7 +125,7 @@ resource "azurerm_managed_disk" "{{ $node.Name }}_{{ $sanitisedRegion }}_{{ $spe
   name                 = "{{ $node.Name }}d"
   location             = "{{ $nodepool.NodePool.Region }}"
   zone                 = {{ $nodepool.NodePool.Zone }}
-  resource_group_name  = azurerm_resource_group.rg_{{ $specName }}_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}.name
+  resource_group_name  = azurerm_resource_group.rg_{{ $sanitisedRegion }}_{{ $specName }}.name
   storage_account_type = "StandardSSD_LRS"
   create_option        = "Empty"
   disk_size_gb         = {{ $nodepool.NodePool.StorageDiskSize }}

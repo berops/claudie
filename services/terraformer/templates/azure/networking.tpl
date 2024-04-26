@@ -5,7 +5,7 @@
 {{- $sanitisedRegion := replaceAll $region " " "_"}}
 {{- $specName := $.Provider.SpecName }}
 
-resource "azurerm_resource_group" "rg_{{ $specName }}_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}" {
+resource "azurerm_resource_group" "rg_{{ $sanitisedRegion }}_{{ $specName }}" {
   provider = azurerm.nodepool_{{ $sanitisedRegion }}_{{ $specName }}
   name     = "rg-{{ $clusterHash }}-{{ $sanitisedRegion }}-{{ $specName }}"
   location = "{{ $region }}"
@@ -16,12 +16,12 @@ resource "azurerm_resource_group" "rg_{{ $specName }}_{{ $sanitisedRegion }}_{{ 
   }
 }
 
-resource "azurerm_virtual_network" "claudie_vn_{{ $specName }}_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}" {
+resource "azurerm_virtual_network" "claudie_vn_{{ $sanitisedRegion }}_{{ $specName }}" {
   provider            = azurerm.nodepool_{{ $sanitisedRegion }}_{{ $specName }}
   name                = "vn-{{ $clusterHash }}-{{ $sanitisedRegion }}-{{ $specName }}"
   address_space       = ["10.0.0.0/16"]
   location            = "{{ $region }}"
-  resource_group_name = azurerm_resource_group.rg_{{ $specName }}_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}.name
+  resource_group_name = azurerm_resource_group.rg_{{ $sanitisedRegion }}_{{ $specName }}.name
 
   tags = {
     managed-by      = "Claudie"
@@ -29,11 +29,11 @@ resource "azurerm_virtual_network" "claudie_vn_{{ $specName }}_{{ $sanitisedRegi
   }
 }
 
-resource "azurerm_network_security_group" "claudie_nsg_{{ $specName }}_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}" {
+resource "azurerm_network_security_group" "claudie_nsg_{{ $sanitisedRegion }}_{{ $specName }}" {
   provider            = azurerm.nodepool_{{ $sanitisedRegion }}_{{ $specName }}
   name                = "nsg-{{ $clusterHash }}-{{ $sanitisedRegion }}-{{ $specName }}"
   location            = "{{ $region }}"
-  resource_group_name = azurerm_resource_group.rg_{{ $specName }}_{{ $sanitisedRegion }}_{{ $clusterName }}_{{ $clusterHash }}.name
+  resource_group_name = azurerm_resource_group.rg_{{ $sanitisedRegion }}_{{ $specName }}.name
 
   security_rule {
     name                       = "SSH"

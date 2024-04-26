@@ -1,18 +1,15 @@
 {{- $clusterName := .ClusterData.ClusterName}}
 {{- $clusterHash := .ClusterData.ClusterHash}}
 
-{{- if eq $.ClusterData.ClusterType "K8s" }}
-variable "oci_storage_disk_name" {
-  default = "oraclevdb"
-  type    = string
-}
-{{- end }}
-
 {{- range $i, $nodepool := .NodePools }}
+
+{{- $region   := $nodepool.NodePool.Region }}
+{{- $specName := $nodepool.NodePool.Provider.SpecName }}
+
 {{- range $node := $nodepool.Nodes }}
-resource "oci_core_instance" "{{ $node.Name }}" {
-  provider            = oci.nodepool_{{ $nodepool.NodePool.Region }}
-  compartment_id      = var.default_compartment_id
+resource "oci_core_instance" "{{ $node.Name }}_{{ $region }}_{{ $specName }}" {
+  provider            = oci.nodepool_{{ $region }}_{{ $specName }}
+  compartment_id      = var.default_compartment_id_{{ $region }}_{{ $specName }}
   availability_domain = "{{ $nodepool.NodePool.Zone }}"
   shape               = "{{ $nodepool.NodePool.ServerType }}"
   display_name        = "{{ $node.Name }}"
@@ -26,7 +23,7 @@ resource "oci_core_instance" "{{ $node.Name }}" {
 
   create_vnic_details {
     assign_public_ip  = true
-    subnet_id         = oci_core_subnet.{{ $nodepool.Name }}_subnet.id
+    subnet_id         = oci_core_subnet.{{ $nodepool.Name }}_{{ $region }}_{{ $specName }}_subnet.id
   }
 
   freeform_tags = {
@@ -101,7 +98,7 @@ resource "oci_core_instance" "{{ $node.Name }}" {
         # Mount volume
         - |
           sleep 50
-          disk=$(ls -l /dev/oracleoci | grep "${var.oci_storage_disk_name}" | awk '{print $NF}')
+          disk=$(ls -l /dev/oracleoci | grep "${var.oci_storage_disk_name_{{ $region }}_{{ $specName }}}" | awk '{print $NF}')
           disk=$(basename "$disk")
           if ! grep -qs "/dev/$disk" /proc/mounts; then
             if ! blkid /dev/$disk | grep -q "TYPE=\"xfs\""; then
@@ -119,12 +116,12 @@ resource "oci_core_instance" "{{ $node.Name }}" {
 
 {{- if eq $.ClusterData.ClusterType "K8s" }}
     {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
-resource "oci_core_volume" "{{ $node.Name }}_volume" {
-  provider            = oci.nodepool_{{ $nodepool.NodePool.Region }}
-  compartment_id      = var.default_compartment_id
+resource "oci_core_volume" "{{ $node.Name }}_{{ $region }}_{{ $specName }}_volume" {
+  provider            = oci.nodepool_{{ $region }}_{{ $specName }}
+  compartment_id      = var.default_compartment_id_{{ $region }}_{{ $specName }}
   availability_domain = "{{ $nodepool.NodePool.Zone }}"
   size_in_gbs         = "{{ $nodepool.NodePool.StorageDiskSize }}"
-  display_name        = "{{ $node.Name }}-volume"
+  display_name        = "{{ $node.Name }}d"
   vpus_per_gb         = 10
 
   freeform_tags = {
@@ -133,13 +130,13 @@ resource "oci_core_volume" "{{ $node.Name }}_volume" {
   }
 }
 
-resource "oci_core_volume_attachment" "{{ $node.Name }}_volume_att" {
-  provider        = oci.nodepool_{{ $nodepool.NodePool.Region }}
+resource "oci_core_volume_attachment" "{{ $node.Name }}_{{ $region }}_{{ $specName }}_volume_att" {
+  provider        = oci.nodepool_{{ $region }}_{{ $specName }}
   attachment_type = "paravirtualized"
-  instance_id     = oci_core_instance.{{ $node.Name }}.id
-  volume_id       = oci_core_volume.{{ $node.Name }}_volume.id
-  display_name    = "{{ $node.Name }}-volume-att"
-  device          = "/dev/oracleoci/${var.oci_storage_disk_name}"
+  instance_id     = oci_core_instance.{{ $node.Name }}_{{ $region }}_{{ $specName }}.id
+  volume_id       = oci_core_volume.{{ $node.Name }}_{{ $region }}_{{ $specName }}_volume.id
+  display_name    = "att-{{ $node.Name }}"
+  device          = "/dev/oracleoci/${var.oci_storage_disk_name_{{ $region }}_{{ $specName }}}"
 }
     {{- end }}
 {{- end }}
@@ -149,7 +146,7 @@ resource "oci_core_volume_attachment" "{{ $node.Name }}_volume_att" {
 output "{{ $nodepool.Name }}" {
   value = {
   {{- range $node := $nodepool.Nodes }}
-    "${oci_core_instance.{{ $node.Name }}.display_name}" = oci_core_instance.{{ $node.Name }}.public_ip
+    "${oci_core_instance.{{ $node.Name }}_{{ $region }}_{{ $specName }}.display_name}" = oci_core_instance.{{ $node.Name }}_{{ $region }}_{{ $specName }}.public_ip
   {{- end }}
   }
 }

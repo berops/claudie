@@ -15,7 +15,7 @@ resource "aws_instance" "{{ $node.Name }}_{{ $region }}_{{ $specName }}" {
 
   associate_public_ip_address = true
   key_name               = aws_key_pair.claudie_pair_{{ $region }}_{{ $specName }}.key_name
-  subnet_id              = aws_subnet.{{ $nodepool.Name }}_{{ $clusterName }}_{{ $clusterHash }}_{{ $region }}_{{ $specName }}_subnet.id
+  subnet_id              = aws_subnet.{{ $nodepool.Name }}_{{ $region }}_{{ $specName }}_subnet.id
   vpc_security_group_ids = [aws_security_group.claudie_sg_{{ $region }}_{{ $specName }}.id]
 
   tags = {

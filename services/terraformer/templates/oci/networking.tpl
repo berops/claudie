@@ -1,16 +1,25 @@
 {{- $clusterName := .ClusterData.ClusterName}}
 {{- $clusterHash := .ClusterData.ClusterHash}}
 
-variable "default_compartment_id" {
+{{- range $_, $region := .Regions }}
+{{- $specName := $.Provider.SpecName }}
+
+{{- if eq $.ClusterData.ClusterType "K8s" }}
+variable "oci_storage_disk_name_{{ $region }}_{{ $specName }}" {
+  default = "oraclevdb"
   type    = string
-  default = "{{ (index .NodePools 0).NodePool.Provider.OciCompartmentOcid }}"
+}
+{{- end }}
+
+variable "default_compartment_id_{{ $region }}_{{ $specName }}" {
+  type    = string
+  default = "{{ $.Provider.OciCompartmentOcid }}"
 }
 
-{{- range $i, $region := .Regions }}
-resource "oci_core_vcn" "claudie_vcn-{{ $region }}" {
-  provider        = oci.nodepool_{{ $region }}
-  compartment_id  = var.default_compartment_id
-  display_name    = "{{ $clusterName }}-{{ $clusterHash }}-vcn"
+resource "oci_core_vcn" "claudie_vcn_{{ $region }}_{{ $specName }}" {
+  provider        = oci.nodepool_{{ $region }}_{{ $specName }}
+  compartment_id  = var.default_compartment_id_{{ $region }}_{{ $specName }}
+  display_name    = "vcn-{{ $clusterHash }}-{{ $region }}-{{ $specName }}"
   cidr_blocks     = ["10.0.0.0/16"]
 
   freeform_tags = {
@@ -19,11 +28,11 @@ resource "oci_core_vcn" "claudie_vcn-{{ $region }}" {
   }
 }
 
-resource "oci_core_internet_gateway" "claudie_gateway_{{ $region }}" {
-  provider        = oci.nodepool_{{ $region }}
-  compartment_id  = var.default_compartment_id
-  display_name    = "{{ $clusterName }}-{{ $clusterHash }}-gateway"
-  vcn_id          = oci_core_vcn.claudie_vcn-{{ $region }}.id
+resource "oci_core_internet_gateway" "claudie_gateway_{{ $region }}_{{ $specName }}" {
+  provider        = oci.nodepool_{{ $region }}_{{ $specName }}
+  compartment_id  = var.default_compartment_id_{{ $region }}_{{ $specName }}
+  display_name    = "gtw-{{ $clusterHash }}-{{ $region }}-{{ $specName }}"
+  vcn_id          = oci_core_vcn.claudie_vcn_{{ $region }}_{{ $specName }}.id
   enabled         = true
 
   freeform_tags = {
@@ -32,10 +41,10 @@ resource "oci_core_internet_gateway" "claudie_gateway_{{ $region }}" {
   }
 }
 
-resource "oci_core_default_security_list" "claudie_security_rules_{{ $region }}" {
-  provider                    = oci.nodepool_{{ $region }}
-  manage_default_resource_id  = oci_core_vcn.claudie_vcn-{{ $region }}.default_security_list_id
-  display_name                = "{{ $clusterName }}-{{ $clusterHash }}_security_rules"
+resource "oci_core_default_security_list" "claudie_security_rules_{{ $region }}_{{ $specName }}" {
+  provider                    = oci.nodepool_{{ $region }}_{{ $specName }}
+  manage_default_resource_id  = oci_core_vcn.claudie_vcn_{{ $region }}_{{ $specName }}.default_security_list_id
+  display_name                = "sl-{{ $clusterHash }}-{{ $region }}-{{ $specName }}"
 
   egress_security_rules {
     destination = "0.0.0.0/0"
@@ -103,13 +112,13 @@ resource "oci_core_default_security_list" "claudie_security_rules_{{ $region }}"
   }
 }
 
-resource "oci_core_default_route_table" "claudie_routes_{{ $region }}" {
-  provider                    = oci.nodepool_{{ $region }}
-  manage_default_resource_id  = oci_core_vcn.claudie_vcn-{{ $region }}.default_route_table_id
+resource "oci_core_default_route_table" "claudie_routes_{{ $region }}_{{ $specName }}" {
+  provider                    = oci.nodepool_{{ $region }}_{{ $specName }}
+  manage_default_resource_id  = oci_core_vcn.claudie_vcn_{{ $region }}_{{ $specName }}.default_route_table_id
 
   route_rules {
     destination       = "0.0.0.0/0"
-    network_entity_id = oci_core_internet_gateway.claudie_gateway_{{ $region }}.id
+    network_entity_id = oci_core_internet_gateway.claudie_gateway_{{ $region }}_{{ $specName }}.id
     destination_type  = "CIDR_BLOCK"
   }
 
@@ -120,21 +129,3 @@ resource "oci_core_default_route_table" "claudie_routes_{{ $region }}" {
 }
 {{- end }}
 
-{{- range $i, $nodepool := .NodePools }}
-resource "oci_core_subnet" "{{ $nodepool.Name }}_subnet" {
-  provider            = oci.nodepool_{{ $nodepool.NodePool.Region }}
-  vcn_id              = oci_core_vcn.claudie_vcn-{{ $nodepool.NodePool.Region }}.id
-  cidr_block          = "{{ index $.Metadata (printf "%s-subnet-cidr" $nodepool.Name)  }}"
-  compartment_id      = var.default_compartment_id
-  display_name        = "{{ $clusterName }}-{{ $clusterHash }}-subnet"
-  security_list_ids   = [oci_core_vcn.claudie_vcn-{{ $nodepool.NodePool.Region }}.default_security_list_id]
-  route_table_id      = oci_core_vcn.claudie_vcn-{{ $nodepool.NodePool.Region }}.default_route_table_id
-  dhcp_options_id     = oci_core_vcn.claudie_vcn-{{ $nodepool.NodePool.Region }}.default_dhcp_options_id
-  availability_domain = "{{ $nodepool.NodePool.Zone }}"
-
-  freeform_tags = {
-    "Managed-by"      = "Claudie"
-    "Claudie-cluster" = "{{ $clusterName }}-{{ $clusterHash }}"
-  }
-}
-{{- end }}

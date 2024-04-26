@@ -4,7 +4,7 @@
 {{- range $_, $nodepool := .NodePools }}
 {{- $region   := $nodepool.NodePool.Region }}
 {{- $specName := $nodepool.NodePool.Provider.SpecName }}
-resource "google_compute_subnetwork" "{{ $nodepool.Name }}_{{ $clusterName}}_{{ $clusterHash }}_{{ $region }}_{{ $specName }}_subnet" {
+resource "google_compute_subnetwork" "{{ $nodepool.Name }}_{{ $region }}_{{ $specName }}_subnet" {
   provider      = google.nodepool_{{ $region }}_{{ $specName }}
   name          = "snt-{{ $clusterHash }}-{{ $region }}-{{ $nodepool.Name }}"
   network       = google_compute_network.network_{{ $region }}_{{ $specName }}.self_link

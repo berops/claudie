@@ -70,7 +70,7 @@ spec:
 
   nodePools:
     dynamic:
-      - name: control-hetzner
+      - name: control-htz
         providerSpec:
           # Name of the provider instance.
           name: hetzner-1
@@ -84,7 +84,7 @@ spec:
         # OS image name.
         image: ubuntu-22.04
 
-      - name: compute-1-hetzner
+      - name: compute-1-htz
         providerSpec:
           # Name of the provider instance.
           name: hetzner-1
@@ -99,7 +99,7 @@ spec:
         image: ubuntu-22.04
         storageDiskSize: 50
 
-      - name: compute-2-hetzner
+      - name: compute-2-htz
         providerSpec:
           # Name of the provider instance.
           name: hetzner-1
@@ -121,10 +121,10 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - control-hetzner
+            - control-htz
           compute:
-            - compute-1-hetzner
-            - compute-2-hetzner
+            - compute-1-htz
+            - compute-2-htz
 ```
 
 ### Multi provider, multi region clusters example
@@ -158,7 +158,7 @@ spec:
 
   nodePools:
     dynamic:
-      - name: control-hetzner-1
+      - name: control-htz-1
         providerSpec:
           # Name of the provider instance.
           name: hetzner-1
@@ -172,7 +172,7 @@ spec:
         # OS image name.
         image: ubuntu-22.04
 
-      - name: control-hetzner-2
+      - name: control-htz-2
         providerSpec:
           # Name of the provider instance.
           name: hetzner-2
@@ -186,7 +186,7 @@ spec:
         # OS image name.
         image: ubuntu-22.04
 
-      - name: compute-hetzner-1
+      - name: compute-htz-1
         providerSpec:
           # Name of the provider instance.
           name: hetzner-1
@@ -201,7 +201,7 @@ spec:
         image: ubuntu-22.04
         storageDiskSize: 50
 
-      - name: compute-hetzner-2
+      - name: compute-htz-2
         providerSpec:
           # Name of the provider instance.
           name: hetzner-2
@@ -223,9 +223,9 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - control-hetzner-1
-            - control-hetzner-2
+            - control-htz-1
+            - control-htz-2
           compute:
-            - compute-hetzner-1
-            - compute-hetzner-2
+            - compute-htz-1
+            - compute-htz-2
 ```
