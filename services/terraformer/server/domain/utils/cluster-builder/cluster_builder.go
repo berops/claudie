@@ -412,7 +412,7 @@ func readIPs(data string) (outputNodepools, error) {
 
 // getUniqueNodeName returns new node name, which is guaranteed to be unique, based on the provided existing names.
 func getUniqueNodeName(nodepoolID string, existingNames map[string]struct{}) string {
-	index := uint8(0)
+	index := uint8(1)
 	for {
 		candidate := fmt.Sprintf("%s-%02x", nodepoolID, index)
 		if _, ok := existingNames[candidate]; !ok {
