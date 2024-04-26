@@ -326,16 +326,18 @@ jobs:
               fi
           done
 
+      - name: Start the E2E tests
+        working-directory: ./manifests
+        run: |
+          NAME_HASH="testing-framework-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}" ./yq e -i '(select(.kind == "ClusterRoleBinding").metadata.name = strenv(NAME_HASH))' ./testing-framework/testing-framework.yaml 
+
+          kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+          kustomize build . | kubectl apply -f -
+
           #Clean up
           rm -f yq 
           rm -f yq.1 
           rm -f install-man-page.sh
-
-      - name: Start the E2E tests
-        working-directory: ./manifests
-        run: |
-          kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
-          kustomize build . | kubectl apply -f -
 
       - name: Monitor E2E test
         run: |
