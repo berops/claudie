@@ -4,16 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/berops/claudie/internal/utils/metrics"
+	"github.com/berops/claudie/services/ansibler/server/domain/usecases"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	grpc2 "google.golang.org/grpc"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-
-	"github.com/berops/claudie/internal/utils/metrics"
-	"github.com/berops/claudie/services/ansibler/server/domain/usecases"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	grpc2 "google.golang.org/grpc"
 
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
@@ -86,5 +85,3 @@ func main() {
 
 	log.Info().Msgf("Stopping ansibler microservice: %v", errGroup.Wait())
 }
-
-// just to trigger CI run
