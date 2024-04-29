@@ -326,18 +326,24 @@ jobs:
               fi
           done
 
+          #Clean up
+          rm -f yq 
+          rm -f yq.1 
+          rm -f install-man-page.sh
+
       - name: Start the E2E tests
         working-directory: ./manifests
         run: |
+          sudo apt update && sudo apt install -y wget tar
+          wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
+          tar xz && mv yq_linux_amd64 yq
+
           NAME_HASH="testing-framework-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}" ./yq e -i '(select(.kind == "ClusterRoleBinding").metadata.name = strenv(NAME_HASH))' ./testing-framework/testing-framework.yaml 
 
           kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
           kustomize build . | kubectl apply -f -
 
-          #Clean up
           rm -f yq 
-          rm -f yq.1 
-          rm -f install-man-page.sh
 
       - name: Monitor E2E test
         run: |
