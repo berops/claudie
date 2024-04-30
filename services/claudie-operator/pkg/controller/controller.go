@@ -130,8 +130,15 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				for _, np := range rawManifest.NodePools.Dynamic {
 					if pName, exist := npNameProvider[np.Name]; exist && pName != np.ProviderSpec.Name {
 						// nodepool exists and user changed the cloud provider
-						return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR},
-							fmt.Errorf("Changing cloud provider for an existing nodepool %s is forbidden", np.Name)
+						cErrMsg := fmt.Errorf("Changing cloud provider for an existing nodepool %s is forbidden", np.Name)
+						r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", cErrMsg.Error())
+						inputManifest.SetUpdateResourceStatus(v1beta.InputManifestStatus{
+							State: v1beta.STATUS_ERROR,
+						})
+						if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
+							return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
+						}
+						return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, cErrMsg
 					}
 				}
 			}
