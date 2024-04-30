@@ -104,10 +104,11 @@ func (l *Longhorn) SetUp() error {
 			if !np.IsControl {
 				isWorkerNodeProvider = true
 				for _, node := range np.GetNodes() {
+					nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", utils.GetClusterID(l.Cluster.ClusterInfo)))
 					annotation := fmt.Sprintf("node.longhorn.io/default-node-tags='[\"%s\"]'", zoneName)
-					realNodeName := utils.FindName(realNodeNames, node.Name)
+					realNodeName := utils.FindName(realNodeNames, nodeName)
 					if realNodeName == "" {
-						log.Warn().Str("cluster", utils.GetClusterID(l.Cluster.ClusterInfo)).Msgf("Node %s was not found in cluster %v", node.Name, realNodeNames)
+						log.Warn().Str("cluster", utils.GetClusterID(l.Cluster.ClusterInfo)).Msgf("Node %s was not found in cluster %v", nodeName, realNodeNames)
 						continue
 					}
 					// Add tag to the node via kubectl annotate, use --overwrite to avoid getting error of already tagged node
