@@ -16,6 +16,7 @@ type KuberPort interface {
 	SetUpClusterAutoscaler(builderCtx *utils.BuilderContext, kuberGrpcClient pb.KuberServiceClient) error
 	DestroyClusterAutoscaler(builderCtx *utils.BuilderContext, kuberGrpcClient pb.KuberServiceClient) error
 	PatchClusterInfoConfigMap(builderCtx *utils.BuilderContext, kuberGrpcClient pb.KuberServiceClient) error
+	PatchKubeProxyConfigMap(builderCtx *utils.BuilderContext, kuberGrpcClient pb.KuberServiceClient) error
 	PatchNodes(builderCtx *utils.BuilderContext, kuberGrpcClient pb.KuberServiceClient) error
 	DeleteNodes(cluster *pb.K8Scluster, masterNodes, workerNodes []string, kuberGrpcClient pb.KuberServiceClient) (*pb.DeleteNodesResponse, error)
 	CiliumRolloutRestart(cluster *pb.K8Scluster, kuberGrpcClient pb.KuberServiceClient) error
