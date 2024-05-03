@@ -44,7 +44,7 @@ func (u *Usecases) PatchKubeProxyConfigMap(ctx context.Context, request *pb.Patc
 		return nil, fmt.Errorf("failed to extract cluster data from kubeconfing of desired state")
 	}
 
-	if err := getKubeconfigServerEndpoint(rawConfigMap, desiredCluster["server"]); err != nil {
+	if err := updateKubeconfigServerEndpoint(rawConfigMap, desiredCluster["server"]); err != nil {
 		return nil, fmt.Errorf("failed to patch kube-proxy kubeconfig: %w", err)
 	}
 
@@ -88,7 +88,7 @@ func extractClusterFromKubeconfig(root map[string]any) (map[string]any, error) {
 	return clusterData, nil
 }
 
-func getKubeconfigServerEndpoint(root map[string]any, val any) error {
+func updateKubeconfigServerEndpoint(root map[string]any, val any) error {
 	data, ok := root["data"].(map[string]any)
 	if !ok {
 		return errors.New("expected 'data' field to be a map[string]any")
