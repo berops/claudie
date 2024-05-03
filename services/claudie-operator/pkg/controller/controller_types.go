@@ -76,6 +76,6 @@ func New(kclient client.Client,
 func (r *InputManifestReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta.InputManifest{}).
-		WatchesRawSource(&source.Channel{Source: r.Usecases.SaveAutoscalerEvent, DestBufferSize: 1024}, &handler.EnqueueRequestForObject{}).
+		WatchesRawSource(source.Channel(r.Usecases.SaveAutoscalerEvent, &handler.EnqueueRequestForObject{})).
 		Complete(r)
 }

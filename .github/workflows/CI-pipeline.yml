@@ -230,7 +230,7 @@ jobs:
         run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
 
       - name: Install kubectl
-        uses: azure/setup-kubectl@v3.2
+        uses: azure/setup-kubectl@v4
         with:
           version: latest
 
@@ -240,7 +240,7 @@ jobs:
           kustomize-version: 4.5.6
 
       - name: Set e2e kubeconfig
-        uses: azure/k8s-set-context@v3.1
+        uses: azure/k8s-set-context@v4
         with:
           kubeconfig: ${{ secrets.E2E_CLUSTER_KUBECONFIG }}
 
