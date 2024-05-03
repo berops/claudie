@@ -21,15 +21,6 @@ import (
 func (u *Usecases) PatchClusterInfoConfigMap(request *pb.PatchClusterInfoConfigMapRequest) (*pb.PatchClusterInfoConfigMapResponse, error) {
 	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(request.DesiredCluster.ClusterInfo))
 	logger.Info().Msgf("Patching cluster info ConfigMap")
-	var err error
-	// Log error if any
-	defer func() {
-		if err != nil {
-			logger.Err(err).Msgf("Error while patching cluster-info Config Map")
-		} else {
-			logger.Info().Msgf("Cluster-info Config Map patched successfully")
-		}
-	}()
 
 	k := kubectl.Kubectl{
 		Kubeconfig: request.DesiredCluster.Kubeconfig,
@@ -48,12 +39,12 @@ func (u *Usecases) PatchClusterInfoConfigMap(request *pb.PatchClusterInfoConfigM
 	configMapKubeconfig := gjson.Get(string(configMap), "data.kubeconfig")
 
 	var rawKubeconfig map[string]interface{}
-	if err = yaml.Unmarshal([]byte(request.DesiredCluster.Kubeconfig), &rawKubeconfig); err != nil {
+	if err := yaml.Unmarshal([]byte(request.DesiredCluster.Kubeconfig), &rawKubeconfig); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal kubeconfig, malformed yaml : %w", err)
 	}
 
 	var rawConfigMapKubeconfig map[string]interface{}
-	if err = yaml.Unmarshal([]byte(configMapKubeconfig.String()), &rawConfigMapKubeconfig); err != nil {
+	if err := yaml.Unmarshal([]byte(configMapKubeconfig.String()), &rawConfigMapKubeconfig); err != nil {
 		return nil, fmt.Errorf("failed to update cluster info config map, malformed yaml : %w", err)
 	}
 
@@ -90,5 +81,6 @@ func (u *Usecases) PatchClusterInfoConfigMap(request *pb.PatchClusterInfoConfigM
 		return nil, fmt.Errorf("failed to patch config map: %w", err)
 	}
 
+	logger.Info().Msgf("Cluster-info Config Map patched successfully")
 	return &pb.PatchClusterInfoConfigMapResponse{}, nil
 }
