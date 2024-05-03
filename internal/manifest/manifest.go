@@ -24,17 +24,17 @@ type Provider struct {
 }
 
 type HetznerDNS struct {
-	Name     string `validate:"required" yaml:"name"`
+	Name     string `validate:"required,max=15" yaml:"name"`
 	ApiToken string `validate:"required" yaml:"apiToken"`
 }
 
 type Cloudflare struct {
-	Name     string `validate:"required" yaml:"name"`
+	Name     string `validate:"required,max=15" yaml:"name"`
 	ApiToken string `validate:"required" yaml:"apiToken"`
 }
 
 type GCP struct {
-	Name string `validate:"required" yaml:"name"`
+	Name string `validate:"required,max=15" yaml:"name"`
 	// We can only validate that the supplied string is a
 	// valid formatted JSON.
 	Credentials string `validate:"required,json" yaml:"credentials" json:"credentials"`
@@ -42,7 +42,7 @@ type GCP struct {
 }
 
 type Hetzner struct {
-	Name string `validate:"required" yaml:"name"`
+	Name string `validate:"required,max=15" yaml:"name"`
 
 	// We can only validate the length of the token
 	// as Hetzner doesn't specify the structure of the token,
@@ -53,17 +53,17 @@ type Hetzner struct {
 }
 
 type GenesisCloud struct {
-	Name     string `validate:"required" yaml:"name"`
+	Name     string `validate:"required,max=15" yaml:"name"`
 	ApiToken string `validate:"required,alphanum" yaml:"apiToken"`
 }
 
 type AWS struct {
-	Name      string `validate:"required" yaml:"name" json:"name"`
+	Name      string `validate:"required,max=15" yaml:"name" json:"name"`
 	AccessKey string `validate:"required,alphanum,len=20" yaml:"accessKey" json:"accessKey"`
 	SecretKey string `validate:"required,len=40" yaml:"secretKey" json:"secretKey"`
 }
 type OCI struct {
-	Name           string `validate:"required" yaml:"name"`
+	Name           string `validate:"required,max=15" yaml:"name"`
 	PrivateKey     string `validate:"required" yaml:"privateKey"`
 	KeyFingerprint string `validate:"required" yaml:"keyFingerprint"`
 	TenancyOCID    string `validate:"required" yaml:"tenancyOcid"`
@@ -72,7 +72,7 @@ type OCI struct {
 }
 
 type Azure struct {
-	Name           string `validate:"required" yaml:"name"`
+	Name           string `validate:"required,max=15" yaml:"name"`
 	SubscriptionId string `validate:"required" yaml:"subscriptionId"`
 	TenantId       string `validate:"required" yaml:"tenantId"`
 	ClientId       string `validate:"required" yaml:"clientId"`
@@ -122,7 +122,7 @@ type MachineSpec struct {
 // that would get instantiated N >= 0 times depending on which clusters reference it.
 type DynamicNodePool struct {
 	// Name of the nodepool. Each nodepool will have a random hash appended to the name, so the whole name will be of format <name>-<hash>.
-	Name string `validate:"required" yaml:"name" json:"name"`
+	Name string `validate:"required,max=14" yaml:"name" json:"name"`
 	// Collection of provider data to be used while creating the nodepool.
 	ProviderSpec ProviderSpec `validate:"required" yaml:"providerSpec" json:"providerSpec"`
 	// Number of the nodes in the nodepool. Mutually exclusive with autoscaler.
@@ -175,7 +175,7 @@ type ProviderSpec struct {
 // StaticNodePool List of static nodepools of already existing machines, not created by Claudie, used for Kubernetes or loadbalancer clusters.
 type StaticNodePool struct {
 	// Name of the static nodepool.
-	Name string `validate:"required" yaml:"name" json:"name"`
+	Name string `validate:"required,max=14" yaml:"name" json:"name"`
 	// List of static nodes assigned to a particular nodepool.
 	Nodes []Node `validate:"dive" yaml:"nodes" json:"nodes"`
 	// User defined labels for this nodepool.
@@ -202,7 +202,7 @@ type Node struct {
 // Collection of data used to define a Kubernetes cluster.
 type Cluster struct {
 	// Name of the Kubernetes cluster. Each cluster will have a random hash appended to the name, so the whole name will be of format <name>-<hash>.
-	Name string `validate:"required" yaml:"name" json:"name"`
+	Name string `validate:"required,max=28" yaml:"name" json:"name"`
 	// Version should be defined in format vX.Y. In terms of supported versions of Kubernetes,
 	// Claudie follows kubeone releases and their supported versions.
 	// The current kubeone version used in Claudie is 1.5.
@@ -242,7 +242,7 @@ type Role struct {
 // Collection of data used to define a loadbalancer cluster. Defines loadbalancer clusters.
 type LoadBalancerCluster struct {
 	// Name of the loadbalancer.
-	Name string `validate:"required" yaml:"name" json:"name"`
+	Name string `validate:"required,max=28" yaml:"name" json:"name"`
 	// List of roles the loadbalancer uses.
 	Roles []string `yaml:"roles" json:"roles"`
 	// Specification of the loadbalancer's DNS record.

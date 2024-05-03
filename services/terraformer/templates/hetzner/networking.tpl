@@ -1,8 +1,22 @@
-{{- $clusterName := .ClusterName}}
-{{- $clusterHash := .ClusterHash}}
-resource "hcloud_firewall" "firewall" {
-  provider = hcloud.nodepool
-  name     = "{{ $clusterName }}-{{ $clusterHash }}-firewall"
+{{- $clusterName := .ClusterData.ClusterName }}
+{{- $clusterHash := .ClusterData.ClusterHash }}
+
+{{- $specName := $.Provider.SpecName }}
+
+resource "hcloud_ssh_key" "claudie_{{ $specName }}" {
+  provider   = hcloud.nodepool_{{ $specName }}
+  name       = "key-{{ $clusterHash }}-{{ $specName }}"
+  public_key = file("./public.pem")
+
+  labels = {
+    "managed-by"      : "Claudie"
+    "claudie-cluster" : "{{ $clusterName }}-{{ $clusterHash }}"
+  }
+}
+
+resource "hcloud_firewall" "firewall_{{ $specName }}" {
+  provider = hcloud.nodepool_{{ $specName }}
+  name     = "fwl-{{ $clusterHash }}-{{ $specName }}"
   rule {
     direction  = "in"
     protocol   = "icmp"
@@ -32,7 +46,7 @@ resource "hcloud_firewall" "firewall" {
     ]
   }
 
-{{- if eq $.ClusterType "LB" }}
+{{- if eq $.ClusterData.ClusterType "LB" }}
   {{- range $role := index $.Metadata "roles" }}
   rule {
     direction  = "in"
@@ -46,7 +60,7 @@ resource "hcloud_firewall" "firewall" {
   {{- end }}
 {{- end }}
 
-{{- if eq $.ClusterType "K8s" }}
+{{- if eq $.ClusterData.ClusterType "K8s" }}
   {{- if index $.Metadata "loadBalancers" | targetPorts | isMissing 6443 }}
   rule {
     direction  = "in"

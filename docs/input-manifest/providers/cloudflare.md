@@ -80,7 +80,7 @@ spec:
   kubernetes:
     clusters:
       - name: cluster
-        version: v1.24.0
+        version: v1.27.0
         network: 192.168.2.0/24
         pools:
           control: []
@@ -103,6 +103,6 @@ spec:
           hostname: my.fancy.url
         targetedK8s: prod-cluster
         pools:
-          - loadbalancer-2
+          - loadbalancer
 
 ```

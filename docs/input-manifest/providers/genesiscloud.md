@@ -45,7 +45,7 @@ spec:
 
   nodePools:
     dynamic:
-      - name: control-genesiscloud
+      - name: control
         providerSpec:
           name: genesiscloud
           region: ARC-IS-HAF-1
@@ -54,7 +54,7 @@ spec:
         image: "Ubuntu 22.04"
         storageDiskSize: 50
 
-      - name: compute-genesiscloud
+      - name: compute
         providerSpec:
           name: genesiscloud
           region: ARC-IS-HAF-1
@@ -70,7 +70,7 @@ spec:
         network: 172.16.2.0/24
         pools:
           control:
-            - control-genesiscloud
+            - control
           compute:
-            - compute-genesiscloud
+            - compute
 ```

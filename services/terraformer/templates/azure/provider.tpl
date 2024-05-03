@@ -1,8 +1,11 @@
+{{- range $_, $region := .Regions }}
+{{- $sanitisedRegion := replaceAll $region " " "_"}}
 provider "azurerm" {
   features {}
-  subscription_id = "{{ (index $.NodePools 0).NodePool.Provider.AzureSubscriptionId }}"
-  tenant_id       = "{{ (index $.NodePools 0).NodePool.Provider.AzureTenantId }}"
-  client_id       = "{{ (index $.NodePools 0).NodePool.Provider.AzureClientId }}"
-  client_secret   = file("{{ (index $.NodePools 0).NodePool.Provider.SpecName }}")
-  alias           = "nodepool"
+  subscription_id = "{{ $.Provider.AzureSubscriptionId }}"
+  tenant_id       = "{{ $.Provider.AzureTenantId }}"
+  client_id       = "{{ $.Provider.AzureClientId }}"
+  client_secret   = file("{{ $.Provider.SpecName }}")
+  alias           = "nodepool_{{ $sanitisedRegion }}_{{ $.Provider.SpecName }}"
 }
+{{- end}}

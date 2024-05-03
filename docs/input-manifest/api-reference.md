@@ -33,7 +33,7 @@ needs to be defined.
 
 - `name`
 
-  The name of the provider specification. It has to be unique across all providers.
+  The name of the provider specification. The name is limited to 15 characters. It has to be unique across all providers.
 
 - `providerType`
 
@@ -199,7 +199,7 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
 - `name`
 
-  Name of the nodepool. Each nodepool will have a random hash appended to the name, so the whole name will be of format `<name>-<hash>`.
+  Name of the nodepool. The name is limited by 14 characters. Each nodepool will have a random hash appended to the name, so the whole name will be of format `<name>-<hash>`.
 
 - `provideSpec` [Provider spec](#provider-spec)
 
@@ -207,7 +207,7 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
 - `count`
 
-  Number of the nodes in the nodepool. Mutually exclusive with `autoscaler`.
+  Number of the nodes in the nodepool. Maximum value of 255.  Mutually exclusive with `autoscaler`.
 
 - `serverType`
   
@@ -294,7 +294,7 @@ Static nodepools are defined for static machines which Claudie will not manage. 
 
 - `name`
 
-  Name of the static nodepool.
+  Name of the static nodepool. The name is limited  by 14 characters.
 
 - `nodes` [Static Node](#static-node)
 
@@ -361,7 +361,7 @@ Collection of data used to define a Kubernetes cluster.
 
 - `name`
 
-  Name of the Kubernetes cluster. Each cluster will have a random hash appended to the name, so the whole name will be of format `<name>-<hash>`.
+  Name of the Kubernetes cluster. The name is limited by 28 characters. Each cluster will have a random hash appended to the name, so the whole name will be of format `<name>-<hash>`.
 
 - `version`
 
@@ -435,7 +435,7 @@ Collection of data used to define a loadbalancer cluster.
 
 - `name`
 
-  Name of the loadbalancer.
+  Name of the loadbalancer. The name is limited by 28 characters.
 
 - `roles`
   

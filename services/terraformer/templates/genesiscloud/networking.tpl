@@ -1,10 +1,26 @@
-{{- $clusterName := .ClusterName }}
-{{- $clusterHash := .ClusterHash }}
+{{- $clusterName := .ClusterData.ClusterName }}
+{{- $clusterHash := .ClusterData.ClusterHash }}
 
-{{- range $i, $region := .Regions }}
-resource "genesiscloud_security_group" "claudie_security_group_{{ $clusterName }}_{{ $clusterHash}}_{{ $region }}" {
-  provider = genesiscloud.nodepool_{{ $region }}
-  name   = "{{ $clusterName }}-{{ $clusterHash }}-security-group"
+{{- range $_, $region := .Regions }}
+{{- $specName := $.Provider.SpecName }}
+
+resource "genesiscloud_ssh_key" "claudie_{{ $region }}_{{ $specName }}" {
+  provider   = genesiscloud.nodepool_{{ $region }}_{{ $specName }}
+  name       = "key-{{ $clusterHash }}-{{ $region }}-{{ $specName }}"
+  public_key = file("./public.pem")
+}
+
+data "genesiscloud_images" "base_os_{{ $region }}_{{ $specName }}" {
+  provider   = genesiscloud.nodepool_{{ $region }}_{{ $specName }}
+  filter = {
+    type   = "base-os"
+    region = "{{ $region }}"
+  }
+}
+
+resource "genesiscloud_security_group" "claudie_security_group_{{ $region }}_{{ $specName }}" {
+  provider = genesiscloud.nodepool_{{ $region }}_{{ $specName }}
+  name   = "sg-{{ $clusterHash }}-{{ $region }}-{{ $specName }}"
   region = "{{ $region }}"
   rules = [
     {
@@ -19,7 +35,7 @@ resource "genesiscloud_security_group" "claudie_security_group_{{ $clusterName }
       port_range_min = 51820
       port_range_max = 51820
     },
-{{- if eq $.ClusterType "LB" }}
+{{- if eq $.ClusterData.ClusterType "LB" }}
     {{- range $role := index $.Metadata "roles" }}
     {
       direction      = "ingress"
@@ -29,7 +45,7 @@ resource "genesiscloud_security_group" "claudie_security_group_{{ $clusterName }
     },
     {{- end }}
 {{- end }}
-{{- if eq $.ClusterType "K8s" }}
+{{- if eq $.ClusterData.ClusterType "K8s" }}
     {{- if index $.Metadata "loadBalancers" | targetPorts | isMissing 6443 }}
      {
        direction      = "ingress"
