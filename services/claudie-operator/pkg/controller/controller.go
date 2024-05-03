@@ -120,26 +120,24 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				configInDesiredState = utils.Equal(config.CsChecksum, config.DsChecksum)
 			}
 
-			if !configInDesiredState {
-				// guard against changing the cloud provider in an existing nodepool
-				npNameProvider, err := getDynamicNodepoolsMap(config)
-				if err != nil {
-					return ctrl.Result{}, err
-				}
+			// guard against changing the cloud provider in an existing nodepool
+			npNameProvider, err := getDynamicNodepoolsMap(config)
+			if err != nil {
+				return ctrl.Result{}, err
+			}
 
-				for _, np := range rawManifest.NodePools.Dynamic {
-					if pName, exist := npNameProvider[np.Name]; exist && pName != np.ProviderSpec.Name {
-						// nodepool exists and user changed the cloud provider
-						cErrMsg := fmt.Errorf("Changing cloud provider for an existing nodepool %s is forbidden", np.Name)
-						r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", cErrMsg.Error())
-						inputManifest.SetUpdateResourceStatus(v1beta.InputManifestStatus{
-							State: v1beta.STATUS_ERROR,
-						})
-						if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
-							return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
-						}
-						return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, cErrMsg
+			for _, np := range rawManifest.NodePools.Dynamic {
+				if pName, exist := npNameProvider[np.Name]; exist && pName != np.ProviderSpec.Name {
+					// nodepool exists and user changed the cloud provider
+					cErrMsg := fmt.Errorf("Changing cloud provider for an existing nodepool %s is forbidden", np.Name)
+					r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", cErrMsg.Error())
+					inputManifest.SetUpdateResourceStatus(v1beta.InputManifestStatus{
+						State: v1beta.STATUS_ERROR,
+					})
+					if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
+						return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 					}
+					return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, cErrMsg
 				}
 			}
 
