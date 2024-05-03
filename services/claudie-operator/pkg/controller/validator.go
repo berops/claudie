@@ -69,8 +69,13 @@ func (v *InputManifestValidator) ValidateDelete(ctx context.Context, obj runtime
 // It doesn't validate .spec.Providers field.
 func validateInputManifest(im *v1beta.InputManifest) error {
 	var rawManifest manifest.Manifest
+	validateUniqueProviders := make(map[string]bool)
 	// Fill providers only with names, to check if they are defined
 	for _, p := range im.Spec.Providers {
+		if _, exists := validateUniqueProviders[p.ProviderName]; exists {
+			return fmt.Errorf("spec.providers.name has to be unique")
+		}
+		validateUniqueProviders[p.ProviderName] = true
 		switch p.ProviderType {
 		case v1beta.GCP:
 			rawManifest.Providers.GCP = append(rawManifest.Providers.GCP, manifest.GCP{Name: p.ProviderName})

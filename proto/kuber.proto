@@ -4,12 +4,8 @@ import "proto/config.proto";
 
 option go_package = "proto/pb";
 
-message SetUpStorageRequest {
-  K8scluster desiredCluster = 1;
-}
-message SetUpStorageResponse {
-  K8scluster desiredCluster = 1;
-}
+message SetUpStorageRequest { K8scluster desiredCluster = 1; }
+message SetUpStorageResponse { K8scluster desiredCluster = 1; }
 
 message StoreKubeconfigRequest {
   K8scluster cluster = 1;
@@ -18,9 +14,7 @@ message StoreKubeconfigRequest {
 
 message StoreKubeconfigResponse {}
 
-message DeleteKubeconfigRequest {
-  K8scluster cluster = 1;
-}
+message DeleteKubeconfigRequest { K8scluster cluster = 1; }
 
 message DeleteKubeconfigResponse {}
 
@@ -30,9 +24,7 @@ message DeleteNodesRequest {
   repeated string masterNodes = 3;
 }
 
-message DeleteNodesResponse {
-  K8scluster cluster = 1;
-}
+message DeleteNodesResponse { K8scluster cluster = 1; }
 
 message StoreClusterMetadataRequest {
   K8scluster cluster = 1;
@@ -49,77 +41,95 @@ message StoreLBScrapeConfigRequest {
 
 message StoreLBScrapeConfigResponse {}
 
-message RemoveLBScrapeConfigRequest {
-  K8scluster cluster = 1;
-}
+message RemoveLBScrapeConfigRequest { K8scluster cluster = 1; }
 
 message RemoveLBScrapeConfigResponse {}
 
-message DeleteClusterMetadataRequest {
-  K8scluster cluster = 1;
-}
+message DeleteClusterMetadataRequest { K8scluster cluster = 1; }
 
 message DeleteClusterMetadataResponse {}
 
-message PatchNodesRequest {
-  K8scluster cluster = 1;
-}
+message PatchNodesRequest { K8scluster cluster = 1; }
 
 message PatchNodesResponse {}
 
-message SetUpClusterAutoscalerRequest{
+message SetUpClusterAutoscalerRequest {
   string projectName = 1;
   K8scluster cluster = 2;
 }
 
 message SetUpClusterAutoscalerResponse {}
 
-message DestroyClusterAutoscalerRequest{
+message DestroyClusterAutoscalerRequest {
   string projectName = 1;
   K8scluster cluster = 2;
 }
 
 message DestroyClusterAutoscalerResponse {}
 
-message PatchClusterInfoConfigMapRequest {
-  K8scluster desiredCluster = 1;
-}
+message PatchClusterInfoConfigMapRequest { K8scluster desiredCluster = 1; }
 
 message PatchClusterInfoConfigMapResponse {}
 
-message CiliumRolloutRestartRequest{
-  K8scluster cluster = 1;
-}
+message CiliumRolloutRestartRequest { K8scluster cluster = 1; }
 
-message CiliumRolloutRestartResponse{}
+message CiliumRolloutRestartResponse {}
+
+message PatchKubeProxyConfigMapRequest { K8scluster desiredCluster = 1; }
+message PatchKubeProxyConfigMapResponse {}
 
 service KuberService {
-  // RemoveLBScrapeConfig removes scrape config for every LB detached from this cluster.
-  rpc RemoveLBScrapeConfig(RemoveLBScrapeConfigRequest) returns (RemoveLBScrapeConfigResponse);
-  // StoreLBScrapeConfig stores scrape config for every LB attached to this cluster.
-  rpc StoreLBScrapeConfig(StoreLBScrapeConfigRequest) returns (StoreLBScrapeConfigResponse);
-  // StoreClusterMetadata creates a secret, which holds the private key and a list of public IP addresses of the cluster supplied.
-  rpc StoreClusterMetadata(StoreClusterMetadataRequest) returns (StoreClusterMetadataResponse);
-  // DeleteClusterMetadata deletes the secret holding the private key and public IP addresses of the cluster supplied.
-  rpc DeleteClusterMetadata(DeleteClusterMetadataRequest) returns (DeleteClusterMetadataResponse);
+  // RemoveLBScrapeConfig removes scrape config for every LB detached from this
+  // cluster.
+  rpc RemoveLBScrapeConfig(RemoveLBScrapeConfigRequest)
+      returns (RemoveLBScrapeConfigResponse);
+  // StoreLBScrapeConfig stores scrape config for every LB attached to this
+  // cluster.
+  rpc StoreLBScrapeConfig(StoreLBScrapeConfigRequest)
+      returns (StoreLBScrapeConfigResponse);
+  // StoreClusterMetadata creates a secret, which holds the private key and a
+  // list of public IP addresses of the cluster supplied.
+  rpc StoreClusterMetadata(StoreClusterMetadataRequest)
+      returns (StoreClusterMetadataResponse);
+  // DeleteClusterMetadata deletes the secret holding the private key and public
+  // IP addresses of the cluster supplied.
+  rpc DeleteClusterMetadata(DeleteClusterMetadataRequest)
+      returns (DeleteClusterMetadataResponse);
   // SetUpStorage installs Longhorn into the cluster.
   rpc SetUpStorage(SetUpStorageRequest) returns (SetUpStorageResponse);
-  // StoreKubeconfig creates a secret, which holds the kubeconfig of a Claudie-created cluster.
+  // StoreKubeconfig creates a secret, which holds the kubeconfig of a
+  // Claudie-created cluster.
   rpc StoreKubeconfig(StoreKubeconfigRequest) returns (StoreKubeconfigResponse);
-  // DeleteKubeconfig removes the secret that holds the kubeconfig of a Claudie-created cluster.
-  rpc DeleteKubeconfig(DeleteKubeconfigRequest) returns (DeleteKubeconfigResponse);
+  // DeleteKubeconfig removes the secret that holds the kubeconfig of a
+  // Claudie-created cluster.
+  rpc DeleteKubeconfig(DeleteKubeconfigRequest)
+      returns (DeleteKubeconfigResponse);
   // DeleteNodes deletes the specified nodes from a k8s cluster.
   rpc DeleteNodes(DeleteNodesRequest) returns (DeleteNodesResponse);
-  // PatchNodes applies attributes like providerID, labels or taints to the nodes.
+  // PatchNodes applies attributes like providerID, labels or taints to the
+  // nodes.
   rpc PatchNodes(PatchNodesRequest) returns (PatchNodesResponse);
-  // SetUpClusterAutoscaler deploys Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
-  rpc SetUpClusterAutoscaler(SetUpClusterAutoscalerRequest) returns (SetUpClusterAutoscalerResponse);
-  // DestroyClusterAutoscaler deletes Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
-  rpc DestroyClusterAutoscaler(DestroyClusterAutoscalerRequest) returns (DestroyClusterAutoscalerResponse);
-  // PatchClusterInfoConfigMap updates the cluster-info config map in the kube-public namespace with the the
-  // kubeconfig. This needs to be done after an api endpoint change as the config map in the kube-public namespace
-  // is used by kubeadm when joining.
-  rpc PatchClusterInfoConfigMap(PatchClusterInfoConfigMapRequest) returns (PatchClusterInfoConfigMapResponse);
+  // SetUpClusterAutoscaler deploys Cluster Autoscaler and Autoscaler Adapter
+  // for every cluster specified.
+  rpc SetUpClusterAutoscaler(SetUpClusterAutoscalerRequest)
+      returns (SetUpClusterAutoscalerResponse);
+  // DestroyClusterAutoscaler deletes Cluster Autoscaler and Autoscaler Adapter
+  // for every cluster specified.
+  rpc DestroyClusterAutoscaler(DestroyClusterAutoscalerRequest)
+      returns (DestroyClusterAutoscalerResponse);
+  // PatchClusterInfoConfigMap updates the cluster-info config map in the
+  // kube-public namespace with the the kubeconfig. This needs to be done after
+  // an api endpoint change as the config map in the kube-public namespace is
+  // used by kubeadm when joining.
+  rpc PatchClusterInfoConfigMap(PatchClusterInfoConfigMapRequest)
+      returns (PatchClusterInfoConfigMapResponse);
+  // PatchCubeProxyConfigMap updates the kube-proxy config map with the value of
+  // the server: from the passed in kubeconfig and subsequently restarts all
+  // kube-proxy pods in the kube-system namespace. This change needs to be done
+  // after a endpoint change is performed.
+  rpc PatchKubeProxyConfigMap(PatchKubeProxyConfigMapRequest)
+      returns (PatchKubeProxyConfigMapResponse);
   // CiliumRolloutRestart performs a rollout restart of the cilium daemonset.
-  rpc CiliumRolloutRestart(CiliumRolloutRestartRequest) returns (CiliumRolloutRestartResponse);
+  rpc CiliumRolloutRestart(CiliumRolloutRestartRequest)
+      returns (CiliumRolloutRestartResponse);
 }

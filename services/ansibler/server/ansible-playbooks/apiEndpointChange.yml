@@ -77,6 +77,12 @@
         - "kubelet"
         - "containerd"
 
+    - name: restart controller
+      shell: "crictl pods | grep kube-controller-manager | awk '{print $1}' | xargs -I {} sh -c 'crictl stopp {} && crictl rmp {}'"
+
+    - name: restart scheduler
+      shell: "crictl pods | grep kube-scheduler | awk '{print $1}' | xargs -I {} sh -c 'crictl stopp {} && crictl rmp {}'"
+
 - hosts: compute
   gather_facts: true
   become: true

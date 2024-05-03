@@ -21,10 +21,12 @@ func (u *Usecases) reconcileK8sConfiguration(ctx *utils.BuilderContext, cboxClie
 		return err
 	}
 
-	// Only patch cluster-info ConfigMap if kubeconfig changed.
+	// Only patch ConfigMaps if kubeconfig changed.
 	if ctx.CurrentCluster != nil && (ctx.CurrentCluster.Kubeconfig != ctx.DesiredCluster.Kubeconfig) {
-		// Set new description.
 		if err := u.callPatchClusterInfoConfigMap(ctx, cboxClient); err != nil {
+			return err
+		}
+		if err := u.Kuber.PatchKubeProxyConfigMap(ctx, kuberClient); err != nil {
 			return err
 		}
 	}

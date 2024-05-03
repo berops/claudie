@@ -1,7 +1,7 @@
 .PHONY: proto contextbox scheduler builder terraformer ansibler kubeEleven test database minio containerimgs crd crd-apply controller-gen kind-load-images
 
 # Enforce same version of protoc 
-PROTOC_VERSION = "25.1"
+PROTOC_VERSION = "26.1"
 CURRENT_VERSION = $$(protoc --version | awk '{print $$2}')
 # Generate all .proto files 
 proto:

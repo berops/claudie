@@ -2,8 +2,6 @@ package utils
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/berops/claudie/proto/pb"
 )
 
@@ -130,10 +128,10 @@ func GroupNodepoolsByProviderRegion(clusterInfo *pb.ClusterInfo) map[string][]*p
 }
 
 // FindName will return a real node name based on the user defined one
-// example: name defined in cloud provider: gcp-cluster-jkshbdc-gcp-control-1 -> name defined in cluster : gcp-control-1
+// example: name defined in cloud provider: gcp-control-1 -> name defined in cluster : gcp-control-1
 func FindName(realNames []string, name string) string {
 	for _, n := range realNames {
-		if strings.Contains(name, n) {
+		if name == n {
 			return n
 		}
 	}
