@@ -33,7 +33,7 @@ needs to be defined.
 
 - `name`
 
-  The name of the provider specification. It has to be unique across all providers.
+  The name of the provider specification. The name is limited to 15 characters. It has to be unique across all providers.
 
 - `providerType`
 
