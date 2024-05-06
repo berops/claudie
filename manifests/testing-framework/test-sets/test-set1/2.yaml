@@ -68,7 +68,7 @@ spec:
         annotations:
           claudie.io/example-annotation: > 
               ["test-set1-new"]
-      - name: gcp-control
+      - name: gcp-ctrl-nodes
         providerSpec:
           name: gcp-1
           region: europe-west2
@@ -81,7 +81,7 @@ spec:
         annotations:
           claudie.io/example-annotation: > 
               ["test-set1-new"]
-      - name: gcp-compute
+      - name: gcp-cmpt-nodes
         providerSpec:
           name: gcp-1
           region: europe-west1
@@ -96,7 +96,7 @@ spec:
           claudie.io/example-annotation: > 
               ["test-set1-new"]
 
-      - name: oci-control
+      - name: oci-ctrl-nodes
         providerSpec:
           name: oci-1
           region: eu-frankfurt-1
@@ -106,7 +106,7 @@ spec:
         # ubuntu minimal
         # https://docs.oracle.com/en-us/iaas/images/image/674d0b41-aee8-4c0b-bf99-9e100d90f241/
         image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
-      - name: oci-compute
+      - name: oci-cmpt-nodes
         providerSpec:
           name: oci-1
           region: eu-frankfurt-1
@@ -118,7 +118,7 @@ spec:
         image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
         storageDiskSize: 50
 
-      - name: aws-control
+      - name: aws-ctrl-nodes
         providerSpec:
           name: aws-1
           region: eu-north-1
@@ -131,7 +131,7 @@ spec:
           - key: test
             value: test
             effect: NoSchedule
-      - name: aws-compute
+      - name: aws-cmpt-nodes
         providerSpec:
           name: aws-2
           region: eu-west-3
@@ -142,7 +142,7 @@ spec:
         image: ami-03c476a1ca8e3ebdc
         storageDiskSize: 50
 
-      - name: azure-control
+      - name: azr-ctrl-nodes
         providerSpec:
           name: azure-2
           region: West Europe
@@ -159,7 +159,7 @@ spec:
         annotations:
           claudie.io/example-annotation: > 
               ["test-set1-new"]
-      - name: azure-compute
+      - name: azr-cmpt-nodes
         providerSpec:
           name: azure-1
           region: Germany West Central
@@ -189,30 +189,30 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - gcp-control
+            - gcp-ctrl-nodes
           compute:
-            - gcp-compute
+            - gcp-cmpt-nodes
       - name: ts1-oci-cluster-test-set-no1
         version: v1.26.13
         network: 192.168.2.0/24
         pools:
           control:
-            - oci-control
+            - oci-ctrl-nodes
           compute:
-            - oci-compute
+            - oci-cmpt-nodes
       - name: ts1-aws-cluster-test-set-no1
         version: v1.26.13
         network: 192.168.2.0/24
         pools:
           control:
-            - aws-control
+            - aws-ctrl-nodes
           compute:
-            - aws-compute
+            - aws-cmpt-nodes
       - name: ts1-azr-cluster-test-set-no1
         version: v1.26.13
         network: 192.168.2.0/24
         pools:
           control:
-            - azure-control
+            - azr-ctrl-nodes
           compute:
-            - azure-compute
+            - azr-ctrl-nodes
