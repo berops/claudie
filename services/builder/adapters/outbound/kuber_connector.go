@@ -136,6 +136,12 @@ func (k *KuberConnector) CiliumRolloutRestart(cluster *pb.K8Scluster, kuberGrpcC
 		})
 }
 
+func (k *KuberConnector) PatchKubeProxyConfigMap(builderCtx *utils.BuilderContext, kuberGrpcClient pb.KuberServiceClient) error {
+	return kuber.PatchKubeProxyConfigMap(kuberGrpcClient, &pb.PatchKubeProxyConfigMapRequest{
+		DesiredCluster: builderCtx.DesiredCluster,
+	})
+}
+
 // Disconnect closes the underlying gRPC connection to kuber microservice.
 func (k *KuberConnector) Disconnect() {
 	cutils.CloseClientConnection(k.Connection)

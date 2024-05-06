@@ -94,7 +94,7 @@ spec:
     #
     # Example definitions for each provider
     dynamic:
-      - name: control-hetzner
+      - name: control-htz
         providerSpec:
           name: hetzner-1
           region: hel1
@@ -112,7 +112,7 @@ spec:
             value: finland
             effect: NoSchedule
 
-      - name: compute-hetzner
+      - name: compute-htz
         providerSpec:
           name: hetzner-1
           region: hel1
@@ -127,7 +127,7 @@ spec:
         annotations:
           node.longhorn.io/default-node-tags: '["finland"]'
 
-      - name: compute-hetzner-autoscaled
+      - name: htz-autoscaled
         providerSpec:
           name: hetzner-1
           region: hel1
@@ -295,8 +295,8 @@ spec:
         annotations:
           node.longhorn.io/default-node-tags: '["datacenter-1"]'   
         taints:
-          key: datacenter
-          effect: NoExecute
+          - key: datacenter
+            effect: NoExecute
             
 
   # Kubernetes field is used to define the kubernetes clusters.
@@ -318,25 +318,26 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - control-hetzner
+            - control-htz
             - control-gcp
           compute:
-            - compute-hetzner
+            - compute-htz
             - compute-gcp
             - compute-azure
+            - htz-autoscaled
 
       - name: prod-cluster
         version: v1.26.13
         network: 192.168.2.0/24
         pools:
           control:
-            - control-hetzner
+            - control-htz
             - control-gcp
             - control-oci
             - control-aws
             - control-azure
           compute:
-            - compute-hetzner
+            - compute-htz
             - compute-gcp
             - compute-oci
             - compute-aws
@@ -349,7 +350,7 @@ spec:
           control:
             - datacenter-1
           compute:
-            - compute-hetzner
+            - compute-htz
             - compute-gcp
             - compute-azure
 
@@ -383,7 +384,7 @@ spec:
         port: 6443
         targetPort: 6443
         targetPools:
-            - k8s-control-gcp # make sure that this nodepools is acutally used by the targeted `dev-cluster` cluster.
+            - control-htz # make sure that this nodepools is acutally used by the targeted `dev-cluster` cluster.
     clusters:
       - name: apiserver-lb-dev
         roles:

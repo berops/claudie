@@ -139,7 +139,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
             namespace: mynamespace    
       nodePools:
         dynamic:
-          - name: aws-controlplane
+          - name: aws-control
             providerSpec:
                 name: aws-1
                 region: eu-central-1
@@ -156,7 +156,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
             serverType: t3.medium
             image: ami-03df6dea56f8aa618
             storageDiskSize: 200
-          - name: aws-loadbalancer
+          - name: aws-lb
             providerSpec:
                 name: aws-1
                 region: eu-central-2
@@ -167,11 +167,11 @@ This detailed guide for Claudie serves as a resource for providing an overview o
       kubernetes:
         clusters:
           - name: my-super-cluster
-            version: v1.24.0
+            version: v1.27.0
             network: 192.168.2.0/24
             pools:
                 control:
-                - aws-controlplane
+                - aws-control
                 compute:
                 - aws-worker
       loadBalancers:
@@ -181,7 +181,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
             port: 6443
             targetPort: 6443
             targetPools:
-                - aws-controlplane
+                - aws-control
         clusters:
           - name: loadbalance-me
             roles:
@@ -192,7 +192,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
                 hostname: supercluster # the sub domain of the new cluster
             targetedK8s: my-super-cluster
             pools:
-                - aws-loadbalancer
+                - aws-lb
     ```
 
     !!! note "Tip!"
@@ -354,7 +354,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
             network: 192.168.2.0/24
             pools:
                 control:
-                - aws-controlplane
+                - aws-control
                 compute:
                 - aws-worker
                 - hetzner-worker  # add it to the compute list here
@@ -388,8 +388,8 @@ This detailed guide for Claudie serves as a resource for providing an overview o
             protocol: tcp
             port: 6443
             targetPort: 6443
-            targetPools: # only loadbalances for port 6443 for the aws-controlplane nodepool
-                - aws-controlplane
+            targetPools: # only loadbalances for port 6443 for the aws-control nodepool
+                - aws-control
           - name: https
             protocol: tcp
             port: 443
@@ -408,7 +408,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
                 hostname: supercluster
             targetedK8s: my-super-cluster
             pools:
-                - aws-loadbalancer
+                - aws-lb
     ```
     !!! note Load balancing
         Please refer how our load balancing works by reading our [documentation](https://docs.claudie.io/latest/loadbalancing/loadbalancing-solution/).

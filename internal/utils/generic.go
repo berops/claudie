@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"cmp"
 	"golang.org/x/exp/constraints"
 	"slices"
 )
@@ -16,7 +17,9 @@ func IterateInOrder[M ~map[K]V, K inorder, V any](m M, f func(k K, v V) error) e
 		keys = append(keys, k)
 	}
 
-	slices.Sort(keys)
+	slices.SortStableFunc(keys, func(first, second K) int {
+		return cmp.Compare(first, second)
+	})
 
 	for _, k := range keys {
 		if err := f(k, m[k]); err != nil {

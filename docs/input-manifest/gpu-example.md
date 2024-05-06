@@ -22,7 +22,7 @@ spec:
 
   nodePools:
     dynamic:
-    - name: genesiscloud-cpu
+    - name: gencloud-cpu
       providerSpec:
         name: genesiscloud
         region: ARC-IS-HAF-1
@@ -31,7 +31,7 @@ spec:
       image: "Ubuntu 22.04"
       storageDiskSize: 50
 
-    - name: genesiscloud-gpu
+    - name: gencloud-gpu
       providerSpec:
         name: genesiscloud
         region: ARC-IS-HAF-1
@@ -47,9 +47,9 @@ spec:
         network: 172.16.2.0/24
         pools:
           control:
-            - genesiscloud-cpu
+            - gencloud-cpu
           compute:
-            - genesiscloud-gpu
+            - gencloud-gpu
 ```
 
 After the `InputManifest` was successfully build by claudie, we deploy the `gpu-operator` to the `gpu-examepl`kubernetes cluster.

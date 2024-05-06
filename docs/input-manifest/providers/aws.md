@@ -161,7 +161,7 @@ spec:
   kubernetes:
     clusters:
       - name: aws-cluster
-        version: v1.24.0
+        version: v1.27.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -266,7 +266,7 @@ spec:
   kubernetes:
     clusters:
       - name: aws-cluster
-        version: v1.24.0
+        version: v1.27.0
         network: 192.168.2.0/24
         pools:
           control:

@@ -2,6 +2,7 @@ package manifest
 
 import (
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/berops/claudie/internal/utils"
@@ -117,6 +118,10 @@ func IsReferenced(name string, m *Manifest) bool {
 func (d *DynamicNodePool) Validate(m *Manifest) error {
 	if (d.StorageDiskSize != nil) && !(*d.StorageDiskSize == 0 || *d.StorageDiskSize >= 50) {
 		return fmt.Errorf("storageDiskSize size must be either 0 or >= 50")
+	}
+
+	if d.Count >= math.MaxUint8 {
+		return fmt.Errorf("max available count for a nodepool is 255")
 	}
 
 	validate := validator.New()

@@ -99,7 +99,7 @@ spec:
 
   nodePools:
     dynamic:
-      - name: control-hetzner
+      - name: control-htz
         providerSpec:
           name: hetzner-1
           region: fsn1

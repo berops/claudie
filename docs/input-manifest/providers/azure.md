@@ -104,7 +104,7 @@ spec:
         namespace: mynamespace
   nodePools:
     dynamic:
-      - name: control-azure
+      - name: control-az
         providerSpec:
           # Name of the provider instance.
           name: azure-1
@@ -118,7 +118,7 @@ spec:
         # URN of the image.
         image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
 
-      - name: compute-1-azure
+      - name: compute-1-az
         providerSpec:
           # Name of the provider instance.
           name: azure-1
@@ -133,7 +133,7 @@ spec:
         image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
         storageDiskSize: 50
 
-      - name: compute-2-azure
+      - name: compute-2-az
         providerSpec:
           # Name of the provider instance.
           name: azure-1
@@ -151,14 +151,14 @@ spec:
   kubernetes:
     clusters:
       - name: azure-cluster
-        version: v1.24.0
+        version: v1.27.0
         network: 192.168.2.0/24
         pools:
           control:
-            - control-azure
+            - control-az
           compute:
-            - compute-2-azure
-            - compute-1-azure
+            - compute-2-az
+            - compute-1-az
 ```
 
 ### Multi provider, multi region clusters example
@@ -193,7 +193,7 @@ spec:
 
   nodePools:
     dynamic:
-      - name: control-azure-1
+      - name: control-az-1
         providerSpec:
           # Name of the provider instance.
           name: azure-1
@@ -207,7 +207,7 @@ spec:
         # URN of the image.
         image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
 
-      - name: control-azure-2
+      - name: control-az-2
         providerSpec:
           # Name of the provider instance.
           name: azure-2
@@ -221,7 +221,7 @@ spec:
         # URN of the image.
         image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
 
-      - name: compute-azure-1
+      - name: compute-az-1
         providerSpec:
           # Name of the provider instance.
           name: azure-1
@@ -236,7 +236,7 @@ spec:
         image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
         storageDiskSize: 50
 
-      - name: compute-azure-2
+      - name: compute-az-2
         providerSpec:
           # Name of the provider instance.
           name: azure-2
@@ -254,13 +254,13 @@ spec:
   kubernetes:
     clusters:
       - name: azure-cluster
-        version: v1.24.0
+        version: v1.27.0
         network: 192.168.2.0/24
         pools:
           control:
-            - control-azure-1
-            - control-azure-2
+            - control-az-1
+            - control-az-2
           compute:
-            - compute-azure-1
-            - compute-azure-2
+            - compute-az-1
+            - compute-az-2
 ```

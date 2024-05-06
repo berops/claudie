@@ -13,6 +13,10 @@ type KuberGrpcService struct {
 	usecases *usecases.Usecases
 }
 
+func (k *KuberGrpcService) PatchKubeProxyConfigMap(ctx context.Context, request *pb.PatchKubeProxyConfigMapRequest) (*pb.PatchKubeProxyConfigMapResponse, error) {
+	return k.usecases.PatchKubeProxyConfigMap(ctx, request)
+}
+
 func (k *KuberGrpcService) CiliumRolloutRestart(ctx context.Context, request *pb.CiliumRolloutRestartRequest) (*pb.CiliumRolloutRestartResponse, error) {
 	return k.usecases.CiliumRolloutRestart(request)
 }
