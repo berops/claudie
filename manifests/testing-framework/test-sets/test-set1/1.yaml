@@ -14,11 +14,6 @@ spec:
       secretRef:
         name: hetzner-secret
         namespace: e2e-secrets
-    - name: hetzner-1
-      providerType: hetzner
-      secretRef:
-        name: hetzner-secret
-        namespace: e2e-secrets
     - name: oci-1
       providerType: oci
       secretRef:
