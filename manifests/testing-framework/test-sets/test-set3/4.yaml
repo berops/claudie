@@ -21,7 +21,7 @@ spec:
         namespace: e2e-secrets  
   nodePools:
     dynamic:
-      - name: genesiscloud
+      - name: gen-kube-nodes
         providerSpec:
           name: genesiscloud-1
           region: ARC-IS-HAF-1
@@ -31,7 +31,7 @@ spec:
         storageDiskSize: 50
 
       #-----------LB nodepools----------
-      - name: gcp-lb
+      - name: gcp-ldbl-nodes
         providerSpec:
           name: gcp-1
           region: europe-west1
@@ -43,14 +43,14 @@ spec:
 
   kubernetes:
     clusters:
-      - name: ts3-c-1
+      - name: ts3-c-1-cluster-test-set-no3
         version: v1.26.13
         network: 192.168.2.0/24
         pools:
           control:
-            - genesiscloud
+            - gen-kube-nodes
           compute:
-            - genesiscloud
+            - gen-kube-nodes
   loadBalancers:
     roles:
       - name: random-lb
@@ -58,14 +58,14 @@ spec:
         port: 6440
         targetPort: 6440
         targetPools:
-          - genesiscloud
+          - gen-kube-nodes
     clusters:
-      - name: ts3-lb-1
+      - name: ts3-lb-1-cluster-test-set-no3
         roles:
           - random-lb
         dns:
           dnsZone: claudie.dev
           provider: cloudflare-1
-        targetedK8s: ts3-c-1
+        targetedK8s: ts3-c-1-cluster-test-set-no3
         pools:
-          - gcp-lb
+          - gcp-ldbl-nodes
