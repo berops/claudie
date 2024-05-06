@@ -14,7 +14,7 @@ spec:
       secretRef:
         name: hetzner-secret
         namespace: e2e-secrets
-    - name: hetzner-2
+    - name: hetzner-1
       providerType: hetzner
       secretRef:
         name: hetzner-secret
@@ -61,7 +61,7 @@ spec:
             ["test-set1"]
       - name: htz-cmpt-nodes
         providerSpec:
-          name: hetzner-2
+          name: hetzner-1
           region: nbg1
           zone: nbg1-dc3
         count: 1
