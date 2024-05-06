@@ -21,7 +21,7 @@ spec:
         namespace: e2e-secrets                
   nodePools:
     dynamic:
-      - name: oci
+      - name: oci-kube-nodes
         providerSpec:
           name: oci-1
           region: eu-frankfurt-1
@@ -33,7 +33,7 @@ spec:
         image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
         storageDiskSize: 50
 
-      - name: gcp
+      - name: gcp-kube-nodes
         providerSpec:
           name: gcp-1
           region: europe-west2
@@ -44,7 +44,7 @@ spec:
         storageDiskSize: 50
 
       #-----------LB nodepools----------
-      - name: gcp-lb
+      - name: gcp-ldbl-nodes
         providerSpec:
           name: gcp-1
           region: europe-west1
@@ -55,15 +55,15 @@ spec:
         storageDiskSize: 50
   kubernetes:
     clusters:
-      - name: ts4-c-1
+      - name: ts4-c-1-cluster-test-set-no4
         version: v1.26.13
         network: 192.168.2.0/24
         pools:
           control:
-            - gcp
+            - gcp-kube-nodes
           compute:
-            - oci
-            - gcp
+            - oci-kube-nodes
+            - gcp-kube-nodes
   loadBalancers:
     roles:
       - name: apiserver-lb
@@ -71,14 +71,14 @@ spec:
         port: 6443
         targetPort: 6443
         targetPools:
-          - gcp
+          - gcp-kube-nodes
     clusters:
-      - name: ts4-lb-1
+      - name: ts4-lb1-cluster-test-set-no4
         roles:
           - apiserver-lb
         dns:
           dnsZone: claudie.dev
           provider: cloudflare-1
-        targetedK8s: ts4-c-1
+        targetedK8s: ts4-c-1-cluster-test-set-no4
         pools:
-          - gcp-lb
+          - gcp-ldbl-nodes

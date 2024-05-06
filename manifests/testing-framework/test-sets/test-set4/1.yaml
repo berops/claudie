@@ -11,7 +11,7 @@ spec:
           namespace: e2e-secrets
   nodePools:
     dynamic:
-      - name: oci
+      - name: oci-kube-nodes
         providerSpec:
           name: oci-1
           region: eu-frankfurt-1
@@ -25,11 +25,11 @@ spec:
 
   kubernetes:
     clusters:
-      - name: ts4-c-1
+      - name: ts4-c-1-cluster-test-set-no4
         version: v1.26.13
         network: 192.168.2.0/24
         pools:
           control:
-            - oci
+            - oci-kube-nodes
           compute:
-            - oci
+            - oci-kube-nodes
