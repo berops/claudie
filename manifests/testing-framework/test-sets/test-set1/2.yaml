@@ -41,7 +41,7 @@ spec:
         namespace: e2e-secrets
   nodePools:
     dynamic:
-      - name: htz-control
+      - name: htz-ctrl-nodes
         providerSpec:
           name: hetzner-1
           region: nbg1
@@ -54,7 +54,7 @@ spec:
         annotations:
           claudie.io/example-annotation: > 
               ["test-set1-new"]
-      - name: htz-compute
+      - name: htz-cmpt-nodes
         providerSpec:
           name: hetzner-1
           region: nbg1
@@ -181,9 +181,9 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - htz-control
+            - htz-ctrl-nodes
           compute:
-            - htz-compute
+            - htz-cmpt-nodes
       - name: ts1-gcp-cluster-test-set-no1
         version: v1.26.13
         network: 192.168.2.0/24
