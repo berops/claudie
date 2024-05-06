@@ -14,6 +14,11 @@ spec:
       secretRef:
         name: hetzner-secret
         namespace: e2e-secrets
+    - name: hetzner-2
+      providerType: hetzner
+      secretRef:
+        name: hetzner-secret
+        namespace: e2e-secrets
     - name: oci-1
       providerType: oci
       secretRef:
@@ -24,7 +29,17 @@ spec:
       secretRef:
         name: aws-secret
         namespace: e2e-secrets
+    - name: aws-2
+      providerType: aws
+      secretRef:
+        name: aws-secret
+        namespace: e2e-secrets
     - name: azure-1
+      providerType: azure
+      secretRef:
+        name: azure-secret
+        namespace: e2e-secrets
+    - name: azure-2
       providerType: azure
       secretRef:
         name: azure-secret
@@ -46,7 +61,7 @@ spec:
               ["test-set1-new"]
       - name: htz-compute
         providerSpec:
-          name: hetzner-1
+          name: hetzner-2
           region: nbg1
           zone: nbg1-dc3
         count: 1
@@ -123,7 +138,7 @@ spec:
             effect: NoSchedule
       - name: aws-compute
         providerSpec:
-          name: aws-1
+          name: aws-2
           region: eu-west-3
           zone: eu-west-3a
         count: 4
@@ -134,7 +149,7 @@ spec:
 
       - name: azure-control
         providerSpec:
-          name: azure-1
+          name: azure-2
           region: West Europe
           zone: "1"
         count: 2
@@ -166,7 +181,7 @@ spec:
 
   kubernetes:
     clusters:
-      - name: ts1-hetzner
+      - name: ts1-htz-cluster-test-set-no1
         version: v1.26.13
         network: 192.168.2.0/24
         pools:
@@ -174,7 +189,7 @@ spec:
             - htz-control
           compute:
             - htz-compute
-      - name: ts1-gcp
+      - name: ts1-gcp-cluster-test-set-no1
         version: v1.26.13
         network: 192.168.2.0/24
         pools:
@@ -182,7 +197,7 @@ spec:
             - gcp-control
           compute:
             - gcp-compute
-      - name: ts1-oci
+      - name: ts1-oci-cluster-test-set-no1
         version: v1.26.13
         network: 192.168.2.0/24
         pools:
@@ -190,7 +205,7 @@ spec:
             - oci-control
           compute:
             - oci-compute
-      - name: ts1-aws
+      - name: ts1-aws-cluster-test-set-no1
         version: v1.26.13
         network: 192.168.2.0/24
         pools:
@@ -198,7 +213,7 @@ spec:
             - aws-control
           compute:
             - aws-compute
-      - name: ts1-azure
+      - name: ts1-azr-cluster-test-set-no1
         version: v1.26.13
         network: 192.168.2.0/24
         pools:
