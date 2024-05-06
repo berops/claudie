@@ -19,6 +19,11 @@ spec:
       secretRef:
         name: oci-secret
         namespace: e2e-secrets
+    - name: oci-2
+      providerType: oci
+      secretRef:
+        name: oci-secret
+        namespace: e2e-secrets
     - name: aws-1
       providerType: aws
       secretRef:
@@ -31,7 +36,7 @@ spec:
         namespace: e2e-secrets
   nodePools:
     dynamic:
-      - name: hetzner
+      - name: htz-kube-nodes
         providerSpec:
           name: hetzner-1
           region: fsn1
@@ -41,7 +46,7 @@ spec:
         image: ubuntu-22.04
         storageDiskSize: 50
 
-      - name: oci
+      - name: oci-kube-nodes
         providerSpec:
           name: oci-1
           region: eu-frankfurt-1
@@ -54,7 +59,7 @@ spec:
         storageDiskSize: 50
 
       #-----------LB nodepools----------
-      - name: gcp-lb
+      - name: gcp-ldbl-nodes
         providerSpec:
           name: gcp-1
           region: europe-west1
@@ -64,7 +69,7 @@ spec:
         image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
         storageDiskSize: 50
 
-      - name: hetzner-lb
+      - name: htz-ldbl-nodes
         providerSpec:
           name: hetzner-1
           region: fsn1
@@ -74,9 +79,9 @@ spec:
         image: ubuntu-22.04
         storageDiskSize: 50
 
-      - name: oci-lb
+      - name: oci-ldbl-nodes
         providerSpec:
-          name: oci-1
+          name: oci-2
           region: eu-frankfurt-1
           zone: hsVQ:EU-FRANKFURT-1-AD-2
         count: 2
@@ -86,7 +91,7 @@ spec:
         image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
         storageDiskSize: 50
 
-      - name: aws-lb
+      - name: aws-ldbl-nodes
         providerSpec:
           name: aws-1
           region: eu-central-1
@@ -97,7 +102,7 @@ spec:
         image: ami-0039da1f3917fa8e3
         storageDiskSize: 50
 
-      - name: azure-lb
+      - name: azure-ldbl-nodes
         providerSpec:
           name: azure-1
           region: West Europe
@@ -109,22 +114,22 @@ spec:
 
   kubernetes:
     clusters:
-      - name: ts2-c-1
+      - name: ts2-htz-cluster-test-set-no2
         version: v1.26.13
         network: 192.168.2.0/24
         pools:
           control:
-            - hetzner
+            - htz-kube-nodes
           compute:
-            - hetzner
-      - name: ts2-c-2
+            - htz-kube-nodes
+      - name: ts2-oci-cluster-test-set-no2
         version: v1.26.13
         network: 192.168.2.0/24
         pools:
           control:
-            - oci
+            - oci-kube-nodes
           compute:
-            - oci
+            - oci-kube-nodes
   loadBalancers:
     roles:
       - name: apiserver-lb-hetzner
@@ -132,38 +137,38 @@ spec:
         port: 6443
         targetPort: 6443
         targetPools:
-          - hetzner
+          - htz-kube-nodes
       - name: apiserver-lb-oci
         protocol: tcp
         port: 6443
         targetPort: 6443
         targetPools:
-          - oci
+          - oci-kube-nodes
     clusters:
-      - name: ts2-lb-1
+      - name: ts2-lb1-cluster-test-set-no2
         roles:
           - apiserver-lb-hetzner
         dns:
           dnsZone: aws.e2e.claudie.io
           provider: aws-1
           hostname: claudiets2lb1
-        targetedK8s: ts2-c-1
+        targetedK8s: ts2-htz-cluster-test-set-no2
         pools:
-          - gcp-lb
-          - hetzner-lb
-          - oci-lb
-          - aws-lb
-          - azure-lb
-      - name: ts2-lb-2
+          - gcp-ldbl-nodes
+          - htz-ldbl-nodes
+          - oci-ldbl-nodes
+          - aws-ldbl-nodes
+          - azr-ldbl-nodes
+      - name: ts2-lb2-cluster-test-set-no2
         roles:
           - apiserver-lb-oci
         dns:
           dnsZone: lb-zone-2
           provider: gcp-1
-        targetedK8s: ts2-c-2
+        targetedK8s: ts2-oci-cluster-test-set-no2
         pools:
-          - gcp-lb
-          - hetzner-lb
-          - oci-lb
-          - aws-lb
-          - azure-lb
+          - gcp-ldbl-nodes
+          - htz-ldbl-nodes
+          - oci-ldbl-nodes
+          - aws-ldbl-nodes
+          - azr-ldbl-nodes
