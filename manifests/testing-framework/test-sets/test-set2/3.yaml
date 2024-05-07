@@ -102,7 +102,7 @@ spec:
         image: ami-0039da1f3917fa8e3
         storageDiskSize: 50
 
-      - name: azure-ldbl-nodes
+      - name: azr-ldbl-nodes
         providerSpec:
           name: azure-1
           region: West Europe
