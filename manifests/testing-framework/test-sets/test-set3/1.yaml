@@ -110,21 +110,21 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - genesiscloud
+            - gen-kube-nodes
           compute:
-            - genesiscloud
+            - gen-kube-nodes
       - name: ts3-c-2-cluster-test-set-no3
         version: v1.26.13
         network: 192.168.2.0/24
         pools:
           control:
-            - genesiscloud
-            - gcp-control
-            - oci
+            - gen-kube-nodes
+            - gcp-cntrl-nodes
+            - oci-kube-nodes
           compute:
-            - genesiscloud
-            - gcp-compute
-            - aws
+            - gen-kube-nodes
+            - gcp-cmpt-nodes
+            - aws-kube-nodes
   loadBalancers:
     roles:
       - name: apiserver-lb
@@ -148,7 +148,7 @@ spec:
         dns:
           dnsZone: claudie.dev
           provider: cloudflare-1
-        targetedK8s: ts3-c-1
+        targetedK8s: ts3-c-1-cluster-test-set-no3
         pools:
           - gcp-ldbl-nodes
       - name: ts3-lb2-cluster-test-set-no3
@@ -157,6 +157,6 @@ spec:
         dns:
           dnsZone: claudie.org
           provider: hetznerdns-1
-        targetedK8s: ts3-c-2
+        targetedK8s: ts3-c-2-cluster-test-set-no3
         pools:
           - gcp-ldbl-nodes
