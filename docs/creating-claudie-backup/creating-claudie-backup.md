@@ -55,7 +55,7 @@ terraformer-66c6f67d98-pwr9t        1/1     Running     0             18m
 To backup state from MongoDB execute the following command
 
 ```bash
-kubectl exec -n claudie mongodb-6ccb5f5dff-ptdw2 -- sh -c 'mongoexport --uri=mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@localhost:27017/claudie -c inputManifests --authenticationDatabase admin' > claudie-backup/inputManifests
+kubectl exec -n claudie mongodb-<your-mongdb-pod> -- sh -c 'mongoexport --uri=mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@localhost:27017/claudie -c inputManifests --authenticationDatabase admin' > claudie-backup/inputManifests
 ```
 
 Next we need to backup the state from MinIO. Port-forward the MinIO service so that it is accessible from localhost.
@@ -87,13 +87,13 @@ To restore the state on your new management cluster you can follow these command
 Copy the collection into the MongoDB pod.
 
 ```bash
-kubectl cp ./claudie-backup/inputManifests mongodb-6ccb5f5dff-jjvz2:/tmp/inputManifests -n claudie
+kubectl cp ./claudie-backup/inputManifests mongodb-<your-mongodb-pod>:/tmp/inputManifests -n claudie
 ```
 
 Import the state to MongoDB.
 
 ```bash
-kubectl exec -n claudie mongodb-6ccb5f5dff-jjvz2 -- sh -c 'mongoimport --uri=mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@localhost:27017/claudie -c inputManifests --authenticationDatabase admin --file /tmp/inputManifests'
+kubectl exec -n claudie mongodb-<your-mongodb-pod> -- sh -c 'mongoimport --uri=mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@localhost:27017/claudie -c inputManifests --authenticationDatabase admin --file /tmp/inputManifests'
 ```
 
 !!! note "Don't forget to delete the `/tmp/inputManifests` file"
@@ -101,7 +101,7 @@ kubectl exec -n claudie mongodb-6ccb5f5dff-jjvz2 -- sh -c 'mongoimport --uri=mon
 Port-forward the MinIO service and import the backed up state.
 
 ```bash
-mc cp --recursive ./claudie-backup/<your-folder-name-donwloaded-from-minio> claudie-minio/claudie-tf-state-files
+mc cp --recursive ./claudie-backup/<your-folder-name-downloaded-from-minio> claudie-minio/claudie-tf-state-files
 ```
 
 You can now apply your Claudie inputmanifests which will be immediately in the `DONE` stage. You can verify this with
@@ -110,7 +110,9 @@ You can now apply your Claudie inputmanifests which will be immediately in the `
 kubectl get inputmanifests -A
 ```
 
-Now you can make any new changes to your inputmanifests on the new management cluster and the state will be reused.
+Now you can make any new changes to your inputmanifests on the new management cluster and the state will be re-used. 
+
+!!! note "The secrets for the clusters, namely kubeconfig and cluster-metadata, are re-created after the workflow with the changes has finished."
 
 !!! note "Alternatively you may also use any GUI clients for MongoDB and Minio for more straightforward backup of the state. All you need to backup is the bucket `claudie-tf-state-files` in MinIO and the collection `inputManifests` from MongoDB"
 
