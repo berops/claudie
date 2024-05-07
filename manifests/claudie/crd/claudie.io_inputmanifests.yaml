@@ -6,6 +6,8 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.11.3
   creationTimestamp: null
   name: inputmanifests.claudie.io
+  labels:
+    app.kubernetes.io/part-of: claudie
 spec:
   group: claudie.io
   names:
