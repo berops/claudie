@@ -70,7 +70,7 @@ Setup an alias for the [mc](https://min.io/docs/minio/linux/reference/minio-mc.h
 mc alias set claudie-minio http://127.0.0.1:9000 <ACCESSKEY> <SECRETKEY>
 ```
 
-!!! note "Provide the access and secret key for minio. The default can be found in the github [repository] (https://github.com/berops/claudie/tree/master/manifests/claudie/minio/secrets). If you have not changed them, we strongly encourage you to do so!"
+!!! note "Provide the access and secret key for minio. The default can be found in the github repository in the `manifests/claudie/minio/secrets` folder. If you have not changed them, we strongly encourage you to do so!"
 
 Download the state into the backup folder
 
@@ -80,7 +80,7 @@ mc mirror claudie-minio/claudie-tf-state-files ./claudie-backup
 
 You now have everything you need to restore your input manifests to a new management cluster.
 
-!!! warning "These files will contain your credentials, DO NOT STORE THEM OUT IN THE PUBLIC"
+!!! warning "These files will contain your credentials, DO NOT STORE THEM OUT IN THE PUBLIC!"
 
 To restore the state on your new management cluster you can follow these commands. We expect that your default `kubeconfig` points to the new Management Cluster, if it does not, you can override it in the following commands using `--kubeconfig ./path-to-config`.
 
