@@ -98,7 +98,7 @@ kubectl exec -n claudie mongodb-6ccb5f5dff-jjvz2 -- sh -c 'mongoimport --uri=mon
 
 !!! note "Don't forget to delete the `/tmp/inputManifests` file"
 
-Port-forward the MinIO server and import the backed up state.
+Port-forward the MinIO service and import the backed up state.
 
 ```bash
 mc cp --recursive ./claudie-backup/<your-folder-name-donwloaded-from-minio> claudie-minio/claudie-tf-state-files
