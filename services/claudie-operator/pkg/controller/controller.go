@@ -12,6 +12,7 @@ import (
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/berops/claudie/internal/manifest"
+	"github.com/berops/claudie/proto/pb"
 	v1beta "github.com/berops/claudie/services/claudie-operator/pkg/api/v1beta1"
 	"github.com/berops/claudie/services/context-box/server/utils"
 )
@@ -118,6 +119,28 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			} else {
 				configInDesiredState = utils.Equal(config.CsChecksum, config.DsChecksum)
 			}
+
+			// guard against changing the cloud provider in an existing nodepool
+			npNameProvider, err := getDynamicNodepoolsMap(config)
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+
+			for _, np := range rawManifest.NodePools.Dynamic {
+				if pName, exist := npNameProvider[np.Name]; exist && pName != np.ProviderSpec.Name {
+					// nodepool exists and user changed the cloud provider
+					cErrMsg := fmt.Errorf("Changing cloud provider for an existing nodepool %s is forbidden", np.Name)
+					r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", cErrMsg.Error())
+					inputManifest.SetUpdateResourceStatus(v1beta.InputManifestStatus{
+						State: v1beta.STATUS_ERROR,
+					})
+					if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
+						return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
+					}
+					return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, cErrMsg
+				}
+			}
+
 			for cluster, workflow := range config.State {
 				currentState.Clusters[cluster] = v1beta.ClustersStatus{
 					State:   workflow.GetStatus().String(),
@@ -287,4 +310,21 @@ func (r *InputManifestReconciler) deleteConfig(im *manifest.Manifest) error {
 		return err
 	}
 	return nil
+}
+
+// getDynamicNodepoolsMap will read manifest from the given config and return map of provider names keyed by dynamic nodepool names
+func getDynamicNodepoolsMap(config *pb.Config) (map[string]string, error) {
+	d := []byte(config.GetManifest())
+	// Parse yaml to protobuf and create unmarshalledManifest
+	var unmarshalledManifest manifest.Manifest
+	if err := yaml.Unmarshal(d, &unmarshalledManifest); err != nil {
+		return nil, fmt.Errorf("error while unmarshalling yaml manifest for config %s: %w", config.Name, err)
+	}
+
+	npNameProvider := make(map[string]string)
+	for _, np := range unmarshalledManifest.NodePools.Dynamic {
+		npNameProvider[np.Name] = np.ProviderSpec.Name
+	}
+
+	return npNameProvider, nil
 }
