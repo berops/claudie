@@ -215,4 +215,4 @@ spec:
           control:
             - azr-ctrl-nodes
           compute:
-            - azr-ctrl-nodes
+            - azr-cmpt-nodes
