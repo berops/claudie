@@ -119,7 +119,7 @@ spec:
         pools:
           control:
             - gen-kube-nodes
-            - gcp-cntrl-nodes
+            - gcp-ctrl-nodes
             - oci-kube-nodes
           compute:
             - gen-kube-nodes
