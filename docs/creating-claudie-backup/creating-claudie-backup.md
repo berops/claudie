@@ -28,7 +28,7 @@ mkdir claudie-backup
 
 Put your Claudie inputmanifests into the created folder.
 
-We will now back up the state of the respective input manifests from MongoDB and Minio.
+We will now back up the state of the respective input manifests from MongoDB and MinIO.
 
 ```bash
 kubectl get pods -n claudie
@@ -58,7 +58,7 @@ To backup state from MongoDB execute the following command
 kubectl exec -n claudie mongodb-6ccb5f5dff-ptdw2 -- sh -c 'mongoexport --uri=mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@localhost:27017/claudie -c inputManifests --authenticationDatabase admin' > claudie-backup/inputManifests
 ```
 
-Next we need to backup the state from Minio. Port-forward the minio service so that it is accessible from localhost.
+Next we need to backup the state from MinIO. Port-forward the MinIO service so that it is accessible from localhost.
 
 ```bash
 kubectl port-forward -n claudie svc/minio 9000:9000
@@ -98,7 +98,7 @@ kubectl exec -n claudie mongodb-6ccb5f5dff-jjvz2 -- sh -c 'mongoimport --uri=mon
 
 !!! note "Don't forget to delete the `/tmp/inputManifests` file"
 
-Import MinIO state.
+Port-forward the MinIO server and import the backed up state.
 
 ```bash
 mc cp --recursive ./claudie-backup/<your-folder-name-donwloaded-from-minio> claudie-minio/claudie-tf-state-files
