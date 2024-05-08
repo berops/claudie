@@ -26,7 +26,7 @@ Create a directory where the backup of the state will be stored.
 mkdir claudie-backup
 ```
 
-Put your Claudie inputmanifests into the created folder.
+Put your Claudie inputmanifests into the created folder, e.g. `kubectl get InputManifest -A -oyaml > ./claudie-backup/all.yaml`
 
 We will now back up the state of the respective input manifests from MongoDB and MinIO.
 
