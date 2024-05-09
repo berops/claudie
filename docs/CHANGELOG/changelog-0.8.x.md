@@ -40,5 +40,5 @@ To further harden claudie, you may want to deploy our pre-defined network polici
 - Fix substring match resulting in deletion of wrong nodes [#1350](https://github.com/berops/claudie/pull/1350)
 - Add spec.providers validation [#1352](https://github.com/berops/claudie/pull/1352)
 - Correctly change the API endpoint [#1366](https://github.com/berops/claudie/pull/1366)
-- Limit the nodepool and cluster names to 14 and 28 respectively and add the possibility to define and use providers in a single cluster [#1348](https://github.com/berops/claudie/pull/1348)
+- Restrict nodepool and cluster names to 14 and 28 characters respectively, and add the ability to define and use providers in a single cluster [#1348](https://github.com/berops/claudie/pull/1348)
 - Prohibit changing the cloud provider in a nodepool [#1371](https://github.com/berops/claudie/pull/1371)
