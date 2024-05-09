@@ -1269,18 +1269,18 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#manual-backup" class="md-nav__link">
+  <a href="#using-velero" class="md-nav__link">
     <span class="md-ellipsis">
-      Manual backup
+      Using Velero
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#using-velero" class="md-nav__link">
+  <a href="#manual-backup" class="md-nav__link">
     <span class="md-ellipsis">
-      Using Velero
+      Manual backup
     </span>
   </a>
   
@@ -1425,18 +1425,18 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#manual-backup" class="md-nav__link">
+  <a href="#using-velero" class="md-nav__link">
     <span class="md-ellipsis">
-      Manual backup
+      Using Velero
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#using-velero" class="md-nav__link">
+  <a href="#manual-backup" class="md-nav__link">
     <span class="md-ellipsis">
-      Using Velero
+      Manual backup
     </span>
   </a>
   
@@ -1478,75 +1478,10 @@ new cluster.</p>
 </ul>
 <p>These are the only services that will have a PVC attached to it, the other are stateless.</p>
 <h2 id="backing-up-claudie">Backing up Claudie<a class="headerlink" href="#backing-up-claudie" title="Permanent link">&para;</a></h2>
-<h3 id="manual-backup">Manual backup<a class="headerlink" href="#manual-backup" title="Permanent link">&para;</a></h3>
-<p>Claudie is already deployed on an existing Management Cluster and at least 1 Input Manifest has been applied.</p>
-<p>Create a directory where the backup of the state will be stored.</p>
-<div class="highlight"><pre><span></span><code>mkdir<span class="w"> </span>claudie-backup
-</code></pre></div>
-<p>Put your Claudie inputmanifests into the created folder.</p>
-<p>We will now back up the state of the respective input manifests from MongoDB and Minio.</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>claudie
-
-NAME<span class="w">                                </span>READY<span class="w">   </span>STATUS<span class="w">      </span>RESTARTS<span class="w">      </span>AGE
-ansibler-6f4557cf74-b4dts<span class="w">           </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
-builder-5d68987c86-qdfd5<span class="w">            </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
-claudie-operator-6d9ddc7f8b-hv84c<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
-context-box-5d75bfffc6-d9qfm<span class="w">        </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
-create-table-job-ghb9f<span class="w">              </span><span class="m">0</span>/1<span class="w">     </span>Completed<span class="w">   </span><span class="m">1</span><span class="w">             </span>18m
-dynamodb-6d65df988-c626j<span class="w">            </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
-kube-eleven-556cfdfd98-jq6hl<span class="w">        </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
-kuber-7f8cd4cd89-6ds2w<span class="w">              </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
-make-bucket-job-9mjft<span class="w">               </span><span class="m">0</span>/1<span class="w">     </span>Completed<span class="w">   </span><span class="m">0</span><span class="w">             </span>18m
-minio-0<span class="w">                             </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
-minio-1<span class="w">                             </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
-minio-2<span class="w">                             </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
-minio-3<span class="w">                             </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
-mongodb-6ccb5f5dff-ptdw2<span class="w">            </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
-scheduler-676bd4468f-6fjn8<span class="w">          </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
-terraformer-66c6f67d98-pwr9t<span class="w">        </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
-</code></pre></div>
-<p>To backup state from MongoDB execute the following command</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span>mongodb-6ccb5f5dff-ptdw2<span class="w"> </span>--<span class="w"> </span>sh<span class="w"> </span>-c<span class="w"> </span><span class="s1">&#39;mongoexport --uri=mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@localhost:27017/claudie -c inputManifests --authenticationDatabase admin&#39;</span><span class="w"> </span>&gt;<span class="w"> </span>claudie-backup/inputManifests
-</code></pre></div>
-<p>Next we need to backup the state from Minio. Port-forward the minio service so that it is accessible from localhost.</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>port-forward<span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span>svc/minio<span class="w"> </span><span class="m">9000</span>:9000
-</code></pre></div>
-<p>Setup an alias for the <a href="https://min.io/docs/minio/linux/reference/minio-mc.html">mc</a> command line tool.</p>
-<div class="highlight"><pre><span></span><code>mc<span class="w"> </span><span class="nb">alias</span><span class="w"> </span><span class="nb">set</span><span class="w"> </span>claudie-minio<span class="w"> </span>http://127.0.0.1:9000<span class="w"> </span>&lt;ACCESSKEY&gt;<span class="w"> </span>&lt;SECRETKEY&gt;
-</code></pre></div>
-<div class="admonition note">
-<p class="admonition-title">Provide the access and secret key for minio. The default can be found in the github [repository] (https://github.com/berops/claudie/tree/master/manifests/claudie/minio/secrets). If you have not changed them, we strongly encourage you to do so!</p>
-</div>
-<p>Download the state into the backup folder</p>
-<div class="highlight"><pre><span></span><code>mc<span class="w"> </span>mirror<span class="w"> </span>claudie-minio/claudie-tf-state-files<span class="w"> </span>./claudie-backup
-</code></pre></div>
-<p>You now have everything you need to restore your input manifests to a new management cluster.</p>
-<div class="admonition warning">
-<p class="admonition-title">These files will contain your credentials, DO NOT STORE THEM OUT IN THE PUBLIC</p>
-</div>
-<p>To restore the state on your new management cluster you can follow these commands. We expect that your default <code>kubeconfig</code> points to the new Management Cluster, if it does not, you can override it in the following commands using <code>--kubeconfig ./path-to-config</code>.</p>
-<p>Copy the collection into the MongoDB pod.</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>cp<span class="w"> </span>./claudie-backup/inputManifests<span class="w"> </span>mongodb-6ccb5f5dff-jjvz2:/tmp/inputManifests<span class="w"> </span>-n<span class="w"> </span>claudie
-</code></pre></div>
-<p>Import the state to MongoDB.</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span>mongodb-6ccb5f5dff-jjvz2<span class="w"> </span>--<span class="w"> </span>sh<span class="w"> </span>-c<span class="w"> </span><span class="s1">&#39;mongoimport --uri=mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@localhost:27017/claudie -c inputManifests --authenticationDatabase admin --file /tmp/inputManifests&#39;</span>
-</code></pre></div>
-<div class="admonition note">
-<p class="admonition-title">Don't forget to delete the <code>/tmp/inputManifests</code> file</p>
-</div>
-<p>Import MinIO state.</p>
-<div class="highlight"><pre><span></span><code>mc<span class="w"> </span>cp<span class="w"> </span>--recursive<span class="w"> </span>./claudie-backup/&lt;your-folder-name-donwloaded-from-minio&gt;<span class="w"> </span>claudie-minio/claudie-tf-state-files
-</code></pre></div>
-<p>You can now apply your Claudie inputmanifests which will be immediately in the <code>DONE</code> stage. You can verify this with</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>inputmanifests<span class="w"> </span>-A
-</code></pre></div>
-<p>Now you can make any new changes to your inputmanifests on the new management cluster and the state will be reused.</p>
-<div class="admonition note">
-<p class="admonition-title">Alternatively you may also use any GUI clients for MongoDB and Minio for more straightforward backup of the state. All you need to backup is the bucket <code>claudie-tf-state-files</code> in MinIO and the collection <code>inputManifests</code> from MongoDB</p>
-</div>
 <h3 id="using-velero">Using Velero<a class="headerlink" href="#using-velero" title="Permanent link">&para;</a></h3>
+<p>This is the primary backup and restore method.</p>
 <div class="admonition warning">
-<p class="admonition-title">Velero does not support HostPath volumes. If the PVCs in your management cluster are attached to such volumes, the backup will not work. In this case, use the above backup method.</p>
+<p class="admonition-title">Velero does not support HostPath volumes. If the PVCs in your management cluster are attached to such volumes (e.g. when running on Kind or MiniKube), the backup will not work. In this case, use the below backup method.</p>
 </div>
 <p>All resources that are deployed or created by Claudie can be identified with the following label:</p>
 <div class="highlight"><pre><span></span><code>    app.kubernetes.io/part-of: claudie
@@ -1558,7 +1493,7 @@ terraformer-66c6f67d98-pwr9t<span class="w">        </span><span class="m">1</sp
 <p>Claudie is already deployed on an existing Management Cluster and at least 1 Input Manifest has been applied. The state
 is backed up and the Management Cluster is replaced by a new one on which we restore the state.</p>
 <div class="admonition note">
-<p class="admonition-title">To back up the resources we'll be using Velero version v1.11.0</p>
+<p class="admonition-title">To back up the resources we'll be using Velero version v1.11.0.</p>
 </div>
 <p>The following steps will all be executed with the existing Management Cluster in context.</p>
 <ol>
@@ -1572,7 +1507,7 @@ is backed up and the Management Cluster is replaced by a new one on which we res
 </li>
 </ol>
 <div class="admonition note">
-<p class="admonition-title">If you do not have the aws CLI locally installed, follow the <a href="https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html">user guide</a> to set it up.</p>
+<p class="admonition-title">If you do not have the <code>aws</code> CLI locally installed, follow the <a href="https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html">user guide</a> to set it up.</p>
 </div>
 <ol>
 <li>Execute the following command to install Velero on the Management Cluster.
@@ -1609,6 +1544,76 @@ We expect that your default <code>kubeconfig</code> points to the new Management
 </code></pre></div></li>
 </ol>
 <p>Once all resources are restored, you should be able to deploy new input manifests and also modify existing infrastructure  without any problems.</p>
+<h3 id="manual-backup">Manual backup<a class="headerlink" href="#manual-backup" title="Permanent link">&para;</a></h3>
+<p>Claudie is already deployed on an existing Management Cluster and at least 1 Input Manifest has been applied.</p>
+<p>Create a directory where the backup of the state will be stored.</p>
+<div class="highlight"><pre><span></span><code>mkdir<span class="w"> </span>claudie-backup
+</code></pre></div>
+<p>Put your Claudie inputmanifests into the created folder, e.g. <code>kubectl get InputManifest -A -oyaml &gt; ./claudie-backup/all.yaml</code></p>
+<p>We will now back up the state of the respective input manifests from MongoDB and MinIO.</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>claudie
+
+NAME<span class="w">                                </span>READY<span class="w">   </span>STATUS<span class="w">      </span>RESTARTS<span class="w">      </span>AGE
+ansibler-6f4557cf74-b4dts<span class="w">           </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
+builder-5d68987c86-qdfd5<span class="w">            </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
+claudie-operator-6d9ddc7f8b-hv84c<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
+context-box-5d75bfffc6-d9qfm<span class="w">        </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
+create-table-job-ghb9f<span class="w">              </span><span class="m">0</span>/1<span class="w">     </span>Completed<span class="w">   </span><span class="m">1</span><span class="w">             </span>18m
+dynamodb-6d65df988-c626j<span class="w">            </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
+kube-eleven-556cfdfd98-jq6hl<span class="w">        </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
+kuber-7f8cd4cd89-6ds2w<span class="w">              </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
+make-bucket-job-9mjft<span class="w">               </span><span class="m">0</span>/1<span class="w">     </span>Completed<span class="w">   </span><span class="m">0</span><span class="w">             </span>18m
+minio-0<span class="w">                             </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
+minio-1<span class="w">                             </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
+minio-2<span class="w">                             </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
+minio-3<span class="w">                             </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
+mongodb-6ccb5f5dff-ptdw2<span class="w">            </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
+scheduler-676bd4468f-6fjn8<span class="w">          </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
+terraformer-66c6f67d98-pwr9t<span class="w">        </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
+</code></pre></div>
+<p>To backup state from MongoDB execute the following command</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span>mongodb-&lt;your-mongdb-pod&gt;<span class="w"> </span>--<span class="w"> </span>sh<span class="w"> </span>-c<span class="w"> </span><span class="s1">&#39;mongoexport --uri=mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@localhost:27017/claudie -c inputManifests --authenticationDatabase admin&#39;</span><span class="w"> </span>&gt;<span class="w"> </span>claudie-backup/inputManifests
+</code></pre></div>
+<p>Next we need to backup the state from MinIO. Port-forward the MinIO service so that it is accessible from localhost.</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>port-forward<span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span>svc/minio<span class="w"> </span><span class="m">9000</span>:9000
+</code></pre></div>
+<p>Setup an alias for the <a href="https://min.io/docs/minio/linux/reference/minio-mc.html">mc</a> command line tool.</p>
+<div class="highlight"><pre><span></span><code>mc<span class="w"> </span><span class="nb">alias</span><span class="w"> </span><span class="nb">set</span><span class="w"> </span>claudie-minio<span class="w"> </span>http://127.0.0.1:9000<span class="w"> </span>&lt;ACCESSKEY&gt;<span class="w"> </span>&lt;SECRETKEY&gt;
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Provide the access and secret key for minio. The default can be found in the github repository in the <code>manifests/claudie/minio/secrets</code> folder. If you have not changed them, we strongly encourage you to do so!</p>
+</div>
+<p>Download the state into the backup folder</p>
+<div class="highlight"><pre><span></span><code>mc<span class="w"> </span>mirror<span class="w"> </span>claudie-minio/claudie-tf-state-files<span class="w"> </span>./claudie-backup
+</code></pre></div>
+<p>You now have everything you need to restore your input manifests to a new management cluster.</p>
+<div class="admonition warning">
+<p class="admonition-title">These files will contain your credentials, DO NOT STORE THEM OUT IN THE PUBLIC!</p>
+</div>
+<p>To restore the state on your new management cluster you can follow these commands. We expect that your default <code>kubeconfig</code> points to the new Management Cluster, if it does not, you can override it in the following commands using <code>--kubeconfig ./path-to-config</code>.</p>
+<p>Copy the collection into the MongoDB pod.</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>cp<span class="w"> </span>./claudie-backup/inputManifests<span class="w"> </span>mongodb-&lt;your-mongodb-pod&gt;:/tmp/inputManifests<span class="w"> </span>-n<span class="w"> </span>claudie
+</code></pre></div>
+<p>Import the state to MongoDB.</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span>mongodb-&lt;your-mongodb-pod&gt;<span class="w"> </span>--<span class="w"> </span>sh<span class="w"> </span>-c<span class="w"> </span><span class="s1">&#39;mongoimport --uri=mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@localhost:27017/claudie -c inputManifests --authenticationDatabase admin --file /tmp/inputManifests&#39;</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Don't forget to delete the <code>/tmp/inputManifests</code> file</p>
+</div>
+<p>Port-forward the MinIO service and import the backed up state.</p>
+<div class="highlight"><pre><span></span><code>mc<span class="w"> </span>cp<span class="w"> </span>--recursive<span class="w"> </span>./claudie-backup/&lt;your-folder-name-downloaded-from-minio&gt;<span class="w"> </span>claudie-minio/claudie-tf-state-files
+</code></pre></div>
+<p>You can now apply your Claudie inputmanifests which will be immediately in the <code>DONE</code> stage. You can verify this with</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>inputmanifests<span class="w"> </span>-A
+</code></pre></div>
+<p>Now you can make any new changes to your inputmanifests on the new management cluster and the state will be re-used. </p>
+<div class="admonition note">
+<p class="admonition-title">The secrets for the clusters, namely kubeconfig and cluster-metadata, are re-created after the workflow with the changes has finished.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Alternatively you may also use any GUI clients for MongoDB and Minio for more straightforward backup of the state. All you need to backup is the bucket <code>claudie-tf-state-files</code> in MinIO and the collection <code>inputManifests</code> from MongoDB</p>
+</div>
+<p>Once all data is restored, you should be able to deploy new input manifests and also modify existing infrastructure  without any problems.</p>
 
 
 
