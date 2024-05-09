@@ -1,6 +1,6 @@
 # Claudie `v0.8`
 
-!!! warning "Due to updating terraform files the `v0.8.x` will not be backwards compatible with `v0.7.x`"
+!!! warning "Due to updating terraform files the `v0.8.x` clusters build with claudie version `v0.7.x` will be forced to be recreated. Before updating make backups of your data"
 
 ## Deployment
 
