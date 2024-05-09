@@ -24,14 +24,24 @@ spec:
       secretRef:
         name: aws-secret
         namespace: e2e-secrets
+    - name: aws-2
+      providerType: aws
+      secretRef:
+        name: aws-secret
+        namespace: e2e-secrets
     - name: azure-1
+      providerType: azure
+      secretRef:
+        name: azure-secret
+        namespace: e2e-secrets
+    - name: azure-2
       providerType: azure
       secretRef:
         name: azure-secret
         namespace: e2e-secrets
   nodePools:
     dynamic:
-      - name: htz-control
+      - name: htz-ctrl-nodes
         providerSpec:
           name: hetzner-1
           region: nbg1
@@ -44,7 +54,7 @@ spec:
         annotations:
           claudie.io/example-annotation: >
             ["test-set1"]
-      - name: htz-compute
+      - name: htz-cmpt-nodes
         providerSpec:
           name: hetzner-1
           region: nbg1
@@ -59,7 +69,7 @@ spec:
           claudie.io/example-annotation: >
             ["test-set1"]         
 
-      - name: gcp-control
+      - name: gcp-ctrl-nodes
         providerSpec:
           name: gcp-1
           region: europe-west2
@@ -69,7 +79,7 @@ spec:
         image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
         labels:
           test-set: test-set1
-      - name: gcp-compute
+      - name: gcp-cmpt-nodes
         providerSpec:
           name: gcp-1
           region: europe-west1
@@ -84,7 +94,7 @@ spec:
           claudie.io/example-annotation: >
             ["test-set1"]
 
-      - name: oci-control
+      - name: oci-ctrl-nodes
         providerSpec:
           name: oci-1
           region: eu-frankfurt-1
@@ -97,7 +107,7 @@ spec:
         taints:
           - key: test
             effect: NoSchedule
-      - name: oci-compute
+      - name: oci-cmpt-nodes
         providerSpec:
           name: oci-1
           region: eu-frankfurt-1
@@ -109,7 +119,7 @@ spec:
         image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
         storageDiskSize: 50
 
-      - name: aws-control
+      - name: aws-ctrl-nodes
         providerSpec:
           name: aws-1
           region: eu-north-1
@@ -122,9 +132,9 @@ spec:
           - key: test
             value: test
             effect: NoSchedule
-      - name: aws-compute
+      - name: aws-cmpt-nodes
         providerSpec:
-          name: aws-1
+          name: aws-2
           region: eu-west-3
           zone: eu-west-3a
         count: 3
@@ -133,9 +143,9 @@ spec:
         image: ami-03c476a1ca8e3ebdc
         storageDiskSize: 50
 
-      - name: azure-control
+      - name: azr-ctrl-nodes
         providerSpec:
-          name: azure-1
+          name: azure-2
           region: West Europe
           zone: "1"
         count: 2
@@ -150,7 +160,7 @@ spec:
         annotations:
           claudie.io/example-annotation: >
             ["test-set1"]        
-      - name: azure-compute
+      - name: azr-cmpt-nodes
         providerSpec:
           name: azure-1
           region: Germany West Central
@@ -167,43 +177,43 @@ spec:
 
   kubernetes:
     clusters:
-      - name: ts1-hetzner
+      - name: ts1-htz-cluster-test-set-no1
         version: v1.26.13
         network: 192.168.2.0/24
         pools:
           control:
-            - htz-control
+            - htz-ctrl-nodes
           compute:
-            - htz-compute
-      - name: ts1-gcp
+            - htz-cmpt-nodes
+      - name: ts1-gcp-cluster-test-set-no1
         version: v1.26.13
         network: 192.168.2.0/24
         pools:
           control:
-            - gcp-control
+            - gcp-ctrl-nodes
           compute:
-            - gcp-compute
-      - name: ts1-oci
+            - gcp-cmpt-nodes
+      - name: ts1-oci-cluster-test-set-no1
         version: v1.26.13
         network: 192.168.2.0/24
         pools:
           control:
-            - oci-control
+            - oci-ctrl-nodes
           compute:
-            - oci-compute
-      - name: ts1-aws
+            - oci-cmpt-nodes
+      - name: ts1-aws-cluster-test-set-no1
         version: v1.26.13
         network: 192.168.2.0/24
         pools:
           control:
-            - aws-control
+            - aws-ctrl-nodes
           compute:
-            - aws-compute
-      - name: ts1-azure
+            - aws-cmpt-nodes
+      - name: ts1-azr-cluster-test-set-no1
         version: v1.26.13
         network: 192.168.2.0/24
         pools:
           control:
-            - azure-control
+            - azr-ctrl-nodes
           compute:
-            - azure-compute
+            - azr-cmpt-nodes

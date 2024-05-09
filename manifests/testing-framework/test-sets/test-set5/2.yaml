@@ -17,7 +17,7 @@ spec:
 
   nodePools:
     dynamic:
-      - name: aws-compute
+      - name: aws-cmpt-nodes
         providerSpec:
           name: aws-1
           region: eu-central-1
@@ -28,7 +28,7 @@ spec:
         image: ami-0039da1f3917fa8e3
         storageDiskSize: 50
 
-      - name: aws-lb
+      - name: aws-ldbl-nodes
         providerSpec:
           name: aws-1
           region: eu-central-1
@@ -40,7 +40,7 @@ spec:
         storageDiskSize: 50
 
     static:
-      - name: static-pool-1
+      - name: static-pool-01
         nodes:
           - endpoint: replace-me
             secretRef:
@@ -49,14 +49,14 @@ spec:
 
   kubernetes:
     clusters:
-      - name: hybrid-cluster
+      - name: hybrid-cluster-test-set-no-5
         version: v1.26.2
         network: 192.168.2.0/24
         pools:
           control:
-            - static-pool-1
+            - static-pool-01
           compute:
-            - aws-compute
+            - aws-cmpt-nodes
 
   loadBalancers:
     roles:
@@ -65,14 +65,14 @@ spec:
         port: 6443
         targetPort: 6443
         targetPools:
-          - static-pool-1
+          - static-pool-01
     clusters:
-      - name: hybrid-cluster-lb
+      - name: hybrid-cluster-lb-test-set-5
         roles:
           - apiserver-lb
         dns:
           dnsZone: claudie.dev
           provider: cloudflare-1
-        targetedK8s: hybrid-cluster
+        targetedK8s: hybrid-cluster-test-set-no-5
         pools:
-          - aws-lb
+          - aws-ldbl-nodes
