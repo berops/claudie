@@ -111,6 +111,7 @@ nav:
   - Claudie Hardening: hardening/hardening.md
   - Prometheus Monitoring: monitoring/grafana.md
   - Updating Claudie: update/update.md
+  - Deploying Node-Local-DNS: node-local-dns/node-local-dns.md
   - Command Cheat Sheet: commands/commands.md
 
 extra:

@@ -9,6 +9,8 @@ features:
   coreDNS:
     replicas: 2
     deployPodDisruptionBudget: true
+  nodeLocalDNS:
+    deploy: false
 
 clusterNetwork:
   cni:
