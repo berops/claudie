@@ -26,7 +26,6 @@ linters:
     - bodyclose
     - durationcheck
     - exhaustive
-    - exportloopref
     - goconst
     - tenv
     - wastedassign
