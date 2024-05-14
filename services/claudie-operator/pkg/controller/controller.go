@@ -129,7 +129,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			for _, desired := range rawManifest.NodePools.Dynamic {
 				if current, exists := nmap[desired.Name]; exists {
 					if err := immutabilityCheck(&desired, current); err != nil {
-						// nodepool exists and user changed the cloud provider
+						// nodepool exists and user changed the immutable specs
 						r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
 						inputManifest.SetUpdateResourceStatus(v1beta.InputManifestStatus{
 							State: v1beta.STATUS_ERROR,
