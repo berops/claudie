@@ -120,24 +120,25 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				configInDesiredState = utils.Equal(config.CsChecksum, config.DsChecksum)
 			}
 
-			// guard against changing the cloud provider in an existing nodepool
-			npNameProvider, err := getDynamicNodepoolsMap(config)
+			// guard against changing the immutables specs in an existing nodepool
+			nmap, err := getDynamicNodepoolsMap(config)
 			if err != nil {
 				return ctrl.Result{}, err
 			}
 
-			for _, np := range rawManifest.NodePools.Dynamic {
-				if pName, exist := npNameProvider[np.Name]; exist && pName != np.ProviderSpec.Name {
-					// nodepool exists and user changed the cloud provider
-					cErrMsg := fmt.Errorf("Changing cloud provider for an existing nodepool %s is forbidden", np.Name)
-					r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", cErrMsg.Error())
-					inputManifest.SetUpdateResourceStatus(v1beta.InputManifestStatus{
-						State: v1beta.STATUS_ERROR,
-					})
-					if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
-						return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
+			for _, desired := range rawManifest.NodePools.Dynamic {
+				if current, exists := nmap[desired.Name]; exists {
+					if err := immutabilityCheck(&desired, current); err != nil {
+						// nodepool exists and user changed the immutable specs
+						r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
+						inputManifest.SetUpdateResourceStatus(v1beta.InputManifestStatus{
+							State: v1beta.STATUS_ERROR,
+						})
+						if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
+							return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
+						}
+						return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, err
 					}
-					return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, cErrMsg
 				}
 			}
 
@@ -313,18 +314,48 @@ func (r *InputManifestReconciler) deleteConfig(im *manifest.Manifest) error {
 }
 
 // getDynamicNodepoolsMap will read manifest from the given config and return map of provider names keyed by dynamic nodepool names
-func getDynamicNodepoolsMap(config *pb.Config) (map[string]string, error) {
+func getDynamicNodepoolsMap(config *pb.Config) (map[string]*manifest.DynamicNodePool, error) {
 	d := []byte(config.GetManifest())
-	// Parse yaml to protobuf and create unmarshalledManifest
+
 	var unmarshalledManifest manifest.Manifest
 	if err := yaml.Unmarshal(d, &unmarshalledManifest); err != nil {
 		return nil, fmt.Errorf("error while unmarshalling yaml manifest for config %s: %w", config.Name, err)
 	}
 
-	npNameProvider := make(map[string]string)
+	nmap := make(map[string]*manifest.DynamicNodePool)
 	for _, np := range unmarshalledManifest.NodePools.Dynamic {
-		npNameProvider[np.Name] = np.ProviderSpec.Name
+		nmap[np.Name] = &np
 	}
 
-	return npNameProvider, nil
+	return nmap, nil
+}
+
+func immutabilityCheck(desired, current *manifest.DynamicNodePool) error {
+	if desired.ProviderSpec != current.ProviderSpec {
+		return fmt.Errorf("dynamic nodepools are immutable, changing the provider specification for %s is not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider creating a new nodepool", current.Name)
+	}
+
+	if desired.ServerType != current.ServerType {
+		return fmt.Errorf("dynamic nodepools are immutable, changing the server type for %s is not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider creating a new nodepool", current.Name)
+	}
+
+	if desired.Image != current.Image {
+		return fmt.Errorf("dynamic nodepools are immutable, changing the image for %s is not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider creating a new nodepool", current.Name)
+	}
+
+	storageDiskChanged := desired.StorageDiskSize == nil && current.StorageDiskSize != nil
+	storageDiskChanged = storageDiskChanged || (desired.StorageDiskSize != nil && current.StorageDiskSize == nil)
+	storageDiskChanged = storageDiskChanged || ((desired.StorageDiskSize != nil && current.StorageDiskSize != nil) && (*desired.StorageDiskSize != *current.StorageDiskSize))
+	if storageDiskChanged {
+		return fmt.Errorf("dynamic nodepools are immutable, changing the storage disk size for %s is not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider creating a new nodepool", current.Name)
+	}
+
+	machineSpecChanged := desired.MachineSpec == nil && current.MachineSpec != nil
+	machineSpecChanged = machineSpecChanged || (desired.MachineSpec != nil && current.MachineSpec == nil)
+	machineSpecChanged = machineSpecChanged || ((desired.MachineSpec != nil && current.MachineSpec != nil) && (*desired.MachineSpec != *current.MachineSpec))
+	if machineSpecChanged {
+		return fmt.Errorf("dynamic nodepools are immutable, changing the machine spec for %s is not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider creating a new nodepool", current.Name)
+	}
+
+	return nil
 }
