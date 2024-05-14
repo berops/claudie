@@ -332,7 +332,7 @@ func getDynamicNodepoolsMap(config *pb.Config) (map[string]*manifest.DynamicNode
 
 func immutabilityCheck(desired, current *manifest.DynamicNodePool) error {
 	if desired.ProviderSpec != current.ProviderSpec {
-		return fmt.Errorf("dynamic nodepools are immutable, changing the provider specification for %s it not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider creating a new nodepool", current.Name)
+		return fmt.Errorf("dynamic nodepools are immutable, changing the provider specification for %s is not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider creating a new nodepool", current.Name)
 	}
 
 	if desired.ServerType != current.ServerType {
