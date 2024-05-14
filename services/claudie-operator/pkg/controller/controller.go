@@ -354,7 +354,7 @@ func immutabilityCheck(desired, current *manifest.DynamicNodePool) error {
 	machineSpecChanged = machineSpecChanged || (desired.MachineSpec != nil && current.MachineSpec == nil)
 	machineSpecChanged = machineSpecChanged || ((desired.MachineSpec != nil && current.MachineSpec != nil) && (*desired.MachineSpec != *current.MachineSpec))
 	if machineSpecChanged {
-		return fmt.Errorf("dynamic nodepools are immutable, changing the machine spec for %s it not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider creating a new nodepool", current.Name)
+		return fmt.Errorf("dynamic nodepools are immutable, changing the machine spec for %s is not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider creating a new nodepool", current.Name)
 	}
 
 	return nil
