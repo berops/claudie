@@ -347,7 +347,7 @@ func immutabilityCheck(desired, current *manifest.DynamicNodePool) error {
 	storageDiskChanged = storageDiskChanged || (desired.StorageDiskSize != nil && current.StorageDiskSize == nil)
 	storageDiskChanged = storageDiskChanged || ((desired.StorageDiskSize != nil && current.StorageDiskSize != nil) && (*desired.StorageDiskSize != *current.StorageDiskSize))
 	if storageDiskChanged {
-		return fmt.Errorf("dynamic nodepools are immutable, changing the storage disk size for %s it not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider creating a new nodepool", current.Name)
+		return fmt.Errorf("dynamic nodepools are immutable, changing the storage disk size for %s is not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider creating a new nodepool", current.Name)
 	}
 
 	machineSpecChanged := desired.MachineSpec == nil && current.MachineSpec != nil
