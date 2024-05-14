@@ -16,10 +16,6 @@
     enabled: false
   when: |
     unattended_upgrades_service_exists is not failed
-    and
-    ansible_distribution == 'Ubuntu'
-    and
-    ansible_distribution_version == '22.04'
 
 - name: "Make sure unattended upgrades package is not installed"
   ansible.builtin.apt:
@@ -28,8 +24,4 @@
     purge: true
     update_cache: true
     force_apt_get: true
-  when: |
-    ansible_distribution == 'Ubuntu'
-    and
-    ansible_distribution_version == '22.04'
 ...
