@@ -120,7 +120,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				configInDesiredState = utils.Equal(config.CsChecksum, config.DsChecksum)
 			}
 
-			// guard against changing the cloud provider in an existing nodepool
+			// guard against changing the immutables specs in an existing nodepool
 			nmap, err := getDynamicNodepoolsMap(config)
 			if err != nil {
 				return ctrl.Result{}, err
