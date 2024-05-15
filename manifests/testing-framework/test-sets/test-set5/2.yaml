@@ -50,7 +50,7 @@ spec:
   kubernetes:
     clusters:
       - name: hybrid-cluster-test-set-no-5
-        version: v1.26.2
+        version: v1.27.0
         network: 192.168.2.0/24
         pools:
           control:

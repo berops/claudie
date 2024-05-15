@@ -350,7 +350,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
         kubernetes:
           clusters:
           - name: my-super-cluster
-            version: v1.24.0
+            version: v1.27.0
             network: 192.168.2.0/24
             pools:
                 control:

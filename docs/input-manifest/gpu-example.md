@@ -43,7 +43,7 @@ spec:
   kubernetes:
     clusters:
       - name: gpu-example
-        version: v1.26.1
+        version: v1.27.0
         network: 172.16.2.0/24
         pools:
           control:
