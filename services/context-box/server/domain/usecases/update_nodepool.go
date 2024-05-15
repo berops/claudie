@@ -38,6 +38,8 @@ func (u *Usecases) UpdateNodepool(request *pb.UpdateNodepoolRequest) (*pb.Update
 			if err := updateNodepool(config.CurrentState, request.ClusterName, request.Nodepool.Name, request.Nodepool.Nodes, nil); err != nil {
 				return nil, fmt.Errorf("error while updating current state in project %s : %w", config.Name, err)
 			}
+			// Calculate and update dsChecksum to reflect the changes in desired state
+			config.DsChecksum = utils.CalculateChecksum(config)
 			// Save new config in the database with dummy CsChecksum to initiate a build.
 			config.CsChecksum = utils.CalculateChecksum(internalUtils.CreateHash(8))
 			if err := u.DB.SaveConfig(config); err != nil {
