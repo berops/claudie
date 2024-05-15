@@ -21,3 +21,17 @@
         name: nfs-common
         state: present
         update_cache: true
+
+    - name: Update /etc/multipath.conf with blacklist configuration
+      blockinfile:
+        path: /etc/multipath.conf
+        block: |
+          blacklist {
+              devnode "^sd[a-z0-9]+"
+          }
+        create: yes
+
+    - name: Restart multipathd.service
+      ansible.builtin.systemd:
+        name: multipathd.service
+        state: restarted
