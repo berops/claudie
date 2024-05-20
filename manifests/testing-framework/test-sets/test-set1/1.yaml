@@ -178,7 +178,7 @@ spec:
   kubernetes:
     clusters:
       - name: ts1-htz-cluster-test-set-no1
-        version: v1.26.13
+        version: 1.27.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -186,7 +186,7 @@ spec:
           compute:
             - htz-cmpt-nodes
       - name: ts1-gcp-cluster-test-set-no1
-        version: v1.26.13
+        version: 1.27.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -194,7 +194,7 @@ spec:
           compute:
             - gcp-cmpt-nodes
       - name: ts1-oci-cluster-test-set-no1
-        version: v1.26.13
+        version: 1.27.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -202,7 +202,7 @@ spec:
           compute:
             - oci-cmpt-nodes
       - name: ts1-aws-cluster-test-set-no1
-        version: v1.26.13
+        version: 1.27.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -210,7 +210,7 @@ spec:
           compute:
             - aws-cmpt-nodes
       - name: ts1-azr-cluster-test-set-no1
-        version: v1.26.13
+        version: 1.27.0
         network: 192.168.2.0/24
         pools:
           control:

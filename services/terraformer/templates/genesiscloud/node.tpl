@@ -67,6 +67,7 @@ echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyA
 mkdir -p /opt/claudie/data
     {{- if not $nodepool.IsControl }}
      {{- if gt $nodepool.NodePool.StorageDiskSize 0 }}
+     sleep 30
 # The IDs listed by `/dev/disk/by-id` are different then the volume ids assigned by genesis cloud.
 # This is a hacky way assuming that only the longhorn volume will be mounted at startup and no other volume
 longhorn_diskuuid=$(blkid | grep genesis_cloud | grep -oP 'UUID="\K[^"]+')
