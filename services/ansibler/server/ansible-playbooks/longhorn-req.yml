@@ -28,6 +28,8 @@
         block: |
           blacklist {
               devnode "^sd[a-z0-9]+"
+              devnode "^vd[a-z0-9]+"
+              devnode "^nvme[a-z0-9]+"
           }
         create: yes
 
@@ -35,3 +37,6 @@
       ansible.builtin.systemd:
         name: multipathd.service
         state: restarted
+      # some cloud providers may not use the multipathd service 
+      # thus make the error not fatal.
+      ignore_errors: yes
