@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	metrics2 "github.com/berops/claudie/services/context-box/server/domain/usecases/metrics"
+	"google.golang.org/grpc/health/grpc_health_v1"
 
 	"net/http"
 	"os"
@@ -58,6 +59,24 @@ func main() {
 	grpcAdapter.Init(usecases, grpc2.UnaryInterceptor(metrics.MetricsMiddleware))
 
 	errGroup, errGroupContext := errgroup.WithContext(context.Background())
+
+	errGroup.Go(func() error {
+		ticker := time.NewTicker(30 * time.Second)
+		for {
+			select {
+			case <-errGroupContext.Done():
+				ticker.Stop()
+				return nil
+			case <-ticker.C:
+				if err := mongoDBConnector.HealthCheck(); err != nil {
+					grpcAdapter.HealthCheckServer.SetServingStatus("context-box-readiness", grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+					log.Debug().Msgf("Failed to verify healthcheck: %v", err)
+				} else {
+					grpcAdapter.HealthCheckServer.SetServingStatus("context-box-readiness", grpc_health_v1.HealthCheckResponse_SERVING)
+				}
+			}
+		}
+	})
 
 	// Server goroutine
 	errGroup.Go(func() error {

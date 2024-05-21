@@ -22,7 +22,7 @@ const (
 	databaseName   = "claudie"
 	collectionName = "inputManifests"
 
-	maxConnectionRetriesCount = 20
+	maxConnectionRetriesCount = 30
 	pingTimeout               = 5 * time.Second
 	pingRetrialDelay          = 5 * time.Second
 )
@@ -69,9 +69,7 @@ func NewMongoDBConnector(connectionUri string) *MongoDBConnector {
 func (m *MongoDBConnector) Connect() error {
 	// Establish DB connection, this does not do any deployment checks/IO on the DB
 	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(m.connectionUri))
-
 	censoredUri := utils.SanitiseURI(m.connectionUri)
-
 	if err != nil {
 		return fmt.Errorf("failed to create a mongoDB client with connection uri %s: %w", censoredUri, err)
 	}
@@ -105,6 +103,13 @@ func pingDB(client *mongo.Client) error {
 	}
 
 	return nil
+}
+
+func (m *MongoDBConnector) HealthCheck() error {
+	if m.client == nil {
+		return fmt.Errorf("unintialized client")
+	}
+	return pingDB(m.client)
 }
 
 // Init performs the initialization tasks after connection is established with MongoDB
