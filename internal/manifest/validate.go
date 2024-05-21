@@ -1,9 +1,11 @@
 package manifest
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
-
 	"github.com/go-playground/validator/v10"
+	"strings"
 )
 
 // Validate validates the parsed manifest data.
@@ -41,4 +43,49 @@ func (m *Manifest) Validate() error {
 	}
 
 	return nil
+}
+
+type validationErrors []error
+
+func (v validationErrors) Error() string {
+	buffer := bytes.NewBufferString("")
+
+	for _, e := range v {
+		buffer.WriteString(e.Error())
+		buffer.WriteString("; ")
+	}
+
+	return strings.TrimSpace(buffer.String())
+}
+
+func prettyPrintValidationError(err error) error {
+	var validationErr validator.ValidationErrors
+	errors.As(err, &validationErr)
+
+	if validationErr == nil {
+		return err
+	}
+
+	var out validationErrors
+	for _, err := range validationErr {
+		var nerr error
+		switch err.Tag() {
+		case "max":
+			nerr = fmt.Errorf("field '%s' must have a maximum length of %s", err.StructField(), err.Param())
+		case "min":
+			nerr = fmt.Errorf("field '%s' must have a minimum length of %s", err.StructField(), err.Param())
+		case "len":
+			nerr = fmt.Errorf("field '%s' must have exact length of %s", err.StructField(), err.Param())
+		case "required":
+			nerr = fmt.Errorf("field '%s' is required to be defined", err.StructField())
+		case "ip_addr":
+			nerr = fmt.Errorf("field '%s' is required to have a valid IPv4 address value", err.StructField())
+		case "cidrv4":
+			nerr = fmt.Errorf("field '%s' is required to have a valid CIDRv4 value", err.StructField())
+		case "ver":
+			nerr = fmt.Errorf("field '%s' is required to have a kubernetes version of: 1.27.x, 1.28.x, 1.29.x", err.StructField())
+		}
+		out = append(out, nerr)
+	}
+	return out
 }

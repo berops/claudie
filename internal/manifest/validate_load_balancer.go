@@ -176,8 +176,19 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 	return nil
 }
 
-func (r *Role) Validate() error                { return validator.New().Struct(r) }
-func (c *LoadBalancerCluster) Validate() error { return validator.New().Struct(c) }
+func (r *Role) Validate() error {
+	if err := validator.New().Struct(r); err != nil {
+		return prettyPrintValidationError(err)
+	}
+	return nil
+}
+
+func (c *LoadBalancerCluster) Validate() error {
+	if err := validator.New().Struct(c); err != nil {
+		return prettyPrintValidationError(err)
+	}
+	return nil
+}
 
 func validateLBStaticNodePool(m *Manifest, clusters []LoadBalancerCluster) error {
 	for _, cluster := range clusters {
