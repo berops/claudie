@@ -32,7 +32,7 @@ func (k *Kubernetes) Validate(m *Manifest) error {
 
 	for _, cluster := range k.Clusters {
 		if err := cluster.Validate(); err != nil {
-			return fmt.Errorf("failed to validate kubernetes cluster %s: %w", cluster.Name, prettyPrintValidationError(err))
+			return fmt.Errorf("failed to validate kubernetes cluster %s: %w", cluster.Name, err)
 		}
 
 		// check if the name is already used by a different cluster
@@ -61,7 +61,10 @@ func (c *Cluster) Validate() error {
 		return err
 	}
 
-	return validate.Struct(c)
+	if err := validate.Struct(c); err != nil {
+		return prettyPrintValidationError(err)
+	}
+	return nil
 }
 
 func validateVersion(fl validator.FieldLevel) bool {
