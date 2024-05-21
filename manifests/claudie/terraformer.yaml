@@ -109,12 +109,6 @@ spec:
               service: terraformer-readiness
             initialDelaySeconds: 5
             periodSeconds: 30
-          livenessProbe:
-            grpc:
-              port: 50052
-              service: terraformer-liveness
-            initialDelaySeconds: 5
-            periodSeconds: 30
 ---
 kind: Service
 apiVersion: v1
