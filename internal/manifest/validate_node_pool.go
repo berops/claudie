@@ -140,10 +140,18 @@ func (d *DynamicNodePool) Validate(m *Manifest) error {
 		}
 	}, DynamicNodePool{})
 
-	return validate.Struct(d)
+	if err := validate.Struct(d); err != nil {
+		return prettyPrintValidationError(err)
+	}
+	return nil
 }
 
-func (s *StaticNodePool) Validate() error { return validator.New().Struct(s) }
+func (s *StaticNodePool) Validate() error {
+	if err := validator.New().Struct(s); err != nil {
+		return prettyPrintValidationError(err)
+	}
+	return nil
+}
 
 func (a *AutoscalerConfig) isDefined() bool { return a.Min >= 0 && a.Max > 0 }
 
