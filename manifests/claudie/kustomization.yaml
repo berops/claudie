@@ -66,7 +66,7 @@ images:
 - name: ghcr.io/berops/claudie/claudie-operator
   newTag: 43f201d-2805
 - name: ghcr.io/berops/claudie/context-box
-  newTag: 43f201d-2805
+  newTag: ab6f6da-2807
 - name: ghcr.io/berops/claudie/kube-eleven
   newTag: 43f201d-2805
 - name: ghcr.io/berops/claudie/kuber
@@ -74,4 +74,4 @@ images:
 - name: ghcr.io/berops/claudie/scheduler
   newTag: 43f201d-2805
 - name: ghcr.io/berops/claudie/terraformer
-  newTag: 43f201d-2805
+  newTag: ab6f6da-2807
