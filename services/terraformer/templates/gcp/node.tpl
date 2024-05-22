@@ -36,7 +36,18 @@ resource "google_compute_instance" "{{ $node.Name }}_{{ $region }}_{{ $specName 
       image = "{{ $nodepool.NodePool.Image }}"
     }
   }
-  metadata_startup_script = "echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart"
+  metadata_startup_script = <<EOF
+#!/bin/bash
+# allow ssh as root
+echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config
+sshd_active=$(systemctl is-active sshd 2>/dev/null)
+if [ $sshd_active = 'active' ]; then
+    sudo service sshd restart
+else
+    # Ubuntu 24.04 doesn't have sshd service...
+    sudo service ssh restart
+fi
+EOF
 {{- end }}
 
 {{- if eq $.ClusterData.ClusterType "K8s" }}
@@ -51,7 +62,15 @@ resource "google_compute_instance" "{{ $node.Name }}_{{ $region }}_{{ $specName 
   #!/bin/bash
   set -euxo pipefail
 # Allow ssh as root
-echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart  
+echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config
+# The '|| true' part in the following cmd makes sure that this script doesn't fail when there is no sshd service.
+sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
+if [ $sshd_active = 'active' ]; then
+    sudo service sshd restart
+else
+    # Ubuntu 24.04 doesn't have sshd service...
+    sudo service ssh restart
+fi
 # Create longhorn volume directory
 mkdir -p /opt/claudie/data
     {{- if and (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
