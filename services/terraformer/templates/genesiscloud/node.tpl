@@ -48,7 +48,14 @@ resource "genesiscloud_instance" "{{ $node.Name }}_{{ $region }}_{{ $specName }}
 #!/bin/bash
 set -eo pipefail
 sudo sed -i -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys
-echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart
+echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config
+sshd_active=$(systemctl is-active sshd 2>/dev/null)
+if [ $sshd_active = 'active' ]; then
+    sudo service sshd restart
+else
+    # Ubuntu 24.04 doesn't have sshd service...
+    sudo service ssh restart
+fi
 EOF
   }
   {{- end }}
@@ -61,7 +68,15 @@ set -eo pipefail
 
 # Allow ssh as root
 sudo sed -i -n 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys
-echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && service sshd restart
+echo 'PermitRootLogin without-password' >> /etc/ssh/sshd_config && echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config
+# The '|| true' part in the following cmd makes sure that this script doesn't fail when there is no sshd service.
+sshd_active=$(systemctl is-active sshd 2>/dev/null || true)
+if [ $sshd_active = 'active' ]; then
+    sudo service sshd restart
+else
+    # Ubuntu 24.04 doesn't have sshd service...
+    sudo service ssh restart
+fi
 
 # startup script
 mkdir -p /opt/claudie/data
