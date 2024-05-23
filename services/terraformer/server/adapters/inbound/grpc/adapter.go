@@ -43,8 +43,6 @@ func (g *GrpcAdapter) Init(usecases *usecases.Usecases, opts ...grpc.ServerOptio
 
 	// Add health service to gRPC
 	g.HealthServer = health.NewServer()
-	// Set liveness to SERVING
-	g.HealthServer.SetServingStatus("terraformer-liveness", grpc_health_v1.HealthCheckResponse_SERVING)
 	// Set readiness to NOT_SERVING, as it will be changed later.
 	g.HealthServer.SetServingStatus("terraformer-readiness", grpc_health_v1.HealthCheckResponse_NOT_SERVING)
 	grpc_health_v1.RegisterHealthServer(g.server, g.HealthServer)

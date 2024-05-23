@@ -66,12 +66,6 @@ spec:
               service: context-box-readiness
             initialDelaySeconds: 5
             periodSeconds: 30
-          livenessProbe:
-            grpc:
-              port: 50055
-              service: context-box-liveness
-            initialDelaySeconds: 5
-            periodSeconds: 30
 ---
 kind: Service
 apiVersion: v1
