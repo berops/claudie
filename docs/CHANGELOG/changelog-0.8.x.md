@@ -49,6 +49,8 @@ To further harden claudie, you may want to deploy our pre-defined network polici
 
 ## v0.8.1
 
+Nodepools with genesis cloud provider will trigger a recreation of the cluster due to the change in terraform files. Make a backup of your data if your cluster constains genesis cloud nodepools.
+
 ### Features
 - disable deploying Node Local DNS by default [#1382](https://github.com/berops/claudie/pull/1382)
 - Add immutability to nodepools [#1385](https://github.com/berops/claudie/pull/1385)
