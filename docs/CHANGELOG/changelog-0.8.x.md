@@ -1,6 +1,10 @@
 # Claudie `v0.8`
 
-!!! warning "Due to updating terraform files the `v0.8.x` clusters build with claudie version `v0.7.x` will be forced to be recreated. Before updating make backups of your data"
+!!! warning "Due to updating terraform files the `v0.8.x` clusters build with claudie version `v0.7.x` will be forced to be recreated. 
+
+Nodepool/cluster names that do not meet the required length of 14 characters for nodepool names and 28 characters for cluster names must be adjusted or the new length validation will fail. You can achieve a rolling update by adding new nodepools with the new names and then removing the old nodepools before updating to version 0.8. 
+
+Before updating make backups of your data"
 
 ## Deployment
 
@@ -42,3 +46,14 @@ To further harden claudie, you may want to deploy our pre-defined network polici
 - Correctly change the API endpoint [#1366](https://github.com/berops/claudie/pull/1366)
 - Restrict nodepool and cluster names to 14 and 28 characters respectively, and add the ability to define and use providers in a single cluster [#1348](https://github.com/berops/claudie/pull/1348)
 - Prohibit changing the cloud provider in a nodepool [#1371](https://github.com/berops/claudie/pull/1371)
+
+## v0.8.1
+
+### Features
+- disable deploying Node Local DNS by default [#1382](https://github.com/berops/claudie/pull/1382)
+- Add immutability to nodepools [#1385](https://github.com/berops/claudie/pull/1385)
+- More readable validation errors [#1397](https://github.com/berops/claudie/pull/1397)
+
+### Bugfixes
+- Fix mounting volume for longhorn on genesis cloud nodepools [#1389](https://github.com/berops/claudie/pull/1389)
+- Fix MountVolume.SetUp errors by updating multipath configuration [#1386](https://github.com/berops/claudie/pull/1386)
