@@ -86,7 +86,7 @@ func (s *S3Adapter) Healthcheck() error {
 	})
 
 	if err != nil {
-		return fmt.Errorf("error creating healthcheck client for AWS S3: %v", err)
+		return fmt.Errorf("error creating healthcheck client for AWS S3: %w", err)
 	}
 	return nil
 }
