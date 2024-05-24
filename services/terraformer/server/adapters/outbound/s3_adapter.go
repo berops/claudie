@@ -6,8 +6,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/rs/zerolog/log"
-
 	"github.com/berops/claudie/internal/envs"
 )
 
@@ -88,7 +86,7 @@ func (s *S3Adapter) Healthcheck() error {
 	})
 
 	if err != nil {
-		log.Fatal().Msgf("Error creating healthcheck client for AWS S3: %v", err)
+		return fmt.Errorf("error creating healthcheck client for AWS S3: %w", err)
 	}
 	return nil
 }
