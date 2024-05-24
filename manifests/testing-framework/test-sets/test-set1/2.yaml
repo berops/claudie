@@ -48,7 +48,7 @@ spec:
           zone: nbg1-dc3
         count: 2
         serverType: cpx11
-        image: ubuntu-22.04
+        image: ubuntu-24.04
         labels:
           test-set: test-set1-new
         annotations:
@@ -61,7 +61,7 @@ spec:
           zone: nbg1-dc3
         count: 1
         serverType: cpx11
-        image: ubuntu-22.04
+        image: ubuntu-24.04
         storageDiskSize: 50
         labels:
           test-set: test-set1-new
