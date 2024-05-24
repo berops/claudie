@@ -1,4 +1,4 @@
-FROM docker.io/library/golang:1.22.2 AS build
+FROM docker.io/library/golang:1.22.2 AS go_builder
 
 ARG TARGETARCH
 
@@ -21,44 +21,44 @@ WORKDIR /go/services/ansibler/server
 RUN CGO_ENABLED=0 go build
 
 # Ansible installation: https://github.com/cytopia/docker-ansible/blob/master/Dockerfiles/Dockerfile-base
-FROM docker.io/library/alpine:3.16 AS builder
+FROM docker.io/library/alpine:3.16 AS ansible_builder
 
 RUN set -eux \
 	&& apk add --update --no-cache \
-		# build tools
-		coreutils \
-		g++ \
-		gcc \
-		make \
-		musl-dev \
-		openssl-dev \
-		python3-dev \
-		# misc tools
-		bc \
-		libffi-dev \
-		libxml2-dev \
-		libxslt-dev \
-		py3-pip \
-		python3 \
-# Fix: ansible --version: libyaml = True
-# https://www.jeffgeerling.com/blog/2021/ansible-might-be-running-slow-if-libyaml-not-available
+	# build tools
+	coreutils \
+	g++ \
+	gcc \
+	make \
+	musl-dev \
+	openssl-dev \
+	python3-dev \
+	# misc tools
+	bc \
+	libffi-dev \
+	libxml2-dev \
+	libxslt-dev \
+	py3-pip \
+	python3 \
+	# Fix: ansible --version: libyaml = True
+	# https://www.jeffgeerling.com/blog/2021/ansible-might-be-running-slow-if-libyaml-not-available
 	&& apk add --update --no-cache \
-		py3-yaml \
+	py3-yaml \
 	&& python3 -c 'import _yaml'
 
 # Pip required tools
 RUN set -eux \
 	&& pip3 install --no-cache-dir --no-compile \
-		wheel
+	wheel
 RUN set -eux \
 	&& pip3 install --no-cache-dir --no-compile \
-		Jinja2 \
-		MarkupSafe \
-		PyNaCl \
-		bcrypt \
-		cffi \
-		cryptography \
-		pycparser
+	Jinja2 \
+	MarkupSafe \
+	PyNaCl \
+	bcrypt \
+	cffi \
+	cryptography \
+	pycparser
 
 RUN set -eux \
 	# ansible 9.6.0 includes ansible-core 2.16.7 and ansible-community 9.6.0
@@ -69,17 +69,17 @@ RUN set -eux \
 # Python packages (copied to final image)
 RUN set -eux \
 	&& pip3 install --no-cache-dir --no-compile \
-		junit-xml \
-		lxml \
-		paramiko \
+	junit-xml \
+	lxml \
+	paramiko \
 	&& find /usr/lib/ -name '__pycache__' -print0 | xargs -0 -n1 rm -rf \
 	&& find /usr/lib/ -name '*.pyc' -print0 | xargs -0 -n1 rm -rf
 
 # Clean-up some site-packages to safe space
 RUN set -eux \
 	&& pip3 uninstall --yes \
-		setuptools \
-		wheel \
+	setuptools \
+	wheel \
 	&& find /usr/lib/ -name '__pycache__' -print0 | xargs -0 -n1 rm -rf \
 	&& find /usr/lib/ -name '*.pyc' -print0 | xargs -0 -n1 rm -rf
 
@@ -93,27 +93,27 @@ LABEL org.opencontainers.image.description "Image for Ansibler from Claudie"
 
 RUN set -eux \
 	&& apk add --no-cache \
-# Issue: #85 libgcc required for ansible-vault
-		libgcc \
-		py3-pip \
-		python3 \
-# Issue: #76 yaml required for 'libyaml = True' (faster startup time)
-		yaml \
+	# Issue: #85 libgcc required for ansible-vault
+	libgcc \
+	py3-pip \
+	python3 \
+	# Issue: #76 yaml required for 'libyaml = True' (faster startup time)
+	yaml \
 	&& find /usr/lib/ -name '__pycache__' -print0 | xargs -0 -n1 rm -rf \
 	&& find /usr/lib/ -name '*.pyc' -print0 | xargs -0 -n1 rm -rf \
 	\
 	&& ln -s /usr/bin/python3 /usr/bin/python
 
-COPY --from=builder /usr/lib/python3.10/site-packages/ /usr/lib/python3.10/site-packages/
-COPY --from=builder /usr/bin/ansible* /usr/bin/
+COPY --from=ansible_builder /usr/lib/python3.10/site-packages/ /usr/lib/python3.10/site-packages/
+COPY --from=ansible_builder /usr/bin/ansible* /usr/bin/
 
 # Pre-compile Python for better performance
 RUN set -eux \
 	&& python3 -m compileall -j 0 /usr/lib/python3.10
 
 #Copy the binaries to empty base image
-COPY --from=build /go/services/ansibler/server/server /bin/services/ansibler/server/server
-COPY --from=build /go/services/ansibler/server/ansible-playbooks /bin/services/ansibler/server/ansible-playbooks
+COPY --from=go_builder /go/services/ansibler/server/server /bin/services/ansibler/server/server
+COPY --from=go_builder /go/services/ansibler/server/ansible-playbooks /bin/services/ansibler/server/ansible-playbooks
 
 RUN apk update && apk add -q bash
 
