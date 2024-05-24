@@ -62,7 +62,7 @@ RUN set -eux \
 
 RUN set -eux \
 	# ansible 9.6.0 includes ansible-core 2.16.7 and ansible-community 9.6.0
-	pip3 install --no-cache-dir --no-binary pyyaml ansible~=9.0 \
+	&& pip3 install --no-cache-dir --no-binary pyyaml ansible~=9.0 \
 	&& find /usr/lib/ -name '__pycache__' -print0 | xargs -0 -n1 rm -rf \
 	&& find /usr/lib/ -name '*.pyc' -print0 | xargs -0 -n1 rm -rf
 
