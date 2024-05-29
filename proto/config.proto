@@ -10,7 +10,8 @@ message Config {
   string name = 2;
   // resourceName represents the input manifest resource name in Kubernetes
   string resourceName = 3;
-  // resourceNamespace represents the input manifest resource namespace in Kubernetes
+  // resourceNamespace represents the input manifest resource namespace in
+  // Kubernetes
   string resourceNamespace = 4;
   // Client defined manifest.
   string manifest = 5;
@@ -36,11 +37,13 @@ message Workflow {
   enum Stage {
     // NONE indicates that no stage is currently executing.
     NONE = 0;
-    // TERRAFORMER indicates that the cluster is currently being build in terraformer.
+    // TERRAFORMER indicates that the cluster is currently being build in
+    // terraformer.
     TERRAFORMER = 1;
     // ANSIBLER indicates that the cluster is currently being build in ansibler.
     ANSIBLER = 2;
-    // KUBE_ELEVEN indicates that the cluster is currently being build in kube eleven.
+    // KUBE_ELEVEN indicates that the cluster is currently being build in kube
+    // eleven.
     KUBE_ELEVEN = 3;
     // KUBER indicates that the cluster is currently being build in kuber.
     KUBER = 4;
@@ -91,7 +94,8 @@ message K8scluster {
   string kubernetes = 4;
 }
 
-// LBcluster represents a single load balancer cluster specified in the manifest.
+// LBcluster represents a single load balancer cluster specified in the
+// manifest.
 message LBcluster {
   // General info about the cluster.
   ClusterInfo clusterInfo = 1;
@@ -203,6 +207,14 @@ message MachineSpec {
   int32 memory = 2;
 }
 
+// TemplateRepository specifies from which repository the template
+// files should be downloaded.
+message TemplateRepository {
+  string repository = 1;
+  string tag = 2;
+  string path = 3;
+}
+
 // DynamicNodePool represents dynamic node pool used in cluster.
 message DynamicNodePool {
   // Machine type of the nodes.
@@ -225,6 +237,7 @@ message DynamicNodePool {
   AutoscalerConf autoscalerConfig = 9;
   // MachineSpec configuration. (optional)
   MachineSpec machineSpec = 10;
+  TemplateRepository templates = 11;
 }
 
 // StaticNodePool represents static node pool used in cluster.
@@ -280,7 +293,6 @@ enum StaticNodepoolInfo {
   STATIC_REGION = 1;
   STATIC_ZONE = 2;
 }
-
 
 message Provider {
   // Provider name defined in input manifest.

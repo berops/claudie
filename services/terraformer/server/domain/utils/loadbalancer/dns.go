@@ -10,19 +10,18 @@ import (
 	"github.com/rs/zerolog/log"
 
 	comm "github.com/berops/claudie/internal/command"
-	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
-	"github.com/berops/claudie/services/terraformer/server/domain/utils/backend"
 	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
-	"github.com/berops/claudie/services/terraformer/server/domain/utils/provider"
+	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates/backend"
+	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates/provider"
+	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates/templates"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/terraform"
-	"github.com/berops/claudie/services/terraformer/templates"
 )
 
 const (
-	dnsTemplate = "dns.tpl"
-	dnsTfFile   = "%s-dns.tf"
+	TemplatesRootDir = "services/terraformer/templates"
+	dnsTfFile        = "%s-dns.tf"
 )
 
 type DNS struct {
@@ -40,19 +39,6 @@ type DNS struct {
 	// processes. This values should always be non-nil and be buffered, where the capacity indicates
 	// the limit.
 	SpawnProcessLimit chan struct{}
-}
-
-type DNSData struct {
-	ClusterName  string
-	ClusterHash  string
-	HostnameHash string
-	DNSZone      string
-	NodeIPs      []string
-	Provider     *pb.Provider
-}
-
-type outputDomain struct {
-	Domain map[string]string `json:"-"`
 }
 
 // CreateDNSRecords creates DNS records for the Loadbalancer cluster.
@@ -180,29 +166,23 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *pb.DNS, nodeIPs []string) 
 		return err
 	}
 
-	if err := utils.CreateKeyFile(dns.Provider.Credentials, dnsDir, dns.Provider.SpecName); err != nil {
-		return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", dns.Provider.SpecName, dnsDir, err)
+	g := templates.DNSGenerator{
+		TargetDirectory: dnsDir,
 	}
 
-	path := filepath.Join(dns.Provider.CloudProviderName, dnsTemplate)
-	file, err := templates.CloudProviderTemplates.ReadFile(path)
-	if err != nil {
-		return fmt.Errorf("error while reading template file %s for %s : %w", dnsTemplate, dnsDir, err)
-	}
-	tpl, err := templateUtils.LoadTemplate(string(file))
-	if err != nil {
-		return fmt.Errorf("error while parsing template file %s for %s : %w", dnsTemplate, dnsDir, err)
-	}
-
-	targetDirectory := templateUtils.Templates{Directory: dnsDir}
-	return targetDirectory.Generate(tpl, fmt.Sprintf(dnsTfFile, dns.Provider.CloudProviderName), DNSData{
+	data := &templates.DNSData{
 		DNSZone:      dns.DnsZone,
 		HostnameHash: dns.Hostname,
 		ClusterName:  d.ClusterName,
 		ClusterHash:  d.ClusterHash,
 		NodeIPs:      nodeIPs,
 		Provider:     dns.Provider,
-	})
+	}
+	if err := g.GenerateDNS(TemplatesRootDir, data); err != nil {
+		return fmt.Errorf("failed to generate dns templates for %q: %w", dnsID, err)
+	}
+
+	return nil
 }
 
 // validateDomain validates the domain does not start with ".".
@@ -214,8 +194,8 @@ func validateDomain(s string) string {
 }
 
 // readDomain reads full domain from terraform output.
-func readDomain(data string) (outputDomain, error) {
-	var result outputDomain
+func readDomain(data string) (templates.DNSDomain, error) {
+	var result templates.DNSDomain
 	err := json.Unmarshal([]byte(data), &result.Domain)
 	return result, err
 }

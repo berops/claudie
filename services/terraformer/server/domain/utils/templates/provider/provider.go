@@ -1,13 +1,16 @@
 package provider
 
 import (
+	_ "embed"
 	"fmt"
 
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
-	"github.com/berops/claudie/services/terraformer/templates"
 )
+
+//go:embed providers.tpl
+var providersTemplate string
 
 // Provider package struct
 type Provider struct {
@@ -32,7 +35,7 @@ type templateData struct {
 func (p Provider) CreateProviderDNS(dns *pb.DNS) error {
 	template := templateUtils.Templates{Directory: p.Directory}
 
-	tpl, err := templateUtils.LoadTemplate(templates.ProvidersTemplate)
+	tpl, err := templateUtils.LoadTemplate(providersTemplate)
 	if err != nil {
 		return fmt.Errorf("error while parsing template file providers.tpl for cluster %s: %w", p.ClusterName, err)
 	}
@@ -51,7 +54,7 @@ func (p Provider) CreateProvider(currentCluster, desiredCluster *pb.ClusterInfo)
 	getProvidersUsed(utils.GetDynamicNodePoolsFromCI(currentCluster), &data)
 	getProvidersUsed(utils.GetDynamicNodePoolsFromCI(desiredCluster), &data)
 
-	tpl, err := templateUtils.LoadTemplate(templates.ProvidersTemplate)
+	tpl, err := templateUtils.LoadTemplate(providersTemplate)
 	if err != nil {
 		return fmt.Errorf("error while parsing template file providers.tpl for cluster %s : %w", p.ClusterName, err)
 	}

@@ -84,6 +84,8 @@ func prettyPrintValidationError(err error) error {
 			nerr = fmt.Errorf("field '%s' is required to have a valid CIDRv4 value", err.StructField())
 		case "ver":
 			nerr = fmt.Errorf("field '%s' is required to have a kubernetes version of: 1.27.x, 1.28.x, 1.29.x", err.StructField())
+		default:
+			nerr = err
 		}
 		out = append(out, nerr)
 	}

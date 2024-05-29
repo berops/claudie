@@ -6,24 +6,23 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"sort"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	comm "github.com/berops/claudie/internal/command"
-	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
-	"github.com/berops/claudie/services/terraformer/server/domain/utils/backend"
-	"github.com/berops/claudie/services/terraformer/server/domain/utils/provider"
+	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates/backend"
+	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates/provider"
+	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates/templates"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/terraform"
-	"github.com/berops/claudie/services/terraformer/templates"
 )
 
 const (
-	Output        = "services/terraformer/server/clusters"
-	subnetCidrKey = "VPC_SUBNET_CIDR"
+	TemplatesRootDir = "services/terraformer/templates"
+	Output           = "services/terraformer/server/clusters"
+	subnetCidrKey    = "VPC_SUBNET_CIDR"
 	// <nodepool-name>-subnet-cidr
 	subnetCidrKeyTemplate = "%s-subnet-cidr"
 	baseSubnetCIDR        = "10.0.0.0/24"
@@ -52,36 +51,6 @@ type ClusterBuilder struct {
 	// processes. This values should always be non-nil and be buffered, where the capacity indicates
 	// the limit.
 	SpawnProcessLimit chan struct{}
-}
-
-type ClusterData struct {
-	ClusterName string
-	ClusterHash string
-	ClusterType string
-}
-
-type ProviderData struct {
-	ClusterData ClusterData
-	Provider    *pb.Provider
-	Regions     []string
-	Metadata    map[string]any
-}
-
-type NodepoolsData struct {
-	ClusterData ClusterData
-	NodePools   []NodePoolInfo
-	Metadata    map[string]any
-}
-
-type NodePoolInfo struct {
-	NodePool  *pb.DynamicNodePool
-	Name      string
-	Nodes     []*pb.Node
-	IsControl bool
-}
-
-type outputNodepools struct {
-	IPs map[string]interface{} `json:"-"`
 }
 
 // CreateNodepools creates node pools for the cluster.
@@ -244,7 +213,13 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 		}
 	}
 
-	if err := generateProviderTemplates(c.CurrentClusterInfo, c.DesiredClusterInfo, clusterID, clusterDir); err != nil {
+	clusterData := templates.ClusterData{
+		ClusterName: clusterInfo.Name,
+		ClusterHash: clusterInfo.Hash,
+		ClusterType: c.ClusterType.String(),
+	}
+
+	if err := generateProviderTemplates(c.CurrentClusterInfo, c.DesiredClusterInfo, clusterID, clusterDir, clusterData); err != nil {
 		return fmt.Errorf("error while generating provider templates: %w", err)
 	}
 
@@ -254,27 +229,35 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 			continue
 		}
 
-		providerData := &ProviderData{
-			ClusterData: ClusterData{
-				ClusterName: clusterInfo.Name,
-				ClusterHash: clusterInfo.Hash,
-				ClusterType: c.ClusterType.String(),
-			},
-			Provider: nodepools[0].GetDynamicNodePool().GetProvider(),
-			Regions:  utils.GetRegions(utils.GetDynamicNodePools(nodepools)),
-			Metadata: c.Metadata,
+		if err := templates.DownloadForNodepools(TemplatesRootDir, nodepools); err != nil {
+			msg := fmt.Sprintf("cluster %q failed to download template repository", clusterID)
+			log.Error().Msgf(msg)
+			return fmt.Errorf("%s: %w", msg, err)
 		}
 
-		if err := generateNetworkingCommon(clusterID, clusterDir, providerData); err != nil {
+		g := templates.NodepoolGenerator{
+			ClusterID:         clusterID,
+			TargetDirectory:   clusterDir,
+			ReadFromDirectory: TemplatesRootDir,
+			Nodepools:         nodepools,
+		}
+
+		providerData := templates.ProviderData{
+			ClusterData: clusterData,
+			Provider:    nodepools[0].GetDynamicNodePool().GetProvider(),
+			Regions:     utils.GetRegions(utils.GetDynamicNodePools(nodepools)),
+			Metadata:    c.Metadata,
+		}
+		if err := g.GenerateNetworkingCommon(&providerData); err != nil {
 			return fmt.Errorf("failed to generate networking_common template files: %w", err)
 		}
 
-		nps := make([]NodePoolInfo, 0, len(nodepools))
+		nps := make([]templates.NodePoolInfo, 0, len(nodepools))
 		for _, np := range nodepools {
 			if np.GetDynamicNodePool() == nil {
 				continue
 			}
-			nps = append(nps, NodePoolInfo{
+			nps = append(nps, templates.NodePoolInfo{
 				Name:      np.Name,
 				Nodes:     np.Nodes,
 				NodePool:  np.GetDynamicNodePool(),
@@ -283,19 +266,15 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 		}
 
 		// based on the cluster type fill out the nodepools data to be used
-		nodepoolData := NodepoolsData{
-			ClusterData: ClusterData{
-				ClusterName: clusterInfo.Name,
-				ClusterHash: clusterInfo.Hash,
-				ClusterType: c.ClusterType.String(),
-			},
-			NodePools: nps,
-			Metadata:  c.Metadata,
+		nodepoolData := templates.NodepoolsData{
+			ClusterData: clusterData,
+			NodePools:   nps,
+			Metadata:    c.Metadata,
 		}
 
 		copyCIDRsToMetadata(&nodepoolData)
 
-		if err := generateNodes(clusterID, clusterDir, &nodepoolData, providerData); err != nil {
+		if err := g.GenerateNodes(&nodepoolData, &providerData); err != nil {
 			return fmt.Errorf("failed to generate nodepool specific templates files: %w", err)
 		}
 
@@ -355,12 +334,11 @@ func (c *ClusterBuilder) calculateCIDR(baseCIDR string, nodepools []*pb.DynamicN
 }
 
 // fillNodes creates pb.Node slices in desired state, with the new nodes and old nodes
-func fillNodes(terraformOutput *outputNodepools, newNodePool *pb.NodePool, oldNodes []*pb.Node) {
+func fillNodes(terraformOutput *templates.NodepoolIPs, newNodePool *pb.NodePool, oldNodes []*pb.Node) {
 	// fill slices from terraformOutput maps with names of nodes to ensure an order
 	var tempNodes []*pb.Node
 	// get sorted list of keys
-	sortedNodeNames := getKeysFromMap(terraformOutput.IPs)
-	for _, nodeName := range sortedNodeNames {
+	utils.IterateInOrder(terraformOutput.IPs, func(nodeName string, IP any) error {
 		var nodeType pb.NodeType
 		var private string
 
@@ -372,7 +350,7 @@ func fillNodes(terraformOutput *outputNodepools, newNodePool *pb.NodePool, oldNo
 		if len(oldNodes) > 0 {
 			for _, node := range oldNodes {
 				//check if node was defined before
-				if fmt.Sprint(terraformOutput.IPs[nodeName]) == node.Public && nodeName == node.Name {
+				if fmt.Sprint(IP) == node.Public && nodeName == node.Name {
 					// carry privateIP to desired state, so it will not get overwritten in Ansibler
 					private = node.Private
 					// carry node type since it might be API endpoint, which should not change once set
@@ -388,23 +366,15 @@ func fillNodes(terraformOutput *outputNodepools, newNodePool *pb.NodePool, oldNo
 			Private:  private,
 			NodeType: nodeType,
 		})
-	}
+		return nil
+	})
+
 	newNodePool.Nodes = tempNodes
 }
 
-// getKeysFromMap returns an array of all keys in a map
-func getKeysFromMap(data map[string]interface{}) []string {
-	var keys []string
-	for key := range data {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	return keys
-}
-
 // readIPs reads json output format from terraform and unmarshal it into map[string]map[string]string readable by Go.
-func readIPs(data string) (outputNodepools, error) {
-	var result outputNodepools
+func readIPs(data string) (templates.NodepoolIPs, error) {
+	var result templates.NodepoolIPs
 	// Unmarshal or Decode the JSON to the interface.
 	err := json.Unmarshal([]byte(data), &result.IPs)
 	return result, err
@@ -448,7 +418,7 @@ func getCIDR(baseCIDR string, position int, existing map[string]struct{}) (strin
 }
 
 // copyCIDRsToMetadata copies CIDRs for subnets in VPCs for every nodepool.
-func copyCIDRsToMetadata(data *NodepoolsData) {
+func copyCIDRsToMetadata(data *templates.NodepoolsData) {
 	if data.Metadata == nil {
 		data.Metadata = make(map[string]any)
 	}
@@ -459,7 +429,7 @@ func copyCIDRsToMetadata(data *NodepoolsData) {
 
 // generateProviderTemplates generates only the `provider.tpl` templates so terraform can
 // destroy the infra if needed.
-func generateProviderTemplates(current, desired *pb.ClusterInfo, clusterID, directory string) error {
+func generateProviderTemplates(current, desired *pb.ClusterInfo, clusterID, directory string, clusterData templates.ClusterData) error {
 	currentNodepools := utils.GroupNodepoolsByProviderNames(current)
 	desiredNodepools := utils.GroupNodepoolsByProviderNames(desired)
 
@@ -494,114 +464,28 @@ func generateProviderTemplates(current, desired *pb.ClusterInfo, clusterID, dire
 			continue
 		}
 
-		providerData := ProviderData{
-			ClusterData: ClusterData{
-				ClusterName: info.Name,
-				ClusterHash: info.Hash,
-				ClusterType: "", // not needed.
-			},
-			Provider: nodepools[0].GetDynamicNodePool().GetProvider(),
-			Regions:  utils.GetRegions(utils.GetDynamicNodePools(nodepools)),
-			Metadata: nil, // not needed.
+		if err := templates.DownloadForNodepools(TemplatesRootDir, nodepools); err != nil {
+			msg := fmt.Sprintf("cluster %q failed to download template repository", clusterID)
+			log.Error().Msgf(msg)
+			return fmt.Errorf("%s: %w", msg, err)
 		}
 
-		if err := generateProvider(clusterID, directory, &providerData); err != nil {
+		g := templates.NodepoolGenerator{
+			ClusterID:         clusterID,
+			TargetDirectory:   directory,
+			ReadFromDirectory: TemplatesRootDir,
+			Nodepools:         nodepools,
+		}
+
+		err := g.GenerateProvider(&templates.ProviderData{
+			ClusterData: clusterData,
+			Provider:    nodepools[0].GetDynamicNodePool().GetProvider(),
+			Regions:     utils.GetRegions(utils.GetDynamicNodePools(nodepools)),
+			Metadata:    nil, // not needed.
+		})
+		if err != nil {
 			return fmt.Errorf("failed to generate provider templates: %w", err)
 		}
-	}
-
-	return nil
-}
-
-func generateProvider(clusterID, directory string, data *ProviderData) error {
-	targetDirectory := templateUtils.Templates{Directory: directory}
-
-	tplPath := filepath.Join(data.Provider.CloudProviderName, "provider.tpl")
-
-	file, err := templates.CloudProviderTemplates.ReadFile(tplPath)
-	if err != nil {
-		return fmt.Errorf("error while reading template file %s : %w", tplPath, err)
-	}
-
-	tpl, err := templateUtils.LoadTemplate(string(file))
-	if err != nil {
-		return fmt.Errorf("error while parsing template file %s : %w", tplPath, err)
-	}
-
-	providerSpecName := data.Provider.SpecName
-
-	// Parse the templates and create Tf files
-	if err := targetDirectory.Generate(tpl, fmt.Sprintf("%s-%s-provider.tf", clusterID, providerSpecName), data); err != nil {
-		return fmt.Errorf("error while generating %s file : %w", fmt.Sprintf("%s-%s-provider.tf", clusterID, providerSpecName), err)
-	}
-
-	// Save keys
-	if err = utils.CreateKeyFile(data.Provider.Credentials, directory, providerSpecName); err != nil {
-		return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", providerSpecName, directory, err)
-	}
-
-	return nil
-}
-
-func generateNetworkingCommon(clusterID, directory string, data *ProviderData) error {
-	var (
-		targetDirectory = templateUtils.Templates{Directory: directory}
-		tplPath         = filepath.Join(data.Provider.CloudProviderName, "networking.tpl")
-		provider        = data.Provider.CloudProviderName
-		specName        = data.Provider.SpecName
-	)
-
-	file, err := templates.CloudProviderTemplates.ReadFile(tplPath)
-	if err != nil {
-		return fmt.Errorf("error while reading networking template file %s: %w", provider, err)
-	}
-
-	networking, err := templateUtils.LoadTemplate(string(file))
-	if err != nil {
-		return fmt.Errorf("error while parsing networking_common template file %s : %w", provider, err)
-	}
-
-	err = targetDirectory.Generate(networking, fmt.Sprintf("%s-%s-networkingn.tf", clusterID, specName), data)
-	if err != nil {
-		return fmt.Errorf("error while generating %s file : %w", fmt.Sprintf("%s-%s-networking.tf", clusterID, specName), err)
-	}
-
-	return nil
-}
-
-func generateNodes(clusterID, directory string, data *NodepoolsData, providerData *ProviderData) error {
-	var (
-		targetDirectory = templateUtils.Templates{Directory: directory}
-		networkingPath  = filepath.Join(providerData.Provider.CloudProviderName, "node_networking.tpl")
-		nodesPath       = filepath.Join(providerData.Provider.CloudProviderName, "node.tpl")
-		provider        = providerData.Provider.CloudProviderName
-		specName        = providerData.Provider.SpecName
-	)
-
-	file, err := templates.CloudProviderTemplates.ReadFile(networkingPath)
-	if err == nil { // the template file might not exists
-		networking, err := templateUtils.LoadTemplate(string(file))
-		if err != nil {
-			return fmt.Errorf("error while parsing node networking template file %s : %w", provider, err)
-		}
-		if err := targetDirectory.Generate(networking, fmt.Sprintf("%s-%s-node-networking.tf", clusterID, specName), data); err != nil {
-			return fmt.Errorf("error while generating %s file : %w", fmt.Sprintf("%s-%s-node-networking.tf", clusterID, specName), err)
-		}
-	}
-
-	file, err = templates.CloudProviderTemplates.ReadFile(nodesPath)
-	if err != nil {
-		return fmt.Errorf("error while reading nodepool template file %s: %w", provider, err)
-	}
-
-	nodepool, err := templateUtils.LoadTemplate(string(file))
-	if err != nil {
-		return fmt.Errorf("error while parsing nodepool template file %s: %w", provider, err)
-	}
-
-	err = targetDirectory.Generate(nodepool, fmt.Sprintf("%s-%s-nodepool.tf", clusterID, specName), data)
-	if err != nil {
-		return fmt.Errorf("error while generating %s file: %w", fmt.Sprintf("%s-%s.tf", clusterID, specName), err)
 	}
 
 	return nil

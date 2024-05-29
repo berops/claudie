@@ -4,6 +4,12 @@ import (
 	k8sV1 "k8s.io/api/core/v1"
 )
 
+type TemplateRepository struct {
+	Repository string `validate:"required,url" yaml:"repository" json:"repository"`
+	Tag        string `validate:"required" yaml:"tag" json:"tag"`
+	Path       string `validate:"required" yaml:"path" json:"path"`
+}
+
 type Manifest struct {
 	Name         string       `validate:"required" yaml:"name"`
 	Providers    Provider     `yaml:"providers" json:"providers"`
@@ -150,7 +156,8 @@ type DynamicNodePool struct {
 	// +optional
 	Taints []k8sV1.Taint `validate:"omitempty" yaml:"taints" json:"taints"`
 	// MachineSpec further describe the properties of the selected server type.
-	MachineSpec *MachineSpec `validate:"omitempty" yaml:"machineSpec,omitempty" json:"machineSpec,omitempty"`
+	MachineSpec *MachineSpec        `validate:"omitempty" yaml:"machineSpec,omitempty" json:"machineSpec,omitempty"`
+	Templates   *TemplateRepository `validate:"omitempty" yaml:"templates,omitempty" json:"templates,omitempty"`
 }
 
 // Autoscaler configuration on per nodepool basis. Defines the number of nodes, autoscaler will scale up or down specific nodepool.

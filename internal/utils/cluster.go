@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+
 	"github.com/berops/claudie/proto/pb"
 )
 
@@ -82,6 +83,20 @@ func GetRegions(nodepools []*pb.DynamicNodePool) []string {
 		regions = append(regions, k)
 	}
 	return regions
+}
+
+// GroupNodepoolsByTemplates groups nodepool by template repository
+func GroupNodepoolsByTemplates(nodepools []*pb.NodePool) map[string][]*pb.NodePool {
+	result := make(map[string][]*pb.NodePool)
+	for _, np := range nodepools {
+		key := fmt.Sprintf("%s-%s-%s",
+			np.GetDynamicNodePool().GetTemplates().GetRepository(),
+			np.GetDynamicNodePool().GetTemplates().GetTag(),
+			np.GetDynamicNodePool().GetTemplates().GetPath(),
+		)
+		result[key] = append(result[key], np)
+	}
+	return result
 }
 
 // GroupNodepoolsByProviderNames groups nodepool by provider spec name into the map[Provider Names][]*pb.Nodepool

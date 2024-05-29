@@ -1,12 +1,15 @@
 package backend
 
 import (
+	_ "embed"
 	"fmt"
 
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/templateUtils"
-	"github.com/berops/claudie/services/terraformer/templates"
 )
+
+//go:embed backend.tpl
+var backendTemplate string
 
 var (
 	bucketName         = envs.BucketName
@@ -40,7 +43,7 @@ type templateData struct {
 func (b Backend) CreateTFFile() error {
 	template := templateUtils.Templates{Directory: b.Directory}
 
-	tpl, err := templateUtils.LoadTemplate(templates.BackendTemplate)
+	tpl, err := templateUtils.LoadTemplate(backendTemplate)
 	if err != nil {
 		return fmt.Errorf("failed to load template file external_backend.tpl for %s : %w", b.ClusterName, err)
 	}

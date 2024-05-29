@@ -198,6 +198,11 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 						Provider:         provider,
 						AutoscalerConfig: autoscalerConf,
 						MachineSpec:      machineSpec,
+						Templates: &pb.TemplateRepository{
+							Repository: nodePool.Templates.Repository,
+							Tag:        nodePool.Templates.Tag,
+							Path:       nodePool.Templates.Path,
+						},
 					},
 				},
 			})

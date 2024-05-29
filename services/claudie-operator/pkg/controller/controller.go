@@ -76,6 +76,9 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
 	}
 
+	// check if templates are defined for dynamic nodepools if not use defaults
+	setDefaultTemplates(&rawManifest, providersSecrets)
+
 	// With the rawManifest filled with providers credentials,
 	// the Manifest.Providers{} struct will be properly validated
 	// In case the validation will fail, it will end the reconcile
@@ -358,4 +361,26 @@ func immutabilityCheck(desired, current *manifest.DynamicNodePool) error {
 	}
 
 	return nil
+}
+
+func setDefaultTemplates(m *manifest.Manifest, providers []v1beta.ProviderWithData) {
+	providerMap := make(map[string]string)
+
+	for _, p := range providers {
+		providerMap[p.ProviderName] = string(p.ProviderType)
+	}
+
+	for np := range m.NodePools.Dynamic {
+		defaultDynamicNodepoolTemplates(&m.NodePools.Dynamic[np], providerMap)
+	}
+}
+
+func defaultDynamicNodepoolTemplates(np *manifest.DynamicNodePool, providers map[string]string) {
+	if np != nil && np.Templates == nil {
+		np.Templates = &manifest.TemplateRepository{
+			Repository: "github.com/berops/claudie-configs",
+			Tag:        "v0.8.1",
+			Path:       "templates/terraformer/" + providers[np.ProviderSpec.Name],
+		}
+	}
 }

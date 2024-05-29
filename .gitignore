@@ -13,6 +13,7 @@ cluster-kubeconfig
 *.conf
 __debug_bin
 services/testing-framework/test-sets
+services/terraformer/templates
 /venv/
 /site/
 bin
