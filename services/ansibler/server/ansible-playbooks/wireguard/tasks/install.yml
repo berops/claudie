@@ -3,7 +3,7 @@
   ansible.builtin.apt:
     pkg:
       - wireguard
-      - python3-pip
+      - pipx
       - net-tools
     state: present
     update_cache: true
@@ -12,7 +12,7 @@
   register: res
   until: res is not failed
 
-- name: Install wireguard via pip
-  ansible.builtin.pip:
+- name: Install wireguard via pipx
+  community.general.pipx:
     name: wireguard
 ...

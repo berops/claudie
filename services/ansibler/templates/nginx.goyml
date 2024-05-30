@@ -8,6 +8,11 @@
         name: nginx
         state: latest
         update_cache: yes
+    - name: install stream module for nginx
+      ansible.builtin.apt:
+        name: libnginx-mod-stream 
+        state: present
+        update_cache: true
     - name: copy config files
       copy:
         src: lb.conf

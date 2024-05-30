@@ -48,6 +48,12 @@
 - name: Set MTU size for wg0
   ansible.builtin.shell: ifconfig {{ wg_interface_name }} mtu {{ mtu_size }}
 
+- name: Ensure file /etc/dhcp/dhclient.conf exists
+  ansible.builtin.copy:
+    content: ""
+    dest: /etc/dhcp/dhclient.conf
+    force: false
+
 - name: Make MTU change persistent across reboots
   ansible.builtin.blockinfile:
     path: /etc/dhcp/dhclient.conf
