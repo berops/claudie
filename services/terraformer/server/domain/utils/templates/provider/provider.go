@@ -5,19 +5,11 @@ import (
 	"fmt"
 
 	"github.com/berops/claudie/internal/templateUtils"
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 )
 
 //go:embed providers.tpl
 var providersTemplate string
-
-// Provider package struct
-type Provider struct {
-	ProjectName string
-	ClusterName string
-	Directory   string
-}
 
 // templateData is data structure passed to providers.tpl
 type templateData struct {
@@ -31,13 +23,14 @@ type templateData struct {
 	GenesisCloud bool
 }
 
-// CreateProviderDNS creates provider file used for DNS management.
-func (p Provider) CreateProviderDNS(dns *pb.DNS) error {
-	template := templateUtils.Templates{Directory: p.Directory}
+func CreateDNS(targetDir string, dns *pb.DNS) error {
+	template := templateUtils.Templates{
+		Directory: targetDir,
+	}
 
 	tpl, err := templateUtils.LoadTemplate(providersTemplate)
 	if err != nil {
-		return fmt.Errorf("error while parsing template file providers.tpl for cluster %s: %w", p.ClusterName, err)
+		return fmt.Errorf("error while parsing template file providers.tpl: %w", err)
 	}
 
 	var data templateData
@@ -45,52 +38,44 @@ func (p Provider) CreateProviderDNS(dns *pb.DNS) error {
 	return template.Generate(tpl, "providers.tf", data)
 }
 
-// CreateProvider creates provider file used for infrastructure management.
-func (p Provider) CreateProvider(currentCluster, desiredCluster *pb.ClusterInfo) error {
-	template := templateUtils.Templates{Directory: p.Directory}
+func CreateNodepool(targetDir string, np *pb.NodePool) error {
+	template := templateUtils.Templates{
+		Directory: targetDir,
+	}
 
 	var data templateData
-
-	getProvidersUsed(utils.GetDynamicNodePoolsFromCI(currentCluster), &data)
-	getProvidersUsed(utils.GetDynamicNodePoolsFromCI(desiredCluster), &data)
+	getProvidersUsed(np.GetDynamicNodePool(), &data)
 
 	tpl, err := templateUtils.LoadTemplate(providersTemplate)
 	if err != nil {
-		return fmt.Errorf("error while parsing template file providers.tpl for cluster %s : %w", p.ClusterName, err)
+		return fmt.Errorf("error while parsing template file providers.tpl:%w", err)
 	}
 
 	if err := template.Generate(tpl, "providers.tf", data); err != nil {
-		return fmt.Errorf("error while creating provider.tf for %s : %w", p.ClusterName, err)
+		return fmt.Errorf("error while creating provider.tf: %w", err)
 	}
 
 	return nil
 }
 
 // getProvidersUsed modifies templateData to reflect current providers used.
-func getProvidersUsed(nodepools []*pb.DynamicNodePool, data *templateData) {
-	if len(nodepools) == 0 {
+func getProvidersUsed(np *pb.DynamicNodePool, data *templateData) {
+	if np == nil {
 		return
 	}
-
-	for _, nodepool := range nodepools {
-		if nodepool.Provider.CloudProviderName == "gcp" {
-			data.Gcp = true
-		}
-		if nodepool.Provider.CloudProviderName == "hetzner" {
-			data.Hetzner = true
-		}
-		if nodepool.Provider.CloudProviderName == "aws" {
-			data.Aws = true
-		}
-		if nodepool.Provider.CloudProviderName == "oci" {
-			data.Oci = true
-		}
-		if nodepool.Provider.CloudProviderName == "azure" {
-			data.Azure = true
-		}
-		if nodepool.Provider.CloudProviderName == "genesiscloud" {
-			data.GenesisCloud = true
-		}
+	switch np.Provider.CloudProviderName {
+	case "gcp":
+		data.Gcp = true
+	case "hetzner":
+		data.Hetzner = true
+	case "aws":
+		data.Aws = true
+	case "oci":
+		data.Oci = true
+	case "azure":
+		data.Azure = true
+	case "genesiscloud":
+		data.GenesisCloud = true
 	}
 }
 

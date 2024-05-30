@@ -160,16 +160,13 @@ func (r *Repository) clone(dir string, upstream *git.Repository) (*git.Repositor
 
 type NodepoolGenerator struct {
 	ClusterID string
+	Nodepool  *pb.NodePool
 	// Where the templates should be generated.
 	TargetDirectory string
 	// Root directory where the template files were downloaded
 	// To this directory the relative path of the templates will
 	// be added to read the templates for each nodepool.
 	ReadFromDirectory string
-	// Nodepools are nodepools that belong to the same Provider
-	// Example: input-manifest provider: gcp-1
-	// nodepools will have all the dynamic nodepools that use the provider gcp-1
-	Nodepools []*pb.NodePool
 }
 
 func (g *NodepoolGenerator) GenerateProvider(data *ProviderData) error {
@@ -183,7 +180,6 @@ func (g *NodepoolGenerator) GenerateProvider(data *ProviderData) error {
 		templatePath := filepath.Join(
 			g.ReadFromDirectory,
 			targetPath,
-			data.Provider.CloudProviderName,
 			"provider.tpl",
 		)
 
@@ -225,7 +221,6 @@ func (g *NodepoolGenerator) GenerateNetworkingCommon(data *ProviderData) error {
 		templatePath := filepath.Join(
 			g.ReadFromDirectory,
 			targetPath,
-			data.Provider.CloudProviderName,
 			"networking.tpl",
 		)
 
@@ -259,14 +254,12 @@ func (g *NodepoolGenerator) GenerateNodes(data *NodepoolsData, providerData *Pro
 		networkingPath := filepath.Join(
 			g.ReadFromDirectory,
 			targetPath,
-			providerData.Provider.CloudProviderName,
 			"node_networking.tpl",
 		)
 
 		nodesPath := filepath.Join(
 			g.ReadFromDirectory,
 			targetPath,
-			providerData.Provider.CloudProviderName,
 			"node.tpl",
 		)
 
@@ -302,16 +295,28 @@ func (g *NodepoolGenerator) GenerateNodes(data *NodepoolsData, providerData *Pro
 }
 
 type DNSGenerator struct {
-	DnsID           string
+	DnsID string
+	// Where the templates should be generated.
 	TargetDirectory string
+	// Root directory where the template files were downloaded
+	// To this directory the relative path of the templates will
+	// be added to read the templates for each nodepool.
+	ReadFromDirectory string
+	// DNS belonging to a LoadBalancer
+	DNS *pb.DNS
 }
 
-func (g *DNSGenerator) GenerateDNS(readFromDir string, dns *DNSData) error {
+func (g *DNSGenerator) GenerateDNS(dns *DNSData) error {
 	const dnsTemplate = "dns.tpl"
 
 	var (
 		targetDirectory = templateUtils.Templates{Directory: g.TargetDirectory}
-		dnsPath         = filepath.Join(readFromDir, dns.Provider.CloudProviderName, dnsTemplate)
+		targetPath      = extractTargetPath(g.DNS.Templates)
+		dnsPath         = filepath.Join(
+			g.ReadFromDirectory,
+			targetPath,
+			dnsTemplate,
+		)
 	)
 
 	file, err := os.ReadFile(dnsPath)
@@ -328,9 +333,9 @@ func (g *DNSGenerator) GenerateDNS(readFromDir string, dns *DNSData) error {
 		return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", dns.Provider.SpecName, g.TargetDirectory, err)
 	}
 
-	err = targetDirectory.Generate(tpl, fmt.Sprintf("%s-dns.tf", dns.Provider.CloudProviderName), dns)
-	if err != nil {
-		return fmt.Errorf("failed generating dns temaplate for %q: %w", g.DnsID, err)
+	outputFile := fmt.Sprintf("%s-dns-%s.tf", dns.Provider.CloudProviderName, fingerprint(targetPath))
+	if err := targetDirectory.Generate(tpl, outputFile, dns); err != nil {
+		return fmt.Errorf("failed generating dns template %q: %w", outputFile, err)
 	}
 
 	return nil

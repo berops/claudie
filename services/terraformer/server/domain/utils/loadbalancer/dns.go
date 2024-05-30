@@ -21,7 +21,6 @@ import (
 
 const (
 	TemplatesRootDir = "services/terraformer/templates"
-	dnsTfFile        = "%s-dns.tf"
 )
 
 type DNS struct {
@@ -166,11 +165,22 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *pb.DNS, nodeIPs []string) 
 		return err
 	}
 
-	g := templates.DNSGenerator{
-		TargetDirectory: dnsDir,
+	repo := templates.Repository{
+		TemplatesRootDirectory: TemplatesRootDir,
 	}
 
-	data := &templates.DNSData{
+	if err := repo.Download(dns.GetTemplates()); err != nil {
+		return fmt.Errorf("failed to download template repository for %q: %w", dnsID, err)
+	}
+
+	g := templates.DNSGenerator{
+		DnsID:             dnsID,
+		TargetDirectory:   dnsDir,
+		ReadFromDirectory: TemplatesRootDir,
+		DNS:               dns,
+	}
+
+	data := templates.DNSData{
 		DNSZone:      dns.DnsZone,
 		HostnameHash: dns.Hostname,
 		ClusterName:  d.ClusterName,
@@ -178,7 +188,8 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *pb.DNS, nodeIPs []string) 
 		NodeIPs:      nodeIPs,
 		Provider:     dns.Provider,
 	}
-	if err := g.GenerateDNS(TemplatesRootDir, data); err != nil {
+
+	if err := g.GenerateDNS(&data); err != nil {
 		return fmt.Errorf("failed to generate dns templates for %q: %w", dnsID, err)
 	}
 

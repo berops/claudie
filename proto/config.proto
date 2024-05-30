@@ -168,6 +168,7 @@ message DNS {
   Provider provider = 3;
   // The whole hostname of the DNS record.
   string endpoint = 4;
+  TemplateRepository templates = 5;
 }
 
 // NodePool represents a single node pool used in cluster.

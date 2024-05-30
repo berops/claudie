@@ -373,6 +373,10 @@ func setDefaultTemplates(m *manifest.Manifest, providers []v1beta.ProviderWithDa
 	for np := range m.NodePools.Dynamic {
 		defaultDynamicNodepoolTemplates(&m.NodePools.Dynamic[np], providerMap)
 	}
+
+	for lb := range m.LoadBalancer.Clusters {
+		defaultDNSTemplates(&m.LoadBalancer.Clusters[lb].DNS, providerMap)
+	}
 }
 
 func defaultDynamicNodepoolTemplates(np *manifest.DynamicNodePool, providers map[string]string) {
@@ -381,6 +385,16 @@ func defaultDynamicNodepoolTemplates(np *manifest.DynamicNodePool, providers map
 			Repository: "github.com/berops/claudie-configs",
 			Tag:        "v0.8.1",
 			Path:       "templates/terraformer/" + providers[np.ProviderSpec.Name],
+		}
+	}
+}
+
+func defaultDNSTemplates(dns *manifest.DNS, providers map[string]string) {
+	if dns != nil && dns.Templates == nil {
+		dns.Templates = &manifest.TemplateRepository{
+			Repository: "github.com/berops/claudie-configs",
+			Tag:        "v0.8.1",
+			Path:       "templates/terraformer/" + providers[dns.Provider],
 		}
 	}
 }

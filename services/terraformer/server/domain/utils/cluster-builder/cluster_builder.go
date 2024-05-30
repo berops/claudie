@@ -2,6 +2,7 @@ package cluster_builder
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -51,6 +52,13 @@ type ClusterBuilder struct {
 	// processes. This values should always be non-nil and be buffered, where the capacity indicates
 	// the limit.
 	SpawnProcessLimit chan struct{}
+}
+
+type TemplateGeneration struct {
+	ProjectName     string
+	ClusterID       string
+	TargetDirectory string
+	Nodepool        *pb.NodePool
 }
 
 // CreateNodepools creates node pools for the cluster.
@@ -158,71 +166,43 @@ func (c ClusterBuilder) DestroyNodepools() error {
 }
 
 // generateFiles creates all the necessary terraform files used to create/destroy node pools.
-func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
-	backend := backend.Backend{
-		ProjectName: c.ProjectName,
-		ClusterName: clusterID,
-		Directory:   clusterDir,
+func generateFiles(np *pb.NodePool, projectName, clusterName, clusterHash, clusterType, rootDirectory string) error {
+	if np.GetDynamicNodePool() == nil {
+		return nil
 	}
 
-	if err := backend.CreateTFFile(); err != nil {
+	// TODO: assumme dynamic nodepool (we don't generate for static nodepools)
+	// TODO: double check.
+	clusterID := fmt.Sprintf("%s-%s", clusterName, clusterHash)
+	targetDirectory := filepath.Join(rootDirectory, np.Name)
+
+	b := backend.Backend{
+		ProjectName: projectName,
+		ClusterName: clusterID,
+		Directory:   targetDirectory,
+	}
+
+	if err := backend.Create(&b); err != nil {
 		return err
 	}
 
-	// generate Providers terraform configuration
-	providers := provider.Provider{
-		ProjectName: c.ProjectName,
-		ClusterName: clusterID,
-		Directory:   clusterDir,
-	}
-
-	if err := providers.CreateProvider(c.CurrentClusterInfo, c.DesiredClusterInfo); err != nil {
+	if err := provider.CreateNodepool(targetDirectory, np); err != nil {
 		return err
 	}
 
-	var clusterInfo *pb.ClusterInfo
-	if c.DesiredClusterInfo != nil {
-		clusterInfo = c.DesiredClusterInfo
-	} else if c.CurrentClusterInfo != nil {
-		clusterInfo = c.CurrentClusterInfo
-	}
-
-	// Init node slices if needed
-	for _, np := range clusterInfo.NodePools {
-		if n := np.GetDynamicNodePool(); n != nil {
-			nodes := make([]*pb.Node, 0, n.Count)
-			nodeNames := make(map[string]struct{}, n.Count)
-			// Copy existing nodes into new slice
-			for i, node := range np.Nodes {
-				if i == int(n.Count) {
-					break
-				}
-				log.Debug().Str("cluster", clusterID).Msgf("Nodepool is reusing node %s", node.Name)
-				nodes = append(nodes, node)
-				nodeNames[node.Name] = struct{}{}
-			}
-			// Fill the rest of the nodes with assigned names
-			nodepoolID := fmt.Sprintf("%s-%s", clusterID, np.Name)
-			for len(nodes) < int(n.Count) {
-				// Get a unique name for the new node
-				nodeName := getUniqueNodeName(nodepoolID, nodeNames)
-				nodeNames[nodeName] = struct{}{}
-				nodes = append(nodes, &pb.Node{Name: nodeName})
-			}
-			np.Nodes = nodes
-		}
-	}
+	updateNodes(np, clusterID)
 
 	clusterData := templates.ClusterData{
-		ClusterName: clusterInfo.Name,
-		ClusterHash: clusterInfo.Hash,
-		ClusterType: c.ClusterType.String(),
+		ClusterName: clusterName,
+		ClusterHash: clusterHash,
+		ClusterType: clusterType,
 	}
 
-	if err := generateProviderTemplates(c.CurrentClusterInfo, c.DesiredClusterInfo, clusterID, clusterDir, clusterData); err != nil {
+	if err := generateProviderTemplates(targetDirectory, clusterID, np, clusterData); err != nil {
 		return fmt.Errorf("error while generating provider templates: %w", err)
 	}
 
+	// TODO:continue removing
 	groupedNodepools := utils.GroupNodepoolsByProviderNames(clusterInfo)
 	for providerNames, nodepools := range groupedNodepools {
 		if providerNames.CloudProviderName == pb.StaticNodepoolInfo_STATIC_PROVIDER.String() {
@@ -429,64 +409,60 @@ func copyCIDRsToMetadata(data *templates.NodepoolsData) {
 
 // generateProviderTemplates generates only the `provider.tpl` templates so terraform can
 // destroy the infra if needed.
-func generateProviderTemplates(current, desired *pb.ClusterInfo, clusterID, directory string, clusterData templates.ClusterData) error {
-	currentNodepools := utils.GroupNodepoolsByProviderNames(current)
-	desiredNodepools := utils.GroupNodepoolsByProviderNames(desired)
-
-	// merge together into a single map instead of creating a new.
-	for name, np := range desiredNodepools {
-		// Continue if static node pool provider.
-		if name.CloudProviderName == pb.StaticNodepoolInfo_STATIC_PROVIDER.String() {
-			continue
-		}
-
-		if cnp, ok := currentNodepools[name]; !ok {
-			currentNodepools[name] = np
-		} else {
-			// merge them together as different regions could be used.
-			// (regions are used for generating the providers for various regions)
-			for _, pool := range np {
-				if found := utils.GetNodePoolByName(pool.GetName(), cnp); found == nil {
-					currentNodepools[name] = append(currentNodepools[name], pool)
-				}
-			}
-		}
+func generateProviderTemplates(targetDirectory, clusterID string, np *pb.NodePool, clusterData templates.ClusterData) error {
+	repo := templates.Repository{
+		TemplatesRootDirectory: TemplatesRootDir,
 	}
 
-	info := desired
-	if info == nil {
-		info = current
+	// TODO: to this with the DNS aswell (i.e. error handling EMPTY error)
+	if err := repo.Download(np.GetDynamicNodePool().GetTemplates()); err != nil {
+		if errors.Is(err, templates.EmptyRepositoryErr) {
+			return fmt.Errorf("nodepool %q does not have a template repository: %w", np.Name, err)
+		}
+		return err
 	}
 
-	for providerName, nodepools := range currentNodepools {
-		// Continue if static node pool provider.
-		if providerName.CloudProviderName == pb.StaticNodepoolInfo_STATIC_PROVIDER.String() {
-			continue
-		}
-
-		if err := templates.DownloadForNodepools(TemplatesRootDir, nodepools); err != nil {
-			msg := fmt.Sprintf("cluster %q failed to download template repository", clusterID)
-			log.Error().Msgf(msg)
-			return fmt.Errorf("%s: %w", msg, err)
-		}
-
-		g := templates.NodepoolGenerator{
-			ClusterID:         clusterID,
-			TargetDirectory:   directory,
-			ReadFromDirectory: TemplatesRootDir,
-			Nodepools:         nodepools,
-		}
-
-		err := g.GenerateProvider(&templates.ProviderData{
-			ClusterData: clusterData,
-			Provider:    nodepools[0].GetDynamicNodePool().GetProvider(),
-			Regions:     utils.GetRegions(utils.GetDynamicNodePools(nodepools)),
-			Metadata:    nil, // not needed.
-		})
-		if err != nil {
-			return fmt.Errorf("failed to generate provider templates: %w", err)
-		}
+	g := templates.NodepoolGenerator{
+		ClusterID:         clusterID,
+		Nodepool:          np,
+		TargetDirectory:   targetDirectory,
+		ReadFromDirectory: TemplatesRootDir,
 	}
 
+	err := g.GenerateProvider(&templates.ProviderData{
+		ClusterData: clusterData,
+		Provider:    np.GetDynamicNodePool().GetProvider(),
+		Region:      np.GetDynamicNodePool().GetRegion(),
+		Metadata:    nil, // not needed.
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to generate provider templates: %w", err)
+	}
 	return nil
+}
+
+func updateNodes(np *pb.NodePool, clusterID string) {
+	n := np.GetDynamicNodePool()
+
+	nodes := make([]*pb.Node, 0, n.Count)
+	nodeNames := make(map[string]struct{}, n.Count)
+	// Copy existing nodes into new slice
+	for i, node := range np.Nodes {
+		if i == int(n.Count) {
+			break
+		}
+		log.Debug().Str("cluster", clusterID).Msgf("Nodepool is reusing node %s", node.Name)
+		nodes = append(nodes, node)
+		nodeNames[node.Name] = struct{}{}
+	}
+	// Fill the rest of the nodes with assigned names
+	nodepoolID := fmt.Sprintf("%s-%s", clusterID, np.Name)
+	for len(nodes) < int(n.Count) {
+		// Get a unique name for the new node
+		nodeName := getUniqueNodeName(nodepoolID, nodeNames)
+		nodeNames[nodeName] = struct{}{}
+		nodes = append(nodes, &pb.Node{Name: nodeName})
+	}
+	np.Nodes = nodes
 }

@@ -15,7 +15,7 @@ type (
 	ProviderData struct {
 		ClusterData ClusterData
 		Provider    *pb.Provider
-		Regions     []string
+		Region      string
 		Metadata    map[string]any
 	}
 
