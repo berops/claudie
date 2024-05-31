@@ -55,10 +55,16 @@ type ClusterBuilder struct {
 }
 
 type TemplateGeneration struct {
-	ProjectName     string
-	ClusterID       string
+	// Name of the Input Manifest.
+	ProjectName string
+	// Directory where the templates are to be generated.
 	TargetDirectory string
-	Nodepool        *pb.NodePool
+	// Nodepool from which templates will be generated.
+	Nodepool *pb.NodePool
+	// Cluster relevant data.
+	ClusterData      templates.ClusterData
+	ClusterMetadata  map[string]any
+	ClusterPublicKey string
 }
 
 // CreateNodepools creates node pools for the cluster.
@@ -75,42 +81,57 @@ func (c ClusterBuilder) CreateNodepools() error {
 		}
 	}
 
-	if err := c.generateFiles(clusterID, clusterDir); err != nil {
-		return fmt.Errorf("failed to generate files: %w", err)
-	}
-
-	terraform := terraform.Terraform{
-		Directory:         clusterDir,
-		SpawnProcessLimit: c.SpawnProcessLimit,
-	}
-
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
-		terraform.Stdout = comm.GetStdOut(clusterID)
-		terraform.Stderr = comm.GetStdErr(clusterID)
-	}
-
-	if err := terraform.Init(); err != nil {
-		return fmt.Errorf("error while running terraform init in %s : %w", clusterID, err)
-	}
-
-	if err := terraform.Apply(); err != nil {
-		return fmt.Errorf("error while running terraform apply in %s : %w", clusterID, err)
-	}
 	oldNodes := c.getCurrentNodes()
-
-	// fill new nodes with output
-	for _, nodepool := range c.DesiredClusterInfo.NodePools {
-		if np := nodepool.GetDynamicNodePool(); np != nil {
-			output, err := terraform.Output(nodepool.Name)
-			if err != nil {
-				return fmt.Errorf("error while getting output from terraform for %s : %w", nodepool.Name, err)
-			}
-			out, err := readIPs(output)
-			if err != nil {
-				return fmt.Errorf("error while reading the terraform output for %s : %w", nodepool.Name, err)
-			}
-			fillNodes(&out, nodepool, oldNodes)
+	// TODO: parralelize.
+	for _, np := range c.DesiredClusterInfo.GetNodePools() {
+		if np.GetDynamicNodePool() == nil {
+			continue
 		}
+
+		g := TemplateGeneration{
+			ProjectName:     c.ProjectName,
+			TargetDirectory: filepath.Join(clusterDir, np.Name),
+			Nodepool:        np,
+			ClusterData: templates.ClusterData{
+				ClusterName: c.DesiredClusterInfo.Name,
+				ClusterHash: c.DesiredClusterInfo.Hash,
+				ClusterType: c.ClusterType.String(),
+			},
+			ClusterMetadata:  c.Metadata,
+			ClusterPublicKey: c.DesiredClusterInfo.PublicKey,
+		}
+
+		if err := generateFiles(np, &g); err != nil {
+			return fmt.Errorf("failed to generate files: %w", err)
+		}
+
+		terraform := terraform.Terraform{
+			Directory:         g.TargetDirectory,
+			SpawnProcessLimit: c.SpawnProcessLimit,
+		}
+		if log.Logger.GetLevel() == zerolog.DebugLevel {
+			terraform.Stdout = comm.GetStdOut(clusterID)
+			terraform.Stderr = comm.GetStdErr(clusterID)
+		}
+
+		if err := terraform.Init(); err != nil {
+			return fmt.Errorf("error while running terraform init in %s : %w", clusterID, err)
+		}
+		if err := terraform.Apply(); err != nil {
+			return fmt.Errorf("error while running terraform apply in %s : %w", clusterID, err)
+		}
+
+		output, err := terraform.Output(np.Name)
+		if err != nil {
+			return fmt.Errorf("error while getting output from terraform for %s : %w", np.Name, err)
+		}
+
+		out, err := readIPs(output)
+		if err != nil {
+			return fmt.Errorf("error while reading the terraform output for %s : %w", np.Name, err)
+		}
+
+		fillNodes(&out, np, oldNodes)
 	}
 
 	// Clean after terraform
@@ -135,29 +156,46 @@ func (c ClusterBuilder) DestroyNodepools() error {
 		}
 	}
 
-	if err := c.generateFiles(clusterID, clusterDir); err != nil {
-		return fmt.Errorf("failed to generate files: %w", err)
+	for _, np := range c.CurrentClusterInfo.GetNodePools() {
+		if np.GetDynamicNodePool() == nil {
+			continue
+		}
+
+		g := TemplateGeneration{
+			ProjectName:     c.ProjectName,
+			TargetDirectory: filepath.Join(clusterID, np.Name),
+			Nodepool:        np,
+			ClusterData: templates.ClusterData{
+				ClusterName: c.CurrentClusterInfo.Name,
+				ClusterHash: c.CurrentClusterInfo.Hash,
+				ClusterType: c.ClusterType.String(),
+			},
+			ClusterMetadata:  c.Metadata,
+			ClusterPublicKey: c.CurrentClusterInfo.PublicKey,
+		}
+
+		if err := generateFiles(np, &g); err != nil {
+			return fmt.Errorf("failed to generate fiels: %w", err)
+		}
+		terraform := terraform.Terraform{
+			Directory:         g.TargetDirectory,
+			SpawnProcessLimit: c.SpawnProcessLimit,
+		}
+
+		if log.Logger.GetLevel() == zerolog.DebugLevel {
+			terraform.Stdout = comm.GetStdOut(clusterID)
+			terraform.Stderr = comm.GetStdErr(clusterID)
+		}
+
+		if err := terraform.Init(); err != nil {
+			return fmt.Errorf("error while running terraform init in %s : %w", clusterID, err)
+		}
+
+		if err := terraform.Destroy(); err != nil {
+			return fmt.Errorf("error while running terraform apply in %s : %w", clusterID, err)
+		}
 	}
 
-	terraform := terraform.Terraform{
-		Directory:         clusterDir,
-		SpawnProcessLimit: c.SpawnProcessLimit,
-	}
-
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
-		terraform.Stdout = comm.GetStdOut(clusterID)
-		terraform.Stderr = comm.GetStdErr(clusterID)
-	}
-
-	if err := terraform.Init(); err != nil {
-		return fmt.Errorf("error while running terraform init in %s : %w", clusterID, err)
-	}
-
-	if err := terraform.Destroy(); err != nil {
-		return fmt.Errorf("error while running terraform apply in %s : %w", clusterID, err)
-	}
-
-	// Clean after terraform.
 	if err := os.RemoveAll(clusterDir); err != nil {
 		return fmt.Errorf("error while deleting files in %s : %w", clusterDir, err)
 	}
@@ -166,105 +204,82 @@ func (c ClusterBuilder) DestroyNodepools() error {
 }
 
 // generateFiles creates all the necessary terraform files used to create/destroy node pools.
-func generateFiles(np *pb.NodePool, projectName, clusterName, clusterHash, clusterType, rootDirectory string) error {
-	if np.GetDynamicNodePool() == nil {
-		return nil
-	}
-
-	// TODO: assumme dynamic nodepool (we don't generate for static nodepools)
-	// TODO: double check.
-	clusterID := fmt.Sprintf("%s-%s", clusterName, clusterHash)
-	targetDirectory := filepath.Join(rootDirectory, np.Name)
+func generateFiles(np *pb.NodePool, tg *TemplateGeneration) error {
+	clusterID := fmt.Sprintf("%s-%s", tg.ClusterData.ClusterName, tg.ClusterData.ClusterHash)
 
 	b := backend.Backend{
-		ProjectName: projectName,
-		ClusterName: clusterID,
-		Directory:   targetDirectory,
+		Key:       fmt.Sprintf("%s/%s/%s", tg.ProjectName, clusterID, np.Name),
+		Directory: tg.TargetDirectory,
 	}
 
 	if err := backend.Create(&b); err != nil {
 		return err
 	}
 
-	if err := provider.CreateNodepool(targetDirectory, np); err != nil {
+	if err := provider.CreateNodepool(tg.TargetDirectory, np); err != nil {
 		return err
 	}
 
 	updateNodes(np, clusterID)
 
-	clusterData := templates.ClusterData{
-		ClusterName: clusterName,
-		ClusterHash: clusterHash,
-		ClusterType: clusterType,
+	// TODO: to this with the DNS aswell (i.e. error handling EMPTY error)
+	repo := templates.Repository{TemplatesRootDirectory: TemplatesRootDir}
+	if err := repo.Download(np.GetDynamicNodePool().GetTemplates()); err != nil {
+		if errors.Is(err, templates.EmptyRepositoryErr) {
+			return fmt.Errorf("nodepool %q does not have a template repository: %w", np.Name, err)
+		}
+		return err
 	}
 
-	if err := generateProviderTemplates(targetDirectory, clusterID, np, clusterData); err != nil {
+	if err := generateProviderTemplates(tg.TargetDirectory, clusterID, np, tg.ClusterData); err != nil {
 		return fmt.Errorf("error while generating provider templates: %w", err)
 	}
 
-	// TODO:continue removing
-	groupedNodepools := utils.GroupNodepoolsByProviderNames(clusterInfo)
-	for providerNames, nodepools := range groupedNodepools {
-		if providerNames.CloudProviderName == pb.StaticNodepoolInfo_STATIC_PROVIDER.String() {
-			continue
-		}
+	g := templates.NodepoolGenerator{
+		ClusterID:         clusterID,
+		Nodepool:          np,
+		TargetDirectory:   tg.TargetDirectory,
+		ReadFromDirectory: TemplatesRootDir,
+	}
 
-		if err := templates.DownloadForNodepools(TemplatesRootDir, nodepools); err != nil {
-			msg := fmt.Sprintf("cluster %q failed to download template repository", clusterID)
-			log.Error().Msgf(msg)
-			return fmt.Errorf("%s: %w", msg, err)
-		}
+	providerData := templates.ProviderData{
+		ClusterData: tg.ClusterData,
+		Provider:    np.GetDynamicNodePool().GetProvider(),
+		Region:      np.GetDynamicNodePool().GetRegion(),
+		Metadata:    tg.ClusterMetadata,
+	}
+	if err := g.GenerateNetworkingCommon(&providerData); err != nil {
+		return fmt.Errorf("failed to generate networking_common template files: %w", err)
+	}
 
-		g := templates.NodepoolGenerator{
-			ClusterID:         clusterID,
-			TargetDirectory:   clusterDir,
-			ReadFromDirectory: TemplatesRootDir,
-			Nodepools:         nodepools,
-		}
+	// based on the cluster type fill out the nodepools data to be used
+	nodepoolData := templates.NodepoolsData{
+		ClusterData: tg.ClusterData,
+		NodePool: templates.NodePoolInfo{
+			Name:      np.Name,
+			Nodes:     np.Nodes,
+			NodePool:  np.GetDynamicNodePool(),
+			IsControl: np.IsControl,
+		},
+		Metadata: tg.ClusterMetadata,
+	}
+	copyCIDRsToMetadata(&nodepoolData)
 
-		providerData := templates.ProviderData{
-			ClusterData: clusterData,
-			Provider:    nodepools[0].GetDynamicNodePool().GetProvider(),
-			Regions:     utils.GetRegions(utils.GetDynamicNodePools(nodepools)),
-			Metadata:    c.Metadata,
-		}
-		if err := g.GenerateNetworkingCommon(&providerData); err != nil {
-			return fmt.Errorf("failed to generate networking_common template files: %w", err)
-		}
+	if err := g.GenerateNodes(&nodepoolData, &providerData); err != nil {
+		return fmt.Errorf("failed to generate nodepool specific templates files: %w", err)
+	}
 
-		nps := make([]templates.NodePoolInfo, 0, len(nodepools))
-		for _, np := range nodepools {
-			if np.GetDynamicNodePool() == nil {
-				continue
-			}
-			nps = append(nps, templates.NodePoolInfo{
-				Name:      np.Name,
-				Nodes:     np.Nodes,
-				NodePool:  np.GetDynamicNodePool(),
-				IsControl: np.IsControl,
-			})
-		}
+	if err := utils.CreateKeyFile(tg.ClusterPublicKey, tg.TargetDirectory, "public.pem"); err != nil {
+		return fmt.Errorf("error creating key file for %s : %w", tg.TargetDirectory, err)
+	}
 
-		// based on the cluster type fill out the nodepools data to be used
-		nodepoolData := templates.NodepoolsData{
-			ClusterData: clusterData,
-			NodePools:   nps,
-			Metadata:    c.Metadata,
-		}
-
-		copyCIDRsToMetadata(&nodepoolData)
-
-		if err := g.GenerateNodes(&nodepoolData, &providerData); err != nil {
-			return fmt.Errorf("failed to generate nodepool specific templates files: %w", err)
-		}
-
-		if err := utils.CreateKeyFile(clusterInfo.PublicKey, clusterDir, "public.pem"); err != nil {
-			return fmt.Errorf("error creating key file for %s : %w", clusterDir, err)
-		}
-
-		if err := utils.CreateKeyFile(nps[0].NodePool.Provider.Credentials, clusterDir, providerNames.SpecName); err != nil {
-			return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", providerNames.SpecName, clusterDir, err)
-		}
+	err := utils.CreateKeyFile(
+		np.GetDynamicNodePool().Provider.GetCredentials(),
+		tg.TargetDirectory,
+		np.GetDynamicNodePool().Provider.GetSpecName(),
+	)
+	if err != nil {
+		return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", np.GetDynamicNodePool().Provider.GetSpecName(), tg.TargetDirectory, err)
 	}
 
 	return nil
@@ -402,26 +417,13 @@ func copyCIDRsToMetadata(data *templates.NodepoolsData) {
 	if data.Metadata == nil {
 		data.Metadata = make(map[string]any)
 	}
-	for _, np := range data.NodePools {
-		data.Metadata[fmt.Sprintf(subnetCidrKeyTemplate, np.Name)] = np.NodePool.Metadata[subnetCidrKey].GetCidr()
-	}
+	key := fmt.Sprintf(subnetCidrKeyTemplate, data.NodePool.Name)
+	data.Metadata[key] = data.NodePool.NodePool.Metadata[subnetCidrKey].GetCidr()
 }
 
 // generateProviderTemplates generates only the `provider.tpl` templates so terraform can
 // destroy the infra if needed.
 func generateProviderTemplates(targetDirectory, clusterID string, np *pb.NodePool, clusterData templates.ClusterData) error {
-	repo := templates.Repository{
-		TemplatesRootDirectory: TemplatesRootDir,
-	}
-
-	// TODO: to this with the DNS aswell (i.e. error handling EMPTY error)
-	if err := repo.Download(np.GetDynamicNodePool().GetTemplates()); err != nil {
-		if errors.Is(err, templates.EmptyRepositoryErr) {
-			return fmt.Errorf("nodepool %q does not have a template repository: %w", np.Name, err)
-		}
-		return err
-	}
-
 	g := templates.NodepoolGenerator{
 		ClusterID:         clusterID,
 		Nodepool:          np,

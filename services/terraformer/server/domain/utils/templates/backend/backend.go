@@ -22,14 +22,14 @@ var (
 )
 
 type Backend struct {
-	ProjectName string
-	ClusterName string
-	Directory   string
+	// Key under which the State file will be stored.
+	Key string
+	// Where the backend file should be generated.
+	Directory string
 }
 
 type templateData struct {
-	ProjectName string
-	ClusterName string
+	Key         string
 	BucketURL   string
 	BucketName  string
 	DynamoURL   string
@@ -39,7 +39,6 @@ type templateData struct {
 	SecretKey   string
 }
 
-// CreateTFFile creates backend.tf file into specified Directory.
 func Create(b *Backend) error {
 	template := templateUtils.Templates{
 		Directory: b.Directory,
@@ -47,12 +46,11 @@ func Create(b *Backend) error {
 
 	tpl, err := templateUtils.LoadTemplate(backendTemplate)
 	if err != nil {
-		return fmt.Errorf("failed to load template file external_backend.tpl for %s : %w", b.ClusterName, err)
+		return fmt.Errorf("failed to load template file external_backend.tpl under key %q: %w", b.Key, err)
 	}
 
 	data := templateData{
-		ProjectName: b.ProjectName,
-		ClusterName: b.ClusterName,
+		Key:         b.Key,
 		BucketURL:   bucketURL,
 		BucketName:  bucketName,
 		DynamoURL:   dynamoURL,
@@ -61,8 +59,9 @@ func Create(b *Backend) error {
 		SecretKey:   awsSecretAccessKey,
 		Region:      region,
 	}
+
 	if err := template.Generate(tpl, "backend.tf", data); err != nil {
-		return fmt.Errorf("failed to generate backend files for %s : %w", b.ClusterName, err)
+		return fmt.Errorf("failed to generate backend files under key %q : %w", b.Key, err)
 	}
 
 	return nil

@@ -1,6 +1,6 @@
 terraform {
   backend "s3" {
-    key            = "{{ .ProjectName }}/{{ .ClusterName }}"
+    key            = "{{ .Key }}"
     region         = "{{or .Region "main" }}"
     bucket         = "{{ .BucketName }}"
     dynamodb_table = "{{ .DynamoTable }}"

@@ -82,18 +82,19 @@ func (r *Repository) Download(repository *pb.TemplateRepository) error {
 	)
 
 	if utils.DirectoryExists(cloneDirectory) {
-		existingMirror, err := git.PlainOpen(cloneDirectory)
-		if err != nil {
-			return fmt.Errorf("%q is not a valid local git repository: %w", cloneDirectory, err)
-		}
+		if existingMirror, err := git.PlainOpen(cloneDirectory); err == nil {
+			if err != nil {
+				return fmt.Errorf("%q is not a valid local git repository: %w", cloneDirectory, err)
+			}
 
-		wk, err := existingMirror.Worktree()
-		if err != nil {
-			return fmt.Errorf("failed to acquire existing worktree for %q: %w", repository.Repository, err)
-		}
+			wk, err := existingMirror.Worktree()
+			if err != nil {
+				return fmt.Errorf("failed to acquire existing worktree for %q: %w", repository.Repository, err)
+			}
 
-		if err := wk.Checkout(&git.CheckoutOptions{Hash: tag.Hash()}); err == nil {
-			return nil
+			if err := wk.Checkout(&git.CheckoutOptions{Hash: tag.Hash()}); err == nil {
+				return nil
+			}
 		}
 
 		// localMirror does not have the required tag, overwrite with requested version
@@ -101,6 +102,7 @@ func (r *Repository) Download(repository *pb.TemplateRepository) error {
 			return fmt.Errorf("failed to delete local clone %q: %w", cloneDirectory, err)
 		}
 		// fallthrough, continue with the cloning below
+
 	}
 
 	localMirror, err := r.clone(cloneDirectory, repo)
@@ -175,32 +177,26 @@ func (g *NodepoolGenerator) GenerateProvider(data *ProviderData) error {
 		providerSpecName = data.Provider.SpecName
 	)
 
-	err := utils.IterateInOrder(utils.GroupNodepoolsByTemplates(g.Nodepools), func(repo string, nps []*pb.NodePool) error {
-		targetPath := extractTargetPath(nps[0].GetDynamicNodePool().GetTemplates())
-		templatePath := filepath.Join(
-			g.ReadFromDirectory,
-			targetPath,
-			"provider.tpl",
-		)
+	targetPath := extractTargetPath(g.Nodepool.GetDynamicNodePool().GetTemplates())
+	templatePath := filepath.Join(
+		g.ReadFromDirectory,
+		targetPath,
+		"provider.tpl",
+	)
 
-		file, err := os.ReadFile(templatePath)
-		if err != nil {
-			return fmt.Errorf("error while reading template file %s : %w", templatePath, err)
-		}
-
-		tpl, err := templateUtils.LoadTemplate(string(file))
-		if err != nil {
-			return fmt.Errorf("error while parsing template file %s : %w", templatePath, err)
-		}
-
-		outputFile := fmt.Sprintf("%s-%s-provider-%s.tf", g.ClusterID, providerSpecName, fingerprint(targetPath))
-		if err := targetDirectory.Generate(tpl, outputFile, data); err != nil {
-			return fmt.Errorf("error while generating %s file : %w", outputFile, err)
-		}
-		return nil
-	})
+	file, err := os.ReadFile(templatePath)
 	if err != nil {
-		return fmt.Errorf("failed to generate provider template files: %w", err)
+		return fmt.Errorf("error while reading template file %s : %w", templatePath, err)
+	}
+
+	tpl, err := templateUtils.LoadTemplate(string(file))
+	if err != nil {
+		return fmt.Errorf("error while parsing template file %s : %w", templatePath, err)
+	}
+
+	outputFile := fmt.Sprintf("%s-%s-provider-%s.tf", g.ClusterID, providerSpecName, fingerprint(targetPath))
+	if err := targetDirectory.Generate(tpl, outputFile, data); err != nil {
+		return fmt.Errorf("error while generating %s file : %w", outputFile, err)
 	}
 
 	if err := utils.CreateKeyFile(data.Provider.Credentials, g.TargetDirectory, providerSpecName); err != nil {
@@ -216,31 +212,29 @@ func (g *NodepoolGenerator) GenerateNetworkingCommon(data *ProviderData) error {
 		providerSpecName = data.Provider.SpecName
 	)
 
-	return utils.IterateInOrder(utils.GroupNodepoolsByTemplates(g.Nodepools), func(repo string, nps []*pb.NodePool) error {
-		targetPath := extractTargetPath(nps[0].GetDynamicNodePool().GetTemplates())
-		templatePath := filepath.Join(
-			g.ReadFromDirectory,
-			targetPath,
-			"networking.tpl",
-		)
+	targetPath := extractTargetPath(g.Nodepool.GetDynamicNodePool().GetTemplates())
+	templatePath := filepath.Join(
+		g.ReadFromDirectory,
+		targetPath,
+		"networking.tpl",
+	)
 
-		file, err := os.ReadFile(templatePath)
-		if err != nil {
-			return fmt.Errorf("error while reading networking template file %s: %w", templatePath, err)
-		}
+	file, err := os.ReadFile(templatePath)
+	if err != nil {
+		return fmt.Errorf("error while reading networking template file %s: %w", templatePath, err)
+	}
 
-		networking, err := templateUtils.LoadTemplate(string(file))
-		if err != nil {
-			return fmt.Errorf("error while parsing networking_common template file %s : %w", templatePath, err)
-		}
+	networking, err := templateUtils.LoadTemplate(string(file))
+	if err != nil {
+		return fmt.Errorf("error while parsing networking_common template file %s : %w", templatePath, err)
+	}
 
-		outputFile := fmt.Sprintf("%s-%s-networking-%s.tf", g.ClusterID, providerSpecName, fingerprint(targetPath))
-		err = targetDirectory.Generate(networking, outputFile, data)
-		if err != nil {
-			return fmt.Errorf("error while generating %s file : %w", outputFile, err)
-		}
-		return nil
-	})
+	outputFile := fmt.Sprintf("%s-%s-networking-%s.tf", g.ClusterID, providerSpecName, fingerprint(targetPath))
+	err = targetDirectory.Generate(networking, outputFile, data)
+	if err != nil {
+		return fmt.Errorf("error while generating %s file : %w", outputFile, err)
+	}
+	return nil
 }
 
 func (g *NodepoolGenerator) GenerateNodes(data *NodepoolsData, providerData *ProviderData) error {
@@ -249,53 +243,50 @@ func (g *NodepoolGenerator) GenerateNodes(data *NodepoolsData, providerData *Pro
 		providerSpecName = providerData.Provider.SpecName
 	)
 
-	return utils.IterateInOrder(utils.GroupNodepoolsByTemplates(g.Nodepools), func(repo string, nps []*pb.NodePool) error {
-		targetPath := extractTargetPath(nps[0].GetDynamicNodePool().GetTemplates())
-		networkingPath := filepath.Join(
-			g.ReadFromDirectory,
-			targetPath,
-			"node_networking.tpl",
-		)
+	targetPath := extractTargetPath(g.Nodepool.GetDynamicNodePool().GetTemplates())
+	networkingPath := filepath.Join(
+		g.ReadFromDirectory,
+		targetPath,
+		"node_networking.tpl",
+	)
 
-		nodesPath := filepath.Join(
-			g.ReadFromDirectory,
-			targetPath,
-			"node.tpl",
-		)
+	nodesPath := filepath.Join(
+		g.ReadFromDirectory,
+		targetPath,
+		"node.tpl",
+	)
 
-		file, err := os.ReadFile(networkingPath)
-		if err == nil { // the template file might not exists
-			networking, err := templateUtils.LoadTemplate(string(file))
-			if err != nil {
-				return fmt.Errorf("error while parsing node networking template file %s : %w", networkingPath, err)
-			}
-
-			outputFile := fmt.Sprintf("%s-%s-node-networking-%s.tf", g.ClusterID, providerSpecName, fingerprint(targetPath))
-			if err := targetDirectory.Generate(networking, outputFile, data); err != nil {
-				return fmt.Errorf("error while generating %s file : %w", outputFile, err)
-			}
-		}
-
-		file, err = os.ReadFile(nodesPath)
+	file, err := os.ReadFile(networkingPath)
+	if err == nil { // the template file might not exists
+		networking, err := templateUtils.LoadTemplate(string(file))
 		if err != nil {
-			return fmt.Errorf("error while reading nodepool template file %s: %w", nodesPath, err)
+			return fmt.Errorf("error while parsing node networking template file %s : %w", networkingPath, err)
 		}
 
-		nodepool, err := templateUtils.LoadTemplate(string(file))
-		if err != nil {
-			return fmt.Errorf("error while parsing nodepool template file %s: %w", nodesPath, err)
+		outputFile := fmt.Sprintf("%s-%s-node-networking-%s.tf", g.ClusterID, providerSpecName, fingerprint(targetPath))
+		if err := targetDirectory.Generate(networking, outputFile, data); err != nil {
+			return fmt.Errorf("error while generating %s file : %w", outputFile, err)
 		}
+	}
 
-		outputFile := fmt.Sprintf("%s-%s-nodepool-%s.tf", g.ClusterID, providerSpecName, fingerprint(targetPath))
-		if err := targetDirectory.Generate(nodepool, outputFile, data); err != nil {
-			return fmt.Errorf("error while generating %s file: %w", outputFile, err)
-		}
-		return nil
-	})
+	file, err = os.ReadFile(nodesPath)
+	if err != nil {
+		return fmt.Errorf("error while reading nodepool template file %s: %w", nodesPath, err)
+	}
+
+	nodepool, err := templateUtils.LoadTemplate(string(file))
+	if err != nil {
+		return fmt.Errorf("error while parsing nodepool template file %s: %w", nodesPath, err)
+	}
+
+	outputFile := fmt.Sprintf("%s-%s-nodepool-%s.tf", g.ClusterID, providerSpecName, fingerprint(targetPath))
+	if err := targetDirectory.Generate(nodepool, outputFile, data); err != nil {
+		return fmt.Errorf("error while generating %s file: %w", outputFile, err)
+	}
+	return nil
 }
 
 type DNSGenerator struct {
-	DnsID string
 	// Where the templates should be generated.
 	TargetDirectory string
 	// Root directory where the template files were downloaded

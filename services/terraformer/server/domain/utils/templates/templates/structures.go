@@ -28,7 +28,7 @@ type (
 
 	NodepoolsData struct {
 		ClusterData ClusterData
-		NodePools   []NodePoolInfo
+		NodePool    NodePoolInfo
 		Metadata    map[string]any
 	}
 
