@@ -1,4 +1,4 @@
-FROM docker.io/library/golang:1.22.2 AS go_builder
+FROM docker.io/library/golang:1.22.4 AS go_builder
 
 ARG TARGETARCH
 
@@ -21,7 +21,7 @@ WORKDIR /go/services/ansibler/server
 RUN CGO_ENABLED=0 go build
 
 # Ansible installation: https://github.com/cytopia/docker-ansible/blob/master/Dockerfiles/Dockerfile-base
-FROM docker.io/library/alpine:3.16 AS ansible_builder
+FROM docker.io/library/alpine:3.20 AS ansible_builder
 
 RUN set -eux \
 	&& apk add --update --no-cache \
@@ -83,7 +83,7 @@ RUN set -eux \
 	&& find /usr/lib/ -name '__pycache__' -print0 | xargs -0 -n1 rm -rf \
 	&& find /usr/lib/ -name '*.pyc' -print0 | xargs -0 -n1 rm -rf
 
-FROM alpine:3.16
+FROM alpine:3.20
 #Add repository label
 LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
 #Add image name as a label
