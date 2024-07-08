@@ -29,6 +29,8 @@ type (
 		APIEndpoint       string
 		KubernetesVersion string
 		ClusterName       string
+		HasHetznerNodes   bool
+		NoProxy           string
 		Nodepools         []*NodepoolInfo
 	}
 )
