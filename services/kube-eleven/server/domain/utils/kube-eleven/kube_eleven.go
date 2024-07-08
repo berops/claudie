@@ -154,6 +154,18 @@ func (k *KubeEleven) generateTemplateData() templateData {
 	var potentialEndpointNode *spec.Node
 	data.Nodepools, potentialEndpointNode = k.getClusterNodes()
 
+	data.HasHetznerNodes = k.hasHetznerNodes(data.Nodepools)
+
+	data.NoProxy = ""
+	if data.HasHetznerNodes {
+		// add nodes privat and public IPs to the NoProxy. Otherwise the kubeone proxy won't work properly
+		for _, nodePool := range data.Nodepools {
+			for _, node := range nodePool.Nodes {
+				data.NoProxy = fmt.Sprintf("%s,%s,%s,", data.NoProxy, node.Node.Private, node.Node.Public)
+			}
+		}
+	}
+
 	data.APIEndpoint = k.findAPIEndpoint(potentialEndpointNode)
 
 	data.KubernetesVersion = k.K8sCluster.GetKubernetes()
@@ -161,6 +173,18 @@ func (k *KubeEleven) generateTemplateData() templateData {
 	data.ClusterName = k.K8sCluster.ClusterInfo.Name
 
 	return data
+}
+
+// hasHetzner will check if k8s cluster uses any Hetzner nodes.
+// Returns true if it does. Otherwise returns false.
+func (k *KubeEleven) hasHetznerNodes(nodePools []*NodepoolInfo) bool {
+	for _, nodePool := range nodePools {
+		if nodePool.CloudProviderName == "hetzner" {
+			return true
+		}
+	}
+
+	return false
 }
 
 // getClusterNodes will parse the nodepools of k.K8sCluster and construct a slice of *NodepoolInfo.

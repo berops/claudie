@@ -69,5 +69,12 @@ staticWorkers:
   {{- end}}
 {{- end}}
 
+{{- if .HasHetznerNodes }}
+proxy:
+  http: "http://proxy.claudie.org:48213"
+  https: "http://proxy.claudie.org:48213"
+  noProxy: "{{ .NoProxy }}"
+{{- end }}
+
 machineController:
   deploy: false
