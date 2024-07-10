@@ -68,7 +68,7 @@ images:
 - name: ghcr.io/berops/claudie/context-box
   newTag: afb7a22-2906
 - name: ghcr.io/berops/claudie/kube-eleven
-  newTag: afb7a22-2906
+  newTag: d672b7e-2845
 - name: ghcr.io/berops/claudie/kuber
   newTag: afb7a22-2906
 - name: ghcr.io/berops/claudie/scheduler
