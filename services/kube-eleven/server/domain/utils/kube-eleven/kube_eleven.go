@@ -24,6 +24,8 @@ const (
 	staticZone                   = "datacenter"
 	staticProvider               = "on-premise"
 	staticProviderName           = "claudie"
+	defaulHttpProxyMode          = "default"
+	defaulHttpProxyUrl           = "http://proxy.claudie.org:48213"
 )
 
 type KubeEleven struct {
@@ -154,16 +156,30 @@ func (k *KubeEleven) generateTemplateData() templateData {
 	var potentialEndpointNode *spec.Node
 	data.Nodepools, potentialEndpointNode = k.getClusterNodes()
 
-	data.HasHetznerNodes = k.hasHetznerNodes(data.Nodepools)
+	hasHetznerNodes := k.hasHetznerNodes(data.Nodepools)
+	httpProxyMode := utils.GetEnvDefault("HTTP_PROXY_MODE", defaulHttpProxyMode)
 
 	data.NoProxy = ""
-	if data.HasHetznerNodes {
+	if httpProxyMode == "on" || (httpProxyMode != "off" && hasHetznerNodes) {
+		// Claudie utilizes proxy, because the proxy mode is either turned on,
+		// or it isn't turned off and there is at least 1 Hetzner node in the k8s cluster
+		data.UtilizeHttpProxy = true
 		// add nodes privat and public IPs to the NoProxy. Otherwise the kubeone proxy won't work properly
 		for _, nodePool := range data.Nodepools {
 			for _, node := range nodePool.Nodes {
-				data.NoProxy = fmt.Sprintf("%s,%s,%s,", data.NoProxy, node.Node.Private, node.Node.Public)
+				if data.NoProxy == "" {
+					data.NoProxy = fmt.Sprintf("%s,%s", node.Node.Private, node.Node.Public)
+				} else {
+					data.NoProxy = fmt.Sprintf("%s,%s,%s", data.NoProxy, node.Node.Private, node.Node.Public)
+				}
 			}
 		}
+		// data.NoProxy has to terminate with the comma
+		data.NoProxy = fmt.Sprintf("%s,", data.NoProxy)
+
+		data.HttpProxyUrl = utils.GetEnvDefault("HTTP_PROXY_URL", defaulHttpProxyUrl)
+	} else {
+		data.UtilizeHttpProxy = false
 	}
 
 	data.APIEndpoint = k.findAPIEndpoint(potentialEndpointNode)
