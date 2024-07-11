@@ -157,6 +157,7 @@ func (k *KubeEleven) generateTemplateData() templateData {
 
 	var potentialEndpointNode *pb.Node
 	data.Nodepools, potentialEndpointNode = k.getClusterNodes()
+	data.APIEndpoint = k.findAPIEndpoint(potentialEndpointNode)
 
 	hasHetznerNodes := k.hasHetznerNodes(data.Nodepools)
 	httpProxyMode := utils.GetEnvDefault("HTTP_PROXY_MODE", defaulHttpProxyMode)
@@ -177,14 +178,12 @@ func (k *KubeEleven) generateTemplateData() templateData {
 			}
 		}
 		// data.NoProxy has to terminate with the comma
-		data.NoProxy = fmt.Sprintf("%s,", data.NoProxy)
+		data.NoProxy = fmt.Sprintf("%s,%s,", data.NoProxy, data.APIEndpoint)
 
 		data.HttpProxyUrl = utils.GetEnvDefault("HTTP_PROXY_URL", defaulHttpProxyUrl)
 	} else {
 		data.UtilizeHttpProxy = false
 	}
-
-	data.APIEndpoint = k.findAPIEndpoint(potentialEndpointNode)
 
 	data.KubernetesVersion = k.K8sCluster.GetKubernetes()
 
