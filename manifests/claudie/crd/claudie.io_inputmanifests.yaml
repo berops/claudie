@@ -3,11 +3,8 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.11.3
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: inputmanifests.claudie.io
-  labels:
-    app.kubernetes.io/part-of: claudie
 spec:
   group: claudie.io
   names:
@@ -25,19 +22,25 @@ spec:
     name: v1beta1
     schema:
       openAPIV3Schema:
-        description: InputManifest is a definition of the user's infrastructure. It
-          contains cloud provider specification, nodepool specification, Kubernetes
-          and loadbalancer clusters.
+        description: |-
+          InputManifest is a definition of the user's infrastructure.
+          It contains cloud provider specification,
+          nodepool specification, Kubernetes and loadbalancer clusters.
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -83,12 +86,12 @@ spec:
                           - control
                           type: object
                         version:
-                          description: Version should be defined in format vX.Y. In
-                            terms of supported versions of Kubernetes, Claudie follows
-                            kubeone releases and their supported versions. The current
-                            kubeone version used in Claudie is 1.5. To see the list
-                            of supported versions, please refer to kubeone documentation.
-                            https://docs.kubermatic.com/kubeone/v1.5/architecture/compatibility/supported-versions/#supported-kubernetes-versions
+                          description: |-
+                            Version should be defined in format vX.Y. In terms of supported versions of Kubernetes,
+                            Claudie follows kubeone releases and their supported versions.
+                            The current kubeone version used in Claudie is 1.5.
+                            To see the list of supported versions, please refer to kubeone documentation.
+                            https://docs.kubermatic.com/kubeone/v1.8/architecture/compatibility/supported-versions/
                           type: string
                       required:
                       - name
@@ -132,10 +135,9 @@ spec:
                           description: Name of the loadbalancer.
                           type: string
                         pools:
-                          description: List of nodepool names this loadbalancer will
-                            use. Remember, that nodepools defined in nodepools are
-                            only "blueprints". The actual nodepool will be created
-                            once referenced here.
+                          description: |-
+                            List of nodepool names this loadbalancer will use. Remember, that nodepools defined
+                            in nodepools are only "blueprints". The actual nodepool will be created once referenced here.
                           items:
                             type: string
                           type: array
@@ -196,22 +198,22 @@ spec:
                     type: array
                 type: object
               nodePools:
-                description: NodePool is a map of dynamic nodepools and static nodepools
-                  which will be used to form kubernetes or loadbalancer clusters.
+                description: |-
+                  NodePool is a map of dynamic nodepools and static nodepools which will be used to
+                  form kubernetes or loadbalancer clusters.
                 properties:
                   dynamic:
                     description: Dynamic nodepools define nodepools dynamically created
                       by Claudie.
                     items:
-                      description: "DynamicNodePool List of dynamically to-be-created
-                        nodepools of not yet existing machines, used for Kubernetes
-                        or loadbalancer clusters. These are only blueprints, and will
-                        only be created per reference in kubernetes or loadBalancer
-                        clusters. \n E.g. if the nodepool isn't used, it won't even
-                        be created. Or if the same nodepool is used in two different
-                        clusters, it will be created twice. In OOP analogy, a dynamic
-                        nodepool would be a class that would get instantiated N >=
-                        0 times depending on which clusters reference it."
+                      description: |-
+                        DynamicNodePool List of dynamically to-be-created nodepools of not yet existing machines, used for Kubernetes or loadbalancer clusters.
+                        These are only blueprints, and will only be created per reference in kubernetes or loadBalancer clusters.
+
+
+                        E.g. if the nodepool isn't used, it won't even be created. Or if the same nodepool is used in two different clusters,
+                        it will be created twice. In OOP analogy, a dynamic nodepool would be a class
+                        that would get instantiated N >= 0 times depending on which clusters reference it.
                       properties:
                         annotations:
                           additionalProperties:
@@ -283,37 +285,37 @@ spec:
                           - region
                           type: object
                         serverType:
-                          description: Type of the machines in the nodepool. Currently,
-                            only AMD64 machines are supported.
+                          description: "\tType of the machines in the nodepool. Currently,
+                            only AMD64 machines are supported."
                           type: string
                         storageDiskSize:
-                          description: Size of the storage disk on the nodes in the
-                            nodepool in GB. The OS disk is created automatically with
-                            predefined size of 100GB for kubernetes nodes and 50GB
-                            for Loadbalancer nodes. The value must be either -1 (no
-                            disk is created), or >= 50. If no value is specified,
-                            50 is used.
+                          description: |-
+                            Size of the storage disk on the nodes in the nodepool in GB. The OS disk is created automatically
+                            with predefined size of 100GB for kubernetes nodes and 50GB for Loadbalancer nodes.
+                            The value must be either -1 (no disk is created), or >= 50. If no value is specified, 50 is used.
                           format: int32
                           type: integer
                         taints:
                           description: User defined taints for this nodepool.
                           items:
-                            description: The node this Taint is attached to has the
-                              "effect" on any pod that does not tolerate the Taint.
+                            description: |-
+                              The node this Taint is attached to has the "effect" on
+                              any pod that does not tolerate the Taint.
                             properties:
                               effect:
-                                description: Required. The effect of the taint on
-                                  pods that do not tolerate the taint. Valid effects
-                                  are NoSchedule, PreferNoSchedule and NoExecute.
+                                description: |-
+                                  Required. The effect of the taint on pods
+                                  that do not tolerate the taint.
+                                  Valid effects are NoSchedule, PreferNoSchedule and NoExecute.
                                 type: string
                               key:
                                 description: Required. The taint key to be applied
                                   to a node.
                                 type: string
                               timeAdded:
-                                description: TimeAdded represents the time at which
-                                  the taint was added. It is only written for NoExecute
-                                  taints.
+                                description: |-
+                                  TimeAdded represents the time at which the taint was added.
+                                  It is only written for NoExecute taints.
                                 format: date-time
                                 type: string
                               value:
@@ -386,22 +388,24 @@ spec:
                           type: array
                         taints:
                           items:
-                            description: The node this Taint is attached to has the
-                              "effect" on any pod that does not tolerate the Taint.
+                            description: |-
+                              The node this Taint is attached to has the "effect" on
+                              any pod that does not tolerate the Taint.
                             properties:
                               effect:
-                                description: Required. The effect of the taint on
-                                  pods that do not tolerate the taint. Valid effects
-                                  are NoSchedule, PreferNoSchedule and NoExecute.
+                                description: |-
+                                  Required. The effect of the taint on pods
+                                  that do not tolerate the taint.
+                                  Valid effects are NoSchedule, PreferNoSchedule and NoExecute.
                                 type: string
                               key:
                                 description: Required. The taint key to be applied
                                   to a node.
                                 type: string
                               timeAdded:
-                                description: TimeAdded represents the time at which
-                                  the taint was added. It is only written for NoExecute
-                                  taints.
+                                description: |-
+                                  TimeAdded represents the time at which the taint was added.
+                                  It is only written for NoExecute taints.
                                 format: date-time
                                 type: string
                               value:
@@ -420,10 +424,12 @@ spec:
                     type: array
                 type: object
               providers:
-                description: Providers list of defined cloud provider configuration
+                description: |-
+                  Providers list of defined cloud provider configuration
                   that will be used while infrastructure provisioning.
                 items:
-                  description: Providers list of defined cloud provider configuration
+                  description: |-
+                    Providers list of defined cloud provider configuration
                     that will be used while infrastructure provisioning.
                   properties:
                     name:
@@ -433,8 +439,9 @@ spec:
                       minLength: 1
                       type: string
                     providerType:
-                      description: ProviderType type of a provider. A list of available
-                        providers can be found at https://docs.claudie.io/v0.3.2/input-manifest/providers/aws/
+                      description: |-
+                        ProviderType type of a provider.
+                        A list of available providers can be found at https://docs.claudie.io/v0.3.2/input-manifest/providers/aws/
                       enum:
                       - gcp
                       - hetzner
@@ -446,8 +453,9 @@ spec:
                       - genesiscloud
                       type: string
                     secretRef:
-                      description: SecretReference represents a Secret Reference.
-                        It has enough information to retrieve secret in any namespace
+                      description: |-
+                        SecretReference represents a Secret Reference. It has enough information to retrieve secret
+                        in any namespace
                       properties:
                         name:
                           description: name is unique within a namespace to reference
