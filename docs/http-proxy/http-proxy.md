@@ -4,7 +4,7 @@ In this section, we'll describe the default HTTP proxy setup and its the further
 
 ## Default setup
 
-By default, Claudie utilizes the HTTP proxy in building the K8s cluster only when there is at least one node from the Hetzner cloud provider. This means, that if you have a cluster with one master node in Azure and one worker node in AWS Claudie won't use the HTTP proxy to build the K8s cluster. However, if you add another worker node from Hetzner the whole process of building the K8s cluster will utilize the HTTP proxy.
+By default `HTTP_PROXY_MODE` is set to `default` [see](https://docs.claudie.io/latest/getting-started/detailed-guide/#claudie-customization), thus Claudie utilizes the HTTP proxy in building the K8s cluster only when there is at least one node from the Hetzner cloud provider. This means, that if you have a cluster with one master node in Azure and one worker node in AWS Claudie won't use the HTTP proxy to build the K8s cluster. However, if you add another worker node from Hetzner the whole process of building the K8s cluster will utilize the HTTP proxy. 
 
 This approach was implemented to address the following issues:
 
