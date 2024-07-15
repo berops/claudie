@@ -176,7 +176,8 @@ func (k *KubeEleven) generateTemplateData() templateData {
 			}
 		}
 		// data.NoProxy has to terminate with the comma
-		data.NoProxy = fmt.Sprintf("%s,%s,", data.NoProxy, data.APIEndpoint)
+		// if "svc" isn't in NoProxy the admission webhooks will fail, because they will be routed to proxy
+		data.NoProxy = fmt.Sprintf("%s,%s,%s,", data.NoProxy, "svc", data.APIEndpoint)
 
 		data.HttpProxyUrl = utils.GetEnvDefault("HTTP_PROXY_URL", defaulHttpProxyUrl)
 	} else {
