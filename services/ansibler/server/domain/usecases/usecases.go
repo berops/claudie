@@ -23,7 +23,6 @@ type Usecases struct {
 type (
 	NodepoolsInfo struct {
 		Nodepools      utils.NodePools
-		PrivateKey     string
 		ClusterID      string
 		ClusterNetwork string
 	}

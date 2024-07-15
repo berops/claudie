@@ -20,57 +20,54 @@ import (
 func (u *Usecases) StoreClusterMetadata(ctx context.Context, request *pb.StoreClusterMetadataRequest) (*pb.StoreClusterMetadataResponse, error) {
 	logger := cutils.CreateLoggerWithClusterName(cutils.GetClusterID(request.Cluster.ClusterInfo))
 
-	md := ClusterMetadata{
-		PrivateKey: request.GetCluster().GetClusterInfo().GetPrivateKey(),
-	}
+	dp := make(map[string]DynamicNodepool)
+	sp := make(map[string]StaticNodepool)
 
-	dp := DynamicNodepool{NodeIps: make(map[string]IPPair)}
-	sp := StaticNodepool{NodeInfo: make(map[string]StaticNodeInfo)}
 	for _, pool := range request.GetCluster().GetClusterInfo().GetNodePools() {
 		if np := pool.GetDynamicNodePool(); np != nil {
+			dp[pool.Name] = DynamicNodepool{
+				NodeIps:    make(map[string]IPPair),
+				PrivateKey: np.PrivateKey,
+			}
 			for _, node := range pool.GetNodes() {
-				dp.NodeIps[node.GetName()] = IPPair{
+				dp[pool.Name].NodeIps[node.GetName()] = IPPair{
 					PublicIP:  net.ParseIP(node.GetPublic()),
 					PrivateIP: net.ParseIP(node.GetPrivate()),
 				}
 			}
 		} else if np := pool.GetStaticNodePool(); np != nil {
 			for _, node := range pool.GetNodes() {
-				sp.NodeInfo[node.GetName()] = StaticNodeInfo{
+				sp[pool.Name].NodeInfo[node.GetName()] = StaticNodeInfo{
 					PrivateKey: np.NodeKeys[node.Public],
 					Endpoint:   node.GetPublic()}
 			}
 		}
 	}
-	md.DynamicNodepools = dp
-	md.StaticNodepools = sp
 
-	lbdp := make(map[string]DynamicLoadBalancerNodePools)
-	lbst := make(map[string]StaticLoadBalancerNodePools)
+	lbdp := make(map[string]map[string]DynamicNodepool)
+	lbst := make(map[string]map[string]StaticNodepool)
 
 	for _, lb := range request.GetLoadbalancers() {
+		lbdp[lb.GetClusterInfo().GetName()] = make(map[string]DynamicNodepool)
 		for _, pool := range lb.GetClusterInfo().GetNodePools() {
 			if np := pool.GetDynamicNodePool(); np != nil {
-				if _, keyExists := lbdp[lb.GetClusterInfo().GetName()]; !keyExists {
-					lbdp[lb.GetClusterInfo().GetName()] = DynamicLoadBalancerNodePools{
-						NodeIps:    make(map[string]IPPair),
-						PrivateKey: lb.GetClusterInfo().GetPrivateKey(),
-					}
+				lbdp[lb.GetClusterInfo().GetName()][pool.Name] = DynamicNodepool{
+					NodeIps:    make(map[string]IPPair),
+					PrivateKey: np.PrivateKey,
 				}
-
 				for _, node := range pool.GetNodes() {
-					lbdp[lb.GetClusterInfo().GetName()].NodeIps[node.GetName()] = IPPair{
+					lbdp[lb.GetClusterInfo().GetName()][pool.Name].NodeIps[node.GetName()] = IPPair{
 						PublicIP:  net.ParseIP(node.GetPublic()),
 						PrivateIP: net.ParseIP(node.GetPrivate()),
 					}
 				}
 			} else if np := pool.GetStaticNodePool(); np != nil {
-				if _, keyExists := lbst[lb.GetClusterInfo().GetName()]; !keyExists {
-					lbst[lb.GetClusterInfo().GetName()] = StaticLoadBalancerNodePools{NodeInfo: make(map[string]StaticNodeInfo)}
+				lbst[lb.GetClusterInfo().GetName()][pool.Name] = StaticNodepool{
+					NodeInfo: make(map[string]StaticNodeInfo),
 				}
 
 				for _, node := range pool.GetNodes() {
-					lbst[lb.GetClusterInfo().GetName()].NodeInfo[node.GetName()] = StaticNodeInfo{
+					lbst[lb.GetClusterInfo().GetName()][pool.Name].NodeInfo[node.GetName()] = StaticNodeInfo{
 						PrivateKey: np.NodeKeys[node.Public],
 						Endpoint:   node.GetPublic()}
 				}
@@ -78,23 +75,20 @@ func (u *Usecases) StoreClusterMetadata(ctx context.Context, request *pb.StoreCl
 		}
 	}
 
-	md.DynamicLoadBalancerNodePools = lbdp
-	md.StaticLoadBalancerNodePools = lbst
+	md := ClusterMetadata{
+		DynamicNodepools:             dp,
+		StaticNodepools:              sp,
+		DynamicLoadBalancerNodePools: lbdp,
+		StaticLoadBalancerNodePools:  lbst,
+	}
 
 	b, err := json.Marshal(md)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal %s cluster metadata: %w", request.GetCluster().GetClusterInfo().GetName(), err)
 	}
 
-	// local deployment - print metadata
+	// local deployment
 	if envs.Namespace == "" {
-		// NOTE: DEBUG print
-		// var buffer bytes.Buffer
-		// for node, ips := range md.NodeIps {
-		// 	buffer.WriteString(fmt.Sprintf("%s: %v \t| %v \n", node, ips.PublicIP, ips.PrivateIP))
-		// }
-		// buffer.WriteString(fmt.Sprintf("%s\n", md.PrivateKey))
-		// log.Info().Msgf("Cluster metadata from cluster %s \n%s", req.GetCluster().ClusterInfo.Name, buffer.String())
 		return &pb.StoreClusterMetadataResponse{}, nil
 	}
 	logger.Info().Msgf("Storing cluster metadata")

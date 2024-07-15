@@ -4,16 +4,6 @@
 {{- range $_, $region := .Regions }}
 {{- $specName := $.Provider.SpecName }}
 
-resource "aws_key_pair" "claudie_pair_{{ $region }}_{{ $specName }}" {
-  provider   = aws.nodepool_{{ $region }}_{{ $specName }}
-  key_name   = "key-{{ $clusterHash }}-{{ $region }}-{{ $specName }}"
-  public_key = file("./public.pem")
-  tags = {
-    Name            = "key-{{ $clusterHash }}-{{ $region }}-{{ $specName }}"
-    Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
-  }
-}
-
 resource "aws_vpc" "claudie_vpc_{{ $region }}_{{ $specName }}" {
   provider   = aws.nodepool_{{ $region }}_{{ $specName }}
   cidr_block = "10.0.0.0/16"

@@ -37,9 +37,8 @@ func (u *Usecases) TeardownLoadBalancers(ctx context.Context, request *pb.Teardo
 
 	// For each load-balancer that is being deleted construct LbClusterData.
 	lbClustersInfo := &utils.LBClustersInfo{
-		ClusterID:            commonUtils.GetClusterID(request.Desired.ClusterInfo),
-		TargetK8sNodepool:    request.Desired.ClusterInfo.NodePools,
-		TargetK8sNodepoolKey: request.Desired.ClusterInfo.PrivateKey,
+		ClusterID:         commonUtils.GetClusterID(request.Desired.ClusterInfo),
+		TargetK8sNodepool: request.Desired.ClusterInfo.NodePools,
 	}
 	for _, lbCluster := range request.DeletedLbs {
 		lbClustersInfo.LbClusters = append(lbClustersInfo.LbClusters, &utils.LBClusterData{
