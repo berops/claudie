@@ -35,6 +35,28 @@
         regexp: '{{ OldEndpoint }}'
         replace: '{{ NewEndpoint }}'
 
+    - name: update NO_PROXY and no_proxy in /etc/environment
+      ansible.builtin.replace:
+        path: "/etc/environment"
+        regexp: '{{ OldEndpoint }}'
+        replace: '{{ NewEndpoint }}'
+
+    # https://github.com/kubernetes/kubeadm/issues/182#issuecomment-1137419094
+    - name: update NO_PROXY and no_proxy using systemctl set-environment
+      ansible.builtin.shell: |
+        systemctl set-environment NO_PROXY="$(awk -F '=' '/NO_PROXY=/{print $2}' /etc/environment)"
+        systemctl set-environment no_proxy="$(awk -F '=' '/no_proxy=/{print $2}' /etc/environment)"
+
+    # https://github.com/kubernetes/kubeadm/issues/182#issuecomment-1137419094
+    - name: restart containerd service
+      ansible.builtin.service:
+        name: containerd
+        state: restarted
+      register: serviceDetails
+      until: serviceDetails.status.ActiveState == "active"
+      retries: 5
+      delay: 20
+
     - name: generate new certs
       shell: "kubeadm init phase certs apiserver --config {{file.files[0].path}}"
 
@@ -97,6 +119,28 @@
         path: "/etc/kubernetes/kubelet.conf"
         regexp: '{{ OldEndpoint}}'
         replace: '{{ NewEndpoint}}'
+    
+    - name: update NO_PROXY and no_proxy in /etc/environment
+      ansible.builtin.replace:
+        path: "/etc/environment"
+        regexp: '{{ OldEndpoint }}'
+        replace: '{{ NewEndpoint }}'
+
+    # https://github.com/kubernetes/kubeadm/issues/182#issuecomment-1137419094
+    - name: update NO_PROXY and no_proxy using systemctl set-environment
+      ansible.builtin.shell: |
+        systemctl set-environment NO_PROXY="$(awk -F '=' '/NO_PROXY=/{print $2}' /etc/environment)"
+        systemctl set-environment no_proxy="$(awk -F '=' '/no_proxy=/{print $2}' /etc/environment)"
+
+    # https://github.com/kubernetes/kubeadm/issues/182#issuecomment-1137419094
+    - name: restart containerd service
+      ansible.builtin.service:
+        name: containerd
+        state: restarted
+      register: serviceDetails
+      until: serviceDetails.status.ActiveState == "active"
+      retries: 5
+      delay: 20
 
     - name: restart kubelet
       ansible.builtin.service:
