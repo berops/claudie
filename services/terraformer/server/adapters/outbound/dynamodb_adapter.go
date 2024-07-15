@@ -53,11 +53,7 @@ func createDynamoDBClientWithEndpoint() *dynamodb.Client {
 					return aws.Credentials{AccessKeyID: awsAccessKeyId, SecretAccessKey: awsSecretAccessKey}, nil
 				},
 			),
-			EndpointResolverWithOptions: aws.EndpointResolverWithOptionsFunc(
-				func(service, region string, options ...interface{}) (aws.Endpoint, error) {
-					return aws.Endpoint{URL: dynamoEndpoint}, nil
-				},
-			),
+			BaseEndpoint:     aws.String(dynamoEndpoint),
 			RetryMaxAttempts: 10,
 			RetryMode:        aws.RetryModeStandard,
 		},

@@ -48,14 +48,7 @@ func createS3ClientWithEndpoint() *s3.Client {
 					return aws.Credentials{AccessKeyID: awsAccessKeyId, SecretAccessKey: awsSecretAccessKey}, nil
 				},
 			),
-			EndpointResolverWithOptions: aws.EndpointResolverWithOptionsFunc(
-				func(service, region string, options ...interface{}) (aws.Endpoint, error) {
-					return aws.Endpoint{
-						URL:               s3Endpoint,
-						HostnameImmutable: true,
-					}, nil
-				},
-			),
+			BaseEndpoint:     aws.String(s3Endpoint),
 			RetryMaxAttempts: 10,
 			RetryMode:        aws.RetryModeStandard,
 		},
