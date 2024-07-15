@@ -121,7 +121,7 @@ $(LOCALBIN):
 
 ## Tool Binaries
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
-CONTROLLER_TOOLS_VERSION ?= v0.11.3
+CONTROLLER_TOOLS_VERSION ?= v0.15.0
 
 # Generate CustomResourceDefinition objects.
 crd: controller-gen 
