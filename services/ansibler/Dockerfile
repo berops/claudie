@@ -21,7 +21,7 @@ WORKDIR /go/services/ansibler/server
 RUN CGO_ENABLED=0 go build
 
 # Ansible installation: https://github.com/cytopia/docker-ansible/blob/master/Dockerfiles/Dockerfile-base
-FROM docker.io/library/alpine:3.20 AS ansible_builder
+FROM docker.io/library/alpine:3.16 AS ansible_builder
 
 RUN set -eux \
 	&& apk add --update --no-cache \
@@ -102,8 +102,8 @@ RUN set -eux \
 	yaml \
 	&& find /usr/lib/ -name '__pycache__' -print0 | xargs -0 -n1 rm -rf \
 	&& find /usr/lib/ -name '*.pyc' -print0 | xargs -0 -n1 rm -rf \
-	\
-	&& ln -s /usr/bin/python3 /usr/bin/python
+    \
+	&& ln -sf /usr/bin/python3 /usr/bin/python
 
 COPY --from=ansible_builder /usr/lib/python3.10/site-packages/ /usr/lib/python3.10/site-packages/
 COPY --from=ansible_builder /usr/bin/ansible* /usr/bin/
