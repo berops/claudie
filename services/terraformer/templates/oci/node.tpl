@@ -39,7 +39,7 @@ resource "oci_core_instance" "{{ $node.Name }}_{{ $region }}_{{ $specName }}" {
   }
 
   metadata = {
-      ssh_authorized_keys = file("./public.pem")
+      ssh_authorized_keys = file("./{{ $nodepool.Name }}.pem")
       user_data = base64encode(<<EOF
       #cloud-config
       runcmd:
@@ -72,7 +72,7 @@ resource "oci_core_instance" "{{ $node.Name }}_{{ $region }}_{{ $specName }}" {
   }
 
   metadata = {
-      ssh_authorized_keys = file("./public.pem")
+      ssh_authorized_keys = file("./{{ $nodepool.Name }}.pem")
       user_data = base64encode(<<EOF
       #cloud-config
       runcmd:

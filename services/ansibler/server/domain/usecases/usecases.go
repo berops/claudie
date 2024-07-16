@@ -7,8 +7,6 @@ const (
 	baseDirectory = "services/ansibler/server"
 	// outputDirectory is directory used to generate ansible playbooks/inventories.
 	outputDirectory = "clusters"
-	// sshPrivateKeyFileExtension is a private key file extension.
-	sshPrivateKeyFileExtension = "pem"
 	// SpawnProcessLimit is the number of processes concurrently executing ansible.
 	SpawnProcessLimit = 5
 )
@@ -23,7 +21,6 @@ type Usecases struct {
 type (
 	NodepoolsInfo struct {
 		Nodepools      utils.NodePools
-		PrivateKey     string
 		ClusterID      string
 		ClusterNetwork string
 	}

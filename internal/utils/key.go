@@ -33,6 +33,18 @@ func CreateKeysForStaticNodepools(nps []*pb.NodePool, outputDirectory string) er
 	return errors.Join(errs...)
 }
 
+func CreateKeysForDynamicNodePools(nps []*pb.NodePool, outputDirectory string) error {
+	errs := make([]error, 0, len(nps))
+	for _, dnp := range nps {
+		pk := dnp.GetDynamicNodePool().PrivateKey
+		if err := CreateKeyFile(pk, outputDirectory, fmt.Sprintf("%s.pem", dnp.Name)); err != nil {
+			errs = append(errs, fmt.Errorf("%q failed to create key file: %w", dnp.Name, err))
+		}
+	}
+
+	return errors.Join(errs...)
+}
+
 // GetEnvDefault take a string representing environment variable as an argument, and a default value
 // If the environment variable is not defined, it returns the provided default value.
 func GetEnvDefault(envKey string, defaultVal string) string {

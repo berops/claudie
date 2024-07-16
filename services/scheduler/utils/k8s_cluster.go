@@ -49,21 +49,25 @@ clusterDesired:
 		for _, clusterCurrent := range newConfig.CurrentState.Clusters {
 			// Found current cluster with matching name
 			if clusterDesired.ClusterInfo.Name == clusterCurrent.ClusterInfo.Name {
-				updateClusterInfo(clusterDesired.ClusterInfo, clusterCurrent.ClusterInfo)
+				if err := updateClusterInfo(clusterDesired.ClusterInfo, clusterCurrent.ClusterInfo); err != nil {
+					return err
+				}
+
+				// create SSH keys for new nodepools that were added.
+				if err := generateSSHKeys(clusterDesired.ClusterInfo); err != nil {
+					return fmt.Errorf("error encountered while creating desired state for %s : %w", clusterDesired.ClusterInfo.Name, err)
+				}
+
 				if clusterCurrent.Kubeconfig != "" {
 					clusterDesired.Kubeconfig = clusterCurrent.Kubeconfig
 				}
+
 				// Skip the checks bellow
 				continue clusterDesired
 			}
 		}
-
-		// No current cluster found with matching name, create keys
-		if clusterDesired.ClusterInfo.PublicKey == "" {
-			err := createSSHKeyPair(clusterDesired.ClusterInfo)
-			if err != nil {
-				return fmt.Errorf("error encountered while creating desired state for %s : %w", clusterDesired.ClusterInfo.Name, err)
-			}
+		if err := generateSSHKeys(clusterDesired.ClusterInfo); err != nil {
+			return fmt.Errorf("error encountered while creating desired state for %s : %w", clusterDesired.ClusterInfo.Name, err)
 		}
 	}
 	return nil

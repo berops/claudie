@@ -25,7 +25,6 @@ apiEndpoint:
   host: '{{ .APIEndpoint }}'
   port: 6443
 
-{{- $privateKey := "./private.pem" }}
 controlPlane:
   hosts:
 {{- range $nodepool := .Nodepools }}
@@ -35,7 +34,7 @@ controlPlane:
     privateAddress: '{{ $nodeInfo.Node.Private }}'
     {{- if $nodepool.IsDynamic }}
     sshUsername: root
-    sshPrivateKeyFile: '{{ $privateKey }}'
+    sshPrivateKeyFile: '{{ $nodepool.NodepoolName }}.pem'
     {{- else }}
     sshUsername: '{{ $nodeInfo.Node.Username }}'
     sshPrivateKeyFile: './{{ $nodeInfo.Name }}.pem'
@@ -60,7 +59,7 @@ staticWorkers:
     privateAddress: '{{ $nodeInfo.Node.Private }}'
     {{- if $nodepool.IsDynamic }}
     sshUsername: root
-    sshPrivateKeyFile: '{{ $privateKey }}'
+    sshPrivateKeyFile: '{{ $nodepool.NodepoolName }}.pem'
     {{- else }}
     sshUsername: '{{ $nodeInfo.Node.Username }}'
     sshPrivateKeyFile: './{{ $nodeInfo.Name }}.pem'

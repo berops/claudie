@@ -130,9 +130,8 @@ func (k *KubeEleven) generateFiles() error {
 		return fmt.Errorf("error while generating %s from kubeone template : %w", generatedKubeoneManifestName, err)
 	}
 
-	// Create file containing SSH key which will be used by Kubeone.
-	if err := utils.CreateKeyFile(k.K8sCluster.ClusterInfo.GetPrivateKey(), k.outputDirectory, sshKeyFileName); err != nil {
-		return fmt.Errorf("error while creating SSH key file: %w", err)
+	if err := utils.CreateKeysForDynamicNodePools(utils.GetCommonDynamicNodePools(k.K8sCluster.ClusterInfo.NodePools), k.outputDirectory); err != nil {
+		return fmt.Errorf("failed to create key file(s) for dynamic nodepools: %w", err)
 	}
 
 	if err := utils.CreateKeysForStaticNodepools(utils.GetCommonStaticNodePools(k.K8sCluster.ClusterInfo.NodePools), k.outputDirectory); err != nil {

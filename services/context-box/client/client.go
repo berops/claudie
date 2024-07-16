@@ -126,10 +126,6 @@ func printConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType, stat
 		buffer.WriteString(fmt.Sprintf("Network CIDR: %s\n", cluster.GetNetwork()))
 		buffer.WriteString("Kubeconfig:\n")
 		buffer.WriteString(fmt.Sprintf("%s\n", cluster.GetKubeconfig()))
-		buffer.WriteString("Public key:\n")
-		buffer.WriteString(fmt.Sprintf("%s\n", cluster.ClusterInfo.PublicKey))
-		buffer.WriteString("Private key:\n")
-		buffer.WriteString(fmt.Sprintf("%s\n", cluster.ClusterInfo.PrivateKey))
 		buffer.WriteString("Node Pools:\n")
 		for j, nodePool := range cluster.ClusterInfo.GetNodePools() {
 			if np := nodePool.GetDynamicNodePool(); np != nil {
@@ -140,6 +136,10 @@ func printConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType, stat
 				buffer.WriteString(fmt.Sprintf("Provider specs: %v\n", np.GetProvider()))
 				buffer.WriteString(fmt.Sprintf("Autoscaler conf: %v\n", np.GetAutoscalerConfig()))
 				buffer.WriteString(fmt.Sprintf("Count: %d\n", np.GetCount()))
+				buffer.WriteString("Public key:\n")
+				buffer.WriteString(fmt.Sprintf("%s\n", np.PublicKey))
+				buffer.WriteString("Private key:\n")
+				buffer.WriteString(fmt.Sprintf("%s\n", np.PrivateKey))
 
 				buffer.WriteString("Nodes:\n")
 				for _, node := range nodePool.GetNodes() {
@@ -165,10 +165,6 @@ func printConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType, stat
 		buffer.WriteString(fmt.Sprintf("Cluster number: %d\n", i))
 		buffer.WriteString(fmt.Sprintf("Name: %s\n", cluster.ClusterInfo.GetName()))
 		buffer.WriteString(fmt.Sprintf("Hash: %s\n", cluster.ClusterInfo.GetHash()))
-		buffer.WriteString("Public key:\n")
-		buffer.WriteString(fmt.Sprintf("%s\n", cluster.ClusterInfo.PublicKey))
-		buffer.WriteString("Private key:\n")
-		buffer.WriteString(fmt.Sprintf("%s\n", cluster.ClusterInfo.PrivateKey))
 		buffer.WriteString("Node Pools:\n")
 		for j, nodePool := range cluster.ClusterInfo.GetNodePools() {
 			if np := nodePool.GetDynamicNodePool(); np != nil {
@@ -178,6 +174,10 @@ func printConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType, stat
 				buffer.WriteString(fmt.Sprintf("Region %s\n", np.GetRegion()))
 				buffer.WriteString(fmt.Sprintf("Provider specs: %v\n", np.GetProvider()))
 				buffer.WriteString(fmt.Sprintf("Count: %d\n", np.GetCount()))
+				buffer.WriteString("Public key:\n")
+				buffer.WriteString(fmt.Sprintf("%s\n", np.PublicKey))
+				buffer.WriteString("Private key:\n")
+				buffer.WriteString(fmt.Sprintf("%s\n", np.PrivateKey))
 
 				buffer.WriteString("Nodes:\n")
 				for _, node := range nodePool.GetNodes() {
