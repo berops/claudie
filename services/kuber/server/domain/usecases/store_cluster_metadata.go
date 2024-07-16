@@ -36,6 +36,9 @@ func (u *Usecases) StoreClusterMetadata(ctx context.Context, request *pb.StoreCl
 				}
 			}
 		} else if np := pool.GetStaticNodePool(); np != nil {
+			sp[pool.Name] = StaticNodepool{
+				NodeInfo: make(map[string]StaticNodeInfo),
+			}
 			for _, node := range pool.GetNodes() {
 				sp[pool.Name].NodeInfo[node.GetName()] = StaticNodeInfo{
 					PrivateKey: np.NodeKeys[node.Public],
