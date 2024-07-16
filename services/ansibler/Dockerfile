@@ -61,8 +61,8 @@ RUN set -eux \
 	pycparser
 
 RUN set -eux \
-	# ansible 9.6.0 includes ansible-core 2.16.7 and ansible-community 9.6.0
-	&& pip3 install --no-cache-dir --no-binary pyyaml ansible==9.6.0 \
+	# ansible 10.1.0 includes ansible-core 2.17 and ansible-community 9.6.0
+	&& pip3 install --no-cache-dir --no-binary pyyaml ansible==10.1.0 \
 	&& find /usr/lib/ -name '__pycache__' -print0 | xargs -0 -n1 rm -rf \
 	&& find /usr/lib/ -name '*.pyc' -print0 | xargs -0 -n1 rm -rf
 
@@ -83,11 +83,11 @@ RUN set -eux \
 	&& find /usr/lib/ -name '__pycache__' -print0 | xargs -0 -n1 rm -rf \
 	&& find /usr/lib/ -name '*.pyc' -print0 | xargs -0 -n1 rm -rf
 
-FROM alpine:3.20
+FROM alpine:3.16
 #Add repository label
 LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
 #Add image name as a label
-LABEL org.opencontainers.image.base.name "alpine:3.20"
+LABEL org.opencontainers.image.base.name "alpine:3.16"
 #Add description to the image
 LABEL org.opencontainers.image.description "Image for Ansibler from Claudie"
 
@@ -102,8 +102,7 @@ RUN set -eux \
 	yaml \
 	&& find /usr/lib/ -name '__pycache__' -print0 | xargs -0 -n1 rm -rf \
 	&& find /usr/lib/ -name '*.pyc' -print0 | xargs -0 -n1 rm -rf \
-    \
-	&& ln -sf /usr/bin/python3 /usr/bin/python
+	&& ln -s /usr/bin/python3 /usr/bin/python
 
 COPY --from=ansible_builder /usr/lib/python3.10/site-packages/ /usr/lib/python3.10/site-packages/
 COPY --from=ansible_builder /usr/bin/ansible* /usr/bin/
