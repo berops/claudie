@@ -1470,26 +1470,6 @@
   
 
     
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../http-proxy/http-proxy/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    HTTP Proxy
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-    
   </ul>
 </nav>
                   </div>
@@ -2128,18 +2108,6 @@ kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="
 <td><code>info</code></td>
 <td>string</td>
 <td>Log level for all services. Can be either <code>info</code> or <code>debug</code>.</td>
-</tr>
-<tr>
-<td><code>HTTP_PROXY_MODE</code></td>
-<td><code>default</code></td>
-<td>string</td>
-<td><code>default</code>, <code>on</code> or <code>off</code>. <code>default</code> utilizes HTTP proxy only when there's at least one node in the K8s cluster from the Hetzner cloud provider. <code>on</code> uses HTTP proxy even when the K8s cluster doesn't have any nodes from the Hetzner. <code>off</code> turns off the usage of HTTP proxy. If the value isn't set or differs from <code>on</code> or <code>off</code> it always works with the <code>default</code>.</td>
-</tr>
-<tr>
-<td><code>HTTP_PROXY_URL</code></td>
-<td><code>http://proxy.claudie.org:48213</code></td>
-<td>string</td>
-<td>HTTP proxy URL used in kubeone <a href="https://docs.kubermatic.com/kubeone/latest/guides/proxy/">proxy configuration</a> to build the K8s cluster.</td>
 </tr>
 <tr>
 <td><code>DATABASE_HOSTNAME</code></td>

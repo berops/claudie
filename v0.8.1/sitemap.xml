@@ -116,11 +116,6 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://docs.claudie.io/v0.8.1/http-proxy/http-proxy/</loc>
-         <lastmod>2024-07-16</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://docs.claudie.io/v0.8.1/input-manifest/api-reference/</loc>
          <lastmod>2024-07-16</lastmod>
          <changefreq>daily</changefreq>
