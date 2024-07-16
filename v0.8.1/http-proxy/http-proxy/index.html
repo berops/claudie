@@ -8,13 +8,11 @@
       
       
       
-        <link rel="canonical" href="https://docs.claudie.io/v0.8.1/node-local-dns/node-local-dns/">
+        <link rel="canonical" href="https://docs.claudie.io/v0.8.1/http-proxy/http-proxy/">
       
       
-        <link rel="prev" href="../../update/update/">
+        <link rel="prev" href="../../commands/commands/">
       
-      
-        <link rel="next" href="../../commands/commands/">
       
       
       <link rel="icon" href="../../hexagon_blue.png">
@@ -22,7 +20,7 @@
     
     
       
-        <title>Deploying Node-Local-DNS - Claudie Docs</title>
+        <title>HTTP Proxy - Claudie Docs</title>
       
     
     
@@ -140,7 +138,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#deploying-node-local-dns" class="md-skip">
+        <a href="#usage-of-http-proxy" class="md-skip">
           Skip to content
         </a>
       
@@ -180,7 +178,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Deploying Node-Local-DNS
+              HTTP Proxy
             
           </span>
         </div>
@@ -1314,30 +1312,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Deploying Node-Local-DNS
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../node-local-dns/node-local-dns/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1346,53 +1324,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#1-download-nodelocaldnsyaml" class="md-nav__link">
-    <span class="md-ellipsis">
-      1. Download nodelocaldns.yaml
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-modify-downloaded-nodelocaldnsyaml" class="md-nav__link">
-    <span class="md-ellipsis">
-      2. Modify downloaded nodelocaldns.yaml
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-apply-the-modified-manifest" class="md-nav__link">
-    <span class="md-ellipsis">
-      3. Apply the modified manifest.
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1421,10 +1352,30 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../http-proxy/http-proxy/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    HTTP Proxy
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -1433,6 +1384,44 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#default-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Default setup
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#further-customization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Further customization
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1464,27 +1453,18 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-download-nodelocaldnsyaml" class="md-nav__link">
+  <a href="#default-setup" class="md-nav__link">
     <span class="md-ellipsis">
-      1. Download nodelocaldns.yaml
+      Default setup
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-modify-downloaded-nodelocaldnsyaml" class="md-nav__link">
+  <a href="#further-customization" class="md-nav__link">
     <span class="md-ellipsis">
-      2. Modify downloaded nodelocaldns.yaml
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-apply-the-modified-manifest" class="md-nav__link">
-    <span class="md-ellipsis">
-      3. Apply the modified manifest.
+      Further customization
     </span>
   </a>
   
@@ -1508,57 +1488,18 @@
   
 
 
-<h1 id="deploying-node-local-dns">Deploying Node-Local-DNS<a class="headerlink" href="#deploying-node-local-dns" title="Permanent link">&para;</a></h1>
-<p>Claudie doesn't deploy <code>node-local-dns</code> by default. In this section we'll walk through an example
-of how to deploy <code>node-local-dns</code> for a claudie created cluster.</p>
-<h3 id="1-download-nodelocaldnsyaml">1. Download <code>nodelocaldns.yaml</code><a class="headerlink" href="#1-download-nodelocaldnsyaml" title="Permanent link">&para;</a></h3>
-<p>Based on the kubernetes version you are using in your cluster download the <code>nodelocaldns.yaml</code>
-from the kubernetes <a href="https://github.com/kubernetes/kubernetes/blob/master/cluster/addons/dns/nodelocaldns/nodelocaldns.yaml">repository</a></p>
-<p>Make sure to download the YAML for the right kubernetes version, e.g. for kubernetes version 1.27 you would use:</p>
-<div class="highlight"><pre><span></span><code>wget<span class="w"> </span>https://raw.githubusercontent.com/kubernetes/kubernetes/release-1.27/cluster/addons/dns/nodelocaldns/nodelocaldns.yaml
-</code></pre></div>
-<h3 id="2-modify-downloaded-nodelocaldnsyaml">2. Modify downloaded <code>nodelocaldns.yaml</code><a class="headerlink" href="#2-modify-downloaded-nodelocaldnsyaml" title="Permanent link">&para;</a></h3>
-<p>We'll need to replace the references to <code>__PILLAR__DNS__DOMAIN__</code> and some of the references to <code>__PILLAR__LOCAL__DNS__</code></p>
-<p>To replace <code>__PILLAR__DNS__DOMAIN__</code> execute:</p>
-<div class="highlight"><pre><span></span><code>sed<span class="w"> </span>-i<span class="w"> </span><span class="s2">&quot;s/__PILLAR__DNS__DOMAIN__/cluster.local/g&quot;</span><span class="w"> </span>nodelocaldns.yaml
-</code></pre></div>
-<p>To replace <code>__PILLAR__LOCAL__DNS__</code> find the references and change it to <a href="https://github.com/kubermatic/kubeone/blob/515d7a3b1dbf42a4f04fae6dccdcb86eaa77e238/pkg/templates/resources/resources.go#L85">169.254.20.10</a> as shown below:</p>
-<div class="highlight"><pre><span></span><code>    ...
-      containers:
-      - name: node-cache
-        image: registry.k8s.io/dns/k8s-dns-node-cache:1.22.20
-        resources:
-          requests:
-            cpu: 25m
-            memory: 5Mi
--       args: [ &quot;-localip&quot;, &quot;__PILLAR__LOCAL__DNS__,__PILLAR__DNS__SERVER__&quot;, &quot;-conf&quot;, &quot;/etc/Corefile&quot;, &quot;-upstreamsvc&quot;, &quot;kube-dns-upstream&quot; ]
-+       args: [ &quot;-localip&quot;, &quot;169.254.20.10&quot;, &quot;-conf&quot;, &quot;/etc/Corefile&quot;, &quot;-upstreamsvc&quot;, &quot;kube-dns-upstream&quot; ]
-        securityContext:
-          capabilities:
-            add:
-            - NET_ADMIN
-        ports:
-        - containerPort: 53
-          name: dns
-          protocol: UDP
-        - containerPort: 53
-          name: dns-tcp
-          protocol: TCP
-        - containerPort: 9253
-          name: metrics
-          protocol: TCP
-        livenessProbe:
-          httpGet:
--           host: __PILLAR__LOCAL__DNS__
-+           host: 169.254.20.10
-            path: /health
-            port: 8080
-          initialDelaySeconds: 60
-          timeoutSeconds: 5
-    ...
-</code></pre></div>
-<h3 id="3-apply-the-modified-manifest">3. Apply the modified manifest.<a class="headerlink" href="#3-apply-the-modified-manifest" title="Permanent link">&para;</a></h3>
-<p><code>kubectl apply -f ./nodelocaldns.yaml</code></p>
+<h1 id="usage-of-http-proxy">Usage of HTTP proxy<a class="headerlink" href="#usage-of-http-proxy" title="Permanent link">&para;</a></h1>
+<p>In this section, we'll describe the default HTTP proxy setup and its the further customization.</p>
+<h2 id="default-setup">Default setup<a class="headerlink" href="#default-setup" title="Permanent link">&para;</a></h2>
+<p>By default <code>HTTP_PROXY_MODE</code> is set to <code>default</code> <a href="https://docs.claudie.io/latest/getting-started/detailed-guide/#claudie-customization">see</a>, thus Claudie utilizes the HTTP proxy in building the K8s cluster only when there is at least one node from the Hetzner cloud provider. This means, that if you have a cluster with one master node in Azure and one worker node in AWS Claudie won't use the HTTP proxy to build the K8s cluster. However, if you add another worker node from Hetzner the whole process of building the K8s cluster will utilize the HTTP proxy. </p>
+<p>This approach was implemented to address the following issues:</p>
+<ul>
+<li><a href="https://github.com/berops/claudie/issues/783">https://github.com/berops/claudie/issues/783</a></li>
+<li><a href="https://github.com/berops/claudie/issues/1272">https://github.com/berops/claudie/issues/1272</a></li>
+</ul>
+<h2 id="further-customization">Further customization<a class="headerlink" href="#further-customization" title="Permanent link">&para;</a></h2>
+<p>In case you don't want to utilize the HTTP proxy at all (even when there are nodes in the K8s cluster from the Hetzner cloud provider) you can turn off the HTTP proxy by setting the <code>HTTP_PROXY_MODE</code> to <code>off</code> (<a href="https://docs.claudie.io/latest/getting-started/detailed-guide/#claudie-customization">see</a>). On the other hand, if you wish to use the HTTP proxy whenever building a K8s cluster (even when there aren't any nodes in the K8s cluster from the Hetzner cloud provider) you can set the <code>HTTP_PROXY_MODE</code> to <code>on</code> (<a href="https://docs.claudie.io/latest/getting-started/detailed-guide/#claudie-customization">see</a>).</p>
+<p>If you want to utilize your own HTTP proxy you can set its URL in <code>HTTP_PROXY_URL</code> (<a href="https://docs.claudie.io/latest/getting-started/detailed-guide/#claudie-customization">see</a>). By default, this value is set to <code>http://proxy.claudie.org:48213</code>. In case your HTTP proxy runs on <code>myproxy.com</code> and is exposed on port <code>3128</code> the <code>HTTP_PROXY_URL</code> has to be set to <code>http://myproxy.com:3128</code>. This means you always have to specify the whole URL with the protocol (HTTP), domain name, and port. </p>
 
 
   
