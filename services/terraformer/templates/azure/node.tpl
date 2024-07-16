@@ -25,7 +25,7 @@ resource "azurerm_linux_virtual_machine" "{{ $node.Name }}_{{ $sanitisedRegion }
 
   disable_password_authentication = true
   admin_ssh_key {
-    public_key = file("public.pem")
+    public_key = file("./{{ $nodepool.Name }}.pem")
     username   = "claudie"
   }
 

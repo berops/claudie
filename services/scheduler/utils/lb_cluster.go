@@ -46,30 +46,36 @@ func UpdateLBClusters(newConfig *pb.Config) error {
 clusterLbDesired:
 	for _, clusterLbDesired := range newConfig.DesiredState.LoadBalancerClusters {
 		for _, clusterLbCurrent := range newConfig.CurrentState.LoadBalancerClusters {
-			// found current cluster with matching name
 			if clusterLbDesired.ClusterInfo.Name == clusterLbCurrent.ClusterInfo.Name {
-				updateClusterInfo(clusterLbDesired.ClusterInfo, clusterLbCurrent.ClusterInfo)
+				if err := updateClusterInfo(clusterLbDesired.ClusterInfo, clusterLbCurrent.ClusterInfo); err != nil {
+					return err
+				}
+
+				// create SSH keys for new nodepools that were added.
+				if err := generateSSHKeys(clusterLbDesired.ClusterInfo); err != nil {
+					return fmt.Errorf("error encountered while creating desired state for %s : %w", clusterLbDesired.ClusterInfo.Name, err)
+				}
+
 				// copy hostname from current state if not specified in manifest
 				if clusterLbDesired.Dns.Hostname == "" {
 					clusterLbDesired.Dns.Hostname = clusterLbCurrent.Dns.Hostname
 					clusterLbDesired.Dns.Endpoint = clusterLbCurrent.Dns.Endpoint
 				}
+
 				//skip the checks
 				continue clusterLbDesired
 			}
 		}
-		// no current cluster found with matching name, create keys
-		if clusterLbDesired.ClusterInfo.PublicKey == "" {
-			err := createSSHKeyPair(clusterLbDesired.ClusterInfo)
-			if err != nil {
-				return fmt.Errorf("error encountered while creating desired state for %s : %w", clusterLbDesired.ClusterInfo.Name, err)
-			}
+
+		if err := generateSSHKeys(clusterLbDesired.ClusterInfo); err != nil {
+			return fmt.Errorf("error encountered while creating desired state for %s : %w", clusterLbDesired.ClusterInfo.Name, err)
 		}
-		// create hostname if its not set and not present in current state
+
 		if clusterLbDesired.Dns.Hostname == "" {
 			clusterLbDesired.Dns.Hostname = utils.CreateHash(hostnameHashLength)
 		}
 	}
+
 	return nil
 }
 

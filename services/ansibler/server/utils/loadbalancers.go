@@ -86,8 +86,6 @@ type (
 		LbClusters []*LBClusterData
 		// TargetK8sNodepool are all nodepools used by the targeted k8s cluster.
 		TargetK8sNodepool []*pb.NodePool
-		// TargetK8sNodepoolKey is the key used for the nodepools.
-		TargetK8sNodepoolKey string
 		// PreviousAPIEndpointLB holds the endpoint of the previous Load-Balancer endpoint
 		// if there was any to be able to handle the endpoint change.
 		PreviousAPIEndpointLB string
@@ -163,10 +161,10 @@ func GenerateLBBaseFiles(outputDirectory string, lbClustersInfo *LBClustersInfo)
 		return fmt.Errorf("failed to create directory %s : %w", outputDirectory, err)
 	}
 
-	// Generate SSH key which will be used by Ansible.
-	if err := utils.CreateKeyFile(lbClustersInfo.TargetK8sNodepoolKey, outputDirectory, "k8s.pem"); err != nil {
-		return fmt.Errorf("failed to create key file: %w", err)
+	if err := utils.CreateKeysForDynamicNodePools(utils.GetCommonDynamicNodePools(lbClustersInfo.TargetK8sNodepool), outputDirectory); err != nil {
+		return fmt.Errorf("failed to create key file(s) for dynamic nodepools : %w", err)
 	}
+
 	if err := utils.CreateKeysForStaticNodepools(utils.GetCommonStaticNodePools(lbClustersInfo.TargetK8sNodepool), outputDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}

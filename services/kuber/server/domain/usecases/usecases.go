@@ -28,38 +28,25 @@ type (
 	// ClusterMetadata contains metadata for the whole cluster. This metadata will be exported as a secret in management cluster.
 	ClusterMetadata struct {
 		// DynamicNodepools contains metadata for dynamic nodepools.
-		DynamicNodepools DynamicNodepool `json:"dynamic_nodepools"`
-		// PrivateKey is the private SSH key for the dynamic nodes.
-		PrivateKey string `json:"cluster_private_key"`
+		DynamicNodepools map[string]DynamicNodepool `json:"dynamic_nodepools"`
 		// StaticNodepools contains metadata for static nodepools.
-		StaticNodepools StaticNodepool `json:"static_nodepools"`
+		StaticNodepools map[string]StaticNodepool `json:"static_nodepools"`
 		// DynamicLoadBalancerNodePools contain metadata for dynamic lb nodepools.
-		DynamicLoadBalancerNodePools map[string]DynamicLoadBalancerNodePools `json:"dynamic_load_balancer_nodepools"`
+		DynamicLoadBalancerNodePools map[string]map[string]DynamicNodepool `json:"dynamic_load_balancer_nodepools"`
 		// StaticLoadBalancerNodePools contain metadata for static lb nodepools.
-		StaticLoadBalancerNodePools map[string]StaticLoadBalancerNodePools `json:"static_load_balancer_nodepools"`
+		StaticLoadBalancerNodePools map[string]map[string]StaticNodepool `json:"static_load_balancer_nodepools"`
 	}
 
 	// DynamicNodepool contains map of node names and their IP pair.
 	DynamicNodepool struct {
 		// NodeIps maps node-name to public-private ip pairs for dynamic node pools.
 		NodeIps map[string]IPPair `json:"node_ips"`
+		// PrivateKey is the private SSH key for the dynamic nodes.
+		PrivateKey string `json:"nodepool_private_key"`
 	}
 
 	// StaticNodepool contains map of node names and their static metadata.
 	StaticNodepool struct {
-		// NodeIps maps node-name to endpoint-key pairs for static node pools.
-		NodeInfo map[string]StaticNodeInfo `json:"node_info"`
-	}
-
-	DynamicLoadBalancerNodePools struct {
-		// NodeIps maps node-name to public-private ip pairs for dynamic node pools.
-		NodeIps map[string]IPPair `json:"node_ips"`
-		// PrivateKey is the private SSH key for the dynamic nodes.
-		PrivateKey string `json:"cluster_private_key"`
-	}
-
-	// StaticLoadBalancerNodePools contains map of LB node names and their static metadata
-	StaticLoadBalancerNodePools struct {
 		// NodeIps maps node-name to endpoint-key pairs for static node pools.
 		NodeInfo map[string]StaticNodeInfo `json:"node_info"`
 	}

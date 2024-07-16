@@ -5,6 +5,17 @@
 
 {{- $specName := $nodepool.NodePool.Provider.SpecName }}
 
+resource "hcloud_ssh_key" "{{ $nodepool.Name }}_key_{{ $specName }}" {
+  provider   = hcloud.nodepool_{{ $specName }}
+  name       = "{{ $nodepool.Name }}-key-{{ $clusterHash }}-{{ $specName }}"
+  public_key = file("./{{ $nodepool.Name }}.pem")
+
+  labels = {
+    "managed-by"      : "Claudie"
+    "claudie-cluster" : "{{ $clusterName }}-{{ $clusterHash }}"
+  }
+}
+
 {{- range $node := $nodepool.Nodes }}
 resource "hcloud_server" "{{ $node.Name }}_{{ $specName }}" {
   provider      = hcloud.nodepool_{{ $specName }}
@@ -17,7 +28,7 @@ resource "hcloud_server" "{{ $node.Name }}_{{ $specName }}" {
      ipv6_enabled = false
   }
   ssh_keys = [
-    hcloud_ssh_key.claudie_{{ $specName }}.id,
+    hcloud_ssh_key.{{ $nodepool.Name }}_key_{{ $specName }}.id,
   ]
   labels = {
     "managed-by"      : "Claudie"

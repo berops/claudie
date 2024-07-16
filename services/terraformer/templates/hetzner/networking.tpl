@@ -3,17 +3,6 @@
 
 {{- $specName := $.Provider.SpecName }}
 
-resource "hcloud_ssh_key" "claudie_{{ $specName }}" {
-  provider   = hcloud.nodepool_{{ $specName }}
-  name       = "key-{{ $clusterHash }}-{{ $specName }}"
-  public_key = file("./public.pem")
-
-  labels = {
-    "managed-by"      : "Claudie"
-    "claudie-cluster" : "{{ $clusterName }}-{{ $clusterHash }}"
-  }
-}
-
 resource "hcloud_firewall" "firewall_{{ $specName }}" {
   provider = hcloud.nodepool_{{ $specName }}
   name     = "fwl-{{ $clusterHash }}-{{ $specName }}"

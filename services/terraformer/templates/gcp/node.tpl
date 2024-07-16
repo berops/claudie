@@ -21,7 +21,7 @@ resource "google_compute_instance" "{{ $node.Name }}_{{ $region }}_{{ $specName 
   }
 
   metadata = {
-    ssh-keys = "root:${file("./public.pem")}"
+    ssh-keys = "root:${file("./{{ $nodepool.Name }}.pem")}"
   }
 
   labels = {
