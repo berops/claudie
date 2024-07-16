@@ -50,11 +50,18 @@ clusterLbDesired:
 				if err := updateClusterInfo(clusterLbDesired.ClusterInfo, clusterLbCurrent.ClusterInfo); err != nil {
 					return err
 				}
+
+				// create SSH keys for new nodepools that were added.
+				if err := generateSSHKeys(clusterLbDesired.ClusterInfo); err != nil {
+					return fmt.Errorf("error encountered while creating desired state for %s : %w", clusterLbDesired.ClusterInfo.Name, err)
+				}
+
 				// copy hostname from current state if not specified in manifest
 				if clusterLbDesired.Dns.Hostname == "" {
 					clusterLbDesired.Dns.Hostname = clusterLbCurrent.Dns.Hostname
 					clusterLbDesired.Dns.Endpoint = clusterLbCurrent.Dns.Endpoint
 				}
+
 				//skip the checks
 				continue clusterLbDesired
 			}

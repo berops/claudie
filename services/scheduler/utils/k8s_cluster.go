@@ -53,6 +53,11 @@ clusterDesired:
 					return err
 				}
 
+				// create SSH keys for new nodepools that were added.
+				if err := generateSSHKeys(clusterDesired.ClusterInfo); err != nil {
+					return fmt.Errorf("error encountered while creating desired state for %s : %w", clusterDesired.ClusterInfo.Name, err)
+				}
+
 				if clusterCurrent.Kubeconfig != "" {
 					clusterDesired.Kubeconfig = clusterCurrent.Kubeconfig
 				}
