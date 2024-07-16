@@ -463,7 +463,7 @@ All of the customisable settings can be found in `claudie/.env` file.
 | ---------------------- | ------------- | ------ | ------------------------------------------------------------ |
 | `GOLANG_LOG`           | `info`        | string | Log level for all services. Can be either `info` or `debug`. |
 | `HTTP_PROXY_MODE`      | `default`     | string | `default`, `on` or `off`. `default` utilizes HTTP proxy only when there's at least one node in the K8s cluster from the Hetzner cloud provider. `on` uses HTTP proxy even when the K8s cluster doesn't have any nodes from the Hetzner. `off` turns off the usage of HTTP proxy. If the value isn't set or differs from `on` or `off` it always works with the `default`. |
-| `HTTP_PROXY_URL`       | `http://proxy.claudie.org:48213` | string | HTTP proxy URL used in kubeone [proxy configuration](https://docs.kubermatic.com/kubeone/latest/guides/proxy/) to build the K8s cluster. |
+| `HTTP_PROXY_URL`       | `http://proxy.claudie.io:48213` | string | HTTP proxy URL used in kubeone [proxy configuration](https://docs.kubermatic.com/kubeone/latest/guides/proxy/) to build the K8s cluster. |
 | `DATABASE_HOSTNAME`    | `mongodb`     | string | Database hostname used for Claudie configs.                  |
 | `CONTEXT_BOX_HOSTNAME` | `context-box` | string | Context-box service hostname.                                |
 | `TERRAFORMER_HOSTNAME` | `terraformer` | string | Terraformer service hostname.                                |
