@@ -3,7 +3,6 @@ package outboundAdapters
 import (
 	"context"
 	"fmt"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/berops/claudie/internal/envs"
@@ -40,17 +39,15 @@ func createS3Client() *s3.Client {
 // It will lookup the endpoint from s3Endpoint variable.
 // If any error occurs, then it returns the error.
 func createS3ClientWithEndpoint() *s3.Client {
-	return s3.NewFromConfig(
-		aws.Config{
+	return s3.New(
+		s3.Options{
 			Region: awsRegion,
-			Credentials: aws.CredentialsProviderFunc(
-				func(ctx context.Context) (aws.Credentials, error) {
-					return aws.Credentials{AccessKeyID: awsAccessKeyId, SecretAccessKey: awsSecretAccessKey}, nil
-				},
-			),
-			BaseEndpoint:     aws.String(s3Endpoint),
-			RetryMaxAttempts: 10,
-			RetryMode:        aws.RetryModeStandard,
+			Credentials: aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
+				return aws.Credentials{AccessKeyID: awsAccessKeyId, SecretAccessKey: awsSecretAccessKey}, nil
+			}),
+			RetryMaxAttempts:   10,
+			RetryMode:          aws.RetryModeStandard,
+			EndpointResolverV2: &immutableResolver{s3Endpoint},
 		},
 	)
 }
