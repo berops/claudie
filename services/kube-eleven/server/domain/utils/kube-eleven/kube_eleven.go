@@ -25,7 +25,7 @@ const (
 	staticProvider               = "on-premise"
 	staticProviderName           = "claudie"
 	defaulHttpProxyMode          = "default"
-	defaulHttpProxyUrl           = "http://proxy.claudie.org:48213"
+	defaulHttpProxyUrl           = "http://proxy.claudie.io:48213"
 )
 
 type KubeEleven struct {
