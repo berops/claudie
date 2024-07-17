@@ -62,9 +62,8 @@ type TemplateGeneration struct {
 	// Nodepool from which templates will be generated.
 	Nodepool *pb.NodePool
 	// Cluster relevant data.
-	ClusterData      templates.ClusterData
-	ClusterMetadata  map[string]any
-	ClusterPublicKey string
+	ClusterData     templates.ClusterData
+	ClusterMetadata map[string]any
 }
 
 // CreateNodepools creates node pools for the cluster.
@@ -97,8 +96,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 				ClusterHash: c.DesiredClusterInfo.Hash,
 				ClusterType: c.ClusterType.String(),
 			},
-			ClusterMetadata:  c.Metadata,
-			ClusterPublicKey: c.DesiredClusterInfo.PublicKey,
+			ClusterMetadata: c.Metadata,
 		}
 
 		if err := generateFiles(np, &g); err != nil {
@@ -170,8 +168,7 @@ func (c ClusterBuilder) DestroyNodepools() error {
 				ClusterHash: c.CurrentClusterInfo.Hash,
 				ClusterType: c.ClusterType.String(),
 			},
-			ClusterMetadata:  c.Metadata,
-			ClusterPublicKey: c.CurrentClusterInfo.PublicKey,
+			ClusterMetadata: c.Metadata,
 		}
 
 		if err := generateFiles(np, &g); err != nil {
@@ -248,12 +245,9 @@ func generateFiles(np *pb.NodePool, tg *TemplateGeneration) error {
 		Region:      np.GetDynamicNodePool().GetRegion(),
 		Metadata:    tg.ClusterMetadata,
 	}
+
 	if err := g.GenerateNetworkingCommon(&providerData); err != nil {
 		return fmt.Errorf("failed to generate networking_common template files: %w", err)
-	}
-
-	if err := utils.CreateKeyFile(dnp.PublicKey, clusterDir, fmt.Sprintf("%s.pem", np.Name)); err != nil {
-		return fmt.Errorf("error public key file for %s : %w", clusterDir, err)
 	}
 
 	// based on the cluster type fill out the nodepools data to be used
@@ -267,10 +261,19 @@ func generateFiles(np *pb.NodePool, tg *TemplateGeneration) error {
 		},
 		Metadata: tg.ClusterMetadata,
 	}
+
 	copyCIDRsToMetadata(&nodepoolData)
 
 	if err := g.GenerateNodes(&nodepoolData, &providerData); err != nil {
 		return fmt.Errorf("failed to generate nodepool specific templates files: %w", err)
+	}
+
+	if err := utils.CreateKeyFile(
+		np.GetDynamicNodePool().GetPublicKey(),
+		tg.TargetDirectory,
+		np.GetName(),
+	); err != nil {
+		return fmt.Errorf("error creating public key file for nodepool %s in %s : %w", np.GetName(), tg.TargetDirectory, err)
 	}
 
 	err := utils.CreateKeyFile(
@@ -278,6 +281,7 @@ func generateFiles(np *pb.NodePool, tg *TemplateGeneration) error {
 		tg.TargetDirectory,
 		np.GetDynamicNodePool().Provider.GetSpecName(),
 	)
+
 	if err != nil {
 		return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", np.GetDynamicNodePool().Provider.GetSpecName(), tg.TargetDirectory, err)
 	}

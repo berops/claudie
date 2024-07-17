@@ -23,26 +23,6 @@ func TestDownloadForNodepools(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "test-case-0",
-			wantErr: false,
-			args: args{
-				downloadInto: downloadDir,
-				nodepools: []*pb.NodePool{
-					{
-						NodePoolType: &pb.NodePool_DynamicNodePool{
-							DynamicNodePool: &pb.DynamicNodePool{
-								Templates: &pb.TemplateRepository{
-									Repository: "https://github.com/Despire/claudie-config",
-									Tag:        "v0.1.0",
-									Path:       "/templates",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
 			name:    "test-case-1",
 			wantErr: false,
 			args: args{
@@ -139,6 +119,37 @@ func TestDownloadForNodepools(t *testing.T) {
 								Templates: &pb.TemplateRepository{
 									Repository: "https://github.com/berops/claudie-config",
 									Tag:        "v0.1.0",
+									Path:       "/templates",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:    "test-case-5",
+			wantErr: false,
+			args: args{
+				downloadInto: downloadDir,
+				nodepools: []*pb.NodePool{
+					{
+						NodePoolType: &pb.NodePool_DynamicNodePool{
+							DynamicNodePool: &pb.DynamicNodePool{
+								Templates: &pb.TemplateRepository{
+									Repository: "https://github.com/berops/claudie-config",
+									Tag:        "v0.1.1",
+									Path:       "/templates",
+								},
+							},
+						},
+					},
+					{
+						NodePoolType: &pb.NodePool_DynamicNodePool{
+							DynamicNodePool: &pb.DynamicNodePool{
+								Templates: &pb.TemplateRepository{
+									Repository: "https://github.com/berops/claudie-config",
+									Tag:        "v0.1.1",
 									Path:       "/templates",
 								},
 							},
