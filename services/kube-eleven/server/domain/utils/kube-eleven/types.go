@@ -29,6 +29,9 @@ type (
 		APIEndpoint       string
 		KubernetesVersion string
 		ClusterName       string
+		UtilizeHttpProxy  bool
+		NoProxy           string
+		HttpProxyUrl      string
 		Nodepools         []*NodepoolInfo
 	}
 )

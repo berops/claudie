@@ -25,6 +25,8 @@ const (
 	staticZone                   = "datacenter"
 	staticProvider               = "on-premise"
 	staticProviderName           = "claudie"
+	defaulHttpProxyMode          = "default"
+	defaulHttpProxyUrl           = "http://proxy.claudie.io:48213"
 )
 
 type KubeEleven struct {
@@ -154,14 +156,52 @@ func (k *KubeEleven) generateTemplateData() templateData {
 
 	var potentialEndpointNode *pb.Node
 	data.Nodepools, potentialEndpointNode = k.getClusterNodes()
-
 	data.APIEndpoint = k.findAPIEndpoint(potentialEndpointNode)
+
+	hasHetznerNodes := k.hasHetznerNodes(data.Nodepools)
+	httpProxyMode := utils.GetEnvDefault("HTTP_PROXY_MODE", defaulHttpProxyMode)
+
+	data.NoProxy = ""
+	if httpProxyMode == "on" || (httpProxyMode != "off" && hasHetznerNodes) {
+		// Claudie utilizes proxy, because the proxy mode is either turned on,
+		// or it isn't turned off and there is at least 1 Hetzner node in the k8s cluster
+		data.UtilizeHttpProxy = true
+		// add nodes privat and public IPs to the NoProxy. Otherwise the kubeone proxy won't work properly
+		for _, nodePool := range data.Nodepools {
+			for _, node := range nodePool.Nodes {
+				if data.NoProxy == "" {
+					data.NoProxy = fmt.Sprintf("%s,%s", node.Node.Private, node.Node.Public)
+				} else {
+					data.NoProxy = fmt.Sprintf("%s,%s,%s", data.NoProxy, node.Node.Private, node.Node.Public)
+				}
+			}
+		}
+		// data.NoProxy has to terminate with the comma
+		// if "svc" isn't in NoProxy the admission webhooks will fail, because they will be routed to proxy
+		data.NoProxy = fmt.Sprintf("%s,%s,%s,", data.NoProxy, "svc", data.APIEndpoint)
+
+		data.HttpProxyUrl = utils.GetEnvDefault("HTTP_PROXY_URL", defaulHttpProxyUrl)
+	} else {
+		data.UtilizeHttpProxy = false
+	}
 
 	data.KubernetesVersion = k.K8sCluster.GetKubernetes()
 
 	data.ClusterName = k.K8sCluster.ClusterInfo.Name
 
 	return data
+}
+
+// hasHetzner will check if k8s cluster uses any Hetzner nodes.
+// Returns true if it does. Otherwise returns false.
+func (k *KubeEleven) hasHetznerNodes(nodePools []*NodepoolInfo) bool {
+	for _, nodePool := range nodePools {
+		if nodePool.CloudProviderName == "hetzner" {
+			return true
+		}
+	}
+
+	return false
 }
 
 // getClusterNodes will parse the nodepools of k.K8sCluster and construct a slice of *NodepoolInfo.
