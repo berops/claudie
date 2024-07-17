@@ -252,6 +252,10 @@ func generateFiles(np *pb.NodePool, tg *TemplateGeneration) error {
 		return fmt.Errorf("failed to generate networking_common template files: %w", err)
 	}
 
+	if err := utils.CreateKeyFile(dnp.PublicKey, clusterDir, fmt.Sprintf("%s.pem", np.Name)); err != nil {
+		return fmt.Errorf("error public key file for %s : %w", clusterDir, err)
+	}
+
 	// based on the cluster type fill out the nodepools data to be used
 	nodepoolData := templates.NodepoolsData{
 		ClusterData: tg.ClusterData,
@@ -267,10 +271,6 @@ func generateFiles(np *pb.NodePool, tg *TemplateGeneration) error {
 
 	if err := g.GenerateNodes(&nodepoolData, &providerData); err != nil {
 		return fmt.Errorf("failed to generate nodepool specific templates files: %w", err)
-	}
-
-	if err := utils.CreateKeyFile(tg.ClusterPublicKey, tg.TargetDirectory, "public.pem"); err != nil {
-		return fmt.Errorf("error creating key file for %s : %w", tg.TargetDirectory, err)
 	}
 
 	err := utils.CreateKeyFile(

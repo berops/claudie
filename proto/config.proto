@@ -113,10 +113,6 @@ message ClusterInfo {
   string name = 1;
   // Random hash of the cluster.
   string hash = 2;
-  // Public SSH key for the nodes.
-  string publicKey = 3;
-  // Private SSH key for the nodes.
-  string privateKey = 4;
   // Array of node pools this cluster is made of.
   repeated NodePool nodePools = 5;
 }
@@ -238,7 +234,11 @@ message DynamicNodePool {
   AutoscalerConf autoscalerConfig = 9;
   // MachineSpec configuration. (optional)
   MachineSpec machineSpec = 10;
-  TemplateRepository templates = 11;
+  // Public SSH key for the nodes.
+  string publicKey = 11;
+  // Private SSH key for the nodes.
+  string privateKey = 12;
+  TemplateRepository templates = 13;
 }
 
 // StaticNodePool represents static node pool used in cluster.

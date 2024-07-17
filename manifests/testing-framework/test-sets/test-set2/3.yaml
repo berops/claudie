@@ -76,7 +76,7 @@ spec:
           zone: fsn1-dc14
         count: 1
         serverType: cpx11
-        image: ubuntu-22.04
+        image: ubuntu-24.04
         storageDiskSize: 50
 
       - name: oci-ldbl-nodes
