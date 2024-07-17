@@ -6,6 +6,16 @@
 {{- $region   := $nodepool.NodePool.Region }}
 {{- $specName := $nodepool.NodePool.Provider.SpecName }}
 
+resource "aws_key_pair" "{{ $nodepool.Name }}_key_{{ $region }}_{{ $specName }}" {
+  provider   = aws.nodepool_{{ $region }}_{{ $specName }}
+  key_name   = "{{ $nodepool.Name }}-key-{{ $clusterHash }}-{{ $region }}-{{ $specName }}"
+  public_key = file("./{{ $nodepool.Name }}.pem")
+  tags = {
+    Name            = "key-{{ $clusterHash }}-{{ $region }}-{{ $specName }}"
+    Claudie-cluster = "{{ $clusterName }}-{{ $clusterHash }}"
+  }
+}
+
 {{- range $node := $nodepool.Nodes }}
 resource "aws_instance" "{{ $node.Name }}_{{ $region }}_{{ $specName }}" {
   provider          = aws.nodepool_{{ $region }}_{{ $specName }}
@@ -14,7 +24,7 @@ resource "aws_instance" "{{ $node.Name }}_{{ $region }}_{{ $specName }}" {
   ami               = "{{ $nodepool.NodePool.Image }}"
 
   associate_public_ip_address = true
-  key_name               = aws_key_pair.claudie_pair_{{ $region }}_{{ $specName }}.key_name
+  key_name               = aws_key_pair.{{ $nodepool.Name }}_key_{{ $region }}_{{ $specName }}.key_name
   subnet_id              = aws_subnet.{{ $nodepool.Name }}_{{ $region }}_{{ $specName }}_subnet.id
   vpc_security_group_ids = [aws_security_group.claudie_sg_{{ $region }}_{{ $specName }}.id]
 

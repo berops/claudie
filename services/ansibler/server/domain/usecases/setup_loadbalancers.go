@@ -35,7 +35,6 @@ func (u *Usecases) SetUpLoadbalancers(request *pb.SetUpLBRequest) (*pb.SetUpLBRe
 	lbClustersInfo := &utils.LBClustersInfo{
 		FirstRun:              request.FirstRun,
 		TargetK8sNodepool:     request.Desired.ClusterInfo.NodePools,
-		TargetK8sNodepoolKey:  request.Desired.ClusterInfo.PrivateKey,
 		PreviousAPIEndpointLB: request.PreviousAPIEndpoint,
 		ClusterID:             commonUtils.GetClusterID(request.Desired.ClusterInfo),
 	}
@@ -79,10 +78,10 @@ func setUpLoadbalancers(clusterName string, lbClustersInfo *utils.LBClustersInfo
 				return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 			}
 
-			// Generate SSH key
-			if err := commonUtils.CreateKeyFile(lbCluster.DesiredLbCluster.ClusterInfo.PrivateKey, clusterDirectory, fmt.Sprintf("key.%s", sshPrivateKeyFileExtension)); err != nil {
-				return fmt.Errorf("failed to create key file for %s : %w", lbCluster.DesiredLbCluster.ClusterInfo.Name, err)
+			if err := commonUtils.CreateKeysForDynamicNodePools(commonUtils.GetCommonDynamicNodePools(lbCluster.DesiredLbCluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
+				return fmt.Errorf("failed to create key file(s) for dynamic nodepools : %w", err)
 			}
+
 			if err := commonUtils.CreateKeysForStaticNodepools(commonUtils.GetCommonStaticNodePools(lbCluster.DesiredLbCluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
 				return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 			}

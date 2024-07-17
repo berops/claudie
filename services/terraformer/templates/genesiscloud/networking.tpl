@@ -4,12 +4,6 @@
 {{- range $_, $region := .Regions }}
 {{- $specName := $.Provider.SpecName }}
 
-resource "genesiscloud_ssh_key" "claudie_{{ $region }}_{{ $specName }}" {
-  provider   = genesiscloud.nodepool_{{ $region }}_{{ $specName }}
-  name       = "key-{{ $clusterHash }}-{{ $region }}-{{ $specName }}"
-  public_key = file("./public.pem")
-}
-
 data "genesiscloud_images" "base_os_{{ $region }}_{{ $specName }}" {
   provider   = genesiscloud.nodepool_{{ $region }}_{{ $specName }}
   filter = {

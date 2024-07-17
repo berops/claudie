@@ -25,7 +25,6 @@ func (u *Usecases) InstallNodeRequirements(request *pb.InstallRequest) (*pb.Inst
 			Dynamic: commonUtils.GetCommonDynamicNodePools(request.Desired.ClusterInfo.NodePools),
 			Static:  commonUtils.GetCommonStaticNodePools(request.Desired.ClusterInfo.NodePools),
 		},
-		PrivateKey:     request.Desired.ClusterInfo.PrivateKey,
 		ClusterID:      commonUtils.GetClusterID(request.Desired.ClusterInfo),
 		ClusterNetwork: request.Desired.Network,
 	}
@@ -47,10 +46,10 @@ func installLonghornRequirements(nodepoolsInfo *NodepoolsInfo, spawnProcessLimit
 		return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 	}
 
-	// generate private SSH key which will be used by Ansible
-	if err := commonUtils.CreateKeyFile(nodepoolsInfo.PrivateKey, clusterDirectory, fmt.Sprintf("%s.%s", nodepoolsInfo.ClusterID, sshPrivateKeyFileExtension)); err != nil {
-		return fmt.Errorf("failed to create key file for %s : %w", nodepoolsInfo.ClusterID, err)
+	if err := commonUtils.CreateKeysForDynamicNodePools(nodepoolsInfo.Nodepools.Dynamic, clusterDirectory); err != nil {
+		return fmt.Errorf("failed to create key file(s) for dynamic nodepools: %w", err)
 	}
+
 	if err := commonUtils.CreateKeysForStaticNodepools(nodepoolsInfo.Nodepools.Static, clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}

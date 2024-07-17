@@ -24,7 +24,6 @@ func (u *Usecases) RemoveUtilities(req *pb.RemoveClaudieUtilitiesRequest) (*pb.R
 					Dynamic: cutils.GetCommonDynamicNodePools(req.Current.ClusterInfo.NodePools),
 					Static:  cutils.GetCommonStaticNodePools(req.Current.ClusterInfo.NodePools),
 				},
-				PrivateKey:     req.Current.ClusterInfo.PrivateKey,
 				ClusterID:      cutils.GetClusterID(req.Current.ClusterInfo),
 				ClusterNetwork: req.Current.Network,
 			},
@@ -37,7 +36,6 @@ func (u *Usecases) RemoveUtilities(req *pb.RemoveClaudieUtilitiesRequest) (*pb.R
 				Dynamic: cutils.GetCommonDynamicNodePools(lbCluster.ClusterInfo.NodePools),
 				Static:  cutils.GetCommonStaticNodePools(lbCluster.ClusterInfo.NodePools),
 			},
-			PrivateKey:     lbCluster.ClusterInfo.PrivateKey,
 			ClusterID:      cutils.GetClusterID(lbCluster.ClusterInfo),
 			ClusterNetwork: req.Current.Network,
 		})
@@ -64,8 +62,8 @@ func removeWireguard(clusterID string, vpnInfo *VPNInfo, spawnProcessLimit chan 
 	}
 
 	for _, nodepoolInfo := range vpnInfo.NodepoolsInfos {
-		if err := cutils.CreateKeyFile(nodepoolInfo.PrivateKey, clusterDirectory, fmt.Sprintf("%s.%s", nodepoolInfo.ClusterID, sshPrivateKeyFileExtension)); err != nil {
-			return fmt.Errorf("failed to create key file for %s : %w", nodepoolInfo.ClusterID, err)
+		if err := cutils.CreateKeysForDynamicNodePools(nodepoolInfo.Nodepools.Dynamic, clusterDirectory); err != nil {
+			return fmt.Errorf("failed to create key file(s) for dynamic nodepools : %w", err)
 		}
 
 		if err := cutils.CreateKeysForStaticNodepools(nodepoolInfo.Nodepools.Static, clusterDirectory); err != nil {

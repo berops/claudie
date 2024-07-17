@@ -272,7 +272,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     If you want to connect to your dynamic k8s nodes via SSH, you can recover private SSH key:
 
     ```bash
-    kubectl get secrets -n claudie -l claudie.io/output=metadata -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r .cluster_private_key > ~/.ssh/my-super-cluster
+    kubectl get secrets -n claudie -l claudie.io/output=metadata -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq '.dynamic_nodepools | map_values(.nodepool_private_key)'
     ```
 
     To recover public IP of your dynamic k8s nodes to connect to via SSH:
@@ -283,7 +283,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     In case you want to connect to your dynamic load balancer nodes via SSH, you can recover private SSH key:
 
     ```bash
-    kubectl get secrets -n claudie -l claudie.io/output=metadata -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r '.dynamic_load_balancer_nodepools[] | .cluster_private_key' > ~/.ssh/my-super-cluster-lb-key
+    kubectl get secrets -n claudie -l claudie.io/output=metadata -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq '.dynamic_load_balancer_nodepools | .[]'
     ```
 
     To recover public IP addresses of your dynamic load balancer nodes to connect to via SSH:

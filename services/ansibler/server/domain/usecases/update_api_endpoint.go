@@ -53,10 +53,10 @@ func updateAPIEndpoint(currentK8sClusterInfo, desiredK8sClusterInfo *pb.ClusterI
 		return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 	}
 
-	// This SSH key is used by Ansible to SSH into the K8s cluster nodes.
-	if err := commonUtils.CreateKeyFile(currentK8sClusterInfo.PrivateKey, clusterDirectory, "k8s.pem"); err != nil {
-		return fmt.Errorf("failed to create key file for %s : %w", clusterID, err)
+	if err := commonUtils.CreateKeysForDynamicNodePools(commonUtils.GetCommonDynamicNodePools(currentK8sClusterInfo.NodePools), clusterDirectory); err != nil {
+		return fmt.Errorf("failed to create key file(s) for dynamic nodepools : %w", err)
 	}
+
 	if err := commonUtils.CreateKeysForStaticNodepools(commonUtils.GetCommonStaticNodePools(currentK8sClusterInfo.NodePools), clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}

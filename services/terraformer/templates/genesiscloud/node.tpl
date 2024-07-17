@@ -6,6 +6,12 @@
 {{- $region   := $nodepool.NodePool.Region }}
 {{- $specName := $nodepool.NodePool.Provider.SpecName }}
 
+resource "genesiscloud_ssh_key" "{{ $nodepool.Name }}_key_{{ $region }}_{{ $specName }}" {
+  provider   = genesiscloud.nodepool_{{ $region }}_{{ $specName }}
+  name       = "{{ $nodepool.Name }}-key-{{ $clusterHash }}-{{ $region }}-{{ $specName }}"
+  public_key = file("./{{ $nodepool.Name }}.pem")
+}
+
 {{- range $node := $nodepool.Nodes }}
 
 {{- if and (eq $.ClusterData.ClusterType "K8s") (not $nodepool.IsControl) (gt $nodepool.NodePool.StorageDiskSize 0) }}
@@ -35,7 +41,7 @@ resource "genesiscloud_instance" "{{ $node.Name }}_{{ $region }}_{{ $specName }}
 {{- end }}
 
   ssh_key_ids = [
-    genesiscloud_ssh_key.claudie_{{ $region }}_{{ $specName }}.id,
+    genesiscloud_ssh_key.{{ $nodepool.Name }}_key_{{ $region }}_{{ $specName }}.id,
   ]
 
   security_group_ids = [

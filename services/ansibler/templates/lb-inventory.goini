@@ -3,7 +3,7 @@
 {{- range $nodepool := .K8sNodepools.Dynamic }}
     {{- if $nodepool.IsControl }}       
         {{- range $node :=  $nodepool.Nodes }}
-{{ trimPrefix $node.Name (printf "%s-" $.ClusterID) }} ansible_user=root ansible_host={{ $node.Public }} private_ip={{ $node.Private }} ansible_ssh_private_key_file=k8s.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
+{{ trimPrefix $node.Name (printf "%s-" $.ClusterID) }} ansible_user=root ansible_host={{ $node.Public }} private_ip={{ $node.Private }} ansible_ssh_private_key_file={{ $nodepool.Name }}.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
         {{- end }}
     {{- end }}
 {{- end }}
@@ -19,7 +19,7 @@
 {{- range $nodepool := .K8sNodepools.Dynamic }}
     {{- if not $nodepool.IsControl }}       
         {{- range $node :=  $nodepool.Nodes }}
-{{ trimPrefix $node.Name (printf "%s-" $.ClusterID) }} ansible_user=root ansible_host={{ $node.Public }} private_ip={{ $node.Private }} ansible_ssh_private_key_file=k8s.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
+{{ trimPrefix $node.Name (printf "%s-" $.ClusterID) }} ansible_user=root ansible_host={{ $node.Public }} private_ip={{ $node.Private }} ansible_ssh_private_key_file={{ $nodepool.Name }}.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
         {{- end }}
     {{- end }}
 {{- end }}
@@ -37,7 +37,7 @@
     {{- range $lbNodepool := $lbCluster.LBnodepools.Dynamic }}
         {{- range $lbNode :=  $lbNodepool.Nodes }}
 {{/*key.pem is taken from a directory where ansible-playbook is called, thus it does not need to specify path relative to inventory.ini*/}}
-{{ trimPrefix $lbNode.Name (printf "%s-%s-" $lbCluster.Name $lbCluster.Hash) }} ansible_user=root ansible_host={{ $lbNode.Public }} private_ip={{ $lbNode.Private }} ansible_ssh_private_key_file=key.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
+{{ trimPrefix $lbNode.Name (printf "%s-%s-" $lbCluster.Name $lbCluster.Hash) }} ansible_user=root ansible_host={{ $lbNode.Public }} private_ip={{ $lbNode.Private }} ansible_ssh_private_key_file={{ $lbNodepool.Name }}.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
         {{- end }}
     {{- end }}
     {{- range $lbNodepool := $lbCluster.LBnodepools.Static }}

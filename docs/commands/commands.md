@@ -43,15 +43,15 @@ Claudie creates kubeconfig secret in claudie namespace:
   kubectl get secrets -n claudie -l claudie.io/output=kubeconfig,claudie.io/cluster=$YOUR-CLUSTER-NAME -o jsonpath='{.items[0].data.kubeconfig}' | base64 -d > my-super-cluster-kubeconfig.yaml
   ```
 
-  If you want to connect to your **dynamic k8s nodes** via SSH, you can **recover private SSH** key:
+  If you want to connect to your **dynamic k8s nodes** via SSH, you can **recover private SSH** key for each nodepool:
 
   ```bash
-  kubectl get secrets -n claudie -l claudie.io/output=metadata,claudie.io/cluster=$YOUR-CLUSTER-NAME -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r .cluster_private_key > ~/.ssh/my-super-cluster
+  kubectl get secrets -n claudie -l claudie.io/output=metadata,claudie.io/cluster=$YOUR-CLUSTER-NAME -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq '.dynamic_nodepools | map_values(.nodepool_private_key)'
   ```
 
   To **recover public IP** of your **dynamic k8s nodes** to connect to via SSH:
   ```bash
-  kubectl get secrets -n claudie -l claudie.io/output=metadata,claudie.io/cluster=$YOUR-CLUSTER-NAME -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r .dynamic_nodepools.node_ips
+  kubectl get secrets -n claudie -l claudie.io/output=metadata,claudie.io/cluster=$YOUR-CLUSTER-NAME -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq '.dynamic_nodepools | map_values(.node_ips)'
   ```
 
   You can display all **dynamic load balancer nodes** metadata by:
@@ -63,13 +63,13 @@ Claudie creates kubeconfig secret in claudie namespace:
   In case you want to connect to your **dynamic load balancer nodes** via SSH, you can **recover private SSH** key:
 
   ```bash
-  kubectl get secrets -n claudie -l claudie.io/output=metadata,claudie.io/cluster=$YOUR-CLUSTER-NAME -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r '.dynamic_load_balancer_nodepools.$YOUR-DYNAMIC-LB-CLUSTER-NAME.cluster_private_key' > ~/.ssh/my-super-cluster-dynamic-lb-key
+  kubectl get secrets -n claudie -l claudie.io/output=metadata,claudie.io/cluster=$YOUR-CLUSTER-NAME -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq '.dynamic_load_balancer_nodepools | .[]'
   ```
 
   To **recover public IP** of your **dynamic load balancer nodes** to connect to via SSH:
 
   ```bash
-  kubectl get secrets -n claudie -l claudie.io/output=metadata,claudie.io/cluster=$YOUR-CLUSTER-NAME -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r '.dynamic_load_balancer_nodepools[] | .node_ips'
+  kubectl get secrets -n claudie -l claudie.io/output=metadata,claudie.io/cluster=$YOUR-CLUSTER-NAME -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq '.dynamic_load_balancer_nodepools | .[] | map_values(.node_ips)'
   ```
 
   You can display all **static load balancer nodes** metadata by:
@@ -80,11 +80,11 @@ Claudie creates kubeconfig secret in claudie namespace:
   In order to display **public IPs** and **private SSH** keys of your **static load balancer** nodes by:
 
   ```bash
-  kubectl get secrets -n claudie -l claudie.io/output=metadata,claudie.io/cluster=$YOUR-CLUSTER-NAME -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r '.static_load_balancer_nodepools[] | .node_info'
+  kubectl get secrets -n claudie -l claudie.io/output=metadata,claudie.io/cluster=$YOUR-CLUSTER-NAME -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r '.static_load_balancer_nodepools | .[] | map_values(.node_info)'
   ```
 
   To connect to one of your **static load balancer** nodes via SSH, you can **recover private SSH** key:
 
   ```bash
-  kubectl get secrets -n claudie -l claudie.io/output=metadata,claudie.io/cluster=$YOUR-CLUSTER-NAME -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r '.static_load_balancer_nodepools.$YOUR-STATIC-LB-CLUSTER-NAME.node_info.$YOUR-STATIC-LB-NODE.node_private_key' > ~/.ssh/my-super-cluster-static-lb-key
+  kubectl get secrets -n claudie -l claudie.io/output=metadata,claudie.io/cluster=$YOUR-CLUSTER-NAME -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r '.static_load_balancer_nodepools | .[]'
   ```
