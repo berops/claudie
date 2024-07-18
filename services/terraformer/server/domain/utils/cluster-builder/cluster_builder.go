@@ -262,7 +262,11 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 					IsControl: np.IsControl,
 				})
 
-				if err := utils.CreateKeyFile(dnp.PublicKey, clusterDir, fmt.Sprintf("%s.pem", np.Name)); err != nil {
+				if err := utils.CreateKeyFile(
+					dnp.GetPublicKey(),
+					clusterDir,
+					np.GetName(),
+				); err != nil {
 					return fmt.Errorf("error public key file for %s : %w", clusterDir, err)
 				}
 			}

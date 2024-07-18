@@ -8,15 +8,12 @@ terraform {
     access_key = "{{ .AccessKey }}"
     secret_key = "{{ .SecretKey }}"
 
-    endpoints = {
-    {{if .BucketURL }}s3 = "{{ .BucketURL }}"{{ end }}
-    {{if .DynamoURL }}dynamodb = "{{ .DynamoURL }}"{{end}}
-    }
+    {{if .BucketURL }}endpoint = "{{ .BucketURL }}"{{ end }}
+    {{if .DynamoURL }}dynamodb_endpoint = "{{ .DynamoURL }}"{{end}}
 
     skip_credentials_validation = true
-    skip_requesting_account_id  = true
     skip_metadata_api_check     = true
     skip_region_validation      = true
-    use_path_style            = true
+    force_path_style            = true
   }
 }
