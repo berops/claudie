@@ -33,3 +33,5 @@ See more in How Claudie works sections.
 ## What to do next
 
 In case you are not sure where to go next, you can just simply start with our [Getting Started Guide](./getting-started/get-started-using-claudie.md) or read our documentation [sitemap](./sitemap/sitemap.md).
+
+If you need help or want to have a chat with us, feel free to join our channel on [kubernetes Slack workspace](https://kubernetes.slack.com/archives/C05SW4GKPL3) (get invite [here](https://communityinviter.com/apps/kubernetes/community)).

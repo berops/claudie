@@ -10,8 +10,7 @@ message Config {
   string name = 2;
   // resourceName represents the input manifest resource name in Kubernetes
   string resourceName = 3;
-  // resourceNamespace represents the input manifest resource namespace in
-  // Kubernetes
+  // resourceNamespace represents the input manifest resource namespace in Kubernetes
   string resourceNamespace = 4;
   // Client defined manifest.
   string manifest = 5;
@@ -37,13 +36,11 @@ message Workflow {
   enum Stage {
     // NONE indicates that no stage is currently executing.
     NONE = 0;
-    // TERRAFORMER indicates that the cluster is currently being build in
-    // terraformer.
+    // TERRAFORMER indicates that the cluster is currently being build in terraformer.
     TERRAFORMER = 1;
     // ANSIBLER indicates that the cluster is currently being build in ansibler.
     ANSIBLER = 2;
-    // KUBE_ELEVEN indicates that the cluster is currently being build in kube
-    // eleven.
+    // KUBE_ELEVEN indicates that the cluster is currently being build in kube eleven.
     KUBE_ELEVEN = 3;
     // KUBER indicates that the cluster is currently being build in kuber.
     KUBER = 4;
@@ -94,8 +91,7 @@ message K8scluster {
   string kubernetes = 4;
 }
 
-// LBcluster represents a single load balancer cluster specified in the
-// manifest.
+// LBcluster represents a single load balancer cluster specified in the manifest.
 message LBcluster {
   // General info about the cluster.
   ClusterInfo clusterInfo = 1;
@@ -113,10 +109,6 @@ message ClusterInfo {
   string name = 1;
   // Random hash of the cluster.
   string hash = 2;
-  // Public SSH key for the nodes.
-  string publicKey = 3;
-  // Private SSH key for the nodes.
-  string privateKey = 4;
   // Array of node pools this cluster is made of.
   repeated NodePool nodePools = 5;
 }
@@ -237,7 +229,11 @@ message DynamicNodePool {
   AutoscalerConf autoscalerConfig = 9;
   // MachineSpec configuration. (optional)
   MachineSpec machineSpec = 10;
-  TemplateRepository templates = 11;
+  // Public SSH key for the nodes.
+  string publicKey = 11;
+  // Private SSH key for the nodes.
+  string privateKey = 12;
+  TemplateRepository templates = 13;
 }
 
 // StaticNodePool represents static node pool used in cluster.

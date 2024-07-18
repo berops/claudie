@@ -254,15 +254,18 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 
 		nps := make([]templates.NodePoolInfo, 0, len(nodepools))
 		for _, np := range nodepools {
-			if np.GetDynamicNodePool() == nil {
-				continue
+			if dnp := np.GetDynamicNodePool(); dnp != nil {
+				nps = append(nps, templates.NodePoolInfo{
+					Name:      np.Name,
+					Nodes:     np.Nodes,
+					NodePool:  np.GetDynamicNodePool(),
+					IsControl: np.IsControl,
+				})
+
+				if err := utils.CreateKeyFile(dnp.PublicKey, clusterDir, fmt.Sprintf("%s.pem", np.Name)); err != nil {
+					return fmt.Errorf("error public key file for %s : %w", clusterDir, err)
+				}
 			}
-			nps = append(nps, templates.NodePoolInfo{
-				Name:      np.Name,
-				Nodes:     np.Nodes,
-				NodePool:  np.GetDynamicNodePool(),
-				IsControl: np.IsControl,
-			})
 		}
 
 		// based on the cluster type fill out the nodepools data to be used
@@ -276,10 +279,6 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 
 		if err := g.GenerateNodes(&nodepoolData, &providerData); err != nil {
 			return fmt.Errorf("failed to generate nodepool specific templates files: %w", err)
-		}
-
-		if err := utils.CreateKeyFile(clusterInfo.PublicKey, clusterDir, "public.pem"); err != nil {
-			return fmt.Errorf("error creating key file for %s : %w", clusterDir, err)
 		}
 
 		if err := utils.CreateKeyFile(nps[0].NodePool.Provider.Credentials, clusterDir, providerNames.SpecName); err != nil {

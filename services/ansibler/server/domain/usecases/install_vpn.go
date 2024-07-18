@@ -41,7 +41,6 @@ func (u *Usecases) InstallVPN(request *pb.InstallRequest) (*pb.InstallResponse, 
 					Dynamic: commonUtils.GetCommonDynamicNodePools(request.Desired.ClusterInfo.NodePools),
 					Static:  commonUtils.GetCommonStaticNodePools(request.Desired.ClusterInfo.NodePools),
 				},
-				PrivateKey:     request.Desired.ClusterInfo.PrivateKey,
 				ClusterID:      commonUtils.GetClusterID(request.Desired.ClusterInfo),
 				ClusterNetwork: request.Desired.Network,
 			},
@@ -55,7 +54,6 @@ func (u *Usecases) InstallVPN(request *pb.InstallRequest) (*pb.InstallResponse, 
 					Dynamic: commonUtils.GetCommonDynamicNodePools(lbCluster.ClusterInfo.NodePools),
 					Static:  commonUtils.GetCommonStaticNodePools(lbCluster.ClusterInfo.NodePools),
 				},
-				PrivateKey:     lbCluster.ClusterInfo.PrivateKey,
 				ClusterID:      commonUtils.GetClusterID(lbCluster.ClusterInfo),
 				ClusterNetwork: request.Desired.Network,
 			},
@@ -93,8 +91,8 @@ func installWireguardVPN(clusterID string, vpnInfo *VPNInfo, spawnProcessLimit c
 	}
 
 	for _, nodepoolInfo := range vpnInfo.NodepoolsInfos {
-		if err := commonUtils.CreateKeyFile(nodepoolInfo.PrivateKey, clusterDirectory, fmt.Sprintf("%s.%s", nodepoolInfo.ClusterID, sshPrivateKeyFileExtension)); err != nil {
-			return fmt.Errorf("failed to create key file for %s : %w", nodepoolInfo.ClusterID, err)
+		if err := commonUtils.CreateKeysForDynamicNodePools(nodepoolInfo.Nodepools.Dynamic, clusterDirectory); err != nil {
+			return fmt.Errorf("failed to create key file(s) for dynamic nodepools : %w", err)
 		}
 		if err := commonUtils.CreateKeysForStaticNodepools(nodepoolInfo.Nodepools.Static, clusterDirectory); err != nil {
 			return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
