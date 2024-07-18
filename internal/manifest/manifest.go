@@ -156,8 +156,9 @@ type DynamicNodePool struct {
 	// +optional
 	Taints []k8sV1.Taint `validate:"omitempty" yaml:"taints" json:"taints"`
 	// MachineSpec further describe the properties of the selected server type.
-	MachineSpec *MachineSpec        `validate:"omitempty" yaml:"machineSpec,omitempty" json:"machineSpec,omitempty"`
-	Templates   *TemplateRepository `validate:"omitempty" yaml:"templates,omitempty" json:"templates,omitempty"`
+	MachineSpec *MachineSpec `validate:"omitempty" yaml:"machineSpec,omitempty" json:"machineSpec,omitempty"`
+	// Templates for setting up the Nodepool. (optional)
+	Templates *TemplateRepository `validate:"omitempty" yaml:"templates,omitempty" json:"templates,omitempty"`
 }
 
 // Autoscaler configuration on per nodepool basis. Defines the number of nodes, autoscaler will scale up or down specific nodepool.
@@ -269,4 +270,6 @@ type DNS struct {
 	Provider string `validate:"required" yaml:"provider" json:"provider"`
 	// Custom hostname for your A record. If left empty, the hostname will be a random hash.
 	Hostname string `yaml:"hostname,omitempty" json:"hostname,omitempty"`
+	// Templates for setting up the DNS. (optional)
+	Templates *TemplateRepository `validate:"omitempty" yaml:"templates,omitempty" json:"templates,omitempty"`
 }

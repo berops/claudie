@@ -96,6 +96,9 @@ func (r *Repository) Download(repository *pb.TemplateRepository) error {
 			return nil
 		}
 
+		// TODO: remove me.
+		return nil
+
 		// localMirror does not have the required tag, overwrite with requested version
 		if err := os.RemoveAll(cloneDirectory); err != nil {
 			return fmt.Errorf("failed to delete local clone %q: %w", cloneDirectory, err)
@@ -158,160 +161,136 @@ func (r *Repository) clone(dir string, upstream *git.Repository) (*git.Repositor
 	return localMirror, nil
 }
 
-type NodepoolGenerator struct {
-	ClusterID string
+type Generator struct {
+	// ID is the ClusterID or DnsID.
+	ID string
 	// Where the templates should be generated.
 	TargetDirectory string
 	// Root directory where the template files were downloaded
 	// To this directory the relative path of the templates will
 	// be added to read the templates for each nodepool.
 	ReadFromDirectory string
-	// Nodepools are nodepools that belong to the same Provider
-	// Example: input-manifest provider: gcp-1
-	// nodepools will have all the dynamic nodepools that use the provider gcp-1
-	Nodepools []*pb.NodePool
+	// TemplatePath is the path from the Root directory of the templates
+	// to the requested provider templates.
+	TemplatePath string
 }
 
-func (g *NodepoolGenerator) GenerateProvider(data *ProviderData) error {
+func (g *Generator) GenerateProvider(data *ProviderData) error {
 	var (
-		targetDirectory  = templateUtils.Templates{Directory: g.TargetDirectory}
-		providerSpecName = data.Provider.SpecName
+		targetDirectory = templateUtils.Templates{Directory: g.TargetDirectory}
+		targetPath      = g.TemplatePath
+		templatePath    = filepath.Join(g.ReadFromDirectory, targetPath, "provider.tpl")
 	)
 
-	err := utils.IterateInOrder(utils.GroupNodepoolsByTemplates(g.Nodepools), func(repo string, nps []*pb.NodePool) error {
-		targetPath := extractTargetPath(nps[0].GetDynamicNodePool().GetTemplates())
-		templatePath := filepath.Join(
-			g.ReadFromDirectory,
-			targetPath,
-			data.Provider.CloudProviderName,
-			"provider.tpl",
-		)
-
-		file, err := os.ReadFile(templatePath)
-		if err != nil {
-			return fmt.Errorf("error while reading template file %s : %w", templatePath, err)
-		}
-
-		tpl, err := templateUtils.LoadTemplate(string(file))
-		if err != nil {
-			return fmt.Errorf("error while parsing template file %s : %w", templatePath, err)
-		}
-
-		outputFile := fmt.Sprintf("%s-%s-provider-%s.tf", g.ClusterID, providerSpecName, fingerprint(targetPath))
-		if err := targetDirectory.Generate(tpl, outputFile, data); err != nil {
-			return fmt.Errorf("error while generating %s file : %w", outputFile, err)
-		}
-		return nil
-	})
+	file, err := os.ReadFile(templatePath)
 	if err != nil {
-		return fmt.Errorf("failed to generate provider template files: %w", err)
+		return fmt.Errorf("error while reading template file %s : %w", templatePath, err)
 	}
 
-	if err := utils.CreateKeyFile(data.Provider.Credentials, g.TargetDirectory, providerSpecName); err != nil {
-		return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", providerSpecName, g.TargetDirectory, err)
+	tpl, err := templateUtils.LoadTemplate(string(file))
+	if err != nil {
+		return fmt.Errorf("error while parsing template file %s : %w", templatePath, err)
+	}
+
+	fp := Fingerprint(targetPath)
+	outputFile := fmt.Sprintf("%s-%s-provider-%s.tf", g.ID, data.Provider.SpecName, fp)
+	if err := targetDirectory.Generate(tpl, outputFile, fingerPrintedData{
+		Data:        data,
+		Fingerprint: fp,
+	}); err != nil {
+		return fmt.Errorf("error while generating %s file : %w", outputFile, err)
+	}
+
+	if err := utils.CreateKeyFile(data.Provider.Credentials, g.TargetDirectory, data.Provider.SpecName); err != nil {
+		return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", data.Provider.SpecName, g.TargetDirectory, err)
 	}
 
 	return nil
 }
 
-func (g *NodepoolGenerator) GenerateNetworkingCommon(data *ProviderData) error {
+func (g *Generator) GenerateNetworking(data *ProviderData) error {
 	var (
-		targetDirectory  = templateUtils.Templates{Directory: g.TargetDirectory}
-		providerSpecName = data.Provider.SpecName
+		targetDirectory = templateUtils.Templates{Directory: g.TargetDirectory}
+		targetPath      = g.TemplatePath
+		templatePath    = filepath.Join(g.ReadFromDirectory, targetPath, "networking.tpl")
+		providerSpec    = data.Provider.SpecName
 	)
 
-	return utils.IterateInOrder(utils.GroupNodepoolsByTemplates(g.Nodepools), func(repo string, nps []*pb.NodePool) error {
-		targetPath := extractTargetPath(nps[0].GetDynamicNodePool().GetTemplates())
-		templatePath := filepath.Join(
-			g.ReadFromDirectory,
-			targetPath,
-			data.Provider.CloudProviderName,
-			"networking.tpl",
-		)
+	file, err := os.ReadFile(templatePath)
+	if err != nil {
+		return fmt.Errorf("error while reading networking template file %s: %w", templatePath, err)
+	}
 
-		file, err := os.ReadFile(templatePath)
-		if err != nil {
-			return fmt.Errorf("error while reading networking template file %s: %w", templatePath, err)
-		}
+	networking, err := templateUtils.LoadTemplate(string(file))
+	if err != nil {
+		return fmt.Errorf("error while parsing networking_common template file %s : %w", templatePath, err)
+	}
 
+	fp := Fingerprint(targetPath)
+	outputFile := fmt.Sprintf("%s-%s-networking-%s.tf", g.ID, providerSpec, fp)
+	err = targetDirectory.Generate(networking, outputFile, fingerPrintedData{
+		Data:        data,
+		Fingerprint: fp,
+	})
+	if err != nil {
+		return fmt.Errorf("error while generating %s file : %w", outputFile, err)
+	}
+	return nil
+}
+
+func (g *Generator) GenerateNodes(data *NodepoolsData) error {
+	var (
+		targetDirectory = templateUtils.Templates{Directory: g.TargetDirectory}
+		targetPath      = g.TemplatePath
+		networkingPath  = filepath.Join(g.ReadFromDirectory, targetPath, "node_networking.tpl")
+		nodesPath       = filepath.Join(g.ReadFromDirectory, targetPath, "node.tpl")
+		providerSpec    = data.NodePools[0].NodePool.GetProvider().GetSpecName()
+	)
+
+	file, err := os.ReadFile(networkingPath)
+	if err == nil { // the template file might not exists
 		networking, err := templateUtils.LoadTemplate(string(file))
 		if err != nil {
-			return fmt.Errorf("error while parsing networking_common template file %s : %w", templatePath, err)
+			return fmt.Errorf("error while parsing node networking template file %s : %w", networkingPath, err)
 		}
 
-		outputFile := fmt.Sprintf("%s-%s-networking-%s.tf", g.ClusterID, providerSpecName, fingerprint(targetPath))
-		err = targetDirectory.Generate(networking, outputFile, data)
-		if err != nil {
+		fp := Fingerprint(targetPath)
+		outputFile := fmt.Sprintf("%s-%s-node-networking-%s.tf", g.ID, providerSpec, fp)
+		if err := targetDirectory.Generate(networking, outputFile, fingerPrintedData{
+			Data:        data,
+			Fingerprint: fp,
+		}); err != nil {
 			return fmt.Errorf("error while generating %s file : %w", outputFile, err)
 		}
-		return nil
-	})
+	}
+
+	file, err = os.ReadFile(nodesPath)
+	if err != nil {
+		return fmt.Errorf("error while reading nodepool template file %s: %w", nodesPath, err)
+	}
+
+	nodepool, err := templateUtils.LoadTemplate(string(file))
+	if err != nil {
+		return fmt.Errorf("error while parsing nodepool template file %s: %w", nodesPath, err)
+	}
+
+	fp := Fingerprint(targetPath)
+	outputFile := fmt.Sprintf("%s-%s-nodepool-%s.tf", g.ID, providerSpec, fp)
+	if err := targetDirectory.Generate(nodepool, outputFile, fingerPrintedData{
+		Data:        data,
+		Fingerprint: fp,
+	}); err != nil {
+		return fmt.Errorf("error while generating %s file: %w", outputFile, err)
+	}
+	return nil
 }
 
-func (g *NodepoolGenerator) GenerateNodes(data *NodepoolsData, providerData *ProviderData) error {
-	var (
-		targetDirectory  = templateUtils.Templates{Directory: g.TargetDirectory}
-		providerSpecName = providerData.Provider.SpecName
-	)
-
-	return utils.IterateInOrder(utils.GroupNodepoolsByTemplates(g.Nodepools), func(repo string, nps []*pb.NodePool) error {
-		targetPath := extractTargetPath(nps[0].GetDynamicNodePool().GetTemplates())
-		networkingPath := filepath.Join(
-			g.ReadFromDirectory,
-			targetPath,
-			providerData.Provider.CloudProviderName,
-			"node_networking.tpl",
-		)
-
-		nodesPath := filepath.Join(
-			g.ReadFromDirectory,
-			targetPath,
-			providerData.Provider.CloudProviderName,
-			"node.tpl",
-		)
-
-		file, err := os.ReadFile(networkingPath)
-		if err == nil { // the template file might not exists
-			networking, err := templateUtils.LoadTemplate(string(file))
-			if err != nil {
-				return fmt.Errorf("error while parsing node networking template file %s : %w", networkingPath, err)
-			}
-
-			outputFile := fmt.Sprintf("%s-%s-node-networking-%s.tf", g.ClusterID, providerSpecName, fingerprint(targetPath))
-			if err := targetDirectory.Generate(networking, outputFile, data); err != nil {
-				return fmt.Errorf("error while generating %s file : %w", outputFile, err)
-			}
-		}
-
-		file, err = os.ReadFile(nodesPath)
-		if err != nil {
-			return fmt.Errorf("error while reading nodepool template file %s: %w", nodesPath, err)
-		}
-
-		nodepool, err := templateUtils.LoadTemplate(string(file))
-		if err != nil {
-			return fmt.Errorf("error while parsing nodepool template file %s: %w", nodesPath, err)
-		}
-
-		outputFile := fmt.Sprintf("%s-%s-nodepool-%s.tf", g.ClusterID, providerSpecName, fingerprint(targetPath))
-		if err := targetDirectory.Generate(nodepool, outputFile, data); err != nil {
-			return fmt.Errorf("error while generating %s file: %w", outputFile, err)
-		}
-		return nil
-	})
-}
-
-type DNSGenerator struct {
-	DnsID           string
-	TargetDirectory string
-}
-
-func (g *DNSGenerator) GenerateDNS(readFromDir string, dns *DNSData) error {
+func (g *Generator) GenerateDNS(dns *DNSData) error {
 	const dnsTemplate = "dns.tpl"
 
 	var (
 		targetDirectory = templateUtils.Templates{Directory: g.TargetDirectory}
-		dnsPath         = filepath.Join(readFromDir, dns.Provider.CloudProviderName, dnsTemplate)
+		dnsPath         = filepath.Join(g.ReadFromDirectory, g.TemplatePath, dnsTemplate)
 	)
 
 	file, err := os.ReadFile(dnsPath)
@@ -330,7 +309,7 @@ func (g *DNSGenerator) GenerateDNS(readFromDir string, dns *DNSData) error {
 
 	err = targetDirectory.Generate(tpl, fmt.Sprintf("%s-dns.tf", dns.Provider.CloudProviderName), dns)
 	if err != nil {
-		return fmt.Errorf("failed generating dns temaplate for %q: %w", g.DnsID, err)
+		return fmt.Errorf("failed generating dns temaplate for %q: %w", g.ID, err)
 	}
 
 	return nil
@@ -343,7 +322,7 @@ func mustParseURL(s *url.URL, err error) *url.URL {
 	return s
 }
 
-func extractTargetPath(repository *pb.TemplateRepository) string {
+func ExtractTargetPath(repository *pb.TemplateRepository) string {
 	u := mustParseURL(url.Parse(repository.Repository))
 	return filepath.Join(
 		u.Hostname(),
@@ -353,7 +332,7 @@ func extractTargetPath(repository *pb.TemplateRepository) string {
 	)
 }
 
-func fingerprint(s string) string {
+func Fingerprint(s string) string {
 	digest := sha512.Sum512_256([]byte(s))
 	return hex.EncodeToString(digest[:16])
 }

@@ -10,7 +10,6 @@ import (
 	"github.com/rs/zerolog/log"
 
 	comm "github.com/berops/claudie/internal/command"
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates/backend"
@@ -21,7 +20,6 @@ import (
 
 const (
 	TemplatesRootDir = "services/terraformer/templates"
-	dnsTfFile        = "%s-dns.tf"
 )
 
 type DNS struct {
@@ -59,7 +57,7 @@ func (d DNS) CreateDNSRecords(logger zerolog.Logger) (string, error) {
 		terraform.Stderr = comm.GetStdErr(clusterID)
 	}
 
-	if utils.ChangedDNSProvider(d.CurrentDNS, d.DesiredDNS) {
+	if changedDNSProvider(d.CurrentDNS, d.DesiredDNS) {
 		sublogger.Info().Msg("Destroying old DNS records")
 		if err := d.generateFiles(dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs); err != nil {
 			return "", fmt.Errorf("error while creating dns .tf files for %s : %w", dnsID, err)
@@ -166,11 +164,14 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *pb.DNS, nodeIPs []string) 
 		return err
 	}
 
-	g := templates.DNSGenerator{
-		TargetDirectory: dnsDir,
+	g := templates.Generator{
+		ID:                dnsID,
+		TargetDirectory:   dnsDir,
+		ReadFromDirectory: TemplatesRootDir,
+		TemplatePath:      templates.ExtractTargetPath(dns.GetTemplates()),
 	}
 
-	data := &templates.DNSData{
+	data := templates.DNSData{
 		DNSZone:      dns.DnsZone,
 		HostnameHash: dns.Hostname,
 		ClusterName:  d.ClusterName,
@@ -178,7 +179,8 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *pb.DNS, nodeIPs []string) 
 		NodeIPs:      nodeIPs,
 		Provider:     dns.Provider,
 	}
-	if err := g.GenerateDNS(TemplatesRootDir, data); err != nil {
+
+	if err := g.GenerateDNS(&data); err != nil {
 		return fmt.Errorf("failed to generate dns templates for %q: %w", dnsID, err)
 	}
 
@@ -198,4 +200,18 @@ func readDomain(data string) (templates.DNSDomain, error) {
 	var result templates.DNSDomain
 	err := json.Unmarshal([]byte(data), &result.Domain)
 	return result, err
+}
+
+func changedDNSProvider(currentDNS, desiredDNS *pb.DNS) bool {
+	// DNS not yet created
+	if currentDNS == nil {
+		return false
+	}
+	// DNS provider are same
+	if currentDNS.Provider.SpecName == desiredDNS.Provider.SpecName {
+		if currentDNS.Provider.Credentials == desiredDNS.Provider.Credentials {
+			return false
+		}
+	}
+	return true
 }

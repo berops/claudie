@@ -41,6 +41,13 @@ type (
 		NodeIPs      []string
 		Provider     *pb.Provider
 	}
+
+	fingerPrintedData struct {
+		// Data is data passed to the template generator.
+		Data any
+		// Fingerprint is the checksum of the templates of a given nodepool.
+		Fingerprint string
+	}
 )
 
 type (

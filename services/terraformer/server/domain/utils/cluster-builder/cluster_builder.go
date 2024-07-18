@@ -93,7 +93,8 @@ func (c ClusterBuilder) CreateNodepools() error {
 	// fill new nodes with output
 	for _, nodepool := range c.DesiredClusterInfo.NodePools {
 		if np := nodepool.GetDynamicNodePool(); np != nil {
-			output, err := terraform.Output(nodepool.Name)
+			k := fmt.Sprintf("%s_%s", nodepool.Name, templates.Fingerprint(templates.ExtractTargetPath(nodepool.GetDynamicNodePool().GetTemplates())))
+			output, err := terraform.Output(k)
 			if err != nil {
 				return fmt.Errorf("error while getting output from terraform for %s : %w", nodepool.Name, err)
 			}
@@ -228,65 +229,65 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 		if providerNames.CloudProviderName == pb.StaticNodepoolInfo_STATIC_PROVIDER.String() {
 			continue
 		}
-
 		if err := templates.DownloadForNodepools(TemplatesRootDir, nodepools); err != nil {
 			msg := fmt.Sprintf("cluster %q failed to download template repository", clusterID)
 			log.Error().Msgf(msg)
 			return fmt.Errorf("%s: %w", msg, err)
 		}
 
-		g := templates.NodepoolGenerator{
-			ClusterID:         clusterID,
-			TargetDirectory:   clusterDir,
-			ReadFromDirectory: TemplatesRootDir,
-			Nodepools:         nodepools,
-		}
+		for _, nodepools := range utils.GroupNodepoolsByTemplates(nodepools) {
+			nps := make([]templates.NodePoolInfo, 0, len(nodepools))
+			for _, np := range nodepools {
+				if dnp := np.GetDynamicNodePool(); dnp != nil {
+					nps = append(nps, templates.NodePoolInfo{
+						Name:      np.Name,
+						Nodes:     np.Nodes,
+						NodePool:  np.GetDynamicNodePool(),
+						IsControl: np.IsControl,
+					})
 
-		providerData := templates.ProviderData{
-			ClusterData: clusterData,
-			Provider:    nodepools[0].GetDynamicNodePool().GetProvider(),
-			Regions:     utils.GetRegions(utils.GetDynamicNodePools(nodepools)),
-			Metadata:    c.Metadata,
-		}
-		if err := g.GenerateNetworkingCommon(&providerData); err != nil {
-			return fmt.Errorf("failed to generate networking_common template files: %w", err)
-		}
-
-		nps := make([]templates.NodePoolInfo, 0, len(nodepools))
-		for _, np := range nodepools {
-			if dnp := np.GetDynamicNodePool(); dnp != nil {
-				nps = append(nps, templates.NodePoolInfo{
-					Name:      np.Name,
-					Nodes:     np.Nodes,
-					NodePool:  np.GetDynamicNodePool(),
-					IsControl: np.IsControl,
-				})
-
-				if err := utils.CreateKeyFile(
-					dnp.GetPublicKey(),
-					clusterDir,
-					np.GetName(),
-				); err != nil {
-					return fmt.Errorf("error public key file for %s : %w", clusterDir, err)
+					if err := utils.CreateKeyFile(
+						dnp.GetPublicKey(),
+						clusterDir,
+						np.GetName(),
+					); err != nil {
+						return fmt.Errorf("error public key file for %s : %w", clusterDir, err)
+					}
 				}
 			}
-		}
 
-		// based on the cluster type fill out the nodepools data to be used
-		nodepoolData := templates.NodepoolsData{
-			ClusterData: clusterData,
-			NodePools:   nps,
-			Metadata:    c.Metadata,
-		}
+			// based on the cluster type fill out the nodepools data to be used
+			nodepoolData := templates.NodepoolsData{
+				ClusterData: clusterData,
+				NodePools:   nps,
+				Metadata:    c.Metadata,
+			}
 
-		copyCIDRsToMetadata(&nodepoolData)
+			copyCIDRsToMetadata(&nodepoolData)
 
-		if err := g.GenerateNodes(&nodepoolData, &providerData); err != nil {
-			return fmt.Errorf("failed to generate nodepool specific templates files: %w", err)
-		}
+			g := templates.Generator{
+				ID:                clusterID,
+				TargetDirectory:   clusterDir,
+				ReadFromDirectory: TemplatesRootDir,
+				TemplatePath:      templates.ExtractTargetPath(nps[0].NodePool.GetTemplates()),
+			}
 
-		if err := utils.CreateKeyFile(nps[0].NodePool.Provider.Credentials, clusterDir, providerNames.SpecName); err != nil {
-			return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", providerNames.SpecName, clusterDir, err)
+			if err := g.GenerateNetworking(&templates.ProviderData{
+				ClusterData: clusterData,
+				Provider:    nodepools[0].GetDynamicNodePool().GetProvider(),
+				Regions:     utils.GetRegions(utils.GetDynamicNodePools(nodepools)),
+				Metadata:    c.Metadata,
+			}); err != nil {
+				return fmt.Errorf("failed to generate networking_common template files: %w", err)
+			}
+
+			if err := g.GenerateNodes(&nodepoolData); err != nil {
+				return fmt.Errorf("failed to generate nodepool specific templates files: %w", err)
+			}
+
+			if err := utils.CreateKeyFile(nps[0].NodePool.Provider.Credentials, clusterDir, providerNames.SpecName); err != nil {
+				return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", providerNames.SpecName, clusterDir, err)
+			}
 		}
 	}
 
@@ -473,21 +474,24 @@ func generateProviderTemplates(current, desired *pb.ClusterInfo, clusterID, dire
 			return fmt.Errorf("%s: %w", msg, err)
 		}
 
-		g := templates.NodepoolGenerator{
-			ClusterID:         clusterID,
-			TargetDirectory:   directory,
-			ReadFromDirectory: TemplatesRootDir,
-			Nodepools:         nodepools,
-		}
+		for _, groupedNodePools := range utils.GroupNodepoolsByTemplates(nodepools) {
+			g := templates.Generator{
+				ID:                clusterID,
+				TargetDirectory:   directory,
+				ReadFromDirectory: TemplatesRootDir,
+				TemplatePath:      templates.ExtractTargetPath(groupedNodePools[0].GetDynamicNodePool().GetTemplates()),
+			}
 
-		err := g.GenerateProvider(&templates.ProviderData{
-			ClusterData: clusterData,
-			Provider:    nodepools[0].GetDynamicNodePool().GetProvider(),
-			Regions:     utils.GetRegions(utils.GetDynamicNodePools(nodepools)),
-			Metadata:    nil, // not needed.
-		})
-		if err != nil {
-			return fmt.Errorf("failed to generate provider templates: %w", err)
+			err := g.GenerateProvider(&templates.ProviderData{
+				ClusterData: clusterData,
+				Provider:    groupedNodePools[0].GetDynamicNodePool().GetProvider(),
+				Regions:     utils.GetRegions(utils.GetDynamicNodePools(groupedNodePools)),
+				Metadata:    nil, // not needed.
+			})
+
+			if err != nil {
+				return fmt.Errorf("failed to generate provider templates: %w", err)
+			}
 		}
 	}
 
