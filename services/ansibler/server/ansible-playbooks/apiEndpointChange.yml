@@ -41,24 +41,28 @@
         regexp: '{{ OldEndpoint }}'
         replace: '{{ NewEndpoint }}'
 
-    # https://github.com/kubernetes/kubeadm/issues/182#issuecomment-1137419094
-    - name: update NO_PROXY and no_proxy using systemctl set-environment
-      ansible.builtin.shell: |
-        systemctl set-environment NO_PROXY="$(awk -F '=' '/NO_PROXY=/{print $2}' /etc/environment)"
-        systemctl set-environment no_proxy="$(awk -F '=' '/no_proxy=/{print $2}' /etc/environment)"
+    - name: Extract NO_PROXY value from /etc/environment
+      ansible.builtin.shell: "awk -F '=' '/NO_PROXY=/{print $2}' /etc/environment | awk -F '#' '{print $1}'"
+      register: no_proxy_output
 
-    # https://github.com/kubernetes/kubeadm/issues/182#issuecomment-1137419094
-    - name: restart containerd service
+    - name: Set NO_PROXY value as a fact
+      set_fact:
+        no_proxy_value: "{{ no_proxy_output.stdout }}"
+
+    - name: restart containerd and kubelet
       ansible.builtin.service:
-        name: containerd
+        name: "{{ item }}"
         state: restarted
       register: serviceDetails
       until: serviceDetails.status.ActiveState == "active"
-      retries: 5
+      retries: 10
       delay: 20
+      loop:
+        - "kubelet"
+        - "containerd"
 
     - name: generate new certs
-      shell: "kubeadm init phase certs apiserver --config {{file.files[0].path}}"
+      shell: "export NO_PROXY={{ no_proxy_value }} && export no_proxy={{ no_proxy_value }} && kubeadm init phase certs apiserver --config {{file.files[0].path}}"
 
     - name: remove old /etc/kubernetes/*.conf
       file:
@@ -71,7 +75,7 @@
         - "/etc/kubernetes/scheduler.conf"
 
     - name: generate kubeconfig
-      shell: "kubeadm init phase kubeconfig all --config {{file.files[0].path}}"
+      shell: "export NO_PROXY={{ no_proxy_value }} && export no_proxy={{ no_proxy_value }} && kubeadm init phase kubeconfig all --config {{file.files[0].path}}"
 
     - name: restart kubelet
       ansible.builtin.service:
@@ -85,7 +89,7 @@
         - "kubelet"
 
     - name: upload config map
-      shell: "kubeadm init phase upload-config all --config {{file.files[0].path}}"
+      shell: "export NO_PROXY={{ no_proxy_value }} && export no_proxy={{ no_proxy_value }} && kubeadm init phase upload-config all --config {{file.files[0].path}}"
 
     - name: restart containerd and kubelet
       ansible.builtin.service:
@@ -126,27 +130,14 @@
         regexp: '{{ OldEndpoint }}'
         replace: '{{ NewEndpoint }}'
 
-    # https://github.com/kubernetes/kubeadm/issues/182#issuecomment-1137419094
-    - name: update NO_PROXY and no_proxy using systemctl set-environment
-      ansible.builtin.shell: |
-        systemctl set-environment NO_PROXY="$(awk -F '=' '/NO_PROXY=/{print $2}' /etc/environment)"
-        systemctl set-environment no_proxy="$(awk -F '=' '/no_proxy=/{print $2}' /etc/environment)"
-
-    # https://github.com/kubernetes/kubeadm/issues/182#issuecomment-1137419094
-    - name: restart containerd service
+    - name: restart containerd and kubelet
       ansible.builtin.service:
-        name: containerd
-        state: restarted
-      register: serviceDetails
-      until: serviceDetails.status.ActiveState == "active"
-      retries: 5
-      delay: 20
-
-    - name: restart kubelet
-      ansible.builtin.service:
-        name: kubelet
+        name: "{{ item }}"
         state: restarted
       register: serviceDetails
       until: serviceDetails.status.ActiveState == "active"
       retries: 10
       delay: 20
+      loop:
+        - "kubelet"
+        - "containerd"
