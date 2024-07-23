@@ -4,54 +4,72 @@ import (
 	"github.com/berops/claudie/proto/pb"
 )
 
+// TODO: cleanup
+// helper structs containing only necessary information
+// for the templates to be used.
 type (
-	// Nodepools Terraform files input.
+	K8sData struct{ HasAPIServer bool }
+	LBData  struct{ Roles []*pb.Role }
+	IPData  struct{ V4, EscapedV4 string }
+
+	RecordData struct {
+		IP []IPData
+	}
+
 	ClusterData struct {
 		ClusterName string
 		ClusterHash string
 		ClusterType string
 	}
 
+	NodePoolInfo struct {
+		Name      string
+		Details   *pb.DynamicNodePool
+		Nodes     []*pb.Node
+		IsControl bool
+	}
+)
+
+// Terraform files input.
+type (
 	ProviderData struct {
 		ClusterData ClusterData
 		Provider    *pb.Provider
 		Regions     []string
-		Metadata    map[string]any
 	}
 
-	NodePoolInfo struct {
-		NodePool  *pb.DynamicNodePool
-		Name      string
-		Nodes     []*pb.Node
-		IsControl bool
+	NetworkingData struct {
+		ClusterData ClusterData
+		Provider    *pb.Provider
+		Regions     []string
+		K8sData     K8sData
+		LBData      LBData
 	}
 
 	NodepoolsData struct {
 		ClusterData ClusterData
 		NodePools   []NodePoolInfo
-		Metadata    map[string]any
 	}
 
-	// DNS Terraform files input
 	DNSData struct {
 		ClusterName  string
 		ClusterHash  string
 		HostnameHash string
 		DNSZone      string
-		NodeIPs      []string
+		RecordData   RecordData
 		Provider     *pb.Provider
 	}
 
 	fingerPrintedData struct {
-		// Data is data passed to the template generator.
+		// Data is data passed to the template generator (one of the above).
 		Data any
 		// Fingerprint is the checksum of the templates of a given nodepool.
 		Fingerprint string
 	}
 )
 
+// Terraform files output.
 type (
-	// Nodepool Terraform files output.
 	NodepoolIPs struct {
 		IPs map[string]any `json:"-"`
 	}

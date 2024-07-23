@@ -34,7 +34,7 @@ func TestDownloadForNodepools(t *testing.T) {
 								Templates: &pb.TemplateRepository{
 									Repository: "https://github.com/berops/claudie-config",
 									Tag:        "v0.1.0",
-									Path:       "/templates",
+									Path:       "/templates/gcp",
 								},
 							},
 						},

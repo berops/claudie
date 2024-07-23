@@ -3,31 +3,30 @@ package cluster_builder
 import (
 	"encoding/json"
 	"fmt"
-	"net"
-	"os"
-	"path/filepath"
-
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-
 	comm "github.com/berops/claudie/internal/command"
+	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates/backend"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates/provider"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates/templates"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/terraform"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"net"
+	"os"
+	"path/filepath"
 )
 
 const (
-	TemplatesRootDir = "services/terraformer/templates"
-	Output           = "services/terraformer/server/clusters"
-	subnetCidrKey    = "VPC_SUBNET_CIDR"
-	// <nodepool-name>-subnet-cidr
-	subnetCidrKeyTemplate = "%s-subnet-cidr"
-	baseSubnetCIDR        = "10.0.0.0/24"
-	defaultOctetToChange  = 2
+	TemplatesRootDir     = "services/terraformer/templates"
+	Output               = "services/terraformer/server/clusters"
+	baseSubnetCIDR       = "10.0.0.0/24"
+	defaultOctetToChange = 2
 )
+
+type K8sInfo struct{ LoadBalancers []*pb.LBcluster }
+type LBInfo struct{ Roles []*pb.Role }
 
 // ClusterBuilder wraps data needed for building a cluster.
 type ClusterBuilder struct {
@@ -42,11 +41,10 @@ type ClusterBuilder struct {
 	// ClusterType is the type of the cluster being build
 	// LoadBalancer or K8s.
 	ClusterType pb.ClusterType
-	// Metadata contains data that further describe
-	// the cluster that is to be build. For example,
-	// in the case of LoadBalancer this will contain the defined
-	// roles from the manifest. Can be nil if no data is supplied.
-	Metadata map[string]any
+	// K8sInfo contains additional data for when building kubernetes clusters.
+	K8sInfo K8sInfo
+	// LBInfo contains additional data for when building loadbalancer clusters.
+	LBInfo LBInfo
 	// SpawnProcessLimit represents a synchronization channel which limits the number of spawned terraform
 	// processes. This values should always be non-nil and be buffered, where the capacity indicates
 	// the limit.
@@ -62,7 +60,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 	// https://github.com/berops/claudie/issues/647
 	// Order them by provider and region
 	for _, nps := range utils.GroupNodepoolsByProviderRegion(c.DesiredClusterInfo) {
-		if err := c.calculateCIDR(baseSubnetCIDR, utils.GetDynamicNodePools(nps)); err != nil {
+		if err := calculateCIDR(baseSubnetCIDR, utils.GetDynamicNodePools(nps)); err != nil {
 			return fmt.Errorf("error while generating CIDR for nodepools : %w", err)
 		}
 	}
@@ -123,7 +121,7 @@ func (c ClusterBuilder) DestroyNodepools() error {
 	// https://github.com/berops/claudie/issues/647
 	// Order them by provider and region
 	for _, nps := range utils.GroupNodepoolsByProviderRegion(c.CurrentClusterInfo) {
-		if err := c.calculateCIDR(baseSubnetCIDR, utils.GetDynamicNodePools(nps)); err != nil {
+		if err := calculateCIDR(baseSubnetCIDR, utils.GetDynamicNodePools(nps)); err != nil {
 			return fmt.Errorf("error while generating CIDR for nodepools : %w", err)
 		}
 	}
@@ -220,7 +218,7 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 		ClusterType: c.ClusterType.String(),
 	}
 
-	if err := generateProviderTemplates(c.CurrentClusterInfo, c.DesiredClusterInfo, clusterID, clusterDir, clusterData); err != nil {
+	if err := c.generateProviderTemplates(c.CurrentClusterInfo, c.DesiredClusterInfo, clusterID, clusterDir, clusterData); err != nil {
 		return fmt.Errorf("error while generating provider templates: %w", err)
 	}
 
@@ -229,7 +227,10 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 		if providerNames.CloudProviderName == pb.StaticNodepoolInfo_STATIC_PROVIDER.String() {
 			continue
 		}
-		if err := templates.DownloadForNodepools(TemplatesRootDir, nodepools); err != nil {
+		// TODO: if donwloaded, don't download again.
+		// TODO: concurrency issue need to download into separate directories.
+		templatesDownloadDir := filepath.Join(TemplatesRootDir, clusterID)
+		if err := templates.DownloadForNodepools(templatesDownloadDir, nodepools); err != nil {
 			msg := fmt.Sprintf("cluster %q failed to download template repository", clusterID)
 			log.Error().Msgf(msg)
 			return fmt.Errorf("%s: %w", msg, err)
@@ -242,7 +243,7 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 					nps = append(nps, templates.NodePoolInfo{
 						Name:      np.Name,
 						Nodes:     np.Nodes,
-						NodePool:  np.GetDynamicNodePool(),
+						Details:   np.GetDynamicNodePool(),
 						IsControl: np.IsControl,
 					})
 
@@ -260,23 +261,28 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 			nodepoolData := templates.NodepoolsData{
 				ClusterData: clusterData,
 				NodePools:   nps,
-				Metadata:    c.Metadata,
 			}
-
-			copyCIDRsToMetadata(&nodepoolData)
 
 			g := templates.Generator{
 				ID:                clusterID,
 				TargetDirectory:   clusterDir,
-				ReadFromDirectory: TemplatesRootDir,
-				TemplatePath:      templates.ExtractTargetPath(nps[0].NodePool.GetTemplates()),
+				ReadFromDirectory: templatesDownloadDir,
+				TemplatePath:      templates.ExtractTargetPath(nps[0].Details.GetTemplates()),
 			}
 
-			if err := g.GenerateNetworking(&templates.ProviderData{
+			if err := g.GenerateNetworking(&templates.NetworkingData{
 				ClusterData: clusterData,
 				Provider:    nodepools[0].GetDynamicNodePool().GetProvider(),
 				Regions:     utils.GetRegions(utils.GetDynamicNodePools(nodepools)),
-				Metadata:    c.Metadata,
+				K8sData: templates.K8sData{
+					HasAPIServer: templateUtils.IsMissing(
+						6443,
+						templateUtils.ExtractTargetPorts(c.K8sInfo.LoadBalancers),
+					),
+				},
+				LBData: templates.LBData{
+					Roles: c.LBInfo.Roles,
+				},
 			}); err != nil {
 				return fmt.Errorf("failed to generate networking_common template files: %w", err)
 			}
@@ -285,7 +291,7 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 				return fmt.Errorf("failed to generate nodepool specific templates files: %w", err)
 			}
 
-			if err := utils.CreateKeyFile(nps[0].NodePool.Provider.Credentials, clusterDir, providerNames.SpecName); err != nil {
+			if err := utils.CreateKeyFile(nps[0].Details.Provider.Credentials, clusterDir, providerNames.SpecName); err != nil {
 				return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", providerNames.SpecName, clusterDir, err)
 			}
 		}
@@ -309,31 +315,30 @@ func (c *ClusterBuilder) getCurrentNodes() []*pb.Node {
 }
 
 // calculateCIDR will make sure all nodepools have subnet CIDR calculated.
-func (c *ClusterBuilder) calculateCIDR(baseCIDR string, nodepools []*pb.DynamicNodePool) error {
+func calculateCIDR(baseCIDR string, nodepools []*pb.DynamicNodePool) error {
 	exists := make(map[string]struct{})
 	// Save CIDRs which already exist.
 	for _, np := range nodepools {
-		if cidr, ok := np.Metadata[subnetCidrKey]; ok {
-			exists[cidr.GetCidr()] = struct{}{}
-		}
+		exists[np.Cidr] = struct{}{}
 	}
+
 	// Calculate new ones if needed.
 	for _, np := range nodepools {
-		// Check if CIDR key is defined and if value is not nil/empty.
-		if cidr, ok := np.Metadata[subnetCidrKey]; !ok || cidr == nil || cidr.GetCidr() == "" {
-			cidr, err := getCIDR(baseCIDR, defaultOctetToChange, exists)
-			if err != nil {
-				return fmt.Errorf("failed to parse CIDR for nodepool : %w", err)
-			}
-			log.Debug().Msgf("Calculating new VPC subnet CIDR for nodepool. New CIDR [%s]", cidr)
-			if np.Metadata == nil {
-				np.Metadata = make(map[string]*pb.MetaValue)
-			}
-			np.Metadata[subnetCidrKey] = &pb.MetaValue{MetaValueOneOf: &pb.MetaValue_Cidr{Cidr: cidr}}
-			// Cache calculated CIDR.
-			exists[cidr] = struct{}{}
+		if np.Cidr != "" {
+			continue
 		}
+
+		cidr, err := getCIDR(baseCIDR, defaultOctetToChange, exists)
+		if err != nil {
+			return fmt.Errorf("failed to parse CIDR for nodepool : %w", err)
+		}
+
+		log.Debug().Msgf("Calculating new VPC subnet CIDR for nodepool. New CIDR [%s]", cidr)
+		np.Cidr = cidr
+		// Cache calculated CIDR.
+		exists[cidr] = struct{}{}
 	}
+
 	return nil
 }
 
@@ -351,6 +356,7 @@ func fillNodes(terraformOutput *templates.NodepoolIPs, newNodePool *pb.NodePool,
 		} else {
 			nodeType = pb.NodeType_worker
 		}
+
 		if len(oldNodes) > 0 {
 			for _, node := range oldNodes {
 				//check if node was defined before
@@ -421,19 +427,8 @@ func getCIDR(baseCIDR string, position int, existing map[string]struct{}) (strin
 	}
 }
 
-// copyCIDRsToMetadata copies CIDRs for subnets in VPCs for every nodepool.
-func copyCIDRsToMetadata(data *templates.NodepoolsData) {
-	if data.Metadata == nil {
-		data.Metadata = make(map[string]any)
-	}
-	for _, np := range data.NodePools {
-		data.Metadata[fmt.Sprintf(subnetCidrKeyTemplate, np.Name)] = np.NodePool.Metadata[subnetCidrKey].GetCidr()
-	}
-}
-
-// generateProviderTemplates generates only the `provider.tpl` templates so terraform can
-// destroy the infra if needed.
-func generateProviderTemplates(current, desired *pb.ClusterInfo, clusterID, directory string, clusterData templates.ClusterData) error {
+// generateProviderTemplates generates only the `provider.tpl` templates so terraform can destroy the infra if needed.
+func (c *ClusterBuilder) generateProviderTemplates(current, desired *pb.ClusterInfo, clusterID, directory string, clusterData templates.ClusterData) error {
 	currentNodepools := utils.GroupNodepoolsByProviderNames(current)
 	desiredNodepools := utils.GroupNodepoolsByProviderNames(desired)
 
@@ -468,7 +463,8 @@ func generateProviderTemplates(current, desired *pb.ClusterInfo, clusterID, dire
 			continue
 		}
 
-		if err := templates.DownloadForNodepools(TemplatesRootDir, nodepools); err != nil {
+		templatesDownloadDir := filepath.Join(TemplatesRootDir, clusterID)
+		if err := templates.DownloadForNodepools(templatesDownloadDir, nodepools); err != nil {
 			msg := fmt.Sprintf("cluster %q failed to download template repository", clusterID)
 			log.Error().Msgf(msg)
 			return fmt.Errorf("%s: %w", msg, err)
@@ -478,7 +474,7 @@ func generateProviderTemplates(current, desired *pb.ClusterInfo, clusterID, dire
 			g := templates.Generator{
 				ID:                clusterID,
 				TargetDirectory:   directory,
-				ReadFromDirectory: TemplatesRootDir,
+				ReadFromDirectory: templatesDownloadDir,
 				TemplatePath:      templates.ExtractTargetPath(groupedNodePools[0].GetDynamicNodePool().GetTemplates()),
 			}
 
@@ -486,7 +482,6 @@ func generateProviderTemplates(current, desired *pb.ClusterInfo, clusterID, dire
 				ClusterData: clusterData,
 				Provider:    groupedNodePools[0].GetDynamicNodePool().GetProvider(),
 				Regions:     utils.GetRegions(utils.GetDynamicNodePools(groupedNodePools)),
-				Metadata:    nil, // not needed.
 			})
 
 			if err != nil {

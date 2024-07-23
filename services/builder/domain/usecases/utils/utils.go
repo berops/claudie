@@ -13,7 +13,7 @@ func SaveConfigWithWorkflowError(config *pb.Config, c pb.ContextBoxServiceClient
 	return cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 }
 
-// updateNodePoolInfo updates the nodepool metadata and node private IPs between stages of the cluster build.
+// updateNodePoolInfo updates the nodepool CIDR and node private IPs between stages of the cluster build.
 func UpdateNodePoolInfo(src []*pb.NodePool, dst []*pb.NodePool) {
 src:
 	for _, npSrc := range src {
@@ -27,7 +27,7 @@ src:
 					}
 				}
 				if npSrc.GetDynamicNodePool() != nil && npDst.GetDynamicNodePool() != nil {
-					npDst.GetDynamicNodePool().Metadata = npSrc.GetDynamicNodePool().Metadata
+					npDst.GetDynamicNodePool().Cidr = npSrc.GetDynamicNodePool().Cidr
 				}
 				continue src
 			}

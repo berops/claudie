@@ -42,6 +42,9 @@ func (u *Usecases) BuildInfrastructure(request *pb.BuildInfrastructureRequest) (
 		clusters = append(clusters, lb)
 	}
 
+	// TODO: download templates.
+	// TODO: download for DNS aswell.
+
 	failed := make([]error, len(clusters))
 	err := utils.ConcurrentExec(clusters, func(idx int, cluster Cluster) error {
 		logger := utils.CreateLoggerWithProjectAndClusterName(request.ProjectName, cluster.Id())

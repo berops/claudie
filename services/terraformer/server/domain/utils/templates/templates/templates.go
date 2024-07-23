@@ -1,13 +1,16 @@
 package templates
 
 import (
+	"bytes"
 	"crypto/sha512"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
@@ -61,104 +64,88 @@ func (r *Repository) Download(repository *pb.TemplateRepository) error {
 		return fmt.Errorf("%s is not a valid url: %w", repository.Repository, err)
 	}
 
-	repo, err := git.Clone(memory.NewStorage(), memfs.New(), &git.CloneOptions{
-		URL:               repository.Repository,
-		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to clone repository: %q: %w", repository.Repository, err)
-	}
+	cloneDirectory := filepath.Join(r.TemplatesRootDirectory, u.Hostname(), u.Path)
+	gitDirectory := filepath.Join(cloneDirectory, repository.Tag)
 
-	tag, err := repo.Tag(repository.Tag)
-	if err != nil {
-		return fmt.Errorf("repository %q does not have tag %q: %w", repository.Repository, repository.Tag, err)
-	}
-
-	cloneDirectory := filepath.Join(
-		r.TemplatesRootDirectory,
-		u.Hostname(),
-		u.Path,
-		repository.Tag,
-	)
-
-	if utils.DirectoryExists(cloneDirectory) {
-		existingMirror, err := git.PlainOpen(cloneDirectory)
+	if utils.DirectoryExists(gitDirectory) {
+		existingMirror, err := git.PlainOpen(gitDirectory)
 		if err != nil {
-			return fmt.Errorf("%q is not a valid local git repository: %w", cloneDirectory, err)
+			return fmt.Errorf("%q is not a valid local git repository: %w", gitDirectory, err)
 		}
 
-		wk, err := existingMirror.Worktree()
+		tag, err := existingMirror.Tag(repository.Tag)
+		if errors.Is(err, plumbing.ErrObjectNotFound) {
+			return fmt.Errorf("existing repository %q does not have tag %q: %w", repository.Repository, repository.Tag, err)
+		}
 		if err != nil {
-			return fmt.Errorf("failed to acquire existing worktree for %q: %w", repository.Repository, err)
+			return fmt.Errorf("failed to resolve tag %q for local repository %q: %w", repository.Tag, gitDirectory, err)
 		}
 
-		if err := wk.Checkout(&git.CheckoutOptions{Hash: tag.Hash()}); err == nil {
+		ref, err := existingMirror.Head()
+		if err != nil {
+			return fmt.Errorf("failed to read HEAD of local repository %q: %w", gitDirectory, err)
+		}
+
+		if ref.Hash() == tag.Hash() {
 			return nil
 		}
 
-		// TODO: remove me.
-		return nil
-
-		// localMirror does not have the required tag, overwrite with requested version
-		if err := os.RemoveAll(cloneDirectory); err != nil {
+		// on mismatch re-download the repo.
+		if err := os.RemoveAll(gitDirectory); err != nil {
 			return fmt.Errorf("failed to delete local clone %q: %w", cloneDirectory, err)
 		}
 		// fallthrough, continue with the cloning below
 	}
 
-	localMirror, err := r.clone(cloneDirectory, repo)
+	// Check if requested tag exists for repository.
+	repo, err := git.Clone(memory.NewStorage(), memfs.New(), &git.CloneOptions{URL: repository.Repository})
+
 	if err != nil {
-		return fmt.Errorf("failed to create local copy of repository %q: %w", repository.Repository, err)
+		return fmt.Errorf("failed to clone repository: %q: %w", repository.Repository, err)
 	}
 
-	wk, err := localMirror.Worktree()
-	if err != nil {
-		return fmt.Errorf("failed to acquire worktree for %q: %w", repository.Repository, err)
+	// TODO: go-git client doesn't corretly handle sparse-checkout
+	// ref: https://github.com/go-git/go-git/issues/90
+	// once implemented replace shell-out code for direct dependency via go-git.
+	if _, err := repo.Tag(repository.Tag); err != nil {
+		return fmt.Errorf("repository %q does not have tag %q: %w", repository.Repository, repository.Tag, err)
 	}
 
-	if err := wk.Checkout(&git.CheckoutOptions{Hash: tag.Hash()}); err != nil {
-		return fmt.Errorf("failed to checkout to the desired tag %q for %q: %w", repository.Tag, repository.Repository, err)
+	if err := utils.CreateDirectory(cloneDirectory); err != nil {
+		return fmt.Errorf("failed to create directory %q: %w", cloneDirectory, err)
+	}
+
+	logs := new(bytes.Buffer)
+	clone := exec.Command("git", "clone", "--no-checkout", repository.Repository, repository.Tag)
+	clone.Dir = cloneDirectory
+	clone.Stdout = logs
+	clone.Stderr = logs
+
+	if err := clone.Run(); err != nil {
+		return fmt.Errorf("failed to clone %q: %w: %s", repository.Repository, err, logs.String())
+	}
+
+	logs.Reset()
+	sparseCheckout := exec.Command("git", "sparse-checkout", "set", strings.Trim(repository.Path, "/"))
+	sparseCheckout.Dir = gitDirectory
+	sparseCheckout.Stdout = logs
+	sparseCheckout.Stderr = logs
+
+	if err := sparseCheckout.Run(); err != nil {
+		return fmt.Errorf("failed to set sparse-checkout %q: %w: %s", repository.Repository, err, logs.String())
+	}
+
+	logs.Reset()
+	checkout := exec.Command("git", "checkout", repository.Tag)
+	checkout.Dir = gitDirectory
+	checkout.Stdout = logs
+	checkout.Stderr = logs
+
+	if err := checkout.Run(); err != nil {
+		return fmt.Errorf("failed to checkout to requested tag %q for repository %q: %w: %s", repository.Tag, repository.Repository, err, logs.String())
 	}
 
 	return nil
-}
-
-func (r *Repository) clone(dir string, upstream *git.Repository) (*git.Repository, error) {
-	if err := utils.CreateDirectory(dir); err != nil {
-		return nil, fmt.Errorf("failed to create directory %q: %w", dir, err)
-	}
-
-	localMirror, err := git.PlainInit(dir, false)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize local repository %q: %w", dir, err)
-	}
-
-	objectIter, err := upstream.Storer.IterEncodedObjects(plumbing.AnyObject)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create upstream object iterator for %q: %w", dir, err)
-	}
-
-	err = objectIter.ForEach(func(eo plumbing.EncodedObject) error {
-		_, err := localMirror.Storer.SetEncodedObject(eo)
-		return err
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to iterate over upstream objects for %q: %w", dir, err)
-	}
-
-	refsIter, err := upstream.Storer.IterReferences()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create upstream refs iterator for %q: %w", dir, err)
-	}
-
-	err = refsIter.ForEach(func(r *plumbing.Reference) error {
-		return localMirror.Storer.SetReference(r)
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to iterate over upstream refs for %q: %w", dir, err)
-	}
-
-	return localMirror, nil
 }
 
 type Generator struct {
@@ -208,7 +195,7 @@ func (g *Generator) GenerateProvider(data *ProviderData) error {
 	return nil
 }
 
-func (g *Generator) GenerateNetworking(data *ProviderData) error {
+func (g *Generator) GenerateNetworking(data *NetworkingData) error {
 	var (
 		targetDirectory = templateUtils.Templates{Directory: g.TargetDirectory}
 		targetPath      = g.TemplatePath
@@ -244,7 +231,7 @@ func (g *Generator) GenerateNodes(data *NodepoolsData) error {
 		targetPath      = g.TemplatePath
 		networkingPath  = filepath.Join(g.ReadFromDirectory, targetPath, "node_networking.tpl")
 		nodesPath       = filepath.Join(g.ReadFromDirectory, targetPath, "node.tpl")
-		providerSpec    = data.NodePools[0].NodePool.GetProvider().GetSpecName()
+		providerSpec    = data.NodePools[0].Details.GetProvider().GetSpecName()
 	)
 
 	file, err := os.ReadFile(networkingPath)
@@ -285,12 +272,13 @@ func (g *Generator) GenerateNodes(data *NodepoolsData) error {
 	return nil
 }
 
-func (g *Generator) GenerateDNS(dns *DNSData) error {
+func (g *Generator) GenerateDNS(data *DNSData) error {
 	const dnsTemplate = "dns.tpl"
 
 	var (
 		targetDirectory = templateUtils.Templates{Directory: g.TargetDirectory}
-		dnsPath         = filepath.Join(g.ReadFromDirectory, g.TemplatePath, dnsTemplate)
+		targetPath      = g.TemplatePath
+		dnsPath         = filepath.Join(g.ReadFromDirectory, targetPath, dnsTemplate)
 	)
 
 	file, err := os.ReadFile(dnsPath)
@@ -303,13 +291,18 @@ func (g *Generator) GenerateDNS(dns *DNSData) error {
 		return fmt.Errorf("error while parsing template file %s for %s : %w", dnsTemplate, g.TargetDirectory, err)
 	}
 
-	if err := utils.CreateKeyFile(dns.Provider.Credentials, g.TargetDirectory, dns.Provider.SpecName); err != nil {
-		return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", dns.Provider.SpecName, g.TargetDirectory, err)
-	}
-
-	err = targetDirectory.Generate(tpl, fmt.Sprintf("%s-dns.tf", dns.Provider.CloudProviderName), dns)
+	fp := Fingerprint(targetPath)
+	outputfile := fmt.Sprintf("%s-%s-dns-%s.tf", g.ID, data.Provider.SpecName, fp)
+	err = targetDirectory.Generate(tpl, outputfile, fingerPrintedData{
+		Data:        data,
+		Fingerprint: fp,
+	})
 	if err != nil {
 		return fmt.Errorf("failed generating dns temaplate for %q: %w", g.ID, err)
+	}
+
+	if err := utils.CreateKeyFile(data.Provider.Credentials, g.TargetDirectory, data.Provider.SpecName); err != nil {
+		return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", data.Provider.SpecName, g.TargetDirectory, err)
 	}
 
 	return nil

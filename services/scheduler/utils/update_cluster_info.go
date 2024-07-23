@@ -50,7 +50,7 @@ func tryUpdateDynamicNodePool(desired, current *pb.NodePool) bool {
 	dnp.PrivateKey = cnp.PrivateKey
 
 	desired.Nodes = current.Nodes
-	dnp.Metadata = cnp.Metadata
+	dnp.Cidr = cnp.Cidr
 
 	// Update the count
 	if cnp.AutoscalerConfig != nil && dnp.AutoscalerConfig != nil {

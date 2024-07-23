@@ -224,17 +224,14 @@ message DynamicNodePool {
   int32 count = 6;
   // Provider configuarion of the node pool.
   Provider provider = 7;
-  // Nodepool metadata.
-  map<string, MetaValue> metadata = 8;
   // Autoscaler configuration. (optional)
   AutoscalerConf autoscalerConfig = 9;
   // MachineSpec configuration. (optional)
   MachineSpec machineSpec = 10;
-  // Public SSH key for the nodes.
   string publicKey = 11;
-  // Private SSH key for the nodes.
   string privateKey = 12;
   TemplateRepository templates = 13;
+  string cidr = 14;
 }
 
 // StaticNodePool represents static node pool used in cluster.
@@ -249,15 +246,6 @@ message AutoscalerConf {
   int32 min = 1;
   // Maximum number of nodes in node pool.
   int32 max = 2;
-}
-
-// MetaValue for the node pool metadata.
-message MetaValue {
-  // Possible values for the node pool metadata.
-  oneof MetaValueOneOf {
-    // Subnet CIDR in private VPC for the node pool.
-    string cidr = 1;
-  }
 }
 
 // NodeType specifies the type of the node.

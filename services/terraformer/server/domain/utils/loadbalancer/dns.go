@@ -2,12 +2,13 @@ package loadbalancer
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
-
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"os"
+	"path/filepath"
+	"strings"
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/proto/pb"
@@ -86,8 +87,10 @@ func (d DNS) CreateDNSRecords(logger zerolog.Logger) (string, error) {
 		return "", err
 	}
 
-	outputID := fmt.Sprintf("%s-%s", clusterID, "endpoint")
-	output, err := terraform.Output(clusterID)
+	k := fmt.Sprintf("%s-%s", clusterID, templates.Fingerprint(
+		templates.ExtractTargetPath(d.DesiredDNS.GetTemplates()),
+	))
+	output, err := terraform.Output(k)
 	if err != nil {
 		return "", fmt.Errorf("error while getting output from terraform for %s : %w", clusterID, err)
 	}
@@ -97,6 +100,7 @@ func (d DNS) CreateDNSRecords(logger zerolog.Logger) (string, error) {
 		return "", fmt.Errorf("error while reading output from terraform for %s : %w", clusterID, err)
 	}
 
+	outputID := fmt.Sprintf("%s-endpoint", clusterID)
 	sublogger.Info().Msg("DNS records were successfully set up")
 	if err := os.RemoveAll(dnsDir); err != nil {
 		return validateDomain(out.Domain[outputID]), fmt.Errorf("error while deleting files in %s: %w", dnsDir, err)
@@ -164,6 +168,16 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *pb.DNS, nodeIPs []string) 
 		return err
 	}
 
+	repo := templates.Repository{TemplatesRootDirectory: TemplatesRootDir}
+	err := repo.Download(dns.GetTemplates())
+	if err != nil {
+		if errors.Is(err, templates.EmptyRepositoryErr) {
+			msg := fmt.Sprintf("dns %q does not have a template repository", dnsID)
+			return fmt.Errorf("%s: %w", msg, err)
+		}
+		return err
+	}
+
 	g := templates.Generator{
 		ID:                dnsID,
 		TargetDirectory:   dnsDir,
@@ -176,8 +190,10 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *pb.DNS, nodeIPs []string) 
 		HostnameHash: dns.Hostname,
 		ClusterName:  d.ClusterName,
 		ClusterHash:  d.ClusterHash,
-		NodeIPs:      nodeIPs,
-		Provider:     dns.Provider,
+		RecordData: templates.RecordData{
+			IP: templateIPData(nodeIPs),
+		},
+		Provider: dns.Provider,
 	}
 
 	if err := g.GenerateDNS(&data); err != nil {
@@ -214,4 +230,17 @@ func changedDNSProvider(currentDNS, desiredDNS *pb.DNS) bool {
 		}
 	}
 	return true
+}
+
+func templateIPData(ips []string) []templates.IPData {
+	out := make([]templates.IPData, 0, len(ips))
+
+	for _, ip := range ips {
+		out = append(out, templates.IPData{
+			V4:        ip,
+			EscapedV4: strings.ReplaceAll(ip, ".", "-"),
+		})
+	}
+
+	return out
 }

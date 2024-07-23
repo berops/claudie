@@ -2,7 +2,6 @@ package kubernetes
 
 import (
 	"fmt"
-
 	"github.com/rs/zerolog"
 
 	"github.com/berops/claudie/internal/utils"
@@ -47,11 +46,10 @@ func (k *K8Scluster) Build(logger zerolog.Logger) error {
 	cluster := cluster_builder.ClusterBuilder{
 		DesiredClusterInfo: k.DesiredState.ClusterInfo,
 		CurrentClusterInfo: currentClusterInfo,
-
-		ProjectName: k.ProjectName,
-		ClusterType: pb.ClusterType_K8s,
-		Metadata: map[string]any{
-			"loadBalancers": k.AttachedLBClusters,
+		ProjectName:        k.ProjectName,
+		ClusterType:        pb.ClusterType_K8s,
+		K8sInfo: cluster_builder.K8sInfo{
+			LoadBalancers: k.AttachedLBClusters,
 		},
 		SpawnProcessLimit: k.SpawnProcessLimit,
 	}

@@ -3,7 +3,6 @@ package loadbalancer
 import (
 	"errors"
 	"fmt"
-
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
@@ -55,13 +54,11 @@ func (l *LBcluster) Build(logger zerolog.Logger) error {
 	clusterBuilder := cluster_builder.ClusterBuilder{
 		DesiredClusterInfo: l.DesiredState.ClusterInfo,
 		CurrentClusterInfo: currentClusterInfo,
-
-		ProjectName: l.ProjectName,
-		ClusterType: pb.ClusterType_LB,
-		Metadata: map[string]any{
-			"roles": l.DesiredState.Roles,
+		ProjectName:        l.ProjectName,
+		ClusterType:        pb.ClusterType_LB,
+		LBInfo: cluster_builder.LBInfo{
+			Roles: l.DesiredState.Roles,
 		},
-
 		SpawnProcessLimit: l.SpawnProcessLimit,
 	}
 
