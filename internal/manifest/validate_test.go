@@ -9,7 +9,7 @@ import (
 
 var (
 	testManifest                = &Manifest{NodePools: NodePool{Dynamic: []DynamicNodePool{{Name: "np1"}}}}
-	testClusterVersionPass      = &Kubernetes{Clusters: []Cluster{{Name: "cluster1", Network: "10.0.0.0/8", Version: "v1.22.0", Pools: Pool{Control: []string{"np1"}}}}}
+	testClusterVersionPass      = &Kubernetes{Clusters: []Cluster{{Name: "cluster1", Network: "10.0.0.0/8", Version: "v1.29.0", Pools: Pool{Control: []string{"np1"}}}}}
 	testClusterVersionFailMinor = &Kubernetes{Clusters: []Cluster{{Name: "cluster1", Network: "10.0.0.0/8", Version: "v1.21.0", Pools: Pool{Control: []string{"np1"}}}}}
 	testClusterVersionFailMajor = &Kubernetes{Clusters: []Cluster{{Name: "cluster1", Network: "10.0.0.0/8", Version: "v2.22.0", Pools: Pool{Control: []string{"np1"}}}}}
 
@@ -56,6 +56,10 @@ var (
 			Hetzner: []Hetzner{{
 				Name:        "foo",
 				Credentials: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+				Templates: &TemplateRepository{
+					Repository: "test.com",
+					Path:       "/subset/dir",
+				},
 			},
 			},
 		},
@@ -63,8 +67,8 @@ var (
 			Clusters: []Cluster{
 				{
 					Name:    "foooo",
-					Version: "v1.26.2",
-					Network: "192.168.0.1/16",
+					Version: "v1.29.2",
+					Network: "192.168.1.0/24",
 					Pools: Pool{
 						Control: []string{"control-1", "control-2"},
 						Compute: []string{"compute-1", "compute-2"},

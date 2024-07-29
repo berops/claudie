@@ -5,9 +5,9 @@ import (
 )
 
 type TemplateRepository struct {
-	Repository string `validate:"required,url" yaml:"repository" json:"repository"`
-	Tag        string `validate:"required" yaml:"tag" json:"tag"`
-	Path       string `validate:"required" yaml:"path" json:"path"`
+	Repository string  `validate:"required,url" yaml:"repository" json:"repository"`
+	Tag        *string `validate:"omitempty,semver2" yaml:"tag" json:"tag"`
+	Path       string  `validate:"required,filepath" yaml:"path" json:"path"`
 }
 
 type Manifest struct {
@@ -30,21 +30,24 @@ type Provider struct {
 }
 
 type HetznerDNS struct {
-	Name     string `validate:"required,max=15" yaml:"name"`
-	ApiToken string `validate:"required" yaml:"apiToken"`
+	Name      string              `validate:"required,max=15" yaml:"name"`
+	ApiToken  string              `validate:"required" yaml:"apiToken"`
+	Templates *TemplateRepository `validate:"omitempty" yaml:"templates,omitempty" json:"templates,omitempty"`
 }
 
 type Cloudflare struct {
-	Name     string `validate:"required,max=15" yaml:"name"`
-	ApiToken string `validate:"required" yaml:"apiToken"`
+	Name      string              `validate:"required,max=15" yaml:"name"`
+	ApiToken  string              `validate:"required" yaml:"apiToken"`
+	Templates *TemplateRepository `validate:"omitempty" yaml:"templates,omitempty" json:"templates,omitempty"`
 }
 
 type GCP struct {
 	Name string `validate:"required,max=15" yaml:"name"`
 	// We can only validate that the supplied string is a
 	// valid formatted JSON.
-	Credentials string `validate:"required,json" yaml:"credentials" json:"credentials"`
-	GCPProject  string `validate:"required" yaml:"gcpProject" json:"gcpProject"`
+	Credentials string              `validate:"required,json" yaml:"credentials" json:"credentials"`
+	GCPProject  string              `validate:"required" yaml:"gcpProject" json:"gcpProject"`
+	Templates   *TemplateRepository `validate:"omitempty" yaml:"templates,omitempty" json:"templates,omitempty"`
 }
 
 type Hetzner struct {
@@ -55,34 +58,39 @@ type Hetzner struct {
 	// only that it's a hash. We can also validate that the characters
 	// are alphanumeric (i.e. excluding characters like !#@$%^&*...)
 	// https://docs.hetzner.com/cloud/technical-details/faq#how-are-api-tokens-stored
-	Credentials string `validate:"required,alphanum,len=64" yaml:"credentials"`
+	Credentials string              `validate:"required,alphanum,len=64" yaml:"credentials"`
+	Templates   *TemplateRepository `validate:"omitempty" yaml:"templates,omitempty" json:"templates,omitempty"`
 }
 
 type GenesisCloud struct {
-	Name     string `validate:"required,max=15" yaml:"name"`
-	ApiToken string `validate:"required,alphanum" yaml:"apiToken"`
+	Name      string              `validate:"required,max=15" yaml:"name"`
+	ApiToken  string              `validate:"required,alphanum" yaml:"apiToken"`
+	Templates *TemplateRepository `validate:"omitempty" yaml:"templates,omitempty" json:"templates,omitempty"`
 }
 
 type AWS struct {
-	Name      string `validate:"required,max=15" yaml:"name" json:"name"`
-	AccessKey string `validate:"required,alphanum,len=20" yaml:"accessKey" json:"accessKey"`
-	SecretKey string `validate:"required,len=40" yaml:"secretKey" json:"secretKey"`
+	Name      string              `validate:"required,max=15" yaml:"name" json:"name"`
+	AccessKey string              `validate:"required,alphanum,len=20" yaml:"accessKey" json:"accessKey"`
+	SecretKey string              `validate:"required,len=40" yaml:"secretKey" json:"secretKey"`
+	Templates *TemplateRepository `validate:"omitempty" yaml:"templates,omitempty" json:"templates,omitempty"`
 }
 type OCI struct {
-	Name           string `validate:"required,max=15" yaml:"name"`
-	PrivateKey     string `validate:"required" yaml:"privateKey"`
-	KeyFingerprint string `validate:"required" yaml:"keyFingerprint"`
-	TenancyOCID    string `validate:"required" yaml:"tenancyOcid"`
-	UserOCID       string `validate:"required" yaml:"userOcid"`
-	CompartmentID  string `validate:"required" yaml:"compartmentOcid"`
+	Name           string              `validate:"required,max=15" yaml:"name"`
+	PrivateKey     string              `validate:"required" yaml:"privateKey"`
+	KeyFingerprint string              `validate:"required" yaml:"keyFingerprint"`
+	TenancyOCID    string              `validate:"required" yaml:"tenancyOcid"`
+	UserOCID       string              `validate:"required" yaml:"userOcid"`
+	CompartmentID  string              `validate:"required" yaml:"compartmentOcid"`
+	Templates      *TemplateRepository `validate:"omitempty" yaml:"templates,omitempty" json:"templates,omitempty"`
 }
 
 type Azure struct {
-	Name           string `validate:"required,max=15" yaml:"name"`
-	SubscriptionId string `validate:"required" yaml:"subscriptionId"`
-	TenantId       string `validate:"required" yaml:"tenantId"`
-	ClientId       string `validate:"required" yaml:"clientId"`
-	ClientSecret   string `validate:"required" yaml:"clientSecret"`
+	Name           string              `validate:"required,max=15" yaml:"name"`
+	SubscriptionId string              `validate:"required" yaml:"subscriptionId"`
+	TenantId       string              `validate:"required" yaml:"tenantId"`
+	ClientId       string              `validate:"required" yaml:"clientId"`
+	ClientSecret   string              `validate:"required" yaml:"clientSecret"`
+	Templates      *TemplateRepository `validate:"omitempty" yaml:"templates,omitempty" json:"templates,omitempty"`
 }
 
 // NodePools describes nodepools used for either kubernetes clusters
@@ -158,7 +166,6 @@ type DynamicNodePool struct {
 	// MachineSpec further describe the properties of the selected server type.
 	MachineSpec *MachineSpec `validate:"omitempty" yaml:"machineSpec,omitempty" json:"machineSpec,omitempty"`
 	// Templates for setting up the Nodepool. (optional)
-	Templates *TemplateRepository `validate:"omitempty" yaml:"templates,omitempty" json:"templates,omitempty"`
 }
 
 // Autoscaler configuration on per nodepool basis. Defines the number of nodes, autoscaler will scale up or down specific nodepool.
@@ -271,5 +278,4 @@ type DNS struct {
 	// Custom hostname for your A record. If left empty, the hostname will be a random hash.
 	Hostname string `yaml:"hostname,omitempty" json:"hostname,omitempty"`
 	// Templates for setting up the DNS. (optional)
-	Templates *TemplateRepository `validate:"omitempty" yaml:"templates,omitempty" json:"templates,omitempty"`
 }

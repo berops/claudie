@@ -93,11 +93,6 @@ func getDNS(lbDNS manifest.DNS, unmarshalledManifest *manifest.Manifest) (*pb.DN
 			DnsZone:  lbDNS.DNSZone,
 			Provider: provider,
 			Hostname: lbDNS.Hostname,
-			Templates: &pb.TemplateRepository{
-				Repository: lbDNS.Templates.Repository,
-				Tag:        lbDNS.Templates.Tag,
-				Path:       lbDNS.Templates.Path,
-			},
 		}, nil
 	}
 }

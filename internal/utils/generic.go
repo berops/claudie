@@ -72,3 +72,15 @@ func RemoveDuplicates[K comparable](slice []K) []K {
 	}
 	return list
 }
+
+func PointerValEqual[K comparable](left, right *K) bool {
+	if left == nil && right == nil {
+		return true
+	}
+
+	if left == nil || right == nil {
+		return false
+	}
+
+	return *left == *right
+}

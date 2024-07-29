@@ -85,20 +85,6 @@ func GetRegions(nodepools []*pb.DynamicNodePool) []string {
 	return regions
 }
 
-// GroupNodepoolsByTemplates groups nodepool by template repository
-func GroupNodepoolsByTemplates(nodepools []*pb.NodePool) map[string][]*pb.NodePool {
-	result := make(map[string][]*pb.NodePool)
-	for _, np := range nodepools {
-		key := fmt.Sprintf("%s-%s-%s",
-			np.GetDynamicNodePool().GetTemplates().GetRepository(),
-			np.GetDynamicNodePool().GetTemplates().GetTag(),
-			np.GetDynamicNodePool().GetTemplates().GetPath(),
-		)
-		result[key] = append(result[key], np)
-	}
-	return result
-}
-
 // GroupNodepoolsByProviderNames groups nodepool by provider spec name into the map[Provider Names][]*pb.Nodepool
 func GroupNodepoolsByProviderNames(clusterInfo *pb.ClusterInfo) map[ProviderNames][]*pb.NodePool {
 	sortedNodePools := map[ProviderNames][]*pb.NodePool{}

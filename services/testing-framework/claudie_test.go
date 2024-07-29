@@ -33,6 +33,9 @@ var (
 
 // TestClaudie will start all the test cases specified in tests directory
 func TestClaudie(t *testing.T) {
+	if testing.Short() {
+		t.Skipf("skipping testing-framework test-case")
+	}
 	utils.InitLog("testing-framework")
 	group := errgroup.Group{}
 	ctx, cancel := context.WithCancel(context.Background())

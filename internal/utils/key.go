@@ -4,10 +4,36 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/berops/claudie/proto/pb"
 	"os"
 	"path/filepath"
+
+	"github.com/berops/claudie/proto/pb"
 )
+
+// GetAuthCredentials extract the key for the provider
+// to be used within terraform.
+func GetAuthCredentials(provider *pb.Provider) string {
+	switch p := provider.ProviderType.(type) {
+	case *pb.Provider_Gcp:
+		return p.Gcp.Key
+	case *pb.Provider_Hetzner:
+		return p.Hetzner.Token
+	case *pb.Provider_Hetznerdns:
+		return p.Hetznerdns.Token
+	case *pb.Provider_Oci:
+		return p.Oci.PrivateKey
+	case *pb.Provider_Aws:
+		return p.Aws.SecretKey
+	case *pb.Provider_Azure:
+		return p.Azure.ClientSecret
+	case *pb.Provider_Cloudflare:
+		return p.Cloudflare.Token
+	case *pb.Provider_Genesiscloud:
+		return p.Genesiscloud.Token
+	default:
+		panic(fmt.Sprintf("unexpected type %T", provider.ProviderType))
+	}
+}
 
 // CreateKeyFile writes the given key to a file.
 // The key filename is specified by its outputPath and KeyName operands.

@@ -32,24 +32,18 @@ type Repository struct {
 	TemplatesRootDirectory string
 }
 
-func DownloadForNodepools(downloadInto string, nodepools []*pb.NodePool) error {
-	for _, np := range nodepools {
-		if np.GetDynamicNodePool() == nil {
-			continue
-		}
+func DownloadProvider(downloadInto string, provider *pb.Provider) error {
+	repo := Repository{
+		TemplatesRootDirectory: downloadInto,
+	}
 
-		repo := Repository{
-			TemplatesRootDirectory: downloadInto,
+	err := repo.Download(provider.GetTemplates())
+	if err != nil {
+		if errors.Is(err, EmptyRepositoryErr) {
+			msg := fmt.Sprintf("provider %q does not have a template repository", provider.GetSpecName())
+			return fmt.Errorf("%s: %w", msg, err)
 		}
-
-		err := repo.Download(np.GetDynamicNodePool().GetTemplates())
-		if err != nil {
-			if errors.Is(err, EmptyRepositoryErr) {
-				msg := fmt.Sprintf("nodepool %q does not have a template repository", np.Name)
-				return fmt.Errorf("%s: %w", msg, err)
-			}
-			return err
-		}
+		return err
 	}
 	return nil
 }
@@ -64,8 +58,33 @@ func (r *Repository) Download(repository *pb.TemplateRepository) error {
 		return fmt.Errorf("%s is not a valid url: %w", repository.Repository, err)
 	}
 
+	repo, err := git.Clone(memory.NewStorage(), memfs.New(), &git.CloneOptions{URL: repository.Repository})
+	if err != nil {
+		return fmt.Errorf("failed to clone repository: %q: %w", repository.Repository, err)
+	}
+
+	var targetCommit *plumbing.Reference
+	if repository.Tag != nil {
+		// TODO: go-git client doesn't correctly handle sparse-checkout
+		// ref: https://github.com/go-git/go-git/issues/90
+		// once implemented replace shell-out code for direct dependency via go-git.
+		if targetCommit, err = repo.Tag(*repository.Tag); err != nil {
+			return fmt.Errorf("repository %q does not have tag %q: %w", repository.Repository, *repository.Tag, err)
+		}
+	} else {
+		if targetCommit, err = repo.Head(); err != nil {
+			return fmt.Errorf("failed to read HEAD of repository %q: %w", repository.Repository, err)
+		}
+	}
+
+	// If no tag is specified always use the latest commit from the HEAD of the master branch.
+	tagName := "latest"
+	if repository.Tag != nil {
+		tagName = *repository.Tag
+	}
+
 	cloneDirectory := filepath.Join(r.TemplatesRootDirectory, u.Hostname(), u.Path)
-	gitDirectory := filepath.Join(cloneDirectory, repository.Tag)
+	gitDirectory := filepath.Join(cloneDirectory, tagName)
 
 	if utils.DirectoryExists(gitDirectory) {
 		existingMirror, err := git.PlainOpen(gitDirectory)
@@ -73,20 +92,36 @@ func (r *Repository) Download(repository *pb.TemplateRepository) error {
 			return fmt.Errorf("%q is not a valid local git repository: %w", gitDirectory, err)
 		}
 
-		tag, err := existingMirror.Tag(repository.Tag)
-		if errors.Is(err, plumbing.ErrObjectNotFound) {
-			return fmt.Errorf("existing repository %q does not have tag %q: %w", repository.Repository, repository.Tag, err)
-		}
-		if err != nil {
-			return fmt.Errorf("failed to resolve tag %q for local repository %q: %w", repository.Tag, gitDirectory, err)
-		}
-
 		ref, err := existingMirror.Head()
 		if err != nil {
 			return fmt.Errorf("failed to read HEAD of local repository %q: %w", gitDirectory, err)
 		}
 
-		if ref.Hash() == tag.Hash() {
+		if ref.Hash() == targetCommit.Hash() {
+			logs := new(bytes.Buffer)
+			sparseCheckout := exec.Command("git", "sparse-checkout", "set", strings.Trim(repository.Path, "/"))
+			sparseCheckout.Dir = gitDirectory
+			sparseCheckout.Stdout = logs
+			sparseCheckout.Stderr = logs
+
+			if err := sparseCheckout.Run(); err != nil {
+				return fmt.Errorf("failed to set sparse-checkout %q: %w: %s", repository.Repository, err, logs.String())
+			}
+
+			logs.Reset()
+			args := []string{"checkout"}
+			if repository.Tag != nil {
+				args = append(args, *repository.Tag)
+			}
+			checkout := exec.Command("git", args...)
+			checkout.Dir = gitDirectory
+			checkout.Stdout = logs
+			checkout.Stderr = logs
+
+			if err := checkout.Run(); err != nil {
+				return fmt.Errorf("failed to checkout for %q, repository %q: %w: %s", args, repository.Repository, err, logs.String())
+			}
+
 			return nil
 		}
 
@@ -97,26 +132,12 @@ func (r *Repository) Download(repository *pb.TemplateRepository) error {
 		// fallthrough, continue with the cloning below
 	}
 
-	// Check if requested tag exists for repository.
-	repo, err := git.Clone(memory.NewStorage(), memfs.New(), &git.CloneOptions{URL: repository.Repository})
-
-	if err != nil {
-		return fmt.Errorf("failed to clone repository: %q: %w", repository.Repository, err)
-	}
-
-	// TODO: go-git client doesn't corretly handle sparse-checkout
-	// ref: https://github.com/go-git/go-git/issues/90
-	// once implemented replace shell-out code for direct dependency via go-git.
-	if _, err := repo.Tag(repository.Tag); err != nil {
-		return fmt.Errorf("repository %q does not have tag %q: %w", repository.Repository, repository.Tag, err)
-	}
-
 	if err := utils.CreateDirectory(cloneDirectory); err != nil {
 		return fmt.Errorf("failed to create directory %q: %w", cloneDirectory, err)
 	}
 
 	logs := new(bytes.Buffer)
-	clone := exec.Command("git", "clone", "--no-checkout", repository.Repository, repository.Tag)
+	clone := exec.Command("git", "clone", "--no-checkout", repository.Repository, tagName)
 	clone.Dir = cloneDirectory
 	clone.Stdout = logs
 	clone.Stderr = logs
@@ -136,13 +157,18 @@ func (r *Repository) Download(repository *pb.TemplateRepository) error {
 	}
 
 	logs.Reset()
-	checkout := exec.Command("git", "checkout", repository.Tag)
+
+	args := []string{"checkout"}
+	if repository.Tag != nil {
+		args = append(args, *repository.Tag)
+	}
+	checkout := exec.Command("git", args...)
 	checkout.Dir = gitDirectory
 	checkout.Stdout = logs
 	checkout.Stderr = logs
 
 	if err := checkout.Run(); err != nil {
-		return fmt.Errorf("failed to checkout to requested tag %q for repository %q: %w: %s", repository.Tag, repository.Repository, err, logs.String())
+		return fmt.Errorf("failed to checkout for %q, repository %q: %w: %s", args, repository.Repository, err, logs.String())
 	}
 
 	return nil
@@ -163,149 +189,35 @@ type Generator struct {
 }
 
 func (g *Generator) GenerateProvider(data *ProviderData) error {
-	var (
-		targetDirectory = templateUtils.Templates{Directory: g.TargetDirectory}
-		targetPath      = g.TemplatePath
-		templatePath    = filepath.Join(g.ReadFromDirectory, targetPath, "provider.tpl")
+	return g.generateTemplates(
+		filepath.Join(g.ReadFromDirectory, g.TemplatePath, "provider"),
+		data.Provider.SpecName,
+		data,
 	)
-
-	file, err := os.ReadFile(templatePath)
-	if err != nil {
-		return fmt.Errorf("error while reading template file %s : %w", templatePath, err)
-	}
-
-	tpl, err := templateUtils.LoadTemplate(string(file))
-	if err != nil {
-		return fmt.Errorf("error while parsing template file %s : %w", templatePath, err)
-	}
-
-	fp := Fingerprint(targetPath)
-	outputFile := fmt.Sprintf("%s-%s-provider-%s.tf", g.ID, data.Provider.SpecName, fp)
-	if err := targetDirectory.Generate(tpl, outputFile, fingerPrintedData{
-		Data:        data,
-		Fingerprint: fp,
-	}); err != nil {
-		return fmt.Errorf("error while generating %s file : %w", outputFile, err)
-	}
-
-	if err := utils.CreateKeyFile(data.Provider.Credentials, g.TargetDirectory, data.Provider.SpecName); err != nil {
-		return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", data.Provider.SpecName, g.TargetDirectory, err)
-	}
-
-	return nil
 }
 
 func (g *Generator) GenerateNetworking(data *NetworkingData) error {
-	var (
-		targetDirectory = templateUtils.Templates{Directory: g.TargetDirectory}
-		targetPath      = g.TemplatePath
-		templatePath    = filepath.Join(g.ReadFromDirectory, targetPath, "networking.tpl")
-		providerSpec    = data.Provider.SpecName
+	return g.generateTemplates(
+		filepath.Join(g.ReadFromDirectory, g.TemplatePath, "networking"),
+		data.Provider.SpecName,
+		data,
 	)
-
-	file, err := os.ReadFile(templatePath)
-	if err != nil {
-		return fmt.Errorf("error while reading networking template file %s: %w", templatePath, err)
-	}
-
-	networking, err := templateUtils.LoadTemplate(string(file))
-	if err != nil {
-		return fmt.Errorf("error while parsing networking_common template file %s : %w", templatePath, err)
-	}
-
-	fp := Fingerprint(targetPath)
-	outputFile := fmt.Sprintf("%s-%s-networking-%s.tf", g.ID, providerSpec, fp)
-	err = targetDirectory.Generate(networking, outputFile, fingerPrintedData{
-		Data:        data,
-		Fingerprint: fp,
-	})
-	if err != nil {
-		return fmt.Errorf("error while generating %s file : %w", outputFile, err)
-	}
-	return nil
 }
 
 func (g *Generator) GenerateNodes(data *NodepoolsData) error {
-	var (
-		targetDirectory = templateUtils.Templates{Directory: g.TargetDirectory}
-		targetPath      = g.TemplatePath
-		networkingPath  = filepath.Join(g.ReadFromDirectory, targetPath, "node_networking.tpl")
-		nodesPath       = filepath.Join(g.ReadFromDirectory, targetPath, "node.tpl")
-		providerSpec    = data.NodePools[0].Details.GetProvider().GetSpecName()
+	return g.generateTemplates(
+		filepath.Join(g.ReadFromDirectory, g.TemplatePath, "nodepool"),
+		data.NodePools[0].Details.GetProvider().GetSpecName(),
+		data,
 	)
-
-	file, err := os.ReadFile(networkingPath)
-	if err == nil { // the template file might not exists
-		networking, err := templateUtils.LoadTemplate(string(file))
-		if err != nil {
-			return fmt.Errorf("error while parsing node networking template file %s : %w", networkingPath, err)
-		}
-
-		fp := Fingerprint(targetPath)
-		outputFile := fmt.Sprintf("%s-%s-node-networking-%s.tf", g.ID, providerSpec, fp)
-		if err := targetDirectory.Generate(networking, outputFile, fingerPrintedData{
-			Data:        data,
-			Fingerprint: fp,
-		}); err != nil {
-			return fmt.Errorf("error while generating %s file : %w", outputFile, err)
-		}
-	}
-
-	file, err = os.ReadFile(nodesPath)
-	if err != nil {
-		return fmt.Errorf("error while reading nodepool template file %s: %w", nodesPath, err)
-	}
-
-	nodepool, err := templateUtils.LoadTemplate(string(file))
-	if err != nil {
-		return fmt.Errorf("error while parsing nodepool template file %s: %w", nodesPath, err)
-	}
-
-	fp := Fingerprint(targetPath)
-	outputFile := fmt.Sprintf("%s-%s-nodepool-%s.tf", g.ID, providerSpec, fp)
-	if err := targetDirectory.Generate(nodepool, outputFile, fingerPrintedData{
-		Data:        data,
-		Fingerprint: fp,
-	}); err != nil {
-		return fmt.Errorf("error while generating %s file: %w", outputFile, err)
-	}
-	return nil
 }
 
 func (g *Generator) GenerateDNS(data *DNSData) error {
-	const dnsTemplate = "dns.tpl"
-
-	var (
-		targetDirectory = templateUtils.Templates{Directory: g.TargetDirectory}
-		targetPath      = g.TemplatePath
-		dnsPath         = filepath.Join(g.ReadFromDirectory, targetPath, dnsTemplate)
+	return g.generateTemplates(
+		filepath.Join(g.ReadFromDirectory, g.TemplatePath, "dns"),
+		data.Provider.SpecName,
+		data,
 	)
-
-	file, err := os.ReadFile(dnsPath)
-	if err != nil {
-		return fmt.Errorf("error while reading template file %s for %s : %w", dnsTemplate, g.TargetDirectory, err)
-	}
-
-	tpl, err := templateUtils.LoadTemplate(string(file))
-	if err != nil {
-		return fmt.Errorf("error while parsing template file %s for %s : %w", dnsTemplate, g.TargetDirectory, err)
-	}
-
-	fp := Fingerprint(targetPath)
-	outputfile := fmt.Sprintf("%s-%s-dns-%s.tf", g.ID, data.Provider.SpecName, fp)
-	err = targetDirectory.Generate(tpl, outputfile, fingerPrintedData{
-		Data:        data,
-		Fingerprint: fp,
-	})
-	if err != nil {
-		return fmt.Errorf("failed generating dns temaplate for %q: %w", g.ID, err)
-	}
-
-	if err := utils.CreateKeyFile(data.Provider.Credentials, g.TargetDirectory, data.Provider.SpecName); err != nil {
-		return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", data.Provider.SpecName, g.TargetDirectory, err)
-	}
-
-	return nil
 }
 
 func mustParseURL(s *url.URL, err error) *url.URL {
@@ -316,11 +228,15 @@ func mustParseURL(s *url.URL, err error) *url.URL {
 }
 
 func ExtractTargetPath(repository *pb.TemplateRepository) string {
+	tagName := "latest"
+	if repository.Tag != nil {
+		tagName = *repository.Tag
+	}
 	u := mustParseURL(url.Parse(repository.Repository))
 	return filepath.Join(
 		u.Hostname(),
 		u.Path,
-		repository.Tag,
+		tagName,
 		repository.Path,
 	)
 }
@@ -328,4 +244,49 @@ func ExtractTargetPath(repository *pb.TemplateRepository) string {
 func Fingerprint(s string) string {
 	digest := sha512.Sum512_256([]byte(s))
 	return hex.EncodeToString(digest[:16])
+}
+
+func (g *Generator) generateTemplates(dir, specName string, data any) error {
+	var (
+		fp              = Fingerprint(g.TemplatePath)
+		targetDirectory = templateUtils.Templates{Directory: g.TargetDirectory}
+	)
+
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return fmt.Errorf("failed to read directory %q: %w", dir, err)
+	}
+
+	for _, gotpl := range files {
+		if gotpl.IsDir() {
+			continue
+		}
+
+		if !strings.HasSuffix(gotpl.Name(), ".tpl") {
+			continue
+		}
+
+		file, err := os.ReadFile(filepath.Join(dir, gotpl.Name()))
+		if err != nil {
+			return fmt.Errorf("error while reading template file %s in %s: %w", gotpl, dir, err)
+		}
+
+		tpl, err := templateUtils.LoadTemplate(string(file))
+		if err != nil {
+			return fmt.Errorf("error while parsing template file %s from %s : %w", gotpl, dir, err)
+		}
+
+		outputFile := fmt.Sprintf("%s-%s-%s-%s.tf", g.ID, specName, gotpl, fp)
+
+		data := fingerPrintedData{
+			Data:        data,
+			Fingerprint: fp,
+		}
+
+		if err := targetDirectory.Generate(tpl, outputFile, data); err != nil {
+			return fmt.Errorf("error while generating %s file : %w", outputFile, err)
+		}
+	}
+
+	return nil
 }

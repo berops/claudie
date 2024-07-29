@@ -20,10 +20,19 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
 	for _, gcpConf := range ds.Providers.GCP {
 		if gcpConf.Name == providerSpecName {
 			return &pb.Provider{
-				SpecName:          gcpConf.Name,
-				Credentials:       gcpConf.Credentials,
-				GcpProject:        gcpConf.GCPProject,
+				SpecName: gcpConf.Name,
+				ProviderType: &pb.Provider_Gcp{
+					Gcp: &pb.GCPProvider{
+						Key:     gcpConf.Credentials,
+						Project: gcpConf.GCPProject,
+					},
+				},
 				CloudProviderName: "gcp",
+				Templates: &pb.TemplateRepository{
+					Repository: gcpConf.Templates.Repository,
+					Tag:        gcpConf.Templates.Tag,
+					Path:       gcpConf.Templates.Path,
+				},
 				//omit rest of the pb.Provider variables
 			}, nil
 		}
@@ -32,9 +41,18 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
 	for _, hetznerConf := range ds.Providers.Hetzner {
 		if hetznerConf.Name == providerSpecName {
 			return &pb.Provider{
-				SpecName:          hetznerConf.Name,
-				Credentials:       hetznerConf.Credentials,
+				SpecName: hetznerConf.Name,
+				ProviderType: &pb.Provider_Hetzner{
+					Hetzner: &pb.HetznerProvider{
+						Token: hetznerConf.Credentials,
+					},
+				},
 				CloudProviderName: "hetzner",
+				Templates: &pb.TemplateRepository{
+					Repository: hetznerConf.Templates.Repository,
+					Tag:        hetznerConf.Templates.Tag,
+					Path:       hetznerConf.Templates.Path,
+				},
 				//omit rest of the pb.Provider variables
 			}, nil
 		}
@@ -43,13 +61,22 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
 	for _, ociConf := range ds.Providers.OCI {
 		if ociConf.Name == providerSpecName {
 			return &pb.Provider{
-				SpecName:           ociConf.Name,
-				Credentials:        ociConf.PrivateKey,
-				CloudProviderName:  "oci",
-				OciUserOcid:        ociConf.UserOCID,
-				OciTenancyOcid:     ociConf.TenancyOCID,
-				OciFingerprint:     ociConf.KeyFingerprint,
-				OciCompartmentOcid: ociConf.CompartmentID,
+				SpecName: ociConf.Name,
+				ProviderType: &pb.Provider_Oci{
+					Oci: &pb.OCIProvider{
+						UserOCID:        ociConf.UserOCID,
+						TenancyOCID:     ociConf.TenancyOCID,
+						KeyFingerprint:  ociConf.KeyFingerprint,
+						CompartmentOCID: ociConf.CompartmentID,
+						PrivateKey:      ociConf.PrivateKey,
+					},
+				},
+				CloudProviderName: "oci",
+				Templates: &pb.TemplateRepository{
+					Repository: ociConf.Templates.Repository,
+					Tag:        ociConf.Templates.Tag,
+					Path:       ociConf.Templates.Path,
+				},
 				//omit rest of the pb.Provider variables
 			}, nil
 		}
@@ -58,12 +85,21 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
 	for _, azureConf := range ds.Providers.Azure {
 		if azureConf.Name == providerSpecName {
 			return &pb.Provider{
-				SpecName:            azureConf.Name,
-				CloudProviderName:   "azure",
-				Credentials:         azureConf.ClientSecret,
-				AzureSubscriptionId: azureConf.SubscriptionId,
-				AzureTenantId:       azureConf.TenantId,
-				AzureClientId:       azureConf.ClientId,
+				SpecName:          azureConf.Name,
+				CloudProviderName: "azure",
+				ProviderType: &pb.Provider_Azure{
+					Azure: &pb.AzureProvider{
+						SubscriptionID: azureConf.SubscriptionId,
+						TenantID:       azureConf.TenantId,
+						ClientID:       azureConf.ClientId,
+						ClientSecret:   azureConf.ClientSecret,
+					},
+				},
+				Templates: &pb.TemplateRepository{
+					Repository: azureConf.Templates.Repository,
+					Tag:        azureConf.Templates.Tag,
+					Path:       azureConf.Templates.Path,
+				},
 				//omit rest of the pb.Provider variables
 			}, nil
 		}
@@ -72,10 +108,19 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
 	for _, awsConf := range ds.Providers.AWS {
 		if awsConf.Name == providerSpecName {
 			return &pb.Provider{
-				SpecName:          awsConf.Name,
-				Credentials:       awsConf.SecretKey,
-				AwsAccessKey:      awsConf.AccessKey,
+				SpecName: awsConf.Name,
+				ProviderType: &pb.Provider_Aws{
+					Aws: &pb.AWSProvider{
+						SecretKey: awsConf.SecretKey,
+						AccessKey: awsConf.AccessKey,
+					},
+				},
 				CloudProviderName: "aws",
+				Templates: &pb.TemplateRepository{
+					Repository: awsConf.Templates.Repository,
+					Tag:        awsConf.Templates.Tag,
+					Path:       awsConf.Templates.Path,
+				},
 			}, nil
 		}
 	}
@@ -83,9 +128,18 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
 	for _, cloudflareConf := range ds.Providers.Cloudflare {
 		if cloudflareConf.Name == providerSpecName {
 			return &pb.Provider{
-				SpecName:          providerSpecName,
-				Credentials:       cloudflareConf.ApiToken,
+				SpecName: providerSpecName,
+				ProviderType: &pb.Provider_Cloudflare{
+					Cloudflare: &pb.CloudflareProvider{
+						Token: cloudflareConf.ApiToken,
+					},
+				},
 				CloudProviderName: "cloudflare",
+				Templates: &pb.TemplateRepository{
+					Repository: cloudflareConf.Templates.Repository,
+					Tag:        cloudflareConf.Templates.Tag,
+					Path:       cloudflareConf.Templates.Path,
+				},
 			}, nil
 		}
 	}
@@ -93,9 +147,18 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
 	for _, hetznerDNSConfig := range ds.Providers.HetznerDNS {
 		if hetznerDNSConfig.Name == providerSpecName {
 			return &pb.Provider{
-				SpecName:          providerSpecName,
-				Credentials:       hetznerDNSConfig.ApiToken,
+				SpecName: providerSpecName,
+				ProviderType: &pb.Provider_Hetznerdns{
+					Hetznerdns: &pb.HetznerDNSProvider{
+						Token: hetznerDNSConfig.ApiToken,
+					},
+				},
 				CloudProviderName: "hetznerdns",
+				Templates: &pb.TemplateRepository{
+					Repository: hetznerDNSConfig.Templates.Repository,
+					Tag:        hetznerDNSConfig.Templates.Tag,
+					Path:       hetznerDNSConfig.Templates.Path,
+				},
 			}, nil
 		}
 	}
@@ -103,9 +166,18 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
 	for _, gc := range ds.Providers.GenesisCloud {
 		if gc.Name == providerSpecName {
 			return &pb.Provider{
-				SpecName:          providerSpecName,
-				Credentials:       gc.ApiToken,
+				SpecName: providerSpecName,
+				ProviderType: &pb.Provider_Genesiscloud{
+					Genesiscloud: &pb.GenesisCloudProvider{
+						Token: gc.ApiToken,
+					},
+				},
 				CloudProviderName: "genesiscloud",
+				Templates: &pb.TemplateRepository{
+					Repository: gc.Templates.Repository,
+					Tag:        gc.Templates.Tag,
+					Path:       gc.Templates.Path,
+				},
 			}, nil
 		}
 	}
@@ -198,11 +270,6 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 						Provider:         provider,
 						AutoscalerConfig: autoscalerConf,
 						MachineSpec:      machineSpec,
-						Templates: &pb.TemplateRepository{
-							Repository: nodePool.Templates.Repository,
-							Tag:        nodePool.Templates.Tag,
-							Path:       nodePool.Templates.Path,
-						},
 					},
 				},
 			})
@@ -277,4 +344,38 @@ func getTaints(taints []k8sV1.Taint) []*pb.Taint {
 		arr = append(arr, &pb.Taint{Key: t.Key, Value: t.Value, Effect: string(t.Effect)})
 	}
 	return arr
+}
+
+func (ds *Manifest) ForEachProvider(do func(name, typ string, tmpls **TemplateRepository)) {
+	for _, c := range ds.Providers.GCP {
+		do(c.Name, "gcp", &c.Templates)
+	}
+
+	for _, c := range ds.Providers.Hetzner {
+		do(c.Name, "hetzner", &c.Templates)
+	}
+
+	for _, c := range ds.Providers.OCI {
+		do(c.Name, "oci", &c.Templates)
+	}
+
+	for _, c := range ds.Providers.AWS {
+		do(c.Name, "aws", &c.Templates)
+	}
+
+	for _, c := range ds.Providers.Azure {
+		do(c.Name, "azure", &c.Templates)
+	}
+
+	for _, c := range ds.Providers.GenesisCloud {
+		do(c.Name, "genesiscloud", &c.Templates)
+	}
+
+	for _, c := range ds.Providers.Cloudflare {
+		do(c.Name, "cloudflare", &c.Templates)
+	}
+
+	for _, c := range ds.Providers.HetznerDNS {
+		do(c.Name, "hetznerdns", &c.Templates)
+	}
 }

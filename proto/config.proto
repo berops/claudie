@@ -36,11 +36,13 @@ message Workflow {
   enum Stage {
     // NONE indicates that no stage is currently executing.
     NONE = 0;
-    // TERRAFORMER indicates that the cluster is currently being build in terraformer.
+    // TERRAFORMER indicates that the cluster is currently being build in
+    // terraformer.
     TERRAFORMER = 1;
     // ANSIBLER indicates that the cluster is currently being build in ansibler.
     ANSIBLER = 2;
-    // KUBE_ELEVEN indicates that the cluster is currently being build in kube eleven.
+    // KUBE_ELEVEN indicates that the cluster is currently being build in kube
+    // eleven.
     KUBE_ELEVEN = 3;
     // KUBER indicates that the cluster is currently being build in kuber.
     KUBER = 4;
@@ -91,7 +93,8 @@ message K8scluster {
   string kubernetes = 4;
 }
 
-// LBcluster represents a single load balancer cluster specified in the manifest.
+// LBcluster represents a single load balancer cluster specified in the
+// manifest.
 message LBcluster {
   // General info about the cluster.
   ClusterInfo clusterInfo = 1;
@@ -160,7 +163,6 @@ message DNS {
   Provider provider = 3;
   // The whole hostname of the DNS record.
   string endpoint = 4;
-  TemplateRepository templates = 5;
 }
 
 // NodePool represents a single node pool used in cluster.
@@ -204,7 +206,7 @@ message MachineSpec {
 // files should be downloaded.
 message TemplateRepository {
   string repository = 1;
-  string tag = 2;
+  optional string tag = 2;
   string path = 3;
 }
 
@@ -230,7 +232,6 @@ message DynamicNodePool {
   MachineSpec machineSpec = 10;
   string publicKey = 11;
   string privateKey = 12;
-  TemplateRepository templates = 13;
   string cidr = 14;
 }
 
@@ -279,38 +280,65 @@ enum StaticNodepoolInfo {
   STATIC_ZONE = 2;
 }
 
+message GCPProvider {
+  string key = 1;
+  string project = 2;
+}
+
+message HetznerProvider {
+  string token = 1;
+}
+
+message HetznerDNSProvider {
+  string token = 1;
+}
+
+message OCIProvider {
+  string userOCID = 1;
+  string tenancyOCID = 2;
+  string keyFingerprint = 3;
+  string compartmentOCID = 4;
+  string privateKey = 5;
+}
+
+message AWSProvider {
+  string secretKey = 1;
+  string accessKey = 2;
+}
+
+message AzureProvider {
+  string subscriptionID = 1;
+  string tenantID = 2;
+  string clientID = 3;
+  string clientSecret = 4;
+}
+
+message CloudflareProvider {
+  string token = 1;
+}
+
+message GenesisCloudProvider {
+  string token = 1;
+}
+
 message Provider {
   // Provider name defined in input manifest.
   string specName = 1;
   // Cloud provider name.
   string cloudProviderName = 2;
-  // Secret Credentials of the provider.
-  // GCP - Service account key.
-  // Hetzner - API token.
-  // HetznerDNS - API token.
-  // OCI - Private key.
-  // AWS - Secret key.
-  // Azure - Client secret.
-  // Cloudflare - API token.
-  string credentials = 3;
-  // GCP project. [GCP provider]
-  string gcpProject = 4;
-  // OCID of the user. [OCI provider]
-  string ociUserOcid = 5;
-  // OCID of the tenancy. [OCI provider]
-  string ociTenancyOcid = 6;
-  // Fingerprint of the private key saved in Credentials. [OCI provider]
-  string ociFingerprint = 7;
-  // OCID of the compartment. [OCI provider]
-  string ociCompartmentOcid = 8;
-  // AWS access key to the secret key saved in the Credentials [AWS provider]
-  string awsAccessKey = 9;
-  // Azure ID of the subscription. [Azure provider]
-  string azureSubscriptionId = 10;
-  // Azure ID of the Tenant. [Azure provider]
-  string azureTenantId = 11;
-  // AzureID of the Client. [Azure provider]
-  string azureClientId = 12;
+
+  oneof ProviderType {
+    GCPProvider gcp = 3;
+    HetznerProvider hetzner = 4;
+    HetznerDNSProvider hetznerdns = 5;
+    OCIProvider oci = 6;
+    AWSProvider aws = 7;
+    AzureProvider azure = 8;
+    CloudflareProvider cloudflare = 9;
+    GenesisCloudProvider genesiscloud = 10;
+  }
+
+  TemplateRepository templates = 13;
 }
 
 // ClusterType specifies the type of the cluster.
@@ -320,3 +348,4 @@ enum ClusterType {
   // Load balancer cluster.
   LB = 1;
 }
+

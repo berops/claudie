@@ -97,7 +97,6 @@ func findMatch(first, second map[string]struct{}) string {
 	return ""
 }
 
-// todo add unused nodepool as error for validation.
 func collectIPs(m *manifest.Manifest) map[string]struct{} {
 	nodepools := make(map[string]struct{})
 

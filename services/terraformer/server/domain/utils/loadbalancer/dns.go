@@ -2,8 +2,8 @@ package loadbalancer
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
+	"github.com/berops/claudie/internal/utils"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"os"
@@ -88,7 +88,7 @@ func (d DNS) CreateDNSRecords(logger zerolog.Logger) (string, error) {
 	}
 
 	k := fmt.Sprintf("%s-%s", clusterID, templates.Fingerprint(
-		templates.ExtractTargetPath(d.DesiredDNS.GetTemplates()),
+		templates.ExtractTargetPath(d.DesiredDNS.GetProvider().GetTemplates()),
 	))
 	output, err := terraform.Output(k)
 	if err != nil {
@@ -134,9 +134,11 @@ func (d DNS) DestroyDNSRecords(logger zerolog.Logger) error {
 	if err := terraform.Init(); err != nil {
 		return err
 	}
+
 	if err := terraform.Destroy(); err != nil {
 		return err
 	}
+
 	sublogger.Info().Msg("DNS records were successfully destroyed")
 
 	if err := os.RemoveAll(dnsDir); err != nil {
@@ -168,21 +170,16 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *pb.DNS, nodeIPs []string) 
 		return err
 	}
 
-	repo := templates.Repository{TemplatesRootDirectory: TemplatesRootDir}
-	err := repo.Download(dns.GetTemplates())
-	if err != nil {
-		if errors.Is(err, templates.EmptyRepositoryErr) {
-			msg := fmt.Sprintf("dns %q does not have a template repository", dnsID)
-			return fmt.Errorf("%s: %w", msg, err)
-		}
-		return err
+	templateDir := filepath.Join(TemplatesRootDir, dnsID, dns.GetProvider().GetSpecName())
+	if err := templates.DownloadProvider(templateDir, dns.GetProvider()); err != nil {
+		return fmt.Errorf("failed to download templates for DNS %q: %w", dnsID, err)
 	}
 
 	g := templates.Generator{
 		ID:                dnsID,
 		TargetDirectory:   dnsDir,
-		ReadFromDirectory: TemplatesRootDir,
-		TemplatePath:      templates.ExtractTargetPath(dns.GetTemplates()),
+		ReadFromDirectory: templateDir,
+		TemplatePath:      templates.ExtractTargetPath(dns.GetProvider().GetTemplates()),
 	}
 
 	data := templates.DNSData{
@@ -198,6 +195,10 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *pb.DNS, nodeIPs []string) 
 
 	if err := g.GenerateDNS(&data); err != nil {
 		return fmt.Errorf("failed to generate dns templates for %q: %w", dnsID, err)
+	}
+
+	if err := utils.CreateKeyFile(utils.GetAuthCredentials(data.Provider), g.TargetDirectory, data.Provider.SpecName); err != nil {
+		return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", data.Provider.SpecName, g.TargetDirectory, err)
 	}
 
 	return nil
@@ -225,7 +226,8 @@ func changedDNSProvider(currentDNS, desiredDNS *pb.DNS) bool {
 	}
 	// DNS provider are same
 	if currentDNS.Provider.SpecName == desiredDNS.Provider.SpecName {
-		if currentDNS.Provider.Credentials == desiredDNS.Provider.Credentials {
+		// TODO: adjust templates based on the changes in the provider struct.
+		if utils.GetAuthCredentials(currentDNS.Provider) == utils.GetAuthCredentials(desiredDNS.Provider) {
 			return false
 		}
 	}
