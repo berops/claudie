@@ -78,3 +78,7 @@ Claudie doesn't deploy Node-Local-DNS in the default mode, thus you have to inst
 ## Command Cheat Sheet
 
 The "Command Cheat Sheet" section contains a useful `kubectl` commands to interact with Claudie.
+
+## Version matrix
+
+In this section, you can find supported Kubernetes and OS versions for the latest Claudie versions.
