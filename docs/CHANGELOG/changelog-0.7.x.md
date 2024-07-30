@@ -58,8 +58,8 @@ Kubernetes version 1.24 is no longer supported.
 1.25.x 1.26.x 1.27.x are the currently supported versions.
 
 ## Bugfixes
-* Static Loadbalancer metadata secret https://github.com/berops/claudie/pull/1249
-* Update healthcheck endpoints https://github.com/berops/claudie/pull/1245
+* Static Loadbalancer metadata secret [#1249](https://github.com/berops/claudie/pull/1249)
+* Update healthcheck endpoints [#1245](https://github.com/berops/claudie/pull/1245)
 
 ## v0.7.2
 ### Features
