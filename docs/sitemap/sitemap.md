@@ -71,6 +71,6 @@ In this section we walk you through the setup of Claudie's Prometheus metrics to
 
 This section describes how to execute updates, such as OS or kubernetes version, in Claudie.
 
-# Command Cheat Sheet
+## Command Cheat Sheet
 
 The "Command Cheat Sheet" section contains a useful `kubectl` commands to interact with Claudie.
