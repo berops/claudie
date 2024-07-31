@@ -1,6 +1,6 @@
 # Claudie `v0.8`
 
-!!! warning "Due to updating terraform files the `v0.8.x` clusters build with claudie version `v0.7.x` will be forced to be recreated. 
+!!! warning "Due to updating terraform files the `v0.8.x` clusters build with claudie version `v0.7.x` will be forced to be recreated."
 
 Nodepool/cluster names that do not meet the required length of 14 characters for nodepool names and 28 characters for cluster names must be adjusted or the new length validation will fail. You can achieve a rolling update by adding new nodepools with the new names and then removing the old nodepools before updating to version 0.8. 
 
