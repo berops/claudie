@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v5.27.1
-// source: proto/contextBox.proto
+// source: contextBox.proto
 
 package pb
 
@@ -485,5 +485,5 @@ var ContextBoxService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/contextBox.proto",
+	Metadata: "contextBox.proto",
 }

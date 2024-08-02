@@ -6,6 +6,7 @@ import (
 
 	cutils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/builder/domain/usecases/utils"
 )
 
@@ -21,7 +22,7 @@ func (u *Usecases) reconcileInfrastructure(ctx *utils.BuilderContext, cboxClient
 
 	// Set workflow state.
 	description := ctx.Workflow.Description
-	ctx.Workflow.Stage = pb.Workflow_TERRAFORMER
+	ctx.Workflow.Stage = spec.Workflow_TERRAFORMER
 	u.saveWorkflowDescription(ctx, fmt.Sprintf("%s building infrastructure", description), cboxClient)
 
 	logger.Info().Msgf("Calling BuildInfrastructure on Terraformer")
@@ -58,7 +59,7 @@ func (u *Usecases) destroyInfrastructure(ctx *utils.BuilderContext, cboxClient p
 
 	// Set workflow state.
 	description := ctx.Workflow.Description
-	ctx.Workflow.Stage = pb.Workflow_DESTROY_TERRAFORMER
+	ctx.Workflow.Stage = spec.Workflow_DESTROY_TERRAFORMER
 	u.saveWorkflowDescription(ctx, fmt.Sprintf("%s destroying infrastructure", description), cboxClient)
 
 	logger.Info().Msg("Calling DestroyInfrastructure on Terraformer")

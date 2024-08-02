@@ -1,30 +1,31 @@
 syntax = "proto3";
 package claudie;
-import "proto/config.proto";
+
+import "spec/manifest.proto";
 
 option go_package = "proto/pb";
 
 message BuildClusterRequest {
-  K8scluster desired = 1;
-  repeated LBcluster desiredLbs = 2;
+  spec.K8scluster desired = 1;
+  repeated spec.LBcluster desiredLbs = 2;
   string projectName = 3;
 }
 
 message BuildClusterResponse {
-  K8scluster desired = 1;
-  repeated LBcluster desiredLbs = 2;
+  spec.K8scluster desired = 1;
+  repeated spec.LBcluster desiredLbs = 2;
 }
 
 message DestroyClusterRequest {
   string projectName = 1;
 
-  K8scluster current = 2;
-  repeated LBcluster currentLbs = 3;
+  spec.K8scluster current = 2;
+  repeated spec.LBcluster currentLbs = 3;
 }
 
 message DestroyClusterResponse {
-  K8scluster current = 1;
-  repeated LBcluster currentLbs = 2;
+  spec.K8scluster current = 1;
+  repeated spec.LBcluster currentLbs = 2;
 }
 
 service KubeElevenService {

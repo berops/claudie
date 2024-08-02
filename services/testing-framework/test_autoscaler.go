@@ -9,6 +9,7 @@ import (
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
@@ -72,7 +73,7 @@ spec:
 )
 
 // testAutoscaler tests the Autoscaler deployment.
-func testAutoscaler(ctx context.Context, config *pb.Config) error {
+func testAutoscaler(ctx context.Context, config *spec.Config) error {
 	autoscaledClusters := getAutoscaledClusters(config)
 	if len(autoscaledClusters) == 0 {
 		// No clusters are currently autoscaled.
@@ -89,7 +90,7 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 
 	var clusterGroup errgroup.Group
 	for _, cluster := range autoscaledClusters {
-		func(cluster *pb.K8Scluster) {
+		func(cluster *spec.K8Scluster) {
 			clusterGroup.Go(
 				func() error {
 					log.Info().Msgf("Deploying pods which should be ignored by autoscaler for cluster %s", cluster.ClusterInfo.Name)
@@ -117,7 +118,7 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 	}
 	// Apply scale up deployment.
 	for _, cluster := range autoscaledClusters {
-		func(cluster *pb.K8Scluster) {
+		func(cluster *spec.K8Scluster) {
 			clusterGroup.Go(
 				func() error {
 					log.Info().Msgf("Deploying pods which should trigger scale up by autoscaler for cluster %s", cluster.ClusterInfo.Name)
@@ -160,7 +161,7 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 	}
 
 	for _, cluster := range autoscaledClusters {
-		func(cluster *pb.K8Scluster) {
+		func(cluster *spec.K8Scluster) {
 			clusterGroup.Go(
 				func() error {
 					log.Info().Msgf("Removing pods which should trigger scale down by autoscaler for cluster %s", cluster.ClusterInfo.Name)
@@ -203,7 +204,7 @@ func testAutoscaler(ctx context.Context, config *pb.Config) error {
 }
 
 // applyDeployment applies specified deployment into specified cluster.
-func applyDeployment(c *pb.K8Scluster, deployment string) error {
+func applyDeployment(c *spec.K8Scluster, deployment string) error {
 	kc := kubectl.Kubectl{Kubeconfig: c.Kubeconfig, MaxKubectlRetries: 5}
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
 		prefix := utils.GetClusterID(c.ClusterInfo)
@@ -217,7 +218,7 @@ func applyDeployment(c *pb.K8Scluster, deployment string) error {
 }
 
 // removeDeployment deletes specified deployment from specified cluster.
-func removeDeployment(c *pb.K8Scluster, deployment string) error {
+func removeDeployment(c *spec.K8Scluster, deployment string) error {
 	kc := kubectl.Kubectl{Kubeconfig: c.Kubeconfig, MaxKubectlRetries: 5}
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
 		prefix := utils.GetClusterID(c.ClusterInfo)

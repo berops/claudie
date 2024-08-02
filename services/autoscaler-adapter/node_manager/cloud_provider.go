@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"github.com/berops/claudie/internal/utils"
 	"net/http"
 	"strings"
 
@@ -17,7 +16,8 @@ import (
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"github.com/oracle/oci-go-sdk/v65/common"
 	"github.com/oracle/oci-go-sdk/v65/core"
@@ -31,9 +31,9 @@ const (
 )
 
 // cacheHetzner function uses hcloud-go module to query supported servers and their info. If the query is successful, the server info is saved in cache.
-func (nm *NodeManager) cacheHetzner(np *pb.DynamicNodePool) error {
+func (nm *NodeManager) cacheHetzner(np *spec.DynamicNodePool) error {
 	// Create client and create cache.
-	hc := hcloud.NewClient(hcloud.WithToken(np.Provider.Credentials), hcloud.WithHTTPClient(http.DefaultClient))
+	hc := hcloud.NewClient(hcloud.WithToken(np.Provider.GetHetzner().Token), hcloud.WithHTTPClient(http.DefaultClient))
 	servers, err := hc.ServerType.All(context.Background())
 	if err != nil {
 		return fmt.Errorf("hetzner client got error %w", err)
@@ -43,11 +43,11 @@ func (nm *NodeManager) cacheHetzner(np *pb.DynamicNodePool) error {
 }
 
 // cacheAws function uses aws-sdk-go-v2 module to query supported VMs and their info. If the query is successful, the VM info is saved in cache.
-func (nm *NodeManager) cacheAws(np *pb.DynamicNodePool) error {
+func (nm *NodeManager) cacheAws(np *spec.DynamicNodePool) error {
 	// Define option function to set static credentials
 	credFunc := func(lo *config.LoadOptions) error {
 		lo.Credentials = aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
-			return aws.Credentials{AccessKeyID: np.Provider.AwsAccessKey, SecretAccessKey: np.Provider.Credentials}, nil
+			return aws.Credentials{AccessKeyID: np.Provider.GetAws().AccessKey, SecretAccessKey: np.Provider.GetAws().SecretKey}, nil
 		})
 		return nil
 	}
@@ -84,9 +84,9 @@ func (nm *NodeManager) cacheAws(np *pb.DynamicNodePool) error {
 }
 
 // cacheGcp function uses google go module to query supported VMs and their info. If the query is successful, the VM info is saved in cache.
-func (nm *NodeManager) cacheGcp(np *pb.DynamicNodePool) error {
+func (nm *NodeManager) cacheGcp(np *spec.DynamicNodePool) error {
 	// Create client and create cache
-	computeService, err := compute.NewMachineTypesRESTClient(context.Background(), option.WithCredentialsJSON([]byte(np.Provider.Credentials)))
+	computeService, err := compute.NewMachineTypesRESTClient(context.Background(), option.WithCredentialsJSON([]byte(np.Provider.GetGcp().Key)))
 	if err != nil {
 		return fmt.Errorf("GCP client got error : %w", err)
 	}
@@ -99,7 +99,7 @@ func (nm *NodeManager) cacheGcp(np *pb.DynamicNodePool) error {
 	// Define request and parameters
 	maxResults := uint32(defaultMaxResults)
 	req := &computepb.ListMachineTypesRequest{
-		Project:    np.Provider.GcpProject,
+		Project:    np.Provider.GetGcp().Project,
 		MaxResults: &maxResults,
 		Zone:       np.Zone,
 	}
@@ -123,15 +123,15 @@ func (nm *NodeManager) cacheGcp(np *pb.DynamicNodePool) error {
 }
 
 // cacheOci function uses oci-go-sdk module to query supported shapes and their info. If the query is successful, the shape info is saved in cache.
-func (nm *NodeManager) cacheOci(np *pb.DynamicNodePool) error {
-	conf := common.NewRawConfigurationProvider(np.Provider.OciTenancyOcid, np.Provider.OciUserOcid, np.Region, np.Provider.OciFingerprint, np.Provider.Credentials, nil)
+func (nm *NodeManager) cacheOci(np *spec.DynamicNodePool) error {
+	conf := common.NewRawConfigurationProvider(np.Provider.GetOci().TenancyOCID, np.Provider.GetOci().UserOCID, np.Region, np.Provider.GetOci().KeyFingerprint, np.Provider.GetOci().PrivateKey, nil)
 	client, err := core.NewComputeClientWithConfigurationProvider(conf)
 	if err != nil {
 		return fmt.Errorf("OCI client got error : %w", err)
 	}
 	maxResults := defaultMaxResults
 	req := core.ListShapesRequest{
-		CompartmentId: &np.Provider.OciCompartmentOcid,
+		CompartmentId: &np.Provider.GetOci().CompartmentOCID,
 		Limit:         &maxResults,
 	}
 	for {
@@ -154,13 +154,13 @@ func (nm *NodeManager) cacheOci(np *pb.DynamicNodePool) error {
 }
 
 // cacheAzure function uses azure-sdk-for-go module to query supported VMs and their info. If the query is successful, the VM info is saved in cache.
-func (nm *NodeManager) cacheAzure(np *pb.DynamicNodePool) error {
-	cred, err := azidentity.NewClientSecretCredential(np.Provider.AzureTenantId, np.Provider.AzureClientId, np.Provider.Credentials, nil)
+func (nm *NodeManager) cacheAzure(np *spec.DynamicNodePool) error {
+	cred, err := azidentity.NewClientSecretCredential(np.Provider.GetAzure().TenantID, np.Provider.GetAzure().ClientID, np.Provider.GetAzure().ClientSecret, nil)
 	if err != nil {
 		return fmt.Errorf("azure client got error : %w", err)
 	}
 
-	client, err := armcompute.NewVirtualMachineSizesClient(np.Provider.AzureSubscriptionId, cred, nil)
+	client, err := armcompute.NewVirtualMachineSizesClient(np.Provider.GetAzure().SubscriptionID, cred, nil)
 	if err != nil {
 		return fmt.Errorf("azure client got error : %w", err)
 	}

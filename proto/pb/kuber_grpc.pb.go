@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v5.27.1
-// source: proto/kuber.proto
+// source: kuber.proto
 
 package pb
 
@@ -627,5 +627,5 @@ var KuberService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/kuber.proto",
+	Metadata: "kuber.proto",
 }

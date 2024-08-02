@@ -14,7 +14,7 @@ import (
 
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -32,7 +32,7 @@ type Repository struct {
 	TemplatesRootDirectory string
 }
 
-func DownloadProvider(downloadInto string, provider *pb.Provider) error {
+func DownloadProvider(downloadInto string, provider *spec.Provider) error {
 	repo := Repository{
 		TemplatesRootDirectory: downloadInto,
 	}
@@ -48,7 +48,7 @@ func DownloadProvider(downloadInto string, provider *pb.Provider) error {
 	return nil
 }
 
-func (r *Repository) Download(repository *pb.TemplateRepository) error {
+func (r *Repository) Download(repository *spec.TemplateRepository) error {
 	if repository == nil {
 		return EmptyRepositoryErr
 	}
@@ -188,7 +188,7 @@ type Generator struct {
 	TemplatePath string
 }
 
-func (g *Generator) GenerateProvider(data *ProviderData) error {
+func (g *Generator) GenerateProvider(data *Provider) error {
 	return g.generateTemplates(
 		filepath.Join(g.ReadFromDirectory, g.TemplatePath, "provider"),
 		data.Provider.SpecName,
@@ -196,7 +196,7 @@ func (g *Generator) GenerateProvider(data *ProviderData) error {
 	)
 }
 
-func (g *Generator) GenerateNetworking(data *NetworkingData) error {
+func (g *Generator) GenerateNetworking(data *Networking) error {
 	return g.generateTemplates(
 		filepath.Join(g.ReadFromDirectory, g.TemplatePath, "networking"),
 		data.Provider.SpecName,
@@ -204,7 +204,7 @@ func (g *Generator) GenerateNetworking(data *NetworkingData) error {
 	)
 }
 
-func (g *Generator) GenerateNodes(data *NodepoolsData) error {
+func (g *Generator) GenerateNodes(data *Nodepools) error {
 	return g.generateTemplates(
 		filepath.Join(g.ReadFromDirectory, g.TemplatePath, "nodepool"),
 		data.NodePools[0].Details.GetProvider().GetSpecName(),
@@ -212,7 +212,7 @@ func (g *Generator) GenerateNodes(data *NodepoolsData) error {
 	)
 }
 
-func (g *Generator) GenerateDNS(data *DNSData) error {
+func (g *Generator) GenerateDNS(data *DNS) error {
 	return g.generateTemplates(
 		filepath.Join(g.ReadFromDirectory, g.TemplatePath, "dns"),
 		data.Provider.SpecName,
@@ -227,7 +227,7 @@ func mustParseURL(s *url.URL, err error) *url.URL {
 	return s
 }
 
-func ExtractTargetPath(repository *pb.TemplateRepository) string {
+func ExtractTargetPath(repository *spec.TemplateRepository) string {
 	tagName := "latest"
 	if repository.Tag != nil {
 		tagName = *repository.Tag
@@ -247,6 +247,13 @@ func Fingerprint(s string) string {
 }
 
 func (g *Generator) generateTemplates(dir, specName string, data any) error {
+	type fingerPrintedData struct {
+		// Data is data passed to the template generator (one of the above).
+		Data any
+		// Fingerprint is the checksum of the templates of a given nodepool.
+		Fingerprint string
+	}
+
 	var (
 		fp              = Fingerprint(g.TemplatePath)
 		targetDirectory = templateUtils.Templates{Directory: g.TargetDirectory}

@@ -6,18 +6,18 @@ import (
 
 	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 )
 
 // CreateK8sCluster reads the unmarshalled manifest and creates desired state for Kubernetes clusters.
-// Returns slice of *pb.K8Scluster if successful, nil otherwise
-func CreateK8sCluster(unmarshalledManifest *manifest.Manifest) ([]*pb.K8Scluster, error) {
-	var clusters []*pb.K8Scluster
+// Returns slice of *spec.K8Scluster if successful, nil otherwise
+func CreateK8sCluster(unmarshalledManifest *manifest.Manifest) ([]*spec.K8Scluster, error) {
+	var clusters []*spec.K8Scluster
 	// Loop through clusters mentioned in the manifest
 	for _, cluster := range unmarshalledManifest.Kubernetes.Clusters {
 		// Generate variables
-		newCluster := &pb.K8Scluster{
-			ClusterInfo: &pb.ClusterInfo{
+		newCluster := &spec.K8Scluster{
+			ClusterInfo: &spec.ClusterInfo{
 				Name: strings.ToLower(cluster.Name),
 				Hash: utils.CreateHash(utils.HashLength),
 			},
@@ -43,7 +43,7 @@ func CreateK8sCluster(unmarshalledManifest *manifest.Manifest) ([]*pb.K8Scluster
 
 // UpdateK8sClusters updates the desired state of the kubernetes clusters based on the current state
 // returns error if failed, nil otherwise
-func UpdateK8sClusters(newConfig *pb.Config) error {
+func UpdateK8sClusters(newConfig *spec.Config) error {
 clusterDesired:
 	for _, clusterDesired := range newConfig.DesiredState.Clusters {
 		for _, clusterCurrent := range newConfig.CurrentState.Clusters {
@@ -74,7 +74,7 @@ clusterDesired:
 }
 
 // CopyLbNodePoolNamesFromCurrentState copies the generated hash from an existing reference in the current state to the desired state.
-func CopyLbNodePoolNamesFromCurrentState(used map[string]struct{}, nodepool string, current, desired []*pb.LBcluster) {
+func CopyLbNodePoolNamesFromCurrentState(used map[string]struct{}, nodepool string, current, desired []*spec.LBcluster) {
 	for _, desired := range desired {
 		references := FindNodePoolReferences(nodepool, desired.GetClusterInfo().GetNodePools())
 		switch {
@@ -107,7 +107,7 @@ func CopyLbNodePoolNamesFromCurrentState(used map[string]struct{}, nodepool stri
 }
 
 // CopyK8sNodePoolsNamesFromCurrentState copies the generated hash from an existing reference in the current state to the desired state.
-func CopyK8sNodePoolsNamesFromCurrentState(used map[string]struct{}, nodepool string, current, desired *pb.K8Scluster) {
+func CopyK8sNodePoolsNamesFromCurrentState(used map[string]struct{}, nodepool string, current, desired *spec.K8Scluster) {
 	references := FindNodePoolReferences(nodepool, desired.GetClusterInfo().GetNodePools())
 	switch {
 	case len(references) == 0:
@@ -117,7 +117,7 @@ func CopyK8sNodePoolsNamesFromCurrentState(used map[string]struct{}, nodepool st
 	}
 
 	// to avoid extra code for special cases where there is just 1 reference, append a nil.
-	references = append(references, []*pb.NodePool{nil}...)
+	references = append(references, []*spec.NodePool{nil}...)
 
 	control, compute := references[0], references[1]
 	if !references[0].IsControl {
@@ -141,8 +141,8 @@ func CopyK8sNodePoolsNamesFromCurrentState(used map[string]struct{}, nodepool st
 }
 
 // FindNodePoolReferences find all nodepools that share the given name.
-func FindNodePoolReferences(name string, nodePools []*pb.NodePool) []*pb.NodePool {
-	var references []*pb.NodePool
+func FindNodePoolReferences(name string, nodePools []*spec.NodePool) []*spec.NodePool {
+	var references []*spec.NodePool
 	for _, np := range nodePools {
 		if np.Name == name {
 			references = append(references, np)

@@ -5,13 +5,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -27,7 +26,7 @@ type etcdPodInfo struct {
 type Deleter struct {
 	masterNodes   []string
 	workerNodes   []string
-	cluster       *pb.K8Scluster
+	cluster       *spec.K8Scluster
 	clusterPrefix string
 
 	logger zerolog.Logger
@@ -36,7 +35,7 @@ type Deleter struct {
 // New returns new Deleter struct, used for node deletion from a k8s cluster
 // masterNodes - master nodes to DELETE
 // workerNodes - worker nodes to DELETE
-func NewDeleter(masterNodes, workerNodes []string, cluster *pb.K8Scluster) *Deleter {
+func NewDeleter(masterNodes, workerNodes []string, cluster *spec.K8Scluster) *Deleter {
 	prefix := utils.GetClusterID(cluster.ClusterInfo)
 
 	for i := range masterNodes {
@@ -59,7 +58,7 @@ func NewDeleter(masterNodes, workerNodes []string, cluster *pb.K8Scluster) *Dele
 
 // DeleteNodes deletes nodes specified in d.masterNodes and d.workerNodes
 // return nil if successful, error otherwise
-func (d *Deleter) DeleteNodes() (*pb.K8Scluster, error) {
+func (d *Deleter) DeleteNodes() (*spec.K8Scluster, error) {
 	kubectl := kubectl.Kubectl{Kubeconfig: d.cluster.Kubeconfig, MaxKubectlRetries: 3}
 	if log.Logger.GetLevel() == zerolog.DebugLevel {
 		kubectl.Stdout = comm.GetStdOut(d.clusterPrefix)
@@ -144,7 +143,7 @@ func (d *Deleter) deleteNodesByName(kc kubectl.Kubectl, nodeName string, realNod
 
 // deleteFromEtcd function deletes members of the etcd cluster. This needs to be done in order to prevent any data corruption in etcd
 // return nil if successful, error otherwise
-func (d *Deleter) deleteFromEtcd(kc kubectl.Kubectl, etcdEpNode *pb.Node) error {
+func (d *Deleter) deleteFromEtcd(kc kubectl.Kubectl, etcdEpNode *spec.Node) error {
 	//get etcd pods
 	etcdPods, err := getEtcdPodNames(kc, strings.TrimPrefix(etcdEpNode.Name, fmt.Sprintf("%s-", d.clusterPrefix)))
 	if err != nil {
@@ -253,10 +252,10 @@ func (d *Deleter) assureReplication(kc kubectl.Kubectl, worker string) error {
 // getMainMaster iterates over all control nodes in cluster and returns API EP node. If none defined with this type,
 // function returns any master node which will not be deleted.
 // return API EP node if successful, nil otherwise
-func (d *Deleter) getMainMaster() *pb.Node {
+func (d *Deleter) getMainMaster() *spec.Node {
 	for _, np := range d.cluster.ClusterInfo.GetNodePools() {
 		for _, node := range np.Nodes {
-			if node.NodeType == pb.NodeType_apiEndpoint {
+			if node.NodeType == spec.NodeType_apiEndpoint {
 				return node
 			}
 		}
@@ -265,7 +264,7 @@ func (d *Deleter) getMainMaster() *pb.Node {
 	for _, np := range d.cluster.ClusterInfo.GetNodePools() {
 	np:
 		for _, node := range np.Nodes {
-			if node.NodeType == pb.NodeType_master {
+			if node.NodeType == spec.NodeType_master {
 				// If node will be deleted, continue.
 				for _, dm := range d.masterNodes {
 					if strings.Contains(node.Name, dm) {

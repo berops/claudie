@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/berops/claudie/proto/pb/spec"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -130,7 +131,7 @@ func (m *MongoDBConnector) Init() error {
 }
 
 // ConvertFromGRPCWorkflow converts the workflow state data from GRPC to the database representation.
-func ConvertFromGRPCWorkflow(w map[string]*pb.Workflow) map[string]Workflow {
+func ConvertFromGRPCWorkflow(w map[string]*spec.Workflow) map[string]Workflow {
 	state := make(map[string]Workflow, len(w))
 	for key, val := range w {
 		state[key] = Workflow{
@@ -144,12 +145,12 @@ func ConvertFromGRPCWorkflow(w map[string]*pb.Workflow) map[string]Workflow {
 }
 
 // ConvertToGRPCWorkflow converts the database representation of the workflow state to GRPC.
-func ConvertToGRPCWorkflow(w map[string]Workflow) map[string]*pb.Workflow {
-	state := make(map[string]*pb.Workflow, len(w))
+func ConvertToGRPCWorkflow(w map[string]Workflow) map[string]*spec.Workflow {
+	state := make(map[string]*spec.Workflow, len(w))
 	for key, val := range w {
-		state[key] = &pb.Workflow{
-			Stage:       pb.Workflow_Stage(pb.Workflow_Stage_value[val.Stage]),
-			Status:      pb.Workflow_Status(pb.Workflow_Status_value[val.Status]),
+		state[key] = &spec.Workflow{
+			Stage:       spec.Workflow_Stage(spec.Workflow_Stage_value[val.Stage]),
+			Status:      spec.Workflow_Status(spec.Workflow_Status_value[val.Status]),
 			Description: val.Description,
 		}
 	}
@@ -182,7 +183,7 @@ func (m *MongoDBConnector) DeleteConfig(id string, idType pb.IdType) error {
 
 // GetConfig will get the config from the database, based on id and id type
 // returns error if not successful, nil otherwise
-func (m *MongoDBConnector) GetConfig(id string, idType pb.IdType) (*pb.Config, error) {
+func (m *MongoDBConnector) GetConfig(id string, idType pb.IdType) (*spec.Config, error) {
 	var d configItem
 	var err error
 	if idType == pb.IdType_HASH {
@@ -205,8 +206,8 @@ func (m *MongoDBConnector) GetConfig(id string, idType pb.IdType) (*pb.Config, e
 
 // GetAllConfig gets all configs from database
 // returns slice of pb.Config if successful, error otherwise
-func (m *MongoDBConnector) GetAllConfigs() ([]*pb.Config, error) {
-	var res []*pb.Config             //slice of configs
+func (m *MongoDBConnector) GetAllConfigs() ([]*spec.Config, error) {
+	var res []*spec.Config           //slice of configs
 	configs, err := m.getAllFromDB() //get all configs from database
 	if err != nil {
 		return nil, err
@@ -225,7 +226,7 @@ func (m *MongoDBConnector) GetAllConfigs() ([]*pb.Config, error) {
 // SaveConfig will save specified config in the database
 // if config has been encountered before, based on id and name, it will update existing record
 // return error if not successful, nil otherwise
-func (m *MongoDBConnector) SaveConfig(config *pb.Config) error {
+func (m *MongoDBConnector) SaveConfig(config *spec.Config) error {
 	// Convert desiredState and currentState to byte[] because we want to save them to the database
 	var desiredStateByte, currentStateByte []byte
 	var err error
@@ -331,7 +332,7 @@ func (c *MongoDBConnector) UpdateMsToNull(id string, idType pb.IdType) error {
 }
 
 // UpdateDs will update the desired state related field in DB
-func (m *MongoDBConnector) UpdateDs(config *pb.Config) error {
+func (m *MongoDBConnector) UpdateDs(config *spec.Config) error {
 	// convert DesiredState to []byte type
 	desiredStateByte, err := proto.Marshal(config.DesiredState)
 	if err != nil {
@@ -349,7 +350,7 @@ func (m *MongoDBConnector) UpdateDs(config *pb.Config) error {
 }
 
 // UpdateWorkflowState updates the state of the config with the given workflow
-func (m *MongoDBConnector) UpdateWorkflowState(configName, clusterName string, workflow *pb.Workflow) error {
+func (m *MongoDBConnector) UpdateWorkflowState(configName, clusterName string, workflow *spec.Workflow) error {
 	if workflow == nil {
 		return nil
 	}
@@ -364,7 +365,7 @@ func (m *MongoDBConnector) UpdateWorkflowState(configName, clusterName string, w
 }
 
 // UpdateAllStates updates all states of the config specified.
-func (c *MongoDBConnector) UpdateAllStates(configName string, states map[string]*pb.Workflow) error {
+func (c *MongoDBConnector) UpdateAllStates(configName string, states map[string]*spec.Workflow) error {
 	if states == nil {
 		return nil
 	}
@@ -372,7 +373,7 @@ func (c *MongoDBConnector) UpdateAllStates(configName string, states map[string]
 }
 
 // UpdateCs will update the current state related field in DB
-func (m *MongoDBConnector) UpdateCs(config *pb.Config) error {
+func (m *MongoDBConnector) UpdateCs(config *spec.Config) error {
 	// convert CurrentState to []byte type
 	currentStateByte, err := proto.Marshal(config.CurrentState)
 	if err != nil {
@@ -429,20 +430,20 @@ func (m *MongoDBConnector) updateDocument(filter, operation primitive.M) error {
 
 // convert configItem struct to *pb.Config
 // returns *pb.Config if successful, error otherwise
-func dataToConfigPb(data *configItem) (*pb.Config, error) {
-	var desiredState *pb.Project = new(pb.Project)
+func dataToConfigPb(data *configItem) (*spec.Config, error) {
+	var desiredState *spec.Project = new(spec.Project)
 	err := proto.Unmarshal(data.DesiredState, desiredState)
 	if err != nil {
 		return nil, fmt.Errorf("error while unmarshalling desiredState: %w", err)
 	}
 
-	var currentState *pb.Project = new(pb.Project)
+	var currentState *spec.Project = new(spec.Project)
 	err = proto.Unmarshal(data.CurrentState, currentState)
 	if err != nil {
 		return nil, fmt.Errorf("error while unmarshalling currentState: %w", err)
 	}
 
-	return &pb.Config{
+	return &spec.Config{
 		Id:                data.ID.Hex(),
 		Name:              data.Name,
 		Manifest:          data.Manifest,

@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/kuber/server/domain/utils/secret"
 )
 
@@ -16,7 +16,7 @@ const (
 )
 
 // getSecretMetadata returns metadata for secrets created in the management cluster as a Claudie output.
-func GetSecretMetadata(ci *pb.ClusterInfo, projectName string, outputType OutputType) secret.Metadata {
+func GetSecretMetadata(ci *spec.ClusterInfo, projectName string, outputType OutputType) secret.Metadata {
 	cid := utils.GetClusterID(ci)
 	return secret.Metadata{
 		Name: fmt.Sprintf("%s-%s", cid, outputType),

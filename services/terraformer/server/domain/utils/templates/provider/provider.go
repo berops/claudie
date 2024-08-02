@@ -3,10 +3,10 @@ package provider
 import (
 	_ "embed"
 	"fmt"
+	"github.com/berops/claudie/proto/pb/spec"
 
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
 )
 
 //go:embed providers.tpl
@@ -32,7 +32,7 @@ type templateData struct {
 }
 
 // CreateProviderDNS creates provider file used for DNS management.
-func (p Provider) CreateProviderDNS(dns *pb.DNS) error {
+func (p Provider) CreateProviderDNS(dns *spec.DNS) error {
 	template := templateUtils.Templates{Directory: p.Directory}
 
 	tpl, err := templateUtils.LoadTemplate(providersTemplate)
@@ -46,7 +46,7 @@ func (p Provider) CreateProviderDNS(dns *pb.DNS) error {
 }
 
 // CreateProvider creates provider file used for infrastructure management.
-func (p Provider) CreateProvider(currentCluster, desiredCluster *pb.ClusterInfo) error {
+func (p Provider) CreateProvider(currentCluster, desiredCluster *spec.ClusterInfo) error {
 	template := templateUtils.Templates{Directory: p.Directory}
 
 	var data templateData
@@ -67,7 +67,7 @@ func (p Provider) CreateProvider(currentCluster, desiredCluster *pb.ClusterInfo)
 }
 
 // getProvidersUsed modifies templateData to reflect current providers used.
-func getProvidersUsed(nodepools []*pb.DynamicNodePool, data *templateData) {
+func getProvidersUsed(nodepools []*spec.DynamicNodePool, data *templateData) {
 	if len(nodepools) == 0 {
 		return
 	}
@@ -95,7 +95,7 @@ func getProvidersUsed(nodepools []*pb.DynamicNodePool, data *templateData) {
 }
 
 // getProvidersUsed modifies templateData to reflect current providers used in DNS.
-func getDNSProvider(dns *pb.DNS, data *templateData) {
+func getDNSProvider(dns *spec.DNS, data *templateData) {
 	if dns == nil {
 		return
 	}

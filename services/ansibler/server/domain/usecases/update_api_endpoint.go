@@ -6,12 +6,12 @@ import (
 	"path/filepath"
 	"slices"
 
-	"github.com/rs/zerolog/log"
-
 	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/ansibler/server/utils"
 	"github.com/berops/claudie/services/ansibler/templates"
+	"github.com/rs/zerolog/log"
 )
 
 func (u *Usecases) UpdateAPIEndpoint(request *pb.UpdateAPIEndpointRequest) (*pb.UpdateAPIEndpointResponse, error) {
@@ -31,15 +31,15 @@ func (u *Usecases) UpdateAPIEndpoint(request *pb.UpdateAPIEndpointRequest) (*pb.
 // updateAPIEndpoint handles the case where the ApiEndpoint node is removed from
 // the desired state. Thus a new control node needs to be selected among the existing
 // control nodes. This new control node will then represent the ApiEndpoint of the cluster.
-func updateAPIEndpoint(currentK8sClusterInfo, desiredK8sClusterInfo *pb.ClusterInfo, spawnProcessLimit chan struct{}) error {
+func updateAPIEndpoint(currentK8sClusterInfo, desiredK8sClusterInfo *spec.ClusterInfo, spawnProcessLimit chan struct{}) error {
 	clusterID := commonUtils.GetClusterID(currentK8sClusterInfo)
 
 	apiEndpointNodePool, apiEndpointNode, err := commonUtils.FindNodepoolWithApiEndpointNode(currentK8sClusterInfo.GetNodePools())
 	if err != nil {
-		return fmt.Errorf("failed to find the node with type: %s", pb.NodeType_apiEndpoint.String())
+		return fmt.Errorf("failed to find the node with type: %s", spec.NodeType_apiEndpoint.String())
 	}
 
-	apiEndpointNodeExists := slices.ContainsFunc(desiredK8sClusterInfo.GetNodePools(), func(pool *pb.NodePool) bool {
+	apiEndpointNodeExists := slices.ContainsFunc(desiredK8sClusterInfo.GetNodePools(), func(pool *spec.NodePool) bool {
 		return pool.GetName() == apiEndpointNodePool.GetName()
 	})
 
@@ -82,8 +82,8 @@ func updateAPIEndpoint(currentK8sClusterInfo, desiredK8sClusterInfo *pb.ClusterI
 	newEndpointNode := newNp.GetNodes()[0]
 
 	// update the current state
-	apiEndpointNode.NodeType = pb.NodeType_master
-	newEndpointNode.NodeType = pb.NodeType_apiEndpoint
+	apiEndpointNode.NodeType = spec.NodeType_master
+	newEndpointNode.NodeType = spec.NodeType_apiEndpoint
 
 	if err = utils.ChangeAPIEndpoint(currentK8sClusterInfo.Name, apiEndpointNode.GetPublic(), newEndpointNode.GetPublic(), clusterDirectory, spawnProcessLimit); err != nil {
 		return err

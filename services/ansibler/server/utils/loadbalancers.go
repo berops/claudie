@@ -2,11 +2,11 @@ package utils
 
 import (
 	"fmt"
+	"github.com/berops/claudie/proto/pb/spec"
 
 	"github.com/rs/zerolog/log"
 
 	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/ansibler/templates"
 )
 
@@ -76,8 +76,8 @@ type (
 	}
 
 	NodePools struct {
-		Dynamic []*pb.NodePool
-		Static  []*pb.NodePool
+		Dynamic []*spec.NodePool
+		Static  []*spec.NodePool
 	}
 
 	// LBClustersInfo wraps all Load-balancers and Nodepools used for a single K8s cluster.
@@ -85,7 +85,7 @@ type (
 		// LbClusters are Load-Balancers that share the targeted k8s cluster.
 		LbClusters []*LBClusterData
 		// TargetK8sNodepool are all nodepools used by the targeted k8s cluster.
-		TargetK8sNodepool []*pb.NodePool
+		TargetK8sNodepool []*spec.NodePool
 		// PreviousAPIEndpointLB holds the endpoint of the previous Load-Balancer endpoint
 		// if there was any to be able to handle the endpoint change.
 		PreviousAPIEndpointLB string
@@ -100,11 +100,11 @@ type (
 		// CurrentLbCluster is the current spec of the LB Cluster.
 		// A value of nil means that the LB cluster doesn't exist currently
 		// and will be created in the future.
-		CurrentLbCluster *pb.LBcluster
+		CurrentLbCluster *spec.LBcluster
 
 		// DesiredLbCluster is the desired spec of the LB Cluster.
 		// A value of nil means that this LB cluster will be deleted in the future.
-		DesiredLbCluster *pb.LBcluster
+		DesiredLbCluster *spec.LBcluster
 	}
 
 	LBPlaybookParameters struct {
@@ -112,8 +112,8 @@ type (
 	}
 
 	LBClusterRolesInfo struct {
-		Role        *pb.Role
-		TargetNodes []*pb.Node
+		Role        *spec.Role
+		TargetNodes []*spec.Node
 	}
 
 	NginxConfigTemplateParameters struct {
@@ -235,7 +235,7 @@ func HandleAPIEndpointChange(apiServerTypeLBCluster *LBClusterData, k8sCluster *
 		if err != nil {
 			return err
 		}
-		node.NodeType = pb.NodeType_apiEndpoint
+		node.NodeType = spec.NodeType_apiEndpoint
 		newEndpoint = node.Public
 
 	case RoleChangedToAPIServer:
@@ -289,7 +289,7 @@ func HandleAPIEndpointChange(apiServerTypeLBCluster *LBClusterData, k8sCluster *
 		if err != nil {
 			return fmt.Errorf("failed to find APIEndpoint k8s node, couldn't update Api server endpoint")
 		}
-		node.NodeType = pb.NodeType_master // remove the Endpoint type from the node.
+		node.NodeType = spec.NodeType_master // remove the Endpoint type from the node.
 		oldEndpoint = node.Public
 
 	case DetachingLoadBalancer:
@@ -306,7 +306,7 @@ func HandleAPIEndpointChange(apiServerTypeLBCluster *LBClusterData, k8sCluster *
 		if err != nil {
 			return err
 		}
-		node.NodeType = pb.NodeType_apiEndpoint
+		node.NodeType = spec.NodeType_apiEndpoint
 		newEndpoint = node.Public
 	}
 

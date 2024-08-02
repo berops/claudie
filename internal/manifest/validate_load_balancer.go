@@ -2,8 +2,7 @@ package manifest
 
 import (
 	"fmt"
-
-	"github.com/berops/claudie/internal/templateUtils"
+	"slices"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -141,7 +140,7 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 			return fmt.Errorf("provider %q used inside cluster %q is not defined", cluster.DNS.Provider, cluster.Name)
 		}
 
-		if templateUtils.IsMissing(provider.CloudProviderName, []string{"gcp", "aws", "azure", "oci", "cloudflare", "hetznerdns"}) {
+		if !slices.Contains([]string{"gcp", "aws", "azure", "oci", "cloudflare", "hetznerdns"}, provider.CloudProviderName) {
 			return fmt.Errorf("provider %q used inside cluster %q exists but is not a supported provider", cluster.DNS.Provider, cluster.Name)
 		}
 

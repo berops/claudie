@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v5.27.1
-// source: proto/ansibler.proto
+// source: ansibler.proto
 
 package pb
 
@@ -297,5 +297,5 @@ var AnsiblerService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/ansibler.proto",
+	Metadata: "ansibler.proto",
 }

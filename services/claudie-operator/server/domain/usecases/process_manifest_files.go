@@ -1,11 +1,10 @@
 package usecases
 
 import (
+	"github.com/berops/claudie/internal/manifest"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
-
-	"github.com/berops/claudie/internal/manifest"
-	"github.com/berops/claudie/proto/pb"
 )
 
 // createConfig generates and saves config into the DB. Used for new configs and updated configs.
@@ -17,7 +16,7 @@ func (u *Usecases) CreateConfig(inputManifest *manifest.Manifest, resourceName s
 	}
 
 	// Define config
-	config := &pb.Config{
+	config := &spec.Config{
 		Name:              inputManifest.Name,
 		ResourceName:      resourceName,
 		ResourceNamespace: resourceNamespace,

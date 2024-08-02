@@ -3,7 +3,7 @@ package manifest
 import (
 	"fmt"
 
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	k8sV1 "k8s.io/api/core/v1"
 )
 
@@ -15,55 +15,56 @@ var (
 )
 
 // GetProvider will search for a Provider config by matching name from providerSpec
-// returns *pb.Provider,nil if matching Provider config found otherwise returns nil,error
-func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
+// returns *spec.Provider,nil if matching Provider config found otherwise returns nil,error
+// This function should only be called after the default templates were set by the operator.
+func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error) {
 	for _, gcpConf := range ds.Providers.GCP {
 		if gcpConf.Name == providerSpecName {
-			return &pb.Provider{
+			return &spec.Provider{
 				SpecName: gcpConf.Name,
-				ProviderType: &pb.Provider_Gcp{
-					Gcp: &pb.GCPProvider{
+				ProviderType: &spec.Provider_Gcp{
+					Gcp: &spec.GCPProvider{
 						Key:     gcpConf.Credentials,
 						Project: gcpConf.GCPProject,
 					},
 				},
 				CloudProviderName: "gcp",
-				Templates: &pb.TemplateRepository{
+				Templates: &spec.TemplateRepository{
 					Repository: gcpConf.Templates.Repository,
 					Tag:        gcpConf.Templates.Tag,
 					Path:       gcpConf.Templates.Path,
 				},
-				//omit rest of the pb.Provider variables
+				//omit rest of the spec.Provider variables
 			}, nil
 		}
 	}
 
 	for _, hetznerConf := range ds.Providers.Hetzner {
 		if hetznerConf.Name == providerSpecName {
-			return &pb.Provider{
+			return &spec.Provider{
 				SpecName: hetznerConf.Name,
-				ProviderType: &pb.Provider_Hetzner{
-					Hetzner: &pb.HetznerProvider{
+				ProviderType: &spec.Provider_Hetzner{
+					Hetzner: &spec.HetznerProvider{
 						Token: hetznerConf.Credentials,
 					},
 				},
 				CloudProviderName: "hetzner",
-				Templates: &pb.TemplateRepository{
+				Templates: &spec.TemplateRepository{
 					Repository: hetznerConf.Templates.Repository,
 					Tag:        hetznerConf.Templates.Tag,
 					Path:       hetznerConf.Templates.Path,
 				},
-				//omit rest of the pb.Provider variables
+				//omit rest of the spec.Provider variables
 			}, nil
 		}
 	}
 
 	for _, ociConf := range ds.Providers.OCI {
 		if ociConf.Name == providerSpecName {
-			return &pb.Provider{
+			return &spec.Provider{
 				SpecName: ociConf.Name,
-				ProviderType: &pb.Provider_Oci{
-					Oci: &pb.OCIProvider{
+				ProviderType: &spec.Provider_Oci{
+					Oci: &spec.OCIProvider{
 						UserOCID:        ociConf.UserOCID,
 						TenancyOCID:     ociConf.TenancyOCID,
 						KeyFingerprint:  ociConf.KeyFingerprint,
@@ -72,30 +73,30 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
 					},
 				},
 				CloudProviderName: "oci",
-				Templates: &pb.TemplateRepository{
+				Templates: &spec.TemplateRepository{
 					Repository: ociConf.Templates.Repository,
 					Tag:        ociConf.Templates.Tag,
 					Path:       ociConf.Templates.Path,
 				},
-				//omit rest of the pb.Provider variables
+				//omit rest of the spec.Provider variables
 			}, nil
 		}
 	}
 
 	for _, azureConf := range ds.Providers.Azure {
 		if azureConf.Name == providerSpecName {
-			return &pb.Provider{
+			return &spec.Provider{
 				SpecName:          azureConf.Name,
 				CloudProviderName: "azure",
-				ProviderType: &pb.Provider_Azure{
-					Azure: &pb.AzureProvider{
+				ProviderType: &spec.Provider_Azure{
+					Azure: &spec.AzureProvider{
 						SubscriptionID: azureConf.SubscriptionId,
 						TenantID:       azureConf.TenantId,
 						ClientID:       azureConf.ClientId,
 						ClientSecret:   azureConf.ClientSecret,
 					},
 				},
-				Templates: &pb.TemplateRepository{
+				Templates: &spec.TemplateRepository{
 					Repository: azureConf.Templates.Repository,
 					Tag:        azureConf.Templates.Tag,
 					Path:       azureConf.Templates.Path,
@@ -107,16 +108,16 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
 
 	for _, awsConf := range ds.Providers.AWS {
 		if awsConf.Name == providerSpecName {
-			return &pb.Provider{
+			return &spec.Provider{
 				SpecName: awsConf.Name,
-				ProviderType: &pb.Provider_Aws{
-					Aws: &pb.AWSProvider{
+				ProviderType: &spec.Provider_Aws{
+					Aws: &spec.AWSProvider{
 						SecretKey: awsConf.SecretKey,
 						AccessKey: awsConf.AccessKey,
 					},
 				},
 				CloudProviderName: "aws",
-				Templates: &pb.TemplateRepository{
+				Templates: &spec.TemplateRepository{
 					Repository: awsConf.Templates.Repository,
 					Tag:        awsConf.Templates.Tag,
 					Path:       awsConf.Templates.Path,
@@ -127,15 +128,15 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
 
 	for _, cloudflareConf := range ds.Providers.Cloudflare {
 		if cloudflareConf.Name == providerSpecName {
-			return &pb.Provider{
+			return &spec.Provider{
 				SpecName: providerSpecName,
-				ProviderType: &pb.Provider_Cloudflare{
-					Cloudflare: &pb.CloudflareProvider{
+				ProviderType: &spec.Provider_Cloudflare{
+					Cloudflare: &spec.CloudflareProvider{
 						Token: cloudflareConf.ApiToken,
 					},
 				},
 				CloudProviderName: "cloudflare",
-				Templates: &pb.TemplateRepository{
+				Templates: &spec.TemplateRepository{
 					Repository: cloudflareConf.Templates.Repository,
 					Tag:        cloudflareConf.Templates.Tag,
 					Path:       cloudflareConf.Templates.Path,
@@ -146,15 +147,15 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
 
 	for _, hetznerDNSConfig := range ds.Providers.HetznerDNS {
 		if hetznerDNSConfig.Name == providerSpecName {
-			return &pb.Provider{
+			return &spec.Provider{
 				SpecName: providerSpecName,
-				ProviderType: &pb.Provider_Hetznerdns{
-					Hetznerdns: &pb.HetznerDNSProvider{
+				ProviderType: &spec.Provider_Hetznerdns{
+					Hetznerdns: &spec.HetznerDNSProvider{
 						Token: hetznerDNSConfig.ApiToken,
 					},
 				},
 				CloudProviderName: "hetznerdns",
-				Templates: &pb.TemplateRepository{
+				Templates: &spec.TemplateRepository{
 					Repository: hetznerDNSConfig.Templates.Repository,
 					Tag:        hetznerDNSConfig.Templates.Tag,
 					Path:       hetznerDNSConfig.Templates.Path,
@@ -165,15 +166,15 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*pb.Provider, error) {
 
 	for _, gc := range ds.Providers.GenesisCloud {
 		if gc.Name == providerSpecName {
-			return &pb.Provider{
+			return &spec.Provider{
 				SpecName: providerSpecName,
-				ProviderType: &pb.Provider_Genesiscloud{
-					Genesiscloud: &pb.GenesisCloudProvider{
+				ProviderType: &spec.Provider_Genesiscloud{
+					Genesiscloud: &spec.GenesisCloudProvider{
 						Token: gc.ApiToken,
 					},
 				},
 				CloudProviderName: "genesiscloud",
-				Templates: &pb.TemplateRepository{
+				Templates: &spec.TemplateRepository{
 					Repository: gc.Templates.Repository,
 					Tag:        gc.Templates.Tag,
 					Path:       gc.Templates.Path,
@@ -220,8 +221,8 @@ func (ds *Manifest) FindStaticNodePool(nodePoolName string) *StaticNodePool {
 
 // CreateNodepools will create a pb.Nodepool structs based on the manifest specification
 // returns error if nodepool/provider not defined, nil otherwise
-func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodePool, error) {
-	var nodePools []*pb.NodePool
+func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.NodePool, error) {
+	var nodePools []*spec.NodePool
 	for _, nodePoolName := range pools {
 		// Check if the nodepool is part of the cluster
 		if nodePool := ds.FindDynamicNodePool(nodePoolName); nodePool != nil {
@@ -231,10 +232,10 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 			}
 
 			// Check if autoscaler is defined
-			var autoscalerConf *pb.AutoscalerConf
+			var autoscalerConf *spec.AutoscalerConf
 			count := nodePool.Count
 			if nodePool.AutoscalerConfig.isDefined() {
-				autoscalerConf = &pb.AutoscalerConf{}
+				autoscalerConf = &spec.AutoscalerConf{}
 				autoscalerConf.Min = nodePool.AutoscalerConfig.Min
 				autoscalerConf.Max = nodePool.AutoscalerConfig.Max
 				count = nodePool.AutoscalerConfig.Min
@@ -245,22 +246,22 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 				nodePool.StorageDiskSize = &defaultDiskSize
 			}
 
-			var machineSpec *pb.MachineSpec
+			var machineSpec *spec.MachineSpec
 			if nodePool.MachineSpec != nil {
-				machineSpec = &pb.MachineSpec{
+				machineSpec = &spec.MachineSpec{
 					CpuCount: int32(nodePool.MachineSpec.CpuCount),
 					Memory:   int32(nodePool.MachineSpec.Memory),
 				}
 			}
 
-			nodePools = append(nodePools, &pb.NodePool{
+			nodePools = append(nodePools, &spec.NodePool{
 				Name:        nodePool.Name,
 				IsControl:   isControl,
 				Labels:      nodePool.Labels,
 				Annotations: nodePool.Annotations,
 				Taints:      getTaints(nodePool.Taints),
-				NodePoolType: &pb.NodePool_DynamicNodePool{
-					DynamicNodePool: &pb.DynamicNodePool{
+				NodePoolType: &spec.NodePool_DynamicNodePool{
+					DynamicNodePool: &spec.DynamicNodePool{
 						Region:           nodePool.ProviderSpec.Region,
 						Zone:             nodePool.ProviderSpec.Zone,
 						ServerType:       nodePool.ServerType,
@@ -275,15 +276,15 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 			})
 		} else if nodePool := ds.FindStaticNodePool(nodePoolName); nodePool != nil {
 			nodes := getStaticNodes(nodePool, isControl)
-			nodePools = append(nodePools, &pb.NodePool{
+			nodePools = append(nodePools, &spec.NodePool{
 				Name:        nodePool.Name,
 				Nodes:       nodes,
 				IsControl:   isControl,
 				Labels:      nodePool.Labels,
 				Annotations: nodePool.Annotations,
 				Taints:      getTaints(nodePool.Taints),
-				NodePoolType: &pb.NodePool_StaticNodePool{
-					StaticNodePool: &pb.StaticNodePool{
+				NodePoolType: &spec.NodePool_StaticNodePool{
+					StaticNodePool: &spec.StaticNodePool{
 						NodeKeys: getNodeKeys(nodePool),
 					},
 				},
@@ -296,14 +297,14 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*pb.NodeP
 }
 
 // getStaticNodes returns slice of static nodes with initialised name.
-func getStaticNodes(np *StaticNodePool, isControl bool) []*pb.Node {
-	nodes := make([]*pb.Node, 0, len(np.Nodes))
-	nodeType := pb.NodeType_worker
+func getStaticNodes(np *StaticNodePool, isControl bool) []*spec.Node {
+	nodes := make([]*spec.Node, 0, len(np.Nodes))
+	nodeType := spec.NodeType_worker
 	if isControl {
-		nodeType = pb.NodeType_master
+		nodeType = spec.NodeType_master
 	}
 	for i, node := range np.Nodes {
-		nodes = append(nodes, &pb.Node{
+		nodes = append(nodes, &spec.Node{
 			Name:     fmt.Sprintf("%s-%d", np.Name, i+1),
 			Public:   node.Endpoint,
 			NodeType: nodeType,
@@ -338,44 +339,56 @@ func (ds *Manifest) nodePoolDefined(pool string) (defined bool, static bool) {
 	return
 }
 
-func getTaints(taints []k8sV1.Taint) []*pb.Taint {
-	arr := make([]*pb.Taint, 0, len(taints))
+func getTaints(taints []k8sV1.Taint) []*spec.Taint {
+	arr := make([]*spec.Taint, 0, len(taints))
 	for _, t := range taints {
-		arr = append(arr, &pb.Taint{Key: t.Key, Value: t.Value, Effect: string(t.Effect)})
+		arr = append(arr, &spec.Taint{Key: t.Key, Value: t.Value, Effect: string(t.Effect)})
 	}
 	return arr
 }
 
+func (ds *Manifest) ProviderExists(provider string) bool {
+	exits := false
+
+	ds.ForEachProvider(func(name, _ string, _ **TemplateRepository) {
+		if name == provider {
+			exits = true
+		}
+	})
+
+	return exits
+}
+
 func (ds *Manifest) ForEachProvider(do func(name, typ string, tmpls **TemplateRepository)) {
-	for _, c := range ds.Providers.GCP {
-		do(c.Name, "gcp", &c.Templates)
+	for i, c := range ds.Providers.GCP {
+		do(c.Name, "gcp", &ds.Providers.GCP[i].Templates)
 	}
 
-	for _, c := range ds.Providers.Hetzner {
-		do(c.Name, "hetzner", &c.Templates)
+	for i, c := range ds.Providers.Hetzner {
+		do(c.Name, "hetzner", &ds.Providers.Hetzner[i].Templates)
 	}
 
-	for _, c := range ds.Providers.OCI {
-		do(c.Name, "oci", &c.Templates)
+	for i, c := range ds.Providers.OCI {
+		do(c.Name, "oci", &ds.Providers.OCI[i].Templates)
 	}
 
-	for _, c := range ds.Providers.AWS {
-		do(c.Name, "aws", &c.Templates)
+	for i, c := range ds.Providers.AWS {
+		do(c.Name, "aws", &ds.Providers.AWS[i].Templates)
 	}
 
-	for _, c := range ds.Providers.Azure {
-		do(c.Name, "azure", &c.Templates)
+	for i, c := range ds.Providers.Azure {
+		do(c.Name, "azure", &ds.Providers.Azure[i].Templates)
 	}
 
-	for _, c := range ds.Providers.GenesisCloud {
-		do(c.Name, "genesiscloud", &c.Templates)
+	for i, c := range ds.Providers.GenesisCloud {
+		do(c.Name, "genesiscloud", &ds.Providers.GenesisCloud[i].Templates)
 	}
 
-	for _, c := range ds.Providers.Cloudflare {
-		do(c.Name, "cloudflare", &c.Templates)
+	for i, c := range ds.Providers.Cloudflare {
+		do(c.Name, "cloudflare", &ds.Providers.Cloudflare[i].Templates)
 	}
 
-	for _, c := range ds.Providers.HetznerDNS {
-		do(c.Name, "hetznerdns", &c.Templates)
+	for i, c := range ds.Providers.HetznerDNS {
+		do(c.Name, "hetznerdns", &ds.Providers.HetznerDNS[i].Templates)
 	}
 }

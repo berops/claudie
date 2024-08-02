@@ -331,8 +331,6 @@ func (r *InputManifestReconciler) deleteConfig(im *manifest.Manifest) error {
 }
 
 func providerImmutabilityCheck(current map[string]providerMapping, desired map[string]providerMapping) error {
-	// TODO: check this in production.
-	// TODO: implement the suggestion from bernard about the TAG.
 	for provider, desired := range desired {
 		if current, ok := current[provider]; ok {
 			checkFailed := desired.Templates.Path != current.Templates.Path

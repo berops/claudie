@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates/templates"
 )
 
@@ -25,8 +25,8 @@ func TestDownloadProviderUpdate(t *testing.T) {
 	downloadDir := "./test2"
 	t.Cleanup(func() { os.RemoveAll(downloadDir) })
 
-	var provider = &pb.Provider{
-		Templates: &pb.TemplateRepository{
+	var provider = &spec.Provider{
+		Templates: &spec.TemplateRepository{
 			Repository: "https://github.com/berops/claudie-config",
 			Tag:        strPtr("v0.1.2"),
 			Path:       "/templates/terraformer/gcp",
@@ -65,7 +65,7 @@ func TestDownloadProvider(t *testing.T) {
 
 	type args struct {
 		downloadInto string
-		provider     *pb.Provider
+		provider     *spec.Provider
 	}
 	tests := []struct {
 		name    string
@@ -76,8 +76,8 @@ func TestDownloadProvider(t *testing.T) {
 			name: "test-01",
 			args: args{
 				downloadInto: downloadDir,
-				provider: &pb.Provider{
-					Templates: &pb.TemplateRepository{
+				provider: &spec.Provider{
+					Templates: &spec.TemplateRepository{
 						Repository: "https://github.com/berops/claudie-config",
 						Path:       "/templates/terraformer/gcp",
 					},
@@ -89,8 +89,8 @@ func TestDownloadProvider(t *testing.T) {
 			name: "test-01",
 			args: args{
 				downloadInto: downloadDir,
-				provider: &pb.Provider{
-					Templates: &pb.TemplateRepository{
+				provider: &spec.Provider{
+					Templates: &spec.TemplateRepository{
 						Repository: "https://github.com/berops/claudie-config",
 						Tag:        strPtr("v0.1.0"),
 						Path:       "/templates/gcp",
@@ -103,8 +103,8 @@ func TestDownloadProvider(t *testing.T) {
 			name: "test-02",
 			args: args{
 				downloadInto: downloadDir,
-				provider: &pb.Provider{
-					Templates: &pb.TemplateRepository{
+				provider: &spec.Provider{
+					Templates: &spec.TemplateRepository{
 						Repository: "https://github.com/berops/claudie-config",
 						Tag:        strPtr("v0.0.0"),
 						Path:       "/templates",
@@ -117,8 +117,8 @@ func TestDownloadProvider(t *testing.T) {
 			name: "test-03",
 			args: args{
 				downloadInto: downloadDir,
-				provider: &pb.Provider{
-					Templates: &pb.TemplateRepository{
+				provider: &spec.Provider{
+					Templates: &spec.TemplateRepository{
 						Repository: "h??ttps:/github.com/berops/claudie-config",
 						Tag:        strPtr("v0.1.0"),
 						Path:       "/templates",

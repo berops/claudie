@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
+	"github.com/stretchr/testify/require"
 )
 
 var (
-	desiredState *pb.Project = &pb.Project{
+	desiredState *spec.Project = &spec.Project{
 		Name: "TestProjectName",
 	}
 )
@@ -23,7 +23,7 @@ func TestSaveConfig(t *testing.T) {
 	err = mongoDBConnector.Init()
 	require.NoError(t, err)
 	defer mongoDBConnector.Disconnect()
-	conf := &pb.Config{DesiredState: desiredState, Name: "test-pb-config"}
+	conf := &spec.Config{DesiredState: desiredState, Name: "test-pb-config"}
 	err = mongoDBConnector.SaveConfig(conf)
 	require.NoError(t, err)
 	fmt.Println("Config id: " + conf.Id)
@@ -39,7 +39,7 @@ func TestUpdateTTL(t *testing.T) {
 	err = mongoDBConnector.Init()
 	require.NoError(t, err)
 	defer mongoDBConnector.Disconnect()
-	conf := &pb.Config{DesiredState: desiredState, Name: "test-pb-config", BuilderTTL: 1000, SchedulerTTL: 1000}
+	conf := &spec.Config{DesiredState: desiredState, Name: "test-pb-config", BuilderTTL: 1000, SchedulerTTL: 1000}
 	err = mongoDBConnector.SaveConfig(conf)
 	require.NoError(t, err)
 	err = mongoDBConnector.UpdateBuilderTTL(conf.Name, 500)
@@ -61,21 +61,21 @@ func TestSaveWorkflow(t *testing.T) {
 	err = cm.Init()
 	require.NoError(t, err)
 	defer cm.Disconnect()
-	conf := &pb.Config{DesiredState: desiredState, Name: "test-pb-config"}
+	conf := &spec.Config{DesiredState: desiredState, Name: "test-pb-config"}
 	err = cm.SaveConfig(conf)
 	require.NoError(t, err)
-	err = cm.UpdateAllStates("test-pb-config", map[string]*pb.Workflow{"foo": {
-		Stage:       pb.Workflow_KUBER,
-		Status:      pb.Workflow_DONE,
+	err = cm.UpdateAllStates("test-pb-config", map[string]*spec.Workflow{"foo": {
+		Stage:       spec.Workflow_KUBER,
+		Status:      spec.Workflow_DONE,
 		Description: "Test",
 	}})
 	require.NoError(t, err)
 	c1, err := cm.getByNameFromDB(conf.Name)
 	require.NoError(t, err)
 	require.Equal(t, c1.State["foo"].Description, "Test")
-	err = cm.UpdateAllStates(conf.Name, map[string]*pb.Workflow{"foo": {
-		Stage:       pb.Workflow_NONE,
-		Status:      pb.Workflow_DONE,
+	err = cm.UpdateAllStates(conf.Name, map[string]*spec.Workflow{"foo": {
+		Stage:       spec.Workflow_NONE,
+		Status:      spec.Workflow_DONE,
 		Description: "Test1",
 	}})
 	require.NoError(t, err)

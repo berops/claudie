@@ -5,7 +5,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 )
 
 // IntermediateRepresentation represents the intermediate state
@@ -13,11 +13,11 @@ import (
 type IntermediateRepresentation struct {
 	// IR is the intermediate representation that should be passed through the workflow
 	// before actually building the desired state. If nil there is no in-between step.
-	IR *pb.K8Scluster
+	IR *spec.K8Scluster
 
 	// IRLbs are the intermediate representations of LB clusters that should be passed through the workflow
 	// before actually building the desired state of the LB clusters. If nil there is no in-between step.
-	IRLbs []*pb.LBcluster
+	IRLbs []*spec.LBcluster
 
 	// ToDelete are the nodepools from which nodes needs to be deleted. This may be set
 	// even if IR is nil.
@@ -49,16 +49,16 @@ func (ir *IntermediateRepresentation) Stages() int {
 	return count
 }
 
-func lbClone(desiredLbs []*pb.LBcluster) []*pb.LBcluster {
-	var result []*pb.LBcluster
+func lbClone(desiredLbs []*spec.LBcluster) []*spec.LBcluster {
+	var result []*spec.LBcluster
 	for _, lb := range desiredLbs {
-		result = append(result, proto.Clone(lb).(*pb.LBcluster))
+		result = append(result, proto.Clone(lb).(*spec.LBcluster))
 	}
 	return result
 }
 
 // Diff takes the desired and current state to calculate difference between them to determine how many nodes  needs to be deleted and added.
-func Diff(current, desired *pb.K8Scluster, currentLbs, desiredLbs []*pb.LBcluster) *IntermediateRepresentation {
+func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcluster) *IntermediateRepresentation {
 	// we only care about the diff if both states are present.
 	if current != nil && desired == nil || current == nil && desired != nil {
 		return &IntermediateRepresentation{}
@@ -81,7 +81,7 @@ func Diff(current, desired *pb.K8Scluster, currentLbs, desiredLbs []*pb.LBcluste
 		  - lastly, the config is processed, which will delete the nodes from infra
 	*/
 	var (
-		ir                          = proto.Clone(desired).(*pb.K8Scluster)
+		ir                          = proto.Clone(desired).(*spec.K8Scluster)
 		irLbs                       = lbClone(currentLbs)
 		currentNodepoolCounts       = nodepoolsCounts(current)
 		delCounts, adding, deleting = findNodepoolDifference(currentNodepoolCounts, ir, current)
@@ -107,7 +107,7 @@ func Diff(current, desired *pb.K8Scluster, currentLbs, desiredLbs []*pb.LBcluste
 				nodepool := utils.GetNodePoolByName(nodepoolName, current.ClusterInfo.GetNodePools())
 
 				// check if the nodepool was an API-endpoint if yes we need to choose the next control nodepool as the endpoint.
-				if _, err := utils.FindAPIEndpointNode([]*pb.NodePool{nodepool}); err == nil {
+				if _, err := utils.FindAPIEndpointNode([]*spec.NodePool{nodepool}); err == nil {
 					apiEndpointDeleted = true
 				}
 
@@ -124,7 +124,7 @@ func Diff(current, desired *pb.K8Scluster, currentLbs, desiredLbs []*pb.LBcluste
 					lbcluster := utils.FindLbAPIEndpointCluster(irLbs)
 
 					// find other control nodepool that will not be deleted.
-					var nextControlNodepool *pb.NodePool
+					var nextControlNodepool *spec.NodePool
 					for _, cnp := range utils.FindControlNodepools(ir.GetClusterInfo().GetNodePools()) {
 						if cnp.Name != nodepool.Name {
 							nextControlNodepool = cnp
@@ -142,7 +142,7 @@ func Diff(current, desired *pb.K8Scluster, currentLbs, desiredLbs []*pb.LBcluste
 					}
 
 					for _, role := range lbcluster.GetRoles() {
-						if role.RoleType == pb.RoleType_ApiServer {
+						if role.RoleType == spec.RoleType_ApiServer {
 							role.TargetPools = append(role.TargetPools, nameWithoutHash)
 							break
 						}
@@ -173,7 +173,7 @@ func Diff(current, desired *pb.K8Scluster, currentLbs, desiredLbs []*pb.LBcluste
 }
 
 // findNodepoolDifference calculates difference between desired nodepools and current nodepools.
-func findNodepoolDifference(currentNodepoolCounts map[string]int32, desiredClusterTmp, currentClusterTmp *pb.K8Scluster) (result map[string]int32, adding, deleting bool) {
+func findNodepoolDifference(currentNodepoolCounts map[string]int32, desiredClusterTmp, currentClusterTmp *spec.K8Scluster) (result map[string]int32, adding, deleting bool) {
 	nodepoolCountToDelete := make(map[string]int32)
 
 	for _, nodePoolDesired := range desiredClusterTmp.GetClusterInfo().GetNodePools() {
@@ -228,7 +228,7 @@ func findNodepoolDifference(currentNodepoolCounts map[string]int32, desiredClust
 }
 
 // nodepoolsCounts returns a map for the counts in each nodepool for a cluster.
-func nodepoolsCounts(cluster *pb.K8Scluster) map[string]int32 {
+func nodepoolsCounts(cluster *spec.K8Scluster) map[string]int32 {
 	counts := make(map[string]int32)
 	for _, nodePool := range cluster.GetClusterInfo().GetNodePools() {
 		if nodePool.GetDynamicNodePool() != nil {
@@ -242,7 +242,7 @@ func nodepoolsCounts(cluster *pb.K8Scluster) map[string]int32 {
 }
 
 // getStaticNodes returns slice of nodes for the specified cluster from specified node pool.
-func getStaticNodes(cluster *pb.K8Scluster, np *pb.NodePool) []*pb.Node {
+func getStaticNodes(cluster *spec.K8Scluster, np *spec.NodePool) []*spec.Node {
 	if np.GetStaticNodePool() == nil {
 		return nil
 	}

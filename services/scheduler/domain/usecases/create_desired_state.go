@@ -5,20 +5,20 @@ import (
 
 	"github.com/berops/claudie/internal/manifest"
 	cutils "github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/scheduler/utils"
 	"gopkg.in/yaml.v3"
 )
 
 // CreateDesiredState is a function which creates desired state of the project based on the unmarshalled manifest
 // Returns *pb.Config for desired state if successful, error otherwise
-func (u *Usecases) CreateDesiredState(config *pb.Config) (*pb.Config, error) {
+func (u *Usecases) CreateDesiredState(config *spec.Config) (*spec.Config, error) {
 	if config == nil {
 		return nil, fmt.Errorf("CreateDesiredState got nil Config")
 	}
 
 	if config.Manifest == "" {
-		return &pb.Config{
+		return &spec.Config{
 			Id:                config.GetId(),
 			Name:              config.GetName(),
 			ResourceName:      config.GetResourceName(),
@@ -47,13 +47,13 @@ func (u *Usecases) CreateDesiredState(config *pb.Config) (*pb.Config, error) {
 		return nil, fmt.Errorf("error while creating Loadbalancer clusters for config %s : %w", config.Name, err)
 	}
 
-	newConfig := &pb.Config{
+	newConfig := &spec.Config{
 		Id:                config.GetId(),
 		Name:              config.GetName(),
 		ResourceName:      config.GetResourceName(),
 		ResourceNamespace: config.GetResourceNamespace(),
 		Manifest:          config.GetManifest(),
-		DesiredState: &pb.Project{
+		DesiredState: &spec.Project{
 			Name:                 unmarshalledManifest.Name,
 			Clusters:             k8sClusters,
 			LoadBalancerClusters: lbClusters,
@@ -81,7 +81,7 @@ func (u *Usecases) CreateDesiredState(config *pb.Config) (*pb.Config, error) {
 
 // getUnmarshalledManifest will read manifest from the given config and return it in manifest.Manifest struct
 // returns *manifest.Manifest if successful, error otherwise
-func getUnmarshalledManifest(config *pb.Config) (*manifest.Manifest, error) {
+func getUnmarshalledManifest(config *spec.Config) (*manifest.Manifest, error) {
 	d := []byte(config.GetManifest())
 	// Parse yaml to protobuf and create unmarshalledManifest
 	var unmarshalledManifest manifest.Manifest
@@ -92,7 +92,7 @@ func getUnmarshalledManifest(config *pb.Config) (*manifest.Manifest, error) {
 }
 
 // fixUpDuplicates renames the nodepools if they're referenced multiple times in k8s,lb clusters.
-func fixUpDuplicates(config *pb.Config) error {
+func fixUpDuplicates(config *spec.Config) error {
 	m, err := getUnmarshalledManifest(config)
 	if err != nil {
 		return err

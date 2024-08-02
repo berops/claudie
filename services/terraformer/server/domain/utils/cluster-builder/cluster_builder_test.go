@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates/templates"
 )
 
@@ -81,7 +81,7 @@ func TestGetCIDR(t *testing.T) {
 func Test_calculateCIDR(t *testing.T) {
 	type args struct {
 		baseCIDR  string
-		nodepools []*pb.DynamicNodePool
+		nodepools []*spec.DynamicNodePool
 	}
 	tests := []struct {
 		name      string
@@ -93,7 +93,7 @@ func Test_calculateCIDR(t *testing.T) {
 			name: "test-01",
 			args: args{
 				baseCIDR: baseSubnetCIDR,
-				nodepools: []*pb.DynamicNodePool{
+				nodepools: []*spec.DynamicNodePool{
 					{Cidr: ""},
 					{Cidr: ""},
 					{Cidr: ""},
@@ -110,7 +110,7 @@ func Test_calculateCIDR(t *testing.T) {
 			name: "test-02",
 			args: args{
 				baseCIDR: baseSubnetCIDR,
-				nodepools: []*pb.DynamicNodePool{
+				nodepools: []*spec.DynamicNodePool{
 					{Cidr: "10.0.0.0/24"},
 					{Cidr: "10.0.2.0/24"},
 				},

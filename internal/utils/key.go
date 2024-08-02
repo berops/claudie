@@ -7,28 +7,28 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 )
 
 // GetAuthCredentials extract the key for the provider
 // to be used within terraform.
-func GetAuthCredentials(provider *pb.Provider) string {
+func GetAuthCredentials(provider *spec.Provider) string {
 	switch p := provider.ProviderType.(type) {
-	case *pb.Provider_Gcp:
+	case *spec.Provider_Gcp:
 		return p.Gcp.Key
-	case *pb.Provider_Hetzner:
+	case *spec.Provider_Hetzner:
 		return p.Hetzner.Token
-	case *pb.Provider_Hetznerdns:
+	case *spec.Provider_Hetznerdns:
 		return p.Hetznerdns.Token
-	case *pb.Provider_Oci:
+	case *spec.Provider_Oci:
 		return p.Oci.PrivateKey
-	case *pb.Provider_Aws:
+	case *spec.Provider_Aws:
 		return p.Aws.SecretKey
-	case *pb.Provider_Azure:
+	case *spec.Provider_Azure:
 		return p.Azure.ClientSecret
-	case *pb.Provider_Cloudflare:
+	case *spec.Provider_Cloudflare:
 		return p.Cloudflare.Token
-	case *pb.Provider_Genesiscloud:
+	case *spec.Provider_Genesiscloud:
 		return p.Genesiscloud.Token
 	default:
 		panic(fmt.Sprintf("unexpected type %T", provider.ProviderType))
@@ -44,7 +44,7 @@ func CreateKeyFile(key string, outputPath string, keyName string) error {
 
 // CreateKeysForStaticNodepools creates private keys files for all nodes in the provided static node pools in form
 // of <node name>.pem.
-func CreateKeysForStaticNodepools(nps []*pb.NodePool, outputDirectory string) error {
+func CreateKeysForStaticNodepools(nps []*spec.NodePool, outputDirectory string) error {
 	errs := make([]error, 0, len(nps))
 	for _, staticNp := range nps {
 		for _, node := range staticNp.Nodes {
@@ -59,7 +59,7 @@ func CreateKeysForStaticNodepools(nps []*pb.NodePool, outputDirectory string) er
 	return errors.Join(errs...)
 }
 
-func CreateKeysForDynamicNodePools(nps []*pb.NodePool, outputDirectory string) error {
+func CreateKeysForDynamicNodePools(nps []*spec.NodePool, outputDirectory string) error {
 	errs := make([]error, 0, len(nps))
 	for _, dnp := range nps {
 		pk := dnp.GetDynamicNodePool().PrivateKey

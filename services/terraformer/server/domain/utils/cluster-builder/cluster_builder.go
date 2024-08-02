@@ -6,11 +6,11 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"slices"
 
 	comm "github.com/berops/claudie/internal/command"
-	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates/backend"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates/provider"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates/templates"
@@ -26,22 +26,22 @@ const (
 	defaultOctetToChange = 2
 )
 
-type K8sInfo struct{ LoadBalancers []*pb.LBcluster }
-type LBInfo struct{ Roles []*pb.Role }
+type K8sInfo struct{ LoadBalancers []*spec.LBcluster }
+type LBInfo struct{ Roles []*spec.Role }
 
 // ClusterBuilder wraps data needed for building a cluster.
 type ClusterBuilder struct {
 	// DesiredClusterInfo contains the information about the
 	// desired state of the cluster.
-	DesiredClusterInfo *pb.ClusterInfo
+	DesiredClusterInfo *spec.ClusterInfo
 	// CurrentClusterInfo contains the information about the
 	// current state of the cluster.
-	CurrentClusterInfo *pb.ClusterInfo
+	CurrentClusterInfo *spec.ClusterInfo
 	// ProjectName is the name of the manifest.
 	ProjectName string
 	// ClusterType is the type of the cluster being build
 	// LoadBalancer or K8s.
-	ClusterType pb.ClusterType
+	ClusterType spec.ClusterType
 	// K8sInfo contains additional data for when building kubernetes clusters.
 	K8sInfo K8sInfo
 	// LBInfo contains additional data for when building loadbalancer clusters.
@@ -179,7 +179,7 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 		return err
 	}
 
-	var clusterInfo *pb.ClusterInfo
+	var clusterInfo *spec.ClusterInfo
 	if c.DesiredClusterInfo != nil {
 		clusterInfo = c.DesiredClusterInfo
 	} else if c.CurrentClusterInfo != nil {
@@ -189,7 +189,7 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	// Init node slices if needed
 	for _, np := range clusterInfo.NodePools {
 		if n := np.GetDynamicNodePool(); n != nil {
-			nodes := make([]*pb.Node, 0, n.Count)
+			nodes := make([]*spec.Node, 0, n.Count)
 			nodeNames := make(map[string]struct{}, n.Count)
 			// Copy existing nodes into new slice
 			for i, node := range np.Nodes {
@@ -206,7 +206,7 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 				// Get a unique name for the new node
 				nodeName := getUniqueNodeName(nodepoolID, nodeNames)
 				nodeNames[nodeName] = struct{}{}
-				nodes = append(nodes, &pb.Node{Name: nodeName})
+				nodes = append(nodes, &spec.Node{Name: nodeName})
 			}
 			np.Nodes = nodes
 		}
@@ -224,7 +224,7 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 
 	groupedNodepools := utils.GroupNodepoolsByProviderNames(clusterInfo)
 	for providerNames, nodepools := range groupedNodepools {
-		if providerNames.CloudProviderName == pb.StaticNodepoolInfo_STATIC_PROVIDER.String() {
+		if providerNames.CloudProviderName == spec.StaticNodepoolInfo_STATIC_PROVIDER.String() {
 			continue
 		}
 
@@ -255,7 +255,7 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 		}
 
 		// based on the cluster type fill out the nodepools data to be used
-		nodepoolData := templates.NodepoolsData{
+		nodepoolData := templates.Nodepools{
 			ClusterData: clusterData,
 			NodePools:   nps,
 		}
@@ -267,14 +267,14 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 			TemplatePath:      templates.ExtractTargetPath(p.GetTemplates()),
 		}
 
-		if err := g.GenerateNetworking(&templates.NetworkingData{
+		if err := g.GenerateNetworking(&templates.Networking{
 			ClusterData: clusterData,
 			Provider:    nodepools[0].GetDynamicNodePool().GetProvider(),
 			Regions:     utils.GetRegions(utils.GetDynamicNodePools(nodepools)),
 			K8sData: templates.K8sData{
-				HasAPIServer: templateUtils.IsMissing(
+				HasAPIServer: !slices.Contains(
+					utils.ExtractTargetPorts(c.K8sInfo.LoadBalancers),
 					6443,
-					templateUtils.ExtractTargetPorts(c.K8sInfo.LoadBalancers),
 				),
 			},
 			LBData: templates.LBData{
@@ -301,9 +301,9 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 }
 
 // getCurrentNodes returns all nodes which are in a current state
-func (c *ClusterBuilder) getCurrentNodes() []*pb.Node {
+func (c *ClusterBuilder) getCurrentNodes() []*spec.Node {
 	// group all the nodes together to make searching with respect to IP easy
-	var oldNodes []*pb.Node
+	var oldNodes []*spec.Node
 	if c.CurrentClusterInfo != nil {
 		for _, oldNodepool := range c.CurrentClusterInfo.NodePools {
 			if oldNodepool.GetDynamicNodePool() != nil {
@@ -315,7 +315,7 @@ func (c *ClusterBuilder) getCurrentNodes() []*pb.Node {
 }
 
 // calculateCIDR will make sure all nodepools have subnet CIDR calculated.
-func calculateCIDR(baseCIDR string, nodepools []*pb.DynamicNodePool) error {
+func calculateCIDR(baseCIDR string, nodepools []*spec.DynamicNodePool) error {
 	exists := make(map[string]struct{})
 	// Save CIDRs which already exist.
 	for _, np := range nodepools {
@@ -343,18 +343,18 @@ func calculateCIDR(baseCIDR string, nodepools []*pb.DynamicNodePool) error {
 }
 
 // fillNodes creates pb.Node slices in desired state, with the new nodes and old nodes
-func fillNodes(terraformOutput *templates.NodepoolIPs, newNodePool *pb.NodePool, oldNodes []*pb.Node) {
+func fillNodes(terraformOutput *templates.NodepoolIPs, newNodePool *spec.NodePool, oldNodes []*spec.Node) {
 	// fill slices from terraformOutput maps with names of nodes to ensure an order
-	var tempNodes []*pb.Node
+	var tempNodes []*spec.Node
 	// get sorted list of keys
 	utils.IterateInOrder(terraformOutput.IPs, func(nodeName string, IP any) error {
-		var nodeType pb.NodeType
+		var nodeType spec.NodeType
 		var private string
 
 		if newNodePool.IsControl {
-			nodeType = pb.NodeType_master
+			nodeType = spec.NodeType_master
 		} else {
-			nodeType = pb.NodeType_worker
+			nodeType = spec.NodeType_worker
 		}
 
 		if len(oldNodes) > 0 {
@@ -370,7 +370,7 @@ func fillNodes(terraformOutput *templates.NodepoolIPs, newNodePool *pb.NodePool,
 			}
 		}
 
-		tempNodes = append(tempNodes, &pb.Node{
+		tempNodes = append(tempNodes, &spec.Node{
 			Name:     nodeName,
 			Public:   fmt.Sprint(terraformOutput.IPs[nodeName]),
 			Private:  private,
@@ -428,14 +428,14 @@ func getCIDR(baseCIDR string, position int, existing map[string]struct{}) (strin
 }
 
 // generateProviderTemplates generates only the `provider.tpl` templates so terraform can destroy the infra if needed.
-func (c *ClusterBuilder) generateProviderTemplates(current, desired *pb.ClusterInfo, clusterID, directory string, clusterData templates.ClusterData) error {
+func (c *ClusterBuilder) generateProviderTemplates(current, desired *spec.ClusterInfo, clusterID, directory string, clusterData templates.ClusterData) error {
 	currentNodepools := utils.GroupNodepoolsByProviderNames(current)
 	desiredNodepools := utils.GroupNodepoolsByProviderNames(desired)
 
 	// merge together into a single map instead of creating a new.
 	for name, np := range desiredNodepools {
 		// Continue if static node pool provider.
-		if name.CloudProviderName == pb.StaticNodepoolInfo_STATIC_PROVIDER.String() {
+		if name.CloudProviderName == spec.StaticNodepoolInfo_STATIC_PROVIDER.String() {
 			continue
 		}
 
@@ -459,7 +459,7 @@ func (c *ClusterBuilder) generateProviderTemplates(current, desired *pb.ClusterI
 
 	for providerName, nodepools := range currentNodepools {
 		// Continue if static node pool provider.
-		if providerName.CloudProviderName == pb.StaticNodepoolInfo_STATIC_PROVIDER.String() {
+		if providerName.CloudProviderName == spec.StaticNodepoolInfo_STATIC_PROVIDER.String() {
 			continue
 		}
 
@@ -479,7 +479,7 @@ func (c *ClusterBuilder) generateProviderTemplates(current, desired *pb.ClusterI
 			TemplatePath:      templates.ExtractTargetPath(p.GetTemplates()),
 		}
 
-		err := g.GenerateProvider(&templates.ProviderData{
+		err := g.GenerateProvider(&templates.Provider{
 			ClusterData: clusterData,
 			Provider:    p,
 			Regions:     utils.GetRegions(utils.GetDynamicNodePools(nodepools)),

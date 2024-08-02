@@ -27,11 +27,15 @@ spec:
           emptyDir: { }
         - name: temp
           emptyDir: { }
+        - name: templates
+          emptyDir: { }
       containers:
         - name: terraformer
           imagePullPolicy: Always
           image: ghcr.io/berops/claudie/terraformer
           volumeMounts:
+            - mountPath: /bin/services/terraformer/templates
+              name: templates
             - mountPath: /bin/services/terraformer/server/clusters
               name: data
             - mountPath: /tmp

@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"fmt"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/scheduler/domain/usecases/metrics"
 	"sync"
 
@@ -62,7 +63,7 @@ func (u *Usecases) ConfigProcessor(contextBoxGrpcClient pb.ContextBoxServiceClie
 
 // processConfig contains the core logic of processing a config
 // returns error if not successful, nil otherwise
-func (u *Usecases) processConfig(config *pb.Config, contextBoxGrpcClient pb.ContextBoxServiceClient) error {
+func (u *Usecases) processConfig(config *spec.Config, contextBoxGrpcClient pb.ContextBoxServiceClient) error {
 	// Create desired state
 	config, err := u.CreateDesiredState(config)
 	if err != nil {
@@ -81,20 +82,20 @@ func (u *Usecases) processConfig(config *pb.Config, contextBoxGrpcClient pb.Cont
 
 // saveErrorMessageToConfig saves error message to the config
 // Returns error if not successful, nil otherwise
-func (u *Usecases) saveErrorMessageToConfig(config *pb.Config, contextBoxGrpcClient pb.ContextBoxServiceClient, err error) error {
+func (u *Usecases) saveErrorMessageToConfig(config *spec.Config, contextBoxGrpcClient pb.ContextBoxServiceClient, err error) error {
 	if config.State == nil {
 		// If no state map created yet, set the error under the key "scheduler".
-		config.State = make(map[string]*pb.Workflow)
-		config.State["scheduler"] = &pb.Workflow{
-			Stage:       pb.Workflow_SCHEDULER,
-			Status:      pb.Workflow_ERROR,
+		config.State = make(map[string]*spec.Workflow)
+		config.State["scheduler"] = &spec.Workflow{
+			Stage:       spec.Workflow_SCHEDULER,
+			Status:      spec.Workflow_ERROR,
 			Description: err.Error(),
 		}
 	} else {
 		// As scheduler does not process config on per cluster basis, the error will be saved under every cluster.
 		for _, state := range config.State {
-			state.Stage = pb.Workflow_SCHEDULER
-			state.Status = pb.Workflow_ERROR
+			state.Stage = spec.Workflow_SCHEDULER
+			state.Status = spec.Workflow_ERROR
 			state.Description = fmt.Sprintf("Error encountered in Scheduler, halting processing of all clusters : %v", err)
 		}
 	}

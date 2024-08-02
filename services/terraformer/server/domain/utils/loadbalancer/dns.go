@@ -3,20 +3,19 @@ package loadbalancer
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/berops/claudie/internal/utils"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"os"
-	"path/filepath"
-	"strings"
 
 	comm "github.com/berops/claudie/internal/command"
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb/spec"
 	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates/backend"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates/provider"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates/templates"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/terraform"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"path/filepath"
 )
 
 const (
@@ -31,8 +30,8 @@ type DNS struct {
 	DesiredNodeIPs []string
 	CurrentNodeIPs []string
 
-	CurrentDNS *pb.DNS
-	DesiredDNS *pb.DNS
+	CurrentDNS *spec.DNS
+	DesiredDNS *spec.DNS
 
 	// SpawnProcessLimit represents a synchronization channel which limits the number of spawned terraform
 	// processes. This values should always be non-nil and be buffered, where the capacity indicates
@@ -149,7 +148,7 @@ func (d DNS) DestroyDNSRecords(logger zerolog.Logger) error {
 }
 
 // generateFiles creates all the necessary terraform files used to create/destroy DNS.
-func (d DNS) generateFiles(dnsID, dnsDir string, dns *pb.DNS, nodeIPs []string) error {
+func (d DNS) generateFiles(dnsID, dnsDir string, dns *spec.DNS, nodeIPs []string) error {
 	backend := backend.Backend{
 		ProjectName: d.ProjectName,
 		ClusterName: dnsID,
@@ -182,11 +181,11 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *pb.DNS, nodeIPs []string) 
 		TemplatePath:      templates.ExtractTargetPath(dns.GetProvider().GetTemplates()),
 	}
 
-	data := templates.DNSData{
-		DNSZone:      dns.DnsZone,
-		HostnameHash: dns.Hostname,
-		ClusterName:  d.ClusterName,
-		ClusterHash:  d.ClusterHash,
+	data := templates.DNS{
+		DNSZone:     dns.DnsZone,
+		Hostname:    dns.Hostname,
+		ClusterName: d.ClusterName,
+		ClusterHash: d.ClusterHash,
 		RecordData: templates.RecordData{
 			IP: templateIPData(nodeIPs),
 		},
@@ -219,14 +218,13 @@ func readDomain(data string) (templates.DNSDomain, error) {
 	return result, err
 }
 
-func changedDNSProvider(currentDNS, desiredDNS *pb.DNS) bool {
+func changedDNSProvider(currentDNS, desiredDNS *spec.DNS) bool {
 	// DNS not yet created
 	if currentDNS == nil {
 		return false
 	}
 	// DNS provider are same
 	if currentDNS.Provider.SpecName == desiredDNS.Provider.SpecName {
-		// TODO: adjust templates based on the changes in the provider struct.
 		if utils.GetAuthCredentials(currentDNS.Provider) == utils.GetAuthCredentials(desiredDNS.Provider) {
 			return false
 		}
@@ -238,10 +236,7 @@ func templateIPData(ips []string) []templates.IPData {
 	out := make([]templates.IPData, 0, len(ips))
 
 	for _, ip := range ips {
-		out = append(out, templates.IPData{
-			V4:        ip,
-			EscapedV4: strings.ReplaceAll(ip, ".", "-"),
-		})
+		out = append(out, templates.IPData{V4: ip})
 	}
 
 	return out

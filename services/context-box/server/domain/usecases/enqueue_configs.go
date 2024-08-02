@@ -2,15 +2,14 @@ package usecases
 
 import (
 	"fmt"
-	"github.com/berops/claudie/services/context-box/server/domain/usecases/metrics"
+	"github.com/berops/claudie/proto/pb/spec"
 	"strings"
 
-	"github.com/rs/zerolog/log"
-
-	"github.com/berops/claudie/proto/pb"
 	outboundAdapters "github.com/berops/claudie/services/context-box/server/adapters/outbound"
 	"github.com/berops/claudie/services/context-box/server/domain/ports"
+	"github.com/berops/claudie/services/context-box/server/domain/usecases/metrics"
 	"github.com/berops/claudie/services/context-box/server/utils"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -41,7 +40,7 @@ func (c *ConfigInfo) GetName() string {
 // hasAnyError returns true if any cluster errored while building or destroying.
 func (c *ConfigInfo) hasAnyError() bool {
 	for _, v := range c.State {
-		if v.Status == pb.Workflow_ERROR.String() {
+		if v.Status == spec.Workflow_ERROR.String() {
 			return true
 		}
 	}
@@ -53,7 +52,7 @@ func (c *ConfigInfo) hasAnyError() bool {
 // while getting destroyed.
 func (c *ConfigInfo) hasDestroyError() bool {
 	for _, v := range c.State {
-		if v.Status == pb.Workflow_ERROR.String() && strings.Contains(v.Stage, "DESTROY") {
+		if v.Status == spec.Workflow_ERROR.String() && strings.Contains(v.Stage, "DESTROY") {
 			return true
 		}
 	}

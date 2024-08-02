@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v5.27.1
-// source: proto/kubeEleven.proto
+// source: kubeEleven.proto
 
 package pb
 
@@ -141,5 +141,5 @@ var KubeElevenService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/kubeEleven.proto",
+	Metadata: "kubeEleven.proto",
 }

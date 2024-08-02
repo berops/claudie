@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v5.27.1
-// source: proto/claudie-operator.proto
+// source: claudie-operator.proto
 
 package pb
 
@@ -103,5 +103,5 @@ var OperatorService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/claudie-operator.proto",
+	Metadata: "claudie-operator.proto",
 }

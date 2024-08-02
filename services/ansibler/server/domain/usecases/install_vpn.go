@@ -7,12 +7,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rs/zerolog/log"
-
 	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/ansibler/server/utils"
 	"github.com/berops/claudie/services/ansibler/templates"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -114,8 +114,8 @@ func installWireguardVPN(clusterID string, vpnInfo *VPNInfo, spawnProcessLimit c
 
 // getAllNodepools flattens []*DesiredClusterNodepoolsInfo to []*pb.NodePool.
 // Returns a slice of all the nodepools.
-func getAllNodepools(nodepoolsInfo []*NodepoolsInfo) []*pb.NodePool {
-	var nodepools []*pb.NodePool
+func getAllNodepools(nodepoolsInfo []*NodepoolsInfo) []*spec.NodePool {
+	var nodepools []*spec.NodePool
 	for _, nodepoolInfo := range nodepoolsInfo {
 		nodepools = append(nodepools, nodepoolInfo.Nodepools.Dynamic...)
 		nodepools = append(nodepools, nodepoolInfo.Nodepools.Static...)
@@ -126,7 +126,7 @@ func getAllNodepools(nodepoolsInfo []*NodepoolsInfo) []*pb.NodePool {
 
 // assignPrivateIPs will assign private IP addresses from the specified cluster network CIDR to all the nodes.
 // Nodes which already have private IPs assigned will be ignored.
-func assignPrivateIPs(nodepools []*pb.NodePool, cidr string) error {
+func assignPrivateIPs(nodepools []*spec.NodePool, cidr string) error {
 	network, err := netip.ParsePrefix(cidr)
 	if err != nil {
 		return err
@@ -134,7 +134,7 @@ func assignPrivateIPs(nodepools []*pb.NodePool, cidr string) error {
 
 	var (
 		assignedPrivateIPs    = make(map[string]struct{})
-		nodesWithoutPrivateIP []*pb.Node
+		nodesWithoutPrivateIP []*spec.Node
 	)
 
 	// Construct nodesWithoutPrivateIP.

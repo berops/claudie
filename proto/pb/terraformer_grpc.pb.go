@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v5.27.1
-// source: proto/terraformer.proto
+// source: terraformer.proto
 
 package pb
 
@@ -141,5 +141,5 @@ var TerraformerService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/terraformer.proto",
+	Metadata: "terraformer.proto",
 }

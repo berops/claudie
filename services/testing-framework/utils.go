@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rs/zerolog/log"
-	"google.golang.org/grpc"
-
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
+	"github.com/rs/zerolog/log"
+	"google.golang.org/grpc"
 )
 
 const (
@@ -91,8 +91,8 @@ func configChecker(ctx context.Context, c pb.ContextBoxServiceClient, testSetNam
 	}
 }
 
-func getAutoscaledClusters(c *pb.Config) []*pb.K8Scluster {
-	clusters := make([]*pb.K8Scluster, 0, len(c.CurrentState.Clusters))
+func getAutoscaledClusters(c *spec.Config) []*spec.K8Scluster {
+	clusters := make([]*spec.K8Scluster, 0, len(c.CurrentState.Clusters))
 	for _, c := range c.CurrentState.Clusters {
 		if utils.IsAutoscaled(c) {
 			clusters = append(clusters, c)
@@ -101,10 +101,10 @@ func getAutoscaledClusters(c *pb.Config) []*pb.K8Scluster {
 	return clusters
 }
 
-func getError(c *pb.Config) error {
+func getError(c *spec.Config) error {
 	var err error
 	for cluster, state := range c.State {
-		if state.Status == pb.Workflow_ERROR {
+		if state.Status == spec.Workflow_ERROR {
 			err1 := fmt.Errorf("----\nerror in cluster %s\n----\nStage: %s \n State: %s\n Description: %s", cluster, state.Stage, state.Status, state.Description)
 			if err == nil {
 				err = err1

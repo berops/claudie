@@ -2,11 +2,12 @@ package usecases
 
 import (
 	"fmt"
-	"github.com/berops/claudie/internal/manifest"
-	"github.com/rs/zerolog/log"
 
+	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/context-box/server/utils"
+	"github.com/rs/zerolog/log"
 
 	"gopkg.in/yaml.v3"
 )
@@ -34,8 +35,8 @@ func (u *Usecases) SaveConfigOperator(request *pb.SaveConfigRequest) (*pb.SaveCo
 			oldConfig.BuilderTTL = 0
 			// clear error states (if any), to push the changed config into the workflow again.
 			for cluster, wf := range oldConfig.State {
-				if wf.Status == pb.Workflow_ERROR {
-					oldConfig.State[cluster] = &pb.Workflow{}
+				if wf.Status == spec.Workflow_ERROR {
+					oldConfig.State[cluster] = &spec.Workflow{}
 				}
 			}
 		}
@@ -60,7 +61,7 @@ func (u *Usecases) SaveConfigOperator(request *pb.SaveConfigRequest) (*pb.SaveCo
 	return &pb.SaveConfigResponse{Config: newConfig}, nil
 }
 
-func validateStaticNodepools(refConf *pb.Config, other []*pb.Config) error {
+func validateStaticNodepools(refConf *spec.Config, other []*spec.Config) error {
 	refManifest, err := unmarshallManifest(refConf)
 	if err != nil {
 		return err
@@ -109,7 +110,7 @@ func collectIPs(m *manifest.Manifest) map[string]struct{} {
 	return nodepools
 }
 
-func unmarshallManifest(config *pb.Config) (*manifest.Manifest, error) {
+func unmarshallManifest(config *spec.Config) (*manifest.Manifest, error) {
 	d := []byte(config.GetManifest())
 
 	var m manifest.Manifest

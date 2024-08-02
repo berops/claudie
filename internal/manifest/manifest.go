@@ -32,13 +32,13 @@ type Provider struct {
 type HetznerDNS struct {
 	Name      string              `validate:"required,max=15" yaml:"name"`
 	ApiToken  string              `validate:"required" yaml:"apiToken"`
-	Templates *TemplateRepository `validate:"omitempty" yaml:"templates,omitempty" json:"templates,omitempty"`
+	Templates *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
 }
 
 type Cloudflare struct {
 	Name      string              `validate:"required,max=15" yaml:"name"`
 	ApiToken  string              `validate:"required" yaml:"apiToken"`
-	Templates *TemplateRepository `validate:"omitempty" yaml:"templates,omitempty" json:"templates,omitempty"`
+	Templates *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
 }
 
 type GCP struct {
@@ -47,7 +47,7 @@ type GCP struct {
 	// valid formatted JSON.
 	Credentials string              `validate:"required,json" yaml:"credentials" json:"credentials"`
 	GCPProject  string              `validate:"required" yaml:"gcpProject" json:"gcpProject"`
-	Templates   *TemplateRepository `validate:"omitempty" yaml:"templates,omitempty" json:"templates,omitempty"`
+	Templates   *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
 }
 
 type Hetzner struct {
@@ -59,20 +59,20 @@ type Hetzner struct {
 	// are alphanumeric (i.e. excluding characters like !#@$%^&*...)
 	// https://docs.hetzner.com/cloud/technical-details/faq#how-are-api-tokens-stored
 	Credentials string              `validate:"required,alphanum,len=64" yaml:"credentials"`
-	Templates   *TemplateRepository `validate:"omitempty" yaml:"templates,omitempty" json:"templates,omitempty"`
+	Templates   *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
 }
 
 type GenesisCloud struct {
 	Name      string              `validate:"required,max=15" yaml:"name"`
 	ApiToken  string              `validate:"required,alphanum" yaml:"apiToken"`
-	Templates *TemplateRepository `validate:"omitempty" yaml:"templates,omitempty" json:"templates,omitempty"`
+	Templates *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
 }
 
 type AWS struct {
 	Name      string              `validate:"required,max=15" yaml:"name" json:"name"`
 	AccessKey string              `validate:"required,alphanum,len=20" yaml:"accessKey" json:"accessKey"`
 	SecretKey string              `validate:"required,len=40" yaml:"secretKey" json:"secretKey"`
-	Templates *TemplateRepository `validate:"omitempty" yaml:"templates,omitempty" json:"templates,omitempty"`
+	Templates *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
 }
 type OCI struct {
 	Name           string              `validate:"required,max=15" yaml:"name"`
@@ -81,7 +81,7 @@ type OCI struct {
 	TenancyOCID    string              `validate:"required" yaml:"tenancyOcid"`
 	UserOCID       string              `validate:"required" yaml:"userOcid"`
 	CompartmentID  string              `validate:"required" yaml:"compartmentOcid"`
-	Templates      *TemplateRepository `validate:"omitempty" yaml:"templates,omitempty" json:"templates,omitempty"`
+	Templates      *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
 }
 
 type Azure struct {
@@ -90,7 +90,7 @@ type Azure struct {
 	TenantId       string              `validate:"required" yaml:"tenantId"`
 	ClientId       string              `validate:"required" yaml:"clientId"`
 	ClientSecret   string              `validate:"required" yaml:"clientSecret"`
-	Templates      *TemplateRepository `validate:"omitempty" yaml:"templates,omitempty" json:"templates,omitempty"`
+	Templates      *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
 }
 
 // NodePools describes nodepools used for either kubernetes clusters
