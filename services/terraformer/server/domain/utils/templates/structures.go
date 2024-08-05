@@ -177,7 +177,7 @@ type (
 		// expose the IP addresses of the Instances.
 		// For example (in the case of our own hetzner template files):
 		//
-		// output "{{ $nodepool.Name }}_{{ $uniqueFingerPrint }}_{{ $specName }}" {
+		// output "{{ $nodepool.Name }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
 		//  value = {
 		//    {{- range $node := $nodepool.Nodes }}
 		//        {{- $serverResourceName := printf "%s_%s" $node.Name $resourceSuffix }}
@@ -197,7 +197,7 @@ type (
 		// the Domain name of the endpoint.
 		// For example (in the case of our own hetznerdns template files):
 		//
-		// output "{{ .Data.ClusterName }}-{{ .Data.ClusterHash }}-{{ $uniqueFingerPrint }}_{{ $specName }}" {
+		// output "{{ .Data.ClusterName }}-{{ .Data.ClusterHash }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
 		// 	value = { "{{ .Data.ClusterName }}-{{ .Data.ClusterHash }}-endpoint" = format("%s.%s", "{{ .Data.HostnameHash }}", "{{ .Data.DNSZone }}")}
 		//}
 		Domain map[string]string `json:"-"`
