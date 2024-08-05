@@ -53,7 +53,7 @@ func TestDownloadProviderUpdate(t *testing.T) {
 	shouldExist := filepath.Join(gitDirectory, provider.Templates.Path)
 	if _, err := os.Stat(shouldExist); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			t.Fatalf("failed to check existance of %q: %v", shouldExist, err)
+			t.Fatalf("failed to check existence of %q: %v", shouldExist, err)
 		}
 		t.Fatal(err)
 	}

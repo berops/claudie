@@ -13,11 +13,6 @@ import (
 
 type State string
 
-const (
-	desired State = "DESIRED"
-	current State = "CURRENT"
-)
-
 // function to be used for saving
 type saveFunction func(context.Context, *pb.SaveConfigRequest, ...grpc.CallOption) (*pb.SaveConfigResponse, error)
 

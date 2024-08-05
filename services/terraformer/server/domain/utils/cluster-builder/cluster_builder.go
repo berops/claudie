@@ -350,7 +350,7 @@ func fillNodes(terraformOutput *templates.NodepoolIPs, newNodePool *spec.NodePoo
 	// fill slices from terraformOutput maps with names of nodes to ensure an order
 	var tempNodes []*spec.Node
 	// get sorted list of keys
-	utils.IterateInOrder(terraformOutput.IPs, func(nodeName string, IP any) error {
+	_ = utils.IterateInOrder(terraformOutput.IPs, func(nodeName string, IP any) error {
 		var nodeType spec.NodeType
 		var private string
 
@@ -453,11 +453,6 @@ func (c *ClusterBuilder) generateProviderTemplates(current, desired *spec.Cluste
 				}
 			}
 		}
-	}
-
-	info := desired
-	if info == nil {
-		info = current
 	}
 
 	for providerName, nodepools := range currentNodepools {

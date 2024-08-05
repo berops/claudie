@@ -21,8 +21,8 @@ import (
 	"github.com/go-git/go-git/v5/storage/memory"
 )
 
-// EmptyRepositoryErr is returned when no repository is to be cloned.
-var EmptyRepositoryErr = errors.New("no repository to clone")
+// ErrEmptyRepository is returned when no repository is to be cloned.
+var ErrEmptyRepository = errors.New("no repository to clone")
 
 type Repository struct {
 	// TemplatesRootDirectory specifies the root directory where
@@ -39,7 +39,7 @@ func DownloadProvider(downloadInto string, provider *spec.Provider) error {
 
 	err := repo.Download(provider.GetTemplates())
 	if err != nil {
-		if errors.Is(err, EmptyRepositoryErr) {
+		if errors.Is(err, ErrEmptyRepository) {
 			msg := fmt.Sprintf("provider %q does not have a template repository", provider.GetSpecName())
 			return fmt.Errorf("%s: %w", msg, err)
 		}
@@ -50,7 +50,7 @@ func DownloadProvider(downloadInto string, provider *spec.Provider) error {
 
 func (r *Repository) Download(repository *spec.TemplateRepository) error {
 	if repository == nil {
-		return EmptyRepositoryErr
+		return ErrEmptyRepository
 	}
 
 	u, err := url.Parse(repository.Repository)
