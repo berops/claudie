@@ -1,4 +1,4 @@
-FROM docker.io/library/golang:1.22.2 AS go_builder
+FROM docker.io/library/golang:1.22.4 AS go_builder
 
 ARG TARGETARCH
 
@@ -61,8 +61,8 @@ RUN set -eux \
 	pycparser
 
 RUN set -eux \
-	# ansible 9.6.0 includes ansible-core 2.16.7 and ansible-community 9.6.0
-	&& pip3 install --no-cache-dir --no-binary pyyaml ansible==9.6.0 \
+	# ansible 10.1.0 includes ansible-core 2.17 and ansible-community 9.6.0
+	&& pip3 install --no-cache-dir --no-binary pyyaml ansible==10.1.0 \
 	&& find /usr/lib/ -name '__pycache__' -print0 | xargs -0 -n1 rm -rf \
 	&& find /usr/lib/ -name '*.pyc' -print0 | xargs -0 -n1 rm -rf
 
@@ -102,7 +102,6 @@ RUN set -eux \
 	yaml \
 	&& find /usr/lib/ -name '__pycache__' -print0 | xargs -0 -n1 rm -rf \
 	&& find /usr/lib/ -name '*.pyc' -print0 | xargs -0 -n1 rm -rf \
-	\
 	&& ln -s /usr/bin/python3 /usr/bin/python
 
 COPY --from=ansible_builder /usr/lib/python3.10/site-packages/ /usr/lib/python3.10/site-packages/

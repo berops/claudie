@@ -45,21 +45,15 @@ func createDynamoDBClient() *dynamodb.Client {
 // It will lookup the endpoint from dynamoEndpoint variable.
 // If any error occurs, then it returns the error.
 func createDynamoDBClientWithEndpoint() *dynamodb.Client {
-	return dynamodb.NewFromConfig(
-		aws.Config{
+	return dynamodb.New(
+		dynamodb.Options{
 			Region: awsRegion,
-			Credentials: aws.CredentialsProviderFunc(
-				func(ctx context.Context) (aws.Credentials, error) {
-					return aws.Credentials{AccessKeyID: awsAccessKeyId, SecretAccessKey: awsSecretAccessKey}, nil
-				},
-			),
-			EndpointResolverWithOptions: aws.EndpointResolverWithOptionsFunc(
-				func(service, region string, options ...interface{}) (aws.Endpoint, error) {
-					return aws.Endpoint{URL: dynamoEndpoint}, nil
-				},
-			),
+			Credentials: aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
+				return aws.Credentials{AccessKeyID: awsAccessKeyId, SecretAccessKey: awsSecretAccessKey}, nil
+			}),
 			RetryMaxAttempts: 10,
 			RetryMode:        aws.RetryModeStandard,
+			BaseEndpoint:     aws.String(dynamoEndpoint),
 		},
 	)
 }
