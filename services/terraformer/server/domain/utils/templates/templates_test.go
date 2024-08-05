@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates/templates"
+	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates"
 )
 
 func strPtr(s string) *string { return &s }

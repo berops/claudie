@@ -41,7 +41,7 @@
 //     the necessary API of the respective cloud providers (the ones that will be generated from the "provider" subdirectory
 //     will not be used in this case).
 //
-// The complete structure of a subtree for a single provider for external templates claudie-config/templates/terraformer/gcp
+// The complete structure of a subtree for a single provider for external templates located at claudie-config/templates/terraformer/gcp
 // can look as follows:
 //
 //	└── terraformer

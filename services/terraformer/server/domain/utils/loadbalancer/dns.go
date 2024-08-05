@@ -9,9 +9,7 @@ import (
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
-	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates/backend"
-	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates/provider"
-	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates/templates"
+	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/terraform"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -86,9 +84,13 @@ func (d DNS) CreateDNSRecords(logger zerolog.Logger) (string, error) {
 		return "", err
 	}
 
-	k := fmt.Sprintf("%s-%s", clusterID, templates.Fingerprint(
-		templates.ExtractTargetPath(d.DesiredDNS.GetProvider().GetTemplates()),
-	))
+	k := fmt.Sprintf(
+		"%s_%s_%s",
+		clusterID,
+		d.DesiredDNS.GetProvider().GetSpecName(),
+		templates.Fingerprint(templates.ExtractTargetPath(d.DesiredDNS.GetProvider().GetTemplates())),
+	)
+
 	output, err := terraform.Output(k)
 	if err != nil {
 		return "", fmt.Errorf("error while getting output from terraform for %s : %w", clusterID, err)
@@ -149,7 +151,7 @@ func (d DNS) DestroyDNSRecords(logger zerolog.Logger) error {
 
 // generateFiles creates all the necessary terraform files used to create/destroy DNS.
 func (d DNS) generateFiles(dnsID, dnsDir string, dns *spec.DNS, nodeIPs []string) error {
-	backend := backend.Backend{
+	backend := templates.Backend{
 		ProjectName: d.ProjectName,
 		ClusterName: dnsID,
 		Directory:   dnsDir,
@@ -159,13 +161,13 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *spec.DNS, nodeIPs []string
 		return err
 	}
 
-	providers := provider.Provider{
+	usedProviders := templates.UsedProviders{
 		ProjectName: d.ProjectName,
 		ClusterName: dnsID,
 		Directory:   dnsDir,
 	}
 
-	if err := providers.CreateProviderDNS(dns); err != nil {
+	if err := usedProviders.CreateUsedProviderDNS(dns); err != nil {
 		return err
 	}
 

@@ -165,14 +165,41 @@ type (
 	}
 )
 
-// Terraform files output.
+// All the following types grouped are passed in as "Outputs" from
+// using the generated template files.
 type (
+	// NodepoolIPs wrap the output data that is acquired from using the
+	// generated template files.
 	NodepoolIPs struct {
+		// IPs holds the IPv4 addresses of the spawned VM instances from the
+		// generated templates files. It is expected that the template files
+		// in the nodepool directory that spawn the VM instances also
+		// expose the IP addresses of the Instances.
+		// For example (in the case of our own hetzner template files):
+		//
+		// output "{{ $nodepool.Name }}_{{ $uniqueFingerPrint }}_{{ $specName }}" {
+		//  value = {
+		//    {{- range $node := $nodepool.Nodes }}
+		//        {{- $serverResourceName := printf "%s_%s" $node.Name $resourceSuffix }}
+		//        "${hcloud_server.{{ $serverResourceName }}.name}" = hcloud_server.{{ $serverResourceName }}.ipv4_address
+		//    {{- end }}
+		//  }
+		//}
 		IPs map[string]any `json:"-"`
 	}
 
-	// DNS Terraform files output.
+	// DNSDomain wrap the output data that is acquired from using the
+	// generated DNS template files.
 	DNSDomain struct {
+		// Domain holds the fully qualified domain name with which the
+		// DNS records were created with. It is expected that the template
+		// files in the DNS directory that create the DNS records also expose
+		// the Domain name of the endpoint.
+		// For example (in the case of our own hetznerdns template files):
+		//
+		// output "{{ .Data.ClusterName }}-{{ .Data.ClusterHash }}-{{ $uniqueFingerPrint }}_{{ $specName }}" {
+		// 	value = { "{{ .Data.ClusterName }}-{{ .Data.ClusterHash }}-endpoint" = format("%s.%s", "{{ .Data.HostnameHash }}", "{{ .Data.DNSZone }}")}
+		//}
 		Domain map[string]string `json:"-"`
 	}
 )

@@ -385,12 +385,13 @@ type providerMapping struct {
 func getProviderMap(m *manifest.Manifest) map[string]providerMapping {
 	pmap := make(map[string]providerMapping)
 
-	m.ForEachProvider(func(name, typ string, tmpls **manifest.TemplateRepository) {
+	m.ForEachProvider(func(name, typ string, tmpls **manifest.TemplateRepository) bool {
 		pmap[name] = providerMapping{
 			Name:      name,
 			Typ:       typ,
 			Templates: *tmpls,
 		}
+		return true
 	})
 
 	return pmap
@@ -407,8 +408,9 @@ func getDynamicNodepoolsMap(m *manifest.Manifest) map[string]*manifest.DynamicNo
 }
 
 func setDefaultTemplates(m *manifest.Manifest) {
-	m.ForEachProvider(func(_, typ string, tmpls **manifest.TemplateRepository) {
+	m.ForEachProvider(func(_, typ string, tmpls **manifest.TemplateRepository) bool {
 		defaultRepository(tmpls, typ)
+		return true
 	})
 }
 

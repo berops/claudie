@@ -11,9 +11,7 @@ import (
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates/backend"
-	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates/provider"
-	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates/templates"
+	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/terraform"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -92,7 +90,12 @@ func (c ClusterBuilder) CreateNodepools() error {
 	// fill new nodes with output
 	for _, nodepool := range c.DesiredClusterInfo.NodePools {
 		if np := nodepool.GetDynamicNodePool(); np != nil {
-			k := fmt.Sprintf("%s_%s", nodepool.Name, templates.Fingerprint(templates.ExtractTargetPath(np.GetProvider().GetTemplates())))
+			k := fmt.Sprintf(
+				"%s_%s_%s",
+				nodepool.Name,
+				np.GetProvider().GetSpecName(),
+				templates.Fingerprint(templates.ExtractTargetPath(np.GetProvider().GetTemplates())),
+			)
 			output, err := terraform.Output(k)
 			if err != nil {
 				return fmt.Errorf("error while getting output from terraform for %s : %w", nodepool.Name, err)
@@ -158,7 +161,7 @@ func (c ClusterBuilder) DestroyNodepools() error {
 
 // generateFiles creates all the necessary terraform files used to create/destroy node pools.
 func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
-	backend := backend.Backend{
+	backend := templates.Backend{
 		ProjectName: c.ProjectName,
 		ClusterName: clusterID,
 		Directory:   clusterDir,
@@ -169,13 +172,13 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	}
 
 	// generate Providers terraform configuration
-	providers := provider.Provider{
+	usedProviders := templates.UsedProviders{
 		ProjectName: c.ProjectName,
 		ClusterName: clusterID,
 		Directory:   clusterDir,
 	}
 
-	if err := providers.CreateProvider(c.CurrentClusterInfo, c.DesiredClusterInfo); err != nil {
+	if err := usedProviders.CreateUsedProvider(c.CurrentClusterInfo, c.DesiredClusterInfo); err != nil {
 		return err
 	}
 

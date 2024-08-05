@@ -26,7 +26,7 @@ func (p *NodePool) Validate(m *Manifest) error {
 		}
 
 		// check if the provider is defined in the manifest
-		if !m.ProviderExists(n.ProviderSpec.Name) {
+		if _, err := m.GetProviderType(n.ProviderSpec.Name); err != nil {
 			return fmt.Errorf("provider %q specified for DynamicNodePool %q doesn't exists", n.ProviderSpec.Name, n.Name)
 		}
 

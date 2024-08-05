@@ -347,48 +347,70 @@ func getTaints(taints []k8sV1.Taint) []*spec.Taint {
 	return arr
 }
 
-func (ds *Manifest) ProviderExists(provider string) bool {
-	exits := false
+func (ds *Manifest) GetProviderType(provider string) (string, error) {
+	var t string
 
-	ds.ForEachProvider(func(name, _ string, _ **TemplateRepository) {
+	ds.ForEachProvider(func(name, typ string, _ **TemplateRepository) bool {
 		if name == provider {
-			exits = true
+			t = typ
+			return false
 		}
+		return true
 	})
 
-	return exits
+	if t == "" {
+		return "", fmt.Errorf("failed to find provider %s", provider)
+	}
+
+	return t, nil
 }
 
-func (ds *Manifest) ForEachProvider(do func(name, typ string, tmpls **TemplateRepository)) {
+func (ds *Manifest) ForEachProvider(do func(name, typ string, tmpls **TemplateRepository) bool) {
 	for i, c := range ds.Providers.GCP {
-		do(c.Name, "gcp", &ds.Providers.GCP[i].Templates)
+		if !do(c.Name, "gcp", &ds.Providers.GCP[i].Templates) {
+			return
+		}
 	}
 
 	for i, c := range ds.Providers.Hetzner {
-		do(c.Name, "hetzner", &ds.Providers.Hetzner[i].Templates)
+		if !do(c.Name, "hetzner", &ds.Providers.Hetzner[i].Templates) {
+			return
+		}
 	}
 
 	for i, c := range ds.Providers.OCI {
-		do(c.Name, "oci", &ds.Providers.OCI[i].Templates)
+		if !do(c.Name, "oci", &ds.Providers.OCI[i].Templates) {
+			return
+		}
 	}
 
 	for i, c := range ds.Providers.AWS {
-		do(c.Name, "aws", &ds.Providers.AWS[i].Templates)
+		if !do(c.Name, "aws", &ds.Providers.AWS[i].Templates) {
+			return
+		}
 	}
 
 	for i, c := range ds.Providers.Azure {
-		do(c.Name, "azure", &ds.Providers.Azure[i].Templates)
+		if !do(c.Name, "azure", &ds.Providers.Azure[i].Templates) {
+			return
+		}
 	}
 
 	for i, c := range ds.Providers.GenesisCloud {
-		do(c.Name, "genesiscloud", &ds.Providers.GenesisCloud[i].Templates)
+		if !do(c.Name, "genesiscloud", &ds.Providers.GenesisCloud[i].Templates) {
+			return
+		}
 	}
 
 	for i, c := range ds.Providers.Cloudflare {
-		do(c.Name, "cloudflare", &ds.Providers.Cloudflare[i].Templates)
+		if !do(c.Name, "cloudflare", &ds.Providers.Cloudflare[i].Templates) {
+			return
+		}
 	}
 
 	for i, c := range ds.Providers.HetznerDNS {
-		do(c.Name, "hetznerdns", &ds.Providers.HetznerDNS[i].Templates)
+		if !do(c.Name, "hetznerdns", &ds.Providers.HetznerDNS[i].Templates) {
+			return
+		}
 	}
 }

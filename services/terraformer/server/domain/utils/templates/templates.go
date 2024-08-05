@@ -280,9 +280,10 @@ func (g *Generator) generateTemplates(dir, specName string, data any) error {
 
 		tpl, err := templateUtils.LoadTemplate(string(file))
 		if err != nil {
-			return fmt.Errorf("error while parsing template file %s from %s : %w", gotpl, dir, err)
+			return fmt.Errorf("error while parsing template file %s from %s : %w", gotpl.Name(), dir, err)
 		}
 
+		gotpl := strings.TrimSuffix(gotpl.Name(), ".tpl")
 		outputFile := fmt.Sprintf("%s-%s-%s-%s.tf", g.ID, specName, gotpl, fp)
 
 		data := fingerPrintedData{
