@@ -158,7 +158,7 @@ jobs:
   #--------------------------------------------------------------------------------------------------
   edit-kustomization:
     runs-on: self-hosted
-    needs: [merge-branch, check-changes, build-and-push]
+    needs: [merge-branch, check-changes, build-and-push, gotest]
     steps:
       - uses: actions/checkout@v4
         if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
