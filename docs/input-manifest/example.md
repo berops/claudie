@@ -13,6 +13,10 @@ spec:
   # providers:
   #   - name: 
   #       providerType:   # Type of the provider secret [aws|azure|gcp|oci|hetzner|hetznerdns|cloudflare]. 
+  #       templates:      # external templates used to build the infrastructure by that given provider. If omitted default templates will be used.
+  #         repository:   # publicly available git repository where the templates can be acquired
+  #         tag:          # optional tag. If set is used to checkout to a specific hash commit of the git repository.
+  #         path:         # path where the templates for the specific provider can be found.
   #       secretRef:      # Secret reference specification.
   #         name:         # Name of the secret resource.
   #         namespace:    # Namespace of the secret resource.
@@ -20,6 +24,9 @@ spec:
     # Hetzner DNS provider.
     - name: hetznerdns-1
       providerType: hetznerdns
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        path: "templates/terraformer/hetznerdns"
       secretRef:
         name: hetznerdns-secret-1
         namespace: example-namespace
@@ -27,6 +34,7 @@ spec:
     # Cloudflare DNS provider.
     - name: cloudflare-1
       providerType: cloudflare
+      # templates: ... using default templates
       secretRef:
         name: cloudflare-secret-1
         namespace: example-namespace

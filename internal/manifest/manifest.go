@@ -5,9 +5,10 @@ import (
 )
 
 type TemplateRepository struct {
-	Repository string  `validate:"required,url" yaml:"repository" json:"repository"`
-	Tag        *string `validate:"omitempty,semver2" yaml:"tag" json:"tag"`
-	Path       string  `validate:"required,filepath" yaml:"path" json:"path"`
+	Repository string `validate:"required,url" yaml:"repository" json:"repository"`
+	Path       string `validate:"required,filepath" yaml:"path" json:"path"`
+	// +optional
+	Tag *string `validate:"omitempty,semver2" yaml:"tag" json:"tag"`
 }
 
 type Manifest struct {

@@ -3,9 +3,9 @@ package controller
 import (
 	"context"
 	"fmt"
-	utils2 "github.com/berops/claudie/internal/utils"
 
 	"gopkg.in/yaml.v3"
+
 	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -13,6 +13,7 @@ import (
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/berops/claudie/internal/manifest"
+	utils2 "github.com/berops/claudie/internal/utils"
 	v1beta "github.com/berops/claudie/services/claudie-operator/pkg/api/v1beta1"
 	"github.com/berops/claudie/services/context-box/server/utils"
 )
@@ -33,10 +34,18 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	providersSecrets := make([]v1beta.ProviderWithData, 0, len(inputManifest.Spec.Providers))
 	// Range over Provider objects and request the secret for each provider
 	for _, p := range inputManifest.Spec.Providers {
-		var pwd v1beta.ProviderWithData
-		pwd.ProviderName = p.ProviderName
-		pwd.ProviderType = p.ProviderType
-		if err := r.kc.Get(ctx, client.ObjectKey{Name: p.SecretRef.Name, Namespace: p.SecretRef.Namespace}, &pwd.Secret); err != nil {
+		pwd := v1beta.ProviderWithData{
+			ProviderName: p.ProviderName,
+			ProviderType: p.ProviderType,
+			Templates:    p.Templates,
+		}
+
+		key := client.ObjectKey{
+			Name:      p.SecretRef.Name,
+			Namespace: p.SecretRef.Namespace,
+		}
+
+		if err := r.kc.Get(ctx, key, &pwd.Secret); err != nil {
 			r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
 			log.Error(err, "secret not found", "will try again in", REQUEUE_AFTER_ERROR, "name", p.SecretRef.Name, "namespace", p.SecretRef.Namespace)
 			return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
@@ -131,6 +140,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 			pmap := getProviderMap(&currentManifest)
 			if err := providerImmutabilityCheck(pmap, desiredStateProviderMap); err != nil {
+				log.Error(err, "immutability check for providers failed", "will try again in", REQUEUE_AFTER_ERROR)
 				// provider changed templates
 				r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
 				inputManifest.SetUpdateResourceStatus(v1beta.InputManifestStatus{
@@ -139,13 +149,14 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 					return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 				}
-				return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, err
+				return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
 			}
 
 			nmap := getDynamicNodepoolsMap(&currentManifest)
 			for _, desired := range rawManifest.NodePools.Dynamic {
 				if current, exists := nmap[desired.Name]; exists {
 					if err := nodepoolImmutabilityCheck(&desired, current); err != nil {
+						log.Error(err, "immutability check for dynamic nodepools failed", "will try again in", REQUEUE_AFTER_ERROR)
 						// nodepool exists and user changed the immutable specs
 						r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
 						inputManifest.SetUpdateResourceStatus(v1beta.InputManifestStatus{
@@ -154,7 +165,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 						if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 							return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 						}
-						return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, err
+						return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
 					}
 				}
 			}

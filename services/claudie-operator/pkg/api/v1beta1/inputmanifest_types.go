@@ -66,6 +66,7 @@ type ProviderWithData struct {
 	ProviderName string
 	ProviderType ProviderType
 	Secret       corev1.Secret
+	Templates    *manifest.TemplateRepository
 }
 
 type StaticNodeWithData struct {
@@ -84,6 +85,9 @@ type Provider struct {
 	// +kubebuilder:validation:Enum=gcp;hetzner;aws;oci;azure;cloudflare;hetznerdns;genesiscloud;
 	ProviderType ProviderType           `json:"providerType"`
 	SecretRef    corev1.SecretReference `json:"secretRef"`
+	// External templates for building the cluster infrastructure.
+	// +optional
+	Templates *manifest.TemplateRepository `json:"templates"`
 }
 
 // NodePool is a map of dynamic nodepools and static nodepools which will be used to
