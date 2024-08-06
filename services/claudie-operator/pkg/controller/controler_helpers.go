@@ -47,6 +47,7 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 				Name:        p.ProviderName,
 				Credentials: gcpCredentials,
 				GCPProject:  gcpProject,
+				Templates:   p.Templates,
 			})
 
 		case v1beta.AWS:
@@ -63,6 +64,7 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 				Name:      p.ProviderName,
 				AccessKey: awsAccesskey,
 				SecretKey: awsSecretkey,
+				Templates: p.Templates,
 			})
 		case v1beta.GENESIS_CLOUD:
 			gcToken, err := p.GetSecretField(v1beta.GEN_C_API_TOKEN)
@@ -70,8 +72,9 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
 			var genCloud = manifest.GenesisCloud{
-				Name:     p.ProviderName,
-				ApiToken: gcToken,
+				Name:      p.ProviderName,
+				ApiToken:  gcToken,
+				Templates: p.Templates,
 			}
 			providers.GenesisCloud = append(providers.GenesisCloud, genCloud)
 		case v1beta.HETZNER:
@@ -82,6 +85,7 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 			var hetzner = manifest.Hetzner{
 				Name:        p.ProviderName,
 				Credentials: hetzner_key,
+				Templates:   p.Templates,
 			}
 			providers.Hetzner = append(providers.Hetzner, hetzner)
 		case v1beta.OCI:
@@ -113,6 +117,7 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 				TenancyOCID:    ociTenant,
 				CompartmentID:  ociCompartmentOcid,
 				UserOCID:       ociUserOcid,
+				Templates:      p.Templates,
 			})
 		case v1beta.AZURE:
 			azureClientId, err := p.GetSecretField(v1beta.AZURE_CLIENT_ID)
@@ -141,6 +146,7 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 				TenantId:       azureTenantId,
 				ClientId:       azureClientId,
 				ClientSecret:   azureClientSecret,
+				Templates:      p.Templates,
 			})
 		case v1beta.CLOUDFLARE:
 			cfApiToken, err := p.GetSecretField(v1beta.CF_API_TOKEN)
@@ -148,8 +154,9 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
 			providers.Cloudflare = append(providers.Cloudflare, manifest.Cloudflare{
-				Name:     p.ProviderName,
-				ApiToken: cfApiToken,
+				Name:      p.ProviderName,
+				ApiToken:  cfApiToken,
+				Templates: p.Templates,
 			})
 
 		case v1beta.HETZNER_DNS:
@@ -158,8 +165,9 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
 			providers.HetznerDNS = append(providers.HetznerDNS, manifest.HetznerDNS{
-				Name:     p.ProviderName,
-				ApiToken: hetznerDNSCredentials,
+				Name:      p.ProviderName,
+				ApiToken:  hetznerDNSCredentials,
+				Templates: p.Templates,
 			})
 		}
 	}

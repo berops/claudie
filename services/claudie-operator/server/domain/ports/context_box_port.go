@@ -1,10 +1,12 @@
 package ports
 
-import "github.com/berops/claudie/proto/pb"
+import (
+	"github.com/berops/claudie/proto/pb/spec"
+)
 
 type ContextBoxPort interface {
-	GetAllConfigs() ([]*pb.Config, error)
-	SaveConfig(config *pb.Config) error
+	GetAllConfigs() ([]*spec.Config, error)
+	SaveConfig(config *spec.Config) error
 	DeleteConfig(configName string) error
 	PerformHealthCheck() error
 }

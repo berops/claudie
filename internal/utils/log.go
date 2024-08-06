@@ -11,7 +11,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/berops/claudie/internal/envs"
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 )
 
 const defaultLogLevel = zerolog.InfoLevel
@@ -53,7 +53,7 @@ func InitLog(moduleName string) {
 	log.Logger = logger
 }
 
-func GetClusterID(clusterInfo *pb.ClusterInfo) string {
+func GetClusterID(clusterInfo *spec.ClusterInfo) string {
 	if clusterInfo != nil {
 		return fmt.Sprintf("%s-%s", clusterInfo.Name, clusterInfo.Hash)
 	}

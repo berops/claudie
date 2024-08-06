@@ -1,11 +1,11 @@
 package outboundAdapters
 
 import (
-	"google.golang.org/grpc"
-
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	cbox "github.com/berops/claudie/services/context-box/client"
+	"google.golang.org/grpc"
 )
 
 // Communicates with the gRPC server of context-box microservice
@@ -51,7 +51,7 @@ func (c *ContextBoxConnector) PerformHealthCheck() error {
 }
 
 // GetAllConfigs fetches all configs present in context-box DB
-func (c *ContextBoxConnector) GetAllConfigs() ([]*pb.Config, error) {
+func (c *ContextBoxConnector) GetAllConfigs() ([]*spec.Config, error) {
 	response, err := cbox.GetAllConfigs(c.grpcClient)
 	if err != nil {
 		return nil, err
@@ -61,7 +61,7 @@ func (c *ContextBoxConnector) GetAllConfigs() ([]*pb.Config, error) {
 }
 
 // SaveConfig sends request to the context-box microservice, to save a config in context-box DB.
-func (c *ContextBoxConnector) SaveConfig(config *pb.Config) error {
+func (c *ContextBoxConnector) SaveConfig(config *spec.Config) error {
 	_, err := cbox.SaveConfigOperator(c.grpcClient, &pb.SaveConfigRequest{Config: config})
 	return err
 }

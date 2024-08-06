@@ -3,6 +3,7 @@ package templateUtils
 import (
 	"bytes"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
@@ -49,18 +50,23 @@ func (t Templates) GenerateToString(tpl *template.Template, d interface{}) (stri
 // LoadTemplate creates template instance with auxiliary functions from specified template.
 func LoadTemplate(tplFile string) (*template.Template, error) {
 	tpl, err := template.New("").Funcs(template.FuncMap{
-		"isMissing":                     IsMissing[int],
-		"targetPorts":                   ExtractTargetPorts,
-		"protocolToOCIProtocolNumber":   ProtocolNameToOCIProtocolNumber,
-		"protocolToAzureProtocolString": ProtocolNameToAzureProtocolString,
-		"assignPriority":                AssignPriority,
-		"enableAccNet":                  EnableAccNet,
-		"replaceAll":                    strings.ReplaceAll,
-		"trimPrefix":                    strings.TrimPrefix,
-		"extractNetmaskFromCIDR":        ExtractNetmaskFromCIDR,
+		"replaceAll":             strings.ReplaceAll,
+		"trimPrefix":             strings.TrimPrefix,
+		"extractNetmaskFromCIDR": ExtractNetmaskFromCIDR,
 	}).Parse(tplFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse the template file : %w", err)
 	}
 	return tpl, nil
+}
+
+// ExtractNetmaskFromCIDR extracts the netmask from the CIDR notation.
+func ExtractNetmaskFromCIDR(cidr string) string {
+	_, n, err := net.ParseCIDR(cidr)
+	if err != nil {
+		panic(err)
+	}
+
+	ones, _ := n.Mask.Size()
+	return fmt.Sprintf("%v", ones)
 }

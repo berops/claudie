@@ -1,13 +1,13 @@
 package kube_eleven
 
 import (
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 )
 
 type (
 	// NodeInfo struct holds data necessary to define node in the node pool.
 	NodeInfo struct {
-		Node *pb.Node
+		Node *spec.Node
 		Name string
 	}
 

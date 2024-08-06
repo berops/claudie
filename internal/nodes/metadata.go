@@ -2,7 +2,7 @@ package nodes
 
 import (
 	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	k8sV1 "k8s.io/api/core/v1"
 )
 
@@ -28,7 +28,7 @@ const (
 )
 
 // GetAllLabels returns default labels with their theoretical values for the specified nodepool.
-func GetAllLabels(np *pb.NodePool, resolver ArchResolver) (map[string]string, error) {
+func GetAllLabels(np *spec.NodePool, resolver ArchResolver) (map[string]string, error) {
 	m := make(map[string]string, len(np.Labels)+9)
 	// Add custom user defined labels first in case user will try to overwrite Claudie default labels.
 	for k, v := range np.Labels {
@@ -64,15 +64,15 @@ func GetAllLabels(np *pb.NodePool, resolver ArchResolver) (map[string]string, er
 		return m, nil
 	}
 	// Static nodepool data.
-	m[string(Provider)] = utils.SanitiseString(pb.StaticNodepoolInfo_STATIC_PROVIDER.String())
-	m[string(ProviderInstance)] = utils.SanitiseString(pb.StaticNodepoolInfo_STATIC_PROVIDER.String())
-	m[string(KubernetesZone)] = utils.SanitiseString(pb.StaticNodepoolInfo_STATIC_ZONE.String())
-	m[string(KubernetesRegion)] = utils.SanitiseString(pb.StaticNodepoolInfo_STATIC_REGION.String())
+	m[string(Provider)] = utils.SanitiseString(spec.StaticNodepoolInfo_STATIC_PROVIDER.String())
+	m[string(ProviderInstance)] = utils.SanitiseString(spec.StaticNodepoolInfo_STATIC_PROVIDER.String())
+	m[string(KubernetesZone)] = utils.SanitiseString(spec.StaticNodepoolInfo_STATIC_ZONE.String())
+	m[string(KubernetesRegion)] = utils.SanitiseString(spec.StaticNodepoolInfo_STATIC_REGION.String())
 	return m, nil
 }
 
 // GetAllTaints returns default taints with their theoretical values for the specified nodepool.
-func GetAllTaints(np *pb.NodePool) []k8sV1.Taint {
+func GetAllTaints(np *spec.NodePool) []k8sV1.Taint {
 	taints := make([]k8sV1.Taint, 0, len(np.Taints)+1)
 	// Add custom user defined taints.
 	for _, t := range np.Taints {
@@ -92,7 +92,7 @@ func GetAllTaints(np *pb.NodePool) []k8sV1.Taint {
 }
 
 // getNodeType returns node type as a string value.
-func getNodeType(np *pb.NodePool) string {
+func getNodeType(np *spec.NodePool) string {
 	if np.IsControl {
 		return "control"
 	}

@@ -3,6 +3,7 @@ package claudie_provider
 import (
 	"context"
 	"fmt"
+	"github.com/berops/claudie/proto/pb/spec"
 	"strings"
 
 	"github.com/rs/zerolog/log"
@@ -76,8 +77,8 @@ func (c *ClaudieCloudProvider) NodeGroupDeleteNodes(_ context.Context, req *prot
 		ngc.nodepool.GetDynamicNodePool().Count = newCount
 		ngc.targetSize = newCount
 		// Update nodes slice
-		deleteNodes := make([]*pb.Node, 0, len(req.Nodes))
-		remainNodes := make([]*pb.Node, 0, len(req.Nodes))
+		deleteNodes := make([]*spec.Node, 0, len(req.Nodes))
+		remainNodes := make([]*spec.Node, 0, len(req.Nodes))
 		for _, node := range ngc.nodepool.Nodes {
 			nodeId := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-%s-", c.configCluster.ClusterInfo.Name, c.configCluster.ClusterInfo.Hash))
 			if containsId(req.GetNodes(), nodeId) {
@@ -170,7 +171,7 @@ func (c *ClaudieCloudProvider) NodeGroupGetOptions(_ context.Context, req *proto
 }
 
 // updateNodepool will call context-box UpdateNodepool method to save any changes to the database. This will also initiate build of the changed nodepool.
-func (c *ClaudieCloudProvider) updateNodepool(nodepool *pb.NodePool) error {
+func (c *ClaudieCloudProvider) updateNodepool(nodepool *spec.NodePool) error {
 	// Update the nodepool in the Claudie.
 	var cc *grpc.ClientConn
 	var err error
@@ -189,7 +190,7 @@ func (c *ClaudieCloudProvider) updateNodepool(nodepool *pb.NodePool) error {
 
 	clusterName := c.configCluster.ClusterInfo.Name
 	// Prevent autoscaling request when the InputManifest is in ERROR.
-	if status := res.GetConfig().GetState()[clusterName].Status; status == pb.Workflow_ERROR {
+	if status := res.GetConfig().GetState()[clusterName].Status; status == spec.Workflow_ERROR {
 		log.Error().Msgf("Failed to send autoscaling request. Cluster %s is in ERROR", clusterName)
 		// Error return is necessary in order to prevent to call sendAutoscalerEvent.
 		return fmt.Errorf("failed to send autoscaling request. Cluster: %s is in ERROR", clusterName)

@@ -2,7 +2,7 @@ package utils
 
 import (
 	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 )
 
 // BuilderContext provides context for the Claudie workflow for a particular cluster.
@@ -11,23 +11,23 @@ type BuilderContext struct {
 	ProjectName string
 	// CurrentCluster is the current state of the cluster
 	// properties may change during processing.
-	CurrentCluster *pb.K8Scluster
+	CurrentCluster *spec.K8Scluster
 	// DesiredCluster is the desired state of the cluster
 	// properties may change during processing.
-	DesiredCluster *pb.K8Scluster
+	DesiredCluster *spec.K8Scluster
 
 	// CurrentLoadbalancers are the current loadbalancers of the cluster
 	// properties may change during processing.
-	CurrentLoadbalancers []*pb.LBcluster
+	CurrentLoadbalancers []*spec.LBcluster
 	// DesiredLoadbalancers are the current loadbalancers of the cluster
 	// properties may change during processing.
-	DesiredLoadbalancers []*pb.LBcluster
+	DesiredLoadbalancers []*spec.LBcluster
 
 	// DeletedLoadBalancers are the deleted loadbalancers for the cluster.
-	DeletedLoadBalancers []*pb.LBcluster
+	DeletedLoadBalancers []*spec.LBcluster
 
 	// Workflow is the current state of processing of the cluster.
-	Workflow *pb.Workflow
+	Workflow *spec.Workflow
 }
 
 // GetClusterName returns name of the k8s cluster for a given builder context.

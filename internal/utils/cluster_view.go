@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -10,39 +10,39 @@ import (
 // works with related values.
 type ClusterView struct {
 	// CurrentClusters are the individual clusters defined in the kubernetes section of the config of the current state.
-	CurrentClusters map[string]*pb.K8Scluster
+	CurrentClusters map[string]*spec.K8Scluster
 	// DesiredClusters are the individual clusters defined in the kubernetes section of the config of the desired state.
-	DesiredClusters map[string]*pb.K8Scluster
+	DesiredClusters map[string]*spec.K8Scluster
 
 	// Loadbalancers are the loadbalancers attach to a given kubernetes cluster in the current state.
-	Loadbalancers map[string][]*pb.LBcluster
+	Loadbalancers map[string][]*spec.LBcluster
 	// DesiredLoadbalancers are the loadbalancers attach to a given kubernetes cluster in the desired state.
-	DesiredLoadbalancers map[string][]*pb.LBcluster
+	DesiredLoadbalancers map[string][]*spec.LBcluster
 
 	// DeletedLoadbalancers are the loadbalancers that will be deleted (present in the current state but missing in the desired state)
-	DeletedLoadbalancers map[string][]*pb.LBcluster
+	DeletedLoadbalancers map[string][]*spec.LBcluster
 
 	// ClusterWorkflows is additional information per-cluster workflow (current stage of execution, if any error occurred etc..)
-	ClusterWorkflows map[string]*pb.Workflow
+	ClusterWorkflows map[string]*spec.Workflow
 }
 
-func NewClusterView(config *pb.Config) *ClusterView {
+func NewClusterView(config *spec.Config) *ClusterView {
 	var (
-		clusterWorkflows     = make(map[string]*pb.Workflow)
-		clusters             = make(map[string]*pb.K8Scluster)
-		desiredClusters      = make(map[string]*pb.K8Scluster)
-		loadbalancers        = make(map[string][]*pb.LBcluster)
-		desiredLoadbalancers = make(map[string][]*pb.LBcluster)
-		deletedLoadbalancers = make(map[string][]*pb.LBcluster)
+		clusterWorkflows     = make(map[string]*spec.Workflow)
+		clusters             = make(map[string]*spec.K8Scluster)
+		desiredClusters      = make(map[string]*spec.K8Scluster)
+		loadbalancers        = make(map[string][]*spec.LBcluster)
+		desiredLoadbalancers = make(map[string][]*spec.LBcluster)
+		deletedLoadbalancers = make(map[string][]*spec.LBcluster)
 	)
 
 	for _, current := range config.CurrentState.Clusters {
 		clusters[current.ClusterInfo.Name] = current
 
 		// store the cluster name with default workflow state.
-		clusterWorkflows[current.ClusterInfo.Name] = &pb.Workflow{
-			Stage:  pb.Workflow_NONE,
-			Status: pb.Workflow_IN_PROGRESS,
+		clusterWorkflows[current.ClusterInfo.Name] = &spec.Workflow{
+			Stage:  spec.Workflow_NONE,
+			Status: spec.Workflow_IN_PROGRESS,
 		}
 	}
 
@@ -50,9 +50,9 @@ func NewClusterView(config *pb.Config) *ClusterView {
 		desiredClusters[desired.ClusterInfo.Name] = desired
 
 		// store the cluster name with default workflow state.
-		clusterWorkflows[desired.ClusterInfo.Name] = &pb.Workflow{
-			Stage:  pb.Workflow_NONE,
-			Status: pb.Workflow_IN_PROGRESS,
+		clusterWorkflows[desired.ClusterInfo.Name] = &spec.Workflow{
+			Stage:  spec.Workflow_NONE,
+			Status: spec.Workflow_IN_PROGRESS,
 		}
 	}
 
@@ -71,7 +71,7 @@ Lb:
 				continue Lb
 			}
 		}
-		deletedLoadbalancers[current.TargetedK8S] = append(deletedLoadbalancers[current.TargetedK8S], proto.Clone(current).(*pb.LBcluster))
+		deletedLoadbalancers[current.TargetedK8S] = append(deletedLoadbalancers[current.TargetedK8S], proto.Clone(current).(*spec.LBcluster))
 	}
 
 	return &ClusterView{
@@ -84,7 +84,7 @@ Lb:
 	}
 }
 
-func mergeK8sClusters(old []*pb.K8Scluster, changed map[string]*pb.K8Scluster) []*pb.K8Scluster {
+func mergeK8sClusters(old []*spec.K8Scluster, changed map[string]*spec.K8Scluster) []*spec.K8Scluster {
 	// update existing clusters.
 	for i, cluster := range old {
 		cluster, ok := changed[cluster.ClusterInfo.Name]
@@ -115,7 +115,7 @@ func mergeK8sClusters(old []*pb.K8Scluster, changed map[string]*pb.K8Scluster) [
 	return old
 }
 
-func mergeLbClusters(old []*pb.LBcluster, changed map[string][]*pb.LBcluster) []*pb.LBcluster {
+func mergeLbClusters(old []*spec.LBcluster, changed map[string][]*spec.LBcluster) []*spec.LBcluster {
 	// update existing clusters.
 	for i, cluster := range old {
 		updated, ok := changed[cluster.TargetedK8S]
@@ -160,7 +160,7 @@ func mergeLbClusters(old []*pb.LBcluster, changed map[string][]*pb.LBcluster) []
 }
 
 // MergeChanges propagates the changes made back to the config.
-func (view *ClusterView) MergeChanges(config *pb.Config) {
+func (view *ClusterView) MergeChanges(config *spec.Config) {
 	config.State = view.ClusterWorkflows
 
 	config.CurrentState.Clusters = mergeK8sClusters(config.CurrentState.Clusters, view.CurrentClusters)
@@ -194,33 +194,33 @@ func (view *ClusterView) AllClusters() []string {
 }
 
 func (view *ClusterView) SetWorkflowError(clusterName string, err error) {
-	view.ClusterWorkflows[clusterName].Status = pb.Workflow_ERROR
+	view.ClusterWorkflows[clusterName].Status = spec.Workflow_ERROR
 	view.ClusterWorkflows[clusterName].Description = err.Error()
 }
 
 func (view *ClusterView) SetWorkflowDone(clusterName string) {
-	view.ClusterWorkflows[clusterName].Status = pb.Workflow_DONE
-	view.ClusterWorkflows[clusterName].Stage = pb.Workflow_NONE
+	view.ClusterWorkflows[clusterName].Status = spec.Workflow_DONE
+	view.ClusterWorkflows[clusterName].Stage = spec.Workflow_NONE
 	view.ClusterWorkflows[clusterName].Description = ""
 }
 
-func (view *ClusterView) UpdateCurrentState(clusterName string, c *pb.K8Scluster, lbs []*pb.LBcluster) {
-	cp := make([]*pb.LBcluster, 0, len(lbs))
+func (view *ClusterView) UpdateCurrentState(clusterName string, c *spec.K8Scluster, lbs []*spec.LBcluster) {
+	cp := make([]*spec.LBcluster, 0, len(lbs))
 	for _, c := range lbs {
-		cp = append(cp, proto.Clone(c).(*pb.LBcluster))
+		cp = append(cp, proto.Clone(c).(*spec.LBcluster))
 	}
 
-	view.CurrentClusters[clusterName] = proto.Clone(c).(*pb.K8Scluster)
+	view.CurrentClusters[clusterName] = proto.Clone(c).(*spec.K8Scluster)
 	view.Loadbalancers[clusterName] = cp
 }
 
-func (view *ClusterView) UpdateDesiredState(clusterName string, c *pb.K8Scluster, lbs []*pb.LBcluster) {
-	cp := make([]*pb.LBcluster, 0, len(lbs))
+func (view *ClusterView) UpdateDesiredState(clusterName string, c *spec.K8Scluster, lbs []*spec.LBcluster) {
+	cp := make([]*spec.LBcluster, 0, len(lbs))
 	for _, c := range lbs {
-		cp = append(cp, proto.Clone(c).(*pb.LBcluster))
+		cp = append(cp, proto.Clone(c).(*spec.LBcluster))
 	}
 
-	view.DesiredClusters[clusterName] = proto.Clone(c).(*pb.K8Scluster)
+	view.DesiredClusters[clusterName] = proto.Clone(c).(*spec.K8Scluster)
 	view.DesiredLoadbalancers[clusterName] = cp
 }
 

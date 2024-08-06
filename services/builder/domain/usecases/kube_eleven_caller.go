@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"fmt"
+	"github.com/berops/claudie/proto/pb/spec"
 
 	cutils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
@@ -14,7 +15,7 @@ func (u *Usecases) reconcileK8sCluster(ctx *utils.BuilderContext, cboxClient pb.
 
 	// Set workflow state.
 	description := ctx.Workflow.Description
-	ctx.Workflow.Stage = pb.Workflow_KUBE_ELEVEN
+	ctx.Workflow.Stage = spec.Workflow_KUBE_ELEVEN
 	u.saveWorkflowDescription(ctx, fmt.Sprintf("%s building kubernetes cluster", description), cboxClient)
 
 	logger.Info().Msgf("Calling BuildCluster on Kube-eleven")
@@ -36,7 +37,7 @@ func (u *Usecases) destroyK8sCluster(ctx *utils.BuilderContext, cboxCLient pb.Co
 	logger := cutils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
 
 	description := ctx.Workflow.Description
-	ctx.Workflow.Stage = pb.Workflow_KUBE_ELEVEN
+	ctx.Workflow.Stage = spec.Workflow_KUBE_ELEVEN
 	u.saveWorkflowDescription(ctx, fmt.Sprintf("%s destroying kubernetes cluster", description), cboxCLient)
 
 	logger.Info().Msgf("Calling DestroyCluster on Kube-eleven")

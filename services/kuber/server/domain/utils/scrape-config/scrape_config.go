@@ -7,7 +7,7 @@ import (
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/kuber/templates"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -16,8 +16,8 @@ import (
 )
 
 type ScrapeConfig struct {
-	Cluster    *pb.K8Scluster
-	LBClusters []*pb.LBcluster
+	Cluster    *spec.K8Scluster
+	LBClusters []*spec.LBcluster
 	Directory  string
 }
 
@@ -30,8 +30,8 @@ type LBcluster struct {
 }
 
 type NodePools struct {
-	Dynamic []*pb.NodePool
-	Static  []*pb.NodePool
+	Dynamic []*spec.NodePool
+	Static  []*spec.NodePool
 }
 
 type ScManifestData struct {

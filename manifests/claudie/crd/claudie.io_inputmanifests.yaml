@@ -5,6 +5,8 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.15.0
   name: inputmanifests.claudie.io
+  labels:
+    app.kubernetes.io/part-of: claudie
 spec:
   group: claudie.io
   names:
@@ -441,7 +443,7 @@ spec:
                     providerType:
                       description: |-
                         ProviderType type of a provider.
-                        A list of available providers can be found at https://docs.claudie.io/v0.3.2/input-manifest/providers/aws/
+                        A list of available providers can be found at https://docs.claudie.io/v0.8.1/input-manifest/providers/aws/
                       enum:
                       - gcp
                       - hetzner
@@ -467,6 +469,19 @@ spec:
                           type: string
                       type: object
                       x-kubernetes-map-type: atomic
+                    templates:
+                      description: External templates for building the cluster infrastructure.
+                      properties:
+                        path:
+                          type: string
+                        repository:
+                          type: string
+                        tag:
+                          type: string
+                      required:
+                      - path
+                      - repository
+                      type: object
                   required:
                   - name
                   - providerType

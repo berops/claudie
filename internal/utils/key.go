@@ -4,10 +4,36 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/berops/claudie/proto/pb"
 	"os"
 	"path/filepath"
+
+	"github.com/berops/claudie/proto/pb/spec"
 )
+
+// GetAuthCredentials extract the key for the provider
+// to be used within terraform.
+func GetAuthCredentials(provider *spec.Provider) string {
+	switch p := provider.ProviderType.(type) {
+	case *spec.Provider_Gcp:
+		return p.Gcp.Key
+	case *spec.Provider_Hetzner:
+		return p.Hetzner.Token
+	case *spec.Provider_Hetznerdns:
+		return p.Hetznerdns.Token
+	case *spec.Provider_Oci:
+		return p.Oci.PrivateKey
+	case *spec.Provider_Aws:
+		return p.Aws.SecretKey
+	case *spec.Provider_Azure:
+		return p.Azure.ClientSecret
+	case *spec.Provider_Cloudflare:
+		return p.Cloudflare.Token
+	case *spec.Provider_Genesiscloud:
+		return p.Genesiscloud.Token
+	default:
+		panic(fmt.Sprintf("unexpected type %T", provider.ProviderType))
+	}
+}
 
 // CreateKeyFile writes the given key to a file.
 // The key filename is specified by its outputPath and KeyName operands.
@@ -18,7 +44,7 @@ func CreateKeyFile(key string, outputPath string, keyName string) error {
 
 // CreateKeysForStaticNodepools creates private keys files for all nodes in the provided static node pools in form
 // of <node name>.pem.
-func CreateKeysForStaticNodepools(nps []*pb.NodePool, outputDirectory string) error {
+func CreateKeysForStaticNodepools(nps []*spec.NodePool, outputDirectory string) error {
 	errs := make([]error, 0, len(nps))
 	for _, staticNp := range nps {
 		for _, node := range staticNp.Nodes {
@@ -33,7 +59,7 @@ func CreateKeysForStaticNodepools(nps []*pb.NodePool, outputDirectory string) er
 	return errors.Join(errs...)
 }
 
-func CreateKeysForDynamicNodePools(nps []*pb.NodePool, outputDirectory string) error {
+func CreateKeysForDynamicNodePools(nps []*spec.NodePool, outputDirectory string) error {
 	errs := make([]error, 0, len(nps))
 	for _, dnp := range nps {
 		pk := dnp.GetDynamicNodePool().PrivateKey

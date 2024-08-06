@@ -5,15 +5,15 @@ import (
 
 	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 )
 
 const hostnameHashLength = 17
 
 // CreateLBCluster reads the unmarshalled manifest and creates loadbalancer clusters based on it.
 // Returns slice of *pb.LBcluster if successful, nil otherwise along with the error.
-func CreateLBCluster(unmarshalledManifest *manifest.Manifest) ([]*pb.LBcluster, error) {
-	var lbClusters []*pb.LBcluster
+func CreateLBCluster(unmarshalledManifest *manifest.Manifest) ([]*spec.LBcluster, error) {
+	var lbClusters []*spec.LBcluster
 	for _, lbCluster := range unmarshalledManifest.LoadBalancer.Clusters {
 		dns, err := getDNS(lbCluster.DNS, unmarshalledManifest)
 		if err != nil {
@@ -21,8 +21,8 @@ func CreateLBCluster(unmarshalledManifest *manifest.Manifest) ([]*pb.LBcluster, 
 		}
 		attachedRoles := getRolesAttachedToLBCluster(unmarshalledManifest.LoadBalancer.Roles, lbCluster.Roles)
 
-		newLbCluster := &pb.LBcluster{
-			ClusterInfo: &pb.ClusterInfo{
+		newLbCluster := &spec.LBcluster{
+			ClusterInfo: &spec.ClusterInfo{
 				Name: lbCluster.Name,
 				Hash: utils.CreateHash(utils.HashLength),
 			},
@@ -42,7 +42,7 @@ func CreateLBCluster(unmarshalledManifest *manifest.Manifest) ([]*pb.LBcluster, 
 
 // UpdateLBClusters updates the desired state of the loadbalancer clusters based on the current state
 // returns error if failed, nil otherwise
-func UpdateLBClusters(newConfig *pb.Config) error {
+func UpdateLBClusters(newConfig *spec.Config) error {
 clusterLbDesired:
 	for _, clusterLbDesired := range newConfig.DesiredState.LoadBalancerClusters {
 		for _, clusterLbCurrent := range newConfig.CurrentState.LoadBalancerClusters {
@@ -81,7 +81,7 @@ clusterLbDesired:
 
 // getDNS reads the unmarshalled manifest and returns *pb.DNS based on it.
 // Return *pb.DNS if successful, error if provider has not been found.
-func getDNS(lbDNS manifest.DNS, unmarshalledManifest *manifest.Manifest) (*pb.DNS, error) {
+func getDNS(lbDNS manifest.DNS, unmarshalledManifest *manifest.Manifest) (*spec.DNS, error) {
 	if lbDNS.DNSZone == "" {
 		return nil, fmt.Errorf("DNS zone not provided in manifest %s", unmarshalledManifest.Name)
 	} else {
@@ -89,7 +89,7 @@ func getDNS(lbDNS manifest.DNS, unmarshalledManifest *manifest.Manifest) (*pb.DN
 		if err != nil {
 			return nil, fmt.Errorf("provider %s was not found in manifest %s", lbDNS.Provider, unmarshalledManifest.Name)
 		}
-		return &pb.DNS{
+		return &spec.DNS{
 			DnsZone:  lbDNS.DNSZone,
 			Provider: provider,
 			Hostname: lbDNS.Hostname,
@@ -99,24 +99,24 @@ func getDNS(lbDNS manifest.DNS, unmarshalledManifest *manifest.Manifest) (*pb.DN
 
 // getRolesAttachedToLBCluster will read roles attached to the LB cluster from the unmarshalled manifest and return them.
 // Returns slice of *[]pb.Roles if successful, error if Target from manifest state not found
-func getRolesAttachedToLBCluster(roles []manifest.Role, roleNames []string) []*pb.Role {
-	var matchingRoles []*pb.Role
+func getRolesAttachedToLBCluster(roles []manifest.Role, roleNames []string) []*spec.Role {
+	var matchingRoles []*spec.Role
 
 	for _, roleName := range roleNames {
 		for _, role := range roles {
 			if role.Name == roleName {
-				var roleType pb.RoleType
+				var roleType spec.RoleType
 
 				// The manifest validation is handling the check if the target nodepools of the
 				// role are control nodepools and thus can be used as a valid API loadbalancer.
 				// Given this invariant we can simply check for the port.
 				if role.TargetPort == manifest.APIServerPort {
-					roleType = pb.RoleType_ApiServer
+					roleType = spec.RoleType_ApiServer
 				} else {
-					roleType = pb.RoleType_Ingress
+					roleType = spec.RoleType_Ingress
 				}
 
-				newRole := &pb.Role{
+				newRole := &spec.Role{
 					Name:        role.Name,
 					Protocol:    role.Protocol,
 					Port:        role.Port,

@@ -1,0 +1,115 @@
+syntax = "proto3";
+package spec;
+option go_package = "github.com/berops/claudie/proto/pb/spec";
+
+import "spec/provider.proto";
+
+// NodePool represents a single node pool used in cluster.
+message NodePool {
+  // Dynamic or Static node pool info.
+  oneof NodePoolType {
+    DynamicNodePool dynamicNodePool = 1;
+    StaticNodePool staticNodePool = 2;
+  }
+  // Name of static node pool.
+  string name = 3;
+  // Array of nodes in this node pool.
+  repeated Node nodes = 4;
+  // Flag to differentiate between control and compute nodes.
+  bool isControl = 5;
+  // User defined labels.
+  map<string, string> labels = 6;
+  // User defined taints.
+  repeated Taint taints = 7;
+  // User definded annotations.
+  map<string, string> annotations = 8;
+}
+
+// Taint defines a custom defined taint for the node pools.
+message Taint {
+  // Taint key.
+  string key = 1;
+  // Taint value.
+  string value = 2;
+  // Taint effect.
+  string effect = 3;
+}
+
+// Node represents a single node from the node pool.
+message Node {
+  // Name of the node.
+  string name = 1;
+  // Private IP of the node in the VPN.
+  string private = 2;
+  // Public IP of the node.
+  string public = 3;
+  // Type of the node.
+  NodeType nodeType = 4;
+  // Username of a user with root privileges. Also used in SSH connection
+  string username = 5;
+}
+
+// NodeType specifies the type of the node.
+enum NodeType {
+  // Worker/Compute node.
+  worker = 0;
+  // Master/Control node.
+  master = 1;
+  // Master node, which is also an API endpoint.
+  apiEndpoint = 2;
+}
+
+// DynamicNodePool represents dynamic node pool used in cluster.
+message DynamicNodePool {
+  // Machine type of the nodes.
+  string serverType = 1;
+  // OS image of the nodes.
+  string image = 2;
+  // Storage disk size of the nodes.
+  int32 storageDiskSize = 3;
+  // Geograhical region of the nodes.
+  string region = 4;
+  // Datacentre zone for the nodes.
+  string zone = 5;
+  // Number of the nodes in the node pool.
+  int32 count = 6;
+  // Provider configuarion of the node pool.
+  Provider provider = 7;
+  // Autoscaler configuration. (optional)
+  AutoscalerConf autoscalerConfig = 9;
+  // MachineSpec configuration. (optional)
+  MachineSpec machineSpec = 10;
+  string publicKey = 11;
+  string privateKey = 12;
+
+  // Cidr initially empty, will be set once the infra
+  // is spawned using terraform.
+  string cidr = 14;
+}
+
+// MachineSpec further specifies the requested server type.
+message MachineSpec {
+  int32 cpuCount = 1;
+  int32 memory = 2;
+}
+
+// Autoscaler configuration on per node pool basis.
+message AutoscalerConf {
+  // Minimum number of nodes in node pool.
+  int32 min = 1;
+  // Maximum number of nodes in node pool.
+  int32 max = 2;
+}
+
+// StaticNodePool represents static node pool used in cluster.
+message StaticNodePool {
+  // Map of keys for each static node in [<Node Endpoint>]<Key> form.
+  map<string, string> nodeKeys = 1;
+}
+
+// Enum used to replace data not present in static nodepools.
+enum StaticNodepoolInfo {
+  STATIC_PROVIDER = 0;
+  STATIC_REGION = 1;
+  STATIC_ZONE = 2;
+}

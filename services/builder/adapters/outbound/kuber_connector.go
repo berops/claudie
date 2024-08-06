@@ -4,6 +4,7 @@ import (
 	"github.com/berops/claudie/internal/envs"
 	cutils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/builder/domain/usecases/utils"
 	kuber "github.com/berops/claudie/services/kuber/client"
 	"google.golang.org/grpc"
@@ -120,7 +121,7 @@ func (k *KuberConnector) PatchNodes(builderCtx *utils.BuilderContext, kuberGrpcC
 }
 
 // DeleteNodes gracefully removes nodes from a given k8s cluster.
-func (k *KuberConnector) DeleteNodes(cluster *pb.K8Scluster, masterNodes, workerNodes []string, kuberGrpcClient pb.KuberServiceClient) (*pb.DeleteNodesResponse, error) {
+func (k *KuberConnector) DeleteNodes(cluster *spec.K8Scluster, masterNodes, workerNodes []string, kuberGrpcClient pb.KuberServiceClient) (*pb.DeleteNodesResponse, error) {
 	return kuber.DeleteNodes(kuberGrpcClient,
 		&pb.DeleteNodesRequest{
 			MasterNodes: masterNodes,
@@ -129,7 +130,7 @@ func (k *KuberConnector) DeleteNodes(cluster *pb.K8Scluster, masterNodes, worker
 		})
 }
 
-func (k *KuberConnector) CiliumRolloutRestart(cluster *pb.K8Scluster, kuberGrpcClient pb.KuberServiceClient) error {
+func (k *KuberConnector) CiliumRolloutRestart(cluster *spec.K8Scluster, kuberGrpcClient pb.KuberServiceClient) error {
 	return kuber.CiliumRolloutRestart(kuberGrpcClient,
 		&pb.CiliumRolloutRestartRequest{
 			Cluster: cluster,

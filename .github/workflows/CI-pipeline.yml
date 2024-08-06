@@ -71,6 +71,23 @@ jobs:
       ARRAY_OF_CHANGES: ${{ steps.change.outputs.ARRAY_OF_CHANGES }}
       RUN_TESTS: ${{ steps.change.outputs.RUN_TESTS }}
   #--------------------------------------------------------------------------------------------------
+  gotest:
+    runs-on: ubuntu-latest
+    needs: [merge-branch, check-changes]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Install golang
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.1"
+
+      - name: Run Go tests
+        run: go test -short ./...
+  #--------------------------------------------------------------------------------------------------
   build-and-push:
     runs-on: self-hosted
     needs: [merge-branch, check-changes]
@@ -141,7 +158,7 @@ jobs:
   #--------------------------------------------------------------------------------------------------
   edit-kustomization:
     runs-on: self-hosted
-    needs: [merge-branch, check-changes, build-and-push]
+    needs: [merge-branch, check-changes, build-and-push, gotest]
     steps:
       - uses: actions/checkout@v4
         if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}

@@ -3,11 +3,11 @@ package usecases
 import (
 	"fmt"
 
-	"github.com/rs/zerolog/log"
-
 	internalUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	utils "github.com/berops/claudie/services/context-box/server/utils"
+	"github.com/rs/zerolog/log"
 )
 
 // UpdateNodepool updates the Nodepool struct in the database, which also initiates build. This function might return an
@@ -20,7 +20,7 @@ func (u *Usecases) UpdateNodepool(request *pb.UpdateNodepoolRequest) (*pb.Update
 
 	log.Info().Msgf("Updating nodepool for project %s, cluster %s, nodepool %s", request.ProjectName, request.ClusterName, request.Nodepool.Name)
 
-	var config *pb.Config
+	var config *spec.Config
 	var err error
 	if config, err = u.DB.GetConfig(request.ProjectName, pb.IdType_NAME); err != nil {
 		return nil, fmt.Errorf("the project %s was not found in the database : %w ", request.ProjectName, err)
@@ -51,7 +51,7 @@ func (u *Usecases) UpdateNodepool(request *pb.UpdateNodepoolRequest) (*pb.Update
 }
 
 // updateNodepool updates the nodepool count and nodes in the given claudie project state (desired / current state)
-func updateNodepool(state *pb.Project, clusterName, nodepoolName string, nodes []*pb.Node, count *int32) error {
+func updateNodepool(state *spec.Project, clusterName, nodepoolName string, nodes []*spec.Node, count *int32) error {
 	for _, cluster := range state.Clusters {
 		if cluster.ClusterInfo.Name == clusterName {
 			for _, np := range cluster.ClusterInfo.NodePools {

@@ -5,10 +5,9 @@ import (
 	"fmt"
 
 	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
 	"github.com/rs/zerolog"
-
 	"golang.org/x/sync/errgroup"
 )
 
@@ -20,8 +19,8 @@ var (
 type LBcluster struct {
 	ProjectName string
 
-	DesiredState *pb.LBcluster
-	CurrentState *pb.LBcluster
+	DesiredState *spec.LBcluster
+	CurrentState *spec.LBcluster
 
 	// SpawnProcessLimit represents a synchronization channel which limits the number of spawned terraform
 	// processes. This values should always be non-nil and be buffered, where the capacity indicates
@@ -41,8 +40,8 @@ func (l *LBcluster) Id() string {
 func (l *LBcluster) Build(logger zerolog.Logger) error {
 	logger.Info().Msgf("Building LB Cluster %s and DNS", l.DesiredState.ClusterInfo.Name)
 
-	var currentClusterInfo *pb.ClusterInfo
-	var currentDNS *pb.DNS
+	var currentClusterInfo *spec.ClusterInfo
+	var currentDNS *spec.DNS
 	var currentNodeIPs []string
 
 	// Check if current cluster was defined, to avoid access of unrefferenced memory
@@ -55,13 +54,11 @@ func (l *LBcluster) Build(logger zerolog.Logger) error {
 	clusterBuilder := cluster_builder.ClusterBuilder{
 		DesiredClusterInfo: l.DesiredState.ClusterInfo,
 		CurrentClusterInfo: currentClusterInfo,
-
-		ProjectName: l.ProjectName,
-		ClusterType: pb.ClusterType_LB,
-		Metadata: map[string]any{
-			"roles": l.DesiredState.Roles,
+		ProjectName:        l.ProjectName,
+		ClusterType:        spec.ClusterType_LB,
+		LBInfo: cluster_builder.LBInfo{
+			Roles: l.DesiredState.Roles,
 		},
-
 		SpawnProcessLimit: l.SpawnProcessLimit,
 	}
 
@@ -99,7 +96,7 @@ func (l *LBcluster) Destroy(logger zerolog.Logger) error {
 		cluster := cluster_builder.ClusterBuilder{
 			CurrentClusterInfo: l.CurrentState.ClusterInfo,
 			ProjectName:        l.ProjectName,
-			ClusterType:        pb.ClusterType_LB,
+			ClusterType:        spec.ClusterType_LB,
 			SpawnProcessLimit:  l.SpawnProcessLimit,
 		}
 		return cluster.DestroyNodepools()
@@ -123,7 +120,7 @@ func (l *LBcluster) Destroy(logger zerolog.Logger) error {
 func (l *LBcluster) UpdateCurrentState() { l.CurrentState = l.DesiredState }
 
 // getNodeIPs returns slice of public IPs used in the node pool.
-func getNodeIPs(nodepools []*pb.NodePool) []string {
+func getNodeIPs(nodepools []*spec.NodePool) []string {
 	var ips []string
 
 	for _, nodepool := range nodepools {

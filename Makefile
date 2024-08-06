@@ -1,12 +1,12 @@
 .PHONY: proto contextbox scheduler builder terraformer ansibler kubeEleven test database minio containerimgs crd crd-apply controller-gen kind-load-images
 
 # Enforce same version of protoc 
-PROTOC_VERSION = "26.1"
+PROTOC_VERSION = "27.1"
 CURRENT_VERSION = $$(protoc --version | awk '{print $$2}')
 # Generate all .proto files 
 proto:
 	@if [ "$(CURRENT_VERSION)" = "$(PROTOC_VERSION)" ]; then \
-		protoc --go-grpc_out=. --go_out=. proto/*.proto ;\
+		protoc --proto_path=proto --go_out=paths=source_relative:proto/pb --go-grpc_out=paths=source_relative:proto/pb proto/*.proto proto/spec/*.proto ;\
 	else \
 		echo "Please update your protoc version. Current $(CURRENT_VERSION) | Required $(PROTOC_VERSION)"; \
 	fi

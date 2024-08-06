@@ -4,6 +4,7 @@ import (
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	cbox "github.com/berops/claudie/services/context-box/client"
 	"google.golang.org/grpc"
 )
@@ -30,17 +31,17 @@ func (c *ContextBoxConnector) GetConfigBuilder(contextBoxGrpcClient pb.ContextBo
 }
 
 // SaveConfigBuilder saves a config from builder to Claudie database via context-box.
-func (c *ContextBoxConnector) SaveConfigBuilder(config *pb.Config, contextBoxGrpcClient pb.ContextBoxServiceClient) error {
+func (c *ContextBoxConnector) SaveConfigBuilder(config *spec.Config, contextBoxGrpcClient pb.ContextBoxServiceClient) error {
 	return cbox.SaveConfigBuilder(contextBoxGrpcClient, &pb.SaveConfigRequest{Config: config})
 }
 
 // SaveWorkflowState saves workflow state for a particular cluster.
-func (c *ContextBoxConnector) SaveWorkflowState(configName, clusterName string, wf *pb.Workflow, contextBoxGrpcClient pb.ContextBoxServiceClient) error {
+func (c *ContextBoxConnector) SaveWorkflowState(configName, clusterName string, wf *spec.Workflow, contextBoxGrpcClient pb.ContextBoxServiceClient) error {
 	return cbox.SaveWorkflowState(contextBoxGrpcClient, &pb.SaveWorkflowStateRequest{ConfigName: configName, ClusterName: clusterName, Workflow: wf})
 }
 
 // DeleteConfig removes config from Claudie database via context-box.
-func (c *ContextBoxConnector) DeleteConfig(config *pb.Config, contextBoxGrpcClient pb.ContextBoxServiceClient) error {
+func (c *ContextBoxConnector) DeleteConfig(config *spec.Config, contextBoxGrpcClient pb.ContextBoxServiceClient) error {
 	return cbox.DeleteConfigFromDB(contextBoxGrpcClient, &pb.DeleteConfigRequest{Id: config.Id, Type: pb.IdType_HASH})
 }
 

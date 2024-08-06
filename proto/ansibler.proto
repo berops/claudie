@@ -1,68 +1,68 @@
 syntax = "proto3";
 package claudie;
-import "proto/config.proto";
-
 option go_package = "proto/pb";
 
+import "spec/manifest.proto";
+
 message InstallRequest {
-  K8scluster desired = 1;
-  repeated LBcluster desiredLbs = 2;
+  spec.K8scluster desired = 1;
+  repeated spec.LBcluster desiredLbs = 2;
   string projectName = 3;
 }
 message InstallResponse {
-  K8scluster desired = 1;
-  repeated LBcluster desiredLbs = 2;
+  spec.K8scluster desired = 1;
+  repeated spec.LBcluster desiredLbs = 2;
 }
 
 message SetUpLBRequest {
-  K8scluster desired = 1;
-  repeated LBcluster currentLbs = 2;
-  repeated LBcluster desiredLbs = 3;
+  spec.K8scluster desired = 1;
+  repeated spec.LBcluster currentLbs = 2;
+  repeated spec.LBcluster desiredLbs = 3;
   string previousAPIEndpoint = 4;
   string projectName = 5;
   bool firstRun = 6;
 }
 message SetUpLBResponse {
-  K8scluster desired = 1;
-  repeated LBcluster currentLbs = 2;
-  repeated LBcluster desiredLbs = 3;
+  spec.K8scluster desired = 1;
+  repeated spec.LBcluster currentLbs = 2;
+  repeated spec.LBcluster desiredLbs = 3;
 }
 
 message TeardownLBRequest {
-  K8scluster desired = 1;
-  repeated LBcluster desiredLbs = 2;
+  spec.K8scluster desired = 1;
+  repeated spec.LBcluster desiredLbs = 2;
   // LB clusters which were deleted from the Claudie manifest.
-  repeated LBcluster deletedLbs = 3;
+  repeated spec.LBcluster deletedLbs = 3;
   string projectName = 4;
 }
 
 message TeardownLBResponse {
   string previousAPIEndpoint = 1;
-  K8scluster desired = 2;
-  repeated LBcluster desiredLbs = 3;
-  repeated LBcluster deletedLbs = 4;
+  spec.K8scluster desired = 2;
+  repeated spec.LBcluster desiredLbs = 3;
+  repeated spec.LBcluster deletedLbs = 4;
 }
 
 message UpdateAPIEndpointRequest{
-  K8scluster current = 1;
-  K8scluster desired = 2;
+  spec.K8scluster current = 1;
+  spec.K8scluster desired = 2;
   string projectName = 3;
 }
 
 message UpdateAPIEndpointResponse{
-  K8scluster current = 1;
-  K8scluster desired = 2;
+  spec.K8scluster current = 1;
+  spec.K8scluster desired = 2;
 }
 
 message RemoveClaudieUtilitiesRequest {
-  K8scluster current = 1;
-  repeated LBcluster currentLbs = 2;
+  spec.K8scluster current = 1;
+  repeated spec.LBcluster currentLbs = 2;
   string projectName = 3;
 }
 
 message RemoveClaudieUtilitiesResponse {
-  K8scluster current = 1;
-  repeated LBcluster currentLbs = 2;
+  spec.K8scluster current = 1;
+  repeated spec.LBcluster currentLbs = 2;
 }
 
 service AnsiblerService {

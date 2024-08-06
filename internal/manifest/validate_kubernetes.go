@@ -9,18 +9,18 @@ import (
 )
 
 var (
-	// semverRegexString is a regex expression used for parsing semantic versioning
+	// kubernetesVersionRegexString is a regex expression used for parsing semantic versioning
 	// based on https://github.com/go-playground/validator/blob/master/regexes.go#L65:2
 	// NOTE:
 	// first/second capturing group MUST be changed whenever new kubeone version is introduced in Claudie
 	// so validation will catch unsupported versions
-	semverRegexString = `^(1)\.(27|28|29)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`
+	kubernetesVersionRegexString = `^(1)\.(27|28|29)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`
 
 	// semverRegex is a regex using the semverRegexString.
 	// It's used to verify the version inside the manifest,
 	// as kubernetes follows the semantic version terminology
 	// https://kubernetes.io/releases/
-	semverRegex = regexp.MustCompile(semverRegexString)
+	kubernetesVersionRegex = regexp.MustCompile(kubernetesVersionRegexString)
 )
 
 // Validate validates the parsed data inside the Kubernetes section of the manifest.
@@ -73,7 +73,7 @@ func validateVersion(fl validator.FieldLevel) bool {
 	// drop the 'v' as it's not part of a semantic version (https://semver.org/)
 	semverString = strings.TrimPrefix(semverString, "v")
 
-	return semverRegex.MatchString(semverString)
+	return kubernetesVersionRegex.MatchString(semverString)
 }
 
 func validateNodepools(m *Manifest, cluster *Cluster) error {

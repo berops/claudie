@@ -3,6 +3,7 @@ package usecases
 import (
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/kubernetes"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/loadbalancer"
 )
@@ -20,7 +21,7 @@ func (u *Usecases) BuildInfrastructure(request *pb.BuildInfrastructureRequest) (
 
 	var lbClusters []*loadbalancer.LBcluster
 	for _, desiredLBCluster := range request.DesiredLbs {
-		var current *pb.LBcluster
+		var current *spec.LBcluster
 
 		for _, currentLbCluster := range request.CurrentLbs {
 			if desiredLBCluster.ClusterInfo.Name == currentLbCluster.ClusterInfo.Name {

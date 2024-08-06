@@ -7,15 +7,15 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/rs/zerolog/log"
-	"google.golang.org/grpc"
-	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/externalgrpc/protos"
-
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/autoscaler-adapter/node_manager"
 	cOperator "github.com/berops/claudie/services/claudie-operator/client"
+	"github.com/rs/zerolog/log"
+	"google.golang.org/grpc"
+	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/externalgrpc/protos"
 )
 
 const (
@@ -34,7 +34,7 @@ type nodeCache struct {
 	// Nodegroup as per Cluster Autoscaler definition.
 	nodeGroup *protos.NodeGroup
 	// Nodepool as per Claudie definition.
-	nodepool *pb.NodePool
+	nodepool *spec.NodePool
 	// Target size of node group.
 	targetSize int32
 }
@@ -49,7 +49,7 @@ type ClaudieCloudProvider struct {
 	// Kubernetes InputManifest resource namespace
 	resourceNamespace string
 	// Cluster as described in Claudie config.
-	configCluster *pb.K8Scluster
+	configCluster *spec.K8Scluster
 	// Map of cached info regarding nodes.
 	nodesCache map[string]*nodeCache
 	// Node manager.
@@ -62,7 +62,7 @@ type ClaudieCloudProvider struct {
 func NewClaudieCloudProvider(projectName, clusterName string) *ClaudieCloudProvider {
 	// Connect to Claudie and retrieve *pb.K8Scluster
 	var (
-		cluster    *pb.K8Scluster
+		cluster    *spec.K8Scluster
 		err        error
 		rName      string
 		rNamespace string
@@ -87,7 +87,7 @@ func NewClaudieCloudProvider(projectName, clusterName string) *ClaudieCloudProvi
 }
 
 // getClaudieState returns a *pb.K8Scluster, resourceName and resourceNamespace from Claudie, for this particular ClaudieCloudProvider instance.
-func getClaudieState(projectName, clusterName string) (*pb.K8Scluster, string, string, error) {
+func getClaudieState(projectName, clusterName string) (*spec.K8Scluster, string, string, error) {
 	var cc *grpc.ClientConn
 	var err error
 	var res *pb.GetConfigFromDBResponse
@@ -121,7 +121,7 @@ func getClaudieState(projectName, clusterName string) (*pb.K8Scluster, string, s
 }
 
 // getNodesCache returns a map of nodeCache, regarding all information needed based on the nodepools with autoscaling enabled.
-func getNodesCache(nodepools []*pb.NodePool) map[string]*nodeCache {
+func getNodesCache(nodepools []*spec.NodePool) map[string]*nodeCache {
 	var nc = make(map[string]*nodeCache, len(nodepools))
 	for _, np := range nodepools {
 		if np.GetDynamicNodePool() != nil {

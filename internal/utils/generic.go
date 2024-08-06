@@ -42,7 +42,7 @@ func MergeMaps[M ~map[K]V, K comparable, V any](maps ...M) M {
 }
 
 // Into traverse the elements in k and calls the supplied function f to
-// convert them into elements if type V.
+// convert them into elements of type V.
 func Into[K, V any](k []K, f func(k K) *V) []*V {
 	result := make([]*V, 0, len(k))
 	for _, k := range k {
@@ -71,4 +71,16 @@ func RemoveDuplicates[K comparable](slice []K) []K {
 		}
 	}
 	return list
+}
+
+func PointerValEqual[K comparable](left, right *K) bool {
+	if left == nil && right == nil {
+		return true
+	}
+
+	if left == nil || right == nil {
+		return false
+	}
+
+	return *left == *right
 }

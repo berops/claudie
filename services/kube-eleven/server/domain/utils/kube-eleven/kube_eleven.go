@@ -6,14 +6,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/rs/zerolog/log"
-
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
 	commonUtils "github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/kube-eleven/server/domain/utils/kubeone"
 	"github.com/berops/claudie/services/kube-eleven/templates"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -32,10 +31,10 @@ type KubeEleven struct {
 	outputDirectory string
 
 	// Kubernetes cluster that will be set up.
-	K8sCluster *pb.K8Scluster
+	K8sCluster *spec.K8Scluster
 	// LB clusters attached to the above Kubernetes cluster.
 	// If nil, the first control node becomes the api endpoint of the cluster.
-	LBClusters []*pb.LBcluster
+	LBClusters []*spec.LBcluster
 
 	// SpawnProcessLimit represents a synchronization channel which limits the number of spawned kubeone
 	// processes. This values must be non-nil and be buffered, where the capacity indicates
@@ -152,7 +151,7 @@ func (k *KubeEleven) generateFiles() error {
 func (k *KubeEleven) generateTemplateData() templateData {
 	var data templateData
 
-	var potentialEndpointNode *pb.Node
+	var potentialEndpointNode *spec.Node
 	data.Nodepools, potentialEndpointNode = k.getClusterNodes()
 
 	data.APIEndpoint = k.findAPIEndpoint(potentialEndpointNode)
@@ -166,9 +165,9 @@ func (k *KubeEleven) generateTemplateData() templateData {
 
 // getClusterNodes will parse the nodepools of k.K8sCluster and construct a slice of *NodepoolInfo.
 // Returns the slice of *NodepoolInfo and the potential endpoint node.
-func (k *KubeEleven) getClusterNodes() ([]*NodepoolInfo, *pb.Node) {
+func (k *KubeEleven) getClusterNodes() ([]*NodepoolInfo, *spec.Node) {
 	nodepoolInfos := make([]*NodepoolInfo, 0, len(k.K8sCluster.ClusterInfo.NodePools))
-	var endpointNode *pb.Node
+	var endpointNode *spec.Node
 
 	// Construct the slice of *NodepoolInfo
 	for _, nodepool := range k.K8sCluster.ClusterInfo.GetNodePools() {
@@ -180,7 +179,7 @@ func (k *KubeEleven) getClusterNodes() ([]*NodepoolInfo, *pb.Node) {
 				return strings.TrimPrefix(name, fmt.Sprintf("%s-%s-", k.K8sCluster.ClusterInfo.Name, k.K8sCluster.ClusterInfo.Hash))
 			})
 
-			if endpointNode == nil || (potentialEndpointNode != nil && potentialEndpointNode.NodeType == pb.NodeType_apiEndpoint) {
+			if endpointNode == nil || (potentialEndpointNode != nil && potentialEndpointNode.NodeType == spec.NodeType_apiEndpoint) {
 				endpointNode = potentialEndpointNode
 			}
 
@@ -196,7 +195,7 @@ func (k *KubeEleven) getClusterNodes() ([]*NodepoolInfo, *pb.Node) {
 		} else if nodepool.GetStaticNodePool() != nil {
 			var nodes []*NodeInfo
 			nodes, potentialEndpointNode := getNodeData(nodepool.Nodes, func(s string) string { return s })
-			if endpointNode == nil || (potentialEndpointNode != nil && potentialEndpointNode.NodeType == pb.NodeType_apiEndpoint) {
+			if endpointNode == nil || (potentialEndpointNode != nil && potentialEndpointNode.NodeType == spec.NodeType_apiEndpoint) {
 				endpointNode = potentialEndpointNode
 			}
 			nodepoolInfo = &NodepoolInfo{
@@ -219,7 +218,7 @@ func (k *KubeEleven) getClusterNodes() ([]*NodepoolInfo, *pb.Node) {
 // It loops through the slice of attached LB clusters and if any ApiServer type LB cluster is found,
 // then it's DNS endpoint is returned as the cluster api endpoint.
 // Otherwise returns the public IP of the potential endpoint node found in getClusterNodes( ).
-func (k *KubeEleven) findAPIEndpoint(potentialEndpointNode *pb.Node) string {
+func (k *KubeEleven) findAPIEndpoint(potentialEndpointNode *spec.Node) string {
 	apiEndpoint := ""
 
 	for _, lbCluster := range k.LBClusters {
@@ -227,7 +226,7 @@ func (k *KubeEleven) findAPIEndpoint(potentialEndpointNode *pb.Node) string {
 		if lbCluster.TargetedK8S == k.K8sCluster.ClusterInfo.Name {
 			// And if the LB cluster if of type ApiServer
 			for _, role := range lbCluster.Roles {
-				if role.RoleType == pb.RoleType_ApiServer {
+				if role.RoleType == spec.RoleType_ApiServer {
 					return lbCluster.Dns.Endpoint
 				}
 			}
@@ -238,7 +237,7 @@ func (k *KubeEleven) findAPIEndpoint(potentialEndpointNode *pb.Node) string {
 	// Then we will use the potential endpoint type control node.
 	if potentialEndpointNode != nil {
 		apiEndpoint = potentialEndpointNode.Public
-		potentialEndpointNode.NodeType = pb.NodeType_apiEndpoint
+		potentialEndpointNode.NodeType = spec.NodeType_apiEndpoint
 	} else {
 		log.Error().Msgf("Cluster %s does not have any API endpoint specified", k.K8sCluster.ClusterInfo.Name)
 	}
@@ -247,9 +246,9 @@ func (k *KubeEleven) findAPIEndpoint(potentialEndpointNode *pb.Node) string {
 }
 
 // getNodeData return template data for the nodes from the cluster.
-func getNodeData(nodes []*pb.Node, nameFunc func(string) string) ([]*NodeInfo, *pb.Node) {
+func getNodeData(nodes []*spec.Node, nameFunc func(string) string) ([]*NodeInfo, *spec.Node) {
 	n := make([]*NodeInfo, 0, len(nodes))
-	var potentialEndpointNode *pb.Node
+	var potentialEndpointNode *spec.Node
 	// Construct the Nodes slice inside the NodePoolInfo
 	for _, node := range nodes {
 		nodeName := nameFunc(node.Name)
@@ -259,11 +258,11 @@ func getNodeData(nodes []*pb.Node, nameFunc func(string) string) ([]*NodeInfo, *
 		// in case there is no LB cluster (of ApiServer type) provided in the Claudie config.
 
 		// If cluster api endpoint is already set, use it.
-		if node.GetNodeType() == pb.NodeType_apiEndpoint {
+		if node.GetNodeType() == spec.NodeType_apiEndpoint {
 			potentialEndpointNode = node
 
 			// otherwise choose one master node which will act as the cluster api endpoint
-		} else if node.GetNodeType() == pb.NodeType_master && potentialEndpointNode == nil {
+		} else if node.GetNodeType() == spec.NodeType_master && potentialEndpointNode == nil {
 			potentialEndpointNode = node
 		}
 	}

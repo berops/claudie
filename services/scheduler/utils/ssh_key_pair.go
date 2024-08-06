@@ -8,14 +8,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/berops/claudie/proto/pb/spec"
 	"golang.org/x/crypto/ssh"
-
-	"github.com/berops/claudie/proto/pb"
 )
 
 // generateSSHKeys will generate SSH keypair for each nodepool that does not yet have
 // a keypair assigned.
-func generateSSHKeys(desiredInfo *pb.ClusterInfo) error {
+func generateSSHKeys(desiredInfo *spec.ClusterInfo) error {
 	for i := range desiredInfo.NodePools {
 		if dp := desiredInfo.NodePools[i].GetDynamicNodePool(); dp != nil && dp.PublicKey == "" {
 			var err error

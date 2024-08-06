@@ -3,22 +3,21 @@ package kubernetes
 import (
 	"fmt"
 
-	"github.com/rs/zerolog"
-
 	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
+	"github.com/rs/zerolog"
 )
 
 type K8Scluster struct {
 	ProjectName string
 
-	DesiredState *pb.K8Scluster
-	CurrentState *pb.K8Scluster
+	DesiredState *spec.K8Scluster
+	CurrentState *spec.K8Scluster
 
 	// AttachedLBClusters are the LB clusters that are
 	// attached to this K8s cluster.
-	AttachedLBClusters []*pb.LBcluster
+	AttachedLBClusters []*spec.LBcluster
 
 	// SpawnProcessLimit represents a synchronization channel which limits the number of spawned terraform
 	// processes. This values should always be non-nil and be buffered, where the capacity indicates
@@ -38,7 +37,7 @@ func (k *K8Scluster) Id() string {
 func (k *K8Scluster) Build(logger zerolog.Logger) error {
 	logger.Info().Msgf("Building K8S Cluster %s", k.DesiredState.ClusterInfo.Name)
 
-	var currentClusterInfo *pb.ClusterInfo
+	var currentClusterInfo *spec.ClusterInfo
 	// Check if current cluster was defined, to avoid access of unreferenced memory
 	if k.CurrentState != nil {
 		currentClusterInfo = k.CurrentState.ClusterInfo
@@ -47,11 +46,10 @@ func (k *K8Scluster) Build(logger zerolog.Logger) error {
 	cluster := cluster_builder.ClusterBuilder{
 		DesiredClusterInfo: k.DesiredState.ClusterInfo,
 		CurrentClusterInfo: currentClusterInfo,
-
-		ProjectName: k.ProjectName,
-		ClusterType: pb.ClusterType_K8s,
-		Metadata: map[string]any{
-			"loadBalancers": k.AttachedLBClusters,
+		ProjectName:        k.ProjectName,
+		ClusterType:        spec.ClusterType_K8s,
+		K8sInfo: cluster_builder.K8sInfo{
+			LoadBalancers: k.AttachedLBClusters,
 		},
 		SpawnProcessLimit: k.SpawnProcessLimit,
 	}
@@ -70,7 +68,7 @@ func (k *K8Scluster) Destroy(logger zerolog.Logger) error {
 		CurrentClusterInfo: k.CurrentState.ClusterInfo,
 
 		ProjectName:       k.ProjectName,
-		ClusterType:       pb.ClusterType_K8s,
+		ClusterType:       spec.ClusterType_K8s,
 		SpawnProcessLimit: k.SpawnProcessLimit,
 	}
 

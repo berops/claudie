@@ -21,32 +21,79 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: autoscaler-config-test-cluster-kjbansc
+  labels:
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: cluster-autoscaler
+    app.kubernetes.io/instance: cluster-autoscaler-test-cluster-kjbansc
+    app.kubernetes.io/component: cluster-autoscaler
 data:
   cloud-config: |-
-    address: "autoscaler-adapter-test-cluster-kjbansc:50000"
+    address: "localhost:50000"
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: autoscaler-test-cluster-kjbansc
   labels:
-    app: autoscaler-test-cluster-kjbansc
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: cluster-autoscaler
+    app.kubernetes.io/instance: cluster-autoscaler-test-cluster-kjbansc
+    app.kubernetes.io/component: cluster-autoscaler
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: autoscaler-test-cluster-kjbansc
+      app.kubernetes.io/part-of: claudie
+      app.kubernetes.io/name: cluster-autoscaler
+      app.kubernetes.io/instance: cluster-autoscaler-test-cluster-kjbansc
+      app.kubernetes.io/component: cluster-autoscaler
   template:
     metadata:
       labels:
-        app: autoscaler-test-cluster-kjbansc
+        app.kubernetes.io/part-of: claudie
+        app.kubernetes.io/name: cluster-autoscaler
+        app.kubernetes.io/instance: cluster-autoscaler-test-cluster-kjbansc
+        app.kubernetes.io/component: cluster-autoscaler
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8085"
     spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 3000
+        fsGroup: 2000    
       containers:
-        - image: registry.k8s.io/autoscaling/cluster-autoscaler:v1.25.0
-          name: cluster-autoscaler
+        - name: autoscaler-adapter
+          imagePullPolicy: IfNotPresent
+          image: ghcr.io/berops/claudie/autoscaler-adapter
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true                    
+            capabilities:
+              drop:
+                - all                 
+          env:
+            - name: ADAPTER_PORT
+              value: "50000"
+            - name: CLUSTER_NAME
+              value: test-cluster
+            - name: PROJECT_NAME
+              value: Project1
+            - name: OPERATOR_HOSTNAME
+              value: 
+            - name: OPERATOR_PORT
+              value: ""
+          resources:
+            requests:
+              cpu: 80m
+              memory: 100Mi
+            limits:
+              cpu: 160m
+          ports:
+            - containerPort: 50000
+        - name: cluster-autoscaler
+          image: registry.k8s.io/autoscaling/cluster-autoscaler:
           resources:
             requests:
               cpu: 100m
@@ -56,7 +103,8 @@ spec:
             - --cloud-provider=externalgrpc
             - --cloud-config=/etc/claudie/cloud-config/cloud-config
             - --kubeconfig=/etc/claudie/kubeconfig/kubeconfig
-            - --v=5
+            - --ignore-daemonsets-utilization=true
+            - --balance-similar-node-groups=true
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: kubeconfig
