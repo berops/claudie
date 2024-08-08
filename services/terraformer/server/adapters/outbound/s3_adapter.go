@@ -2,9 +2,11 @@ package outboundAdapters
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/berops/claudie/internal/envs"
 )
 
@@ -103,6 +105,10 @@ func (s *S3Adapter) Stat(ctx context.Context, projectName, clusterId, keyFormat 
 		Key:    &key,
 	})
 	if err != nil {
+		var notFound *types.NotFound
+		if errors.As(err, &notFound) {
+			return ErrKeyNotExists
+		}
 		return fmt.Errorf("failed to check existence of object %s: %w", key, err)
 	}
 	return nil
