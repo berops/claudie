@@ -7,7 +7,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/aws/smithy-go"
 	"github.com/berops/claudie/internal/envs"
 )
 
@@ -106,12 +105,9 @@ func (s *S3Adapter) Stat(ctx context.Context, projectName, clusterId, keyFormat 
 		Key:    &key,
 	})
 	if err != nil {
-		var apiError smithy.APIError
-		if errors.As(err, &apiError) {
-			var notFound *types.NotFound
-			if errors.As(apiError, &notFound) {
-				return ErrKeyNotExists
-			}
+		var notFound *types.NotFound
+		if errors.As(err, &notFound) {
+			return ErrKeyNotExists
 		}
 		return fmt.Errorf("failed to check existence of object %s: %w", key, err)
 	}
