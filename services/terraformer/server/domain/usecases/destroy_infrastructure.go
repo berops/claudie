@@ -69,10 +69,10 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 		// After the infrastructure is destroyed, we need to delete the Terraform state file from MinIO
 		// and Terraform state-lock file from DynamoDB.
 		if err := u.DynamoDB.DeleteLockFile(ctx, request.ProjectName, cluster.Id(), keyFormatLockFile); err != nil {
-			return err
+			logger.Warn().Msgf("Failed to delete lock file for %q, assumming it was deleted/not created", cluster.Id())
 		}
 		if err := u.StateStorage.DeleteStateFile(ctx, request.ProjectName, cluster.Id(), keyFormatStateFile); err != nil {
-			return err
+			logger.Warn().Msgf("Failed to delete state file for %q, assumming it was deleted/not created", cluster.Id())
 		}
 		logger.Info().Msgf("Successfully deleted Terraform state and state-lock files for %q", cluster.Id())
 
@@ -85,10 +85,10 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 		// there are additional DNS related Terraform state and state-lock files.
 		if _, ok := cluster.(*loadbalancer.LBcluster); ok {
 			if err := u.DynamoDB.DeleteLockFile(ctx, request.ProjectName, cluster.Id(), dnsKeyFormatLockFile); err != nil {
-				return err
+				logger.Warn().Msgf("Failed to delete lock file for %q-dns, assumming it was deleted/not created", cluster.Id())
 			}
 			if err := u.StateStorage.DeleteStateFile(ctx, request.ProjectName, cluster.Id(), dnsKeyFormatStateFile); err != nil {
-				return err
+				logger.Warn().Msgf("Failed to delete state file for %q-dns, assumming it was deleted/not created", cluster.Id())
 			}
 			logger.Info().Msg("Successfully deleted DNS related Terraform state and state-lock files")
 
