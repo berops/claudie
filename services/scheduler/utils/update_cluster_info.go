@@ -2,7 +2,8 @@ package utils
 
 import (
 	"fmt"
-	"github.com/berops/claudie/proto/pb"
+
+	"github.com/berops/claudie/proto/pb/spec"
 )
 
 // updateClusterInfo updates the desired state based on the current state
@@ -14,7 +15,7 @@ import (
 //   - metadata
 //   - Public key
 //   - Private key
-func updateClusterInfo(desired, current *pb.ClusterInfo) error {
+func updateClusterInfo(desired, current *spec.ClusterInfo) error {
 	desired.Hash = current.Hash
 desired:
 	for _, desiredNp := range desired.NodePools {
@@ -37,7 +38,7 @@ desired:
 	return nil
 }
 
-func tryUpdateDynamicNodePool(desired, current *pb.NodePool) bool {
+func tryUpdateDynamicNodePool(desired, current *spec.NodePool) bool {
 	dnp := desired.GetDynamicNodePool()
 	cnp := current.GetDynamicNodePool()
 
@@ -50,7 +51,7 @@ func tryUpdateDynamicNodePool(desired, current *pb.NodePool) bool {
 	dnp.PrivateKey = cnp.PrivateKey
 
 	desired.Nodes = current.Nodes
-	dnp.Metadata = cnp.Metadata
+	dnp.Cidr = cnp.Cidr
 
 	// Update the count
 	if cnp.AutoscalerConfig != nil && dnp.AutoscalerConfig != nil {
@@ -73,7 +74,7 @@ func tryUpdateDynamicNodePool(desired, current *pb.NodePool) bool {
 	return true
 }
 
-func tryUpdateStaticNodePool(desired, current *pb.NodePool) bool {
+func tryUpdateStaticNodePool(desired, current *spec.NodePool) bool {
 	dnp := desired.GetStaticNodePool()
 	cnp := current.GetStaticNodePool()
 

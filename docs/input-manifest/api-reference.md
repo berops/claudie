@@ -79,6 +79,11 @@ To find out how to configure Cloudflare follow the instructions [here](./provide
 
   Credentials for the provider (API token).
 
+- `templates`
+  - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
+  - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
+  - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
+
 ### HetznerDNS
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the HetznerDNS provider.
@@ -87,6 +92,11 @@ To find out how to configure HetznerDNS follow the instructions [here](./provide
 - `apitoken`
 
   Credentials for the provider (API token).
+
+- `templates`
+  - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
+  - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
+  - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
 
 ### GCP
 
@@ -101,6 +111,11 @@ To find out how to configure GCP provider and service account, follow the instru
 
   Project id of an already existing GCP project where the infrastructure is to be created.
 
+- `templates`
+  - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
+  - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
+  - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
+
 ### GenesisCloud
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the Genesis Cloud provider.
@@ -110,6 +125,11 @@ To find out how to configure Genesis Cloud provider, follow the instructions [he
 
   API token for the provider.
 
+- `templates`
+  - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
+  - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
+  - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
+
 ### Hetzner
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the Hetzner provider.
@@ -118,6 +138,11 @@ To find out how to configure Hetzner provider and service account, follow the in
 - `credentials`
 
   Credentials for the provider (API token).
+
+- `templates`
+  - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
+  - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
+  - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
 
 ### OCI
 
@@ -144,6 +169,11 @@ To find out how to configure OCI provider and service account, follow the instru
 
   OCID of the [compartment](https://docs.oracle.com/en/cloud/paas/integration-cloud/oracle-integration-oci/creating-oci-compartment.html) where VMs/VCNs/... will be created
 
+- `templates`
+  - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
+  - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
+  - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
+
 ### AWS
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the AWS provider.
@@ -156,6 +186,11 @@ To find out how to configure AWS provider and service account, follow the instru
 - `secretkey`
 
   Secret key for the Access key specified above.
+
+- `templates`
+  - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
+  - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
+  - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
 
 ### Azure
 
@@ -177,6 +212,11 @@ To find out how to configure Azure provider and service account, follow the inst
 - `clientsecret`
   
   Client secret generated for your client.
+
+- `templates`
+  - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
+  - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
+  - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
 
 ## Nodepools
 

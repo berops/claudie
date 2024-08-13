@@ -3,6 +3,7 @@ package usecases
 import (
 	"errors"
 	"fmt"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/builder/domain/usecases/metrics"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog/log"
@@ -158,9 +159,9 @@ func (u *Usecases) destroyCluster(ctx *utils.BuilderContext, cboxClient pb.Conte
 }
 
 // destroyConfig destroys all the current state of the config.
-func (u *Usecases) destroyConfig(config *pb.Config, clusterView *cutils.ClusterView, c pb.ContextBoxServiceClient) error {
+func (u *Usecases) destroyConfig(config *spec.Config, clusterView *cutils.ClusterView, c pb.ContextBoxServiceClient) error {
 	// Destroy all cluster concurrently.
-	if err := cutils.ConcurrentExec(config.CurrentState.Clusters, func(_ int, cluster *pb.K8Scluster) error {
+	if err := cutils.ConcurrentExec(config.CurrentState.Clusters, func(_ int, cluster *spec.K8Scluster) error {
 		err := u.destroyCluster(&utils.BuilderContext{
 			ProjectName:          config.Name,
 			CurrentCluster:       cluster,
@@ -192,7 +193,7 @@ func (u *Usecases) saveWorkflowDescription(ctx *utils.BuilderContext, descriptio
 }
 
 // deleteConfig calls destroy config to remove all traces of infrastructure from given config.
-func (u *Usecases) deleteConfig(config *pb.Config, clusterView *cutils.ClusterView, cboxClient pb.ContextBoxServiceClient) error {
+func (u *Usecases) deleteConfig(config *spec.Config, clusterView *cutils.ClusterView, cboxClient pb.ContextBoxServiceClient) error {
 	log := cutils.CreateLoggerWithProjectName(config.Name)
 
 	var err error
@@ -228,7 +229,7 @@ func (u *Usecases) deleteCluster(configName, clusterName string, clusterView *cu
 }
 
 // deleteNodes deletes nodes from the cluster based on the node map specified.
-func (u *Usecases) deleteNodes(currentCluster, desiredCluster *pb.K8Scluster, nodes map[string]int32) (*pb.K8Scluster, error) {
+func (u *Usecases) deleteNodes(currentCluster, desiredCluster *spec.K8Scluster, nodes map[string]int32) (*spec.K8Scluster, error) {
 	master, worker := utils.SeparateNodepools(nodes, currentCluster.ClusterInfo, desiredCluster.ClusterInfo)
 	newCluster, err := u.callDeleteNodes(master, worker, currentCluster)
 	if err != nil {

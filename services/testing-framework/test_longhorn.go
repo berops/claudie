@@ -9,7 +9,7 @@ import (
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -27,7 +27,7 @@ type KubectlOutputJSON struct {
 }
 
 // testLonghornDeployment function will perform actions needed to confirm that longhorn has been successfully deployed in the cluster
-func testLonghornDeployment(ctx context.Context, config *pb.Config) error {
+func testLonghornDeployment(ctx context.Context, config *spec.Config) error {
 	//start longhorn testing
 	clusters := config.CurrentState.Clusters
 	for _, cluster := range clusters {
@@ -51,7 +51,7 @@ func testLonghornDeployment(ctx context.Context, config *pb.Config) error {
 }
 
 // checkLonghornNodes will check if the count of nodes.longhorn.io is same as number of schedulable nodes
-func checkLonghornNodes(ctx context.Context, cluster *pb.K8Scluster, kubectl kubectl.Kubectl) error {
+func checkLonghornNodes(ctx context.Context, cluster *spec.K8Scluster, kubectl kubectl.Kubectl) error {
 	readyCheck := 0
 	workerCount := 0
 	//count the worker nodes

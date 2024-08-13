@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/berops/claudie/internal/nodes"
 	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb/spec"
 
-	"github.com/berops/claudie/proto/pb"
 	k8sV1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -36,13 +36,13 @@ type typeInfo struct {
 }
 
 // NewNodeManager returns a NodeManager pointer with initialised caches about nodes.
-func NewNodeManager(nodepools []*pb.NodePool) (*NodeManager, error) {
+func NewNodeManager(nodepools []*spec.NodePool) (*NodeManager, error) {
 	nm := &NodeManager{}
 	nm.cacheProviderMap = make(map[string]struct{})
 
 	var err error
 
-	dyn := utils.Into(nodepools, func(k *pb.NodePool) *pb.DynamicNodePool {
+	dyn := utils.Into(nodepools, func(k *spec.NodePool) *spec.DynamicNodePool {
 		return k.GetDynamicNodePool()
 	})
 
@@ -58,12 +58,12 @@ func NewNodeManager(nodepools []*pb.NodePool) (*NodeManager, error) {
 }
 
 // Refresh checks if the information about specified nodepools needs refreshing, and if so, refreshes it.
-func (nm *NodeManager) Refresh(nodepools []*pb.NodePool) error {
+func (nm *NodeManager) Refresh(nodepools []*spec.NodePool) error {
 	return nm.refreshCache(nodepools)
 }
 
 // GetCapacity returns a theoretical capacity for a new node from specified nodepool.
-func (nm *NodeManager) GetCapacity(np *pb.NodePool) k8sV1.ResourceList {
+func (nm *NodeManager) GetCapacity(np *spec.NodePool) k8sV1.ResourceList {
 	typeInfo := nm.getTypeInfo(np.GetDynamicNodePool().Provider.CloudProviderName, np.GetDynamicNodePool())
 	if typeInfo != nil {
 		var disk int64
@@ -84,12 +84,12 @@ func (nm *NodeManager) GetCapacity(np *pb.NodePool) k8sV1.ResourceList {
 }
 
 // Arch returns the architecture for the dynamic nodepool.
-func (nm *NodeManager) Arch(np *pb.NodePool) (nodes.Arch, error) {
+func (nm *NodeManager) Arch(np *spec.NodePool) (nodes.Arch, error) {
 	return nm.resolver.Arch(np)
 }
 
 // getTypeInfo returns a typeInfo for this nodepool
-func (nm *NodeManager) getTypeInfo(provider string, np *pb.DynamicNodePool) *typeInfo {
+func (nm *NodeManager) getTypeInfo(provider string, np *spec.DynamicNodePool) *typeInfo {
 	switch provider {
 	case "hetzner":
 		if ti, ok := nm.hetznerVMs[np.ServerType]; ok {
@@ -116,7 +116,7 @@ func (nm *NodeManager) getTypeInfo(provider string, np *pb.DynamicNodePool) *typ
 }
 
 // refreshCache refreshes node info cache if needed.
-func (nm *NodeManager) refreshCache(nps []*pb.NodePool) error {
+func (nm *NodeManager) refreshCache(nps []*spec.NodePool) error {
 	for _, nodepool := range nps {
 		np := nodepool.GetDynamicNodePool()
 		if np == nil {

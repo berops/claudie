@@ -15,7 +15,7 @@ import (
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/kuber/templates"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -39,7 +39,7 @@ type AutoscalerManager struct {
 	// Project name where k8s cluster is defined.
 	projectName string
 	// K8s cluster.
-	cluster *pb.K8Scluster
+	cluster *spec.K8Scluster
 	// Output directory.
 	directory string
 }
@@ -60,7 +60,7 @@ type TagsResponse struct {
 }
 
 // NewAutoscalerManager returns configured AutoscalerManager which can set up or remove Cluster Autoscaler.
-func NewAutoscalerManager(projectName string, cluster *pb.K8Scluster, directory string) *AutoscalerManager {
+func NewAutoscalerManager(projectName string, cluster *spec.K8Scluster, directory string) *AutoscalerManager {
 	return &AutoscalerManager{projectName: projectName, cluster: cluster, directory: directory}
 }
 

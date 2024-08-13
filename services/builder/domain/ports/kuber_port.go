@@ -2,6 +2,7 @@ package ports
 
 import (
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/builder/domain/usecases/utils"
 )
 
@@ -18,8 +19,8 @@ type KuberPort interface {
 	PatchClusterInfoConfigMap(builderCtx *utils.BuilderContext, kuberGrpcClient pb.KuberServiceClient) error
 	PatchKubeProxyConfigMap(builderCtx *utils.BuilderContext, kuberGrpcClient pb.KuberServiceClient) error
 	PatchNodes(builderCtx *utils.BuilderContext, kuberGrpcClient pb.KuberServiceClient) error
-	DeleteNodes(cluster *pb.K8Scluster, masterNodes, workerNodes []string, kuberGrpcClient pb.KuberServiceClient) (*pb.DeleteNodesResponse, error)
-	CiliumRolloutRestart(cluster *pb.K8Scluster, kuberGrpcClient pb.KuberServiceClient) error
+	DeleteNodes(cluster *spec.K8Scluster, masterNodes, workerNodes []string, kuberGrpcClient pb.KuberServiceClient) (*pb.DeleteNodesResponse, error)
+	CiliumRolloutRestart(cluster *spec.K8Scluster, kuberGrpcClient pb.KuberServiceClient) error
 
 	PerformHealthCheck() error
 	GetClient() pb.KuberServiceClient

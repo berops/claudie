@@ -5,13 +5,13 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rs/zerolog"
-
 	"github.com/berops/claudie/internal/templateUtils"
 	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/ansibler/server/utils"
 	"github.com/berops/claudie/services/ansibler/templates"
+	"github.com/rs/zerolog"
 )
 
 const (
@@ -27,7 +27,7 @@ func (u *Usecases) SetUpLoadbalancers(request *pb.SetUpLBRequest) (*pb.SetUpLBRe
 	logger := commonUtils.CreateLoggerWithProjectAndClusterName(request.ProjectName, commonUtils.GetClusterID(request.Desired.ClusterInfo))
 	logger.Info().Msgf("Setting up the loadbalancers")
 
-	currentLBClusters := make(map[string]*pb.LBcluster)
+	currentLBClusters := make(map[string]*spec.LBcluster)
 	for _, lbCluster := range request.CurrentLbs {
 		currentLBClusters[lbCluster.ClusterInfo.Name] = lbCluster
 	}
@@ -126,7 +126,7 @@ func setUpLoadbalancers(clusterName string, lbClustersInfo *utils.LBClustersInfo
 
 // setUpNodeExporter sets up node-exporter on each node of the LB cluster.
 // Returns error if not successful, nil otherwise.
-func setUpNodeExporter(lbCluster *pb.LBcluster, clusterDirectory string, spawnProcessLimit chan struct{}) error {
+func setUpNodeExporter(lbCluster *spec.LBcluster, clusterDirectory string, spawnProcessLimit chan struct{}) error {
 	var playbookParameters = utils.LBPlaybookParameters{Loadbalancer: lbCluster.ClusterInfo.Name}
 
 	// Generate node-exporter Ansible playbook from template
@@ -157,7 +157,7 @@ func setUpNodeExporter(lbCluster *pb.LBcluster, clusterDirectory string, spawnPr
 
 // setUpNginx sets up the nginx loadbalancer based on the input manifest specification.
 // Return error if not successful, nil otherwise
-func setUpNginx(lbCluster *pb.LBcluster, targetK8sNodepool []*pb.NodePool, clusterDirectory string, spawnProcessLimit chan struct{}) error {
+func setUpNginx(lbCluster *spec.LBcluster, targetK8sNodepool []*spec.NodePool, clusterDirectory string, spawnProcessLimit chan struct{}) error {
 	lbClusterRolesInfo := targetPools(lbCluster, targetK8sNodepool)
 	// Generate the nginx config file
 	nginxConfTemplate, err := templateUtils.LoadTemplate(templates.NginxConfigTemplate)
@@ -193,7 +193,7 @@ func setUpNginx(lbCluster *pb.LBcluster, targetK8sNodepool []*pb.NodePool, clust
 	return nil
 }
 
-func targetPools(lbCluster *pb.LBcluster, targetK8sNodepool []*pb.NodePool) []utils.LBClusterRolesInfo {
+func targetPools(lbCluster *spec.LBcluster, targetK8sNodepool []*spec.NodePool) []utils.LBClusterRolesInfo {
 	//TODO: remove in favor of targetNodepools
 	targetControlNodes, targetComputeNodes := splitNodesByType(targetK8sNodepool)
 
@@ -214,8 +214,8 @@ func targetPools(lbCluster *pb.LBcluster, targetK8sNodepool []*pb.NodePool) []ut
 	return lbClusterRolesInfo
 }
 
-func targetNodes(targetPools []string, targetk8sPools []*pb.NodePool) (nodes []*pb.Node) {
-	var pools []*pb.NodePool
+func targetNodes(targetPools []string, targetk8sPools []*spec.NodePool) (nodes []*spec.Node) {
+	var pools []*spec.NodePool
 
 	for _, target := range targetPools {
 		for _, np := range targetk8sPools {
@@ -239,10 +239,10 @@ func targetNodes(targetPools []string, targetk8sPools []*pb.NodePool) (nodes []*
 }
 
 // splitNodesByType returns two slices of *pb.Node, one for control nodes and one for compute nodes.
-func splitNodesByType(nodepools []*pb.NodePool) (controlNodes, computeNodes []*pb.Node) {
+func splitNodesByType(nodepools []*spec.NodePool) (controlNodes, computeNodes []*spec.Node) {
 	for _, nodepool := range nodepools {
 		for _, node := range nodepool.Nodes {
-			if node.NodeType == pb.NodeType_apiEndpoint || node.NodeType == pb.NodeType_master {
+			if node.NodeType == spec.NodeType_apiEndpoint || node.NodeType == spec.NodeType_master {
 				controlNodes = append(controlNodes, node)
 			} else {
 				computeNodes = append(computeNodes, node)
@@ -255,12 +255,12 @@ func splitNodesByType(nodepools []*pb.NodePool) (controlNodes, computeNodes []*p
 
 // assignTarget returns a target nodes for pb.Target.
 // If no target matches the pb.Target enum, returns nil
-func assignTarget(targetControlNodes, targetComputeNodes []*pb.Node, target pb.Target) (targetNodes []*pb.Node) {
-	if target == pb.Target_k8sAllNodes {
+func assignTarget(targetControlNodes, targetComputeNodes []*spec.Node, target spec.Target) (targetNodes []*spec.Node) {
+	if target == spec.Target_k8sAllNodes {
 		targetNodes = append(targetControlNodes, targetComputeNodes...)
-	} else if target == pb.Target_k8sControlPlane {
+	} else if target == spec.Target_k8sControlPlane {
 		targetNodes = targetControlNodes
-	} else if target == pb.Target_k8sComputePlane {
+	} else if target == spec.Target_k8sComputePlane {
 		targetNodes = targetComputeNodes
 	}
 

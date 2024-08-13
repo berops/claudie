@@ -150,7 +150,7 @@ kubernetes:
 		{
 			desc: "test case containing unprintable characters",
 			in:   " unprintable ",
-			out:  "9969c5f9e2813e38773d38cb64a898e691423b2c5848c9b3a82f0a14d0f92f7b",
+			out:  "ed328a89372edae1364d85a79000b2012f45467253134f2c966cc36c4a4a09d3",
 		},
 	}
 

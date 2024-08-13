@@ -7,9 +7,12 @@ import (
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	outboundAdapters "github.com/berops/claudie/services/terraformer/server/adapters/outbound"
+	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/kubernetes"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/loadbalancer"
 	"github.com/rs/zerolog/log"
+	"os"
+	"path/filepath"
 )
 
 const (
@@ -71,7 +74,12 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 		if err := u.StateStorage.DeleteStateFile(ctx, request.ProjectName, cluster.Id(), keyFormatStateFile); err != nil {
 			logger.Warn().Msgf("Failed to delete state file for %q, assumming it was deleted/not created", cluster.Id())
 		}
-		logger.Info().Msg("Successfully deleted Terraform state and state-lock files")
+		logger.Info().Msgf("Successfully deleted Terraform state and state-lock files for %q", cluster.Id())
+
+		if err := os.RemoveAll(filepath.Join(cluster_builder.TemplatesRootDir, cluster.Id())); err != nil {
+			return fmt.Errorf("failed to delete templates for cluster %q: %w", cluster.Id(), err)
+		}
+		logger.Info().Msgf("Successfully deleted Templates files for cluster %q", cluster.Id())
 
 		// In case of LoadBalancer type cluster,
 		// there are additional DNS related Terraform state and state-lock files.
@@ -83,6 +91,11 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 				logger.Warn().Msgf("Failed to delete state file for %q-dns, assumming it was deleted/not created", cluster.Id())
 			}
 			logger.Info().Msg("Successfully deleted DNS related Terraform state and state-lock files")
+
+			if err := os.RemoveAll(filepath.Join(loadbalancer.TemplatesRootDir, fmt.Sprintf("%s-dns", cluster.Id()))); err != nil {
+				return fmt.Errorf("failed to delete dns templates for cluster %q: %w", cluster.Id(), err)
+			}
+			logger.Info().Msgf("Successfully deleted dns Templates files for cluster %q", cluster.Id())
 		}
 
 		return nil

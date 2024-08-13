@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/nodes"
 	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -36,12 +35,12 @@ type MetadataAnnotations struct {
 
 type Patcher struct {
 	clusterID        string
-	desiredNodepools []*pb.NodePool
+	desiredNodepools []*spec.NodePool
 	kc               kubectl.Kubectl
 	logger           zerolog.Logger
 }
 
-func NewPatcher(cluster *pb.K8Scluster, logger zerolog.Logger) *Patcher {
+func NewPatcher(cluster *spec.K8Scluster, logger zerolog.Logger) *Patcher {
 	kc := kubectl.Kubectl{Kubeconfig: cluster.Kubeconfig, MaxKubectlRetries: 3}
 	clusterID := utils.GetClusterID(cluster.ClusterInfo)
 	if log.Logger.GetLevel() == zerolog.DebugLevel {

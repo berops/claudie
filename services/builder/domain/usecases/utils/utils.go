@@ -3,18 +3,19 @@ package utils
 import (
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	cbox "github.com/berops/claudie/services/context-box/client"
 	"github.com/rs/zerolog/log"
 )
 
 // SaveConfigWithWorkflowError saves config with workflow states
-func SaveConfigWithWorkflowError(config *pb.Config, c pb.ContextBoxServiceClient, clusterView *utils.ClusterView) error {
+func SaveConfigWithWorkflowError(config *spec.Config, c pb.ContextBoxServiceClient, clusterView *utils.ClusterView) error {
 	config.State = clusterView.ClusterWorkflows
 	return cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
 }
 
-// updateNodePoolInfo updates the nodepool metadata and node private IPs between stages of the cluster build.
-func UpdateNodePoolInfo(src []*pb.NodePool, dst []*pb.NodePool) {
+// updateNodePoolInfo updates the nodepool CIDR and node private IPs between stages of the cluster build.
+func UpdateNodePoolInfo(src []*spec.NodePool, dst []*spec.NodePool) {
 src:
 	for _, npSrc := range src {
 		for _, npDst := range dst {
@@ -27,7 +28,7 @@ src:
 					}
 				}
 				if npSrc.GetDynamicNodePool() != nil && npDst.GetDynamicNodePool() != nil {
-					npDst.GetDynamicNodePool().Metadata = npSrc.GetDynamicNodePool().Metadata
+					npDst.GetDynamicNodePool().Cidr = npSrc.GetDynamicNodePool().Cidr
 				}
 				continue src
 			}
@@ -36,8 +37,8 @@ src:
 }
 
 // getNodeMap returns a map of nodes, where each key is node name.
-func getNodeMap(nodes []*pb.Node) map[string]*pb.Node {
-	m := make(map[string]*pb.Node, len(nodes))
+func getNodeMap(nodes []*spec.Node) map[string]*spec.Node {
+	m := make(map[string]*spec.Node, len(nodes))
 	for _, node := range nodes {
 		m[node.Name] = node
 	}
@@ -45,7 +46,7 @@ func getNodeMap(nodes []*pb.Node) map[string]*pb.Node {
 }
 
 // separateNodepools creates two slices of node names, one for master and one for worker nodes
-func SeparateNodepools(clusterNodes map[string]int32, currentClusterInfo, desiredClusterInfo *pb.ClusterInfo) (master []string, worker []string) {
+func SeparateNodepools(clusterNodes map[string]int32, currentClusterInfo, desiredClusterInfo *spec.ClusterInfo) (master []string, worker []string) {
 	for _, nodepool := range currentClusterInfo.NodePools {
 		var names = make([]string, 0, len(nodepool.Nodes))
 		if np := nodepool.GetDynamicNodePool(); np != nil {
@@ -68,7 +69,7 @@ func SeparateNodepools(clusterNodes map[string]int32, currentClusterInfo, desire
 
 // getDynamicNodeNames returns slice of length count with names of the nodes from specified nodepool
 // nodes chosen are from the last element in Nodes slice, up to the first one
-func getDynamicNodeNames(np *pb.NodePool, count int) (names []string) {
+func getDynamicNodeNames(np *spec.NodePool, count int) (names []string) {
 	for i := len(np.GetNodes()) - 1; i >= len(np.GetNodes())-count; i-- {
 		names = append(names, np.GetNodes()[i].GetName())
 		log.Debug().Msgf("Choosing node %s for deletion", np.GetNodes()[i].GetName())
@@ -78,7 +79,7 @@ func getDynamicNodeNames(np *pb.NodePool, count int) (names []string) {
 
 // getStaticNodeNames returns slice of length count with names of the nodes from specified nodepool
 // nodes chosen are from the last element in Nodes slice, up to the first one
-func getStaticNodeNames(np *pb.NodePool, desiredCluster *pb.ClusterInfo) (names []string) {
+func getStaticNodeNames(np *spec.NodePool, desiredCluster *spec.ClusterInfo) (names []string) {
 	// Find desired nodes for node pool.
 	desired := make(map[string]struct{})
 	for _, n := range desiredCluster.NodePools {

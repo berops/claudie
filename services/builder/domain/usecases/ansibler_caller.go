@@ -5,13 +5,14 @@ import (
 
 	cutils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/builder/domain/usecases/utils"
 )
 
 // removeClaudieUtilities removes previously installed claudie utilities.
 func (u *Usecases) removeClaudieUtilities(ctx *utils.BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
 	description := ctx.Workflow.Description
-	ctx.Workflow.Stage = pb.Workflow_ANSIBLER
+	ctx.Workflow.Stage = spec.Workflow_ANSIBLER
 	u.saveWorkflowDescription(ctx, fmt.Sprintf("%s removing claudie installed utilities", description), cboxClient)
 
 	resp, err := u.Ansibler.RemoveClaudieUtilities(ctx, u.Ansibler.GetClient())
@@ -32,7 +33,7 @@ func (u *Usecases) configureInfrastructure(ctx *utils.BuilderContext, cboxClient
 	ansClient := u.Ansibler.GetClient()
 
 	description := ctx.Workflow.Description
-	ctx.Workflow.Stage = pb.Workflow_ANSIBLER
+	ctx.Workflow.Stage = spec.Workflow_ANSIBLER
 
 	// Tear down loadbalancers.
 	apiEndpoint := ""
@@ -98,7 +99,7 @@ func (u *Usecases) configureInfrastructure(ctx *utils.BuilderContext, cboxClient
 // callUpdateAPIEndpoint updates k8s API endpoint via ansibler.
 func (u *Usecases) callUpdateAPIEndpoint(ctx *utils.BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
 	description := ctx.Workflow.Description
-	ctx.Workflow.Stage = pb.Workflow_ANSIBLER
+	ctx.Workflow.Stage = spec.Workflow_ANSIBLER
 	u.saveWorkflowDescription(ctx, fmt.Sprintf("%s changing api endpoint to a new control plane node", description), cboxClient)
 
 	resp, err := u.Ansibler.UpdateAPIEndpoint(ctx, u.Ansibler.GetClient())

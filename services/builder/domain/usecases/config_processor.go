@@ -3,15 +3,16 @@ package usecases
 import (
 	"errors"
 	"fmt"
-	"github.com/berops/claudie/services/builder/domain/usecases/metrics"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/rs/zerolog/log"
+	"github.com/berops/claudie/proto/pb/spec"
 	"sync"
 
 	cutils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/services/builder/domain/usecases/metrics"
 	"github.com/berops/claudie/services/builder/domain/usecases/utils"
 	cbox "github.com/berops/claudie/services/context-box/client"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/rs/zerolog/log"
 )
 
 // ConfigProcessor will fetch new configs from the context-box service. Each received config will be processed in
@@ -168,7 +169,7 @@ func (u *Usecases) ConfigProcessor(wg *sync.WaitGroup) error {
 				clusterView.ClusterWorkflows[clusterName].Description = fmt.Sprintf("Processing stage [%d/%d]", currentStage, stages)
 				logger.Info().Msgf("Processing stage [%d/%d] for cluster", currentStage, stages)
 
-				clusterView.ClusterWorkflows[clusterName].Stage = pb.Workflow_DELETE_NODES
+				clusterView.ClusterWorkflows[clusterName].Stage = spec.Workflow_DELETE_NODES
 				if err := u.ContextBox.SaveWorkflowState(config.Name, clusterName, clusterView.ClusterWorkflows[clusterName], cboxClient); err != nil {
 					clusterView.SetWorkflowError(clusterName, err)
 					return err

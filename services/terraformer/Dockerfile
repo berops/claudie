@@ -40,7 +40,9 @@ COPY --from=build /go/terraform/terraform /usr/local/bin
 
 COPY --from=build /go/services/terraformer/server/server /bin/services/terraformer/server/server
 
-RUN apk add bash
+COPY --from=build /usr/bin/git /usr/bin/git
+
+RUN apk --no-cache add bash git
 
 #Run server
 WORKDIR /bin

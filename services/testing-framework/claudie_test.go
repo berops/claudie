@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/berops/claudie/proto/pb/spec"
 	"io/fs"
 	"os"
 	"os/signal"
@@ -33,6 +34,9 @@ var (
 
 // TestClaudie will start all the test cases specified in tests directory
 func TestClaudie(t *testing.T) {
+	if testing.Short() {
+		t.Skipf("skipping testing-framework test-case")
+	}
 	utils.InitLog("testing-framework")
 	group := errgroup.Group{}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -127,7 +131,7 @@ func testClaudie(ctx context.Context) error {
 				errGroup.Go(func() error {
 					log.Info().Msgf("Starting test set: %s", path)
 					err := processTestSet(ctx, path, c,
-						func(ctx context.Context, c *pb.Config) error {
+						func(ctx context.Context, c *spec.Config) error {
 							if err := testLonghornDeployment(ctx, c); err != nil {
 								return err
 							}
@@ -153,7 +157,7 @@ func testClaudie(ctx context.Context) error {
 }
 
 // processTestSet function will apply test set sequentially to Claudie
-func processTestSet(ctx context.Context, setName string, c pb.ContextBoxServiceClient, testFunc func(ctx context.Context, c *pb.Config) error) error {
+func processTestSet(ctx context.Context, setName string, c pb.ContextBoxServiceClient, testFunc func(ctx context.Context, c *spec.Config) error) error {
 	// Set errCleanUp to clean up the infra on failure
 	var errCleanUp, errIgnore error
 	idInfo := idInfo{id: "", idType: -1}
@@ -294,7 +298,7 @@ func clusterTesting(yamlFile []byte, pathToTestSet, manifestName string, c pb.Co
 func localTesting(yamlFile []byte, manifestName string, c pb.ContextBoxServiceClient) (string, error) {
 	// testing locally - NOT TESTING THE OPERATOR!
 	id, err := cbox.SaveConfigOperator(c, &pb.SaveConfigRequest{
-		Config: &pb.Config{
+		Config: &spec.Config{
 			Name:     manifestName,
 			Manifest: string(yamlFile),
 		},

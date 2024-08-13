@@ -2,8 +2,10 @@ package usecases
 
 import (
 	"fmt"
+
 	cutils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/builder/domain/usecases/utils"
 	"github.com/rs/zerolog/log"
 )
@@ -15,7 +17,7 @@ func (u *Usecases) reconcileK8sConfiguration(ctx *utils.BuilderContext, cboxClie
 
 	// Set workflow state.
 	description := ctx.Workflow.Description
-	ctx.Workflow.Stage = pb.Workflow_KUBER
+	ctx.Workflow.Stage = spec.Workflow_KUBER
 
 	if err := u.Kuber.CiliumRolloutRestart(ctx.DesiredCluster, kuberClient); err != nil {
 		return err
@@ -109,7 +111,7 @@ func (u *Usecases) callPatchClusterInfoConfigMap(ctx *utils.BuilderContext, cbox
 	logger := cutils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
 
 	description := ctx.Workflow.Description
-	ctx.Workflow.Stage = pb.Workflow_KUBER
+	ctx.Workflow.Stage = spec.Workflow_KUBER
 
 	u.saveWorkflowDescription(ctx, fmt.Sprintf("%s patching cluster info config map", description), cboxClient)
 	logger.Info().Msg("Calling PatchClusterInfoConfigMap on kuber for cluster")
@@ -131,7 +133,7 @@ func (u *Usecases) deleteClusterData(ctx *utils.BuilderContext, cboxClient pb.Co
 	kuberClient := u.Kuber.GetClient()
 	logger := cutils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
 
-	ctx.Workflow.Stage = pb.Workflow_DESTROY_KUBER
+	ctx.Workflow.Stage = spec.Workflow_DESTROY_KUBER
 	u.saveWorkflowDescription(ctx, fmt.Sprintf("%s deleting kubeconfig secret", description), cboxClient)
 
 	logger.Info().Msgf("Calling DeleteKubeconfig on Kuber")
@@ -161,7 +163,7 @@ func (u *Usecases) deleteClusterData(ctx *utils.BuilderContext, cboxClient pb.Co
 }
 
 // callDeleteNodes calls Kuber.DeleteNodes which will gracefully delete nodes from cluster
-func (u *Usecases) callDeleteNodes(master, worker []string, cluster *pb.K8Scluster) (*pb.K8Scluster, error) {
+func (u *Usecases) callDeleteNodes(master, worker []string, cluster *spec.K8Scluster) (*spec.K8Scluster, error) {
 	logger := cutils.CreateLoggerWithClusterName(cutils.GetClusterID(cluster.ClusterInfo))
 
 	logger.Info().Msg("Calling DeleteNodes on Kuber")

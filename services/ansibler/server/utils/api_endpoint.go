@@ -4,15 +4,15 @@ import (
 	"fmt"
 
 	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 )
 
 const apiChangePlaybookFilePath = "../../ansible-playbooks/apiEndpointChange.yml"
 
 // FindNewAPIEndpointCandidate finds control plane nodepools present in both current (excluding the request nodepool)
 // and desired state. Returns the first.
-func FindNewAPIEndpointCandidate(current, desired []*pb.NodePool, excludeNodepoolName *pb.NodePool) (*pb.NodePool, error) {
-	currentPools := make(map[string]*pb.NodePool)
+func FindNewAPIEndpointCandidate(current, desired []*spec.NodePool, excludeNodepoolName *spec.NodePool) (*spec.NodePool, error) {
+	currentPools := make(map[string]*spec.NodePool)
 	// Identify node pools in current state.
 	for _, np := range current {
 		if np.IsControl && np.Name != excludeNodepoolName.Name {

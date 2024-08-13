@@ -11,7 +11,7 @@ import (
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/kuber/templates"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -20,7 +20,7 @@ import (
 // Cluster - k8s cluster where longhorn will be set up
 // Directory - directory where to create storage class manifest
 type Longhorn struct {
-	Cluster   *pb.K8Scluster
+	Cluster   *spec.K8Scluster
 	Directory string
 }
 

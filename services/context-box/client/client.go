@@ -1,7 +1,6 @@
 package cbox
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"reflect"
@@ -13,11 +12,6 @@ import (
 )
 
 type State string
-
-const (
-	desired State = "DESIRED"
-	current State = "CURRENT"
-)
 
 // function to be used for saving
 type saveFunction func(context.Context, *pb.SaveConfigRequest, ...grpc.CallOption) (*pb.SaveConfigResponse, error)
@@ -94,110 +88,6 @@ func DeleteConfigFromDB(c pb.ContextBoxServiceClient, req *pb.DeleteConfigReques
 		return fmt.Errorf("error deleting config from DB: %w", err)
 	}
 	return nil
-}
-
-func UpdateNodepoolCount(c pb.ContextBoxServiceClient, req *pb.UpdateNodepoolRequest) (*pb.UpdateNodepoolResponse, error) {
-	return c.UpdateNodepool(context.Background(), req)
-}
-
-// printConfig prints a desired config with a current state info
-func printConfig(c pb.ContextBoxServiceClient, id string, idType pb.IdType, state State) (string, error) {
-	var buffer bytes.Buffer
-	var printState *pb.Project
-	res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: id, Type: idType})
-	if err != nil {
-		return "", fmt.Errorf("failed to get config ID %s : %w", id, err)
-	}
-	if state == desired {
-		printState = res.GetConfig().GetDesiredState()
-	} else {
-		printState = res.GetConfig().GetCurrentState()
-	}
-	buffer.WriteString(fmt.Sprintf("\nConfig name: %s\n", res.GetConfig().GetName()))
-	buffer.WriteString(fmt.Sprintf("Config ID: %s\n", res.GetConfig().GetId()))
-	buffer.WriteString(fmt.Sprintf("Project name: %s\n", printState.GetName()))
-	buffer.WriteString("Project clusters: \n")
-	for i, cluster := range printState.GetClusters() {
-		buffer.WriteString("========================================\n")
-		buffer.WriteString(fmt.Sprintf("Cluster number: %d\n", i))
-		buffer.WriteString(fmt.Sprintf("Name: %s\n", cluster.ClusterInfo.GetName()))
-		buffer.WriteString(fmt.Sprintf("Hash: %s\n", cluster.ClusterInfo.GetHash()))
-		buffer.WriteString(fmt.Sprintf("Kubernetes version: %s\n", cluster.GetKubernetes()))
-		buffer.WriteString(fmt.Sprintf("Network CIDR: %s\n", cluster.GetNetwork()))
-		buffer.WriteString("Kubeconfig:\n")
-		buffer.WriteString(fmt.Sprintf("%s\n", cluster.GetKubeconfig()))
-		buffer.WriteString("Node Pools:\n")
-		for j, nodePool := range cluster.ClusterInfo.GetNodePools() {
-			if np := nodePool.GetDynamicNodePool(); np != nil {
-				buffer.WriteString("----------------------------------------\n")
-				buffer.WriteString(fmt.Sprintf("NodePool number: %d \n", j))
-				buffer.WriteString(fmt.Sprintf("Name: %s\n", nodePool.GetName()))
-				buffer.WriteString(fmt.Sprintf("Region %s\n", np.GetRegion()))
-				buffer.WriteString(fmt.Sprintf("Provider specs: %v\n", np.GetProvider()))
-				buffer.WriteString(fmt.Sprintf("Autoscaler conf: %v\n", np.GetAutoscalerConfig()))
-				buffer.WriteString(fmt.Sprintf("Count: %d\n", np.GetCount()))
-				buffer.WriteString("Public key:\n")
-				buffer.WriteString(fmt.Sprintf("%s\n", np.PublicKey))
-				buffer.WriteString("Private key:\n")
-				buffer.WriteString(fmt.Sprintf("%s\n", np.PrivateKey))
-
-				buffer.WriteString("Nodes:\n")
-				for _, node := range nodePool.GetNodes() {
-					buffer.WriteString(fmt.Sprintf("Name: %s Public: %s Private: %s NodeType: %s \n", node.Name, node.GetPublic(), node.GetPrivate(), node.GetNodeType().String()))
-				}
-				buffer.WriteString("----------------------------------------\n")
-			} else if np := nodePool.GetStaticNodePool(); np != nil {
-				buffer.WriteString("----------------------------------------\n")
-				buffer.WriteString(fmt.Sprintf("NodePool number: %d \n", j))
-				buffer.WriteString(fmt.Sprintf("Name: %s\n", nodePool.GetName()))
-				buffer.WriteString(fmt.Sprintf("IsControl: %v\n", nodePool.GetIsControl()))
-
-				buffer.WriteString("Nodes:\n")
-				for _, node := range nodePool.GetNodes() {
-					buffer.WriteString(fmt.Sprintf("Name: %s Endpoint: %s Key: %s NodeType: %s \n", node.Name, node.GetPublic(), node.GetPrivate(), node.GetNodeType().String()))
-				}
-				buffer.WriteString("----------------------------------------\n")
-			}
-		}
-	}
-	for i, cluster := range printState.LoadBalancerClusters {
-		buffer.WriteString("========================================\n")
-		buffer.WriteString(fmt.Sprintf("Cluster number: %d\n", i))
-		buffer.WriteString(fmt.Sprintf("Name: %s\n", cluster.ClusterInfo.GetName()))
-		buffer.WriteString(fmt.Sprintf("Hash: %s\n", cluster.ClusterInfo.GetHash()))
-		buffer.WriteString("Node Pools:\n")
-		for j, nodePool := range cluster.ClusterInfo.GetNodePools() {
-			if np := nodePool.GetDynamicNodePool(); np != nil {
-				buffer.WriteString("--------------------Dynamic Node Pool --------------------\n")
-				buffer.WriteString(fmt.Sprintf("NodePool number: %d \n", j))
-				buffer.WriteString(fmt.Sprintf("Name: %s\n", nodePool.GetName()))
-				buffer.WriteString(fmt.Sprintf("Region %s\n", np.GetRegion()))
-				buffer.WriteString(fmt.Sprintf("Provider specs: %v\n", np.GetProvider()))
-				buffer.WriteString(fmt.Sprintf("Count: %d\n", np.GetCount()))
-				buffer.WriteString("Public key:\n")
-				buffer.WriteString(fmt.Sprintf("%s\n", np.PublicKey))
-				buffer.WriteString("Private key:\n")
-				buffer.WriteString(fmt.Sprintf("%s\n", np.PrivateKey))
-
-				buffer.WriteString("Nodes:\n")
-				for _, node := range nodePool.GetNodes() {
-					buffer.WriteString(fmt.Sprintf("Name: %s Public: %s Private: %s NodeType: %s \n", node.Name, node.GetPublic(), node.GetPrivate(), node.GetNodeType().String()))
-				}
-				buffer.WriteString("----------------------------------------\n")
-			} else if np := nodePool.GetStaticNodePool(); np != nil {
-				buffer.WriteString("------------------Static Node Pool----------------------\n")
-				buffer.WriteString(fmt.Sprintf("NodePool number: %d \n", j))
-				buffer.WriteString(fmt.Sprintf("Name: %s\n", nodePool.GetName()))
-
-				buffer.WriteString("Nodes:\n")
-				for _, node := range nodePool.GetNodes() {
-					buffer.WriteString(fmt.Sprintf("Name: %s Endpoint: %s Key: %s NodeType: %s \n", node.Name, node.GetPublic(), node.GetPrivate(), node.GetNodeType().String()))
-				}
-				buffer.WriteString("----------------------------------------\n")
-			}
-		}
-	}
-	return buffer.String(), nil
 }
 
 func saveConfig(req *pb.SaveConfigRequest, saveFun saveFunction) (*pb.SaveConfigResponse, error) {

@@ -5,24 +5,23 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"net/http"
 	"regexp"
 	"strings"
 
 	compute "cloud.google.com/go/compute/apiv1"
 	"cloud.google.com/go/compute/apiv1/computepb"
-	"google.golang.org/api/option"
-
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"github.com/rs/zerolog/log"
+	"google.golang.org/api/option"
 )
 
 var (
@@ -39,7 +38,7 @@ const (
 
 // ArchResolver resolves the architecture of a nodepool.
 type ArchResolver interface {
-	Arch(node *pb.NodePool) (Arch, error)
+	Arch(node *spec.NodePool) (Arch, error)
 }
 
 // DynamicNodePoolResolver will resolve architecture for a dynamic nodepool.
@@ -47,7 +46,7 @@ type DynamicNodePoolResolver struct {
 	cache map[string]Arch
 }
 
-func NewDynamicNodePoolResolver(init []*pb.DynamicNodePool) (*DynamicNodePoolResolver, error) {
+func NewDynamicNodePoolResolver(init []*spec.DynamicNodePool) (*DynamicNodePoolResolver, error) {
 	r := &DynamicNodePoolResolver{cache: make(map[string]Arch)}
 
 	for _, np := range init {
@@ -61,7 +60,7 @@ func NewDynamicNodePoolResolver(init []*pb.DynamicNodePool) (*DynamicNodePoolRes
 	return r, nil
 }
 
-func (r *DynamicNodePoolResolver) Arch(np *pb.NodePool) (Arch, error) {
+func (r *DynamicNodePoolResolver) Arch(np *spec.NodePool) (Arch, error) {
 	if np.GetDynamicNodePool() == nil {
 		return "", ErrFailedToResolveArch
 	}
@@ -81,7 +80,7 @@ func (r *DynamicNodePoolResolver) Arch(np *pb.NodePool) (Arch, error) {
 	return arch, nil
 }
 
-func (r *DynamicNodePoolResolver) resolve(np *pb.DynamicNodePool) (Arch, error) {
+func (r *DynamicNodePoolResolver) resolve(np *spec.DynamicNodePool) (Arch, error) {
 	switch np.GetProvider().GetCloudProviderName() {
 	case "hetzner":
 		return resolveHetzner(np)
@@ -98,13 +97,13 @@ func (r *DynamicNodePoolResolver) resolve(np *pb.DynamicNodePool) (Arch, error) 
 	}
 }
 
-func resolveAzure(np *pb.DynamicNodePool) (Arch, error) {
-	cred, err := azidentity.NewClientSecretCredential(np.Provider.AzureTenantId, np.Provider.AzureClientId, np.Provider.Credentials, nil)
+func resolveAzure(np *spec.DynamicNodePool) (Arch, error) {
+	cred, err := azidentity.NewClientSecretCredential(np.Provider.GetAzure().TenantID, np.Provider.GetAzure().ClientID, np.Provider.GetAzure().ClientSecret, nil)
 	if err != nil {
 		return "", fmt.Errorf("azure client got error : %w", err)
 	}
 
-	imgClient, err := armcompute.NewVirtualMachineImagesClient(np.Provider.AzureSubscriptionId, cred, nil)
+	imgClient, err := armcompute.NewVirtualMachineImagesClient(np.Provider.GetAzure().SubscriptionID, cred, nil)
 	if err != nil {
 		return "", fmt.Errorf("azure client errored: %w", err)
 	}
@@ -129,7 +128,7 @@ func resolveAzure(np *pb.DynamicNodePool) (Arch, error) {
 	return Arch(arch), nil
 }
 
-func resolveOci(np *pb.DynamicNodePool) (Arch, error) {
+func resolveOci(np *spec.DynamicNodePool) (Arch, error) {
 	// OCI sdk doesn't have a way to retrieve the Arch thus we default to a regex match
 	// TODO: find a better way to handle this case.
 	arch := Amd64
@@ -144,8 +143,8 @@ func resolveOci(np *pb.DynamicNodePool) (Arch, error) {
 	return Arch(arch), nil
 }
 
-func resolveGcp(np *pb.DynamicNodePool) (Arch, error) {
-	imgClient, err := compute.NewImagesRESTClient(context.Background(), option.WithCredentialsJSON([]byte(np.Provider.Credentials)))
+func resolveGcp(np *spec.DynamicNodePool) (Arch, error) {
+	imgClient, err := compute.NewImagesRESTClient(context.Background(), option.WithCredentialsJSON([]byte(np.Provider.GetGcp().Key)))
 	if err != nil {
 		return "", fmt.Errorf("failed to create GCP client error : %w", err)
 	}
@@ -156,7 +155,7 @@ func resolveGcp(np *pb.DynamicNodePool) (Arch, error) {
 	}()
 
 	imgInfo, err := imgClient.Get(context.Background(), &computepb.GetImageRequest{
-		Project: np.Provider.GcpProject,
+		Project: np.Provider.GetGcp().Project,
 		Image:   np.Image,
 	})
 	if err != nil {
@@ -189,8 +188,8 @@ func resolveGcp(np *pb.DynamicNodePool) (Arch, error) {
 	return Arch(arch), nil
 }
 
-func resolveHetzner(np *pb.DynamicNodePool) (Arch, error) {
-	hc := hcloud.NewClient(hcloud.WithToken(np.Provider.Credentials), hcloud.WithHTTPClient(http.DefaultClient))
+func resolveHetzner(np *spec.DynamicNodePool) (Arch, error) {
+	hc := hcloud.NewClient(hcloud.WithToken(np.Provider.GetHetzner().Token), hcloud.WithHTTPClient(http.DefaultClient))
 
 	typ, _, err := hc.ServerType.GetByName(context.Background(), np.ServerType)
 	if err != nil {
@@ -207,12 +206,12 @@ func resolveHetzner(np *pb.DynamicNodePool) (Arch, error) {
 	return Amd64, nil
 }
 
-func resolveAws(np *pb.DynamicNodePool) (Arch, error) {
+func resolveAws(np *spec.DynamicNodePool) (Arch, error) {
 	credFunc := func(lo *config.LoadOptions) error {
 		lo.Credentials = aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
 			return aws.Credentials{
-				AccessKeyID:     np.Provider.AwsAccessKey,
-				SecretAccessKey: np.Provider.Credentials,
+				AccessKeyID:     np.Provider.GetAws().AccessKey,
+				SecretAccessKey: np.Provider.GetAws().SecretKey,
 			}, nil
 		})
 		return nil

@@ -6,6 +6,7 @@ import (
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	cbox "github.com/berops/claudie/services/context-box/client"
 )
 
@@ -33,7 +34,7 @@ func (c ContextBoxConnector) GetConfigScheduler(contextBoxGrpcClient pb.ContextB
 }
 
 // SaveConfigScheduler saves a config into context-box DB
-func (c ContextBoxConnector) SaveConfigScheduler(config *pb.Config, contextBoxGrpcClient pb.ContextBoxServiceClient) error {
+func (c ContextBoxConnector) SaveConfigScheduler(config *spec.Config, contextBoxGrpcClient pb.ContextBoxServiceClient) error {
 	return cbox.SaveConfigScheduler(contextBoxGrpcClient, &pb.SaveConfigRequest{Config: config})
 }
 

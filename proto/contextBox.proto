@@ -1,6 +1,8 @@
 syntax = "proto3";
 package claudie;
-import "proto/config.proto";
+
+import "spec/manifest.proto";
+import "spec/nodepool.proto";
 
 option go_package = "proto/pb";
 
@@ -13,26 +15,26 @@ enum IdType {
 message SaveWorkflowStateRequest {
   string configName = 1;
   string clusterName = 2;
-  Workflow workflow = 3;
+  spec.Workflow workflow = 3;
 }
 
 message SaveWorkflowStateResponse {}
 message SaveConfigRequest { 
-  Config config = 1; 
+  spec.Config config = 1;
 }
 message SaveConfigResponse { 
-  Config config = 1; 
+  spec.Config config = 1;
 }
 
 // Get
 message GetConfigRequest {}
 message GetConfigResponse {
-  Config config = 1;
+  spec.Config config = 1;
 }
 
 message GetAllConfigsRequest {}
 message GetAllConfigsResponse {
-  repeated Config configs = 1;
+  repeated spec.Config configs = 1;
 }
 
 message GetConfigFromDBRequest {
@@ -40,7 +42,7 @@ message GetConfigFromDBRequest {
   IdType type = 2;
 }
 message GetConfigFromDBResponse {
-  Config config = 1;
+  spec.Config config = 1;
 }
 
 
@@ -57,7 +59,7 @@ message DeleteConfigResponse {
 message UpdateNodepoolRequest {
   string projectName = 1;
   string clusterName = 2;
-  NodePool nodepool = 3;
+  spec.NodePool nodepool = 3;
 }
 message UpdateNodepoolResponse {}
 

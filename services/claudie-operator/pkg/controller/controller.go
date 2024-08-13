@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"gopkg.in/yaml.v3"
+
 	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -12,7 +13,7 @@ import (
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/berops/claudie/internal/manifest"
-	"github.com/berops/claudie/proto/pb"
+	utils2 "github.com/berops/claudie/internal/utils"
 	v1beta "github.com/berops/claudie/services/claudie-operator/pkg/api/v1beta1"
 	"github.com/berops/claudie/services/context-box/server/utils"
 )
@@ -33,10 +34,18 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	providersSecrets := make([]v1beta.ProviderWithData, 0, len(inputManifest.Spec.Providers))
 	// Range over Provider objects and request the secret for each provider
 	for _, p := range inputManifest.Spec.Providers {
-		var pwd v1beta.ProviderWithData
-		pwd.ProviderName = p.ProviderName
-		pwd.ProviderType = p.ProviderType
-		if err := r.kc.Get(ctx, client.ObjectKey{Name: p.SecretRef.Name, Namespace: p.SecretRef.Namespace}, &pwd.Secret); err != nil {
+		pwd := v1beta.ProviderWithData{
+			ProviderName: p.ProviderName,
+			ProviderType: p.ProviderType,
+			Templates:    p.Templates,
+		}
+
+		key := client.ObjectKey{
+			Name:      p.SecretRef.Name,
+			Namespace: p.SecretRef.Namespace,
+		}
+
+		if err := r.kc.Get(ctx, key, &pwd.Secret); err != nil {
 			r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
 			log.Error(err, "secret not found", "will try again in", REQUEUE_AFTER_ERROR, "name", p.SecretRef.Name, "namespace", p.SecretRef.Namespace)
 			return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
@@ -76,6 +85,9 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
 	}
 
+	// check if templates are defined for dynamic nodepools if not use defaults
+	setDefaultTemplates(&rawManifest)
+
 	// With the rawManifest filled with providers credentials,
 	// the Manifest.Providers{} struct will be properly validated
 	// In case the validation will fail, it will end the reconcile
@@ -109,6 +121,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	configInDesiredState := false
 	configContainsError := false
 
+	desiredStateProviderMap := getProviderMap(&rawManifest)
 	for _, config := range configs {
 		if inputManifest.GetNamespacedNameDashed() == config.Name {
 			configExists = true
@@ -120,15 +133,30 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				configInDesiredState = utils.Equal(config.CsChecksum, config.DsChecksum)
 			}
 
-			// guard against changing the immutables specs in an existing nodepool
-			nmap, err := getDynamicNodepoolsMap(config)
-			if err != nil {
+			var currentManifest manifest.Manifest
+			if err := yaml.Unmarshal([]byte(config.GetManifest()), &currentManifest); err != nil {
 				return ctrl.Result{}, err
 			}
 
+			pmap := getProviderMap(&currentManifest)
+			if err := providerImmutabilityCheck(pmap, desiredStateProviderMap); err != nil {
+				log.Error(err, "immutability check for providers failed", "will try again in", REQUEUE_AFTER_ERROR)
+				// provider changed templates
+				r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
+				inputManifest.SetUpdateResourceStatus(v1beta.InputManifestStatus{
+					State: v1beta.STATUS_ERROR,
+				})
+				if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
+					return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
+				}
+				return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
+			}
+
+			nmap := getDynamicNodepoolsMap(&currentManifest)
 			for _, desired := range rawManifest.NodePools.Dynamic {
 				if current, exists := nmap[desired.Name]; exists {
-					if err := immutabilityCheck(&desired, current); err != nil {
+					if err := nodepoolImmutabilityCheck(&desired, current); err != nil {
+						log.Error(err, "immutability check for dynamic nodepools failed", "will try again in", REQUEUE_AFTER_ERROR)
 						// nodepool exists and user changed the immutable specs
 						r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
 						inputManifest.SetUpdateResourceStatus(v1beta.InputManifestStatus{
@@ -137,7 +165,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 						if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 							return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 						}
-						return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, err
+						return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
 					}
 				}
 			}
@@ -313,24 +341,21 @@ func (r *InputManifestReconciler) deleteConfig(im *manifest.Manifest) error {
 	return nil
 }
 
-// getDynamicNodepoolsMap will read manifest from the given config and return map of provider names keyed by dynamic nodepool names
-func getDynamicNodepoolsMap(config *pb.Config) (map[string]*manifest.DynamicNodePool, error) {
-	d := []byte(config.GetManifest())
-
-	var unmarshalledManifest manifest.Manifest
-	if err := yaml.Unmarshal(d, &unmarshalledManifest); err != nil {
-		return nil, fmt.Errorf("error while unmarshalling yaml manifest for config %s: %w", config.Name, err)
+func providerImmutabilityCheck(current map[string]providerMapping, desired map[string]providerMapping) error {
+	for provider, desired := range desired {
+		if current, ok := current[provider]; ok {
+			checkFailed := desired.Templates.Path != current.Templates.Path
+			checkFailed = checkFailed || desired.Templates.Repository != current.Templates.Repository
+			checkFailed = checkFailed || !utils2.PointerValEqual(current.Templates.Tag, desired.Templates.Tag)
+			if checkFailed {
+				return fmt.Errorf("attempted to change provider templates for provider %q, changing templates is prohibited. To change the templates you can create a new provider along with new nodepools referencing this provider, to achieve a rolling update", provider)
+			}
+		}
 	}
-
-	nmap := make(map[string]*manifest.DynamicNodePool)
-	for _, np := range unmarshalledManifest.NodePools.Dynamic {
-		nmap[np.Name] = &np
-	}
-
-	return nmap, nil
+	return nil
 }
 
-func immutabilityCheck(desired, current *manifest.DynamicNodePool) error {
+func nodepoolImmutabilityCheck(desired, current *manifest.DynamicNodePool) error {
 	if desired.ProviderSpec != current.ProviderSpec {
 		return fmt.Errorf("dynamic nodepools are immutable, changing the provider specification for %s is not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider creating a new nodepool", current.Name)
 	}
@@ -358,4 +383,59 @@ func immutabilityCheck(desired, current *manifest.DynamicNodePool) error {
 	}
 
 	return nil
+}
+
+type providerMapping struct {
+	// Name as specified in the inputmanfiest
+	Name string
+	// Type of the provider (gcp, hetzner...)
+	Typ       string
+	Templates *manifest.TemplateRepository
+}
+
+func getProviderMap(m *manifest.Manifest) map[string]providerMapping {
+	pmap := make(map[string]providerMapping)
+
+	m.ForEachProvider(func(name, typ string, tmpls **manifest.TemplateRepository) bool {
+		pmap[name] = providerMapping{
+			Name:      name,
+			Typ:       typ,
+			Templates: *tmpls,
+		}
+		return true
+	})
+
+	return pmap
+}
+
+// getDynamicNodepoolsMap will read manifest from the given config and return map of provider names keyed by dynamic nodepool names
+func getDynamicNodepoolsMap(m *manifest.Manifest) map[string]*manifest.DynamicNodePool {
+	nmap := make(map[string]*manifest.DynamicNodePool)
+	for _, np := range m.NodePools.Dynamic {
+		nmap[np.Name] = &np
+	}
+
+	return nmap
+}
+
+func setDefaultTemplates(m *manifest.Manifest) {
+	m.ForEachProvider(func(_, typ string, tmpls **manifest.TemplateRepository) bool {
+		defaultRepository(tmpls, typ)
+		return true
+	})
+}
+
+func defaultRepository(r **manifest.TemplateRepository, providerTyp string) {
+	const (
+		repo = "https://github.com/berops/claudie-config"
+		path = "templates/terraformer/"
+	)
+
+	if *r == nil {
+		*r = &manifest.TemplateRepository{
+			Repository: repo,
+			Path:       path + providerTyp,
+		}
+		return
+	}
 }

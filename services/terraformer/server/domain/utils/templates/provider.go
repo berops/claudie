@@ -1,23 +1,25 @@
-package provider
+package templates
 
 import (
+	_ "embed"
 	"fmt"
 
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
-	"github.com/berops/claudie/services/terraformer/templates"
+	"github.com/berops/claudie/proto/pb/spec"
 )
 
-// Provider package struct
-type Provider struct {
+//go:embed providers.tpl
+var providersTemplate string
+
+type UsedProviders struct {
 	ProjectName string
 	ClusterName string
 	Directory   string
 }
 
-// templateData is data structure passed to providers.tpl
-type templateData struct {
+// providerTemplateData is data structure passed to providers.tpl
+type usedProvidersTemplateData struct {
 	Gcp          bool
 	Hetzner      bool
 	Aws          bool
@@ -28,30 +30,30 @@ type templateData struct {
 	GenesisCloud bool
 }
 
-// CreateProviderDNS creates provider file used for DNS management.
-func (p Provider) CreateProviderDNS(dns *pb.DNS) error {
+// CreateUsedProviderDNS creates provider file used for DNS management.
+func (p UsedProviders) CreateUsedProviderDNS(dns *spec.DNS) error {
 	template := templateUtils.Templates{Directory: p.Directory}
 
-	tpl, err := templateUtils.LoadTemplate(templates.ProvidersTemplate)
+	tpl, err := templateUtils.LoadTemplate(providersTemplate)
 	if err != nil {
 		return fmt.Errorf("error while parsing template file providers.tpl for cluster %s: %w", p.ClusterName, err)
 	}
 
-	var data templateData
+	var data usedProvidersTemplateData
 	getDNSProvider(dns, &data)
 	return template.Generate(tpl, "providers.tf", data)
 }
 
-// CreateProvider creates provider file used for infrastructure management.
-func (p Provider) CreateProvider(currentCluster, desiredCluster *pb.ClusterInfo) error {
+// CreateUsedProvider creates provider file used for infrastructure management.
+func (p UsedProviders) CreateUsedProvider(currentCluster, desiredCluster *spec.ClusterInfo) error {
 	template := templateUtils.Templates{Directory: p.Directory}
 
-	var data templateData
+	var data usedProvidersTemplateData
 
 	getProvidersUsed(utils.GetDynamicNodePoolsFromCI(currentCluster), &data)
 	getProvidersUsed(utils.GetDynamicNodePoolsFromCI(desiredCluster), &data)
 
-	tpl, err := templateUtils.LoadTemplate(templates.ProvidersTemplate)
+	tpl, err := templateUtils.LoadTemplate(providersTemplate)
 	if err != nil {
 		return fmt.Errorf("error while parsing template file providers.tpl for cluster %s : %w", p.ClusterName, err)
 	}
@@ -63,8 +65,8 @@ func (p Provider) CreateProvider(currentCluster, desiredCluster *pb.ClusterInfo)
 	return nil
 }
 
-// getProvidersUsed modifies templateData to reflect current providers used.
-func getProvidersUsed(nodepools []*pb.DynamicNodePool, data *templateData) {
+// getProvidersUsed modifies providerTemplateData to reflect current providers used.
+func getProvidersUsed(nodepools []*spec.DynamicNodePool, data *usedProvidersTemplateData) {
 	if len(nodepools) == 0 {
 		return
 	}
@@ -91,8 +93,8 @@ func getProvidersUsed(nodepools []*pb.DynamicNodePool, data *templateData) {
 	}
 }
 
-// getProvidersUsed modifies templateData to reflect current providers used in DNS.
-func getDNSProvider(dns *pb.DNS, data *templateData) {
+// getProvidersUsed modifies providerTemplateData to reflect current providers used in DNS.
+func getDNSProvider(dns *spec.DNS, data *usedProvidersTemplateData) {
 	if dns == nil {
 		return
 	}
