@@ -1,21 +1,20 @@
 package usecases
 
-import (
-	"github.com/rs/zerolog/log"
-
-	"github.com/berops/claudie/proto/pb"
-)
-
-// GetConfigBuilder is a gRPC service: function returns oldest config from the queueBuilder
-func (u *Usecases) GetConfigBuilder(request *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
-	configInfo := u.builderQueue.Dequeue()
-	if configInfo != nil {
-		log.Info().Msgf("Sending config %s to Builder", configInfo.GetName())
-		config, err := u.DB.GetConfig(configInfo.GetName(), pb.IdType_NAME)
-		if err != nil {
-			return nil, err
-		}
-		return &pb.GetConfigResponse{Config: config}, nil
-	}
-	return &pb.GetConfigResponse{Config: nil}, nil
-}
+//import (
+//	"github.com/berops/claudie/proto/pb/spec"
+//	"github.com/rs/zerolog/log"
+//
+//	"github.com/berops/claudie/proto/pb"
+//)
+//
+//// GetTask returns the next available task.
+//func (u *Usecases) GetTask(_ *pb.GetTaskRequest) (*pb.GetTaskResponse, error) {
+//	task := u.tasksQueue.Dequeue()
+//	if task == nil {
+//		return &pb.GetTaskResponse{Event: nil}, nil
+//	}
+//
+//	log.Info().Msgf("Sending task %s to Builder", task.ID())
+//
+//	return &pb.GetTaskResponse{Event: task.(*spec.TaskEvent)}, nil
+//}

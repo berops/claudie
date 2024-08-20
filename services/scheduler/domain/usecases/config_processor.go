@@ -70,6 +70,8 @@ func (u *Usecases) processConfig(config *spec.Config, contextBoxGrpcClient pb.Co
 		return fmt.Errorf("error while creating a desired state: %w", err)
 	}
 
+	CreateTasks(config)
+
 	// After constructing the desired state for the config
 	// save it to the context-box DB
 	err = u.ContextBox.SaveConfigScheduler(config, contextBoxGrpcClient)

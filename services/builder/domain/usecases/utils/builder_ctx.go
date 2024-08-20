@@ -7,8 +7,10 @@ import (
 
 // BuilderContext provides context for the Claudie workflow for a particular cluster.
 type BuilderContext struct {
-	// ProjectName for this cluster
+	// ProjectName name of the config from which the cluster is.
 	ProjectName string
+	// TaskId from which this process was spawned from.
+	TaskId string
 	// CurrentCluster is the current state of the cluster
 	// properties may change during processing.
 	CurrentCluster *spec.K8Scluster

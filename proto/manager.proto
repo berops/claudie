@@ -1,0 +1,49 @@
+syntax = "proto3";
+package claudie;
+
+import "spec/manifest.proto";
+
+option go_package = "proto/pb";
+
+message UpsertManifestRequest {string name = 1; spec.KubernetesContext k8sCtx = 2; spec.Manifest manifest = 3;}
+message UpsertManifestResponse {string name = 1; uint64 version = 2;}
+
+message MarkForDeletionRequest {string name = 1; uint64 version = 2;}
+message MarkForDeletionResponse {string name = 1; uint64 version = 2;}
+
+message NextTaskRequest {}
+message NextTaskResponse {
+  spec.Workflow state = 1;
+  spec.Clusters current = 2;
+  spec.TaskEvent event = 3;
+  int32 ttl = 4;
+  string cluster = 5;
+  uint64 version = 6;
+  string config = 7;
+}
+
+message TaskUpdateRequest {
+  string config = 1;
+  string cluster = 2;
+  string taskId = 3;
+  uint64 version = 4;
+  spec.Workflow state = 5;
+}
+message TaskUpdateResponse {string name = 1; uint64 version = 2;}
+
+message GetConfigRequest {string name = 1;}
+message GetConfigResponse {spec.Config config = 1;}
+
+message UpdateCurrentStateRequest {string name = 1; string cluster = 2; uint64 version = 3; spec.Clusters state = 4;}
+message UpdateCurrentStateResponse {string name = 1; uint64 version = 2;}
+
+service ManagerService {
+  rpc UpsertManifest(UpsertManifestRequest) returns (UpsertManifestResponse);
+  rpc MarkForDeletion(MarkForDeletionRequest) returns (MarkForDeletionResponse);
+
+  rpc GetConfig(GetConfigRequest) returns (GetConfigResponse);
+  rpc NextTask(NextTaskRequest) returns (NextTaskResponse);
+  rpc TaskUpdate(TaskUpdateRequest) returns (TaskUpdateResponse);
+
+  rpc UpdateCurrentState(UpdateCurrentStateRequest) returns (UpdateCurrentStateResponse);
+}

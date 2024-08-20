@@ -2,33 +2,20 @@ package utils
 
 import "sync"
 
-type QueueElement interface {
-	// name of each item must be unique
-	GetName() string
-}
-
-// Queue uses slice as a data structure to hold elements
-// New elements are appended as a last indexes in the slice, meaning the oldest entries (First in) are at the start of the
-// slice
-// Queue is also thread safe and support usage over multiple go-routines
-type Queue struct {
-	elements []QueueElement
+type SyncQueue struct {
+	elements []Identifier
 	lock     sync.Mutex
 }
 
-// Enqueue will add a new element into the end of the queue
-func (q *Queue) Enqueue(element QueueElement) {
+func (q *SyncQueue) Enqueue(e Identifier) {
 	q.lock.Lock()
 
-	// appends element to last index
-	q.elements = append(q.elements, element)
+	q.elements = append(q.elements, e)
 
 	q.lock.Unlock()
 }
 
-// Dequeue will delete oldest element in the queue and return it
-// Returns nil if queue is empty
-func (q *Queue) Dequeue() QueueElement {
+func (q *SyncQueue) Dequeue() Identifier {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 
@@ -42,14 +29,12 @@ func (q *Queue) Dequeue() QueueElement {
 	return dequeuedElement
 }
 
-// Checks if the queue holds the specified elements
-// checking is done by name of the element
-func (q *Queue) Contains(targetElement QueueElement) bool {
+func (q *SyncQueue) Contains(e Identifier) bool {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 
 	for _, element := range q.elements {
-		if element.GetName() == targetElement.GetName() {
+		if element.ID() == e.ID() {
 			return true
 		}
 	}
@@ -57,22 +42,21 @@ func (q *Queue) Contains(targetElement QueueElement) bool {
 	return false
 }
 
-// GetElementNames returns slice of names of the elements in the queue
-func (q *Queue) GetElementNames() []string {
-	var names []string
+func (q *SyncQueue) IDs() []string {
+	var ids []string
 
 	q.lock.Lock()
 	for _, element := range q.elements {
-		names = append(names, element.GetName())
+		ids = append(ids, element.ID())
 	}
 	q.lock.Unlock()
 
-	return names
+	return ids
 }
 
 // CompareElementNameList compares given element-name list with the current element-name list of the queue
-func (q *Queue) CompareElementNameList(givenList []string) bool {
-	currentList := q.GetElementNames()
+func (q *SyncQueue) CompareElementNameList(givenList []string) bool {
+	currentList := q.IDs()
 
 	if len(givenList) != len(currentList) {
 		return false

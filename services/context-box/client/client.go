@@ -55,9 +55,9 @@ func GetConfigScheduler(c pb.ContextBoxServiceClient) (*pb.GetConfigResponse, er
 	return res, nil
 }
 
-// GetConfigBuilder gets config from queueBuilder in which are available configs for Builder
-func GetConfigBuilder(c pb.ContextBoxServiceClient) (*pb.GetConfigResponse, error) {
-	res, err := c.GetConfigBuilder(context.Background(), &pb.GetConfigRequest{})
+// GetTask gets the next task from the task queue.
+func GetTask(c pb.ContextBoxServiceClient) (*pb.GetTaskResponse, error) {
+	res, err := c.GetTask(context.Background(), &pb.GetTaskRequest{})
 	if err != nil {
 		return nil, fmt.Errorf("error getting builder config: %w", err)
 	}

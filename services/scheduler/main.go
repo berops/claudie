@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/berops/claudie/services/scheduler/domain/usecases/metrics"
 	"net/http"
 	"os"
 	"os/signal"
@@ -21,13 +20,14 @@ import (
 	"github.com/berops/claudie/proto/pb"
 	outboundAdapters "github.com/berops/claudie/services/scheduler/adapters/outbound"
 	"github.com/berops/claudie/services/scheduler/domain/usecases"
+	"github.com/berops/claudie/services/scheduler/domain/usecases/metrics"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const (
 	defaultHealthcheckPort    = 50056
 	defaultConfigPullInterval = 10
-	defaultPrometheusPort     = "9090"
+	defaultPrometheusPort     = "9099"
 	healthCheckInterval       = 10 * time.Second
 )
 

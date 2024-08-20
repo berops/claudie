@@ -8,7 +8,6 @@ option go_package = "proto/pb";
 
 enum IdType {
   NAME = 0;
-  HASH = 1;
 }
 
 // Save
@@ -27,9 +26,15 @@ message SaveConfigResponse {
 }
 
 // Get
-message GetConfigRequest {}
-message GetConfigResponse {
-  spec.Config config = 1;
+//message GetConfigRequest {}
+//message GetConfigResponse {
+//  spec.Config config = 1;
+//}
+
+// Get
+message GetTaskRequest {}
+message GetTaskResponse {
+  spec.TaskEvent event = 1;
 }
 
 message GetAllConfigsRequest {}
@@ -47,11 +52,11 @@ message GetConfigFromDBResponse {
 
 
 // Delete
-message DeleteConfigRequest {
+message CboxDeleteConfigRequest {
   string id = 1;
   IdType type = 2;
 }
-message DeleteConfigResponse {
+message CboxDeleteConfigResponse {
   string id = 1;
 }
 
@@ -75,16 +80,16 @@ service ContextBoxService {
   // GetConfigFromDB gets a single config from the database.
   rpc GetConfigFromDB(GetConfigFromDBRequest) returns (GetConfigFromDBResponse);
   // GetConfigScheduler gets a config from Scheduler's queue of pending configs.
-  rpc GetConfigScheduler(GetConfigRequest) returns (GetConfigResponse);
-  // GetConfigBuilder gets a config from Builder's queue of pending configs.
-  rpc GetConfigBuilder(GetConfigRequest) returns (GetConfigResponse);
+//  rpc GetConfigScheduler(GetConfigRequest) returns (GetConfigResponse);
+  // GetTask returns the next task from the task queue, if any.
+  rpc GetTask(GetTaskRequest) returns (GetTaskResponse);
   // GetAllConfigs gets all configs from the database.
   rpc GetAllConfigs(GetAllConfigsRequest) returns (GetAllConfigsResponse);
   // DeleteConfig sets the manifest to null, effectively forcing the deletion of the infrastructure
   // defined by the manifest on the very next config (diff) check.
-  rpc DeleteConfig(DeleteConfigRequest) returns (DeleteConfigResponse);
+  rpc DeleteConfig(CboxDeleteConfigRequest) returns (CboxDeleteConfigResponse);
   // DeleteConfigFromDB deletes the config from the database.
-  rpc DeleteConfigFromDB(DeleteConfigRequest) returns (DeleteConfigResponse);
+  rpc DeleteConfigFromDB(CboxDeleteConfigRequest) returns (CboxDeleteConfigResponse);
   // UpdateNodepool updates specific nodepool from the config. Used mainly for autoscaling.
   rpc UpdateNodepool(UpdateNodepoolRequest) returns (UpdateNodepoolResponse);
 }

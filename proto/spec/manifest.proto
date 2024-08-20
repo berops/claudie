@@ -2,37 +2,59 @@ syntax = "proto3";
 package spec;
 option go_package = "github.com/berops/claudie/proto/pb/spec";
 
+import "google/protobuf/timestamp.proto";
 import "spec/nodepool.proto";
 import "spec/dns.proto";
 
 // Config holds data for a single manifest.
 message Config {
-  // Config ID in the DB.
-  string id = 1;
+  // version of the config.
+  uint64 version = 1;
   // Config name - same as input manifest name.
   string name = 2;
-  // resourceName represents the input manifest resource name in Kubernetes
-  string resourceName = 3;
-  // resourceNamespace represents the input manifest resource namespace in Kubernetes
-  string resourceNamespace = 4;
+  // Information related within a k8s context.
+  KubernetesContext k8sCtx = 3;
   // Client defined manifest.
-  string manifest = 5;
-  // Desired state based on the input manifest manifest.
-  Project desiredState = 6;
-  // Current state of the infrastructure.
-  Project currentState = 7;
-  // Manifest state checksum.
-  bytes msChecksum = 8;
-  // Desired state checksum.
-  bytes dsChecksum = 9;
-  // Current state checksum.
-  bytes csChecksum = 10;
-  // Builder time to live counter.
-  int32 builderTTL = 11;
-  // Scheduler time to live counter.
-  int32 schedulerTTL = 12;
-  // Per-cluster workflow state.
-  map<string, Workflow> state = 13;
+  Manifest manifest = 4;
+  // Clusters parsed from the supplied manifest.
+  map<string, ClusterState> clusters = 5;
+}
+
+message Manifest {
+  enum State {
+    Pending = 0;
+    Scheduled = 1;
+    Done = 2;
+    Error = 3;
+  }
+
+  string raw = 1;
+  bytes checksum = 2;
+  bytes lastAppliedChecksum = 3;
+  State state = 4;
+}
+
+message ClusterState {
+  Clusters current = 1;
+  Clusters desired = 2;
+  Events events = 3;
+  Workflow state = 4;
+}
+
+message Clusters {
+  K8scluster k8s = 1;
+  LoadBalancers loadBalancers = 2;
+}
+
+message LoadBalancers {
+  repeated LBcluster clusters = 1;
+}
+
+message KubernetesContext {
+  // name represents the input manifest resource name in Kubernetes
+  string name = 1;
+  // namespace represents the input manifest resource namespace in Kubernetes
+  string namespace = 2;
 }
 
 message Workflow {
@@ -72,16 +94,6 @@ message Workflow {
   Status status = 2;
   // additional information describing the state and status.
   string description = 3;
-}
-
-// Project represents the desired and current state of the manifest.
-message Project {
-  // Name of the project - same as input manifest name.
-  string name = 1;
-  // Array of Kubernetes clusters.
-  repeated K8scluster clusters = 2;
-  //  Array of Load Balancer clusters.
-  repeated LBcluster loadBalancerClusters = 3;
 }
 
 // K8scluster represents a single kubernetes cluster specified in the manifest.
@@ -164,3 +176,44 @@ enum ClusterType {
   LB = 1;
 }
 
+enum Event {
+  UNKNOWN = 0;
+  CREATE = 1;
+  UPDATE = 2;
+  DELETE = 3;
+}
+
+message Events {
+  repeated TaskEvent events = 1;
+  int32 ttl = 2;
+}
+
+message TaskEvent {
+  string id = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  Event event = 3;
+  Task task = 4;
+}
+
+message Task {
+  CreateState createState = 1;
+  UpdateState updateState = 2;
+  DeleteState deleteState = 3;
+}
+
+message CreateState {
+  K8scluster k8s = 1;
+  repeated LBcluster lbs = 2;
+}
+
+message UpdateState {
+  K8scluster k8s = 1;
+  repeated LBcluster lbs = 2;
+  bool controlPlaneWithAPIEndpointReplace = 3;
+}
+
+message DeleteState {
+  K8scluster k8s = 1;
+  repeated LBcluster lbs = 2;
+  map<string, int32> nodepools = 3;
+}

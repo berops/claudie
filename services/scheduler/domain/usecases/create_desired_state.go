@@ -66,6 +66,7 @@ func (u *Usecases) CreateDesiredState(config *spec.Config) (*spec.Config, error)
 		SchedulerTTL: config.GetSchedulerTTL(),
 	}
 
+	// TODO: reimplement.
 	if err := fixUpDuplicates(newConfig); err != nil {
 		return nil, fmt.Errorf("failed to fixup duplicates for config %s: %w", config.Name, err)
 	}

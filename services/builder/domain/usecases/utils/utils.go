@@ -1,18 +1,15 @@
 package utils
 
 import (
-	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
-	cbox "github.com/berops/claudie/services/context-box/client"
 	"github.com/rs/zerolog/log"
 )
 
-// SaveConfigWithWorkflowError saves config with workflow states
-func SaveConfigWithWorkflowError(config *spec.Config, c pb.ContextBoxServiceClient, clusterView *utils.ClusterView) error {
-	config.State = clusterView.ClusterWorkflows
-	return cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
-}
+//// SaveConfigWithWorkflowError saves config with workflow states
+//func SaveConfigWithWorkflowError(config *spec.Config, c pb.ContextBoxServiceClient, clusterView *utils.ClusterView) error {
+//	config.State = clusterView.ClusterWorkflows
+//	return cbox.SaveConfigBuilder(c, &pb.SaveConfigRequest{Config: config})
+//}
 
 // updateNodePoolInfo updates the nodepool CIDR and node private IPs between stages of the cluster build.
 func UpdateNodePoolInfo(src []*spec.NodePool, dst []*spec.NodePool) {

@@ -4,16 +4,14 @@ import (
 	"fmt"
 
 	cutils "github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/builder/domain/usecases/utils"
 )
 
 // removeClaudieUtilities removes previously installed claudie utilities.
-func (u *Usecases) removeClaudieUtilities(ctx *utils.BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+func (u *Usecases) removeClaudieUtilities(ctx *utils.BuilderContext) error {
 	description := ctx.Workflow.Description
-	ctx.Workflow.Stage = spec.Workflow_ANSIBLER
-	u.saveWorkflowDescription(ctx, fmt.Sprintf("%s removing claudie installed utilities", description), cboxClient)
+	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s removing claudie installed utilities", description))
 
 	resp, err := u.Ansibler.RemoveClaudieUtilities(ctx, u.Ansibler.GetClient())
 	if err != nil {
@@ -23,22 +21,21 @@ func (u *Usecases) removeClaudieUtilities(ctx *utils.BuilderContext, cboxClient 
 	ctx.CurrentCluster = resp.Current
 	ctx.CurrentLoadbalancers = resp.CurrentLbs
 
-	u.saveWorkflowDescription(ctx, description, cboxClient)
+	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, description)
 	return nil
 }
 
 // configureInfrastructure configures infrastructure via ansibler.
-func (u *Usecases) configureInfrastructure(ctx *utils.BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+func (u *Usecases) configureInfrastructure(ctx *utils.BuilderContext) error {
 	logger := cutils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
 	ansClient := u.Ansibler.GetClient()
 
 	description := ctx.Workflow.Description
-	ctx.Workflow.Stage = spec.Workflow_ANSIBLER
 
 	// Tear down loadbalancers.
 	apiEndpoint := ""
 	if len(ctx.DeletedLoadBalancers) > 0 {
-		u.saveWorkflowDescription(ctx, fmt.Sprintf("%s tearing down loadbalancers", description), cboxClient)
+		u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s tearing down loadbalancers", description))
 
 		logger.Info().Msgf("Calling TearDownLoadbalancers on Ansibler")
 		teardownRes, err := u.Ansibler.TeardownLoadBalancers(ctx, ansClient)
@@ -54,7 +51,7 @@ func (u *Usecases) configureInfrastructure(ctx *utils.BuilderContext, cboxClient
 	}
 
 	// Install VPN.
-	u.saveWorkflowDescription(ctx, fmt.Sprintf("%s installing VPN", description), cboxClient)
+	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s intalling VPN", description))
 
 	logger.Info().Msgf("Calling InstallVPN on Ansibler")
 	installRes, err := u.Ansibler.InstallVPN(ctx, ansClient)
@@ -67,7 +64,7 @@ func (u *Usecases) configureInfrastructure(ctx *utils.BuilderContext, cboxClient
 	ctx.DesiredLoadbalancers = installRes.DesiredLbs
 
 	// Install node requirements.
-	u.saveWorkflowDescription(ctx, fmt.Sprintf("%s installing node requirements", description), cboxClient)
+	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s installing node requirements", description))
 
 	logger.Info().Msgf("Calling InstallNodeRequirements on Ansibler")
 	installRes, err = u.Ansibler.InstallNodeRequirements(ctx, ansClient)
@@ -80,7 +77,7 @@ func (u *Usecases) configureInfrastructure(ctx *utils.BuilderContext, cboxClient
 	ctx.DesiredLoadbalancers = installRes.DesiredLbs
 
 	// Set up Loadbalancers.
-	u.saveWorkflowDescription(ctx, fmt.Sprintf("%s setting up Loadbalancers", description), cboxClient)
+	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s setting up Loadbalancers", description))
 
 	logger.Info().Msgf("Calling SetUpLoadbalancers on Ansibler")
 	setUpRes, err := u.Ansibler.SetUpLoadbalancers(ctx, apiEndpoint, ansClient)
@@ -92,15 +89,14 @@ func (u *Usecases) configureInfrastructure(ctx *utils.BuilderContext, cboxClient
 	ctx.DesiredCluster = setUpRes.Desired
 	ctx.CurrentLoadbalancers = setUpRes.CurrentLbs
 	ctx.DesiredLoadbalancers = setUpRes.DesiredLbs
-	u.saveWorkflowDescription(ctx, description, cboxClient)
+	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, description)
 	return nil
 }
 
 // callUpdateAPIEndpoint updates k8s API endpoint via ansibler.
-func (u *Usecases) callUpdateAPIEndpoint(ctx *utils.BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+func (u *Usecases) callUpdateAPIEndpoint(ctx *utils.BuilderContext) error {
 	description := ctx.Workflow.Description
-	ctx.Workflow.Stage = spec.Workflow_ANSIBLER
-	u.saveWorkflowDescription(ctx, fmt.Sprintf("%s changing api endpoint to a new control plane node", description), cboxClient)
+	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s changing api endpoint to a new control plane node", description))
 
 	resp, err := u.Ansibler.UpdateAPIEndpoint(ctx, u.Ansibler.GetClient())
 	if err != nil {
@@ -109,6 +105,6 @@ func (u *Usecases) callUpdateAPIEndpoint(ctx *utils.BuilderContext, cboxClient p
 
 	ctx.CurrentCluster = resp.Current
 	ctx.DesiredCluster = resp.Desired
-	u.saveWorkflowDescription(ctx, description, cboxClient)
+	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, description)
 	return nil
 }

@@ -2,7 +2,6 @@ package manifest
 
 import (
 	"fmt"
-
 	"github.com/berops/claudie/proto/pb/spec"
 	k8sV1 "k8s.io/api/core/v1"
 )

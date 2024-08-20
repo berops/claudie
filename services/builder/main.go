@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/berops/claudie/services/builder/domain/usecases/metrics"
 	"net/http"
 	"os"
 	"os/signal"
@@ -17,6 +16,8 @@ import (
 	"github.com/berops/claudie/internal/worker"
 	"github.com/berops/claudie/services/builder/adapters/outbound"
 	"github.com/berops/claudie/services/builder/domain/usecases"
+	"github.com/berops/claudie/services/builder/domain/usecases/metrics"
+	managerclient "github.com/berops/claudie/services/manager/client"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
 
@@ -33,12 +34,12 @@ func main() {
 	utils.InitLog("builder")
 
 	// Init connections.
-	cbox := &outbound.ContextBoxConnector{}
-	if err := cbox.Connect(); err != nil {
-		log.Err(err).Msgf("Failed to connect to Context-box")
+	manager, err := managerclient.New(&log.Logger)
+	if err != nil {
+		log.Err(err).Msgf("Failed to connect to Manager")
 		return
 	}
-	defer cbox.Disconnect()
+	defer manager.Close()
 
 	tf := &outbound.TerraformerConnector{}
 	if err := tf.Connect(); err != nil {
@@ -72,7 +73,7 @@ func main() {
 	metrics.MustRegisterCounters()
 
 	usecases := &usecases.Usecases{
-		ContextBox:  cbox,
+		Manager:     manager,
 		Terraformer: tf,
 		Ansibler:    ans,
 		KubeEleven:  ke,
@@ -97,8 +98,8 @@ func main() {
 			ServiceName: "kuber",
 		},
 		{
-			Ping:        usecases.ContextBox.PerformHealthCheck,
-			ServiceName: "contextbox",
+			Ping:        usecases.Manager.HealthCheck,
+			ServiceName: "manager",
 		},
 	})
 
@@ -159,7 +160,7 @@ func main() {
 					return nil
 				}
 
-				return usecases.ConfigProcessor(&wg)
+				return usecases.TaskProcessor(&wg)
 			},
 			worker.ErrorLogger,
 		).Run()
