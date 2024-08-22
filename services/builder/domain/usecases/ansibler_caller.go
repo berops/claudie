@@ -66,6 +66,17 @@ func (u *Usecases) configureInfrastructure(ctx *utils.BuilderContext, cboxClient
 	ctx.DesiredCluster = installRes.Desired
 	ctx.DesiredLoadbalancers = installRes.DesiredLbs
 
+	// Update NO_PROXY and no_proxy variables
+	u.saveWorkflowDescription(ctx, fmt.Sprintf("%s updating NO_PROXY and no_proxy env variables", description), cboxClient)
+	logger.Info().Msgf("Calling UpdateNoProxyEnvs on Ansibler")
+	resp, err := u.Ansibler.UpdateNoProxyEnvs(ctx, ansClient)
+	if err != nil {
+		return err
+	}
+	logger.Info().Msgf("UpdateNoProxyEnvs on Ansibler finished successfully")
+	ctx.CurrentCluster = resp.Current
+	ctx.DesiredCluster = resp.Desired
+
 	// Install node requirements.
 	u.saveWorkflowDescription(ctx, fmt.Sprintf("%s installing node requirements", description), cboxClient)
 
