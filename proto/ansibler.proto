@@ -89,9 +89,9 @@ service AnsiblerService {
   // UpdateAPIEndpoint handles changes of API endpoint between control nodes.
   // It will update the current stage based on the information from the desired state.
   rpc UpdateAPIEndpoint(UpdateAPIEndpointRequest) returns (UpdateAPIEndpointResponse);
-  // Removes utilities installed by claudie via ansible playbooks.
   // UpdateNoProxyEnvs handles changes of NO_PROXY and no_proxy env variables in kube-proxy DaemonSet and static pods.
   // It will check the public and private IPs in the current and desired state. If there's a mismatch it will update the envs accordingly.
   rpc UpdateNoProxyEnvs(UpdateNoProxyEnvsRequest) returns (UpdateNoProxyEnvsResponse);
+  // Removes utilities installed by claudie via ansible playbooks.
   rpc RemoveClaudieUtilities(RemoveClaudieUtilitiesRequest) returns (RemoveClaudieUtilitiesResponse);
 }

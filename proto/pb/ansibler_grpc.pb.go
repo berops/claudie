@@ -44,10 +44,10 @@ type AnsiblerServiceClient interface {
 	// UpdateAPIEndpoint handles changes of API endpoint between control nodes.
 	// It will update the current stage based on the information from the desired state.
 	UpdateAPIEndpoint(ctx context.Context, in *UpdateAPIEndpointRequest, opts ...grpc.CallOption) (*UpdateAPIEndpointResponse, error)
-	// Removes utilities installed by claudie via ansible playbooks.
 	// UpdateNoProxyEnvs handles changes of NO_PROXY and no_proxy env variables in kube-proxy DaemonSet and static pods.
 	// It will check the public and private IPs in the current and desired state. If there's a mismatch it will update the envs accordingly.
 	UpdateNoProxyEnvs(ctx context.Context, in *UpdateNoProxyEnvsRequest, opts ...grpc.CallOption) (*UpdateNoProxyEnvsResponse, error)
+	// Removes utilities installed by claudie via ansible playbooks.
 	RemoveClaudieUtilities(ctx context.Context, in *RemoveClaudieUtilitiesRequest, opts ...grpc.CallOption) (*RemoveClaudieUtilitiesResponse, error)
 }
 
@@ -138,10 +138,10 @@ type AnsiblerServiceServer interface {
 	// UpdateAPIEndpoint handles changes of API endpoint between control nodes.
 	// It will update the current stage based on the information from the desired state.
 	UpdateAPIEndpoint(context.Context, *UpdateAPIEndpointRequest) (*UpdateAPIEndpointResponse, error)
-	// Removes utilities installed by claudie via ansible playbooks.
 	// UpdateNoProxyEnvs handles changes of NO_PROXY and no_proxy env variables in kube-proxy DaemonSet and static pods.
 	// It will check the public and private IPs in the current and desired state. If there's a mismatch it will update the envs accordingly.
 	UpdateNoProxyEnvs(context.Context, *UpdateNoProxyEnvsRequest) (*UpdateNoProxyEnvsResponse, error)
+	// Removes utilities installed by claudie via ansible playbooks.
 	RemoveClaudieUtilities(context.Context, *RemoveClaudieUtilitiesRequest) (*RemoveClaudieUtilitiesResponse, error)
 	mustEmbedUnimplementedAnsiblerServiceServer()
 }
