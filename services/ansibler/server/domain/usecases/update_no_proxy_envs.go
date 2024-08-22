@@ -2,15 +2,34 @@ package usecases
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/rs/zerolog/log"
 
 	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/services/ansibler/server/utils"
+	"github.com/berops/claudie/services/ansibler/templates"
 )
 
 const (
-	defaulHttpProxyMode = "default"
+	defaulHttpProxyMode     = "default"
+	noProxyDefault          = "127.0.0.1/8,localhost,cluster.local,10.244.0.0/16,10.96.0.0/12" // 10.244.0.0/16 is kubeone's default PodCIDR and 10.96.0.0/12 is kubeone's default ServiceCIDR
+	noProxyPlaybookFilePath = "../../ansible-playbooks/update-noproxy-envs.yml"
+)
+
+type (
+	noProxyInventoryFileParameters struct {
+		K8sNodepools NodePools
+		ClusterID    string
+		NoProxy      string
+	}
+
+	NodePools struct {
+		Dynamic []*pb.NodePool
+		Static  []*pb.NodePool
+	}
 )
 
 func (u *Usecases) UpdateNoProxyEnvs(request *pb.UpdateNoProxyEnvsRequest) (*pb.UpdateNoProxyEnvsResponse, error) {
@@ -21,9 +40,8 @@ func (u *Usecases) UpdateNoProxyEnvs(request *pb.UpdateNoProxyEnvsRequest) (*pb.
 	hasHetznerNodeFlag := hasHetznerNode(request.Desired.ClusterInfo)
 	httpProxyMode := commonUtils.GetEnvDefault("HTTP_PROXY_MODE", defaulHttpProxyMode)
 	// Changing NO_PROXY and no_proxy env variables is necessary only when
-	// 1. HTTP Proxy mode isn't "off"
-	// 2. cluster has a Hetzner node or cluster is being build using HTTP proxy
-	if !(httpProxyMode == "on" || (httpProxyMode != "off" && hasHetznerNodeFlag)) {
+	// HTTP Proxy mode isn't "off" and cluster has a Hetzner node or cluster is being build using HTTP proxy
+	if httpProxyMode == "off" || (httpProxyMode == "default" && !hasHetznerNodeFlag) {
 		return &pb.UpdateNoProxyEnvsResponse{Current: request.Current, Desired: request.Desired}, nil
 	}
 
@@ -93,5 +111,59 @@ func nodesChanged(currentK8sClusterInfo, desiredK8sClusterInfo *pb.ClusterInfo) 
 // Public and private IPs of this node must be added to the NO_PROXY and no_proxy env variables in
 // kube-proxy DaemonSet and static pods.
 func updateNoProxyEnvs(currentK8sClusterInfo, desiredK8sClusterInfo *pb.ClusterInfo, spawnProcessLimit chan struct{}) error {
-	return nil
+	clusterID := commonUtils.GetClusterID(currentK8sClusterInfo)
+
+	// This is the directory where files (Ansible inventory files, SSH keys etc.) will be generated.
+	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, commonUtils.CreateHash(commonUtils.HashLength)))
+	if err := commonUtils.CreateDirectory(clusterDirectory); err != nil {
+		return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
+	}
+
+	if err := commonUtils.CreateKeysForDynamicNodePools(commonUtils.GetCommonDynamicNodePools(currentK8sClusterInfo.NodePools), clusterDirectory); err != nil {
+		return fmt.Errorf("failed to create key file(s) for dynamic nodepools : %w", err)
+	}
+
+	if err := commonUtils.CreateKeysForStaticNodepools(commonUtils.GetCommonStaticNodePools(currentK8sClusterInfo.NodePools), clusterDirectory); err != nil {
+		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
+	}
+
+	noProxyList := createNoProxyList(desiredK8sClusterInfo.GetNodePools())
+	if err := utils.GenerateInventoryFile(templates.NoProxyEnvsInventoryTemplate, clusterDirectory, noProxyInventoryFileParameters{
+		K8sNodepools: NodePools{
+			Dynamic: commonUtils.GetCommonDynamicNodePools(currentK8sClusterInfo.NodePools),
+			Static:  commonUtils.GetCommonStaticNodePools(currentK8sClusterInfo.NodePools),
+		},
+		ClusterID: clusterID,
+		NoProxy:   noProxyList,
+	}); err != nil {
+		return fmt.Errorf("failed to generate inventory file for updating the no proxy envs using playbook in %s : %w", clusterDirectory, err)
+	}
+
+	ansible := utils.Ansible{
+		Playbook:          noProxyPlaybookFilePath,
+		Inventory:         utils.InventoryFileName,
+		Directory:         clusterDirectory,
+		SpawnProcessLimit: spawnProcessLimit,
+	}
+
+	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("Running ansible to update NO_PROXY and no_proxy envs - %s", clusterID)); err != nil {
+		return fmt.Errorf("error while running ansible to update NO_PROXY and no_proxy envs in %s : %w", clusterDirectory, err)
+	}
+
+	return os.RemoveAll(clusterDirectory)
+}
+
+func createNoProxyList(desiredNodePools []*pb.NodePool) string {
+	noProxyList := noProxyDefault
+
+	for _, np := range desiredNodePools {
+		for _, node := range np.Nodes {
+			noProxyList = fmt.Sprintf("%s,%s,%s", noProxyList, node.Private, node.Public)
+		}
+	}
+
+	// if "svc" isn't in noProxyList the admission webhooks will fail, because they will be routed to proxy
+	noProxyList = fmt.Sprintf("%s,%s,", noProxyList, "svc")
+
+	return noProxyList
 }
