@@ -123,7 +123,6 @@ func createK8sClustersFromManifest(from *manifest.Manifest, into *store.Config) 
 
 // createLBClustersFromManifest reads the manifest and creates load balancer clusters based on it.
 func createLBClustersFromManifest(from *manifest.Manifest, into *store.Config) error {
-	const hostnameHashLength = 17
 	// 1. Collect all Lbs in the desired state for given K8s clusters.
 	lbs := make(map[string]*spec.LoadBalancers)
 	for _, lbCluster := range from.LoadBalancer.Clusters {
@@ -154,9 +153,8 @@ func createLBClustersFromManifest(from *manifest.Manifest, into *store.Config) e
 			return fmt.Errorf("error encountered while creating desired state for %s : %w", newLbCluster.ClusterInfo.Name, err)
 		}
 
-		if newLbCluster.Dns.Hostname == "" {
-			newLbCluster.Dns.Hostname = utils.CreateHash(hostnameHashLength)
-		}
+		// delay the creation of the hostname at a later point
+		// where we can re-use the current state.
 
 		if _, ok := lbs[newLbCluster.TargetedK8S]; !ok {
 			lbs[newLbCluster.TargetedK8S] = new(spec.LoadBalancers)
@@ -165,19 +163,19 @@ func createLBClustersFromManifest(from *manifest.Manifest, into *store.Config) e
 	}
 
 	// 2. Marshal and match with respective clusters.
-	for k8sCluster := range lbs {
-		state, ok := into.Clusters[k8sCluster]
+	for k8sCluster := range into.Clusters {
+		lbs, ok := lbs[k8sCluster]
 		if !ok {
-			// THIS  CASE SHOULD NEVER HAPPEN A LB CLUSTER CANNOT STAND ALONE WITHOUT A K8S CLUSTER.
-			return fmt.Errorf("unexpected state. Loadbalancer cluster was created without a matching K8s cluster")
+			into.Clusters[k8sCluster].Desired.LoadBalancers = nil
+			continue
 		}
 
-		bytes, err := proto.Marshal(lbs[k8sCluster])
+		bytes, err := proto.Marshal(lbs)
 		if err != nil {
 			return fmt.Errorf("failed to marshal lb clusters for %q: %w", k8sCluster, err)
 		}
 
-		state.Desired.LoadBalancers = bytes
+		into.Clusters[k8sCluster].Desired.LoadBalancers = bytes
 	}
 
 	return nil
@@ -232,257 +230,6 @@ func getRolesAttachedToLBCluster(roles []manifest.Role, roleNames []string) []*s
 	return matchingRoles
 }
 
-// transferExistingState transfers existing data from current state to desired.
-func transferExistingState(m *manifest.Manifest, db *store.Config) error {
-	// Since we're working with cluster states directly, we'll use the grpc form.
-	// As in the DB form they're encoded.
-	grpcRepr, err := store.ConvertToGRPC(db)
-	if err != nil {
-		return fmt.Errorf("failed to convert from db representation to grpc %q: %w", db.Name, err)
-	}
-
-	fixUpDuplicates(m, grpcRepr)
-
-	if err := transferExistingK8sState(grpcRepr); err != nil {
-		return fmt.Errorf("error while updating Kubernetes clusters for config %s : %w", db.Name, err)
-	}
-
-	if err := transferExistingLBState(grpcRepr); err != nil {
-		return fmt.Errorf("error while updating Loadbalancer clusters for config %s : %w", db.Name, err)
-	}
-
-	newdb, err := store.ConvertFromGRPC(grpcRepr)
-	if err != nil {
-		return fmt.Errorf("failed to convert from grpc to db representation %q: %w", grpcRepr.Name, err)
-	}
-
-	*db = *newdb
-
-	return nil
-}
-
-// fixUpDuplicates renames the nodepools if they're referenced multiple times in k8s,lb clusters.
-func fixUpDuplicates(from *manifest.Manifest, config *spec.Config) {
-	for _, state := range config.GetClusters() {
-		desired := state.GetDesired().GetK8S()
-		desiredLbs := state.GetDesired().GetLoadBalancers().GetClusters()
-
-		current := state.GetCurrent().GetK8S()
-		currentLbs := state.GetCurrent().GetLoadBalancers().GetClusters()
-
-		for _, np := range from.NodePools.Dynamic {
-			used := make(map[string]struct{})
-
-			copyK8sNodePoolsNamesFromCurrentState(used, np.Name, current, desired)
-			copyLbNodePoolNamesFromCurrentState(used, np.Name, currentLbs, desiredLbs)
-
-			references := findNodePoolReferences(np.Name, desired.GetClusterInfo().GetNodePools())
-			for _, lb := range desiredLbs {
-				references = append(references, findNodePoolReferences(np.Name, lb.GetClusterInfo().GetNodePools())...)
-			}
-
-			for _, np := range references {
-				hash := utils.CreateHash(utils.HashLength)
-				for _, ok := used[hash]; ok; {
-					hash = utils.CreateHash(utils.HashLength)
-				}
-				used[hash] = struct{}{}
-				np.Name += fmt.Sprintf("-%s", hash)
-			}
-		}
-	}
-}
-
-// copyLbNodePoolNamesFromCurrentState copies the generated hash from an existing reference in the current state to the desired state.
-func copyLbNodePoolNamesFromCurrentState(used map[string]struct{}, nodepool string, current, desired []*spec.LBcluster) {
-	for _, desired := range desired {
-		references := findNodePoolReferences(nodepool, desired.GetClusterInfo().GetNodePools())
-		switch {
-		case len(references) > 1:
-			panic("unexpected nodepool reference count")
-		case len(references) == 0:
-			continue
-		}
-
-		ref := references[0]
-
-		for _, current := range current {
-			if desired.ClusterInfo.Name != current.ClusterInfo.Name {
-				continue
-			}
-
-			for _, np := range current.GetClusterInfo().GetNodePools() {
-				_, hash := utils.GetNameAndHashFromNodepool(nodepool, np.Name)
-				if hash == "" {
-					continue
-				}
-
-				used[hash] = struct{}{}
-
-				ref.Name += fmt.Sprintf("-%s", hash)
-				break
-			}
-		}
-	}
-}
-
-// copyK8sNodePoolsNamesFromCurrentState copies the generated hash from an existing reference in the current state to the desired state.
-func copyK8sNodePoolsNamesFromCurrentState(used map[string]struct{}, nodepool string, current, desired *spec.K8Scluster) {
-	references := findNodePoolReferences(nodepool, desired.GetClusterInfo().GetNodePools())
-	switch {
-	case len(references) == 0:
-		return
-	case len(references) > 2:
-		panic("unexpected nodepool reference count")
-	}
-
-	// to avoid extra code for special cases where there is just 1 reference, append a nil.
-	references = append(references, []*spec.NodePool{nil}...)
-
-	control, compute := references[0], references[1]
-	if !references[0].IsControl {
-		control, compute = compute, control
-	}
-
-	for _, np := range current.GetClusterInfo().GetNodePools() {
-		_, hash := utils.GetNameAndHashFromNodepool(nodepool, np.Name)
-		if hash == "" {
-			continue
-		}
-
-		used[hash] = struct{}{}
-
-		if np.IsControl && control != nil {
-			control.Name += fmt.Sprintf("-%s", hash)
-		} else if !np.IsControl && compute != nil {
-			compute.Name += fmt.Sprintf("-%s", hash)
-		}
-	}
-}
-
-// findNodePoolReferences find all nodepools that share the given name.
-func findNodePoolReferences(name string, nodePools []*spec.NodePool) []*spec.NodePool {
-	var references []*spec.NodePool
-	for _, np := range nodePools {
-		if np.Name == name {
-			references = append(references, np)
-		}
-	}
-	return references
-}
-
-// transferExistingK8sState updates the desired state of the kubernetes clusters based on the current state
-func transferExistingK8sState(newConfig *spec.Config) error {
-	for _, state := range newConfig.Clusters {
-		if state.Desired == nil || state.Current == nil {
-			continue
-		}
-
-		if err := updateClusterInfo(state.Desired.K8S.ClusterInfo, state.Current.K8S.ClusterInfo); err != nil {
-			return err
-		}
-
-		// create SSH keys for new nodepools that were added.
-		if err := generateSSHKeys(state.Desired.K8S.ClusterInfo); err != nil {
-			return fmt.Errorf("error encountered while creating desired state for %s : %w", state.Desired.K8S.ClusterInfo.Name, err)
-		}
-
-		if state.Current.K8S.Kubeconfig != "" {
-			state.Desired.K8S.Kubeconfig = state.Current.K8S.Kubeconfig
-		}
-	}
-	return nil
-}
-
-// updateClusterInfo updates the desired state based on the current state
-// namely:
-// - Hash
-// - AutoscalerConfig
-// - existing nodes
-// - nodepool
-//   - metadata
-//   - Public key
-//   - Private key
-func updateClusterInfo(desired, current *spec.ClusterInfo) error {
-	desired.Hash = current.Hash
-desired:
-	for _, desiredNp := range desired.NodePools {
-		for _, currentNp := range current.NodePools {
-			if desiredNp.Name != currentNp.Name {
-				continue
-			}
-
-			switch {
-			case tryUpdateDynamicNodePool(desiredNp, currentNp):
-			case tryUpdateStaticNodePool(desiredNp, currentNp):
-			default:
-				return fmt.Errorf("%q is neither dynamic nor static, unexpected value: %v", desiredNp.Name, desiredNp.GetNodePoolType())
-			}
-
-			continue desired
-		}
-	}
-	return nil
-}
-
-func tryUpdateDynamicNodePool(desired, current *spec.NodePool) bool {
-	dnp := desired.GetDynamicNodePool()
-	cnp := current.GetDynamicNodePool()
-
-	canUpdate := dnp != nil && cnp != nil
-	if !canUpdate {
-		return false
-	}
-
-	dnp.PublicKey = cnp.PublicKey
-	dnp.PrivateKey = cnp.PrivateKey
-
-	desired.Nodes = current.Nodes
-	dnp.Cidr = cnp.Cidr
-
-	// Update the count
-	if cnp.AutoscalerConfig != nil && dnp.AutoscalerConfig != nil {
-		// Both have Autoscaler conf defined, use same count as in current
-		dnp.Count = cnp.Count
-	} else if cnp.AutoscalerConfig == nil && dnp.AutoscalerConfig != nil {
-		// Desired is autoscaled, but not current
-		if dnp.AutoscalerConfig.Min > cnp.Count {
-			// Cannot have fewer nodes than defined min
-			dnp.Count = dnp.AutoscalerConfig.Min
-		} else if dnp.AutoscalerConfig.Max < cnp.Count {
-			// Cannot have more nodes than defined max
-			dnp.Count = dnp.AutoscalerConfig.Max
-		} else {
-			// Use same count as in current for now, autoscaler might change it later
-			dnp.Count = cnp.Count
-		}
-	}
-
-	return true
-}
-
-func tryUpdateStaticNodePool(desired, current *spec.NodePool) bool {
-	dnp := desired.GetStaticNodePool()
-	cnp := current.GetStaticNodePool()
-
-	canUpdate := dnp != nil && cnp != nil
-	if !canUpdate {
-		return false
-	}
-
-	for _, dn := range desired.Nodes {
-		for _, cn := range current.Nodes {
-			if dn.Public == cn.Public {
-				dn.Name = cn.Name
-				dn.Private = cn.Private
-				dn.NodeType = cn.NodeType
-			}
-		}
-	}
-
-	return true
-}
-
 // generateSSHKeys will generate SSH keypair for each nodepool that does not yet have
 // a keypair assigned.
 func generateSSHKeys(desiredInfo *spec.ClusterInfo) error {
@@ -521,44 +268,4 @@ func generateSSHKeyPair() (string, string, error) {
 	pubKeyBuf.Write(ssh.MarshalAuthorizedKey(pubKey))
 
 	return pubKeyBuf.String(), privKeyBuf.String(), nil
-}
-
-// transferExistingLBState updates the desired state of the loadbalancer clusters based on the current state
-func transferExistingLBState(newConfig *spec.Config) error {
-	for _, state := range newConfig.Clusters {
-		if state.Current == nil || state.Desired == nil {
-			continue
-		}
-
-		currentLbs := state.GetCurrent().GetLoadBalancers().GetClusters()
-		desiredLbs := state.GetDesired().GetLoadBalancers().GetClusters()
-
-		for _, desired := range desiredLbs {
-			for _, current := range currentLbs {
-				if current.ClusterInfo.Name == desired.ClusterInfo.Name {
-					if err := updateClusterInfo(desired.ClusterInfo, current.ClusterInfo); err != nil {
-						return err
-					}
-
-					// create SSH keys for new nodepools that were added.
-					if err := generateSSHKeys(desired.ClusterInfo); err != nil {
-						return fmt.Errorf("error encountered while creating desired state for %s : %w", desired.GetClusterInfo().GetName(), err)
-					}
-
-					// copy hostname from current state if not specified in manifest
-					// TODO: verify this is not needed.
-					//if desired.Dns.Hostname == "" {
-					//	desired.Dns.Hostname = current.Dns.Hostname
-					//	desired.Dns.Endpoint = current.Dns.Endpoint
-					//}
-					if current.Dns.Hostname != desired.Dns.Hostname {
-						desired.Dns.Endpoint = current.Dns.Endpoint
-					}
-					break
-				}
-			}
-		}
-	}
-
-	return nil
 }

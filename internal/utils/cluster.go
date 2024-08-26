@@ -12,29 +12,6 @@ type ProviderNames struct {
 	CloudProviderName string
 }
 
-// GetClusterByName will return index of Cluster that will have same name as specified in parameters
-// If no name is found, return -1
-func GetClusterByName(clusterName string, clusters []*spec.K8Scluster) int {
-	if clusterName == "" {
-		return -1
-	}
-
-	if len(clusters) == 0 {
-		return -1
-	}
-
-	for i, cluster := range clusters {
-		if cluster == nil {
-			continue
-		}
-		if cluster.ClusterInfo.Name == clusterName {
-			return i
-		}
-	}
-
-	return -1
-}
-
 // GetLBClusterByName will return index of Cluster that will have same name as specified in parameters
 // If no name is found, return -1
 func GetLBClusterByName(name string, clusters []*spec.LBcluster) int {

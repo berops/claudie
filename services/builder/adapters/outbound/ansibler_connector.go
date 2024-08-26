@@ -69,10 +69,10 @@ func (a *AnsiblerConnector) TeardownLoadBalancers(builderCtx *utils.BuilderConte
 }
 
 // UpdateAPIEndpoint updates kube API endpoint of the cluster.
-func (a *AnsiblerConnector) UpdateAPIEndpoint(builderCtx *utils.BuilderContext, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.UpdateAPIEndpointResponse, error) {
+func (a *AnsiblerConnector) UpdateAPIEndpoint(builderCtx *utils.BuilderContext, apiNodePool string, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.UpdateAPIEndpointResponse, error) {
 	return ansibler.UpdateAPIEndpoint(ansiblerGrpcClient, &pb.UpdateAPIEndpointRequest{
+		ApiNodePool: apiNodePool,
 		Current:     builderCtx.CurrentCluster,
-		Desired:     builderCtx.DesiredCluster,
 		ProjectName: builderCtx.ProjectName,
 	})
 }

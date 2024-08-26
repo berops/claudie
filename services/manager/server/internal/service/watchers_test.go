@@ -258,6 +258,60 @@ func TestGRPC_WatchForDoneOrErrorDocuments(t *testing.T) {
 				assert.Equal(t, uint64(2), cfg.Version)
 			},
 		},
+		{
+			name: "test-manifest-checksum-equal-error-stage-delete-clusters",
+			fields: fields{Store: func() store.Store {
+				db := store.NewInMemoryStore()
+				_ = db.CreateConfig(context.Background(), &store.Config{
+					Version: 0,
+					Name:    "checksum-equal-error-stage-delete-clusters",
+					Manifest: store.Manifest{
+						Raw:                 "testing-manifest",
+						Checksum:            checksum.Digest("0"),
+						LastAppliedChecksum: checksum.Digest("0"),
+					},
+					Clusters: map[string]*store.ClusterState{
+						"test-cluster-1": {
+							Current: store.Clusters{K8s: []byte("random")},
+							Desired: store.Clusters{},
+						},
+						"test-cluster-2": {
+							Current: store.Clusters{},
+							Desired: store.Clusters{K8s: []byte("random")},
+						},
+						"test-cluster-3": {
+							Current: store.Clusters{},
+							Desired: store.Clusters{},
+						},
+						"test-cluster-4": {
+							Current: store.Clusters{},
+							Desired: store.Clusters{},
+						},
+					},
+				})
+				return db
+			}()},
+			args:    args{ctx: context.Background()},
+			wantErr: false,
+			setup: func(db store.Store) {
+				cfg, _ := db.GetConfig(context.Background(), "checksum-equal-error-stage-delete-clusters")
+				cfg.Manifest.State = manifest.Error.String()
+				_ = db.UpdateConfig(context.Background(), cfg)
+				assert.NotNil(t, cfg.Clusters["test-cluster-3"])
+				assert.NotNil(t, cfg.Clusters["test-cluster-4"])
+				assert.NotNil(t, cfg.Clusters["test-cluster-1"])
+				assert.NotNil(t, cfg.Clusters["test-cluster-2"])
+				assert.Equal(t, uint64(1), cfg.Version)
+			},
+			validate: func(t *testing.T, db store.Store) {
+				cfg, _ := db.GetConfig(context.Background(), "checksum-equal-error-stage-delete-clusters")
+				assert.NotNil(t, cfg.Clusters["test-cluster-3"])
+				assert.NotNil(t, cfg.Clusters["test-cluster-4"])
+				assert.NotNil(t, cfg.Clusters["test-cluster-1"])
+				assert.NotNil(t, cfg.Clusters["test-cluster-2"])
+				assert.Equal(t, uint64(1), cfg.Version)
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

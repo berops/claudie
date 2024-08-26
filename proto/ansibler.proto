@@ -45,13 +45,12 @@ message TeardownLBResponse {
 
 message UpdateAPIEndpointRequest{
   spec.K8scluster current = 1;
-  spec.K8scluster desired = 2;
-  string projectName = 3;
+  string apiNodePool = 2;
+  string projectName = 4;
 }
 
 message UpdateAPIEndpointResponse{
   spec.K8scluster current = 1;
-  spec.K8scluster desired = 2;
 }
 
 message RemoveClaudieUtilitiesRequest {

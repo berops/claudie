@@ -224,29 +224,28 @@ func (g *GRPC) WatchForDoneOrErrorDocuments(ctx context.Context) error {
 				}
 				continue
 			}
-		}
 
-		// for both error and done documents clear destroyed clusters.
-		clustersDeleted := false
-		for cluster, state := range idle.Clusters {
-			currentEmpty := len(state.Current.K8s) == 0 && len(state.Current.LoadBalancers) == 0
-			desiredEmpty := len(state.Desired.K8s) == 0 && len(state.Desired.LoadBalancers) == 0
+			clustersDeleted := false
+			for cluster, state := range idle.Clusters {
+				currentEmpty := len(state.Current.K8s) == 0 && len(state.Current.LoadBalancers) == 0
+				desiredEmpty := len(state.Desired.K8s) == 0 && len(state.Desired.LoadBalancers) == 0
 
-			if currentEmpty && desiredEmpty {
-				clustersDeleted = true
-				delete(idle.Clusters, cluster)
-			}
-		}
-
-		if clustersDeleted {
-			if err := g.Store.UpdateConfig(ctx, idle); err != nil {
-				if errors.Is(err, store.ErrNotFoundOrDirty) {
-					logger.Warn().Msgf("Idle Config %q couldn't be updated due to a Dirty Write, another retry will start shortly.", idle.Name)
-					continue
+				if currentEmpty && desiredEmpty {
+					clustersDeleted = true
+					delete(idle.Clusters, cluster)
 				}
-				logger.Err(err).Msgf("Failed to update idle config %q, skipping.", idle.Name)
 			}
-			continue
+
+			if clustersDeleted {
+				if err := g.Store.UpdateConfig(ctx, idle); err != nil {
+					if errors.Is(err, store.ErrNotFoundOrDirty) {
+						logger.Warn().Msgf("Idle Config %q couldn't be updated due to a Dirty Write, another retry will start shortly.", idle.Name)
+						continue
+					}
+					logger.Err(err).Msgf("Failed to update idle config %q, skipping.", idle.Name)
+				}
+				continue
+			}
 		}
 	}
 

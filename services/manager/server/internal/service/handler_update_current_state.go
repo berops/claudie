@@ -45,6 +45,16 @@ func (g *GRPC) UpdateCurrentState(ctx context.Context, request *pb.UpdateCurrent
 
 	cluster.Current = request.State
 
+	if cluster.Current != nil {
+		if err := transferExistingK8sState(cluster.Current.K8S, cluster.Desired.K8S); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to trasnsfer updated current state to desired state for cluster %q config %q: %v", request.Cluster, request.Name, err)
+		}
+
+		if err := transferExistingLBState(cluster.Current.LoadBalancers, cluster.Desired.LoadBalancers); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to trasnsfer updated current state to desired state for cluster %q config %q: %v", request.Cluster, request.Name, err)
+		}
+	}
+
 	db, err := store.ConvertFromGRPC(grpc)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert config %q from grpc representation to database representation: %v", request.Name, err)

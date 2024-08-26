@@ -131,7 +131,7 @@ func Diff(configName string, current, desired *spec.K8Scluster, currentLbs, desi
 			Event:     spec.Event_UPDATE,
 			Task: &spec.Task{
 				UpdateState: &spec.UpdateState{
-					ControlPlaneWithAPIEndpointReplace: addingLbApiEndpoint,
+					ControlPlaneWithAPIEndpointReplace: apiEndpointDeleted,
 				},
 			},
 		})

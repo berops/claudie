@@ -203,17 +203,21 @@ message Task {
 
 message CreateState {
   K8scluster k8s = 1;
-  repeated LBcluster lbs = 2;
+  LoadBalancers lbs = 2;
 }
 
 message UpdateState {
   K8scluster k8s = 1;
-  repeated LBcluster lbs = 2;
-  bool controlPlaneWithAPIEndpointReplace = 3;
+  LoadBalancers lbs = 2;
+  string apiNodePool = 3;
 }
 
 message DeleteState {
   K8scluster k8s = 1;
-  repeated LBcluster lbs = 2;
-  map<string, int32> nodepools = 3;
+  LoadBalancers lbs = 2;
+  map<string, DeletedNodes> nodepools = 3;
+}
+
+message DeletedNodes {
+  repeated string nodes = 1;
 }

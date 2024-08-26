@@ -10,7 +10,7 @@ type AnsiblerPort interface {
 	InstallVPN(builderCtx *utils.BuilderContext, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.InstallResponse, error)
 	SetUpLoadbalancers(builderCtx *utils.BuilderContext, apiEndpoint string, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.SetUpLBResponse, error)
 	TeardownLoadBalancers(builderCtx *utils.BuilderContext, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.TeardownLBResponse, error)
-	UpdateAPIEndpoint(builderCtx *utils.BuilderContext, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.UpdateAPIEndpointResponse, error)
+	UpdateAPIEndpoint(builderCtx *utils.BuilderContext, apiNodePool string, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.UpdateAPIEndpointResponse, error)
 	RemoveClaudieUtilities(builderCtx *utils.BuilderContext, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.RemoveClaudieUtilitiesResponse, error)
 
 	PerformHealthCheck() error

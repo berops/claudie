@@ -94,17 +94,16 @@ func (u *Usecases) configureInfrastructure(ctx *utils.BuilderContext) error {
 }
 
 // callUpdateAPIEndpoint updates k8s API endpoint via ansibler.
-func (u *Usecases) callUpdateAPIEndpoint(ctx *utils.BuilderContext) error {
+func (u *Usecases) callUpdateAPIEndpoint(ctx *utils.BuilderContext, apiNodePool string) error {
 	description := ctx.Workflow.Description
 	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s changing api endpoint to a new control plane node", description))
 
-	resp, err := u.Ansibler.UpdateAPIEndpoint(ctx, u.Ansibler.GetClient())
+	resp, err := u.Ansibler.UpdateAPIEndpoint(ctx, apiNodePool, u.Ansibler.GetClient())
 	if err != nil {
 		return err
 	}
 
 	ctx.CurrentCluster = resp.Current
-	ctx.DesiredCluster = resp.Desired
 	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, description)
 	return nil
 }
