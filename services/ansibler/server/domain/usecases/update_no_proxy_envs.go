@@ -130,8 +130,8 @@ func updateNoProxyEnvs(currentK8sClusterInfo, desiredK8sClusterInfo *pb.ClusterI
 	noProxyList := createNoProxyList(desiredK8sClusterInfo.GetNodePools())
 	if err := utils.GenerateInventoryFile(templates.NoProxyEnvsInventoryTemplate, clusterDirectory, noProxyInventoryFileParameters{
 		K8sNodepools: NodePools{
-			Dynamic: commonUtils.GetCommonDynamicNodePools(currentK8sClusterInfo.NodePools),
-			Static:  commonUtils.GetCommonStaticNodePools(currentK8sClusterInfo.NodePools),
+			Dynamic: commonUtils.GetCommonDynamicControlPlaneNodes(currentK8sClusterInfo.NodePools, desiredK8sClusterInfo.NodePools),
+			Static:  commonUtils.GetCommonStaticControlPlaneNodes(currentK8sClusterInfo.NodePools, desiredK8sClusterInfo.NodePools),
 		},
 		ClusterID: clusterID,
 		NoProxy:   noProxyList,
