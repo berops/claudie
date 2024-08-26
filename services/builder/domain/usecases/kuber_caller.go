@@ -3,15 +3,15 @@ package usecases
 import (
 	"fmt"
 
-	cutils "github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/berops/claudie/services/builder/domain/usecases/utils"
+	builder "github.com/berops/claudie/services/builder/internal"
 	"github.com/rs/zerolog/log"
 )
 
 // reconcileK8sConfiguration reconciles desired k8s cluster configuration via kuber.
-func (u *Usecases) reconcileK8sConfiguration(ctx *utils.BuilderContext) error {
-	logger := cutils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
+func (u *Usecases) reconcileK8sConfiguration(ctx *builder.Context) error {
+	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
 	kuberClient := u.Kuber.GetClient()
 
 	// Set workflow state.
@@ -85,14 +85,14 @@ func (u *Usecases) reconcileK8sConfiguration(ctx *utils.BuilderContext) error {
 		return err
 	}
 
-	if cutils.IsAutoscaled(ctx.DesiredCluster) {
+	if utils.IsAutoscaled(ctx.DesiredCluster) {
 		// Set up Autoscaler if desired state is autoscaled.
 		u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, fmt.Sprintf("%s deploying Cluster Autoscaler", description))
 		logger.Info().Msg("Calling SetUpClusterAutoscaler on kuber")
 		if err := u.Kuber.SetUpClusterAutoscaler(ctx, kuberClient); err != nil {
 			return err
 		}
-	} else if cutils.IsAutoscaled(ctx.CurrentCluster) {
+	} else if utils.IsAutoscaled(ctx.CurrentCluster) {
 		// Destroy Autoscaler if current state is autoscaled, but desired is not.
 		u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, fmt.Sprintf("%s deleting Cluster Autoscaler", description))
 		logger.Info().Msg("Calling DestroyClusterAutoscaler on kuber")
@@ -106,8 +106,8 @@ func (u *Usecases) reconcileK8sConfiguration(ctx *utils.BuilderContext) error {
 }
 
 // callPatchClusterInfoConfigMap patches cluster-info ConfigMap via kuber.
-func (u *Usecases) callPatchClusterInfoConfigMap(ctx *utils.BuilderContext) error {
-	logger := cutils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
+func (u *Usecases) callPatchClusterInfoConfigMap(ctx *builder.Context) error {
+	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
 
 	description := ctx.Workflow.Description
 
@@ -124,13 +124,13 @@ func (u *Usecases) callPatchClusterInfoConfigMap(ctx *utils.BuilderContext) erro
 }
 
 // deleteClusterData deletes the kubeconfig, cluster metadata and cluster autoscaler from management cluster.
-func (u *Usecases) deleteClusterData(ctx *utils.BuilderContext) error {
+func (u *Usecases) deleteClusterData(ctx *builder.Context) error {
 	if ctx.CurrentCluster == nil {
 		return nil
 	}
 	description := ctx.Workflow.Description
 	kuberClient := u.Kuber.GetClient()
-	logger := cutils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
+	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
 
 	u.updateTaskWithDescription(ctx, spec.Workflow_DESTROY_KUBER, fmt.Sprintf("%s deleting kubeconfig secret", description))
 
@@ -148,7 +148,7 @@ func (u *Usecases) deleteClusterData(ctx *utils.BuilderContext) error {
 	logger.Info().Msg("DeleteKubeconfig on Kuber finished successfully")
 
 	// Destroy Autoscaler if current state is autoscaled
-	if cutils.IsAutoscaled(ctx.CurrentCluster) {
+	if utils.IsAutoscaled(ctx.CurrentCluster) {
 		u.updateTaskWithDescription(ctx, spec.Workflow_DESTROY_KUBER, fmt.Sprintf("%s deleting Cluster Autoscaler", description))
 		logger.Info().Msg("Calling DestroyClusterAutoscaler on kuber")
 		if err := u.Kuber.DestroyClusterAutoscaler(ctx, kuberClient); err != nil {
@@ -162,7 +162,7 @@ func (u *Usecases) deleteClusterData(ctx *utils.BuilderContext) error {
 
 // callDeleteNodes calls Kuber.DeleteNodes which will gracefully delete nodes from cluster
 func (u *Usecases) callDeleteNodes(master, worker []string, cluster *spec.K8Scluster) (*spec.K8Scluster, error) {
-	logger := cutils.CreateLoggerWithClusterName(cutils.GetClusterID(cluster.ClusterInfo))
+	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(cluster.ClusterInfo))
 
 	logger.Info().Msg("Calling DeleteNodes on Kuber")
 	resDelete, err := u.Kuber.DeleteNodes(cluster, master, worker, u.Kuber.GetClient())

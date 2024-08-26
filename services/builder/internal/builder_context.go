@@ -1,12 +1,12 @@
-package utils
+package builder
 
 import (
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 )
 
-// BuilderContext provides context for the Claudie workflow for a particular cluster.
-type BuilderContext struct {
+// Context provides context for the Claudie workflow for a particular cluster.
+type Context struct {
 	// ProjectName name of the config from which the cluster is.
 	ProjectName string
 	// TaskId from which this process was spawned from.
@@ -33,7 +33,7 @@ type BuilderContext struct {
 }
 
 // GetClusterName returns name of the k8s cluster for a given builder context.
-func (ctx *BuilderContext) GetClusterName() string {
+func (ctx *Context) GetClusterName() string {
 	if ctx.DesiredCluster != nil {
 		return ctx.DesiredCluster.ClusterInfo.Name
 	}
@@ -58,7 +58,7 @@ func (ctx *BuilderContext) GetClusterName() string {
 }
 
 // GetClusterID returns ID of the k8s cluster for a given builder context.
-func (ctx *BuilderContext) GetClusterID() string {
+func (ctx *Context) GetClusterID() string {
 	if ctx.DesiredCluster != nil {
 		return utils.GetClusterID(ctx.DesiredCluster.ClusterInfo)
 	}

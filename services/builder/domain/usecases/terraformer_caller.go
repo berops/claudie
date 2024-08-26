@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 
-	cutils "github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/berops/claudie/services/builder/domain/usecases/utils"
+	builder "github.com/berops/claudie/services/builder/internal"
 )
 
 var (
@@ -17,8 +17,8 @@ var (
 )
 
 // reconcileInfrastructure reconciles the desired infrastructure via terraformer.
-func (u *Usecases) reconcileInfrastructure(ctx *utils.BuilderContext) error {
-	logger := cutils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
+func (u *Usecases) reconcileInfrastructure(ctx *builder.Context) error {
+	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
 
 	// Set workflow state.
 	description := ctx.Workflow.Description
@@ -52,8 +52,8 @@ func (u *Usecases) reconcileInfrastructure(ctx *utils.BuilderContext) error {
 }
 
 // destroyInfrastructure destroys the current infrastructure via terraformer.
-func (u *Usecases) destroyInfrastructure(ctx *utils.BuilderContext) error {
-	logger := cutils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
+func (u *Usecases) destroyInfrastructure(ctx *builder.Context) error {
+	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
 
 	// Set workflow state.
 	description := ctx.Workflow.Description

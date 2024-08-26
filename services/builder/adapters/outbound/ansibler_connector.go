@@ -2,10 +2,11 @@ package outbound
 
 import (
 	"github.com/berops/claudie/internal/envs"
-	cutils "github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	ansibler "github.com/berops/claudie/services/ansibler/client"
-	"github.com/berops/claudie/services/builder/domain/usecases/utils"
+	builder "github.com/berops/claudie/services/builder/internal"
+
 	"google.golang.org/grpc"
 )
 
@@ -15,7 +16,7 @@ type AnsiblerConnector struct {
 
 // Connect establishes a gRPC connection with the ansibler microservice.
 func (a *AnsiblerConnector) Connect() error {
-	connection, err := cutils.GrpcDialWithRetryAndBackoff("ansibler", envs.AnsiblerURL)
+	connection, err := utils.GrpcDialWithRetryAndBackoff("ansibler", envs.AnsiblerURL)
 	if err != nil {
 		return err
 	}
@@ -26,7 +27,7 @@ func (a *AnsiblerConnector) Connect() error {
 }
 
 // InstallNodeRequirements installs node requirements on all nodes.
-func (a *AnsiblerConnector) InstallNodeRequirements(builderCtx *utils.BuilderContext, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.InstallResponse, error) {
+func (a *AnsiblerConnector) InstallNodeRequirements(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.InstallResponse, error) {
 	return ansibler.InstallNodeRequirements(ansiblerGrpcClient,
 		&pb.InstallRequest{Desired: builderCtx.DesiredCluster,
 			DesiredLbs:  builderCtx.DesiredLoadbalancers,
@@ -35,7 +36,7 @@ func (a *AnsiblerConnector) InstallNodeRequirements(builderCtx *utils.BuilderCon
 }
 
 // InstallVPN installs VPN on all nodes of the infrastructure.
-func (a *AnsiblerConnector) InstallVPN(builderCtx *utils.BuilderContext, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.InstallResponse, error) {
+func (a *AnsiblerConnector) InstallVPN(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.InstallResponse, error) {
 	return ansibler.InstallVPN(ansiblerGrpcClient,
 		&pb.InstallRequest{
 			Desired:     builderCtx.DesiredCluster,
@@ -45,7 +46,7 @@ func (a *AnsiblerConnector) InstallVPN(builderCtx *utils.BuilderContext, ansible
 }
 
 // SetUpLoadbalancers configures loadbalancers for the infrastructure.
-func (a *AnsiblerConnector) SetUpLoadbalancers(builderCtx *utils.BuilderContext, apiEndpoint string, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.SetUpLBResponse, error) {
+func (a *AnsiblerConnector) SetUpLoadbalancers(builderCtx *builder.Context, apiEndpoint string, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.SetUpLBResponse, error) {
 	return ansibler.SetUpLoadbalancers(ansiblerGrpcClient,
 		&pb.SetUpLBRequest{
 			Desired:             builderCtx.DesiredCluster,
@@ -58,7 +59,7 @@ func (a *AnsiblerConnector) SetUpLoadbalancers(builderCtx *utils.BuilderContext,
 }
 
 // TeardownLoadBalancers destroys loadbalancers for the infrastructure.
-func (a *AnsiblerConnector) TeardownLoadBalancers(builderCtx *utils.BuilderContext, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.TeardownLBResponse, error) {
+func (a *AnsiblerConnector) TeardownLoadBalancers(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.TeardownLBResponse, error) {
 	return ansibler.TeardownLoadBalancers(ansiblerGrpcClient,
 		&pb.TeardownLBRequest{
 			Desired:     builderCtx.DesiredCluster,
@@ -69,7 +70,7 @@ func (a *AnsiblerConnector) TeardownLoadBalancers(builderCtx *utils.BuilderConte
 }
 
 // UpdateAPIEndpoint updates kube API endpoint of the cluster.
-func (a *AnsiblerConnector) UpdateAPIEndpoint(builderCtx *utils.BuilderContext, apiNodePool string, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.UpdateAPIEndpointResponse, error) {
+func (a *AnsiblerConnector) UpdateAPIEndpoint(builderCtx *builder.Context, apiNodePool string, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.UpdateAPIEndpointResponse, error) {
 	return ansibler.UpdateAPIEndpoint(ansiblerGrpcClient, &pb.UpdateAPIEndpointRequest{
 		ApiNodePool: apiNodePool,
 		Current:     builderCtx.CurrentCluster,
@@ -78,7 +79,7 @@ func (a *AnsiblerConnector) UpdateAPIEndpoint(builderCtx *utils.BuilderContext, 
 }
 
 // RemoveClaudieUtilities removes claudie installed utilities from the nodes of the cluster.
-func (a *AnsiblerConnector) RemoveClaudieUtilities(builderCtx *utils.BuilderContext, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.RemoveClaudieUtilitiesResponse, error) {
+func (a *AnsiblerConnector) RemoveClaudieUtilities(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.RemoveClaudieUtilitiesResponse, error) {
 	return ansibler.RemoveClaudieUtilities(ansiblerGrpcClient, &pb.RemoveClaudieUtilitiesRequest{
 		Current:     builderCtx.CurrentCluster,
 		CurrentLbs:  builderCtx.CurrentLoadbalancers,
@@ -88,12 +89,12 @@ func (a *AnsiblerConnector) RemoveClaudieUtilities(builderCtx *utils.BuilderCont
 
 // Disconnect closes the underlying gRPC connection to ansibler microservice
 func (a *AnsiblerConnector) Disconnect() {
-	cutils.CloseClientConnection(a.Connection)
+	utils.CloseClientConnection(a.Connection)
 }
 
 // PerformHealthCheck checks health of the underlying gRPC connection to ansibler microservice
 func (a *AnsiblerConnector) PerformHealthCheck() error {
-	if err := cutils.IsConnectionReady(a.Connection); err == nil {
+	if err := utils.IsConnectionReady(a.Connection); err == nil {
 		return nil
 	} else {
 		a.Connection.Connect()

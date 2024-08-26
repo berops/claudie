@@ -3,13 +3,13 @@ package usecases
 import (
 	"context"
 	"errors"
+	builder "github.com/berops/claudie/services/builder/internal"
 	"math/rand/v2"
 	"slices"
 	"sync"
 	"time"
 
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/berops/claudie/services/builder/domain/usecases/utils"
 	managerclient "github.com/berops/claudie/services/manager/client"
 	"github.com/rs/zerolog/log"
 )
@@ -117,7 +117,7 @@ func (u *Usecases) processTaskEvent(t *managerclient.NextTaskResponse) (*spec.Cl
 }
 
 func (u *Usecases) executeCreateTask(te *managerclient.NextTaskResponse) (*spec.K8Scluster, []*spec.LBcluster, error) {
-	ctx := &utils.BuilderContext{
+	ctx := &builder.Context{
 		ProjectName:          te.Config,
 		TaskId:               te.Event.Id,
 		DesiredCluster:       te.Event.Task.CreateState.K8S,
@@ -130,7 +130,7 @@ func (u *Usecases) executeCreateTask(te *managerclient.NextTaskResponse) (*spec.
 
 func (u *Usecases) executeUpdateTask(te *managerclient.NextTaskResponse) (*spec.K8Scluster, []*spec.LBcluster, error) {
 	if te.Event.Task.UpdateState.ApiNodePool != "" {
-		ctx := &utils.BuilderContext{
+		ctx := &builder.Context{
 			ProjectName:    te.Config,
 			TaskId:         te.Event.Id,
 			CurrentCluster: te.Current.K8S,
@@ -141,7 +141,7 @@ func (u *Usecases) executeUpdateTask(te *managerclient.NextTaskResponse) (*spec.
 			return te.Current.GetK8S(), te.Current.GetLoadBalancers().GetClusters(), err
 		}
 
-		ctx = &utils.BuilderContext{
+		ctx = &builder.Context{
 			ProjectName:          te.Config,
 			TaskId:               te.Event.Id,
 			DesiredCluster:       ctx.CurrentCluster,
@@ -162,7 +162,7 @@ func (u *Usecases) executeUpdateTask(te *managerclient.NextTaskResponse) (*spec.
 		return ctx.DesiredCluster, ctx.DesiredLoadbalancers, nil
 	}
 
-	ctx := &utils.BuilderContext{
+	ctx := &builder.Context{
 		ProjectName:          te.Config,
 		TaskId:               te.Event.Id,
 		CurrentCluster:       te.Current.K8S,
@@ -188,7 +188,7 @@ func (u *Usecases) executeDeleteTask(te *managerclient.NextTaskResponse) (*spec.
 
 	clusterDeletion := te.Event.Task.DeleteState.GetK8S() != nil
 
-	ctx := &utils.BuilderContext{
+	ctx := &builder.Context{
 		ProjectName:          te.Config,
 		TaskId:               te.Event.Id,
 		CurrentCluster:       te.Event.Task.DeleteState.GetK8S(),

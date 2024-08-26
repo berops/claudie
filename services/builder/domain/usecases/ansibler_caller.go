@@ -3,13 +3,13 @@ package usecases
 import (
 	"fmt"
 
-	cutils "github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/berops/claudie/services/builder/domain/usecases/utils"
+	builder "github.com/berops/claudie/services/builder/internal"
 )
 
 // removeClaudieUtilities removes previously installed claudie utilities.
-func (u *Usecases) removeClaudieUtilities(ctx *utils.BuilderContext) error {
+func (u *Usecases) removeClaudieUtilities(ctx *builder.Context) error {
 	description := ctx.Workflow.Description
 	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s removing claudie installed utilities", description))
 
@@ -26,8 +26,8 @@ func (u *Usecases) removeClaudieUtilities(ctx *utils.BuilderContext) error {
 }
 
 // configureInfrastructure configures infrastructure via ansibler.
-func (u *Usecases) configureInfrastructure(ctx *utils.BuilderContext) error {
-	logger := cutils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
+func (u *Usecases) configureInfrastructure(ctx *builder.Context) error {
+	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
 	ansClient := u.Ansibler.GetClient()
 
 	description := ctx.Workflow.Description
@@ -94,7 +94,7 @@ func (u *Usecases) configureInfrastructure(ctx *utils.BuilderContext) error {
 }
 
 // callUpdateAPIEndpoint updates k8s API endpoint via ansibler.
-func (u *Usecases) callUpdateAPIEndpoint(ctx *utils.BuilderContext, apiNodePool string) error {
+func (u *Usecases) callUpdateAPIEndpoint(ctx *builder.Context, apiNodePool string) error {
 	description := ctx.Workflow.Description
 	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s changing api endpoint to a new control plane node", description))
 

@@ -3,14 +3,14 @@ package usecases
 import (
 	"fmt"
 
-	cutils "github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/berops/claudie/services/builder/domain/usecases/utils"
+	builder "github.com/berops/claudie/services/builder/internal"
 )
 
 // reconcileK8sCluster reconciles desired k8s cluster via kube-eleven.
-func (u *Usecases) reconcileK8sCluster(ctx *utils.BuilderContext) error {
-	logger := cutils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
+func (u *Usecases) reconcileK8sCluster(ctx *builder.Context) error {
+	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
 
 	// Set workflow state.
 	description := ctx.Workflow.Description
@@ -31,8 +31,8 @@ func (u *Usecases) reconcileK8sCluster(ctx *utils.BuilderContext) error {
 	return nil
 }
 
-func (u *Usecases) destroyK8sCluster(ctx *utils.BuilderContext) error {
-	logger := cutils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
+func (u *Usecases) destroyK8sCluster(ctx *builder.Context) error {
+	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
 
 	description := ctx.Workflow.Description
 	u.updateTaskWithDescription(ctx, spec.Workflow_KUBE_ELEVEN, fmt.Sprintf("%s destroying kubernetes cluster", description))

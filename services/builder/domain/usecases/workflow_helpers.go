@@ -4,15 +4,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/builder/domain/usecases/metrics"
+	builder "github.com/berops/claudie/services/builder/internal"
 	managerclient "github.com/berops/claudie/services/manager/client"
 	"github.com/docker/distribution/context"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog/log"
-
-	cutils "github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/services/builder/domain/usecases/utils"
 )
 
 const (
@@ -21,15 +20,15 @@ const (
 )
 
 // buildCluster performs whole Claudie workflow on the given cluster.
-func (u *Usecases) buildCluster(ctx *utils.BuilderContext) (*utils.BuilderContext, error) {
+func (u *Usecases) buildCluster(ctx *builder.Context) (*builder.Context, error) {
 	// LB add nodes prometheus metrics.
 	for _, lb := range ctx.DesiredLoadbalancers {
 		var currNodes int
-		if idx := cutils.GetLBClusterByName(lb.ClusterInfo.Name, ctx.CurrentLoadbalancers); idx >= 0 {
-			currNodes = cutils.CountLbNodes(ctx.CurrentLoadbalancers[idx])
+		if idx := utils.GetLBClusterByName(lb.ClusterInfo.Name, ctx.CurrentLoadbalancers); idx >= 0 {
+			currNodes = utils.CountLbNodes(ctx.CurrentLoadbalancers[idx])
 		}
 
-		adding := max(0, cutils.CountLbNodes(lb)-currNodes)
+		adding := max(0, utils.CountLbNodes(lb)-currNodes)
 
 		metrics.LbAddingNodesInProgress.With(prometheus.Labels{
 			metrics.LBClusterLabel:     lb.ClusterInfo.Name,
@@ -45,7 +44,7 @@ func (u *Usecases) buildCluster(ctx *utils.BuilderContext) (*utils.BuilderContex
 			}).Add(-float64(c))
 		}(lb.TargetedK8S, lb.ClusterInfo.Name, adding)
 
-		deleting := -min(cutils.CountLbNodes(lb)-currNodes, 0)
+		deleting := -min(utils.CountLbNodes(lb)-currNodes, 0)
 
 		metrics.LbDeletingNodesInProgress.With(prometheus.Labels{
 			metrics.K8sClusterLabel:    lb.TargetedK8S,
@@ -66,7 +65,7 @@ func (u *Usecases) buildCluster(ctx *utils.BuilderContext) (*utils.BuilderContex
 		metrics.K8sClusterLabel:    ctx.GetClusterName(),
 		metrics.InputManifestLabel: ctx.ProjectName,
 	}).Add(float64(
-		max(0, cutils.CountNodes(ctx.DesiredCluster)-cutils.CountNodes(ctx.CurrentCluster)),
+		max(0, utils.CountNodes(ctx.DesiredCluster)-utils.CountNodes(ctx.CurrentCluster)),
 	))
 
 	defer func(c int) {
@@ -74,7 +73,7 @@ func (u *Usecases) buildCluster(ctx *utils.BuilderContext) (*utils.BuilderContex
 			metrics.K8sClusterLabel:    ctx.GetClusterName(),
 			metrics.InputManifestLabel: ctx.ProjectName,
 		}).Add(-float64(c))
-	}(max(0, cutils.CountNodes(ctx.DesiredCluster)-cutils.CountNodes(ctx.CurrentCluster)))
+	}(max(0, utils.CountNodes(ctx.DesiredCluster)-utils.CountNodes(ctx.CurrentCluster)))
 
 	// Reconcile infrastructure via terraformer.
 	if err := u.reconcileInfrastructure(ctx); err != nil {
@@ -100,19 +99,19 @@ func (u *Usecases) buildCluster(ctx *utils.BuilderContext) (*utils.BuilderContex
 }
 
 // destroyCluster destroys existing clusters infrastructure for a config and cleans up management cluster from any of the cluster data.
-func (u *Usecases) destroyCluster(ctx *utils.BuilderContext) error {
+func (u *Usecases) destroyCluster(ctx *builder.Context) error {
 	// K8s delete nodes prometheus metric.
 	metrics.K8sDeletingNodesInProgress.With(prometheus.Labels{
 		metrics.K8sClusterLabel:    ctx.GetClusterName(),
 		metrics.InputManifestLabel: ctx.ProjectName,
-	}).Add(float64(cutils.CountNodes(ctx.CurrentCluster)))
+	}).Add(float64(utils.CountNodes(ctx.CurrentCluster)))
 
 	defer func(c int) {
 		metrics.K8sDeletingNodesInProgress.With(prometheus.Labels{
 			metrics.K8sClusterLabel:    ctx.GetClusterName(),
 			metrics.InputManifestLabel: ctx.ProjectName,
 		}).Add(-float64(c))
-	}(cutils.CountNodes(ctx.CurrentCluster))
+	}(utils.CountNodes(ctx.CurrentCluster))
 
 	// LB delete nodes prometheus metrics.
 	for _, lb := range ctx.CurrentLoadbalancers {
@@ -120,7 +119,7 @@ func (u *Usecases) destroyCluster(ctx *utils.BuilderContext) error {
 			metrics.K8sClusterLabel:    lb.TargetedK8S,
 			metrics.LBClusterLabel:     lb.ClusterInfo.Name,
 			metrics.InputManifestLabel: ctx.ProjectName,
-		}).Add(float64(cutils.CountLbNodes(lb)))
+		}).Add(float64(utils.CountLbNodes(lb)))
 
 		defer func(k8s, lb string, c int) {
 			metrics.LbDeletingNodesInProgress.With(prometheus.Labels{
@@ -128,13 +127,13 @@ func (u *Usecases) destroyCluster(ctx *utils.BuilderContext) error {
 				metrics.LBClusterLabel:     lb,
 				metrics.InputManifestLabel: ctx.ProjectName,
 			}).Add(-float64(c))
-		}(lb.TargetedK8S, lb.ClusterInfo.Name, cutils.CountLbNodes(lb))
+		}(lb.TargetedK8S, lb.ClusterInfo.Name, utils.CountLbNodes(lb))
 	}
 
 	metrics.LBClustersInDeletion.Add(float64(len(ctx.CurrentLoadbalancers)))
 	defer func(c int) { metrics.LBClustersInDeletion.Add(-float64(c)) }(len(ctx.CurrentLoadbalancers))
 
-	if s := cutils.GetCommonStaticNodePools(ctx.CurrentCluster.GetClusterInfo().GetNodePools()); len(s) > 0 {
+	if s := utils.GetCommonStaticNodePools(ctx.CurrentCluster.GetClusterInfo().GetNodePools()); len(s) > 0 {
 		if err := u.destroyK8sCluster(ctx); err != nil {
 			log.Error().Msgf("error in destroy Kube-Eleven for config %s project %s : %v", ctx.GetClusterName(), ctx.ProjectName, err)
 		}
@@ -159,75 +158,11 @@ func (u *Usecases) destroyCluster(ctx *utils.BuilderContext) error {
 	return nil
 }
 
-// // destroyConfig destroys all the current state of the config.
-//
-//	func (u *Usecases) destroyConfig(config *spec.Config, clusterView *cutils.ClusterView, c pb.ContextBoxServiceClient) error {
-//		// Destroy all cluster concurrently.
-//		if err := cutils.ConcurrentExec(config.CurrentState.Clusters, func(_ int, cluster *spec.K8Scluster) error {
-//			err := u.destroyCluster(&utils.BuilderContext{
-//				ProjectName:          config.Name,
-//				CurrentCluster:       cluster,
-//				CurrentLoadbalancers: clusterView.Loadbalancers[cluster.ClusterInfo.Name],
-//				Workflow:             clusterView.ClusterWorkflows[cluster.ClusterInfo.Name],
-//			}, c)
-//
-//			if err != nil {
-//				clusterView.SetWorkflowError(cluster.ClusterInfo.Name, err)
-//				return err
-//			}
-//
-//			clusterView.SetWorkflowDone(cluster.ClusterInfo.Name)
-//			return nil
-//		}); err != nil {
-//			return err
-//		}
-//
-//		return u.ContextBox.DeleteConfig(config, c)
-//	}
-//
-// // deleteConfig calls destroy config to remove all traces of infrastructure from given config.
-//
-//	func (u *Usecases) deleteConfig(config *spec.Config, clusterView *cutils.ClusterView, cboxClient pb.ContextBoxServiceClient) error {
-//		log := cutils.CreateLoggerWithProjectName(config.Name)
-//
-//		var err error
-//		for i := 0; i < maxDeleteRetry; i++ {
-//			if err = u.destroyConfig(config, clusterView, cboxClient); err == nil {
-//				break
-//			}
-//			log.Err(err).Msg("failed to destroy config")
-//		}
-//		return err
-//	}
-//
-// // deleteCluster calls destroy cluster to remove all traces of infrastructure from cluster.
-//
-//	func (u *Usecases) deleteCluster(configName, clusterName string, clusterView *cutils.ClusterView, cboxClient pb.ContextBoxServiceClient) error {
-//		log := cutils.CreateLoggerWithProjectAndClusterName(configName, clusterName)
-//
-//		deleteCtx := &utils.BuilderContext{
-//			ProjectName:          configName,
-//			CurrentCluster:       clusterView.CurrentClusters[clusterName],
-//			CurrentLoadbalancers: clusterView.DeletedLoadbalancers[clusterName],
-//			Workflow:             clusterView.ClusterWorkflows[clusterName],
-//		}
-//
-//		var err error
-//		for i := 0; i < maxDeleteRetry; i++ {
-//			if err = u.destroyCluster(deleteCtx, cboxClient); err == nil {
-//				break
-//			}
-//			log.Err(err).Msg("failed to destroy cluster")
-//		}
-//
-//		return err
-//	}
-//
 // deleteNodes deletes nodes from the cluster based on the node map specified.
 func (u *Usecases) deleteNodes(current *spec.K8Scluster, nodepools map[string]*spec.DeletedNodes) (*spec.K8Scluster, error) {
 	var master, worker []string
 	for np, deleted := range nodepools {
-		nodepool := cutils.GetNodePoolByName(np, current.ClusterInfo.NodePools)
+		nodepool := utils.GetNodePoolByName(np, current.ClusterInfo.NodePools)
 		if nodepool.IsControl {
 			master = append(master, deleted.Nodes...)
 		} else {
@@ -243,35 +178,8 @@ func (u *Usecases) deleteNodes(current *spec.K8Scluster, nodepools map[string]*s
 	return newCluster, nil
 }
 
-// // applyIR applies intermediate representation of the infrastructure to the Claudie workflow.
-//
-//	func (u *Usecases) applyIR(configName, clusterName string, clusterView *cutils.ClusterView, cboxClient pb.ContextBoxServiceClient, diff *utils.IntermediateRepresentation) (*utils.BuilderContext, error) {
-//		ctx := &utils.BuilderContext{
-//			ProjectName:          configName,
-//			CurrentCluster:       clusterView.CurrentClusters[clusterName],
-//			DesiredCluster:       diff.IR,
-//			CurrentLoadbalancers: clusterView.Loadbalancers[clusterName],
-//			DesiredLoadbalancers: diff.IRLbs,
-//			DeletedLoadBalancers: nil,
-//			Workflow:             clusterView.ClusterWorkflows[clusterName],
-//		}
-//
-//		if ctx, err := u.buildCluster(ctx, cboxClient); err != nil {
-//			clusterView.CurrentClusters[clusterName] = ctx.DesiredCluster
-//			clusterView.Loadbalancers[clusterName] = ctx.DesiredLoadbalancers
-//
-//			if errors.Is(err, ErrFailedToBuildInfrastructure) {
-//				clusterView.CurrentClusters[clusterName] = ctx.CurrentCluster
-//				clusterView.Loadbalancers[clusterName] = ctx.CurrentLoadbalancers
-//			}
-//			return ctx, err
-//		}
-//		return ctx, nil
-//	}
-//
-
-func (u *Usecases) updateTaskWithDescription(ctx *utils.BuilderContext, stage spec.Workflow_Stage, description string) {
-	logger := cutils.CreateLoggerWithProjectName(ctx.ProjectName)
+func (u *Usecases) updateTaskWithDescription(ctx *builder.Context, stage spec.Workflow_Stage, description string) {
+	logger := utils.CreateLoggerWithProjectName(ctx.ProjectName)
 	ctx.Workflow.Stage = stage
 	ctx.Workflow.Description = strings.TrimSpace(description)
 
