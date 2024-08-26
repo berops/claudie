@@ -48,7 +48,7 @@ spec:
               protocol: TCP
     - toEndpoints:
         - matchLabels:
-            app.kubernetes.io/name: context-box
+            app.kubernetes.io/name: manager
             app.kubernetes.io/part-of: claudie
           matchExpressions:
             - key: io.kubernetes.pod.namespace

@@ -13,9 +13,7 @@ var (
 	AnsiblerURL = os.Getenv("ANSIBLER_HOSTNAME") + ":" + os.Getenv("ANSIBLER_PORT")
 	//KubeElevenURL is a listening URL for KubeEleven module
 	KubeElevenURL = os.Getenv("KUBE_ELEVEN_HOSTNAME") + ":" + os.Getenv("KUBE_ELEVEN_PORT")
-	//ContextBoxURL is a listening URL for ContextBox module
-	ContextBoxURL = os.Getenv("CONTEXT_BOX_HOSTNAME") + ":" + os.Getenv("CONTEXT_BOX_PORT")
-	//ManagerURL is a listening URL for ContextBox module
+	//ManagerURL is a listening URL for Manager module
 	ManagerURL = os.Getenv("MANAGER_HOSTNAME") + ":" + os.Getenv("MANAGER_PORT")
 	//OperatorURL is a listening URL for claudie-operator connection
 	OperatorURL = os.Getenv("OPERATOR_HOSTNAME") + ":" + os.Getenv("OPERATOR_PORT")
@@ -67,11 +65,6 @@ func init() {
 		KubeElevenURL = "localhost:50054"
 	}
 	KubeElevenURL = strings.ReplaceAll(KubeElevenURL, ":tcp://", "")
-
-	if ContextBoxURL == ":" {
-		ContextBoxURL = "localhost:50055"
-	}
-	ContextBoxURL = strings.ReplaceAll(ContextBoxURL, ":tcp://", "")
 
 	if ManagerURL == ":" {
 		ManagerURL = "localhost:50055"

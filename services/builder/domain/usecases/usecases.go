@@ -6,7 +6,7 @@ import (
 )
 
 type Usecases struct {
-	// ContextBox connector to perform tasks related to Context-box
+	// Manager client to perform tasks related to manager
 	Manager managerclient.ManagerClient
 	// Terraformer connector to perform tasks related to Terraformer
 	Terraformer ports.TerraformerPort

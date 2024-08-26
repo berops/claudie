@@ -56,10 +56,10 @@ func run() error {
 				return nil
 			case <-ticker.C:
 				if err := manager.Store.HealthCheck(); err != nil {
-					manager.HealthCheckServer.SetServingStatus("context-box-readiness", grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+					manager.HealthCheckServer.SetServingStatus("manager-readiness", grpc_health_v1.HealthCheckResponse_NOT_SERVING)
 					log.Debug().Msgf("Failed to verify healthcheck: %v", err)
 				} else {
-					manager.HealthCheckServer.SetServingStatus("context-box-readiness", grpc_health_v1.HealthCheckResponse_SERVING)
+					manager.HealthCheckServer.SetServingStatus("manager-readiness", grpc_health_v1.HealthCheckResponse_SERVING)
 				}
 			}
 		}

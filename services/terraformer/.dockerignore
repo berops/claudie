@@ -6,8 +6,6 @@ LICENSE
 .git
 services/ansibler
 services/kube-eleven
-services/scheduler
-services/context-box
 services/builder
 services/testing-framework
 services/claudie-operator

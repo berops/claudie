@@ -71,8 +71,6 @@ message Workflow {
     KUBE_ELEVEN = 3;
     // KUBER indicates that the cluster is currently being build in kuber.
     KUBER = 4;
-    // SCHEDULER indicates that the config is being processed by the scheduler.
-    SCHEDULER = 5;
     // DESTROY_TERRAFORMER indicates that infra for a cluster is being deleted.
     DESTROY_TERRAFORMER = 7;
     // DESTROY_KUBER indicates that data for a cluster is being deleted.
