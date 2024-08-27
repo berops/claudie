@@ -144,12 +144,12 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 		})
 	}
 
-	if target, deleted := deletedTargetApiNodePool(k8sDiffResult, current, currentLbs); deleted {
-		lb := utils.FindLbAPIEndpointCluster(irLbs)
+	if targets, deleted := deletedTargetApiNodePools(k8sDiffResult, current, currentLbs); deleted {
+		lb := findLbAPIEndpointCluster(irLbs)
 
 		var nextControlNodePool *spec.NodePool
 		for _, np := range utils.FindControlNodepools(desired.ClusterInfo.NodePools) {
-			if np.Name != target {
+			if !slices.ContainsFunc(targets, func(s string) bool { return s == np.Name }) {
 				nextControlNodePool = np
 				break
 			}
@@ -167,7 +167,7 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 
 		for _, role := range lb.GetRoles() {
 			if role.RoleType == spec.RoleType_ApiServer {
-				role.TargetPools = slices.DeleteFunc(role.TargetPools, func(s string) bool { return s == target })
+				role.TargetPools = slices.DeleteFunc(role.TargetPools, func(s string) bool { return slices.Contains(targets, s) })
 				role.TargetPools = append(role.TargetPools, nameWithoutHash)
 				break
 			}
@@ -186,7 +186,7 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 		})
 	}
 
-	if k8sNodeApiEndpointDeleted(k8sDiffResult, current) {
+	if endpointNodePoolDeleted(k8sDiffResult, current) {
 		newApiNodePool := findNewAPIEndpointCandidate(desired.ClusterInfo.NodePools)
 
 		events = append(events, &spec.TaskEvent{
@@ -520,7 +520,7 @@ func craftK8sIR(k8sDiffResult nodePoolDiffResult, current, desired *spec.K8Sclus
 	return ir
 }
 
-func k8sNodeApiEndpointDeleted(k8sDiffResult nodePoolDiffResult, current *spec.K8Scluster) bool {
+func endpointNodePoolDeleted(k8sDiffResult nodePoolDiffResult, current *spec.K8Scluster) bool {
 	deletedNodePools := make(map[string][]string)
 	maps.Insert(deletedNodePools, maps.All(k8sDiffResult.deletedDynamic))
 	maps.Insert(deletedNodePools, maps.All(k8sDiffResult.deletedStatic))
@@ -534,18 +534,17 @@ func k8sNodeApiEndpointDeleted(k8sDiffResult nodePoolDiffResult, current *spec.K
 	return false
 }
 
-func deletedTargetApiNodePool(k8sDiffResult nodePoolDiffResult, current *spec.K8Scluster, currentLbs []*spec.LBcluster) (string, bool) {
+func deletedTargetApiNodePools(k8sDiffResult nodePoolDiffResult, current *spec.K8Scluster, currentLbs []*spec.LBcluster) ([]string, bool) {
 	deletedNodePools := make(map[string][]string)
 	maps.Insert(deletedNodePools, maps.All(k8sDiffResult.deletedDynamic))
 	maps.Insert(deletedNodePools, maps.All(k8sDiffResult.deletedStatic))
 
-	for nodepool := range deletedNodePools {
-		np := utils.GetNodePoolByName(nodepool, current.ClusterInfo.NodePools)
-		if utils.IsNodepoolOnlyTargetOfLbAPI(currentLbs, np) {
-			return nodepool, true
-		}
+	var deleted []*spec.NodePool
+	for np := range deletedNodePools {
+		deleted = append(deleted, utils.GetNodePoolByName(np, current.ClusterInfo.NodePools))
 	}
-	return "", false
+
+	return targetPoolsDeleted(currentLbs, deleted)
 }
 
 func findNewAPIEndpointCandidate(desired []*spec.NodePool) string {
@@ -555,4 +554,38 @@ func findNewAPIEndpointCandidate(desired []*spec.NodePool) string {
 		}
 	}
 	panic("no suitable api endpoint replacement candidate found, malformed state.")
+}
+
+// targetPoolsDeleted check whether the LB API cluster target pools are among those that get deleted, if yes returns the names.
+func targetPoolsDeleted(current []*spec.LBcluster, nodepools []*spec.NodePool) ([]string, bool) {
+	for _, role := range findLbAPIEndpointCluster(current).GetRoles() {
+		if role.RoleType != spec.RoleType_ApiServer {
+			continue
+		}
+
+		var matches []string
+		for _, targetPool := range role.TargetPools {
+			idx := slices.IndexFunc(nodepools, func(pool *spec.NodePool) bool {
+				name, _ := utils.GetNameAndHashFromNodepool(targetPool, pool.Name)
+				return name == targetPool
+			})
+			if idx >= 0 {
+				matches = append(matches, nodepools[idx].Name)
+			}
+		}
+
+		if len(matches) == len(role.TargetPools) {
+			return matches, true
+		}
+	}
+	return nil, false
+}
+
+func findLbAPIEndpointCluster(current []*spec.LBcluster) *spec.LBcluster {
+	for _, lb := range current {
+		if utils.HasAPIServerRole(lb.GetRoles()) {
+			return lb
+		}
+	}
+	return nil
 }
