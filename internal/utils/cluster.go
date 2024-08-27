@@ -202,8 +202,8 @@ func GetCommonDynamicNodePools(nps []*spec.NodePool) []*spec.NodePool {
 	return dynamic
 }
 
-func GetCommonDynamicControlPlaneNodes(currentNp, desiredNp []*pb.NodePool) []*pb.NodePool {
-	currDynamicControlNps := make(map[string]*pb.NodePool)
+func GetCommonDynamicControlPlaneNodes(currentNp, desiredNp []*spec.NodePool) []*spec.NodePool {
+	currDynamicControlNps := make(map[string]*spec.NodePool)
 	for _, np := range currentNp {
 		if np.IsControl && np.GetDynamicNodePool() != nil {
 			currDynamicControlNps[np.Name] = np
@@ -214,8 +214,8 @@ func GetCommonDynamicControlPlaneNodes(currentNp, desiredNp []*pb.NodePool) []*p
 	return commonDynamicControlNps
 }
 
-func GetCommonStaticControlPlaneNodes(currentNp, desiredNp []*pb.NodePool) []*pb.NodePool {
-	currStaticControlNps := make(map[string]*pb.NodePool)
+func GetCommonStaticControlPlaneNodes(currentNp, desiredNp []*spec.NodePool) []*spec.NodePool {
+	currStaticControlNps := make(map[string]*spec.NodePool)
 	for _, np := range currentNp {
 		if np.IsControl && np.GetStaticNodePool() != nil {
 			currStaticControlNps[np.Name] = np
@@ -226,16 +226,16 @@ func GetCommonStaticControlPlaneNodes(currentNp, desiredNp []*pb.NodePool) []*pb
 	return commonStaticControlNps
 }
 
-func CreateNpsFromCommonControlPlaneNodes(currControlNps map[string]*pb.NodePool, desiredNp []*pb.NodePool) []*pb.NodePool {
-	var commonControlNps []*pb.NodePool
+func CreateNpsFromCommonControlPlaneNodes(currControlNps map[string]*spec.NodePool, desiredNp []*spec.NodePool) []*spec.NodePool {
+	var commonControlNps []*spec.NodePool
 
 	for _, np := range desiredNp {
 		if currNp, exists := currControlNps[np.Name]; exists {
-			currNodeMap := make(map[string]*pb.Node)
+			currNodeMap := make(map[string]*spec.Node)
 			for _, node := range currNp.Nodes {
 				currNodeMap[node.Name] = node
 			}
-			var commonNodes []*pb.Node
+			var commonNodes []*spec.Node
 			for _, node := range np.Nodes {
 				if _, exists := currNodeMap[node.Name]; exists {
 					commonNodes = append(commonNodes, node)
@@ -244,7 +244,7 @@ func CreateNpsFromCommonControlPlaneNodes(currControlNps map[string]*pb.NodePool
 
 			if len(commonNodes) > 0 {
 				// copy everything except Nodes
-				commonNodePool := &pb.NodePool{
+				commonNodePool := &spec.NodePool{
 					NodePoolType: currNp.NodePoolType,
 					Name:         currNp.Name,
 					Nodes:        commonNodes,
@@ -260,7 +260,7 @@ func CreateNpsFromCommonControlPlaneNodes(currControlNps map[string]*pb.NodePool
 	return commonControlNps
 }
 
-func CountLbNodes(lb *pb.LBcluster) int {
+func CountLbNodes(lb *spec.LBcluster) int {
 	var out int
 	for _, np := range lb.GetClusterInfo().GetNodePools() {
 		switch i := np.GetNodePoolType().(type) {

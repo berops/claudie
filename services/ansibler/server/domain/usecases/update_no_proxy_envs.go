@@ -9,6 +9,7 @@ import (
 
 	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/ansibler/server/utils"
 	"github.com/berops/claudie/services/ansibler/templates"
 )
@@ -27,8 +28,8 @@ type (
 	}
 
 	NodePools struct {
-		Dynamic []*pb.NodePool
-		Static  []*pb.NodePool
+		Dynamic []*spec.NodePool
+		Static  []*spec.NodePool
 	}
 )
 
@@ -63,7 +64,7 @@ func (u *Usecases) UpdateNoProxyEnvs(request *pb.UpdateNoProxyEnvsRequest) (*pb.
 	return &pb.UpdateNoProxyEnvsResponse{Current: request.Current, Desired: request.Desired}, nil
 }
 
-func hasHetznerNode(desiredK8sClusterInfo *pb.ClusterInfo) bool {
+func hasHetznerNode(desiredK8sClusterInfo *spec.ClusterInfo) bool {
 	desiredNodePools := desiredK8sClusterInfo.GetNodePools()
 	for _, np := range desiredNodePools {
 		if np.GetDynamicNodePool() != nil && np.GetDynamicNodePool().Provider.CloudProviderName == "hetzner" {
@@ -74,7 +75,7 @@ func hasHetznerNode(desiredK8sClusterInfo *pb.ClusterInfo) bool {
 	return false
 }
 
-func nodesChanged(currentK8sClusterInfo, desiredK8sClusterInfo *pb.ClusterInfo) bool {
+func nodesChanged(currentK8sClusterInfo, desiredK8sClusterInfo *spec.ClusterInfo) bool {
 	currNodePool := currentK8sClusterInfo.GetNodePools()
 	desiredNodePool := desiredK8sClusterInfo.GetNodePools()
 
@@ -110,7 +111,7 @@ func nodesChanged(currentK8sClusterInfo, desiredK8sClusterInfo *pb.ClusterInfo) 
 // updateNoProxyEnvs handles the case where Claudie adds/removes node to/from the cluster.
 // Public and private IPs of this node must be added to the NO_PROXY and no_proxy env variables in
 // kube-proxy DaemonSet and static pods.
-func updateNoProxyEnvs(currentK8sClusterInfo, desiredK8sClusterInfo *pb.ClusterInfo, spawnProcessLimit chan struct{}) error {
+func updateNoProxyEnvs(currentK8sClusterInfo, desiredK8sClusterInfo *spec.ClusterInfo, spawnProcessLimit chan struct{}) error {
 	clusterID := commonUtils.GetClusterID(currentK8sClusterInfo)
 
 	// This is the directory where files (Ansible inventory files, SSH keys etc.) will be generated.
@@ -153,7 +154,7 @@ func updateNoProxyEnvs(currentK8sClusterInfo, desiredK8sClusterInfo *pb.ClusterI
 	return os.RemoveAll(clusterDirectory)
 }
 
-func createNoProxyList(desiredNodePools []*pb.NodePool) string {
+func createNoProxyList(desiredNodePools []*spec.NodePool) string {
 	noProxyList := noProxyDefault
 
 	for _, np := range desiredNodePools {

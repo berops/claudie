@@ -55,14 +55,14 @@ message UpdateAPIEndpointResponse{
 }
 
 message UpdateNoProxyEnvsRequest{
-  K8scluster current = 1;
-  K8scluster desired = 2;
+  spec.K8scluster current = 1;
+  spec.K8scluster desired = 2;
   string projectName = 3;
 }
 
 message UpdateNoProxyEnvsResponse{
-  K8scluster current = 1;
-  K8scluster desired = 2;
+  spec.K8scluster current = 1;
+  spec.K8scluster desired = 2;
 }
 
 message RemoveClaudieUtilitiesRequest {
