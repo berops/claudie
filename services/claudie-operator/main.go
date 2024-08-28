@@ -11,24 +11,25 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-logr/zerologr"
-	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
+
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/healthcheck"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/services/claudie-operator/pkg/controller"
 	"github.com/berops/claudie/services/claudie-operator/server/adapters/inbound/grpc"
-	outboundAdapters "github.com/berops/claudie/services/claudie-operator/server/adapters/outbound"
 	"github.com/berops/claudie/services/claudie-operator/server/domain/usecases"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	managerclient "github.com/berops/claudie/services/manager/client"
+	"github.com/go-logr/zerologr"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -67,17 +68,16 @@ func main() {
 }
 
 func run() error {
-	contextBoxConnector := outboundAdapters.NewContextBoxConnector(envs.ContextBoxURL)
-	err := contextBoxConnector.Connect()
+	manager, err := managerclient.New(&log.Logger)
 	if err != nil {
 		return err
 	}
-	defer contextBoxConnector.Disconnect()
+	defer manager.Close()
 
 	autoscalerChan := make(chan event.GenericEvent)
 	usecaseContext, usecaseCancel := context.WithCancel(context.Background())
 	usecases := &usecases.Usecases{
-		ContextBox:          contextBoxConnector,
+		Manager:             manager,
 		Context:             usecaseContext,
 		SaveAutoscalerEvent: autoscalerChan,
 	}
@@ -178,7 +178,7 @@ func run() error {
 	}
 
 	hc := healthcheck.NewHealthCheck(&log.Logger, healthCheckInterval, []healthcheck.HealthCheck{{
-		Ping:        usecases.ContextBox.PerformHealthCheck,
+		Ping:        usecases.Manager.HealthCheck,
 		ServiceName: "contextbox",
 	}})
 

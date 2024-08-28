@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 
@@ -12,10 +13,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/berops/claudie/internal/checksum"
 	"github.com/berops/claudie/internal/manifest"
-	utils2 "github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb/spec"
 	v1beta "github.com/berops/claudie/services/claudie-operator/pkg/api/v1beta1"
-	"github.com/berops/claudie/services/context-box/server/utils"
+	managerclient "github.com/berops/claudie/services/manager/client"
 )
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
@@ -104,8 +107,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
 	}
 
-	// Get all configs from context-box
-	configs, err := r.Usecases.ContextBox.GetAllConfigs()
+	resp, err := r.Usecases.Manager.ListConfigs(ctx, new(managerclient.ListConfigRequest))
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -113,87 +115,82 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	// Build the actual state of inputManifest.
 	// Based on this, reconcile loop will decide
 	// what to do next.
-	currentState := v1beta.InputManifestStatus{
-		Clusters: make(map[string]v1beta.ClustersStatus),
-	}
-	var dbDsChecksum []byte
-	configExists := false
-	configInDesiredState := false
-	configContainsError := false
+	currentState := v1beta.InputManifestStatus{Clusters: make(map[string]v1beta.ClustersStatus)}
+
+	var deleted bool
+	var previousChecksum []byte
+	var configExists bool
+	var configState spec.Manifest_State
 
 	desiredStateProviderMap := getProviderMap(&rawManifest)
-	for _, config := range configs {
-		if inputManifest.GetNamespacedNameDashed() == config.Name {
-			configExists = true
-			dbDsChecksum = config.DsChecksum
 
-			if len(config.CsChecksum) == 0 && len(config.DsChecksum) == 0 {
-				configInDesiredState = false // handle newly created resources
-			} else {
-				configInDesiredState = utils.Equal(config.CsChecksum, config.DsChecksum)
+	for _, config := range resp.Config {
+		if inputManifest.GetNamespacedNameDashed() != config.Name {
+			continue
+		}
+		configExists = true
+		configState = config.Manifest.State
+		previousChecksum = config.Manifest.Checksum
+
+		var currentManifest manifest.Manifest
+		if err := yaml.Unmarshal([]byte(config.GetManifest().GetRaw()), &currentManifest); err != nil {
+			return ctrl.Result{}, err
+		}
+
+		pmap := getProviderMap(&currentManifest)
+		if err := providerImmutabilityCheck(pmap, desiredStateProviderMap); err != nil {
+			log.Error(err, "immutability check for providers failed", "will try again in", REQUEUE_AFTER_ERROR)
+			// provider changed templates
+			r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
+			inputManifest.SetUpdateResourceStatus(v1beta.InputManifestStatus{
+				State: v1beta.STATUS_ERROR,
+			})
+			if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
+				return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 			}
+			return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
+		}
 
-			var currentManifest manifest.Manifest
-			if err := yaml.Unmarshal([]byte(config.GetManifest()), &currentManifest); err != nil {
-				return ctrl.Result{}, err
-			}
-
-			pmap := getProviderMap(&currentManifest)
-			if err := providerImmutabilityCheck(pmap, desiredStateProviderMap); err != nil {
-				log.Error(err, "immutability check for providers failed", "will try again in", REQUEUE_AFTER_ERROR)
-				// provider changed templates
-				r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
-				inputManifest.SetUpdateResourceStatus(v1beta.InputManifestStatus{
-					State: v1beta.STATUS_ERROR,
-				})
-				if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
-					return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
-				}
-				return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
-			}
-
-			nmap := getDynamicNodepoolsMap(&currentManifest)
-			for _, desired := range rawManifest.NodePools.Dynamic {
-				if current, exists := nmap[desired.Name]; exists {
-					if err := nodepoolImmutabilityCheck(&desired, current); err != nil {
-						log.Error(err, "immutability check for dynamic nodepools failed", "will try again in", REQUEUE_AFTER_ERROR)
-						// nodepool exists and user changed the immutable specs
-						r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
-						inputManifest.SetUpdateResourceStatus(v1beta.InputManifestStatus{
-							State: v1beta.STATUS_ERROR,
-						})
-						if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
-							return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
-						}
-						return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
+		nmap := getDynamicNodepoolsMap(&currentManifest)
+		for _, desired := range rawManifest.NodePools.Dynamic {
+			if current, exists := nmap[desired.Name]; exists {
+				if err := nodepoolImmutabilityCheck(&desired, current); err != nil {
+					log.Error(err, "immutability check for dynamic nodepools failed", "will try again in", REQUEUE_AFTER_ERROR)
+					// nodepool exists and user changed the immutable specs
+					r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
+					inputManifest.SetUpdateResourceStatus(v1beta.InputManifestStatus{
+						State: v1beta.STATUS_ERROR,
+					})
+					if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
+						return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 					}
-				}
-			}
-
-			for cluster, workflow := range config.State {
-				currentState.Clusters[cluster] = v1beta.ClustersStatus{
-					State:   workflow.GetStatus().String(),
-					Phase:   workflow.GetStage().String(),
-					Message: workflow.GetDescription(),
-				}
-
-				if workflow.GetStatus().String() == v1beta.STATUS_ERROR {
-					configContainsError = true
+					return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
 				}
 			}
 		}
+
+		var deletedCount int
+		for cluster, state := range config.Clusters {
+			if state.Current == nil && state.Desired == nil {
+				deletedCount++
+			}
+			currentState.Clusters[cluster] = v1beta.ClustersStatus{
+				State:   state.State.GetStatus().String(),
+				Phase:   state.State.GetStage().String(),
+				Message: state.State.GetDescription(),
+			}
+		}
+		deleted = deletedCount == len(config.Clusters)
 	}
 
-	// Set inputManifest status field - informational only
-	if !configExists {
+	switch {
+	case configState == spec.Manifest_Pending:
 		currentState.State = v1beta.STATUS_NEW
-	} else if !configInDesiredState {
+	case configState == spec.Manifest_Scheduled:
 		currentState.State = v1beta.STATUS_IN_PROGRESS
-	} else {
+	case configState == spec.Manifest_Done:
 		currentState.State = v1beta.STATUS_DONE
-	}
-	// In any scenario, if config contains error - set the status to ERROR
-	if configContainsError {
+	case configState == spec.Manifest_Error:
 		currentState.State = v1beta.STATUS_ERROR
 	}
 
@@ -217,7 +214,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			return ctrl.Result{}, nil
 		}
 
-		if !configInDesiredState {
+		if configState == spec.Manifest_Pending || configState == spec.Manifest_Scheduled {
 			inputManifest.SetUpdateResourceStatus(currentState)
 			if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 				return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
@@ -229,9 +226,8 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 
 		if controllerutil.ContainsFinalizer(inputManifest, finalizerName) {
-			// Prevent calling deleteConfig, when the deleteConfig call
-			// won't make it yet to scheduler
-			if inputManifest.Status.State == v1beta.STATUS_SCHEDULED_FOR_DELETION {
+			// Prevent calling deleteConfig repeatedly
+			if inputManifest.Status.State == v1beta.STATUS_SCHEDULED_FOR_DELETION || deleted {
 				return ctrl.Result{RequeueAfter: REQUEUE_NEW}, nil
 			}
 			// schedule deletion of manifest
@@ -240,7 +236,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 			}
 			log.Info("Calling delete config")
-			if err := r.deleteConfig(&rawManifest); err != nil {
+			if err := r.Usecases.DeleteConfig(ctx, rawManifest.Name); err != nil {
 				return ctrl.Result{}, err
 			}
 			return ctrl.Result{RequeueAfter: REQUEUE_DELETE}, nil
@@ -248,8 +244,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{RequeueAfter: REQUEUE_DELETE}, nil
 	}
 
-	// Skip the inputManifests that are ready
-	if !configInDesiredState {
+	if configState == spec.Manifest_Pending || configState == spec.Manifest_Scheduled {
 		// CREATE LOGIC
 		// Call create config if it not present in DB
 		if !configExists {
@@ -263,7 +258,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				return ctrl.Result{}, fmt.Errorf("failed executing finalizer: %w", err)
 			}
 			log.Info("Calling create config")
-			if err := r.createConfig(&rawManifest, inputManifest.Name, inputManifest.Namespace); err != nil {
+			if err := r.Usecases.CreateConfig(ctx, &rawManifest, inputManifest.Name, inputManifest.Namespace); err != nil {
 				return ctrl.Result{}, err
 			}
 			return ctrl.Result{RequeueAfter: REQUEUE_NEW}, nil
@@ -284,7 +279,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	// ERROR logic
 	// Refresh cluster status, message an error and end the reconcile,
 	// Continue the workflow, to update/end reconcile loop.
-	if configContainsError {
+	if configState == spec.Manifest_Error {
 		// No updates to the inputManifest, output an error and finish the reconcile
 		inputManifest.SetUpdateResourceStatus(currentState)
 		if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
@@ -301,8 +296,8 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	if err != nil {
 		return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, err
 	}
-	inputManifestChecksum := utils.CalculateChecksum(string(inputManifestMarshalled))
-	inputManifestUpdated := !(utils.Equal(inputManifestChecksum, dbDsChecksum))
+	inputManifestChecksum := checksum.Digest(string(inputManifestMarshalled))
+	inputManifestUpdated := !bytes.Equal(inputManifestChecksum, previousChecksum)
 
 	// Update logic if the input manifest has been updated
 	// only when the resource is not scheduled for deletion
@@ -311,8 +306,8 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 		}
-		log.Info("InputManifest has been updates", "status", currentState.State)
-		if err := r.createConfig(&rawManifest, inputManifest.Name, inputManifest.Namespace); err != nil {
+		log.Info("InputManifest has been updated", "status", currentState.State)
+		if err := r.Usecases.CreateConfig(ctx, &rawManifest, inputManifest.Name, inputManifest.Namespace); err != nil {
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{RequeueAfter: REQUEUE_UPDATE}, nil
@@ -327,26 +322,12 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	return ctrl.Result{}, nil
 }
 
-func (r *InputManifestReconciler) createConfig(im *manifest.Manifest, resourceName string, resourceNamespace string) error {
-	if err := r.Usecases.CreateConfig(im, resourceName, resourceNamespace); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (r *InputManifestReconciler) deleteConfig(im *manifest.Manifest) error {
-	if err := r.Usecases.DeleteConfig(im); err != nil {
-		return err
-	}
-	return nil
-}
-
 func providerImmutabilityCheck(current map[string]providerMapping, desired map[string]providerMapping) error {
 	for provider, desired := range desired {
 		if current, ok := current[provider]; ok {
 			checkFailed := desired.Templates.Path != current.Templates.Path
 			checkFailed = checkFailed || desired.Templates.Repository != current.Templates.Repository
-			checkFailed = checkFailed || !utils2.PointerValEqual(current.Templates.Tag, desired.Templates.Tag)
+			checkFailed = checkFailed || !utils.PointerValEqual(current.Templates.Tag, desired.Templates.Tag)
 			if checkFailed {
 				return fmt.Errorf("attempted to change provider templates for provider %q, changing templates is prohibited. To change the templates you can create a new provider along with new nodepools referencing this provider, to achieve a rolling update", provider)
 			}
