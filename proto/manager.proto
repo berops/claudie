@@ -2,6 +2,7 @@ syntax = "proto3";
 package claudie;
 
 import "spec/manifest.proto";
+import "spec/nodepool.proto";
 
 option go_package = "proto/pb";
 
@@ -31,19 +32,27 @@ message TaskUpdateRequest {
 }
 message TaskUpdateResponse {string name = 1; uint64 version = 2;}
 
+message ListConfigRequest {}
+message ListConfigResponse {repeated spec.Config configs = 1;}
+
 message GetConfigRequest {string name = 1;}
 message GetConfigResponse {spec.Config config = 1;}
 
 message UpdateCurrentStateRequest {string name = 1; string cluster = 2; uint64 version = 3; spec.Clusters state = 4;}
 message UpdateCurrentStateResponse {string name = 1; uint64 version = 2;}
 
+message UpdateNodePoolRequest {string name = 1; string cluster = 2; uint64 version = 3; spec.NodePool nodepool = 4; }
+message UpdateNodePoolResponse {string name = 1; uint64 version = 2;}
+
 service ManagerService {
   rpc UpsertManifest(UpsertManifestRequest) returns (UpsertManifestResponse);
   rpc MarkForDeletion(MarkForDeletionRequest) returns (MarkForDeletionResponse);
 
+  rpc ListConfigs(ListConfigRequest) returns (ListConfigResponse);
   rpc GetConfig(GetConfigRequest) returns (GetConfigResponse);
   rpc NextTask(NextTaskRequest) returns (NextTaskResponse);
   rpc TaskUpdate(TaskUpdateRequest) returns (TaskUpdateResponse);
 
   rpc UpdateCurrentState(UpdateCurrentStateRequest) returns (UpdateCurrentStateResponse);
+  rpc UpdateNodePool(UpdateNodePoolRequest) returns (UpdateNodePoolResponse);
 }

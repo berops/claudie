@@ -24,10 +24,12 @@ const _ = grpc.SupportPackageIsVersion7
 type ManagerServiceClient interface {
 	UpsertManifest(ctx context.Context, in *UpsertManifestRequest, opts ...grpc.CallOption) (*UpsertManifestResponse, error)
 	MarkForDeletion(ctx context.Context, in *MarkForDeletionRequest, opts ...grpc.CallOption) (*MarkForDeletionResponse, error)
+	ListConfigs(ctx context.Context, in *ListConfigRequest, opts ...grpc.CallOption) (*ListConfigResponse, error)
 	GetConfig(ctx context.Context, in *GetConfigRequest, opts ...grpc.CallOption) (*GetConfigResponse, error)
 	NextTask(ctx context.Context, in *NextTaskRequest, opts ...grpc.CallOption) (*NextTaskResponse, error)
 	TaskUpdate(ctx context.Context, in *TaskUpdateRequest, opts ...grpc.CallOption) (*TaskUpdateResponse, error)
 	UpdateCurrentState(ctx context.Context, in *UpdateCurrentStateRequest, opts ...grpc.CallOption) (*UpdateCurrentStateResponse, error)
+	UpdateNodePool(ctx context.Context, in *UpdateNodePoolRequest, opts ...grpc.CallOption) (*UpdateNodePoolResponse, error)
 }
 
 type managerServiceClient struct {
@@ -50,6 +52,15 @@ func (c *managerServiceClient) UpsertManifest(ctx context.Context, in *UpsertMan
 func (c *managerServiceClient) MarkForDeletion(ctx context.Context, in *MarkForDeletionRequest, opts ...grpc.CallOption) (*MarkForDeletionResponse, error) {
 	out := new(MarkForDeletionResponse)
 	err := c.cc.Invoke(ctx, "/claudie.ManagerService/MarkForDeletion", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *managerServiceClient) ListConfigs(ctx context.Context, in *ListConfigRequest, opts ...grpc.CallOption) (*ListConfigResponse, error) {
+	out := new(ListConfigResponse)
+	err := c.cc.Invoke(ctx, "/claudie.ManagerService/ListConfigs", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -92,16 +103,27 @@ func (c *managerServiceClient) UpdateCurrentState(ctx context.Context, in *Updat
 	return out, nil
 }
 
+func (c *managerServiceClient) UpdateNodePool(ctx context.Context, in *UpdateNodePoolRequest, opts ...grpc.CallOption) (*UpdateNodePoolResponse, error) {
+	out := new(UpdateNodePoolResponse)
+	err := c.cc.Invoke(ctx, "/claudie.ManagerService/UpdateNodePool", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ManagerServiceServer is the server API for ManagerService service.
 // All implementations must embed UnimplementedManagerServiceServer
 // for forward compatibility
 type ManagerServiceServer interface {
 	UpsertManifest(context.Context, *UpsertManifestRequest) (*UpsertManifestResponse, error)
 	MarkForDeletion(context.Context, *MarkForDeletionRequest) (*MarkForDeletionResponse, error)
+	ListConfigs(context.Context, *ListConfigRequest) (*ListConfigResponse, error)
 	GetConfig(context.Context, *GetConfigRequest) (*GetConfigResponse, error)
 	NextTask(context.Context, *NextTaskRequest) (*NextTaskResponse, error)
 	TaskUpdate(context.Context, *TaskUpdateRequest) (*TaskUpdateResponse, error)
 	UpdateCurrentState(context.Context, *UpdateCurrentStateRequest) (*UpdateCurrentStateResponse, error)
+	UpdateNodePool(context.Context, *UpdateNodePoolRequest) (*UpdateNodePoolResponse, error)
 	mustEmbedUnimplementedManagerServiceServer()
 }
 
@@ -115,6 +137,9 @@ func (UnimplementedManagerServiceServer) UpsertManifest(context.Context, *Upsert
 func (UnimplementedManagerServiceServer) MarkForDeletion(context.Context, *MarkForDeletionRequest) (*MarkForDeletionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MarkForDeletion not implemented")
 }
+func (UnimplementedManagerServiceServer) ListConfigs(context.Context, *ListConfigRequest) (*ListConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListConfigs not implemented")
+}
 func (UnimplementedManagerServiceServer) GetConfig(context.Context, *GetConfigRequest) (*GetConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetConfig not implemented")
 }
@@ -126,6 +151,9 @@ func (UnimplementedManagerServiceServer) TaskUpdate(context.Context, *TaskUpdate
 }
 func (UnimplementedManagerServiceServer) UpdateCurrentState(context.Context, *UpdateCurrentStateRequest) (*UpdateCurrentStateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateCurrentState not implemented")
+}
+func (UnimplementedManagerServiceServer) UpdateNodePool(context.Context, *UpdateNodePoolRequest) (*UpdateNodePoolResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateNodePool not implemented")
 }
 func (UnimplementedManagerServiceServer) mustEmbedUnimplementedManagerServiceServer() {}
 
@@ -172,6 +200,24 @@ func _ManagerService_MarkForDeletion_Handler(srv interface{}, ctx context.Contex
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ManagerServiceServer).MarkForDeletion(ctx, req.(*MarkForDeletionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ManagerService_ListConfigs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ManagerServiceServer).ListConfigs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/claudie.ManagerService/ListConfigs",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ManagerServiceServer).ListConfigs(ctx, req.(*ListConfigRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -248,6 +294,24 @@ func _ManagerService_UpdateCurrentState_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ManagerService_UpdateNodePool_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateNodePoolRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ManagerServiceServer).UpdateNodePool(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/claudie.ManagerService/UpdateNodePool",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ManagerServiceServer).UpdateNodePool(ctx, req.(*UpdateNodePoolRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ManagerService_ServiceDesc is the grpc.ServiceDesc for ManagerService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -264,6 +328,10 @@ var ManagerService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ManagerService_MarkForDeletion_Handler,
 		},
 		{
+			MethodName: "ListConfigs",
+			Handler:    _ManagerService_ListConfigs_Handler,
+		},
+		{
 			MethodName: "GetConfig",
 			Handler:    _ManagerService_GetConfig_Handler,
 		},
@@ -278,6 +346,10 @@ var ManagerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateCurrentState",
 			Handler:    _ManagerService_UpdateCurrentState_Handler,
+		},
+		{
+			MethodName: "UpdateNodePool",
+			Handler:    _ManagerService_UpdateNodePool_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

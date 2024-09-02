@@ -184,6 +184,7 @@ enum Event {
 message Events {
   repeated TaskEvent events = 1;
   int32 ttl = 2;
+  bool autoscaled = 3;
 }
 
 message TaskEvent {
