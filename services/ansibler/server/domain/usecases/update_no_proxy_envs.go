@@ -128,7 +128,6 @@ func updateNoProxyEnvs(currentK8sClusterInfo, desiredK8sClusterInfo *spec.Cluste
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 
-	// TODO: add LBCluster hostnames and public + private IPs
 	noProxyList := createNoProxyList(desiredK8sClusterInfo.GetNodePools(), desiredLbs)
 	if err := utils.GenerateInventoryFile(templates.NoProxyEnvsInventoryTemplate, clusterDirectory, noProxyInventoryFileParameters{
 		K8sNodepools: NodePools{
