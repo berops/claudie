@@ -17,14 +17,10 @@ import (
 // before being rescheduled again.
 const TaskTTL = 450 // ~1.1 hour
 
-// TODO: fixup log messages so that they don't contain the Config name twice.
-
 type EnqueuedTask struct {
 	Config  string
 	Cluster string
 	Event   *spec.TaskEvent
-	TTL     int32
-	Version uint64
 }
 
 func (t *EnqueuedTask) ID() string { return t.Event.Id }
@@ -63,22 +59,22 @@ func (g *GRPC) WatchForScheduledDocuments(ctx context.Context) error {
 
 			if state.Events.TTL > 0 {
 				state.Events.TTL -= 1
-				logger.Debug().Msgf("Decreasing TTL for task %q cluster %q config %q", nextTask.Id, cluster, scheduled.Name)
+				logger.Debug().Msgf("Decreasing TTL for task %q cluster %q", nextTask.Id, cluster)
 				if err := g.Store.UpdateConfig(ctx, scheduled); err != nil {
 					if errors.Is(err, store.ErrNotFoundOrDirty) {
-						logger.Debug().Msgf("Failed to decrement task TTL for cluster %q config %q, dirty write", cluster, scheduled.Name)
+						logger.Debug().Msgf("Failed to decrement task TTL for cluster %q, dirty write", cluster)
 						continue
 					}
-					logger.Err(err).Msgf("Failed to decrement task TTL for cluster %q config %q", cluster, scheduled.Name)
+					logger.Err(err).Msgf("Failed to decrement task TTL for cluster %q", cluster)
 				}
 				continue
 			}
 
-			logger.Debug().Msgf("Scheduling next task with ID: %v for cluster %q config %q", nextTask.Id, cluster, scheduled.Name)
-			if err := addTaskToQueue(g.TaskQueue, scheduled.Name, cluster, scheduled.Version, state); err != nil {
-				logger.Err(err).Msgf("Failed to add task %v for cluster %q config %q to the task queue", nextTask.Id, cluster, scheduled.Name)
+			logger.Debug().Msgf("Scheduling next task with ID: %v for cluster %q", nextTask.Id, cluster)
+			if err := addTaskToQueue(g.TaskQueue, scheduled.Name, cluster, state); err != nil {
+				logger.Err(err).Msgf("Failed to add task %v for cluster %q to the task queue", nextTask.Id, cluster)
 			}
-			logger.Info().Msgf("Task %v for cluster %v config %v scheduled", nextTask.Id, cluster, scheduled.Name)
+			logger.Info().Msgf("[%s] Task %v for cluster %v scheduled", nextTask.Event, nextTask.Id, cluster)
 		}
 
 		if clustersDone == len(scheduled.Clusters) {
@@ -101,10 +97,10 @@ func (g *GRPC) WatchForScheduledDocuments(ctx context.Context) error {
 			scheduled.Manifest.State = newManifestState.String()
 			if err := g.Store.UpdateConfig(ctx, scheduled); err != nil {
 				if errors.Is(err, store.ErrNotFoundOrDirty) {
-					logger.Warn().Msgf("Scheduled Config %q couldn't be updated due to a Dirty Write", scheduled.Name)
+					logger.Warn().Msgf("Scheduled Config couldn't be updated due to a Dirty Write")
 					continue
 				}
-				logger.Err(err).Msgf("Failed to update scheduled config %q, skipping.", scheduled.Name)
+				logger.Err(err).Msgf("Failed to update scheduled config, skipping.")
 				continue
 			}
 		}
@@ -113,7 +109,7 @@ func (g *GRPC) WatchForScheduledDocuments(ctx context.Context) error {
 	return nil
 }
 
-func addTaskToQueue(queue *syncqueue.Queue, config, cluster string, version uint64, state *store.ClusterState) error {
+func addTaskToQueue(queue *syncqueue.Queue, config, cluster string, state *store.ClusterState) error {
 	te, err := store.ConvertToGRPCTaskEvent(state.Events.TaskEvents[0])
 	if err != nil {
 		return fmt.Errorf("failed to convert database representation GRPC: %w", err)
@@ -123,8 +119,6 @@ func addTaskToQueue(queue *syncqueue.Queue, config, cluster string, version uint
 		Config:  config,
 		Cluster: cluster,
 		Event:   te,
-		TTL:     state.Events.TTL,
-		Version: version,
 	}
 
 	queue.Enqueue(w)
@@ -162,14 +156,14 @@ func (g *GRPC) WatchForPendingDocuments(ctx context.Context) error {
 
 		if err := g.Store.UpdateConfig(ctx, pending); err != nil {
 			if errors.Is(err, store.ErrNotFoundOrDirty) {
-				logger.Warn().Msgf("Pending Config %q couldn't be updated due to a Dirty Write, another retry will start shortly.", pending.Name)
+				logger.Warn().Msgf("Pending Config couldn't be updated due to a Dirty Write, another retry will start shortly.")
 				continue
 			}
-			logger.Err(err).Msgf("Failed to update pending config %q, skipping.", pending.Name)
+			logger.Err(err).Msgf("Failed to update pending config, skipping.")
 			continue
 		}
 
-		logger.Info().Msgf("Config has been sucessfully processed and has been moved to the %q state", manifest.Scheduled.String())
+		logger.Info().Msgf("Config has been sucessfully processed and moved to the %q state", manifest.Scheduled.String())
 	}
 
 	return nil
@@ -202,14 +196,14 @@ func (g *GRPC) WatchForDoneOrErrorDocuments(ctx context.Context) error {
 
 			if err := g.Store.UpdateConfig(ctx, idle); err != nil {
 				if errors.Is(err, store.ErrNotFoundOrDirty) {
-					logger.Warn().Msgf("Idle Config %q couldn't be updated due to a Dirty Write, another retry will start shortly.", idle.Name)
+					logger.Warn().Msgf("Idle Config couldn't be updated due to a Dirty Write, another retry will start shortly.")
 					continue
 				}
-				logger.Err(err).Msgf("Failed to update idle config %q, skipping.", idle.Name)
+				logger.Err(err).Msgf("Failed to update idle config, skipping.")
 				continue
 			}
 
-			logger.Info().Msgf("Config has been sucessfully processed and has been moved to the %q state", manifest.Pending.String())
+			logger.Info().Msgf("Config has been sucessfully processed and moved to the %q state", manifest.Pending.String())
 			continue
 		}
 
@@ -217,10 +211,10 @@ func (g *GRPC) WatchForDoneOrErrorDocuments(ctx context.Context) error {
 			if idle.Manifest.Checksum == nil && idle.Manifest.LastAppliedChecksum == nil {
 				if err := g.Store.DeleteConfig(ctx, idle.Name, idle.Version); err != nil {
 					if errors.Is(err, store.ErrNotFoundOrDirty) {
-						logger.Warn().Msgf("Idle Config %q couldn't be deleted due to a Dirty Write, another retry will start shortly.", idle.Name)
+						logger.Warn().Msgf("Idle Config couldn't be deleted due to a Dirty Write, another retry will start shortly.")
 						continue
 					}
-					logger.Err(err).Msgf("Failed to delete idle config %q, skipping.", idle.Name)
+					logger.Err(err).Msgf("Failed to delete idle config, skipping.")
 				}
 				continue
 			}
@@ -231,6 +225,7 @@ func (g *GRPC) WatchForDoneOrErrorDocuments(ctx context.Context) error {
 				desiredEmpty := len(state.Desired.K8s) == 0 && len(state.Desired.LoadBalancers) == 0
 
 				if currentEmpty && desiredEmpty {
+					logger.Debug().Msgf("Deleting cluster %q from database as infrastructure was destroyed", cluster)
 					clustersDeleted = true
 					delete(idle.Clusters, cluster)
 				}
@@ -239,10 +234,10 @@ func (g *GRPC) WatchForDoneOrErrorDocuments(ctx context.Context) error {
 			if clustersDeleted {
 				if err := g.Store.UpdateConfig(ctx, idle); err != nil {
 					if errors.Is(err, store.ErrNotFoundOrDirty) {
-						logger.Warn().Msgf("Idle Config %q couldn't be updated due to a Dirty Write, another retry will start shortly.", idle.Name)
+						logger.Warn().Msgf("Idle Config couldn't be updated due to a Dirty Write, another retry will start shortly.")
 						continue
 					}
-					logger.Err(err).Msgf("Failed to update idle config %q, skipping.", idle.Name)
+					logger.Err(err).Msgf("Failed to update idle config, skipping.")
 				}
 				continue
 			}
