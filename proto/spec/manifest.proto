@@ -192,6 +192,7 @@ message TaskEvent {
   google.protobuf.Timestamp timestamp = 2;
   Event event = 3;
   Task task = 4;
+  string description = 5;
 }
 
 message Task {
