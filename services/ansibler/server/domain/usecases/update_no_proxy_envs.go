@@ -165,7 +165,7 @@ func createNoProxyList(desiredNodePools []*spec.NodePool, desiredLbs []*spec.LBc
 	}
 
 	for _, lbCluster := range desiredLbs {
-		noProxyList = fmt.Sprintf("%s,%s", noProxyList, lbCluster.Dns.Hostname)
+		noProxyList = fmt.Sprintf("%s,%s", noProxyList, lbCluster.Dns.Endpoint)
 		for _, np := range lbCluster.ClusterInfo.NodePools {
 			for _, node := range np.Nodes {
 				noProxyList = fmt.Sprintf("%s,%s,%s", noProxyList, node.Private, node.Public)

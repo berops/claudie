@@ -179,7 +179,7 @@ func (k *KubeEleven) generateTemplateData() templateData {
 		for _, lbCluster := range k.LBClusters {
 			// If the LB cluster is attached to out target Kubernetes cluster
 			if lbCluster.TargetedK8S == k.K8sCluster.ClusterInfo.Name {
-				data.NoProxy = fmt.Sprintf("%s,%s", data.NoProxy, lbCluster.Dns.Hostname)
+				data.NoProxy = fmt.Sprintf("%s,%s", data.NoProxy, lbCluster.Dns.Endpoint)
 
 				for _, nodePool := range lbCluster.ClusterInfo.NodePools {
 					for _, node := range nodePool.Nodes {
@@ -190,7 +190,7 @@ func (k *KubeEleven) generateTemplateData() templateData {
 		}
 		// data.NoProxy has to terminate with the comma
 		// if "svc" isn't in NoProxy the admission webhooks will fail, because they will be routed to proxy
-		data.NoProxy = fmt.Sprintf("%s,%s,%s,", data.NoProxy, "svc", data.APIEndpoint)
+		data.NoProxy = fmt.Sprintf("%s,%s,", data.NoProxy, "svc")
 
 		data.HttpProxyUrl = utils.GetEnvDefault("HTTP_PROXY_URL", defaulHttpProxyUrl)
 	} else {
