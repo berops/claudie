@@ -7,7 +7,7 @@ import (
 
 type Usecases struct {
 	// Manager client to perform tasks related to manager
-	Manager managerclient.ManagerClient
+	Manager managerclient.ClientAPI
 	// Terraformer connector to perform tasks related to Terraformer
 	Terraformer ports.TerraformerPort
 	// Ansibler connector to perform tasks related to Ansibler

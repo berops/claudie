@@ -1,6 +1,7 @@
 package usecases
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -12,11 +13,6 @@ import (
 	"github.com/docker/distribution/context"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog/log"
-)
-
-const (
-	// maxDeleteRetry defines how many times the config should try to be deleted before returning an error, if encountered.
-	maxDeleteRetry = 3
 )
 
 // buildCluster performs whole Claudie workflow on the given cluster.
@@ -183,13 +179,19 @@ func (u *Usecases) updateTaskWithDescription(ctx *builder.Context, stage spec.Wo
 	ctx.Workflow.Stage = stage
 	ctx.Workflow.Description = strings.TrimSpace(description)
 
-	err := u.Manager.TaskUpdate(context.Background(), &managerclient.TaskUpdateRequest{
-		Config:  ctx.ProjectName,
-		Cluster: ctx.GetClusterName(),
-		TaskId:  ctx.TaskId,
-		State:   ctx.Workflow,
+	// ignore error is this is not a fatal error due to which
+	// we can't continue.
+	_ = managerclient.Retry(&logger, "TaskUpdate", func() error {
+		err := u.Manager.TaskUpdate(context.Background(), &managerclient.TaskUpdateRequest{
+			Config:  ctx.ProjectName,
+			Cluster: ctx.GetClusterName(),
+			TaskId:  ctx.TaskId,
+			State:   ctx.Workflow,
+		})
+		if errors.Is(err, managerclient.ErrNotFound) {
+			log.Warn().Msgf("can't update config %q cluster %q task %q: %v", ctx.ProjectName, ctx.GetClusterName(), ctx.TaskId, err)
+			return nil // nothing to retry
+		}
+		return err
 	})
-	if err != nil {
-		logger.Debug().Msgf("failed to update state for task %q cluster %q config %q: %v", ctx.TaskId, ctx.GetClusterName(), ctx.ProjectName, err)
-	}
 }

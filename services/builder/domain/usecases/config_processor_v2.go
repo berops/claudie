@@ -3,15 +3,20 @@ package usecases
 import (
 	"context"
 	"errors"
-	builder "github.com/berops/claudie/services/builder/internal"
-	"math/rand/v2"
 	"slices"
 	"sync"
-	"time"
 
 	"github.com/berops/claudie/proto/pb/spec"
+	builder "github.com/berops/claudie/services/builder/internal"
 	managerclient "github.com/berops/claudie/services/manager/client"
 	"github.com/rs/zerolog/log"
+)
+
+// TODO: verify if on error on every state the correct current state is set.
+
+const (
+	// maxDeleteRetry defines how many times the config should try to be deleted before returning an error, if encountered.
+	maxDeleteRetry = 3
 )
 
 func (u *Usecases) TaskProcessor(wg *sync.WaitGroup) error {
@@ -22,7 +27,10 @@ func (u *Usecases) TaskProcessor(wg *sync.WaitGroup) error {
 		if errors.Is(err, managerclient.ErrVersionMismatch) {
 			log.Debug().Msgf("failed to receive next task due to a dirty write")
 		}
-		return err
+		if !errors.Is(err, managerclient.ErrNotFound) {
+			return err
+		}
+		return nil
 	}
 
 	wg.Add(1)
@@ -43,46 +51,40 @@ func (u *Usecases) TaskProcessor(wg *sync.WaitGroup) error {
 			// fallthrough
 		}
 
-		tolerateDirtyWrites := 5
-		var errs error
-		for i := range tolerateDirtyWrites {
-			if i > 0 {
-				wait := time.Duration(50+rand.IntN(300)) * time.Millisecond
-				log.Warn().Msgf("retry[%v/%v]Failed to update current state due to a dirty write, retrying again in %s ms", i, tolerateDirtyWrites, wait)
-				time.Sleep(wait)
-			}
-
+		err = managerclient.Retry(&log.Logger, "UpdateCurrentState", func() error {
 			err := u.Manager.UpdateCurrentState(ctx, &managerclient.UpdateCurrentStateRequest{
 				Config:   task.Config,
 				Cluster:  task.Cluster,
 				Clusters: updatedState,
 			})
-			if err != nil {
-				errs = errors.Join(errs, err)
-				if errors.Is(err, managerclient.ErrVersionMismatch) {
-					continue
-				}
-				break // unknown error, log.
+			if errors.Is(err, managerclient.ErrNotFound) {
+				log.Warn().Msgf("can't update config %q cluster %q: %v", task.Config, task.Cluster, err)
+				return nil // nothing to retry.
 			}
+			return err
+		})
+		if err != nil {
+			log.Err(err).Msgf("failed to update current state for cluster %q config %q", task.Cluster, task.Config)
+		}
 
-			err = u.Manager.TaskUpdate(ctx, &managerclient.TaskUpdateRequest{
+		err = managerclient.Retry(&log.Logger, "UpdateTask after CurrentState", func() error {
+			err := u.Manager.TaskUpdate(ctx, &managerclient.TaskUpdateRequest{
 				Config:  task.Config,
 				Cluster: task.Cluster,
 				TaskId:  task.Event.Id,
 				State:   task.State,
 			})
-			if err != nil {
-				errs = errors.Join(errs, err)
-				if errors.Is(err, managerclient.ErrVersionMismatch) {
-					continue
-				}
-				break // unknown error, log.
+			if errors.Is(err, managerclient.ErrNotFound) {
+				log.Warn().Msgf("can't update config %q cluster %q task %q: %v", task.Config, task.Cluster, task.Event.Id, err)
+				return nil // nothing to retry.
 			}
-			return // completed nothing to do.
+			return err
+		})
+		if err != nil {
+			log.Err(err).Msgf("failed to update task after current state update for cluster %q config %q", task.Cluster, task.Config)
 		}
-		if errs != nil {
-			log.Err(err).Msgf("failed to update current state for cluster %q config %q", task.Cluster, task.Config)
-		}
+
+		log.Info().Msgf("sucessfuly updated current state for cluster %q config %q after completing task %q", task.Cluster, task.Config, task.Event.Id)
 	}()
 	return nil
 }
@@ -106,6 +108,9 @@ func (u *Usecases) processTaskEvent(t *managerclient.NextTaskResponse) (*spec.Cl
 		k8s, lbs, err = u.executeDeleteTask(t)
 	}
 
+	// even on error we construct the current state
+	// as changes could have been done in steps that
+	// succeeded.
 	var resp *spec.Clusters
 	if k8s != nil {
 		resp = &spec.Clusters{K8S: k8s}
@@ -208,10 +213,10 @@ func (u *Usecases) executeDeleteTask(te *managerclient.NextTaskResponse) (*spec.
 						return deleted.ClusterInfo.Name == bcluster.ClusterInfo.Name
 					})
 				}
-				return te.Current.GetK8S(), currentLbs, nil // TODO: validate
+				return te.Current.GetK8S(), currentLbs, nil
 			}
 		}
 		log.Warn().Msgf("Failed destroying cluster task %q config %q cluster %q: %v", te.Event.Id, te.Config, te.Current.K8S.ClusterInfo.Name, err.Error())
 	}
-	return nil, nil, err
+	return te.Current.K8S, te.Current.GetLoadBalancers().GetClusters(), err
 }
