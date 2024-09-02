@@ -54,7 +54,7 @@ func (u *Usecases) UpdateNoProxyEnvs(request *pb.UpdateNoProxyEnvsRequest) (*pb.
 
 	log.Info().Msgf("Updating NO_PROXY and no_proxy env variables in kube-proxy DaemonSet and static pods for cluster %s project %s",
 		request.Current.ClusterInfo.Name, request.ProjectName)
-	if err := updateNoProxyEnvs(request.Current.ClusterInfo, request.Desired.ClusterInfo, u.SpawnProcessLimit); err != nil {
+	if err := updateNoProxyEnvs(request.Current.ClusterInfo, request.Desired.ClusterInfo, request.DesiredLbs, u.SpawnProcessLimit); err != nil {
 		return nil, fmt.Errorf("Failed to update NO_PROXY and no_proxy env variables in kube-proxy DaemonSet and static pods for cluster %s project %s",
 			request.Current.ClusterInfo.Name, request.ProjectName)
 	}
@@ -111,7 +111,7 @@ func nodesChanged(currentK8sClusterInfo, desiredK8sClusterInfo *spec.ClusterInfo
 // updateNoProxyEnvs handles the case where Claudie adds/removes node to/from the cluster.
 // Public and private IPs of this node must be added to the NO_PROXY and no_proxy env variables in
 // kube-proxy DaemonSet and static pods.
-func updateNoProxyEnvs(currentK8sClusterInfo, desiredK8sClusterInfo *spec.ClusterInfo, spawnProcessLimit chan struct{}) error {
+func updateNoProxyEnvs(currentK8sClusterInfo, desiredK8sClusterInfo *spec.ClusterInfo, desiredLbs []*spec.LBcluster, spawnProcessLimit chan struct{}) error {
 	clusterID := commonUtils.GetClusterID(currentK8sClusterInfo)
 
 	// This is the directory where files (Ansible inventory files, SSH keys etc.) will be generated.
@@ -128,7 +128,8 @@ func updateNoProxyEnvs(currentK8sClusterInfo, desiredK8sClusterInfo *spec.Cluste
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 
-	noProxyList := createNoProxyList(desiredK8sClusterInfo.GetNodePools())
+	// TODO: add LBCluster hostnames and public + private IPs
+	noProxyList := createNoProxyList(desiredK8sClusterInfo.GetNodePools(), desiredLbs)
 	if err := utils.GenerateInventoryFile(templates.NoProxyEnvsInventoryTemplate, clusterDirectory, noProxyInventoryFileParameters{
 		K8sNodepools: NodePools{
 			Dynamic: commonUtils.GetCommonDynamicControlPlaneNodes(currentK8sClusterInfo.NodePools, desiredK8sClusterInfo.NodePools),
@@ -154,12 +155,21 @@ func updateNoProxyEnvs(currentK8sClusterInfo, desiredK8sClusterInfo *spec.Cluste
 	return os.RemoveAll(clusterDirectory)
 }
 
-func createNoProxyList(desiredNodePools []*spec.NodePool) string {
+func createNoProxyList(desiredNodePools []*spec.NodePool, desiredLbs []*spec.LBcluster) string {
 	noProxyList := noProxyDefault
 
 	for _, np := range desiredNodePools {
 		for _, node := range np.Nodes {
 			noProxyList = fmt.Sprintf("%s,%s,%s", noProxyList, node.Private, node.Public)
+		}
+	}
+
+	for _, lbCluster := range desiredLbs {
+		noProxyList = fmt.Sprintf("%s,%s", noProxyList, lbCluster.Dns.Hostname)
+		for _, np := range lbCluster.ClusterInfo.NodePools {
+			for _, node := range np.Nodes {
+				noProxyList = fmt.Sprintf("%s,%s,%s", noProxyList, node.Private, node.Public)
+			}
 		}
 	}
 

@@ -57,7 +57,8 @@ message UpdateAPIEndpointResponse{
 message UpdateNoProxyEnvsRequest{
   spec.K8scluster current = 1;
   spec.K8scluster desired = 2;
-  string projectName = 3;
+  repeated spec.LBcluster desiredLbs = 3;
+  string projectName = 4;
 }
 
 message UpdateNoProxyEnvsResponse{
