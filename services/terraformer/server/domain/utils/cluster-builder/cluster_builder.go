@@ -189,32 +189,6 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 		clusterInfo = c.CurrentClusterInfo
 	}
 
-	// Init node slices if needed
-	for _, np := range clusterInfo.NodePools {
-		if n := np.GetDynamicNodePool(); n != nil {
-			nodes := make([]*spec.Node, 0, n.Count)
-			nodeNames := make(map[string]struct{}, n.Count)
-			// Copy existing nodes into new slice
-			for i, node := range np.Nodes {
-				if i == int(n.Count) {
-					break
-				}
-				log.Debug().Str("cluster", clusterID).Msgf("Nodepool is reusing node %s", node.Name)
-				nodes = append(nodes, node)
-				nodeNames[node.Name] = struct{}{}
-			}
-			// Fill the rest of the nodes with assigned names
-			nodepoolID := fmt.Sprintf("%s-%s", clusterID, np.Name)
-			for len(nodes) < int(n.Count) {
-				// Get a unique name for the new node
-				nodeName := getUniqueNodeName(nodepoolID, nodeNames)
-				nodeNames[nodeName] = struct{}{}
-				nodes = append(nodes, &spec.Node{Name: nodeName})
-			}
-			np.Nodes = nodes
-		}
-	}
-
 	clusterData := templates.ClusterData{
 		ClusterName: clusterInfo.Name,
 		ClusterHash: clusterInfo.Hash,
