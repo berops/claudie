@@ -90,13 +90,15 @@ type Clusters struct {
 type Events struct {
 	TaskEvents []TaskEvent `bson:"taskEvents"`
 	TTL        int32       `bson:"ttl"`
+	Autoscaled bool        `bson:"autoscaled"`
 }
 
 type TaskEvent struct {
-	Id        string `bson:"id"`
-	Timestamp string `bson:"timestamp"`
-	Event     string `bson:"event"`
-	Task      []byte `bson:"task"`
+	Id          string `bson:"id"`
+	Timestamp   string `bson:"timestamp"`
+	Event       string `bson:"event"`
+	Task        []byte `bson:"task"`
+	Description string `bson:"description"`
 }
 
 type Workflow struct {

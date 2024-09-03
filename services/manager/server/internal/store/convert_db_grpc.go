@@ -10,6 +10,21 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// ConvertToGRPCEvents converts the database representation of events to GRPC.
+func ConvertToGRPCEvents(w Events) (*spec.Events, error) {
+	var te []*spec.TaskEvent
+
+	for i := range w.TaskEvents {
+		g, err := ConvertToGRPCTaskEvent(w.TaskEvents[i])
+		if err != nil {
+			return nil, err
+		}
+		te = append(te, g)
+	}
+
+	return &spec.Events{Events: te, Ttl: w.TTL, Autoscaled: w.Autoscaled}, nil
+}
+
 // ConvertFromGRPCEvents converts the events data from GRPC to the database representation.
 func ConvertFromGRPCEvents(w *spec.Events) (Events, error) {
 	var te []TaskEvent
@@ -20,14 +35,15 @@ func ConvertFromGRPCEvents(w *spec.Events) (Events, error) {
 		}
 
 		te = append(te, TaskEvent{
-			Id:        e.Id,
-			Timestamp: e.Timestamp.AsTime().Format(time.RFC3339),
-			Event:     e.Event.String(),
-			Task:      b,
+			Id:          e.Id,
+			Timestamp:   e.Timestamp.AsTime().Format(time.RFC3339),
+			Event:       e.Event.String(),
+			Task:        b,
+			Description: e.Description,
 		})
 	}
 
-	return Events{TaskEvents: te, TTL: w.Ttl}, nil
+	return Events{TaskEvents: te, TTL: w.Ttl, Autoscaled: w.Autoscaled}, nil
 }
 
 func ConvertToGRPCTaskEvent(te TaskEvent) (*spec.TaskEvent, error) {
@@ -42,26 +58,12 @@ func ConvertToGRPCTaskEvent(te TaskEvent) (*spec.TaskEvent, error) {
 	}
 
 	return &spec.TaskEvent{
-		Id:        te.Id,
-		Timestamp: timestamppb.New(t),
-		Event:     spec.Event(spec.Event_value[te.Event]),
-		Task:      &task,
+		Id:          te.Id,
+		Timestamp:   timestamppb.New(t),
+		Event:       spec.Event(spec.Event_value[te.Event]),
+		Task:        &task,
+		Description: te.Description,
 	}, nil
-}
-
-// ConvertToGRPCEvents converts the database representation of events to GRPC.
-func ConvertToGRPCEvents(w Events) (*spec.Events, error) {
-	var te []*spec.TaskEvent
-
-	for i := range w.TaskEvents {
-		g, err := ConvertToGRPCTaskEvent(w.TaskEvents[i])
-		if err != nil {
-			return nil, err
-		}
-		te = append(te, g)
-	}
-
-	return &spec.Events{Events: te, Ttl: w.TTL}, nil
 }
 
 // ConvertFromGRPCWorkflow converts the workflow state data from GRPC to the database representation.

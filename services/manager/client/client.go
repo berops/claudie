@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
@@ -15,7 +16,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-var _ ManagerClient = (*Client)(nil)
+var _ ClientAPI = (*Client)(nil)
 
 type Client struct {
 	conn   *grpc.ClientConn
@@ -58,7 +59,7 @@ func (t *Client) NextTask(ctx context.Context) (*NextTaskResponse, error) {
 	if e, ok := status.FromError(err); ok {
 		switch e.Code() {
 		case codes.NotFound:
-			return nil, nil
+			return nil, fmt.Errorf("%w: no task scheduled or config deleted in the meanwhile", ErrNotFound)
 		case codes.Aborted:
 			return nil, ErrVersionMismatch
 		}
@@ -76,16 +77,22 @@ func (t *Client) MarkForDeletion(ctx context.Context, request *MarkForDeletionRe
 		if err == nil {
 			return nil
 		}
-		if e, ok := status.FromError(err); ok && e.Code() == codes.Aborted {
-			err = errors.Join(err, fmt.Errorf("%w", ErrVersionMismatch))
+		if e, ok := status.FromError(err); ok {
+			switch e.Code() {
+			case codes.NotFound:
+				err = errors.Join(err, fmt.Errorf("config %q: %w", request.Name, ErrNotFound))
+			case codes.Aborted:
+				err = errors.Join(err, fmt.Errorf("%w", ErrVersionMismatch))
+			}
 		}
+
 		t.logger.Debug().Msgf("Received error %v while calling MarkForDeletion", err.Error())
 		return err
 	}
 
 	if e, ok := status.FromError(err); ok && e.Code() == codes.NotFound {
 		t.logger.Debug().Msgf("GetConfig(): no config with name %q found", request.Name)
-		return fmt.Errorf("no config with name %q found", request.Name)
+		return fmt.Errorf("config with name %q: %w", request.Name, ErrNotFound)
 	}
 
 	t.logger.Debug().Msgf("Received error %v while calling MarkForDeletion", err.Error())
@@ -113,6 +120,15 @@ func (t *Client) UpsertManifest(ctx context.Context, request *UpsertManifestRequ
 	return err
 }
 
+func (t *Client) ListConfigs(ctx context.Context, _ *ListConfigRequest) (*ListConfigResponse, error) {
+	resp, err := t.client.ListConfigs(ctx, new(pb.ListConfigRequest))
+	if err == nil {
+		return &ListConfigResponse{Config: resp.Configs}, nil
+	}
+	t.logger.Debug().Msgf("Received error %v while calling ListConfigs", err.Error())
+	return nil, err
+}
+
 func (t *Client) GetConfig(ctx context.Context, request *GetConfigRequest) (*GetConfigResponse, error) {
 	resp, err := t.client.GetConfig(ctx, &pb.GetConfigRequest{Name: request.Name})
 	if err == nil {
@@ -120,7 +136,7 @@ func (t *Client) GetConfig(ctx context.Context, request *GetConfigRequest) (*Get
 	}
 	if e, ok := status.FromError(err); ok && e.Code() == codes.NotFound {
 		t.logger.Debug().Msgf("GetConfig(): no config with name %q found", request.Name)
-		return nil, fmt.Errorf("no config with name %q found", request.Name)
+		return nil, fmt.Errorf("config with name %q: %w", request.Name, ErrNotFound)
 	}
 	t.logger.Debug().Msgf("Received error %v while calling UpsertManifest", err.Error())
 	return nil, err
@@ -139,15 +155,22 @@ func (t *Client) TaskUpdate(ctx context.Context, req *TaskUpdateRequest) error {
 		if err == nil {
 			return nil
 		}
-		if e, ok := status.FromError(err); ok && e.Code() == codes.Aborted {
-			err = errors.Join(err, fmt.Errorf("%w", ErrVersionMismatch))
+
+		if e, ok := status.FromError(err); ok {
+			switch e.Code() {
+			case codes.NotFound:
+				err = errors.Join(err, fmt.Errorf("combination config %q cluster %q task %q: %w", req.Config, req.Cluster, req.TaskId, ErrNotFound))
+			case codes.Aborted:
+				err = errors.Join(err, fmt.Errorf("%w", ErrVersionMismatch))
+			}
 		}
+
 		t.logger.Debug().Msgf("Received error %v while calling TaskUpdate", err.Error())
 		return err
 	}
 	if e, ok := status.FromError(err); ok && e.Code() == codes.NotFound {
 		t.logger.Debug().Msgf("GetConfig(): no config with name %q found", req.Config)
-		return fmt.Errorf("no config with name %q found", req.Config)
+		return fmt.Errorf("config with name %q: %w", req.Config, ErrNotFound)
 	}
 	return err
 }
@@ -164,15 +187,52 @@ func (t *Client) UpdateCurrentState(ctx context.Context, req *UpdateCurrentState
 		if err == nil {
 			return nil
 		}
-		if e, ok := status.FromError(err); ok && e.Code() == codes.Aborted {
-			err = errors.Join(err, fmt.Errorf("%w", ErrVersionMismatch))
+		if e, ok := status.FromError(err); ok {
+			switch e.Code() {
+			case codes.NotFound:
+				err = errors.Join(err, fmt.Errorf("combination config %q cluster %q: %w", req.Config, req.Cluster, ErrNotFound))
+			case codes.Aborted:
+				err = errors.Join(err, fmt.Errorf("%w", ErrVersionMismatch))
+			}
 		}
 		t.logger.Debug().Msgf("Received error %v while calling UpdateCurrentState", err.Error())
 		return err
 	}
 	if e, ok := status.FromError(err); ok && e.Code() == codes.NotFound {
 		t.logger.Debug().Msgf("GetConfig(): no config with name %q found", req.Config)
-		return fmt.Errorf("no config with name %q found", req.Config)
+		return fmt.Errorf("config with name %q: %w", req.Config, ErrNotFound)
+	}
+	return err
+}
+
+func (t *Client) UpdateNodePool(ctx context.Context, req *UpdateNodePoolRequest) error {
+	current, err := t.client.GetConfig(ctx, &pb.GetConfigRequest{Name: req.Config})
+	if err == nil {
+		_, err := t.client.UpdateNodePool(ctx, &pb.UpdateNodePoolRequest{
+			Name:     req.Config,
+			Cluster:  req.Cluster,
+			Version:  current.Config.Version,
+			Nodepool: req.NodePool,
+		})
+		if err == nil {
+			return nil
+		}
+
+		if e, ok := status.FromError(err); ok {
+			switch e.Code() {
+			case codes.NotFound:
+				err = errors.Join(err, fmt.Errorf("combination config %q cluster %q nodepool %q: %w", req.Config, req.Cluster, req.NodePool.GetName(), ErrNotFound))
+			case codes.Aborted:
+				err = errors.Join(err, fmt.Errorf("%w", ErrVersionMismatch))
+			}
+		}
+
+		t.logger.Debug().Msgf("Received error %v while calling UpdateNodePool", err.Error())
+		return err
+	}
+	if e, ok := status.FromError(err); ok && e.Code() == codes.NotFound {
+		t.logger.Debug().Msgf("GetConfig(): no config with name %q found", req.Config)
+		return fmt.Errorf("config with name %q: %w", req.Config, ErrNotFound)
 	}
 	return err
 }

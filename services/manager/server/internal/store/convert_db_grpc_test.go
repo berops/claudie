@@ -1,7 +1,9 @@
 package store_test
 
 import (
+	"github.com/google/uuid"
 	"testing"
+	"time"
 
 	"github.com/berops/claudie/internal/checksum"
 	"github.com/berops/claudie/internal/manifest"
@@ -60,8 +62,17 @@ func TestConvertToGRPCAndBack(t *testing.T) {
 					LoadBalancers: []byte{10, 221, 1, 10, 218, 1, 10, 23, 68, 101, 115, 105, 114, 101, 100, 45, 108, 98, 45, 116, 101, 115, 116, 45, 99, 108, 117, 115, 116, 101, 114, 18, 4, 97, 98, 99, 100, 42, 184, 1, 26, 13, 116, 101, 115, 116, 45, 110, 111, 100, 101, 112, 111, 111, 108, 34, 44, 10, 12, 116, 101, 115, 116, 45, 110, 111, 100, 101, 45, 48, 49, 18, 11, 49, 57, 50, 46, 49, 54, 56, 46, 48, 46, 49, 26, 9, 49, 50, 55, 46, 48, 46, 48, 46, 49, 42, 4, 114, 111, 111, 116, 10, 121, 10, 11, 112, 101, 114, 102, 111, 114, 109, 97, 110, 99, 101, 18, 6, 108, 97, 116, 101, 115, 116, 24, 50, 34, 5, 108, 111, 99, 97, 108, 42, 5, 108, 111, 99, 97, 108, 48, 3, 58, 48, 10, 7, 104, 101, 116, 122, 110, 101, 114, 18, 10, 104, 101, 116, 122, 110, 101, 114, 45, 48, 49, 106, 17, 10, 6, 47, 114, 111, 111, 116, 47, 26, 7, 104, 101, 116, 122, 110, 101, 114, 34, 6, 10, 4, 116, 101, 115, 116, 90, 7, 100, 101, 102, 97, 117, 108, 116, 98, 7, 100, 101, 102, 97, 117, 108, 116, 114, 12, 49, 50, 55, 46, 48, 46, 48, 46, 49, 47, 50, 52},
 				},
 				Events: store.Events{
-					TaskEvents: nil,
+					TaskEvents: []store.TaskEvent{
+						{
+							Id:          uuid.New().String(),
+							Timestamp:   time.Now().UTC().Format(time.RFC3339),
+							Event:       spec.Event_CREATE.String(),
+							Task:        []uint8{},
+							Description: "Testing",
+						},
+					},
 					TTL:        500,
+					Autoscaled: true,
 				},
 				State: store.Workflow{
 					Status:      spec.Workflow_DONE.String(),

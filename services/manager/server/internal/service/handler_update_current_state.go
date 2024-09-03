@@ -45,7 +45,7 @@ func (g *GRPC) UpdateCurrentState(ctx context.Context, request *pb.UpdateCurrent
 
 	cluster.Current = request.State
 
-	if cluster.Current != nil {
+	if cluster.Current != nil && cluster.Desired != nil { // on update.
 		if err := transferExistingK8sState(cluster.Current.K8S, cluster.Desired.K8S); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to trasnsfer updated current state to desired state for cluster %q config %q: %v", request.Cluster, request.Name, err)
 		}

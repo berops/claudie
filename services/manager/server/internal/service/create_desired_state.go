@@ -49,10 +49,27 @@ func createDesiredState(pending *store.Config) error {
 		return fmt.Errorf("failed to parse lb clusters from manifest: %q: %w", m.Name, err)
 	}
 
+	grpcRepr, err := store.ConvertToGRPC(pending)
+	if err != nil {
+		return fmt.Errorf("failed to convert from db representation to grpc %q: %w", pending.Name, err)
+	}
+
+	for _, state := range grpcRepr.GetClusters() {
+		deduplicateNodepoolNames(&m, state)
+		fillDynamicNodes(state.Desired)
+	}
+
 	// 2.1 Also consider to re-use existing data created in previous run if not first-run of the workflow for the manifest.
-	if err := transferExistingState(&m, pending); err != nil {
+	if err := transferExistingState(grpcRepr); err != nil {
 		return fmt.Errorf("failed to reuse current state date for desired state for %q: %w", m.Name, err)
 	}
+
+	modified, err := store.ConvertFromGRPC(grpcRepr)
+	if err != nil {
+		return fmt.Errorf("failed to convert from grpc to db representation %q: %w", grpcRepr.Name, err)
+	}
+
+	*pending = *modified
 
 	return nil
 }
@@ -268,4 +285,44 @@ func generateSSHKeyPair() (string, string, error) {
 	pubKeyBuf.Write(ssh.MarshalAuthorizedKey(pubKey))
 
 	return pubKeyBuf.String(), privKeyBuf.String(), nil
+}
+
+func fillDynamicNodes(c *spec.Clusters) {
+	k8sID := utils.GetClusterID(c.GetK8S().GetClusterInfo())
+	for _, np := range c.GetK8S().GetClusterInfo().GetNodePools() {
+		if np.GetDynamicNodePool() == nil {
+			continue
+		}
+		usedNames := make(map[string]struct{})
+		nodepoolID := fmt.Sprintf("%s-%s", k8sID, np.Name)
+		np.Nodes = dynamicNodes(nodepoolID, usedNames, np.GetDynamicNodePool().Count, np.IsControl)
+	}
+
+	for _, lb := range c.GetLoadBalancers().GetClusters() {
+		lbID := utils.GetClusterID(c.GetK8S().GetClusterInfo())
+		for _, np := range lb.GetClusterInfo().GetNodePools() {
+			if np.GetDynamicNodePool() == nil {
+				continue
+			}
+			usedNames := make(map[string]struct{})
+			nodepoolID := fmt.Sprintf("%s-%s", lbID, np.Name)
+			np.Nodes = dynamicNodes(nodepoolID, usedNames, np.GetDynamicNodePool().Count, np.IsControl)
+		}
+	}
+}
+
+func dynamicNodes(nodepoolID string, usedNames map[string]struct{}, count int32, isControl bool) []*spec.Node {
+	nodes := make([]*spec.Node, 0, count)
+	typ := spec.NodeType_worker
+	if isControl {
+		typ = spec.NodeType_master
+	}
+	for range count {
+		nodes = append(nodes, &spec.Node{
+			Name:     uniqueNodeName(nodepoolID, usedNames),
+			NodeType: typ,
+		})
+		usedNames[nodes[len(nodes)-1].Name] = struct{}{}
+	}
+	return nodes
 }

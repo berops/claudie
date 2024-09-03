@@ -53,8 +53,10 @@ func (g *GRPC) TaskUpdate(ctx context.Context, req *pb.TaskUpdateRequest) (*pb.T
 	case cluster.State.Status == spec.Workflow_DONE.String():
 		cluster.Events.TTL = 0
 		cluster.Events.TaskEvents = cluster.Events.TaskEvents[1:]
+		TasksFinishedOk.Inc()
 	case cluster.State.Status == spec.Workflow_ERROR.String():
 		cluster.Events.TTL = 0
+		TasksFinishedErr.Inc()
 	}
 
 	if err := g.Store.UpdateConfig(ctx, cfg); err != nil {

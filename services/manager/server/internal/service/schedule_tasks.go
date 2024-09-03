@@ -14,8 +14,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// TODO: verify all paths and write tests.
-
 func scheduleTasks(scheduled *store.Config) error {
 	scheduledGRPC, err := store.ConvertToGRPC(scheduled)
 	if err != nil {
@@ -61,20 +59,8 @@ func scheduleTasks(scheduled *store.Config) error {
 			)...)
 		}
 
-		state.Events = &spec.Events{Events: events, Ttl: 0}
-		state.State = &spec.Workflow{
-			Stage:  spec.Workflow_NONE,
-			Status: spec.Workflow_DONE,
-		}
-		// TODO: verify if not needed.
-		//if e := state.Events; e == nil {
-		//	state.Events = &spec.Events{Events: events, Ttl: 0}
-		//} else {
-		//	if len(e.Events) != 0 {
-		//		return fmt.Errorf("failed to schedule tasks for cluster %q config %q. Cannot schedule tasks for a config which previous scheduled tasks have not been finished", cluster, scheduled.Name)
-		//	}
-		//	state.Events.Events = append(state.Events.Events, events...)
-		//}
+		state.Events = &spec.Events{Events: events}
+		state.State = &spec.Workflow{Stage: spec.Workflow_NONE, Status: spec.Workflow_DONE}
 	}
 
 	db, err := store.ConvertFromGRPC(scheduledGRPC)
@@ -87,13 +73,17 @@ func scheduleTasks(scheduled *store.Config) error {
 }
 
 // Diff takes the desired and current state to calculate difference between them to determine the difference and returns
-// a number of tasks to be performed in specific order.
+// a number of tasks to be performed in specific order. It is expected that the current state actually represents
+// the actual current state of the cluster and the desired state contains relevant data from the current state with
+// the requested changes (i.e. deletion, addition of nodes) from the new config changes, (relevant data was transferred
+// to desired state).
 func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcluster) []*spec.TaskEvent {
 	k8sDynamic, k8sStatic := NodePoolNodes(current)
 	lbsDynamic, lbsStatic := LbsNodePoolNodes(currentLbs)
 
 	k8sDiffResult := k8sNodePoolDiff(k8sDynamic, k8sStatic, desired)
 	lbsDiffResult := lbsNodePoolDiff(lbsDynamic, lbsStatic, desiredLbs)
+	autoscalerConfigUpdated := k8sAutoscalerDiff(current, desired)
 
 	k8sAllDeletedNodes := make(map[string][]string)
 	maps.Insert(k8sAllDeletedNodes, maps.All(k8sDiffResult.deletedDynamic))
@@ -132,9 +122,10 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 
 	if k8sDiffResult.adding {
 		events = append(events, &spec.TaskEvent{
-			Id:        uuid.New().String(),
-			Timestamp: timestamppb.New(time.Now().UTC()),
-			Event:     spec.Event_UPDATE,
+			Id:          uuid.New().String(),
+			Timestamp:   timestamppb.New(time.Now().UTC()),
+			Event:       spec.Event_UPDATE,
+			Description: "adding nodes to k8s cluster",
 			Task: &spec.Task{
 				UpdateState: &spec.UpdateState{
 					K8S: ir,
@@ -174,9 +165,10 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 		}
 
 		events = append(events, &spec.TaskEvent{
-			Id:        uuid.New().String(),
-			Timestamp: timestamppb.New(time.Now().UTC()),
-			Event:     spec.Event_UPDATE,
+			Id:          uuid.New().String(),
+			Timestamp:   timestamppb.New(time.Now().UTC()),
+			Event:       spec.Event_UPDATE,
+			Description: "loadbalancer target to new control plane nodepool",
 			Task: &spec.Task{
 				UpdateState: &spec.UpdateState{
 					K8S: ir,
@@ -190,9 +182,10 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 		newApiNodePool := findNewAPIEndpointCandidate(desired.ClusterInfo.NodePools)
 
 		events = append(events, &spec.TaskEvent{
-			Id:        uuid.New().String(),
-			Timestamp: timestamppb.New(time.Now().UTC()),
-			Event:     spec.Event_UPDATE,
+			Id:          uuid.New().String(),
+			Timestamp:   timestamppb.New(time.Now().UTC()),
+			Event:       spec.Event_UPDATE,
+			Description: "moving endpoint from old control plane node to a new control plane node",
 			Task: &spec.Task{
 				UpdateState: &spec.UpdateState{ApiNodePool: newApiNodePool},
 			},
@@ -205,16 +198,18 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 			dn[k] = &spec.DeletedNodes{Nodes: v}
 		}
 		events = append(events, &spec.TaskEvent{
-			Id:        uuid.New().String(),
-			Timestamp: timestamppb.New(time.Now().UTC()),
-			Event:     spec.Event_DELETE,
-			Task:      &spec.Task{DeleteState: &spec.DeleteState{Nodepools: dn}},
+			Id:          uuid.New().String(),
+			Timestamp:   timestamppb.New(time.Now().UTC()),
+			Event:       spec.Event_DELETE,
+			Description: "deleting nodes from k8s cluster",
+			Task:        &spec.Task{DeleteState: &spec.DeleteState{Nodepools: dn}},
 		})
 
 		events = append(events, &spec.TaskEvent{
-			Id:        uuid.New().String(),
-			Timestamp: timestamppb.New(time.Now().UTC()),
-			Event:     spec.Event_UPDATE,
+			Id:          uuid.New().String(),
+			Timestamp:   timestamppb.New(time.Now().UTC()),
+			Event:       spec.Event_UPDATE,
+			Description: "deleting infrastructure of deleted k8s nodes",
 			Task: &spec.Task{
 				UpdateState: &spec.UpdateState{
 					K8S: desired,                              // since we don't work with the IR anymore will trigger the deletion of the infra.
@@ -231,9 +226,10 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 	lbsChanges = lbsChanges || !proto.Equal(&spec.LoadBalancers{Clusters: currentLbs}, &spec.LoadBalancers{Clusters: desiredLbs})
 	if lbsChanges || len(deletedLoadbalancers) > 0 || len(addedLoadBalancers) > 0 {
 		events = append(events, &spec.TaskEvent{
-			Id:        uuid.New().String(),
-			Timestamp: timestamppb.New(time.Now().UTC()),
-			Event:     spec.Event_UPDATE,
+			Id:          uuid.New().String(),
+			Timestamp:   timestamppb.New(time.Now().UTC()),
+			Event:       spec.Event_UPDATE,
+			Description: "reconciling loadbalancer infrastructure changes",
 			Task: &spec.Task{
 				UpdateState: &spec.UpdateState{
 					K8S: desired,
@@ -251,11 +247,27 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 
 	if len(deletedLoadbalancers) > 0 {
 		events = append(events, &spec.TaskEvent{
-			Id:        uuid.New().String(),
-			Timestamp: timestamppb.New(time.Now().UTC()),
-			Event:     spec.Event_DELETE,
+			Id:          uuid.New().String(),
+			Timestamp:   timestamppb.New(time.Now().UTC()),
+			Event:       spec.Event_DELETE,
+			Description: "deleting loadbalancer infrastructure",
 			Task: &spec.Task{
 				DeleteState: &spec.DeleteState{Lbs: &spec.LoadBalancers{Clusters: deletedLoadbalancers}},
+			},
+		})
+	}
+
+	if autoscalerConfigUpdated && len(events) == 0 {
+		events = append(events, &spec.TaskEvent{
+			Id:          uuid.New().String(),
+			Timestamp:   timestamppb.New(time.Now().UTC()),
+			Event:       spec.Event_UPDATE,
+			Description: "updating autoscaler config",
+			Task: &spec.Task{
+				UpdateState: &spec.UpdateState{
+					K8S: desired,
+					Lbs: &spec.LoadBalancers{Clusters: desiredLbs},
+				},
 			},
 		})
 	}
@@ -318,20 +330,21 @@ func lbsNodePoolDiff(dynamic, static map[string]map[string][]string, desiredLbs 
 					continue
 				}
 
-				if len(desiredNps.Nodes) > len(current) {
-					result.adding = true
-					continue
+				// Node names are transferred over from current state based on the public IP.
+				// Thus, at this point we can figure out based on nodes names which were deleted/added
+				// see existing_state.go:transferStaticNpDataOnly
+				for _, dnode := range desiredNps.Nodes {
+					found := slices.ContainsFunc(current, func(s string) bool { return s == dnode.Name })
+					if !found {
+						result.adding = true
+					}
 				}
 
-				// TODO: this does not correctly handle the static node deletion.
-				// For example if we would replace a ndoe with a different one it would fail.
-				// TODO: issue for static nodes diff.
-				// check for deletion of static nodes (also include replacement).
+				// Node names are transferred over from current state based on the public IP.
+				// Thus, at this point we can figure out based on nodes names which were deleted/added
+				// see existing_state.go:transferStaticNpDataOnly
 				for _, cnode := range current {
-					var found bool
-					for _, dnode := range desiredNps.Nodes {
-						found = found || cnode == dnode.Name
-					}
+					found := slices.ContainsFunc(desiredNps.Nodes, func(dn *spec.Node) bool { return cnode == dn.Name })
 					if !found {
 						result.deleting = true
 						// we don't need to keep track of which nodes are being deleted
@@ -418,20 +431,22 @@ func k8sNodePoolDiff(dynamic, static map[string][]string, desiredCluster *spec.K
 				result.adding = true
 				continue
 			}
-			if len(desired.Nodes) > len(current) {
-				result.adding = true
-				continue
+
+			// Node names are transferred over from current state based on the public IP.
+			// Thus, at this point we can figure out based on nodes names which were deleted/added
+			// see existing_state.go:transferStaticNpDataOnly
+			for _, dnode := range desired.Nodes {
+				found := slices.ContainsFunc(current, func(s string) bool { return s == dnode.Name })
+				if !found {
+					result.adding = true
+				}
 			}
 
-			// TODO: this does not correctly handle the static node deletion.
-			// For example if we would replace a ndoe with a different one it would fail.
-			// TODO: issue for static nodes diff.
-			// check for deletion of static nodes (also include replacement).
+			// Node names are transferred over from current state based on the public IP.
+			// Thus, at this point we can figure out based on nodes names which were deleted/added
+			// see existing_state.go:transferStaticNpDataOnly
 			for _, cnode := range current {
-				var found bool
-				for _, dnode := range desired.Nodes {
-					found = found || cnode == dnode.Name
-				}
+				found := slices.ContainsFunc(desired.Nodes, func(dn *spec.Node) bool { return cnode == dn.Name })
 				if !found {
 					result.deleting = true
 					result.partialDeletedStatic[desired.Name] = append(result.partialDeletedStatic[desired.Name], cnode)
@@ -499,8 +514,11 @@ func craftK8sIR(k8sDiffResult nodePoolDiffResult, current, desired *spec.K8Sclus
 	ir := proto.Clone(desired).(*spec.K8Scluster)
 
 	for nodepool := range k8sDiffResult.partialDeletedDynamic {
-		np := utils.GetNodePoolByName(nodepool, ir.ClusterInfo.NodePools)
-		np.GetDynamicNodePool().Count = utils.GetNodePoolByName(nodepool, current.ClusterInfo.NodePools).GetDynamicNodePool().Count
+		inp := utils.GetNodePoolByName(nodepool, ir.ClusterInfo.NodePools)
+		cnp := utils.GetNodePoolByName(nodepool, current.ClusterInfo.NodePools)
+
+		inp.GetDynamicNodePool().Count = cnp.GetDynamicNodePool().Count
+		fillNodes(utils.GetClusterID(desired.ClusterInfo), cnp, inp)
 	}
 
 	for nodepool := range k8sDiffResult.partialDeletedStatic {
@@ -588,4 +606,26 @@ func findLbAPIEndpointCluster(current []*spec.LBcluster) *spec.LBcluster {
 		}
 	}
 	return nil
+}
+
+func k8sAutoscalerDiff(current, desired *spec.K8Scluster) bool {
+	cnp := make(map[string]*spec.DynamicNodePool)
+	for _, np := range current.GetClusterInfo().GetNodePools() {
+		if dyn := np.GetDynamicNodePool(); dyn != nil && dyn.AutoscalerConfig != nil {
+			cnp[np.Name] = dyn
+		}
+	}
+
+	for _, np := range desired.GetClusterInfo().GetNodePools() {
+		if dyn := np.GetDynamicNodePool(); dyn != nil && dyn.AutoscalerConfig != nil {
+			if prev, ok := cnp[np.Name]; ok {
+				equal := proto.Equal(prev.AutoscalerConfig, dyn.AutoscalerConfig)
+				if !equal {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
 }

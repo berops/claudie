@@ -2,40 +2,25 @@ package service
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/berops/claudie/services/manager/server/internal/store"
+	"github.com/rs/zerolog/log"
 )
 
 // transferExistingState transfers existing data from current state to desired.
-func transferExistingState(m *manifest.Manifest, db *store.Config) error {
-	// Since we're working with cluster states directly, we'll use the grpc form.
-	// As in the DB form they're encoded.
-	grpcRepr, err := store.ConvertToGRPC(db)
-	if err != nil {
-		return fmt.Errorf("failed to convert from db representation to grpc %q: %w", db.Name, err)
-	}
-
-	for cluster, state := range grpcRepr.GetClusters() {
-		deduplicateNodepoolNames(m, state)
-
+func transferExistingState(c *spec.Config) error {
+	for cluster, state := range c.GetClusters() {
 		if err := transferExistingK8sState(state.GetCurrent().GetK8S(), state.GetDesired().GetK8S()); err != nil {
-			return fmt.Errorf("error while updating Kubernetes cluster %q for config %s : %w", cluster, db.Name, err)
+			return fmt.Errorf("error while updating Kubernetes cluster %q for config %s : %w", cluster, c.Name, err)
 		}
 
 		if err := transferExistingLBState(state.GetCurrent().GetLoadBalancers(), state.GetDesired().GetLoadBalancers()); err != nil {
-			return fmt.Errorf("error while updating Loadbalancer cluster %q for config %s : %w", cluster, db.Name, err)
+			return fmt.Errorf("error while updating Loadbalancer cluster %q for config %s : %w", cluster, c.Name, err)
 		}
 	}
-
-	newdb, err := store.ConvertFromGRPC(grpcRepr)
-	if err != nil {
-		return fmt.Errorf("failed to convert from grpc to db representation %q: %w", grpcRepr.Name, err)
-	}
-
-	*db = *newdb
 
 	return nil
 }
@@ -152,7 +137,7 @@ func findNodePoolReferences(name string, nodePools []*spec.NodePool) []*spec.Nod
 }
 
 // transferExistingK8sState updates the desired state of the kubernetes clusters based on the current state
-func transferExistingK8sState(current *spec.K8Scluster, desired *spec.K8Scluster) error {
+func transferExistingK8sState(current, desired *spec.K8Scluster) error {
 	if desired == nil || current == nil {
 		return nil
 	}
@@ -166,6 +151,36 @@ func transferExistingK8sState(current *spec.K8Scluster, desired *spec.K8Scluster
 	}
 
 	return nil
+}
+
+// transferDynamicNpDataOnly updates the desired state of the kubernetes clusters based on the current state
+// transferring only nodepoolData.
+func transferDynamicNpDataOnly(clusterID string, current, desired *spec.NodePool, updateAutoscaler bool) bool {
+	dnp := desired.GetDynamicNodePool()
+	cnp := current.GetDynamicNodePool()
+
+	canUpdate := dnp != nil && cnp != nil
+	if !canUpdate {
+		return false
+	}
+
+	dnp.PublicKey = cnp.PublicKey
+	dnp.PrivateKey = cnp.PrivateKey
+	dnp.Cidr = cnp.Cidr
+
+	if updateAutoscaler && dnp.AutoscalerConfig != nil {
+		switch {
+		case dnp.AutoscalerConfig.Min > cnp.Count:
+			dnp.Count = dnp.AutoscalerConfig.Min
+		case dnp.AutoscalerConfig.Max < cnp.Count:
+			dnp.Count = dnp.AutoscalerConfig.Max
+		default:
+			dnp.Count = cnp.Count
+		}
+	}
+
+	fillNodes(clusterID, current, desired)
+	return true
 }
 
 // updateClusterInfo updates the desired state based on the current state
@@ -187,8 +202,8 @@ desired:
 			}
 
 			switch {
-			case tryUpdateDynamicNodePool(desiredNp, currentNp):
-			case tryUpdateStaticNodePool(desiredNp, currentNp):
+			case transferDynamicNpDataOnly(utils.GetClusterID(desired), currentNp, desiredNp, true):
+			case transferStaticNpDataOnly(currentNp, desiredNp):
 			default:
 				return fmt.Errorf("%q is neither dynamic nor static, unexpected value: %v", desiredNp.Name, desiredNp.GetNodePoolType())
 			}
@@ -199,66 +214,76 @@ desired:
 	return nil
 }
 
-func tryUpdateDynamicNodePool(desired, current *spec.NodePool) bool {
+// fillNodes transfers nodes from current state up to the count defined
+// in desired state. if the count is larger than the number of current
+// nodes new nodes will be appended.
+func fillNodes(clusterID string, current, desired *spec.NodePool) {
 	dnp := desired.GetDynamicNodePool()
-	cnp := current.GetDynamicNodePool()
 
-	canUpdate := dnp != nil && cnp != nil
-	if !canUpdate {
-		return false
-	}
+	nodes := make([]*spec.Node, 0, dnp.Count)
+	nodeNames := make(map[string]struct{}, dnp.Count)
 
-	dnp.PublicKey = cnp.PublicKey
-	dnp.PrivateKey = cnp.PrivateKey
-
-	desired.Nodes = current.Nodes
-	dnp.Cidr = cnp.Cidr
-
-	// Update the count
-	if cnp.AutoscalerConfig != nil && dnp.AutoscalerConfig != nil {
-		// Both have Autoscaler conf defined, use same count as in current
-		dnp.Count = cnp.Count
-	} else if cnp.AutoscalerConfig == nil && dnp.AutoscalerConfig != nil {
-		// Desired is autoscaled, but not current
-		if dnp.AutoscalerConfig.Min > cnp.Count {
-			// Cannot have fewer nodes than defined min
-			dnp.Count = dnp.AutoscalerConfig.Min
-		} else if dnp.AutoscalerConfig.Max < cnp.Count {
-			// Cannot have more nodes than defined max
-			dnp.Count = dnp.AutoscalerConfig.Max
-		} else {
-			// Use same count as in current for now, autoscaler might change it later
-			dnp.Count = cnp.Count
+	for i, node := range current.Nodes {
+		if i == int(dnp.Count) {
+			break
 		}
+		nodes = append(nodes, node)
+		nodeNames[node.Name] = struct{}{}
+		log.Debug().Str("cluster", clusterID).Msgf("reusing node %q from current state nodepool %q, IsControl: %v, into desired state of the nodepool", node.Name, desired.Name, desired.IsControl)
 	}
 
-	return true
+	nodepoolID := fmt.Sprintf("%s-%s", clusterID, desired.Name)
+	for len(nodes) < int(dnp.Count) {
+		name := uniqueNodeName(nodepoolID, nodeNames)
+		nodeNames[name] = struct{}{}
+		nodes = append(nodes, &spec.Node{Name: name})
+	}
+
+	desired.Nodes = nodes
 }
 
-func tryUpdateStaticNodePool(desired, current *spec.NodePool) bool {
-	dnp := desired.GetStaticNodePool()
-	cnp := current.GetStaticNodePool()
+// uniqueNodeName returns new node name, which is guaranteed to be unique, based on the provided existing names.
+func uniqueNodeName(nodepoolID string, existingNames map[string]struct{}) string {
+	index := uint8(1)
+	for {
+		candidate := fmt.Sprintf("%s-%02x", nodepoolID, index)
+		if _, ok := existingNames[candidate]; !ok {
+			return candidate
+		}
+		index++
+	}
+}
 
-	canUpdate := dnp != nil && cnp != nil
+func transferStaticNpDataOnly(current, desired *spec.NodePool) bool {
+	dsp := desired.GetStaticNodePool()
+	csp := current.GetStaticNodePool()
+
+	canUpdate := dsp != nil && csp != nil
 	if !canUpdate {
 		return false
+	}
+
+	usedNames := make(map[string]struct{})
+	for _, cn := range current.Nodes {
+		usedNames[cn.Name] = struct{}{}
 	}
 
 	for _, dn := range desired.Nodes {
-		for _, cn := range current.Nodes {
-			if dn.Public == cn.Public {
-				dn.Name = cn.Name
-				dn.Private = cn.Private
-				dn.NodeType = cn.NodeType
-			}
+		i := slices.IndexFunc(current.Nodes, func(cn *spec.Node) bool { return cn.Public == dn.Public })
+		if i < 0 {
+			dn.Name = uniqueNodeName(desired.Name, usedNames)
+			continue
 		}
+		dn.Name = current.Nodes[i].Name
+		dn.Private = current.Nodes[i].Private
+		dn.NodeType = current.Nodes[i].NodeType
 	}
 
 	return true
 }
 
 // transferExistingLBState updates the desired state of the loadbalancer clusters based on the current state
-func transferExistingLBState(current *spec.LoadBalancers, desired *spec.LoadBalancers) error {
+func transferExistingLBState(current, desired *spec.LoadBalancers) error {
 	transferExistingDns(current, desired)
 
 	currentLbs := current.GetClusters()
@@ -284,25 +309,30 @@ func transferExistingLBState(current *spec.LoadBalancers, desired *spec.LoadBala
 func transferExistingDns(current, desired *spec.LoadBalancers) {
 	const hostnameHashLength = 17
 
-	if desired == nil {
-		return
-	}
-
 	currentLbs := make(map[string]*spec.LBcluster)
-
 	for _, cluster := range current.GetClusters() {
 		currentLbs[cluster.ClusterInfo.Name] = cluster
 	}
 
 	for _, cluster := range desired.GetClusters() {
-		if previous, ok := currentLbs[cluster.ClusterInfo.Name]; !ok && cluster.Dns.Hostname == "" {
-			cluster.Dns.Hostname = utils.CreateHash(hostnameHashLength)
-		} else {
-			// copy hostname from current state if not specified in manifest
+		previous, ok := currentLbs[cluster.ClusterInfo.Name]
+		if !ok {
 			if cluster.Dns.Hostname == "" {
-				cluster.Dns.Hostname = previous.Dns.Hostname
+				cluster.Dns.Hostname = utils.CreateHash(hostnameHashLength)
+			}
+			continue
+		}
+		if cluster.Dns.Hostname != "" {
+			if previous.Dns.Hostname == cluster.Dns.Hostname {
 				cluster.Dns.Endpoint = previous.Dns.Endpoint
 			}
+			continue
+		}
+
+		// copy hostname from current state if not specified in manifest
+		if cluster.Dns.Hostname == "" || cluster.Dns.Endpoint == "" {
+			cluster.Dns.Hostname = previous.Dns.Hostname
+			cluster.Dns.Endpoint = previous.Dns.Endpoint
 		}
 	}
 }

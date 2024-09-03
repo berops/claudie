@@ -40,8 +40,6 @@ func TestEnqueuedTask_ID(t1 *testing.T) {
 				Config:  tt.fields.Config,
 				Cluster: tt.fields.Cluster,
 				Event:   tt.fields.Event,
-				TTL:     tt.fields.TTL,
-				Version: tt.fields.Version,
 			}
 			if got := t.ID(); got != tt.want {
 				t1.Errorf("ID() = %v, want %v", got, tt.want)

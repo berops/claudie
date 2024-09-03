@@ -75,6 +75,8 @@ func (g *GRPC) WatchForScheduledDocuments(ctx context.Context) error {
 				logger.Err(err).Msgf("Failed to add task %v for cluster %q to the task queue", nextTask.Id, cluster)
 			}
 			logger.Info().Msgf("[%s] Task %v for cluster %v scheduled", nextTask.Event, nextTask.Id, cluster)
+			TasksScheduled.Inc()
+			TasksInQueue.Inc()
 		}
 
 		if clustersDone == len(scheduled.Clusters) {

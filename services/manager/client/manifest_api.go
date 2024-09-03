@@ -13,7 +13,8 @@ type ManifestAPI interface {
 	// If the requested config with the specific version is not found the ErrVersionMismatch error is
 	// returned indicating a Dirty write. On a Dirty write the application code should execute
 	// the Read/Update/Write cycle again. If the config is not present an error will be returned
-	// along with other errors.
+	// along with other errors. If the requested config for deletion is not found the ErrNotFound error
+	// is returned.
 	MarkForDeletion(ctx context.Context, request *MarkForDeletionRequest) error
 }
 

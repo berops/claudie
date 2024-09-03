@@ -36,9 +36,8 @@ func run() error {
 		Addr: fmt.Sprintf(":%s", utils.GetEnvDefault("PROMETHEUS_PORT", fmt.Sprintf("%v", defaultPrometheusPort))),
 	}
 
-	// TODO: metrics
-	//metrics.MustRegisterCounters()
-	//metrics2.MustRegisterCounters()
+	metrics.MustRegisterCounters()
+	service.MustRegisterCounters()
 
 	errGroup, errGroupContext := errgroup.WithContext(context.Background())
 

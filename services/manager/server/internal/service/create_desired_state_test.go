@@ -141,7 +141,8 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 				from: &manifest.Manifest{
 					NodePools: manifest.NodePool{
 						Dynamic: []manifest.DynamicNodePool{{
-							Name: "lb-pool",
+							Name:  "lb-pool",
+							Count: 3,
 							ProviderSpec: manifest.ProviderSpec{
 								Name:   "test-provider",
 								Region: "earth",
@@ -251,6 +252,8 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 				assert.Nil(t, proto.Unmarshal(into.Clusters["test-cluster"].Desired.LoadBalancers, &m))
 				assert.Equal(t, 1, len(m.Clusters))
 				assert.Equal(t, "test-lb-cluster", m.Clusters[0].ClusterInfo.Name)
+				// 0 as dynamic nodes are created at a later step.
+				assert.Equal(t, 0, len(m.Clusters[0].ClusterInfo.NodePools[0].Nodes))
 			},
 		},
 		{
@@ -259,7 +262,8 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 				from: &manifest.Manifest{
 					NodePools: manifest.NodePool{
 						Dynamic: []manifest.DynamicNodePool{{
-							Name: "lb-pool",
+							Name:  "lb-pool",
+							Count: 2,
 							ProviderSpec: manifest.ProviderSpec{
 								Name:   "test-provider",
 								Region: "earth",
@@ -378,7 +382,8 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 				from: &manifest.Manifest{
 					NodePools: manifest.NodePool{
 						Dynamic: []manifest.DynamicNodePool{{
-							Name: "lb-pool",
+							Name:  "lb-pool",
+							Count: 3,
 							ProviderSpec: manifest.ProviderSpec{
 								Name:   "test-provider",
 								Region: "earth",
@@ -493,6 +498,8 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 				assert.Nil(t, proto.Unmarshal(into.Clusters["test-k8s"].Desired.LoadBalancers, &m2))
 				assert.Equal(t, 1, len(m2.Clusters))
 				assert.Equal(t, "test-lb-cluster", m2.Clusters[0].ClusterInfo.Name)
+				// 0 as dynamic nodes are created at a later step.
+				assert.Equal(t, 0, len(m2.Clusters[0].ClusterInfo.NodePools[0].Nodes))
 			},
 		},
 	}
@@ -523,7 +530,8 @@ func Test_createK8sClustersFromManifest(t *testing.T) {
 					Name: "catch-deleted-cluster",
 					NodePools: manifest.NodePool{
 						Dynamic: []manifest.DynamicNodePool{{
-							Name: "pool",
+							Name:  "pool",
+							Count: 4,
 							ProviderSpec: manifest.ProviderSpec{
 								Name:   "test-provider",
 								Region: "earth",
@@ -583,7 +591,8 @@ func Test_createK8sClustersFromManifest(t *testing.T) {
 					Name: "catch-deleted-cluster",
 					NodePools: manifest.NodePool{
 						Dynamic: []manifest.DynamicNodePool{{
-							Name: "pool",
+							Name:  "pool",
+							Count: 4,
 							ProviderSpec: manifest.ProviderSpec{
 								Name:   "test-provider",
 								Region: "earth",
@@ -644,6 +653,10 @@ func Test_createK8sClustersFromManifest(t *testing.T) {
 				assert.False(t, m.ClusterInfo.NodePools[1].IsControl)
 				assert.Equal(t, "pool", m.ClusterInfo.NodePools[0].Name)
 				assert.Equal(t, "pool", m.ClusterInfo.NodePools[1].Name)
+
+				// 0 as dynamic nodes are created at a later step.
+				assert.Equal(t, 0, len(m.ClusterInfo.NodePools[0].Nodes))
+				assert.Equal(t, 0, len(m.ClusterInfo.NodePools[1].Nodes))
 			},
 		},
 	}

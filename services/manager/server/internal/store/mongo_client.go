@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/berops/claudie/internal/manifest"
+	"github.com/berops/claudie/internal/checksum"
 	"time"
 
+	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/rs/zerolog/log"
 
@@ -174,7 +175,8 @@ func (m *Mongo) MarkForDeletion(ctx context.Context, name string, version uint64
 		bson.D{
 			{"$set", bson.D{
 				{"manifest.raw", ""},
-				{"manifest.checksum", nil}},
+				{"manifest.checksum", nil},
+				{"manifest.lastAppliedChecksum", checksum.Digest("delete")}}, // modify the last applied checksum so that repeated deletion will trigger the process again.
 			},
 			{"$inc", bson.D{{"version", 1}}},
 		},

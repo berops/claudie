@@ -2,9 +2,9 @@ package service
 
 import (
 	"fmt"
-	"github.com/berops/claudie/internal/manifest"
 	"testing"
 
+	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/stretchr/testify/assert"
@@ -49,7 +49,7 @@ func Test_transferExistingDns(t *testing.T) {
 					Clusters: []*spec.LBcluster{
 						{
 							ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
-							Dns:         &spec.DNS{Hostname: "test-hostname"},
+							Dns:         &spec.DNS{Hostname: "test-hostname", Endpoint: "test-endpoint"},
 						},
 					},
 				},
@@ -65,6 +65,33 @@ func Test_transferExistingDns(t *testing.T) {
 			validate: func(t *testing.T, args args) {
 				assert.NotEmpty(t, args.desired.Clusters[0].Dns.Hostname)
 				assert.Equal(t, "test-hostname", args.desired.Clusters[0].Dns.Hostname)
+				assert.Equal(t, "test-endpoint", args.desired.Clusters[0].Dns.Endpoint)
+			},
+		},
+		{
+			name: "generate-hostname-2",
+			args: args{
+				current: &spec.LoadBalancers{
+					Clusters: []*spec.LBcluster{
+						{
+							ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
+							Dns:         &spec.DNS{Hostname: "test-hostname", Endpoint: "test-endpoint"},
+						},
+					},
+				},
+				desired: &spec.LoadBalancers{
+					Clusters: []*spec.LBcluster{
+						{
+							ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
+							Dns:         &spec.DNS{Hostname: "other-hostname"},
+						},
+					},
+				},
+			},
+			validate: func(t *testing.T, args args) {
+				assert.NotEmpty(t, args.desired.Clusters[0].Dns.Hostname)
+				assert.Equal(t, "other-hostname", args.desired.Clusters[0].Dns.Hostname)
+				assert.Empty(t, args.desired.Clusters[0].Dns.Endpoint)
 			},
 		},
 	}
@@ -89,6 +116,80 @@ func Test_updateClusterInfo(t *testing.T) {
 		validate func(t *testing.T, args args)
 	}{
 		{
+			name: "transfer-cluster-info-state-autoscaler",
+			args: args{
+				current: &spec.ClusterInfo{
+					Name: "current",
+					Hash: "current",
+					NodePools: []*spec.NodePool{
+						{
+							NodePoolType: &spec.NodePool_DynamicNodePool{
+								DynamicNodePool: &spec.DynamicNodePool{
+									PublicKey:  "current-pk",
+									PrivateKey: "current-sk",
+									Cidr:       "current-cidr",
+									Count:      5,
+									AutoscalerConfig: &spec.AutoscalerConf{
+										Min: 3,
+										Max: 12,
+									},
+								},
+							},
+							Name: "np0",
+							Nodes: []*spec.Node{
+								{
+									Name:     "node-0",
+									Private:  "private",
+									Public:   "public",
+									NodeType: spec.NodeType_apiEndpoint,
+									Username: "username",
+								},
+								{
+									Name:     "node-1",
+									Private:  "private",
+									Public:   "public",
+									NodeType: spec.NodeType_apiEndpoint,
+									Username: "username",
+								},
+								{
+									Name:     "node-2",
+									Private:  "private",
+									Public:   "public",
+									NodeType: spec.NodeType_apiEndpoint,
+									Username: "username",
+								},
+							},
+							IsControl: true,
+						},
+					},
+				},
+				desired: &spec.ClusterInfo{
+					Name: "current",
+					Hash: "desired",
+					NodePools: []*spec.NodePool{
+						{Name: "np0", NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 3, AutoscalerConfig: &spec.AutoscalerConf{
+							Min: 3,
+							Max: 12,
+						}}}},
+					},
+				},
+			},
+			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool { return assert.Nil(t, err) },
+			validate: func(t *testing.T, args args) {
+				assert.Equal(t, int32(5), args.desired.NodePools[0].GetDynamicNodePool().Count)
+				assert.Equal(t, 1, len(args.desired.NodePools))
+				assert.Equal(t, 5, len(args.desired.NodePools[0].Nodes))
+				assert.Equal(t, "node-0", args.desired.NodePools[0].Nodes[0].Name)
+				assert.Equal(t, "node-1", args.desired.NodePools[0].Nodes[1].Name)
+				assert.Equal(t, "node-2", args.desired.NodePools[0].Nodes[2].Name)
+				assert.Equal(t, "current-current-np0-01", args.desired.NodePools[0].Nodes[3].Name)
+				assert.Equal(t, "current-current-np0-02", args.desired.NodePools[0].Nodes[4].Name)
+				assert.Equal(t, "current-cidr", args.desired.NodePools[0].GetDynamicNodePool().Cidr)
+				assert.Equal(t, "current-pk", args.desired.NodePools[0].GetDynamicNodePool().PublicKey)
+				assert.Equal(t, "current-sk", args.desired.NodePools[0].GetDynamicNodePool().PrivateKey)
+			},
+		},
+		{
 			name: "transfer-cluster-info-state",
 			args: args{
 				current: &spec.ClusterInfo{
@@ -101,6 +202,7 @@ func Test_updateClusterInfo(t *testing.T) {
 									PublicKey:  "current-pk",
 									PrivateKey: "current-sk",
 									Cidr:       "current-cidr",
+									Count:      1,
 								},
 							},
 							Name: "np0",
@@ -121,14 +223,16 @@ func Test_updateClusterInfo(t *testing.T) {
 					Name: "current",
 					Hash: "desired",
 					NodePools: []*spec.NodePool{
-						{Name: "np0", NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{}}},
+						{Name: "np0", NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 2}}},
 					},
 				},
 			},
 			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool { return assert.Nil(t, err) },
 			validate: func(t *testing.T, args args) {
 				assert.Equal(t, 1, len(args.desired.NodePools))
-				assert.Equal(t, 1, len(args.desired.NodePools[0].Nodes))
+				assert.Equal(t, 2, len(args.desired.NodePools[0].Nodes))
+				assert.Equal(t, "node-0", args.desired.NodePools[0].Nodes[0].Name)
+				assert.Equal(t, "current-current-np0-01", args.desired.NodePools[0].Nodes[1].Name)
 				assert.Equal(t, "current-cidr", args.desired.NodePools[0].GetDynamicNodePool().Cidr)
 				assert.Equal(t, "current-pk", args.desired.NodePools[0].GetDynamicNodePool().PublicKey)
 				assert.Equal(t, "current-sk", args.desired.NodePools[0].GetDynamicNodePool().PrivateKey)

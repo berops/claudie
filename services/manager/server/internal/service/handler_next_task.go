@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
+	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/server/internal/store"
@@ -19,6 +21,7 @@ func (g *GRPC) NextTask(ctx context.Context, _ *pb.NextTaskRequest) (*pb.NextTas
 	if nextTask == nil {
 		return nil, status.Errorf(codes.NotFound, "no tasks scheduled")
 	}
+	TasksInQueue.Dec()
 
 	t := nextTask.(*EnqueuedTask)
 
@@ -79,7 +82,7 @@ func (g *GRPC) NextTask(ctx context.Context, _ *pb.NextTaskRequest) (*pb.NextTas
 		State:   cluster.State,
 		Current: nil,
 		Event:   t.Event,
-		Ttl:     t.TTL,
+		Ttl:     TaskTTL,
 		Cluster: t.Cluster,
 		Version: newConfig.Version,
 		Config:  newConfig.Name,
@@ -92,30 +95,47 @@ func (g *GRPC) NextTask(ctx context.Context, _ *pb.NextTaskRequest) (*pb.NextTas
 		}
 	}
 
-	log.Info().Msgf("Task %q for cluster %q config %q has been picked up to work on", resp.Event.Id, resp.Cluster, resp.Config)
+	log.Info().Msgf("[%s] Task %q for cluster %q config %q has been picked up to work on", resp.Event.Event.String(), resp.Event.Id, resp.Cluster, resp.Config)
 
 	return resp, nil
 }
 
 func transferExistingData(state *spec.ClusterState, te *spec.TaskEvent) error {
 	switch te.Event {
-	case spec.Event_CREATE:
-		if err := transferExistingK8sState(state.Current.K8S, te.Task.CreateState.K8S); err != nil {
-			return err
-		}
-		if err := transferExistingLBState(state.Current.LoadBalancers, te.Task.CreateState.Lbs); err != nil {
-			return err
-		}
-		return nil
 	case spec.Event_UPDATE:
-		if err := transferExistingK8sState(state.Current.K8S, te.Task.UpdateState.K8S); err != nil {
-			return err
+		if state.Events.Autoscaled {
+			// autoscaler only deleted or adds node to the cluster
+			// however since autoscaler can spawn multiple tasks
+			// transfer only the relevant node data (no lb changes
+			// or other changes are made by autoscaler) Autoscaler
+			// also runs only if there are no other changes being
+			// worked on and vice versa. We skip updating autoscaler config
+			// as sets the desired nocepool count to the value from the current
+			// state, which we don't want because the autoscaler event increases
+			// and decreased the desired nodepool count which we want to build.
+			for _, cnp := range state.Current.K8S.ClusterInfo.NodePools {
+				if cnp.GetDynamicNodePool() == nil {
+					continue
+				}
+
+				di := slices.IndexFunc(state.Desired.K8S.ClusterInfo.NodePools, func(pool *spec.NodePool) bool {
+					return pool.Name == cnp.Name
+				})
+				if di < 0 {
+					continue
+				}
+
+				dnp := state.Desired.K8S.ClusterInfo.NodePools[di]
+				transferDynamicNpDataOnly(utils.GetClusterID(state.Desired.K8S.ClusterInfo), cnp, dnp, false)
+			}
+			return nil
+		} else {
+			if err := transferExistingK8sState(state.Current.K8S, te.Task.UpdateState.K8S); err != nil {
+				return err
+			}
+			return transferExistingLBState(state.Current.LoadBalancers, te.Task.UpdateState.Lbs)
 		}
-		if err := transferExistingLBState(state.Current.LoadBalancers, te.Task.UpdateState.Lbs); err != nil {
-			return err
-		}
-		return nil
-	case spec.Event_DELETE:
+	case spec.Event_DELETE, spec.Event_CREATE:
 		return nil // do nothing.
 	default:
 		return fmt.Errorf("no such event recognized: %v", te.Event)

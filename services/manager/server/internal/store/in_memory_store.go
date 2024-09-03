@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"github.com/berops/claudie/internal/checksum"
 	"slices"
 	"sync"
 
@@ -88,6 +89,7 @@ func (i *InMemoryStore) MarkForDeletion(ctx context.Context, name string, versio
 
 	cfg.Manifest.Raw = ""
 	cfg.Manifest.Checksum = nil
+	cfg.Manifest.LastAppliedChecksum = checksum.Digest("delete")
 
 	cfg.Version += 1
 
