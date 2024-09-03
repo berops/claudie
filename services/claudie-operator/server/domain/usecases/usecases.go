@@ -10,7 +10,7 @@ import (
 
 type Usecases struct {
 	// Manager is a connector used to query request from manager.
-	Manager managerclient.ManagerClient
+	Manager managerclient.ClientAPI
 
 	// Context which when cancelled will close all channel/goroutines.
 	Context context.Context

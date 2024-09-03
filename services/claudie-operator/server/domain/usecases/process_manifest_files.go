@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/berops/claudie/internal/manifest"
@@ -25,7 +26,7 @@ func (u *Usecases) CreateConfig(ctx context.Context, inputManifest *manifest.Man
 		K8sCtx:   &managerclient.KubernetesContext{Name: resourceName, Namespace: resourceNamespace},
 	}
 
-	err = managerclient.Retry(log.Logger, fmt.Sprintf("UpsertManifest %q", req.Name), func() error {
+	err = managerclient.Retry(&log.Logger, fmt.Sprintf("UpsertManifest %q", req.Name), func() error {
 		return u.Manager.UpsertManifest(ctx, req)
 	})
 	if err != nil {
@@ -37,8 +38,13 @@ func (u *Usecases) CreateConfig(ctx context.Context, inputManifest *manifest.Man
 }
 
 func (u *Usecases) DeleteConfig(ctx context.Context, name string) error {
-	err := managerclient.Retry(log.Logger, "MarkForDeletion", func() error {
-		return u.Manager.MarkForDeletion(ctx, &managerclient.MarkForDeletionRequest{Name: name})
+	err := managerclient.Retry(&log.Logger, "MarkForDeletion", func() error {
+		err := u.Manager.MarkForDeletion(ctx, &managerclient.MarkForDeletionRequest{Name: name})
+		if errors.Is(err, managerclient.ErrNotFound) {
+			log.Warn().Msgf("can't mark config %q for deletion: %v", name, err)
+			return nil // nothing to retry.
+		}
+		return err
 	})
 	if err != nil {
 		log.Err(err).Msgf("Failed to trigger deletion for config %v due to error. Skipping...", name)
