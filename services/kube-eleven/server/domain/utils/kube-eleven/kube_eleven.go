@@ -160,7 +160,6 @@ func (k *KubeEleven) generateTemplateData() templateData {
 	hasHetznerNodes := k.hasHetznerNodes(data.Nodepools)
 	httpProxyMode := utils.GetEnvDefault("HTTP_PROXY_MODE", defaulHttpProxyMode)
 
-	data.NoProxy = ""
 	if httpProxyMode == "on" || (httpProxyMode != "off" && hasHetznerNodes) {
 		// Claudie utilizes proxy, because the proxy mode is either turned on,
 		// or it isn't turned off and there is at least 1 Hetzner node in the k8s cluster
@@ -193,8 +192,6 @@ func (k *KubeEleven) generateTemplateData() templateData {
 		data.NoProxy = fmt.Sprintf("%s,%s,", data.NoProxy, "svc")
 
 		data.HttpProxyUrl = utils.GetEnvDefault("HTTP_PROXY_URL", defaulHttpProxyUrl)
-	} else {
-		data.UtilizeHttpProxy = false
 	}
 
 	data.KubernetesVersion = k.K8sCluster.GetKubernetes()
