@@ -46,12 +46,6 @@ func (u *Usecases) UpdateNoProxyEnvs(request *pb.UpdateNoProxyEnvsRequest) (*pb.
 		return &pb.UpdateNoProxyEnvsResponse{Current: request.Current, Desired: request.Desired}, nil
 	}
 
-	nodesChangedFlag := nodesChanged(request.Current.ClusterInfo, request.Desired.ClusterInfo)
-	// At least one node in the cluster has to be changed to perform the update of NO_PROXY and no_proxy env variables.
-	if !nodesChangedFlag {
-		return &pb.UpdateNoProxyEnvsResponse{Current: request.Current, Desired: request.Desired}, nil
-	}
-
 	log.Info().Msgf("Updating NO_PROXY and no_proxy env variables in kube-proxy DaemonSet and static pods for cluster %s project %s",
 		request.Current.ClusterInfo.Name, request.ProjectName)
 	if err := updateNoProxyEnvs(request.Current.ClusterInfo, request.Desired.ClusterInfo, request.DesiredLbs, u.SpawnProcessLimit); err != nil {
@@ -73,39 +67,6 @@ func hasHetznerNode(desiredK8sClusterInfo *spec.ClusterInfo) bool {
 	}
 
 	return false
-}
-
-func nodesChanged(currentK8sClusterInfo, desiredK8sClusterInfo *spec.ClusterInfo) bool {
-	currNodePool := currentK8sClusterInfo.GetNodePools()
-	desiredNodePool := desiredK8sClusterInfo.GetNodePools()
-
-	currStateNodesNum := 0
-	currStateIpMap := make(map[string]bool)
-	for _, np := range currNodePool {
-		for _, node := range np.Nodes {
-			currStateIpMap[node.Public] = true
-			currStateIpMap[node.Private] = true
-			currStateNodesNum += 1
-		}
-	}
-
-	desiredStateNodesNum := 0
-	for _, np := range desiredNodePool {
-		for _, node := range np.Nodes {
-			desiredStateNodesNum += 1
-			_, publicIPExists := currStateIpMap[node.Public]
-			_, privateIPExists := currStateIpMap[node.Private]
-
-			// Node in at least one nodepool was changed and no proxy env variables have to be changed.
-			if !publicIPExists || !privateIPExists {
-				return true
-			}
-		}
-	}
-
-	// Returns true if at lease one node was added or removed from the cluster.
-	// Otherwise returns false.
-	return desiredStateNodesNum != currStateNodesNum
 }
 
 // updateNoProxyEnvs handles the case where Claudie adds/removes node to/from the cluster.
