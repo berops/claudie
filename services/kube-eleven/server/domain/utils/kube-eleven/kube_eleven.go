@@ -164,32 +164,30 @@ func (k *KubeEleven) generateTemplateData() templateData {
 		// Claudie utilizes proxy, because the proxy mode is either turned on,
 		// or it isn't turned off and there is at least 1 Hetzner node in the k8s cluster
 		data.UtilizeHttpProxy = true
-		// add nodes privat and public IPs to the NoProxy. Otherwise the kubeone proxy won't work properly
+
+		var noProxy []string
+		// add nodes' private and public IPs to the NoProxy. Otherwise the kubeone proxy won't work properly
 		for _, nodePool := range data.Nodepools {
 			for _, node := range nodePool.Nodes {
-				if data.NoProxy == "" {
-					data.NoProxy = fmt.Sprintf("%s,%s", node.Node.Private, node.Node.Public)
-				} else {
-					data.NoProxy = fmt.Sprintf("%s,%s,%s", data.NoProxy, node.Node.Private, node.Node.Public)
-				}
+				noProxy = append(noProxy, node.Node.Private, node.Node.Public)
 			}
 		}
 
 		for _, lbCluster := range k.LBClusters {
 			// If the LB cluster is attached to out target Kubernetes cluster
 			if lbCluster.TargetedK8S == k.K8sCluster.ClusterInfo.Name {
-				data.NoProxy = fmt.Sprintf("%s,%s", data.NoProxy, lbCluster.Dns.Endpoint)
+				noProxy = append(noProxy, lbCluster.Dns.Endpoint)
 
 				for _, nodePool := range lbCluster.ClusterInfo.NodePools {
 					for _, node := range nodePool.Nodes {
-						data.NoProxy = fmt.Sprintf("%s,%s,%s", data.NoProxy, node.Private, node.Public)
+						noProxy = append(noProxy, node.Private, node.Public)
 					}
 				}
 			}
 		}
 		// data.NoProxy has to terminate with the comma
 		// if "svc" isn't in NoProxy the admission webhooks will fail, because they will be routed to proxy
-		data.NoProxy = fmt.Sprintf("%s,%s,", data.NoProxy, "svc")
+		data.NoProxy = fmt.Sprintf("%s,svc,", strings.Join(noProxy, ","))
 
 		data.HttpProxyUrl = utils.GetEnvDefault("HTTP_PROXY_URL", defaulHttpProxyUrl)
 	}
