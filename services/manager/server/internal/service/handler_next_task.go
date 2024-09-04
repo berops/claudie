@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -14,24 +15,20 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 )
 
+// TODO: test-set3 invalid nodes name investigate.
+
 func (g *GRPC) NextTask(ctx context.Context, _ *pb.NextTaskRequest) (*pb.NextTaskResponse, error) {
-	nextTask := g.TaskQueue.Dequeue()
-	if nextTask == nil {
-		return nil, status.Errorf(codes.NotFound, "no tasks scheduled")
-	}
-	TasksInQueue.Dec()
-
-	t := nextTask.(*EnqueuedTask)
-
-	// before sending the task, we need to update its state to be marked as in progress.
-	cfg, err := g.Store.GetConfig(ctx, t.Config)
+	cfgs, err := g.Store.ListConfigs(ctx, &store.ListFilter{ManifestState: []string{manifest.Scheduled.String()}})
 	if err != nil {
-		if !errors.Is(err, store.ErrNotFoundOrDirty) {
-			return nil, status.Errorf(codes.Internal, "failed to check existence for config %q for which task %q was scheduled, aborting: %v", t.Config, t.Event.Id, err)
-		}
-		return nil, status.Errorf(codes.NotFound, "no config with name %q exists, for which task %q was scheduled, aborting", t.Config, t.Event.Id)
+		return nil, status.Errorf(codes.Internal, "failed to retrieve next task %v", err)
+	}
+
+	cfg, clusterName := nextTask(cfgs)
+	if cfg == nil {
+		return nil, status.Errorf(codes.NotFound, "no tasks schedulable")
 	}
 
 	grpcCfg, err := store.ConvertToGRPC(cfg)
@@ -39,19 +36,10 @@ func (g *GRPC) NextTask(ctx context.Context, _ *pb.NextTaskRequest) (*pb.NextTas
 		return nil, status.Errorf(codes.Internal, "failed to convert config %q from database representation to grpc: %v", cfg.Name, err)
 	}
 
-	// Perform validation (in case any changes have been made)
-	cluster, exists := grpcCfg.Clusters[t.Cluster]
-	if !exists {
-		return nil, status.Errorf(codes.NotFound, "failed to find cluster %q within config %q for which task %q was scheduled, aborting", t.Cluster, t.Config, t.Event.Id)
-	}
+	cluster := grpcCfg.Clusters[clusterName]
+	events := cluster.Events.Events
 
-	// task that is always at the top of the queue is being worked on.
-	if len(cluster.Events.Events) == 0 {
-		return nil, status.Errorf(codes.NotFound, "failed to find task %q within cluster %q within config %q for which a task was scheduled, aborting", t.Event.Id, t.Cluster, t.Config)
-	}
-	if cluster.Events.Events[0].Id != t.Event.Id {
-		return nil, status.Errorf(codes.NotFound, "task %q for cluster %q within config %q that was scheduled is not present in the state of the cluster", t.Event.Id, t.Cluster, t.Config)
-	}
+	outgoingTask := proto.Clone(events[0]).(*spec.TaskEvent)
 
 	cluster.State = &spec.Workflow{
 		Status: spec.Workflow_IN_PROGRESS,
@@ -61,8 +49,9 @@ func (g *GRPC) NextTask(ctx context.Context, _ *pb.NextTaskRequest) (*pb.NextTas
 	cluster.Events.Ttl = TaskTTL
 
 	if cluster.Current != nil {
-		if err := transferExistingData(cluster, t.Event); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to re-use data from current state for desired state for config %q cluster %q: %v", grpcCfg.Name, t.Cluster, err)
+		log.Debug().Str("cluster", utils.GetClusterID(cluster.Current.K8S.ClusterInfo)).Msgf("transfering existing state into %s task %q", outgoingTask.Event.String(), outgoingTask.Id)
+		if err := transferExistingData(cluster, outgoingTask); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to re-use data from current state for desired state for config %q cluster %q: %v", grpcCfg.Name, clusterName, err)
 		}
 	}
 
@@ -73,17 +62,17 @@ func (g *GRPC) NextTask(ctx context.Context, _ *pb.NextTaskRequest) (*pb.NextTas
 
 	if err := g.Store.UpdateConfig(ctx, newConfig); err != nil {
 		if errors.Is(err, store.ErrNotFoundOrDirty) {
-			return nil, status.Errorf(codes.Aborted, "couldn't update config %q for which task %q was scheduled, dirty write", t.Config, t.Event.Id)
+			return nil, status.Errorf(codes.Aborted, "couldn't update config %q for which task %q was scheduled, dirty write", cfg.Name, outgoingTask.Id)
 		}
-		return nil, status.Errorf(codes.Internal, "failed to update task: %q for cluster: %q config: %q", t.Event.Id, t.Cluster, t.Config)
+		return nil, status.Errorf(codes.Internal, "failed to update task: %q for cluster: %q config: %q", outgoingTask.Id, clusterName, cfg.Name)
 	}
 
 	resp := &pb.NextTaskResponse{
 		State:   cluster.State,
 		Current: nil,
-		Event:   t.Event,
+		Event:   outgoingTask,
 		Ttl:     TaskTTL,
-		Cluster: t.Cluster,
+		Cluster: clusterName,
 		Version: newConfig.Version,
 		Config:  newConfig.Name,
 	}
@@ -95,9 +84,22 @@ func (g *GRPC) NextTask(ctx context.Context, _ *pb.NextTaskRequest) (*pb.NextTas
 		}
 	}
 
-	log.Info().Msgf("[%s] Task %q for cluster %q config %q has been picked up to work on", resp.Event.Event.String(), resp.Event.Id, resp.Cluster, resp.Config)
+	log.Info().Msgf("[%s] Task %v (%v) for cluster %q config %q has been picked up to work on", resp.Event.Event.String(), resp.Event.Description, resp.Event.Id, resp.Cluster, resp.Config)
+
+	TasksScheduled.Inc()
 
 	return resp, nil
+}
+
+func nextTask(cfgs []*store.Config) (*store.Config, string) {
+	for _, cfg := range cfgs {
+		for c, s := range cfg.Clusters {
+			if s.Events.TTL == 0 && len(s.Events.TaskEvents) > 0 {
+				return cfg, c
+			}
+		}
+	}
+	return nil, ""
 }
 
 func transferExistingData(state *spec.ClusterState, te *spec.TaskEvent) error {

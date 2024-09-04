@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/berops/claudie/internal/checksum"
 	"time"
 
+	"github.com/berops/claudie/internal/checksum"
 	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/rs/zerolog/log"
@@ -32,7 +32,8 @@ type Mongo struct {
 }
 
 func NewMongoClient(ctx context.Context, uri string) (*Mongo, error) {
-	conn, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	opts := options.Client().ApplyURI(uri)
+	conn, err := mongo.Connect(ctx, opts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to %q: %w", utils.SanitiseURI(uri), err)
 	}
@@ -150,7 +151,7 @@ func (m *Mongo) UpdateConfig(ctx context.Context, config *Config) error {
 		return fmt.Errorf("failed to update config %q with version %v: %w", config.Name, suppliedVersion, err)
 	}
 
-	log.Debug().Msgf("Sucesfully Updated config %q with version %v", config.Name, suppliedVersion)
+	log.Debug().Msgf("Sucesfully Updated config %q with version %v, new version: %v", config.Name, suppliedVersion, config.Version)
 	return nil
 }
 

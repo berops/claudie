@@ -61,11 +61,11 @@ func (t *Client) NextTask(ctx context.Context) (*NextTaskResponse, error) {
 		case codes.NotFound:
 			return nil, fmt.Errorf("%w: no task scheduled or config deleted in the meanwhile", ErrNotFound)
 		case codes.Aborted:
-			return nil, ErrVersionMismatch
+			return nil, fmt.Errorf("%w: %w", ErrVersionMismatch, err)
 		}
 	}
 
-	t.logger.Debug().Msgf("Received error %v while calling NextTask", err.Error())
+	t.logger.Debug().Msgf("Received error %v while calling NextTask", err)
 	return nil, err
 }
 
@@ -86,7 +86,7 @@ func (t *Client) MarkForDeletion(ctx context.Context, request *MarkForDeletionRe
 			}
 		}
 
-		t.logger.Debug().Msgf("Received error %v while calling MarkForDeletion", err.Error())
+		t.logger.Debug().Msgf("Received error %v while calling MarkForDeletion", err)
 		return err
 	}
 
@@ -95,7 +95,7 @@ func (t *Client) MarkForDeletion(ctx context.Context, request *MarkForDeletionRe
 		return fmt.Errorf("config with name %q: %w", request.Name, ErrNotFound)
 	}
 
-	t.logger.Debug().Msgf("Received error %v while calling MarkForDeletion", err.Error())
+	t.logger.Debug().Msgf("Received error %v while calling MarkForDeletion", err)
 	return err
 }
 
@@ -116,7 +116,7 @@ func (t *Client) UpsertManifest(ctx context.Context, request *UpsertManifestRequ
 	if e, ok := status.FromError(err); ok && e.Code() == codes.Aborted {
 		err = errors.Join(err, fmt.Errorf("%w", ErrVersionMismatch))
 	}
-	t.logger.Debug().Msgf("Received error %v while calling UpsertManifest", err.Error())
+	t.logger.Debug().Msgf("Received error %v while calling UpsertManifest", err)
 	return err
 }
 
@@ -125,7 +125,7 @@ func (t *Client) ListConfigs(ctx context.Context, _ *ListConfigRequest) (*ListCo
 	if err == nil {
 		return &ListConfigResponse{Config: resp.Configs}, nil
 	}
-	t.logger.Debug().Msgf("Received error %v while calling ListConfigs", err.Error())
+	t.logger.Debug().Msgf("Received error %v while calling ListConfigs", err)
 	return nil, err
 }
 
@@ -138,7 +138,7 @@ func (t *Client) GetConfig(ctx context.Context, request *GetConfigRequest) (*Get
 		t.logger.Debug().Msgf("GetConfig(): no config with name %q found", request.Name)
 		return nil, fmt.Errorf("config with name %q: %w", request.Name, ErrNotFound)
 	}
-	t.logger.Debug().Msgf("Received error %v while calling UpsertManifest", err.Error())
+	t.logger.Debug().Msgf("Received error %v while calling UpsertManifest", err)
 	return nil, err
 }
 
@@ -165,7 +165,7 @@ func (t *Client) TaskUpdate(ctx context.Context, req *TaskUpdateRequest) error {
 			}
 		}
 
-		t.logger.Debug().Msgf("Received error %v while calling TaskUpdate", err.Error())
+		t.logger.Debug().Msgf("Received error %v while calling TaskUpdate", err)
 		return err
 	}
 	if e, ok := status.FromError(err); ok && e.Code() == codes.NotFound {
@@ -195,7 +195,7 @@ func (t *Client) UpdateCurrentState(ctx context.Context, req *UpdateCurrentState
 				err = errors.Join(err, fmt.Errorf("%w", ErrVersionMismatch))
 			}
 		}
-		t.logger.Debug().Msgf("Received error %v while calling UpdateCurrentState", err.Error())
+		t.logger.Debug().Msgf("Received error %v while calling UpdateCurrentState", err)
 		return err
 	}
 	if e, ok := status.FromError(err); ok && e.Code() == codes.NotFound {
@@ -227,7 +227,7 @@ func (t *Client) UpdateNodePool(ctx context.Context, req *UpdateNodePoolRequest)
 			}
 		}
 
-		t.logger.Debug().Msgf("Received error %v while calling UpdateNodePool", err.Error())
+		t.logger.Debug().Msgf("Received error %v while calling UpdateNodePool", err)
 		return err
 	}
 	if e, ok := status.FromError(err); ok && e.Code() == codes.NotFound {

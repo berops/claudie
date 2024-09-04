@@ -10,6 +10,8 @@ import (
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/server/internal/store"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
+
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -23,12 +25,15 @@ func scheduleTasks(scheduled *store.Config) error {
 	for _, state := range scheduledGRPC.Clusters {
 		var events []*spec.TaskEvent
 		switch {
+		case state.Current == nil && state.Desired == nil:
+			// nothing to do (desired state was not build).
 		// create
 		case state.Current == nil && state.Desired != nil:
 			events = append(events, &spec.TaskEvent{
-				Id:        uuid.New().String(),
-				Timestamp: timestamppb.New(time.Now().UTC()),
-				Event:     spec.Event_CREATE,
+				Id:          uuid.New().String(),
+				Timestamp:   timestamppb.New(time.Now().UTC()),
+				Event:       spec.Event_CREATE,
+				Description: "creating cluster",
 				Task: &spec.Task{
 					CreateState: &spec.CreateState{
 						K8S: state.Desired.GetK8S(),
@@ -39,9 +44,10 @@ func scheduleTasks(scheduled *store.Config) error {
 		// delete
 		case state.Desired == nil && state.Current != nil:
 			events = append(events, &spec.TaskEvent{
-				Id:        uuid.New().String(),
-				Timestamp: timestamppb.New(time.Now().UTC()),
-				Event:     spec.Event_DELETE,
+				Id:          uuid.New().String(),
+				Timestamp:   timestamppb.New(time.Now().UTC()),
+				Event:       spec.Event_DELETE,
+				Description: "deleting cluster",
 				Task: &spec.Task{
 					DeleteState: &spec.DeleteState{
 						K8S: state.Current.GetK8S(),
@@ -513,15 +519,19 @@ func craftK8sIR(k8sDiffResult nodePoolDiffResult, current, desired *spec.K8Sclus
 	// Build the Intermediate Representation such that no deletion occurs in desired cluster.
 	ir := proto.Clone(desired).(*spec.K8Scluster)
 
+	clusterID := utils.GetClusterID(desired.ClusterInfo)
+
 	for nodepool := range k8sDiffResult.partialDeletedDynamic {
 		inp := utils.GetNodePoolByName(nodepool, ir.ClusterInfo.NodePools)
 		cnp := utils.GetNodePoolByName(nodepool, current.ClusterInfo.NodePools)
 
+		log.Debug().Str("cluster", clusterID).Msgf("nodes from dynamic nodepool %q were partially deleted, crafting ir to include them", nodepool)
 		inp.GetDynamicNodePool().Count = cnp.GetDynamicNodePool().Count
-		fillNodes(utils.GetClusterID(desired.ClusterInfo), cnp, inp)
+		fillNodes(clusterID, cnp, inp)
 	}
 
 	for nodepool := range k8sDiffResult.partialDeletedStatic {
+		log.Debug().Str("cluster", clusterID).Msgf("nodes from static nodepool %q were partially deleted, crafting ir to include them", nodepool)
 		np := utils.GetNodePoolByName(nodepool, ir.ClusterInfo.NodePools)
 		np.Nodes = utils.GetNodePoolByName(nodepool, current.ClusterInfo.NodePools).Nodes
 	}
@@ -531,6 +541,7 @@ func craftK8sIR(k8sDiffResult nodePoolDiffResult, current, desired *spec.K8Sclus
 	maps.Insert(deletedNodePools, maps.All(k8sDiffResult.deletedStatic))
 
 	for nodepool := range deletedNodePools {
+		log.Debug().Str("cluster", clusterID).Msgf("nodepool %q  deleted, crafting ir to include it", nodepool)
 		np := utils.GetNodePoolByName(nodepool, current.ClusterInfo.NodePools)
 		ir.ClusterInfo.NodePools = append(ir.ClusterInfo.NodePools, np)
 	}

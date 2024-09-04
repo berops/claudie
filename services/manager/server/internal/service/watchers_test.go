@@ -8,7 +8,7 @@ import (
 
 	"github.com/berops/claudie/internal/checksum"
 	"github.com/berops/claudie/internal/manifest"
-	"github.com/berops/claudie/internal/syncqueue"
+	"github.com/berops/claudie/internal/queue"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/server/internal/store"
 	"github.com/stretchr/testify/assert"
@@ -412,7 +412,7 @@ kubernetes:
 func TestGRPC_WatchForScheduledDocuments(t *testing.T) {
 	type fields struct {
 		Store     store.Store
-		TaskQueue *syncqueue.Queue
+		TaskQueue *queue.Queue
 	}
 	type args struct{ ctx context.Context }
 
@@ -421,7 +421,7 @@ func TestGRPC_WatchForScheduledDocuments(t *testing.T) {
 		fields   fields
 		args     args
 		wantErr  bool
-		validate func(t *testing.T, db store.Store, queue *syncqueue.Queue)
+		validate func(t *testing.T, db store.Store, queue *queue.Queue)
 	}{
 		{
 			name: "test-config-ends-in-scheduled",
@@ -459,10 +459,10 @@ func TestGRPC_WatchForScheduledDocuments(t *testing.T) {
 					_ = db.UpdateConfig(context.Background(), cfg)
 					return db
 				}(),
-				TaskQueue: syncqueue.New(),
+				TaskQueue: queue.New(),
 			},
 			args: args{ctx: context.Background()},
-			validate: func(t *testing.T, db store.Store, queue *syncqueue.Queue) {
+			validate: func(t *testing.T, db store.Store, queue *queue.Queue) {
 				cfg, _ := db.GetConfig(context.Background(), "test-set-1")
 				assert.Equal(t, true, queue.Contains(&EnqueuedTask{Event: &spec.TaskEvent{Id: "1"}}))
 				assert.Equal(t, false, queue.Contains(&EnqueuedTask{Event: &spec.TaskEvent{Id: "2"}}))
@@ -505,10 +505,10 @@ func TestGRPC_WatchForScheduledDocuments(t *testing.T) {
 					_ = db.UpdateConfig(context.Background(), cfg)
 					return db
 				}(),
-				TaskQueue: syncqueue.New(),
+				TaskQueue: queue.New(),
 			},
 			args: args{ctx: context.Background()},
-			validate: func(t *testing.T, db store.Store, queue *syncqueue.Queue) {
+			validate: func(t *testing.T, db store.Store, queue *queue.Queue) {
 				cfg, _ := db.GetConfig(context.Background(), "test-set-1")
 				assert.Equal(t, false, queue.Contains(&EnqueuedTask{Event: &spec.TaskEvent{Id: "1"}}))
 				assert.Equal(t, false, queue.Contains(&EnqueuedTask{Event: &spec.TaskEvent{Id: "2"}}))
@@ -548,10 +548,10 @@ func TestGRPC_WatchForScheduledDocuments(t *testing.T) {
 					_ = db.UpdateConfig(context.Background(), cfg)
 					return db
 				}(),
-				TaskQueue: syncqueue.New(),
+				TaskQueue: queue.New(),
 			},
 			args: args{ctx: context.Background()},
-			validate: func(t *testing.T, db store.Store, queue *syncqueue.Queue) {
+			validate: func(t *testing.T, db store.Store, queue *queue.Queue) {
 				cfg, _ := db.GetConfig(context.Background(), "test-set-1")
 				assert.Equal(t, false, queue.Contains(&EnqueuedTask{Event: &spec.TaskEvent{Id: "1"}}))
 				assert.Equal(t, false, queue.Contains(&EnqueuedTask{Event: &spec.TaskEvent{Id: "2"}}))
@@ -606,10 +606,10 @@ func TestGRPC_WatchForScheduledDocuments(t *testing.T) {
 					_ = db.UpdateConfig(context.Background(), cfg)
 					return db
 				}(),
-				TaskQueue: syncqueue.New(),
+				TaskQueue: queue.New(),
 			},
 			args: args{ctx: context.Background()},
-			validate: func(t *testing.T, db store.Store, queue *syncqueue.Queue) {
+			validate: func(t *testing.T, db store.Store, queue *queue.Queue) {
 				cfg, _ := db.GetConfig(context.Background(), "test-set-1")
 				assert.Equal(t, uint64(2), cfg.Version)
 				assert.Equal(t, int32(4), cfg.Clusters["test-cluster-1"].Events.TTL)

@@ -5,16 +5,15 @@ import (
 	"fmt"
 	"net"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
+
 	"github.com/berops/claudie/internal/envs"
-	"github.com/berops/claudie/internal/syncqueue"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/manager/server/internal/store"
 	"github.com/rs/zerolog/log"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/health"
-	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
 const defaultManagerPort = 50055
@@ -28,8 +27,6 @@ type GRPC struct {
 	HealthCheckServer *health.Server
 
 	Store store.Store
-
-	TaskQueue *syncqueue.Queue
 }
 
 func NewGRPC(ctx context.Context, opts ...grpc.ServerOption) (*GRPC, error) {
@@ -65,8 +62,6 @@ func NewGRPC(ctx context.Context, opts ...grpc.ServerOption) (*GRPC, error) {
 	}
 
 	g.Store = mongo
-
-	g.TaskQueue = syncqueue.New()
 
 	return g, nil
 }

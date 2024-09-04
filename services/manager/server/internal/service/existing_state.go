@@ -13,6 +13,8 @@ import (
 // transferExistingState transfers existing data from current state to desired.
 func transferExistingState(c *spec.Config) error {
 	for cluster, state := range c.GetClusters() {
+		log.Debug().Str("cluster", cluster).Msgf("reusing existing state")
+
 		if err := transferExistingK8sState(state.GetCurrent().GetK8S(), state.GetDesired().GetK8S()); err != nil {
 			return fmt.Errorf("error while updating Kubernetes cluster %q for config %s : %w", cluster, c.Name, err)
 		}
@@ -237,6 +239,7 @@ func fillNodes(clusterID string, current, desired *spec.NodePool) {
 		name := uniqueNodeName(nodepoolID, nodeNames)
 		nodeNames[name] = struct{}{}
 		nodes = append(nodes, &spec.Node{Name: name})
+		log.Debug().Str("cluster", clusterID).Msgf("adding node %q into desired state nodepool %q, IsControl: %v", name, desired.Name, desired.IsControl)
 	}
 
 	desired.Nodes = nodes

@@ -3,10 +3,10 @@ package store
 import (
 	"context"
 	"fmt"
-	"github.com/berops/claudie/internal/checksum"
 	"slices"
 	"sync"
 
+	"github.com/berops/claudie/internal/checksum"
 	"github.com/berops/claudie/internal/manifest"
 )
 
@@ -26,7 +26,7 @@ func (i *InMemoryStore) Close() error { return nil }
 
 func (i *InMemoryStore) HealthCheck() error { return nil }
 
-func (i *InMemoryStore) CreateConfig(ctx context.Context, config *Config) error {
+func (i *InMemoryStore) CreateConfig(_ context.Context, config *Config) error {
 	if _, exists := i.db.Load(config.Name); exists {
 		return fmt.Errorf("config %q already exists", config.Name)
 	}
@@ -38,7 +38,7 @@ func (i *InMemoryStore) CreateConfig(ctx context.Context, config *Config) error 
 	return nil
 }
 
-func (i *InMemoryStore) UpdateConfig(ctx context.Context, config *Config) error {
+func (i *InMemoryStore) UpdateConfig(_ context.Context, config *Config) error {
 	existing, exists := i.db.Load(config.Name)
 	cfg := existing.(*Config)
 	if !exists || cfg.Version != config.Version {
@@ -51,7 +51,7 @@ func (i *InMemoryStore) UpdateConfig(ctx context.Context, config *Config) error 
 	return nil
 }
 
-func (i *InMemoryStore) GetConfig(ctx context.Context, name string) (*Config, error) {
+func (i *InMemoryStore) GetConfig(_ context.Context, name string) (*Config, error) {
 	cfg, exists := i.db.Load(name)
 	if !exists {
 		return nil, ErrNotFoundOrDirty
@@ -59,7 +59,7 @@ func (i *InMemoryStore) GetConfig(ctx context.Context, name string) (*Config, er
 	return cfg.(*Config), nil
 }
 
-func (i *InMemoryStore) ListConfigs(ctx context.Context, filter *ListFilter) ([]*Config, error) {
+func (i *InMemoryStore) ListConfigs(_ context.Context, filter *ListFilter) ([]*Config, error) {
 	var out []*Config
 	i.db.Range(func(key, value any) bool {
 		cfg := value.(*Config)
@@ -72,7 +72,7 @@ func (i *InMemoryStore) ListConfigs(ctx context.Context, filter *ListFilter) ([]
 	return out, nil
 }
 
-func (i *InMemoryStore) DeleteConfig(ctx context.Context, name string, version uint64) error {
+func (i *InMemoryStore) DeleteConfig(_ context.Context, name string, version uint64) error {
 	if cfg, exists := i.db.Load(name); !exists || cfg.(*Config).Version != version {
 		return ErrNotFoundOrDirty
 	}
@@ -80,7 +80,7 @@ func (i *InMemoryStore) DeleteConfig(ctx context.Context, name string, version u
 	return nil
 }
 
-func (i *InMemoryStore) MarkForDeletion(ctx context.Context, name string, version uint64) error {
+func (i *InMemoryStore) MarkForDeletion(_ context.Context, name string, version uint64) error {
 	existing, exists := i.db.Load(name)
 	cfg := existing.(*Config)
 	if !exists || cfg.Version != version {

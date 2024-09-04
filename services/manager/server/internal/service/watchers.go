@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/berops/claudie/internal/manifest"
-	"github.com/berops/claudie/internal/syncqueue"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/server/internal/store"
@@ -15,15 +13,7 @@ import (
 
 // TaskTTL is the minimum number of ticks (every ~10sec) within which a given task must be completed
 // before being rescheduled again.
-const TaskTTL = 450 // ~1.1 hour
-
-type EnqueuedTask struct {
-	Config  string
-	Cluster string
-	Event   *spec.TaskEvent
-}
-
-func (t *EnqueuedTask) ID() string { return t.Event.Id }
+const TaskTTL = 900 // ~2.5 hour
 
 func (g *GRPC) WatchForScheduledDocuments(ctx context.Context) error {
 	cfgs, err := g.Store.ListConfigs(ctx, &store.ListFilter{ManifestState: []string{manifest.Scheduled.String()}})
@@ -53,30 +43,24 @@ func (g *GRPC) WatchForScheduledDocuments(ctx context.Context) error {
 			}
 
 			nextTask := state.Events.TaskEvents[0]
-			if g.TaskQueue.Contains(&EnqueuedTask{Event: &spec.TaskEvent{Id: nextTask.Id}}) {
-				continue
-			}
 
+			// TODO: If building multiple cluster it can fail on the first due to a dirty write
+			// and skip to the next
+			// but the next maybe outdated due to having an older version, and it can happen that the task
+			// has been picked up and the above check of queue contains fails and since the outdated version is used
+			// this below check will be skipped and the task will be enqueued again.
 			if state.Events.TTL > 0 {
 				state.Events.TTL -= 1
 				logger.Debug().Msgf("Decreasing TTL for task %q cluster %q", nextTask.Id, cluster)
 				if err := g.Store.UpdateConfig(ctx, scheduled); err != nil {
 					if errors.Is(err, store.ErrNotFoundOrDirty) {
-						logger.Debug().Msgf("Failed to decrement task TTL for cluster %q, dirty write", cluster)
+						logger.Debug().Msgf("Failed to decrement task TTL (%v) for cluster %q, dirty write", nextTask.Id, cluster)
 						continue
 					}
-					logger.Err(err).Msgf("Failed to decrement task TTL for cluster %q", cluster)
+					logger.Err(err).Msgf("Failed to decrement task TTL (%v) for cluster %q", nextTask.Id, cluster)
 				}
 				continue
 			}
-
-			logger.Debug().Msgf("Scheduling next task with ID: %v for cluster %q", nextTask.Id, cluster)
-			if err := addTaskToQueue(g.TaskQueue, scheduled.Name, cluster, state); err != nil {
-				logger.Err(err).Msgf("Failed to add task %v for cluster %q to the task queue", nextTask.Id, cluster)
-			}
-			logger.Info().Msgf("[%s] Task %v for cluster %v scheduled", nextTask.Event, nextTask.Id, cluster)
-			TasksScheduled.Inc()
-			TasksInQueue.Inc()
 		}
 
 		if clustersDone == len(scheduled.Clusters) {
@@ -108,22 +92,6 @@ func (g *GRPC) WatchForScheduledDocuments(ctx context.Context) error {
 		}
 	}
 
-	return nil
-}
-
-func addTaskToQueue(queue *syncqueue.Queue, config, cluster string, state *store.ClusterState) error {
-	te, err := store.ConvertToGRPCTaskEvent(state.Events.TaskEvents[0])
-	if err != nil {
-		return fmt.Errorf("failed to convert database representation GRPC: %w", err)
-	}
-
-	w := &EnqueuedTask{
-		Config:  config,
-		Cluster: cluster,
-		Event:   te,
-	}
-
-	queue.Enqueue(w)
 	return nil
 }
 
