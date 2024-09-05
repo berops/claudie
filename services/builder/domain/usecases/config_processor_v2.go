@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/berops/claudie/proto/pb/spec"
+	"github.com/berops/claudie/services/builder/domain/usecases/metrics"
 	builder "github.com/berops/claudie/services/builder/internal"
 	managerclient "github.com/berops/claudie/services/manager/client"
 	"github.com/rs/zerolog/log"
@@ -39,11 +40,13 @@ func (u *Usecases) TaskProcessor(wg *sync.WaitGroup) error {
 
 		updatedState, err := u.processTaskEvent(task)
 		if err != nil {
+			metrics.TasksProcessedErrCounter.Inc()
 			log.Err(err).Msgf("failed to process task %q for cluster %q for config %q", task.Event.Id, task.Cluster, task.Config)
 			task.State.Status = spec.Workflow_ERROR
 			task.State.Description = err.Error()
 			// fallthrough
 		} else {
+			metrics.TasksProcessedOkCounter.Inc()
 			log.Info().Msgf("sucessfully processed task %q for cluster %q for config %q", task.Event.Id, task.Cluster, task.Config)
 			task.State.Status = spec.Workflow_DONE
 			task.State.Stage = spec.Workflow_NONE
@@ -90,22 +93,57 @@ func (u *Usecases) TaskProcessor(wg *sync.WaitGroup) error {
 }
 
 func (u *Usecases) processTaskEvent(t *managerclient.NextTaskResponse) (*spec.Clusters, error) {
+	metrics.TasksProcessedCounter.Inc()
+
 	var (
 		err error
 		k8s *spec.K8Scluster
 		lbs []*spec.LBcluster
 	)
 
+	metrics.ClustersInProgress.Inc()
+	defer metrics.ClustersInProgress.Dec()
+
 	switch t.Event.Event {
 	case spec.Event_CREATE:
+		metrics.TasksProcessedCreateCounter.Inc()
+		metrics.ClusterProcessedCounter.Inc()
+		metrics.LoadBalancersProcessedCounter.Add(float64(len(t.Event.Task.CreateState.GetLbs().GetClusters())))
+		metrics.LoadBalancersInProgress.Add(float64(len(t.Event.Task.CreateState.GetLbs().GetClusters())))
+		defer metrics.LoadBalancersInProgress.Sub(float64(len(t.Event.Task.CreateState.GetLbs().GetClusters())))
+		metrics.ClustersInCreate.Inc()
+		defer metrics.ClustersInCreate.Dec()
 		log.Debug().Msgf("[task %q] Create operation cluster %q from config %q", t.Event.Id, t.Cluster, t.Config)
 		k8s, lbs, err = u.executeCreateTask(t)
+		if err != nil {
+			metrics.ClustersCreated.Inc()
+		}
 	case spec.Event_UPDATE:
+		metrics.TasksProcessedUpdateCounter.Inc()
+		metrics.ClusterProcessedCounter.Inc()
+		metrics.LoadBalancersProcessedCounter.Add(float64(len(t.Event.Task.UpdateState.GetLbs().GetClusters())))
+		metrics.LoadBalancersInProgress.Add(float64(len(t.Event.Task.CreateState.GetLbs().GetClusters())))
+		defer metrics.LoadBalancersInProgress.Sub(float64(len(t.Event.Task.CreateState.GetLbs().GetClusters())))
+		metrics.ClustersInUpdate.Inc()
+		defer metrics.ClustersInUpdate.Dec()
 		log.Debug().Msgf("[task %q] Update operation %q from config %q", t.Event.Id, t.Cluster, t.Config)
 		k8s, lbs, err = u.executeUpdateTask(t)
+		if err != nil {
+			metrics.ClustersUpdated.Inc()
+		}
 	case spec.Event_DELETE:
+		metrics.TasksProcessedDeleteCounter.Inc()
+		metrics.ClusterProcessedCounter.Inc()
+		metrics.LoadBalancersProcessedCounter.Add(float64(len(t.Event.Task.DeleteState.GetLbs().GetClusters())))
+		metrics.LoadBalancersInProgress.Add(float64(len(t.Event.Task.CreateState.GetLbs().GetClusters())))
+		defer metrics.LoadBalancersInProgress.Sub(float64(len(t.Event.Task.CreateState.GetLbs().GetClusters())))
+		metrics.ClustersInDelete.Inc()
+		defer metrics.ClustersInDelete.Dec()
 		log.Debug().Msgf("[task %q] Delete operation %q from config %q", t.Event.Id, t.Cluster, t.Config)
 		k8s, lbs, err = u.executeDeleteTask(t)
+		if err != nil {
+			metrics.ClustersDeleted.Inc()
+		}
 	}
 
 	// even on error we construct the current state

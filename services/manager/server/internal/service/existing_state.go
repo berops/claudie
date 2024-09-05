@@ -144,7 +144,7 @@ func transferExistingK8sState(current, desired *spec.K8Scluster) error {
 		return nil
 	}
 
-	if err := updateClusterInfo(desired.ClusterInfo, current.ClusterInfo); err != nil {
+	if err := transferNodePools(desired.ClusterInfo, current.ClusterInfo); err != nil {
 		return err
 	}
 
@@ -186,15 +186,8 @@ func transferDynamicNpDataOnly(clusterID string, current, desired *spec.NodePool
 }
 
 // updateClusterInfo updates the desired state based on the current state
-// namely:
-// - Hash
-// - AutoscalerConfig
-// - existing nodes
-// - nodepool
-//   - metadata
-//   - Public key
-//   - Private key
-func updateClusterInfo(desired, current *spec.ClusterInfo) error {
+// clusterInfo.
+func transferNodePools(desired, current *spec.ClusterInfo) error {
 	desired.Hash = current.Hash
 desired:
 	for _, desiredNp := range desired.NodePools {
@@ -298,7 +291,7 @@ func transferExistingLBState(current, desired *spec.LoadBalancers) error {
 				continue
 			}
 
-			if err := updateClusterInfo(desired.ClusterInfo, current.ClusterInfo); err != nil {
+			if err := transferNodePools(desired.ClusterInfo, current.ClusterInfo); err != nil {
 				return err
 			}
 

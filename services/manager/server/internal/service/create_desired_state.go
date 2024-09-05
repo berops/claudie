@@ -12,6 +12,7 @@ import (
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/server/internal/store"
+	"github.com/rs/zerolog/log"
 
 	"gopkg.in/yaml.v3"
 
@@ -54,14 +55,15 @@ func createDesiredState(pending *store.Config) error {
 		return fmt.Errorf("failed to convert from db representation to grpc %q: %w", pending.Name, err)
 	}
 
+	// 2.1 Also consider to re-use existing data created in previous run if not first-run of the workflow for the manifest.
 	for _, state := range grpcRepr.GetClusters() {
 		deduplicateNodepoolNames(&m, state)
-		fillDynamicNodes(state.Desired)
 	}
-
-	// 2.1 Also consider to re-use existing data created in previous run if not first-run of the workflow for the manifest.
 	if err := transferExistingState(grpcRepr); err != nil {
 		return fmt.Errorf("failed to reuse current state date for desired state for %q: %w", m.Name, err)
+	}
+	for _, state := range grpcRepr.GetClusters() {
+		fillMissingDynamicNodes(state.Desired)
 	}
 
 	modified, err := store.ConvertFromGRPC(grpcRepr)
@@ -287,15 +289,20 @@ func generateSSHKeyPair() (string, string, error) {
 	return pubKeyBuf.String(), privKeyBuf.String(), nil
 }
 
-func fillDynamicNodes(c *spec.Clusters) {
+func fillMissingDynamicNodes(c *spec.Clusters) {
 	k8sID := utils.GetClusterID(c.GetK8S().GetClusterInfo())
+
 	for _, np := range c.GetK8S().GetClusterInfo().GetNodePools() {
 		if np.GetDynamicNodePool() == nil {
 			continue
 		}
 		usedNames := make(map[string]struct{})
+		for _, node := range np.Nodes {
+			usedNames[node.Name] = struct{}{}
+		}
+
 		nodepoolID := fmt.Sprintf("%s-%s", k8sID, np.Name)
-		np.Nodes = dynamicNodes(nodepoolID, usedNames, np.GetDynamicNodePool().Count, np.IsControl)
+		generateMissingDynamicNodes(nodepoolID, usedNames, np)
 	}
 
 	for _, lb := range c.GetLoadBalancers().GetClusters() {
@@ -305,24 +312,28 @@ func fillDynamicNodes(c *spec.Clusters) {
 				continue
 			}
 			usedNames := make(map[string]struct{})
+			for _, node := range np.Nodes {
+				usedNames[node.Name] = struct{}{}
+			}
 			nodepoolID := fmt.Sprintf("%s-%s", lbID, np.Name)
-			np.Nodes = dynamicNodes(nodepoolID, usedNames, np.GetDynamicNodePool().Count, np.IsControl)
+			generateMissingDynamicNodes(nodepoolID, usedNames, np)
 		}
 	}
 }
 
-func dynamicNodes(nodepoolID string, usedNames map[string]struct{}, count int32, isControl bool) []*spec.Node {
-	nodes := make([]*spec.Node, 0, count)
+func generateMissingDynamicNodes(nodepoolID string, usedNames map[string]struct{}, np *spec.NodePool) {
 	typ := spec.NodeType_worker
-	if isControl {
+	if np.IsControl {
 		typ = spec.NodeType_master
 	}
-	for range count {
-		nodes = append(nodes, &spec.Node{
-			Name:     uniqueNodeName(nodepoolID, usedNames),
+
+	for len(np.Nodes) < int(np.GetDynamicNodePool().Count) {
+		name := uniqueNodeName(nodepoolID, usedNames)
+		usedNames[name] = struct{}{}
+		np.Nodes = append(np.Nodes, &spec.Node{
+			Name:     name,
 			NodeType: typ,
 		})
-		usedNames[nodes[len(nodes)-1].Name] = struct{}{}
+		log.Debug().Str("nodepool", nodepoolID).Msgf("adding new node %q into desired state IsControl: %v", name, np.IsControl)
 	}
-	return nodes
 }

@@ -94,7 +94,7 @@ func (g *GRPC) NextTask(ctx context.Context, _ *pb.NextTaskRequest) (*pb.NextTas
 func nextTask(cfgs []*store.Config) (*store.Config, string) {
 	for _, cfg := range cfgs {
 		for c, s := range cfg.Clusters {
-			if s.Events.TTL == 0 && len(s.Events.TaskEvents) > 0 {
+			if s.Events.TTL == 0 && len(s.Events.TaskEvents) > 0 && s.State.Status != spec.Workflow_ERROR.String() {
 				return cfg, c
 			}
 		}
