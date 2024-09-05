@@ -8,45 +8,10 @@ import (
 
 	"github.com/berops/claudie/internal/checksum"
 	"github.com/berops/claudie/internal/manifest"
-	"github.com/berops/claudie/internal/queue"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/server/internal/store"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestEnqueuedTask_ID(t1 *testing.T) {
-	type fields struct {
-		Config  string
-		Cluster string
-		Event   *spec.TaskEvent
-		TTL     int32
-		Version uint64
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   string
-	}{
-		{
-			name:   "task-id-01",
-			fields: fields{Event: &spec.TaskEvent{Id: "01"}},
-			want:   "01",
-		},
-	}
-	for _, tt := range tests {
-		t1.Run(tt.name, func(t1 *testing.T) {
-			t1.Parallel()
-			t := &EnqueuedTask{
-				Config:  tt.fields.Config,
-				Cluster: tt.fields.Cluster,
-				Event:   tt.fields.Event,
-			}
-			if got := t.ID(); got != tt.want {
-				t1.Errorf("ID() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
 func TestGRPC_WatchForDoneOrErrorDocuments(t *testing.T) {
 	type fields struct{ Store store.Store }
@@ -410,10 +375,7 @@ kubernetes:
 }
 
 func TestGRPC_WatchForScheduledDocuments(t *testing.T) {
-	type fields struct {
-		Store     store.Store
-		TaskQueue *queue.Queue
-	}
+	type fields struct{ Store store.Store }
 	type args struct{ ctx context.Context }
 
 	tests := []struct {
@@ -421,7 +383,7 @@ func TestGRPC_WatchForScheduledDocuments(t *testing.T) {
 		fields   fields
 		args     args
 		wantErr  bool
-		validate func(t *testing.T, db store.Store, queue *queue.Queue)
+		validate func(t *testing.T, db store.Store)
 	}{
 		{
 			name: "test-config-ends-in-scheduled",
@@ -440,7 +402,7 @@ func TestGRPC_WatchForScheduledDocuments(t *testing.T) {
 								Events: store.Events{TaskEvents: []store.TaskEvent{
 									{Id: "3", Timestamp: time.Now().UTC().Format(time.RFC3339)},
 									{Id: "4", Timestamp: time.Now().UTC().Format(time.RFC3339)},
-								}},
+								}, TTL: 40},
 								State: store.Workflow{Status: spec.Workflow_ERROR.String()},
 							},
 							"test-cluster-2": {
@@ -449,7 +411,7 @@ func TestGRPC_WatchForScheduledDocuments(t *testing.T) {
 								Events: store.Events{TaskEvents: []store.TaskEvent{
 									{Id: "1", Timestamp: time.Now().UTC().Format(time.RFC3339)},
 									{Id: "2", Timestamp: time.Now().UTC().Format(time.RFC3339)},
-								}},
+								}, TTL: 10},
 								State: store.Workflow{Status: spec.Workflow_DONE.String()},
 							},
 						},
@@ -459,21 +421,19 @@ func TestGRPC_WatchForScheduledDocuments(t *testing.T) {
 					_ = db.UpdateConfig(context.Background(), cfg)
 					return db
 				}(),
-				TaskQueue: queue.New(),
 			},
 			args: args{ctx: context.Background()},
-			validate: func(t *testing.T, db store.Store, queue *queue.Queue) {
+			validate: func(t *testing.T, db store.Store) {
 				cfg, _ := db.GetConfig(context.Background(), "test-set-1")
-				assert.Equal(t, true, queue.Contains(&EnqueuedTask{Event: &spec.TaskEvent{Id: "1"}}))
-				assert.Equal(t, false, queue.Contains(&EnqueuedTask{Event: &spec.TaskEvent{Id: "2"}}))
-				assert.Equal(t, false, queue.Contains(&EnqueuedTask{Event: &spec.TaskEvent{Id: "3"}}))
-				assert.Equal(t, false, queue.Contains(&EnqueuedTask{Event: &spec.TaskEvent{Id: "4"}}))
 				assert.Equal(t, manifest.Scheduled.String(), cfg.Manifest.State)
+				assert.Equal(t, uint64(2), cfg.Version)
+				assert.Equal(t, int32(9), cfg.Clusters["test-cluster-2"].Events.TTL)
+				assert.Equal(t, int32(40), cfg.Clusters["test-cluster-1"].Events.TTL)
 			},
 			wantErr: false,
 		},
 		{
-			name: "test-config-ends-in-error",
+			name: "test-config-ends-in-scheduled",
 			fields: fields{
 				Store: func() store.Store {
 					db := store.NewInMemoryStore()
@@ -489,14 +449,17 @@ func TestGRPC_WatchForScheduledDocuments(t *testing.T) {
 								Events: store.Events{TaskEvents: []store.TaskEvent{
 									{Id: "3", Timestamp: time.Now().UTC().Format(time.RFC3339)},
 									{Id: "4", Timestamp: time.Now().UTC().Format(time.RFC3339)},
-								}},
+								}, TTL: 40},
 								State: store.Workflow{Status: spec.Workflow_ERROR.String()},
 							},
 							"test-cluster-2": {
 								Current: store.Clusters{},
 								Desired: store.Clusters{},
-								Events:  store.Events{TaskEvents: []store.TaskEvent{}},
-								State:   store.Workflow{Status: spec.Workflow_DONE.String()},
+								Events: store.Events{TaskEvents: []store.TaskEvent{
+									{Id: "1", Timestamp: time.Now().UTC().Format(time.RFC3339)},
+									{Id: "2", Timestamp: time.Now().UTC().Format(time.RFC3339)},
+								}, TTL: 10},
+								State: store.Workflow{Status: spec.Workflow_ERROR.String()},
 							},
 						},
 					})
@@ -505,118 +468,55 @@ func TestGRPC_WatchForScheduledDocuments(t *testing.T) {
 					_ = db.UpdateConfig(context.Background(), cfg)
 					return db
 				}(),
-				TaskQueue: queue.New(),
 			},
 			args: args{ctx: context.Background()},
-			validate: func(t *testing.T, db store.Store, queue *queue.Queue) {
+			validate: func(t *testing.T, db store.Store) {
 				cfg, _ := db.GetConfig(context.Background(), "test-set-1")
-				assert.Equal(t, false, queue.Contains(&EnqueuedTask{Event: &spec.TaskEvent{Id: "1"}}))
-				assert.Equal(t, false, queue.Contains(&EnqueuedTask{Event: &spec.TaskEvent{Id: "2"}}))
-				assert.Equal(t, false, queue.Contains(&EnqueuedTask{Event: &spec.TaskEvent{Id: "3"}}))
-				assert.Equal(t, false, queue.Contains(&EnqueuedTask{Event: &spec.TaskEvent{Id: "4"}}))
 				assert.Equal(t, manifest.Error.String(), cfg.Manifest.State)
-			},
-			wantErr: false,
-		},
-		{
-			name: "test-config-ends-in-done",
-			fields: fields{
-				Store: func() store.Store {
-					db := store.NewInMemoryStore()
-					_ = db.CreateConfig(context.Background(), &store.Config{
-						Version:  0,
-						Name:     "test-set-1",
-						K8SCtx:   store.KubernetesContext{},
-						Manifest: store.Manifest{},
-						Clusters: map[string]*store.ClusterState{
-							"test-cluster-1": {
-								Current: store.Clusters{},
-								Desired: store.Clusters{},
-								Events:  store.Events{},
-								State:   store.Workflow{Status: spec.Workflow_DONE.String()},
-							},
-							"test-cluster-2": {
-								Current: store.Clusters{},
-								Desired: store.Clusters{},
-								Events:  store.Events{},
-								State:   store.Workflow{Status: spec.Workflow_DONE.String()},
-							},
-						},
-					})
-					cfg, _ := db.GetConfig(context.Background(), "test-set-1")
-					cfg.Manifest.State = manifest.Scheduled.String()
-					_ = db.UpdateConfig(context.Background(), cfg)
-					return db
-				}(),
-				TaskQueue: queue.New(),
-			},
-			args: args{ctx: context.Background()},
-			validate: func(t *testing.T, db store.Store, queue *queue.Queue) {
-				cfg, _ := db.GetConfig(context.Background(), "test-set-1")
-				assert.Equal(t, false, queue.Contains(&EnqueuedTask{Event: &spec.TaskEvent{Id: "1"}}))
-				assert.Equal(t, false, queue.Contains(&EnqueuedTask{Event: &spec.TaskEvent{Id: "2"}}))
-				assert.Equal(t, false, queue.Contains(&EnqueuedTask{Event: &spec.TaskEvent{Id: "3"}}))
-				assert.Equal(t, false, queue.Contains(&EnqueuedTask{Event: &spec.TaskEvent{Id: "4"}}))
-				assert.Equal(t, manifest.Done.String(), cfg.Manifest.State)
-			},
-			wantErr: false,
-		},
-		{
-			name: "test-config-decrement-ttl",
-			fields: fields{
-				Store: func() store.Store {
-					db := store.NewInMemoryStore()
-					_ = db.CreateConfig(context.Background(), &store.Config{
-						Version:  0,
-						Name:     "test-set-1",
-						K8SCtx:   store.KubernetesContext{},
-						Manifest: store.Manifest{},
-						Clusters: map[string]*store.ClusterState{
-							"test-cluster-1": {
-								Current: store.Clusters{},
-								Desired: store.Clusters{},
-								Events:  store.Events{TaskEvents: []store.TaskEvent{{Id: "1"}, {Id: "2"}}, TTL: 5},
-								State: store.Workflow{
-									Status:      spec.Workflow_IN_PROGRESS.String(),
-									Stage:       spec.Workflow_TERRAFORMER.String(),
-									Description: "Building infra",
-									Timestamp:   time.Now().UTC().Format(time.RFC3339),
-								},
-							},
-							"test-cluster-2": {
-								Current: store.Clusters{},
-								Desired: store.Clusters{},
-								Events: store.Events{
-									TaskEvents: []store.TaskEvent{
-										{Id: "4", Timestamp: time.Now().UTC().Format(time.RFC3339)},
-									},
-									TTL: 0,
-								},
-								State: store.Workflow{
-									Status:      spec.Workflow_DONE.String(),
-									Stage:       spec.Workflow_NONE.String(),
-									Description: "nothing",
-									Timestamp:   time.Now().UTC().Format(time.RFC3339),
-								},
-							},
-						},
-					})
-					cfg, _ := db.GetConfig(context.Background(), "test-set-1")
-					cfg.Manifest.State = manifest.Scheduled.String()
-					_ = db.UpdateConfig(context.Background(), cfg)
-					return db
-				}(),
-				TaskQueue: queue.New(),
-			},
-			args: args{ctx: context.Background()},
-			validate: func(t *testing.T, db store.Store, queue *queue.Queue) {
-				cfg, _ := db.GetConfig(context.Background(), "test-set-1")
 				assert.Equal(t, uint64(2), cfg.Version)
-				assert.Equal(t, int32(4), cfg.Clusters["test-cluster-1"].Events.TTL)
-				assert.Equal(t, true, queue.Contains(&EnqueuedTask{Event: &spec.TaskEvent{Id: "4"}}))
-				assert.Equal(t, false, queue.Contains(&EnqueuedTask{Event: &spec.TaskEvent{Id: "1"}}))
-				assert.Equal(t, false, queue.Contains(&EnqueuedTask{Event: &spec.TaskEvent{Id: "2"}}))
-				assert.Equal(t, manifest.Scheduled.String(), cfg.Manifest.State)
+				assert.Equal(t, int32(10), cfg.Clusters["test-cluster-2"].Events.TTL)
+				assert.Equal(t, int32(40), cfg.Clusters["test-cluster-1"].Events.TTL)
+			},
+			wantErr: false,
+		},
+		{
+			name: "test-config-ends-in-scheduled",
+			fields: fields{
+				Store: func() store.Store {
+					db := store.NewInMemoryStore()
+					_ = db.CreateConfig(context.Background(), &store.Config{
+						Version:  0,
+						Name:     "test-set-1",
+						K8SCtx:   store.KubernetesContext{},
+						Manifest: store.Manifest{},
+						Clusters: map[string]*store.ClusterState{
+							"test-cluster-1": {
+								Current: store.Clusters{},
+								Desired: store.Clusters{},
+								Events:  store.Events{TaskEvents: []store.TaskEvent{}, TTL: 0},
+								State:   store.Workflow{Status: spec.Workflow_DONE.String()},
+							},
+							"test-cluster-2": {
+								Current: store.Clusters{},
+								Desired: store.Clusters{},
+								Events:  store.Events{TaskEvents: []store.TaskEvent{}, TTL: 0},
+								State:   store.Workflow{Status: spec.Workflow_DONE.String()},
+							},
+						},
+					})
+					cfg, _ := db.GetConfig(context.Background(), "test-set-1")
+					cfg.Manifest.State = manifest.Scheduled.String()
+					_ = db.UpdateConfig(context.Background(), cfg)
+					return db
+				}(),
+			},
+			args: args{ctx: context.Background()},
+			validate: func(t *testing.T, db store.Store) {
+				cfg, _ := db.GetConfig(context.Background(), "test-set-1")
+				assert.Equal(t, manifest.Done.String(), cfg.Manifest.State)
+				assert.Equal(t, uint64(2), cfg.Version)
+				assert.Equal(t, int32(0), cfg.Clusters["test-cluster-2"].Events.TTL)
+				assert.Equal(t, int32(0), cfg.Clusters["test-cluster-1"].Events.TTL)
 			},
 			wantErr: false,
 		},
@@ -625,12 +525,12 @@ func TestGRPC_WatchForScheduledDocuments(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			g := &GRPC{Store: tt.fields.Store, TaskQueue: tt.fields.TaskQueue}
+			g := &GRPC{Store: tt.fields.Store}
 			if err := g.WatchForScheduledDocuments(tt.args.ctx); (err != nil) != tt.wantErr {
 				t.Errorf("WatchForScheduledDocuments() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			tt.validate(t, tt.fields.Store, tt.fields.TaskQueue)
+			tt.validate(t, tt.fields.Store)
 		})
 	}
 }

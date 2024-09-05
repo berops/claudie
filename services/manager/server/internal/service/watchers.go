@@ -44,11 +44,6 @@ func (g *GRPC) WatchForScheduledDocuments(ctx context.Context) error {
 
 			nextTask := state.Events.TaskEvents[0]
 
-			// TODO: If building multiple cluster it can fail on the first due to a dirty write
-			// and skip to the next
-			// but the next maybe outdated due to having an older version, and it can happen that the task
-			// has been picked up and the above check of queue contains fails and since the outdated version is used
-			// this below check will be skipped and the task will be enqueued again.
 			if state.Events.TTL > 0 {
 				state.Events.TTL -= 1
 				logger.Debug().Msgf("Decreasing TTL for task %q cluster %q", nextTask.Id, cluster)

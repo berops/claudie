@@ -288,7 +288,7 @@ func Test_updateClusterInfo(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			tt.wantErr(t, updateClusterInfo(tt.args.desired, tt.args.current), fmt.Sprintf("updateClusterInfo(%v, %v)", tt.args.desired, tt.args.current))
+			tt.wantErr(t, transferNodePools(tt.args.desired, tt.args.current), fmt.Sprintf("transferNodePools(%v, %v)", tt.args.desired, tt.args.current))
 			tt.validate(t, tt.args)
 		})
 	}
