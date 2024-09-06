@@ -111,10 +111,6 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, err
 	}
 
-	if err := validateStaticNodePools(&rawManifest, resp.Config); err != nil {
-		return ctrl.Result{}, err
-	}
-
 	// Build the actual state of inputManifest.
 	// Based on this, reconcile loop will decide
 	// what to do next.
@@ -422,48 +418,4 @@ func defaultRepository(r **manifest.TemplateRepository, providerTyp string) {
 		}
 		return
 	}
-}
-
-// Check if the new config has reference to already existing static nodes.
-func validateStaticNodePools(m *manifest.Manifest, allConfigs []*spec.Config) error {
-	manifestStaticIPs := collectIPs(m)
-
-	for _, cfg := range allConfigs {
-		if cfg.Name == m.Name {
-			continue
-		}
-
-		var other manifest.Manifest
-		if err := yaml.Unmarshal([]byte(cfg.Manifest.Raw), &other); err != nil {
-			return fmt.Errorf("config %q failed to unmarshal manifest: %w", cfg.Name, err)
-		}
-		otherStaticIPs := collectIPs(&other)
-
-		if match := findMatch(manifestStaticIPs, otherStaticIPs); match != "" {
-			return fmt.Errorf("reference to the same static node with IP %q referenced in the newly added config %q is already in use by config %q, reference to the same static node across different clusters/configs is discouraged as it can lead to corrupt state of the cluster", match, m.Name, cfg.Name)
-		}
-	}
-
-	return nil
-}
-
-func findMatch(first, second map[string]struct{}) string {
-	for checkIP := range first {
-		if _, ok := second[checkIP]; ok {
-			return checkIP
-		}
-	}
-	return ""
-}
-
-func collectIPs(m *manifest.Manifest) map[string]struct{} {
-	nodepools := make(map[string]struct{})
-
-	for _, snp := range m.NodePools.Static {
-		for _, node := range snp.Nodes {
-			nodepools[node.Endpoint] = struct{}{}
-		}
-	}
-
-	return nodepools
 }
