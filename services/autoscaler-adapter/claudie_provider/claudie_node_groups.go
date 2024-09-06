@@ -171,7 +171,6 @@ func (c *ClaudieCloudProvider) NodeGroupGetOptions(_ context.Context, req *proto
 	return &protos.NodeGroupAutoscalingOptionsResponse{NodeGroupAutoscalingOptions: req.GetDefaults()}, nil
 }
 
-// updateNodepool will call context-box UpdateNodepool method to save any changes to the database. This will also initiate build of the changed nodepool.
 func (c *ClaudieCloudProvider) updateNodepool(ctx context.Context, nodepool *spec.NodePool) error {
 	manager, err := managerclient.New(&log.Logger)
 	if err != nil {

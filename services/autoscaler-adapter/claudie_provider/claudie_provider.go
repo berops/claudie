@@ -97,7 +97,7 @@ func getClaudieState(ctx context.Context, projectName, clusterName string) (*spe
 	}
 	defer func() {
 		if err := manager.Close(); err != nil {
-			log.Err(err).Msgf("Failed to close context-box connection")
+			log.Err(err).Msgf("Failed to close manager connection")
 		}
 	}()
 
