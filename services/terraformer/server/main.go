@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	defaultPrometheusPort = "9098"
+	defaultPrometheusPort = "9090"
 )
 
 func main() {
@@ -59,6 +59,7 @@ func main() {
 	// Check if terraformer microservice is in ready state every 30s
 	errGroup.Go(func() error {
 		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
 
 		for {
 			select {
