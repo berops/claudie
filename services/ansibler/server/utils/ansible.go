@@ -19,7 +19,7 @@ const (
 	// defaultAnsibleForks defines how many forks ansible uses (on how many nodes can ansible perform a task at the same time).
 	defaultAnsibleForks = 15
 	// maxAnsibleRetries defines how many times should be playbook retried before returning error.
-	maxAnsibleRetries = 5
+	maxAnsibleRetries = 3
 )
 
 // GenerateInventoryFile generates an Ansible inventory file that defines
