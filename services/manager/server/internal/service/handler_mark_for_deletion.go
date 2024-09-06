@@ -32,6 +32,6 @@ func (g *GRPC) MarkForDeletion(ctx context.Context, request *pb.MarkForDeletionR
 		return nil, status.Errorf(codes.Aborted, "config %q with version %v was not found", request.Name, request.Version)
 	}
 
-	log.Info().Msgf("Config %q with version %v sucessfully marked for deletion", request.Name, request.Version)
+	log.Info().Msgf("Config %q with version %v successfully marked for deletion", request.Name, request.Version)
 	return &pb.MarkForDeletionResponse{Name: request.Name, Version: request.Version}, nil
 }

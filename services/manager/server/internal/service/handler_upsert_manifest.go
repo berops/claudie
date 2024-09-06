@@ -36,7 +36,7 @@ func (g *GRPC) UpsertManifest(ctx context.Context, request *pb.UpsertManifestReq
 	dbConfig, err := g.Store.GetConfig(ctx, request.Name)
 	if err != nil {
 		if !errors.Is(err, store.ErrNotFoundOrDirty) {
-			return nil, status.Errorf(codes.Internal, "failed to check existance for config %q: %v", request.Name, err)
+			return nil, status.Errorf(codes.Internal, "failed to check existence for config %q: %v", request.Name, err)
 		}
 
 		newConfig := store.Config{
@@ -88,7 +88,7 @@ func (g *GRPC) UpsertManifest(ctx context.Context, request *pb.UpsertManifestReq
 		return nil, status.Errorf(codes.Internal, "error while saving config %q in database: %v", request.Name, err)
 	}
 
-	log.Info().Msgf("Config %q sucessfully saved", request.Name)
+	log.Info().Msgf("Config %q successfully saved", request.Name)
 
 	return &pb.UpsertManifestResponse{Name: dbConfig.Name, Version: dbConfig.Version}, nil
 }

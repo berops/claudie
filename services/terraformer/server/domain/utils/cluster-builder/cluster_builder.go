@@ -210,7 +210,7 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 
 		if err := templates.DownloadProvider(templatesDownloadDir, p); err != nil {
 			msg := fmt.Sprintf("cluster %q failed to download template repository", clusterID)
-			log.Error().Msgf(msg)
+			log.Error().Msgf("%v", msg)
 			return fmt.Errorf("%s: %w", msg, err)
 		}
 
@@ -367,18 +367,6 @@ func readIPs(data string) (templates.NodepoolIPs, error) {
 	return result, err
 }
 
-// getUniqueNodeName returns new node name, which is guaranteed to be unique, based on the provided existing names.
-func getUniqueNodeName(nodepoolID string, existingNames map[string]struct{}) string {
-	index := uint8(1)
-	for {
-		candidate := fmt.Sprintf("%s-%02x", nodepoolID, index)
-		if _, ok := existingNames[candidate]; !ok {
-			return candidate
-		}
-		index++
-	}
-}
-
 // getCIDR function returns CIDR in IPv4 format, with position replaced by value
 // The function does not check if it is a valid CIDR/can be used in subnet spec
 func getCIDR(baseCIDR string, position int, existing map[string]struct{}) (string, error) {
@@ -440,7 +428,7 @@ func (c *ClusterBuilder) generateProviderTemplates(current, desired *spec.Cluste
 
 		if err := templates.DownloadProvider(templatesDownloadDir, p); err != nil {
 			msg := fmt.Sprintf("cluster %q failed to download template repository", clusterID)
-			log.Error().Msgf(msg)
+			log.Error().Msgf("%v", msg)
 			return fmt.Errorf("%s: %w", msg, err)
 		}
 

@@ -141,8 +141,8 @@ func (m *Mongo) UpdateConfig(ctx context.Context, config *Config) error {
 
 	result := m.collection.FindOneAndUpdate(
 		ctx,
-		bson.D{{"name", config.Name}, {"version", suppliedVersion}},
-		bson.D{{"$set", config}},
+		bson.D{{Key: "name", Value: config.Name}, {Key: "version", Value: suppliedVersion}},
+		bson.D{{Key: "$set", Value: config}},
 	)
 
 	if err := result.Err(); errors.Is(err, mongo.ErrNoDocuments) {
@@ -151,7 +151,7 @@ func (m *Mongo) UpdateConfig(ctx context.Context, config *Config) error {
 		return fmt.Errorf("failed to update config %q with version %v: %w", config.Name, suppliedVersion, err)
 	}
 
-	log.Debug().Msgf("Sucesfully Updated config %q with version %v, new version: %v", config.Name, suppliedVersion, config.Version)
+	log.Debug().Msgf("Successfully Updated config %q with version %v, new version: %v", config.Name, suppliedVersion, config.Version)
 	return nil
 }
 
@@ -174,12 +174,12 @@ func (m *Mongo) MarkForDeletion(ctx context.Context, name string, version uint64
 		ctx,
 		bson.D{{Key: "name", Value: name}, {Key: "version", Value: version}},
 		bson.D{
-			{"$set", bson.D{
-				{"manifest.raw", ""},
-				{"manifest.checksum", nil},
-				{"manifest.lastAppliedChecksum", checksum.Digest("delete")}}, // modify the last applied checksum so that repeated deletion will trigger the process again.
+			{Key: "$set", Value: bson.D{
+				{Key: "manifest.raw", Value: ""},
+				{Key: "manifest.checksum", Value: nil},
+				{Key: "manifest.lastAppliedChecksum", Value: checksum.Digest("delete")}}, // modify the last applied checksum so that repeated deletion will trigger the process again.
 			},
-			{"$inc", bson.D{{"version", 1}}},
+			{Key: "$inc", Value: bson.D{{Key: "version", Value: 1}}},
 		},
 	)
 
@@ -189,7 +189,7 @@ func (m *Mongo) MarkForDeletion(ctx context.Context, name string, version uint64
 		return fmt.Errorf("failed to mark config %q with version %v for deletion: %w", name, version, err)
 	}
 
-	log.Debug().Msgf("Sucesfully marked config %q with version %v for deletion", name, version)
+	log.Debug().Msgf("Successfully marked config %q with version %v for deletion", name, version)
 
 	return nil
 }

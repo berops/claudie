@@ -100,7 +100,6 @@ func TestConvertToGRPCAndBack(t *testing.T) {
 	if diff := cmp.Diff(want, got, opts); diff != "" {
 		t.Errorf("Conversion DB->GRPC->DB failed\ndiff %v", diff)
 	}
-
 }
 
 func TestConvertToDBAndBack(t *testing.T) {

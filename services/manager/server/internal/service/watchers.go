@@ -63,10 +63,10 @@ func (g *GRPC) WatchForScheduledDocuments(ctx context.Context) error {
 
 			if anyError {
 				newManifestState = manifest.Error
-				logger.Info().Msgf("One of the clusters failed to build sucesfully, moving manifest to %q state", manifest.Error.String())
+				logger.Info().Msgf("One of the clusters failed to build successfully, moving manifest to %q state", manifest.Error.String())
 			} else {
 				newManifestState = manifest.Done
-				logger.Info().Msgf("All of the clusters build sucesfully, moving manifest to %q state", manifest.Done.String())
+				logger.Info().Msgf("All of the clusters build successfully, moving manifest to %q state", manifest.Done.String())
 			}
 
 			ok, err := manifest.ValidStateTransitionString(scheduled.Manifest.State, newManifestState)
@@ -128,7 +128,7 @@ func (g *GRPC) WatchForPendingDocuments(ctx context.Context) error {
 			continue
 		}
 
-		logger.Info().Msgf("Config has been sucessfully processed and moved to the %q state", manifest.Scheduled.String())
+		logger.Info().Msgf("Config has been successfully processed and moved to the %q state", manifest.Scheduled.String())
 	}
 
 	return nil
@@ -168,7 +168,7 @@ func (g *GRPC) WatchForDoneOrErrorDocuments(ctx context.Context) error {
 				continue
 			}
 
-			logger.Info().Msgf("Config has been sucessfully processed and moved to the %q state", manifest.Pending.String())
+			logger.Info().Msgf("Config has been successfully processed and moved to the %q state", manifest.Pending.String())
 			continue
 		}
 

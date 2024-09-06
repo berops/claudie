@@ -36,7 +36,7 @@ func (g *GRPC) UpdateNodePool(ctx context.Context, request *pb.UpdateNodePoolReq
 	dbConfig, err := g.Store.GetConfig(ctx, request.Name)
 	if err != nil {
 		if !errors.Is(err, store.ErrNotFoundOrDirty) {
-			return nil, status.Errorf(codes.Internal, "failed to check existance for config %q: %v", request.Name, err)
+			return nil, status.Errorf(codes.Internal, "failed to check existence for config %q: %v", request.Name, err)
 		}
 		return nil, status.Errorf(codes.NotFound, "no config with name %q found", request.Name)
 	}

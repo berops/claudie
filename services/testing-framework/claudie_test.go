@@ -261,7 +261,7 @@ func applyManifest(ctx context.Context, manifest, path string, raw []byte, m man
 		Manifest: &managerclient.Manifest{Raw: string(raw)},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to upsert manifest: %v", err)
+		return fmt.Errorf("failed to upsert manifest: %w", err)
 	}
 	log.Info().Msgf("Manifest %s %s has been saved...", path, manifest)
 	return nil

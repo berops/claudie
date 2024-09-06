@@ -47,7 +47,7 @@ func (g *GRPC) NextTask(ctx context.Context, _ *pb.NextTaskRequest) (*pb.NextTas
 	cluster.Events.Ttl = TaskTTL
 
 	if cluster.Current != nil {
-		log.Debug().Str("cluster", utils.GetClusterID(cluster.Current.K8S.ClusterInfo)).Msgf("transfering existing state into %s task %q", outgoingTask.Event.String(), outgoingTask.Id)
+		log.Debug().Str("cluster", utils.GetClusterID(cluster.Current.K8S.ClusterInfo)).Msgf("transferring existing state into %s task %q", outgoingTask.Event.String(), outgoingTask.Id)
 		if err := transferExistingData(cluster, outgoingTask); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to re-use data from current state for desired state for config %q cluster %q: %v", grpcCfg.Name, clusterName, err)
 		}

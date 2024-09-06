@@ -26,7 +26,7 @@ func (g *GRPC) UpdateCurrentState(ctx context.Context, request *pb.UpdateCurrent
 	dbConfig, err := g.Store.GetConfig(ctx, request.Name)
 	if err != nil {
 		if !errors.Is(err, store.ErrNotFoundOrDirty) {
-			return nil, status.Errorf(codes.Internal, "failed to check existance for config %q: %v", request.Name, err)
+			return nil, status.Errorf(codes.Internal, "failed to check existence for config %q: %v", request.Name, err)
 		}
 		return nil, status.Errorf(codes.NotFound, "no config with name %q found", request.Name)
 	}
@@ -47,7 +47,7 @@ func (g *GRPC) UpdateCurrentState(ctx context.Context, request *pb.UpdateCurrent
 	cluster.Current = request.State
 
 	if cluster.Current != nil && cluster.Desired != nil { // on update.
-		log.Debug().Str("cluster", utils.GetClusterID(cluster.Current.K8S.ClusterInfo)).Msgf("transfering state from newly supplied current state into desired state")
+		log.Debug().Str("cluster", utils.GetClusterID(cluster.Current.K8S.ClusterInfo)).Msgf("transferring state from newly supplied current state into desired state")
 
 		if err := transferExistingK8sState(cluster.Current.K8S, cluster.Desired.K8S); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to trasnsfer updated current state to desired state for cluster %q config %q: %v", request.Cluster, request.Name, err)
