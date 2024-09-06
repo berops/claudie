@@ -155,9 +155,9 @@ func transferExistingK8sState(current, desired *spec.K8Scluster) error {
 	return nil
 }
 
-// transferDynamicNpDataOnly updates the desired state of the kubernetes clusters based on the current state
+// transferDynamicNp updates the desired state of the kubernetes clusters based on the current state
 // transferring only nodepoolData.
-func transferDynamicNpDataOnly(clusterID string, current, desired *spec.NodePool, updateAutoscaler bool) bool {
+func transferDynamicNp(clusterID string, current, desired *spec.NodePool, updateAutoscaler bool) bool {
 	dnp := desired.GetDynamicNodePool()
 	cnp := current.GetDynamicNodePool()
 
@@ -181,7 +181,7 @@ func transferDynamicNpDataOnly(clusterID string, current, desired *spec.NodePool
 		}
 	}
 
-	fillNodes(clusterID, current, desired)
+	fillDynamicNodes(clusterID, current, desired)
 	return true
 }
 
@@ -197,8 +197,8 @@ desired:
 			}
 
 			switch {
-			case transferDynamicNpDataOnly(utils.GetClusterID(desired), currentNp, desiredNp, true):
-			case transferStaticNpDataOnly(currentNp, desiredNp):
+			case transferDynamicNp(utils.GetClusterID(desired), currentNp, desiredNp, true):
+			case transferStaticNodes(currentNp, desiredNp):
 			default:
 				return fmt.Errorf("%q is neither dynamic nor static, unexpected value: %v", desiredNp.Name, desiredNp.GetNodePoolType())
 			}
@@ -209,10 +209,7 @@ desired:
 	return nil
 }
 
-// fillNodes transfers nodes from current state up to the count defined
-// in desired state. if the count is larger than the number of current
-// nodes new nodes will be appended.
-func fillNodes(clusterID string, current, desired *spec.NodePool) {
+func fillDynamicNodes(clusterID string, current, desired *spec.NodePool) {
 	dnp := desired.GetDynamicNodePool()
 
 	nodes := make([]*spec.Node, 0, dnp.Count)
@@ -250,7 +247,7 @@ func uniqueNodeName(nodepoolID string, existingNames map[string]struct{}) string
 	}
 }
 
-func transferStaticNpDataOnly(current, desired *spec.NodePool) bool {
+func transferStaticNodes(current, desired *spec.NodePool) bool {
 	dsp := desired.GetStaticNodePool()
 	csp := current.GetStaticNodePool()
 

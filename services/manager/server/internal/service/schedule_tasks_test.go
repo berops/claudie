@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"google.golang.org/protobuf/proto"
 	"testing"
 
 	"github.com/berops/claudie/internal/utils"
@@ -10,6 +9,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
+
+	"google.golang.org/protobuf/proto"
 )
 
 var opts = cmpopts.IgnoreUnexported(
@@ -285,62 +286,33 @@ func Test_craftK8sIR(t *testing.T) {
 					NodePools: []*spec.NodePool{{
 						NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 2}},
 						Name:         fmt.Sprintf("pdyn-%s", rnghash),
-						Nodes: []*spec.Node{{
-							Name:     "1",
-							Private:  "private",
-							Public:   "public",
-							NodeType: spec.NodeType_apiEndpoint,
-						}, {
-							Name:     "2",
-							Private:  "private",
-							Public:   "public",
-							NodeType: spec.NodeType_master,
-						}},
+						Nodes: []*spec.Node{
+							{Name: "1", Private: "1.1", Public: "10.1", NodeType: spec.NodeType_apiEndpoint},
+							{Name: "2", Private: "1.2", Public: "10.2", NodeType: spec.NodeType_master},
+						},
 						IsControl: true,
 					}, {
 						NodePoolType: &spec.NodePool_StaticNodePool{StaticNodePool: &spec.StaticNodePool{NodeKeys: make(map[string]string)}},
 						Name:         fmt.Sprintf("pstat-%s", rnghash),
-						Nodes: []*spec.Node{{
-							Name:     "1",
-							Private:  "private",
-							Public:   "public",
-							NodeType: spec.NodeType_master,
-						}, {
-							Name:     "2",
-							Private:  "private",
-							Public:   "public",
-							NodeType: spec.NodeType_master,
-						}},
+						Nodes: []*spec.Node{
+							{Name: "1", Private: "1.3", Public: "20.1", NodeType: spec.NodeType_master},
+							{Name: "2", Private: "1.4", Public: "20.2", NodeType: spec.NodeType_master},
+						},
 						IsControl: true,
 					}, {
 						NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 2}},
 						Name:         fmt.Sprintf("dyn-%s", rnghash),
-						Nodes: []*spec.Node{{
-							Name:     "1",
-							Private:  "private",
-							Public:   "public",
-							NodeType: spec.NodeType_worker,
-						}, {
-							Name:     "2",
-							Private:  "private",
-							Public:   "public",
-							NodeType: spec.NodeType_worker,
-						}},
+						Nodes: []*spec.Node{
+							{Name: "1", Private: "1.5", Public: "10.3", NodeType: spec.NodeType_worker},
+							{Name: "2", Private: "1.6", Public: "10.4", NodeType: spec.NodeType_worker},
+						},
 						IsControl: false,
 					}, {
 						NodePoolType: &spec.NodePool_StaticNodePool{StaticNodePool: &spec.StaticNodePool{NodeKeys: make(map[string]string)}},
 						Name:         fmt.Sprintf("stat-%s", rnghash),
-						Nodes: []*spec.Node{{
-							Name:     "1",
-							Private:  "private",
-							Public:   "public",
-							NodeType: spec.NodeType_worker,
-						}, {
-							Name:     "2",
-							Private:  "private",
-							Public:   "public",
-							NodeType: spec.NodeType_worker,
-						}},
+						Nodes: []*spec.Node{
+							{Name: "1", Private: "1.7", Public: "20.3", NodeType: spec.NodeType_worker},
+							{Name: "2", Private: "1.8", Public: "20.4", NodeType: spec.NodeType_worker}},
 						IsControl: false,
 					}},
 				}},
@@ -350,42 +322,23 @@ func Test_craftK8sIR(t *testing.T) {
 					NodePools: []*spec.NodePool{{
 						NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 1}},
 						Name:         fmt.Sprintf("pdyn-%s", rnghash),
-						Nodes: []*spec.Node{{
-							Name:     "1",
-							Private:  "private",
-							Public:   "public",
-							NodeType: spec.NodeType_apiEndpoint,
-						}},
+						Nodes: []*spec.Node{
+							{Name: "1", Private: "1.1", Public: "10.1", NodeType: spec.NodeType_apiEndpoint}},
 						IsControl: true,
 					}, {
 						NodePoolType: &spec.NodePool_StaticNodePool{StaticNodePool: &spec.StaticNodePool{NodeKeys: make(map[string]string)}},
 						Name:         fmt.Sprintf("pstat-%s", rnghash),
-						Nodes: []*spec.Node{{
-							Name:     "1",
-							Private:  "private",
-							Public:   "public",
-							NodeType: spec.NodeType_master,
-						}},
+						Nodes: []*spec.Node{
+							{Name: "1", Private: "1.3", Public: "20.1", NodeType: spec.NodeType_master},
+						},
 						IsControl: true,
 					}, {
 						NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 3}},
 						Name:         fmt.Sprintf("new-%s", rnghash),
-						Nodes: []*spec.Node{{
-							Name:     "1",
-							Private:  "private",
-							Public:   "public",
-							NodeType: spec.NodeType_worker,
-						}, {
-							Name:     "2",
-							Private:  "private",
-							Public:   "public",
-							NodeType: spec.NodeType_worker,
-						}, {
-							Name:     "3",
-							Private:  "private",
-							Public:   "public",
-							NodeType: spec.NodeType_worker,
-						}},
+						Nodes: []*spec.Node{
+							{Name: "1", Private: "1.9", Public: "10.5", NodeType: spec.NodeType_worker},
+							{Name: "2", Private: "1.10", Public: "10.6", NodeType: spec.NodeType_worker},
+							{Name: "3", Private: "1.11", Public: "10.7", NodeType: spec.NodeType_worker}},
 						IsControl: false,
 					}},
 				}},
@@ -397,82 +350,177 @@ func Test_craftK8sIR(t *testing.T) {
 					NodePools: []*spec.NodePool{{
 						NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 2}},
 						Name:         fmt.Sprintf("pdyn-%s", rnghash),
-						Nodes: []*spec.Node{{
-							Name:     "1",
-							Private:  "private",
-							Public:   "public",
-							NodeType: spec.NodeType_apiEndpoint,
-						}, {
-							Name:     "2",
-							Private:  "private",
-							Public:   "public",
-							NodeType: spec.NodeType_master,
-						}},
+						Nodes: []*spec.Node{
+							{Name: "1", Private: "1.1", Public: "10.1", NodeType: spec.NodeType_apiEndpoint},
+							{Name: "2", Private: "1.2", Public: "10.2", NodeType: spec.NodeType_master},
+						},
 						IsControl: true,
 					}, {
 						NodePoolType: &spec.NodePool_StaticNodePool{StaticNodePool: &spec.StaticNodePool{}},
 						Name:         fmt.Sprintf("pstat-%s", rnghash),
-						Nodes: []*spec.Node{{
-							Name:     "1",
-							Private:  "private",
-							Public:   "public",
-							NodeType: spec.NodeType_master,
-						}, {
-							Name:     "2",
-							Private:  "private",
-							Public:   "public",
-							NodeType: spec.NodeType_master,
-						}},
-						IsControl: true,
-					}, {
+						Nodes: []*spec.Node{
+							{Name: "1", Private: "1.3", Public: "20.1", NodeType: spec.NodeType_master},
+							{Name: "2", Private: "1.4", Public: "20.2", NodeType: spec.NodeType_master},
+						},
+						IsControl: true}, {
 						NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 3}},
 						Name:         fmt.Sprintf("new-%s", rnghash),
-						Nodes: []*spec.Node{{
-							Name:     "1",
-							Private:  "private",
-							Public:   "public",
-							NodeType: spec.NodeType_worker,
-						}, {
-							Name:     "2",
-							Private:  "private",
-							Public:   "public",
-							NodeType: spec.NodeType_worker,
-						}, {
-							Name:     "3",
-							Private:  "private",
-							Public:   "public",
-							NodeType: spec.NodeType_worker,
-						}},
+						Nodes: []*spec.Node{
+							{Name: "1", Private: "1.9", Public: "10.5", NodeType: spec.NodeType_worker},
+							{Name: "2", Private: "1.10", Public: "10.6", NodeType: spec.NodeType_worker},
+							{Name: "3", Private: "1.11", Public: "10.7", NodeType: spec.NodeType_worker},
+						},
 						IsControl: false,
+					}, {
+						NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 2}}, Name: fmt.Sprintf("dyn-%s", rnghash),
+						Nodes: []*spec.Node{
+							{Name: "1", Private: "1.5", Public: "10.3", NodeType: spec.NodeType_worker},
+							{Name: "2", Private: "1.6", Public: "10.4", NodeType: spec.NodeType_worker},
+						}, IsControl: false,
+					}, {
+						NodePoolType: &spec.NodePool_StaticNodePool{StaticNodePool: &spec.StaticNodePool{NodeKeys: make(map[string]string)}},
+						Name:         fmt.Sprintf("stat-%s", rnghash),
+						Nodes: []*spec.Node{
+							{Name: "1", Private: "1.7", Public: "20.3", NodeType: spec.NodeType_worker},
+							{Name: "2", Private: "1.8", Public: "20.4", NodeType: spec.NodeType_worker},
+						},
+						IsControl: false,
+					}},
+				},
+			},
+		},
+		{
+			name: "ok-includes-replaced",
+			args: args{
+				k8sDiffResult: nodePoolDiffResult{
+					partialDeletedDynamic: map[string][]string{fmt.Sprintf("pdyn-%s", rnghash): {"2"}},
+					partialDeletedStatic:  map[string][]string{fmt.Sprintf("pstat-%s", rnghash): {"2"}},
+					deletedDynamic:        map[string][]string{fmt.Sprintf("dyn-%s", rnghash): {"1", "2"}},
+					deletedStatic:         map[string][]string{fmt.Sprintf("stat-%s", rnghash): {"1", "2"}},
+				},
+				current: &spec.K8Scluster{ClusterInfo: &spec.ClusterInfo{
+					Name: "current",
+					Hash: "hash",
+					NodePools: []*spec.NodePool{{
+						NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 2}},
+						Name:         fmt.Sprintf("pdyn-%s", rnghash),
+						Nodes: []*spec.Node{
+							{Name: "1", Private: "1.2", Public: "10.2", NodeType: spec.NodeType_apiEndpoint},
+							{Name: "2", Private: "1.3", Public: "10.3", NodeType: spec.NodeType_master},
+						},
+						IsControl: true,
+					}, {
+						NodePoolType: &spec.NodePool_StaticNodePool{StaticNodePool: &spec.StaticNodePool{NodeKeys: map[string]string{
+							"20.4": "pk20.4",
+							"20.5": "pk20.5",
+						}}},
+						Name: fmt.Sprintf("pstat-%s", rnghash),
+						Nodes: []*spec.Node{
+							{Name: "1", Private: "1.4", Public: "20.4", NodeType: spec.NodeType_master},
+							{Name: "2", Private: "1.5", Public: "20.5", NodeType: spec.NodeType_master},
+						},
+						IsControl: true,
 					}, {
 						NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 2}},
 						Name:         fmt.Sprintf("dyn-%s", rnghash),
-						Nodes: []*spec.Node{{
-							Name:     "1",
-							Private:  "private",
-							Public:   "public",
-							NodeType: spec.NodeType_worker,
-						}, {
-							Name:     "2",
-							Private:  "private",
-							Public:   "public",
-							NodeType: spec.NodeType_worker,
-						}},
+						Nodes: []*spec.Node{
+							{Name: "1", Private: "1.6", Public: "10.4", NodeType: spec.NodeType_worker},
+							{Name: "2", Private: "1.7", Public: "10.5", NodeType: spec.NodeType_worker},
+						},
 						IsControl: false,
 					}, {
 						NodePoolType: &spec.NodePool_StaticNodePool{StaticNodePool: &spec.StaticNodePool{NodeKeys: make(map[string]string)}},
 						Name:         fmt.Sprintf("stat-%s", rnghash),
-						Nodes: []*spec.Node{{
-							Name:     "1",
-							Private:  "private",
-							Public:   "public",
-							NodeType: spec.NodeType_worker,
-						}, {
-							Name:     "2",
-							Private:  "private",
-							Public:   "public",
-							NodeType: spec.NodeType_worker,
-						}},
+						Nodes: []*spec.Node{
+							{Name: "1", Private: "1.8", Public: "20.6", NodeType: spec.NodeType_worker},
+							{Name: "2", Private: "1.9", Public: "20.7", NodeType: spec.NodeType_worker},
+						},
+						IsControl: false,
+					}},
+				}},
+				desired: &spec.K8Scluster{ClusterInfo: &spec.ClusterInfo{
+					Name: "current",
+					Hash: "hash",
+					NodePools: []*spec.NodePool{{
+						NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 2}},
+						Name:         fmt.Sprintf("pdyn-%s", rnghash),
+						Nodes: []*spec.Node{
+							{Name: "1", Private: "1.2", Public: "10.2", NodeType: spec.NodeType_apiEndpoint},
+							{Name: "2", Private: "1.3", Public: "10.3", NodeType: spec.NodeType_master},
+						},
+						IsControl: true,
+					}, {
+						NodePoolType: &spec.NodePool_StaticNodePool{StaticNodePool: &spec.StaticNodePool{NodeKeys: map[string]string{
+							"20.4":  "pk20.4",
+							"20.10": "pk20.10",
+						}}},
+						Name: fmt.Sprintf("pstat-%s", rnghash),
+						Nodes: []*spec.Node{
+							{Name: "1", Private: "1.4", Public: "20.4", NodeType: spec.NodeType_master},
+							{Name: "2", Private: "1.13", Public: "20.10", NodeType: spec.NodeType_master},
+						},
+						IsControl: true,
+					}, {
+						NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 3}},
+						Name:         fmt.Sprintf("new-%s", rnghash),
+						Nodes: []*spec.Node{
+							{Name: "1", Private: "1.15", Public: "10.21", NodeType: spec.NodeType_worker},
+							{Name: "2", Private: "1.16", Public: "10.22", NodeType: spec.NodeType_worker},
+							{Name: "3", Private: "1.17", Public: "10.23", NodeType: spec.NodeType_worker},
+						},
+						IsControl: false,
+					}},
+				}},
+			},
+			want: &spec.K8Scluster{
+				ClusterInfo: &spec.ClusterInfo{
+					Name: "current",
+					Hash: "hash",
+					NodePools: []*spec.NodePool{{
+						NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 2}},
+						Name:         fmt.Sprintf("pdyn-%s", rnghash),
+						Nodes: []*spec.Node{
+							{Name: "1", Private: "1.2", Public: "10.2", NodeType: spec.NodeType_apiEndpoint},
+							{Name: "2", Private: "1.3", Public: "10.3", NodeType: spec.NodeType_master},
+						},
+						IsControl: true,
+					}, {
+						NodePoolType: &spec.NodePool_StaticNodePool{StaticNodePool: &spec.StaticNodePool{NodeKeys: map[string]string{
+							"20.4":  "pk20.4",
+							"20.10": "pk20.10",
+							"20.5":  "pk20.5",
+						}}},
+						Name: fmt.Sprintf("pstat-%s", rnghash),
+						Nodes: []*spec.Node{
+							{Name: "1", Private: "1.4", Public: "20.4", NodeType: spec.NodeType_master},
+							{Name: fmt.Sprintf("pstat-%s-01", rnghash), Private: "1.13", Public: "20.10", NodeType: spec.NodeType_master},
+							{Name: "2", Private: "1.5", Public: "20.5", NodeType: spec.NodeType_master},
+						},
+						IsControl: true,
+					}, {
+						NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 3}},
+						Name:         fmt.Sprintf("new-%s", rnghash),
+						Nodes: []*spec.Node{
+							{Name: "1", Private: "1.15", Public: "10.21", NodeType: spec.NodeType_worker},
+							{Name: "2", Private: "1.16", Public: "10.22", NodeType: spec.NodeType_worker},
+							{Name: "3", Private: "1.17", Public: "10.23", NodeType: spec.NodeType_worker},
+						},
+						IsControl: false,
+					}, {
+						NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 2}},
+						Name:         fmt.Sprintf("dyn-%s", rnghash),
+						Nodes: []*spec.Node{
+							{Name: "1", Private: "1.6", Public: "10.4", NodeType: spec.NodeType_worker},
+							{Name: "2", Private: "1.7", Public: "10.5", NodeType: spec.NodeType_worker},
+						},
+						IsControl: false,
+					}, {
+						NodePoolType: &spec.NodePool_StaticNodePool{StaticNodePool: &spec.StaticNodePool{NodeKeys: make(map[string]string)}},
+						Name:         fmt.Sprintf("stat-%s", rnghash),
+						Nodes: []*spec.Node{
+							{Name: "1", Private: "1.8", Public: "20.6", NodeType: spec.NodeType_worker},
+							{Name: "2", Private: "1.9", Public: "20.7", NodeType: spec.NodeType_worker},
+						},
 						IsControl: false,
 					}},
 				},
@@ -483,7 +531,8 @@ func Test_craftK8sIR(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got := craftK8sIR(tt.args.k8sDiffResult, tt.args.current, tt.args.desired)
-			if diff := cmp.Diff(got, tt.want, opts); diff != "" {
+			equal := proto.Equal(tt.want, got)
+			if diff := cmp.Diff(got, tt.want, opts); !equal && diff != "" {
 				t.Errorf("craftK8sIR(%v, %v, %v) = %v", tt.args.k8sDiffResult, tt.args.current, tt.args.desired, diff)
 			}
 		})
@@ -506,20 +555,14 @@ func Test_k8sAutoscalerDiff(t *testing.T) {
 				current: &spec.K8Scluster{ClusterInfo: &spec.ClusterInfo{NodePools: []*spec.NodePool{
 					{
 						NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{
-							AutoscalerConfig: &spec.AutoscalerConf{
-								Min: 1,
-								Max: 3,
-							},
+							AutoscalerConfig: &spec.AutoscalerConf{Min: 1, Max: 3},
 						}},
 					},
 				}}},
 				desired: &spec.K8Scluster{ClusterInfo: &spec.ClusterInfo{NodePools: []*spec.NodePool{
 					{
 						NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{
-							AutoscalerConfig: &spec.AutoscalerConf{
-								Min: 2,
-								Max: 3,
-							},
+							AutoscalerConfig: &spec.AutoscalerConf{Min: 2, Max: 3},
 						}},
 					},
 				}}},
@@ -532,20 +575,14 @@ func Test_k8sAutoscalerDiff(t *testing.T) {
 				current: &spec.K8Scluster{ClusterInfo: &spec.ClusterInfo{NodePools: []*spec.NodePool{
 					{
 						NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{
-							AutoscalerConfig: &spec.AutoscalerConf{
-								Min: 1,
-								Max: 3,
-							},
+							AutoscalerConfig: &spec.AutoscalerConf{Min: 1, Max: 3},
 						}},
 					},
 				}}},
 				desired: &spec.K8Scluster{ClusterInfo: &spec.ClusterInfo{NodePools: []*spec.NodePool{
 					{
 						NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{
-							AutoscalerConfig: &spec.AutoscalerConf{
-								Min: 1,
-								Max: 3,
-							},
+							AutoscalerConfig: &spec.AutoscalerConf{Min: 1, Max: 3},
 						}},
 					},
 				}}},
@@ -597,7 +634,6 @@ func TestDiff(t *testing.T) {
 			},
 		},
 	}}
-
 	type args struct {
 		current    *spec.K8Scluster
 		desired    *spec.K8Scluster

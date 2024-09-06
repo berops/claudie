@@ -48,6 +48,8 @@ func run() error {
 
 	errGroup.Go(func() error {
 		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+
 		for {
 			select {
 			case <-errGroupContext.Done():

@@ -338,7 +338,7 @@ func lbsNodePoolDiff(dynamic, static map[string]map[string][]string, desiredLbs 
 
 				// Node names are transferred over from current state based on the public IP.
 				// Thus, at this point we can figure out based on nodes names which were deleted/added
-				// see existing_state.go:transferStaticNpDataOnly
+				// see existing_state.go:transferStaticNodes
 				for _, dnode := range desiredNps.Nodes {
 					found := slices.ContainsFunc(current, func(s string) bool { return s == dnode.Name })
 					if !found {
@@ -348,7 +348,7 @@ func lbsNodePoolDiff(dynamic, static map[string]map[string][]string, desiredLbs 
 
 				// Node names are transferred over from current state based on the public IP.
 				// Thus, at this point we can figure out based on nodes names which were deleted/added
-				// see existing_state.go:transferStaticNpDataOnly
+				// see existing_state.go:transferStaticNodes
 				for _, cnode := range current {
 					found := slices.ContainsFunc(desiredNps.Nodes, func(dn *spec.Node) bool { return cnode == dn.Name })
 					if !found {
@@ -440,7 +440,7 @@ func k8sNodePoolDiff(dynamic, static map[string][]string, desiredCluster *spec.K
 
 			// Node names are transferred over from current state based on the public IP.
 			// Thus, at this point we can figure out based on nodes names which were deleted/added
-			// see existing_state.go:transferStaticNpDataOnly
+			// see existing_state.go:transferStaticNodes
 			for _, dnode := range desired.Nodes {
 				found := slices.ContainsFunc(current, func(s string) bool { return s == dnode.Name })
 				if !found {
@@ -450,7 +450,7 @@ func k8sNodePoolDiff(dynamic, static map[string][]string, desiredCluster *spec.K
 
 			// Node names are transferred over from current state based on the public IP.
 			// Thus, at this point we can figure out based on nodes names which were deleted/added
-			// see existing_state.go:transferStaticNpDataOnly
+			// see existing_state.go:transferStaticNodes
 			for _, cnode := range current {
 				found := slices.ContainsFunc(desired.Nodes, func(dn *spec.Node) bool { return cnode == dn.Name })
 				if !found {
@@ -521,26 +521,47 @@ func craftK8sIR(k8sDiffResult nodePoolDiffResult, current, desired *spec.K8Sclus
 
 	clusterID := utils.GetClusterID(desired.ClusterInfo)
 
-	for nodepool := range k8sDiffResult.partialDeletedDynamic {
+	k := slices.Collect(maps.Keys(k8sDiffResult.partialDeletedDynamic))
+	slices.Sort(k)
+
+	for _, nodepool := range k {
 		inp := utils.GetNodePoolByName(nodepool, ir.ClusterInfo.NodePools)
 		cnp := utils.GetNodePoolByName(nodepool, current.ClusterInfo.NodePools)
 
 		log.Debug().Str("cluster", clusterID).Msgf("nodes from dynamic nodepool %q were partially deleted, crafting ir to include them", nodepool)
 		inp.GetDynamicNodePool().Count = cnp.GetDynamicNodePool().Count
-		fillNodes(clusterID, cnp, inp)
+		fillDynamicNodes(clusterID, cnp, inp)
 	}
 
-	for nodepool := range k8sDiffResult.partialDeletedStatic {
+	k = slices.Collect(maps.Keys(k8sDiffResult.partialDeletedStatic))
+	slices.Sort(k)
+
+	for _, nodepool := range k {
 		log.Debug().Str("cluster", clusterID).Msgf("nodes from static nodepool %q were partially deleted, crafting ir to include them", nodepool)
-		np := utils.GetNodePoolByName(nodepool, ir.ClusterInfo.NodePools)
-		np.Nodes = utils.GetNodePoolByName(nodepool, current.ClusterInfo.NodePools).Nodes
+		inp := utils.GetNodePoolByName(nodepool, ir.ClusterInfo.NodePools)
+		cnp := utils.GetNodePoolByName(nodepool, current.ClusterInfo.NodePools)
+
+		is := inp.GetStaticNodePool()
+		cs := cnp.GetStaticNodePool()
+
+		maps.Insert(is.NodeKeys, maps.All(cs.NodeKeys))
+		transferStaticNodes(cnp, inp)
+
+		for _, cn := range cnp.Nodes {
+			if slices.Contains(k8sDiffResult.partialDeletedStatic[nodepool], cn.Name) {
+				inp.Nodes = append(inp.Nodes, cn)
+			}
+		}
 	}
 
 	deletedNodePools := make(map[string][]string)
 	maps.Insert(deletedNodePools, maps.All(k8sDiffResult.deletedDynamic))
 	maps.Insert(deletedNodePools, maps.All(k8sDiffResult.deletedStatic))
 
-	for nodepool := range deletedNodePools {
+	k = slices.Collect(maps.Keys(deletedNodePools))
+	slices.Sort(k)
+
+	for _, nodepool := range k {
 		log.Debug().Str("cluster", clusterID).Msgf("nodepool %q  deleted, crafting ir to include it", nodepool)
 		np := utils.GetNodePoolByName(nodepool, current.ClusterInfo.NodePools)
 		ir.ClusterInfo.NodePools = append(ir.ClusterInfo.NodePools, np)

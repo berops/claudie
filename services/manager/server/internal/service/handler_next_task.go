@@ -18,8 +18,6 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// TODO: test-set3 invalid nodes name investigate.
-
 func (g *GRPC) NextTask(ctx context.Context, _ *pb.NextTaskRequest) (*pb.NextTaskResponse, error) {
 	cfgs, err := g.Store.ListConfigs(ctx, &store.ListFilter{ManifestState: []string{manifest.Scheduled.String()}})
 	if err != nil {
@@ -128,7 +126,7 @@ func transferExistingData(state *spec.ClusterState, te *spec.TaskEvent) error {
 				}
 
 				dnp := state.Desired.K8S.ClusterInfo.NodePools[di]
-				transferDynamicNpDataOnly(utils.GetClusterID(state.Desired.K8S.ClusterInfo), cnp, dnp, false)
+				transferDynamicNp(utils.GetClusterID(state.Desired.K8S.ClusterInfo), cnp, dnp, false)
 			}
 			return nil
 		} else {
