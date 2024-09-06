@@ -10,7 +10,8 @@ import (
 	v1beta "github.com/berops/claudie/services/claudie-operator/pkg/api/v1beta1"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	yaml "k8s.io/apimachinery/pkg/util/yaml"
+
+	"gopkg.in/yaml.v3"
 )
 
 // deleteInputManifest will delete an inputManifest from the cluster in the specified namespace

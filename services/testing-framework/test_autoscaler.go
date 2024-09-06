@@ -8,8 +8,8 @@ import (
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
+	managerclient "github.com/berops/claudie/services/manager/client"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
@@ -67,140 +67,137 @@ spec:
             requests:
               memory: 500Mi`
 	// Time in which Autoscaler should trigger scale up
-	scaleUpTimeout = 3
+	scaleUpTimeout = 180 // 3 mins
 	// Time in which Autoscaler should trigger scale down
-	scaleDownTimeout = 15
+	scaleDownTimeout = 900 // 15 mins
 )
 
 // testAutoscaler tests the Autoscaler deployment.
 func testAutoscaler(ctx context.Context, config *spec.Config) error {
+	manager, err := managerclient.New(&log.Logger)
+	if err != nil {
+		return err
+	}
+	defer manager.Close()
+
 	autoscaledClusters := getAutoscaledClusters(config)
-	if len(autoscaledClusters) == 0 {
-		// No clusters are currently autoscaled.
-		return testLonghornDeployment(ctx, config)
-	}
 
-	c, cc := clientConnection()
-	defer func() {
-		err := cc.Close()
-		if err != nil {
-			log.Err(err).Msgf("error while closing client connection")
-		}
-	}()
+	group, ctx := errgroup.WithContext(ctx)
 
-	var clusterGroup errgroup.Group
 	for _, cluster := range autoscaledClusters {
-		func(cluster *spec.K8Scluster) {
-			clusterGroup.Go(
-				func() error {
-					log.Info().Msgf("Deploying pods which should be ignored by autoscaler for cluster %s", cluster.ClusterInfo.Name)
-					return applyDeployment(cluster, scaleUpDeploymentIgnored)
-				})
-		}(cluster)
+		group.Go(func() error {
+			log.Info().Msgf("Deploying pods which should be ignored by autoscaler for cluster %s", cluster.ClusterInfo.Name)
+			return applyDeployment(cluster, scaleUpDeploymentIgnored)
+		})
 	}
 
-	if err := clusterGroup.Wait(); err != nil {
+	if err := group.Wait(); err != nil {
 		return fmt.Errorf("failed to deploy scale up deployment which should be ignored: %w", err)
 	}
-	// Wait before checking for changes
-	log.Info().Msgf("Waiting %d minutes to see if autoscaler starts the scale up", scaleUpTimeout)
-	time.Sleep(scaleUpTimeout * time.Minute)
 
-	// Check if build has been started, if yes, error.
-	if res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: config.Id, Type: pb.IdType_HASH}); err == nil {
-		if !checksumsEqual(res.Config.DsChecksum, res.Config.CsChecksum) {
-			return fmt.Errorf("some cluster/s in config %s have been scaled up, when they should not", config.Name)
-		} else {
-			log.Info().Msgf("Config %s has successfully passed autoscaling test [1/3]", config.Name)
+	log.Info().Msgf("Waiting %d seconds to see if autoscaler starts the scale up [1/3]", scaleUpTimeout)
+	for elapsed := 0; elapsed < scaleUpTimeout; elapsed += 30 {
+		time.Sleep(30 * time.Second)
+
+		res, err := manager.GetConfig(ctx, &managerclient.GetConfigRequest{Name: config.Name})
+		if err != nil {
+			return fmt.Errorf("error while retrieving config %s from DB : %w", config.Name, err)
 		}
-	} else {
-		return fmt.Errorf("error while retrieving config %s from DB : %w", config.Name, err)
+
+		if res.Config.Manifest.State == spec.Manifest_Scheduled {
+			return fmt.Errorf("some cluster/s in config %s have been scaled up, when they should not", config.Name)
+		}
 	}
+
+	log.Info().Msgf("Config %s has successfully passed autoscaling test [1/3]", config.Name)
+
 	// Apply scale up deployment.
 	for _, cluster := range autoscaledClusters {
-		func(cluster *spec.K8Scluster) {
-			clusterGroup.Go(
-				func() error {
-					log.Info().Msgf("Deploying pods which should trigger scale up by autoscaler for cluster %s", cluster.ClusterInfo.Name)
-					return applyDeployment(cluster, scaleUpDeployment)
-				})
-		}(cluster)
+		group.Go(func() error {
+			log.Info().Msgf("Deploying pods which should trigger scale up by autoscaler for cluster %s", cluster.ClusterInfo.Name)
+			return applyDeployment(cluster, scaleUpDeployment)
+		})
 	}
-
-	if err := clusterGroup.Wait(); err != nil {
+	if err := group.Wait(); err != nil {
 		return fmt.Errorf("failed to deploy scale up deployment : %w", err)
 	}
 
 	// Wait before checking for changes.
-	log.Info().Msgf("Waiting %d minutes to see if autoscaler starts the scale up", scaleUpTimeout)
-	time.Sleep(scaleUpTimeout * time.Minute)
+	log.Info().Msgf("Waiting %d seconds to see if autoscaler starts the scale up [2/3]", scaleUpTimeout)
+	scheduled := false
+	for elapsed := 0; elapsed < scaleUpTimeout; elapsed += 30 {
+		time.Sleep(30 * time.Second)
 
-	// Check if build has been started, if no, error (Scale up).
-	if res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: config.Id, Type: pb.IdType_HASH}); err == nil {
-		if checksumsEqual(res.Config.DsChecksum, res.Config.CsChecksum) {
-			return fmt.Errorf("some cluster/s in config %s have not been scaled up, when they should have", config.Name)
-		} else {
-			log.Info().Msgf("Config %s has successfully passed autoscaling test [2/3]", config.Name)
+		res, err := manager.GetConfig(ctx, &managerclient.GetConfigRequest{Name: config.Name})
+		if err != nil {
+			return fmt.Errorf("error while retrieving config %s from DB : %w", config.Name, err)
 		}
-	} else {
+
+		scheduled = scheduled || res.Config.Manifest.State == spec.Manifest_Scheduled
+	}
+	if !scheduled {
+		return fmt.Errorf("some cluster/s in config %s have not been scaled up, when they should have [2/3]", config.Name)
+	}
+
+	log.Info().Msgf("Config %s has successfully passed autoscaling test [2/3]", config.Name)
+
+	err = waitForDoneOrError(ctx, manager, testset{Config: config.Name, Set: "autoscaling", Manifest: "scale-up-test"})
+	if err != nil {
+		return err
+	}
+
+	// Test longhorn.
+	// Get new config from DB with updated counts.
+	resp, err := manager.GetConfig(ctx, &managerclient.GetConfigRequest{Name: config.Name})
+	if err != nil {
 		return fmt.Errorf("error while retrieving config %s from DB : %w", config.Name, err)
 	}
 
-	// Wait until build is finished.
-	if err := configChecker(ctx, c, "autoscaling", "scale-up-test", idInfo{id: config.Id, idType: pb.IdType_HASH}); err != nil {
+	if err := testLonghornDeployment(ctx, resp.Config); err != nil {
 		return err
-	}
-	// Test longhorn.
-	// Get new config from DB with updated counts.
-	if res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: config.Id, Type: pb.IdType_HASH}); err != nil {
-		return err
-	} else {
-		if err := testLonghornDeployment(ctx, res.Config); err != nil {
-			return err
-		}
 	}
 
 	for _, cluster := range autoscaledClusters {
-		func(cluster *spec.K8Scluster) {
-			clusterGroup.Go(
-				func() error {
-					log.Info().Msgf("Removing pods which should trigger scale down by autoscaler for cluster %s", cluster.ClusterInfo.Name)
-					return removeDeployment(cluster, scaleUpDeployment)
-				})
-		}(cluster)
+		group.Go(func() error {
+			log.Info().Msgf("Removing pods which should trigger scale down by autoscaler for cluster %s [3/3]", cluster.ClusterInfo.Name)
+			return removeDeployment(cluster, scaleUpDeployment)
+		})
 	}
-	if err := clusterGroup.Wait(); err != nil {
+
+	if err := group.Wait(); err != nil {
 		return fmt.Errorf("failed to remove scale up deployment : %w", err)
 	}
 
-	// Wait before checking for changes.
-	log.Info().Msgf("Waiting %d minutes to let autoscaler start the scale down", scaleDownTimeout)
-	time.Sleep(scaleDownTimeout * time.Minute)
-	// Check if build has been started, if not, error (Scale down).
-	if res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: config.Id, Type: pb.IdType_HASH}); err == nil {
-		if checksumsEqual(res.Config.DsChecksum, res.Config.CsChecksum) {
-			return fmt.Errorf("some cluster/s in config %s have not been scaled down, when they should have", config.Name)
-		} else {
-			log.Info().Msgf("Config %s has successfully passed autoscaling test [3/3]", config.Name)
+	log.Info().Msgf("Waiting %d seconds to let autoscaler start the scale down [3/3]", scaleDownTimeout)
+	scheduled = false
+	for elapsed := 0; elapsed < scaleDownTimeout; elapsed += 30 {
+		time.Sleep(30 * time.Second)
+
+		res, err := manager.GetConfig(ctx, &managerclient.GetConfigRequest{Name: config.Name})
+		if err != nil {
+			return fmt.Errorf("error while retrieving config %s from DB : %w", config.Name, err)
 		}
-	} else {
-		return fmt.Errorf("error while retrieving config %s from DB : %w", config.Name, err)
+
+		scheduled = scheduled || res.Config.Manifest.State == spec.Manifest_Scheduled
 	}
-	// Wait until build is finished.
-	if err := configChecker(ctx, c, "autoscaling", "scale-down-test", idInfo{id: config.Id, idType: pb.IdType_HASH}); err != nil {
+	if !scheduled {
+		return fmt.Errorf("some cluster/s in config %s have not been scaled down, when they should have [3/3]", config.Name)
+	}
+
+	log.Info().Msgf("Config %s has successfully passed autoscaling test [3/3]", config.Name)
+
+	err = waitForDoneOrError(ctx, manager, testset{Config: config.Name, Set: "autoscaling", Manifest: "scale-down-test"})
+	if err != nil {
 		return err
 	}
 
-	// Test longhorn.
 	// Get new config from DB with updated counts.
-	if res, err := c.GetConfigFromDB(context.Background(), &pb.GetConfigFromDBRequest{Id: config.Id, Type: pb.IdType_HASH}); err != nil {
-		return err
-	} else {
-		if err := testLonghornDeployment(ctx, res.Config); err != nil {
-			return err
-		}
+	resp, err = manager.GetConfig(ctx, &managerclient.GetConfigRequest{Name: config.Name})
+	if err != nil {
+		return fmt.Errorf("error while retrieving config %s from DB : %w", config.Name, err)
 	}
-	return nil
+
+	return testLonghornDeployment(ctx, resp.Config)
 }
 
 // applyDeployment applies specified deployment into specified cluster.
