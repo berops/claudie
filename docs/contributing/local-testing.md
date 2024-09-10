@@ -173,7 +173,7 @@ loadBalancers:
 
 ### Test Claudie using manual manifest injection
 
-To test Claudie in a more "manual" way, you can use the specified [GRPC API](../../proto/manager.proto) to inject/delete/modify an input manifest. 
+To test Claudie in a more "manual" way, you can use the specified [GRPC API](https://github.com/berops/claudie/blob/master/proto/manager.proto) to inject/delete/modify an input manifest. 
 
 ### Deploy Claudie in the local cluster for testing
 

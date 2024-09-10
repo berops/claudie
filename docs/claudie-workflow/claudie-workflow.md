@@ -35,7 +35,7 @@
 Manger is the brain and main entry point for claudie.
 To build clusters users/services submit their configs to the manager service. The manager creates the desired state and schedules a number of jobs to be executed in order to achieve the desired state based on the current state. The jobs are then picked up by the builder service.
 
-For the API see the [GRPC definitions](../../proto/manager.proto).
+For the API see the [GRPC definitions](https://github.com/berops/claudie/blob/master/proto/manager.proto).
 
 ### Flow
 
@@ -74,7 +74,7 @@ Processed tasks scheduled by the manager gradually building the desired state of
 
 Terraformer creates or destroys infrastructure via Terraform calls.
 
-For the API see the [GRPC definitions](../../proto/terraformer.proto).
+For the API see the [GRPC definitions](https://github.com/berops/claudie/blob/master/proto/terraformer.proto).
 
 ## Ansibler
 
@@ -84,20 +84,20 @@ Ansibler uses Ansible to:
 - set up nginx load balancer for the infrastructure
 - install dependencies for required by nodes in a kubernetes cluster
 
-For the API see the [GRPC definitions](../../proto/ansibler.proto).
+For the API see the [GRPC definitions](https://github.com/berops/claudie/blob/master/proto/ansibler.proto).
 
 ## Kube-eleven
 
 Kube-eleven uses [KubeOne](https://github.com/kubermatic/kubeone) to spin up a kubernetes clusters,
 out of the spawned and pre-configured infrastructure.
 
-For the API see the [GRPC definitions](../../proto/kubeEleven.proto).
+For the API see the [GRPC definitions](https://github.com/berops/claudie/blob/master/proto/kubeEleven.proto).
 
 ## Kuber
 
 Kuber manipulates the cluster resources using `kubectl`.
 
-For the API see the [GRPC definitions](../../proto/kuber.proto).
+For the API see the [GRPC definitions](https://github.com/berops/claudie/blob/master/proto/kuber.proto).
 
 ## Claudie-operator
 
