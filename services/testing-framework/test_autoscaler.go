@@ -82,17 +82,19 @@ func testAutoscaler(ctx context.Context, config *spec.Config) error {
 
 	autoscaledClusters := getAutoscaledClusters(config)
 
-	group, ctx := errgroup.WithContext(ctx)
+	{
+		group := new(errgroup.Group)
 
-	for _, cluster := range autoscaledClusters {
-		group.Go(func() error {
-			log.Info().Msgf("Deploying pods which should be ignored by autoscaler for cluster %s", cluster.ClusterInfo.Name)
-			return applyDeployment(cluster, scaleUpDeploymentIgnored)
-		})
-	}
+		for _, cluster := range autoscaledClusters {
+			group.Go(func() error {
+				log.Info().Msgf("Deploying pods which should be ignored by autoscaler for cluster %s", cluster.ClusterInfo.Name)
+				return applyDeployment(cluster, scaleUpDeploymentIgnored)
+			})
+		}
 
-	if err := group.Wait(); err != nil {
-		return fmt.Errorf("failed to deploy scale up deployment which should be ignored: %w", err)
+		if err := group.Wait(); err != nil {
+			return fmt.Errorf("failed to deploy scale up deployment which should be ignored: %w", err)
+		}
 	}
 
 	log.Info().Msgf("Waiting %d seconds to see if autoscaler starts the scale up [1/3]", scaleUpTimeout)
@@ -111,15 +113,18 @@ func testAutoscaler(ctx context.Context, config *spec.Config) error {
 
 	log.Info().Msgf("Config %s has successfully passed autoscaling test [1/3]", config.Name)
 
-	// Apply scale up deployment.
-	for _, cluster := range autoscaledClusters {
-		group.Go(func() error {
-			log.Info().Msgf("Deploying pods which should trigger scale up by autoscaler for cluster %s", cluster.ClusterInfo.Name)
-			return applyDeployment(cluster, scaleUpDeployment)
-		})
-	}
-	if err := group.Wait(); err != nil {
-		return fmt.Errorf("failed to deploy scale up deployment : %w", err)
+	{
+		group := new(errgroup.Group)
+		// Apply scale up deployment.
+		for _, cluster := range autoscaledClusters {
+			group.Go(func() error {
+				log.Info().Msgf("Deploying pods which should trigger scale up by autoscaler for cluster %s", cluster.ClusterInfo.Name)
+				return applyDeployment(cluster, scaleUpDeployment)
+			})
+		}
+		if err := group.Wait(); err != nil {
+			return fmt.Errorf("failed to deploy scale up deployment : %w", err)
+		}
 	}
 
 	// Wait before checking for changes.
@@ -157,15 +162,19 @@ func testAutoscaler(ctx context.Context, config *spec.Config) error {
 		return err
 	}
 
-	for _, cluster := range autoscaledClusters {
-		group.Go(func() error {
-			log.Info().Msgf("Removing pods which should trigger scale down by autoscaler for cluster %s [3/3]", cluster.ClusterInfo.Name)
-			return removeDeployment(cluster, scaleUpDeployment)
-		})
-	}
+	{
+		group := new(errgroup.Group)
 
-	if err := group.Wait(); err != nil {
-		return fmt.Errorf("failed to remove scale up deployment : %w", err)
+		for _, cluster := range autoscaledClusters {
+			group.Go(func() error {
+				log.Info().Msgf("Removing pods which should trigger scale down by autoscaler for cluster %s [3/3]", cluster.ClusterInfo.Name)
+				return removeDeployment(cluster, scaleUpDeployment)
+			})
+		}
+
+		if err := group.Wait(); err != nil {
+			return fmt.Errorf("failed to remove scale up deployment : %w", err)
+		}
 	}
 
 	log.Info().Msgf("Waiting %d seconds to let autoscaler start the scale down [3/3]", scaleDownTimeout)

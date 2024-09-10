@@ -138,7 +138,7 @@ func (t *Client) GetConfig(ctx context.Context, request *GetConfigRequest) (*Get
 		t.logger.Debug().Msgf("GetConfig(): no config with name %q found", request.Name)
 		return nil, fmt.Errorf("config with name %q: %w", request.Name, ErrNotFound)
 	}
-	t.logger.Debug().Msgf("Received error %v while calling UpsertManifest", err)
+	t.logger.Debug().Msgf("Received error %v while calling GetConfig", err)
 	return nil, err
 }
 
