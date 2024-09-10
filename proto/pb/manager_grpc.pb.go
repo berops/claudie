@@ -22,13 +22,30 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ManagerServiceClient interface {
+	// UpsertManifest will process the request by either created a new configuration for the
+	// given input manifest or updating an existing one.
 	UpsertManifest(ctx context.Context, in *UpsertManifestRequest, opts ...grpc.CallOption) (*UpsertManifestResponse, error)
+	// MarkForDeletion will mark the requested configuration to be deleted. Once the
+	// manager determines the configuration can be deleted it will be deleted.
 	MarkForDeletion(ctx context.Context, in *MarkForDeletionRequest, opts ...grpc.CallOption) (*MarkForDeletionResponse, error)
+	// ListConfigs will list all stored configuration that the manager manages.
 	ListConfigs(ctx context.Context, in *ListConfigRequest, opts ...grpc.CallOption) (*ListConfigResponse, error)
+	// GetConfig will retrieve the requested configuration by name.
 	GetConfig(ctx context.Context, in *GetConfigRequest, opts ...grpc.CallOption) (*GetConfigResponse, error)
+	// NextTask will return the next available task to be worked on or a nil response if no task is available.
 	NextTask(ctx context.Context, in *NextTaskRequest, opts ...grpc.CallOption) (*NextTaskResponse, error)
+	// TaskUpdate will update the state of the requested task. This should be periodically called as the task
+	// that was picked up by the NextTask RPC enters different stages of the build process.
 	TaskUpdate(ctx context.Context, in *TaskUpdateRequest, opts ...grpc.CallOption) (*TaskUpdateResponse, error)
+	// UpdateCurrentState updates the current state with the specified version in the request.
+	// This should be called after a Task has been processed, either successfully or not, so that
+	// subsequent tasks will work with an up-to-date current state that reflects the actual state
+	// of the infrastructure.
 	UpdateCurrentState(ctx context.Context, in *UpdateCurrentStateRequest, opts ...grpc.CallOption) (*UpdateCurrentStateResponse, error)
+	// UpdateNodePool updates a single nodepool within a cluster, and should only be called by
+	// the autoscaler-adapter service. This RPC bypasses the main loop of how changes are applied
+	// to the configuration, and directly changes the nodepool to the state specified in the request
+	// to initiate the build process.
 	UpdateNodePool(ctx context.Context, in *UpdateNodePoolRequest, opts ...grpc.CallOption) (*UpdateNodePoolResponse, error)
 }
 
@@ -116,13 +133,30 @@ func (c *managerServiceClient) UpdateNodePool(ctx context.Context, in *UpdateNod
 // All implementations must embed UnimplementedManagerServiceServer
 // for forward compatibility
 type ManagerServiceServer interface {
+	// UpsertManifest will process the request by either created a new configuration for the
+	// given input manifest or updating an existing one.
 	UpsertManifest(context.Context, *UpsertManifestRequest) (*UpsertManifestResponse, error)
+	// MarkForDeletion will mark the requested configuration to be deleted. Once the
+	// manager determines the configuration can be deleted it will be deleted.
 	MarkForDeletion(context.Context, *MarkForDeletionRequest) (*MarkForDeletionResponse, error)
+	// ListConfigs will list all stored configuration that the manager manages.
 	ListConfigs(context.Context, *ListConfigRequest) (*ListConfigResponse, error)
+	// GetConfig will retrieve the requested configuration by name.
 	GetConfig(context.Context, *GetConfigRequest) (*GetConfigResponse, error)
+	// NextTask will return the next available task to be worked on or a nil response if no task is available.
 	NextTask(context.Context, *NextTaskRequest) (*NextTaskResponse, error)
+	// TaskUpdate will update the state of the requested task. This should be periodically called as the task
+	// that was picked up by the NextTask RPC enters different stages of the build process.
 	TaskUpdate(context.Context, *TaskUpdateRequest) (*TaskUpdateResponse, error)
+	// UpdateCurrentState updates the current state with the specified version in the request.
+	// This should be called after a Task has been processed, either successfully or not, so that
+	// subsequent tasks will work with an up-to-date current state that reflects the actual state
+	// of the infrastructure.
 	UpdateCurrentState(context.Context, *UpdateCurrentStateRequest) (*UpdateCurrentStateResponse, error)
+	// UpdateNodePool updates a single nodepool within a cluster, and should only be called by
+	// the autoscaler-adapter service. This RPC bypasses the main loop of how changes are applied
+	// to the configuration, and directly changes the nodepool to the state specified in the request
+	// to initiate the build process.
 	UpdateNodePool(context.Context, *UpdateNodePoolRequest) (*UpdateNodePoolResponse, error)
 	mustEmbedUnimplementedManagerServiceServer()
 }
