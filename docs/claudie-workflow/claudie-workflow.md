@@ -6,8 +6,7 @@
 
 ### Microservices
 
-- [Context-box](https://github.com/berops/claudie/tree/master/services/context-box)
-- [Scheduler](https://github.com/berops/claudie/tree/master/services/scheduler)
+- [Manager](https://github.com/berops/claudie/tree/master/services/manager)
 - [Builder](https://github.com/berops/claudie/tree/master/services/builder)
 - [Terraformer](https://github.com/berops/claudie/tree/master/services/terraformer)
 - [Ansibler](https://github.com/berops/claudie/tree/master/services/ansibler)
@@ -31,226 +30,69 @@
 - [Calico](https://github.com/projectcalico/calico)
 - [gRPC](https://grpc.io/)
 
-## Context-box
+## Manager
 
-Context box is Claudie's "control unit". It holds pending configs, which need to be processed, periodically checks for new/changed configs and receives new configs from an InputManifest CRD consumed by the`claudie-operator`.
+Manger is the brain and main entry point for claudie.
+To build clusters users/services submit their configs to the manager service. The manager creates the desired state and schedules a number of jobs to be executed in order to achieve the desired state based on the current state. The jobs are then picked up by the builder service.
 
-### API
-
-```go
-  // SaveConfigOperator saves the InputManifest consumed by Claudie-operator.
-  rpc SaveConfigOperator(SaveConfigRequest) returns (SaveConfigResponse);
-  // SaveConfigScheduler saves the config parsed by Scheduler.
-  rpc SaveConfigScheduler(SaveConfigRequest) returns (SaveConfigResponse);
-  // SaveConfigBuilder saves the config parsed by Builder.
-  rpc SaveConfigBuilder(SaveConfigRequest) returns (SaveConfigResponse);
-  // GetConfigFromDB gets a single config from the database.
-  rpc GetConfigFromDB(GetConfigFromDBRequest) returns (GetConfigFromDBResponse);
-  // GetConfigScheduler gets a config from Scheduler's queue of pending configs.
-  rpc GetConfigScheduler(GetConfigRequest) returns (GetConfigResponse);
-  // GetConfigBuilder gets a config from Builder's queue of pending configs.
-  rpc GetConfigBuilder(GetConfigRequest) returns (GetConfigResponse);
-  // GetAllConfigs gets all configs from the database.
-  rpc GetAllConfigs(GetAllConfigsRequest) returns (GetAllConfigsResponse);
-  // DeleteConfig sets the manifest to null, effectively forcing the deletion of the infrastructure
-  // defined by the manifest on the very next config (diff-) check.
-  rpc DeleteConfig(DeleteConfigRequest) returns (DeleteConfigResponse);
-  // DeleteConfigFromDB deletes the config from the database.
-  rpc DeleteConfigFromDB(DeleteConfigRequest) returns (DeleteConfigResponse);
-  // UpdateNodepool updates specific nodepool from the config. Used mainly for autoscaling.
-  rpc UpdateNodepool(UpdateNodepoolRequest) returns (UpdateNodepoolResponse);
-```
+For the API see the [GRPC definitions](../../proto/manager.proto).
 
 ### Flow
 
-- Receives an InputManifest CRD from Claudie-operator, calculates its `msChecksum` and saves it to the database
-- Periodically checks for `config` changes and pushes the `config` to the `schedulerQueue` if `msChecksum` != `dsChecksum`
-- Periodically checks for `config` changes and pushes the `config` to the `builderQueue` if `dsChecksum` != `csChecksum`
-- Receives a `config` with the `desiredState` from Scheduler and saves it to the database
-- Receives a `config` with the `currentState` from Builder and saves it to the database
-
-### Variables used
-
-| variable     | meaning                |
-| ------------ | ---------------------- |
-| `msChecksum` | manifest checksum      |
-| `dsChecksum` | desired state checksum |
-| `csChecksum` | current state checksum |
-
-## Scheduler
-
-Scheduler brings the infrastructure to a desired the state based on the manifest contained in the config that is received from Context-box.
-
-Scheduler also monitors the health of current infrastructure and manages any operations based on actual health state (e.g. replacement of broken nodes, etc. *[work in progress]*).
-
-### API
-
->This service is a gRPC client, thus it does not provide any API
-
-### Flow
-
-- Periodically pulls `config` from Context-Box's `schedulerQueue`
-- Creates `desiredState` with `dsChecksum` based on the `config`
-- Sends the `config` file back to Context-box
+Each newly created manifest starts in the Pending state. Pending manifests
+are periodically checked and based on the specification provided in the applied configs, the desired
+state for each cluster, along with the tasks to be performed to achieve the desired state are created,
+after which the manifest is moved to the  scheduled state. Tasks from Scheduled manifests are picked up
+by builder services gradually building the desired state. From this state, the manifest can end up in the 
+Done or Error state. Any changes to the input manifest while it is in the Scheduled state will be reflected after 
+it is moved to the Done state. After which the cycle repeats.
 
 ## Builder
 
-Builder aligns the current state of the infrastructure with the desired state. It calls methods on `terraformer`, `ansibler`, `kube-eleven` and `kuber` in order to manage the infrastructure. It follows that Builder also takes care of deleting nodes from a kubernetes cluster by finding differences between `desiredState` and `currentState`.
-
-### API
-
->This service is a gRPC client, thus it does not provide any API
+Processed tasks scheduled by the manager gradually building the desired state of the infrastructure. It communicates with `terraformer`, `ansibler`, `kube-eleven` and `kuber` services in order to manage the infrastructure. 
 
 ### Flow
 
-- Periodically polls Context-Box's `builderQueue` for changes in `config`, pulls it when changed
-- Calls Terraformer, Ansibler, Kube-eleven and Kuber
-- Creates `currentState`
-- Sends updated `config` with the `currentState` to Context-box
+- Periodically polls Manager for available tasks to be worked on.
+- Communicates with Terraformer, Ansibler, Kube-eleven and Kuber
+- After a task is completed, either successfully or not, the current state is updated along with the status, if errored.
 
 ## Terraformer
 
-Terraformer creates or destroys infrastructure (specified in the desired state) via Terraform calls.
+Terraformer creates or destroys infrastructure via Terraform calls.
 
-### API
-
-```go
-  // BuildInfrastructure builds the infrastructure based on the provided desired state (includes addition/deletion of *stuff*).
-  rpc BuildInfrastructure(BuildInfrastructureRequest) returns (BuildInfrastructureResponse);
-  // DestroyInfrastructure destroys the infrastructure completely.
-  rpc DestroyInfrastructure(DestroyInfrastructureRequest) returns (DestroyInfrastructureResponse);
-```
-
-### Flow
-
-- Receives a `config` from Builder
-- Uses Terraform to create infrastructure based on the `desiredState`
-- Updates the `currentState` in the `config`
-- Upon receiving a deletion request, Terraformer destroys the infrastructure based on the current state
+For the API see the [GRPC definitions](../../proto/terraformer.proto).
 
 ## Ansibler
 
 Ansibler uses Ansible to:
 
-- set up Wireguard VPN between the nodes
-- set up nginx load balancer
-- install dependencies for nodes in a kubernetes cluster
+- set up Wireguard VPN between the infrastructure spawned in the Terraformer service. 
+- set up nginx load balancer for the infrastructure
+- install dependencies for required by nodes in a kubernetes cluster
 
-### API
-
-```go
-  // InstallNodeRequirements installs any requirements there are on all of the nodes.
-  rpc InstallNodeRequirements(InstallRequest) returns (InstallResponse);
-  // InstallVPN sets up a VPN between the nodes in the k8s cluster and LB clusters.
-  rpc InstallVPN(InstallRequest) returns (InstallResponse);
-  // SetUpLoadbalancers sets up the load balancers together with the DNS and verifies their configuration.
-  rpc SetUpLoadbalancers(SetUpLBRequest) returns (SetUpLBResponse);
-  // TeardownLoadBalancers correctly destroys the load balancers attached to a k8s
-  // cluster by choosing a new ApiServer endpoint.
-  rpc TeardownLoadBalancers(TeardownLBRequest) returns (TeardownLBResponse);
-  // UpdateAPIEndpoint handles changes of API endpoint between control nodes.
-  // It will update the current stage based on the information from the desired state.
-  rpc UpdateAPIEndpoint(UpdateAPIEndpointRequest) returns (UpdateAPIEndpointResponse);
-```
-
-### Flow
-
-- Receives a `configToDelete` from Builder for `TeardownLoadBalancers()`
-  - Finds the new ApiEndpoint among the control nodes of the k8s-cluster.
-  - Sets up new certs for the endpoint to be reachable
-- Receives a `config` from Builder for `InstallVPN()`
-  - Sets up ansible *inventory*, and installs the Wireguard full mesh VPN using a playbook
-  - Updates the `currentState` in a `config`
-- Receives a `config` from Builder for `InstallNodeRequirements()`
-  - Sets up ansible *inventory*, and installs any prerequisites, as per individual nodes' requirements
-  - Updates the `currentState` in a `config`
-- Receives a `config` from Builder for `SetUpLoadbalancers()`
-  - Sets up the ansible inventory, and installs nginx load balancers
-  - Creates and verifies the DNS configuration for the load balancers
-
-- `UpdateAPIEndpoint()` is called in specific use cases when there is change 
-in the api endpoint of a control plane.
+For the API see the [GRPC definitions](../../proto/ansibler.proto).
 
 ## Kube-eleven
 
-Kube-eleven uses [KubeOne](https://github.com/kubermatic/kubeone) to set up kubernetes clusters.
-After cluster creation, it assures the cluster stays healthy and keeps running smoothly.
+Kube-eleven uses [KubeOne](https://github.com/kubermatic/kubeone) to spin up a kubernetes clusters,
+out of the spawned and pre-configured infrastructure.
 
-### API
-
-```go
-  // BuildCluster builds the kubernetes clusters specified in the provided config.
-  rpc BuildCluster(BuildClusterRequest) returns (BuildClusterResponse);
-```
-
-### Flow
-
-- Receives a `config` object from Builder
-- Generates KubeOne manifest based on the `desiredState`
-- Uses KubeOne to provision a kubernetes cluster
-- Updates the `currentState` in the `config`
+For the API see the [GRPC definitions](../../proto/kubeEleven.proto).
 
 ## Kuber
 
 Kuber manipulates the cluster resources using `kubectl`.
 
-### API
-
-```go
-  // RemoveLBScrapeConfig removes scrape config for every LB detached from this cluster.
-  rpc RemoveLBScrapeConfig(RemoveLBScrapeConfigRequest) returns (RemoveLBScrapeConfigResponse);
-  // StoreLBScrapeConfig stores scrape config for every LB attached to this cluster.
-  rpc StoreLBScrapeConfig(StoreLBScrapeConfigRequest) returns (StoreLBScrapeConfigResponse);
-  // StoreClusterMetadata creates a secret, which holds the private key and a list of public IP addresses of the cluster supplied.
-  rpc StoreClusterMetadata(StoreClusterMetadataRequest) returns (StoreClusterMetadataResponse);
-  // DeleteClusterMetadata deletes the secret holding the private key and public IP addresses of the cluster supplied.
-  rpc DeleteClusterMetadata(DeleteClusterMetadataRequest) returns (DeleteClusterMetadataResponse);
-  // SetUpStorage installs Longhorn into the cluster.
-  rpc SetUpStorage(SetUpStorageRequest) returns (SetUpStorageResponse); 
-  // StoreKubeconfig creates a secret, which holds the kubeconfig of a Claudie-created cluster.
-  rpc StoreKubeconfig(StoreKubeconfigRequest) returns (StoreKubeconfigResponse);
-  // DeleteKubeconfig removes the secret that holds the kubeconfig of a Claudie-created cluster.
-  rpc DeleteKubeconfig(DeleteKubeconfigRequest) returns (DeleteKubeconfigResponse);
-  // DeleteNodes deletes the specified nodes from a k8s cluster.
-  rpc DeleteNodes(DeleteNodesRequest) returns (DeleteNodesResponse);
-  // PatchNodes applies attributes like providerID, labels or taints to the nodes.
-  rpc PatchNodes(PatchNodeTemplateRequest) returns (PatchNodeTemplateResponse);
-  // SetUpClusterAutoscaler deploys Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
-  rpc SetUpClusterAutoscaler(SetUpClusterAutoscalerRequest) returns (SetUpClusterAutoscalerResponse);
-  // DestroyClusterAutoscaler deletes Cluster Autoscaler and Autoscaler Adapter for every cluster specified.
-  rpc DestroyClusterAutoscaler(DestroyClusterAutoscalerRequest) returns (DestroyClusterAutoscalerResponse);
-  // PatchClusterInfoConfigMap updates the cluster-info config map in the kube-public namespace with the new
-  // kubeconfig. This needs to be done after an api endpoint change as the config map in the kube-public namespace
-  // is used by kubeadm when joining.
-  rpc PatchClusterInfoConfigMap(PatchClusterInfoConfigMapRequest) returns (PatchClusterInfoConfigMapResponse);
-```
-
-### Flow
-- Recieves a `config` from Builder for `PatchClusterInfoConfigMap`
-  - updatedes kubeconfig to reflect the new changed endpoint.
-- Receives a `config` from Builder for `SetUpStorage()`
-  - Applies the `longhorn` deployment
-- Receives a `config` from Builder for `StoreKubeconfig()`
-  - Creates a kubernetes secret that holds the kubeconfig of the Claudie-created cluster
-- Receives a `config` from Builder for `StoreMetadata()`
-  - Creates a kubernetes secret that holds the node metadata of the Claudie-created cluster
-- Receives a `config` from Builder for `StoreLBScrapeConfig()`
-  - Stores scrape config for any LB attached to the Claudie-made cluster.
-- Receives a `config` from Builder for `PatchNodes()`
-  - Patches the node manifests of the Claudie-made cluster.
-- Upon infrastructure deletion request, Kuber deletes the kubeconfig secret, metadata secret, scrape configs and autoscaler of the cluster being deleted
+For the API see the [GRPC definitions](../../proto/kuber.proto).
 
 ## Claudie-operator
 
-Claudie-operator is a layer between the user and Claudie. It is a `InputManifest` Custom Resource Definition controller, that will communicate with `context-box` to maintain the input manifest state.
-New manifests are added as CRD into the Kubernetes cluster where Claudie-operator pulls them and saves them to Claudie.
-
-### API
-
->This service is a gRPC client, thus it does not provide any API
+Claudie-operator is a layer between the user and Claudie. It is a `InputManifest` Custom Resource Definition controller, 
+that will communicate with the `manager` service to communicate changes to the config made by the user.
 
 ### Flow
 
-- User applies a new InputManifest crd holding a manifest
+- User applies a new InputManifest crd holding a configuration of the desired clusters
 - Claudie-operator detects it and processes the created/modified input manifest
 - Upon deletion of user-created InputManifest, Claudie-operator initiates a deletion process of the manifest

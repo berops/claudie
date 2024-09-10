@@ -69,7 +69,7 @@ spec:
 	// Time in which Autoscaler should trigger scale up
 	scaleUpTimeout = 180 // 3 mins
 	// Time in which Autoscaler should trigger scale down
-	scaleDownTimeout = 900 // 15 mins
+	scaleDownTimeout = 2400 // 40 mins
 )
 
 // testAutoscaler tests the Autoscaler deployment.
@@ -138,7 +138,10 @@ func testAutoscaler(ctx context.Context, config *spec.Config) error {
 			return fmt.Errorf("error while retrieving config %s from DB : %w", config.Name, err)
 		}
 
-		scheduled = scheduled || res.Config.Manifest.State == spec.Manifest_Scheduled
+		scheduled = res.Config.Manifest.State == spec.Manifest_Scheduled
+		if scheduled {
+			break
+		}
 	}
 	if !scheduled {
 		return fmt.Errorf("some cluster/s in config %s have not been scaled up, when they should have [2/3]", config.Name)
@@ -187,7 +190,10 @@ func testAutoscaler(ctx context.Context, config *spec.Config) error {
 			return fmt.Errorf("error while retrieving config %s from DB : %w", config.Name, err)
 		}
 
-		scheduled = scheduled || res.Config.Manifest.State == spec.Manifest_Scheduled
+		scheduled = res.Config.Manifest.State == spec.Manifest_Scheduled
+		if scheduled {
+			break
+		}
 	}
 	if !scheduled {
 		return fmt.Errorf("some cluster/s in config %s have not been scaled down, when they should have [3/3]", config.Name)

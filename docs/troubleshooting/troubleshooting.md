@@ -16,7 +16,7 @@ Claudie relies on all services to be interconnected. If any of these services fa
     NAME                                   READY   STATUS      RESTARTS        AGE
     ansibler-5c6c776b75-82c2q              1/1     Running     0               8m10s
     builder-59f9d44596-n2qzm               1/1     Running     0               8m10s
-    context-box-5d76c89b4d-tb6h4           1/1     Running     1 (6m37s ago)   8m10s
+    manager-5d76c89b4d-tb6h4               1/1     Running     1 (6m37s ago)   8m10s
     create-table-job-jvs9n                 0/1     Completed   1               8m10s
     dynamodb-68777f9787-8wjhs              1/1     Running     0               8m10s
     claudie-operator-5755b7bc69-5l84h      1/1     Running     0               8m10s
@@ -28,7 +28,6 @@ Claudie relies on all services to be interconnected. If any of these services fa
     minio-2                                1/1     Running     0               8m10s
     minio-3                                1/1     Running     0               8m10s
     mongodb-67bf769957-9ct5z               1/1     Running     0               8m10s
-    scheduler-654cbd4b97-qwtbf             1/1     Running     0               8m10s
     terraformer-fd664b7ff-dd2h7            1/1     Running     0               8m9s
     ```
 

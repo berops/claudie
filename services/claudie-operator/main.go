@@ -179,7 +179,7 @@ func run() error {
 
 	hc := healthcheck.NewHealthCheck(&log.Logger, healthCheckInterval, []healthcheck.HealthCheck{{
 		Ping:        usecases.Manager.HealthCheck,
-		ServiceName: "contextbox",
+		ServiceName: "manager",
 	}})
 
 	// Register a healthcheck and readiness endpoint, with path and /healthz
