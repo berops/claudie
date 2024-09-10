@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"google.golang.org/protobuf/proto"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -214,6 +215,19 @@ func processTestSet(ctx context.Context, setName string, m managerclient.ClientA
 				return nil
 			}
 			return fmt.Errorf("error while monitoring manifest %s from test set %s : %w", entry.Name(), setName, errCleanUp)
+		}
+
+		resp, err := m.GetConfig(ctx, &managerclient.GetConfigRequest{Name: manifestName})
+		if err != nil {
+			return fmt.Errorf("failed to fetch config %q: %w", manifestName, err)
+		}
+
+		// assert that current and desired state match.
+		for cluster, state := range resp.Config.Clusters {
+			equal := proto.Equal(state.Current, state.Desired)
+			if !equal {
+				return fmt.Errorf("cluster %q from config %q has current and desired state that diverge after all tasks have been build successfully", cluster, manifestName)
+			}
 		}
 
 		// Run additional tests
