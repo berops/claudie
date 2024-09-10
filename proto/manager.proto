@@ -45,14 +45,34 @@ message UpdateNodePoolRequest {string name = 1; string cluster = 2; uint64 versi
 message UpdateNodePoolResponse {string name = 1; uint64 version = 2;}
 
 service ManagerService {
+  // UpsertManifest will process the request by either created a new configuration for the
+  // given input manifest or updating an existing one.
   rpc UpsertManifest(UpsertManifestRequest) returns (UpsertManifestResponse);
+
+  // MarkForDeletion will mark the requested configuration to be deleted. Once the
+  // manager determines the configuration can be deleted it will be deleted.
   rpc MarkForDeletion(MarkForDeletionRequest) returns (MarkForDeletionResponse);
 
+  // ListConfigs will list all stored configuration that the manager manages.
   rpc ListConfigs(ListConfigRequest) returns (ListConfigResponse);
+  // GetConfig will retrieve the requested configuration by name.
   rpc GetConfig(GetConfigRequest) returns (GetConfigResponse);
+
+  // NextTask will return the next available task to be worked on or a nil response if no task is available.
   rpc NextTask(NextTaskRequest) returns (NextTaskResponse);
+  // TaskUpdate will update the state of the requested task. This should be periodically called as the task
+  // that was picked up by the NextTask RPC enters different stages of the build process.
   rpc TaskUpdate(TaskUpdateRequest) returns (TaskUpdateResponse);
 
+  // UpdateCurrentState updates the current state with the specified version in the request.
+  // This should be called after a Task has been processed, either successfully or not, so that
+  // subsequent tasks will work with an up-to-date current state that reflects the actual state
+  // of the infrastructure.
   rpc UpdateCurrentState(UpdateCurrentStateRequest) returns (UpdateCurrentStateResponse);
+
+  // UpdateNodePool updates a single nodepool within a cluster, and should only be called by
+  // the autoscaler-adapter service. This RPC bypasses the main loop of how changes are applied
+  // to the configuration, and directly changes the nodepool to the state specified in the request
+  // to initiate the build process.
   rpc UpdateNodePool(UpdateNodePoolRequest) returns (UpdateNodePoolResponse);
 }
