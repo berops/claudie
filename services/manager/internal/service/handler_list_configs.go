@@ -5,7 +5,7 @@ import (
 
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/berops/claudie/services/manager/server/internal/store"
+	"github.com/berops/claudie/services/manager/internal/store"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

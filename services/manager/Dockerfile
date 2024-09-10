@@ -16,7 +16,7 @@ RUN go mod download
 COPY . .
 
 #Change the directory
-WORKDIR /go/services/manager/server
+WORKDIR /go/services/manager/cmd/api-server
 
 #Compile the golang code, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build
@@ -36,8 +36,8 @@ LABEL org.opencontainers.image.description "Image for Manager from Claudie"
 
 #Copy the binaries to empty base image
 COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-COPY --from=build  /go/services/manager/server/server /bin/services/manager/server/server
+COPY --from=build  /go/services/manager/cmd/api-server/api-server /bin/services/manager/api-server
 
 WORKDIR /bin
 #Run server
-ENTRYPOINT [ "./services/manager/server/server" ]
+ENTRYPOINT [ "./services/manager/api-server" ]

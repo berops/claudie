@@ -11,7 +11,7 @@ import (
 	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/berops/claudie/services/manager/server/internal/store"
+	"github.com/berops/claudie/services/manager/internal/store"
 	"github.com/rs/zerolog/log"
 
 	"gopkg.in/yaml.v3"

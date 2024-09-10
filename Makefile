@@ -13,7 +13,7 @@ proto:
 
 # Start manager on a local environment, exposted on port 50055
 manager:
-	GOLANG_LOG=debug PROMETHEUS_PORT=9091 go run ./services/manager/server
+	GOLANG_LOG=debug PROMETHEUS_PORT=9091 go run ./services/manager/cmd/api-server
 # Start Builder service on a local environment
 builder:
 	GOLANG_LOG=debug PROMETHEUS_PORT=9092 go run ./services/builder
