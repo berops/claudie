@@ -660,6 +660,71 @@ func TestDiff(t *testing.T) {
 			want: []*spec.TaskEvent{{Event: spec.Event_UPDATE, Description: "updating autoscaler config"}},
 		},
 		{
+			name: "autoscaler-disable-different-count",
+			args: args{
+				current:    proto.Clone(current).(*spec.K8Scluster),
+				currentLbs: proto.Clone(currentLbs).(*spec.LoadBalancers).GetClusters(),
+				desiredLbs: proto.Clone(currentLbs).(*spec.LoadBalancers).GetClusters(),
+				desired: func() *spec.K8Scluster {
+					desired := proto.Clone(current).(*spec.K8Scluster)
+					desired.ClusterInfo.NodePools[0].GetDynamicNodePool().AutoscalerConfig = nil
+					desired.ClusterInfo.NodePools[0].GetDynamicNodePool().Count = 5
+					return desired
+				}(),
+			},
+			want: []*spec.TaskEvent{{Event: spec.Event_UPDATE, Description: "adding nodes to k8s cluster"}},
+		},
+		{
+			name: "autoscaler-disable-different-count-2",
+			args: args{
+				current:    proto.Clone(current).(*spec.K8Scluster),
+				currentLbs: proto.Clone(currentLbs).(*spec.LoadBalancers).GetClusters(),
+				desiredLbs: proto.Clone(currentLbs).(*spec.LoadBalancers).GetClusters(),
+				desired: func() *spec.K8Scluster {
+					desired := proto.Clone(current).(*spec.K8Scluster)
+					desired.ClusterInfo.NodePools[0].GetDynamicNodePool().AutoscalerConfig = nil
+					desired.ClusterInfo.NodePools[0].GetDynamicNodePool().Count = 0
+					return desired
+				}(),
+			},
+			want: []*spec.TaskEvent{
+				{Event: spec.Event_DELETE, Description: "deleting nodes from k8s cluster"},
+				{Event: spec.Event_UPDATE, Description: "deleting infrastructure of deleted k8s nodes"},
+			},
+		},
+		{
+			name: "autoscaler-disable-same-count",
+			args: args{
+				current:    proto.Clone(current).(*spec.K8Scluster),
+				currentLbs: proto.Clone(currentLbs).(*spec.LoadBalancers).GetClusters(),
+				desiredLbs: proto.Clone(currentLbs).(*spec.LoadBalancers).GetClusters(),
+				desired: func() *spec.K8Scluster {
+					desired := proto.Clone(current).(*spec.K8Scluster)
+					desired.ClusterInfo.NodePools[0].GetDynamicNodePool().AutoscalerConfig = nil
+					return desired
+				}(),
+			},
+			want: []*spec.TaskEvent{{Event: spec.Event_UPDATE, Description: "updating autoscaler config"}},
+		},
+		{
+			name: "autoscaler-enable-same-count",
+			args: args{
+				current: func() *spec.K8Scluster {
+					desired := proto.Clone(current).(*spec.K8Scluster)
+					desired.ClusterInfo.NodePools[0].GetDynamicNodePool().AutoscalerConfig = nil
+					return desired
+				}(),
+				currentLbs: proto.Clone(currentLbs).(*spec.LoadBalancers).GetClusters(),
+				desiredLbs: proto.Clone(currentLbs).(*spec.LoadBalancers).GetClusters(),
+				desired: func() *spec.K8Scluster {
+					desired := proto.Clone(current).(*spec.K8Scluster)
+					desired.ClusterInfo.NodePools[0].GetDynamicNodePool().AutoscalerConfig = &spec.AutoscalerConf{Min: 1, Max: 3}
+					return desired
+				}(),
+			},
+			want: []*spec.TaskEvent{{Event: spec.Event_UPDATE, Description: "updating autoscaler config"}},
+		},
+		{
 			name: "delete-only-lb",
 			args: args{
 				current:    proto.Clone(current).(*spec.K8Scluster),

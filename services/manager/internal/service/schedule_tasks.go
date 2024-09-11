@@ -643,13 +643,13 @@ func findLbAPIEndpointCluster(current []*spec.LBcluster) *spec.LBcluster {
 func k8sAutoscalerDiff(current, desired *spec.K8Scluster) bool {
 	cnp := make(map[string]*spec.DynamicNodePool)
 	for _, np := range current.GetClusterInfo().GetNodePools() {
-		if dyn := np.GetDynamicNodePool(); dyn != nil && dyn.AutoscalerConfig != nil {
+		if dyn := np.GetDynamicNodePool(); dyn != nil {
 			cnp[np.Name] = dyn
 		}
 	}
 
 	for _, np := range desired.GetClusterInfo().GetNodePools() {
-		if dyn := np.GetDynamicNodePool(); dyn != nil && dyn.AutoscalerConfig != nil {
+		if dyn := np.GetDynamicNodePool(); dyn != nil {
 			if prev, ok := cnp[np.Name]; ok {
 				equal := proto.Equal(prev.AutoscalerConfig, dyn.AutoscalerConfig)
 				if !equal {

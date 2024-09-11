@@ -219,14 +219,18 @@ func processTestSet(ctx context.Context, setName string, m managerclient.ClientA
 
 		resp, err := m.GetConfig(ctx, &managerclient.GetConfigRequest{Name: manifestName})
 		if err != nil {
-			return fmt.Errorf("failed to fetch config %q: %w", manifestName, err)
+			err := fmt.Errorf("failed to fetch config %q: %w", manifestName, err)
+			errCleanUp = err
+			return err
 		}
 
 		// assert that current and desired state match.
 		for cluster, state := range resp.Config.Clusters {
 			equal := proto.Equal(state.Current, state.Desired)
 			if !equal {
-				return fmt.Errorf("cluster %q from config %q has current and desired state that diverge after all tasks have been build successfully", cluster, manifestName)
+				err := fmt.Errorf("cluster %q from config %q has current and desired state that diverge after all tasks have been build successfully", cluster, manifestName)
+				errCleanUp = err
+				return err
 			}
 		}
 
