@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"google.golang.org/protobuf/proto"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -20,6 +19,8 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"golang.org/x/sync/errgroup"
+
+	"google.golang.org/protobuf/proto"
 )
 
 const testDir = "test-sets"

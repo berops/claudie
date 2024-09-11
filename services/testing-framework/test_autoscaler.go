@@ -74,13 +74,16 @@ spec:
 
 // testAutoscaler tests the Autoscaler deployment.
 func testAutoscaler(ctx context.Context, config *spec.Config) error {
+	autoscaledClusters := getAutoscaledClusters(config)
+	if len(autoscaledClusters) == 0 {
+		return nil
+	}
+
 	manager, err := managerclient.New(&log.Logger)
 	if err != nil {
 		return err
 	}
 	defer manager.Close()
-
-	autoscaledClusters := getAutoscaledClusters(config)
 
 	{
 		group := new(errgroup.Group)
