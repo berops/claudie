@@ -172,7 +172,7 @@ func (u *Usecases) executeCreateTask(te *managerclient.NextTaskResponse) (*spec.
 }
 
 func (u *Usecases) executeUpdateTask(te *managerclient.NextTaskResponse) (*spec.K8Scluster, []*spec.LBcluster, error) {
-	if te.Event.Task.UpdateState.ApiNodePool != "" {
+	if te.Event.Task.UpdateState.Endpoint != nil {
 		ctx := &builder.Context{
 			ProjectName:    te.Config,
 			TaskId:         te.Event.Id,
@@ -180,7 +180,10 @@ func (u *Usecases) executeUpdateTask(te *managerclient.NextTaskResponse) (*spec.
 			Workflow:       te.State,
 		}
 
-		if err := u.callUpdateAPIEndpoint(ctx, te.Event.Task.UpdateState.ApiNodePool); err != nil {
+		np := te.Event.Task.UpdateState.Endpoint.Nodepool
+		n := te.Event.Task.UpdateState.Endpoint.Node
+
+		if err := u.callUpdateAPIEndpoint(ctx, np, n); err != nil {
 			return te.Current.GetK8S(), te.Current.GetLoadBalancers().GetClusters(), err
 		}
 

@@ -124,6 +124,7 @@ type nodeDiffResult struct {
 	nodepool               string
 	deleted, added, reused []*spec.Node
 	oldCount, newCount     int
+	endpointDeleted        bool
 }
 
 func nodeDiff(current, desired *spec.NodePool) nodeDiffResult {
@@ -137,6 +138,9 @@ func nodeDiff(current, desired *spec.NodePool) nodeDiffResult {
 		deleted := !slices.ContainsFunc(desired.Nodes, func(n2 *spec.Node) bool { return n2.Name == n.Name })
 		if deleted {
 			result.deleted = append(result.deleted, n)
+			if n.NodeType == spec.NodeType_apiEndpoint {
+				result.endpointDeleted = true
+			}
 		}
 	}
 
@@ -204,6 +208,22 @@ func autoscaledEvents(diff nodeDiffResult, desired *spec.Clusters) []*spec.TaskE
 					K8S: desired.K8S, // changes to the desired nodepool should have been done at this point.
 					Lbs: desired.GetLoadBalancers(),
 				},
+			},
+		})
+	}
+
+	if diff.endpointDeleted {
+		nodePool, node := newAPIEndpointNodeCandidate(desired.K8S.ClusterInfo.NodePools)
+		events = append(events, &spec.TaskEvent{
+			Id:          uuid.New().String(),
+			Timestamp:   timestamppb.New(time.Now().UTC()),
+			Event:       spec.Event_UPDATE,
+			Description: "autoscaler: moving endpoint from old control plane node to a new control plane node",
+			Task: &spec.Task{
+				UpdateState: &spec.UpdateState{Endpoint: &spec.UpdateState_Endpoint{
+					Nodepool: nodePool,
+					Node:     node,
+				}},
 			},
 		})
 	}

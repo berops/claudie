@@ -207,9 +207,13 @@ message CreateState {
 }
 
 message UpdateState {
+  message Endpoint {
+    string nodepool = 1;
+    string node = 2;
+  }
   K8scluster k8s = 1;
   LoadBalancers lbs = 2;
-  string apiNodePool = 3;
+  Endpoint endpoint = 3;
 }
 
 message DeleteState {

@@ -2,14 +2,15 @@ package usecases
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/ansibler/server/utils"
 	"github.com/berops/claudie/services/ansibler/templates"
 	"github.com/rs/zerolog/log"
-	"os"
-	"path/filepath"
 )
 
 func (u *Usecases) UpdateAPIEndpoint(request *pb.UpdateAPIEndpointRequest) (*pb.UpdateAPIEndpointResponse, error) {
@@ -18,7 +19,7 @@ func (u *Usecases) UpdateAPIEndpoint(request *pb.UpdateAPIEndpointRequest) (*pb.
 	}
 
 	log.Info().Msgf("Updating api endpoint for cluster %s project %s", request.Current.ClusterInfo.Name, request.ProjectName)
-	if err := updateAPIEndpoint(request.ApiNodePool, request.Current.ClusterInfo, u.SpawnProcessLimit); err != nil {
+	if err := updateAPIEndpoint(request.Endpoint, request.Current.ClusterInfo, u.SpawnProcessLimit); err != nil {
 		return nil, fmt.Errorf("failed to update api endpoint for cluster %s project %s", request.Current.ClusterInfo.Name, request.ProjectName)
 	}
 	log.Info().Msgf("Updated api endpoint for cluster %s project %s", request.Current.ClusterInfo.Name, request.ProjectName)
@@ -27,9 +28,9 @@ func (u *Usecases) UpdateAPIEndpoint(request *pb.UpdateAPIEndpointRequest) (*pb.
 }
 
 // updateAPIEndpoint handles the case where the ApiEndpoint node is removed from
-// the desired state. Thus a new control node needs to be selected among the existing
+// the desired state. Thus, a new control node needs to be selected among the existing
 // control nodes. This new control node will then represent the ApiEndpoint of the cluster.
-func updateAPIEndpoint(apiNodePool string, currentK8sClusterInfo *spec.ClusterInfo, spawnProcessLimit chan struct{}) error {
+func updateAPIEndpoint(endpoint *pb.UpdateAPIEndpointRequest_Endpoint, currentK8sClusterInfo *spec.ClusterInfo, spawnProcessLimit chan struct{}) error {
 	clusterID := commonUtils.GetClusterID(currentK8sClusterInfo)
 
 	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, commonUtils.CreateHash(commonUtils.HashLength)))
@@ -62,12 +63,23 @@ func updateAPIEndpoint(apiNodePool string, currentK8sClusterInfo *spec.ClusterIn
 		return fmt.Errorf("current state cluster doesn't have api endpoint as a control plane node")
 	}
 
-	np := commonUtils.GetNodePoolByName(apiNodePool, currentK8sClusterInfo.NodePools)
+	np := commonUtils.GetNodePoolByName(endpoint.Nodepool, currentK8sClusterInfo.NodePools)
 	if np == nil {
-		return fmt.Errorf("no nodepool %q found within current state", apiNodePool)
+		return fmt.Errorf("no nodepool %q found within current state", endpoint.Nodepool)
 	}
 
-	newEndpointNode := np.GetNodes()[0]
+	var newEndpointNode *spec.Node
+
+	for _, node := range np.Nodes {
+		if node.Name == endpoint.Node {
+			newEndpointNode = node
+			break
+		}
+	}
+
+	if newEndpointNode == nil {
+		return fmt.Errorf("no node %q within nodepool %q found in current state", endpoint.Node, endpoint.Nodepool)
+	}
 
 	// update the current state
 	apiEndpointNode.NodeType = spec.NodeType_master

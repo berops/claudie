@@ -44,9 +44,13 @@ message TeardownLBResponse {
 }
 
 message UpdateAPIEndpointRequest{
+  message Endpoint {
+    string nodepool = 1;
+    string node = 2;
+  }
   spec.K8scluster current = 1;
-  string apiNodePool = 2;
-  string projectName = 4;
+  Endpoint endpoint = 2;
+  string projectName = 3;
 }
 
 message UpdateAPIEndpointResponse{

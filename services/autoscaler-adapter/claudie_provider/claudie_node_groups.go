@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"google.golang.org/protobuf/proto"
 	"slices"
 	"strings"
 
@@ -14,6 +13,8 @@ import (
 	"github.com/berops/claudie/services/kuber/server/domain/utils/nodes"
 	managerclient "github.com/berops/claudie/services/manager/client"
 	"github.com/rs/zerolog/log"
+
+	"google.golang.org/protobuf/proto"
 )
 
 // NodeGroupTargetSize returns the current target size of the node group. It is possible

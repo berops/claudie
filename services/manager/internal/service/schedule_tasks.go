@@ -184,8 +184,8 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 		})
 	}
 
-	if endpointNodePoolDeleted(k8sDiffResult, current) {
-		newApiNodePool := findNewAPIEndpointCandidate(desired.ClusterInfo.NodePools)
+	if endpointNodeDeleted(k8sDiffResult, current) {
+		nodePool, node := newAPIEndpointNodeCandidate(desired.ClusterInfo.NodePools)
 
 		events = append(events, &spec.TaskEvent{
 			Id:          uuid.New().String(),
@@ -193,7 +193,10 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 			Event:       spec.Event_UPDATE,
 			Description: "moving endpoint from old control plane node to a new control plane node",
 			Task: &spec.Task{
-				UpdateState: &spec.UpdateState{ApiNodePool: newApiNodePool},
+				UpdateState: &spec.UpdateState{Endpoint: &spec.UpdateState_Endpoint{
+					Nodepool: nodePool,
+					Node:     node,
+				}},
 			},
 		})
 	}
@@ -570,7 +573,7 @@ func craftK8sIR(k8sDiffResult nodePoolDiffResult, current, desired *spec.K8Sclus
 	return ir
 }
 
-func endpointNodePoolDeleted(k8sDiffResult nodePoolDiffResult, current *spec.K8Scluster) bool {
+func endpointNodeDeleted(k8sDiffResult nodePoolDiffResult, current *spec.K8Scluster) bool {
 	deletedNodePools := make(map[string][]string)
 	maps.Insert(deletedNodePools, maps.All(k8sDiffResult.deletedDynamic))
 	maps.Insert(deletedNodePools, maps.All(k8sDiffResult.deletedStatic))
@@ -581,6 +584,24 @@ func endpointNodePoolDeleted(k8sDiffResult nodePoolDiffResult, current *spec.K8S
 			return true
 		}
 	}
+
+	clear(deletedNodePools)
+	maps.Insert(deletedNodePools, maps.All(k8sDiffResult.partialDeletedDynamic))
+	maps.Insert(deletedNodePools, maps.All(k8sDiffResult.partialDeletedStatic))
+
+	for nodepool, nodes := range deletedNodePools {
+		np := utils.GetNodePoolByName(nodepool, current.ClusterInfo.NodePools)
+		for _, deleted := range nodes {
+			i := slices.IndexFunc(np.Nodes, func(node *spec.Node) bool { return node.Name == deleted })
+			if i < 0 {
+				continue
+			}
+			if np.Nodes[i].NodeType == spec.NodeType_apiEndpoint {
+				return true
+			}
+		}
+	}
+
 	return false
 }
 
@@ -597,10 +618,10 @@ func deletedTargetApiNodePools(k8sDiffResult nodePoolDiffResult, current *spec.K
 	return targetPoolsDeleted(currentLbs, deleted)
 }
 
-func findNewAPIEndpointCandidate(desired []*spec.NodePool) string {
+func newAPIEndpointNodeCandidate(desired []*spec.NodePool) (string, string) {
 	for _, np := range desired {
 		if np.IsControl {
-			return np.Name
+			return np.Name, np.Nodes[0].Name
 		}
 	}
 	panic("no suitable api endpoint replacement candidate found, malformed state.")

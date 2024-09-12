@@ -44,25 +44,28 @@ func Test_findNewAPIEndpointCandidate(t *testing.T) {
 		desired []*spec.NodePool
 	}
 	tests := []struct {
-		name string
-		args args
-		want string
+		name         string
+		args         args
+		wantNodePool string
+		wantNode     string
 	}{
 		{
 			name: "find-candidate-ok",
 			args: args{
 				desired: []*spec.NodePool{
-					{Name: "np-0", IsControl: false},
-					{Name: "np-1", IsControl: true},
+					{Name: "np-0", IsControl: false, Nodes: []*spec.Node{{Name: "0"}, {Name: "1"}}},
+					{Name: "np-1", IsControl: true, Nodes: []*spec.Node{{Name: "3"}, {Name: "4"}}},
 				},
 			},
-			want: "np-1",
+			wantNodePool: "np-1", wantNode: "3",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equalf(t, tt.want, findNewAPIEndpointCandidate(tt.args.desired), "findNewAPIEndpointCandidate(%v)", tt.args.desired)
+			np, n := newAPIEndpointNodeCandidate(tt.args.desired)
+			assert.Equalf(t, tt.wantNodePool, np, "findNewAPIEndpointCandidate(%v)", tt.args.desired)
+			assert.Equalf(t, tt.wantNode, n, "findNewAPIEndpointCandidate(%v)", tt.args.desired)
 		})
 	}
 }
@@ -254,7 +257,7 @@ func Test_endpointNodePoolDeleted(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equalf(t, tt.want, endpointNodePoolDeleted(tt.args.k8sDiffResult, tt.args.current), "endpointNodePoolDeleted(%v, %v)", tt.args.k8sDiffResult, tt.args.current)
+			assert.Equalf(t, tt.want, endpointNodeDeleted(tt.args.k8sDiffResult, tt.args.current), "endpointNodePoolDeleted(%v, %v)", tt.args.k8sDiffResult, tt.args.current)
 		})
 	}
 }
@@ -605,18 +608,13 @@ func TestDiff(t *testing.T) {
 		NodePools: []*spec.NodePool{{
 			Name:      fmt.Sprintf("np0-%v", rnghash),
 			IsControl: true,
-			Nodes: []*spec.Node{
-				{Name: "1"}, {Name: "2", NodeType: spec.NodeType_apiEndpoint},
-			},
+			Nodes:     []*spec.Node{{Name: "1", NodeType: spec.NodeType_apiEndpoint}, {Name: "2"}},
 			NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{
-				Count: 2,
-				AutoscalerConfig: &spec.AutoscalerConf{
-					Min: 1,
-					Max: 3,
-				},
+				Count:            2,
+				AutoscalerConfig: &spec.AutoscalerConf{Min: 2, Max: 3},
 			}},
-		},
-		}}}
+		}}},
+	}
 	currentLbs := &spec.LoadBalancers{Clusters: []*spec.LBcluster{
 		{
 			ClusterInfo: &spec.ClusterInfo{Name: "test1"},
@@ -653,7 +651,7 @@ func TestDiff(t *testing.T) {
 				desiredLbs: proto.Clone(currentLbs).(*spec.LoadBalancers).GetClusters(),
 				desired: func() *spec.K8Scluster {
 					desired := proto.Clone(current).(*spec.K8Scluster)
-					desired.ClusterInfo.NodePools[0].GetDynamicNodePool().AutoscalerConfig.Min = 2
+					desired.ClusterInfo.NodePools[0].GetDynamicNodePool().AutoscalerConfig.Min = 3
 					return desired
 				}(),
 			},
@@ -683,7 +681,7 @@ func TestDiff(t *testing.T) {
 				desired: func() *spec.K8Scluster {
 					desired := proto.Clone(current).(*spec.K8Scluster)
 					desired.ClusterInfo.NodePools[0].GetDynamicNodePool().AutoscalerConfig = nil
-					desired.ClusterInfo.NodePools[0].GetDynamicNodePool().Count = 0
+					desired.ClusterInfo.NodePools[0].GetDynamicNodePool().Count = 1
 					return desired
 				}(),
 			},
@@ -795,13 +793,13 @@ func TestDiff(t *testing.T) {
 			args: args{
 				current: func() *spec.K8Scluster {
 					current := proto.Clone(current).(*spec.K8Scluster)
-					current.ClusterInfo.NodePools[0].Nodes[1].NodeType = spec.NodeType_master
+					current.ClusterInfo.NodePools[0].Nodes[0].NodeType = spec.NodeType_master
 					return current
 				}(),
 				desired: func() *spec.K8Scluster {
 					desired := proto.Clone(current).(*spec.K8Scluster)
 					desired.ClusterInfo.NodePools[0].Name = fmt.Sprintf("np1-%v", rnghash)
-					desired.ClusterInfo.NodePools[0].Nodes[1].NodeType = spec.NodeType_master
+					desired.ClusterInfo.NodePools[0].Nodes[0].NodeType = spec.NodeType_master
 					return desired
 				}(),
 				currentLbs: proto.Clone(currentLbs).(*spec.LoadBalancers).GetClusters(),
@@ -810,6 +808,29 @@ func TestDiff(t *testing.T) {
 			want: []*spec.TaskEvent{
 				{Event: spec.Event_UPDATE, Description: "adding nodes to k8s cluster"},
 				{Event: spec.Event_UPDATE, Description: "loadbalancer target to new control plane nodepool"},
+				{Event: spec.Event_DELETE, Description: "deleting nodes from k8s cluster"},
+				{Event: spec.Event_UPDATE, Description: "deleting infrastructure of deleted k8s nodes"},
+			},
+		},
+		{
+			name: "k8s-deletion-endpoint",
+			args: args{
+				current: func() *spec.K8Scluster {
+					current := proto.Clone(current).(*spec.K8Scluster)
+					current.ClusterInfo.NodePools[0].Nodes[1].NodeType = spec.NodeType_apiEndpoint
+					current.ClusterInfo.NodePools[0].Nodes[0].NodeType = spec.NodeType_master
+					return current
+				}(),
+				desired: func() *spec.K8Scluster {
+					desired := proto.Clone(current).(*spec.K8Scluster)
+					desired.ClusterInfo.NodePools[0].GetDynamicNodePool().Count = 1
+					return desired
+				}(),
+				currentLbs: proto.Clone(currentLbs).(*spec.LoadBalancers).GetClusters(),
+				desiredLbs: proto.Clone(currentLbs).(*spec.LoadBalancers).GetClusters(),
+			},
+			want: []*spec.TaskEvent{
+				{Event: spec.Event_UPDATE, Description: "moving endpoint from old control plane node to a new control plane node"},
 				{Event: spec.Event_DELETE, Description: "deleting nodes from k8s cluster"},
 				{Event: spec.Event_UPDATE, Description: "deleting infrastructure of deleted k8s nodes"},
 			},
