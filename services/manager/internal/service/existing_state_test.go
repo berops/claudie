@@ -148,14 +148,14 @@ func Test_updateClusterInfo(t *testing.T) {
 									Name:     "node-1",
 									Private:  "private",
 									Public:   "public",
-									NodeType: spec.NodeType_apiEndpoint,
+									NodeType: spec.NodeType_worker,
 									Username: "username",
 								},
 								{
 									Name:     "node-2",
 									Private:  "private",
 									Public:   "public",
-									NodeType: spec.NodeType_apiEndpoint,
+									NodeType: spec.NodeType_worker,
 									Username: "username",
 								},
 							},
@@ -255,7 +255,7 @@ func Test_updateClusterInfo(t *testing.T) {
 									Name:     "node-0",
 									Private:  "private",
 									Public:   "127.0.0.1",
-									NodeType: spec.NodeType_worker,
+									NodeType: spec.NodeType_apiEndpoint,
 									Username: "username",
 								},
 							},
@@ -270,7 +270,11 @@ func Test_updateClusterInfo(t *testing.T) {
 						{
 							Name:         "np0",
 							NodePoolType: &spec.NodePool_StaticNodePool{StaticNodePool: &spec.StaticNodePool{}},
-							Nodes:        []*spec.Node{{Public: "127.0.0.1"}},
+							Nodes: []*spec.Node{
+								{Public: "127.0.0.1"},
+								{Public: "127.0.0.2"},
+								{Public: "127.0.0.3"},
+							},
 						},
 					},
 				},
@@ -278,10 +282,13 @@ func Test_updateClusterInfo(t *testing.T) {
 			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool { return assert.Nil(t, err) },
 			validate: func(t *testing.T, args args) {
 				assert.Equal(t, 1, len(args.desired.NodePools))
-				assert.Equal(t, 1, len(args.desired.NodePools[0].Nodes))
+				assert.Equal(t, 3, len(args.desired.NodePools[0].Nodes))
 				assert.Equal(t, "node-0", args.desired.NodePools[0].Nodes[0].Name)
 				assert.Equal(t, "private", args.desired.NodePools[0].Nodes[0].Private)
-				assert.Equal(t, spec.NodeType_worker, args.desired.NodePools[0].Nodes[0].NodeType)
+				assert.Equal(t, spec.NodeType_apiEndpoint, args.desired.NodePools[0].Nodes[0].NodeType)
+
+				assert.Equal(t, "np0-01", args.desired.NodePools[0].Nodes[1].Name)
+				assert.Equal(t, "np0-02", args.desired.NodePools[0].Nodes[2].Name)
 			},
 		},
 	}

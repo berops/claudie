@@ -198,7 +198,7 @@ desired:
 
 			switch {
 			case transferDynamicNp(utils.GetClusterID(desired), currentNp, desiredNp, true):
-			case transferStaticNodes(currentNp, desiredNp):
+			case transferStaticNodes(utils.GetClusterID(desired), currentNp, desiredNp):
 			default:
 				return fmt.Errorf("%q is neither dynamic nor static, unexpected value: %v", desiredNp.Name, desiredNp.GetNodePoolType())
 			}
@@ -247,7 +247,7 @@ func uniqueNodeName(nodepoolID string, existingNames map[string]struct{}) string
 	}
 }
 
-func transferStaticNodes(current, desired *spec.NodePool) bool {
+func transferStaticNodes(clusterID string, current, desired *spec.NodePool) bool {
 	dsp := desired.GetStaticNodePool()
 	csp := current.GetStaticNodePool()
 
@@ -265,11 +265,14 @@ func transferStaticNodes(current, desired *spec.NodePool) bool {
 		i := slices.IndexFunc(current.Nodes, func(cn *spec.Node) bool { return cn.Public == dn.Public })
 		if i < 0 {
 			dn.Name = uniqueNodeName(desired.Name, usedNames)
+			usedNames[dn.Name] = struct{}{}
+			log.Debug().Str("cluster", clusterID).Msgf("adding static node %q into desired state nodepool %q, IsControl: %v", dn.Name, desired.Name, desired.IsControl)
 			continue
 		}
 		dn.Name = current.Nodes[i].Name
 		dn.Private = current.Nodes[i].Private
 		dn.NodeType = current.Nodes[i].NodeType
+		log.Debug().Str("cluster", clusterID).Msgf("reusing node %q from current state static nodepool %q, IsControl: %v, into desired state static nodepool", dn.Name, desired.Name, desired.IsControl)
 	}
 
 	return true

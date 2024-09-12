@@ -17,7 +17,7 @@ spec:
 
   nodePools:
     dynamic:
-      - name: aws-ctrl-nodes
+      - name: aws-cmpt-nodes
         providerSpec:
           name: aws-1
           region: eu-central-1
@@ -40,12 +40,8 @@ spec:
         storageDiskSize: 50
 
     static:
-      - name: static-pool-02
+      - name: static-pool-01
         nodes:
-          - endpoint: replace-me
-            secretRef:
-              name: static-nodes-key
-              namespace: e2e-secrets
           - endpoint: replace-me
             secretRef:
               name: static-nodes-key
@@ -58,9 +54,9 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - aws-ctrl-nodes
+            - static-pool-01
           compute:
-            - static-pool-02
+            - aws-cmpt-nodes
 
   loadBalancers:
     roles:
@@ -69,7 +65,7 @@ spec:
         port: 6443
         targetPort: 6443
         targetPools:
-          - aws-ctrl-nodes
+          - static-pool-01
     clusters:
       - name: hybrid-cluster-lb-test-set-5
         roles:

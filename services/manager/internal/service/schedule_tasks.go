@@ -548,7 +548,7 @@ func craftK8sIR(k8sDiffResult nodePoolDiffResult, current, desired *spec.K8Sclus
 		cs := cnp.GetStaticNodePool()
 
 		maps.Insert(is.NodeKeys, maps.All(cs.NodeKeys))
-		transferStaticNodes(cnp, inp)
+		transferStaticNodes(clusterID, cnp, inp)
 
 		for _, cn := range cnp.Nodes {
 			if slices.Contains(k8sDiffResult.partialDeletedStatic[nodepool], cn.Name) {

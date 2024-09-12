@@ -179,8 +179,7 @@ func (u *Usecases) updateTaskWithDescription(ctx *builder.Context, stage spec.Wo
 	ctx.Workflow.Stage = stage
 	ctx.Workflow.Description = strings.TrimSpace(description)
 
-	// ignore error is this is not a fatal error due to which
-	// we can't continue.
+	// ignore error, this is not a fatal error due to which we can't continue.
 	_ = managerclient.Retry(&logger, "TaskUpdate", func() error {
 		err := u.Manager.TaskUpdate(context.Background(), &managerclient.TaskUpdateRequest{
 			Config:  ctx.ProjectName,

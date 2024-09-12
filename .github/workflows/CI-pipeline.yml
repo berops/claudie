@@ -338,7 +338,11 @@ jobs:
                       ENDPOINT=${IP_ARR[2]} ./yq e '.spec.nodePools.static.[0].nodes.[1].endpoint = strenv(ENDPOINT)' $file -i
                   fi
                   if [[ $filename == "2.yaml" ]]; then
-                      ENDPOINT=${IP_ARR[0]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
+                      ENDPOINT=${IP_ARR[1]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
+                      ENDPOINT=${IP_ARR[0]} ./yq e '.spec.nodePools.static.[0].nodes.[1].endpoint = strenv(ENDPOINT)' $file -i
+                  fi
+                  if [[ $filename == "3.yaml" ]]; then
+                      ENDPOINT=${IP_ARR[2]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
                   fi
               fi
           done

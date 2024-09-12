@@ -13,8 +13,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// TODO: verify if on error on every state the correct current state is set.
-
 const (
 	// maxDeleteRetry defines how many times the config should try to be deleted before returning an error, if encountered.
 	maxDeleteRetry = 3

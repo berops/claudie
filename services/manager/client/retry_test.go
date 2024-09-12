@@ -2,6 +2,7 @@ package managerclient
 
 import (
 	"bytes"
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"github.com/rs/zerolog"
@@ -14,9 +15,9 @@ func TestRetry(t *testing.T) {
 		fn          func() error
 	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name     string
+		args     args
+		validate func(t *testing.T, err error)
 	}{
 		{
 			name: "ok-on-3rd-retry",
@@ -34,7 +35,7 @@ func TestRetry(t *testing.T) {
 					}
 				}(),
 			},
-			wantErr: false,
+			validate: func(t *testing.T, err error) { assert.Nil(t, err) },
 		},
 		{
 			name: "fail-all-retries",
@@ -52,15 +53,17 @@ func TestRetry(t *testing.T) {
 					}
 				}(),
 			},
-			wantErr: true,
+			validate: func(t *testing.T, err error) {
+				assert.ErrorIs(t, err, ErrVersionMismatch)
+				assert.ErrorIs(t, err, ErrRetriesExhausted)
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if err := Retry(tt.args.logger, tt.args.description, tt.args.fn); (err != nil) != tt.wantErr {
-				t.Errorf("Retry() error = %v, wantErr %v", err, tt.wantErr)
-			}
+			err := Retry(tt.args.logger, tt.args.description, tt.args.fn)
+			tt.validate(t, err)
 		})
 	}
 }

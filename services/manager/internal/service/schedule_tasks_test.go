@@ -847,3 +847,50 @@ func TestDiff(t *testing.T) {
 		})
 	}
 }
+
+func Test_k8sNodePoolDiff(t *testing.T) {
+	type args struct {
+		dynamic        map[string][]string
+		static         map[string][]string
+		desiredCluster *spec.K8Scluster
+	}
+	tests := []struct {
+		name string
+		args args
+		want nodePoolDiffResult
+	}{
+		{
+			name: "ok-deleted-static",
+			args: args{
+				static: map[string][]string{
+					"1": {"1", "2", "3"},
+					"2": {"1"},
+				},
+				desiredCluster: &spec.K8Scluster{ClusterInfo: &spec.ClusterInfo{
+					Name: "test-01",
+					Hash: "rng",
+					NodePools: []*spec.NodePool{{
+						NodePoolType: &spec.NodePool_StaticNodePool{StaticNodePool: new(spec.StaticNodePool)},
+						Name:         "1",
+						Nodes:        []*spec.Node{{Name: "1"}, {Name: "3"}},
+						IsControl:    false,
+					}},
+				}},
+			},
+			want: nodePoolDiffResult{
+				partialDeletedDynamic: map[string][]string{},
+				partialDeletedStatic:  map[string][]string{"1": {"2"}},
+				deletedDynamic:        map[string][]string{},
+				deletedStatic:         map[string][]string{"2": {"1"}},
+				adding:                false,
+				deleting:              true,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equalf(t, tt.want, k8sNodePoolDiff(tt.args.dynamic, tt.args.static, tt.args.desiredCluster), "k8sNodePoolDiff(%v, %v, %v)", tt.args.dynamic, tt.args.static, tt.args.desiredCluster)
+		})
+	}
+}

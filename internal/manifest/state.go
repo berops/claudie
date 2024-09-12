@@ -6,15 +6,15 @@ import (
 	"strings"
 )
 
-// The State of the Manifest represent when given "actions" can be done.
-// Each newly created Manifest starts in the Pending state. Pending Manifests
-// will be picked up and based on the provided InputManifest specification desired
-// state will be created for each cluster along with the tasks to be done to achieve
-// the desired state from the current state, after which the Manifest will be moved to the
+// The State of the Manifest represent when given "actions" can be done. Each newly
+// created Manifest starts in the Pending state. Pending Manifests will be picked up
+// and based on the provided InputManifest specification the desired state will be
+// created for each cluster defined, along with the tasks to be executed to achieve
+// the desired state based on the current state, after which the Manifest will be moved to the
 // scheduled state. Scheduled Manifests will be picked up and individual tasks will be worked on
 // by other services. From this state the Manifest can end up in the Done or Error state. Any changes
-// made to the Input Manifest while in the Scheduled state will be reflected after it has been move
-// to the Done stage. So that the Read/Write/Update cycle repeats.
+// made to the Input Manifest while in the Scheduled state will be reflected after it has been moved
+// to the Done state. So the Read/Write/Update cycle repeats.
 //
 //go:generate stringer -type=State
 type State int
