@@ -53,7 +53,7 @@ state to the desired state. Each time a task is picked up by the builder service
 is transferred to the task so that each task has up-to-date information about current infrastructure and its up to the
 builder service to build/modify/delete the missing pieces in the picked up task.
 
-Once a task is done building, either in error of successfully, the current state should be updated by the builder
+Once a task is done building, either in error or successfully, the current state should be updated by the builder
 service so that the manager has the actual information about the current state of the infrastructure. When the
 manager receives a request for the update of the current state it transfers relevant information to the desired state
 that was created at the beginning, before the tasks were scheduled. This is the only point where the desired state is
