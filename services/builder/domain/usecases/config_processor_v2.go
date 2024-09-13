@@ -3,14 +3,18 @@ package usecases
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 	"sync"
 
+	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/builder/domain/usecases/metrics"
 	builder "github.com/berops/claudie/services/builder/internal"
 	managerclient "github.com/berops/claudie/services/manager/client"
 	"github.com/rs/zerolog/log"
+
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -223,10 +227,53 @@ func (u *Usecases) executeUpdateTask(te *managerclient.NextTaskResponse) (*spec.
 
 func (u *Usecases) executeDeleteTask(te *managerclient.NextTaskResponse) (*spec.K8Scluster, []*spec.LBcluster, error) {
 	if len(te.Event.Task.DeleteState.Nodepools) != 0 {
-		k8s, err := u.deleteNodes(te.Current.K8S, te.Event.Task.DeleteState.Nodepools)
-		if err != nil {
-			return te.Current.GetK8S(), te.Current.GetLoadBalancers().GetClusters(), err
+		var static []*spec.NodePool
+		var master, worker []string
+
+		for np, deleted := range te.Event.Task.DeleteState.Nodepools {
+			nodepool := utils.GetNodePoolByName(np, te.Current.K8S.ClusterInfo.NodePools)
+			if nodepool.IsControl {
+				master = append(master, deleted.Nodes...)
+			} else {
+				worker = append(worker, deleted.Nodes...)
+			}
+			if nodepool.GetStaticNodePool() != nil {
+				static = append(static, proto.Clone(nodepool).(*spec.NodePool))
+			}
 		}
+
+		k8s, err := u.callDeleteNodes(master, worker, te.Current.K8S)
+		if err != nil {
+			return te.Current.GetK8S(), te.Current.GetLoadBalancers().GetClusters(), fmt.Errorf("error while deleting nodes for %s: %w", te.Current.K8S.ClusterInfo.NodePools, err)
+		}
+
+		if len(static) == 0 {
+			return k8s, te.Current.GetLoadBalancers().GetClusters(), nil
+		}
+
+		// for static nodes we need to delete installed claudie utilities.
+		for _, np := range static {
+			np.Nodes = slices.DeleteFunc(np.Nodes, func(node *spec.Node) bool {
+				return !slices.ContainsFunc(te.Event.Task.DeleteState.Nodepools[np.Name].Nodes, func(s string) bool {
+					return node.Name == s
+				})
+			})
+		}
+
+		c := proto.Clone(te.Current.K8S).(*spec.K8Scluster)
+		c.ClusterInfo.NodePools = static
+
+		ctx := &builder.Context{
+			ProjectName:    te.Config,
+			TaskId:         te.Event.Id,
+			CurrentCluster: c,
+			Workflow:       te.State,
+		}
+
+		if err := u.removeClaudieUtilities(ctx); err != nil {
+			return k8s, te.Current.GetLoadBalancers().GetClusters(), fmt.Errorf("error while removing utilities for static nodes from %s: %w", te.Current.K8S.ClusterInfo.Name, err)
+		}
+
 		return k8s, te.Current.GetLoadBalancers().GetClusters(), nil
 	}
 

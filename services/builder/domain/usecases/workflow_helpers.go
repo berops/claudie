@@ -154,26 +154,6 @@ func (u *Usecases) destroyCluster(ctx *builder.Context) error {
 	return nil
 }
 
-// deleteNodes deletes nodes from the cluster based on the node map specified.
-func (u *Usecases) deleteNodes(current *spec.K8Scluster, nodepools map[string]*spec.DeletedNodes) (*spec.K8Scluster, error) {
-	var master, worker []string
-	for np, deleted := range nodepools {
-		nodepool := utils.GetNodePoolByName(np, current.ClusterInfo.NodePools)
-		if nodepool.IsControl {
-			master = append(master, deleted.Nodes...)
-		} else {
-			worker = append(worker, deleted.Nodes...)
-		}
-	}
-
-	newCluster, err := u.callDeleteNodes(master, worker, current)
-	if err != nil {
-		return nil, fmt.Errorf("error while deleting nodes for %s : %w", current.ClusterInfo.Name, err)
-	}
-
-	return newCluster, nil
-}
-
 func (u *Usecases) updateTaskWithDescription(ctx *builder.Context, stage spec.Workflow_Stage, description string) {
 	logger := utils.CreateLoggerWithProjectName(ctx.ProjectName)
 	ctx.Workflow.Stage = stage
