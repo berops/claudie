@@ -57,6 +57,18 @@ message UpdateAPIEndpointResponse{
   spec.K8scluster current = 1;
 }
 
+message UpdateNoProxyEnvsRequest{
+  spec.K8scluster current = 1;
+  spec.K8scluster desired = 2;
+  repeated spec.LBcluster desiredLbs = 3;
+  string projectName = 4;
+}
+
+message UpdateNoProxyEnvsResponse{
+  spec.K8scluster current = 1;
+  spec.K8scluster desired = 2;
+}
+
 message RemoveClaudieUtilitiesRequest {
   spec.K8scluster current = 1;
   repeated spec.LBcluster currentLbs = 2;
@@ -81,6 +93,9 @@ service AnsiblerService {
   // UpdateAPIEndpoint handles changes of API endpoint between control nodes.
   // It will update the current stage based on the information from the desired state.
   rpc UpdateAPIEndpoint(UpdateAPIEndpointRequest) returns (UpdateAPIEndpointResponse);
+  // UpdateNoProxyEnvs handles changes of NO_PROXY and no_proxy env variables in kube-proxy DaemonSet and static pods.
+  // It will check the public and private IPs in the current and desired state. If there's a mismatch it will update the envs accordingly.
+  rpc UpdateNoProxyEnvs(UpdateNoProxyEnvsRequest) returns (UpdateNoProxyEnvsResponse);
   // Removes utilities installed by claudie via ansible playbooks.
   rpc RemoveClaudieUtilities(RemoveClaudieUtilitiesRequest) returns (RemoveClaudieUtilitiesResponse);
 }

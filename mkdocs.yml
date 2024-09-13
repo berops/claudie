@@ -115,6 +115,7 @@ nav:
   - Deploying Node-Local-DNS: node-local-dns/node-local-dns.md
   - Command Cheat Sheet: commands/commands.md
   - Version Matrix: version-matrix/version-matrix.md
+  - HTTP Proxy: http-proxy/http-proxy.md
 
 extra:
   version:
