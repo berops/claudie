@@ -202,6 +202,64 @@ func GetCommonDynamicNodePools(nps []*spec.NodePool) []*spec.NodePool {
 	return dynamic
 }
 
+func GetCommonDynamicControlPlaneNodes(currentNp, desiredNp []*spec.NodePool) []*spec.NodePool {
+	currDynamicControlNps := make(map[string]*spec.NodePool)
+	for _, np := range currentNp {
+		if np.IsControl && np.GetDynamicNodePool() != nil {
+			currDynamicControlNps[np.Name] = np
+		}
+	}
+
+	commonDynamicControlNps := CreateNpsFromCommonControlPlaneNodes(currDynamicControlNps, desiredNp)
+	return commonDynamicControlNps
+}
+
+func GetCommonStaticControlPlaneNodes(currentNp, desiredNp []*spec.NodePool) []*spec.NodePool {
+	currStaticControlNps := make(map[string]*spec.NodePool)
+	for _, np := range currentNp {
+		if np.IsControl && np.GetStaticNodePool() != nil {
+			currStaticControlNps[np.Name] = np
+		}
+	}
+
+	commonStaticControlNps := CreateNpsFromCommonControlPlaneNodes(currStaticControlNps, desiredNp)
+	return commonStaticControlNps
+}
+
+func CreateNpsFromCommonControlPlaneNodes(currControlNps map[string]*spec.NodePool, desiredNp []*spec.NodePool) []*spec.NodePool {
+	var commonControlNps []*spec.NodePool
+
+	for _, np := range desiredNp {
+		if currNp, exists := currControlNps[np.Name]; exists {
+			currNodeMap := make(map[string]*spec.Node)
+			for _, node := range currNp.Nodes {
+				currNodeMap[node.Name] = node
+			}
+			var commonNodes []*spec.Node
+			for _, node := range np.Nodes {
+				if _, exists := currNodeMap[node.Name]; exists {
+					commonNodes = append(commonNodes, node)
+				}
+			}
+
+			if len(commonNodes) > 0 {
+				// copy everything except Nodes
+				commonNodePool := &spec.NodePool{
+					NodePoolType: currNp.NodePoolType,
+					Name:         currNp.Name,
+					Nodes:        commonNodes,
+					IsControl:    currNp.IsControl,
+					Labels:       currNp.Labels,
+					Annotations:  currNp.Annotations,
+				}
+				commonControlNps = append(commonControlNps, commonNodePool)
+			}
+		}
+	}
+
+	return commonControlNps
+}
+
 func CountLbNodes(lb *spec.LBcluster) int {
 	var out int
 	for _, np := range lb.GetClusterInfo().GetNodePools() {

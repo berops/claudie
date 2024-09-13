@@ -69,5 +69,12 @@ staticWorkers:
   {{- end}}
 {{- end}}
 
+{{- if .UtilizeHttpProxy }}
+proxy:
+  http: "{{ .HttpProxyUrl }}"
+  https: "{{ .HttpProxyUrl }}"
+  noProxy: "{{ .NoProxy }}"
+{{- end }}
+
 machineController:
   deploy: false
