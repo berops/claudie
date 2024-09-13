@@ -29,6 +29,10 @@ type KubectlOutputJSON struct {
 // testLonghornDeployment function will perform actions needed to confirm that longhorn has been successfully deployed in the cluster
 func testLonghornDeployment(ctx context.Context, config *spec.Config) error {
 	for _, cluster := range config.Clusters {
+		if cluster.GetCurrent() == nil {
+			log.Debug().Msgf("cluster %q has no current state", cluster)
+			continue
+		}
 		// check number of nodes in nodes.longhorn.io
 		k := kubectl.Kubectl{
 			Kubeconfig:        cluster.Current.K8S.Kubeconfig,
