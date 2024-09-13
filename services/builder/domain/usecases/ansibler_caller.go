@@ -89,6 +89,19 @@ func (u *Usecases) configureInfrastructure(ctx *builder.Context) error {
 	ctx.DesiredCluster = setUpRes.Desired
 	ctx.CurrentLoadbalancers = setUpRes.CurrentLbs
 	ctx.DesiredLoadbalancers = setUpRes.DesiredLbs
+
+	// Update NO_PROXY and no_proxy variables
+	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s updating NO_PROXY and no_proxy env variables", description))
+	logger.Info().Msgf("Calling UpdateNoProxyEnvs on Ansibler")
+	resp, err := u.Ansibler.UpdateNoProxyEnvs(ctx, ansClient)
+	if err != nil {
+		return err
+	}
+
+	logger.Info().Msgf("UpdateNoProxyEnvs on Ansibler finished successfully")
+	ctx.CurrentCluster = resp.Current
+	ctx.DesiredCluster = resp.Desired
+
 	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, description)
 	return nil
 }
