@@ -41,9 +41,11 @@ func (g *GRPC) TaskUpdate(ctx context.Context, req *pb.TaskUpdateRequest) (*pb.T
 
 	// task that is always at the top of the queue is being worked on.
 	if len(cluster.Events.TaskEvents) == 0 {
+		log.Debug().Msgf("Failed updating Config: %q Cluster: %q Version: %v Task: %q. No tasks in queue", req.Config, req.Cluster, req.Version, req.TaskId)
 		return nil, status.Errorf(codes.NotFound, "failed to find task %q within cluster %q within config %q", req.TaskId, req.Cluster, req.Config)
 	}
 	if cluster.Events.TaskEvents[0].Id != req.TaskId {
+		log.Debug().Msgf("Failed updating Config: %q Cluster: %q Version: %v Task: %q, does, not match top level task", req.Config, req.Cluster, req.Version, req.TaskId)
 		return nil, status.Errorf(codes.InvalidArgument, "cannot update task %q, as this task is not being currently worked on", req.TaskId)
 	}
 
@@ -54,17 +56,24 @@ func (g *GRPC) TaskUpdate(ctx context.Context, req *pb.TaskUpdateRequest) (*pb.T
 		cluster.Events.TTL = 0
 		cluster.Events.TaskEvents = cluster.Events.TaskEvents[1:]
 		TasksFinishedOk.Inc()
+		log.Debug().Msgf("Updating Config: %q Cluster: %q Version: %v Task: %q, Finished successfully", req.Config, req.Cluster, req.Version, req.TaskId)
 	case cluster.State.Status == spec.Workflow_ERROR.String():
 		cluster.Events.TTL = 0
 		TasksFinishedErr.Inc()
+		log.Debug().Msgf("Updating Config: %q Cluster: %q Version: %v Task: %q, Errored", req.Config, req.Cluster, req.Version, req.TaskId)
 	}
 
 	if err := g.Store.UpdateConfig(ctx, cfg); err != nil {
 		if errors.Is(err, store.ErrNotFoundOrDirty) {
+			log.Debug().Msgf("Failed updating (dirty write) Config: %q Cluster: %q Version: %v Task: %q", req.Config, req.Cluster, req.Version, req.TaskId)
 			return nil, status.Errorf(codes.Aborted, "couldn't update config %q with version %v, dirty write", req.Config, req.Version)
 		}
+
+		log.Debug().Msgf("Failed updating Config: %q Cluster: %q Version: %v Task: %q", req.Config, req.Cluster, req.Version, req.TaskId)
 		return nil, status.Errorf(codes.Internal, "failed to update task: %q for cluster: %q config: %q", req.TaskId, req.Cluster, req.Config)
 	}
+
+	log.Debug().Msgf("updated Config: %q Cluster: %q Version: %v Task: %q", req.Config, req.Cluster, req.Version, req.TaskId)
 
 	return &pb.TaskUpdateResponse{Name: req.Config, Version: cfg.Version}, nil
 }

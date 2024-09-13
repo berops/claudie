@@ -52,7 +52,7 @@ func (u *Usecases) TaskProcessor(wg *sync.WaitGroup) error {
 			log.Info().Msgf("successfully processed task %q for cluster %q for config %q", task.Event.Id, task.Cluster, task.Config)
 			task.State.Status = spec.Workflow_DONE
 			task.State.Stage = spec.Workflow_NONE
-			task.State.Description = ""
+			task.State.Description = "Finished successfully"
 			// fallthrough
 		}
 
@@ -89,7 +89,7 @@ func (u *Usecases) TaskProcessor(wg *sync.WaitGroup) error {
 			log.Err(err).Msgf("failed to update task after current state update for cluster %q config %q", task.Cluster, task.Config)
 		}
 
-		log.Info().Msgf("successfully updated current state for cluster %q config %q after completing task %q", task.Cluster, task.Config, task.Event.Id)
+		log.Info().Msgf("successfully updated current state for cluster %q config %q after processing task %q", task.Cluster, task.Config, task.Event.Id)
 	}()
 	return nil
 }
@@ -260,6 +260,7 @@ func (u *Usecases) executeDeleteTask(te *managerclient.NextTaskResponse) (*spec.
 			})
 		}
 
+		// TODO: verift the merge of the proxy again...
 		c := proto.Clone(te.Current.K8S).(*spec.K8Scluster)
 		c.ClusterInfo.NodePools = static
 
