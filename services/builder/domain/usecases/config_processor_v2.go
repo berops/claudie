@@ -260,7 +260,6 @@ func (u *Usecases) executeDeleteTask(te *managerclient.NextTaskResponse) (*spec.
 			})
 		}
 
-		// TODO: verift the merge of the proxy again...
 		c := proto.Clone(te.Current.K8S).(*spec.K8Scluster)
 		c.ClusterInfo.NodePools = static
 
