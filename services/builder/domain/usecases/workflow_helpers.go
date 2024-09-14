@@ -161,6 +161,7 @@ func (u *Usecases) updateTaskWithDescription(ctx *builder.Context, stage spec.Wo
 
 	// ignore error, this is not a fatal error due to which we can't continue.
 	_ = managerclient.Retry(&logger, "TaskUpdate", func() error {
+		log.Debug().Msgf("updating task %q for cluster %q for config %q with state: %s", ctx.TaskId, ctx.GetClusterName(), ctx.ProjectName, ctx.Workflow.String())
 		err := u.Manager.TaskUpdate(context.Background(), &managerclient.TaskUpdateRequest{
 			Config:  ctx.ProjectName,
 			Cluster: ctx.GetClusterName(),

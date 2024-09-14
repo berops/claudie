@@ -21,7 +21,7 @@ func (g *GRPC) TaskUpdate(ctx context.Context, req *pb.TaskUpdateRequest) (*pb.T
 		return nil, status.Errorf(codes.InvalidArgument, "missing name of cluster")
 	}
 
-	log.Debug().Msgf("Updating Config: %q Cluster: %q Version: %v Task: %q", req.Config, req.Cluster, req.Version, req.TaskId)
+	log.Debug().Msgf("Updating Config: %q Cluster: %q Version: %v Task: %q with state: %q", req.Config, req.Cluster, req.Version, req.TaskId, req.State.String())
 
 	cfg, err := g.Store.GetConfig(ctx, req.Config)
 	if err != nil {
@@ -52,12 +52,12 @@ func (g *GRPC) TaskUpdate(ctx context.Context, req *pb.TaskUpdateRequest) (*pb.T
 	cluster.State = store.ConvertFromGRPCWorkflow(req.State)
 
 	switch {
-	case cluster.State.Status == spec.Workflow_DONE.String():
+	case req.State.Status == spec.Workflow_DONE:
 		cluster.Events.TTL = 0
 		cluster.Events.TaskEvents = cluster.Events.TaskEvents[1:]
 		TasksFinishedOk.Inc()
 		log.Debug().Msgf("Updating Config: %q Cluster: %q Version: %v Task: %q, Finished successfully", req.Config, req.Cluster, req.Version, req.TaskId)
-	case cluster.State.Status == spec.Workflow_ERROR.String():
+	case req.State.Status == spec.Workflow_ERROR:
 		cluster.Events.TTL = 0
 		TasksFinishedErr.Inc()
 		log.Debug().Msgf("Updating Config: %q Cluster: %q Version: %v Task: %q, Errored", req.Config, req.Cluster, req.Version, req.TaskId)
@@ -73,7 +73,7 @@ func (g *GRPC) TaskUpdate(ctx context.Context, req *pb.TaskUpdateRequest) (*pb.T
 		return nil, status.Errorf(codes.Internal, "failed to update task: %q for cluster: %q config: %q", req.TaskId, req.Cluster, req.Config)
 	}
 
-	log.Debug().Msgf("updated Config: %q Cluster: %q Version: %v Task: %q", req.Config, req.Cluster, req.Version, req.TaskId)
+	log.Debug().Msgf("Updated Config: %q Cluster: %q Version: %v Task: %q with status: %s", req.Config, req.Cluster, req.Version, req.TaskId, cluster.State.Status)
 
 	return &pb.TaskUpdateResponse{Name: req.Config, Version: cfg.Version}, nil
 }
