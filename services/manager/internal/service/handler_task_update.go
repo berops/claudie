@@ -21,7 +21,7 @@ func (g *GRPC) TaskUpdate(ctx context.Context, req *pb.TaskUpdateRequest) (*pb.T
 		return nil, status.Errorf(codes.InvalidArgument, "missing name of cluster")
 	}
 
-	log.Debug().Msgf("Updating Config: %q Cluster: %q Version: %v Task: %q with state: %q", req.Config, req.Cluster, req.Version, req.TaskId, req.State.String())
+	log.Debug().Msgf("Updating Config: %q Cluster: %q Version: %v Task: %q with status: %q", req.Config, req.Cluster, req.Version, req.TaskId, req.State.Status.String())
 
 	cfg, err := g.Store.GetConfig(ctx, req.Config)
 	if err != nil {

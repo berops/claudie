@@ -74,7 +74,7 @@ func (u *Usecases) TaskProcessor(wg *sync.WaitGroup) error {
 		}
 
 		err = managerclient.Retry(&log.Logger, "UpdateTask after CurrentState", func() error {
-			log.Debug().Msgf("updating task %q for cluster %q for config %q with state: %s", task.Event.Id, task.Cluster, task.Config, task.State.String())
+			log.Debug().Msgf("updating task %q for cluster %q for config %q with status: %s", task.Event.Id, task.Cluster, task.Config, task.State.Status.String())
 			err := u.Manager.TaskUpdate(ctx, &managerclient.TaskUpdateRequest{
 				Config:  task.Config,
 				Cluster: task.Cluster,

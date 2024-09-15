@@ -146,8 +146,10 @@ func (m *Mongo) UpdateConfig(ctx context.Context, config *Config) error {
 	)
 
 	if err := result.Err(); errors.Is(err, mongo.ErrNoDocuments) {
+		config.Version = suppliedVersion
 		return fmt.Errorf("failed to update config %q with version %v: %w", config.Name, suppliedVersion, ErrNotFoundOrDirty)
 	} else if err != nil {
+		config.Version = suppliedVersion
 		return fmt.Errorf("failed to update config %q with version %v: %w", config.Name, suppliedVersion, err)
 	}
 

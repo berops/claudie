@@ -50,11 +50,11 @@ func (g *GRPC) WatchForScheduledDocuments(ctx context.Context) error {
 				if err := g.Store.UpdateConfig(ctx, scheduled); err != nil {
 					if errors.Is(err, store.ErrNotFoundOrDirty) {
 						logger.Debug().Msgf("Failed to decrement task TTL (%v) for cluster %q, dirty write", nextTask.Id, cluster)
-						continue
+						break
 					}
 					logger.Err(err).Msgf("Failed to decrement task TTL (%v) for cluster %q", nextTask.Id, cluster)
 				}
-				continue
+				break
 			}
 		}
 
