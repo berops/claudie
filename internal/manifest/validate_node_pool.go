@@ -22,7 +22,7 @@ func (p *NodePool) Validate(m *Manifest) error {
 
 	for _, n := range p.Dynamic {
 		if !IsReferenced(n.Name, m) {
-			return fmt.Errorf("unused nodepool %q, unused nodepools are not alloved", n.Name)
+			return fmt.Errorf("unused nodepool %q, unused nodepools are not allowed", n.Name)
 		}
 
 		// check if the provider is defined in the manifest
@@ -55,7 +55,7 @@ func (p *NodePool) Validate(m *Manifest) error {
 	reusedStaticIp := make(map[string]string)
 	for _, n := range p.Static {
 		if !IsReferenced(n.Name, m) {
-			return fmt.Errorf("unused nodepool %q, unused nodepools are not alloved", n.Name)
+			return fmt.Errorf("unused nodepool %q, unused nodepools are not allowed", n.Name)
 		}
 		if err := n.Validate(); err != nil {
 			return fmt.Errorf("failed to validate StaticNodePool %q: %w", n.Name, err)

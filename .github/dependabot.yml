@@ -25,16 +25,6 @@ updates:
         patterns:
           - "*"
 
-  # Maintain dependencies for ContextBox Docker
-  - package-ecosystem: "docker"
-    directory: "/services/context-box"
-    schedule:
-      interval: "monthly"
-    groups: # Group all docker updates into single PR.
-      docker-dependencies:
-        patterns:
-          - "*"
-
   # Maintain dependencies for Claudie Operator Docker
   - package-ecosystem: "docker"
     directory: "/services/claudie-operator"
@@ -65,9 +55,9 @@ updates:
         patterns:
           - "*"
 
-  # Maintain dependencies for Scheduler Docker
+  # Maintain dependencies for Manager Docker
   - package-ecosystem: "docker"
-    directory: "/services/scheduler"
+    directory: "/services/manager"
     schedule:
       interval: "monthly"
     groups: # Group all docker updates into single PR.

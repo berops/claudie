@@ -81,7 +81,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     NAME                           READY   STATUS      RESTARTS        AGE
     ansibler-5c6c776b75-82c2q      1/1     Running     0               8m10s
     builder-59f9d44596-n2qzm       1/1     Running     0               8m10s
-    context-box-5d76c89b4d-tb6h4   1/1     Running     1 (6m37s ago)   8m10s
+    manager-5d76c89b4d-tb6h4       1/1     Running     1 (6m37s ago)   8m10s
     create-table-job-jvs9n         0/1     Completed   1               8m10s
     dynamodb-68777f9787-8wjhs      1/1     Running     0               8m10s
     claudie-operator-5755b7bc69-5l84h      1/1     Running     0               8m10s
@@ -93,7 +93,6 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     minio-2                        1/1     Running     0               8m10s
     minio-3                        1/1     Running     0               8m10s
     mongodb-67bf769957-9ct5z       1/1     Running     0               8m10s
-    scheduler-654cbd4b97-qwtbf     1/1     Running     0               8m10s
     terraformer-fd664b7ff-dd2h7    1/1     Running     0               8m9s
     ```
 
@@ -460,12 +459,12 @@ Once you've gained a comprehensive understanding of how Claudie operates through
 All of the customisable settings can be found in `claudie/.env` file.
 
 | Variable               | Default       | Type   | Description                                                  |
-| ---------------------- | ------------- | ------ | ------------------------------------------------------------ |
+|------------------------|---------------| ------ |--------------------------------------------------------------|
 | `GOLANG_LOG`           | `info`        | string | Log level for all services. Can be either `info` or `debug`. |
 | `HTTP_PROXY_MODE`      | `default`     | string | `default`, `on` or `off`. `default` utilizes HTTP proxy only when there's at least one node in the K8s cluster from the Hetzner cloud provider. `on` uses HTTP proxy even when the K8s cluster doesn't have any nodes from the Hetzner. `off` turns off the usage of HTTP proxy. If the value isn't set or differs from `on` or `off` it always works with the `default`. |
 | `HTTP_PROXY_URL`       | `http://proxy.claudie.io:8880` | string | HTTP proxy URL used in kubeone [proxy configuration](https://docs.kubermatic.com/kubeone/latest/guides/proxy/) to build the K8s cluster. |
 | `DATABASE_HOSTNAME`    | `mongodb`     | string | Database hostname used for Claudie configs.                  |
-| `CONTEXT_BOX_HOSTNAME` | `context-box` | string | Context-box service hostname.                                |
+| `MANAGER_HOSTNAME`     | `manager`     | string | Manager service hostname.                                    |
 | `TERRAFORMER_HOSTNAME` | `terraformer` | string | Terraformer service hostname.                                |
 | `ANSIBLER_HOSTNAME`    | `ansibler`    | string | Ansibler service hostname.                                   |
 | `KUBE_ELEVEN_HOSTNAME` | `kube-eleven` | string | Kube-eleven service hostname.                                |
@@ -478,7 +477,7 @@ All of the customisable settings can be found in `claudie/.env` file.
 | `TERRAFORMER_PORT`     | 50052         | int    | Port of the Terraformer service.                             |
 | `ANSIBLER_PORT`        | 50053         | int    | Port of the Ansibler service.                                |
 | `KUBE_ELEVEN_PORT`     | 50054         | int    | Port of the Kube-eleven service.                             |
-| `CONTEXT_BOX_PORT`     | 50055         | int    | Port of the Context-box service.                             |
+| `MANAGER_PORT`         | 50055         | int    | Port of the MANAGER service.                                 |
 | `KUBER_PORT`           | 50057         | int    | Port of the Kuber service.                                   |
 | `MINIO_PORT`           | 9000          | int    | Port of the MinIO service.                                   |
 | `DYNAMO_PORT`          | 8000          | int    | Port of the DynamoDB service.                                |

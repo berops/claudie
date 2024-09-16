@@ -1,0 +1,78 @@
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: test-set5
+spec:
+  providers:
+    - name: aws-1
+      providerType: aws
+      secretRef:
+        name: aws-secret
+        namespace: e2e-secrets
+    - name: cloudflare-1
+      providerType: cloudflare
+      secretRef:
+        name: cloudflare-secret
+        namespace: e2e-secrets
+
+  nodePools:
+    dynamic:
+      - name: aws-cmpt-nodes
+        providerSpec:
+          name: aws-1
+          region: eu-central-1
+          zone: eu-central-1c
+        count: 1
+        serverType: t3.small
+        #ubuntu
+        image: ami-0039da1f3917fa8e3
+        storageDiskSize: 50
+
+      - name: aws-ldbl-nodes
+        providerSpec:
+          name: aws-1
+          region: eu-central-1
+          zone: eu-central-1c
+        count: 1
+        serverType: t3.small
+        #ubuntu
+        image: ami-0039da1f3917fa8e3
+        storageDiskSize: 50
+
+    static:
+      - name: static-pool-01
+        nodes:
+          - endpoint: replace-me
+            secretRef:
+              name: static-nodes-key
+              namespace: e2e-secrets
+
+  kubernetes:
+    clusters:
+      - name: hybrid-cluster-test-set-no-5
+        version: v1.27.0
+        network: 192.168.2.0/24
+        pools:
+          control:
+            - static-pool-01
+          compute:
+            - aws-cmpt-nodes
+
+  loadBalancers:
+    roles:
+      - name: apiserver-lb
+        protocol: tcp
+        port: 6443
+        targetPort: 6443
+        targetPools:
+          - static-pool-01
+    clusters:
+      - name: hybrid-cluster-lb-test-set-5
+        roles:
+          - apiserver-lb
+        dns:
+          dnsZone: claudie.dev
+          provider: cloudflare-1
+        targetedK8s: hybrid-cluster-test-set-no-5
+        pools:
+          - aws-ldbl-nodes

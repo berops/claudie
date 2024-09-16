@@ -8,7 +8,7 @@ on:
 
 env:
   ENV_FILE: .env
-  SERVICES: context-box scheduler builder terraformer ansibler kube-eleven kuber claudie-operator autoscaler-adapter testing-framework
+  SERVICES: manager builder terraformer ansibler kube-eleven kuber claudie-operator autoscaler-adapter testing-framework
 
 jobs:
   #--------------------------------------------------------------------------------------------------
@@ -83,7 +83,7 @@ jobs:
       - name: Install golang
         uses: actions/setup-go@v5
         with:
-          go-version: "1.22.1"
+          go-version: "1.23.1"
 
       - name: Run Go tests
         run: go test -short ./...
@@ -184,7 +184,7 @@ jobs:
           NEW_SERVICES=( ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES }} )
           for SERVICE in "${NEW_SERVICES[@]}"
           do
-            if [ "${SERVICE}" != "testing-framework" ] && [ "${SERVICE}" != "autoscaler-adapter" ]; then
+            if [ "${SERVICE}" != "testing-framework" ]; then
               echo "Setting a new tag for a $SERVICE"
               kustomize edit set image ghcr.io/berops/claudie/$SERVICE:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
             fi
@@ -338,7 +338,11 @@ jobs:
                       ENDPOINT=${IP_ARR[2]} ./yq e '.spec.nodePools.static.[0].nodes.[1].endpoint = strenv(ENDPOINT)' $file -i
                   fi
                   if [[ $filename == "2.yaml" ]]; then
-                      ENDPOINT=${IP_ARR[0]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
+                      ENDPOINT=${IP_ARR[1]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
+                      ENDPOINT=${IP_ARR[0]} ./yq e '.spec.nodePools.static.[0].nodes.[1].endpoint = strenv(ENDPOINT)' $file -i
+                  fi
+                  if [[ $filename == "3.yaml" ]]; then
+                      ENDPOINT=${IP_ARR[2]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
                   fi
               fi
           done

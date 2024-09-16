@@ -2,18 +2,19 @@ package claudie_provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"github.com/berops/claudie/proto/pb/spec"
+	"slices"
 	"strings"
 
-	"github.com/rs/zerolog/log"
-	"google.golang.org/grpc"
 	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/externalgrpc/protos"
 
-	"github.com/berops/claudie/internal/envs"
-	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/kuber/server/domain/utils/nodes"
+	managerclient "github.com/berops/claudie/services/manager/client"
+	"github.com/rs/zerolog/log"
+
+	"google.golang.org/protobuf/proto"
 )
 
 // NodeGroupTargetSize returns the current target size of the node group. It is possible
@@ -34,7 +35,7 @@ func (c *ClaudieCloudProvider) NodeGroupTargetSize(_ context.Context, req *proto
 // NodeGroupIncreaseSize increases the size of the node group. To delete a node you need
 // to explicitly name it and use NodeGroupDeleteNodes. This function should wait until
 // node group size is updated.
-func (c *ClaudieCloudProvider) NodeGroupIncreaseSize(_ context.Context, req *protos.NodeGroupIncreaseSizeRequest) (*protos.NodeGroupIncreaseSizeResponse, error) {
+func (c *ClaudieCloudProvider) NodeGroupIncreaseSize(ctx context.Context, req *protos.NodeGroupIncreaseSizeRequest) (*protos.NodeGroupIncreaseSizeResponse, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	log.Info().Str("nodepool", req.GetId()).Msgf("Got NodeGroupIncreaseSize request for nodepool by %d", req.GetDelta())
@@ -45,15 +46,20 @@ func (c *ClaudieCloudProvider) NodeGroupIncreaseSize(_ context.Context, req *pro
 		if newCount > ngc.nodepool.GetDynamicNodePool().AutoscalerConfig.Max {
 			return nil, fmt.Errorf("could not add new nodes, as that would be larger than max size of the nodepool; current size %d, requested delta %d", ngc.nodepool.GetDynamicNodePool().Count, req.GetDelta())
 		}
-		ngc.nodepool.GetDynamicNodePool().Count = newCount
-		ngc.targetSize = newCount
-		// Update nodepool in Claudie.
-		if err := c.updateNodepool(ngc.nodepool); err != nil {
-			return nil, fmt.Errorf("failed to update nodepool %s : %w", ngc.nodepool.Name, err)
+
+		temp := proto.Clone(ngc.nodepool).(*spec.NodePool)
+		temp.GetDynamicNodePool().Count = newCount
+
+		if err := c.updateNodepool(ctx, temp); err != nil {
+			return nil, fmt.Errorf("failed to update nodepool %s : %w", temp.Name, err)
 		}
 		if err := c.sendAutoscalerEvent(); err != nil {
-			return nil, fmt.Errorf("failed to send autoscaler event %s : %w", ngc.nodepool.Name, err)
+			return nil, fmt.Errorf("failed to send autoscaler event %s : %w", temp.Name, err)
 		}
+
+		ngc.targetSize = newCount
+		ngc.nodepool = temp
+
 		return &protos.NodeGroupIncreaseSizeResponse{}, nil
 	}
 
@@ -63,7 +69,7 @@ func (c *ClaudieCloudProvider) NodeGroupIncreaseSize(_ context.Context, req *pro
 // NodeGroupDeleteNodes deletes nodes from this node group (and also decreasing the size
 // of the node group with that). Error is returned either on failure or if the given node
 // doesn't belong to this node group. This function should wait until node group size is updated.
-func (c *ClaudieCloudProvider) NodeGroupDeleteNodes(_ context.Context, req *protos.NodeGroupDeleteNodesRequest) (*protos.NodeGroupDeleteNodesResponse, error) {
+func (c *ClaudieCloudProvider) NodeGroupDeleteNodes(ctx context.Context, req *protos.NodeGroupDeleteNodesRequest) (*protos.NodeGroupDeleteNodesResponse, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	log.Info().Str("nodepool", req.GetId()).Msgf("Got NodeGroupDeleteNodes request for nodepool")
@@ -74,29 +80,25 @@ func (c *ClaudieCloudProvider) NodeGroupDeleteNodes(_ context.Context, req *prot
 		if newCount < ngc.nodepool.GetDynamicNodePool().AutoscalerConfig.GetMin() {
 			return nil, fmt.Errorf("could not remove nodes, as that would be smaller than min size of the nodepool; current size %d, requested removal %d", ngc.nodepool.GetDynamicNodePool().Count, len(req.GetNodes()))
 		}
-		ngc.nodepool.GetDynamicNodePool().Count = newCount
-		ngc.targetSize = newCount
-		// Update nodes slice
-		deleteNodes := make([]*spec.Node, 0, len(req.Nodes))
-		remainNodes := make([]*spec.Node, 0, len(req.Nodes))
-		for _, node := range ngc.nodepool.Nodes {
+
+		temp := proto.Clone(ngc.nodepool).(*spec.NodePool)
+		temp.GetDynamicNodePool().Count = newCount
+
+		temp.Nodes = slices.DeleteFunc(temp.Nodes, func(node *spec.Node) bool {
 			nodeId := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-%s-", c.configCluster.ClusterInfo.Name, c.configCluster.ClusterInfo.Hash))
-			if containsId(req.GetNodes(), nodeId) {
-				log.Debug().Msgf("Adding node %s to delete nodes slice", nodeId)
-				deleteNodes = append(deleteNodes, node)
-			} else {
-				remainNodes = append(remainNodes, node)
-			}
-		}
-		// Reorder node, since they are deleted from the end
-		ngc.nodepool.Nodes = append(remainNodes, deleteNodes...)
-		// Update nodepool in Claudie.
-		if err := c.updateNodepool(ngc.nodepool); err != nil {
-			return nil, fmt.Errorf("failed to update nodepool %s : %w", ngc.nodepool.Name, err)
+			return slices.ContainsFunc(req.GetNodes(), func(n *protos.ExternalGrpcNode) bool { return n.Name == nodeId })
+		})
+
+		if err := c.updateNodepool(ctx, temp); err != nil {
+			return nil, fmt.Errorf("failed to update nodepool %s : %w", temp.Name, err)
 		}
 		if err := c.sendAutoscalerEvent(); err != nil {
-			return nil, fmt.Errorf("failed to send autoscaler event %s : %w", ngc.nodepool.Name, err)
+			return nil, fmt.Errorf("failed to send autoscaler event %s : %w", temp.Name, err)
 		}
+
+		ngc.targetSize = newCount
+		ngc.nodepool = temp
+
 		return &protos.NodeGroupDeleteNodesResponse{}, nil
 	}
 	return nil, fmt.Errorf("could not find the nodepool with id %s", req.GetId())
@@ -170,49 +172,47 @@ func (c *ClaudieCloudProvider) NodeGroupGetOptions(_ context.Context, req *proto
 	return &protos.NodeGroupAutoscalingOptionsResponse{NodeGroupAutoscalingOptions: req.GetDefaults()}, nil
 }
 
-// updateNodepool will call context-box UpdateNodepool method to save any changes to the database. This will also initiate build of the changed nodepool.
-func (c *ClaudieCloudProvider) updateNodepool(nodepool *spec.NodePool) error {
-	// Update the nodepool in the Claudie.
-	var cc *grpc.ClientConn
-	var err error
-
-	cboxURL := strings.ReplaceAll(envs.ContextBoxURL, ":tcp://", "")
-	if cc, err = utils.GrpcDialWithRetryAndBackoff("context-box", cboxURL); err != nil {
-		return fmt.Errorf("failed to dial context-box at %s : %w", envs.ContextBoxURL, err)
+func (c *ClaudieCloudProvider) updateNodepool(ctx context.Context, nodepool *spec.NodePool) error {
+	manager, err := managerclient.New(&log.Logger)
+	if err != nil {
+		return fmt.Errorf("failed to connect to manager: %w", err)
 	}
 
-	cbox := pb.NewContextBoxServiceClient(cc)
-	var res *pb.GetConfigFromDBResponse
-	if res, err = cbox.GetConfigFromDB(context.Background(),
-		&pb.GetConfigFromDBRequest{Id: c.projectName, Type: pb.IdType_NAME}); err != nil {
-		return fmt.Errorf("failed to get config from database : %w", err)
+	resp, err := manager.GetConfig(ctx, &managerclient.GetConfigRequest{Name: c.projectName})
+	if err != nil {
+		if errors.Is(err, managerclient.ErrNotFound) {
+			log.Warn().Msgf("%v", err)
+		}
+		return fmt.Errorf("failed to get config %s : %w", c.projectName, err)
 	}
 
-	clusterName := c.configCluster.ClusterInfo.Name
 	// Prevent autoscaling request when the InputManifest is in ERROR.
-	if status := res.GetConfig().GetState()[clusterName].Status; status == spec.Workflow_ERROR {
-		log.Error().Msgf("Failed to send autoscaling request. Cluster %s is in ERROR", clusterName)
-		// Error return is necessary in order to prevent to call sendAutoscalerEvent.
-		return fmt.Errorf("failed to send autoscaling request. Cluster: %s is in ERROR", clusterName)
+	for cluster, state := range resp.Config.Clusters {
+		if cluster != c.configCluster.ClusterInfo.Name {
+			continue
+		}
+		if state.State.Status == spec.Workflow_ERROR {
+			log.Error().Msgf("Failed to send autoscaling request. Cluster %s is in ERROR", cluster)
+			// Error return is necessary in order to prevent to call sendAutoscalerEvent.
+			return fmt.Errorf("failed to send autoscaling request. Cluster: %s is in ERROR", cluster)
+		}
 	}
 
-	if _, err := cbox.UpdateNodepool(context.Background(),
-		&pb.UpdateNodepoolRequest{
-			ProjectName: c.projectName,
-			ClusterName: clusterName,
-			Nodepool:    nodepool,
-		}); err != nil {
+	description := fmt.Sprintf("UpdateNodePoolRequest cluster %q config %q", c.configCluster.ClusterInfo.Name, resp.Config.Name)
+
+	err = managerclient.Retry(&log.Logger, description, func() error {
+		err := manager.UpdateNodePool(ctx, &managerclient.UpdateNodePoolRequest{
+			Config:   c.projectName,
+			Cluster:  c.configCluster.ClusterInfo.Name,
+			NodePool: nodepool,
+		})
+		if errors.Is(err, managerclient.ErrNotFound) {
+			log.Warn().Msgf("can't update nodepool %q cluster %q config %q: %v", nodepool.Name, c.configCluster.ClusterInfo.Name, c.projectName, err)
+		}
+		return err
+	})
+	if err != nil {
 		return fmt.Errorf("error while updating the state in the Claudie : %w", err)
 	}
 	return nil
-}
-
-// containsId checks if nodes in specified slice contain specific id.
-func containsId(nodes []*protos.ExternalGrpcNode, nodeId string) bool {
-	for _, node := range nodes {
-		if node.Name == nodeId {
-			return true
-		}
-	}
-	return false
 }

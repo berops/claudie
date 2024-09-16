@@ -2,7 +2,6 @@ package usecases
 
 import (
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"os"
 	"path/filepath"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/ansibler/server/utils"
 	"github.com/berops/claudie/services/ansibler/templates"
+	"github.com/rs/zerolog/log"
 )
 
 func (u *Usecases) RemoveUtilities(req *pb.RemoveClaudieUtilitiesRequest) (*pb.RemoveClaudieUtilitiesResponse, error) {
@@ -41,14 +41,14 @@ func (u *Usecases) RemoveUtilities(req *pb.RemoveClaudieUtilitiesRequest) (*pb.R
 		})
 	}
 
-	if err := removeWireguard(cutils.GetClusterID(req.Current.ClusterInfo), vpnInfo, u.SpawnProcessLimit); err != nil {
+	if err := removeUtilities(cutils.GetClusterID(req.Current.ClusterInfo), vpnInfo, u.SpawnProcessLimit); err != nil {
 		return nil, fmt.Errorf("failed to remove wiregaurd from nodes: %w", err)
 	}
 
 	return &pb.RemoveClaudieUtilitiesResponse{Current: req.Current, CurrentLbs: req.CurrentLbs}, nil
 }
 
-func removeWireguard(clusterID string, vpnInfo *VPNInfo, spawnProcessLimit chan struct{}) error {
+func removeUtilities(clusterID string, vpnInfo *VPNInfo, spawnProcessLimit chan struct{}) error {
 	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, cutils.CreateHash(cutils.HashLength)))
 	if err := cutils.CreateDirectory(clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", clusterDirectory, err)

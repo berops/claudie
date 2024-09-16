@@ -47,8 +47,9 @@ func CreateKeyFile(key string, outputPath string, keyName string) error {
 func CreateKeysForStaticNodepools(nps []*spec.NodePool, outputDirectory string) error {
 	errs := make([]error, 0, len(nps))
 	for _, staticNp := range nps {
+		sp := staticNp.GetStaticNodePool()
 		for _, node := range staticNp.Nodes {
-			if key, ok := staticNp.GetStaticNodePool().NodeKeys[node.Public]; ok {
+			if key, ok := sp.NodeKeys[node.Public]; ok {
 				if err := CreateKeyFile(key, outputDirectory, fmt.Sprintf("%s.pem", node.Name)); err != nil {
 					errs = append(errs, err)
 				}

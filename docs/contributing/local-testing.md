@@ -173,11 +173,7 @@ loadBalancers:
 
 ### Test Claudie using manual manifest injection
 
-To test Claudie in a more "manual" way, you can use the test client to inject an input manifest. The code for the client can be found in `services/context-box/client/client_test.go`, specifically in the `TestSaveConfigOperator` function.
-
-In this function, the input manifest (in raw YAML format, not CRD) is located based on the `manifestFile` variable and applied to Claudie. It's important to note that this method of testing does not provide automatic clean up or verification of Longhorn deployment. Therefore, exercise caution when using this testing approach.
-
-To trigger a deletion of the input manifest, you can use function `TestDeleteConfig` from the same test client.
+To test Claudie in a more "manual" way, you can use the specified [GRPC API](https://github.com/berops/claudie/blob/master/proto/manager.proto) to inject/delete/modify an input manifest. 
 
 ### Deploy Claudie in the local cluster for testing
 

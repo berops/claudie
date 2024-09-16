@@ -6,31 +6,6 @@ import (
 	"github.com/berops/claudie/proto/pb/spec"
 )
 
-func FindLbAPIEndpointCluster(current []*spec.LBcluster) *spec.LBcluster {
-	for _, lb := range current {
-		if HasAPIServerRole(lb.GetRoles()) {
-			return lb
-		}
-	}
-	return nil
-}
-
-// HasLbAPIEndpoint searches for a role with ApiEndpoint among the LBcluster.
-func HasLbAPIEndpoint(lbs []*spec.LBcluster) bool { return FindLbAPIEndpointCluster(lbs) != nil }
-
-// IsNodepoolOnlyTargetOfLbAPI checks if nodepool is the only target Pool of the API LB cluster.
-func IsNodepoolOnlyTargetOfLbAPI(current []*spec.LBcluster, nodepool *spec.NodePool) bool {
-	for _, role := range FindLbAPIEndpointCluster(current).GetRoles() {
-		if role.RoleType == spec.RoleType_ApiServer {
-			if len(role.TargetPools) == 1 {
-				name, _ := GetNameAndHashFromNodepool(role.TargetPools[0], nodepool.Name)
-				return name != ""
-			}
-		}
-	}
-	return false
-}
-
 // HasAPIServerRole checks if there is an API server role.
 func HasAPIServerRole(roles []*spec.Role) bool {
 	for _, role := range roles {

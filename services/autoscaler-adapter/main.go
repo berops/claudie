@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os"
@@ -8,7 +9,9 @@ import (
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/services/autoscaler-adapter/claudie_provider"
 	"github.com/rs/zerolog/log"
+
 	"google.golang.org/grpc"
+
 	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/externalgrpc/protos"
 )
 
@@ -34,7 +37,7 @@ func main() {
 	}
 
 	// Serve
-	srv := claudie_provider.NewClaudieCloudProvider(projectName, clusterName)
+	srv := claudie_provider.NewClaudieCloudProvider(context.Background(), projectName, clusterName)
 	protos.RegisterCloudProviderServer(server, srv)
 	log.Info().Msgf("Server ready at: %s", port)
 	if err := server.Serve(lis); err != nil {

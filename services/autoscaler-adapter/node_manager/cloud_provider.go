@@ -139,7 +139,7 @@ func (nm *NodeManager) cacheOci(np *spec.DynamicNodePool) error {
 		if err != nil {
 			return fmt.Errorf("OCI client got error : %w", err)
 		}
-		if r.Items == nil || len(r.Items) == 0 {
+		if len(r.Items) == 0 {
 			return fmt.Errorf("OCI client got empty response")
 		}
 		nm.ociVMs = utils.MergeMaps(getTypeInfoOci(r.Items), nm.ociVMs)
