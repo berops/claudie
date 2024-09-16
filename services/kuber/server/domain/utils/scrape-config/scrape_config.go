@@ -75,7 +75,7 @@ func (sc *ScrapeConfig) GenerateAndApplyScrapeConfig() error {
 
 	// Apply namespace and secret to the cluster
 	k := kubectl.Kubectl{Kubeconfig: sc.Cluster.Kubeconfig, Directory: sc.Directory}
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
+	if log.Logger.GetLevel() <= zerolog.InfoLevel {
 		prefix := utils.GetClusterID(sc.Cluster.ClusterInfo)
 		k.Stdout = comm.GetStdOut(prefix)
 		k.Stderr = comm.GetStdErr(prefix)
@@ -90,7 +90,7 @@ func (sc *ScrapeConfig) GenerateAndApplyScrapeConfig() error {
 // RemoveIfNoLBScrapeConfig will remove the LB scrape-config.yml
 func (sc *ScrapeConfig) RemoveLBScrapeConfig() error {
 	k := kubectl.Kubectl{Kubeconfig: sc.Cluster.Kubeconfig, MaxKubectlRetries: 3}
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
+	if log.Logger.GetLevel() <= zerolog.InfoLevel {
 		prefix := utils.GetClusterID(sc.Cluster.ClusterInfo)
 		k.Stdout = comm.GetStdOut(prefix)
 		k.Stderr = comm.GetStdErr(prefix)

@@ -63,7 +63,7 @@ func NewYaml(md Metadata, data map[string]string) SecretYaml {
 func (s *Secret) Apply(namespace, kubeconfig string) error {
 	// setting empty string for kubeconfig will create secret on same cluster where claudie is running
 	kubectl := kubectl.Kubectl{Kubeconfig: kubeconfig, MaxKubectlRetries: 3}
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
+	if log.Logger.GetLevel() <= zerolog.InfoLevel {
 		kubectl.Stdout = comm.GetStdOut(s.YamlManifest.Metadata.Name)
 		kubectl.Stderr = comm.GetStdErr(s.YamlManifest.Metadata.Name)
 	}

@@ -60,7 +60,7 @@ func NewDeleter(masterNodes, workerNodes []string, cluster *spec.K8Scluster) *De
 // return nil if successful, error otherwise
 func (d *Deleter) DeleteNodes() (*spec.K8Scluster, error) {
 	kubectl := kubectl.Kubectl{Kubeconfig: d.cluster.Kubeconfig, MaxKubectlRetries: 3}
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
+	if log.Logger.GetLevel() <= zerolog.InfoLevel {
 		kubectl.Stdout = comm.GetStdOut(d.clusterPrefix)
 		kubectl.Stderr = comm.GetStdErr(d.clusterPrefix)
 	}

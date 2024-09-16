@@ -72,7 +72,7 @@ func (a *AutoscalerManager) SetUpClusterAutoscaler() error {
 	}
 	// Apply generated files.
 	kc := kubectl.Kubectl{Directory: a.directory, MaxKubectlRetries: 3}
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
+	if log.Logger.GetLevel() <= zerolog.InfoLevel {
 		prefix := utils.GetClusterID(a.cluster.ClusterInfo)
 		kc.Stdout = comm.GetStdOut(prefix)
 		kc.Stderr = comm.GetStdErr(prefix)
@@ -91,7 +91,7 @@ func (a *AutoscalerManager) DestroyClusterAutoscaler() error {
 	}
 	// Apply generated files.
 	kc := kubectl.Kubectl{Directory: a.directory, MaxKubectlRetries: 3}
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
+	if log.Logger.GetLevel() <= zerolog.InfoLevel {
 		prefix := utils.GetClusterID(a.cluster.ClusterInfo)
 		kc.Stdout = comm.GetStdOut(prefix)
 		kc.Stderr = comm.GetStdErr(prefix)

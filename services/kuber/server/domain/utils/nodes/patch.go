@@ -43,7 +43,7 @@ type Patcher struct {
 func NewPatcher(cluster *spec.K8Scluster, logger zerolog.Logger) *Patcher {
 	kc := kubectl.Kubectl{Kubeconfig: cluster.Kubeconfig, MaxKubectlRetries: 3}
 	clusterID := utils.GetClusterID(cluster.ClusterInfo)
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
+	if log.Logger.GetLevel() <= zerolog.InfoLevel {
 		kc.Stdout = comm.GetStdOut(clusterID)
 		kc.Stderr = comm.GetStdErr(clusterID)
 	}

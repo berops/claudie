@@ -35,7 +35,7 @@ func (u *Usecases) DeleteClusterMetadata(ctx context.Context, request *pb.Delete
 
 	logger.Info().Msgf("Deleting cluster metadata secret")
 	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
+	if log.Logger.GetLevel() <= zerolog.InfoLevel {
 		prefix := utils.GetClusterID(request.Cluster.ClusterInfo)
 		kc.Stdout = comm.GetStdOut(prefix)
 		kc.Stderr = comm.GetStdErr(prefix)
