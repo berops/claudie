@@ -35,7 +35,7 @@ func (k *Kubeone) Reset(prefix string) error {
 	cmd.Stdout = output
 	cmd.Stderr = output
 
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
+	if log.Logger.GetLevel() <= zerolog.InfoLevel {
 		cmd.Stdout = comm.GetStdOut(prefix)
 		cmd.Stderr = comm.GetStdErr(prefix)
 	}
@@ -104,7 +104,7 @@ func (k *Kubeone) Apply(prefix string) error {
 	cmd.Stdout = output
 	cmd.Stderr = output
 
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
+	if log.Logger.GetLevel() <= zerolog.InfoLevel {
 		// Here prefix is the cluster id
 		cmd.Stdout = comm.GetStdOut(prefix)
 		cmd.Stderr = comm.GetStdErr(prefix)
@@ -159,7 +159,7 @@ func (k *Kubeone) Apply(prefix string) error {
 }
 
 func structuredLogging() string {
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
+	if log.Logger.GetLevel() <= zerolog.InfoLevel {
 		return ""
 	}
 	return "--log-format json"
