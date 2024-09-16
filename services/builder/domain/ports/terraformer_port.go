@@ -2,12 +2,12 @@ package ports
 
 import (
 	"github.com/berops/claudie/proto/pb"
-	"github.com/berops/claudie/services/builder/domain/usecases/utils"
+	builder "github.com/berops/claudie/services/builder/internal"
 )
 
 type TerraformerPort interface {
-	BuildInfrastructure(builderCtx *utils.BuilderContext, terraformerGrpcClient pb.TerraformerServiceClient) (*pb.BuildInfrastructureResponse, error)
-	DestroyInfrastructure(builderCtx *utils.BuilderContext, terraformerGrpcClient pb.TerraformerServiceClient) (*pb.DestroyInfrastructureResponse, error)
+	BuildInfrastructure(builderCtx *builder.Context, terraformerGrpcClient pb.TerraformerServiceClient) (*pb.BuildInfrastructureResponse, error)
+	DestroyInfrastructure(builderCtx *builder.Context, terraformerGrpcClient pb.TerraformerServiceClient) (*pb.DestroyInfrastructureResponse, error)
 
 	PerformHealthCheck() error
 	GetClient() pb.TerraformerServiceClient

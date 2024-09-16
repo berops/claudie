@@ -5,7 +5,7 @@ on:
     types: [ published ]
 
 env:
-  SERVICES: context-box scheduler builder terraformer ansibler kube-eleven kuber claudie-operator autoscaler-adapter
+  SERVICES: manager builder terraformer ansibler kube-eleven kuber claudie-operator autoscaler-adapter
 
 jobs:
   build-and-publish:

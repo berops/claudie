@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: manager
+  labels:
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: claudie
+      app.kubernetes.io/name: manager
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/part-of: claudie
+        app.kubernetes.io/name: manager
+    spec:
+      terminationGracePeriodSeconds: 300
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 3000
+        fsGroup: 2000
+      containers:
+        - name: manager
+          imagePullPolicy: Always
+          image: ghcr.io/berops/claudie/manager
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - all
+          resources:
+            requests:
+              cpu: 80m
+              memory: 100Mi
+            limits:
+              cpu: 160m
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-secret
+                  key: DATABASE_URL
+            - name: MANAGER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: MANAGER_PORT
+              # No hostname needed
+            - name: GOLANG_LOG
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: GOLANG_LOG
+          ports:
+            - containerPort: 50055
+            - name: "metrics"
+              containerPort: 9090
+          readinessProbe:
+            grpc:
+              port: 50055
+              service: manager-readiness
+            initialDelaySeconds: 5
+            periodSeconds: 30
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: manager
+  labels:
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: manager
+spec:
+  selector:
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: manager
+  ports:
+    - protocol: TCP
+      port: 50055
+      targetPort: 50055

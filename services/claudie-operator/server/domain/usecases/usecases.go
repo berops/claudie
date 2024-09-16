@@ -5,12 +5,12 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/event"
 
-	"github.com/berops/claudie/services/claudie-operator/server/domain/ports"
+	managerclient "github.com/berops/claudie/services/manager/client"
 )
 
 type Usecases struct {
-	// ContextBox is a connector used to query request from context-box.
-	ContextBox ports.ContextBoxPort
+	// Manager is a connector used to query request from manager.
+	Manager managerclient.ClientAPI
 
 	// Context which when cancelled will close all channel/goroutines.
 	Context context.Context

@@ -1,4 +1,4 @@
-.PHONY: proto contextbox scheduler builder terraformer ansibler kubeEleven test database minio containerimgs crd crd-apply controller-gen kind-load-images
+.PHONY: proto manager builder terraformer ansibler kubeEleven test database minio containerimgs crd crd-apply controller-gen kind-load-images
 
 # Enforce same version of protoc 
 PROTOC_VERSION = "27.1"
@@ -11,14 +11,9 @@ proto:
 		echo "Please update your protoc version. Current $(CURRENT_VERSION) | Required $(PROTOC_VERSION)"; \
 	fi
 
-# Start Context-box service on a local environment, exposed on port 50055
-contextbox:
-	GOLANG_LOG=debug PROMETHEUS_PORT=9090 go run ./services/context-box/server
-
-# Start Scheduler service on a local environment
-scheduler:
-	GOLANG_LOG=debug PROMETHEUS_PORT=9091 go run ./services/scheduler
-
+# Start manager on a local environment, exposted on port 50055
+manager:
+	GOLANG_LOG=debug PROMETHEUS_PORT=9091 go run ./services/manager/cmd/api-server
 # Start Builder service on a local environment
 builder:
 	GOLANG_LOG=debug PROMETHEUS_PORT=9092 go run ./services/builder
@@ -40,8 +35,7 @@ kuber:
 
 # Start Claudie-operator service on a local environment
 # This is not necessary to have running on local environtment, to inject input manifest,
-# use API directly from either /services/context-box/client/client_test.go -run TestSaveConfigOperator,
-# or use testing-framework
+# use API directly from either /services/manager
 operator:
 	GOLANG_LOG=debug go run ./services/claudie-operator
 

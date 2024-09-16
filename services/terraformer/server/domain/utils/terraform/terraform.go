@@ -15,7 +15,7 @@ const (
 	// maxTfCommandRetryCount is the maximum amount a Terraform command can be repeated until
 	// it succeeds. If after "maxTfCommandRetryCount" retries the commands still fails an error should be
 	// returned containing the reason.
-	maxTfCommandRetryCount = 5
+	maxTfCommandRetryCount = 3
 
 	// Parallelism is the number of resource to be work on in parallel during the apply/destroy commands.
 	Parallelism = 8

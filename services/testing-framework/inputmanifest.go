@@ -2,6 +2,7 @@ package testingframework
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/util/yaml"
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/envs"
@@ -9,7 +10,6 @@ import (
 	"github.com/berops/claudie/internal/manifest"
 	v1beta "github.com/berops/claudie/services/claudie-operator/pkg/api/v1beta1"
 	"github.com/rs/zerolog/log"
-	yaml "k8s.io/apimachinery/pkg/util/yaml"
 )
 
 // deleteInputManifest will delete an inputManifest from the cluster in the specified namespace
@@ -51,7 +51,7 @@ func getInputManifestName(yamlFile []byte) (string, error) {
 	}
 
 	// Name is checked before apply, so ID needs to be combined manually (.metadata.namespace is not present before apply)
-	if manifest.GetName() != "" {
+	if manifest.Name != "" {
 		return envs.Namespace + "-" + manifest.GetName(), nil
 	}
 	return "", fmt.Errorf("manifest does not have a name defined, which could be used as DB id")

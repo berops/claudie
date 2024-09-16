@@ -112,7 +112,7 @@ NAME                                READY   STATUS      RESTARTS      AGE
 ansibler-6f4557cf74-b4dts           1/1     Running     0             18m
 builder-5d68987c86-qdfd5            1/1     Running     0             18m
 claudie-operator-6d9ddc7f8b-hv84c   1/1     Running     0             18m
-context-box-5d75bfffc6-d9qfm        1/1     Running     0             18m
+manager-5d75bfffc6-d9qfm            1/1     Running     0             18m
 create-table-job-ghb9f              0/1     Completed   1             18m
 dynamodb-6d65df988-c626j            1/1     Running     0             18m
 kube-eleven-556cfdfd98-jq6hl        1/1     Running     0             18m
@@ -123,7 +123,6 @@ minio-1                             1/1     Running     0             18m
 minio-2                             1/1     Running     0             18m
 minio-3                             1/1     Running     0             18m
 mongodb-6ccb5f5dff-ptdw2            1/1     Running     0             18m
-scheduler-676bd4468f-6fjn8          1/1     Running     0             18m
 terraformer-66c6f67d98-pwr9t        1/1     Running     0             18m
 ```
 

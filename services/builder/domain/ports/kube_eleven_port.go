@@ -2,12 +2,12 @@ package ports
 
 import (
 	"github.com/berops/claudie/proto/pb"
-	"github.com/berops/claudie/services/builder/domain/usecases/utils"
+	builder "github.com/berops/claudie/services/builder/internal"
 )
 
 type KubeElevenPort interface {
-	BuildCluster(builderCtx *utils.BuilderContext, kubeElevenGrpcClient pb.KubeElevenServiceClient) (*pb.BuildClusterResponse, error)
-	DestroyCluster(builderCtx *utils.BuilderContext, kubeElevenGrpcClient pb.KubeElevenServiceClient) (*pb.DestroyClusterResponse, error)
+	BuildCluster(builderCtx *builder.Context, kubeElevenGrpcClient pb.KubeElevenServiceClient) (*pb.BuildClusterResponse, error)
+	DestroyCluster(builderCtx *builder.Context, kubeElevenGrpcClient pb.KubeElevenServiceClient) (*pb.DestroyClusterResponse, error)
 
 	PerformHealthCheck() error
 	GetClient() pb.KubeElevenServiceClient

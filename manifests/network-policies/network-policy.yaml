@@ -51,7 +51,7 @@ spec:
         - namespaceSelector: { }
           podSelector:
             matchLabels:
-              app.kubernetes.io/name: context-box
+              app.kubernetes.io/name: manager
               app.kubernetes.io/part-of: claudie
       ports:
         - port: 50055

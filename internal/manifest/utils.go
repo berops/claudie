@@ -2,7 +2,6 @@ package manifest
 
 import (
 	"fmt"
-
 	"github.com/berops/claudie/proto/pb/spec"
 	k8sV1 "k8s.io/api/core/v1"
 )
@@ -260,6 +259,8 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 				Labels:      nodePool.Labels,
 				Annotations: nodePool.Annotations,
 				Taints:      getTaints(nodePool.Taints),
+				//Nodes: We can't create dynamic nodes at this point
+				// as the nodepool hashes are not known yet.
 				NodePoolType: &spec.NodePool_DynamicNodePool{
 					DynamicNodePool: &spec.DynamicNodePool{
 						Region:           nodePool.ProviderSpec.Region,
@@ -275,10 +276,9 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 				},
 			})
 		} else if nodePool := ds.FindStaticNodePool(nodePoolName); nodePool != nil {
-			nodes := getStaticNodes(nodePool, isControl)
 			nodePools = append(nodePools, &spec.NodePool{
 				Name:        nodePool.Name,
-				Nodes:       nodes,
+				Nodes:       staticNodes(nodePool, isControl),
 				IsControl:   isControl,
 				Labels:      nodePool.Labels,
 				Annotations: nodePool.Annotations,
@@ -296,8 +296,8 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 	return nodePools, nil
 }
 
-// getStaticNodes returns slice of static nodes with initialised name.
-func getStaticNodes(np *StaticNodePool, isControl bool) []*spec.Node {
+// staticNodes returns slice of static nodes with initialised name.
+func staticNodes(np *StaticNodePool, isControl bool) []*spec.Node {
 	nodes := make([]*spec.Node, 0, len(np.Nodes))
 	nodeType := spec.NodeType_worker
 	if isControl {
@@ -305,7 +305,11 @@ func getStaticNodes(np *StaticNodePool, isControl bool) []*spec.Node {
 	}
 	for i, node := range np.Nodes {
 		nodes = append(nodes, &spec.Node{
-			Name:     fmt.Sprintf("%s-%d", np.Name, i+1),
+			// Name only matters on the first run of the static nodepool,
+			// on subsequent runs, if there are previously build nodes
+			// with the same public IP we will transfer that existing names.
+			// see existing_state.go:transferStaticNodes
+			Name:     fmt.Sprintf("%s-%02x", np.Name, uint8(i+1)),
 			Public:   node.Endpoint,
 			NodeType: nodeType,
 			Username: node.Username,

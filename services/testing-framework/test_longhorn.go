@@ -27,22 +27,29 @@ type KubectlOutputJSON struct {
 
 // testLonghornDeployment function will perform actions needed to confirm that longhorn has been successfully deployed in the cluster
 func testLonghornDeployment(ctx context.Context, config *spec.Config) error {
-	//start longhorn testing
-	clusters := config.CurrentState.Clusters
-	for _, cluster := range clusters {
-		// check number of nodes in nodes.longhorn.io
-
-		kubectl := kubectl.Kubectl{Kubeconfig: cluster.Kubeconfig, MaxKubectlRetries: 5}
-		prefix := utils.GetClusterID(cluster.ClusterInfo)
-		kubectl.Stdout = comm.GetStdOut(prefix)
-		kubectl.Stderr = comm.GetStdErr(prefix)
-
-		if err := checkLonghornNodes(ctx, cluster, kubectl); err != nil {
-			return fmt.Errorf("error while checking the nodes.longhorn.io in cluster %s : %w", cluster.ClusterInfo.Name, err)
+	for _, cluster := range config.Clusters {
+		if cluster.GetCurrent() == nil {
+			log.Debug().Msgf("cluster %q has no current state", cluster)
+			continue
 		}
-		// check if all pods from longhorn-system are ready
-		if err := checkLonghornPods(ctx, cluster.ClusterInfo.Name, kubectl); err != nil {
-			return fmt.Errorf("error while checking if all pods from longhorn-system are ready in cluster %s: %w", cluster.ClusterInfo.Name, err)
+		// check number of nodes in nodes.longhorn.io
+		k := kubectl.Kubectl{
+			Kubeconfig:        cluster.Current.K8S.Kubeconfig,
+			MaxKubectlRetries: 5,
+		}
+    
+		prefix := utils.GetClusterID(cluster.Current.K8S.ClusterInfo)
+		k.Stdout = comm.GetStdOut(prefix)
+		k.Stderr = comm.GetStdErr(prefix)
+
+    clusterName := cluster.Current.K8S.ClusterInfo.Name
+    
+		if err := checkLonghornNodes(ctx, cluster.Current.K8S, k); err != nil {
+			return fmt.Errorf("error while checking the nodes.longhorn.io in cluster %s : %w", cluster, err)
+    }
+
+		if err := checkLonghornPods(ctx, clusterName, k); err != nil {
+			return fmt.Errorf("error while checking if all pods from longhorn-system are ready in cluster %s: %w", clusterName, err)
 		}
 	}
 	return nil
