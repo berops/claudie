@@ -8,7 +8,6 @@ import (
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/manifest"
 	v1beta "github.com/berops/claudie/services/claudie-operator/pkg/api/v1beta1"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	yaml "k8s.io/apimachinery/pkg/util/yaml"
 )
@@ -16,10 +15,9 @@ import (
 // deleteInputManifest will delete an inputManifest from the cluster in the specified namespace
 func deleteInputManifest(name string) error {
 	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
-	if log.Logger.GetLevel() <= zerolog.InfoLevel {
-		kc.Stdout = comm.GetStdOut(name)
-		kc.Stderr = comm.GetStdErr(name)
-	}
+	kc.Stdout = comm.GetStdOut(name)
+	kc.Stderr = comm.GetStdErr(name)
+
 	return kc.KubectlDeleteResource("inputmanifest", name, "-n", envs.Namespace)
 }
 
@@ -27,10 +25,9 @@ func deleteInputManifest(name string) error {
 // the name of the resource will be defined already in the file
 func applyInputManifest(yamlFile []byte, pathToTestSet string) error {
 	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
-	if log.Logger.GetLevel() <= zerolog.InfoLevel {
-		kc.Stdout = comm.GetStdOut(pathToTestSet)
-		kc.Stderr = comm.GetStdErr(pathToTestSet)
-	}
+	kc.Stdout = comm.GetStdOut(pathToTestSet)
+	kc.Stderr = comm.GetStdErr(pathToTestSet)
+
 	return kc.KubectlApplyString(string(yamlFile), "-n", envs.Namespace)
 }
 

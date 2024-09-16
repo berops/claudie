@@ -13,7 +13,6 @@ import (
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/kuber/templates"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -46,11 +45,9 @@ const (
 func (l *Longhorn) SetUp() error {
 	kubectl := kubectl.Kubectl{Kubeconfig: l.Cluster.GetKubeconfig(), MaxKubectlRetries: 3}
 	// apply longhorn.yaml and settings
-	if log.Logger.GetLevel() <= zerolog.InfoLevel {
-		prefix := utils.GetClusterID(l.Cluster.ClusterInfo)
-		kubectl.Stdout = comm.GetStdOut(prefix)
-		kubectl.Stderr = comm.GetStdErr(prefix)
-	}
+	prefix := utils.GetClusterID(l.Cluster.ClusterInfo)
+	kubectl.Stdout = comm.GetStdOut(prefix)
+	kubectl.Stderr = comm.GetStdErr(prefix)
 
 	// Apply longhorn manifests after nodes are annotated.
 	if err := l.applyManifests(kubectl); err != nil {

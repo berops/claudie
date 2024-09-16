@@ -17,7 +17,6 @@ import (
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/kuber/templates"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -72,11 +71,10 @@ func (a *AutoscalerManager) SetUpClusterAutoscaler() error {
 	}
 	// Apply generated files.
 	kc := kubectl.Kubectl{Directory: a.directory, MaxKubectlRetries: 3}
-	if log.Logger.GetLevel() <= zerolog.InfoLevel {
-		prefix := utils.GetClusterID(a.cluster.ClusterInfo)
-		kc.Stdout = comm.GetStdOut(prefix)
-		kc.Stderr = comm.GetStdErr(prefix)
-	}
+	prefix := utils.GetClusterID(a.cluster.ClusterInfo)
+	kc.Stdout = comm.GetStdOut(prefix)
+	kc.Stderr = comm.GetStdErr(prefix)
+
 	if err := kc.KubectlApply(clusterAutoscalerDeployment, "-n", envs.Namespace); err != nil {
 		return fmt.Errorf("error while applying cluster autoscaler for cluster %s : %w", a.cluster.ClusterInfo.Name, err)
 	}
@@ -91,11 +89,10 @@ func (a *AutoscalerManager) DestroyClusterAutoscaler() error {
 	}
 	// Apply generated files.
 	kc := kubectl.Kubectl{Directory: a.directory, MaxKubectlRetries: 3}
-	if log.Logger.GetLevel() <= zerolog.InfoLevel {
-		prefix := utils.GetClusterID(a.cluster.ClusterInfo)
-		kc.Stdout = comm.GetStdOut(prefix)
-		kc.Stderr = comm.GetStdErr(prefix)
-	}
+	prefix := utils.GetClusterID(a.cluster.ClusterInfo)
+	kc.Stdout = comm.GetStdOut(prefix)
+	kc.Stderr = comm.GetStdErr(prefix)
+
 	if err := kc.KubectlDeleteManifest(clusterAutoscalerDeployment, "-n", envs.Namespace); err != nil {
 		return fmt.Errorf("error while deleting cluster autoscaler for cluster %s : %w", a.cluster.ClusterInfo.Name, err)
 	}

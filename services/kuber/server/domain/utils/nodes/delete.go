@@ -10,7 +10,6 @@ import (
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -60,10 +59,9 @@ func NewDeleter(masterNodes, workerNodes []string, cluster *spec.K8Scluster) *De
 // return nil if successful, error otherwise
 func (d *Deleter) DeleteNodes() (*spec.K8Scluster, error) {
 	kubectl := kubectl.Kubectl{Kubeconfig: d.cluster.Kubeconfig, MaxKubectlRetries: 3}
-	if log.Logger.GetLevel() <= zerolog.InfoLevel {
-		kubectl.Stdout = comm.GetStdOut(d.clusterPrefix)
-		kubectl.Stderr = comm.GetStdErr(d.clusterPrefix)
-	}
+	kubectl.Stdout = comm.GetStdOut(d.clusterPrefix)
+	kubectl.Stderr = comm.GetStdErr(d.clusterPrefix)
+
 	// get real node names
 	realNodeNamesBytes, err := kubectl.KubectlGetNodeNames()
 	realNodeNames := strings.Split(string(realNodeNamesBytes), "\n")

@@ -8,8 +8,6 @@ import (
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/utils"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 )
 
@@ -63,10 +61,9 @@ func NewYaml(md Metadata, data map[string]string) SecretYaml {
 func (s *Secret) Apply(namespace, kubeconfig string) error {
 	// setting empty string for kubeconfig will create secret on same cluster where claudie is running
 	kubectl := kubectl.Kubectl{Kubeconfig: kubeconfig, MaxKubectlRetries: 3}
-	if log.Logger.GetLevel() <= zerolog.InfoLevel {
-		kubectl.Stdout = comm.GetStdOut(s.YamlManifest.Metadata.Name)
-		kubectl.Stderr = comm.GetStdErr(s.YamlManifest.Metadata.Name)
-	}
+	kubectl.Stdout = comm.GetStdOut(s.YamlManifest.Metadata.Name)
+	kubectl.Stderr = comm.GetStdErr(s.YamlManifest.Metadata.Name)
+
 	path := filepath.Join(s.Directory, filename)
 
 	if err := utils.CreateDirectory(s.Directory); err != nil {

@@ -14,7 +14,6 @@ import (
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/terraform"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -51,10 +50,8 @@ func (d DNS) CreateDNSRecords(logger zerolog.Logger) (string, error) {
 		SpawnProcessLimit: d.SpawnProcessLimit,
 	}
 
-	if log.Logger.GetLevel() <= zerolog.InfoLevel {
-		terraform.Stdout = comm.GetStdOut(clusterID)
-		terraform.Stderr = comm.GetStdErr(clusterID)
-	}
+	terraform.Stdout = comm.GetStdOut(clusterID)
+	terraform.Stderr = comm.GetStdErr(clusterID)
 
 	if changedDNSProvider(d.CurrentDNS, d.DesiredDNS) {
 		sublogger.Info().Msg("Destroying old DNS records")
@@ -128,10 +125,8 @@ func (d DNS) DestroyDNSRecords(logger zerolog.Logger) error {
 		SpawnProcessLimit: d.SpawnProcessLimit,
 	}
 
-	if log.Logger.GetLevel() <= zerolog.InfoLevel {
-		terraform.Stdout = comm.GetStdOut(dnsID)
-		terraform.Stderr = comm.GetStdErr(dnsID)
-	}
+	terraform.Stdout = comm.GetStdOut(dnsID)
+	terraform.Stderr = comm.GetStdErr(dnsID)
 
 	if err := terraform.Init(); err != nil {
 		return err

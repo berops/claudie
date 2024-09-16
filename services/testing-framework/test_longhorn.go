@@ -10,7 +10,6 @@ import (
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -34,11 +33,10 @@ func testLonghornDeployment(ctx context.Context, config *spec.Config) error {
 		// check number of nodes in nodes.longhorn.io
 
 		kubectl := kubectl.Kubectl{Kubeconfig: cluster.Kubeconfig, MaxKubectlRetries: 5}
-		if log.Logger.GetLevel() <= zerolog.InfoLevel {
-			prefix := utils.GetClusterID(cluster.ClusterInfo)
-			kubectl.Stdout = comm.GetStdOut(prefix)
-			kubectl.Stderr = comm.GetStdErr(prefix)
-		}
+		prefix := utils.GetClusterID(cluster.ClusterInfo)
+		kubectl.Stdout = comm.GetStdOut(prefix)
+		kubectl.Stderr = comm.GetStdErr(prefix)
+
 		if err := checkLonghornNodes(ctx, cluster, kubectl); err != nil {
 			return fmt.Errorf("error while checking the nodes.longhorn.io in cluster %s : %w", cluster.ClusterInfo.Name, err)
 		}

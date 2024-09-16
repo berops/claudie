@@ -1,7 +1,6 @@
 package kubeone
 
 import (
-	"bytes"
 	"fmt"
 	"os/exec"
 
@@ -27,30 +26,14 @@ func (k *Kubeone) Reset(prefix string) error {
 	k.SpawnProcessLimit <- struct{}{}
 	defer func() { <-k.SpawnProcessLimit }()
 
-	output := new(bytes.Buffer)
-
 	command := fmt.Sprintf("kubeone reset -m kubeone.yaml -y --remove-binaries %s", structuredLogging())
 	cmd := exec.Command("bash", "-c", command)
 	cmd.Dir = k.ConfigDirectory
-	cmd.Stdout = output
-	cmd.Stderr = output
 
-	if log.Logger.GetLevel() <= zerolog.InfoLevel {
-		cmd.Stdout = comm.GetStdOut(prefix)
-		cmd.Stderr = comm.GetStdErr(prefix)
-	}
+	cmd.Stdout = comm.GetStdOut(prefix)
+	cmd.Stderr = comm.GetStdErr(prefix)
 
 	if err := cmd.Run(); err != nil {
-		l, errParse := collectErrors(output)
-		if errParse == nil && len(l) > 0 {
-			log.Error().Msgf("failed to execute cmd: %s: %s", command, l.prettyPrint())
-		}
-		if errParse != nil {
-			log.Warn().Msgf("failed to parse errors from kubeone logs: %v", errParse)
-		}
-
-		output.Reset()
-
 		log.Warn().Msgf("Error encountered while executing %s : %v", command, err)
 
 		retryCmd := comm.Cmd{
@@ -60,29 +43,7 @@ func (k *Kubeone) Reset(prefix string) error {
 			Stderr:  cmd.Stderr,
 		}
 
-		err = retryCmd.RetryCommandWithCallback(maxRetryCount, func() error {
-			l, errParse := collectErrors(output)
-			if errParse != nil {
-				output.Reset()
-				log.Warn().Msgf("failed to parse errors from kubeone logs: %v", errParse)
-				return nil
-			}
-			if len(l) > 0 {
-				log.Error().Msgf("failed to execute cmd: %s: %s", retryCmd.Command, l.prettyPrint())
-			}
-			output.Reset()
-			return nil
-		})
-
-		if err != nil {
-			l, errParse := collectErrors(output)
-			if errParse != nil {
-				log.Warn().Msgf("failed to parse errors from kubeone logs: %v", errParse)
-				return fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
-			}
-			if len(l) > 0 {
-				err = fmt.Errorf("%w: %s", err, l.prettyPrint())
-			}
+		if err := retryCmd.RetryCommand(maxRetryCount); err != nil {
 			return fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
 		}
 	}
@@ -96,31 +57,15 @@ func (k *Kubeone) Apply(prefix string) error {
 	k.SpawnProcessLimit <- struct{}{}
 	defer func() { <-k.SpawnProcessLimit }()
 
-	output := new(bytes.Buffer)
-
 	command := fmt.Sprintf("kubeone apply -m kubeone.yaml -y %s", structuredLogging())
 	cmd := exec.Command("bash", "-c", command)
 	cmd.Dir = k.ConfigDirectory
-	cmd.Stdout = output
-	cmd.Stderr = output
 
-	if log.Logger.GetLevel() <= zerolog.InfoLevel {
-		// Here prefix is the cluster id
-		cmd.Stdout = comm.GetStdOut(prefix)
-		cmd.Stderr = comm.GetStdErr(prefix)
-	}
+	// Here prefix is the cluster id
+	cmd.Stdout = comm.GetStdOut(prefix)
+	cmd.Stderr = comm.GetStdErr(prefix)
 
 	if err := cmd.Run(); err != nil {
-		l, errParse := collectErrors(output)
-		if errParse == nil && len(l) > 0 {
-			log.Error().Msgf("failed to execute cmd: %s: %s", command, l.prettyPrint())
-		}
-		if errParse != nil {
-			log.Warn().Msgf("failed to parse errors from kubeone logs: %v", errParse)
-		}
-
-		output.Reset()
-
 		log.Warn().Msgf("Error encountered while executing %s : %v", command, err)
 
 		retryCmd := comm.Cmd{
@@ -129,29 +74,8 @@ func (k *Kubeone) Apply(prefix string) error {
 			Stdout:  cmd.Stdout,
 			Stderr:  cmd.Stderr,
 		}
-		err = retryCmd.RetryCommandWithCallback(maxRetryCount, func() error {
-			l, errParse := collectErrors(output)
-			if errParse != nil {
-				output.Reset()
-				log.Warn().Msgf("failed to parse errors from kubeone logs: %v", errParse)
-				return nil
-			}
-			if len(l) > 0 {
-				log.Error().Msgf("failed to execute cmd: %s: %s", retryCmd.Command, l.prettyPrint())
-			}
-			output.Reset()
-			return nil
-		})
 
-		if err != nil {
-			l, errParse := collectErrors(output)
-			if errParse != nil {
-				log.Warn().Msgf("failed to parse errors from kubeone logs: %v", errParse)
-				return fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
-			}
-			if len(l) > 0 {
-				err = fmt.Errorf("%w: %s", err, l.prettyPrint())
-			}
+		if err := retryCmd.RetryCommand(maxRetryCount); err != nil {
 			return fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
 		}
 	}
