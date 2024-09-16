@@ -34,7 +34,7 @@ func testLonghornDeployment(ctx context.Context, config *spec.Config) error {
 		// check number of nodes in nodes.longhorn.io
 
 		kubectl := kubectl.Kubectl{Kubeconfig: cluster.Kubeconfig, MaxKubectlRetries: 5}
-		if log.Logger.GetLevel() == zerolog.DebugLevel {
+		if log.Logger.GetLevel() <= zerolog.InfoLevel {
 			prefix := utils.GetClusterID(cluster.ClusterInfo)
 			kubectl.Stdout = comm.GetStdOut(prefix)
 			kubectl.Stderr = comm.GetStdErr(prefix)

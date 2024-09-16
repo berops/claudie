@@ -206,7 +206,7 @@ func testAutoscaler(ctx context.Context, config *spec.Config) error {
 // applyDeployment applies specified deployment into specified cluster.
 func applyDeployment(c *spec.K8Scluster, deployment string) error {
 	kc := kubectl.Kubectl{Kubeconfig: c.Kubeconfig, MaxKubectlRetries: 5}
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
+	if log.Logger.GetLevel() <= zerolog.InfoLevel {
 		prefix := utils.GetClusterID(c.ClusterInfo)
 		kc.Stdout = comm.GetStdOut(prefix)
 		kc.Stderr = comm.GetStdErr(prefix)
@@ -220,7 +220,7 @@ func applyDeployment(c *spec.K8Scluster, deployment string) error {
 // removeDeployment deletes specified deployment from specified cluster.
 func removeDeployment(c *spec.K8Scluster, deployment string) error {
 	kc := kubectl.Kubectl{Kubeconfig: c.Kubeconfig, MaxKubectlRetries: 5}
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
+	if log.Logger.GetLevel() <= zerolog.InfoLevel {
 		prefix := utils.GetClusterID(c.ClusterInfo)
 		kc.Stdout = comm.GetStdOut(prefix)
 		kc.Stderr = comm.GetStdErr(prefix)

@@ -16,7 +16,7 @@ import (
 // deleteInputManifest will delete an inputManifest from the cluster in the specified namespace
 func deleteInputManifest(name string) error {
 	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
+	if log.Logger.GetLevel() <= zerolog.InfoLevel {
 		kc.Stdout = comm.GetStdOut(name)
 		kc.Stderr = comm.GetStdErr(name)
 	}
@@ -27,7 +27,7 @@ func deleteInputManifest(name string) error {
 // the name of the resource will be defined already in the file
 func applyInputManifest(yamlFile []byte, pathToTestSet string) error {
 	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
+	if log.Logger.GetLevel() <= zerolog.InfoLevel {
 		kc.Stdout = comm.GetStdOut(pathToTestSet)
 		kc.Stderr = comm.GetStdErr(pathToTestSet)
 	}
