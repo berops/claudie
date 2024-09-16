@@ -3,10 +3,11 @@ package terraform
 import (
 	"bytes"
 	"fmt"
-	"github.com/rs/zerolog"
 	"io"
 	"os/exec"
 	"strings"
+
+	"github.com/rs/zerolog"
 
 	"github.com/rs/zerolog/log"
 
@@ -82,7 +83,7 @@ func (t *Terraform) Apply() error {
 		fmt.Sprintf("--parallelism=%v", t.Parallelism),
 	}
 
-	if log.Logger.GetLevel() != zerolog.DebugLevel {
+	if log.Logger.GetLevel() > zerolog.InfoLevel {
 		args = append(args, "-json")
 
 		t.Stdout = output
@@ -160,7 +161,7 @@ func (t *Terraform) Destroy() error {
 		fmt.Sprintf("--parallelism=%v", t.Parallelism),
 	}
 
-	if log.Logger.GetLevel() != zerolog.DebugLevel {
+	if log.Logger.GetLevel() > zerolog.InfoLevel {
 		args = append(args, "-json")
 
 		t.Stdout = output

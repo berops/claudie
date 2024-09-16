@@ -73,7 +73,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 		SpawnProcessLimit: c.SpawnProcessLimit,
 	}
 
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
+	if log.Logger.GetLevel() <= zerolog.InfoLevel {
 		terraform.Stdout = comm.GetStdOut(clusterID)
 		terraform.Stderr = comm.GetStdErr(clusterID)
 	}
@@ -139,7 +139,7 @@ func (c ClusterBuilder) DestroyNodepools() error {
 		SpawnProcessLimit: c.SpawnProcessLimit,
 	}
 
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
+	if log.Logger.GetLevel() <= zerolog.InfoLevel {
 		terraform.Stdout = comm.GetStdOut(clusterID)
 		terraform.Stderr = comm.GetStdErr(clusterID)
 	}

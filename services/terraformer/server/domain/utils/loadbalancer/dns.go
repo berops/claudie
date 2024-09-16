@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"path/filepath"
+
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -13,7 +15,6 @@ import (
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/terraform"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"path/filepath"
 )
 
 const (
@@ -50,7 +51,7 @@ func (d DNS) CreateDNSRecords(logger zerolog.Logger) (string, error) {
 		SpawnProcessLimit: d.SpawnProcessLimit,
 	}
 
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
+	if log.Logger.GetLevel() <= zerolog.InfoLevel {
 		terraform.Stdout = comm.GetStdOut(clusterID)
 		terraform.Stderr = comm.GetStdErr(clusterID)
 	}
@@ -127,7 +128,7 @@ func (d DNS) DestroyDNSRecords(logger zerolog.Logger) error {
 		SpawnProcessLimit: d.SpawnProcessLimit,
 	}
 
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
+	if log.Logger.GetLevel() <= zerolog.InfoLevel {
 		terraform.Stdout = comm.GetStdOut(dnsID)
 		terraform.Stderr = comm.GetStdErr(dnsID)
 	}
