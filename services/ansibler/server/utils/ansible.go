@@ -70,7 +70,7 @@ func (a *Ansible) RunAnsiblePlaybook(prefix string) error {
 	cmd.Stdout = output
 	cmd.Stderr = output
 
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
+	if log.Logger.GetLevel() <= zerolog.InfoLevel {
 		cmd.Stdout = comm.GetStdOut(prefix)
 		cmd.Stderr = comm.GetStdErr(prefix)
 	}
@@ -115,7 +115,7 @@ func setEnv() error {
 		return fmt.Errorf("failed to set ANSIBLE_HOST_KEY_CHECKING environment variable to False : %w", err)
 	}
 
-	if log.Logger.GetLevel() != zerolog.DebugLevel {
+	if log.Logger.GetLevel() <= zerolog.InfoLevel {
 		if err := os.Setenv("ANSIBLE_STDOUT_CALLBACK", "json"); err != nil {
 			return fmt.Errorf("failed to set ANSIBLE_STDOUT_CALLBACK environment variable to json: %w", err)
 		}
