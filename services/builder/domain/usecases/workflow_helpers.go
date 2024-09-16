@@ -3,32 +3,28 @@ package usecases
 import (
 	"errors"
 	"fmt"
-	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/berops/claudie/services/builder/domain/usecases/metrics"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/rs/zerolog/log"
 	"strings"
 
-	cutils "github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/proto/pb"
-	"github.com/berops/claudie/services/builder/domain/usecases/utils"
-)
-
-const (
-	// maxDeleteRetry defines how many times the config should try to be deleted before returning an error, if encountered.
-	maxDeleteRetry = 3
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb/spec"
+	"github.com/berops/claudie/services/builder/domain/usecases/metrics"
+	builder "github.com/berops/claudie/services/builder/internal"
+	managerclient "github.com/berops/claudie/services/manager/client"
+	"github.com/docker/distribution/context"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/rs/zerolog/log"
 )
 
 // buildCluster performs whole Claudie workflow on the given cluster.
-func (u *Usecases) buildCluster(ctx *utils.BuilderContext, cboxClient pb.ContextBoxServiceClient) (*utils.BuilderContext, error) {
+func (u *Usecases) buildCluster(ctx *builder.Context) (*builder.Context, error) {
 	// LB add nodes prometheus metrics.
 	for _, lb := range ctx.DesiredLoadbalancers {
 		var currNodes int
-		if idx := cutils.GetLBClusterByName(lb.ClusterInfo.Name, ctx.CurrentLoadbalancers); idx >= 0 {
-			currNodes = cutils.CountLbNodes(ctx.CurrentLoadbalancers[idx])
+		if idx := utils.GetLBClusterByName(lb.ClusterInfo.Name, ctx.CurrentLoadbalancers); idx >= 0 {
+			currNodes = utils.CountLbNodes(ctx.CurrentLoadbalancers[idx])
 		}
 
-		adding := max(0, cutils.CountLbNodes(lb)-currNodes)
+		adding := max(0, utils.CountLbNodes(lb)-currNodes)
 
 		metrics.LbAddingNodesInProgress.With(prometheus.Labels{
 			metrics.LBClusterLabel:     lb.ClusterInfo.Name,
@@ -44,7 +40,7 @@ func (u *Usecases) buildCluster(ctx *utils.BuilderContext, cboxClient pb.Context
 			}).Add(-float64(c))
 		}(lb.TargetedK8S, lb.ClusterInfo.Name, adding)
 
-		deleting := -min(cutils.CountLbNodes(lb)-currNodes, 0)
+		deleting := -min(utils.CountLbNodes(lb)-currNodes, 0)
 
 		metrics.LbDeletingNodesInProgress.With(prometheus.Labels{
 			metrics.K8sClusterLabel:    lb.TargetedK8S,
@@ -65,7 +61,7 @@ func (u *Usecases) buildCluster(ctx *utils.BuilderContext, cboxClient pb.Context
 		metrics.K8sClusterLabel:    ctx.GetClusterName(),
 		metrics.InputManifestLabel: ctx.ProjectName,
 	}).Add(float64(
-		max(0, cutils.CountNodes(ctx.DesiredCluster)-cutils.CountNodes(ctx.CurrentCluster)),
+		max(0, utils.CountNodes(ctx.DesiredCluster)-utils.CountNodes(ctx.CurrentCluster)),
 	))
 
 	defer func(c int) {
@@ -73,25 +69,25 @@ func (u *Usecases) buildCluster(ctx *utils.BuilderContext, cboxClient pb.Context
 			metrics.K8sClusterLabel:    ctx.GetClusterName(),
 			metrics.InputManifestLabel: ctx.ProjectName,
 		}).Add(-float64(c))
-	}(max(0, cutils.CountNodes(ctx.DesiredCluster)-cutils.CountNodes(ctx.CurrentCluster)))
+	}(max(0, utils.CountNodes(ctx.DesiredCluster)-utils.CountNodes(ctx.CurrentCluster)))
 
 	// Reconcile infrastructure via terraformer.
-	if err := u.reconcileInfrastructure(ctx, cboxClient); err != nil {
+	if err := u.reconcileInfrastructure(ctx); err != nil {
 		return ctx, fmt.Errorf("error in Terraformer for cluster %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
 	}
 
 	// Configure infrastructure via Ansibler.
-	if err := u.configureInfrastructure(ctx, cboxClient); err != nil {
+	if err := u.configureInfrastructure(ctx); err != nil {
 		return ctx, fmt.Errorf("error in Ansibler for cluster %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
 	}
 
 	// Build k8s cluster via Kube-eleven.
-	if err := u.reconcileK8sCluster(ctx, cboxClient); err != nil {
+	if err := u.reconcileK8sCluster(ctx); err != nil {
 		return ctx, fmt.Errorf("error in Kube-eleven for cluster %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
 	}
 
 	// Reconcile k8s configuration via Kuber.
-	if err := u.reconcileK8sConfiguration(ctx, cboxClient); err != nil {
+	if err := u.reconcileK8sConfiguration(ctx); err != nil {
 		return ctx, fmt.Errorf("error in Kuber for cluster %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
 	}
 
@@ -99,19 +95,19 @@ func (u *Usecases) buildCluster(ctx *utils.BuilderContext, cboxClient pb.Context
 }
 
 // destroyCluster destroys existing clusters infrastructure for a config and cleans up management cluster from any of the cluster data.
-func (u *Usecases) destroyCluster(ctx *utils.BuilderContext, cboxClient pb.ContextBoxServiceClient) error {
+func (u *Usecases) destroyCluster(ctx *builder.Context) error {
 	// K8s delete nodes prometheus metric.
 	metrics.K8sDeletingNodesInProgress.With(prometheus.Labels{
 		metrics.K8sClusterLabel:    ctx.GetClusterName(),
 		metrics.InputManifestLabel: ctx.ProjectName,
-	}).Add(float64(cutils.CountNodes(ctx.CurrentCluster)))
+	}).Add(float64(utils.CountNodes(ctx.CurrentCluster)))
 
 	defer func(c int) {
 		metrics.K8sDeletingNodesInProgress.With(prometheus.Labels{
 			metrics.K8sClusterLabel:    ctx.GetClusterName(),
 			metrics.InputManifestLabel: ctx.ProjectName,
 		}).Add(-float64(c))
-	}(cutils.CountNodes(ctx.CurrentCluster))
+	}(utils.CountNodes(ctx.CurrentCluster))
 
 	// LB delete nodes prometheus metrics.
 	for _, lb := range ctx.CurrentLoadbalancers {
@@ -119,7 +115,7 @@ func (u *Usecases) destroyCluster(ctx *utils.BuilderContext, cboxClient pb.Conte
 			metrics.K8sClusterLabel:    lb.TargetedK8S,
 			metrics.LBClusterLabel:     lb.ClusterInfo.Name,
 			metrics.InputManifestLabel: ctx.ProjectName,
-		}).Add(float64(cutils.CountLbNodes(lb)))
+		}).Add(float64(utils.CountLbNodes(lb)))
 
 		defer func(k8s, lb string, c int) {
 			metrics.LbDeletingNodesInProgress.With(prometheus.Labels{
@@ -127,29 +123,29 @@ func (u *Usecases) destroyCluster(ctx *utils.BuilderContext, cboxClient pb.Conte
 				metrics.LBClusterLabel:     lb,
 				metrics.InputManifestLabel: ctx.ProjectName,
 			}).Add(-float64(c))
-		}(lb.TargetedK8S, lb.ClusterInfo.Name, cutils.CountLbNodes(lb))
+		}(lb.TargetedK8S, lb.ClusterInfo.Name, utils.CountLbNodes(lb))
 	}
 
 	metrics.LBClustersInDeletion.Add(float64(len(ctx.CurrentLoadbalancers)))
 	defer func(c int) { metrics.LBClustersInDeletion.Add(-float64(c)) }(len(ctx.CurrentLoadbalancers))
 
-	if s := cutils.GetCommonStaticNodePools(ctx.CurrentCluster.GetClusterInfo().GetNodePools()); len(s) > 0 {
-		if err := u.destroyK8sCluster(ctx, cboxClient); err != nil {
+	if s := utils.GetCommonStaticNodePools(ctx.CurrentCluster.GetClusterInfo().GetNodePools()); len(s) > 0 {
+		if err := u.destroyK8sCluster(ctx); err != nil {
 			log.Error().Msgf("error in destroy Kube-Eleven for config %s project %s : %v", ctx.GetClusterName(), ctx.ProjectName, err)
 		}
 
-		if err := u.removeClaudieUtilities(ctx, cboxClient); err != nil {
+		if err := u.removeClaudieUtilities(ctx); err != nil {
 			log.Error().Msgf("error while removing claudie installed utilities for config %s project %s: %v", ctx.GetClusterName(), ctx.ProjectName, err)
 		}
 	}
 
 	// Destroy infrastructure for the given cluster.
-	if err := u.destroyInfrastructure(ctx, cboxClient); err != nil {
+	if err := u.destroyInfrastructure(ctx); err != nil {
 		return fmt.Errorf("error in destroy config Terraformer for config %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
 	}
 
 	// Delete Cluster data from management cluster.
-	if err := u.deleteClusterData(ctx, cboxClient); err != nil {
+	if err := u.deleteClusterData(ctx); err != nil {
 		return fmt.Errorf("error in delete kubeconfig for config %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
 	}
 
@@ -158,146 +154,24 @@ func (u *Usecases) destroyCluster(ctx *utils.BuilderContext, cboxClient pb.Conte
 	return nil
 }
 
-// destroyConfig destroys all the current state of the config.
-func (u *Usecases) destroyConfig(config *spec.Config, clusterView *cutils.ClusterView, c pb.ContextBoxServiceClient) error {
-	// Destroy all cluster concurrently.
-	if err := cutils.ConcurrentExec(config.CurrentState.Clusters, func(_ int, cluster *spec.K8Scluster) error {
-		err := u.destroyCluster(&utils.BuilderContext{
-			ProjectName:          config.Name,
-			CurrentCluster:       cluster,
-			CurrentLoadbalancers: clusterView.Loadbalancers[cluster.ClusterInfo.Name],
-			Workflow:             clusterView.ClusterWorkflows[cluster.ClusterInfo.Name],
-		}, c)
-
-		if err != nil {
-			clusterView.SetWorkflowError(cluster.ClusterInfo.Name, err)
-			return err
-		}
-
-		clusterView.SetWorkflowDone(cluster.ClusterInfo.Name)
-		return nil
-	}); err != nil {
-		return err
-	}
-
-	return u.ContextBox.DeleteConfig(config, c)
-}
-
-// saveWorkflowDescription sets description for a given builder context and saves it to Claudie database.
-func (u *Usecases) saveWorkflowDescription(ctx *utils.BuilderContext, description string, cboxClient pb.ContextBoxServiceClient) {
-	log := cutils.CreateLoggerWithProjectName(ctx.ProjectName)
+func (u *Usecases) updateTaskWithDescription(ctx *builder.Context, stage spec.Workflow_Stage, description string) {
+	logger := utils.CreateLoggerWithProjectName(ctx.ProjectName)
+	ctx.Workflow.Stage = stage
 	ctx.Workflow.Description = strings.TrimSpace(description)
-	if err := u.ContextBox.SaveWorkflowState(ctx.ProjectName, ctx.GetClusterName(), ctx.Workflow, cboxClient); err != nil {
-		log.Err(err).Msgf("failed to update workflow description")
-	}
-}
 
-// deleteConfig calls destroy config to remove all traces of infrastructure from given config.
-func (u *Usecases) deleteConfig(config *spec.Config, clusterView *cutils.ClusterView, cboxClient pb.ContextBoxServiceClient) error {
-	log := cutils.CreateLoggerWithProjectName(config.Name)
-
-	var err error
-	for i := 0; i < maxDeleteRetry; i++ {
-		if err = u.destroyConfig(config, clusterView, cboxClient); err == nil {
-			break
+	// ignore error, this is not a fatal error due to which we can't continue.
+	_ = managerclient.Retry(&logger, "TaskUpdate", func() error {
+		log.Debug().Msgf("updating task %q for cluster %q for config %q with state: %s", ctx.TaskId, ctx.GetClusterName(), ctx.ProjectName, ctx.Workflow.String())
+		err := u.Manager.TaskUpdate(context.Background(), &managerclient.TaskUpdateRequest{
+			Config:  ctx.ProjectName,
+			Cluster: ctx.GetClusterName(),
+			TaskId:  ctx.TaskId,
+			State:   ctx.Workflow,
+		})
+		if errors.Is(err, managerclient.ErrNotFound) {
+			log.Warn().Msgf("can't update config %q cluster %q task %q: %v", ctx.ProjectName, ctx.GetClusterName(), ctx.TaskId, err)
+			return nil // nothing to retry
 		}
-		log.Err(err).Msg("failed to destroy config")
-	}
-	return err
-}
-
-// deleteCluster calls destroy cluster to remove all traces of infrastructure from cluster.
-func (u *Usecases) deleteCluster(configName, clusterName string, clusterView *cutils.ClusterView, cboxClient pb.ContextBoxServiceClient) error {
-	log := cutils.CreateLoggerWithProjectAndClusterName(configName, clusterName)
-
-	deleteCtx := &utils.BuilderContext{
-		ProjectName:          configName,
-		CurrentCluster:       clusterView.CurrentClusters[clusterName],
-		CurrentLoadbalancers: clusterView.DeletedLoadbalancers[clusterName],
-		Workflow:             clusterView.ClusterWorkflows[clusterName],
-	}
-
-	var err error
-	for i := 0; i < maxDeleteRetry; i++ {
-		if err = u.destroyCluster(deleteCtx, cboxClient); err == nil {
-			break
-		}
-		log.Err(err).Msg("failed to destroy cluster")
-	}
-
-	return err
-}
-
-// deleteNodes deletes nodes from the cluster based on the node map specified.
-func (u *Usecases) deleteNodes(currentCluster, desiredCluster *spec.K8Scluster, nodes map[string]int32) (*spec.K8Scluster, error) {
-	master, worker := utils.SeparateNodepools(nodes, currentCluster.ClusterInfo, desiredCluster.ClusterInfo)
-	newCluster, err := u.callDeleteNodes(master, worker, currentCluster)
-	if err != nil {
-		return nil, fmt.Errorf("error while deleting nodes for %s : %w", currentCluster.ClusterInfo.Name, err)
-	}
-
-	return newCluster, nil
-}
-
-// applyIR applies intermediate representation of the infrastructure to the Claudie workflow.
-func (u *Usecases) applyIR(configName, clusterName string, clusterView *cutils.ClusterView, cboxClient pb.ContextBoxServiceClient, diff *utils.IntermediateRepresentation) (*utils.BuilderContext, error) {
-	ctx := &utils.BuilderContext{
-		ProjectName:          configName,
-		CurrentCluster:       clusterView.CurrentClusters[clusterName],
-		DesiredCluster:       diff.IR,
-		CurrentLoadbalancers: clusterView.Loadbalancers[clusterName],
-		DesiredLoadbalancers: diff.IRLbs,
-		DeletedLoadBalancers: nil,
-		Workflow:             clusterView.ClusterWorkflows[clusterName],
-	}
-
-	if ctx, err := u.buildCluster(ctx, cboxClient); err != nil {
-		clusterView.CurrentClusters[clusterName] = ctx.DesiredCluster
-		clusterView.Loadbalancers[clusterName] = ctx.DesiredLoadbalancers
-
-		if errors.Is(err, ErrFailedToBuildInfrastructure) {
-			clusterView.CurrentClusters[clusterName] = ctx.CurrentCluster
-			clusterView.Loadbalancers[clusterName] = ctx.CurrentLoadbalancers
-		}
-		return ctx, err
-	}
-	return ctx, nil
-}
-
-// applyAPIEndpointReplacement applies workflow for kube API Endpoint replacement.
-func (u *Usecases) applyAPIEndpointReplacement(configName, clusterName string, clusterView *cutils.ClusterView, cboxClient pb.ContextBoxServiceClient) error {
-	ctx := &utils.BuilderContext{
-		ProjectName:    configName,
-		CurrentCluster: clusterView.CurrentClusters[clusterName],
-		DesiredCluster: clusterView.DesiredClusters[clusterName],
-		Workflow:       clusterView.ClusterWorkflows[clusterName],
-	}
-
-	if err := u.callUpdateAPIEndpoint(ctx, cboxClient); err != nil {
 		return err
-	}
-
-	clusterView.CurrentClusters[clusterName] = ctx.CurrentCluster
-	clusterView.DesiredClusters[clusterName] = ctx.DesiredCluster
-
-	ctx = &utils.BuilderContext{
-		ProjectName:          configName,
-		DesiredCluster:       clusterView.CurrentClusters[clusterName],
-		DesiredLoadbalancers: clusterView.Loadbalancers[clusterName],
-		Workflow:             clusterView.ClusterWorkflows[clusterName],
-	}
-
-	// Reconcile k8s cluster to assure new API endpoint has correct certificates.
-	if err := u.reconcileK8sCluster(ctx, cboxClient); err != nil {
-		return err
-	}
-
-	clusterView.CurrentClusters[clusterName] = ctx.DesiredCluster
-	clusterView.Loadbalancers[clusterName] = ctx.DesiredLoadbalancers
-
-	// Patch cluster-info config map to update certificates.
-	if err := u.callPatchClusterInfoConfigMap(ctx, cboxClient); err != nil {
-		return err
-	}
-	return nil
+	})
 }

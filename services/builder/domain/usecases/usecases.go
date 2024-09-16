@@ -1,10 +1,13 @@
 package usecases
 
-import "github.com/berops/claudie/services/builder/domain/ports"
+import (
+	"github.com/berops/claudie/services/builder/domain/ports"
+	managerclient "github.com/berops/claudie/services/manager/client"
+)
 
 type Usecases struct {
-	// ContextBox connector to perform tasks related to Context-box
-	ContextBox ports.ContextBoxPort
+	// Manager client to perform tasks related to manager
+	Manager managerclient.ClientAPI
 	// Terraformer connector to perform tasks related to Terraformer
 	Terraformer ports.TerraformerPort
 	// Ansibler connector to perform tasks related to Ansibler

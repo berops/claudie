@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	outboundAdapters "github.com/berops/claudie/services/terraformer/server/adapters/outbound"
@@ -11,8 +14,6 @@ import (
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/kubernetes"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/loadbalancer"
 	"github.com/rs/zerolog/log"
-	"os"
-	"path/filepath"
 )
 
 const (

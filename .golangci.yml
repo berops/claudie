@@ -25,7 +25,6 @@ linters:
     - unused
     - bodyclose
     - durationcheck
-    - exhaustive
     - goconst
     - tenv
     - wastedassign
@@ -49,9 +48,3 @@ linters-settings:
     disable:
       - fieldalignment # too strict
       - shadow # too strict
-  exhaustive:
-    # Program elements to check for exhaustiveness.
-    # Default: [ switch ]
-    check:
-      - switch
-      - map

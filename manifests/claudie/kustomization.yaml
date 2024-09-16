@@ -3,13 +3,12 @@ resources:
 - crd
 - ns.yaml
 - operator.yaml
-- context-box.yaml
-- scheduler.yaml
 - builder.yaml
 - terraformer.yaml
 - ansibler.yaml
 - kube-eleven.yaml
 - kuber.yaml
+- manager.yaml
 - cluster-rbac
 - mongo
 - minio
@@ -58,20 +57,18 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
 - name: ghcr.io/berops/claudie/ansibler
-  newTag: e9d2abf-2946
+  newTag: 69690e5-2959
 - name: ghcr.io/berops/claudie/autoscaler-adapter
-  newTag: 688726a-1932
+  newTag: 69690e5-2959
 - name: ghcr.io/berops/claudie/builder
-  newTag: e9d2abf-2946
+  newTag: 69690e5-2959
 - name: ghcr.io/berops/claudie/claudie-operator
-  newTag: e9d2abf-2946
-- name: ghcr.io/berops/claudie/context-box
-  newTag: e9d2abf-2946
+  newTag: 69690e5-2959
 - name: ghcr.io/berops/claudie/kube-eleven
-  newTag: e9d2abf-2946
+  newTag: 69690e5-2959
 - name: ghcr.io/berops/claudie/kuber
-  newTag: e9d2abf-2946
-- name: ghcr.io/berops/claudie/scheduler
-  newTag: e9d2abf-2946
+  newTag: 69690e5-2959
+- name: ghcr.io/berops/claudie/manager
+  newTag: 69690e5-2959
 - name: ghcr.io/berops/claudie/terraformer
-  newTag: e9d2abf-2946
+  newTag: 69690e5-2959

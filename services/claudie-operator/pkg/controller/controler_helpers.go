@@ -229,7 +229,7 @@ func buildProvisioningError(state v1beta.InputManifestStatus) error {
 			msg = msg + "For cluster: " + name + " Message: " + cluster.Message + "; "
 		}
 	}
-	return fmt.Errorf(msg)
+	return fmt.Errorf("%v", msg)
 }
 
 func getStaticNodePool(name string, nps []v1beta.StaticNodePool) *v1beta.StaticNodePool {

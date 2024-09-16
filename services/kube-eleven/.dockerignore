@@ -6,8 +6,6 @@ LICENSE
 .git
 services/terraformer
 services/ansibler
-services/scheduler
-services/context-box
 services/builder
 services/testing-framework
 services/claudie-operator

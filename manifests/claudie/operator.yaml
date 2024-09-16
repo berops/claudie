@@ -47,16 +47,16 @@ spec:
             - containerPort: 50058
               name: grpc-server
           env:
-            - name: CONTEXT_BOX_PORT
+            - name: MANAGER_PORT
               valueFrom:
                 configMapKeyRef:
                   name: env
-                  key: CONTEXT_BOX_PORT
-            - name: CONTEXT_BOX_HOSTNAME
+                  key: MANAGER_PORT
+            - name: MANAGER_HOSTNAME
               valueFrom:
                 configMapKeyRef:
                   name: env
-                  key: CONTEXT_BOX_HOSTNAME
+                  key: MANAGER_HOSTNAME
             - name: GOLANG_LOG
               valueFrom:
                 configMapKeyRef:

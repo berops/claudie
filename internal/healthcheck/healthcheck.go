@@ -62,14 +62,14 @@ type HealthCheck struct {
 	timeSinceFailure *time.Time
 }
 
-type HealthChecker struct {
+type AggregateHealthCheck struct {
 	services []HealthCheck
 	logger   *zerolog.Logger
 	lock     sync.Mutex
 }
 
-func NewHealthCheck(logger *zerolog.Logger, interval time.Duration, services []HealthCheck) *HealthChecker {
-	hc := &HealthChecker{
+func NewHealthCheck(logger *zerolog.Logger, interval time.Duration, services []HealthCheck) *AggregateHealthCheck {
+	hc := &AggregateHealthCheck{
 		services: services,
 		logger:   logger,
 	}
@@ -86,7 +86,7 @@ func NewHealthCheck(logger *zerolog.Logger, interval time.Duration, services []H
 	return hc
 }
 
-func (c *HealthChecker) check() {
+func (c *AggregateHealthCheck) check() {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -110,7 +110,7 @@ func (c *HealthChecker) check() {
 	}
 }
 
-func (c *HealthChecker) CheckForFailures() error {
+func (c *AggregateHealthCheck) CheckForFailures() error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -121,7 +121,7 @@ func (c *HealthChecker) CheckForFailures() error {
 	return err
 }
 
-func (c *HealthChecker) checkFailure(t *time.Time, service string, perr error) error {
+func (c *AggregateHealthCheck) checkFailure(t *time.Time, service string, perr error) error {
 	if t != nil && time.Since(*t) >= 4*time.Minute {
 		if perr != nil {
 			return fmt.Errorf("%w; %s is unhealthy", perr, service)
@@ -131,7 +131,7 @@ func (c *HealthChecker) checkFailure(t *time.Time, service string, perr error) e
 	return perr
 }
 
-func (c *HealthChecker) AnyServiceUnhealthy() bool {
+func (c *AggregateHealthCheck) AnyServiceUnhealthy() bool {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
