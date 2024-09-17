@@ -37,16 +37,16 @@ func testLonghornDeployment(ctx context.Context, config *spec.Config) error {
 			Kubeconfig:        cluster.Current.K8S.Kubeconfig,
 			MaxKubectlRetries: 5,
 		}
-    
+
 		prefix := utils.GetClusterID(cluster.Current.K8S.ClusterInfo)
 		k.Stdout = comm.GetStdOut(prefix)
 		k.Stderr = comm.GetStdErr(prefix)
 
-    clusterName := cluster.Current.K8S.ClusterInfo.Name
-    
+		clusterName := cluster.Current.K8S.ClusterInfo.Name
+
 		if err := checkLonghornNodes(ctx, cluster.Current.K8S, k); err != nil {
 			return fmt.Errorf("error while checking the nodes.longhorn.io in cluster %s : %w", cluster, err)
-    }
+		}
 
 		if err := checkLonghornPods(ctx, clusterName, k); err != nil {
 			return fmt.Errorf("error while checking if all pods from longhorn-system are ready in cluster %s: %w", clusterName, err)
