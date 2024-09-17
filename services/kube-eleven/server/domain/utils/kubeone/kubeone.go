@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	comm "github.com/berops/claudie/internal/command"
@@ -26,7 +25,7 @@ func (k *Kubeone) Reset(prefix string) error {
 	k.SpawnProcessLimit <- struct{}{}
 	defer func() { <-k.SpawnProcessLimit }()
 
-	command := fmt.Sprintf("kubeone reset -m kubeone.yaml -y --remove-binaries %s", structuredLogging())
+	command := "kubeone reset -m kubeone.yaml -y --remove-binaries"
 	cmd := exec.Command("bash", "-c", command)
 	cmd.Dir = k.ConfigDirectory
 
@@ -57,7 +56,7 @@ func (k *Kubeone) Apply(prefix string) error {
 	k.SpawnProcessLimit <- struct{}{}
 	defer func() { <-k.SpawnProcessLimit }()
 
-	command := fmt.Sprintf("kubeone apply -m kubeone.yaml -y %s", structuredLogging())
+	command := "kubeone apply -m kubeone.yaml -y"
 	cmd := exec.Command("bash", "-c", command)
 	cmd.Dir = k.ConfigDirectory
 
@@ -80,11 +79,4 @@ func (k *Kubeone) Apply(prefix string) error {
 		}
 	}
 	return nil
-}
-
-func structuredLogging() string {
-	if log.Logger.GetLevel() <= zerolog.InfoLevel {
-		return ""
-	}
-	return "--log-format json"
 }
