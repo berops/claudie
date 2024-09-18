@@ -9,8 +9,6 @@ import (
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
 // DeleteClusterMetadata deletes the K8s secret (from the management cluster) containing cluster
@@ -35,11 +33,9 @@ func (u *Usecases) DeleteClusterMetadata(ctx context.Context, request *pb.Delete
 
 	logger.Info().Msgf("Deleting cluster metadata secret")
 	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
-		prefix := utils.GetClusterID(request.Cluster.ClusterInfo)
-		kc.Stdout = comm.GetStdOut(prefix)
-		kc.Stderr = comm.GetStdErr(prefix)
-	}
+	prefix := utils.GetClusterID(request.Cluster.ClusterInfo)
+	kc.Stdout = comm.GetStdOut(prefix)
+	kc.Stderr = comm.GetStdErr(prefix)
 
 	// Save error and return as errors are ignored here.
 	err = kc.KubectlDeleteResource("secret", fmt.Sprintf("%s-metadata", clusterID), "-n", namespace)
