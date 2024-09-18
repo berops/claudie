@@ -29,10 +29,10 @@ spec:
       secretRef:
         name: aws-secret
         namespace: e2e-secrets
-    - name: azure-1
+    - name: azure-sponsor-1
       providerType: azure
       secretRef:
-        name: azure-secret
+        name: azure-sponsorship-secret
         namespace: e2e-secrets
   nodePools:
     dynamic:
@@ -104,7 +104,7 @@ spec:
 
       - name: azr-ldbl-nodes
         providerSpec:
-          name: azure-1
+          name: azure-sponsor-1
           region: West Europe
           zone: "3"
         count: 2

@@ -29,7 +29,12 @@ spec:
       secretRef:
         name: aws-secret
         namespace: e2e-secrets
-    - name: azure-1
+    - name: azure-sponsor-1
+      providerType: azure
+      secretRef:
+        name: azure-sponsorship-secret
+        namespace: e2e-secrets
+    - name: azure-payed-1
       providerType: azure
       secretRef:
         name: azure-secret
@@ -104,7 +109,7 @@ spec:
 
       - name: azr-ldbl-nodes
         providerSpec:
-          name: azure-1
+          name: azure-sponsor-1
           region: West Europe
           zone: "3"
         count: 2
@@ -150,7 +155,7 @@ spec:
           - apiserver-lb-hetzner
         dns:
           dnsZone: azure.e2e.claudie.io
-          provider: azure-1
+          provider: azure-payed-1
         targetedK8s: ts2-htz-cluster-test-set-no2
         pools:
           - gcp-ldbl-nodes
