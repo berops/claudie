@@ -110,7 +110,7 @@ spec:
       - name: azr-ldbl-nodes
         providerSpec:
           name: azure-sponsor-1
-          region: West Europe
+          region: Germany West Central
           zone: "3"
         count: 2
         serverType: Standard_B2s

@@ -145,7 +145,7 @@ spec:
       - name: azr-ctrl-nodes
         providerSpec:
           name: azure-sponsor-2
-          region: West Europe
+          region: Germany West Central
           zone: "1"
         count: 2
         serverType: Standard_B2s
