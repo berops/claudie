@@ -105,7 +105,8 @@ func (g *GRPC) WatchForPendingDocuments(ctx context.Context) error {
 			continue
 		}
 
-		if err := scheduleTasks(pending); err != nil {
+		reschedule, err := scheduleTasks(pending)
+		if err != nil {
 			logger.Err(err).Msgf("Failed to create tasks, skipping.")
 			continue
 		}
@@ -117,7 +118,11 @@ func (g *GRPC) WatchForPendingDocuments(ctx context.Context) error {
 		}
 
 		pending.Manifest.State = manifest.Scheduled.String()
-		pending.Manifest.LastAppliedChecksum = pending.Manifest.Checksum
+		if !reschedule {
+			pending.Manifest.LastAppliedChecksum = pending.Manifest.Checksum
+		} else {
+			logger.Debug().Msgf("Scheduling for intermediate tasks after which the config will be rescheduled again")
+		}
 
 		if err := g.Store.UpdateConfig(ctx, pending); err != nil {
 			if errors.Is(err, store.ErrNotFoundOrDirty) {

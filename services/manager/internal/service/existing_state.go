@@ -77,7 +77,7 @@ func copyLbNodePoolNamesFromCurrentState(used map[string]struct{}, nodepool stri
 			}
 
 			for _, np := range current.GetClusterInfo().GetNodePools() {
-				_, hash := utils.GetNameAndHashFromNodepool(nodepool, np.Name)
+				_, hash := utils.MatchNameAndHashWithTemplate(nodepool, np.Name)
 				if hash == "" {
 					continue
 				}
@@ -112,7 +112,7 @@ func copyK8sNodePoolsNamesFromCurrentState(used map[string]struct{}, nodepool st
 	}
 
 	for _, np := range current.GetClusterInfo().GetNodePools() {
-		_, hash := utils.GetNameAndHashFromNodepool(nodepool, np.Name)
+		_, hash := utils.MatchNameAndHashWithTemplate(nodepool, np.Name)
 		if hash == "" {
 			continue
 		}
@@ -200,7 +200,7 @@ desired:
 			case transferDynamicNp(utils.GetClusterID(desired), currentNp, desiredNp, true):
 			case transferStaticNodes(utils.GetClusterID(desired), currentNp, desiredNp):
 			default:
-				return fmt.Errorf("%q is neither dynamic nor static, unexpected value: %v", desiredNp.Name, desiredNp.GetNodePoolType())
+				return fmt.Errorf("%q is neither dynamic nor static, unexpected value: %T", desiredNp.Name, desiredNp.Type)
 			}
 
 			continue desired

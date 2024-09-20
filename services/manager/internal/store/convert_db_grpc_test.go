@@ -126,7 +126,7 @@ func TestConvertToDBAndBack(t *testing.T) {
 							Hash: "abcd",
 							NodePools: []*spec.NodePool{
 								{
-									NodePoolType: &spec.NodePool_DynamicNodePool{
+									Type: &spec.NodePool_DynamicNodePool{
 										DynamicNodePool: &spec.DynamicNodePool{
 											ServerType:      "performance",
 											Image:           "latest",
@@ -178,7 +178,7 @@ func TestConvertToDBAndBack(t *testing.T) {
 									Hash: "abcd",
 									NodePools: []*spec.NodePool{
 										{
-											NodePoolType: &spec.NodePool_DynamicNodePool{
+											Type: &spec.NodePool_DynamicNodePool{
 												DynamicNodePool: &spec.DynamicNodePool{
 													ServerType:      "performance",
 													Image:           "latest",
@@ -322,7 +322,7 @@ func TestConvertFromGRPC(t *testing.T) {
 										Hash: "abcd",
 										NodePools: []*spec.NodePool{
 											{
-												NodePoolType: &spec.NodePool_DynamicNodePool{
+												Type: &spec.NodePool_DynamicNodePool{
 													DynamicNodePool: &spec.DynamicNodePool{
 														ServerType:      "performance",
 														Image:           "latest",
@@ -374,7 +374,7 @@ func TestConvertFromGRPC(t *testing.T) {
 												Hash: "abcd",
 												NodePools: []*spec.NodePool{
 													{
-														NodePoolType: &spec.NodePool_DynamicNodePool{
+														Type: &spec.NodePool_DynamicNodePool{
 															DynamicNodePool: &spec.DynamicNodePool{
 																ServerType:      "performance",
 																Image:           "latest",
@@ -561,7 +561,7 @@ func TestConvertToGRPC(t *testing.T) {
 									Hash: "abcd",
 									NodePools: []*spec.NodePool{
 										{
-											NodePoolType: &spec.NodePool_DynamicNodePool{
+											Type: &spec.NodePool_DynamicNodePool{
 												DynamicNodePool: &spec.DynamicNodePool{
 													ServerType:      "performance",
 													Image:           "latest",
@@ -613,7 +613,7 @@ func TestConvertToGRPC(t *testing.T) {
 											Hash: "abcd",
 											NodePools: []*spec.NodePool{
 												{
-													NodePoolType: &spec.NodePool_DynamicNodePool{
+													Type: &spec.NodePool_DynamicNodePool{
 														DynamicNodePool: &spec.DynamicNodePool{
 															ServerType:      "performance",
 															Image:           "latest",

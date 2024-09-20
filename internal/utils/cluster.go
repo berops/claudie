@@ -6,12 +6,6 @@ import (
 	"github.com/berops/claudie/proto/pb/spec"
 )
 
-// ProviderNames struct hold pair of cloud provider name and user defined name from manifest.
-type ProviderNames struct {
-	SpecName          string
-	CloudProviderName string
-}
-
 // GetLBClusterByName will return index of Cluster that will have same name as specified in parameters
 // If no name is found, return -1
 func GetLBClusterByName(name string, clusters []*spec.LBcluster) int {
@@ -60,21 +54,6 @@ func GetRegions(nodepools []*spec.DynamicNodePool) []string {
 		regions = append(regions, k)
 	}
 	return regions
-}
-
-// GroupNodepoolsByProviderNames groups nodepool by provider spec name into the map[Provider Names][]*spec.Nodepool
-func GroupNodepoolsByProviderNames(clusterInfo *spec.ClusterInfo) map[ProviderNames][]*spec.NodePool {
-	sortedNodePools := map[ProviderNames][]*spec.NodePool{}
-	pnStatic := ProviderNames{SpecName: spec.StaticNodepoolInfo_STATIC_PROVIDER.String(), CloudProviderName: spec.StaticNodepoolInfo_STATIC_PROVIDER.String()}
-	for _, nodepool := range clusterInfo.GetNodePools() {
-		if np := nodepool.GetDynamicNodePool(); np != nil {
-			pn := ProviderNames{SpecName: np.Provider.SpecName, CloudProviderName: np.Provider.CloudProviderName}
-			sortedNodePools[pn] = append(sortedNodePools[pn], nodepool)
-		} else if np := nodepool.GetStaticNodePool(); np != nil {
-			sortedNodePools[pnStatic] = append(sortedNodePools[pnStatic], nodepool)
-		}
-	}
-	return sortedNodePools
 }
 
 // GroupNodepoolsByProviderSpecName groups nodepool by provider spec name into the map[Provider Name][]*spec.Nodepool
@@ -222,12 +201,12 @@ func CreateNpsFromCommonControlPlaneNodes(currControlNps map[string]*spec.NodePo
 			if len(commonNodes) > 0 {
 				// copy everything except Nodes
 				commonNodePool := &spec.NodePool{
-					NodePoolType: currNp.NodePoolType,
-					Name:         currNp.Name,
-					Nodes:        commonNodes,
-					IsControl:    currNp.IsControl,
-					Labels:       currNp.Labels,
-					Annotations:  currNp.Annotations,
+					Type:        currNp.Type,
+					Name:        currNp.Name,
+					Nodes:       commonNodes,
+					IsControl:   currNp.IsControl,
+					Labels:      currNp.Labels,
+					Annotations: currNp.Annotations,
 				}
 				commonControlNps = append(commonControlNps, commonNodePool)
 			}
@@ -240,7 +219,7 @@ func CreateNpsFromCommonControlPlaneNodes(currControlNps map[string]*spec.NodePo
 func CountLbNodes(lb *spec.LBcluster) int {
 	var out int
 	for _, np := range lb.GetClusterInfo().GetNodePools() {
-		switch i := np.GetNodePoolType().(type) {
+		switch i := np.Type.(type) {
 		case *spec.NodePool_DynamicNodePool:
 			out += int(i.DynamicNodePool.Count)
 		case *spec.NodePool_StaticNodePool:
@@ -254,7 +233,7 @@ func CountLbNodes(lb *spec.LBcluster) int {
 func CountNodes(k *spec.K8Scluster) int {
 	var out int
 	for _, np := range k.GetClusterInfo().GetNodePools() {
-		switch i := np.GetNodePoolType().(type) {
+		switch i := np.Type.(type) {
 		case *spec.NodePool_DynamicNodePool:
 			out += int(i.DynamicNodePool.Count)
 		case *spec.NodePool_StaticNodePool:

@@ -16,11 +16,13 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func scheduleTasks(scheduled *store.Config) error {
+func scheduleTasks(scheduled *store.Config) (bool, error) {
 	scheduledGRPC, err := store.ConvertToGRPC(scheduled)
 	if err != nil {
-		return fmt.Errorf("failed to convert database representation to GRPC for %q: %w", scheduled.Name, err)
+		return false, fmt.Errorf("failed to convert database representation to GRPC for %q: %w", scheduled.Name, err)
 	}
+
+	var reschedule bool
 
 	for _, state := range scheduledGRPC.Clusters {
 		var events []*spec.TaskEvent
@@ -57,6 +59,29 @@ func scheduleTasks(scheduled *store.Config) error {
 			})
 		// update
 		default:
+			ir, e, err := rollingUpdate(state.Current, state.Desired)
+			if err != nil {
+				return false, err
+			}
+
+			events = append(events, e...)
+			if len(events) != 0 {
+				// First we will let claudie to work on the rolling update
+				// to have the latest versions of the terraform manifests.
+				// After that the manifest will be rescheduled again
+				// to handle the diff between the new current state (with
+				// updated terraform files) and the desired state as specified
+				// in the Manifest.
+				reschedule = true
+				// TODO: check why there are Failed to elect leader errors.
+				// We set the desired state to the intermediate desired state which is the same as the
+				// current state but with updated templates. After this state is build by the builder
+				// the config will be rescheduled again to actually reflect the changes made. (if any
+				// by the user)
+				state.Desired.K8S = ir
+				break
+			}
+
 			events = append(events, Diff(
 				state.Current.K8S,
 				state.Desired.K8S,
@@ -71,14 +96,14 @@ func scheduleTasks(scheduled *store.Config) error {
 
 	db, err := store.ConvertFromGRPC(scheduledGRPC)
 	if err != nil {
-		return fmt.Errorf("failed to convert GRPC representation to database for %q: %w", scheduled.Name, err)
+		return false, fmt.Errorf("failed to convert GRPC representation to database for %q: %w", scheduled.Name, err)
 	}
 
 	*scheduled = *db
-	return nil
+	return reschedule, nil
 }
 
-// Diff takes the desired and current state to calculate difference between them to determine the difference and returns
+// Diff takes the desired and current state to determine the difference and returns
 // a number of tasks to be performed in specific order. It is expected that the current state actually represents
 // the actual current state of the cluster and the desired state contains relevant data from the current state with
 // the requested changes (i.e. deletion, addition of nodes) from the new config changes, (relevant data was transferred
@@ -637,7 +662,7 @@ func targetPoolsDeleted(current []*spec.LBcluster, nodepools []*spec.NodePool) (
 		var matches []string
 		for _, targetPool := range role.TargetPools {
 			idx := slices.IndexFunc(nodepools, func(pool *spec.NodePool) bool {
-				name, _ := utils.GetNameAndHashFromNodepool(targetPool, pool.Name)
+				name, _ := utils.MatchNameAndHashWithTemplate(targetPool, pool.Name)
 				return name == targetPool
 			})
 			if idx >= 0 {

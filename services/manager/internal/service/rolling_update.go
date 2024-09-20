@@ -1,0 +1,215 @@
+package service
+
+import (
+	"fmt"
+	"maps"
+	"slices"
+	"time"
+
+	"github.com/berops/claudie/internal/manifest"
+	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb/spec"
+	"github.com/google/uuid"
+
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
+)
+
+// rollingUpdate compares the commit hashes between the templates of the current state, desired state and
+// the latest commit of the template repository. Returns an Intermediate state where the nodepools for which
+// an updated commit hashes was found, are replaced with new nodepools and events that need to be executed
+// by the builder to achieve the "desired" intermediate state.
+// The rolling update of nodepools works as follows:
+//
+//  1. A clone of the current state is made.
+//
+//  2. On this clone the commit hash of the requested template repositories are updated to reflect the latest
+//     changes. If the template repository uses a tag the commit hash will not change.
+//
+//  3. The desired state is then used to overwrite changes made by the user in this intermediate state.
+//     (catching cases where the user changed the tag, or disabled the tag)
+//
+//  4. Each nodepool in the current state is then compared to the respective nodepool in the new intermediate state.
+//     On different commit hashes a rolling update will be performed.
+func rollingUpdate(current, desired *spec.Clusters) (*spec.K8Scluster, []*spec.TaskEvent, error) {
+	var (
+		events            []*spec.TaskEvent
+		mapping           = make(map[int]*spec.NodePool)
+		usedNodePoolNames = make(map[string]struct{})
+		ir                = proto.Clone(current.K8S).(*spec.K8Scluster)
+		rollingUpdates    = proto.Clone(current.K8S).(*spec.K8Scluster)
+		k8sID             = utils.GetClusterID(ir.ClusterInfo)
+	)
+
+	maps.Insert(usedNodePoolNames, maps.All(nodepoolNames(current.K8S.ClusterInfo.NodePools)))
+	maps.Insert(usedNodePoolNames, maps.All(nodepoolNames(desired.K8S.ClusterInfo.NodePools)))
+
+	if err := syncWithRemoteRepo(ir.ClusterInfo.NodePools); err != nil {
+		return nil, nil, err
+	}
+
+	transferTemplatesRepo(ir.ClusterInfo.NodePools, desired.K8S.ClusterInfo.NodePools)
+
+	for di, d := range ir.ClusterInfo.NodePools {
+		desiredPool := d.GetDynamicNodePool()
+		if desiredPool == nil {
+			continue
+		}
+
+		ci := slices.IndexFunc(rollingUpdates.ClusterInfo.NodePools, func(c *spec.NodePool) bool { return c.Name == d.Name })
+		currentPool := rollingUpdates.ClusterInfo.NodePools[ci]
+		if currentPool.GetDynamicNodePool().Provider.Templates.CommitHash == desiredPool.Provider.Templates.CommitHash {
+			continue
+		}
+
+		updated := proto.Clone(currentPool).(*spec.NodePool)
+		mapping[di] = updated
+
+		// 1. new name
+		n, _ := utils.MustExtractNameAndHash(updated.Name)
+		for {
+			name := fmt.Sprintf("%s-%s", n, utils.CreateHash(utils.HashLength))
+			if _, ok := usedNodePoolNames[name]; !ok {
+				usedNodePoolNames[name] = struct{}{}
+				updated.Name = name
+				break
+			}
+		}
+
+		// 2. new keys/cidr
+		var err error
+		updatedDyn := updated.GetDynamicNodePool()
+		updatedDyn.Cidr = ""
+		if updatedDyn.PublicKey, updatedDyn.PrivateKey, err = generateSSHKeyPair(); err != nil {
+			return nil, nil, err
+		}
+
+		// 3. replace provider
+		updatedDyn.Provider = desiredPool.Provider
+
+		// 4. new nodes
+		updated.Nodes = nil
+		nodeNames := make(map[string]struct{})
+		nodepoolID := fmt.Sprintf("%s-%s", k8sID, updated.Name)
+		generateMissingDynamicNodes(nodepoolID, nodeNames, updated)
+
+		rollingUpdates.ClusterInfo.NodePools = append(rollingUpdates.ClusterInfo.NodePools, updated)
+		addNodePool := proto.Clone(rollingUpdates).(*spec.K8Scluster) // clone as the cluster will gradually change.
+
+		rollingUpdates.ClusterInfo.NodePools = slices.Delete(rollingUpdates.ClusterInfo.NodePools, ci, ci+1)
+		delNodePool := proto.Clone(rollingUpdates).(*spec.K8Scluster) // clone as the cluster will gradually change.
+
+		// add new nodepool.
+		events = append(events, &spec.TaskEvent{
+			Id:          uuid.New().String(),
+			Timestamp:   timestamppb.New(time.Now().UTC()),
+			Event:       spec.Event_UPDATE,
+			Description: fmt.Sprintf("rolling update: replacing %s with %s", currentPool.Name, updated.Name),
+			Task: &spec.Task{
+				UpdateState: &spec.UpdateState{
+					K8S: addNodePool,
+					Lbs: &spec.LoadBalancers{Clusters: current.GetLoadBalancers().GetClusters()}, // keep current lbs
+				},
+			},
+		})
+
+		// delete nodes from old nodepool.
+		var deletedApiEndpoint bool
+		var delNodes []string
+		for _, n := range currentPool.Nodes {
+			if n.NodeType == spec.NodeType_apiEndpoint {
+				deletedApiEndpoint = true
+			}
+			delNodes = append(delNodes, n.Name)
+		}
+
+		// transfer API endpoint if needed.
+		if deletedApiEndpoint {
+			events = append(events, &spec.TaskEvent{
+				Id:          uuid.New().String(),
+				Timestamp:   timestamppb.New(time.Now().UTC()),
+				Event:       spec.Event_UPDATE,
+				Description: "rolling update: moving endpoint from old control plane node to a new control plane node",
+				Task: &spec.Task{
+					UpdateState: &spec.UpdateState{Endpoint: &spec.UpdateState_Endpoint{
+						Nodepool: updated.Name,
+						Node:     updated.Nodes[0].Name,
+					}},
+				},
+			})
+		}
+
+		events = append(events, &spec.TaskEvent{
+			Id:          uuid.New().String(),
+			Timestamp:   timestamppb.New(time.Now().UTC()),
+			Event:       spec.Event_DELETE,
+			Description: fmt.Sprintf("rolling update: deleting nodes from replaced nodepool %s", currentPool.Name),
+			Task: &spec.Task{DeleteState: &spec.DeleteState{
+				Nodepools: map[string]*spec.DeletedNodes{
+					currentPool.Name: {Nodes: delNodes},
+				},
+			}},
+		})
+
+		// delete infra from old nodepool.
+		events = append(events, &spec.TaskEvent{
+			Id:          uuid.New().String(),
+			Timestamp:   timestamppb.New(time.Now().UTC()),
+			Event:       spec.Event_UPDATE,
+			Description: fmt.Sprintf("rolling update: deleting infrastructure of deleted nodes from nodepool %s", currentPool.Name),
+			Task: &spec.Task{
+				UpdateState: &spec.UpdateState{
+					K8S: delNodePool,
+					Lbs: &spec.LoadBalancers{Clusters: current.GetLoadBalancers().GetClusters()}, // keep current lbs
+				},
+			},
+		})
+	}
+
+	for di, updated := range mapping {
+		ir.ClusterInfo.NodePools[di] = updated
+	}
+
+	return ir, events, nil
+}
+
+func syncWithRemoteRepo(nps []*spec.NodePool) error {
+	for _, n := range nps {
+		n := n.GetDynamicNodePool()
+		if n == nil || n.Provider.Templates.Tag != nil {
+			continue
+		}
+
+		if err := manifest.FetchCommitHash(n.Provider.Templates); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func transferTemplatesRepo(into, from []*spec.NodePool) {
+	for _, d := range from {
+		dn := d.GetDynamicNodePool()
+		if dn == nil {
+			continue
+		}
+
+		ci := slices.IndexFunc(into, func(c *spec.NodePool) bool { return c.Name == d.Name })
+		if ci < 0 {
+			continue
+		}
+
+		into[ci].GetDynamicNodePool().Provider.Templates = dn.Provider.Templates
+	}
+}
+
+func nodepoolNames(nps []*spec.NodePool) map[string]struct{} {
+	m := make(map[string]struct{})
+
+	for _, c := range nps {
+		m[c.Name] = struct{}{}
+	}
+
+	return m
+}

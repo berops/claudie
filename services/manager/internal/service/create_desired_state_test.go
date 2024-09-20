@@ -12,6 +12,8 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+func strPtr(s string) *string { return &s }
+
 func Test_getRolesAttachedToLBCluster(t *testing.T) {
 	type args struct {
 		roles     []manifest.Role
@@ -94,7 +96,11 @@ func Test_getDNS(t *testing.T) {
 					Name: "test",
 					Providers: manifest.Provider{
 						HetznerDNS: []manifest.HetznerDNS{
-							{Name: "test-provider", ApiToken: "test-token", Templates: &manifest.TemplateRepository{}},
+							{Name: "test-provider", ApiToken: "test-token", Templates: &manifest.TemplateRepository{
+								Repository: "https://github.com/berops/claudie-config",
+								Tag:        strPtr("v0.1.2"),
+								Path:       "/templates/terraformer/gcp",
+							}},
 						},
 					},
 				},
@@ -106,7 +112,12 @@ func Test_getDNS(t *testing.T) {
 					SpecName:          "test-provider",
 					CloudProviderName: "hetznerdns",
 					ProviderType:      &spec.Provider_Hetznerdns{Hetznerdns: &spec.HetznerDNSProvider{Token: "test-token"}},
-					Templates:         &spec.TemplateRepository{},
+					Templates: &spec.TemplateRepository{
+						Repository: "https://github.com/berops/claudie-config",
+						Tag:        strPtr("v0.1.2"),
+						Path:       "/templates/terraformer/gcp",
+						CommitHash: "42e963e4bcaa5cbf7ce3330c1b7a21ebaa30f79b",
+					},
 				},
 			},
 			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool { return assert.Nil(t, err) },
@@ -154,8 +165,8 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 					Providers: manifest.Provider{
 						HetznerDNS: []manifest.HetznerDNS{
 							{Name: "test-provider", ApiToken: "test-token", Templates: &manifest.TemplateRepository{
-								Repository: "test-repo",
-								Path:       "test-path",
+								Repository: "https://github.com/berops/claudie-config",
+								Path:       "/templates/terraformer/gcp",
 							}},
 						},
 					},
@@ -275,8 +286,8 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 					Providers: manifest.Provider{
 						HetznerDNS: []manifest.HetznerDNS{
 							{Name: "test-provider", ApiToken: "test-token", Templates: &manifest.TemplateRepository{
-								Repository: "test-repo",
-								Path:       "test-path",
+								Repository: "https://github.com/berops/claudie-config",
+								Path:       "/templates/terraformer/gcp",
 							}},
 						},
 					},
@@ -395,8 +406,8 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 					Providers: manifest.Provider{
 						HetznerDNS: []manifest.HetznerDNS{
 							{Name: "test-provider", ApiToken: "test-token", Templates: &manifest.TemplateRepository{
-								Repository: "test-repo",
-								Path:       "test-path",
+								Repository: "https://github.com/berops/claudie-config",
+								Path:       "/templates/terraformer/gcp",
 							}},
 						},
 					},
@@ -542,8 +553,8 @@ func Test_createK8sClustersFromManifest(t *testing.T) {
 					Providers: manifest.Provider{
 						HetznerDNS: []manifest.HetznerDNS{
 							{Name: "test-provider", ApiToken: "test-token", Templates: &manifest.TemplateRepository{
-								Repository: "test-repo",
-								Path:       "test-path",
+								Repository: "https://github.com/berops/claudie-config",
+								Path:       "/templates/terraformer/gcp",
 							}},
 						},
 					},
@@ -603,8 +614,8 @@ func Test_createK8sClustersFromManifest(t *testing.T) {
 					Providers: manifest.Provider{
 						HetznerDNS: []manifest.HetznerDNS{
 							{Name: "test-provider", ApiToken: "test-token", Templates: &manifest.TemplateRepository{
-								Repository: "test-repo",
-								Path:       "test-path",
+								Repository: "https://github.com/berops/claudie-config",
+								Path:       "/templates/terraformer/gcp",
 							}},
 						},
 					},

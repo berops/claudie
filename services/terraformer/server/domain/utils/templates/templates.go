@@ -15,10 +15,7 @@ import (
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/storage/memory"
 )
 
 // ErrEmptyRepository is returned when no repository is to be cloned.
@@ -58,33 +55,8 @@ func (r *Repository) Download(repository *spec.TemplateRepository) error {
 		return fmt.Errorf("%s is not a valid url: %w", repository.Repository, err)
 	}
 
-	repo, err := git.Clone(memory.NewStorage(), memfs.New(), &git.CloneOptions{URL: repository.Repository})
-	if err != nil {
-		return fmt.Errorf("failed to clone repository: %q: %w", repository.Repository, err)
-	}
-
-	var targetCommit *plumbing.Reference
-	if repository.Tag != nil {
-		// TODO: go-git client doesn't correctly handle sparse-checkout
-		// ref: https://github.com/go-git/go-git/issues/90
-		// once implemented replace shell-out code for direct dependency via go-git.
-		if targetCommit, err = repo.Tag(*repository.Tag); err != nil {
-			return fmt.Errorf("repository %q does not have tag %q: %w", repository.Repository, *repository.Tag, err)
-		}
-	} else {
-		if targetCommit, err = repo.Head(); err != nil {
-			return fmt.Errorf("failed to read HEAD of repository %q: %w", repository.Repository, err)
-		}
-	}
-
-	// If no tag is specified always use the latest commit from the HEAD of the master branch.
-	tagName := "latest"
-	if repository.Tag != nil {
-		tagName = *repository.Tag
-	}
-
 	cloneDirectory := filepath.Join(r.TemplatesRootDirectory, u.Hostname(), u.Path)
-	gitDirectory := filepath.Join(cloneDirectory, tagName)
+	gitDirectory := filepath.Join(cloneDirectory, repository.CommitHash)
 
 	if utils.DirectoryExists(gitDirectory) {
 		existingMirror, err := git.PlainOpen(gitDirectory)
@@ -97,7 +69,7 @@ func (r *Repository) Download(repository *spec.TemplateRepository) error {
 			return fmt.Errorf("failed to read HEAD of local repository %q: %w", gitDirectory, err)
 		}
 
-		if ref.Hash() == targetCommit.Hash() {
+		if ref.Hash().String() == repository.CommitHash {
 			logs := new(bytes.Buffer)
 			sparseCheckout := exec.Command("git", "sparse-checkout", "set", strings.Trim(repository.Path, "/"))
 			sparseCheckout.Dir = gitDirectory
@@ -137,7 +109,7 @@ func (r *Repository) Download(repository *spec.TemplateRepository) error {
 	}
 
 	logs := new(bytes.Buffer)
-	clone := exec.Command("git", "clone", "--no-checkout", repository.Repository, tagName)
+	clone := exec.Command("git", "clone", "--no-checkout", repository.Repository, repository.CommitHash)
 	clone.Dir = cloneDirectory
 	clone.Stdout = logs
 	clone.Stderr = logs
@@ -158,17 +130,13 @@ func (r *Repository) Download(repository *spec.TemplateRepository) error {
 
 	logs.Reset()
 
-	args := []string{"checkout"}
-	if repository.Tag != nil {
-		args = append(args, *repository.Tag)
-	}
-	checkout := exec.Command("git", args...)
+	checkout := exec.Command("git", "checkout", repository.CommitHash)
 	checkout.Dir = gitDirectory
 	checkout.Stdout = logs
 	checkout.Stderr = logs
 
 	if err := checkout.Run(); err != nil {
-		return fmt.Errorf("failed to checkout for %q, repository %q: %w: %s", args, repository.Repository, err, logs.String())
+		return fmt.Errorf("failed to checkout for %q, repository %q: %w: %s", repository.CommitHash, repository.Repository, err, logs.String())
 	}
 
 	return nil
@@ -228,15 +196,11 @@ func mustParseURL(s *url.URL, err error) *url.URL {
 }
 
 func ExtractTargetPath(repository *spec.TemplateRepository) string {
-	tagName := "latest"
-	if repository.Tag != nil {
-		tagName = *repository.Tag
-	}
 	u := mustParseURL(url.Parse(repository.Repository))
 	return filepath.Join(
 		u.Hostname(),
 		u.Path,
-		tagName,
+		repository.CommitHash,
 		repository.Path,
 	)
 }

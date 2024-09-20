@@ -30,6 +30,7 @@ func TestDownloadProviderUpdate(t *testing.T) {
 			Repository: "https://github.com/berops/claudie-config",
 			Tag:        strPtr("v0.1.2"),
 			Path:       "/templates/terraformer/gcp",
+			CommitHash: "42e963e4bcaa5cbf7ce3330c1b7a21ebaa30f79b",
 		},
 	}
 
@@ -39,8 +40,8 @@ func TestDownloadProviderUpdate(t *testing.T) {
 
 	repoURL := mustParse(url.Parse(provider.Templates.Repository))
 
-	gitDirectory := filepath.Join(downloadDir, repoURL.Hostname(), repoURL.Path, "v0.1.2")
-	gitCmd := exec.Command("git", "checkout", "v0.1.1")
+	gitDirectory := filepath.Join(downloadDir, repoURL.Hostname(), repoURL.Path, "42e963e4bcaa5cbf7ce3330c1b7a21ebaa30f79b")
+	gitCmd := exec.Command("git", "checkout", "74d4c23d5eb6c04cd4197be177989dce3a512981")
 	gitCmd.Dir = gitDirectory
 	if err := gitCmd.Run(); err != nil {
 		t.Fatalf("failed to execute git checkout %v", err.Error())
@@ -80,6 +81,7 @@ func TestDownloadProvider(t *testing.T) {
 					Templates: &spec.TemplateRepository{
 						Repository: "https://github.com/berops/claudie-config",
 						Path:       "/templates/terraformer/gcp",
+						CommitHash: "aa7bd5cfa382f8030494766016c59e8a2034cfcd",
 					},
 				},
 			},
@@ -94,6 +96,7 @@ func TestDownloadProvider(t *testing.T) {
 						Repository: "https://github.com/berops/claudie-config",
 						Tag:        strPtr("v0.1.0"),
 						Path:       "/templates/gcp",
+						CommitHash: "ed25f730d859489aa994f75811ec90688aa1b82d",
 					},
 				},
 			},

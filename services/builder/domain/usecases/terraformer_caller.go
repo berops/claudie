@@ -31,7 +31,7 @@ func (u *Usecases) reconcileInfrastructure(ctx *builder.Context) error {
 	}
 	logger.Info().Msgf("BuildInfrastructure on Terraformer finished successfully")
 
-	switch resp := res.GetResponse().(type) {
+	switch resp := res.Response.(type) {
 	case *pb.BuildInfrastructureResponse_Fail:
 		logger.Error().Msgf("failed to build %s", resp.Fail.Failed)
 		ctx.CurrentCluster = resp.Fail.Current
