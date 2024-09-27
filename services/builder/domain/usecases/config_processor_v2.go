@@ -56,6 +56,28 @@ func (u *Usecases) TaskProcessor(wg *sync.WaitGroup) error {
 			// fallthrough
 		}
 
+		err = managerclient.Retry(&log.Logger, "UpdateTask after CurrentState", func() error {
+			log.Debug().Msgf("updating task %q for cluster %q for config %q with status: %s", task.Event.Id, task.Cluster, task.Config, task.State.Status.String())
+			err := u.Manager.TaskUpdate(ctx, &managerclient.TaskUpdateRequest{
+				Config:  task.Config,
+				Cluster: task.Cluster,
+				TaskId:  task.Event.Id,
+				State:   task.State,
+			})
+			if errors.Is(err, managerclient.ErrNotFound) {
+				log.Warn().Msgf("can't update config %q cluster %q task %q: %v", task.Config, task.Cluster, task.Event.Id, err)
+				// the retry will break after this.
+			}
+			return err
+		})
+		if err != nil {
+			log.Err(err).Msgf("failed to update task after for cluster %q config %q, after processing task: %q", task.Cluster, task.Config, task.Event.Id)
+			if errors.Is(err, managerclient.ErrNotFound) {
+				log.Debug().Msgf("skipping updating current state for cluster %q config %q, after processing task: %q returned code Not Found", task.Cluster, task.Config, task.Event.Id)
+				return // the task was for the cluster was not found, thus we can't update the current state.
+			}
+		}
+
 		err = managerclient.Retry(&log.Logger, "UpdateCurrentState", func() error {
 			log.Debug().Msgf("updating current state for cluster %q for config %q task %q", task.Cluster, task.Config, task.Event.Id)
 			err := u.Manager.UpdateCurrentState(ctx, &managerclient.UpdateCurrentStateRequest{
@@ -72,25 +94,6 @@ func (u *Usecases) TaskProcessor(wg *sync.WaitGroup) error {
 		if err != nil {
 			log.Err(err).Msgf("failed to update current state for cluster %q config %q, after processing task: %q", task.Cluster, task.Config, task.Event.Id)
 		}
-
-		err = managerclient.Retry(&log.Logger, "UpdateTask after CurrentState", func() error {
-			log.Debug().Msgf("updating task %q for cluster %q for config %q with status: %s", task.Event.Id, task.Cluster, task.Config, task.State.Status.String())
-			err := u.Manager.TaskUpdate(ctx, &managerclient.TaskUpdateRequest{
-				Config:  task.Config,
-				Cluster: task.Cluster,
-				TaskId:  task.Event.Id,
-				State:   task.State,
-			})
-			if errors.Is(err, managerclient.ErrNotFound) {
-				log.Warn().Msgf("can't update config %q cluster %q task %q: %v", task.Config, task.Cluster, task.Event.Id, err)
-				return nil // nothing to retry.
-			}
-			return err
-		})
-		if err != nil {
-			log.Err(err).Msgf("failed to update task after current state update for cluster %q config %q, after processing task: %q", task.Cluster, task.Config, task.Event.Id)
-		}
-
 		log.Info().Msgf("Finished processing task %q for cluster %q config %q", task.Event.Id, task.Cluster, task.Config)
 	}()
 	return nil

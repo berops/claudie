@@ -222,7 +222,7 @@ func Test_rollingUpdate(t *testing.T) {
 				}
 			}
 
-			tt.validate(t, tt.args, gotK8s)
+			tt.validate(t, tt.args, gotK8s.K8S)
 		})
 	}
 }

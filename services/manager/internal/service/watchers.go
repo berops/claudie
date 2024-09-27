@@ -13,7 +13,7 @@ import (
 
 // TaskTTL is the minimum number of ticks (every ~10sec) within which a given task must be completed
 // before being rescheduled again.
-const TaskTTL = 900 // ~2.5 hour
+const TaskTTL = 750 // ~2 hour
 
 func (g *GRPC) WatchForScheduledDocuments(ctx context.Context) error {
 	cfgs, err := g.Store.ListConfigs(ctx, &store.ListFilter{ManifestState: []string{manifest.Scheduled.String()}})
@@ -71,7 +71,7 @@ func (g *GRPC) WatchForScheduledDocuments(ctx context.Context) error {
 
 			ok, err := manifest.ValidStateTransitionString(scheduled.Manifest.State, newManifestState)
 			if err != nil || !ok {
-				logger.Err(err).Msgf("Cannot transtition from manifest state %q to %q, skipping", scheduled.Manifest.State, manifest.Done)
+				logger.Err(err).Msgf("Cannot transtition from manifest state %q to %q, skipping", scheduled.Manifest.State, newManifestState)
 				continue
 			}
 
@@ -212,6 +212,8 @@ func (g *GRPC) WatchForDoneOrErrorDocuments(ctx context.Context) error {
 				continue
 			}
 		}
+
+		// TODO: check for new commit hashes periodically.
 	}
 
 	return nil

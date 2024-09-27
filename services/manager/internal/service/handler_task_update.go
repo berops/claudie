@@ -46,7 +46,7 @@ func (g *GRPC) TaskUpdate(ctx context.Context, req *pb.TaskUpdateRequest) (*pb.T
 	}
 	if cluster.Events.TaskEvents[0].Id != req.TaskId {
 		log.Debug().Msgf("Failed updating Config: %q Cluster: %q Version: %v Task: %q, does, not match top level task", req.Config, req.Cluster, req.Version, req.TaskId)
-		return nil, status.Errorf(codes.InvalidArgument, "cannot update task %q, as this task is not being currently worked on", req.TaskId)
+		return nil, status.Errorf(codes.NotFound, "cannot update task %q, as this task is not being currently worked on", req.TaskId)
 	}
 
 	cluster.State = store.ConvertFromGRPCWorkflow(req.State)

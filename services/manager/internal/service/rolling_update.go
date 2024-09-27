@@ -10,6 +10,7 @@ import (
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -31,7 +32,7 @@ import (
 //
 //  4. Each nodepool in the current state is then compared to the respective nodepool in the new intermediate state.
 //     On different commit hashes a rolling update will be performed.
-func rollingUpdate(current, desired *spec.Clusters) (*spec.K8Scluster, []*spec.TaskEvent, error) {
+func rollingUpdate(current, desired *spec.Clusters) (*spec.Clusters, []*spec.TaskEvent, error) {
 	var (
 		events            []*spec.TaskEvent
 		mapping           = make(map[int]*spec.NodePool)
@@ -66,7 +67,7 @@ func rollingUpdate(current, desired *spec.Clusters) (*spec.K8Scluster, []*spec.T
 		mapping[di] = updated
 
 		// 1. new name
-		n, _ := utils.MustExtractNameAndHash(updated.Name)
+		n, _ := utils.MustExtractNameAndHash(d.Name)
 		for {
 			name := fmt.Sprintf("%s-%s", n, utils.CreateHash(utils.HashLength))
 			if _, ok := usedNodePoolNames[name]; !ok {
@@ -93,6 +94,8 @@ func rollingUpdate(current, desired *spec.Clusters) (*spec.K8Scluster, []*spec.T
 		nodepoolID := fmt.Sprintf("%s-%s", k8sID, updated.Name)
 		generateMissingDynamicNodes(nodepoolID, nodeNames, updated)
 
+		rollback := proto.Clone(rollingUpdates).(*spec.K8Scluster) // clone in case of failure to rollback to.
+
 		rollingUpdates.ClusterInfo.NodePools = append(rollingUpdates.ClusterInfo.NodePools, updated)
 		addNodePool := proto.Clone(rollingUpdates).(*spec.K8Scluster) // clone as the cluster will gradually change.
 
@@ -108,10 +111,55 @@ func rollingUpdate(current, desired *spec.Clusters) (*spec.K8Scluster, []*spec.T
 			Task: &spec.Task{
 				UpdateState: &spec.UpdateState{
 					K8S: addNodePool,
-					Lbs: &spec.LoadBalancers{Clusters: current.GetLoadBalancers().GetClusters()}, // keep current lbs
+					Lbs: current.LoadBalancers, // keep current lbs
+				},
+			},
+			OnError: &spec.RetryStrategy{
+				Rollback: []*spec.TaskEvent{
+					{
+						Id:          uuid.New().String(),
+						Timestamp:   timestamppb.New(time.Now().UTC()),
+						Event:       spec.Event_DELETE,
+						Description: fmt.Sprintf("rollback: deleting nodes from replaced nodepool %s", updated.Name),
+						Task: &spec.Task{DeleteState: &spec.DeleteState{
+							Nodepools: map[string]*spec.DeletedNodes{
+								updated.Name: {
+									Nodes: func() []string {
+										var result []string
+										for _, n := range updated.Nodes {
+											result = append(result, n.Name)
+										}
+										return result
+									}(),
+								},
+							},
+						}},
+						OnError: &spec.RetryStrategy{Repeat: true},
+					},
+					{
+						Id:          uuid.New().String(),
+						Timestamp:   timestamppb.New(time.Now().UTC()),
+						Event:       spec.Event_UPDATE,
+						Description: fmt.Sprintf("rollback: deleting infrastructure of deleted nodes from nodepool %s", updated.Name),
+						Task: &spec.Task{
+							UpdateState: &spec.UpdateState{
+								K8S: rollback,
+								Lbs: current.LoadBalancers, // keep current lbs
+							},
+						},
+						OnError: &spec.RetryStrategy{Repeat: true},
+					},
 				},
 			},
 		})
+
+		log.Debug().
+			Str("cluster", k8sID).
+			Msgf("created event %q with Rollback on error [%q, %q] with repeat on rollback failure",
+				events[len(events)-1].Description,
+				events[len(events)-1].OnError.Rollback[0].Description,
+				events[len(events)-1].OnError.Rollback[1].Description,
+			)
 
 		// delete nodes from old nodepool.
 		var deletedApiEndpoint bool
@@ -129,14 +177,20 @@ func rollingUpdate(current, desired *spec.Clusters) (*spec.K8Scluster, []*spec.T
 				Id:          uuid.New().String(),
 				Timestamp:   timestamppb.New(time.Now().UTC()),
 				Event:       spec.Event_UPDATE,
-				Description: "rolling update: moving endpoint from old control plane node to a new control plane node",
+				Description: fmt.Sprintf("rolling update: moving endpoint from old control plane node to a new control plane node %q from nodepool %q", updated.Nodes[0].Name, updated.Name),
 				Task: &spec.Task{
 					UpdateState: &spec.UpdateState{Endpoint: &spec.UpdateState_Endpoint{
 						Nodepool: updated.Name,
 						Node:     updated.Nodes[0].Name,
 					}},
 				},
+				OnError: &spec.RetryStrategy{Repeat: true},
 			})
+
+			log.Debug().
+				Str("cluster", k8sID).
+				Msgf("created event %q with Repeat on error", events[len(events)-1].Description)
+
 		}
 
 		events = append(events, &spec.TaskEvent{
@@ -149,7 +203,12 @@ func rollingUpdate(current, desired *spec.Clusters) (*spec.K8Scluster, []*spec.T
 					currentPool.Name: {Nodes: delNodes},
 				},
 			}},
+			OnError: &spec.RetryStrategy{Repeat: true},
 		})
+
+		log.Debug().
+			Str("cluster", k8sID).
+			Msgf("created event %q with Repeat on error", events[len(events)-1].Description)
 
 		// delete infra from old nodepool.
 		events = append(events, &spec.TaskEvent{
@@ -160,17 +219,27 @@ func rollingUpdate(current, desired *spec.Clusters) (*spec.K8Scluster, []*spec.T
 			Task: &spec.Task{
 				UpdateState: &spec.UpdateState{
 					K8S: delNodePool,
-					Lbs: &spec.LoadBalancers{Clusters: current.GetLoadBalancers().GetClusters()}, // keep current lbs
+					Lbs: current.LoadBalancers, // keep current lbs
 				},
 			},
+			OnError: &spec.RetryStrategy{Repeat: true},
 		})
+
+		log.Debug().
+			Str("cluster", k8sID).
+			Msgf("created event %q with Repeat on error", events[len(events)-1].Description)
 	}
 
 	for di, updated := range mapping {
 		ir.ClusterInfo.NodePools[di] = updated
 	}
 
-	return ir, events, nil
+	r := &spec.Clusters{
+		K8S:           ir,
+		LoadBalancers: current.GetLoadBalancers(),
+	}
+
+	return r, events, nil
 }
 
 func syncWithRemoteRepo(nps []*spec.NodePool) error {

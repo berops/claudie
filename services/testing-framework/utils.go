@@ -1,9 +1,11 @@
 package testingframework
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"google.golang.org/protobuf/proto"
 	"time"
 
 	"github.com/berops/claudie/internal/utils"
@@ -45,8 +47,18 @@ func waitForDoneOrError(ctx context.Context, manager managerclient.CrudAPI, set 
 				return fmt.Errorf("error while waiting for config to finish: %w", err)
 			}
 
+			// Rolling update can have multiple stages, thus we also check for the manifest checksum equality.
 			if res.Config.Manifest.State == spec.Manifest_Done {
-				return nil
+				if bytes.Equal(res.Config.Manifest.LastAppliedChecksum, res.Config.Manifest.Checksum) {
+					return nil
+				}
+
+				for c, s := range res.Config.Clusters {
+					equal := proto.Equal(s.Current, s.Desired)
+					if !equal {
+						return fmt.Errorf("cluster %q has current state diverging from the desired state", c)
+					}
+				}
 			}
 
 			if res.Config.Manifest.State == spec.Manifest_Error {

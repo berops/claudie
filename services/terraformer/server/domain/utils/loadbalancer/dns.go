@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/utils"
@@ -13,7 +14,8 @@ import (
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/terraform"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"path/filepath"
+
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -58,7 +60,11 @@ func (d DNS) CreateDNSRecords(logger zerolog.Logger) (string, error) {
 	if changedDNSProvider(d.CurrentDNS, d.DesiredDNS) {
 		sublogger.Info().Msg("Destroying old DNS records")
 		if err := d.generateFiles(dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs); err != nil {
-			return "", fmt.Errorf("error while creating dns .tf files for %s : %w", dnsID, err)
+			return "", fmt.Errorf("error while creating current state dns.tf files for %s : %w", dnsID, err)
+		}
+		// Delete the ones from desired state, in case this is a re-execution.
+		if err := d.generateFiles(dnsID, dnsDir, d.DesiredDNS, d.DesiredNodeIPs); err != nil {
+			return "", fmt.Errorf("error while creating desired state dns.tf files for %s : %w", dnsID, err)
 		}
 		if err := terraform.Init(); err != nil {
 			return "", err
@@ -227,7 +233,7 @@ func changedDNSProvider(currentDNS, desiredDNS *spec.DNS) bool {
 	}
 	// DNS provider are same
 	if currentDNS.Provider.SpecName == desiredDNS.Provider.SpecName {
-		if utils.GetAuthCredentials(currentDNS.Provider) == utils.GetAuthCredentials(desiredDNS.Provider) {
+		if proto.Equal(currentDNS.Provider, desiredDNS.Provider) {
 			return false
 		}
 	}

@@ -120,9 +120,17 @@ func copyK8sNodePoolsNamesFromCurrentState(used map[string]struct{}, nodepool st
 		used[hash] = struct{}{}
 
 		if np.IsControl && control != nil {
-			control.Name += fmt.Sprintf("-%s", hash)
+			// if there are multiple nodepools in the current state (for example on a failed rolling update)
+			// transfer only one of them.
+			if _, h := utils.MatchNameAndHashWithTemplate(nodepool, control.Name); h == "" {
+				control.Name += fmt.Sprintf("-%s", hash)
+			}
 		} else if !np.IsControl && compute != nil {
-			compute.Name += fmt.Sprintf("-%s", hash)
+			// if there are multiple nodepools in the current state (for example on a failed rolling update)
+			// transfer only one of them.
+			if _, h := utils.MatchNameAndHashWithTemplate(nodepool, compute.Name); h == "" {
+				compute.Name += fmt.Sprintf("-%s", hash)
+			}
 		}
 	}
 }

@@ -306,7 +306,7 @@ func fillMissingDynamicNodes(c *spec.Clusters) {
 	}
 
 	for _, lb := range c.GetLoadBalancers().GetClusters() {
-		lbID := utils.GetClusterID(c.GetK8S().GetClusterInfo())
+		lbID := utils.GetClusterID(lb.ClusterInfo)
 		for _, np := range lb.GetClusterInfo().GetNodePools() {
 			if np.GetDynamicNodePool() == nil {
 				continue

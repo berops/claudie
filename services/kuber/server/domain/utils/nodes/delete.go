@@ -2,6 +2,7 @@ package nodes
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -253,30 +254,26 @@ func (d *Deleter) assureReplication(kc kubectl.Kubectl, worker string) error {
 // function returns any master node which will not be deleted.
 // return API EP node if successful, nil otherwise
 func (d *Deleter) getMainMaster() *spec.Node {
-	for _, np := range d.cluster.ClusterInfo.GetNodePools() {
-		for _, node := range np.Nodes {
-			if node.NodeType == spec.NodeType_apiEndpoint {
-				return node
-			}
-		}
+	n, err := utils.FindAPIEndpointNode(d.cluster.ClusterInfo.NodePools)
+	if err == nil {
+		return n
 	}
+
 	// Choose one master, which is not going to be deleted
 	for _, np := range d.cluster.ClusterInfo.GetNodePools() {
-	np:
-		for _, node := range np.Nodes {
-			if node.NodeType == spec.NodeType_master {
-				// If node will be deleted, continue.
-				for _, dm := range d.masterNodes {
-					if strings.Contains(node.Name, dm) {
-						continue np
-					}
-				}
+		if !np.IsControl {
+			continue
+		}
+
+		for _, n := range np.Nodes {
+			name := strings.TrimPrefix(n.Name, fmt.Sprintf("%s-", d.clusterPrefix))
+			if !slices.Contains(d.masterNodes, name) {
+				return n
 			}
-			// If loop was not broken by the continue, return this node.
-			return node
 		}
 	}
-	return nil
+
+	panic("no master nodes or api endpoint node, malformed state, can't continue")
 }
 
 // getEtcdPodNames returns slice of strings containing all etcd pod names
