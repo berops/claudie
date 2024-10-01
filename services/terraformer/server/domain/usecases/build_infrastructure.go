@@ -43,10 +43,6 @@ func (u *Usecases) BuildInfrastructure(request *pb.BuildInfrastructureRequest) (
 		clusters = append(clusters, lb)
 	}
 
-	// TODO: identify which clusters succeeded and which didnt
-	// include also Lbs cluster and dns.
-	// we need to corectly return the desired state.
-
 	failed := make([]error, len(clusters))
 	err := utils.ConcurrentExec(clusters, func(idx int, cluster Cluster) error {
 		logger := utils.CreateLoggerWithProjectAndClusterName(request.ProjectName, cluster.Id())

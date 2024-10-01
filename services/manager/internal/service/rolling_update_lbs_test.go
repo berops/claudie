@@ -153,7 +153,7 @@ func Test_rollingUpdateLB(t *testing.T) {
 				current: proto.Clone(current).(*spec.Clusters),
 				desired: func() *spec.Clusters {
 					desired := proto.Clone(current).(*spec.Clusters)
-					desired.LoadBalancers.Clusters[0].ClusterInfo.NodePools[0].GetDynamicNodePool().Provider.Templates.CommitHash = "hash-2"
+					desired.LoadBalancers.Clusters[0].ClusterInfo.NodePools[0].GetDynamicNodePool().Provider.Templates.CommitHash = "hash-3"
 					return desired
 				}(),
 				position: 0,
@@ -195,8 +195,8 @@ func Test_rollingUpdateLB(t *testing.T) {
 				current: proto.Clone(current).(*spec.Clusters),
 				desired: func() *spec.Clusters {
 					desired := proto.Clone(current).(*spec.Clusters)
-					desired.LoadBalancers.Clusters[0].ClusterInfo.NodePools[0].GetDynamicNodePool().Provider.Templates.CommitHash = "hash-2"
-					desired.LoadBalancers.Clusters[0].ClusterInfo.NodePools[1].GetDynamicNodePool().Provider.Templates.CommitHash = "hash-2"
+					desired.LoadBalancers.Clusters[0].ClusterInfo.NodePools[0].GetDynamicNodePool().Provider.Templates.CommitHash = "hash-4"
+					desired.LoadBalancers.Clusters[0].ClusterInfo.NodePools[1].GetDynamicNodePool().Provider.Templates.CommitHash = "hash-5"
 					return desired
 				}(),
 				position: 0,

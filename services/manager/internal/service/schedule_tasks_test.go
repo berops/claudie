@@ -847,7 +847,7 @@ func TestDiff(t *testing.T) {
 			},
 			want: []*spec.TaskEvent{
 				{Event: spec.Event_DELETE, Description: "deleting nodes from k8s cluster"},
-				{Event: spec.Event_UPDATE, Description: "deleting infrastructure of deleted k8s nodes"},
+				{Event: spec.Event_UPDATE, Description: "reconciling infrastructure changes, including deletion of infrastructure for deleted dynamic nodes"},
 			},
 		},
 		{
@@ -891,7 +891,7 @@ func TestDiff(t *testing.T) {
 				desired:    proto.Clone(current).(*spec.K8Scluster),
 			},
 			want: []*spec.TaskEvent{
-				{Event: spec.Event_UPDATE, Description: "reconciling loadbalancer infrastructure changes"},
+				{Event: spec.Event_UPDATE, Description: "reconciling infrastructure changes, including changes to the loadbalancer infrastructure"},
 				{Event: spec.Event_DELETE, Description: "deleting loadbalancer infrastructure"},
 			},
 		},
@@ -910,7 +910,7 @@ func TestDiff(t *testing.T) {
 			},
 			want: []*spec.TaskEvent{
 				{Event: spec.Event_DELETE, Description: "deleting nodes from k8s cluster"},
-				{Event: spec.Event_UPDATE, Description: "deleting infrastructure of deleted k8s nodes"},
+				{Event: spec.Event_UPDATE, Description: "reconciling infrastructure changes, including deletion of infrastructure for deleted dynamic nodes"},
 			},
 		},
 		{
@@ -945,7 +945,7 @@ func TestDiff(t *testing.T) {
 				{Event: spec.Event_UPDATE, Description: "adding nodes to k8s cluster"},
 				{Event: spec.Event_UPDATE, Description: "moving endpoint from old control plane node to a new control plane node"},
 				{Event: spec.Event_DELETE, Description: "deleting nodes from k8s cluster"},
-				{Event: spec.Event_UPDATE, Description: "deleting infrastructure of deleted k8s nodes"},
+				{Event: spec.Event_UPDATE, Description: "reconciling infrastructure changes, including deletion of infrastructure for deleted dynamic nodes"},
 			},
 		},
 		{
@@ -969,7 +969,7 @@ func TestDiff(t *testing.T) {
 				{Event: spec.Event_UPDATE, Description: "adding nodes to k8s cluster"},
 				{Event: spec.Event_UPDATE, Description: "loadbalancer target to new control plane nodepool"},
 				{Event: spec.Event_DELETE, Description: "deleting nodes from k8s cluster"},
-				{Event: spec.Event_UPDATE, Description: "deleting infrastructure of deleted k8s nodes"},
+				{Event: spec.Event_UPDATE, Description: "reconciling infrastructure changes, including deletion of infrastructure for deleted dynamic nodes"},
 			},
 		},
 		{
@@ -992,7 +992,7 @@ func TestDiff(t *testing.T) {
 			want: []*spec.TaskEvent{
 				{Event: spec.Event_UPDATE, Description: "moving endpoint from old control plane node to a new control plane node"},
 				{Event: spec.Event_DELETE, Description: "deleting nodes from k8s cluster"},
-				{Event: spec.Event_UPDATE, Description: "deleting infrastructure of deleted k8s nodes"},
+				{Event: spec.Event_UPDATE, Description: "reconciling infrastructure changes, including deletion of infrastructure for deleted dynamic nodes"},
 			},
 		},
 	}

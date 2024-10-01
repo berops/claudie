@@ -235,12 +235,12 @@ func TestGRPC_WatchForDoneOrErrorDocuments(t *testing.T) {
 					},
 					Clusters: map[string]*store.ClusterState{
 						"test-cluster-1": {
-							Current: store.Clusters{K8s: []byte("random")},
+							Current: store.Clusters{K8s: []byte("")},
 							Desired: store.Clusters{},
 						},
 						"test-cluster-2": {
 							Current: store.Clusters{},
-							Desired: store.Clusters{K8s: []byte("random")},
+							Desired: store.Clusters{K8s: []byte("")},
 						},
 						"test-cluster-3": {
 							Current: store.Clusters{},

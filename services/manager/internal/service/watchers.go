@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/internal/utils"
@@ -213,7 +214,29 @@ func (g *GRPC) WatchForDoneOrErrorDocuments(ctx context.Context) error {
 			}
 		}
 
-		// TODO: check for new commit hashes periodically.
+		cfg, err := store.ConvertToGRPC(idle)
+		if err != nil {
+			return fmt.Errorf("failed to convert database representation to grpc: %w", err)
+		}
+
+		updated, err := templatesUpdated(cfg)
+		if err != nil {
+			return fmt.Errorf("failed to check if templates for nodepools were updated: %w", err)
+		}
+
+		if updated {
+			logger.Debug().Msgf("rescheduling idle config for rolling updates")
+			// trigger reschedule.
+			idle.Manifest.LastAppliedChecksum = append([]byte(nil), idle.Manifest.Checksum[1:]...)
+			if err := g.Store.UpdateConfig(ctx, idle); err != nil {
+				if errors.Is(err, store.ErrNotFoundOrDirty) {
+					logger.Warn().Msgf("Idle config couldn't be rescheduled for rolling update due to a Dirty Write, another retry will start shortly.")
+					continue
+				}
+				logger.Err(err).Msgf("Failed to reschedule Idle config for rolling update, skipping.")
+			}
+			continue
+		}
 	}
 
 	return nil

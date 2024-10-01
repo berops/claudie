@@ -282,3 +282,53 @@ func nodepoolNames(nps []*spec.NodePool) map[string]struct{} {
 
 	return m
 }
+
+// templatesUpdated check if at least 1 provider had their template repository updated.
+func templatesUpdated(c *spec.Config) (bool, error) {
+	for _, cluster := range c.Clusters {
+		for _, n := range cluster.Current.GetK8S().GetClusterInfo().GetNodePools() {
+			n := n.GetDynamicNodePool()
+			if n == nil || n.Provider.Templates.Tag != nil {
+				continue
+			}
+
+			updated, err := commitHashUpdated(n.Provider)
+			if err != nil {
+				return false, err
+			}
+
+			if updated {
+				return true, nil
+			}
+		}
+
+		for _, lb := range cluster.Current.GetLoadBalancers().GetClusters() {
+			for _, n := range lb.ClusterInfo.NodePools {
+				n := n.GetDynamicNodePool()
+				if n == nil || n.Provider.Templates.Tag != nil {
+					continue
+				}
+
+				updated, err := commitHashUpdated(n.Provider)
+				if err != nil {
+					return false, err
+				}
+
+				if updated {
+					return true, nil
+				}
+			}
+		}
+	}
+
+	return false, nil
+}
+
+func commitHashUpdated(p *spec.Provider) (bool, error) {
+	t := proto.Clone(p.Templates).(*spec.TemplateRepository)
+	if err := manifest.FetchCommitHash(t); err != nil {
+		return false, err
+	}
+
+	return p.Templates.CommitHash != t.CommitHash, nil
+}

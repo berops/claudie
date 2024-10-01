@@ -117,7 +117,7 @@ func Test_rollingUpdate(t *testing.T) {
 				current: current,
 				desired: func() *spec.Clusters {
 					c := proto.Clone(current).(*spec.Clusters)
-					c.K8S.ClusterInfo.NodePools[0].GetDynamicNodePool().Provider.Templates.CommitHash = "hash-2"
+					c.K8S.ClusterInfo.NodePools[0].GetDynamicNodePool().Provider.Templates.CommitHash = "hash-6"
 					return c
 				}(),
 			},
@@ -132,7 +132,7 @@ func Test_rollingUpdate(t *testing.T) {
 				assert.NotEqual(t, fmt.Sprintf("np-%s", rngHash), got.ClusterInfo.NodePools[0].Name)
 				assert.Equal(t, spec.NodeType_master, got.ClusterInfo.NodePools[0].Nodes[0].NodeType)
 				assert.NotEqual(t, "node-0", got.ClusterInfo.NodePools[0].Nodes[0].Name)
-				assert.Equal(t, "hash-2", got.ClusterInfo.NodePools[0].GetDynamicNodePool().Provider.Templates.CommitHash)
+				assert.Equal(t, "hash-6", got.ClusterInfo.NodePools[0].GetDynamicNodePool().Provider.Templates.CommitHash)
 				assert.Empty(t, got.ClusterInfo.NodePools[0].GetDynamicNodePool().Cidr)
 				assert.NotEqual(t, current.K8S.ClusterInfo.NodePools[0].GetDynamicNodePool().PrivateKey, got.ClusterInfo.NodePools[0].GetDynamicNodePool().PrivateKey)
 				assert.NotEqual(t, current.K8S.ClusterInfo.NodePools[0].GetDynamicNodePool().PublicKey, got.ClusterInfo.NodePools[0].GetDynamicNodePool().PublicKey)
