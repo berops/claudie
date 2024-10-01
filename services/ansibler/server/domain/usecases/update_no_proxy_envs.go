@@ -134,7 +134,8 @@ func createNoProxyList(desiredNodePools []*spec.NodePool, desiredLbs []*spec.LBc
 	}
 
 	// if "svc" isn't in noProxyList the admission webhooks will fail, because they will be routed to proxy
-	noProxyList = fmt.Sprintf("%s,%s,", noProxyList, "svc")
+	// "metadata,metadata.google.internal,169.254.169.254,metadata.google.internal." are required for GCP VMs
+	noProxyList = fmt.Sprintf("%s,svc,metadata,metadata.google.internal,169.254.169.254,metadata.google.internal.,", noProxyList)
 
 	return noProxyList
 }

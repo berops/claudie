@@ -10,7 +10,6 @@ import (
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -39,11 +38,9 @@ func testLonghornDeployment(ctx context.Context, config *spec.Config) error {
 			MaxKubectlRetries: 5,
 		}
 
-		if log.Logger.GetLevel() == zerolog.DebugLevel {
-			prefix := utils.GetClusterID(cluster.Current.K8S.ClusterInfo)
-			k.Stdout = comm.GetStdOut(prefix)
-			k.Stderr = comm.GetStdErr(prefix)
-		}
+		prefix := utils.GetClusterID(cluster.Current.K8S.ClusterInfo)
+		k.Stdout = comm.GetStdOut(prefix)
+		k.Stderr = comm.GetStdErr(prefix)
 
 		clusterName := cluster.Current.K8S.ClusterInfo.Name
 

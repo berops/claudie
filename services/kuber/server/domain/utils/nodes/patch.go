@@ -11,7 +11,6 @@ import (
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -43,10 +42,8 @@ type Patcher struct {
 func NewPatcher(cluster *spec.K8Scluster, logger zerolog.Logger) *Patcher {
 	kc := kubectl.Kubectl{Kubeconfig: cluster.Kubeconfig, MaxKubectlRetries: 3}
 	clusterID := utils.GetClusterID(cluster.ClusterInfo)
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
-		kc.Stdout = comm.GetStdOut(clusterID)
-		kc.Stderr = comm.GetStdErr(clusterID)
-	}
+	kc.Stdout = comm.GetStdOut(clusterID)
+	kc.Stderr = comm.GetStdErr(clusterID)
 
 	return &Patcher{
 		kc:               kc,

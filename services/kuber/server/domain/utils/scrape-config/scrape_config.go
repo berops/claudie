@@ -9,8 +9,6 @@ import (
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/kuber/templates"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 
 	comm "github.com/berops/claudie/internal/command"
 )
@@ -75,11 +73,10 @@ func (sc *ScrapeConfig) GenerateAndApplyScrapeConfig() error {
 
 	// Apply namespace and secret to the cluster
 	k := kubectl.Kubectl{Kubeconfig: sc.Cluster.Kubeconfig, Directory: sc.Directory}
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
-		prefix := utils.GetClusterID(sc.Cluster.ClusterInfo)
-		k.Stdout = comm.GetStdOut(prefix)
-		k.Stderr = comm.GetStdErr(prefix)
-	}
+	prefix := utils.GetClusterID(sc.Cluster.ClusterInfo)
+	k.Stdout = comm.GetStdOut(prefix)
+	k.Stderr = comm.GetStdErr(prefix)
+
 	if err = k.KubectlApply(scManifestFile); err != nil {
 		return fmt.Errorf("error while applying %s on %s: %w", scManifestFile, sc.Cluster.ClusterInfo.Name, err)
 	}
@@ -90,11 +87,10 @@ func (sc *ScrapeConfig) GenerateAndApplyScrapeConfig() error {
 // RemoveIfNoLBScrapeConfig will remove the LB scrape-config.yml
 func (sc *ScrapeConfig) RemoveLBScrapeConfig() error {
 	k := kubectl.Kubectl{Kubeconfig: sc.Cluster.Kubeconfig, MaxKubectlRetries: 3}
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
-		prefix := utils.GetClusterID(sc.Cluster.ClusterInfo)
-		k.Stdout = comm.GetStdOut(prefix)
-		k.Stderr = comm.GetStdErr(prefix)
-	}
+	prefix := utils.GetClusterID(sc.Cluster.ClusterInfo)
+	k.Stdout = comm.GetStdOut(prefix)
+	k.Stderr = comm.GetStdErr(prefix)
+
 	if err := k.KubectlDeleteResource("secret", "loadbalancers-scrape-config", "-n", scrapeConfigNamespace); err != nil {
 		return fmt.Errorf("error while removing LB scrape-config on %s: %w", sc.Cluster.ClusterInfo.Name, err)
 	}

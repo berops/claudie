@@ -187,7 +187,8 @@ func (k *KubeEleven) generateTemplateData() templateData {
 		}
 		// data.NoProxy has to terminate with the comma
 		// if "svc" isn't in NoProxy the admission webhooks will fail, because they will be routed to proxy
-		data.NoProxy = fmt.Sprintf("%s,svc,", strings.Join(noProxy, ","))
+		// "metadata,metadata.google.internal,169.254.169.254,metadata.google.internal." are required for GCP VMs
+		data.NoProxy = fmt.Sprintf("%s,svc,metadata,metadata.google.internal,169.254.169.254,metadata.google.internal.,", strings.Join(noProxy, ","))
 
 		data.HttpProxyUrl = utils.GetEnvDefault("HTTP_PROXY_URL", defaulHttpProxyUrl)
 	}

@@ -14,7 +14,6 @@ import (
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/terraform"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -74,10 +73,8 @@ func (c ClusterBuilder) CreateNodepools() error {
 		SpawnProcessLimit: c.SpawnProcessLimit,
 	}
 
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
-		terraform.Stdout = comm.GetStdOut(clusterID)
-		terraform.Stderr = comm.GetStdErr(clusterID)
-	}
+	terraform.Stdout = comm.GetStdOut(clusterID)
+	terraform.Stderr = comm.GetStdErr(clusterID)
 
 	if err := terraform.Init(); err != nil {
 		return fmt.Errorf("error while running terraform init in %s : %w", clusterID, err)
@@ -140,10 +137,8 @@ func (c ClusterBuilder) DestroyNodepools() error {
 		SpawnProcessLimit: c.SpawnProcessLimit,
 	}
 
-	if log.Logger.GetLevel() == zerolog.DebugLevel {
-		terraform.Stdout = comm.GetStdOut(clusterID)
-		terraform.Stderr = comm.GetStdErr(clusterID)
-	}
+	terraform.Stdout = comm.GetStdOut(clusterID)
+	terraform.Stderr = comm.GetStdErr(clusterID)
 
 	if err := terraform.Init(); err != nil {
 		return fmt.Errorf("error while running terraform init in %s : %w", clusterID, err)
