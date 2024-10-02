@@ -1,11 +1,13 @@
 package loadbalancer
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/berops/claudie/internal/checksum"
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -87,12 +89,8 @@ func (d DNS) CreateDNSRecords(logger zerolog.Logger) (string, error) {
 		return "", err
 	}
 
-	k := fmt.Sprintf(
-		"%s_%s_%s",
-		clusterID,
-		d.DesiredDNS.GetProvider().GetSpecName(),
-		templates.Fingerprint(templates.ExtractTargetPath(d.DesiredDNS.GetProvider().GetTemplates())),
-	)
+	f := checksum.Digest128(filepath.Join(d.DesiredDNS.Provider.SpecName, templates.ExtractTargetPath(d.DesiredDNS.Provider.Templates)))
+	k := fmt.Sprintf("%s_%s_%s", clusterID, d.DesiredDNS.GetProvider().GetSpecName(), hex.EncodeToString(f))
 
 	output, err := terraform.Output(k)
 	if err != nil {
@@ -177,11 +175,14 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *spec.DNS, nodeIPs []string
 		return fmt.Errorf("failed to download templates for DNS %q: %w", dnsID, err)
 	}
 
+	path := templates.ExtractTargetPath(dns.Provider.Templates)
+
 	g := templates.Generator{
 		ID:                dnsID,
 		TargetDirectory:   dnsDir,
 		ReadFromDirectory: templateDir,
-		TemplatePath:      templates.ExtractTargetPath(dns.GetProvider().GetTemplates()),
+		TemplatePath:      path,
+		Fingerprint:       hex.EncodeToString(checksum.Digest128(filepath.Join(dns.Provider.SpecName, path))),
 	}
 
 	data := templates.DNS{
@@ -189,10 +190,8 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *spec.DNS, nodeIPs []string
 		Hostname:    dns.Hostname,
 		ClusterName: d.ClusterName,
 		ClusterHash: d.ClusterHash,
-		RecordData: templates.RecordData{
-			IP: templateIPData(nodeIPs),
-		},
-		Provider: dns.Provider,
+		RecordData:  templates.RecordData{IP: templateIPData(nodeIPs)},
+		Provider:    dns.Provider,
 	}
 
 	if err := g.GenerateDNS(&data); err != nil {

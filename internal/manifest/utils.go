@@ -368,7 +368,7 @@ func FetchCommitHash(tmpl *spec.TemplateRepository) error {
 		if tmpl.Tag != nil {
 			target = *tmpl.Tag
 		}
-		return fmt.Errorf("multiple references for template repository: %q, target: %q", tmpl.Repository, target)
+		return fmt.Errorf("couldn't find the requested target %q, for the template repository %q", target, tmpl.Repository)
 	}
 
 	tmpl.CommitHash = rfs[0].Hash().String()

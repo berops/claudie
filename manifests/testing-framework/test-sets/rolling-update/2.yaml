@@ -1,0 +1,179 @@
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: rolling-update
+spec:
+  providers:
+    - name: genesiscloud-1
+      providerType: genesiscloud
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: "v0.9.1-test"
+        path: "templates/terraformer/genesiscloud"
+      secretRef:
+        name: genesiscloud-secret
+        namespace: e2e-secrets
+    - name: hetzner-1
+      providerType: hetzner
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: "v0.9.1-test"
+        path: "templates/terraformer/hetzner"
+      secretRef:
+        name: hetzner-secret
+        namespace: e2e-secrets
+    - name: oci-1
+      providerType: oci
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: "v0.9.1-test"
+        path: "templates/terraformer/oci"
+      secretRef:
+        name: oci-secret
+        namespace: e2e-secrets
+    - name: aws-1
+      providerType: aws
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: "v0.9.1-test"
+        path: "templates/terraformer/aws"
+      secretRef:
+        name: aws-secret
+        namespace: e2e-secrets
+    - name: aws-2
+      providerType: aws
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: "v0.9.1-test"
+        path: "templates/terraformer/aws"
+      secretRef:
+        name: aws-secret
+        namespace: e2e-secrets
+    - name: azure-payed-1
+      providerType: azure
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: "v0.9.1-test"
+        path: "templates/terraformer/azure"
+      secretRef:
+        name: azure-secret
+        namespace: e2e-secrets
+    - name: azure-sponsor-2
+      providerType: azure
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: "v0.9.1-test"
+        path: "templates/terraformer/azure"
+      secretRef:
+        name: azure-sponsorship-secret
+        namespace: e2e-secrets
+  nodePools:
+    dynamic:
+      - name: htz-ctrl-nodes
+        providerSpec:
+          name: hetzner-1
+          region: nbg1
+          zone: nbg1-dc3
+        count: 1
+        serverType: cpx11
+        image: ubuntu-24.04
+        labels:
+          test-set: rolling-update-test
+        annotations:
+          claudie.io/example-annotation: >
+            ["rolling-update-test"]
+
+      - name: oci-ldbl-nodes
+        providerSpec:
+          name: oci-1
+          region: eu-frankfurt-1
+          zone: hsVQ:EU-FRANKFURT-1-AD-2
+        count: 2
+        serverType: VM.Standard2.1
+        # ubuntu minimal
+        # https://docs.oracle.com/en-us/iaas/images/image/674d0b41-aee8-4c0b-bf99-9e100d90f241/
+        image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
+        storageDiskSize: 50
+
+      - name: aws-cmpt-nodes
+        providerSpec:
+          name: aws-2
+          region: eu-west-3
+          zone: eu-west-3a
+        count: 2
+        serverType: t3.small
+        #ubuntu
+        image: ami-03c476a1ca8e3ebdc
+        storageDiskSize: 50
+
+      - name: azr-ctrl-nodes
+        providerSpec:
+          name: azure-sponsor-2
+          region: Germany West Central
+          zone: "1"
+        count: 2
+        serverType: Standard_B2s
+        image: Canonical:ubuntu-24_04-lts:server:latest
+        taints:
+          - key: test
+            value: test
+            effect: NoSchedule
+        labels:
+          test-set: rolling-update-test
+        annotations:
+          claudie.io/example-annotation: >
+            ["rolling-update-test"]
+
+      - name: gen-kube-nodes
+        providerSpec:
+          name: genesiscloud-1
+          region: ARC-IS-HAF-1
+        count: 1
+        serverType: vcpu-2_memory-4g_disk-80g
+        image: "Ubuntu 22.04"
+        storageDiskSize: 50
+
+  kubernetes:
+    clusters:
+      - name: ts-rolling-update-nodepools1
+        version: 1.27.0
+        network: 192.168.2.0/24
+        pools:
+          control:
+            - htz-ctrl-nodes
+            - azr-ctrl-nodes
+          compute:
+            - aws-cmpt-nodes
+  loadBalancers:
+    roles:
+      - name: port1
+        protocol: tcp
+        port: 6444
+        targetPort: 6444
+        targetPools:
+          - aws-cmpt-nodes
+      - name: port2
+        protocol: tcp
+        port: 6448
+        targetPort: 6448
+        targetPools:
+          - azr-ctrl-nodes
+    clusters:
+      - name: ts-rolling-update-lbpools001
+        roles:
+          - port1
+        dns:
+          dnsZone: aws.e2e.claudie.io
+          provider: aws-1
+        targetedK8s: ts-rolling-update-nodepools1
+        pools:
+          - oci-ldbl-nodes
+      - name: ts-rolling-update-lbpools002
+        roles:
+          - port2
+        dns:
+          dnsZone: azure.e2e.claudie.io
+          provider: azure-payed-1
+        targetedK8s: ts-rolling-update-nodepools1
+        pools:
+          - gen-kube-nodes

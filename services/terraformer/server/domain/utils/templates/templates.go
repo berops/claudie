@@ -2,8 +2,6 @@ package templates
 
 import (
 	"bytes"
-	"crypto/sha512"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/url"
@@ -154,6 +152,11 @@ type Generator struct {
 	// TemplatePath is the path from the Root directory of the templates
 	// to the requested provider templates.
 	TemplatePath string
+	// Fingerprint is a sequence of bytes that uniquely identifies the
+	// templates attached to a provider. For example if two providers use
+	// the same templates the fingerprint must be unique so that no collisions
+	// occur when generating the template files.
+	Fingerprint string
 }
 
 func (g *Generator) GenerateProvider(data *Provider) error {
@@ -205,11 +208,6 @@ func ExtractTargetPath(repository *spec.TemplateRepository) string {
 	)
 }
 
-func Fingerprint(s string) string {
-	digest := sha512.Sum512_256([]byte(s))
-	return hex.EncodeToString(digest[:16])
-}
-
 func (g *Generator) generateTemplates(dir, specName string, data any) error {
 	type fingerPrintedData struct {
 		// Data is data passed to the template generator (one of the above).
@@ -219,7 +217,6 @@ func (g *Generator) generateTemplates(dir, specName string, data any) error {
 	}
 
 	var (
-		fp              = Fingerprint(g.TemplatePath)
 		targetDirectory = templateUtils.Templates{Directory: g.TargetDirectory}
 	)
 
@@ -248,11 +245,11 @@ func (g *Generator) generateTemplates(dir, specName string, data any) error {
 		}
 
 		gotpl := strings.TrimSuffix(gotpl.Name(), ".tpl")
-		outputFile := fmt.Sprintf("%s-%s-%s-%s.tf", g.ID, specName, gotpl, fp)
+		outputFile := fmt.Sprintf("%s-%s-%s-%s.tf", g.ID, specName, gotpl, g.Fingerprint)
 
 		data := fingerPrintedData{
 			Data:        data,
-			Fingerprint: fp,
+			Fingerprint: g.Fingerprint,
 		}
 
 		if err := targetDirectory.Generate(tpl, outputFile, data); err != nil {

@@ -1,6 +1,7 @@
 package cluster_builder
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"iter"
@@ -9,6 +10,7 @@ import (
 	"path/filepath"
 	"slices"
 
+	"github.com/berops/claudie/internal/checksum"
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -87,23 +89,23 @@ func (c ClusterBuilder) CreateNodepools() error {
 
 	// fill new nodes with output
 	for _, nodepool := range c.DesiredClusterInfo.NodePools {
-		if np := nodepool.GetDynamicNodePool(); np != nil {
-			k := fmt.Sprintf(
-				"%s_%s_%s",
-				nodepool.Name,
-				np.GetProvider().GetSpecName(),
-				templates.Fingerprint(templates.ExtractTargetPath(np.GetProvider().GetTemplates())),
-			)
-			output, err := terraform.Output(k)
-			if err != nil {
-				return fmt.Errorf("error while getting output from terraform for %s : %w", nodepool.Name, err)
-			}
-			out, err := readIPs(output)
-			if err != nil {
-				return fmt.Errorf("error while reading the terraform output for %s : %w", nodepool.Name, err)
-			}
-			fillNodes(&out, nodepool, oldNodes)
+		np := nodepool.GetDynamicNodePool()
+		if np == nil {
+			continue
 		}
+
+		f := checksum.Digest128(filepath.Join(np.Provider.SpecName, templates.ExtractTargetPath(np.Provider.Templates)))
+		k := fmt.Sprintf("%s_%s_%s", nodepool.Name, np.Provider.SpecName, hex.EncodeToString(f))
+
+		output, err := terraform.Output(k)
+		if err != nil {
+			return fmt.Errorf("error while getting output from terraform for %s : %w", nodepool.Name, err)
+		}
+		out, err := readIPs(output)
+		if err != nil {
+			return fmt.Errorf("error while reading the terraform output for %s : %w", nodepool.Name, err)
+		}
+		fillNodes(&out, nodepool, oldNodes)
 	}
 
 	// Clean after terraform
@@ -235,6 +237,7 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 				TargetDirectory:   clusterDir,
 				ReadFromDirectory: templatesDownloadDir,
 				TemplatePath:      path,
+				Fingerprint:       hex.EncodeToString(checksum.Digest128(filepath.Join(info.SpecName, path))),
 			}
 
 			if err := g.GenerateNetworking(&templates.Networking{
@@ -405,6 +408,7 @@ func (c *ClusterBuilder) generateProviderTemplates(current, desired *spec.Cluste
 				TargetDirectory:   directory,
 				ReadFromDirectory: templatesDownloadDir,
 				TemplatePath:      path,
+				Fingerprint:       hex.EncodeToString(checksum.Digest128(filepath.Join(info.SpecName, path))),
 			}
 
 			err := g.GenerateProvider(&templates.Provider{

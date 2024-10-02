@@ -1,11 +1,12 @@
 package checksum
 
 import (
-	"golang.org/x/crypto/blake2b"
+	"crypto/sha512"
 )
 
-// Digest calculates a Blake2b 256 bit checksum of the passed data.
 func Digest(data string) []byte {
-	checksum := blake2b.Sum256([]byte(data))
-	return checksum[:]
+	digest := sha512.Sum512_256([]byte(data))
+	return digest[:]
 }
+
+func Digest128(data string) []byte { return Digest(data)[:16] }
