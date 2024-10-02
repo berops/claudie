@@ -269,6 +269,8 @@ jobs:
       - name: Deploy to new namespace
         working-directory: ./manifests/claudie
         run: |
+          #turn on proxy
+          sed -i 's/HTTP_PROXY_MODE=off/HTTP_PROXY_MODE=on/g' .env
           #set log level to debug
           sed -i 's/GOLANG_LOG=info/GOLANG_LOG=debug/g' .env
           #check if auto clean up is enabled/disabled
