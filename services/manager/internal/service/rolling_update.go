@@ -190,7 +190,6 @@ func rollingUpdate(current, desired *spec.Clusters) (*spec.Clusters, []*spec.Tas
 			log.Debug().
 				Str("cluster", k8sID).
 				Msgf("created event %q with Repeat on error", events[len(events)-1].Description)
-
 		}
 
 		events = append(events, &spec.TaskEvent{
