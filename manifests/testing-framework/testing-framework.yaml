@@ -50,7 +50,7 @@ spec:
               mountPath: "/go/services/testing-framework/test-sets/test-set5"
             - name: autoscaling-1
               mountPath: "/go/services/testing-framework/test-sets/autoscaling-1"
-            - name: rolling-updates
+            - name: rolling-update
               mountPath: "/go/services/testing-framework/test-sets/rolling-update"
       volumes:
         - name: test-set1
