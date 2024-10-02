@@ -50,6 +50,8 @@ spec:
               mountPath: "/go/services/testing-framework/test-sets/test-set5"
             - name: autoscaling-1
               mountPath: "/go/services/testing-framework/test-sets/autoscaling-1"
+            - name: rolling-updates
+              mountPath: "/go/services/testing-framework/test-sets/rolling-update"
       volumes:
         - name: test-set1
           secret:
@@ -69,6 +71,9 @@ spec:
         - name: autoscaling-1
           secret:
             secretName: autoscaling-1
+        - name: rolling-update
+          secret:
+            secretName: rolling-update
       restartPolicy: Never
       serviceAccountName: testing-framework
 ---
