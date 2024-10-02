@@ -330,6 +330,7 @@ jobs:
           IPS=$(terraform output --json | jq -r '.endpoints.value | values[]')
           IP_ARR=( $IPS )
           
+          # use 3 nodes for the explicit static nodes test-set.
           for file in test-set5/*; do
               if [ -f "$file" ]; then
                   filename=$(basename "$file")
@@ -343,6 +344,22 @@ jobs:
                   fi
                   if [[ $filename == "3.yaml" ]]; then
                       ENDPOINT=${IP_ARR[2]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
+                  fi
+              fi
+          done
+          
+          # use 1 node for the rolling update test.
+          for file in rolling-update/*; do
+              if [ -f "$file" ]; then
+                  filename=$(basename "$file")
+                  if [[ $filename == "1.yaml" ]]; then
+                      ENDPOINT=${IP_ARR[3]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
+                  fi
+                  if [[ $filename == "2.yaml" ]]; then
+                      ENDPOINT=${IP_ARR[3]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
+                  fi
+                  if [[ $filename == "3.yaml" ]]; then
+                      ENDPOINT=${IP_ARR[3]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
                   fi
               fi
           done

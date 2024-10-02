@@ -50,6 +50,13 @@ spec:
         name: aws-secret
         namespace: e2e-secrets
   nodePools:
+    static:
+      - name: static-pool-01
+        nodes:
+          - endpoint: replace-me
+            secretRef:
+              name: static-nodes-key
+              namespace: e2e-secrets
     dynamic:
       - name: htz-ctrl-nodes
         providerSpec:
@@ -107,6 +114,7 @@ spec:
             - htz-ctrl-nodes
           compute:
             - aws-cmpt-nodes
+            - static-pool-01
   loadBalancers:
     roles:
       - name: port1

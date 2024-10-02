@@ -37,11 +37,12 @@ type ManagerServiceClient interface {
 	// TaskUpdate will update the state of the requested task. This should be periodically called as the task
 	// that was picked up by the NextTask RPC enters different stages of the build process.
 	TaskUpdate(ctx context.Context, in *TaskUpdateRequest, opts ...grpc.CallOption) (*TaskUpdateResponse, error)
-	// UpdateCurrentState updates the current state with the specified version in the request.
-	// This should be called after a Task has been processed, either successfully or not, so that
-	// subsequent tasks will work with an up-to-date current state that reflects the actual state
-	// of the infrastructure.
-	UpdateCurrentState(ctx context.Context, in *UpdateCurrentStateRequest, opts ...grpc.CallOption) (*UpdateCurrentStateResponse, error)
+	// TaskComplete will update the state of the requested task to either Done or Error. Further, it will
+	// update the current state of the clusters from the passed in value, so that subsequent tasks will
+	// work with an up-to-date current state that reflects the actual state of the infrastructure.
+	// This RPC  should be called when a task that has been previously picked up by the NextTask RPC
+	// finished processing, either in error or successfully.
+	TaskComplete(ctx context.Context, in *TaskCompleteRequest, opts ...grpc.CallOption) (*TaskCompleteResponse, error)
 	// UpdateNodePool updates a single nodepool within a cluster, and should only be called by
 	// the autoscaler-adapter service. This RPC bypasses the main loop of how changes are applied
 	// to the configuration, and directly changes the nodepool to the state specified in the request
@@ -111,9 +112,9 @@ func (c *managerServiceClient) TaskUpdate(ctx context.Context, in *TaskUpdateReq
 	return out, nil
 }
 
-func (c *managerServiceClient) UpdateCurrentState(ctx context.Context, in *UpdateCurrentStateRequest, opts ...grpc.CallOption) (*UpdateCurrentStateResponse, error) {
-	out := new(UpdateCurrentStateResponse)
-	err := c.cc.Invoke(ctx, "/claudie.ManagerService/UpdateCurrentState", in, out, opts...)
+func (c *managerServiceClient) TaskComplete(ctx context.Context, in *TaskCompleteRequest, opts ...grpc.CallOption) (*TaskCompleteResponse, error) {
+	out := new(TaskCompleteResponse)
+	err := c.cc.Invoke(ctx, "/claudie.ManagerService/TaskComplete", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -148,11 +149,12 @@ type ManagerServiceServer interface {
 	// TaskUpdate will update the state of the requested task. This should be periodically called as the task
 	// that was picked up by the NextTask RPC enters different stages of the build process.
 	TaskUpdate(context.Context, *TaskUpdateRequest) (*TaskUpdateResponse, error)
-	// UpdateCurrentState updates the current state with the specified version in the request.
-	// This should be called after a Task has been processed, either successfully or not, so that
-	// subsequent tasks will work with an up-to-date current state that reflects the actual state
-	// of the infrastructure.
-	UpdateCurrentState(context.Context, *UpdateCurrentStateRequest) (*UpdateCurrentStateResponse, error)
+	// TaskComplete will update the state of the requested task to either Done or Error. Further, it will
+	// update the current state of the clusters from the passed in value, so that subsequent tasks will
+	// work with an up-to-date current state that reflects the actual state of the infrastructure.
+	// This RPC  should be called when a task that has been previously picked up by the NextTask RPC
+	// finished processing, either in error or successfully.
+	TaskComplete(context.Context, *TaskCompleteRequest) (*TaskCompleteResponse, error)
 	// UpdateNodePool updates a single nodepool within a cluster, and should only be called by
 	// the autoscaler-adapter service. This RPC bypasses the main loop of how changes are applied
 	// to the configuration, and directly changes the nodepool to the state specified in the request
@@ -183,8 +185,8 @@ func (UnimplementedManagerServiceServer) NextTask(context.Context, *NextTaskRequ
 func (UnimplementedManagerServiceServer) TaskUpdate(context.Context, *TaskUpdateRequest) (*TaskUpdateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TaskUpdate not implemented")
 }
-func (UnimplementedManagerServiceServer) UpdateCurrentState(context.Context, *UpdateCurrentStateRequest) (*UpdateCurrentStateResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateCurrentState not implemented")
+func (UnimplementedManagerServiceServer) TaskComplete(context.Context, *TaskCompleteRequest) (*TaskCompleteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TaskComplete not implemented")
 }
 func (UnimplementedManagerServiceServer) UpdateNodePool(context.Context, *UpdateNodePoolRequest) (*UpdateNodePoolResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateNodePool not implemented")
@@ -310,20 +312,20 @@ func _ManagerService_TaskUpdate_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ManagerService_UpdateCurrentState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateCurrentStateRequest)
+func _ManagerService_TaskComplete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TaskCompleteRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ManagerServiceServer).UpdateCurrentState(ctx, in)
+		return srv.(ManagerServiceServer).TaskComplete(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/claudie.ManagerService/UpdateCurrentState",
+		FullMethod: "/claudie.ManagerService/TaskComplete",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ManagerServiceServer).UpdateCurrentState(ctx, req.(*UpdateCurrentStateRequest))
+		return srv.(ManagerServiceServer).TaskComplete(ctx, req.(*TaskCompleteRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -378,8 +380,8 @@ var ManagerService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ManagerService_TaskUpdate_Handler,
 		},
 		{
-			MethodName: "UpdateCurrentState",
-			Handler:    _ManagerService_UpdateCurrentState_Handler,
+			MethodName: "TaskComplete",
+			Handler:    _ManagerService_TaskComplete_Handler,
 		},
 		{
 			MethodName: "UpdateNodePool",

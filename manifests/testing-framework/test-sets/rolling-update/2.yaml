@@ -68,6 +68,13 @@ spec:
         name: azure-sponsorship-secret
         namespace: e2e-secrets
   nodePools:
+    static:
+      - name: static-pool-01
+        nodes:
+          - endpoint: replace-me
+            secretRef:
+              name: static-nodes-key
+              namespace: e2e-secrets
     dynamic:
       - name: htz-ctrl-nodes
         providerSpec:
@@ -144,6 +151,7 @@ spec:
             - azr-ctrl-nodes
           compute:
             - aws-cmpt-nodes
+            - static-pool-01
   loadBalancers:
     roles:
       - name: port1
@@ -157,7 +165,7 @@ spec:
         port: 6448
         targetPort: 6448
         targetPools:
-          - azr-ctrl-nodes
+          - static-pool-01
     clusters:
       - name: ts-rolling-update-lbpools001
         roles:

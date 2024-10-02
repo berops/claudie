@@ -22,6 +22,13 @@ type TaskAPI interface {
 	// should execute the Read/Update/Write cycle again. If either the config or the cluster within the config or
 	// the task for which the state should be updated is not found the ErrNotFound error is returned.
 	TaskUpdate(ctx context.Context, request *TaskUpdateRequest) error
+
+	// TaskComplete will mark the given task as completed either with status "DONE" or "ERROR. Further, it will update
+	// the current state of the cluster within the specified config and version. If the requested config version is not
+	// found the ErrVersionMismatch error is returned indicating a Dirty write. On a dirty write the application code
+	// should execute the Read/Update/Write cycle again. If either the (cluster, config, task) triple is not found the
+	// ErrNotFound error is returned.
+	TaskComplete(ctx context.Context, request *TaskCompleteRequest) error
 }
 
 type NextTaskResponse struct {
@@ -38,4 +45,12 @@ type TaskUpdateRequest struct {
 	Cluster string
 	TaskId  string
 	State   *spec.Workflow
+}
+
+type TaskCompleteRequest struct {
+	Config   string
+	Cluster  string
+	TaskId   string
+	Workflow *spec.Workflow
+	State    *spec.Clusters
 }
