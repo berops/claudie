@@ -226,12 +226,22 @@ func (u *Usecases) executeDeleteTask(te *managerclient.NextTaskResponse) (*spec.
 			}
 		}
 
-		k8s, err := u.callDeleteNodes(master, worker, te.Current.K8S)
+		ctx := &builder.Context{
+			ProjectName:    te.Config,
+			TaskId:         te.Event.Id,
+			CurrentCluster: te.Current.K8S,
+			Workflow:       te.State,
+		}
+
+		u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, fmt.Sprintf("deleting nodes [%q, %q] from cluster", master, worker))
+
+		k8s, err := u.callDeleteNodes(master, worker, ctx.CurrentCluster)
 		if err != nil {
 			return te.Current.GetK8S(), te.Current.GetLoadBalancers().GetClusters(), fmt.Errorf("error while deleting nodes for %s: %w", te.Current.K8S.ClusterInfo.NodePools, err)
 		}
 
 		if len(static) == 0 {
+			u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, fmt.Sprintf("finished deleting nodes [%q, %q] from cluster", master, worker))
 			return k8s, te.Current.GetLoadBalancers().GetClusters(), nil
 		}
 
@@ -247,7 +257,7 @@ func (u *Usecases) executeDeleteTask(te *managerclient.NextTaskResponse) (*spec.
 		c := proto.Clone(te.Current.K8S).(*spec.K8Scluster)
 		c.ClusterInfo.NodePools = static
 
-		ctx := &builder.Context{
+		ctx = &builder.Context{
 			ProjectName:    te.Config,
 			TaskId:         te.Event.Id,
 			CurrentCluster: c,
@@ -258,6 +268,7 @@ func (u *Usecases) executeDeleteTask(te *managerclient.NextTaskResponse) (*spec.
 			return k8s, te.Current.GetLoadBalancers().GetClusters(), fmt.Errorf("error while removing utilities for static nodes from %s: %w", te.Current.K8S.ClusterInfo.Name, err)
 		}
 
+		u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, fmt.Sprintf("finished deleting nodes [%q, %q] from cluster", master, worker))
 		return k8s, te.Current.GetLoadBalancers().GetClusters(), nil
 	}
 

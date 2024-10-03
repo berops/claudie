@@ -51,7 +51,7 @@ spec:
 
   kubernetes:
     clusters:
-      - name: autoscaling-cluster-test-set
+      - name: autoscaling-cluster-test-002
         version: 1.27.0
         network: 192.168.2.0/24
         pools:
