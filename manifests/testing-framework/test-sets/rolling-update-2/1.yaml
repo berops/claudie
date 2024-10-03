@@ -1,14 +1,14 @@
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
-  name: rolling-update
+  name: rolling-update-2
 spec:
   providers:
     - name: genesiscloud-1
       providerType: genesiscloud
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.1"
+        tag: "v0.9.1-test"
         path: "templates/terraformer/genesiscloud"
       secretRef:
         name: genesiscloud-secret
@@ -17,7 +17,7 @@ spec:
       providerType: hetzner
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.1"
+        tag: "v0.9.1-test"
         path: "templates/terraformer/hetzner"
       secretRef:
         name: hetzner-secret
@@ -26,7 +26,7 @@ spec:
       providerType: oci
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.1"
+        tag: "v0.9.1-test"
         path: "templates/terraformer/oci"
       secretRef:
         name: oci-secret
@@ -35,7 +35,7 @@ spec:
       providerType: aws
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.1"
+        tag: "v0.9.1-test"
         path: "templates/terraformer/aws"
       secretRef:
         name: aws-secret
@@ -44,19 +44,22 @@ spec:
       providerType: aws
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.1"
+        tag: "v0.9.1-test"
         path: "templates/terraformer/aws"
       secretRef:
         name: aws-secret
         namespace: e2e-secrets
+    - name: azure-payed-1
+      providerType: azure
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: "v0.9.1-test"
+        path: "templates/terraformer/azure"
+      secretRef:
+        name: azure-secret
+        namespace: e2e-secrets
   nodePools:
     static:
-      - name: static-pool-01
-        nodes:
-          - endpoint: replace-me
-            secretRef:
-              name: static-nodes-key
-              namespace: e2e-secrets
     dynamic:
       - name: htz-ctrl-nodes
         providerSpec:
@@ -67,10 +70,10 @@ spec:
         serverType: cpx11
         image: ubuntu-24.04
         labels:
-          test-set: rolling-update-test
+          test-set: rolling-update-2-test
         annotations:
           claudie.io/example-annotation: >
-            ["rolling-update-test"]
+            ["rolling-update-2-test"]
 
       - name: oci-ldbl-nodes
         providerSpec:
@@ -114,13 +117,18 @@ spec:
             - htz-ctrl-nodes
           compute:
             - aws-cmpt-nodes
-            - static-pool-01
   loadBalancers:
     roles:
       - name: port1
         protocol: tcp
         port: 6444
         targetPort: 6444
+        targetPools:
+          - aws-cmpt-nodes
+      - name: port2
+        protocol: tcp
+        port: 6448
+        targetPort: 6448
         targetPools:
           - aws-cmpt-nodes
     clusters:
@@ -133,3 +141,12 @@ spec:
         targetedK8s: ts-rolling-update-nodepools1
         pools:
           - oci-ldbl-nodes
+      - name: ts-rolling-update-lbpools002
+        roles:
+          - port2
+        dns:
+          dnsZone: azure.e2e.claudie.io
+          provider: azure-payed-1
+        targetedK8s: ts-rolling-update-nodepools1
+        pools:
+          - gen-kube-nodes

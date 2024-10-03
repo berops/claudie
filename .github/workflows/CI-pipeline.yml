@@ -360,9 +360,6 @@ jobs:
                   if [[ $filename == "2.yaml" ]]; then
                       ENDPOINT=${IP_ARR[3]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
                   fi
-                  if [[ $filename == "3.yaml" ]]; then
-                      ENDPOINT=${IP_ARR[3]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
-                  fi
               fi
           done
 
@@ -388,11 +385,11 @@ jobs:
       - name: Monitor E2E test
         run: |
           # Wait for completion as background process - capture PID
-          kubectl wait --for=condition=complete --timeout=10800s job/testing-framework -n claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER} &
+          kubectl wait --for=condition=complete --timeout=25000s job/testing-framework -n claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER} &
           completion_pid=$!
 
           # Wait for failure as background process - capture PID
-          kubectl wait --for=condition=failed --timeout=10800s job/testing-framework -n claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER} && exit 1 &
+          kubectl wait --for=condition=failed --timeout=25000s job/testing-framework -n claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER} && exit 1 &
           failure_pid=$! 
 
           # capture exit code of the first subprocess to exit
