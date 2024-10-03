@@ -114,7 +114,7 @@ spec:
         port: 6443
         targetPort: 6443
         targetPools:
-          - azr-ctrl-notes
+          - azr-ctrl-nodes
       - name: port2
         protocol: tcp
         port: 6448
