@@ -77,7 +77,7 @@ func copyLbNodePoolNamesFromCurrentState(used map[string]struct{}, nodepool stri
 			}
 
 			for _, np := range current.GetClusterInfo().GetNodePools() {
-				_, hash := utils.GetNameAndHashFromNodepool(nodepool, np.Name)
+				_, hash := utils.MatchNameAndHashWithTemplate(nodepool, np.Name)
 				if hash == "" {
 					continue
 				}
@@ -112,7 +112,7 @@ func copyK8sNodePoolsNamesFromCurrentState(used map[string]struct{}, nodepool st
 	}
 
 	for _, np := range current.GetClusterInfo().GetNodePools() {
-		_, hash := utils.GetNameAndHashFromNodepool(nodepool, np.Name)
+		_, hash := utils.MatchNameAndHashWithTemplate(nodepool, np.Name)
 		if hash == "" {
 			continue
 		}
@@ -120,9 +120,17 @@ func copyK8sNodePoolsNamesFromCurrentState(used map[string]struct{}, nodepool st
 		used[hash] = struct{}{}
 
 		if np.IsControl && control != nil {
-			control.Name += fmt.Sprintf("-%s", hash)
+			// if there are multiple nodepools in the current state (for example on a failed rolling update)
+			// transfer only one of them.
+			if _, h := utils.MatchNameAndHashWithTemplate(nodepool, control.Name); h == "" {
+				control.Name += fmt.Sprintf("-%s", hash)
+			}
 		} else if !np.IsControl && compute != nil {
-			compute.Name += fmt.Sprintf("-%s", hash)
+			// if there are multiple nodepools in the current state (for example on a failed rolling update)
+			// transfer only one of them.
+			if _, h := utils.MatchNameAndHashWithTemplate(nodepool, compute.Name); h == "" {
+				compute.Name += fmt.Sprintf("-%s", hash)
+			}
 		}
 	}
 }
@@ -200,7 +208,7 @@ desired:
 			case transferDynamicNp(utils.GetClusterID(desired), currentNp, desiredNp, true):
 			case transferStaticNodes(utils.GetClusterID(desired), currentNp, desiredNp):
 			default:
-				return fmt.Errorf("%q is neither dynamic nor static, unexpected value: %v", desiredNp.Name, desiredNp.GetNodePoolType())
+				return fmt.Errorf("%q is neither dynamic nor static, unexpected value: %T", desiredNp.Name, desiredNp.Type)
 			}
 
 			continue desired

@@ -269,6 +269,8 @@ jobs:
       - name: Deploy to new namespace
         working-directory: ./manifests/claudie
         run: |
+          #turn on proxy
+          sed -i 's/HTTP_PROXY_MODE=default/HTTP_PROXY_MODE=on/g' .env
           #set log level to debug
           sed -i 's/GOLANG_LOG=info/GOLANG_LOG=debug/g' .env
           #check if auto clean up is enabled/disabled
@@ -330,6 +332,7 @@ jobs:
           IPS=$(terraform output --json | jq -r '.endpoints.value | values[]')
           IP_ARR=( $IPS )
           
+          # use 3 nodes for the explicit static nodes test-set.
           for file in test-set5/*; do
               if [ -f "$file" ]; then
                   filename=$(basename "$file")
@@ -343,6 +346,19 @@ jobs:
                   fi
                   if [[ $filename == "3.yaml" ]]; then
                       ENDPOINT=${IP_ARR[2]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
+                  fi
+              fi
+          done
+          
+          # use 1 node for the rolling update test.
+          for file in rolling-update/*; do
+              if [ -f "$file" ]; then
+                  filename=$(basename "$file")
+                  if [[ $filename == "1.yaml" ]]; then
+                      ENDPOINT=${IP_ARR[3]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
+                  fi
+                  if [[ $filename == "2.yaml" ]]; then
+                      ENDPOINT=${IP_ARR[3]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
                   fi
               fi
           done
@@ -369,11 +385,11 @@ jobs:
       - name: Monitor E2E test
         run: |
           # Wait for completion as background process - capture PID
-          kubectl wait --for=condition=complete --timeout=10800s job/testing-framework -n claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER} &
+          kubectl wait --for=condition=complete --timeout=25000s job/testing-framework -n claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER} &
           completion_pid=$!
 
           # Wait for failure as background process - capture PID
-          kubectl wait --for=condition=failed --timeout=10800s job/testing-framework -n claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER} && exit 1 &
+          kubectl wait --for=condition=failed --timeout=25000s job/testing-framework -n claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER} && exit 1 &
           failure_pid=$! 
 
           # capture exit code of the first subprocess to exit

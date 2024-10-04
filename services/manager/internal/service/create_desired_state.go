@@ -208,7 +208,7 @@ func getDNS(dns manifest.DNS, from *manifest.Manifest) (*spec.DNS, error) {
 
 	provider, err := from.GetProvider(dns.Provider)
 	if err != nil {
-		return nil, fmt.Errorf("provider %s was not found in manifest %s", dns.Provider, from.Name)
+		return nil, fmt.Errorf("provider %s was not found in manifest %s: %w", dns.Provider, from.Name, err)
 	}
 
 	return &spec.DNS{DnsZone: dns.DNSZone, Provider: provider, Hostname: dns.Hostname}, nil
@@ -306,7 +306,7 @@ func fillMissingDynamicNodes(c *spec.Clusters) {
 	}
 
 	for _, lb := range c.GetLoadBalancers().GetClusters() {
-		lbID := utils.GetClusterID(c.GetK8S().GetClusterInfo())
+		lbID := utils.GetClusterID(lb.ClusterInfo)
 		for _, np := range lb.GetClusterInfo().GetNodePools() {
 			if np.GetDynamicNodePool() == nil {
 				continue

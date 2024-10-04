@@ -24,12 +24,12 @@ func Test_nodeDiff(t *testing.T) {
 					{Name: "0"}, {Name: "1"},
 					{Name: "2"}, {Name: "3"},
 					{Name: "4"}, {Name: "5"},
-				}, NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 6}}},
+				}, Type: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 6}}},
 				desired: &spec.NodePool{Name: "t0", Nodes: []*spec.Node{
 					{Name: "0"},
 					{Name: "3"},
 					{Name: "4"}, {Name: "5"}, {Name: "6"},
-				}, NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 4}}},
+				}, Type: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 4}}},
 			},
 			want: nodeDiffResult{
 				nodepool: "t0",
@@ -50,12 +50,12 @@ func Test_nodeDiff(t *testing.T) {
 					{Name: "0"}, {Name: "1", NodeType: spec.NodeType_apiEndpoint},
 					{Name: "2"}, {Name: "3"},
 					{Name: "4"}, {Name: "5"},
-				}, NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 6}}},
+				}, Type: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 6}}},
 				desired: &spec.NodePool{Name: "t0", Nodes: []*spec.Node{
 					{Name: "0"},
 					{Name: "3"},
 					{Name: "4"}, {Name: "5"}, {Name: "6"},
-				}, NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 4}}},
+				}, Type: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 4}}},
 			},
 			want: nodeDiffResult{
 				nodepool: "t0",

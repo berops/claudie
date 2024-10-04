@@ -35,6 +35,7 @@ var opts = cmpopts.IgnoreUnexported(
 	spec.Provider_Hetzner{},
 	spec.HetznerProvider{},
 	spec.TemplateRepository{},
+	spec.RetryStrategy{},
 )
 
 func TestConvertToGRPCAndBack(t *testing.T) {
@@ -69,6 +70,7 @@ func TestConvertToGRPCAndBack(t *testing.T) {
 							Event:       spec.Event_CREATE.String(),
 							Task:        []uint8{},
 							Description: "Testing",
+							OnError:     []uint8{18, 88, 10, 36, 102, 57, 98, 49, 53, 55, 97, 101, 45, 100, 97, 100, 54, 45, 52, 50, 52, 101, 45, 97, 97, 102, 56, 45, 57, 52, 99, 102, 97, 57, 57, 102, 56, 99, 56, 51, 18, 12, 8, 201, 198, 212, 183, 6, 16, 216, 250, 232, 177, 2, 24, 2, 34, 19, 26, 17, 26, 15, 10, 4, 116, 101, 115, 116, 18, 7, 10, 5, 110, 111, 100, 101, 49, 42, 7, 116, 101, 115, 116, 105, 110, 103, 50, 2, 8, 1},
 						},
 					},
 					TTL:        500,
@@ -126,7 +128,7 @@ func TestConvertToDBAndBack(t *testing.T) {
 							Hash: "abcd",
 							NodePools: []*spec.NodePool{
 								{
-									NodePoolType: &spec.NodePool_DynamicNodePool{
+									Type: &spec.NodePool_DynamicNodePool{
 										DynamicNodePool: &spec.DynamicNodePool{
 											ServerType:      "performance",
 											Image:           "latest",
@@ -178,7 +180,7 @@ func TestConvertToDBAndBack(t *testing.T) {
 									Hash: "abcd",
 									NodePools: []*spec.NodePool{
 										{
-											NodePoolType: &spec.NodePool_DynamicNodePool{
+											Type: &spec.NodePool_DynamicNodePool{
 												DynamicNodePool: &spec.DynamicNodePool{
 													ServerType:      "performance",
 													Image:           "latest",
@@ -322,7 +324,7 @@ func TestConvertFromGRPC(t *testing.T) {
 										Hash: "abcd",
 										NodePools: []*spec.NodePool{
 											{
-												NodePoolType: &spec.NodePool_DynamicNodePool{
+												Type: &spec.NodePool_DynamicNodePool{
 													DynamicNodePool: &spec.DynamicNodePool{
 														ServerType:      "performance",
 														Image:           "latest",
@@ -374,7 +376,7 @@ func TestConvertFromGRPC(t *testing.T) {
 												Hash: "abcd",
 												NodePools: []*spec.NodePool{
 													{
-														NodePoolType: &spec.NodePool_DynamicNodePool{
+														Type: &spec.NodePool_DynamicNodePool{
 															DynamicNodePool: &spec.DynamicNodePool{
 																ServerType:      "performance",
 																Image:           "latest",
@@ -561,7 +563,7 @@ func TestConvertToGRPC(t *testing.T) {
 									Hash: "abcd",
 									NodePools: []*spec.NodePool{
 										{
-											NodePoolType: &spec.NodePool_DynamicNodePool{
+											Type: &spec.NodePool_DynamicNodePool{
 												DynamicNodePool: &spec.DynamicNodePool{
 													ServerType:      "performance",
 													Image:           "latest",
@@ -613,7 +615,7 @@ func TestConvertToGRPC(t *testing.T) {
 											Hash: "abcd",
 											NodePools: []*spec.NodePool{
 												{
-													NodePoolType: &spec.NodePool_DynamicNodePool{
+													Type: &spec.NodePool_DynamicNodePool{
 														DynamicNodePool: &spec.DynamicNodePool{
 															ServerType:      "performance",
 															Image:           "latest",

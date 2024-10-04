@@ -65,4 +65,6 @@ message TemplateRepository {
   string repository = 1;
   optional string tag = 2;
   string path = 3;
+
+  string commitHash = 4;
 }

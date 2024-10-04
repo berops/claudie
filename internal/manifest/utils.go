@@ -1,8 +1,16 @@
 package manifest
 
 import (
+	"errors"
 	"fmt"
+	"slices"
+
 	"github.com/berops/claudie/proto/pb/spec"
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/storage/memory"
+
 	k8sV1 "k8s.io/api/core/v1"
 )
 
@@ -19,6 +27,15 @@ var (
 func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error) {
 	for _, gcpConf := range ds.Providers.GCP {
 		if gcpConf.Name == providerSpecName {
+			t := &spec.TemplateRepository{
+				Repository: gcpConf.Templates.Repository,
+				Tag:        gcpConf.Templates.Tag,
+				Path:       gcpConf.Templates.Path,
+			}
+			if err := FetchCommitHash(t); err != nil {
+				return nil, err
+			}
+
 			return &spec.Provider{
 				SpecName: gcpConf.Name,
 				ProviderType: &spec.Provider_Gcp{
@@ -28,11 +45,7 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 					},
 				},
 				CloudProviderName: "gcp",
-				Templates: &spec.TemplateRepository{
-					Repository: gcpConf.Templates.Repository,
-					Tag:        gcpConf.Templates.Tag,
-					Path:       gcpConf.Templates.Path,
-				},
+				Templates:         t,
 				//omit rest of the spec.Provider variables
 			}, nil
 		}
@@ -40,6 +53,14 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 
 	for _, hetznerConf := range ds.Providers.Hetzner {
 		if hetznerConf.Name == providerSpecName {
+			t := &spec.TemplateRepository{
+				Repository: hetznerConf.Templates.Repository,
+				Tag:        hetznerConf.Templates.Tag,
+				Path:       hetznerConf.Templates.Path,
+			}
+			if err := FetchCommitHash(t); err != nil {
+				return nil, err
+			}
 			return &spec.Provider{
 				SpecName: hetznerConf.Name,
 				ProviderType: &spec.Provider_Hetzner{
@@ -48,11 +69,7 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 					},
 				},
 				CloudProviderName: "hetzner",
-				Templates: &spec.TemplateRepository{
-					Repository: hetznerConf.Templates.Repository,
-					Tag:        hetznerConf.Templates.Tag,
-					Path:       hetznerConf.Templates.Path,
-				},
+				Templates:         t,
 				//omit rest of the spec.Provider variables
 			}, nil
 		}
@@ -60,6 +77,14 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 
 	for _, ociConf := range ds.Providers.OCI {
 		if ociConf.Name == providerSpecName {
+			t := &spec.TemplateRepository{
+				Repository: ociConf.Templates.Repository,
+				Tag:        ociConf.Templates.Tag,
+				Path:       ociConf.Templates.Path,
+			}
+			if err := FetchCommitHash(t); err != nil {
+				return nil, err
+			}
 			return &spec.Provider{
 				SpecName: ociConf.Name,
 				ProviderType: &spec.Provider_Oci{
@@ -72,11 +97,7 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 					},
 				},
 				CloudProviderName: "oci",
-				Templates: &spec.TemplateRepository{
-					Repository: ociConf.Templates.Repository,
-					Tag:        ociConf.Templates.Tag,
-					Path:       ociConf.Templates.Path,
-				},
+				Templates:         t,
 				//omit rest of the spec.Provider variables
 			}, nil
 		}
@@ -84,6 +105,14 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 
 	for _, azureConf := range ds.Providers.Azure {
 		if azureConf.Name == providerSpecName {
+			t := &spec.TemplateRepository{
+				Repository: azureConf.Templates.Repository,
+				Tag:        azureConf.Templates.Tag,
+				Path:       azureConf.Templates.Path,
+			}
+			if err := FetchCommitHash(t); err != nil {
+				return nil, err
+			}
 			return &spec.Provider{
 				SpecName:          azureConf.Name,
 				CloudProviderName: "azure",
@@ -95,11 +124,7 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 						ClientSecret:   azureConf.ClientSecret,
 					},
 				},
-				Templates: &spec.TemplateRepository{
-					Repository: azureConf.Templates.Repository,
-					Tag:        azureConf.Templates.Tag,
-					Path:       azureConf.Templates.Path,
-				},
+				Templates: t,
 				//omit rest of the pb.Provider variables
 			}, nil
 		}
@@ -107,6 +132,14 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 
 	for _, awsConf := range ds.Providers.AWS {
 		if awsConf.Name == providerSpecName {
+			t := &spec.TemplateRepository{
+				Repository: awsConf.Templates.Repository,
+				Tag:        awsConf.Templates.Tag,
+				Path:       awsConf.Templates.Path,
+			}
+			if err := FetchCommitHash(t); err != nil {
+				return nil, err
+			}
 			return &spec.Provider{
 				SpecName: awsConf.Name,
 				ProviderType: &spec.Provider_Aws{
@@ -116,17 +149,21 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 					},
 				},
 				CloudProviderName: "aws",
-				Templates: &spec.TemplateRepository{
-					Repository: awsConf.Templates.Repository,
-					Tag:        awsConf.Templates.Tag,
-					Path:       awsConf.Templates.Path,
-				},
+				Templates:         t,
 			}, nil
 		}
 	}
 
 	for _, cloudflareConf := range ds.Providers.Cloudflare {
 		if cloudflareConf.Name == providerSpecName {
+			t := &spec.TemplateRepository{
+				Repository: cloudflareConf.Templates.Repository,
+				Tag:        cloudflareConf.Templates.Tag,
+				Path:       cloudflareConf.Templates.Path,
+			}
+			if err := FetchCommitHash(t); err != nil {
+				return nil, err
+			}
 			return &spec.Provider{
 				SpecName: providerSpecName,
 				ProviderType: &spec.Provider_Cloudflare{
@@ -135,17 +172,21 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 					},
 				},
 				CloudProviderName: "cloudflare",
-				Templates: &spec.TemplateRepository{
-					Repository: cloudflareConf.Templates.Repository,
-					Tag:        cloudflareConf.Templates.Tag,
-					Path:       cloudflareConf.Templates.Path,
-				},
+				Templates:         t,
 			}, nil
 		}
 	}
 
 	for _, hetznerDNSConfig := range ds.Providers.HetznerDNS {
 		if hetznerDNSConfig.Name == providerSpecName {
+			t := &spec.TemplateRepository{
+				Repository: hetznerDNSConfig.Templates.Repository,
+				Tag:        hetznerDNSConfig.Templates.Tag,
+				Path:       hetznerDNSConfig.Templates.Path,
+			}
+			if err := FetchCommitHash(t); err != nil {
+				return nil, err
+			}
 			return &spec.Provider{
 				SpecName: providerSpecName,
 				ProviderType: &spec.Provider_Hetznerdns{
@@ -154,17 +195,21 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 					},
 				},
 				CloudProviderName: "hetznerdns",
-				Templates: &spec.TemplateRepository{
-					Repository: hetznerDNSConfig.Templates.Repository,
-					Tag:        hetznerDNSConfig.Templates.Tag,
-					Path:       hetznerDNSConfig.Templates.Path,
-				},
+				Templates:         t,
 			}, nil
 		}
 	}
 
 	for _, gc := range ds.Providers.GenesisCloud {
 		if gc.Name == providerSpecName {
+			t := &spec.TemplateRepository{
+				Repository: gc.Templates.Repository,
+				Tag:        gc.Templates.Tag,
+				Path:       gc.Templates.Path,
+			}
+			if err := FetchCommitHash(t); err != nil {
+				return nil, err
+			}
 			return &spec.Provider{
 				SpecName: providerSpecName,
 				ProviderType: &spec.Provider_Genesiscloud{
@@ -173,11 +218,7 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 					},
 				},
 				CloudProviderName: "genesiscloud",
-				Templates: &spec.TemplateRepository{
-					Repository: gc.Templates.Repository,
-					Tag:        gc.Templates.Tag,
-					Path:       gc.Templates.Path,
-				},
+				Templates:         t,
 			}, nil
 		}
 	}
@@ -261,7 +302,7 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 				Taints:      getTaints(nodePool.Taints),
 				//Nodes: We can't create dynamic nodes at this point
 				// as the nodepool hashes are not known yet.
-				NodePoolType: &spec.NodePool_DynamicNodePool{
+				Type: &spec.NodePool_DynamicNodePool{
 					DynamicNodePool: &spec.DynamicNodePool{
 						Region:           nodePool.ProviderSpec.Region,
 						Zone:             nodePool.ProviderSpec.Zone,
@@ -283,7 +324,7 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 				Labels:      nodePool.Labels,
 				Annotations: nodePool.Annotations,
 				Taints:      getTaints(nodePool.Taints),
-				NodePoolType: &spec.NodePool_StaticNodePool{
+				Type: &spec.NodePool_StaticNodePool{
 					StaticNodePool: &spec.StaticNodePool{
 						NodeKeys: getNodeKeys(nodePool),
 					},
@@ -294,6 +335,44 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 		}
 	}
 	return nodePools, nil
+}
+
+func FetchCommitHash(tmpl *spec.TemplateRepository) error {
+	r := git.NewRemote(memory.NewStorage(), &config.RemoteConfig{
+		Name: "origin",
+		URLs: []string{tmpl.Repository},
+	})
+
+	rfs, err := r.List(&git.ListOptions{
+		Timeout: 60,
+	})
+	if err != nil {
+		return err
+	}
+
+	if tmpl.Tag != nil {
+		rfs = slices.DeleteFunc(rfs, func(reference *plumbing.Reference) bool {
+			return !(reference.Name().IsTag() && reference.Name().Short() == *tmpl.Tag)
+		})
+	} else {
+		i := slices.IndexFunc(rfs, func(r *plumbing.Reference) bool { return r.Name().Short() == "HEAD" })
+		if i < 0 {
+			return errors.New("couldn't find commit hash for HEAD of the template repository")
+		}
+		t := rfs[i].Target()
+		rfs = slices.DeleteFunc(rfs, func(r *plumbing.Reference) bool { return r.Name() != t })
+	}
+
+	if len(rfs) != 1 {
+		target := "HEAD"
+		if tmpl.Tag != nil {
+			target = *tmpl.Tag
+		}
+		return fmt.Errorf("couldn't find the requested target %q, for the template repository %q", target, tmpl.Repository)
+	}
+
+	tmpl.CommitHash = rfs[0].Hash().String()
+	return nil
 }
 
 // staticNodes returns slice of static nodes with initialised name.

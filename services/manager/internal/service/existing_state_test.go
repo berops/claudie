@@ -123,7 +123,7 @@ func Test_updateClusterInfo(t *testing.T) {
 					Hash: "current",
 					NodePools: []*spec.NodePool{
 						{
-							NodePoolType: &spec.NodePool_DynamicNodePool{
+							Type: &spec.NodePool_DynamicNodePool{
 								DynamicNodePool: &spec.DynamicNodePool{
 									PublicKey:  "current-pk",
 									PrivateKey: "current-sk",
@@ -167,7 +167,7 @@ func Test_updateClusterInfo(t *testing.T) {
 					Name: "current",
 					Hash: "desired",
 					NodePools: []*spec.NodePool{
-						{Name: "np0", NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 3, AutoscalerConfig: &spec.AutoscalerConf{
+						{Name: "np0", Type: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 3, AutoscalerConfig: &spec.AutoscalerConf{
 							Min: 3,
 							Max: 12,
 						}}}},
@@ -197,7 +197,7 @@ func Test_updateClusterInfo(t *testing.T) {
 					Hash: "current",
 					NodePools: []*spec.NodePool{
 						{
-							NodePoolType: &spec.NodePool_DynamicNodePool{
+							Type: &spec.NodePool_DynamicNodePool{
 								DynamicNodePool: &spec.DynamicNodePool{
 									PublicKey:  "current-pk",
 									PrivateKey: "current-sk",
@@ -223,7 +223,7 @@ func Test_updateClusterInfo(t *testing.T) {
 					Name: "current",
 					Hash: "desired",
 					NodePools: []*spec.NodePool{
-						{Name: "np0", NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 2}}},
+						{Name: "np0", Type: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 2}}},
 					},
 				},
 			},
@@ -246,7 +246,7 @@ func Test_updateClusterInfo(t *testing.T) {
 					Hash: "current",
 					NodePools: []*spec.NodePool{
 						{
-							NodePoolType: &spec.NodePool_StaticNodePool{
+							Type: &spec.NodePool_StaticNodePool{
 								StaticNodePool: &spec.StaticNodePool{},
 							},
 							Name: "np0",
@@ -268,8 +268,8 @@ func Test_updateClusterInfo(t *testing.T) {
 					Hash: "desired",
 					NodePools: []*spec.NodePool{
 						{
-							Name:         "np0",
-							NodePoolType: &spec.NodePool_StaticNodePool{StaticNodePool: &spec.StaticNodePool{}},
+							Name: "np0",
+							Type: &spec.NodePool_StaticNodePool{StaticNodePool: &spec.StaticNodePool{}},
 							Nodes: []*spec.Node{
 								{Public: "127.0.0.1"},
 								{Public: "127.0.0.2"},
@@ -332,7 +332,7 @@ func Test_copyK8sNodePoolsNamesFromCurrentState(t *testing.T) {
 			},
 			validate: func(t *testing.T, args args) {
 				assert.Equal(t, args.current.ClusterInfo.NodePools[0].Name, args.desired.ClusterInfo.NodePools[0].Name)
-				_, hash := utils.GetNameAndHashFromNodepool("np0", args.current.ClusterInfo.NodePools[0].Name)
+				_, hash := utils.MatchNameAndHashWithTemplate("np0", args.current.ClusterInfo.NodePools[0].Name)
 				_, ok := args.used[hash]
 				assert.True(t, ok)
 			},
@@ -356,7 +356,7 @@ func Test_copyK8sNodePoolsNamesFromCurrentState(t *testing.T) {
 			},
 			validate: func(t *testing.T, args args) {
 				assert.NotEqual(t, args.current.ClusterInfo.NodePools[0].Name, args.desired.ClusterInfo.NodePools[0].Name)
-				_, hash := utils.GetNameAndHashFromNodepool("np0", args.current.ClusterInfo.NodePools[0].Name)
+				_, hash := utils.MatchNameAndHashWithTemplate("np0", args.current.ClusterInfo.NodePools[0].Name)
 				assert.Equal(t, utils.HashLength, len(hash))
 				_, ok := args.used[hash]
 				assert.False(t, ok)
@@ -402,7 +402,7 @@ func Test_copyLbNodePoolNamesFromCurrentState(t *testing.T) {
 			},
 			validate: func(t *testing.T, args args) {
 				assert.Equal(t, args.current[0].ClusterInfo.NodePools[0].Name, args.desired[0].ClusterInfo.NodePools[0].Name)
-				_, hash := utils.GetNameAndHashFromNodepool("np-0", args.desired[0].ClusterInfo.NodePools[0].Name)
+				_, hash := utils.MatchNameAndHashWithTemplate("np-0", args.desired[0].ClusterInfo.NodePools[0].Name)
 				assert.Equal(t, utils.HashLength, len(hash))
 				_, ok := args.used[hash]
 				assert.True(t, ok)
@@ -426,7 +426,7 @@ func Test_copyLbNodePoolNamesFromCurrentState(t *testing.T) {
 			},
 			validate: func(t *testing.T, args args) {
 				assert.NotEqual(t, args.current[0].ClusterInfo.NodePools[0].Name, args.desired[0].ClusterInfo.NodePools[0].Name)
-				_, hash := utils.GetNameAndHashFromNodepool("np-0", args.desired[0].ClusterInfo.NodePools[0].Name)
+				_, hash := utils.MatchNameAndHashWithTemplate("np-0", args.desired[0].ClusterInfo.NodePools[0].Name)
 				assert.Empty(t, hash)
 				_, ok := args.used[hash]
 				assert.False(t, ok)
@@ -463,19 +463,19 @@ func Test_deduplicateNodepoolNames(t *testing.T) {
 						K8S: &spec.K8Scluster{ClusterInfo: &spec.ClusterInfo{
 							Name: "desired",
 							NodePools: []*spec.NodePool{
-								{Name: "np-0", NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{}}},
-								{Name: "np-0", NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{}}},
+								{Name: "np-0", Type: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{}}},
+								{Name: "np-0", Type: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{}}},
 							},
 						}},
 					},
 				},
 			},
 			validate: func(t *testing.T, args args) {
-				name, hash := utils.GetNameAndHashFromNodepool("np-0", args.state.Desired.K8S.ClusterInfo.NodePools[0].Name)
+				name, hash := utils.MatchNameAndHashWithTemplate("np-0", args.state.Desired.K8S.ClusterInfo.NodePools[0].Name)
 				assert.Equal(t, utils.HashLength, len(hash))
 				assert.Equal(t, "np-0", name)
 
-				name, hash = utils.GetNameAndHashFromNodepool("np-0", args.state.Desired.K8S.ClusterInfo.NodePools[1].Name)
+				name, hash = utils.MatchNameAndHashWithTemplate("np-0", args.state.Desired.K8S.ClusterInfo.NodePools[1].Name)
 				assert.Equal(t, utils.HashLength, len(hash))
 				assert.Equal(t, "np-0", name)
 			},
@@ -491,29 +491,29 @@ func Test_deduplicateNodepoolNames(t *testing.T) {
 						K8S: &spec.K8Scluster{ClusterInfo: &spec.ClusterInfo{
 							Name: "desired",
 							NodePools: []*spec.NodePool{
-								{Name: "np-0", NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{}}},
-								{Name: "np-0", NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{}}},
+								{Name: "np-0", Type: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{}}},
+								{Name: "np-0", Type: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{}}},
 							},
 						}},
 						LoadBalancers: &spec.LoadBalancers{Clusters: []*spec.LBcluster{{ClusterInfo: &spec.ClusterInfo{
 							Name: "desired-lb",
 							NodePools: []*spec.NodePool{
-								{Name: "np-0", NodePoolType: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{}}},
+								{Name: "np-0", Type: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{}}},
 							},
 						}}}},
 					},
 				},
 			},
 			validate: func(t *testing.T, args args) {
-				name, hash1 := utils.GetNameAndHashFromNodepool("np-0", args.state.Desired.K8S.ClusterInfo.NodePools[0].Name)
+				name, hash1 := utils.MatchNameAndHashWithTemplate("np-0", args.state.Desired.K8S.ClusterInfo.NodePools[0].Name)
 				assert.Equal(t, utils.HashLength, len(hash1))
 				assert.Equal(t, "np-0", name)
 
-				name, hash2 := utils.GetNameAndHashFromNodepool("np-0", args.state.Desired.K8S.ClusterInfo.NodePools[1].Name)
+				name, hash2 := utils.MatchNameAndHashWithTemplate("np-0", args.state.Desired.K8S.ClusterInfo.NodePools[1].Name)
 				assert.Equal(t, utils.HashLength, len(hash2))
 				assert.Equal(t, "np-0", name)
 
-				name, hash3 := utils.GetNameAndHashFromNodepool("np-0", args.state.Desired.LoadBalancers.Clusters[0].ClusterInfo.NodePools[0].Name)
+				name, hash3 := utils.MatchNameAndHashWithTemplate("np-0", args.state.Desired.LoadBalancers.Clusters[0].ClusterInfo.NodePools[0].Name)
 				assert.Equal(t, utils.HashLength, len(hash3))
 				assert.Equal(t, "np-0", name)
 

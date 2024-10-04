@@ -16,13 +16,15 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func scheduleTasks(scheduled *store.Config) error {
+func scheduleTasks(scheduled *store.Config) (bool, error) {
 	scheduledGRPC, err := store.ConvertToGRPC(scheduled)
 	if err != nil {
-		return fmt.Errorf("failed to convert database representation to GRPC for %q: %w", scheduled.Name, err)
+		return false, fmt.Errorf("failed to convert database representation to GRPC for %q: %w", scheduled.Name, err)
 	}
 
-	for _, state := range scheduledGRPC.Clusters {
+	var reschedule bool
+
+	for cluster, state := range scheduledGRPC.Clusters {
 		var events []*spec.TaskEvent
 		switch {
 		case state.Current == nil && state.Desired == nil:
@@ -57,12 +59,72 @@ func scheduleTasks(scheduled *store.Config) error {
 			})
 		// update
 		default:
+			if state.State.Status == spec.Workflow_ERROR {
+				if len(state.Events.Events) != 0 && state.Events.Events[0].OnError != nil {
+					reschedule = true
+
+					switch e := state.Events.Events[0]; {
+					case e.OnError.Repeat:
+						events = state.Events.Events
+						log.Debug().Str("cluster", cluster).Msgf("rescheduled for a retry of previously failed task with ID %q.", e.Id)
+					case len(e.OnError.Rollback) > 0:
+						events = e.OnError.Rollback
+						log.Debug().Str("cluster", cluster).Msgf("rescheduled for a rollback with task ID %q of previous failed task with ID %q.", e.OnError.Rollback[0].Id, e.Id)
+					default:
+						log.Debug().Str("cluster", cluster).Msgf("has not been rescheduled for a retry on failure")
+						reschedule = false // no retry strategy on error.
+					}
+
+					if reschedule {
+						break
+					}
+				}
+			}
+
+			ir, e, err := rollingUpdate(state.Current, state.Desired)
+			if err != nil {
+				return false, err
+			}
+
+			events = append(events, e...)
+			if len(events) != 0 {
+				log.Debug().Str("cluster", cluster).Msgf("[%d] rolling updates scheduled for k8s cluster, to be performed before building the actual desired state, starting with task with ID %q.", len(events), events[0].Id)
+				// First we will let claudie to work on the rolling update
+				// to have the latest versions of the terraform manifests.
+				// After that the manifest will be rescheduled again
+				// to handle the diff between the new current state (with
+				// updated terraform files) and the desired state as specified
+				// in the Manifest.
+				reschedule = true
+				// We set the desired state to the intermediate desired state which is the same as the
+				// current state but with updated templates for k8s cluster. After this state is build
+				// by the builder the config will be rescheduled again to actually reflect the changes
+				// made. (if any by the user).
+				state.Desired = ir
+				break
+			}
+
+			ir, e, err = rollingUpdateLBs(state.Current, state.Desired)
+			if err != nil {
+				return false, err
+			}
+
+			events = append(events, e...)
+			if len(events) > 0 {
+				log.Debug().Str("cluster", cluster).Msgf("[%d] rolling updates scheduled for attached lb clusters, to be performed before building the actual desired state, starting with task with ID %q.", len(events), events[0].Id)
+				reschedule = true
+				state.Desired = ir
+				break
+			}
+
 			events = append(events, Diff(
 				state.Current.K8S,
 				state.Desired.K8S,
 				state.Current.GetLoadBalancers().GetClusters(),
 				state.Desired.GetLoadBalancers().GetClusters(),
 			)...)
+
+			log.Debug().Str("cluster", cluster).Msgf("Scheduled final [%d] tasks to be worked on to build the desired state", len(events))
 		}
 
 		state.Events = &spec.Events{Events: events}
@@ -71,14 +133,14 @@ func scheduleTasks(scheduled *store.Config) error {
 
 	db, err := store.ConvertFromGRPC(scheduledGRPC)
 	if err != nil {
-		return fmt.Errorf("failed to convert GRPC representation to database for %q: %w", scheduled.Name, err)
+		return false, fmt.Errorf("failed to convert GRPC representation to database for %q: %w", scheduled.Name, err)
 	}
 
 	*scheduled = *db
-	return nil
+	return reschedule, nil
 }
 
-// Diff takes the desired and current state to calculate difference between them to determine the difference and returns
+// Diff takes the desired and current state to determine the difference and returns
 // a number of tasks to be performed in specific order. It is expected that the current state actually represents
 // the actual current state of the cluster and the desired state contains relevant data from the current state with
 // the requested changes (i.e. deletion, addition of nodes) from the new config changes, (relevant data was transferred
@@ -122,10 +184,6 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 	// will contain also the deleted nodes / nodepools if any.
 	ir := craftK8sIR(k8sDiffResult, current, desired)
 
-	// since lbs are not part of the k8s cluster no need to keep track
-	// of any deletions, we simply just delete the infra.
-	irLbs := lbClone(currentLbs)
-
 	if k8sDiffResult.adding {
 		events = append(events, &spec.TaskEvent{
 			Id:          uuid.New().String(),
@@ -135,13 +193,14 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 			Task: &spec.Task{
 				UpdateState: &spec.UpdateState{
 					K8S: ir,
-					Lbs: &spec.LoadBalancers{Clusters: irLbs}, // keep current lbs
+					Lbs: &spec.LoadBalancers{Clusters: currentLbs}, // keep current lbs
 				},
 			},
 		})
 	}
 
 	if targets, deleted := deletedTargetApiNodePools(k8sDiffResult, current, currentLbs); deleted {
+		irLbs := lbClone(currentLbs)
 		lb := findLbAPIEndpointCluster(irLbs)
 
 		var nextControlNodePool *spec.NodePool
@@ -213,32 +272,30 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 			Description: "deleting nodes from k8s cluster",
 			Task:        &spec.Task{DeleteState: &spec.DeleteState{Nodepools: dn}},
 		})
-
-		events = append(events, &spec.TaskEvent{
-			Id:          uuid.New().String(),
-			Timestamp:   timestamppb.New(time.Now().UTC()),
-			Event:       spec.Event_UPDATE,
-			Description: "deleting infrastructure of deleted k8s nodes",
-			Task: &spec.Task{
-				UpdateState: &spec.UpdateState{
-					K8S: desired,                              // since we don't work with the IR anymore will trigger the deletion of the infra.
-					Lbs: &spec.LoadBalancers{Clusters: irLbs}, // no changes to the Lbs yet.
-				},
-			},
-		})
 	}
 
-	// at last handle lb changes.
+	// at last infrastructure changes. The loadbalancer changes are not "rolling update"
+	// as with the changes to the k8s cluster. If nodepools are added and removed, it
+	// will be executed in one go.
+	//
 	// This will move the current state from an intermediate representation (if any)
 	// to the desired as given in the manifest.
 	lbsChanges := lbsDiffResult.adding || lbsDiffResult.deleting
 	lbsChanges = lbsChanges || !proto.Equal(&spec.LoadBalancers{Clusters: currentLbs}, &spec.LoadBalancers{Clusters: desiredLbs})
-	if lbsChanges || len(deletedLoadbalancers) > 0 || len(addedLoadBalancers) > 0 {
+	lbsChanges = lbsChanges || len(deletedLoadbalancers) > 0 || len(addedLoadBalancers) > 0
+	desc := "reconciling infrastructure changes"
+	if k8sDiffResult.deleting {
+		desc += ", including deletion of infrastructure for deleted dynamic nodes"
+	}
+	if lbsChanges {
+		desc += ", including changes to the loadbalancer infrastructure"
+	}
+	if lbsChanges || k8sDiffResult.deleting {
 		events = append(events, &spec.TaskEvent{
 			Id:          uuid.New().String(),
 			Timestamp:   timestamppb.New(time.Now().UTC()),
 			Event:       spec.Event_UPDATE,
-			Description: "reconciling loadbalancer infrastructure changes",
+			Description: desc,
 			Task: &spec.Task{
 				UpdateState: &spec.UpdateState{
 					K8S: desired,
@@ -637,7 +694,7 @@ func targetPoolsDeleted(current []*spec.LBcluster, nodepools []*spec.NodePool) (
 		var matches []string
 		for _, targetPool := range role.TargetPools {
 			idx := slices.IndexFunc(nodepools, func(pool *spec.NodePool) bool {
-				name, _ := utils.GetNameAndHashFromNodepool(targetPool, pool.Name)
+				name, _ := utils.MatchNameAndHashWithTemplate(targetPool, pool.Name)
 				return name == targetPool
 			})
 			if idx >= 0 {

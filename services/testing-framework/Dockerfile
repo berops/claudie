@@ -39,4 +39,4 @@ RUN chmod +x /usr/local/bin/kubectl && \
 
 #Run server
 WORKDIR /go/services/testing-framework
-ENTRYPOINT [ "./testing-framework.test", "-test.run", "TestClaudie", "-test.timeout=10800s", "-test.v", "./..." ]
+ENTRYPOINT [ "./testing-framework.test", "-test.run", "TestClaudie", "-test.timeout=25000s", "-test.v", "./..." ]

@@ -200,7 +200,7 @@ func processTestSet(ctx context.Context, setName string, m managerclient.ClientA
 			return fmt.Errorf("error while getting the manifest name from %s : %w", manifestPath, err)
 		}
 
-		if errIgnore = applyManifest(ctx, manifestName, manifestPath, rawManifest, m); errIgnore != nil {
+		if errIgnore = applyManifest(manifestName, manifestPath, rawManifest, m); errIgnore != nil {
 			return fmt.Errorf("error applying test set %s, manifest %s from %s : %w", entry.Name(), manifestName, setName, errIgnore)
 		}
 
@@ -269,7 +269,9 @@ func processTestSet(ctx context.Context, setName string, m managerclient.ClientA
 	return nil
 }
 
-func applyManifest(ctx context.Context, manifest, path string, raw []byte, m managerclient.ClientAPI) error {
+func applyManifest(manifest, path string, raw []byte, m managerclient.ClientAPI) error {
+	ctx := context.Background()
+
 	if envs.Namespace != "" {
 		return clusterTesting(ctx, raw, path, manifest, m)
 	}
@@ -297,7 +299,7 @@ func clusterTesting(ctx context.Context, yamlFile []byte, pathToTestSet, manifes
 	log.Info().Msgf("InputManifest %s has been saved...", manifestName)
 
 	if err := waitForPickup(ctx, manifestName, m); err != nil {
-		return fmt.Errorf("error while checking if with manifest %s is saved : %w", manifestName, err)
+		return fmt.Errorf("error while checking if manifest %s is saved : %w", manifestName, err)
 	}
 	log.Info().Msgf("Manifest %s has been saved...", manifestName)
 	return nil

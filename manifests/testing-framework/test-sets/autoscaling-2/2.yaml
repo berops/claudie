@@ -1,12 +1,13 @@
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
-  name: autoscaling-1
+  name: autoscaling-2
 spec:
   providers:
     - name: gcp-1
       templates:
         repository: "https://github.com/berops/claudie-config"
+        tag: "v0.9.1-test" # performs a rolling update
         path: "templates/terraformer/gcp"
       providerType: gcp
       secretRef:
@@ -15,6 +16,7 @@ spec:
     - name: gcp-2
       templates:
         repository: "https://github.com/berops/claudie-config"
+        tag: "v0.9.1-test" # performs a rolling update
         path: "templates/terraformer/gcp"
       providerType: gcp
       secretRef:
@@ -42,10 +44,14 @@ spec:
         serverType: e2-small
         image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
         storageDiskSize: 50
+        labels:
+          test-set: autoscaling-2
+        annotations:
+          test-set: autoscaling-2         
 
   kubernetes:
     clusters:
-      - name: autoscaling-cluster-test-set
+      - name: autoscaling-cluster-test-002
         version: 1.27.0
         network: 192.168.2.0/24
         pools:

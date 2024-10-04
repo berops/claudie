@@ -1,6 +1,7 @@
 package testingframework
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -10,10 +11,12 @@ import (
 	"github.com/berops/claudie/proto/pb/spec"
 	managerclient "github.com/berops/claudie/services/manager/client"
 	"github.com/rs/zerolog/log"
+
+	"google.golang.org/protobuf/proto"
 )
 
 const (
-	maxTimeout     = 8000    // max allowed time for one manifest to finish in [seconds]
+	maxTimeout     = 24_500  // max allowed time for one manifest to finish in [seconds]
 	sleepSec       = 30      // seconds for one cycle of config check
 	maxTimeoutSave = 60 * 12 // max allowed time for config to be found in the database
 )
@@ -45,8 +48,18 @@ func waitForDoneOrError(ctx context.Context, manager managerclient.CrudAPI, set 
 				return fmt.Errorf("error while waiting for config to finish: %w", err)
 			}
 
+			// Rolling update can have multiple stages, thus we also check for the manifest checksum equality.
 			if res.Config.Manifest.State == spec.Manifest_Done {
-				return nil
+				if bytes.Equal(res.Config.Manifest.LastAppliedChecksum, res.Config.Manifest.Checksum) {
+					return nil
+				}
+
+				for c, s := range res.Config.Clusters {
+					equal := proto.Equal(s.Current, s.Desired)
+					if !equal {
+						return fmt.Errorf("cluster %q has current state diverging from the desired state", c)
+					}
+				}
 			}
 
 			if res.Config.Manifest.State == spec.Manifest_Error {

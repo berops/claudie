@@ -1,0 +1,62 @@
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: rolling-update-2
+spec:
+  providers:
+    - name: hetzner-1
+      providerType: hetzner
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: "v0.9.1"
+        path: "templates/terraformer/hetzner"
+      secretRef:
+        name: hetzner-secret
+        namespace: e2e-secrets
+    - name: aws-2
+      providerType: aws
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: "v0.9.1"
+        path: "templates/terraformer/aws"
+      secretRef:
+        name: aws-secret
+        namespace: e2e-secrets
+  nodePools:
+    static:
+    dynamic:
+      - name: htz-ctrl-nodes
+        providerSpec:
+          name: hetzner-1
+          region: nbg1
+          zone: nbg1-dc3
+        count: 1
+        serverType: cpx11
+        image: ubuntu-24.04
+        labels:
+          test-set: rolling-update-2-test
+        annotations:
+          claudie.io/example-annotation: >
+            ["rolling-update-2-test"]
+
+      - name: aws-cmpt-nodes
+        providerSpec:
+          name: aws-2
+          region: eu-west-3
+          zone: eu-west-3a
+        count: 1
+        serverType: t3.small
+        #ubuntu
+        image: ami-03c476a1ca8e3ebdc
+        storageDiskSize: 50
+
+  kubernetes:
+    clusters:
+      - name: ts-rolling-update-nodepools1
+        version: 1.27.0
+        network: 192.168.2.0/24
+        pools:
+          control:
+            - htz-ctrl-nodes
+          compute:
+            - aws-cmpt-nodes

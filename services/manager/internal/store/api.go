@@ -99,6 +99,7 @@ type TaskEvent struct {
 	Event       string `bson:"event"`
 	Task        []byte `bson:"task"`
 	Description string `bson:"description"`
+	OnError     []byte `bson:"onError"`
 }
 
 type Workflow struct {

@@ -7,7 +7,7 @@ import "spec/provider.proto";
 // NodePool represents a single node pool used in cluster.
 message NodePool {
   // Dynamic or Static node pool info.
-  oneof NodePoolType {
+  oneof Type {
     DynamicNodePool dynamicNodePool = 1;
     StaticNodePool staticNodePool = 2;
   }

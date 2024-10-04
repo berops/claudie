@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/internal/utils"
@@ -13,7 +14,7 @@ import (
 
 // TaskTTL is the minimum number of ticks (every ~10sec) within which a given task must be completed
 // before being rescheduled again.
-const TaskTTL = 900 // ~2.5 hour
+const TaskTTL = 750 // ~2 hour
 
 func (g *GRPC) WatchForScheduledDocuments(ctx context.Context) error {
 	cfgs, err := g.Store.ListConfigs(ctx, &store.ListFilter{ManifestState: []string{manifest.Scheduled.String()}})
@@ -71,7 +72,7 @@ func (g *GRPC) WatchForScheduledDocuments(ctx context.Context) error {
 
 			ok, err := manifest.ValidStateTransitionString(scheduled.Manifest.State, newManifestState)
 			if err != nil || !ok {
-				logger.Err(err).Msgf("Cannot transtition from manifest state %q to %q, skipping", scheduled.Manifest.State, manifest.Done)
+				logger.Err(err).Msgf("Cannot transtition from manifest state %q to %q, skipping", scheduled.Manifest.State, newManifestState)
 				continue
 			}
 
@@ -105,7 +106,8 @@ func (g *GRPC) WatchForPendingDocuments(ctx context.Context) error {
 			continue
 		}
 
-		if err := scheduleTasks(pending); err != nil {
+		reschedule, err := scheduleTasks(pending)
+		if err != nil {
 			logger.Err(err).Msgf("Failed to create tasks, skipping.")
 			continue
 		}
@@ -117,7 +119,11 @@ func (g *GRPC) WatchForPendingDocuments(ctx context.Context) error {
 		}
 
 		pending.Manifest.State = manifest.Scheduled.String()
-		pending.Manifest.LastAppliedChecksum = pending.Manifest.Checksum
+		if !reschedule {
+			pending.Manifest.LastAppliedChecksum = pending.Manifest.Checksum
+		} else {
+			logger.Debug().Msgf("Scheduling for intermediate tasks after which the config will be rescheduled again")
+		}
 
 		if err := g.Store.UpdateConfig(ctx, pending); err != nil {
 			if errors.Is(err, store.ErrNotFoundOrDirty) {
@@ -206,6 +212,30 @@ func (g *GRPC) WatchForDoneOrErrorDocuments(ctx context.Context) error {
 				}
 				continue
 			}
+		}
+
+		cfg, err := store.ConvertToGRPC(idle)
+		if err != nil {
+			return fmt.Errorf("failed to convert database representation to grpc: %w", err)
+		}
+
+		updated, err := templatesUpdated(cfg)
+		if err != nil {
+			return fmt.Errorf("failed to check if templates for nodepools were updated: %w", err)
+		}
+
+		if updated {
+			logger.Debug().Msgf("rescheduling idle config for rolling updates")
+			// trigger reschedule.
+			idle.Manifest.LastAppliedChecksum = append([]byte(nil), idle.Manifest.Checksum[1:]...)
+			if err := g.Store.UpdateConfig(ctx, idle); err != nil {
+				if errors.Is(err, store.ErrNotFoundOrDirty) {
+					logger.Warn().Msgf("Idle config couldn't be rescheduled for rolling update due to a Dirty Write, another retry will start shortly.")
+					continue
+				}
+				logger.Err(err).Msgf("Failed to reschedule Idle config for rolling update, skipping.")
+			}
+			continue
 		}
 	}
 

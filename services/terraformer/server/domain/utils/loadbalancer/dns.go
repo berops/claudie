@@ -1,12 +1,13 @@
 package loadbalancer
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
-
 	"path/filepath"
 
+	"github.com/berops/claudie/internal/checksum"
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -14,6 +15,8 @@ import (
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/terraform"
 	"github.com/rs/zerolog"
+
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -56,7 +59,11 @@ func (d DNS) CreateDNSRecords(logger zerolog.Logger) (string, error) {
 	if changedDNSProvider(d.CurrentDNS, d.DesiredDNS) {
 		sublogger.Info().Msg("Destroying old DNS records")
 		if err := d.generateFiles(dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs); err != nil {
-			return "", fmt.Errorf("error while creating dns .tf files for %s : %w", dnsID, err)
+			return "", fmt.Errorf("error while creating current state dns.tf files for %s : %w", dnsID, err)
+		}
+		// Delete the ones from desired state, in case this is a re-execution.
+		if err := d.generateFiles(dnsID, dnsDir, d.DesiredDNS, d.DesiredNodeIPs); err != nil {
+			return "", fmt.Errorf("error while creating desired state dns.tf files for %s : %w", dnsID, err)
 		}
 		if err := terraform.Init(); err != nil {
 			return "", err
@@ -82,12 +89,8 @@ func (d DNS) CreateDNSRecords(logger zerolog.Logger) (string, error) {
 		return "", err
 	}
 
-	k := fmt.Sprintf(
-		"%s_%s_%s",
-		clusterID,
-		d.DesiredDNS.GetProvider().GetSpecName(),
-		templates.Fingerprint(templates.ExtractTargetPath(d.DesiredDNS.GetProvider().GetTemplates())),
-	)
+	f := checksum.Digest128(filepath.Join(d.DesiredDNS.Provider.SpecName, templates.ExtractTargetPath(d.DesiredDNS.Provider.Templates)))
+	k := fmt.Sprintf("%s_%s_%s", clusterID, d.DesiredDNS.GetProvider().GetSpecName(), hex.EncodeToString(f))
 
 	output, err := terraform.Output(k)
 	if err != nil {
@@ -172,11 +175,14 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *spec.DNS, nodeIPs []string
 		return fmt.Errorf("failed to download templates for DNS %q: %w", dnsID, err)
 	}
 
+	path := templates.ExtractTargetPath(dns.Provider.Templates)
+
 	g := templates.Generator{
 		ID:                dnsID,
 		TargetDirectory:   dnsDir,
 		ReadFromDirectory: templateDir,
-		TemplatePath:      templates.ExtractTargetPath(dns.GetProvider().GetTemplates()),
+		TemplatePath:      path,
+		Fingerprint:       hex.EncodeToString(checksum.Digest128(filepath.Join(dns.Provider.SpecName, path))),
 	}
 
 	data := templates.DNS{
@@ -184,10 +190,8 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *spec.DNS, nodeIPs []string
 		Hostname:    dns.Hostname,
 		ClusterName: d.ClusterName,
 		ClusterHash: d.ClusterHash,
-		RecordData: templates.RecordData{
-			IP: templateIPData(nodeIPs),
-		},
-		Provider: dns.Provider,
+		RecordData:  templates.RecordData{IP: templateIPData(nodeIPs)},
+		Provider:    dns.Provider,
 	}
 
 	if err := g.GenerateDNS(&data); err != nil {
@@ -223,7 +227,7 @@ func changedDNSProvider(currentDNS, desiredDNS *spec.DNS) bool {
 	}
 	// DNS provider are same
 	if currentDNS.Provider.SpecName == desiredDNS.Provider.SpecName {
-		if utils.GetAuthCredentials(currentDNS.Provider) == utils.GetAuthCredentials(desiredDNS.Provider) {
+		if proto.Equal(currentDNS.Provider, desiredDNS.Provider) {
 			return false
 		}
 	}

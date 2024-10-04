@@ -56,41 +56,23 @@ func (u *Usecases) TaskProcessor(wg *sync.WaitGroup) error {
 			// fallthrough
 		}
 
-		err = managerclient.Retry(&log.Logger, "UpdateCurrentState", func() error {
-			log.Debug().Msgf("updating current state for cluster %q for config %q task %q", task.Cluster, task.Config, task.Event.Id)
-			err := u.Manager.UpdateCurrentState(ctx, &managerclient.UpdateCurrentStateRequest{
+		err = managerclient.Retry(&log.Logger, fmt.Sprintf("Completing task %q", task.Event.Id), func() error {
+			log.Debug().Msgf("completing task %q for cluster %q for config %q with status: %s", task.Event.Id, task.Cluster, task.Config, task.State.Status.String())
+			err := u.Manager.TaskComplete(ctx, &managerclient.TaskCompleteRequest{
 				Config:   task.Config,
 				Cluster:  task.Cluster,
-				Clusters: updatedState,
+				TaskId:   task.Event.Id,
+				Workflow: task.State,
+				State:    updatedState,
 			})
 			if errors.Is(err, managerclient.ErrNotFound) {
-				log.Warn().Msgf("can't update config %q cluster %q: %v", task.Config, task.Cluster, err)
-				return nil // nothing to retry.
+				log.Warn().Msgf("can't complete task %q from config %q cluster %q: %v", task.Event.Id, task.Config, task.Cluster, err)
 			}
 			return err
 		})
 		if err != nil {
-			log.Err(err).Msgf("failed to update current state for cluster %q config %q, after processing task: %q", task.Cluster, task.Config, task.Event.Id)
+			log.Err(err).Msgf("failed to mark task %q from cluster %q config %q, as completed", task.Event.Id, task.Cluster, task.Config)
 		}
-
-		err = managerclient.Retry(&log.Logger, "UpdateTask after CurrentState", func() error {
-			log.Debug().Msgf("updating task %q for cluster %q for config %q with status: %s", task.Event.Id, task.Cluster, task.Config, task.State.Status.String())
-			err := u.Manager.TaskUpdate(ctx, &managerclient.TaskUpdateRequest{
-				Config:  task.Config,
-				Cluster: task.Cluster,
-				TaskId:  task.Event.Id,
-				State:   task.State,
-			})
-			if errors.Is(err, managerclient.ErrNotFound) {
-				log.Warn().Msgf("can't update config %q cluster %q task %q: %v", task.Config, task.Cluster, task.Event.Id, err)
-				return nil // nothing to retry.
-			}
-			return err
-		})
-		if err != nil {
-			log.Err(err).Msgf("failed to update task after current state update for cluster %q config %q, after processing task: %q", task.Cluster, task.Config, task.Event.Id)
-		}
-
 		log.Info().Msgf("Finished processing task %q for cluster %q config %q", task.Event.Id, task.Cluster, task.Config)
 	}()
 	return nil
@@ -244,12 +226,22 @@ func (u *Usecases) executeDeleteTask(te *managerclient.NextTaskResponse) (*spec.
 			}
 		}
 
-		k8s, err := u.callDeleteNodes(master, worker, te.Current.K8S)
+		ctx := &builder.Context{
+			ProjectName:    te.Config,
+			TaskId:         te.Event.Id,
+			CurrentCluster: te.Current.K8S,
+			Workflow:       te.State,
+		}
+
+		u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, fmt.Sprintf("deleting nodes [%q, %q] from cluster", master, worker))
+
+		k8s, err := u.callDeleteNodes(master, worker, ctx.CurrentCluster)
 		if err != nil {
 			return te.Current.GetK8S(), te.Current.GetLoadBalancers().GetClusters(), fmt.Errorf("error while deleting nodes for %s: %w", te.Current.K8S.ClusterInfo.NodePools, err)
 		}
 
 		if len(static) == 0 {
+			u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, fmt.Sprintf("finished deleting nodes [%q, %q] from cluster", master, worker))
 			return k8s, te.Current.GetLoadBalancers().GetClusters(), nil
 		}
 
@@ -265,7 +257,7 @@ func (u *Usecases) executeDeleteTask(te *managerclient.NextTaskResponse) (*spec.
 		c := proto.Clone(te.Current.K8S).(*spec.K8Scluster)
 		c.ClusterInfo.NodePools = static
 
-		ctx := &builder.Context{
+		ctx = &builder.Context{
 			ProjectName:    te.Config,
 			TaskId:         te.Event.Id,
 			CurrentCluster: c,
@@ -276,6 +268,7 @@ func (u *Usecases) executeDeleteTask(te *managerclient.NextTaskResponse) (*spec.
 			return k8s, te.Current.GetLoadBalancers().GetClusters(), fmt.Errorf("error while removing utilities for static nodes from %s: %w", te.Current.K8S.ClusterInfo.Name, err)
 		}
 
+		u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, fmt.Sprintf("finished deleting nodes [%q, %q] from cluster", master, worker))
 		return k8s, te.Current.GetLoadBalancers().GetClusters(), nil
 	}
 

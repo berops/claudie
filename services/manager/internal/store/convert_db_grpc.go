@@ -29,7 +29,12 @@ func ConvertToGRPCEvents(w Events) (*spec.Events, error) {
 func ConvertFromGRPCEvents(w *spec.Events) (Events, error) {
 	var te []TaskEvent
 	for _, e := range w.Events {
-		b, err := proto.Marshal(e.Task)
+		t, err := proto.Marshal(e.Task)
+		if err != nil {
+			return Events{}, err
+		}
+
+		r, err := proto.Marshal(e.OnError)
 		if err != nil {
 			return Events{}, err
 		}
@@ -38,8 +43,9 @@ func ConvertFromGRPCEvents(w *spec.Events) (Events, error) {
 			Id:          e.Id,
 			Timestamp:   e.Timestamp.AsTime().Format(time.RFC3339),
 			Event:       e.Event.String(),
-			Task:        b,
+			Task:        t,
 			Description: e.Description,
+			OnError:     r,
 		})
 	}
 
@@ -57,12 +63,18 @@ func ConvertToGRPCTaskEvent(te TaskEvent) (*spec.TaskEvent, error) {
 		return nil, err
 	}
 
+	var strategy spec.RetryStrategy
+	if err := proto.Unmarshal(te.OnError, &strategy); err != nil {
+		return nil, err
+	}
+
 	return &spec.TaskEvent{
 		Id:          te.Id,
 		Timestamp:   timestamppb.New(t),
 		Event:       spec.Event(spec.Event_value[te.Event]),
 		Task:        &task,
 		Description: te.Description,
+		OnError:     &strategy,
 	}, nil
 }
 

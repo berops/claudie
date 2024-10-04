@@ -65,8 +65,9 @@ spec:
           resources:
             requests:
               memory: 500Mi`
+	scaleInogoreTimeout = 300 // 5 mins
 	// Time in which Autoscaler should trigger scale up
-	scaleUpTimeout = 180 // 3 mins
+	scaleUpTimeout = 600 // 10 mins
 	// Time in which Autoscaler should trigger scale down
 	scaleDownTimeout = 2400 // 40 mins
 )
@@ -99,8 +100,8 @@ func testAutoscaler(ctx context.Context, config *spec.Config) error {
 		}
 	}
 
-	log.Info().Msgf("Waiting %d seconds to see if autoscaler starts the scale up [1/3]", scaleUpTimeout)
-	for elapsed := 0; elapsed < scaleUpTimeout; elapsed += 30 {
+	log.Info().Msgf("Waiting %d seconds to see if autoscaler starts the scale up [1/3]", scaleInogoreTimeout)
+	for elapsed := 0; elapsed < scaleInogoreTimeout; elapsed += 30 {
 		time.Sleep(30 * time.Second)
 
 		res, err := manager.GetConfig(ctx, &managerclient.GetConfigRequest{Name: config.Name})

@@ -72,7 +72,7 @@ func (g *GRPC) NextTask(ctx context.Context, _ *pb.NextTaskRequest) (*pb.NextTas
 		Ttl:     TaskTTL,
 		Cluster: clusterName,
 		Version: newConfig.Version,
-		Config:  newConfig.Name,
+		Name:    newConfig.Name,
 	}
 
 	if cluster.Current != nil {
@@ -82,7 +82,7 @@ func (g *GRPC) NextTask(ctx context.Context, _ *pb.NextTaskRequest) (*pb.NextTas
 		}
 	}
 
-	log.Info().Msgf("[%s] Task %v (%v) for cluster %q config %q has been picked up to work on", resp.Event.Event.String(), resp.Event.Description, resp.Event.Id, resp.Cluster, resp.Config)
+	log.Info().Msgf("[%s] Task %v (%v) for cluster %q config %q has been picked up to work on", resp.Event.Event.String(), resp.Event.Description, resp.Event.Id, resp.Cluster, resp.Name)
 
 	TasksScheduled.Inc()
 

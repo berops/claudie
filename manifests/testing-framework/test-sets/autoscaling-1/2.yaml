@@ -5,11 +5,17 @@ metadata:
 spec:
   providers:
     - name: gcp-1
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        path: "templates/terraformer/gcp"
       providerType: gcp
       secretRef:
         name: gcp-secret
         namespace: e2e-secrets
     - name: gcp-2
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        path: "templates/terraformer/gcp"
       providerType: gcp
       secretRef:
         name: gcp-secret

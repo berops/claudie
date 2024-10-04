@@ -4,21 +4,22 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/berops/claudie/internal/utils/metrics"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	grpc2 "google.golang.org/grpc"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/utils/metrics"
 	"github.com/berops/claudie/services/kuber/server/adapters/inbound/grpc"
 	"github.com/berops/claudie/services/kuber/server/domain/usecases"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rs/zerolog/log"
+
+	grpc2 "google.golang.org/grpc"
 )
 
 const (

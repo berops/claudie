@@ -48,7 +48,7 @@ func (t *Client) NextTask(ctx context.Context) (*NextTaskResponse, error) {
 	if err == nil {
 		return &NextTaskResponse{
 			State:   resp.State,
-			Config:  resp.Config,
+			Config:  resp.Name,
 			Cluster: resp.Cluster,
 			TTL:     resp.Ttl,
 			Current: resp.Current,
@@ -146,7 +146,7 @@ func (t *Client) TaskUpdate(ctx context.Context, req *TaskUpdateRequest) error {
 	current, err := t.client.GetConfig(ctx, &pb.GetConfigRequest{Name: req.Config})
 	if err == nil {
 		_, err := t.client.TaskUpdate(ctx, &pb.TaskUpdateRequest{
-			Config:  req.Config,
+			Name:    req.Config,
 			Cluster: req.Cluster,
 			TaskId:  req.TaskId,
 			Version: current.Config.Version,
@@ -175,27 +175,31 @@ func (t *Client) TaskUpdate(ctx context.Context, req *TaskUpdateRequest) error {
 	return err
 }
 
-func (t *Client) UpdateCurrentState(ctx context.Context, req *UpdateCurrentStateRequest) error {
+func (t *Client) TaskComplete(ctx context.Context, req *TaskCompleteRequest) error {
 	current, err := t.client.GetConfig(ctx, &pb.GetConfigRequest{Name: req.Config})
 	if err == nil {
-		_, err := t.client.UpdateCurrentState(ctx, &pb.UpdateCurrentStateRequest{
-			Name:    req.Config,
-			Cluster: req.Cluster,
-			Version: current.Config.Version,
-			State:   req.Clusters,
+		_, err := t.client.TaskComplete(ctx, &pb.TaskCompleteRequest{
+			Name:     req.Config,
+			Cluster:  req.Cluster,
+			TaskId:   req.TaskId,
+			Version:  current.Config.Version,
+			Workflow: req.Workflow,
+			State:    req.State,
 		})
 		if err == nil {
 			return nil
 		}
+
 		if e, ok := status.FromError(err); ok {
 			switch e.Code() {
 			case codes.NotFound:
-				err = errors.Join(err, fmt.Errorf("combination config %q cluster %q: %w", req.Config, req.Cluster, ErrNotFound))
+				err = errors.Join(err, fmt.Errorf("combination config %q cluster %q task %q: %w", req.Config, req.Cluster, req.TaskId, ErrNotFound))
 			case codes.Aborted:
 				err = errors.Join(err, fmt.Errorf("%w", ErrVersionMismatch))
 			}
 		}
-		t.logger.Debug().Msgf("Received error %v while calling UpdateCurrentState", err)
+
+		t.logger.Debug().Msgf("Received error %v while calling TaskComplete", err)
 		return err
 	}
 	if e, ok := status.FromError(err); ok && e.Code() == codes.NotFound {

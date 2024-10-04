@@ -193,6 +193,12 @@ message TaskEvent {
   Event event = 3;
   Task task = 4;
   string description = 5;
+  RetryStrategy onError = 6;
+}
+
+message RetryStrategy {
+  bool repeat = 1;
+  repeated TaskEvent rollback = 2;
 }
 
 message Task {
