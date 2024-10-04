@@ -152,19 +152,18 @@ func testAutoscaler(ctx context.Context, config *spec.Config) error {
 
 	log.Info().Msgf("Config %s has successfully passed autoscaling test [2/3]", config.Name)
 
-	err = waitForDoneOrError(ctx, manager, testset{Config: config.Name, Set: "autoscaling", Manifest: "scale-up-test"})
+	done, err := waitForDoneOrError(ctx, manager, testset{
+		Config:   config.Name,
+		Set:      "autoscaling",
+		Manifest: "scale-up-test",
+	})
 	if err != nil {
 		return err
 	}
 
 	// Test longhorn.
 	// Get new config from DB with updated counts.
-	resp, err := manager.GetConfig(ctx, &managerclient.GetConfigRequest{Name: config.Name})
-	if err != nil {
-		return fmt.Errorf("error while retrieving config %s from DB : %w", config.Name, err)
-	}
-
-	if err := testLonghornDeployment(ctx, resp.Config); err != nil {
+	if err := testLonghornDeployment(ctx, done); err != nil {
 		return err
 	}
 
@@ -204,18 +203,16 @@ func testAutoscaler(ctx context.Context, config *spec.Config) error {
 
 	log.Info().Msgf("Config %s has successfully passed autoscaling test [3/3]", config.Name)
 
-	err = waitForDoneOrError(ctx, manager, testset{Config: config.Name, Set: "autoscaling", Manifest: "scale-down-test"})
+	done, err = waitForDoneOrError(ctx, manager, testset{
+		Config:   config.Name,
+		Set:      "autoscaling",
+		Manifest: "scale-down-test",
+	})
 	if err != nil {
 		return err
 	}
 
-	// Get new config from DB with updated counts.
-	resp, err = manager.GetConfig(ctx, &managerclient.GetConfigRequest{Name: config.Name})
-	if err != nil {
-		return fmt.Errorf("error while retrieving config %s from DB : %w", config.Name, err)
-	}
-
-	return testLonghornDeployment(ctx, resp.Config)
+	return testLonghornDeployment(ctx, done)
 }
 
 // applyDeployment applies specified deployment into specified cluster.
