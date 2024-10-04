@@ -62,7 +62,7 @@ func waitForDoneOrError(ctx context.Context, manager managerclient.CrudAPI, set 
 				}
 			}
 
-			if res.Config.Manifest.State == spec.Manifest_Error {
+			if res.Config.Manifest.State == spec.Manifest_Error && bytes.Equal(res.Config.Manifest.LastAppliedChecksum, res.Config.Manifest.Checksum) {
 				var err error
 
 				for cluster, state := range res.Config.Clusters {
