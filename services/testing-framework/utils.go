@@ -19,7 +19,7 @@ import (
 
 const (
 	maxTimeout     = 24_500  // max allowed time for one manifest to finish in [seconds]
-	sleepSec       = 30      // seconds for one cycle of config check
+	sleepSec       = 2       // seconds for one cycle of config check
 	maxTimeoutSave = 60 * 12 // max allowed time for config to be found in the database
 )
 
