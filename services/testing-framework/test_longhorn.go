@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	maxLonghornCheck = 6 * 60 // max allowed time for pods of longhorn-system to be ready [seconds]
-	sleepSecPods     = 20     // seconds for one cycle of longhorn checks (the node and pod checks)
+	maxLonghornCheck = 12 * 60 // max allowed time for pods of longhorn-system to be ready [seconds]
+	sleepSecPods     = 20      // seconds for one cycle of longhorn checks (the node and pod checks)
 )
 
 type KubectlOutputJSON struct {
