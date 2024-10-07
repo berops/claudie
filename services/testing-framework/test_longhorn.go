@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	maxLonghornCheck = 12 * 60 // max allowed time for pods of longhorn-system to be ready [seconds]
+	maxLonghornCheck = 14 * 60 // max allowed time for pods of longhorn-system to be ready [seconds]
 	sleepSecPods     = 20      // seconds for one cycle of longhorn checks (the node and pod checks)
 )
 
