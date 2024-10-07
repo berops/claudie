@@ -10,6 +10,8 @@ import (
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	managerclient "github.com/berops/claudie/services/manager/client"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/rs/zerolog/log"
 
 	"google.golang.org/protobuf/proto"
@@ -17,17 +19,68 @@ import (
 
 const (
 	maxTimeout     = 24_500  // max allowed time for one manifest to finish in [seconds]
-	sleepSec       = 30      // seconds for one cycle of config check
+	sleepSec       = 10      // seconds for one cycle of config check
 	maxTimeoutSave = 60 * 12 // max allowed time for config to be found in the database
 )
 
 var (
 	errInterrupt = errors.New("interrupt")
+
+	opts = cmpopts.IgnoreUnexported(
+		spec.DNS{},
+		spec.Config{},
+		spec.Manifest{},
+		spec.ClusterState{},
+		spec.Clusters{},
+		spec.LoadBalancers{},
+		spec.KubernetesContext{},
+		spec.Workflow{},
+		spec.K8Scluster{},
+		spec.LBcluster{},
+		spec.ClusterInfo{},
+		spec.Role{},
+		spec.Events{},
+		spec.TaskEvent{},
+		spec.RetryStrategy{},
+		spec.Task{},
+		spec.CreateState{},
+		spec.UpdateState{},
+		spec.UpdateState_Endpoint{},
+		spec.DeleteState{},
+		spec.DeletedNodes{},
+		spec.NodePool{},
+		spec.NodePool_DynamicNodePool{},
+		spec.NodePool_StaticNodePool{},
+		spec.Taint{},
+		spec.Node{},
+		spec.DynamicNodePool{},
+		spec.MachineSpec{},
+		spec.AutoscalerConf{},
+		spec.StaticNodePool{},
+		spec.GCPProvider{},
+		spec.HetznerProvider{},
+		spec.HetznerDNSProvider{},
+		spec.OCIProvider{},
+		spec.AWSProvider{},
+		spec.AzureProvider{},
+		spec.CloudflareProvider{},
+		spec.GenesisCloudProvider{},
+		spec.Provider{},
+		spec.Provider_Gcp{},
+		spec.Provider_Hetzner{},
+		spec.Provider_Hetznerdns{},
+		spec.Provider_Oci{},
+		spec.Provider_Aws{},
+		spec.Provider_Azure{},
+		spec.Provider_Cloudflare{},
+		spec.Provider_Genesiscloud{},
+		spec.TemplateRepository{},
+	)
 )
 
 type testset struct{ Config, Set, Manifest string }
 
-func waitForDoneOrError(ctx context.Context, manager managerclient.CrudAPI, set testset) error {
+func waitForDoneOrError(ctx context.Context, manager managerclient.CrudAPI, set testset) (*spec.Config, error) {
 	elapsed := 0
 	ticker := time.NewTicker(sleepSec * time.Second)
 	defer ticker.Stop()
@@ -35,34 +88,41 @@ func waitForDoneOrError(ctx context.Context, manager managerclient.CrudAPI, set 
 	for {
 		select {
 		case <-ctx.Done():
-			return errInterrupt
+			return nil, errInterrupt
 		case <-ticker.C:
 			elapsed += sleepSec
 			log.Info().Msgf("Waiting for %s from %s to finish... [ %ds elapsed ]", set.Manifest, set.Set, elapsed)
 			if elapsed >= maxTimeout {
-				return fmt.Errorf("test took too long... Aborting after %d seconds", maxTimeout)
+				return nil, fmt.Errorf("test took too long... Aborting after %d seconds", maxTimeout)
 			}
 
 			res, err := manager.GetConfig(ctx, &managerclient.GetConfigRequest{Name: set.Config})
 			if err != nil {
-				return fmt.Errorf("error while waiting for config to finish: %w", err)
+				return nil, fmt.Errorf("error while waiting for config to finish: %w", err)
 			}
 
 			// Rolling update can have multiple stages, thus we also check for the manifest checksum equality.
 			if res.Config.Manifest.State == spec.Manifest_Done {
 				if bytes.Equal(res.Config.Manifest.LastAppliedChecksum, res.Config.Manifest.Checksum) {
-					return nil
+					return res.Config, nil
 				}
 
+				// In case a test-set contains static nodepools and the test set performs
+				// a rolling update the static pools needs to be placed first in the input manifest.
+				// As a rolling update appends new nodepools and skips over static nodepool the
+				// order between the current and desired state will be different and fails the
+				// below check, but the end state does match
 				for c, s := range res.Config.Clusters {
 					equal := proto.Equal(s.Current, s.Desired)
 					if !equal {
-						return fmt.Errorf("cluster %q has current state diverging from the desired state", c)
+						diff := cmp.Diff(s.Current, s.Desired, opts)
+						log.Debug().Msgf("cluster %q failed: %s", c, diff)
+						return nil, fmt.Errorf("cluster %q has current state diverging from the desired state", c)
 					}
 				}
 			}
 
-			if res.Config.Manifest.State == spec.Manifest_Error {
+			if res.Config.Manifest.State == spec.Manifest_Error && bytes.Equal(res.Config.Manifest.LastAppliedChecksum, res.Config.Manifest.Checksum) {
 				var err error
 
 				for cluster, state := range res.Config.Clusters {
@@ -71,7 +131,7 @@ func waitForDoneOrError(ctx context.Context, manager managerclient.CrudAPI, set 
 					}
 				}
 
-				return err
+				return nil, err
 			}
 		}
 	}

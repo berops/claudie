@@ -23,65 +23,16 @@ RUN CGO_ENABLED=0 go build
 # Ansible installation: https://github.com/cytopia/docker-ansible/blob/master/Dockerfiles/Dockerfile-base
 FROM docker.io/library/alpine:3.16 AS ansible_builder
 
-RUN set -eux \
-	&& apk add --update --no-cache \
-	# build tools
-	coreutils \
-	g++ \
-	gcc \
-	make \
-	musl-dev \
-	openssl-dev \
-	python3-dev \
-	# misc tools
-	bc \
-	libffi-dev \
-	libxml2-dev \
-	libxslt-dev \
-	py3-pip \
-	python3 \
-	# Fix: ansible --version: libyaml = True
-	# https://www.jeffgeerling.com/blog/2021/ansible-might-be-running-slow-if-libyaml-not-available
-	&& apk add --update --no-cache \
-	py3-yaml \
-	&& python3 -c 'import _yaml'
-
-# Pip required tools
-RUN set -eux \
-	&& pip3 install --no-cache-dir --no-compile \
-	wheel
-RUN set -eux \
-	&& pip3 install --no-cache-dir --no-compile \
-	Jinja2 \
-	MarkupSafe \
-	PyNaCl \
-	bcrypt \
-	cffi \
-	cryptography \
-	pycparser
-
-RUN set -eux \
-	# ansible 10.1.0 includes ansible-core 2.17 and ansible-community 9.6.0
-	&& pip3 install --no-cache-dir --no-binary pyyaml ansible==10.1.0 \
-	&& find /usr/lib/ -name '__pycache__' -print0 | xargs -0 -n1 rm -rf \
-	&& find /usr/lib/ -name '*.pyc' -print0 | xargs -0 -n1 rm -rf
-
-# Python packages (copied to final image)
-RUN set -eux \
-	&& pip3 install --no-cache-dir --no-compile \
-	junit-xml \
-	lxml \
-	paramiko \
-	&& find /usr/lib/ -name '__pycache__' -print0 | xargs -0 -n1 rm -rf \
-	&& find /usr/lib/ -name '*.pyc' -print0 | xargs -0 -n1 rm -rf
-
-# Clean-up some site-packages to safe space
-RUN set -eux \
-	&& pip3 uninstall --yes \
-	setuptools \
-	wheel \
-	&& find /usr/lib/ -name '__pycache__' -print0 | xargs -0 -n1 rm -rf \
-	&& find /usr/lib/ -name '*.pyc' -print0 | xargs -0 -n1 rm -rf
+# Install required packages, including Python3 and Ansible
+RUN apk add --no-cache \
+    bash \
+    python3 \
+    py3-pip \
+    openssh-client \
+    libgcc \
+    yaml \
+    && ln -s /usr/bin/python3 /usr/bin/python \
+    && pip3 install --no-cache-dir ansible==10.1.0
 
 FROM alpine:3.16
 #Add repository label
@@ -93,6 +44,9 @@ LABEL org.opencontainers.image.description "Image for Ansibler from Claudie"
 
 RUN set -eux \
 	&& apk add --no-cache \
+    # tini init system for cleaning up zombie processes left by spawned ansible playbooks \
+    # https://github.com/berops/claudie/issues/1317
+    tini \
 	# Issue: #85 libgcc required for ansible-vault
 	libgcc \
 	py3-pip \
@@ -119,5 +73,6 @@ RUN apk update && apk add -q bash
 
 #Run server
 WORKDIR /bin
-ENTRYPOINT [ "./services/ansibler/server/server" ]
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD [ "./services/ansibler/server/server" ]
 #NOTE: We cannot use scratch image for our dockerfile since we are using shell commands to execute commands inside the code

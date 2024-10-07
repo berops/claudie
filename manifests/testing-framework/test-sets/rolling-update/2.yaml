@@ -78,10 +78,6 @@ spec:
         count: 2
         serverType: Standard_B2s
         image: Canonical:ubuntu-24_04-lts:server:latest
-        taints:
-          - key: test
-            value: test
-            effect: NoSchedule
         labels:
           test-set: rolling-update-test
         annotations:
@@ -104,9 +100,9 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - azr-ctrl-nodes
-          compute:
             - static-pool-01
+          compute:
+            - azr-ctrl-nodes
   loadBalancers:
     roles:
       - name: port1
@@ -114,13 +110,13 @@ spec:
         port: 6443
         targetPort: 6443
         targetPools:
-          - azr-ctrl-nodes
+          - static-pool-01
       - name: port2
         protocol: tcp
         port: 6448
         targetPort: 6448
         targetPools:
-          - static-pool-01
+          - azr-ctrl-nodes
     clusters:
       - name: ts-rolling-update-lbpools001
         roles:

@@ -205,11 +205,13 @@ func processTestSet(ctx context.Context, setName string, m managerclient.ClientA
 		}
 
 		// Wait until test manifest has been processed
-		if errCleanUp = waitForDoneOrError(ctx, m, testset{
+		var done *spec.Config
+		done, errCleanUp = waitForDoneOrError(ctx, m, testset{
 			Config:   manifestName,
 			Set:      pathToTestSet,
 			Manifest: entry.Name(),
-		}); errCleanUp != nil {
+		})
+		if errCleanUp != nil {
 			if errors.Is(errCleanUp, errInterrupt) {
 				log.Warn().Msgf("Testing-framework received interrupt signal, aborting test checking")
 				// Do not return error, since it was an interrupt
@@ -218,15 +220,8 @@ func processTestSet(ctx context.Context, setName string, m managerclient.ClientA
 			return fmt.Errorf("error while monitoring manifest %s from test set %s : %w", entry.Name(), setName, errCleanUp)
 		}
 
-		resp, err := m.GetConfig(ctx, &managerclient.GetConfigRequest{Name: manifestName})
-		if err != nil {
-			err := fmt.Errorf("failed to fetch config %q: %w", manifestName, err)
-			errCleanUp = err
-			return err
-		}
-
 		// assert that current and desired state match.
-		for cluster, state := range resp.Config.Clusters {
+		for cluster, state := range done.Clusters {
 			equal := proto.Equal(state.Current, state.Desired)
 			if !equal {
 				err := fmt.Errorf("cluster %q from config %q has current and desired state that diverge after all tasks have been build successfully", cluster, manifestName)
