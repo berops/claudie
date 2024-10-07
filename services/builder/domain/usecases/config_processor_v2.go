@@ -191,6 +191,10 @@ func (u *Usecases) executeUpdateTask(te *managerclient.NextTaskResponse) (*spec.
 			return ctx.DesiredCluster, ctx.DesiredLoadbalancers, err
 		}
 
+		if err := u.Kuber.CiliumRolloutRestart(ctx.DesiredCluster, u.Kuber.GetClient()); err != nil {
+			return ctx.DesiredCluster, ctx.DesiredLoadbalancers, err
+		}
+
 		return ctx.DesiredCluster, ctx.DesiredLoadbalancers, nil
 	}
 

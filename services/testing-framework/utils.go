@@ -107,6 +107,11 @@ func waitForDoneOrError(ctx context.Context, manager managerclient.CrudAPI, set 
 					return res.Config, nil
 				}
 
+				// In case a test-set contains static nodepools and the test set performs
+				// a rolling update the static pools needs to be placed first in the input manifest.
+				// As a rolling update appends new nodepools and skips over static nodepool the
+				// order between the current and desired state will be different and fails the
+				// below check, but the end state does match
 				for c, s := range res.Config.Clusters {
 					equal := proto.Equal(s.Current, s.Desired)
 					if !equal {

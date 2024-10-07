@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -49,6 +50,15 @@ func (g *GRPC) UpdateNodePool(ctx context.Context, request *pb.UpdateNodePoolReq
 		return nil, status.Errorf(codes.NotFound, "failed to find cluster %q within config %q", request.Cluster, request.Name)
 	}
 
+	finished := bytes.Equal(dbConfig.Manifest.LastAppliedChecksum, dbConfig.Manifest.Checksum)
+	finished = finished && (slices.Contains(
+		[]string{manifest.Done.String(), manifest.Error.String()},
+		dbConfig.Manifest.State,
+	))
+	if !finished {
+		return nil, status.Errorf(codes.FailedPrecondition, "can't update nodepool %q cluster %q from configuration on which changes are currently ongoing.", request.Cluster, request.Name)
+	}
+
 	// We need initiate a build process due to the possible change
 	// of the nodepool nodes.
 	grpc, err := store.ConvertToGRPC(dbConfig)
@@ -57,10 +67,6 @@ func (g *GRPC) UpdateNodePool(ctx context.Context, request *pb.UpdateNodePoolReq
 	}
 
 	cluster := grpc.Clusters[request.Cluster]
-
-	if dbConfig.Manifest.State == manifest.Scheduled.String() && len(cluster.Events.Events) != 0 {
-		return nil, status.Errorf(codes.FailedPrecondition, "can't update nodepool of a cluster on which changes are being currently done")
-	}
 
 	cnp := cluster.GetCurrent().GetK8S().GetClusterInfo().GetNodePools()
 	dnp := cluster.GetDesired().GetK8S().GetClusterInfo().GetNodePools()
