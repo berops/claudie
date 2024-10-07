@@ -78,10 +78,6 @@ spec:
         count: 2
         serverType: Standard_B2s
         image: Canonical:ubuntu-24_04-lts:server:latest
-        taints:
-          - key: test
-            value: test
-            effect: NoSchedule
         labels:
           test-set: rolling-update-test
         annotations:
