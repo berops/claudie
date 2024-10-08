@@ -81,6 +81,8 @@ func (u *Usecases) TaskProcessor(wg *sync.WaitGroup) error {
 func (u *Usecases) processTaskEvent(t *managerclient.NextTaskResponse) (*spec.Clusters, error) {
 	metrics.TasksProcessedCounter.Inc()
 
+	t.State.Description = t.Event.Description
+
 	var (
 		err error
 		k8s *spec.K8Scluster
