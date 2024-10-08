@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"gopkg.in/yaml.v3"
-
 	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -228,7 +227,9 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{RequeueAfter: REQUEUE_DELETE}, nil
 	}
 
-	if configState == spec.Manifest_Pending || configState == spec.Manifest_Scheduled {
+	provisioning := configState == spec.Manifest_Pending || configState == spec.Manifest_Scheduled
+	provisioning = provisioning || manifestRescheduled
+	if provisioning {
 		// CREATE LOGIC
 		// Call create config if it not present in DB
 		if !configExists {
