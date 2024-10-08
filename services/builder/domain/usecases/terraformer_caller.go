@@ -34,16 +34,11 @@ func (u *Usecases) reconcileInfrastructure(ctx *builder.Context) error {
 	switch resp := res.Response.(type) {
 	case *pb.BuildInfrastructureResponse_Fail:
 		logger.Error().Msgf("failed to build %s", resp.Fail.Failed)
-		ctx.CurrentCluster = resp.Fail.Current
 		ctx.DesiredCluster = resp.Fail.Desired
-		ctx.CurrentLoadbalancers = resp.Fail.CurrentLbs
 		ctx.DesiredLoadbalancers = resp.Fail.DesiredLbs
-
 		return ErrFailedToBuildInfrastructure
 	case *pb.BuildInfrastructureResponse_Ok:
-		ctx.CurrentCluster = resp.Ok.Current
 		ctx.DesiredCluster = resp.Ok.Desired
-		ctx.CurrentLoadbalancers = resp.Ok.CurrentLbs
 		ctx.DesiredLoadbalancers = resp.Ok.DesiredLbs
 	}
 

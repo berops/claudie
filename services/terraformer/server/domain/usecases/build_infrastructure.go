@@ -61,37 +61,14 @@ func (u *Usecases) BuildInfrastructure(request *pb.BuildInfrastructureRequest) (
 	})
 
 	if err != nil {
-		// Given a failure in the building process construct the response such that those that successfully
-		// build will have their current state = desired state.
-		// This is done as to when the calling side might want to delete the infra, it has its current state.
 		response := &pb.BuildInfrastructureResponse_Fail{
 			Fail: &pb.BuildInfrastructureResponse_InfrastructureData{
-				Current: k8sCluster.CurrentState,
 				Desired: k8sCluster.DesiredState,
 			},
 		}
 
 		for _, cluster := range lbClusters {
 			response.Fail.DesiredLbs = append(response.Fail.DesiredLbs, cluster.DesiredState)
-			if cluster.CurrentState != nil {
-				response.Fail.CurrentLbs = append(response.Fail.CurrentLbs, cluster.CurrentState)
-			}
-		}
-
-		// add unchanged clusters that were not in lbClusters
-		for _, cluster := range request.CurrentLbs {
-			var found bool
-
-			for _, buildCluster := range lbClusters {
-				if cluster.ClusterInfo.Name == buildCluster.CurrentState.ClusterInfo.Name {
-					found = true
-					break
-				}
-			}
-
-			if !found {
-				response.Fail.CurrentLbs = append(response.Fail.CurrentLbs, cluster)
-			}
 		}
 
 		for idx, err := range failed {
@@ -107,9 +84,7 @@ func (u *Usecases) BuildInfrastructure(request *pb.BuildInfrastructureRequest) (
 	resp := &pb.BuildInfrastructureResponse{
 		Response: &pb.BuildInfrastructureResponse_Ok{
 			Ok: &pb.BuildInfrastructureResponse_InfrastructureData{
-				Current:    request.Current,
 				Desired:    request.Desired,
-				CurrentLbs: request.CurrentLbs,
 				DesiredLbs: request.DesiredLbs,
 			},
 		},
