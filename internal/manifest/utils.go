@@ -347,7 +347,7 @@ func FetchCommitHash(tmpl *spec.TemplateRepository) error {
 		Timeout: 60,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to list remote repository %q: %w", tmpl.Repository, err)
 	}
 
 	if tmpl.Tag != nil {
