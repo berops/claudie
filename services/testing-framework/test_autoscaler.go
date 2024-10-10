@@ -67,7 +67,7 @@ spec:
               memory: 500Mi`
 	scaleInogoreTimeout = 300 // 5 mins
 	// Time in which Autoscaler should trigger scale up
-	scaleUpTimeout = 600 // 10 mins
+	scaleUpTimeout = 1200 // 20 mins
 	// Time in which Autoscaler should trigger scale down
 	scaleDownTimeout = 2400 // 40 mins
 )
