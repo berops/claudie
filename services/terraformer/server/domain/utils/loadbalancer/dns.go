@@ -78,6 +78,10 @@ func (d DNS) CreateDNSRecords(logger zerolog.Logger) (string, error) {
 			return "", err
 		}
 
+		if err := os.RemoveAll(dnsDir); err != nil {
+			return "", fmt.Errorf("error while removing files in dir %q: %w", dnsDir, err)
+		}
+
 		sublogger.Info().Msg("Old DNS records were successfully destroyed")
 	}
 
