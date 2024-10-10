@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"fmt"
+
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
@@ -14,7 +15,7 @@ func (u *Usecases) CiliumRolloutRestart(request *pb.CiliumRolloutRestartRequest)
 	logger.Info().Msgf("Performing a rollout of the cilium daemonset")
 	kc := kubectl.Kubectl{
 		Kubeconfig:        request.Cluster.Kubeconfig,
-		MaxKubectlRetries: 3,
+		MaxKubectlRetries: 5,
 	}
 
 	if err := kc.RolloutRestart("daemonset", "cilium", "-n kube-system"); err != nil {

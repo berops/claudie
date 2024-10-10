@@ -57,6 +57,13 @@ func (c ClusterBuilder) CreateNodepools() error {
 	clusterID := utils.GetClusterID(c.DesiredClusterInfo)
 	clusterDir := filepath.Join(Output, clusterID)
 
+	defer func() {
+		// Clean after terraform
+		if err := os.RemoveAll(clusterDir); err != nil {
+			log.Err(err).Msgf("error while deleting files in %s : %v", clusterDir, err)
+		}
+	}()
+
 	// Calculate CIDR, so they do not change if nodepool order changes
 	// https://github.com/berops/claudie/issues/647
 	// Order them by provider and region
@@ -108,11 +115,6 @@ func (c ClusterBuilder) CreateNodepools() error {
 		fillNodes(&out, nodepool, oldNodes)
 	}
 
-	// Clean after terraform
-	if err := os.RemoveAll(clusterDir); err != nil {
-		return fmt.Errorf("error while deleting files in %s : %w", clusterDir, err)
-	}
-
 	return nil
 }
 
@@ -120,6 +122,12 @@ func (c ClusterBuilder) CreateNodepools() error {
 func (c ClusterBuilder) DestroyNodepools() error {
 	clusterID := utils.GetClusterID(c.CurrentClusterInfo)
 	clusterDir := filepath.Join(Output, clusterID)
+
+	defer func() {
+		if err := os.RemoveAll(clusterDir); err != nil {
+			log.Err(err).Msgf("error while deleting files in %s : %v", clusterDir, err)
+		}
+	}()
 
 	// Calculate CIDR, in case some nodepools do not have it, due to error.
 	// https://github.com/berops/claudie/issues/647
@@ -148,10 +156,6 @@ func (c ClusterBuilder) DestroyNodepools() error {
 
 	if err := terraform.Destroy(); err != nil {
 		return fmt.Errorf("error while running terraform apply in %s : %w", clusterID, err)
-	}
-
-	if err := os.RemoveAll(clusterDir); err != nil {
-		return fmt.Errorf("error while deleting files in %s : %w", clusterDir, err)
 	}
 
 	return nil
