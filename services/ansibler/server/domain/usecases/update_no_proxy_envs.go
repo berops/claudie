@@ -15,7 +15,8 @@ import (
 )
 
 const (
-	defaulHttpProxyMode     = "default"
+	defaultHttpProxyMode    = "default"
+	defaultHttpProxyUrl     = "http://proxy.claudie.io:8880"
 	noProxyDefault          = "127.0.0.1/8,localhost,cluster.local,10.244.0.0/16,10.96.0.0/12" // 10.244.0.0/16 is kubeone's default PodCIDR and 10.96.0.0/12 is kubeone's default ServiceCIDR
 	noProxyPlaybookFilePath = "../../ansible-playbooks/update-noproxy-envs.yml"
 )
@@ -25,6 +26,7 @@ type (
 		K8sNodepools NodePools
 		ClusterID    string
 		NoProxy      string
+		HttpProxyUrl string
 	}
 
 	NodePools struct {
@@ -39,10 +41,11 @@ func (u *Usecases) UpdateNoProxyEnvs(request *pb.UpdateNoProxyEnvsRequest) (*pb.
 	}
 
 	hasHetznerNodeFlag := hasHetznerNode(request.Desired.ClusterInfo)
-	httpProxyMode := commonUtils.GetEnvDefault("HTTP_PROXY_MODE", defaulHttpProxyMode)
+	httpProxyMode := commonUtils.GetEnvDefault("HTTP_PROXY_MODE", defaultHttpProxyMode)
 	// Changing NO_PROXY and no_proxy env variables is necessary only when
 	// HTTP Proxy mode isn't "off" and cluster has a Hetzner node or cluster is being build using HTTP proxy
 	if httpProxyMode == "off" || (httpProxyMode == "default" && !hasHetznerNodeFlag) {
+		// httpProxy := ""
 		return &pb.UpdateNoProxyEnvsResponse{Current: request.Current, Desired: request.Desired}, nil
 	}
 
@@ -95,8 +98,9 @@ func updateNoProxyEnvs(currentK8sClusterInfo, desiredK8sClusterInfo *spec.Cluste
 			Dynamic: commonUtils.GetCommonDynamicControlPlaneNodes(currentK8sClusterInfo.NodePools, desiredK8sClusterInfo.NodePools),
 			Static:  commonUtils.GetCommonStaticControlPlaneNodes(currentK8sClusterInfo.NodePools, desiredK8sClusterInfo.NodePools),
 		},
-		ClusterID: clusterID,
-		NoProxy:   noProxyList,
+		ClusterID:    clusterID,
+		NoProxy:      noProxyList,
+		HttpProxyUrl: commonUtils.GetEnvDefault("HTTP_PROXY_URL", defaultHttpProxyUrl),
 	}); err != nil {
 		return fmt.Errorf("failed to generate inventory file for updating the no proxy envs using playbook in %s : %w", clusterDirectory, err)
 	}

@@ -5,11 +5,15 @@
   tasks:
     - name: Update NO_PROXY and no_proxy in kube-proxy DaemonSet
       ansible.builtin.shell: |
-        NO_PROXY="{{ no_proxy }}" no_proxy="{{ no_proxy }}" kubeadm init phase addon kube-proxy --apiserver-advertise-address {{ private_ip }} --pod-network-cidr 10.244.0.0/16
+        NO_PROXY="{{ no_proxy }}" no_proxy="{{ no_proxy }}" HTTP_PROXY="{{ http_proxy_url }}" http_proxy="{{ http_proxy_url }}" \
+        HTTPS_PROXY="{{ http_proxy_url }}" https_proxy="{{ http_proxy_url }}" \
+        kubeadm init phase addon kube-proxy --apiserver-advertise-address {{ private_ip }} --pod-network-cidr 10.244.0.0/16
 
     - name: Update NO_PROXY and no_proxy in static pods
       ansible.builtin.shell: |
-        NO_PROXY="{{ no_proxy }}" no_proxy="{{ no_proxy }}" kubeadm init phase control-plane all --apiserver-advertise-address {{ private_ip }} --apiserver-extra-args profiling=false --patches .
+        NO_PROXY="{{ no_proxy }}" no_proxy="{{ no_proxy }}" HTTP_PROXY="{{ http_proxy_url }}" http_proxy="{{ http_proxy_url }}" \
+        HTTPS_PROXY="{{ http_proxy_url }}" https_proxy="{{ http_proxy_url }}" \
+        kubeadm init phase control-plane all --apiserver-advertise-address {{ private_ip }} --apiserver-extra-args profiling=false --patches .
 
     - name: Try 10 times to check kube-apiserver health
       ansible.builtin.uri:
@@ -23,3 +27,43 @@
       retries: 10
       delay: 10
       until: api_response.status == 200
+
+- hosts: all
+  gather_facts: true
+  become: true
+  tasks:
+    - name: Ensure /etc/environment contains the correct lowercase proxy variables
+      lineinfile:
+        path: /etc/environment
+        state: present
+        backrefs: yes
+        regexp: '^(http_proxy|https_proxy|no_proxy)='
+        line: "{{ item }}"
+      with_items:
+        - 'http_proxy="{{ http_proxy_url }}"'
+        - 'https_proxy="{{ http_proxy_url }}"'
+        - 'no_proxy="{{ no_proxy }}"'
+
+    - name: Ensure /etc/environment contains the correct uppercase proxy variables
+      lineinfile:
+        path: /etc/environment
+        state: present
+        backrefs: yes
+        regexp: '^(HTTP_PROXY|HTTPS_PROXY|NO_PROXY)='
+        line: "{{ item }}"
+      with_items:
+        - 'HTTP_PROXY="{{ http_proxy_url }}"'
+        - 'HTTPS_PROXY="{{ http_proxy_url }}"'
+        - 'NO_PROXY="{{ no_proxy }}"'
+    
+    - name: Restart containerd and kubelet
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: restarted
+      register: serviceDetails
+      until: serviceDetails.status.ActiveState == "active"
+      retries: 10
+      delay: 20
+      loop:
+        - "kubelet"
+        - "containerd"
