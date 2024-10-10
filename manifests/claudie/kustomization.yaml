@@ -67,8 +67,8 @@ images:
 - name: ghcr.io/berops/claudie/kube-eleven
   newTag: 89ff66f-3015
 - name: ghcr.io/berops/claudie/kuber
-  newTag: e4fdc18-3017
+  newTag: fbe30b9-3018
 - name: ghcr.io/berops/claudie/manager
   newTag: 89ff66f-3015
 - name: ghcr.io/berops/claudie/terraformer
-  newTag: e4fdc18-3017
+  newTag: fbe30b9-3018
