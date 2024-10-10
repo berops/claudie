@@ -56,6 +56,12 @@ func (d DNS) CreateDNSRecords(logger zerolog.Logger) (string, error) {
 	terraform.Stdout = comm.GetStdOut(clusterID)
 	terraform.Stderr = comm.GetStdErr(clusterID)
 
+	defer func() {
+		if err := os.RemoveAll(dnsDir); err != nil {
+			sublogger.Err(err).Msgf("error while removing files in dir %q: %v", dnsDir, err)
+		}
+	}()
+
 	if changedDNSProvider(d.CurrentDNS, d.DesiredDNS) {
 		sublogger.Info().Msg("Destroying old DNS records")
 		if err := d.generateFiles(dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs); err != nil {
@@ -72,9 +78,6 @@ func (d DNS) CreateDNSRecords(logger zerolog.Logger) (string, error) {
 			return "", err
 		}
 
-		if err := os.RemoveAll(dnsDir); err != nil {
-			return "", fmt.Errorf("error while removing files in dir %q: %w", dnsDir, err)
-		}
 		sublogger.Info().Msg("Old DNS records were successfully destroyed")
 	}
 
@@ -104,9 +107,6 @@ func (d DNS) CreateDNSRecords(logger zerolog.Logger) (string, error) {
 
 	outputID := fmt.Sprintf("%s-endpoint", clusterID)
 	sublogger.Info().Msg("DNS records were successfully set up")
-	if err := os.RemoveAll(dnsDir); err != nil {
-		return validateDomain(out.Domain[outputID]), fmt.Errorf("error while deleting files in %s: %w", dnsDir, err)
-	}
 
 	return validateDomain(out.Domain[outputID]), nil
 }
@@ -118,6 +118,12 @@ func (d DNS) DestroyDNSRecords(logger zerolog.Logger) error {
 	sublogger.Info().Msg("Destroying DNS records")
 	dnsID := fmt.Sprintf("%s-%s-dns", d.ClusterName, d.ClusterHash)
 	dnsDir := filepath.Join(cluster_builder.Output, dnsID)
+
+	defer func() {
+		if err := os.RemoveAll(dnsDir); err != nil {
+			sublogger.Err(err).Msgf("error while removing files in dir %q: %v", dnsDir, err)
+		}
+	}()
 
 	if err := d.generateFiles(dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs); err != nil {
 		return fmt.Errorf("error while creating dns records for %s : %w", dnsID, err)
@@ -140,10 +146,6 @@ func (d DNS) DestroyDNSRecords(logger zerolog.Logger) error {
 	}
 
 	sublogger.Info().Msg("DNS records were successfully destroyed")
-
-	if err := os.RemoveAll(dnsDir); err != nil {
-		return fmt.Errorf("error while deleting files in %s : %w", dnsDir, err)
-	}
 
 	return nil
 }
