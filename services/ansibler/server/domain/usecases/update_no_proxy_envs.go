@@ -23,10 +23,11 @@ const (
 
 type (
 	noProxyInventoryFileParameters struct {
-		K8sNodepools NodePools
-		ClusterID    string
-		NoProxy      string
-		HttpProxyUrl string
+		K8sControlPlaneNodepools NodePools
+		K8sNodepools             NodePools
+		ClusterID                string
+		NoProxy                  string
+		HttpProxyUrl             string
 	}
 
 	NodePools struct {
@@ -37,15 +38,6 @@ type (
 
 func (u *Usecases) UpdateNoProxyEnvs(request *pb.UpdateNoProxyEnvsRequest) (*pb.UpdateNoProxyEnvsResponse, error) {
 	if request.Current == nil {
-		return &pb.UpdateNoProxyEnvsResponse{Current: request.Current, Desired: request.Desired}, nil
-	}
-
-	hasHetznerNodeFlag := hasHetznerNode(request.Desired.ClusterInfo)
-	httpProxyMode := commonUtils.GetEnvDefault("HTTP_PROXY_MODE", defaultHttpProxyMode)
-	// Changing NO_PROXY and no_proxy env variables is necessary only when
-	// HTTP Proxy mode isn't "off" and cluster has a Hetzner node or cluster is being build using HTTP proxy
-	if httpProxyMode == "off" || (httpProxyMode == "default" && !hasHetznerNodeFlag) {
-		// httpProxy := ""
 		return &pb.UpdateNoProxyEnvsResponse{Current: request.Current, Desired: request.Desired}, nil
 	}
 
@@ -92,15 +84,31 @@ func updateNoProxyEnvs(currentK8sClusterInfo, desiredK8sClusterInfo *spec.Cluste
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 
-	noProxyList := createNoProxyList(desiredK8sClusterInfo.GetNodePools(), desiredLbs)
+	var noProxyList, httpProxyUrl string
+	hasHetznerNodeFlag := hasHetznerNode(desiredK8sClusterInfo)
+	httpProxyMode := commonUtils.GetEnvDefault("HTTP_PROXY_MODE", defaultHttpProxyMode)
+
+	if httpProxyMode == "off" || (httpProxyMode == "default" && !hasHetznerNodeFlag) {
+		// set empty proxy env variables when proxy is off or a k8s cluster doesn't have any hetzner nodes in proxy default mode.
+		httpProxyUrl = ""
+		noProxyList = ""
+	} else {
+		noProxyList = createNoProxyList(desiredK8sClusterInfo.GetNodePools(), desiredLbs)
+		httpProxyUrl = commonUtils.GetEnvDefault("HTTP_PROXY_URL", defaultHttpProxyUrl)
+	}
+
 	if err := utils.GenerateInventoryFile(templates.NoProxyEnvsInventoryTemplate, clusterDirectory, noProxyInventoryFileParameters{
-		K8sNodepools: NodePools{
+		K8sControlPlaneNodepools: NodePools{
 			Dynamic: commonUtils.GetCommonDynamicControlPlaneNodes(currentK8sClusterInfo.NodePools, desiredK8sClusterInfo.NodePools),
 			Static:  commonUtils.GetCommonStaticControlPlaneNodes(currentK8sClusterInfo.NodePools, desiredK8sClusterInfo.NodePools),
 		},
+		K8sNodepools: NodePools{
+			Dynamic: commonUtils.GetCommonDynamicNodePools(currentK8sClusterInfo.NodePools),
+			Static:  commonUtils.GetCommonStaticNodePools(currentK8sClusterInfo.NodePools),
+		},
 		ClusterID:    clusterID,
 		NoProxy:      noProxyList,
-		HttpProxyUrl: commonUtils.GetEnvDefault("HTTP_PROXY_URL", defaultHttpProxyUrl),
+		HttpProxyUrl: httpProxyUrl,
 	}); err != nil {
 		return fmt.Errorf("failed to generate inventory file for updating the no proxy envs using playbook in %s : %w", clusterDirectory, err)
 	}

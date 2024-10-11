@@ -32,29 +32,20 @@
   gather_facts: true
   become: true
   tasks:
-    - name: Ensure /etc/environment contains the correct lowercase proxy variables
+    - name: Ensure /etc/environment contains the correct proxy variables
       lineinfile:
         path: /etc/environment
         state: present
         backrefs: yes
-        regexp: '^(http_proxy|https_proxy|no_proxy)='
-        line: "{{ item }}"
-      with_items:
-        - 'http_proxy="{{ http_proxy_url }}"'
-        - 'https_proxy="{{ http_proxy_url }}"'
-        - 'no_proxy="{{ no_proxy }}"'
-
-    - name: Ensure /etc/environment contains the correct uppercase proxy variables
-      lineinfile:
-        path: /etc/environment
-        state: present
-        backrefs: yes
-        regexp: '^(HTTP_PROXY|HTTPS_PROXY|NO_PROXY)='
-        line: "{{ item }}"
-      with_items:
-        - 'HTTP_PROXY="{{ http_proxy_url }}"'
-        - 'HTTPS_PROXY="{{ http_proxy_url }}"'
-        - 'NO_PROXY="{{ no_proxy }}"'
+        regexp: '^{{ item.name }}='
+        line: '{{ item.name }}="{{ item.value }}"'
+      loop:
+        - { name: 'HTTP_PROXY', value: '{{ http_proxy_url }}' }
+        - { name: 'HTTPS_PROXY', value: '{{ http_proxy_url }}' }
+        - { name: 'NO_PROXY', value: '{{ no_proxy }}' }
+        - { name: 'http_proxy', value: '{{ http_proxy_url }}' }
+        - { name: 'https_proxy', value: '{{ http_proxy_url }}' }
+        - { name: 'no_proxy', value: '{{ no_proxy }}' }
     
     - name: Restart containerd and kubelet
       ansible.builtin.service:
