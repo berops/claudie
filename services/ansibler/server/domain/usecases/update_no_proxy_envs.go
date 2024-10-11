@@ -15,9 +15,6 @@ import (
 )
 
 const (
-	defaultHttpProxyMode    = "default"
-	defaultHttpProxyUrl     = "http://proxy.claudie.io:8880"
-	noProxyDefault          = "127.0.0.1/8,localhost,cluster.local,10.244.0.0/16,10.96.0.0/12" // 10.244.0.0/16 is kubeone's default PodCIDR and 10.96.0.0/12 is kubeone's default ServiceCIDR
 	noProxyPlaybookFilePath = "../../ansible-playbooks/update-noproxy-envs.yml"
 )
 
@@ -26,7 +23,7 @@ type (
 		K8sControlPlaneNodepools NodePools
 		K8sNodepools             NodePools
 		ClusterID                string
-		NoProxy                  string
+		NoProxyList              string
 		HttpProxyUrl             string
 	}
 
@@ -53,17 +50,6 @@ func (u *Usecases) UpdateNoProxyEnvs(request *pb.UpdateNoProxyEnvsRequest) (*pb.
 	return &pb.UpdateNoProxyEnvsResponse{Current: request.Current, Desired: request.Desired}, nil
 }
 
-func hasHetznerNode(desiredK8sClusterInfo *spec.ClusterInfo) bool {
-	desiredNodePools := desiredK8sClusterInfo.GetNodePools()
-	for _, np := range desiredNodePools {
-		if np.GetDynamicNodePool() != nil && np.GetDynamicNodePool().Provider.CloudProviderName == "hetzner" {
-			return true
-		}
-	}
-
-	return false
-}
-
 // updateNoProxyEnvs handles the case where Claudie adds/removes node to/from the cluster.
 // Public and private IPs of this node must be added to the NO_PROXY and no_proxy env variables in
 // kube-proxy DaemonSet and static pods.
@@ -84,18 +70,7 @@ func updateNoProxyEnvs(currentK8sClusterInfo, desiredK8sClusterInfo *spec.Cluste
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 
-	var noProxyList, httpProxyUrl string
-	hasHetznerNodeFlag := hasHetznerNode(desiredK8sClusterInfo)
-	httpProxyMode := commonUtils.GetEnvDefault("HTTP_PROXY_MODE", defaultHttpProxyMode)
-
-	if httpProxyMode == "off" || (httpProxyMode == "default" && !hasHetznerNodeFlag) {
-		// set empty proxy env variables when proxy is off or a k8s cluster doesn't have any hetzner nodes in proxy default mode.
-		httpProxyUrl = ""
-		noProxyList = ""
-	} else {
-		noProxyList = createNoProxyList(desiredK8sClusterInfo.GetNodePools(), desiredLbs)
-		httpProxyUrl = commonUtils.GetEnvDefault("HTTP_PROXY_URL", defaultHttpProxyUrl)
-	}
+	httpProxyUrl, noProxyList := utils.GetHttpProxyUrlAndNoProxyList(desiredK8sClusterInfo, desiredLbs)
 
 	if err := utils.GenerateInventoryFile(templates.NoProxyEnvsInventoryTemplate, clusterDirectory, noProxyInventoryFileParameters{
 		K8sControlPlaneNodepools: NodePools{
@@ -107,7 +82,7 @@ func updateNoProxyEnvs(currentK8sClusterInfo, desiredK8sClusterInfo *spec.Cluste
 			Static:  commonUtils.GetCommonStaticNodePools(currentK8sClusterInfo.NodePools),
 		},
 		ClusterID:    clusterID,
-		NoProxy:      noProxyList,
+		NoProxyList:  noProxyList,
 		HttpProxyUrl: httpProxyUrl,
 	}); err != nil {
 		return fmt.Errorf("failed to generate inventory file for updating the no proxy envs using playbook in %s : %w", clusterDirectory, err)
@@ -125,29 +100,4 @@ func updateNoProxyEnvs(currentK8sClusterInfo, desiredK8sClusterInfo *spec.Cluste
 	}
 
 	return os.RemoveAll(clusterDirectory)
-}
-
-func createNoProxyList(desiredNodePools []*spec.NodePool, desiredLbs []*spec.LBcluster) string {
-	noProxyList := noProxyDefault
-
-	for _, np := range desiredNodePools {
-		for _, node := range np.Nodes {
-			noProxyList = fmt.Sprintf("%s,%s,%s", noProxyList, node.Private, node.Public)
-		}
-	}
-
-	for _, lbCluster := range desiredLbs {
-		noProxyList = fmt.Sprintf("%s,%s", noProxyList, lbCluster.Dns.Endpoint)
-		for _, np := range lbCluster.ClusterInfo.NodePools {
-			for _, node := range np.Nodes {
-				noProxyList = fmt.Sprintf("%s,%s,%s", noProxyList, node.Private, node.Public)
-			}
-		}
-	}
-
-	// if "svc" isn't in noProxyList the admission webhooks will fail, because they will be routed to proxy
-	// "metadata,metadata.google.internal,169.254.169.254,metadata.google.internal." are required for GCP VMs
-	noProxyList = fmt.Sprintf("%s,svc,metadata,metadata.google.internal,169.254.169.254,metadata.google.internal.,", noProxyList)
-
-	return noProxyList
 }

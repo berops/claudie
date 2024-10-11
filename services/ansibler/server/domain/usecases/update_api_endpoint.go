@@ -13,24 +13,30 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+const (
+	defaultHttpProxyMode = "default"
+	defaultHttpProxyUrl  = "http://proxy.claudie.io:8880"
+	noProxyDefault       = "127.0.0.1/8,localhost,cluster.local,10.244.0.0/16,10.96.0.0/12" // 10.244.0.0/16 is kubeone's default PodCIDR and 10.96.0.0/12 is kubeone's default ServiceCIDR
+)
+
 func (u *Usecases) UpdateAPIEndpoint(request *pb.UpdateAPIEndpointRequest) (*pb.UpdateAPIEndpointResponse, error) {
 	if request.Current == nil {
 		return &pb.UpdateAPIEndpointResponse{Current: request.Current}, nil
 	}
 
 	log.Info().Msgf("Updating api endpoint for cluster %s project %s", request.Current.ClusterInfo.Name, request.ProjectName)
-	if err := updateAPIEndpoint(request.Endpoint, request.Current.ClusterInfo, u.SpawnProcessLimit); err != nil {
+	if err := updateAPIEndpoint(request.Endpoint, request.Current.ClusterInfo, request.Desired.ClusterInfo, request.DesiredLbs, u.SpawnProcessLimit); err != nil {
 		return nil, fmt.Errorf("failed to update api endpoint for cluster %s project %s", request.Current.ClusterInfo.Name, request.ProjectName)
 	}
 	log.Info().Msgf("Updated api endpoint for cluster %s project %s", request.Current.ClusterInfo.Name, request.ProjectName)
 
-	return &pb.UpdateAPIEndpointResponse{Current: request.Current}, nil
+	return &pb.UpdateAPIEndpointResponse{Current: request.Current, Desired: request.Desired}, nil
 }
 
 // updateAPIEndpoint handles the case where the ApiEndpoint node is removed from
 // the desired state. Thus, a new control node needs to be selected among the existing
 // control nodes. This new control node will then represent the ApiEndpoint of the cluster.
-func updateAPIEndpoint(endpoint *pb.UpdateAPIEndpointRequest_Endpoint, currentK8sClusterInfo *spec.ClusterInfo, spawnProcessLimit chan struct{}) error {
+func updateAPIEndpoint(endpoint *pb.UpdateAPIEndpointRequest_Endpoint, currentK8sClusterInfo, desiredK8sClusterInfo *spec.ClusterInfo, desiredLbs []*spec.LBcluster, spawnProcessLimit chan struct{}) error {
 	clusterID := commonUtils.GetClusterID(currentK8sClusterInfo)
 
 	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, commonUtils.CreateHash(commonUtils.HashLength)))
@@ -46,13 +52,18 @@ func updateAPIEndpoint(endpoint *pb.UpdateAPIEndpointRequest_Endpoint, currentK8
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 
+	// TODO: make sure new endpoint is in the no proxy list
+	httpProxyUrl, noProxyList := utils.GetHttpProxyUrlAndNoProxyList(desiredK8sClusterInfo, desiredLbs)
+
 	err := utils.GenerateInventoryFile(templates.LoadbalancerInventoryTemplate, clusterDirectory, utils.LBInventoryFileParameters{
 		K8sNodepools: utils.NodePools{
 			Dynamic: commonUtils.GetCommonDynamicNodePools(currentK8sClusterInfo.NodePools),
 			Static:  commonUtils.GetCommonStaticNodePools(currentK8sClusterInfo.NodePools),
 		},
-		LBClusters: nil,
-		ClusterID:  clusterID,
+		LBClusters:   nil,
+		ClusterID:    clusterID,
+		NoProxyList:  noProxyList,
+		HttpProxyUrl: httpProxyUrl,
 	})
 	if err != nil {
 		return fmt.Errorf("error while creating inventory file for %s : %w", clusterDirectory, err)

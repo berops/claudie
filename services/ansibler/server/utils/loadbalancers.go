@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+
 	"github.com/berops/claudie/proto/pb/spec"
 
 	"github.com/rs/zerolog/log"
@@ -67,6 +68,8 @@ type (
 		K8sNodepools NodePools
 		LBClusters   []LBcluster
 		ClusterID    string
+		NoProxyList  string
+		HttpProxyUrl string
 	}
 
 	LBcluster struct {

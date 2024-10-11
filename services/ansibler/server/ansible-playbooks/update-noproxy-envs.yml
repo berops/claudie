@@ -1,17 +1,48 @@
----
+# the following playbook has to run first
+- hosts: all
+  gather_facts: true
+  become: true
+  tasks:
+    - name: Ensure /etc/environment contains the correct proxy variables
+      lineinfile:
+        path: /etc/environment
+        state: present
+        backrefs: yes
+        regexp: '^{{ item.name }}='
+        line: '{{ item.name }}="{{ item.value }}"'
+      loop:
+        - { name: 'HTTP_PROXY', value: '{{ http_proxy_url }}' }
+        - { name: 'HTTPS_PROXY', value: '{{ http_proxy_url }}' }
+        - { name: 'NO_PROXY', value: '{{ no_proxy_list }}' }
+        - { name: 'http_proxy', value: '{{ http_proxy_url }}' }
+        - { name: 'https_proxy', value: '{{ http_proxy_url }}' }
+        - { name: 'no_proxy', value: '{{ no_proxy_list }}' }
+    
+    - name: Restart containerd and kubelet
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: restarted
+      register: serviceDetails
+      until: serviceDetails.status.ActiveState == "active"
+      retries: 10
+      delay: 20
+      loop:
+        - "kubelet"
+        - "containerd"
+
 - hosts: control
   gather_facts: true
   become: true
   tasks:
     - name: Update NO_PROXY and no_proxy in kube-proxy DaemonSet
       ansible.builtin.shell: |
-        NO_PROXY="{{ no_proxy }}" no_proxy="{{ no_proxy }}" HTTP_PROXY="{{ http_proxy_url }}" http_proxy="{{ http_proxy_url }}" \
+        NO_PROXY="{{ no_proxy_list }}" no_proxy="{{ no_proxy_list }}" HTTP_PROXY="{{ http_proxy_url }}" http_proxy="{{ http_proxy_url }}" \
         HTTPS_PROXY="{{ http_proxy_url }}" https_proxy="{{ http_proxy_url }}" \
         kubeadm init phase addon kube-proxy --apiserver-advertise-address {{ private_ip }} --pod-network-cidr 10.244.0.0/16
 
     - name: Update NO_PROXY and no_proxy in static pods
       ansible.builtin.shell: |
-        NO_PROXY="{{ no_proxy }}" no_proxy="{{ no_proxy }}" HTTP_PROXY="{{ http_proxy_url }}" http_proxy="{{ http_proxy_url }}" \
+        NO_PROXY="{{ no_proxy_list }}" no_proxy="{{ no_proxy_list }}" HTTP_PROXY="{{ http_proxy_url }}" http_proxy="{{ http_proxy_url }}" \
         HTTPS_PROXY="{{ http_proxy_url }}" https_proxy="{{ http_proxy_url }}" \
         kubeadm init phase control-plane all --apiserver-advertise-address {{ private_ip }} --apiserver-extra-args profiling=false --patches .
 
@@ -27,34 +58,3 @@
       retries: 10
       delay: 10
       until: api_response.status == 200
-
-- hosts: all
-  gather_facts: true
-  become: true
-  tasks:
-    - name: Ensure /etc/environment contains the correct proxy variables
-      lineinfile:
-        path: /etc/environment
-        state: present
-        backrefs: yes
-        regexp: '^{{ item.name }}='
-        line: '{{ item.name }}="{{ item.value }}"'
-      loop:
-        - { name: 'HTTP_PROXY', value: '{{ http_proxy_url }}' }
-        - { name: 'HTTPS_PROXY', value: '{{ http_proxy_url }}' }
-        - { name: 'NO_PROXY', value: '{{ no_proxy }}' }
-        - { name: 'http_proxy', value: '{{ http_proxy_url }}' }
-        - { name: 'https_proxy', value: '{{ http_proxy_url }}' }
-        - { name: 'no_proxy', value: '{{ no_proxy }}' }
-    
-    - name: Restart containerd and kubelet
-      ansible.builtin.service:
-        name: "{{ item }}"
-        state: restarted
-      register: serviceDetails
-      until: serviceDetails.status.ActiveState == "active"
-      retries: 10
-      delay: 20
-      loop:
-        - "kubelet"
-        - "containerd"
