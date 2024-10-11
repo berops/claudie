@@ -90,6 +90,7 @@ func (u *Usecases) configureInfrastructure(ctx *builder.Context) error {
 	ctx.CurrentLoadbalancers = setUpRes.CurrentLbs
 	ctx.DesiredLoadbalancers = setUpRes.DesiredLbs
 
+	// NOTE: UpdateNoProxyEnvs has to be called after SetUpLoadbalancers
 	// Update NO_PROXY and no_proxy variables
 	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s updating NO_PROXY and no_proxy env variables", description))
 	logger.Info().Msgf("Calling UpdateNoProxyEnvs on Ansibler")
