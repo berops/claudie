@@ -12,14 +12,14 @@ const apiChangePlaybookFilePath = "../../ansible-playbooks/apiEndpointChange.yml
 // ChangeAPIEndpoint will change the kubeadm configuration.
 // It will set the Api endpoint of the cluster to the public IP of the
 // newly selected ApiEndpoint node.
-func ChangeAPIEndpoint(clusterName, oldEndpoint, newEndpoint, noProxyList, directory string, spawnProcessLimit chan struct{}) error {
+func ChangeAPIEndpoint(clusterName, oldEndpoint, newEndpoint, httpProxyUrl, noProxyList, directory string, spawnProcessLimit chan struct{}) error {
 	noProxyList = strings.Replace(noProxyList, oldEndpoint, newEndpoint, 1)
 
 	ansible := Ansible{
 		Playbook:  apiChangePlaybookFilePath,
 		Inventory: InventoryFileName,
-		Flags: fmt.Sprintf("--extra-vars \"NewEndpoint=%s OldEndpoint=%s NoProxyList=%s\"",
-			newEndpoint, oldEndpoint, noProxyList),
+		Flags: fmt.Sprintf("--extra-vars \"NewEndpoint=%s OldEndpoint=%s HttpProxyUrl=%s NoProxyList=%s\"",
+			newEndpoint, oldEndpoint, httpProxyUrl, noProxyList),
 		Directory:         directory,
 		SpawnProcessLimit: spawnProcessLimit,
 	}

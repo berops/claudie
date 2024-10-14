@@ -85,10 +85,10 @@ func updateAPIEndpoint(endpoint *pb.UpdateAPIEndpointRequest_Endpoint, currentK8
 	apiEndpointNode.NodeType = spec.NodeType_master
 	newEndpointNode.NodeType = spec.NodeType_apiEndpoint
 
-	_, noProxyList := utils.GetHttpProxyUrlAndNoProxyList(desiredK8sClusterInfo, desiredLbs)
+	httpProxyUrl, noProxyList := utils.GetHttpProxyUrlAndNoProxyList(desiredK8sClusterInfo, desiredLbs)
 
 	if err = utils.ChangeAPIEndpoint(currentK8sClusterInfo.Name, apiEndpointNode.GetPublic(), newEndpointNode.GetPublic(),
-		noProxyList, clusterDirectory, spawnProcessLimit); err != nil {
+		httpProxyUrl, noProxyList, clusterDirectory, spawnProcessLimit); err != nil {
 		return err
 	}
 

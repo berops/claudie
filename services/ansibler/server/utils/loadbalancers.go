@@ -317,11 +317,11 @@ func HandleAPIEndpointChange(apiServerTypeLBCluster *LBClusterData, desiredK8sCl
 		lbCluster = apiServerTypeLBCluster.CurrentLbCluster
 	}
 
-	_, noProxyList := GetHttpProxyUrlAndNoProxyList(desiredK8sClusterInfo, []*spec.LBcluster{apiServerTypeLBCluster.DesiredLbCluster})
+	httpProxyUrl, noProxyList := GetHttpProxyUrlAndNoProxyList(desiredK8sClusterInfo, []*spec.LBcluster{apiServerTypeLBCluster.DesiredLbCluster})
 	noProxyList = strings.Replace(noProxyList, oldEndpoint, newEndpoint, 1)
 
 	log.Debug().Str("LB-cluster", utils.GetClusterID(lbCluster.ClusterInfo)).Msgf("Changing the API endpoint from %s to %s", oldEndpoint, newEndpoint)
-	if err := ChangeAPIEndpoint(lbCluster.ClusterInfo.Name, oldEndpoint, newEndpoint, noProxyList, outputDirectory, spawnProcessLimit); err != nil {
+	if err := ChangeAPIEndpoint(lbCluster.ClusterInfo.Name, oldEndpoint, newEndpoint, httpProxyUrl, noProxyList, outputDirectory, spawnProcessLimit); err != nil {
 		return fmt.Errorf("error while changing the endpoint for %s : %w", lbCluster.ClusterInfo.Name, err)
 	}
 
