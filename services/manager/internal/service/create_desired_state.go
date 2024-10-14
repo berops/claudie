@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -283,10 +284,11 @@ func generateSSHKeyPair() (string, string, error) {
 		return "", "", err
 	}
 
-	var pubKeyBuf strings.Builder
-	pubKeyBuf.Write(ssh.MarshalAuthorizedKey(pubKey))
+	b := &bytes.Buffer{}
+	b.Write(ssh.MarshalAuthorizedKey(pubKey))
+	b.Truncate(b.Len() - 1) // remove generated newline
 
-	return pubKeyBuf.String(), privKeyBuf.String(), nil
+	return b.String(), privKeyBuf.String(), nil
 }
 
 func fillMissingDynamicNodes(c *spec.Clusters) {

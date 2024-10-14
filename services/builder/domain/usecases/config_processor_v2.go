@@ -81,7 +81,7 @@ func (u *Usecases) TaskProcessor(wg *sync.WaitGroup) error {
 func (u *Usecases) processTaskEvent(t *managerclient.NextTaskResponse) (*spec.Clusters, error) {
 	metrics.TasksProcessedCounter.Inc()
 
-	t.State.Description = t.Event.Description
+	t.State.Description = fmt.Sprintf("%s:", t.Event.Description)
 
 	var (
 		err error
@@ -212,6 +212,18 @@ func (u *Usecases) executeUpdateTask(te *managerclient.NextTaskResponse) (*spec.
 	}
 
 	ctx, err := u.buildCluster(ctx)
+	// We let the **task be process with the desired state with missing deleted loadbalancers**,
+	// as deleted loadbalancers are not handled by the Update Task, they're deleted as a
+	// separate step, thus to avoid having issues with the diverging current state, append the deleted loadbalancers
+	// so that the current state actually reflects the infrastructure that exists.
+	// NOTE: in the case that a loadbalancer for the API server was deleted it might be the case
+	// that the current state will have "additional state" for an api server that has to be ignored until
+	// the loadbalancers are destroyed. As long as the destruction of the Lb is the next task to be processed
+	// this should not be a problem.
+	if len(ctx.DeletedLoadBalancers) > 0 {
+		ctx.DesiredLoadbalancers = append(ctx.DesiredLoadbalancers, ctx.DeletedLoadBalancers...)
+	}
+
 	return ctx.DesiredCluster, ctx.DesiredLoadbalancers, err
 }
 
