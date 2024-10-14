@@ -18,6 +18,6 @@ var (
 	//go:embed node-exporter.goyml
 	NodeExporterPlaybookTemplate string
 
-	//go:embed update-noproxy-envs-inventory.goini
-	NoProxyEnvsInventoryTemplate string
+	//go:embed update-proxy-envs-inventory.goini
+	ProxyEnvsInventoryTemplate string
 )

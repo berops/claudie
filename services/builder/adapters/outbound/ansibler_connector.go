@@ -78,9 +78,9 @@ func (a *AnsiblerConnector) UpdateAPIEndpoint(builderCtx *builder.Context, nodep
 	})
 }
 
-// UpdateAPIEndpoint updates kube API endpoint of the cluster.
-func (a *AnsiblerConnector) UpdateNoProxyEnvs(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.UpdateNoProxyEnvsResponse, error) {
-	return ansibler.UpdateNoProxyEnvs(ansiblerGrpcClient, &pb.UpdateNoProxyEnvsRequest{
+// UpdateProxyEnvs updates proxy envs
+func (a *AnsiblerConnector) UpdateProxyEnvs(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.UpdateProxyEnvsResponse, error) {
+	return ansibler.UpdateProxyEnvs(ansiblerGrpcClient, &pb.UpdateProxyEnvsRequest{
 		Current:     builderCtx.CurrentCluster,
 		Desired:     builderCtx.DesiredCluster,
 		DesiredLbs:  builderCtx.DesiredLoadbalancers,
