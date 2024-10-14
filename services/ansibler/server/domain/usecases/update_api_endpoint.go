@@ -13,12 +13,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const (
-	defaultHttpProxyMode = "default"
-	defaultHttpProxyUrl  = "http://proxy.claudie.io:8880"
-	noProxyDefault       = "127.0.0.1/8,localhost,cluster.local,10.244.0.0/16,10.96.0.0/12" // 10.244.0.0/16 is kubeone's default PodCIDR and 10.96.0.0/12 is kubeone's default ServiceCIDR
-)
-
 func (u *Usecases) UpdateAPIEndpoint(request *pb.UpdateAPIEndpointRequest) (*pb.UpdateAPIEndpointResponse, error) {
 	if request.Current == nil {
 		return &pb.UpdateAPIEndpointResponse{Current: request.Current}, nil
@@ -52,18 +46,13 @@ func updateAPIEndpoint(endpoint *pb.UpdateAPIEndpointRequest_Endpoint, currentK8
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 
-	// TODO: make sure new endpoint is in the no proxy list
-	httpProxyUrl, noProxyList := utils.GetHttpProxyUrlAndNoProxyList(desiredK8sClusterInfo, desiredLbs)
-
 	err := utils.GenerateInventoryFile(templates.LoadbalancerInventoryTemplate, clusterDirectory, utils.LBInventoryFileParameters{
 		K8sNodepools: utils.NodePools{
 			Dynamic: commonUtils.GetCommonDynamicNodePools(currentK8sClusterInfo.NodePools),
 			Static:  commonUtils.GetCommonStaticNodePools(currentK8sClusterInfo.NodePools),
 		},
-		LBClusters:   nil,
-		ClusterID:    clusterID,
-		NoProxyList:  noProxyList,
-		HttpProxyUrl: httpProxyUrl,
+		LBClusters: nil,
+		ClusterID:  clusterID,
 	})
 	if err != nil {
 		return fmt.Errorf("error while creating inventory file for %s : %w", clusterDirectory, err)
@@ -96,7 +85,10 @@ func updateAPIEndpoint(endpoint *pb.UpdateAPIEndpointRequest_Endpoint, currentK8
 	apiEndpointNode.NodeType = spec.NodeType_master
 	newEndpointNode.NodeType = spec.NodeType_apiEndpoint
 
-	if err = utils.ChangeAPIEndpoint(currentK8sClusterInfo.Name, apiEndpointNode.GetPublic(), newEndpointNode.GetPublic(), clusterDirectory, spawnProcessLimit); err != nil {
+	_, noProxyList := utils.GetHttpProxyUrlAndNoProxyList(desiredK8sClusterInfo, desiredLbs)
+
+	if err = utils.ChangeAPIEndpoint(currentK8sClusterInfo.Name, apiEndpointNode.GetPublic(), newEndpointNode.GetPublic(),
+		noProxyList, clusterDirectory, spawnProcessLimit); err != nil {
 		return err
 	}
 

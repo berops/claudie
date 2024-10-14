@@ -48,13 +48,16 @@ message UpdateAPIEndpointRequest{
     string nodepool = 1;
     string node = 2;
   }
-  spec.K8scluster current = 1;
-  Endpoint endpoint = 2;
-  string projectName = 3;
+  Endpoint endpoint = 1;
+  spec.K8scluster current = 2;
+  spec.K8scluster desired = 3;
+  repeated spec.LBcluster desiredLbs = 4;
+  string projectName = 5;
 }
 
 message UpdateAPIEndpointResponse{
   spec.K8scluster current = 1;
+  spec.K8scluster desired = 2;
 }
 
 message UpdateNoProxyEnvsRequest{

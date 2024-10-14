@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/berops/claudie/proto/pb/spec"
 
@@ -68,8 +69,6 @@ type (
 		K8sNodepools NodePools
 		LBClusters   []LBcluster
 		ClusterID    string
-		NoProxyList  string
-		HttpProxyUrl string
 	}
 
 	LBcluster struct {
@@ -205,7 +204,7 @@ func GenerateLBBaseFiles(outputDirectory string, lbClustersInfo *LBClustersInfo)
 	return nil
 }
 
-func HandleAPIEndpointChange(apiServerTypeLBCluster *LBClusterData, k8sCluster *LBClustersInfo, outputDirectory string, spawnProcessLimit chan struct{}) error {
+func HandleAPIEndpointChange(apiServerTypeLBCluster *LBClusterData, desiredK8sClusterInfo *spec.ClusterInfo, k8sCluster *LBClustersInfo, outputDirectory string, spawnProcessLimit chan struct{}) error {
 	// If there is no ApiSever type LB cluster, that means that the ports 6443 are exposed
 	// on one of the control nodes (which acts as the api endpoint).
 	// Thus we don't need to do anything.
@@ -318,8 +317,11 @@ func HandleAPIEndpointChange(apiServerTypeLBCluster *LBClusterData, k8sCluster *
 		lbCluster = apiServerTypeLBCluster.CurrentLbCluster
 	}
 
+	_, noProxyList := GetHttpProxyUrlAndNoProxyList(desiredK8sClusterInfo, []*spec.LBcluster{apiServerTypeLBCluster.DesiredLbCluster})
+	noProxyList = strings.Replace(noProxyList, oldEndpoint, newEndpoint, 1)
+
 	log.Debug().Str("LB-cluster", utils.GetClusterID(lbCluster.ClusterInfo)).Msgf("Changing the API endpoint from %s to %s", oldEndpoint, newEndpoint)
-	if err := ChangeAPIEndpoint(lbCluster.ClusterInfo.Name, oldEndpoint, newEndpoint, outputDirectory, spawnProcessLimit); err != nil {
+	if err := ChangeAPIEndpoint(lbCluster.ClusterInfo.Name, oldEndpoint, newEndpoint, noProxyList, outputDirectory, spawnProcessLimit); err != nil {
 		return fmt.Errorf("error while changing the endpoint for %s : %w", lbCluster.ClusterInfo.Name, err)
 	}
 
