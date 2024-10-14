@@ -18,7 +18,7 @@ func ChangeAPIEndpoint(clusterName, oldEndpoint, newEndpoint, noProxyList, direc
 	ansible := Ansible{
 		Playbook:  apiChangePlaybookFilePath,
 		Inventory: InventoryFileName,
-		Flags: fmt.Sprintf("--extra-vars \"NewEndpoint=%s OldEndpoint=%s\" NoProxyList=%s",
+		Flags: fmt.Sprintf("--extra-vars \"NewEndpoint=%s OldEndpoint=%s NoProxyList=%s\"",
 			newEndpoint, oldEndpoint, noProxyList),
 		Directory:         directory,
 		SpawnProcessLimit: spawnProcessLimit,

@@ -95,7 +95,7 @@ func updateNoProxyEnvs(currentK8sClusterInfo, desiredK8sClusterInfo *spec.Cluste
 		SpawnProcessLimit: spawnProcessLimit,
 	}
 
-	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("Running ansible to update NO_PROXY and no_proxy envs - %s", clusterID)); err != nil {
+	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("Update NO_PROXY and no_proxy envs - %s", clusterID)); err != nil {
 		return fmt.Errorf("error while running ansible to update NO_PROXY and no_proxy envs in %s : %w", clusterDirectory, err)
 	}
 
