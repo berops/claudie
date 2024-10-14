@@ -175,6 +175,22 @@ loadBalancers:
 
 To test Claudie in a more "manual" way, you can use the specified [GRPC API](https://github.com/berops/claudie/blob/master/proto/manager.proto) to inject/delete/modify an input manifest. 
 
+When using this technique, you most likely will omit the initial step of the InputManifest being passed through the operator.
+If this is the case, you will need to add templates to the providers listed in the InputManifest otherwise the workflow will panic at an early stage due to unset templates.
+
+
+To specify templates you add them to the provider definition as shown in the snippet below:
+```yaml
+  hetzner:
+    - name: hetzner-1
+      credentials: "api token"
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        path: "templates/terraformer/hetzner"
+```
+
+We provide ready-to-use terraform templates, which can be used by claudie at https://github.com/berops/claudie-config, If you would like to use your own, you can fork the repo, or write your own templates and modify the provider definition in the InputManifest to point to your templates
+
 ### Deploy Claudie in the local cluster for testing
 
 Claudie can be also tested on a local cluster by following these steps.

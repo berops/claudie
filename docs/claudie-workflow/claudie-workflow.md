@@ -60,6 +60,36 @@ that was created at the beginning, before the tasks were scheduled. This is the 
 updated, and we only transfer information from current state (such as newly build nodes, ips, etc...). After all tasks
 have finished successfully the current and desired state should match.
 
+#### Rolling updates
+
+Unless otherwise specified, the default is to use the external templates located at https://github.com/berops/claudie-config to build the infrastructure for the dynamic nodepools. The templates provide reasonable defaults that anyone can use to build multi-provider clusters.
+
+As we understand that someone may need more specific scenarios, we allow these external templates to be overridden by the user, see https://docs.claudie.io/latest/input-manifest/external-templates/ for more information.
+By providing the ability to specify the templates that should be used when building the infrastructure of the InputManifest, there is one common scenario that we decided should be handled by the manager service, which is rolling updates.
+
+Rolling updates of nodepools are performed when a change to a provider's external templates is registered. The manager then checks that the external repository of the new templates exists and uses them to perform a rolling update of the already built infrastructure. The rolling update is performed in the following steps
+
+![rolling update](rolling_update.png)
+
+If a failure occurs during the rolling update of a single Nodepool, the state is rolled back to the last possible working state. Rolling updates have a retry strategy that results in endless processing of rolling updates until it succeeds.
+
+If the rollback to the last working state fails, it will also be retried indefinitely, in which case it is up to the claudie user to repair the cluster so that the rolling update can continue.
+
+The individual states of the Input Manifest and how they are processed within manager are further visually described in the following sections.
+
+### Pending State
+
+![pending state](pending_state.png)
+
+### Scheduled State
+
+![scheduled state](scheduled_state.png)
+
+### Done/Error State
+
+![done/error state](done_error_state.png)
+
+
 ## Builder
 
 Processed tasks scheduled by the manager gradually building the desired state of the infrastructure. It communicates with `terraformer`, `ansibler`, `kube-eleven` and `kuber` services in order to manage the infrastructure. 
