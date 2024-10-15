@@ -35,7 +35,6 @@
       lineinfile:
         path: /etc/environment
         state: present
-        backrefs: yes
         regexp: '^{{ item.name }}='
         line: '{{ item.name }}="{{ item.value }}"'
       loop:
