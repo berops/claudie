@@ -48,7 +48,7 @@ metadata:
   labels:
     app: nginx
 spec:
-  replicas: 6
+  replicas: 5
   selector:
     matchLabels:
       app: nginx
@@ -64,7 +64,7 @@ spec:
             - containerPort: 80
           resources:
             requests:
-              memory: 500Mi`
+              memory: 800Mi`
 	scaleInogoreTimeout = 300 // 5 mins
 	// Time in which Autoscaler should trigger scale up
 	scaleUpTimeout = 1200 // 20 mins
