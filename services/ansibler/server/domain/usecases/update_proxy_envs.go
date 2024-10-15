@@ -76,8 +76,8 @@ func updateProxyEnvs(currentK8sClusterInfo, desiredK8sClusterInfo *spec.ClusterI
 			Static:  commonUtils.GetCommonStaticControlPlaneNodes(currentK8sClusterInfo.NodePools, desiredK8sClusterInfo.NodePools),
 		},
 		K8sNodepools: NodePools{
-			Dynamic: commonUtils.GetCommonDynamicNodePools(currentK8sClusterInfo.NodePools),
-			Static:  commonUtils.GetCommonStaticNodePools(currentK8sClusterInfo.NodePools),
+			Dynamic: commonUtils.GetCommonDynamicNodePools(desiredK8sClusterInfo.NodePools),
+			Static:  commonUtils.GetCommonStaticNodePools(desiredK8sClusterInfo.NodePools),
 		},
 		ClusterID:    clusterID,
 		NoProxyList:  noProxyList,
