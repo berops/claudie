@@ -157,6 +157,10 @@ func (nm *NodeManager) refreshCache(nps []*spec.NodePool) error {
 					if err := nm.cacheAzure(np); err != nil {
 						return err
 					}
+				case "genesiscloud":
+					if err := nm.cacheGenesisCloud(np); err != nil {
+						return err
+					}
 				}
 				// Save flag for this provider-region-zone combination.
 				nm.cacheProviderMap[providerId] = struct{}{}
