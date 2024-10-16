@@ -58,14 +58,26 @@ message UpdateAPIEndpointResponse{
   spec.K8scluster current = 1;
 }
 
-message UpdateProxyEnvsRequest{
+message UpdateProxyEnvsOnNodesRequest{
   spec.K8scluster current = 1;
   spec.K8scluster desired = 2;
   repeated spec.LBcluster desiredLbs = 3;
   string projectName = 4;
 }
 
-message UpdateProxyEnvsResponse{
+message UpdateProxyEnvsOnNodesResponse{
+  spec.K8scluster current = 1;
+  spec.K8scluster desired = 2;
+}
+
+message UpdateNoProxyEnvsInK8sRequest{
+  spec.K8scluster current = 1;
+  spec.K8scluster desired = 2;
+  repeated spec.LBcluster desiredLbs = 3;
+  string projectName = 4;
+}
+
+message UpdateNoProxyEnvsInK8sResponse{
   spec.K8scluster current = 1;
   spec.K8scluster desired = 2;
 }
@@ -94,8 +106,10 @@ service AnsiblerService {
   // UpdateAPIEndpoint handles changes of API endpoint between control nodes.
   // It will update the current stage based on the information from the desired state.
   rpc UpdateAPIEndpoint(UpdateAPIEndpointRequest) returns (UpdateAPIEndpointResponse);
-  // UpdateProxyEnvs handles changes of HTTP_PROXY, HTTPS_PROXY, NO_PROXY, http_proxy, https_proxy and no_proxy envs
-  rpc UpdateProxyEnvs(UpdateProxyEnvsRequest) returns (UpdateProxyEnvsResponse);
+  // UpdateProxyEnvsOnNodes handles changes of HTTP_PROXY, HTTPS_PROXY, NO_PROXY, http_proxy, https_proxy and no_proxy envs in /etc/environment
+  rpc UpdateProxyEnvsOnNodes(UpdateProxyEnvsOnNodesRequest) returns (UpdateProxyEnvsOnNodesResponse);
+  // UpdateNoProxyEnvsInK8s handles changes of NO_PROXY and no_proxy envs in kube-proxy and static pods
+  rpc UpdateNoProxyEnvsInK8s(UpdateNoProxyEnvsInK8sRequest) returns (UpdateNoProxyEnvsInK8sResponse);
   // Removes utilities installed by claudie via ansible playbooks.
   rpc RemoveClaudieUtilities(RemoveClaudieUtilitiesRequest) returns (RemoveClaudieUtilitiesResponse);
 }
