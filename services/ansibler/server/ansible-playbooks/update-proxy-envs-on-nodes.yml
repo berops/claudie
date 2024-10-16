@@ -1,0 +1,30 @@
+
+- hosts: all
+  gather_facts: true
+  become: true
+  tasks:
+    - name: Ensure /etc/environment contains the correct proxy variables
+      lineinfile:
+        path: /etc/environment
+        state: present
+        regexp: '^{{ item.name }}='
+        line: '{{ item.name }}="{{ item.value }}"'
+      loop:
+        - { name: 'HTTP_PROXY', value: '{{ http_proxy_url }}' }
+        - { name: 'HTTPS_PROXY', value: '{{ http_proxy_url }}' }
+        - { name: 'NO_PROXY', value: '{{ no_proxy_list }}' }
+        - { name: 'http_proxy', value: '{{ http_proxy_url }}' }
+        - { name: 'https_proxy', value: '{{ http_proxy_url }}' }
+        - { name: 'no_proxy', value: '{{ no_proxy_list }}' }
+    
+    - name: Restart containerd and kubelet
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: restarted
+      register: serviceDetails
+      until: serviceDetails.status.ActiveState == "active"
+      retries: 10
+      delay: 20
+      loop:
+        - "kubelet"
+        - "containerd"

@@ -25,6 +25,10 @@ func (a *AnsiblerGrpcService) UpdateNoProxyEnvsInK8s(_ context.Context, request 
 	return a.usecases.UpdateNoProxyEnvsInK8s(request)
 }
 
+func (a *AnsiblerGrpcService) UpdateProxyEnvsOnNodes(_ context.Context, request *pb.UpdateProxyEnvsOnNodesRequest) (*pb.UpdateProxyEnvsOnNodesResponse, error) {
+	return a.usecases.UpdateProxyEnvsOnNodes(request)
+}
+
 func (a *AnsiblerGrpcService) InstallNodeRequirements(_ context.Context, request *pb.InstallRequest) (*pb.InstallResponse, error) {
 	return a.usecases.InstallNodeRequirements(request)
 }

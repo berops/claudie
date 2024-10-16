@@ -13,6 +13,15 @@ const (
 	noProxyDefault       = "127.0.0.1/8,localhost,cluster.local,10.244.0.0/16,10.96.0.0/12" // 10.244.0.0/16 is kubeone's default PodCIDR and 10.96.0.0/12 is kubeone's default ServiceCIDR
 )
 
+type (
+	ProxyInventoryFileParameters struct {
+		K8sNodepools NodePools
+		ClusterID    string
+		NoProxyList  string
+		HttpProxyUrl string
+	}
+)
+
 func GetHttpProxyUrlAndNoProxyList(k8sClusterInfo *spec.ClusterInfo, lbs []*spec.LBcluster) (string, string) {
 	var httpProxyUrl, noProxyList string
 	hasHetznerNodeFlag := hasHetznerNode(k8sClusterInfo)

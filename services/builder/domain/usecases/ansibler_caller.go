@@ -50,7 +50,18 @@ func (u *Usecases) configureInfrastructure(ctx *builder.Context) error {
 		apiEndpoint = teardownRes.PreviousAPIEndpoint
 	}
 
-	// TODO: make new gRPC call to update proxy envs in /etc/environment
+	// Updating proxy envs on nodes.
+	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s updating proxy envs on nodes in /etc/environment", description))
+
+	logger.Info().Msgf("Calling UpdateProxyEnvsOnNodes on Ansibler")
+	proxyResp, err := u.Ansibler.UpdateProxyEnvsOnNodes(ctx, ansClient)
+	if err != nil {
+		return err
+	}
+
+	logger.Info().Msgf("UpdateProxyEnvsOnNodes on Ansibler finished successfully")
+	ctx.CurrentCluster = proxyResp.Current
+	ctx.DesiredCluster = proxyResp.Desired
 
 	// Install VPN.
 	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s intalling VPN", description))
@@ -95,14 +106,14 @@ func (u *Usecases) configureInfrastructure(ctx *builder.Context) error {
 	// NOTE: UpdateNoProxyEnvsInK8s has to be called after SetUpLoadbalancers
 	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s updating NO_PROXY and no_proxy env variables in kube-proxy and static pods", description))
 	logger.Info().Msgf("Calling UpdateNoProxyEnvsInK8s on Ansibler")
-	resp, err := u.Ansibler.UpdateNoProxyEnvsInK8s(ctx, ansClient)
+	noProxyResp, err := u.Ansibler.UpdateNoProxyEnvsInK8s(ctx, ansClient)
 	if err != nil {
 		return err
 	}
 
 	logger.Info().Msgf("UpdateNoProxyEnvsInK8s on Ansibler finished successfully")
-	ctx.CurrentCluster = resp.Current
-	ctx.DesiredCluster = resp.Desired
+	ctx.CurrentCluster = noProxyResp.Current
+	ctx.DesiredCluster = noProxyResp.Desired
 
 	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, description)
 	return nil

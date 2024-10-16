@@ -79,9 +79,19 @@ func (a *AnsiblerConnector) UpdateAPIEndpoint(builderCtx *builder.Context, nodep
 	})
 }
 
-// UpdateNoProxyEnvsInK8s updates NO_PROXY and no_proxy envs in kube-proxy and static pods
+// UpdateNoProxyEnvsInK8s updates NO_PROXY and no_proxy envs in kube-proxy and static pods.
 func (a *AnsiblerConnector) UpdateNoProxyEnvsInK8s(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.UpdateNoProxyEnvsInK8SResponse, error) {
 	return ansibler.UpdateNoProxyEnvsInK8s(ansiblerGrpcClient, &pb.UpdateNoProxyEnvsInK8SRequest{
+		Current:     builderCtx.CurrentCluster,
+		Desired:     builderCtx.DesiredCluster,
+		DesiredLbs:  builderCtx.DesiredLoadbalancers,
+		ProjectName: builderCtx.ProjectName,
+	})
+}
+
+// UpdateProxyEnvsOnNodes updates proxy envs on all nodes of the cluster.
+func (a *AnsiblerConnector) UpdateProxyEnvsOnNodes(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.UpdateProxyEnvsOnNodesResponse, error) {
+	return ansibler.UpdateProxyEnvsOnNodes(ansiblerGrpcClient, &pb.UpdateProxyEnvsOnNodesRequest{
 		Current:     builderCtx.CurrentCluster,
 		Desired:     builderCtx.DesiredCluster,
 		DesiredLbs:  builderCtx.DesiredLoadbalancers,

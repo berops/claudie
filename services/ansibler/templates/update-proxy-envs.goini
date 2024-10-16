@@ -1,12 +1,16 @@
 [control]
-{{- range $nodepool := .K8sControlPlaneNodepools.Dynamic }}
+{{- range $nodepool := .K8sNodepools.Dynamic }}
     {{- range $node :=  $nodepool.Nodes }}
+        {{- if not $nodepool.IsControl }} 
 {{ trimPrefix $node.Name (printf "%s-" $.ClusterID) }} ansible_user=root ansible_host={{ $node.Public }} private_ip={{ $node.Private }} no_proxy_list={{ $.NoProxyList }} http_proxy_url={{ $.HttpProxyUrl }} ansible_ssh_private_key_file={{ $nodepool.Name }}.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
+        {{- end }}
     {{- end }}
 {{- end }}
-{{- range $nodepool := .K8sControlPlaneNodepools.Static }}
+{{- range $nodepool := .K8sNodepools.Static }}
     {{- range $node :=  $nodepool.Nodes }}
+        {{- if not $nodepool.IsControl }} 
 {{ $node.Name }} ansible_user={{ $node.Username }} ansible_host={{ $node.Public }} private_ip={{ $node.Private }} no_proxy_list={{ $.NoProxyList }} http_proxy_url={{ $.HttpProxyUrl }} ansible_ssh_private_key_file={{ $node.Name }}.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
+        {{- end }}
     {{- end }}
 {{- end }}
 

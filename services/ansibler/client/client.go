@@ -66,3 +66,11 @@ func UpdateNoProxyEnvsInK8s(c pb.AnsiblerServiceClient, req *pb.UpdateNoProxyEnv
 	}
 	return res, nil
 }
+
+func UpdateProxyEnvsOnNodes(c pb.AnsiblerServiceClient, req *pb.UpdateProxyEnvsOnNodesRequest) (*pb.UpdateProxyEnvsOnNodesResponse, error) {
+	res, err := c.UpdateProxyEnvsOnNodes(context.Background(), req)
+	if err != nil {
+		return res, fmt.Errorf("error while calling UpdateProxyEnvsOnNodes on Ansibler: %w", err)
+	}
+	return res, nil
+}

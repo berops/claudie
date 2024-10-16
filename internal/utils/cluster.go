@@ -158,32 +158,32 @@ func GetCommonDynamicNodePools(nps []*spec.NodePool) []*spec.NodePool {
 	return dynamic
 }
 
-func GetCommonDynamicControlPlaneNodes(currentNp, desiredNp []*spec.NodePool) []*spec.NodePool {
-	currDynamicControlNps := make(map[string]*spec.NodePool)
+func GetCommonDynamicNodes(currentNp, desiredNp []*spec.NodePool) []*spec.NodePool {
+	currDynamicNps := make(map[string]*spec.NodePool)
 	for _, np := range currentNp {
-		if np.IsControl && np.GetDynamicNodePool() != nil {
-			currDynamicControlNps[np.Name] = np
+		if np.GetDynamicNodePool() != nil {
+			currDynamicNps[np.Name] = np
 		}
 	}
 
-	commonDynamicControlNps := CreateNpsFromCommonControlPlaneNodes(currDynamicControlNps, desiredNp)
+	commonDynamicControlNps := CreateNpsFromNodes(currDynamicNps, desiredNp)
 	return commonDynamicControlNps
 }
 
-func GetCommonStaticControlPlaneNodes(currentNp, desiredNp []*spec.NodePool) []*spec.NodePool {
-	currStaticControlNps := make(map[string]*spec.NodePool)
+func GetCommonStaticNodes(currentNp, desiredNp []*spec.NodePool) []*spec.NodePool {
+	currStaticNps := make(map[string]*spec.NodePool)
 	for _, np := range currentNp {
-		if np.IsControl && np.GetStaticNodePool() != nil {
-			currStaticControlNps[np.Name] = np
+		if np.GetStaticNodePool() != nil {
+			currStaticNps[np.Name] = np
 		}
 	}
 
-	commonStaticControlNps := CreateNpsFromCommonControlPlaneNodes(currStaticControlNps, desiredNp)
+	commonStaticControlNps := CreateNpsFromNodes(currStaticNps, desiredNp)
 	return commonStaticControlNps
 }
 
-func CreateNpsFromCommonControlPlaneNodes(currControlNps map[string]*spec.NodePool, desiredNp []*spec.NodePool) []*spec.NodePool {
-	var commonControlNps []*spec.NodePool
+func CreateNpsFromNodes(currControlNps map[string]*spec.NodePool, desiredNp []*spec.NodePool) []*spec.NodePool {
+	var commonNps []*spec.NodePool
 
 	for _, np := range desiredNp {
 		if currNp, exists := currControlNps[np.Name]; exists {
@@ -208,12 +208,12 @@ func CreateNpsFromCommonControlPlaneNodes(currControlNps map[string]*spec.NodePo
 					Labels:      currNp.Labels,
 					Annotations: currNp.Annotations,
 				}
-				commonControlNps = append(commonControlNps, commonNodePool)
+				commonNps = append(commonNps, commonNodePool)
 			}
 		}
 	}
 
-	return commonControlNps
+	return commonNps
 }
 
 func CountLbNodes(lb *spec.LBcluster) int {
