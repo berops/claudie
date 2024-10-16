@@ -137,7 +137,7 @@ type AnsiblerServiceServer interface {
 	// UpdateAPIEndpoint handles changes of API endpoint between control nodes.
 	// It will update the current stage based on the information from the desired state.
 	UpdateAPIEndpoint(context.Context, *UpdateAPIEndpointRequest) (*UpdateAPIEndpointResponse, error)
-	// UpdateProxyEnvs HTTP_PROXY, HTTPS_PROXY, NO_PROXY, http_proxy, https_proxy and no_proxy envs
+	// UpdateProxyEnvs handles changes of HTTP_PROXY, HTTPS_PROXY, NO_PROXY, http_proxy, https_proxy and no_proxy envs
 	UpdateProxyEnvs(context.Context, *UpdateProxyEnvsRequest) (*UpdateProxyEnvsResponse, error)
 	// Removes utilities installed by claudie via ansible playbooks.
 	RemoveClaudieUtilities(context.Context, *RemoveClaudieUtilitiesRequest) (*RemoveClaudieUtilitiesResponse, error)

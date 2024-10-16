@@ -19,18 +19,18 @@ func (u *Usecases) UpdateAPIEndpoint(request *pb.UpdateAPIEndpointRequest) (*pb.
 	}
 
 	log.Info().Msgf("Updating api endpoint for cluster %s project %s", request.Current.ClusterInfo.Name, request.ProjectName)
-	if err := updateAPIEndpoint(request.Endpoint, request.Current.ClusterInfo, request.Desired.ClusterInfo, request.DesiredLbs, u.SpawnProcessLimit); err != nil {
+	if err := updateAPIEndpoint(request.Endpoint, request.Current.ClusterInfo, request.CurrnetLbs, u.SpawnProcessLimit); err != nil {
 		return nil, fmt.Errorf("failed to update api endpoint for cluster %s project %s", request.Current.ClusterInfo.Name, request.ProjectName)
 	}
 	log.Info().Msgf("Updated api endpoint for cluster %s project %s", request.Current.ClusterInfo.Name, request.ProjectName)
 
-	return &pb.UpdateAPIEndpointResponse{Current: request.Current, Desired: request.Desired}, nil
+	return &pb.UpdateAPIEndpointResponse{Current: request.Current}, nil
 }
 
 // updateAPIEndpoint handles the case where the ApiEndpoint node is removed from
 // the desired state. Thus, a new control node needs to be selected among the existing
 // control nodes. This new control node will then represent the ApiEndpoint of the cluster.
-func updateAPIEndpoint(endpoint *pb.UpdateAPIEndpointRequest_Endpoint, currentK8sClusterInfo, desiredK8sClusterInfo *spec.ClusterInfo, desiredLbs []*spec.LBcluster, spawnProcessLimit chan struct{}) error {
+func updateAPIEndpoint(endpoint *pb.UpdateAPIEndpointRequest_Endpoint, currentK8sClusterInfo *spec.ClusterInfo, currnetLbs []*spec.LBcluster, spawnProcessLimit chan struct{}) error {
 	clusterID := commonUtils.GetClusterID(currentK8sClusterInfo)
 
 	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, commonUtils.CreateHash(commonUtils.HashLength)))
@@ -85,9 +85,11 @@ func updateAPIEndpoint(endpoint *pb.UpdateAPIEndpointRequest_Endpoint, currentK8
 	apiEndpointNode.NodeType = spec.NodeType_master
 	newEndpointNode.NodeType = spec.NodeType_apiEndpoint
 
-	httpProxyUrl, noProxyList := utils.GetHttpProxyUrlAndNoProxyList(desiredK8sClusterInfo, desiredLbs)
+	newApiEndpoint := newEndpointNode.GetPublic()
 
-	if err = utils.ChangeAPIEndpoint(currentK8sClusterInfo.Name, apiEndpointNode.GetPublic(), newEndpointNode.GetPublic(),
+	httpProxyUrl, noProxyList := utils.GetHttpProxyUrlAndNoProxyList(currentK8sClusterInfo, currnetLbs)
+
+	if err = utils.ChangeAPIEndpoint(currentK8sClusterInfo.Name, apiEndpointNode.GetPublic(), newApiEndpoint,
 		httpProxyUrl, noProxyList, clusterDirectory, spawnProcessLimit); err != nil {
 		return err
 	}

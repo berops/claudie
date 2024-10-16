@@ -13,9 +13,9 @@ const (
 	noProxyDefault       = "127.0.0.1/8,localhost,cluster.local,10.244.0.0/16,10.96.0.0/12" // 10.244.0.0/16 is kubeone's default PodCIDR and 10.96.0.0/12 is kubeone's default ServiceCIDR
 )
 
-func GetHttpProxyUrlAndNoProxyList(desiredK8sClusterInfo *spec.ClusterInfo, desiredLbs []*spec.LBcluster) (string, string) {
+func GetHttpProxyUrlAndNoProxyList(k8sClusterInfo *spec.ClusterInfo, lbs []*spec.LBcluster) (string, string) {
 	var httpProxyUrl, noProxyList string
-	hasHetznerNodeFlag := hasHetznerNode(desiredK8sClusterInfo)
+	hasHetznerNodeFlag := hasHetznerNode(k8sClusterInfo)
 	httpProxyMode := commonUtils.GetEnvDefault("HTTP_PROXY_MODE", defaultHttpProxyMode)
 
 	if httpProxyMode == "off" || (httpProxyMode == "default" && !hasHetznerNodeFlag) {
@@ -23,23 +23,23 @@ func GetHttpProxyUrlAndNoProxyList(desiredK8sClusterInfo *spec.ClusterInfo, desi
 		httpProxyUrl = ""
 		noProxyList = ""
 	} else {
-		noProxyList = createNoProxyList(desiredK8sClusterInfo.GetNodePools(), desiredLbs)
+		noProxyList = createNoProxyList(k8sClusterInfo.GetNodePools(), lbs)
 		httpProxyUrl = commonUtils.GetEnvDefault("HTTP_PROXY_URL", defaultHttpProxyUrl)
 	}
 
 	return httpProxyUrl, noProxyList
 }
 
-func createNoProxyList(desiredNodePools []*spec.NodePool, desiredLbs []*spec.LBcluster) string {
+func createNoProxyList(nodePools []*spec.NodePool, lbs []*spec.LBcluster) string {
 	noProxyList := noProxyDefault
 
-	for _, np := range desiredNodePools {
+	for _, np := range nodePools {
 		for _, node := range np.Nodes {
 			noProxyList = fmt.Sprintf("%s,%s,%s", noProxyList, node.Private, node.Public)
 		}
 	}
 
-	for _, lbCluster := range desiredLbs {
+	for _, lbCluster := range lbs {
 		noProxyList = fmt.Sprintf("%s,%s", noProxyList, lbCluster.Dns.Endpoint)
 		for _, np := range lbCluster.ClusterInfo.NodePools {
 			for _, node := range np.Nodes {
@@ -55,9 +55,9 @@ func createNoProxyList(desiredNodePools []*spec.NodePool, desiredLbs []*spec.LBc
 	return noProxyList
 }
 
-func hasHetznerNode(desiredK8sClusterInfo *spec.ClusterInfo) bool {
-	desiredNodePools := desiredK8sClusterInfo.GetNodePools()
-	for _, np := range desiredNodePools {
+func hasHetznerNode(k8sClusterInfo *spec.ClusterInfo) bool {
+	nodePools := k8sClusterInfo.GetNodePools()
+	for _, np := range nodePools {
 		if np.GetDynamicNodePool() != nil && np.GetDynamicNodePool().Provider.CloudProviderName == "hetzner" {
 			return true
 		}

@@ -74,6 +74,7 @@ func (a *AnsiblerConnector) UpdateAPIEndpoint(builderCtx *builder.Context, nodep
 	return ansibler.UpdateAPIEndpoint(ansiblerGrpcClient, &pb.UpdateAPIEndpointRequest{
 		Endpoint:    &pb.UpdateAPIEndpointRequest_Endpoint{Nodepool: nodepool, Node: node},
 		Current:     builderCtx.CurrentCluster,
+		CurrnetLbs:  builderCtx.CurrentLoadbalancers,
 		ProjectName: builderCtx.ProjectName,
 	})
 }
