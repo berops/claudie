@@ -48,23 +48,26 @@ message UpdateAPIEndpointRequest{
     string nodepool = 1;
     string node = 2;
   }
-  spec.K8scluster current = 1;
-  Endpoint endpoint = 2;
-  string projectName = 3;
+  Endpoint endpoint = 1;
+  spec.K8scluster current = 2;
+  spec.K8scluster desired = 3;
+  repeated spec.LBcluster desiredLbs = 4;
+  string projectName = 5;
 }
 
 message UpdateAPIEndpointResponse{
   spec.K8scluster current = 1;
+  spec.K8scluster desired = 2;
 }
 
-message UpdateNoProxyEnvsRequest{
+message UpdateProxyEnvsRequest{
   spec.K8scluster current = 1;
   spec.K8scluster desired = 2;
   repeated spec.LBcluster desiredLbs = 3;
   string projectName = 4;
 }
 
-message UpdateNoProxyEnvsResponse{
+message UpdateProxyEnvsResponse{
   spec.K8scluster current = 1;
   spec.K8scluster desired = 2;
 }
@@ -93,9 +96,8 @@ service AnsiblerService {
   // UpdateAPIEndpoint handles changes of API endpoint between control nodes.
   // It will update the current stage based on the information from the desired state.
   rpc UpdateAPIEndpoint(UpdateAPIEndpointRequest) returns (UpdateAPIEndpointResponse);
-  // UpdateNoProxyEnvs handles changes of NO_PROXY and no_proxy env variables in kube-proxy DaemonSet and static pods.
-  // It will check the public and private IPs in the current and desired state. If there's a mismatch it will update the envs accordingly.
-  rpc UpdateNoProxyEnvs(UpdateNoProxyEnvsRequest) returns (UpdateNoProxyEnvsResponse);
+  // UpdateProxyEnvs handles changes of HTTP_PROXY, HTTPS_PROXY, NO_PROXY, http_proxy, https_proxy and no_proxy envs
+  rpc UpdateProxyEnvs(UpdateProxyEnvsRequest) returns (UpdateProxyEnvsResponse);
   // Removes utilities installed by claudie via ansible playbooks.
   rpc RemoveClaudieUtilities(RemoveClaudieUtilitiesRequest) returns (RemoveClaudieUtilitiesResponse);
 }
