@@ -92,9 +92,16 @@ func (r *DynamicNodePoolResolver) resolve(np *spec.DynamicNodePool) (Arch, error
 		return resolveOci(np)
 	case "azure":
 		return resolveAzure(np)
+	case "genesiscloud":
+		return resolveGenesisCloud(np)
 	default:
 		return "", fmt.Errorf("%q not supported", np.GetProvider().GetCloudProviderName())
 	}
+}
+
+func resolveGenesisCloud(np *spec.DynamicNodePool) (Arch, error) {
+	// As of now (15. oct 2024) genesiscloud currently only has x64 cpus.
+	return Amd64, nil
 }
 
 func resolveAzure(np *spec.DynamicNodePool) (Arch, error) {
