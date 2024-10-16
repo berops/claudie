@@ -118,7 +118,15 @@ func setUpLoadbalancers(desiredK8sClusterInfo *spec.ClusterInfo, lbClustersInfo 
 		desiredApiServerTypeLBCluster = utils.FindCurrentAPIServerTypeLBCluster(lbClustersInfo.LbClusters)
 	}
 
-	if err := utils.HandleAPIEndpointChange(desiredApiServerTypeLBCluster, desiredK8sClusterInfo, lbClustersInfo, clusterBaseDirectory, spawnProcessLimit); err != nil {
+	var desiredLbs []*spec.LBcluster
+	for _, lbCluster := range lbClustersInfo.LbClusters {
+		desiredLbs = append(desiredLbs, lbCluster.DesiredLbCluster)
+	}
+
+	httpProxyUrl, noProxyList := utils.GetHttpProxyUrlAndNoProxyList(desiredK8sClusterInfo, desiredLbs)
+
+	if err := utils.HandleAPIEndpointChange(desiredApiServerTypeLBCluster, desiredK8sClusterInfo, lbClustersInfo,
+		httpProxyUrl, noProxyList, clusterBaseDirectory, spawnProcessLimit); err != nil {
 		return fmt.Errorf("failed to find a candidate for the Api Server: %w", err)
 	}
 

@@ -85,7 +85,15 @@ func teardownLoadBalancers(desiredK8sClusterInfo *spec.ClusterInfo, lbClustersIn
 		return currentApiServerTypeLBCluster.CurrentLbCluster.Dns.Endpoint, os.RemoveAll(clusterDirectory)
 	}
 
-	if err := utils.HandleAPIEndpointChange(currentApiServerTypeLBCluster, desiredK8sClusterInfo, lbClustersInfo, clusterDirectory, spawnProcessLimit); err != nil {
+	var desiredLbs []*spec.LBcluster
+	for _, lbCluster := range lbClustersInfo.LbClusters {
+		desiredLbs = append(desiredLbs, lbCluster.DesiredLbCluster)
+	}
+
+	httpProxyUrl, noProxyList := utils.GetHttpProxyUrlAndNoProxyList(desiredK8sClusterInfo, desiredLbs)
+
+	if err := utils.HandleAPIEndpointChange(currentApiServerTypeLBCluster, desiredK8sClusterInfo, lbClustersInfo,
+		httpProxyUrl, noProxyList, clusterDirectory, spawnProcessLimit); err != nil {
 		return "", err
 	}
 
