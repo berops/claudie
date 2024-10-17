@@ -5,6 +5,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/berops/claudie/internal/kubectl"
+	"gopkg.in/yaml.v3"
 	"time"
 
 	"github.com/berops/claudie/internal/utils"
@@ -104,6 +106,9 @@ func waitForDoneOrError(ctx context.Context, manager managerclient.CrudAPI, set 
 			// Rolling update can have multiple stages, thus we also check for the manifest checksum equality.
 			if res.Config.Manifest.State == spec.Manifest_Done {
 				if bytes.Equal(res.Config.Manifest.LastAppliedChecksum, res.Config.Manifest.Checksum) {
+					if err := validateKubeconfigAlternativeNames(res.Config.Clusters); err != nil {
+						return nil, err
+					}
 					return res.Config, nil
 				}
 
@@ -124,6 +129,9 @@ func waitForDoneOrError(ctx context.Context, manager managerclient.CrudAPI, set 
 
 			if res.Config.Manifest.State == spec.Manifest_Error && bytes.Equal(res.Config.Manifest.LastAppliedChecksum, res.Config.Manifest.Checksum) {
 				var err error
+				if validateErr := validateKubeconfigAlternativeNames(res.Config.Clusters); validateErr != nil {
+					err = errors.Join(err, validateErr)
+				}
 
 				for cluster, state := range res.Config.Clusters {
 					if state.State.Status == spec.Workflow_ERROR {
@@ -147,4 +155,75 @@ func getAutoscaledClusters(c *spec.Config) []*spec.K8Scluster {
 	}
 
 	return clusters
+}
+
+func validateKubeconfigAlternativeNames(clusters map[string]*spec.ClusterState) error {
+	for c, v := range clusters {
+		if v.Current == nil {
+			continue
+		}
+		// if the clusters has no APIServer Loadbalancer we can test all
+		// control plane nodes to validate if they all can be used with the
+		// generated KubeConfig.
+		apiLb := false
+		for _, l := range v.GetCurrent().GetLoadBalancers().GetClusters() {
+			if utils.HasAPIServerRole(l.Roles) {
+				apiLb = true
+				break
+			}
+		}
+		if apiLb {
+			continue
+		}
+
+		var kubeconfigs []string
+
+		kubeconfig := map[string]interface{}{}
+		if err := yaml.Unmarshal([]byte(v.Current.K8S.Kubeconfig), &kubeconfig); err != nil {
+			return fmt.Errorf("cluster %q: %w", c, err)
+		}
+
+		cluster := kubeconfig["clusters"].([]interface{})[0]
+		clusterMap := cluster.(map[string]interface{})["cluster"].(map[string]interface{})
+		for _, n := range v.Current.K8S.ClusterInfo.NodePools {
+			if !n.IsControl {
+				continue
+			}
+
+			for _, n := range n.Nodes {
+				clusterMap["server"] = fmt.Sprintf("https://%s:6443", n.Public)
+				newConfig, err := yaml.Marshal(kubeconfig)
+				if err != nil {
+					return fmt.Errorf("cluster %q: %w", c, err)
+				}
+
+				kubeconfigs = append(kubeconfigs, string(newConfig))
+			}
+		}
+
+		var output []byte
+		for _, kubeconfig := range kubeconfigs {
+			// check number of nodes in nodes.longhorn.io
+			k := kubectl.Kubectl{
+				Kubeconfig:        kubeconfig,
+				MaxKubectlRetries: 5,
+			}
+			nodes, err := k.KubectlGetNodeNames()
+			if err != nil {
+				return fmt.Errorf("cluster %q: %w", c, err)
+			}
+
+			// initialize only once, every output should then
+			// be the same.
+			if output == nil {
+				output = nodes
+			}
+
+			if !bytes.Equal(nodes, output) {
+				return fmt.Errorf("cluster %q does not have kubeconfig signed for all control plane nodes")
+			}
+		}
+	}
+
+	return nil
 }

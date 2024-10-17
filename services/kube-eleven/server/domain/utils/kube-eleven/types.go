@@ -27,6 +27,7 @@ type (
 	// the Kubeone files from templates.
 	templateData struct {
 		APIEndpoint       string
+		AlternativeNames  []string
 		KubernetesVersion string
 		ClusterName       string
 		UtilizeHttpProxy  bool
