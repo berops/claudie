@@ -220,7 +220,7 @@ func validateKubeconfigAlternativeNames(clusters map[string]*spec.ClusterState) 
 			}
 
 			if !bytes.Equal(nodes, output) {
-				return fmt.Errorf("cluster %q does not have kubeconfig signed for all control plane nodes")
+				return fmt.Errorf("cluster %q does not have kubeconfig signed for all control plane nodes", c)
 			}
 		}
 	}
