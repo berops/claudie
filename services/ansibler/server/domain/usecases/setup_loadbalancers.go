@@ -194,21 +194,12 @@ func setUpNginx(lbCluster *spec.LBcluster, targetK8sNodepool []*spec.NodePool, c
 }
 
 func targetPools(lbCluster *spec.LBcluster, targetK8sNodepool []*spec.NodePool) []utils.LBClusterRolesInfo {
-	//TODO: remove in favor of targetNodepools
-	targetControlNodes, targetComputeNodes := splitNodesByType(targetK8sNodepool)
-
 	var lbClusterRolesInfo []utils.LBClusterRolesInfo
 	for _, role := range lbCluster.Roles {
-		if len(role.TargetPools) == 0 {
-			// TODO: remove in favor of targetNodepools
-			target := assignTarget(targetControlNodes, targetComputeNodes, role.Target)
-			lbClusterRolesInfo = append(lbClusterRolesInfo, utils.LBClusterRolesInfo{Role: role, TargetNodes: target})
-		} else {
-			lbClusterRolesInfo = append(lbClusterRolesInfo, utils.LBClusterRolesInfo{
-				Role:        role,
-				TargetNodes: targetNodes(role.TargetPools, targetK8sNodepool),
-			})
-		}
+		lbClusterRolesInfo = append(lbClusterRolesInfo, utils.LBClusterRolesInfo{
+			Role:        role,
+			TargetNodes: targetNodes(role.TargetPools, targetK8sNodepool),
+		})
 	}
 
 	return lbClusterRolesInfo
@@ -236,33 +227,4 @@ func targetNodes(targetPools []string, targetk8sPools []*spec.NodePool) (nodes [
 	}
 
 	return
-}
-
-// splitNodesByType returns two slices of *pb.Node, one for control nodes and one for compute nodes.
-func splitNodesByType(nodepools []*spec.NodePool) (controlNodes, computeNodes []*spec.Node) {
-	for _, nodepool := range nodepools {
-		for _, node := range nodepool.Nodes {
-			if node.NodeType == spec.NodeType_apiEndpoint || node.NodeType == spec.NodeType_master {
-				controlNodes = append(controlNodes, node)
-			} else {
-				computeNodes = append(computeNodes, node)
-			}
-		}
-	}
-
-	return controlNodes, computeNodes
-}
-
-// assignTarget returns a target nodes for pb.Target.
-// If no target matches the pb.Target enum, returns nil
-func assignTarget(targetControlNodes, targetComputeNodes []*spec.Node, target spec.Target) (targetNodes []*spec.Node) {
-	if target == spec.Target_k8sAllNodes {
-		targetNodes = append(targetControlNodes, targetComputeNodes...)
-	} else if target == spec.Target_k8sControlPlane {
-		targetNodes = targetControlNodes
-	} else if target == spec.Target_k8sComputePlane {
-		targetNodes = targetComputeNodes
-	}
-
-	return targetNodes
 }

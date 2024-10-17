@@ -785,7 +785,6 @@ func TestDiff(t *testing.T) {
 					Protocol:    "tcp",
 					Port:        6443,
 					TargetPort:  6443,
-					Target:      0,
 					TargetPools: []string{"np0"},
 					RoleType:    spec.RoleType_ApiServer,
 				},

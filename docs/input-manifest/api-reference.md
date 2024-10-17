@@ -454,18 +454,6 @@ Role defines a concrete loadbalancer configuration. Single loadbalancer can have
 
   Port where loadbalancer forwards the traffic.
 
-- `target`
-
-!!! note "Deprecated, use targetPools instead."
-
-  Defines a target group of nodes. Allowed values are:
-
-  | Value             | Description                          |
-  | ----------------- | ------------------------------------ |
-  | `k8sAllNodes`     | All nodes in the cluster             |
-  | `k8sControlPlane` | Only control/master nodes in cluster |
-  | `k8sComputePlane` | Only compute/worker nodes in cluster |
-
 - `targetPools`
   Defines from which nodepools, nodes will be targeted by the Load Balancer
 
