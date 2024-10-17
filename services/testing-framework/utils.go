@@ -5,16 +5,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/berops/claudie/internal/kubectl"
-	"gopkg.in/yaml.v3"
 	"time"
 
+	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	managerclient "github.com/berops/claudie/services/manager/client"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/rs/zerolog/log"
+
+	"gopkg.in/yaml.v3"
 
 	"google.golang.org/protobuf/proto"
 )
@@ -203,7 +204,6 @@ func validateKubeconfigAlternativeNames(clusters map[string]*spec.ClusterState) 
 
 		var output []byte
 		for _, kubeconfig := range kubeconfigs {
-			// check number of nodes in nodes.longhorn.io
 			k := kubectl.Kubectl{
 				Kubeconfig:        kubeconfig,
 				MaxKubectlRetries: 5,
