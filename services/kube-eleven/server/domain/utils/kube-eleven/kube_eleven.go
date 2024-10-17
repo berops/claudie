@@ -139,12 +139,6 @@ func (k *KubeEleven) generateFiles() error {
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 
-	// Create a kubeconfig file for the target Kubernetes cluster.
-	kubeconfigFilePath := filepath.Join(k.outputDirectory, fmt.Sprintf("%s-kubeconfig", k.K8sCluster.ClusterInfo.Name))
-	if err := os.WriteFile(kubeconfigFilePath, []byte(k.K8sCluster.GetKubeconfig()), 0600); err != nil {
-		return fmt.Errorf("error while writing cluster-kubeconfig file in %s: %w", k.outputDirectory, err)
-	}
-
 	return nil
 }
 
@@ -156,6 +150,19 @@ func (k *KubeEleven) generateTemplateData() templateData {
 	var potentialEndpointNode *spec.Node
 	data.Nodepools, potentialEndpointNode = k.getClusterNodes()
 	data.APIEndpoint = k.findAPIEndpoint(potentialEndpointNode)
+
+	var alternativeNames []string
+	for _, n := range k.K8sCluster.ClusterInfo.NodePools {
+		if !n.IsControl {
+			continue
+		}
+		for _, n := range n.Nodes {
+			if n.NodeType != spec.NodeType_apiEndpoint {
+				alternativeNames = append(alternativeNames, n.Public)
+			}
+		}
+	}
+	data.AlternativeNames = alternativeNames
 
 	hasHetznerNodes := k.hasHetznerNodes(data.Nodepools)
 	httpProxyMode := utils.GetEnvDefault("HTTP_PROXY_MODE", defaulHttpProxyMode)
