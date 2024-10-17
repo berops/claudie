@@ -65,7 +65,7 @@ images:
 - name: ghcr.io/berops/claudie/claudie-operator
   newTag: 4577dc2-3035
 - name: ghcr.io/berops/claudie/kube-eleven
-  newTag: 4577dc2-3035
+  newTag: 79cda35-3040
 - name: ghcr.io/berops/claudie/kuber
   newTag: 4577dc2-3035
 - name: ghcr.io/berops/claudie/manager
