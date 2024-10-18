@@ -50,7 +50,7 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 ## What's changed
 - Support added for Ubuntu 24.04 in Azure and Hetzner [#1401](https://github.com/berops/Claudie/pull/1401)
 
-- Each nodepool now has its own SSH keys, a change from the previous state where all nodepools shared the same SSH keys.. [#1442](https://github.com/berops/Claudie/pull/1442)
+- Each nodepool now has its own SSH keys, a change from the previous state where all nodepools shared the same SSH keys.. [#1442](https://github.com/berops/claudie/pull/1442)
 
 - Added support for pluggable external terraform files, breaking the dependency of updated terraform files on a new Claudie version. [#1460](https://github.com/berops/claudie/pull/1460)
 
