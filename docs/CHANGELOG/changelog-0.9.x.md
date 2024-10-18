@@ -68,7 +68,7 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 
 
 ### Experimental
-- Support for a HTTP proxy was added. The HTTP Proxy can be turned on by setting the `HTTP_PROXY_MODE` environment variable in the Claudie config map to `on`  [#1440](https://github.com/berops/Claudie/pull/1440)
+- Support for a HTTP proxy was added. The HTTP Proxy can be turned on by setting the `HTTP_PROXY_MODE` environment variable in the Claudie config map to `on`  [#1440](https://github.com/berops/claudie/pull/1440)
 
 ## Bug fixes
 - In the case when the infrastructure fails to be build or is only partially build
