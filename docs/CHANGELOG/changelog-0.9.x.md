@@ -58,7 +58,7 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 
 - The Scheduler and Context-Box microservices were merged into a single service called Manager. This was done because these two services were tightly coupled, and parts of the context box service were causing state correctness issues within Claudie and needed to be fixed. [#1498](https://github.com/berops/claudie/pull/1498)
 
-- Latest supported kubernetes version is now  v1.30.x [#1498](https://github.com/berops/Claudie/pull/1501)
+- Latest supported kubernetes version is now  v1.30.x [#1498](https://github.com/berops/claudie/pull/1501)
 
 - Logs in all microservices have been changed to always log what is being executed, rather than only when the LOG_LEVEL is set to debug. [#1507](https://github.com/berops/claudie/pull/1507)
 
