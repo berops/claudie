@@ -62,7 +62,7 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 
 - Logs in all microservices have been changed to always log what is being executed, rather than only when the LOG_LEVEL is set to debug. [#1507](https://github.com/berops/Claudie/pull/1507)
 
-- Longhron version was bumped from 1.6.0 to 1.7.0 [#1511](https://github.com/berops/Claudie/pull/1511)
+- Longhron version was bumped from 1.6.0 to 1.7.0 [#1511](https://github.com/berops/claudie/pull/1511)
 
 - When building a Kubernetes cluster without a load balancer for the API server, the generated kubeconfig will now work for all control plane nodes defined in the input manifest, instead of just one. [#1546](https://github.com/berops/claudie/pull/1546)
 
