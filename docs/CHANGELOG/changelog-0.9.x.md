@@ -11,7 +11,7 @@
 ### Experimental
 - We have added support for an HTTP proxy to be used when building Kubernetes clusters. This was mainly motivated by the issues we encountered while building multi-provider clusters, where some IP addresses assigned to some of the VMs were being misused and blacklisted/blocked in various registries. By using the HTTP proxy, it is possible to work around this and get the cluster built successfully.
 
-Currently the HTTP proxy is experimental, it is made available by modifying the `HTTP_PROXY_MODE` in the Claudie config map in the `Claudie` namespace. The possible values are `(on|off|default)`. Default means that if a kubernetes cluster uses Hetzner nodepools, it will automatically switch to using the proxy, as we have encountered the most bad IP issues with Hetzner. By default the proxy is turned off.
+Currently the HTTP proxy is experimental, it is made available by modifying the `HTTP_PROXY_MODE` in the Claudie config map in the `claudie` namespace. The possible values are `(on|off|default)`. Default means that if a kubernetes cluster uses Hetzner nodepools, it will automatically switch to using the proxy, as we have encountered the most bad IP issues with Hetzner. By default the proxy is turned off.
 
 It should be noted that the proxy is still in an experimental phase, where the API for interacting with the proxy may change in the future. Therefore, clusters using this feature in this release run the risk of being backwards incompatible with future `0.9.x` releases, which will further stabilise the proxy API.
 
