@@ -60,7 +60,7 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 
 - Latest supported kubernetes version is now  v1.30.x [#1498](https://github.com/berops/Claudie/pull/1501)
 
-- Logs in all microservices have been changed to always log what is being executed, rather than only when the LOG_LEVEL is set to debug. [#1507](https://github.com/berops/Claudie/pull/1507)
+- Logs in all microservices have been changed to always log what is being executed, rather than only when the LOG_LEVEL is set to debug. [#1507](https://github.com/berops/claudie/pull/1507)
 
 - Longhron version was bumped from 1.6.0 to 1.7.0 [#1511](https://github.com/berops/claudie/pull/1511)
 
