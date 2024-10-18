@@ -52,7 +52,7 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 
 - Each nodepool now has its own SSH keys, a change from the previous state where all nodepools shared the same SSH keys.. [#1442](https://github.com/berops/Claudie/pull/1442)
 
-- Added support for pluggable external terraform files, breaking the dependency of updated terraform files on a new Claudie version. [#1460](https://github.com/berops/Claudie/pull/1460)
+- Added support for pluggable external terraform files, breaking the dependency of updated terraform files on a new Claudie version. [#1460](https://github.com/berops/claudie/pull/1460)
 
 - With the support of external terraform templates, the ability to arbitrarily change the templates used by Claudie was made available to the user. As a result, Claudie has implemented a rolling update of the infrastructure in case a change in the terraform templates is detected, by gradually updating the build cluster one nodepool at a time. [#1525](https://github.com/berops/claudie/pull/1525)
 
