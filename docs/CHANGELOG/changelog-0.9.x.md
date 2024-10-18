@@ -56,7 +56,7 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 
 - With the support of external terraform templates, the ability to arbitrarily change the templates used by Claudie was made available to the user. As a result, Claudie has implemented a rolling update of the infrastructure in case a change in the terraform templates is detected, by gradually updating the build cluster one nodepool at a time. [#1525](https://github.com/berops/Claudie/pull/1525)
 
-- The Scheduler and Context-Box microservices were merged into a single service called Manager. This was done because these two services were tightly coupled, and parts of the context box service were causing state correctness issues within Claudie and needed to be fixed. [#1498](https://github.com/berops/Claudie/pull/1498)
+- The Scheduler and Context-Box microservices were merged into a single service called Manager. This was done because these two services were tightly coupled, and parts of the context box service were causing state correctness issues within Claudie and needed to be fixed. [#1498](https://github.com/berops/claudie/pull/1498)
 
 - Latest supported kubernetes version is now  v1.30.x [#1498](https://github.com/berops/Claudie/pull/1501)
 
