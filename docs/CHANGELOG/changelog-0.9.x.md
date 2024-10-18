@@ -73,7 +73,7 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 ## Bug fixes
 - In the case when the infrastructure fails to be build or is only partially build
   the deletion process was stuck on acquiring a lock which was never created, this issue is no longer present [#1463](https://github.com/berops/claudie/pull/1463)
-- The init process was added to the Ansible microservice because previously spawned Ansible playbooks left behind zombie processes that consumed resources. The init process takes care of cleaning up these processes. [#1527](https://github.com/berops/Claudie/pull/1527)
+- The init process was added to the Ansible microservice because previously spawned Ansible playbooks left behind zombie processes that consumed resources. The init process takes care of cleaning up these processes. [#1527](https://github.com/berops/claudie/pull/1527)
 - Fixed an edge case where part of the load balancer infrastructure was incorrectly destroyed when a failure occurred in the middle of the workflow. [#1533](https://github.com/berops/Claudie/pull/1533)
 - The whitespace when generating keys will no longer be trimmed [#1539](https://github.com/berops/Claudie/pull/1539)
 - GenesisCloud autoscaling will now correctly work [#1543](https://github.com/berops/Claudie/pull/1543)
