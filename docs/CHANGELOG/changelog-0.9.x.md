@@ -40,7 +40,7 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
    ```
    ```bash
    # other
-   kubectl apply -f https://github.com/berops/Claudie/releases/latest/download/network-policy.yaml
+   kubectl apply -f https://github.com/berops/claudie/releases/latest/download/network-policy.yaml
    ```
 
 
