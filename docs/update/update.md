@@ -26,7 +26,7 @@ kubernetes:
 kubernetes:
   clusters:
     - name: claudie-cluster
-      version: 1.27.0
+      version: 1.28.0
       network: 192.168.2.0/24
       pools:
         ...
@@ -36,27 +36,14 @@ When re-applied this will trigger a new workflow for the cluster that will resul
 
 !!! note "Downgrading a version is not supported once you've upgraded a cluster to a newer version"
 
-## Updating the OS image
+# Updating Dynamic Nodepool
 
-Similarly, as to how the kubernetes version is updated you can update the OS image by just replacing
-it with a new version in the desired dynamic nodepool.
+Nodepools specified in the InputManifest are immutable. Once created, they cannot be updated/changed. This decision was made to force the user to perform a rolling update by first deleting the nodepool and replacing it with a new version with the new desired state. A couple of examples are listed below.
+
+## Updating the OS image
 
 ```yaml
 # old version
-...
-- name: hetzner
-  providerSpec:
-    name: hetzner-1
-    region: fsn1
-    zone: fsn1-dc14
-  count: 1
-  serverType: cpx11
-  image: ubuntu-20.04
-...
-```
-
-```yaml
-# new version
 ...
 - name: hetzner
   providerSpec:
@@ -69,7 +56,21 @@ it with a new version in the desired dynamic nodepool.
 ...
 ```
 
-When re-applied this will trigger a new workflow for the cluster that will result in the updated OS image version.
+```yaml
+# new version
+...
+- name: hetzner-1 # NOTE the different name.
+  providerSpec:
+    name: hetzner-1
+    region: fsn1
+    zone: fsn1-dc14
+  count: 1
+  serverType: cpx11
+  image: ubuntu-24.04
+...
+```
+
+When re-applied this will trigger a new workflow for the cluster that will result first in the addition of the new nodepool and then the deletion of the old nodepool. 
 
 ## Changing the Server Type of a Dynamic Nodepool
 
@@ -92,7 +93,7 @@ The same concept applies to changing the server type of a dynamic nodepool.
 ```yaml
 # new version
 ...
-- name: hetzner
+- name: hetzner-1 # NOTE the different name.
   providerSpec:
     name: hetzner-1
     region: fsn1
@@ -104,7 +105,3 @@ The same concept applies to changing the server type of a dynamic nodepool.
 ```
 
 When re-applied this will trigger a new workflow for the cluster that will result in the updated server type of the nodepool.
-
-!!! warning "Rollout Update"
-         When making changes to the nodepools the newly started workflow will not execute a rollout replacement,
-         it will re-create the instances in all places where the nodepool is referenced. It's possible to achieve a rollout strategy by firstly adding a new nodepool with the desired parameters waiting for it to be build and then deleting the references of the old nodepool and apply.

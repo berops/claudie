@@ -80,3 +80,90 @@ can look as follows:
 		...
 
 Examples of external templates can be found on:  https://github.com/berops/claudie-config
+
+## Rolling update
+
+To handle more specific scenarios where the default templates provided by claudie do not fit the use case, we allow these external templates to be changed/adapted by the user.
+
+By providing this ability to specify the templates to be used when building the InputManifest infrastructure, there is one common scenario that should be handled by claudie, which is rolling updates.
+
+Rolling updates of nodepools are performed when a change to a provider's external templates is registered. Claudie checks that the external repository of the new templates exists and uses them to perform a rolling update of the infrastructure already built. In the below example, when the templates of provider Hetzner-1 are changed the rolling update of all the nodepools which reference that provider will start by doing an update on a single nodepool at a time.
+
+```diff
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: HetznerExampleManifest
+  labels:
+    app.kubernetes.io/part-of: claudie
+spec:
+  providers:
+    - name: hetzner-1
+      providerType: hetzner
+      templates:
+-       repository: "https://github.com/berops/claudie-config"
+-       path: "templates/terraformer/hetzner"
++       repository: "https://github.com/YouRepository/claudie-config"
++       path: "templates/terraformer/hetzner"
+      secretRef:
+        name: hetzner-secret-1
+        namespace: mynamespace
+
+  nodePools:
+    dynamic:
+      - name: control-htz
+        providerSpec:
+          # Name of the provider instance.
+          name: hetzner-1
+          # Region of the nodepool.
+          region: hel1
+          # Datacenter of the nodepool.
+          zone: hel1-dc2
+        count: 1
+        # Machine type name.
+        serverType: cpx11
+        # OS image name.
+        image: ubuntu-22.04
+
+      - name: compute-1-htz
+        providerSpec:
+          # Name of the provider instance.
+          name: hetzner-1
+          # Region of the nodepool.
+          region: fsn1
+          # Datacenter of the nodepool.
+          zone: fsn1-dc14
+        count: 2
+        # Machine type name.
+        serverType: cpx11
+        # OS image name.
+        image: ubuntu-22.04
+        storageDiskSize: 50
+
+      - name: compute-2-htz
+        providerSpec:
+          # Name of the provider instance.
+          name: hetzner-1
+          # Region of the nodepool.
+          region: nbg1
+          # Datacenter of the nodepool.
+          zone: nbg1-dc3
+        count: 2
+        # Machine type name.
+        serverType: cpx11
+        # OS image name.
+        image: ubuntu-22.04
+        storageDiskSize: 50
+
+  kubernetes:
+    clusters:
+      - name: hetzner-cluster
+        version: v1.27.0
+        network: 192.168.2.0/24
+        pools:
+          control:
+            - control-htz
+          compute:
+            - compute-1-htz
+            - compute-2-htz
+```
