@@ -70,14 +70,14 @@ message UpdateProxyEnvsOnNodesResponse{
   spec.K8scluster desired = 2;
 }
 
-message UpdateNoProxyEnvsInK8sRequest{
+message UpdateNoProxyEnvsInKubernetesRequest{
   spec.K8scluster current = 1;
   spec.K8scluster desired = 2;
   repeated spec.LBcluster desiredLbs = 3;
   string projectName = 4;
 }
 
-message UpdateNoProxyEnvsInK8sResponse{
+message UpdateNoProxyEnvsInKubernetesResponse{
   spec.K8scluster current = 1;
   spec.K8scluster desired = 2;
 }
@@ -108,8 +108,8 @@ service AnsiblerService {
   rpc UpdateAPIEndpoint(UpdateAPIEndpointRequest) returns (UpdateAPIEndpointResponse);
   // UpdateProxyEnvsOnNodes handles changes of HTTP_PROXY, HTTPS_PROXY, NO_PROXY, http_proxy, https_proxy and no_proxy envs in /etc/environment
   rpc UpdateProxyEnvsOnNodes(UpdateProxyEnvsOnNodesRequest) returns (UpdateProxyEnvsOnNodesResponse);
-  // UpdateNoProxyEnvsInK8s handles changes of NO_PROXY and no_proxy envs in kube-proxy and static pods
-  rpc UpdateNoProxyEnvsInK8s(UpdateNoProxyEnvsInK8sRequest) returns (UpdateNoProxyEnvsInK8sResponse);
+  // UpdateNoProxyEnvsInKubernetes handles changes of NO_PROXY and no_proxy envs in kube-proxy and static pods
+  rpc UpdateNoProxyEnvsInKubernetes(UpdateNoProxyEnvsInKubernetesRequest) returns (UpdateNoProxyEnvsInKubernetesResponse);
   // Removes utilities installed by claudie via ansible playbooks.
   rpc RemoveClaudieUtilities(RemoveClaudieUtilitiesRequest) returns (RemoveClaudieUtilitiesResponse);
 }

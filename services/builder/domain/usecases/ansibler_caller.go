@@ -103,15 +103,15 @@ func (u *Usecases) configureInfrastructure(ctx *builder.Context) error {
 	ctx.CurrentLoadbalancers = setUpRes.CurrentLbs
 	ctx.DesiredLoadbalancers = setUpRes.DesiredLbs
 
-	// NOTE: UpdateNoProxyEnvsInK8s has to be called after SetUpLoadbalancers
+	// NOTE: UpdateNoProxyEnvsInKubernetes has to be called after SetUpLoadbalancers
 	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s updating NO_PROXY and no_proxy env variables in kube-proxy and static pods", description))
-	logger.Info().Msgf("Calling UpdateNoProxyEnvsInK8s on Ansibler")
-	noProxyResp, err := u.Ansibler.UpdateNoProxyEnvsInK8s(ctx, ansClient)
+	logger.Info().Msgf("Calling UpdateNoProxyEnvsInKubernetes on Ansibler")
+	noProxyResp, err := u.Ansibler.UpdateNoProxyEnvsInKubernetes(ctx, ansClient)
 	if err != nil {
 		return err
 	}
 
-	logger.Info().Msgf("UpdateNoProxyEnvsInK8s on Ansibler finished successfully")
+	logger.Info().Msgf("UpdateNoProxyEnvsInKubernetes on Ansibler finished successfully")
 	ctx.CurrentCluster = noProxyResp.Current
 	ctx.DesiredCluster = noProxyResp.Desired
 

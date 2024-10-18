@@ -15,28 +15,28 @@ import (
 )
 
 const (
-	noProxyPlaybookFilePath = "../../ansible-playbooks/update-noproxy-envs-in-k8s.yml"
+	noProxyPlaybookFilePath = "../../ansible-playbooks/update-noproxy-envs-in-kubernetes.yml"
 )
 
-func (u *Usecases) UpdateNoProxyEnvsInK8s(request *pb.UpdateNoProxyEnvsInK8SRequest) (*pb.UpdateNoProxyEnvsInK8SResponse, error) {
+func (u *Usecases) UpdateNoProxyEnvsInKubernetes(request *pb.UpdateNoProxyEnvsInKubernetesRequest) (*pb.UpdateNoProxyEnvsInKubernetesResponse, error) {
 	if request.Current == nil {
-		return &pb.UpdateNoProxyEnvsInK8SResponse{Current: request.Current, Desired: request.Desired}, nil
+		return &pb.UpdateNoProxyEnvsInKubernetesResponse{Current: request.Current, Desired: request.Desired}, nil
 	}
 
 	log.Info().Msgf("Updating proxy env variables in kube-proxy DaemonSet and static pods for cluster %s project %s",
 		request.Current.ClusterInfo.Name, request.ProjectName)
-	if err := updateNoProxyEnvsInK8s(request.Current.ClusterInfo, request.Desired.ClusterInfo, request.DesiredLbs, u.SpawnProcessLimit); err != nil {
+	if err := updateNoProxyEnvsInKubernetes(request.Current.ClusterInfo, request.Desired.ClusterInfo, request.DesiredLbs, u.SpawnProcessLimit); err != nil {
 		return nil, fmt.Errorf("Failed to update proxy env variables in kube-proxy DaemonSet and static pods for cluster %s project %s",
 			request.Current.ClusterInfo.Name, request.ProjectName)
 	}
 	log.Info().Msgf("Updated proxy env variables in kube-proxy DaemonSet and static pods for cluster %s project %s",
 		request.Current.ClusterInfo.Name, request.ProjectName)
 
-	return &pb.UpdateNoProxyEnvsInK8SResponse{Current: request.Current, Desired: request.Desired}, nil
+	return &pb.UpdateNoProxyEnvsInKubernetesResponse{Current: request.Current, Desired: request.Desired}, nil
 }
 
-// updateNoProxyEnvsInK8s updates NO_PROXY and no_proxy envs in kube-proxy and static pods
-func updateNoProxyEnvsInK8s(currentK8sClusterInfo, desiredK8sClusterInfo *spec.ClusterInfo, desiredLbs []*spec.LBcluster, spawnProcessLimit chan struct{}) error {
+// updateNoProxyEnvsInKubernetes updates NO_PROXY and no_proxy envs in kube-proxy and static pods
+func updateNoProxyEnvsInKubernetes(currentK8sClusterInfo, desiredK8sClusterInfo *spec.ClusterInfo, desiredLbs []*spec.LBcluster, spawnProcessLimit chan struct{}) error {
 	clusterID := commonUtils.GetClusterID(currentK8sClusterInfo)
 
 	// This is the directory where files (Ansible inventory files, SSH keys etc.) will be generated.

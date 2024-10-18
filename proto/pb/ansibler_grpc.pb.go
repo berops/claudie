@@ -19,14 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	AnsiblerService_InstallNodeRequirements_FullMethodName = "/claudie.AnsiblerService/InstallNodeRequirements"
-	AnsiblerService_InstallVPN_FullMethodName              = "/claudie.AnsiblerService/InstallVPN"
-	AnsiblerService_SetUpLoadbalancers_FullMethodName      = "/claudie.AnsiblerService/SetUpLoadbalancers"
-	AnsiblerService_TeardownLoadBalancers_FullMethodName   = "/claudie.AnsiblerService/TeardownLoadBalancers"
-	AnsiblerService_UpdateAPIEndpoint_FullMethodName       = "/claudie.AnsiblerService/UpdateAPIEndpoint"
-	AnsiblerService_UpdateProxyEnvsOnNodes_FullMethodName  = "/claudie.AnsiblerService/UpdateProxyEnvsOnNodes"
-	AnsiblerService_UpdateNoProxyEnvsInK8S_FullMethodName  = "/claudie.AnsiblerService/UpdateNoProxyEnvsInK8s"
-	AnsiblerService_RemoveClaudieUtilities_FullMethodName  = "/claudie.AnsiblerService/RemoveClaudieUtilities"
+	AnsiblerService_InstallNodeRequirements_FullMethodName       = "/claudie.AnsiblerService/InstallNodeRequirements"
+	AnsiblerService_InstallVPN_FullMethodName                    = "/claudie.AnsiblerService/InstallVPN"
+	AnsiblerService_SetUpLoadbalancers_FullMethodName            = "/claudie.AnsiblerService/SetUpLoadbalancers"
+	AnsiblerService_TeardownLoadBalancers_FullMethodName         = "/claudie.AnsiblerService/TeardownLoadBalancers"
+	AnsiblerService_UpdateAPIEndpoint_FullMethodName             = "/claudie.AnsiblerService/UpdateAPIEndpoint"
+	AnsiblerService_UpdateProxyEnvsOnNodes_FullMethodName        = "/claudie.AnsiblerService/UpdateProxyEnvsOnNodes"
+	AnsiblerService_UpdateNoProxyEnvsInKubernetes_FullMethodName = "/claudie.AnsiblerService/UpdateNoProxyEnvsInKubernetes"
+	AnsiblerService_RemoveClaudieUtilities_FullMethodName        = "/claudie.AnsiblerService/RemoveClaudieUtilities"
 )
 
 // AnsiblerServiceClient is the client API for AnsiblerService service.
@@ -47,8 +47,8 @@ type AnsiblerServiceClient interface {
 	UpdateAPIEndpoint(ctx context.Context, in *UpdateAPIEndpointRequest, opts ...grpc.CallOption) (*UpdateAPIEndpointResponse, error)
 	// UpdateProxyEnvsOnNodes handles changes of HTTP_PROXY, HTTPS_PROXY, NO_PROXY, http_proxy, https_proxy and no_proxy envs in /etc/environment
 	UpdateProxyEnvsOnNodes(ctx context.Context, in *UpdateProxyEnvsOnNodesRequest, opts ...grpc.CallOption) (*UpdateProxyEnvsOnNodesResponse, error)
-	// UpdateNoProxyEnvsInK8s handles changes of NO_PROXY and no_proxy envs in kube-proxy and static pods
-	UpdateNoProxyEnvsInK8S(ctx context.Context, in *UpdateNoProxyEnvsInK8SRequest, opts ...grpc.CallOption) (*UpdateNoProxyEnvsInK8SResponse, error)
+	// UpdateNoProxyEnvsInKubernetes handles changes of NO_PROXY and no_proxy envs in kube-proxy and static pods
+	UpdateNoProxyEnvsInKubernetes(ctx context.Context, in *UpdateNoProxyEnvsInKubernetesRequest, opts ...grpc.CallOption) (*UpdateNoProxyEnvsInKubernetesResponse, error)
 	// Removes utilities installed by claudie via ansible playbooks.
 	RemoveClaudieUtilities(ctx context.Context, in *RemoveClaudieUtilitiesRequest, opts ...grpc.CallOption) (*RemoveClaudieUtilitiesResponse, error)
 }
@@ -115,9 +115,9 @@ func (c *ansiblerServiceClient) UpdateProxyEnvsOnNodes(ctx context.Context, in *
 	return out, nil
 }
 
-func (c *ansiblerServiceClient) UpdateNoProxyEnvsInK8S(ctx context.Context, in *UpdateNoProxyEnvsInK8SRequest, opts ...grpc.CallOption) (*UpdateNoProxyEnvsInK8SResponse, error) {
-	out := new(UpdateNoProxyEnvsInK8SResponse)
-	err := c.cc.Invoke(ctx, AnsiblerService_UpdateNoProxyEnvsInK8S_FullMethodName, in, out, opts...)
+func (c *ansiblerServiceClient) UpdateNoProxyEnvsInKubernetes(ctx context.Context, in *UpdateNoProxyEnvsInKubernetesRequest, opts ...grpc.CallOption) (*UpdateNoProxyEnvsInKubernetesResponse, error) {
+	out := new(UpdateNoProxyEnvsInKubernetesResponse)
+	err := c.cc.Invoke(ctx, AnsiblerService_UpdateNoProxyEnvsInKubernetes_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -151,8 +151,8 @@ type AnsiblerServiceServer interface {
 	UpdateAPIEndpoint(context.Context, *UpdateAPIEndpointRequest) (*UpdateAPIEndpointResponse, error)
 	// UpdateProxyEnvsOnNodes handles changes of HTTP_PROXY, HTTPS_PROXY, NO_PROXY, http_proxy, https_proxy and no_proxy envs in /etc/environment
 	UpdateProxyEnvsOnNodes(context.Context, *UpdateProxyEnvsOnNodesRequest) (*UpdateProxyEnvsOnNodesResponse, error)
-	// UpdateNoProxyEnvsInK8s handles changes of NO_PROXY and no_proxy envs in kube-proxy and static pods
-	UpdateNoProxyEnvsInK8S(context.Context, *UpdateNoProxyEnvsInK8SRequest) (*UpdateNoProxyEnvsInK8SResponse, error)
+	// UpdateNoProxyEnvsInKubernetes handles changes of NO_PROXY and no_proxy envs in kube-proxy and static pods
+	UpdateNoProxyEnvsInKubernetes(context.Context, *UpdateNoProxyEnvsInKubernetesRequest) (*UpdateNoProxyEnvsInKubernetesResponse, error)
 	// Removes utilities installed by claudie via ansible playbooks.
 	RemoveClaudieUtilities(context.Context, *RemoveClaudieUtilitiesRequest) (*RemoveClaudieUtilitiesResponse, error)
 	mustEmbedUnimplementedAnsiblerServiceServer()
@@ -180,8 +180,8 @@ func (UnimplementedAnsiblerServiceServer) UpdateAPIEndpoint(context.Context, *Up
 func (UnimplementedAnsiblerServiceServer) UpdateProxyEnvsOnNodes(context.Context, *UpdateProxyEnvsOnNodesRequest) (*UpdateProxyEnvsOnNodesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateProxyEnvsOnNodes not implemented")
 }
-func (UnimplementedAnsiblerServiceServer) UpdateNoProxyEnvsInK8S(context.Context, *UpdateNoProxyEnvsInK8SRequest) (*UpdateNoProxyEnvsInK8SResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateNoProxyEnvsInK8S not implemented")
+func (UnimplementedAnsiblerServiceServer) UpdateNoProxyEnvsInKubernetes(context.Context, *UpdateNoProxyEnvsInKubernetesRequest) (*UpdateNoProxyEnvsInKubernetesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateNoProxyEnvsInKubernetes not implemented")
 }
 func (UnimplementedAnsiblerServiceServer) RemoveClaudieUtilities(context.Context, *RemoveClaudieUtilitiesRequest) (*RemoveClaudieUtilitiesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveClaudieUtilities not implemented")
@@ -307,20 +307,20 @@ func _AnsiblerService_UpdateProxyEnvsOnNodes_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AnsiblerService_UpdateNoProxyEnvsInK8S_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateNoProxyEnvsInK8SRequest)
+func _AnsiblerService_UpdateNoProxyEnvsInKubernetes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateNoProxyEnvsInKubernetesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AnsiblerServiceServer).UpdateNoProxyEnvsInK8S(ctx, in)
+		return srv.(AnsiblerServiceServer).UpdateNoProxyEnvsInKubernetes(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AnsiblerService_UpdateNoProxyEnvsInK8S_FullMethodName,
+		FullMethod: AnsiblerService_UpdateNoProxyEnvsInKubernetes_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AnsiblerServiceServer).UpdateNoProxyEnvsInK8S(ctx, req.(*UpdateNoProxyEnvsInK8SRequest))
+		return srv.(AnsiblerServiceServer).UpdateNoProxyEnvsInKubernetes(ctx, req.(*UpdateNoProxyEnvsInKubernetesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -375,8 +375,8 @@ var AnsiblerService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AnsiblerService_UpdateProxyEnvsOnNodes_Handler,
 		},
 		{
-			MethodName: "UpdateNoProxyEnvsInK8s",
-			Handler:    _AnsiblerService_UpdateNoProxyEnvsInK8S_Handler,
+			MethodName: "UpdateNoProxyEnvsInKubernetes",
+			Handler:    _AnsiblerService_UpdateNoProxyEnvsInKubernetes_Handler,
 		},
 		{
 			MethodName: "RemoveClaudieUtilities",
