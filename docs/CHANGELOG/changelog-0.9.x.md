@@ -30,7 +30,7 @@ To deploy Claudie `v0.9.X`, please:
 > We strongly recommend changing the default credentials for MongoDB, MinIO and DynamoDB before you deploy it.
 
 ```
-kubectl apply -f https://github.com/berops/Claudie/releases/latest/download/Claudie.yaml
+kubectl apply -f https://github.com/berops/claudie/releases/latest/download/claudie.yaml
 ```
 
 To further harden Claudie, you may want to deploy our pre-defined network policies:
