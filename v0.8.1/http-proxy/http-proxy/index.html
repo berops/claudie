@@ -8,13 +8,11 @@
       
       
       
-        <link rel="canonical" href="https://docs.claudie.io/v0.8.1/version-matrix/version-matrix/">
+        <link rel="canonical" href="https://docs.claudie.io/v0.8.1/http-proxy/http-proxy/">
       
       
-        <link rel="prev" href="../../commands/commands/">
+        <link rel="prev" href="../../version-matrix/version-matrix/">
       
-      
-        <link rel="next" href="../../http-proxy/http-proxy/">
       
       
       <link rel="icon" href="../../hexagon_blue.png">
@@ -22,7 +20,7 @@
     
     
       
-        <title>Version Matrix - Claudie Docs</title>
+        <title>HTTP Proxy - Claudie Docs</title>
       
     
     
@@ -135,7 +133,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#version-matrix" class="md-skip">
+        <a href="#usage-of-http-proxy" class="md-skip">
           Skip to content
         </a>
       
@@ -175,7 +173,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Version Matrix
+              HTTP Proxy
             
           </span>
         </div>
@@ -1384,6 +1382,26 @@
       
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../../version-matrix/version-matrix/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Version Matrix
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
     
   
   
@@ -1396,28 +1414,18 @@
         
       
       
-      <a href="./" class="md-nav__link md-nav__link--active">
-        
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
   
   <span class="md-ellipsis">
-    Version Matrix
+    HTTP Proxy
   </span>
   
 
-      </a>
+          <span class="md-nav__icon md-icon"></span>
+        </label>
       
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../http-proxy/http-proxy/" class="md-nav__link">
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -1426,6 +1434,44 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#default-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Default setup
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#further-customization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Further customization
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1450,6 +1496,32 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#default-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Default setup
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#further-customization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Further customization
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1466,44 +1538,18 @@
   
 
 
-<h1 id="version-matrix">Version matrix<a class="headerlink" href="#version-matrix" title="Permanent link">&para;</a></h1>
-<p>In the following table, you can find the supported Kubernetes and OS versions for the latest Claudie versions.</p>
-<table>
-<thead>
-<tr>
-<th>Claudie Version</th>
-<th>Kubernetes versions</th>
-<th>OS versions</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>v0.6.x</td>
-<td>1.24.x, 1.25.x, 1.26.x</td>
-<td>Ubuntu 22.04</td>
-</tr>
-<tr>
-<td>v0.7.0</td>
-<td>1.24.x, 1.25.x, 1.26.x</td>
-<td>Ubuntu 22.04</td>
-</tr>
-<tr>
-<td>v0.7.1-x</td>
-<td>1.25.x, 1.26.x, 1.27.x</td>
-<td>Ubuntu 22.04</td>
-</tr>
-<tr>
-<td>v0.8.0</td>
-<td>1.25.x, 1.26.x, 1.27.x</td>
-<td>Ubuntu 22.04</td>
-</tr>
-<tr>
-<td>v0.8.1</td>
-<td>1.27.x, 1.28.x, 1.29.x</td>
-<td>Ubuntu 22.04</td>
-</tr>
-</tbody>
-</table>
+<h1 id="usage-of-http-proxy">Usage of HTTP proxy<a class="headerlink" href="#usage-of-http-proxy" title="Permanent link">&para;</a></h1>
+<p>In this section, we'll describe the default HTTP proxy setup and its the further customization.</p>
+<h2 id="default-setup">Default setup<a class="headerlink" href="#default-setup" title="Permanent link">&para;</a></h2>
+<p>By default <code>HTTP_PROXY_MODE</code> is set to <code>default</code> <a href="https://docs.claudie.io/latest/getting-started/detailed-guide/#claudie-customization">see</a>, thus Claudie utilizes the HTTP proxy in building the K8s cluster only when there is at least one node from the Hetzner cloud provider. This means, that if you have a cluster with one master node in Azure and one worker node in AWS Claudie won't use the HTTP proxy to build the K8s cluster. However, if you add another worker node from Hetzner the whole process of building the K8s cluster will utilize the HTTP proxy. </p>
+<p>This approach was implemented to address the following issues:</p>
+<ul>
+<li><a href="https://github.com/berops/claudie/issues/783">https://github.com/berops/claudie/issues/783</a></li>
+<li><a href="https://github.com/berops/claudie/issues/1272">https://github.com/berops/claudie/issues/1272</a></li>
+</ul>
+<h2 id="further-customization">Further customization<a class="headerlink" href="#further-customization" title="Permanent link">&para;</a></h2>
+<p>In case you don't want to utilize the HTTP proxy at all (even when there are nodes in the K8s cluster from the Hetzner cloud provider) you can turn off the HTTP proxy by setting the <code>HTTP_PROXY_MODE</code> to <code>off</code> (<a href="https://docs.claudie.io/latest/getting-started/detailed-guide/#claudie-customization">see</a>). On the other hand, if you wish to use the HTTP proxy whenever building a K8s cluster (even when there aren't any nodes in the K8s cluster from the Hetzner cloud provider) you can set the <code>HTTP_PROXY_MODE</code> to <code>on</code> (<a href="https://docs.claudie.io/latest/getting-started/detailed-guide/#claudie-customization">see</a>).</p>
+<p>If you want to utilize your own HTTP proxy you can set its URL in <code>HTTP_PROXY_URL</code> (<a href="https://docs.claudie.io/latest/getting-started/detailed-guide/#claudie-customization">see</a>). By default, this value is set to <code>http://proxy.claudie.io:8880</code>. In case your HTTP proxy runs on <code>myproxy.com</code> and is exposed on port <code>3128</code> the <code>HTTP_PROXY_URL</code> has to be set to <code>http://myproxy.com:3128</code>. This means you always have to specify the whole URL with the protocol (HTTP), domain name, and port. </p>
 
 
 
