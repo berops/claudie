@@ -76,4 +76,4 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 - The init process was added to the Ansible microservice because previously spawned Ansible playbooks left behind zombie processes that consumed resources. The init process takes care of cleaning up these processes. [#1527](https://github.com/berops/claudie/pull/1527)
 - Fixed an edge case where part of the load balancer infrastructure was incorrectly destroyed when a failure occurred in the middle of the workflow. [#1533](https://github.com/berops/claudie/pull/1533)
 - The whitespace when generating keys will no longer be trimmed [#1539](https://github.com/berops/claudie/pull/1539)
-- GenesisCloud autoscaling will now correctly work [#1543](https://github.com/berops/Claudie/pull/1543)
+- GenesisCloud autoscaling will now correctly work [#1543](https://github.com/berops/claudie/pull/1543)
