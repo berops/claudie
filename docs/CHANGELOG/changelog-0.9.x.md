@@ -19,7 +19,7 @@ It should be noted that the proxy is still in an experimental phase, where the A
 
 To deploy Claudie `v0.9.X`, please:
 
-1. Download Claudie.yaml from [release page](https://github.com/berops/Claudie/releases)
+1. Download claudie.yaml from [release page](https://github.com/berops/claudie/releases)
 
 2. Verify the checksum with `sha256` (optional)
 
