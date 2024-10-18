@@ -23,7 +23,7 @@ To deploy Claudie `v0.9.X`, please:
 
 2. Verify the checksum with `sha256` (optional)
 
-   We provide checksums in `Claudie_checksum.txt` you can verify the downloaded yaml files againts the provided checksums.
+   We provide checksums in `claudie_checksum.txt` you can verify the downloaded yaml files againts the provided checksums.
 
 3. Install Claudie using `kubectl`
 
