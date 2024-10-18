@@ -36,7 +36,7 @@ kubectl apply -f https://github.com/berops/claudie/releases/latest/download/clau
 To further harden Claudie, you may want to deploy our pre-defined network policies:
    ```bash
    # for clusters using cilium as their CNI
-   kubectl apply -f https://github.com/berops/Claudie/releases/latest/download/network-policy-cilium.yaml
+   kubectl apply -f https://github.com/berops/claudie/releases/latest/download/network-policy-cilium.yaml
    ```
    ```bash
    # other
