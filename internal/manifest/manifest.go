@@ -229,6 +229,8 @@ type Cluster struct {
 	Network string `validate:"required,cidrv4" yaml:"network" json:"network"`
 	// List of nodepool names this cluster will use.
 	Pools Pool `yaml:"pools" json:"pools"`
+	// General information about a proxy used to build a K8s cluster.
+	InstallationProxy InstallationProxy `yaml:"installationProxy" json:"installationProxy"`
 }
 
 // List of nodepool names this cluster will use. Remember that nodepools defined in nodepools
@@ -238,6 +240,14 @@ type Pool struct {
 	Control []string `validate:"min=1" yaml:"control" json:"control"`
 	// List of nodepool names, that will represent compute nodes.
 	Compute []string `yaml:"compute" json:"compute"`
+}
+
+// General information about a proxy used to build a K8s cluster.
+type InstallationProxy struct {
+	// Enabled defines if the proxy is enabled. If undefined, the default mode is on.
+	Enabled bool `yaml:"enabled" json:"enabled"`
+	// Host defines the proxy host. If undefined, the default value is proxy.claudie.io:8880.
+	Host string `yaml:"host" json:"host"`
 }
 
 // Role defines a concrete loadbalancer configuration. Single loadbalancer can have multiple roles.

@@ -3,14 +3,12 @@ package utils
 import (
 	"fmt"
 
-	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 )
 
 const (
-	defaultHttpProxyMode = "default"
-	defaultHttpProxyUrl  = "http://proxy.claudie.io:8880"
-	noProxyDefault       = "127.0.0.1/8,localhost,cluster.local,10.244.0.0/16,10.96.0.0/12" // 10.244.0.0/16 is kubeone's default PodCIDR and 10.96.0.0/12 is kubeone's default ServiceCIDR
+	defaultHttpProxyUrl = "http://proxy.claudie.io:8880"
+	noProxyDefault      = "127.0.0.1/8,localhost,cluster.local,10.244.0.0/16,10.96.0.0/12" // 10.244.0.0/16 is kubeone's default PodCIDR and 10.96.0.0/12 is kubeone's default ServiceCIDR
 )
 
 type (
@@ -22,18 +20,37 @@ type (
 	}
 )
 
-func GetHttpProxyUrlAndNoProxyList(k8sClusterInfo *spec.ClusterInfo, lbs []*spec.LBcluster) (string, string) {
-	var httpProxyUrl, noProxyList string
+func GetHttpProxyUrlAndNoProxyList(k8sClusterInfo *spec.ClusterInfo, lbs []*spec.LBcluster, k8sInstallationProxy *spec.InstallationProxy) (string, string) {
+	var httpProxyUrl, noProxyList = "", ""
 	hasHetznerNodeFlag := hasHetznerNode(k8sClusterInfo)
-	httpProxyMode := commonUtils.GetEnvDefault("HTTP_PROXY_MODE", defaultHttpProxyMode)
 
-	if httpProxyMode == "off" || (httpProxyMode == "default" && !hasHetznerNodeFlag) {
-		// set empty proxy env variables when proxy is off or a k8s cluster doesn't have any hetzner nodes in proxy default mode.
-		httpProxyUrl = ""
-		noProxyList = ""
-	} else {
+	if (k8sInstallationProxy != nil && k8sInstallationProxy.Enabled) || hasHetznerNodeFlag {
+		httpProxyUrl = k8sInstallationProxy.Host
 		noProxyList = createNoProxyList(k8sClusterInfo.GetNodePools(), lbs)
-		httpProxyUrl = commonUtils.GetEnvDefault("HTTP_PROXY_URL", defaultHttpProxyUrl)
+	}
+
+	if k8sInstallationProxy != nil {
+		if k8sInstallationProxy.Enabled {
+			// Set proxy env variables when proxy is on.
+			if k8sInstallationProxy.Host == "" {
+				httpProxyUrl = defaultHttpProxyUrl
+			} else {
+				httpProxyUrl = k8sInstallationProxy.Host
+			}
+			noProxyList = createNoProxyList(k8sClusterInfo.GetNodePools(), lbs)
+		} else {
+			// Set empty proxy env variables when proxy is off.
+			httpProxyUrl = ""
+			noProxyList = ""
+		}
+	} else {
+		hasHetznerNodeFlag := hasHetznerNode(k8sClusterInfo)
+
+		if hasHetznerNodeFlag {
+			// Set proxy env variables when k8s cluster has at least one hetzner node.
+			httpProxyUrl = defaultHttpProxyUrl
+			noProxyList = createNoProxyList(k8sClusterInfo.GetNodePools(), lbs)
+		}
 	}
 
 	return httpProxyUrl, noProxyList

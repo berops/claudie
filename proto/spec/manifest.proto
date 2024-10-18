@@ -104,6 +104,8 @@ message K8scluster {
   string kubeconfig = 3;
   // Kubernetes version.
   string kubernetes = 4;
+  // General information about a proxy used to build a K8s cluster.
+  InstallationProxy installationProxy = 5;
 }
 
 // LBcluster represents a single load balancer cluster specified in the
@@ -127,6 +129,14 @@ message ClusterInfo {
   string hash = 2;
   // Array of node pools this cluster is made of.
   repeated NodePool nodePools = 5;
+}
+
+// InstallationProxy holds general information about a proxy used to build a K8s cluster.
+message InstallationProxy {
+  // Proxy installation turned on/off flag. If undefined the default mode is on
+  bool enabled = 1;
+  // Proxy hostname used to access the proxy.
+  string host = 2;
 }
 
 // Role represents a single loadbalancer role from the manifest.

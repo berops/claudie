@@ -5,8 +5,6 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.15.0
   name: inputmanifests.claudie.io
-  labels:
-    app.kubernetes.io/part-of: claudie
 spec:
   group: claudie.io
   names:
@@ -59,6 +57,22 @@ spec:
                       description: Collection of data used to define a Kubernetes
                         cluster.
                       properties:
+                        installationProxy:
+                          description: General information about a proxy used to build
+                            a K8s cluster.
+                          properties:
+                            enabled:
+                              description: Enabled defines if the proxy is enabled.
+                                If undefined, the default mode is on.
+                              type: boolean
+                            host:
+                              description: Host defines the proxy host. If undefined,
+                                the default value is proxy.claudie.io:8880.
+                              type: string
+                          required:
+                          - enabled
+                          - host
+                          type: object
                         name:
                           description: Name of the Kubernetes cluster. Each cluster
                             will have a random hash appended to the name, so the whole
@@ -96,6 +110,7 @@ spec:
                             https://docs.kubermatic.com/kubeone/v1.8/architecture/compatibility/supported-versions/
                           type: string
                       required:
+                      - installationProxy
                       - name
                       - network
                       - pools

@@ -48,7 +48,7 @@ func (u *Usecases) TeardownLoadBalancers(ctx context.Context, request *pb.Teardo
 		})
 	}
 
-	previousApiEndpoint, err := teardownLoadBalancers(request.Desired.ClusterInfo, lbClustersInfo, isApiServerTypeDesiredLBClusterPresent, u.SpawnProcessLimit)
+	previousApiEndpoint, err := teardownLoadBalancers(request.Desired, lbClustersInfo, isApiServerTypeDesiredLBClusterPresent, u.SpawnProcessLimit)
 	if err != nil {
 		logger.Err(err).Msgf("Error encountered while tearing down the LoadBalancers")
 		return nil, fmt.Errorf("error encountered while tearing down loadbalancers for cluster %s project %s : %w", request.Desired.ClusterInfo.Name, request.ProjectName, err)
@@ -68,8 +68,8 @@ func (u *Usecases) TeardownLoadBalancers(ctx context.Context, request *pb.Teardo
 // If for a K8s cluster a new ApiServerLB is being attached instead of handling the apiEndpoint immediately
 // it will be delayed and will send the data to the dataChan which will be used later for the SetupLoadbalancers
 // function to bypass generating the certificates for the endpoint multiple times.
-func teardownLoadBalancers(desiredK8sClusterInfo *spec.ClusterInfo, lbClustersInfo *utils.LBClustersInfo, attached bool, spawnProcessLimit chan struct{}) (string, error) {
-	clusterName := desiredK8sClusterInfo.Name
+func teardownLoadBalancers(desiredK8sCluster *spec.K8Scluster, lbClustersInfo *utils.LBClustersInfo, attached bool, spawnProcessLimit chan struct{}) (string, error) {
+	clusterName := desiredK8sCluster.ClusterInfo.Name
 
 	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, commonUtils.CreateHash(commonUtils.HashLength)))
 	if err := utils.GenerateLBBaseFiles(clusterDirectory, lbClustersInfo); err != nil {
@@ -90,9 +90,9 @@ func teardownLoadBalancers(desiredK8sClusterInfo *spec.ClusterInfo, lbClustersIn
 		desiredLbs = append(desiredLbs, lbCluster.DesiredLbCluster)
 	}
 
-	httpProxyUrl, noProxyList := utils.GetHttpProxyUrlAndNoProxyList(desiredK8sClusterInfo, desiredLbs)
+	httpProxyUrl, noProxyList := utils.GetHttpProxyUrlAndNoProxyList(desiredK8sCluster.ClusterInfo, desiredLbs, desiredK8sCluster.InstallationProxy)
 
-	if err := utils.HandleAPIEndpointChange(currentApiServerTypeLBCluster, desiredK8sClusterInfo, lbClustersInfo,
+	if err := utils.HandleAPIEndpointChange(currentApiServerTypeLBCluster, desiredK8sCluster.ClusterInfo, lbClustersInfo,
 		httpProxyUrl, noProxyList, clusterDirectory, spawnProcessLimit); err != nil {
 		return "", err
 	}

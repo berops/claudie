@@ -90,6 +90,10 @@ func createK8sClustersFromManifest(from *manifest.Manifest, into *store.Config) 
 			},
 			Kubernetes: cluster.Version,
 			Network:    cluster.Network,
+			InstallationProxy: &spec.InstallationProxy{
+				Enabled: cluster.InstallationProxy.Enabled,
+				Host:    cluster.InstallationProxy.Host,
+			},
 		}
 
 		controlNodePools, err := from.CreateNodepools(cluster.Pools.Control, true)

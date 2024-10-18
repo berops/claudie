@@ -46,7 +46,7 @@ func (u *Usecases) SetUpLoadbalancers(request *pb.SetUpLBRequest) (*pb.SetUpLBRe
 		})
 	}
 
-	if err := setUpLoadbalancers(request.Desired.ClusterInfo, lbClustersInfo, logger, u.SpawnProcessLimit); err != nil {
+	if err := setUpLoadbalancers(request.Desired, lbClustersInfo, logger, u.SpawnProcessLimit); err != nil {
 		logger.Err(err).Msgf("Error encountered while setting up the loadbalancers")
 		return nil, fmt.Errorf("error encountered while setting up the loadbalancers for cluster %s project %s : %w", request.Desired.ClusterInfo.Name, request.ProjectName, err)
 	}
@@ -56,8 +56,8 @@ func (u *Usecases) SetUpLoadbalancers(request *pb.SetUpLBRequest) (*pb.SetUpLBRe
 }
 
 // setUpLoadbalancers sets up the loadbalancers along with DNS and verifies their configuration
-func setUpLoadbalancers(desiredK8sClusterInfo *spec.ClusterInfo, lbClustersInfo *utils.LBClustersInfo, logger zerolog.Logger, spawnProcessLimit chan struct{}) error {
-	clusterName := desiredK8sClusterInfo.Name
+func setUpLoadbalancers(desiredK8sCluster *spec.K8Scluster, lbClustersInfo *utils.LBClustersInfo, logger zerolog.Logger, spawnProcessLimit chan struct{}) error {
+	clusterName := desiredK8sCluster.ClusterInfo.Name
 	clusterBaseDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, commonUtils.CreateHash(commonUtils.HashLength)))
 
 	if err := utils.GenerateLBBaseFiles(clusterBaseDirectory, lbClustersInfo); err != nil {
@@ -123,9 +123,9 @@ func setUpLoadbalancers(desiredK8sClusterInfo *spec.ClusterInfo, lbClustersInfo 
 		desiredLbs = append(desiredLbs, lbCluster.DesiredLbCluster)
 	}
 
-	httpProxyUrl, noProxyList := utils.GetHttpProxyUrlAndNoProxyList(desiredK8sClusterInfo, desiredLbs)
+	httpProxyUrl, noProxyList := utils.GetHttpProxyUrlAndNoProxyList(desiredK8sCluster.ClusterInfo, desiredLbs, desiredK8sCluster.InstallationProxy)
 
-	if err := utils.HandleAPIEndpointChange(desiredApiServerTypeLBCluster, desiredK8sClusterInfo, lbClustersInfo,
+	if err := utils.HandleAPIEndpointChange(desiredApiServerTypeLBCluster, desiredK8sCluster.ClusterInfo, lbClustersInfo,
 		httpProxyUrl, noProxyList, clusterBaseDirectory, spawnProcessLimit); err != nil {
 		return fmt.Errorf("failed to find a candidate for the Api Server: %w", err)
 	}

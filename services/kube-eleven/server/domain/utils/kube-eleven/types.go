@@ -30,7 +30,7 @@ type (
 		KubernetesVersion string
 		ClusterName       string
 		UtilizeHttpProxy  bool
-		NoProxy           string
+		NoProxyList       string
 		HttpProxyUrl      string
 		Nodepools         []*NodepoolInfo
 	}
