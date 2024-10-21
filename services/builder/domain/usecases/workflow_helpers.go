@@ -72,6 +72,12 @@ func (u *Usecases) buildCluster(ctx *builder.Context) (*builder.Context, error) 
 		}).Add(-float64(c))
 	}(max(0, utils.CountNodes(ctx.DesiredCluster)-utils.CountNodes(ctx.CurrentCluster)))
 
+	// Reconcile infrastructure via terraformer.
+	if err := u.reconcileInfrastructure(ctx); err != nil {
+		return ctx, fmt.Errorf("error in Terraformer for cluster %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
+	}
+
+	// The proxy envs need to be created after terraformer phase.
 	updateProxyEnvsFlag := false
 	if ctx.CurrentCluster != nil && ctx.DesiredCluster != nil {
 		currProxySettings := ctx.CurrentCluster.InstallationProxy
@@ -121,19 +127,10 @@ func (u *Usecases) buildCluster(ctx *builder.Context) (*builder.Context, error) 
 	}
 
 	if updateProxyEnvsFlag || ctx.CurrentCluster == nil {
-		// The proxy envs must be changed or set.
-		httpProxyUrl, noProxyList := builder.GetHttpProxyUrlAndNoProxyList(
-			ctx.DesiredCluster.ClusterInfo, ctx.DesiredLoadbalancers, ctx.DesiredCluster.InstallationProxy)
+		// HttProxyUrl and NoProxyList will be set after ansibler Install VPN phase.
 		ctx.ProxyEnvs = &spec.ProxyEnvs{
 			UpdateProxyEnvsFlag: true,
-			HttpProxyUrl:        httpProxyUrl,
-			NoProxyList:         noProxyList,
 		}
-	}
-
-	// Reconcile infrastructure via terraformer.
-	if err := u.reconcileInfrastructure(ctx); err != nil {
-		return ctx, fmt.Errorf("error in Terraformer for cluster %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
 	}
 
 	// Configure infrastructure via Ansibler.

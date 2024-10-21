@@ -53,6 +53,16 @@ func (u *Usecases) configureInfrastructure(ctx *builder.Context) error {
 	// Updating proxy envs on nodes.
 	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s updating proxy envs on nodes in /etc/environment", description))
 
+	if ctx.CurrentCluster != nil && ctx.ProxyEnvs != nil && ctx.ProxyEnvs.UpdateProxyEnvsFlag {
+		// in this case the builder cna create proxy envs only from current state because some
+		// a newly added VMs in the k8s cluster doesn't have a Wireguard IP yet.
+		hasHetznerNodeFlag := builder.HasHetznerNode(ctx.DesiredCluster.ClusterInfo)
+		httpProxyUrl, noProxyList := builder.GetHttpProxyUrlAndNoProxyList(
+			ctx.CurrentCluster.ClusterInfo, ctx.CurrentLoadbalancers, hasHetznerNodeFlag, ctx.DesiredCluster.InstallationProxy)
+		ctx.ProxyEnvs.HttpProxyUrl = httpProxyUrl
+		ctx.ProxyEnvs.NoProxyList = noProxyList
+	}
+
 	logger.Info().Msgf("Calling UpdateProxyEnvsOnNodes on Ansibler")
 	proxyResp, err := u.Ansibler.UpdateProxyEnvsOnNodes(ctx, ansClient)
 	if err != nil {
@@ -75,6 +85,15 @@ func (u *Usecases) configureInfrastructure(ctx *builder.Context) error {
 
 	ctx.DesiredCluster = installRes.Desired
 	ctx.DesiredLoadbalancers = installRes.DesiredLbs
+
+	if ctx.ProxyEnvs != nil && ctx.ProxyEnvs.UpdateProxyEnvsFlag {
+		// As soon as the VPN is installed, we can update the proxy envs.
+		hasHetznerNodeFlag := builder.HasHetznerNode(ctx.DesiredCluster.ClusterInfo)
+		httpProxyUrl, noProxyList := builder.GetHttpProxyUrlAndNoProxyList(
+			ctx.DesiredCluster.ClusterInfo, ctx.DesiredLoadbalancers, hasHetznerNodeFlag, ctx.DesiredCluster.InstallationProxy)
+		ctx.ProxyEnvs.HttpProxyUrl = httpProxyUrl
+		ctx.ProxyEnvs.NoProxyList = noProxyList
+	}
 
 	// Install node requirements.
 	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s installing node requirements", description))
