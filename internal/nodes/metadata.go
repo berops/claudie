@@ -4,6 +4,7 @@ import (
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	k8sV1 "k8s.io/api/core/v1"
+	"strings"
 )
 
 type LabelKey string
@@ -30,9 +31,20 @@ const (
 // GetAllLabels returns default labels with their theoretical values for the specified nodepool.
 func GetAllLabels(np *spec.NodePool, resolver ArchResolver) (map[string]string, error) {
 	m := make(map[string]string, len(np.Labels)+9)
-	// Add custom user defined labels first in case user will try to overwrite Claudie default labels.
+
+	// Apply default static nodepool labels.
+	if n := np.GetStaticNodePool(); n != nil {
+		m[string(Provider)] = utils.SanitiseString(spec.StaticNodepoolInfo_STATIC_PROVIDER.String())
+		m[string(ProviderInstance)] = utils.SanitiseString(spec.StaticNodepoolInfo_STATIC_PROVIDER.String())
+		m[string(KubernetesZone)] = utils.SanitiseString(spec.StaticNodepoolInfo_STATIC_ZONE.String())
+		m[string(KubernetesRegion)] = utils.SanitiseString(spec.StaticNodepoolInfo_STATIC_REGION.String())
+	}
+
+	// In case the user wants to overwrite the static nodepool labels allow.
+	// In case of dynamic nodepools, apply them first, so that if the user tries
+	// to overwrite some of the claudie default related it will not allow it.
 	for k, v := range np.Labels {
-		m[k] = v
+		m[escape(utils.SanitiseString(k))] = utils.SanitiseString(v)
 	}
 
 	// Claudie assigned labels.
@@ -41,6 +53,7 @@ func GetAllLabels(np *spec.NodePool, resolver ArchResolver) (map[string]string, 
 	// Other labels.
 	m[string(KubernetesOs)] = "linux" // Only Linux is supported.
 	m[string(KubeoneOs)] = "ubuntu"   // Only supported Os
+
 	// Dynamic nodepool data.
 	if n := np.GetDynamicNodePool(); n != nil {
 		m[string(Provider)] = n.Provider.CloudProviderName
@@ -63,11 +76,6 @@ func GetAllLabels(np *spec.NodePool, resolver ArchResolver) (map[string]string, 
 
 		return m, nil
 	}
-	// Static nodepool data.
-	m[string(Provider)] = utils.SanitiseString(spec.StaticNodepoolInfo_STATIC_PROVIDER.String())
-	m[string(ProviderInstance)] = utils.SanitiseString(spec.StaticNodepoolInfo_STATIC_PROVIDER.String())
-	m[string(KubernetesZone)] = utils.SanitiseString(spec.StaticNodepoolInfo_STATIC_ZONE.String())
-	m[string(KubernetesRegion)] = utils.SanitiseString(spec.StaticNodepoolInfo_STATIC_REGION.String())
 	return m, nil
 }
 
@@ -98,3 +106,5 @@ func getNodeType(np *spec.NodePool) string {
 	}
 	return "compute"
 }
+
+func escape(s string) string { return strings.ReplaceAll(s, "/", "~1") }
