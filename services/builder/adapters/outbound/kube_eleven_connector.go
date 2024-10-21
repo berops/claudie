@@ -31,6 +31,7 @@ func (k *KubeElevenConnector) BuildCluster(builderCtx *builder.Context, kubeElev
 		&pb.BuildClusterRequest{
 			Desired:     builderCtx.DesiredCluster,
 			DesiredLbs:  builderCtx.DesiredLoadbalancers,
+			ProxyEnvs:   builderCtx.ProxyEnvs,
 			ProjectName: builderCtx.ProjectName,
 		})
 }
