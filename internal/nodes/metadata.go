@@ -1,10 +1,11 @@
 package nodes
 
 import (
+	"strings"
+
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	k8sV1 "k8s.io/api/core/v1"
-	"strings"
 )
 
 type LabelKey string
