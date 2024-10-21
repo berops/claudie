@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"maps"
+	"reflect"
 	"slices"
 	"time"
 
@@ -152,6 +153,7 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 	k8sDiffResult := k8sNodePoolDiff(k8sDynamic, k8sStatic, desired)
 	lbsDiffResult := lbsNodePoolDiff(lbsDynamic, lbsStatic, desiredLbs)
 	autoscalerConfigUpdated := k8sAutoscalerDiff(current, desired)
+	labelsAnnotationsTaintsUpdated := labelsTaintsAnnotationsDiff(current, desired)
 
 	k8sAllDeletedNodes := make(map[string][]string)
 	maps.Insert(k8sAllDeletedNodes, maps.All(k8sDiffResult.deletedDynamic))
@@ -323,7 +325,8 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 		})
 	}
 
-	if autoscalerConfigUpdated && len(events) == 0 {
+	// No-infrastructure related changes.
+	if (autoscalerConfigUpdated || labelsAnnotationsTaintsUpdated) && len(events) == 0 {
 		events = append(events, &spec.TaskEvent{
 			Id:          uuid.New().String(),
 			Timestamp:   timestamppb.New(time.Now().UTC()),
@@ -737,5 +740,27 @@ func k8sAutoscalerDiff(current, desired *spec.K8Scluster) bool {
 		}
 	}
 
+	return false
+}
+
+func labelsTaintsAnnotationsDiff(current, desired *spec.K8Scluster) bool {
+	cnp := make(map[string]*spec.NodePool)
+	for _, np := range current.GetClusterInfo().GetNodePools() {
+		cnp[np.Name] = np
+	}
+
+	for _, np := range desired.GetClusterInfo().GetNodePools() {
+		if prev, ok := cnp[np.Name]; ok {
+			if !reflect.DeepEqual(prev.Annotations, np.Annotations) {
+				return true
+			}
+			if !reflect.DeepEqual(prev.Labels, np.Labels) {
+				return true
+			}
+			if !reflect.DeepEqual(prev.Taints, np.Taints) {
+				return true
+			}
+		}
+	}
 	return false
 }
