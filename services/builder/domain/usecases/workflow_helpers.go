@@ -120,13 +120,15 @@ func (u *Usecases) buildCluster(ctx *builder.Context) (*builder.Context, error) 
 		}
 	}
 
-	if updateProxyEnvsFlag {
-		// The proxy envs must be changed.
+	if updateProxyEnvsFlag || ctx.CurrentCluster == nil {
+		// The proxy envs must be changed or set.
 		httpProxyUrl, noProxyList := builder.GetHttpProxyUrlAndNoProxyList(
 			ctx.DesiredCluster.ClusterInfo, ctx.DesiredLoadbalancers, ctx.DesiredCluster.InstallationProxy)
-		ctx.ProxyEnvs.UpdateProxyEnvsFlag = true
-		ctx.ProxyEnvs.HttpProxyUrl = httpProxyUrl
-		ctx.ProxyEnvs.NoProxyList = noProxyList
+		ctx.ProxyEnvs = &spec.ProxyEnvs{
+			UpdateProxyEnvsFlag: true,
+			HttpProxyUrl:        httpProxyUrl,
+			NoProxyList:         noProxyList,
+		}
 	}
 
 	// Reconcile infrastructure via terraformer.
