@@ -3,6 +3,7 @@ package usecases
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/berops/claudie/internal/utils"
@@ -70,6 +71,63 @@ func (u *Usecases) buildCluster(ctx *builder.Context) (*builder.Context, error) 
 			metrics.InputManifestLabel: ctx.ProjectName,
 		}).Add(-float64(c))
 	}(max(0, utils.CountNodes(ctx.DesiredCluster)-utils.CountNodes(ctx.CurrentCluster)))
+
+	updateProxyEnvsFlag := false
+	if ctx.CurrentCluster != nil && ctx.DesiredCluster != nil {
+		currProxySettings := ctx.CurrentCluster.InstallationProxy
+		desiredProxySettings := ctx.DesiredCluster.InstallationProxy
+
+		// proxy settings differs.
+		// It was default without Hetzner node and it is turned off // NO CHANGE
+		// It was default without Hetzner node and it is turned on // CHANGE
+		// It was default with Hetzner node and it is turned off // CHANGE
+		// It was default with Hetzner node and it is turned on // CHANGE
+		// It was on and is turned off // CHANGE
+		// It was on and is turned to default // CHANGE (It doesn't matter if the k8s cluster contains a Hetzner node or not)
+		// It was off and is turned on // CHANGE
+		// It was off and is turned to default with Hetzner node // CHANGE
+		// It was off and is turned to default without Hetzner node // NO CHANGE
+
+		// proxy settings are the same.
+		// It is on // CHANGE
+		// It is off // NO CHANGE
+		// It is default with Hetzner node in desired state and current state // CHANGE
+		// It is default with Hetzner node in desired and without Hetzner node in current state // CHANGE
+		// It is default without Hetzner node in desired state and with Hetzner node in current state // CHANGE
+		// It is default without Hetzner node in desired state and without Hetzner node in current state // NO CHANGE
+
+		if reflect.DeepEqual(currProxySettings, desiredProxySettings) {
+			// In this case the cluster was already build and the proxy settings in the current and desired state are the same.
+			updateProxyEnvsFlag = true
+
+			if !desiredProxySettings.Enabled {
+				// The proxy installation is and was turned off.
+				updateProxyEnvsFlag = false
+			} else if desiredProxySettings == nil && !builder.HasHetznerNode(ctx.CurrentCluster.ClusterInfo) && !builder.HasHetznerNode(ctx.DesiredCluster.ClusterInfo) {
+				// The proxy is and was in defaul mode without Hetzner nodepool in both cases.
+				updateProxyEnvsFlag = false
+			}
+		} else {
+			updateProxyEnvsFlag = true
+
+			if currProxySettings == nil && !builder.HasHetznerNode(ctx.CurrentCluster.ClusterInfo) && !desiredProxySettings.Enabled {
+				// The proxy was in default mode without Hetzner node and is turned off.
+				updateProxyEnvsFlag = false
+			} else if !currProxySettings.Enabled && desiredProxySettings == nil && !builder.HasHetznerNode(ctx.DesiredCluster.ClusterInfo) {
+				// The proxy was turned off and is in default mode without Hetzner node.
+				updateProxyEnvsFlag = false
+			}
+		}
+	}
+
+	if updateProxyEnvsFlag {
+		// The proxy envs must be changed.
+		httpProxyUrl, noProxyList := builder.GetHttpProxyUrlAndNoProxyList(
+			ctx.DesiredCluster.ClusterInfo, ctx.DesiredLoadbalancers, ctx.DesiredCluster.InstallationProxy)
+		ctx.ProxyEnvs.UpdateProxyEnvsFlag = true
+		ctx.ProxyEnvs.HttpProxyUrl = httpProxyUrl
+		ctx.ProxyEnvs.NoProxyList = noProxyList
+	}
 
 	// Reconcile infrastructure via terraformer.
 	if err := u.reconcileInfrastructure(ctx); err != nil {

@@ -30,6 +30,9 @@ type Context struct {
 
 	// Workflow is the current state of processing of the cluster.
 	Workflow *spec.Workflow
+
+	// ProxyEnvs holds information about a need to update proxy envs, proxy endpoint, and no proxy list.
+	ProxyEnvs *spec.ProxyEnvs
 }
 
 // GetClusterName returns name of the k8s cluster for a given builder context.

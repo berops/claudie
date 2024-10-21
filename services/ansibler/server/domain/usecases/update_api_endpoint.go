@@ -19,7 +19,7 @@ func (u *Usecases) UpdateAPIEndpoint(request *pb.UpdateAPIEndpointRequest) (*pb.
 	}
 
 	log.Info().Msgf("Updating api endpoint for cluster %s project %s", request.Current.ClusterInfo.Name, request.ProjectName)
-	if err := updateAPIEndpoint(request.Endpoint, request.Current, request.CurrnetLbs, u.SpawnProcessLimit); err != nil {
+	if err := updateAPIEndpoint(request.Endpoint, request.Current, request.ProxyEnvs, u.SpawnProcessLimit); err != nil {
 		return nil, fmt.Errorf("failed to update api endpoint for cluster %s project %s", request.Current.ClusterInfo.Name, request.ProjectName)
 	}
 	log.Info().Msgf("Updated api endpoint for cluster %s project %s", request.Current.ClusterInfo.Name, request.ProjectName)
@@ -30,7 +30,7 @@ func (u *Usecases) UpdateAPIEndpoint(request *pb.UpdateAPIEndpointRequest) (*pb.
 // updateAPIEndpoint handles the case where the ApiEndpoint node is removed from
 // the desired state. Thus, a new control node needs to be selected among the existing
 // control nodes. This new control node will then represent the ApiEndpoint of the cluster.
-func updateAPIEndpoint(endpoint *pb.UpdateAPIEndpointRequest_Endpoint, currentK8sCluster *spec.K8Scluster, currnetLbs []*spec.LBcluster, spawnProcessLimit chan struct{}) error {
+func updateAPIEndpoint(endpoint *pb.UpdateAPIEndpointRequest_Endpoint, currentK8sCluster *spec.K8Scluster, proxyEnvs *spec.ProxyEnvs, spawnProcessLimit chan struct{}) error {
 	clusterID := commonUtils.GetClusterID(currentK8sCluster.ClusterInfo)
 
 	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, commonUtils.CreateHash(commonUtils.HashLength)))
@@ -87,10 +87,8 @@ func updateAPIEndpoint(endpoint *pb.UpdateAPIEndpointRequest_Endpoint, currentK8
 
 	newApiEndpoint := newEndpointNode.GetPublic()
 
-	httpProxyUrl, noProxyList := utils.GetHttpProxyUrlAndNoProxyList(currentK8sCluster.ClusterInfo, currnetLbs, currentK8sCluster.InstallationProxy)
-
 	if err = utils.ChangeAPIEndpoint(currentK8sCluster.ClusterInfo.Name, apiEndpointNode.GetPublic(), newApiEndpoint,
-		httpProxyUrl, noProxyList, clusterDirectory, spawnProcessLimit); err != nil {
+		proxyEnvs.HttpProxyUrl, proxyEnvs.NoProxyList, clusterDirectory, spawnProcessLimit); err != nil {
 		return err
 	}
 

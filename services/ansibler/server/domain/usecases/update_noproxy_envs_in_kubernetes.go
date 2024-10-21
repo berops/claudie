@@ -19,14 +19,15 @@ const (
 )
 
 func (u *Usecases) UpdateNoProxyEnvsInKubernetes(request *pb.UpdateNoProxyEnvsInKubernetesRequest) (*pb.UpdateNoProxyEnvsInKubernetesResponse, error) {
-	if request.Current == nil {
+	if request.Current == nil || request.ProxyEnvs == nil || !request.ProxyEnvs.UpdateProxyEnvsFlag {
+		// Don't update no proxy envs, when the k8s cluster wasn't build yet or the proxy envs are not supposed to be updated.
 		return &pb.UpdateNoProxyEnvsInKubernetesResponse{Current: request.Current, Desired: request.Desired}, nil
 	}
 
 	log.Info().Msgf("Updating proxy env variables in kube-proxy DaemonSet and static pods for cluster %s project %s",
 		request.Current.ClusterInfo.Name, request.ProjectName)
-	if err := updateNoProxyEnvsInKubernetes(request.Current.ClusterInfo, request.Desired.ClusterInfo, request.DesiredLbs,
-		request.Desired.InstallationProxy, u.SpawnProcessLimit); err != nil {
+	if err := updateNoProxyEnvsInKubernetes(request.Current.ClusterInfo, request.Desired.ClusterInfo,
+		request.ProxyEnvs, u.SpawnProcessLimit); err != nil {
 		return nil, fmt.Errorf("Failed to update proxy env variables in kube-proxy DaemonSet and static pods for cluster %s project %s",
 			request.Current.ClusterInfo.Name, request.ProjectName)
 	}
@@ -37,7 +38,7 @@ func (u *Usecases) UpdateNoProxyEnvsInKubernetes(request *pb.UpdateNoProxyEnvsIn
 }
 
 // updateNoProxyEnvsInKubernetes updates NO_PROXY and no_proxy envs in kube-proxy and static pods
-func updateNoProxyEnvsInKubernetes(currentK8sClusterInfo, desiredK8sClusterInfo *spec.ClusterInfo, desiredLbs []*spec.LBcluster, installationProxy *spec.InstallationProxy, spawnProcessLimit chan struct{}) error {
+func updateNoProxyEnvsInKubernetes(currentK8sClusterInfo, desiredK8sClusterInfo *spec.ClusterInfo, proxyEnvs *spec.ProxyEnvs, spawnProcessLimit chan struct{}) error {
 	clusterID := commonUtils.GetClusterID(currentK8sClusterInfo)
 
 	// This is the directory where files (Ansible inventory files, SSH keys etc.) will be generated.
@@ -54,16 +55,14 @@ func updateNoProxyEnvsInKubernetes(currentK8sClusterInfo, desiredK8sClusterInfo 
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 
-	httpProxyUrl, noProxyList := utils.GetHttpProxyUrlAndNoProxyList(desiredK8sClusterInfo, desiredLbs, installationProxy)
-
 	if err := utils.GenerateInventoryFile(templates.UpdateProxyEnvsInventoryTemplate, clusterDirectory, utils.ProxyInventoryFileParameters{
 		K8sNodepools: utils.NodePools{
 			Dynamic: commonUtils.GetCommonDynamicNodes(currentK8sClusterInfo.NodePools, desiredK8sClusterInfo.NodePools),
 			Static:  commonUtils.GetCommonStaticNodes(currentK8sClusterInfo.NodePools, desiredK8sClusterInfo.NodePools),
 		},
 		ClusterID:    clusterID,
-		NoProxyList:  noProxyList,
-		HttpProxyUrl: httpProxyUrl,
+		NoProxyList:  proxyEnvs.NoProxyList,
+		HttpProxyUrl: proxyEnvs.HttpProxyUrl,
 	}); err != nil {
 		return fmt.Errorf("failed to generate inventory file for updating proxy envs using playbook in %s : %w", clusterDirectory, err)
 	}

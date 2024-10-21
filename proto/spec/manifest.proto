@@ -133,10 +133,20 @@ message ClusterInfo {
 
 // InstallationProxy holds general information about a proxy used to build a K8s cluster.
 message InstallationProxy {
-  // Proxy installation turned on/off flag. If undefined the default mode is on
+  // Proxy installation turned on/off flag. If undefined the default mode is on.
   bool enabled = 1;
   // Proxy hostname used to access the proxy.
   string host = 2;
+}
+
+// ProxyEnvs holds information about a need to update proxy envs, proxy endpoint, and no proxy list.
+message ProxyEnvs {
+  // Signal a need to update proxy envs
+  bool updateProxyEnvsFlag = 1;
+  // Holds a proxy endpoint.
+  string httpProxyUrl = 2;
+  // Holds a list of IPs and hostnames that aren't routed through proxy.
+  string noProxyList = 3;
 }
 
 // Role represents a single loadbalancer role from the manifest.

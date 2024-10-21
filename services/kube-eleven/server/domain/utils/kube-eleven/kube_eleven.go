@@ -37,6 +37,9 @@ type KubeEleven struct {
 	// If nil, the first control node becomes the api endpoint of the cluster.
 	LBClusters []*spec.LBcluster
 
+	// ProxyEnvs holds information about a need to update proxy envs, proxy endpoint, and no proxy list.
+	ProxyEnvs *spec.ProxyEnvs
+
 	// SpawnProcessLimit represents a synchronization channel which limits the number of spawned kubeone
 	// processes. This values must be non-nil and be buffered, where the capacity indicates
 	// the limit.
@@ -156,26 +159,10 @@ func (k *KubeEleven) generateTemplateData() templateData {
 	data.Nodepools, potentialEndpointNode = k.getClusterNodes()
 	data.APIEndpoint = k.findAPIEndpoint(potentialEndpointNode)
 
-	k8sInstallationProxy := k.K8sCluster.InstallationProxy
-	hasHetznerNodeFlag := k.hasHetznerNodes(data.Nodepools)
-
-	if k8sInstallationProxy != nil {
-		if k8sInstallationProxy.Enabled {
-			// Proxy is enabled
-			data.UtilizeHttpProxy = true
-			data.NoProxyList = k.createNoProxyList(data.Nodepools)
-
-			if k8sInstallationProxy.Host == "" {
-				data.HttpProxyUrl = defaultHttpProxyUrl
-			} else {
-				data.HttpProxyUrl = k8sInstallationProxy.Host
-			}
-		}
-	} else if hasHetznerNodeFlag {
-		// Proxy is in default mode but the k8s cluster has at least one Hetzner node, thus Claudie builds the k8s cluster using proxy
-		data.UtilizeHttpProxy = true
-		data.NoProxyList = k.createNoProxyList(data.Nodepools)
-		data.HttpProxyUrl = defaultHttpProxyUrl
+	if k.ProxyEnvs != nil && k.ProxyEnvs.UpdateProxyEnvsFlag {
+		data.UtilizeHttpProxy = k.ProxyEnvs.UpdateProxyEnvsFlag
+		data.NoProxyList = k.ProxyEnvs.NoProxyList
+		data.HttpProxyUrl = k.ProxyEnvs.HttpProxyUrl
 	}
 
 	data.KubernetesVersion = k.K8sCluster.GetKubernetes()
@@ -265,47 +252,6 @@ func (k *KubeEleven) findAPIEndpoint(potentialEndpointNode *spec.Node) string {
 	}
 
 	return apiEndpoint
-}
-
-// hasHetzner will check if k8s cluster uses any Hetzner nodes.
-// Returns true if it does. Otherwise returns false.
-func (k *KubeEleven) hasHetznerNodes(nodePools []*NodepoolInfo) bool {
-	for _, nodePool := range nodePools {
-		if nodePool.CloudProviderName == "hetzner" {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (k *KubeEleven) createNoProxyList(nodePools []*NodepoolInfo) string {
-	var noProxy []string
-	// Add nodes' private and public IPs to the NoProxy. Otherwise the kubeone proxy won't work properly.
-	for _, nodePool := range nodePools {
-		for _, node := range nodePool.Nodes {
-			noProxy = append(noProxy, node.Node.Private, node.Node.Public)
-		}
-	}
-
-	for _, lbCluster := range k.LBClusters {
-		// If the LB cluster is attached to out target Kubernetes cluster.
-		if lbCluster.TargetedK8S == k.K8sCluster.ClusterInfo.Name {
-			noProxy = append(noProxy, lbCluster.Dns.Endpoint)
-
-			for _, nodePool := range lbCluster.ClusterInfo.NodePools {
-				for _, node := range nodePool.Nodes {
-					noProxy = append(noProxy, node.Private, node.Public)
-				}
-			}
-		}
-	}
-	// noProxyList has to terminate with the comma.
-	// .f "svc" isn't in noProxyList the admission webhooks will fail because they will be routed to proxy.
-	// "metadata,metadata.google.internal,169.254.169.254,metadata.google.internal." are required for GCP VMs.
-	noProxyList := fmt.Sprintf("%s,svc,metadata,metadata.google.internal,169.254.169.254,metadata.google.internal.,", strings.Join(noProxy, ","))
-
-	return noProxyList
 }
 
 // getNodeData return template data for the nodes from the cluster.

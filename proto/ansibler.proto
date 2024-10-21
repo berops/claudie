@@ -18,9 +18,10 @@ message SetUpLBRequest {
   spec.K8scluster desired = 1;
   repeated spec.LBcluster currentLbs = 2;
   repeated spec.LBcluster desiredLbs = 3;
-  string previousAPIEndpoint = 4;
-  string projectName = 5;
-  bool firstRun = 6;
+  spec.ProxyEnvs proxyEnvs = 4;
+  string previousAPIEndpoint = 5;
+  string projectName = 6;
+  bool firstRun = 7;
 }
 message SetUpLBResponse {
   spec.K8scluster desired = 1;
@@ -33,7 +34,8 @@ message TeardownLBRequest {
   repeated spec.LBcluster desiredLbs = 2;
   // LB clusters which were deleted from the Claudie manifest.
   repeated spec.LBcluster deletedLbs = 3;
-  string projectName = 4;
+  spec.ProxyEnvs proxyEnvs = 4;
+  string projectName = 5;
 }
 
 message TeardownLBResponse {
@@ -49,8 +51,8 @@ message UpdateAPIEndpointRequest{
     string node = 2;
   }
   spec.K8scluster current = 1;
-  repeated spec.LBcluster currnetLbs = 2;
-  Endpoint endpoint = 3;
+  Endpoint endpoint = 2;
+  spec.ProxyEnvs proxyEnvs = 3;
   string projectName = 4;
 }
 
@@ -61,7 +63,7 @@ message UpdateAPIEndpointResponse{
 message UpdateProxyEnvsOnNodesRequest{
   spec.K8scluster current = 1;
   spec.K8scluster desired = 2;
-  repeated spec.LBcluster desiredLbs = 3;
+  spec.ProxyEnvs proxyEnvs = 3;
   string projectName = 4;
 }
 
@@ -73,7 +75,7 @@ message UpdateProxyEnvsOnNodesResponse{
 message UpdateNoProxyEnvsInKubernetesRequest{
   spec.K8scluster current = 1;
   spec.K8scluster desired = 2;
-  repeated spec.LBcluster desiredLbs = 3;
+  spec.ProxyEnvs proxyEnvs = 3;
   string projectName = 4;
 }
 
