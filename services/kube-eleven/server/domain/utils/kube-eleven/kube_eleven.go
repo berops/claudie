@@ -24,7 +24,6 @@ const (
 	staticZone                   = "datacenter"
 	staticProvider               = "on-premise"
 	staticProviderName           = "claudie"
-	defaultHttpProxyUrl          = "http://proxy.claudie.io:8880"
 )
 
 type KubeEleven struct {
