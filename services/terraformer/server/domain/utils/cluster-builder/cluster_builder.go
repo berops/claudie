@@ -3,6 +3,7 @@ package cluster_builder
 import (
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"iter"
 	"net"
@@ -17,6 +18,11 @@ import (
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/terraform"
 	"github.com/rs/zerolog/log"
+)
+
+var (
+	// ErrCreateNodePools is returned when an error occurs during the creation of the desired nodepools.
+	ErrCreateNodePools = errors.New("failed to create desired nodepools")
 )
 
 const (
@@ -89,8 +95,35 @@ func (c ClusterBuilder) CreateNodepools() error {
 		return fmt.Errorf("error while running terraform init in %s : %w", clusterID, err)
 	}
 
+	var currentState []string
+	if c.CurrentClusterInfo != nil {
+		var err error
+		if currentState, err = terraform.StateList(); err != nil {
+			return fmt.Errorf("error while running terraform state list in %s : %w", clusterID, err)
+		}
+	}
+
 	if err := terraform.Apply(); err != nil {
-		return fmt.Errorf("error while running terraform apply in %s : %w", clusterID, err)
+		updatedState, listErr := terraform.StateList()
+		if listErr != nil {
+			return errors.Join(err, fmt.Errorf("error while running terraform state list in %s : %w", clusterID, listErr))
+		}
+
+		var errAll error
+		for _, resource := range updatedState {
+			if !slices.Contains(currentState, resource) {
+				log.Debug().Msgf("deleting unsuccessfuly build resource %s", resource)
+				if err := terraform.DestroyTarget(resource); err != nil {
+					errAll = errors.Join(errAll, fmt.Errorf("error while running terraform destroy target %s in %s : %w", resource, clusterID, err))
+				}
+			}
+		}
+
+		err = fmt.Errorf("error while running terraform apply in %s:%w:%w", clusterID, ErrCreateNodePools, err)
+		if errAll != nil {
+			err = fmt.Errorf("%w: %w", err, errAll)
+		}
+		return err
 	}
 	oldNodes := c.getCurrentNodes()
 

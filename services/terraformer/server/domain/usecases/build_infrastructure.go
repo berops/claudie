@@ -1,9 +1,11 @@
 package usecases
 
 import (
+	"errors"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
+	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/kubernetes"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/loadbalancer"
 )
@@ -49,7 +51,9 @@ func (u *Usecases) BuildInfrastructure(request *pb.BuildInfrastructureRequest) (
 		logger.Info().Msg("Creating infrastructure")
 
 		if err := cluster.Build(logger); err != nil {
-			cluster.UpdateCurrentState()
+			if !errors.Is(err, cluster_builder.ErrCreateNodePools) {
+				cluster.UpdateCurrentState()
+			}
 			logger.Error().Msgf("Error encountered while building cluster: %s", err)
 			failed[idx] = err
 			return err
@@ -63,12 +67,12 @@ func (u *Usecases) BuildInfrastructure(request *pb.BuildInfrastructureRequest) (
 	if err != nil {
 		response := &pb.BuildInfrastructureResponse_Fail{
 			Fail: &pb.BuildInfrastructureResponse_InfrastructureData{
-				Desired: k8sCluster.DesiredState,
+				Desired: k8sCluster.CurrentState,
 			},
 		}
 
 		for _, cluster := range lbClusters {
-			response.Fail.DesiredLbs = append(response.Fail.DesiredLbs, cluster.DesiredState)
+			response.Fail.DesiredLbs = append(response.Fail.DesiredLbs, cluster.CurrentState)
 		}
 
 		for idx, err := range failed {

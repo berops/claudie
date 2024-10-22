@@ -1,6 +1,7 @@
 package terraform
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os/exec"
@@ -140,6 +141,76 @@ func (t *Terraform) Destroy() error {
 	}
 
 	return nil
+}
+
+func (t *Terraform) DestroyTarget(target string) error {
+	t.SpawnProcessLimit <- struct{}{}
+	defer func() { <-t.SpawnProcessLimit }()
+
+	if t.Parallelism <= 0 {
+		t.Parallelism = Parallelism
+	}
+
+	args := []string{
+		"destroy",
+		"--auto-approve",
+		"--target=" + target,
+		fmt.Sprintf("--parallelism=%v", t.Parallelism),
+	}
+
+	cmd := exec.Command("terraform", args...)
+	cmd.Dir = t.Directory
+	cmd.Stdout = t.Stdout
+	cmd.Stderr = t.Stderr
+
+	if err := cmd.Run(); err != nil {
+		command := fmt.Sprintf("terraform %s", strings.Join(args, " "))
+
+		log.Warn().Msgf("Error encountered while executing %s from %s: %v", cmd, t.Directory, err)
+
+		retryCmd := comm.Cmd{
+			Command: command,
+			Dir:     t.Directory,
+			Stdout:  cmd.Stdout,
+			Stderr:  cmd.Stderr,
+		}
+
+		if err := retryCmd.RetryCommand(maxTfCommandRetryCount); err != nil {
+			return fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
+		}
+	}
+
+	return nil
+}
+
+func (t *Terraform) StateList() ([]string, error) {
+	cmd := exec.Command("terraform", "state", "list")
+	cmd.Dir = t.Directory
+	out, err := cmd.Output()
+	if err != nil {
+		command := fmt.Sprintf("terraform state list")
+		log.Warn().Msgf("Error encountered while executing %s from %s: %v", cmd, t.Directory, err)
+		retryCmd := comm.Cmd{
+			Command: command,
+			Dir:     t.Directory,
+			Stdout:  cmd.Stdout,
+			Stderr:  cmd.Stderr,
+		}
+		if err := retryCmd.RetryCommand(maxTfCommandRetryCount); err != nil {
+			return nil, fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
+		}
+		return nil, err
+	}
+
+	r := bytes.Split(out, []byte("\n"))
+	var resources []string
+	for _, b := range r {
+		if r := strings.TrimSpace(string(b)); r != "" {
+			resources = append(resources, strings.TrimSpace(string(b)))
+		}
+	}
+
+	return resources, nil
 }
 
 func (t *Terraform) Output(resourceName string) (string, error) {

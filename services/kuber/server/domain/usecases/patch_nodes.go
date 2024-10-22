@@ -36,6 +36,11 @@ func (u *Usecases) PatchNodes(ctx context.Context, request *pb.PatchNodesRequest
 		return nil, fmt.Errorf("error while patching taints on nodes for %s : %w", clusterID, err)
 	}
 
+	if err := patcher.PatchAddresses(); err != nil {
+		logger.Err(err).Msgf("Error while patching node addresses")
+		return nil, fmt.Errorf("error while patching addresses on nodes for %s : %w", clusterID, err)
+	}
+
 	logger.Info().Msgf("Nodes were successfully patched")
 	return &pb.PatchNodesResponse{}, nil
 }

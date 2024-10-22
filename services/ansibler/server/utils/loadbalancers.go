@@ -220,6 +220,12 @@ func HandleAPIEndpointChange(apiServerTypeLBCluster *LBClusterData, k8sCluster *
 		oldEndpoint = apiServerTypeLBCluster.CurrentLbCluster.Dns.Endpoint
 		newEndpoint = apiServerTypeLBCluster.DesiredLbCluster.Dns.Endpoint
 
+		// The DNS was not build sucessfully the first time but in the second
+		// run it was sucessfully updated (user for example inputed incorrect dnsZone)
+		if oldEndpoint == "" && newEndpoint != "" {
+			return nil
+		}
+
 	case RoleChangedFromAPIServer:
 		oldEndpoint = apiServerTypeLBCluster.CurrentLbCluster.Dns.Endpoint
 

@@ -130,6 +130,16 @@ func (p *Patcher) PatchTaints() error {
 	return err
 }
 
+func (p *Patcher) PatchAddresses() error {
+	var errAll error
+
+	for _, np := range p.desiredNodepools {
+		patchPath, err := buildJSONPatchString("replace")
+	}
+
+	return errAll
+}
+
 func buildJSONAnnotationPatch(data map[string]string) (string, error) {
 	metadata := PatchAnnotations{
 		MetadataAnnotations{
