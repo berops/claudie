@@ -16,6 +16,9 @@
         - { name: 'http_proxy', value: '{{ http_proxy_url }}' }
         - { name: 'https_proxy', value: '{{ http_proxy_url }}' }
         - { name: 'no_proxy', value: '{{ no_proxy_list }}' }
+
+    - name: Gather service facts
+      ansible.builtin.service_facts:
     
     - name: Restart containerd and kubelet
       ansible.builtin.service:
@@ -28,3 +31,4 @@
       loop:
         - "kubelet"
         - "containerd"
+      when: "'kubelet' in ansible_facts.services and 'containerd' in ansible_facts.services"

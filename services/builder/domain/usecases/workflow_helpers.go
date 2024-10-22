@@ -128,13 +128,25 @@ func (u *Usecases) buildCluster(ctx *builder.Context) (*builder.Context, error) 
 				updateProxyEnvsFlag = false
 			}
 		}
+	} else if ctx.DesiredCluster != nil {
+		// The cluster wasn't build yet because currentState is nil
+		// but we have to check if the proxy is turned on or in a default mode with Hetzner node in the desired state.
+		desiredProxySettings := ctx.DesiredCluster.InstallationProxy
+
+		if desiredProxySettings == nil && !builder.HasHetznerNode(ctx.DesiredCluster.ClusterInfo) {
+			updateProxyEnvsFlag = true
+		} else if desiredProxySettings != nil && desiredProxySettings.Enabled {
+			updateProxyEnvsFlag = true
+		}
 	}
 
-	if updateProxyEnvsFlag || ctx.CurrentCluster == nil {
-		// HttProxyUrl and NoProxyList will be set after ansibler Install VPN phase.
+	if updateProxyEnvsFlag {
+		// HttProxyUrl and NoProxyList will be set before first task in ansibler and then updated after ansibler Install VPN phase.
 		ctx.ProxyEnvs = &spec.ProxyEnvs{
 			UpdateProxyEnvsFlag: true,
 		}
+	} else {
+		ctx.ProxyEnvs = &spec.ProxyEnvs{}
 	}
 
 	// Configure infrastructure via Ansibler.
