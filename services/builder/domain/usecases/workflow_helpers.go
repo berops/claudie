@@ -3,7 +3,6 @@ package usecases
 import (
 	"errors"
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/berops/claudie/internal/utils"
@@ -102,15 +101,20 @@ func (u *Usecases) buildCluster(ctx *builder.Context) (*builder.Context, error) 
 		// It is default without Hetzner node in desired state and with Hetzner node in current state // CHANGE
 		// It is default without Hetzner node in desired state and without Hetzner node in current state // NO CHANGE
 
-		if reflect.DeepEqual(currProxySettings, desiredProxySettings) {
+		if currProxySettings == nil && desiredProxySettings == nil {
+			updateProxyEnvsFlag = true
+
+			if !builder.HasHetznerNode(ctx.CurrentCluster.ClusterInfo) && !builder.HasHetznerNode(ctx.DesiredCluster.ClusterInfo) {
+				// The proxy is and was in defaul mode without Hetzner nodepool in both cases.
+				updateProxyEnvsFlag = false
+			}
+		} else if (currProxySettings != nil && desiredProxySettings != nil) && currProxySettings.Enabled == desiredProxySettings.Enabled &&
+			currProxySettings.Host == desiredProxySettings.Host {
 			// In this case the cluster was already build and the proxy settings in the current and desired state are the same.
 			updateProxyEnvsFlag = true
 
 			if !desiredProxySettings.Enabled {
 				// The proxy installation is and was turned off.
-				updateProxyEnvsFlag = false
-			} else if desiredProxySettings == nil && !builder.HasHetznerNode(ctx.CurrentCluster.ClusterInfo) && !builder.HasHetznerNode(ctx.DesiredCluster.ClusterInfo) {
-				// The proxy is and was in defaul mode without Hetzner nodepool in both cases.
 				updateProxyEnvsFlag = false
 			}
 		} else {
