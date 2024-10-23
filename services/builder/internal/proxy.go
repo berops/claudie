@@ -14,7 +14,7 @@ const (
 func GetHttpProxyUrlAndNoProxyList(k8sClusterInfo *spec.ClusterInfo, lbs []*spec.LBcluster, hasHetznerNodeFlag bool, k8sInstallationProxy *spec.InstallationProxy) (string, string) {
 	var httpProxyUrl, noProxyList = "", ""
 
-	if k8sInstallationProxy.Mode == *spec.InstallationProxy_On.Enum() || (k8sInstallationProxy.Mode == *spec.InstallationProxy_Default.Enum() && hasHetznerNodeFlag) {
+	if k8sInstallationProxy.Mode == "on" || (k8sInstallationProxy.Mode == "default" && hasHetznerNodeFlag) {
 		// The installation proxy is either turned on or in default mode with at least one Hetzner node in the k8s cluster.
 		if k8sInstallationProxy.Endpoint == "" {
 			httpProxyUrl = defaultHttpProxyUrl

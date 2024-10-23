@@ -78,8 +78,17 @@ func (u *Usecases) buildCluster(ctx *builder.Context) (*builder.Context, error) 
 
 	// The proxy envs need to be created after terraformer phase.
 	updateProxyEnvsFlag := false
+	defaultMode := "default"
+	offMode := "off"
+
+	// If proxy mode isn't specified, set default value.
+	if ctx.DesiredCluster.InstallationProxy.Mode == "" {
+		ctx.DesiredCluster.InstallationProxy.Mode = defaultMode
+	}
+
 	if ctx.CurrentCluster != nil && ctx.DesiredCluster != nil {
 		updateProxyEnvsFlag = true
+
 		currProxySettings := ctx.CurrentCluster.InstallationProxy
 		desiredProxySettings := ctx.DesiredCluster.InstallationProxy
 
@@ -102,18 +111,18 @@ func (u *Usecases) buildCluster(ctx *builder.Context) (*builder.Context, error) 
 		// It is default without Hetzner node in desired state and with Hetzner node in current state // CHANGE
 		// It is default without Hetzner node in desired state and without Hetzner node in current state // NO CHANGE
 
-		if currProxySettings.Mode == *spec.InstallationProxy_Off.Enum() && desiredProxySettings.Mode == *spec.InstallationProxy_Off.Enum() {
+		if currProxySettings.Mode == offMode && desiredProxySettings.Mode == offMode {
 			// The proxy is and was turned off in both cases.
 			updateProxyEnvsFlag = false
-		} else if currProxySettings.Mode == *spec.InstallationProxy_Default.Enum() && desiredProxySettings.Mode == *spec.InstallationProxy_Default.Enum() &&
+		} else if currProxySettings.Mode == defaultMode && desiredProxySettings.Mode == defaultMode &&
 			!builder.HasHetznerNode(ctx.CurrentCluster.ClusterInfo) && !builder.HasHetznerNode(ctx.DesiredCluster.ClusterInfo) {
 			// The proxy is in default mode without Hetzner node in both cases.
 			updateProxyEnvsFlag = false
-		} else if currProxySettings.Mode == *spec.InstallationProxy_Default.Enum() && !builder.HasHetznerNode(ctx.CurrentCluster.ClusterInfo) &&
-			desiredProxySettings.Mode == *spec.InstallationProxy_Off.Enum() {
+		} else if currProxySettings.Mode == defaultMode && !builder.HasHetznerNode(ctx.CurrentCluster.ClusterInfo) &&
+			desiredProxySettings.Mode == offMode {
 			// The proxy was in default mode without Hetzner node and is turned off.
 			updateProxyEnvsFlag = false
-		} else if currProxySettings.Mode == *spec.InstallationProxy_Off.Enum() && desiredProxySettings.Mode == *spec.InstallationProxy_Default.Enum() &&
+		} else if currProxySettings.Mode == offMode && desiredProxySettings.Mode == defaultMode &&
 			!builder.HasHetznerNode(ctx.DesiredCluster.ClusterInfo) {
 			// The proxy was in off mode. Now it is in default mode without Hetzner node.
 			updateProxyEnvsFlag = false
@@ -123,9 +132,9 @@ func (u *Usecases) buildCluster(ctx *builder.Context) (*builder.Context, error) 
 		// but we have to check if the proxy is turned on or in a default mode with Hetzner node in the desired state.
 		desiredProxySettings := ctx.DesiredCluster.InstallationProxy
 
-		if desiredProxySettings.Mode == *spec.InstallationProxy_Default.Enum() && !builder.HasHetznerNode(ctx.DesiredCluster.ClusterInfo) {
+		if desiredProxySettings.Mode == defaultMode && !builder.HasHetznerNode(ctx.DesiredCluster.ClusterInfo) {
 			updateProxyEnvsFlag = true
-		} else if desiredProxySettings.Mode == *spec.InstallationProxy_On.Enum() {
+		} else if desiredProxySettings.Mode == "on" {
 			updateProxyEnvsFlag = true
 		}
 	}

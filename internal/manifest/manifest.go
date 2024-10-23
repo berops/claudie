@@ -1,7 +1,6 @@
 package manifest
 
 import (
-	"github.com/berops/claudie/proto/pb/spec"
 	k8sV1 "k8s.io/api/core/v1"
 )
 
@@ -246,7 +245,7 @@ type Pool struct {
 // General information about a proxy used to build a K8s cluster.
 type InstallationProxy struct {
 	// Mode defines if the proxy mode (on/off/default). If undefined, the default mode is used.
-	Mode spec.InstallationProxy_Mode `yaml:"mode" json:"mode"`
+	Mode string `default:"default" yaml:"mode" json:"mode"`
 	// Endpoint defines the proxy endpoint. If undefined, the default value is proxy.claudie.io:8880.
 	Endpoint string `yaml:"endpoint" json:"endpoint"`
 }

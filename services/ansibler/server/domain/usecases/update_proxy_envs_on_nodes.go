@@ -24,14 +24,14 @@ func (u *Usecases) UpdateProxyEnvsOnNodes(request *pb.UpdateProxyEnvsOnNodesRequ
 		return &pb.UpdateProxyEnvsOnNodesResponse{Current: request.Current, Desired: request.Desired}, nil
 	}
 
-	log.Info().Msgf("Updating proxy env variables in kube-proxy DaemonSet and static pods for cluster %s project %s",
+	log.Info().Msgf("Updating proxy env variables in /etc/environment for cluster %s project %s",
 		request.Current.ClusterInfo.Name, request.ProjectName)
 	if err := updateProxyEnvsOnNodes(request.Current.ClusterInfo, request.Desired.ClusterInfo,
 		request.ProxyEnvs, u.SpawnProcessLimit); err != nil {
-		return nil, fmt.Errorf("Failed to update proxy env variables in kube-proxy DaemonSet and static pods for cluster %s project %s",
+		return nil, fmt.Errorf("Failed to update proxy env variables in /etc/environment for cluster %s project %s",
 			request.Current.ClusterInfo.Name, request.ProjectName)
 	}
-	log.Info().Msgf("Updated proxy env variables in kube-proxy DaemonSet and static pods for cluster %s project %s",
+	log.Info().Msgf("Updated proxy env variables in /etc/environment for cluster %s project %s",
 		request.Current.ClusterInfo.Name, request.ProjectName)
 
 	return &pb.UpdateProxyEnvsOnNodesResponse{Current: request.Current, Desired: request.Desired}, nil
@@ -64,7 +64,7 @@ func updateProxyEnvsOnNodes(currentK8sClusterInfo, desiredK8sClusterInfo *spec.C
 		NoProxyList:  proxyEnvs.NoProxyList,
 		HttpProxyUrl: proxyEnvs.HttpProxyUrl,
 	}); err != nil {
-		return fmt.Errorf("failed to generate inventory file for updating proxy envs using playbook in %s : %w", clusterDirectory, err)
+		return fmt.Errorf("failed to generate inventory file for updating proxy envs in /etc/environment using playbook in %s : %w", clusterDirectory, err)
 	}
 
 	ansible := utils.Ansible{
@@ -74,8 +74,8 @@ func updateProxyEnvsOnNodes(currentK8sClusterInfo, desiredK8sClusterInfo *spec.C
 		SpawnProcessLimit: spawnProcessLimit,
 	}
 
-	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("Update proxy envs - %s", clusterID)); err != nil {
-		return fmt.Errorf("error while running ansible to update proxy envs in %s : %w", clusterDirectory, err)
+	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("Update proxy envs in /etc/environment - %s", clusterID)); err != nil {
+		return fmt.Errorf("error while running ansible to update proxy envs /etc/environment in %s : %w", clusterDirectory, err)
 	}
 
 	return os.RemoveAll(clusterDirectory)

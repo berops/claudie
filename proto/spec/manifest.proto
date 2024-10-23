@@ -133,16 +133,8 @@ message ClusterInfo {
 
 // InstallationProxy holds general information about a proxy used to build a K8s cluster.
 message InstallationProxy {
-  enum Mode {
-    // Default indicates the installation proxy will be used only when k8s cluster contains at least one Hetzner node.
-    Default = 0;
-    // On indicates the installation proxy is turned on.
-    On = 1;
-    // Of indicates the installation proxy is turned off.
-    Off = 2;
-  }
   // Proxy installation mode.
-  Mode mode = 1;
+  string mode = 1;
   // Proxy endpoint used to access the proxy.
   string endpoint = 2;
 }

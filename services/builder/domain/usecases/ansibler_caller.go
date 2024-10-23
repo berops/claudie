@@ -53,7 +53,7 @@ func (u *Usecases) configureInfrastructure(ctx *builder.Context) error {
 	// Updating proxy envs on nodes.
 	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s updating proxy envs on nodes in /etc/environment", description))
 
-	updateProxyFlag := ctx.ProxyEnvs != nil && ctx.ProxyEnvs.UpdateProxyEnvsFlag
+	updateProxyFlag := ctx.ProxyEnvs.UpdateProxyEnvsFlag
 	if updateProxyFlag {
 		// In this case only a public IP of newly provisioned VMs will be in no proxy list
 		// because they don't have a Wireguard IP yet.
