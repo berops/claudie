@@ -57,8 +57,8 @@ func updateProxyEnvsOnNodes(currentK8sClusterInfo, desiredK8sClusterInfo *spec.C
 
 	if err := utils.GenerateInventoryFile(templates.UpdateProxyEnvsInventoryTemplate, clusterDirectory, utils.ProxyInventoryFileParameters{
 		K8sNodepools: utils.NodePools{
-			Dynamic: commonUtils.GetCommonDynamicNodes(currentK8sClusterInfo.NodePools, desiredK8sClusterInfo.NodePools),
-			Static:  commonUtils.GetCommonStaticNodes(currentK8sClusterInfo.NodePools, desiredK8sClusterInfo.NodePools),
+			Dynamic: commonUtils.GetCommonDynamicNodePools(desiredK8sClusterInfo.NodePools),
+			Static:  commonUtils.GetCommonStaticNodePools(desiredK8sClusterInfo.NodePools),
 		},
 		ClusterID:    clusterID,
 		NoProxyList:  proxyEnvs.NoProxyList,

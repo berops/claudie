@@ -181,6 +181,33 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 
 	var events []*spec.TaskEvent
 
+	currProxySettings := current.InstallationProxy
+	desiredProxySettings := desired.InstallationProxy
+
+	if currProxySettings.Mode != desiredProxySettings.Mode || currProxySettings.Endpoint != desiredProxySettings.Endpoint {
+		// Proxy settings have been set or changed.
+		events = append(events, &spec.TaskEvent{
+			Id:          uuid.New().String(),
+			Timestamp:   timestamppb.New(time.Now().UTC()),
+			Event:       spec.Event_UPDATE,
+			Description: "changing installation proxy settings",
+			Task: &spec.Task{
+				UpdateState: &spec.UpdateState{
+					K8S: &spec.K8Scluster{
+						ClusterInfo: current.ClusterInfo,
+						Kubernetes:  current.Kubernetes,
+						Network:     current.Network,
+						InstallationProxy: &spec.InstallationProxy{
+							Mode:     desired.InstallationProxy.Mode,
+							Endpoint: desired.InstallationProxy.Endpoint,
+						},
+					},
+					Lbs: &spec.LoadBalancers{Clusters: currentLbs},
+				},
+			},
+		})
+	}
+
 	// will contain also the deleted nodes / nodepools if any.
 	ir := craftK8sIR(k8sDiffResult, current, desired)
 

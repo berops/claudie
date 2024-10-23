@@ -14,33 +14,14 @@ const (
 func GetHttpProxyUrlAndNoProxyList(k8sClusterInfo *spec.ClusterInfo, lbs []*spec.LBcluster, hasHetznerNodeFlag bool, k8sInstallationProxy *spec.InstallationProxy) (string, string) {
 	var httpProxyUrl, noProxyList = "", ""
 
-	if (k8sInstallationProxy != nil && k8sInstallationProxy.Enabled) || hasHetznerNodeFlag {
-		httpProxyUrl = k8sInstallationProxy.Host
-		noProxyList = createNoProxyList(k8sClusterInfo.GetNodePools(), lbs)
-	}
-
-	if k8sInstallationProxy != nil {
-		if k8sInstallationProxy.Enabled {
-			// Set proxy env variables when proxy is on.
-			if k8sInstallationProxy.Host == "" {
-				httpProxyUrl = defaultHttpProxyUrl
-			} else {
-				httpProxyUrl = k8sInstallationProxy.Host
-			}
-			noProxyList = createNoProxyList(k8sClusterInfo.GetNodePools(), lbs)
-		} else {
-			// Set empty proxy env variables when proxy is off.
-			httpProxyUrl = ""
-			noProxyList = ""
-		}
-	} else {
-		hasHetznerNodeFlag := HasHetznerNode(k8sClusterInfo)
-
-		if hasHetznerNodeFlag {
-			// Set proxy env variables when k8s cluster has at least one hetzner node.
+	if k8sInstallationProxy.Mode == *spec.InstallationProxy_On.Enum() || (k8sInstallationProxy.Mode == *spec.InstallationProxy_Default.Enum() && hasHetznerNodeFlag) {
+		// The installation proxy is either turned on or in default mode with at least one Hetzner node in the k8s cluster.
+		if k8sInstallationProxy.Endpoint == "" {
 			httpProxyUrl = defaultHttpProxyUrl
-			noProxyList = createNoProxyList(k8sClusterInfo.GetNodePools(), lbs)
+		} else {
+			httpProxyUrl = k8sInstallationProxy.Endpoint
 		}
+		noProxyList = createNoProxyList(k8sClusterInfo.GetNodePools(), lbs)
 	}
 
 	return httpProxyUrl, noProxyList

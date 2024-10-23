@@ -79,6 +79,7 @@ func (u *Usecases) buildCluster(ctx *builder.Context) (*builder.Context, error) 
 	// The proxy envs need to be created after terraformer phase.
 	updateProxyEnvsFlag := false
 	if ctx.CurrentCluster != nil && ctx.DesiredCluster != nil {
+		updateProxyEnvsFlag = true
 		currProxySettings := ctx.CurrentCluster.InstallationProxy
 		desiredProxySettings := ctx.DesiredCluster.InstallationProxy
 
@@ -101,52 +102,37 @@ func (u *Usecases) buildCluster(ctx *builder.Context) (*builder.Context, error) 
 		// It is default without Hetzner node in desired state and with Hetzner node in current state // CHANGE
 		// It is default without Hetzner node in desired state and without Hetzner node in current state // NO CHANGE
 
-		if currProxySettings == nil && desiredProxySettings == nil {
-			updateProxyEnvsFlag = true
-
-			if !builder.HasHetznerNode(ctx.CurrentCluster.ClusterInfo) && !builder.HasHetznerNode(ctx.DesiredCluster.ClusterInfo) {
-				// The proxy is and was in defaul mode without Hetzner nodepool in both cases.
-				updateProxyEnvsFlag = false
-			}
-		} else if (currProxySettings != nil && desiredProxySettings != nil) && currProxySettings.Enabled == desiredProxySettings.Enabled &&
-			currProxySettings.Host == desiredProxySettings.Host {
-			// In this case the cluster was already build and the proxy settings in the current and desired state are the same.
-			updateProxyEnvsFlag = true
-
-			if !desiredProxySettings.Enabled {
-				// The proxy installation is and was turned off.
-				updateProxyEnvsFlag = false
-			}
-		} else {
-			updateProxyEnvsFlag = true
-
-			if currProxySettings == nil && !builder.HasHetznerNode(ctx.CurrentCluster.ClusterInfo) && !desiredProxySettings.Enabled {
-				// The proxy was in default mode without Hetzner node and is turned off.
-				updateProxyEnvsFlag = false
-			} else if !currProxySettings.Enabled && desiredProxySettings == nil && !builder.HasHetznerNode(ctx.DesiredCluster.ClusterInfo) {
-				// The proxy was turned off and is in default mode without Hetzner node.
-				updateProxyEnvsFlag = false
-			}
+		if currProxySettings.Mode == *spec.InstallationProxy_Off.Enum() && desiredProxySettings.Mode == *spec.InstallationProxy_Off.Enum() {
+			// The proxy is and was turned off in both cases.
+			updateProxyEnvsFlag = false
+		} else if currProxySettings.Mode == *spec.InstallationProxy_Default.Enum() && desiredProxySettings.Mode == *spec.InstallationProxy_Default.Enum() &&
+			!builder.HasHetznerNode(ctx.CurrentCluster.ClusterInfo) && !builder.HasHetznerNode(ctx.DesiredCluster.ClusterInfo) {
+			// The proxy is in default mode without Hetzner node in both cases.
+			updateProxyEnvsFlag = false
+		} else if currProxySettings.Mode == *spec.InstallationProxy_Default.Enum() && !builder.HasHetznerNode(ctx.CurrentCluster.ClusterInfo) &&
+			desiredProxySettings.Mode == *spec.InstallationProxy_Off.Enum() {
+			// The proxy was in default mode without Hetzner node and is turned off.
+			updateProxyEnvsFlag = false
+		} else if currProxySettings.Mode == *spec.InstallationProxy_Off.Enum() && desiredProxySettings.Mode == *spec.InstallationProxy_Default.Enum() &&
+			!builder.HasHetznerNode(ctx.DesiredCluster.ClusterInfo) {
+			// The proxy was in off mode. Now it is in default mode without Hetzner node.
+			updateProxyEnvsFlag = false
 		}
 	} else if ctx.DesiredCluster != nil {
 		// The cluster wasn't build yet because currentState is nil
 		// but we have to check if the proxy is turned on or in a default mode with Hetzner node in the desired state.
 		desiredProxySettings := ctx.DesiredCluster.InstallationProxy
 
-		if desiredProxySettings == nil && !builder.HasHetznerNode(ctx.DesiredCluster.ClusterInfo) {
+		if desiredProxySettings.Mode == *spec.InstallationProxy_Default.Enum() && !builder.HasHetznerNode(ctx.DesiredCluster.ClusterInfo) {
 			updateProxyEnvsFlag = true
-		} else if desiredProxySettings != nil && desiredProxySettings.Enabled {
+		} else if desiredProxySettings.Mode == *spec.InstallationProxy_On.Enum() {
 			updateProxyEnvsFlag = true
 		}
 	}
 
-	if updateProxyEnvsFlag {
-		// HttProxyUrl and NoProxyList will be set before first task in ansibler and then updated after ansibler Install VPN phase.
-		ctx.ProxyEnvs = &spec.ProxyEnvs{
-			UpdateProxyEnvsFlag: true,
-		}
-	} else {
-		ctx.ProxyEnvs = &spec.ProxyEnvs{}
+	// HttProxyUrl and NoProxyList will be set before first task in ansibler and then updated after ansibler Install VPN phase.
+	ctx.ProxyEnvs = &spec.ProxyEnvs{
+		UpdateProxyEnvsFlag: updateProxyEnvsFlag,
 	}
 
 	// Configure infrastructure via Ansibler.
