@@ -132,7 +132,7 @@ func (u *Usecases) buildCluster(ctx *builder.Context) (*builder.Context, error) 
 		// but we have to check if the proxy is turned on or in a default mode with Hetzner node in the desired state.
 		desiredProxySettings := ctx.DesiredCluster.InstallationProxy
 
-		if desiredProxySettings.Mode == defaultMode && !builder.HasHetznerNode(ctx.DesiredCluster.ClusterInfo) {
+		if desiredProxySettings.Mode == defaultMode && builder.HasHetznerNode(ctx.DesiredCluster.ClusterInfo) {
 			updateProxyEnvsFlag = true
 		} else if desiredProxySettings.Mode == "on" {
 			updateProxyEnvsFlag = true
