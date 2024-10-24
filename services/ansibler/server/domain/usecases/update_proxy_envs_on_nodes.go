@@ -25,21 +25,21 @@ func (u *Usecases) UpdateProxyEnvsOnNodes(request *pb.UpdateProxyEnvsOnNodesRequ
 	}
 
 	log.Info().Msgf("Updating proxy env variables in /etc/environment for cluster %s project %s",
-		request.Current.ClusterInfo.Name, request.ProjectName)
-	if err := updateProxyEnvsOnNodes(request.Current.ClusterInfo, request.Desired.ClusterInfo,
+		request.Desired.ClusterInfo.Name, request.ProjectName)
+	if err := updateProxyEnvsOnNodes(request.Desired.ClusterInfo,
 		request.ProxyEnvs, u.SpawnProcessLimit); err != nil {
 		return nil, fmt.Errorf("Failed to update proxy env variables in /etc/environment for cluster %s project %s",
-			request.Current.ClusterInfo.Name, request.ProjectName)
+			request.Desired.ClusterInfo.Name, request.ProjectName)
 	}
 	log.Info().Msgf("Updated proxy env variables in /etc/environment for cluster %s project %s",
-		request.Current.ClusterInfo.Name, request.ProjectName)
+		request.Desired.ClusterInfo.Name, request.ProjectName)
 
 	return &pb.UpdateProxyEnvsOnNodesResponse{Current: request.Current, Desired: request.Desired}, nil
 }
 
 // UpdateProxyEnvsOnNodes updates proxy envs in /etc/environment
-func updateProxyEnvsOnNodes(currentK8sClusterInfo, desiredK8sClusterInfo *spec.ClusterInfo, proxyEnvs *spec.ProxyEnvs, spawnProcessLimit chan struct{}) error {
-	clusterID := commonUtils.GetClusterID(currentK8sClusterInfo)
+func updateProxyEnvsOnNodes(desiredK8sClusterInfo *spec.ClusterInfo, proxyEnvs *spec.ProxyEnvs, spawnProcessLimit chan struct{}) error {
+	clusterID := commonUtils.GetClusterID(desiredK8sClusterInfo)
 
 	// This is the directory where files (Ansible inventory files, SSH keys etc.) will be generated.
 	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, commonUtils.CreateHash(commonUtils.HashLength)))
@@ -47,11 +47,11 @@ func updateProxyEnvsOnNodes(currentK8sClusterInfo, desiredK8sClusterInfo *spec.C
 		return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 	}
 
-	if err := commonUtils.CreateKeysForDynamicNodePools(commonUtils.GetCommonDynamicNodePools(currentK8sClusterInfo.NodePools), clusterDirectory); err != nil {
+	if err := commonUtils.CreateKeysForDynamicNodePools(commonUtils.GetCommonDynamicNodePools(desiredK8sClusterInfo.NodePools), clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for dynamic nodepools : %w", err)
 	}
 
-	if err := commonUtils.CreateKeysForStaticNodepools(commonUtils.GetCommonStaticNodePools(currentK8sClusterInfo.NodePools), clusterDirectory); err != nil {
+	if err := commonUtils.CreateKeysForStaticNodepools(commonUtils.GetCommonStaticNodePools(desiredK8sClusterInfo.NodePools), clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 
