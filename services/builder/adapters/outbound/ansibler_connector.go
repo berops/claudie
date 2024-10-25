@@ -94,7 +94,6 @@ func (a *AnsiblerConnector) UpdateNoProxyEnvsInKubernetes(builderCtx *builder.Co
 // UpdateProxyEnvsOnNodes updates proxy envs on all nodes of the cluster.
 func (a *AnsiblerConnector) UpdateProxyEnvsOnNodes(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.UpdateProxyEnvsOnNodesResponse, error) {
 	return ansibler.UpdateProxyEnvsOnNodes(ansiblerGrpcClient, &pb.UpdateProxyEnvsOnNodesRequest{
-		Current:     builderCtx.CurrentCluster,
 		Desired:     builderCtx.DesiredCluster,
 		ProxyEnvs:   builderCtx.ProxyEnvs,
 		ProjectName: builderCtx.ProjectName,

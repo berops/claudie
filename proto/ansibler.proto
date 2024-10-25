@@ -61,15 +61,13 @@ message UpdateAPIEndpointResponse{
 }
 
 message UpdateProxyEnvsOnNodesRequest{
-  spec.K8scluster current = 1;
-  spec.K8scluster desired = 2;
-  spec.ProxyEnvs proxyEnvs = 3;
-  string projectName = 4;
+  spec.K8scluster desired = 1;
+  spec.ProxyEnvs proxyEnvs = 2;
+  string projectName = 3;
 }
 
 message UpdateProxyEnvsOnNodesResponse{
-  spec.K8scluster current = 1;
-  spec.K8scluster desired = 2;
+  spec.K8scluster desired = 1;
 }
 
 message UpdateNoProxyEnvsInKubernetesRequest{

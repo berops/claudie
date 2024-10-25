@@ -19,11 +19,12 @@ const (
 )
 
 func (u *Usecases) UpdateProxyEnvsOnNodes(request *pb.UpdateProxyEnvsOnNodesRequest) (*pb.UpdateProxyEnvsOnNodesResponse, error) {
-	if request.Current == nil || request.ProxyEnvs == nil || !request.ProxyEnvs.UpdateProxyEnvsFlag {
-		// Don't update proxy envs, when the k8s cluster wasn't build yet or the proxy envs are not supposed to be updated.
-		return &pb.UpdateProxyEnvsOnNodesResponse{Current: request.Current, Desired: request.Desired}, nil
+	if request.ProxyEnvs == nil || !request.ProxyEnvs.UpdateProxyEnvsFlag {
+		return &pb.UpdateProxyEnvsOnNodesResponse{Desired: request.Desired}, nil
 	}
 
+	// Update proxy envs even when the cluster wasn't build yet
+	// because wireguard installation have to utilize the proxy.
 	log.Info().Msgf("Updating proxy env variables in /etc/environment for cluster %s project %s",
 		request.Desired.ClusterInfo.Name, request.ProjectName)
 	if err := updateProxyEnvsOnNodes(request.Desired.ClusterInfo,
@@ -34,7 +35,7 @@ func (u *Usecases) UpdateProxyEnvsOnNodes(request *pb.UpdateProxyEnvsOnNodesRequ
 	log.Info().Msgf("Updated proxy env variables in /etc/environment for cluster %s project %s",
 		request.Desired.ClusterInfo.Name, request.ProjectName)
 
-	return &pb.UpdateProxyEnvsOnNodesResponse{Current: request.Current, Desired: request.Desired}, nil
+	return &pb.UpdateProxyEnvsOnNodesResponse{Desired: request.Desired}, nil
 }
 
 // UpdateProxyEnvsOnNodes updates proxy envs in /etc/environment

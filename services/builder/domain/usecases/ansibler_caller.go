@@ -70,7 +70,6 @@ func (u *Usecases) configureInfrastructure(ctx *builder.Context) error {
 		}
 
 		logger.Info().Msgf("UpdateProxyEnvsOnNodes on Ansibler finished successfully")
-		ctx.CurrentCluster = proxyResp.Current
 		ctx.DesiredCluster = proxyResp.Desired
 	}
 
