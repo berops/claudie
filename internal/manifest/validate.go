@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/go-playground/validator/v10"
 	"strings"
+
+	"github.com/go-playground/validator/v10"
 )
 
 // Validate validates the parsed manifest data.
@@ -84,6 +85,8 @@ func prettyPrintValidationError(err error) error {
 			nerr = fmt.Errorf("field '%s' is required to have a valid CIDRv4 value", err.StructField())
 		case "ver":
 			nerr = fmt.Errorf("field '%s' is required to have a kubernetes version of: 1.27.x, 1.28.x, 1.29.x, 1.30.x", err.StructField())
+		case "proxyMode":
+			nerr = fmt.Errorf("field '%s' is required to have a valid proxy mode value of \"on\", \"off\", \"default\"", err.StructField())
 		case "semver2":
 			nerr = fmt.Errorf("field '%s' is required to follow semantic version 2.0, ref: https://semver.org/", err.StructField())
 		default:

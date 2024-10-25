@@ -33,6 +33,104 @@ var (
 		},
 	}
 
+	testProxyFailOffMode = &Kubernetes{
+		Clusters: []Cluster{
+			{Name: "CLUSTER", Pools: Pool{
+				Control: []string{"np1"},
+			},
+				Network: "10.0.0.0/8",
+				Version: "v1.29.0",
+				InstallationProxy: &InstallationProxy{
+					Mode:     "Off",
+					Endpoint: "http://proxy.claudie.io:8880",
+				}},
+		},
+	}
+
+	testProxyFailOnMode = &Kubernetes{
+		Clusters: []Cluster{
+			{Name: "CLUSTER", Pools: Pool{
+				Control: []string{"np1"},
+			},
+				Network: "10.0.0.0/8",
+				Version: "v1.29.0",
+				InstallationProxy: &InstallationProxy{
+					Mode:     "On",
+					Endpoint: "http://proxy.claudie.io:8880",
+				}},
+		},
+	}
+
+	testProxyFailNothingMode = &Kubernetes{
+		Clusters: []Cluster{
+			{Name: "CLUSTER", Pools: Pool{
+				Control: []string{"np1"},
+			},
+				Network: "10.0.0.0/8",
+				Version: "v1.29.0",
+				InstallationProxy: &InstallationProxy{
+					Mode:     "",
+					Endpoint: "http://proxy.claudie.io:8880",
+				}},
+		},
+	}
+
+	testProxyFailDefaultMode = &Kubernetes{
+		Clusters: []Cluster{
+			{Name: "CLUSTER", Pools: Pool{
+				Control: []string{"np1"},
+			},
+				Network: "10.0.0.0/8",
+				Version: "v1.29.0",
+				InstallationProxy: &InstallationProxy{
+					Mode:     "Default",
+					Endpoint: "http://proxy.claudie.io:8880",
+				}},
+		},
+	}
+
+	testProxyPassOnMode = &Kubernetes{
+		Clusters: []Cluster{
+			{Name: "CLUSTER", Pools: Pool{
+				Control: []string{"np1"},
+			},
+				Network: "10.0.0.0/8",
+				Version: "v1.29.0",
+				InstallationProxy: &InstallationProxy{
+					Mode:     "on",
+					Endpoint: "http://proxy.claudie.io:8880",
+				}},
+		},
+	}
+
+	testProxyPassOffMode = &Kubernetes{
+		Clusters: []Cluster{
+			{Name: "CLUSTER", Pools: Pool{
+				Control: []string{"np1"},
+			},
+				Network: "10.0.0.0/8",
+				Version: "v1.29.0",
+				InstallationProxy: &InstallationProxy{
+					Mode:     "off",
+					Endpoint: "http://proxy.claudie.io:8880",
+				}},
+		},
+	}
+
+	testProxyPassDefaultMode = &Kubernetes{
+		Clusters: []Cluster{
+			{Name: "CLUSTER", Pools: Pool{
+				Control: []string{"np1"},
+			},
+				Network: "10.0.0.0/8",
+				Version: "v1.29.0",
+				InstallationProxy: &InstallationProxy{
+					Mode:     "default",
+					Endpoint: "http://proxy.claudie.io:8880",
+				}},
+		},
+	}
+
 	testDomainSuccess = &Manifest{
 		Kubernetes: Kubernetes{
 			Clusters: []Cluster{
@@ -133,6 +231,23 @@ func TestKubernetes(t *testing.T) {
 	require.Error(t, err)
 	err = testClusterVersionFailMinor.Validate(testManifest)
 	require.Error(t, err)
+}
+
+func TestProxy(t *testing.T) {
+	err := testProxyFailOffMode.Validate(testManifest)
+	require.Error(t, err)
+	err = testProxyFailOnMode.Validate(testManifest)
+	require.Error(t, err)
+	err = testProxyFailNothingMode.Validate(testManifest)
+	require.Error(t, err)
+	err = testProxyFailDefaultMode.Validate(testManifest)
+	require.Error(t, err)
+	err = testProxyPassDefaultMode.Validate(testManifest)
+	require.NoError(t, err)
+	err = testProxyPassOnMode.Validate(testManifest)
+	require.NoError(t, err)
+	err = testProxyPassOffMode.Validate(testManifest)
+	require.NoError(t, err)
 }
 
 // TestNodepool tests the nodepool spec validation
