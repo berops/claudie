@@ -92,25 +92,26 @@ func (u *Usecases) buildCluster(ctx *builder.Context) (*builder.Context, error) 
 		currProxySettings := ctx.CurrentCluster.InstallationProxy
 		desiredProxySettings := ctx.DesiredCluster.InstallationProxy
 
-		// proxy settings differs.
-		// It was default without Hetzner node and it is turned off // NO CHANGE - without Hetzner 2
-		// It was default without Hetzner node and it is turned on // CHANGE - without Hetzner 4
-		// It was default with Hetzner node and it is turned off // CHANGE - with Hetzner 2
-		// It was default with Hetzner node and it is turned on // CHANGE - with Hetzner 4
-		// It was on and is turned off // CHANGE - without Hetzner 5
-		// It was on and is turned to default with Hetzner node // CHANGE - with Hetzner 5
-		// It was on and is turned to default without Hetzner node // CHANGE - without Hetzner 9
-		// It was off and is turned on // CHANGE - without Hetzner 7
-		// It was off and is turned to default with Hetzner node // CHANGE - with Hetzner 3
-		// It was off and is turned to default without Hetzner node // NO CHANGE - without Hetzner 3
+		// The following use cases represents scenarios when the proxy envs have to be updated:
+		// The proxy mode is on in both current and the desired state.
+		// The proxy mode is default in both current and the desired state. Both states have at least one Hetzner node.
+		// The proxy mode is default in both current and the desired state. The desired state has at least one Hetzner node. The current state doesn't have any Hetzner nodes.
+		// The proxy mode is default in both current and the desired state. The desired state doesn't have any Hetzner nodes. The current state have at least one Hetzner node.
+		// The proxy mode is default in both current and the desired state. Both states don't have any Hetzner nodes.
+		// The proxy mode is default in the current state. The current state doesn't have any Hetzner nodes. The proxy is turned on in the desired state.
+		// The proxy mode is default in the current state. The current state has at least one Hetzner node. The proxy is turned off in the desired state.
+		// The proxy mode is default in the current state. The current state has at least one Hetzner node. The proxy is turned on in the desired state.
+		// The proxy mode is off in the current state. The proxy modes is on in the desired state.
+		// The proxy mode is on in the current state. The desired state has at least one Hetzner node and the proxy mode is default.
+		// The proxy mode is on in the current state. The desired state doesn't have any Hetzner nodes and the proxy mode is default.
+		// The proxy mode is off in the current state. The proxy mode is on in the desired state.
+		// The proxy mode is off in the current state. The desired state has at least one Hetzner node and the proxy mode is default.
 
-		// proxy settings are the same.
-		// It is on // CHANGE - without Hetzner 8
-		// It is off // NO CHANGE - without Hetzner 6
-		// It is default with Hetzner node in desired state and current state // CHANGE - with Hetzner 6
-		// It is default with Hetzner node in desired and without Hetzner node in current state // CHANGE - with Hetzner 8
-		// It is default without Hetzner node in desired state and with Hetzner node in current state // CHANGE - with Hetzner 7
-		// It is default without Hetzner node in desired state and without Hetzner node in current state // NO CHANGE - without Hetzner 8
+		// The following use cases represents scenarios when the proxy envs don't have to be updated:
+		// The proxy mode is off in both current and the desired state.
+		// The proxy mode is default in both current and the desired state. Both states don't have any Hetzner nodes.
+		// The proxy mode is default in the current state. The current state doesn't have any Hetzner nodes. The proxy is turned off in the desired state.
+		// The proxy mode is off in the current state. The desired state doesn't have any Hetzner nodes and the proxy mode is default.
 
 		if currProxySettings.Mode == offMode && desiredProxySettings.Mode == offMode {
 			// The proxy is and was turned off in both cases.
