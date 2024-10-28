@@ -1,4 +1,4 @@
-# the proxy is still on
+# the proxy mode is still on
 # we removed one GCP compute node
 apiVersion: claudie.io/v1beta1
 kind: InputManifest

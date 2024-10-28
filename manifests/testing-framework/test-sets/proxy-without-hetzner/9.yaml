@@ -1,5 +1,5 @@
-# the proxy was on and is turned to default
-# the k8s cluster doesn't have any Hetzner nodes
+# the proxy mode was on and is turned to default
+# the cluster doesn't have any Hetzner nodes
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:

@@ -1,4 +1,4 @@
-# the proxy was off and is turned on
+# the proxy mode was off and is turned on
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
