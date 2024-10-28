@@ -183,8 +183,15 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 
 	var events []*spec.TaskEvent
 
-	currProxySettings := current.InstallationProxy
-	desiredProxySettings := desired.InstallationProxy
+	currProxySettings := &spec.InstallationProxy{}
+	if current.InstallationProxy != nil {
+		currProxySettings = current.InstallationProxy
+	}
+
+	desiredProxySettings := &spec.InstallationProxy{}
+	if desired.InstallationProxy != nil {
+		desiredProxySettings = desired.InstallationProxy
+	}
 
 	if currProxySettings.Mode != desiredProxySettings.Mode || currProxySettings.Endpoint != desiredProxySettings.Endpoint {
 		// Proxy settings have been set or changed.

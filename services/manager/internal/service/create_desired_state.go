@@ -83,17 +83,21 @@ func createK8sClustersFromManifest(from *manifest.Manifest, into *store.Config) 
 	//    catching newly created or existing (updated).
 	desiredClusters := make(map[string]struct{})
 	for _, cluster := range from.Kubernetes.Clusters {
+		useInstallationProxy := &spec.InstallationProxy{}
+
+		if cluster.InstallationProxy != nil {
+			useInstallationProxy.Mode = cluster.InstallationProxy.Mode
+			useInstallationProxy.Endpoint = cluster.InstallationProxy.Endpoint
+		}
+
 		newCluster := &spec.K8Scluster{
 			ClusterInfo: &spec.ClusterInfo{
 				Name: strings.ToLower(cluster.Name),
 				Hash: utils.CreateHash(utils.HashLength),
 			},
-			Kubernetes: cluster.Version,
-			Network:    cluster.Network,
-			InstallationProxy: &spec.InstallationProxy{
-				Mode:     cluster.InstallationProxy.Mode,
-				Endpoint: cluster.InstallationProxy.Endpoint,
-			},
+			Kubernetes:        cluster.Version,
+			Network:           cluster.Network,
+			InstallationProxy: useInstallationProxy,
 		}
 
 		controlNodePools, err := from.CreateNodepools(cluster.Pools.Control, true)
