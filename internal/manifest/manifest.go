@@ -246,7 +246,7 @@ type Pool struct {
 type InstallationProxy struct {
 	// Mode defines if the proxy mode (on/off/default). If undefined, the default mode is used.
 	Mode string `validate:"required,proxyMode" default:"default" yaml:"mode" json:"mode"`
-	// Endpoint defines the proxy endpoint. If undefined, the default value is proxy.claudie.io:8880.
+	// Endpoint defines the proxy endpoint. If undefined, the default value is http://proxy.claudie.io:8880.
 	Endpoint string `yaml:"endpoint,omitempty" json:"endpoint,omitempty"`
 }
 

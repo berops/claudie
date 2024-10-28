@@ -93,23 +93,24 @@ func (u *Usecases) buildCluster(ctx *builder.Context) (*builder.Context, error) 
 		desiredProxySettings := ctx.DesiredCluster.InstallationProxy
 
 		// proxy settings differs.
-		// It was default without Hetzner node and it is turned off // NO CHANGE
-		// It was default without Hetzner node and it is turned on // CHANGE
-		// It was default with Hetzner node and it is turned off // CHANGE
-		// It was default with Hetzner node and it is turned on // CHANGE
-		// It was on and is turned off // CHANGE
-		// It was on and is turned to default // CHANGE (It doesn't matter if the k8s cluster contains a Hetzner node or not)
-		// It was off and is turned on // CHANGE
-		// It was off and is turned to default with Hetzner node // CHANGE
-		// It was off and is turned to default without Hetzner node // NO CHANGE
+		// It was default without Hetzner node and it is turned off // NO CHANGE - without Hetzner 2
+		// It was default without Hetzner node and it is turned on // CHANGE - without Hetzner 4
+		// It was default with Hetzner node and it is turned off // CHANGE - with Hetzner 2
+		// It was default with Hetzner node and it is turned on // CHANGE - with Hetzner 4
+		// It was on and is turned off // CHANGE - without Hetzner 5
+		// It was on and is turned to default with Hetzner node // CHANGE - with Hetzner 5
+		// It was on and is turned to default without Hetzner node // CHANGE - without Hetzner 9
+		// It was off and is turned on // CHANGE - without Hetzner 7
+		// It was off and is turned to default with Hetzner node // CHANGE - with Hetzner 3
+		// It was off and is turned to default without Hetzner node // NO CHANGE - without Hetzner 3
 
 		// proxy settings are the same.
-		// It is on // CHANGE
-		// It is off // NO CHANGE
-		// It is default with Hetzner node in desired state and current state // CHANGE
-		// It is default with Hetzner node in desired and without Hetzner node in current state // CHANGE
-		// It is default without Hetzner node in desired state and with Hetzner node in current state // CHANGE
-		// It is default without Hetzner node in desired state and without Hetzner node in current state // NO CHANGE
+		// It is on // CHANGE - without Hetzner 8
+		// It is off // NO CHANGE - without Hetzner 6
+		// It is default with Hetzner node in desired state and current state // CHANGE - with Hetzner 6
+		// It is default with Hetzner node in desired and without Hetzner node in current state // CHANGE - with Hetzner 8
+		// It is default without Hetzner node in desired state and with Hetzner node in current state // CHANGE - with Hetzner 7
+		// It is default without Hetzner node in desired state and without Hetzner node in current state // NO CHANGE - without Hetzner 8
 
 		if currProxySettings.Mode == offMode && desiredProxySettings.Mode == offMode {
 			// The proxy is and was turned off in both cases.
