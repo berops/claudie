@@ -24,6 +24,10 @@ cloudProvider:
 apiEndpoint:
   host: '{{ .APIEndpoint }}'
   port: 6443
+  alternativeNames:
+  {{- range $server := .AlternativeNames }}
+    - "{{ $server}}"
+  {{- end }}
 
 controlPlane:
   hosts:

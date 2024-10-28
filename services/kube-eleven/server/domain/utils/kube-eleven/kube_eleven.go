@@ -140,23 +140,35 @@ func (k *KubeEleven) generateFiles() error {
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 
-	// Create a kubeconfig file for the target Kubernetes cluster.
-	kubeconfigFilePath := filepath.Join(k.outputDirectory, fmt.Sprintf("%s-kubeconfig", k.K8sCluster.ClusterInfo.Name))
-	if err := os.WriteFile(kubeconfigFilePath, []byte(k.K8sCluster.GetKubeconfig()), 0600); err != nil {
-		return fmt.Errorf("error while writing cluster-kubeconfig file in %s: %w", k.outputDirectory, err)
-	}
-
 	return nil
 }
 
 // generateTemplateData will create an instance of the templateData and fill up the fields
 // The instance will then be returned.
 func (k *KubeEleven) generateTemplateData() templateData {
-	var data templateData
+	var (
+		data                  templateData
+		potentialEndpointNode *spec.Node
+		k8sApiEndpoint        bool
+	)
 
-	var potentialEndpointNode *spec.Node
 	data.Nodepools, potentialEndpointNode = k.getClusterNodes()
-	data.APIEndpoint = k.findAPIEndpoint(potentialEndpointNode)
+	data.APIEndpoint, k8sApiEndpoint = k.lbApiEndpointOrDefault(potentialEndpointNode)
+
+	var alternativeNames []string
+	for _, n := range k.K8sCluster.ClusterInfo.NodePools {
+		if !n.IsControl {
+			continue
+		}
+		for _, n := range n.Nodes {
+			if n.NodeType != spec.NodeType_apiEndpoint {
+				alternativeNames = append(alternativeNames, n.Public)
+			}
+		}
+	}
+	if k8sApiEndpoint {
+		data.AlternativeNames = alternativeNames
+	}
 
 	if k.ProxyEnvs != nil && k.ProxyEnvs.UpdateProxyEnvsFlag {
 		data.UtilizeHttpProxy = k.ProxyEnvs.UpdateProxyEnvsFlag
@@ -222,21 +234,17 @@ func (k *KubeEleven) getClusterNodes() ([]*NodepoolInfo, *spec.Node) {
 	return nodepoolInfos, endpointNode
 }
 
-// findAPIEndpoint returns the cluster api endpoint.
-// It loops through the slice of attached LB clusters and if any ApiServer type LB cluster is found,
-// then it's DNS endpoint is returned as the cluster api endpoint.
-// Otherwise returns the public IP of the potential endpoint node found in getClusterNodes( ).
-func (k *KubeEleven) findAPIEndpoint(potentialEndpointNode *spec.Node) string {
+// lbApiEndpointOrDefault returns the hostname of the attached api endpoint loadbalancer.
+// If not present the node that is passed will be used a the default api endpoint.
+// Returns the selected endpoint and a bool indicating whether the default was used or not.
+func (k *KubeEleven) lbApiEndpointOrDefault(potentialEndpointNode *spec.Node) (string, bool) {
 	apiEndpoint := ""
 
 	for _, lbCluster := range k.LBClusters {
-		// If the LB cluster is attached to out target Kubernetes cluster
-		if lbCluster.TargetedK8S == k.K8sCluster.ClusterInfo.Name {
-			// And if the LB cluster if of type ApiServer
-			for _, role := range lbCluster.Roles {
-				if role.RoleType == spec.RoleType_ApiServer {
-					return lbCluster.Dns.Endpoint
-				}
+		// And if the LB cluster if of type ApiServer
+		for _, role := range lbCluster.Roles {
+			if role.RoleType == spec.RoleType_ApiServer {
+				return lbCluster.Dns.Endpoint, false
 			}
 		}
 	}
@@ -250,7 +258,7 @@ func (k *KubeEleven) findAPIEndpoint(potentialEndpointNode *spec.Node) string {
 		log.Error().Msgf("Cluster %s does not have any API endpoint specified", k.K8sCluster.ClusterInfo.Name)
 	}
 
-	return apiEndpoint
+	return apiEndpoint, true
 }
 
 // getNodeData return template data for the nodes from the cluster.

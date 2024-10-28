@@ -30,6 +30,16 @@ const (
 	defaultMaxResults = 30
 )
 
+func (nm *NodeManager) cacheGenesisCloud(_ *spec.DynamicNodePool) error {
+	vms, err := getTypeInfoGenesisCloud()
+	if err != nil {
+		return err
+	}
+
+	nm.genesisCloudVMs = vms
+	return nil
+}
+
 // cacheHetzner function uses hcloud-go module to query supported servers and their info. If the query is successful, the server info is saved in cache.
 func (nm *NodeManager) cacheHetzner(np *spec.DynamicNodePool) error {
 	// Create client and create cache.

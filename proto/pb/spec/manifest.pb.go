@@ -70,60 +70,6 @@ func (RoleType) EnumDescriptor() ([]byte, []int) {
 	return file_spec_manifest_proto_rawDescGZIP(), []int{0}
 }
 
-// TODO: remove in favor of targetPools
-// Target specifies which nodes are targeted by the load balancer.
-type Target int32
-
-const (
-	// All nodes in cluster.
-	Target_k8sAllNodes Target = 0
-	// Only Control nodes.
-	Target_k8sControlPlane Target = 1
-	// Only Compute nodes
-	Target_k8sComputePlane Target = 2
-)
-
-// Enum value maps for Target.
-var (
-	Target_name = map[int32]string{
-		0: "k8sAllNodes",
-		1: "k8sControlPlane",
-		2: "k8sComputePlane",
-	}
-	Target_value = map[string]int32{
-		"k8sAllNodes":     0,
-		"k8sControlPlane": 1,
-		"k8sComputePlane": 2,
-	}
-)
-
-func (x Target) Enum() *Target {
-	p := new(Target)
-	*p = x
-	return p
-}
-
-func (x Target) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (Target) Descriptor() protoreflect.EnumDescriptor {
-	return file_spec_manifest_proto_enumTypes[1].Descriptor()
-}
-
-func (Target) Type() protoreflect.EnumType {
-	return &file_spec_manifest_proto_enumTypes[1]
-}
-
-func (x Target) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use Target.Descriptor instead.
-func (Target) EnumDescriptor() ([]byte, []int) {
-	return file_spec_manifest_proto_rawDescGZIP(), []int{1}
-}
-
 // ClusterType specifies the type of the cluster.
 type ClusterType int32
 
@@ -157,11 +103,11 @@ func (x ClusterType) String() string {
 }
 
 func (ClusterType) Descriptor() protoreflect.EnumDescriptor {
-	return file_spec_manifest_proto_enumTypes[2].Descriptor()
+	return file_spec_manifest_proto_enumTypes[1].Descriptor()
 }
 
 func (ClusterType) Type() protoreflect.EnumType {
-	return &file_spec_manifest_proto_enumTypes[2]
+	return &file_spec_manifest_proto_enumTypes[1]
 }
 
 func (x ClusterType) Number() protoreflect.EnumNumber {
@@ -170,7 +116,7 @@ func (x ClusterType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ClusterType.Descriptor instead.
 func (ClusterType) EnumDescriptor() ([]byte, []int) {
-	return file_spec_manifest_proto_rawDescGZIP(), []int{2}
+	return file_spec_manifest_proto_rawDescGZIP(), []int{1}
 }
 
 type Event int32
@@ -209,11 +155,11 @@ func (x Event) String() string {
 }
 
 func (Event) Descriptor() protoreflect.EnumDescriptor {
-	return file_spec_manifest_proto_enumTypes[3].Descriptor()
+	return file_spec_manifest_proto_enumTypes[2].Descriptor()
 }
 
 func (Event) Type() protoreflect.EnumType {
-	return &file_spec_manifest_proto_enumTypes[3]
+	return &file_spec_manifest_proto_enumTypes[2]
 }
 
 func (x Event) Number() protoreflect.EnumNumber {
@@ -222,7 +168,7 @@ func (x Event) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Event.Descriptor instead.
 func (Event) EnumDescriptor() ([]byte, []int) {
-	return file_spec_manifest_proto_rawDescGZIP(), []int{3}
+	return file_spec_manifest_proto_rawDescGZIP(), []int{2}
 }
 
 type Manifest_State int32
@@ -261,11 +207,11 @@ func (x Manifest_State) String() string {
 }
 
 func (Manifest_State) Descriptor() protoreflect.EnumDescriptor {
-	return file_spec_manifest_proto_enumTypes[4].Descriptor()
+	return file_spec_manifest_proto_enumTypes[3].Descriptor()
 }
 
 func (Manifest_State) Type() protoreflect.EnumType {
-	return &file_spec_manifest_proto_enumTypes[4]
+	return &file_spec_manifest_proto_enumTypes[3]
 }
 
 func (x Manifest_State) Number() protoreflect.EnumNumber {
@@ -335,11 +281,11 @@ func (x Workflow_Stage) String() string {
 }
 
 func (Workflow_Stage) Descriptor() protoreflect.EnumDescriptor {
-	return file_spec_manifest_proto_enumTypes[5].Descriptor()
+	return file_spec_manifest_proto_enumTypes[4].Descriptor()
 }
 
 func (Workflow_Stage) Type() protoreflect.EnumType {
-	return &file_spec_manifest_proto_enumTypes[5]
+	return &file_spec_manifest_proto_enumTypes[4]
 }
 
 func (x Workflow_Stage) Number() protoreflect.EnumNumber {
@@ -387,11 +333,11 @@ func (x Workflow_Status) String() string {
 }
 
 func (Workflow_Status) Descriptor() protoreflect.EnumDescriptor {
-	return file_spec_manifest_proto_enumTypes[6].Descriptor()
+	return file_spec_manifest_proto_enumTypes[5].Descriptor()
 }
 
 func (Workflow_Status) Type() protoreflect.EnumType {
-	return &file_spec_manifest_proto_enumTypes[6]
+	return &file_spec_manifest_proto_enumTypes[5]
 }
 
 func (x Workflow_Status) Number() protoreflect.EnumNumber {
@@ -1221,9 +1167,7 @@ type Role struct {
 	Port int32 `protobuf:"varint,3,opt,name=port,proto3" json:"port,omitempty"`
 	// Port that load balancer will forward to.
 	TargetPort int32 `protobuf:"varint,4,opt,name=targetPort,proto3" json:"targetPort,omitempty"`
-	// TODO: remove in favor of targetPools.
 	// Targeted nodes in Kubernetes clusters.
-	Target      Target   `protobuf:"varint,5,opt,name=target,proto3,enum=spec.Target" json:"target,omitempty"`
 	TargetPools []string `protobuf:"bytes,7,rep,name=targetPools,proto3" json:"targetPools,omitempty"`
 	// Type of the role.
 	RoleType RoleType `protobuf:"varint,6,opt,name=roleType,proto3,enum=spec.RoleType" json:"roleType,omitempty"`
@@ -1287,13 +1231,6 @@ func (x *Role) GetTargetPort() int32 {
 		return x.TargetPort
 	}
 	return 0
-}
-
-func (x *Role) GetTarget() Target {
-	if x != nil {
-		return x.Target
-	}
-	return Target_k8sAllNodes
 }
 
 func (x *Role) GetTargetPools() []string {

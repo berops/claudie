@@ -2,6 +2,8 @@ package node_manager
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/berops/claudie/internal/nodes"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -16,11 +18,12 @@ const (
 
 type NodeManager struct {
 	// VM type info caches
-	hetznerVMs map[string]*typeInfo
-	gcpVMs     map[string]*typeInfo
-	awsVMs     map[string]*typeInfo
-	azureVMs   map[string]*typeInfo
-	ociVMs     map[string]*typeInfo
+	genesisCloudVMs map[string]*typeInfo
+	hetznerVMs      map[string]*typeInfo
+	gcpVMs          map[string]*typeInfo
+	awsVMs          map[string]*typeInfo
+	azureVMs        map[string]*typeInfo
+	ociVMs          map[string]*typeInfo
 	// Provider-region-zone cache
 	cacheProviderMap map[string]struct{}
 	resolver         *nodes.DynamicNodePoolResolver
@@ -90,7 +93,7 @@ func (nm *NodeManager) Arch(np *spec.NodePool) (nodes.Arch, error) {
 
 // getTypeInfo returns a typeInfo for this nodepool
 func (nm *NodeManager) getTypeInfo(provider string, np *spec.DynamicNodePool) *typeInfo {
-	switch provider {
+	switch strings.ToLower(provider) {
 	case "hetzner":
 		if ti, ok := nm.hetznerVMs[np.ServerType]; ok {
 			return ti
@@ -109,6 +112,10 @@ func (nm *NodeManager) getTypeInfo(provider string, np *spec.DynamicNodePool) *t
 		}
 	case "azure":
 		if ti, ok := nm.azureVMs[np.ServerType]; ok {
+			return ti
+		}
+	case "genesiscloud":
+		if ti, ok := nm.genesisCloudVMs[np.ServerType]; ok {
 			return ti
 		}
 	}
@@ -148,6 +155,10 @@ func (nm *NodeManager) refreshCache(nps []*spec.NodePool) error {
 					}
 				case "azure":
 					if err := nm.cacheAzure(np); err != nil {
+						return err
+					}
+				case "genesiscloud":
+					if err := nm.cacheGenesisCloud(np); err != nil {
 						return err
 					}
 				}
