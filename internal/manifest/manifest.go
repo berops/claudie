@@ -221,7 +221,7 @@ type Cluster struct {
 	Name string `validate:"required,max=28" yaml:"name" json:"name"`
 	// Version should be defined in format vX.Y. In terms of supported versions of Kubernetes,
 	// Claudie follows kubeone releases and their supported versions.
-	// The current kubeone version used in Claudie is 1.5.
+	// The current kubeone version used in Claudie is 1.8.1.
 	// To see the list of supported versions, please refer to kubeone documentation.
 	// https://docs.kubermatic.com/kubeone/v1.8/architecture/compatibility/supported-versions/
 	Version string `validate:"required,ver" yaml:"version" json:"version"`
