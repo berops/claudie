@@ -20,11 +20,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-var (
-	// ErrCreateNodePools is returned when an error occurs during the creation of the desired nodepools.
-	ErrCreateNodePools = errors.New("failed to create desired nodepools")
-)
-
 const (
 	TemplatesRootDir     = "services/terraformer/templates"
 	Output               = "services/terraformer/server/clusters"
@@ -106,6 +101,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 	if err := terraform.Apply(); err != nil {
 		updatedState, listErr := terraform.StateList()
 		if listErr != nil {
+			// TODO ignore error.
 			return errors.Join(err, fmt.Errorf("error while running terraform state list in %s : %w", clusterID, listErr))
 		}
 
@@ -119,7 +115,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 			}
 		}
 
-		err = fmt.Errorf("error while running terraform apply in %s:%w:%w", clusterID, ErrCreateNodePools, err)
+		err = fmt.Errorf("error while running terraform apply in %s:%w", clusterID, err)
 		if errAll != nil {
 			err = fmt.Errorf("%w: %w", err, errAll)
 		}

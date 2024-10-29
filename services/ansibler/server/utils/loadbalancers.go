@@ -220,10 +220,21 @@ func HandleAPIEndpointChange(apiServerTypeLBCluster *LBClusterData, k8sCluster *
 		oldEndpoint = apiServerTypeLBCluster.CurrentLbCluster.Dns.Endpoint
 		newEndpoint = apiServerTypeLBCluster.DesiredLbCluster.Dns.Endpoint
 
-		// The DNS was not build sucessfully the first time but in the second
-		// run it was sucessfully updated (user for example inputed incorrect dnsZone)
 		if oldEndpoint == "" && newEndpoint != "" {
-			return nil
+			// The DNS was not build successfully the first time but in the second
+			// run it was sucessfully updated (user for example inputed incorrect dnsZone)
+			if k8sCluster.FirstRun {
+				return nil
+			}
+
+			// The DNS was not build successfully but there is already an existing cluster.
+			// pick the control node as the previous ApiServer.
+			node, err := utils.FindAPIEndpointNode(k8sCluster.TargetK8sNodepool)
+			if err != nil {
+				return fmt.Errorf("failed to find APIEndpoint k8s node, couldn't update Api server endpoint")
+			}
+			node.NodeType = spec.NodeType_master // remove the Endpoint type from the node.
+			oldEndpoint = node.Public
 		}
 
 	case RoleChangedFromAPIServer:

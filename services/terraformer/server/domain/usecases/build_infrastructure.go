@@ -2,10 +2,10 @@ package usecases
 
 import (
 	"errors"
+
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
-	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/kubernetes"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/loadbalancer"
 )
@@ -20,6 +20,23 @@ func (u *Usecases) BuildInfrastructure(request *pb.BuildInfrastructureRequest) (
 		AttachedLBClusters: request.DesiredLbs,
 		SpawnProcessLimit:  u.SpawnProcessLimit,
 	}
+
+	k8slogger := utils.CreateLoggerWithProjectAndClusterName(request.ProjectName, k8sCluster.Id())
+	k8slogger.Info().Msg("Creating infrastructure")
+	if err := k8sCluster.Build(k8slogger); err != nil {
+		return &pb.BuildInfrastructureResponse{
+			Response: &pb.BuildInfrastructureResponse_Fail{
+				Fail: &pb.BuildInfrastructureResponse_InfrastructureData{
+					Desired:    k8sCluster.CurrentState,
+					DesiredLbs: request.CurrentLbs,
+					Failed:     []string{k8sCluster.Id()},
+				},
+			},
+		}, nil
+	}
+
+	k8sCluster.UpdateCurrentState()
+	k8slogger.Info().Msgf("Infrastructure successfully created for cluster")
 
 	var lbClusters []*loadbalancer.LBcluster
 	for _, desiredLBCluster := range request.DesiredLbs {
@@ -40,22 +57,32 @@ func (u *Usecases) BuildInfrastructure(request *pb.BuildInfrastructureRequest) (
 		})
 	}
 
-	clusters := []Cluster{k8sCluster}
-	for _, lb := range lbClusters {
-		clusters = append(clusters, lb)
-	}
-
-	failed := make([]error, len(clusters))
-	err := utils.ConcurrentExec(clusters, func(idx int, cluster Cluster) error {
+	failed := make([]error, len(lbClusters))
+	err := utils.ConcurrentExec(lbClusters, func(idx int, cluster *loadbalancer.LBcluster) error {
 		logger := utils.CreateLoggerWithProjectAndClusterName(request.ProjectName, cluster.Id())
 		logger.Info().Msg("Creating infrastructure")
 
 		if err := cluster.Build(logger); err != nil {
-			if !errors.Is(err, cluster_builder.ErrCreateNodePools) {
-				cluster.UpdateCurrentState()
-			}
 			logger.Error().Msgf("Error encountered while building cluster: %s", err)
 			failed[idx] = err
+
+			if errors.Is(err, loadbalancer.ErrCreateNodePools) {
+				return err
+			}
+
+			if errors.Is(err, loadbalancer.ErrCreateDNSRecord) {
+				// infra build, dns failed, if there is an
+				// existing current state keep it and do
+				// not overwrite to desired state dns (which failed).
+				dns := cluster.DesiredState.Dns
+				if cluster.CurrentState != nil {
+					dns = cluster.CurrentState.Dns
+				}
+				cluster.UpdateCurrentState()
+				cluster.CurrentState.Dns = dns
+				return err
+			}
+
 			return err
 		}
 
@@ -63,7 +90,6 @@ func (u *Usecases) BuildInfrastructure(request *pb.BuildInfrastructureRequest) (
 		logger.Info().Msgf("Infrastructure successfully created for cluster")
 		return nil
 	})
-
 	if err != nil {
 		response := &pb.BuildInfrastructureResponse_Fail{
 			Fail: &pb.BuildInfrastructureResponse_InfrastructureData{
@@ -72,19 +98,20 @@ func (u *Usecases) BuildInfrastructure(request *pb.BuildInfrastructureRequest) (
 		}
 
 		for _, cluster := range lbClusters {
-			response.Fail.DesiredLbs = append(response.Fail.DesiredLbs, cluster.CurrentState)
+			if cluster.CurrentState != nil {
+				response.Fail.DesiredLbs = append(response.Fail.DesiredLbs, cluster.CurrentState)
+			}
 		}
 
 		for idx, err := range failed {
 			if err != nil {
-				response.Fail.Failed = append(response.Fail.Failed, clusters[idx].Id())
+				response.Fail.Failed = append(response.Fail.Failed, lbClusters[idx].Id())
 			}
 		}
 
 		return &pb.BuildInfrastructureResponse{Response: response}, nil
 	}
 
-	// with no errors we don't set the current state = desired state as it can be easily done from the calling side.
 	resp := &pb.BuildInfrastructureResponse{
 		Response: &pb.BuildInfrastructureResponse_Ok{
 			Ok: &pb.BuildInfrastructureResponse_InfrastructureData{

@@ -34,7 +34,7 @@ type (
 )
 
 func (u *Usecases) UpdateNoProxyEnvs(request *pb.UpdateNoProxyEnvsRequest) (*pb.UpdateNoProxyEnvsResponse, error) {
-	if request.Current == nil {
+	if request.Current == nil || request.Current.Kubeconfig == "" {
 		return &pb.UpdateNoProxyEnvsResponse{Current: request.Current, Desired: request.Desired}, nil
 	}
 

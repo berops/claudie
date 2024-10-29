@@ -14,6 +14,8 @@ import (
 var (
 	// ErrCreateDNSRecord is returned when an error occurs during the creation of the DNS records
 	ErrCreateDNSRecord = errors.New("failed to create DNS record")
+	// ErrCreateNodePools is returned when an error occurs during the creation of the desired nodepools.
+	ErrCreateNodePools = errors.New("failed to create desired nodepools")
 )
 
 type LBcluster struct {
@@ -63,7 +65,7 @@ func (l *LBcluster) Build(logger zerolog.Logger) error {
 	}
 
 	if err := clusterBuilder.CreateNodepools(); err != nil {
-		return fmt.Errorf("error while creating the LB cluster %s : %w", l.DesiredState.ClusterInfo.Name, err)
+		return fmt.Errorf("%w: error while creating the LB cluster %s : %w", ErrCreateNodePools, l.DesiredState.ClusterInfo.Name, err)
 	}
 
 	nodeIPs := getNodeIPs(l.DesiredState.ClusterInfo.NodePools)
@@ -78,12 +80,9 @@ func (l *LBcluster) Build(logger zerolog.Logger) error {
 		SpawnProcessLimit: l.SpawnProcessLimit,
 	}
 
-	endpoint, err := dns.CreateDNSRecords(logger)
-	if err != nil {
+	if err := dns.CreateDNSRecords(logger); err != nil {
 		return fmt.Errorf("%w for %s: %w", ErrCreateDNSRecord, l.DesiredState.ClusterInfo.Name, err)
 	}
-
-	l.DesiredState.Dns.Endpoint = endpoint
 
 	return nil
 }
