@@ -101,7 +101,6 @@ func (c ClusterBuilder) CreateNodepools() error {
 	if err := terraform.Apply(); err != nil {
 		updatedState, listErr := terraform.StateList()
 		if listErr != nil {
-			// TODO ignore error.
 			return errors.Join(err, fmt.Errorf("error while running terraform state list in %s : %w", clusterID, listErr))
 		}
 
