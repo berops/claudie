@@ -83,7 +83,9 @@ func createK8sClustersFromManifest(from *manifest.Manifest, into *store.Config) 
 	//    catching newly created or existing (updated).
 	desiredClusters := make(map[string]struct{})
 	for _, cluster := range from.Kubernetes.Clusters {
-		useInstallationProxy := &spec.InstallationProxy{}
+		useInstallationProxy := &spec.InstallationProxy{
+			Mode: "default",
+		}
 
 		if cluster.InstallationProxy != nil {
 			useInstallationProxy.Mode = cluster.InstallationProxy.Mode

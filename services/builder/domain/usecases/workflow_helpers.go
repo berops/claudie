@@ -81,11 +81,6 @@ func (u *Usecases) buildCluster(ctx *builder.Context) (*builder.Context, error) 
 	defaultMode := "default"
 	offMode := "off"
 
-	// If proxy mode isn't specified, set default value.
-	if ctx.DesiredCluster.InstallationProxy.Mode == "" {
-		ctx.DesiredCluster.InstallationProxy.Mode = defaultMode
-	}
-
 	if ctx.CurrentCluster != nil && ctx.DesiredCluster != nil {
 		updateProxyEnvsFlag = true
 
