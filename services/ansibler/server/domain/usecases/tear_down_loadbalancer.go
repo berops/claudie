@@ -86,7 +86,7 @@ func teardownLoadBalancers(desiredK8sCluster *spec.K8Scluster, lbClustersInfo *u
 	}
 
 	if err := utils.HandleAPIEndpointChange(currentApiServerTypeLBCluster, desiredK8sCluster.ClusterInfo, lbClustersInfo,
-		proxyEnvs.HttpProxyUrl, proxyEnvs.NoProxyList, clusterDirectory, spawnProcessLimit); err != nil {
+		proxyEnvs, clusterDirectory, spawnProcessLimit); err != nil {
 		return "", err
 	}
 

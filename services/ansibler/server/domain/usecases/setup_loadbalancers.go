@@ -119,7 +119,7 @@ func setUpLoadbalancers(desiredK8sCluster *spec.K8Scluster, lbClustersInfo *util
 	}
 
 	if err := utils.HandleAPIEndpointChange(desiredApiServerTypeLBCluster, desiredK8sCluster.ClusterInfo, lbClustersInfo,
-		proxyEnvs.HttpProxyUrl, proxyEnvs.NoProxyList, clusterBaseDirectory, spawnProcessLimit); err != nil {
+		proxyEnvs, clusterBaseDirectory, spawnProcessLimit); err != nil {
 		return fmt.Errorf("failed to find a candidate for the Api Server: %w", err)
 	}
 
