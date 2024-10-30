@@ -217,6 +217,8 @@ spec:
       - name: ts1-oci-cluster-test-set-no1
         version: 1.27.0
         network: 192.168.2.0/24
+        installationProxy:
+          mode: "on"
         pools:
           control:
             - oci-ctrl-nodes
