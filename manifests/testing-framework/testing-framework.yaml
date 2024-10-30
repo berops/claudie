@@ -56,6 +56,12 @@ spec:
               mountPath: "/go/services/testing-framework/test-sets/rolling-update"
             - name: rolling-update-2
               mountPath: "/go/services/testing-framework/test-sets/rolling-update-2"
+            - name: succeeds-on-last-1
+              mountPath: "/go/services/testing-framework/test-sets/succeeds-on-last-1"
+            - name: succeeds-on-last-2
+              mountPath: "/go/services/testing-framework/test-sets/succeeds-on-last-2"
+            - name: succeeds-on-last-3
+              mountPath: "/go/services/testing-framework/test-sets/succeeds-on-last-3"
       volumes:
         - name: test-set1
           secret:
@@ -84,6 +90,15 @@ spec:
         - name: rolling-update-2
           secret:
             secretName: rolling-update-2
+        - name: succeeds-on-last-1
+          secret:
+            secretName: succeeds-on-last-1
+        - name: succeeds-on-last-2
+          secret:
+            secretName: succeeds-on-last-2
+        - name: succeeds-on-last-3
+          secret:
+            secretName: succeeds-on-last-3
       restartPolicy: Never
       serviceAccountName: testing-framework
 ---

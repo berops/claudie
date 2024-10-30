@@ -104,6 +104,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 			return errors.Join(err, fmt.Errorf("error while running terraform state list in %s : %w", clusterID, listErr))
 		}
 
+		// TODO(fix): this does not consider dependencies among the resources created.
 		var errAll error
 		for _, resource := range updatedState {
 			if !slices.Contains(currentState, resource) {

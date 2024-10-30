@@ -1,0 +1,34 @@
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: succeeds-on-last-2
+spec:
+  providers:
+    - name: hetzner-1
+      providerType: hetzner
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        path: "templates/terraformer/hetzner"
+      secretRef:
+        name: hetzner-secret
+        namespace: e2e-secrets
+  nodePools:
+    dynamic:
+      - name: htz-nodes
+        providerSpec:
+          name: hetzner-1
+          region: nbg1
+          zone: nbg1-dc3
+        count: 1
+        serverType: cpx11
+        image: ubuntu-24.04
+  kubernetes:
+    clusters:
+      - name: succeeds-on-last-2-cluster-0
+        version: 1.27.0
+        network: 192.168.2.0/24
+        pools:
+          control:
+            - htz-nodes
+          compute:
+            - htz-nodes

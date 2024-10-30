@@ -47,6 +47,19 @@ secretGenerator:
   - test-sets/autoscaling-2/1.yaml
   - test-sets/autoscaling-2/2.yaml
   name: autoscaling-2
+- files:
+    - test-sets/succeeds-on-last-1/1.yaml
+    - test-sets/succeeds-on-last-1/2.yaml
+  name: succeeds-on-last-1
+- files:
+    - test-sets/succeeds-on-last-2/1.yaml
+    - test-sets/succeeds-on-last-2/2.yaml
+    - test-sets/succeeds-on-last-2/3.yaml
+  name: succeeds-on-last-2
+- files:
+    - test-sets/succeeds-on-last-3/1.yaml
+    - test-sets/succeeds-on-last-3/2.yaml
+  name: succeeds-on-last-3
 
 
 images:
