@@ -21,7 +21,7 @@ const (
 func (u *Usecases) UpdateNoProxyEnvsInKubernetes(request *pb.UpdateNoProxyEnvsInKubernetesRequest) (*pb.UpdateNoProxyEnvsInKubernetesResponse, error) {
 	if request.Current == nil || request.ProxyEnvs == nil || !request.ProxyEnvs.UpdateProxyEnvsFlag {
 		// Don't update no proxy envs, when the k8s cluster wasn't build yet or the proxy envs are not supposed to be updated.
-		return &pb.UpdateNoProxyEnvsInKubernetesResponse{Current: request.Current, Desired: request.Desired}, nil
+		return &pb.UpdateNoProxyEnvsInKubernetesResponse{Desired: request.Desired}, nil
 	}
 
 	log.Info().Msgf("Updating proxy env variables in kube-proxy DaemonSet and static pods for cluster %s project %s",
@@ -34,7 +34,7 @@ func (u *Usecases) UpdateNoProxyEnvsInKubernetes(request *pb.UpdateNoProxyEnvsIn
 	log.Info().Msgf("Updated proxy env variables in kube-proxy DaemonSet and static pods for cluster %s project %s",
 		request.Current.ClusterInfo.Name, request.ProjectName)
 
-	return &pb.UpdateNoProxyEnvsInKubernetesResponse{Current: request.Current, Desired: request.Desired}, nil
+	return &pb.UpdateNoProxyEnvsInKubernetesResponse{Desired: request.Desired}, nil
 }
 
 // updateNoProxyEnvsInKubernetes updates NO_PROXY and no_proxy envs in kube-proxy and static pods

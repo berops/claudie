@@ -132,7 +132,6 @@ func (u *Usecases) configureInfrastructure(ctx *builder.Context) error {
 		}
 
 		logger.Info().Msgf("UpdateNoProxyEnvsInKubernetes on Ansibler finished successfully")
-		ctx.CurrentCluster = noProxyResp.Current
 		ctx.DesiredCluster = noProxyResp.Desired
 	}
 
