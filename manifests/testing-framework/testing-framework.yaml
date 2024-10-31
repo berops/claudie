@@ -84,6 +84,12 @@ spec:
         - name: rolling-update-2
           secret:
             secretName: rolling-update-2
+        - name: proxy-with-hetzner
+          secret:
+            secretName: proxy-with-hetzner
+        - name: proxy-without-hetzner
+          secret:
+            secretName: proxy-without-hetzner
       restartPolicy: Never
       serviceAccountName: testing-framework
 ---
