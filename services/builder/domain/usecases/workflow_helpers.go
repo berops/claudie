@@ -76,69 +76,9 @@ func (u *Usecases) buildCluster(ctx *builder.Context) (*builder.Context, error) 
 		return ctx, fmt.Errorf("error in Terraformer for cluster %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
 	}
 
-	// The proxy envs need to be created after terraformer phase.
-	updateProxyEnvsFlag := false
-	defaultMode := "default"
-	offMode := "off"
-
-	if ctx.CurrentCluster != nil && ctx.DesiredCluster != nil {
-		updateProxyEnvsFlag = true
-
-		currProxySettings := ctx.CurrentCluster.InstallationProxy
-		desiredProxySettings := ctx.DesiredCluster.InstallationProxy
-
-		// The following use cases represents scenarios when the proxy envs have to be updated:
-		// The proxy mode is on in both current and the desired state.
-		// The proxy mode is default in both current and the desired state. Both states have at least one Hetzner node.
-		// The proxy mode is default in both current and the desired state. The desired state has at least one Hetzner node. The current state doesn't have any Hetzner nodes.
-		// The proxy mode is default in both current and the desired state. The desired state doesn't have any Hetzner nodes. The current state have at least one Hetzner node.
-		// The proxy mode is default in both current and the desired state. Both states don't have any Hetzner nodes.
-		// The proxy mode is default in the current state. The current state doesn't have any Hetzner nodes. The proxy is turned on in the desired state.
-		// The proxy mode is default in the current state. The current state has at least one Hetzner node. The proxy is turned off in the desired state.
-		// The proxy mode is default in the current state. The current state has at least one Hetzner node. The proxy is turned on in the desired state.
-		// The proxy mode is off in the current state. The proxy modes is on in the desired state.
-		// The proxy mode is on in the current state. The desired state has at least one Hetzner node and the proxy mode is default.
-		// The proxy mode is on in the current state. The desired state doesn't have any Hetzner nodes and the proxy mode is default.
-		// The proxy mode is off in the current state. The proxy mode is on in the desired state.
-		// The proxy mode is off in the current state. The desired state has at least one Hetzner node and the proxy mode is default.
-
-		// The following use cases represents scenarios when the proxy envs don't have to be updated:
-		// The proxy mode is off in both current and the desired state.
-		// The proxy mode is default in both current and the desired state. Both states don't have any Hetzner nodes.
-		// The proxy mode is default in the current state. The current state doesn't have any Hetzner nodes. The proxy is turned off in the desired state.
-		// The proxy mode is off in the current state. The desired state doesn't have any Hetzner nodes and the proxy mode is default.
-
-		if currProxySettings.Mode == offMode && desiredProxySettings.Mode == offMode {
-			// The proxy is and was turned off in both cases.
-			updateProxyEnvsFlag = false
-		} else if currProxySettings.Mode == defaultMode && desiredProxySettings.Mode == defaultMode &&
-			!builder.HasHetznerNode(ctx.CurrentCluster.ClusterInfo) && !builder.HasHetznerNode(ctx.DesiredCluster.ClusterInfo) {
-			// The proxy is in default mode without Hetzner node in both cases.
-			updateProxyEnvsFlag = false
-		} else if currProxySettings.Mode == defaultMode && !builder.HasHetznerNode(ctx.CurrentCluster.ClusterInfo) &&
-			desiredProxySettings.Mode == offMode {
-			// The proxy was in default mode without Hetzner node and is turned off.
-			updateProxyEnvsFlag = false
-		} else if currProxySettings.Mode == offMode && desiredProxySettings.Mode == defaultMode &&
-			!builder.HasHetznerNode(ctx.DesiredCluster.ClusterInfo) {
-			// The proxy was in off mode. Now it is in default mode without Hetzner node.
-			updateProxyEnvsFlag = false
-		}
-	} else if ctx.DesiredCluster != nil {
-		// The cluster wasn't build yet because currentState is nil
-		// but we have to check if the proxy is turned on or in a default mode with Hetzner node in the desired state.
-		desiredProxySettings := ctx.DesiredCluster.InstallationProxy
-
-		if desiredProxySettings.Mode == defaultMode && builder.HasHetznerNode(ctx.DesiredCluster.ClusterInfo) {
-			updateProxyEnvsFlag = true
-		} else if desiredProxySettings.Mode == "on" {
-			updateProxyEnvsFlag = true
-		}
-	}
-
 	// HttProxyUrl and NoProxyList will be set before first task in ansibler and then updated after ansibler Install VPN phase.
 	ctx.ProxyEnvs = &spec.ProxyEnvs{
-		UpdateProxyEnvsFlag: updateProxyEnvsFlag,
+		UpdateProxyEnvsFlag: ctx.DetermineProxyUpdate(),
 	}
 
 	// Configure infrastructure via Ansibler.
