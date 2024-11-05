@@ -194,10 +194,9 @@ func (t *Terraform) StateList() ([]string, error) {
 	cmd.Dir = t.Directory
 	out, err := cmd.Output()
 	if err != nil {
-		command := fmt.Sprintf("terraform state list")
 		log.Warn().Msgf("Error encountered while executing %s from %s: %v", cmd, t.Directory, err)
 		retryCmd := comm.Cmd{
-			Command: command,
+			Command: "terraform state list",
 			Dir:     t.Directory,
 			Stdout:  cmd.Stdout,
 			Stderr:  cmd.Stderr,
