@@ -3,7 +3,6 @@ package loadbalancer
 import (
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -16,8 +15,6 @@ import (
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/terraform"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-
 	"google.golang.org/protobuf/proto"
 )
 
@@ -87,15 +84,8 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 			sublogger.Warn().Msgf("absent statefile for dns, assumming the previous state was not build corretly")
 		}
 
-		var errAll error
-		for _, resource := range stateFile {
-			log.Debug().Msgf("deleting build resource %s", resource)
-			if err := terraform.DestroyTarget(resource); err != nil {
-				errAll = errors.Join(errAll, fmt.Errorf("error while running terraform destroy target %s in %s : %w", resource, clusterID, err))
-			}
-		}
-		if errAll != nil {
-			return fmt.Errorf("failed to destroy DNS state: %w", errAll)
+		if err := terraform.DestroyTarget(stateFile); err != nil {
+			return fmt.Errorf("failed to destroy existing DNS state: %w", err)
 		}
 
 		if err := os.RemoveAll(dnsDir); err != nil {

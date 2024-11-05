@@ -320,7 +320,7 @@ func transferExistingDns(current, desired *spec.LoadBalancers) {
 
 	for _, cluster := range desired.GetClusters() {
 		previous, ok := currentLbs[cluster.ClusterInfo.Name]
-		if !ok {
+		if !ok || previous.Dns == nil {
 			if cluster.Dns.Hostname == "" {
 				cluster.Dns.Hostname = utils.CreateHash(hostnameHashLength)
 			}

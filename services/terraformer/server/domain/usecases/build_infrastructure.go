@@ -74,7 +74,7 @@ func (u *Usecases) BuildInfrastructure(request *pb.BuildInfrastructureRequest) (
 				// infra build, dns failed, if there is an
 				// existing current state keep it and do
 				// not overwrite to desired state dns (which failed).
-				dns := cluster.DesiredState.Dns
+				var dns *spec.DNS
 				if cluster.CurrentState != nil {
 					dns = cluster.CurrentState.Dns
 				}

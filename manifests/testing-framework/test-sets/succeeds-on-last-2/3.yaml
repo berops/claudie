@@ -12,6 +12,14 @@ spec:
       secretRef:
         name: hetzner-secret
         namespace: e2e-secrets
+    - name: oci-1
+      providerType: oci
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        path: "templates/terraformer/oci"
+      secretRef:
+        name: oci-secret
+        namespace: e2e-secrets
   nodePools:
     dynamic:
       - name: htz-nodes
@@ -22,22 +30,24 @@ spec:
         count: 1
         serverType: cpx11
         image: ubuntu-24.04
-      - name: htz-nodes-2
+      - name: oci-cmpt-00002
         providerSpec:
-          name: hetzner-1
-          region: fsn1
-          zone: fsn1-dc14
+          name: oci-1
+          region: eu-frankfurt-1
+          zone: hsVQ:EU-FRANKFURT-1-AD-1
         count: 1
-        serverType: cpx11
-        image: ubuntu-24.04
+        serverType: VM.Standard1.1
+        # ubuntu minimal
+        # https://docs.oracle.com/en-us/iaas/images/image/674d0b41-aee8-4c0b-bf99-9e100d90f241/
+        image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
         storageDiskSize: 50
   kubernetes:
     clusters:
       - name: succeeds-on-last-2-cluster-0
-        version: 1.27.0
+        version: 1.29.0
         network: 192.168.2.0/24
         pools:
           control:
             - htz-nodes
           compute:
-            - htz-nodes-2
+            - oci-cmpt-00002

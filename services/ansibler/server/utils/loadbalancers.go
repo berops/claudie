@@ -2,12 +2,11 @@ package utils
 
 import (
 	"fmt"
-	"github.com/berops/claudie/proto/pb/spec"
-
-	"github.com/rs/zerolog/log"
 
 	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/ansibler/templates"
+	"github.com/rs/zerolog/log"
 )
 
 /*
@@ -132,8 +131,16 @@ func (lb *LBClusterData) APIEndpointState() APIEndpointChangeState {
 		return AttachingLoadBalancer
 	}
 
-	if lb.CurrentLbCluster != nil && lb.DesiredLbCluster == nil {
-		return DetachingLoadBalancer
+	if lb.CurrentLbCluster != nil {
+		if lb.DesiredLbCluster == nil {
+			return DetachingLoadBalancer
+		}
+
+		// the DNS creation failed in the terraformer step and was fixed in subsequent
+		// inputs from the user.
+		if lb.CurrentLbCluster.Dns == nil && lb.DesiredLbCluster.Dns != nil {
+			return AttachingLoadBalancer
+		}
 	}
 
 	if lb.CurrentLbCluster.Dns.Endpoint != lb.DesiredLbCluster.Dns.Endpoint {
@@ -219,23 +226,6 @@ func HandleAPIEndpointChange(apiServerTypeLBCluster *LBClusterData, k8sCluster *
 	case EndpointRenamed:
 		oldEndpoint = apiServerTypeLBCluster.CurrentLbCluster.Dns.Endpoint
 		newEndpoint = apiServerTypeLBCluster.DesiredLbCluster.Dns.Endpoint
-
-		if oldEndpoint == "" && newEndpoint != "" {
-			// The DNS was not build successfully the first time but in the second
-			// run it was sucessfully updated (user for example inputed incorrect dnsZone)
-			if k8sCluster.FirstRun {
-				return nil
-			}
-
-			// The DNS was not build successfully but there is already an existing cluster.
-			// pick the control node as the previous ApiServer.
-			node, err := utils.FindAPIEndpointNode(k8sCluster.TargetK8sNodepool)
-			if err != nil {
-				return fmt.Errorf("failed to find APIEndpoint k8s node, couldn't update Api server endpoint")
-			}
-			node.NodeType = spec.NodeType_master // remove the Endpoint type from the node.
-			oldEndpoint = node.Public
-		}
 
 	case RoleChangedFromAPIServer:
 		oldEndpoint = apiServerTypeLBCluster.CurrentLbCluster.Dns.Endpoint

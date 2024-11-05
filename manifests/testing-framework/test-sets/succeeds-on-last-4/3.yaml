@@ -27,7 +27,7 @@ spec:
         namespace: e2e-secrets
   nodePools:
     dynamic:
-      - name: azr-nodes
+      - name: azr-nodes-2
         providerSpec:
           name: azure-sponsor-1
           region: Germany West Central
@@ -47,7 +47,7 @@ spec:
   kubernetes:
     clusters:
       - name: succeeds-on-last-4-cluster-0
-        version: 1.27.0
+        version: 1.29.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -62,8 +62,14 @@ spec:
         targetPort: 6443
         targetPools:
           - htz-ctrl-nodes
+      - name: lb-htz
+        protocol: tcp
+        port: 6447
+        targetPort: 6447
+        targetPools:
+          - htz-ctrl-nodes
     clusters:
-      - name: succeeds-on-last-4-lbcluster
+      - name: succeeds-on-last-4-lb0000001
         roles:
           - apiserver-lb-hetzner
         dns:
@@ -71,4 +77,13 @@ spec:
           provider: hetznerdns-1
         targetedK8s: succeeds-on-last-4-cluster-0
         pools:
-          - azr-nodes
+          - azr-nodes-2
+      - name: succeeds-on-last-4-lb0000002
+        roles:
+          - lb-htz
+        dns:
+          dnsZone: claudie.org
+          provider: hetznerdns-1
+        targetedK8s: succeeds-on-last-4-cluster-0
+        pools:
+          - htz-ctrl-nodes

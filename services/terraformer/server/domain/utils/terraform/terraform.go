@@ -143,7 +143,7 @@ func (t *Terraform) Destroy() error {
 	return nil
 }
 
-func (t *Terraform) DestroyTarget(target string) error {
+func (t *Terraform) DestroyTarget(targets []string) error {
 	t.SpawnProcessLimit <- struct{}{}
 	defer func() { <-t.SpawnProcessLimit }()
 
@@ -154,8 +154,11 @@ func (t *Terraform) DestroyTarget(target string) error {
 	args := []string{
 		"destroy",
 		"--auto-approve",
-		"--target=" + target,
 		fmt.Sprintf("--parallelism=%v", t.Parallelism),
+	}
+
+	for _, resource := range targets {
+		args = append(args, fmt.Sprintf("--target=%s", resource))
 	}
 
 	cmd := exec.Command("terraform", args...)
@@ -175,7 +178,10 @@ func (t *Terraform) DestroyTarget(target string) error {
 			Stderr:  cmd.Stderr,
 		}
 
-		if err := retryCmd.RetryCommand(maxTfCommandRetryCount); err != nil {
+		// NOTE: the maxTfCommandRetryCount * 2 is crucial here. Some resources may have a kind of
+		// "lock" on a resource that cannot be immediately deleted and a timeout is needed, for example
+		// this is the case with azures NIC which have a reservation for 180.
+		if err := retryCmd.RetryCommand(maxTfCommandRetryCount * 2); err != nil {
 			return fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
 		}
 	}

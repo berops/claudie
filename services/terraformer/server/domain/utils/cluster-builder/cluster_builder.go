@@ -99,28 +99,25 @@ func (c ClusterBuilder) CreateNodepools() error {
 	}
 
 	if err := terraform.Apply(); err != nil {
-		updatedState, listErr := terraform.StateList()
-		if listErr != nil {
-			return errors.Join(err, fmt.Errorf("error while running terraform state list in %s : %w", clusterID, listErr))
+		updatedState, errList := terraform.StateList()
+		if errList != nil {
+			return errors.Join(err, fmt.Errorf("%w: error while running terraform state list in %s : %w", err, clusterID, errList))
 		}
 
-		// TODO(fix): this does not consider dependencies among the resources created.
-		var errAll error
+		var toDelete []string
 		for _, resource := range updatedState {
 			if !slices.Contains(currentState, resource) {
-				log.Debug().Msgf("deleting unsuccessfuly build resource %s", resource)
-				if err := terraform.DestroyTarget(resource); err != nil {
-					errAll = errors.Join(errAll, fmt.Errorf("error while running terraform destroy target %s in %s : %w", resource, clusterID, err))
-				}
+				toDelete = append(toDelete, resource)
 			}
 		}
 
-		err = fmt.Errorf("error while running terraform apply in %s:%w", clusterID, err)
-		if errAll != nil {
-			err = fmt.Errorf("%w: %w", err, errAll)
+		if errDestroy := terraform.DestroyTarget(toDelete); errDestroy != nil {
+			return fmt.Errorf("%w: failed to destroy partially create state: %w", err, errDestroy)
 		}
+
 		return err
 	}
+
 	oldNodes := c.getCurrentNodes()
 
 	// fill new nodes with output

@@ -12,6 +12,14 @@ spec:
       secretRef:
         name: hetzner-secret
         namespace: e2e-secrets
+    - name: aws-1
+      providerType: aws
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        path: "templates/terraformer/aws"
+      secretRef:
+        name: aws-secret
+        namespace: e2e-secrets
   nodePools:
     dynamic:
       - name: htz-ctrl-nodes
@@ -22,22 +30,23 @@ spec:
         count: 1
         serverType: cpx11
         image: ubuntu-24.04
-      - name: htz-cmpt-nodes
+      - name: aws-cmpt-00002
         providerSpec:
-          name: hetzner-1
-          region: nbg1
-          zone: nbg1-dc3
+          name: aws-1
+          region: eu-west-3
+          zone: eu-west-3a
         count: 1
-        serverType: cpx11
-        image: ubuntu-24.04
+        serverType: t3.small
+        #ubuntu
+        image: ami-03c476a1ca8e3ebdc
         storageDiskSize: 50
   kubernetes:
     clusters:
       - name: succeeds-on-last-1-cluster-0
-        version: 1.27.0
+        version: 1.29.0
         network: 192.168.2.0/24
         pools:
           control:
             - htz-ctrl-nodes
           compute:
-            - htz-cmpt-nodes
+            - aws-cmpt-00002

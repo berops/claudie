@@ -25,7 +25,7 @@ spec:
   kubernetes:
     clusters:
       - name: succeeds-on-last-4-cluster-0
-        version: 1.27.0
+        version: 1.29.0
         network: 192.168.2.0/24
         pools:
           control:
