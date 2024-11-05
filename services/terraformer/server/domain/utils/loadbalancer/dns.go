@@ -81,7 +81,7 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 
 		stateFile, err := terraform.StateList()
 		if err != nil {
-			sublogger.Warn().Msgf("absent statefile for dns, assumming the previous state was not build corretly")
+			sublogger.Warn().Msgf("absent statefile for dns, assumming the previous state was not build correctly")
 		}
 
 		if err := terraform.DestroyTarget(stateFile); err != nil {
