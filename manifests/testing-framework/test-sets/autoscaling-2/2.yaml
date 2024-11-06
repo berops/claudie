@@ -7,7 +7,8 @@ spec:
     - name: genesiscloud-1
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.1-test" # performs a rolling update
+        # performs a rolling update
+        tag: "v0.9.1-test"
         path: "templates/terraformer/genesiscloud"
       providerType: genesiscloud
       secretRef:
@@ -16,7 +17,8 @@ spec:
     - name: genesiscloud-2
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.1-test" # performs a rolling update
+        # performs a rolling update
+        tag: "v0.9.1-test"
         path: "templates/terraformer/genesiscloud"
       providerType: genesiscloud
       secretRef:

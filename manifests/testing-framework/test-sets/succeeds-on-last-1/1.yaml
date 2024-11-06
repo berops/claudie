@@ -37,8 +37,8 @@ spec:
           zone: eu-west-3a
         count: 1
         serverType: t3.small
-        #ubuntu
-        image: ami-00000000000000000 # doesn't exists
+        #ubuntu - doesnt exists
+        image: ami-00000000000000001
         storageDiskSize: 50
   kubernetes:
     clusters:

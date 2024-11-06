@@ -37,9 +37,9 @@ spec:
           zone: hsVQ:EU-FRANKFURT-1-AD-1
         count: 1
         serverType: VM.Standard1.1
-        # ubuntu minimal
+        # ubuntu minimal - wrong image
         # https://docs.oracle.com/en-us/iaas/images/image/674d0b41-aee8-4c0b-bf99-9e100d90f241/
-        image: ocid1.image.oc1.eu-frankfurt-1.000000000000000000000000000000000000000000000000000000000000 # wrong image
+        image: ocid1.image.oc1.eu-frankfurt-1.000000000000000000000000000000000000000000000000000000000001
         storageDiskSize: 50
   kubernetes:
     clusters:
