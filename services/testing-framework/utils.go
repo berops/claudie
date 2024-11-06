@@ -160,7 +160,7 @@ func getAutoscaledClusters(c *spec.Config) []*spec.K8Scluster {
 
 func validateKubeconfigAlternativeNames(clusters map[string]*spec.ClusterState) error {
 	for c, v := range clusters {
-		if v.Current == nil {
+		if v.Current == nil || v.Current.K8S.Kubeconfig == "" {
 			continue
 		}
 		// if the clusters has no APIServer Loadbalancer we can test all
