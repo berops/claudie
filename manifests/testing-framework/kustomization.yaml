@@ -61,12 +61,12 @@ secretGenerator:
   - test-sets/succeeds-on-last-3/2.yaml
   name: succeeds-on-last-3
 - files:
-    - test-sets/succeeds-on-last-4/1.yaml
-    - test-sets/succeeds-on-last-4/2.yaml
-    - test-sets/succeeds-on-last-4/3.yaml
+  - test-sets/succeeds-on-last-4/1.yaml
+  - test-sets/succeeds-on-last-4/2.yaml
+  - test-sets/succeeds-on-last-4/3.yaml
   name: succeeds-on-last-4
 
 
 images:
 - name: ghcr.io/berops/claudie/testing-framework
-  newTag: d900067-3096
+  newTag: 332baa8-3097
