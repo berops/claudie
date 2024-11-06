@@ -62,6 +62,8 @@ spec:
               mountPath: "/go/services/testing-framework/test-sets/succeeds-on-last-2"
             - name: succeeds-on-last-3
               mountPath: "/go/services/testing-framework/test-sets/succeeds-on-last-3"
+            - name: succeeds-on-last-4
+              mountPath: "/go/services/testing-framework/test-sets/succeeds-on-last-4"
       volumes:
         - name: test-set1
           secret:
@@ -99,6 +101,9 @@ spec:
         - name: succeeds-on-last-3
           secret:
             secretName: succeeds-on-last-3
+        - name: succeeds-on-last-4
+          secret:
+            secretName: succeeds-on-last-4
       restartPolicy: Never
       serviceAccountName: testing-framework
 ---

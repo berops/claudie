@@ -102,6 +102,10 @@ func (l *LBcluster) Destroy(logger zerolog.Logger) error {
 	})
 
 	group.Go(func() error {
+		if l.CurrentState.Dns == nil {
+			return nil
+		}
+
 		dns := DNS{
 			ClusterName:       l.CurrentState.ClusterInfo.Name,
 			ClusterHash:       l.CurrentState.ClusterInfo.Hash,
