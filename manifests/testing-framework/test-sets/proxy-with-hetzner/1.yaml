@@ -55,4 +55,3 @@ spec:
             - htz-ctrl-nodes
           compute:
             - htz-cmpt-nodes
-  # the cluster will be build with at least one Hetzner node and a default proxy mode

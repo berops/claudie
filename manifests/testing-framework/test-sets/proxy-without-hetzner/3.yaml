@@ -54,4 +54,3 @@ spec:
             - gcp-ctrl-nodes
           compute:
             - gcp-cmpt-nodes
-  # the proxy mode was off and is turned to default the cluster doesn't have any Hetzner nodes

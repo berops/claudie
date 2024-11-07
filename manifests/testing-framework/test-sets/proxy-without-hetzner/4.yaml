@@ -54,4 +54,3 @@ spec:
             - gcp-ctrl-nodes
           compute:
             - gcp-cmpt-nodes
-  # the proxy was in default mode without any Hetzner nodes and it is turned on

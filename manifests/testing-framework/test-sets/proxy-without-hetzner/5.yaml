@@ -54,4 +54,3 @@ spec:
             - gcp-ctrl-nodes
           compute:
             - gcp-cmpt-nodes
-  # the proxy mode was on and is turned off

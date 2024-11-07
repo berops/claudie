@@ -55,4 +55,3 @@ spec:
             - htz-ctrl-nodes
           compute:
             - htz-cmpt-nodes
-  # the proxy mode is turned off and the cluster has at least one Hetzner node
