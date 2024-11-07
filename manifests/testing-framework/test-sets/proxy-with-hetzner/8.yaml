@@ -1,7 +1,6 @@
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
-  # the proxy mode is and was in default we removed GCP compute nodes and added one Hetzner node thus the cluster has at least one Hetzner node
   name: proxy-with-hetzner
 spec:
   providers:
@@ -64,3 +63,4 @@ spec:
             - gcp-ctrl-nodes
           compute:
             - htz-cmpt-nodes
+  # the proxy mode is and was in default we removed GCP compute nodes and added one Hetzner node thus the cluster has at least one Hetzner node

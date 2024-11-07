@@ -1,7 +1,6 @@
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
-  # the proxy mode was off and is turned to default the cluster doesn't have any Hetzner nodes
   name: proxy-without-hetzner
 spec:
   providers:
@@ -55,3 +54,4 @@ spec:
             - gcp-ctrl-nodes
           compute:
             - gcp-cmpt-nodes
+  # the proxy mode was off and is turned to default the cluster doesn't have any Hetzner nodes
