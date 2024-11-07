@@ -1,8 +1,7 @@
-# the proxy mode is switched from default to off
-# the cluster doesn't have any Hetzner nodes
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
+  # the proxy mode is switched from default to off the cluster doesn't have any Hetzner nodes
   name: proxy-without-hetzner
 spec:
   providers:

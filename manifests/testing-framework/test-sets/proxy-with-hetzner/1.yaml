@@ -1,7 +1,7 @@
-# the cluster will be build with at least one Hetzner node and a default proxy mode
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
+  # the cluster will be build with at least one Hetzner node and a default proxy mode
   name: proxy-with-hetzner
 spec:
   providers:

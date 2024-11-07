@@ -1,7 +1,7 @@
-# the proxy is in default mode and the cluster will be build without any Hetzner nodes
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
+  # the proxy is in default mode and the cluster will be build without any Hetzner nodes
   name: proxy-without-hetzner
 spec:
   providers:

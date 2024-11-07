@@ -1,7 +1,7 @@
-# the proxy mode is switched from on to default and the cluster has at least one Hetzner node
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
+  # the proxy mode is switched from on to default and the cluster has at least one Hetzner node
   name: proxy-with-hetzner
 spec:
   providers:

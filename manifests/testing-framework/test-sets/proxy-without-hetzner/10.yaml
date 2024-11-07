@@ -1,9 +1,7 @@
-# the proxy was and is in default mode
-# the cluster doesn't have any Hetzner nodes
-# we added one GCP compute node
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
+  # the proxy was and is in default mode the cluster doesn't have any Hetzner nodes we added one GCP compute node
   name: proxy-without-hetzner
 spec:
   providers:

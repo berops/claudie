@@ -1,7 +1,7 @@
-# the proxy mode was off and is turned on
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
+  # the proxy mode was off and is turned on
   name: proxy-without-hetzner
 spec:
   providers:

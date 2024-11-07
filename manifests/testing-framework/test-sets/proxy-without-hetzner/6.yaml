@@ -1,8 +1,7 @@
-# the proxy mode is still off
-# we added one GCP compute node
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
+  # the proxy mode is still off we added one GCP compute node
   name: proxy-without-hetzner
 spec:
   providers:

@@ -1,7 +1,7 @@
-# the proxy was in default mode without any Hetzner nodes and it is turned on
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
+  # the proxy was in default mode without any Hetzner nodes and it is turned on
   name: proxy-without-hetzner
 spec:
   providers:
