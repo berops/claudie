@@ -333,6 +333,9 @@ spec:
             - compute-gcp
             - compute-azure
             - htz-autoscaled
+        installationProxy: # learn [more](https://docs.claudie.io/latest/http-proxy)
+          mode: "on" # can be on, off or default 
+          endpoint: http://proxy.claudie.io:8880 # you can use your own HTTP proxy. If not specified http://proxy.claudie.io:8880 is the default value.
 
       - name: prod-cluster
         version: 1.27.0
@@ -350,6 +353,8 @@ spec:
             - compute-oci
             - compute-aws
             - compute-azure
+        installationProxy: # learn [more](https://docs.claudie.io/latest/http-proxy)
+          mode: "off" # can be on, off or default 
 
       - name: hybrid-cluster
         version: 1.27.0
@@ -361,6 +366,9 @@ spec:
             - compute-htz
             - compute-gcp
             - compute-azure
+        installationProxy: # learn [more](https://docs.claudie.io/latest/http-proxy)
+          mode: "on" # can be on, off or default 
+          endpoint: http://proxy.claudie.io:8880 # you can use your own HTTP proxy. If not specified http://proxy.claudie.io:8880 is the default value.
 
   # Loadbalancers field defines loadbalancers used for the kubernetes clusters and roles for the loadbalancers.
   # Definition specification for role:

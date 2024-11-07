@@ -21,8 +21,12 @@ func (a *AnsiblerGrpcService) UpdateAPIEndpoint(_ context.Context, request *pb.U
 	return a.usecases.UpdateAPIEndpoint(request)
 }
 
-func (a *AnsiblerGrpcService) UpdateNoProxyEnvs(_ context.Context, request *pb.UpdateNoProxyEnvsRequest) (*pb.UpdateNoProxyEnvsResponse, error) {
-	return a.usecases.UpdateNoProxyEnvs(request)
+func (a *AnsiblerGrpcService) UpdateNoProxyEnvsInKubernetes(_ context.Context, request *pb.UpdateNoProxyEnvsInKubernetesRequest) (*pb.UpdateNoProxyEnvsInKubernetesResponse, error) {
+	return a.usecases.UpdateNoProxyEnvsInKubernetes(request)
+}
+
+func (a *AnsiblerGrpcService) UpdateProxyEnvsOnNodes(_ context.Context, request *pb.UpdateProxyEnvsOnNodesRequest) (*pb.UpdateProxyEnvsOnNodesResponse, error) {
+	return a.usecases.UpdateProxyEnvsOnNodes(request)
 }
 
 func (a *AnsiblerGrpcService) InstallNodeRequirements(_ context.Context, request *pb.InstallRequest) (*pb.InstallResponse, error) {

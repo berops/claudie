@@ -48,6 +48,28 @@ secretGenerator:
   - test-sets/autoscaling-2/2.yaml
   name: autoscaling-2
 - files:
+  - test-sets/proxy-with-hetzner/1.yaml
+  - test-sets/proxy-with-hetzner/2.yaml
+  - test-sets/proxy-with-hetzner/3.yaml
+  - test-sets/proxy-with-hetzner/4.yaml
+  - test-sets/proxy-with-hetzner/5.yaml
+  - test-sets/proxy-with-hetzner/6.yaml
+  - test-sets/proxy-with-hetzner/7.yaml
+  - test-sets/proxy-with-hetzner/8.yaml
+  name: proxy-with-hetzner
+- files:
+  - test-sets/proxy-without-hetzner/1.yaml
+  - test-sets/proxy-without-hetzner/2.yaml
+  - test-sets/proxy-without-hetzner/3.yaml
+  - test-sets/proxy-without-hetzner/4.yaml
+  - test-sets/proxy-without-hetzner/5.yaml
+  - test-sets/proxy-without-hetzner/6.yaml
+  - test-sets/proxy-without-hetzner/7.yaml
+  - test-sets/proxy-without-hetzner/8.yaml
+  - test-sets/proxy-without-hetzner/9.yaml
+  - test-sets/proxy-without-hetzner/10.yaml
+  name: proxy-without-hetzner
+- files:
   - test-sets/succeeds-on-last-1/1.yaml
   - test-sets/succeeds-on-last-1/2.yaml
   name: succeeds-on-last-1
@@ -69,4 +91,4 @@ secretGenerator:
 
 images:
 - name: ghcr.io/berops/claudie/testing-framework
-  newTag: 23e2167-3100
+  newTag: 06089a0-3104

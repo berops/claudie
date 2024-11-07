@@ -61,16 +61,6 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: GOLANG_LOG
-            - name: HTTP_PROXY_MODE
-              valueFrom:
-                configMapKeyRef:
-                  name: env
-                  key: HTTP_PROXY_MODE
-            - name: HTTP_PROXY_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: env
-                  key: HTTP_PROXY_URL
           ports:
             - containerPort: 50053
             - name: "metrics"

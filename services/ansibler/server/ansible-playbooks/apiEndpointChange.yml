@@ -35,19 +35,11 @@
         regexp: '{{ OldEndpoint }}'
         replace: '{{ NewEndpoint }}'
 
-    - name: update NO_PROXY and no_proxy in /etc/environment
+    - name: update endpoint in /etc/environment
       ansible.builtin.replace:
         path: "/etc/environment"
         regexp: '{{ OldEndpoint }}'
         replace: '{{ NewEndpoint }}'
-
-    - name: Extract NO_PROXY value from /etc/environment
-      ansible.builtin.shell: "awk -F '=' '/NO_PROXY=/{print $2}' /etc/environment | awk -F '#' '{print $1}'"
-      register: no_proxy_output
-
-    - name: Set NO_PROXY value as a fact
-      set_fact:
-        no_proxy_value: "{{ no_proxy_output.stdout }}"
 
     - name: restart containerd and kubelet
       ansible.builtin.service:
@@ -62,7 +54,10 @@
         - "containerd"
 
     - name: generate new certs
-      shell: "export NO_PROXY={{ no_proxy_value }} && export no_proxy={{ no_proxy_value }} && kubeadm init phase certs apiserver --config {{file.files[0].path}}"
+      shell: |
+        NO_PROXY={{ NoProxyList }} no_proxy={{ NoProxyList }} HTTP_PROXY={{ HttpProxyUrl }} http_proxy={{ HttpProxyUrl }} \
+        HTTPS_PROXY={{ HttpProxyUrl }} https_proxy={{ HttpProxyUrl }} \
+        kubeadm init phase certs apiserver --config {{file.files[0].path}}
 
     - name: remove old /etc/kubernetes/*.conf
       file:
@@ -75,7 +70,10 @@
         - "/etc/kubernetes/scheduler.conf"
 
     - name: generate kubeconfig
-      shell: "export NO_PROXY={{ no_proxy_value }} && export no_proxy={{ no_proxy_value }} && kubeadm init phase kubeconfig all --config {{file.files[0].path}}"
+      ansible.builtin.shell: |
+        NO_PROXY={{ NoProxyList }} no_proxy={{ NoProxyList }} HTTP_PROXY={{ HttpProxyUrl }} http_proxy={{ HttpProxyUrl }} \
+        HTTPS_PROXY={{ HttpProxyUrl }} https_proxy={{ HttpProxyUrl }} \
+        kubeadm init phase kubeconfig all --config {{file.files[0].path}}
 
     - name: restart kubelet
       ansible.builtin.service:
@@ -89,7 +87,10 @@
         - "kubelet"
 
     - name: upload config map
-      shell: "export NO_PROXY={{ no_proxy_value }} && export no_proxy={{ no_proxy_value }} && kubeadm init phase upload-config all --config {{file.files[0].path}}"
+      ansible.builtin.shell: |
+        NO_PROXY={{ NoProxyList }} no_proxy={{ NoProxyList }} HTTP_PROXY={{ HttpProxyUrl }} http_proxy={{ HttpProxyUrl }} \
+        HTTPS_PROXY={{ HttpProxyUrl }} https_proxy={{ HttpProxyUrl }} \
+        kubeadm init phase upload-config all --config {{file.files[0].path}}
 
     - name: restart containerd and kubelet
       ansible.builtin.service:

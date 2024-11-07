@@ -52,6 +52,7 @@ func (a *AnsiblerConnector) SetUpLoadbalancers(builderCtx *builder.Context, apiE
 			Desired:             builderCtx.DesiredCluster,
 			CurrentLbs:          builderCtx.CurrentLoadbalancers,
 			DesiredLbs:          builderCtx.DesiredLoadbalancers,
+			ProxyEnvs:           builderCtx.ProxyEnvs,
 			PreviousAPIEndpoint: apiEndpoint,
 			ProjectName:         builderCtx.ProjectName,
 			FirstRun:            builderCtx.CurrentCluster == nil || builderCtx.CurrentCluster.Kubeconfig == "",
@@ -65,6 +66,7 @@ func (a *AnsiblerConnector) TeardownLoadBalancers(builderCtx *builder.Context, a
 			Desired:     builderCtx.DesiredCluster,
 			DesiredLbs:  builderCtx.DesiredLoadbalancers,
 			DeletedLbs:  builderCtx.DeletedLoadBalancers,
+			ProxyEnvs:   builderCtx.ProxyEnvs,
 			ProjectName: builderCtx.ProjectName,
 		})
 }
@@ -74,16 +76,26 @@ func (a *AnsiblerConnector) UpdateAPIEndpoint(builderCtx *builder.Context, nodep
 	return ansibler.UpdateAPIEndpoint(ansiblerGrpcClient, &pb.UpdateAPIEndpointRequest{
 		Endpoint:    &pb.UpdateAPIEndpointRequest_Endpoint{Nodepool: nodepool, Node: node},
 		Current:     builderCtx.CurrentCluster,
+		ProxyEnvs:   builderCtx.ProxyEnvs,
 		ProjectName: builderCtx.ProjectName,
 	})
 }
 
-// UpdateAPIEndpoint updates kube API endpoint of the cluster.
-func (a *AnsiblerConnector) UpdateNoProxyEnvs(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.UpdateNoProxyEnvsResponse, error) {
-	return ansibler.UpdateNoProxyEnvs(ansiblerGrpcClient, &pb.UpdateNoProxyEnvsRequest{
+// UpdateNoProxyEnvsInKubernetes updates NO_PROXY and no_proxy envs in kube-proxy and static pods.
+func (a *AnsiblerConnector) UpdateNoProxyEnvsInKubernetes(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.UpdateNoProxyEnvsInKubernetesResponse, error) {
+	return ansibler.UpdateNoProxyEnvsInKubernetes(ansiblerGrpcClient, &pb.UpdateNoProxyEnvsInKubernetesRequest{
 		Current:     builderCtx.CurrentCluster,
 		Desired:     builderCtx.DesiredCluster,
-		DesiredLbs:  builderCtx.DesiredLoadbalancers,
+		ProxyEnvs:   builderCtx.ProxyEnvs,
+		ProjectName: builderCtx.ProjectName,
+	})
+}
+
+// UpdateProxyEnvsOnNodes updates proxy envs on all nodes of the cluster.
+func (a *AnsiblerConnector) UpdateProxyEnvsOnNodes(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.UpdateProxyEnvsOnNodesResponse, error) {
+	return ansibler.UpdateProxyEnvsOnNodes(ansiblerGrpcClient, &pb.UpdateProxyEnvsOnNodesRequest{
+		Desired:     builderCtx.DesiredCluster,
+		ProxyEnvs:   builderCtx.ProxyEnvs,
 		ProjectName: builderCtx.ProjectName,
 	})
 }

@@ -130,6 +130,8 @@ spec:
       - name: ts2-oci-cluster-test-set-no2
         version: 1.29.0
         network: 192.168.2.0/24
+        installationProxy:
+          mode: "on"
         pools:
           control:
             - oci-kube-nodes

@@ -46,7 +46,7 @@ func (u *Usecases) SetUpLoadbalancers(request *pb.SetUpLBRequest) (*pb.SetUpLBRe
 		})
 	}
 
-	if err := setUpLoadbalancers(request.Desired.ClusterInfo.Name, lbClustersInfo, logger, u.SpawnProcessLimit); err != nil {
+	if err := setUpLoadbalancers(request.Desired, lbClustersInfo, request.ProxyEnvs, logger, u.SpawnProcessLimit); err != nil {
 		logger.Err(err).Msgf("Error encountered while setting up the loadbalancers")
 		return nil, fmt.Errorf("error encountered while setting up the loadbalancers for cluster %s project %s : %w", request.Desired.ClusterInfo.Name, request.ProjectName, err)
 	}
@@ -56,7 +56,8 @@ func (u *Usecases) SetUpLoadbalancers(request *pb.SetUpLBRequest) (*pb.SetUpLBRe
 }
 
 // setUpLoadbalancers sets up the loadbalancers along with DNS and verifies their configuration
-func setUpLoadbalancers(clusterName string, lbClustersInfo *utils.LBClustersInfo, logger zerolog.Logger, spawnProcessLimit chan struct{}) error {
+func setUpLoadbalancers(desiredK8sCluster *spec.K8Scluster, lbClustersInfo *utils.LBClustersInfo, proxyEnvs *spec.ProxyEnvs, logger zerolog.Logger, spawnProcessLimit chan struct{}) error {
+	clusterName := desiredK8sCluster.ClusterInfo.Name
 	clusterBaseDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, commonUtils.CreateHash(commonUtils.HashLength)))
 
 	if err := utils.GenerateLBBaseFiles(clusterBaseDirectory, lbClustersInfo); err != nil {
@@ -117,7 +118,8 @@ func setUpLoadbalancers(clusterName string, lbClustersInfo *utils.LBClustersInfo
 		desiredApiServerTypeLBCluster = utils.FindCurrentAPIServerTypeLBCluster(lbClustersInfo.LbClusters)
 	}
 
-	if err := utils.HandleAPIEndpointChange(desiredApiServerTypeLBCluster, lbClustersInfo, clusterBaseDirectory, spawnProcessLimit); err != nil {
+	if err := utils.HandleAPIEndpointChange(desiredApiServerTypeLBCluster, desiredK8sCluster.ClusterInfo, lbClustersInfo,
+		proxyEnvs, clusterBaseDirectory, spawnProcessLimit); err != nil {
 		return fmt.Errorf("failed to find a candidate for the Api Server: %w", err)
 	}
 
