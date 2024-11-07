@@ -162,10 +162,11 @@ func (u *Usecases) executeCreateTask(te *managerclient.NextTaskResponse) (*spec.
 func (u *Usecases) executeUpdateTask(te *managerclient.NextTaskResponse) (*spec.K8Scluster, []*spec.LBcluster, error) {
 	if te.Event.Task.UpdateState.Endpoint != nil {
 		ctx := &builder.Context{
-			ProjectName:    te.Config,
-			TaskId:         te.Event.Id,
-			CurrentCluster: te.Current.K8S,
-			Workflow:       te.State,
+			ProjectName:          te.Config,
+			TaskId:               te.Event.Id,
+			CurrentCluster:       te.Current.K8S,
+			CurrentLoadbalancers: te.Current.GetLoadBalancers().GetClusters(),
+			Workflow:             te.State,
 		}
 
 		np := te.Event.Task.UpdateState.Endpoint.Nodepool

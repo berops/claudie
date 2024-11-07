@@ -8,7 +8,8 @@ option go_package = "proto/pb";
 message BuildClusterRequest {
   spec.K8scluster desired = 1;
   repeated spec.LBcluster desiredLbs = 2;
-  string projectName = 3;
+  spec.ProxyEnvs proxyEnvs = 3;
+  string projectName = 4;
 }
 
 message BuildClusterResponse {

@@ -56,6 +56,10 @@ spec:
               mountPath: "/go/services/testing-framework/test-sets/rolling-update"
             - name: rolling-update-2
               mountPath: "/go/services/testing-framework/test-sets/rolling-update-2"
+            - name: proxy-with-hetzner
+              mountPath: "/go/services/testing-framework/test-sets/proxy-with-hetzner"
+            - name: proxy-without-hetzner
+              mountPath: "/go/services/testing-framework/test-sets/proxy-without-hetzner"
       volumes:
         - name: test-set1
           secret:
@@ -84,6 +88,12 @@ spec:
         - name: rolling-update-2
           secret:
             secretName: rolling-update-2
+        - name: proxy-with-hetzner
+          secret:
+            secretName: proxy-with-hetzner
+        - name: proxy-without-hetzner
+          secret:
+            secretName: proxy-without-hetzner
       restartPolicy: Never
       serviceAccountName: testing-framework
 ---

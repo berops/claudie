@@ -21,6 +21,13 @@ var (
 	// as kubernetes follows the semantic version terminology
 	// https://kubernetes.io/releases/
 	kubernetesVersionRegex = regexp.MustCompile(kubernetesVersionRegexString)
+
+	// proxyModeRegexString is a regex expression used for parsing the proxy mode from the manifest
+	// must be changed whenever there's a change in supporting modes
+	proxyModeRegexString = `^(on|off|default)$`
+
+	// used to verify the proxy mode inside the manifest
+	proxyModeRegex = regexp.MustCompile(proxyModeRegexString)
 )
 
 // Validate validates the parsed data inside the Kubernetes section of the manifest.
@@ -61,6 +68,10 @@ func (c *Cluster) Validate() error {
 		return err
 	}
 
+	if err := validate.RegisterValidation("proxyMode", validateProxyMode, true); err != nil {
+		return err
+	}
+
 	if err := validate.Struct(c); err != nil {
 		return prettyPrintValidationError(err)
 	}
@@ -74,6 +85,11 @@ func validateVersion(fl validator.FieldLevel) bool {
 	semverString = strings.TrimPrefix(semverString, "v")
 
 	return kubernetesVersionRegex.MatchString(semverString)
+}
+
+func validateProxyMode(fl validator.FieldLevel) bool {
+	mode := fl.Field().String()
+	return proxyModeRegex.MatchString(mode)
 }
 
 func validateNodepools(m *Manifest, cluster *Cluster) error {

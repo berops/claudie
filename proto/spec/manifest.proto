@@ -104,6 +104,8 @@ message K8scluster {
   string kubeconfig = 3;
   // Kubernetes version.
   string kubernetes = 4;
+  // General information about a proxy used to build a K8s cluster.
+  InstallationProxy installationProxy = 5;
 }
 
 // LBcluster represents a single load balancer cluster specified in the
@@ -127,6 +129,24 @@ message ClusterInfo {
   string hash = 2;
   // Array of node pools this cluster is made of.
   repeated NodePool nodePools = 5;
+}
+
+// InstallationProxy holds general information about a proxy used to build a K8s cluster.
+message InstallationProxy {
+  // Proxy installation mode.
+  string mode = 1;
+  // Proxy endpoint used to access the proxy.
+  string endpoint = 2;
+}
+
+// ProxyEnvs holds information about a need to update proxy envs, proxy endpoint, and no proxy list.
+message ProxyEnvs {
+  // Signal a need to update proxy envs
+  bool updateProxyEnvsFlag = 1;
+  // Holds a proxy endpoint.
+  string httpProxyUrl = 2;
+  // Holds a list of IPs and hostnames that aren't routed through proxy.
+  string noProxyList = 3;
 }
 
 // Role represents a single loadbalancer role from the manifest.

@@ -1,0 +1,65 @@
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: proxy-with-hetzner
+spec:
+  providers:
+    - name: hetzner-1
+      providerType: hetzner
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        path: "templates/terraformer/hetzner"
+      secretRef:
+        name: hetzner-secret
+        namespace: e2e-secrets
+    - name: gcp-1
+      providerType: gcp
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        path: "templates/terraformer/gcp"
+      secretRef:
+        name: gcp-secret
+        namespace: e2e-secrets
+  nodePools:
+    dynamic:
+    - name: htz-ctrl-nodes
+      providerSpec:
+        name: hetzner-1
+        region: fsn1
+        zone: fsn1-dc14
+      count: 1
+      serverType: cpx11
+      image: ubuntu-22.04
+      storageDiskSize: 50
+      labels:
+        test-set: proxy-with-hetzner
+      annotations:
+        claudie.io/example-annotation: >
+          ["proxy-with-hetzner"]
+    - name: gcp-cmpt-nodes
+      providerSpec:
+        name: gcp-1
+        region: europe-west1
+        zone: europe-west1-b
+      count: 1
+      serverType: e2-small
+      image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
+      storageDiskSize: 50
+      labels:
+        test-set: proxy-with-hetzner
+      annotations:
+        claudie.io/example-annotation: >
+          ["proxy-with-hetzner"]
+  kubernetes:
+    clusters:
+      - name: proxy-with-hetzner
+        version: "1.30.0"
+        network: 192.168.2.0/24
+        installationProxy:
+          mode: "default"
+          endpoint: http://proxy.claudie.io:8880
+        pools:
+          control:
+            - htz-ctrl-nodes
+          compute:
+            - gcp-cmpt-nodes

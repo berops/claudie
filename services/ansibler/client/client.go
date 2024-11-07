@@ -59,10 +59,18 @@ func UpdateAPIEndpoint(c pb.AnsiblerServiceClient, req *pb.UpdateAPIEndpointRequ
 	return res, nil
 }
 
-func UpdateNoProxyEnvs(c pb.AnsiblerServiceClient, req *pb.UpdateNoProxyEnvsRequest) (*pb.UpdateNoProxyEnvsResponse, error) {
-	res, err := c.UpdateNoProxyEnvs(context.Background(), req)
+func UpdateNoProxyEnvsInKubernetes(c pb.AnsiblerServiceClient, req *pb.UpdateNoProxyEnvsInKubernetesRequest) (*pb.UpdateNoProxyEnvsInKubernetesResponse, error) {
+	res, err := c.UpdateNoProxyEnvsInKubernetes(context.Background(), req)
 	if err != nil {
-		return res, fmt.Errorf("error while calling UpdateNoProxyEnvs on Ansibler: %w", err)
+		return res, fmt.Errorf("error while calling UpdateNoProxyEnvsInKubernetes on Ansibler: %w", err)
+	}
+	return res, nil
+}
+
+func UpdateProxyEnvsOnNodes(c pb.AnsiblerServiceClient, req *pb.UpdateProxyEnvsOnNodesRequest) (*pb.UpdateProxyEnvsOnNodesResponse, error) {
+	res, err := c.UpdateProxyEnvsOnNodes(context.Background(), req)
+	if err != nil {
+		return res, fmt.Errorf("error while calling UpdateProxyEnvsOnNodes on Ansibler: %w", err)
 	}
 	return res, nil
 }

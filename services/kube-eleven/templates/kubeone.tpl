@@ -77,7 +77,7 @@ staticWorkers:
 proxy:
   http: "{{ .HttpProxyUrl }}"
   https: "{{ .HttpProxyUrl }}"
-  noProxy: "{{ .NoProxy }}"
+  noProxy: "{{ .NoProxyList }}"
 {{- end }}
 
 machineController:

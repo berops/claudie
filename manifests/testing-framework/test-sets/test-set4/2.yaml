@@ -56,8 +56,10 @@ spec:
   kubernetes:
     clusters:
       - name: ts4-c-1-cluster-test-set-no4
-        version: 1.27.0
+        version: 1.29.0
         network: 192.168.2.0/24
+        installationProxy:
+          mode: "on"
         pools:
           control:
             - gcp-kube-nodes

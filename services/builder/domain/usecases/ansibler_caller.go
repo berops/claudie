@@ -50,6 +50,29 @@ func (u *Usecases) configureInfrastructure(ctx *builder.Context) error {
 		apiEndpoint = teardownRes.PreviousAPIEndpoint
 	}
 
+	// Updating proxy envs on nodes.
+	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s updating proxy envs on nodes in /etc/environment", description))
+
+	updateProxyFlag := ctx.ProxyEnvs.UpdateProxyEnvsFlag
+	if updateProxyFlag {
+		// In this case only a public IP of newly provisioned VMs will be in no proxy list
+		// because they don't have a Wireguard IP yet.
+		hasHetznerNodeFlag := builder.HasHetznerNode(ctx.DesiredCluster.ClusterInfo)
+		httpProxyUrl, noProxyList := builder.GetHttpProxyUrlAndNoProxyList(
+			ctx.DesiredCluster.ClusterInfo, ctx.DesiredLoadbalancers, hasHetznerNodeFlag, ctx.DesiredCluster.InstallationProxy)
+		ctx.ProxyEnvs.HttpProxyUrl = httpProxyUrl
+		ctx.ProxyEnvs.NoProxyList = noProxyList
+
+		logger.Info().Msgf("Calling UpdateProxyEnvsOnNodes on Ansibler")
+		proxyResp, err := u.Ansibler.UpdateProxyEnvsOnNodes(ctx, ansClient)
+		if err != nil {
+			return err
+		}
+
+		logger.Info().Msgf("UpdateProxyEnvsOnNodes on Ansibler finished successfully")
+		ctx.DesiredCluster = proxyResp.Desired
+	}
+
 	// Install VPN.
 	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s intalling VPN", description))
 
@@ -62,6 +85,15 @@ func (u *Usecases) configureInfrastructure(ctx *builder.Context) error {
 
 	ctx.DesiredCluster = installRes.Desired
 	ctx.DesiredLoadbalancers = installRes.DesiredLbs
+
+	if updateProxyFlag {
+		// As soon as the VPN is installed, we can update the proxy envs (the newly added VMs have a Wireguard IP).
+		hasHetznerNodeFlag := builder.HasHetznerNode(ctx.DesiredCluster.ClusterInfo)
+		httpProxyUrl, noProxyList := builder.GetHttpProxyUrlAndNoProxyList(
+			ctx.DesiredCluster.ClusterInfo, ctx.DesiredLoadbalancers, hasHetznerNodeFlag, ctx.DesiredCluster.InstallationProxy)
+		ctx.ProxyEnvs.HttpProxyUrl = httpProxyUrl
+		ctx.ProxyEnvs.NoProxyList = noProxyList
+	}
 
 	// Install node requirements.
 	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s installing node requirements", description))
@@ -90,17 +122,18 @@ func (u *Usecases) configureInfrastructure(ctx *builder.Context) error {
 	ctx.CurrentLoadbalancers = setUpRes.CurrentLbs
 	ctx.DesiredLoadbalancers = setUpRes.DesiredLbs
 
-	// Update NO_PROXY and no_proxy variables
-	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s updating NO_PROXY and no_proxy env variables", description))
-	logger.Info().Msgf("Calling UpdateNoProxyEnvs on Ansibler")
-	resp, err := u.Ansibler.UpdateNoProxyEnvs(ctx, ansClient)
-	if err != nil {
-		return err
-	}
+	if updateProxyFlag {
+		// NOTE: UpdateNoProxyEnvsInKubernetes has to be called after SetUpLoadbalancers
+		u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s updating NO_PROXY and no_proxy env variables in kube-proxy and static pods", description))
+		logger.Info().Msgf("Calling UpdateNoProxyEnvsInKubernetes on Ansibler")
+		noProxyResp, err := u.Ansibler.UpdateNoProxyEnvsInKubernetes(ctx, ansClient)
+		if err != nil {
+			return err
+		}
 
-	logger.Info().Msgf("UpdateNoProxyEnvs on Ansibler finished successfully")
-	ctx.CurrentCluster = resp.Current
-	ctx.DesiredCluster = resp.Desired
+		logger.Info().Msgf("UpdateNoProxyEnvsInKubernetes on Ansibler finished successfully")
+		ctx.DesiredCluster = noProxyResp.Desired
+	}
 
 	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, description)
 	return nil

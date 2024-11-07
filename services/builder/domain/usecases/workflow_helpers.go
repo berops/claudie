@@ -76,6 +76,11 @@ func (u *Usecases) buildCluster(ctx *builder.Context) (*builder.Context, error) 
 		return ctx, fmt.Errorf("error in Terraformer for cluster %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
 	}
 
+	// HttProxyUrl and NoProxyList will be set before first task in ansibler and then updated after ansibler Install VPN phase.
+	ctx.ProxyEnvs = &spec.ProxyEnvs{
+		UpdateProxyEnvsFlag: ctx.DetermineProxyUpdate(),
+	}
+
 	// Configure infrastructure via Ansibler.
 	if err := u.configureInfrastructure(ctx); err != nil {
 		return ctx, fmt.Errorf("error in Ansibler for cluster %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)

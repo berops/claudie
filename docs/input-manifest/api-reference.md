@@ -417,6 +417,10 @@ Collection of data used to define a Kubernetes cluster.
 
   List of nodepool names this cluster will use. Remember that nodepools defined in [nodepools](#nodepools) are only "blueprints". The actual nodepool will be created once referenced here.
 
+- `installationProxy`
+
+  Installation proxy settings used by this cluster. You can learn more about the setting [here](https://docs.claudie.io/latest/http-proxy).
+
 ## LoadBalancer
 
 Defines loadbalancer clusters.
