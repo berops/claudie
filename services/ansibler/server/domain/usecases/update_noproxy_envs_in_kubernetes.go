@@ -19,7 +19,10 @@ const (
 )
 
 func (u *Usecases) UpdateNoProxyEnvsInKubernetes(request *pb.UpdateNoProxyEnvsInKubernetesRequest) (*pb.UpdateNoProxyEnvsInKubernetesResponse, error) {
-	if request.Current == nil || request.ProxyEnvs == nil || !request.ProxyEnvs.UpdateProxyEnvsFlag {
+	skip := request.Current == nil || request.Current.Kubeconfig == ""
+	skip = skip || request.ProxyEnvs == nil
+	skip = skip || !request.ProxyEnvs.UpdateProxyEnvsFlag
+	if skip {
 		// Don't update no proxy envs, when the k8s cluster wasn't build yet or the proxy envs are not supposed to be updated.
 		return &pb.UpdateNoProxyEnvsInKubernetesResponse{Desired: request.Desired}, nil
 	}
