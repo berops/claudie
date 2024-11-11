@@ -249,12 +249,15 @@ func processTestSet(
 		if errCleanUp != nil {
 			if errors.Is(errCleanUp, errInterrupt) {
 				log.Warn().Msgf("Testing-framework received interrupt signal, aborting test checking")
-				// Do not return error, since it was an interrupt
+				// On interrupt remove infra
 				return nil
 			}
 			if i != len(configs)-1 && continueOnBuildError {
 				continue
 			}
+			// do not delete infra so that we can debug what went wrong, the deletion is then needed to be done
+			// manually.
+			errCleanUp = nil
 			return fmt.Errorf("error while monitoring manifest %s from test set %s : %w", entry.Name(), setName, errCleanUp)
 		}
 
