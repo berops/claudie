@@ -3,6 +3,7 @@ package cluster_builder
 import (
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"iter"
 	"net"
@@ -89,9 +90,34 @@ func (c ClusterBuilder) CreateNodepools() error {
 		return fmt.Errorf("error while running terraform init in %s : %w", clusterID, err)
 	}
 
-	if err := terraform.Apply(); err != nil {
-		return fmt.Errorf("error while running terraform apply in %s : %w", clusterID, err)
+	var currentState []string
+	if c.CurrentClusterInfo != nil {
+		var err error
+		if currentState, err = terraform.StateList(); err != nil {
+			return fmt.Errorf("error while running terraform state list in %s : %w", clusterID, err)
+		}
 	}
+
+	if err := terraform.Apply(); err != nil {
+		updatedState, errList := terraform.StateList()
+		if errList != nil {
+			return errors.Join(err, fmt.Errorf("%w: error while running terraform state list in %s : %w", err, clusterID, errList))
+		}
+
+		var toDelete []string
+		for _, resource := range updatedState {
+			if !slices.Contains(currentState, resource) {
+				toDelete = append(toDelete, resource)
+			}
+		}
+
+		if errDestroy := terraform.DestroyTarget(toDelete); errDestroy != nil {
+			return fmt.Errorf("%w: failed to destroy partially create state: %w", err, errDestroy)
+		}
+
+		return err
+	}
+
 	oldNodes := c.getCurrentNodes()
 
 	// fill new nodes with output

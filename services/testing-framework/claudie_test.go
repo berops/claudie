@@ -91,7 +91,7 @@ func testClaudie(ctx context.Context) error {
 	}
 
 	// save all the test set paths
-	var basicSets, autoscalingSets []string
+	var basicSets, autoscalingSets, succeedsOnLastSets []string
 	for _, f := range files {
 		if !f.IsDir() {
 			continue
@@ -100,6 +100,12 @@ func testClaudie(ctx context.Context) error {
 		if strings.Contains(f.Name(), "autoscaling") {
 			log.Info().Msgf("Found autoscaling test set: %s", f.Name())
 			autoscalingSets = append(autoscalingSets, f.Name())
+			continue
+		}
+
+		if strings.HasPrefix(f.Name(), "succeeds-on-last") {
+			log.Info().Msgf("Found succeeds on last test set: %s", f.Name())
+			succeedsOnLastSets = append(succeedsOnLastSets, f.Name())
 			continue
 		}
 
@@ -115,7 +121,25 @@ func testClaudie(ctx context.Context) error {
 			defer cancel()
 
 			log.Info().Msgf("Starting test set: %s", path)
-			err := processTestSet(ctx, path, manager, testLonghornDeployment)
+			err := processTestSet(ctx, path, false, manager, testLonghornDeployment)
+			if err == nil {
+				log.Info().Msgf("test set: %s finished", path)
+				return nil
+			}
+
+			//in order to get errors from all goroutines in error group, print them here and just return simple error so test will fail
+			log.Err(err).Msgf("Error in test sets %s ", path)
+			return err
+		})
+	}
+
+	for _, path := range succeedsOnLastSets {
+		group.Go(func() error {
+			ctx, cancel := context.WithCancel(ctx)
+			defer cancel()
+
+			log.Info().Msgf("Starting test set: %s", path)
+			err := processTestSet(ctx, path, true, manager, testLonghornDeployment)
 			if err == nil {
 				log.Info().Msgf("test set: %s finished", path)
 				return nil
@@ -135,7 +159,7 @@ func testClaudie(ctx context.Context) error {
 
 				log.Info().Msgf("Starting test set: %s", path)
 
-				err := processTestSet(ctx, path, manager, func(ctx context.Context, c *spec.Config) error {
+				err := processTestSet(ctx, path, false, manager, func(ctx context.Context, c *spec.Config) error {
 					if err := testLonghornDeployment(ctx, c); err != nil {
 						return err
 					}
@@ -158,7 +182,13 @@ func testClaudie(ctx context.Context) error {
 }
 
 // processTestSet function will apply test set sequentially to Claudie
-func processTestSet(ctx context.Context, setName string, m managerclient.ClientAPI, testFunc func(ctx context.Context, c *spec.Config) error) error {
+func processTestSet(
+	ctx context.Context,
+	setName string,
+	continueOnBuildError bool,
+	m managerclient.ClientAPI,
+	testFunc func(ctx context.Context, c *spec.Config) error,
+) error {
 	// Set errCleanUp to clean up the infra on failure
 	var errCleanUp, errIgnore error
 	var manifestName string
@@ -183,11 +213,16 @@ func processTestSet(ctx context.Context, setName string, m managerclient.ClientA
 		return fmt.Errorf("error while trying to read test manifests in %s : %w", pathToTestSet, errIgnore)
 	}
 
+	var configs []os.DirEntry
 	for _, entry := range dir {
 		// https://github.com/berops/claudie/pull/243#issuecomment-1218237412
 		if entry.IsDir() || entry.Name()[0] == '.' {
 			continue
 		}
+		configs = append(configs, entry)
+	}
+
+	for i, entry := range configs {
 		manifestPath := filepath.Join(pathToTestSet, entry.Name())
 
 		rawManifest, err := os.ReadFile(manifestPath)
@@ -216,6 +251,9 @@ func processTestSet(ctx context.Context, setName string, m managerclient.ClientA
 				log.Warn().Msgf("Testing-framework received interrupt signal, aborting test checking")
 				// Do not return error, since it was an interrupt
 				return nil
+			}
+			if i != len(configs)-1 && continueOnBuildError {
+				continue
 			}
 			return fmt.Errorf("error while monitoring manifest %s from test set %s : %w", entry.Name(), setName, errCleanUp)
 		}

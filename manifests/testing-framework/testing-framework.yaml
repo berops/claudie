@@ -60,6 +60,14 @@ spec:
               mountPath: "/go/services/testing-framework/test-sets/proxy-with-hetzner"
             - name: proxy-without-hetzner
               mountPath: "/go/services/testing-framework/test-sets/proxy-without-hetzner"
+            - name: succeeds-on-last-1
+              mountPath: "/go/services/testing-framework/test-sets/succeeds-on-last-1"
+            - name: succeeds-on-last-2
+              mountPath: "/go/services/testing-framework/test-sets/succeeds-on-last-2"
+            - name: succeeds-on-last-3
+              mountPath: "/go/services/testing-framework/test-sets/succeeds-on-last-3"
+            - name: succeeds-on-last-4
+              mountPath: "/go/services/testing-framework/test-sets/succeeds-on-last-4"
       volumes:
         - name: test-set1
           secret:
@@ -94,6 +102,18 @@ spec:
         - name: proxy-without-hetzner
           secret:
             secretName: proxy-without-hetzner
+        - name: succeeds-on-last-1
+          secret:
+            secretName: succeeds-on-last-1
+        - name: succeeds-on-last-2
+          secret:
+            secretName: succeeds-on-last-2
+        - name: succeeds-on-last-3
+          secret:
+            secretName: succeeds-on-last-3
+        - name: succeeds-on-last-4
+          secret:
+            secretName: succeeds-on-last-4
       restartPolicy: Never
       serviceAccountName: testing-framework
 ---

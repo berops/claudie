@@ -90,7 +90,18 @@ func (ctx *Context) DetermineProxyUpdate() bool {
 	defaultMode := "default"
 	offMode := "off"
 
-	if ctx.CurrentCluster != nil && ctx.DesiredCluster != nil {
+	firstRun := ctx.CurrentCluster == nil || ctx.CurrentCluster.Kubeconfig == ""
+	if firstRun {
+		// The cluster wasn't build yet because currentState is nil
+		// but we have to check if the proxy is turned on or in a default mode with Hetzner node in the desired state.
+		desiredProxySettings := ctx.DesiredCluster.InstallationProxy
+
+		if desiredProxySettings.Mode == defaultMode && HasHetznerNode(ctx.DesiredCluster.ClusterInfo) {
+			updateProxyEnvsFlag = true
+		} else if desiredProxySettings.Mode == "on" {
+			updateProxyEnvsFlag = true
+		}
+	} else if ctx.CurrentCluster != nil && ctx.DesiredCluster != nil {
 		updateProxyEnvsFlag = true
 
 		hetznerInDesired := HasHetznerNode(ctx.DesiredCluster.ClusterInfo)
@@ -132,16 +143,6 @@ func (ctx *Context) DetermineProxyUpdate() bool {
 		case currProxySettings.Mode == offMode && desiredProxySettings.Mode == defaultMode && !hetznerInDesired:
 			// The proxy was in off mode. Now it is in default mode without Hetzner node.
 			updateProxyEnvsFlag = false
-		}
-	} else if ctx.DesiredCluster != nil {
-		// The cluster wasn't build yet because currentState is nil
-		// but we have to check if the proxy is turned on or in a default mode with Hetzner node in the desired state.
-		desiredProxySettings := ctx.DesiredCluster.InstallationProxy
-
-		if desiredProxySettings.Mode == defaultMode && HasHetznerNode(ctx.DesiredCluster.ClusterInfo) {
-			updateProxyEnvsFlag = true
-		} else if desiredProxySettings.Mode == "on" {
-			updateProxyEnvsFlag = true
 		}
 	}
 

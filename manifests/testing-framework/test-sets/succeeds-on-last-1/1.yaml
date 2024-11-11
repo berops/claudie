@@ -1,0 +1,52 @@
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: succeeds-on-last-1
+spec:
+  providers:
+    - name: hetzner-1
+      providerType: hetzner
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        path: "templates/terraformer/hetzner"
+      secretRef:
+        name: hetzner-secret
+        namespace: e2e-secrets
+    - name: aws-1
+      providerType: aws
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        path: "templates/terraformer/aws"
+      secretRef:
+        name: aws-secret
+        namespace: e2e-secrets
+  nodePools:
+    dynamic:
+      - name: htz-ctrl-nodes
+        providerSpec:
+          name: hetzner-1
+          region: nbg1
+          zone: nbg1-dc3
+        count: 1
+        serverType: cpx11
+        image: ubuntu-24.04
+      - name: aws-cmpt-00001
+        providerSpec:
+          name: aws-1
+          region: eu-west-3
+          zone: eu-west-3a
+        count: 1
+        serverType: t3.small
+        #ubuntu - doesnt exists
+        image: ami-00000000000000001
+        storageDiskSize: 50
+  kubernetes:
+    clusters:
+      - name: succeeds-on-last-1-cluster-0
+        version: 1.29.0
+        network: 192.168.2.0/24
+        pools:
+          control:
+            - htz-ctrl-nodes
+          compute:
+            - aws-cmpt-00001

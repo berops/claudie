@@ -15,7 +15,6 @@ import (
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/terraform"
 	"github.com/rs/zerolog"
-
 	"google.golang.org/protobuf/proto"
 )
 
@@ -41,7 +40,7 @@ type DNS struct {
 }
 
 // CreateDNSRecords creates DNS records for the Loadbalancer cluster.
-func (d DNS) CreateDNSRecords(logger zerolog.Logger) (string, error) {
+func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 	sublogger := logger.With().Str("endpoint", d.DesiredDNS.Endpoint).Logger()
 
 	clusterID := fmt.Sprintf("%s-%s", d.ClusterName, d.ClusterHash)
@@ -64,36 +63,54 @@ func (d DNS) CreateDNSRecords(logger zerolog.Logger) (string, error) {
 
 	if changedDNSProvider(d.CurrentDNS, d.DesiredDNS) {
 		sublogger.Info().Msg("Destroying old DNS records")
-		if err := d.generateFiles(dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs); err != nil {
-			return "", fmt.Errorf("error while creating current state dns.tf files for %s : %w", dnsID, err)
+		if err := d.generateProvider(dnsID, dnsDir, d.CurrentDNS, d.DesiredDNS); err != nil {
+			return fmt.Errorf("error while generating providers tf files for %s: %w", dnsID, err)
 		}
-		// Delete the ones from desired state, in case this is a re-execution.
+		// destroy current state.
+		if err := d.generateFiles(dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs); err != nil {
+			return fmt.Errorf("error while creating current state dns.tf files for %s : %w", dnsID, err)
+		}
+		// In case of a re-execution of a task which would fail, if we do not
+		// delete also the desired state, which might have been created.
 		if err := d.generateFiles(dnsID, dnsDir, d.DesiredDNS, d.DesiredNodeIPs); err != nil {
-			return "", fmt.Errorf("error while creating desired state dns.tf files for %s : %w", dnsID, err)
+			return fmt.Errorf("error while creating desired state dns.tf files for %s : %w", dnsID, err)
 		}
 		if err := terraform.Init(); err != nil {
-			return "", err
+			return err
 		}
-		if err := terraform.Destroy(); err != nil {
-			return "", err
+
+		stateFile, err := terraform.StateList()
+		if err != nil {
+			sublogger.Warn().Msgf("absent statefile for dns, assumming the previous state was not build correctly")
+		}
+
+		if err := terraform.DestroyTarget(stateFile); err != nil {
+			return fmt.Errorf("failed to destroy existing DNS state: %w", err)
 		}
 
 		if err := os.RemoveAll(dnsDir); err != nil {
-			return "", fmt.Errorf("error while removing files in dir %q: %w", dnsDir, err)
+			return fmt.Errorf("error while removing files in dir %q: %w", dnsDir, err)
 		}
 
-		sublogger.Info().Msg("Old DNS records were successfully destroyed")
+		sublogger.Info().Msg("Old DNS records were destroyed")
 	}
 
 	sublogger.Info().Msg("Creating new DNS records")
+
+	if err := d.generateProvider(dnsID, dnsDir, nil, d.DesiredDNS); err != nil {
+		return fmt.Errorf("error while generating providers tf files for %s: %w", dnsID, err)
+	}
+
 	if err := d.generateFiles(dnsID, dnsDir, d.DesiredDNS, d.DesiredNodeIPs); err != nil {
-		return "", fmt.Errorf("error while creating dns .tf files for %s : %w", dnsID, err)
+		return fmt.Errorf("error while creating dns .tf files for %s : %w", dnsID, err)
 	}
+
 	if err := terraform.Init(); err != nil {
-		return "", err
+		return err
 	}
+
 	if err := terraform.Apply(); err != nil {
-		return "", err
+		return err
 	}
 
 	f := checksum.Digest128(filepath.Join(d.DesiredDNS.Provider.SpecName, templates.ExtractTargetPath(d.DesiredDNS.Provider.Templates)))
@@ -101,22 +118,23 @@ func (d DNS) CreateDNSRecords(logger zerolog.Logger) (string, error) {
 
 	output, err := terraform.Output(k)
 	if err != nil {
-		return "", fmt.Errorf("error while getting output from terraform for %s : %w", clusterID, err)
+		return fmt.Errorf("error while getting output from terraform for %s : %w", clusterID, err)
 	}
 
 	out, err := readDomain(output)
 	if err != nil {
-		return "", fmt.Errorf("error while reading output from terraform for %s : %w", clusterID, err)
+		return fmt.Errorf("error while reading output from terraform for %s : %w", clusterID, err)
 	}
 
 	outputID := fmt.Sprintf("%s-endpoint", clusterID)
 	sublogger.Info().Msg("DNS records were successfully set up")
 
-	return validateDomain(out.Domain[outputID]), nil
+	d.DesiredDNS.Endpoint = validateDomain(out.Domain[outputID])
+	return nil
 }
 
 // DestroyDNSRecords destroys DNS records for the Loadbalancer cluster.
-func (d DNS) DestroyDNSRecords(logger zerolog.Logger) error {
+func (d *DNS) DestroyDNSRecords(logger zerolog.Logger) error {
 	sublogger := logger.With().Str("endpoint", d.CurrentDNS.Endpoint).Logger()
 
 	sublogger.Info().Msg("Destroying DNS records")
@@ -128,6 +146,10 @@ func (d DNS) DestroyDNSRecords(logger zerolog.Logger) error {
 			sublogger.Err(err).Msgf("error while removing files in dir %q: %v", dnsDir, err)
 		}
 	}()
+
+	if err := d.generateProvider(dnsID, dnsDir, d.CurrentDNS, nil); err != nil {
+		return fmt.Errorf("error while generating providers tf files for %s: %w", dnsID, err)
+	}
 
 	if err := d.generateFiles(dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs); err != nil {
 		return fmt.Errorf("error while creating dns records for %s : %w", dnsID, err)
@@ -154,8 +176,7 @@ func (d DNS) DestroyDNSRecords(logger zerolog.Logger) error {
 	return nil
 }
 
-// generateFiles creates all the necessary terraform files used to create/destroy DNS.
-func (d DNS) generateFiles(dnsID, dnsDir string, dns *spec.DNS, nodeIPs []string) error {
+func (d *DNS) generateProvider(dnsID, dnsDir string, current, desired *spec.DNS) error {
 	backend := templates.Backend{
 		ProjectName: d.ProjectName,
 		ClusterName: dnsID,
@@ -172,10 +193,11 @@ func (d DNS) generateFiles(dnsID, dnsDir string, dns *spec.DNS, nodeIPs []string
 		Directory:   dnsDir,
 	}
 
-	if err := usedProviders.CreateUsedProviderDNS(dns); err != nil {
-		return err
-	}
+	return usedProviders.CreateUsedProviderDNS(current, desired)
+}
 
+// generateFiles creates all the necessary terraform files used to create/destroy DNS.
+func (d *DNS) generateFiles(dnsID, dnsDir string, dns *spec.DNS, nodeIPs []string) error {
 	templateDir := filepath.Join(TemplatesRootDir, dnsID, dns.GetProvider().GetSpecName())
 	if err := templates.DownloadProvider(templateDir, dns.GetProvider()); err != nil {
 		return fmt.Errorf("failed to download templates for DNS %q: %w", dnsID, err)

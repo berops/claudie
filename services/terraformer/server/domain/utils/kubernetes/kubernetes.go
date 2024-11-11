@@ -1,12 +1,18 @@
 package kubernetes
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
 	"github.com/rs/zerolog"
+)
+
+var (
+	// ErrCreateNodePools is returned when an error occurs during the creation of the desired nodepools.
+	ErrCreateNodePools = errors.New("failed to create desired nodepools")
 )
 
 type K8Scluster struct {
@@ -54,9 +60,8 @@ func (k *K8Scluster) Build(logger zerolog.Logger) error {
 		SpawnProcessLimit: k.SpawnProcessLimit,
 	}
 
-	err := cluster.CreateNodepools()
-	if err != nil {
-		return fmt.Errorf("error while creating the K8s cluster %s : %w", k.DesiredState.ClusterInfo.Name, err)
+	if err := cluster.CreateNodepools(); err != nil {
+		return fmt.Errorf("%w: error while creating the K8s cluster %s : %w", ErrCreateNodePools, k.DesiredState.ClusterInfo.Name, err)
 	}
 
 	return nil

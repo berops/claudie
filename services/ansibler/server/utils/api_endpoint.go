@@ -36,7 +36,7 @@ func ChangeAPIEndpoint(clusterName, oldEndpoint, newEndpoint, directory string, 
 func FindCurrentAPIServerTypeLBCluster(lbClusters []*LBClusterData) *LBClusterData {
 	for _, lbClusterData := range lbClusters {
 		if lbClusterData.CurrentLbCluster != nil {
-			if utils.HasAPIServerRole(lbClusterData.CurrentLbCluster.Roles) {
+			if utils.HasAPIServerRole(lbClusterData.CurrentLbCluster.Roles) && lbClusterData.CurrentLbCluster.Dns != nil {
 				return lbClusterData
 			}
 		}

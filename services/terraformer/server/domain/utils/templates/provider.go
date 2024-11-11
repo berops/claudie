@@ -31,7 +31,7 @@ type usedProvidersTemplateData struct {
 }
 
 // CreateUsedProviderDNS creates provider file used for DNS management.
-func (p UsedProviders) CreateUsedProviderDNS(dns *spec.DNS) error {
+func (p UsedProviders) CreateUsedProviderDNS(current, desired *spec.DNS) error {
 	template := templateUtils.Templates{Directory: p.Directory}
 
 	tpl, err := templateUtils.LoadTemplate(providersTemplate)
@@ -40,7 +40,8 @@ func (p UsedProviders) CreateUsedProviderDNS(dns *spec.DNS) error {
 	}
 
 	var data usedProvidersTemplateData
-	getDNSProvider(dns, &data)
+	getDNSProvider(current, &data)
+	getDNSProvider(desired, &data)
 	return template.Generate(tpl, "providers.tf", data)
 }
 

@@ -55,7 +55,7 @@ func (a *AnsiblerConnector) SetUpLoadbalancers(builderCtx *builder.Context, apiE
 			ProxyEnvs:           builderCtx.ProxyEnvs,
 			PreviousAPIEndpoint: apiEndpoint,
 			ProjectName:         builderCtx.ProjectName,
-			FirstRun:            builderCtx.CurrentCluster == nil,
+			FirstRun:            builderCtx.CurrentCluster == nil || builderCtx.CurrentCluster.Kubeconfig == "",
 		})
 }
 

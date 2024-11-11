@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/berops/claudie/proto/pb/spec"
-
-	"github.com/rs/zerolog/log"
-
 	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/ansibler/templates"
+	"github.com/rs/zerolog/log"
 )
 
 /*
@@ -134,8 +132,16 @@ func (lb *LBClusterData) APIEndpointState() APIEndpointChangeState {
 		return AttachingLoadBalancer
 	}
 
-	if lb.CurrentLbCluster != nil && lb.DesiredLbCluster == nil {
-		return DetachingLoadBalancer
+	if lb.CurrentLbCluster != nil {
+		if lb.DesiredLbCluster == nil {
+			return DetachingLoadBalancer
+		}
+
+		// the DNS creation failed in the terraformer step and was fixed in subsequent
+		// inputs from the user.
+		if lb.CurrentLbCluster.Dns == nil && lb.DesiredLbCluster.Dns != nil {
+			return AttachingLoadBalancer
+		}
 	}
 
 	if lb.CurrentLbCluster.Dns.Endpoint != lb.DesiredLbCluster.Dns.Endpoint {

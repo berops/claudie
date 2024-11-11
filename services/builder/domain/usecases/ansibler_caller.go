@@ -58,8 +58,7 @@ func (u *Usecases) configureInfrastructure(ctx *builder.Context) error {
 		// In this case only a public IP of newly provisioned VMs will be in no proxy list
 		// because they don't have a Wireguard IP yet.
 		hasHetznerNodeFlag := builder.HasHetznerNode(ctx.DesiredCluster.ClusterInfo)
-		httpProxyUrl, noProxyList := builder.GetHttpProxyUrlAndNoProxyList(
-			ctx.DesiredCluster.ClusterInfo, ctx.DesiredLoadbalancers, hasHetznerNodeFlag, ctx.DesiredCluster.InstallationProxy)
+		httpProxyUrl, noProxyList := builder.GetHttpProxyUrlAndNoProxyList(ctx.DesiredCluster.ClusterInfo, ctx.DesiredLoadbalancers, hasHetznerNodeFlag, ctx.DesiredCluster.InstallationProxy)
 		ctx.ProxyEnvs.HttpProxyUrl = httpProxyUrl
 		ctx.ProxyEnvs.NoProxyList = noProxyList
 

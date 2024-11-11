@@ -69,8 +69,26 @@ secretGenerator:
   - test-sets/proxy-without-hetzner/9.yaml
   - test-sets/proxy-without-hetzner/10.yaml
   name: proxy-without-hetzner
+- files:
+  - test-sets/succeeds-on-last-1/1.yaml
+  - test-sets/succeeds-on-last-1/2.yaml
+  name: succeeds-on-last-1
+- files:
+  - test-sets/succeeds-on-last-2/1.yaml
+  - test-sets/succeeds-on-last-2/2.yaml
+  - test-sets/succeeds-on-last-2/3.yaml
+  name: succeeds-on-last-2
+- files:
+  - test-sets/succeeds-on-last-3/1.yaml
+  - test-sets/succeeds-on-last-3/2.yaml
+  name: succeeds-on-last-3
+- files:
+  - test-sets/succeeds-on-last-4/1.yaml
+  - test-sets/succeeds-on-last-4/2.yaml
+  - test-sets/succeeds-on-last-4/3.yaml
+  name: succeeds-on-last-4
 
 
 images:
 - name: ghcr.io/berops/claudie/testing-framework
-  newTag: 06089a0-3104
+  newTag: 5b997a0-3111
