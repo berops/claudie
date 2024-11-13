@@ -121,13 +121,14 @@ func testClaudie(ctx context.Context) error {
 			defer cancel()
 
 			log.Info().Msgf("Starting test set: %s", path)
-			err := processTestSet(ctx, path, false, manager, testLonghornDeployment)
-			if err == nil {
+			err, cleanup := processTestSet(ctx, path, false, manager, testLonghornDeployment)
+			if err == nil || errors.Is(err, errInterrupt) {
+				if err := cleanup(); err != nil {
+					log.Err(err).Msgf("Error in cleaning up test set %s", path)
+				}
 				log.Info().Msgf("test set: %s finished", path)
 				return nil
 			}
-
-			//in order to get errors from all goroutines in error group, print them here and just return simple error so test will fail
 			log.Err(err).Msgf("Error in test sets %s ", path)
 			return err
 		})
@@ -139,13 +140,14 @@ func testClaudie(ctx context.Context) error {
 			defer cancel()
 
 			log.Info().Msgf("Starting test set: %s", path)
-			err := processTestSet(ctx, path, true, manager, testLonghornDeployment)
-			if err == nil {
+			err, cleanup := processTestSet(ctx, path, true, manager, testLonghornDeployment)
+			if err == nil || errors.Is(err, errInterrupt) {
+				if err := cleanup(); err != nil {
+					log.Err(err).Msgf("Error in cleaning up test set %s", path)
+				}
 				log.Info().Msgf("test set: %s finished", path)
 				return nil
 			}
-
-			//in order to get errors from all goroutines in error group, print them here and just return simple error so test will fail
 			log.Err(err).Msgf("Error in test sets %s ", path)
 			return err
 		})
@@ -159,21 +161,28 @@ func testClaudie(ctx context.Context) error {
 
 				log.Info().Msgf("Starting test set: %s", path)
 
-				err := processTestSet(ctx, path, false, manager, func(ctx context.Context, c *spec.Config) error {
-					if err := testLonghornDeployment(ctx, c); err != nil {
-						return err
+				err, cleanup := processTestSet(
+					ctx,
+					path,
+					false,
+					manager,
+					func(ctx context.Context, c *spec.Config) error {
+						if err := testLonghornDeployment(ctx, c); err != nil {
+							return err
+						}
+						return testAutoscaler(ctx, c)
+					},
+				)
+				if err == nil || errors.Is(err, errInterrupt) {
+					if err := cleanup(); err != nil {
+						log.Err(err).Msgf("Error in cleaning up test set %s", path)
 					}
-					return testAutoscaler(ctx, c)
-				})
-
-				if err != nil {
-					//in order to get errors from all goroutines in error group, print them here and just return simple error so test will fail
-					log.Err(err).Msgf("Error in test sets %s", path)
-					return fmt.Errorf("error")
+					log.Info().Msgf("test set: %s finished", path)
+					return nil
 				}
-
-				log.Info().Msgf("test set: %s finished", path)
-				return nil
+				log.Err(err).Msgf("Error in test sets %s ", path)
+				// failed to build, no cleanup(), keep infra for debugging.
+				return err
 			})
 		}
 	}
@@ -188,29 +197,28 @@ func processTestSet(
 	continueOnBuildError bool,
 	m managerclient.ClientAPI,
 	testFunc func(ctx context.Context, c *spec.Config) error,
-) error {
-	// Set errCleanUp to clean up the infra on failure
-	var errCleanUp, errIgnore error
-	var manifestName string
+) (error, func() error) {
 	pathToTestSet := filepath.Join(testDir, setName)
 	log.Info().Msgf("Working on the test set %s", pathToTestSet)
 
-	// Defer clean up function
-	defer func() {
-		if errCleanUp != nil {
+	var (
+		manifestName string
+		nocleanup    = func() error { return nil }
+		cleanup      = func() error {
 			if autoCleanUpFlag == "TRUE" {
-				log.Info().Msgf("Deleting infra even after error due to flag \"-auto-clean-up\" set to %v", autoCleanUpFlag)
-				// delete manifest from DB to clean up the infra
+				log.Info().Msgf("[%s] Deleting infra even after error due to flag \"-auto-clean-up\" set to %v", manifestName, autoCleanUpFlag)
+
 				if err := cleanUp(setName, manifestName, m); err != nil {
 					log.Err(err).Msgf("error while cleaning up the infra for test set %s", setName)
 				}
 			}
+			return nil
 		}
-	}()
+	)
 
-	dir, errIgnore := os.ReadDir(pathToTestSet)
-	if errIgnore != nil {
-		return fmt.Errorf("error while trying to read test manifests in %s : %w", pathToTestSet, errIgnore)
+	dir, err := os.ReadDir(pathToTestSet)
+	if err != nil {
+		return fmt.Errorf("error while trying to read test manifests in %s : %w", pathToTestSet, err), nocleanup
 	}
 
 	var configs []os.DirEntry
@@ -227,68 +235,48 @@ func processTestSet(
 
 		rawManifest, err := os.ReadFile(manifestPath)
 		if err != nil {
-			return fmt.Errorf("error while reading manifest %s : %w", manifestPath, err)
+			return fmt.Errorf("error while reading manifest %s : %w", manifestPath, err), nocleanup
 		}
 
 		manifestName, err = getInputManifestName(rawManifest)
 		if err != nil {
-			return fmt.Errorf("error while getting the manifest name from %s : %w", manifestPath, err)
+			return fmt.Errorf("error while getting the manifest name from %s : %w", manifestPath, err), nocleanup
 		}
 
-		if errIgnore = applyManifest(manifestName, manifestPath, rawManifest, m); errIgnore != nil {
-			return fmt.Errorf("error applying test set %s, manifest %s from %s : %w", entry.Name(), manifestName, setName, errIgnore)
+		if err = applyManifest(manifestName, manifestPath, rawManifest, m); err != nil {
+			return fmt.Errorf("error applying test set %s, manifest %s from %s : %w", entry.Name(), manifestName, setName, err), nocleanup
 		}
 
-		// Wait until test manifest has been processed
-		var done *spec.Config
-		done, errCleanUp = waitForDoneOrError(ctx, m, testset{
+		ts := testset{
 			Config:   manifestName,
 			Set:      pathToTestSet,
 			Manifest: entry.Name(),
-		})
-		if errCleanUp != nil {
-			if errors.Is(errCleanUp, errInterrupt) {
-				log.Warn().Msgf("Testing-framework received interrupt signal, aborting test checking")
-				// Do not return error, since it was an interrupt
-				return nil
+		}
+
+		done, err := waitForDoneOrError(ctx, m, ts)
+		if err != nil {
+			if errors.Is(err, errInterrupt) {
+				return err, cleanup
 			}
 			if i != len(configs)-1 && continueOnBuildError {
 				continue
 			}
-			return fmt.Errorf("error while monitoring manifest %s from test set %s : %w", entry.Name(), setName, errCleanUp)
+			return fmt.Errorf("error while monitoring manifest %s from test set %s: %w", entry.Name(), setName, err), cleanup
 		}
 
-		// assert that current and desired state match.
 		for cluster, state := range done.Clusters {
-			equal := proto.Equal(state.Current, state.Desired)
-			if !equal {
+			if !proto.Equal(state.Current, state.Desired) {
 				err := fmt.Errorf("cluster %q from config %q has current and desired state that diverge after all tasks have been build successfully", cluster, manifestName)
-				errCleanUp = err
-				return err
+				return err, cleanup
 			}
 		}
 
-		// Run additional tests
-		if testFunc != nil {
-			var resp *managerclient.GetConfigResponse
-			resp, errCleanUp = m.GetConfig(ctx, &managerclient.GetConfigRequest{Name: manifestName})
-			if errCleanUp != nil {
-				return fmt.Errorf("error while checking test for config %s from manifest %s, test set %s : %w", manifestName, entry.Name(), setName, errCleanUp)
-			}
+		log.Info().Msgf("Starting additional tests for manifest %s from %s", entry.Name(), setName)
 
-			// Start additional tests
-			log.Info().Msgf("Starting additional tests for manifest %s from %s", entry.Name(), setName)
-			if errCleanUp = testFunc(ctx, resp.Config); errCleanUp != nil {
-				if errors.Is(errCleanUp, errInterrupt) {
-					log.Warn().Msgf("Testing-framework received interrupt signal, aborting test checking")
-					// Do not return error, since it was an interrupt
-					return nil
-				}
-				return fmt.Errorf("error while performing additional test for manifest %s from %s : %w", entry.Name(), setName, errCleanUp)
-			}
-		} else {
-			log.Debug().Msgf("No additional tests, manifest %s from %s is done", entry.Name(), setName)
+		if err := testFunc(ctx, done); err != nil {
+			return fmt.Errorf("error while performing additional test for manifest %s from %s : %w", entry.Name(), setName, err), cleanup
 		}
+
 		log.Info().Msgf("Manifest %s from %s is done...", entry.Name(), pathToTestSet)
 	}
 
@@ -296,17 +284,27 @@ func processTestSet(
 	log.Info().Msgf("Deleting the infra from test set %s", setName)
 
 	// Delete manifest from DB to clean up the infra as errCleanUp is nil and deferred function will not clean up.
-	if errIgnore = cleanUp(setName, manifestName, m); errIgnore != nil {
-		return fmt.Errorf("error while cleaning up the infra for test set %s : %w", setName, errIgnore)
+	if err := cleanUp(setName, manifestName, m); err != nil {
+		return fmt.Errorf("error while cleaning up the infra for test set %s : %w", setName, err), cleanup
 	}
-	return nil
+	return nil, nocleanup
 }
 
 func applyManifest(manifest, path string, raw []byte, m managerclient.ClientAPI) error {
 	ctx := context.Background()
 
 	if envs.Namespace != "" {
-		return clusterTesting(ctx, raw, path, manifest, m)
+		if err := applyInputManifest(raw, path); err != nil {
+			return fmt.Errorf("error while applying a input manifest for %s : %w", manifest, err)
+		}
+
+		log.Info().Msgf("InputManifest %s has been saved...", manifest)
+
+		if err := waitForPickup(ctx, manifest, m); err != nil {
+			return fmt.Errorf("error while checking if manifest %s is saved : %w", manifest, err)
+		}
+		log.Info().Msgf("Manifest %s has been saved...", manifest)
+		return nil
 	}
 
 	// testing locally - NOT TESTING THE OPERATOR!
@@ -318,23 +316,6 @@ func applyManifest(manifest, path string, raw []byte, m managerclient.ClientAPI)
 		return fmt.Errorf("failed to upsert manifest: %w", err)
 	}
 	log.Info().Msgf("Manifest %s %s has been saved...", path, manifest)
-	return nil
-}
-
-// clusterTesting will perform actions needed for testing framework to function in k8s cluster deployment
-// this option is only used when NAMESPACE env var has been found
-// this option is testing the whole claudie
-func clusterTesting(ctx context.Context, yamlFile []byte, pathToTestSet, manifestName string, m managerclient.CrudAPI) error {
-	if err := applyInputManifest(yamlFile, pathToTestSet); err != nil {
-		return fmt.Errorf("error while applying a input manifest for %s : %w", manifestName, err)
-	}
-
-	log.Info().Msgf("InputManifest %s has been saved...", manifestName)
-
-	if err := waitForPickup(ctx, manifestName, m); err != nil {
-		return fmt.Errorf("error while checking if manifest %s is saved : %w", manifestName, err)
-	}
-	log.Info().Msgf("Manifest %s has been saved...", manifestName)
 	return nil
 }
 
