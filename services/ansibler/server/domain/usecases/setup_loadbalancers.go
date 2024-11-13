@@ -12,6 +12,8 @@ import (
 	"github.com/berops/claudie/services/ansibler/server/utils"
 	"github.com/berops/claudie/services/ansibler/templates"
 	"github.com/rs/zerolog"
+
+	"golang.org/x/sync/semaphore"
 )
 
 const (
@@ -56,7 +58,7 @@ func (u *Usecases) SetUpLoadbalancers(request *pb.SetUpLBRequest) (*pb.SetUpLBRe
 }
 
 // setUpLoadbalancers sets up the loadbalancers along with DNS and verifies their configuration
-func setUpLoadbalancers(desiredK8sCluster *spec.K8Scluster, lbClustersInfo *utils.LBClustersInfo, proxyEnvs *spec.ProxyEnvs, logger zerolog.Logger, spawnProcessLimit chan struct{}) error {
+func setUpLoadbalancers(desiredK8sCluster *spec.K8Scluster, lbClustersInfo *utils.LBClustersInfo, proxyEnvs *spec.ProxyEnvs, logger zerolog.Logger, processLimit *semaphore.Weighted) error {
 	clusterName := desiredK8sCluster.ClusterInfo.Name
 	clusterBaseDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, commonUtils.CreateHash(commonUtils.HashLength)))
 
@@ -87,11 +89,11 @@ func setUpLoadbalancers(desiredK8sCluster *spec.K8Scluster, lbClustersInfo *util
 				return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 			}
 
-			if err := setUpNodeExporter(lbCluster.DesiredLbCluster, clusterDirectory, spawnProcessLimit); err != nil {
+			if err := setUpNodeExporter(lbCluster.DesiredLbCluster, clusterDirectory, processLimit); err != nil {
 				return err
 			}
 
-			if err := setUpNginx(lbCluster.DesiredLbCluster, lbClustersInfo.TargetK8sNodepool, clusterDirectory, spawnProcessLimit); err != nil {
+			if err := setUpNginx(lbCluster.DesiredLbCluster, lbClustersInfo.TargetK8sNodepool, clusterDirectory, processLimit); err != nil {
 				return err
 			}
 
@@ -118,8 +120,7 @@ func setUpLoadbalancers(desiredK8sCluster *spec.K8Scluster, lbClustersInfo *util
 		desiredApiServerTypeLBCluster = utils.FindCurrentAPIServerTypeLBCluster(lbClustersInfo.LbClusters)
 	}
 
-	if err := utils.HandleAPIEndpointChange(desiredApiServerTypeLBCluster, desiredK8sCluster.ClusterInfo, lbClustersInfo,
-		proxyEnvs, clusterBaseDirectory, spawnProcessLimit); err != nil {
+	if err := utils.HandleAPIEndpointChange(desiredApiServerTypeLBCluster, lbClustersInfo, proxyEnvs, clusterBaseDirectory, processLimit); err != nil {
 		return fmt.Errorf("failed to find a candidate for the Api Server: %w", err)
 	}
 
@@ -128,7 +129,7 @@ func setUpLoadbalancers(desiredK8sCluster *spec.K8Scluster, lbClustersInfo *util
 
 // setUpNodeExporter sets up node-exporter on each node of the LB cluster.
 // Returns error if not successful, nil otherwise.
-func setUpNodeExporter(lbCluster *spec.LBcluster, clusterDirectory string, spawnProcessLimit chan struct{}) error {
+func setUpNodeExporter(lbCluster *spec.LBcluster, clusterDirectory string, processLimit *semaphore.Weighted) error {
 	var playbookParameters = utils.LBPlaybookParameters{Loadbalancer: lbCluster.ClusterInfo.Name}
 
 	// Generate node-exporter Ansible playbook from template
@@ -147,7 +148,7 @@ func setUpNodeExporter(lbCluster *spec.LBcluster, clusterDirectory string, spawn
 		Directory:         clusterDirectory,
 		Playbook:          nodeExporterPlaybookFileName,
 		Inventory:         filepath.Join("..", utils.InventoryFileName),
-		SpawnProcessLimit: spawnProcessLimit,
+		SpawnProcessLimit: processLimit,
 	}
 
 	if err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash)); err != nil {
@@ -159,7 +160,7 @@ func setUpNodeExporter(lbCluster *spec.LBcluster, clusterDirectory string, spawn
 
 // setUpNginx sets up the nginx loadbalancer based on the input manifest specification.
 // Return error if not successful, nil otherwise
-func setUpNginx(lbCluster *spec.LBcluster, targetK8sNodepool []*spec.NodePool, clusterDirectory string, spawnProcessLimit chan struct{}) error {
+func setUpNginx(lbCluster *spec.LBcluster, targetK8sNodepool []*spec.NodePool, clusterDirectory string, processLimit *semaphore.Weighted) error {
 	lbClusterRolesInfo := targetPools(lbCluster, targetK8sNodepool)
 	// Generate the nginx config file
 	nginxConfTemplate, err := templateUtils.LoadTemplate(templates.NginxConfigTemplate)
@@ -184,7 +185,7 @@ func setUpNginx(lbCluster *spec.LBcluster, targetK8sNodepool []*spec.NodePool, c
 		Playbook:          nginxPlaybookName,
 		Inventory:         filepath.Join("..", utils.InventoryFileName),
 		Directory:         clusterDirectory,
-		SpawnProcessLimit: spawnProcessLimit,
+		SpawnProcessLimit: processLimit,
 	}
 
 	err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash))

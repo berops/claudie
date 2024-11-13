@@ -10,6 +10,8 @@ import (
 	"github.com/berops/claudie/services/ansibler/server/utils"
 	"github.com/berops/claudie/services/ansibler/templates"
 	"github.com/rs/zerolog/log"
+
+	"golang.org/x/sync/semaphore"
 )
 
 func (u *Usecases) RemoveUtilities(req *pb.RemoveClaudieUtilitiesRequest) (*pb.RemoveClaudieUtilitiesResponse, error) {
@@ -48,7 +50,7 @@ func (u *Usecases) RemoveUtilities(req *pb.RemoveClaudieUtilitiesRequest) (*pb.R
 	return &pb.RemoveClaudieUtilitiesResponse{Current: req.Current, CurrentLbs: req.CurrentLbs}, nil
 }
 
-func removeUtilities(clusterID string, vpnInfo *VPNInfo, spawnProcessLimit chan struct{}) error {
+func removeUtilities(clusterID string, vpnInfo *VPNInfo, processLimit *semaphore.Weighted) error {
 	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, cutils.CreateHash(cutils.HashLength)))
 	if err := cutils.CreateDirectory(clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", clusterDirectory, err)
@@ -75,7 +77,7 @@ func removeUtilities(clusterID string, vpnInfo *VPNInfo, spawnProcessLimit chan 
 		Playbook:          wireguardUninstall,
 		Inventory:         utils.InventoryFileName,
 		Directory:         clusterDirectory,
-		SpawnProcessLimit: spawnProcessLimit,
+		SpawnProcessLimit: processLimit,
 	}
 
 	// Subsequent calling may fail, thus simply log the error.

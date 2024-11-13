@@ -13,6 +13,8 @@ import (
 	"github.com/berops/claudie/services/ansibler/server/utils"
 	"github.com/berops/claudie/services/ansibler/templates"
 	"github.com/rs/zerolog/log"
+
+	"golang.org/x/sync/semaphore"
 )
 
 const (
@@ -70,7 +72,7 @@ func (u *Usecases) InstallVPN(request *pb.InstallRequest) (*pb.InstallResponse, 
 }
 
 // installWireguardVPN install wireguard VPN for all nodes in the infrastructure.
-func installWireguardVPN(clusterID string, vpnInfo *VPNInfo, spawnProcessLimit chan struct{}) error {
+func installWireguardVPN(clusterID string, vpnInfo *VPNInfo, processLimit *semaphore.Weighted) error {
 	// Directory where files (required by Ansible) will be generated.
 	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, commonUtils.CreateHash(commonUtils.HashLength)))
 	if err := commonUtils.CreateDirectory(clusterDirectory); err != nil {
@@ -102,7 +104,7 @@ func installWireguardVPN(clusterID string, vpnInfo *VPNInfo, spawnProcessLimit c
 		Playbook:          wireguardPlaybookFilePath,
 		Inventory:         utils.InventoryFileName,
 		Directory:         clusterDirectory,
-		SpawnProcessLimit: spawnProcessLimit,
+		SpawnProcessLimit: processLimit,
 	}
 
 	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("VPN - %s", clusterID)); err != nil {

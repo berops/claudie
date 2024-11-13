@@ -6,6 +6,8 @@ import (
 
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
+
+	"golang.org/x/sync/semaphore"
 )
 
 const apiChangePlaybookFilePath = "../../ansible-playbooks/apiEndpointChange.yml"
@@ -13,7 +15,7 @@ const apiChangePlaybookFilePath = "../../ansible-playbooks/apiEndpointChange.yml
 // ChangeAPIEndpoint will change the kubeadm configuration.
 // It will set the Api endpoint of the cluster to the public IP of the
 // newly selected ApiEndpoint node.
-func ChangeAPIEndpoint(clusterName, oldEndpoint, newEndpoint, directory string, proxyEnvs *spec.ProxyEnvs, spawnProcessLimit chan struct{}) error {
+func ChangeAPIEndpoint(clusterName, oldEndpoint, newEndpoint, directory string, proxyEnvs *spec.ProxyEnvs, spawnProcessLimit *semaphore.Weighted) error {
 	proxyEnvs.NoProxyList = strings.Replace(proxyEnvs.NoProxyList, oldEndpoint, newEndpoint, 1)
 
 	ansible := Ansible{
