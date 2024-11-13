@@ -1,12 +1,14 @@
 package kubeone
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 
+	comm "github.com/berops/claudie/internal/command"
 	"github.com/rs/zerolog/log"
 
-	comm "github.com/berops/claudie/internal/command"
+	"golang.org/x/sync/semaphore"
 )
 
 // maxRetryCount is max number of retries for kubeone apply.
@@ -15,15 +17,15 @@ const maxRetryCount = 2
 type Kubeone struct {
 	// ConfigDirectory is the directory where the generated kubeone.yaml will be located.
 	ConfigDirectory string
-	// SpawnProcessLimit represents a synchronization channel which limits the number of spawned kubeone
-	// processes. This values must be non-nil and be buffered, where the capacity indicates
-	// the limit.
-	SpawnProcessLimit chan struct{}
+	// SpawnProcessLimit limits the number of spawned kubeone processes.
+	SpawnProcessLimit *semaphore.Weighted
 }
 
 func (k *Kubeone) Reset(prefix string) error {
-	k.SpawnProcessLimit <- struct{}{}
-	defer func() { <-k.SpawnProcessLimit }()
+	if err := k.SpawnProcessLimit.Acquire(context.Background(), 1); err != nil {
+		return fmt.Errorf("failed to prepare kubeon reset process: %w", err)
+	}
+	defer k.SpawnProcessLimit.Release(1)
 
 	command := "kubeone reset -m kubeone.yaml -y --remove-binaries"
 	cmd := exec.Command("bash", "-c", command)
@@ -53,8 +55,10 @@ func (k *Kubeone) Reset(prefix string) error {
 // Apply will run `kubeone apply -m kubeone.yaml -y` in the ConfigDirectory.
 // Returns nil if successful, error otherwise.
 func (k *Kubeone) Apply(prefix string) error {
-	k.SpawnProcessLimit <- struct{}{}
-	defer func() { <-k.SpawnProcessLimit }()
+	if err := k.SpawnProcessLimit.Acquire(context.Background(), 1); err != nil {
+		return fmt.Errorf("failed to prepare kubeon apply process: %w", err)
+	}
+	defer k.SpawnProcessLimit.Release(1)
 
 	command := "kubeone apply -m kubeone.yaml -y"
 	cmd := exec.Command("bash", "-c", command)

@@ -6,10 +6,10 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/rs/zerolog/log"
-
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/templateUtils"
+	"github.com/rs/zerolog/log"
+
 	"golang.org/x/sync/semaphore"
 )
 
