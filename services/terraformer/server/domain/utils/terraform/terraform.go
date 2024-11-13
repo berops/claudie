@@ -2,14 +2,16 @@ package terraform
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os/exec"
 	"strings"
 
+	comm "github.com/berops/claudie/internal/command"
 	"github.com/rs/zerolog/log"
 
-	comm "github.com/berops/claudie/internal/command"
+	"golang.org/x/sync/semaphore"
 )
 
 const (
@@ -32,15 +34,15 @@ type Terraform struct {
 	// Parallelism is the number of resources to be worked on in parallel by terraform.
 	Parallelism int
 
-	// SpawnProcessLimit represents a synchronization channel which limits the number of spawned terraform
-	// processes. This values must be non-nil and be buffered, where the capacity indicates
-	// the limit.
-	SpawnProcessLimit chan struct{}
+	// SpawnProcessLimit limits the number of spawned terraform processes.
+	SpawnProcessLimit *semaphore.Weighted
 }
 
 func (t *Terraform) Init() error {
-	t.SpawnProcessLimit <- struct{}{}
-	defer func() { <-t.SpawnProcessLimit }()
+	if err := t.SpawnProcessLimit.Acquire(context.Background(), 1); err != nil {
+		return fmt.Errorf("failed to prepare terraform init process: %w", err)
+	}
+	defer t.SpawnProcessLimit.Release(1)
 
 	cmd := exec.Command("terraform", "init")
 	cmd.Dir = t.Directory
@@ -66,8 +68,10 @@ func (t *Terraform) Init() error {
 }
 
 func (t *Terraform) Apply() error {
-	t.SpawnProcessLimit <- struct{}{}
-	defer func() { <-t.SpawnProcessLimit }()
+	if err := t.SpawnProcessLimit.Acquire(context.Background(), 1); err != nil {
+		return fmt.Errorf("failed to prepare terraform apply process: %w", err)
+	}
+	defer t.SpawnProcessLimit.Release(1)
 
 	if t.Parallelism <= 0 {
 		t.Parallelism = Parallelism
@@ -105,8 +109,10 @@ func (t *Terraform) Apply() error {
 }
 
 func (t *Terraform) Destroy() error {
-	t.SpawnProcessLimit <- struct{}{}
-	defer func() { <-t.SpawnProcessLimit }()
+	if err := t.SpawnProcessLimit.Acquire(context.Background(), 1); err != nil {
+		return fmt.Errorf("failed to prepare terraform destroy process: %w", err)
+	}
+	defer t.SpawnProcessLimit.Release(1)
 
 	if t.Parallelism <= 0 {
 		t.Parallelism = Parallelism
@@ -144,8 +150,10 @@ func (t *Terraform) Destroy() error {
 }
 
 func (t *Terraform) DestroyTarget(targets []string) error {
-	t.SpawnProcessLimit <- struct{}{}
-	defer func() { <-t.SpawnProcessLimit }()
+	if err := t.SpawnProcessLimit.Acquire(context.Background(), 1); err != nil {
+		return fmt.Errorf("failed to prepare terraform destroy target process: %w", err)
+	}
+	defer t.SpawnProcessLimit.Release(1)
 
 	if t.Parallelism <= 0 {
 		t.Parallelism = Parallelism

@@ -8,6 +8,8 @@ import (
 	"github.com/berops/claudie/proto/pb/spec"
 	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
 	"github.com/rs/zerolog"
+
+	"golang.org/x/sync/semaphore"
 )
 
 var (
@@ -25,10 +27,8 @@ type K8Scluster struct {
 	// attached to this K8s cluster.
 	AttachedLBClusters []*spec.LBcluster
 
-	// SpawnProcessLimit represents a synchronization channel which limits the number of spawned terraform
-	// processes. This values should always be non-nil and be buffered, where the capacity indicates
-	// the limit.
-	SpawnProcessLimit chan struct{}
+	// SpawnProcessLimit limits the number of spawned terraform processes.
+	SpawnProcessLimit *semaphore.Weighted
 }
 
 func (k *K8Scluster) Id() string {
