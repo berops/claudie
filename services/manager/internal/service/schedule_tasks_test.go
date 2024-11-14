@@ -779,6 +779,7 @@ func TestDiff(t *testing.T) {
 		{
 			ClusterInfo: &spec.ClusterInfo{Name: "test1"},
 			TargetedK8S: "k8s",
+			Dns:         &spec.DNS{},
 			Roles: []*spec.Role{
 				{
 					Name:        "api-server",
