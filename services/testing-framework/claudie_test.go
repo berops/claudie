@@ -122,7 +122,7 @@ func testClaudie(ctx context.Context) error {
 
 			log.Info().Msgf("Starting test set: %s", path)
 			err, cleanup := processTestSet(ctx, path, false, manager, testLonghornDeployment)
-			if err == nil || errors.Is(err, errInterrupt) {
+			if err == nil || errors.Is(err, errInterrupt) || errors.Is(err, context.Canceled) {
 				if err := cleanup(); err != nil {
 					log.Err(err).Msgf("Error in cleaning up test set %s", path)
 				}
@@ -141,7 +141,7 @@ func testClaudie(ctx context.Context) error {
 
 			log.Info().Msgf("Starting test set: %s", path)
 			err, cleanup := processTestSet(ctx, path, true, manager, testLonghornDeployment)
-			if err == nil || errors.Is(err, errInterrupt) {
+			if err == nil || errors.Is(err, errInterrupt) || errors.Is(err, context.Canceled) {
 				if err := cleanup(); err != nil {
 					log.Err(err).Msgf("Error in cleaning up test set %s", path)
 				}
@@ -173,7 +173,7 @@ func testClaudie(ctx context.Context) error {
 						return testAutoscaler(ctx, c)
 					},
 				)
-				if err == nil || errors.Is(err, errInterrupt) {
+				if err == nil || errors.Is(err, errInterrupt) || errors.Is(err, context.Canceled) {
 					if err := cleanup(); err != nil {
 						log.Err(err).Msgf("Error in cleaning up test set %s", path)
 					}
