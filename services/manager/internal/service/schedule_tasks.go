@@ -9,6 +9,7 @@ import (
 
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
+	utils2 "github.com/berops/claudie/services/ansibler/server/utils"
 	"github.com/berops/claudie/services/manager/internal/store"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
@@ -280,6 +281,7 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 					Lbs: &spec.LoadBalancers{Clusters: irLbs},
 				},
 			},
+			OnError: &spec.RetryStrategy{Repeat: true},
 		})
 	}
 
@@ -297,6 +299,7 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 					Node:     node,
 				}},
 			},
+			OnError: &spec.RetryStrategy{Repeat: true},
 		})
 	}
 
@@ -347,6 +350,9 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 					}
 					return nil
 				}(),
+			},
+			OnError: &spec.RetryStrategy{
+				Repeat: ApiEndpointChanged(currentLbs, desiredLbs),
 			},
 		})
 	}
@@ -798,6 +804,29 @@ func labelsTaintsAnnotationsDiff(current, desired *spec.K8Scluster) bool {
 			if !reflect.DeepEqual(prev.Taints, np.Taints) {
 				return true
 			}
+		}
+	}
+	return false
+}
+
+func ApiEndpointChanged(current, desired []*spec.LBcluster) bool {
+	var lbs []*utils2.LBClusterData
+
+	c := make(map[string]*spec.LBcluster)
+	for _, l := range current {
+		c[l.ClusterInfo.Name] = l
+	}
+
+	for _, l := range desired {
+		lbs = append(lbs, &utils2.LBClusterData{
+			CurrentLbCluster: c[l.ClusterInfo.Name],
+			DesiredLbCluster: l,
+		})
+	}
+
+	for _, l := range lbs {
+		if l.APIEndpointState() != utils2.NoChange {
+			return true
 		}
 	}
 	return false
