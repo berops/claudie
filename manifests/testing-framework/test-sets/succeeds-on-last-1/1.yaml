@@ -4,14 +4,6 @@ metadata:
   name: succeeds-on-last-1
 spec:
   providers:
-    - name: hetzner-1
-      providerType: hetzner
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        path: "templates/terraformer/hetzner"
-      secretRef:
-        name: hetzner-secret
-        namespace: e2e-secrets
     - name: aws-1
       providerType: aws
       templates:
@@ -22,14 +14,6 @@ spec:
         namespace: e2e-secrets
   nodePools:
     dynamic:
-      - name: htz-ctrl-nodes
-        providerSpec:
-          name: hetzner-1
-          region: nbg1
-          zone: nbg1-dc3
-        count: 1
-        serverType: cpx11
-        image: ubuntu-24.04
       - name: aws-cmpt-00001
         providerSpec:
           name: aws-1
@@ -47,6 +31,6 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - htz-ctrl-nodes
+            - aws-cmpt-00001
           compute:
             - aws-cmpt-00001
