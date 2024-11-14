@@ -231,6 +231,7 @@ func autoscaledEvents(diff nodeDiffResult, desired *spec.Clusters) []*spec.TaskE
 					Node:     node,
 				}},
 			},
+			OnError: &spec.RetryStrategy{Repeat: true},
 		})
 	}
 
