@@ -23,7 +23,7 @@ type Kubeone struct {
 
 func (k *Kubeone) Reset(prefix string) error {
 	if err := k.SpawnProcessLimit.Acquire(context.Background(), 1); err != nil {
-		return fmt.Errorf("failed to prepare kubeon reset process: %w", err)
+		return fmt.Errorf("failed to prepare kubeone reset process: %w", err)
 	}
 	defer k.SpawnProcessLimit.Release(1)
 
