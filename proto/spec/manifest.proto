@@ -200,12 +200,36 @@ message TaskEvent {
   Event event = 3;
   Task task = 4;
   string description = 5;
-  RetryStrategy onError = 6;
+  Retry onError = 6;
 }
 
-message RetryStrategy {
-  bool repeat = 1;
-  repeated TaskEvent rollback = 2;
+message Retry {
+  message Repeat {
+    enum Kind {
+      ENDLESS = 0;
+      EXPONENTIAL = 1;
+    }
+    Kind kind = 1;
+    // cap specifies the maximum allowed timeout, anything above this
+    // should be ignored and capped at the specified value. Does not apply
+    // for ENDLESS kind.
+    // example: cap = 5 would specify that a repeat of a timeout longer than 5 minutes
+    // would be set to 5 instead.
+    uint32 cap = 2;
+    // stopAfter specifies how long should the retry be execute for. Does not
+    // apply for ENDLESS kind.
+    // example: stopAfter = 5 would specify that after 5 minutes no more retries
+    // would be done.
+    uint32 stopAfter = 3;
+  }
+  message Rollback {
+    repeated TaskEvent tasks = 1;
+  }
+
+  oneof Do {
+    Repeat repeat = 1;
+    Rollback rollback = 2;
+  }
 }
 
 message Task {

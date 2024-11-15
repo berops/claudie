@@ -62,19 +62,41 @@ func scheduleTasks(scheduled *store.Config) (bool, error) {
 		// update
 		default:
 			if state.State.Status == spec.Workflow_ERROR {
-				if len(state.Events.Events) != 0 && state.Events.Events[0].OnError != nil {
+				if e := state.Events.Events; len(e) != 0 && e[0].OnError != nil {
+					task := e[0]
 					reschedule = true
 
-					switch e := state.Events.Events[0]; {
-					case e.OnError.Repeat:
+					switch s := task.OnError.Do.(type) {
+					case *spec.Retry_Repeat_:
 						events = state.Events.Events
-						log.Debug().Str("cluster", cluster).Msgf("rescheduled for a retry of previously failed task with ID %q.", e.Id)
-					case len(e.OnError.Rollback) > 0:
-						events = e.OnError.Rollback
-						log.Debug().Str("cluster", cluster).Msgf("rescheduled for a rollback with task ID %q of previous failed task with ID %q.", e.OnError.Rollback[0].Id, e.Id)
+
+						if s.Repeat.Kind == spec.Retry_Repeat_EXPONENTIAL {
+							// TODO: calculate if events should be scheduled again.
+						}
+
+						// TODO: implement me!.
+						switch s.Repeat.Kind {
+						case spec.Retry_Repeat_ENDLESS:
+						case spec.Retry_Repeat_EXPONENTIAL:
+						default:
+
+						}
+
+						log.Debug().
+							Str("cluster", cluster).
+							Msgf("rescheduled for a retry of previously failed task with ID %q.", task.Id)
+					case *spec.Retry_Rollback_:
+						events = s.Rollback.Tasks
+
+						log.Debug().
+							Str("cluster", cluster).
+							Msgf("rescheduled for a rollback with task ID %q of previous failed task with ID %q.", events[0].Id, task.Id)
 					default:
-						log.Debug().Str("cluster", cluster).Msgf("has not been rescheduled for a retry on failure")
 						reschedule = false // no retry strategy on error.
+
+						log.Debug().
+							Str("cluster", cluster).
+							Msgf("has not been rescheduled for a retry on failure")
 					}
 
 					if reschedule {
@@ -281,7 +303,9 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 					Lbs: &spec.LoadBalancers{Clusters: irLbs},
 				},
 			},
-			OnError: &spec.RetryStrategy{Repeat: true},
+			OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
+				Kind: spec.Retry_Repeat_ENDLESS,
+			}}},
 		})
 	}
 
@@ -299,7 +323,9 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 					Node:     node,
 				}},
 			},
-			OnError: &spec.RetryStrategy{Repeat: true},
+			OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
+				Kind: spec.Retry_Repeat_ENDLESS,
+			}}},
 		})
 	}
 
@@ -334,6 +360,13 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 		desc += ", including changes to the loadbalancer infrastructure"
 	}
 	if lbsChanges || k8sDiffResult.deleting {
+		var onError *spec.Retry
+		if ApiEndpointChanged(currentLbs, desiredLbs) {
+			onError = &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
+				Kind: spec.Retry_Repeat_ENDLESS,
+			}}}
+		}
+
 		events = append(events, &spec.TaskEvent{
 			Id:          uuid.New().String(),
 			Timestamp:   timestamppb.New(time.Now().UTC()),
@@ -351,9 +384,7 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 					return nil
 				}(),
 			},
-			OnError: &spec.RetryStrategy{
-				Repeat: ApiEndpointChanged(currentLbs, desiredLbs),
-			},
+			OnError: onError,
 		})
 	}
 
