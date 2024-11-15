@@ -56,7 +56,7 @@ func (k *Kubeone) Reset(prefix string) error {
 // Returns nil if successful, error otherwise.
 func (k *Kubeone) Apply(prefix string) error {
 	if err := k.SpawnProcessLimit.Acquire(context.Background(), 1); err != nil {
-		return fmt.Errorf("failed to prepare kubeon apply process: %w", err)
+		return fmt.Errorf("failed to prepare kubeone apply process: %w", err)
 	}
 	defer k.SpawnProcessLimit.Release(1)
 
