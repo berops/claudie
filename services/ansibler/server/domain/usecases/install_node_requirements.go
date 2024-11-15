@@ -11,6 +11,8 @@ import (
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/ansibler/server/utils"
 	"github.com/berops/claudie/services/ansibler/templates"
+
+	"golang.org/x/sync/semaphore"
 )
 
 const ansiblePlaybookFilePath = "../../ansible-playbooks/longhorn-req.yml"
@@ -39,7 +41,7 @@ func (u *Usecases) InstallNodeRequirements(request *pb.InstallRequest) (*pb.Inst
 }
 
 // installLonghornRequirements installs pre-requisite tools for LongHorn in all the nodes
-func installLonghornRequirements(nodepoolsInfo *NodepoolsInfo, spawnProcessLimit chan struct{}) error {
+func installLonghornRequirements(nodepoolsInfo *NodepoolsInfo, processLimit *semaphore.Weighted) error {
 	// Directory where files (required by Ansible) will be generated.
 	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, commonUtils.CreateHash(commonUtils.HashLength))
 	if err := commonUtils.CreateDirectory(clusterDirectory); err != nil {
@@ -67,7 +69,7 @@ func installLonghornRequirements(nodepoolsInfo *NodepoolsInfo, spawnProcessLimit
 		Playbook:          ansiblePlaybookFilePath,
 		Inventory:         utils.InventoryFileName,
 		Directory:         clusterDirectory,
-		SpawnProcessLimit: spawnProcessLimit,
+		SpawnProcessLimit: processLimit,
 	}
 
 	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("Node requirements - %s", nodepoolsInfo.ClusterID)); err != nil {

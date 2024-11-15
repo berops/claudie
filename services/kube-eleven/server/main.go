@@ -4,21 +4,23 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/berops/claudie/internal/utils/metrics"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	grpc2 "google.golang.org/grpc"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/rs/zerolog/log"
-	"golang.org/x/sync/errgroup"
-
 	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/utils/metrics"
 	"github.com/berops/claudie/services/kube-eleven/server/adapters/inbound/grpc"
 	"github.com/berops/claudie/services/kube-eleven/server/domain/usecases"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rs/zerolog/log"
+
+	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
+
+	grpc2 "google.golang.org/grpc"
 )
 
 const (
@@ -30,7 +32,7 @@ func main() {
 	utils.InitLog("kube-eleven")
 
 	usecases := &usecases.Usecases{
-		SpawnProcessLimit: make(chan struct{}, usecases.SpawnProcessLimit),
+		SpawnProcessLimit: semaphore.NewWeighted(usecases.SpawnProcessLimit),
 	}
 	grpcAdapter := grpc.GrpcAdapter{}
 	grpcAdapter.Init(

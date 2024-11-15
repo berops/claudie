@@ -13,11 +13,12 @@ import (
 	"github.com/berops/claudie/services/kube-eleven/server/domain/utils/kubeone"
 	"github.com/berops/claudie/services/kube-eleven/templates"
 	"github.com/rs/zerolog/log"
+
+	"golang.org/x/sync/semaphore"
 )
 
 const (
 	generatedKubeoneManifestName = "kubeone.yaml"
-	sshKeyFileName               = "private.pem"
 	baseDirectory                = "services/kube-eleven/server"
 	outputDirectory              = "clusters"
 	staticRegion                 = "on-premise"
@@ -39,10 +40,8 @@ type KubeEleven struct {
 	// ProxyEnvs holds information about a need to update proxy envs, proxy endpoint, and no proxy list.
 	ProxyEnvs *spec.ProxyEnvs
 
-	// SpawnProcessLimit represents a synchronization channel which limits the number of spawned kubeone
-	// processes. This values must be non-nil and be buffered, where the capacity indicates
-	// the limit.
-	SpawnProcessLimit chan struct{}
+	// SpawnProcessLimit limits the number of spawned kubeone processes.
+	SpawnProcessLimit *semaphore.Weighted
 }
 
 // BuildCluster is responsible for managing the given K8sCluster along with the attached LBClusters

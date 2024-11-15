@@ -12,6 +12,8 @@ import (
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/ansibler/server/utils"
+
+	"golang.org/x/sync/semaphore"
 )
 
 // TeardownLoadBalancers correctly destroys loadbalancers by selecting the new ApiServer endpoint.
@@ -68,7 +70,13 @@ func (u *Usecases) TeardownLoadBalancers(ctx context.Context, request *pb.Teardo
 // If for a K8s cluster a new ApiServerLB is being attached instead of handling the apiEndpoint immediately
 // it will be delayed and will send the data to the dataChan which will be used later for the SetupLoadbalancers
 // function to bypass generating the certificates for the endpoint multiple times.
-func teardownLoadBalancers(desiredK8sCluster *spec.K8Scluster, lbClustersInfo *utils.LBClustersInfo, proxyEnvs *spec.ProxyEnvs, attached bool, spawnProcessLimit chan struct{}) (string, error) {
+func teardownLoadBalancers(
+	desiredK8sCluster *spec.K8Scluster,
+	lbClustersInfo *utils.LBClustersInfo,
+	proxyEnvs *spec.ProxyEnvs,
+	attached bool,
+	processLimit *semaphore.Weighted,
+) (string, error) {
 	clusterName := desiredK8sCluster.ClusterInfo.Name
 
 	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, commonUtils.CreateHash(commonUtils.HashLength)))
@@ -85,8 +93,7 @@ func teardownLoadBalancers(desiredK8sCluster *spec.K8Scluster, lbClustersInfo *u
 		return currentApiServerTypeLBCluster.CurrentLbCluster.Dns.Endpoint, os.RemoveAll(clusterDirectory)
 	}
 
-	if err := utils.HandleAPIEndpointChange(currentApiServerTypeLBCluster, desiredK8sCluster.ClusterInfo, lbClustersInfo,
-		proxyEnvs, clusterDirectory, spawnProcessLimit); err != nil {
+	if err := utils.HandleAPIEndpointChange(currentApiServerTypeLBCluster, lbClustersInfo, proxyEnvs, clusterDirectory, processLimit); err != nil {
 		return "", err
 	}
 

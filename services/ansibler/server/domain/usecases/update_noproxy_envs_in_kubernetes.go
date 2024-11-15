@@ -12,6 +12,8 @@ import (
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/ansibler/server/utils"
 	"github.com/berops/claudie/services/ansibler/templates"
+
+	"golang.org/x/sync/semaphore"
 )
 
 const (
@@ -29,9 +31,8 @@ func (u *Usecases) UpdateNoProxyEnvsInKubernetes(request *pb.UpdateNoProxyEnvsIn
 
 	log.Info().Msgf("Updating proxy env variables in kube-proxy DaemonSet and static pods for cluster %s project %s",
 		request.Current.ClusterInfo.Name, request.ProjectName)
-	if err := updateNoProxyEnvsInKubernetes(request.Current.ClusterInfo, request.Desired.ClusterInfo,
-		request.ProxyEnvs, u.SpawnProcessLimit); err != nil {
-		return nil, fmt.Errorf("Failed to update proxy env variables in kube-proxy DaemonSet and static pods for cluster %s project %s",
+	if err := updateNoProxyEnvsInKubernetes(request.Current.ClusterInfo, request.Desired.ClusterInfo, request.ProxyEnvs, u.SpawnProcessLimit); err != nil {
+		return nil, fmt.Errorf("failed to update proxy env variables in kube-proxy DaemonSet and static pods for cluster %s project %s",
 			request.Current.ClusterInfo.Name, request.ProjectName)
 	}
 	log.Info().Msgf("Updated proxy env variables in kube-proxy DaemonSet and static pods for cluster %s project %s",
@@ -41,7 +42,7 @@ func (u *Usecases) UpdateNoProxyEnvsInKubernetes(request *pb.UpdateNoProxyEnvsIn
 }
 
 // updateNoProxyEnvsInKubernetes updates NO_PROXY and no_proxy envs in kube-proxy and static pods
-func updateNoProxyEnvsInKubernetes(currentK8sClusterInfo, desiredK8sClusterInfo *spec.ClusterInfo, proxyEnvs *spec.ProxyEnvs, spawnProcessLimit chan struct{}) error {
+func updateNoProxyEnvsInKubernetes(currentK8sClusterInfo, desiredK8sClusterInfo *spec.ClusterInfo, proxyEnvs *spec.ProxyEnvs, processLimit *semaphore.Weighted) error {
 	clusterID := commonUtils.GetClusterID(currentK8sClusterInfo)
 
 	// This is the directory where files (Ansible inventory files, SSH keys etc.) will be generated.
@@ -74,7 +75,7 @@ func updateNoProxyEnvsInKubernetes(currentK8sClusterInfo, desiredK8sClusterInfo 
 		Playbook:          noProxyPlaybookFilePath,
 		Inventory:         utils.InventoryFileName,
 		Directory:         clusterDirectory,
-		SpawnProcessLimit: spawnProcessLimit,
+		SpawnProcessLimit: processLimit,
 	}
 
 	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("Update proxy envs - %s", clusterID)); err != nil {

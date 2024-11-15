@@ -18,6 +18,8 @@ import (
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/terraform"
 	"github.com/rs/zerolog/log"
+
+	"golang.org/x/sync/semaphore"
 )
 
 const (
@@ -47,10 +49,8 @@ type ClusterBuilder struct {
 	K8sInfo K8sInfo
 	// LBInfo contains additional data for when building loadbalancer clusters.
 	LBInfo LBInfo
-	// SpawnProcessLimit represents a synchronization channel which limits the number of spawned terraform
-	// processes. This values should always be non-nil and be buffered, where the capacity indicates
-	// the limit.
-	SpawnProcessLimit chan struct{}
+	// SpawnProcessLimit limits the number of spawned terraform processes.
+	SpawnProcessLimit *semaphore.Weighted
 }
 
 // CreateNodepools creates node pools for the cluster.
