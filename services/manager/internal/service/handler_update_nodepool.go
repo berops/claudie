@@ -186,6 +186,9 @@ func nodeDiff(nodepoolId string, current, desired *spec.NodePool) nodeDiffResult
 		name := uniqueNodeName(nodepoolId, usedNames)
 		usedNames[name] = struct{}{}
 		result.added = append(result.added, &spec.Node{Name: name})
+		log.Debug().
+			Str("nodepool", nodepoolId).
+			Msgf("node %q generated to desired nodepool %q after autoscaler update", name, desired.Name)
 	}
 
 	return result
