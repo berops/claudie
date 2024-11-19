@@ -59,8 +59,6 @@ func (g *GRPC) UpdateNodePool(ctx context.Context, request *pb.UpdateNodePoolReq
 		return nil, status.Errorf(codes.FailedPrecondition, "can't update nodepool %q cluster %q from configuration on which changes are currently ongoing.", request.Cluster, request.Name)
 	}
 
-	// We need initiate a build process due to the possible change
-	// of the nodepool nodes.
 	grpc, err := store.ConvertToGRPC(dbConfig)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert database representation for config %q to grpc: %v", request.Name, err)
@@ -149,8 +147,16 @@ func nodeDiff(nodepoolId string, current, desired *spec.NodePool) nodeDiffResult
 	}
 
 	for _, n := range current.Nodes {
-		deleted := !slices.ContainsFunc(desired.Nodes, func(n2 *spec.Node) bool { return n2.Name == n.Name })
-		if deleted {
+		canReuse := slices.ContainsFunc(desired.Nodes, func(n2 *spec.Node) bool { return n2.Name == n.Name })
+		canReuse = canReuse && len(result.reused) < result.newCount
+		if canReuse {
+			log.Debug().
+				Str("nodepool", nodepoolId).
+				Msgf("node %q resued to desired nodepool %q after autoscaler update", n.Name, desired.Name)
+
+			result.reused = append(result.reused, n)
+			usedNames[n.Name] = struct{}{}
+		} else {
 			log.Debug().
 				Str("nodepool", nodepoolId).
 				Msgf("node %q deleted from desired nodepool %q after autoscaler update", n.Name, desired.Name)
@@ -163,21 +169,10 @@ func nodeDiff(nodepoolId string, current, desired *spec.NodePool) nodeDiffResult
 		}
 	}
 
-	for _, n := range current.Nodes {
-		reused := !slices.ContainsFunc(result.deleted, func(n2 *spec.Node) bool { return n2.Name == n.Name })
-		if reused {
-			log.Debug().
-				Str("nodepool", nodepoolId).
-				Msgf("node %q resued to desired nodepool %q after autoscaler update", n.Name, desired.Name)
-
-			result.reused = append(result.reused, n)
-			usedNames[n.Name] = struct{}{}
-		}
-	}
-
 	for _, n := range desired.Nodes {
-		added := !slices.ContainsFunc(current.Nodes, func(n2 *spec.Node) bool { return n.Name == n2.Name })
-		if added {
+		canAdd := !slices.ContainsFunc(current.Nodes, func(n2 *spec.Node) bool { return n.Name == n2.Name })
+		canAdd = canAdd && (len(result.reused)+len(result.added) < result.newCount)
+		if canAdd {
 			log.Debug().
 				Str("nodepool", nodepoolId).
 				Msgf("node %q added to desired nodepool %q after autoscaler update", n.Name, desired.Name)
@@ -187,7 +182,7 @@ func nodeDiff(nodepoolId string, current, desired *spec.NodePool) nodeDiffResult
 		}
 	}
 
-	for range max(0, result.newCount-result.oldCount) {
+	for range max(0, result.newCount-(len(result.reused)+len(result.added))) {
 		name := uniqueNodeName(nodepoolId, usedNames)
 		usedNames[name] = struct{}{}
 		result.added = append(result.added, &spec.Node{Name: name})
@@ -231,9 +226,9 @@ func autoscaledEvents(diff nodeDiffResult, current, desired *spec.Clusters) []*s
 								},
 							}},
 							OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
-								Kind:      spec.Retry_Repeat_EXPONENTIAL,
-								Cap:       45,     // 45 min
-								StopAfter: 60 * 4, // 4 hours
+								Kind:        spec.Retry_Repeat_EXPONENTIAL,
+								CurrentTick: 1,
+								StopAfter:   uint32(25 * time.Minute / Tick),
 							}}},
 						},
 						{
@@ -246,9 +241,9 @@ func autoscaledEvents(diff nodeDiffResult, current, desired *spec.Clusters) []*s
 								Lbs: current.LoadBalancers,
 							}},
 							OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
-								Kind:      spec.Retry_Repeat_EXPONENTIAL,
-								Cap:       45,     // 45 min
-								StopAfter: 60 * 4, // 4 hours
+								Kind:        spec.Retry_Repeat_EXPONENTIAL,
+								CurrentTick: 1,
+								StopAfter:   uint32(25 * time.Minute / Tick),
 							}}},
 						},
 					},
@@ -288,9 +283,9 @@ func autoscaledEvents(diff nodeDiffResult, current, desired *spec.Clusters) []*s
 			Description: "autoscaler: deleting nodes from k8s cluster",
 			Task:        &spec.Task{DeleteState: &spec.DeleteState{Nodepools: dn}},
 			OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
-				Kind:      spec.Retry_Repeat_EXPONENTIAL,
-				Cap:       45,     // 45 min
-				StopAfter: 60 * 4, // 4 hours
+				Kind:        spec.Retry_Repeat_EXPONENTIAL,
+				CurrentTick: 1,
+				StopAfter:   uint32(25 * time.Minute / Tick),
 			}}},
 		})
 		events = append(events, &spec.TaskEvent{
@@ -305,9 +300,9 @@ func autoscaledEvents(diff nodeDiffResult, current, desired *spec.Clusters) []*s
 				},
 			},
 			OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
-				Kind:      spec.Retry_Repeat_EXPONENTIAL,
-				Cap:       45,     // 45 min
-				StopAfter: 60 * 4, // 4 hours
+				Kind:        spec.Retry_Repeat_EXPONENTIAL,
+				CurrentTick: 1,
+				StopAfter:   uint32(25 * time.Minute / Tick),
 			}}},
 		})
 	}

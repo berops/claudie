@@ -210,25 +210,24 @@ message Retry {
       EXPONENTIAL = 1;
     }
     Kind kind = 1;
-    // cap specifies the maximum allowed timeout, anything above this
-    // should be ignored and capped at the specified value. Does not apply
-    // for ENDLESS kind.
-    // example: cap = 5 would specify that a repeat of a timeout longer than 5 minutes
-    // would be set to 5 instead.
-    uint32 cap = 2;
-    // stopAfter specifies how long should the retry be execute for. Does not
-    // apply for ENDLESS kind.
-    // example: stopAfter = 5 would specify that after 5 minutes no more retries
-    // would be done.
+    // currentTick specifies the current number of ticks.
+    // A tick is an regular interval at which manifests are being checked.
+    // to check the Tick timeout see: manager/internal/service/watchers.go
+    uint32 currentTick = 2;
+    // stopAfter specifies the maximum number of ticks, after reaching this value the manifest will be rescheduled
+    // for the last time before giving up.
     uint32 stopAfter = 3;
+    // retryAfter specifies the number of ticks to wait before rescheduling the manifest again.
+    // this value will be set to the value of currentTick after it is updated.
+    uint32 retryAfter = 4;
   }
   message Rollback {
     repeated TaskEvent tasks = 1;
   }
 
   oneof Do {
-    Repeat repeat = 1;
-    Rollback rollback = 2;
+    Repeat repeat = 3;
+    Rollback rollback = 4;
   }
 }
 

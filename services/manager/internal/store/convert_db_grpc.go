@@ -63,7 +63,7 @@ func ConvertToGRPCTaskEvent(te TaskEvent) (*spec.TaskEvent, error) {
 		return nil, err
 	}
 
-	var strategy spec.RetryStrategy
+	var strategy spec.Retry
 	if err := proto.Unmarshal(te.OnError, &strategy); err != nil {
 		return nil, err
 	}

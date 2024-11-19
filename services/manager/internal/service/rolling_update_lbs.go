@@ -131,8 +131,8 @@ func rollingUpdateLB(current, desired *spec.Clusters, position int) (*spec.Clust
 					Lbs: addNodePool,
 				},
 			},
-			OnError: &spec.RetryStrategy{
-				Rollback: []*spec.TaskEvent{
+			OnError: &spec.Retry{Do: &spec.Retry_Rollback_{Rollback: &spec.Retry_Rollback{
+				Tasks: []*spec.TaskEvent{
 					{
 						Id:          uuid.New().String(),
 						Timestamp:   timestamppb.New(time.Now().UTC()),
@@ -144,17 +144,19 @@ func rollingUpdateLB(current, desired *spec.Clusters, position int) (*spec.Clust
 								Lbs: rollback,
 							},
 						},
-						OnError: &spec.RetryStrategy{Repeat: true},
+						OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
+							Kind: spec.Retry_Repeat_ENDLESS,
+						}}},
 					},
 				},
-			},
+			}}},
 		})
 
 		log.Debug().
 			Str("cluster", lbID).
 			Msgf("created event %q with Rollback on error %q with repeat on rollback failure",
 				events[len(events)-1].Description,
-				events[len(events)-1].OnError.Rollback[0].Description,
+				events[len(events)-1].OnError.Do.(*spec.Retry_Rollback_).Rollback.Tasks[0].Description,
 			)
 
 		events = append(events, &spec.TaskEvent{
@@ -168,7 +170,9 @@ func rollingUpdateLB(current, desired *spec.Clusters, position int) (*spec.Clust
 					Lbs: delNodePool,
 				},
 			},
-			OnError: &spec.RetryStrategy{Repeat: true},
+			OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
+				Kind: spec.Retry_Repeat_ENDLESS,
+			}}},
 		})
 
 		log.Debug().

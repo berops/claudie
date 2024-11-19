@@ -114,8 +114,8 @@ func rollingUpdate(current, desired *spec.Clusters) (*spec.Clusters, []*spec.Tas
 					Lbs: current.LoadBalancers, // keep current lbs
 				},
 			},
-			OnError: &spec.RetryStrategy{
-				Rollback: []*spec.TaskEvent{
+			OnError: &spec.Retry{Do: &spec.Retry_Rollback_{Rollback: &spec.Retry_Rollback{
+				Tasks: []*spec.TaskEvent{
 					{
 						Id:          uuid.New().String(),
 						Timestamp:   timestamppb.New(time.Now().UTC()),
@@ -134,7 +134,9 @@ func rollingUpdate(current, desired *spec.Clusters) (*spec.Clusters, []*spec.Tas
 								},
 							},
 						}},
-						OnError: &spec.RetryStrategy{Repeat: true},
+						OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
+							Kind: spec.Retry_Repeat_ENDLESS,
+						}}},
 					},
 					{
 						Id:          uuid.New().String(),
@@ -147,18 +149,20 @@ func rollingUpdate(current, desired *spec.Clusters) (*spec.Clusters, []*spec.Tas
 								Lbs: current.LoadBalancers, // keep current lbs
 							},
 						},
-						OnError: &spec.RetryStrategy{Repeat: true},
+						OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
+							Kind: spec.Retry_Repeat_ENDLESS,
+						}}},
 					},
 				},
-			},
+			}}},
 		})
 
 		log.Debug().
 			Str("cluster", k8sID).
 			Msgf("created event %q with Rollback on error [%q, %q] with repeat on rollback failure",
 				events[len(events)-1].Description,
-				events[len(events)-1].OnError.Rollback[0].Description,
-				events[len(events)-1].OnError.Rollback[1].Description,
+				events[len(events)-1].OnError.Do.(*spec.Retry_Rollback_).Rollback.Tasks[0].Description,
+				events[len(events)-1].OnError.Do.(*spec.Retry_Rollback_).Rollback.Tasks[1].Description,
 			)
 
 		// delete nodes from old nodepool.
@@ -184,7 +188,9 @@ func rollingUpdate(current, desired *spec.Clusters) (*spec.Clusters, []*spec.Tas
 						Node:     updated.Nodes[0].Name,
 					}},
 				},
-				OnError: &spec.RetryStrategy{Repeat: true},
+				OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
+					Kind: spec.Retry_Repeat_ENDLESS,
+				}}},
 			})
 
 			log.Debug().
@@ -202,7 +208,9 @@ func rollingUpdate(current, desired *spec.Clusters) (*spec.Clusters, []*spec.Tas
 					currentPool.Name: {Nodes: delNodes},
 				},
 			}},
-			OnError: &spec.RetryStrategy{Repeat: true},
+			OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
+				Kind: spec.Retry_Repeat_ENDLESS,
+			}}},
 		})
 
 		log.Debug().
@@ -221,7 +229,9 @@ func rollingUpdate(current, desired *spec.Clusters) (*spec.Clusters, []*spec.Tas
 					Lbs: current.LoadBalancers, // keep current lbs
 				},
 			},
-			OnError: &spec.RetryStrategy{Repeat: true},
+			OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
+				Kind: spec.Retry_Repeat_ENDLESS,
+			}}},
 		})
 
 		log.Debug().

@@ -44,7 +44,7 @@ var (
 		spec.Role{},
 		spec.Events{},
 		spec.TaskEvent{},
-		spec.RetryStrategy{},
+		spec.Retry{},
 		spec.Task{},
 		spec.CreateState{},
 		spec.UpdateState{},
