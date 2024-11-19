@@ -3,6 +3,8 @@ package usecases
 import (
 	"github.com/berops/claudie/services/terraformer/server/domain/ports"
 	"github.com/rs/zerolog"
+
+	"golang.org/x/sync/semaphore"
 )
 
 const (
@@ -15,10 +17,8 @@ type Usecases struct {
 	DynamoDB ports.DynamoDBPort
 	// Minio connector.
 	StateStorage ports.StateStoragePort
-	// SpawnProcessLimit represents a synchronization channel which limits the number of spawned terraform
-	// processes. This values should always be non-nil and be buffered, where the capacity indicates
-	// the limit.
-	SpawnProcessLimit chan struct{}
+	// SpawnProcessLimit limits the number of spawned terraform processes.
+	SpawnProcessLimit *semaphore.Weighted
 }
 
 type Cluster interface {

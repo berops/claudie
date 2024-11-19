@@ -12,6 +12,8 @@ import (
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/ansibler/server/utils"
 	"github.com/berops/claudie/services/ansibler/templates"
+
+	"golang.org/x/sync/semaphore"
 )
 
 const (
@@ -27,9 +29,8 @@ func (u *Usecases) UpdateProxyEnvsOnNodes(request *pb.UpdateProxyEnvsOnNodesRequ
 	// because wireguard installation have to utilize the proxy.
 	log.Info().Msgf("Updating proxy env variables in /etc/environment for cluster %s project %s",
 		request.Desired.ClusterInfo.Name, request.ProjectName)
-	if err := updateProxyEnvsOnNodes(request.Desired.ClusterInfo,
-		request.ProxyEnvs, u.SpawnProcessLimit); err != nil {
-		return nil, fmt.Errorf("Failed to update proxy env variables in /etc/environment for cluster %s project %s",
+	if err := updateProxyEnvsOnNodes(request.Desired.ClusterInfo, request.ProxyEnvs, u.SpawnProcessLimit); err != nil {
+		return nil, fmt.Errorf("failed to update proxy env variables in /etc/environment for cluster %s project %s",
 			request.Desired.ClusterInfo.Name, request.ProjectName)
 	}
 	log.Info().Msgf("Updated proxy env variables in /etc/environment for cluster %s project %s",
@@ -39,7 +40,7 @@ func (u *Usecases) UpdateProxyEnvsOnNodes(request *pb.UpdateProxyEnvsOnNodesRequ
 }
 
 // UpdateProxyEnvsOnNodes updates proxy envs in /etc/environment
-func updateProxyEnvsOnNodes(desiredK8sClusterInfo *spec.ClusterInfo, proxyEnvs *spec.ProxyEnvs, spawnProcessLimit chan struct{}) error {
+func updateProxyEnvsOnNodes(desiredK8sClusterInfo *spec.ClusterInfo, proxyEnvs *spec.ProxyEnvs, processLimit *semaphore.Weighted) error {
 	clusterID := commonUtils.GetClusterID(desiredK8sClusterInfo)
 
 	// This is the directory where files (Ansible inventory files, SSH keys etc.) will be generated.
@@ -72,7 +73,7 @@ func updateProxyEnvsOnNodes(desiredK8sClusterInfo *spec.ClusterInfo, proxyEnvs *
 		Playbook:          proxyPlaybookFilePath,
 		Inventory:         utils.InventoryFileName,
 		Directory:         clusterDirectory,
-		SpawnProcessLimit: spawnProcessLimit,
+		SpawnProcessLimit: processLimit,
 	}
 
 	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("Update proxy envs in /etc/environment - %s", clusterID)); err != nil {

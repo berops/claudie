@@ -11,6 +11,8 @@ import (
 	"github.com/berops/claudie/services/ansibler/server/utils"
 	"github.com/berops/claudie/services/ansibler/templates"
 	"github.com/rs/zerolog/log"
+
+	"golang.org/x/sync/semaphore"
 )
 
 func (u *Usecases) UpdateAPIEndpoint(request *pb.UpdateAPIEndpointRequest) (*pb.UpdateAPIEndpointResponse, error) {
@@ -30,7 +32,7 @@ func (u *Usecases) UpdateAPIEndpoint(request *pb.UpdateAPIEndpointRequest) (*pb.
 // updateAPIEndpoint handles the case where the ApiEndpoint node is removed from
 // the desired state. Thus, a new control node needs to be selected among the existing
 // control nodes. This new control node will then represent the ApiEndpoint of the cluster.
-func updateAPIEndpoint(endpoint *pb.UpdateAPIEndpointRequest_Endpoint, currentK8sCluster *spec.K8Scluster, proxyEnvs *spec.ProxyEnvs, spawnProcessLimit chan struct{}) error {
+func updateAPIEndpoint(endpoint *pb.UpdateAPIEndpointRequest_Endpoint, currentK8sCluster *spec.K8Scluster, proxyEnvs *spec.ProxyEnvs, processLimit *semaphore.Weighted) error {
 	clusterID := commonUtils.GetClusterID(currentK8sCluster.ClusterInfo)
 
 	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, commonUtils.CreateHash(commonUtils.HashLength)))
@@ -91,8 +93,15 @@ func updateAPIEndpoint(endpoint *pb.UpdateAPIEndpointRequest_Endpoint, currentK8
 		proxyEnvs = &spec.ProxyEnvs{}
 	}
 
-	if err = utils.ChangeAPIEndpoint(currentK8sCluster.ClusterInfo.Name, apiEndpointNode.GetPublic(), newApiEndpoint,
-		clusterDirectory, proxyEnvs, spawnProcessLimit); err != nil {
+	err = utils.ChangeAPIEndpoint(
+		currentK8sCluster.ClusterInfo.Name,
+		apiEndpointNode.GetPublic(),
+		newApiEndpoint,
+		clusterDirectory,
+		proxyEnvs,
+		processLimit,
+	)
+	if err != nil {
 		return err
 	}
 

@@ -10,18 +10,19 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/berops/claudie/internal/utils/metrics"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	grpc2 "google.golang.org/grpc"
-
-	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
+
+	grpc2 "google.golang.org/grpc"
 	"google.golang.org/grpc/health/grpc_health_v1"
 
 	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/utils/metrics"
 	"github.com/berops/claudie/services/terraformer/server/adapters/inbound/grpc"
 	outboundAdapters "github.com/berops/claudie/services/terraformer/server/adapters/outbound"
 	"github.com/berops/claudie/services/terraformer/server/domain/usecases"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -38,7 +39,7 @@ func main() {
 	usecases := &usecases.Usecases{
 		DynamoDB:          dynamoDBAdapter,
 		StateStorage:      stateAdapter,
-		SpawnProcessLimit: make(chan struct{}, usecases.SpawnProcessLimit),
+		SpawnProcessLimit: semaphore.NewWeighted(usecases.SpawnProcessLimit),
 	}
 
 	metricsServer := &http.Server{Addr: fmt.Sprintf(":%s", utils.GetEnvDefault("PROMETHEUS_PORT", defaultPrometheusPort))}

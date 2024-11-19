@@ -15,7 +15,10 @@ import (
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/terraform"
 	"github.com/rs/zerolog"
+
 	"google.golang.org/protobuf/proto"
+
+	"golang.org/x/sync/semaphore"
 )
 
 const (
@@ -33,10 +36,8 @@ type DNS struct {
 	CurrentDNS *spec.DNS
 	DesiredDNS *spec.DNS
 
-	// SpawnProcessLimit represents a synchronization channel which limits the number of spawned terraform
-	// processes. This values should always be non-nil and be buffered, where the capacity indicates
-	// the limit.
-	SpawnProcessLimit chan struct{}
+	// SpawnProcessLimit limits the number of spawned terraform processes.
+	SpawnProcessLimit *semaphore.Weighted
 }
 
 // CreateDNSRecords creates DNS records for the Loadbalancer cluster.

@@ -1,14 +1,16 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 
-	"github.com/rs/zerolog/log"
-
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/templateUtils"
+	"github.com/rs/zerolog/log"
+
+	"golang.org/x/sync/semaphore"
 )
 
 const (
@@ -42,10 +44,8 @@ type Ansible struct {
 	Inventory string
 	Flags     string
 	Directory string
-	// SpawnProcessLimit represents a synchronization channel which limits the number of spawned ansible
-	// processes. This values must be non-nil and be buffered, where the capacity indicates
-	// the limit.
-	SpawnProcessLimit chan struct{}
+	// SpawnProcessLimit limits the number of spawned ansible processes.
+	SpawnProcessLimit *semaphore.Weighted
 }
 
 // RunAnsiblePlaybook executes ansible-playbook with the default forks of defaultAnsibleForks
@@ -53,8 +53,10 @@ type Ansible struct {
 // if command unsuccessful, the function will retry it until successful or maxAnsibleRetries reached
 // all commands are executed with ANSIBLE_HOST_KEY_CHECKING set to false
 func (a *Ansible) RunAnsiblePlaybook(prefix string) error {
-	a.SpawnProcessLimit <- struct{}{}
-	defer func() { <-a.SpawnProcessLimit }()
+	if err := a.SpawnProcessLimit.Acquire(context.Background(), 1); err != nil {
+		return fmt.Errorf("failed to prepare ansible process: %w", err)
+	}
+	defer a.SpawnProcessLimit.Release(1)
 
 	if err := setEnv(); err != nil {
 		return err

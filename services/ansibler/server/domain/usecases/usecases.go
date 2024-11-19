@@ -1,6 +1,10 @@
 package usecases
 
-import "github.com/berops/claudie/services/ansibler/server/utils"
+import (
+	"github.com/berops/claudie/services/ansibler/server/utils"
+
+	"golang.org/x/sync/semaphore"
+)
 
 const (
 	// baseDirectory is ansibler base directory
@@ -12,10 +16,8 @@ const (
 )
 
 type Usecases struct {
-	// SpawnProcessLimit represents a synchronization channel which limits the number of spawned ansible
-	// processes. This values should always be non-nil and be buffered, where the capacity indicates
-	// the limit.
-	SpawnProcessLimit chan struct{}
+	// SpawnProcessLimit limits the number of spawned ansible processes.
+	SpawnProcessLimit *semaphore.Weighted
 }
 
 type (
