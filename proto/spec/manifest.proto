@@ -200,7 +200,7 @@ message TaskEvent {
   Event event = 3;
   Task task = 4;
   string description = 5;
-  Retry onError = 6;
+  Retry onError = 7;
 }
 
 message Retry {
