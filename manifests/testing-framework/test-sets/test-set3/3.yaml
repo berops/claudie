@@ -30,7 +30,7 @@ spec:
       - name: gen-kube-nodes
         providerSpec:
           name: genesiscloud-1
-          region: ARC-IS-HAF-1
+          region: NORD-NO-KRS-1
         count: 1
         serverType: vcpu-2_memory-4g_disk-80g
         image: "Ubuntu 22.04"
