@@ -2,27 +2,14 @@ name: CI pipeline for Claudie
 on:
   workflow_dispatch:
     inputs:
-      logLevel:
-        description: 'Log level'
-        required: true
-        default: 'warning'
-        type: choice
-        options:
-          - info
-          - warning
-          - debug
-      print_tags:
-        description: 'True to print to STDOUT'
-        required: true
+      repo_1:
         type: boolean
-      tags:
-        description: 'Test scenario tags'
-        required: true
-        type: string
-      environment:
-        description: 'Environment to run tests against'
-        type: environment
-        required: true
+        default: false
+        description: Use Repo 1?
+      repo_2:
+        type: boolean
+        default: false
+        description: Use Repo 2?
   # Triggers the workflow on push or pull request events but only for the master branch
   pull_request:
     branches: [master]
@@ -33,17 +20,25 @@ env:
 
 jobs:
   #--------------------------------------------------------------------------------------------------
-  print-tag:
-    runs-on: self-hosted
-    if: ${{ inputs.print_tags }}
+  repo-1-job:
+    name: Repo 1 Job
+    runs-on: ubuntu-latest
+    if: github.event.inputs.repo_1 == 'true'
     steps:
-      - name: Print the input tag to STDOUT
-        run: echo  The tags are ${{ inputs.tags }}
+      - run: echo "some repo 1 job"
+
+  repo-2-job:
+    name: Repo 2 Job
+    needs: repo-1-job
+    runs-on: ubuntu-latest
+    if: github.event.inputs.repo_2 == 'true'
+    steps:
+      - run: echo "some repo 2 job"
   #--------------------------------------------------------------------------------------------------
   merge-branch:
     if: github.event.pull_request.draft == false
     runs-on: self-hosted
-    needs: print-tag
+    needs: repo-2-job
     steps:
       - uses: actions/checkout@v4
         with:
