@@ -17,11 +17,6 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-const (
-	// maxDeleteRetry defines how many times the config should try to be deleted before returning an error, if encountered.
-	maxDeleteRetry = 3
-)
-
 func (u *Usecases) TaskProcessor(wg *sync.WaitGroup) error {
 	ctx := context.Background()
 
@@ -301,22 +296,21 @@ func (u *Usecases) executeDeleteTask(te *managerclient.NextTaskResponse) (*spec.
 		Workflow:             te.State,
 	}
 
-	var err error
-	for i := 0; i < maxDeleteRetry; i++ {
-		if err = u.destroyCluster(ctx); err == nil {
-			if clusterDeletion {
-				return nil, nil, nil
-			} else {
-				currentLbs := te.Current.GetLoadBalancers().GetClusters()
-				for _, deleted := range te.Event.Task.DeleteState.GetLbs().GetClusters() {
-					currentLbs = slices.DeleteFunc(currentLbs, func(bcluster *spec.LBcluster) bool {
-						return deleted.ClusterInfo.Name == bcluster.ClusterInfo.Name
-					})
-				}
-				return te.Current.GetK8S(), currentLbs, nil
+	err := u.destroyCluster(ctx)
+	if err == nil {
+		if clusterDeletion {
+			return nil, nil, nil
+		} else {
+			currentLbs := te.Current.GetLoadBalancers().GetClusters()
+			for _, deleted := range te.Event.Task.DeleteState.GetLbs().GetClusters() {
+				currentLbs = slices.DeleteFunc(currentLbs, func(bcluster *spec.LBcluster) bool {
+					return deleted.ClusterInfo.Name == bcluster.ClusterInfo.Name
+				})
 			}
+			return te.Current.GetK8S(), currentLbs, nil
 		}
-		log.Warn().Msgf("Failed destroying cluster task %q config %q cluster %q: %v", te.Event.Id, te.Config, te.Current.K8S.ClusterInfo.Name, err.Error())
 	}
+
+	log.Warn().Msgf("Failed destroying cluster task %q config %q cluster %q: %v", te.Event.Id, te.Config, te.Current.K8S.ClusterInfo.Name, err.Error())
 	return te.Current.K8S, te.Current.GetLoadBalancers().GetClusters(), err
 }

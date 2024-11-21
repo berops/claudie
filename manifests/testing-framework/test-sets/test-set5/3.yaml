@@ -25,7 +25,7 @@ spec:
         count: 1
         serverType: t3.small
         #ubuntu
-        image: ami-0039da1f3917fa8e3
+        image: ami-0084a47cc718c111a
         storageDiskSize: 50
 
       - name: aws-ldbl-nodes
@@ -36,7 +36,7 @@ spec:
         count: 1
         serverType: t3.small
         #ubuntu
-        image: ami-0039da1f3917fa8e3
+        image: ami-0084a47cc718c111a
         storageDiskSize: 50
 
     static:

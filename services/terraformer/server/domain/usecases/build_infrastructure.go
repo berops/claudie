@@ -24,6 +24,7 @@ func (u *Usecases) BuildInfrastructure(request *pb.BuildInfrastructureRequest) (
 	k8slogger := utils.CreateLoggerWithProjectAndClusterName(request.ProjectName, k8sCluster.Id())
 	k8slogger.Info().Msg("Creating infrastructure")
 	if err := k8sCluster.Build(k8slogger); err != nil {
+		k8slogger.Err(err).Msgf("failed tu build k8s cluster")
 		return &pb.BuildInfrastructureResponse{
 			Response: &pb.BuildInfrastructureResponse_Fail{
 				Fail: &pb.BuildInfrastructureResponse_InfrastructureData{
