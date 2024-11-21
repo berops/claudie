@@ -34,7 +34,7 @@ env:
 jobs:
   #--------------------------------------------------------------------------------------------------
   print-tag:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     if: ${{ inputs.print_tags }}
     steps:
       - name: Print the input tag to STDOUT
@@ -43,6 +43,7 @@ jobs:
   merge-branch:
     if: github.event.pull_request.draft == false
     runs-on: self-hosted
+    needs: print-tag
     steps:
       - uses: actions/checkout@v4
         with:
