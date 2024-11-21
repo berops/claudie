@@ -1,7 +1,28 @@
 name: CI pipeline for Claudie
 on:
-  # Manual trigger
   workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'warning'
+        type: choice
+        options:
+          - info
+          - warning
+          - debug
+      print_tags:
+        description: 'True to print to STDOUT'
+        required: true
+        type: boolean
+      tags:
+        description: 'Test scenario tags'
+        required: true
+        type: string
+      environment:
+        description: 'Environment to run tests against'
+        type: environment
+        required: true
   # Triggers the workflow on push or pull request events but only for the master branch
   pull_request:
     branches: [master]
@@ -11,6 +32,13 @@ env:
   SERVICES: manager builder terraformer ansibler kube-eleven kuber claudie-operator autoscaler-adapter testing-framework
 
 jobs:
+  #--------------------------------------------------------------------------------------------------
+  print-tag:
+    runs-on: ubuntu-latest
+    if: ${{ inputs.print_tags }}
+    steps:
+      - name: Print the input tag to STDOUT
+        run: echo  The tags are ${{ inputs.tags }}
   #--------------------------------------------------------------------------------------------------
   merge-branch:
     if: github.event.pull_request.draft == false
