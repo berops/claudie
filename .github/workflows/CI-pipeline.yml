@@ -32,9 +32,9 @@ jobs:
           wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
           tar xz && mv yq_linux_amd64 yq
           
-          test-sets=$(./yq '.secretGenerator[].name' kustomization.yaml)
+          test_sets=$(./yq '.secretGenerator[].name' kustomization.yaml)
           
-          for set in $test-sets; do
+          for set in $test_sets; do
             echo "found set: $set"
           done
           
