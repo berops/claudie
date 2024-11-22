@@ -91,9 +91,10 @@ jobs:
           wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
           tar xz && mv yq_linux_amd64 yq
 
-          #!/bin/bash
-
           test_sets=$(./yq '.secretGenerator[].name' kustomization.yaml)
+          
+          echo $GITHUB_PR_LABEL_TEST-SET-AUTOSCALING
+          echo $GITHUB_PR_LABEL_TEST-SET-FAIL-UNTIL-LAST
 
           for set in $test_sets; do
             mnt="/go/services/testing-framework/test-sets/$set"
