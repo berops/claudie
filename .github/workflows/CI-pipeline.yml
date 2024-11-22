@@ -273,6 +273,10 @@ jobs:
           ref: ${{ github.head_ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
 
+      - name: Get PR labels
+        id: pr-labels
+        uses: joerick/pr-labels-action@v1.0.9
+
       - name: Determine which test sets to run
         working-directory: ./manifests
         run: |
@@ -325,10 +329,6 @@ jobs:
         uses: azure/k8s-set-context@v4
         with:
           kubeconfig: ${{ secrets.E2E_CLUSTER_KUBECONFIG }}
-
-      - name: Get PR labels
-        id: pr-labels
-        uses: joerick/pr-labels-action@v1.0.9
 
       # Deploy services to new namespace
       - name: Deploy to new namespace
