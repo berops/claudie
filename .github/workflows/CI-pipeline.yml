@@ -46,7 +46,7 @@ jobs:
             fi
           done
           
-          cat testing-framework.yaml | echo
+          cat testing-framework.yaml
           
           rm -f yq
 
