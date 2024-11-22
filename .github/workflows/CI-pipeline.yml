@@ -19,6 +19,11 @@ jobs:
         id: pr-labels
         uses: joerick/pr-labels-action@v1.0.9
 
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
       - name: Print PR labels
         id: print-pr-labels
         working-directory: ./manifests/testing-framework
@@ -116,6 +121,48 @@ jobs:
       - name: Run Go tests
         run: go test -short ./...
   #--------------------------------------------------------------------------------------------------
+  golangci:
+    name: Run golangci-lint
+    runs-on: self-hosted
+    needs: [merge-branch, check-changes]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Install golang
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23.1"
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
+          # It's highly recommended installing a specific version of golangci-lint from
+          # https://github.com/golangci/golangci-lint/releases
+          version: v1.60.3
+
+          # Optional: working directory, useful for monorepos
+          # working-directory: somedir
+
+          # Optional: golangci-lint command line arguments.
+          # args: --issues-exit-code=0
+
+          # Optional: show only new issues if it's a pull request. The default value is `false`.
+          # only-new-issues: true
+
+          # Optional: if set to true then the action will use pre-installed Go.
+          # skip-go-installation: true
+
+          # Optional: if set to true then the action don't cache or restore ~/go/pkg.
+          # skip-pkg-cache: true
+
+          # Optional: if set to true then the action don't cache or restore ~/.cache/go-build.
+          # skip-build-cache: true
+
+  #--------------------------------------------------------------------------------------------------
   build-and-push:
     runs-on: self-hosted
     needs: [merge-branch, check-changes]
@@ -183,7 +230,7 @@ jobs:
   #--------------------------------------------------------------------------------------------------
   edit-kustomization:
     runs-on: self-hosted
-    needs: [merge-branch, check-changes, build-and-push, gotest]
+    needs: [merge-branch, check-changes, build-and-push, gotest, golangci]
     steps:
       - uses: actions/checkout@v4
         if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
