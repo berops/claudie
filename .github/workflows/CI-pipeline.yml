@@ -274,35 +274,32 @@ jobs:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
 
       - name: Determine which test sets to run
-        working-directory: ./manifests/testing-framework
+        working-directory: ./manifests
         run: |
           sudo apt update && sudo apt install -y wget tar
           wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
           tar xz && mv yq_linux_amd64 yq
           
-          test_sets=$(./yq '.secretGenerator[].name' kustomization.yaml)
+          test_sets=$(./yq '.secretGenerator[].name' ./testing-framework/kustomization.yaml)
           selected=()
           
           for set in $test_sets; do
             mnt="/go/services/testing-framework/test-sets/$set"
 
             if [ -n "$GITHUB_PR_LABEL_TEST_SET_AUTOSCALING" ] && [[ "$set" == *"autoscaling"* ]]; then
-              ./yq -i "select(di ==0).spec.template.spec.volumes += [{\"name\": \"$set\", \"secret\": {\"secretName\": \"$set\"}}]"    testing-framework.yaml
-              ./yq -i "select(di ==0).spec.template.spec.containers[].volumeMounts += [{\"name\": \"$set\", \"mountPath\": \"$mnt\"}]" testing-framework.yaml
+              ./yq -i "select(di ==0).spec.template.spec.volumes += [{\"name\": \"$set\", \"secret\": {\"secretName\": \"$set\"}}]"    ./testing-framework/testing-framework.yaml
+              ./yq -i "select(di ==0).spec.template.spec.containers[].volumeMounts += [{\"name\": \"$set\", \"mountPath\": \"$mnt\"}]" ./testing-framework/testing-framework.yaml
               selected+=("$set")
             fi
 
             if [ -n "$GITHUB_PR_LABEL_TEST_SET_FAIL_UNTIL_LAST" ] && [[ "$set" == *"on-last"* ]]; then
-              ./yq -i "select(di ==0).spec.template.spec.volumes += [{\"name\": \"$set\", \"secret\": {\"secretName\": \"$set\"}}]"    testing-framework.yaml
-              ./yq -i "select(di ==0).spec.template.spec.containers[].volumeMounts += [{\"name\": \"$set\", \"mountPath\": \"$mnt\"}]" testing-framework.yaml
+              ./yq -i "select(di ==0).spec.template.spec.volumes += [{\"name\": \"$set\", \"secret\": {\"secretName\": \"$set\"}}]"    ./testing-framework/testing-framework.yaml
+              ./yq -i "select(di ==0).spec.template.spec.containers[].volumeMounts += [{\"name\": \"$set\", \"mountPath\": \"$mnt\"}]" ./testing-framework/testing-framework.yaml
               selected+=("$set")
             fi
           done
           
-          if [ ${#selected[@]} -eq 0 ]; then
-            echo "No test sets were selected."
-            exit 0
-          fi
+          echo "selected sets: $selected"
 
       - name: Install terraform
         run: | 
@@ -346,12 +343,8 @@ jobs:
             echo "AUTO_CLEAN_UP=TRUE" >> .env
           fi
 
-          sudo apt update && sudo apt install -y wget tar
-          wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
-          tar xz && mv yq_linux_amd64 yq
-
-          NAME_HASH="claudie-operator-role-binding-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}" ./yq e 'select(di == 0) * (select(.kind == "ClusterRoleBinding") | .metadata.name = strenv(NAME_HASH))' ./cluster-rbac/clusterrolebinding.yaml -i
-          NAMESPACES="claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER},e2e-secrets" ./yq eval 'select(documentIndex == 0).spec.template.spec.containers.0.env += [{"name": "CLAUDIE_NAMESPACES", "value": strenv(NAMESPACES)}]' -i operator.yaml
+          NAME_HASH="claudie-operator-role-binding-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}" ../yq e 'select(di == 0) * (select(.kind == "ClusterRoleBinding") | .metadata.name = strenv(NAME_HASH))' ./cluster-rbac/clusterrolebinding.yaml -i
+          NAMESPACES="claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER},e2e-secrets" ../yq eval 'select(documentIndex == 0).spec.template.spec.containers.0.env += [{"name": "CLAUDIE_NAMESPACES", "value": strenv(NAMESPACES)}]' -i operator.yaml
           kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
           kustomize build | kubectl apply -f -
 
@@ -374,8 +367,8 @@ jobs:
       - name: Insert random test hostnames to loadbalancer test set
         working-directory: ./manifests/testing-framework/test-sets
         run: |
-          HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ./yq e '.spec.loadBalancers.clusters.[1].dns.hostname = strenv(HOSTNAME)' test-set2/1.yaml -i
-          HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ./yq e '.spec.loadBalancers.clusters.[0].dns.hostname = strenv(HOSTNAME)' test-set2/3.yaml -i
+          HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ../../yq e '.spec.loadBalancers.clusters.[1].dns.hostname = strenv(HOSTNAME)' test-set2/1.yaml -i
+          HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ../../yq e '.spec.loadBalancers.clusters.[0].dns.hostname = strenv(HOSTNAME)' test-set2/3.yaml -i
 
       - name: Create test static nodes
         working-directory: ./manifests/testing-framework/test-sets
@@ -399,15 +392,15 @@ jobs:
               if [ -f "$file" ]; then
                   filename=$(basename "$file")
                   if [[ $filename == "1.yaml" ]]; then
-                      ENDPOINT=${IP_ARR[1]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
-                      ENDPOINT=${IP_ARR[2]} ./yq e '.spec.nodePools.static.[0].nodes.[1].endpoint = strenv(ENDPOINT)' $file -i
+                      ENDPOINT=${IP_ARR[1]} ../../yq e '.spec.nodePools.static.[1].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
+                      ENDPOINT=${IP_ARR[2]} ../../yq e '.spec.nodePools.static.[0].nodes.[1].endpoint = strenv(ENDPOINT)' $file -i
                   fi
                   if [[ $filename == "2.yaml" ]]; then
-                      ENDPOINT=${IP_ARR[1]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
-                      ENDPOINT=${IP_ARR[0]} ./yq e '.spec.nodePools.static.[0].nodes.[1].endpoint = strenv(ENDPOINT)' $file -i
+                      ENDPOINT=${IP_ARR[1]} ../../yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
+                      ENDPOINT=${IP_ARR[0]} ../../yq e '.spec.nodePools.static.[0].nodes.[1].endpoint = strenv(ENDPOINT)' $file -i
                   fi
                   if [[ $filename == "3.yaml" ]]; then
-                      ENDPOINT=${IP_ARR[2]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
+                      ENDPOINT=${IP_ARR[2]} ../../yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
                   fi
               fi
           done
@@ -417,10 +410,10 @@ jobs:
               if [ -f "$file" ]; then
                   filename=$(basename "$file")
                   if [[ $filename == "1.yaml" ]]; then
-                      ENDPOINT=${IP_ARR[3]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
+                      ENDPOINT=${IP_ARR[3]} ../../yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
                   fi
                   if [[ $filename == "2.yaml" ]]; then
-                      ENDPOINT=${IP_ARR[3]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
+                      ENDPOINT=${IP_ARR[3]} ../../yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
                   fi
               fi
           done
