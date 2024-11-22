@@ -1,15 +1,6 @@
 name: CI pipeline for Claudie
 on:
   workflow_dispatch:
-    inputs:
-      repo_1:
-        type: boolean
-        default: false
-        description: Use Repo 1?
-      repo_2:
-        type: boolean
-        default: false
-        description: Use Repo 2?
   # Triggers the workflow on push or pull request events but only for the master branch
   pull_request:
     branches: [master]
@@ -20,25 +11,25 @@ env:
 
 jobs:
   #--------------------------------------------------------------------------------------------------
-  repo-1-job:
-    name: Repo 1 Job
-    runs-on: ubuntu-latest
-    if: github.event.inputs.repo_1 == 'true'
+  select-test-sets:
+    if: github.event.pull_request.draft == false
+    runs-on: self-hosted
     steps:
-      - run: echo "some repo 1 job"
+      - name: Get PR labels
+        id: pr-labels
+        uses: joerick/pr-labels-action@v1.0.8
 
-  repo-2-job:
-    name: Repo 2 Job
-    needs: repo-1-job
-    runs-on: ubuntu-latest
-    if: github.event.inputs.repo_2 == 'true'
-    steps:
-      - run: echo "some repo 2 job"
-  #--------------------------------------------------------------------------------------------------
+      - name: Print PR labels
+        id: print-pr-labels
+        run: |
+          if [ -n "$GITHUB_PR_LABEL_TEST-SET-AUTOSCALING" ]; then
+            echo "autoscaling test-set"
+          fi
+
   merge-branch:
     if: github.event.pull_request.draft == false
     runs-on: self-hosted
-    needs: repo-2-job
+    needs: select-test-sets
     steps:
       - uses: actions/checkout@v4
         with:
@@ -96,7 +87,7 @@ jobs:
       RUN_TESTS: ${{ steps.change.outputs.RUN_TESTS }}
   #--------------------------------------------------------------------------------------------------
   gotest:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [merge-branch, check-changes]
     steps:
       - uses: actions/checkout@v4
