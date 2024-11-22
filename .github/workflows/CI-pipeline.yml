@@ -34,15 +34,15 @@ jobs:
           
           #!/bin/bash
   
-          test_sets=$(yq '.secretGenerator[].name' kustomization.yaml)
+          test_sets=$(./yq '.secretGenerator[].name' kustomization.yaml)
   
           for set in $test_sets; do
             mnt="/go/services/testing-framework/test-sets/$set"
           
             if [ -n "$GITHUB_PR_LABEL_TEST-SET-AUTOSCALING" ] && [[ "$set" == *"autoscaling"* ]]; then
               echo "autoscaling test-set"
-              yq -i "select(di ==0).spec.template.spec.volumes += [{\"name\": \"$set\", \"secret\": {\"secretName\": \"$set\"}}]"    testing-framework.yaml
-              yq -i "select(di ==0).spec.template.spec.containers[].volumeMounts += [{\"name\": \"$set\", \"mountPath\": \"$mnt\"}]" testing-framework.yaml
+              ./yq -i "select(di ==0).spec.template.spec.volumes += [{\"name\": \"$set\", \"secret\": {\"secretName\": \"$set\"}}]"    testing-framework.yaml
+              ./yq -i "select(di ==0).spec.template.spec.containers[].volumeMounts += [{\"name\": \"$set\", \"mountPath\": \"$mnt\"}]" testing-framework.yaml
             fi
           done
           
