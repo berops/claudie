@@ -35,7 +35,7 @@ jobs:
           test-sets=$(./yq '.secretGenerator[].name' kustomization.yaml)
           
           for set in $test-sets; do
-            echo $set
+            echo "found set: $set"
           done
           
           if [ -n "$GITHUB_PR_LABEL_TEST-SET-AUTOSCALING" ]; then
