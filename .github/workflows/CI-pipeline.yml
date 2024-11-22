@@ -239,7 +239,7 @@ jobs:
   #--------------------------------------------------------------------------------------------------
   edit-kustomization:
     runs-on: self-hosted
-    needs: [merge-branch, check-changes, select-test-sets, build-and-push, golangci, golangci]
+    needs: [merge-branch, check-changes, select-test-sets, build-and-push, golangci, gotest]
     steps:
       - uses: actions/checkout@v4
         if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
@@ -455,6 +455,8 @@ jobs:
           tar xz && mv yq_linux_amd64 yq
 
           NAME_HASH="testing-framework-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}" ./yq e -i '(select(.kind == "ClusterRoleBinding").metadata.name = strenv(NAME_HASH))' ./testing-framework/testing-framework.yaml 
+          
+          cat ./testing-framework/testing-framework.yaml
 
           kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
           kustomize build . | kubectl apply -f -
