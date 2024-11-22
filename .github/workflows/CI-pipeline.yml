@@ -274,6 +274,7 @@ jobs:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
 
       - name: Determine which test sets to run
+        working-directory: ./manifests/testing-framework
         run: |
           sudo apt update && sudo apt install -y wget tar
           wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
