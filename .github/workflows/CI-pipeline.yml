@@ -10,50 +10,9 @@ env:
   SERVICES: manager builder terraformer ansibler kube-eleven kuber claudie-operator autoscaler-adapter testing-framework
 
 jobs:
-  #--------------------------------------------------------------------------------------------------
-  select-test-sets:
-    if: github.event.pull_request.draft == false
-    runs-on: self-hosted
-    steps:
-      - name: Get PR labels
-        id: pr-labels
-        uses: joerick/pr-labels-action@v1.0.9
-
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-
-      - name: Print PR labels
-        id: print-pr-labels
-        working-directory: ./manifests/testing-framework
-        run: |
-          sudo apt update && sudo apt install -y wget tar
-          wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
-          tar xz && mv yq_linux_amd64 yq
-          
-          #!/bin/bash
-  
-          test_sets=$(./yq '.secretGenerator[].name' kustomization.yaml)
-  
-          for set in $test_sets; do
-            mnt="/go/services/testing-framework/test-sets/$set"
-          
-            if [ -n "$GITHUB_PR_LABEL_TEST-SET-AUTOSCALING" ] && [[ "$set" == *"autoscaling"* ]]; then
-              echo "autoscaling test-set"
-              ./yq -i "select(di ==0).spec.template.spec.volumes += [{\"name\": \"$set\", \"secret\": {\"secretName\": \"$set\"}}]"    testing-framework.yaml
-              ./yq -i "select(di ==0).spec.template.spec.containers[].volumeMounts += [{\"name\": \"$set\", \"mountPath\": \"$mnt\"}]" testing-framework.yaml
-            fi
-          done
-          
-          cat testing-framework.yaml
-          
-          rm -f yq
-
   merge-branch:
     if: github.event.pull_request.draft == false
     runs-on: self-hosted
-    needs: select-test-sets
     steps:
       - uses: actions/checkout@v4
         with:
@@ -110,9 +69,53 @@ jobs:
       ARRAY_OF_CHANGES: ${{ steps.change.outputs.ARRAY_OF_CHANGES }}
       RUN_TESTS: ${{ steps.change.outputs.RUN_TESTS }}
   #--------------------------------------------------------------------------------------------------
+  select-test-sets:
+    if: github.event.pull_request.draft == false
+    runs-on: self-hosted
+    needs: check-changes
+    steps:
+      - name: Get PR labels
+        id: pr-labels
+        uses: joerick/pr-labels-action@v1.0.9
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Print PR labels
+        id: print-pr-labels
+        working-directory: ./manifests/testing-framework
+        run: |
+          sudo apt update && sudo apt install -y wget tar
+          wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
+          tar xz && mv yq_linux_amd64 yq
+
+          #!/bin/bash
+
+          test_sets=$(./yq '.secretGenerator[].name' kustomization.yaml)
+
+          for set in $test_sets; do
+            mnt="/go/services/testing-framework/test-sets/$set"
+
+            if [ -n "$GITHUB_PR_LABEL_TEST-SET-AUTOSCALING" ] && [[ "$set" == *"autoscaling"* ]]; then
+              ./yq -i "select(di ==0).spec.template.spec.volumes += [{\"name\": \"$set\", \"secret\": {\"secretName\": \"$set\"}}]"    testing-framework.yaml
+              ./yq -i "select(di ==0).spec.template.spec.containers[].volumeMounts += [{\"name\": \"$set\", \"mountPath\": \"$mnt\"}]" testing-framework.yaml
+            fi
+
+            if [ -n "$GITHUB_PR_LABEL_TEST-SET-FAIL-UNTIL-LAST" ] && [[ "$set" == *"on-last"* ]]; then
+              ./yq -i "select(di ==0).spec.template.spec.volumes += [{\"name\": \"$set\", \"secret\": {\"secretName\": \"$set\"}}]"    testing-framework.yaml
+              ./yq -i "select(di ==0).spec.template.spec.containers[].volumeMounts += [{\"name\": \"$set\", \"mountPath\": \"$mnt\"}]" testing-framework.yaml
+            fi
+          done
+
+          cat testing-framework.yaml
+
+          rm -f yq
+  #--------------------------------------------------------------------------------------------------
   gotest:
     runs-on: self-hosted
-    needs: [merge-branch, check-changes]
+    needs: [merge-branch, check-changes, select-test-sets]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -130,7 +133,7 @@ jobs:
   golangci:
     name: Run golangci-lint
     runs-on: self-hosted
-    needs: [merge-branch, check-changes]
+    needs: [merge-branch, check-changes, select-test-sets]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -171,7 +174,7 @@ jobs:
   #--------------------------------------------------------------------------------------------------
   build-and-push:
     runs-on: self-hosted
-    needs: [merge-branch, check-changes]
+    needs: [merge-branch, check-changes, select-test-sets]
     steps:
       - uses: actions/checkout@v4
         if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
@@ -236,7 +239,7 @@ jobs:
   #--------------------------------------------------------------------------------------------------
   edit-kustomization:
     runs-on: self-hosted
-    needs: [merge-branch, check-changes, build-and-push, gotest, golangci]
+    needs: [merge-branch, check-changes, select-test-sets, build-and-push, golangci, golangci]
     steps:
       - uses: actions/checkout@v4
         if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
@@ -303,7 +306,7 @@ jobs:
   #--------------------------------------------------------------------------------------------------
   deploy-and-monitor:
     runs-on: self-hosted
-    needs: [merge-branch, build-and-push, edit-kustomization, check-changes]
+    needs: [merge-branch, build-and-push, edit-kustomization, check-changes, select-test-sets]
     permissions:
       id-token: write
       contents: read
