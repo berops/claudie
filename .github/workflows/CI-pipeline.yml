@@ -301,9 +301,28 @@ jobs:
               ./yq -i "select(di ==0).spec.template.spec.containers[].volumeMounts += [{\"name\": \"$set\", \"mountPath\": \"$mnt\"}]" ./testing-framework/testing-framework.yaml
               selected+=("$set")
             fi
+          
+            if [ -n "$GITHUB_PR_LABEL_TEST_SET_ORDINARY" ] && [[ "$set" == *"test-set"* ]]; then
+              ./yq -i "select(di ==0).spec.template.spec.volumes += [{\"name\": \"$set\", \"secret\": {\"secretName\": \"$set\"}}]"    ./testing-framework/testing-framework.yaml
+              ./yq -i "select(di ==0).spec.template.spec.containers[].volumeMounts += [{\"name\": \"$set\", \"mountPath\": \"$mnt\"}]" ./testing-framework/testing-framework.yaml
+              selected+=("$set")
+            fi
+          
+            if [ -n "$GITHUB_PR_LABEL_TEST_SET_ROLLING_UPDATE" ] && [[ "$set" == *"rolling-update"* ]]; then
+              ./yq -i "select(di ==0).spec.template.spec.volumes += [{\"name\": \"$set\", \"secret\": {\"secretName\": \"$set\"}}]"    ./testing-framework/testing-framework.yaml
+              ./yq -i "select(di ==0).spec.template.spec.containers[].volumeMounts += [{\"name\": \"$set\", \"mountPath\": \"$mnt\"}]" ./testing-framework/testing-framework.yaml
+              selected+=("$set")
+            fi
+          
+            if [ -n "$GITHUB_PR_LABEL_TEST_SET_PROXY" ] && [[ "$set" == *"proxy"* ]]; then
+              ./yq -i "select(di ==0).spec.template.spec.volumes += [{\"name\": \"$set\", \"secret\": {\"secretName\": \"$set\"}}]"    ./testing-framework/testing-framework.yaml
+              ./yq -i "select(di ==0).spec.template.spec.containers[].volumeMounts += [{\"name\": \"$set\", \"mountPath\": \"$mnt\"}]" ./testing-framework/testing-framework.yaml
+              selected+=("$set")
+            fi
           done
           
           echo "selected sets: $selected"
+          # TODO: skip on 0 test-sets selected.
 
       - name: Install terraform
         run: | 
