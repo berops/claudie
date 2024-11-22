@@ -84,6 +84,12 @@ func testClaudie(ctx context.Context) error {
 
 	log.Info().Msg("---- Starting the tests ----")
 
+	// no test sets.
+	if _, err := os.Stat(testDir); errors.Is(err, os.ErrNotExist) {
+		log.Info().Msg("---- No tests found ----")
+		return nil
+	}
+
 	// loop through the directory and list files inside
 	files, err := os.ReadDir(testDir)
 	if err != nil {
