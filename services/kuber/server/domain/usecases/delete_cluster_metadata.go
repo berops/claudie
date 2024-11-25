@@ -19,9 +19,9 @@ func (u *Usecases) DeleteClusterMetadata(ctx context.Context, request *pb.Delete
 		// If kuber deployed locally, return.
 		return &pb.DeleteClusterMetadataResponse{}, nil
 	}
-	id := request.Cluster.ClusterInfo.Id()
+	clusterID := request.Cluster.ClusterInfo.Id()
 
-	logger := loggerutils.WithClusterName(id)
+	logger := loggerutils.WithClusterName(clusterID)
 	var err error
 	// Log success/error message.
 	defer func() {
@@ -34,10 +34,10 @@ func (u *Usecases) DeleteClusterMetadata(ctx context.Context, request *pb.Delete
 
 	logger.Info().Msgf("Deleting cluster metadata secret")
 	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
-	kc.Stdout = comm.GetStdOut(id)
-	kc.Stderr = comm.GetStdErr(id)
+	kc.Stdout = comm.GetStdOut(clusterID)
+	kc.Stderr = comm.GetStdErr(clusterID)
 
 	// Save error and return as errors are ignored here.
-	err = kc.KubectlDeleteResource("secret", fmt.Sprintf("%s-metadata", id), "-n", namespace)
+	err = kc.KubectlDeleteResource("secret", fmt.Sprintf("%s-metadata", clusterID), "-n", namespace)
 	return &pb.DeleteClusterMetadataResponse{}, nil
 }

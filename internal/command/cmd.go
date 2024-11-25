@@ -3,16 +3,15 @@ package command
 import (
 	"bytes"
 	"context"
-	"github.com/berops/claudie/internal/sanitise"
 	"io"
+	stdLog "log"
 	"math"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
 
-	stdLog "log"
-
+	"github.com/berops/claudie/internal/sanitise"
 	"github.com/rs/zerolog/log"
 )
 

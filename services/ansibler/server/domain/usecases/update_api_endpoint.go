@@ -33,9 +33,9 @@ func (u *Usecases) UpdateAPIEndpoint(request *pb.UpdateAPIEndpointRequest) (*pb.
 // the desired state. Thus, a new control node needs to be selected among the existing
 // control nodes. This new control node will then represent the ApiEndpoint of the cluster.
 func updateAPIEndpoint(endpoint *pb.UpdateAPIEndpointRequest_Endpoint, currentK8sCluster *spec.K8Scluster, proxyEnvs *spec.ProxyEnvs, processLimit *semaphore.Weighted) error {
-	id := currentK8sCluster.ClusterInfo.Id()
+	clusterID := currentK8sCluster.ClusterInfo.Id()
 
-	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", id, commonUtils.CreateHash(commonUtils.HashLength)))
+	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, commonUtils.CreateHash(commonUtils.HashLength)))
 	if err := commonUtils.CreateDirectory(clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 	}
@@ -54,7 +54,7 @@ func updateAPIEndpoint(endpoint *pb.UpdateAPIEndpointRequest_Endpoint, currentK8
 			Static:  commonUtils.GetCommonStaticNodePools(currentK8sCluster.ClusterInfo.NodePools),
 		},
 		LBClusters: nil,
-		ClusterID:  id,
+		ClusterID:  clusterID,
 	})
 	if err != nil {
 		return fmt.Errorf("error while creating inventory file for %s : %w", clusterDirectory, err)

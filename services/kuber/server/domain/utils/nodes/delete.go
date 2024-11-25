@@ -37,23 +37,23 @@ type Deleter struct {
 // masterNodes - master nodes to DELETE
 // workerNodes - worker nodes to DELETE
 func NewDeleter(masterNodes, workerNodes []string, cluster *spec.K8Scluster) *Deleter {
-	id := cluster.ClusterInfo.Id()
+	clusterID := cluster.ClusterInfo.Id()
 
 	for i := range masterNodes {
-		masterNodes[i] = strings.TrimPrefix(masterNodes[i], fmt.Sprintf("%s-", id))
+		masterNodes[i] = strings.TrimPrefix(masterNodes[i], fmt.Sprintf("%s-", clusterID))
 	}
 
 	for i := range workerNodes {
-		workerNodes[i] = strings.TrimPrefix(workerNodes[i], fmt.Sprintf("%s-", id))
+		workerNodes[i] = strings.TrimPrefix(workerNodes[i], fmt.Sprintf("%s-", clusterID))
 	}
 
 	return &Deleter{
 		masterNodes:   masterNodes,
 		workerNodes:   workerNodes,
 		cluster:       cluster,
-		clusterPrefix: id,
+		clusterPrefix: clusterID,
 
-		logger: loggerutils.WithClusterName(id),
+		logger: loggerutils.WithClusterName(clusterID),
 	}
 }
 

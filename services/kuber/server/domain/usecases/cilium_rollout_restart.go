@@ -9,8 +9,8 @@ import (
 )
 
 func (u *Usecases) CiliumRolloutRestart(request *pb.CiliumRolloutRestartRequest) (*pb.CiliumRolloutRestartResponse, error) {
-	id := request.Cluster.ClusterInfo.Id()
-	logger := loggerutils.WithClusterName(id)
+	clusterID := request.Cluster.ClusterInfo.Id()
+	logger := loggerutils.WithClusterName(clusterID)
 
 	logger.Info().Msgf("Performing a rollout of the cilium daemonset")
 	kc := kubectl.Kubectl{

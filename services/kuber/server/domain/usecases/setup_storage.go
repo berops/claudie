@@ -13,16 +13,16 @@ import (
 // SetUpStorage installs and configures Longhorn in the given K8s cluster.
 // (Installation of Longhorn prerequisites has already been taken care in the ansibler microservice.)
 func (u *Usecases) SetUpStorage(ctx context.Context, request *pb.SetUpStorageRequest) (*pb.SetUpStorageResponse, error) {
-	id := request.DesiredCluster.ClusterInfo.Id()
-	logger := loggerutils.WithClusterName(id)
+	clusterID := request.DesiredCluster.ClusterInfo.Id()
+	logger := loggerutils.WithClusterName(clusterID)
 
-	clusterDir := filepath.Join(outputDir, id)
+	clusterDir := filepath.Join(outputDir, clusterID)
 
 	logger.Info().Msgf("Setting up the longhorn")
 	longhorn := longhorn.Longhorn{Cluster: request.DesiredCluster, Directory: clusterDir}
 	if err := longhorn.SetUp(); err != nil {
 		logger.Err(err).Msgf("Error while setting up the longhorn")
-		return nil, fmt.Errorf("error while setting up the longhorn for %s : %w", id, err)
+		return nil, fmt.Errorf("error while setting up the longhorn for %s : %w", clusterID, err)
 	}
 	logger.Info().Msgf("Longhorn successfully set up")
 

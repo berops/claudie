@@ -46,9 +46,9 @@ type KubeEleven struct {
 // BuildCluster is responsible for managing the given K8sCluster along with the attached LBClusters
 // using Kubeone.
 func (k *KubeEleven) BuildCluster() error {
-	id := k.K8sCluster.ClusterInfo.Id()
+	clusterID := k.K8sCluster.ClusterInfo.Id()
 
-	k.outputDirectory = filepath.Join(baseDirectory, outputDirectory, id)
+	k.outputDirectory = filepath.Join(baseDirectory, outputDirectory, clusterID)
 	// Generate files which will be needed by Kubeone.
 	err := k.generateFiles()
 	if err != nil {
@@ -60,7 +60,7 @@ func (k *KubeEleven) BuildCluster() error {
 		ConfigDirectory:   k.outputDirectory,
 		SpawnProcessLimit: k.SpawnProcessLimit,
 	}
-	err = kubeone.Apply(id)
+	err = kubeone.Apply(clusterID)
 	if err != nil {
 		return fmt.Errorf("error while running \"kubeone apply\" in %s : %w", k.outputDirectory, err)
 	}
@@ -86,9 +86,9 @@ func (k *KubeEleven) BuildCluster() error {
 }
 
 func (k *KubeEleven) DestroyCluster() error {
-	id := k.K8sCluster.ClusterInfo.Id()
+	clusterID := k.K8sCluster.ClusterInfo.Id()
 
-	k.outputDirectory = filepath.Join(baseDirectory, outputDirectory, id)
+	k.outputDirectory = filepath.Join(baseDirectory, outputDirectory, clusterID)
 
 	if err := k.generateFiles(); err != nil {
 		return fmt.Errorf("error while generating files for %s: %w", k.K8sCluster.ClusterInfo.Name, err)
@@ -101,7 +101,7 @@ func (k *KubeEleven) DestroyCluster() error {
 
 	// Destroying the cluster might fail when deleting the binaries, if its called subsequently,
 	// thus ignore the error.
-	if err := kubeone.Reset(id); err != nil {
+	if err := kubeone.Reset(clusterID); err != nil {
 		log.Warn().Msgf("failed to destroy cluster and remove binaries: %s, assuming they were deleted", err)
 	}
 

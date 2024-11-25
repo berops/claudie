@@ -19,8 +19,8 @@ func (u *Usecases) DeleteKubeconfig(ctx context.Context, request *pb.DeleteKubec
 		// If kuber deployed locally, return.
 		return &pb.DeleteKubeconfigResponse{}, nil
 	}
-	id := request.Cluster.ClusterInfo.Id()
-	logger := loggerutils.WithClusterName(id)
+	clusterID := request.Cluster.ClusterInfo.Id()
+	logger := loggerutils.WithClusterName(clusterID)
 	var err error
 	// Log success/error message.
 	defer func() {
@@ -33,10 +33,10 @@ func (u *Usecases) DeleteKubeconfig(ctx context.Context, request *pb.DeleteKubec
 
 	logger.Info().Msgf("Deleting kubeconfig secret")
 	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
-	kc.Stdout = comm.GetStdOut(id)
-	kc.Stderr = comm.GetStdErr(id)
+	kc.Stdout = comm.GetStdOut(clusterID)
+	kc.Stderr = comm.GetStdErr(clusterID)
 
 	// Save error and return as errors are ignored here.
-	err = kc.KubectlDeleteResource("secret", fmt.Sprintf("%s-kubeconfig", id), "-n", namespace)
+	err = kc.KubectlDeleteResource("secret", fmt.Sprintf("%s-kubeconfig", clusterID), "-n", namespace)
 	return &pb.DeleteKubeconfigResponse{}, nil
 }

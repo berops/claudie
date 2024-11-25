@@ -41,10 +41,10 @@ func (u *Usecases) UpdateProxyEnvsOnNodes(request *pb.UpdateProxyEnvsOnNodesRequ
 
 // UpdateProxyEnvsOnNodes updates proxy envs in /etc/environment
 func updateProxyEnvsOnNodes(desiredK8sClusterInfo *spec.ClusterInfo, proxyEnvs *spec.ProxyEnvs, processLimit *semaphore.Weighted) error {
-	id := desiredK8sClusterInfo.Id()
+	clusterID := desiredK8sClusterInfo.Id()
 
 	// This is the directory where files (Ansible inventory files, SSH keys etc.) will be generated.
-	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", id, commonUtils.CreateHash(commonUtils.HashLength)))
+	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, commonUtils.CreateHash(commonUtils.HashLength)))
 	if err := commonUtils.CreateDirectory(clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 	}
@@ -62,7 +62,7 @@ func updateProxyEnvsOnNodes(desiredK8sClusterInfo *spec.ClusterInfo, proxyEnvs *
 			Dynamic: commonUtils.GetCommonDynamicNodePools(desiredK8sClusterInfo.NodePools),
 			Static:  commonUtils.GetCommonStaticNodePools(desiredK8sClusterInfo.NodePools),
 		},
-		ClusterID:    id,
+		ClusterID:    clusterID,
 		NoProxyList:  proxyEnvs.NoProxyList,
 		HttpProxyUrl: proxyEnvs.HttpProxyUrl,
 	}); err != nil {
@@ -76,7 +76,7 @@ func updateProxyEnvsOnNodes(desiredK8sClusterInfo *spec.ClusterInfo, proxyEnvs *
 		SpawnProcessLimit: processLimit,
 	}
 
-	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("Update proxy envs in /etc/environment - %s", id)); err != nil {
+	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("Update proxy envs in /etc/environment - %s", clusterID)); err != nil {
 		return fmt.Errorf("error while running ansible to update proxy envs /etc/environment in %s : %w", clusterDirectory, err)
 	}
 

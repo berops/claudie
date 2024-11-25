@@ -41,14 +41,14 @@ type Patcher struct {
 func NewPatcher(cluster *spec.K8Scluster, logger zerolog.Logger) *Patcher {
 	kc := kubectl.Kubectl{Kubeconfig: cluster.Kubeconfig, MaxKubectlRetries: 3}
 
-	id := cluster.ClusterInfo.Id()
-	kc.Stdout = comm.GetStdOut(id)
-	kc.Stderr = comm.GetStdErr(id)
+	clusterID := cluster.ClusterInfo.Id()
+	kc.Stdout = comm.GetStdOut(clusterID)
+	kc.Stderr = comm.GetStdErr(clusterID)
 
 	return &Patcher{
 		kc:               kc,
 		desiredNodepools: cluster.ClusterInfo.NodePools,
-		clusterID:        id,
+		clusterID:        clusterID,
 		logger:           logger,
 	}
 }

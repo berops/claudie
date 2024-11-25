@@ -18,8 +18,8 @@ import (
 // StoreClusterMetadata constructs ClusterMetadata for the given K8s cluster, creates a Kubernetes
 // secret out of that and stores that secret in the Claudie management cluster.
 func (u *Usecases) StoreClusterMetadata(ctx context.Context, request *pb.StoreClusterMetadataRequest) (*pb.StoreClusterMetadataResponse, error) {
-	id := request.Cluster.ClusterInfo.Id()
-	logger := loggerutils.WithClusterName(id)
+	clusterID := request.Cluster.ClusterInfo.Id()
+	logger := loggerutils.WithClusterName(clusterID)
 
 	dp := make(map[string]DynamicNodepool)
 	sp := make(map[string]StaticNodepool)
@@ -97,7 +97,7 @@ func (u *Usecases) StoreClusterMetadata(ctx context.Context, request *pb.StoreCl
 	}
 	logger.Info().Msgf("Storing cluster metadata")
 
-	clusterDir := filepath.Join(outputDir, id)
+	clusterDir := filepath.Join(outputDir, clusterID)
 	sec := secret.New(clusterDir, secret.NewYaml(
 		utils.GetSecretMetadata(request.Cluster.ClusterInfo, request.ProjectName, utils.MetadataSecret),
 		map[string]string{"metadata": base64.StdEncoding.EncodeToString(b)},

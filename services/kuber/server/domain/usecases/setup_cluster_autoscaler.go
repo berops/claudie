@@ -12,8 +12,8 @@ import (
 )
 
 func (u *Usecases) SetUpClusterAutoscaler(ctx context.Context, request *pb.SetUpClusterAutoscalerRequest) (*pb.SetUpClusterAutoscalerResponse, error) {
-	id := request.Cluster.ClusterInfo.Id()
-	logger := loggerutils.WithClusterName(id)
+	clusterID := request.Cluster.ClusterInfo.Id()
+	logger := loggerutils.WithClusterName(clusterID)
 	var err error
 	// Log success/error message.
 	defer func() {
@@ -34,7 +34,7 @@ func (u *Usecases) SetUpClusterAutoscaler(ctx context.Context, request *pb.SetUp
 	// Set up cluster autoscaler.
 	autoscalerManager := autoscaler.NewAutoscalerManager(request.ProjectName, request.Cluster, clusterDir)
 	if err := autoscalerManager.SetUpClusterAutoscaler(); err != nil {
-		return nil, fmt.Errorf("error while setting up cluster autoscaler for %s : %w", id, err)
+		return nil, fmt.Errorf("error while setting up cluster autoscaler for %s : %w", clusterID, err)
 	}
 	return &pb.SetUpClusterAutoscalerResponse{}, nil
 }

@@ -689,7 +689,7 @@ func craftK8sIR(k8sDiffResult nodePoolDiffResult, current, desired *spec.K8Sclus
 	// Build the Intermediate Representation such that no deletion occurs in desired cluster.
 	ir := proto.Clone(desired).(*spec.K8Scluster)
 
-	id := desired.ClusterInfo.Id()
+	clusterID := desired.ClusterInfo.Id()
 
 	k := slices.Collect(maps.Keys(k8sDiffResult.partialDeletedDynamic))
 	slices.Sort(k)
@@ -698,16 +698,16 @@ func craftK8sIR(k8sDiffResult nodePoolDiffResult, current, desired *spec.K8Sclus
 		inp := utils.GetNodePoolByName(nodepool, ir.ClusterInfo.NodePools)
 		cnp := utils.GetNodePoolByName(nodepool, current.ClusterInfo.NodePools)
 
-		log.Debug().Str("cluster", id).Msgf("nodes from dynamic nodepool %q were partially deleted, crafting ir to include them", nodepool)
+		log.Debug().Str("cluster", clusterID).Msgf("nodes from dynamic nodepool %q were partially deleted, crafting ir to include them", nodepool)
 		inp.GetDynamicNodePool().Count = cnp.GetDynamicNodePool().Count
-		fillDynamicNodes(id, cnp, inp)
+		fillDynamicNodes(clusterID, cnp, inp)
 	}
 
 	k = slices.Collect(maps.Keys(k8sDiffResult.partialDeletedStatic))
 	slices.Sort(k)
 
 	for _, nodepool := range k {
-		log.Debug().Str("cluster", id).Msgf("nodes from static nodepool %q were partially deleted, crafting ir to include them", nodepool)
+		log.Debug().Str("cluster", clusterID).Msgf("nodes from static nodepool %q were partially deleted, crafting ir to include them", nodepool)
 		inp := utils.GetNodePoolByName(nodepool, ir.ClusterInfo.NodePools)
 		cnp := utils.GetNodePoolByName(nodepool, current.ClusterInfo.NodePools)
 
@@ -715,7 +715,7 @@ func craftK8sIR(k8sDiffResult nodePoolDiffResult, current, desired *spec.K8Sclus
 		cs := cnp.GetStaticNodePool()
 
 		maps.Insert(is.NodeKeys, maps.All(cs.NodeKeys))
-		transferStaticNodes(id, cnp, inp)
+		transferStaticNodes(clusterID, cnp, inp)
 
 		for _, cn := range cnp.Nodes {
 			if slices.Contains(k8sDiffResult.partialDeletedStatic[nodepool], cn.Name) {
@@ -732,7 +732,7 @@ func craftK8sIR(k8sDiffResult nodePoolDiffResult, current, desired *spec.K8Sclus
 	slices.Sort(k)
 
 	for _, nodepool := range k {
-		log.Debug().Str("cluster", id).Msgf("nodepool %q  deleted, crafting ir to include it", nodepool)
+		log.Debug().Str("cluster", clusterID).Msgf("nodepool %q  deleted, crafting ir to include it", nodepool)
 		np := utils.GetNodePoolByName(nodepool, current.ClusterInfo.NodePools)
 		ir.ClusterInfo.NodePools = append(ir.ClusterInfo.NodePools, np)
 	}

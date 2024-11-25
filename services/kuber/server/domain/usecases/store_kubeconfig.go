@@ -14,8 +14,8 @@ import (
 )
 
 func (u *Usecases) StoreKubeconfig(ctx context.Context, request *pb.StoreKubeconfigRequest) (*pb.StoreKubeconfigResponse, error) {
-	id := request.Cluster.ClusterInfo.Id()
-	logger := loggerutils.WithClusterName(id)
+	clusterID := request.Cluster.ClusterInfo.Id()
+	logger := loggerutils.WithClusterName(clusterID)
 
 	if envs.Namespace == "" {
 		//NOTE: DEBUG print
@@ -25,7 +25,7 @@ func (u *Usecases) StoreKubeconfig(ctx context.Context, request *pb.StoreKubecon
 
 	logger.Info().Msgf("Storing kubeconfig")
 
-	clusterDir := filepath.Join(outputDir, id)
+	clusterDir := filepath.Join(outputDir, clusterID)
 	sec := secret.New(clusterDir, secret.NewYaml(
 		utils.GetSecretMetadata(request.Cluster.ClusterInfo, request.ProjectName, utils.KubeconfigSecret),
 		map[string]string{"kubeconfig": base64.StdEncoding.EncodeToString([]byte(request.Cluster.Kubeconfig))},
@@ -33,7 +33,7 @@ func (u *Usecases) StoreKubeconfig(ctx context.Context, request *pb.StoreKubecon
 
 	if err := sec.Apply(envs.Namespace, ""); err != nil {
 		logger.Err(err).Msgf("Failed to store kubeconfig")
-		return nil, fmt.Errorf("error while creating the kubeconfig secret for %s", id)
+		return nil, fmt.Errorf("error while creating the kubeconfig secret for %s", clusterID)
 	}
 
 	logger.Info().Msgf("Kubeconfig was successfully stored")

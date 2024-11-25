@@ -11,10 +11,10 @@ import (
 )
 
 func (u *Usecases) StoreLBScrapeConfig(ctx context.Context, req *pb.StoreLBScrapeConfigRequest) (*pb.StoreLBScrapeConfigResponse, error) {
-	id := req.Cluster.ClusterInfo.Id()
-	logger := loggerutils.WithClusterName(id)
+	clusterID := req.Cluster.ClusterInfo.Id()
+	logger := loggerutils.WithClusterName(clusterID)
 
-	clusterDir := filepath.Join(outputDir, id)
+	clusterDir := filepath.Join(outputDir, clusterID)
 	logger.Info().Msgf("Storing loadbalancer scrape-config")
 
 	sc := scrapeconfig.ScrapeConfig{
@@ -25,7 +25,7 @@ func (u *Usecases) StoreLBScrapeConfig(ctx context.Context, req *pb.StoreLBScrap
 
 	if err := sc.GenerateAndApplyScrapeConfig(); err != nil {
 		logger.Err(err).Msgf("Error while applying scrape config for Loadbalancers")
-		return nil, fmt.Errorf("error while setting up the loadbalancer scrape-config for %s : %w", id, err)
+		return nil, fmt.Errorf("error while setting up the loadbalancer scrape-config for %s : %w", clusterID, err)
 	}
 	logger.Info().Msgf("Loadbalancer scrape-config successfully set up")
 
