@@ -200,12 +200,35 @@ message TaskEvent {
   Event event = 3;
   Task task = 4;
   string description = 5;
-  RetryStrategy onError = 6;
+  Retry onError = 7;
 }
 
-message RetryStrategy {
-  bool repeat = 1;
-  repeated TaskEvent rollback = 2;
+message Retry {
+  message Repeat {
+    enum Kind {
+      ENDLESS = 0;
+      EXPONENTIAL = 1;
+    }
+    Kind kind = 1;
+    // currentTick specifies the current number of ticks.
+    // A tick is an regular interval at which manifests are being checked.
+    // to check the Tick timeout see: manager/internal/service/watchers.go
+    uint32 currentTick = 2;
+    // stopAfter specifies the maximum number of ticks, after reaching this value the manifest will be rescheduled
+    // for the last time before giving up.
+    uint32 stopAfter = 3;
+    // retryAfter specifies the number of ticks to wait before rescheduling the manifest again.
+    // this value will be set to the value of currentTick after it is updated.
+    uint32 retryAfter = 4;
+  }
+  message Rollback {
+    repeated TaskEvent tasks = 1;
+  }
+
+  oneof Do {
+    Repeat repeat = 3;
+    Rollback rollback = 4;
+  }
 }
 
 message Task {

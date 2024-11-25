@@ -24,10 +24,10 @@ spec:
       - name: gen-kube-nodes
         providerSpec:
           name: genesiscloud-1
-          region: ARC-IS-HAF-1
+          region: NORD-NO-KRS-1
         count: 1
-        serverType: vcpu-2_memory-4g_disk-80g
-        image: "Ubuntu 22.04"
+        serverType: vcpu-2_memory-4g
+        image: "Ubuntu 24.04"
         storageDiskSize: 50
 
       #-----------LB nodepools----------
@@ -38,7 +38,7 @@ spec:
           zone: europe-west1-c
         count: 1
         serverType: e2-small
-        image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
+        image: ubuntu-minimal-2404-noble-amd64-v20241116
         storageDiskSize: 50
 
   kubernetes:

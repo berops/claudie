@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/internal/utils"
@@ -12,9 +13,14 @@ import (
 	"github.com/berops/claudie/services/manager/internal/store"
 )
 
-// TaskTTL is the minimum number of ticks (every ~10sec) within which a given task must be completed
-// before being rescheduled again.
-const TaskTTL = 750 // ~2 hour
+const (
+	// TaskTTL is the minimum number of ticks (every ~10sec) within which a given task must be completed
+	// before being rescheduled again.
+	TaskTTL = 750 // ~2 hour
+
+	// Tick represents the interval at which each manifest state is checked.
+	Tick = 10 * time.Second
+)
 
 func (g *GRPC) WatchForScheduledDocuments(ctx context.Context) error {
 	cfgs, err := g.Store.ListConfigs(ctx, &store.ListFilter{ManifestState: []string{manifest.Scheduled.String()}})
@@ -106,7 +112,7 @@ func (g *GRPC) WatchForPendingDocuments(ctx context.Context) error {
 			continue
 		}
 
-		reschedule, err := scheduleTasks(pending)
+		result, err := scheduleTasks(pending)
 		if err != nil {
 			logger.Err(err).Msgf("Failed to create tasks, skipping.")
 			continue
@@ -118,11 +124,16 @@ func (g *GRPC) WatchForPendingDocuments(ctx context.Context) error {
 			continue
 		}
 
-		pending.Manifest.State = manifest.Scheduled.String()
-		if !reschedule {
-			pending.Manifest.LastAppliedChecksum = pending.Manifest.Checksum
-		} else {
+		switch result {
+		case NotReady:
+			logger.Info().Msgf("manifest is not ready to be scheduled, retrying again later")
+		case Reschedule:
+			pending.Manifest.State = manifest.Scheduled.String()
 			logger.Debug().Msgf("Scheduling for intermediate tasks after which the config will be rescheduled again")
+		case FinalRetry, NoReschedule:
+			logger.Debug().Msgf("Scheduling for tasks after which the config will not be rescheduled again")
+			pending.Manifest.State = manifest.Scheduled.String()
+			pending.Manifest.LastAppliedChecksum = pending.Manifest.Checksum
 		}
 
 		if err := g.Store.UpdateConfig(ctx, pending); err != nil {
@@ -134,7 +145,12 @@ func (g *GRPC) WatchForPendingDocuments(ctx context.Context) error {
 			continue
 		}
 
-		logger.Info().Msgf("Config has been successfully processed and moved to the %q state", manifest.Scheduled.String())
+		switch result {
+		case NotReady:
+			// do nothing.
+		case Reschedule, FinalRetry, NoReschedule:
+			logger.Info().Msgf("Config has been successfully processed and moved to the %q state", manifest.Scheduled.String())
+		}
 	}
 
 	return nil

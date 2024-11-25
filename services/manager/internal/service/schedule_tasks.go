@@ -9,7 +9,6 @@ import (
 
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
-	utils2 "github.com/berops/claudie/services/ansibler/server/utils"
 	"github.com/berops/claudie/services/manager/internal/store"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
@@ -18,13 +17,35 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func scheduleTasks(scheduled *store.Config) (bool, error) {
+// ScheduleResult describes what has happened during the
+// scheduling of the tasks.
+type ScheduleResult uint8
+
+const (
+	// NoReschedule describes the case where the manifest should not be rescheduled again
+	// after either error-ing or completing.
+	NoReschedule ScheduleResult = iota
+	// Reschedule describes the case where the manifest should be rescheduled again
+	// after either error-ing or completing.
+	Reschedule
+	// NotReady describes the case where the manifest is not ready to be scheduled yet,
+	// this is mostly related to the retry policies which can vary. For example if
+	// an exponential retry policy is used the manifest will not be ready to be scheduled
+	// until the specified number of Tick pass.
+	NotReady
+	// FinalRetry describes the case where a manifest had a retry policy to retry
+	// rescheduling the manifest N times before giving up. FinalRetry states that
+	// the manifest should be retried one last time before giving up.
+	FinalRetry
+)
+
+func scheduleTasks(scheduled *store.Config) (ScheduleResult, error) {
 	scheduledGRPC, err := store.ConvertToGRPC(scheduled)
 	if err != nil {
-		return false, fmt.Errorf("failed to convert database representation to GRPC for %q: %w", scheduled.Name, err)
+		return NotReady, fmt.Errorf("failed to convert database representation to GRPC for %q: %w", scheduled.Name, err)
 	}
 
-	var reschedule bool
+	var result ScheduleResult
 
 	for cluster, state := range scheduledGRPC.Clusters {
 		var events []*spec.TaskEvent
@@ -62,22 +83,51 @@ func scheduleTasks(scheduled *store.Config) (bool, error) {
 		// update
 		default:
 			if state.State.Status == spec.Workflow_ERROR {
-				if len(state.Events.Events) != 0 && state.Events.Events[0].OnError != nil {
-					reschedule = true
+				if tasks := state.Events.Events; len(tasks) != 0 && tasks[0].OnError.Do != nil {
+					task := tasks[0]
 
-					switch e := state.Events.Events[0]; {
-					case e.OnError.Repeat:
-						events = state.Events.Events
-						log.Debug().Str("cluster", cluster).Msgf("rescheduled for a retry of previously failed task with ID %q.", e.Id)
-					case len(e.OnError.Rollback) > 0:
-						events = e.OnError.Rollback
-						log.Debug().Str("cluster", cluster).Msgf("rescheduled for a rollback with task ID %q of previous failed task with ID %q.", e.OnError.Rollback[0].Id, e.Id)
+					switch s := task.OnError.Do.(type) {
+					case *spec.Retry_Repeat_:
+						events = tasks
+
+						if s.Repeat.Kind == spec.Retry_Repeat_EXPONENTIAL {
+							if s.Repeat.RetryAfter > 0 {
+								s.Repeat.RetryAfter--
+								result = NotReady
+								break
+							}
+
+							s.Repeat.CurrentTick <<= 1
+							if s.Repeat.CurrentTick >= s.Repeat.StopAfter {
+								// final retry before error-ing out.
+								result = FinalRetry
+								task.OnError.Do = nil
+								break
+							}
+
+							s.Repeat.RetryAfter = s.Repeat.CurrentTick
+						}
+
+						result = Reschedule
+						log.Debug().
+							Str("cluster", cluster).
+							Msgf("rescheduled for a retry of previously failed task with ID %q.", task.Id)
+					case *spec.Retry_Rollback_:
+						result = Reschedule
+						events = s.Rollback.Tasks
+
+						log.Debug().
+							Str("cluster", cluster).
+							Msgf("rescheduled for a rollback with task ID %q of previous failed task with ID %q.", events[0].Id, task.Id)
 					default:
-						log.Debug().Str("cluster", cluster).Msgf("has not been rescheduled for a retry on failure")
-						reschedule = false // no retry strategy on error.
+						result = NoReschedule
+
+						log.Debug().
+							Str("cluster", cluster).
+							Msgf("has not been rescheduled for a retry on failure")
 					}
 
-					if reschedule {
+					if result == Reschedule || result == NotReady || result == FinalRetry {
 						break
 					}
 				}
@@ -85,19 +135,21 @@ func scheduleTasks(scheduled *store.Config) (bool, error) {
 
 			ir, e, err := rollingUpdate(state.Current, state.Desired)
 			if err != nil {
-				return false, err
+				return NotReady, err
 			}
 
 			events = append(events, e...)
 			if len(events) != 0 {
-				log.Debug().Str("cluster", cluster).Msgf("[%d] rolling updates scheduled for k8s cluster, to be performed before building the actual desired state, starting with task with ID %q.", len(events), events[0].Id)
+				log.Debug().
+					Str("cluster", cluster).
+					Msgf("[%d] rolling updates scheduled for k8s cluster, to be performed before building the actual desired state, starting with task with ID %q.", len(events), events[0].Id)
 				// First we will let claudie to work on the rolling update
 				// to have the latest versions of the terraform manifests.
 				// After that the manifest will be rescheduled again
 				// to handle the diff between the new current state (with
 				// updated terraform files) and the desired state as specified
 				// in the Manifest.
-				reschedule = true
+				result = Reschedule
 				// We set the desired state to the intermediate desired state which is the same as the
 				// current state but with updated templates for k8s cluster. After this state is build
 				// by the builder the config will be rescheduled again to actually reflect the changes
@@ -108,13 +160,15 @@ func scheduleTasks(scheduled *store.Config) (bool, error) {
 
 			ir, e, err = rollingUpdateLBs(state.Current, state.Desired)
 			if err != nil {
-				return false, err
+				return NotReady, err
 			}
 
 			events = append(events, e...)
 			if len(events) > 0 {
-				log.Debug().Str("cluster", cluster).Msgf("[%d] rolling updates scheduled for attached lb clusters, to be performed before building the actual desired state, starting with task with ID %q.", len(events), events[0].Id)
-				reschedule = true
+				log.Debug().
+					Str("cluster", cluster).
+					Msgf("[%d] rolling updates scheduled for attached lb clusters, to be performed before building the actual desired state, starting with task with ID %q.", len(events), events[0].Id)
+				result = Reschedule
 				state.Desired = ir
 				break
 			}
@@ -126,20 +180,28 @@ func scheduleTasks(scheduled *store.Config) (bool, error) {
 				state.Desired.GetLoadBalancers().GetClusters(),
 			)...)
 
-			log.Debug().Str("cluster", cluster).Msgf("Scheduled final [%d] tasks to be worked on to build the desired state", len(events))
+			log.Debug().
+				Str("cluster", cluster).
+				Msgf("Scheduled final [%d] tasks to be worked on to build the desired state", len(events))
+		}
+
+		switch result {
+		case Reschedule, NoReschedule, FinalRetry:
+			// Events are going to be worked on, thus clear the Error state, if any.
+			state.State = &spec.Workflow{Stage: spec.Workflow_NONE, Status: spec.Workflow_DONE}
+		case NotReady:
 		}
 
 		state.Events = &spec.Events{Events: events}
-		state.State = &spec.Workflow{Stage: spec.Workflow_NONE, Status: spec.Workflow_DONE}
 	}
 
 	db, err := store.ConvertFromGRPC(scheduledGRPC)
 	if err != nil {
-		return false, fmt.Errorf("failed to convert GRPC representation to database for %q: %w", scheduled.Name, err)
+		return NotReady, fmt.Errorf("failed to convert GRPC representation to database for %q: %w", scheduled.Name, err)
 	}
 
 	*scheduled = *db
-	return reschedule, nil
+	return result, nil
 }
 
 // Diff takes the desired and current state to determine the difference and returns
@@ -281,7 +343,9 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 					Lbs: &spec.LoadBalancers{Clusters: irLbs},
 				},
 			},
-			OnError: &spec.RetryStrategy{Repeat: true},
+			OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
+				Kind: spec.Retry_Repeat_ENDLESS,
+			}}},
 		})
 	}
 
@@ -299,7 +363,9 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 					Node:     node,
 				}},
 			},
-			OnError: &spec.RetryStrategy{Repeat: true},
+			OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
+				Kind: spec.Retry_Repeat_ENDLESS,
+			}}},
 		})
 	}
 
@@ -350,9 +416,6 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 					}
 					return nil
 				}(),
-			},
-			OnError: &spec.RetryStrategy{
-				Repeat: ApiEndpointChanged(currentLbs, desiredLbs),
 			},
 		})
 	}
@@ -804,29 +867,6 @@ func labelsTaintsAnnotationsDiff(current, desired *spec.K8Scluster) bool {
 			if !reflect.DeepEqual(prev.Taints, np.Taints) {
 				return true
 			}
-		}
-	}
-	return false
-}
-
-func ApiEndpointChanged(current, desired []*spec.LBcluster) bool {
-	var lbs []*utils2.LBClusterData
-
-	c := make(map[string]*spec.LBcluster)
-	for _, l := range current {
-		c[l.ClusterInfo.Name] = l
-	}
-
-	for _, l := range desired {
-		lbs = append(lbs, &utils2.LBClusterData{
-			CurrentLbCluster: c[l.ClusterInfo.Name],
-			DesiredLbCluster: l,
-		})
-	}
-
-	for _, l := range lbs {
-		if l.APIEndpointState() != utils2.NoChange {
-			return true
 		}
 	}
 	return false
