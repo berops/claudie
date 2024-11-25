@@ -333,7 +333,6 @@ jobs:
           fi
 
       - name: Install terraform
-        if: (steps.determine-test-sets.skip_deploy == 'false')
         run: | 
           sudo apt-get update && sudo apt-get install -y wget
           wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
