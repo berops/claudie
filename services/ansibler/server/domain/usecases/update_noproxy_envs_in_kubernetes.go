@@ -43,10 +43,10 @@ func (u *Usecases) UpdateNoProxyEnvsInKubernetes(request *pb.UpdateNoProxyEnvsIn
 
 // updateNoProxyEnvsInKubernetes updates NO_PROXY and no_proxy envs in kube-proxy and static pods
 func updateNoProxyEnvsInKubernetes(currentK8sClusterInfo, desiredK8sClusterInfo *spec.ClusterInfo, proxyEnvs *spec.ProxyEnvs, processLimit *semaphore.Weighted) error {
-	clusterID := commonUtils.GetClusterID(currentK8sClusterInfo)
+	id := currentK8sClusterInfo.Id()
 
 	// This is the directory where files (Ansible inventory files, SSH keys etc.) will be generated.
-	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, commonUtils.CreateHash(commonUtils.HashLength)))
+	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", id, commonUtils.CreateHash(commonUtils.HashLength)))
 	if err := commonUtils.CreateDirectory(clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 	}
@@ -64,7 +64,7 @@ func updateNoProxyEnvsInKubernetes(currentK8sClusterInfo, desiredK8sClusterInfo 
 			Dynamic: commonUtils.GetCommonDynamicNodes(currentK8sClusterInfo.NodePools, desiredK8sClusterInfo.NodePools),
 			Static:  commonUtils.GetCommonStaticNodes(currentK8sClusterInfo.NodePools, desiredK8sClusterInfo.NodePools),
 		},
-		ClusterID:    clusterID,
+		ClusterID:    id,
 		NoProxyList:  proxyEnvs.NoProxyList,
 		HttpProxyUrl: proxyEnvs.HttpProxyUrl,
 	}); err != nil {
@@ -78,7 +78,7 @@ func updateNoProxyEnvsInKubernetes(currentK8sClusterInfo, desiredK8sClusterInfo 
 		SpawnProcessLimit: processLimit,
 	}
 
-	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("Update proxy envs - %s", clusterID)); err != nil {
+	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("Update proxy envs - %s", id)); err != nil {
 		return fmt.Errorf("error while running ansible to update proxy envs in %s : %w", clusterDirectory, err)
 	}
 

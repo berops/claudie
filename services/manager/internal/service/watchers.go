@@ -5,10 +5,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/berops/claudie/internal/loggerutils"
 	"time"
 
 	"github.com/berops/claudie/internal/manifest"
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/internal/store"
 )
@@ -29,7 +29,7 @@ func (g *GRPC) WatchForScheduledDocuments(ctx context.Context) error {
 	}
 
 	for _, scheduled := range cfgs {
-		logger := utils.CreateLoggerWithProjectName(scheduled.Name)
+		logger := loggerutils.WithProjectName(scheduled.Name)
 
 		// clusterDone counts the number of cluster for which no progress is currently being made.
 		var clustersDone int
@@ -104,7 +104,7 @@ func (g *GRPC) WatchForPendingDocuments(ctx context.Context) error {
 	}
 
 	for _, pending := range cfgs {
-		logger := utils.CreateLoggerWithProjectName(pending.Name)
+		logger := loggerutils.WithProjectName(pending.Name)
 		logger.Info().Msgf("Processing Pending Config")
 
 		if err := createDesiredState(pending); err != nil {
@@ -168,7 +168,7 @@ func (g *GRPC) WatchForDoneOrErrorDocuments(ctx context.Context) error {
 	}
 
 	for _, idle := range cfgs {
-		logger := utils.CreateLoggerWithProjectName(idle.Name)
+		logger := loggerutils.WithProjectName(idle.Name)
 
 		if !bytes.Equal(idle.Manifest.LastAppliedChecksum, idle.Manifest.Checksum) {
 			logger.Info().Msgf("Moving to %q as changes have been made to the manifest since the last build", manifest.Pending.String())

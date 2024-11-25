@@ -55,8 +55,8 @@ type ClusterBuilder struct {
 
 // CreateNodepools creates node pools for the cluster.
 func (c ClusterBuilder) CreateNodepools() error {
-	clusterID := utils.GetClusterID(c.DesiredClusterInfo)
-	clusterDir := filepath.Join(Output, clusterID)
+	id := c.DesiredClusterInfo.Id()
+	clusterDir := filepath.Join(Output, id)
 
 	defer func() {
 		// Clean after terraform
@@ -74,7 +74,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 		}
 	}
 
-	if err := c.generateFiles(clusterID, clusterDir); err != nil {
+	if err := c.generateFiles(id, clusterDir); err != nil {
 		return fmt.Errorf("failed to generate files: %w", err)
 	}
 
@@ -83,25 +83,25 @@ func (c ClusterBuilder) CreateNodepools() error {
 		SpawnProcessLimit: c.SpawnProcessLimit,
 	}
 
-	terraform.Stdout = comm.GetStdOut(clusterID)
-	terraform.Stderr = comm.GetStdErr(clusterID)
+	terraform.Stdout = comm.GetStdOut(id)
+	terraform.Stderr = comm.GetStdErr(id)
 
 	if err := terraform.Init(); err != nil {
-		return fmt.Errorf("error while running terraform init in %s : %w", clusterID, err)
+		return fmt.Errorf("error while running terraform init in %s : %w", id, err)
 	}
 
 	var currentState []string
 	if c.CurrentClusterInfo != nil {
 		var err error
 		if currentState, err = terraform.StateList(); err != nil {
-			return fmt.Errorf("error while running terraform state list in %s : %w", clusterID, err)
+			return fmt.Errorf("error while running terraform state list in %s : %w", id, err)
 		}
 	}
 
 	if err := terraform.Apply(); err != nil {
 		updatedState, errList := terraform.StateList()
 		if errList != nil {
-			return errors.Join(err, fmt.Errorf("%w: error while running terraform state list in %s : %w", err, clusterID, errList))
+			return errors.Join(err, fmt.Errorf("%w: error while running terraform state list in %s : %w", err, id, errList))
 		}
 
 		var toDelete []string
@@ -146,8 +146,8 @@ func (c ClusterBuilder) CreateNodepools() error {
 
 // DestroyNodepools destroys nodepools for the cluster.
 func (c ClusterBuilder) DestroyNodepools() error {
-	clusterID := utils.GetClusterID(c.CurrentClusterInfo)
-	clusterDir := filepath.Join(Output, clusterID)
+	id := c.CurrentClusterInfo.Id()
+	clusterDir := filepath.Join(Output, id)
 
 	defer func() {
 		if err := os.RemoveAll(clusterDir); err != nil {
@@ -164,7 +164,7 @@ func (c ClusterBuilder) DestroyNodepools() error {
 		}
 	}
 
-	if err := c.generateFiles(clusterID, clusterDir); err != nil {
+	if err := c.generateFiles(id, clusterDir); err != nil {
 		return fmt.Errorf("failed to generate files: %w", err)
 	}
 
@@ -173,15 +173,15 @@ func (c ClusterBuilder) DestroyNodepools() error {
 		SpawnProcessLimit: c.SpawnProcessLimit,
 	}
 
-	terraform.Stdout = comm.GetStdOut(clusterID)
-	terraform.Stderr = comm.GetStdErr(clusterID)
+	terraform.Stdout = comm.GetStdOut(id)
+	terraform.Stderr = comm.GetStdErr(id)
 
 	if err := terraform.Init(); err != nil {
-		return fmt.Errorf("error while running terraform init in %s : %w", clusterID, err)
+		return fmt.Errorf("error while running terraform init in %s : %w", id, err)
 	}
 
 	if err := terraform.Destroy(); err != nil {
-		return fmt.Errorf("error while running terraform apply in %s : %w", clusterID, err)
+		return fmt.Errorf("error while running terraform apply in %s : %w", id, err)
 	}
 
 	return nil

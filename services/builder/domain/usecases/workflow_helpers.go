@@ -3,6 +3,7 @@ package usecases
 import (
 	"errors"
 	"fmt"
+	"github.com/berops/claudie/internal/loggerutils"
 	"strings"
 
 	"github.com/berops/claudie/internal/utils"
@@ -160,7 +161,7 @@ func (u *Usecases) destroyCluster(ctx *builder.Context) error {
 }
 
 func (u *Usecases) updateTaskWithDescription(ctx *builder.Context, stage spec.Workflow_Stage, description string) {
-	logger := utils.CreateLoggerWithProjectName(ctx.ProjectName)
+	logger := loggerutils.WithProjectName(ctx.ProjectName)
 	ctx.Workflow.Stage = stage
 	ctx.Workflow.Description = strings.TrimSpace(description)
 

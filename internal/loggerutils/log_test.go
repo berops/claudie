@@ -1,6 +1,10 @@
-package utils
+package loggerutils
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/berops/claudie/internal/sanitise"
+)
 
 // TestSanitiseURI tests the SanitiseURI function.
 func TestSanitiseURI(t *testing.T) {
@@ -35,7 +39,7 @@ func TestSanitiseURI(t *testing.T) {
 		t.Run(tC.desc, func(t *testing.T) {
 			want := tC.out
 
-			if got := SanitiseURI(tC.in); got != want {
+			if got := sanitise.URI(tC.in); got != want {
 				t.Errorf("Unexpected output for %q: expected %q, actual %q",
 					tC.desc, want, got)
 			}
@@ -152,7 +156,7 @@ users:
 		t.Run(tC.desc, func(t *testing.T) {
 			want := tC.out
 
-			if got := SanitiseKubeconfig(tC.in); got != want {
+			if got := sanitise.Kubeconfig(tC.in); got != want {
 				t.Errorf("Unexpected output for %q: expected %q, actual %q",
 					tC.desc, want, got)
 			}

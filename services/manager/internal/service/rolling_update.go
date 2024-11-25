@@ -39,7 +39,7 @@ func rollingUpdate(current, desired *spec.Clusters) (*spec.Clusters, []*spec.Tas
 		usedNodePoolNames = make(map[string]struct{})
 		ir                = proto.Clone(current.K8S).(*spec.K8Scluster)
 		rollingUpdates    = proto.Clone(current.K8S).(*spec.K8Scluster)
-		k8sID             = utils.GetClusterID(ir.ClusterInfo)
+		k8sID             = ir.ClusterInfo.Id()
 	)
 
 	maps.Insert(usedNodePoolNames, maps.All(nodepoolNames(current.K8S.ClusterInfo.NodePools)))

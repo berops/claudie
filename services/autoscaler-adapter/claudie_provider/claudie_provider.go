@@ -78,7 +78,7 @@ func NewClaudieCloudProvider(ctx context.Context, projectName, clusterName strin
 		panic(fmt.Sprintf("Error while creating node manager : %v", err))
 	}
 	// Initialize all other variables.
-	log.Logger = log.Logger.With().Str("cluster", utils.GetClusterID(cluster.ClusterInfo)).Logger()
+	log.Logger = log.Logger.With().Str("cluster", cluster.ClusterInfo.Id()).Logger()
 	return &ClaudieCloudProvider{
 		projectName:       projectName,
 		configCluster:     cluster,

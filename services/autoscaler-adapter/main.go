@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/services/autoscaler-adapter/claudie_provider"
 	"github.com/rs/zerolog/log"
@@ -23,7 +24,8 @@ func main() {
 	if projectName == "" || clusterName == "" || port == "" {
 		log.Fatal().Msgf("Env vars PROJECT_NAME and CLUSTER_NAME and ADAPTER_PORT must be specified")
 	}
-	utils.InitLog(fmt.Sprintf("%s-%s", "autoscaler-adapter", clusterName))
+
+	loggerutils.Init(fmt.Sprintf("%s-%s", "autoscaler-adapter", clusterName))
 
 	server := utils.NewGRPCServer(
 		grpc.ChainUnaryInterceptor(utils.PeerInfoInterceptor(&log.Logger)),

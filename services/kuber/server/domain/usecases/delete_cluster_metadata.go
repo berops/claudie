@@ -7,7 +7,7 @@ import (
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/kubectl"
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb"
 )
 
@@ -19,8 +19,9 @@ func (u *Usecases) DeleteClusterMetadata(ctx context.Context, request *pb.Delete
 		// If kuber deployed locally, return.
 		return &pb.DeleteClusterMetadataResponse{}, nil
 	}
-	clusterID := utils.GetClusterID(request.Cluster.ClusterInfo)
-	logger := utils.CreateLoggerWithClusterName(clusterID)
+	id := request.Cluster.ClusterInfo.Id()
+
+	logger := loggerutils.WithClusterName(id)
 	var err error
 	// Log success/error message.
 	defer func() {
@@ -33,11 +34,10 @@ func (u *Usecases) DeleteClusterMetadata(ctx context.Context, request *pb.Delete
 
 	logger.Info().Msgf("Deleting cluster metadata secret")
 	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
-	prefix := utils.GetClusterID(request.Cluster.ClusterInfo)
-	kc.Stdout = comm.GetStdOut(prefix)
-	kc.Stderr = comm.GetStdErr(prefix)
+	kc.Stdout = comm.GetStdOut(id)
+	kc.Stderr = comm.GetStdErr(id)
 
 	// Save error and return as errors are ignored here.
-	err = kc.KubectlDeleteResource("secret", fmt.Sprintf("%s-metadata", clusterID), "-n", namespace)
+	err = kc.KubectlDeleteResource("secret", fmt.Sprintf("%s-metadata", id), "-n", namespace)
 	return &pb.DeleteClusterMetadataResponse{}, nil
 }

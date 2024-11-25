@@ -205,8 +205,8 @@ desired:
 			}
 
 			switch {
-			case transferDynamicNp(utils.GetClusterID(desired), currentNp, desiredNp, true):
-			case transferStaticNodes(utils.GetClusterID(desired), currentNp, desiredNp):
+			case transferDynamicNp(desired.Id(), currentNp, desiredNp, true):
+			case transferStaticNodes(desired.Id(), currentNp, desiredNp):
 			default:
 				return fmt.Errorf("%q is neither dynamic nor static, unexpected value: %T", desiredNp.Name, desiredNp.Type)
 			}

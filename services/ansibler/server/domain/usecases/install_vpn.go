@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/berops/claudie/internal/cluster"
 	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -43,7 +44,7 @@ func (u *Usecases) InstallVPN(request *pb.InstallRequest) (*pb.InstallResponse, 
 					Dynamic: commonUtils.GetCommonDynamicNodePools(request.Desired.ClusterInfo.NodePools),
 					Static:  commonUtils.GetCommonStaticNodePools(request.Desired.ClusterInfo.NodePools),
 				},
-				ClusterID:      commonUtils.GetClusterID(request.Desired.ClusterInfo),
+				ClusterID:      cluster.Id(request.Desired.ClusterInfo),
 				ClusterNetwork: request.Desired.Network,
 			},
 		},
@@ -56,13 +57,13 @@ func (u *Usecases) InstallVPN(request *pb.InstallRequest) (*pb.InstallResponse, 
 					Dynamic: commonUtils.GetCommonDynamicNodePools(lbCluster.ClusterInfo.NodePools),
 					Static:  commonUtils.GetCommonStaticNodePools(lbCluster.ClusterInfo.NodePools),
 				},
-				ClusterID:      commonUtils.GetClusterID(lbCluster.ClusterInfo),
+				ClusterID:      cluster.Id(lbCluster.ClusterInfo),
 				ClusterNetwork: request.Desired.Network,
 			},
 		)
 	}
 
-	if err := installWireguardVPN(commonUtils.GetClusterID(request.Desired.ClusterInfo), vpnInfo, u.SpawnProcessLimit); err != nil {
+	if err := installWireguardVPN(cluster.Id(request.Desired.ClusterInfo), vpnInfo, u.SpawnProcessLimit); err != nil {
 		logger.Err(err).Msgf("Error encountered while installing VPN")
 		return nil, fmt.Errorf("error encountered while installing VPN for cluster %s project %s : %w", request.Desired.ClusterInfo.Name, request.ProjectName, err)
 	}

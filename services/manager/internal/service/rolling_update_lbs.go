@@ -37,11 +37,11 @@ func rollingUpdateLB(current, desired *spec.Clusters, position int) (*spec.Clust
 		usedNodePoolNames = make(map[string]struct{})
 		ir                = proto.Clone(current.LoadBalancers).(*spec.LoadBalancers)
 		rollingUpdates    = proto.Clone(current.LoadBalancers).(*spec.LoadBalancers)
-		lbID              = utils.GetClusterID(ir.Clusters[position].ClusterInfo)
+		lbID              = ir.Clusters[position].ClusterInfo.Id()
 	)
 
 	indexDesired := slices.IndexFunc(desired.GetLoadBalancers().GetClusters(), func(d *spec.LBcluster) bool {
-		return utils.GetClusterID(d.ClusterInfo) == lbID
+		return d.ClusterInfo.Id() == lbID
 	})
 
 	// names are unique within a single cluster.

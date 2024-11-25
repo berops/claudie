@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/internal/utils/metrics"
 	"github.com/berops/claudie/services/kube-eleven/server/adapters/inbound/grpc"
@@ -29,7 +30,7 @@ const (
 
 func main() {
 	// Initialize logger
-	utils.InitLog("kube-eleven")
+	loggerutils.Init("kube-eleven")
 
 	usecases := &usecases.Usecases{
 		SpawnProcessLimit: semaphore.NewWeighted(usecases.SpawnProcessLimit),

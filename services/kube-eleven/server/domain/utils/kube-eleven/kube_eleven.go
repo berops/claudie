@@ -8,7 +8,6 @@ import (
 
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
-	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/kube-eleven/server/domain/utils/kubeone"
 	"github.com/berops/claudie/services/kube-eleven/templates"
@@ -47,9 +46,9 @@ type KubeEleven struct {
 // BuildCluster is responsible for managing the given K8sCluster along with the attached LBClusters
 // using Kubeone.
 func (k *KubeEleven) BuildCluster() error {
-	clusterID := commonUtils.GetClusterID(k.K8sCluster.ClusterInfo)
+	id := k.K8sCluster.ClusterInfo.Id()
 
-	k.outputDirectory = filepath.Join(baseDirectory, outputDirectory, clusterID)
+	k.outputDirectory = filepath.Join(baseDirectory, outputDirectory, id)
 	// Generate files which will be needed by Kubeone.
 	err := k.generateFiles()
 	if err != nil {
@@ -61,7 +60,7 @@ func (k *KubeEleven) BuildCluster() error {
 		ConfigDirectory:   k.outputDirectory,
 		SpawnProcessLimit: k.SpawnProcessLimit,
 	}
-	err = kubeone.Apply(clusterID)
+	err = kubeone.Apply(id)
 	if err != nil {
 		return fmt.Errorf("error while running \"kubeone apply\" in %s : %w", k.outputDirectory, err)
 	}
@@ -87,9 +86,9 @@ func (k *KubeEleven) BuildCluster() error {
 }
 
 func (k *KubeEleven) DestroyCluster() error {
-	clusterID := commonUtils.GetClusterID(k.K8sCluster.ClusterInfo)
+	id := k.K8sCluster.ClusterInfo.Id()
 
-	k.outputDirectory = filepath.Join(baseDirectory, outputDirectory, clusterID)
+	k.outputDirectory = filepath.Join(baseDirectory, outputDirectory, id)
 
 	if err := k.generateFiles(); err != nil {
 		return fmt.Errorf("error while generating files for %s: %w", k.K8sCluster.ClusterInfo.Name, err)
@@ -102,7 +101,7 @@ func (k *KubeEleven) DestroyCluster() error {
 
 	// Destroying the cluster might fail when deleting the binaries, if its called subsequently,
 	// thus ignore the error.
-	if err := kubeone.Reset(clusterID); err != nil {
+	if err := kubeone.Reset(id); err != nil {
 		log.Warn().Msgf("failed to destroy cluster and remove binaries: %s, assuming they were deleted", err)
 	}
 

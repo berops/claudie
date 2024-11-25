@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
 	builder "github.com/berops/claudie/services/builder/internal"
@@ -18,7 +18,7 @@ var (
 
 // reconcileInfrastructure reconciles the desired infrastructure via terraformer.
 func (u *Usecases) reconcileInfrastructure(ctx *builder.Context) error {
-	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
+	logger := loggerutils.WithProjectAndCluster(ctx.ProjectName, ctx.Id())
 
 	// Set workflow state.
 	description := ctx.Workflow.Description
@@ -48,7 +48,7 @@ func (u *Usecases) reconcileInfrastructure(ctx *builder.Context) error {
 
 // destroyInfrastructure destroys the current infrastructure via terraformer.
 func (u *Usecases) destroyInfrastructure(ctx *builder.Context) error {
-	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
+	logger := loggerutils.WithProjectAndCluster(ctx.ProjectName, ctx.Id())
 
 	// Set workflow state.
 	description := ctx.Workflow.Description

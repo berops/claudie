@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"fmt"
+	"github.com/berops/claudie/internal/loggerutils"
 	"os"
 	"path/filepath"
 
@@ -26,7 +27,7 @@ const (
 )
 
 func (u *Usecases) SetUpLoadbalancers(request *pb.SetUpLBRequest) (*pb.SetUpLBResponse, error) {
-	logger := commonUtils.CreateLoggerWithProjectAndClusterName(request.ProjectName, commonUtils.GetClusterID(request.Desired.ClusterInfo))
+	logger := loggerutils.WithProjectAndCluster(request.ProjectName, request.Desired.ClusterInfo.Id())
 	logger.Info().Msgf("Setting up the loadbalancers")
 
 	currentLBClusters := make(map[string]*spec.LBcluster)
@@ -38,7 +39,7 @@ func (u *Usecases) SetUpLoadbalancers(request *pb.SetUpLBRequest) (*pb.SetUpLBRe
 		FirstRun:              request.FirstRun,
 		TargetK8sNodepool:     request.Desired.ClusterInfo.NodePools,
 		PreviousAPIEndpointLB: request.PreviousAPIEndpoint,
-		ClusterID:             commonUtils.GetClusterID(request.Desired.ClusterInfo),
+		ClusterID:             request.Desired.ClusterInfo.Id(),
 	}
 	for _, lbCluster := range request.DesiredLbs {
 		lbClustersInfo.LbClusters = append(lbClustersInfo.LbClusters, &utils.LBClusterData{
@@ -70,7 +71,7 @@ func setUpLoadbalancers(desiredK8sCluster *spec.K8Scluster, lbClustersInfo *util
 		func(_ int, lbCluster *utils.LBClusterData) error {
 			var (
 				loggerPrefix = "LB-cluster"
-				lbClusterId  = commonUtils.GetClusterID(lbCluster.DesiredLbCluster.ClusterInfo)
+				lbClusterId  = lbCluster.DesiredLbCluster.ClusterInfo.Id()
 			)
 
 			logger.Info().Str(loggerPrefix, lbClusterId).Msg("Setting up the loadbalancer cluster")

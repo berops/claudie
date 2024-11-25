@@ -3,7 +3,7 @@ package usecases
 import (
 	"fmt"
 
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb/spec"
 	builder "github.com/berops/claudie/services/builder/internal"
 )
@@ -27,7 +27,7 @@ func (u *Usecases) removeClaudieUtilities(ctx *builder.Context) error {
 
 // configureInfrastructure configures infrastructure via ansibler.
 func (u *Usecases) configureInfrastructure(ctx *builder.Context) error {
-	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
+	logger := loggerutils.WithProjectAndCluster(ctx.ProjectName, ctx.Id())
 	ansClient := u.Ansibler.GetClient()
 
 	description := ctx.Workflow.Description

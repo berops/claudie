@@ -7,7 +7,6 @@ import (
 	"slices"
 
 	"github.com/berops/claudie/internal/manifest"
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/internal/store"
@@ -47,7 +46,7 @@ func (g *GRPC) NextTask(ctx context.Context, _ *pb.NextTaskRequest) (*pb.NextTas
 	cluster.Events.Ttl = TaskTTL
 
 	if cluster.Current != nil {
-		log.Debug().Str("cluster", utils.GetClusterID(cluster.Current.K8S.ClusterInfo)).Msgf("transferring existing state into %s task %q", outgoingTask.Event.String(), outgoingTask.Id)
+		log.Debug().Str("cluster", cluster.Current.K8S.ClusterInfo.Id()).Msgf("transferring existing state into %s task %q", outgoingTask.Event.String(), outgoingTask.Id)
 		if err := transferExistingData(cluster, outgoingTask); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to re-use data from current state for desired state for config %q cluster %q: %v", grpcCfg.Name, clusterName, err)
 		}
@@ -126,7 +125,7 @@ func transferExistingData(state *spec.ClusterState, te *spec.TaskEvent) error {
 				}
 
 				dnp := state.Desired.K8S.ClusterInfo.NodePools[di]
-				transferDynamicNp(utils.GetClusterID(state.Desired.K8S.ClusterInfo), cnp, dnp, false)
+				transferDynamicNp(state.Desired.K8S.ClusterInfo.Id(), cnp, dnp, false)
 			}
 			return nil
 		} else {

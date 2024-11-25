@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/berops/claudie/internal/loggerutils"
 	"os"
 	"path/filepath"
 
@@ -49,7 +50,7 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 
 	// Concurrently destroy the infrastructure, Terraform state and state-lock files for each cluster
 	err := utils.ConcurrentExec(clusters, func(_ int, cluster Cluster) error {
-		logger := utils.CreateLoggerWithProjectAndClusterName(request.ProjectName, cluster.Id())
+		logger := loggerutils.WithProjectAndCluster(request.ProjectName, cluster.Id())
 		err := u.StateStorage.Stat(ctx, request.ProjectName, cluster.Id(), keyFormatStateFile)
 		if err != nil {
 			if errors.Is(err, outboundAdapters.ErrKeyNotExists) {

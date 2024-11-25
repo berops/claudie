@@ -3,14 +3,14 @@ package usecases
 import (
 	"fmt"
 
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb"
 	kube_eleven "github.com/berops/claudie/services/kube-eleven/server/domain/utils/kube-eleven"
 )
 
 // BuildCluster builds all cluster defined in the desired state
 func (u *Usecases) BuildCluster(req *pb.BuildClusterRequest) (*pb.BuildClusterResponse, error) {
-	logger := utils.CreateLoggerWithProjectAndClusterName(req.ProjectName, utils.GetClusterID(req.Desired.ClusterInfo))
+	logger := loggerutils.WithProjectAndCluster(req.ProjectName, req.Desired.ClusterInfo.Id())
 
 	logger.Info().Msgf("Building kubernetes cluster")
 

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/berops/claudie/internal/healthcheck"
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/internal/worker"
 	"github.com/berops/claudie/services/builder/adapters/outbound"
@@ -31,7 +32,7 @@ const (
 )
 
 func main() {
-	utils.InitLog("builder")
+	loggerutils.Init("builder")
 
 	// Init connections.
 	manager, err := managerclient.New(&log.Logger)

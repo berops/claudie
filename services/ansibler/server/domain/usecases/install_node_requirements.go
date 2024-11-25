@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"fmt"
+	"github.com/berops/claudie/internal/cluster"
 	"os"
 	"path/filepath"
 
@@ -27,7 +28,7 @@ func (u *Usecases) InstallNodeRequirements(request *pb.InstallRequest) (*pb.Inst
 			Dynamic: commonUtils.GetCommonDynamicNodePools(request.Desired.ClusterInfo.NodePools),
 			Static:  commonUtils.GetCommonStaticNodePools(request.Desired.ClusterInfo.NodePools),
 		},
-		ClusterID:      commonUtils.GetClusterID(request.Desired.ClusterInfo),
+		ClusterID:      cluster.Id(request.Desired.ClusterInfo),
 		ClusterNetwork: request.Desired.Network,
 	}
 

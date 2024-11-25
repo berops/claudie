@@ -120,7 +120,7 @@ func createK8sClustersFromManifest(from *manifest.Manifest, into *store.Config) 
 
 		clusterBytes, err := proto.Marshal(newCluster)
 		if err != nil {
-			return fmt.Errorf("failed to marshal k8s cluster %q: %w", utils.GetClusterID(newCluster.GetClusterInfo()), err)
+			return fmt.Errorf("failed to marshal k8s cluster %q: %w", newCluster.GetClusterInfo().Id(), err)
 		}
 
 		// It is guaranteed by validation, that within a single InputManifest no two clusters (including LB)
@@ -302,7 +302,7 @@ func generateSSHKeyPair() (string, string, error) {
 }
 
 func fillMissingDynamicNodes(c *spec.Clusters) {
-	k8sID := utils.GetClusterID(c.GetK8S().GetClusterInfo())
+	k8sID := c.GetK8S().GetClusterInfo().Id()
 
 	for _, np := range c.GetK8S().GetClusterInfo().GetNodePools() {
 		if np.GetDynamicNodePool() == nil {
@@ -318,7 +318,7 @@ func fillMissingDynamicNodes(c *spec.Clusters) {
 	}
 
 	for _, lb := range c.GetLoadBalancers().GetClusters() {
-		lbID := utils.GetClusterID(lb.ClusterInfo)
+		lbID := lb.ClusterInfo.Id()
 		for _, np := range lb.GetClusterInfo().GetNodePools() {
 			if np.GetDynamicNodePool() == nil {
 				continue

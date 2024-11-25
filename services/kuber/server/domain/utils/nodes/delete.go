@@ -8,6 +8,7 @@ import (
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/rs/zerolog"
@@ -36,23 +37,23 @@ type Deleter struct {
 // masterNodes - master nodes to DELETE
 // workerNodes - worker nodes to DELETE
 func NewDeleter(masterNodes, workerNodes []string, cluster *spec.K8Scluster) *Deleter {
-	prefix := utils.GetClusterID(cluster.ClusterInfo)
+	id := cluster.ClusterInfo.Id()
 
 	for i := range masterNodes {
-		masterNodes[i] = strings.TrimPrefix(masterNodes[i], fmt.Sprintf("%s-", prefix))
+		masterNodes[i] = strings.TrimPrefix(masterNodes[i], fmt.Sprintf("%s-", id))
 	}
 
 	for i := range workerNodes {
-		workerNodes[i] = strings.TrimPrefix(workerNodes[i], fmt.Sprintf("%s-", prefix))
+		workerNodes[i] = strings.TrimPrefix(workerNodes[i], fmt.Sprintf("%s-", id))
 	}
 
 	return &Deleter{
 		masterNodes:   masterNodes,
 		workerNodes:   workerNodes,
 		cluster:       cluster,
-		clusterPrefix: prefix,
+		clusterPrefix: id,
 
-		logger: utils.CreateLoggerWithClusterName(prefix),
+		logger: loggerutils.WithClusterName(id),
 	}
 }
 

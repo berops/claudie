@@ -73,9 +73,8 @@ func (sc *ScrapeConfig) GenerateAndApplyScrapeConfig() error {
 
 	// Apply namespace and secret to the cluster
 	k := kubectl.Kubectl{Kubeconfig: sc.Cluster.Kubeconfig, Directory: sc.Directory}
-	prefix := utils.GetClusterID(sc.Cluster.ClusterInfo)
-	k.Stdout = comm.GetStdOut(prefix)
-	k.Stderr = comm.GetStdErr(prefix)
+	k.Stdout = comm.GetStdOut(sc.Cluster.ClusterInfo.Id())
+	k.Stderr = comm.GetStdErr(sc.Cluster.ClusterInfo.Id())
 
 	if err = k.KubectlApply(scManifestFile); err != nil {
 		return fmt.Errorf("error while applying %s on %s: %w", scManifestFile, sc.Cluster.ClusterInfo.Name, err)
@@ -87,9 +86,8 @@ func (sc *ScrapeConfig) GenerateAndApplyScrapeConfig() error {
 // RemoveIfNoLBScrapeConfig will remove the LB scrape-config.yml
 func (sc *ScrapeConfig) RemoveLBScrapeConfig() error {
 	k := kubectl.Kubectl{Kubeconfig: sc.Cluster.Kubeconfig, MaxKubectlRetries: 3}
-	prefix := utils.GetClusterID(sc.Cluster.ClusterInfo)
-	k.Stdout = comm.GetStdOut(prefix)
-	k.Stderr = comm.GetStdErr(prefix)
+	k.Stdout = comm.GetStdOut(sc.Cluster.ClusterInfo.Id())
+	k.Stderr = comm.GetStdErr(sc.Cluster.ClusterInfo.Id())
 
 	if err := k.KubectlDeleteResource("secret", "loadbalancers-scrape-config", "-n", scrapeConfigNamespace); err != nil {
 		return fmt.Errorf("error while removing LB scrape-config on %s: %w", sc.Cluster.ClusterInfo.Name, err)

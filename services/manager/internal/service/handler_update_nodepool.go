@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/berops/claudie/internal/manifest"
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/internal/store"
@@ -92,7 +91,7 @@ func (g *GRPC) UpdateNodePool(ctx context.Context, request *pb.UpdateNodePoolReq
 	di := slices.IndexFunc(dnp, func(p *spec.NodePool) bool { return p.Name == request.Nodepool.Name })
 
 	diffResult := nodeDiff(
-		fmt.Sprintf("%s-%s", utils.GetClusterID(cluster.Current.K8S.ClusterInfo), request.Nodepool.Name),
+		fmt.Sprintf("%s-%s", cluster.Current.K8S.ClusterInfo.Id(), request.Nodepool.Name),
 		cnp[ci],
 		request.Nodepool,
 	)

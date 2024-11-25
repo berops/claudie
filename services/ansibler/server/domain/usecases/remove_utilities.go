@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/berops/claudie/internal/loggerutils"
 	cutils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/ansibler/server/utils"
@@ -15,7 +16,7 @@ import (
 )
 
 func (u *Usecases) RemoveUtilities(req *pb.RemoveClaudieUtilitiesRequest) (*pb.RemoveClaudieUtilitiesResponse, error) {
-	logger := cutils.CreateLoggerWithProjectAndClusterName(req.ProjectName, req.Current.ClusterInfo.Name)
+	logger := loggerutils.WithProjectAndCluster(req.ProjectName, req.Current.ClusterInfo.Id())
 	logger.Info().Msgf("Removing Claudie installed utilities")
 
 	vpnInfo := &VPNInfo{
@@ -26,7 +27,7 @@ func (u *Usecases) RemoveUtilities(req *pb.RemoveClaudieUtilitiesRequest) (*pb.R
 					Dynamic: cutils.GetCommonDynamicNodePools(req.Current.ClusterInfo.NodePools),
 					Static:  cutils.GetCommonStaticNodePools(req.Current.ClusterInfo.NodePools),
 				},
-				ClusterID:      cutils.GetClusterID(req.Current.ClusterInfo),
+				ClusterID:      req.Current.ClusterInfo.Id(),
 				ClusterNetwork: req.Current.Network,
 			},
 		},
@@ -38,12 +39,12 @@ func (u *Usecases) RemoveUtilities(req *pb.RemoveClaudieUtilitiesRequest) (*pb.R
 				Dynamic: cutils.GetCommonDynamicNodePools(lbCluster.ClusterInfo.NodePools),
 				Static:  cutils.GetCommonStaticNodePools(lbCluster.ClusterInfo.NodePools),
 			},
-			ClusterID:      cutils.GetClusterID(lbCluster.ClusterInfo),
+			ClusterID:      lbCluster.ClusterInfo.Id(),
 			ClusterNetwork: req.Current.Network,
 		})
 	}
 
-	if err := removeUtilities(cutils.GetClusterID(req.Current.ClusterInfo), vpnInfo, u.SpawnProcessLimit); err != nil {
+	if err := removeUtilities(req.Current.ClusterInfo.Id(), vpnInfo, u.SpawnProcessLimit); err != nil {
 		return nil, fmt.Errorf("failed to remove wiregaurd from nodes: %w", err)
 	}
 

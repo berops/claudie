@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/berops/claudie/internal/sanitise"
 	"time"
 
 	"github.com/berops/claudie/internal/checksum"
 	"github.com/berops/claudie/internal/manifest"
-	"github.com/berops/claudie/internal/utils"
 	"github.com/rs/zerolog/log"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -35,7 +35,7 @@ func NewMongoClient(ctx context.Context, uri string) (*Mongo, error) {
 	opts := options.Client().ApplyURI(uri)
 	conn, err := mongo.Connect(ctx, opts)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to %q: %w", utils.SanitiseURI(uri), err)
+		return nil, fmt.Errorf("failed to connect to %q: %w", sanitise.URI(uri), err)
 	}
 	return &Mongo{conn: conn}, nil
 }

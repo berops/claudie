@@ -13,6 +13,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
 
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/internal/utils/metrics"
 	"github.com/berops/claudie/services/ansibler/server/adapters/inbound/grpc"
@@ -29,7 +30,7 @@ const (
 
 func main() {
 	// Initialize logger
-	utils.InitLog("ansibler")
+	loggerutils.Init("ansibler")
 
 	grpcAdapter := grpc.CreateGrpcAdapter(
 		&usecases.Usecases{

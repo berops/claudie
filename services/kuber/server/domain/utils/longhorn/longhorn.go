@@ -45,9 +45,8 @@ const (
 func (l *Longhorn) SetUp() error {
 	kubectl := kubectl.Kubectl{Kubeconfig: l.Cluster.GetKubeconfig(), MaxKubectlRetries: 3}
 	// apply longhorn.yaml and settings
-	prefix := utils.GetClusterID(l.Cluster.ClusterInfo)
-	kubectl.Stdout = comm.GetStdOut(prefix)
-	kubectl.Stderr = comm.GetStdErr(prefix)
+	kubectl.Stdout = comm.GetStdOut(l.Cluster.ClusterInfo.Id())
+	kubectl.Stderr = comm.GetStdErr(l.Cluster.ClusterInfo.Id())
 
 	// Apply longhorn manifests after nodes are annotated.
 	if err := l.applyManifests(kubectl); err != nil {
@@ -101,11 +100,11 @@ func (l *Longhorn) SetUp() error {
 			if !np.IsControl {
 				isWorkerNodeProvider = true
 				for _, node := range np.GetNodes() {
-					nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", utils.GetClusterID(l.Cluster.ClusterInfo)))
+					nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", l.Cluster.ClusterInfo.Id()))
 					annotation := fmt.Sprintf("node.longhorn.io/default-node-tags='[\"%s\"]'", zoneName)
 					realNodeName := utils.FindName(realNodeNames, nodeName)
 					if realNodeName == "" {
-						log.Warn().Str("cluster", utils.GetClusterID(l.Cluster.ClusterInfo)).Msgf("Node %s was not found in cluster %v", nodeName, realNodeNames)
+						log.Warn().Str("cluster", l.Cluster.ClusterInfo.Id()).Msgf("Node %s was not found in cluster %v", nodeName, realNodeNames)
 						continue
 					}
 					// Add tag to the node via kubectl annotate, use --overwrite to avoid getting error of already tagged node

@@ -16,6 +16,7 @@ import (
 	grpc2 "google.golang.org/grpc"
 	"google.golang.org/grpc/health/grpc_health_v1"
 
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/internal/utils/metrics"
 	"github.com/berops/claudie/services/terraformer/server/adapters/inbound/grpc"
@@ -31,7 +32,7 @@ const (
 
 func main() {
 	// Initialize logger
-	utils.InitLog("terraformer")
+	loggerutils.Init("terraformer")
 
 	dynamoDBAdapter := outboundAdapters.CreateDynamoDBAdapter()
 	stateAdapter := outboundAdapters.CreateS3Adapter()

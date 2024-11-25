@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/berops/claudie/internal/loggerutils"
 	"net/http"
 	"os"
 	"os/signal"
@@ -27,8 +28,7 @@ const (
 )
 
 func main() {
-	// Initialize logger
-	utils.InitLog("kuber")
+	loggerutils.Init("kuber")
 
 	usecases := &usecases.Usecases{}
 	grpcAdapter := grpc.GrpcAdapter{}

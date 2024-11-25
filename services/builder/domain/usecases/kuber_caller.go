@@ -3,6 +3,7 @@ package usecases
 import (
 	"fmt"
 
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	builder "github.com/berops/claudie/services/builder/internal"
@@ -11,7 +12,7 @@ import (
 
 // reconcileK8sConfiguration reconciles desired k8s cluster configuration via kuber.
 func (u *Usecases) reconcileK8sConfiguration(ctx *builder.Context) error {
-	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
+	logger := loggerutils.WithProjectAndCluster(ctx.ProjectName, ctx.Id())
 	kuberClient := u.Kuber.GetClient()
 
 	// Set workflow state.
@@ -107,7 +108,7 @@ func (u *Usecases) reconcileK8sConfiguration(ctx *builder.Context) error {
 
 // callPatchClusterInfoConfigMap patches cluster-info ConfigMap via kuber.
 func (u *Usecases) callPatchClusterInfoConfigMap(ctx *builder.Context) error {
-	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
+	logger := loggerutils.WithProjectAndCluster(ctx.ProjectName, ctx.Id())
 
 	description := ctx.Workflow.Description
 
@@ -130,7 +131,7 @@ func (u *Usecases) deleteClusterData(ctx *builder.Context) error {
 	}
 	description := ctx.Workflow.Description
 	kuberClient := u.Kuber.GetClient()
-	logger := utils.CreateLoggerWithProjectAndClusterName(ctx.ProjectName, ctx.GetClusterID())
+	logger := loggerutils.WithProjectAndCluster(ctx.ProjectName, ctx.Id())
 
 	u.updateTaskWithDescription(ctx, spec.Workflow_DESTROY_KUBER, fmt.Sprintf("%s deleting kubeconfig secret", description))
 
@@ -162,7 +163,7 @@ func (u *Usecases) deleteClusterData(ctx *builder.Context) error {
 
 // callDeleteNodes calls Kuber.DeleteNodes which will gracefully delete nodes from cluster
 func (u *Usecases) callDeleteNodes(master, worker []string, cluster *spec.K8Scluster) (*spec.K8Scluster, error) {
-	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(cluster.ClusterInfo))
+	logger := loggerutils.WithClusterName(cluster.ClusterInfo.Id())
 
 	logger.Info().Msg("Calling DeleteNodes on Kuber")
 	resDelete, err := u.Kuber.DeleteNodes(cluster, master, worker, u.Kuber.GetClient())

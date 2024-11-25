@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/internal/utils/metrics"
 	"github.com/berops/claudie/internal/worker"
@@ -25,7 +26,7 @@ import (
 const defaultPrometheusPort = 9090
 
 func main() {
-	utils.InitLog("manager")
+	loggerutils.Init("manager")
 	if err := run(); err != nil {
 		log.Fatal().Msgf("manager service finished with: %s", err)
 	}

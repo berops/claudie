@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/berops/claudie/internal/envs"
-	cutils "github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/kuber/server/domain/utils"
 	"github.com/berops/claudie/services/kuber/server/domain/utils/secret"
@@ -18,7 +18,8 @@ import (
 // StoreClusterMetadata constructs ClusterMetadata for the given K8s cluster, creates a Kubernetes
 // secret out of that and stores that secret in the Claudie management cluster.
 func (u *Usecases) StoreClusterMetadata(ctx context.Context, request *pb.StoreClusterMetadataRequest) (*pb.StoreClusterMetadataResponse, error) {
-	logger := cutils.CreateLoggerWithClusterName(cutils.GetClusterID(request.Cluster.ClusterInfo))
+	id := request.Cluster.ClusterInfo.Id()
+	logger := loggerutils.WithClusterName(id)
 
 	dp := make(map[string]DynamicNodepool)
 	sp := make(map[string]StaticNodepool)
@@ -96,8 +97,7 @@ func (u *Usecases) StoreClusterMetadata(ctx context.Context, request *pb.StoreCl
 	}
 	logger.Info().Msgf("Storing cluster metadata")
 
-	clusterID := cutils.GetClusterID(request.GetCluster().ClusterInfo)
-	clusterDir := filepath.Join(outputDir, clusterID)
+	clusterDir := filepath.Join(outputDir, id)
 	sec := secret.New(clusterDir, secret.NewYaml(
 		utils.GetSecretMetadata(request.Cluster.ClusterInfo, request.ProjectName, utils.MetadataSecret),
 		map[string]string{"metadata": base64.StdEncoding.EncodeToString(b)},

@@ -23,6 +23,7 @@ import (
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/berops/claudie/internal/healthcheck"
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/services/claudie-operator/pkg/controller"
 	"github.com/berops/claudie/services/claudie-operator/server/adapters/inbound/grpc"
@@ -60,7 +61,7 @@ func main() {
 	webhookPath = utils.GetEnvDefault("WEBHOOK_PATH", "/validate-manifest")
 	namespaceSelector = utils.GetEnvDefault("CLAUDIE_NAMESPACES", cache.AllNamespaces)
 	watchedNamespaces = utils.GetWatchNamespaceList(namespaceSelector)
-	utils.InitLog("claudie-operator")
+	loggerutils.Init("claudie-operator")
 
 	if err := run(); err != nil {
 		log.Fatal().Msg(err.Error())
