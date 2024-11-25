@@ -324,12 +324,13 @@ jobs:
             fi
           done
           
-          echo "selected sets: $selected"
           
           if [ ${#array[@]} -eq 0 ]; then
-              echo "skip_deploy=true" >> $GITHUB_OUTPUT
+            echo "skipping e2e tests"
+            echo "skip_deploy=true" >> $GITHUB_OUTPUT
           else
-              echo "skip_deploy=false" >> $GITHUB_OUTPUT
+            echo "selected sets: $selected"
+            echo "skip_deploy=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Install terraform
