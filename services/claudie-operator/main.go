@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -60,7 +61,7 @@ func main() {
 	certDir = utils.GetEnvDefault("WEBHOOK_CERT_DIR", "./tls")
 	webhookPath = utils.GetEnvDefault("WEBHOOK_PATH", "/validate-manifest")
 	namespaceSelector = utils.GetEnvDefault("CLAUDIE_NAMESPACES", cache.AllNamespaces)
-	watchedNamespaces = utils.GetWatchNamespaceList(namespaceSelector)
+	watchedNamespaces = strings.Split(namespaceSelector, ",")
 	loggerutils.Init("claudie-operator")
 
 	if err := run(); err != nil {

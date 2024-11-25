@@ -3,7 +3,6 @@ package usecases
 import (
 	"fmt"
 
-	"github.com/berops/claudie/internal/cluster"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb"
@@ -20,7 +19,7 @@ import (
 // PatchClusterInfoConfigMap updates that kubeconfig so that it represents the already reached
 // desired state of the cluster.
 func (u *Usecases) PatchClusterInfoConfigMap(request *pb.PatchClusterInfoConfigMapRequest) (*pb.PatchClusterInfoConfigMapResponse, error) {
-	logger := loggerutils.WithClusterName(cluster.Id(request.DesiredCluster.ClusterInfo))
+	logger := loggerutils.WithClusterName(request.DesiredCluster.ClusterInfo.Id())
 	logger.Info().Msgf("Patching cluster info ConfigMap")
 
 	k := kubectl.Kubectl{

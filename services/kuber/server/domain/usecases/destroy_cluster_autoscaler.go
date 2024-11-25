@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/berops/claudie/internal/cluster"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
@@ -14,7 +13,7 @@ import (
 
 // DestroyClusterAutoscaler removes deployment of Cluster Autoscaler from the management cluster for given k8s cluster.
 func (u *Usecases) DestroyClusterAutoscaler(ctx context.Context, request *pb.DestroyClusterAutoscalerRequest) (*pb.DestroyClusterAutoscalerResponse, error) {
-	logger := loggerutils.WithClusterName(cluster.Id(request.Cluster.ClusterInfo))
+	logger := loggerutils.WithClusterName(request.Cluster.ClusterInfo.Id())
 
 	var err error
 	// Log success/error message.

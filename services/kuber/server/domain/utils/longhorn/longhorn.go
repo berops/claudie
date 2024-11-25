@@ -9,6 +9,7 @@ import (
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
+	"github.com/berops/claudie/internal/sanitise"
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -89,7 +90,7 @@ func (l *Longhorn) SetUp() error {
 	realNodeNames := strings.Split(string(realNodesInfo), "\n")
 	// tag nodes based on the zones
 	for providerInstance, nodepools := range sortedNodePools {
-		zoneName := utils.SanitiseString(fmt.Sprintf("%s-zone", providerInstance))
+		zoneName := sanitise.String(fmt.Sprintf("%s-zone", providerInstance))
 		storageClassName := fmt.Sprintf("longhorn-%s", zoneName)
 		//flag to determine whether we need to create storage class or not
 		isWorkerNodeProvider := false

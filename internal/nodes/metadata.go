@@ -3,7 +3,7 @@ package nodes
 import (
 	"strings"
 
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/sanitise"
 	"github.com/berops/claudie/proto/pb/spec"
 	k8sV1 "k8s.io/api/core/v1"
 )
@@ -35,17 +35,17 @@ func GetAllLabels(np *spec.NodePool, resolver ArchResolver) (map[string]string, 
 
 	// Apply default static nodepool labels.
 	if n := np.GetStaticNodePool(); n != nil {
-		m[string(Provider)] = utils.SanitiseString(spec.StaticNodepoolInfo_STATIC_PROVIDER.String())
-		m[string(ProviderInstance)] = utils.SanitiseString(spec.StaticNodepoolInfo_STATIC_PROVIDER.String())
-		m[string(KubernetesZone)] = utils.SanitiseString(spec.StaticNodepoolInfo_STATIC_ZONE.String())
-		m[string(KubernetesRegion)] = utils.SanitiseString(spec.StaticNodepoolInfo_STATIC_REGION.String())
+		m[string(Provider)] = sanitise.String(spec.StaticNodepoolInfo_STATIC_PROVIDER.String())
+		m[string(ProviderInstance)] = sanitise.String(spec.StaticNodepoolInfo_STATIC_PROVIDER.String())
+		m[string(KubernetesZone)] = sanitise.String(spec.StaticNodepoolInfo_STATIC_ZONE.String())
+		m[string(KubernetesRegion)] = sanitise.String(spec.StaticNodepoolInfo_STATIC_REGION.String())
 	}
 
 	// In case the user wants to overwrite the static nodepool labels allow.
 	// In case of dynamic nodepools, apply them first, so that if the user tries
 	// to overwrite some of the claudie default related it will not allow it.
 	for k, v := range np.Labels {
-		m[escape(utils.SanitiseString(k))] = utils.SanitiseString(v)
+		m[escape(sanitise.String(k))] = sanitise.String(v)
 	}
 
 	// Claudie assigned labels.
@@ -59,8 +59,8 @@ func GetAllLabels(np *spec.NodePool, resolver ArchResolver) (map[string]string, 
 	if n := np.GetDynamicNodePool(); n != nil {
 		m[string(Provider)] = n.Provider.CloudProviderName
 		m[string(ProviderInstance)] = n.Provider.SpecName
-		m[string(KubernetesZone)] = utils.SanitiseString(n.Zone)
-		m[string(KubernetesRegion)] = utils.SanitiseString(n.Region)
+		m[string(KubernetesZone)] = sanitise.String(n.Zone)
+		m[string(KubernetesRegion)] = sanitise.String(n.Region)
 
 		if resolver != nil {
 			arch, err := resolver.Arch(np)

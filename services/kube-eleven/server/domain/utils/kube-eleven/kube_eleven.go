@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/berops/claudie/internal/sanitise"
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -203,10 +204,10 @@ func (k *KubeEleven) getClusterNodes() ([]*NodepoolInfo, *spec.Node) {
 
 			nodepoolInfo = &NodepoolInfo{
 				NodepoolName:      nodepool.Name,
-				Region:            utils.SanitiseString(nodepool.GetDynamicNodePool().Region),
-				Zone:              utils.SanitiseString(nodepool.GetDynamicNodePool().Zone),
-				CloudProviderName: utils.SanitiseString(nodepool.GetDynamicNodePool().Provider.CloudProviderName),
-				ProviderName:      utils.SanitiseString(nodepool.GetDynamicNodePool().Provider.SpecName),
+				Region:            sanitise.String(nodepool.GetDynamicNodePool().Region),
+				Zone:              sanitise.String(nodepool.GetDynamicNodePool().Zone),
+				CloudProviderName: sanitise.String(nodepool.GetDynamicNodePool().Provider.CloudProviderName),
+				ProviderName:      sanitise.String(nodepool.GetDynamicNodePool().Provider.SpecName),
 				Nodes:             nodes,
 				IsDynamic:         true,
 			}
@@ -218,10 +219,10 @@ func (k *KubeEleven) getClusterNodes() ([]*NodepoolInfo, *spec.Node) {
 			}
 			nodepoolInfo = &NodepoolInfo{
 				NodepoolName:      nodepool.Name,
-				Region:            utils.SanitiseString(staticRegion),
-				Zone:              utils.SanitiseString(staticZone),
-				CloudProviderName: utils.SanitiseString(staticProvider),
-				ProviderName:      utils.SanitiseString(staticProviderName),
+				Region:            sanitise.String(staticRegion),
+				Zone:              sanitise.String(staticZone),
+				CloudProviderName: sanitise.String(staticProvider),
+				ProviderName:      sanitise.String(staticProviderName),
 				Nodes:             nodes,
 				IsDynamic:         false,
 			}

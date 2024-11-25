@@ -1,6 +1,9 @@
 package sanitise
 
-import "regexp"
+import (
+	"regexp"
+	"strings"
+)
 
 var (
 	// Match the password part (between ':' and '@)' of the connection string.
@@ -33,4 +36,17 @@ func URI(s string) string {
 func Kubeconfig(s string) string {
 	// The entire kubeconfig passed in after the flag is replaced with stars and returned.
 	return kubeconfig.ReplaceAllLiteralString(s, "--kubeconfig '*****'")
+}
+
+// String replaces all white spaces and ":" in the string to "-", and converts everything to lower case.
+func String(s string) string {
+	// convert to lower case
+	sanitised := strings.ToLower(s)
+	// replace all white space with "-"
+	sanitised = strings.ReplaceAll(sanitised, " ", "-")
+	// replace all ":" with "-"
+	sanitised = strings.ReplaceAll(sanitised, ":", "-")
+	// replace all "_" with "-"
+	sanitised = strings.ReplaceAll(sanitised, "_", "-")
+	return sanitised
 }
