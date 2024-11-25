@@ -71,7 +71,7 @@ func run() error {
 	errGroup.Go(func() error {
 		worker.NewWorker(
 			errGroupContext,
-			10*time.Second,
+			service.Tick,
 			func() error { return manager.WatchForPendingDocuments(errGroupContext) },
 			worker.ErrorLogger,
 		).Run()
@@ -82,7 +82,7 @@ func run() error {
 	errGroup.Go(func() error {
 		worker.NewWorker(
 			errGroupContext,
-			10*time.Second,
+			service.Tick,
 			func() error { return manager.WatchForScheduledDocuments(errGroupContext) },
 			worker.ErrorLogger,
 		).Run()
@@ -93,7 +93,7 @@ func run() error {
 	errGroup.Go(func() error {
 		worker.NewWorker(
 			errGroupContext,
-			10*time.Second,
+			service.Tick,
 			func() error { return manager.WatchForDoneOrErrorDocuments(errGroupContext) },
 			worker.ErrorLogger,
 		).Run()

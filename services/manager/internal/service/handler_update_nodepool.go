@@ -59,8 +59,6 @@ func (g *GRPC) UpdateNodePool(ctx context.Context, request *pb.UpdateNodePoolReq
 		return nil, status.Errorf(codes.FailedPrecondition, "can't update nodepool %q cluster %q from configuration on which changes are currently ongoing.", request.Cluster, request.Name)
 	}
 
-	// We need initiate a build process due to the possible change
-	// of the nodepool nodes.
 	grpc, err := store.ConvertToGRPC(dbConfig)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert database representation for config %q to grpc: %v", request.Name, err)
@@ -88,21 +86,23 @@ func (g *GRPC) UpdateNodePool(ctx context.Context, request *pb.UpdateNodePoolReq
 		return nil, status.Errorf(codes.FailedPrecondition, "can't move manifest from state %q to state %q", dbConfig.Manifest.State, manifest.Scheduled.String())
 	}
 
+	grpc.Manifest.State = spec.Manifest_Scheduled
+
 	ci := slices.IndexFunc(cnp, func(p *spec.NodePool) bool { return p.Name == request.Nodepool.Name })
 	di := slices.IndexFunc(dnp, func(p *spec.NodePool) bool { return p.Name == request.Nodepool.Name })
 
-	diffResult := nodeDiff(cnp[ci], request.Nodepool)
-
-	updateNodePool(
-		diffResult,
+	diffResult := nodeDiff(
 		fmt.Sprintf("%s-%s", utils.GetClusterID(cluster.Current.K8S.ClusterInfo), request.Nodepool.Name),
-		dnp[di],
+		cnp[ci],
+		request.Nodepool,
 	)
 
-	grpc.Manifest.State = spec.Manifest_Scheduled
+	// prepare desired nodepool with new nodes.
+	dnp[di].GetDynamicNodePool().Count = int32(diffResult.newCount)
+	dnp[di].Nodes = append(append([]*spec.Node(nil), diffResult.reused...), diffResult.added...)
 
 	cluster.Events = &spec.Events{
-		Events:     autoscaledEvents(diffResult, cluster.Desired),
+		Events:     autoscaledEvents(diffResult, cluster.Current, cluster.Desired),
 		Autoscaled: true,
 	}
 
@@ -115,6 +115,11 @@ func (g *GRPC) UpdateNodePool(ctx context.Context, request *pb.UpdateNodePoolReq
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert config %q from grpc representation to database representation: %v", request.Name, err)
 	}
+
+	// change the last applied checksum to a dummy value,
+	// so that the config will be rescheduled again to trigger
+	// the OnError handler if needed.
+	db.Manifest.LastAppliedChecksum = db.Manifest.LastAppliedChecksum[:len(db.Manifest.LastAppliedChecksum)-1]
 
 	if err := g.Store.UpdateConfig(ctx, db); err != nil {
 		if errors.Is(err, store.ErrNotFoundOrDirty) {
@@ -133,7 +138,8 @@ type nodeDiffResult struct {
 	endpointDeleted        bool
 }
 
-func nodeDiff(current, desired *spec.NodePool) nodeDiffResult {
+func nodeDiff(nodepoolId string, current, desired *spec.NodePool) nodeDiffResult {
+	usedNames := make(map[string]struct{})
 	result := nodeDiffResult{
 		nodepool: desired.Name,
 		oldCount: int(current.GetDynamicNodePool().Count),
@@ -141,66 +147,54 @@ func nodeDiff(current, desired *spec.NodePool) nodeDiffResult {
 	}
 
 	for _, n := range current.Nodes {
-		deleted := !slices.ContainsFunc(desired.Nodes, func(n2 *spec.Node) bool { return n2.Name == n.Name })
-		if deleted {
+		canReuse := slices.ContainsFunc(desired.Nodes, func(n2 *spec.Node) bool { return n2.Name == n.Name })
+		canReuse = canReuse && len(result.reused) < result.newCount
+		if canReuse {
+			log.Debug().
+				Str("nodepool", nodepoolId).
+				Msgf("node %q resued to desired nodepool %q after autoscaler update", n.Name, desired.Name)
+
+			result.reused = append(result.reused, n)
+			usedNames[n.Name] = struct{}{}
+		} else {
+			log.Debug().
+				Str("nodepool", nodepoolId).
+				Msgf("node %q deleted from desired nodepool %q after autoscaler update", n.Name, desired.Name)
+
 			result.deleted = append(result.deleted, n)
+			usedNames[n.Name] = struct{}{}
 			if n.NodeType == spec.NodeType_apiEndpoint {
 				result.endpointDeleted = true
 			}
 		}
 	}
 
-	for _, n := range current.Nodes {
-		reused := !slices.ContainsFunc(result.deleted, func(n2 *spec.Node) bool { return n2.Name == n.Name })
-		if reused {
-			result.reused = append(result.reused, n)
+	for _, n := range desired.Nodes {
+		canAdd := !slices.ContainsFunc(current.Nodes, func(n2 *spec.Node) bool { return n.Name == n2.Name })
+		canAdd = canAdd && (len(result.reused)+len(result.added) < result.newCount)
+		if canAdd {
+			log.Debug().
+				Str("nodepool", nodepoolId).
+				Msgf("node %q added to desired nodepool %q after autoscaler update", n.Name, desired.Name)
+
+			result.added = append(result.added, n)
+			usedNames[n.Name] = struct{}{}
 		}
 	}
 
-	for _, n := range desired.Nodes {
-		added := !slices.ContainsFunc(current.Nodes, func(n2 *spec.Node) bool { return n.Name == n2.Name })
-		if added {
-			result.added = append(result.added, n)
-		}
+	for range max(0, result.newCount-(len(result.reused)+len(result.added))) {
+		name := uniqueNodeName(nodepoolId, usedNames)
+		usedNames[name] = struct{}{}
+		result.added = append(result.added, &spec.Node{Name: name})
+		log.Debug().
+			Str("nodepool", nodepoolId).
+			Msgf("node %q generated to desired nodepool %q after autoscaler update", name, desired.Name)
 	}
 
 	return result
 }
 
-func updateNodePool(diff nodeDiffResult, nodePoolID string, desired *spec.NodePool) {
-	usedNames := make(map[string]struct{})
-	var newNodes []*spec.Node
-
-	for _, n := range diff.deleted {
-		log.Debug().Str("nodepool", nodePoolID).Msgf("node %q deleted from desired nodepool %q after autoscaler update", n.Name, desired.Name)
-		usedNames[n.Name] = struct{}{}
-	}
-
-	for _, n := range diff.reused {
-		log.Debug().Str("nodepool", nodePoolID).Msgf("node %q resued to desired nodepool %q after autoscaler update", n.Name, desired.Name)
-		newNodes = append(newNodes, n)
-		usedNames[n.Name] = struct{}{}
-	}
-
-	for _, n := range diff.added {
-		log.Debug().Str("nodepool", nodePoolID).Msgf("node %q added to desired nodepool %q after autoscaler update", n.Name, desired.Name)
-		newNodes = append(newNodes, n)
-		usedNames[n.Name] = struct{}{}
-	}
-
-	for len(newNodes) < diff.newCount {
-		c := len(newNodes)
-		name := uniqueNodeName(nodePoolID, usedNames)
-		usedNames[name] = struct{}{}
-		newNodes = append(newNodes, &spec.Node{Name: name})
-		log.Debug().Str("nodepool", nodePoolID).Msgf("node %q added to desired nodepool %q after autoscaler update (%v < %v)", name, desired.Name, c, diff.newCount)
-	}
-
-	desired.GetDynamicNodePool().Count = int32(diff.newCount)
-	desired.Nodes = newNodes
-}
-
-func autoscaledEvents(diff nodeDiffResult, desired *spec.Clusters) []*spec.TaskEvent {
+func autoscaledEvents(diff nodeDiffResult, current, desired *spec.Clusters) []*spec.TaskEvent {
 	var events []*spec.TaskEvent
 
 	if diff.oldCount < diff.newCount || len(diff.added) > 0 {
@@ -209,12 +203,55 @@ func autoscaledEvents(diff nodeDiffResult, desired *spec.Clusters) []*spec.TaskE
 			Timestamp:   timestamppb.New(time.Now().UTC()),
 			Event:       spec.Event_UPDATE,
 			Description: "autoscaler: adding nodes to k8s cluster",
-			Task: &spec.Task{
-				UpdateState: &spec.UpdateState{
-					K8S: desired.K8S, // changes to the desired nodepool should have been done at this point.
-					Lbs: desired.GetLoadBalancers(),
+			Task: &spec.Task{UpdateState: &spec.UpdateState{
+				K8S: desired.K8S, // changes to the desired nodepool should have been done at this point.
+				Lbs: desired.GetLoadBalancers(),
+			}},
+			OnError: &spec.Retry{Do: &spec.Retry_Rollback_{
+				Rollback: &spec.Retry_Rollback{
+					Tasks: []*spec.TaskEvent{
+						{
+							Id:          uuid.New().String(),
+							Timestamp:   timestamppb.New(time.Now().UTC()),
+							Event:       spec.Event_DELETE,
+							Description: fmt.Sprintf("autoscaler rollback: deleting nodes from nodepool %s", diff.nodepool),
+							Task: &spec.Task{DeleteState: &spec.DeleteState{
+								Nodepools: map[string]*spec.DeletedNodes{
+									diff.nodepool: {
+										Nodes: func() []string {
+											var result []string
+											for _, n := range diff.added {
+												result = append(result, n.Name)
+											}
+											return result
+										}(),
+									},
+								},
+							}},
+							OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
+								Kind:        spec.Retry_Repeat_EXPONENTIAL,
+								CurrentTick: 1,
+								StopAfter:   uint32(25 * time.Minute / Tick),
+							}}},
+						},
+						{
+							Id:          uuid.New().String(),
+							Timestamp:   timestamppb.New(time.Now().UTC()),
+							Event:       spec.Event_UPDATE,
+							Description: fmt.Sprintf("autoscaler rollback: deleting nodes from nodepool %s", diff.nodepool),
+							Task: &spec.Task{UpdateState: &spec.UpdateState{
+								K8S: current.K8S,
+								Lbs: current.LoadBalancers,
+							}},
+							OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
+								Kind:        spec.Retry_Repeat_EXPONENTIAL,
+								CurrentTick: 1,
+								StopAfter:   uint32(25 * time.Minute / Tick),
+							}}},
+						},
+					},
 				},
-			},
+			}},
 		})
 	}
 
@@ -231,7 +268,9 @@ func autoscaledEvents(diff nodeDiffResult, desired *spec.Clusters) []*spec.TaskE
 					Node:     node,
 				}},
 			},
-			OnError: &spec.RetryStrategy{Repeat: true},
+			OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
+				Kind: spec.Retry_Repeat_ENDLESS,
+			}}},
 		})
 	}
 
@@ -246,6 +285,11 @@ func autoscaledEvents(diff nodeDiffResult, desired *spec.Clusters) []*spec.TaskE
 			Event:       spec.Event_DELETE,
 			Description: "autoscaler: deleting nodes from k8s cluster",
 			Task:        &spec.Task{DeleteState: &spec.DeleteState{Nodepools: dn}},
+			OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
+				Kind:        spec.Retry_Repeat_EXPONENTIAL,
+				CurrentTick: 1,
+				StopAfter:   uint32(25 * time.Minute / Tick),
+			}}},
 		})
 		events = append(events, &spec.TaskEvent{
 			Id:          uuid.New().String(),
@@ -258,6 +302,11 @@ func autoscaledEvents(diff nodeDiffResult, desired *spec.Clusters) []*spec.TaskE
 					Lbs: desired.GetLoadBalancers(),
 				},
 			},
+			OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
+				Kind:        spec.Retry_Repeat_EXPONENTIAL,
+				CurrentTick: 1,
+				StopAfter:   uint32(25 * time.Minute / Tick),
+			}}},
 		})
 	}
 

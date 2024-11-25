@@ -83,8 +83,8 @@ spec:
         count: 1
         serverType: VM.Standard2.1
         # ubuntu minimal
-        # https://docs.oracle.com/en-us/iaas/images/image/674d0b41-aee8-4c0b-bf99-9e100d90f241/
-        image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
+        # https://docs.oracle.com/en-us/iaas/images/ubuntu-2404/canonical-ubuntu-24-04-2024-08-28-0.htm
+        image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaa7hxwyz4qiasffo7n7s4ep5lywpzwgkc2am65frqrqinoyitmxxla
         storageDiskSize: 50
 
       - name: aws-cmpt-nodes
@@ -95,16 +95,16 @@ spec:
         count: 1
         serverType: t3.small
         #ubuntu
-        image: ami-03c476a1ca8e3ebdc
+        image: ami-045a8ab02aadf4f88
         storageDiskSize: 50
 
       - name: gen-kube-nodes
         providerSpec:
           name: genesiscloud-1
-          region: ARC-IS-HAF-1
+          region: NORD-NO-KRS-1
         count: 1
-        serverType: vcpu-2_memory-4g_disk-80g
-        image: "Ubuntu 22.04"
+        serverType: vcpu-2_memory-4g
+        image: "Ubuntu 24.04"
         storageDiskSize: 50
 
   kubernetes:

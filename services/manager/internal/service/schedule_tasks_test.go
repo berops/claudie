@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -41,7 +42,11 @@ var opts = cmpopts.IgnoreUnexported(
 	spec.Task{},
 	spec.TaskEvent{},
 	timestamppb.Timestamp{},
-	spec.RetryStrategy{},
+	spec.Retry{},
+	spec.Retry_Rollback_{},
+	spec.Retry_Rollback{},
+	spec.Retry_Repeat_{},
+	spec.Retry_Repeat{},
 )
 
 func Test_findNewAPIEndpointCandidate(t *testing.T) {
@@ -1075,7 +1080,9 @@ func Test_scheduleTasksRetry(t *testing.T) {
 							Event:       spec.Event_UPDATE,
 							Task:        &spec.Task{},
 							Description: "first task",
-							OnError:     &spec.RetryStrategy{Repeat: true},
+							OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
+								Kind: spec.Retry_Repeat_ENDLESS,
+							}}},
 						},
 						{
 							Id:          uuid.NewString(),
@@ -1083,7 +1090,9 @@ func Test_scheduleTasksRetry(t *testing.T) {
 							Event:       spec.Event_UPDATE,
 							Task:        &spec.Task{},
 							Description: "second task",
-							OnError:     &spec.RetryStrategy{Repeat: true},
+							OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
+								Kind: spec.Retry_Repeat_ENDLESS,
+							}}},
 						},
 					},
 					Ttl:        510,
@@ -1101,9 +1110,9 @@ func Test_scheduleTasksRetry(t *testing.T) {
 	cfg, err := store.ConvertFromGRPC(repeat)
 	assert.Nil(t, err)
 
-	reschedule, err := scheduleTasks(cfg)
+	result, err := scheduleTasks(cfg)
 	assert.Nil(t, err)
-	assert.True(t, reschedule)
+	assert.Equal(t, Reschedule, result)
 
 	got, err := store.ConvertToGRPC(cfg)
 	assert.Nil(t, err)
@@ -1128,6 +1137,210 @@ func Test_scheduleTasksRetry(t *testing.T) {
 		diff := cmp.Diff(got, repeat, opts)
 		t.Fatalf("schedule tasks (repeat) failed: %s", diff)
 	}
+
+	repeat = &spec.Config{
+		Version:  0,
+		Name:     "test",
+		K8SCtx:   &spec.KubernetesContext{},
+		Manifest: &spec.Manifest{},
+		Clusters: map[string]*spec.ClusterState{
+			"test-01": {
+				Current: &spec.Clusters{K8S: &spec.K8Scluster{Kubeconfig: "config", ClusterInfo: &spec.ClusterInfo{Name: "test"}}},
+				Desired: &spec.Clusters{K8S: &spec.K8Scluster{Kubeconfig: "config", ClusterInfo: &spec.ClusterInfo{Name: "test"}}},
+				Events: &spec.Events{
+					Events: []*spec.TaskEvent{
+						{
+							Id:          uuid.NewString(),
+							Timestamp:   timestamppb.Now(),
+							Event:       spec.Event_UPDATE,
+							Task:        &spec.Task{},
+							Description: "first task",
+							OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
+								Kind:        spec.Retry_Repeat_EXPONENTIAL,
+								CurrentTick: 1,
+								StopAfter:   uint32(20 * time.Second / Tick),
+							}}},
+						},
+					},
+					Ttl:        510,
+					Autoscaled: false,
+				},
+				State: &spec.Workflow{
+					Stage:       spec.Workflow_ANSIBLER,
+					Status:      spec.Workflow_ERROR,
+					Description: "randomly failed",
+				},
+			},
+		},
+	}
+
+	cfg, err = store.ConvertFromGRPC(repeat)
+	assert.Nil(t, err)
+
+	result, err = scheduleTasks(cfg)
+	assert.Nil(t, err)
+	assert.Equal(t, FinalRetry, result)
+
+	got, err = store.ConvertToGRPC(cfg)
+	assert.Nil(t, err)
+
+	assert.Equal(t, got.Clusters["test-01"].State.Stage, spec.Workflow_NONE)
+	assert.Equal(t, got.Clusters["test-01"].State.Status, spec.Workflow_DONE)
+	assert.Empty(t, got.Clusters["test-01"].State.Description)
+	assert.Empty(t, got.Clusters["test-01"].Events.Ttl)
+	assert.Empty(t, got.Clusters["test-01"].Events.Events[0].OnError.Do)
+
+	repeat.Clusters["test-01"].State.Stage = spec.Workflow_NONE
+	repeat.Clusters["test-01"].State.Status = spec.Workflow_DONE
+	repeat.Clusters["test-01"].State.Description = ""
+	repeat.Clusters["test-01"].Events.Ttl = 0
+	repeat.Clusters["test-01"].Events.Events[0].OnError.Do = nil
+
+	for k := range repeat.Clusters {
+		for i := range repeat.Clusters[k].Events.Events {
+			repeat.Clusters[k].Events.Events[i].Timestamp = nil
+			got.Clusters[k].Events.Events[i].Timestamp = nil
+		}
+	}
+	if !proto.Equal(got, repeat) {
+		diff := cmp.Diff(got, repeat, opts)
+		t.Fatalf("schedule tasks (repeat) failed: %s", diff)
+	}
+
+	repeat = &spec.Config{
+		Version:  0,
+		Name:     "test",
+		K8SCtx:   &spec.KubernetesContext{},
+		Manifest: &spec.Manifest{},
+		Clusters: map[string]*spec.ClusterState{
+			"test-01": {
+				Current: &spec.Clusters{K8S: &spec.K8Scluster{Kubeconfig: "config", ClusterInfo: &spec.ClusterInfo{Name: "test"}}},
+				Desired: &spec.Clusters{K8S: &spec.K8Scluster{Kubeconfig: "config", ClusterInfo: &spec.ClusterInfo{Name: "test"}}},
+				Events: &spec.Events{
+					Events: []*spec.TaskEvent{
+						{
+							Id:          uuid.NewString(),
+							Timestamp:   timestamppb.Now(),
+							Event:       spec.Event_UPDATE,
+							Task:        &spec.Task{},
+							Description: "first task",
+							OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
+								Kind:        spec.Retry_Repeat_EXPONENTIAL,
+								CurrentTick: 1,
+								StopAfter:   uint32(30 * time.Second / Tick),
+							}}},
+						},
+					},
+					Ttl:        510,
+					Autoscaled: false,
+				},
+				State: &spec.Workflow{
+					Stage:       spec.Workflow_ANSIBLER,
+					Status:      spec.Workflow_ERROR,
+					Description: "randomly failed",
+				},
+			},
+		},
+	}
+
+	cfg, err = store.ConvertFromGRPC(repeat)
+	assert.Nil(t, err)
+
+	result, err = scheduleTasks(cfg)
+	assert.Nil(t, err)
+	assert.Equal(t, Reschedule, result)
+
+	got, err = store.ConvertToGRPC(cfg)
+	assert.Nil(t, err)
+
+	assert.Equal(t, got.Clusters["test-01"].State.Stage, spec.Workflow_NONE)
+	assert.Equal(t, got.Clusters["test-01"].State.Status, spec.Workflow_DONE)
+	assert.Empty(t, got.Clusters["test-01"].State.Description)
+	assert.Empty(t, got.Clusters["test-01"].Events.Ttl)
+
+	repeat.Clusters["test-01"].State.Stage = spec.Workflow_NONE
+	repeat.Clusters["test-01"].State.Status = spec.Workflow_DONE
+	repeat.Clusters["test-01"].State.Description = ""
+	repeat.Clusters["test-01"].Events.Ttl = 0
+	repeat.Clusters["test-01"].Events.Events[0].OnError.Do.(*spec.Retry_Repeat_).Repeat.CurrentTick = 2
+	repeat.Clusters["test-01"].Events.Events[0].OnError.Do.(*spec.Retry_Repeat_).Repeat.RetryAfter = 2
+
+	for k := range repeat.Clusters {
+		for i := range repeat.Clusters[k].Events.Events {
+			repeat.Clusters[k].Events.Events[i].Timestamp = nil
+			got.Clusters[k].Events.Events[i].Timestamp = nil
+		}
+	}
+	if !proto.Equal(got, repeat) {
+		diff := cmp.Diff(got, repeat, opts)
+		t.Fatalf("schedule tasks (repeat) failed: %s", diff)
+	}
+
+	repeat = &spec.Config{
+		Version:  0,
+		Name:     "test",
+		K8SCtx:   &spec.KubernetesContext{},
+		Manifest: &spec.Manifest{},
+		Clusters: map[string]*spec.ClusterState{
+			"test-01": {
+				Current: &spec.Clusters{K8S: &spec.K8Scluster{Kubeconfig: "config", ClusterInfo: &spec.ClusterInfo{Name: "test"}}},
+				Desired: &spec.Clusters{K8S: &spec.K8Scluster{Kubeconfig: "config", ClusterInfo: &spec.ClusterInfo{Name: "test"}}},
+				Events: &spec.Events{
+					Events: []*spec.TaskEvent{
+						{
+							Id:          uuid.NewString(),
+							Timestamp:   timestamppb.Now(),
+							Event:       spec.Event_UPDATE,
+							Task:        &spec.Task{},
+							Description: "first task",
+							OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
+								Kind:        spec.Retry_Repeat_EXPONENTIAL,
+								CurrentTick: 1,
+								StopAfter:   uint32(30 * time.Second / Tick),
+								RetryAfter:  2,
+							}}},
+						},
+					},
+					Ttl:        510,
+					Autoscaled: false,
+				},
+				State: &spec.Workflow{
+					Stage:       spec.Workflow_ANSIBLER,
+					Status:      spec.Workflow_ERROR,
+					Description: "randomly failed",
+				},
+			},
+		},
+	}
+
+	cfg, err = store.ConvertFromGRPC(repeat)
+	assert.Nil(t, err)
+
+	result, err = scheduleTasks(cfg)
+	assert.Nil(t, err)
+	assert.Equal(t, NotReady, result)
+
+	got, err = store.ConvertToGRPC(cfg)
+	assert.Nil(t, err)
+
+	assert.Equal(t, spec.Workflow_ANSIBLER, got.Clusters["test-01"].State.Stage)
+	assert.Equal(t, spec.Workflow_ERROR, got.Clusters["test-01"].State.Status)
+	assert.Equal(t, "randomly failed", got.Clusters["test-01"].State.Description)
+	assert.Equal(t, int32(0), got.Clusters["test-01"].Events.Ttl)
+
+	repeat.Clusters["test-01"].Events.Events[0].OnError.Do.(*spec.Retry_Repeat_).Repeat.RetryAfter = 1
+	repeat.Clusters["test-01"].Events.Ttl = 0
+
+	for k := range repeat.Clusters {
+		for i := range repeat.Clusters[k].Events.Events {
+			repeat.Clusters[k].Events.Events[i].Timestamp = nil
+			got.Clusters[k].Events.Events[i].Timestamp = nil
+		}
+	}
+	if !proto.Equal(got, repeat) {
+		diff := cmp.Diff(got, repeat, opts)
+		t.Fatalf("schedule tasks (repeat) failed: %s", diff)
+	}
 }
 
 func Test_scheduleTasksRollback(t *testing.T) {
@@ -1139,7 +1352,9 @@ func Test_scheduleTasksRollback(t *testing.T) {
 		Event:       spec.Event_DELETE,
 		Task:        &spec.Task{},
 		Description: "mid task",
-		OnError:     &spec.RetryStrategy{Repeat: true},
+		OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
+			Kind: spec.Retry_Repeat_ENDLESS,
+		}}},
 	}
 
 	rollback := &spec.Config{
@@ -1159,7 +1374,8 @@ func Test_scheduleTasksRollback(t *testing.T) {
 							Event:       spec.Event_UPDATE,
 							Task:        &spec.Task{},
 							Description: "first task",
-							OnError:     &spec.RetryStrategy{Rollback: []*spec.TaskEvent{rb}},
+							//OnError:     &spec.RetryStrategy{Rollback: []*spec.TaskEvent{rb}},
+							OnError: &spec.Retry{Do: &spec.Retry_Rollback_{Rollback: &spec.Retry_Rollback{Tasks: []*spec.TaskEvent{rb}}}},
 						},
 						{
 							Id:          uuid.NewString(),
@@ -1167,7 +1383,9 @@ func Test_scheduleTasksRollback(t *testing.T) {
 							Event:       spec.Event_UPDATE,
 							Task:        &spec.Task{},
 							Description: "second task",
-							OnError:     &spec.RetryStrategy{Repeat: true},
+							OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
+								Kind: spec.Retry_Repeat_ENDLESS,
+							}}},
 						},
 					},
 					Ttl:        510,
@@ -1185,9 +1403,9 @@ func Test_scheduleTasksRollback(t *testing.T) {
 	cfg, err := store.ConvertFromGRPC(rollback)
 	assert.Nil(t, err)
 
-	reschedule, err := scheduleTasks(cfg)
+	result, err := scheduleTasks(cfg)
 	assert.Nil(t, err)
-	assert.True(t, reschedule)
+	assert.Equal(t, Reschedule, result)
 
 	got, err := store.ConvertToGRPC(cfg)
 	assert.Nil(t, err)

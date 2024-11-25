@@ -35,7 +35,7 @@ var opts = cmpopts.IgnoreUnexported(
 	spec.Provider_Hetzner{},
 	spec.HetznerProvider{},
 	spec.TemplateRepository{},
-	spec.RetryStrategy{},
+	spec.Retry{},
 )
 
 func TestConvertToGRPCAndBack(t *testing.T) {
