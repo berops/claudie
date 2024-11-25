@@ -278,6 +278,7 @@ jobs:
         uses: joerick/pr-labels-action@v1.0.9
 
       - name: Determine which test sets to run
+        id: determine-test-sets
         working-directory: ./manifests
         run: |
           sudo apt update && sudo apt install -y wget tar
@@ -322,9 +323,15 @@ jobs:
           done
           
           echo "selected sets: $selected"
-          # TODO: skip on 0 test-sets selected.
+          
+          if [ ${#array[@]} -eq 0 ]; then
+              echo "skip_deploy=true" >> $GITHUB_OUTPUT
+          else
+              echo "skip_deploy=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Install terraform
+        if: (steps.determine-test-sets.skip_deploy == 'false')
         run: | 
           sudo apt-get update && sudo apt-get install -y wget
           wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
@@ -332,25 +339,30 @@ jobs:
           sudo apt update && sudo apt install terraform -y
 
       - name: Set short sha output
+        if: (steps.determine-test-sets.skip_deploy == 'false')
         run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
 
       - name: Install kubectl
+        if: (steps.determine-test-sets.skip_deploy == 'false')
         uses: azure/setup-kubectl@v4
         with:
           version: latest
 
       - name: Install kustomize
+        if: (steps.determine-test-sets.skip_deploy == 'false')
         uses: imranismail/setup-kustomize@v2
         with:
           kustomize-version: 4.5.6
 
       - name: Set e2e kubeconfig
+        if: (steps.determine-test-sets.skip_deploy == 'false')
         uses: azure/k8s-set-context@v4
         with:
           kubeconfig: ${{ secrets.E2E_CLUSTER_KUBECONFIG }}
 
       # Deploy services to new namespace
       - name: Deploy to new namespace
+        if: (steps.determine-test-sets.skip_deploy == 'false')
         working-directory: ./manifests/claudie
         run: |
           #set log level to debug
@@ -371,6 +383,7 @@ jobs:
 
       # Check if everything is ready and running
       - name: Monitor status of the new namespace
+        if: (steps.determine-test-sets.skip_deploy == 'false')
         run: |
           arr=( ${{ env.SERVICES }} )
           echo "${arr[@]}"
@@ -384,12 +397,14 @@ jobs:
           kubectl get pods --namespace=claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
 
       - name: Insert random test hostnames to loadbalancer test set
+        if: (steps.determine-test-sets.skip_deploy == 'false')
         working-directory: ./manifests/testing-framework/test-sets
         run: |
           HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ../../yq e '.spec.loadBalancers.clusters.[1].dns.hostname = strenv(HOSTNAME)' test-set2/1.yaml -i
           HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ../../yq e '.spec.loadBalancers.clusters.[0].dns.hostname = strenv(HOSTNAME)' test-set2/3.yaml -i
 
       - name: Create test static nodes
+        if: (steps.determine-test-sets.skip_deploy == 'false')
         working-directory: ./manifests/testing-framework/test-sets
         run: |
           sudo apt update && sudo apt install -y jq
@@ -438,6 +453,7 @@ jobs:
           done
 
       - name: Start the E2E tests
+        if: (steps.determine-test-sets.skip_deploy == 'false')
         working-directory: ./manifests
         run: |
           NAME_HASH="testing-framework-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}" ./yq e -i '(select(.kind == "ClusterRoleBinding").metadata.name = strenv(NAME_HASH))' ./testing-framework/testing-framework.yaml 
@@ -453,6 +469,7 @@ jobs:
           rm -f install-man-page.sh
 
       - name: Monitor E2E test
+        if: (steps.determine-test-sets.skip_deploy == 'false')
         run: |
           # Wait for completion as background process - capture PID
           kubectl wait --for=condition=complete --timeout=25000s job/testing-framework -n claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER} &
@@ -475,6 +492,7 @@ jobs:
           exit $exit_code
 
       - name: Delete temporary namespace
+        if: (steps.determine-test-sets.skip_deploy == 'false')
         run: |
           kubectl delete namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
       
