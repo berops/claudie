@@ -329,7 +329,7 @@ jobs:
             echo "skipping e2e tests"
             echo "skip_deploy=true" >> $GITHUB_OUTPUT
           else
-            echo "selected sets: $selected"
+            echo "selected sets: ${selected[@]}"
             echo "skip_deploy=false" >> $GITHUB_OUTPUT
           fi
 
