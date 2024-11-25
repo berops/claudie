@@ -263,6 +263,8 @@ jobs:
   deploy-and-monitor:
     runs-on: self-hosted
     needs: [merge-branch, build-and-push, edit-kustomization, check-changes]
+    outputs:
+      skip-deploy: ${{ steps.determine-test-sets.skip_deploy }}
     permissions:
       id-token: write
       contents: read
