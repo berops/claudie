@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/berops/claudie/internal/sanitise"
 	"time"
 
 	"github.com/berops/claudie/internal/checksum"
 	"github.com/berops/claudie/internal/manifest"
+	"github.com/berops/claudie/internal/sanitise"
 	"github.com/rs/zerolog/log"
 
 	"go.mongodb.org/mongo-driver/bson"

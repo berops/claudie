@@ -2,10 +2,10 @@ package usecases
 
 import (
 	"fmt"
-	"github.com/berops/claudie/internal/loggerutils"
 	"os"
 	"path/filepath"
 
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/templateUtils"
 	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"

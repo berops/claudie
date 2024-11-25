@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/berops/claudie/internal/cluster"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/ansibler/templates"
@@ -334,7 +333,7 @@ func HandleAPIEndpointChange(
 
 	proxyEnvs.NoProxyList = strings.Replace(proxyEnvs.NoProxyList, oldEndpoint, newEndpoint, 1)
 
-	log.Debug().Str("LB-cluster", cluster.Id(lbCluster.ClusterInfo)).Msgf("Changing the API endpoint from %s to %s", oldEndpoint, newEndpoint)
+	log.Debug().Str("LB-cluster", lbCluster.ClusterInfo.Id()).Msgf("Changing the API endpoint from %s to %s", oldEndpoint, newEndpoint)
 	if err := ChangeAPIEndpoint(lbCluster.ClusterInfo.Name, oldEndpoint, newEndpoint, outputDirectory, proxyEnvs, processLimit); err != nil {
 		return fmt.Errorf("error while changing the endpoint for %s : %w", lbCluster.ClusterInfo.Name, err)
 	}

@@ -3,9 +3,9 @@ package usecases
 import (
 	"errors"
 	"fmt"
-	"github.com/berops/claudie/internal/loggerutils"
 	"strings"
 
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/builder/domain/usecases/metrics"
