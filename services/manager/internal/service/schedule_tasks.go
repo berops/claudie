@@ -401,13 +401,6 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 		desc += ", including changes to the loadbalancer infrastructure"
 	}
 	if lbsChanges || k8sDiffResult.deleting {
-		var onError *spec.Retry
-		if ApiEndpointChanged(currentLbs, desiredLbs) {
-			onError = &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
-				Kind: spec.Retry_Repeat_ENDLESS,
-			}}}
-		}
-
 		events = append(events, &spec.TaskEvent{
 			Id:          uuid.New().String(),
 			Timestamp:   timestamppb.New(time.Now().UTC()),
@@ -425,7 +418,6 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 					return nil
 				}(),
 			},
-			OnError: onError,
 		})
 	}
 
