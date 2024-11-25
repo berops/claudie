@@ -325,7 +325,7 @@ jobs:
           done
           
           
-          if [ ${#array[@]} -eq 0 ]; then
+          if [ ${#selected[@]} -eq 0 ]; then
             echo "skipping e2e tests"
             echo "skip_deploy=true" >> $GITHUB_OUTPUT
           else
