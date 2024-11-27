@@ -2,11 +2,12 @@ package usecases
 
 import (
 	"fmt"
-	"github.com/berops/claudie/internal/nodepools"
 	"os"
 	"path/filepath"
 
+	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/loggerutils"
+	"github.com/berops/claudie/internal/nodepools"
 	cutils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/ansibler/server/utils"
@@ -53,7 +54,7 @@ func (u *Usecases) RemoveUtilities(req *pb.RemoveClaudieUtilitiesRequest) (*pb.R
 }
 
 func removeUtilities(clusterID string, vpnInfo *VPNInfo, processLimit *semaphore.Weighted) error {
-	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, cutils.CreateHash(cutils.HashLength)))
+	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, hash.Create(hash.Length)))
 	if err := cutils.CreateDirectory(clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", clusterDirectory, err)
 	}

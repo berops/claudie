@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
@@ -14,7 +14,7 @@ import (
 )
 
 func Test_rollingUpdate(t *testing.T) {
-	rngHash := utils.CreateHash(utils.HashLength)
+	rngHash := hash.Create(hash.Length)
 	np := &spec.NodePool{
 		Type: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{
 			ServerType:      "type",

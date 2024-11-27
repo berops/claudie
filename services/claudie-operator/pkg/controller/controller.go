@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -11,7 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/berops/claudie/internal/checksum"
+	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/proto/pb/spec"
 	v1beta "github.com/berops/claudie/services/claudie-operator/pkg/api/v1beta1"
@@ -281,7 +282,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	if err != nil {
 		return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, err
 	}
-	inputManifestChecksum := checksum.Digest(string(inputManifestMarshalled))
+	inputManifestChecksum := hash.Digest(string(inputManifestMarshalled))
 	inputManifestUpdated := !bytes.Equal(inputManifestChecksum, previousChecksum)
 
 	// Update logic if the input manifest has been updated

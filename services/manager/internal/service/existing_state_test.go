@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/manifest"
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/stretchr/testify/assert"
 )
@@ -317,14 +318,14 @@ func Test_copyK8sNodePoolsNamesFromCurrentState(t *testing.T) {
 			name: "transfer-hashes",
 			args: args{
 				used: map[string]struct{}{
-					utils.CreateHash(utils.HashLength): {},
-					utils.CreateHash(utils.HashLength): {},
-					utils.CreateHash(utils.HashLength): {},
-					utils.CreateHash(utils.HashLength): {},
+					hash.Create(hash.Length): {},
+					hash.Create(hash.Length): {},
+					hash.Create(hash.Length): {},
+					hash.Create(hash.Length): {},
 				},
 				nodepool: "np0",
 				current: &spec.K8Scluster{ClusterInfo: &spec.ClusterInfo{
-					NodePools: []*spec.NodePool{{Name: fmt.Sprintf("np0-%s", utils.CreateHash(utils.HashLength))}},
+					NodePools: []*spec.NodePool{{Name: fmt.Sprintf("np0-%s", hash.Create(hash.Length))}},
 				}},
 				desired: &spec.K8Scluster{ClusterInfo: &spec.ClusterInfo{
 					NodePools: []*spec.NodePool{{Name: "np0"}},
@@ -332,7 +333,7 @@ func Test_copyK8sNodePoolsNamesFromCurrentState(t *testing.T) {
 			},
 			validate: func(t *testing.T, args args) {
 				assert.Equal(t, args.current.ClusterInfo.NodePools[0].Name, args.desired.ClusterInfo.NodePools[0].Name)
-				_, hash := utils.MatchNameAndHashWithTemplate("np0", args.current.ClusterInfo.NodePools[0].Name)
+				_, hash := nodepools.MatchNameAndHashWithTemplate("np0", args.current.ClusterInfo.NodePools[0].Name)
 				_, ok := args.used[hash]
 				assert.True(t, ok)
 			},
@@ -341,14 +342,14 @@ func Test_copyK8sNodePoolsNamesFromCurrentState(t *testing.T) {
 			name: "no-transfer",
 			args: args{
 				used: map[string]struct{}{
-					utils.CreateHash(utils.HashLength): {},
-					utils.CreateHash(utils.HashLength): {},
-					utils.CreateHash(utils.HashLength): {},
-					utils.CreateHash(utils.HashLength): {},
+					hash.Create(hash.Length): {},
+					hash.Create(hash.Length): {},
+					hash.Create(hash.Length): {},
+					hash.Create(hash.Length): {},
 				},
 				nodepool: "np0",
 				current: &spec.K8Scluster{ClusterInfo: &spec.ClusterInfo{
-					NodePools: []*spec.NodePool{{Name: fmt.Sprintf("np0-%s", utils.CreateHash(utils.HashLength))}},
+					NodePools: []*spec.NodePool{{Name: fmt.Sprintf("np0-%s", hash.Create(hash.Length))}},
 				}},
 				desired: &spec.K8Scluster{ClusterInfo: &spec.ClusterInfo{
 					NodePools: []*spec.NodePool{{Name: "np-0"}},
@@ -356,9 +357,9 @@ func Test_copyK8sNodePoolsNamesFromCurrentState(t *testing.T) {
 			},
 			validate: func(t *testing.T, args args) {
 				assert.NotEqual(t, args.current.ClusterInfo.NodePools[0].Name, args.desired.ClusterInfo.NodePools[0].Name)
-				_, hash := utils.MatchNameAndHashWithTemplate("np0", args.current.ClusterInfo.NodePools[0].Name)
-				assert.Equal(t, utils.HashLength, len(hash))
-				_, ok := args.used[hash]
+				_, h := nodepools.MatchNameAndHashWithTemplate("np0", args.current.ClusterInfo.NodePools[0].Name)
+				assert.Equal(t, hash.Length, len(h))
+				_, ok := args.used[h]
 				assert.False(t, ok)
 			},
 		},
@@ -388,23 +389,23 @@ func Test_copyLbNodePoolNamesFromCurrentState(t *testing.T) {
 			name: "transfer-hash",
 			args: args{
 				used: map[string]struct{}{
-					utils.CreateHash(utils.HashLength): {},
-					utils.CreateHash(utils.HashLength): {},
-					utils.CreateHash(utils.HashLength): {},
+					hash.Create(hash.Length): {},
+					hash.Create(hash.Length): {},
+					hash.Create(hash.Length): {},
 				},
 				nodepool: "np-0",
 				current: []*spec.LBcluster{{
 					ClusterInfo: &spec.ClusterInfo{NodePools: []*spec.NodePool{
-						{Name: fmt.Sprintf("np-0-%s", utils.CreateHash(utils.HashLength))},
+						{Name: fmt.Sprintf("np-0-%s", hash.Create(hash.Length))},
 					}},
 				}},
 				desired: []*spec.LBcluster{{ClusterInfo: &spec.ClusterInfo{NodePools: []*spec.NodePool{{Name: "np-0"}}}}},
 			},
 			validate: func(t *testing.T, args args) {
 				assert.Equal(t, args.current[0].ClusterInfo.NodePools[0].Name, args.desired[0].ClusterInfo.NodePools[0].Name)
-				_, hash := utils.MatchNameAndHashWithTemplate("np-0", args.desired[0].ClusterInfo.NodePools[0].Name)
-				assert.Equal(t, utils.HashLength, len(hash))
-				_, ok := args.used[hash]
+				_, h := nodepools.MatchNameAndHashWithTemplate("np-0", args.desired[0].ClusterInfo.NodePools[0].Name)
+				assert.Equal(t, hash.Length, len(h))
+				_, ok := args.used[h]
 				assert.True(t, ok)
 			},
 		},
@@ -412,21 +413,21 @@ func Test_copyLbNodePoolNamesFromCurrentState(t *testing.T) {
 			name: "no-transfer",
 			args: args{
 				used: map[string]struct{}{
-					utils.CreateHash(utils.HashLength): {},
-					utils.CreateHash(utils.HashLength): {},
-					utils.CreateHash(utils.HashLength): {},
+					hash.Create(hash.Length): {},
+					hash.Create(hash.Length): {},
+					hash.Create(hash.Length): {},
 				},
 				nodepool: "np-0",
 				current: []*spec.LBcluster{{
 					ClusterInfo: &spec.ClusterInfo{NodePools: []*spec.NodePool{
-						{Name: fmt.Sprintf("np-0-%s", utils.CreateHash(utils.HashLength))},
+						{Name: fmt.Sprintf("np-0-%s", hash.Create(hash.Length))},
 					}},
 				}},
 				desired: []*spec.LBcluster{{ClusterInfo: &spec.ClusterInfo{NodePools: []*spec.NodePool{{Name: "np0"}}}}},
 			},
 			validate: func(t *testing.T, args args) {
 				assert.NotEqual(t, args.current[0].ClusterInfo.NodePools[0].Name, args.desired[0].ClusterInfo.NodePools[0].Name)
-				_, hash := utils.MatchNameAndHashWithTemplate("np-0", args.desired[0].ClusterInfo.NodePools[0].Name)
+				_, hash := nodepools.MatchNameAndHashWithTemplate("np-0", args.desired[0].ClusterInfo.NodePools[0].Name)
 				assert.Empty(t, hash)
 				_, ok := args.used[hash]
 				assert.False(t, ok)
@@ -471,13 +472,13 @@ func Test_deduplicateNodepoolNames(t *testing.T) {
 				},
 			},
 			validate: func(t *testing.T, args args) {
-				name, hash := utils.MatchNameAndHashWithTemplate("np-0", args.state.Desired.K8S.ClusterInfo.NodePools[0].Name)
-				assert.Equal(t, utils.HashLength, len(hash))
-				assert.Equal(t, "np-0", name)
+				n, h := nodepools.MatchNameAndHashWithTemplate("np-0", args.state.Desired.K8S.ClusterInfo.NodePools[0].Name)
+				assert.Equal(t, hash.Length, len(h))
+				assert.Equal(t, "np-0", n)
 
-				name, hash = utils.MatchNameAndHashWithTemplate("np-0", args.state.Desired.K8S.ClusterInfo.NodePools[1].Name)
-				assert.Equal(t, utils.HashLength, len(hash))
-				assert.Equal(t, "np-0", name)
+				n, h = nodepools.MatchNameAndHashWithTemplate("np-0", args.state.Desired.K8S.ClusterInfo.NodePools[1].Name)
+				assert.Equal(t, hash.Length, len(h))
+				assert.Equal(t, "np-0", n)
 			},
 		},
 		{
@@ -505,16 +506,16 @@ func Test_deduplicateNodepoolNames(t *testing.T) {
 				},
 			},
 			validate: func(t *testing.T, args args) {
-				name, hash1 := utils.MatchNameAndHashWithTemplate("np-0", args.state.Desired.K8S.ClusterInfo.NodePools[0].Name)
-				assert.Equal(t, utils.HashLength, len(hash1))
+				name, hash1 := nodepools.MatchNameAndHashWithTemplate("np-0", args.state.Desired.K8S.ClusterInfo.NodePools[0].Name)
+				assert.Equal(t, hash.Length, len(hash1))
 				assert.Equal(t, "np-0", name)
 
-				name, hash2 := utils.MatchNameAndHashWithTemplate("np-0", args.state.Desired.K8S.ClusterInfo.NodePools[1].Name)
-				assert.Equal(t, utils.HashLength, len(hash2))
+				name, hash2 := nodepools.MatchNameAndHashWithTemplate("np-0", args.state.Desired.K8S.ClusterInfo.NodePools[1].Name)
+				assert.Equal(t, hash.Length, len(hash2))
 				assert.Equal(t, "np-0", name)
 
-				name, hash3 := utils.MatchNameAndHashWithTemplate("np-0", args.state.Desired.LoadBalancers.Clusters[0].ClusterInfo.NodePools[0].Name)
-				assert.Equal(t, utils.HashLength, len(hash3))
+				name, hash3 := nodepools.MatchNameAndHashWithTemplate("np-0", args.state.Desired.LoadBalancers.Clusters[0].ClusterInfo.NodePools[0].Name)
+				assert.Equal(t, hash.Length, len(hash3))
 				assert.Equal(t, "np-0", name)
 
 				assert.NotEqual(t, hash1, hash2)

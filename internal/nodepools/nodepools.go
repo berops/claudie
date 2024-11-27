@@ -3,7 +3,9 @@ package nodepools
 import (
 	"maps"
 	"slices"
+	"strings"
 
+	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/proto/pb/spec"
 )
 
@@ -114,4 +116,36 @@ func commonNodes(currControlNps map[string]*spec.NodePool, desiredNp []*spec.Nod
 	}
 
 	return commonNps
+}
+
+func MatchNameAndHashWithTemplate(template, nodepoolName string) (n, h string) {
+	if len(nodepoolName) != len(template)+hash.Length+1 {
+		return
+	}
+
+	idx := strings.LastIndex(nodepoolName, "-")
+	if idx < 0 {
+		return "", ""
+	}
+
+	if nodepoolName[:idx] != template {
+		return
+	}
+
+	n = nodepoolName[:idx]
+	h = nodepoolName[idx+1:]
+
+	return
+}
+
+func MustExtractNameAndHash(pool string) (name, hash string) {
+	idx := strings.LastIndex(pool, "-")
+	if idx < 0 {
+		panic("this function expect that the nodepool name contains a appended hash delimited by '-'")
+	}
+
+	name = pool[:idx]
+	hash = pool[idx+1:]
+
+	return name, hash
 }

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/loggerutils"
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	scrapeconfig "github.com/berops/claudie/services/kuber/server/domain/utils/scrape-config"
 )
@@ -19,7 +19,7 @@ func (u *Usecases) RemoveLBScrapeConfig(ctx context.Context, request *pb.RemoveL
 
 	logger.Info().Msgf("Deleting load balancer scrape-config")
 
-	tempClusterID := fmt.Sprintf("%s-%s", request.Cluster.ClusterInfo.Name, utils.CreateHash(5))
+	tempClusterID := fmt.Sprintf("%s-%s", request.Cluster.ClusterInfo.Name, hash.Create(5))
 	clusterDir := filepath.Join(outputDir, tempClusterID)
 
 	sc := scrapeconfig.ScrapeConfig{

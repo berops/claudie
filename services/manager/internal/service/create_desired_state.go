@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/manifest"
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/internal/store"
 	"github.com/rs/zerolog/log"
@@ -95,7 +95,7 @@ func createK8sClustersFromManifest(from *manifest.Manifest, into *store.Config) 
 		newCluster := &spec.K8Scluster{
 			ClusterInfo: &spec.ClusterInfo{
 				Name: strings.ToLower(cluster.Name),
-				Hash: utils.CreateHash(utils.HashLength),
+				Hash: hash.Create(hash.Length),
 			},
 			Kubernetes:        cluster.Version,
 			Network:           cluster.Network,
@@ -166,7 +166,7 @@ func createLBClustersFromManifest(from *manifest.Manifest, into *store.Config) e
 		newLbCluster := &spec.LBcluster{
 			ClusterInfo: &spec.ClusterInfo{
 				Name: lbCluster.Name,
-				Hash: utils.CreateHash(utils.HashLength),
+				Hash: hash.Create(hash.Length),
 			},
 			Roles:       attachedRoles,
 			Dns:         dns,

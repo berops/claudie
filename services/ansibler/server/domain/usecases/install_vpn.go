@@ -3,6 +3,7 @@ package usecases
 import (
 	"errors"
 	"fmt"
+	"github.com/berops/claudie/internal/hash"
 	"net/netip"
 	"os"
 	"path/filepath"
@@ -75,7 +76,7 @@ func (u *Usecases) InstallVPN(request *pb.InstallRequest) (*pb.InstallResponse, 
 // installWireguardVPN install wireguard VPN for all nodes in the infrastructure.
 func installWireguardVPN(clusterID string, vpnInfo *VPNInfo, processLimit *semaphore.Weighted) error {
 	// Directory where files (required by Ansible) will be generated.
-	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, commonUtils.CreateHash(commonUtils.HashLength)))
+	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, hash.Create(hash.Length)))
 	if err := commonUtils.CreateDirectory(clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 	}

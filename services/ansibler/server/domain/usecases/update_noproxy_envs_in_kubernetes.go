@@ -2,17 +2,17 @@ package usecases
 
 import (
 	"fmt"
-	"github.com/berops/claudie/internal/nodepools"
 	"os"
 	"path/filepath"
 
-	"github.com/rs/zerolog/log"
-
+	"github.com/berops/claudie/internal/hash"
+	"github.com/berops/claudie/internal/nodepools"
 	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/ansibler/server/utils"
 	"github.com/berops/claudie/services/ansibler/templates"
+	"github.com/rs/zerolog/log"
 
 	"golang.org/x/sync/semaphore"
 )
@@ -47,7 +47,7 @@ func updateNoProxyEnvsInKubernetes(currentK8sClusterInfo, desiredK8sClusterInfo 
 	clusterID := currentK8sClusterInfo.Id()
 
 	// This is the directory where files (Ansible inventory files, SSH keys etc.) will be generated.
-	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, commonUtils.CreateHash(commonUtils.HashLength)))
+	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, hash.Create(hash.Length)))
 	if err := commonUtils.CreateDirectory(clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 	}

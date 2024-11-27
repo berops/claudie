@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/nodepools"
 	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
@@ -36,7 +37,7 @@ func (u *Usecases) UpdateAPIEndpoint(request *pb.UpdateAPIEndpointRequest) (*pb.
 func updateAPIEndpoint(endpoint *pb.UpdateAPIEndpointRequest_Endpoint, currentK8sCluster *spec.K8Scluster, proxyEnvs *spec.ProxyEnvs, processLimit *semaphore.Weighted) error {
 	clusterID := currentK8sCluster.ClusterInfo.Id()
 
-	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, commonUtils.CreateHash(commonUtils.HashLength)))
+	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, hash.Create(hash.Length)))
 	if err := commonUtils.CreateDirectory(clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 	}

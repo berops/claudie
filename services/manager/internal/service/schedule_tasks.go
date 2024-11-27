@@ -7,6 +7,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -322,7 +323,7 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 		// to get the original nodepool name as defined in the input manifest
 		// we need to strip the hash.
 		if nextControlNodePool.GetDynamicNodePool() != nil {
-			nameWithoutHash = nextControlNodePool.Name[:len(nextControlNodePool.Name)-(utils.HashLength+1)] // +1 for '-'
+			nameWithoutHash = nextControlNodePool.Name[:len(nextControlNodePool.Name)-(hash.Length+1)] // +1 for '-'
 		}
 
 		for _, role := range lb.GetRoles() {
@@ -796,7 +797,7 @@ func newAPIEndpointNodeCandidate(desired []*spec.NodePool) (string, string) {
 }
 
 // targetPoolsDeleted check whether the LB API cluster target pools are among those that get deleted, if yes returns the names.
-func targetPoolsDeleted(current []*spec.LBcluster, nodepools []*spec.NodePool) ([]string, bool) {
+func targetPoolsDeleted(current []*spec.LBcluster, nps []*spec.NodePool) ([]string, bool) {
 	for _, role := range findLbAPIEndpointCluster(current).GetRoles() {
 		if role.RoleType != spec.RoleType_ApiServer {
 			continue
@@ -804,12 +805,12 @@ func targetPoolsDeleted(current []*spec.LBcluster, nodepools []*spec.NodePool) (
 
 		var matches []string
 		for _, targetPool := range role.TargetPools {
-			idx := slices.IndexFunc(nodepools, func(pool *spec.NodePool) bool {
-				name, _ := utils.MatchNameAndHashWithTemplate(targetPool, pool.Name)
+			idx := slices.IndexFunc(nps, func(pool *spec.NodePool) bool {
+				name, _ := nodepools.MatchNameAndHashWithTemplate(targetPool, pool.Name)
 				return name == targetPool
 			})
 			if idx >= 0 {
-				matches = append(matches, nodepools[idx].Name)
+				matches = append(matches, nps[idx].Name)
 			}
 		}
 

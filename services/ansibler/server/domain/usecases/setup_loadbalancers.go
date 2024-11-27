@@ -2,11 +2,12 @@ package usecases
 
 import (
 	"fmt"
-	"github.com/berops/claudie/internal/nodepools"
 	"os"
 	"path/filepath"
 
+	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/loggerutils"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/internal/templateUtils"
 	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
@@ -62,7 +63,7 @@ func (u *Usecases) SetUpLoadbalancers(request *pb.SetUpLBRequest) (*pb.SetUpLBRe
 // setUpLoadbalancers sets up the loadbalancers along with DNS and verifies their configuration
 func setUpLoadbalancers(desiredK8sCluster *spec.K8Scluster, lbClustersInfo *utils.LBClustersInfo, proxyEnvs *spec.ProxyEnvs, logger zerolog.Logger, processLimit *semaphore.Weighted) error {
 	clusterName := desiredK8sCluster.ClusterInfo.Name
-	clusterBaseDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, commonUtils.CreateHash(commonUtils.HashLength)))
+	clusterBaseDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, hash.Create(hash.Length)))
 
 	if err := utils.GenerateLBBaseFiles(clusterBaseDirectory, lbClustersInfo); err != nil {
 		return fmt.Errorf("error encountered while generating base files for %s : %w", clusterName, err)
@@ -216,7 +217,7 @@ func targetNodes(targetPools []string, targetk8sPools []*spec.NodePool) (nodes [
 	for _, target := range targetPools {
 		for _, np := range targetk8sPools {
 			if np.GetDynamicNodePool() != nil {
-				if name, _ := commonUtils.MatchNameAndHashWithTemplate(target, np.Name); name != "" {
+				if name, _ := nodepools.MatchNameAndHashWithTemplate(target, np.Name); name != "" {
 					pools = append(pools, np)
 				}
 			} else if np.GetStaticNodePool() != nil {

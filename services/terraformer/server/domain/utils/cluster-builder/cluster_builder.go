@@ -11,9 +11,9 @@ import (
 	"path/filepath"
 	"slices"
 
-	"github.com/berops/claudie/internal/checksum"
 	"github.com/berops/claudie/internal/clusters"
 	comm "github.com/berops/claudie/internal/command"
+	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -129,7 +129,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 			continue
 		}
 
-		f := checksum.Digest128(filepath.Join(np.Provider.SpecName, templates.ExtractTargetPath(np.Provider.Templates)))
+		f := hash.Digest128(filepath.Join(np.Provider.SpecName, templates.ExtractTargetPath(np.Provider.Templates)))
 		k := fmt.Sprintf("%s_%s_%s", nodepool.Name, np.Provider.SpecName, hex.EncodeToString(f))
 
 		output, err := terraform.Output(k)
@@ -269,7 +269,7 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 				TargetDirectory:   clusterDir,
 				ReadFromDirectory: templatesDownloadDir,
 				TemplatePath:      path,
-				Fingerprint:       hex.EncodeToString(checksum.Digest128(filepath.Join(info.SpecName, path))),
+				Fingerprint:       hex.EncodeToString(hash.Digest128(filepath.Join(info.SpecName, path))),
 			}
 
 			if err := g.GenerateNetworking(&templates.Networking{
@@ -440,7 +440,7 @@ func (c *ClusterBuilder) generateProviderTemplates(current, desired *spec.Cluste
 				TargetDirectory:   directory,
 				ReadFromDirectory: templatesDownloadDir,
 				TemplatePath:      path,
-				Fingerprint:       hex.EncodeToString(checksum.Digest128(filepath.Join(info.SpecName, path))),
+				Fingerprint:       hex.EncodeToString(hash.Digest128(filepath.Join(info.SpecName, path))),
 			}
 
 			err := g.GenerateProvider(&templates.Provider{

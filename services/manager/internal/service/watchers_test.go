@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/berops/claudie/internal/checksum"
+	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/internal/store"
@@ -35,8 +35,8 @@ func TestGRPC_WatchForDoneOrErrorDocuments(t *testing.T) {
 						Name:    "checksum-not-equal-done-stage",
 						Manifest: store.Manifest{
 							Raw:                 "testing-manifest",
-							Checksum:            checksum.Digest("01"),
-							LastAppliedChecksum: checksum.Digest("02"),
+							Checksum:            hash.Digest("01"),
+							LastAppliedChecksum: hash.Digest("02"),
 						},
 					})
 					return db
@@ -64,8 +64,8 @@ func TestGRPC_WatchForDoneOrErrorDocuments(t *testing.T) {
 					Name:    "checksum-not-equal-error-stage",
 					Manifest: store.Manifest{
 						Raw:                 "testing-manifest",
-						Checksum:            checksum.Digest("01"),
-						LastAppliedChecksum: checksum.Digest("02"),
+						Checksum:            hash.Digest("01"),
+						LastAppliedChecksum: hash.Digest("02"),
 					},
 				})
 				return db
@@ -92,8 +92,8 @@ func TestGRPC_WatchForDoneOrErrorDocuments(t *testing.T) {
 					Name:    "checksum-equal-done-stage",
 					Manifest: store.Manifest{
 						Raw:                 "testing-manifest",
-						Checksum:            checksum.Digest("01"),
-						LastAppliedChecksum: checksum.Digest("01"),
+						Checksum:            hash.Digest("01"),
+						LastAppliedChecksum: hash.Digest("01"),
 					},
 				})
 				return db
@@ -120,8 +120,8 @@ func TestGRPC_WatchForDoneOrErrorDocuments(t *testing.T) {
 					Name:    "checksum-equal-error-stage",
 					Manifest: store.Manifest{
 						Raw:                 "testing-manifest",
-						Checksum:            checksum.Digest("01"),
-						LastAppliedChecksum: checksum.Digest("01"),
+						Checksum:            hash.Digest("01"),
+						LastAppliedChecksum: hash.Digest("01"),
 					},
 				})
 				return db
@@ -176,8 +176,8 @@ func TestGRPC_WatchForDoneOrErrorDocuments(t *testing.T) {
 					Name:    "checksum-equal-done-stage-delete-clusters",
 					Manifest: store.Manifest{
 						Raw:                 "testing-manifest",
-						Checksum:            checksum.Digest("0"),
-						LastAppliedChecksum: checksum.Digest("0"),
+						Checksum:            hash.Digest("0"),
+						LastAppliedChecksum: hash.Digest("0"),
 					},
 					Clusters: map[string]*store.ClusterState{
 						"test-cluster-1": {
@@ -230,8 +230,8 @@ func TestGRPC_WatchForDoneOrErrorDocuments(t *testing.T) {
 					Name:    "checksum-equal-error-stage-delete-clusters",
 					Manifest: store.Manifest{
 						Raw:                 "testing-manifest",
-						Checksum:            checksum.Digest("0"),
-						LastAppliedChecksum: checksum.Digest("0"),
+						Checksum:            hash.Digest("0"),
+						LastAppliedChecksum: hash.Digest("0"),
 					},
 					Clusters: map[string]*store.ClusterState{
 						"test-cluster-1": {
@@ -329,7 +329,7 @@ kubernetes:
         compute:
           - htz-ctrl-nodes
 `,
-			Checksum: checksum.Digest("random-checksum"),
+			Checksum: hash.Digest("random-checksum"),
 		},
 	})
 

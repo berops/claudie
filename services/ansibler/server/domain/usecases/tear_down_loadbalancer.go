@@ -6,12 +6,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rs/zerolog/log"
-
+	"github.com/berops/claudie/internal/hash"
 	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/ansibler/server/utils"
+	"github.com/rs/zerolog/log"
 
 	"golang.org/x/sync/semaphore"
 )
@@ -79,7 +79,7 @@ func teardownLoadBalancers(
 ) (string, error) {
 	clusterName := desiredK8sCluster.ClusterInfo.Name
 
-	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, commonUtils.CreateHash(commonUtils.HashLength)))
+	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, hash.Create(hash.Length)))
 	if err := utils.GenerateLBBaseFiles(clusterDirectory, lbClustersInfo); err != nil {
 		return "", fmt.Errorf("error encountered while generating base files for %s", clusterName)
 	}
