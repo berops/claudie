@@ -154,7 +154,7 @@ func getAutoscaledClusters(c *spec.Config) []*spec.K8Scluster {
 	clusters := make([]*spec.K8Scluster, 0, len(c.Clusters))
 
 	for _, s := range c.Clusters {
-		if utils.IsAutoscaled(s.Current.GetK8S()) {
+		if s.Current != nil && s.Current.K8S.AnyAutoscaledNodePools() {
 			clusters = append(clusters, s.Current.GetK8S())
 		}
 	}

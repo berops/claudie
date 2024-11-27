@@ -2,6 +2,7 @@ package kube_eleven
 
 import (
 	"fmt"
+	"github.com/berops/claudie/internal/nodepools"
 	"os"
 	"path/filepath"
 	"strings"
@@ -131,11 +132,11 @@ func (k *KubeEleven) generateFiles() error {
 		return fmt.Errorf("error while generating %s from kubeone template : %w", generatedKubeoneManifestName, err)
 	}
 
-	if err := utils.CreateKeysForDynamicNodePools(utils.GetCommonDynamicNodePools(k.K8sCluster.ClusterInfo.NodePools), k.outputDirectory); err != nil {
+	if err := utils.CreateKeysForDynamicNodePools(nodepools.Dynamic(k.K8sCluster.ClusterInfo.NodePools), k.outputDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for dynamic nodepools: %w", err)
 	}
 
-	if err := utils.CreateKeysForStaticNodepools(utils.GetCommonStaticNodePools(k.K8sCluster.ClusterInfo.NodePools), k.outputDirectory); err != nil {
+	if err := utils.CreateKeysForStaticNodepools(nodepools.Static(k.K8sCluster.ClusterInfo.NodePools), k.outputDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 

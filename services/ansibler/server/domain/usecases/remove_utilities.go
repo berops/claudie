@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"fmt"
+	"github.com/berops/claudie/internal/nodepools"
 	"os"
 	"path/filepath"
 
@@ -24,8 +25,8 @@ func (u *Usecases) RemoveUtilities(req *pb.RemoveClaudieUtilitiesRequest) (*pb.R
 		NodepoolsInfos: []*NodepoolsInfo{
 			{
 				Nodepools: utils.NodePools{
-					Dynamic: cutils.GetCommonDynamicNodePools(req.Current.ClusterInfo.NodePools),
-					Static:  cutils.GetCommonStaticNodePools(req.Current.ClusterInfo.NodePools),
+					Dynamic: nodepools.Dynamic(req.Current.ClusterInfo.NodePools),
+					Static:  nodepools.Static(req.Current.ClusterInfo.NodePools),
 				},
 				ClusterID:      req.Current.ClusterInfo.Id(),
 				ClusterNetwork: req.Current.Network,
@@ -36,8 +37,8 @@ func (u *Usecases) RemoveUtilities(req *pb.RemoveClaudieUtilitiesRequest) (*pb.R
 	for _, lbCluster := range req.CurrentLbs {
 		vpnInfo.NodepoolsInfos = append(vpnInfo.NodepoolsInfos, &NodepoolsInfo{
 			Nodepools: utils.NodePools{
-				Dynamic: cutils.GetCommonDynamicNodePools(lbCluster.ClusterInfo.NodePools),
-				Static:  cutils.GetCommonStaticNodePools(lbCluster.ClusterInfo.NodePools),
+				Dynamic: nodepools.Dynamic(lbCluster.ClusterInfo.NodePools),
+				Static:  nodepools.Static(lbCluster.ClusterInfo.NodePools),
 			},
 			ClusterID:      lbCluster.ClusterInfo.Id(),
 			ClusterNetwork: req.Current.Network,

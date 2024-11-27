@@ -7,6 +7,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/internal/store"
@@ -695,8 +696,8 @@ func craftK8sIR(k8sDiffResult nodePoolDiffResult, current, desired *spec.K8Sclus
 	slices.Sort(k)
 
 	for _, nodepool := range k {
-		inp := utils.GetNodePoolByName(nodepool, ir.ClusterInfo.NodePools)
-		cnp := utils.GetNodePoolByName(nodepool, current.ClusterInfo.NodePools)
+		inp := nodepools.FindByName(nodepool, ir.ClusterInfo.NodePools)
+		cnp := nodepools.FindByName(nodepool, current.ClusterInfo.NodePools)
 
 		log.Debug().Str("cluster", clusterID).Msgf("nodes from dynamic nodepool %q were partially deleted, crafting ir to include them", nodepool)
 		inp.GetDynamicNodePool().Count = cnp.GetDynamicNodePool().Count
@@ -708,8 +709,8 @@ func craftK8sIR(k8sDiffResult nodePoolDiffResult, current, desired *spec.K8Sclus
 
 	for _, nodepool := range k {
 		log.Debug().Str("cluster", clusterID).Msgf("nodes from static nodepool %q were partially deleted, crafting ir to include them", nodepool)
-		inp := utils.GetNodePoolByName(nodepool, ir.ClusterInfo.NodePools)
-		cnp := utils.GetNodePoolByName(nodepool, current.ClusterInfo.NodePools)
+		inp := nodepools.FindByName(nodepool, ir.ClusterInfo.NodePools)
+		cnp := nodepools.FindByName(nodepool, current.ClusterInfo.NodePools)
 
 		is := inp.GetStaticNodePool()
 		cs := cnp.GetStaticNodePool()
@@ -733,7 +734,7 @@ func craftK8sIR(k8sDiffResult nodePoolDiffResult, current, desired *spec.K8Sclus
 
 	for _, nodepool := range k {
 		log.Debug().Str("cluster", clusterID).Msgf("nodepool %q  deleted, crafting ir to include it", nodepool)
-		np := utils.GetNodePoolByName(nodepool, current.ClusterInfo.NodePools)
+		np := nodepools.FindByName(nodepool, current.ClusterInfo.NodePools)
 		ir.ClusterInfo.NodePools = append(ir.ClusterInfo.NodePools, np)
 	}
 
@@ -746,7 +747,7 @@ func endpointNodeDeleted(k8sDiffResult nodePoolDiffResult, current *spec.K8Sclus
 	maps.Insert(deletedNodePools, maps.All(k8sDiffResult.deletedStatic))
 
 	for nodepool := range deletedNodePools {
-		np := utils.GetNodePoolByName(nodepool, current.ClusterInfo.NodePools)
+		np := nodepools.FindByName(nodepool, current.ClusterInfo.NodePools)
 		if _, err := utils.FindAPIEndpointNode([]*spec.NodePool{np}); err == nil {
 			return true
 		}
@@ -757,7 +758,7 @@ func endpointNodeDeleted(k8sDiffResult nodePoolDiffResult, current *spec.K8Sclus
 	maps.Insert(deletedNodePools, maps.All(k8sDiffResult.partialDeletedStatic))
 
 	for nodepool, nodes := range deletedNodePools {
-		np := utils.GetNodePoolByName(nodepool, current.ClusterInfo.NodePools)
+		np := nodepools.FindByName(nodepool, current.ClusterInfo.NodePools)
 		for _, deleted := range nodes {
 			i := slices.IndexFunc(np.Nodes, func(node *spec.Node) bool { return node.Name == deleted })
 			if i < 0 {
@@ -779,7 +780,7 @@ func deletedTargetApiNodePools(k8sDiffResult nodePoolDiffResult, current *spec.K
 
 	var deleted []*spec.NodePool
 	for np := range deletedNodePools {
-		deleted = append(deleted, utils.GetNodePoolByName(np, current.ClusterInfo.NodePools))
+		deleted = append(deleted, nodepools.FindByName(np, current.ClusterInfo.NodePools))
 	}
 
 	return targetPoolsDeleted(currentLbs, deleted)

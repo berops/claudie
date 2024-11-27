@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/berops/claudie/internal/nodepools"
 	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -40,8 +41,8 @@ func (u *Usecases) InstallVPN(request *pb.InstallRequest) (*pb.InstallResponse, 
 			// Construct and add NodepoolsInfo for the Kubernetes cluster
 			{
 				Nodepools: utils.NodePools{
-					Dynamic: commonUtils.GetCommonDynamicNodePools(request.Desired.ClusterInfo.NodePools),
-					Static:  commonUtils.GetCommonStaticNodePools(request.Desired.ClusterInfo.NodePools),
+					Dynamic: nodepools.Dynamic(request.Desired.ClusterInfo.NodePools),
+					Static:  nodepools.Static(request.Desired.ClusterInfo.NodePools),
 				},
 				ClusterID:      request.Desired.ClusterInfo.Id(),
 				ClusterNetwork: request.Desired.Network,
@@ -53,8 +54,8 @@ func (u *Usecases) InstallVPN(request *pb.InstallRequest) (*pb.InstallResponse, 
 		vpnInfo.NodepoolsInfos = append(vpnInfo.NodepoolsInfos,
 			&NodepoolsInfo{
 				Nodepools: utils.NodePools{
-					Dynamic: commonUtils.GetCommonDynamicNodePools(lbCluster.ClusterInfo.NodePools),
-					Static:  commonUtils.GetCommonStaticNodePools(lbCluster.ClusterInfo.NodePools),
+					Dynamic: nodepools.Dynamic(lbCluster.ClusterInfo.NodePools),
+					Static:  nodepools.Static(lbCluster.ClusterInfo.NodePools),
 				},
 				ClusterID:      lbCluster.ClusterInfo.Id(),
 				ClusterNetwork: request.Desired.Network,

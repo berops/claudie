@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"fmt"
+	"github.com/berops/claudie/internal/nodepools"
 	"os"
 	"path/filepath"
 
@@ -51,18 +52,18 @@ func updateNoProxyEnvsInKubernetes(currentK8sClusterInfo, desiredK8sClusterInfo 
 		return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 	}
 
-	if err := commonUtils.CreateKeysForDynamicNodePools(commonUtils.GetCommonDynamicNodePools(currentK8sClusterInfo.NodePools), clusterDirectory); err != nil {
+	if err := commonUtils.CreateKeysForDynamicNodePools(nodepools.Dynamic(currentK8sClusterInfo.NodePools), clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for dynamic nodepools : %w", err)
 	}
 
-	if err := commonUtils.CreateKeysForStaticNodepools(commonUtils.GetCommonStaticNodePools(currentK8sClusterInfo.NodePools), clusterDirectory); err != nil {
+	if err := commonUtils.CreateKeysForStaticNodepools(nodepools.Static(currentK8sClusterInfo.NodePools), clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 
 	if err := utils.GenerateInventoryFile(templates.UpdateProxyEnvsInventoryTemplate, clusterDirectory, utils.ProxyInventoryFileParameters{
 		K8sNodepools: utils.NodePools{
-			Dynamic: commonUtils.GetCommonDynamicNodes(currentK8sClusterInfo.NodePools, desiredK8sClusterInfo.NodePools),
-			Static:  commonUtils.GetCommonStaticNodes(currentK8sClusterInfo.NodePools, desiredK8sClusterInfo.NodePools),
+			Dynamic: nodepools.CommonDynamicNodes(currentK8sClusterInfo.NodePools, desiredK8sClusterInfo.NodePools),
+			Static:  nodepools.CommonStaticNodes(currentK8sClusterInfo.NodePools, desiredK8sClusterInfo.NodePools),
 		},
 		ClusterID:    clusterID,
 		NoProxyList:  proxyEnvs.NoProxyList,

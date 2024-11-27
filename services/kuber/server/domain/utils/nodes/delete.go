@@ -85,13 +85,15 @@ func (d *Deleter) DeleteNodes() (*spec.K8Scluster, error) {
 	}
 
 	// Cordon worker nodes to prevent any new pods/volume replicas being scheduled there
-	if err := utils.ConcurrentExec(d.workerNodes, func(_ int, worker string) error {
-		if realNodeName := utils.FindName(realNodeNames, worker); realNodeName != "" {
-			return kubectl.KubectlCordon(worker)
+	err = utils.ConcurrentExec(d.workerNodes, func(_ int, worker string) error {
+		i := slices.Index(realNodeNames, worker)
+		if i < 0 {
+			d.logger.Warn().Msgf("Node name %s not found in cluster.", worker)
+			return nil
 		}
-		d.logger.Warn().Msgf("Node name %s not found in cluster.", worker)
-		return nil
-	}); err != nil {
+		return kubectl.KubectlCordon(worker)
+	})
+	if err != nil {
 		return nil, fmt.Errorf("error while cordoning worker nodes from cluster %s which were marked for deletion : %w", d.clusterPrefix, err)
 	}
 
@@ -122,22 +124,26 @@ func (d *Deleter) DeleteNodes() (*spec.K8Scluster, error) {
 // kubectl delete node <node-name>
 // return nil if successful, error otherwise
 func (d *Deleter) deleteNodesByName(kc kubectl.Kubectl, nodeName string, realNodeNames []string) error {
-	if realNodeName := utils.FindName(realNodeNames, nodeName); realNodeName != "" {
-		d.logger.Info().Msgf("Deleting node %s from k8s cluster", realNodeName)
-		//kubectl drain <node-name> --ignore-daemonsets --delete-emptydir-data
-		err := kc.KubectlDrain(realNodeName)
-		if err != nil {
-			return fmt.Errorf("error while draining node %s from cluster %s : %w", nodeName, d.clusterPrefix, err)
-		}
-		//kubectl delete node <node-name>
-		err = kc.KubectlDeleteResource("nodes", realNodeName)
-		if err != nil {
-			return fmt.Errorf("error while deleting node %s from cluster %s : %w", nodeName, d.clusterPrefix, err)
-		}
+	i := slices.Index(realNodeNames, nodeName)
+	if i < 0 {
+		d.logger.Warn().Msgf("Node name that contains %s not found in cluster", nodeName)
 		return nil
 	}
 
-	d.logger.Warn().Msgf("Node name that contains %s not found in cluster", nodeName)
+	name := realNodeNames[i]
+
+	d.logger.Info().Msgf("Deleting node %s from k8s cluster", name)
+
+	//kubectl drain <node-name> --ignore-daemonsets --delete-emptydir-data
+	if err := kc.KubectlDrain(name); err != nil {
+		return fmt.Errorf("error while draining node %s from cluster %s : %w", nodeName, d.clusterPrefix, err)
+	}
+
+	//kubectl delete node <node-name>
+	if err := kc.KubectlDeleteResource("nodes", name); err != nil {
+		return fmt.Errorf("error while deleting node %s from cluster %s : %w", nodeName, d.clusterPrefix, err)
+	}
+
 	return nil
 }
 

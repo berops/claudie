@@ -1,7 +1,6 @@
 .idea/
 *.ini
 .terraform*
-clusters
 playground
 .vscode
 mongodb

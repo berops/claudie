@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/berops/claudie/internal/nodepools"
 	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -40,18 +41,18 @@ func updateAPIEndpoint(endpoint *pb.UpdateAPIEndpointRequest_Endpoint, currentK8
 		return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 	}
 
-	if err := commonUtils.CreateKeysForDynamicNodePools(commonUtils.GetCommonDynamicNodePools(currentK8sCluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
+	if err := commonUtils.CreateKeysForDynamicNodePools(nodepools.Dynamic(currentK8sCluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for dynamic nodepools : %w", err)
 	}
 
-	if err := commonUtils.CreateKeysForStaticNodepools(commonUtils.GetCommonStaticNodePools(currentK8sCluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
+	if err := commonUtils.CreateKeysForStaticNodepools(nodepools.Static(currentK8sCluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 
 	err := utils.GenerateInventoryFile(templates.LoadbalancerInventoryTemplate, clusterDirectory, utils.LBInventoryFileParameters{
 		K8sNodepools: utils.NodePools{
-			Dynamic: commonUtils.GetCommonDynamicNodePools(currentK8sCluster.ClusterInfo.NodePools),
-			Static:  commonUtils.GetCommonStaticNodePools(currentK8sCluster.ClusterInfo.NodePools),
+			Dynamic: nodepools.Dynamic(currentK8sCluster.ClusterInfo.NodePools),
+			Static:  nodepools.Static(currentK8sCluster.ClusterInfo.NodePools),
 		},
 		LBClusters: nil,
 		ClusterID:  clusterID,
@@ -65,7 +66,7 @@ func updateAPIEndpoint(endpoint *pb.UpdateAPIEndpointRequest_Endpoint, currentK8
 		return fmt.Errorf("current state cluster doesn't have api endpoint as a control plane node")
 	}
 
-	np := commonUtils.GetNodePoolByName(endpoint.Nodepool, currentK8sCluster.ClusterInfo.NodePools)
+	np := nodepools.FindByName(endpoint.Nodepool, currentK8sCluster.ClusterInfo.NodePools)
 	if np == nil {
 		return fmt.Errorf("no nodepool %q found within current state", endpoint.Nodepool)
 	}

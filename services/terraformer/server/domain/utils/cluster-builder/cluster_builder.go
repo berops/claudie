@@ -12,7 +12,9 @@ import (
 	"slices"
 
 	"github.com/berops/claudie/internal/checksum"
+	"github.com/berops/claudie/internal/clusters"
 	comm "github.com/berops/claudie/internal/command"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates"
@@ -68,8 +70,8 @@ func (c ClusterBuilder) CreateNodepools() error {
 	// Calculate CIDR, so they do not change if nodepool order changes
 	// https://github.com/berops/claudie/issues/647
 	// Order them by provider and region
-	for _, nps := range utils.GroupNodepoolsByProviderRegion(c.DesiredClusterInfo) {
-		if err := calculateCIDR(baseSubnetCIDR, utils.GetDynamicNodePools(nps)); err != nil {
+	for _, nps := range nodepools.ByProviderRegion(c.DesiredClusterInfo.NodePools) {
+		if err := calculateCIDR(baseSubnetCIDR, nodepools.ExtractDynamic(nps)); err != nil {
 			return fmt.Errorf("error while generating CIDR for nodepools : %w", err)
 		}
 	}
@@ -158,8 +160,8 @@ func (c ClusterBuilder) DestroyNodepools() error {
 	// Calculate CIDR, in case some nodepools do not have it, due to error.
 	// https://github.com/berops/claudie/issues/647
 	// Order them by provider and region
-	for _, nps := range utils.GroupNodepoolsByProviderRegion(c.CurrentClusterInfo) {
-		if err := calculateCIDR(baseSubnetCIDR, utils.GetDynamicNodePools(nps)); err != nil {
+	for _, nps := range nodepools.ByProviderRegion(c.CurrentClusterInfo.NodePools) {
+		if err := calculateCIDR(baseSubnetCIDR, nodepools.ExtractDynamic(nps)); err != nil {
 			return fmt.Errorf("error while generating CIDR for nodepools : %w", err)
 		}
 	}
@@ -273,10 +275,10 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 			if err := g.GenerateNetworking(&templates.Networking{
 				ClusterData: clusterData,
 				Provider:    p,
-				Regions:     utils.GetRegions(utils.GetDynamicNodePools(pools)),
+				Regions:     nodepools.ExtractRegions(nodepools.ExtractDynamic(pools)),
 				K8sData: templates.K8sData{
 					HasAPIServer: !slices.Contains(
-						utils.ExtractTargetPorts(c.K8sInfo.LoadBalancers),
+						clusters.ExtractTargetPorts(c.K8sInfo.LoadBalancers),
 						6443,
 					),
 				},
@@ -444,7 +446,7 @@ func (c *ClusterBuilder) generateProviderTemplates(current, desired *spec.Cluste
 			err := g.GenerateProvider(&templates.Provider{
 				ClusterData: clusterData,
 				Provider:    pools[0].GetDynamicNodePool().GetProvider(),
-				Regions:     utils.GetRegions(utils.GetDynamicNodePools(pools)),
+				Regions:     nodepools.ExtractRegions(nodepools.ExtractDynamic(pools)),
 			})
 
 			if err != nil {

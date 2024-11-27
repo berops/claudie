@@ -7,6 +7,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	"github.com/berops/claudie/internal/nodepools"
 	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -49,18 +50,18 @@ func updateProxyEnvsOnNodes(desiredK8sClusterInfo *spec.ClusterInfo, proxyEnvs *
 		return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 	}
 
-	if err := commonUtils.CreateKeysForDynamicNodePools(commonUtils.GetCommonDynamicNodePools(desiredK8sClusterInfo.NodePools), clusterDirectory); err != nil {
+	if err := commonUtils.CreateKeysForDynamicNodePools(nodepools.Dynamic(desiredK8sClusterInfo.NodePools), clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for dynamic nodepools : %w", err)
 	}
 
-	if err := commonUtils.CreateKeysForStaticNodepools(commonUtils.GetCommonStaticNodePools(desiredK8sClusterInfo.NodePools), clusterDirectory); err != nil {
+	if err := commonUtils.CreateKeysForStaticNodepools(nodepools.Static(desiredK8sClusterInfo.NodePools), clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 
 	if err := utils.GenerateInventoryFile(templates.UpdateProxyEnvsInventoryTemplate, clusterDirectory, utils.ProxyInventoryFileParameters{
 		K8sNodepools: utils.NodePools{
-			Dynamic: commonUtils.GetCommonDynamicNodePools(desiredK8sClusterInfo.NodePools),
-			Static:  commonUtils.GetCommonStaticNodePools(desiredK8sClusterInfo.NodePools),
+			Dynamic: nodepools.Dynamic(desiredK8sClusterInfo.NodePools),
+			Static:  nodepools.Static(desiredK8sClusterInfo.NodePools),
 		},
 		ClusterID:    clusterID,
 		NoProxyList:  proxyEnvs.NoProxyList,

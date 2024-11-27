@@ -7,6 +7,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	"github.com/berops/claudie/internal/nodepools"
 	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/ansibler/server/utils"
@@ -24,8 +25,8 @@ func (u *Usecases) InstallNodeRequirements(request *pb.InstallRequest) (*pb.Inst
 
 	NodepoolsInfo := &NodepoolsInfo{
 		Nodepools: utils.NodePools{
-			Dynamic: commonUtils.GetCommonDynamicNodePools(request.Desired.ClusterInfo.NodePools),
-			Static:  commonUtils.GetCommonStaticNodePools(request.Desired.ClusterInfo.NodePools),
+			Dynamic: nodepools.Dynamic(request.Desired.ClusterInfo.NodePools),
+			Static:  nodepools.Static(request.Desired.ClusterInfo.NodePools),
 		},
 		ClusterID:      request.Desired.ClusterInfo.Id(),
 		ClusterNetwork: request.Desired.Network,

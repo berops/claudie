@@ -3,10 +3,10 @@ package scrapeconfig
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/berops/claudie/internal/nodepools"
 
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/templateUtils"
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/kuber/templates"
 
@@ -99,8 +99,8 @@ func (sc *ScrapeConfig) getData() SCData {
 	lbs := make([]*LBcluster, 0, len(sc.LBClusters))
 	for _, l := range sc.LBClusters {
 		lbs = append(lbs, &LBcluster{NodePools: &NodePools{
-			Dynamic: utils.GetCommonDynamicNodePools(l.ClusterInfo.NodePools),
-			Static:  utils.GetCommonStaticNodePools(l.ClusterInfo.NodePools),
+			Dynamic: nodepools.Dynamic(l.ClusterInfo.NodePools),
+			Static:  nodepools.Static(l.ClusterInfo.NodePools),
 		}})
 	}
 	return SCData{LBClusters: lbs}

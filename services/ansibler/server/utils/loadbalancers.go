@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/ansibler/templates"
@@ -171,11 +172,11 @@ func GenerateLBBaseFiles(outputDirectory string, lbClustersInfo *LBClustersInfo)
 		return fmt.Errorf("failed to create directory %s : %w", outputDirectory, err)
 	}
 
-	if err := utils.CreateKeysForDynamicNodePools(utils.GetCommonDynamicNodePools(lbClustersInfo.TargetK8sNodepool), outputDirectory); err != nil {
+	if err := utils.CreateKeysForDynamicNodePools(nodepools.Dynamic(lbClustersInfo.TargetK8sNodepool), outputDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for dynamic nodepools : %w", err)
 	}
 
-	if err := utils.CreateKeysForStaticNodepools(utils.GetCommonStaticNodePools(lbClustersInfo.TargetK8sNodepool), outputDirectory); err != nil {
+	if err := utils.CreateKeysForStaticNodepools(nodepools.Static(lbClustersInfo.TargetK8sNodepool), outputDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 
@@ -186,8 +187,8 @@ func GenerateLBBaseFiles(outputDirectory string, lbClustersInfo *LBClustersInfo)
 				Name: lbData.DesiredLbCluster.ClusterInfo.Name,
 				Hash: lbData.DesiredLbCluster.ClusterInfo.Hash,
 				LBnodepools: NodePools{
-					Dynamic: utils.GetCommonDynamicNodePools(lbData.DesiredLbCluster.ClusterInfo.NodePools),
-					Static:  utils.GetCommonStaticNodePools(lbData.DesiredLbCluster.ClusterInfo.NodePools),
+					Dynamic: nodepools.Dynamic(lbData.DesiredLbCluster.ClusterInfo.NodePools),
+					Static:  nodepools.Static(lbData.DesiredLbCluster.ClusterInfo.NodePools),
 				},
 			})
 		}
@@ -198,8 +199,8 @@ func GenerateLBBaseFiles(outputDirectory string, lbClustersInfo *LBClustersInfo)
 		// Value of Ansible template parameters
 		LBInventoryFileParameters{
 			K8sNodepools: NodePools{
-				Dynamic: utils.GetCommonDynamicNodePools(lbClustersInfo.TargetK8sNodepool),
-				Static:  utils.GetCommonStaticNodePools(lbClustersInfo.TargetK8sNodepool),
+				Dynamic: nodepools.Dynamic(lbClustersInfo.TargetK8sNodepool),
+				Static:  nodepools.Static(lbClustersInfo.TargetK8sNodepool),
 			},
 			LBClusters: lbClusters,
 			ClusterID:  lbClustersInfo.ClusterID,

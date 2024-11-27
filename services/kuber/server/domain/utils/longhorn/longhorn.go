@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/internal/sanitise"
 	"github.com/berops/claudie/internal/templateUtils"
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/kuber/templates"
 	"github.com/rs/zerolog/log"
@@ -74,14 +75,13 @@ func (l *Longhorn) SetUp() error {
 	}
 
 	// Apply setting about CA
-	enableCa := enableCA{fmt.Sprintf("%v", utils.IsAutoscaled(l.Cluster))}
+	enableCa := enableCA{fmt.Sprintf("%v", l.Cluster.AnyAutoscaledNodePools())}
 	if setting, err := template.GenerateToString(enableCATpl, enableCa); err != nil {
 		return err
 	} else if err := kubectl.KubectlApplyString(setting); err != nil {
 		return fmt.Errorf("error while applying CA setting for longhorn in cluster %s : %w", l.Cluster.ClusterInfo.Name, err)
 	}
 
-	sortedNodePools := utils.GroupNodepoolsByProviderSpecName(l.Cluster.ClusterInfo)
 	// get real nodes names in a case when provider appends some string to the set name
 	realNodesInfo, err := kubectl.KubectlGetNodeNames()
 	if err != nil {
@@ -89,12 +89,12 @@ func (l *Longhorn) SetUp() error {
 	}
 	realNodeNames := strings.Split(string(realNodesInfo), "\n")
 	// tag nodes based on the zones
-	for providerInstance, nodepools := range sortedNodePools {
+	for providerInstance, nps := range nodepools.ByProviderSpecName(l.Cluster.ClusterInfo.NodePools) {
 		zoneName := sanitise.String(fmt.Sprintf("%s-zone", providerInstance))
 		storageClassName := fmt.Sprintf("longhorn-%s", zoneName)
 		//flag to determine whether we need to create storage class or not
 		isWorkerNodeProvider := false
-		for _, np := range nodepools {
+		for _, np := range nps {
 			// tag worker nodes from nodepool based on the future zone
 			// NOTE: the master nodes are by default set to NoSchedule, therefore we do not need to annotate them
 			// If in the future, we add functionality to allow scheduling on master nodes, the longhorn will need add the annotation
@@ -103,14 +103,15 @@ func (l *Longhorn) SetUp() error {
 				for _, node := range np.GetNodes() {
 					nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", l.Cluster.ClusterInfo.Id()))
 					annotation := fmt.Sprintf("node.longhorn.io/default-node-tags='[\"%s\"]'", zoneName)
-					realNodeName := utils.FindName(realNodeNames, nodeName)
-					if realNodeName == "" {
+
+					i := slices.Index(realNodeNames, nodeName)
+					if i < 0 {
 						log.Warn().Str("cluster", l.Cluster.ClusterInfo.Id()).Msgf("Node %s was not found in cluster %v", nodeName, realNodeNames)
 						continue
 					}
 					// Add tag to the node via kubectl annotate, use --overwrite to avoid getting error of already tagged node
-					if err := kubectl.KubectlAnnotate("node", realNodeName, annotation, "--overwrite"); err != nil {
-						return fmt.Errorf("error while annotating the node %s from cluster %s via kubectl annotate : %w", realNodeName, l.Cluster.ClusterInfo.Name, err)
+					if err := kubectl.KubectlAnnotate("node", realNodeNames[i], annotation, "--overwrite"); err != nil {
+						return fmt.Errorf("error while annotating the node %s from cluster %s via kubectl annotate : %w", realNodeNames[i], l.Cluster.ClusterInfo.Name, err)
 					}
 				}
 			}

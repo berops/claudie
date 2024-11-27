@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"fmt"
+	"github.com/berops/claudie/internal/nodepools"
 	"os"
 	"path/filepath"
 
@@ -82,11 +83,11 @@ func setUpLoadbalancers(desiredK8sCluster *spec.K8Scluster, lbClustersInfo *util
 				return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 			}
 
-			if err := commonUtils.CreateKeysForDynamicNodePools(commonUtils.GetCommonDynamicNodePools(lbCluster.DesiredLbCluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
+			if err := commonUtils.CreateKeysForDynamicNodePools(nodepools.Dynamic(lbCluster.DesiredLbCluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
 				return fmt.Errorf("failed to create key file(s) for dynamic nodepools : %w", err)
 			}
 
-			if err := commonUtils.CreateKeysForStaticNodepools(commonUtils.GetCommonStaticNodePools(lbCluster.DesiredLbCluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
+			if err := commonUtils.CreateKeysForStaticNodepools(nodepools.Static(lbCluster.DesiredLbCluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
 				return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 			}
 
