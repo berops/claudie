@@ -191,23 +191,6 @@ func (g *Generator) GenerateDNS(data *DNS) error {
 	)
 }
 
-func mustParseURL(s *url.URL, err error) *url.URL {
-	if err != nil {
-		panic(err)
-	}
-	return s
-}
-
-func ExtractTargetPath(repository *spec.TemplateRepository) string {
-	u := mustParseURL(url.Parse(repository.Repository))
-	return filepath.Join(
-		u.Hostname(),
-		u.Path,
-		repository.CommitHash,
-		repository.Path,
-	)
-}
-
 func (g *Generator) generateTemplates(dir, specName string, data any) error {
 	type fingerPrintedData struct {
 		// Data is data passed to the template generator (one of the above).

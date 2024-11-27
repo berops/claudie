@@ -1,6 +1,10 @@
 package spec
 
-import "fmt"
+import (
+	"fmt"
+	"net/url"
+	"path/filepath"
+)
 
 // Id returns the ID of the cluster.
 func (c *ClusterInfo) Id() string {
@@ -136,4 +140,26 @@ func (pr *Provider) Credentials() string {
 	default:
 		panic(fmt.Sprintf("unexpected type %T", pr.ProviderType))
 	}
+}
+
+// MustExtractTargetPath returns the target path of the external template repository.
+// If the URL of the repository is invalid this functions panics.
+// The target path is the path where the templates should be downloaded on the local
+// filesystem.
+func (r *TemplateRepository) MustExtractTargetPath() string {
+	if r == nil {
+		return ""
+	}
+
+	u, err := url.Parse(r.Repository)
+	if err != nil {
+		panic(err)
+	}
+
+	return filepath.Join(
+		u.Hostname(),
+		u.Path,
+		r.CommitHash,
+		r.Path,
+	)
 }

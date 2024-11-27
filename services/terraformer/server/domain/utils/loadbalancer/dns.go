@@ -114,7 +114,7 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 		return err
 	}
 
-	f := hash.Digest128(filepath.Join(d.DesiredDNS.Provider.SpecName, templates.ExtractTargetPath(d.DesiredDNS.Provider.Templates)))
+	f := hash.Digest128(filepath.Join(d.DesiredDNS.Provider.SpecName, d.DesiredDNS.Provider.Templates.MustExtractTargetPath()))
 	k := fmt.Sprintf("%s_%s_%s", clusterID, d.DesiredDNS.GetProvider().GetSpecName(), hex.EncodeToString(f))
 
 	output, err := terraform.Output(k)
@@ -204,7 +204,7 @@ func (d *DNS) generateFiles(dnsID, dnsDir string, dns *spec.DNS, nodeIPs []strin
 		return fmt.Errorf("failed to download templates for DNS %q: %w", dnsID, err)
 	}
 
-	path := templates.ExtractTargetPath(dns.Provider.Templates)
+	path := dns.Provider.Templates.MustExtractTargetPath()
 
 	g := templates.Generator{
 		ID:                dnsID,

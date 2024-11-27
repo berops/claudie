@@ -7,6 +7,61 @@ import (
 	"github.com/berops/claudie/proto/pb/spec"
 )
 
+type ProviderTemplateGroup struct {
+	CloudProvider string
+	SpecName      string
+	Creds         string
+}
+
+// ByProvider returns an iterator that groups nodepools by provider.
+func ByProvider(nps []*spec.NodePool) iter.Seq2[ProviderTemplateGroup, []*spec.NodePool] {
+	m := make(map[ProviderTemplateGroup][]*spec.NodePool)
+
+	for _, nodepool := range nps {
+		np, ok := nodepool.Type.(*spec.NodePool_DynamicNodePool)
+		if !ok {
+			continue
+		}
+		k := ProviderTemplateGroup{
+			CloudProvider: np.DynamicNodePool.Provider.CloudProviderName,
+			SpecName:      np.DynamicNodePool.Provider.SpecName,
+			Creds:         np.DynamicNodePool.Provider.Credentials(),
+		}
+		m[k] = append(m[k], nodepool)
+	}
+
+	return func(yield func(ProviderTemplateGroup, []*spec.NodePool) bool) {
+		for k, v := range m {
+			if !yield(k, v) {
+				return
+			}
+		}
+	}
+}
+
+// ByTemplates returns an iterator that groups nodepools by provider templates.
+func ByTemplates(nps []*spec.NodePool) iter.Seq2[string, []*spec.NodePool] {
+	m := make(map[string][]*spec.NodePool)
+
+	for _, nodepool := range nps {
+		np, ok := nodepool.Type.(*spec.NodePool_DynamicNodePool)
+		if !ok {
+			continue
+		}
+
+		p := np.DynamicNodePool.Provider.Templates.MustExtractTargetPath()
+		m[p] = append(m[p], nodepool)
+	}
+
+	return func(yield func(string, []*spec.NodePool) bool) {
+		for k, v := range m {
+			if !yield(k, v) {
+				return
+			}
+		}
+	}
+}
+
 // ByProviderSpecName returns an iterator that groups nodepools by provider SpecName.
 func ByProviderSpecName(nodepools []*spec.NodePool) iter.Seq2[string, []*spec.NodePool] {
 	sortedNodePools := map[string][]*spec.NodePool{}
