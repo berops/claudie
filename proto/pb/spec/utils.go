@@ -81,6 +81,20 @@ func (c *LBcluster) NodeCount() int {
 	return out
 }
 
+func (c *LBcluster) HasApiRole() bool {
+	if c == nil {
+		return false
+	}
+
+	for _, role := range c.Roles {
+		if role.RoleType == RoleType_ApiServer {
+			return true
+		}
+	}
+
+	return false
+}
+
 // EndpointNode searches for a node with type ApiEndpoint.
 func (n *NodePool) EndpointNode() *Node {
 	if n == nil {
@@ -94,20 +108,6 @@ func (n *NodePool) EndpointNode() *Node {
 	}
 
 	return nil
-}
-
-func (c *LBcluster) HasApiRole() bool {
-	if c == nil {
-		return false
-	}
-
-	for _, role := range c.Roles {
-		if role.RoleType == RoleType_ApiServer {
-			return true
-		}
-	}
-
-	return false
 }
 
 // Credentials extract the key for the provider to be used within terraform.
