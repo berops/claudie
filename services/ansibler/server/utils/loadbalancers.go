@@ -152,12 +152,12 @@ func (lb *LBClusterData) APIEndpointState() APIEndpointChangeState {
 	}
 
 	// check if role changed.
-	isAPIServer := utils.HasAPIServerRole(lb.CurrentLbCluster.Roles)
-	if utils.HasAPIServerRole(lb.DesiredLbCluster.Roles) && !isAPIServer {
+	isAPIServer := lb.CurrentLbCluster.HasApiRole()
+	if lb.DesiredLbCluster.HasApiRole() && !isAPIServer {
 		return RoleChangedToAPIServer
 	}
 
-	if isAPIServer && !utils.HasAPIServerRole(lb.DesiredLbCluster.Roles) {
+	if isAPIServer && !lb.DesiredLbCluster.HasApiRole() {
 		return RoleChangedFromAPIServer
 	}
 
@@ -242,15 +242,15 @@ func HandleAPIEndpointChange(
 
 		// Find if any control node was acting as the Api endpoint in past.
 		// If so, then we will reuse that control node as the Api endpoint.
-		if node, err := utils.FindAPIEndpointNode(k8sCluster.TargetK8sNodepool); err == nil {
+		if _, node := nodepools.FindApiEndpoint(k8sCluster.TargetK8sNodepool); node != nil {
 			newEndpoint = node.Public
 			break
 		}
 
 		// Otherwise choose one of the control nodes as the api endpoint.
-		node, err := utils.FindControlNode(k8sCluster.TargetK8sNodepool)
-		if err != nil {
-			return err
+		node := nodepools.FirstControlNode(k8sCluster.TargetK8sNodepool)
+		if node == nil {
+			return fmt.Errorf("failed to find node with type %s", spec.NodeType_master.String())
 		}
 		node.NodeType = spec.NodeType_apiEndpoint
 		newEndpoint = node.Public
@@ -271,8 +271,8 @@ func HandleAPIEndpointChange(
 		}
 
 		// 3rd - pick the control node as the previous ApiServer.
-		node, err := utils.FindAPIEndpointNode(k8sCluster.TargetK8sNodepool)
-		if err != nil {
+		_, node := nodepools.FindApiEndpoint(k8sCluster.TargetK8sNodepool)
+		if node == nil {
 			return fmt.Errorf("failed to find ApiEndpoint k8s node, couldn't update Api server endpoint")
 		}
 		oldEndpoint = node.Public
@@ -302,8 +302,8 @@ func HandleAPIEndpointChange(
 		}
 
 		// 3rd - pick the control node as the previous ApiServer.
-		node, err := utils.FindAPIEndpointNode(k8sCluster.TargetK8sNodepool)
-		if err != nil {
+		_, node := nodepools.FindApiEndpoint(k8sCluster.TargetK8sNodepool)
+		if node == nil {
 			return fmt.Errorf("failed to find APIEndpoint k8s node, couldn't update Api server endpoint")
 		}
 		node.NodeType = spec.NodeType_master // remove the Endpoint type from the node.
@@ -313,15 +313,15 @@ func HandleAPIEndpointChange(
 		oldEndpoint = apiServerTypeLBCluster.CurrentLbCluster.Dns.Endpoint
 
 		// 1st - find if any control node was an API server.
-		if node, err := utils.FindAPIEndpointNode(k8sCluster.TargetK8sNodepool); err == nil {
+		if _, node := nodepools.FindApiEndpoint(k8sCluster.TargetK8sNodepool); node != nil {
 			newEndpoint = node.Public
 			break
 		}
 
 		// 2nd - choose one of the control nodes as the api endpoint.
-		node, err := utils.FindControlNode(k8sCluster.TargetK8sNodepool)
-		if err != nil {
-			return err
+		node := nodepools.FirstControlNode(k8sCluster.TargetK8sNodepool)
+		if node == nil {
+			return fmt.Errorf("failed to find node with type %s", spec.NodeType_master.String())
 		}
 		node.NodeType = spec.NodeType_apiEndpoint
 		newEndpoint = node.Public

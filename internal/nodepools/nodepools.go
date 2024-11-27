@@ -149,3 +149,27 @@ func MustExtractNameAndHash(pool string) (name, hash string) {
 
 	return name, hash
 }
+
+// FindApiEndpoint searches for a nodepool that has the control node representing the Api endpoint of the cluster.
+func FindApiEndpoint(nodepools []*spec.NodePool) (*spec.NodePool, *spec.Node) {
+	for _, np := range nodepools {
+		if np.IsControl {
+			if node := np.EndpointNode(); node != nil {
+				return np, node
+			}
+		}
+	}
+	return nil, nil
+}
+
+// FirstControlNode returns the first control node encountered.
+func FirstControlNode(nodepools []*spec.NodePool) *spec.Node {
+	for _, np := range nodepools {
+		for _, node := range np.Nodes {
+			if node.NodeType == spec.NodeType_master {
+				return node
+			}
+		}
+	}
+	return nil
+}

@@ -309,7 +309,7 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 		lb := findLbAPIEndpointCluster(irLbs)
 
 		var nextControlNodePool *spec.NodePool
-		for _, np := range utils.FindControlNodepools(desired.ClusterInfo.NodePools) {
+		for np := range nodepools.Control(desired.ClusterInfo.NodePools) {
 			if !slices.ContainsFunc(targets, func(s string) bool { return s == np.Name }) {
 				nextControlNodePool = np
 				break
@@ -749,7 +749,7 @@ func endpointNodeDeleted(k8sDiffResult nodePoolDiffResult, current *spec.K8Sclus
 
 	for nodepool := range deletedNodePools {
 		np := nodepools.FindByName(nodepool, current.ClusterInfo.NodePools)
-		if _, err := utils.FindAPIEndpointNode([]*spec.NodePool{np}); err == nil {
+		if np.EndpointNode() != nil {
 			return true
 		}
 	}
@@ -823,7 +823,7 @@ func targetPoolsDeleted(current []*spec.LBcluster, nps []*spec.NodePool) ([]stri
 
 func findLbAPIEndpointCluster(current []*spec.LBcluster) *spec.LBcluster {
 	for _, lb := range current {
-		if utils.HasAPIServerRole(lb.GetRoles()) {
+		if lb.HasApiRole() {
 			return lb
 		}
 	}

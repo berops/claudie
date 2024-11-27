@@ -2,6 +2,7 @@ package nodes
 
 import (
 	"fmt"
+	"github.com/berops/claudie/internal/nodepools"
 	"slices"
 	"strings"
 	"time"
@@ -259,8 +260,7 @@ func (d *Deleter) assureReplication(kc kubectl.Kubectl, worker string) error {
 // function returns any master node which will not be deleted.
 // return API EP node if successful, nil otherwise
 func (d *Deleter) getMainMaster() *spec.Node {
-	n, err := utils.FindAPIEndpointNode(d.cluster.ClusterInfo.NodePools)
-	if err == nil {
+	if _, n := nodepools.FindApiEndpoint(d.cluster.ClusterInfo.NodePools); n != nil {
 		return n
 	}
 

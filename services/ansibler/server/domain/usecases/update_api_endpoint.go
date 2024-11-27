@@ -62,8 +62,8 @@ func updateAPIEndpoint(endpoint *pb.UpdateAPIEndpointRequest_Endpoint, currentK8
 		return fmt.Errorf("error while creating inventory file for %s : %w", clusterDirectory, err)
 	}
 
-	_, apiEndpointNode, err := commonUtils.FindNodepoolWithApiEndpointNode(currentK8sCluster.ClusterInfo.NodePools)
-	if err != nil {
+	_, apiEndpointNode := nodepools.FindApiEndpoint(currentK8sCluster.ClusterInfo.NodePools)
+	if apiEndpointNode == nil {
 		return fmt.Errorf("current state cluster doesn't have api endpoint as a control plane node")
 	}
 

@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 
 	"github.com/berops/claudie/internal/hash"
-	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/ansibler/server/utils"
@@ -33,7 +32,7 @@ func (u *Usecases) TeardownLoadBalancers(ctx context.Context, request *pb.Teardo
 
 	var isApiServerTypeDesiredLBClusterPresent bool
 	for _, lbCluster := range request.DesiredLbs {
-		if commonUtils.HasAPIServerRole(lbCluster.Roles) {
+		if lbCluster.HasApiRole() {
 			isApiServerTypeDesiredLBClusterPresent = true
 		}
 	}

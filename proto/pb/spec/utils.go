@@ -80,3 +80,32 @@ func (c *LBcluster) NodeCount() int {
 
 	return out
 }
+
+// EndpointNode searches for a node with type ApiEndpoint.
+func (n *NodePool) EndpointNode() *Node {
+	if n == nil {
+		return nil
+	}
+
+	for _, node := range n.Nodes {
+		if node.NodeType == NodeType_apiEndpoint {
+			return node
+		}
+	}
+
+	return nil
+}
+
+func (c *LBcluster) HasApiRole() bool {
+	if c == nil {
+		return false
+	}
+
+	for _, role := range c.Roles {
+		if role.RoleType == RoleType_ApiServer {
+			return true
+		}
+	}
+
+	return false
+}

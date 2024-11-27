@@ -2,9 +2,8 @@ package nodepools
 
 import (
 	"fmt"
-	"iter"
-
 	"github.com/berops/claudie/proto/pb/spec"
+	"iter"
 )
 
 // ByProviderSpecName returns an iterator that groups nodepools by provider SpecName.
@@ -45,6 +44,18 @@ func ByProviderRegion(nodepools []*spec.NodePool) iter.Seq2[string, []*spec.Node
 		for k, v := range sortedNodePools {
 			if !yield(k, v) {
 				return
+			}
+		}
+	}
+}
+
+func Control(nodepools []*spec.NodePool) iter.Seq[*spec.NodePool] {
+	return func(yield func(*spec.NodePool) bool) {
+		for _, np := range nodepools {
+			if np.IsControl {
+				if !yield(np) {
+					return
+				}
 			}
 		}
 	}

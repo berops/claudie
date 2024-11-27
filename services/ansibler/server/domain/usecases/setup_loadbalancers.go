@@ -110,7 +110,7 @@ func setUpLoadbalancers(desiredK8sCluster *spec.K8Scluster, lbClustersInfo *util
 
 	var desiredApiServerTypeLBCluster *utils.LBClusterData
 	for _, lbClusterInfo := range lbClustersInfo.LbClusters {
-		if commonUtils.HasAPIServerRole(lbClusterInfo.DesiredLbCluster.Roles) {
+		if lbClusterInfo.DesiredLbCluster.HasApiRole() {
 			desiredApiServerTypeLBCluster = lbClusterInfo
 		}
 	}
