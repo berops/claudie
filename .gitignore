@@ -2,6 +2,7 @@
 *.ini
 .terraform*
 playground
+clusters
 .vscode
 mongodb
 *.tfstate*
