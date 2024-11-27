@@ -23,9 +23,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/healthcheck"
 	"github.com/berops/claudie/internal/loggerutils"
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/services/claudie-operator/pkg/controller"
 	"github.com/berops/claudie/services/claudie-operator/server/adapters/inbound/grpc"
 	"github.com/berops/claudie/services/claudie-operator/server/domain/usecases"
@@ -57,10 +57,10 @@ var (
 
 func main() {
 	// lookup environment variables
-	portStr = utils.GetEnvDefault("WEBHOOK_TLS_PORT", "9443")
-	certDir = utils.GetEnvDefault("WEBHOOK_CERT_DIR", "./tls")
-	webhookPath = utils.GetEnvDefault("WEBHOOK_PATH", "/validate-manifest")
-	namespaceSelector = utils.GetEnvDefault("CLAUDIE_NAMESPACES", cache.AllNamespaces)
+	portStr = envs.GetOrDefault("WEBHOOK_TLS_PORT", "9443")
+	certDir = envs.GetOrDefault("WEBHOOK_CERT_DIR", "./tls")
+	webhookPath = envs.GetOrDefault("WEBHOOK_PATH", "/validate-manifest")
+	namespaceSelector = envs.GetOrDefault("CLAUDIE_NAMESPACES", cache.AllNamespaces)
 	watchedNamespaces = strings.Split(namespaceSelector, ",")
 	loggerutils.Init("claudie-operator")
 

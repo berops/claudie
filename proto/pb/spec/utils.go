@@ -109,3 +109,31 @@ func (c *LBcluster) HasApiRole() bool {
 
 	return false
 }
+
+// Credentials extract the key for the provider to be used within terraform.
+func (pr *Provider) Credentials() string {
+	if pr == nil {
+		return ""
+	}
+
+	switch p := pr.ProviderType.(type) {
+	case *Provider_Gcp:
+		return p.Gcp.Key
+	case *Provider_Hetzner:
+		return p.Hetzner.Token
+	case *Provider_Hetznerdns:
+		return p.Hetznerdns.Token
+	case *Provider_Oci:
+		return p.Oci.PrivateKey
+	case *Provider_Aws:
+		return p.Aws.SecretKey
+	case *Provider_Azure:
+		return p.Azure.ClientSecret
+	case *Provider_Cloudflare:
+		return p.Cloudflare.Token
+	case *Provider_Genesiscloud:
+		return p.Genesiscloud.Token
+	default:
+		panic(fmt.Sprintf("unexpected type %T", pr.ProviderType))
+	}
+}

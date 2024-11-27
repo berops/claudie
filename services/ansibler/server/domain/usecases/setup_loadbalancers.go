@@ -5,11 +5,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/berops/claudie/internal/concurrent"
+	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/internal/templateUtils"
-	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/ansibler/server/utils"
@@ -69,7 +70,7 @@ func setUpLoadbalancers(desiredK8sCluster *spec.K8Scluster, lbClustersInfo *util
 		return fmt.Errorf("error encountered while generating base files for %s : %w", clusterName, err)
 	}
 
-	err := commonUtils.ConcurrentExec(lbClustersInfo.LbClusters,
+	err := concurrent.Exec(lbClustersInfo.LbClusters,
 		func(_ int, lbCluster *utils.LBClusterData) error {
 			var (
 				loggerPrefix = "LB-cluster"
@@ -80,15 +81,15 @@ func setUpLoadbalancers(desiredK8sCluster *spec.K8Scluster, lbClustersInfo *util
 
 			// Create the directory where files will be generated
 			clusterDirectory := filepath.Join(clusterBaseDirectory, lbClusterId)
-			if err := commonUtils.CreateDirectory(clusterDirectory); err != nil {
+			if err := fileutils.CreateDirectory(clusterDirectory); err != nil {
 				return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 			}
 
-			if err := commonUtils.CreateKeysForDynamicNodePools(nodepools.Dynamic(lbCluster.DesiredLbCluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
+			if err := nodepools.DynamicGenerateKeys(nodepools.Dynamic(lbCluster.DesiredLbCluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
 				return fmt.Errorf("failed to create key file(s) for dynamic nodepools : %w", err)
 			}
 
-			if err := commonUtils.CreateKeysForStaticNodepools(nodepools.Static(lbCluster.DesiredLbCluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
+			if err := nodepools.StaticGenerateKeys(nodepools.Static(lbCluster.DesiredLbCluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
 				return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 			}
 

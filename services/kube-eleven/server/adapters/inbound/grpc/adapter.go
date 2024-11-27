@@ -9,7 +9,8 @@ import (
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/internal/grpcutils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/kube-eleven/server/domain/usecases"
 )
@@ -26,7 +27,7 @@ type GrpcAdapter struct {
 
 func (g *GrpcAdapter) Init(usecases *usecases.Usecases, opts ...grpc.ServerOption) {
 	var err error
-	port := utils.GetEnvDefault("KUBE_ELEVEN_PORT", fmt.Sprint(defaultPort))
+	port := envs.GetOrDefault("KUBE_ELEVEN_PORT", fmt.Sprint(defaultPort))
 	bindingAddress := net.JoinHostPort("0.0.0.0", port)
 	g.tcpListener, err = net.Listen("tcp", bindingAddress)
 	if err != nil {
@@ -34,7 +35,7 @@ func (g *GrpcAdapter) Init(usecases *usecases.Usecases, opts ...grpc.ServerOptio
 	}
 	log.Info().Msgf("Kube-eleven microservice is listening on %s", bindingAddress)
 
-	g.server = utils.NewGRPCServer(opts...)
+	g.server = grpcutils.NewGRPCServer(opts...)
 	pb.RegisterKubeElevenServiceServer(g.server, &KubeElevenGrpcService{usecases: usecases})
 
 	// Add healthcheck service to the gRPC server

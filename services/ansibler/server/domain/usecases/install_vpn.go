@@ -3,13 +3,13 @@ package usecases
 import (
 	"errors"
 	"fmt"
-	"github.com/berops/claudie/internal/hash"
 	"net/netip"
 	"os"
 	"path/filepath"
 
+	"github.com/berops/claudie/internal/fileutils"
+	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/nodepools"
-	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/ansibler/server/utils"
@@ -77,7 +77,7 @@ func (u *Usecases) InstallVPN(request *pb.InstallRequest) (*pb.InstallResponse, 
 func installWireguardVPN(clusterID string, vpnInfo *VPNInfo, processLimit *semaphore.Weighted) error {
 	// Directory where files (required by Ansible) will be generated.
 	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, hash.Create(hash.Length)))
-	if err := commonUtils.CreateDirectory(clusterDirectory); err != nil {
+	if err := fileutils.CreateDirectory(clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 	}
 
@@ -95,10 +95,10 @@ func installWireguardVPN(clusterID string, vpnInfo *VPNInfo, processLimit *semap
 	}
 
 	for _, nodepoolInfo := range vpnInfo.NodepoolsInfos {
-		if err := commonUtils.CreateKeysForDynamicNodePools(nodepoolInfo.Nodepools.Dynamic, clusterDirectory); err != nil {
+		if err := nodepools.DynamicGenerateKeys(nodepoolInfo.Nodepools.Dynamic, clusterDirectory); err != nil {
 			return fmt.Errorf("failed to create key file(s) for dynamic nodepools : %w", err)
 		}
-		if err := commonUtils.CreateKeysForStaticNodepools(nodepoolInfo.Nodepools.Static, clusterDirectory); err != nil {
+		if err := nodepools.StaticGenerateKeys(nodepoolInfo.Nodepools.Static, clusterDirectory); err != nil {
 			return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 		}
 	}

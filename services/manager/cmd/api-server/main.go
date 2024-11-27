@@ -9,9 +9,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/loggerutils"
-	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/internal/utils/metrics"
+	"github.com/berops/claudie/internal/metrics"
 	"github.com/berops/claudie/internal/worker"
 	"github.com/berops/claudie/services/manager/internal/service"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -34,7 +34,7 @@ func main() {
 
 func run() error {
 	metricsServer := &http.Server{
-		Addr: fmt.Sprintf(":%s", utils.GetEnvDefault("PROMETHEUS_PORT", fmt.Sprintf("%v", defaultPrometheusPort))),
+		Addr: fmt.Sprintf(":%s", envs.GetOrDefault("PROMETHEUS_PORT", fmt.Sprintf("%v", defaultPrometheusPort))),
 	}
 
 	metrics.MustRegisterCounters()

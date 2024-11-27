@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/nodepools"
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/ansibler/templates"
 	"github.com/rs/zerolog/log"
@@ -168,15 +168,15 @@ func (lb *LBClusterData) APIEndpointState() APIEndpointChangeState {
 // Returns error if not successful, nil otherwise
 func GenerateLBBaseFiles(outputDirectory string, lbClustersInfo *LBClustersInfo) error {
 	// Create the directory where files will be generated
-	if err := utils.CreateDirectory(outputDirectory); err != nil {
+	if err := fileutils.CreateDirectory(outputDirectory); err != nil {
 		return fmt.Errorf("failed to create directory %s : %w", outputDirectory, err)
 	}
 
-	if err := utils.CreateKeysForDynamicNodePools(nodepools.Dynamic(lbClustersInfo.TargetK8sNodepool), outputDirectory); err != nil {
+	if err := nodepools.DynamicGenerateKeys(nodepools.Dynamic(lbClustersInfo.TargetK8sNodepool), outputDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for dynamic nodepools : %w", err)
 	}
 
-	if err := utils.CreateKeysForStaticNodepools(nodepools.Static(lbClustersInfo.TargetK8sNodepool), outputDirectory); err != nil {
+	if err := nodepools.StaticGenerateKeys(nodepools.Static(lbClustersInfo.TargetK8sNodepool), outputDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 

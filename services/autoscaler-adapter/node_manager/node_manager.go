@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/berops/claudie/internal/generics"
 	"github.com/berops/claudie/internal/nodes"
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 
 	k8sV1 "k8s.io/api/core/v1"
@@ -45,7 +45,7 @@ func NewNodeManager(nodepools []*spec.NodePool) (*NodeManager, error) {
 
 	var err error
 
-	dyn := utils.Into(nodepools, func(k *spec.NodePool) *spec.DynamicNodePool {
+	dyn := generics.Into(nodepools, func(k *spec.NodePool) *spec.DynamicNodePool {
 		return k.GetDynamicNodePool()
 	})
 

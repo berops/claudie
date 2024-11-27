@@ -2,7 +2,7 @@ package outbound
 
 import (
 	"github.com/berops/claudie/internal/envs"
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/grpcutils"
 	"github.com/berops/claudie/proto/pb"
 	ansibler "github.com/berops/claudie/services/ansibler/client"
 	builder "github.com/berops/claudie/services/builder/internal"
@@ -16,7 +16,7 @@ type AnsiblerConnector struct {
 
 // Connect establishes a gRPC connection with the ansibler microservice.
 func (a *AnsiblerConnector) Connect() error {
-	connection, err := utils.GrpcDialWithRetryAndBackoff("ansibler", envs.AnsiblerURL)
+	connection, err := grpcutils.GrpcDialWithRetryAndBackoff("ansibler", envs.AnsiblerURL)
 	if err != nil {
 		return err
 	}
@@ -111,12 +111,12 @@ func (a *AnsiblerConnector) RemoveClaudieUtilities(builderCtx *builder.Context, 
 
 // Disconnect closes the underlying gRPC connection to ansibler microservice
 func (a *AnsiblerConnector) Disconnect() {
-	utils.CloseClientConnection(a.Connection)
+	grpcutils.CloseClientConnection(a.Connection)
 }
 
 // PerformHealthCheck checks health of the underlying gRPC connection to ansibler microservice
 func (a *AnsiblerConnector) PerformHealthCheck() error {
-	if err := utils.IsConnectionReady(a.Connection); err == nil {
+	if err := grpcutils.IsConnectionReady(a.Connection); err == nil {
 		return nil
 	} else {
 		a.Connection.Connect()

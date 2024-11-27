@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/berops/claudie/internal/envs"
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/grpcutils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/rs/zerolog"
@@ -25,7 +25,7 @@ type Client struct {
 }
 
 func New(logger *zerolog.Logger) (*Client, error) {
-	conn, err := utils.GrpcDialWithRetryAndBackoff("manager", envs.ManagerURL)
+	conn, err := grpcutils.GrpcDialWithRetryAndBackoff("manager", envs.ManagerURL)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +35,7 @@ func New(logger *zerolog.Logger) (*Client, error) {
 func (t *Client) Close() error { return t.conn.Close() }
 
 func (t *Client) HealthCheck() error {
-	if err := utils.IsConnectionReady(t.conn); err == nil {
+	if err := grpcutils.IsConnectionReady(t.conn); err == nil {
 		return nil
 	} else {
 		t.conn.Connect()

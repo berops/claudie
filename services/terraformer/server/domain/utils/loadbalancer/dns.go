@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 
 	comm "github.com/berops/claudie/internal/command"
+	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/hash"
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates"
@@ -227,7 +227,7 @@ func (d *DNS) generateFiles(dnsID, dnsDir string, dns *spec.DNS, nodeIPs []strin
 		return fmt.Errorf("failed to generate dns templates for %q: %w", dnsID, err)
 	}
 
-	if err := utils.CreateKeyFile(utils.GetAuthCredentials(data.Provider), g.TargetDirectory, data.Provider.SpecName); err != nil {
+	if err := fileutils.CreateKey(data.Provider.Credentials(), g.TargetDirectory, data.Provider.SpecName); err != nil {
 		return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", data.Provider.SpecName, g.TargetDirectory, err)
 	}
 

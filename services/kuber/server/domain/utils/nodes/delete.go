@@ -2,15 +2,15 @@ package nodes
 
 import (
 	"fmt"
-	"github.com/berops/claudie/internal/nodepools"
 	"slices"
 	"strings"
 	"time"
 
 	comm "github.com/berops/claudie/internal/command"
+	"github.com/berops/claudie/internal/concurrent"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/loggerutils"
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/rs/zerolog"
 )
@@ -86,7 +86,7 @@ func (d *Deleter) DeleteNodes() (*spec.K8Scluster, error) {
 	}
 
 	// Cordon worker nodes to prevent any new pods/volume replicas being scheduled there
-	err = utils.ConcurrentExec(d.workerNodes, func(_ int, worker string) error {
+	err = concurrent.Exec(d.workerNodes, func(_ int, worker string) error {
 		i := slices.Index(realNodeNames, worker)
 		if i < 0 {
 			d.logger.Warn().Msgf("Node name %s not found in cluster.", worker)

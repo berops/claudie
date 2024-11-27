@@ -1,10 +1,13 @@
 package nodepools
 
 import (
+	"errors"
+	"fmt"
 	"maps"
 	"slices"
 	"strings"
 
+	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/proto/pb/spec"
 )
@@ -172,4 +175,35 @@ func FirstControlNode(nodepools []*spec.NodePool) *spec.Node {
 		}
 	}
 	return nil
+}
+
+// DynamicGenerateKeys creates private keys files for all nodes in the provided dynamic node pools in form
+// of <node name>.pem.
+func DynamicGenerateKeys(nodepools []*spec.NodePool, outputDir string) error {
+	errs := make([]error, 0, len(nodepools))
+	for _, dnp := range nodepools {
+		pk := dnp.GetDynamicNodePool().PrivateKey
+		if err := fileutils.CreateKey(pk, outputDir, fmt.Sprintf("%s.pem", dnp.Name)); err != nil {
+			errs = append(errs, fmt.Errorf("%q failed to create key file: %w", dnp.Name, err))
+		}
+	}
+	return errors.Join(errs...)
+}
+
+// StaticGenerateKeys creates private keys files for all nodes in the provided static node pools in form
+// of <node name>.pem.
+func StaticGenerateKeys(nodepools []*spec.NodePool, outputDir string) error {
+	errs := make([]error, 0, len(nodepools))
+	for _, staticNp := range nodepools {
+		sp := staticNp.GetStaticNodePool()
+		for _, node := range staticNp.Nodes {
+			if key, ok := sp.NodeKeys[node.Public]; ok {
+				if err := fileutils.CreateKey(key, outputDir, fmt.Sprintf("%s.pem", node.Name)); err != nil {
+					errs = append(errs, err)
+				}
+			}
+		}
+	}
+	// If empty, returns nil
+	return errors.Join(errs...)
 }

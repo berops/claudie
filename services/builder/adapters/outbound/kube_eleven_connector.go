@@ -2,7 +2,7 @@ package outbound
 
 import (
 	"github.com/berops/claudie/internal/envs"
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/grpcutils"
 	"github.com/berops/claudie/proto/pb"
 	builder "github.com/berops/claudie/services/builder/internal"
 	kubeEleven "github.com/berops/claudie/services/kube-eleven/client"
@@ -15,7 +15,7 @@ type KubeElevenConnector struct {
 
 // Connect establishes a gRPC connection with the kube-eleven microservice
 func (k *KubeElevenConnector) Connect() error {
-	connection, err := utils.GrpcDialWithRetryAndBackoff("kube-eleven", envs.KubeElevenURL)
+	connection, err := grpcutils.GrpcDialWithRetryAndBackoff("kube-eleven", envs.KubeElevenURL)
 	if err != nil {
 		return err
 	}
@@ -48,12 +48,12 @@ func (k *KubeElevenConnector) DestroyCluster(builderCtx *builder.Context, kubeEl
 
 // Disconnect closes the underlying gRPC connection to kube-eleven microservice
 func (k *KubeElevenConnector) Disconnect() {
-	utils.CloseClientConnection(k.Connection)
+	grpcutils.CloseClientConnection(k.Connection)
 }
 
 // PerformHealthCheck checks health of the underlying gRPC connection to kube-eleven microservice
 func (k *KubeElevenConnector) PerformHealthCheck() error {
-	if err := utils.IsConnectionReady(k.Connection); err == nil {
+	if err := grpcutils.IsConnectionReady(k.Connection); err == nil {
 		return nil
 	} else {
 		k.Connection.Connect()

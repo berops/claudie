@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"github.com/berops/claudie/internal/envs"
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/grpcutils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/autoscaler-adapter/node_manager"
@@ -260,7 +260,7 @@ func (c *ClaudieCloudProvider) sendAutoscalerEvent() error {
 	var err error
 	operatorURL := strings.ReplaceAll(envs.OperatorURL, ":tcp://", "")
 	log.Info().Msgf("Sending autoscale event to %s: %s, %s, ", operatorURL, c.resourceName, c.resourceNamespace)
-	if cc, err = utils.GrpcDialWithRetryAndBackoff("claudie-operator", operatorURL); err != nil {
+	if cc, err = grpcutils.GrpcDialWithRetryAndBackoff("claudie-operator", operatorURL); err != nil {
 		return fmt.Errorf("failed to dial claudie-operator at %s : %w", envs.OperatorURL, err)
 	}
 	client := pb.NewOperatorServiceClient(cc)

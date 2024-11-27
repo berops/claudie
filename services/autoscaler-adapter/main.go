@@ -6,8 +6,8 @@ import (
 	"net"
 	"os"
 
+	"github.com/berops/claudie/internal/grpcutils"
 	"github.com/berops/claudie/internal/loggerutils"
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/services/autoscaler-adapter/claudie_provider"
 	"github.com/rs/zerolog/log"
 
@@ -27,8 +27,8 @@ func main() {
 
 	loggerutils.Init(fmt.Sprintf("%s-%s", "autoscaler-adapter", clusterName))
 
-	server := utils.NewGRPCServer(
-		grpc.ChainUnaryInterceptor(utils.PeerInfoInterceptor(&log.Logger)),
+	server := grpcutils.NewGRPCServer(
+		grpc.ChainUnaryInterceptor(grpcutils.PeerInfoInterceptor(&log.Logger)),
 	)
 
 	// Listen

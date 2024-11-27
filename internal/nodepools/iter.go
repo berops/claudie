@@ -2,8 +2,9 @@ package nodepools
 
 import (
 	"fmt"
-	"github.com/berops/claudie/proto/pb/spec"
 	"iter"
+
+	"github.com/berops/claudie/proto/pb/spec"
 )
 
 // ByProviderSpecName returns an iterator that groups nodepools by provider SpecName.

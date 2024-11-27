@@ -14,7 +14,6 @@ import (
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/templateUtils"
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/kuber/templates"
 	"github.com/rs/zerolog/log"
@@ -110,8 +109,8 @@ func (a *AutoscalerManager) generateFiles() error {
 	// Prepare data
 	clusterId := a.cluster.ClusterInfo.Id()
 	version, err := getK8sVersion(a.cluster.Kubernetes)
-	operatorHostname := utils.GetEnvDefault("OPERATOR_HOSTNAME", defaultOperatorHostname)
-	operatorPort := utils.GetEnvDefault("OPERATOR_PORT", defaultOperatorPort)
+	operatorHostname := envs.GetOrDefault("OPERATOR_HOSTNAME", defaultOperatorHostname)
+	operatorPort := envs.GetOrDefault("OPERATOR_PORT", defaultOperatorPort)
 	if err != nil {
 		return err
 	}

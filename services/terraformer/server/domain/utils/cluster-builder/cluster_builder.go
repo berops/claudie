@@ -13,9 +13,10 @@ import (
 
 	"github.com/berops/claudie/internal/clusters"
 	comm "github.com/berops/claudie/internal/command"
+	"github.com/berops/claudie/internal/fileutils"
+	"github.com/berops/claudie/internal/generics"
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/nodepools"
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/terraform"
@@ -252,7 +253,7 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 						IsControl: np.IsControl,
 					})
 
-					if err := utils.CreateKeyFile(dnp.GetPublicKey(), clusterDir, np.GetName()); err != nil {
+					if err := fileutils.CreateKey(dnp.GetPublicKey(), clusterDir, np.GetName()); err != nil {
 						return fmt.Errorf("error public key file for %s : %w", clusterDir, err)
 					}
 				}
@@ -345,7 +346,7 @@ func fillNodes(terraformOutput *templates.NodepoolIPs, newNodePool *spec.NodePoo
 	// fill slices from terraformOutput maps with names of nodes to ensure an order
 	var tempNodes []*spec.Node
 	// get sorted list of keys
-	_ = utils.IterateInOrder(terraformOutput.IPs, func(nodeName string, IP any) error {
+	_ = generics.IterateInOrder(terraformOutput.IPs, func(nodeName string, IP any) error {
 		var nodeType spec.NodeType
 		var private string
 
@@ -421,7 +422,7 @@ func (c *ClusterBuilder) generateProviderTemplates(current, desired *spec.Cluste
 	)
 
 	for info, pools := range GroupByProvider(nps) {
-		if err := utils.CreateKeyFile(info.Creds, directory, info.SpecName); err != nil {
+		if err := fileutils.CreateKey(info.Creds, directory, info.SpecName); err != nil {
 			return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", info.SpecName, directory, err)
 		}
 
@@ -475,7 +476,7 @@ func GroupByProvider(nps []*spec.NodePool) iter.Seq2[ProviderTemplateGroup, []*s
 		k := ProviderTemplateGroup{
 			CloudProvider: np.DynamicNodePool.Provider.CloudProviderName,
 			SpecName:      np.DynamicNodePool.Provider.SpecName,
-			Creds:         utils.GetAuthCredentials(np.DynamicNodePool.Provider),
+			Creds:         np.DynamicNodePool.Provider.Credentials(),
 		}
 		m[k] = append(m[k], nodepool)
 	}

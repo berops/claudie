@@ -5,9 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/nodepools"
-	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/ansibler/server/utils"
 	"github.com/berops/claudie/services/ansibler/templates"
@@ -45,15 +45,15 @@ func (u *Usecases) InstallNodeRequirements(request *pb.InstallRequest) (*pb.Inst
 func installLonghornRequirements(nodepoolsInfo *NodepoolsInfo, processLimit *semaphore.Weighted) error {
 	// Directory where files (required by Ansible) will be generated.
 	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, hash.Create(hash.Length))
-	if err := commonUtils.CreateDirectory(clusterDirectory); err != nil {
+	if err := fileutils.CreateDirectory(clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 	}
 
-	if err := commonUtils.CreateKeysForDynamicNodePools(nodepoolsInfo.Nodepools.Dynamic, clusterDirectory); err != nil {
+	if err := nodepools.DynamicGenerateKeys(nodepoolsInfo.Nodepools.Dynamic, clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for dynamic nodepools: %w", err)
 	}
 
-	if err := commonUtils.CreateKeysForStaticNodepools(nodepoolsInfo.Nodepools.Static, clusterDirectory); err != nil {
+	if err := nodepools.StaticGenerateKeys(nodepoolsInfo.Nodepools.Static, clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 

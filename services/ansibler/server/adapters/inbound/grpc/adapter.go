@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"fmt"
-	"github.com/berops/claudie/services/ansibler/server/domain/usecases"
 	"net"
 
 	"github.com/rs/zerolog/log"
@@ -10,8 +9,10 @@ import (
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/internal/grpcutils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/services/ansibler/server/domain/usecases"
 )
 
 const (
@@ -26,14 +27,14 @@ type GrpcAdapter struct {
 
 // CreateGrpcAdapter return new gRPC adapter for Ansibler.
 func CreateGrpcAdapter(usecases *usecases.Usecases, opts ...grpc.ServerOption) *GrpcAdapter {
-	port := utils.GetEnvDefault("ANSIBLER_PORT", fmt.Sprint(defaultPort))
+	port := envs.GetOrDefault("ANSIBLER_PORT", fmt.Sprint(defaultPort))
 	tcpBindingAddress := net.JoinHostPort("0.0.0.0", port)
 	listener, err := net.Listen("tcp", tcpBindingAddress)
 	if err != nil {
 		log.Fatal().Msgf("Failed to listen on %s : %v", tcpBindingAddress, err)
 	}
 
-	g := &GrpcAdapter{tcpListener: listener, server: utils.NewGRPCServer(opts...), healthcheckServer: health.NewServer()}
+	g := &GrpcAdapter{tcpListener: listener, server: grpcutils.NewGRPCServer(opts...), healthcheckServer: health.NewServer()}
 	log.Info().Msgf("Ansibler microservice is listening on %s", tcpBindingAddress)
 
 	pb.RegisterAnsiblerServiceServer(g.server, &AnsiblerGrpcService{usecases: usecases})

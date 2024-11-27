@@ -9,7 +9,6 @@ import (
 
 	"github.com/berops/claudie/internal/sanitise"
 	"github.com/berops/claudie/internal/templateUtils"
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/kube-eleven/server/domain/utils/kubeone"
 	"github.com/berops/claudie/services/kube-eleven/templates"
@@ -132,11 +131,11 @@ func (k *KubeEleven) generateFiles() error {
 		return fmt.Errorf("error while generating %s from kubeone template : %w", generatedKubeoneManifestName, err)
 	}
 
-	if err := utils.CreateKeysForDynamicNodePools(nodepools.Dynamic(k.K8sCluster.ClusterInfo.NodePools), k.outputDirectory); err != nil {
+	if err := nodepools.DynamicGenerateKeys(nodepools.Dynamic(k.K8sCluster.ClusterInfo.NodePools), k.outputDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for dynamic nodepools: %w", err)
 	}
 
-	if err := utils.CreateKeysForStaticNodepools(nodepools.Static(k.K8sCluster.ClusterInfo.NodePools), k.outputDirectory); err != nil {
+	if err := nodepools.StaticGenerateKeys(nodepools.Static(k.K8sCluster.ClusterInfo.NodePools), k.outputDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 
