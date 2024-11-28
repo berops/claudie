@@ -2,9 +2,9 @@ package node_manager
 
 import (
 	"fmt"
-	"github.com/berops/claudie/internal/nodepools"
 	"strings"
 
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/internal/nodes"
 	"github.com/berops/claudie/proto/pb/spec"
 
