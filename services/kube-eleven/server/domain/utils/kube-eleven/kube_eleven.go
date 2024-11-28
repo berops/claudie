@@ -2,11 +2,11 @@ package kube_eleven
 
 import (
 	"fmt"
-	"github.com/berops/claudie/internal/nodepools"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/internal/sanitise"
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/proto/pb/spec"

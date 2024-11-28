@@ -3,14 +3,13 @@ package scrapeconfig
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/berops/claudie/internal/nodepools"
 
+	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/kuber/templates"
-
-	comm "github.com/berops/claudie/internal/command"
 )
 
 type ScrapeConfig struct {

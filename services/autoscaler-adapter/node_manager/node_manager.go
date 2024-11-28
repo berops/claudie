@@ -2,9 +2,9 @@ package node_manager
 
 import (
 	"fmt"
+	"github.com/berops/claudie/internal/nodepools"
 	"strings"
 
-	"github.com/berops/claudie/internal/generics"
 	"github.com/berops/claudie/internal/nodes"
 	"github.com/berops/claudie/proto/pb/spec"
 
@@ -39,22 +39,18 @@ type typeInfo struct {
 }
 
 // NewNodeManager returns a NodeManager pointer with initialised caches about nodes.
-func NewNodeManager(nodepools []*spec.NodePool) (*NodeManager, error) {
+func NewNodeManager(nps []*spec.NodePool) (*NodeManager, error) {
 	nm := &NodeManager{}
 	nm.cacheProviderMap = make(map[string]struct{})
 
 	var err error
 
-	dyn := generics.Into(nodepools, func(k *spec.NodePool) *spec.DynamicNodePool {
-		return k.GetDynamicNodePool()
-	})
-
-	nm.resolver, err = nodes.NewDynamicNodePoolResolver(dyn)
+	nm.resolver, err = nodes.NewDynamicNodePoolResolver(nodepools.ExtractDynamic(nps))
 	if err != nil {
 		return nil, err
 	}
 
-	if err = nm.refreshCache(nodepools); err != nil {
+	if err = nm.refreshCache(nps); err != nil {
 		return nil, err
 	}
 	return nm, nil
