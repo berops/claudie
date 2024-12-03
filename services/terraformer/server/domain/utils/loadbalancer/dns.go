@@ -7,9 +7,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/berops/claudie/internal/checksum"
 	comm "github.com/berops/claudie/internal/command"
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/fileutils"
+	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/proto/pb/spec"
 	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates"
@@ -114,7 +114,7 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 		return err
 	}
 
-	f := checksum.Digest128(filepath.Join(d.DesiredDNS.Provider.SpecName, templates.ExtractTargetPath(d.DesiredDNS.Provider.Templates)))
+	f := hash.Digest128(filepath.Join(d.DesiredDNS.Provider.SpecName, d.DesiredDNS.Provider.Templates.MustExtractTargetPath()))
 	k := fmt.Sprintf("%s_%s_%s", clusterID, d.DesiredDNS.GetProvider().GetSpecName(), hex.EncodeToString(f))
 
 	output, err := terraform.Output(k)
@@ -204,14 +204,14 @@ func (d *DNS) generateFiles(dnsID, dnsDir string, dns *spec.DNS, nodeIPs []strin
 		return fmt.Errorf("failed to download templates for DNS %q: %w", dnsID, err)
 	}
 
-	path := templates.ExtractTargetPath(dns.Provider.Templates)
+	path := dns.Provider.Templates.MustExtractTargetPath()
 
 	g := templates.Generator{
 		ID:                dnsID,
 		TargetDirectory:   dnsDir,
 		ReadFromDirectory: templateDir,
 		TemplatePath:      path,
-		Fingerprint:       hex.EncodeToString(checksum.Digest128(filepath.Join(dns.Provider.SpecName, path))),
+		Fingerprint:       hex.EncodeToString(hash.Digest128(filepath.Join(dns.Provider.SpecName, path))),
 	}
 
 	data := templates.DNS{
@@ -227,7 +227,7 @@ func (d *DNS) generateFiles(dnsID, dnsDir string, dns *spec.DNS, nodeIPs []strin
 		return fmt.Errorf("failed to generate dns templates for %q: %w", dnsID, err)
 	}
 
-	if err := utils.CreateKeyFile(utils.GetAuthCredentials(data.Provider), g.TargetDirectory, data.Provider.SpecName); err != nil {
+	if err := fileutils.CreateKey(data.Provider.Credentials(), g.TargetDirectory, data.Provider.SpecName); err != nil {
 		return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", data.Provider.SpecName, g.TargetDirectory, err)
 	}
 

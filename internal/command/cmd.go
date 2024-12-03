@@ -4,15 +4,14 @@ import (
 	"bytes"
 	"context"
 	"io"
+	stdLog "log"
 	"math"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
 
-	stdLog "log"
-
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/sanitise"
 	"github.com/rs/zerolog/log"
 )
 
@@ -154,9 +153,9 @@ func (c *Cmd) sanitisedCmd() string {
 	}
 
 	// sanitise any kubeconfigs found.
-	printSafeCmd := utils.SanitiseKubeconfig(c.Command)
+	printSafeCmd := sanitise.Kubeconfig(c.Command)
 	// sanitise any URIs with passwords.
-	printSafeCmd = utils.SanitiseURI(printSafeCmd)
+	printSafeCmd = sanitise.URI(printSafeCmd)
 
 	return printSafeCmd
 }

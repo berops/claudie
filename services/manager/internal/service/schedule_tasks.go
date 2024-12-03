@@ -7,7 +7,8 @@ import (
 	"slices"
 	"time"
 
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/hash"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/internal/store"
 	"github.com/google/uuid"
@@ -307,7 +308,7 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 		lb := findLbAPIEndpointCluster(irLbs)
 
 		var nextControlNodePool *spec.NodePool
-		for _, np := range utils.FindControlNodepools(desired.ClusterInfo.NodePools) {
+		for np := range nodepools.Control(desired.ClusterInfo.NodePools) {
 			if !slices.ContainsFunc(targets, func(s string) bool { return s == np.Name }) {
 				nextControlNodePool = np
 				break
@@ -321,7 +322,7 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 		// to get the original nodepool name as defined in the input manifest
 		// we need to strip the hash.
 		if nextControlNodePool.GetDynamicNodePool() != nil {
-			nameWithoutHash = nextControlNodePool.Name[:len(nextControlNodePool.Name)-(utils.HashLength+1)] // +1 for '-'
+			nameWithoutHash = nextControlNodePool.Name[:len(nextControlNodePool.Name)-(hash.Length+1)] // +1 for '-'
 		}
 
 		for _, role := range lb.GetRoles() {
@@ -689,14 +690,14 @@ func craftK8sIR(k8sDiffResult nodePoolDiffResult, current, desired *spec.K8Sclus
 	// Build the Intermediate Representation such that no deletion occurs in desired cluster.
 	ir := proto.Clone(desired).(*spec.K8Scluster)
 
-	clusterID := utils.GetClusterID(desired.ClusterInfo)
+	clusterID := desired.ClusterInfo.Id()
 
 	k := slices.Collect(maps.Keys(k8sDiffResult.partialDeletedDynamic))
 	slices.Sort(k)
 
 	for _, nodepool := range k {
-		inp := utils.GetNodePoolByName(nodepool, ir.ClusterInfo.NodePools)
-		cnp := utils.GetNodePoolByName(nodepool, current.ClusterInfo.NodePools)
+		inp := nodepools.FindByName(nodepool, ir.ClusterInfo.NodePools)
+		cnp := nodepools.FindByName(nodepool, current.ClusterInfo.NodePools)
 
 		log.Debug().Str("cluster", clusterID).Msgf("nodes from dynamic nodepool %q were partially deleted, crafting ir to include them", nodepool)
 		inp.GetDynamicNodePool().Count = cnp.GetDynamicNodePool().Count
@@ -708,8 +709,8 @@ func craftK8sIR(k8sDiffResult nodePoolDiffResult, current, desired *spec.K8Sclus
 
 	for _, nodepool := range k {
 		log.Debug().Str("cluster", clusterID).Msgf("nodes from static nodepool %q were partially deleted, crafting ir to include them", nodepool)
-		inp := utils.GetNodePoolByName(nodepool, ir.ClusterInfo.NodePools)
-		cnp := utils.GetNodePoolByName(nodepool, current.ClusterInfo.NodePools)
+		inp := nodepools.FindByName(nodepool, ir.ClusterInfo.NodePools)
+		cnp := nodepools.FindByName(nodepool, current.ClusterInfo.NodePools)
 
 		is := inp.GetStaticNodePool()
 		cs := cnp.GetStaticNodePool()
@@ -733,7 +734,7 @@ func craftK8sIR(k8sDiffResult nodePoolDiffResult, current, desired *spec.K8Sclus
 
 	for _, nodepool := range k {
 		log.Debug().Str("cluster", clusterID).Msgf("nodepool %q  deleted, crafting ir to include it", nodepool)
-		np := utils.GetNodePoolByName(nodepool, current.ClusterInfo.NodePools)
+		np := nodepools.FindByName(nodepool, current.ClusterInfo.NodePools)
 		ir.ClusterInfo.NodePools = append(ir.ClusterInfo.NodePools, np)
 	}
 
@@ -746,8 +747,8 @@ func endpointNodeDeleted(k8sDiffResult nodePoolDiffResult, current *spec.K8Sclus
 	maps.Insert(deletedNodePools, maps.All(k8sDiffResult.deletedStatic))
 
 	for nodepool := range deletedNodePools {
-		np := utils.GetNodePoolByName(nodepool, current.ClusterInfo.NodePools)
-		if _, err := utils.FindAPIEndpointNode([]*spec.NodePool{np}); err == nil {
+		np := nodepools.FindByName(nodepool, current.ClusterInfo.NodePools)
+		if np.EndpointNode() != nil {
 			return true
 		}
 	}
@@ -757,7 +758,7 @@ func endpointNodeDeleted(k8sDiffResult nodePoolDiffResult, current *spec.K8Sclus
 	maps.Insert(deletedNodePools, maps.All(k8sDiffResult.partialDeletedStatic))
 
 	for nodepool, nodes := range deletedNodePools {
-		np := utils.GetNodePoolByName(nodepool, current.ClusterInfo.NodePools)
+		np := nodepools.FindByName(nodepool, current.ClusterInfo.NodePools)
 		for _, deleted := range nodes {
 			i := slices.IndexFunc(np.Nodes, func(node *spec.Node) bool { return node.Name == deleted })
 			if i < 0 {
@@ -779,7 +780,7 @@ func deletedTargetApiNodePools(k8sDiffResult nodePoolDiffResult, current *spec.K
 
 	var deleted []*spec.NodePool
 	for np := range deletedNodePools {
-		deleted = append(deleted, utils.GetNodePoolByName(np, current.ClusterInfo.NodePools))
+		deleted = append(deleted, nodepools.FindByName(np, current.ClusterInfo.NodePools))
 	}
 
 	return targetPoolsDeleted(currentLbs, deleted)
@@ -795,7 +796,7 @@ func newAPIEndpointNodeCandidate(desired []*spec.NodePool) (string, string) {
 }
 
 // targetPoolsDeleted check whether the LB API cluster target pools are among those that get deleted, if yes returns the names.
-func targetPoolsDeleted(current []*spec.LBcluster, nodepools []*spec.NodePool) ([]string, bool) {
+func targetPoolsDeleted(current []*spec.LBcluster, nps []*spec.NodePool) ([]string, bool) {
 	for _, role := range findLbAPIEndpointCluster(current).GetRoles() {
 		if role.RoleType != spec.RoleType_ApiServer {
 			continue
@@ -803,12 +804,12 @@ func targetPoolsDeleted(current []*spec.LBcluster, nodepools []*spec.NodePool) (
 
 		var matches []string
 		for _, targetPool := range role.TargetPools {
-			idx := slices.IndexFunc(nodepools, func(pool *spec.NodePool) bool {
-				name, _ := utils.MatchNameAndHashWithTemplate(targetPool, pool.Name)
+			idx := slices.IndexFunc(nps, func(pool *spec.NodePool) bool {
+				name, _ := nodepools.MatchNameAndHashWithTemplate(targetPool, pool.Name)
 				return name == targetPool
 			})
 			if idx >= 0 {
-				matches = append(matches, nodepools[idx].Name)
+				matches = append(matches, nps[idx].Name)
 			}
 		}
 
@@ -821,7 +822,7 @@ func targetPoolsDeleted(current []*spec.LBcluster, nodepools []*spec.NodePool) (
 
 func findLbAPIEndpointCluster(current []*spec.LBcluster) *spec.LBcluster {
 	for _, lb := range current {
-		if utils.HasAPIServerRole(lb.GetRoles()) {
+		if lb.HasApiRole() {
 			return lb
 		}
 	}

@@ -9,7 +9,8 @@ import (
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/internal/grpcutils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/terraformer/server/domain/usecases"
 )
@@ -27,7 +28,7 @@ type GrpcAdapter struct {
 // Init sets up the GrpcAdapter by creating the underlying tcpListener, gRPC server and
 // gRPC health check server.
 func (g *GrpcAdapter) Init(usecases *usecases.Usecases, opts ...grpc.ServerOption) {
-	port := utils.GetEnvDefault("TERRAFORMER_PORT", fmt.Sprint(defaultTerraformerPort))
+	port := envs.GetOrDefault("TERRAFORMER_PORT", fmt.Sprint(defaultTerraformerPort))
 
 	var err error
 
@@ -38,7 +39,7 @@ func (g *GrpcAdapter) Init(usecases *usecases.Usecases, opts ...grpc.ServerOptio
 	}
 	log.Info().Msgf("Terraformer service is listening on: %s", listeningAddress)
 
-	g.server = utils.NewGRPCServer(opts...)
+	g.server = grpcutils.NewGRPCServer(opts...)
 	pb.RegisterTerraformerServiceServer(g.server, &TerraformerGrpcService{usecases: usecases})
 
 	// Add health service to gRPC

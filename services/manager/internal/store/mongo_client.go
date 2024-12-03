@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/berops/claudie/internal/checksum"
+	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/manifest"
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/sanitise"
 	"github.com/rs/zerolog/log"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -35,7 +35,7 @@ func NewMongoClient(ctx context.Context, uri string) (*Mongo, error) {
 	opts := options.Client().ApplyURI(uri)
 	conn, err := mongo.Connect(ctx, opts)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to %q: %w", utils.SanitiseURI(uri), err)
+		return nil, fmt.Errorf("failed to connect to %q: %w", sanitise.URI(uri), err)
 	}
 	return &Mongo{conn: conn}, nil
 }
@@ -179,7 +179,7 @@ func (m *Mongo) MarkForDeletion(ctx context.Context, name string, version uint64
 			{Key: "$set", Value: bson.D{
 				{Key: "manifest.raw", Value: ""},
 				{Key: "manifest.checksum", Value: nil},
-				{Key: "manifest.lastAppliedChecksum", Value: checksum.Digest("delete")}}, // modify the last applied checksum so that repeated deletion will trigger the process again.
+				{Key: "manifest.lastAppliedChecksum", Value: hash.Digest("delete")}}, // modify the last applied checksum so that repeated deletion will trigger the process again.
 			},
 			{Key: "$inc", Value: bson.D{{Key: "version", Value: 1}}},
 		},

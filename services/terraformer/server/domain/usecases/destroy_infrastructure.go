@@ -7,7 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/concurrent"
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb"
 	outboundAdapters "github.com/berops/claudie/services/terraformer/server/adapters/outbound"
 	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
@@ -48,8 +49,8 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 	}
 
 	// Concurrently destroy the infrastructure, Terraform state and state-lock files for each cluster
-	err := utils.ConcurrentExec(clusters, func(_ int, cluster Cluster) error {
-		logger := utils.CreateLoggerWithProjectAndClusterName(request.ProjectName, cluster.Id())
+	err := concurrent.Exec(clusters, func(_ int, cluster Cluster) error {
+		logger := loggerutils.WithProjectAndCluster(request.ProjectName, cluster.Id())
 		err := u.StateStorage.Stat(ctx, request.ProjectName, cluster.Id(), keyFormatStateFile)
 		if err != nil {
 			if errors.Is(err, outboundAdapters.ErrKeyNotExists) {

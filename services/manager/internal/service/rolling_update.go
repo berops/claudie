@@ -6,8 +6,9 @@ import (
 	"slices"
 	"time"
 
+	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/manifest"
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
@@ -39,7 +40,7 @@ func rollingUpdate(current, desired *spec.Clusters) (*spec.Clusters, []*spec.Tas
 		usedNodePoolNames = make(map[string]struct{})
 		ir                = proto.Clone(current.K8S).(*spec.K8Scluster)
 		rollingUpdates    = proto.Clone(current.K8S).(*spec.K8Scluster)
-		k8sID             = utils.GetClusterID(ir.ClusterInfo)
+		k8sID             = ir.ClusterInfo.Id()
 	)
 
 	maps.Insert(usedNodePoolNames, maps.All(nodepoolNames(current.K8S.ClusterInfo.NodePools)))
@@ -67,9 +68,9 @@ func rollingUpdate(current, desired *spec.Clusters) (*spec.Clusters, []*spec.Tas
 		mapping[di] = updated
 
 		// 1. new name
-		n, _ := utils.MustExtractNameAndHash(d.Name)
+		n, _ := nodepools.MustExtractNameAndHash(d.Name)
 		for {
-			name := fmt.Sprintf("%s-%s", n, utils.CreateHash(utils.HashLength))
+			name := fmt.Sprintf("%s-%s", n, hash.Create(hash.Length))
 			if _, ok := usedNodePoolNames[name]; !ok {
 				usedNodePoolNames[name] = struct{}{}
 				updated.Name = name

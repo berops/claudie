@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/internal/nodes"
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 
 	k8sV1 "k8s.io/api/core/v1"
@@ -39,22 +39,18 @@ type typeInfo struct {
 }
 
 // NewNodeManager returns a NodeManager pointer with initialised caches about nodes.
-func NewNodeManager(nodepools []*spec.NodePool) (*NodeManager, error) {
+func NewNodeManager(nps []*spec.NodePool) (*NodeManager, error) {
 	nm := &NodeManager{}
 	nm.cacheProviderMap = make(map[string]struct{})
 
 	var err error
 
-	dyn := utils.Into(nodepools, func(k *spec.NodePool) *spec.DynamicNodePool {
-		return k.GetDynamicNodePool()
-	})
-
-	nm.resolver, err = nodes.NewDynamicNodePoolResolver(dyn)
+	nm.resolver, err = nodes.NewDynamicNodePoolResolver(nodepools.ExtractDynamic(nps))
 	if err != nil {
 		return nil, err
 	}
 
-	if err = nm.refreshCache(nodepools); err != nil {
+	if err = nm.refreshCache(nps); err != nil {
 		return nil, err
 	}
 	return nm, nil

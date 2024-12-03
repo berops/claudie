@@ -5,17 +5,16 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/fileutils"
+	"github.com/berops/claudie/internal/hash"
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/kuber/server/domain/utils/autoscaler"
 )
 
 func (u *Usecases) SetUpClusterAutoscaler(ctx context.Context, request *pb.SetUpClusterAutoscalerRequest) (*pb.SetUpClusterAutoscalerResponse, error) {
-	// Create output dir
-	tempClusterID := fmt.Sprintf("%s-%s", request.Cluster.ClusterInfo.Name, utils.CreateHash(5))
-	clusterID := utils.GetClusterID(request.Cluster.ClusterInfo)
-	clusterDir := filepath.Join(outputDir, tempClusterID)
-	logger := utils.CreateLoggerWithClusterName(clusterID)
+	clusterID := request.Cluster.ClusterInfo.Id()
+	logger := loggerutils.WithClusterName(clusterID)
 	var err error
 	// Log success/error message.
 	defer func() {
@@ -26,7 +25,10 @@ func (u *Usecases) SetUpClusterAutoscaler(ctx context.Context, request *pb.SetUp
 		}
 	}()
 
-	if err := utils.CreateDirectory(clusterDir); err != nil {
+	// Create output dir
+	tempClusterID := fmt.Sprintf("%s-%s", request.Cluster.ClusterInfo.Name, hash.Create(5))
+	clusterDir := filepath.Join(outputDir, tempClusterID)
+	if err := fileutils.CreateDirectory(clusterDir); err != nil {
 		return nil, fmt.Errorf("error while creating directory %s : %w", clusterDir, err)
 	}
 

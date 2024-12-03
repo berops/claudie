@@ -5,8 +5,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/berops/claudie/internal/concurrent"
+	"github.com/berops/claudie/internal/fileutils"
+	"github.com/berops/claudie/internal/hash"
+	"github.com/berops/claudie/internal/loggerutils"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/internal/templateUtils"
-	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/ansibler/server/utils"
@@ -26,7 +30,7 @@ const (
 )
 
 func (u *Usecases) SetUpLoadbalancers(request *pb.SetUpLBRequest) (*pb.SetUpLBResponse, error) {
-	logger := commonUtils.CreateLoggerWithProjectAndClusterName(request.ProjectName, commonUtils.GetClusterID(request.Desired.ClusterInfo))
+	logger := loggerutils.WithProjectAndCluster(request.ProjectName, request.Desired.ClusterInfo.Id())
 	logger.Info().Msgf("Setting up the loadbalancers")
 
 	currentLBClusters := make(map[string]*spec.LBcluster)
@@ -38,7 +42,7 @@ func (u *Usecases) SetUpLoadbalancers(request *pb.SetUpLBRequest) (*pb.SetUpLBRe
 		FirstRun:              request.FirstRun,
 		TargetK8sNodepool:     request.Desired.ClusterInfo.NodePools,
 		PreviousAPIEndpointLB: request.PreviousAPIEndpoint,
-		ClusterID:             commonUtils.GetClusterID(request.Desired.ClusterInfo),
+		ClusterID:             request.Desired.ClusterInfo.Id(),
 	}
 	for _, lbCluster := range request.DesiredLbs {
 		lbClustersInfo.LbClusters = append(lbClustersInfo.LbClusters, &utils.LBClusterData{
@@ -60,32 +64,32 @@ func (u *Usecases) SetUpLoadbalancers(request *pb.SetUpLBRequest) (*pb.SetUpLBRe
 // setUpLoadbalancers sets up the loadbalancers along with DNS and verifies their configuration
 func setUpLoadbalancers(desiredK8sCluster *spec.K8Scluster, lbClustersInfo *utils.LBClustersInfo, proxyEnvs *spec.ProxyEnvs, logger zerolog.Logger, processLimit *semaphore.Weighted) error {
 	clusterName := desiredK8sCluster.ClusterInfo.Name
-	clusterBaseDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, commonUtils.CreateHash(commonUtils.HashLength)))
+	clusterBaseDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, hash.Create(hash.Length)))
 
 	if err := utils.GenerateLBBaseFiles(clusterBaseDirectory, lbClustersInfo); err != nil {
 		return fmt.Errorf("error encountered while generating base files for %s : %w", clusterName, err)
 	}
 
-	err := commonUtils.ConcurrentExec(lbClustersInfo.LbClusters,
+	err := concurrent.Exec(lbClustersInfo.LbClusters,
 		func(_ int, lbCluster *utils.LBClusterData) error {
 			var (
 				loggerPrefix = "LB-cluster"
-				lbClusterId  = commonUtils.GetClusterID(lbCluster.DesiredLbCluster.ClusterInfo)
+				lbClusterId  = lbCluster.DesiredLbCluster.ClusterInfo.Id()
 			)
 
 			logger.Info().Str(loggerPrefix, lbClusterId).Msg("Setting up the loadbalancer cluster")
 
 			// Create the directory where files will be generated
 			clusterDirectory := filepath.Join(clusterBaseDirectory, lbClusterId)
-			if err := commonUtils.CreateDirectory(clusterDirectory); err != nil {
+			if err := fileutils.CreateDirectory(clusterDirectory); err != nil {
 				return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 			}
 
-			if err := commonUtils.CreateKeysForDynamicNodePools(commonUtils.GetCommonDynamicNodePools(lbCluster.DesiredLbCluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
+			if err := nodepools.DynamicGenerateKeys(nodepools.Dynamic(lbCluster.DesiredLbCluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
 				return fmt.Errorf("failed to create key file(s) for dynamic nodepools : %w", err)
 			}
 
-			if err := commonUtils.CreateKeysForStaticNodepools(commonUtils.GetCommonStaticNodePools(lbCluster.DesiredLbCluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
+			if err := nodepools.StaticGenerateKeys(nodepools.Static(lbCluster.DesiredLbCluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
 				return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 			}
 
@@ -107,7 +111,7 @@ func setUpLoadbalancers(desiredK8sCluster *spec.K8Scluster, lbClustersInfo *util
 
 	var desiredApiServerTypeLBCluster *utils.LBClusterData
 	for _, lbClusterInfo := range lbClustersInfo.LbClusters {
-		if commonUtils.HasAPIServerRole(lbClusterInfo.DesiredLbCluster.Roles) {
+		if lbClusterInfo.DesiredLbCluster.HasApiRole() {
 			desiredApiServerTypeLBCluster = lbClusterInfo
 		}
 	}
@@ -214,7 +218,7 @@ func targetNodes(targetPools []string, targetk8sPools []*spec.NodePool) (nodes [
 	for _, target := range targetPools {
 		for _, np := range targetk8sPools {
 			if np.GetDynamicNodePool() != nil {
-				if name, _ := commonUtils.MatchNameAndHashWithTemplate(target, np.Name); name != "" {
+				if name, _ := nodepools.MatchNameAndHashWithTemplate(target, np.Name); name != "" {
 					pools = append(pools, np)
 				}
 			} else if np.GetStaticNodePool() != nil {

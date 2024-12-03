@@ -2,7 +2,7 @@ package outbound
 
 import (
 	"github.com/berops/claudie/internal/envs"
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/grpcutils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
 	builder "github.com/berops/claudie/services/builder/internal"
@@ -17,7 +17,7 @@ type KuberConnector struct {
 
 // Connect establishes a gRPC connection with the kuber microservice.
 func (k *KuberConnector) Connect() error {
-	connection, err := utils.GrpcDialWithRetryAndBackoff("kuber", envs.KuberURL)
+	connection, err := grpcutils.GrpcDialWithRetryAndBackoff("kuber", envs.KuberURL)
 	if err != nil {
 		return err
 	}
@@ -146,12 +146,12 @@ func (k *KuberConnector) PatchKubeProxyConfigMap(builderCtx *builder.Context, ku
 
 // Disconnect closes the underlying gRPC connection to kuber microservice.
 func (k *KuberConnector) Disconnect() {
-	utils.CloseClientConnection(k.Connection)
+	grpcutils.CloseClientConnection(k.Connection)
 }
 
 // PerformHealthCheck checks health of the underlying gRPC connection to kuber microservice.
 func (k *KuberConnector) PerformHealthCheck() error {
-	if err := utils.IsConnectionReady(k.Connection); err == nil {
+	if err := grpcutils.IsConnectionReady(k.Connection); err == nil {
 		return nil
 	} else {
 		k.Connection.Connect()

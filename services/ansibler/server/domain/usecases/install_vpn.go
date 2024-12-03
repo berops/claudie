@@ -7,7 +7,9 @@ import (
 	"os"
 	"path/filepath"
 
-	commonUtils "github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/fileutils"
+	"github.com/berops/claudie/internal/hash"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/ansibler/server/utils"
@@ -40,10 +42,10 @@ func (u *Usecases) InstallVPN(request *pb.InstallRequest) (*pb.InstallResponse, 
 			// Construct and add NodepoolsInfo for the Kubernetes cluster
 			{
 				Nodepools: utils.NodePools{
-					Dynamic: commonUtils.GetCommonDynamicNodePools(request.Desired.ClusterInfo.NodePools),
-					Static:  commonUtils.GetCommonStaticNodePools(request.Desired.ClusterInfo.NodePools),
+					Dynamic: nodepools.Dynamic(request.Desired.ClusterInfo.NodePools),
+					Static:  nodepools.Static(request.Desired.ClusterInfo.NodePools),
 				},
-				ClusterID:      commonUtils.GetClusterID(request.Desired.ClusterInfo),
+				ClusterID:      request.Desired.ClusterInfo.Id(),
 				ClusterNetwork: request.Desired.Network,
 			},
 		},
@@ -53,16 +55,16 @@ func (u *Usecases) InstallVPN(request *pb.InstallRequest) (*pb.InstallResponse, 
 		vpnInfo.NodepoolsInfos = append(vpnInfo.NodepoolsInfos,
 			&NodepoolsInfo{
 				Nodepools: utils.NodePools{
-					Dynamic: commonUtils.GetCommonDynamicNodePools(lbCluster.ClusterInfo.NodePools),
-					Static:  commonUtils.GetCommonStaticNodePools(lbCluster.ClusterInfo.NodePools),
+					Dynamic: nodepools.Dynamic(lbCluster.ClusterInfo.NodePools),
+					Static:  nodepools.Static(lbCluster.ClusterInfo.NodePools),
 				},
-				ClusterID:      commonUtils.GetClusterID(lbCluster.ClusterInfo),
+				ClusterID:      lbCluster.ClusterInfo.Id(),
 				ClusterNetwork: request.Desired.Network,
 			},
 		)
 	}
 
-	if err := installWireguardVPN(commonUtils.GetClusterID(request.Desired.ClusterInfo), vpnInfo, u.SpawnProcessLimit); err != nil {
+	if err := installWireguardVPN(request.Desired.ClusterInfo.Id(), vpnInfo, u.SpawnProcessLimit); err != nil {
 		logger.Err(err).Msgf("Error encountered while installing VPN")
 		return nil, fmt.Errorf("error encountered while installing VPN for cluster %s project %s : %w", request.Desired.ClusterInfo.Name, request.ProjectName, err)
 	}
@@ -74,8 +76,8 @@ func (u *Usecases) InstallVPN(request *pb.InstallRequest) (*pb.InstallResponse, 
 // installWireguardVPN install wireguard VPN for all nodes in the infrastructure.
 func installWireguardVPN(clusterID string, vpnInfo *VPNInfo, processLimit *semaphore.Weighted) error {
 	// Directory where files (required by Ansible) will be generated.
-	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, commonUtils.CreateHash(commonUtils.HashLength)))
-	if err := commonUtils.CreateDirectory(clusterDirectory); err != nil {
+	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, hash.Create(hash.Length)))
+	if err := fileutils.CreateDirectory(clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 	}
 
@@ -93,10 +95,10 @@ func installWireguardVPN(clusterID string, vpnInfo *VPNInfo, processLimit *semap
 	}
 
 	for _, nodepoolInfo := range vpnInfo.NodepoolsInfos {
-		if err := commonUtils.CreateKeysForDynamicNodePools(nodepoolInfo.Nodepools.Dynamic, clusterDirectory); err != nil {
+		if err := nodepools.DynamicGenerateKeys(nodepoolInfo.Nodepools.Dynamic, clusterDirectory); err != nil {
 			return fmt.Errorf("failed to create key file(s) for dynamic nodepools : %w", err)
 		}
-		if err := commonUtils.CreateKeysForStaticNodepools(nodepoolInfo.Nodepools.Static, clusterDirectory); err != nil {
+		if err := nodepools.StaticGenerateKeys(nodepoolInfo.Nodepools.Static, clusterDirectory); err != nil {
 			return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 		}
 	}

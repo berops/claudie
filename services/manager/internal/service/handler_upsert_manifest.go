@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/berops/claudie/internal/checksum"
+	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/manager/internal/store"
@@ -31,7 +31,7 @@ func (g *GRPC) UpsertManifest(ctx context.Context, request *pb.UpsertManifestReq
 		return nil, status.Errorf(codes.InvalidArgument, "cannot update manifest with empty string")
 	}
 
-	request.Manifest.Checksum = checksum.Digest(request.Manifest.Raw)
+	request.Manifest.Checksum = hash.Digest(request.Manifest.Raw)
 
 	dbConfig, err := g.Store.GetConfig(ctx, request.Name)
 	if err != nil {

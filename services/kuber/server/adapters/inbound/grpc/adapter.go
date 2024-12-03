@@ -9,7 +9,8 @@ import (
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/internal/grpcutils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/kuber/server/domain/usecases"
 )
@@ -27,7 +28,7 @@ type GrpcAdapter struct {
 // Init sets up the GrpcAdapter by creating the underlying tcpListener, gRPC server and
 // gRPC health check server.
 func (g *GrpcAdapter) Init(usecases *usecases.Usecases, opts ...grpc.ServerOption) {
-	port := utils.GetEnvDefault("KUBER_PORT", fmt.Sprint(defaultKuberPort))
+	port := envs.GetOrDefault("KUBER_PORT", fmt.Sprint(defaultKuberPort))
 
 	var err error
 
@@ -38,7 +39,7 @@ func (g *GrpcAdapter) Init(usecases *usecases.Usecases, opts ...grpc.ServerOptio
 	}
 	log.Info().Msgf("Kuber service is listening on: %s", listeningAddress)
 
-	g.server = utils.NewGRPCServer(opts...)
+	g.server = grpcutils.NewGRPCServer(opts...)
 	pb.RegisterKuberServiceServer(g.server, &KuberGrpcService{usecases: usecases})
 
 	// Add health service to gRPC
