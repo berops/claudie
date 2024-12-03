@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/internal/store"
 	"github.com/google/go-cmp/cmp"
@@ -81,7 +81,7 @@ func Test_findNewAPIEndpointCandidate(t *testing.T) {
 }
 
 func Test_deletedTargetApiNodePool(t *testing.T) {
-	rnghash := utils.CreateHash(utils.HashLength)
+	rnghash := hash.Create(hash.Length)
 	type args struct {
 		k8sDiffResult nodePoolDiffResult
 		current       *spec.K8Scluster
@@ -166,7 +166,7 @@ func Test_deletedTargetApiNodePool(t *testing.T) {
 }
 
 func Test_endpointNodePoolDeleted(t *testing.T) {
-	rnghash := utils.CreateHash(utils.HashLength)
+	rnghash := hash.Create(hash.Length)
 	type args struct {
 		k8sDiffResult nodePoolDiffResult
 		current       *spec.K8Scluster
@@ -273,7 +273,7 @@ func Test_endpointNodePoolDeleted(t *testing.T) {
 }
 
 func Test_craftK8sIR(t *testing.T) {
-	rnghash := utils.CreateHash(utils.HashLength)
+	rnghash := hash.Create(hash.Length)
 	type args struct {
 		k8sDiffResult nodePoolDiffResult
 		current       *spec.K8Scluster
@@ -767,7 +767,7 @@ func Test_k8sAutoscalerDiff(t *testing.T) {
 }
 
 func TestDiff(t *testing.T) {
-	rnghash := utils.CreateHash(utils.HashLength)
+	rnghash := hash.Create(hash.Length)
 	current := &spec.K8Scluster{ClusterInfo: &spec.ClusterInfo{
 		Name: "k8s",
 		NodePools: []*spec.NodePool{{

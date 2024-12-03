@@ -5,7 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	commonUtils "github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/fileutils"
+	"github.com/berops/claudie/internal/hash"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/ansibler/server/utils"
@@ -33,25 +35,25 @@ func (u *Usecases) UpdateAPIEndpoint(request *pb.UpdateAPIEndpointRequest) (*pb.
 // the desired state. Thus, a new control node needs to be selected among the existing
 // control nodes. This new control node will then represent the ApiEndpoint of the cluster.
 func updateAPIEndpoint(endpoint *pb.UpdateAPIEndpointRequest_Endpoint, currentK8sCluster *spec.K8Scluster, proxyEnvs *spec.ProxyEnvs, processLimit *semaphore.Weighted) error {
-	clusterID := commonUtils.GetClusterID(currentK8sCluster.ClusterInfo)
+	clusterID := currentK8sCluster.ClusterInfo.Id()
 
-	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, commonUtils.CreateHash(commonUtils.HashLength)))
-	if err := commonUtils.CreateDirectory(clusterDirectory); err != nil {
+	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, hash.Create(hash.Length)))
+	if err := fileutils.CreateDirectory(clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 	}
 
-	if err := commonUtils.CreateKeysForDynamicNodePools(commonUtils.GetCommonDynamicNodePools(currentK8sCluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
+	if err := nodepools.DynamicGenerateKeys(nodepools.Dynamic(currentK8sCluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for dynamic nodepools : %w", err)
 	}
 
-	if err := commonUtils.CreateKeysForStaticNodepools(commonUtils.GetCommonStaticNodePools(currentK8sCluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
+	if err := nodepools.StaticGenerateKeys(nodepools.Static(currentK8sCluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 
 	err := utils.GenerateInventoryFile(templates.LoadbalancerInventoryTemplate, clusterDirectory, utils.LBInventoryFileParameters{
 		K8sNodepools: utils.NodePools{
-			Dynamic: commonUtils.GetCommonDynamicNodePools(currentK8sCluster.ClusterInfo.NodePools),
-			Static:  commonUtils.GetCommonStaticNodePools(currentK8sCluster.ClusterInfo.NodePools),
+			Dynamic: nodepools.Dynamic(currentK8sCluster.ClusterInfo.NodePools),
+			Static:  nodepools.Static(currentK8sCluster.ClusterInfo.NodePools),
 		},
 		LBClusters: nil,
 		ClusterID:  clusterID,
@@ -60,12 +62,12 @@ func updateAPIEndpoint(endpoint *pb.UpdateAPIEndpointRequest_Endpoint, currentK8
 		return fmt.Errorf("error while creating inventory file for %s : %w", clusterDirectory, err)
 	}
 
-	_, apiEndpointNode, err := commonUtils.FindNodepoolWithApiEndpointNode(currentK8sCluster.ClusterInfo.NodePools)
-	if err != nil {
+	_, apiEndpointNode := nodepools.FindApiEndpoint(currentK8sCluster.ClusterInfo.NodePools)
+	if apiEndpointNode == nil {
 		return fmt.Errorf("current state cluster doesn't have api endpoint as a control plane node")
 	}
 
-	np := commonUtils.GetNodePoolByName(endpoint.Nodepool, currentK8sCluster.ClusterInfo.NodePools)
+	np := nodepools.FindByName(endpoint.Nodepool, currentK8sCluster.ClusterInfo.NodePools)
 	if np == nil {
 		return fmt.Errorf("no nodepool %q found within current state", endpoint.Nodepool)
 	}

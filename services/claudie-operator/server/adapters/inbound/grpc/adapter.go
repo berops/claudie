@@ -7,7 +7,8 @@ import (
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/internal/grpcutils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/claudie-operator/server/domain/usecases"
 )
@@ -23,7 +24,7 @@ type GrpcAdapter struct {
 
 // Init will create the underlying gRPC server and the gRPC healthcheck server
 func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
-	port := utils.GetEnvDefault("OPERATOR_PORT", fmt.Sprint(defaultOperatorPort))
+	port := envs.GetOrDefault("OPERATOR_PORT", fmt.Sprint(defaultOperatorPort))
 	listeningAddress := net.JoinHostPort("0.0.0.0", port)
 
 	tcpListener, err := net.Listen("tcp", listeningAddress)
@@ -34,8 +35,8 @@ func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
 
 	log.Info().Msgf("Claudie-operator bound to %s", listeningAddress)
 
-	g.server = utils.NewGRPCServer(
-		grpc.ChainUnaryInterceptor(utils.PeerInfoInterceptor(&log.Logger)),
+	g.server = grpcutils.NewGRPCServer(
+		grpc.ChainUnaryInterceptor(grpcutils.PeerInfoInterceptor(&log.Logger)),
 	)
 
 	pb.RegisterOperatorServiceServer(g.server, &OperatorGrpcService{usecases: usecases})

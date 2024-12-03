@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/berops/claudie/internal/nodepools"
+	"github.com/berops/claudie/internal/sanitise"
 	"github.com/berops/claudie/internal/templateUtils"
-	"github.com/berops/claudie/internal/utils"
-	commonUtils "github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/kube-eleven/server/domain/utils/kubeone"
 	"github.com/berops/claudie/services/kube-eleven/templates"
@@ -47,7 +47,7 @@ type KubeEleven struct {
 // BuildCluster is responsible for managing the given K8sCluster along with the attached LBClusters
 // using Kubeone.
 func (k *KubeEleven) BuildCluster() error {
-	clusterID := commonUtils.GetClusterID(k.K8sCluster.ClusterInfo)
+	clusterID := k.K8sCluster.ClusterInfo.Id()
 
 	k.outputDirectory = filepath.Join(baseDirectory, outputDirectory, clusterID)
 	// Generate files which will be needed by Kubeone.
@@ -87,7 +87,7 @@ func (k *KubeEleven) BuildCluster() error {
 }
 
 func (k *KubeEleven) DestroyCluster() error {
-	clusterID := commonUtils.GetClusterID(k.K8sCluster.ClusterInfo)
+	clusterID := k.K8sCluster.ClusterInfo.Id()
 
 	k.outputDirectory = filepath.Join(baseDirectory, outputDirectory, clusterID)
 
@@ -131,11 +131,11 @@ func (k *KubeEleven) generateFiles() error {
 		return fmt.Errorf("error while generating %s from kubeone template : %w", generatedKubeoneManifestName, err)
 	}
 
-	if err := utils.CreateKeysForDynamicNodePools(utils.GetCommonDynamicNodePools(k.K8sCluster.ClusterInfo.NodePools), k.outputDirectory); err != nil {
+	if err := nodepools.DynamicGenerateKeys(nodepools.Dynamic(k.K8sCluster.ClusterInfo.NodePools), k.outputDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for dynamic nodepools: %w", err)
 	}
 
-	if err := utils.CreateKeysForStaticNodepools(utils.GetCommonStaticNodePools(k.K8sCluster.ClusterInfo.NodePools), k.outputDirectory); err != nil {
+	if err := nodepools.StaticGenerateKeys(nodepools.Static(k.K8sCluster.ClusterInfo.NodePools), k.outputDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 
@@ -204,10 +204,10 @@ func (k *KubeEleven) getClusterNodes() ([]*NodepoolInfo, *spec.Node) {
 
 			nodepoolInfo = &NodepoolInfo{
 				NodepoolName:      nodepool.Name,
-				Region:            utils.SanitiseString(nodepool.GetDynamicNodePool().Region),
-				Zone:              utils.SanitiseString(nodepool.GetDynamicNodePool().Zone),
-				CloudProviderName: utils.SanitiseString(nodepool.GetDynamicNodePool().Provider.CloudProviderName),
-				ProviderName:      utils.SanitiseString(nodepool.GetDynamicNodePool().Provider.SpecName),
+				Region:            sanitise.String(nodepool.GetDynamicNodePool().Region),
+				Zone:              sanitise.String(nodepool.GetDynamicNodePool().Zone),
+				CloudProviderName: sanitise.String(nodepool.GetDynamicNodePool().Provider.CloudProviderName),
+				ProviderName:      sanitise.String(nodepool.GetDynamicNodePool().Provider.SpecName),
 				Nodes:             nodes,
 				IsDynamic:         true,
 			}
@@ -219,10 +219,10 @@ func (k *KubeEleven) getClusterNodes() ([]*NodepoolInfo, *spec.Node) {
 			}
 			nodepoolInfo = &NodepoolInfo{
 				NodepoolName:      nodepool.Name,
-				Region:            utils.SanitiseString(staticRegion),
-				Zone:              utils.SanitiseString(staticZone),
-				CloudProviderName: utils.SanitiseString(staticProvider),
-				ProviderName:      utils.SanitiseString(staticProviderName),
+				Region:            sanitise.String(staticRegion),
+				Zone:              sanitise.String(staticZone),
+				CloudProviderName: sanitise.String(staticProvider),
+				ProviderName:      sanitise.String(staticProviderName),
 				Nodes:             nodes,
 				IsDynamic:         false,
 			}

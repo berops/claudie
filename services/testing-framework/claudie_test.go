@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/berops/claudie/internal/envs"
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb/spec"
 	managerclient "github.com/berops/claudie/services/manager/client"
 	"github.com/rs/zerolog/log"
@@ -36,7 +36,7 @@ func TestClaudie(t *testing.T) {
 		t.Skipf("skipping testing-framework test-case")
 	}
 
-	utils.InitLog("testing-framework")
+	loggerutils.Init("testing-framework")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	group, ctx := errgroup.WithContext(ctx)

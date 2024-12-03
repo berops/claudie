@@ -11,8 +11,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/healthcheck"
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/worker"
 	"github.com/berops/claudie/services/builder/adapters/outbound"
 	"github.com/berops/claudie/services/builder/domain/usecases"
@@ -31,7 +32,7 @@ const (
 )
 
 func main() {
-	utils.InitLog("builder")
+	loggerutils.Init("builder")
 
 	// Init connections.
 	manager, err := managerclient.New(&log.Logger)
@@ -69,7 +70,7 @@ func main() {
 	}
 	defer kb.Disconnect()
 
-	metricsServer := &http.Server{Addr: fmt.Sprintf(":%s", utils.GetEnvDefault("PROMETHEUS_PORT", defaultPrometheusPort))}
+	metricsServer := &http.Server{Addr: fmt.Sprintf(":%s", envs.GetOrDefault("PROMETHEUS_PORT", defaultPrometheusPort))}
 	metrics.MustRegisterCounters()
 
 	usecases := &usecases.Usecases{

@@ -1,7 +1,6 @@
 package builder
 
 import (
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 )
 
@@ -60,13 +59,13 @@ func (ctx *Context) GetClusterName() string {
 	return ""
 }
 
-// GetClusterID returns ID of the k8s cluster for a given builder context.
-func (ctx *Context) GetClusterID() string {
+// Id returns Id of the k8s cluster for a given builder context.
+func (ctx *Context) Id() string {
 	if ctx.DesiredCluster != nil {
-		return utils.GetClusterID(ctx.DesiredCluster.ClusterInfo)
+		return ctx.DesiredCluster.ClusterInfo.Id()
 	}
 	if ctx.CurrentCluster != nil {
-		return utils.GetClusterID(ctx.CurrentCluster.ClusterInfo)
+		return ctx.CurrentCluster.ClusterInfo.Id()
 	}
 
 	// try to get the cluster name from the lbs if present

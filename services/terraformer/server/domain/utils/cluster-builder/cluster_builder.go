@@ -5,15 +5,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"iter"
 	"net"
 	"os"
 	"path/filepath"
 	"slices"
 
-	"github.com/berops/claudie/internal/checksum"
+	"github.com/berops/claudie/internal/clusters"
 	comm "github.com/berops/claudie/internal/command"
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/fileutils"
+	"github.com/berops/claudie/internal/generics"
+	"github.com/berops/claudie/internal/hash"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/terraform"
@@ -55,7 +57,7 @@ type ClusterBuilder struct {
 
 // CreateNodepools creates node pools for the cluster.
 func (c ClusterBuilder) CreateNodepools() error {
-	clusterID := utils.GetClusterID(c.DesiredClusterInfo)
+	clusterID := c.DesiredClusterInfo.Id()
 	clusterDir := filepath.Join(Output, clusterID)
 
 	defer func() {
@@ -68,8 +70,8 @@ func (c ClusterBuilder) CreateNodepools() error {
 	// Calculate CIDR, so they do not change if nodepool order changes
 	// https://github.com/berops/claudie/issues/647
 	// Order them by provider and region
-	for _, nps := range utils.GroupNodepoolsByProviderRegion(c.DesiredClusterInfo) {
-		if err := calculateCIDR(baseSubnetCIDR, utils.GetDynamicNodePools(nps)); err != nil {
+	for _, nps := range nodepools.ByProviderRegion(c.DesiredClusterInfo.NodePools) {
+		if err := calculateCIDR(baseSubnetCIDR, nodepools.ExtractDynamic(nps)); err != nil {
 			return fmt.Errorf("error while generating CIDR for nodepools : %w", err)
 		}
 	}
@@ -127,7 +129,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 			continue
 		}
 
-		f := checksum.Digest128(filepath.Join(np.Provider.SpecName, templates.ExtractTargetPath(np.Provider.Templates)))
+		f := hash.Digest128(filepath.Join(np.Provider.SpecName, np.Provider.Templates.MustExtractTargetPath()))
 		k := fmt.Sprintf("%s_%s_%s", nodepool.Name, np.Provider.SpecName, hex.EncodeToString(f))
 
 		output, err := terraform.Output(k)
@@ -146,7 +148,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 
 // DestroyNodepools destroys nodepools for the cluster.
 func (c ClusterBuilder) DestroyNodepools() error {
-	clusterID := utils.GetClusterID(c.CurrentClusterInfo)
+	clusterID := c.CurrentClusterInfo.Id()
 	clusterDir := filepath.Join(Output, clusterID)
 
 	defer func() {
@@ -158,8 +160,8 @@ func (c ClusterBuilder) DestroyNodepools() error {
 	// Calculate CIDR, in case some nodepools do not have it, due to error.
 	// https://github.com/berops/claudie/issues/647
 	// Order them by provider and region
-	for _, nps := range utils.GroupNodepoolsByProviderRegion(c.CurrentClusterInfo) {
-		if err := calculateCIDR(baseSubnetCIDR, utils.GetDynamicNodePools(nps)); err != nil {
+	for _, nps := range nodepools.ByProviderRegion(c.CurrentClusterInfo.NodePools) {
+		if err := calculateCIDR(baseSubnetCIDR, nodepools.ExtractDynamic(nps)); err != nil {
 			return fmt.Errorf("error while generating CIDR for nodepools : %w", err)
 		}
 	}
@@ -227,10 +229,10 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 		return fmt.Errorf("error while generating provider templates: %w", err)
 	}
 
-	for info, pools := range GroupByProvider(clusterInfo.NodePools) {
+	for info, pools := range nodepools.ByProvider(clusterInfo.NodePools) {
 		templatesDownloadDir := filepath.Join(TemplatesRootDir, clusterID, info.SpecName)
 
-		for path, pools := range GroupByTemplates(pools) {
+		for path, pools := range nodepools.ByTemplates(pools) {
 			p := pools[0].GetDynamicNodePool().GetProvider()
 
 			if err := templates.DownloadProvider(templatesDownloadDir, p); err != nil {
@@ -250,7 +252,7 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 						IsControl: np.IsControl,
 					})
 
-					if err := utils.CreateKeyFile(dnp.GetPublicKey(), clusterDir, np.GetName()); err != nil {
+					if err := fileutils.CreateKey(dnp.GetPublicKey(), clusterDir, np.GetName()); err != nil {
 						return fmt.Errorf("error public key file for %s : %w", clusterDir, err)
 					}
 				}
@@ -267,16 +269,16 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 				TargetDirectory:   clusterDir,
 				ReadFromDirectory: templatesDownloadDir,
 				TemplatePath:      path,
-				Fingerprint:       hex.EncodeToString(checksum.Digest128(filepath.Join(info.SpecName, path))),
+				Fingerprint:       hex.EncodeToString(hash.Digest128(filepath.Join(info.SpecName, path))),
 			}
 
 			if err := g.GenerateNetworking(&templates.Networking{
 				ClusterData: clusterData,
 				Provider:    p,
-				Regions:     utils.GetRegions(utils.GetDynamicNodePools(pools)),
+				Regions:     nodepools.ExtractRegions(nodepools.ExtractDynamic(pools)),
 				K8sData: templates.K8sData{
 					HasAPIServer: !slices.Contains(
-						utils.ExtractTargetPorts(c.K8sInfo.LoadBalancers),
+						clusters.ExtractTargetPorts(c.K8sInfo.LoadBalancers),
 						6443,
 					),
 				},
@@ -343,7 +345,7 @@ func fillNodes(terraformOutput *templates.NodepoolIPs, newNodePool *spec.NodePoo
 	// fill slices from terraformOutput maps with names of nodes to ensure an order
 	var tempNodes []*spec.Node
 	// get sorted list of keys
-	_ = utils.IterateInOrder(terraformOutput.IPs, func(nodeName string, IP any) error {
+	_ = generics.IterateInOrder(terraformOutput.IPs, func(nodeName string, IP any) error {
 		var nodeType spec.NodeType
 		var private string
 
@@ -418,14 +420,14 @@ func (c *ClusterBuilder) generateProviderTemplates(current, desired *spec.Cluste
 		slices.Values(desired.GetNodePools()),
 	)
 
-	for info, pools := range GroupByProvider(nps) {
-		if err := utils.CreateKeyFile(info.Creds, directory, info.SpecName); err != nil {
+	for info, pools := range nodepools.ByProvider(nps) {
+		if err := fileutils.CreateKey(info.Creds, directory, info.SpecName); err != nil {
 			return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", info.SpecName, directory, err)
 		}
 
 		templatesDownloadDir := filepath.Join(TemplatesRootDir, clusterID, info.SpecName)
 
-		for path, pools := range GroupByTemplates(pools) {
+		for path, pools := range nodepools.ByTemplates(pools) {
 			p := pools[0].GetDynamicNodePool().GetProvider()
 			if err := templates.DownloadProvider(templatesDownloadDir, p); err != nil {
 				msg := fmt.Sprintf("cluster %q failed to download template repository", clusterID)
@@ -438,13 +440,13 @@ func (c *ClusterBuilder) generateProviderTemplates(current, desired *spec.Cluste
 				TargetDirectory:   directory,
 				ReadFromDirectory: templatesDownloadDir,
 				TemplatePath:      path,
-				Fingerprint:       hex.EncodeToString(checksum.Digest128(filepath.Join(info.SpecName, path))),
+				Fingerprint:       hex.EncodeToString(hash.Digest128(filepath.Join(info.SpecName, path))),
 			}
 
 			err := g.GenerateProvider(&templates.Provider{
 				ClusterData: clusterData,
 				Provider:    pools[0].GetDynamicNodePool().GetProvider(),
-				Regions:     utils.GetRegions(utils.GetDynamicNodePools(pools)),
+				Regions:     nodepools.ExtractRegions(nodepools.ExtractDynamic(pools)),
 			})
 
 			if err != nil {
@@ -454,57 +456,4 @@ func (c *ClusterBuilder) generateProviderTemplates(current, desired *spec.Cluste
 	}
 
 	return nil
-}
-
-type ProviderTemplateGroup struct {
-	CloudProvider string
-	SpecName      string
-	Creds         string
-}
-
-func GroupByProvider(nps []*spec.NodePool) iter.Seq2[ProviderTemplateGroup, []*spec.NodePool] {
-	m := make(map[ProviderTemplateGroup][]*spec.NodePool)
-
-	for _, nodepool := range nps {
-		np, ok := nodepool.Type.(*spec.NodePool_DynamicNodePool)
-		if !ok {
-			continue
-		}
-		k := ProviderTemplateGroup{
-			CloudProvider: np.DynamicNodePool.Provider.CloudProviderName,
-			SpecName:      np.DynamicNodePool.Provider.SpecName,
-			Creds:         utils.GetAuthCredentials(np.DynamicNodePool.Provider),
-		}
-		m[k] = append(m[k], nodepool)
-	}
-
-	return func(yield func(ProviderTemplateGroup, []*spec.NodePool) bool) {
-		for k, v := range m {
-			if !yield(k, v) {
-				return
-			}
-		}
-	}
-}
-
-func GroupByTemplates(nps []*spec.NodePool) iter.Seq2[string, []*spec.NodePool] {
-	m := make(map[string][]*spec.NodePool)
-
-	for _, nodepool := range nps {
-		np, ok := nodepool.Type.(*spec.NodePool_DynamicNodePool)
-		if !ok {
-			continue
-		}
-
-		p := templates.ExtractTargetPath(np.DynamicNodePool.Provider.Templates)
-		m[p] = append(m[p], nodepool)
-	}
-
-	return func(yield func(string, []*spec.NodePool) bool) {
-		for k, v := range m {
-			if !yield(k, v) {
-				return
-			}
-		}
-	}
 }

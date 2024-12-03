@@ -6,7 +6,8 @@ import (
 	"slices"
 	"time"
 
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/hash"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
@@ -37,11 +38,11 @@ func rollingUpdateLB(current, desired *spec.Clusters, position int) (*spec.Clust
 		usedNodePoolNames = make(map[string]struct{})
 		ir                = proto.Clone(current.LoadBalancers).(*spec.LoadBalancers)
 		rollingUpdates    = proto.Clone(current.LoadBalancers).(*spec.LoadBalancers)
-		lbID              = utils.GetClusterID(ir.Clusters[position].ClusterInfo)
+		lbID              = ir.Clusters[position].ClusterInfo.Id()
 	)
 
 	indexDesired := slices.IndexFunc(desired.GetLoadBalancers().GetClusters(), func(d *spec.LBcluster) bool {
-		return utils.GetClusterID(d.ClusterInfo) == lbID
+		return d.ClusterInfo.Id() == lbID
 	})
 
 	// names are unique within a single cluster.
@@ -85,9 +86,9 @@ func rollingUpdateLB(current, desired *spec.Clusters, position int) (*spec.Clust
 		mapping[di] = updated
 
 		// 1. new name
-		n, _ := utils.MustExtractNameAndHash(d.Name)
+		n, _ := nodepools.MustExtractNameAndHash(d.Name)
 		for {
-			name := fmt.Sprintf("%s-%s", n, utils.CreateHash(utils.HashLength))
+			name := fmt.Sprintf("%s-%s", n, hash.Create(hash.Length))
 			if _, ok := usedNodePoolNames[name]; !ok {
 				usedNodePoolNames[name] = struct{}{}
 				updated.Name = name

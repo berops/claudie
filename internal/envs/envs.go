@@ -105,3 +105,14 @@ func init() {
 		LogLevel = "info"
 	}
 }
+
+// GetOrDefault take a string representing environment variable as an argument, and a default value
+// If the environment variable is not defined, it returns the provided default value.
+func GetOrDefault(envKey string, defaultVal string) string {
+	v, present := os.LookupEnv(envKey)
+	if present {
+		return v
+	} else {
+		return defaultVal
+	}
+}

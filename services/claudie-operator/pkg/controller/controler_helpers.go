@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"unicode/utf8"
 
+	"github.com/berops/claudie/internal/generics"
 	"github.com/berops/claudie/internal/manifest"
-	"github.com/berops/claudie/internal/utils"
 	v1beta "github.com/berops/claudie/services/claudie-operator/pkg/api/v1beta1"
 )
 
@@ -176,7 +176,7 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 	nodePools.Dynamic = crd.Spec.NodePools.Dynamic
 	nodePools.Static = make([]manifest.StaticNodePool, 0, len(crd.Spec.NodePools.Static))
 
-	err := utils.IterateInOrder(staticNodesWithSecret, func(nodepool string, nws []v1beta.StaticNodeWithData) error {
+	err := generics.IterateInOrder(staticNodesWithSecret, func(nodepool string, nws []v1beta.StaticNodeWithData) error {
 		nodes := make([]manifest.Node, 0, len(nws))
 		// Iterate over nodes and retrieve private key from secret
 		for _, n := range nws {

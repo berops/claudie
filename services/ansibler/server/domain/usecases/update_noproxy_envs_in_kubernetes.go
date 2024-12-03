@@ -5,13 +5,14 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rs/zerolog/log"
-
-	commonUtils "github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/fileutils"
+	"github.com/berops/claudie/internal/hash"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/ansibler/server/utils"
 	"github.com/berops/claudie/services/ansibler/templates"
+	"github.com/rs/zerolog/log"
 
 	"golang.org/x/sync/semaphore"
 )
@@ -43,26 +44,26 @@ func (u *Usecases) UpdateNoProxyEnvsInKubernetes(request *pb.UpdateNoProxyEnvsIn
 
 // updateNoProxyEnvsInKubernetes updates NO_PROXY and no_proxy envs in kube-proxy and static pods
 func updateNoProxyEnvsInKubernetes(currentK8sClusterInfo, desiredK8sClusterInfo *spec.ClusterInfo, proxyEnvs *spec.ProxyEnvs, processLimit *semaphore.Weighted) error {
-	clusterID := commonUtils.GetClusterID(currentK8sClusterInfo)
+	clusterID := currentK8sClusterInfo.Id()
 
 	// This is the directory where files (Ansible inventory files, SSH keys etc.) will be generated.
-	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, commonUtils.CreateHash(commonUtils.HashLength)))
-	if err := commonUtils.CreateDirectory(clusterDirectory); err != nil {
+	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, hash.Create(hash.Length)))
+	if err := fileutils.CreateDirectory(clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 	}
 
-	if err := commonUtils.CreateKeysForDynamicNodePools(commonUtils.GetCommonDynamicNodePools(currentK8sClusterInfo.NodePools), clusterDirectory); err != nil {
+	if err := nodepools.DynamicGenerateKeys(nodepools.Dynamic(currentK8sClusterInfo.NodePools), clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for dynamic nodepools : %w", err)
 	}
 
-	if err := commonUtils.CreateKeysForStaticNodepools(commonUtils.GetCommonStaticNodePools(currentK8sClusterInfo.NodePools), clusterDirectory); err != nil {
+	if err := nodepools.StaticGenerateKeys(nodepools.Static(currentK8sClusterInfo.NodePools), clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 
 	if err := utils.GenerateInventoryFile(templates.UpdateProxyEnvsInventoryTemplate, clusterDirectory, utils.ProxyInventoryFileParameters{
 		K8sNodepools: utils.NodePools{
-			Dynamic: commonUtils.GetCommonDynamicNodes(currentK8sClusterInfo.NodePools, desiredK8sClusterInfo.NodePools),
-			Static:  commonUtils.GetCommonStaticNodes(currentK8sClusterInfo.NodePools, desiredK8sClusterInfo.NodePools),
+			Dynamic: nodepools.CommonDynamicNodes(currentK8sClusterInfo.NodePools, desiredK8sClusterInfo.NodePools),
+			Static:  nodepools.CommonStaticNodes(currentK8sClusterInfo.NodePools, desiredK8sClusterInfo.NodePools),
 		},
 		ClusterID:    clusterID,
 		NoProxyList:  proxyEnvs.NoProxyList,

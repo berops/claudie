@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/templateUtils"
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/go-git/go-git/v5"
 )
@@ -56,7 +56,7 @@ func (r *Repository) Download(repository *spec.TemplateRepository) error {
 	cloneDirectory := filepath.Join(r.TemplatesRootDirectory, u.Hostname(), u.Path)
 	gitDirectory := filepath.Join(cloneDirectory, repository.CommitHash)
 
-	if utils.DirectoryExists(gitDirectory) {
+	if fileutils.DirectoryExists(gitDirectory) {
 		existingMirror, err := git.PlainOpen(gitDirectory)
 		if err != nil {
 			return fmt.Errorf("%q is not a valid local git repository: %w", gitDirectory, err)
@@ -102,7 +102,7 @@ func (r *Repository) Download(repository *spec.TemplateRepository) error {
 		// fallthrough, continue with the cloning below
 	}
 
-	if err := utils.CreateDirectory(cloneDirectory); err != nil {
+	if err := fileutils.CreateDirectory(cloneDirectory); err != nil {
 		return fmt.Errorf("failed to create directory %q: %w", cloneDirectory, err)
 	}
 
@@ -188,23 +188,6 @@ func (g *Generator) GenerateDNS(data *DNS) error {
 		filepath.Join(g.ReadFromDirectory, g.TemplatePath, "dns"),
 		data.Provider.SpecName,
 		data,
-	)
-}
-
-func mustParseURL(s *url.URL, err error) *url.URL {
-	if err != nil {
-		panic(err)
-	}
-	return s
-}
-
-func ExtractTargetPath(repository *spec.TemplateRepository) string {
-	u := mustParseURL(url.Parse(repository.Repository))
-	return filepath.Join(
-		u.Hostname(),
-		u.Path,
-		repository.CommitHash,
-		repository.Path,
 	)
 }
 

@@ -4,13 +4,13 @@ import (
 	"fmt"
 
 	"github.com/berops/claudie/internal/kubectl"
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb"
 )
 
 func (u *Usecases) CiliumRolloutRestart(request *pb.CiliumRolloutRestartRequest) (*pb.CiliumRolloutRestartResponse, error) {
-	clusterID := utils.GetClusterID(request.Cluster.ClusterInfo)
-	logger := utils.CreateLoggerWithClusterName(clusterID)
+	clusterID := request.Cluster.ClusterInfo.Id()
+	logger := loggerutils.WithClusterName(clusterID)
 
 	logger.Info().Msgf("Performing a rollout of the cilium daemonset")
 	kc := kubectl.Kubectl{

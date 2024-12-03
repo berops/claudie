@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/internal/store"
@@ -77,7 +76,7 @@ func (g *GRPC) TaskComplete(ctx context.Context, req *pb.TaskCompleteRequest) (*
 	cluster.Current = req.State
 
 	if cluster.Current != nil && cluster.Desired != nil { // on update.
-		log.Debug().Str("cluster", utils.GetClusterID(cluster.Current.K8S.ClusterInfo)).Msgf("transferring state from newly supplied current state into desired state")
+		log.Debug().Str("cluster", cluster.Current.K8S.ClusterInfo.Id()).Msgf("transferring state from newly supplied current state into desired state")
 
 		if err := transferExistingK8sState(cluster.Current.K8S, cluster.Desired.K8S); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to trasnsfer updated current state to desired state for task %q cluster %q config %q: %v", req.TaskId, req.Cluster, req.Name, err)

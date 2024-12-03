@@ -7,7 +7,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/builder/domain/usecases/metrics"
 	builder "github.com/berops/claudie/services/builder/internal"
@@ -229,7 +229,7 @@ func (u *Usecases) executeDeleteTask(te *managerclient.NextTaskResponse) (*spec.
 		var master, worker []string
 
 		for np, deleted := range te.Event.Task.DeleteState.Nodepools {
-			nodepool := utils.GetNodePoolByName(np, te.Current.K8S.ClusterInfo.NodePools)
+			nodepool := nodepools.FindByName(np, te.Current.K8S.ClusterInfo.NodePools)
 			if nodepool.IsControl {
 				master = append(master, deleted.Nodes...)
 			} else {

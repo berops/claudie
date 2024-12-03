@@ -3,7 +3,7 @@ package usecases
 import (
 	"fmt"
 
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb"
 	kube_eleven "github.com/berops/claudie/services/kube-eleven/server/domain/utils/kube-eleven"
 )
@@ -13,7 +13,7 @@ func (u *Usecases) DestroyCluster(req *pb.DestroyClusterRequest) (*pb.DestroyClu
 		return &pb.DestroyClusterResponse{Current: req.Current, CurrentLbs: req.CurrentLbs}, nil
 	}
 
-	logger := utils.CreateLoggerWithProjectAndClusterName(req.ProjectName, utils.GetClusterID(req.Current.ClusterInfo))
+	logger := loggerutils.WithProjectAndCluster(req.ProjectName, req.Current.ClusterInfo.Id())
 
 	logger.Info().Msgf("Destroying kubernetes cluster")
 

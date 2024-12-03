@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/fileutils"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/ansibler/templates"
 	"github.com/rs/zerolog/log"
@@ -151,12 +152,12 @@ func (lb *LBClusterData) APIEndpointState() APIEndpointChangeState {
 	}
 
 	// check if role changed.
-	isAPIServer := utils.HasAPIServerRole(lb.CurrentLbCluster.Roles)
-	if utils.HasAPIServerRole(lb.DesiredLbCluster.Roles) && !isAPIServer {
+	isAPIServer := lb.CurrentLbCluster.HasApiRole()
+	if lb.DesiredLbCluster.HasApiRole() && !isAPIServer {
 		return RoleChangedToAPIServer
 	}
 
-	if isAPIServer && !utils.HasAPIServerRole(lb.DesiredLbCluster.Roles) {
+	if isAPIServer && !lb.DesiredLbCluster.HasApiRole() {
 		return RoleChangedFromAPIServer
 	}
 
@@ -167,15 +168,15 @@ func (lb *LBClusterData) APIEndpointState() APIEndpointChangeState {
 // Returns error if not successful, nil otherwise
 func GenerateLBBaseFiles(outputDirectory string, lbClustersInfo *LBClustersInfo) error {
 	// Create the directory where files will be generated
-	if err := utils.CreateDirectory(outputDirectory); err != nil {
+	if err := fileutils.CreateDirectory(outputDirectory); err != nil {
 		return fmt.Errorf("failed to create directory %s : %w", outputDirectory, err)
 	}
 
-	if err := utils.CreateKeysForDynamicNodePools(utils.GetCommonDynamicNodePools(lbClustersInfo.TargetK8sNodepool), outputDirectory); err != nil {
+	if err := nodepools.DynamicGenerateKeys(nodepools.Dynamic(lbClustersInfo.TargetK8sNodepool), outputDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for dynamic nodepools : %w", err)
 	}
 
-	if err := utils.CreateKeysForStaticNodepools(utils.GetCommonStaticNodePools(lbClustersInfo.TargetK8sNodepool), outputDirectory); err != nil {
+	if err := nodepools.StaticGenerateKeys(nodepools.Static(lbClustersInfo.TargetK8sNodepool), outputDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 
@@ -186,8 +187,8 @@ func GenerateLBBaseFiles(outputDirectory string, lbClustersInfo *LBClustersInfo)
 				Name: lbData.DesiredLbCluster.ClusterInfo.Name,
 				Hash: lbData.DesiredLbCluster.ClusterInfo.Hash,
 				LBnodepools: NodePools{
-					Dynamic: utils.GetCommonDynamicNodePools(lbData.DesiredLbCluster.ClusterInfo.NodePools),
-					Static:  utils.GetCommonStaticNodePools(lbData.DesiredLbCluster.ClusterInfo.NodePools),
+					Dynamic: nodepools.Dynamic(lbData.DesiredLbCluster.ClusterInfo.NodePools),
+					Static:  nodepools.Static(lbData.DesiredLbCluster.ClusterInfo.NodePools),
 				},
 			})
 		}
@@ -198,8 +199,8 @@ func GenerateLBBaseFiles(outputDirectory string, lbClustersInfo *LBClustersInfo)
 		// Value of Ansible template parameters
 		LBInventoryFileParameters{
 			K8sNodepools: NodePools{
-				Dynamic: utils.GetCommonDynamicNodePools(lbClustersInfo.TargetK8sNodepool),
-				Static:  utils.GetCommonStaticNodePools(lbClustersInfo.TargetK8sNodepool),
+				Dynamic: nodepools.Dynamic(lbClustersInfo.TargetK8sNodepool),
+				Static:  nodepools.Static(lbClustersInfo.TargetK8sNodepool),
 			},
 			LBClusters: lbClusters,
 			ClusterID:  lbClustersInfo.ClusterID,
@@ -241,15 +242,15 @@ func HandleAPIEndpointChange(
 
 		// Find if any control node was acting as the Api endpoint in past.
 		// If so, then we will reuse that control node as the Api endpoint.
-		if node, err := utils.FindAPIEndpointNode(k8sCluster.TargetK8sNodepool); err == nil {
+		if _, node := nodepools.FindApiEndpoint(k8sCluster.TargetK8sNodepool); node != nil {
 			newEndpoint = node.Public
 			break
 		}
 
 		// Otherwise choose one of the control nodes as the api endpoint.
-		node, err := utils.FindControlNode(k8sCluster.TargetK8sNodepool)
-		if err != nil {
-			return err
+		node := nodepools.FirstControlNode(k8sCluster.TargetK8sNodepool)
+		if node == nil {
+			return fmt.Errorf("failed to find node with type %s", spec.NodeType_master.String())
 		}
 		node.NodeType = spec.NodeType_apiEndpoint
 		newEndpoint = node.Public
@@ -270,8 +271,8 @@ func HandleAPIEndpointChange(
 		}
 
 		// 3rd - pick the control node as the previous ApiServer.
-		node, err := utils.FindAPIEndpointNode(k8sCluster.TargetK8sNodepool)
-		if err != nil {
+		_, node := nodepools.FindApiEndpoint(k8sCluster.TargetK8sNodepool)
+		if node == nil {
 			return fmt.Errorf("failed to find ApiEndpoint k8s node, couldn't update Api server endpoint")
 		}
 		oldEndpoint = node.Public
@@ -301,8 +302,8 @@ func HandleAPIEndpointChange(
 		}
 
 		// 3rd - pick the control node as the previous ApiServer.
-		node, err := utils.FindAPIEndpointNode(k8sCluster.TargetK8sNodepool)
-		if err != nil {
+		_, node := nodepools.FindApiEndpoint(k8sCluster.TargetK8sNodepool)
+		if node == nil {
 			return fmt.Errorf("failed to find APIEndpoint k8s node, couldn't update Api server endpoint")
 		}
 		node.NodeType = spec.NodeType_master // remove the Endpoint type from the node.
@@ -312,15 +313,15 @@ func HandleAPIEndpointChange(
 		oldEndpoint = apiServerTypeLBCluster.CurrentLbCluster.Dns.Endpoint
 
 		// 1st - find if any control node was an API server.
-		if node, err := utils.FindAPIEndpointNode(k8sCluster.TargetK8sNodepool); err == nil {
+		if _, node := nodepools.FindApiEndpoint(k8sCluster.TargetK8sNodepool); node != nil {
 			newEndpoint = node.Public
 			break
 		}
 
 		// 2nd - choose one of the control nodes as the api endpoint.
-		node, err := utils.FindControlNode(k8sCluster.TargetK8sNodepool)
-		if err != nil {
-			return err
+		node := nodepools.FirstControlNode(k8sCluster.TargetK8sNodepool)
+		if node == nil {
+			return fmt.Errorf("failed to find node with type %s", spec.NodeType_master.String())
 		}
 		node.NodeType = spec.NodeType_apiEndpoint
 		newEndpoint = node.Public
@@ -333,7 +334,7 @@ func HandleAPIEndpointChange(
 
 	proxyEnvs.NoProxyList = strings.Replace(proxyEnvs.NoProxyList, oldEndpoint, newEndpoint, 1)
 
-	log.Debug().Str("LB-cluster", utils.GetClusterID(lbCluster.ClusterInfo)).Msgf("Changing the API endpoint from %s to %s", oldEndpoint, newEndpoint)
+	log.Debug().Str("LB-cluster", lbCluster.ClusterInfo.Id()).Msgf("Changing the API endpoint from %s to %s", oldEndpoint, newEndpoint)
 	if err := ChangeAPIEndpoint(lbCluster.ClusterInfo.Name, oldEndpoint, newEndpoint, outputDirectory, proxyEnvs, processLimit); err != nil {
 		return fmt.Errorf("error while changing the endpoint for %s : %w", lbCluster.ClusterInfo.Name, err)
 	}

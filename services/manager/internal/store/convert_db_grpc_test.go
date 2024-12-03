@@ -1,16 +1,16 @@
 package store_test
 
 import (
-	"github.com/google/uuid"
 	"testing"
 	"time"
 
-	"github.com/berops/claudie/internal/checksum"
+	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/internal/store"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/uuid"
 )
 
 var opts = cmpopts.IgnoreUnexported(
@@ -50,7 +50,7 @@ func TestConvertToGRPCAndBack(t *testing.T) {
 		},
 		Manifest: store.Manifest{
 			Raw:                 "random-manifest",
-			Checksum:            checksum.Digest("random-manifest"),
+			Checksum:            hash.Digest("random-manifest"),
 			LastAppliedChecksum: nil,
 			State:               manifest.Pending.String(),
 		},
@@ -116,7 +116,7 @@ func TestConvertToDBAndBack(t *testing.T) {
 		},
 		Manifest: &spec.Manifest{
 			Raw:      "random-manifest",
-			Checksum: checksum.Digest("random-manifest"),
+			Checksum: hash.Digest("random-manifest"),
 			State:    spec.Manifest_Pending,
 		},
 		Clusters: map[string]*spec.ClusterState{
@@ -277,7 +277,7 @@ func TestConvertFromGRPC(t *testing.T) {
 					},
 					Manifest: &spec.Manifest{
 						Raw:      "random-manifest",
-						Checksum: checksum.Digest("random-manifest"),
+						Checksum: hash.Digest("random-manifest"),
 						State:    spec.Manifest_Pending,
 					},
 					Clusters: nil,
@@ -292,7 +292,7 @@ func TestConvertFromGRPC(t *testing.T) {
 				},
 				Manifest: store.Manifest{
 					Raw:                 "random-manifest",
-					Checksum:            checksum.Digest("random-manifest"),
+					Checksum:            hash.Digest("random-manifest"),
 					LastAppliedChecksum: nil,
 					State:               manifest.Pending.String(),
 				},
@@ -312,7 +312,7 @@ func TestConvertFromGRPC(t *testing.T) {
 					},
 					Manifest: &spec.Manifest{
 						Raw:      "random-manifest",
-						Checksum: checksum.Digest("random-manifest"),
+						Checksum: hash.Digest("random-manifest"),
 						State:    spec.Manifest_Pending,
 					},
 					Clusters: map[string]*spec.ClusterState{
@@ -445,7 +445,7 @@ func TestConvertFromGRPC(t *testing.T) {
 				},
 				Manifest: store.Manifest{
 					Raw:                 "random-manifest",
-					Checksum:            checksum.Digest("random-manifest"),
+					Checksum:            hash.Digest("random-manifest"),
 					LastAppliedChecksum: nil,
 					State:               manifest.Pending.String(),
 				},
@@ -516,7 +516,7 @@ func TestConvertToGRPC(t *testing.T) {
 				},
 				Manifest: &spec.Manifest{
 					Raw:      "random-manifest",
-					Checksum: checksum.Digest("random-manifest"),
+					Checksum: hash.Digest("random-manifest"),
 					State:    spec.Manifest_Pending,
 				},
 				Clusters: nil,
@@ -531,7 +531,7 @@ func TestConvertToGRPC(t *testing.T) {
 					},
 					Manifest: store.Manifest{
 						Raw:                 "random-manifest",
-						Checksum:            checksum.Digest("random-manifest"),
+						Checksum:            hash.Digest("random-manifest"),
 						LastAppliedChecksum: nil,
 						State:               manifest.Pending.String(),
 					},
@@ -551,7 +551,7 @@ func TestConvertToGRPC(t *testing.T) {
 				},
 				Manifest: &spec.Manifest{
 					Raw:      "random-manifest",
-					Checksum: checksum.Digest("random-manifest"),
+					Checksum: hash.Digest("random-manifest"),
 					State:    spec.Manifest_Pending,
 				},
 				Clusters: map[string]*spec.ClusterState{
@@ -684,7 +684,7 @@ func TestConvertToGRPC(t *testing.T) {
 					},
 					Manifest: store.Manifest{
 						Raw:                 "random-manifest",
-						Checksum:            checksum.Digest("random-manifest"),
+						Checksum:            hash.Digest("random-manifest"),
 						LastAppliedChecksum: nil,
 						State:               manifest.Pending.String(),
 					},
