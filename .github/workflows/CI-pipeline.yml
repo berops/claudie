@@ -1,6 +1,5 @@
 name: CI pipeline for Claudie
 on:
-  # Manual trigger
   workflow_dispatch:
   # Triggers the workflow on push or pull request events but only for the master branch
   pull_request:
@@ -11,7 +10,6 @@ env:
   SERVICES: manager builder terraformer ansibler kube-eleven kuber claudie-operator autoscaler-adapter testing-framework
 
 jobs:
-  #--------------------------------------------------------------------------------------------------
   merge-branch:
     if: github.event.pull_request.draft == false
     runs-on: self-hosted
@@ -72,7 +70,7 @@ jobs:
       RUN_TESTS: ${{ steps.change.outputs.RUN_TESTS }}
   #--------------------------------------------------------------------------------------------------
   gotest:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [merge-branch, check-changes]
     steps:
       - uses: actions/checkout@v4
@@ -87,6 +85,48 @@ jobs:
 
       - name: Run Go tests
         run: go test -short ./...
+  #--------------------------------------------------------------------------------------------------
+  golangci:
+    name: Run golangci-lint
+    runs-on: self-hosted
+    needs: [merge-branch, check-changes]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Install golang
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23.1"
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
+          # It's highly recommended installing a specific version of golangci-lint from
+          # https://github.com/golangci/golangci-lint/releases
+          version: v1.60.3
+
+          # Optional: working directory, useful for monorepos
+          # working-directory: somedir
+
+          # Optional: golangci-lint command line arguments.
+          # args: --issues-exit-code=0
+
+          # Optional: show only new issues if it's a pull request. The default value is `false`.
+          # only-new-issues: true
+
+          # Optional: if set to true then the action will use pre-installed Go.
+          # skip-go-installation: true
+
+          # Optional: if set to true then the action don't cache or restore ~/go/pkg.
+          # skip-pkg-cache: true
+
+          # Optional: if set to true then the action don't cache or restore ~/.cache/go-build.
+          # skip-build-cache: true
+
   #--------------------------------------------------------------------------------------------------
   build-and-push:
     runs-on: self-hosted
@@ -155,7 +195,7 @@ jobs:
   #--------------------------------------------------------------------------------------------------
   edit-kustomization:
     runs-on: self-hosted
-    needs: [merge-branch, check-changes, build-and-push, gotest]
+    needs: [merge-branch, check-changes, build-and-push, golangci, gotest]
     steps:
       - uses: actions/checkout@v4
         if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
@@ -223,6 +263,8 @@ jobs:
   deploy-and-monitor:
     runs-on: self-hosted
     needs: [merge-branch, build-and-push, edit-kustomization, check-changes]
+    outputs:
+      skip-deploy: ${{ steps.determine-test-sets.skip_deploy }}
     permissions:
       id-token: write
       contents: read
@@ -233,6 +275,64 @@ jobs:
           ref: ${{ github.head_ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
 
+      - name: Get PR labels
+        id: pr-labels
+        uses: joerick/pr-labels-action@v1.0.9
+
+      - name: Determine which test sets to run
+        id: determine-test-sets
+        working-directory: ./manifests
+        run: |
+          sudo apt update && sudo apt install -y wget tar
+          wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
+          tar xz && mv yq_linux_amd64 yq
+          
+          test_sets=$(./yq '.secretGenerator[].name' ./testing-framework/kustomization.yaml)
+          selected=()
+          
+          for set in $test_sets; do
+            mnt="/go/services/testing-framework/test-sets/$set"
+
+            if [ -n "$GITHUB_PR_LABEL_TEST_SET_AUTOSCALING" ] && [[ "$set" == *"autoscaling"* ]]; then
+              ./yq -i "select(di ==0).spec.template.spec.volumes += [{\"name\": \"$set\", \"secret\": {\"secretName\": \"$set\"}}]"    ./testing-framework/testing-framework.yaml
+              ./yq -i "select(di ==0).spec.template.spec.containers[].volumeMounts += [{\"name\": \"$set\", \"mountPath\": \"$mnt\"}]" ./testing-framework/testing-framework.yaml
+              selected+=("$set")
+            fi
+
+            if [ -n "$GITHUB_PR_LABEL_TEST_SET_FAIL_UNTIL_LAST" ] && [[ "$set" == *"on-last"* ]]; then
+              ./yq -i "select(di ==0).spec.template.spec.volumes += [{\"name\": \"$set\", \"secret\": {\"secretName\": \"$set\"}}]"    ./testing-framework/testing-framework.yaml
+              ./yq -i "select(di ==0).spec.template.spec.containers[].volumeMounts += [{\"name\": \"$set\", \"mountPath\": \"$mnt\"}]" ./testing-framework/testing-framework.yaml
+              selected+=("$set")
+            fi
+          
+            if [ -n "$GITHUB_PR_LABEL_TEST_SET_ORDINARY" ] && [[ "$set" == *"test-set"* ]]; then
+              ./yq -i "select(di ==0).spec.template.spec.volumes += [{\"name\": \"$set\", \"secret\": {\"secretName\": \"$set\"}}]"    ./testing-framework/testing-framework.yaml
+              ./yq -i "select(di ==0).spec.template.spec.containers[].volumeMounts += [{\"name\": \"$set\", \"mountPath\": \"$mnt\"}]" ./testing-framework/testing-framework.yaml
+              selected+=("$set")
+            fi
+          
+            if [ -n "$GITHUB_PR_LABEL_TEST_SET_ROLLING_UPDATE" ] && [[ "$set" == *"rolling-update"* ]]; then
+              ./yq -i "select(di ==0).spec.template.spec.volumes += [{\"name\": \"$set\", \"secret\": {\"secretName\": \"$set\"}}]"    ./testing-framework/testing-framework.yaml
+              ./yq -i "select(di ==0).spec.template.spec.containers[].volumeMounts += [{\"name\": \"$set\", \"mountPath\": \"$mnt\"}]" ./testing-framework/testing-framework.yaml
+              selected+=("$set")
+            fi
+          
+            if [ -n "$GITHUB_PR_LABEL_TEST_SET_PROXY" ] && [[ "$set" == *"proxy"* ]]; then
+              ./yq -i "select(di ==0).spec.template.spec.volumes += [{\"name\": \"$set\", \"secret\": {\"secretName\": \"$set\"}}]"    ./testing-framework/testing-framework.yaml
+              ./yq -i "select(di ==0).spec.template.spec.containers[].volumeMounts += [{\"name\": \"$set\", \"mountPath\": \"$mnt\"}]" ./testing-framework/testing-framework.yaml
+              selected+=("$set")
+            fi
+          done
+          
+          
+          if [ ${#selected[@]} -eq 0 ]; then
+            echo "skipping e2e tests"
+            echo "skip_deploy=true" >> $GITHUB_OUTPUT
+          else
+            echo "selected sets: ${selected[@]}"
+            echo "skip_deploy=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Install terraform
         run: | 
           sudo apt-get update && sudo apt-get install -y wget
@@ -241,29 +341,30 @@ jobs:
           sudo apt update && sudo apt install terraform -y
 
       - name: Set short sha output
+        if: (steps.determine-test-sets.outputs.skip_deploy == 'false')
         run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
 
       - name: Install kubectl
+        if: (steps.determine-test-sets.outputs.skip_deploy == 'false')
         uses: azure/setup-kubectl@v4
         with:
           version: latest
 
       - name: Install kustomize
+        if: (steps.determine-test-sets.outputs.skip_deploy == 'false')
         uses: imranismail/setup-kustomize@v2
         with:
           kustomize-version: 4.5.6
 
       - name: Set e2e kubeconfig
+        if: (steps.determine-test-sets.outputs.skip_deploy == 'false')
         uses: azure/k8s-set-context@v4
         with:
           kubeconfig: ${{ secrets.E2E_CLUSTER_KUBECONFIG }}
 
-      - name: Get PR labels
-        id: pr-labels
-        uses: joerick/pr-labels-action@v1.0.9
-
       # Deploy services to new namespace
       - name: Deploy to new namespace
+        if: (steps.determine-test-sets.outputs.skip_deploy == 'false')
         working-directory: ./manifests/claudie
         run: |
           #set log level to debug
@@ -275,12 +376,8 @@ jobs:
             echo "AUTO_CLEAN_UP=TRUE" >> .env
           fi
 
-          sudo apt update && sudo apt install -y wget tar
-          wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
-          tar xz && mv yq_linux_amd64 yq
-
-          NAME_HASH="claudie-operator-role-binding-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}" ./yq e 'select(di == 0) * (select(.kind == "ClusterRoleBinding") | .metadata.name = strenv(NAME_HASH))' ./cluster-rbac/clusterrolebinding.yaml -i
-          NAMESPACES="claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER},e2e-secrets" ./yq eval 'select(documentIndex == 0).spec.template.spec.containers.0.env += [{"name": "CLAUDIE_NAMESPACES", "value": strenv(NAMESPACES)}]' -i operator.yaml
+          NAME_HASH="claudie-operator-role-binding-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}" ../yq e 'select(di == 0) * (select(.kind == "ClusterRoleBinding") | .metadata.name = strenv(NAME_HASH))' ./cluster-rbac/clusterrolebinding.yaml -i
+          NAMESPACES="claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER},e2e-secrets" ../yq eval 'select(documentIndex == 0).spec.template.spec.containers.0.env += [{"name": "CLAUDIE_NAMESPACES", "value": strenv(NAMESPACES)}]' -i operator.yaml
           kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
           kustomize build | kubectl apply -f -
 
@@ -288,6 +385,7 @@ jobs:
 
       # Check if everything is ready and running
       - name: Monitor status of the new namespace
+        if: (steps.determine-test-sets.outputs.skip_deploy == 'false')
         run: |
           arr=( ${{ env.SERVICES }} )
           echo "${arr[@]}"
@@ -301,16 +399,14 @@ jobs:
           kubectl get pods --namespace=claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
 
       - name: Insert random test hostnames to loadbalancer test set
+        if: (steps.determine-test-sets.outputs.skip_deploy == 'false')
         working-directory: ./manifests/testing-framework/test-sets
         run: |
-          sudo apt update && sudo apt install -y wget tar
-          wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
-          tar xz && mv yq_linux_amd64 yq
-
-          HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ./yq e '.spec.loadBalancers.clusters.[1].dns.hostname = strenv(HOSTNAME)' test-set2/1.yaml -i
-          HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ./yq e '.spec.loadBalancers.clusters.[0].dns.hostname = strenv(HOSTNAME)' test-set2/3.yaml -i
+          HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ../../yq e '.spec.loadBalancers.clusters.[1].dns.hostname = strenv(HOSTNAME)' test-set2/1.yaml -i
+          HOSTNAME=$(echo $RANDOM | md5sum | head -c 20; echo;)  ../../yq e '.spec.loadBalancers.clusters.[0].dns.hostname = strenv(HOSTNAME)' test-set2/3.yaml -i
 
       - name: Create test static nodes
+        if: (steps.determine-test-sets.outputs.skip_deploy == 'false')
         working-directory: ./manifests/testing-framework/test-sets
         run: |
           sudo apt update && sudo apt install -y jq
@@ -332,15 +428,15 @@ jobs:
               if [ -f "$file" ]; then
                   filename=$(basename "$file")
                   if [[ $filename == "1.yaml" ]]; then
-                      ENDPOINT=${IP_ARR[1]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
-                      ENDPOINT=${IP_ARR[2]} ./yq e '.spec.nodePools.static.[0].nodes.[1].endpoint = strenv(ENDPOINT)' $file -i
+                      ENDPOINT=${IP_ARR[1]} ../../yq e '.spec.nodePools.static.[1].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
+                      ENDPOINT=${IP_ARR[2]} ../../yq e '.spec.nodePools.static.[0].nodes.[1].endpoint = strenv(ENDPOINT)' $file -i
                   fi
                   if [[ $filename == "2.yaml" ]]; then
-                      ENDPOINT=${IP_ARR[1]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
-                      ENDPOINT=${IP_ARR[0]} ./yq e '.spec.nodePools.static.[0].nodes.[1].endpoint = strenv(ENDPOINT)' $file -i
+                      ENDPOINT=${IP_ARR[1]} ../../yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
+                      ENDPOINT=${IP_ARR[0]} ../../yq e '.spec.nodePools.static.[0].nodes.[1].endpoint = strenv(ENDPOINT)' $file -i
                   fi
                   if [[ $filename == "3.yaml" ]]; then
-                      ENDPOINT=${IP_ARR[2]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
+                      ENDPOINT=${IP_ARR[2]} ../../yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
                   fi
               fi
           done
@@ -350,34 +446,32 @@ jobs:
               if [ -f "$file" ]; then
                   filename=$(basename "$file")
                   if [[ $filename == "1.yaml" ]]; then
-                      ENDPOINT=${IP_ARR[3]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
+                      ENDPOINT=${IP_ARR[3]} ../../yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
                   fi
                   if [[ $filename == "2.yaml" ]]; then
-                      ENDPOINT=${IP_ARR[3]} ./yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
+                      ENDPOINT=${IP_ARR[3]} ../../yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
                   fi
               fi
           done
+
+      - name: Start the E2E tests
+        if: (steps.determine-test-sets.outputs.skip_deploy == 'false')
+        working-directory: ./manifests
+        run: |
+          NAME_HASH="testing-framework-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}" ./yq e -i '(select(.kind == "ClusterRoleBinding").metadata.name = strenv(NAME_HASH))' ./testing-framework/testing-framework.yaml 
+          
+          cat ./testing-framework/testing-framework.yaml
+
+          kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
+          kustomize build . | kubectl apply -f -
 
           #Clean up
           rm -f yq 
           rm -f yq.1 
           rm -f install-man-page.sh
 
-      - name: Start the E2E tests
-        working-directory: ./manifests
-        run: |
-          sudo apt update && sudo apt install -y wget tar
-          wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
-          tar xz && mv yq_linux_amd64 yq
-
-          NAME_HASH="testing-framework-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}" ./yq e -i '(select(.kind == "ClusterRoleBinding").metadata.name = strenv(NAME_HASH))' ./testing-framework/testing-framework.yaml 
-
-          kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
-          kustomize build . | kubectl apply -f -
-
-          rm -f yq 
-
       - name: Monitor E2E test
+        if: (steps.determine-test-sets.outputs.skip_deploy == 'false')
         run: |
           # Wait for completion as background process - capture PID
           kubectl wait --for=condition=complete --timeout=25000s job/testing-framework -n claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER} &
@@ -400,6 +494,7 @@ jobs:
           exit $exit_code
 
       - name: Delete temporary namespace
+        if: (steps.determine-test-sets.outputs.skip_deploy == 'false')
         run: |
           kubectl delete namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
       
